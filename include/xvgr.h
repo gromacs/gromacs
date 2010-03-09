@@ -99,6 +99,13 @@ enum {
   exvggtNONE, exvggtXNY, exvggtXYDY, exvggtXYDYDY, exvggtNR
 };
 
+extern void xvgr_header(FILE *fp,const char *title,const char *xaxis,
+			const char *yaxis,int exvg_graph_type,
+			const output_env_t oenv);
+/* In most cases you want to use xvgropen_type, which does the same thing
+ * but takes a filename and opens it.
+ */
+
 extern FILE *xvgropen_type(const char *fn,const char *title,const char *xaxis,
 			   const char *yaxis,int exvg_graph_type,
 			   const output_env_t oenv);

@@ -225,50 +225,60 @@ static char *xvgrstr(const char *gmx,const output_env_t oenv,
     return buf;
 }
 
-FILE *xvgropen_type(const char *fn,const char *title,const char *xaxis,
-                    const char *yaxis,int exvg_graph_type,
-                    const output_env_t oenv)
+void xvgr_header(FILE *fp,const char *title,const char *xaxis,
+                 const char *yaxis,int exvg_graph_type,
+                 const output_env_t oenv)
 {
-    FILE *xvgr;
     char pukestr[100],buf[STRLEN];
     time_t t;
 
-    xvgr=gmx_fio_fopen(fn,"w");
     if (output_env_get_print_xvgr_codes(oenv)) 
     {
         time(&t);
-        fprintf(xvgr,"# This file was created %s",ctime(&t));
-        fprintf(xvgr,"# by the following command:\n# %s\n#\n",command_line());
-        fprintf(xvgr,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
+        fprintf(fp,"# This file was created %s",ctime(&t));
+        fprintf(fp,"# by the following command:\n# %s\n#\n",command_line());
+        fprintf(fp,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
         bromacs(pukestr,99);
-        fprintf(xvgr,"# %s\n#\n",pukestr);
-        fprintf(xvgr,"@    title \"%s\"\n",xvgrstr(title,oenv,buf,STRLEN));
-        fprintf(xvgr,"@    xaxis  label \"%s\"\n",
+        fprintf(fp,"# %s\n#\n",pukestr);
+        fprintf(fp,"@    title \"%s\"\n",xvgrstr(title,oenv,buf,STRLEN));
+        fprintf(fp,"@    xaxis  label \"%s\"\n",
                 xvgrstr(xaxis,oenv,buf,STRLEN));
-        fprintf(xvgr,"@    yaxis  label \"%s\"\n",
+        fprintf(fp,"@    yaxis  label \"%s\"\n",
                 xvgrstr(yaxis,oenv,buf,STRLEN));
         switch (exvg_graph_type)
         {
         case exvggtXNY:
             if (output_env_get_xvg_format(oenv) == exvgXMGR)
             {
-                fprintf(xvgr,"@TYPE nxy\n");
+                fprintf(fp,"@TYPE nxy\n");
             }
             else
             {
-                fprintf(xvgr,"@TYPE xy\n");
+                fprintf(fp,"@TYPE xy\n");
             }
             break;
         case exvggtXYDY:
-            fprintf(xvgr,"@TYPE xydy\n");
+            fprintf(fp,"@TYPE xydy\n");
             break;
         case exvggtXYDYDY:
-            fprintf(xvgr,"@TYPE xydydy\n");
+            fprintf(fp,"@TYPE xydydy\n");
             break;
         }
     }
+}
 
-    return xvgr;
+FILE *xvgropen_type(const char *fn,const char *title,const char *xaxis,
+                    const char *yaxis,int exvg_graph_type,
+                    const output_env_t oenv)
+{
+    FILE *fp;
+    time_t t;
+
+    fp = gmx_fio_fopen(fn,"w");
+
+    xvgr_header(fp,title,xaxis,yaxis,exvg_graph_type,oenv);
+
+    return fp;
 }
 
 FILE *xvgropen(const char *fn,const char *title,const char *xaxis,

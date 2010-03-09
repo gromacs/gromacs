@@ -148,17 +148,20 @@ static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv,
     
     if(Flags & MD_APPENDFILES)
     {
-        fp = gmx_fio_fopen(fn,"a");
+        fp = gmx_fio_fopen(fn,"a+");
     }
     else
     {
+        fp = gmx_fio_fopen(fn,"w+");
         if (bCoord)
         {
-            fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)",oenv);
+            xvgr_header(fp,"Pull COM",  "Time (ps)","Position (nm)",
+                        exvggtXNY,oenv);
         }
         else
         {
-            fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol/nm)",oenv);
+            xvgr_header(fp,"Pull force","Time (ps)","Force (kJ/mol/nm)",
+                        exvggtXNY,oenv);
         }
         
         snew(setname,(1+pull->ngrp)*DIM);
