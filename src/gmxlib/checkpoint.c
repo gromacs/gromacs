@@ -1937,9 +1937,15 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
             sfree(outputfiles);
         }
     }
-    if (PAR(cr)) {
+    if (PAR(cr))
+    {
         gmx_bcast(sizeof(*simulation_part),simulation_part,cr);
-        gmx_bcast(sizeof(bAppend),&bAppend,cr);
+
+        if (*simulation_part > 0 && bAppendReq)
+        {
+            gmx_bcast(sizeof(bAppend),&bAppend,cr);
+            gmx_bcast(sizeof(*bAddPart),bAddPart,cr);
+        }
     }
     if (NULL != cpt_step)
     {

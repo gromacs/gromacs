@@ -1411,7 +1411,7 @@ int gmx_tune_pme(int argc,char *argv[])
       /* g_tune_pme options: */
       /***********************/
       { "-np",       FALSE, etINT,  {&nnodes},
-        "Number of nodes to run the tests on (must be > 3 for separate PME nodes)" },
+        "Number of nodes to run the tests on (must be > 2 for separate PME nodes)" },
       { "-r",        FALSE, etINT,  {&repeats},
         "Repeat each test this often" },
       { "-max",      FALSE, etREAL, {&maxPMEfraction},
@@ -1519,7 +1519,9 @@ int gmx_tune_pme(int argc,char *argv[])
     {
         snew(cr,1);
         cr->duty=DUTY_PP; /* makes the following routine happy */
-        read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm),&sim_part,&cpt_steps,cr);
+        read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm),
+					&sim_part,&cpt_steps,cr,
+					FALSE,NULL,NULL);
         sfree(cr);
         sim_part++;
         /* sim_part will now be 1 if no checkpoint file was found */
