@@ -258,6 +258,7 @@ endif(GMX_FORTRAN OR GMX_POWER6)
 
 
 # Process nonbonded accelerated kernels settings
+option(GMX_ASM_USECCOMPILER "Use C compiler for assembly" ON)
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
@@ -266,14 +267,12 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
         set(GMX_SSE 1)
         if(GMX_IA32_ASM)
           option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
-          option(GMX_ASM_USECCOMPILER "Use C compiler for assembly" ON)
           set(GMX_IA32_SSE 1)
         endif(GMX_IA32_ASM)
     endif(HAVE_XMMINTRIN_H)
     if(HAVE_EMMINTRIN_H)
         if(GMX_X86_64_ASM)
           option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
-          option(GMX_ASM_USECCOMPILER "Use C compiler for assembly" ON)
           set(GMX_X86_64_SSE 1)
         else(GMX_X86_64_ASM)  #only use intrinsic if not using the ASM loops
           set(GMX_SSE2 1)
