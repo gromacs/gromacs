@@ -70,35 +70,38 @@
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
 
-static int missing_atoms(t_restp *rp, int resind,
-			 t_atoms *at, int i0, int i, bool bCTer)
+static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
 {
-  int  j,k,nmiss;
-  char *name;
-  bool bFound, bRet;
-
-  nmiss = 0;
-  for (j=0; j<rp->natom; j++) {
-    name=*(rp->atomname[j]);
-    /* if ((name[0]!='H') && (name[0]!='h') && (!bCTer || (name[0]!='O'))) { */
-    bFound=FALSE;
-    for (k=i0; k<i; k++) 
-      bFound=(bFound || !strcasecmp(*(at->atomname[k]),name));
-    if (!bFound) {
-      nmiss++;
-      fprintf(stderr,"\nWARNING: "
-	      "atom %s is missing in residue %s %d in the pdb file\n",
-	      name,*(at->resinfo[resind].name),at->resinfo[resind].nr);
-      if (name[0]=='H' || name[0]=='h')
-	fprintf(stderr,"         You might need to add atom %s to the hydrogen database of residue %s\n"
-		       "         in the file ff???.hdb (see the manual)\n",
-		name,*(at->resinfo[resind].name));
-      fprintf(stderr,"\n");
-      }
-      /* } */
-  }
+    int  j,k,nmiss;
+    char *name;
+    bool bFound, bRet;
+    
+    nmiss = 0;
+    for (j=0; j<rp->natom; j++)
+    {
+        name=*(rp->atomname[j]);
+        bFound=FALSE;
+        for (k=i0; k<i; k++) 
+        {
+            bFound = (bFound || !strcasecmp(*(at->atomname[k]),name));
+        }
+        if (!bFound)
+        {
+            nmiss++;
+            fprintf(stderr,"\nWARNING: "
+                    "atom %s is missing in residue %s %d in the pdb file\n",
+                    name,*(at->resinfo[resind].name),at->resinfo[resind].nr);
+            if (name[0]=='H' || name[0]=='h')
+            {
+                fprintf(stderr,"         You might need to add atom %s to the hydrogen database of residue %s\n"
+                        "         in the file %s.hdb (see the manual)\n",
+                        name,*(at->resinfo[resind].name),rp->filebase);
+            }
+            fprintf(stderr,"\n");
+        }
+    }
   
-  return nmiss;
+    return nmiss;
 }
 
 bool is_int(double x)
@@ -259,10 +262,9 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
       resind = at->atom[i].resind;
       bProt = is_protein(aan,*(at->resinfo[resind].name));
       bNterm=bProt && (resind == 0);
-      if (resind > 0)
-	nmissat += 
-	  missing_atoms(&restp[prevresind],prevresind,at,i0,i,
-			(!bProt && is_protein(aan,restp[prevresind].resname)));
+      if (resind > 0) {
+          nmissat += missing_atoms(&restp[prevresind],prevresind,at,i0,i);
+      }
       i0=i;
     }
     if (at->atom[i].m == 0) {
@@ -297,8 +299,8 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
     at->atom[i].qB    = at->atom[i].q;
     at->atom[i].mB    = at->atom[i].m;
   }
-  nmissat += missing_atoms(&restp[resind],resind,at,i0,i,
-			   (!bProt || is_protein(aan,restp[resind].resname)));
+  nmissat += missing_atoms(&restp[resind],resind,at,i0,i);
+
   done_aa_names(&aan);
 			   
   return nmissat;
