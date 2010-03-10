@@ -576,7 +576,7 @@ void add_t_atoms(t_atoms *atoms,int nextra)
     int i;
     
     srenew(atoms->atomname,atoms->nr+nextra);
-    srenew(atoms->resinfo,atoms->nr+nextra);
+    srenew(atoms->resinfo,atoms->nres+nextra);
     srenew(atoms->atom,atoms->nr+nextra);
     if (NULL != atoms->pdbinfo)
         srenew(atoms->pdbinfo,atoms->nr+nextra);
@@ -584,9 +584,11 @@ void add_t_atoms(t_atoms *atoms,int nextra)
         srenew(atoms->atomtype,atoms->nr+nextra);
     if (NULL != atoms->atomtypeB)
         srenew(atoms->atomtypeB,atoms->nr+nextra);
+    for(i=atoms->nres; (i<atoms->nres+nextra); i++) {
+        memset(&atoms->resinfo[i],0,sizeof(atoms->resinfo[i]));
+    }
     for(i=atoms->nr; (i<atoms->nr+nextra); i++) {
         atoms->atomname[i] = NULL;
-        memset(&atoms->resinfo[i],0,sizeof(atoms->resinfo[i]));
         memset(&atoms->atom[i],0,sizeof(atoms->atom[i]));
         if (NULL != atoms->pdbinfo)
             memset(&atoms->pdbinfo[i],0,sizeof(atoms->pdbinfo[i]));
@@ -596,6 +598,7 @@ void add_t_atoms(t_atoms *atoms,int nextra)
             atoms->atomtypeB[i] = NULL;
     }
     atoms->nr += nextra;
+    atoms->nres += nextra;
 }
 
 void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
