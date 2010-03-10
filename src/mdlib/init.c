@@ -119,9 +119,9 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
     if (ir->epc != epcNO) {
       state->flags |= (1<<estPRES_PREV);
     }
-    if (ir->etc == etcNOSEHOOVER) {
-      state->flags |= (1<<estNH_XI);
-    }
+  }
+  if (ir->etc == etcNOSEHOOVER) {
+    state->flags |= (1<<estNH_XI);
   }
   if (ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) {
     state->flags |= (1<<estTC_INT);
