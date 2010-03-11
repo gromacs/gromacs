@@ -1295,7 +1295,8 @@ void init_md(FILE *fplog,
 			  }
 		  }
 		  
-		  if ((fp_field != NULL) && (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
+		  if ((fp_field != NULL) && opt2bSet("-field",nfile,fnm) &&
+		      (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
 		  {
 			  if(Flags & MD_APPENDFILES)
 			  {
