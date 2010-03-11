@@ -14,7 +14,7 @@ if which git >/dev/null && test -d $GITDIR ; then
     # Get a 7-character hash for the HEAD commit.
     shorthash=`git --git-dir=$GITDIR rev-parse --short=7 HEAD 2>/dev/null`
     # Get the full hash for the HEAD commit.
-    fullhash=`git --git-dir=$GITDIR rev-parse HEAD 2>/dev/null`$dirtystr
+    fullhash=`git --git-dir=$GITDIR rev-parse HEAD 2>/dev/null`
     # Generate a version string like 4.0.99-dev-YYYYMMDD-1234abc-dirty.
     # If PKGVERSION ends in a date, replace it with the head commit.
     version=`echo $PKGVERSION | sed -e 's/-dev-[0-9]*$/-dev/'`-$date-$shorthash$dirtystr
@@ -28,21 +28,30 @@ if which git >/dev/null && test -d $GITDIR ; then
         # Find the most recent ancestral commit that appears in $gmxremote.
         # Gets the hash and the number of local commits that are newer than
         # the found commit.
-        baserev=`git --git-dir=$GITDIR rev-list HEAD | git --git-dir=$GITDIR name-rev --stdin --refs=refs/remotes/$gmxremote/* | awk 'NF > 1 {print $1 " (" NR-1 " newer local commits)"; nextfile}'`
+        baserev=`git --git-dir=$GITDIR rev-list HEAD | git --git-dir=$GITDIR name-rev --stdin --refs=refs/remotes/$gmxremote/* | awk 'NF > 1 {print $1 " (" NR-1 " newer local commits)"; exit 0}'`
+        # Extract the base hash
+        basehash=`expr "$baserev" : '\([0123456789abcdef]*\) '`
+        # Do not report the base revision if it is the same as the most recent commit
+        if test "$basehash" = "$fullhash" ; then
+            baserev=
+        fi
     fi
 else
     version=$PKGVERSION
     fullhash="unknown"
-    baserev="unknown"
+    dirtystr=
+    baserev=
 fi
 
-# write out to a temporary file, to compare with current version.c
-echo "#include \"version.h\"" > version.c.tmp
-echo "const char _gmx_ver_string[] = \"VERSION $version\";" >> version.c.tmp
-echo "const char _gmx_full_git_hash[] = \"$fullhash\";" >> version.c.tmp
-echo "const char _gmx_central_base_hash[] = \"$baserev\";" >> version.c.tmp
+# Write out to a temporary file, to compare with current version.c.
+cat > version.c.tmp << END
+#include "version.h"
+const char _gmx_ver_string[] = "VERSION $version";
+const char _gmx_full_git_hash[] = "$fullhash$dirtystr";
+const char _gmx_central_base_hash[] = "$baserev";
+END
 
-# Write contents into version.c.tmp if they differ from the current version.c.
+# Replace version.c with version.c.tmp if they differ.
 [ -f version.c ] || touch version.c
 cmp -s version.c.tmp version.c || mv -f version.c.tmp version.c
 rm -f version.c.tmp
