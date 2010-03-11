@@ -538,9 +538,16 @@ const char *GromacsVersion()
 
 void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "%s\n", _gmx_ver_string);
+    fprintf(fp, "Version:        %s\n", _gmx_ver_string);
 #ifdef USE_VERSION_H
-    fprintf(fp, "GIT SHA1 hash: %s\n", _gmx_full_git_hash);
-    fprintf(fp, "Branched from: %s\n", _gmx_central_base_hash);
+    fprintf(fp, "GIT SHA1 hash:  %s\n", _gmx_full_git_hash);
+    /* Only print out the branch information if present.
+     * The generating script checks whether the branch point actually
+     * coincides with the hash reported above, and produces an empty string
+     * in such cases. */
+    if (_gmx_central_base_hash[0] != 0)
+    {
+        fprintf(fp, "Branched from:  %s\n", _gmx_central_base_hash);
+    }
 #endif
 }

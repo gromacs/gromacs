@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.6.2)
+
 project(Gromacs)
 set(PROJECT_VERSION "4.0.99-dev-20100305"
     CACHE STRING "Gromacs version string")
@@ -14,6 +15,7 @@ option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" ON)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
+option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library" OFF)
 set(GMX_ACCELERATION "none" 
     CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec")
 
@@ -33,6 +35,31 @@ enable_language(C)
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
+
+#######################################################################
+# Check for options incompatible with OpenMM build                    #
+#######################################################################
+if(GMX_OPENMM)
+    # we'll use the built-in fft to avoid unnecessary dependencies
+    set (GMX_FFT_LIBRARY "fftpack")
+    if(GMX_MPI)
+        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
+    endif(GMX_MPI)
+    if(GMX_THREADS)
+        message(FATAL_ERROR "The OpenMM build is not compatible with threads!")
+    endif(GMX_THREADS)
+    if(GMX_SOFTWARE_INVSQRT)
+        set(GMX_SOFTWARE_INVSQRT OFF)
+    endif(GMX_SOFTWARE_INVSQRT)
+    if(NOT GMX_ACCELERATION MATCHES "none")    
+        message(WARNING "The OpenMM build does not support other acceleration modes!")
+        set(GMX_ACCELERATION "none")
+    endif()
+    if(GMX_FAHCORE)
+        message(FATAL_ERROR "The OpenMM build does not support the FAH option!")
+    endif(GMX_FAHCORE)
+endif(GMX_OPENMM)
+
 
 ########################################################################
 # Fix stupid flags on MSVC
@@ -189,6 +216,15 @@ if(GMX_THREADS)
     endif()
 endif(GMX_THREADS)
 
+if(GMX_OPENMM)
+    set(CUDA_BUILD_EMULATION OFF)
+    find_package(CUDA 2.3 EXACT REQUIRED)   # TODO what are we compatible with?
+    add_definitions(-DGMX_OPENMM)
+    if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
+        set(CUDA_VERBOSE_BUILD ON)
+    endif()
+    find_package(OpenMM) 
+endif(GMX_OPENMM)
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -324,7 +360,7 @@ else(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
     MESSAGE(FATAL_ERROR "Invalid QM/MM program option: ${GMX_QMMM_PROGRAM}. Choose one of: Gaussian, Mopac, Gamess, None")
 endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
 
-# Process FFT library settings
+# Process FFT library settings - if not OpenMM build 
 string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 #    MESSAGE(STATUS "Using external FFT library - fftw3")
