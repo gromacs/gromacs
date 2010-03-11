@@ -43,8 +43,8 @@
 #include "gmx_random.h"
 #include "checkpoint.h"
 #include "futil.h"
+#include "string2.h"
 #include <fcntl.h>
-
 
 
 #ifdef GMX_FAHCORE
