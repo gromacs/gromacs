@@ -1,5 +1,5 @@
 /*
- * $Id: gmxcomplex.h,v 1.5 2009/03/07 13:30:36 lindahl Exp $
+ * $Id: g_densorder.c,v 0.95 2009/06/15  bjornss Exp $
  * 
  *                This source code is part of
  * 
@@ -31,104 +31,26 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
-#ifndef _complex_h
-#define _complex_h
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <math.h>
-#include "typedefs.h"
+#include <gmx_ana.h>
 
-typedef struct {
-  real re,im;
-} t_complex;
 
-typedef t_complex cvec[DIM];
 
-static t_complex cnul = { 0.0, 0.0 };
+/* This is just a wrapper binary.
+* The code that used to be in g_density.c is now in gmx_density.c,
+* where the old main function is called gmx_density().
+*/
 
-static t_complex rcmul(real r,t_complex c)
+int main(int argc, char *argv[])
 {
-  t_complex d;
-  
-  d.re = r*c.re;
-  d.im = r*c.im;
-  
-  return d;
-}
-
-static t_complex rcexp(real r)
-{
-  t_complex c;
-  
-  c.re = (real)cos(r);
-  c.im = (real)sin(r);
-  
-  return c;
+  gmx_densorder(argc,argv);
+  return 0;
 }
 
 
-static t_complex cadd(t_complex a,t_complex b)
-{
-  t_complex c;
   
-  c.re = a.re+b.re;
-  c.im = a.im+b.im;
-  
-  return c;
-}
-
-static t_complex csub(t_complex a,t_complex b)
-{
-  t_complex c;
-  
-  c.re = a.re-b.re;
-  c.im = a.im-b.im;
-  
-  return c;
-}
-
-static t_complex cmul(t_complex a,t_complex b)
-{
-  t_complex c;
-  
-  c.re = a.re*b.re - a.im*b.im;
-  c.im = a.re*b.im + a.im*b.re;
-  
-  return c;
-}
-
-static t_complex conjugate(t_complex c)
-{
-  t_complex d;
-  
-  d.re =  c.re;
-  d.im = -c.im;
-  
-  return d;
-}
-
-static real cabs2(t_complex c)
-{
-real abs2;
-abs2=(c.re*c.re)+(c.im*c.im);
-
-return abs2;
-}
-
-
-
-static t_complex cdiv(t_complex teller,t_complex noemer)
-{
-  t_complex res,anoemer;
-  
-  anoemer = cmul(conjugate(noemer),noemer);
-  res = cmul(teller,conjugate(noemer));
-  
-  return rcmul(1.0/anoemer.re,res);
-}
-#endif

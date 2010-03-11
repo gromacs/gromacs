@@ -43,7 +43,11 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_editconf.c	gmx_genbox.c	gmx_genion.c	gmx_genconf.c	\
 	gmx_genpr.c	gmx_eneconv.c	gmx_vanhove.c	gmx_wheel.c	\
 	addconf.c 	addconf.h	gmx_tune_pme.c    \
-	calcpot.c 	calcpot.h 	edittop.c
+	calcpot.c 	calcpot.h 	edittop.c	\
+	linearsearch.c	linearsearch.h	\
+	powerspect.c	powerspect.h	interf.h	\
+	gmx_densorder.c	gmx_hydorder.c	\
+	binsearch.h	binsearch.c
 
 bin_PROGRAMS = \
 	do_dssp		editconf	eneconv		\
@@ -71,7 +75,7 @@ bin_PROGRAMS = \
 	g_tcaf      	g_traj      	g_tune_pme   \
 	g_vanhove	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_wham		g_kinetics	\
-	sigeps
+	sigeps		g_densorder	g_hydorder
 
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \

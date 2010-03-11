@@ -70,7 +70,7 @@ extern real LegendreP(real x,unsigned long m);
 
 enum {
   effnNONE, effnEXP1, effnEXP2, effnEXP3,   effnVAC, 
-  effnEXP5, effnEXP7, effnEXP9, effnERREST, effnNR
+  effnEXP5, effnEXP7, effnEXP9, effnERF, effnERREST, effnNR
 };
 
 /* must correspond with 'leg' g_chi.c:727 */
@@ -100,7 +100,7 @@ typedef struct {
 
 } t_dlist;
 
-extern int  nfp_ffn[effnNR];
+extern const int  nfp_ffn[effnNR];
 
 extern const char *s_ffn[effnNR+2];
 
@@ -352,8 +352,8 @@ extern real fit_function(int eFitFn,real *parm,real x);
 /* or to a transverse current autocorrelation function */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
 extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
-		     real begintimefit,real endtimefit,const output_env_t oenv,
-                     bool bVerbose, int eFitFn,real fitparms[],int fix);
+		     real begintimefit,real endtimefit,
+                     bool bVerbose, int eFitFn,real fitparms[],int fix,const output_env_t oenv);
 /* Returns integral.
  * If x == NULL, the timestep dt will be used to create a time axis.
  * fix fixes fit parameter i at it's starting value, when the i'th bit

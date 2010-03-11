@@ -1,4 +1,5 @@
 /*
+ * $Id: levenmar.c,v 1.20 2004/01/23 18:11:02 lindahl Exp $
  * 
  *                This source code is part of
  * 
@@ -42,7 +43,7 @@
 
 #include "types/simple.h"
 
-static void nrerror(const char error_text[], bool bExit)
+static void nrerror(char error_text[], bool bExit)
 {
   fprintf(stderr,"Numerical Recipes run-time error...\n");
   fprintf(stderr,"%s\n",error_text);
