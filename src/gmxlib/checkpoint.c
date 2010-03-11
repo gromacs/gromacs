@@ -1568,9 +1568,9 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
                                      digest) != outputfiles[i].chksum_size)
                 {
-                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute"
-                        " checksum.", outputfiles[i].chksum_size, 
-                        outputfiles[i].filename);
+                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents has been modified.",
+                              outputfiles[i].chksum_size, 
+                              outputfiles[i].filename);
                 }
             } 
             else if (i==0)  /*log file need to be seeked even when not reading md5*/
@@ -1602,7 +1602,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     }
                     fprintf(debug,"\n");
                 }
-                gmx_fatal(FARGS,"Checksum wrong for '%s'.",
+                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents has been modified.",
                           outputfiles[i].filename);
             }
 #endif        
