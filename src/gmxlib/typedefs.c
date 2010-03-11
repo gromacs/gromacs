@@ -571,34 +571,40 @@ void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b)
     do_box_rel(ir,box_rel,b,FALSE);
 }
 
-void add_t_atoms(t_atoms *atoms,int nextra)
+void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra)
 {
     int i;
     
-    srenew(atoms->atomname,atoms->nr+nextra);
-    srenew(atoms->resinfo,atoms->nres+nextra);
-    srenew(atoms->atom,atoms->nr+nextra);
-    if (NULL != atoms->pdbinfo)
-        srenew(atoms->pdbinfo,atoms->nr+nextra);
-    if (NULL != atoms->atomtype)
-        srenew(atoms->atomtype,atoms->nr+nextra);
-    if (NULL != atoms->atomtypeB)
-        srenew(atoms->atomtypeB,atoms->nr+nextra);
-    for(i=atoms->nres; (i<atoms->nres+nextra); i++) {
-        memset(&atoms->resinfo[i],0,sizeof(atoms->resinfo[i]));
-    }
-    for(i=atoms->nr; (i<atoms->nr+nextra); i++) {
-        atoms->atomname[i] = NULL;
-        memset(&atoms->atom[i],0,sizeof(atoms->atom[i]));
+    if (natom_extra > 0) 
+    {
+        srenew(atoms->atomname,atoms->nr+natom_extra);
+        srenew(atoms->atom,atoms->nr+natom_extra);
         if (NULL != atoms->pdbinfo)
-            memset(&atoms->pdbinfo[i],0,sizeof(atoms->pdbinfo[i]));
+            srenew(atoms->pdbinfo,atoms->nr+natom_extra);
         if (NULL != atoms->atomtype)
-            atoms->atomtype[i] = NULL;
+            srenew(atoms->atomtype,atoms->nr+natom_extra);
         if (NULL != atoms->atomtypeB)
-            atoms->atomtypeB[i] = NULL;
+            srenew(atoms->atomtypeB,atoms->nr+natom_extra);
+        for(i=atoms->nr; (i<atoms->nr+natom_extra); i++) {
+            atoms->atomname[i] = NULL;
+            memset(&atoms->atom[i],0,sizeof(atoms->atom[i]));
+            if (NULL != atoms->pdbinfo)
+                memset(&atoms->pdbinfo[i],0,sizeof(atoms->pdbinfo[i]));
+            if (NULL != atoms->atomtype)
+                atoms->atomtype[i] = NULL;
+            if (NULL != atoms->atomtypeB)
+                atoms->atomtypeB[i] = NULL;
+        }
+        atoms->nr += natom_extra;
     }
-    atoms->nr += nextra;
-    atoms->nres += nextra;
+    if (nres_extra > 0)
+    {
+        srenew(atoms->resinfo,atoms->nres+nres_extra);
+        for(i=atoms->nres; (i<atoms->nres+nres_extra); i++) {
+            memset(&atoms->resinfo[i],0,sizeof(atoms->resinfo[i]));
+        }
+        atoms->nres += nres_extra;
+    }
 }
 
 void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
@@ -616,9 +622,41 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
     atoms->pdbinfo=NULL;
 }
 
+t_atoms *copy_t_atoms(t_atoms *src)
+{
+  t_atoms *dst;
+  int i;
+    
+  snew(dst,1);
+  init_t_atoms(dst,src->nr,(NULL != src->pdbinfo));
+  dst->nr = src->nr;
+  if (NULL != src->atomname)
+      snew(dst->atomname,src->nr);
+  if (NULL != src->atomtype)
+      snew(dst->atomtype,src->nr);
+  if (NULL != src->atomtypeB)
+      snew(dst->atomtypeB,src->nr);
+  for(i=0; (i<src->nr); i++) {
+    dst->atom[i] = src->atom[i];
+    if (NULL != src->pdbinfo)
+      dst->pdbinfo[i] = src->pdbinfo[i];
+    if (NULL != src->atomname)
+        dst->atomname[i]  = src->atomname[i];
+    if (NULL != src->atomtype)
+        dst->atomtype[i] = src->atomtype[i];
+    if (NULL != src->atomtypeB)
+        dst->atomtypeB[i] = src->atomtypeB[i];
+  }  
+  dst->nres = src->nres;
+  for(i=0; (i<src->nres); i++) {
+    dst->resinfo[i] = src->resinfo[i];
+  }  
+  return dst;
+}
+
 void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
-			 const char *resname,int resnr,unsigned char ic,
-			 unsigned char chain)
+                         const char *resname,int resnr,unsigned char ic,
+                         unsigned char chain)
 {
   t_resinfo *ri;
 
