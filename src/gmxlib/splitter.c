@@ -425,9 +425,10 @@ static void split_blocks(FILE *fp,t_inputrec *ir, int nnodes,
   
   natoms = cgs->index[cgs->nr];
 	
-  if (debug) {
+  if (NULL != debug) {
     pr_block(debug,0,"cgs",cgs,TRUE);
     pr_blocka(debug,0,"sblock",sblock,TRUE);
+    fflush(debug);
   }
 
   cgsnum = make_invblock(cgs,natoms+1);	
