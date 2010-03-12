@@ -149,8 +149,8 @@ extern void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
 					rvec *f, matrix vir,
 					real energy, real dvdlambda,
 					float cycles,
-					bool bGotTermSignal,
-					bool bGotUsr1Signal);
+					bool bGotStopNextStepSignal,
+					bool bGotStopNextNbrStepSignal);
 /* Send the PME mesh force, virial and energy to the PP-only nodes */
 
 #ifdef __cplusplus

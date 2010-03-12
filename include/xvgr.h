@@ -95,9 +95,28 @@ enum {
 extern bool output_env_get_print_xvgr_codes(const output_env_t oenv);
 /* Returns if we should print xmgrace or xmgr codes */
 
+enum {
+  exvggtNONE, exvggtXNY, exvggtXYDY, exvggtXYDYDY, exvggtNR
+};
+
+extern void xvgr_header(FILE *fp,const char *title,const char *xaxis,
+			const char *yaxis,int exvg_graph_type,
+			const output_env_t oenv);
+/* In most cases you want to use xvgropen_type, which does the same thing
+ * but takes a filename and opens it.
+ */
+
+extern FILE *xvgropen_type(const char *fn,const char *title,const char *xaxis,
+			   const char *yaxis,int exvg_graph_type,
+			   const output_env_t oenv);
+/* Open a file, and write a title, and axis-labels in Xvgr format
+ * or write nothing when oenv specifies so.
+ * The xvgr graph type enum is defined above.
+ */
+
 extern FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
                       const char *yaxis,const output_env_t oenv);
-/* Open a file, and write a title, and axis-labels in Xvgr format */
+/* Calls xvgropen_type with graph type xvggtXNY. */
 
 /* Close xvgr file, and clean up internal file buffers correctly */
 extern void xvgrclose(FILE *fp);

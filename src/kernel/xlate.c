@@ -48,6 +48,7 @@
 #include "futil.h"
 #include "fflibutil.h"
 #include "hackblock.h"
+#include "gmx_fatal.h"
 
 typedef struct {
     char *filebase;

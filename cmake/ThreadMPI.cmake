@@ -12,7 +12,7 @@ if (CMAKE_USE_PTHREADS_INIT)
         thread_mpi/profile.c     thread_mpi/barrier.c 
         thread_mpi/collective.c  thread_mpi/reduce_fast.c
         thread_mpi/comm.c        thread_mpi/errhandler.c  
-        thread_mpi/send_recv.c   thread_mpi/event.c       
+        thread_mpi/p2p.c         thread_mpi/event.c       
         thread_mpi/threads.c     thread_mpi/tmpi_init.c
         thread_mpi/group.c       thread_mpi/list.c
         thread_mpi/topology.c    thread_mpi/type.c
@@ -26,7 +26,7 @@ else (CMAKE_USE_PTHREADS_INIT)
             thread_mpi/profile.c     thread_mpi/barrier.c 
             thread_mpi/collective.c  thread_mpi/reduce_fast.c
             thread_mpi/comm.c        thread_mpi/errhandler.c  
-            thread_mpi/send_recv.c   thread_mpi/event.c       
+            thread_mpi/p2p.c         thread_mpi/event.c       
             thread_mpi/threads.c     thread_mpi/tmpi_init.c
             thread_mpi/group.c       thread_mpi/list.c
             thread_mpi/topology.c    thread_mpi/type.c

@@ -185,7 +185,8 @@ struct envelope
     int error;
 
     /* the message status */
-    tMPI_Status *status;
+    /*tMPI_Status *status;*/
+
     /* prev and next envelopes in the send/recv_envelope_list linked list  */
     struct envelope *prev,*next;
 
@@ -256,9 +257,14 @@ struct recv_envelope_list
 struct tmpi_req_
 {
     bool finished; /* whether it's finished */
-    int error; /* error code */
     struct envelope *ev; /* the envelope */
-    tMPI_Status *st; /* the associated status */
+
+    struct tmpi_thread *source; /* the message source (for receives) */
+    tMPI_Comm comm; /* the comm */
+    int tag; /* the tag */
+    int error; /* error code */
+    size_t transferred; /* the number of transferred bytes */
+    bool cancelled; /* whether the transmission was canceled */
 
     struct tmpi_req_ *next,*prev; /* next,prev request in linked list,
                                      used in the req_list, but also in 

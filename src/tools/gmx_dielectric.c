@@ -52,6 +52,7 @@
 #include "gmxcomplex.h"
 #include "correl.h"
 #include "gmx_ana.h"
+#include "gmx_fatal.h"
 
 
 /* Determines at which point in the array the fit should start */

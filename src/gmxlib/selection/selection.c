@@ -44,6 +44,7 @@
 #include <statutil.h>
 #include <string2.h>
 #include <xvgr.h>
+#include <gmx_fatal.h>
 
 #include <poscalc.h>
 #include <selection.h>

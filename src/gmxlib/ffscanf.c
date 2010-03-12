@@ -43,6 +43,7 @@
 #include <ctype.h>
 #include "typedefs.h"
 #include "string2.h"
+#include "gmx_fatal.h"
 #include "ffscanf.h"
 
 static int getfld(char **p)

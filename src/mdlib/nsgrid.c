@@ -59,16 +59,14 @@
  *         Grid Routines
  ***********************************/
 
-static void init_range_check()
-{
-  sprintf(warn_buf,"Explanation: During neighborsearching, we assign each particle to a grid\n"
-	  "based on its coordinates. If your system contains collisions or parameter\n"
-	  "errors that give particles very high velocities you might end up with some\n"
-	  "coordinates being +-Infinity or NaN (not-a-number). Obviously, we cannot\n"
-	  "put these on a grid, so this is usually where we detect those errors.\n"
-	  "Make sure your system is properly energy-minimized and that the potential\n"
-	  "energy seems reasonable before trying again.\n");
-}
+const char *range_warn =
+    "Explanation: During neighborsearching, we assign each particle to a grid\n"
+    "based on its coordinates. If your system contains collisions or parameter\n"
+    "errors that give particles very high velocities you might end up with some\n"
+    "coordinates being +-Infinity or NaN (not-a-number). Obviously, we cannot\n"
+    "put these on a grid, so this is usually where we detect those errors.\n"
+    "Make sure your system is properly energy-minimized and that the potential\n"
+    "energy seems reasonable before trying again.";
 
 static void calc_x_av_stddev(int n,rvec *x,rvec av,rvec stddev)
 {
@@ -436,7 +434,7 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
 {
   int ci;
 
-  range_check(i,0,grid->nr);
+  range_check_mesg(i,0,grid->nr,range_warn);
 
   ci = grid->cell_index[i];
   *x  = ci / (grid->n[YY]*grid->n[ZZ]);
@@ -474,9 +472,6 @@ void grid_first(FILE *fplog,t_grid *grid,
 {
   int    i,m;
   ivec   cx;
-
-  /* Must do this every step because other routines may override it. */
-  init_range_check();
 
   set_grid_sizes(box,izones_x0,izones_x1,rlistlong,dd,ddbox,grid,grid_density);
 
@@ -551,7 +546,7 @@ void calc_elemnr(FILE *fplog,t_grid *grid,int cg0,int cg1,int ncg)
     for(i=CG0[m]; (i<CG1[m]); i++) {
       ci = cell_index[i];
       if (ci != not_used) {
-	range_check(ci,0,ncells);
+          range_check_mesg(ci,0,ncells,range_warn);
 	nra[ci]++;
       }
     }
@@ -572,7 +567,7 @@ void calc_ptrs(t_grid *grid)
   for(ix=0; (ix < grid->n[XX]); ix++)
     for(iy=0; (iy < grid->n[YY]); iy++) 
       for(iz=0; (iz < grid->n[ZZ]); iz++,ci++) {
-	range_check(ci,0,ncells);
+          range_check_mesg(ci,0,ncells,range_warn);
 	index[ci] = nr;
 	nnra      = nra[ci];
 	nr       += nnra;
@@ -601,9 +596,9 @@ void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
     for(i=CG0[m]; (i<CG1[m]); i++) {
       ci     = cell_index[i];
       if (ci != not_used) {
-	range_check(ci,0,ncells);
+          range_check_mesg(ci,0,ncells,range_warn);
 	ind    = index[ci]+nra[ci]++;
-	range_check(ind,0,grid->nr);
+	range_check_mesg(ind,0,grid->nr,range_warn);
 	a[ind] = i;
       }
     }
@@ -803,7 +798,7 @@ void check_grid(FILE *log,t_grid *grid)
 			nra,grid->nra[cci],cci);
 	}
 	cci=xyz2ci(grid->n[YY],grid->n[ZZ],ix,iy,iz);
-	range_check(cci,0,grid->ncells);
+	range_check_mesg(cci,0,grid->ncells,range_warn);
 	
 	if (cci != ci) 
 	  gmx_fatal(FARGS,"ci = %d, cci = %d",ci,cci);

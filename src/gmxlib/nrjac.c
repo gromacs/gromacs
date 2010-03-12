@@ -42,6 +42,7 @@
 #include <math.h>
 #include "gstat.h"
 #include "smalloc.h"
+#include "gmx_fatal.h"
 #include "nrjac.h"
 
 

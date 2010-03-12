@@ -49,6 +49,8 @@ extern "C" {
     
 /* Has to be a function, so we can get version number from autoconf */   
 const char *GromacsVersion(void);
+
+void gmx_print_version_info(FILE *fp);
   
   
 static const char *CopyrightText[] = {

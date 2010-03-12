@@ -163,6 +163,7 @@ typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_forcerec *fr,
 				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
+				const char *deviceOptions,
 				unsigned long Flags,
 				gmx_runtime_t *runtime);
 
@@ -171,6 +172,8 @@ typedef struct gmx_global_stat *gmx_global_stat_t;
 /* ROUTINES from md.c */
 
 extern gmx_integrator_t do_md;
+
+extern gmx_integrator_t do_md_openmm;
 
 /* ROUTINES from minimize.c */
 
@@ -185,6 +188,8 @@ extern gmx_integrator_t do_lbfgs;
 
 extern gmx_integrator_t do_nm;
 /* Do normal mode analysis */
+
+/* ROUTINES from tpi.c */
 
 extern gmx_integrator_t do_tpi;
 /* Do test particle insertion */
@@ -349,7 +354,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
 	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,int repl_ex_seed,
 	     real pforce,real cpt_period,real max_hours,
-	     unsigned long Flags);
+	     const char *deviceOptions, unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
 int mdrunner_threads(int nthreads,
@@ -361,7 +366,7 @@ int mdrunner_threads(int nthreads,
                      const char *ddcsx,const char *ddcsy,const char *ddcsz,
                      int nstepout,int resetstep,int nmultisim, int repl_ex_nst,
                      int repl_ex_seed, real pforce,real cpt_period,
-                     real max_hours, unsigned long Flags);
+                     real max_hours, const char *deviceOptions, unsigned long Flags);
 /* initializes nthread threads before running mdrunner: is the preferred
    way to start a simulation (even if nthreads=1 and no threads are started) */
 

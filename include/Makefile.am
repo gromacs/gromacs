@@ -15,6 +15,7 @@ calcgrid.h \
 calch.h \
 calcmu.h \
 centerofmass.h \
+chargegroup.h \
 checkpoint.h \
 confio.h \
 constr.h \
@@ -143,6 +144,7 @@ vec.h \
 viewit.h \
 vmdio.h \
 vsite.h \
+warninp.h \
 wgms.h \
 wman.h \
 writeps.h \
@@ -154,4 +156,6 @@ tmpi.h \
 mainpage.h \
 molfile_plugin.h \
 vmddlopen.h \
-vmdplugin.h
+vmdplugin.h \
+oenv.h \
+sighandler.h

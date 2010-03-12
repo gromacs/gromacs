@@ -156,7 +156,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         /* get the root cev */
         size_t bufsize=recvcount*recvtype->size;
         /* wait until root becomes available */
-        tMPI_Wait_for_data(cev, root, synct);
+        tMPI_Wait_for_data(cur, cev, root, synct);
         tMPI_Mult_recv(comm, cev, root, myrank,TMPI_SCATTER_TAG, recvtype, 
                        bufsize, recvbuf, &ret);
     }
@@ -290,7 +290,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         /* get the root cev */
         size_t bufsize=recvcount*recvtype->size;
         /* wait until root becomes available */
-        tMPI_Wait_for_data(cev, root, synct);
+        tMPI_Wait_for_data(cur, cev, root, synct);
         tMPI_Mult_recv(comm, cev, root, myrank, TMPI_SCATTERV_TAG, 
                        recvtype, bufsize, recvbuf, &ret);
     }

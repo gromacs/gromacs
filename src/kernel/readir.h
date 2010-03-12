@@ -79,26 +79,32 @@ extern void init_ir(t_inputrec *ir, t_gromppopts *opts);
 /* Initiate stuff */
 
 extern void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
-		     int *nerror);
+		     warninp_t wi);
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
  */
 extern int search_string(char *s,int ng,char *gn[]);
 /* Returns the index of string s in the index groups */
 
-extern void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror);
+extern void double_check(t_inputrec *ir,matrix box,bool bConstr,
+			 warninp_t wi);
 /* Do more checks */
 
 extern void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
-			 int *nerror);
+			 warninp_t wi);
 /* Do even more checks */
 
+extern void check_chargegroup_radii(const gmx_mtop_t *mtop,const t_inputrec *ir,
+				    rvec *x,
+				    warninp_t wi);
+/* Even more checks, charge group radii vs. cut-off's only. */
+
 extern void get_ir(const char *mdparin,const char *mdparout,
-		   t_inputrec *ir,t_gromppopts *opts, int *nerror);
+		   t_inputrec *ir,t_gromppopts *opts,
+		   warninp_t wi);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next
  * function is called. Also prints the input file back to mdparout.
- * Add errors no nerror.
  */
  
 extern void do_index(const char* mdparin, 
@@ -106,7 +112,8 @@ extern void do_index(const char* mdparin,
 		     gmx_mtop_t *mtop,
 		     bool bVerbose,
 		     t_inputrec *ir,
-		     rvec *v);
+		     rvec *v,
+		     warninp_t wi);
 /* Read the index file and assign grp numbers to atoms.
  * If v is not NULL, the velocities will be scaled to the correct number
  * of degrees of freedom.
@@ -115,7 +122,8 @@ extern void do_index(const char* mdparin,
 /* Routines In readpull.c */
 
 extern char **read_pullparams(int *ninp_p,t_inpfile **inp,
-			      t_pull *pull,bool *bStart,int *nerror_p);
+			      t_pull *pull,bool *bStart,
+			      warninp_t wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
 extern void make_pull_groups(t_pull *pull,char **pgnames,

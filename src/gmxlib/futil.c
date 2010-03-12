@@ -110,6 +110,7 @@ void push_ps(FILE *fp)
 /* don't use pipes!*/
 #define popen fah_fopen
 #define pclose fah_fclose
+#define SKIP_FFOPS 1
 #else
 #ifdef ffclose
 #undef ffclose
@@ -134,9 +135,11 @@ static int pclose(FILE *fp)
 #endif
 #endif
 
-#ifndef SKIP_FFOPS
 int ffclose(FILE *fp)
 {
+#ifndef SKIP_FFOPS
+    return fclose(fp);
+#else
     t_pstack *ps,*tmp;
     int ret=0;
 #ifdef GMX_THREADS
@@ -173,9 +176,9 @@ int ffclose(FILE *fp)
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
     return ret;
+#endif
 }
 
-#endif
 
 #ifdef rewind
 #undef rewind
@@ -369,9 +372,11 @@ bool make_backup(const char * name)
 #endif
 }
 
-#ifndef SKIP_FFOPS
 FILE *ffopen(const char *file,const char *mode)
 {
+#ifdef SKIP_FFOPS
+    return fopen(file,mode);
+#else
     FILE *ff=NULL;
     char buf[256],*bf,*bufsize=0,*ptr;
     bool bRead;
@@ -422,8 +427,8 @@ FILE *ffopen(const char *file,const char *mode)
         }
     }
     return ff;
-}
 #endif
+}
 
 
 bool search_subdirs(const char *parent, char *libdir)

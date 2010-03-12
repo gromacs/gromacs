@@ -313,8 +313,7 @@ static void do_sham(const char *fn,const char *ndx,
      */
     if (bXmax) {
       if (max_eig[i] > xmax[i]) {
-	sprintf(warn_buf,"Your xmax[%d] value %f is smaller than the largest data point %f",i,xmax[i],max_eig[i]);
-	warning(NULL);
+	gmx_warning("Your xmax[%d] value %f is smaller than the largest data point %f",i,xmax[i],max_eig[i]);
       }
       max_eig[i] = xmax[i];
     }
@@ -323,8 +322,7 @@ static void do_sham(const char *fn,const char *ndx,
     
     if (bXmin) {
       if (min_eig[i] < xmin[i]) {
-	sprintf(warn_buf,"Your xmin[%d] value %f is larger than the smallest data point %f",i,xmin[i],min_eig[i]);
-	warning(NULL);
+	gmx_warning("Your xmin[%d] value %f is larger than the smallest data point %f",i,xmin[i],min_eig[i]);
       }
       min_eig[i] = xmin[i];
     }
