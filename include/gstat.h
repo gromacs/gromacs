@@ -352,8 +352,8 @@ extern real fit_function(int eFitFn,real *parm,real x);
 /* or to a transverse current autocorrelation function */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
 extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
-		     real begintimefit,real endtimefit,
-                     bool bVerbose, int eFitFn,real fitparms[],int fix,const output_env_t oenv);
+		     real begintimefit,real endtimefit,const output_env_t oenv,
+                     bool bVerbose, int eFitFn,real fitparms[],int fix);
 /* Returns integral.
  * If x == NULL, the timestep dt will be used to create a time axis.
  * fix fixes fit parameter i at it's starting value, when the i'th bit

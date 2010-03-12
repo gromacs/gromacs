@@ -382,9 +382,9 @@ if(method==methFUNCFIT){
 	/*Fit average density in z over whole trajectory to obtain tentative fit-parameters in fit1 and fit2*/
 	
 	/*Fit 1st half of box*/
-	do_lmfit(zslices, zDensavg,sigma1,binwidth,NULL,startpoint,splitpoint,FALSE,effnERF,beginfit1,3,oenv);
+	do_lmfit(zslices, zDensavg,sigma1,binwidth,NULL,startpoint,splitpoint,oenv,FALSE,effnERF,beginfit1,3);
 	/*Fit 2nd half of box*/
-	do_lmfit(zslices ,zDensavg,sigma2,binwidth,NULL,splitpoint,endpoint,FALSE,effnERF,beginfit2,3,oenv);
+	do_lmfit(zslices ,zDensavg,sigma2,binwidth,NULL,splitpoint,endpoint,oenv,FALSE,effnERF,beginfit2,3);
 	
 	/*Initialise the const arrays for storing the average fit parameters*/
 		const real * const avgfit1=beginfit1;
@@ -404,10 +404,12 @@ if(method==methFUNCFIT){
 					fit2[k]=avgfit2[k];
 				}
 				/*Now fit and store in structures in row-major order int[n][i][j]*/
-				do_lmfit(zslices,Densmap[n][i][j],sigma1,binwidth,NULL,startpoint,splitpoint,FALSE,effnERF,fit1,1,oenv);
+				do_lmfit(zslices,Densmap[n][i][j],sigma1,binwidth,NULL,startpoint,splitpoint,
+					 oenv,FALSE,effnERF,fit1,1);
 				int1[n][j+(yslices*i)]->Z=fit1[2];
 				int1[n][j+(yslices*i)]->t=fit1[3];
-				do_lmfit(zslices,Densmap[n][i][j],sigma2,binwidth,NULL,splitpoint,endpoint, FALSE,effnERF,fit2,2,oenv);
+				do_lmfit(zslices,Densmap[n][i][j],sigma2,binwidth,NULL,splitpoint,endpoint,
+					 oenv,FALSE,effnERF,fit2,2);
 				int2[n][j+(yslices*i)]->Z=fit2[2];
 				int2[n][j+(yslices*i)]->t=fit2[3];
 			}

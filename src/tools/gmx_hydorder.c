@@ -256,8 +256,9 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
 /*Determines interface from tetrahedral order parameter in box with specified binwidth.  */
 /*Outputs interface positions(bins), the number of timeframes, and the number of surface-mesh points in xy*/ 
 
-static void calc_tetra_order_interface(char *fnNDX,char *fnTPS,char *fnTRX, real binw, int tblock, 
-					int *nframes,  int *nslicex, int *nslicey, 
+static void calc_tetra_order_interface(const char *fnNDX,const char *fnTPS,const char *fnTRX,
+				       real binw, int tblock, 
+				       int *nframes,  int *nslicex, int *nslicey, 
 				       real sgang1,real sgang2,real ****intfpos,
 				       output_env_t oenv)
 {
@@ -577,7 +578,7 @@ int gmx_hydorder(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   /*Filenames*/
-  char *ndxfnm,*tpsfnm,*trxfnm;
+  const char *ndxfnm,*tpsfnm,*trxfnm;
   char **spectra,**intfn, **raw;
   int nfspect,nfxpm, nfraw;
   output_env_t oenv;	
