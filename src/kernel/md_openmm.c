@@ -226,7 +226,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     double     run_time;
     double     t,t0,lam0;
     bool       bSimAnn,
-               bFirstStep,bStateFromTPX,bInitStep,bLastStep;
+               bFirstStep,bStateFromTPX,bInitStep,bLastStep,bStartingFromCpt;
     bool       bNEMD,do_ene,do_log, do_verbose,
                bX,bV,bF,bXTC,bCPT=FALSE;
     tensor     force_vir,shake_vir,total_vir,pres;
@@ -234,7 +234,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        mdof_flags;
     rvec       mu_tot;
     t_vcm      *vcm;
-    real       chkpt=0,terminate=0;
+    int        nchkpt=1;
     gmx_localtop_t *top;	
     t_mdebin *mdebin=NULL;
     t_state    *state=NULL;
@@ -444,6 +444,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bFirstStep = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
     bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
+    bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
     bLastStep = FALSE;
 
     init_global_signals(&gs,cr,ir,repl_ex_nst);
@@ -477,24 +478,20 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         clear_mat(force_vir);
-
         GMX_MPE_LOG(ev_timestep2);
 
-// TODO do we enable usage of heckpoints?
-//
-//        if ((bLastStep) && (step > ir->init_step))
-//        {
-//            bCPT = (chkpt > 0 || (bLastStep && (Flags & MD_CONFOUT)));
-//            if (bCPT)
-//            {
-//                chkpt = 0;
-//            }
-//        }
-//        else
-//        {
-//            bCPT = FALSE;
-//        }
-
+        /* We write a checkpoint at this MD step when:
+         * either when we signalled through gs (in OpenMM NS works different),
+         * or at the last step (but not when we do not want confout),
+         * but never at the first step.
+         */
+        bCPT = ((gs.set[eglsCHKPT] ||
+                 (bLastStep && (Flags & MD_CONFOUT))) &&
+                step > ir->init_step );
+        if (bCPT)
+        {
+            gs.set[eglsCHKPT] = 0;
+        }
 
         /* Now we have the energies and forces corresponding to the 
          * coordinates at time t. We must output all of this before
@@ -537,11 +534,19 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
             write_traj(fplog,cr,outf,mdof_flags,top_global,
                        step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
+            if (bCPT)
+            {
+                nchkpt++;
+                bCPT = FALSE;
+            }
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
                 (Flags & MD_CONFOUT) && MASTER(cr))
             {
-                /* x and v have been collected in write_traj */
+                /* x and v have been collected in write_traj,
+                 * because a checkpoint file will always be written
+                 * at the last step.
+                 */
                 fprintf(stderr,"\nWriting final coordinates.\n");
                 if (ir->ePBC != epbcNONE && !ir->bPeriodicMols)
                 {
@@ -560,7 +565,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
 
         /* Determine the wallclock run time up till now */
-        run_time = (double)time(NULL) - (double)runtime->real;
+        run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */    
         if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) && 
@@ -605,23 +610,14 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         
 
-///////   TODO checkpointing?
-//
-//        /* In parallel we only have to check for checkpointing in steps
-//         * where we do global communication,
-//         *  otherwise the other nodes don't know.
-//         */
-//        if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
-//                           cpt_period >= 0 &&
-//                           (cpt_period == 0 || 
-//                            run_time >= nchkpt*cpt_period*60.0)))
-//        {
-//            if (chkpt == 0)
-//            {
-//                nchkpt++;
-//            }
-//            chkpt = 1;
-//        }
+        /* checkpoints */
+        if (MASTER(cr) && (cpt_period >= 0 &&
+                           (cpt_period == 0 || 
+                            run_time >= nchkpt*cpt_period*60.0)) &&
+            gs.set[eglsCHKPT] == 0)
+        {
+            gs.sig[eglsCHKPT] = 1;
+        }
   
          
         /* Time for performance */
@@ -649,21 +645,11 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         bFirstStep = FALSE;
         bInitStep = FALSE;
+        bStartingFromCpt = FALSE;
         step++;
         step_rel++;
 
 
-#if 0
-        if (step_rel == wcycle_get_reset_counters(wcycle) ||
-            reset_counters_now == 1)
-        {
-            /* Reset all the counters related to performance over the run */
-            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
-            wcycle_set_reset_counters(wcycle,-1);
-////            bResetCountersHalfMaxH = FALSE;
-            reset_counters_now = 0;
-        }
-#endif
 
     }
     /* End of main MD loop */
