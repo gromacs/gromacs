@@ -71,6 +71,11 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
+# Selection has test_ instead of _test.  Removing here for special case, perhaps make general?
+if(GMX_FAHCORE)
+    file(GLOB SELECTION_TEST selection/test*)
+    list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
+endif(GMX_FAHCORE)
 
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_MORESSE_SOURCES} ${GMX_SSE2_SOURCES} ${THREAD_MPI_SRC})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})

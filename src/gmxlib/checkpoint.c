@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include <time.h>
+#include "string2.h"
 
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 /* _chsize_s */
@@ -105,6 +106,10 @@ const char *eenh_names[eenhNR]=
 static int
 gmx_wintruncate(const char *filename, __int64 size)
 {
+#ifdef GMX_FAHCORE
+    /*we do this elsewhere*/
+    return 0;
+#else
     FILE *fp;
     int   rc;
     
@@ -116,9 +121,9 @@ gmx_wintruncate(const char *filename, __int64 size)
     }
     
     return _chsize_s( fileno(fp), size);
+#endif
 }
 #endif
-
 
 
 enum { ecprREAL, ecprRVEC, ecprMATRIX };

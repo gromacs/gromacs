@@ -109,7 +109,12 @@ bool be_cool(void)
    * but we dont call this routine often, and it avoids using 
    * a mutex for locking the variable...
    */
+#ifdef GMX_FAHCORE
+  /*be uncool*/
+  return FALSE;
+#else
   return (getenv("GMX_NO_QUOTES") == NULL);
+#endif
 }
 
 void space(FILE *out, int n)
@@ -224,7 +229,11 @@ void CopyRight(FILE *out,const char *szProgram)
   char buf[256],tmpstr[1024];
   int i;
 
+#ifdef GMX_FAHCORE
+  set_program_name("Gromacs");
+#else
   set_program_name(szProgram);
+#endif
 
   ster_print(out,"G  R  O  M  A  C  S");
   fprintf(out,"\n");
