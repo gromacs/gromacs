@@ -75,6 +75,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+#include "xvgr.h"
 
 typedef struct {
   t_state s;
