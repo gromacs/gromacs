@@ -7,12 +7,11 @@
 
 #ifndef GMX
 #define GMX_PARALLEL_ENV_INITIALIZED 1
-#define GMX_MPI
 #else 
 #define GMX_PARALLEL_ENV_INITIALIZED gmx_parallel_env_initialized()
 #endif
 
-#ifdef GMX_LIB_MPI
+#ifdef GMX_MPI
 #include <mpi.h>
 #endif
 #ifdef GMX_THREADS
@@ -72,6 +71,14 @@ static int lpfactor(int z) {
 	return fft5d_fmax(lpfactor(f),lpfactor(z/f));
 }
 
+#ifndef GMX_MPI
+#include <sys/time.h>
+double MPI_Wtime() {
+    struct timeval tv;
+    gettimeofday(&tv,0);
+    return tv.tv_sec+tv.tv_usec*1e-6;
+}
+#endif
 
 static int vmax(int* a, int s) {
     int i,max=0;
@@ -102,22 +109,26 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
     int s;
 
     /* comm, prank and P are in the order of the decomposition (plan->cart is in the order of transposes) */
+#ifdef GMX_MPI
     if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != 0)
     {
         MPI_Comm_size(comm[0],&P[0]);
         MPI_Comm_rank(comm[0],&prank[0]);
     }
     else
+#endif
     {
         P[0] = 1;
         prank[0] = 0;
     }
+#ifdef GMX_MPI
     if (GMX_PARALLEL_ENV_INITIALIZED && comm[1] != 0)
     {
         MPI_Comm_size(comm[1],&P[1]);
         MPI_Comm_rank(comm[1],&prank[1]);
     }
     else
+#endif
     {
         P[1] = 1;
         prank[1] = 0;
@@ -592,7 +603,9 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 #ifdef FFT5D_MPI_TRANSPOSE
     FFTW(plan) *mpip=plan->mpip;
 #endif
+#ifdef GMX_MPI
     MPI_Comm *cart=plan->cart;
+#endif
 
     double time_fft=0,time_local=0,time_mpi[2]={0},time;    
     int *N=plan->N,*M=plan->M,*K=plan->K,*pN=plan->pN,*pM=plan->pM,*pK=plan->pK,
@@ -610,19 +623,20 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
     
         if (plan->flags&FFT5D_DEBUG) print_localdata(lout, "%d %d: FFT %d\n", s, plan);
         
-        time=MPI_Wtime(); 
-        /*prepare for AllToAll
-          1. (most outer) axes (x) is split into P[s] parts of size N[s] 
-             for sending*/
-        splitaxes(lin,lout,N[s],M[s],K[s], pN[s],pM[s],pK[s],P[s],C[s],iNout[s],oNout[s]);
-
-        time_local+=MPI_Wtime()-time;
-        
-        /*send, recv*/
-        time=MPI_Wtime();
 #ifdef GMX_MPI
-        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s] != 0)
+        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s] !=0 && P[s]>1 )
         {
+            time=MPI_Wtime(); 
+            /*prepare for AllToAll
+              1. (most outer) axes (x) is split into P[s] parts of size N[s] 
+              for sending*/
+            splitaxes(lin,lout,N[s],M[s],K[s], pN[s],pM[s],pK[s],P[s],C[s],iNout[s],oNout[s]);
+
+            time_local+=MPI_Wtime()-time;
+            
+            /*send, recv*/
+            time=MPI_Wtime();
+
 #ifdef FFT5D_MPI_TRANSPOSE
             FFTW(execute)(mpip[s]);  
 #else
@@ -630,14 +644,11 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
                 MPI_Alltoall(lin,N[s]*pM[s]*K[s]*sizeof(fft5d_type)/sizeof(fft5d_rtype),FFT5D_MPI_RTYPE,lout,N[s]*pM[s]*K[s]*sizeof(fft5d_type)/sizeof(fft5d_rtype),FFT5D_MPI_RTYPE,cart[s]);
             else
                 MPI_Alltoall(lin,N[s]*M[s]*pK[s]*sizeof(fft5d_type)/sizeof(fft5d_rtype),FFT5D_MPI_RTYPE,lout,N[s]*M[s]*pK[s]*sizeof(fft5d_type)/sizeof(fft5d_rtype),FFT5D_MPI_RTYPE,cart[s]);
-#endif
+#endif /*FFT5D_MPI_TRANSPOSE*/
+            time_mpi[s]=MPI_Wtime()-time;
         }
-        else
-#endif
-        {
-            memcpy(lin,lout,N[s]*M[s]*K[s]*sizeof(fft5d_type));
-        }
-        time_mpi[s]=MPI_Wtime()-time;
+#endif /*GMX_MPI*/
+
     
         time=MPI_Wtime();
         /*bring back in matrix form 
@@ -701,16 +712,18 @@ void fft5d_local_size(fft5d_plan plan,int* N1,int* M0,int* K0,int* K1,int** coor
 /*same as fft5d_plan_3d but with cartesian coordinator and automatic splitting 
   of processor dimensions*/
 fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int flags, fft5d_type** rlin, fft5d_type** rlout) {
-    int size,prank;
+    MPI_Comm cart[2]={0};
+#ifdef GMX_MPI
+    int size=1,prank=0;
     int P[2];
     int coor[2];
     int wrap[]={0,0};
     MPI_Comm gcart;
-    MPI_Comm cart[2];
     int rdim1[] = {0,1}, rdim2[] = {1,0};
 
     MPI_Comm_size(comm,&size);
     MPI_Comm_rank(comm,&prank);
+
     if (P0==0) P0 = lfactor(size);
     if (size%P0!=0) {
         if (prank==0) printf("FFT5D: WARNING: Number of processors %d not evenly dividable by %d\n",size,P0);
@@ -726,7 +739,7 @@ fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int
     MPI_Cart_get(gcart,2,P,wrap,coor); 
     MPI_Cart_sub(gcart, rdim1 , &cart[0]);
     MPI_Cart_sub(gcart, rdim2 , &cart[1]);
-
+#endif
     return fft5d_plan_3d(NG, MG, KG, cart, flags, rlin, rlout); 
 }
 
