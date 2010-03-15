@@ -49,6 +49,9 @@
 #include "mdrun.h"
 #include "xmdrun.h"
 #include "checkpoint.h"
+#ifdef GMX_THREADS
+#include "thread_mpi.h"
+#endif
 
 /* afm stuf */
 #include "pull.h"
@@ -386,7 +389,7 @@ int main(int argc,char *argv[])
   int  repl_ex_nst=0;
   int  repl_ex_seed=-1;
   int  nstepout=100;
-  int  nthreads=1;
+  int  nthreads=0; /* set to determine # of threads automatically */
   int  resetstep=-1;
   
   rvec realddxyz={0,0,0};
@@ -415,7 +418,7 @@ int main(int argc,char *argv[])
     { "-dd",      FALSE, etRVEC,{&realddxyz},
       "Domain decomposition grid, 0 is optimize" },
     { "-nt",      FALSE, etINT, {&nthreads},
-      "Number of threads to start on each node" },
+      "Number of threads to start (0 is guess)" },
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME, -1 is guess" },
     { "-ddorder", FALSE, etENUM, {ddno_opt},
@@ -490,9 +493,9 @@ int main(int argc,char *argv[])
   char     suffix[STRLEN];
   int      rc;
 
+
   cr = init_par(&argc,&argv);
-  cr->nthreads = nthreads;
-    
+   
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
   
@@ -512,6 +515,16 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL, &oenv);
 
+#ifdef GMX_THREADS
+  if (nthreads<1)
+  {
+      nthreads=tMPI_Get_recommended_nthreads();
+  }
+#else
+  nthreads=1;
+#endif
+  cr->nthreads = nthreads;
+ 
 
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
@@ -617,8 +630,8 @@ int main(int argc,char *argv[])
                         fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,nstglobalcomm,
                         ddxyz,dd_node_order,rdd,rconstr,
                         dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                        nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
-                        cpt_period,max_hours,deviceOptions,Flags);
+                        nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
+                        pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();

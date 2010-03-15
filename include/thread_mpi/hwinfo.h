@@ -35,90 +35,37 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifdef HAVE_TMPI_CONFIG_H
-#include "tmpi_config.h"
-#endif
+#ifndef _TMPI_HWINFO_H_
+#define _TMPI_HWINFO_H_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+/*! \file
 
+  \brief CPU/core/HT count function.
 
-#include "thread_mpi/list.h"
+*/
 
+/*! \brief Determine number of hardware threads that can be run simultaneously
 
-void tMPI_Stack_init(tMPI_Stack *st)
-{
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
+    Returns the total number of cores and SMT threads that can run.
 
-void tMPI_Stack_destroy(tMPI_Stack *st)
-{
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
-
-void tMPI_Stack_push(tMPI_Stack *st, tMPI_Stack_element *el)
-{
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        el->next=head;
-    }
-    while (tMPI_Atomic_ptr_cas(&(st->head), head, el)!=(void*)head);
-}
-
-tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
-{
-    tMPI_Stack_element *head,*next;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        if (head)
-            next=head->next;
-        else
-            next=NULL;
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, next)!=(void*)head);
-
-    return head;
-}
-
-tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st)
-{
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, NULL)!=(void*)head);
-
-    return head;
-}
+    \ret The maximum number of threads that can run simulataneously. If this
+         number cannot be determined for the current architecture, -1 is 
+         returned.
+  */
+int tMPI_Get_hw_nthreads(void);
 
 
+/*! \brief Determine the recommended number of hardware threads to run on
+           
+
+    Returns the total number of cores and SMT threads to run on. This is
+    equal to the number of hardware threads available, or 1 if the number
+    can't be determined, or if there are no atomics for this platform.
+
+    \ret The maximum number of threads to run on.
+  */
+int tMPI_Get_recommended_nthreads(void);
 
 
-
-#if 0
-void tMPI_Queue_init(tMPI_Queue *q)
-{
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
-
-
-void tMPI_Queue_destroy(tMPI_Queue *q)
-{
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
-
-void tMPI_Queue_enqueue(tMPI_Queue *q, tMPI_Queue_element *qe)
-{
-    tMPI_Queue_element *head, *next;
-
-    do
-    {
-    } while (tMPI_Atomic_ptr_cas(&(q->head), head, 
-}
 #endif
 

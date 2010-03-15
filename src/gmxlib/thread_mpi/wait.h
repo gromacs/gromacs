@@ -42,8 +42,12 @@ files.
 #ifndef TMPI_WAIT_FOR_NO_ONE
 
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_SCHED_H
 #include <sched.h>
+#endif
 
 /* for now we just do sched_yield(). It's in POSIX. */
 /* the data associated with waiting. */

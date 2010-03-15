@@ -35,90 +35,68 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+
 #ifdef HAVE_TMPI_CONFIG_H
 #include "tmpi_config.h"
-#endif
-
+#else
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-
-#include "thread_mpi/list.h"
-
-
-void tMPI_Stack_init(tMPI_Stack *st)
-{
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
-
-void tMPI_Stack_destroy(tMPI_Stack *st)
-{
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
-
-void tMPI_Stack_push(tMPI_Stack *st, tMPI_Stack_element *el)
-{
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        el->next=head;
-    }
-    while (tMPI_Atomic_ptr_cas(&(st->head), head, el)!=(void*)head);
-}
-
-tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
-{
-    tMPI_Stack_element *head,*next;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        if (head)
-            next=head->next;
-        else
-            next=NULL;
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, next)!=(void*)head);
-
-    return head;
-}
-
-tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st)
-{
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, NULL)!=(void*)head);
-
-    return head;
-}
-
-
-
-
-
-#if 0
-void tMPI_Queue_init(tMPI_Queue *q)
-{
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
-
-
-void tMPI_Queue_destroy(tMPI_Queue *q)
-{
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
-
-void tMPI_Queue_enqueue(tMPI_Queue *q, tMPI_Queue_element *qe)
-{
-    tMPI_Queue_element *head, *next;
-
-    do
-    {
-    } while (tMPI_Atomic_ptr_cas(&(q->head), head, 
-}
 #endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef THREAD_WINDOWS
+#include <windows.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "impl.h"
+#include "thread_mpi/hwinfo.h"
+
+#ifdef TMPI_TRACE
+#include <stdarg.h>
+#endif
+
+
+int tMPI_Get_hw_nthreads(void)
+{
+#ifdef HAVE_SYSCONF
+#if defined(_SC_NPROCESSORS_ONLN)
+    return sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_SC_NPROC_ONLN)
+    return sysconf(_SC_NPROC_ONLN);
+#elif defined(_SC_NPROCESSORS_CONF)
+    return sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(_SC_NPROC_CONF)
+    return sysconf(_SC_NPROC_CONF);
+#endif
+#endif
+
+#ifdef THREAD_WINDOWS
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo( &sysinfo );
+
+    return sysinfo.dwNumberOfProcessors;
+#endif
+    return -1;
+}
+
+
+int tMPI_Get_recommended_nthreads(void)
+{
+    int N=1; /* the default is 1 */
+
+#ifndef TMPI_NO_ATOMICS
+    N=tMPI_Get_hw_nthreads();
+    if (N<1)
+        N=1;
+#endif
+    return N;
+}
 

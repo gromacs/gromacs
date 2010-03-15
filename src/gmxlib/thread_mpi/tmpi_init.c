@@ -35,6 +35,11 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -206,9 +211,9 @@ tMPI_Comm tMPI_Get_comm_self(void)
 int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
 {
     int i;
-    int ret=TMPI_FAILURE;
+    int ret=TMPI_SUCCESS;
 
-    *nthreads=1;
+    *nthreads=0;
     if (!optname)
     {
         i=0;
@@ -230,15 +235,15 @@ int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
         *nthreads=strtol((*argv)[i+1], &end, 10);
         if ( !end || (*end != 0) )
         {
-            *nthreads=1;
-        }
-        else if (*nthreads > 0)
-        {
-            ret=TMPI_SUCCESS;
+            *nthreads=0;
+            ret=TMPI_FAILURE;
         }
     }
     if (*nthreads<1)
-        *nthreads=1;
+    {
+        *nthreads=tMPI_Get_recommended_nthreads();
+    }
+
     return ret;
 }
 
@@ -450,8 +455,8 @@ int tMPI_Init(int *argc, char ***argv)
 
     if (TMPI_COMM_WORLD==0) /* we're the main process */
     {
-        int N;
-        tMPI_Get_N(argc, argv, "-np", &N);
+        int N=0;
+        tMPI_Get_N(argc, argv, "-nt", &N);
         tMPI_Start_threads(N, argc, argv, NULL, NULL);
     }
     else
@@ -468,6 +473,11 @@ int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg)
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Init_fn(%d, %p, %p)", N, start_function, arg);
 #endif
+
+    if (N<1)
+    {
+        N=tMPI_Get_recommended_nthreads();
+    }
 
     if (TMPI_COMM_WORLD==0 && N>=1) /* we're the main process */
     {
@@ -689,10 +699,12 @@ double tMPI_Wtime(void)
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     {
         struct timeval tv;
+        long int secdiff;
+        int usecdiff;
 
         gettimeofday(&tv, NULL);
-        long int secdiff = tv.tv_sec - tmpi_global->timer_init.tv_sec;
-        int usecdiff = tv.tv_usec - tmpi_global->timer_init.tv_usec;
+        secdiff = tv.tv_sec - tmpi_global->timer_init.tv_sec;
+        usecdiff = tv.tv_usec - tmpi_global->timer_init.tv_usec;
 
         ret=(double)secdiff + 1e-6*usecdiff;
     }

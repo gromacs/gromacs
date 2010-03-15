@@ -35,6 +35,9 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifndef _TMPI_EVENT_H_
+#define _TMPI_EVENT_H_
+
 /*! \file
 
   \brief Event notification wait and signaling functions.
@@ -104,5 +107,7 @@ void tMPI_Event_process(tMPI_Event *ev, int N);
 { \
     (ev)->last_sync += N; \
 }
+#endif
+
 #endif
 

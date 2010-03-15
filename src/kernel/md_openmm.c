@@ -226,7 +226,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     double     run_time;
     double     t,t0,lam0;
     bool       bSimAnn,
-               bFirstStep,bStateFromTPX,bInitStep,bLastStep,bStartingFromCpt;
+               bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
+    bool       bInitStep=TRUE;
     bool       bNEMD,do_ene,do_log, do_verbose,
                bX,bV,bF,bXTC,bCPT=FALSE;
     tensor     force_vir,shake_vir,total_vir,pres;

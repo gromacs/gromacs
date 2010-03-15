@@ -35,90 +35,66 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifdef HAVE_TMPI_CONFIG_H
-#include "tmpi_config.h"
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+/* the types that were defined in include/thread_mpi/threads.h */
 
 
-#include "thread_mpi/list.h"
-
-
-void tMPI_Stack_init(tMPI_Stack *st)
+struct tMPI_Thread
 {
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
+    HANDLE th;
+};
 
-void tMPI_Stack_destroy(tMPI_Stack *st)
+struct tMPI_Thread_key
 {
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
+    DWORD key;
+};
 
-void tMPI_Stack_push(tMPI_Stack *st, tMPI_Stack_element *el)
+struct tMPI_Mutex
 {
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        el->next=head;
-    }
-    while (tMPI_Atomic_ptr_cas(&(st->head), head, el)!=(void*)head);
-}
+    CRITICAL_SECTION cs;
+};
 
-tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
+struct tMPI_Thread_once
 {
-    tMPI_Stack_element *head,*next;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        if (head)
-            next=head->next;
-        else
-            next=NULL;
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, next)!=(void*)head);
+    int dum;
+};
 
-    return head;
-}
-
-tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st)
+struct tMPI_Thread_cond
 {
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, NULL)!=(void*)head);
-
-    return head;
-}
-
-
-
-
-
 #if 0
-void tMPI_Queue_init(tMPI_Queue *q)
-{
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
-
-
-void tMPI_Queue_destroy(tMPI_Queue *q)
-{
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
-
-void tMPI_Queue_enqueue(tMPI_Queue *q, tMPI_Queue_element *qe)
-{
-    tMPI_Queue_element *head, *next;
-
-    do
-    {
-    } while (tMPI_Atomic_ptr_cas(&(q->head), head, 
-}
+    /* this works since Windows Vista: */
+    CONDITION_VARIABLE cv;
+#else
+    /* this data structure and its algorithms are based on 
+       'Strategies for Implementing POSIX Condition Variables on Win32'
+       by
+       Douglas C. Schmidt and Irfan Pyarali
+       Department of Computer Science
+       Washington University, St. Louis, Missouri
+       http://www.cs.wustl.edu/~schmidt/win32-cv-1.html */
+    int Nwaiters; /* number of waiting threads */
+    CRITICAL_SECTION wtr_lock; /* lock for Nwaiters */
+    int Nrelease; /* number of threads to release in broadcast/signal */
+    int cycle; /* cycle number so threads can't steal signals */
+    HANDLE ev; /* the event used to trigger WaitForSingleObject.  
+                  Is a manual reset event.  */
 #endif
+};
+
+struct tMPI_Thread_barrier
+{
+#if 0
+    /* use this once Vista is the oldest supported windows version: */
+    CRITICAL_SECTION   cs;        /*!< Lock for the barrier                    
+                                    contents          */
+    CONDITION_VARIABLE cv;        /*!< Condition to signal barrier             
+                                    completion */
+#else
+    tMPI_Thread_mutex_t cs;   /*!< Lock for the barrier contents          */
+    tMPI_Thread_cond_t  cv;      /*!< Condition to signal barrier completion */
+#endif
+};
+
+
+
+
 

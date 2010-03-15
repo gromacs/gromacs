@@ -314,6 +314,11 @@ extern void init_single(FILE *log, t_inputrec *inputrec, const char *tpbfile,
       * coordinates and velocities from the file specified in tpbfile
       */
 
+/* check the version */
+void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
+                               t_inputrec *ir,gmx_mtop_t *mtop);
+
+
 extern void init_parallel(FILE *log,const char *tpxfile, t_commrec *cr,
 			  t_inputrec *inputrec,gmx_mtop_t *mtop,
 			  t_state *state, int list);

@@ -35,90 +35,43 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifdef HAVE_TMPI_CONFIG_H
-#include "tmpi_config.h"
-#endif
+/* the types that were defined in include/thread_mpi/threads.h */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-
-#include "thread_mpi/list.h"
-
-
-void tMPI_Stack_init(tMPI_Stack *st)
+struct tMPI_Thread
 {
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
+    pthread_t th;
+};
 
-void tMPI_Stack_destroy(tMPI_Stack *st)
+struct tMPI_Thread_key
 {
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
+    pthread_key_t key;
+};
 
-void tMPI_Stack_push(tMPI_Stack *st, tMPI_Stack_element *el)
+struct tMPI_Mutex
 {
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        el->next=head;
-    }
-    while (tMPI_Atomic_ptr_cas(&(st->head), head, el)!=(void*)head);
-}
+    pthread_mutex_t mtx;
+};
 
-tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
+struct tMPI_Thread_once
 {
-    tMPI_Stack_element *head,*next;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        if (head)
-            next=head->next;
-        else
-            next=NULL;
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, next)!=(void*)head);
+    pthread_once_t once;
+};
 
-    return head;
-}
-
-tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st)
+struct tMPI_Thread_cond
 {
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, NULL)!=(void*)head);
+    pthread_cond_t cond;
+};
 
-    return head;
-}
-
-
-
-
-
-#if 0
-void tMPI_Queue_init(tMPI_Queue *q)
+struct tMPI_Thread_barrier
 {
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
+    pthread_mutex_t   mutex;     /*!< Lock for the barrier contents          */
+    pthread_cond_t    cv;        /*!< Condition to signal barrier completion */
+    int               threshold; /*!< Total number of members in barrier     */
+    int               count;     /*!< Remaining count before completion      */
+    int               cycle;     /*!< Alternating 0/1 to indicate round      */
+};
 
 
-void tMPI_Queue_destroy(tMPI_Queue *q)
-{
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
 
-void tMPI_Queue_enqueue(tMPI_Queue *q, tMPI_Queue_element *qe)
-{
-    tMPI_Queue_element *head, *next;
 
-    do
-    {
-    } while (tMPI_Atomic_ptr_cas(&(q->head), head, 
-}
-#endif
 

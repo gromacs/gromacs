@@ -36,21 +36,38 @@ files.
 */
 
 
+/* this is the header file for the implementation side of the thread_mpi
+   library. It contains the definitions for all the internal data structures
+   and the prototypes for all the internal functions that aren't static.  */
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "settings.h"
-#include "thread_mpi/threads.h"
 #include "thread_mpi/atomic.h"
+#include "thread_mpi/threads.h"
 #include "thread_mpi/event.h"
 #include "thread_mpi/tmpi.h"
 #include "thread_mpi/collective.h"
 #include "thread_mpi/barrier.h"
+#include "thread_mpi/hwinfo.h"
 #include "wait.h"
 #include "barrier.h"
 #include "event.h"
 #ifdef TMPI_PROFILE
 #include "profile.h"
 #endif
-
 
 
 
@@ -341,6 +358,7 @@ struct coll_env_thread
     tMPI_Event send_ev; /* event associated with being the sending thread. 
                            Triggered when last receiving thread is ready, 
                            and the coll_env_thread is ready for re-use. */
+    tMPI_Event recv_ev; /* event associated with being a receiving thread. */
 
     bool *read_data; /* whether we read data from a specific thread. */
 };
