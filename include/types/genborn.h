@@ -95,6 +95,7 @@ typedef struct
 	real obc_gamma;           /* OBC parameters */
 	real gb_doffset;          /* Dielectric offset for Still/HCT/OBC */
 	real gb_epsilon_solvent;  /*   */
+	real epsilon_r;           /* Used for inner dielectric */
 	
 	real *work;               /* Used for parallel summation and in the chain rule, length natoms         */
 	real *buf;                /* Used for parallel summation and in the chain rule, length natoms         */
