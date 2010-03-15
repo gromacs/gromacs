@@ -327,33 +327,109 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
     fftwflags=FFTW_DESTROY_INPUT;
     if (!(flags&FFT5D_NOMEASURE)) fftwflags|=FFTW_MEASURE;
     output=lout;
-    plan = (fft5d_plan)malloc(sizeof(struct fft5d_plan_t));
+    plan = (fft5d_plan)calloc(1,sizeof(struct fft5d_plan_t));
+
     FFTW_LOCK
-    for (s=0;s<3;s++) {
-        if (debug)
-        {
-            fprintf(debug,"FFT5D: Plan s %d rC %d M %d pK %d C %d lsize %d\n",
-                    s,rC[s],M[s],pK[s],C[s],lsize);
-        }
-        if ((flags&FFT5D_INPLACE) && s==2) {
-            output=lin;
-            fftwflags&=~FFTW_DESTROY_INPUT;
-        }
-        if ((flags&FFT5D_REALCOMPLEX) && !(flags&FFT5D_BACKWARD) && s==0) {
-            plan->p1d[s] = FFTW(plan_many_dft_r2c)(1, &rC[s], pM[s]*pK[s],   
-                    (fft5d_rtype*)lin, &rC[s], 1,   C[s]*2, 
-                    (FFTW(complex)*)output, &C[s], 1,   C[s], fftwflags);
-        } else if ((flags&FFT5D_REALCOMPLEX) && (flags&FFT5D_BACKWARD) && s==2) {
-            plan->p1d[s] = FFTW(plan_many_dft_c2r)(1, &rC[s], pM[s]*pK[s],   
-                    (FFTW(complex)*)lin, &C[s], 1,   C[s], 
+    if ((!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1))) {  /*don't do 3d plan in parallel or if in_place requested */  
+                           /*TODO: only do 3d-plan for FFT-lib supporting transpose in/output*/
+            fftw_iodim dims[3];
+            int inNG=NG,outMG=MG,outKG=KG;
+            if (flags&FFT5D_REALCOMPLEX) {
+                if (!(flags&FFT5D_BACKWARD)) {  /*input pointer is not complex*/
+                    inNG*=2; 
+                } else {                        /*output pointer is not complex*/
+                    if (!(flags&FFT5D_ORDER_YZ)) outMG*=2;
+                    else outKG*=2;
+                }
+            }
+
+            if (!(flags&FFT5D_BACKWARD)) {
+                dims[0].n  = KG;
+                dims[1].n  = MG;
+                dims[2].n  = rNG;
+                
+                dims[0].is = inNG*MG;     /*N M K*/
+                dims[1].is = inNG;
+                dims[2].is = 1;
+                if (!(flags&FFT5D_ORDER_YZ)) {
+                    dims[0].os = MG;       /*M K N*/
+                    dims[1].os = 1;
+                    dims[2].os = MG*KG;
+                } else  {
+                    dims[0].os = 1;       /*K N M*/
+                    dims[1].os = KG*NG;
+                    dims[2].os = KG;
+                }
+            } else {
+                if (!(flags&FFT5D_ORDER_YZ)) {
+                    dims[0].n  = NG;   
+                    dims[1].n  = KG;   
+                    dims[2].n  = rMG;  
+                    
+                    dims[0].is = 1;     
+                    dims[1].is = NG*MG;
+                    dims[2].is = NG;
+
+                    dims[0].os = outMG*KG;       
+                    dims[1].os = outMG;
+                    dims[2].os = 1;                  
+                } else {
+                    dims[0].n  = MG;
+                    dims[1].n  = NG;
+                    dims[2].n  = rKG;
+                    
+                    dims[0].is = NG;     
+                    dims[1].is = 1;
+                    dims[2].is = NG*MG;
+
+                    dims[0].os = outKG*NG;       
+                    dims[1].os = outKG;
+                    dims[2].os = 1;                  
+                }           
+            }
+            if ((flags&FFT5D_REALCOMPLEX) && !(flags&FFT5D_BACKWARD)) {
+                plan->p3d = FFTW(plan_guru_dft_r2c)(/*rank*/ 3, dims,
+                                     /*howmany*/ 0, /*howmany_dims*/0 ,
+                                     (fft5d_rtype*)lin, lout,
+                                     /*flags*/ fftwflags);              
+            } else if ((flags&FFT5D_REALCOMPLEX) && (flags&FFT5D_BACKWARD)) {
+                plan->p3d = FFTW(plan_guru_dft_c2r)(/*rank*/ 3, dims,
+                                     /*howmany*/ 0, /*howmany_dims*/0 ,
+                                     lin, (fft5d_rtype*)lout,
+                                     /*flags*/ fftwflags);              
+            } else {
+                plan->p3d = FFTW(plan_guru_dft)(/*rank*/ 3, dims,
+                                     /*howmany*/ 0, /*howmany_dims*/0 ,
+                                     lin, lout,
+                                     /*sign*/ (flags&FFT5D_BACKWARD)?1:-1, /*flags*/ fftwflags);
+            }
+    }
+    if (!plan->p3d) {  /* for decomposition and if 3d plan did not work */
+        for (s=0;s<3;s++) {
+            if (debug)
+            {
+                fprintf(debug,"FFT5D: Plan s %d rC %d M %d pK %d C %d lsize %d\n",
+                        s,rC[s],M[s],pK[s],C[s],lsize);
+            }
+            if ((flags&FFT5D_INPLACE) && s==2) {
+                output=lin;
+                fftwflags&=~FFTW_DESTROY_INPUT;
+            }
+            if ((flags&FFT5D_REALCOMPLEX) && !(flags&FFT5D_BACKWARD) && s==0) {
+                plan->p1d[s] = FFTW(plan_many_dft_r2c)(1, &rC[s], pM[s]*pK[s],   
+                                                       (fft5d_rtype*)lin, &rC[s], 1,   C[s]*2, 
+                                                       (FFTW(complex)*)output, &C[s], 1,   C[s], fftwflags);
+            } else if ((flags&FFT5D_REALCOMPLEX) && (flags&FFT5D_BACKWARD) && s==2) {
+                plan->p1d[s] = FFTW(plan_many_dft_c2r)(1, &rC[s], pM[s]*pK[s],   
+                                                       (FFTW(complex)*)lin, &C[s], 1,   C[s], 
                     (fft5d_rtype*)output, &rC[s], 1,   C[s]*2, fftwflags);
-        } else {
-            plan->p1d[s] = FFTW(plan_many_dft)(1, &C[s], pM[s]*pK[s],   
-                    (FFTW(complex)*)lin, &C[s], 1,   C[s], 
-                    (FFTW(complex)*)output, &C[s], 1,   C[s], (flags&FFT5D_BACKWARD)?1:-1, fftwflags);
+            } else {
+                plan->p1d[s] = FFTW(plan_many_dft)(1, &C[s], pM[s]*pK[s],   
+                                                   (FFTW(complex)*)lin, &C[s], 1,   C[s], 
+                                                   (FFTW(complex)*)output, &C[s], 1,   C[s], (flags&FFT5D_BACKWARD)?1:-1, fftwflags);
+            }
         }
     }
-
     if ((flags&FFT5D_ORDER_YZ)) { /*plan->cart is in the order of transposes */
         plan->cart[0]=comm[0]; plan->cart[1]=comm[1];
     } else {
@@ -612,6 +688,12 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
         *C=plan->C,*P=plan->P,**iNin=plan->iNin,**oNin=plan->oNin,**iNout=plan->iNout,**oNout=plan->oNout;
     
     
+    if (plan->p3d) {
+        time=MPI_Wtime();
+        FFTW(execute)(plan->p3d); 
+        times->fft+=MPI_Wtime()-time;
+        return;
+    }
 
     /*lin: x,y,z*/
     int s=0;

@@ -10,13 +10,16 @@
 #define GMX
 
 #ifndef GMX
-#define GMX_LIB_MPI
+/*#define GMX_MPI*/
 #define GMX_FFT_FFTW3
 FILE* debug;
 #endif
 
-#ifdef GMX_LIB_MPI
+#ifdef GMX_MPI
 #include <mpi.h>
+#else
+typedef void* MPI_Comm;
+double MPI_Wtime();
 #endif
 #ifdef GMX_THREADS
 #include "tmpi.h"
@@ -59,28 +62,30 @@ typedef double fft5d_rtype;
 #endif
 
 struct fft5d_time_t {
-    double fft,local,mpi1,mpi2;
+	double fft,local,mpi1,mpi2;
 };
 typedef struct fft5d_time_t *fft5d_time;
 
 typedef enum fft5d_flags_t {
-    FFT5D_ORDER_YZ=1,
-    FFT5D_BACKWARD=2,
-    FFT5D_REALCOMPLEX=4,
-    FFT5D_DEBUG=8,
-    FFT5D_NOMEASURE=16,
-    FFT5D_INPLACE=32,
-    FFT5D_NOMALLOC=64
+	FFT5D_ORDER_YZ=1,
+	FFT5D_BACKWARD=2,
+	FFT5D_REALCOMPLEX=4,
+	FFT5D_DEBUG=8,
+	FFT5D_NOMEASURE=16,
+	FFT5D_INPLACE=32,
+	FFT5D_NOMALLOC=64
 } fft5d_flags;
 
 struct fft5d_plan_t {
-    fft5d_type *lin;
-    fft5d_type *lout;
-    FFTW(plan) p1d[3];
+	fft5d_type *lin;
+	fft5d_type *lout;
+        FFTW(plan) p1d[3];   /*1D plans*/
+        FFTW(plan) p2d;  /*2D plan: used for 1D decomposition if FFT supports transposed output*/
+        FFTW(plan) p3d;  /*3D plan: used for 0D decomposition if FFT supports transposed output*/
 #ifdef FFT5D_MPI_TRANSPOSE
-    FFTW(plan) mpip[2];
+	FFTW(plan) mpip[2];
 #endif
-    MPI_Comm cart[2];
+	MPI_Comm cart[2];
 
     int N[3],M[3],K[3]; /*local length in transposed coordinate system (if not divisisable max)*/
     int pN[3],pM[3], pK[3]; /*local length - not max but length for this processor*/
@@ -90,14 +95,14 @@ struct fft5d_plan_t {
     int C[3],rC[3]; /*global length (of the one global axes) */
     /* C!=rC for real<->complex. then C=rC/2 but with potential padding*/
     int P[2]; /*size of processor grid*/
-/*  int fftorder;*/
-/*  int direction;*/
-/*  int realcomplex;*/
-    int flags;
-/*int N0,N1,M0,M1,K0,K1;*/
-    int NG,MG,KG;
-/*int P[2];*/
-    int coor[2];
+/*	int fftorder;*/
+/*	int direction;*/
+/*	int realcomplex;*/
+	int flags;
+    /*int N0,N1,M0,M1,K0,K1;*/
+	int NG,MG,KG;
+    /*int P[2];*/
+	int coor[2];
 }; 
 
 typedef struct fft5d_plan_t *fft5d_plan;
