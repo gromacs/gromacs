@@ -73,19 +73,15 @@ files.
 #include "pthreads.h"
 
 
-
-static pthread_mutex_t mutex_init;   /* mutex for initializing mutexes */
-static pthread_mutex_t once_init;    /* mutex for initializing barriers */
-static pthread_mutex_t cond_init;    /* mutex for initializing thread_conds */
-static pthread_mutex_t barrier_init; /* mutex for initializing barriers */
-
-
-/* spinlock for initializing the above mutexes */
-static tMPI_Spinlock_t init_init=TMPI_SPINLOCK_INITIALIZER;
-
-/* whether tMPI_Thread_create has initialized these mutexes */
-static volatile int init_inited=0;   
-                                 
+/* mutex for initializing mutexes */
+static pthread_mutex_t mutex_init=PTHREAD_MUTEX_INITIALIZER;   
+/* mutex for initializing barriers */
+static pthread_mutex_t once_init=PTHREAD_MUTEX_INITIALIZER;    
+/* mutex for initializing thread_conds */
+static pthread_mutex_t cond_init=PTHREAD_MUTEX_INITIALIZER;    
+/* mutex for initializing barriers */
+static pthread_mutex_t barrier_init=PTHREAD_MUTEX_INITIALIZER; 
+                                
 
 
 void tMPI_Fatal_error(const char *file, int line, const char *message, ...)
@@ -106,8 +102,6 @@ enum tMPI_Thread_support tMPI_Thread_support(void)
     return TMPI_THREAD_SUPPORT_YES;
 }
 
-
-
 int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
                        void *arg)
 {
@@ -118,18 +112,6 @@ int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
         tMPI_Fatal_error(TMPI_FARGS,"Invalid thread pointer.");
         return EINVAL;
     }
-
-    /* this can be a spinlock because the chances of collision are very low. */
-    tMPI_Spinlock_lock( &init_init );
-    if (!init_inited)
-    {
-        init_inited=1;
-        pthread_mutex_init(&mutex_init, NULL);
-        pthread_mutex_init(&once_init, NULL);
-        pthread_mutex_init(&cond_init, NULL);
-        pthread_mutex_init(&barrier_init, NULL);
-    }
-    tMPI_Spinlock_unlock( &init_init );
 
     *thread=(struct tMPI_Thread*)malloc(sizeof(struct tMPI_Thread)*1);
     ret=pthread_create(&((*thread)->th),NULL,start_routine,arg);

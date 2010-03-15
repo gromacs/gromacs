@@ -90,6 +90,21 @@ static volatile int init_inited=0;
 
 
 
+static void tMPI_Init_initers(void)
+{
+    /* this can be a spinlock because the chances of collision are low. */
+    tMPI_Spinlock_lock( &init_init );
+    if (!init_inited)
+    {
+        init_inited=1;
+        InitializeCriticalSection(&mutex_init);
+        InitializeCriticalSection(&once_init);
+        InitializeCriticalSection(&cond_init);
+        InitializeCriticalSection(&barrier_init);
+    }
+    tMPI_Spinlock_unlock( &init_init );
+}
+
 
 void tMPI_Fatal_error(const char *file, int line, const char *message, ...)
 {
@@ -132,18 +147,7 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
     DWORD thread_id;
     struct tMPI_Thread_starter_param *prm;
 
-    /* this can be a spinlock because the chances of collision are very low. */
-    tMPI_Spinlock_lock( &init_init );
-    if (!init_inited)
-    {
-        init_inited=1;
-        InitializeCriticalSection(&mutex_init);
-        InitializeCriticalSection(&once_init);
-        InitializeCriticalSection(&cond_init);
-        InitializeCriticalSection(&barrier_init);
-    }
-    tMPI_Spinlock_unlock( &init_init );
-
+    tMPI_Init_initers();
 
     /* a small memory leak to be sure that it doesn't get deallocated 
        once this function ends */
@@ -273,6 +277,8 @@ static int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
      * memory barriers right. Trust me, you don't want a deadlock here...
      */ 
 
+    /* initialize the initializers */
+    tMPI_Init_initers();
     /* Lock the common one-time init mutex so we can check carefully */
     EnterCriticalSection( &mutex_init );
 
@@ -422,6 +428,7 @@ int tMPI_Thread_once(tMPI_Thread_once_t *once_control,
     }
 #else
     /* really ugly hack - and it's slow... */
+    tMPI_Init_initers();
     EnterCriticalSection(&once_init);
     if (tMPI_Atomic_get(&(once_control->once)) == 0)
     {
@@ -496,6 +503,8 @@ static int tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *cond)
      * the memory barriers right. Trust me, you don't want a deadlock here...
      */ 
 
+    /* initialize the initializers */
+    tMPI_Init_initers();
     /* Lock the common one-time init mutex so we can check carefully */
     EnterCriticalSection( &cond_init );
 
@@ -738,6 +747,9 @@ static int tMPI_Thread_barrier_init_once(tMPI_Thread_barrier_t *barrier, int n)
      * the memory barriers right. Trust me, you don't want a deadlock here...
      */ 
 
+
+    /* initialize the initializers */
+    tMPI_Init_initers();
 
     /* Lock the common one-time init mutex so we can check carefully */
     EnterCriticalSection( &barrier_init );
