@@ -1,13 +1,18 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef GMX
+#ifdef NOGMX
 #define GMX_PARALLEL_ENV_INITIALIZED 1
 #else 
+#include "main.h"
 #define GMX_PARALLEL_ENV_INITIALIZED gmx_parallel_env_initialized()
 #endif
 
@@ -28,7 +33,7 @@
 #define __DBL_EPSILON__ DBL_EPSILON
 #endif
 
-#ifndef GMX
+#ifdef NOGMX
 FILE* debug=0;
 #else
 #include "gmx_fatal.h"
@@ -330,7 +335,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
     plan = (fft5d_plan)calloc(1,sizeof(struct fft5d_plan_t));
 
     FFTW_LOCK
-    if ((!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1))) {  /*don't do 3d plan in parallel or if in_place requested */  
+    if (0 && (!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1))) {  /*don't do 3d plan in parallel or if in_place requested */  
                            /*TODO: only do 3d-plan for FFT-lib supporting transpose in/output*/
             fftw_iodim dims[3];
             int inNG=NG,outMG=MG,outKG=KG;
@@ -415,6 +420,13 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
                 output=lin;
                 fftwflags&=~FFTW_DESTROY_INPUT;
             }
+
+            if ((flags&FFT5D_REALCOMPLEX) && ((!(flags&FFT5D_BACKWARD) && s==0) || ((flags&FFT5D_BACKWARD) && s==2))) {
+                gmx_fft_init_many_1d_real( &plan->p1d[s], rC[s], pM[s]*pK[s], (flags&FFT5D_NOMEASURE)?GMX_FFT_FLAG_CONSERVATIVE:0 );
+            } else {
+                gmx_fft_init_many_1d     ( &plan->p1d[s],  C[s], pM[s]*pK[s], (flags&FFT5D_NOMEASURE)?GMX_FFT_FLAG_CONSERVATIVE:0 );
+            }
+/*
             if ((flags&FFT5D_REALCOMPLEX) && !(flags&FFT5D_BACKWARD) && s==0) {
                 plan->p1d[s] = FFTW(plan_many_dft_r2c)(1, &rC[s], pM[s]*pK[s],   
                                                        (fft5d_rtype*)lin, &rC[s], 1,   C[s]*2, 
@@ -428,6 +440,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
                                                    (FFTW(complex)*)lin, &C[s], 1,   C[s], 
                                                    (FFTW(complex)*)output, &C[s], 1,   C[s], (flags&FFT5D_BACKWARD)?1:-1, fftwflags);
             }
+*/
         }
     }
     if ((flags&FFT5D_ORDER_YZ)) { /*plan->cart is in the order of transposes */
@@ -675,7 +688,7 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
     fft5d_type *lin = plan->lin;
     fft5d_type *lout = plan->lout;
 
-    FFTW(plan) *p1d=plan->p1d;
+    gmx_fft_t *p1d=plan->p1d;
 #ifdef FFT5D_MPI_TRANSPOSE
     FFTW(plan) *mpip=plan->mpip;
 #endif
@@ -700,7 +713,13 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
     if (plan->flags&FFT5D_DEBUG) print_localdata(lin, "%d %d: copy in lin\n", s, plan);
     for (s=0;s<2;s++) {
         time=MPI_Wtime();
-        FFTW(execute)(p1d[s]); /*in:lin out:lout*/
+        
+        if ((plan->flags&FFT5D_REALCOMPLEX) && !(plan->flags&FFT5D_BACKWARD) && s==0) {
+            gmx_fft_1d_real(p1d[s],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_COMPLEX_TO_REAL:GMX_FFT_REAL_TO_COMPLEX,lin,lout);
+        } else {
+            gmx_fft_1d(     p1d[s],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_BACKWARD:GMX_FFT_FORWARD,               lin,lout);
+        }
+        /*FFTW(execute)(p1d[s]);*/ /*in:lin out:lout*/
         time_fft+=MPI_Wtime()-time;
     
         if (plan->flags&FFT5D_DEBUG) print_localdata(lout, "%d %d: FFT %d\n", s, plan);
@@ -748,7 +767,13 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
     }    
     
     time=MPI_Wtime();
-    FFTW(execute)(p1d[2]);
+    if ((plan->flags&FFT5D_REALCOMPLEX) && (plan->flags&FFT5D_BACKWARD)) {
+        gmx_fft_1d_real(p1d[s],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_COMPLEX_TO_REAL:GMX_FFT_REAL_TO_COMPLEX,lin,lout);
+    } else {
+        gmx_fft_1d(     p1d[s],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_BACKWARD:GMX_FFT_FORWARD,               lin,lout);
+    }
+
+    /*FFTW(execute)(p1d[2]);*/
     time_fft+=MPI_Wtime()-time;
     if (plan->flags&FFT5D_DEBUG) print_localdata(lout, "%d %d: FFT %d\n", s, plan);
     /*if (debug) print_localdata(lout, "%d %d: FFT in y\n", N1, M, K0, YZX, coor);*/
@@ -765,7 +790,8 @@ void fft5d_destroy(fft5d_plan plan) {
     int s;
     FFTW_LOCK;
     for (s=0;s<3;s++)
-        FFTW(destroy_plan)(plan->p1d[s]);
+        /*FFTW(destroy_plan)(plan->p1d[s]);*/
+        gmx_fft_destroy(plan->p1d[s]);
     
 #ifdef FFT5D_MPI_TRANSPOSE
     for (s=0;s<2;s++)    

@@ -7,11 +7,9 @@
 #include <config.h>
 #endif
 
-#define GMX
-
-#ifndef GMX
+#ifdef NOGMX
 /*#define GMX_MPI*/
-#define GMX_FFT_FFTW3
+/*#define GMX_FFT_FFTW3*/
 FILE* debug;
 #endif
 
@@ -24,6 +22,8 @@ double MPI_Wtime();
 #ifdef GMX_THREADS
 #include "tmpi.h"
 #endif
+
+#include "gmx_fft.h"
 
 #ifdef GMX_FFT_FFTW3
 #include <fftw3.h>
@@ -39,10 +39,9 @@ double MPI_Wtime();
 #endif
 
 
-#ifdef GMX
+#ifndef NOGMX
 #ifndef GMX_DOUBLE  /*TODO how to not how have to do this GMX specific in here? 
 can't be in gmx_parallel_3dfft.h because it has to be also be set when included from fft5d.c */
-
 #define FFT5D_SINGLE
 #endif
 #endif
@@ -79,7 +78,7 @@ typedef enum fft5d_flags_t {
 struct fft5d_plan_t {
 	fft5d_type *lin;
 	fft5d_type *lout;
-        FFTW(plan) p1d[3];   /*1D plans*/
+        gmx_fft_t p1d[3];   /*1D plans*/
         FFTW(plan) p2d;  /*2D plan: used for 1D decomposition if FFT supports transposed output*/
         FFTW(plan) p3d;  /*3D plan: used for 0D decomposition if FFT supports transposed output*/
 #ifdef FFT5D_MPI_TRANSPOSE

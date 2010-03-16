@@ -126,6 +126,25 @@ gmx_fft_init_1d        (gmx_fft_t *       fft,
                         gmx_fft_flag      flags);
 
 
+/*! \brief Setup multiple 1-dimensional complex-to-complex transform 
+ *
+ *  \param fft    Pointer to opaque Gromacs FFT datatype
+ *  \param nx     Length of transform 
+ *  \param howmany Howmany 1D FFT
+ *  \param flags  FFT options
+ *
+ *  \return status - 0 or a standard error message.
+ *   
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *        handles this datatype should only be used for one thread at a time, 
+ *        i.e. you should create one copy per thread when executing in parallel.
+ */
+int
+gmx_fft_init_many_1d        (gmx_fft_t *       fft,
+                             int               nx,
+                             int               howmany,
+                             gmx_fft_flag      flags);
+
 
 /*! \brief Setup a 1-dimensional real-to-complex transform 
  *
@@ -143,6 +162,26 @@ int
 gmx_fft_init_1d_real        (gmx_fft_t *       fft,
                              int               nx,
                              gmx_fft_flag      flags);
+
+
+/*! \brief Setup multiple 1-dimensional real-to-complex transform 
+ *
+ *  \param fft    Pointer to opaque Gromacs FFT datatype
+ *  \param nx     Length of transform in real space
+ *  \param howmany Homany 1D FFTs
+ *  \param flags  FFT options
+ *
+ *  \return status - 0 or a standard error message.
+ *   
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *        handles this datatype should only be used for one thread at a time, 
+ *        i.e. you should create one copy per thread when executing in parallel.
+ */
+int
+gmx_fft_init_many_1d_real        (gmx_fft_t *       fft,
+                                  int               nx,
+                                  int               howmany,
+                                  gmx_fft_flag      flags);
 
 
 
