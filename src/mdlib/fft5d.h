@@ -31,13 +31,14 @@ double MPI_Wtime();
 #include <fftw3-mpi.h>
 #endif
 #endif
+/* TODO: optional wrapper
 #ifdef GMX_FFT_MKL
 #include <fftw/fftw3.h>
 #ifdef FFT5D_MPI_TRANSPOSE
 #include <fftw/fftw3-mpi.h>
 #endif
 #endif
-
+*/
 
 #ifndef NOGMX
 #ifndef GMX_DOUBLE  /*TODO how to not how have to do this GMX specific in here? 
@@ -46,15 +47,14 @@ can't be in gmx_parallel_3dfft.h because it has to be also be set when included 
 #endif
 #endif
 
+typedef t_complex fft5d_type; 
 #ifdef FFT5D_SINGLE
 #define FFTW(x) fftwf_##x
-typedef FFTW(complex) fft5d_type; 
 typedef float fft5d_rtype;  
 #define FFT5D_EPS __FLT_EPSILON__
 #define FFT5D_MPI_RTYPE MPI_FLOAT 
 #else
 #define FFTW(x) fftw_##x
-typedef FFTW(complex) fft5d_type; 
 typedef double fft5d_rtype; 
 #define FFT5D_EPS __DBL_EPSILON__
 #define FFT5D_MPI_RTYPE MPI_DOUBLE 
@@ -79,10 +79,12 @@ struct fft5d_plan_t {
 	fft5d_type *lin;
 	fft5d_type *lout;
         gmx_fft_t p1d[3];   /*1D plans*/
+#ifdef GMX_FFT_FFTW3 
         FFTW(plan) p2d;  /*2D plan: used for 1D decomposition if FFT supports transposed output*/
         FFTW(plan) p3d;  /*3D plan: used for 0D decomposition if FFT supports transposed output*/
 #ifdef FFT5D_MPI_TRANSPOSE
 	FFTW(plan) mpip[2];
+#endif
 #endif
 	MPI_Comm cart[2];
 

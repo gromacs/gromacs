@@ -762,6 +762,14 @@ gmx_fft_1d               (gmx_fft_t                  fft,
     return 0;
 }
 
+int
+gmx_fft_many_1d               (gmx_fft_t                  fft,
+			       enum gmx_fft_direction     dir,
+			       void *                     in_data,
+			       void *                     out_data)
+{
+    return gmx_fft_1d(fft,dir,in_data,out_data);
+}
 
 int 
 gmx_fft_1d_real          (gmx_fft_t                  fft,
@@ -795,6 +803,14 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
     return 0;
 }
 
+int 
+gmx_fft_many_1d_real     (gmx_fft_t                  fft,
+                          enum gmx_fft_direction     dir,
+                          void *                     in_data,
+                          void *                     out_data)
+{
+    return gmx_fft_1d_real(fft,dir,in_data,out_data);
+}
 
 int 
 gmx_fft_2d               (gmx_fft_t                  fft,
@@ -948,6 +964,12 @@ gmx_fft_destroy(gmx_fft_t      fft)
         FFTW_UNLOCK;
     }
 
+}
+
+void
+gmx_many_fft_destroy(gmx_fft_t    fft)
+{
+    gmx_fft_destroy(fft);
 }
 
 #else

@@ -294,8 +294,33 @@ gmx_fft_init_3d_real   (gmx_fft_t *         fft,
  * \note Data pointers are declared as void, to avoid casting pointers 
  *       depending on your grid type.
  */
-int 
+ int 
 gmx_fft_1d               (gmx_fft_t                  setup,
+                          enum gmx_fft_direction     dir,
+                          void *                     in_data,
+                          void *                     out_data);
+
+
+/*! \brief Perform many 1-dimensional complex-to-complex transforms
+ *
+ *  Performs many instances of a transform previously initiated.
+ *
+ *  \param setup     Setup returned from gmx_fft_init_1d()
+ *  \param dir       Forward or Backward
+ *  \param in_data   Input grid data. This should be allocated with gmx_new()
+ *                   to make it 16-byte aligned for better performance.
+ *  \param out_data  Output grid data. This should be allocated with gmx_new()
+ *                   to make it 16-byte aligned for better performance.
+ *                   You can provide the same pointer for in_data and out_data
+ *                   to perform an in-place transform.
+ *
+ * \return 0 on success, or an error code.
+ *
+ * \note Data pointers are declared as void, to avoid casting pointers 
+ *       depending on your grid type.
+ */
+ int 
+gmx_fft_many_1d          (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
                           void *                     out_data);
@@ -325,6 +350,34 @@ gmx_fft_1d               (gmx_fft_t                  setup,
  */
 int 
 gmx_fft_1d_real          (gmx_fft_t                  setup,
+                          enum gmx_fft_direction     dir,
+                          void *                     in_data,
+                          void *                     out_data);
+
+/*! \brief Perform many 1-dimensional real-to-complex transforms
+ *
+ *  Performs many instances of a transform previously initiated.
+ *
+ *  \param setup     Setup returned from gmx_fft_init_1d_real()
+ *  \param dir       Real-to-complex or complex-to-real
+ *  \param in_data   Input grid data. This should be allocated with gmx_new()
+ *                   to make it 16-byte aligned for better performance.
+ *  \param out_data  Output grid data. This should be allocated with gmx_new()
+ *                   to make it 16-byte aligned for better performance.
+ *                   You can provide the same pointer for in_data and out_data
+ *                   to perform an in-place transform.
+ *
+ * If you are doing an in-place transform, the array must be padded up to
+ * an even integer length so n/2 complex numbers can fit. Out-of-place arrays
+ * should not be padded (although it doesn't matter in 1d).
+ *
+ * \return 0 on success, or an error code.
+ *
+ * \note Data pointers are declared as void, to avoid casting pointers 
+ *       depending on transform direction.
+ */
+int 
+gmx_fft_many_1d_real     (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
                           void *                     out_data);
@@ -462,6 +515,17 @@ gmx_fft_3d_real          (gmx_fft_t                  setup,
  */
 void
 gmx_fft_destroy          (gmx_fft_t                 setup);
+
+/*! \brief Release a many FFT setup structure 
+ *
+ *  Destroy setup and release all allocated memory.
+ *
+ *  \param setup Setup returned from gmx_fft_init_1d(), or one
+ *		 of the other initializers.
+ *
+ */
+void
+gmx_many_fft_destroy          (gmx_fft_t                 setup);
 
 
 /*! \brief Transpose 2d complex matrix, in-place or out-of-place.
