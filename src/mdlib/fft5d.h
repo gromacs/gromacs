@@ -16,7 +16,10 @@ FILE* debug;
 #ifdef GMX_MPI
 #include <mpi.h>
 #else
+#ifndef HAVE_MPICOMM
 typedef void* MPI_Comm;
+#define HAVE_MPICOMM
+#endif
 double MPI_Wtime();
 #endif
 #ifdef GMX_THREADS

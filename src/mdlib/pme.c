@@ -167,10 +167,10 @@ typedef struct gmx_pme {
     int  nnodes;             /* The number of nodes doing PME */
     int  nnodes_major;
     int  nnodes_minor;
-#ifdef GMX_MPI
+
     MPI_Comm mpi_comm;
     MPI_Comm mpi_comm_d[2];  /* Indexed on dimension, 0=x, 1=y */
-
+#ifdef GMX_MPI
     MPI_Datatype  rvec_mpi;  /* the pme vector's MPI type */
 #endif
 
@@ -668,6 +668,7 @@ static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
     }
 }
 
+#ifdef GMX_MPI
 static void 
 gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
 {
@@ -835,7 +836,7 @@ gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
         }
     }
 }
-
+#endif
 
 
 static int
@@ -2660,11 +2661,13 @@ int gmx_pme_do(gmx_pme_t pme,
             wrap_periodic_pmegrid(pme,grid);
 
             /* sum contributions to local grid from other nodes */
+#ifdef GMX_MPI
             if (pme->nnodes > 1) {
                 GMX_BARRIER(cr->mpi_comm_mygroup);
                 gmx_sum_qgrid_dd(pme,grid,GMX_SUM_QGRID_FORWARD);
                 where();
             }
+#endif
             where();
 
             copy_pmegrid_to_fftgrid(pme,grid,fftgrid);
@@ -2732,10 +2735,12 @@ int gmx_pme_do(gmx_pme_t pme,
             copy_fftgrid_to_pmegrid(pme,fftgrid,grid);
 
             /* distribute local grid to all nodes */
+#ifdef GMX_MPI
             if (pme->nnodes > 1) {
                 GMX_BARRIER(cr->mpi_comm_mygroup);
                 gmx_sum_qgrid_dd(pme,grid,GMX_SUM_QGRID_BACKWARD);
             }
+#endif
             where();
 
             unwrap_periodic_pmegrid(pme,grid);

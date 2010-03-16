@@ -23,15 +23,18 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_MPI
 
 #include "types/simple.h"
 #include "gmxcomplex.h"
 #include "gmx_fft.h"
 
-/* We NEED MPI here. */
+/* We NEED MPI Comm here. But if no MPI is used then void pointer for MPI_Comm is enough*/
+/* This saves on many ifdefs */
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
+#else 
+typedef void* MPI_Comm;
+#define HAVE_MPICOMM
 #endif
 #ifdef GMX_THREADS
 #include "tmpi.h"
@@ -121,7 +124,6 @@ gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
 
 
 
-#endif /* GMX_MPI */
 
 #endif /* _gmx_parallel_3dfft_h_ */
 
