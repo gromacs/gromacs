@@ -21,7 +21,7 @@ if which git >/dev/null && test -d $GITDIR ; then
     #version=$PKGVERSION-$date-$shorthash$dirtystr
     # Find the name of the remote which has the git.gromacs.org:gromacs in its url.
     # If not found, just set baserev to "unknown".
-    gmxremote=`git --git-dir=$GITDIR config --get-regexp 'remote\..*\.url' 'git\.gromacs\.org:gromacs' | sed -e 's/remote\.\(.*\)\.url.*/\1/'`
+    gmxremote=`git --git-dir=$GITDIR config --get-regexp 'remote\..*\.url' 'git\.gromacs\.org[:|/]gromacs' | sed -e 's/remote\.\(.*\)\.url.*/\1/'`
     if test "x$gmxremote" = "x" ; then
         baserev="unknown"
     else
