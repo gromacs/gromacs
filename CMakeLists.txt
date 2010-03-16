@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 2.6.2)
 
 project(Gromacs)
-set(PROJECT_VERSION "4.0.99-dev-20100305"
+set(PROJECT_VERSION "4.0.99-dev-20100315"
     CACHE STRING "Gromacs version string")
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+# Generate development version info for cache
+# set(GEN_VERSION_INFO_INTERNAL "ON")
+# include(gmxGenerateVersionString)
 
 ########################################################################
 # User input options                                                   #
@@ -35,6 +39,7 @@ enable_language(C)
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
+option(USE_VERSION_H "Generate development version string/information" ON)
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
