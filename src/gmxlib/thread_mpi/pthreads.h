@@ -44,17 +44,12 @@ struct tMPI_Thread
 
 struct tMPI_Thread_key
 {
-    pthread_key_t key;
+    pthread_key_t pkey;
 };
 
 struct tMPI_Mutex
 {
     pthread_mutex_t mtx;
-};
-
-struct tMPI_Thread_once
-{
-    pthread_once_t once;
 };
 
 struct tMPI_Thread_cond
@@ -64,6 +59,7 @@ struct tMPI_Thread_cond
 
 struct tMPI_Thread_barrier
 {
+    tMPI_Atomic_t initialized;
     pthread_mutex_t   mutex;     /*!< Lock for the barrier contents          */
     pthread_cond_t    cv;        /*!< Condition to signal barrier completion */
     int               threshold; /*!< Total number of members in barrier     */

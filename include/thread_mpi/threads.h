@@ -102,6 +102,7 @@ typedef struct tMPI_Thread* tMPI_Thread_t;
  */
 typedef struct 
 {
+    tMPI_Atomic_t initialized;
     struct tMPI_Mutex* mutex;
 }  tMPI_Thread_mutex_t;
 /*! \brief Static initializer for tMPI_Thread_mutex_t
@@ -110,7 +111,7 @@ typedef struct
  *  on how to use this. Note that any variables initialized with this value
  *  MUST have static storage allocation.
  */
-#define TMPI_THREAD_MUTEX_INITIALIZER { NULL }
+#define TMPI_THREAD_MUTEX_INITIALIZER { {0} , NULL }
 
 
 
@@ -121,7 +122,11 @@ typedef struct
  *  The contents of this structure depends on the actual threads 
  *  implementation used.
  */
-typedef struct tMPI_Thread_key* tMPI_Thread_key_t;
+typedef struct 
+{
+    tMPI_Atomic_t initialized;
+    struct tMPI_Thread_key *key;
+} tMPI_Thread_key_t;
 
 
 
@@ -172,6 +177,7 @@ typedef struct
  */
 typedef struct 
 {
+    tMPI_Atomic_t initialized;
     struct tMPI_Thread_cond* condp;
 } tMPI_Thread_cond_t;
 /*! \brief Static initializer for tMPI_Thread_cond_t
@@ -180,7 +186,7 @@ typedef struct
   *  on how to use this. Note that any variables initialized with this value
   *  MUST have static storage allocation.
   */
-#define TMPI_THREAD_COND_INITIALIZER {NULL}
+#define TMPI_THREAD_COND_INITIALIZER { {0}, NULL}
 
 
 
@@ -194,6 +200,7 @@ typedef struct
  */
 typedef struct 
 {
+    tMPI_Atomic_t initialized;
     struct tMPI_Thread_barrier* barrierp;
     volatile int threshold; /*!< Total number of members in barrier     */
     volatile int count;     /*!< Remaining count before completion      */

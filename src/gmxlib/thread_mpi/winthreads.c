@@ -86,23 +86,32 @@ static CRITICAL_SECTION barrier_init; /* mutex for initializing barriers */
 static tMPI_Spinlock_t init_init=TMPI_SPINLOCK_INITIALIZER;
 
 /* whether tMPI_Thread_create has initialized these mutexes */
-static volatile int init_inited=0;
+tMPI_Atomic_t init_inited={ 0 };
 
 
 
 static void tMPI_Init_initers(void)
 {
-    /* this can be a spinlock because the chances of collision are low. */
-    tMPI_Spinlock_lock( &init_init );
-    if (!init_inited)
+    /* we can pre-check because it's atomic */
+    if (tMPI_Atomic_get(&init_inited) == 0)
     {
-        init_inited=1;
-        InitializeCriticalSection(&mutex_init);
-        InitializeCriticalSection(&once_init);
-        InitializeCriticalSection(&cond_init);
-        InitializeCriticalSection(&barrier_init);
+        /* this can be a spinlock because the chances of collision are low. */
+        tMPI_Spinlock_lock( &init_init );
+
+        tMPI_Atomic_memory_barrier();
+        if (tMPI_Atomic_get(&init_inited) == 0)
+        {
+            InitializeCriticalSection(&mutex_init);
+            InitializeCriticalSection(&once_init);
+            InitializeCriticalSection(&cond_init);
+            InitializeCriticalSection(&barrier_init);
+
+            tMPI_Atomic_set(&init_inited, 1);
+            tMPI_Atomic_memory_barrier();
+        }
+
+        tMPI_Spinlock_unlock( &init_init );
     }
-    tMPI_Spinlock_unlock( &init_init );
 }
 
 
@@ -299,8 +308,8 @@ static int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
 
 int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx)
 {
-    /* Ccheck whether this mutex is initialized */
-    if(mtx->mutex == NULL)
+    /* check whether the mutex is initialized */
+    if (tMPI_Atomic_get( &(mtx->initialized)  ) == 0)
     {
         tMPI_Thread_mutex_init_once(mtx);
     }
@@ -318,8 +327,8 @@ int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx)
 {
     BOOL ret;
 
-    /* Ccheck whether this mutex is initialized */
-    if(mtx->mutex == NULL)
+    /* check whether the mutex is initialized */
+    if (tMPI_Atomic_get( &(mtx->initialized)  ) == 0)
     {
         tMPI_Thread_mutex_init_once(mtx);
     }
@@ -352,10 +361,12 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *))
 
 
     /* TODO: make list of destructors for thread-local storage */
-    *key=(struct tMPI_Thread_key*)tMPI_Malloc(sizeof(struct tMPI_Thread_key)*1);
-    (*key)->key=TlsAlloc();
+    key->key=(struct tMPI_Thread_key*)tMPI_Malloc(sizeof(struct 
+                                                         tMPI_Thread_key)*1);
+ 
+    (key)->key->wkey=TlsAlloc();
 
-    if ( (*key)->key == TLS_OUT_OF_INDEXES ) 
+    if ( (key)->key->wkey == TLS_OUT_OF_INDEXES ) 
     {
         tMPI_Fatal_error(TMPI_FARGS,
                          "Failed to create thread key, error code=%d.",
@@ -369,8 +380,8 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *))
 
 int tMPI_Thread_key_delete(tMPI_Thread_key_t key)
 {
-    TlsFree(key->key);
-    free(key);
+    TlsFree(key.key->wkey);
+    free(key.key);
 
     return 0;
 }
@@ -381,7 +392,7 @@ void * tMPI_Thread_getspecific(tMPI_Thread_key_t key)
 {
     void *p = NULL;
 
-    p=TlsGetValue(key->key);
+    p=TlsGetValue(key.key->wkey);
 
     return p;
 }
@@ -391,7 +402,7 @@ int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value)
 {
     BOOL ret;
 
-    ret = TlsSetValue(key->key, value);
+    ret = TlsSetValue(key.key->wkey, value);
 
     return ret==0;
 }
@@ -529,15 +540,13 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
     BOOL last_waiter=FALSE;
     int my_cycle;
 
-    /* Ccheck whether this condition variable is initialized */
-    if(cond->condp == NULL)
+    /* check whether the condition is initialized */
+    if (tMPI_Atomic_get( &(cond->initialized)  ) == 0)
     {
         tMPI_Thread_cond_init_once(cond);
     }
-    if(mtx->mutex == NULL)
-    {
-        tMPI_Thread_mutex_init_once(mtx);
-    }
+    /* the mutex must have been initialized because it should be locked here */
+
 #if 0
     /* use this code once Vista is the minimum version required */
     ret=SleepConditionVariableCS (&(cond->cv), &(mtx->cs), INFINITE);
@@ -609,8 +618,8 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
 
 int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond)
 {
-    /* Ccheck whether this condition variable is initialized */
-    if(cond->condp == NULL)
+    /* check whether the condition is initialized */
+    if (tMPI_Atomic_get( &(cond->initialized)  ) == 0)
     {
         tMPI_Thread_cond_init_once(cond);
     }
@@ -643,8 +652,8 @@ int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond)
 
 int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *cond)
 {
-    /* Ccheck whether this condition variable is initialized */
-    if(cond->condp == NULL)
+    /* check whether the condition is initialized */
+    if (tMPI_Atomic_get( &(cond->initialized)  ) == 0)
     {
         tMPI_Thread_cond_init_once(cond);
     }
@@ -775,7 +784,8 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier)
     int     ret=0;
     /*tMPI_Thread_pthread_barrier_t *p;*/
 
-    if(barrier->barrierp == NULL)
+    /* check whether the barrier is initialized */
+    if (tMPI_Atomic_get( &(barrier->initialized)  ) == 0)
     {
         tMPI_Thread_barrier_init_once(barrier,barrier->threshold);        
     }

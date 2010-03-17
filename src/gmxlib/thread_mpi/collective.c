@@ -92,7 +92,8 @@ static void tMPI_Coll_root_xfer(tMPI_Comm comm,
 static void tMPI_Wait_for_others(struct coll_env *cev, int myrank);
 /* wait for data to become available from a specific rank */
 static void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
-                               int rank, int myrank, int synct);
+                               int myrank);
+                               /*int rank, int myrank, int synct);*/
 
 /* run a single binary reduce operation on src_a and src_b, producing dest. 
       dest and src_a may be identical */
@@ -401,9 +402,9 @@ static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
     }
     /* signal one thread ready */
    {
-        int ret;
-        ret=tMPI_Atomic_add_return( &(cev->met[rank].n_remaining), -1);
-        if (ret <= 0)
+        int reta;
+        reta=tMPI_Atomic_add_return( &(cev->met[rank].n_remaining), -1);
+        if (reta <= 0)
         {
             tMPI_Event_signal( &(cev->met[rank].send_ev) );
         }
@@ -512,10 +513,8 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
     if (! (cev->met[myrank].using_cb) )
 #endif
     {
-        int N;
-
         /* wait until everybody else is done copying the buffer */
-        N=tMPI_Event_wait( &(cev->met[myrank].send_ev));
+        tMPI_Event_wait( &(cev->met[myrank].send_ev));
         tMPI_Event_process( &(cev->met[myrank].send_ev), 1);
     }
 #ifdef USE_COLLECTIVE_COPY_BUFFER
@@ -547,7 +546,8 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
 }
 
 static void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
-                               int rank, int myrank, int synct)
+                               int myrank)
+                               /*int rank, int myrank, int synct)*/
 {
 #if defined(TMPI_PROFILE) 
     tMPI_Profile_wait_start(cur);
