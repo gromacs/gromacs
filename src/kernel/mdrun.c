@@ -451,12 +451,6 @@ int main(int argc,char *argv[])
       "Print all forces larger than this (kJ/mol nm)" },
     { "-reprod",  FALSE, etBOOL,{&bReproducible},  
       "Try to avoid optimizations that affect binary reproducibility" },
-    { "-cpt",     FALSE, etREAL, {&cpt_period},
-      "Checkpoint interval (minutes)" },
-    { "-append",  FALSE, etBOOL, {&bAppendFiles},
-      "Append to previous output files when continuing from checkpoint" },
-    { "-addpart",  FALSE, etBOOL, {&bAddPart},
-      "Add the simulation part number to all output files when continuing from checkpoint" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
@@ -481,6 +475,12 @@ int main(int argc,char *argv[])
       "Be loud and noisy" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
       "Terminate after 0.99 times this time (hours)" },
+    { "-cpt",     FALSE, etREAL, {&cpt_period},
+      "Checkpoint interval (minutes)" },
+    { "-append",  FALSE, etBOOL, {&bAppendFiles},
+      "Append to previous output files when continuing from checkpoint" },
+    { "-addpart",  FALSE, etBOOL, {&bAddPart},
+      "Add the simulation part number to all output files when continuing from checkpoint" },
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;

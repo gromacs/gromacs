@@ -150,15 +150,6 @@ static void init_global_signals(globsig_t *gs,const t_commrec *cr,
 {
     int i;
 
-    if (MULTISIM(cr))
-    {
-        gs->nstms = multisim_nstsimsync(cr,ir,repl_ex_nst);
-        if (debug)
-        {
-            fprintf(debug,"Syncing simulations for checkpointing and termination every %d steps\n",gs->nstms);
-        }
-    }
-    else
     {
         gs->nstms = 1;
     }
@@ -170,36 +161,6 @@ static void init_global_signals(globsig_t *gs,const t_commrec *cr,
     }
 }
 
-
-#if 0
-static void reset_all_counters(FILE *fplog,t_commrec *cr,
-                               gmx_large_int_t step,
-                               gmx_large_int_t *step_rel,t_inputrec *ir,
-                               gmx_wallcycle_t wcycle,t_nrnb *nrnb,
-                               gmx_runtime_t *runtime)
-{
-    char buf[STRLEN],sbuf[STEPSTRSIZE];
-
-    /* Reset all the counters related to performance over the run */
-    sprintf(buf,"Step %s: resetting all time and cycle counters\n",
-            gmx_step_str(step,sbuf));
-    md_print_warning(cr,fplog,buf);
-
-    wallcycle_stop(wcycle,ewcRUN);
-    wallcycle_reset_all(wcycle);
-    if (DOMAINDECOMP(cr))
-    {
-        reset_dd_statistics_counters(cr->dd);
-    }
-    init_nrnb(nrnb);
-    ir->init_step += *step_rel;
-    ir->nsteps    -= *step_rel;
-    *step_rel = 0;
-    wallcycle_start(wcycle,ewcRUN);
-    runtime_start(runtime);
-    print_date_and_time(fplog,cr->nodeid,"Restarted time",runtime);
-}
-#endif
 
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,
@@ -219,17 +180,14 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              gmx_runtime_t *runtime)
 {
     gmx_mdoutf_t *outf;
-    int        fp_trn=0,fp_xtc=0;
     gmx_large_int_t step,step_rel;
-    const char *fn_cpt;
-    FILE       *fp_dhdl=NULL,*fp_field=NULL;
     double     run_time;
     double     t,t0,lam0;
     bool       bSimAnn,
                bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
     bool       bInitStep=TRUE;
     bool       bNEMD,do_ene,do_log, do_verbose,
-               bX,bV,bF,bXTC,bCPT=FALSE;
+               bX,bV,bF,bXTC,bCPT;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m;
     int        mdof_flags;
@@ -445,6 +403,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bFirstStep = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
     bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
+    bInitStep = bFirstStep && bStateFromTPX;
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
     bLastStep = FALSE;
 
@@ -526,7 +485,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if( bF || do_ene ){                                                                                                                                                                   
            openmm_copy_state(openmmData, state, &t, f, enerd, 0, 0, bF, do_ene);                                                                                                              
       }                                                                                                                                                                                     
-      upd_mdebin(mdebin,fp_dhdl,FALSE,
+     upd_mdebin(mdebin, NULL,TRUE,
 		 t,mdatoms->tmass,enerd,state,lastbox,
 		 shake_vir,force_vir,total_vir,pres,
 		 ekind,mu_tot,constr);
