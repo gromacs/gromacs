@@ -103,6 +103,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
     int           n0,n1C,n1V,nnn;
     real          Y,F,G,H,Fp,Geps,Heps2,epsC,eps2C,epsV,eps2V,VV,FF;
     double        isp=0.564189583547756;
+    real          dvdl_part;
 
     /* fix compiler warnings */
     nj1   = 0;
@@ -202,15 +203,10 @@ gmx_nb_free_energy_kernel(int                  icoul,
             j=0;
             for (i=0;i<NSTATES;i++) 
             {
-                if (i==STATE_A) {
-                    j=STATE_B;
-                } else if (i==STATE_B) {
-                    j=STATE_A;
-                }
-                alf_coul[i]  = alpha_coul_eff*(lam_power==2 ? LFC[j]*LFC[j] : LFC[j]);
-                dalf_coul[i] = alpha_coul_eff*lam_power/6.0*(lam_power==2 ? DLF[j]*LFC[j] : DLF[j]); 
-                alf_vdw[i]   = alpha_vdw_eff *(lam_power==2 ? LFV[j]*LFV[j] : LFV[j]);
-                dalf_vdw[i]  = alpha_vdw_eff *lam_power/6.0*(lam_power==2 ? DLF[j]*LFV[j] : DLF[j]); 
+                alf_coul[i]  = alpha_coul_eff*(lam_power==2 ? (1-LFC[i])*(1-LFC[i]) : (1-LFC[i]));
+                dalf_coul[i] = DLF[i]*alpha_coul_eff*lam_power/6.0*(lam_power==2 ? (1-LFC[i]) : 1); 
+                alf_vdw[i]   = alpha_vdw_eff *(lam_power==2 ? (1-LFV[i])*(1-LFV[i]) : (1-LFV[i]));
+                dalf_vdw[i]  = DLF[i]*alpha_vdw_eff*lam_power/6.0*(lam_power==2 ? (1-LFV[i]) : 1); 
                 
                 FscalC[i]    = 0;
                 FscalV[i]    = 0;
@@ -337,15 +333,9 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 }
             }
 
-            j=0;
             /* Assemble A and B states */
             for (i=0;i<NSTATES;i++) 
             {
-                if (i==STATE_A) {
-                    j=STATE_B;
-                } else if (i==STATE_B) {
-                    j=STATE_A;
-                }
                 vctot         += LFC[i]*Vcoul[i];
                 vvtot         += LFV[i]*Vvdw[i];
                 
@@ -353,10 +343,15 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 Fscal         += (LFV[i]*FscalV[i]*rinv4V[i])*r4;
                 
                 dvdl_coul     += Vcoul[i]*DLF[i];
-                dvdl_coul     += DLF[j]*LFC[i]*dalf_coul[i]*FscalC[i]*sigma6[i]*rinv4C[i];
+                dvdl_coul     += LFC[i]*dalf_coul[i]*FscalC[i]*sigma6[i]*rinv4C[i];
                 
                 dvdl_vdw      += Vvdw[i]*DLF[i];
-                dvdl_vdw      += DLF[j]*LFV[i]*dalf_vdw[i]*FscalV[i]*sigma6[i]*rinv4V[i];
+                dvdl_vdw      += LFV[i]*dalf_vdw[i]*FscalV[i]*sigma6[i]*rinv4V[i];
+
+                //dvdl_vdw     += dvdl_part;
+                //if (i==1) {
+                //    fprintf(stdout,"%5i %5i %10.5g\n",n,k,dvdl_part);
+                //}
             }
             if (bDoForces)
             {
