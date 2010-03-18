@@ -153,6 +153,8 @@ extern "C"
 #error No atomic operations implemented for this cpu/compiler combination. 
 #endif
 
+#define TMPI_NO_ATOMICS
+
 
 /** Memory barrier operation
 

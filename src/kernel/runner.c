@@ -71,6 +71,8 @@
 #include "mtop_util.h"
 #include "sighandler.h"
 
+#include "md_openmm.h"
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -82,6 +84,9 @@
 #include "corewrap.h"
 #endif
 
+#ifdef GMX_OPENMM
+#include "md_openmm.h"
+#endif
 
 
 typedef struct { 
@@ -89,7 +94,11 @@ typedef struct {
 } gmx_intp_t;
 
 /* The array should match the eI array in include/types/enums.h */
+#ifdef GMX_OPENMM  /* FIXME do_md_openmm needs fixing */
+const gmx_intp_t integrator[eiNR] = { {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm},{do_md_openmm}};
+#else
 const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md},{do_md}};
+#endif
 
 gmx_large_int_t     deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
@@ -126,6 +135,7 @@ struct mdrunner_arglist
     real pforce;
     real cpt_period;
     real max_hours;
+    const char *deviceOptions;
     unsigned long Flags;
     int ret; /* return value */
 };
@@ -155,7 +165,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
                       mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, mc.nmultisim,
                       mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
-                      mc.cpt_period, mc.max_hours, mc.Flags);
+                      mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
 }
 
 #endif
@@ -169,7 +179,7 @@ int mdrunner_threads(int nthreads,
                      const char *ddcsx,const char *ddcsy,const char *ddcsz,
                      int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
                      int repl_ex_seed, real pforce,real cpt_period,
-                     real max_hours, unsigned long Flags)
+                     real max_hours, const char *deviceOptions, unsigned long Flags)
 {
     int ret;
     /* first check whether we even need to start tMPI */
@@ -179,7 +189,7 @@ int mdrunner_threads(int nthreads,
                      nstglobalcomm,
                      ddxyz, dd_node_order, rdd, rconstr, dddlb_opt, dlb_scale,
                      ddcsx, ddcsy, ddcsz, nstepout, resetstep, nmultisim, repl_ex_nst, 
-                     repl_ex_seed, pforce, cpt_period, max_hours, Flags);
+                     repl_ex_seed, pforce, cpt_period, max_hours, deviceOptions, Flags);
     }
     else
     {
@@ -213,6 +223,7 @@ int mdrunner_threads(int nthreads,
         mda.pforce=pforce;
         mda.cpt_period=cpt_period;
         mda.max_hours=max_hours;
+        mda.deviceOptions=deviceOptions;
         mda.Flags=Flags;
 
         fprintf(stderr, "Starting %d threads\n",nthreads);
@@ -236,6 +247,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
              int nstepout,int resetstep,int nmultisim,int repl_ex_nst,int repl_ex_seed,
              real pforce,real cpt_period,real max_hours,
+             const char *deviceOptions,
              unsigned long Flags)
 {
     double     nodetime=0,realtime;
@@ -659,6 +671,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                       mdatoms,nrnb,wcycle,ed,fr,
                                       repl_ex_nst,repl_ex_seed,
                                       cpt_period,max_hours,
+                                      deviceOptions,
                                       Flags,
                                       &runtime);
 

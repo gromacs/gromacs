@@ -123,7 +123,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
     facel            = *p_facel; 
-	scl_gb           = 1.0 - (1.0/gbdata->gb_epsilon_solvent);
+	scl_gb           = (1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent);
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    

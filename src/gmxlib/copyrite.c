@@ -109,7 +109,12 @@ bool be_cool(void)
    * but we dont call this routine often, and it avoids using 
    * a mutex for locking the variable...
    */
+#ifdef GMX_FAHCORE
+  /*be uncool*/
+  return FALSE;
+#else
   return (getenv("GMX_NO_QUOTES") == NULL);
+#endif
 }
 
 void space(FILE *out, int n)
@@ -224,7 +229,12 @@ void CopyRight(FILE *out,const char *szProgram)
   char buf[256],tmpstr[1024];
   int i;
 
+#ifdef GMX_FAHCORE
+  set_program_name("Gromacs");
+#else
   set_program_name(szProgram);
+#endif
+
 #ifdef CGUNITS
   ster_print(out,"CG AdResS G  R  O  M  A  C  S");
 #else
@@ -541,9 +551,16 @@ const char *GromacsVersion()
 
 void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "%s\n", _gmx_ver_string);
+    fprintf(fp, "Version:        %s\n", _gmx_ver_string);
 #ifdef USE_VERSION_H
-    fprintf(fp, "GIT SHA1 hash: %s\n", _gmx_full_git_hash);
-    fprintf(fp, "Branched from: %s\n", _gmx_central_base_hash);
+    fprintf(fp, "GIT SHA1 hash:  %s\n", _gmx_full_git_hash);
+    /* Only print out the branch information if present.
+     * The generating script checks whether the branch point actually
+     * coincides with the hash reported above, and produces an empty string
+     * in such cases. */
+    if (_gmx_central_base_hash[0] != 0)
+    {
+        fprintf(fp, "Branched from:  %s\n", _gmx_central_base_hash);
+    }
 #endif
 }

@@ -38,6 +38,10 @@ files.
 
 /* the profiling functions */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -142,10 +146,12 @@ void tMPI_Profile_init(struct tmpi_profile *prof)
     prof->total_coll_xfers=0;
 }
 
+
+#if 0
 void tMPI_Profile_destroy(struct tmpi_profile *prof)
 {
 }
-
+#endif
 
 
 
@@ -189,9 +195,9 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
             long unsigned int count=threads[j].profile.mpifn_calls[i];
 
             total += count;
-            printf(" %10ld", count);
+            printf(" %10ld", (long)count);
         }
-        printf(" %10ld\n", total);
+        printf(" %10ld\n", (long)total);
     }
 
     printf("\nFraction of buffered transfers:\n");
@@ -316,7 +322,11 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
     printf("\n");
 
     /* here we make use of the fact that this is how we calculate tMPI_Wtime */
-    printf("\nTotal run time: %g +/- %g s.\n", tMPI_Wtime(), tMPI_Wtick());
+    {
+        double wt=tMPI_Wtime();
+        double wtck=tMPI_Wtick();
+        printf("\nTotal run time: %g +/- %g s.\n", wt, wtck);
+    }
 
     printf("\n");
 

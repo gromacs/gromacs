@@ -386,6 +386,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     warning(wi,warn_buf);
   }
 
+  if (ir->epsilon_r!=1 && ir->implicit_solvent==eisGBSA) {
+    sprintf(warn_buf,"epsilon_r = %g with GB implicit solvent, will use this value for inner dielectric",ir->epsilon_r);
+    warning_note(wi,warn_buf);
+  }
+
   if (EEL_RF(ir->coulombtype) && ir->epsilon_rf==1 && ir->epsilon_r!=1) {
     sprintf(warn_buf,"epsilon_r = %g and epsilon_rf = 1 with reaction field, assuming old format and exchanging epsilon_r and epsilon_rf",ir->epsilon_r);
     warning(wi,warn_buf);

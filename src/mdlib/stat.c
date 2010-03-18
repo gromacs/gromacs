@@ -478,7 +478,8 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
             }
         }
         
-        if (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n)
+        if (opt2bSet("-field",nfile,fnm) &&
+            (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n))
         {
             if (bAppendFiles)
             {

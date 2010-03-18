@@ -272,9 +272,12 @@ tMPI_Comm tMPI_Get_comm_self(void);
     \{ */
 /** Traditional MPI initializer; spawns threads that start at main(). 
   
-    Seeks the argument '-np n', where n is the number of 
-    threads that will be created. These new threads then run main() again,
-    with the original argc and argv. 
+    Seeks the argument '-nt n', where n is the number of 
+    threads that will be created. If n==0, the number of threads will
+    be the recommended number of threads for this platform as obtained
+    from tMPI_Get_recommended_ntreads(). 
+
+    The new threads then run main() again, with the original argc and argv. 
     
     \param[in] argc     argc of original main() invocation, or NULL
     \param[in] argv     argv of original main() invocation, or NULL. 
@@ -291,8 +294,13 @@ int tMPI_Init(int *argc, char ***argv);
     thread. When the function start_function returns it, will behave 
     as if tMPI_Finalize is called, and if it's a sub-thread it will
     stop running. 
+
+    If N==0, the number of threads will be the recommended number of 
+    threads for this platform as obtained from tMPI_Get_recommended_ntreads(). 
+
     
-    \param[in] N                The number of threads to start.
+    \param[in] N                The number of threads to start (or 0 to
+                                automatically determine this).
     \param[in] start_function   The function to start threads at (including 
                                 main thread). 
     \param[in] arg              An optional argument for start_function().

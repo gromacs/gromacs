@@ -808,8 +808,8 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
     return nstglobalcomm;
 }
 
-static void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
-                                      t_inputrec *ir,gmx_mtop_t *mtop)
+void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
+                               t_inputrec *ir,gmx_mtop_t *mtop)
 {
     /* Check required for old tpx files */
     if (IR_TWINRANGE(*ir) && ir->nstlist > 1 &&
@@ -960,6 +960,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              gmx_edsam_t ed,t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
              real cpt_period,real max_hours,
+             const char *deviceOptions,
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
@@ -2684,4 +2685,3 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
     return 0;
 }
-

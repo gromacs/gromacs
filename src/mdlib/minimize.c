@@ -829,6 +829,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
              t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
              real cpt_period,real max_hours,
+             const char *deviceOptions,
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
@@ -1347,6 +1348,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
                 t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
                 real cpt_period,real max_hours,
+                const char *deviceOptions,
                 unsigned long Flags,
                 gmx_runtime_t *runtime)
 {
@@ -1979,6 +1981,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
                 t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
                 real cpt_period,real max_hours,
+                const char *deviceOptions,
                 unsigned long Flags,
                 gmx_runtime_t *runtime)
 { 
@@ -2182,6 +2185,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
              t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
              real cpt_period,real max_hours,
+             const char *deviceOptions,
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {

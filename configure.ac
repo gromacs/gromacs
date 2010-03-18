@@ -423,13 +423,50 @@ if test "$enable_threads" = "yes"; then
   if test "$with_fft" = "fftw2"; then
     AC_MSG_ERROR([fftw2 can't be used with threads. Use fftw3 or mkl.])
   fi 
+  AC_CHECK_HEADERS(unistd.h)
+  AC_CHECK_HEADERS(sys/time.h)
+  AC_CHECK_HEADERS(sched.h)
+  AC_CHECK_FUNCS(sysconf)
+
   # for now we just assume pthreads
-  ACX_PTHREAD(,AC_MSG_ERROR([Cannot find POSIX threads - required for thread    support using configure!]))
+  ACX_PTHREAD(,AC_MSG_ERROR([Cannot find POSIX threads - required for thread support using configure!]))
   LIBS="$PTHREAD_LIBS $LIBS"
-  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-  CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+  CFLAGS="$CFLAGS $PTHREAD_CFLAGS -I$srcdir/include"
+  CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS -I$srcdir/include"
   CC="$PTHREAD_CC "
   AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for thread_mpi multithreading])
+
+  # profiling
+  AC_ARG_ENABLE(tmpi-profiling,
+              [AC_HELP_STRING([--enable-tmpi-profiling],
+              [Enables profiling of thread_mpi calls and wait times])],,
+              enable_tmpi_profiling=no)
+  if test "x$enable_tmpi_profiling" = "xyes"; then
+    AC_DEFINE(TMPI_PROFILE,,[Enable profiling for call and wait times])
+  fi
+
+  # check the atomics
+  AC_MSG_CHECKING(if atomic operations are supported)
+  CFLAGS_RET="$CFLAGS"
+  CXXFLAGS_RET="$CXXFLAGS"
+  CFLAGS="$CFLAGS -I$srcdir/include -DTMPI_CHECK_ATOMICS"
+  CXXFLAGS="$CXXFLAGS -I$srcdir/include -DTMPI_CHECK_ATOMICS"
+  # this sets a variable 'tmpi_atomics' to 'yes' if there are atomics. 
+  AC_COMPILE_IFELSE([#include "thread_mpi/atomic.h" ],
+                      [AC_MSG_RESULT(yes); tmpi_atomics=yes],
+                      [AC_MSG_WARN(
+[No atomics.
+
+This compiler+CPU combination doesn't have working atomics.
+Thread support will be unbearably slow: disable threads.
+
+Atomics should work on all but the most obscure CPU+compiler combinations;
+if your system is not obscure -- like, for example, x86 with gcc --  please
+contact the developers.
+]); tmpi_atomics=no])
+  CFLAGS="$CFLAGS_RET"
+  CXXFLAGS="$CXXFLAGS_RET"
+
   AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AM_CONDITIONAL(THREAD_PARALLEL,true)
@@ -745,6 +782,33 @@ if test "$with_gsl" = "yes"; then
   AC_SUBST(PKG_GSL)
 #
 fi
+
+######
+# Use OpenMM libraries
+######
+AC_ARG_WITH(openmm,
+ [  --with-openmm                 Use the OpenMM libraries to run on GPUs],,with_openmm=no)
+
+if test "$with_openmm" = "yes"; then
+
+  AC_PROG_CXX
+  CPPFLAGS="$CPPFLAGS -I$OPENMM_INSTALL_DIR/include"
+  INCLUDES="$INCLUDES -I$OPENMM_INSTALL_DIR/include"
+  LDFLAGS="$LDFLAGS -L$OPENMM_INSTALL_DIR/lib -lOpenMM"
+  #AC_CHECK_HEADERS([OpenMM.h],AC_CHECK_LIB(OpenMM,main))
+  #AC_CHECK_HEADERS([OpenMM.h],,AC_MSG_ERROR([Cannot find OpenMM.h file. Please set OPENMM_INSTALL_DIR.]))
+  AC_DEFINE([USE_OPENMM],,[Use OpenMM libraries to run on GPUs])
+
+#  AS_CASE([${host_cpu}-${host_os}-${host_vendor}],
+#    [i?86-linux*], [OPENMM_HOST=linux32],
+#    [x86_64-linux*], [OPENMM_HOST=linux64],
+#    [amd64-linux*], [OPENMM_HOST=linux64],
+#    [i?86-darwin*-apple], [OPENMM_HOST=apple],
+#    [OPENMM_HOST=""])
+#  AC_SUBST([OPENMM_HOST])
+fi
+
+AM_CONDITIONAL([USE_OPENMM],[test "$with_openmm" = "yes"])
 
 
 AC_ARG_WITH(xml,
@@ -1191,30 +1255,15 @@ if test "$enable_shared" = "no"; then
 fi  
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if test "$tmpi_atomics" = "no"; then
+  echo ""
+  echo "* This compiler+CPU combination doesn't have working atomic operations."
+  echo "  Thread support will be unbearably slow: the default number of threads"
+  echo "  is set to 1."
+  echo "  Atomics should work on all but the most obscure CPU+compiler"
+  echo "  combinations; if your system is not obscure (like, for example, x86"
+  echo "  with gcc) please contact the developers."
+  echo ""
+fi
 
 
