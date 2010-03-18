@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6.2)
+cmake_minimum_required(VERSION 2.6)
 
 project(Gromacs)
 set(PROJECT_VERSION "4.0.99-dev-20100315"
@@ -45,6 +45,7 @@ option(USE_VERSION_H "Generate development version string/information" ON)
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
 if(GMX_OPENMM)
+    cmake_minimum_required(VERSION 2.6.4)
     # we'll use the built-in fft to avoid unnecessary dependencies
     set (GMX_FFT_LIBRARY "fftpack")
     if(GMX_MPI)

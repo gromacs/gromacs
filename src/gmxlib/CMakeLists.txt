@@ -16,9 +16,12 @@ add_custom_target(gmx_version ALL
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 
 file(GLOB GMXLIB_SOURCES *.c 
-     ${CMAKE_CURRENT_BINARY_DIR}/version.c # auto-generated
      selection/*.c trajana/*.c
      statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
+
+LIST(APPEND GMXLIB_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/version.c) # auto-generated
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.c 
+                PROPERTIES GENERATED true)
 
 if(GMX_IA32_SSE)
   if(GMX_ASM_USEASM-ATT)

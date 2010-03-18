@@ -30,13 +30,13 @@ set(VER ${PROJECT_VERSION})
 
 # if we're generating variables for cache unset the variables 
 if(GEN_VERSION_INFO_INTERNAL)
-    unset(GMX_PROJECT_VERSION_STR CACHE)
-    unset(GMX_GIT_HEAD_HASH CACHE)
-    unset(GMX_GIT_REMOTE_HASH CACHE)
-    unset(USE_VERSION_H CACHE)
+    set(GMX_PROJECT_VERSION_STR)
+    set(GMX_GIT_HEAD_HASH)
+    set(GMX_GIT_REMOTE_HASH)
+    set(USE_VERSION_H)
 endif()
 
-unset(GIT_BIN)
+set(GIT_BIN)
 find_program(GIT_BIN "git")
 mark_as_advanced(GIT_BIN)
 
