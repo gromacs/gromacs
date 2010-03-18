@@ -77,7 +77,7 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     {
         size_t bufsize=count*datatype->size;
         /* wait until root becomes available */
-        tMPI_Wait_for_data(cur, cev, root, myrank, synct);
+        tMPI_Wait_for_data(cur, cev, myrank);
         tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize, 
                        buffer, &ret);
     }

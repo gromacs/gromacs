@@ -309,9 +309,6 @@ static void tMPI_Thread_destroy(struct tmpi_thread *th)
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     tMPI_Copy_buffer_list_destroy(&(th->cbl_multi));
 #endif
-#ifdef TMPI_PROFILE
-    tMPI_Profile_destroy(&(th->profile));
-#endif
 
     for(i=0;i<th->argc;i++)
     {
@@ -541,6 +538,7 @@ int tMPI_Finalize(void)
         tMPI_Thread_destroy(&(threads[0]));
         free(threads);
 
+        tMPI_Thread_key_delete(id_key);
         /* de-allocate all the comm stuctures. */
         {
             tMPI_Comm cur=TMPI_COMM_WORLD->next;

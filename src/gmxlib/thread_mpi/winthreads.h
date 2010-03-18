@@ -45,7 +45,7 @@ struct tMPI_Thread
 
 struct tMPI_Thread_key
 {
-    DWORD key;
+    DWORD wkey;
 };
 
 struct tMPI_Mutex

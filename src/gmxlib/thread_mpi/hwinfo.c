@@ -66,15 +66,16 @@ files.
 
 int tMPI_Get_hw_nthreads(void)
 {
+    int ret=-1;
 #ifdef HAVE_SYSCONF
 #if defined(_SC_NPROCESSORS_ONLN)
-    return sysconf(_SC_NPROCESSORS_ONLN);
+    ret=sysconf(_SC_NPROCESSORS_ONLN);
 #elif defined(_SC_NPROC_ONLN)
-    return sysconf(_SC_NPROC_ONLN);
+    ret=sysconf(_SC_NPROC_ONLN);
 #elif defined(_SC_NPROCESSORS_CONF)
-    return sysconf(_SC_NPROCESSORS_CONF);
+    ret=sysconf(_SC_NPROCESSORS_CONF);
 #elif defined(_SC_NPROC_CONF)
-    return sysconf(_SC_NPROC_CONF);
+    ret=sysconf(_SC_NPROC_CONF);
 #endif
 #endif
 
@@ -82,9 +83,9 @@ int tMPI_Get_hw_nthreads(void)
     SYSTEM_INFO sysinfo;
     GetSystemInfo( &sysinfo );
 
-    return sysinfo.dwNumberOfProcessors;
+    ret=sysinfo.dwNumberOfProcessors;
 #endif
-    return -1;
+    return ret;
 }
 
 
