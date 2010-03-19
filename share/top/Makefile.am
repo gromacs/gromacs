@@ -14,7 +14,8 @@ gromos43a2.ff \
 gromos45a3.ff \
 gromos53a5.ff \
 gromos53a6.ff \
-oplsaa.ff 
+oplsaa.ff \
+charmm27.ff
 
 topol_DATA = \
 	1mlg.itp	2mlg.itp	benzamide.itp	bondadd.itp	\
