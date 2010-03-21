@@ -493,6 +493,7 @@ t_commrec *init_par_threads(t_commrec *cro)
 
 void cancel_par_threads(t_commrec *cr)
 {
+#ifdef GMX_THREADS
     if (MASTERTHREAD(cr))
     {
         fprintf(stderr, "\nCANCELING %d THREADS\n", cr->nthreads-1);
@@ -507,6 +508,9 @@ void cancel_par_threads(t_commrec *cr)
     {
         tMPI_Finalize();
     }
+#else
+    gmx_incons("cancel_par_threads called without thread support");
+#endif
 }
 
 t_commrec *init_cr_nopar(void)
