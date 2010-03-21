@@ -325,6 +325,11 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
 
         snew(state,1);
+        /* NOTE: if the run is thread-parallel but the integrator doesn't support this
+                 such as with LBGFS, this function may cancel the threads 
+                 through cancel_par_threads(), and make the commrec serial. The
+                 rest of the simulation is then only performed by the main thread,
+                 as if it were a serial run. */
         init_parallel(fplog, opt2fn_master("-s",nfile,fnm,cr),cr,
                       inputrec,mtop,state,list);
 

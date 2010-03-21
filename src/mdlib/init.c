@@ -176,6 +176,18 @@ void init_parallel(FILE *log,const char *tpxfile,t_commrec *cr,
   }
   bcast_ir_mtop(cr,inputrec,mtop);
 
+#ifdef GMX_THREADS
+  if (inputrec->eI == eiLBFGS)
+  {
+      if (MASTERTHREAD(cr)) 
+      {
+          fprintf(stderr,"This integration algorithm doesn't support ");
+          fprintf(stderr,"parallel runs.\n");
+      }
+      cancel_par_threads(cr); 
+  }
+#endif
+
   if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */
     inputrec->ld_seed += cr->nodeid;

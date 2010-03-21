@@ -288,7 +288,7 @@ static void tMPI_Thread_init(struct tmpi_thread *th)
 #endif
     /* now wait for all other threads to come on line, before we
        start the MPI program */
-    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->barrier));
+    tMPI_Thread_barrier_wait( &(tmpi_global->barrier) );
 }
 
 
@@ -316,13 +316,15 @@ static void tMPI_Thread_destroy(struct tmpi_thread *th)
     }
 }
 
-static void tMPI_Global_init(struct tmpi_global *g)
+static void tMPI_Global_init(struct tmpi_global *g, int Nthreads)
 {
     g->usertypes=NULL;
     g->N_usertypes=0;
     g->Nalloc_usertypes=0;
     tMPI_Thread_mutex_init(&(g->timer_mutex));
     tMPI_Spinlock_init(&(g->datatype_lock));
+
+    tMPI_Thread_barrier_init( &(g->barrier), Nthreads);
 
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     /* the time at initialization. */
@@ -387,7 +389,7 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         /* allocate global data */
         tmpi_global=(struct tmpi_global*)
                         tMPI_Malloc(sizeof(struct tmpi_global));
-        tMPI_Global_init(tmpi_global);
+        tMPI_Global_init(tmpi_global, N);
 
         /* allocate world and thread data */
         threads=(struct tmpi_thread*)tMPI_Malloc(sizeof(struct tmpi_thread)*N);
@@ -510,7 +512,7 @@ int tMPI_Finalize(void)
         struct tmpi_thread *cur=tMPI_Get_current();
 
         tMPI_Profile_stop( &(cur->profile) );
-        tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->barrier));
+        tMPI_Thread_barrier_wait( &(tmpi_global->barrier) );
 
         if (tMPI_Is_master())
         {
@@ -518,7 +520,7 @@ int tMPI_Finalize(void)
         }
     }
 #endif
-    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->barrier));
+    tMPI_Thread_barrier_wait( &(tmpi_global->barrier) );
 
     if (tMPI_Is_master())
     {
