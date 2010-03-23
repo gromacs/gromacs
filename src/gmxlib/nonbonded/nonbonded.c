@@ -67,6 +67,7 @@
 #include "nb_kernel/nb_kernel330.h"
 #include "nb_free_energy.h"
 #include "nb_generic.h"
+#include "nb_generic_cg.h"
 
 
 #ifdef GMX_PPC_ALTIVEC   
@@ -236,6 +237,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	bool            bWater;
 	nb_kernel_t *   kernelptr;
 	FILE *          fp;
+	int             fac=0;
 	int             wateratoms;
 	int             nthreads = 1;
 	int             tabletype;
@@ -390,6 +392,23 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  &outeriter,
 											  &inneriter);
 				}
+                else if (nlist->enlist == enlistCG_CG)
+                {
+                    /* Call the charge group based inner loop */
+                    gmx_nb_generic_cg_kernel(nlist,
+                                             fr,
+                                             mdatoms,
+                                             x[0],
+                                             f[0],
+                                             fshift,
+                                             egcoul,
+                                             egnb,
+                                             nblists->tab.scale,
+                                             tabledata,
+                                             &outeriter,
+                                             &inneriter,
+                                             localp_grid);
+                }                
 				else
 				{
 					/* Not free energy - call nonbonded kernel from function pointer */
@@ -413,7 +432,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  nblists->tab.scale,
 											  tabledata,
 											  &outeriter,
-											  &inneriter);
+											  &inneriter,
+                                              localp_grid);
 					}
 					/* Call the appropriate nonbonded kernel function */
 					(*kernelptr)( &(nlist->nri),
@@ -452,18 +472,16 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 				/* Update flop accounting */
 				
 				/* Outer loop in kernel */
-				if (nlist->nltype==enlistWATER)
-				{
-					inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*outeriter);
+				switch (nlist->enlist) {
+				case enlistATOM_ATOM:   fac =  1; break;
+				case enlistSPC_ATOM:    fac =  3; break;
+				case enlistSPC_SPC:     fac =  9; break;
+				case enlistTIP4P_ATOM:  fac =  4; break;
+				case enlistTIP4P_TIP4P: fac = 16; break;
+				case enlistCG_CG:       fac =  1; break;
 				}
-				else if (nlist->nltype==enlistWATERWATER)
-				{
-					inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*wateratoms*outeriter);
-				}
-				else
-				{
-					inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,outeriter);
-				}
+				inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,fac*outeriter);
+
 				/* inner loop in kernel */
 				inc_nrnb(nrnb,nrnb_ind,inneriter);
 			}

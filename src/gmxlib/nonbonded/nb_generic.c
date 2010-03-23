@@ -42,6 +42,7 @@
 #include "types/simple.h"
 #include "vec.h"
 #include "typedefs.h"
+#include "localpressure.h"
 
 void
 gmx_nb_generic_kernel(t_nblist *           nlist,
@@ -55,7 +56,8 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 					  real                 tabscale,  
 					  real *               VFtab,
 					  int *                outeriter,
-					  int *                inneriter)
+					  int *                inneriter,
+                      gmx_localp_grid_t *  localp_grid)
 {
     int           nri,ntype,table_nelements,icoul,ivdw;
     real          facel,gbtabscale;
@@ -265,7 +267,13 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 			
             tx               = fscal*dx;     
             ty               = fscal*dy;     
-            tz               = fscal*dz;     
+            tz               = fscal*dz;  
+            
+            gmx_spread_local_virial_on_grid(localp_grid,
+                                            ix,iy,iz,
+                                            jx,jy,jz,
+                                            tx,ty,tz);
+            
             fix              = fix + tx;      
             fiy              = fiy + ty;      
             fiz              = fiz + tz;      

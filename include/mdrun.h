@@ -92,7 +92,7 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				gmx_edsam_t ed, 
 				t_forcerec *fr,
 				int repl_ex_nst,int repl_ex_seed,
-				real cpt_period,real max_hours,
+				real cpt_period,real max_hours,real localpgrid,
 				unsigned long Flags);
 
 /* ROUTINES from md.c */
@@ -250,7 +250,7 @@ extern void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		     char *ddcsx,char *ddcsy,char *ddcsz,
 		     int nstepout,
 		     gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
-		     real pforce,real cpt_period,real max_hours,
+		     real pforce,real cpt_period,real max_hours,real localpgrid,
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
 

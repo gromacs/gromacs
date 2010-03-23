@@ -38,6 +38,9 @@
 #include <config.h>
 #endif
 
+
+#define GMX_CG_INNERLOOP
+
 #ifdef GMX_THREADS
 #include <pthread.h> 
 #endif
@@ -97,6 +100,10 @@ static void reallocate_nblist(t_nblist *nl)
                 nl->il_code,nl->maxnri); 
     }
     srenew(nl->iinr,   nl->maxnri);
+    if (nl->enlist == enlistCG_CG)
+    {
+        srenew(nl->iinr_end,nl->maxnri);
+    }
     srenew(nl->gid,    nl->maxnri);
     srenew(nl->shift,  nl->maxnri);
     srenew(nl->jindex, nl->maxnri+1);
@@ -126,7 +133,7 @@ static void reallocate_nblist(t_nblist *nl)
 static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
                         int maxsr,int maxlr,
                         int ivdw, int icoul, 
-                        bool bfree, int solvent, int nltype)
+                        bool bfree, int enlist)
 {
     t_nblist *nl;
     int      homenr;
@@ -170,6 +177,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
     
         if (bfree)
         {
+            nl->enlist  = enlistATOM_ATOM;
             nl->il_code = eNR_NBKERNEL_FREE_ENERGY;
         }
         else
@@ -182,41 +190,31 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
             * SPC, SPC-SPC, TIP4p, TIP4p-TIP4p
             *   
             */
-            if (solvent == esolSPC)
-            {
-                if (nltype == enlistWATER)
-                {
-                    nn += 1;
-                }
-                else if (nltype == enlistWATERWATER)
-                {
-                    nn += 2;
-                }
-            } 
-            else if (solvent == esolTIP4P)
-            {
-                if (nltype == enlistWATER)
-                {
-                    nn += 3;
-                }
-                else if (nltype == enlistWATERWATER)
-                {
-                    nn += 4;
-                }
+
+            switch (enlist) {
+            case enlistATOM_ATOM:
+#ifdef GMX_CG_INNERLOOP
+                nl->enlist = enlistCG_CG;
+#endif
+                break;
+            case enlistSPC_ATOM:     nn += 1; break;
+            case enlistSPC_SPC:      nn += 2; break;
+            case enlistTIP4P_ATOM:   nn += 3; break;
+            case enlistTIP4P_TIP4P:  nn += 4; break;
             }
-            
+
             nl->il_code = nn;
         }
 
         if (debug)
             fprintf(debug,"Initiating neighbourlist type %d for %s interactions,\nwith %d SR, %d LR atoms.\n",
-                    nl->il_code,ENLISTTYPE(nltype),maxsr,maxlr);
-        
-        /* maxnri is influenced by the number of shifts (maximum is 8)
-         * and the number of energy groups.
-         * If it is not enough, nl memory will be reallocated during the run.
-         * 4 seems to be a reasonable factor, which only causes reallocation
-         * during runs with tiny and many energygroups.
+                    nl->il_code,ENLISTTYPE(enlist),maxsr,maxlr);
+
+        /* maxnri is influenced by the number of shifts (maximum is 8)                                          
+         * and the number of energy groups.                                                                     
+         * If it is not enough, nl memory will be reallocated during the run.                                   
+         * 4 seems to be a reasonable factor, which only causes reallocation                                    
+         * during runs with tiny and many energygroups.                                                         
          */
         nl->maxnri      = homenr*4;
         nl->maxnrj      = 0;
@@ -227,16 +225,16 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         nl->gid         = NULL;
         nl->shift       = NULL;
         nl->jindex      = NULL;
-        nl->nltype      = nltype;
         reallocate_nblist(nl);
         nl->jindex[0] = 0;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
         nl->counter = 0;
         snew(nl->mtx,1);
         pthread_mutex_init(nl->mtx,NULL);
 #endif
     }
 }
+
 
 void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
 {
@@ -248,6 +246,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    int maxsr,maxsr_wat,maxlr,maxlr_wat;
    int icoul,icoulf,ivdw;
    int solvent;
+   int enlist_w,enlist_ww;
    int i;
    t_nblists *nbl;
 
@@ -259,18 +258,16 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
      gmx_fatal(FARGS,"%s, %d: Negative number of short range atoms.\n"
 		 "Call your Gromacs dealer for assistance.",__FILE__,__LINE__);
    }
-   maxsr_wat = fr->nWatMol; 
-   if (fr->bTwinRange) 
+   maxsr_wat = min(fr->nWatMol,(homenr+2)/3);
+   if (fr->bTwinRange)
    {
        maxlr     = 50;
-       maxlr_wat = min(fr->nWatMol,maxlr);
+       maxlr_wat = min(maxsr_wat,maxlr);
    }
    else
    {
-     maxlr = maxlr_wat = 0;
-   }  
-
-   solvent = fr->solvent_opt;
+       maxlr = maxlr_wat = 0;
+   }
 
    /* Determine the values for icoul/ivdw. */
    if (fr->bcoultab)
@@ -281,11 +278,11 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    {
        icoul = 2;
    }
-   else 
+   else
    {
        icoul = 1;
    }
-   
+
    if (fr->bvdwtab)
    {
        ivdw = 3;
@@ -294,30 +291,38 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    {
        ivdw = 2;
    }
-   else 
+   else
    {
        ivdw = 1;
    }
-   
-   for(i=0; i<fr->nnblists; i++) 
+
+   if (fr->solvent_opt == esolTIP4P) {
+       enlist_w  = enlistTIP4P_ATOM;
+       enlist_ww = enlistTIP4P_TIP4P;
+   } else {
+       enlist_w  = enlistSPC_ATOM;
+       enlist_ww = enlistSPC_SPC;
+   }
+
+   for(i=0; i<fr->nnblists; i++)
    {
        nbl = &(fr->nblists[i]);
        init_nblist(&nbl->nlist_sr[eNL_VDWQQ],&nbl->nlist_lr[eNL_VDWQQ],
-                   maxsr,maxlr,ivdw,icoul,FALSE,solvent,enlistATOM);
+                   maxsr,maxlr,ivdw,icoul,FALSE,enlistATOM_ATOM);
        init_nblist(&nbl->nlist_sr[eNL_VDW],&nbl->nlist_lr[eNL_VDW],
-                   maxsr,maxlr,ivdw,0,FALSE,solvent,enlistATOM);
+                   maxsr,maxlr,ivdw,0,FALSE,enlistATOM_ATOM);
        init_nblist(&nbl->nlist_sr[eNL_QQ],&nbl->nlist_lr[eNL_QQ],
-                   maxsr,maxlr,0,icoul,FALSE,solvent,enlistATOM);
+                   maxsr,maxlr,0,icoul,FALSE,enlistATOM_ATOM);
        init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATER],&nbl->nlist_lr[eNL_VDWQQ_WATER],
-                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,solvent,enlistWATER);
+                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,enlist_w);
        init_nblist(&nbl->nlist_sr[eNL_QQ_WATER],&nbl->nlist_lr[eNL_QQ_WATER],
-                   maxsr_wat,maxlr_wat,0,icoul, FALSE,solvent,enlistWATER);
+                   maxsr_wat,maxlr_wat,0,icoul, FALSE,enlist_w);
        init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATERWATER],&nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
-                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,solvent,enlistWATERWATER);
+                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,enlist_ww);
        init_nblist(&nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
-                   maxsr_wat,maxlr_wat,0,icoul, FALSE,solvent,enlistWATERWATER);
-       
-       if (fr->efep != efepNO) 
+                   maxsr_wat,maxlr_wat,0,icoul, FALSE,enlist_ww);
+
+       if (fr->efep != efepNO)
        {
            if (fr->bEwald)
            {
@@ -329,21 +334,24 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
            }
 
            init_nblist(&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
-                       maxsr,maxlr,ivdw,icoulf,TRUE,solvent,enlistATOM);
+                       maxsr,maxlr,ivdw,icoulf,TRUE,enlistATOM_ATOM);
            init_nblist(&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
-                       maxsr,maxlr,ivdw,0,TRUE,solvent,enlistATOM);
+                       maxsr,maxlr,ivdw,0,TRUE,enlistATOM_ATOM);
            init_nblist(&nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
-                       maxsr,maxlr,0,icoulf,TRUE,solvent,enlistATOM);
-       }  
+                       maxsr,maxlr,0,icoulf,TRUE,enlistATOM_ATOM);
+       }
    }
    /* QMMM MM list */
    if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
    {
        init_nblist(&fr->QMMMlist_sr,&fr->QMMMlist_lr,
-                   maxsr,maxlr,0,icoul,FALSE,solvent,enlistATOM);
+                   maxsr,maxlr,0,icoul,FALSE,enlistATOM_ATOM);
    }
-   
+
+   fr->ns.nblist_initialized=TRUE;
 }
+
+
 
  static void reset_nblist(t_nblist *nl)
  {
@@ -503,6 +511,29 @@ static void add_j_to_nblist(t_nblist *nlist,atom_id j_atom,bool bLR)
     nlist->nrj ++;
 }
 
+static inline void add_j_to_nblist_cg(t_nblist *nlist,
+                                      atom_id j_start,int j_end,bool bLR)
+{
+    int nrj=nlist->nrj;
+
+    if (nlist->nrj >= nlist->maxnrj)
+    {
+        nlist->maxnrj = over_alloc_small(nlist->nrj + 1);
+        if (gmx_debug_at)
+            fprintf(debug,"Increasing %s nblist %s j size to %d\n",
+                    bLR ? "LR" : "SR",nrnb_str(nlist->il_code),nlist->maxnrj);
+
+        srenew(nlist->jjnr    ,nlist->maxnrj);
+        srenew(nlist->jjnr_end,nlist->maxnrj);
+    }
+
+    nlist->jjnr[nrj]     = j_start;
+    nlist->jjnr_end[nrj] = j_end;
+    nlist->nrj ++;
+}
+
+
+#ifndef GMX_CG_INNERLOOP
 static inline void 
 put_in_list(bool              bHaveVdW[],
             int               ngid,
@@ -1067,6 +1098,76 @@ put_in_list(bool              bHaveVdW[],
         }
     }
 }
+
+#endif
+
+#ifdef GMX_CG_INNERLOOP
+static inline void
+put_in_list(bool              bHaveVdW[],
+            int               ngid,
+            t_mdatoms *       md,
+            int               icg,
+            int               jgid,
+            int               nj,
+            atom_id           jjcg[],
+            atom_id           index[],
+            t_excl            bExcl[],
+            int               shift,
+            t_forcerec *      fr,
+            bool              bLR,
+            bool              bDoVdW,
+            bool              bDoCoul,
+            bool              bQMMM)
+{
+    int          igid,gid,nbl_ind;
+    t_nblist *   vdwc;
+    int          j,jcg;
+
+    igid = GET_CGINFO_GID(fr->cginfo[icg]);
+    gid  = GID(igid,jgid,ngid);
+
+    /* Unpack pointers to neighbourlist structs */
+    if (fr->nnblists == 1)
+    {
+        nbl_ind = 0;
+    }
+    else
+    {
+        nbl_ind = fr->gid2nblists[gid];
+    }
+    if (bLR)
+    {
+        vdwc = &fr->nblists[nbl_ind].nlist_lr[eNL_VDWQQ];
+    }
+    else
+    {
+        vdwc = &fr->nblists[nbl_ind].nlist_sr[eNL_VDWQQ];
+    }
+
+    /* Make a new neighbor list for charge group icg.                                                           
+     * Currently simply one neighbor list is made with LJ and Coulomb.                                          
+     * If required, zerp interactions could be removed here                                                     
+     * or in the force loop.                                                                                    
+     */
+    new_i_nblist(vdwc,bLR,index[icg],shift,gid);
+    vdwc->iinr_end[vdwc->nri] = index[icg+1];
+
+    for(j=0; (j<nj); j++)
+    {
+        jcg = jjcg[j];
+        if (jcg != icg)
+        {
+            /* Here we simply add the j charge group jcg to the list                                            
+             * without checking exclusions, LJ interactions or charges.                                         
+             */
+            add_j_to_nblist_cg(vdwc,index[jcg],index[jcg+1],bLR);
+        }
+    }
+    close_i_nblist(vdwc);
+}
+#endif
+
+
 
 static void setexcl(atom_id start,atom_id end,t_blocka *excl,bool b,
                     t_excl bexcl[])

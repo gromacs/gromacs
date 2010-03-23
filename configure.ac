@@ -124,6 +124,10 @@ case "${host_cpu}-${host_vendor}" in
    *) enable_x86_64_sse=no ;;
 esac
 
+# Turn off stuff for local pressure
+enable_x86_64_sse=no;
+enable_ia32_sse=no;
+enable_ia32_3dnow=no;
 
 ### Altivec on powerpc (motorola)
 AC_ARG_ENABLE(ppc_altivec,
