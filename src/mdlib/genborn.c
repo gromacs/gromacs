@@ -1653,8 +1653,12 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
     v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
                       fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 #else    
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )    
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )   /* 
     v += gb_bonds_analytic(x[0],f[0],md->chargeA,born->bRad,fr->dvda,idef,born->epsilon_r,born->gb_epsilon_solvent,fr->epsfac);
+                                                                                  */
+    v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
+                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+    
 #else
     v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
                       fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
