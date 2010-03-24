@@ -225,7 +225,7 @@ endif(GMX_THREADS)
 
 if(GMX_OPENMM)
     set(CUDA_BUILD_EMULATION OFF)
-    find_package(CUDA 2.3 EXACT REQUIRED)   # TODO what are we compatible with?
+    find_package(CUDA 2.3 REQUIRED)   # TODO what are we compatible with?
     add_definitions(-DGMX_OPENMM)
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
         set(CUDA_VERBOSE_BUILD ON)
