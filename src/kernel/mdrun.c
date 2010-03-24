@@ -312,8 +312,8 @@ int main(int argc,char *argv[])
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   static real cpt_period=15.0,max_hours=-1;
   static bool bAppendFiles=FALSE;
-  static real localpgrid=0.1;
-
+  static int localp_interval=1;
+	
   static t_pargs pa[] = {
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
@@ -371,8 +371,8 @@ int main(int argc,char *argv[])
       "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
-    { "-localpgrid",  FALSE, etREAL, {&localpgrid},
-      "Spacing for local pressure grid" },
+    { "-lpdt",  FALSE, etINT,{&localp_interval},
+      "Write local pressure grid every n steps" },
     { "-confout", FALSE, etBOOL, {&bConfout},
       "HIDDENWrite the last configuration with -c" },
     { "-stepout", FALSE, etINT, {&nstepout},
@@ -495,7 +495,7 @@ int main(int argc,char *argv[])
 	   ddxyz,dd_node_order,rdd,rconstr,
 	   dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
 	   nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,
-	   cpt_period,max_hours,localpgrid,Flags);
+	   cpt_period,max_hours,localp_interval,Flags);
   
   if (gmx_parallel_env)
     gmx_finalize(cr);

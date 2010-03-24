@@ -256,6 +256,9 @@ typedef struct {
 
   /* Limit for printing large forces, negative is don't print */
   real print_force;
+  
+  /* Step interval for writing local pressure */
+  int localp_interval;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;
