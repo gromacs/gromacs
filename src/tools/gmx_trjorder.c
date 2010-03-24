@@ -130,8 +130,8 @@ int gmx_trjorder(int argc,char *argv[])
   real       t,totmass,mass,rcut2=0,n2;
   int        natoms,nwat,ncut;
   char       **grpname,title[256];
-  int        i,j,d,*isize,isize_ref,isize_sol;
-  atom_id    sa,sr,*swi,**index,*ind_ref,*ind_sol;
+  int        i,j,d,*isize,isize_ref=0,isize_sol;
+  atom_id    sa,sr,*swi,**index,*ind_ref=NULL,*ind_sol;
   output_env_t oenv;
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD  }, 
