@@ -759,7 +759,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	     gmx_edsam_t ed,
 	     t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
-	     real cpt_period,real max_hours,real localpgrid,
+	     real cpt_period,real max_hours,
 	     unsigned long Flags)
 {
   const char *CG="Polak-Ribiere Conjugate Gradients";
@@ -1278,7 +1278,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 		gmx_edsam_t ed,
 		t_forcerec *fr,
 		int repl_ex_nst,int repl_ex_seed,
-		real cpt_period,real max_hours,real localpgrid,
+		real cpt_period,real max_hours,
 		unsigned long Flags)
 {
   static char *LBFGS="Low-Memory BFGS Minimizer";
@@ -1913,7 +1913,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 		gmx_edsam_t ed,
 		t_forcerec *fr,
 		int repl_ex_nst,int repl_ex_seed,
-		real cpt_period,real max_hours,real localpgrid,
+		real cpt_period,real max_hours,
 		unsigned long Flags)
 { 
   const char *SD="Steepest Descents";
@@ -2122,7 +2122,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	     gmx_edsam_t ed,
 	     t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
-	     real cpt_period,real max_hours,real localprid,
+	     real cpt_period,real max_hours,
 	     unsigned long Flags)
 {
     t_mdebin   *mdebin;
@@ -2384,7 +2384,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	      gmx_edsam_t ed,
 	      t_forcerec *fr,
 	      int repl_ex_nst,int repl_ex_seed,
-	      real cpt_period,real max_hours,real localpgrid,
+	      real cpt_period,real max_hours,
 	      unsigned long Flags)
 {
   const char *TPI="Test Particle Insertion"; 
