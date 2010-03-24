@@ -334,15 +334,22 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
     }
 
     /* Electroctstics */
-    if ((ir->coulombtype != eelPME) && (ir->coulombtype != eelRF) &&  (ir->coulombtype != eelEWALD))
+    if (
+         (ir->coulombtype != eelPME) && 
+         (ir->coulombtype != eelRF) &&  
+         (ir->coulombtype != eelEWALD) &&
+         // no-cutoff
+         ( !(ir->coulombtype == eelCUT && ir->rcoulomb == 0 &&  ir->rvdw == 0))
+       )
     {
         gmx_fatal(FARGS,"OpenMM supports only the following methods for electrostatics: NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.\n");
     }
 
-    if ( (ir->etc != etcNO) && (ir->etc != etcANDERSEN) && (ir->etc != etcANDERSENINTERVAL))
-        gmx_fatal(FARGS,"In OpenMM temperature coupling can be achieved by "
-                "using either \n\t(1)\t\"md-vv\" or \"md-vvak\" integrators with \"andersen\" or "
-                "\"andersen-interval\" thermostat, or \n\t(2)\t\"sd\",\"sd1\" or \"bd\" integrators\n");
+    if ( (ir->etc != etcNO) &&
+         (ir->eI !=  eiSD1)  && 
+         (ir->eI !=  eiSD2)  && 
+         (ir->eI !=  eiBD) ) 
+        gmx_warning("OpenMM supports only Andersen thermostat with the md-vv/md-vvak integrators\n");
 
     if (ir->opts.ngtc > 1)
         gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.\n");
@@ -356,7 +363,7 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
     if (ir->eConstrAlg != econtSHAKE)
         gmx_warning("Constraints in OpenMM are done by a combination "
                 "of SHAKE, SETTLE and CCMA. Accuracy is based on the SHAKE tolerance set "
-                "by the \"shake_tol\" option.");
+                "by the \"shake_tol\" option.\n");
 
     if (ir->nwall != 0)
         gmx_fatal(FARGS,"OpenMM does not support walls.\n");
@@ -700,7 +707,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
     Integrator* integ;
     if (ir->eI == eiVV || ir->eI == eiVVAK) {
         integ = new VerletIntegrator(ir->delta_t);
-        if ( ir->etc == etcANDERSEN) {
+        if ( ir->etc != etcNO) {
            real collisionFreq = ir->opts.tau_t[0] / 1000; /* tau_t (ps) / 1000 = collisionFreq (fs^-1) */
            AndersenThermostat* thermostat = new AndersenThermostat(ir->opts.ref_t[0], friction); /* TODO test this  */
            sys->addForce(thermostat);

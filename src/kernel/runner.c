@@ -634,7 +634,8 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
 
-    if (integrator[inputrec->eI].func == do_md)
+    if ( (integrator[inputrec->eI].func == do_md) || 
+       (integrator[inputrec->eI].func == do_md_openmm))
     {
         /* Turn on signal handling on all nodes */
         /*
