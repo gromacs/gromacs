@@ -845,7 +845,7 @@ static inline real trace(matrix m)
   return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
 
-static inline real _divide(real a,real b,const char *file,int line)
+static inline real _divide_err(real a,real b,const char *file,int line)
 {
     if (fabs(b) <= GMX_REAL_MIN) 
         gmx_fatal(FARGS,"Dividing by zero, file %s, line %d",file,line);
@@ -883,7 +883,7 @@ static void matrix_convert(matrix box, rvec vec, rvec angle)
                        -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
 }
 
-#define divide(a,b) _divide((a),(b),__FILE__,__LINE__)
+#define divide_err(a,b) _divide_err((a),(b),__FILE__,__LINE__)
 #define mod(a,b)    _mod((a),(b),__FILE__,__LINE__)
 
 #ifdef __cplusplus
