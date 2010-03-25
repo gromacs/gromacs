@@ -347,7 +347,6 @@ static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
         else
         {
             tMPI_Atomic_memory_barrier();
-            /*srcbuf=(char*) (cev->met[rank].cpbuf[index]);*/
             srcbuf=tMPI_Atomic_ptr_get(&(cev->met[rank].cpbuf[index]));
 
             if(!srcbuf)
@@ -530,7 +529,8 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
                                     -100000) != 0)
 #endif
 #if 1
-        while (tMPI_Atomic_fetch_add( &(cev->met[myrank].buf_readcount), 0) != 0)
+        while (tMPI_Atomic_fetch_add( &(cev->met[myrank].buf_readcount), 0) 
+               != 0)
 #endif
 #if 0
         while (tMPI_Atomic_get( &(cev->met[rank].buf_readcount) )>0)

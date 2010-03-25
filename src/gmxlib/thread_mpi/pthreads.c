@@ -158,7 +158,7 @@ int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx)
         return EINVAL;
     }
 
-    mtx->mutex=tMPI_Malloc(sizeof(struct tMPI_Mutex)*1);
+    mtx->mutex=(struct tMPI_Mutex*)tMPI_Malloc(sizeof(struct tMPI_Mutex)*1);
     ret = pthread_mutex_init(&(mtx->mutex->mtx),NULL);
     
     if(ret!=0)
@@ -181,7 +181,7 @@ static int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
     pthread_mutex_lock( &(mutex_init) );    
     if(mtx->mutex==NULL)
     {
-        mtx->mutex=tMPI_Malloc(sizeof(struct tMPI_Mutex)*1);
+        mtx->mutex=(struct tMPI_Mutex*)tMPI_Malloc(sizeof(struct tMPI_Mutex)*1);
         ret=pthread_mutex_init( &(mtx->mutex->mtx), NULL);
     }
     pthread_mutex_unlock( &(mutex_init) );    
@@ -367,7 +367,8 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond)
         return EINVAL;
     }
    
-    cond->condp=tMPI_Malloc(sizeof(struct tMPI_Thread_cond)*1);
+    cond->condp=(struct tMPI_Thread_cond*)
+              tMPI_Malloc(sizeof(struct tMPI_Thread_cond)*1);
     ret = pthread_cond_init(&(cond->condp->cond), NULL);
     
     if(ret!=0)
@@ -389,7 +390,8 @@ static int tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *cond)
     pthread_mutex_lock( &(cond_init) );    
     if(cond->condp==NULL)
     {
-        cond->condp=tMPI_Malloc(sizeof(struct tMPI_Thread_cond)*1);
+        cond->condp=(struct tMPI_Thread_cond*)
+                  tMPI_Malloc(sizeof(struct tMPI_Thread_cond)*1);
         ret=pthread_cond_init( &(cond->condp->cond), NULL);
     }
     pthread_mutex_unlock( &(cond_init) );    
@@ -499,7 +501,8 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int n)
         return EINVAL;
     }
     
-    barrier->barrierp=tMPI_Malloc(sizeof(struct tMPI_Thread_barrier)*1);
+    barrier->barrierp=(struct tMPI_Thread_barrier*)
+              tMPI_Malloc(sizeof(struct tMPI_Thread_barrier)*1);
     ret = pthread_mutex_init(&(barrier->barrierp->mutex),NULL);
         
     if(ret!=0)
@@ -536,7 +539,8 @@ static int tMPI_Thread_barrier_init_once(tMPI_Thread_barrier_t *barrier)
     pthread_mutex_lock( &(barrier_init) );    
     if(barrier->barrierp==NULL)
     {
-        barrier->barrierp=tMPI_Malloc(sizeof(struct tMPI_Thread_barrier)*1);
+        barrier->barrierp=(struct tMPI_Thread_barrier*)
+                  tMPI_Malloc(sizeof(struct tMPI_Thread_barrier)*1);
         ret = pthread_mutex_init(&(barrier->barrierp->mutex),NULL);
 
         if(ret!=0)

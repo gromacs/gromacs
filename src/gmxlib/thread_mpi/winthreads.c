@@ -252,7 +252,7 @@ int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx)
         return EINVAL;
     }
 
-    mtx->mutex=tMPI_Malloc(sizeof(struct tMPI_Mutex)*1);
+    mtx->mutex=(struct tMPI_Mutex*)tMPI_Malloc(sizeof(struct tMPI_Mutex)*1);
     InitializeCriticalSection(&(mtx->mutex->cs));
 
     return 0;
@@ -462,7 +462,8 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond)
         return EINVAL;
     }
 
-    cond->condp=tMPI_Malloc(sizeof(struct tMPI_Thread_cond)*1);
+    cond->condp=(struct tMPI_Thread_cond*)
+              tMPI_Malloc(sizeof(struct tMPI_Thread_cond)*1);
 #if 0
     /* use this code once Vista is the minimum version required */
     InitializeConditionVariable( &(cond->cv) );
@@ -691,7 +692,8 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int n)
         return EINVAL;
     }
 
-    barrier->barrierp=tMPI_Malloc(sizeof(struct tMPI_Thread_barrier)*1);
+    barrier->barrierp=(struct tMPI_Thread_barrier*)
+              tMPI_Malloc(sizeof(struct tMPI_Thread_barrier)*1);
 
 #if 0
  /* use this once Vista is the oldest supported windows version: */
