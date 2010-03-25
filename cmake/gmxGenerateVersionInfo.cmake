@@ -7,7 +7,9 @@
 # GEN_VERSION_INFO_INTERNAL has to be set ON.
 #
 # The following variables have to be previously defined: 
-# PROJECT_VERSION       - hard-coded version string 
+# PROJECT_VERSION       - hard-coded version string, should have the following structure: 
+#                       VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix 
+#                       is optional but should start with -dev
 # PROJECT_SOURCE_DIR    - top level source directory 
 # VERSION_C_CMAKEIN     - path to the version.c.cmakein file 
 # VERSION_C_OUT         - path to the version.c output file
@@ -33,7 +35,6 @@ if(GEN_VERSION_INFO_INTERNAL)
     set(GMX_PROJECT_VERSION_STR)
     set(GMX_GIT_HEAD_HASH)
     set(GMX_GIT_REMOTE_HASH)
-    set(USE_VERSION_H)
 endif()
 
 set(GIT_BIN)
@@ -154,11 +155,13 @@ if(NOT "${GIT_BIN}" MATCHES ".*-NOTFOUND"
     string(REGEX REPLACE "(.*)-dev.*" "\\1" VER ${VER})
     set(GMX_PROJECT_VERSION_STR "${VER}-dev-${VERSION_STR_SUFFIX}")
 else()
-    # the version has to be defined 
+    # the version has to be defined - if not we're not using version.h/.c and set 
+    # the GIT related information to "unknown"
     message(WARNING " Not a git repository and/or git not found, using hard-coded version.")
     set(GMX_PROJECT_VERSION_STR "${PROJECT_VERSION}")
     set(GMX_GIT_HEAD_HASH "unknown")
-    set(GMX_GIT_REMOTE_HASH "unknown")    
+    set(GMX_GIT_REMOTE_HASH "unknown")
+    set(USE_VERSION_H OFF)
 endif()
 
 # if we're generating cache variables set these
@@ -170,7 +173,7 @@ if(GEN_VERSION_INFO_INTERNAL)
         CACHE STRING "Current git HEAD commit object" FORCE)
     set(GMX_GIT_REMOTE_HASH ${GMX_GIT_REMOTE_HASH} 
         CACHE STRING "Commmit object of the nearest ancestor present in the Gromacs git repository" FORCE)
-    mark_as_advanced(GMX_GIT_HEAD_HASH GMX_GIT_REMOTE_HASH USE_VERSION_H)
+    mark_as_advanced(GMX_GIT_HEAD_HASH GMX_GIT_REMOTE_HASH)
 else()
     if(${VERSION_C_CMAKEIN} STREQUAL "")
         message(FATAL_ERROR "Missing input parameter VERSION_C_CMAKEIN!")

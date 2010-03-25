@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
 
 project(Gromacs)
+# PROJECT_VERSION should have the following structure: 
+# VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
 set(PROJECT_VERSION "4.0.99-dev-20100315"
     CACHE STRING "Gromacs version string")
 
