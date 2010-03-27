@@ -23,7 +23,8 @@
 # GMX_GIT_HEAD_HASH         - git hash of current local HEAD 
 # GMX_GIT_REMOTE_HASH       - git hash of the first ancestor commit from the 
 #                             main Gromacs repository 
-#
+# 
+# Szilard Pall (pszilard@cbr.su.se) 
 
 if(${PROJECT_VERSION} STREQUAL "")
     message(FATAL_ERROR "PROJECT_VERSION undefined!")
@@ -55,7 +56,7 @@ if(NOT "${GIT_BIN}" MATCHES ".*-NOTFOUND"
     ) 
 
    # get the full hash of the current HEAD 
-    execute_process(COMMAND ${GIT_BIN} rev-parse -q HEAD
+    execute_process(COMMAND ${GIT_BIN} rev-parse HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         TIMEOUT 5
         OUTPUT_VARIABLE GMX_GIT_HEAD_HASH
