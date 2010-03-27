@@ -93,9 +93,9 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
                     name,*(at->resinfo[resind].name),at->resinfo[resind].nr);
             if (name[0]=='H' || name[0]=='h')
             {
-                fprintf(stderr,"         You might need to add atom %s to the hydrogen database of residue %s\n"
+                fprintf(stderr,"         You might need to add atom %s to the hydrogen database of buidling block %s\n"
                         "         in the file %s.hdb (see the manual)\n",
-                        name,*(at->resinfo[resind].name),rp->filebase);
+                        name,*(at->resinfo[resind].rtp),rp->filebase);
             }
             fprintf(stderr,"\n");
         }
@@ -415,8 +415,9 @@ void print_top_mols(FILE *out,
 }
 
 void write_top(FILE *out, char *pr,char *molname,
-	       t_atoms *at,int bts[],t_params plist[],t_excls excls[],
-	       gpp_atomtype_t atype,int *cgnr, int nrexcl)
+               t_atoms *at,bool bRTPresname,
+               int bts[],t_params plist[],t_excls excls[],
+               gpp_atomtype_t atype,int *cgnr, int nrexcl)
      /* NOTE: nrexcl is not the size of *excl! */
 {
   if (at && atype && cgnr) {
@@ -424,7 +425,7 @@ void write_top(FILE *out, char *pr,char *molname,
     fprintf(out,"; %-15s %5s\n","Name","nrexcl");
     fprintf(out,"%-15s %5d\n\n",molname?molname:"Protein",nrexcl);
     
-    print_atoms(out, atype, at, cgnr);
+    print_atoms(out, atype, at, cgnr, bRTPresname);
     print_bondeds(out,at->nr,d_bonds,      F_BONDS,    bts[ebtsBONDS], plist);
     print_bondeds(out,at->nr,d_constraints,F_CONSTR,   0,              plist);
     print_bondeds(out,at->nr,d_constraints,F_CONSTRNC, 0,              plist);
@@ -736,7 +737,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
   /* then the whole rtp */
   for(i=0; i < nres; i++) {
-    res = search_rtp(*resinfo[i].name,nrtp,rtp);
+    res = search_rtp(*resinfo[i].rtp,nrtp,rtp);
     copy_t_restp(res, &(*restp)[i]);
 
     /* Check that we do not have different bonded types in one molecule */
@@ -797,11 +798,12 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         !((*hb)[i].hack[j].oname != NULL &&
                           (*hb)[i].hack[j].nname == NULL))
                     {
-                        gmx_fatal(FARGS,"atom %s not found in residue %d%s "
+                        gmx_fatal(FARGS,
+                                  "atom %s not found in buiding block %d%s "
                                   "while combining tdb and rtp",
                                   (*hb)[i].hack[j].oname!=NULL ? 
                                   (*hb)[i].hack[j].oname : (*hb)[i].hack[j].AI, 
-                                  i+1,*resinfo[i].name);
+                                  i+1,*resinfo[i].rtp);
                     }
                 }
                 else
@@ -887,7 +889,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
 {
     int  resnr;
     int  i,j,k;
-    char *oldnm,*resnm,*newnm;
+    char *oldnm,*newnm;
     int  anmnr;
     char *start_at,buf[STRLEN];
     int  start_nr;
@@ -1039,7 +1041,7 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
                               bool bVerbose)
 {
     int  i,j,k;
-    char *oldnm,*resnm,*newnm;
+    char *oldnm,*newnm;
     int  resnr;
     t_restp *rptr;
     t_hackblock *hbr;
@@ -1051,7 +1053,6 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
     for(i=0; i<pdba->nr; i++)
     {
         oldnm = *pdba->atomname[i];
-        resnm = *pdba->resinfo[pdba->atom[i].resind].name;
         resnr = pdba->resinfo[pdba->atom[i].resind].nr;
         rptr  = &restp[pdba->atom[i].resind];
         for(j=0; (j<rptr->natom); j++)
@@ -1148,7 +1149,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
              bool bDeuterate, bool bChargeGroups, bool bCmap,
-             bool bRenumRes)
+             bool bRenumRes,bool bRTPresname)
 {
     /*
   t_hackblock *hb;
@@ -1270,7 +1271,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         bts[i] = restp[0].rb[i].type;
     }
     write_top(top_file, posre_fn, molname,
-	      atoms, bts, plist, excls, atype, cgnr, restp[0].nrexcl);
+              atoms, bRTPresname, 
+              bts, plist, excls, atype, cgnr, restp[0].nrexcl);
   }
   
   /* cleaning up */

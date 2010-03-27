@@ -61,6 +61,7 @@ typedef struct {
   int           nr;             /* Residue number                       */
   unsigned char ic;             /* Code for insertion of residues       */
   unsigned char chain;          /* Chain identifier                     */
+  char          **rtp;          /* rtp building block name (optional)   */
 } t_resinfo;
 
 typedef struct {

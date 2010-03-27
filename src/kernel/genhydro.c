@@ -144,7 +144,7 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   }
   /* then the whole hdb */
   for(rnr=0; rnr < pdba->nres; rnr++) {
-    ahptr=search_h_db(nah,ah,*pdba->resinfo[rnr].name);
+    ahptr=search_h_db(nah,ah,*pdba->resinfo[rnr].rtp);
     if ( ahptr ) {
       if (hb[rnr].name==NULL)
 	hb[rnr].name=strdup(ahptr->name);
@@ -316,11 +316,13 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
 	    } else {
 	      bFoundAll = FALSE;
 	      if (bCheckMissing) {
-		gmx_fatal(FARGS,"Atom %s not found in residue %s%d"
+		gmx_fatal(FARGS,"Atom %s not found in residue %s %d"
+			  ", rtp entry %s"
 			  " while adding hydrogens",
 			  ab[i][j].a[m],
 			  *pdba->resinfo[rnr].name,
-			  pdba->resinfo[rnr].nr);
+			  pdba->resinfo[rnr].nr,
+			  *pdba->resinfo[rnr].rtp);
 	      }
 	    }
 	  } else
