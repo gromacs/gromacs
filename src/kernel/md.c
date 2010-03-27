@@ -2421,6 +2421,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 if (bNstEner)
                 {
+                    ir->fepvals->energy = enerd->term[F_ETOT];
                     upd_mdebin(mdebin,bDoDHDL ? fp_dhdl : NULL,TRUE,
                                t,mdatoms->tmass,enerd,state,ir->fepvals,lastbox,
                                shake_vir,force_vir,total_vir,pres,

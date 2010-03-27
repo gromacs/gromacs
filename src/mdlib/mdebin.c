@@ -543,7 +543,6 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     }
     sprintf(label_x,"%s (%s)","Time",unit_time);
     
-
     fp = xvgropen(filename,title,label_x,label_y,oenv);
     
     /* count the number of dv/dl components */
@@ -556,7 +555,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     /* count the number of delta_g states */
     nsets2 = ir->fepvals->n_lambda;
     
-    nsets = nsets1 + nsets2;
+    nsets = nsets1 + nsets2 + 1;
     nsetsextend = nsets;
     if (ir->epc!=epcNO) 
     {
@@ -564,6 +563,10 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     }
     snew(setname,nsetsextend); 
     
+    sprintf(buf," %s(%s)","Energy",unit_energy);
+    setname[s] = strdup(buf);
+    s+=1;
+
     for (i=0;i<efptNR;i++) 
     {
         if (ir->fepvals->separate_dvdl[i]) { 
@@ -830,6 +833,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     if (fp_dhdl)
     {
         fprintf(fp_dhdl,"%.4f ",time);
+        fprintf(fp_dhdl,"%.12g ",fepvals->energy);
+
         for (i=0;i<efptNR;i++) 
         {
             if (fepvals->separate_dvdl[i])
