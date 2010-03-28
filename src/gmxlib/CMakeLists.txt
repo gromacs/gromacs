@@ -4,8 +4,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # add target that generates version.c every time a make is run
 # only do this if we generate the version
 if(USE_VERSION_H)
-add_custom_target(gmx_version ALL
+    add_custom_target(gmx_version ALL
             COMMAND ${CMAKE_COMMAND} 
+                -D Git_EXECUTABLE="${Git_EXECUTABLE}"
+                -D Git_VERSION="${Git_VERSION}"
                 -D PROJECT_VERSION="${PROJECT_VERSION}"
                 -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
                 -D VERSION_C_CMAKEIN="${CMAKE_SOURCE_DIR}/src/gmxlib/version.c.cmakein"

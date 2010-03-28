@@ -7,10 +7,12 @@
 # GEN_VERSION_INFO_INTERNAL has to be set ON.
 #
 # The following variables have to be previously defined: 
+# Git_EXECUTABLE        - path to git binary
+# Git_VERSION           - git version (if not defined it's assumed that >=1.5.3)
 # PROJECT_VERSION       - hard-coded version string, should have the following structure: 
 #                       VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix 
 #                       is optional but should start with -dev
-# PROJECT_SOURCE_DIR    - top level source directory 
+# PROJECT_SOURCE_DIR    - top level source directory (which has to be in git)
 # VERSION_C_CMAKEIN     - path to the version.c.cmakein file 
 # VERSION_C_OUT         - path to the version.c output file
 #
@@ -38,16 +40,16 @@ if(GEN_VERSION_INFO_INTERNAL)
     set(GMX_GIT_REMOTE_HASH)
 endif()
 
-set(GIT_BIN)
-find_program(GIT_BIN "git")
-mark_as_advanced(GIT_BIN)
+# bail if the source tree is not in a git repository  
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    message(FATAL_ERROR " Project source directory ${PROJECT_SOURCE_DIR} not in git")
+endif()
 
-# if the source tree is a git repository extract the necessary information for  
-# building the development version string 
-if(NOT "${GIT_BIN}" MATCHES ".*-NOTFOUND" 
-   AND IS_DIRECTORY "${PROJECT_SOURCE_DIR}/.git")
+# if git executable xists and it's compatible version
+# build the development version string 
+if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION VERSION_LESS "1.5.1")
     # refresh git index 
-    execute_process(COMMAND ${GIT_BIN} update-index -q --refresh
+    execute_process(COMMAND ${Git_EXECUTABLE} update-index -q --refresh
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         TIMEOUT 5
         OUTPUT_QUIET
@@ -56,9 +58,8 @@ if(NOT "${GIT_BIN}" MATCHES ".*-NOTFOUND"
     ) 
 
    # get the full hash of the current HEAD 
-    execute_process(COMMAND ${GIT_BIN} rev-parse HEAD
+    execute_process(COMMAND ${Git_EXECUTABLE} rev-parse HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        TIMEOUT 5
         OUTPUT_VARIABLE GMX_GIT_HEAD_HASH
         ERROR_VARIABLE EXEC_ERR
         OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -67,9 +68,8 @@ if(NOT "${GIT_BIN}" MATCHES ".*-NOTFOUND"
     string(SUBSTRING ${GMX_GIT_HEAD_HASH} 0 5 HEAD_HASH_SHORT) 
 
     # if there are local uncommitted changes, the build gets labeled "dirty"
-    execute_process(COMMAND ${GIT_BIN} diff-index --name-only HEAD
+    execute_process(COMMAND ${Git_EXECUTABLE} diff-index --name-only HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        TIMEOUT 5
         OUTPUT_VARIABLE SRC_LOCAL_CHANGES
         ERROR_VARIABLE EXEC_ERR
         OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -79,26 +79,50 @@ if(NOT "${GIT_BIN}" MATCHES ".*-NOTFOUND"
         set(GMX_GIT_HEAD_HASH "${GMX_GIT_HEAD_HASH} (dirty)")
     endif()
 
-    # get the date of the HEAD commit
-    execute_process(COMMAND ${GIT_BIN} rev-list -n1 "--pretty=format:%ci" HEAD
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        TIMEOUT 5
-        OUTPUT_VARIABLE HEAD_DATE
-        ERROR_VARIABLE EXEC_ERR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    string(REGEX REPLACE "\n| " ";" HEAD_DATE ${HEAD_DATE})
-    list(GET HEAD_DATE 2 HEAD_DATE)
-    string(REGEX REPLACE "-" "" HEAD_DATE ${HEAD_DATE})
+    # if git is older then 1.5.3 we need to extract the RFC2822 style date 
+    # and massage it, otherwise the ISO 8601 format is more trusworthy
+    if (NOT Git_VERSION STREQUAL "" AND Git_VERSION VERSION_LESS "1.5.3")
+        execute_process(COMMAND ${Git_EXECUTABLE} rev-list -n1 "--pretty=format:%cD" HEAD
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+            OUTPUT_VARIABLE HEAD_DATE
+            ERROR_VARIABLE EXEC_ERR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        string(REGEX REPLACE ".*, ([0-9]+) ([A-Z][a-z]+) ([0-9]+).*" "\\3\\2\\1" 
+            HEAD_DATE ${HEAD_DATE})
+        string(TOUPPER ${HEAD_DATE} HEAD_DATE)
+        string(REGEX REPLACE "JAN" "01" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "FEB" "02" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "MAR" "03" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "APR" "04" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "MAY" "05" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "JUN" "06" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "JUL" "07" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "AUG" "08" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "SEP" "09" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "OCT" "10" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "NOV" "11" HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE "DEC" "12" HEAD_DATE ${HEAD_DATE})
+    else()
+        # get the date of the HEAD commit
+        execute_process(COMMAND ${Git_EXECUTABLE} rev-list -n1 "--pretty=format:%ci" HEAD
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+            OUTPUT_VARIABLE HEAD_DATE
+            ERROR_VARIABLE EXEC_ERR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        string(REGEX REPLACE "\n| " ";" HEAD_DATE ${HEAD_DATE})
+        list(GET HEAD_DATE 2 HEAD_DATE)
+        string(REGEX REPLACE "-" "" HEAD_DATE ${HEAD_DATE})
+    endif()
 
     # compile the version string suffix
     set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}") 
     
     # find the name of the remote which is located on the official gromacs git server
-    execute_process(COMMAND ${GIT_BIN} config --get-regexp 
+    execute_process(COMMAND ${Git_EXECUTABLE} config --get-regexp 
                     "remote\\..*\\.url" "git\\.gromacs\\.org[:|/]gromacs"
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        TIMEOUT 5
         OUTPUT_VARIABLE GMX_REMOTE
         ERROR_VARIABLE EXEC_ERR
         OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -113,9 +137,8 @@ if(NOT "${GIT_BIN}" MATCHES ".*-NOTFOUND"
         # find the first ancestor in the list provided by rev-list (not 
         # necessarily the last though) which is in GMX_REMOTE, extract the 
         # hash and the number of commits HEAD is ahead with 
-        execute_process(COMMAND ${GIT_BIN} rev-list --max-count=100 HEAD
+        execute_process(COMMAND ${Git_EXECUTABLE} rev-list --max-count=100 HEAD
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-            TIMEOUT 5
             OUTPUT_VARIABLE ANCESTOR_LIST
         )
         string(REGEX REPLACE "\n" ";" ANCESTOR_LIST ${ANCESTOR_LIST})
@@ -123,9 +146,8 @@ if(NOT "${GIT_BIN}" MATCHES ".*-NOTFOUND"
         set(AHEAD 0)
         set(GMX_GIT_REMOTE_HASH "")
         foreach(OBJ ${ANCESTOR_LIST})
-            execute_process(COMMAND ${GIT_BIN} name-rev --refs=refs/remotes/${GMX_REMOTE}/* ${OBJ}
+            execute_process(COMMAND ${Git_EXECUTABLE} name-rev --refs=refs/remotes/${GMX_REMOTE}/* ${OBJ}
                 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-                TIMEOUT 5
                 OUTPUT_VARIABLE HASH_AND_REVNAME
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
@@ -158,11 +180,10 @@ if(NOT "${GIT_BIN}" MATCHES ".*-NOTFOUND"
 else()
     # the version has to be defined - if not we're not using version.h/.c and set 
     # the GIT related information to "unknown"
-    message(WARNING " Not a git repository and/or git not found, using hard-coded version.")
+    message(WARNING " Source tree seems to be a repository, but no compatible git is available, using hard-coded version string")
     set(GMX_PROJECT_VERSION_STR "${PROJECT_VERSION}")
     set(GMX_GIT_HEAD_HASH "unknown")
     set(GMX_GIT_REMOTE_HASH "unknown")
-    set(USE_VERSION_H OFF)
 endif()
 
 # if we're generating cache variables set these
