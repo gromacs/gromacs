@@ -88,7 +88,11 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION VERSION_LESS "1.5.1")
             ERROR_VARIABLE EXEC_ERR
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-        string(REGEX REPLACE ".*, ([0-9]+) ([A-Z][a-z]+) ([0-9]+).*" "\\3\\2\\1" 
+        # date format: day, D Mmm YYYY  -> YYYY-MM-DD
+        # if the day is single sigit need to insert a "0"
+        string(REGEX REPLACE ".*(, )([0-9] )(.*)" "\\10\\2\\3" 
+            HEAD_DATE ${HEAD_DATE})
+        string(REGEX REPLACE ".*, ([0-9][0-9]) ([A-Z][a-z]+) ([0-9]+).*" "\\3\\2\\1" 
             HEAD_DATE ${HEAD_DATE})
         string(TOUPPER ${HEAD_DATE} HEAD_DATE)
         string(REGEX REPLACE "JAN" "01" HEAD_DATE ${HEAD_DATE})
