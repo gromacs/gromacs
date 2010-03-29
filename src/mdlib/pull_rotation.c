@@ -1994,6 +1994,7 @@ static void angle(t_rotgrp *rotg,
 
 /* Project first vector onto a plane perpendicular to the second vector 
  * dr = dr - (dr.v)v
+ * Note that v must be of unit length.
  */
 static inline void project_onto_plane(rvec dr, const rvec v)
 {
