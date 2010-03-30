@@ -516,7 +516,8 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
         }
     }
     PR("sc_alpha",fepvals->sc_alpha);
-    PS("sc_coul",BOOL(fepvals->bScCoul));
+    PS("bScCoul",BOOL(fepvals->bScCoul));
+    PS("bScPrintEnergy",BOOL(fepvals->bPrintEnergy));
     PI("sc_power",fepvals->sc_power);
     PR("sc_sigma",fepvals->sc_sigma);
 };

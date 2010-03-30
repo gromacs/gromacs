@@ -534,6 +534,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->fepvals->sc_power",-1,ir1->fepvals->sc_power,ir2->fepvals->sc_power);
   cmp_real(fp,"inputrec->fepvals->sc_sigma",-1,ir1->fepvals->sc_sigma,ir2->fepvals->sc_sigma,ftol,abstol);
   cmp_int(fp,"inputrec->nstdhdl",-1,ir1->nstdhdl,ir2->nstdhdl);
+  cmp_bool(fp,"inputrec->fepvals->bPrintEnergy",-1,ir1->fepvals->bPrintEnergy,ir1->fepvals->bPrintEnergy);
+  cmp_bool(fp,"inputrec->fepvals->bScCoul",-1,ir1->fepvals->bScCoul,ir1->fepvals->bScCoul);
 
   cmp_int(fp,"inputrec->nwall",-1,ir1->nwall,ir2->nwall);
   cmp_int(fp,"inputrec->wall_type",-1,ir1->wall_type,ir2->wall_type);

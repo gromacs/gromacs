@@ -1092,15 +1092,15 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("Free energy control stuff");
   EETYPE("free-energy",	ir->efep, efep_names, nerror, TRUE);
   RTYPE ("init-lambda", ir->fepvals->init_lambda,-1); /* start with -1 so we can recognize if it was not entered */
-  ITYPE ("init-fep-state", ir->fepvals->init_fep_state,0);
+  ITYPE ("init-lambda-state", ir->fepvals->init_fep_state,0);
   RTYPE ("delta-lambda",ir->fepvals->delta_lambda,0.0);
-  /*STYPE ("foreign-lambda", fep_lambda[efptFEP], NULL);*/  /* included for backwards compatibility -- but fep-lambda overwrites */
-  STYPE ("fep-lambda", fep_lambda[efptFEP], NULL);
-  STYPE ("mass-lambda", fep_lambda[efptMASS], NULL);
-  STYPE ("coul-lambda", fep_lambda[efptCOUL], NULL);
-  STYPE ("vdw-lambda", fep_lambda[efptVDW], NULL);
-  STYPE ("bonded-lambda", fep_lambda[efptBONDED], NULL);
-  STYPE ("restraint-lambda", fep_lambda[efptRESTRAINT], NULL);
+  STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
+  STYPE ("mass-lambdas", fep_lambda[efptMASS], NULL);
+  STYPE ("coul-lambdas", fep_lambda[efptCOUL], NULL);
+  STYPE ("vdw-lambdas", fep_lambda[efptVDW], NULL);
+  STYPE ("bonded-lambdas", fep_lambda[efptBONDED], NULL);
+  STYPE ("restraint-lambdas", fep_lambda[efptRESTRAINT], NULL);
+  EETYPE("dhdl-print-energy", ir->fepvals->bPrintEnergy, yesno_names, nerror, FALSE);
   RTYPE ("sc-alpha",ir->fepvals->sc_alpha,0.0);
   ITYPE ("sc-power",ir->fepvals->sc_power,0);
   RTYPE ("sc-sigma",ir->fepvals->sc_sigma,0.3);

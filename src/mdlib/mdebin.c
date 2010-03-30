@@ -521,9 +521,9 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     FILE *fp;
     const char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4",*remain="remaining";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
-    int  i,np,nps,nsets,nsets2;
+    int  i,np,nps,nsets,nsets_de,nsetsbegin;
     char **setname,buf[STRLEN];
-    int nsets1 = 0;
+    int nsets_dhdl = 0;
     int s = 0;
     int nsetsextend;
     
@@ -549,13 +549,18 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
 
     for (i=0;i<efptNR;i++) 
     {
-        if (ir->fepvals->separate_dvdl[i]) {nsets1++;}
+        if (ir->fepvals->separate_dvdl[i]) {nsets_dhdl++;}
     }
     
     /* count the number of delta_g states */
-    nsets2 = ir->fepvals->n_lambda;
+    nsets_de = ir->fepvals->n_lambda;
     
-    nsets = 1 + nsets1 + nsets2; /* energy + dhdl + fep differences */
+    nsets = nsets_dhdl + nsets_de; /* dhdl + fep differences */
+    if (ir->fepvals->bPrintEnergy)  
+    { 
+        nsets += 1;  /* add energy to the dhdl as well */
+    }
+
     nsetsextend = nsets;
     if (ir->epc!=epcNO) 
     {
@@ -563,9 +568,12 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     }
     snew(setname,nsetsextend); 
     
-    sprintf(buf,"%s (%s)","Energy",unit_energy);
-    setname[s] = strdup(buf);
-    s+=1;
+    if (ir->fepvals->bPrintEnergy)  
+    { 
+        sprintf(buf,"%s (%s)","Energy",unit_energy);
+        setname[s] = strdup(buf);
+        s+=1;
+    }
 
     for (i=0;i<efptNR;i++) 
     {
@@ -582,14 +590,20 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
          * from this xvg legend.
          */
 
-        for(s=nsets1+1; s<nsets; s++)
+        nsetsbegin = nsets_dhdl;
+        if (ir->fepvals->bPrintEnergy)  
+        { 
+            nsetsbegin = nsets_dhdl + 1;
+        }
+
+        for(s=nsetsbegin; s<nsets; s++)
         {
             nps = sprintf(buf,"%s %s (",deltag,lambda);  
             for (i=0;i<efptNR;i++) 
             {
                 if (ir->fepvals->separate_dvdl[i]) 
                 { 
-                    np = sprintf(&buf[nps],"%g,",ir->fepvals->all_lambda[i][s-(nsets1+1)]);
+                    np = sprintf(&buf[nps],"%g,",ir->fepvals->all_lambda[i][s-(nsetsbegin)]);
                     nps += np;
                 }
             }
@@ -598,7 +612,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
         }
         if (ir->epc!=epcNO) {
             np = sprintf(buf,"pv(%s)",unit_energy);        
-            setname[(nsets-1)+1] = strdup(buf);  /* the first entry after nsets */
+            setname[nsetsextend-1] = strdup(buf);  /* the first entry after nsets */
         }
 
         xvgr_legend(fp,nsetsextend,setname,oenv);
@@ -833,8 +847,10 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     if (fp_dhdl)
     {
         fprintf(fp_dhdl,"%.4f ",time);
-        fprintf(fp_dhdl,"%.12g ",fepvals->energy);
-
+        if (fepvals->bPrintEnergy) 
+        {
+            fprintf(fp_dhdl,"%.12g ",fepvals->energy);
+        }
         for (i=0;i<efptNR;i++) 
         {
             if (fepvals->separate_dvdl[i])

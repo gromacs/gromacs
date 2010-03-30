@@ -306,9 +306,23 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
   {
       fepvals->sc_sigma = 0.3;
   }    
+
   if (file_version >= 70) 
   {
       do_int(fepvals->bScCoul);
+  }
+  else
+  {
+      fepvals->bScCoul = TRUE;
+  }
+
+  if (file_version >= 70)
+  {
+      do_int(fepvals->bPrintEnergy);
+  }
+  else
+  {
+      fepvals->bPrintEnergy = FALSE;
   }
 }
 
