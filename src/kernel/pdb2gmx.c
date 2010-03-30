@@ -447,8 +447,6 @@ static int read_pdball(const char *inf, const char *outf,char *title,
   rename_pdbres(atoms,"HOH",watres,FALSE,symtab);
   rename_pdbres(atoms,"SOL",watres,FALSE,symtab);
   rename_pdbres(atoms,"WAT",watres,FALSE,symtab);
-  
-  rename_pdbres(atoms,"HEM","HEME",FALSE,symtab);
 
   rename_atoms("xlateat.dat",NULL,atoms,symtab,NULL,TRUE,aan,TRUE,bVerbose);
   
@@ -493,9 +491,16 @@ void process_chain(t_atoms *pdba, rvec *x,
   else
     rename_bb(pdba,"GLUH","GLU",FALSE,symtab);
 
-  if (bRenameCys)
-    /* Make sure we don't have things like CYS? */ 
-    rename_bb(pdba,"CYS","CYS",FALSE,symtab);
+  if (bRenameCys) {
+    /* Make sure we don't have things like CYS?
+     * And rename CYS to CYSH, since that is the Gromacs standard
+     * unbound cysteine rtp entry name.
+     */ 
+    rename_bb(pdba,"CYS","CYSH",FALSE,symtab);
+  }
+
+  /* The Gromacs rtp name for a heme is HEME */
+  rename_bb(pdba,"HEM","HEME",TRUE,symtab);
 
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
@@ -831,7 +836,7 @@ int main(int argc, char *argv[])
   t_aa_names *aan;
   const char *top_fn;
   char       fn[256],itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
-  char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[STRLEN];
+  char       molname[STRLEN],title[STRLEN],quote[STRLEN];
   char       *c,forcefield[STRLEN],ffdir[STRLEN];
   char       fff[STRLEN],suffix[STRLEN];
   const char *watres;
@@ -915,8 +920,8 @@ int main(int argc, char *argv[])
       "Interactive Glutamine selection, iso neutral" },
     { "-his",    FALSE, etBOOL, {&bHisMan},
       "Interactive Histidine selection, iso checking H-bonds" },
-    { "-cys",    FALSE, etBOOL, {&bRenameCys},
-      "HIDDENRename cysteines to cys" },
+    { "-cysh",    FALSE, etBOOL, {&bRenameCys},
+      "HIDDENUse rtp entry CYSH for cysteines" },
     { "-angle",  FALSE, etREAL, {&angle}, 
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
     { "-dist",   FALSE, etREAL, {&distance},
@@ -1269,9 +1274,7 @@ int main(int argc, char *argv[])
     }
 
     /* Check for disulphides and other special bonds */
-    rename_bb(pdba,"CYSH","CYS",TRUE,&symtab);
-    nssbonds=mk_specbonds(pdba,x,bCysMan,&ssbonds);
-    rename_bb(pdba,"CYS","CYSH",TRUE,&symtab);
+    nssbonds = mk_specbonds(pdba,x,bCysMan,&ssbonds,bVerbose);
 
     if (nrtprename > 0) {
       rename_resrtp(pdba,cc->nterpairs,cc->rN,cc->rC,nrtprename,rtprename,
@@ -1295,9 +1298,10 @@ int main(int argc, char *argv[])
        */
       /* First the N terminus */
       if (nNtdb > 0) {
-	strncpy(resname,*pdba->resinfo[cc->rN[i]].name,3);
-	resname[3] = '\0';
-	tdblist=filter_ter(nrtp,restp,nNtdb,ntdb,resname,&ntdblist);
+	tdblist = filter_ter(nrtp,restp,nNtdb,ntdb,
+			     *pdba->resinfo[cc->rN[i]].name,
+			     *pdba->resinfo[cc->rN[i]].rtp,
+			     &ntdblist);
 	if(ntdblist==0)
 	  gmx_fatal(FARGS,"No suitable N-terminus found in database");
 	
@@ -1313,8 +1317,10 @@ int main(int argc, char *argv[])
       
       /* And the C terminus */
       if (nCtdb > 0) {
-	strncpy(resname,*pdba->resinfo[cc->rC[i]].name,3);
-	tdblist=filter_ter(nrtp,restp,nCtdb,ctdb,resname,&ntdblist);
+	tdblist = filter_ter(nrtp,restp,nCtdb,ctdb,
+			     *pdba->resinfo[cc->rC[i]].name,
+			     *pdba->resinfo[cc->rC[i]].rtp,
+			     &ntdblist);
 	if(ntdblist==0)
 	  gmx_fatal(FARGS,"No suitable C-terminus found in database");
 	
