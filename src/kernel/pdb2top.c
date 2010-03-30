@@ -116,6 +116,15 @@ bool is_int(double x)
   return (fabs(x-ix) < tol);
 }
 
+static void swap_strings(char **s,int i,int j)
+{
+    char *tmp;
+
+    tmp  = s[i];
+    s[i] = s[j];
+    s[j] = tmp;
+}
+
 void
 choose_ff(const char *ffsel,
           char *forcefield, int ff_maxlen,
@@ -123,8 +132,8 @@ choose_ff(const char *ffsel,
 {
     int  nff;
     char **ffdirs,**ffs,*ptr;
-    int  i,sel;
-    char buf[STRLEN],*doc_dir;
+    int  i,j,sel;
+    char buf[STRLEN],**desc,*doc_dir;
     FILE *fp;
     char *pret;
 
@@ -173,7 +182,7 @@ choose_ff(const char *ffsel,
     }
     else if (nff > 1)
     {
-        printf("\nSelect the Force Field:\n");
+        snew(desc,nff);
         for(i=0; (i<nff); i++)
         {
             sprintf(buf,"%s%c%s",
@@ -183,16 +192,40 @@ choose_ff(const char *ffsel,
             {
                 /* We don't use fflib_open, because we don't want printf's */
                 fp = ffopen(doc_dir,"r");
-                get_a_line(fp,buf,STRLEN);
+                snew(desc[i],STRLEN);
+                get_a_line(fp,desc[i],STRLEN);
                 ffclose(fp);
                 sfree(doc_dir);
-                printf("%2d: %s\n",i,buf);
             }
             else
             {
+                desc[i] = strdup(ffs[i]);
                 printf("%2d: %s\n",i,ffs[i]);
             }
         }
+        for(i=0; (i<nff); i++)
+        {
+            for(j=i+1; (j<nff); j++)
+            {
+                if ((desc[i][0] == '[' && desc[j][0] != '[') ||
+                    ((desc[i][0] == '[' || desc[j][0] != '[') &&
+                     strcasecmp(desc[i],desc[j]) > 0))
+                {
+                    swap_strings(ffdirs,i,j);
+                    swap_strings(ffs   ,i,j);
+                    swap_strings(desc  ,i,j);
+                }
+            }
+        }
+
+        printf("\nSelect the Force Field:\n");
+        for(i=0; (i<nff); i++)
+        {
+            printf("%2d: %s\n",i,desc[i]);
+            sfree(desc[i]);
+        }
+        sfree(desc);
+
         do
         {
             pret = fgets(buf,STRLEN,stdin);
