@@ -364,7 +364,9 @@ typedef struct {
   int  adress_ivdw;
   int  adress_site;
   rvec adress_refs;
-  t_forcetable  atf_tab;
+  int n_adress_tf_grps;
+  int * adress_tf_table_index;
+  t_forcetable *  atf_tabs;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;
