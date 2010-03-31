@@ -1162,6 +1162,34 @@ static real cutoff_inf(real cutoff)
     return cutoff;
 }
 
+static void make_adress_tf_tables(FILE *fp,const output_env_t oenv,
+                            t_forcerec *fr,const t_inputrec *ir,
+			    const char *tabfn, const gmx_mtop_t *mtop,
+                            matrix     box)
+{
+  char buf[STRLEN];
+  int i,j;
+  gmx_groups_t *groups;
+  char   **gnames;
+
+  groups = &mtop->groups;
+  if (tabfn == NULL) {
+    if (debug)
+      fprintf(debug,"No table file name passed, can not read table, can not do adress tf table\n");
+    return;
+  }
+
+  snew(fr->atf_tabs, ir->n_adress_tf_grps);
+
+  for (i=0; i<ir->n_adress_tf_grps; i++){
+    j = ir->adress_tf_table_index[i]; /* get energy group index */
+    sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_tf_%s.%s", *(groups->grpname[groups->grps[egcENER].nm_ind[j]]) ,ftp2ext(efXVG));
+    printf("loading tf table for energy index %d from %s\n", ir->adress_tf_table_index[j], buf);
+    fr->atf_tabs[i] = make_atf_table(fp,oenv,fr,buf, box);
+  }
+
+}
+
 void init_forcerec(FILE *fp,
                    const output_env_t oenv,
                    t_forcerec *fr,
@@ -1220,6 +1248,12 @@ void init_forcerec(FILE *fp,
     fr->adress_hy_width = ir->adress_hy_width;
     fr->adress_icor     = ir->adress_icor;
     fr->adress_site     = ir->adress_site;
+    
+    fr->n_adress_tf_grps = ir->n_adress_tf_grps;
+    snew(fr->adress_tf_table_index, fr->n_adress_tf_grps);
+    for (i=0; i< fr->n_adress_tf_grps; i++){
+        fr->adress_tf_table_index[i]= ir->adress_tf_table_index[i];
+    }
     copy_rvec(ir->adress_refs,fr->adress_refs);
     
     if (ir->adress_ivdw == evdwUSER)
@@ -1607,7 +1641,16 @@ void init_forcerec(FILE *fp,
     /* Read AdResS Thermo Force table if needed */
     if(fr->adress_icor == eAdressICThermoForce)
     {
-        fr->atf_tab = make_atf_table(fp,oenv,fr,tabafn, box);
+        // old todo replace 
+        
+        if (ir->n_adress_tf_grps > 0){
+            make_adress_tf_tables(fp,oenv,fr,ir,tabfn, mtop, box);
+
+        }else{
+            //load the default table
+            snew(fr->atf_tabs, 1);
+            fr->atf_tabs[DEFAULT_TF_TABLE] = make_atf_table(fp,oenv,fr,tabafn, box);
+        }
     }
     
     /* Wall stuff */
