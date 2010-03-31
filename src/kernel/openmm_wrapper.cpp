@@ -324,7 +324,7 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
 
     /* Integrator */
     if (ir->eI ==  eiMD)
-        gmx_warning(FARGS, "OpenMM does not support leap-frog, will use velocity-verlet integrator.\n");
+        gmx_warning( "OpenMM does not support leap-frog, will use velocity-verlet integrator.\n");
 
     if ( (ir->eI !=  eiMD)   &&  
          (ir->eI !=  eiVV)   &&  
