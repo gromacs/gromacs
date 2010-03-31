@@ -996,7 +996,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("adress_exvdw",               ir->adress_ivdw,     evdw_names,        nerror, TRUE);
   EETYPE("adress_site",                ir->adress_site,     eAdressSITEtype_names,nerror, TRUE);
   STYPE ("adress_reference_coords",    adress_refs,         NULL);
-  STYPE ("adress_tf_grp_names",    adress_refs,         NULL);
+  STYPE ("adress_tf_grp_names",      adress_tf_grp_names,    NULL);
 
   /* User defined thingies */
   CCTYPE ("User defined thingies");
@@ -1942,24 +1942,7 @@ void do_index(const char* mdparin, const char *ndx,
   for( ;(i<DIM); i++)
     ir->adress_refs[i]=0;
 
-
-  nadress_tf_grp_names = str_nelem(adress_tf_grp_names,MAXPTR,ptr1);
-
-  if (nadress_tf_grp_names > 0){
-  for (g=0; g <nadress_tf_grp_names; g++){
-    //search group index, already checks if group exists
-    ig = search_string(pgnames[g],grps->nr,gnames);
-    if (bVerbose){
-        fprintf(stderr,"%s :",gtypes[i],groups->grps[i].nr);
-    }
-
-  }
-  }
-  //TODO: find grp indices, store them somehow
-  //for(i=0; (i<nadress_tf_grp_names); i++)
-  //  ir->adress_tf_grp_names[i]=strtod(ptr1[i],NULL);
-
-  /* End AdResS input */
+ /* End AdResS input */
 
   if (bVerbose)
     for(i=0; (i<egcNR); i++) {
@@ -1987,6 +1970,29 @@ void do_index(const char* mdparin, const char *ndx,
   decode_cos(efield_yt,&(ir->et[YY]),TRUE);
   decode_cos(efield_z,&(ir->ex[ZZ]),FALSE);
   decode_cos(efield_zt,&(ir->et[ZZ]),TRUE);
+
+  /* AdResS multiple tf tables input */
+  nadress_tf_grp_names = str_nelem(adress_tf_grp_names,MAXPTR,ptr1);
+  ir->n_adress_tf_grps = nadress_tf_grp_names;
+  snew(ir->adress_tf_table_index, nadress_tf_grp_names);
+
+  nr = groups->grps[egcENER].nr;
+
+  if (nadress_tf_grp_names > 0){
+        for (i=0; i <nadress_tf_grp_names; i++){
+        //search for the group name mathching the tf group name
+            k = 0;
+            while ((k < nr) &&
+                 strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
+              k++;
+            if (k==nr) gmx_fatal(FARGS,"Adress tf energy group %s not found\n",ptr1[i]);
+            
+            ir->adress_tf_table_index[i] = k;
+            if (debug) fprintf(debug,"found tf group %s id %d \n",ptr1[i], k);
+
+    }
+  }
+  /* end AdResS multiple tf tables input */
   
   for(i=0; (i<grps->nr); i++)
     sfree(gnames[i]);
