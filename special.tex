@@ -898,4 +898,67 @@ in the calculation.
 
 What is needed as well is a transition state optimizer.
 
+\section{Gromacs on GPUs}
+
+This is an experimental release of {\gromacs} for accelerated
+Molecular Dynamics simulations on GPU processors. Support is provided
+by the \href{https://simtk.org/home/openmm}{OpenMM library}. This release is targeted at developers and advanced users
+and care should be taken before production use. The following should be
+noted before using the GPU accelerated program:
+\begin{itemize}
+\item The current release runs only on modern nVidia GPU hardware with CUDA support.
+Make sure that the necessary CUDA drivers and libraries for your operating system
+are already installed. The \href{http://www.nvidia.com/object/cuda_home.html}
+{CUDA SDK} also should be installed in order to compile the program from source.
+\item Multiple GPU cards are not supported.
+\item Only a small subset of the {\gromacs} features and options are supported on the GPUs.
+See below for a detailed list.
+\item Consumer level GPU cards are known to often have problems with faulty memory.
+It is recommended that a full memory check of the cards is done at least once
+(for example, using the {\tt memtest=full} option).
+A partial memory check (for example, {\tt memtest=15}) before and
+after the simulation run would help spot
+problems resulting from processor overheating.
+\item The maximum size of the simulated systems depends on the available
+GPU memory, for example, a GTX280 with 1GB memory has been tested with systems
+of up to about 100,000 atoms.
+\item In order to take a full advantage of the GPU platform features, many algorithms
+have been implemented in a very different way than they are on the CPUs.
+Therefore numercal correspondence between some properties of the systems' state
+should not be expected. Moreover, the values will likely vary when simulations are
+done on different GPU hardware. However, sufficiently long trajectories
+should produce comparable statistical averages.
+\item Frequent retrieval of system state information such as
+trajectory coordinates and energies can greatly influence the performance
+of the program due to slow CPU$<$--$>$GPU memory transfer speed.
+\item MD algorithms are complex, and although the Gromacs code is highly tuned for them,
+they often do not translate very well onto the streaming architetures.
+Realistic expectations about the achievable speed-up from tests with GTX280:
+for small protein systems in implicit solvent using all-vs-all kernels the acceleration
+can be as high as 20 times, but in most other setups involving cutoffs and PME the
+acceleration is usually only 4~6 times relative to a 3GHz CPU.
+\end{itemize}
+
+\subsection{Supported features}
+
+\begin{itemize}
+\item \textbf{Integrators:} {\tt md/md-vv/md-vv2}, {\tt sd/sd1} and {\tt bd}.\\
+OpenMM implements only the velocity-verlet algorithm for MD simulations.
+Option {\tt md} is accepted but keep in mind that the actual algorithm is not leap-frog.
+Thus all three options {\tt md}, {\tt md-vv} and {\tt md-vv2} are equivalent. Similarly, options {\tt sd}
+and {\tt sd1} are equivalent also.
+\item \textbf{Long-range interactions:} {\tt Reaction-Field}, {\tt Ewald}, {\tt PME}.
+\\{\tt No-cutoff}, i.e. {\tt rcoulomb=0} and {\tt rvdw=0}, is also supported.
+\item \textbf{Temperature control:} Supported only with the {\tt sd/sd1}, {\tt bd}, {\tt md/md-vv/md-vv2} integrators.\\
+OpenMM implements only the Andersen thermostat. All values for {\tt tcoupl} are thus accepted and equivalent and 
+\item \textbf{Pressure control:} Not supported.
+\item \textbf{Implicit solvent:} Supported.
+\end{itemize}
+
+\subsection{Installation}
+
+
+\subsection{Command line option}
+
+
 
