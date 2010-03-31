@@ -674,6 +674,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_int(ir->badress_tf_full_box);
       do_int(ir->adress_site);
       do_rvec(ir->adress_refs);
+      do_int(ir->n_adress_tf_grps);
+      if (bRead)snew(ir->adress_tf_table_index,ir->n_adress_tf_grps);
+      if (ir->n_adress_tf_grps > 0) {
+        ndo_int(ir->adress_tf_table_index,ir->n_adress_tf_grps,bDum);
+      }
     }
 
     /* pull stuff */
