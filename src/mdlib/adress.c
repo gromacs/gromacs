@@ -433,8 +433,6 @@ adress_thermo_force(int                  cg0,
     ptype            = mdatoms->ptype;
     ref              = &(fr->adress_refs);
     wf               = mdatoms->wf;
-    tabscale         = fr->atf_tab.scale;
-    ATFtab           = fr->atf_tab.tab;
     badress_chempot_dx = fr->badress_chempot_dx;
     badress_tf_full_box = fr->badress_tf_full_box;
 
@@ -450,8 +448,19 @@ adress_thermo_force(int                  cg0,
             {
                 w    = wf[k0];
                 /* is it hybrid or apply the thermodynamics force everywhere?*/
-                if ((w > 0 && w < 1) || badress_tf_full_box)
+                if (((w > 0 && w < 1) || badress_tf_full_box) && mdatoms->tf_table_index[k0] != NO_TF_TABLE)
                 {
+                    if (fr->n_adress_tf_grps > 0 ){
+                        /* multi component tf is on, select the right table */
+                        ATFtab = fr->atf_tabs[mdatoms->tf_table_index[k0]].tab;
+                        tabscale = fr->atf_tabs[mdatoms->tf_table_index[k0]].scale;
+                    }
+                    else {
+                    /* just on component*/
+                        ATFtab = fr->atf_tabs[DEFAULT_TF_TABLE].tab;
+                        tabscale = fr->atf_tabs[DEFAULT_TF_TABLE].scale;
+                    }
+                    
                     fscal            = 0;
                     if (pbc)
                     {
