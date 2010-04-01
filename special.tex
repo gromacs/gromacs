@@ -942,16 +942,16 @@ acceleration is usually only 4~6 times relative to a 3GHz CPU.
 \subsection{Supported features}
 
 \begin{itemize}
-\item \textbf{Integrators:} {\tt md/md-vv/md-vv2}, {\tt sd/sd1} and {\tt bd}.\\
+\item \textbf{Integrators:} {\tt md/md-vv/md-vv-avek}, {\tt sd/sd1} and {\tt bd}.\\
 OpenMM implements only the velocity-verlet algorithm for MD simulations.
 Option {\tt md} is accepted but keep in mind that the actual algorithm is not leap-frog.
-Thus all three options {\tt md}, {\tt md-vv} and {\tt md-vv2} are equivalent.
+Thus all three options {\tt md}, {\tt md-vv} and {\tt md-vv-avek} are equivalent.
 Similarly, options {\tt sd} and {\tt sd1} are also equivalent.
 \item \textbf{Long-range interactions:} {\tt Reaction-Field}, {\tt Ewald}, {\tt PME}.\\
 {\tt No-cutoff}, i.e. {\tt rcoulomb=0} and {\tt rvdw=0}, is also supported.\\
 For Ewald summation only 3D geometry is supported, and dipole correction is not.
 \item \textbf{Temperature control:} Supported only with the {\tt sd/sd1}, {\tt bd},
-{\tt md/md-vv/md-vv2} integrators.\\
+{\tt md/md-vv/md-vv-avek} integrators.\\
 OpenMM implements only the Andersen thermostat. All values for {\tt tcoupl} are
 thus accepted and equivalent to {\tt andersen}. Multiple temperature coupling groups
 are not supported, only {\tt tc-grps=System} will work. Remember that for heterogenous
