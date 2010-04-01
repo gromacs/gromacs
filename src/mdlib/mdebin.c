@@ -530,7 +530,8 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         sprintf(title,"%s, %s",dhdl,deltag);
         sprintf(label_y,"(%s)",unit_energy);
     }
-    fp = xvgropen(filename,title,label_x,label_y,oenv);
+    fp = gmx_fio_fopen(filename,"w+");
+    xvgr_header(fp,title,label_x,label_y,exvggtXNY,oenv);
 
     sprintf(buf,"T = %g (K)",ir->opts.ref_t[0]);
     xvgr_subtitle(fp,buf,oenv);

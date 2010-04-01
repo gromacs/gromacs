@@ -47,6 +47,7 @@
 #include <string2.h>
 #include <trajana.h>
 #include "gmx_ana.h"
+#include "gmx_fatal.h"
 
 
 typedef struct

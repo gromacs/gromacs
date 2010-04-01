@@ -1,5 +1,7 @@
 
 include(CheckIncludeFiles)
+include(CheckFunctionExists)
+#include(CheckCSourceCompiles)
 
 #option(THREAD_PTHREADS "Use posix threads" ON)
 
@@ -12,11 +14,11 @@ if (CMAKE_USE_PTHREADS_INIT)
         thread_mpi/profile.c     thread_mpi/barrier.c 
         thread_mpi/collective.c  thread_mpi/reduce_fast.c
         thread_mpi/comm.c        thread_mpi/errhandler.c  
-        thread_mpi/send_recv.c   thread_mpi/event.c       
+        thread_mpi/p2p.c         thread_mpi/event.c       
         thread_mpi/threads.c     thread_mpi/tmpi_init.c
         thread_mpi/group.c       thread_mpi/list.c
         thread_mpi/topology.c    thread_mpi/type.c
-        thread_mpi/once.c        )
+        thread_mpi/once.c        thread_mpi/hwinfo.c)
     set(THREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
 else (CMAKE_USE_PTHREADS_INIT)
     if (CMAKE_USE_WIN32_THREADS_INIT)
@@ -26,11 +28,11 @@ else (CMAKE_USE_PTHREADS_INIT)
             thread_mpi/profile.c     thread_mpi/barrier.c 
             thread_mpi/collective.c  thread_mpi/reduce_fast.c
             thread_mpi/comm.c        thread_mpi/errhandler.c  
-            thread_mpi/send_recv.c   thread_mpi/event.c       
+            thread_mpi/p2p.c         thread_mpi/event.c       
             thread_mpi/threads.c     thread_mpi/tmpi_init.c
             thread_mpi/group.c       thread_mpi/list.c
             thread_mpi/topology.c    thread_mpi/type.c
-            thread_mpi/once.c        )
+            thread_mpi/once.c        thread_mpi/hwinfo.c)
         set(THREAD_LIBRARY )
     endif (CMAKE_USE_WIN32_THREADS_INIT)
 endif (CMAKE_USE_PTHREADS_INIT)
@@ -64,4 +66,27 @@ else (THREAD_MPI_PROFILING)
     add_definitions()
 endif (THREAD_MPI_PROFILING)
 
+
+# this runs on POSIX systems
+check_include_files(unistd.h        HAVE_UNISTD_H)
+check_include_files(sched.h         HAVE_SCHED_H)
+check_include_files(sys/time.h      HAVE_SYS_TIME_H)
+check_function_exists(sysconf       HAVE_SYSCONF)
+# this runs on windows
+#check_include_files(windows.h		HAVE_WINDOWS_H)
+#check_function_exists(GetSystemInfo HAVE_SYSTEM_INFO)
+
+try_compile(TEST_ATOMICS "${CMAKE_BINARY_DIR}"
+            "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.c"
+            COMPILE_DEFINITIONS "-I${CMAKE_SOURCE_DIR}/include" )
+
+if (TEST_ATOMICS)
+    message(STATUS "Atomics found")
+    set(TMPI_ATOMICS 1)
+else (TEST_ATOMICS)
+    message(WARNING "Atomics not found for this compiler+cpu combination. Thread support will be unbearably slow: disable threads.
+Atomics should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.
+")
+    set(TMPI_ATOMICS 0)
+endif(TEST_ATOMICS)
 

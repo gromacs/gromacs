@@ -41,6 +41,7 @@
 #endif
 
 #include "typedefs.h"
+#include "warninp.h"
 
 
 #ifdef __cplusplus
@@ -61,48 +62,52 @@ typedef struct {
 
 
 extern t_inpfile *read_inpfile(const char *fn,int *ninp,
-			       char **cppopts);
+			       char **cppopts,
+			       warninp_t wi);
 /* Create & populate a t_inpfile struct from values in file fn. 
    fn = the file name
    ninp = the number of read parameters
    cppopts = the cpp-style options for #include paths and #defines */
 
 extern void write_inpfile(const char *fn,int ninp,t_inpfile inp[],
-			  bool bHaltOnUnknown);
+			  bool bHaltOnUnknown,
+			  warninp_t wi);
 
 extern void replace_inp_entry(int ninp,t_inpfile *inp,
 			      const char *old_entry,const char *new_entry);
 
-extern int get_eint(int *ninp,t_inpfile **inp,const char *name,int def);
+extern int get_eint(int *ninp,t_inpfile **inp,const char *name,int def,
+		      warninp_t wi);
 
-extern gmx_large_int_t get_egmx_large_int(int *ninp,t_inpfile **inp,const char *name,gmx_large_int_t def);
-
-extern double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def);
+extern gmx_large_int_t get_egmx_large_int(int *ninp,t_inpfile **inp,
+					  const char *name,gmx_large_int_t def,
+					  warninp_t);
+  
+extern double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def,
+			warninp_t wi);
 
 extern const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def);
 
 extern int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
-		      int *nerror,bool bPrintError);
-/* defs must be NULL terminated, 
- * Add errors to nerror 
- * When bPrintError=TRUE and invalid enum: print "ERROR: ..."
- */
+		      warninp_t wi);
+/* defs must be NULL terminated */
 
 extern int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **defs);
 /* defs must be NULL terminated */
 
-/* Here are some macros to extract data from the inp structures.
- * Elements that are  removed  from the list after reading
+/* Here are some dirty macros to extract data from the inp structures.
+ * Most macros assume the variables ninp, inp and wi are present.
+ * Elements are removed from the list after reading.
  */
 #define REM_TYPE(name)       replace_inp_entry(ninp,inp,name,NULL)
 #define REPL_TYPE(old,new)   replace_inp_entry(ninp,inp,old,new)
 #define STYPE(name,var,def)  if ((tmp=get_estr(&ninp,&inp,name,def)) != NULL) strcpy(var,tmp)
 #define STYPENC(name,def) get_estr(&ninp,&inp,name,def)
-#define ITYPE(name,var,def)  var=get_eint(&ninp,&inp,name,def)
-#define STEPTYPE(name,var,def)  var=get_egmx_large_int(&ninp,&inp,name,def)
-#define RTYPE(name,var,def)  var=get_ereal(&ninp,&inp,name,def)
+#define ITYPE(name,var,def)  var=get_eint(&ninp,&inp,name,def,wi)
+#define STEPTYPE(name,var,def)  var=get_egmx_large_int(&ninp,&inp,name,def,wi)
+#define RTYPE(name,var,def)  var=get_ereal(&ninp,&inp,name,def,wi)
 #define ETYPE(name,var,defs) var=get_eenum(&ninp,&inp,name,defs)
-#define EETYPE(name,var,defs,nerr,bErr) var=get_eeenum(&ninp,&inp,name,defs,nerr,bErr)
+#define EETYPE(name,var,defs) var=get_eeenum(&ninp,&inp,name,defs,wi)
 #define CCTYPE(s) STYPENC("\n; "s,NULL)
 #define CTYPE(s)  STYPENC("; "s,NULL)
 /* This last one prints a comment line where you can add some explanation */

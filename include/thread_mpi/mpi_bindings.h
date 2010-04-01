@@ -114,6 +114,7 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 #define MPI_ERR_OP_FN               TMPI_ERR_OP_FN
 #define MPI_ERR_ENVELOPES           TMPI_ERR_ENVELOPES
 #define MPI_ERR_REQUESTS            TMPI_ERR_REQUESTS
+#define MPI_ERR_IN_STATUS           TMPI_ERR_IN_STATUS
 #define MPI_FAILURE                 TMPI_FAILURE
 #define MPI_ERR_UNKNOWN             TMPI_ERR_UNKNOWN
 #define N_MPI_ERR                   N_TMPI_ERR

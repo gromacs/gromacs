@@ -1,0 +1,16 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libgmxana
+Description: Gromacs analysis lib
+URL: http://www.gromacs.org
+Version: @VERSION@
+Requires: @PKG_GSL@ libgmx@LIBSUFFIX@ libmd@LIBSUFFIX@
+Libs.private: @LIBS@
+# Once deps have been split change to this
+# Libs.private: -lm -lpthread
+Libs: -L${libdir} -lgmxana@LIBSUFFIX@
+Cflags: -I${includedir}/gromacs
+

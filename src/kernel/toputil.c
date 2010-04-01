@@ -55,7 +55,7 @@ void set_p_string(t_param *p,const char *s)
 {
   if (s) {
     if (strlen(s) < sizeof(p->s)-1)
-      strcpy(p->s,s);
+      strncpy(p->s,s,sizeof(p->s));
     else
       gmx_fatal(FARGS,"Increase MAXSLEN in include/grompp.h to at least %d,"
 		  " or shorten your definition of bonds like %s to at most %d",
@@ -100,14 +100,15 @@ void init_plist(t_params plist[])
     plist[i].nr    = 0;
     plist[i].maxnr = 0;
     plist[i].param = NULL;
+  
+    /* CMAP */
+    plist[i].ncmap=0;
+    plist[i].cmap=NULL;
+    plist[i].grid_spacing = 0;
+    plist[i].nc = 0;   
+    plist[i].nct        = 0;
+    plist[i].cmap_types = NULL;
   }
-	
-	/* CMAP */
-	plist->ncmap=0;
-	plist->cmap=NULL;
-	
-	plist->nct        = 0;
-	plist->cmap_types = NULL;
 }
 
 void cp_param(t_param *dest,t_param *src)
@@ -118,7 +119,7 @@ void cp_param(t_param *dest,t_param *src)
     dest->a[j] = src->a[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
     dest->c[j] = src->c[j];
-  strcpy(dest->s,src->s);
+  strncpy(dest->s,src->s,sizeof(dest->s));
 }
 
 void add_param_to_list(t_params *list, t_param *b)
@@ -133,6 +134,7 @@ void add_param_to_list(t_params *list, t_param *b)
     list->param[list->nr].c[j]   = b->c[j];
   for (j=0; (j < MAXATOMLIST); j++) 
     list->param[list->nr].a[j]   = b->a[j];
+  memset(list->param[list->nr].s,0,sizeof(list->param[list->nr].s));
   
   list->nr++;
 }

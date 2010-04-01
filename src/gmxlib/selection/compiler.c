@@ -2242,10 +2242,13 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
         {
             mark_subexpr_dynamic(item->child, FALSE);
             item->child->u.cgrp.isize = 0;
-            if (item->child->v.type == GROUP_VALUE)
-            {
-                item->child->child->v.u.g->isize = 0;
-            }
+            /* We won't clear item->child->child->v.u.g here, because it may
+             * be static, and hence actually point to item->child->cdata->gmax,
+             * which is used below. We could also check whether this is the
+             * case and only clear the group otherwise, but because the value
+             * is actually overwritten immediately in the evaluate call, we
+             * won't, because similar problems may arise if gmax handling ever
+             * changes and the check were not updated. */
             set_evaluation_function(item, &analyze_static2);
             rc = item->evaluate(&evaldata, item->child, item->child->cdata->gmax);
             if (rc != 0)

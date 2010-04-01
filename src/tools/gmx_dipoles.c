@@ -1031,7 +1031,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       mu_aver = (mu_ave/gnx_tot)*invtel;
     
     if ((skip == 0) || ((teller % skip) == 0)) {
-      /* Write to file < |M|^2 >, < |M| >^2. And the difference between 
+      /* Write to file < |M|^2 >, |< M >|^2. And the difference between 
        * the two. Here M is sum mu_i. Further write the finite system
        * Kirkwood G factor and epsilon.
        */
@@ -1154,9 +1154,9 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   printf(" Total < M_z^2 > = %g Debye^2\n\n", M2[ZZ]/teller);
 
   printf(" Total < |M|^2 > = %g Debye^2\n", M2_ave);
-  printf(" Total < |M| >^2 = %g Debye^2\n\n", M_ave2);
+  printf(" Total |< M >|^2 = %g Debye^2\n\n", M_ave2);
 
-  printf(" < |M|^2 > - < |M| >^2 = %g Debye^2\n\n", M_diff);
+  printf(" < |M|^2 > - |< M >|^2 = %g Debye^2\n\n", M_diff);
   
   if (!bMU || (mu_aver != -1)) {
     printf("Finite system Kirkwood g factor G_k = %g\n", Gk);
@@ -1212,7 +1212,7 @@ int gmx_dipoles(int argc,char *argv[])
     "center of mass of the molecule.[PAR]",
     "The file Mtot.xvg contains the total dipole moment of a frame, the",
     "components as well as the norm of the vector.",
-    "The file aver.xvg contains < |Mu|^2 > and < |Mu| >^2 during the",
+    "The file aver.xvg contains < |Mu|^2 > and |< Mu >|^2 during the",
     "simulation.",
     "The file dipdist.xvg contains the distribution of dipole moments during",
     "the simulation",

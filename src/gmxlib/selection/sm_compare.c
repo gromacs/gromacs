@@ -39,6 +39,7 @@
 #include <maths.h>
 #include <macros.h>
 #include <smalloc.h>
+#include <gmx_fatal.h>
 
 #include <selmethod.h>
 

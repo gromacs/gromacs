@@ -36,21 +36,39 @@ files.
 */
 
 
+/* this is the header file for the implementation side of the thread_mpi
+   library. It contains the definitions for all the internal data structures
+   and the prototypes for all the internal functions that aren't static.  */
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 
 #include "settings.h"
-#include "thread_mpi/threads.h"
 #include "thread_mpi/atomic.h"
+#include "thread_mpi/threads.h"
 #include "thread_mpi/event.h"
 #include "thread_mpi/tmpi.h"
 #include "thread_mpi/collective.h"
 #include "thread_mpi/barrier.h"
+#include "thread_mpi/hwinfo.h"
 #include "wait.h"
 #include "barrier.h"
 #include "event.h"
 #ifdef TMPI_PROFILE
 #include "profile.h"
 #endif
-
 
 
 
@@ -185,7 +203,8 @@ struct envelope
     int error;
 
     /* the message status */
-    tMPI_Status *status;
+    /*tMPI_Status *status;*/
+
     /* prev and next envelopes in the send/recv_envelope_list linked list  */
     struct envelope *prev,*next;
 
@@ -256,9 +275,14 @@ struct recv_envelope_list
 struct tmpi_req_
 {
     bool finished; /* whether it's finished */
-    int error; /* error code */
     struct envelope *ev; /* the envelope */
-    tMPI_Status *st; /* the associated status */
+
+    struct tmpi_thread *source; /* the message source (for receives) */
+    tMPI_Comm comm; /* the comm */
+    int tag; /* the tag */
+    int error; /* error code */
+    size_t transferred; /* the number of transferred bytes */
+    bool cancelled; /* whether the transmission was canceled */
 
     struct tmpi_req_ *next,*prev; /* next,prev request in linked list,
                                      used in the req_list, but also in 
@@ -335,6 +359,7 @@ struct coll_env_thread
     tMPI_Event send_ev; /* event associated with being the sending thread. 
                            Triggered when last receiving thread is ready, 
                            and the coll_env_thread is ready for re-use. */
+    tMPI_Event recv_ev; /* event associated with being a receiving thread. */
 
     bool *read_data; /* whether we read data from a specific thread. */
 };

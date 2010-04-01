@@ -104,6 +104,39 @@ nb_kernel400nf_x86_64_sse(int *   nri,        int     iinr[],   int     jindex[]
                        float * work);
 
 
+void nb_kernel400_x86_64_sse(int *           p_nri,
+                    int *           iinr,
+                    int *           jindex,
+                    int *           jjnr,
+                    int *           shift,
+                    float *         shiftvec,
+                    float *         fshift,
+                    int *           gid,
+                    float *         pos,
+                    float *         faction,
+                    float *         charge,
+                    float *         p_facel,
+                    float *         p_krf,
+                    float *         p_crf,
+                    float *         vc,
+                    int *           type,
+                    int *           p_ntype,
+                    float *         vdwparam,
+                    float *         vvdw,
+                    float *         p_tabscale,
+                    float *         VFtab,
+                    float *         invsqrta,
+                    float *         dvda,
+                    float *         p_gbtabscale,
+                    float *         GBtab,
+                    int *           p_nthreads,
+                    int *           count,
+                    void *          mtx,
+                    int *           outeriter,
+                    int *           inneriter,
+                    float *         work);
+
+
 #ifdef __cplusplus
 }
 #endif

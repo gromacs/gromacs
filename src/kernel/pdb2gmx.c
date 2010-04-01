@@ -1266,6 +1266,7 @@ int main(int argc, char *argv[])
       /* First the N terminus */
       if (nNtdb > 0) {
 	strncpy(resname,*pdba->resinfo[cc->rN[i]].name,3);
+	resname[3] = '\0';
 	tdblist=filter_ter(nrtp,restp,nNtdb,ntdb,resname,&ntdblist);
 	if(ntdblist==0)
 	  gmx_fatal(FARGS,"No suitable N-terminus found in database");

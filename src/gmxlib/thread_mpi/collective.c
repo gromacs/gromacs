@@ -35,9 +35,14 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -55,11 +60,22 @@ files.
 /* get a pointer the next coll_env once it's ready */
 static struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *synct);
 
-/* post the availability of data in a cev */
-static void tMPI_Post_multi(struct coll_env *cev, int rank, int index, 
+/* post the availability of data in a cev. 
+    cev         = the collective comm environment
+    myrank      = my rank
+    index       = the buffer index
+    tag         = the tag
+    datatype    = the datatype
+    busize      = the buffer size
+    buf         = the buffer to xfer
+    n_remaining = the number of remaining threads that need to transfer
+    synct       = the multicast sync number 
+    dest        = -1 for all theads, or a specific rank number.
+*/
+static void tMPI_Post_multi(struct coll_env *cev, int myrank, int index, 
                             int tag, tMPI_Datatype datatype, 
                             size_t bufsize, void *buf, int n_remaining, 
-                            int synct);
+                            int synct, int dest);
 
 /* transfer data from cev->met[rank] to recvbuf */
 static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
@@ -75,7 +91,9 @@ static void tMPI_Coll_root_xfer(tMPI_Comm comm,
 /* wait for other processes to copy data from my cev */
 static void tMPI_Wait_for_others(struct coll_env *cev, int myrank);
 /* wait for data to become available from a specific rank */
-static void tMPI_Wait_for_data(struct coll_env *cev, int rank, int synct);
+static void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
+                               int myrank);
+                               /*int rank, int myrank, int synct);*/
 
 /* run a single binary reduce operation on src_a and src_b, producing dest. 
       dest and src_a may be identical */
@@ -172,7 +190,7 @@ static void tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
     met->using_cb=FALSE;
 #endif
     tMPI_Event_init( &(met->send_ev) );
-    /*tMPI_Event_multi_init( &(met->recv_ev) );*/
+    tMPI_Event_init( &(met->recv_ev) );
 }
 
 
@@ -384,14 +402,13 @@ static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
     }
     /* signal one thread ready */
    {
-        int ret;
-        ret=tMPI_Atomic_add_return( &(cev->met[rank].n_remaining), -1);
-        if (ret <= 0)
+        int reta;
+        reta=tMPI_Atomic_add_return( &(cev->met[rank].n_remaining), -1);
+        if (reta <= 0)
         {
             tMPI_Event_signal( &(cev->met[rank].send_ev) );
         }
     }
-
 }
 
 static void tMPI_Coll_root_xfer(tMPI_Comm comm, tMPI_Datatype sendtype, 
@@ -419,33 +436,45 @@ static void tMPI_Coll_root_xfer(tMPI_Comm comm, tMPI_Datatype sendtype,
     memcpy(recvbuf, sendbuf, sendsize);
 }
 
-static void tMPI_Post_multi(struct coll_env *cev, int rank, int index, 
+static void tMPI_Post_multi(struct coll_env *cev, int myrank, int index, 
                             int tag, tMPI_Datatype datatype, size_t bufsize, 
-                            void *buf, int n_remaining, int synct)
+                            void *buf, int n_remaining, int synct, int dest)
 {
+    int i;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* decide based on the number of waiting threads */
     bool using_cb=(bufsize < (size_t)(n_remaining*COPY_BUFFER_SIZE));
 
-    cev->met[rank].using_cb=using_cb;
+    cev->met[myrank].using_cb=using_cb;
     if (using_cb)
     {
         /* we set it to NULL initially */
-        /*cev->met[rank].cpbuf[index]=NULL;*/
-        tMPI_Atomic_ptr_set(&(cev->met[rank].cpbuf[index]), NULL);
+        /*cev->met[myrank].cpbuf[index]=NULL;*/
+        tMPI_Atomic_ptr_set(&(cev->met[myrank].cpbuf[index]), NULL);
 
-        tMPI_Atomic_set(&(cev->met[rank].buf_readcount), 0);
+        tMPI_Atomic_set(&(cev->met[myrank].buf_readcount), 0);
     }
 #endif
-    cev->met[rank].tag=tag;
-    cev->met[rank].datatype=datatype;
-    cev->met[rank].buf[index]=buf;
-    cev->met[rank].bufsize[index]=bufsize;
-    tMPI_Atomic_set(&(cev->met[rank].n_remaining), n_remaining);
+    cev->met[myrank].tag=tag;
+    cev->met[myrank].datatype=datatype;
+    cev->met[myrank].buf[index]=buf;
+    cev->met[myrank].bufsize[index]=bufsize;
+    tMPI_Atomic_set(&(cev->met[myrank].n_remaining), n_remaining);
+    tMPI_Atomic_set(&(cev->met[myrank].current_sync), synct);
 
     /* publish availability. */
-    tMPI_Atomic_memory_barrier();
-    tMPI_Atomic_set(&(cev->met[rank].current_sync), synct);
+    if (dest<0)
+    {
+        for(i=0;i<cev->N;i++)
+        {
+            if (i != myrank)
+                tMPI_Event_signal( &(cev->met[i].recv_ev) );
+        }
+    }
+    else
+    {
+        tMPI_Event_signal( &(cev->met[dest].recv_ev) );
+    }
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* becase we've published availability, we can start copying -- 
@@ -454,20 +483,20 @@ static void tMPI_Post_multi(struct coll_env *cev, int rank, int index,
     {
         struct tmpi_thread *cur=tMPI_Get_current();
          /* copy the buffer locally. First allocate */
-        cev->met[rank].cb=tMPI_Copy_buffer_list_get( &(cur->cbl_multi) );
-        if (cev->met[rank].cb->size < bufsize)
+        cev->met[myrank].cb=tMPI_Copy_buffer_list_get( &(cur->cbl_multi) );
+        if (cev->met[myrank].cb->size < bufsize)
         {
             fprintf(stderr, "ERROR: cb size too small\n");
             exit(1);
         }
         /* copy to the new buf */
-        memcpy(cev->met[rank].cb->buf, buf, bufsize);
+        memcpy(cev->met[myrank].cb->buf, buf, bufsize);
 
         /* post the new buf */
         tMPI_Atomic_memory_barrier();
-        /*cev->met[rank].cpbuf[index]=cev->met[rank].cb->buf;*/
-        tMPI_Atomic_ptr_set(&(cev->met[rank].cpbuf[index]), 
-                            cev->met[rank].cb->buf);
+        /*cev->met[myrank].cpbuf[index]=cev->met[myrank].cb->buf;*/
+        tMPI_Atomic_ptr_set(&(cev->met[myrank].cpbuf[index]), 
+                            cev->met[myrank].cb->buf);
     }
 #endif
 }
@@ -484,10 +513,8 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
     if (! (cev->met[myrank].using_cb) )
 #endif
     {
-        int N;
-
         /* wait until everybody else is done copying the buffer */
-        N=tMPI_Event_wait( &(cev->met[myrank].send_ev));
+        tMPI_Event_wait( &(cev->met[myrank].send_ev));
         tMPI_Event_process( &(cev->met[myrank].send_ev), 1);
     }
 #ifdef USE_COLLECTIVE_COPY_BUFFER
@@ -518,27 +545,17 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
 #endif
 }
 
-static void tMPI_Wait_for_data(struct coll_env *cev, int rank, int synct)
+static void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
+                               int myrank)
+                               /*int rank, int myrank, int synct)*/
 {
 #if defined(TMPI_PROFILE) 
-    struct tmpi_thread *cur=tMPI_Get_current();
     tMPI_Profile_wait_start(cur);
 #endif
-
-    /* wait until the source posts availability by updating its sync value */
-    while( tMPI_Atomic_get( &(cev->met[rank].current_sync)) != synct)
-    {
-        TMPI_YIELD_WAIT(cur);
-        tMPI_Atomic_memory_barrier();
-    }
+    tMPI_Event_wait( &(cev->met[myrank].recv_ev));
+    tMPI_Event_process( &(cev->met[myrank].recv_ev), 1);
 #if defined(TMPI_PROFILE) 
     tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
-#endif
-#if 0
-    while( tMPI_Atomic_get( &(cev->met[rank].current_sync)) != synct)
-    {
-        tMPI_Atomic_memory_barrier();
-    }
 #endif
 }
 

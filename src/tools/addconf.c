@@ -50,6 +50,7 @@
 #include "nrnb.h"
 #include "ns.h"
 #include "mtop_util.h"
+#include "chargegroup.h"
 
 static real box_margin;
 
@@ -187,7 +188,7 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,
 static t_forcerec *fr=NULL;
 
 void do_nsgrid(FILE *fp,bool bVerbose,
-	       matrix box,rvec x[],t_atoms *atoms,real rlong, 
+	       matrix box,rvec x[],t_atoms *atoms,real rlong,
                const output_env_t oenv)
 {
   gmx_mtop_t *mtop;
@@ -356,10 +357,12 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
   snew(remove,natoms_solvt);
 
   nremove = 0;
-  for(i=0; i<atoms_solvt->nr; i++)
-    if ( outside_box_plus_margin(x_solvt[i],box) )
-      i=mark_res(i,remove,atoms_solvt->nr,atoms_solvt->atom,&nremove);
-  fprintf(stderr,"Removed %d atoms that were outside the box\n",nremove);
+  if (!bInsert) {
+    for(i=0; i<atoms_solvt->nr; i++)
+      if ( outside_box_plus_margin(x_solvt[i],box) )
+	i=mark_res(i,remove,atoms_solvt->nr,atoms_solvt->atom,&nremove);
+    fprintf(stderr,"Removed %d atoms that were outside the box\n",nremove);
+  }
   
   /* Define grid stuff for genbox */
   /* Largest VDW radius */
@@ -379,17 +382,17 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
   /* check solvent with solute */
   nlist = &(fr->nblists[0].nlist_sr[eNL_VDW]);
   fprintf(stderr,"nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
-  for(bSolSol=0; (bSolSol<=1); bSolSol++) {
+  for(bSolSol=0; (bSolSol<=(bInsert ? 0 : 1)); bSolSol++) {
     ntest = nremove = 0;
     fprintf(stderr,"Checking %s-Solvent overlap:",
 	    bSolSol ? "Solvent" : "Protein");
-    for(i=0; (i<nlist->nri); i++) {
+    for(i=0; (i<nlist->nri && nremove<natoms_solvt); i++) {
       inr = nlist->iinr[i];
       j0  = nlist->jindex[i];
       j1  = nlist->jindex[i+1];
       rvec_add(x_all[inr],fr->shift_vec[nlist->shift[i]],xi);
       
-      for(j=j0; (j<j1); j++) {
+      for(j=j0; (j<j1 && nremove<natoms_solvt); j++) {
 	jnr = nlist->jjnr[j];
 	copy_rvec(x_all[jnr],xj);
 	
@@ -421,6 +424,12 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
 	  n2 = norm2(dx);
 	  r2 = sqr(r_all[inr]+r_all[jnr]);
 	  if (n2 < r2) {
+	    if (bInsert) {
+	      nremove = natoms_solvt;
+	      for(k=0; k<nremove; k++) {
+		remove[k] = TRUE;
+	      }
+	    }
 	    /* Need only remove one of the solvents... */
 	    if (is2 >= 0)
 	      (void) mark_res(is2,remove,natoms_solvt,atoms_solvt->atom,
@@ -434,7 +443,9 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
 	}
       }
     }
-    fprintf(stderr," tested %d pairs, removed %d atoms.\n",ntest,nremove);
+    if (!bInsert) {
+      fprintf(stderr," tested %d pairs, removed %d atoms.\n",ntest,nremove);
+    }
   }
   if (debug) 
     for(i=0; i<natoms_solvt; i++)
@@ -476,29 +487,37 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
     sfree(keep);
   }
   /* count how many atoms and residues will be added and make space */
-  j     = 0;
-  jnres = 0;
-  for (i=0; ((i<atoms_solvt->nr) && 
-	     ((max_sol == 0) || (jnres < max_sol))); i++) {
-    if (!remove[i]) {
-      j++;
-      if ((i == 0) || 
-	  (atoms_solvt->atom[i].resind != atoms_solvt->atom[i-1].resind))
-	jnres++;
+  if (bInsert) {
+    j     = atoms_solvt->nr;
+    jnres = atoms_solvt->nres;
+  } else {
+    j     = 0;
+    jnres = 0;
+    for (i=0; ((i<atoms_solvt->nr) && 
+	       ((max_sol == 0) || (jnres < max_sol))); i++) {
+      if (!remove[i]) {
+	j++;
+	if ((i == 0) || 
+	    (atoms_solvt->atom[i].resind != atoms_solvt->atom[i-1].resind))
+	  jnres++;
+      }
     }
   }
   if (debug)
     fprintf(debug,"Will add %d atoms in %d residues\n",j,jnres);
-  /* Flag the remaing solvent atoms to be removed */
-  jjj = atoms_solvt->atom[i-1].resind;
-  for ( ; (i<atoms_solvt->nr); i++) 
-    if (atoms_solvt->atom[i].resind > jjj)
-      remove[i] = TRUE;
-    else
-      j++;
+  if (!bInsert) {
+    /* Flag the remaing solvent atoms to be removed */
+    jjj = atoms_solvt->atom[i-1].resind;
+    for ( ; (i<atoms_solvt->nr); i++) {
+      if (atoms_solvt->atom[i].resind > jjj)
+	remove[i] = TRUE;
+      else
+	j++;
+    }
+  }
 
   if (bSrenew) {
-    srenew(atoms->resinfo,  atoms->nres+atoms_solvt->nres);
+    srenew(atoms->resinfo,  atoms->nres+jnres);
     srenew(atoms->atomname, atoms->nr+j);
     srenew(atoms->atom,     atoms->nr+j);
     srenew(*x,              atoms->nr+j);
@@ -507,14 +526,23 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
   }
   
   /* add the selected atoms_solvt to atoms */
-  prev=NOTSET;
-  nresadd=0;
-  for (i=0; i<atoms_solvt->nr; i++)
+  if (atoms->nr > 0) {
+    resnr = atoms->resinfo[atoms->atom[atoms->nr-1].resind].nr;
+  } else {
+    resnr = 0;
+  }
+  prev = -1;
+  nresadd = 0;
+  for (i=0; i<atoms_solvt->nr; i++) {
     if (!remove[i]) {
-      if (prev==NOTSET || 
+      if (prev == -1 || 
 	  atoms_solvt->atom[i].resind != atoms_solvt->atom[prev].resind) {
 	nresadd ++;
 	atoms->nres++;
+	resnr++;
+	atoms->resinfo[atoms->nres-1] =
+	  atoms_solvt->resinfo[atoms_solvt->atom[i].resind];
+	atoms->resinfo[atoms->nres-1].nr = resnr;
 	/* calculate shift of the solvent molecule using the first atom */
 	copy_rvec(x_solvt[i],dx);
 	put_atoms_in_box(box,1,&dx);
@@ -526,13 +554,10 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
       if (v) copy_rvec(v_solvt[i],(*v)[atoms->nr]);
       (*r)[atoms->nr]   = r_solvt[i];
       atoms->atom[atoms->nr].resind = atoms->nres-1;
-      atoms->resinfo[atoms->nres-1] =
-	atoms_solvt->resinfo[atoms_solvt->atom[i].resind];
-      atoms->resinfo[atoms->nres-1].nr =
-	(atoms->nres == 1 ? 1 : atoms->resinfo[atoms->nres-2].nr + 1);
       atoms->nr++;
       prev=i;
     }
+  }
   if (bSrenew)
     srenew(atoms->resinfo,  atoms->nres+nresadd);
   

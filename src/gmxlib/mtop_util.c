@@ -26,6 +26,7 @@
 #include "mtop_util.h"
 #include "topsort.h"
 #include "symtab.h"
+#include "gmx_fatal.h"
 
 static int gmx_mtop_maxresnr(const gmx_mtop_t *mtop,int maxres_renum)
 {

@@ -657,8 +657,9 @@ static void write_espresso_conf_indexed(FILE *out,const char *title,
   int i,j;
 
   fprintf(out,"# %s\n",title);
-  if (TRICLINIC(box))
-    fprintf(stderr,"\nWARNING: the Espresso format does not support triclinic unit-cells\n\n");
+  if (TRICLINIC(box)) {
+    gmx_warning("The Espresso format does not support triclinic unit-cells");
+  }
   fprintf(out,"{variable {box_l %f %f %f}}\n",box[0][0],box[1][1],box[2][2]);
   
   fprintf(out,"{particles {id pos type q%s}\n",v ? " v" : "");
@@ -826,8 +827,7 @@ static bool get_w_conf(FILE *in,const char *infile,char *title,
   /* box */
   fgets2 (line,STRLEN,in);
   if (sscanf (line,"%lf%lf%lf",&x1,&y1,&z1) != 3) {
-    sprintf(buf,"Bad box in file %s",infile);
-    warning(buf);
+    gmx_warning("Bad box in file %s",infile);
     
     /* Generate a cubic box */
     for(m=0; (m<DIM); m++)

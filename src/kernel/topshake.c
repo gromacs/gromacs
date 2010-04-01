@@ -49,6 +49,7 @@
 #include "toputil.h"
 #include "topdirs.h"
 #include "smalloc.h"
+#include "gmx_fatal.h"
 
 static void copy_bond (t_params *pr, int to, int from)
 /* copies an entry in a bond list to another position.

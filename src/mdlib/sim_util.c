@@ -57,6 +57,7 @@
 #include "mvdata.h"
 #include "txtdump.h"
 #include "pbc.h"
+#include "chargegroup.h"
 #include "vec.h"
 #include "time.h"
 #include "nrnb.h"
