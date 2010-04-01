@@ -2214,9 +2214,15 @@ double do_nm(FILE *fplog,t_commrec *cr,
     /* added with respect to mdrun */
     int        idum,jdum,kdum,row,col;
     real       der_range=10.0*sqrt(GMX_REAL_EPS);
+    real       x_min;
     real       fnorm,fmax;
     real       dfdx;
     
+    if (constr != NULL)
+    {
+        gmx_fatal(FARGS,"Constraints present with Normal Mode Analysis, this combination is not supported");
+    }
+
     state_work = init_em_state();
     
     /* Init em and store the local state in state_minimum */
@@ -2330,47 +2336,52 @@ double do_nm(FILE *fplog,t_commrec *cr,
         
         for (idum=0; (idum<DIM); idum++) 
         {
-	  row = DIM*step+idum;
+            row = DIM*step+idum;
 	  
-	  state_work->s.x[step][idum] -= der_range;
+            x_min = state_work->s.x[step][idum];
+
+            state_work->s.x[step][idum] = x_min - der_range;
           
-	  evaluate_energy(fplog,bVerbose,cr,
-			  state_global,top_global,state_work,top,
-			  inputrec,nrnb,wcycle,gstat,
-			  vsite,constr,fcd,graph,mdatoms,fr,
-			  mu_tot,enerd,vir,pres,count,count==0);
-	  count++;
+            evaluate_energy(fplog,bVerbose,cr,
+                            state_global,top_global,state_work,top,
+                            inputrec,nrnb,wcycle,gstat,
+                            vsite,constr,fcd,graph,mdatoms,fr,
+                            mu_tot,enerd,vir,pres,count,count==0);
+            count++;
 			
-	  for ( i=0 ; i < top_global->natoms ; i++ )
-	    {
-	      copy_rvec ( state_work->f[i] , fneg[i] );
-	    }
-	  
-	  state_work->s.x[step][idum] += 2*der_range;
-          
-	  evaluate_energy(fplog,bVerbose,cr,
-			  state_global,top_global,state_work,top,
-			  inputrec,nrnb,wcycle,gstat,
-			  vsite,constr,fcd,graph,mdatoms,fr,
-			  mu_tot,enerd,vir,pres,count,count==0);
-	  count++;
-	  
-	  for ( i=0 ; i < top_global->natoms ; i++ )
-	    {
-	      copy_rvec ( state_work->f[i] , fpos[i] );
-	    }
-	  
-	  for (jdum=0; (jdum<top_global->natoms); jdum++) 
+            for ( i=0 ; i < top_global->natoms ; i++ )
+            {
+                copy_rvec ( state_work->f[i] , fneg[i] );
+            }
+            
+            state_work->s.x[step][idum] = x_min + der_range;
+            
+            evaluate_energy(fplog,bVerbose,cr,
+                            state_global,top_global,state_work,top,
+                            inputrec,nrnb,wcycle,gstat,
+                            vsite,constr,fcd,graph,mdatoms,fr,
+                            mu_tot,enerd,vir,pres,count,count==0);
+            count++;
+            
+            for ( i=0 ; i < top_global->natoms ; i++ )
+            {
+                copy_rvec ( state_work->f[i] , fpos[i] );
+            }
+            
+            for (jdum=0; (jdum<top_global->natoms); jdum++) 
             {
                 for (kdum=0; (kdum<DIM); kdum++) 
                 {
-                    dfdx=-(fpos[jdum][kdum]-fneg[jdum][kdum])/(2*der_range);
-                    col = DIM*jdum+kdum;
+                    dfdx = -(fpos[jdum][kdum] - fneg[jdum][kdum])/(2*der_range);
+                    col  = DIM*jdum+kdum;
                     
-                    if(bSparse)
+                    if (bSparse)
                     {
-                        if(col>=row && dfdx!=0.0)
-                            gmx_sparsematrix_increment_value(sparse_matrix,row,col,dfdx);
+                        if (col>=row && dfdx!=0.0)
+                        {
+                            gmx_sparsematrix_increment_value(sparse_matrix,
+                                                             row,col,dfdx);
+                        }
                     }
                     else
                     {
@@ -2380,10 +2391,12 @@ double do_nm(FILE *fplog,t_commrec *cr,
             }
             
             /* x is restored to original */
-			state_work->s.x[step][idum] -= der_range;
+            state_work->s.x[step][idum] = x_min;
             
             if (bVerbose && fplog)
+            {
                 fflush(fplog);            
+            }
         }
         /* write progress */
         if (MASTER(cr) && bVerbose) 

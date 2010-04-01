@@ -334,7 +334,7 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
          (ir->eI !=  eiBD) 
        )
     {
-        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md-vv/md-vvak, sd/sd1, and bd.\n");
+        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md/md-vv/md-vv-avek, sd/sd1, and bd.\n");
     }
 
     /* Electroctstics */
@@ -353,7 +353,7 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
          (ir->eI !=  eiSD1)  && 
          (ir->eI !=  eiSD2)  && 
          (ir->eI !=  eiBD) ) 
-        gmx_warning("OpenMM supports only Andersen thermostat with the md-vv/md-vvak integrators.\n");
+        gmx_warning("OpenMM supports only Andersen thermostat with the md/md-vv/md-vv-avek integrators.\n");
 
     if (ir->opts.ngtc > 1)
         gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.\n");
@@ -727,7 +727,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         static_cast<LangevinIntegrator*>(integ)->setRandomNumberSeed(ir->ld_seed); /* TODO test this */
     }
     else {
-        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md-vv/md-vvak, sd/sd1, and bd.\n");
+        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md/md-vv/md-vv-avek, sd/sd1, and bd.\n");
     }
 
     integ->setConstraintTolerance(ir->shake_tol);
