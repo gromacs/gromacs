@@ -182,11 +182,11 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
     rvec *rij;
     real *M2,*tt,*dist2;
     int     maxnit=1000;
-    int     nit,ll,i,j,type;
+    int     nit=0,ll,i,j,type;
     t_iatom *ia;
     real    L1,tol2,toler;
     real    mm=0.,tmp;
-    int     error;
+    int     error=0;
     real    g,vscale,rscale,rvscale;
 
     if (ncon > shaked->nalloc)
