@@ -409,7 +409,7 @@ struct coll_sync
 
 /**************************************************************************
 
-  THREAD & GLOBALLY AVAILABLE DATA STRUCTURES 
+  THREAD DATA STRUCTURES 
 
 **************************************************************************/
 
@@ -505,6 +505,9 @@ struct tmpi_global
     /* spinlock/mutex for manipulating tmpi_user_types */
     tMPI_Spinlock_t  datatype_lock;
 
+    /* barrier for tMPI_Finalize(), etc. */
+    tMPI_Thread_barrier_t barrier;
+
     /* the timer for tMPI_Wtime() */
     tMPI_Thread_mutex_t timer_mutex;
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
@@ -555,20 +558,6 @@ struct tmpi_comm_
     /* the barrier for tMPI_Barrier() */
     tMPI_Spinlock_barrier_t barrier;
 
-
-#if 0
-    /* list of barrier_t's for reduce operations. 
-       reduce_barrier[0] contains a barrier for N threads 
-       (N=the number of threads in the communicator)
-       reduce_barrier[1] contains a barrier for N/2 threads
-       reduce_barrier[2] contains a barrier for N/4 threads
-       reduce_barrier[3] contains a barrier for N/8 threads
-       and so on. (until N/x reaches 1)
-       This is to facilitate tree-based algorithms for tMPI_Reduce, etc.  */
-    tMPI_Spinlock_barrier_t *reduce_barrier;   
-    int *N_reduce_barrier;
-    int Nreduce_barriers;
-#endif
 
     /* List of barriers for reduce operations.
        reduce_barrier[0] contains a list of N/2 barriers for N threads

@@ -332,11 +332,15 @@ extern void init_parallel(FILE *log,const char *tpxfile, t_commrec *cr,
       * nparts1 are necessary to calculate the non bonded interaction using
       * the symmetry and thus calculating every force only once. List is a 
       * facility for logging (and debugging). One can decide to print none or a 
-      * set of * selected parameters to the file specified by log. Parameters are
-      * printed by or-ing the corresponding items from t_listitem. A 0 (zero)
-      * specifies that nothing is to be printed on the file. The function
+      * set of * selected parameters to the file specified by log. Parameters 
+      * are printed by or-ing the corresponding items from t_listitem. A 0 
+      * (zero) specifies that nothing is to be printed on the file. The function
       * returns the number of shifts over the ring to perform to calculate
       * all interactions.
+      *
+      * NOTE: for threaded simulations that don't support parallel runs (at
+      * the moment that's only the LBGFS integrator), this function may
+      * cancel them and re-write the commrec.
       */
 
 extern void do_constrain_first(FILE *log,gmx_constr_t constr,

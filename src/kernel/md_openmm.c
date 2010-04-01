@@ -150,9 +150,7 @@ static void init_global_signals(globsig_t *gs,const t_commrec *cr,
 {
     int i;
 
-    {
-        gs->nstms = 1;
-    }
+    gs->nstms = 1;
 
     for(i=0; i<eglsNR; i++)
     {
@@ -423,7 +421,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bLastStep = (step_rel == ir->nsteps);
         t = t0 + step*ir->delta_t;
 
-        if (gs.set[eglsTERM] > 0 )
+        if (gs.set[eglsTERM] != 0 )
         {
             bLastStep = TRUE;
         }
@@ -532,36 +530,35 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             (handledSignal!=last_signal_number_recvd) &&
             MASTERTHREAD(cr))
         {
-            if (bGotStopNextStepSignal || ir->nstlist == 0)
+            if (bGotStopNextStepSignal)
             {
-                gs.sig[eglsTERM] = 1;
+                gs.set[eglsTERM] = 1;
             }
             else
             {
-                gs.sig[eglsTERM] = -1;
+                gs.set[eglsTERM] = -1;
             }
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                         signal_name[last_signal_number_recvd], 
-                        gs.sig[eglsTERM]==-1 ? "NS " : "");
+                        gs.set[eglsTERM]==-1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                     signal_name[last_signal_number_recvd], 
-                    gs.sig[eglsTERM]==-1 ? "NS " : "");
+                    gs.set[eglsTERM]==-1 ? "NS " : "");
             fflush(stderr);
             handledSignal=last_signal_number_recvd;
         }
-
         else if (MASTER(cr) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 gs.sig[eglsTERM] == 0)
+                 gs.set[eglsTERM] == 0)
         {
             /* Signal to terminate the run */
-            gs.sig[eglsTERM] = 1;
+            gs.set[eglsTERM] = 1;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
@@ -576,7 +573,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             run_time >= nchkpt*cpt_period*60.0)) &&
             gs.set[eglsCHKPT] == 0)
         {
-            gs.sig[eglsCHKPT] = 1;
+            gs.set[eglsCHKPT] = 1;
         }
   
          

@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -175,6 +176,22 @@ void init_parallel(FILE *log,const char *tpxfile,t_commrec *cr,
     set_state_entries(state,inputrec,cr->nnodes);
   }
   bcast_ir_mtop(cr,inputrec,mtop);
+
+#ifdef GMX_THREADS
+    /* Check if we did not automatically start multiple threads,
+     * while an algorithm does not support parallel simulation.
+     */
+    if (inputrec->eI == eiLBFGS ||
+        inputrec->eI == eiNM ||
+        inputrec->coulombtype == eelEWALD)
+    {
+        if (cr->nnodes > 1 && MASTERTHREAD(cr))
+        {
+            fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs.\n");
+        }
+        cancel_par_threads(cr); 
+    }
+#endif
 
   if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */

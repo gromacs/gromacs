@@ -10,7 +10,7 @@ if which git >/dev/null && test -d $GITDIR ; then
     # Get either -dirty or an empty string, depending on whether there are local changes.
     dirtystr=`(cd $SRCDIR && git diff-index --quiet HEAD) || echo "-dirty"`
     # Get date of the head commit as YYYYMMDD (commit date).
-    date=`git --git-dir=$GITDIR rev-list -n1 --pretty=format:%ci HEAD | sed -ne '/commit/!{s/-\| .*$//g;p}'`
+    date=`git --git-dir=$GITDIR rev-list -n1 --pretty=format:%ci HEAD | sed -ne '/commit/!{s/-\| .*$//g;p;}'`
     # Get a 7-character hash for the HEAD commit.
     shorthash=`git --git-dir=$GITDIR rev-parse --short=7 HEAD 2>/dev/null`
     # Get the full hash for the HEAD commit.

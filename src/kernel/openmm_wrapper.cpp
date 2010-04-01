@@ -323,26 +323,37 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
     // Abort if unsupported critical options are present
 
     /* Integrator */
-    if ( (ir->eI !=  eiVV)   &&  
+    if (ir->eI ==  eiMD)
+        gmx_warning( "OpenMM does not support leap-frog, will use velocity-verlet integrator.\n");
+
+    if ( (ir->eI !=  eiMD)   &&  
+         (ir->eI !=  eiVV)   &&  
          (ir->eI !=  eiVVAK) && 
          (ir->eI !=  eiSD1)  && 
          (ir->eI !=  eiSD2)  && 
          (ir->eI !=  eiBD) 
        )
     {
-        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md-vv/md-vvak, sd/sd1, and bd. \n");
+        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md-vv/md-vvak, sd/sd1, and bd.\n");
     }
 
     /* Electroctstics */
-    if ((ir->coulombtype != eelPME) && (ir->coulombtype != eelRF) &&  (ir->coulombtype != eelEWALD))
+    if (
+         (ir->coulombtype != eelPME) && 
+         (ir->coulombtype != eelRF) &&  
+         (ir->coulombtype != eelEWALD) &&
+         // no-cutoff
+         ( !(ir->coulombtype == eelCUT && ir->rcoulomb == 0 &&  ir->rvdw == 0))
+       )
     {
         gmx_fatal(FARGS,"OpenMM supports only the following methods for electrostatics: NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.\n");
     }
 
-    if ( (ir->etc != etcNO) && (ir->etc != etcANDERSEN) && (ir->etc != etcANDERSENINTERVAL))
-        gmx_fatal(FARGS,"In OpenMM temperature coupling can be achieved by "
-                "using either \n\t(1)\t\"md-vv\" or \"md-vvak\" integrators with \"andersen\" or "
-                "\"andersen-interval\" thermostat, or \n\t(2)\t\"sd\",\"sd1\" or \"bd\" integrators\n");
+    if ( (ir->etc != etcNO) &&
+         (ir->eI !=  eiSD1)  && 
+         (ir->eI !=  eiSD2)  && 
+         (ir->eI !=  eiBD) ) 
+        gmx_warning("OpenMM supports only Andersen thermostat with the md-vv/md-vvak integrators.\n");
 
     if (ir->opts.ngtc > 1)
         gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.\n");
@@ -356,7 +367,7 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
     if (ir->eConstrAlg != econtSHAKE)
         gmx_warning("Constraints in OpenMM are done by a combination "
                 "of SHAKE, SETTLE and CCMA. Accuracy is based on the SHAKE tolerance set "
-                "by the \"shake_tol\" option.");
+                "by the \"shake_tol\" option.\n");
 
     if (ir->nwall != 0)
         gmx_fatal(FARGS,"OpenMM does not support walls.\n");
@@ -371,7 +382,7 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
         gmx_fatal(FARGS,"OpenMM does not support orientation restraints.\n");
 
     if (top->idef.il[F_ANGRES].nr > 0)
-        gmx_fatal(FARGS,"OpenMM does not support angle restraints,\n");
+        gmx_fatal(FARGS,"OpenMM does not support angle restraints.\n");
 
     if (top->idef.il[F_DIHRES].nr > 0)
         gmx_fatal(FARGS,"OpenMM does not support dihedral restraints.\n");
@@ -383,14 +394,14 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
         gmx_fatal(FARGS,"OpenMM does not support non-equilibrium MD (accelerated groups).\n");
 
     if (IR_ELEC_FIELD(*ir))
-        gmx_fatal(FARGS,"OpenMM does not support electric fields. \n");
+        gmx_fatal(FARGS,"OpenMM does not support electric fields.\n");
 
     if (ir->bQMMM)
-        gmx_fatal(FARGS,"OpenMM does not support QMMM calculations. \n");
+        gmx_fatal(FARGS,"OpenMM does not support QMMM calculations.\n");
 
     if (ir->rcoulomb != ir->rvdw)
         gmx_fatal(FARGS,"OpenMM uses a single cutoff for both Coulomb "
-                "and VdW interactions. Please set rcoulomb equal to rvdw. \n");
+                "and VdW interactions. Please set rcoulomb equal to rvdw.\n");
 
 }
 
@@ -698,9 +709,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
     real friction = (ir->opts.tau_t[0] == 0.0 ? 0.0 : 1.0/ir->opts.tau_t[0]);
     Integrator* integ;
-    if (ir->eI == eiVV || ir->eI == eiVVAK) {
+    if (ir->eI == eiMD || ir->eI == eiVV || ir->eI == eiVVAK) {
         integ = new VerletIntegrator(ir->delta_t);
-        if ( ir->etc == etcANDERSEN) {
+        if ( ir->etc != etcNO) {
            real collisionFreq = ir->opts.tau_t[0] / 1000; /* tau_t (ps) / 1000 = collisionFreq (fs^-1) */
            AndersenThermostat* thermostat = new AndersenThermostat(ir->opts.ref_t[0], friction); /* TODO test this  */
            sys->addForce(thermostat);
@@ -716,7 +727,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         static_cast<LangevinIntegrator*>(integ)->setRandomNumberSeed(ir->ld_seed); /* TODO test this */
     }
     else {
-        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md-vv/md-vvak, sd/sd1, and bd. \n");
+        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md-vv/md-vvak, sd/sd1, and bd.\n");
     }
 
     integ->setConstraintTolerance(ir->shake_tol);

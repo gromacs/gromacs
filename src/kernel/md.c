@@ -2355,7 +2355,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             
             /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints ############ */
-            if (bFirstIterate)
+            if (ir->nstlist == -1 && bFirstIterate)
             {
                 gs.sig[eglsNABNSB] = nlh.nabnsb;
             }
@@ -2373,7 +2373,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                             | CGLO_CONSTRAINT 
                 );
-            if (bFirstIterate)
+            if (ir->nstlist == -1 && bFirstIterate)
             {
                 nlh.nabnsb = gs.set[eglsNABNSB];
                 gs.set[eglsNABNSB] = 0;

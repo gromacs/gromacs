@@ -95,6 +95,10 @@ extern t_commrec *init_par_threads(t_commrec *cro);
    Must be called before any communication takes place by the individual
    threads. cro is the old shared commrec */
 
+extern void cancel_par_threads(t_commrec *cr);
+/* Cancel threads (for when there is no parallel version of the integration
+   algorithm). Cancels threads (actually, it calls tMPI_Finalize() on them) 
+   and re-writes commrec to new serial situation.  */
 
 extern t_commrec *init_cr_nopar(void);
 /* Returns t_commrec for non-parallel functionality */

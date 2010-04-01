@@ -192,11 +192,11 @@ void tmpi_errors_are_fatal_fn(tMPI_Comm *comm, int *err)
     tMPI_Error_string(*err, errstr, &len);
     if (comm)
     {
-        fprintf(stderr, "MPI error: %s (in valid comm)\n", errstr);
+        fprintf(stderr, "tMPI error: %s (in valid comm)\n", errstr);
     }
     else
     {
-        fprintf(stderr, "MPI error: %s\n", errstr);
+        fprintf(stderr, "tMPI error: %s\n", errstr);
     }
     abort();
     /*exit(0);*/
@@ -210,11 +210,11 @@ void tmpi_errors_return_fn(tMPI_Comm *comm, int *err)
     tMPI_Error_string(*err, errstr, &len);
     if (comm)
     {
-        fprintf(stderr, "MPI error: %s (in valid comm)\n", errstr);
+        fprintf(stderr, "tMPI error: %s (in valid comm)\n", errstr);
     }
     else
     {
-        fprintf(stderr, "MPI error: %s\n", errstr);
+        fprintf(stderr, "tMPI error: %s\n", errstr);
     }
     return;
 }

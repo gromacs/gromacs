@@ -173,19 +173,21 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
   return FALSE;
 }
 
-static void rename_1res(t_atoms *pdba,int resind,char *newres)
+static void rename_1res(t_atoms *pdba,int resind,char *newres,bool bVerbose)
 {
-  if(debug) fprintf(stderr,"Renaming %s-%d to %s\n", 
-		    *pdba->resinfo[resind].name,
-		    pdba->resinfo[resind].nr,
-		    newres);
+  if (bVerbose) {
+    printf("Using rtp entry %s for %s %d\n",
+	   newres,
+	   *pdba->resinfo[resind].name,
+	   pdba->resinfo[resind].nr);
+  }
   /* this used to free *resname, which fucks up the symtab! */
-  snew(pdba->resinfo[resind].name,1);
-  *pdba->resinfo[resind].name = strdup(newres);
+  snew(pdba->resinfo[resind].rtp,1);
+  *pdba->resinfo[resind].rtp = strdup(newres);
 }
 
 int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
-		 t_ssbond **specbonds)
+		 t_ssbond **specbonds,bool bVerbose)
 {
   t_specbond *sb=NULL;
   t_ssbond   *bonds=NULL;
@@ -289,12 +291,12 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 	    bonds[nbonds].a2   = strdup(*pdba->atomname[aj]);
 	    /* rename residues */
 	    if (bSwap) {
-	      rename_1res(pdba,specp[i],sb[index_sb].newres2);
-	      rename_1res(pdba,specp[j],sb[index_sb].newres1);
+	      rename_1res(pdba,specp[i],sb[index_sb].newres2,bVerbose);
+	      rename_1res(pdba,specp[j],sb[index_sb].newres1,bVerbose);
 	    }
 	    else {
-	      rename_1res(pdba,specp[i],sb[index_sb].newres1);
-	      rename_1res(pdba,specp[j],sb[index_sb].newres2);
+	      rename_1res(pdba,specp[i],sb[index_sb].newres1,bVerbose);
+	      rename_1res(pdba,specp[j],sb[index_sb].newres2,bVerbose);
 	    }
 	    nbonds++;
 	  }

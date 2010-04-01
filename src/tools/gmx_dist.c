@@ -190,12 +190,16 @@ int gmx_dist(int argc,char *argv[])
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
-      for(d=0;(d<DIM);d++) {
-	com[g][d]=0;
-	for(i=0;(i<isize[g]);i++) {
-	  com[g][d] += x[index[g][i]][d] * top->atoms.atom[index[g][i]].m;
+      if (isize[g] == 1) {
+	copy_rvec(x[index[g][0]],com[g]);
+      } else {
+	for(d=0;(d<DIM);d++) {
+	  com[g][d]=0;
+	  for(i=0;(i<isize[g]);i++) {
+	    com[g][d] += x[index[g][i]][d] * top->atoms.atom[index[g][i]].m;
+	  }
+	  com[g][d] /= mass[g];
 	}
-	com[g][d] /= mass[g];
       }
     }
     
