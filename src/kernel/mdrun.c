@@ -515,17 +515,10 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL, &oenv);
 
-#ifdef GMX_THREADS
-  if (nthreads<1)
-  {
-      nthreads=tMPI_Get_recommended_nthreads();
-  }
-#else
-  nthreads=1;
-#endif
-  cr->nthreads = nthreads;
- 
-
+  /* we set these early because they might be used in init_multisystem() 
+     Note that there is the potential for npme>nnodes until the number of
+     threads is set later on, if there's thread parallelization. That shouldn't
+     lead to problems. */ 
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
 
@@ -540,45 +533,46 @@ int main(int argc,char *argv[])
 #endif
   }
 
-    /* Check if there is ANY checkpoint file available */	
-    sim_part    = 1;
-    sim_part_fn = sim_part;
-    if (opt2bSet("-cpi",NFILE,fnm))
-    {
-        bAppendFiles =
-            read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),
-                                            &sim_part_fn,NULL,cr,
-                                            bAppendFiles,
-                                            part_suffix,&bAddPart);
-        if (sim_part_fn==0 && MASTER(cr))
-        {
-            fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
-        }
-        else
-        {
-            sim_part = sim_part_fn + 1;
-        }
-    } 
-    else
-    {
-        bAppendFiles = FALSE;
-    }
-    
-    if (!bAppendFiles)
-    {
-        sim_part_fn = sim_part;
-    }
+  /* Check if there is ANY checkpoint file available */	
+  sim_part    = 1;
+  sim_part_fn = sim_part;
+  if (opt2bSet("-cpi",NFILE,fnm))
+  {
+      bAppendFiles =
+                read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
+                                                              fnm,cr),
+                                                &sim_part_fn,NULL,cr,
+                                                bAppendFiles,
+                                                part_suffix,&bAddPart);
+      if (sim_part_fn==0 && MASTER(cr))
+      {
+          fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
+      }
+      else
+      {
+          sim_part = sim_part_fn + 1;
+      }
+  } 
+  else
+  {
+      bAppendFiles = FALSE;
+  }
 
-    if (bAddPart && sim_part_fn > 1)
-    {
-        /* This is a continuation run, rename trajectory output files 
-           (except checkpoint files) */
-        /* create new part name first (zero-filled) */
-        sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
+  if (!bAppendFiles)
+  {
+      sim_part_fn = sim_part;
+  }
 
-        add_suffix_to_output_names(fnm,NFILE,suffix);
-        fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
-    }
+  if (bAddPart && sim_part_fn > 1)
+  {
+      /* This is a continuation run, rename trajectory output files 
+         (except checkpoint files) */
+      /* create new part name first (zero-filled) */
+      sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
+
+      add_suffix_to_output_names(fnm,NFILE,suffix);
+      fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
+  }
 
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
@@ -611,15 +605,19 @@ int main(int argc,char *argv[])
       fplog = NULL;
   }
 
-#if 0
-  /* this is now done in mdrunner: */
-  /* Essential dynamics */
-  if (opt2bSet("-ei",NFILE,fnm)) {
-      /* Open input and output files, allocate space for ED data structure */
-      ed = ed_open(NFILE,fnm,cr);
-  } else
-      ed=NULL;
+  /* here we set some thread number settings that weren't needed before. 
+     Threads start only at mdrunner_threads, so setting cr->nthreads
+     earlier would lead to PAR(cr) being TRUE to soon, which leads to crashes 
+     in the checkpoint reading code. */
+#ifdef GMX_THREADS
+  if (nthreads<1)
+  {
+      nthreads=tMPI_Get_recommended_nthreads();
+  }
+#else
+  nthreads=1;
 #endif
+  cr->nthreads = nthreads;
 
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
