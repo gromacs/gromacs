@@ -522,6 +522,18 @@ int main(int argc,char *argv[])
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
 
+#ifdef GMX_THREADS
+  /* now determine the number of threads automatically. The threads are
+     only started at mdrunner_threads, though. */
+  if (nthreads<1)
+  {
+      nthreads=tMPI_Get_recommended_nthreads();
+  }
+#else
+  nthreads=1;
+#endif
+
+
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
@@ -604,20 +616,6 @@ int main(int argc,char *argv[])
   {
       fplog = NULL;
   }
-
-  /* here we set some thread number settings that weren't needed before. 
-     Threads start only at mdrunner_threads, so setting cr->nthreads
-     earlier would lead to PAR(cr) being TRUE to soon, which leads to crashes 
-     in the checkpoint reading code. */
-#ifdef GMX_THREADS
-  if (nthreads<1)
-  {
-      nthreads=tMPI_Get_recommended_nthreads();
-  }
-#else
-  nthreads=1;
-#endif
-  cr->nthreads = nthreads;
 
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
