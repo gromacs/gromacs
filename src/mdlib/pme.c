@@ -200,6 +200,7 @@ typedef struct gmx_pme {
     gmx_parallel_3dfft_t  pfft_setupB;
     
     int  *nnx,*nny,*nnz;
+    real *fshx,*fshy,*fshz;
     
     pme_atomcomm_t atc[2];  /* Indexed on decomposition index */
     matrix    recipbox;
@@ -286,8 +287,11 @@ static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
         tiy = (int)(ty);
         tiz = (int)(tz);
         
-        fptr[XX] = tx - tix;
-        fptr[YY] = ty - tiy;
+        /* Because decomposition only occurs in x and y,
+         * we never have a fraction correction in z.
+         */
+        fptr[XX] = tx - tix + pme->fshx[tix];
+        fptr[YY] = ty - tiy + pme->fshy[tiy];
         fptr[ZZ] = tz - tiz;   
 
         idxptr[XX] = pme->nnx[tix];
@@ -2063,29 +2067,51 @@ init_overlap_comm(pme_overlap_t *  ol,
     }
 }
 
-static int *
-make_gridindex5_to_localindex(int n,int local_start,int local_size)
+static void
+make_gridindex5_to_localindex(int n,int local_start,int local_end,
+                              int **global_to_local,
+                              real **fraction_shift)
 {
+    int local_size,i;
     int * gtl;
-    int   i;
+    real * fsh;
+
+    local_size = local_end - local_start;
 
     snew(gtl,5*n);
+    snew(fsh,5*n);
     for(i=0; (i<5*n); i++) {
         gtl[i] = i % n - local_start;
-        /* Due to rounding issues i could be 1 beyond the lower or
-         * upper boundary of the local grid. Correct the index for this.
-         */
-        if (gtl[i] < 0)
+        fsh[i] = 0;
+        if (local_size < n)
         {
-            gtl[i] = 0;
-        }
-        if (gtl[i] >= local_size)
-        {
-            gtl[i] = local_size - 1;
+            /* Due to rounding issues i could be 1 beyond the lower or
+             * upper boundary of the local grid. Correct the index for this.
+             * If we shift the index, we need to shift the fraction by
+             * the same amount in the other direction to not affect
+             * the weights.
+             * Note that due to this shifting the weights at the end of
+             * the spline might change, but that will only involve values
+             * between zero and values close to the precision of a real,
+             * which is anyhow the accuracy of the whole mesh calculation.
+             */
+            if ((local_start >  0 && gtl[i] == -1) ||
+                (local_start == 0 && gtl[i] == n-1))
+            {
+                gtl[i] = 0;
+                fsh[i] = -1; 
+            }
+            if ((local_end <  n && gtl[i] == local_size) ||
+                (local_end == n && gtl[i] == 0))
+            {
+                gtl[i] = local_size - 1;
+                fsh[i] = 1;
+            }
         }
     }
 
-    return gtl;
+    *global_to_local = gtl;
+    *fraction_shift  = fsh;
 }
 
 static void
@@ -2301,15 +2327,18 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->pmegrid_start_iy = pme->overlap[1].s2g0[pme->nodeid_minor];
     pme->pmegrid_start_iz = 0;
     
-    pme->nnx = make_gridindex5_to_localindex(pme->nkx,
-                                             pme->pmegrid_start_ix,
-                                             pme->pmegrid_nx);
-    pme->nny = make_gridindex5_to_localindex(pme->nky,
-                                             pme->pmegrid_start_iy,
-                                             pme->pmegrid_ny);
-    pme->nnz = make_gridindex5_to_localindex(pme->nkz,
-                                             pme->pmegrid_start_iz,
-                                             pme->pmegrid_nz);
+    make_gridindex5_to_localindex(pme->nkx,
+                                  pme->pmegrid_start_ix,
+                                  pme->overlap[0].s2g0[pme->nodeid_major+1],
+                                  &pme->nnx,&pme->fshx);
+    make_gridindex5_to_localindex(pme->nky,
+                                  pme->pmegrid_start_iy,
+                                  pme->overlap[1].s2g0[pme->nodeid_minor+1],
+                                  &pme->nny,&pme->fshy);
+    make_gridindex5_to_localindex(pme->nkz,
+                                  pme->pmegrid_start_iz,
+                                  pme->nkz,
+                                  &pme->nnz,&pme->fshz);
     
     snew(pme->pmegridA,pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);
     
