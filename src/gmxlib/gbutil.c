@@ -83,6 +83,30 @@ static void low_rotate_conf(int natom,rvec *x,real alfa, real beta,real gamma)
   }
 }
 
+static void low_rotate_conf_indexed(int nindex,atom_id *index,rvec *x,real alfa, real beta,real gamma)
+{
+  int  i;
+  rvec x_old;
+  
+  for (i=0; i<nindex; i++) { 
+    copy_rvec(x[index[i]],x_old);
+    /*calculate new x[index[i]] by rotation alfa around the x-axis*/
+    x[index[i]][XX]=   x_old[XX];
+    x[index[i]][YY]=             cos(alfa)*x_old[YY] - sin(alfa)*x_old[ZZ];
+    x[index[i]][ZZ]=             sin(alfa)*x_old[YY] + cos(alfa)*x_old[ZZ];
+    copy_rvec(x[index[i]],x_old);
+    /*calculate new x[index[i]] by rotation beta around the y-axis*/
+    x[index[i]][XX]=   cos(beta)*x_old[XX]           + sin(beta)*x_old[ZZ];
+    x[index[i]][YY]=                       x_old[YY];
+    x[index[i]][ZZ]= - sin(beta)*x_old[XX]           + cos(beta)*x_old[ZZ];
+    copy_rvec(x[index[i]],x_old);
+    /*calculate new x[index[i]] by rotation gamma around the z-axis*/
+    x[index[i]][XX]= x_old[XX]*cos(gamma) - x_old[YY]*sin(gamma);
+    x[index[i]][YY]= x_old[XX]*sin(gamma) + x_old[YY]*cos(gamma);
+    x[index[i]][ZZ]=                                             x_old[ZZ];
+  }
+}
+
 void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma)
 {
   if (x)
@@ -91,6 +115,13 @@ void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma)
     low_rotate_conf(natom,v,alfa,beta,gamma);
 }
 
+void rotate_conf_indexed(int nindex,atom_id *index,rvec *x,rvec *v,real alfa, real beta,real gamma)
+{
+  if (x)
+    low_rotate_conf_indexed(nindex,index,x,alfa,beta,gamma);
+  if (v)
+    low_rotate_conf_indexed(nindex,index,v,alfa,beta,gamma);
+}
 
 void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box)
 {
