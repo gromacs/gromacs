@@ -32,12 +32,10 @@
 /* This saves on many ifdefs */
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
+#elif defined GMX_THREADS
+#include "tmpi.h"
 #else 
 typedef void* MPI_Comm;
-#define HAVE_MPICOMM
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
 #endif
 
 typedef struct gmx_parallel_3dfft *

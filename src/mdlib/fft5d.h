@@ -13,8 +13,10 @@
 FILE* debug;
 #endif
 
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
+#elif defined GMX_THREADS
+#include "tmpi.h"
 #else
 #ifndef HAVE_MPICOMM
 typedef void* MPI_Comm;

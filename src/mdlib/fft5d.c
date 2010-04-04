@@ -16,7 +16,7 @@
 #define GMX_PARALLEL_ENV_INITIALIZED gmx_parallel_env_initialized()
 #endif
 
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
 #ifdef GMX_THREADS
