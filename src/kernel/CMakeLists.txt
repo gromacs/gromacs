@@ -29,6 +29,7 @@ set(GMXPREPROCESS_SOURCES
     toputil.c       
     tpbcmp.c        
     vsite_parm.c    
+    fflibutil.c
     xlate.c)
 
 set(MDRUN_SOURCES 

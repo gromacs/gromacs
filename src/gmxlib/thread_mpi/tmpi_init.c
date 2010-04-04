@@ -35,6 +35,11 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -206,9 +211,9 @@ tMPI_Comm tMPI_Get_comm_self(void)
 int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
 {
     int i;
-    int ret=TMPI_FAILURE;
+    int ret=TMPI_SUCCESS;
 
-    *nthreads=1;
+    *nthreads=0;
     if (!optname)
     {
         i=0;
@@ -230,15 +235,15 @@ int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
         *nthreads=strtol((*argv)[i+1], &end, 10);
         if ( !end || (*end != 0) )
         {
-            *nthreads=1;
-        }
-        else if (*nthreads > 0)
-        {
-            ret=TMPI_SUCCESS;
+            *nthreads=0;
+            ret=TMPI_FAILURE;
         }
     }
     if (*nthreads<1)
-        *nthreads=1;
+    {
+        *nthreads=tMPI_Get_recommended_nthreads();
+    }
+
     return ret;
 }
 
@@ -283,7 +288,7 @@ static void tMPI_Thread_init(struct tmpi_thread *th)
 #endif
     /* now wait for all other threads to come on line, before we
        start the MPI program */
-    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->barrier));
+    tMPI_Thread_barrier_wait( &(tmpi_global->barrier) );
 }
 
 
@@ -304,9 +309,6 @@ static void tMPI_Thread_destroy(struct tmpi_thread *th)
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     tMPI_Copy_buffer_list_destroy(&(th->cbl_multi));
 #endif
-#ifdef TMPI_PROFILE
-    tMPI_Profile_destroy(&(th->profile));
-#endif
 
     for(i=0;i<th->argc;i++)
     {
@@ -314,13 +316,15 @@ static void tMPI_Thread_destroy(struct tmpi_thread *th)
     }
 }
 
-static void tMPI_Global_init(struct tmpi_global *g)
+static void tMPI_Global_init(struct tmpi_global *g, int Nthreads)
 {
     g->usertypes=NULL;
     g->N_usertypes=0;
     g->Nalloc_usertypes=0;
     tMPI_Thread_mutex_init(&(g->timer_mutex));
     tMPI_Spinlock_init(&(g->datatype_lock));
+
+    tMPI_Thread_barrier_init( &(g->barrier), Nthreads);
 
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     /* the time at initialization. */
@@ -385,7 +389,7 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         /* allocate global data */
         tmpi_global=(struct tmpi_global*)
                         tMPI_Malloc(sizeof(struct tmpi_global));
-        tMPI_Global_init(tmpi_global);
+        tMPI_Global_init(tmpi_global, N);
 
         /* allocate world and thread data */
         threads=(struct tmpi_thread*)tMPI_Malloc(sizeof(struct tmpi_thread)*N);
@@ -450,8 +454,8 @@ int tMPI_Init(int *argc, char ***argv)
 
     if (TMPI_COMM_WORLD==0) /* we're the main process */
     {
-        int N;
-        tMPI_Get_N(argc, argv, "-np", &N);
+        int N=0;
+        tMPI_Get_N(argc, argv, "-nt", &N);
         tMPI_Start_threads(N, argc, argv, NULL, NULL);
     }
     else
@@ -468,6 +472,11 @@ int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg)
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Init_fn(%d, %p, %p)", N, start_function, arg);
 #endif
+
+    if (N<1)
+    {
+        N=tMPI_Get_recommended_nthreads();
+    }
 
     if (TMPI_COMM_WORLD==0 && N>=1) /* we're the main process */
     {
@@ -503,7 +512,7 @@ int tMPI_Finalize(void)
         struct tmpi_thread *cur=tMPI_Get_current();
 
         tMPI_Profile_stop( &(cur->profile) );
-        tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->barrier));
+        tMPI_Thread_barrier_wait( &(tmpi_global->barrier) );
 
         if (tMPI_Is_master())
         {
@@ -511,7 +520,7 @@ int tMPI_Finalize(void)
         }
     }
 #endif
-    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->barrier));
+    tMPI_Thread_barrier_wait( &(tmpi_global->barrier) );
 
     if (tMPI_Is_master())
     {
@@ -531,6 +540,7 @@ int tMPI_Finalize(void)
         tMPI_Thread_destroy(&(threads[0]));
         free(threads);
 
+        tMPI_Thread_key_delete(id_key);
         /* de-allocate all the comm stuctures. */
         {
             tMPI_Comm cur=TMPI_COMM_WORLD->next;
@@ -689,10 +699,12 @@ double tMPI_Wtime(void)
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     {
         struct timeval tv;
+        long int secdiff;
+        int usecdiff;
 
         gettimeofday(&tv, NULL);
-        long int secdiff = tv.tv_sec - tmpi_global->timer_init.tv_sec;
-        int usecdiff = tv.tv_usec - tmpi_global->timer_init.tv_usec;
+        secdiff = tv.tv_sec - tmpi_global->timer_init.tv_sec;
+        usecdiff = tv.tv_usec - tmpi_global->timer_init.tv_usec;
 
         ret=(double)secdiff + 1e-6*usecdiff;
     }

@@ -36,21 +36,39 @@ files.
 */
 
 
+/* this is the header file for the implementation side of the thread_mpi
+   library. It contains the definitions for all the internal data structures
+   and the prototypes for all the internal functions that aren't static.  */
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 
 #include "settings.h"
-#include "thread_mpi/threads.h"
 #include "thread_mpi/atomic.h"
+#include "thread_mpi/threads.h"
 #include "thread_mpi/event.h"
 #include "thread_mpi/tmpi.h"
 #include "thread_mpi/collective.h"
 #include "thread_mpi/barrier.h"
+#include "thread_mpi/hwinfo.h"
 #include "wait.h"
 #include "barrier.h"
 #include "event.h"
 #ifdef TMPI_PROFILE
 #include "profile.h"
 #endif
-
 
 
 
@@ -341,6 +359,7 @@ struct coll_env_thread
     tMPI_Event send_ev; /* event associated with being the sending thread. 
                            Triggered when last receiving thread is ready, 
                            and the coll_env_thread is ready for re-use. */
+    tMPI_Event recv_ev; /* event associated with being a receiving thread. */
 
     bool *read_data; /* whether we read data from a specific thread. */
 };
@@ -390,7 +409,7 @@ struct coll_sync
 
 /**************************************************************************
 
-  THREAD & GLOBALLY AVAILABLE DATA STRUCTURES 
+  THREAD DATA STRUCTURES 
 
 **************************************************************************/
 
@@ -486,6 +505,9 @@ struct tmpi_global
     /* spinlock/mutex for manipulating tmpi_user_types */
     tMPI_Spinlock_t  datatype_lock;
 
+    /* barrier for tMPI_Finalize(), etc. */
+    tMPI_Thread_barrier_t barrier;
+
     /* the timer for tMPI_Wtime() */
     tMPI_Thread_mutex_t timer_mutex;
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
@@ -536,20 +558,6 @@ struct tmpi_comm_
     /* the barrier for tMPI_Barrier() */
     tMPI_Spinlock_barrier_t barrier;
 
-
-#if 0
-    /* list of barrier_t's for reduce operations. 
-       reduce_barrier[0] contains a barrier for N threads 
-       (N=the number of threads in the communicator)
-       reduce_barrier[1] contains a barrier for N/2 threads
-       reduce_barrier[2] contains a barrier for N/4 threads
-       reduce_barrier[3] contains a barrier for N/8 threads
-       and so on. (until N/x reaches 1)
-       This is to facilitate tree-based algorithms for tMPI_Reduce, etc.  */
-    tMPI_Spinlock_barrier_t *reduce_barrier;   
-    int *N_reduce_barrier;
-    int Nreduce_barriers;
-#endif
 
     /* List of barriers for reduce operations.
        reduce_barrier[0] contains a list of N/2 barriers for N threads

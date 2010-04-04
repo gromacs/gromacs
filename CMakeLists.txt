@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 2.6.2)
+cmake_minimum_required(VERSION 2.6)
 
 project(Gromacs)
-set(PROJECT_VERSION "4.0.99-dev-20100305"
+# PROJECT_VERSION should have the following structure: 
+# VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
+set(PROJECT_VERSION "4.0.99-dev-20100315"
     CACHE STRING "Gromacs version string")
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -35,18 +37,20 @@ enable_language(C)
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
+option(USE_VERSION_H "Generate development version string/information" ON)
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
 if(GMX_OPENMM)
+    cmake_minimum_required(VERSION 2.6.4)
     # we'll use the built-in fft to avoid unnecessary dependencies
     set (GMX_FFT_LIBRARY "fftpack")
     if(GMX_MPI)
         message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
     endif(GMX_MPI)
     if(GMX_THREADS)
-        message(WARNING "Threads have been disabled, not compatible with OpenMM build!")
+        message(STATUS "Threads not compatible with OpenMM build, disabled")
         set(GMX_THREADS OFF)
     endif(GMX_THREADS)
     if(GMX_SOFTWARE_INVSQRT)
@@ -57,7 +61,7 @@ if(GMX_OPENMM)
         set(GMX_ACCELERATION "none")
     endif()
     if(GMX_FAHCORE)
-        message(FATAL_ERROR "The OpenMM build does not support the FAH option!")
+        message(FATAL_ERROR "The OpenMM build does not support FAH build!")
     endif(GMX_FAHCORE)
 endif(GMX_OPENMM)
 
@@ -219,7 +223,7 @@ endif(GMX_THREADS)
 
 if(GMX_OPENMM)
     set(CUDA_BUILD_EMULATION OFF)
-    find_package(CUDA 2.3 EXACT REQUIRED)   # TODO what are we compatible with?
+    find_package(CUDA 2.3 REQUIRED)
     add_definitions(-DGMX_OPENMM)
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
         set(CUDA_VERBOSE_BUILD ON)
@@ -231,6 +235,26 @@ if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
    list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
 endif(APPLE)
+
+# only bother with finding git and using version.h if the source is a git repo
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    if(USE_VERSION_H)
+        # We need at least git v1.5.1 be able to parse git's date output. If not 
+        # fund or the version is too small, we can't generate version information.
+        find_package(Git 1.5.1)
+        if(NOT Git_FOUND OR Git_VERSION VERSION_LESS "1.5.1")
+            message("No compatible git version found, won't be able to generate proper development version information.")
+        endif()
+    endif()
+else()
+    set(USE_VERSION_H OFF)
+endif()
+
+########################################################################
+# Generate development version info for cache
+########################################################################
+# set(GEN_VERSION_INFO_INTERNAL "ON")
+# include(gmxGenerateVersionString)
 
 ########################################################################
 # Our own GROMACS tests

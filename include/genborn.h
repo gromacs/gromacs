@@ -72,7 +72,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 
 /* Bonded GB interactions */								
 real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
-				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef,
+				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
 				  real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph);
 
 

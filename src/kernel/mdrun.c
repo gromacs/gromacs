@@ -49,6 +49,9 @@
 #include "mdrun.h"
 #include "xmdrun.h"
 #include "checkpoint.h"
+#ifdef GMX_THREADS
+#include "thread_mpi.h"
+#endif
 
 /* afm stuf */
 #include "pull.h"
@@ -95,9 +98,9 @@ int main(int argc,char *argv[])
 	"can be as high as 20 times, but in most other setups involving cutoffs and PME the",
 	"acceleration is usually only 4~6 times relative to a 3GHz CPU.[PAR]",
 	"Supported features:[PAR]",
-	" * Integrators: md, md-vv, md-vv2, sd and bd.\n",
+	" * Integrators: md/md-vv/md-vv-avek, sd/sd1 and bd.\n",
 	" * Long-range interactions (option coulombtype): Reaction-Field, Ewald, PME.\n",
-	" * Temperature control: Supported only with the sd, bd, md-vv and md-vv2 integrators.\n",
+	" * Temperature control: Supported only with the md/md-vv/md-vv-avek, sd/sd1 and bd integrators.\n",
 	" * Pressure control: Not supported.\n",
 	" * Implicit solvent: Supported.\n",
 	"A detailed description can be found on the website:\n",
@@ -386,7 +389,7 @@ int main(int argc,char *argv[])
   int  repl_ex_nst=0;
   int  repl_ex_seed=-1;
   int  nstepout=100;
-  int  nthreads=1;
+  int  nthreads=0; /* set to determine # of threads automatically */
   int  resetstep=-1;
   
   rvec realddxyz={0,0,0};
@@ -415,7 +418,7 @@ int main(int argc,char *argv[])
     { "-dd",      FALSE, etRVEC,{&realddxyz},
       "Domain decomposition grid, 0 is optimize" },
     { "-nt",      FALSE, etINT, {&nthreads},
-      "Number of threads to start on each node" },
+      "Number of threads to start (0 is guess)" },
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME, -1 is guess" },
     { "-ddorder", FALSE, etENUM, {ddno_opt},
@@ -448,12 +451,6 @@ int main(int argc,char *argv[])
       "Print all forces larger than this (kJ/mol nm)" },
     { "-reprod",  FALSE, etBOOL,{&bReproducible},  
       "Try to avoid optimizations that affect binary reproducibility" },
-    { "-cpt",     FALSE, etREAL, {&cpt_period},
-      "Checkpoint interval (minutes)" },
-    { "-append",  FALSE, etBOOL, {&bAppendFiles},
-      "Append to previous output files when continuing from checkpoint" },
-    { "-addpart",  FALSE, etBOOL, {&bAddPart},
-      "Add the simulation part number to all output files when continuing from checkpoint" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
@@ -478,6 +475,12 @@ int main(int argc,char *argv[])
       "Be loud and noisy" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
       "Terminate after 0.99 times this time (hours)" },
+    { "-cpt",     FALSE, etREAL, {&cpt_period},
+      "Checkpoint interval (minutes)" },
+    { "-append",  FALSE, etBOOL, {&bAppendFiles},
+      "Append to previous output files when continuing from checkpoint" },
+    { "-addpart",  FALSE, etBOOL, {&bAddPart},
+      "Add the simulation part number to all output files when continuing from checkpoint" },
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
@@ -490,9 +493,9 @@ int main(int argc,char *argv[])
   char     suffix[STRLEN];
   int      rc;
 
+
   cr = init_par(&argc,&argv);
-  cr->nthreads = nthreads;
-    
+   
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
   
@@ -512,9 +515,24 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL, &oenv);
 
-
+  /* we set these early because they might be used in init_multisystem() 
+     Note that there is the potential for npme>nnodes until the number of
+     threads is set later on, if there's thread parallelization. That shouldn't
+     lead to problems. */ 
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
+
+#ifdef GMX_THREADS
+  /* now determine the number of threads automatically. The threads are
+     only started at mdrunner_threads, though. */
+  if (nthreads<1)
+  {
+      nthreads=tMPI_Get_recommended_nthreads();
+  }
+#else
+  nthreads=1;
+#endif
+
 
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
@@ -527,45 +545,46 @@ int main(int argc,char *argv[])
 #endif
   }
 
-    /* Check if there is ANY checkpoint file available */	
-    sim_part    = 1;
-    sim_part_fn = sim_part;
-    if (opt2bSet("-cpi",NFILE,fnm))
-    {
-        bAppendFiles =
-            read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),
-                                            &sim_part_fn,NULL,cr,
-                                            bAppendFiles,
-                                            part_suffix,&bAddPart);
-        if (sim_part_fn==0 && MASTER(cr))
-        {
-            fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
-        }
-        else
-        {
-            sim_part = sim_part_fn + 1;
-        }
-    } 
-    else
-    {
-        bAppendFiles = FALSE;
-    }
-    
-    if (!bAppendFiles)
-    {
-        sim_part_fn = sim_part;
-    }
+  /* Check if there is ANY checkpoint file available */	
+  sim_part    = 1;
+  sim_part_fn = sim_part;
+  if (opt2bSet("-cpi",NFILE,fnm))
+  {
+      bAppendFiles =
+                read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
+                                                              fnm,cr),
+                                                &sim_part_fn,NULL,cr,
+                                                bAppendFiles,
+                                                part_suffix,&bAddPart);
+      if (sim_part_fn==0 && MASTER(cr))
+      {
+          fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
+      }
+      else
+      {
+          sim_part = sim_part_fn + 1;
+      }
+  } 
+  else
+  {
+      bAppendFiles = FALSE;
+  }
 
-    if (bAddPart && sim_part_fn > 1)
-    {
-        /* This is a continuation run, rename trajectory output files 
-           (except checkpoint files) */
-        /* create new part name first (zero-filled) */
-        sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
+  if (!bAppendFiles)
+  {
+      sim_part_fn = sim_part;
+  }
 
-        add_suffix_to_output_names(fnm,NFILE,suffix);
-        fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
-    }
+  if (bAddPart && sim_part_fn > 1)
+  {
+      /* This is a continuation run, rename trajectory output files 
+         (except checkpoint files) */
+      /* create new part name first (zero-filled) */
+      sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
+
+      add_suffix_to_output_names(fnm,NFILE,suffix);
+      fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
+  }
 
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
@@ -598,16 +617,6 @@ int main(int argc,char *argv[])
       fplog = NULL;
   }
 
-#if 0
-  /* this is now done in mdrunner: */
-  /* Essential dynamics */
-  if (opt2bSet("-ei",NFILE,fnm)) {
-      /* Open input and output files, allocate space for ED data structure */
-      ed = ed_open(NFILE,fnm,cr);
-  } else
-      ed=NULL;
-#endif
-
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
@@ -617,8 +626,8 @@ int main(int argc,char *argv[])
                         fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,nstglobalcomm,
                         ddxyz,dd_node_order,rdd,rconstr,
                         dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                        nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
-                        cpt_period,max_hours,deviceOptions,Flags);
+                        nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
+                        pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();

@@ -35,6 +35,9 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifndef _TMPI_EVENT_H_
+#define _TMPI_EVENT_H_
+
 /*! \file
 
   \brief Event notification wait and signaling functions.
@@ -85,6 +88,7 @@ void tMPI_Event_signal(tMPI_Event *ev);
 #else
 #define tMPI_Event_signal(ev) \
 { \
+    tMPI_Atomic_memory_barrier(); \
     tMPI_Atomic_add_return( &((ev)->sync), 1); \
 }
 #endif
@@ -104,5 +108,7 @@ void tMPI_Event_process(tMPI_Event *ev, int N);
 { \
     (ev)->last_sync += N; \
 }
+#endif
+
 #endif
 

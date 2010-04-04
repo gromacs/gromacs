@@ -499,17 +499,32 @@ static double filename2lambda(char *fn)
     char   *ptr,*endptr;
     
     ptr = fn;
-    while (ptr[0] != '\0' && !isdigit(ptr[0]))
+    /* go to the end of the path string and search backward 
+       because there might be numbers in the directory names 
+       before the directory in which the lambda value is
+     */
+    while (ptr[1] != '\0')
     {
         ptr++;
+    }
+    while (!isdigit(*ptr) && ptr > fn)
+    {
+        ptr--;
     }
     if (!isdigit(ptr[0]))
     {
         gmx_fatal(FARGS,"While trying to read the lambda value from the filename: filename '%s' does not contain a number",fn);
     }
-    if (ptr > fn && fn[ptr-fn-1] == '-')
+    /* now that we have the last digit of the number we are looking for 
+       let's find the beginning of the number and the sign if it has one
+     */
+    while ((isdigit(*ptr) || ptr[0] == '.') && ptr > fn)
     {
         ptr--;
+    }
+    if (ptr[0] != '-')
+    {
+        ptr++;
     }
 
     lambda = strtod(ptr,&endptr);

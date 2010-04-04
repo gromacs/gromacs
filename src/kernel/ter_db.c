@@ -345,6 +345,7 @@ int read_ter_db(const char *ffdir,char ter,
 t_hackblock **filter_ter(int nrtp,t_restp rtp[],
 			 int nb,t_hackblock tb[],
 			 const char *resname,
+			 const char *rtpname,
 			 int *nret)
 {
   /* Since some force fields (e.g. OPLS) needs different
@@ -374,7 +375,7 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
   char *s,*s2,*c;
   t_hackblock **list;
 
-  restp = search_rtp(resname,nrtp,rtp);
+  restp = search_rtp(rtpname,nrtp,rtp);
   
   n=0;
   list=NULL;

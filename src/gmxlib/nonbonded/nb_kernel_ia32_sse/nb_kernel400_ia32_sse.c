@@ -90,9 +90,9 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 	__m128   vgb,vgbB,fijGB,fijGBB,dvdatmp,dvdatmpB;
 	__m128   facel,gbtabscale,mask,dvdaj;
     
-    __m128   mask1 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
-	__m128   mask2 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
-	__m128   mask3 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
+    __m128   mask1 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
+	__m128   mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
+	__m128   mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
     
 	__m128i  n0, nnn;
 	__m128i  n0B, nnnB;
@@ -107,7 +107,7 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 	
 	nri              = *p_nri;         
     
-    gbfactor         = _mm_set1_ps( - (1.0 - (1.0/gbdata->gb_epsilon_solvent)));     
+    gbfactor         = _mm_set1_ps( - ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent)));     
     gbtabscale       = _mm_load1_ps(p_gbtabscale);  
     facel            = _mm_load1_ps(p_facel);
 

@@ -163,8 +163,8 @@ static void mdrunner_start_fn(void *arg)
                       mc.bCompact, mc.nstglobalcomm, 
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
-                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, mc.nmultisim,
-                      mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
+                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, 
+                      mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
                       mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
 }
 
@@ -325,6 +325,11 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
 
         snew(state,1);
+        /* NOTE: if the run is thread-parallel but the integrator doesn't support this
+                 such as with LBGFS, this function may cancel the threads 
+                 through cancel_par_threads(), and make the commrec serial. The
+                 rest of the simulation is then only performed by the main thread,
+                 as if it were a serial run. */
         init_parallel(fplog, opt2fn_master("-s",nfile,fnm,cr),cr,
                       inputrec,mtop,state,list);
 
@@ -629,7 +634,12 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
 
-    if (integrator[inputrec->eI].func == do_md)
+    if (integrator[inputrec->eI].func == do_md
+#ifdef GMX_OPENMM
+        ||
+        integrator[inputrec->eI].func == do_md_openmm
+#endif
+        )
     {
         /* Turn on signal handling on all nodes */
         /*

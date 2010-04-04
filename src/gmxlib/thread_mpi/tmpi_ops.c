@@ -89,10 +89,10 @@ static void tMPI_##tp##_##fname  (void *dest, void *src_a, void *src_b, \
 
 
 /* these are the function prototypes + definitions: */
-#define MAX(a, b)  ( (a) > (b) ) ? (a) : (b)
+#define MAX(a, b)  (( (a) > (b) ) ? (a) : (b))
 FN(TYPENM,max,MAX)
 #undef MAX
-#define MIN(a, b)  ( (a) < (b) ) ? (a) : (b)
+#define MIN(a, b)  (( (a) < (b) ) ? (a) : (b))
 FN(TYPENM,min,MIN)
 #undef MIN
 OPFN(TYPENM,sum,+)

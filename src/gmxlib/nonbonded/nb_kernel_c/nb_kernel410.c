@@ -119,7 +119,7 @@ void nb_kernel410(
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
     facel            = *p_facel;     
-	scale_gb         = 1.0 - (1.0/gbdata->gb_epsilon_solvent);  
+	scale_gb         = (1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent);  
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    
