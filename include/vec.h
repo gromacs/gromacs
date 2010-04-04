@@ -627,7 +627,7 @@ static inline real
 gmx_angle(const rvec a, const rvec b)
 {
     rvec w;
-    real wlen,s,theta;
+    real wlen,s;
     
     cprod(a,b,w);
     

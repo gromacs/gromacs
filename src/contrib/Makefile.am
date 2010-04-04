@@ -26,13 +26,3 @@ ehole_SOURCES = ehdata.c ehdata.h ehanal.c ehole.c
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
 CLEANFILES   = 	*~ \\\#*
-
-
-
-
-
-
-
-
-
-
