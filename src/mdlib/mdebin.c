@@ -578,7 +578,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     for (i=0;i<efptNR;i++) 
     {
         if (ir->fepvals->separate_dvdl[i]) { 
-            sprintf(buf,"%s(%s)",dhdl,efpt_names[i]);
+            sprintf(buf,"%s (%s)",dhdl,efpt_names[i]);
             setname[s] = strdup(buf);
             s+=1;
         }
@@ -611,7 +611,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
             setname[s] = strdup(buf);
         }
         if (ir->epc!=epcNO) {
-            np = sprintf(buf,"pv(%s)",unit_energy);        
+            np = sprintf(buf,"pV (%s)",unit_energy);        
             setname[nsetsextend-1] = strdup(buf);  /* the first entry after nsets */
         }
 
@@ -849,23 +849,23 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         fprintf(fp_dhdl,"%.4f ",time);
         if (fepvals->bPrintEnergy) 
         {
-            fprintf(fp_dhdl,"%.12g ",fepvals->energy);
+            fprintf(fp_dhdl,"%.4f ",fepvals->energy);
         }
         for (i=0;i<efptNR;i++) 
         {
             if (fepvals->separate_dvdl[i])
             {
-                fprintf(fp_dhdl," %g",enerd->term[F_DVDL_REMAIN+i]); /* assumes F_DVDL_REMAIN is first */
+                fprintf(fp_dhdl," %.4f",enerd->term[F_DVDL_REMAIN+i]); /* assumes F_DVDL_REMAIN is first */
             }
         }
         for(i=1; i<enerd->n_lambda; i++)
         {
-            fprintf(fp_dhdl," %.12g",
+            fprintf(fp_dhdl," %.4f",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
         }
         if (md->epc!=epcNO) 
         {
-            fprintf(fp_dhdl," %g",pv);
+            fprintf(fp_dhdl," %.4f",pv);
         }
         fprintf(fp_dhdl,"\n");
     }
