@@ -662,6 +662,7 @@ void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
 
   ri = &atoms->resinfo[atoms->atom[atom_ind].resind];
   ri->name  = put_symtab(symtab,resname);
+  ri->rtp   = NULL;
   ri->nr    = resnr;
   ri->ic    = ic;
   ri->chain = chain;
