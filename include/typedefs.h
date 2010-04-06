@@ -179,8 +179,8 @@ extern void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra);
 /* allocate extra space for more atoms and or residues */
  
 extern void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
-				const char *resname,int resnr,unsigned char ic,
-				unsigned char chain);
+				const char *resname,const char *rtpname,
+				int resnr,unsigned char ic,unsigned char chain);
 /* Set the residue name, number, insertion code and chain identifier
  * of atom index atom_ind.
  */

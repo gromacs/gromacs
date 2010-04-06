@@ -144,7 +144,7 @@ void connelly_plot(const char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
     srenew(atoms->atomname,atoms->nr+ndots);
     srenew(atoms->resinfo,r0+1);
     atoms->atom[i0].resind = r0;
-    t_atoms_set_resinfo(atoms,i0,symtab,resnm,r0+1,' ',' ');
+    t_atoms_set_resinfo(atoms,i0,symtab,resnm,resnm,r0+1,' ',' ');
     srenew(atoms->pdbinfo,atoms->nr+ndots);
     snew(xnew,atoms->nr+ndots);
     for(i=0; (i<atoms->nr); i++)
@@ -170,7 +170,7 @@ void connelly_plot(const char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
   else {
     init_t_atoms(&aaa,ndots,TRUE);
     aaa.atom[0].resind = 0;
-    t_atoms_set_resinfo(&aaa,0,symtab,resnm,1,' ',' ');
+    t_atoms_set_resinfo(&aaa,0,symtab,resnm,resnm,1,' ',' ');
     snew(xnew,ndots);
     for(i=k=0; (i<ndots); i++) {
       ii0 = i;

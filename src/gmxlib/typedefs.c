@@ -655,13 +655,14 @@ t_atoms *copy_t_atoms(t_atoms *src)
 }
 
 void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
-                         const char *resname,int resnr,unsigned char ic,
-                         unsigned char chain)
+                         const char *resname,const char *rtpname,
+                         int resnr,unsigned char ic,unsigned char chain)
 {
   t_resinfo *ri;
 
   ri = &atoms->resinfo[atoms->atom[atom_ind].resind];
   ri->name  = put_symtab(symtab,resname);
+  ri->rtp   = put_symtab(symtab,rtpname);
   ri->nr    = resnr;
   ri->ic    = ic;
   ri->chain = chain;
