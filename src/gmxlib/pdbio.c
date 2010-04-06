@@ -519,7 +519,7 @@ static int read_atom(t_symtab *symtab,
 	atomn->resind = atoms->atom[natom-1].resind + 1;
       }
       atoms->nres = atomn->resind + 1;
-      t_atoms_set_resinfo(atoms,natom,symtab,resnm,resnm,resnr,resic,chain);
+      t_atoms_set_resinfo(atoms,natom,symtab,resnm,resnr,resic,chain);
     }
     else
     {

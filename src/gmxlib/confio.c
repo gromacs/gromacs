@@ -120,7 +120,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 	    if (newres+1 > atoms->nres) {
 	      atoms->nres = newres+1;
 	    }
-	    t_atoms_set_resinfo(atoms,natoms,symtab,resnm,resnm,resnr,' ',' ');
+	    t_atoms_set_resinfo(atoms,natoms,symtab,resnm,resnr,' ',' ');
 	  } else {
 	    atoms->atom[natoms].resind = newres;
 	  }
@@ -567,7 +567,7 @@ static void read_espresso_conf(const char *infile,
 	      sprintf(buf,"T%c%c",
 		      'A'+atoms->atom[i].type/26,'A'+atoms->atom[i].type%26);
 	    }
-	    t_atoms_set_resinfo(atoms,i,symtab,buf,buf,i,' ',' ');
+	    t_atoms_set_resinfo(atoms,i,symtab,buf,i,' ',' ');
 	  }	  
 
 	  if (r == 3)
@@ -777,7 +777,7 @@ static bool get_w_conf(FILE *in,const char *infile,char *title,
 	gmx_fatal(FARGS,"More residues than atoms in %s (natoms = %d)",
 		    infile,natoms);
       atoms->atom[i].resind = newres;
-      t_atoms_set_resinfo(atoms,i,symtab,name,name,resnr,' ',' ');
+      t_atoms_set_resinfo(atoms,i,symtab,name,resnr,' ',' ');
     } else {
       atoms->atom[i].resind = newres;
     }
