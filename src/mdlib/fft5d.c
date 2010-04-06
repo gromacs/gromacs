@@ -35,9 +35,10 @@
 
 #ifdef NOGMX
 FILE* debug=0;
-#else
-#include "gmx_fatal.h"
 #endif
+
+#include "gmx_fatal.h"
+
 
 #ifdef GMX_FFT_FFTW3 
 #ifdef GMX_THREADS
@@ -97,6 +98,33 @@ static int vmax(int* a, int s) {
     return max;
 } 
 
+/*
+copied here from fftgrid, because:
+1. function there not publically available
+2. not sure whether we keep fftgrid
+3. less dependencies for fft5d
+
+Only used for non-fftw case
+*/
+static void *
+gmx_alloc_aligned(size_t size)
+{
+    void *p0,*p;
+    
+    p0 = malloc(size+32);
+    
+    if(p0 == NULL)
+    {
+        gmx_fatal(FARGS,"Failed to allocated %u bytes of aligned memory.",size+32);
+    }
+    
+    p = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
+    
+    /* Yeah, yeah, we cannot free this pointer, but who cares... */
+    return p;
+}
+
+
 /* NxMxK the size of the data
  * comm communicator to use for fft5d
  * P0 number of processor in 1st axes (can be null for automatic)
@@ -106,11 +134,11 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
 
     int P[2],bMaster,prank[2],i;
     int rNG,rMG,rKG;
-    int *N0, *N1, *M0, *M1, *K0, *K1, *oN0, *oN1, *oM0, *oM1, *oK0, *oK1;
-    int N[3],M[3],K[3],pN[3],pM[3],pK[3],oM[3],oK[3],*iNin[3],*oNin[3],*iNout[3],*oNout[3];
+    int *N0=0, *N1=0, *M0=0, *M1=0, *K0=0, *K1=0, *oN0=0, *oN1=0, *oM0=0, *oM1=0, *oK0=0, *oK1=0;
+    int N[3],M[3],K[3],pN[3],pM[3],pK[3],oM[3],oK[3],*iNin[3]={0},*oNin[3]={0},*iNout[3]={0},*oNout[3]={0};
     int C[3],rC[3],nP[2];
     int lsize;
-    fft5d_type* lin,*lout;
+    fft5d_type *lin=0,*lout=0;
     fft5d_plan plan;
     int s;
 
@@ -180,7 +208,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
     
     /*for transpose we need to know the size for each processor not only our own size*/
 
-    N0 = malloc(P[0]*sizeof(int)); N1 = malloc(P[1]*sizeof(int)); /*TODO: free*/
+    N0 = malloc(P[0]*sizeof(int)); N1 = malloc(P[1]*sizeof(int)); 
     M0 = malloc(P[0]*sizeof(int)); M1 = malloc(P[1]*sizeof(int));
     K0 = malloc(P[0]*sizeof(int)); K1 = malloc(P[1]*sizeof(int));
     oN0 = malloc(P[0]*sizeof(int));oN1 = malloc(P[1]*sizeof(int));
@@ -275,6 +303,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
         K[2] = vmax(N1,P[1]);
         pK[2] = N1[prank[1]];
         oK[2] = oN1[prank[1]];
+        free(N0); free(oN0); /*these are not used for this order*/
+        free(M1); free(oM1); /*the rest is freed in destroy*/
     } else {
         N[0] = vmax(N0,P[0]);
         M[0] = vmax(M0,P[0]);
@@ -308,6 +338,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
         K[2] = vmax(M1,P[1]);
         pK[2] = M1[prank[1]];
         oK[2] = oM1[prank[1]];
+        free(N1); free(oN1); /*these are not used for this order*/
+        free(K0); free(oK0); /*the rest is freed in destroy*/
     }
     
     /*
@@ -327,8 +359,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
         lout = (fft5d_type*)FFTW(malloc)(sizeof(fft5d_type) * lsize); 
         FFTW_UNLOCK;
         #else 
-        lin = (fft5d_type*)malloc(sizeof(fft5d_type) * lsize);   //TODO: aligned alloc
-        lout = (fft5d_type*)malloc(sizeof(fft5d_type) * lsize); 
+        lin = (fft5d_type*)gmx_alloc_aligned(sizeof(fft5d_type) * lsize);   
+        lout = (fft5d_type*)gmx_alloc_aligned(sizeof(fft5d_type) * lsize); 
         #endif
     } else {
         lin = *rlin;
@@ -761,7 +793,7 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
     }    
     
     time=MPI_Wtime();
-    //TODO: in-place
+    if (plan->flags&FFT5D_INPLACE) lout=lin;
     if ((plan->flags&FFT5D_REALCOMPLEX) && (plan->flags&FFT5D_BACKWARD)) {
         gmx_fft_many_1d_real(p1d[s],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_COMPLEX_TO_REAL:GMX_FFT_REAL_TO_COMPLEX,lin,lout);
     } else {
@@ -782,9 +814,25 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 
 void fft5d_destroy(fft5d_plan plan) {
     int s;
-    for (s=0;s<3;s++)
+    for (s=0;s<3;s++) {
         gmx_many_fft_destroy(plan->p1d[s]);
-    
+        if (plan->iNin[s]) {
+            free(plan->iNin[s]);
+            plan->iNin[s]=0;
+        }
+        if (plan->oNin[s]) {
+            free(plan->oNin[s]);
+            plan->oNin[s]=0;
+        }
+        if (plan->iNout[s]) {
+            free(plan->iNout[s]);
+            plan->iNout[s]=0;
+        }
+        if (plan->oNout[s]) {
+            free(plan->oNout[s]);
+            plan->oNout[s]=0;
+        }
+    }
 #ifdef GMX_FFT_FFTW3 
     FFTW_LOCK;
 #ifdef FFT5D_MPI_TRANSPOS
@@ -797,16 +845,14 @@ void fft5d_destroy(fft5d_plan plan) {
     }
     FFTW_UNLOCK;
 #else /* GMX_FFT_FFTW3 */
-    if (!(plan->flags&FFT5D_NOMALLOC)) {
-        free(plan->lin);
-        free(plan->lout);
-    }
+    /*We can't free lin/lout here - is allocated by gmx_alloc_aligned which can't be freed*/
 #endif /* GMX_FFT_FFTW3 */
+    
 
     free(plan);
 }
 
-/*TODO better than direct access of plan? enough data?
+/*Is this better than direct access of plan? enough data?
   here 0,1 reference divided by which processor grid dimension (not FFT step!)*/
 void fft5d_local_size(fft5d_plan plan,int* N1,int* M0,int* K0,int* K1,int** coor) {
     *N1=plan->N[0];
