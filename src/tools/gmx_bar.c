@@ -496,41 +496,47 @@ static double legend2lambda(char *fn,const char *legend,bool bdhdl)
 static double filename2lambda(char *fn)
 {
     double lambda;
-    char   *ptr,*endptr;
-    
+    char   *ptr,*endptr,*digitptr;
+    int     dirsep;
     ptr = fn;
-    /* go to the end of the path string and search backward 
-       because there might be numbers in the directory names 
-       before the directory in which the lambda value is
+    /* go to the end of the path string and search backward to find the last 
+       directory in the path which has to contain the value of lambda 
      */
     while (ptr[1] != '\0')
     {
         ptr++;
     }
-    while (!isdigit(*ptr) && ptr > fn)
+    /* searching backward to find the second directory separator */
+    dirsep = 0;
+    digitptr = NULL;
+    while (ptr >= fn)
     {
+        if (ptr[0] != DIR_SEPARATOR && ptr[1] == DIR_SEPARATOR)
+        {            
+            if (dirsep == 1) break;
+            dirsep++;
+        }
+        /* save the last position of a digit between the last two 
+           separators = in the last dirname */
+        if (dirsep > 0 && isdigit(*ptr))
+        {
+            digitptr = ptr;
+        }
         ptr--;
     }
-    if (!isdigit(ptr[0]))
+    if (!digitptr)
     {
-        gmx_fatal(FARGS,"While trying to read the lambda value from the filename: filename '%s' does not contain a number",fn);
+        gmx_fatal(FARGS,"While trying to read the lambda value from the file path:"
+                    " last directory in the path '%s' does not contain a number",fn);
     }
-    /* now that we have the last digit of the number we are looking for 
-       let's find the beginning of the number and the sign if it has one
-     */
-    while ((isdigit(*ptr) || ptr[0] == '.') && ptr > fn)
+    if (digitptr[-1] == '-')
     {
-        ptr--;
+        digitptr--;
     }
-    if (ptr[0] != '-')
+    lambda = strtod(digitptr,&endptr);
+    if (endptr == digitptr)
     {
-        ptr++;
-    }
-
-    lambda = strtod(ptr,&endptr);
-    if (endptr == ptr)
-    {
-        gmx_fatal(FARGS,"Malformed number in filename '%s'",fn);
+        gmx_fatal(FARGS,"Malformed number in file path '%s'",fn);
     }
 
     return lambda;
