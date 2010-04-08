@@ -533,7 +533,16 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     fp = gmx_fio_fopen(filename,"w+");
     xvgr_header(fp,title,label_x,label_y,exvggtXNY,oenv);
 
-    sprintf(buf,"T = %g (K)",ir->opts.ref_t[0]);
+    if (ir->delta_lambda == 0)
+    {
+        sprintf(buf,"T = %g (K), %s = %g",
+                ir->opts.ref_t[0],lambda,ir->init_lambda);
+    }
+    else
+    {
+        sprintf(buf,"T = %g (K)",
+                ir->opts.ref_t[0]);
+    }
     xvgr_subtitle(fp,buf,oenv);
 
     if (ir->n_flambda > 0)

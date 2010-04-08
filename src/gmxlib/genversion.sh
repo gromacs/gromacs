@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # usage: genversion.sh PKGVERSION top_srcdir
+# Requires git 1.5.1 or later
 
 PKGVERSION=$1
 SRCDIR=$2
@@ -10,7 +11,17 @@ if which git >/dev/null && test -d $GITDIR ; then
     # Get either -dirty or an empty string, depending on whether there are local changes.
     dirtystr=`(cd $SRCDIR && git diff-index --quiet HEAD) || echo "-dirty"`
     # Get date of the head commit as YYYYMMDD (commit date).
-    date=`git --git-dir=$GITDIR rev-list -n1 --pretty=format:%ci HEAD | sed -ne '/commit/!{s/-\| .*$//g;p;}'`
+    # Git before 1.5.3 does not support any sensible date format,
+    # so we need to massage the output.
+    if test "`git --version`" \< "git version 1.5.3" ; then
+        date=`git --git-dir=$GITDIR rev-list -n1 --pretty=format:%cD HEAD | \
+              sed -ne '/commit/!{s/^.*, *\([ 0-9][0-9]\) \([a-zA-Z]*\) \([0-9]*\) .*$/\3\2\1/;y/ /0/;\
+                   s/Jan/01/;s/Feb/02/;s/Mar/03/;s/Apr/04/;s/May/05/;s/Jun/06/;
+                   s/Jul/07/;s/Aug/08/;s/Sep/09/;s/Oct/10/;s/Nov/11/;s/Dec/12/;
+                   p;}'`
+    else
+        date=`git --git-dir=$GITDIR rev-list -n1 --pretty=format:%ci HEAD | sed -ne '/commit/!{s/-\| .*$//g;p;}'`
+    fi
     # Get a 7-character hash for the HEAD commit.
     shorthash=`git --git-dir=$GITDIR rev-parse --short=7 HEAD 2>/dev/null`
     # Get the full hash for the HEAD commit.
