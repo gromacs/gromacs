@@ -2081,7 +2081,11 @@ make_gridindex5_to_localindex(int n,int local_start,int local_end,
     snew(gtl,5*n);
     snew(fsh,5*n);
     for(i=0; (i<5*n); i++) {
-        gtl[i] = i % n - local_start;
+        /* Determine the global to local grid index */
+        gtl[i] = (i - local_start + n) % n;
+        /* For coordinates that fall within the local grid the fraction
+         * is correct, we don't need to shift it.
+         */
         fsh[i] = 0;
         if (local_size < n)
         {
