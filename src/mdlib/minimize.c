@@ -325,52 +325,62 @@ void init_em(FILE *fplog,const char *title,
         }
     }
 
-  clear_rvec(mu_tot);
-  calc_shifts(ems->s.box,fr->shift_vec);
+    clear_rvec(mu_tot);
+    calc_shifts(ems->s.box,fr->shift_vec);
 
-  if (PARTDECOMP(cr)) {
-    pd_at_range(cr,&start,&homenr);
-    homenr -= start;
-  } else {
-    start  = 0;
-    homenr = top_global->natoms;
-  }
-  atoms2md(top_global,ir,0,NULL,start,homenr,mdatoms);
-  update_mdatoms(mdatoms,state_global->lambda);
-
-  if (vsite && !DOMAINDECOMP(cr)) {
-    set_vsite_top(vsite,*top,mdatoms,cr);
-  }
-
-  if (constr) {
-    if (ir->eConstrAlg == econtSHAKE &&
-	gmx_mtop_ftype_count(top_global,F_CONSTR) > 0) {
-      gmx_fatal(FARGS,"Can not do energy minimization with %s, use %s\n",
-		econstr_names[econtSHAKE],econstr_names[econtLINCS]);
+    if (PARTDECOMP(cr))
+    {
+        pd_at_range(cr,&start,&homenr);
+        homenr -= start;
     }
-
-    if (!DOMAINDECOMP(cr))
+    else
+    {
+        start  = 0;
+        homenr = top_global->natoms;
+    }
+    atoms2md(top_global,ir,0,NULL,start,homenr,mdatoms);
+    update_mdatoms(mdatoms,state_global->lambda);
+    
+    if (vsite && !DOMAINDECOMP(cr))
+    {
+        set_vsite_top(vsite,*top,mdatoms,cr);
+    }
+    
+    if (constr)
+    {
+        if (ir->eConstrAlg == econtSHAKE &&
+            gmx_mtop_ftype_count(top_global,F_CONSTR) > 0)
+        {
+            gmx_fatal(FARGS,"Can not do energy minimization with %s, use %s\n",
+                      econstr_names[econtSHAKE],econstr_names[econtLINCS]);
+        }
+        
 		set_constraints(constr,*top,ir,mdatoms,cr);
 
-    /* Constrain the starting coordinates */
-    dvdlambda=0;
-    constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,&(*top)->idef,
-              ir,NULL,cr,-1,0,mdatoms,
-              ems->s.x,ems->s.x,NULL,ems->s.box,ems->s.lambda,&dvdlambda,
-              NULL,NULL,nrnb,econqCoord,FALSE,0,0);
-  }
+        if (!ir->bContinuation)
+        {
+            /* Constrain the starting coordinates */
+            dvdlambda=0;
+            constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,&(*top)->idef,
+                      ir,NULL,cr,-1,0,mdatoms,
+                      ems->s.x,ems->s.x,NULL,ems->s.box,
+                      ems->s.lambda,&dvdlambda,
+                      NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+        }
+    }
+    
+    if (PAR(cr))
+    {
+        *gstat = global_stat_init(ir);
+    }
+    
+    *outf = init_mdoutf(nfile,fnm,FALSE,cr,ir,NULL);
 
-  if (PAR(cr)) {
-    *gstat = global_stat_init(ir);
-  }
+    snew(*enerd,1);
+    init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,*enerd);
 
-  *outf = init_mdoutf(nfile,fnm,FALSE,cr,ir,NULL);
-
-  snew(*enerd,1);
-  init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,*enerd);
-
-  /* Init bin for energy stuff */
-  *mdebin = init_mdebin((*outf)->fp_ene,top_global,ir); 
+    /* Init bin for energy stuff */
+    *mdebin = init_mdebin((*outf)->fp_ene,top_global,ir); 
 }
 
 static void finish_em(FILE *fplog,t_commrec *cr,gmx_mdoutf_t *outf)
