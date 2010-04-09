@@ -303,18 +303,20 @@ void init_em(FILE *fplog,const char *title,
   clear_rvec(mu_tot);
   calc_shifts(ems->s.box,fr->shift_vec);
 
-  if (PARTDECOMP(cr)) {
-    pd_at_range(cr,&start,&homenr);
-    homenr -= start;
-  } else {
-    start  = 0;
-    homenr = top_global->natoms;
-  }
-  atoms2md(top_global,ir,0,NULL,start,homenr,mdatoms);
-  update_mdatoms(mdatoms,state_global->lambda);
+  if (!DOMAINDECOMP(cr)) {
+    if (PARTDECOMP(cr)) {
+      pd_at_range(cr,&start,&homenr);
+      homenr -= start;
+    } else {
+      start  = 0;
+      homenr = top_global->natoms;
+    }
+    atoms2md(top_global,ir,0,NULL,start,homenr,mdatoms);
+    update_mdatoms(mdatoms,state_global->lambda);
 
-  if (vsite && !DOMAINDECOMP(cr)) {
-    set_vsite_top(vsite,*top,mdatoms,cr);
+    if (vsite) {
+      set_vsite_top(vsite,*top,mdatoms,cr);
+    }
   }
 
   if (constr) {
