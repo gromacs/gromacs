@@ -323,27 +323,24 @@ void init_em(FILE *fplog,const char *title,
         {
             *graph = NULL;
         }
-    }
 
-    clear_rvec(mu_tot);
-    calc_shifts(ems->s.box,fr->shift_vec);
-
-    if (PARTDECOMP(cr))
-    {
-        pd_at_range(cr,&start,&homenr);
-        homenr -= start;
-    }
-    else
-    {
-        start  = 0;
-        homenr = top_global->natoms;
-    }
-    atoms2md(top_global,ir,0,NULL,start,homenr,mdatoms);
-    update_mdatoms(mdatoms,state_global->lambda);
+        if (PARTDECOMP(cr))
+        {
+            pd_at_range(cr,&start,&homenr);
+            homenr -= start;
+        }
+        else
+        {
+            start  = 0;
+            homenr = top_global->natoms;
+        }
+        atoms2md(top_global,ir,0,NULL,start,homenr,mdatoms);
+        update_mdatoms(mdatoms,state_global->lambda);
     
-    if (vsite && !DOMAINDECOMP(cr))
-    {
-        set_vsite_top(vsite,*top,mdatoms,cr);
+        if (vsite)
+        {
+            set_vsite_top(vsite,*top,mdatoms,cr);
+        }
     }
     
     if (constr)
@@ -355,7 +352,10 @@ void init_em(FILE *fplog,const char *title,
                       econstr_names[econtSHAKE],econstr_names[econtLINCS]);
         }
         
-		set_constraints(constr,*top,ir,mdatoms,cr);
+        if (!DOMAINDECOMP(cr))
+        {
+            set_constraints(constr,*top,ir,mdatoms,cr);
+        }
 
         if (!ir->bContinuation)
         {
@@ -381,6 +381,9 @@ void init_em(FILE *fplog,const char *title,
 
     /* Init bin for energy stuff */
     *mdebin = init_mdebin((*outf)->fp_ene,top_global,ir); 
+
+    clear_rvec(mu_tot);
+    calc_shifts(ems->s.box,fr->shift_vec);
 }
 
 static void finish_em(FILE *fplog,t_commrec *cr,gmx_mdoutf_t *outf)
