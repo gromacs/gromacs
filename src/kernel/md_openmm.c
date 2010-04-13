@@ -606,17 +606,14 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         step++;
         step_rel++;
 
-
-
     }
     /* End of main MD loop */
     debug_gmx();
-    
-    openmm_cleanup(fplog, openmmData);
-
+ 
     /* Stop the time */
     runtime_end(runtime);
-    
+       
+    openmm_cleanup(fplog, openmmData);
 
     done_mdoutf(outf);
 
