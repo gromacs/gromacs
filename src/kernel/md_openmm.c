@@ -185,7 +185,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
     bool       bInitStep=TRUE;
     bool       bNEMD,do_ene,do_log, do_verbose,
-               bX,bV,bF,bXTC,bCPT;
+               bX,bV,bF,bCPT;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m;
     int        mdof_flags;
@@ -464,23 +464,24 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (do_per_step(step,ir->nstfout)) { mdof_flags |= MDOF_F; }
         if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
         if (bCPT) { mdof_flags |= MDOF_CPT; };
-        bX   = MDOF_X || (bLastStep && ir->nstxout);
-        bV   = MDOF_V || (bLastStep && ir->nstvout);
-        bF   = MDOF_F || (bLastStep && ir->nstfout);
-        bXTC = MDOF_XTC || (bLastStep && ir->nstxtcout);
         do_ene = do_per_step(step,ir->nstenergy) || (bLastStep && ir->nstenergy);
 
-      if( bX || bXTC || bV ){                                                                                                                                                                 
+      if(mdof_flags != 0) {
+	bX = (mdof_flags & (MDOF_X | MDOF_XTC | MDOF_CPT));
+	bV = (mdof_flags & (MDOF_V | MDOF_CPT));
+	
+
         wallcycle_start(wcycle,ewcTRAJ);                                                                                                                                                              
-        openmm_copy_state(openmmData, state, &t, f, enerd, bX||bXTC, bV, 0, 0);                                                                                                               
+        openmm_copy_state(openmmData, state, &t, f, enerd, bX, bV, 0, 0);                                                                                                               
         wallcycle_stop(wcycle,ewcTRAJ);                                                                                                                                                       
       }                                                                                                                                                                                       
 
       openmm_take_one_step(openmmData);                                                                                                                                                       
 
-      if (bX || bV || bF || bXTC || do_ene) {
+      if (mdof_flags != 0 || do_ene) {
         wallcycle_start(wcycle,ewcTRAJ);
-        if( bF || do_ene ){                                                                                                                                                                   
+	bF = (mdof_flags & MDOF_F);
+        if(bF || do_ene ){                                                                                                                                                                   
            openmm_copy_state(openmmData, state, &t, f, enerd, 0, 0, bF, do_ene);                                                                                                              
       }                                                                                                                                                                                     
      upd_mdebin(mdebin, NULL,TRUE,
