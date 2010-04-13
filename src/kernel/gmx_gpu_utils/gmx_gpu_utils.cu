@@ -13,15 +13,16 @@
 
 #define QUICK_MEM       250
 #define QUICK_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS
-#define QUICK_ITER      3 /* TODO adjust this for production version */
+#define QUICK_ITER      3 
 
 #define FULL_MEM        -1
 #define FULL_TESTS      0x3FFF
-#define FULL_ITER       25 /* TODO adjust this for production version */
+#define FULL_ITER       25 
 
-#ifndef _DEBUG_
-#define _DEBUG_           0
+#ifdef _DEBUG_
+#undef _DEBUG_
 #endif
+#define _DEBUG_           0
 
 #if _DEBUG_ == 1
 #define DUPME(msg) printf("---> %s\n", msg);
@@ -32,10 +33,9 @@
 #define NB_GPUS (sizeof(SupportedGPUs)/sizeof(SupportedGPUs[0]))
 
 /*
-TODO fine-tune parameters for quick/full test
-TODO add logging capability when integrating into gmx
-TODO add verbosity level
+TODO add proper gromacs logging?
 */
+
 /** Bit-flags which refer to memtestG80 test types and are used in do_memtest to specify which tests to run. */
 enum memtest_G80_test_types {
     MOVING_INVERSIONS_10 =      0x1,
@@ -57,6 +57,15 @@ enum memtest_G80_test_types {
 // TODO put this list into an external file and include it so that the list is easily accessible
 /** List of supported GPU names. */
 static const char * const SupportedGPUs[] = {
+    /* GT400 */
+    "Geforce GTX 480",
+    "Geforce GTX 470",
+
+    "Tesla C2070",
+    "Tesla C2050",
+    "Tesla S2070",
+    "Tesla S2050",
+
     /* GT200 */
     "Geforce GTX 295",
     "Geforce GTX 285",
@@ -64,9 +73,14 @@ static const char * const SupportedGPUs[] = {
     "Geforce GTX 275",
     "Geforce GTX 260",
     "GeForce GTS 250",
+    "GeForce GTS 150",
+
+    "GeForce GTX 285M",
+    "GeForce GTX 280M",
 
     "Tesla S1070",
     "Tesla C1060",
+    "Tesla M1060",
 
     "Quadro FX 5800",
     "Quadro FX 4800",
@@ -75,8 +89,8 @@ static const char * const SupportedGPUs[] = {
     "Quadro Plex 2200 S4",
 
     /* G90 */
-    "GeForce 9800 G", /*GX2, GTX, GTX+ */
-    "GeForce 9600 G",  /* */
+    "GeForce 9800 G", /* GX2, GTX, GTX+, GT */
+    "GeForce 9800M GTX",
 
     "Quadro FX 4700",
     "Quadro Plex 2100 D4"
@@ -84,7 +98,9 @@ static const char * const SupportedGPUs[] = {
 
 #ifndef _string2_h
 #include <string.h>
-/* - duplicated from ~/src/gmxlib/string2.c - */
+/* string trimming function - duplicated from ~/src/gmxlib/string2.c -
+   only used if this file is compiled in debug mode (_DEBUG_ > 0)
+ */
 void ltrim (char *str)
 {
   char *tr;
@@ -470,9 +486,6 @@ int do_full_memtest(int dev_id)
     if (dev_id != -1) cudaThreadExit();
     return res;
 }
-
-/*******************************************************/
-/* FIXME test it! */
 
 /**
  * Runs a time constrained memory test and returns 0 in case if no error is detected. If an error is detected
