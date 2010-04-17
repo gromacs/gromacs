@@ -839,8 +839,12 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
       lsq_y_ax_b(N,&(msd->time[i0]),&(msd->data[j][i0]),&(DD[j]),&b,&r,&chi2);
       DD[j]     *= FACTOR/msd->dim_factor;
       SigmaD[j] *= FACTOR/msd->dim_factor;
-      fprintf(stdout,"D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",
-	      grpname[j],DD[j],SigmaD[j]);
+      if (DD[j] > 0.01 && DD[j] < 1e4)
+          fprintf(stdout,"D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",
+                  grpname[j],DD[j],SigmaD[j]);
+      else
+          fprintf(stdout,"D[%10s] %.4g (+/- %.4g) 1e-5 cm^2/s\n",
+                  grpname[j],DD[j], SigmaD[j]);
     }
   }
   /* Print mean square displacement */

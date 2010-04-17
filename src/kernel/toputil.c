@@ -415,7 +415,7 @@ void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr,
     /* if the information is present... */
     for (i=0; (i < at->nr); i++) {
       ri = at->atom[i].resind;
-      if (i == 0 || ri != at->atom[i-1].resind &&
+      if ((i == 0 || ri != at->atom[i-1].resind) &&
 	  at->resinfo[ri].rtp != NULL) {
 	qres = get_residue_charge(at,i);
 	fprintf(out,"; residue %3d %-3s rtp %-4s q ",

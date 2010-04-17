@@ -493,29 +493,81 @@ static double legend2lambda(char *fn,const char *legend,bool bdhdl)
     return lambda;
 }
 
+static bool subtitle2lambda(const char *subtitle,double *lambda)
+{
+    bool bFound;
+    char *ptr;
+
+    bFound = FALSE;
+
+    /* plain text lambda string */
+    ptr = strstr(subtitle,"lambda");
+    if (ptr == NULL)
+    {
+        /* xmgrace formatted lambda string */
+        ptr = strstr(subtitle,"\\xl\\f{}");
+    }
+    if (ptr == NULL)
+    {
+        /* xmgr formatted lambda string */
+        ptr = strstr(subtitle,"\\8l\\4");
+    }
+    if (ptr != NULL)
+    {
+        ptr = strstr(ptr,"=");
+    }
+    if (ptr != NULL)
+    {
+        bFound = (sscanf(ptr+1,"%lf",lambda) == 1);
+    }
+
+    return bFound;
+}
+
 static double filename2lambda(char *fn)
 {
     double lambda;
-    char   *ptr,*endptr;
-    
+    char   *ptr,*endptr,*digitptr;
+    int     dirsep;
     ptr = fn;
-    while (ptr[0] != '\0' && !isdigit(ptr[0]))
+    /* go to the end of the path string and search backward to find the last 
+       directory in the path which has to contain the value of lambda 
+     */
+    while (ptr[1] != '\0')
     {
         ptr++;
     }
-    if (!isdigit(ptr[0]))
+    /* searching backward to find the second directory separator */
+    dirsep = 0;
+    digitptr = NULL;
+    while (ptr >= fn)
     {
-        gmx_fatal(FARGS,"While trying to read the lambda value from the filename: filename '%s' does not contain a number",fn);
-    }
-    if (ptr > fn && fn[ptr-fn-1] == '-')
-    {
+        if (ptr[0] != DIR_SEPARATOR && ptr[1] == DIR_SEPARATOR)
+        {            
+            if (dirsep == 1) break;
+            dirsep++;
+        }
+        /* save the last position of a digit between the last two 
+           separators = in the last dirname */
+        if (dirsep > 0 && isdigit(*ptr))
+        {
+            digitptr = ptr;
+        }
         ptr--;
     }
-
-    lambda = strtod(ptr,&endptr);
-    if (endptr == ptr)
+    if (!digitptr)
     {
-        gmx_fatal(FARGS,"Malformed number in filename '%s'",fn);
+        gmx_fatal(FARGS,"While trying to read the lambda value from the file path:"
+                    " last directory in the path '%s' does not contain a number",fn);
+    }
+    if (digitptr[-1] == '-')
+    {
+        digitptr--;
+    }
+    lambda = strtod(digitptr,&endptr);
+    if (endptr == digitptr)
+    {
+        gmx_fatal(FARGS,"Malformed number in file path '%s'",fn);
     }
 
     return lambda;
@@ -574,8 +626,13 @@ static void read_barsim(char *fn,double begin,double end,real temp,
         /* Check if we have a single set, nset=2 means t and dH/dl */
         if (ba->nset == 2)
         {
-            /* Deduce lambda from the file name */
-            ba->lambda[0] = filename2lambda(fn);
+            /* Try to deduce lambda from the subtitle */
+            if (subtitle != NULL &&
+                !subtitle2lambda(subtitle,&ba->lambda[0]))
+            {
+                /* Deduce lambda from the file name */
+                ba->lambda[0] = filename2lambda(fn);
+            }
             printf(" %g",ba->lambda[0]);
         }
         else
@@ -620,8 +677,8 @@ int gmx_bar(int argc,char *argv[])
         "* Files with only one y-value, for such files it is assumed ",
         "that the y-value is dH/dlambda and that the Hamiltonian depends ",
         "linearly on lambda. The lambda value of the simulation is inferred ",
-        "from the legend if present, otherwise from a number in the file ",
-        "name.",
+        "from the subtitle if present, otherwise from a number in the",
+        "subdirectory in the file name.",
         "[BR]",
         "* Files with more than one y-value. The files should have columns ",
         "with dH/dlambda and Delta lambda. The lambda values are inferred ",
@@ -698,6 +755,7 @@ int gmx_bar(int argc,char *argv[])
     double   *partsum;
     double   prec,dg_tot,dg,sig;
     FILE     *fpb,*fpi;
+    char     lamformat[20];
     char     dgformat[20],xvg2format[STRLEN],xvg3format[STRLEN],buf[STRLEN];
     char     ktformat[STRLEN], sktformat[STRLEN];
     char     kteformat[STRLEN], skteformat[STRLEN];
@@ -721,6 +779,7 @@ int gmx_bar(int argc,char *argv[])
         gmx_fatal(FARGS,"Can not have negative number of digits");
     }
     prec = pow(10,-nd);
+    sprintf(lamformat,"%%6.3f");
     sprintf( dgformat,"%%%d.%df",3+nd,nd);
     /* the format strings of the results in kT */
     sprintf( ktformat,"%%%d.%df",5+nd,nd);
@@ -826,8 +885,8 @@ int gmx_bar(int argc,char *argv[])
     printf("\nTemperature: %g K\n", ba[0].temp);
 
     printf("\nDetailed results in kT (see help for explanation):\n\n");
-    printf(skteformat, "lam_A ");
-    printf(skteformat, "lam_B ");
+    printf("%6s ", " lam_A");
+    printf("%6s ", " lam_B");
     printf(sktformat,  "DG ");
     printf(skteformat, "+/- ");
     printf(sktformat,  "s_A ");
@@ -839,9 +898,9 @@ int gmx_bar(int argc,char *argv[])
     printf("\n");
     for(f=0; f<nfile-1; f++)
     {
-        printf(kteformat, results[f].lambda_a);
+        printf(lamformat, results[f].lambda_a);
         printf(" ");
-        printf(kteformat, results[f].lambda_b);
+        printf(lamformat, results[f].lambda_b);
         printf(" ");
         printf(ktformat,  results[f].dg);
         printf(" ");
@@ -900,9 +959,9 @@ int gmx_bar(int argc,char *argv[])
         /*printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
                                               results[f].lambda_b);*/
         printf("lambda ");
-        printf(dgformat, results[f].lambda_a);
+        printf(lamformat, results[f].lambda_a);
         printf(" - ");
-        printf(dgformat, results[f].lambda_b);
+        printf(lamformat, results[f].lambda_b);
         printf(",   DG ");
 
         printf(dgformat,results[f].dg*kT);
@@ -914,9 +973,9 @@ int gmx_bar(int argc,char *argv[])
     }
     printf("\n");
     printf("total  ");
-    printf(dgformat, ba[0].lambda[0]);
+    printf(lamformat, ba[0].lambda[0]);
     printf(" - ");
-    printf(dgformat, ba[nfile-1].lambda[0]);
+    printf(lamformat, ba[nfile-1].lambda[0]);
     printf(",   DG ");
 
     printf(dgformat,dg_tot*kT);

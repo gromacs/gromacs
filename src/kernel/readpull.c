@@ -100,7 +100,7 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
 		       t_pull *pull,bool *bStart,
 		       warninp_t wi) 
 {
-  int  ninp,nerror,i,nchar,ndim,nscan,m;
+  int  ninp,nerror=0,i,nchar,ndim,nscan,m;
   t_inpfile *inp;
   const char *tmp;
   char **grpbuf;
