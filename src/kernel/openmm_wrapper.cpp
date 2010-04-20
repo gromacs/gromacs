@@ -25,14 +25,14 @@ using namespace std;
 
 using namespace OpenMM;
 
-/// \cond
+/*! \cond */
 #define MEM_ERR_MSG(str) \
     "The %s-simulation GPU memory test detected errors. As memory errors would cause incorrect " \
     "simulation results, gromacs has aborted execution.\n Make sure that your GPU's memory is not " \
     "overclocked and that the device is properly cooled.\n", (str)
-/// \endcond
+/*! \endcond */
 
-/** 
+/*! 
  * \brief Convert string to integer type.
  * \param[in]  s         String to convert from.  
  * \param[in]  ios_base  Basefield format flag that takes any of the following I/O 
@@ -46,7 +46,7 @@ static bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
     return !(iss >> f >> t).fail();
 }
 
-/**
+/*!
  * \brief Split string around a given delimiter.
  * \param[in] s      String to split.
  * \param[in] delim  Delimiter character that defines the boundaries of substring in \p s.
@@ -65,7 +65,7 @@ static vector<string> split(const string &s, char delim)
     return elems;
 }
 
-/**
+/*!
  * \brief Split a string of the form "option=value" into "option" and "value" strings.
  * This string corresponds to one option and the associated value from the option list 
  * in the mdrun -device argument.
@@ -84,7 +84,7 @@ static void splitOptionValue(const string &s, string &opt, string &val)
     }
 }
 
-/**
+/*!
  * \brief Compare two strings ignoring case.
  * This function is in fact a wrapper around the gromacs function gmx_strncasecmp().
  * \param[in] s1 String. 
@@ -98,11 +98,11 @@ static bool isStringEqNCase(const string s1, const string s2)
     return (gmx_strncasecmp(s1.c_str(), s2.c_str(), max(s1.length(), s2.length())) == 0);
 }
 
-/**
+/*!
  * \brief Convert string to upper case.
  *
  * \param[in]  s    String to convert to uppercase.
- * \returns        The given string converted to uppercase.
+ * \returns         The given string converted to uppercase.
  */
 static string toUpper(const string &s)
 {
@@ -111,14 +111,21 @@ static string toUpper(const string &s)
     return stmp;
 }
 
-#define SIZEOF_PLATFORMS    1 /*!< Number of constant values in platforms option. */
-#define SIZEOF_MEMTESTS     3 /*!< Number of constant values in memtest option. */
-#define SIZEOF_DEVICEIDS    1 /*!< Number of constant values in deviceid options. */
-#define SIZEOF_FORCE_DEV    2 /*!< Number of constant values in force-dev options. */
+/*! 
+  \name Sizes of constant device option arrays GmxOpenMMPlatformOptions#platforms, 
+  GmxOpenMMPlatformOptions#memtests, GmxOpenMMPlatformOptions#deviceid, 
+  GmxOpenMMPlatformOptions#force_dev.  */
+/* {@ */
+#define SIZEOF_PLATFORMS    1 
+#define SIZEOF_MEMTESTS     3 
+#define SIZEOF_DEVICEIDS    1 
+#define SIZEOF_FORCE_DEV    2 
+/* @} */
 
-/** Possible platform options in the mdrun -device option. */
-static const char *devOptStrings[] = { "platform", "deviceid", "memtest", "force-device" };
-/** Enumerated platform options in the mdrun -device option. */
+/*! Possible platform options in the mdrun -device option. */
+static const char *devOptStrings[] = { "platform", "deviceid", "memtest", "force-device" }; 
+
+/*! Enumerated platform options in the mdrun -device option. */
 enum devOpt
 {
     PLATFORM     = 0,
@@ -127,7 +134,7 @@ enum devOpt
     FORCE_DEVICE = 3
 };
 
-/**
+/*!
  * \brief Class to extract and manage the platform options in the mdrun -device option.
  * 
  */
@@ -141,14 +148,14 @@ public:
 private:
     void setOption(const string &opt, const string &val);
 
-    map<string, string> options; /**< Data structure to store the option (name, value) pairs. */
+    map<string, string> options; /*!< Data structure to store the option (name, value) pairs. */
 
-    static const char * const platforms[SIZEOF_PLATFORMS];  /**< Available OpenMM platforms; size #SIZEOF_PLATFORMS */
-    static const char * const memtests[SIZEOF_MEMTESTS];    /**< Available types of memory tests, also valid 
+    static const char * const platforms[SIZEOF_PLATFORMS];  /*!< Available OpenMM platforms; size #SIZEOF_PLATFORMS */
+    static const char * const memtests[SIZEOF_MEMTESTS];    /*!< Available types of memory tests, also valid 
                                                                  any positive integer >=15; size #SIZEOF_MEMTESTS */
-    static const char * const deviceid[SIZEOF_DEVICEIDS];   /**< Possible values for deviceid option; 
+    static const char * const deviceid[SIZEOF_DEVICEIDS];   /*!< Possible values for deviceid option; 
                                                                  also valid any positive integer; size #SIZEOF_DEVICEIDS */
-    static const char * const force_dev[SIZEOF_FORCE_DEV];  /**< Possible values for for force-device option; 
+    static const char * const force_dev[SIZEOF_FORCE_DEV];  /*!< Possible values for for force-device option; 
                                                                  size #SIZEOF_FORCE_DEV */
 };
 
@@ -157,13 +164,13 @@ const char * const GmxOpenMMPlatformOptions::memtests[SIZEOF_MEMTESTS]   = { "15
 const char * const GmxOpenMMPlatformOptions::deviceid[SIZEOF_DEVICEIDS]  = { "0" };
 const char * const GmxOpenMMPlatformOptions::force_dev[SIZEOF_FORCE_DEV] = { "no", "yes" };
 
-/**
+/*!
  * \brief Contructor.
  * Takes the option list, parses it, checks the options and their values for validity.
  * When certain options are not provided by the user, as default value the first item  
- * of the respective constant array is taken (GmxOpenMMPlatformOptions::platforms, 
- * GmxOpenMMPlatformOptions::memtests, GmxOpenMMPlatformOptions::deviceid, 
- * GmxOpenMMPlatformOptions::force_dev). 
+ * of the respective constant array is taken (GmxOpenMMPlatformOptions#platforms, 
+ * GmxOpenMMPlatformOptions#memtests, GmxOpenMMPlatformOptions#deviceid, 
+ * GmxOpenMMPlatformOptions#force_dev). 
  * \param[in] optionString  Option string part of the mdrun -deviceoption parameter.
  */
 GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
@@ -238,8 +245,8 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
 }
 
 
-/**
- * Returns the value of an option. 
+/*!
+ * \brief Returns the value of an option. 
  * \param[in] opt   Name of the option.
  */
 string GmxOpenMMPlatformOptions::getOptionValue(const string &opt)
@@ -254,8 +261,8 @@ string GmxOpenMMPlatformOptions::getOptionValue(const string &opt)
     }
 }
 
-/**
- * Setter function - private, only used from contructor.
+/*!
+ * \brief Setter function - private, only used from contructor.
  * \param[in] opt   Name of the option.
  * \param[in] val   Value for the option. 
  */
@@ -264,8 +271,8 @@ void GmxOpenMMPlatformOptions::setOption(const string &opt, const string &val)
     options[toUpper(opt)] = val;
 }
 
-/**
- * Removes an option with its value from the map structure. If the option 
+/*!
+ * \brief Removes an option with its value from the map structure. If the option 
  * does not exist, returns without any action.
  * \param[in] opt   Name of the option.
  */
@@ -275,7 +282,7 @@ void GmxOpenMMPlatformOptions::remOption(const string &opt)
 }
 
 
-/**
+/*!
  * \brief Container for OpenMM related data structures that represent the bridge 
  *        between the Gromacs data-structures and the OpenMM library and is but it's 
  *        only passed through the API functions as void to disable direct access. 
@@ -283,14 +290,14 @@ void GmxOpenMMPlatformOptions::remOption(const string &opt)
 class OpenMMData
 {
 public:
-    System* system;      /** The system to simulate. */
-    Context* context;   /** The OpenMM context in which the simulation is carried out. */
-    Integrator* integrator; /** The integrator used in the simulation. */
-    bool removeCM;          /** If \true remove venter of motion, false otherwise. */
-    GmxOpenMMPlatformOptions *platformOpt; /** Platform options. */
+    System* system;      /*! The system to simulate. */
+    Context* context;   /*! The OpenMM context in which the simulation is carried out. */
+    Integrator* integrator; /*! The integrator used in the simulation. */
+    bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
+    GmxOpenMMPlatformOptions *platformOpt; /*! Platform options. */
 };
 
-/**
+/*!
  *  \brief Runs memtest on the GPU that has alreaby been initialized by OpenMM.
  *  \param[in] fplog    Pointer to gromacs log file.
  *  \param[in] devId    Device id of the GPU to run the test on. TODO: this can be removed!
@@ -384,14 +391,14 @@ void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatformO
         fflush(stdout);
 }
 
-/*
+/*!
  * \brief Does gromacs option checking.
  *
  * Checks the gromacs mdp options for features unsupported in OpenMM, case in which 
- * interrupts the execution. It alsowarn the user about pecularities of OpenMM 
+ * interrupts the execution. It also warns the user about pecularities of OpenMM 
  * implementations.
- * \param[in] ir Gromacs structure for input options, see ::t_inputrec
- * \param[in] top ??? TODO
+ * \param[in] ir    Gromacs structure for input options, \see ::t_inputrec
+ * \param[in] top   Gromacs topology, \see ::gmx_localtop_t 
  */
 void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
 {
@@ -483,7 +490,7 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
 
 }
 
-/**
+/*!
  * \brief Initialize OpenMM, run sanity/consistency checks, and return a pointer to 
  * the OpenMMData.
  * 
@@ -495,17 +502,16 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
  *  - Gromacs parameters are checked for OpenMM support and consistency;
  *  - after the OpenMM is initialized memtest executed in the same GPU context.
  * 
- * \param[in] fplog 
- * \param[in] platformOptStr 
- * \param[in] cr
- * \param[in] ir
- * \param[in] top_global
- * \param[in] top
- * \param[in] mdatoms
- * \param[in] fr
- * \param[in] state 
+ * \param[in] fplog             Gromacs log file handler.
+ * \param[in] platformOptStr    Platform option string. 
+ * \param[in] cr                TODO remove!
+ * \param[in] ir                The Gromacs input parameters.
+ * \param[in] top_global        TODO
+ * \param[in] top               TODO
+ * \param[in] mdatoms           TODO
+ * \param[in] fr                TODO
+ * \param[in] state             TODO
  *
- * TODO finish the docs for openmm_init. 
  */
 void* openmm_init(FILE *fplog, const char *platformOptStr,
                   t_commrec *cr,t_inputrec *ir,
@@ -969,8 +975,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
     }
 }
 
-/**
- * Integrate one step.
+/*!
+ * \brief Integrate one step.
  *
  * \param[in] data  OpenMMData object created by openmm_init().
  */
@@ -987,8 +993,8 @@ void openmm_take_one_step(void* data)
     }
 }
 
-/**
- * Integrate n steps.
+/*!
+ * \brief Integrate n steps.
  *
  * \param[in] data  OpenMMData object created by openmm_init().
  */
@@ -1004,8 +1010,8 @@ void openmm_take_steps(void* data, int nstep)
     }
 }
 
-/**
- * Clean up the data structures cretead for OpenMM.
+/*!
+ * \brief Clean up the data structures cretead for OpenMM.
  *
  * \param[in] log   Log file pointer.
  * \param[in] data  OpenMMData object created by openmm_init().
@@ -1021,7 +1027,7 @@ void openmm_cleanup(FILE* fplog, void* data)
     delete d;
 }
 
-/**
+/*!
  * \brief Copy the current state information from OpenMM into the Gromacs data structures.
  * 
  * This function results in the requested proprties to be copied from the 
