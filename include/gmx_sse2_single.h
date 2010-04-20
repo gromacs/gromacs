@@ -87,12 +87,15 @@
 #if (defined (_MSC_VER) || defined(__INTEL_COMPILER))
 #  define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
 #  define gmx_mm_castps_si128(a) _mm_castps_si128(a)
+#  define gmx_mm_castps_ps128(a) (a)
 #elif defined(__GNUC__)
 #  define gmx_mm_castsi128_ps(a) ((__m128)(a))
 #  define gmx_mm_castps_si128(a) ((__m128i)(a))
+#  define gmx_mm_castps_ps128(a) ((__m128)(a))
 #else
 static __m128  gmx_mm_castsi128_ps(__m128i a) { return *(__m128 *) &a;  } 
 static __m128i gmx_mm_castps_si128(__m128 a)  { return *(__m128i *) &a; } 
+static __m128  gmx_mm_castps_ps128(__m128 a) { return *(__m128 *) &a;  } 
 #endif
 
 
