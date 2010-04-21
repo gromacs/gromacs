@@ -24,10 +24,6 @@ AC_DISABLE_SHARED
 # Simple options and makefile variables
 #######################################################################
 
-# This is currently not defined by CMake, because it's tricky to generate
-# version.h portably (the autoconf rules for it are in src/gmxlib/Makefile.am).
-AC_DEFINE(USE_VERSION_H,,[Use the version string from generated version.h])
-
 ### Single/Double
 AC_ARG_ENABLE(float,
 	     [AC_HELP_STRING([--disable-float],
@@ -290,6 +286,28 @@ AC_DEFINE_UNQUOTED([BUILD_TIME],["`date`"],[Date and time for build])
 AC_DEFINE_UNQUOTED([BUILD_USER],["`whoami`@`hostname`"],[User doing build])
 AC_DEFINE_UNQUOTED([BUILD_MACHINE],["`uname -srm`"],[Hardware and OS version for build host])
 
+
+############################################################
+# Checks for requirements for version information generation
+############################################################
+generate_version=no
+if test -d $srcdir/.git ; then
+    AC_CHECK_PROG(have_git, git, yes, no)
+    if test "$have_git" = "yes" ; then
+        AC_MSG_CHECKING(for git >= 1.5.1)
+        if test "`git --version`" \< "git version 1.5.1" ; then
+            AC_MSG_RESULT(no)
+        else
+            AC_MSG_RESULT(yes)
+            generate_version=yes
+            AC_DEFINE(USE_VERSION_H,,[Use generated version info])
+        fi
+    fi
+    if test "$generate_version" = "no" ; then
+        AC_MSG_WARN([No compatible git version found, won't be able to generate proper development version information.])
+    fi
+fi
+AM_CONDITIONAL([USE_VERSION_H],[test "$generate_version" = "yes"])
 
 
 ############################################################

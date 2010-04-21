@@ -182,6 +182,11 @@ void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
     t_iatom *iabuf;
     int  iabuf_nalloc;
 
+    if (qB == NULL)
+    {
+        qB = qA;
+    }
+
     iabuf_nalloc = 0;
     iabuf        = NULL;
     

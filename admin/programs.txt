@@ -54,6 +54,7 @@ xpm2ps|convert XPM (XPixelMap) file to postscript
 g_sham|read/write xmgr and xvgr data sets
 g_spatial|calculates the spatial distribution function (more control than g_sdf)
 g_sdf|calculates the spatial distribution function (faster than g_spatial)
+g_select|selects groups of atoms based on flexible textual selections
 END
 
 HEAD|Distances between structures

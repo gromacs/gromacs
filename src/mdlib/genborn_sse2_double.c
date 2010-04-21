@@ -69,8 +69,8 @@ sincos_sse2double(__m128d x, __m128d *sinval, __m128d *cosval)
     const __m128d sincosd_sc4 = {0.00833333333331908278,0.00833333333331908278};
     const __m128d sincosd_sc5 = {-0.16666666666666612594,-0.16666666666666612594};
     
-    __m128d signbit           = (__m128d) _mm_set1_epi64x(0x8000000000000000ULL);
-    __m128d tiny              = (__m128d) _mm_set1_epi64x(0x3e40000000000000ULL);
+    __m128d signbit           = gmx_castsi128_pd(_mm_set1_epi64x(0x8000000000000000ULL));
+    __m128d tiny              = gmx_castsi128_pd(_mm_set1_epi64x(0x3e40000000000000ULL));
     
     __m128d xl,xl2,xl3,qd,absxl,p1,cx,sx,ts,tc,tsn,tcn;
     __m128i q;
@@ -142,18 +142,18 @@ sincos_sse2double(__m128d x, __m128d *sinval, __m128d *cosval)
     sx     = _mm_or_pd( _mm_and_pd(isTiny,xl) , _mm_andnot_pd(isTiny,sx) );
     cx     = _mm_or_pd( _mm_and_pd(isTiny,one) , _mm_andnot_pd(isTiny,cx) );
 	
-    sinMask = (__m128d) _mm_cmpeq_epi32( _mm_and_si128(offsetSin,ione), izero);
-    cosMask = (__m128d) _mm_cmpeq_epi32( _mm_and_si128(offsetCos,ione), izero);
+    sinMask = gmx_castsi128_pd(_mm_cmpeq_epi32( _mm_and_si128(offsetSin,ione), izero));
+    cosMask = gmx_castsi128_pd(_mm_cmpeq_epi32( _mm_and_si128(offsetCos,ione), izero));
     
     ts     = _mm_or_pd( _mm_and_pd(sinMask,sx) , _mm_andnot_pd(sinMask,cx) );
     tc     = _mm_or_pd( _mm_and_pd(cosMask,sx) , _mm_andnot_pd(cosMask,cx) );
 	
     /* Flip the sign of the result when (offset mod 4) = 1 or 2 */
-    sinMask = (__m128d) _mm_cmpeq_epi32( _mm_and_si128(offsetSin,itwo), izero);
+    sinMask = gmx_castsi128_pd(_mm_cmpeq_epi32( _mm_and_si128(offsetSin,itwo), izero));
     tsn    = _mm_xor_pd(signbit,ts);
     ts     = _mm_or_pd( _mm_and_pd(sinMask,ts) , _mm_andnot_pd(sinMask,tsn) );
 	
-    cosMask = (__m128d) _mm_cmpeq_epi32( _mm_and_si128(offsetCos,itwo), izero);
+    cosMask = gmx_castsi128_pd(_mm_cmpeq_epi32( _mm_and_si128(offsetCos,itwo), izero));
     tcn    = _mm_xor_pd(signbit,tc);
     tc     = _mm_or_pd( _mm_and_pd(cosMask,tc) , _mm_andnot_pd(cosMask,tcn) );
 	
