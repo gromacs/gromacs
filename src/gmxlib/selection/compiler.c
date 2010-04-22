@@ -812,6 +812,11 @@ init_item_evaluation(t_selelem *sel)
             break;
 
         case SEL_EXPRESSION:
+            if (!(sel->flags & SEL_DYNAMIC) && sel->u.expr.method
+                && sel->u.expr.method->init_frame)
+            {
+                sel->flags |= SEL_INITFRAME;
+            }
             sel->evaluate = &_gmx_sel_evaluate_method;
             break;
 

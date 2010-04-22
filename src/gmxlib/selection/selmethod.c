@@ -419,10 +419,6 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     /* Warn of dynamic callbacks in static methods */
     if (!(method->flags & SMETH_MODIFIER))
     {
-        if (method->init_frame && !(method->flags & SMETH_DYNAMIC))
-        {
-            report_error(fp, method->name, "warning: init_frame not used because the method is static");
-        }
         if (method->pupdate && !(method->flags & SMETH_DYNAMIC))
         {
             report_error(fp, method->name, "warning: pupdate not used because the method is static");
