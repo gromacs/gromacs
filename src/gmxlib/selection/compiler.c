@@ -1224,6 +1224,10 @@ init_method(t_selelem *sel, t_topology *top, int isize)
             {
                 return rc;
             }
+            if (sel->v.type != POS_VALUE && sel->v.type != GROUP_VALUE)
+            {
+                alloc_selection_data(sel, isize, TRUE);
+            }
         }
         else
         {
