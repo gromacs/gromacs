@@ -325,7 +325,14 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
             }
             else
             {
-                fprintf(stderr, "%s\n", method->name);
+                const char *symname = _gmx_sel_sym_name(symbol);
+
+                fprintf(stderr, "%s", symname);
+                if (strcmp(symname, method->name) != 0)
+                {
+                    fprintf(stderr, " (synonym for %s)", method->name);
+                }
+                fprintf(stderr, "\n");
             }
         }
         symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
