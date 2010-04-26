@@ -710,6 +710,11 @@ on_error:
  *
  * This function handles the creation of a \c t_selelem object for
  * selection methods that take parameters.
+ *
+ * Part of the behavior of the \c same selection keyword is hardcoded into
+ * this function (or rather, into _gmx_selelem_custom_init_same()) to allow the
+ * use of any keyword in \c "same KEYWORD as" without requiring special
+ * handling somewhere else (or sacrificing the simple syntax).
  */
 t_selelem *
 _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
@@ -720,6 +725,16 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     int              rc;
 
     _gmx_sel_finish_method(scanner);
+    /* The "same" keyword needs some custom massaging of the parameters. */
+    if (_gmx_selelem_is_method_same(method))
+    {
+        rc = _gmx_selelem_custom_init_same(params, scanner);
+        if (rc != 0)
+        {
+            _gmx_selexpr_free_params(params);
+            return NULL;
+        }
+    }
     root = _gmx_selelem_create(SEL_EXPRESSION);
     _gmx_selelem_set_method(root, method, scanner);
     /* Process the parameters */
