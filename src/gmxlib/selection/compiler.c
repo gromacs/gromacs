@@ -490,8 +490,15 @@ extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
         {
             subexpr = subexpr->next;
         }
-        /* The latter check excludes variable references */
-        if (child->type == SEL_SUBEXPRREF && child->child->type != SEL_SUBEXPR)
+        /* The latter check excludes variable references.
+         * It also excludes subexpression elements that have already been
+         * processed, because they are given a name when they are first
+         * encountered.
+         * TODO: There should be a more robust mechanism (probably a dedicated
+         * flag) for detecting parser-generated subexpressions than relying on
+         * a NULL name field. */
+        if (child->type == SEL_SUBEXPRREF && (child->child->type != SEL_SUBEXPR
+                                              || child->child->name == NULL))
         {
             /* Create the root element for the subexpression */
             if (!root)
@@ -508,14 +515,21 @@ extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
             {
                 gmx_ana_index_set(&subexpr->u.cgrp, gall->isize, gall->index, NULL, 0);
             }
-            /* Create the subexpression element */
-            subexpr->child = _gmx_selelem_create(SEL_SUBEXPR);
-            _gmx_selelem_set_vtype(subexpr->child, child->v.type);
+            /* Create the subexpression element and/or
+             * move the actual subexpression under the created element. */
+            if (child->child->type != SEL_SUBEXPR)
+            {
+                subexpr->child = _gmx_selelem_create(SEL_SUBEXPR);
+                _gmx_selelem_set_vtype(subexpr->child, child->v.type);
+                subexpr->child->child = child->child;
+                child->child          = subexpr->child;
+            }
+            else
+            {
+                subexpr->child = child->child;
+            }
             create_subexpression_name(subexpr->child, ++*subexprn);
-            /* Move the actual subexpression under the created element */
-            subexpr->child->child    = child->child;
-            child->child             = subexpr->child;
-            subexpr->child->refcount = 2;
+            subexpr->child->refcount++;
             /* Set the flags for the created elements */
             subexpr->flags          |= (child->flags & SEL_VALFLAGMASK);
             subexpr->child->flags   |= (child->flags & SEL_VALFLAGMASK);
@@ -1892,12 +1906,40 @@ init_root_item(t_selelem *root)
 }
 
 /*! \brief
+ * Reverses the chain of selection elements starting at \p root.
+ *
+ * \param   root First selection in the whole selection chain.
+ * \returns The new first element for the chain.
+ */
+static t_selelem *
+reverse_selelem_chain(t_selelem *root)
+{
+    t_selelem *item;
+    t_selelem *prev;
+    t_selelem *next;
+
+    prev = NULL;
+    item = root;
+    while (item)
+    {
+        next = item->next;
+        item->next = prev;
+        prev = item;
+        item = next;
+    }
+    return prev;
+}
+
+/*! \brief
  * Initializes the evaluation groups for \ref SEL_ROOT items.
  *
  * \param   root First selection in the whole selection chain.
  * \returns The new first element for the chain.
  *
  * The function also removes static subexpressions that are no longer used.
+ * The elements are processed in reverse order to correctly detect static
+ * subexpressions referred to by other static subexpressions. All other
+ * processing is independent of the order of the elements.
  */
 static t_selelem *
 process_roots(t_selelem *root)
@@ -1905,6 +1947,7 @@ process_roots(t_selelem *root)
     t_selelem *item;
     t_selelem *next;
 
+    root = reverse_selelem_chain(root);
     do
     {
         next = root->next;
@@ -1929,7 +1972,7 @@ process_roots(t_selelem *root)
             item = item->next;
         }
     }
-    return root;
+    return reverse_selelem_chain(root);
 }
 
 
