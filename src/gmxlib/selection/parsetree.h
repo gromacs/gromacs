@@ -129,6 +129,15 @@ _gmx_selexpr_free_params(t_selexpr_param *param);
 int
 _gmx_selelem_update_flags(struct t_selelem *sel);
 
+/** Initializes the method parameter data of \ref SEL_EXPRESSION and
+ * \ref SEL_MODIFIER elements. */
+void
+_gmx_selelem_init_method_params(struct t_selelem *sel, void *scanner);
+/** Initializes the method for a \ref SEL_EXPRESSION selection element. */
+void
+_gmx_selelem_set_method(struct t_selelem *sel,
+                        struct gmx_ana_selmethod_t *method, void *scanner);
+
 /** Creates a \c t_selelem for comparsion expression evaluation. */
 struct t_selelem *
 _gmx_sel_init_comparison(struct t_selelem *left, struct t_selelem *right,

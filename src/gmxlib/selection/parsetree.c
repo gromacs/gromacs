@@ -448,19 +448,16 @@ _gmx_selelem_update_flags(t_selelem *sel)
     return 0;
 }
 
-/*! \brief
- * Initializes the method parameter data of \ref SEL_EXPRESSION and
- * \ref SEL_MODIFIER elements.
- *
- * \param[in]     sc     Selection collection.
+/*!
  * \param[in,out] sel    Selection element to initialize.
+ * \param[in]     scanner Scanner data structure.
  *
  * A deep copy of the parameters is made to allow several
  * expressions with the same method to coexist peacefully.
  * Calls sel_datafunc() if one is specified for the method.
  */
-static void
-init_method_params(gmx_ana_selcollection_t *sc, t_selelem *sel)
+void
+_gmx_selelem_init_method_params(t_selelem *sel, yyscan_t scanner)
 {
     int                 nparams;
     gmx_ana_selparam_t *orgparam;
@@ -507,6 +504,8 @@ init_method_params(gmx_ana_selcollection_t *sc, t_selelem *sel)
     }
     if (sel->u.expr.method->set_poscoll)
     {
+        gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+
         sel->u.expr.method->set_poscoll(sc->pcc, mdata);
     }
     /* Store the values */
@@ -514,19 +513,17 @@ init_method_params(gmx_ana_selcollection_t *sc, t_selelem *sel)
     sel->u.expr.mdata         = mdata;
 }
 
-/*! \brief
- * Initializes the method for a \ref SEL_EXPRESSION selection element.
- *
- * \param[in]     sc     Selection collection.
+/*!
  * \param[in,out] sel    Selection element to initialize.
  * \param[in]     method Selection method to set.
+ * \param[in]     scanner Scanner data structure.
  *
  * Makes a copy of \p method and stores it in \p sel->u.expr.method,
- * and calls init_method_params();
+ * and calls _gmx_selelem_init_method_params();
  */
-static void
-set_method(gmx_ana_selcollection_t *sc, t_selelem *sel,
-           gmx_ana_selmethod_t *method)
+void
+_gmx_selelem_set_method(t_selelem *sel, gmx_ana_selmethod_t *method,
+                        yyscan_t scanner)
 {
     int      i;
 
@@ -534,7 +531,7 @@ set_method(gmx_ana_selcollection_t *sc, t_selelem *sel,
     sel->name   = method->name;
     snew(sel->u.expr.method, 1);
     memcpy(sel->u.expr.method, method, sizeof(gmx_ana_selmethod_t));
-    init_method_params(sc, sel);
+    _gmx_selelem_init_method_params(sel, scanner);
 }
 
 /*! \brief
@@ -585,14 +582,13 @@ t_selelem *
 _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
                          yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem         *sel;
     t_selexpr_param   *params, *param;
     const char        *name;
     int                rc;
 
     sel = _gmx_selelem_create(SEL_EXPRESSION);
-    set_method(sc, sel, &sm_compare);
+    _gmx_selelem_set_method(sel, &sm_compare, scanner);
     /* Create the parameter for the left expression */
     name               = left->v.type == INT_VALUE ? "int1" : "real1";
     params = param     = _gmx_selexpr_create_param(strdup(name));
@@ -650,7 +646,7 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
 
     root = _gmx_selelem_create(SEL_EXPRESSION);
     child = root;
-    set_method(sc, child, method);
+    _gmx_selelem_set_method(child, method, scanner);
 
     /* Initialize the evaluation of keyword matching if values are provided */
     if (args)
@@ -676,7 +672,7 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
         }
         /* Initialize the selection element */
         root = _gmx_selelem_create(SEL_EXPRESSION);
-        set_method(sc, root, kwmethod);
+        _gmx_selelem_set_method(root, kwmethod, scanner);
         params = param = _gmx_selexpr_create_param(NULL);
         param->nval    = 1;
         param->value   = _gmx_selexpr_create_value_expr(child);
@@ -714,6 +710,11 @@ on_error:
  *
  * This function handles the creation of a \c t_selelem object for
  * selection methods that take parameters.
+ *
+ * Part of the behavior of the \c same selection keyword is hardcoded into
+ * this function (or rather, into _gmx_selelem_custom_init_same()) to allow the
+ * use of any keyword in \c "same KEYWORD as" without requiring special
+ * handling somewhere else (or sacrificing the simple syntax).
  */
 t_selelem *
 _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
@@ -724,8 +725,18 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     int              rc;
 
     _gmx_sel_finish_method(scanner);
+    /* The "same" keyword needs some custom massaging of the parameters. */
+    if (_gmx_selelem_is_method_same(method))
+    {
+        rc = _gmx_selelem_custom_init_same(params, scanner);
+        if (rc != 0)
+        {
+            _gmx_selexpr_free_params(params);
+            return NULL;
+        }
+    }
     root = _gmx_selelem_create(SEL_EXPRESSION);
-    set_method(sc, root, method);
+    _gmx_selelem_set_method(root, method, scanner);
     /* Process the parameters */
     if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
                                root->u.expr.method->param, root, scanner))
@@ -757,7 +768,6 @@ t_selelem *
 _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
                        t_selelem *sel, yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem         *root;
     t_selelem         *mod;
     t_selexpr_param   *vparam;
@@ -765,7 +775,7 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
 
     _gmx_sel_finish_method(scanner);
     mod = _gmx_selelem_create(SEL_MODIFIER);
-    set_method(sc, mod, method);
+    _gmx_selelem_set_method(mod, method, scanner);
     if (method->type == NO_VALUE)
     {
         t_selelem *child;
@@ -814,12 +824,11 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
 t_selelem *
 _gmx_sel_init_position(t_selelem *expr, const char *type, yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem       *root;
     t_selexpr_param *params;
 
     root = _gmx_selelem_create(SEL_EXPRESSION);
-    set_method(sc, root, &sm_keyword_pos);
+    _gmx_selelem_set_method(root, &sm_keyword_pos, scanner);
     _gmx_selelem_set_kwpos_type(root, type);
     /* Create the parameters for the parameter parser. */
     params        = _gmx_selexpr_create_param(NULL);
