@@ -256,9 +256,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     if ((fep->sc_alpha>0) && (!fep->bScCoul)) {
       for (i=0;i<fep->n_lambda;i++) 
 	{
-	  sprintf(err_buf,"For state %d, vdw-lambda (%f) is changing with vdw softcore, while coul-lambda (%f) is nonzero without coulomb softcore: this will lead to crashes, and is not supported.",i,fep->all_lambda[efptVDW][i],fep->all_lambda[efptCOUL][i]);
-	  CHECK((fep->sc_alpha>0) && (((fep->all_lambda[efptCOUL][i] > 0.0) && (fep->all_lambda[efptCOUL][i] < 1.0)) &&
-				      ((fep->all_lambda[efptVDW][i] > 0.0) && (fep->all_lambda[efptVDW][i] < 1.0))));
+	  sprintf(err_buf,"For state %d, vdw-lambda (%f) is changing with vdw softcore, while coul-lambda (%f) is nonzero without coulomb softcore: this will lead to crashes, and is not supported.",i,fep->all_lambda[efptVDW][i],
+                  fep->all_lambda[efptCOUL][i]);
+          CHECK((fep->sc_alpha>0) && 
+                (((fep->all_lambda[efptCOUL][i] > 0.0) && 
+                  (fep->all_lambda[efptCOUL][i] < 1.0)) &&
+                 ((fep->all_lambda[efptVDW][i] > 0.0) && 
+                  (fep->all_lambda[efptVDW][i] < 1.0))));
 	}
     }
 
@@ -592,6 +596,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 }
 
+/* count the number of elements in a string.
+    str = the input string
+    maxptr = the maximum number of allowed elements
+    ptr = the output array of pointers to the first character of each element 
+    returns: the number of elements. */
 static int str_nelem(const char *str,int maxptr,char *ptr[])
 {
   int  np=0;
@@ -621,6 +630,11 @@ static int str_nelem(const char *str,int maxptr,char *ptr[])
   return np;
 }
 
+/* interpret a number of doubles from a string and put them in an array,
+   after allocating space for them. 
+   str = the input string
+   n = the (pre-allocated) number of doubles read
+   r = the output array of doubles. */
 static void parse_n_double(char *str,int *n,double **r)
 {
   char *ptr[MAXPTR];
@@ -638,12 +652,13 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
 
   int i,j,max_n_lambda,nfep[efptNR];
   t_lambda *fep = ir->fepvals;
-  real **count_fep_lambdas;
+  double **count_fep_lambdas;
   
   snew(count_fep_lambdas,efptNR);
 
   /* FEP input processing */
-  /* first, identify the number of lambda values for each type.  All that are nonzero must have the same number */
+  /* first, identify the number of lambda values for each type.  
+     All that are nonzero must have the same number */
   
   fep->n_lambda = -1;
   for (i=0;i<efptNR;i++) 
@@ -658,7 +673,8 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
     {
       if (nfep[i] > 0) {
 	max_n_lambda = nfep[i];  /* here's a nonzero one.  Everything else 
-				    must have the same number as this if it's not zero.*/
+				    must have the same number as this if it's 
+                                    not zero.*/
 	break;
       }
     }
@@ -680,7 +696,8 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
 	}
     }
   
-  /* the number of lambdas is the number we've read in, which is either zero or the same for all */
+  /* the number of lambdas is the number we've read in, which is either zero 
+     or the same for all */
   fep->n_lambda = max_n_lambda;  
   
   /* now allocate the space for all of the lambdas, and transfer the data */
@@ -688,7 +705,8 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
   for (i=0;i<efptNR;i++) 
     {
       snew(fep->all_lambda[i],fep->n_lambda);
-      if (nfep[i] > 0)  /* if it's zero, then the count_fep_lambda arrays are zero */
+      if (nfep[i] > 0)  /* if it's zero, then the count_fep_lambda arrays 
+                           are zero */
 	{
 	  for (j=0;j<fep->n_lambda;j++) 
 	    {
@@ -1091,7 +1109,9 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
   EETYPE("free-energy",	ir->efep, efep_names, nerror, TRUE);
-  RTYPE ("init-lambda", ir->fepvals->init_lambda,-1); /* start with -1 so we can recognize if it was not entered */
+  RTYPE ("init-lambda", ir->fepvals->init_lambda,-1); /* start with -1 so 
+                                                         we can recognize if 
+                                                         it was not entered */
   ITYPE ("init-lambda-state", ir->fepvals->init_fep_state,0);
   RTYPE ("delta-lambda",ir->fepvals->delta_lambda,0.0);
   STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
@@ -1100,7 +1120,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("vdw-lambdas", fep_lambda[efptVDW], NULL);
   STYPE ("bonded-lambdas", fep_lambda[efptBONDED], NULL);
   STYPE ("restraint-lambdas", fep_lambda[efptRESTRAINT], NULL);
-  EETYPE("dhdl-print-energy", ir->fepvals->bPrintEnergy, yesno_names, nerror, FALSE);
+  EETYPE("dhdl-print-energy", ir->fepvals->bPrintEnergy, yesno_names, nerror, 
+         FALSE);
   RTYPE ("sc-alpha",ir->fepvals->sc_alpha,0.0);
   ITYPE ("sc-power",ir->fepvals->sc_power,0);
   RTYPE ("sc-sigma",ir->fepvals->sc_sigma,0.3);
