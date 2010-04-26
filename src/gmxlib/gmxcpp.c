@@ -55,6 +55,7 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "macros.h"
+#include "gmx_fatal.h"
 #include "gmxcpp.h"
 
 typedef struct {
@@ -413,15 +414,34 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   const char *ptr, *ptr2;
   char *name;
   char *dname, *dval;
-  
+  bool bEOF;
+
   if (!handle)
     return eCPP_INVALID_HANDLE;
   if (!handle->fp)
     return eCPP_FILE_NOT_OPEN;
-    
-  if (feof(handle->fp) || (fgets2(buf,n-1,handle->fp) == NULL)) {
-    if (handle->parent == NULL)
+
+  bEOF = feof(handle->fp);
+  if (!bEOF) {
+    /* Read the actual line now. */
+    if (fgets2(buf,n-1,handle->fp) == NULL) {
+      /* Recheck EOF, since we could have been at the end before
+       * the fgets2 call, but we need to read past the end to know.
+       */
+       bEOF = feof(handle->fp);
+       if (!bEOF) {
+	 /* Something strange happened, fgets returned NULL,
+	  * but we are not at EOF.
+	  */
+	 return eCPP_UNKNOWN;
+       }
+    }
+  }
+
+  if (bEOF) {
+    if (handle->parent == NULL) {
       return eCPP_EOF;
+    }
     cpp_close_file(handlep);
     *handlep = handle->parent;
     handle->child = NULL;
@@ -438,7 +458,6 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   /* Now we've read a line! */
   if (debug) 
     fprintf(debug,"%s : %4d : %s\n",handle->fn,handle->line_nr,buf);
-  set_warning_line(handle->fn,handle->line_nr);
 
   /* Process directives if this line contains one */
   if (find_directive(buf, &dname, &dval))
@@ -486,6 +505,16 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   }
   
   return eCPP_OK;
+}
+
+char *cpp_cur_file(const gmx_cpp_t *handlep)
+{
+  return (*handlep)->fn;
+}
+
+int cpp_cur_linenr(const gmx_cpp_t *handlep)
+{
+  return (*handlep)->line_nr;
 }
 
 /* Close the file! Return integer status. */

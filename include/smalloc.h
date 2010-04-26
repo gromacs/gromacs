@@ -125,33 +125,47 @@ size_t memavail(void);
 #ifdef __cplusplus
 }
 
+/* Use of sizeof(T) in _snew() and _srenew() can cause obscure bugs if
+ * several files define distinct data structures with identical names and
+ * allocate memory for them using the macros below.
+ * For this reason, the size of an element is passed as a parameter.
+ *
+ * The C versions work fine in such cases, but when compiled with a C++
+ * compiler (and if the compiler does not inline the calls), the linker cannot
+ * tell that data structures with identical names are actually different and
+ * links calls to these template functions incorrectly, which can result in
+ * allocation of an incorrect amount of memory if the element size is computed
+ * within the function. Even with the size passed as a parameter, incorrect
+ * linkage will occur, but as the type is now only present in the cast, it
+ * should not cause problems.
+ */
 template <typename T>
-void _snew(const char *name, T *&ptr, int nelem)
+void _snew(const char *name, const char *file, int line,
+           T *&ptr, size_t nelem, size_t elsize)
 {
-    ptr = (T *)save_calloc(name, __FILE__, __LINE__, nelem, sizeof(T));
+    ptr = (T *)save_calloc(name, file, line, nelem, elsize);
 }
 template <typename T>
-void _srenew(const char *name, T *&ptr, int nelem)
+void _srenew(const char *name, const char *file, int line,
+             T *&ptr, size_t nelem, size_t elsize)
 {
-    ptr = (T *)save_realloc(name, __FILE__, __LINE__, ptr, nelem, sizeof(T));
+    ptr = (T *)save_realloc(name, file, line, ptr, nelem, elsize);
 }
 template <typename T>
-void _smalloc(const char *name, T *&ptr, size_t size)
+void _smalloc(const char *name, const char *file, int line, T *&ptr, size_t size)
 {
-    ptr = (T *)save_malloc(name, __FILE__, __LINE__, size);
+    ptr = (T *)save_malloc(name, file, line, size);
 }
 template <typename T>
-void _srealloc(const char *name, T *&ptr, size_t size)
+void _srealloc(const char *name, const char *file, int line, T *&ptr, size_t size)
 {
-    ptr = (T *)save_realloc(name, __FILE__, __LINE__, ptr, size, sizeof(char));
+    ptr = (T *)save_realloc(name, file, line, ptr, size, sizeof(char));
 }
 
-
-
-#define snew(ptr,nelem) _snew(#ptr,(ptr),(nelem))
-#define srenew(ptr,nelem) _srenew(#ptr,(ptr),(nelem))
-#define smalloc(ptr, size) _smalloc(#ptr,(ptr),(size))
-#define srealloc(ptr, size) _srealloc(#ptr,(ptr),(size))
+#define snew(ptr,nelem) _snew(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)))
+#define srenew(ptr,nelem) _srenew(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)))
+#define smalloc(ptr, size) _smalloc(#ptr,__FILE__,__LINE__,(ptr),(size))
+#define srealloc(ptr, size) _srealloc(#ptr,__FILE__,__LINE__,(ptr),(size))
 
 #else
 

@@ -516,10 +516,12 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     return md;
 }
 
-FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
+FILE *open_dhdl(const char *filename,const t_inputrec *ir,
+                const output_env_t oenv)
 {
     FILE *fp;
-    const char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4",*remain="remaining";
+    const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda",
+          *remain="remaining";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  i,np,nps,nsets,nsets_de,nsetsbegin;
     char **setname,buf[STRLEN];
@@ -533,7 +535,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     {
         sprintf(title,"%s",dhdl);
         sprintf(label_y,"%s (%s %s)",
-                dhdl,unit_energy,"[\\8l\\4]\\S-1\\N");
+                dhdl,unit_energy,"[\\lambda]\\S-1\\N");
     }
     else 
     {
@@ -541,11 +543,20 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
         sprintf(label_y,"%s and %s (%s %s)",
                 dhdl,deltag,unit_energy,"[\\8l\\4]\\S-1\\N");
     }
-    sprintf(label_x,"%s (%s)","Time",unit_time);
-    
-    fp = xvgropen(filename,title,label_x,label_y,oenv);
-    
-    /* count the number of dv/dl components */
+    fp = gmx_fio_fopen(filename,"w+");
+    xvgr_header(fp,title,label_x,label_y,exvggtXNY,oenv);
+
+    if (ir->fepvals->delta_lambda == 0)
+    {
+        sprintf(buf,"T = %g (K), %s = %g",
+                ir->opts.ref_t[0],lambda,ir->fepvals->init_lambda);
+    }
+    else
+    {
+        sprintf(buf,"T = %g (K)",
+                ir->opts.ref_t[0]);
+    }
+    xvgr_subtitle(fp,buf,oenv);
 
     for (i=0;i<efptNR;i++) 
     {

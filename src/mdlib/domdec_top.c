@@ -29,6 +29,7 @@
 #include "network.h"
 #include "vec.h"
 #include "pbc.h"
+#include "chargegroup.h"
 #include "gmx_random.h"
 #include "topsort.h"
 #include "mtop_util.h"

@@ -69,6 +69,9 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+#include "sighandler.h"
+
+#include "md_openmm.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -81,33 +84,21 @@
 #include "corewrap.h"
 #endif
 
-
-
-/* The following two variables and the signal_handler function
- * are used from md.c and pme.c as well 
- */
-extern bool bGotTermSignal, bGotUsr1Signal;
-
-static RETSIGTYPE signal_handler(int n)
-{
-    switch (n) {
-        case SIGTERM:
-            bGotTermSignal = TRUE;
-            break;
-#ifdef HAVE_SIGUSR1
-        case SIGUSR1:
-            bGotUsr1Signal = TRUE;
-            break;
+#ifdef GMX_OPENMM
+#include "md_openmm.h"
 #endif
-    }
-}
+
 
 typedef struct { 
     gmx_integrator_t *func;
 } gmx_intp_t;
 
 /* The array should match the eI array in include/types/enums.h */
+#ifdef GMX_OPENMM  /* FIXME do_md_openmm needs fixing */
+const gmx_intp_t integrator[eiNR] = { {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm},{do_md_openmm}};
+#else
 const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md},{do_md}};
+#endif
 
 gmx_large_int_t     deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
@@ -144,6 +135,7 @@ struct mdrunner_arglist
     real pforce;
     real cpt_period;
     real max_hours;
+    const char *deviceOptions;
     unsigned long Flags;
     int ret; /* return value */
 };
@@ -171,9 +163,9 @@ static void mdrunner_start_fn(void *arg)
                       mc.bCompact, mc.nstglobalcomm, 
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
-                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, mc.nmultisim,
-                      mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
-                      mc.cpt_period, mc.max_hours, mc.Flags);
+                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, 
+                      mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
+                      mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
 }
 
 #endif
@@ -187,7 +179,7 @@ int mdrunner_threads(int nthreads,
                      const char *ddcsx,const char *ddcsy,const char *ddcsz,
                      int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
                      int repl_ex_seed, real pforce,real cpt_period,
-                     real max_hours, unsigned long Flags)
+                     real max_hours, const char *deviceOptions, unsigned long Flags)
 {
     int ret;
     /* first check whether we even need to start tMPI */
@@ -197,7 +189,7 @@ int mdrunner_threads(int nthreads,
                      nstglobalcomm,
                      ddxyz, dd_node_order, rdd, rconstr, dddlb_opt, dlb_scale,
                      ddcsx, ddcsy, ddcsz, nstepout, resetstep, nmultisim, repl_ex_nst, 
-                     repl_ex_seed, pforce, cpt_period, max_hours, Flags);
+                     repl_ex_seed, pforce, cpt_period, max_hours, deviceOptions, Flags);
     }
     else
     {
@@ -231,6 +223,7 @@ int mdrunner_threads(int nthreads,
         mda.pforce=pforce;
         mda.cpt_period=cpt_period;
         mda.max_hours=max_hours;
+        mda.deviceOptions=deviceOptions;
         mda.Flags=Flags;
 
         fprintf(stderr, "Starting %d threads\n",nthreads);
@@ -254,6 +247,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
              int nstepout,int resetstep,int nmultisim,int repl_ex_nst,int repl_ex_seed,
              real pforce,real cpt_period,real max_hours,
+             const char *deviceOptions,
              unsigned long Flags)
 {
     double     nodetime=0,realtime;
@@ -281,6 +275,24 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        rc;
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed;
+
+    /* A parallel command line option consistency check */
+    if (!PAR(cr) &&
+        (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || cr->npmenodes > 0))
+    {
+        gmx_fatal(FARGS,
+                  "The -dd or -npme option request a parallel simulation, "
+#ifndef GMX_MPI
+                  "but mdrun was compiled without threads or MPI enabled"
+#else
+#ifdef GMX_THREADS
+                  "but the number of threads (option -nt) is 1"
+#else
+                  "but mdrun was not started through mpirun/mpiexec or only one process was requested through mpirun/mpiexec" 
+#endif
+#endif
+            );
+    }
 
     /* Essential dynamics */
     if (opt2bSet("-ei",nfile,fnm)) 
@@ -313,6 +325,11 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
 
         snew(state,1);
+        /* NOTE: if the run is thread-parallel but the integrator doesn't support this
+                 such as with LBGFS, this function may cancel the threads 
+                 through cancel_par_threads(), and make the commrec serial. The
+                 rest of the simulation is then only performed by the main thread,
+                 as if it were a serial run. */
         init_parallel(fplog, opt2fn_master("-s",nfile,fnm,cr),cr,
                       inputrec,mtop,state,list);
 
@@ -617,31 +634,19 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
 
-    if (integrator[inputrec->eI].func == do_md)
+    if (integrator[inputrec->eI].func == do_md
+#ifdef GMX_OPENMM
+        ||
+        integrator[inputrec->eI].func == do_md_openmm
+#endif
+        )
     {
         /* Turn on signal handling on all nodes */
         /*
          * (A user signal from the PME nodes (if any)
          * is communicated to the PP nodes.
          */
-        if (getenv("GMX_NO_TERM") == NULL)
-        {
-            if (debug)
-            {
-                fprintf(debug,"Installing signal handler for SIGTERM\n");
-            }
-            signal(SIGTERM,signal_handler);
-        }
-#ifdef HAVE_SIGUSR1
-        if (getenv("GMX_NO_USR1") == NULL)
-        {
-            if (debug)
-            {
-                fprintf(debug,"Installing signal handler for SIGUSR1\n");
-            }
-            signal(SIGUSR1,signal_handler);
-        }
-#endif
+        signal_handler_install();
     }
 
     if (cr->duty & DUTY_PP)
@@ -675,6 +680,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                       mdatoms,nrnb,wcycle,ed,fr,
                                       repl_ex_nst,repl_ex_seed,
                                       cpt_period,max_hours,
+                                      deviceOptions,
                                       Flags,
                                       &runtime);
 
@@ -723,11 +729,11 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         gmx_log_close(fplog);
     }	
 
-    if(bGotTermSignal)
+    if(bGotStopNextStepSignal)
     {
         rc = 1;
     }
-    else if(bGotUsr1Signal)
+    else if(bGotStopNextNSStepSignal)
     {
         rc = 2;
     }

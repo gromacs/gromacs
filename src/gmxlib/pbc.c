@@ -862,7 +862,9 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 
     is = IVEC2IS(ishift);
     if (debug)
-        range_check(is,0,SHIFTS);
+    {
+        range_check_mesg(is,0,SHIFTS,"PBC shift vector index range check.");
+    }
 
     return is; 
 }
@@ -1047,131 +1049,6 @@ void calc_shifts(matrix box,rvec shift_vec[])
                 for(d = 0; d < DIM; d++)
                     shift_vec[n][d] = k*box[XX][d] + l*box[YY][d] + m*box[ZZ][d];
             }
-}
-
-void calc_cgcm(FILE *fplog,int cg0,int cg1,t_block *cgs,
-               rvec pos[],rvec cg_cm[])
-{
-    int  icg,k,k0,k1,d;
-    rvec cg;
-    real nrcg,inv_ncg;
-    atom_id *cgindex;
-
-#ifdef DEBUG
-    fprintf(fplog,"Calculating centre of geometry for charge groups %d to %d\n",
-            cg0,cg1);
-#endif
-    cgindex = cgs->index;
-
-    /* Compute the center of geometry for all charge groups */
-    for(icg=cg0; (icg<cg1); icg++) {
-        k0      = cgindex[icg];
-        k1      = cgindex[icg+1];
-        nrcg    = k1-k0;
-        if (nrcg == 1) {
-            copy_rvec(pos[k0],cg_cm[icg]);
-        }
-        else {
-            inv_ncg = 1.0/nrcg;
-
-            clear_rvec(cg);
-            for(k=k0; (k<k1); k++)  {
-                for(d=0; (d<DIM); d++)
-                    cg[d] += pos[k][d];
-            }
-            for(d=0; (d<DIM); d++)
-                cg_cm[icg][d] = inv_ncg*cg[d];
-        }
-    }
-}
-
-void put_charge_groups_in_box(FILE *fplog,int cg0,int cg1,
-                              int ePBC,matrix box,t_block *cgs,
-                              rvec pos[],rvec cg_cm[])
-
-{ 
-    int  npbcdim,icg,k,k0,k1,d,e;
-    rvec cg;
-    real nrcg,inv_ncg;
-    atom_id *cgindex;
-    bool bTric;
-
-    if (ePBC == epbcNONE) 
-        gmx_incons("Calling put_charge_groups_in_box for a system without PBC");
-
-#ifdef DEBUG
-    fprintf(fplog,"Putting cgs %d to %d in box\n",cg0,cg1);
-#endif
-    cgindex = cgs->index;
-
-    if (ePBC == epbcXY)
-        npbcdim = 2;
-    else
-        npbcdim = 3;
-
-    bTric = TRICLINIC(box);
-
-    for(icg=cg0; (icg<cg1); icg++) {
-        /* First compute the center of geometry for this charge group */
-        k0      = cgindex[icg];
-        k1      = cgindex[icg+1];
-        nrcg    = k1-k0;
-
-        if (nrcg == 1) {
-            copy_rvec(pos[k0],cg_cm[icg]);
-        } else {
-            inv_ncg = 1.0/nrcg;
-
-            clear_rvec(cg);
-            for(k=k0; (k<k1); k++)  {
-                for(d=0; d<DIM; d++)
-                    cg[d] += pos[k][d];
-            }
-            for(d=0; d<DIM; d++)
-                cg_cm[icg][d] = inv_ncg*cg[d];
-        }
-        /* Now check pbc for this cg */
-        if (bTric) {
-            for(d=npbcdim-1; d>=0; d--) {
-                while(cg_cm[icg][d] < 0) {
-                    for(e=d; e>=0; e--) {
-                        cg_cm[icg][e] += box[d][e];
-                        for(k=k0; (k<k1); k++) 
-                            pos[k][e] += box[d][e];
-                    }
-                }
-                while(cg_cm[icg][d] >= box[d][d]) {
-                    for(e=d; e>=0; e--) {
-                        cg_cm[icg][e] -= box[d][e];
-                        for(k=k0; (k<k1); k++) 
-                            pos[k][e] -= box[d][e];
-                    }
-                }
-            }
-        } else {
-            for(d=0; d<npbcdim; d++) {
-                while(cg_cm[icg][d] < 0) {
-                    cg_cm[icg][d] += box[d][d];
-                    for(k=k0; (k<k1); k++) 
-                        pos[k][d] += box[d][d];
-                }
-                while(cg_cm[icg][d] >= box[d][d]) {
-                    cg_cm[icg][d] -= box[d][d];
-                    for(k=k0; (k<k1); k++) 
-                        pos[k][d] -= box[d][d];
-                }
-            }
-        }
-#ifdef DEBUG_PBC
-        for(d=0; (d<npbcdim); d++) {
-            if ((cg_cm[icg][d] < 0) || (cg_cm[icg][d] >= box[d][d]))
-                gmx_fatal(FARGS,"cg_cm[%d] = %15f  %15f  %15f\n"
-                          "box = %15f  %15f  %15f\n",
-                          icg,cg_cm[icg][XX],cg_cm[icg][YY],cg_cm[icg][ZZ],
-                          box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
-        }
-#endif
-    }
 }
 
 void calc_box_center(int ecenter,matrix box,rvec box_center)

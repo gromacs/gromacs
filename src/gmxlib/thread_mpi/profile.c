@@ -38,6 +38,10 @@ files.
 
 /* the profiling functions */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -58,10 +62,7 @@ files.
 #endif
 
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 #ifdef TMPI_TRACE
 #include <stdarg.h>
@@ -79,6 +80,11 @@ const char *tmpi_function_names[] =
     "Wait",
     "Test",
     "Waitall",
+    "Testall",
+    "Waitany",
+    "Testany",
+    "Waitsome",
+    "Testsome",
 
     "Barrier",
 
@@ -88,17 +94,17 @@ const char *tmpi_function_names[] =
     "Scatter",
     "Scatterv",
     "Alltoall",
-    "Alltoallv"
+    "Alltoallv",
+    "Reduce",
+    "Allreduce"
 };
 
 
 /* this must match the tmpi_wait_functions enum: */
 const char *tmpi_waitfn_names[] = 
 {
-    "Send",
-    "Recv",
+    "P2p",
     "P2p signal",
-    "Waitall",
     "Coll. send",
     "Coll. recv",
     "Barrier",
@@ -121,62 +127,31 @@ void tMPI_Profile_init(struct tmpi_profile *prof)
         prof->mpifn_calls[i]=0;
     }
 #ifdef TMPI_CYCLE_COUNT
+    for(i=0;i<TMPIFN_Nfunctions;i++)
+    {
+        prof->mpifn_cycles[i]=0;
+    }
     for(i=0;i<TMPIWAIT_N;i++)
     {
         prof->wait_cycles[i]=0;
     }
     prof->global_start=tmpi_cycles_read();
     prof->global_stop=0;
-    prof->start=0;
-    prof->stop=0;
-#endif
-}
-
-void tMPI_Profile_count(enum tmpi_functions fn)
-{
-    struct tmpi_thread *th=tMPI_Get_current();
-
-    tMPI_Profile_count_thread(th, fn);
-}
-
-
-void tMPI_Profile_count_thread(struct tmpi_thread *th, enum tmpi_functions fn)
-{
-    (th->profile.mpifn_calls[fn])++;
-    /*printf("counting %d, %ld\n",fn, th->profile.mpifn_calls[fn]);*/
-}
-
-
-
-
-#ifdef TMPI_CYCLE_COUNT
-void tMPI_Profile_wait_start()
-{
-    struct tmpi_thread *th=tMPI_Get_current();
-    tMPI_Profile_wait_start_thread(th);
-}
-
-void tMPI_Profile_wait_start_thread(struct tmpi_thread *th)
-{
-    th->profile.start=tmpi_cycles_read();
-}
-
-void tMPI_Profile_wait_stop(enum tmpi_wait_functions fn)
-{
-    struct tmpi_thread *th=tMPI_Get_current();
-    tMPI_Profile_wait_stop_thread(th, fn);
-}
-
-void tMPI_Profile_wait_stop_thread(struct tmpi_thread *th, 
-                                   enum tmpi_wait_functions fn)
-{
-    tmpi_cycles_t stop=tmpi_cycles_read();
-    th->profile.wait_cycles[fn] += (stop - th->profile.start);
-}
+    prof->wait_start=0;
 #endif
 
+    prof->buffered_p2p_xfers=0;
+    prof->buffered_coll_xfers=0;
+    prof->total_p2p_xfers=0;
+    prof->total_coll_xfers=0;
+}
 
 
+#if 0
+void tMPI_Profile_destroy(struct tmpi_profile *prof)
+{
+}
+#endif
 
 
 
@@ -220,12 +195,86 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
             long unsigned int count=threads[j].profile.mpifn_calls[i];
 
             total += count;
-            printf(" %10ld", count);
+            printf(" %10ld", (long)count);
         }
-        printf(" %10ld\n", total);
+        printf(" %10ld\n", (long)total);
     }
 
+    printf("\nFraction of buffered transfers:\n");
+    {
+        long unsigned int tot_buf=0;
+        long unsigned int tot_count=0;
+        printf("%11s", "P2p");
+        for(j=0;j<Nthreads;j++)
+        {
+            long unsigned int buf=threads[j].profile.buffered_p2p_xfers;
+            long unsigned int count=threads[j].profile.total_p2p_xfers;
+
+            tot_buf+=buf;
+            tot_count+=count;
+
+            printf(" %10.5f", (double)buf/(double)count);
+        }
+        printf(" %10.5f\n", (double)tot_buf/(double)tot_count);
+
+        tot_buf=0;
+        tot_count=0;
+        printf("%11s", "Collective");
+        for(j=0;j<Nthreads;j++)
+        {
+            long unsigned int buf=threads[j].profile.buffered_coll_xfers;
+            long unsigned int count=threads[j].profile.total_coll_xfers;
+
+            tot_buf+=buf;
+            tot_count+=count;
+
+            printf(" %10.5f", (double)buf/(double)count);
+        }
+        printf(" %10.5f\n", (double)tot_buf/(double)tot_count);
+    }
+
+
 #ifdef TMPI_CYCLE_COUNT
+    printf("\nCall times as fraction of total run time:\n");
+    for(j=0;j<Nthreads;j++)
+        threads[j].profile.totals=0.;
+    for(i=0;i<TMPIFN_Nfunctions;i++)
+    {
+        double tot_time=0.;
+        double tot_diff=0.;
+
+        printf("%11s", tmpi_function_names[i]);
+        for(j=0;j<Nthreads;j++)
+        {
+            double time=(double)(threads[j].profile.global_stop - 
+                                 threads[j].profile.global_start );
+            double diff=((double)threads[j].profile.mpifn_cycles[i]);
+            tot_time += time;
+            tot_diff += diff;
+            threads[j].profile.totals += diff;
+            printf(" %10.5f", diff/time);
+        }
+        printf(" %10.5f\n", tot_diff/tot_time);
+    }
+    {
+        double tot_time=0.;
+        double tot_diff=0.;
+
+        printf("%11s", "Total");
+        for(j=0;j<Nthreads;j++)
+        {
+            double time=(double)(threads[j].profile.global_stop - 
+                                 threads[j].profile.global_start );
+            double diff=threads[j].profile.totals;
+
+            tot_time += time;
+            tot_diff += diff;
+            printf(" %10.5f", diff/time );
+        } 
+        printf(" %10.5f\n", tot_diff/tot_time);
+    }
+
+
     printf("\nWait times as fraction of total run time:\n");
     for(j=0;j<Nthreads;j++)
         threads[j].profile.totals=0.;
@@ -272,17 +321,15 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
         printf("-");
     printf("\n");
 
+    /* here we make use of the fact that this is how we calculate tMPI_Wtime */
+    {
+        double wt=tMPI_Wtime();
+        double wtck=tMPI_Wtick();
+        printf("\nTotal run time: %g +/- %g s.\n", wt, wtck);
+    }
+
     printf("\n");
 
 }
 
-/* destroy all of them  */
-void tMPI_Profiles_destroy(int Nthreads, struct tmpi_thread *threads)
-{
-    /*
-    int i;
-
-    for(i=0;i<Nthreads;i++)
-        tMPI_Free(threads[i].profile);*/
-}
 #endif

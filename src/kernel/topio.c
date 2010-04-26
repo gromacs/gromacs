@@ -56,6 +56,7 @@
 #include "string2.h"
 #include "symtab.h"
 #include "gmx_fatal.h"
+#include "warninp.h"
 #include "vsite_parm.h"
 
 #include "grompp.h"
@@ -151,7 +152,7 @@ static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, int comb, bool b
   }
 }
 
-double check_mol(gmx_mtop_t *mtop)
+double check_mol(gmx_mtop_t *mtop,warninp_t wi)
 {
   char    buf[256];
   int     i,mb,nmol,ri,pt;
@@ -179,7 +180,7 @@ double check_mol(gmx_mtop_t *mtop)
 		*(atoms->resinfo[ri].name),
 		atoms->resinfo[ri].nr,
 		m);
-	warning_error(buf);
+	warning_error(wi,buf);
       } else 
 	if ((m!=0) && (pt == eptVSite)) {
 	  ri = atoms->atom[i].resind;
@@ -189,7 +190,7 @@ double check_mol(gmx_mtop_t *mtop)
 		  *(atoms->resinfo[ri].name),
 		  atoms->resinfo[ri].nr,
 		  m);
-	  warning_error(buf);
+	  warning_error(wi,buf);
 	  /* The following statements make LINCS break! */
 	  /* atoms->atom[i].m=0; */
 	}
@@ -209,9 +210,11 @@ static void sum_q(t_atoms *atoms,int n,double *qt,double *qBt)
   }
 }
 
-static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
+static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb,
+                       warninp_t wi)
 {
-  int i;
+  int  i;
+  char warn_buf[STRLEN];
   
   *nb   = -1;
   for(i=1; (i<eNBF_NR); i++)
@@ -222,7 +225,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
   if ((*nb < 1) || (*nb >= eNBF_NR)) {
     sprintf(warn_buf,"Invalid nonbond function selector '%s' using %s",
 	    nb_str,enbf_names[1]);
-    warning_error(NULL);
+    warning_error(wi,warn_buf);
     *nb = 1;
   }
   *comb = -1;
@@ -234,13 +237,14 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
   if ((*comb < 1) || (*comb >= eCOMB_NR)) {
     sprintf(warn_buf,"Invalid combination rule selector '%s' using %s",
 	    comb_str,ecomb_names[1]);
-    warning_error(NULL);
+    warning_error(wi,warn_buf);
     *comb = 1;
   }
 }
 
-char ** cpp_opts(const char *define,const char *include,
-                       const char *infile)
+static char ** cpp_opts(const char *define,const char *include,
+                        const char *infile,
+                        warninp_t wi)
 {
   int  n,len;
   int  ncppopts=0;
@@ -251,6 +255,7 @@ char ** cpp_opts(const char *define,const char *include,
   const char *ptr;
   const char *rptr;
   char *buf;
+  char warn_buf[STRLEN];
   
   cppadds[0] = define;
   cppadds[1] = include;
@@ -268,8 +273,9 @@ char ** cpp_opts(const char *define,const char *include,
 	  snew(buf,(len+1));
 	  strncpy(buf,ptr,len);
 	  if (strstr(ptr,option[n]) != ptr) {
-	    sprintf(warn_buf,"Malformed %s option %s",nopt[n],buf);
-	    warning(NULL);
+          set_warning_line(wi,"mdp file",-1);
+          sprintf(warn_buf,"Malformed %s option %s",nopt[n],buf);
+          warning(wi,warn_buf);
 	  }
 	  else {
 	    srenew(cppopts,++ncppopts);
@@ -476,22 +482,23 @@ generate_gb_exclusion_interactions(t_molinfo *mi,gpp_atomtype_t atype,t_nextnb *
 
 
 static char **read_topol(const char *infile,const char *outfile,
-			 const char *define,const char *include,
-			 t_symtab    *symtab,
-			 gpp_atomtype_t atype,
-			 int         *nrmols,
-			 t_molinfo   **molinfo,
-			 t_params    plist[],
-			 int         *combination_rule,
-			 double      *reppow,
-			 t_gromppopts *opts,
-			 real        *fudgeQQ,
-			 int         *nmolblock,
-			 gmx_molblock_t **molblock,
-			 bool        bFEP,
-			 bool        bGenborn,
-			 bool        bZero,
-			 bool        bVerbose)
+                         const char *define,const char *include,
+                         t_symtab    *symtab,
+                         gpp_atomtype_t atype,
+                         int         *nrmols,
+                         t_molinfo   **molinfo,
+                         t_params    plist[],
+                         int         *combination_rule,
+                         double      *reppow,
+                         t_gromppopts *opts,
+                         real        *fudgeQQ,
+                         int         *nmolblock,
+                         gmx_molblock_t **molblock,
+                         bool        bFEP,
+                         bool        bGenborn,
+                         bool        bZero,
+                         bool        bVerbose,
+                         warninp_t   wi)
 {
   FILE       *out;
   int        i,sl,nb_funct,comb;
@@ -518,9 +525,10 @@ static char **read_topol(const char *infile,const char *outfile,
   int        status,done;
   gmx_cpp_t  handle;
   char     *tmp_line=NULL;
+  char       warn_buf[STRLEN];
 
   /* open input and output file */
-  status = cpp_open_file(infile,&handle,cpp_opts(define,include,infile));
+  status = cpp_open_file(infile,&handle,cpp_opts(define,include,infile,wi));
   if (status != 0) 
     gmx_fatal(FARGS,cpp_error(&handle,status));
   if (outfile)
@@ -560,6 +568,8 @@ static char **read_topol(const char *infile,const char *outfile,
 	gmx_fatal(FARGS,cpp_error(&handle,status));
       else if (out)
 	fprintf(out,"%s\n",line);
+
+      set_warning_line(wi,cpp_cur_file(&handle),cpp_cur_linenr(&handle));
     
       pline = strdup(line);
     
@@ -573,6 +583,7 @@ static char **read_topol(const char *infile,const char *outfile,
 		while (continuing(line))
 		{
 			status = cpp_read_line(&handle,STRLEN,line);
+            set_warning_line(wi,cpp_cur_file(&handle),cpp_cur_linenr(&handle));
 			
 			/* Since we depend on the '\' being present to continue to read, we copy line                                           
 			 * to a tmp string, strip the '\' from that string, and cat it to pline                                                 
@@ -594,6 +605,7 @@ static char **read_topol(const char *infile,const char *outfile,
 			
 			srenew(pline,strlen(pline)+strlen(tmp_line)+1);
 			strcat(pline,tmp_line);
+            sfree(tmp_line);
 		}
 				
       /* skip trailing and leading spaces and comment text */
@@ -614,7 +626,7 @@ static char **read_topol(const char *infile,const char *outfile,
 	  
 	  if ((newd = str2dir(dirstr)) == d_invalid) {
 	    sprintf(errbuf,"Invalid directive %s",dirstr);
-	    warning_error(errbuf);
+	    warning_error(wi,errbuf);
 	  }
 	  else {
 	    /* Directive found */
@@ -648,13 +660,13 @@ static char **read_topol(const char *infile,const char *outfile,
 	    nscan = sscanf(pline,"%s%s%s%lf%lf%lf",
 			   nb_str,comb_str,genpairs,&fLJ,&fQQ,&fPOW);
 	    if (nscan < 2)
-	      too_few();
+            too_few(wi);
 	    else {
 	      bGenPairs = FALSE;
 	      fudgeLJ   = 1.0;
 	      *fudgeQQ  = 1.0;
 	      
-	      get_nbparm(nb_str,comb_str,&nb_funct,&comb);
+	      get_nbparm(nb_str,comb_str,&nb_funct,&comb,wi);
 	      *combination_rule = comb;
 	      if (nscan >= 3) {
 		bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
@@ -674,31 +686,31 @@ static char **read_topol(const char *infile,const char *outfile,
 	    break;
 	  case d_atomtypes:
 	    push_at(symtab,atype,batype,pline,nb_funct,
-		    &nbparam,bGenPairs ? &pair : NULL);
+                &nbparam,bGenPairs ? &pair : NULL,wi);
 	    break;
 	    
 	  case d_bondtypes:
-	    push_bt(d,plist,2,NULL,batype,pline);
+          push_bt(d,plist,2,NULL,batype,pline,wi);
 	    break;
 	  case d_constrainttypes:
-	    push_bt(d,plist,2,NULL,batype,pline);
+          push_bt(d,plist,2,NULL,batype,pline,wi);
 	    break;
 	  case d_pairtypes:
 	    if (bGenPairs)
-	      push_nbt(d,pair,atype,pline,F_LJ14);
+            push_nbt(d,pair,atype,pline,F_LJ14,wi);
 	    else
-	      push_bt(d,plist,2,atype,NULL,pline);
+            push_bt(d,plist,2,atype,NULL,pline,wi);
 	      break;
 	  case d_angletypes:
-	    push_bt(d,plist,3,NULL,batype,pline);
+          push_bt(d,plist,3,NULL,batype,pline,wi);
 	    break;
 	  case d_dihedraltypes:
 	    /* Special routine that can read both 2 and 4 atom dihedral definitions. */
-	    push_dihedraltype(d,plist,batype,pline);
+          push_dihedraltype(d,plist,batype,pline,wi);
 	    break;
 
 	  case d_nonbond_params:
-	    push_nbt(d,nbparam,atype,pline,nb_funct);
+          push_nbt(d,nbparam,atype,pline,nb_funct,wi);
 	    break;
 	    /*
 	      case d_blocktype:
@@ -714,7 +726,7 @@ static char **read_topol(const char *infile,const char *outfile,
 	    */
 
 	  case d_implicit_genborn_params:
-	    push_gb_params(atype,pline);
+          push_gb_params(atype,pline,wi);
 	    break;
 
 	  case d_implicit_surface_params:
@@ -722,7 +734,7 @@ static char **read_topol(const char *infile,const char *outfile,
 	    break;
 
 	  case d_cmaptypes:
-		push_cmaptype(d, plist, 5, atype, batype,pline);
+          push_cmaptype(d, plist, 5, atype, batype,pline,wi);
 		break;
 			  
 	  case d_moleculetype: {
@@ -739,7 +751,7 @@ static char **read_topol(const char *infile,const char *outfile,
           }
 	      ntype = get_atomtype_ntypes(atype);
 	      ncombs = (ntype*(ntype+1))/2;
-	      generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
+	      generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype,wi);
 	      ncopy = copy_nbparams(nbparam,nb_funct,&(plist[nb_funct]),
 				    ntype);
 	      fprintf(stderr,"Generated %d of the %d non-bonded parameter combinations\n",ncombs-ncopy,ncombs);
@@ -756,19 +768,19 @@ static char **read_topol(const char *infile,const char *outfile,
 	      bReadMolType = TRUE;
 	    }
 	    
-	    push_molt(symtab,&nmol,molinfo,pline);
+	    push_molt(symtab,&nmol,molinfo,pline,wi);
 	    srenew(block2,nmol);
 	    block2[nmol-1].nr=0;
 	    mi0=&((*molinfo)[nmol-1]);
 	    break;
 	  }
 	  case d_atoms: 
-	    push_atom(symtab,&(mi0->cgs),&(mi0->atoms),atype,pline,&lastcg);
+          push_atom(symtab,&(mi0->cgs),&(mi0->atoms),atype,pline,&lastcg,wi);
 	    break;
 	    
 	  case d_pairs: 
-	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,
-		      bGenPairs,*fudgeQQ,bZero,&bWarn_copy_A_B);
+          push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,
+                    bGenPairs,*fudgeQQ,bZero,&bWarn_copy_A_B,wi);
 	    break;
 	    
 	  case d_vsites2:
@@ -789,14 +801,15 @@ static char **read_topol(const char *infile,const char *outfile,
 	  case d_water_polarization:
 	  case d_thole_polarization:
 	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,
-		      bGenPairs,*fudgeQQ,bZero,&bWarn_copy_A_B);
+                  bGenPairs,*fudgeQQ,bZero,&bWarn_copy_A_B,wi);
 	    break;
 	  case d_cmap:
-		push_cmap(d,plist,mi0->plist,&(mi0->atoms),atype,pline,&bWarn_copy_A_B);
+          push_cmap(d,plist,mi0->plist,&(mi0->atoms),atype,pline,
+                    &bWarn_copy_A_B,wi);
 		break;
 			  
 	  case d_vsitesn:
-	    push_vsitesn(d,plist,mi0->plist,&(mi0->atoms),atype,pline);
+          push_vsitesn(d,plist,mi0->plist,&(mi0->atoms),atype,pline,wi);
 	    break;
 	  case d_exclusions:
 	    if (!block2[nmol-1].nr)
@@ -811,7 +824,7 @@ static char **read_topol(const char *infile,const char *outfile,
 	    int  whichmol;
 	    bool bCouple;
 	    
-	    push_mol(nmol,*molinfo,pline,&whichmol,&nrcopies);
+	    push_mol(nmol,*molinfo,pline,&whichmol,&nrcopies,wi);
 	    mi0=&((*molinfo)[whichmol]);
 	    srenew(molb,nmolb+1);
 	    molb[nmolb].type = whichmol;
@@ -899,11 +912,11 @@ static char **read_topol(const char *infile,const char *outfile,
     title=put_symtab(symtab,"");
   if (fabs(qt) > 1e-4) {
     sprintf(warn_buf,"System has non-zero total charge: %e\n\n",qt);
-    warning_note(NULL);
+    warning_note(wi,warn_buf);
   }
   if (fabs(qBt) > 1e-4 && qBt != qt) {
     sprintf(warn_buf,"State B has non-zero total charge: %e\n\n",qBt);
-    warning_note(NULL);
+    warning_note(wi,warn_buf);
   }
   DS_Done (&DS);
   for(i=0; i<nmol; i++)
@@ -921,46 +934,56 @@ static char **read_topol(const char *infile,const char *outfile,
 }
 
 char **do_top(bool         bVerbose,
-	      const char   *topfile,
-	      const char   *topppfile,
-	      t_gromppopts *opts,
-	      bool         bZero,
-	      t_symtab     *symtab,
-	      t_params     plist[],
-	      int          *combination_rule,
-	      double       *repulsion_power,
-	      real         *fudgeQQ,
-	      gpp_atomtype_t atype,
-	      int          *nrmols,
-	      t_molinfo    **molinfo,
-	      t_inputrec   *ir,
-	      int          *nmolblock,
-	      gmx_molblock_t **molblock,
-	      bool          bGenborn)
+              const char   *topfile,
+              const char   *topppfile,
+              t_gromppopts *opts,
+              bool         bZero,
+              t_symtab     *symtab,
+              t_params     plist[],
+              int          *combination_rule,
+              double       *repulsion_power,
+              real         *fudgeQQ,
+              gpp_atomtype_t atype,
+              int          *nrmols,
+              t_molinfo    **molinfo,
+              t_inputrec   *ir,
+              int          *nmolblock,
+              gmx_molblock_t **molblock,
+              bool          bGenborn,
+              warninp_t     wi)
 {
-  /* Tmpfile might contain a long path */
-  const char *tmpfile;
-  char **title;
-  
-  if (topppfile)
-    tmpfile = topppfile;
-  else 
-    tmpfile = NULL;
-
-  if (bVerbose) printf("processing topology...\n");
-  title=read_topol(topfile,tmpfile,opts->define,opts->include,
-		   symtab,atype,nrmols,molinfo,
-		   plist,combination_rule,repulsion_power,
-		   opts,fudgeQQ,nmolblock,molblock,
-		   ir->efep!=efepNO,bGenborn,bZero,bVerbose);
-  if ((*combination_rule != eCOMB_GEOMETRIC) && 
-      (ir->vdwtype == evdwUSER)) {
-    warning("Using sigma/epsilon based combination rules with"
-	    " user supplied potential function may produce unwanted"
-	    " results");
-  }
-  
-  return title;
+    /* Tmpfile might contain a long path */
+    const char *tmpfile;
+    char **title;
+    
+    if (topppfile)
+    {
+        tmpfile = topppfile;
+    }
+    else
+    {
+        tmpfile = NULL;
+    }
+    
+    if (bVerbose)
+    {
+        printf("processing topology...\n");
+    }
+    title = read_topol(topfile,tmpfile,opts->define,opts->include,
+                       symtab,atype,nrmols,molinfo,
+                       plist,combination_rule,repulsion_power,
+                       opts,fudgeQQ,nmolblock,molblock,
+                       ir->efep!=efepNO,bGenborn,bZero,bVerbose,
+                       wi);
+    if ((*combination_rule != eCOMB_GEOMETRIC) && 
+        (ir->vdwtype == evdwUSER))
+    {
+        warning(wi,"Using sigma/epsilon based combination rules with"
+                " user supplied potential function may produce unwanted"
+                " results");
+    }
+    
+    return title;
 }
 
 

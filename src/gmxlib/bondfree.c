@@ -2634,7 +2634,8 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                         if (bPrintSepPot && !bForeign) 
                         {
                             fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
-                                    interaction_function[ftype].longname,nbonds/nat1,v,cdvdl);
+                                    interaction_function[ftype].longname,
+                                    nbonds/nat1,v,cdvdl[efptFTYPE]);
                         }
                     } 
                 }

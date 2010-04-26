@@ -494,6 +494,7 @@ int init_gb(gmx_genborn_t **p_born,
     born->obc_gamma  = ir->gb_obc_gamma;
     born->gb_doffset = ir->gb_dielectric_offset;
     born->gb_epsilon_solvent = ir->gb_epsilon_solvent;
+    born->epsilon_r = ir->epsilon_r;
     
     doffset = born->gb_doffset;
     
@@ -1305,7 +1306,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 
 
 real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
-                  real *invsqrta, real *dvda, real *GBtab, t_idef *idef,
+                  real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
                   real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph)
 {
     int i,j,n0,m,nnn,type,ai,aj;
@@ -1324,7 +1325,7 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
     t_iatom *forceatoms;
 
     /* Scale the electrostatics by gb_epsilon_solvent */
-    facel = facel * (1.0 - 1.0/gb_epsilon_solvent);
+    facel = facel * ((1.0/epsilon_r) - 1.0/gb_epsilon_solvent);
     
     gbtabscale=*p_gbtabscale;
     vctot = 0.0;
@@ -1415,7 +1416,7 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
     }
         
     /* Scale the electrostatics by gb_epsilon_solvent */
-    facel = facel * (1.0 - 1.0/born->gb_epsilon_solvent);
+    facel = facel * ((1.0/born->epsilon_r) - 1.0/born->gb_epsilon_solvent);
     
     vtot=0.0;
     
@@ -1648,13 +1649,17 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
     /* Calculate the bonded GB-interactions using either table or analytical formula */
 #ifdef GMX_DOUBLE    
     v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
-                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 #else    
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )    
-    v += gb_bonds_analytic(x[0],f[0],md->chargeA,born->bRad,fr->dvda,idef,born->gb_epsilon_solvent,fr->epsfac);
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )   /* 
+    v += gb_bonds_analytic(x[0],f[0],md->chargeA,born->bRad,fr->dvda,idef,born->epsilon_r,born->gb_epsilon_solvent,fr->epsfac);
+                                                                                  */
+    v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
+                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+    
 #else
     v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
-                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 #endif
 #endif
     
@@ -1978,7 +1983,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
     return 0;
 }
 
-void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
+void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 {
     int i,at0,at1;
     gmx_domdec_t *dd=NULL;

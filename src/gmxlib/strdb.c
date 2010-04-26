@@ -107,10 +107,8 @@ int get_strings(const char *db,char ***strings)
 
   in=libopen(db);
   
-  set_warning_line(db,1);
   if (fscanf(in,"%d",&nstr) != 1) {
-    sprintf(warn_buf,"File %s is empty",db);
-    warning(NULL);
+    gmx_warning("File %s is empty",db);
     ffclose(in);
     return 0;
   }
@@ -154,8 +152,7 @@ int fget_lines(FILE *in,char ***strings)
   pret = fgets(buf,255,in);  
   if ( pret==NULL  || sscanf(buf,"%d",&nstr) != 1) 
   {
-    sprintf(warn_buf,"File is empty");
-    warning(NULL);
+    gmx_warning("File is empty");
     ffclose(in);
     
     return 0;
@@ -176,7 +173,6 @@ int get_lines(const char *db,char ***strings)
   FILE *in;
   int  nstr;
   
-  set_warning_line(db,1);
   in   = libopen(db);
   nstr = fget_lines(in,strings);
   ffclose(in);

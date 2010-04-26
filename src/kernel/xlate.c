@@ -48,6 +48,7 @@
 #include "futil.h"
 #include "fflibutil.h"
 #include "hackblock.h"
+#include "gmx_fatal.h"
 
 typedef struct {
     char *filebase;
@@ -133,14 +134,15 @@ static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
 
 void rename_atoms(const char *xlfile,const char *ffdir,
                   t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
-                  t_aa_names *aan,bool bReorderNum,bool bVerbose)
+                  bool bResname,t_aa_names *aan,bool bReorderNum,
+                  bool bVerbose)
 {
     FILE *fp;
     int nxlate,a,i,resind;
     t_xlate_atom *xlatom;
     int  nf;
     char **f;
-    char c,*res,atombuf[32],*ptr0,*ptr1;
+    char c,*rnm,atombuf[32],*ptr0,*ptr1;
     bool bReorderedNum,bRenamed,bMatch;
 
     nxlate = 0;
@@ -167,7 +169,14 @@ void rename_atoms(const char *xlfile,const char *ffdir,
     for(a=0; (a<atoms->nr); a++)
     {
         resind = atoms->atom[a].resind;
-        res    = *(atoms->resinfo[resind].name);
+        if (bResname)
+        {
+            rnm = *(atoms->resinfo[resind].name);
+        }
+        else
+        {
+            rnm = *(atoms->resinfo[resind].rtp);
+        }
         strcpy(atombuf,*(atoms->atomname[a]));
         bReorderedNum = FALSE;
         if (bReorderNum)
@@ -192,10 +201,10 @@ void rename_atoms(const char *xlfile,const char *ffdir,
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
                           (strcasecmp("protein",xlatom[i].res) == 0 &&
-                           is_protein(aan,res)));
+                           is_protein(aan,rnm)));
                 if (!bMatch)
                 {
-                    ptr0 = res;
+                    ptr0 = rnm;
                     ptr1 = xlatom[i].res;
                     while (ptr0[0] != '\0' && ptr1[0] != '\0' &&
                            (ptr0[0] == ptr1[0] || ptr1[0] == '?'))
@@ -214,8 +223,11 @@ void rename_atoms(const char *xlfile,const char *ffdir,
                     ptr0 = strdup(xlatom[i].replace);
                     if (bVerbose)
                     {
-                        printf("Renaming atom '%s' in '%s' to '%s'\n",
-                               *atoms->atomname[a],res,ptr0);
+                        printf("Renaming atom '%s' in residue %d %s to '%s'\n",
+                               *atoms->atomname[a],
+                               atoms->resinfo[resind].nr,
+                               *atoms->resinfo[resind].name,
+                               ptr0);
                     }
                     atoms->atomname[a] = put_symtab(symtab,ptr0);
                     bRenamed = TRUE;

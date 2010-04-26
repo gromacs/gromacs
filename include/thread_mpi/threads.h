@@ -69,6 +69,7 @@ files.
 
 #include <stdio.h>
 
+#include "thread_mpi/atomic.h"
 
 
 #ifdef __cplusplus
@@ -80,16 +81,144 @@ extern "C"
 #endif
 
 
-/* the data types are defined in the thread platform-specific include files */
-#ifdef THREAD_PTHREADS
-#include "thread_mpi/pthreads.h"
-#else
-#ifdef THREAD_WINDOWS
-#include "thread_mpi/winthreads.h"
-#else
-#include "thread_mpi/nothreads.h"
-#endif
-#endif
+
+
+
+/*! \brief Pthread implementation of the abstract tMPI_Thread type
+ *
+ *  The contents of this structure depends on the actual threads 
+ *  implementation used.
+ */
+typedef struct tMPI_Thread* tMPI_Thread_t;
+
+
+
+/*! \brief Opaque mutex datatype 
+ *
+ *  This type is only defined in the header to enable static
+ *  initialization with TMPI_THREAD_MUTEX_INITIALIZER.
+ *  You should _never_ touch the contents or create a variable
+ *  with automatic storage class without calling tMPI_Thread_mutex_init().
+ */
+typedef struct 
+{
+    tMPI_Atomic_t initialized;
+    struct tMPI_Mutex* mutex;
+}  tMPI_Thread_mutex_t;
+/*! \brief Static initializer for tMPI_Thread_mutex_t
+ *
+ *  See the description of the tMPI_Thread_mutex_t datatype for instructions
+ *  on how to use this. Note that any variables initialized with this value
+ *  MUST have static storage allocation.
+ */
+#define TMPI_THREAD_MUTEX_INITIALIZER { {0} , NULL }
+
+
+
+
+
+/*! \brief Pthread implementation of the abstract tMPI_Thread_key type 
+ *
+ *  The contents of this structure depends on the actual threads 
+ *  implementation used.
+ */
+typedef struct 
+{
+    tMPI_Atomic_t initialized;
+    struct tMPI_Thread_key *key;
+} tMPI_Thread_key_t;
+
+
+
+
+
+/*! \brief One-time initialization data for thread
+ *
+ *  This is an opaque datatype which is necessary for tMPI_Thread_once(),
+ *  but since it needs to be initialized statically it must be defined
+ *  in the header. You will be sorry if you touch the contents.
+ *  Variables of this type should always be initialized statically to
+ *  TMPI_THREAD_ONCE_INIT.
+ *
+ *  This type is used as control data for single-time initialization.
+ *  The most common example is a mutex at file scope used when calling 
+ *  a non-threadsafe function, e.g. the FFTW initialization routines.
+ *
+ */
+typedef struct 
+{
+    tMPI_Atomic_t once;
+} tMPI_Thread_once_t;
+/*! \brief Static initializer for tMPI_Thread_once_t
+ *
+ *  See the description of the tMPI_Thread_once_t datatype for instructions
+ *  on how to use this. Normally, all variables of that type should be 
+ *  initialized statically to this value.
+ */
+#define TMPI_THREAD_ONCE_INIT { {0} }
+
+
+
+
+/*! \brief Condition variable handle for threads
+ *
+ *  Condition variables are useful for synchronization together
+ *  with a mutex: Lock the mutex and check if our thread is the last
+ *  to the barrier. If no, wait for the condition to be signaled.
+ *  If yes, reset whatever data you want and then signal the condition.
+ *
+ *  This should be considered an opaque structure, but since it is sometimes
+ *  useful to initialize it statically it must go in the header. 
+ *  You will be sorry if you touch the contents.
+ *  
+ *  There are two alternatives: Either initialize it as a static variable
+ *  with TMPI_THREAD_COND_INITIALIZER, or call tMPI_Thread_cond_init()
+ *  before using it.
+ */
+typedef struct 
+{
+    tMPI_Atomic_t initialized;
+    struct tMPI_Thread_cond* condp;
+} tMPI_Thread_cond_t;
+/*! \brief Static initializer for tMPI_Thread_cond_t
+  *
+  *  See the description of the tMPI_Thread_cond_t datatype for instructions
+  *  on how to use this. Note that any variables initialized with this value
+  *  MUST have static storage allocation.
+  */
+#define TMPI_THREAD_COND_INITIALIZER { {0}, NULL}
+
+
+
+
+
+
+/*! \brief Pthread implementation of barrier type. 
+ *
+ *  The contents of this structure depends on the actual threads 
+ *  implementation used.
+ */
+typedef struct 
+{
+    tMPI_Atomic_t initialized;
+    struct tMPI_Thread_barrier* barrierp;
+    volatile int threshold; /*!< Total number of members in barrier     */
+    volatile int count;     /*!< Remaining count before completion      */
+    volatile int cycle;     /*!< Alternating 0/1 to indicate round      */
+}tMPI_Thread_barrier_t;
+/*! \brief Static initializer for tMPI_Thread_barrier_t
+ *
+ *  See the description of the tMPI_Thread_barrier_t datatype for instructions
+ *  on how to use this. Note that variables initialized with this value
+ *  MUST have static storage allocation.
+ *
+ * \param count  Threshold for barrier
+ */
+#define TMPI_THREAD_BARRIER_INITIALIZER(count)   {\
+            NULL, count, count, 0 \
+            }
+
+
 
 
 
@@ -390,118 +519,6 @@ void tMPI_Thread_exit(void *      value_ptr);
 int tMPI_Thread_cancel(tMPI_Thread_t      thread);
 
 
-#ifdef TMPI_RWLOCK
-/** Initialize a read-write lock.
-
-  Read-write locks support multiple readers at the same time, but only one
-  writer can hold the lock at any given time, to the exclusion of readers.
-  The need to be initialized only once, and there's no static initializer.
-
-  \param rwlock     Pointer to rwlock to be initialized.
-
-
-  \return 0 if successful, or a non-zero error code.
-  */
-int tMPI_Thread_rwlock_init(tMPI_Thread_rwlock_t *rwlock);
-
-/** Destroy a read-write lcok.
-
-  Release data held by a read-write lock.
-
-  \param rwlock     Pointer to the rwlock to be destroyed.
-  \return 0 if successful, nonzero otherwise.
-  */
-int tMPI_Thread_rwlock_destroy(tMPI_Thread_rwlock_t *rwlock);
-
-
-
-/** Lock a read-write lock non-exclusively, as a reader.
-
-  Read-write locks support multiple readers at the same time, but only one
-  writer can hold the lock at any given time, to the exclusion of readers.
-  This function applies a read lock, excluding any write locks, but not
-  other read locks, until the last read lock is released 
-  
-  \param rwlock     Pointer to the rwlock to be locked.
-  \return 0 if successful, nonzero otherwise.  */
-int tMPI_Thread_rwlock_rdlock(tMPI_Thread_rwlock_t *rwlock);
-
-/** Try to lock a read-write lock non-exclusively, as a reader.
-
-  Read-write locks support multiple readers at the same time, but only one
-  writer can hold the lock at any given time, to the exclusion of readers.
-  This function tries to a read lock, excluding any write locks, but not
-  other read locks, until the last read lock is released, if it succeeds 
-  immediately. If not, it will exit immediately.
-  
-  \param rwlock     Pointer to the rwlock to be locked.
-  \return 0 if locking was successful, nonzero otherwise.  */
-int tMPI_Thread_rwlock_tryrdlock(tMPI_Thread_rwlock_t *rwlock);
-
-
-
-
-/** Lock a read-write lock exclusively, as a writer.
-
-  Read-write locks support multiple readers at the same time, but only one
-  writer can hold the lock at any given time, to the exclusion of readers.
-  This function applies a write lock, excluding any read or write locks, 
-  until the owning thread releases the lock. 
-  
-  \param rwlock     Pointer to the rwlock to be locked.
-  \return 0 if successful, nonzero otherwise.  */
-int tMPI_Thread_rwlock_wrlock(tMPI_Thread_rwlock_t *rwlock);
-
-/** Try to lock a read-write lock exclusively, as a writer.
-
-  Read-write locks support multiple readers at the same time, but only one
-  writer can hold the lock at any given time, to the exclusion of readers.
-  This function tries to apply a write lock, excluding any read or write locks, 
-  until the owning thread releases the lock, if it succeeds 
-  immediately. If not, it will exit immediately.
-  
-  \param rwlock     Pointer to the rwlock to be locked.
-  \return 0 if locking was successful, nonzero otherwise.  */
-int tMPI_Thread_rwlock_trywrlock(tMPI_Thread_rwlock_t *rwlock);
-
-
-
-
-
-/** Release a read/write lock held non-exclusively, as read lock.
-
-  Read-write locks support multiple readers at the same time, but only one
-  writer can hold the lock at any given time, to the exclusion of readers.
-  This function releases a read/write lock that is locked as a read 
-  lock by the current thread. 
-
-  \note This is different from the POSIX standard, where rwlocks can
-       be unlocked with a single function, whether held as read or write 
-       locks. 
-  
-  \param rwlock     Pointer to the rwlock to be locked.
-  \return 0 if successful, nonzero otherwise.  */
-int tMPI_Thread_rwlock_rdunlock(tMPI_Thread_rwlock_t *rwlock);
-
-/** Release a read/write lock held exclusively, as write lock.
-
-  Read-write locks support multiple readers at the same time, but only one
-  writer can hold the lock at any given time, to the exclusion of readers.
-  This function releases a read/write lock that is locked as a write 
-  lock by the current thread. 
-
-  \note This is different from the POSIX standard, where rwlocks can
-       be unlocked with a single function, whether held as read or write 
-       locks. 
-  
-  \param rwlock     Pointer to the rwlock to be locked.
-  \return 0 if successful, nonzero otherwise.  */
-int tMPI_Thread_rwlock_wrunlock(tMPI_Thread_rwlock_t *rwlock);
-#endif
-
-
-
-
 
 
 
@@ -543,21 +560,6 @@ int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *barrier);
 int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier);
 
 
-
-/** Lock a file so only one thread can use it
- *
- *  Call this routine before writing to logfiles or standard out, in order
- *  to avoid mixing output from multiple threads.
- */
-void tMPI_Lockfile(FILE *   stream);
-
-
-/** Unlock a file (allow other threads to use it)
- *
- *  Call this routine when you finish a write statement to a file, so other
- *  threads can use it again.
- */
-void tMPI_Unlockfile(FILE *   stream);
 
 
 #ifdef __cplusplus

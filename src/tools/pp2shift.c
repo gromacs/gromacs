@@ -47,6 +47,7 @@
 #include "gstat.h"
 #include "matio.h"
 #include "copyrite.h"
+#include "gmx_fatal.h"
 
 typedef struct {
   int  nx,ny;

@@ -311,7 +311,7 @@ static void pr_int(FILE *fp,int indent,const char *title,int i)
 
 static void pr_gmx_large_int(FILE *fp,int indent,const char *title,gmx_large_int_t i)
 {
-  char buf[22];
+  char buf[STEPSTRSIZE];
 
   pr_indent(fp,indent);
   fprintf(fp,"%-20s = %s\n",title,gmx_step_str(i,buf));

@@ -491,18 +491,40 @@ t_commrec *init_par_threads(t_commrec *cro)
 #endif
 }
 
+void cancel_par_threads(t_commrec *cr)
+{
+#ifdef GMX_THREADS
+    if (MASTERTHREAD(cr))
+    {
+        fprintf(stderr, "\nCANCELING %d THREADS\n", cr->nthreads-1);
+        cr->nnodes     = 1; 
+        cr->nthreads   = 1;
+        cr->sim_nodeid = 0;
+        cr->nodeid     = 0;
+        cr->threadid   = 0;
+        cr->duty       = (DUTY_PP | DUTY_PME);
+    }
+    else
+    {
+        tMPI_Finalize();
+    }
+#else
+    gmx_incons("cancel_par_threads called without thread support");
+#endif
+}
+
 t_commrec *init_cr_nopar(void)
 {
-  t_commrec *cr;
+    t_commrec *cr;
 
-  snew(cr,1);
+    snew(cr,1);
 
-  cr->nnodes     = 1; 
-  cr->sim_nodeid = 0;
-  cr->nodeid     = 0;
-  cr->nthreads   = 1;
-  cr->threadid   = 0;
-  cr->duty       = (DUTY_PP | DUTY_PME);
+    cr->nnodes     = 1; 
+    cr->nthreads   = 1;
+    cr->sim_nodeid = 0;
+    cr->nodeid     = 0;
+    cr->threadid   = 0;
+    cr->duty       = (DUTY_PP | DUTY_PME);
 
-  return cr;
+    return cr;
 }

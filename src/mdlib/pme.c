@@ -86,6 +86,7 @@
 #include "nrnb.h"
 #include "copyrite.h"
 #include "gmx_wallcycle.h"
+#include "sighandler.h"
 
 
 #include "mpelogging.h"
@@ -101,8 +102,6 @@
 #else
 #define mpi_type MPI_FLOAT
 #endif
-
-/* TODO: fix thread-safety */
 
 /* Internal datastructures */
 typedef struct {
@@ -210,13 +209,6 @@ typedef struct gmx_pme {
     real *   sum_qgrid_tmp;
     real *   sum_qgrid_dd_tmp;
 } t_gmx_pme;
-
-/* The following stuff is needed for signal handling on the PME nodes. 
- * signal_handler needs to be defined in md.c, the bGot..Signal variables
- * here */ 
-extern RETSIGTYPE signal_handler(int n);
-
-volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE; 
 
 /* #define SORTPME */
 
@@ -1976,7 +1968,9 @@ int gmx_pmeonly(gmx_pme_t pme,
         
         gmx_pme_send_force_vir_ener(pme_pp,
                                     f_pp,vir,energy,dvdlambda,
-                                    cycles,bGotTermSignal,bGotUsr1Signal);
+                                    cycles,
+                                    bGotStopNextStepSignal,
+                                    bGotStopNextNSStepSignal);
         
         count++;
 

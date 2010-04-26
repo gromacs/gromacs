@@ -116,9 +116,11 @@ extern int gmx_large_int_to_int(gmx_large_int_t step,const char *warn);
  * "WARNING during %s:", where warn is printed in %s.
  */
 
+#define STEPSTRSIZE 22
+
 extern char *gmx_step_str(gmx_large_int_t i,char *buf);
 /* Prints a gmx_large_int_t value in buf and returns the pointer to buf.
- * buf should be large enough to contain i: 22 chars.
+ * buf should be large enough to contain i: STEPSTRSIZE (22) chars.
  * When multiple gmx_large_int_t values are printed in the same printf call,
  * be sure to call gmx_step_str with different buffers.
  */
@@ -166,10 +168,16 @@ void stupid_fill_blocka(t_blocka *grp, int natom);
  * There is one atom per index entry
  */
 
-void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
+extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
 
+extern t_atoms *copy_t_atoms(t_atoms *src);
+/* copy an atoms struct from src to a new one */
+  
+extern void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra);
+/* allocate extra space for more atoms and or residues */
+ 
 extern void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
 				const char *resname,int resnr,unsigned char ic,
 				unsigned char chain);

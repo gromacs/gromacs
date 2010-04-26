@@ -41,9 +41,15 @@ files.
 * We do not use HAVE_PTHREAD_H directly, since we might want to
 * turn off thread support explicity (e.g. for debugging).
 */
+
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #ifdef THREAD_PTHREADS 
 #include "pthreads.c"

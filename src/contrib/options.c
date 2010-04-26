@@ -104,9 +104,10 @@ int main(int argc,char *argv[])
     "[TT]xpm[tt] matrices) and in all time options."
   };
 
+  output_env_t oenv=NULL;
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,
-		    0,NULL,0,NULL,asize(desc),desc,asize(bugs),bugs);
+		    0,NULL,0,NULL,asize(desc),desc,asize(bugs),bugs,&oenv);
   
   thanx(stderr);
   

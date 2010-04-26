@@ -64,18 +64,34 @@
    coefficient in X,Y,Z direction. LATERAL is diffusion coefficient in
    plane perpendicular to axis
 */
-enum { NOT_USED, NORMAL, X, Y, Z, LATERAL };
+typedef enum { NOT_USED, NORMAL, X, Y, Z, LATERAL } msd_type;
 
 typedef struct {
-  real    t0,delta_t,beginfit,endfit,dim_factor;
-  real    **data,*time,*data_x,*data_y,*data_z,*data_xy,*mass;
+  real    t0;           /* start time and time increment between  */
+  real    delta_t;      /* time between restart points */
+  real    beginfit,     /* the begin/end time for fits as reals between */
+          endfit;       /* 0 and 1 */
+  real    dim_factor;   /* the dimensionality factor for the diffusion 
+                           constant */
+  real    **data;       /* the displacement data. First index is the group 
+                           number, second is frame number */
+  real    *time;        /* frame time */
+  real    *mass;        /* masses for mass-weighted msd */
   matrix  **datam;
-  rvec    **x0;
-  rvec    *com;
-  gmx_stats_t **lsq;
-  int     type,axis,ncoords,nrestart,nmol,nframes,nlast,ngrp;
-  int     *n_offs;
-  int     **ndata;
+  rvec    **x0;         /* original positions */
+  rvec    *com;         /* center of mass correction for each frame */
+  gmx_stats_t **lsq;    /* fitting stats for individual molecule msds */
+  msd_type type;        /* the type of msd to calculate (lateral, etc.)*/
+  int       axis;       /* the axis along which to calculate */
+  int       ncoords;
+  int       nrestart;   /* number of restart points */
+  int       nmol;       /* number of molecules (for bMol) */
+  int       nframes;    /* number of frames */ 
+  int       nlast;
+  int       ngrp;       /* number of groups to use for msd calculation */
+  int       *n_offs;
+  int       **ndata;    /* the number of msds (particles/mols) per data 
+                           point. */
 } t_corr;
 
 typedef real t_calc_func(t_corr *,int,atom_id[],int,rvec[],rvec,bool,matrix,
@@ -217,7 +233,7 @@ static void calc_corr(t_corr *curr,int nr,int nx,atom_id index[],rvec xc[],
    */
   for(nx0=0; (nx0<curr->nlast); nx0++) {
     if (bRmCOMM) {
-      rvec_sub(curr->com[nx0],com,dcom);
+      rvec_sub(com,curr->com[nx0],dcom);
     } else {
       clear_rvec(dcom);
     }
@@ -234,6 +250,7 @@ static void calc_corr(t_corr *curr,int nr,int nx,atom_id index[],rvec xc[],
   }
 }
 
+/* the non-mass-weighted mean-squared displacement calcuation */
 static real calc1_norm(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
 		      rvec dcom,bool bTen,matrix mat, const output_env_t oenv)
 {
@@ -250,7 +267,7 @@ static real calc1_norm(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
     switch (curr->type) {
     case NORMAL:
       for(m=0; (m<DIM); m++) {
-	rv[m] = curr->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
+	rv[m] = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
 	r2   += rv[m]*rv[m];
 	if (bTen) {
 	  for(m2=0; m2<=m; m2++)
@@ -261,14 +278,14 @@ static real calc1_norm(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
     case X:
     case Y:
     case Z:
-      r = curr->x0[nx0][ix][curr->type-X] - xc[ix][curr->type-X]
-	- dcom[curr->type-X];
+      r = xc[ix][curr->type-X] - curr->x0[nx0][ix][curr->type-X] - 
+                dcom[curr->type-X];
       r2 += r*r;
       break;
     case LATERAL:
       for(m=0; (m<DIM); m++) {
 	if (m != curr->axis) {
-	  r   = curr->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
+	  r   = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
 	  r2 += r*r;
 	}
       }
@@ -284,6 +301,7 @@ static real calc1_norm(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
   return g;
 }
 
+/* calculate the com of molecules in x and put it into xa */
 static void calc_mol_com(int nmol,int *molindex,t_block *mols,t_atoms *atoms,
 			 rvec *x,rvec *xa)
 {
@@ -320,7 +338,7 @@ static real calc_one_mw(t_corr *curr,int ix,int nx0,rvec xc[],real *tm,
   switch (curr->type) {
   case NORMAL:
     for(m=0; (m<DIM); m++) {
-      rv[m] = curr->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
+      rv[m] = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
       r2   += mm*rv[m]*rv[m];
       if (bTen) {
 	for(m2=0; m2<=m; m2++)
@@ -331,14 +349,14 @@ static real calc_one_mw(t_corr *curr,int ix,int nx0,rvec xc[],real *tm,
   case X:
   case Y:
   case Z:
-    r  = curr->x0[nx0][ix][curr->type-X] - xc[ix][curr->type-X]
-      - dcom[curr->type-X];
+    r  = xc[ix][curr->type-X] - curr->x0[nx0][ix][curr->type-X] - 
+              dcom[curr->type-X];
     r2 = mm*r*r;
       break;
   case LATERAL:
     for(m=0; (m<DIM); m++) {
       if (m != curr->axis) {
-	r   = curr->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
+	r   = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
 	r2 += mm*r*r;
       }
     }
@@ -349,6 +367,7 @@ static real calc_one_mw(t_corr *curr,int ix,int nx0,rvec xc[],real *tm,
   return r2;
 }
 
+/* the normal, mass-weighted mean-squared displacement calcuation */
 static real calc1_mw(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
 		     rvec dcom,bool bTen,matrix mat,const output_env_t oenv)
 {
@@ -367,79 +386,90 @@ static real calc1_mw(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
   return g;
 }
 
-static void remove_pbc(bool bMol,int nmol,int natoms,t_atoms *atoms,
-		       rvec xcur[],rvec xprev[],matrix box,
-		       rvec com)
-{
-  int  n,i,m;
-  rvec hbox;
-  real mass;
-  dvec sx;
-  double tmass;
-
-  if (bMol)
-    n = nmol;
-  else
-    n = natoms;
-
-  /* Remove periodicity */
-  for(m=0; (m<DIM); m++)
-    hbox[m] = 0.5*box[m][m];
-  clear_dvec(sx);
-  tmass = 0;
-  mass = 1;
-  for(i=0; i<n; i++) {
-    for(m=DIM-1; m>=0; m--) {
-      while(xcur[i][m]-xprev[i][m] <= -hbox[m])
-	rvec_inc(xcur[i],box[m]);
-      while(xcur[i][m]-xprev[i][m] >  hbox[m])
-	rvec_dec(xcur[i],box[m]);
-    }
-    if (!bMol)
-      mass = atoms->atom[i].m;
-    for(m=0; m<DIM; m++)
-      sx[m] += mass*xcur[i][m];
-    tmass += mass;
-  }
-  for(m=0; m<DIM; m++)
-    com[m] = sx[m]/tmass;
-}
-
+/* prepare the coordinates by removing periodic boundary crossings.
+   gnx = the number of atoms/molecules
+   index = the indices
+   xcur = the current coordinates
+   xprev = the previous coordinates
+   box = the box matrix */
 static void prep_data(bool bMol,int gnx,atom_id index[],
 		      rvec xcur[],rvec xprev[],matrix box)
 {
-  int  i,m,ind;
-  rvec hbox;
+    int  i,m,ind;
+    rvec hbox;
 
-  /* Remove periodicity */
-  for(m=0; (m<DIM); m++)
-    hbox[m]=0.5*box[m][m];
-  for(i=0; (i<gnx); i++) {
-    if (bMol)
-      ind = i;
-    else
-      ind = index[i];
-    for(m=DIM-1; m>=0; m--) {
-      while(xcur[ind][m]-xprev[ind][m] <= -hbox[m])
-	rvec_inc(xcur[ind],box[m]);
-      while(xcur[ind][m]-xprev[ind][m] >  hbox[m])
-	rvec_dec(xcur[ind],box[m]);
-    }      
-  }
+    /* Remove periodicity */
+    for(m=0; (m<DIM); m++)
+        hbox[m]=0.5*box[m][m];
+    
+    for(i=0; (i<gnx); i++) {
+        if (bMol)
+            ind = i;
+        else
+            ind = index[i];
+
+        for(m=DIM-1; m>=0; m--) 
+        {
+            while(xcur[ind][m]-xprev[ind][m] <= -hbox[m])
+                rvec_inc(xcur[ind],box[m]);
+            while(xcur[ind][m]-xprev[ind][m] >  hbox[m])
+                rvec_dec(xcur[ind],box[m]);
+        }      
+    }
 }
+
+/* calculate the center of mass for a group 
+   gnx = the number of atoms/molecules
+   index = the indices
+   xcur = the current coordinates
+   xprev = the previous coordinates
+   box = the box matrix
+   atoms = atom data (for mass)
+   com(output) = center of mass  */
+static void calc_com(bool bMol, int gnx, atom_id index[], 
+                     rvec xcur[],rvec xprev[],matrix box, t_atoms *atoms,
+                     rvec com)
+{
+    int  i,m,ind;
+    real mass;
+    double tmass;
+    dvec sx;
+
+    clear_dvec(sx);
+    tmass = 0;
+    mass = 1;
+
+    prep_data(bMol, gnx, index, xcur, xprev, box);
+    for(i=0; (i<gnx); i++) 
+    {
+        if (bMol)
+            ind = i;
+        else
+            ind = index[i];
+
+
+        mass = atoms->atom[ind].m;
+        for(m=0; m<DIM; m++)
+            sx[m] += mass*xcur[ind][m];
+        tmass += mass;
+    }
+    for(m=0; m<DIM; m++)
+        com[m] = sx[m]/tmass;
+}
+
 
 static real calc1_mol(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
 		      rvec dcom,bool bTen,matrix mat, const output_env_t oenv)
 {
   int  i;
-  real g,mm,gtot,tt;
+  real g,tm,gtot,tt;
 
   tt = curr->time[in_data(curr,nx0)];
   gtot = 0;
+  tm = 0;
   clear_mat(mat);
   for(i=0; (i<nx); i++) {
-    mm = 0;
-    g = calc_one_mw(curr,i,nx0,xc,&mm,dcom,bTen,mat);
+    g = calc_one_mw(curr,i,nx0,xc,&tm,dcom,bTen,mat);
     /* We don't need to normalize as the mass was set to 1 */
     gtot += g;
     if (tt >= curr->beginfit && (curr->endfit < 0 || tt <= curr->endfit))
@@ -455,10 +485,10 @@ void printmol(t_corr *curr,const char *fn,
 	      rvec *x,int ePBC,matrix box, const output_env_t oenv)
 {
 #define NDIST 100
-  FILE  *out,out_pdb;
+  FILE  *out;
   gmx_stats_t lsq1;
   int   i,j;
-  real  a,b,r,D,Dav,D2av,VarD,sqrtD,sqrtD_max,scale;
+  real  a,b,D,Dav,D2av,VarD,sqrtD,sqrtD_max,scale;
   t_pdbinfo *pdbinfo=NULL;
   int   *mol2a=NULL;
 
@@ -479,12 +509,7 @@ void printmol(t_corr *curr,const char *fn,
       real xx,yy,dx,dy;
       
       while(gmx_stats_get_point(curr->lsq[j][i],&xx,&yy,&dx,&dy) == estatsOK)
-	gmx_stats_add_point(lsq1,xx,yy,dx,dy);
-      /* lsq1.sx+=curr->lsq[j][i].sx;
-	 lsq1.sy+=curr->lsq[j][i].sy;
-	 lsq1.xx+=curr->lsq[j][i].xx;
-	 lsq1.yx+=curr->lsq[j][i].yx;
-	 lsq1.np+=curr->lsq[j][i].np; */
+          gmx_stats_add_point(lsq1,xx,yy,dx,dy);
     }
     gmx_stats_get_ab(lsq1,elsqWEIGHT_NONE,&a,&b,NULL,NULL,NULL,NULL);
     gmx_stats_done(lsq1);
@@ -531,10 +556,13 @@ void printmol(t_corr *curr,const char *fn,
  */
 int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 	      bool bMol,int gnx[],atom_id *index[],
-	      t_calc_func *calc1,bool bTen,bool bRmCOMM,real dt,
-	      real t_pdb,rvec **x_pdb,matrix box_pdb, const output_env_t oenv)
+	      t_calc_func *calc1,bool bTen, int *gnx_com, atom_id *index_com[],
+              real dt, real t_pdb,rvec **x_pdb,matrix box_pdb, 
+              const output_env_t oenv)
 {
-  rvec         *x[2],*xa[2],com={0};
+  rvec         *x[2]; /* the coordinates to read */
+  rvec         *xa[2]; /* the coordinates to calculate displacements for */
+  rvec         com={0};
   real         t,t_prev=0;
   int          natoms,i,j,status,cur=0,maxframes=0;
 #define        prev (1-cur)
@@ -545,7 +573,7 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 #ifdef DEBUG
   fprintf(stderr,"Read %d atoms for first frame\n",natoms);
 #endif
-  if (bRmCOMM && natoms < top->atoms.nr) {
+  if ((gnx_com!=NULL) && natoms < top->atoms.nr) {
     fprintf(stderr,"WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n",natoms,top->atoms.nr);
   }
 
@@ -565,19 +593,24 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
   t=curr->t0;
   if (x_pdb)
     *x_pdb = NULL;
-  do {
+
+  /* the loop over all frames */
+  do 
+  {
     if (x_pdb && ((bFirst && t_pdb < t) || 
 		  (!bFirst && 
 		   t_pdb > t - 0.5*(t - t_prev) && 
-		   t_pdb < t + 0.5*(t - t_prev)))) {
-      if (*x_pdb == NULL)
-	snew(*x_pdb,natoms);
-      for(i=0; i<natoms; i++)
-	copy_rvec(x[cur][i],(*x_pdb)[i]);
-      copy_mat(box,box_pdb);
+		   t_pdb < t + 0.5*(t - t_prev)))) 
+    {
+        if (*x_pdb == NULL)
+            snew(*x_pdb,natoms);
+        for(i=0; i<natoms; i++)
+            copy_rvec(x[cur][i],(*x_pdb)[i]);
+        copy_mat(box,box_pdb);
     }
       
 
+    /* check whether we've reached a restart point */
     if (bRmod(t,curr->t0,dt)) {
       curr->nrestart++;
   
@@ -587,10 +620,14 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
       srenew(curr->n_offs,curr->nrestart);
       srenew(curr->lsq,curr->nrestart);
       snew(curr->lsq[curr->nrestart-1],curr->nmol);
+      for(i=0;i<curr->nmol;i++)
+          curr->lsq[curr->nrestart-1][i]  = gmx_stats_init();
+
       if (debug)
 	fprintf(debug,"Extended data structures because of new restart %d\n",
 		curr->nrestart);
     }
+    /* create or extend the frame-based arrays */
     if (curr->nframes >= maxframes-1) {
       if (maxframes==0) {
 	for(i=0; (i<curr->ngrp); i++) {
@@ -617,30 +654,43 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
       srenew(curr->time,maxframes);
     }
 
+    /* set the time */
     curr->time[curr->nframes] = t - curr->t0;
 
+    /* for the first frame, the previous frame is a copy of the first frame */
     if (bFirst) {
       memcpy(xa[prev],xa[cur],curr->ncoords*sizeof(xa[prev][0]));
       bFirst = FALSE;
     }
 
+    /* make the molecules whole */
     if (bMol)
       rm_pbc(&top->idef,ePBC,natoms,box,x[cur],x[cur]);
 
-    if (bRmCOMM)
-      remove_pbc(bMol,curr->nmol,natoms,&top->atoms,xa[cur],xa[prev],box,com);
+    /* first remove the periodic boundary condition crossings */
+    for(i=0;i<curr->ngrp;i++)
+    {
+        prep_data(bMol, gnx[i], index[i], xa[cur], xa[prev], box);
+    }
 
+    /* calculate the center of mass */
+    if (gnx_com)
+    {
+        prep_data(bMol, gnx_com[0], index_com[0], xa[cur], xa[prev], box);
+        calc_com(bMol, gnx_com[0], index_com[0], xa[cur], xa[prev], box,
+                 &top->atoms, com);
+    }
+
+    /* calculate the molecules' centers of masses and put them into xa */
     if (bMol)
-      calc_mol_com(gnx[0],index[0],&top->mols,&top->atoms,
-		   x[cur],xa[cur]);
+        calc_mol_com(gnx[0],index[0],&top->mols,&top->atoms, x[cur],xa[cur]);
     
     /* loop over all groups in index file */
-    for(i=0; (i<curr->ngrp); i++) {
-      /* nice for putting things in boxes and such */
-      if (!bRmCOMM)
-	prep_data(bMol,gnx[i],index[i],xa[cur],xa[prev],box);
+    for(i=0; (i<curr->ngrp); i++) 
+    {
       /* calculate something useful, like mean square displacements */
-      calc_corr(curr,i,gnx[i],index[i],xa[cur],bRmCOMM,com,calc1,bTen,oenv);
+      calc_corr(curr,i,gnx[i],index[i],xa[cur], (gnx_com!=NULL),com,
+                calc1,bTen,oenv);
     }
     cur=prev;
     t_prev = t;
@@ -692,19 +742,33 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
 	     real dt,real beginfit,real endfit,const output_env_t oenv)
 {
   t_corr       *msd;
-  int          *gnx;
-  atom_id      **index;
-  char         **grpname;
+  int          *gnx; /* the selected groups' sizes */
+  atom_id      **index; /* selected groups' indices */
+  char         **grpname; 
   int          i,i0,i1,j,N,nat_trx;
   real         *DD,*SigmaD,a,a2,b,r,chi2;
   rvec         *x;
   matrix       box;
+  int          *gnx_com=NULL; /* the COM removal group size  */
+  atom_id      **index_com=NULL; /* the COM removal group atom indices */
+  char         **grpname_com=NULL; /* the COM removal group name */
   
   snew(gnx,nrgrp);
   snew(index,nrgrp);
   snew(grpname,nrgrp);
-    
+   
+  fprintf(stderr, "\nSelect a group to calculate mean squared displacement for:\n");
   get_index(&top->atoms,ndx_file,nrgrp,gnx,index,grpname);
+
+  if (bRmCOMM)
+  {
+      snew(gnx_com,1);
+      snew(index_com,1);
+      snew(grpname_com,1);
+
+      fprintf(stderr, "\nNow select a group for center of mass removal:\n");
+      get_index(&top->atoms, ndx_file, 1, gnx_com, index_com, grpname_com);
+  }
 
   if (mol_file)
     index_atom2mol(&gnx[0],index[0],&top->mols);
@@ -716,7 +780,8 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
   nat_trx =
     corr_loop(msd,trx_file,top,ePBC,mol_file ? gnx[0] : 0,gnx,index,
 	      (mol_file!=NULL) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
-	      bTen,bRmCOMM,dt,t_pdb,pdb_file ? &x : NULL,box,oenv);
+	      bTen, gnx_com, index_com, dt,t_pdb,
+              pdb_file ? &x : NULL,box,oenv);
   
   /* Correct for the number of points */
   for(j=0; (j<msd->ngrp); j++) {
@@ -774,8 +839,12 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
       lsq_y_ax_b(N,&(msd->time[i0]),&(msd->data[j][i0]),&(DD[j]),&b,&r,&chi2);
       DD[j]     *= FACTOR/msd->dim_factor;
       SigmaD[j] *= FACTOR/msd->dim_factor;
-      fprintf(stdout,"D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",
-	      grpname[j],DD[j],SigmaD[j]);
+      if (DD[j] > 0.01 && DD[j] < 1e4)
+          fprintf(stdout,"D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",
+                  grpname[j],DD[j],SigmaD[j]);
+      else
+          fprintf(stdout,"D[%10s] %.4g (+/- %.4g) 1e-5 cm^2/s\n",
+                  grpname[j],DD[j], SigmaD[j]);
     }
   }
   /* Print mean square displacement */
@@ -803,15 +872,18 @@ int gmx_msd(int argc,char *argv[])
     "types of mean square displacement: [TT]-type[tt], [TT]-lateral[tt]",
     "and [TT]-ten[tt]. Option [TT]-ten[tt] writes the full MSD tensor for",
     "each group, the order in the output is: trace xx yy zz yx zx zy.[PAR]",
-    "Option [TT]-mol[tt] plots the MSD for molecules, this implies",
-    "With option [TT]-rmcomm[tt] center of mass motion can be removed.",
-    "For trajectories produced with GROMACS this is usually not necessary",
+    "If [TT]-mol[tt] is set, g_msd plots the MSD for individual molecules: ",
+    "for each individual molecule a diffusion constant is computed for ",
+    "its center of mass. The chosen index group will be split into ",
+    "molecules.[PAR]",
+    "The default way to calculate a MSD is by using mass-weighted averages.",
+    "This can be turned off with [TT]-nomw[tt].[PAR]",
+    "With the option [TT]-rmcomm[tt], the center of mass motion of a ",
+    "specific group can be removed. For trajectories produced with ",
+    "GROMACS this is usually not necessary, ",
     "as mdrun usually already removes the center of mass motion.",
     "When you use this option be sure that the whole system is stored",
     "in the trajectory file.[PAR]",
-    "[TT]-mw[tt], i.e. for each individual molecule an diffusion constant",
-    "is computed for its center of mass. The chosen index group will",
-    "be split into molecules.",
     "The diffusion coefficient is determined by linear regression of the MSD,",
     "where, unlike for the normal output of D, the times are weighted",
     "according to the number of reference points, i.e. short times have",

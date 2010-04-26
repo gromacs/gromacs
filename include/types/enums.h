@@ -93,7 +93,9 @@ enum {
 
 #define EEL_SWITCHED(e) ((e) == eelSWITCH || (e) == eelSHIFT || (e) == eelENCADSHIFT || (e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
 
-#define EEL_ZERO_AT_CUTOFF(e) (EEL_SWITCHED(e) || (e) == eelRF_ZERO || (e) == eelUSER || (e) == eelPMEUSER)
+#define EEL_IS_ZERO_AT_CUTOFF(e) (EEL_SWITCHED(e) || (e) == eelRF_ZERO)
+
+#define EEL_MIGHT_BE_ZERO_AT_CUTOFF(e) (EEL_IS_ZERO_AT_CUTOFF(e) || (e) == eelUSER || (e) == eelPMEUSER)
 
 enum {
   evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwNR
@@ -101,7 +103,9 @@ enum {
 
 #define EVDW_SWITCHED(e) ((e) == evdwSWITCH || (e) == evdwSHIFT || (e) == evdwENCADSHIFT)
 
-#define EVDW_ZERO_AT_CUTOFF(e) (EVDW_SWITCHED(e) || (e) == evdwUSER)
+#define EVDW_IS_ZERO_AT_CUTOFF(e) EVDW_SWITCHED(e)
+
+#define EVDW_MIGHT_BE_ZERO_AT_CUTOFF(e) (EVDW_IS_ZERO_AT_CUTOFF(e) || (e) == evdwUSER)
 
 enum { 
   ensGRID, ensSIMPLE, ensNR

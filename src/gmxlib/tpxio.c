@@ -749,7 +749,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     if (file_version >= 69) {
       do_int(ir->opts.nhchainlength);
     } else {
-      ir->opts.nhchainlength = 0;
+      ir->opts.nhchainlength = 1;
     }
     do_int(ir->opts.ngacc); 
     do_int(ir->opts.ngfrz); 

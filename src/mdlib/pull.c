@@ -148,17 +148,20 @@ static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv,
     
     if(Flags & MD_APPENDFILES)
     {
-        fp = gmx_fio_fopen(fn,"a");
+        fp = gmx_fio_fopen(fn,"a+");
     }
     else
     {
+        fp = gmx_fio_fopen(fn,"w+");
         if (bCoord)
         {
-            fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)",oenv);
+            xvgr_header(fp,"Pull COM",  "Time (ps)","Position (nm)",
+                        exvggtXNY,oenv);
         }
         else
         {
-            fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol/nm)",oenv);
+            xvgr_header(fp,"Pull force","Time (ps)","Force (kJ/mol/nm)",
+                        exvggtXNY,oenv);
         }
         
         snew(setname,(1+pull->ngrp)*DIM);
@@ -674,7 +677,8 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
         {
             pgrp = &pull->grp[g];
             
-            get_pullgrps_dr(pull,pbc,g,t,rinew[g],rjnew[g],-1,unc_ij);
+            get_pullgrps_dr(pull,pbc,g,t,rinew[g],rjnew[PULL_CYL(pull) ? g : 0],
+                            -1,unc_ij);
             
             switch (pull->eGeom)
             {

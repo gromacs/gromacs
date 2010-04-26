@@ -43,6 +43,7 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "string2.h"
+#include "gmx_fatal.h"
 #include "topdirs.h"
 
 int ifunc_index(directive d,int type)

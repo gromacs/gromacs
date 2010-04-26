@@ -261,8 +261,8 @@ void write_pdbfile_indexed(FILE *out,const char *title,
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
     resind = atoms->atom[i].resind;
-    strcpy(resnm,*atoms->resinfo[resind].name);
-    strcpy(nm,*atoms->atomname[i]);
+    strncpy(resnm,*atoms->resinfo[resind].name,sizeof(resnm)-1);
+    strncpy(nm,*atoms->atomname[i],sizeof(nm)-1);
     /* rename HG12 to 2HG1, etc. */
     xlate_atomname_gmx2pdb(nm);
     resnr = atoms->resinfo[resind].nr;

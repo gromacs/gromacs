@@ -1526,7 +1526,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
 
 
 float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda, 
-					   t_idef *idef, real gb_epsilon_solvent, real facel)
+					   t_idef *idef, real epsilon_r, real gb_epsilon_solvent, real facel)
 {
 	
 	int i,j,nral,nri;
@@ -1566,7 +1566,7 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 	aj13 = aj23 = aj33 = aj43 = 0;
 	
 	/* Scale the electrostatics by gb_epsilon_solvent */
-	facel = (-1.0) * facel * (1.0 - 1.0/gb_epsilon_solvent);
+	facel = (-1.0) * facel * ((1.0/epsilon_r) - 1.0/gb_epsilon_solvent);
 	fac        = _mm_load1_ps(&facel);
 	
 	vctot = 0.0;

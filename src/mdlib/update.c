@@ -1533,7 +1533,6 @@ o               If we assume isotropic scaling, and box length scaling
         deform(upd,start,homenr,state->x,state->box,scale_tot,inputrec,step);
     }
     where();
-    inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
     dump_it_all(fplog,"After update",
                 state->natoms,state->x,upd->xp,state->v,force);
 }

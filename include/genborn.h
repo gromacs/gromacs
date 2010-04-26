@@ -72,7 +72,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 
 /* Bonded GB interactions */								
 real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
-				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef,
+				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
 				  real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph);
 
 
@@ -102,7 +102,7 @@ make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
 	       t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born);
 
 void 
-make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
+make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
 
 #ifdef __cplusplus
 }

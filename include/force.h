@@ -161,7 +161,7 @@ extern void reset_enerdata(t_grpopts *opts,
 extern void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
 /* Locally sum the non-bonded potential energy terms */
 
-extern void sum_dhdl(gmx_enerdata_t *enerd,double *lambda,t_lambda *fepvals);
+extern void sum_dhdl(gmx_enerdata_t *enerd,real *lambda,t_lambda *fepvals);
 /* Sum the free energy contributions */
 
 extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);

@@ -20,5 +20,6 @@ Makefile.in
 Makefile
 .deps
 .libs
+lib*.pc
 Doxyfile
 doxygen-doc

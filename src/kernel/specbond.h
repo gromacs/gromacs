@@ -39,7 +39,7 @@
 #include "pdb2top.h"
 
 extern int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
-			t_ssbond **specbonds);
+			t_ssbond **specbonds,bool bVerbose);
 
 extern bool yesno(void);
 

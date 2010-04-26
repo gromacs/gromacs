@@ -79,12 +79,44 @@ enum {
  *            XVGR   ROUTINES
  ***************************************************/
 
-extern bool use_xmgr(void);
-/* Returns if we use xmgr instead of xmgrace */
+/* Strings such as titles, lables and legends can contain escape sequences
+ * for formatting. Currently supported are:
+ * \s : start subscript
+ * \S : start superscript
+ * \N : end sub/superscript
+ * \symbol : where symbol is the full name of a greek letter
+ *           (see the xvgrstr function in xvgr.c for the full list)
+ *           when starting with a capital, a capital symbol will be printed,
+ *           note that symbol does not need to be followed by a space
+ * \8 : (deprecated) start symbol font
+ * \4 : (deprecated) end symbol font
+ */
+
+extern bool output_env_get_print_xvgr_codes(const output_env_t oenv);
+/* Returns if we should print xmgrace or xmgr codes */
+
+enum {
+  exvggtNONE, exvggtXNY, exvggtXYDY, exvggtXYDYDY, exvggtNR
+};
+
+extern void xvgr_header(FILE *fp,const char *title,const char *xaxis,
+			const char *yaxis,int exvg_graph_type,
+			const output_env_t oenv);
+/* In most cases you want to use xvgropen_type, which does the same thing
+ * but takes a filename and opens it.
+ */
+
+extern FILE *xvgropen_type(const char *fn,const char *title,const char *xaxis,
+			   const char *yaxis,int exvg_graph_type,
+			   const output_env_t oenv);
+/* Open a file, and write a title, and axis-labels in Xvgr format
+ * or write nothing when oenv specifies so.
+ * The xvgr graph type enum is defined above.
+ */
 
 extern FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
                       const char *yaxis,const output_env_t oenv);
-/* Open a file, and write a title, and axis-labels in Xvgr format */
+/* Calls xvgropen_type with graph type xvggtXNY. */
 
 /* Close xvgr file, and clean up internal file buffers correctly */
 extern void xvgrclose(FILE *fp);
@@ -117,10 +149,13 @@ extern void xvgr_box(FILE *out,
                      const output_env_t oenv);
 /* Make a box */
 
-extern int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend);
+extern int read_xvg_legend(const char *fn,double ***y,int *ny,
+			   char **subtitle,char ***legend);
 /* Read an xvg file for post processing. The number of rows is returned
  * fn is the filename, y is a pointer to a 2D array (to be allocated by
  * the routine) ny is the number of columns (including X if appropriate).
+ * If subtitle!=NULL, read the subtitle (when present),
+ * the subtitle string will be NULL when not present.
  * If legend!=NULL, read the legends for the sets (when present),
  * 0 is the first y legend, the legend string will be NULL when not present.
  */
