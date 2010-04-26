@@ -132,13 +132,11 @@ _gmx_selelem_update_flags(struct t_selelem *sel);
 /** Initializes the method parameter data of \ref SEL_EXPRESSION and
  * \ref SEL_MODIFIER elements. */
 void
-_gmx_selelem_init_method_params(struct gmx_ana_selcollection_t *sc,
-                                struct t_selelem *sel);
+_gmx_selelem_init_method_params(struct t_selelem *sel, void *scanner);
 /** Initializes the method for a \ref SEL_EXPRESSION selection element. */
 void
-_gmx_selelem_set_method(struct gmx_ana_selcollection_t *sc,
-                        struct t_selelem *sel,
-                        struct gmx_ana_selmethod_t *method);
+_gmx_selelem_set_method(struct t_selelem *sel,
+                        struct gmx_ana_selmethod_t *method, void *scanner);
 
 /** Creates a \c t_selelem for comparsion expression evaluation. */
 struct t_selelem *
