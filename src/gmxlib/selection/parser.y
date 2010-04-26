@@ -143,7 +143,7 @@ yyerror(yyscan_t, char const *s);
 %type <param> method_params method_param_list method_param
 %type <val>   value_list value_list_nonempty value_item
 
-%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER string
+%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER CMP_OP string
 %destructor { if($$) free($$);              } PARAM
 %destructor { if($$) _gmx_selelem_free($$); } command cmd_plain
 %destructor { _gmx_selelem_free_chain($$);  } selection

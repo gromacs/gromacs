@@ -1256,70 +1256,75 @@ yydestruct (yymsg, yytype, yyvaluep, scanner)
 	{ if((yyvaluep->str)) free((yyvaluep->str));              };
 #line 1258 "parser.c"
 	break;
-      case 40: /* "command" */
-#line 148 "parser.y"
-	{ if((yyvaluep->sel)) _gmx_selelem_free((yyvaluep->sel)); };
+      case 28: /* "CMP_OP" */
+#line 146 "parser.y"
+	{ free((yyvaluep->str));                     };
 #line 1263 "parser.c"
 	break;
-      case 41: /* "cmd_plain" */
+      case 40: /* "command" */
 #line 148 "parser.y"
 	{ if((yyvaluep->sel)) _gmx_selelem_free((yyvaluep->sel)); };
 #line 1268 "parser.c"
 	break;
+      case 41: /* "cmd_plain" */
+#line 148 "parser.y"
+	{ if((yyvaluep->sel)) _gmx_selelem_free((yyvaluep->sel)); };
+#line 1273 "parser.c"
+	break;
       case 44: /* "selection" */
 #line 149 "parser.y"
 	{ _gmx_selelem_free_chain((yyvaluep->sel));  };
-#line 1273 "parser.c"
+#line 1278 "parser.c"
 	break;
       case 46: /* "string" */
 #line 146 "parser.y"
 	{ free((yyvaluep->str));                     };
-#line 1278 "parser.c"
+#line 1283 "parser.c"
 	break;
       case 47: /* "sel_expr" */
 #line 150 "parser.y"
 	{ _gmx_selelem_free((yyvaluep->sel));        };
-#line 1283 "parser.c"
+#line 1288 "parser.c"
 	break;
       case 49: /* "num_expr" */
 #line 150 "parser.y"
 	{ _gmx_selelem_free((yyvaluep->sel));        };
-#line 1288 "parser.c"
+#line 1293 "parser.c"
 	break;
       case 50: /* "pos_expr" */
 #line 150 "parser.y"
 	{ _gmx_selelem_free((yyvaluep->sel));        };
-#line 1293 "parser.c"
+#line 1298 "parser.c"
 	break;
       case 51: /* "method_params" */
 #line 151 "parser.y"
 	{ _gmx_selexpr_free_params((yyvaluep->param)); };
-#line 1298 "parser.c"
+#line 1303 "parser.c"
 	break;
       case 52: /* "method_param_list" */
 #line 151 "parser.y"
 	{ _gmx_selexpr_free_params((yyvaluep->param)); };
-#line 1303 "parser.c"
+#line 1308 "parser.c"
 	break;
       case 53: /* "method_param" */
 #line 151 "parser.y"
 	{ _gmx_selexpr_free_params((yyvaluep->param)); };
-#line 1308 "parser.c"
+#line 1313 "parser.c"
 	break;
       case 54: /* "value_list" */
 #line 152 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
-#line 1313 "parser.c"
+#line 1318 "parser.c"
 	break;
       case 55: /* "value_list_nonempty" */
 #line 152 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
-#line 1318 "parser.c"
+#line 1323 "parser.c"
 	break;
       case 56: /* "value_item" */
 #line 152 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
-#line 1323 "parser.c"
+#line 1328 "parser.c"
 	break;
 
       default:
@@ -2072,7 +2077,7 @@ yyreduce:
 
 
 /* Line 1267 of yacc.c.  */
-#line 2076 "parser.c"
+#line 2081 "parser.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
