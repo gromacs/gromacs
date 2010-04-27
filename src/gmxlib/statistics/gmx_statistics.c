@@ -507,7 +507,7 @@ int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int *nb,
                              int ehisto,int normalized,real **x,real **y)
 {
     gmx_stats *stats = (gmx_stats *) gstats;
-    int    i,ok,index,nbins=*nb,*nindex;
+    int    i,ok,index=0,nbins=*nb,*nindex;
     double minx,maxx,maxy,miny,delta,dd,minh;
   
     if (((binwidth <= 0) && (nbins <= 0)) ||

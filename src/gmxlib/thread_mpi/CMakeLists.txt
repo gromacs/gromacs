@@ -14,6 +14,9 @@ target_link_libraries(thread_mpi ${THREAD_LIB})
 #add_definitions(-DHAVE_TMPI_CONFIG_H)
 #include_directories( . )
 
+# this configure file only works here. If you include the source
+# files into your project, insert the contest of the tmpi_config.h.cmakein
+# into your config.h.cmakein file
 configure_file(tmpi_config.h.cmakein  ${CMAKE_CURRENT_BINARY_DIR}/tmpi_config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(-DHAVE_TMPI_CONFIG_H)
