@@ -726,14 +726,11 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
 
     _gmx_sel_finish_method(scanner);
     /* The "same" keyword needs some custom massaging of the parameters. */
-    if (_gmx_selelem_is_method_same(method))
+    rc = _gmx_selelem_custom_init_same(&method, params, scanner);
+    if (rc != 0)
     {
-        rc = _gmx_selelem_custom_init_same(params, scanner);
-        if (rc != 0)
-        {
-            _gmx_selexpr_free_params(params);
-            return NULL;
-        }
+        _gmx_selexpr_free_params(params);
+        return NULL;
     }
     root = _gmx_selelem_create(SEL_EXPRESSION);
     _gmx_selelem_set_method(root, method, scanner);

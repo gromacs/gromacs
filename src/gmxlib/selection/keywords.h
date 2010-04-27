@@ -64,12 +64,10 @@ _gmx_selelem_set_kwpos_type(struct t_selelem *sel, const char *type);
 void
 _gmx_selelem_set_kwpos_flags(struct t_selelem *sel, int flags);
 
-/** Returns true if the selection method is a \c same expression. */
-bool
-_gmx_selelem_is_method_same(struct gmx_ana_selmethod_t *method);
 /** Does custom processing for parameters of the \c same selection method. */
 int
-_gmx_selelem_custom_init_same(struct t_selexpr_param *params, void *scanner);
+_gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t **method,
+                              struct t_selexpr_param *params, void *scanner);
 
 /** Initializes a selection element for evaluating a keyword in a given group. */
 int
