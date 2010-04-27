@@ -123,7 +123,7 @@ real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
          * the potential.
          */
         dp = phi-phi0;
-        make_dp_periodic(&dp);
+        /*make_dp_periodic(&dp);*/
 
         if (dp > dphi) 
         {

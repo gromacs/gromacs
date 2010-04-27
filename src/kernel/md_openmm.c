@@ -225,7 +225,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     groups = &top_global->groups;
 
     /* Initial values */
-    init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
+    init_md(fplog,cr,ir,oenv,&t,&t0,state_global->lambda,
+            &(state_global->fep_state),&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
             force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,state_global,Flags);
@@ -234,7 +235,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     clear_mat(pres);
     /* Energy terms and groups */
     snew(enerd,1);
-    init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,enerd);
+    init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,
+                  enerd);
     snew(f,top_global->natoms);
 
     /* Kinetic energy data */
@@ -277,7 +279,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         graph = mk_graph(fplog,&(top->idef),0,top_global->natoms,FALSE,FALSE);
     }
 
-    update_mdatoms(mdatoms,state->lambda);
+    update_mdatoms(mdatoms,state->lambda[efptMASS]);
 
     if (deviceOptions[0]=='\0')
     {
@@ -433,7 +435,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (MASTER(cr) && do_log)
         {
-            print_ebin_header(fplog,step,t,state->lambda);
+            print_ebin_header(fplog,step,t,state->lambda[efptFEP]);
         }
 
         clear_mat(force_vir);
@@ -503,7 +505,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 openmm_copy_state(openmmData, state, &t, f, enerd, 0, 0, bF, do_ene);
             }
             upd_mdebin(mdebin, NULL,TRUE,
-                       t,mdatoms->tmass,enerd,state,lastbox,
+                       t,mdatoms->tmass,enerd,state, ir->fepvals,lastbox,
                        shake_vir,force_vir,total_vir,pres,
                        ekind,mu_tot,constr);
             print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,fplog,step,t,
