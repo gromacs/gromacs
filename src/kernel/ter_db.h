@@ -40,11 +40,15 @@
 #include "hackblock.h"
 #include "grompp.h"
 
-extern int read_ter_db(char *FF,char ter,
+extern int read_ter_db(const char *ffdir,char ter,
 		       t_hackblock **tbptr,gpp_atomtype_t atype);
 /* Read database for N&C terminal hacking */
 
-extern t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret);
+extern t_hackblock **filter_ter(int nrtp,t_restp rtp[],
+				int nb,t_hackblock tb[],
+				const char *resname,
+				const char *rtpname,
+				int *nret);
 /* Return a list of pointers to blocks that match residue name */
 
 extern t_hackblock *choose_ter(int nb,t_hackblock **tb,const char *title);

@@ -822,34 +822,34 @@ int gmx_current(int argc,char *argv[])
   if (fr.bV){
       if(bACF){
           outf =xvgropen(opt2fn("-caf",NFILE,fnm),
-                  "Current autocorrelation function",get_xvgr_tlabel(oenv),
+                  "Current autocorrelation function",output_env_get_xvgr_tlabel(oenv),
                   "ACF (e nm/ps)\\S2",oenv);
           fprintf(outf,"# time\t acf\t average \t std.dev\n");
       }
       fcur =xvgropen(opt2fn("-o",NFILE,fnm),
-              "Current",get_xvgr_tlabel(oenv),"J(t) (e nm/ps)",oenv);
+              "Current",output_env_get_xvgr_tlabel(oenv),"J(t) (e nm/ps)",oenv);
       fprintf(fcur,"# time\t Jx\t Jy \t J_z \n");
       if(bINT){
           mcor = xvgropen(opt2fn("-mc",NFILE,fnm),
                   "M\\sD\\N - current  autocorrelation function",
-                  get_xvgr_tlabel(oenv),
+                  output_env_get_xvgr_tlabel(oenv),
                   "< M\\sD\\N (0)\\c7\\CJ(t) >  (e nm/ps)\\S2",oenv);
           fprintf(mcor,"# time\t M_D(0) J(t) acf \t Integral acf\n");
     }
   }
   
   fmj = xvgropen(opt2fn("-mj",NFILE,fnm),
-		 "Averaged translational part of M",get_xvgr_tlabel(oenv),
+		 "Averaged translational part of M",output_env_get_xvgr_tlabel(oenv),
                  "< M\\sJ\\N > (enm)",oenv);
   fprintf(fmj,"# time\t x\t y \t z \t average of M_J^2 \t std.dev\n");
   fmd = xvgropen(opt2fn("-md",NFILE,fnm),
-		 "Averaged rotational part of M",get_xvgr_tlabel(oenv),
+		 "Averaged rotational part of M",output_env_get_xvgr_tlabel(oenv),
                  "< M\\sD\\N > (enm)",oenv);
   fprintf(fmd,"# time\t x\t y \t z \t average of M_D^2 \t std.dev\n");
 
 	fmjdsp = xvgropen(opt2fn("-dsp",NFILE,fnm),
 		 "MSD of the squared translational dipole moment M",
-                 get_xvgr_tlabel(oenv),
+                 output_env_get_xvgr_tlabel(oenv),
 		 "<|M\\sJ\\N(t)-M\\sJ\\N(0)|\\S2\\N > / 6.0*V*k\\sB\\N*T / Sm\\S-1\\Nps\\S-1\\N",
                  oenv);
 

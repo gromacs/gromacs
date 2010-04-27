@@ -55,6 +55,7 @@
 #include "mtop_util.h"
 #include "pbc.h"
 #include "nrnb.h"
+#include "bondf.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -89,6 +90,21 @@ typedef struct gbtmpnbls {
     int list_nalloc;
 } t_gbtmpnbls;
 
+/* This function is exactly the same as the one in bondfree.c. The reason
+ * it is copied here is that the bonded gb-interactions are evaluated
+ * not in calc_bonds, but rather in calc_gb_forces
+ */
+static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
+{
+	if (pbc) {
+		return pbc_dx_aiuc(pbc,xi,xj,dx);
+	}
+	else {
+		rvec_sub(xi,xj,dx);
+		return CENTRAL;
+	}
+}
+
 int init_gb_nblist(int natoms, t_nblist *nl)
 {
     nl->maxnri      = natoms*4;
@@ -100,6 +116,7 @@ int init_gb_nblist(int natoms, t_nblist *nl)
     nl->gid         = NULL;
     nl->shift       = NULL;
     nl->jindex      = NULL;
+    nl->jjnr        = NULL;
     /*nl->nltype      = nltype;*/
     
     srenew(nl->iinr,   nl->maxnri);
@@ -320,7 +337,7 @@ int init_gb_still(const t_commrec *cr, t_forcerec  *fr,
             born->vsolv_globalindex[i]=born->vsolv_globalindex[i]-vsol[i];
         }
     }
-    
+  
     /* Get the self-, 1-2 and 1-3 polarization energies for analytical Still 
        method */
     /* Self */
@@ -423,6 +440,7 @@ int init_gb(gmx_genborn_t **p_born,
     snew(born,1);
     *p_born = born;
 
+	born->nr = fr->natoms_force;
     born->nr  = natoms;
     
     snew(born->drobc, natoms);
@@ -478,6 +496,7 @@ int init_gb(gmx_genborn_t **p_born,
     born->obc_gamma  = ir->gb_obc_gamma;
     born->gb_doffset = ir->gb_dielectric_offset;
     born->gb_epsilon_solvent = ir->gb_epsilon_solvent;
+    born->epsilon_r = ir->epsilon_r;
     
     doffset = born->gb_doffset;
     
@@ -556,8 +575,8 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
     {
         born->gpol_still_work[i]=0;
     }
-        
-    for(i=0;i<nl->nri;i++ )
+     
+	for(i=0;i<nl->nri;i++ )
     {
         ai      = nl->iinr[i];
         
@@ -633,7 +652,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
         }
         born->gpol_still_work[ai]+=gpi;
     }
-    
+
     /* Parallel summations */
     if(PARTDECOMP(cr))
     {
@@ -643,21 +662,20 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
     {
         dd_atom_sum_real(cr->dd, born->gpol_still_work);
     }
-    
+    	
     /* Calculate the radii */
-    for(i=0;i<nl->nri;i++)
+	for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
     {
-        ai   = nl->iinr[i];
-        
-        if(born->use[ai] != 0)
+		if(born->use[i] != 0)
         {
-            gpi  = born->gpol[ai]+born->gpol_still_work[ai];
+		
+            gpi  = born->gpol[i]+born->gpol_still_work[i];
             gpi2 = gpi * gpi;
-            born->bRad[ai]   = factor*gmx_invsqrt(gpi2);
-            fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
-        }
+            born->bRad[i]   = factor*gmx_invsqrt(gpi2);
+            fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
+		}
     }
-    
+
     /* Extra communication required for DD */
     if(DOMAINDECOMP(cr))
     {
@@ -867,19 +885,17 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
         dd_atom_sum_real(cr->dd, born->gpol_hct_work);
     }
     
-    for(i=0;i<nl->nri;i++)
+    for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
     {
-        ai      = nl->iinr[i];
-        
-        if(born->use[ai] != 0)
+		if(born->use[i] != 0)
         {
-            rai     = top->atomtypes.gb_radius[md->typeA[ai]]-doffset; 
-            sum_ai  = 1.0/rai - born->gpol_hct_work[ai];
+            rai     = top->atomtypes.gb_radius[md->typeA[i]]-doffset; 
+            sum_ai  = 1.0/rai - born->gpol_hct_work[i];
             min_rad = rai + doffset;
             rad     = 1.0/sum_ai; 
             
-            born->bRad[ai]   = rad > min_rad ? rad : min_rad;
-            fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+            born->bRad[i]   = rad > min_rad ? rad : min_rad;
+            fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
         }
     }
     
@@ -947,8 +963,6 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
         iz1      = shZ + x[ai][2];
         
         sum_ai   = 0;
-        
-        printf("i=%d rai=%g sk_ai=%g\n",ai,rai,sk_ai);
         
         for(k=nj0;k<nj1;k++)
         {
@@ -1019,7 +1033,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
                 dadx_val = 0.0;
             }
             fr->dadx[n++] = dadx_val;
-            printf("j=%d  dadx1=%g",aj,dadx_val);
+          
             /* ai -> aj interaction */
             if(raj < dr + sk_ai)
             {
@@ -1071,11 +1085,10 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
                 dadx_val = 0.0;
             }
             fr->dadx[n++] = dadx_val;
-            printf("    dadx2=%g\n",dadx_val);
 
         }        
         born->gpol_hct_work[ai] += sum_ai;
-        printf("sum_ai=%g\n\n",sum_ai);
+      
     }
     
     /* Parallel summations */
@@ -1088,30 +1101,27 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
         dd_atom_sum_real(cr->dd, born->gpol_hct_work);
     }
     
-    for(i=0;i<nl->nri;i++)
+    for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
     {
-        ai         = nl->iinr[i];
-        
-        if(born->use[ai] != 0)
+		if(born->use[i] != 0)
         {
-            rai        = top->atomtypes.gb_radius[md->typeA[ai]];
+            rai        = top->atomtypes.gb_radius[md->typeA[i]];
             rai_inv2   = 1.0/rai;
             rai        = rai-doffset; 
             rai_inv    = 1.0/rai;
-            sum_ai     = rai * born->gpol_hct_work[ai];
+            sum_ai     = rai * born->gpol_hct_work[i];
             sum_ai2    = sum_ai  * sum_ai;
             sum_ai3    = sum_ai2 * sum_ai;
             
             tsum    = tanh(born->obc_alpha*sum_ai-born->obc_beta*sum_ai2+born->obc_gamma*sum_ai3);
-            born->bRad[ai] = rai_inv - tsum*rai_inv2;
-            born->bRad[ai] = 1.0 / born->bRad[ai];
+            born->bRad[i] = rai_inv - tsum*rai_inv2;
+            born->bRad[i] = 1.0 / born->bRad[i];
             
-            fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
+            fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
             
             tchain  = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
-            born->drobc[ai] = (1.0-tsum*tsum)*tchain*rai_inv2;
+            born->drobc[i] = (1.0-tsum*tsum)*tchain*rai_inv2;
         }
-        printf("invsqrta[%2d]=%g\n",ai,fr->invsqrta[ai]);
     }
     
     /* Extra (local) communication required for DD */
@@ -1133,6 +1143,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 {    
     real *p;
     int   cnt;
+    int ndadx;
+
     if(fr->bAllvsAll && fr->dadx==NULL)
     {
         /* We might need up to 8 atoms of padding before and after, 
@@ -1144,11 +1156,18 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     }
     else
     {
+        /* In the SSE-enabled gb-loops, when writing to dadx, we
+         * always write 2*4 elements at a time, even in the case with only
+         * 1-3 j particles, where we only really need to write 2*(1-3)
+         * elements. This is because we want dadx to be aligned to a 16-
+         * byte boundary, and being able to use _mm_store/load_ps
+         */
+        ndadx = 2 * (nl->nrj + 3*nl->nri);
+
         /* First, reallocate the dadx array, we need 3 extra for SSE */
-        if (2*nl->nrj + 3 > fr->nalloc_dadx)
+        if (ndadx + 3 > fr->nalloc_dadx)
         {
-            /* add 4for alignment */
-            fr->nalloc_dadx = over_alloc_large(2*nl->nrj + 3) + 4;
+            fr->nalloc_dadx = over_alloc_large(ndadx) + 3;
             srenew(fr->dadx_rawptr,fr->nalloc_dadx);
             fr->dadx = (real *) (((size_t) fr->dadx_rawptr + 16) & (~((size_t) 15)));            
         }
@@ -1288,22 +1307,27 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 
 
 
-real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
-                  real *invsqrta, real *dvda, real *GBtab, t_idef *idef,
-                  real gb_epsilon_solvent, real facel)
+real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
+                  real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
+                  real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph)
 {
-    int i,j,n0,nnn,type,ai,aj,ai3,aj3;
-    real isai,isaj;
-    real r,rsq11,ix1,iy1,iz1,jx1,jy1,jz1;
-    real dx11,dy11,dz11,rinv11,iq,facel2;
+    int i,j,n0,m,nnn,type,ai,aj;
+	int ki;
+ 
+	real isai,isaj;
+    real r,rsq11;
+    real rinv11,iq;
     real isaprod,qq,gbscale,gbtabscale,Y,F,Geps,Heps2,Fp,VV,FF,rt,eps,eps2;
-    real vgb,fgb,vcoul,fijC,dvdatmp,fscal,tx,ty,tz,dvdaj;
+    real vgb,fgb,vcoul,fijC,dvdatmp,fscal,dvdaj;
     real vctot;
     
+	rvec dx;
+	ivec dt;
+	
     t_iatom *forceatoms;
 
     /* Scale the electrostatics by gb_epsilon_solvent */
-    facel = facel * (1.0 - 1.0/gb_epsilon_solvent);
+    facel = facel * ((1.0/epsilon_r) - 1.0/gb_epsilon_solvent);
     
     gbtabscale=*p_gbtabscale;
     vctot = 0.0;
@@ -1320,20 +1344,13 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
             i++;
             ai            = forceatoms[i++];
             aj            = forceatoms[i++];
-            ai3           = ai*3;
-            aj3           = aj*3; 
-            isai          = invsqrta[ai];
-            ix1           = x[ai3+0];
-            iy1           = x[ai3+1];
-            iz1           = x[ai3+2];
-            iq            = (-1)*facel*charge[ai];
-            jx1           = x[aj3+0];
-            jy1           = x[aj3+1];
-            jz1           = x[aj3+2];
-            dx11          = ix1 - jx1;
-            dy11          = iy1 - jy1;
-            dz11          = iz1 - jz1;
-            rsq11         = dx11*dx11+dy11*dy11+dz11*dz11;
+			
+			ki            = pbc_rvec_sub(pbc,x[ai],x[aj],dx);
+			rsq11         = iprod(dx,dx);
+			
+			isai          = invsqrta[ai];
+			iq            = (-1)*facel*charge[ai];
+			
             rinv11        = gmx_invsqrt(rsq11);
             isaj          = invsqrta[aj];
             isaprod       = isai*isaj;
@@ -1359,17 +1376,19 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
             dvda[ai]      = dvda[ai] + dvdatmp*isai*isai;
             vctot         = vctot + vgb;
             fgb           = -(fijC)*rinv11;
-            tx            = fgb*dx11;
-            ty            = fgb*dy11;
-            tz            = fgb*dz11;
-    
-            f[aj3+0]      = f[aj3+0] - tx;
-            f[aj3+1]      = f[aj3+1] - ty;
-            f[aj3+2]      = f[aj3+2] - tz;
-        
-            f[ai3+0]      = f[ai3+0] + tx;
-            f[ai3+1]      = f[ai3+1] + ty;
-            f[ai3+2]      = f[ai3+2] + tz;
+			
+			if (graph) {
+				ivec_sub(SHIFT_IVEC(graph,ai),SHIFT_IVEC(graph,aj),dt);
+				ki=IVEC2IS(dt);
+			}
+			
+			for (m=0; (m<DIM); m++) {			/*  15		*/
+				fscal=fgb*dx[m];
+				f[ai][m]+=fscal;
+				f[aj][m]-=fscal;
+				fshift[ki][m]+=fscal;
+				fshift[CENTRAL][m]-=fscal;
+			}
         }
     }
     
@@ -1399,7 +1418,7 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
     }
         
     /* Scale the electrostatics by gb_epsilon_solvent */
-    facel = facel * (1.0 - 1.0/born->gb_epsilon_solvent);
+    facel = facel * ((1.0/born->epsilon_r) - 1.0/born->gb_epsilon_solvent);
     
     vtot=0.0;
     
@@ -1610,24 +1629,39 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 
 
 real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype, 
-                    rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, t_nrnb *nrnb, bool bRad)
+                    rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, t_nrnb *nrnb, bool bRad,
+					const t_pbc *pbc, const t_graph *graph)
 {
     real v=0;
     int  cnt;
     
+	/* PBC or not? */
+	const t_pbc *pbc_null;
+	
+	if (fr->bMolPBC)
+		pbc_null = pbc;
+	else
+		pbc_null = NULL;
+	
+	
+	
     /* Do a simple ACE type approximation for the non-polar solvation */
     v += calc_gb_nonpolar(cr, fr,born->nr, born, top, atype, fr->dvda, gb_algorithm,md);
-        
+	
     /* Calculate the bonded GB-interactions using either table or analytical formula */
 #ifdef GMX_DOUBLE    
-    v += gb_bonds_tab(x[0],f[0],md->chargeA,&(fr->gbtabscale),
-                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->gb_epsilon_solvent, fr->epsfac);
+    v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
+                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 #else    
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )    
-    v += gb_bonds_analytic(x[0],f[0],md->chargeA,born->bRad,fr->dvda,idef,born->gb_epsilon_solvent,fr->epsfac);
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )   /* 
+    v += gb_bonds_analytic(x[0],f[0],md->chargeA,born->bRad,fr->dvda,idef,born->epsilon_r,born->gb_epsilon_solvent,fr->epsfac);
+                                                                                  */
+    v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
+                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+    
 #else
-    v += gb_bonds_tab(x[0],f[0],md->chargeA,&(fr->gbtabscale),
-                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->gb_epsilon_solvent, fr->epsfac);
+    v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
+                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 #endif
 #endif
     
@@ -1786,6 +1820,11 @@ static void add_bondeds_to_gblist(t_ilist *il,
         
         if (found == 0)
         {
+			if(ai == aj)
+			{
+				gmx_incons("ai == aj");
+			}
+			
             add_j_to_gblist(list,aj);
         }
     }
@@ -1799,11 +1838,11 @@ compare_int (const void * a, const void * b)
 
 
 
-int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut,
+int make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
                    rvec x[], matrix box,
                    t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born)
 {
-    int i,l,ii,j,k,n,nj0,nj1,ai,aj,ii_idx,nalloc,at0,at1,found,shift,s;
+    int i,l,ii,j,k,n,nj0,nj1,ai,aj,at0,at1,found,shift,s;
     int apa;
     t_nblist *nblist;
     t_pbc pbc;
@@ -1872,17 +1911,12 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut,
     }
         
     /* Zero out some counters */
-    ii_idx=0;
-    fr->gblist.nri=0;
+	fr->gblist.nri=0;
     fr->gblist.nrj=0;
     
-    if(DOMAINDECOMP(cr))
-    {
-        natoms = cr->dd->nat_home;
-    }
-    
-    fr->gblist.jindex[0] = ii_idx;
-    for(i=0;i<natoms;i++)
+	fr->gblist.jindex[0] = fr->gblist.nri;
+   	
+	for(i=0;i<fr->natoms_force;i++)
     {
         for(s=0; s<nls[i].nlist; s++)
         {
@@ -1911,24 +1945,20 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut,
                     }
             
                     /* Put in list */
+					if(i == list->aj[k])
+					{
+						gmx_incons("i == list->aj[k]");
+					}
                     fr->gblist.jjnr[fr->gblist.nrj++] = list->aj[k];
                 }
+				
+				fr->gblist.jindex[fr->gblist.nri] = fr->gblist.nrj;  
             }
-            
-            ii_idx++;
-            fr->gblist.jindex[ii_idx] = fr->gblist.nrj;    
-        }
-        if (nls[i].nlist == 0)
-        {
-            /* Temporary code adding an empty list to make loops work */
-            fr->gblist.iinr[fr->gblist.nri]  = i;
-            fr->gblist.shift[fr->gblist.nri] = list->shift;
-            fr->gblist.nri++;
+		}
+	}
 
-            ii_idx++;
-            fr->gblist.jindex[ii_idx] = fr->gblist.nrj;    
-        }
-    }
+	
+#ifdef SORT_GB_LIST
     for(i=0;i<fr->gblist.nri;i++)
     {
         nj0 = fr->gblist.jindex[i];
@@ -1936,25 +1966,26 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut,
         ai  = fr->gblist.iinr[i];
         
         /* Temporary fix */
-        for(j=nj0;j<nj1;j++)
-        {
+		for(j=nj0;j<nj1;j++)
+		{
             if(fr->gblist.jjnr[j]<ai)
-                fr->gblist.jjnr[j]+=natoms;
+                fr->gblist.jjnr[j]+=fr->natoms_force;
         }
         qsort(fr->gblist.jjnr+nj0,nj1-nj0,sizeof(int),compare_int);
         /* Fix back */
         for(j=nj0;j<nj1;j++)
         {
-            if(fr->gblist.jjnr[j]>=natoms)
-                fr->gblist.jjnr[j]-=natoms;
+            if(fr->gblist.jjnr[j]>=fr->natoms_force)
+                fr->gblist.jjnr[j]-=fr->natoms_force;
         }
         
     }
-    
+#endif
+	
     return 0;
 }
 
-void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
+void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 {
     int i,at0,at1;
     gmx_domdec_t *dd=NULL;

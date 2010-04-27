@@ -1025,6 +1025,9 @@ convert_const_values(t_selexpr_value *values)
                 case REAL_VALUE:
                     val->u.r.r1 = val->u.r.r2 = expr->v.u.r[0];
                     break;
+                case STR_VALUE:
+                    val->u.s = expr->v.u.s[0];
+                    break;
                 case POS_VALUE:
                     copy_rvec(expr->v.u.p->x[0], val->u.x);
                     break;

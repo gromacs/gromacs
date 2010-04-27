@@ -10,6 +10,9 @@ libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = libmd@LIBSUFFIX@.pc
+
 libmd@LIBSUFFIX@_la_SOURCES = \
 	calcmu.c	calcvir.c	constr.c	\
 	coupling.c	\
@@ -32,12 +35,12 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	genborn_allvsall_sse2_single.h			\
 	gmx_qhop_parm.c	gmx_qhop_parm.h			\
 	gmx_qhop_xml.c	gmx_qhop_xml.h			\
-	gmx_qhop_db.c	gmx_qhop_db.h			\
+	groupcoord.c                                    \
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	shellfc.c	stat.c 		\
-	tables.c	tgroup.c	\
+	tables.c	tgroup.c	tpi.c	\
 	update.c	vcm.c		vsite.c	\
 	wall.c		wnblist.c	\
 	csettle.c       clincs.c	\
@@ -46,7 +49,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	gmx_wallcycle.c fftgrid.c 	\
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
-	gmx_fft_mkl.c
+	gmx_fft_mkl.c	
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 

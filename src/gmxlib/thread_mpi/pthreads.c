@@ -41,9 +41,14 @@ files.
 * We do not use HAVE_PTHREAD_H directly, since we might want to
 * turn off thread support explicity (e.g. for debugging).
 */
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #ifdef THREAD_PTHREADS 
 
@@ -60,8 +65,23 @@ files.
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "thread_mpi/atomic.h"
 #include "thread_mpi/threads.h"
-/*#include "thread_mpi_impl.h"*/
+#include "impl.h"
+
+
+#include "pthreads.h"
+
+
+/* mutex for initializing mutexes */
+static pthread_mutex_t mutex_init=PTHREAD_MUTEX_INITIALIZER;   
+/* mutex for initializing barriers */
+static pthread_mutex_t once_init=PTHREAD_MUTEX_INITIALIZER;    
+/* mutex for initializing thread_conds */
+static pthread_mutex_t cond_init=PTHREAD_MUTEX_INITIALIZER;    
+/* mutex for initializing barriers */
+static pthread_mutex_t barrier_init=PTHREAD_MUTEX_INITIALIZER; 
+
 
 
 
@@ -84,8 +104,6 @@ enum tMPI_Thread_support tMPI_Thread_support(void)
     return TMPI_THREAD_SUPPORT_YES;
 }
 
-
-
 int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
                        void *arg)
 {
@@ -97,7 +115,8 @@ int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
         return EINVAL;
     }
 
-    ret=pthread_create(thread,NULL,start_routine,arg);
+    *thread=(struct tMPI_Thread*)malloc(sizeof(struct tMPI_Thread)*1);
+    ret=pthread_create(&((*thread)->th),NULL,start_routine,arg);
 
     if(ret!=0)
     {
@@ -115,9 +134,11 @@ int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
 int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr)
 {
     int ret;
+    pthread_t th=thread->th;
 
+    free(thread);
     
-    ret = pthread_join( thread, value_ptr );
+    ret = pthread_join( th, value_ptr );
 
     if(ret != 0 )
     {
@@ -128,17 +149,17 @@ int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr)
 
 
 
-
 int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx) 
 {
     int ret;
-    
-    if(mtx==NULL)
+  
+    if (mtx == NULL)
     {
         return EINVAL;
     }
-   
-    ret = pthread_mutex_init(mtx,NULL);
+
+    mtx->mutex=(struct tMPI_Mutex*)tMPI_Malloc(sizeof(struct tMPI_Mutex)*1);
+    ret = pthread_mutex_init(&(mtx->mutex->mtx),NULL);
     
     if(ret!=0)
     {
@@ -147,7 +168,24 @@ int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx)
         return ret;
     }
 
+    tMPI_Atomic_set(&(mtx->initialized), 1);
     return 0;
+}
+
+static int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
+{
+    int ret=0;
+
+    /* we're relying on the memory barrier semantics of mutex_lock/unlock
+       for the check preceding this function call to have worked */
+    pthread_mutex_lock( &(mutex_init) );    
+    if(mtx->mutex==NULL)
+    {
+        mtx->mutex=(struct tMPI_Mutex*)tMPI_Malloc(sizeof(struct tMPI_Mutex)*1);
+        ret=pthread_mutex_init( &(mtx->mutex->mtx), NULL);
+    }
+    pthread_mutex_unlock( &(mutex_init) );    
+    return ret;
 }
 
 
@@ -160,7 +198,8 @@ int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx)
         return EINVAL;
     }
     
-    ret = pthread_mutex_destroy( mtx );
+    ret = pthread_mutex_destroy( &(mtx->mutex->mtx) );
+    free(mtx->mutex);
     
     if(ret!=0)
     {
@@ -175,8 +214,16 @@ int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx)
 int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx)
 {
     int ret;
+
+    /* check whether the mutex is initialized */
+    if (tMPI_Atomic_get( &(mtx->initialized)  ) == 0)
+    {
+        ret=tMPI_Thread_mutex_init_once(mtx);
+        if (ret)
+            return ret;
+    }
    
-    ret=pthread_mutex_lock(mtx);
+    ret=pthread_mutex_lock(&(mtx->mutex->mtx));
 
     return ret;
 }
@@ -187,7 +234,16 @@ int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx)
 int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx)
 {
     int ret;
-    ret=pthread_mutex_trylock(mtx);
+
+    /* check whether the mutex is initialized */
+    if (tMPI_Atomic_get( &(mtx->initialized)  ) == 0)
+    {
+        ret=tMPI_Thread_mutex_init_once(mtx);
+        if (ret)
+            return ret;
+    }
+
+    ret=pthread_mutex_trylock(&(mtx->mutex->mtx));
     
     return ret;
 }
@@ -197,8 +253,16 @@ int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx)
 int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx)
 {
     int ret;
-    
-    ret = pthread_mutex_unlock(mtx);
+ 
+    /* check whether the mutex is initialized */
+    if (tMPI_Atomic_get( &(mtx->initialized)  ) == 0)
+    {
+        ret=tMPI_Thread_mutex_init_once(mtx);
+        if (ret)
+            return ret;
+    }
+ 
+    ret = pthread_mutex_unlock(&(mtx->mutex->mtx));
     
     return ret;
 }
@@ -216,7 +280,9 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *))
     }
 
 
-    ret = pthread_key_create(key, destructor);
+    key->key=(struct tMPI_Thread_key*)tMPI_Malloc(sizeof(struct 
+                                                         tMPI_Thread_key)*1);
+    ret = pthread_key_create(&((key)->key->pkey), destructor);
     if(ret!=0)
     {
         tMPI_Fatal_error(TMPI_FARGS,"Failed to create thread key, rc=%d.",ret);
@@ -224,6 +290,7 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *))
         return -1;
     }
 
+    tMPI_Atomic_set(&(key->initialized), 1);
     return 0;
 }
 
@@ -232,7 +299,8 @@ int tMPI_Thread_key_delete(tMPI_Thread_key_t key)
 {
     int ret;
 
-    ret=pthread_key_delete(key);
+    ret=pthread_key_delete((key.key->pkey));
+    free(key.key);
 
     if(ret!=0)
     {
@@ -249,7 +317,7 @@ void * tMPI_Thread_getspecific(tMPI_Thread_key_t key)
 {
     void *p = NULL;
 
-    p=pthread_getspecific(key);
+    p=pthread_getspecific((key.key->pkey));
 
     return p;
 }
@@ -259,27 +327,33 @@ int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value)
 {
     int ret;
     
-    ret=pthread_setspecific(key,value);
+    ret=pthread_setspecific((key.key->pkey),value);
     
     return ret;
 }
-
 
 
 int tMPI_Thread_once(tMPI_Thread_once_t *once_control,
                      void (*init_routine)(void))
 {
     int ret;
-    ret=pthread_once(once_control, init_routine);
-    if(ret!=0)
+    if (!once_control || !init_routine)
     {
-        tMPI_Fatal_error(TMPI_FARGS,"Failed run thread_once, rc=%d.",ret);
-        fflush(stderr);
-        
+        return EINVAL;
     }
-    return ret;
+
+    /* really ugly hack - and it's slow... */
+    if ( (ret=pthread_mutex_lock( &once_init )) )
+        return ret;
+    if (tMPI_Atomic_get(&(once_control->once)) == 0)
+    {
+        (*init_routine)();
+        tMPI_Atomic_set(&(once_control->once), 1);
+    }
+    pthread_mutex_unlock( &once_init );
+
+    return 0;
 }
-    
 
 
 
@@ -293,15 +367,37 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond)
         return EINVAL;
     }
    
-    ret = pthread_cond_init(cond, NULL);
+    cond->condp=(struct tMPI_Thread_cond*)
+              tMPI_Malloc(sizeof(struct tMPI_Thread_cond)*1);
+    ret = pthread_cond_init(&(cond->condp->cond), NULL);
     
     if(ret!=0)
     {
         tMPI_Fatal_error(TMPI_FARGS,"Error initializing POSIX condition variable. rc=%d",ret);
         fflush(stderr);
     }
+    tMPI_Atomic_set(&(cond->initialized),1);
     return ret;
 }
+
+
+static int tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *cond)
+{
+    int ret=0;
+
+    /* we're relying on the memory barrier semantics of mutex_lock/unlock
+       for the check preceding this function call to have worked */
+    pthread_mutex_lock( &(cond_init) );    
+    if(cond->condp==NULL)
+    {
+        cond->condp=(struct tMPI_Thread_cond*)
+                  tMPI_Malloc(sizeof(struct tMPI_Thread_cond)*1);
+        ret=pthread_cond_init( &(cond->condp->cond), NULL);
+    }
+    pthread_mutex_unlock( &(cond_init) );    
+    return ret;
+}
+
 
 
 int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond) 
@@ -313,7 +409,8 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond)
         return EINVAL;
     }
     
-    ret = pthread_cond_destroy(cond);
+    ret = pthread_cond_destroy(&(cond->condp->cond));
+    free(cond->condp);
    
     if(ret!=0)
     {
@@ -329,8 +426,15 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond)
 int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
 {
     int ret;
+
+    /* check whether the condition is initialized */
+    if (tMPI_Atomic_get( &(cond->initialized)  ) == 0)
+    {
+        tMPI_Thread_cond_init_once(cond);
+    }
+    /* the mutex must have been initialized because it should be locked here */
    
-    ret = pthread_cond_wait( cond, mtx );
+    ret = pthread_cond_wait( &(cond->condp->cond), &(mtx->mutex->mtx) );
     
     return ret;
 }
@@ -341,8 +445,14 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
 int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond)
 {
     int ret;
+
+    /* check whether the condition is initialized */
+    if (tMPI_Atomic_get( &(cond->initialized)  ) == 0)
+    {
+        tMPI_Thread_cond_init_once(cond);
+    }
     
-    ret = pthread_cond_signal( cond );
+    ret = pthread_cond_signal( &(cond->condp->cond) );
     
     return ret;
 }
@@ -352,8 +462,14 @@ int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond)
 int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *cond)
 {
     int ret;
+
+    /* check whether the condition is initialized */
+    if (tMPI_Atomic_get( &(cond->initialized)  ) == 0)
+    {
+        tMPI_Thread_cond_init_once(cond);
+    }
    
-    ret = pthread_cond_broadcast( cond );
+    ret = pthread_cond_broadcast( &(cond->condp->cond) );
     
     return ret;
 }
@@ -369,52 +485,8 @@ void tMPI_Thread_exit(void *      value_ptr)
 
 int tMPI_Thread_cancel(tMPI_Thread_t     thread)
 {
-    return pthread_cancel(thread);
+    return pthread_cancel(thread->th);
 }
-
-
-#ifdef TMPI_RWLOCK
-/* rwlocks are very thin wrappers. */
-int tMPI_Thread_rwlock_init(tMPI_Thread_rwlock_t *rwlock)
-{
-    return pthread_rwlock_init(rwlock,NULL);
-}
-
-int tMPI_Thread_rwlock_destroy(tMPI_Thread_rwlock_t *rwlock)
-{
-    return pthread_rwlock_destroy(rwlock);
-}
-
-int tMPI_Thread_rwlock_rdlock(tMPI_Thread_rwlock_t *rwlock)
-{
-    return pthread_rwlock_rdlock(rwlock);
-}
-
-int tMPI_Thread_rwlock_tryrdlock(tMPI_Thread_rwlock_t *rwlock)
-{
-    return pthread_rwlock_tryrdlock(rwlock);
-}
-
-int tMPI_Thread_rwlock_wrlock(tMPI_Thread_rwlock_t *rwlock)
-{
-    return pthread_rwlock_wrlock(rwlock);
-}
-
-int tMPI_Thread_rwlock_trywrlock(tMPI_Thread_rwlock_t *rwlock)
-{
-    return pthread_rwlock_trywrlock(rwlock);
-}
-
-int tMPI_Thread_rwlock_rdunlock(tMPI_Thread_rwlock_t *rwlock)
-{
-    return pthread_rwlock_unlock(rwlock);
-}
-
-int tMPI_Thread_rwlock_wrunlock(tMPI_Thread_rwlock_t *rwlock)
-{
-    return pthread_rwlock_unlock(rwlock);
-}
-#endif
 
 
 
@@ -429,7 +501,9 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int n)
         return EINVAL;
     }
     
-    ret = pthread_mutex_init(&(barrier->mutex),NULL);
+    barrier->barrierp=(struct tMPI_Thread_barrier*)
+              tMPI_Malloc(sizeof(struct tMPI_Thread_barrier)*1);
+    ret = pthread_mutex_init(&(barrier->barrierp->mutex),NULL);
         
     if(ret!=0)
     {
@@ -438,7 +512,7 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int n)
         return ret;
     }
     
-    ret = pthread_cond_init(&(barrier->cv),NULL);
+    ret = pthread_cond_init(&(barrier->barrierp->cv),NULL);
     
     if(ret!=0)
     {
@@ -452,8 +526,44 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int n)
     barrier->count     = n;
     barrier->cycle     = 0;
 
+    tMPI_Atomic_set(&(barrier->initialized), 1);
     return 0;
 }
+
+static int tMPI_Thread_barrier_init_once(tMPI_Thread_barrier_t *barrier)
+{
+    int ret=0;
+
+    /* we're relying on the memory barrier semantics of mutex_lock/unlock
+       for the check preceding this function call to have worked */
+    pthread_mutex_lock( &(barrier_init) );    
+    if(barrier->barrierp==NULL)
+    {
+        barrier->barrierp=(struct tMPI_Thread_barrier*)
+                  tMPI_Malloc(sizeof(struct tMPI_Thread_barrier)*1);
+        ret = pthread_mutex_init(&(barrier->barrierp->mutex),NULL);
+
+        if(ret!=0)
+        {
+            tMPI_Fatal_error(TMPI_FARGS,"Error initializing POSIX mutex. rc=%d",
+                             ret);
+            return ret;
+        }
+
+        ret = pthread_cond_init(&(barrier->barrierp->cv),NULL);
+
+        if(ret!=0)
+        {
+            tMPI_Fatal_error(TMPI_FARGS,
+                             "Error initializing POSIX condition variable. rc=%d",
+                             ret);
+            return ret;
+        }
+    }
+    pthread_mutex_unlock( &(barrier_init) );    
+    return ret;
+}
+
 
 
 
@@ -464,8 +574,10 @@ int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *barrier)
         return EINVAL;
     }
 
-    pthread_mutex_destroy(&(barrier->mutex));
-    pthread_cond_destroy(&(barrier->cv));
+    pthread_mutex_destroy(&(barrier->barrierp->mutex));
+    pthread_cond_destroy(&(barrier->barrierp->cv));
+
+    free(barrier->barrierp);
     
     return 0;
 }
@@ -476,7 +588,14 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *   barrier)
     int    cycle;
     int    rc;
     
-    rc = pthread_mutex_lock(&barrier->mutex);
+    /* check whether the barrier is initialized */
+    if (tMPI_Atomic_get( &(barrier->initialized)  ) == 0)
+    {
+        tMPI_Thread_barrier_init_once(barrier);
+    }
+
+
+    rc = pthread_mutex_lock(&barrier->barrierp->mutex);
 
     
     if(rc != 0)
@@ -491,7 +610,7 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *   barrier)
     { 
         barrier->cycle = !barrier->cycle;
         barrier->count = barrier->threshold;
-        rc = pthread_cond_broadcast(&barrier->cv);
+        rc = pthread_cond_broadcast(&barrier->barrierp->cv);
         
         if(rc == 0)
             rc = -1;
@@ -500,26 +619,15 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *   barrier)
     {
         while(cycle == barrier->cycle)
         {
-            rc = pthread_cond_wait(&barrier->cv,&barrier->mutex);
+            rc = pthread_cond_wait(&barrier->barrierp->cv,
+                                   &barrier->barrierp->mutex);
             if(rc != 0) break;
         }
     }
     
-    pthread_mutex_unlock(&barrier->mutex);
+    pthread_mutex_unlock(&barrier->barrierp->mutex);
     return rc;
 }
 
-
-
-void tMPI_Lockfile(FILE *stream)
-{
-    flockfile(stream);
-}
-
-
-void tMPI_Unlockfile(FILE *stream)
-{
-    funlockfile(stream);
-}
 
 #endif /* THREAD_PTHREADS */

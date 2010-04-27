@@ -369,6 +369,6 @@ evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
-    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, fr->x, pbc);
+    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, fr, pbc);
     return 0;
 }

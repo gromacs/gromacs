@@ -490,8 +490,15 @@ extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
         {
             subexpr = subexpr->next;
         }
-        /* The latter check excludes variable references */
-        if (child->type == SEL_SUBEXPRREF && child->child->type != SEL_SUBEXPR)
+        /* The latter check excludes variable references.
+         * It also excludes subexpression elements that have already been
+         * processed, because they are given a name when they are first
+         * encountered.
+         * TODO: There should be a more robust mechanism (probably a dedicated
+         * flag) for detecting parser-generated subexpressions than relying on
+         * a NULL name field. */
+        if (child->type == SEL_SUBEXPRREF && (child->child->type != SEL_SUBEXPR
+                                              || child->child->name == NULL))
         {
             /* Create the root element for the subexpression */
             if (!root)
@@ -508,14 +515,21 @@ extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
             {
                 gmx_ana_index_set(&subexpr->u.cgrp, gall->isize, gall->index, NULL, 0);
             }
-            /* Create the subexpression element */
-            subexpr->child = _gmx_selelem_create(SEL_SUBEXPR);
-            _gmx_selelem_set_vtype(subexpr->child, child->v.type);
+            /* Create the subexpression element and/or
+             * move the actual subexpression under the created element. */
+            if (child->child->type != SEL_SUBEXPR)
+            {
+                subexpr->child = _gmx_selelem_create(SEL_SUBEXPR);
+                _gmx_selelem_set_vtype(subexpr->child, child->v.type);
+                subexpr->child->child = child->child;
+                child->child          = subexpr->child;
+            }
+            else
+            {
+                subexpr->child = child->child;
+            }
             create_subexpression_name(subexpr->child, ++*subexprn);
-            /* Move the actual subexpression under the created element */
-            subexpr->child->child    = child->child;
-            child->child             = subexpr->child;
-            subexpr->child->refcount = 2;
+            subexpr->child->refcount++;
             /* Set the flags for the created elements */
             subexpr->flags          |= (child->flags & SEL_VALFLAGMASK);
             subexpr->child->flags   |= (child->flags & SEL_VALFLAGMASK);
@@ -812,6 +826,11 @@ init_item_evaluation(t_selelem *sel)
             break;
 
         case SEL_EXPRESSION:
+            if (!(sel->flags & SEL_DYNAMIC) && sel->u.expr.method
+                && sel->u.expr.method->init_frame)
+            {
+                sel->flags |= SEL_INITFRAME;
+            }
             sel->evaluate = &_gmx_sel_evaluate_method;
             break;
 
@@ -1218,6 +1237,10 @@ init_method(t_selelem *sel, t_topology *top, int isize)
             if (rc != 0)
             {
                 return rc;
+            }
+            if (sel->v.type != POS_VALUE && sel->v.type != GROUP_VALUE)
+            {
+                alloc_selection_data(sel, isize, TRUE);
             }
         }
         else
@@ -1639,8 +1662,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
              * methods that do not have SMETH_SINGLEVAL or SMETH_VARNUMVAL). */
             if (sel->v.type == POS_VALUE && !(sel->flags & SEL_OUTINIT))
             {
-                gmx_ana_indexmap_copy(&sel->v.u.p->m, &sel->child->child->v.u.p->m, TRUE);
-                gmx_ana_pos_set_nr(sel->v.u.p, sel->child->child->v.u.p->nr);
+                gmx_ana_pos_copy(sel->v.u.p, sel->child->child->v.u.p, TRUE);
                 sel->flags |= SEL_OUTINIT;
             }
             rc = sel->cdata->evaluate(data, sel, g);
@@ -1884,12 +1906,40 @@ init_root_item(t_selelem *root)
 }
 
 /*! \brief
+ * Reverses the chain of selection elements starting at \p root.
+ *
+ * \param   root First selection in the whole selection chain.
+ * \returns The new first element for the chain.
+ */
+static t_selelem *
+reverse_selelem_chain(t_selelem *root)
+{
+    t_selelem *item;
+    t_selelem *prev;
+    t_selelem *next;
+
+    prev = NULL;
+    item = root;
+    while (item)
+    {
+        next = item->next;
+        item->next = prev;
+        prev = item;
+        item = next;
+    }
+    return prev;
+}
+
+/*! \brief
  * Initializes the evaluation groups for \ref SEL_ROOT items.
  *
  * \param   root First selection in the whole selection chain.
  * \returns The new first element for the chain.
  *
  * The function also removes static subexpressions that are no longer used.
+ * The elements are processed in reverse order to correctly detect static
+ * subexpressions referred to by other static subexpressions. All other
+ * processing is independent of the order of the elements.
  */
 static t_selelem *
 process_roots(t_selelem *root)
@@ -1897,6 +1947,7 @@ process_roots(t_selelem *root)
     t_selelem *item;
     t_selelem *next;
 
+    root = reverse_selelem_chain(root);
     do
     {
         next = root->next;
@@ -1921,7 +1972,7 @@ process_roots(t_selelem *root)
             item = item->next;
         }
     }
-    return root;
+    return reverse_selelem_chain(root);
 }
 
 
@@ -2243,10 +2294,13 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
         {
             mark_subexpr_dynamic(item->child, FALSE);
             item->child->u.cgrp.isize = 0;
-            if (item->child->v.type == GROUP_VALUE)
-            {
-                item->child->child->v.u.g->isize = 0;
-            }
+            /* We won't clear item->child->child->v.u.g here, because it may
+             * be static, and hence actually point to item->child->cdata->gmax,
+             * which is used below. We could also check whether this is the
+             * case and only clear the group otherwise, but because the value
+             * is actually overwritten immediately in the evaluate call, we
+             * won't, because similar problems may arise if gmax handling ever
+             * changes and the check were not updated. */
             set_evaluation_function(item, &analyze_static2);
             rc = item->evaluate(&evaldata, item->child, item->child->cdata->gmax);
             if (rc != 0)

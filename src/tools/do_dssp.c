@@ -129,7 +129,7 @@ static int strip_dssp(char *dsspfile,int nres,
     
     sprintf(mat->title,"Secondary structure");
     mat->legend[0]=0;
-    sprintf(mat->label_x,"%s",get_time_label(oenv));
+    sprintf(mat->label_x,"%s",output_env_get_time_label(oenv));
     sprintf(mat->label_y,"Residue");
     mat->bDiscrete=TRUE;
     mat->ny=nr;
@@ -299,8 +299,8 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     leg[s+1]=strdup(map[s].desc);
   
   fp=xvgropen(outfile,"Secondary Structure",
-	      get_xvgr_tlabel(oenv),"Number of Residues",oenv);
-  if (get_print_xvgr_codes(oenv))
+	      output_env_get_xvgr_tlabel(oenv),"Number of Residues",oenv);
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"Structure = ");
   for(s=0; s<strlen(ss_string); s++) {
     if (s>0)
@@ -473,7 +473,7 @@ int main(int argc,char *argv[])
   
   if (fnTArea) {
     fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
-		    get_xvgr_tlabel(oenv),"Area (nm\\S2\\N)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"Area (nm\\S2\\N)",oenv);
     xvgr_legend(fTArea,2,leg,oenv);
   } else
     fTArea=NULL;
@@ -494,7 +494,7 @@ int main(int argc,char *argv[])
   accr=NULL;
   naccr=0;
   do {
-    t = conv_time(oenv,t);
+    t = output_env_conv_time(oenv,t);
     if (bDoAccSurf && nframe>=naccr) {
       naccr+=10;
       srenew(accr,naccr);

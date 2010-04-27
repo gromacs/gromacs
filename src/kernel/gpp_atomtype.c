@@ -261,20 +261,32 @@ int add_atomtype(gpp_atomtype_t ga,t_symtab *tab,
 		 real radius,real vol,real surftens,real atomnumber,
 		 real gb_radius, real S_hct)
 {
-  ga->nr++;
-  srenew(ga->atom,ga->nr);
-  srenew(ga->atomname,ga->nr);
-  srenew(ga->nb,ga->nr);
-  srenew(ga->bondatomtype,ga->nr);
-  srenew(ga->radius,ga->nr);
-  srenew(ga->vol,ga->nr);
-  srenew(ga->surftens,ga->nr);
-  srenew(ga->atomnumber,ga->nr);
-  srenew(ga->gb_radius,ga->nr);
-  srenew(ga->S_hct,ga->nr);
-
-  return set_atomtype(ga->nr-1,ga,tab,a,name,nb,bondatomtype,radius,
-		      vol,surftens,atomnumber,gb_radius,S_hct);
+  int i;
+  
+  for(i=0; (i<ga->nr); i++) {
+    if (strcmp(*ga->atomname[i],name) == 0) {
+      fprintf(stderr,"Trying to add atomtype %s again. Skipping it.\n",name);
+      break;
+    }
+  }
+  if (i == ga->nr) {
+    ga->nr++;
+    srenew(ga->atom,ga->nr);
+    srenew(ga->atomname,ga->nr);
+    srenew(ga->nb,ga->nr);
+    srenew(ga->bondatomtype,ga->nr);
+    srenew(ga->radius,ga->nr);
+    srenew(ga->vol,ga->nr);
+    srenew(ga->surftens,ga->nr);
+    srenew(ga->atomnumber,ga->nr);
+    srenew(ga->gb_radius,ga->nr);
+    srenew(ga->S_hct,ga->nr);
+    
+    return set_atomtype(ga->nr-1,ga,tab,a,name,nb,bondatomtype,radius,
+			vol,surftens,atomnumber,gb_radius,S_hct);
+  }
+  else
+    return i;
 }
 
 void print_at (FILE * out, gpp_atomtype_t ga)

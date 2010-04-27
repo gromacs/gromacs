@@ -35,6 +35,10 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -50,10 +54,7 @@ files.
 #include <string.h>
 
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 /* helper function for tMPI_Comm_split. Splits N entities with color and key
    out so that the output contains Ngroups groups each with elements
@@ -97,7 +98,7 @@ int tMPI_Comm_rank(tMPI_Comm comm, int *rank)
 tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 {
     struct tmpi_comm_ *ret;
-    int i,Nbarriers,Nred;
+    int i;
 
     ret=(struct tmpi_comm_*)tMPI_Malloc(sizeof(struct tmpi_comm_));
     ret->grp.peers=(struct tmpi_thread**)tMPI_Malloc(
@@ -114,38 +115,82 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     ret->cart=NULL;
     /*ret->graph=NULL;*/
 
-    /* calculate the number of multicast barriers */
-    Nbarriers=0;
-    Nred=N;
-    while(Nred>1) {
-        Nbarriers+=1;
-        Nred = Nred/2 + Nred%2;
-    } 
 
-    ret->Nbarriers=Nbarriers;
-#ifndef TMPI_NO_BUSY_WAIT
-    ret->multicast_barrier=(tMPI_Spinlock_barrier_t*)tMPI_Malloc(
-                      sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
-#else
-    ret->multicast_barrier=(tMPI_Thread_barrier_t*)tMPI_Malloc(
-                      sizeof(tMPI_Thread_barrier_t)*(Nbarriers+1));
-#endif
-    ret->N_multicast_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
-    Nred=N;
-    for(i=0;i<Nbarriers;i++)
+    /* initialize the main barrier */
+    tMPI_Spinlock_barrier_init(&(ret->barrier), N);
+
+#if 0
     {
-#ifndef TMPI_NO_BUSY_WAIT
-        tMPI_Spinlock_barrier_init( &(ret->multicast_barrier[i]), Nred);
-#else
-        tMPI_Thread_barrier_init( &(ret->multicast_barrier[i]), Nred);
-#endif
-        ret->N_multicast_barrier[i]=Nred;
-        /* Nred is now Nred/2 + a rest term because solitary 
-           process at the end of the list must still be accounter for */
-        Nred = Nred/2 + Nred%2;
+        /* calculate the number of reduce barriers */
+        int Nbarriers=0;
+        int Nred=N;
+        while(Nred>1) {
+            Nbarriers+=1;
+            Nred = Nred/2 + Nred%2;
+        } 
+
+        ret->Nreduce_barriers=Nbarriers;
+        ret->reduce_barrier=(tMPI_Spinlock_barrier_t*)
+                  tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
+        ret->N_reduce_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
+        Nred=N;
+        for(i=0;i<Nbarriers;i++)
+        {
+            tMPI_Spinlock_barrier_init( &(ret->reduce_barrier[i]), Nred);
+            ret->N_reduce_barrier[i]=Nred;
+            /* Nred is now Nred/2 + a rest term because solitary 
+               process at the end of the list must still be accounter for */
+            Nred = Nred/2 + Nred%2;
+        }
     }
+#endif
+
+    /* the reduce barriers */
+    {
+        /* First calculate the number of reduce barriers */
+        int Niter=0; /* the iteration number */
+        int Nred=N; /* the number of reduce barriers for this iteration */
+        while(Nred>1) {
+            /* Nred is now Nred/2 + a rest term because solitary 
+               process at the end of the list must still be accounter for */
+            Nred = Nred/2 + Nred%2;
+            Niter+=1;
+        } 
+
+        ret->N_reduce_iter=Niter;
+        /* allocate the list */
+        ret->reduce_barrier=(tMPI_Spinlock_barrier_t**)
+                  tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t*)*(Niter+1));
+        ret->N_reduce=(int*)tMPI_Malloc(sizeof(int)*(Niter+1));
+
+        /* we re-set Nred to N */
+        Nred=N;
+        for(i=0;i<Niter;i++)
+        {
+            int j;
+
+            Nred = Nred/2 + Nred%2;
+            ret->N_reduce[i] = Nred;
+            /* allocate the sub-list */
+            ret->reduce_barrier[i]=(tMPI_Spinlock_barrier_t*)
+                      tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nred));
+            for(j=0;j<Nred;j++)
+            {
+                tMPI_Spinlock_barrier_init(&(ret->reduce_barrier[i][j]),2);
+            }
+        }
+    }
+
+    /* the reduce buffers */
+#if 0
     ret->sendbuf=(volatile void**)tMPI_Malloc(sizeof(void*)*Nthreads);
     ret->recvbuf=(volatile void**)tMPI_Malloc(sizeof(void*)*Nthreads);
+#else
+    ret->reduce_sendbuf=(tMPI_Atomic_ptr_t*)
+              tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*Nthreads);
+    ret->reduce_recvbuf=(tMPI_Atomic_ptr_t*)
+              tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*Nthreads);
+#endif
 
 
     if (parent)
@@ -164,9 +209,9 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     /* multi_sync objects */
     ret->csync=(struct coll_sync*)tMPI_Malloc(sizeof(struct coll_sync)*N);
     for(i=0;i<N;i++)
-        tMPI_Coll_sync_init( &(ret->csync[i]));
+        tMPI_Coll_sync_init( &(ret->csync[i]), N);
 
-    /* we insert ourselves after TMPI_COMM_WORLD */
+    /* we insert ourselves in the circular list, after TMPI_COMM_WORLD */
     if (TMPI_COMM_WORLD)
     {
         ret->next=TMPI_COMM_WORLD;
@@ -185,34 +230,39 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 
 void tMPI_Comm_destroy(tMPI_Comm comm)
 {
+    int i;
 
     free(comm->grp.peers);
-#ifndef TMPI_NO_BUSY_WAIT
-    free(comm->multicast_barrier);
-#else
-    {
-        int i;
-        for(i=0;i<comm->Nbarriers;i++)
-            tMPI_Thread_barrier_destroy(&(comm->multicast_barrier[i]));
-        free(comm->multicast_barrier);
-    }
+#if 0
+    free(comm->reduce_barrier);
+    free(comm->N_reduce_barrier);
 #endif
-    tMPI_Coll_env_destroy( comm->cev );
-    tMPI_Coll_sync_destroy( comm->csync );
+    for(i=0;i<comm->N_reduce_iter;i++)
+        free(comm->reduce_barrier[i]);
+    free(comm->reduce_barrier);
+    free(comm->N_reduce);
+
+    for(i=0;i<N_COLL_ENV;i++)
+        tMPI_Coll_env_destroy( &(comm->cev[i]) );
+    for(i=0;i<comm->grp.N;i++)
+        tMPI_Coll_sync_destroy( &(comm->csync[i]) );
+    free(comm->cev);
+    free(comm->csync);
 
     tMPI_Thread_mutex_destroy( &(comm->comm_create_lock) );
     tMPI_Thread_cond_destroy( &(comm->comm_create_prep) );
     tMPI_Thread_cond_destroy( &(comm->comm_create_finish) );
 
-    free((void*)comm->sendbuf);
-    free((void*)comm->recvbuf);
+    free((void*)comm->reduce_sendbuf);
+    free((void*)comm->reduce_recvbuf);
+
     if ( comm->cart )
     {
-        free(comm->cart->dims);
-        free(comm->cart->periods);
+        tMPI_Cart_destroy( comm->cart );
         free(comm->cart);
     }
 
+    /* remove ourselves from the circular list */
     if (comm->next)
         comm->next->prev=comm->prev;
     if (comm->prev)
@@ -494,6 +544,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
             free(comm_N);
         }
         free(comm_groups);
+        free(comms);
         spl->can_finish=TRUE;
 
         /* tell the waiting threads that there's a comm ready */

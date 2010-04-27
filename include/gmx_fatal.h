@@ -44,8 +44,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
-
-/* This include has now been moved upwards and the sky hasn't fallen... */
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -79,7 +77,7 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
  * errno is 0, only the message and arguments are printed. If errno is 
  * a legal system errno or -1, a perror like message is printed after the
  * first message, if errno is -1, the last system errno will be used.
- * The format of fmt is that like printf etc, only %d, %x, %c, %f and %s
+ * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
  * are allowed as format specifiers.
  *
  * Tip of the week:
@@ -87,80 +85,18 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
  * gmx_fatal(FARGS,fmt,...)
  */
 
+extern void
+gmx_fatal_collective(int f_errno,const char *file,int line,
+		     bool bMaster,
+		     const char *fmt,...);
+/* As gmx_fatal, but only process with bMaster=TRUE prints the error message.
+ * This is useful for handling errors in code that is executed identically
+ * for all processes.
+ */
+
 void
 gmx_fatal_set_log_file(FILE *fp);
 /* Set the log file for printing error messages */
-
-void 
-init_warning(int maxwarning);
-/* Set the max number of warnings */
-
-void 
-set_warning_line(const char *fn,int line);
-/* Set filename and linenumber for the warning */
-  
-int 
-get_warning_line(void);
-/* Get linenumber for the warning */
-  
-
-const char *
-get_warning_file(void);
-/* Get filename for the warning */
-  
-extern char 
-warn_buf[1024];
-/* Warning buffer of 1024 bytes, which can be used to print messages to */
-
-void
-warning(const char *s);
-/* Issue a warning, with the string s. If s == NULL, then warn_buf
- * will be printed instead. The file and line set by set_warning_line
- * are printed, nwarn_warn (local) is incremented.
- * A fatal error will be generated after processing the input
- * when nwarn_warn is larger than maxwarning passed to init_warning.
- * So warning should only be called for issues that should be resolved,
- * otherwise warning_note should be called.
- */
-
-void 
-warning_note(const char *s);
-/* Issue a note, with the string s. If s == NULL, then warn_buf
- * will be printed instead. The file and line set by set_warning_line
- * are printed, nwarn_note (local) is incremented.
- * This is for issues which could be a problem for some systems,
- * but 100% ok for other systems.
- */
-
-void 
-warning_error(const char *s);
-/* Issue an error, with the string s. If s == NULL, then warn_buf
- * will be printed instead. The file and line set by set_warning_line
- * are printed, nwarn_error (local) is incremented.
- */
- 
-void 
-check_warning_error(int f_errno,const char *file,int line);
-/* When warning_error has been called at least once gmx_fatal is called,
- * otherwise does nothing.
- */
-
-void 
-print_warn_num(bool bFatalError);
-/* Print the total number of warnings, if larger than 0.
- * When bFatalError == TRUE generates a fatal error
- * when the number is larger than maxwarn.
- */
-  
-void 
-_too_few(const char *fn,int line);
-#define too_few() _too_few(__FILE__,__LINE__)
-/* Issue a warning stating 'Too few parameters' */
-
-void 
-_incorrect_n_param(const char *fn,int line);
-#define incorrect_n_param() _incorrect_n_param(__FILE__,__LINE__)
-/* Issue a warning stating 'Incorrect number of parameters' */
   
 void 
 _invalid_case(const char *fn,int line);
@@ -169,7 +105,7 @@ _invalid_case(const char *fn,int line);
   
 extern void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline);
 #define unexpected_eof(fn,line) _unexpected_eof(fn,line,__FILE__,__LINE__)
-  
+
 /* 
  * Functions can write to this file for debug info
  * Before writing to it, it should be checked whether
@@ -189,11 +125,19 @@ extern void doexceptions(void);
 /* Set exception handlers for debugging */
 #endif
 
-  /* If msg == NULL, then warn_buf will be printed instead.
+  /* warn_str is allowed to be NULL.
    */
-  extern void _range_check(int n,int n_min,int n_max,const char *var,
+  extern void _range_check(int n,int n_min,int n_max,const char *warn_str,
+			   const char *var,
 			   const char *file,int line);
-#define range_check(n,n_min,n_max) _range_check(n,n_min,n_max,#n,__FILE__,__LINE__)
+
+#define range_check_mesg(n,n_min,n_max,str) _range_check(n,n_min,n_max,str,#n,__FILE__,__LINE__)
+  /* Range check will terminate with an error message if not
+   * n E [ n_min, n_max >
+   * That is n_min is inclusive but not n_max.
+   */
+
+#define range_check(n,n_min,n_max) _range_check(n,n_min,n_max,NULL,#n,__FILE__,__LINE__)
   /* Range check will terminate with an error message if not
    * n E [ n_min, n_max >
    * That is n_min is inclusive but not n_max.
@@ -232,6 +176,14 @@ set_gmx_error_handler(void (*func)(const char *msg));
    * where my_func is a function that takes a string as an argument.
    * The string may be a multi-line string.
    */
+
+extern void gmx_warning(const char *fmt,...);
+/* Print a warning message to stderr.
+ * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
+ * are allowed as format specifiers.
+ * The message string should NOT start with "WARNING"
+ * and should NOT end with a newline.
+ */
 
 #ifdef __cplusplus
 	   }

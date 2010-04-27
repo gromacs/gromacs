@@ -132,8 +132,7 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
     const char matchstrcr[]="resetting all time and cycle counters";
     const char matchstrbal[]="Average PME mesh/force load:";
     const char matchstring[]="R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G";
-    const char errTERM[]="Received the TERM signal, stopping at the next step";
-    const char errUSR1[]="Received the USR1 signal, stopping at the next NS step";
+    const char errSIG[]="signal, stopping at the next";
     int   iFound;
     int   procs;
     float  dum1,dum2,dum3;
@@ -163,8 +162,8 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
         /* Remove leading spaces */
         ltrim(line);
 
-        /* Check for TERM and USR1 signals from user: */
-        if ( str_starts(line, errTERM) || str_starts(line, errUSR1) )
+        /* Check for TERM and INT signals from user: */
+        if ( strstr(line, errSIG) != NULL )
         {
             fclose(fp);
             cleandata(perfdata, test_nr);
@@ -1412,7 +1411,7 @@ int gmx_tune_pme(int argc,char *argv[])
       /* g_tune_pme options: */
       /***********************/
       { "-np",       FALSE, etINT,  {&nnodes},
-        "Number of nodes to run the tests on (must be > 3 for separate PME nodes)" },
+        "Number of nodes to run the tests on (must be > 2 for separate PME nodes)" },
       { "-r",        FALSE, etINT,  {&repeats},
         "Repeat each test this often" },
       { "-max",      FALSE, etREAL, {&maxPMEfraction},
@@ -1520,7 +1519,9 @@ int gmx_tune_pme(int argc,char *argv[])
     {
         snew(cr,1);
         cr->duty=DUTY_PP; /* makes the following routine happy */
-        read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm),&sim_part,&cpt_steps,cr);
+        read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm),
+					&sim_part,&cpt_steps,cr,
+					FALSE,NULL,NULL);
         sfree(cr);
         sim_part++;
         /* sim_part will now be 1 if no checkpoint file was found */

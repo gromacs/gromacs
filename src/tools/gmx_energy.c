@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -56,17 +57,35 @@
 #include "tpxio.h"
 #include "viewit.h"
 #include "mtop_util.h"
-#include "gmx_statistics.h"
 #include "gmx_ana.h"
 
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
 typedef struct {
-  int    nframes;
-  double *sum;
-  double *sum2;
-} enersum_t;
+    real sum;
+    real sum2;
+} exactsum_t;
+
+typedef struct {
+    real   *ener;
+    exactsum_t *es;
+    bool   bExactStat;
+    double av;
+    double rmsd;
+    double ee;
+    double slope;
+} enerdat_t;
+
+typedef struct {
+    gmx_large_int_t nsteps;
+    gmx_large_int_t npoints;
+    int             nframes;
+    int             *step;
+    int             *steps;
+    int             *points;
+    enerdat_t       *s;
+} enerdata_t;
 
 static double mypow(double x,double y)
 {
@@ -513,33 +532,342 @@ static void einstein_visco(const char *fn,const char *fni,int nsets,
     ffclose(fp1);
 }
 
+typedef struct {
+    gmx_large_int_t np;
+    double sum;
+    double sav;
+    double sav2;
+} ee_sum_t;
+
+typedef struct {
+    int b;
+    ee_sum_t sum;
+    gmx_large_int_t nst;
+    gmx_large_int_t nst_min;
+} ener_ee_t;
+
+static void clear_ee_sum(ee_sum_t *ees)
+{
+    ees->sav  = 0;
+    ees->sav2 = 0;
+    ees->np   = 0;
+    ees->sum  = 0;
+}
+
+static void add_ee_sum(ee_sum_t *ees,double sum,int np)
+{
+    ees->np  += np;
+    ees->sum += sum;
+}
+
+static void add_ee_av(ee_sum_t *ees)
+{
+    double av;
+    
+    av = ees->sum/ees->np;
+    ees->sav  += av;
+    ees->sav2 += av*av;
+    ees->np    = 0;
+    ees->sum   = 0;
+}
+
+static double calc_ee2(int nb,ee_sum_t *ees)
+{
+    return (ees->sav2/nb - dsqr(ees->sav/nb))/(nb - 1);
+}
+
+static void set_ee_av(ener_ee_t *eee)
+{
+    if (debug)
+    {
+        char buf[STEPSTRSIZE];
+        fprintf(debug,"Storing average for err.est.: %s steps\n",
+                gmx_step_str(eee->nst,buf));
+    }
+    add_ee_av(&eee->sum);
+    eee->b++;
+    if (eee->b == 1 || eee->nst < eee->nst_min)
+    {
+        eee->nst_min = eee->nst;
+    }
+    eee->nst = 0;
+}
+
+static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
+{
+    int  nb,i,f,nee;
+    double sum,sum2,sump,see2;
+    gmx_large_int_t steps,np,p,bound_nb;
+    enerdat_t *ed;
+    exactsum_t *es;
+    bool bAllZero;
+    double x,sx,sy,sxx,sxy;
+    ener_ee_t *eee;
+
+    /* Check if we have exact statistics over all points */
+    for(i=0; i<nset; i++)
+    {
+        ed = &edat->s[i];
+        ed->bExactStat = FALSE;
+        if (edat->npoints > 0)
+        {
+            /* All energy file sum entries 0 signals no exact sums.
+             * But if all energy values are 0, we still have exact sums.
+             */
+            bAllZero = TRUE;
+            for(f=0; f<edat->nframes && !ed->bExactStat; f++)
+            {
+                if (ed->ener[i] != 0)
+                {
+                    bAllZero = FALSE;
+                }
+                ed->bExactStat = (ed->es[f].sum != 0);
+            }
+            if (bAllZero)
+            {
+                ed->bExactStat = TRUE;
+            }
+        }
+    }
+
+    snew(eee,nbmax+1);
+    for(i=0; i<nset; i++)
+    {
+        ed = &edat->s[i];
+        
+        sum  = 0;
+        sum2 = 0;
+        np   = 0;
+        sx   = 0;
+        sy   = 0;
+        sxx  = 0;
+        sxy  = 0;
+        for(nb=nbmin; nb<=nbmax; nb++)
+        {
+            eee[nb].b     = 0;
+            clear_ee_sum(&eee[nb].sum);
+            eee[nb].nst   = 0;
+            eee[nb].nst_min = 0;
+        }
+        for(f=0; f<edat->nframes; f++)
+        {
+            es = &ed->es[f];
+
+            if (ed->bExactStat)
+            {
+                /* Add the sum and the sum of variances to the totals. */
+                p     = edat->points[f];
+                sump  = es->sum;
+                sum2 += es->sum2;
+                if (np > 0)
+                {
+                    sum2 += dsqr(sum/np - (sum + es->sum)/(np + p))
+                        *np*(np + p)/p;
+                }
+            }
+            else
+            {
+                /* Add a single value to the sum and sum of squares. */
+                p     = 1;
+                sump  = ed->ener[f];
+                sum2 += dsqr(sump);
+            }
+            
+            /* sum has to be increased after sum2 */
+            np  += p;
+            sum += sump;
+
+            /* For the linear regression use variance 1/p.
+             * Note that sump is the sum, not the average, so we don't need p*.
+             */
+            x    = edat->step[f] - 0.5*(edat->steps[f] - 1);
+            sx  += p*x;
+            sy  += sump;
+            sxx += p*x*x;
+            sxy += x*sump;
+
+            for(nb=nbmin; nb<=nbmax; nb++)
+            {
+                /* Check if the current end step is closer to the desired
+                 * block boundary than the next end step.
+                 */
+                bound_nb = (edat->step[0]-1)*nb + edat->nsteps*(eee[nb].b+1);
+                if (eee[nb].nst > 0 &&
+                    bound_nb - edat->step[f-1]*nb < edat->step[f]*nb - bound_nb)
+                {
+                    set_ee_av(&eee[nb]);
+                }
+                if (f == 0)
+                {
+                    eee[nb].nst = 1;
+                }
+                else
+                {
+                    eee[nb].nst += edat->step[f] - edat->step[f-1];
+                }
+                if (ed->bExactStat)
+                {
+                    add_ee_sum(&eee[nb].sum,es->sum,edat->points[f]);
+                }
+                else
+                {
+                    add_ee_sum(&eee[nb].sum,edat->s[i].ener[f],1);
+                }
+                bound_nb = (edat->step[0]-1)*nb + edat->nsteps*(eee[nb].b+1);
+                if (edat->step[f]*nb >= bound_nb)
+                {
+                    set_ee_av(&eee[nb]);
+                }
+            }
+        }
+
+        edat->s[i].av = sum/np;
+        if (ed->bExactStat)
+        {
+            edat->s[i].rmsd = sqrt(sum2/np);
+        }
+        else
+        {
+            edat->s[i].rmsd = sqrt(sum2/np - dsqr(edat->s[i].av));
+        }
+
+        if (edat->nframes > 1)
+        {
+            edat->s[i].slope = (np*sxy - sx*sy)/(np*sxx - sx*sx);
+        }
+        else
+        {
+            edat->s[i].slope = 0;
+        }
+
+        nee  = 0;
+        see2 = 0;
+        for(nb=nbmin; nb<=nbmax; nb++)
+        {
+            /* Check if we actually got nb blocks and if the smallest
+             * block is not shorter than 80% of the average.
+             */
+            if (debug)
+            {
+                char buf1[STEPSTRSIZE],buf2[STEPSTRSIZE];
+                fprintf(debug,"Requested %d blocks, we have %d blocks, min %s nsteps %s\n",
+                        nb,eee[nb].b,
+                        gmx_step_str(eee[nb].nst_min,buf1),
+                        gmx_step_str(edat->nsteps,buf2));
+            }
+            if (eee[nb].b == nb && 5*nb*eee[nb].nst_min >= 4*edat->nsteps)
+            {
+                see2 += calc_ee2(nb,&eee[nb].sum);
+                nee++;
+            }
+        }
+        if (nee > 0)
+        {
+            edat->s[i].ee = sqrt(see2/nee);
+        }
+        else
+        {
+            edat->s[i].ee = -1;
+        }
+    }
+    sfree(eee);
+}
+
+static enerdata_t *calc_sum(int nset,enerdata_t *edat,int nbmin,int nbmax)
+{
+    enerdata_t *esum;
+    enerdat_t *s;
+    int f,i;
+    double sum;
+    
+    snew(esum,1);
+    *esum = *edat;
+    snew(esum->s,1);
+    s = &esum->s[0];
+    snew(s->ener,esum->nframes);
+    snew(s->es  ,esum->nframes);
+    
+    s->bExactStat = TRUE;
+    s->slope      = 0;
+    for(i=0; i<nset; i++)
+    {
+        if (!edat->s[i].bExactStat)
+        {
+            s->bExactStat = FALSE;
+        }
+        s->slope += edat->s[i].slope;
+    }
+    
+    for(f=0; f<edat->nframes; f++)
+    {
+        sum = 0;
+        for(i=0; i<nset; i++)
+        {
+            sum += edat->s[i].ener[f];
+        }
+        s->ener[f] = sum;
+        sum = 0;
+        for(i=0; i<nset; i++)
+        {
+            sum += edat->s[i].es[f].sum;
+        }
+        s->es[f].sum  = sum;
+        s->es[f].sum2 = 0;
+    }
+    
+    calc_averages(1,esum,nbmin,nbmax);
+
+    return esum;
+}
+
+static char *ee_pr(double ee,char *buf)
+{
+    char   tmp[100];
+    double rnd;
+    
+    if (ee < 0)
+    {
+        sprintf(buf,"%s","--");
+    }
+    else
+    {
+        /* Round to two decimals by printing. */
+        sprintf(tmp,"%.1e",ee);
+        sscanf(tmp,"%lf",&rnd);
+        sprintf(buf,"%g",rnd);
+    }
+
+    return buf;
+}
+
 static void analyse_ener(bool bCorr,const char *corrfn,
-			 bool bFee,bool bSum,bool bFluct,
-			 bool bVisco,const char *visfn,int  nmol,int ndf,
-			 gmx_large_int_t start_step,double start_t,
-			 gmx_large_int_t step,double t,
-			 double time[], real reftemp,
-			 gmx_large_int_t ee_nsum,
-			 t_energy ee_sum[],enersum_t *enersum,
-			 int nset,int set[],int nenergy,real **eneset,
-			 real **enesum,bool *bIsEner,
-			 char **leg,gmx_enxnm_t *enm,
-			 real Vaver,real ezero, const output_env_t oenv)
+                         bool bFee,bool bSum,bool bFluct,bool bTempFluct,
+                         bool bVisco,const char *visfn,int nmol,
+                         int nconstr,
+                         gmx_large_int_t start_step,double start_t,
+                         gmx_large_int_t step,double t,
+                         double time[], real reftemp,
+                         enerdata_t *edat,
+                         int nset,int set[],bool *bIsEner,
+                         char **leg,gmx_enxnm_t *enm,
+                         real Vaver,real ezero,
+                         int nbmin,int nbmax,
+                         const output_env_t oenv)
 {
   FILE *fp;
   /* Check out the printed manual for equations! */
-  double Dt,aver,avertot,stddev,delta_t,totaldrift;
-  real a,b,r;
+  double Dt,aver,stddev,errest,delta_t,totaldrift;
+  enerdata_t *esum=NULL;
   real xxx,integral,intBulk;
-  real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
+  real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,pr_errest;
   double beta=0,expE,expEtot,*fee=NULL;
   gmx_large_int_t nsteps;
-  int  nexact,nnotexact,iset;
+  int  nexact,nnotexact;
   double x1m,x1mk;
-  real Temp=-1,Pres=-1,VarV=-1,VarT=-1;
+  real Temp=-1,Pres=-1,VarV=-1,VarT=-1,VarEtot=-1,AvEtot=0,VarEnthalpy=-1;
   int  i,j;
   real chi2;
-  char buf[256];
+  char buf[256],eebuf[100];
 
   nsteps  = step - start_step + 1;
   if (nsteps < 1) {
@@ -553,14 +881,20 @@ static void analyse_ener(bool bCorr,const char *corrfn,
     fprintf(stdout,"\nStatistics over %s steps [ %.4f thru %.4f ps ], %d data sets\n",
 	    gmx_step_str(nsteps,buf),start_t,t,nset);
 
-    if (ee_nsum == 0) {
+    calc_averages(nset,edat,nbmin,nbmax);
+    
+    if (bSum) {
+        esum = calc_sum(nset,edat,nbmin,nbmax);
+    }
+
+    if (edat->npoints == 0) {
       nexact    = 0;
       nnotexact = nset;
     } else {
       nexact    = 0;
       nnotexact = 0;
       for(i=0; (i<nset); i++) {
-	if (ee_sum[set[i]].esum != 0) {
+	if (edat->s[i].bExactStat) {
 	  nexact++;
 	} else {
 	  nnotexact++;
@@ -569,26 +903,27 @@ static void analyse_ener(bool bCorr,const char *corrfn,
     }
     
     if (nnotexact == 0) {
-      fprintf(stdout,"All averages are over %s frames\n",
-	      gmx_step_str(ee_nsum,buf));
-    } else if (nexact == 0 || ee_nsum == enersum->nframes) {
-      fprintf(stdout,"All averages are over %d frames\n",enersum->nframes);
+      fprintf(stdout,"All statistics are over %s points\n",
+	      gmx_step_str(edat->npoints,buf));
+    } else if (nexact == 0 || edat->npoints == edat->nframes) {
+      fprintf(stdout,"All statistics are over %d points (frames)\n",
+              edat->nframes);
     } else {
       fprintf(stdout,"The term%s",nnotexact==1 ? "" : "s");
       for(i=0; (i<nset); i++) {
-	if (ee_sum[set[i]].esum == 0) {
+	if (!edat->s[i].bExactStat) {
 	  fprintf(stdout," '%s'",leg[i]);
 	}
       }
-      fprintf(stdout," %s averaged over %d frames\n",
-	      nnotexact==1 ? "is" : "are",enersum->nframes);
-      fprintf(stdout,"All other averages are over %s frames\n",
-	      gmx_step_str(ee_nsum,buf));
+      fprintf(stdout," %s has statistics over %d points (frames)\n",
+	      nnotexact==1 ? "is" : "are",edat->nframes);
+      fprintf(stdout,"All other statistics are over %s points\n",
+	      gmx_step_str(edat->npoints,buf));
     }
     fprintf(stdout,"\n");
 
     fprintf(stdout,"%-24s %10s %10s %10s %10s",
-	    "Energy","Average","RMSD","Fluct.","Tot-Drift");
+	    "Energy","Average","Err.Est.","RMSD","Tot-Drift");
     if (bFee)
       fprintf(stdout,"  %10s\n","-kT ln<e^(E/kT)>");
     else
@@ -596,39 +931,25 @@ static void analyse_ener(bool bCorr,const char *corrfn,
     fprintf(stdout,"-------------------------------------------------------------------------------\n");
     
     /* Initiate locals, only used with -sum */
-    avertot=0;
     expEtot=0;
     if (bFee) {
       beta = 1.0/(BOLTZ*reftemp);
       snew(fee,nset);
     }
     for(i=0; (i<nset); i++) {
-      iset = set[i];
-      if (ee_nsum > 0 && ee_sum[iset].esum != 0) {
-	/* We have exact sums over all the MD steps */
-	aver   = ee_sum[iset].esum/ee_nsum;
-	stddev = sqrt(ee_sum[iset].eav/ee_nsum);
-      } else {
-	/* We only have data at energy file frame steps */
-	aver   = enersum->sum[i]/enersum->nframes;
-	if (enersum->nframes > 1) {
-	  stddev = sqrt(enersum->sum2[i]/enersum->nframes - aver*aver);
-	} else {
-	  stddev = 0;
-	}
-      }
+      aver   = edat->s[i].av;
+      stddev = edat->s[i].rmsd;
+      errest = edat->s[i].ee;
 
-      if (bSum) 
-	avertot+=aver;
       if (bFee) {
 	expE = 0;
-	for(j=0; (j<nenergy); j++) {
-	  expE += exp(beta*(eneset[i][j]-aver)/nmol);
+	for(j=0; (j<edat->nframes); j++) {
+	  expE += exp(beta*(edat->s[i].ener[j] - aver)/nmol);
 	}
 	if (bSum) 
-	  expEtot+=expE/nenergy;
+	  expEtot+=expE/edat->nframes;
 	
-	fee[i] = log(expE/nenergy)/beta + aver/nmol;
+	fee[i] = log(expE/edat->nframes)/beta + aver/nmol;
       }
       if (strstr(leg[i],"empera") != NULL) {
 	VarT = sqr(stddev);
@@ -638,97 +959,138 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	Vaver= aver;
       } else if (strstr(leg[i],"essure") != NULL) {
 	Pres = aver;
+      } else if (strstr(leg[i],"otal") != NULL) {
+	VarEtot = sqr(stddev);
+	AvEtot = aver;
+      } else if (strstr(leg[i],"nthalpy") != NULL) {
+	VarEnthalpy = sqr(stddev);
       }
       if (bIsEner[i]) {
 	pr_aver   = aver/nmol-ezero;
 	pr_stddev = stddev/nmol;
+	pr_errest = errest/nmol;
       }
       else {
 	pr_aver   = aver;
 	pr_stddev = stddev;
+	pr_errest = errest;
       }
-      if (nenergy > 1) {
-	lsq_y_ax_b_xdouble(nenergy,time,eneset[i],&a,&b,&r,&chi2);
-        if (bIsEner[i])
-          totaldrift = a * delta_t / nmol;
-        else
-          totaldrift = a * delta_t;
-      } else {
-	totaldrift = 0;
+
+      /* Multiply the slope in steps with the number of steps taken */
+      totaldrift = (edat->nsteps - 1)*edat->s[i].slope;
+      if (bIsEner[i])
+      {
+          totaldrift /= nmol;
       }
-      fluct2 = sqr(pr_stddev) - sqr(totaldrift)/12;
-      if (fluct2 < 0)
-	fluct2 = 0;
-      fprintf(stdout,"%-24s %10g %10g %10g %10g",
-	      leg[i],pr_aver,pr_stddev,sqrt(fluct2),totaldrift);
+
+      fprintf(stdout,"%-24s %10g %10s %10g %10g",
+	      leg[i],pr_aver,ee_pr(pr_errest,eebuf),pr_stddev,totaldrift);
       if (bFee) 
 	fprintf(stdout,"  %10g",fee[i]);
       
       fprintf(stdout,"  (%s)\n",enm[set[i]].unit);
 
       if (bFluct) {
-	for(j=0; (j<nenergy); j++)
-	  eneset[i][j] -= aver;
+	for(j=0; (j<edat->nframes); j++)
+	  edat->s[i].ener[j] -= aver;
       }
     }
     if (bSum) {
-      fprintf(stdout,"%-24s %10g %10s %10s %10s %10s",
-	      "Total",avertot/nmol,"--","--","--","--");
+        totaldrift = (edat->nsteps - 1)*esum->s[0].slope;
+      fprintf(stdout,"%-24s %10g %10s %10s %10g  (%s)",
+	      "Total",esum->s[0].av/nmol,ee_pr(esum->s[0].ee/nmol,eebuf),
+	      "--",totaldrift/nmol,enm[set[0]].unit);
       /* pr_aver,pr_stddev,a,totaldrift */
       if (bFee) 
 	fprintf(stdout,"  %10g  %10g\n",
-		log(expEtot)/beta + avertot/nmol,log(expEtot)/beta);
+		log(expEtot)/beta + esum->s[0].av/nmol,log(expEtot)/beta);
       else
 	fprintf(stdout,"\n");
     }
-    if (Temp != -1) {
-      real factor;
-      
-      factor = nmol*ndf*VarT/(3.0*sqr(Temp));
-      fprintf(stdout,"Heat Capacity Cv:   %10g J/mol K (factor = %g)\n",
-	      1000*BOLTZ/(2.0/3.0 - factor),factor);
-    }
-    if ((VarV != -1) && (Temp != -1)) {
-      real tmp = VarV/(Vaver*BOLTZ*Temp*PRESFAC);
-      
-      fprintf(stdout,"Isothermal Compressibility: %10g /%s\n",
-	      tmp,unit_pres_bar);
-      fprintf(stdout,"Adiabatic bulk modulus:     %10g  %s\n",
-	      1.0/tmp,unit_pres_bar);
+    if (bTempFluct && Temp != -1) {
+      printf("\nTemperature dependent fluctuation properties at T = %g. #constr/mol = %d\n",Temp,nconstr);
+      if (nmol < 2)
+	printf("Warning: nmol = %d, this may not be what you want.\n",
+	       nmol);
+      if (VarV != -1) {
+	real tmp = VarV/(Vaver*BOLTZ*Temp*PRESFAC);
+	
+	printf("Isothermal Compressibility: %10g /%s\n",
+	       tmp,unit_pres_bar);
+	printf("Adiabatic bulk modulus:     %10g  %s\n",
+	       1.0/tmp,unit_pres_bar);
+      }
+      if (VarEnthalpy != -1) {
+	real Cp = 1000*((VarEnthalpy/nmol)/(BOLTZ*Temp*Temp) - 
+			0.5*BOLTZ*nconstr);
+	printf("Heat capacity at constant pressure Cp: %10g J/mol K\n",Cp);
+      }
+      if ((VarV != -1) && (VarEnthalpy != -1)) {
+	real aP = (sqrt(VarEnthalpy*VarV/nmol))/(BOLTZ*Vaver*Temp*Temp);
+	printf("Thermal expansion coefficient alphaP: %10g 1/K\n",aP);
+      }
+      if ((VarV == -1) && (VarEtot != -1)) {
+	real Cv = 1000*((VarEtot/nmol)/(BOLTZ*Temp*Temp) - 
+			0.5*BOLTZ*nconstr);
+	printf("Heat capacity at constant volume Cv: %10g J/mol K\n",Cv);
+      }
+      please_cite(stdout,"Allen1987a");
     }
     /* Do correlation function */
-    Dt = delta_t/nenergy;
+    if (edat->nframes > 1)
+    {
+        Dt = delta_t/(edat->nframes - 1);
+    }
+    else
+    {
+        Dt = 0;
+    }
     if (bVisco) {
       char *leg[] = { "Shear", "Bulk" };
       real factor;
+      real **eneset;
+      real **enesum;
     
       /* Assume pressure tensor is in Pxx Pxy Pxz Pyx Pyy Pyz Pzx Pzy Pzz */
       
       /* Symmetrise tensor! (and store in first three elements) 
        * And subtract average pressure!
        */
-      for(i=0; (i<nenergy); i++) {
-	eneset[0][i] = 0.5*(eneset[1][i]+eneset[3][i]);
-	eneset[1][i] = 0.5*(eneset[2][i]+eneset[6][i]);
-	eneset[2][i] = 0.5*(eneset[5][i]+eneset[7][i]);
+      snew(eneset,12);
+      for(i=0; i<12; i++) {
+          snew(eneset[i],edat->nframes);
+      }
+      snew(enesum,3);
+      for(i=0; i<3; i++) {
+	snew(enesum[i],edat->nframes);
+      }
+      for(i=0; (i<edat->nframes); i++) {
+	eneset[0][i] = 0.5*(edat->s[1].ener[i]+edat->s[3].ener[i]);
+	eneset[1][i] = 0.5*(edat->s[2].ener[i]+edat->s[6].ener[i]);
+	eneset[2][i] = 0.5*(edat->s[5].ener[i]+edat->s[7].ener[i]);
+	for(j=3; j<=11; j++) {
+	  eneset[j][i] = edat->s[j].ener[i];
+	}
 	eneset[11][i] -= Pres;
-	enesum[0][i] = 0.5*(enesum[1][i]+enesum[3][i]);
-	enesum[1][i] = 0.5*(enesum[2][i]+enesum[6][i]);
-	enesum[2][i] = 0.5*(enesum[5][i]+enesum[7][i]);
+	enesum[0][i] = 0.5*(edat->s[1].es[i].sum+edat->s[3].es[i].sum);
+	enesum[1][i] = 0.5*(edat->s[2].es[i].sum+edat->s[6].es[i].sum);
+	enesum[2][i] = 0.5*(edat->s[5].es[i].sum+edat->s[7].es[i].sum);
       }
       
       einstein_visco("evisco.xvg","eviscoi.xvg",
-		     3,nenergy,enesum,Vaver,Temp,nsteps,time,oenv);
+		     3,edat->nframes,enesum,Vaver,Temp,nsteps,time,oenv);
       
       /*do_autocorr(corrfn,buf,nenergy,3,eneset,Dt,eacNormal,TRUE);*/
       /* Do it for shear viscosity */
       strcpy(buf,"Shear Viscosity");
-      low_do_autocorr(corrfn,oenv,buf,nenergy,3,(nenergy+1)/2,eneset,Dt,
+      low_do_autocorr(corrfn,oenv,buf,edat->nframes,3,
+		      (edat->nframes+1)/2,eneset,Dt,
 		      eacNormal,1,TRUE,FALSE,FALSE,0.0,0.0,0,1);
 	
       /* Now for bulk viscosity */
       strcpy(buf,"Bulk Viscosity");
-      low_do_autocorr(corrfn,oenv,buf,nenergy,1,(nenergy+1)/2,&(eneset[11]),Dt,
+      low_do_autocorr(corrfn,oenv,buf,edat->nframes,1,
+		      (edat->nframes+1)/2,&(eneset[11]),Dt,
 		      eacNormal,1,TRUE,FALSE,FALSE,0.0,0.0,0,1);
       
       factor = (Vaver*1e-26/(BOLTZMANN*Temp))*Dt;
@@ -738,7 +1100,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       /* Use trapezium rule for integration */
       integral = 0;
       intBulk  = 0;
-      for(i=1; (i<nenergy/2); i++) {
+      for(i=1; (i<edat->nframes/2); i++) {
 	integral += 0.5*(eneset[0][i-1]  + eneset[0][i])*factor;
 	intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
 	fprintf(fp,"%10g  %10g  %10g\n",(i*Dt),integral,intBulk);
@@ -750,10 +1112,12 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	strcpy(buf,"Autocorrelation of Energy Fluctuations");
       else
 	strcpy(buf,"Energy Autocorrelation");
-      do_autocorr(corrfn,oenv,buf,nenergy,
+#if 0
+      do_autocorr(corrfn,oenv,buf,edat->nframes,
 		  bSum ? 1                 : nset,
-		  bSum ? &(eneset[nset-1]) : eneset,
-		  (delta_t/nenergy),eacNormal,FALSE);
+		  bSum ? &edat->s[nset-1].ener : eneset,
+		  (delta_t/edat->nframes),eacNormal,FALSE);
+#endif
     }
   }
 }
@@ -769,19 +1133,18 @@ static void print1(FILE *fp,bool bDp,real e)
     fprintf(fp,"  %16.12f",e);
   else
     fprintf(fp,"  %10.6f",e);
-
 }
 
 static void fec(const char *ene2fn, const char *runavgfn, 
 		real reftemp, int nset, int set[], char *leg[], 
-		int nenergy, real **eneset, double time[],
+		enerdata_t *edat, double time[],
                 const output_env_t oenv)
 {
   char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
 	   	      "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
   FILE *fp;
   ener_file_t enx;
-  int  nre,timecheck,step,nenergy2,maxenergy;
+  int  nre,timecheck,step,nenergy,nenergy2,maxenergy;
   int  i,j;
   bool bCont;
   real aver, beta;
@@ -832,9 +1195,11 @@ static void fec(const char *ene2fn, const char *runavgfn,
   } while (bCont && (timecheck == 0));
   
   /* check */
-  if(nenergy!=nenergy2)
-    fprintf(stderr,"\nWARNING file length mismatch %d!=%d\n",nenergy,nenergy2);
-  nenergy=min(nenergy,nenergy2);
+  if (edat->nframes != nenergy2) {
+    fprintf(stderr,"\nWARNING file length mismatch %d!=%d\n",
+	    edat->nframes,nenergy2);
+  }
+  nenergy = min(edat->nframes,nenergy2);
   
   /* calculate fe difference dF = -kT ln < exp(-(E_B-E_A)/kT) >_A */
   fp=NULL;
@@ -852,7 +1217,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
       fprintf(stderr,"\nWARNING energy set name mismatch %s!=%s\n",
 	      leg[i],enm[set[i]].name);
     for(j=0; j<nenergy; j++) {
-      dE = eneset2[i][j]-eneset[i][j];
+      dE = eneset2[i][j] - edat->s[i].ener[j];
       sum += exp(-dE*beta);
       if (fp)
 	fprintf(fp,"%10g %10g %10g\n", 
@@ -873,11 +1238,40 @@ int gmx_energy(int argc,char *argv[])
     "data from an energy file. The user is prompted to interactively",
     "select the energy terms she wants.[PAR]",
     
-    "Average and RMSD are calculated with full precision from the",
+    "Average, RMSD and drift are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
     "a LSQ fit of the data to a straight line. The reported total drift",
     "is the difference of the fit at the first and last point.",
+    "An error estimate of the average is given based on a block averages",
+    "over 5 blocks using the full precision averages. The error estimate",
+    "can be performed over multiple block lengths with the options",
+    "[TT]-nbmin[tt] and [TT]-nbmax[tt].",
+    "Note that in most cases the energy files contains averages over all",
+    "MD steps, or over many more points than the number of frames in",
+    "energy file. This makes the g_energy statistics output more accurate",
+    "than the xvg output. When exact averages are not present in the energy",
+    "file the statistics mentioned above is simply over the single, per-frame",
+    "energy values.[PAR]",
+
     "The term fluctuation gives the RMSD around the LSQ fit.[PAR]",
+    
+    "Some fluctuation-dependent properties can be calculated provided",
+    "the correct energy terms are selected. The following properties",
+    "will be computed:[BR]",
+    "Property                       Energy terms needed[BR]",
+    "--------------------------------------------------[BR]",
+    "Heat capacity Cp (NPT sims)    Enthalpy, Temp     [BR]",
+    "Heat capacity Cv (NVT sims)    Etot, Temp         [BR]",
+    "Thermal expansion coeff. (NPT) Enthalpy, Vol, Temp[BR]",
+    "Isothermal compressibility     Vol, Temp          [BR]",
+    "Adiabatic bulk modulus         Vol, Temp          [PBR]",
+    "--------------------------------------------------[BR]",
+    "You always need to set the number of molecules [TT]-nmol[tt], and,",
+    "if you used constraints in your simulations you will need to give",
+    "the number of constraints per molecule [TT]-nconstr[tt] in order to",
+    "correct for this: (nconstr/2) kB is subtracted from the heat",
+    "capacity in this case. For instance in the case of rigid water",
+    "you need to give the value 3 to this option.[PAR]",
     
     "When the [TT]-viol[tt] option is set, the time averaged",
     "violations are plotted and the running time-averaged and",
@@ -924,9 +1318,9 @@ int gmx_energy(int argc,char *argv[])
     "the energies must both be calculated from the same trajectory."
     
   };
-  static bool bSum=FALSE,bFee=FALSE,bAll=FALSE,bFluct=FALSE;
+  static bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
   static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
-  static int  skip=0,nmol=1,ndf=3;
+  static int  skip=0,nmol=1,nconstr=0,nbmin=5,nbmax=5;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
     { "-fee",   FALSE, etBOOL,  {&bFee},
@@ -939,16 +1333,20 @@ int gmx_energy(int argc,char *argv[])
       "Sum the energy terms selected rather than display them all" },
     { "-dp",   FALSE, etBOOL, {&bDp},
       "Print energies in high precision" },
+    { "-nbmin", FALSE, etINT, {&nbmin},
+      "Minimum number of blocks for error estimate" },
+    { "-nbmax", FALSE, etINT, {&nbmax}, 
+      "Maximum number of blocks for error estimate" },
     { "-mutot",FALSE, etBOOL, {&bMutot},
       "Compute the total dipole moment from the components" },
     { "-skip", FALSE, etINT,  {&skip},
       "Skip number of frames between data points" },
-    { "-aver", FALSE, etBOOL, {&bAll},
-      "Print also the X1,t and sigma1,t, only if only 1 energy is requested" },
+    { "-aver", FALSE, etBOOL, {&bPrAll},
+      "Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested)" },
     { "-nmol", FALSE, etINT,  {&nmol},
       "Number of molecules in your sample: the energies are divided by this number" },
-    { "-ndf",  FALSE, etINT,  {&ndf},
-      "Number of degrees of freedom per molecule. Necessary for calculating the heat capacity" },
+    { "-nconstr",  FALSE, etINT,  {&nconstr},
+      "Number of constraints per molecule. Necessary for calculating the heat capacity" },
     { "-fluc", FALSE, etBOOL, {&bFluct},
       "Calculate autocorrelation of energy fluctuations rather than energy itself" },
     { "-orinst", FALSE, etBOOL, {&bOrinst},
@@ -973,14 +1371,14 @@ int gmx_energy(int argc,char *argv[])
   gmx_mtop_t mtop;
   gmx_localtop_t *top=NULL;
   t_inputrec ir;
-  t_energy   *ee_sum,**ee;
-  enersum_t  enersum;
+  t_energy   **ee;
+  enerdata_t edat;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *frame,*fr=NULL;
   int        cur=0;
 #define NEXT (1-cur)
-  int        nre,teller,teller_disre;
-  gmx_large_int_t start_step,ee_nsteps,ee_nsum;
+  int        nre,teller,teller_disre,nfr;
+  gmx_large_int_t start_step;
   int        nor=0,nex=0,norfr=0,enx_i=0;
   real       start_t;
   real       *bounds=NULL,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
@@ -990,8 +1388,8 @@ int gmx_energy(int argc,char *argv[])
   bool       bFoundStart,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt,ener,dbl;
   double     *time=NULL;
-  real       **eneset=NULL, **enesum=NULL,Vaver;
-  int        *set=NULL,i,j,k,nset,sss,nenergy;
+  real       Vaver;
+  int        *set=NULL,i,j,k,nset,sss;
   bool       *bIsEner=NULL;
   char       **pairleg,**odtleg,**otenleg;
   char       **leg=NULL;
@@ -1045,12 +1443,6 @@ int gmx_energy(int argc,char *argv[])
   fp = open_enx(ftp2fn(efEDR,NFILE,fnm),"r");
   do_enxnms(fp,&nre,&enm);
 
-  /* Initiate energies and set them to zero */
-  snew(ee_sum,nre);
-  enersum.nframes = 0;
-  snew(enersum.sum,nre);
-  snew(enersum.sum2,nre);
-  nenergy = 0;
   Vaver = -1;
   
   bVisco = opt2bSet("-vis",NFILE,fnm);
@@ -1119,9 +1511,10 @@ int gmx_energy(int argc,char *argv[])
 	  (strcasecmp(interaction_function[j].longname,leg[i]) == 0);
     }
     
-    snew(eneset,nset+1);
-    if (bVisco)
-      snew(enesum,nset+1);
+    if (bPrAll && nset > 1) {
+        gmx_fatal(FARGS,"Printing averages can only be done when a single set is selected");
+    }
+
     time = NULL;
 
     if (bORIRE || bOTEN)
@@ -1222,11 +1615,20 @@ int gmx_energy(int argc,char *argv[])
     if (bDRAll) { 
       fp_pairs=xvgropen(opt2fn("-pairs",NFILE,fnm),"Pair Distances",
 			"Time (ps)","Distance (nm)",oenv);
-      if (get_print_xvgr_codes(oenv))
+      if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(fp_pairs,"@ subtitle \"averaged (tau=%g) and instantaneous\"\n",
 		ir.dr_tau);
     }
   }
+
+  /* Initiate energies and set them to zero */
+  edat.nsteps  = 0;
+  edat.npoints = 0;
+  edat.nframes = 0;
+  edat.step    = NULL;
+  edat.steps   = NULL;
+  edat.points  = NULL;
+  snew(edat.s,nset);
   
   /* Initiate counters */
   teller       = 0;
@@ -1234,8 +1636,6 @@ int gmx_energy(int argc,char *argv[])
   bFoundStart  = FALSE;
   start_step   = 0;
   start_t      = 0;
-  ee_nsteps    = 0;
-  ee_nsum      = 0;
   do {
     /* This loop searches for the first frame (when -b option is given), 
      * or when this has been found it reads just one energy frame
@@ -1255,53 +1655,83 @@ int gmx_energy(int argc,char *argv[])
       if (fr->nre > 0) {
 	/* The frame contains energies, so update cur */
 	cur  = NEXT;
-	
-	if (!bFoundStart) {
-	  bFoundStart = TRUE;
-	  /* Initiate the previous step data */
-	  start_step = fr->step;
-	  start_t    = fr->t;
-	  /* Initiate the energy sums */
-	  for(i=0; i<fr->nre; i++) {
-	    ee_sum[i].esum = fr->ener[i].e;
-	    ee_sum[i].eav  = 0;
-	  }
-	  ee_nsteps = 1;
-	  ee_nsum   = 1;
-	} else {
-	  if (ee_nsum > 0) {
-	    if (fr->step - start_step + 1 == ee_nsteps + fr->nsteps) {
-	      if (fr->nsum <= 1) {
-		/* We have a sum of a single frame:
-		 * add the energy to the sums.
-		 */
-		for(i=0; i<fr->nre; i++) {
-		  ee_sum[i].eav  +=
-		    dsqr(ee_sum[i].esum/ee_nsum - (ee_sum[i].esum + fr->ener[i].e)/(ee_nsum + 1))*
-		    ee_nsum*(ee_nsum + 1);
-		  ee_sum[i].esum += fr->ener[i].e;
-		}
-		ee_nsum += 1;
-	      } else {
-		/* Add the sums to the total */
-		for(i=0; i<fr->nre; i++) {
-		  ee_sum[i].eav  +=
-		    fr->ener[i].eav +
-		    dsqr(ee_sum[i].esum/ee_nsum - (ee_sum[i].esum + fr->ener[i].esum)/(ee_nsum + fr->nsum))*
-		    ee_nsum*(ee_nsum + fr->nsum)/(double)fr->nsum;
-		ee_sum[i].esum += fr->ener[i].esum;
-		}
-		ee_nsum += fr->nsum;
-	      }
-	    } else {
-	      /* The interval does not match fr->nsteps:
-	       * can not do exact averages.
-	       */
-	      ee_nsum = 0;
-	    }
-	    ee_nsteps = fr->step - start_step + 1;
-	  }
-	}
+
+	        if (edat.nframes % 1000 == 0)
+            {
+                srenew(edat.step,edat.nframes+1000);
+                srenew(edat.steps,edat.nframes+1000);
+                srenew(edat.points,edat.nframes+1000);
+                for(i=0; i<nset; i++)
+                {
+                    srenew(edat.s[i].ener,edat.nframes+1000);
+                    srenew(edat.s[i].es  ,edat.nframes+1000);
+                }
+            }
+
+	        nfr = edat.nframes;
+            edat.step[nfr] = fr->step;
+
+            if (!bFoundStart)
+            {
+                bFoundStart = TRUE;
+                /* Initiate the previous step data */
+                start_step = fr->step;
+                start_t    = fr->t;
+                /* Initiate the energy sums */
+                edat.steps[nfr]  = 1;
+                edat.points[nfr] = 1;
+                for(i=0; i<nset; i++)
+                {
+                    sss = set[i];
+                    edat.s[i].es[nfr].sum  = fr->ener[sss].e;
+                    edat.s[i].es[nfr].sum2 = 0;
+                }
+                edat.nsteps  = 1;
+                edat.npoints = 1;
+            }
+            else
+            {
+                edat.steps[nfr] = fr->nsteps;
+                {
+                    if (fr->step - start_step + 1 == edat.nsteps + fr->nsteps)
+                    {
+                        if (fr->nsum <= 1)
+                        {
+                            edat.points[nfr] = 1;
+                            for(i=0; i<nset; i++)
+                            {
+                                sss = set[i];
+                                edat.s[i].es[nfr].sum  = fr->ener[sss].e;
+                                edat.s[i].es[nfr].sum2 = 0;
+                            }
+                            edat.npoints += 1;
+                        }
+                        else
+                        {
+                            edat.points[nfr] = fr->nsum;
+                            for(i=0; i<nset; i++)
+                            {
+                                sss = set[i];
+                                edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
+                                edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
+                            }
+                            edat.npoints += fr->nsum;
+                        }
+                    }
+                    else
+                    {
+                        /* The interval does not match fr->nsteps:
+                         * can not do exact averages.
+                         */
+                        edat.npoints = 0;
+                    }
+                    edat.nsteps = fr->step - start_step + 1;
+                }
+            }
+            for(i=0; i<nset; i++)
+            {
+                edat.s[i].ener[nfr] = fr->ener[set[i]].e;
+            }
       }
       /*
        * Define distance restraint legends. Can only be done after
@@ -1344,34 +1774,11 @@ int gmx_energy(int argc,char *argv[])
        * Store energies for analysis afterwards... 
        */
       if (!bDisRe && (fr->nre > 0)) {
-	if ((nenergy % 1000) == 0) {
-	  srenew(time,nenergy+1000);
-	  for(i=0; (i<=nset); i++) {
-	    srenew(eneset[i],nenergy+1000);
-	    if (bVisco)
-	      srenew(enesum[i],nenergy+1000);
-	  }
+	if (edat.nframes % 1000 == 0) {
+	  srenew(time,edat.nframes+1000);
 	}
-	time[nenergy] = fr->t;
-	sum=0;
-	for(i=0; (i<nset); i++) {
-	  ener = fr->ener[set[i]].e;
-	  eneset[i][nenergy] = ener;
-	  sum += ener;
-	  if (bVisco) {
-	    enesum[i][nenergy] = fr->ener[set[i]].esum;
-	  }
-	  /* Sum the actual frame energies,
-	   * for in case we do not have exact sums in the energy file.
-	   */
-	  enersum.sum[i]  += ener;
-	  enersum.sum2[i] += ener*ener;
-	}
-	if (bSum) {
-	  eneset[nset][nenergy] = sum;
-	}
-	nenergy++;
-	enersum.nframes++;
+	time[edat.nframes] = fr->t;
+	edat.nframes++;
       }
       /* 
        * Printing time, only when we do not want to skip frames
@@ -1410,22 +1817,47 @@ int gmx_energy(int argc,char *argv[])
 	 *******************************************/
 	else {
 	  if (fr->nre > 0) {
-	    print_time(out,fr->t);
-	    if (bSum) 
-	      print1(out,bDp,(eneset[nset][nenergy-1])/nmol-ezero);
-	    else if ((nset == 1) && bAll) {
-	      print1(out,bDp,fr->ener[set[0]].e);
-	      print1(out,bDp,fr->ener[set[0]].esum);
-	      print1(out,bDp,fr->ener[set[0]].eav);
-	    }
-	    else for(i=0; (i<nset); i++) {
-              if (bIsEner[i])
-                print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
-              else
-                print1(out,bDp,fr->ener[set[i]].e);
+            if (bPrAll)
+            {
+                /* We skip frames with single points (usually only the first frame),
+                 * since they would result in an average plot with outliers.
+                 */
+                if (fr->nsum > 1) {
+                    print_time(out,fr->t);
+                     print1(out,bDp,fr->ener[set[0]].e);
+                     print1(out,bDp,fr->ener[set[0]].esum/fr->nsum);
+                     print1(out,bDp,sqrt(fr->ener[set[0]].eav/fr->nsum));
+                     fprintf(out,"\n");
+                }
             }
-
-	    fprintf(out,"\n");
+            else
+            {
+                print_time(out,fr->t);
+                if (bSum)
+                {
+                    sum = 0;
+                    for(i=0; i<nset; i++)
+                    {
+                        sum += fr->ener[set[i]].e;
+                    }
+                    print1(out,bDp,sum/nmol-ezero);
+                }
+                else
+                {
+                    for(i=0; (i<nset); i++)
+                    {
+                        if (bIsEner[i])
+                        {
+                            print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
+                        }
+                        else
+                        {
+                            print1(out,bDp,fr->ener[set[i]].e);
+                        }
+                    }
+                }
+                fprintf(out,"\n");
+            }
 	  }
 	  if (bORIRE && fr->nblock>enx_i && fr->nr[enx_i]>0) {
 	    if (fr->nr[enx_i] != nor)
@@ -1514,15 +1946,16 @@ int gmx_energy(int argc,char *argv[])
 		  teller_disre,violaver,bounds,index,pair,nbounds,oenv);
   } else {
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
-		 bFee,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
-		 nmol,ndf,start_step,start_t,frame[cur].step,frame[cur].t,
-		 time,reftemp,ee_nsum,ee_sum,&enersum,
-		 nset,set,nenergy,eneset,enesum,bIsEner,leg,enm,Vaver,ezero,
+                 bFee,bSum,bFluct,opt2parg_bSet("-nmol",npargs,ppa),
+                 bVisco,opt2fn("-vis",NFILE,fnm),
+                 nmol,nconstr,start_step,start_t,frame[cur].step,frame[cur].t,
+                 time,reftemp,&edat,
+                 nset,set,bIsEner,leg,enm,Vaver,ezero,nbmin,nbmax,
                  oenv);
   }
   if (opt2bSet("-f2",NFILE,fnm)) {
     fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
-	reftemp, nset, set, leg, nenergy, eneset, time ,oenv);
+	reftemp, nset, set, leg, &edat, time ,oenv);
   }
   
   {

@@ -73,7 +73,7 @@ static const t_timeconvert timeconvert[] = {
     { 1e3,  		   "fs",  "fs"       },
     { 1,    		   "ps",  "ps"       },
     { 1e-3, 		   "ns",  "ns"       },
-    { 1e-6, 		   "us",  "\\8m\\4s" }, 
+    { 1e-6, 		   "us",  "\\mus"    }, 
     { 1e-9, 		   "ms",  "ms"       },
     { 1e-12, 		   "s",   "s"        },
     { (1.0/60.0)*1e-12,    "m",   "m"        },

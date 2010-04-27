@@ -1,0 +1,73 @@
+
+#ifdef _FF_CHARMM
+
+[ moleculetype ] 
+; molname	nrexcl
+OH		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1       OC      	1       OH               O1	 1	-1.32
+2       H       	1       OH               H1	 1	0.32
+
+[ bonds ]
+;i	j	funct	length	force.c.
+1	2	1	0.09700	456056   ; hydroxyl bond
+
+[ moleculetype ]
+; molname	nrexcl
+Na		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   
+1	SOD		1	Na		Na	 1	1		 
+
+[ moleculetype ]
+; molname	nrexcl
+Mg		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge
+1	MG		1	Mg		Mg	 1	2		 
+
+[ moleculetype ]
+; molname	nrexcl
+K		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   
+1	POT		1	K		K	 1	1		 
+
+[ moleculetype ]
+; molname	nrexcl
+Ces		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   
+1	CES		1	Ces		Ces	 1	1		 
+
+[ moleculetype ]
+; molname	nrexcl
+Cal		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   
+1	CAL		1	Cal		Cal	 1	2	 
+
+[ moleculetype ]
+; molname	nrexcl
+Cl		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   
+1	CLA		1	Cl		Cl	 1	-1	 
+
+[ moleculetype ]
+; molname	nrexcl
+Zn		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   
+1	ZN		1	Zn		Zn	 1	-2	 
+
+#endif

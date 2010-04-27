@@ -61,9 +61,11 @@ void rd_index(const char *statfile,int ngrps,int isize[],
 /* Assume the group file is generated, so the
  * format need not be user-friendly. The format is:
  * nr of groups, total nr of atoms
- * for each group: name nr of element, elements
- * The function opens a file, reads ngrps groups, puts the
- * sizes in isize, the atom_id s in index and the names of
+ * for each group: name nr of element, elements.
+ *
+ * The function opens a file, reads ngrps groups, asks the 
+ * user for group numbers, and puts the resulting sizes in 
+ * isize, the atom_id s in index and the names of
  * the groups in grpnames.
  *
  * It is also assumed, that when ngrps groups are requested

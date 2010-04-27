@@ -196,6 +196,7 @@ static const t_deffile
     { eftASC, ".edi", "sam",    NULL, "ED sampling input"},
     { eftASC, ".edo", "sam",    NULL, "ED sampling output"},
     { eftASC, ".hat", "gk", NULL, "Fourier transform of spread function" },
+    { eftASC, ".cub", "pot",  NULL, "Gaussian cube file" },
     { eftASC, ".xpm", "root", NULL, "X PixMap compatible matrix file" } 
 };
 
@@ -961,7 +962,7 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
                 strncpy(buf, fnm[i].fns[j], STRLEN - 1);
                 extpos = strrchr(buf, '.');
                 *extpos = '\0';
-                sprintf(newname, "%s.%s.%s", buf, suffix, extpos + 1);
+                sprintf(newname, "%s%s.%s", buf, suffix, extpos + 1);
                 free(fnm[i].fns[j]);
                 fnm[i].fns[j] = strdup(newname);
             }

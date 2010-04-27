@@ -189,7 +189,7 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   bool bHDd,bHEd;
   rvec xh1,xh2;
   int  natom;
-  int  i,j,nd,na,aj,hisind,his0,type=-1;
+  int  i,nd,na,aj,hisind,his0,type=-1;
   int  nd1,ne2,cg,cd2,ce1;
   t_blocka *hb;
   real d;
@@ -229,18 +229,20 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
 	
 	/* Find the  atoms in the ring */
 	nd1=ne2=cg=cd2=ce1=-1;
-	for(j=i; (pdba->atom[j].resind==hisind) && (j<natom); j++) {
-	  atomnm=*pdba->atomname[j];
+	while (i<natom && pdba->atom[i].resind==hisind) {
+	  atomnm = *pdba->atomname[i];
 	  if (strcmp(atomnm,"CD2") == 0)
-	    cd2=j;
+	    cd2 = i;
 	  else if (strcmp(atomnm,"CG") == 0)
-	    cg=j;
+	    cg  = i;
 	  else if (strcmp(atomnm,"CE1") == 0)
-	    ce1=j;
+	    ce1 = i;
 	  else if (strcmp(atomnm,"ND1") == 0)
-	    nd1=j;
+	    nd1 = i;
 	  else if (strcmp(atomnm,"NE2") == 0)
-	    ne2=j;
+	    ne2 = i;
+
+	  i++;
 	}
 	
 	if (!((cg == -1 ) || (cd2 == -1) || (ce1 == -1) ||
@@ -268,8 +270,8 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
 	  gmx_fatal(FARGS,"Incomplete ring in HIS%d",
 		    pdba->resinfo[hisind].nr);
 	
-	sfree(*pdba->resinfo[hisind].name);
-	*pdba->resinfo[hisind].name = strdup(hh[type]);
+	snew(pdba->resinfo[hisind].rtp,1);
+	*pdba->resinfo[hisind].rtp = strdup(hh[type]);
       }
     }
   }

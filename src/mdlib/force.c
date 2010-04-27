@@ -239,7 +239,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     if (ir->n_flambda > 0 && (flags & GMX_FORCE_DHDL) && ir->sc_alpha != 0)
     {
         init_enerdata(mtop->groups.grps[egcENER].nr,ir->n_flambda,&ed_lam);
-
+        
         for(i=0; i<enerd->n_lambda; i++)
         {
             lam_i = (i==0 ? lambda : ir->flambda[i-1]);
@@ -250,7 +250,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                          ed_lam.grpp.ener[egBHAMSR] :
                          ed_lam.grpp.ener[egLJSR],
                          ed_lam.grpp.ener[egCOULSR],
-			 enerd->grpp.ener[egGB], box_size,nrnb,
+                         enerd->grpp.ener[egGB], box_size,nrnb,
                          lam_i,&dvdl_dum,-1,-1,
                          GMX_DONB_FOREIGNLAMBDA);
             sum_epot(&ir->opts,&ed_lam);
@@ -263,9 +263,11 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	/* If we are doing GB, calculate bonded forces and apply corrections 
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
-		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm,nrnb,bBornRadii);
-		enerd->term[F_GB12]+=dvdgb;	
+		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
+							   ir->gb_algorithm,nrnb,bBornRadii,&pbc,graph);
 		
+		enerd->term[F_GB12]+=dvdgb;	
+	
 		/* Also add the nonbonded GB potential energy (only from one energy group currently) */
 		enerd->term[F_GB12]+=enerd->grpp.ener[egGB][0];
 	}
@@ -345,7 +347,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         GMX_MPE_LOG(ev_calc_bonds_start);
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
-                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born, &(mtop->cmap_grid),
+                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
                    fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
         
         /* Check if we have to determine energy differences

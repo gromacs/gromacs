@@ -48,6 +48,7 @@
 #include "pme.h"
 #include "network.h"
 #include "domdec.h"
+#include "sighandler.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -64,8 +65,8 @@
 #define PP_PME_FEP      (1<<3)
 #define PP_PME_FINISH   (1<<4)
 
-#define PME_PP_TERM     (1<<0)
-#define PME_PP_USR1     (1<<1)
+#define PME_PP_SIGSTOP     (1<<0)
+#define PME_PP_SIGSTOPNSS     (1<<1)
 
 typedef struct gmx_pme_pp {
 #ifdef GMX_MPI
@@ -106,10 +107,6 @@ typedef struct {
 } gmx_pme_comm_vir_ene_t;
 
 
-/* The following stuff is needed for signal handling on the PME nodes.
- * The signal variables are defined in pme.c and also used in md.c.
- */ 
-extern bool bGotTermSignal, bGotUsr1Signal; 
 
 
 gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr)
@@ -419,8 +416,8 @@ static void receive_virial_energy(t_commrec *cr,
     *dvdlambda += cve.dvdlambda;
     *pme_cycles = cve.cycles;
 
-    bGotTermSignal = (cve.flags & PME_PP_TERM);
-    bGotUsr1Signal = (cve.flags & PME_PP_USR1);
+    bGotStopNextStepSignal = (cve.flags & PME_PP_SIGSTOP);
+    bGotStopNextNSStepSignal = (cve.flags & PME_PP_SIGSTOPNSS);
   } else {
     *energy = 0;
     *pme_cycles = 0;
@@ -465,8 +462,8 @@ void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
 				 rvec *f, matrix vir,
 				 real energy, real dvdlambda,
 				 float cycles,
-				 bool bGotTermSignal,
-				 bool bGotUsr1Signal)
+				 bool bGotStopNextStepSignal,
+				 bool bGotStopNextNSStepSignal)
 {
   gmx_pme_comm_vir_ene_t cve; 
   int messages,ind_start,ind_end,receiver;
@@ -492,10 +489,10 @@ void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
   cve.energy    = energy;
   cve.dvdlambda = dvdlambda;
   cve.flags     = 0;
-  if (bGotTermSignal)
-    cve.flags |= PME_PP_TERM;
-  if (bGotUsr1Signal)
-    cve.flags |= PME_PP_USR1;
+  if (bGotStopNextStepSignal)
+    cve.flags |= PME_PP_SIGSTOP;
+  if (bGotStopNextNSStepSignal)
+    cve.flags |= PME_PP_SIGSTOPNSS;
   
   cve.cycles = cycles;
   

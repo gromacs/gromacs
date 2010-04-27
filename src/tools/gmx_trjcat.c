@@ -180,18 +180,18 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                 "same amount as in the previous. Use it when the time in the\n"
                 "new run continues from the end of the previous one,\n"
                 "since this takes possible overlap into account.\n\n",
-                get_time_unit(oenv));
+                output_env_get_time_unit(oenv));
 
         fprintf(
                 stderr,
                 "          File             Current start (%s)  New start (%s)\n"
                 "---------------------------------------------------------\n",
-                get_time_unit(oenv), get_time_unit(oenv));
+                output_env_get_time_unit(oenv), output_env_get_time_unit(oenv));
 
         for (i = 0; i < nfiles; i++)
         {
             fprintf(stderr, "%25s   %10.3f %s          ", fnms[i],
-                    conv_time(oenv, readtime[i]), get_time_unit(oenv));
+                    output_env_conv_time(oenv, readtime[i]), output_env_get_time_unit(oenv));
             ok = FALSE;
             do
             {
@@ -220,7 +220,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                 else
                 {
                     settime[i]=strtod(inputstring,&chptr)*
-                    get_time_invfactor(oenv);
+                    output_env_get_time_invfactor(oenv);
                     if(chptr==inputstring)
                     {
                         fprintf(stderr,"'%s' not recognized as a floating point number, 'c' or 'l'. "
@@ -264,8 +264,8 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
         case TIME_EXPLICIT:
             fprintf(stderr,"%25s   %10.3f %s   %10.3f %s",
                     fnms[i],
-                    conv_time(oenv,settime[i]),get_time_unit(oenv),
-                    conv_time(oenv,timestep[i]),get_time_unit(oenv));
+                    output_env_conv_time(oenv,settime[i]),output_env_get_time_unit(oenv),
+                    output_env_conv_time(oenv,timestep[i]),output_env_get_time_unit(oenv));
             if ( i>0 &&
                 cont_type[i-1]==TIME_EXPLICIT && settime[i]==settime[i-1] )
                 fprintf(stderr," WARNING: same Start time as previous");
@@ -733,8 +733,8 @@ int gmx_trjcat(int argc, char *argv[])
                         fprintf(stderr, "WARNING: Frames around t=%f %s have a different "
                                 "spacing than the rest,\n"
                                 "might be a gap or overlap that couldn't be corrected "
-                                "automatically.\n",conv_time(oenv,frout.time),
-                                get_time_unit(oenv));
+                                "automatically.\n",output_env_conv_time(oenv,frout.time),
+                                output_env_get_time_unit(oenv));
                     }
                 }
             }
@@ -815,7 +815,7 @@ int gmx_trjcat(int argc, char *argv[])
                         {
                             fprintf(stderr,"\nContinue writing frames from %s t=%g %s, "
                                     "frame=%d      \n",
-                                    fnms[i],conv_time(oenv,frout.time),get_time_unit(oenv),
+                                    fnms[i],output_env_conv_time(oenv,frout.time),output_env_get_time_unit(oenv),
                                     frame);
                             bNewFile=FALSE;
                         }
@@ -831,7 +831,7 @@ int gmx_trjcat(int argc, char *argv[])
                         if ( ((frame % 10) == 0) || (frame < 10) )
                         {
                             fprintf(stderr," ->  frame %6d time %8.3f %s     \r",
-                                    frame_out,conv_time(oenv,frout.time),get_time_unit(oenv));
+                                    frame_out,output_env_conv_time(oenv,frout.time),output_env_get_time_unit(oenv));
                         }
                     }
                 }
@@ -846,7 +846,7 @@ int gmx_trjcat(int argc, char *argv[])
             close_trx(trxout);
         }
         fprintf(stderr,"\nLast frame written was %d, time %f %s\n",
-                frame,conv_time(oenv,last_ok_t),get_time_unit(oenv)); 
+                frame,output_env_conv_time(oenv,last_ok_t),output_env_get_time_unit(oenv)); 
     }
     thanx(stderr);
 

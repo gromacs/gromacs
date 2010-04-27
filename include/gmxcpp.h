@@ -50,6 +50,12 @@ extern int cpp_open_file(const char *filenm,gmx_cpp_t *handlep, char **cppopts);
    characters, for subsequent processing. Returns integer status. */
 extern int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[]);
 
+/* Return the file currently being read. */
+extern char *cpp_cur_file(const gmx_cpp_t *handlep);
+
+/* Return the current line number. */
+extern int cpp_cur_linenr(const gmx_cpp_t *handlep);
+
 /* Close the file! Return integer status. */
 extern int cpp_close_file(gmx_cpp_t *handlep);
 

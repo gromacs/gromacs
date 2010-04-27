@@ -500,7 +500,7 @@ check_solvent(FILE *                fp,
     
     if (bestsol != esolNO && fp!=NULL)
     {
-        fprintf(fp,"\nEnabling %s water optimization for %d molecules.\n\n",
+        fprintf(fp,"\nEnabling %s-like water optimization for %d molecules.\n\n",
                 esol_names[bestsol],
                 solvent_parameters[bestsp].count);
     }
@@ -1121,6 +1121,9 @@ void forcerec_set_ranges(t_forcerec *fr,
     fr->cg0 = 0;
     fr->hcg = ncg_home;
 
+    /* fr->ncg_force is unused in the standard code,
+     * but it can be useful for modified code dealing with charge groups.
+     */
     fr->ncg_force    = ncg_force;
     fr->natoms_force = natoms_force;
 
@@ -1460,6 +1463,12 @@ void init_forcerec(FILE *fp,
 		fr->gbtab=make_gb_table(fp,oenv,fr,tabpfn,fr->gbtabscale);
 
         init_gb(&fr->born,cr,fr,ir,mtop,ir->rgbradii,ir->gb_algorithm);
+
+        /* Copy local gb data (for dd, this is done in dd_partition_system) */
+        if (!DOMAINDECOMP(cr))
+        {
+            make_local_gb(cr,fr->born,ir->gb_algorithm);
+        }
     }
 
     /* Set the charge scaling */
@@ -1618,7 +1627,9 @@ void init_forcerec(FILE *fp,
     
     if (!DOMAINDECOMP(cr))
     {
-        /* This is corrected later for particle decomposition */
+        /* When using particle decomposition, the effect of the second argument,
+         * which sets fr->hcg, is corrected later in do_md and init_em.
+         */
         forcerec_set_ranges(fr,ncg_mtop(mtop),ncg_mtop(mtop),
                             mtop->natoms,mtop->natoms);
     }

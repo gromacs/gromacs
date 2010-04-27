@@ -51,6 +51,7 @@
 #include "names.h"
 #include "futil.h"
 #include "gpp_atomtype.h"
+#include "fflibutil.h"
 
 #define MAXNAME 32
 #define OPENDIR  	'['	/* starting sign for directive		*/
@@ -126,11 +127,12 @@ static int ddb_name2dir(char *name)
 }
 
 
-static void read_vsite_database(char *ff,t_vsiteconf **pvsiteconflist, int *nvsiteconf,
+static void read_vsite_database(const char *ddbname,
+				t_vsiteconf **pvsiteconflist, int *nvsiteconf,
 				t_vsitetop **pvsitetoplist, int *nvsitetop)
 {
   /* This routine is a quick hack to fix the problem with hardcoded atomtypes
-   * and aromatic vsite parameters by reading them from a ff???.ddb file.
+   * and aromatic vsite parameters by reading them from a ff???.vsd file.
    *
    * The file can contain sections [ NH3 ], [ CH3 ], [ NH2 ], and ring residue names.
    * For the NH3 and CH3 section each line has three fields. The first is the atomtype 
@@ -143,7 +145,6 @@ static void read_vsite_database(char *ff,t_vsiteconf **pvsiteconflist, int *nvsi
    */
 
   FILE *ddb;
-  char ddbname[STRLEN];
   char dirstr[STRLEN];
   char pline[STRLEN];
   int i,j,n,k,nvsite,ntop,curdir,prevdir;
@@ -152,11 +153,13 @@ static void read_vsite_database(char *ff,t_vsiteconf **pvsiteconflist, int *nvsi
   char *ch;
   char s1[MAXNAME],s2[MAXNAME],s3[MAXNAME],s4[MAXNAME];
 
-  sprintf(ddbname,"%s.ddb",ff);
   ddb = libopen(ddbname);
 
-  nvsite = 0;
-  ntop = 0;
+  nvsite        = *nvsiteconf;
+  vsiteconflist = *pvsiteconflist;
+  ntop          = *nvsitetop;
+  vsitetoplist  = *pvsitetoplist;
+
   curdir=-1;
   
   snew(vsiteconflist,1);
@@ -180,8 +183,10 @@ static void read_vsite_database(char *ff,t_vsiteconf **pvsiteconflist, int *nvsi
 	  sprintf(dirstr,"HISH");
 
 	curdir=ddb_name2dir(dirstr);
-	if(curdir<0)
-	  gmx_fatal(FARGS,"Invalid directive %s in vsite database %s.ddb\n",dirstr,ff);
+	if (curdir < 0) {
+	  gmx_fatal(FARGS,"Invalid directive %s in vsite database %s",
+		    dirstr,ddbname);
+	}
       } else {
 	switch(curdir) {
 	case -1:
@@ -248,9 +253,9 @@ static void read_vsite_database(char *ff,t_vsiteconf **pvsiteconflist, int *nvsi
 	    strncpy(vsitetoplist[i].angle[k].atom2,s2,MAXNAME-1);
 	    strncpy(vsitetoplist[i].angle[k].atom3,s3,MAXNAME-1);
 	    vsitetoplist[i].angle[k].value=strtod(s4,NULL);
-	  } else 
-	    gmx_fatal(FARGS,"Need 3 or 4 values to specify bond/angle values in %s.ddb: %s\n",ff,pline);
-	  
+	  } else {
+	    gmx_fatal(FARGS,"Need 3 or 4 values to specify bond/angle values in %s: %s\n",ddbname,pline);
+	  }
 	  break;
 	default:
 	  gmx_fatal(FARGS,"Didnt find a case for directive %s in read_vsite_database\n",dirstr);
@@ -1324,9 +1329,10 @@ static bool is_vsite(int vsite_type)
 static char atomnamesuffix[] = "1234";
 
 void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype, 
-		t_atoms *at, t_symtab *symtab, rvec *x[], 
-		t_params plist[], int *vsite_type[], int *cgnr[], 
-		real mHmult, bool bVsiteAromatics, char *ff)
+	       t_atoms *at, t_symtab *symtab, rvec *x[], 
+	       t_params plist[], int *vsite_type[], int *cgnr[], 
+	       real mHmult, bool bVsiteAromatics,
+	       const char *ffdir)
 {
 #define MAXATOMSPERRESIDUE 16
   int  i,j,k,i0,ni0,whatres,resind,add_shift,ftype,nvsite,nadd;
@@ -1345,7 +1351,9 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
   t_params *params;
   char ***newatomname;
   char *resnm=NULL;
-  int nvsiteconf,nvsitetop,cmplength;
+  int  ndb,f;
+  char **db;
+  int  nvsiteconf,nvsitetop,cmplength;
   bool isN,planarN,bFound;
   t_aa_names *aan;
   t_vsiteconf *vsiteconflist; 
@@ -1400,7 +1408,16 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     fprintf(debug,"# # # VSITES # # #\n");
   }
 
-  read_vsite_database(ff,&vsiteconflist,&nvsiteconf,&vsitetop,&nvsitetop);
+  ndb = fflib_search_file_end(ffdir,".vsd",FALSE,&db);
+  nvsiteconf    = 0;
+  vsiteconflist = NULL;
+  nvsitetop     = 0;
+  vsitetop      = NULL;
+  for(f=0; f<ndb; f++) {
+    read_vsite_database(db[f],&vsiteconflist,&nvsiteconf,&vsitetop,&nvsitetop);
+    sfree(db[f]);
+  }
+  sfree(db);
   
   bFirstWater=TRUE;
   nvsite=0;
@@ -1613,10 +1630,15 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	strcpy(nexttpname,get_atomtype_name(get_atype(heavies[0],at,nrtp,rtp,aan),atype));
 	ch=get_dummymass_name(vsiteconflist,nvsiteconf,tpname,nexttpname);
 
-	if(ch==NULL) 
-	  gmx_fatal(FARGS,"Cant find dummy mass (in %s.ddb) for type %s bonded to type %s. Add it to the database!\n",ff,tpname,nexttpname);
-	else
+	if (ch == NULL) {
+	  if (ndb > 0) {
+	    gmx_fatal(FARGS,"Can't find dummy mass for type %s bonded to type %s in the virtual site database (.vsd files). Add it to the database!\n",tpname,nexttpname);
+	  } else {
+	     gmx_fatal(FARGS,"A dummy mass for type %s bonded to type %s is required, but no virtual site database (.vsd) files where found.\n",tpname,nexttpname);
+	  }
+	} else {
 	  strcpy(name,ch);
+	}
 
 	tpM=vsite_nm2type(name,atype);
 	/* make space for 2 masses: shift all atoms starting with 'Heavy' */

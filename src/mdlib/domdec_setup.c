@@ -28,6 +28,7 @@
 #include "smalloc.h"
 #include "typedefs.h"
 #include "vec.h"
+#include "names.h"
 
 /* Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
@@ -64,10 +65,25 @@ static bool fits_pme_ratio(int nnodes,int npme,float ratio)
     return ((double)npme/(double)nnodes > 0.95*ratio); 
 }
 
-static bool fits_pme_perf(FILE *fplog,
-						  t_inputrec *ir,matrix box,gmx_mtop_t *mtop,
-						  int nnodes,int npme,float ratio)
+static bool fits_pp_pme_perf(FILE *fplog,
+                             t_inputrec *ir,matrix box,gmx_mtop_t *mtop,
+                             int nnodes,int npme,float ratio)
 {
+    int ndiv,*div,*mdiv,ldiv;
+
+    ndiv = factorize(nnodes-npme,&div,&mdiv);
+    ldiv = div[ndiv-1];
+    sfree(div);
+    sfree(mdiv);
+    /* The check below gives a reasonable division:
+     * factor 5 allowed at 5 or more PP nodes,
+     * factor 7 allowed at 49 or more PP nodes.
+     */
+    if (ldiv > 3 + (int)(pow(nnodes-npme,1.0/3.0) + 0.5))
+    {
+        return FALSE;
+    }
+
     /* Does this division gives a reasonable PME load? */
     return fits_pme_ratio(nnodes,npme,ratio);
 }
@@ -76,7 +92,7 @@ static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
 					  int nnodes)
 {
 	float ratio;
-	int  npme,nkx,nky,ndiv,*div,*mdiv,ldiv;
+	int  npme,nkx,nky;
 	t_inputrec ir_try;
 	
 	ratio = pme_load_estimate(mtop,ir,box);
@@ -101,14 +117,18 @@ static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
         return 0;
     }
 
-    /* First try to find npme as a factor of nnodes up to nnodes/3 */
-	npme = 1;
+    /* First try to find npme as a factor of nnodes up to nnodes/3.
+     * We start with a minimum PME node fraction of 1/16
+     * and avoid ratios which lead to large prime factors in nnodes-npme.
+     */
+    npme = (nnodes + 15)/16;
     while (npme <= nnodes/3) {
-        if (nnodes % npme == 0) {
+        if (nnodes % npme == 0)
+        {
             /* Note that fits_perf might change the PME grid,
              * in the current implementation it does not.
              */
-            if (fits_pme_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
+            if (fits_pp_pme_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
 			{
 				break;
 			}
@@ -121,20 +141,10 @@ static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
         npme = 1;
         while (npme <= nnodes/2)
         {
-            ndiv = factorize(nnodes-npme,&div,&mdiv);
-            ldiv = div[ndiv-1];
-            sfree(div);
-            sfree(mdiv);
-            /* Only use this value if nnodes-npme does not have
-             * a large prime factor (5 y, 7 n, 14 n, 15 y).
-             */
-            if (ldiv <= 3 + (int)(pow(nnodes-npme,1.0/3.0) + 0.5))
+            /* Note that fits_perf may change the PME grid */
+            if (fits_pp_pme_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
             {
-                /* Note that fits_perf may change the PME grid */
-                if (fits_pme_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
-                {
-                    break;
-                }
+                break;
             }
             npme++;
         }
@@ -226,7 +236,11 @@ real comm_box_frac(ivec dd_nc,real cutoff,gmx_ddbox_t *ddbox)
     return comm_vol;
 }
 
-
+static bool inhomogeneous_z(const t_inputrec *ir)
+{
+    return ((EEL_PME(ir->coulombtype) || ir->coulombtype==eelEWALD) &&
+            ir->ePBC==epbcXYZ && ir->ewald_geometry==eewg3DC);
+}
 
 static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
                            matrix box,gmx_ddbox_t *ddbox,
@@ -253,6 +267,11 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
         return -1;
     }
     
+    if (inhomogeneous_z(ir) && nc[ZZ] > 1)
+    {
+        return -1;
+    }
+
     /* Check if the triclinic requirements are met */
     for(i=0; i<DIM; i++)
     {
@@ -511,6 +530,11 @@ static real optimize_ncells(FILE *fplog,
     {
         fprintf(fplog,"Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm\n",npp,limit);
 
+        if (inhomogeneous_z(ir))
+        {
+            fprintf(fplog,"Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, will not decompose in z.\n",eewg_names[ir->ewald_geometry]);
+        }
+
         if (limit > 0)
         {
             fprintf(fplog,"The maximum allowed number of cells is:");
@@ -520,6 +544,10 @@ static real optimize_ncells(FILE *fplog,
                 if (d >= ddbox->npbcdim && nmax < 2)
                 {
                     nmax = 2;
+                }
+                if (d == ZZ && inhomogeneous_z(ir))
+                {
+                    nmax = 1;
                 }
                 fprintf(fplog," %c %d",'X' + d,nmax);
             }

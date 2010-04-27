@@ -49,8 +49,14 @@ typedef struct {
 static const char *help_common[] = {
     "SELECTION HELP[PAR]",
 
+    "This program supports selections in addition to traditional index files.",
     "Please read the subtopic pages (available through \"help topic\") for",
     "more information.",
+    "Explanation of command-line arguments for specifying selections can be",
+    "found under the \"cmdline\" subtopic, and general selection syntax is",
+    "described under \"syntax\". Available keywords can be found under",
+    "\"keywords\", and concrete examples under \"examples\".",
+    "Other subtopics give more details on certain aspects.",
 };
 
 static const char *help_cmdline[] = {
@@ -114,6 +120,40 @@ static const char *help_eval[] = {
     "performance loss because of the checks necessary to determine for which",
     "atoms the expression has already been evaluated, but this should not be",
     "a major problem.",
+};
+
+static const char *help_examples[] = {
+    "SELECTION EXAMPLES[PAR]",
+
+    "Below, examples of increasingly complex selections are given.[PAR]",
+
+    "Selection of all water oxygens:[BR]",
+    "  resname SOL and name OW",
+    "[PAR]",
+
+    "Centers of mass of residues 1 to 5 and 10:[BR]",
+    "  res_com of resnr 1 to 5 10",
+    "[PAR]",
+
+    "All atoms farther than 1 nm of a fixed position:[BR]",
+    "  not within 1 of (1.2, 3.1, 2.4)",
+    "[PAR]",
+
+    "All atoms of a residue LIG within 0.5 nm of a protein (with a custom name):[BR]",
+    "  \"Close to protein\" resname LIG and within 0.5 of group \"Protein\"",
+    "[PAR]",
+
+    "All protein residues that have at least one atom within 0.5 nm of a residue LIG:[BR]",
+    "  group \"Protein\" and same residue as within 0.5 of resname LIG",
+    "[PAR]",
+
+    "All RES residues whose COM is between 2 and 4 nm from the COM of all of them:[BR]",
+    "  rdist = res_com distance from com of resname RES[BR]",
+    "  resname RES and rdist >= 2 and rdist <= 4",
+    "[PAR]",
+
+    "Selection like C1 C2 C2 C3 C3 C4 ... C8 C9 (e.g., for g_bond):[BR]",
+    "  name \"C[1-8]\" merge name \"C[2-9]\"",
 };
 
 static const char *help_keywords[] = {
@@ -246,6 +286,7 @@ static const t_selection_help_item helpitems[] = {
     {NULL,          asize(help_common),    help_common},
     {"cmdline",     asize(help_cmdline),   help_cmdline},
     {"evaluation",  asize(help_eval),      help_eval},
+    {"examples",    asize(help_examples),  help_examples},
     {"keywords",    asize(help_keywords),  help_keywords},
     {"limitations", asize(help_limits),    help_limits},
     {"positions",   asize(help_positions), help_positions},
@@ -284,7 +325,14 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
             }
             else
             {
-                fprintf(stderr, "%s\n", method->name);
+                const char *symname = _gmx_sel_sym_name(symbol);
+
+                fprintf(stderr, "%s", symname);
+                if (strcmp(symname, method->name) != 0)
+                {
+                    fprintf(stderr, " (synonym for %s)", method->name);
+                }
+                fprintf(stderr, "\n");
             }
         }
         symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);

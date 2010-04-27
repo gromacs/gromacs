@@ -47,19 +47,22 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+    struct tmpi_thread *cur=tMPI_Get_current();
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_start(cur); 
+#endif
 #ifdef TMPI_TRACE
-        tMPI_Trace_print("tMPI_Gather(%p, %d, %p, %p, %d, %p, %d, %p)",
-                           sendbuf, sendcount, sendtype, 
-                           recvbuf, recvcount, recvtype, 
-                           root, comm);
+    tMPI_Trace_print("tMPI_Gather(%p, %d, %p, %p, %d, %p, %d, %p)",
+                     sendbuf, sendcount, sendtype, 
+                     recvbuf, recvcount, recvtype, root, comm);
 #endif
 
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    myrank=tMPI_Comm_seek_rank(comm, cur);
 
     /* we increase our counter, and determine which coll_env we get */
     cev=tMPI_Get_cev(comm, myrank, &synct);
@@ -82,9 +85,17 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             cev->met[myrank].read_data[i]=FALSE;
         cev->met[myrank].read_data[myrank]=TRUE;
 
-        /* poll data availability as long as there are xfers to be done */
+        /* wait for data availability as long as there are xfers to be done */
         while(n_remaining>0)
         {
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+            tMPI_Profile_wait_start(cur);
+#endif
+            tMPI_Event_wait( &(cev->met[myrank]).recv_ev ) ;
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+            tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
+#endif
+            /* now check all of them */
             for(i=0;i<comm->grp.N;i++)
             {
                 if ( !cev->met[myrank].read_data[i] &&
@@ -94,6 +105,7 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                                    recvcount*recvtype->size,
                                    (char*)recvbuf+i*recvcount*recvtype->size,
                                    &ret);
+                    tMPI_Event_process( &(cev->met[myrank]).recv_ev, 1) ;
                     if (ret!=TMPI_SUCCESS)
                         return ret;
                     cev->met[myrank].read_data[i]=TRUE;
@@ -109,15 +121,21 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             return tMPI_Error(comm, TMPI_ERR_BUF);
         }
 
-        /* first set up the data */
+        /* first set up the data just to root. */
         tMPI_Post_multi(cev, myrank, 0, TMPI_GATHER_TAG, sendtype, 
-                        sendcount*sendtype->size, sendbuf, 1, synct);
+                        sendcount*sendtype->size, sendbuf, 1, synct, root);
         /* and wait until root is done copying */
         tMPI_Wait_for_others(cev, myrank);
     }
-
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_stop(cur,TMPIFN_Gather); 
+#endif
     return ret;
 }
+
+
+
+
 
 
 int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
@@ -128,7 +146,11 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+    struct tmpi_thread *cur=tMPI_Get_current();
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_start(cur); 
+#endif
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Gatherv(%p, %d, %p, %p, %p, %p, %p, %d, %p)",
                      sendbuf, sendcount, sendtype, recvbuf,
@@ -139,7 +161,7 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    myrank=tMPI_Comm_seek_rank(comm, cur);
 
     /* we increase our counter, and determine which coll_env we get */
     cev=tMPI_Get_cev(comm, myrank, &synct);
@@ -162,14 +184,22 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             cev->met[myrank].read_data[i]=FALSE;
         cev->met[myrank].read_data[myrank]=TRUE;
 
-        /* poll data availability */
+        /* wait for data availability as long as there are xfers to be done */
         while(n_remaining>0)
-        {
+        {            
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+            tMPI_Profile_wait_start(cur);
+#endif
+            tMPI_Event_wait( &(cev->met[myrank]).recv_ev ) ;
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+            tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
+#endif
             for(i=0;i<comm->grp.N;i++)
             {
                 if ( !cev->met[myrank].read_data[i] &&
                     (tMPI_Atomic_get(&(cev->met[i].current_sync))==synct) )
                 {
+                    tMPI_Event_process( &(cev->met[myrank]).recv_ev, 1) ;
                     tMPI_Mult_recv(comm, cev, i, 0, TMPI_GATHERV_TAG, recvtype,
                                    recvcounts[i]*recvtype->size,
                                    (char*)recvbuf+displs[i]*recvtype->size,
@@ -189,13 +219,16 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             return tMPI_Error(comm, TMPI_ERR_BUF);
         }
 
-        /* first set up the data */
+        /* first set up the data just to root. */
         tMPI_Post_multi(cev, myrank, 0, TMPI_GATHERV_TAG, sendtype, 
-                        sendcount*sendtype->size, sendbuf, 1, synct);
+                        sendcount*sendtype->size, sendbuf, 1, synct, root);
         /* and wait until root is done copying */
         tMPI_Wait_for_others(cev, myrank);
     }
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_stop(cur, TMPIFN_Gatherv); 
+#endif
     return ret;
 }
 

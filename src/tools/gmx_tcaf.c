@@ -222,7 +222,7 @@ int gmx_tcaf(int argc,char *argv[])
     "For details see: Palmer, JCP 49 (1994) pp 359-366.[PAR]",
     "Transverse currents are calculated using the",
     "k-vectors (1,0,0) and (2,0,0) each also in the y- and z-direction,",
-    "(1,1,0) and (1,-1,0) each also in the 2 other plains (these vectors",
+    "(1,1,0) and (1,-1,0) each also in the 2 other planes (these vectors",
     "are not independent) and (1,1,1) and the 3 other box diagonals (also",
     "not independent). For each k-vector the sine and cosine are used, in",
     "combination with the velocity in 2 perpendicular directions. This gives",

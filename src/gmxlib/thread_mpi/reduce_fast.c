@@ -35,11 +35,14 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -51,11 +54,7 @@ files.
 #include <stdarg.h>
 #include <string.h>
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "thread_mpi/collective.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 
 
@@ -64,7 +63,7 @@ static void *tMPI_Reduce_req_allocator(void *arg)
     tMPI_Reduce_req *ret;
     /*tMPI_Comm comm=(tMPI_Comm)arg;*/
 
-    ret=tMPI_Malloc(sizeof(tMPI_Reduce_req));
+    ret=(tMPI_Reduce_req*)tMPI_Malloc(sizeof(tMPI_Reduce_req));
     tMPI_Atomic_set( &(ret->n_remaining), 0);
     ret->comm=(tMPI_Comm)arg;
 

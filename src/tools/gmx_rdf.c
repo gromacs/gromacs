@@ -587,11 +587,11 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     sprintf(refgt,"%s","");
   }
   if (ng==1) {
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
       fprintf(fp,"@ subtitle \"%s%s - %s\"\n",grpname[0],refgt,grpname[1]);
   }
   else {
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
         fprintf(fp,"@ subtitle \"reference %s%s\"\n",grpname[0],refgt);
     xvgr_legend(fp,ng,grpname+1,oenv);
   }
@@ -637,11 +637,11 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     normfac = 1.0/(isize0*nframes);
     fp=xvgropen(fnCNRDF,"Cumulative Number RDF","r","number",oenv);
     if (ng==1) {
-      if (get_print_xvgr_codes(oenv))
+      if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
     }
     else {
-      if (get_print_xvgr_codes(oenv))
+      if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
       xvgr_legend(fp,ng,grpname+1,oenv);
     }

@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.6)
+
 project(Gromacs)
-set(PROJECT_VERSION "4.0.99_development_20090605"
+include(Dart)
+# PROJECT_VERSION should have the following structure: 
+# VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
+set(PROJECT_VERSION "4.0.99-dev-20100315"
     CACHE STRING "Gromacs version string")
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -11,9 +15,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 ########################################################################
 option(GMX_DOUBLE "Use double precision" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" OFF)
+option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" ON)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
+option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library" OFF)
 set(GMX_ACCELERATION "none" 
     CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec")
 
@@ -33,6 +38,34 @@ enable_language(C)
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
+option(USE_VERSION_H "Generate development version string/information" ON)
+
+#######################################################################
+# Check for options incompatible with OpenMM build                    #
+#######################################################################
+if(GMX_OPENMM)
+    cmake_minimum_required(VERSION 2.6.4)
+    # we'll use the built-in fft to avoid unnecessary dependencies
+    set (GMX_FFT_LIBRARY "fftpack")
+    if(GMX_MPI)
+        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
+    endif(GMX_MPI)
+    if(GMX_THREADS)
+        message(STATUS "Threads not compatible with OpenMM build, disabled")
+        set(GMX_THREADS OFF)
+    endif(GMX_THREADS)
+    if(GMX_SOFTWARE_INVSQRT)
+        set(GMX_SOFTWARE_INVSQRT OFF)
+    endif(GMX_SOFTWARE_INVSQRT)
+    if(NOT GMX_ACCELERATION MATCHES "none")    
+        message(WARNING "The OpenMM build does not support other acceleration modes!")
+        set(GMX_ACCELERATION "none")
+    endif()
+    if(GMX_FAHCORE)
+        message(FATAL_ERROR "The OpenMM build does not support FAH build!")
+    endif(GMX_FAHCORE)
+endif(GMX_OPENMM)
+
 
 ########################################################################
 # Fix stupid flags on MSVC
@@ -51,7 +84,9 @@ set(GMX_EXTRA_LIBRARIES)
 ########################################################################
 if(GMX_MPI)
     if(GMX_THREADS)
-        message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
+        #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
+        set(GMX_THREADS OFF CACHE BOOL 
+            "Thread-based parallelization conflicts with MPI." FORCE)
     endif(GMX_THREADS)
     find_package(MPI)
     if(MPI_FOUND)
@@ -89,6 +124,7 @@ check_include_files(pwd.h        HAVE_PWD_H)
 check_include_files(stdint.h	 HAVE_STDINT_H)
 check_include_files(stdlib.h	 HAVE_STDLIB_H)
 check_include_files(pthread.h    HAVE_PTHREAD_H)
+check_include_files(dirent.h     HAVE_DIRENT_H)
 check_include_files(inttypes.h   HAVE_INTTYPES_H)
 check_include_files(regex.h      HAVE_REGEX_H)
 check_include_files(sys/types.h  HAVE_SYS_TYPES_H)
@@ -110,6 +146,8 @@ check_function_exists(memcmp            HAVE_MEMCMP)
 check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
 check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
+check_function_exists(isfinite          HAVE_ISFINITE)
+check_function_exists(_isfinite         HAVE__ISFINITE)
 # After large files? check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(CheckLibraryExists)
@@ -184,11 +222,40 @@ if(GMX_THREADS)
     endif()
 endif(GMX_THREADS)
 
+if(GMX_OPENMM)
+    set(CUDA_BUILD_EMULATION OFF)
+    find_package(CUDA 2.3 REQUIRED)
+    add_definitions(-DGMX_OPENMM)
+    if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
+        set(CUDA_VERBOSE_BUILD ON)
+    endif()
+    find_package(OpenMM) 
+endif(GMX_OPENMM)
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
    list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
 endif(APPLE)
+
+# only bother with finding git and using version.h if the source is a git repo
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    if(USE_VERSION_H)
+        # We need at least git v1.5.1 be able to parse git's date output. If not 
+        # fund or the version is too small, we can't generate version information.
+        find_package(Git 1.5.1)
+        if(NOT Git_FOUND OR Git_VERSION VERSION_LESS "1.5.1")
+            message("No compatible git version found, won't be able to generate proper development version information.")
+        endif()
+    endif()
+else()
+    set(USE_VERSION_H OFF)
+endif()
+
+########################################################################
+# Generate development version info for cache
+########################################################################
+# set(GEN_VERSION_INFO_INTERNAL "ON")
+# include(gmxGenerateVersionString)
 
 ########################################################################
 # Our own GROMACS tests
@@ -214,7 +281,6 @@ gmx_test_large_files(GMX_LARGEFILES)
 
 include(gmxTestSignal)
 gmx_test_retsigtype(RETSIGTYPE)
-gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)
@@ -254,25 +320,27 @@ endif(GMX_FORTRAN OR GMX_POWER6)
 
 
 # Process nonbonded accelerated kernels settings
+option(GMX_ASM_USECCOMPILER "Use C compiler for assembly" ON)
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
     if(HAVE_XMMINTRIN_H)
-        set(GMX_SSE 1)
         if(GMX_IA32_ASM)
           option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
-          option(GMX_ASM_USECCOMPILER "Use C compiler for assembly" ON)
           set(GMX_IA32_SSE 1)
+        else(GMX_IA32_ASM) #only use intrinsic if not using the ASM loops
+          set(GMX_SSE 1)
         endif(GMX_IA32_ASM)
     endif(HAVE_XMMINTRIN_H)
     if(HAVE_EMMINTRIN_H)
         if(GMX_X86_64_ASM)
           option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
-          option(GMX_ASM_USECCOMPILER "Use C compiler for assembly" ON)
           set(GMX_X86_64_SSE 1)
         else(GMX_X86_64_ASM)  #only use intrinsic if not using the ASM loops
-          set(GMX_SSE2 1)
+          if(NOT GMX_IA32_ASM)
+            set(GMX_SSE2 1)
+          endif(NOT GMX_IA32_ASM)
         endif(GMX_X86_64_ASM)
     endif(HAVE_EMMINTRIN_H)
 #    if(HAVE_PMMINTRIN_H)
@@ -321,7 +389,7 @@ else(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
     MESSAGE(FATAL_ERROR "Invalid QM/MM program option: ${GMX_QMMM_PROGRAM}. Choose one of: Gaussian, Mopac, Gamess, None")
 endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
 
-# Process FFT library settings
+# Process FFT library settings - if not OpenMM build 
 string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 #    MESSAGE(STATUS "Using external FFT library - fftw3")

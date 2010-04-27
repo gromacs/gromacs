@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -38,6 +39,7 @@
 
 
 #include <ctype.h>
+#include "copyrite.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"
@@ -74,27 +76,6 @@
  *
  ******************************************************************/
 
-/* read only time names */
-static const real timefactors[] =   { 0,  1e3,  1, 1e-3, 1e-6, 1e-9, 1e-12, 0 };
-static const real timeinvfactors[] ={ 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
-static const char *time_units_str[] = { NULL, "fs", "ps", "ns", "us", 
-                                        "ms", "s", NULL };
-static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns", 
-                                         "\\8m\\4s", "ms", "s" };
-
-
-
-struct output_env
-{
-    int time_unit; /*  the time unit as index for the above-defined arrays */
-    bool view;  /* view of file requested */
-    bool xvgr_codes; /* xmgrace-style legends etc. in file output */
-#if 0
-    const char *program; /* the program name */
-    char *cmdline; /* the re-assembled command line */
-#endif
-};
-
 /* inherently globally shared names: */
 static const char *program_name=NULL;
 static char *cmd_line=NULL;
@@ -112,35 +93,8 @@ static tMPI_Thread_mutex_t init_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
  *
  ****************************************************************/
 
-void init_output_env(output_env_t oenv,  int argc, char *argv[],
-                     bool view, bool xvgr_codes, const char *timenm)
-{
-    set_output_env(oenv, view, xvgr_codes, timenm);
-}
 
-void set_output_env(output_env_t oenv,  bool view, bool xvgr_codes, 
-                    const char *timenm)
-{
-    int i;
-    int time_unit=2; /* the default is ps */
-    
-    if (timenm)
-    {
-        i=1;
-        while(time_units_str[i])
-        {
-            if (strcmp(timenm, time_units_str[i])==0)
-                break;
-            i++;
-        }
-        if (time_units_str[i])
-            time_unit=i;
-    }
-    oenv->time_unit=time_unit;
-    oenv->view=view;
-    oenv->xvgr_codes=xvgr_codes;
-}
-
+/* progam names, etc. */
 
 const char *ShortProgram(void)
 {
@@ -154,8 +108,9 @@ const char *ShortProgram(void)
 #endif
     if ((pr=strrchr(ret,'/')) != NULL)
         ret=pr+1;
-    /*else
-        ret=ret;*/
+    /* Strip away the libtool prefix if it's still there. */
+    if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))
+        ret = ret + 3;
     return ret;
 }
 
@@ -239,6 +194,7 @@ void set_command_line(int argc, char *argv[])
 
 }
 
+/* utility functions */
 
 bool bRmod_fd(double a, double b, double c, bool bDouble)
 {
@@ -293,89 +249,67 @@ int check_times(real t)
 
 
 
-const char *get_time_unit(const output_env_t oenv)
-{
-    return time_units_str[oenv->time_unit];
-}
 
-const char *get_time_label(const output_env_t oenv)
-{
-    char *label;
-    snew(label, 20);
-    
-    sprintf(label,"Time (%s)",time_units_str[oenv->time_unit] ? 
-            time_units_str[oenv->time_unit]: "ps");
-    
-    return label;
-}
-
-const char *get_xvgr_tlabel(const output_env_t oenv)
-{
-    char *label;
-    snew(label, 20);
-    
-    sprintf(label,"Time (%s)", time_units_xvgr[oenv->time_unit] ?
-            time_units_xvgr[oenv->time_unit] : "ps");
-    
-    return label;
-}
-
-
-real get_time_factor(const output_env_t oenv)
-{
-    return timefactors[oenv->time_unit];
-}
-
-real get_time_invfactor(const output_env_t oenv)
-{
-    return timeinvfactors[oenv->time_unit];
-}
-
-real conv_time(const output_env_t oenv, real time)
-{
-    return time*timefactors[oenv->time_unit];
-}
-
-
-void conv_times(const output_env_t oenv, int n, real *time)
-{
-    int i;
-    double fact=timefactors[oenv->time_unit];
-    
-    if (fact!=1.)
-        for(i=0; i<n; i++)
-            time[i] *= fact;
-}
-
-bool get_view(const output_env_t oenv)
-{
-    return oenv->view;
-}
-
-bool get_print_xvgr_codes(const output_env_t oenv)
-{
-    return oenv->xvgr_codes;
-}
-
-
-
-static void set_default_time_unit(const char *time_list[])
+static void set_default_time_unit(const char *time_list[], bool bCanTime)
 {
     int i,j;
-    const char *select=getenv("GMXTIMEUNIT");
-    if (!select)
-        select="ps";
-    
-    i=1;
-    while(time_list[i] && strcmp(time_list[i], select)!=0)
-        i++;
-    if (strcmp(time_list[i], select)==0) {
-        /* swap the values and set time_list[0]*/
-        time_list[0]=time_list[i];
-        time_list[i]=time_list[1];
-        time_list[1]=time_list[0];
+    const char *select;
+
+    if (bCanTime)
+    {
+        select = getenv("GMXTIMEUNIT");
+        if (select != NULL)
+        {
+            i = 1;
+            while(time_list[i] && strcmp(time_list[i], select) != 0)
+            {
+                i++;
+            }
+        }
+    }
+    if (!bCanTime || select == NULL || strcmp(time_list[i], select) != 0)
+    {
+        /* Set it to the default: ps */
+        i = 1;
+        while(time_list[i] && strcmp(time_list[i], "ps") != 0)
+        {
+            i++;
+        }
+        
+    }
+    time_list[0] = time_list[i];
+}
+
+
+static void set_default_xvg_format(const char *xvg_list[])
+{
+    int i,j;
+    const char *select,*tmp;
+
+    select = getenv("GMX_VIEW_XVG");
+    if (select == NULL)
+    {
+        /* The default is the first option */
+        xvg_list[0] = xvg_list[1];
+    }
+    else
+    {
+        i = 1;
+        while (xvg_list[i] && strcmp(xvg_list[i], select) != 0)
+        {
+            i++;
+        }
+        if (xvg_list[i] != NULL)
+        {
+            xvg_list[0] = xvg_list[i];
+        }
+        else
+        {
+            xvg_list[0] = xvg_list[exvgNONE];
+        }
     }
 }
+
 
 /***** T O P O L O G Y   S T U F F ******/
 
@@ -497,13 +431,7 @@ static FILE *man_file(const output_env_t oenv,const char *mantp)
 {
     FILE   *fp;
     char   buf[256];
-    const char *pr;
-    const char *program_name=Program();
-    
-    if ( (pr=strrchr(program_name,'/')) == NULL)
-        pr=program_name;
-    else 
-        pr+=1;
+    const char *pr = output_env_get_short_program_name(oenv);
     
     if (strcmp(mantp,"ascii") != 0)
         sprintf(buf,"%s.%s",pr,mantp);
@@ -590,15 +518,18 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       int nbugs,const char **bugs,
                        output_env_t *oenv)
 {
-    bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
+    bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE,bVersion=FALSE;
     const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", 
                             "completion", "py", "xml", "wiki", NULL };
-    const char *time_units[] = { NULL, "ps", "fs", "ns", "us", "ms", "s", 
+    /* This array should match the order of the enum in oenv.h */
+    const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
+    /* This array should match the order of the enum in oenv.h */
+    const char *time_units[] = { NULL, "fs", "ps", "ns", "us", "ms", "s", 
                                 NULL };
-    int  nicelevel=0,mantp=0,npri=0,debug_level=0;
+    int  nicelevel=0,mantp=0,npri=0,debug_level=0,verbose_level=0;
     char *deffnm=NULL;
     real tbegin=0,tend=0,tdelta=0;
-    bool bView=FALSE, bXvgrCodes=TRUE;
+    bool bView=FALSE;
     
     t_pargs *all_pa=NULL;
     
@@ -616,23 +547,27 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     "Only use frame when t MOD dt = first time (%t)" };
     t_pargs view_pa   = { "-w",    FALSE, etBOOL,  {&bView},
     "View output xvg, xpm, eps and pdb files" };
-    t_pargs code_pa   = { "-xvgr", FALSE, etBOOL,  {&bXvgrCodes},
-    "Add specific codes (legends etc.) in the output xvg files for the xmgrace program" };
+    t_pargs xvg_pa    = { "-xvg",  FALSE, etENUM,  {xvg_format},
+    "xvg plot formatting" };
     t_pargs time_pa   = { "-tu",   FALSE, etENUM,  {time_units},
     "Time unit" };
     /* Maximum number of extra arguments */
 #define EXTRA_PA 16
     
     t_pargs pca_pa[] = {
-        { "-h",    FALSE, etBOOL, {&bHelp},     
-        "Print help info and quit" }, 
-        { "-hidden", FALSE, etBOOL, {&bHidden},
-        "HIDDENPrint hidden options" },
-        { "-quiet",FALSE, etBOOL, {&bQuiet},
+      { "-h",    FALSE, etBOOL, {&bHelp},     
+	"Print help info and quit" }, 
+      { "-version",  FALSE, etBOOL, {&bVersion},     
+	"Print version info and quit" }, 
+      { "-verb",    FALSE,  etINT, {&verbose_level},
+	"HIDDENLevel of verbosity for this program" },
+      { "-hidden", FALSE, etBOOL, {&bHidden},
+	  "HIDDENPrint hidden options" },
+      { "-quiet",FALSE, etBOOL, {&bQuiet},
         "HIDDENDo not print help info" },
-        { "-man",  FALSE, etENUM,  {manstr},
+      { "-man",  FALSE, etENUM,  {manstr},
         "HIDDENWrite manual and quit" },
-        { "-debug",FALSE, etINT, {&debug_level},
+      { "-debug",FALSE, etINT, {&debug_level},
         "HIDDENWrite file with debug information, 1: short, 2: also x and f" },
     };
 #define NPCA_PA asize(pca_pa)
@@ -671,7 +606,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     debug_gmx();
     set_program_name(argv[0]);
     set_command_line(*argc, argv);
-    
+      
     /* Handle the flags argument, which is a bit field 
      * The FF macro returns whether or not the bit is set
      */
@@ -707,9 +642,10 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     if (FF(PCA_CAN_END))
         npall = add_parg(npall,all_pa,&end_pa);
     if (FF(PCA_CAN_DT))
+    {
         npall = add_parg(npall,all_pa,&dt_pa);
+    }
     if (FF(PCA_TIME_UNIT)) {
-        set_default_time_unit(time_units);
         npall = add_parg(npall,all_pa,&time_pa);
     } 
     if (FF(PCA_CAN_VIEW)) 
@@ -717,9 +653,13 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
     bXvgr = FALSE;
     for(i=0; (i<nfile); i++)
+    {
         bXvgr = bXvgr ||  (fnm[i].ftp == efXVG);
+    }
     if (bXvgr)
-        npall = add_parg(npall,all_pa,&code_pa);
+    {
+        npall = add_parg(npall,all_pa,&xvg_pa);
+    }
     
     /* Now append the program specific arguments */
     for(i=0; (i<npargs); i++)
@@ -727,15 +667,27 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
     /* set etENUM options to default */
     for(i=0; (i<npall); i++)
+    {
         if (all_pa[i].type==etENUM)
+        {
             all_pa[i].u.c[0]=all_pa[i].u.c[1];
-    
-    
-    /* set program name, command line, and default values for output options */
-    init_output_env(*oenv, *argc, argv, bView, bXvgrCodes, time_units[1]);
-   
+        }
+    }
+    set_default_time_unit(time_units,FF(PCA_TIME_UNIT));
+    set_default_xvg_format(xvg_format);
+  
     /* Now parse all the command-line options */
     get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
+
+    /* set program name, command line, and default values for output options */
+    output_env_init(*oenv, *argc, argv, (time_unit_t)nenum(time_units), bView, 
+                    (xvg_format_t)nenum(xvg_format), verbose_level, debug_level);
+ 
+    if (bVersion) {
+      printf("Program: %s\n",output_env_get_program_name(*oenv));
+      gmx_print_version_info(stdout);
+      exit(0);
+    }
     
     if (FF(PCA_CAN_SET_DEFFNM) && (deffnm!=NULL))
         set_default_file_name(deffnm);
@@ -748,9 +700,10 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         char buf[256];
         
         if (gmx_mpi_initialized())
-            sprintf(buf,"%s%d.debug",ShortProgram(),gmx_node_rank());
+            sprintf(buf,"%s%d.debug",output_env_get_short_program_name(*oenv),
+                    gmx_node_rank());
         else
-            sprintf(buf,"%s.debug",ShortProgram());
+            sprintf(buf,"%s.debug",output_env_get_short_program_name(*oenv));
         
         init_debug(debug_level,buf);
         fprintf(stderr,"Opening debug file %s (src code file %s, line %d)\n",
@@ -763,7 +716,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 
 
     for(i=0; (i<npall); i++)
-        all_pa[i].desc = mk_desc(&(all_pa[i]), get_time_unit(*oenv) );
+        all_pa[i].desc = mk_desc(&(all_pa[i]), output_env_get_time_unit(*oenv));
    
     bExit = bHelp || (strcmp(manstr[0],"no") != 0);
     
@@ -799,15 +752,15 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     }
 #endif
 #endif
-    
-    set_output_env(*oenv, bView, bXvgrCodes, time_units[0]);
-    /*init_time_factor(tms);*/
    
+    /* Update oenv for parsed command line options settings. */
+    (*oenv)->xvg_format = (xvg_format_t)nenum(xvg_format);
+    (*oenv)->time_unit  = (time_unit_t)nenum(time_units);
     
     if (!(FF(PCA_QUIET) || bQuiet )) {
         if (bHelp)
-            write_man(stderr,"help",Program(),ndesc,desc,nfile,
-                      fnm,npall,all_pa, nbugs,bugs,bHidden);
+            write_man(stderr,"help",output_env_get_program_name(*oenv),
+                      ndesc,desc,nfile, fnm,npall,all_pa, nbugs,bugs,bHidden);
         else if (bPrint) {
             pr_fns(stderr,nfile,fnm);
             print_pargs(stderr,npall,all_pa,FALSE);
@@ -818,21 +771,22 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         if(!strcmp(manstr[0],"completion")) {
             /* one file each for csh, bash and zsh if we do completions */
             fp=man_file(*oenv,"completion-zsh");
-            write_man(fp,"completion-zsh",Program(),ndesc,desc,nfile,
-                      fnm, npall,all_pa,nbugs,bugs,bHidden);
+        
+            write_man(fp,"completion-zsh",output_env_get_program_name(*oenv),
+                      ndesc,desc,nfile, fnm, npall,all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
             fp=man_file(*oenv,"completion-bash");
-            write_man(fp,"completion-bash",Program(),ndesc,desc,nfile,
-                      fnm, npall,all_pa,nbugs,bugs,bHidden);
+            write_man(fp,"completion-bash",output_env_get_program_name(*oenv),
+                      ndesc,desc,nfile, fnm, npall,all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
             fp=man_file(*oenv,"completion-csh");
-            write_man(fp,"completion-csh",Program(),ndesc,desc,nfile,
-                      fnm, npall,all_pa,nbugs,bugs,bHidden);
+            write_man(fp,"completion-csh",output_env_get_program_name(*oenv),
+                      ndesc,desc,nfile, fnm, npall,all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
         } else {
             fp=man_file(*oenv,manstr[0]);
-            write_man(fp,manstr[0],Program(),ndesc,desc,nfile,fnm,
-                      npall, all_pa,nbugs,bugs,bHidden);
+            write_man(fp,manstr[0],output_env_get_program_name(*oenv),
+                      ndesc,desc,nfile,fnm, npall, all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
         }
     }
@@ -841,7 +795,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
     for(i=0; i<npall; i++) {
         if ((all_pa[i].type == etTIME) && (*all_pa[i].u.r >= 0)) {
-            *all_pa[i].u.r *= get_time_invfactor(*oenv);
+            *all_pa[i].u.r *= output_env_get_time_invfactor(*oenv);
         }
     }
     
@@ -856,6 +810,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         setTimeValue(TDELTA,opt2parg_real("-dt",npall,all_pa));
     
     /* clear memory */
+    for (i = 0; i < npall; ++i)
+        sfree((void *)all_pa[i].desc);
     sfree(all_pa);
     
     if (!FF(PCA_NOEXIT_ON_ARGS)) {

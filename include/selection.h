@@ -127,6 +127,14 @@ gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, const char *ty
 extern void
 gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
                                      const char *type, bool bMaskOnly);
+/** Request evaluation of velocities for selections. */
+extern void
+gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
+                                    bool bVelOut);
+/** Request evaluation of forces for selections. */
+extern void
+gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
+                                      bool bForceOut);
 /** Sets the topology for a selection collection. */
 extern int
 gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,

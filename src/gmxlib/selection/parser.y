@@ -69,7 +69,7 @@ yyerror(yyscan_t, char const *s);
 
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
-}
+};
 
 /* Invalid token to report lexer errors */
 %token INVALID
@@ -137,21 +137,22 @@ yyerror(yyscan_t, char const *s);
 %type <sel>   selection
 %type <sel>   sel_expr
 %type <sel>   num_expr
+%type <sel>   str_expr
 %type <sel>   pos_expr
 
 /* Parameter/value non-terminals */
 %type <param> method_params method_param_list method_param
 %type <val>   value_list value_list_nonempty value_item
 
-%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER string
+%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER CMP_OP string
 %destructor { if($$) free($$);              } PARAM
 %destructor { if($$) _gmx_selelem_free($$); } command cmd_plain
 %destructor { _gmx_selelem_free_chain($$);  } selection
-%destructor { _gmx_selelem_free($$);        } sel_expr num_expr pos_expr
+%destructor { _gmx_selelem_free($$);        } sel_expr num_expr str_expr pos_expr
 %destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
 %destructor { _gmx_selexpr_free_values($$); } value_list value_list_nonempty value_item
 
-%expect 72
+%expect 85
 %debug
 %pure-parser
 
@@ -391,6 +392,24 @@ num_expr:    '(' num_expr ')'   { $$ = $2; }
 ;
 
 /********************************************************************
+ * STRING EXPRESSIONS
+ ********************************************************************/
+
+str_expr:    string
+             {
+                 $$ = _gmx_selelem_create(SEL_CONST);
+                 _gmx_selelem_set_vtype($$, STR_VALUE);
+                 _gmx_selvalue_reserve(&$$->v, 1);
+                 $$->v.u.s[0] = $1;
+             }
+           | pos_mod KEYWORD_STR
+             {
+                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
+                 if ($$ == NULL) YYERROR;
+             }
+;
+
+/********************************************************************
  * POSITION EXPRESSIONS
  ********************************************************************/
 
@@ -478,6 +497,8 @@ value_item:  sel_expr            %prec PARAM_REDUCT
              { $$ = _gmx_selexpr_create_value_expr($1); }
            | num_expr            %prec PARAM_REDUCT
              { $$ = _gmx_selexpr_create_value_expr($1); }
+           | str_expr            %prec PARAM_REDUCT
+             { $$ = _gmx_selexpr_create_value_expr($1); }
            | TOK_INT TO TOK_INT
              {
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
@@ -492,11 +513,6 @@ value_item:  sel_expr            %prec PARAM_REDUCT
              {
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
                  $$->u.r.r1 = $1; $$->u.r.r2 = $3;
-             }
-           | string
-             {
-                 $$ = _gmx_selexpr_create_value(STR_VALUE);
-                 $$->u.s = $1;
              }
 ;
 

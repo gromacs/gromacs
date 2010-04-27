@@ -1,5 +1,5 @@
-/*
- * toppush.c
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -51,10 +51,12 @@
 #include "readir.h"
 #include "symtab.h"
 #include "gmx_fatal.h"
+#include "warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
 
-void generate_nbparams(int comb,int ftype,t_params *plist,gpp_atomtype_t atype)
+void generate_nbparams(int comb,int ftype,t_params *plist,gpp_atomtype_t atype,
+		       warninp_t wi)
 {
   int   i,j,k=-1,nf;
   int   nr,nrfp;
@@ -140,7 +142,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,gpp_atomtype_t atype)
   default:
     sprintf(errbuf,"Invalid nonbonded type %s",
 	    interaction_function[ftype].longname);
-    warning_error(errbuf);
+    warning_error(wi,errbuf);
   }
 }
 
@@ -172,7 +174,8 @@ static void copy_B_from_A(int ftype,double *c)
 
 void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
 	      char *line,int nb_funct,
-	      t_nbparam ***nbparam,t_nbparam ***pair)
+	      t_nbparam ***nbparam,t_nbparam ***pair,
+	      warninp_t wi)
 {
   typedef struct {
     const char *entry;
@@ -240,7 +243,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
   
   if(nfields<6)
   {
-      too_few();
+      too_few(wi);
       return;
   }
   
@@ -282,7 +285,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
                            &radius,&vol,&surftens,&gb_radius);
             if(nread < 8)
             {
-                too_few();
+                too_few(wi);
                 return;
             }            
         }
@@ -294,7 +297,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
                            &radius,&vol,&surftens,&gb_radius);
             if(nread < 7)
             {
-                too_few();
+                too_few(wi);
                 return;
             }            
         }
@@ -309,7 +312,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
                            &radius,&vol,&surftens,&gb_radius);
             if(nread < 7)
             {
-                too_few();
+                too_few(wi);
                 return;
             }            
         }
@@ -321,7 +324,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
                            &radius,&vol,&surftens,&gb_radius);
             if(nread < 6)
             {
-                too_few();
+                too_few(wi);
                 return;
             }            
         }    
@@ -351,7 +354,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
                              &radius,&vol,&surftens,&gb_radius);
               if(nread < 9)
               {
-                  too_few();
+                  too_few(wi);
                   return;
               }            
           }
@@ -363,7 +366,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
                              &radius,&vol,&surftens,&gb_radius);
               if(nread < 8)
               {
-                  too_few();
+                  too_few(wi);
                   return;
               }            
           }
@@ -378,7 +381,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
                              &radius,&vol,&surftens,&gb_radius);
               if(nread < 8)
               {
-                  too_few();
+                  too_few(wi);
                   return;
               }            
           }
@@ -390,7 +393,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
                              &radius,&vol,&surftens,&gb_radius);
               if(nread < 7)
               {
-                  too_few();
+                  too_few(wi);
                   return;
               }            
           }        
@@ -446,7 +449,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
   
   if ((nr = get_atomtype_type(type,at)) != NOTSET) {
     sprintf(errbuf,"Overriding atomtype %s",type);
-    warning(errbuf);
+    warning(wi,errbuf);
     if ((nr = set_atomtype(nr,at,symtab,atom,type,param,batype_nr,
 			   radius,vol,surftens,atomnr,gb_radius,S_hct)) == NOTSET)
       gmx_fatal(FARGS,"Replacing atomtype %s failed",type);
@@ -468,7 +471,8 @@ static void push_bondtype(t_params *       bt,
                           int              nral,
                           int              ftype,
                           bool             bAllowRepeat,
-                          char *           line)
+                          char *           line,
+			  warninp_t        wi)
 {
 	int  i,j;
 	bool bTest,bFound,bCont,bId;
@@ -521,7 +525,7 @@ static void push_bondtype(t_params *       bt,
                         sprintf(errbuf,"Overriding %s parameters.%s",
                                 interaction_function[ftype].longname,
                                 (ftype==F_PDIHS) ? "\nUse dihedraltype 4 to allow several multiplicity terms." : "");
-                        warning(errbuf);
+                        warning(wi,errbuf);
                         fprintf(stderr,"  old:");
                         for (j=0; (j < nrfp); j++)
                             fprintf(stderr," %g",bt->param[i].c[j]);
@@ -555,7 +559,8 @@ static void push_bondtype(t_params *       bt,
 
 void push_bt(directive d,t_params bt[],int nral,
 	     gpp_atomtype_t at,
-	     t_bond_atomtype bat,char *line)
+	     t_bond_atomtype bat,char *line,
+	     warninp_t wi)
 {
   const char *formal[MAXATOMLIST+1] = {
     "%s",
@@ -591,7 +596,7 @@ void push_bt(directive d,t_params bt[],int nral,
   if ((nn=sscanf(line,formal[nral],
 		 alc[0],alc[1],alc[2],alc[3],alc[4],alc[5])) != nral+1) {
     sprintf(errbuf,"Not enough atomtypes (%d instead of %d)",nn-1,nral);
-    warning_error(errbuf);
+    warning_error(wi,errbuf);
     return;
   }
   
@@ -609,11 +614,11 @@ void push_bt(directive d,t_params bt[],int nral,
       copy_B_from_A(ftype,c);
     } else {
       if (nn < nrfpA) {
-      warning_error("Not enough parameters");
+	warning_error(wi,"Not enough parameters");
       } else if (nn > nrfpA && nn < nrfp) {
-	warning_error("Too many parameters or not enough parameters for topology B");
+	warning_error(wi,"Too many parameters or not enough parameters for topology B");
       } else if (nn > nrfp) {
-	warning_error("Too many parameters");
+	warning_error(wi,"Too many parameters");
       }
       for(i=nn; (i<nrfp); i++)
 	c[i] = 0.0;
@@ -627,12 +632,13 @@ void push_bt(directive d,t_params bt[],int nral,
   }
   for(i=0; (i<nrfp); i++)
     p.c[i]=c[i];
-  push_bondtype (&(bt[ftype]),&p,nral,ftype,FALSE,line);
+  push_bondtype (&(bt[ftype]),&p,nral,ftype,FALSE,line,wi);
 }
 
 
 void push_dihedraltype(directive d,t_params bt[],
-		       t_bond_atomtype bat,char *line)
+		       t_bond_atomtype bat,char *line,
+		       warninp_t wi)
 {
   const char *formal[MAXATOMLIST+1] = {
     "%s",
@@ -706,7 +712,7 @@ void push_dihedraltype(directive d,t_params bt[],
     ft    = strtol(alc[nral],NULL,10);
   } else {
     sprintf(errbuf,"Incorrect number of atomtypes for dihedral (%d instead of 2 or 4)",nn-1);
-    warning_error(errbuf);
+    warning_error(wi,errbuf);
     return;
   }
 	
@@ -745,11 +751,11 @@ void push_dihedraltype(directive d,t_params bt[],
       copy_B_from_A(ftype,c);
     } else {
       if (nn < nrfpA) {
-      warning_error("Not enough parameters");
+	warning_error(wi,"Not enough parameters");
       } else if (nn > nrfpA && nn < nrfp) {
-	warning_error("Too many parameters or not enough parameters for topology B");
+	warning_error(wi,"Too many parameters or not enough parameters for topology B");
       } else if (nn > nrfp) {
-	warning_error("Too many parameters");
+	warning_error(wi,"Too many parameters");
       }
       for(i=nn; (i<nrfp); i++)
 	c[i] = 0.0;
@@ -769,12 +775,13 @@ void push_dihedraltype(directive d,t_params bt[],
   /* Always use 4 atoms here, since we created two wildcard atoms
    * if there wasn't of them 4 already.
    */
-  push_bondtype (&(bt[ftype]),&p,4,ftype,bAllowRepeat,line);
+  push_bondtype (&(bt[ftype]),&p,4,ftype,bAllowRepeat,line,wi);
 }
 
 
 void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
-	      char *pline,int nb_funct)
+              char *pline,int nb_funct,
+              warninp_t wi)
 {
   /* swap the atoms */
   const char *form2="%*s%*s%*s%lf%lf";
@@ -791,7 +798,7 @@ void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
   char  errbuf[256];
 
   if (sscanf (pline,"%s%s%d",a0,a1,&f) != 3) {
-    too_few();
+    too_few(wi);
     return;
   }
   
@@ -801,7 +808,7 @@ void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
     sprintf(errbuf,"Trying to add %s while the default nonbond type is %s",
 	    interaction_function[ftype].longname,
 	    interaction_function[nb_funct].longname);
-    warning_error(errbuf);
+    warning_error(wi,errbuf);
     return;
   }
   
@@ -810,7 +817,7 @@ void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
   if (ftype == F_LJ14) {
     n = sscanf(pline,form4,&c[0],&c[1],&c[2],&c[3]);
     if (n < 2) {
-      too_few();
+      too_few(wi);
       return;
     }
     /* When the B topology parameters are not set,
@@ -822,19 +829,19 @@ void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
   else if (ftype == F_LJC14_Q) {
     n = sscanf(pline,form5,&c[0],&c[1],&c[2],&c[3],&dum);
     if (n != 4) {
-      incorrect_n_param();
+      incorrect_n_param(wi);
       return;
     }
   }
   else if (nrfp == 2) {
     if (sscanf(pline,form3,&c[0],&c[1],&dum) != 2) {
-      incorrect_n_param();
+      incorrect_n_param(wi);
       return;
     }
   }
   else if (nrfp == 3) {
     if (sscanf(pline,form4,&c[0],&c[1],&c[2],&dum) != 3) {
-      incorrect_n_param();
+      incorrect_n_param(wi);
       return;
     }
   }
@@ -858,7 +865,7 @@ void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
       bId = bId && (nbp->c[i] == cr[i]);
     if (!bId) {
       sprintf(errbuf,"Overriding non-bonded parameters,");
-      warning(errbuf);
+      warning(wi,errbuf);
       fprintf(stderr,"  old:");
       for (i=0; i<nrfp; i++)
 	fprintf(stderr," %g",nbp->c[i]);
@@ -871,44 +878,46 @@ void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
 }
 
 void 
-push_gb_params (gpp_atomtype_t at, char *line)
+push_gb_params (gpp_atomtype_t at, char *line,
+                warninp_t wi)
 {
-	int nfield;
-	int i,n,k,found,gfound;
-	double radius,vol,surftens,gb_radius,S_hct;
-	char atypename[STRLEN];
-	char errbuf[STRLEN];
-	
-	if( (nfield = sscanf(line,"%s%lf%lf%lf%lf%lf",atypename,&radius,&vol,&surftens,&gb_radius,&S_hct)) != 6)
+    int nfield;
+    int i,n,k,found,gfound;
+    double radius,vol,surftens,gb_radius,S_hct;
+    char atypename[STRLEN];
+    char errbuf[STRLEN];
+    
+    if ( (nfield = sscanf(line,"%s%lf%lf%lf%lf%lf",atypename,&radius,&vol,&surftens,&gb_radius,&S_hct)) != 6)
     {
-		sprintf(errbuf,"Too few gb parameters for type %s\n",atypename);
-		warning(errbuf);
+        sprintf(errbuf,"Too few gb parameters for type %s\n",atypename);
+        warning(wi,errbuf);
     }
-	
-	/* Search for atomtype */
-	found = 0;
-	gfound = -1;
-	for(i=0;i<get_atomtype_ntypes(at) && !found;i++)
+    
+    /* Search for atomtype */
+    found = 0;
+    gfound = -1;
+    for(i=0;i<get_atomtype_ntypes(at) && !found;i++)
+    {
+        if(gmx_strncasecmp(atypename,get_atomtype_name(i,at),STRLEN-1)==0)
         {
-	  if(gmx_strncasecmp(atypename,get_atomtype_name(i,at),STRLEN-1)==0)
-		{
-			found = i;
+            found = i;
 			gfound = i;
 		}
     }
 	
-	if(gfound==-1)
+	if (gfound==-1)
     {
 		printf("Couldn't find topology match for atomtype %s\n",atypename);
 		abort();
     }
-
+    
 	set_atomtype_gbparam(at,found,radius,vol,surftens,gb_radius,S_hct);
 }
 
 void 
 push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at, 
-	      t_bond_atomtype bat, char *line)
+              t_bond_atomtype bat, char *line,
+              warninp_t wi)
 {
 	const char *formal="%s%s%s%s%s%s%s%s";
 	
@@ -927,7 +936,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	if((nn=sscanf(line,formal,alc[0],alc[1],alc[2],alc[3],alc[4],alc[5],alc[6],alc[7])) != nral+3)
 	{
 		sprintf(errbuf,"Incorrect number of atomtypes for cmap (%d instead of 5)",nn-1);
-		warning_error(errbuf);
+		warning_error(wi,errbuf);
 		return;
 	}
 	
@@ -994,15 +1003,15 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	{
 		if(read_cmap<nrfpA)
 		{
-			warning_error("Not enough cmap parameters");
+			warning_error(wi,"Not enough cmap parameters");
 		}
 		else if(read_cmap > nrfpA && read_cmap < nrfp)
 		{
-			warning_error("Too many cmap parameters or not enough parameters for topology B");
+			warning_error(wi,"Too many cmap parameters or not enough parameters for topology B");
 		}
 		else if(read_cmap>nrfp)
 		{
-			warning_error("Too many cmap parameters");
+			warning_error(wi,"Too many cmap parameters");
 		}
 	}
 	
@@ -1048,7 +1057,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	}
 	
 	/* Push the bond to the bondlist */
-	push_bondtype (&(bt[ftype]),&p,nral,ftype,FALSE,line);
+	push_bondtype (&(bt[ftype]),&p,nral,ftype,FALSE,line,wi);
 }
 
 
@@ -1138,7 +1147,8 @@ void push_cg(t_block *block, int *lastindex, int index, int a)
 }
 
 void push_atom(t_symtab *symtab,t_block *cgs,
-	       t_atoms *at,gpp_atomtype_t atype,char *line,int *lastcg)
+               t_atoms *at,gpp_atomtype_t atype,char *line,int *lastcg,
+               warninp_t wi)
 {
   int 		nr,ptype;
   int 		cgnumber,atomnr,type,typeB,nscan;
@@ -1153,7 +1163,7 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   /* Fixed parameters */
   if (sscanf(line,"%s%s%s%s%s%d",
 	     id,ctype,resnumberic,resname,name,&cgnumber) != 6) {
-    too_few();
+    too_few(wi);
     return;
   }
   sscanf(id,"%d",&atomnr);
@@ -1188,7 +1198,7 @@ void push_atom(t_symtab *symtab,t_block *cgs,
 	  if (nscan > 4) {
 	    mB = mb;
 	    if (nscan > 5)
-	      warning_error("Too many parameters");
+            warning_error(wi,"Too many parameters");
 	  }
 	}
       }
@@ -1205,14 +1215,15 @@ void push_atom(t_symtab *symtab,t_block *cgs,
 		typeB==type ? ctype : ctypeB,mB,qB);
 }
 
-void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line)
+void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line,
+               warninp_t wi)
 {
   char type[STRLEN];
   int nrexcl,i;
   t_molinfo *newmol;
 
   if ((sscanf(line,"%s%d",type,&nrexcl)) != 2) {
-    warning_error("Expected a molecule type name and nrexcl");
+      warning_error(wi,"Expected a molecule type name and nrexcl");
   }
   
   /* Test if this atomtype overwrites another */
@@ -1449,9 +1460,10 @@ static bool default_params(int ftype,t_params bt[],
 
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
-	       t_atoms *at,gpp_atomtype_t atype,char *line,
-	       bool bBonded,bool bGenPairs,real fudgeQQ,
-	       bool bZero,bool *bWarn_copy_A_B)
+               t_atoms *at,gpp_atomtype_t atype,char *line,
+               bool bBonded,bool bGenPairs,real fudgeQQ,
+               bool bZero,bool *bWarn_copy_A_B,
+               warninp_t wi)
 {
   const char *aaformat[MAXATOMLIST]= {
     "%d%d",
@@ -1491,7 +1503,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   nread = sscanf(line,aaformat[nral-1],
 		 &aa[0],&aa[1],&aa[2],&aa[3],&aa[4],&aa[5]);
   if (nread < nral) {
-    too_few();
+    too_few(wi);
     return;
   } else if (nread == nral) 
     ftype = ifunc_index(d,1);
@@ -1521,12 +1533,12 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		"This probably means that you have inserted topology section \"%s\"\n"
 		"in a part belonging to a different molecule than you intended to.\n" 
 		"In that case move the \"%s\" section to the right molecule.",
-		get_warning_file(),get_warning_line(),
+		get_warning_file(wi),get_warning_line(wi),
 		aa[i],dir2str(d),at->nr,dir2str(d),dir2str(d));
     for(j=i+1; (j<nral); j++)
       if (aa[i] == aa[j]) {
 	sprintf(errbuf,"Duplicate atom index (%d) in %s",aa[i],dir2str(d));
-	warning(errbuf);
+	warning(wi,errbuf);
       }
   }
   if (ftype == F_SETTLE)
@@ -1534,7 +1546,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		  "             Atom index (%d) in %s out of bounds (1-%d)\n"
 		  "             Settle works on atoms %d, %d and %d",
-		  get_warning_file(),get_warning_line(),
+		  get_warning_file(wi),get_warning_line(wi),
 		  aa[0],dir2str(d),at->nr,
 		  aa[0],aa[0]+1,aa[0]+2);
   
@@ -1599,7 +1611,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	  {
 	    sprintf(errbuf,
 		    "Some parameters for bonded interaction involving perturbed atoms are specified explicitly in state A, but not B - copying A to B");
-	    warning(errbuf);
+	    warning(wi,errbuf);
 	    *bWarn_copy_A_B = FALSE;
 	  }
 	
@@ -1652,7 +1664,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 				sprintf(errbuf,
 						"Cannot automatically perturb a torsion with multiple terms to different form.\n"
 						"Please specify perturbed parameters manually for this torsion in your topology!");
-				warning_error(errbuf);
+				warning_error(wi,errbuf);
 			}
 		}
 		
@@ -1660,7 +1672,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	  {
 		  /* Issue an error, do not use defaults */
 		  sprintf(errbuf,"Not enough parameters, there should be at least %d (or 0 for defaults)",NRFPA(ftype));
-		  warning_error(errbuf);
+		  warning_error(wi,errbuf);
 	  } 
 		  
       if (nread == 0 || nread == EOF) 
@@ -1686,7 +1698,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 				  else 
 				  {
 					  sprintf(errbuf,"No default %s types",interaction_function[ftype].longname);
-					  warning_error(errbuf);
+					  warning_error(wi,errbuf);
 				  }
 			  }
 		  }
@@ -1716,7 +1728,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 			  {
 				  sprintf(errbuf,"No default %s types for perturbed atoms, "
 						  "using normal values",interaction_function[ftype].longname);
-				  warning(errbuf);
+				  warning(wi,errbuf);
 			  }
 		  }
 	  }
@@ -1726,14 +1738,14 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		&& param.c[5]!=param.c[2])
 		gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 				  "             %s multiplicity can not be perturbed %f!=%f",
-				  get_warning_file(),get_warning_line(),
+				  get_warning_file(wi),get_warning_line(wi),
 				  interaction_function[ftype].longname,
 				  param.c[2],param.c[5]);
 	
 	if (IS_TABULATED(ftype) && param.c[2]!=param.c[0])
 		gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 				  "             %s table number can not be perturbed %d!=%d",
-				  get_warning_file(),get_warning_line(),
+				  get_warning_file(wi),get_warning_line(wi),
 				  interaction_function[ftype].longname,
 				  (int)(param.c[0]+0.5),(int)(param.c[2]+0.5));
 	
@@ -1772,7 +1784,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 
 void push_cmap(directive d, t_params bondtype[], t_params bond[],
 			   t_atoms *at, gpp_atomtype_t atype, char *line,
-			   bool *bWarn_copy_A_B)
+			   bool *bWarn_copy_A_B,
+               warninp_t wi)
 {
 	const char *aaformat[MAXATOMLIST+1]= 
 	{
@@ -1802,7 +1815,7 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
 	
 	if (nread < nral) 
 	{
-		too_few();
+		too_few(wi);
 		return;
 	} 
 	else if (nread == nral) 
@@ -1820,7 +1833,7 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
 					  "This probably means that you have inserted topology section \"%s\"\n"
 					  "in a part belonging to a different molecule than you intended to.\n" 
 					  "In that case move the \"%s\" section to the right molecule.",
-					  get_warning_file(),get_warning_line(),
+					  get_warning_file(wi),get_warning_line(wi),
 					  aa[i],dir2str(d),at->nr,dir2str(d),dir2str(d));
 		}
 		
@@ -1829,7 +1842,7 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
 			if (aa[i] == aa[j]) 
 			{
 				sprintf(errbuf,"Duplicate atom index (%d) in %s",aa[i],dir2str(d));
-				warning(errbuf);
+				warning(wi,errbuf);
 			}
 		}
 	}
@@ -1865,7 +1878,8 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
 
 	
 void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
-		  t_atoms *at,gpp_atomtype_t atype,char *line)
+                  t_atoms *at,gpp_atomtype_t atype,char *line,
+                  warninp_t wi)
 {
   char *ptr;
   int  type,ftype,j,n,ret,nj,a;
@@ -1884,9 +1898,9 @@ void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
   ptr += n;
   if (ret == 0)
     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
-	      "             Expected an atom index in section \"%s\"",
-	      	get_warning_file(),get_warning_line(),
-	      dir2str(d));
+              "             Expected an atom index in section \"%s\"",
+              get_warning_file(wi),get_warning_line(wi),
+              dir2str(d));
   
   param.a[0] = a - 1;
 
@@ -1921,9 +1935,9 @@ void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
 	ptr += n;
 	if (weight[nj] < 0)
 	  gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
-		    "             No weight or negative weight found for vsiten constructing atom %d (atom index %d)",
-		    get_warning_file(),get_warning_line(),
-		    nj+1,atc[nj]+1);
+                "             No weight or negative weight found for vsiten constructing atom %d (atom index %d)",
+                get_warning_file(wi),get_warning_line(wi),
+                nj+1,atc[nj]+1);
 	break;
       default:
 	gmx_fatal(FARGS,"Unknown vsiten type %d",type);
@@ -1935,14 +1949,14 @@ void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
 
   if (nj == 0)
     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
-	      "             Expected more than one atom index in section \"%s\"",
-	      get_warning_file(),get_warning_line(),
-	      dir2str(d));
+              "             Expected more than one atom index in section \"%s\"",
+              get_warning_file(wi),get_warning_line(wi),
+              dir2str(d));
 
   if (weight_tot == 0)
      gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 	       "             The total mass of the construting atoms is zero",
-	       get_warning_file(),get_warning_line());
+	       get_warning_file(wi),get_warning_line(wi));
 
   for(j=0; j<nj; j++) {
     param.a[1] = atc[j];
@@ -1957,14 +1971,15 @@ void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
 }
 
 void push_mol(int nrmols,t_molinfo mols[],char *pline,int *whichmol,
-	      int *nrcopies)
+              int *nrcopies,
+              warninp_t wi)
 {
   int  i,copies;
   char type[STRLEN];
 
   *nrcopies=0;
   if (sscanf(pline,"%s%d",type,&copies) != 2) {
-    too_few();
+    too_few(wi);
     return;
   }
   

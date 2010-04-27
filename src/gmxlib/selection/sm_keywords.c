@@ -42,11 +42,16 @@
 #define USE_REGEX
 #endif
 
+#include <gmx_fatal.h>
 #include <macros.h>
 #include <smalloc.h>
 #include <string2.h>
 
 #include <selmethod.h>
+
+#include "keywords.h"
+#include "parsetree.h"
+#include "selelem.h"
 
 /** Allocates data for integer keyword evaluation. */
 static void *
@@ -214,6 +219,41 @@ gmx_ana_selmethod_t sm_keyword_str = {
     &evaluate_keyword_str,
      NULL,
     {NULL, 0, NULL},
+};
+
+/** Initializes keyword evaluation for an arbitrary group. */
+static int
+init_kweval(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+/** Initializes output for keyword evaluation in an arbitrary group. */
+static int
+init_output_kweval(t_topology *top, gmx_ana_selvalue_t *out, void *data);
+/** Frees the data allocated for keyword evaluation in an arbitrary group. */
+static void
+free_data_kweval(void *data);
+/** Initializes frame evaluation for keyword evaluation in an arbitrary group. */
+static int
+init_frame_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
+/** Evaluates keywords in an arbitrary group. */
+static int
+evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+
+/*! \internal \brief
+ * Data structure for keyword evaluation in arbitrary groups.
+ */
+typedef struct
+{
+    /** Wrapped keyword method for evaluating the values. */
+    gmx_ana_selmethod_t  *kwmethod;
+    /** Method data for \p kwmethod. */
+    void                 *kwmdata;
+    /** Group in which \p kwmethod should be evaluated. */
+    gmx_ana_index_t       g;
+} t_methoddata_kweval;
+
+/** Parameters for keyword evaluation in an arbitrary group. */
+static gmx_ana_selparam_t smparams_kweval[] = {
+    {NULL,   {GROUP_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
 };
 
 
@@ -593,5 +633,157 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             out->u.g->index[out->u.g->isize++] = g->index[i];
         }
     }
+    return 0;
+}
+
+
+/********************************************************************
+ * KEYWORD EVALUATION FOR ARBITRARY GROUPS
+ ********************************************************************/
+
+/*!
+ * \param[in] top   Not used.
+ * \param[in] npar  Not used.
+ * \param[in] param Not used.
+ * \param[in] data  Should point to \ref t_methoddata_kweval.
+ * \returns   0 on success, a non-zero error code on return.
+ *
+ * Calls the initialization method of the wrapped keyword.
+ */
+static int
+init_kweval(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+{
+    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+
+    return d->kwmethod->init(top, 0, NULL, d->kwmdata);
+}
+
+/*!
+ * \param[in]     top   Not used.
+ * \param[in,out] out   Pointer to output data structure.
+ * \param[in,out] data  Should point to \c t_methoddata_kweval.
+ * \returns       0 for success.
+ */
+static int
+init_output_kweval(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+{
+    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+
+    out->nr = d->g.isize;
+    return 0;
+}
+
+/*!
+ * \param data Data to free (should point to a \c t_methoddata_kweval).
+ *
+ * Frees the memory allocated for all the members of \c t_methoddata_kweval.
+ */
+static void
+free_data_kweval(void *data)
+{
+    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+
+    _gmx_selelem_free_method(d->kwmethod, d->kwmdata, FALSE);
+    gmx_ana_index_deinit(&d->g);
+}
+
+/*!
+ * \param[in]  top  Topology.
+ * \param[in]  fr   Current frame.
+ * \param[in]  pbc  PBC structure.
+ * \param      data Should point to a \ref t_methoddata_kweval.
+ * \returns    0 on success, a non-zero error code on error.
+ *
+ * Creates a lookup structure that enables fast queries of whether a point
+ * is within the solid angle or not.
+ */
+static int
+init_frame_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
+{
+    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+
+    return d->kwmethod->init_frame(top, fr, pbc, d->kwmdata);
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data should point to a \c t_methoddata_kweval.
+ *
+ * Calls the evaluation function of the wrapped keyword with the given
+ * parameters, with the exception of using \c t_methoddata_kweval::g for the
+ * evaluation group.
+ */
+static int
+evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    t_methoddata_kweval *d = (t_methoddata_kweval *)data;
+
+    return d->kwmethod->update(top, fr, pbc, &d->g, out, d->kwmdata);
+}
+
+/*!
+ * \param[out]  selp    Pointer to receive a pointer to the created selection
+ *      element (set to NULL on error).
+ * \param[in]   method  Keyword selection method to evaluate.
+ * \param[in]   param   Parameter that gives the group to evaluate \p method in.
+ * \param[in]   scanner Scanner data structure.
+ * \returns     0 on success, non-zero error code on error.
+ *
+ * Creates a \ref SEL_EXPRESSION selection element (pointer put in \c *selp)
+ * that evaluates the keyword method given by \p method in the group given by
+ * \p param.
+ */
+int
+_gmx_sel_init_keyword_evaluator(t_selelem **selp, gmx_ana_selmethod_t *method,
+                                t_selexpr_param *param, void *scanner)
+{
+    t_selelem            *sel;
+    t_methoddata_kweval  *data;
+
+    if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
+        || method->outinit || method->pupdate)
+    {
+        _gmx_selexpr_free_params(param);
+        gmx_incons("unsupported keyword method for arbitrary group evaluation");
+        return -1;
+    }
+
+    *selp = NULL;
+    sel = _gmx_selelem_create(SEL_EXPRESSION);
+    _gmx_selelem_set_method(sel, method, scanner);
+
+    snew(data, 1);
+    data->kwmethod = sel->u.expr.method;
+    data->kwmdata  = sel->u.expr.mdata;
+    gmx_ana_index_clear(&data->g);
+
+    snew(sel->u.expr.method, 1);
+    memcpy(sel->u.expr.method, data->kwmethod, sizeof(gmx_ana_selmethod_t));
+    sel->u.expr.method->flags       |= SMETH_VARNUMVAL;
+    sel->u.expr.method->init_data    = NULL;
+    sel->u.expr.method->set_poscoll  = NULL;
+    sel->u.expr.method->init         = method->init ? &init_kweval : NULL;
+    sel->u.expr.method->outinit      = &init_output_kweval;
+    sel->u.expr.method->free         = &free_data_kweval;
+    sel->u.expr.method->init_frame   = method->init_frame ? &init_frame_kweval : NULL;
+    sel->u.expr.method->update       = &evaluate_kweval;
+    sel->u.expr.method->pupdate      = NULL;
+    sel->u.expr.method->nparams      = asize(smparams_kweval);
+    sel->u.expr.method->param        = smparams_kweval;
+    _gmx_selelem_init_method_params(sel, scanner);
+    sel->u.expr.mdata = data;
+
+    sel->u.expr.method->param[0].val.u.g = &data->g;
+
+    sfree(param->name);
+    param->name = NULL;
+    if (!_gmx_sel_parse_params(param, sel->u.expr.method->nparams,
+                               sel->u.expr.method->param, sel, scanner))
+    {
+        _gmx_selelem_free(sel);
+        return -1;
+    }
+    *selp = sel;
     return 0;
 }

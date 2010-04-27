@@ -74,8 +74,39 @@ extern "C" {
 #define MD_APPENDFILES  (1<<16)
 #define MD_READ_EKIN    (1<<17)
 #define MD_STARTFROMCPT (1<<18)
+#define MD_RESETCOUNTERSHALFWAY (1<<19)
 
+/* Define a number of flags to better control the information
+ * passed to compute_globals in md.c and global_stat.
+ */
 
+/* We are rerunning the simulation */
+#define CGLO_RERUNMD        (1<<1)
+/* we are computing the kinetic energy from average velocities */
+#define CGLO_EKINAVEVEL     (1<<2)
+/* we are removing the center of mass momenta */
+#define CGLO_STOPCM         (1<<3)
+/* bGStat is defined in do_md */
+#define CGLO_GSTAT          (1<<4)
+/* bNEMD is defined in do_md */
+#define CGLO_NEMD           (1<<5)
+/* Sum the energy terms in global computation */
+#define CGLO_ENERGY         (1<<6)
+/* Sum the kinetic energy terms in global computation */
+#define CGLO_TEMPERATURE    (1<<7)
+/* Sum the kinetic energy terms in global computation */
+#define CGLO_PRESSURE       (1<<8)
+/* Sum the constraint term in global computation */
+#define CGLO_CONSTRAINT     (1<<9)
+/* we are using an integrator that requires iteration over some steps - currently not used*/
+#define CGLO_ITERATE        (1<<10)
+/* it is the first time we are iterating (or, only once through is required */
+#define CGLO_FIRSTITERATE   (1<<11)
+/* Reading ekin from the trajectory */
+#define CGLO_READEKIN       (1<<12)
+/* we need to reset the ekin rescaling factor here */
+#define CGLO_SCALEEKIN      (1<<13)
+  
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
@@ -94,6 +125,29 @@ typedef struct {
   gmx_large_int_t nsteps_done;
 } gmx_runtime_t;
 
+typedef struct {
+  int  fp_trn;
+  int  fp_xtc;
+  int  xtc_prec;
+  ener_file_t fp_ene;
+  const char *fn_cpt;
+  int  eIntegrator;
+  int  simulation_part;
+  FILE *fp_dhdl;
+  FILE *fp_field;
+} gmx_mdoutf_t;
+
+/* Variables for temporary use with the deform option,
+ * used in runner.c and md.c.
+ * (These variables should be stored in the tpx file.)
+ */
+extern gmx_large_int_t     deform_init_init_step_tpx;
+extern matrix              deform_init_box_tpx;
+#ifdef GMX_THREADS
+extern tMPI_Thread_mutex_t deform_init_box_mutex;
+#endif
+
+
 typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				int nfile,const t_filenm fnm[],
 				const output_env_t oenv, bool bVerbose,
@@ -109,6 +163,7 @@ typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_forcerec *fr,
 				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
+				const char *deviceOptions,
 				unsigned long Flags,
 				gmx_runtime_t *runtime);
 
@@ -117,6 +172,8 @@ typedef struct gmx_global_stat *gmx_global_stat_t;
 /* ROUTINES from md.c */
 
 extern gmx_integrator_t do_md;
+
+extern gmx_integrator_t do_md_openmm;
 
 /* ROUTINES from minimize.c */
 
@@ -131,6 +188,8 @@ extern gmx_integrator_t do_lbfgs;
 
 extern gmx_integrator_t do_nm;
 /* Do normal mode analysis */
+
+/* ROUTINES from tpi.c */
 
 extern gmx_integrator_t do_tpi;
 /* Do test particle insertion */
@@ -156,22 +215,40 @@ extern void global_stat(FILE *log,gmx_global_stat_t gs,
 			t_commrec *cr,gmx_enerdata_t *enerd,
 			tensor fvir,tensor svir,rvec mu_tot,
 			t_inputrec *inputrec,
-			gmx_ekindata_t *ekind,bool bSumEkinhOld,
+			gmx_ekindata_t *ekind,
 			gmx_constr_t constr,t_vcm *vcm,
-			int *nabnsb,real *chkpt,real *terminate,
-			gmx_mtop_t *top_global, t_state *state_local);
+			int nsig,real *sig,
+			gmx_mtop_t *top_global, t_state *state_local, 
+			bool bSumEkinhOld, int flags);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
-void write_traj(FILE *fplog,t_commrec *cr,
-		int fp_trn,bool bX,bool bV,bool bF,
-		int fp_xtc,bool bXTC,int xtc_prec,
-		const char *fn_cpt,bool bCPT,
-		gmx_mtop_t *top_global,
-		int eIntegrator,int simulation_part,gmx_large_int_t step,double t,
-		t_state *state_local,t_state *state_global,
-		rvec *f_local,rvec *f_global,
-		int *n_xtc,rvec **x_xtc);
+extern gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],
+				 bool bAppendFiles,
+				 const t_commrec *cr,const t_inputrec *ir,
+				 const output_env_t oenv);
+/* Returns a pointer to a data structure with all output file pointers
+ * and names required by mdrun.
+ */
+
+extern void done_mdoutf(gmx_mdoutf_t *of);
+/* Close all open output files and free the of pointer */
+
+#define MDOF_X   (1<<0)
+#define MDOF_V   (1<<1)
+#define MDOF_F   (1<<2)
+#define MDOF_XTC (1<<3)
+#define MDOF_CPT (1<<4)
+
+extern void write_traj(FILE *fplog,t_commrec *cr,
+		       gmx_mdoutf_t *of,
+		       int mdof_flags,
+		       gmx_mtop_t *top_global,
+		       gmx_large_int_t step,double t,
+		       t_state *state_local,t_state *state_global,
+		       rvec *f_local,rvec *f_global,
+		       int *n_xtc,rvec **x_xtc);
 /* Routine that writes frames to trn, xtc and/or checkpoint.
+ * What is written is determined by the mdof_flags defined above.
  * Data is collected to the master node only when necessary.
  */
 
@@ -181,6 +258,8 @@ extern int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep);
 extern int do_any_io(int step, t_inputrec *ir);
 
 /* ROUTINES from sim_util.c */
+
+extern double gmx_gettime();
 
 extern void print_time(FILE *out, gmx_runtime_t *runtime,
                        gmx_large_int_t step,t_inputrec *ir, t_commrec *cr);
@@ -193,10 +272,10 @@ extern void runtime_upd_proc(gmx_runtime_t *runtime);
 /* The processor time should be updated every once in a while,
  * since on 32-bit manchines it loops after 72 minutes.
  */
-
+  
 extern void print_date_and_time(FILE *log,int pid,const char *title,
 				const gmx_runtime_t *runtime);
-
+  
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
 
@@ -209,9 +288,9 @@ extern void finish_run(FILE *log,t_commrec *cr,const char *confout,
 extern void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 
 extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-			  gmx_large_int_t step,int natoms,matrix box,real lambda,
-			  tensor pres,tensor virial,gmx_enerdata_t *enerd);
-     
+			  gmx_large_int_t step, int natoms, 
+			  matrix box,real lambda,tensor pres,tensor virial,
+			  real *prescorr, real *enercorr, real *dvdlcorr);
 
 typedef enum
 {
@@ -235,6 +314,11 @@ extern void init_single(FILE *log, t_inputrec *inputrec, const char *tpbfile,
       * coordinates and velocities from the file specified in tpbfile
       */
 
+/* check the version */
+void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
+                               t_inputrec *ir,gmx_mtop_t *mtop);
+
+
 extern void init_parallel(FILE *log,const char *tpxfile, t_commrec *cr,
 			  t_inputrec *inputrec,gmx_mtop_t *mtop,
 			  t_state *state, int list);
@@ -248,18 +332,22 @@ extern void init_parallel(FILE *log,const char *tpxfile, t_commrec *cr,
       * nparts1 are necessary to calculate the non bonded interaction using
       * the symmetry and thus calculating every force only once. List is a 
       * facility for logging (and debugging). One can decide to print none or a 
-      * set of * selected parameters to the file specified by log. Parameters are
-      * printed by or-ing the corresponding items from t_listitem. A 0 (zero)
-      * specifies that nothing is to be printed on the file. The function
+      * set of * selected parameters to the file specified by log. Parameters 
+      * are printed by or-ing the corresponding items from t_listitem. A 0 
+      * (zero) specifies that nothing is to be printed on the file. The function
       * returns the number of shifts over the ring to perform to calculate
       * all interactions.
+      *
+      * NOTE: for threaded simulations that don't support parallel runs (at
+      * the moment that's only the LBGFS integrator), this function may
+      * cancel them and re-write the commrec.
       */
 
 extern void do_constrain_first(FILE *log,gmx_constr_t constr,
 			       t_inputrec *inputrec,t_mdatoms *md,
-			       t_state *state,
+			       t_state *state,rvec *f,
 			       t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-			       t_forcerec *fr,t_idef *idef);
+			       t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir); 
 			  
 extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,
@@ -275,7 +363,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
 	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,int repl_ex_seed,
 	     real pforce,real cpt_period,real max_hours,
-	     unsigned long Flags);
+	     const char *deviceOptions, unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
 int mdrunner_threads(int nthreads,
@@ -287,29 +375,31 @@ int mdrunner_threads(int nthreads,
                      const char *ddcsx,const char *ddcsy,const char *ddcsz,
                      int nstepout,int resetstep,int nmultisim, int repl_ex_nst,
                      int repl_ex_seed, real pforce,real cpt_period,
-                     real max_hours, unsigned long Flags);
+                     real max_hours, const char *deviceOptions, unsigned long Flags);
 /* initializes nthread threads before running mdrunner: is the preferred
    way to start a simulation (even if nthreads=1 and no threads are started) */
 
+extern void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);
+/* Print a warning message to stderr on the master node
+ * and to fplog if fplog!=NULL.
+ */
 
 extern void init_md(FILE *fplog,
 		    t_commrec *cr,t_inputrec *ir, const output_env_t oenv, 
-                    double *t,double *t0,
+		    double *t,double *t0,
 		    real *lambda,double *lam0,
 		    t_nrnb *nrnb,gmx_mtop_t *mtop,
 		    gmx_update_t *upd,
 		    int nfile,const t_filenm fnm[],
-		    int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,
-                    const char **fn_cpt,
-		    FILE **fp_dhdl,FILE **fp_field,
-		    t_mdebin **mdebin,
+		    gmx_mdoutf_t **outf,t_mdebin **mdebin,
 		    tensor force_vir,tensor shake_vir,
 		    rvec mu_tot,
-		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags);
-/* Routine in sim_util.c */
+		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm, 
+		    t_state *state, unsigned long Flags);
+  /* Routine in sim_util.c */
 
 #ifdef __cplusplus
 }
 #endif
-     
+
 #endif	/* _mdrun_h */

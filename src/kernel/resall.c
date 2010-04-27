@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -47,44 +48,56 @@
 #include "macros.h"
 #include "resall.h"
 #include "pgutil.h"
+#include "fflibutil.h"
 
-gpp_atomtype_t read_atype(const char *adb,t_symtab *tab)
+gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab)
 {
-  FILE       *in;
-  char       aadb[STRLEN];
-  char       buf[STRLEN],name[STRLEN];
-  double     m;
-  int        nratt=0;
-  gpp_atomtype_t at;
-  t_atom     *a;
-  t_param    *nb;
-  
-  sprintf(aadb,"%s.atp",adb);
-  in = libopen(aadb);
-  at = init_atomtype();
-  snew(a,1);
-  snew(nb,1);
-  
-  while(!feof(in)) {
-    /* Skip blank or comment-only lines */
-    do {
-      fgets2(buf,STRLEN,in);
-      if (NULL!=buf) {
-	strip_comment(buf);
-	trim(buf);
-      }
-    } while (NULL!=buf && strlen(buf)==0);
+    int        nfile,f;
+    char       **file;
+    FILE       *in;
+    char       buf[STRLEN],name[STRLEN];
+    double     m;
+    int        nratt=0;
+    gpp_atomtype_t at;
+    t_atom     *a;
+    t_param    *nb;
     
-    if ((buf != NULL) && (sscanf(buf,"%s%lf",name,&m) == 2)) {
-      a->m = m;
-      add_atomtype(at,tab,a,name,nb, 0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 );
-      fprintf(stderr,"\rAtomtype %d",nratt+1);
+    nfile = fflib_search_file_end(ffdir,".atp",TRUE,&file);
+    at = init_atomtype();
+    snew(a,1);
+    snew(nb,1);
+    
+    for(f=0; f<nfile; f++)
+    {
+        in = fflib_open(file[f]);
+        while(!feof(in))
+        {
+            /* Skip blank or comment-only lines */
+            do
+            {
+                fgets2(buf,STRLEN,in);
+                if (NULL != buf)
+                {
+                    strip_comment(buf);
+                    trim(buf);
+                }
+            }
+            while (NULL!=buf && strlen(buf)==0);
+            
+            if ((buf != NULL) && (sscanf(buf,"%s%lf",name,&m) == 2))
+            {
+                a->m = m;
+                add_atomtype(at,tab,a,name,nb, 0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 );
+                fprintf(stderr,"\rAtomtype %d",nratt+1);
+            }
+        }
+        ffclose(in);
+        sfree(file[f]);
     }
-  }
-  ffclose(in);
-  fprintf(stderr,"\n");
+    fprintf(stderr,"\n");
+    sfree(file);
   
-  return at;
+    return at;
 }
 
 static void print_resatoms(FILE *out,gpp_atomtype_t atype,t_restp *rtp)
@@ -129,7 +142,7 @@ static bool read_atoms(FILE *in,char *line,
       srenew(r0->atomname, maxentries);
       srenew(r0->cgnr,     maxentries);
     }
-    r0->atomname[i]=put_symtab(tab,buf);
+    r0->atomname[i] = put_symtab(tab,buf);
     r0->atom[i].q=q;
     r0->cgnr[i]=cg;
     j = get_atomtype_type(buf1,atype);
@@ -235,20 +248,27 @@ void clear_t_restp(t_restp *rrtp)
   memset((void *)rrtp, 0, sizeof(t_restp));
 }
 
-int read_resall(char *ff, int bts[], t_restp **rtp, 
-		gpp_atomtype_t atype, t_symtab *tab, bool *bAlldih, int *nrexcl,
-		bool *HH14, bool *bRemoveDih)
+void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp, 
+                 gpp_atomtype_t atype, t_symtab *tab,
+                 bool bAllowOverrideRTP)
 {
   FILE      *in;
-  char      rrdb[STRLEN],line[STRLEN],header[STRLEN];
+  char      filebase[STRLEN],*ptr,line[STRLEN],header[STRLEN];
   int       i,nrtp,maxrtp,bt,nparam;
   int       dum1,dum2,dum3;
   t_restp   *rrtp;
   bool      bNextResidue,bError;
+  int       bts[ebtsNR];
+  bool      bAlldih;
+  int       nrexcl;
+  bool      HH14;
+  bool      bRemoveDih;
+  int       firstrtp;
+
+  fflib_filename_base(rrdb,filebase,STRLEN);
+
+  in = fflib_open(rrdb);
   
-  sprintf(rrdb,"%s.rtp",ff);
-  in=libopen(rrdb);
-  rrtp=NULL;
   if (debug) {
     fprintf(debug,"%9s %5s", "Residue", "atoms");
     for(i=0; i<ebtsNR; i++)
@@ -258,12 +278,17 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
 
   /* these bonded parameters will overwritten be when  *
    * there is a [ bondedtypes ] entry in the .rtp file */
-  bts[0] = 1; /* normal bonds     */
-  bts[1] = 1; /* normal angles    */
-  bts[2] = 1; /* normal dihedrals */
-  bts[3] = 2; /* normal impropers */
-  bts[5] = 1; /* normal cmap torsions */
-  
+  bts[ebtsBONDS]  = 1; /* normal bonds     */
+  bts[ebtsANGLES] = 1; /* normal angles    */
+  bts[ebtsPDIHS]  = 1; /* normal dihedrals */
+  bts[ebtsIDIHS]  = 2; /* normal impropers */
+  bts[ebtsEXCLS]  = 1; /* normal exclusions */
+  bts[ebtsCMAP]   = 1; /* normal cmap torsions */
+
+  bAlldih    = FALSE;
+  nrexcl     = 3;
+  HH14       = TRUE;
+  bRemoveDih = TRUE;
   
   /* Column 5 & 6 aren't really bonded types, but we include
    * them here to avoid introducing a new section:
@@ -273,36 +298,37 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
    * Column 8: Remove impropers over the same bond as a proper dihedral
    */
   
-  nrtp=0;
-  maxrtp=0;
   get_a_line(in,line,STRLEN);
   if (!get_header(line,header))
     gmx_fatal(FARGS,"in .rtp file at line:\n%s\n",line);
   if (strncasecmp("bondedtypes",header,5)==0) {
     get_a_line(in,line,STRLEN);
-    if ((nparam=sscanf(line,"%d %d %d %d %d %d %d %d",&bts[0],&bts[1],&bts[2],&bts[3],&dum1,nrexcl,&dum2,&dum3)) < 4 )
+    if ((nparam=sscanf(line,"%d %d %d %d %d %d %d %d",
+		       &bts[ebtsBONDS],&bts[ebtsANGLES],
+		       &bts[ebtsPDIHS],&bts[ebtsIDIHS],
+		       &dum1,&nrexcl,&dum2,&dum3)) < 4 )
     {
       gmx_fatal(FARGS,"need at least 4 (up to 8) parameters in .rtp file at line:\n%s\n",line);
     }
-    *bAlldih    = (dum1 != 0);
-    *HH14       = (dum2 != 0);
-    *bRemoveDih = (dum3 != 0);
+    bAlldih    = (dum1 != 0);
+    HH14       = (dum2 != 0);
+    bRemoveDih = (dum3 != 0);
     get_a_line(in,line,STRLEN);
     if(nparam<5) {
       fprintf(stderr,"Using default: not generating all possible dihedrals\n");
-      *bAlldih=FALSE;
+      bAlldih = FALSE;
     }
     if(nparam<6) {
       fprintf(stderr,"Using default: excluding 3 bonded neighbors\n");
-      *nrexcl=3;
+      nrexcl = 3;
     }
     if(nparam<7) {
       fprintf(stderr,"Using default: generating 1,4 H--H interactions\n");
-      *HH14=TRUE;
+      HH14 = TRUE;
     }
     if(nparam<8) {
       fprintf(stderr,"Using default: removing impropers on same bond as a proper\n");
-      *bRemoveDih=TRUE;
+      bRemoveDih = TRUE;
     }
   } else {
     fprintf(stderr,
@@ -314,9 +340,12 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
 	    "\n   %3d     %3d        %3d        %3d           %3d           %3d   %3d    %3d"
 	    "\n"
 	    "was present at the beginning of %s",
-	    bts[0],bts[1],bts[2],bts[3], (*bAlldih) ? 1 : 0,*nrexcl,*HH14,*bRemoveDih,rrdb);
+	    bts[0],bts[1],bts[2],bts[3], bAlldih ? 1 : 0,nrexcl,HH14,bRemoveDih,rrdb);
   }
-  nrtp=0;
+  /* We don't know the current size of rrtp, but simply realloc immediately */
+  nrtp = *nrtpptr;
+  rrtp = *rtp;
+  maxrtp = nrtp;
   while (!feof(in)) {
     if (nrtp >= maxrtp) {
       maxrtp+=100;
@@ -325,8 +354,18 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
     clear_t_restp(&rrtp[nrtp]);
     if (!get_header(line,header))
       gmx_fatal(FARGS,"in .rtp file at line:\n%s\n",line);
-    rrtp[nrtp].resname=strdup(header);
-    
+    rrtp[nrtp].resname  = strdup(header);
+    rrtp[nrtp].filebase = strdup(filebase);
+
+    /* Set the bonded types */
+    rrtp[nrtp].bAlldih    = bAlldih;
+    rrtp[nrtp].nrexcl     = nrexcl;
+    rrtp[nrtp].HH14       = HH14;
+    rrtp[nrtp].bRemoveDih = bRemoveDih;
+    for(i=0; i<ebtsNR; i++) {
+      rrtp[nrtp].rb[i].type = bts[i];
+    }
+
     get_a_line(in,line,STRLEN);
     bError=FALSE;
     bNextResidue=FALSE;
@@ -361,8 +400,38 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
 	fprintf(debug," %10d",rrtp[nrtp].rb[i].nb);
       fprintf(debug,"\n");
     }
-    nrtp++;
-    fprintf(stderr,"\rResidue %d",nrtp);
+    
+    firstrtp = -1;
+    for(i=0; i<nrtp; i++) {
+        if (strcasecmp(rrtp[i].resname,rrtp[nrtp].resname) == 0) {
+            firstrtp = i;
+        }
+    }
+    
+    if (firstrtp == -1) {
+        nrtp++;
+        fprintf(stderr,"\rResidue %d",nrtp);
+    } else {
+        if (firstrtp >= *nrtpptr)
+        {
+            gmx_fatal(FARGS,"Found a second entry for '%s' in '%s'",
+                      rrtp[nrtp].resname,rrdb);
+        }
+        if (bAllowOverrideRTP)
+        {
+            fprintf(stderr,"\n");
+            fprintf(stderr,"Found another rtp entry for '%s' in '%s', ignoring this entry and keeping the one from '%s.rtp'\n",
+                    rrtp[nrtp].resname,rrdb,rrtp[firstrtp].filebase);
+            /* We should free all the data for this entry.
+             * The current code gives a lot of dangling pointers.
+             */
+            clear_t_restp(&rrtp[nrtp]);
+        }
+        else
+        {
+            gmx_fatal(FARGS,"Found rtp entries for '%s' in both '%s' and '%s'. If you want the first definition to override the second one, set the -rtpo option of pdb2gmx.",rrtp[nrtp].resname,rrtp[firstrtp].filebase,rrdb);
+        }
+    }
   }
   ffclose(in);
   /* give back unused memory */
@@ -372,22 +441,29 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
   qsort(rrtp,nrtp,(size_t)sizeof(rrtp[0]),comprtp);
   
   check_rtp(nrtp,rrtp,rrdb);
-  
-  *rtp  = rrtp;
-  
-  return nrtp;
+
+  *nrtpptr = nrtp;
+  *rtp     = rrtp;
 }
 
-void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[],
-		  gpp_atomtype_t atype, bool bAlldih, int nrexcl, 
-		  bool HH14, bool bRemoveDih)
+void print_resall(FILE *out, int nrtp, t_restp rtp[],
+		  gpp_atomtype_t atype)
 {
   int i,bt;
+
+  if (nrtp == 0) {
+    return;
+  }
 
   /* print all the ebtsNR type numbers */
   fprintf(out,"[ bondedtypes ]\n");
   fprintf(out,"; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  remove_dih\n");
-  fprintf(out," %5d  %6d  %9d  %9d  %14d  %14d %14d %14d\n\n",bts[0],bts[1],bts[2],bts[3],bAlldih,nrexcl,HH14,bRemoveDih);
+  fprintf(out," %5d  %6d  %9d  %9d  %14d  %14d %14d %14d\n\n",
+	  rtp[0].rb[0].type,
+	  rtp[0].rb[1].type,
+	  rtp[0].rb[2].type,
+	  rtp[0].rb[3].type,
+	  rtp[0].bAlldih,rtp[0].nrexcl,rtp[0].HH14,rtp[0].bRemoveDih);
 
   for(i=0; i<nrtp; i++) {
     if (rtp[i].natom > 0) {
@@ -403,7 +479,7 @@ void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[],
  *                  SEARCH   ROUTINES
  * 
  ***********************************************************/
-int neq_str(char *a1,char *a2)
+int neq_str(const char *a1,const char *a2)
 {
   int j,l;
   
@@ -415,7 +491,7 @@ int neq_str(char *a1,char *a2)
   return j;
 }
 
-t_restp *search_rtp(char *key,int nrtp,t_restp rtp[])
+t_restp *search_rtp(const char *key,int nrtp,t_restp rtp[])
 {
   int i,n,best,besti;
 

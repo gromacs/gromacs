@@ -47,6 +47,7 @@
 #include "readinp.h"
 #include "wman.h"
 #include "pdbio.h"
+#include "oenv.h"
 
 
 #ifdef __cplusplus
@@ -77,18 +78,14 @@ typedef bool t_next_x(int status,real *t,int natoms,rvec x[],matrix box);
 
 /* I/O function types */
 
-    
-/* This is for re-entrant versions of the functions below. The env_info
-   structure holds information about program name, cmd line, default times,
-   etc. Right now, there is a global variable of this type in statutil.c to 
-   enable the old functions, but this should change. All the functions below
-   now have re-entrant versions listed with them. */
-extern void set_output_env(output_env_t oenv,  bool view, bool xvgr_codes, 
-                           const char *timenm);
-extern void init_output_env(output_env_t oenv,  int argc, char *argv[],
-                            bool view, bool xvgr_codes, const char *timenm);
+  
+/* LEGACY FUNCTIONS 
 
-
+   The program names, command lines, etc. are now also set in the output_env
+   structure. That is now the preferred location, but the functions here
+   are still available as legacy functions. Because they all act on inherently
+   global informaion, their existence in a multi-threaded environment is not
+   a real problem. */
     
 /* Return the name of the program */
 extern const char *command_line(void);
@@ -181,32 +178,6 @@ extern int check_times(real t);
  *          1 if t>tend
  */
 
-extern const char *get_time_unit(const output_env_t oenv);
-/* return time unit (e.g. ps or ns) */
-
-extern const char *get_time_label(const output_env_t oenv);
-/* return time unit label (e.g. "Time (ps)") */
-
-extern const char *get_xvgr_tlabel(const output_env_t oenv);
-/* retrun x-axis time label for xmgr */
-
-extern real get_time_factor(const output_env_t oenv);
-/* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
-
-extern real get_time_invfactor(const output_env_t oenv);
-/* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
-
-extern real conv_time(const output_env_t oenv, real time);
-/* return converted time */
-
-extern void conv_times(const output_env_t oenv, int n, real *time);
-/* convert array of times */
-
-extern bool get_view(const output_env_t oenv);
-/* Return TRUE when user requested viewing of the file */
-
-extern bool get_print_xvgr_codes(const output_env_t oenv);
-/* Return TRUE when user wants printing of legends etc. in the file. */
 
 
 

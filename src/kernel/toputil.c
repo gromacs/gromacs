@@ -55,7 +55,7 @@ void set_p_string(t_param *p,const char *s)
 {
   if (s) {
     if (strlen(s) < sizeof(p->s)-1)
-      strcpy(p->s,s);
+      strncpy(p->s,s,sizeof(p->s));
     else
       gmx_fatal(FARGS,"Increase MAXSLEN in include/grompp.h to at least %d,"
 		  " or shorten your definition of bonds like %s to at most %d",
@@ -100,14 +100,15 @@ void init_plist(t_params plist[])
     plist[i].nr    = 0;
     plist[i].maxnr = 0;
     plist[i].param = NULL;
+  
+    /* CMAP */
+    plist[i].ncmap=0;
+    plist[i].cmap=NULL;
+    plist[i].grid_spacing = 0;
+    plist[i].nc = 0;   
+    plist[i].nct        = 0;
+    plist[i].cmap_types = NULL;
   }
-	
-	/* CMAP */
-	plist->ncmap=0;
-	plist->cmap=NULL;
-	
-	plist->nct        = 0;
-	plist->cmap_types = NULL;
 }
 
 void cp_param(t_param *dest,t_param *src)
@@ -118,7 +119,7 @@ void cp_param(t_param *dest,t_param *src)
     dest->a[j] = src->a[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
     dest->c[j] = src->c[j];
-  strcpy(dest->s,src->s);
+  strncpy(dest->s,src->s,sizeof(dest->s));
 }
 
 void add_param_to_list(t_params *list, t_param *b)
@@ -133,6 +134,7 @@ void add_param_to_list(t_params *list, t_param *b)
     list->param[list->nr].c[j]   = b->c[j];
   for (j=0; (j < MAXATOMLIST); j++) 
     list->param[list->nr].a[j]   = b->a[j];
+  memset(list->param[list->nr].s,0,sizeof(list->param[list->nr].s));
   
   list->nr++;
 }
@@ -374,13 +376,29 @@ void print_excl(FILE *out, int natoms, t_excls excls[])
   }
 }
 
-void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr)
+static double get_residue_charge(const t_atoms *atoms,int at)
 {
-  int  i;
+  int ri;
+  double q;
+  
+  ri = atoms->atom[at].resind;
+  q = 0;
+  while (at < atoms->nr && atoms->atom[at].resind == ri) {
+    q += atoms->atom[at].q;
+    at++;
+  }
+
+  return q;
+}
+
+void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr,
+		 bool bRTPresname)
+{
+  int  i,ri;
   int  tpA,tpB;
   const char *as;
   char *tpnmA,*tpnmB;
-  double qtot;
+  double qres,qtot;
   
   as=dir2str(d_atoms);
   fprintf(out,"[ %s ]\n",as);
@@ -396,14 +414,31 @@ void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr)
   if (at->nres) {
     /* if the information is present... */
     for (i=0; (i < at->nr); i++) {
+      ri = at->atom[i].resind;
+      if ((i == 0 || ri != at->atom[i-1].resind) &&
+	  at->resinfo[ri].rtp != NULL) {
+	qres = get_residue_charge(at,i);
+	fprintf(out,"; residue %3d %-3s rtp %-4s q ",
+		at->resinfo[ri].nr,
+		*at->resinfo[ri].name,
+		*at->resinfo[ri].rtp);
+	if (fabs(qres) < 0.001) {
+	  fprintf(out," %s","0.0");
+	} else {
+	  fprintf(out,"%+3.1f",qres);
+	}
+	fprintf(out,"\n");
+      }
       tpA = at->atom[i].type;
       if ((tpnmA = get_atomtype_name(tpA,atype)) == NULL)
 	gmx_fatal(FARGS,"tpA = %d, i= %d in print_atoms",tpA,i);
       
       fprintf(out,"%6d %10s %6d%c %5s %6s %6d %10g %10g",
 	      i+1,tpnmA,
-	      at->resinfo[at->atom[i].resind].nr,
-	      at->resinfo[at->atom[i].resind].ic,
+	      at->resinfo[ri].nr,
+	      at->resinfo[ri].ic,
+	      bRTPresname ?
+	      *(at->resinfo[at->atom[i].resind].rtp) :
 	      *(at->resinfo[at->atom[i].resind].name),
 	      *(at->atomname[i]),cgnr[i],
 	      at->atom[i].q,at->atom[i].m);

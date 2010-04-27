@@ -216,8 +216,8 @@
  *  - sel_freefunc() should be provided if sel_datafunc() and/or
  *    sel_initfunc() allocate any dynamic memory in addition to the data
  *    structure itself.
- *  - sel_framefunc() and sel_updatefunc_pos() only make sense for methods with
- *    \ref SMETH_DYNAMIC set.
+ *  - sel_updatefunc_pos() only makes sense for methods with \ref SMETH_DYNAMIC
+ *    set.
  *  - At least one update function should be provided unless the method type is
  *    \ref NO_VALUE.
  *
@@ -500,6 +500,8 @@ typedef void  (*sel_freefunc)(void *data);
  * It is ensured that this function will be called before
  * \p sel_updatefunc_* for each frame, and that it will be called at most
  * once for each frame.
+ * For static methods, it is called once, with \p fr and \p pbc set to
+ * NULL.
  */
 typedef int   (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                                void *data);

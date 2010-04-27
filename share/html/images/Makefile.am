@@ -2,7 +2,9 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-imagedir = ${pkgdatadir}/html/images
+htmldir = ${pkgdatadir}/html
+
+imagedir = ${htmldir}/images
 
 image_DATA = \
 	features.gif					\

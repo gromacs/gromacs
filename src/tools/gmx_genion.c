@@ -231,8 +231,8 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 {
 #define TEMP_FILENM "temp.top"
   FILE *fpin,*fpout;
-  char  buf[STRLEN],buf2[STRLEN],*temp;
-  int  line,i,nsol;
+  char  buf[STRLEN],buf2[STRLEN],*temp,**mol_line=NULL;
+  int  line,i,nsol,nmol_line,sol_line,nsol_last;
   bool bMolecules;
   
   printf("\nProcessing topology\n");
@@ -241,6 +241,9 @@ static void update_topol(const char *topinout,int p_num,int n_num,
   
   line=0;
   bMolecules = FALSE;
+  nmol_line = 0;
+  sol_line  = -1;
+  nsol_last = -1;
   while (fgets(buf, STRLEN, fpin)) {
     line++;
     strcpy(buf2,buf);
@@ -258,32 +261,56 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 	rtrim(buf2);
 	bMolecules=(strcasecmp(buf2,"molecules")==0);
       }
-    } 
-    if (bMolecules) {
-      /* check if this is a line with solvent molecules */
-      sscanf(buf,"%s",buf2);
-      if (strcasecmp(buf2,grpname)==0) {
-	sscanf(buf,"%*s %d",&i);
-	nsol = i-p_num-n_num;
-	if (nsol < 0) 
-	  gmx_incons("Not enough water");
-	else {
-	  printf("Replacing %d solute molecules in topology file (%s) "
-		 " by %d %s and %d %s ions.\n",
-		 nsol,topinout,p_num,p_name,n_num,n_name);
-	  fprintf(fpout,"%-10s  %d\n",grpname,nsol);  
-	  fprintf(fpout,"%-10s  %d\n",p_name,p_num);  
-	  fprintf(fpout,"%-10s  %d\n",n_name,n_num);  
-	}
-      } else
-	fprintf(fpout,"%s",buf);
-    } else
       fprintf(fpout,"%s",buf);
+    } else if (!bMolecules) {
+      fprintf(fpout,"%s",buf);
+    } else {
+      /* Check if this is a line with solvent molecules */
+      sscanf(buf,"%s",buf2);
+      if (strcasecmp(buf2,grpname) == 0) {
+	sol_line = nmol_line;
+	sscanf(buf,"%*s %d",&nsol_last);
+      }
+      /* Store this molecules section line */
+      srenew(mol_line,nmol_line+1);
+      mol_line[nmol_line] = strdup(buf);
+      nmol_line++;
+    }
   }
   ffclose(fpin);
+
+  if (sol_line == -1) {
+    ffclose(fpout);
+    gmx_fatal(FARGS,"No line with moleculetype '%s' found the [ molecules ] section of file '%s'",grpname,topinout);
+  }
+  if (nsol_last < p_num+n_num) {
+    ffclose(fpout);
+    gmx_fatal(FARGS,"The last entry for moleculetype '%s' in the [ molecules ] section of file '%s' has less solvent molecules (%d) than were replaced (%d)",grpname,topinout,nsol_last,p_num+n_num);
+  }
+
+  /* Print all the molecule entries */
+  for(i=0; i<nmol_line; i++) {
+    if (i != sol_line) {
+      fprintf(fpout,"%s",mol_line[i]);
+    } else {
+      printf("Replacing %d solute molecules in topology file (%s) "
+	     " by %d %s and %d %s ions.\n",
+	     p_num+n_num,topinout,p_num,p_name,n_num,n_name);
+      nsol_last -= p_num + n_num;
+      if (nsol_last > 0) {
+	fprintf(fpout,"%-10s  %d\n",grpname,nsol_last);  
+      }
+      if (p_num > 0) {
+	fprintf(fpout,"%-10s  %d\n",p_name,p_num);  
+      }
+      if (n_num > 0) {
+	fprintf(fpout,"%-10s  %d\n",n_name,n_num);
+      }
+    }
+  }
   ffclose(fpout);
   /* use ffopen to generate backup of topinout */
-  fpout=ffopen(topinout,"w");
+  fpout = ffopen(topinout,"w");
   ffclose(fpout);
   rename(TEMP_FILENM,topinout);
 #undef TEMP_FILENM

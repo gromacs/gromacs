@@ -52,18 +52,21 @@ extern "C" {
 
 typedef struct {
   t_ebin *ebin;
-  int    ie,iconrmsd,ib,ivol,idens,ipv;
-  int    isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,iu,imu;
+  int    ie,iconrmsd,ib,ivol,idens,ipv,ienthalpy;
+  int    isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,itcb,iu,imu;
   int    ivcos,ivisc;
-  int    nE,nEg,nEc,nTC,nU;
+  int    nE,nEg,nEc,nTC,nTCP,nU,nNHC;
   int    *igrp;
   char   **grpnms;
+  int    mde_n,mdeb_n;
   real   *tmp_r;
   rvec   *tmp_v;
   bool	 bConstr;
   bool   bConstrVir;
   bool   bTricl;
   bool   bDynBox;
+  bool   bNHC_trotter;
+  bool   bMTTK;
   int    f_nre;
   int    epc;
   tensor ref_p;
@@ -80,7 +83,8 @@ extern t_mdebin
 	     const t_inputrec *ir);
 /* Initiate MD energy bin and write header to energy file. */
 
-FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv);
+extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
+		       const output_env_t oenv);
 /* Open the dhdl file for output */
 
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,

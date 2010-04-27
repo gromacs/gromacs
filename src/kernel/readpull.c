@@ -50,6 +50,7 @@
 #include "macros.h"
 #include "rdgroup.h"
 #include "symtab.h"
+#include "readinp.h"
 #include "readir.h"
 #include "string.h"
 #include "mdatoms.h"
@@ -96,9 +97,10 @@ static void init_pullgrp(t_pullgrp *pg,char *wbuf,
 }
 
 char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
-		       t_pull *pull,bool *bStart,int *nerror_p) 
+		       t_pull *pull,bool *bStart,
+		       warninp_t wi) 
 {
-  int  ninp,nerror,i,nchar,ndim,nscan,m;
+  int  ninp,nerror=0,i,nchar,ndim,nscan,m;
   t_inpfile *inp;
   const char *tmp;
   char **grpbuf;
@@ -111,11 +113,10 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
 
   ninp   = *ninp_p;
   inp    = *inp_p;
-  nerror = *nerror_p;
 
   /* read pull parameters */
   CTYPE("Pull geometry: distance, direction, cylinder or position");
-  EETYPE("pull_geometry",   pull->eGeom, epullg_names, &nerror, TRUE);
+  EETYPE("pull_geometry",   pull->eGeom, epullg_names);
   CTYPE("Select components for the pull vector. default: Y Y Y");
   STYPE("pull_dim",         pulldim, "Y Y Y");
   CTYPE("Cylinder radius for dynamic reaction force groups (nm)");
@@ -123,15 +124,14 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
   CTYPE("Switch from r1 to r0 in case of dynamic reaction force");
   RTYPE("pull_r0",          pull->cyl_r0, 1.5);
   RTYPE("pull_constr_tol",  pull->constr_tol, 1E-6);
-  EETYPE("pull_start",      *bStart, yesno_names, &nerror, TRUE);
+  EETYPE("pull_start",      *bStart, yesno_names);
   ITYPE("pull_nstxout",     pull->nstxout, 10);
   ITYPE("pull_nstfout",     pull->nstfout,  1);
   CTYPE("Number of pull groups");
   ITYPE("pull_ngroups",     pull->ngrp,1);
 
   if (pull->cyl_r1 > pull->cyl_r0) {
-    fprintf(stderr,"ERROR: pull_r1 > pull_r0\n");
-    nerror++;
+    warning_error(wi,"pull_r1 > pull_r0");
   }
 
   if (pull->ngrp < 1) {
@@ -186,7 +186,6 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
   
   *ninp_p   = ninp;
   *inp_p    = inp;
-  *nerror_p = nerror;
 
   return grpbuf;
 }
