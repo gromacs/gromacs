@@ -214,6 +214,7 @@ gmx_test_selection(int argc, char *argv[])
     print_selections(ngrps, sel, d.nmaxind);
 
     gmx_ana_traj_free(trj);
+    done_filenms(NFILE, fnm);
 
     return 0;
 }

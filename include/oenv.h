@@ -92,6 +92,9 @@ void output_env_init_default(output_env_t oenv);
 /* initialize an output_env structure, with reasonable default settings.
     (the time unit is set to time_ps, which means no conversion).  */
 
+extern void output_env_done(output_env_t oenv);
+/* free memory allocated for an output_env structure. */
+
 
 extern int output_env_get_verbosity(const output_env_t oenv);
 /* return the verbosity */
