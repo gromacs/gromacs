@@ -1292,7 +1292,7 @@ void read_tpr_header(char *fn,t_UmbrellaHeader* header,t_UmbrellaOptions *opt)
 
     if (ir.ePull != epullUMBRELLA)
         gmx_fatal(FARGS,"This is not a tpr of an umbrella simulation. Found ir.ePull = %s\n",
-                epullg_names[ir.ePull]);
+                epull_names[ir.ePull]);
 
     /* nr of pull groups */
     ngrp=ir.pull->ngrp;
