@@ -146,6 +146,13 @@ _gmx_sel_value_type_str(gmx_ana_selvalue_t *val);
  * a selection.
  *
  * Even if the flag is set, \p v.u.ptr can be NULL during initialization.
+ *
+ * \todo
+ * This flag overlaps with the function of \p v.nalloc field, and could
+ * probably be removed, making memory management simpler. Currently, the
+ * \p v.nalloc field is not kept up-to-date in all cases when this flag
+ * is changed and is used in places where this flag is not, so this would
+ * require a careful investigation of the selection code.
  */
 #define SEL_ALLOCVAL    (1<<8)
 /*! \brief
