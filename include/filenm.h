@@ -153,6 +153,9 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
 /* duplicate the filename list (to make a private copy for each thread, 
    for example) */
 t_filenm *dup_tfn(int nf, const t_filenm tfn[]);
+
+/* Free memory allocated for file names by parse_file_args(). */
+void done_filenms(int nf, t_filenm fnm[]);
 	
 #ifdef __cplusplus
 }

@@ -2777,12 +2777,13 @@ static void set_pme_maxshift(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
          */
         xmin = ddpme->pp_min;
         xmax = ddpme->pp_max;
-        /* Allow for atoms to be maximally half the cell size or cut-off
-         * out of their DD cell.
+        /* Allow for atoms to be maximally 2/3 times the cut-off
+         * out of their DD cell. This is a reasonable balance between
+         * between performance and support for most charge-group/cut-off
+         * combinations.
          */
-        range  = 0.5*min(comm->cellsize_min[dim],comm->cutoff);
-        range /= ddbox->skew_fac[dim]*ddbox->box_size[dim];
-        /* Avoid unlucky rounding at exactly 0.5 */
+        range  = 2.0/3.0*comm->cutoff/ddbox->box_size[dim];
+        /* Avoid extra communication when we are exactly at a boundary */
         range *= 0.999;
         
         sh = 1;

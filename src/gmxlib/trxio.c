@@ -821,6 +821,12 @@ int read_first_frame(const output_env_t oenv,int *status,
 #endif
       break;
   }
+
+  /* Return FALSE if we read a frame that's past the set ending time. */
+  if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0)) {
+    fr->t0 = fr->time;
+    return FALSE;
+  }
   
   if (bFirst || 
       (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
