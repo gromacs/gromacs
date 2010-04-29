@@ -803,6 +803,12 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
     gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
     break;
   }
+
+  /* Return FALSE if we read a frame that's pass the set ending time. */
+  if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0)) {
+    fr->t0 = fr->time;
+    return FALSE;
+  }
   
   if (bFirst || 
       (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))

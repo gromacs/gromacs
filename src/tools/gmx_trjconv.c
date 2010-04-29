@@ -1406,7 +1406,7 @@ int gmx_trjconv(int argc,char *argv[])
     
     if (!bHaveFirstFrame || (bTDump && !bDumpFrame))
       fprintf(stderr,"\nWARNING no output, "
-	      "trajectory ended at %g\n",fr.time);
+	      "last frame read at t=%g\n",fr.time);
     fprintf(stderr,"\n");
     
     close_trj(status);
