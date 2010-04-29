@@ -156,18 +156,20 @@ typedef struct gmx_enfrotgrp *gmx_enfrotgrp_t;
 
 typedef struct {
   int        eType;          /* Rotation type for this group                  */
-  int        eOrigin;        /* Subtract the rot groups COM / COG?            */
+  int        bMassW;         /* Use mass-weighed positions?                   */
   int        nat;            /* Number of atoms in the group                  */
   atom_id    *ind;           /* The global atoms numbers                      */
   rvec       *x_ref;         /* The reference positions                       */
-  rvec       vec;            /* The rotation vector                           */
+  rvec       vec;            /* The normalized rotation vector                */
   real       rate;           /* Rate of rotation (degree/ps)                  */
-  real       k;              /* Force constant                                */
-  rvec       pivot;          /* Pivot point of rotation axis                  */  
+  real       k;              /* Force constant (kJ/(mol nm^2)                 */
+  rvec       pivot;          /* Pivot point of rotation axis (nm)             */
   int        eFittype;       /* Type of fit to determine actual group angle   */
   real       slab_dist;      /* Slab distance (nm)                            */
   real       min_gaussian;   /* Minimum value the gaussian must have so that 
-                                the force is actually evaluated               */  
+                                the force is actually evaluated               */
+  real       eps;            /* Additive constant for radial motion2 and
+                                flexible2 potentials (nm^2)                   */
   gmx_enfrotgrp_t enfrotgrp; /* Stores non-inputrec rotation data per group   */
 } t_rotgrp;
 

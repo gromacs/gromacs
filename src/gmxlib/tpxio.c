@@ -251,7 +251,7 @@ static void do_rotgrp(t_rotgrp *rotg,bool bRead, int file_version)
   int  i;
 
   do_int(rotg->eType);
-  do_int(rotg->eOrigin);
+  do_int(rotg->bMassW);
   do_int(rotg->nat);
   if (bRead)
     snew(rotg->ind,rotg->nat);
@@ -265,6 +265,7 @@ static void do_rotgrp(t_rotgrp *rotg,bool bRead, int file_version)
   do_real(rotg->k);
   do_real(rotg->slab_dist);
   do_real(rotg->min_gaussian);
+  do_real(rotg->eps);
   do_int(rotg->eFittype);
 }
 
@@ -726,7 +727,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     if (file_version >= 69) {
       do_int(ir->opts.nhchainlength);
     } else {
-      ir->opts.nhchainlength = 0;
+      ir->opts.nhchainlength = 1;
     }
     do_int(ir->opts.ngacc); 
     do_int(ir->opts.ngfrz); 

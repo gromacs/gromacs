@@ -49,7 +49,7 @@ libgmx@LIBSUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
 libgmx@LIBSUFFIX@_la_SOURCES = \
 	3dview.c	atomprop.c	bondfree.c	\
-	calcgrid.c	calch.c		checkpoint.c	\
+	calcgrid.c	calch.c		chargegroup.c	checkpoint.c	\
 	confio.c	copyrite.c	disre.c		do_fit.c	\
 	enxio.c		ewald_util.c	gmx_fatal.c	ffscanf.c	\
 	filenm.c	futil.c		gbutil.c	gmxcpp.c \
@@ -65,19 +65,28 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	strdb.c		string2.c	symtab.c	\
 	topsort.c	tpxio.c		\
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
-	viewit.c	wgms.c		wman.c		writeps.c	\
+	viewit.c	warninp.c	\
+	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
 	libxdrf.c	gmx_arpack.c			\
 	dihres.c	gmx_random_gausstable.h		\
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		\
-	gmx_system_xdr.c md5.c vmdio.c vmddlopen.c
+	gmx_system_xdr.c md5.c vmdio.c vmddlopen.c	sighandler.c 	\
+	oenv.c		version.c
 
-
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = libgmx@LIBSUFFIX@.pc
 
 # clean all libtool libraries, since the target names might have changed
-CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl 
+CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl version.c
 
-
+#version.c contains git version information or version defined in VERSION
+#The empty target FORCE forces make to run the commands every time. But
+#version.c is only changed if the version actually has changed, and hence
+#rebuilds are only triggered when they are needed.
+version.c: FORCE
+	$(top_srcdir)/src/gmxlib/genversion.sh @VERSION@ $(top_srcdir)
+FORCE:
 
 
 

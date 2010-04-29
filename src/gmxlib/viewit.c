@@ -43,6 +43,7 @@
 #include "string2.h"
 #include "filenm.h"
 #include "macros.h"
+#include "gmx_fatal.h"
 
 static const int can_view_ftp[] = { 0,
   efEPS,           efXPM,         efXVG,          efPDB };

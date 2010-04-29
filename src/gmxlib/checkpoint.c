@@ -43,8 +43,8 @@
 #include "gmx_random.h"
 #include "checkpoint.h"
 #include "futil.h"
+#include "string2.h"
 #include <fcntl.h>
-
 
 
 #ifdef GMX_FAHCORE
@@ -63,7 +63,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 11;
+static const int cpt_version = 12;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -105,6 +105,10 @@ const char *eenh_names[eenhNR]=
 static int
 gmx_wintruncate(const char *filename, __int64 size)
 {
+#ifdef GMX_FAHCORE
+    /*we do this elsewhere*/
+    return 0;
+#else
     FILE *fp;
     int   rc;
     
@@ -116,9 +120,9 @@ gmx_wintruncate(const char *filename, __int64 size)
     }
     
     return _chsize_s( fileno(fp), size);
+#endif
 }
 #endif
-
 
 
 enum { ecprREAL, ecprRVEC, ecprMATRIX };
@@ -221,7 +225,7 @@ static void do_cpt_int_err(XDR *xd,const char *desc,int *i,FILE *list)
 static void do_cpt_step_err(XDR *xd,const char *desc,gmx_large_int_t *i,FILE *list)
 {
     bool_t res=0;
-    char   buf[22];
+    char   buf[STEPSTRSIZE];
 
     res = xdr_gmx_large_int(xd,i,"reading checkpoint file");
     if (res == 0)
@@ -623,7 +627,8 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     int  magic;
     int  idum=0;
     int  i;
-    
+    char *fhost;
+
     if (bRead)
     {
         magic = -1;
@@ -643,6 +648,18 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
                   "The checkpoint file is corrupted or not a checkpoint file",
                   magic,CPT_MAGIC1);
     }
+    if (!bRead)
+    {
+        snew(fhost,255);
+#ifdef HAVE_UNISTD_H
+        if (gethostname(fhost,255) != 0)
+        {
+            sprintf(fhost,"unknown");
+        }
+#else
+        sprintf(fhost,"unknown");
+#endif  
+    }
     do_cpt_string_err(xd,bRead,"GROMACS version"           ,version,list);
     do_cpt_string_err(xd,bRead,"GROMACS build time"        ,btime,list);
     do_cpt_string_err(xd,bRead,"GROMACS build user"        ,buser,list);
@@ -655,15 +672,31 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     {
         gmx_fatal(FARGS,"Attempting to read a checkpoint file of version %d with code of version %d\n",*file_version,cpt_version);
     }
+    if (*file_version >= 12)
+    {
+        do_cpt_string_err(xd,bRead,"generating host"           ,&fhost,list);
+        if (list == NULL)
+        {
+            sfree(fhost);
+        }
+    }
     do_cpt_int_err(xd,"#atoms"            ,natoms     ,list);
     do_cpt_int_err(xd,"#T-coupling groups",ngtc       ,list);
     if (*file_version >= 10) 
     {
-        do_cpt_int_err(xd,"#Nose-Hoover T-chains",nhchainlength  ,list);
+        do_cpt_int_err(xd,"#Nose-Hoover T-chains",nhchainlength,list);
+    }
+    else
+    {
+        *nhchainlength = 1;
     }
     if (*file_version >= 11)
     {
         do_cpt_int_err(xd,"#Nose-Hoover T-chains for barostat ",nnhpres,list);
+    }
+    else
+    {
+        *nnhpres = 0;
     }
     do_cpt_int_err(xd,"integrator"        ,eIntegrator,list);
 	if (*file_version >= 3)
@@ -1250,7 +1283,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     int  fp,i,j,rc;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
-	char filename[STRLEN],buf[22];
+	char filename[STRLEN],buf[STEPSTRSIZE];
     int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
     int  natoms,ngtc,nnhpres,nhchainlength,fflags,flags_eks,flags_enh;
@@ -1453,10 +1486,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 
     if (file_version < 6)
     {
-        fprintf(stderr,"\nWARNING: Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the energy averages will be incorrect.\n\n");
+        const char *warn="Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the averages stored in the energy file will be incorrect.";
+
+        fprintf(stderr,"\nWARNING: %s\n\n",warn);
         if (fplog)
         {
-            fprintf(fplog,"\nWARNING: Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the energy averages will be incorrect.\n\n");
+            fprintf(fplog,"\nWARNING: %s\n\n",warn);
         }
         state->enerhist.nsum     = *step;
         state->enerhist.nsum_sim = *step;
@@ -1537,9 +1572,9 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
                                      digest) != outputfiles[i].chksum_size)
                 {
-                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute"
-                        " checksum.", outputfiles[i].chksum_size, 
-                        outputfiles[i].filename);
+                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents has been modified.",
+                              outputfiles[i].chksum_size, 
+                              outputfiles[i].filename);
                 }
             } 
             else if (i==0)  /*log file need to be seeked even when not reading md5*/
@@ -1571,7 +1606,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     }
                     fprintf(debug,"\n");
                 }
-                gmx_fatal(FARGS,"Checksum wrong for '%s'.",
+                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents has been modified.",
                           outputfiles[i].filename);
             }
 #endif        
@@ -1624,9 +1659,10 @@ void load_checkpoint(const char *fn,FILE **fplog,
 	ir->simulation_part += 1;
 }
 
-static void low_read_checkpoint_state(int fp,int *simulation_part,
-                                      gmx_large_int_t *step,double *t,t_state *state,
-                                      bool bReadRNG)
+static void read_checkpoint_data(int fp,int *simulation_part,
+                                 gmx_large_int_t *step,double *t,t_state *state,
+                                 bool bReadRNG,
+                                 int *nfiles,gmx_file_position_t **outputfiles)
 {
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
@@ -1634,9 +1670,9 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
     int  nppnodes,npme;
     ivec dd_nc;
     int  flags_eks,flags_enh;
+    int  nfiles_loc;
+    gmx_file_position_t *files_loc=NULL;
     int  ret;
-    gmx_file_position_t *outputfiles;
-	int  nfiles;
 	
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
@@ -1662,8 +1698,14 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
         cp_error();
     }
 
-	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL,file_version);
-	sfree(outputfiles);
+    ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,
+                       outputfiles != NULL ? outputfiles : &files_loc,
+                       outputfiles != NULL ? nfiles : &nfiles_loc,
+                       NULL,file_version);
+    if (files_loc != NULL)
+    {
+        sfree(files_loc);
+    }
 	
     if (ret)
     {
@@ -1690,7 +1732,7 @@ read_checkpoint_state(const char *fn,int *simulation_part,
     int  fp;
     
     fp = gmx_fio_open(fn,"r");
-    low_read_checkpoint_state(fp,simulation_part,step,t,state,TRUE);
+    read_checkpoint_data(fp,simulation_part,step,t,state,TRUE,NULL,NULL);
     if( gmx_fio_close(fp) != 0)
 	{
 		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
@@ -1706,7 +1748,7 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     
     init_state(&state,0,0,0,0);
     
-    low_read_checkpoint_state(fp,&simulation_part,&step,&t,&state,FALSE);
+    read_checkpoint_data(fp,&simulation_part,&step,&t,&state,FALSE,NULL,NULL);
     
     fr->natoms  = state.natoms;
     fr->bTitle  = FALSE;
@@ -1802,18 +1844,23 @@ void list_checkpoint(const char *fn,FILE *out)
 
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                     gmx_large_int_t *cpt_step,t_commrec *cr)
+bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
+                                     gmx_large_int_t *cpt_step,t_commrec *cr,
+                                     bool bAppendReq,
+                                     const char *part_suffix,bool *bAddPart)
 {
     int  fp;
-	int  file_version;
-    char *version,*btime,*buser,*bmach,*fprog,*ftime;
-    int  eIntegrator_f,nppnodes_f,npmenodes_f;
-    ivec dd_nc_f;
     gmx_large_int_t step=0;
 	double t;
-    int  natoms,ngtc,nnhpres,nhchainlength,fflags,flags_eks,flags_enh;
-		
+    t_state state;
+    int  nfiles;
+    gmx_file_position_t *outputfiles;
+    int  nexist,f;
+    bool bAppend;
+    char *fn,suf_up[STRLEN];
+
+    bAppend = FALSE;
+
     if (SIMMASTER(cr)) {
         if(!gmx_fexist(filename) || ( (fp = gmx_fio_open(filename,"r")) < 0 ))
         {
@@ -1821,31 +1868,93 @@ void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
         }
         else 
         {
-            do_cpt_header(gmx_fio_getxdr(fp),
-                          TRUE,&file_version,
-                          &version,&btime,&buser,&bmach,&fprog,&ftime,
-                          &eIntegrator_f,simulation_part,
-                          &step,&t,&nppnodes_f,dd_nc_f,&npmenodes_f,
-                          &natoms,&ngtc,&nnhpres,&nhchainlength,
-                          &fflags,&flags_eks,&flags_enh,NULL);
+            init_state(&state,0,0,0,0);
+
+            read_checkpoint_data(fp,simulation_part,&step,&t,&state,FALSE,
+                                 &nfiles,&outputfiles);
             if( gmx_fio_close(fp) != 0)
             {
                 gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
             }
+            done_state(&state);
+
+            if (bAppendReq)
+            {
+                nexist = 0;
+                for(f=0; f<nfiles; f++)
+                {
+                    if (gmx_fexist(outputfiles[f].filename))
+                    {
+                        nexist++;
+                    }
+                }
+                if (nexist == nfiles)
+                {
+                    bAppend = bAppendReq;
+                }
+                else if (nexist > 0)
+                {
+                    fprintf(stderr,"Output files present:");
+                    for(f=0; f<nfiles; f++)
+                    {
+                        if (gmx_fexist(outputfiles[f].filename))
+                        {
+                            fprintf(stderr," %s",outputfiles[f].filename);
+                        }
+                    }
+                    fprintf(stderr,"\n");
+                    fprintf(stderr,"Output files not present:");
+                    for(f=0; f<nfiles; f++)
+                    {
+                        if (!gmx_fexist(outputfiles[f].filename))
+                        {
+                            fprintf(stderr," %s",outputfiles[f].filename);
+                        }
+                    }
+                    fprintf(stderr,"\n");
+                    
+                    gmx_fatal(FARGS,"File appending requested, but only %d of the %d output files are present",nexist,nfiles);
+                }
+            }
             
-            sfree(version);
-            sfree(btime);
-            sfree(buser);
-            sfree(bmach);
-            sfree(fprog);
-            sfree(ftime);
+            if (bAppend)
+            {
+                if (nfiles == 0)
+                {
+                    gmx_fatal(FARGS,"File appending requested, but no output file information is stored in the checkpoint file");
+                }
+                fn = outputfiles[0].filename;
+                if (strlen(fn) < 4 ||
+                    strcasecmp(fn+strlen(fn)-4,ftp2ext(efLOG)) == 0)
+                {
+                    gmx_fatal(FARGS,"File appending requested, but the log file is not the first file listed in the checkpoint file");
+                }
+                /* Set bAddPart to whether the suffix string '.part' is present
+                 * in the log file name.
+                 */
+                strcpy(suf_up,part_suffix);
+                upstring(suf_up);
+                *bAddPart = (strstr(fn,part_suffix) != NULL ||
+                             strstr(fn,suf_up) != NULL);
+            }
+
+            sfree(outputfiles);
         }
     }
-    if (PAR(cr)) {
+    if (PAR(cr))
+    {
         gmx_bcast(sizeof(*simulation_part),simulation_part,cr);
+
+        if (*simulation_part > 0 && bAppendReq)
+        {
+            gmx_bcast(sizeof(bAppend),&bAppend,cr);
+            gmx_bcast(sizeof(*bAddPart),bAddPart,cr);
+        }
     }
     if (NULL != cpt_step)
     {
         *cpt_step = step;
     }
+
+    return bAppend;
 }

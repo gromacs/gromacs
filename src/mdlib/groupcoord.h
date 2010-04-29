@@ -61,7 +61,6 @@
 * will always have the same atom order (ascending indices). 
 *
 *  \param ga2la[in]         Global to local atom index conversion data.
-*  \param md[in]            Pointer to runtime atom data.
 *  \param nr[in]            The total number of atoms that the group contains.
 *  \param anrs[in]          The global atom number of the group's atoms.
 *  \param nr_loc[out]       The number of group atoms present on the local node.
@@ -72,7 +71,7 @@
 *                           (collective) array such that it can be gmx_summed
 *                           in the communicate_group_positions routine.
 */
-extern void dd_make_local_group_indices(gmx_ga2la_t ga2la, t_mdatoms *md,
+extern void dd_make_local_group_indices(gmx_ga2la_t ga2la,
                                         const int nr, int anrs[], int *nr_loc,
                                         int *anrs_loc[], int *nalloc_loc,
                                         int coll_ind[]);
@@ -193,5 +192,5 @@ extern void translate_x(rvec x[], const int nr, const rvec transvec);
  * \param rmat[in]           Rotation matrix to operate on all positions.
  * 
  */
-extern void rotate_x(rvec x[], int nr, matrix rmat);
+extern void rotate_x(rvec x[], const int nr, matrix rmat);
 

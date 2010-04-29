@@ -181,11 +181,7 @@ const char *epullg_names[epullgNR+1] = {
 };
 
 const char *erotg_names[erotgNR+1] = { 
-  "fixed", "fixedplane", "flexible1", "flexible2", NULL
-};
-
-const char *erotg_originnames[erotgNR+1] = { 
-  "box_origin", "COG", "COM", NULL
+  "iso", "iso-pf", "pm", "pm-pf", "rm", "rm-pf", "rm2", "rm2-pf", "flex", "flex2", NULL
 };
 
 const char *erotg_fitnames[erotgFitNR+1] = { 

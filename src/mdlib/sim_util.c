@@ -57,6 +57,7 @@
 #include "mvdata.h"
 #include "txtdump.h"
 #include "pbc.h"
+#include "chargegroup.h"
 #include "vec.h"
 #include "time.h"
 #include "nrnb.h"
@@ -369,7 +370,7 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
 {
   int  i;
   real pf2,fn2;
-  char buf[22];
+  char buf[STEPSTRSIZE];
 
   pf2 = sqr(pforce);
   for(i=md->start; i<md->start+md->homenr; i++) {
@@ -926,7 +927,11 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     /* Do a first constrain to reset particles... */
     step = ir->init_step;
     if (fplog)
-        fprintf(fplog,"\nConstraining the starting coordinates (step %ld)\n",step);
+    {
+        char buf[STEPSTRSIZE];
+        fprintf(fplog,"\nConstraining the starting coordinates (step %s)\n",
+                gmx_step_str(step,buf));
+    }
     dvdlambda = 0;
     
     /* constrain the current position */
@@ -964,8 +969,9 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
          */
         if (fplog)
         {
-            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %ld)\n",
-                    step);
+            char buf[STEPSTRSIZE];
+            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %s)\n",
+                    gmx_step_str(step,buf));
         }
         dvdlambda = 0;
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
@@ -1422,17 +1428,12 @@ void init_md(FILE *fplog,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
              gmx_update_t *upd,
              int nfile,const t_filenm fnm[],
-             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,const char **fn_cpt,
-             FILE **fp_dhdl,FILE **fp_field,
-             t_mdebin **mdebin,
+             gmx_mdoutf_t **outf,t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
              bool *bNEMD,bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
 {
     int  i,j,n;
     real tmpt,mod;
-    char filemode[3];
-    
-    sprintf(filemode, (Flags & MD_APPENDFILES) ? "a+" : "w+");  
 	
     /* Initial values */
     *t = *t0       = ir->init_t;
@@ -1488,49 +1489,10 @@ void init_md(FILE *fplog,
     
     if (nfile != -1)
     {
-        *fp_trn = -1;
-        *fp_ene = NULL;
-        *fp_xtc = -1;
-        
-        if (MASTER(cr)) 
-        {
-            *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
-            if (ir->nstxtcout > 0)
-            {
-                *fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
-            }
-            *fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
-            *fn_cpt = opt2fn("-cpo",nfile,fnm);
-            
-            if ((fp_dhdl != NULL) && ir->efep != efepNO && ir->nstdhdl > 0)
-            {
-                if(Flags & MD_APPENDFILES)
-                {
-                    *fp_dhdl= gmx_fio_fopen(opt2fn("-dhdl",nfile,fnm),filemode);
-                }
-                else
-                {
-                    *fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir,oenv);
-                }
-            }
-            
-            if ((fp_field != NULL) &&
-                (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
-            {
-                if(Flags & MD_APPENDFILES)
-                {
-                    *fp_dhdl=gmx_fio_fopen(opt2fn("-field",nfile,fnm),filemode);
-                }
-                else
-                {				  
-                    *fp_field = xvgropen(opt2fn("-field",nfile,fnm),
-                                         "Applied electric field","Time (ps)",
-                                         "E (V/nm)",oenv);
-                }
-            }
-        }
-        *mdebin = init_mdebin( (Flags & MD_APPENDFILES) ? NULL : *fp_ene,
-                                mtop,ir);
+        *outf = init_mdoutf(nfile,fnm,(Flags & MD_APPENDFILES),cr,ir,oenv);
+
+        *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
+                              mtop,ir);
     }
     
     /* Initiate variables */  

@@ -311,7 +311,7 @@ static void pr_int(FILE *fp,int indent,const char *title,int i)
 
 static void pr_gmx_large_int(FILE *fp,int indent,const char *title,gmx_large_int_t i)
 {
-  char buf[22];
+  char buf[STEPSTRSIZE];
 
   pr_indent(fp,indent);
   fprintf(fp,"%-20s = %s\n",title,gmx_step_str(i,buf));
@@ -513,7 +513,7 @@ static void pr_rotgrp(FILE *fp,int indent,int g,t_rotgrp *rotg)
   fprintf(fp,"rotation_group %d:\n",g);
   indent += 2;
   PS("type",EROTGEOM(rotg->eType));
-  PS("origin",EROTORIGIN(rotg->eOrigin));
+  PS("massw",BOOL(rotg->bMassW));
   pr_ivec_block(fp,indent,"atom",rotg->ind,rotg->nat,TRUE);
   pr_rvecs(fp,indent,"x_ref",rotg->x_ref,rotg->nat);
   pr_rvec(fp,indent,"vec",rotg->vec,DIM,TRUE);
@@ -522,6 +522,7 @@ static void pr_rotgrp(FILE *fp,int indent,int g,t_rotgrp *rotg)
   PR("k",rotg->k);
   PR("slab_dist",rotg->slab_dist);
   PR("min_gaussian",rotg->min_gaussian);
+  PR("epsilon",rotg->eps);
   PS("fit_method",EROTFIT(rotg->eFittype));
 }
 

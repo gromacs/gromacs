@@ -1,4 +1,5 @@
-/*
+/*   -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -50,6 +51,7 @@
 #include "symtab.h"
 #include "string2.h"
 #include "readinp.h"
+#include "warninp.h"
 #include "readir.h" 
 #include "toputil.h"
 #include "index.h"
@@ -57,6 +59,7 @@
 #include "vec.h"
 #include "pbc.h"
 #include "mtop_util.h"
+#include "chargegroup.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -93,16 +96,17 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
   snew(opts->define,STRLEN);
 }
 
-static void _low_check(bool b,char *s,int *n)
+static void _low_check(bool b,char *s,warninp_t wi)
 {
-  if (b) {
-    fprintf(stderr,"\nERROR: %s\n\n",s);
-    (*n)++;
-  }
+    if (b)
+    {
+        warning_error(wi,s);
+    }
 }
 
 static void check_nst(const char *desc_nst,int nst,
-		      const char *desc_p,int *p)
+                      const char *desc_p,int *p,
+                      warninp_t wi)
 {
     char buf[STRLEN];
 
@@ -112,29 +116,34 @@ static void check_nst(const char *desc_nst,int nst,
         *p = ((*p)/nst + 1)*nst;
         sprintf(buf,"%s should be a multiple of %s, changing %s to %d\n",
 		desc_p,desc_nst,desc_p,*p);
-	warning(buf);
+        warning(wi,buf);
     }
 }
 
+static bool ir_NVE(const t_inputrec *ir)
+{
+    return ((ir->eI == eiMD || EI_VV(ir->eI)) && ir->etc == etcNO);
+}
+
 void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
-              int *nerror)
+              warninp_t wi)
 /* Check internal consistency */
 {
   /* Strange macro: first one fills the err_buf, and then one can check 
    * the condition, which will print the message and increase the error
    * counter.
    */
-#define CHECK(b) _low_check(b,err_buf,nerror)
-  char err_buf[256];
+#define CHECK(b) _low_check(b,err_buf,wi)
+    char err_buf[256],warn_buf[STRLEN];
   int  ns_type=0;
   real dt_coupl=0;
 
-  set_warning_line(mdparin,-1);
+  set_warning_line(wi,mdparin,-1);
 
   /* BASIC CUT-OFF STUFF */
   if (ir->rlist == 0 ||
-      !(( EEL_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
-	(EVDW_ZERO_AT_CUTOFF(ir->vdwtype)     && ir->rvdw     > ir->rlist))) {
+      !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
+        (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)    && ir->rvdw     > ir->rlist))) {
     /* No switched potential and/or no twin-range:
      * we can set the long-range cut-off to the maximum of the other cut-offs.
      */
@@ -143,16 +152,16 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
     sprintf(warn_buf,"rlistlong was not set, setting it to %g (no buffer)",
 	    ir->rlistlong);
-    warning(NULL);
+    warning(wi,warn_buf);
   }
   if (ir->rlistlong == 0 && ir->ePBC != epbcNONE) {
-    warning_error("Can not have an infinite cut-off with PBC");
+      warning_error(wi,"Can not have an infinite cut-off with PBC");
   }
   if (ir->rlistlong > 0 && (ir->rlist == 0 || ir->rlistlong < ir->rlist)) {
-    warning_error("rlistlong can not be shorter than rlist");
+      warning_error(wi,"rlistlong can not be shorter than rlist");
   }
   if (IR_TWINRANGE(*ir) && ir->nstlist <= 0) {
-    warning_error("Can not have nstlist<=0 with twin-range interactions");
+      warning_error(wi,"Can not have nstlist<=0 with twin-range interactions");
   }
 
   /* GENERAL INTEGRATOR STUFF */
@@ -170,7 +179,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       gmx_fatal(FARGS,"Can not have nstcalcenergy=0 with global T/P-coupling");
     }
     if (IR_TWINRANGE(*ir)) {
-      check_nst("nstlist",ir->nstlist,"nstcalcenergy",&ir->nstcalcenergy);
+        check_nst("nstlist",ir->nstlist,"nstcalcenergy",&ir->nstcalcenergy,wi);
     }
     dt_coupl = ir->nstcalcenergy*ir->delta_t;
   
@@ -178,10 +187,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       /* Energy and log file writing trigger energy calculation,
        * so we need some checks.
        */
-      check_nst("nstcalcenergy",ir->nstcalcenergy,"nstenergy",&ir->nstenergy);
-      check_nst("nstcalcenergy",ir->nstcalcenergy,"nstlog",&ir->nstlog);
+        check_nst("nstcalcenergy",ir->nstcalcenergy,"nstenergy",&ir->nstenergy,wi);
+        check_nst("nstcalcenergy",ir->nstcalcenergy,"nstlog",&ir->nstlog,wi);
       if (ir->efep != efepNO) {
-	check_nst("nstcalcenergy",ir->nstcalcenergy,"nstdhdl",&ir->nstdhdl);
+          check_nst("nstcalcenergy",ir->nstcalcenergy,"nstdhdl",&ir->nstdhdl,wi);
       }
     }
   }
@@ -189,7 +198,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   /* LD STUFF */
   if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
       ir->bContinuation && ir->ld_seed != -1) {
-    warning_note("You are doing a continuation with SD or BD, make sure that ld_seed is different from the previous run (using ld_seed=-1 will ensure this)");
+      warning_note(wi,"You are doing a continuation with SD or BD, make sure that ld_seed is different from the previous run (using ld_seed=-1 will ensure this)");
   }
 
   /* TPI STUFF */
@@ -208,7 +217,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   if ( (opts->nshake > 0) && (opts->bMorse) ) {
     sprintf(warn_buf,
 	    "Using morse bond-potentials while constraining bonds is useless");
-    warning(NULL);
+    warning(wi,warn_buf);
   }
   
   sprintf(err_buf,"shake_tol must be > 0 instead of %g while using shake",
@@ -224,8 +233,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   if (ir->ePBC != epbcXYZ && ir->nwall != 2) {
     if (ir->ePBC == epbcNONE) {
       if (ir->epc != epcNO) {
-	warning("Turning off pressure coupling for vacuum system");
-	ir->epc = epcNO;
+          warning(wi,"Turning off pressure coupling for vacuum system");
+          ir->epc = epcNO;
       }
     } else {
       sprintf(err_buf,"Can not have pressure coupling with pbc=%s",
@@ -251,10 +260,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	  (ir->rcoulomb != 0.0)      || (ir->rvdw != 0.0));
 
     if (ir->nstlist < 0) {
-      warning_error("Can not have heuristic neighborlist updates without cut-off");
+        warning_error(wi,"Can not have heuristic neighborlist updates without cut-off");
     }
     if (ir->nstlist > 0) {
-      warning_note("Simulating without cut-offs is usually (slightly) faster with nstlist=0, nstype=simple and particle decomposition");
+        warning_note(wi,"Simulating without cut-offs is usually (slightly) faster with nstlist=0, nstype=simple and particle decomposition");
     }
   }
 
@@ -264,12 +273,12 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
   if (ir->comm_mode != ecmNO) {
     if (ir->nstcomm < 0) {
-      warning("If you want to remove the rotation around the center of mass, you should set comm_mode = Angular instead of setting nstcomm < 0. nstcomm is modified to its absolute value");
+        warning(wi,"If you want to remove the rotation around the center of mass, you should set comm_mode = Angular instead of setting nstcomm < 0. nstcomm is modified to its absolute value");
       ir->nstcomm = abs(ir->nstcomm);
     }
     
     if (ir->nstcalcenergy > 0 && ir->nstcomm < ir->nstcalcenergy) {
-      warning_note("nstcomm < nstcalcenergy defeats the purpose of nstcalcenergy, setting nstcomm to nstcalcenergy");
+        warning_note(wi,"nstcomm < nstcalcenergy defeats the purpose of nstcalcenergy, setting nstcomm to nstcalcenergy");
       ir->nstcomm = ir->nstcalcenergy;
     }
 
@@ -277,12 +286,12 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"Can not remove the rotation around the center of mass with periodic molecules");
       CHECK(ir->bPeriodicMols);
       if (ir->ePBC != epbcNONE)
-	warning("Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
+          warning(wi,"Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
     }
   }
     
   if (EI_STATE_VELOCITY(ir->eI) && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
-    warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
+      warning_note(wi,"Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
   
   sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
@@ -297,7 +306,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   /* TEMPERATURE COUPLING */
   if(ir->etc == etcYES) {
     ir->etc = etcBERENDSEN;
-    warning_note("Old option for temperature coupling given: "
+    warning_note(wi,"Old option for temperature coupling given: "
 		 "changing \"yes\" to \"Berendsen\"\n");
   }
   if (ir->etc == etcNOSEHOOVER) {
@@ -305,11 +314,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       {
 	sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nhchainlength);
 	ir->opts.nhchainlength =1;
-	warning(NULL);
+	warning(wi,warn_buf);
       }
     
     if (ir->etc==etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nhchainlength > 1) {
-      warning_note("leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1");
+        warning_note(wi,"leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1");
       ir->opts.nhchainlength = 1;
     }
   } else {
@@ -319,21 +328,21 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   if (ir->etc == etcBERENDSEN) {
     sprintf(warn_buf,"The %s thermostat does not generate the correct kinetic energy distribution. You might want to consider using the %s thermostat.",
 	    ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
-    warning_note(NULL);
+    warning_note(wi,warn_buf);
   }
   
   if((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL ) 
      && ir->epc==epcBERENDSEN) {
     sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
 	    "true ensemble for the thermostat");
-    warning(NULL);
+    warning(wi,warn_buf);
   }
 
   /* PRESSURE COUPLING */
   if (ir->epc == epcISOTROPIC) {
     ir->epc = epcBERENDSEN;
-    warning_note("Old option for pressure coupling given: "
-		 "changing \"Isotropic\" to \"Berendsen\"\n"); 
+    warning_note(wi,"Old option for pressure coupling given: "
+                 "changing \"Isotropic\" to \"Berendsen\"\n"); 
   }
 
   if (ir->epc != epcNO) {
@@ -343,7 +352,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     if (ir->tau_p < 100*dt_coupl) {
       sprintf(warn_buf,"For proper barostat integration tau_p (%g) should be more than two orders of magnitude larger than nstcalcenergy*dt (%g)",
 	      ir->tau_p,dt_coupl);
-      warning(NULL);
+      warning(wi,warn_buf);
     }	
        
     sprintf(err_buf,"compressibility must be > 0 when using pressure" 
@@ -358,13 +367,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
      
   } else if (ir->coulombtype == eelPPPM) {
     sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
-    warning(NULL);
+    warning(wi,warn_buf);
   }
 
   if (EI_VV(ir->eI)) {
     if (ir->epc > epcNO) {
       if (ir->epc!=epcMTTK) {
-	warning_error("NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
+          warning_error(wi,"NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
       }
     }
   }
@@ -375,12 +384,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     sprintf(warn_buf,"coulombtype = %s is only for testing purposes and can lead to serious artifacts, advice: use coulombtype = %s",
 	    eel_names[ir->coulombtype],
 	    eel_names[eelRF_ZERO]);
-    warning(NULL);
+    warning(wi,warn_buf);
+  }
+
+  if (ir->epsilon_r!=1 && ir->implicit_solvent==eisGBSA) {
+    sprintf(warn_buf,"epsilon_r = %g with GB implicit solvent, will use this value for inner dielectric",ir->epsilon_r);
+    warning_note(wi,warn_buf);
   }
 
   if (EEL_RF(ir->coulombtype) && ir->epsilon_rf==1 && ir->epsilon_r!=1) {
     sprintf(warn_buf,"epsilon_r = %g and epsilon_rf = 1 with reaction field, assuming old format and exchanging epsilon_r and epsilon_rf",ir->epsilon_r);
-    warning(NULL);
+    warning(wi,warn_buf);
     ir->epsilon_rf = ir->epsilon_r;
     ir->epsilon_r  = 1.0;
   }
@@ -405,14 +419,14 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     if (ir->epsilon_rf == ir->epsilon_r) {
       sprintf(warn_buf,"Using epsilon_rf = epsilon_r with %s does not make sense",
 	      eel_names[ir->coulombtype]);
-      warning(NULL);
+      warning(wi,warn_buf);
     }
   }
   /* Allow rlist>rcoulomb for tabulated long range stuff. This just
    * means the interaction is zero outside rcoulomb, but it helps to
    * provide accurate energy conservation.
    */
-  if (EEL_ZERO_AT_CUTOFF(ir->coulombtype)) {
+  if (EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype)) {
     if (EEL_SWITCHED(ir->coulombtype)) {
       sprintf(err_buf,
 	      "With coulombtype = %s rcoulomb_switch must be < rcoulomb",
@@ -447,7 +461,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   if (EEL_PME(ir->coulombtype)) {
     if (ir->pme_order < 3) {
-      warning_error("pme_order can not be smaller than 3");
+        warning_error(wi,"pme_order can not be smaller than 3");
     }
   }
 
@@ -455,7 +469,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     if (ir->ewald_geometry == eewg3D) {
       sprintf(warn_buf,"With pbc=%s you should use ewald_geometry=%s",
 	      epbc_names[ir->ePBC],eewg_names[eewg3DC]);
-      warning(NULL);
+      warning(wi,warn_buf);
     }
     /* This check avoids extra pbc coding for exclusion corrections */
     sprintf(err_buf,"wall_ewald_zfac should be >= 2");
@@ -470,20 +484,20 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
     CHECK(ir->rlist > ir->rvdw);
   }
-  if ((EEL_SWITCHED(ir->coulombtype) || ir->coulombtype == eelRF_ZERO)
+  if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
       && (ir->rlistlong <= ir->rcoulomb)) {
     sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
 	    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
-    warning_note(NULL);
+    warning_note(wi,warn_buf);
   }
   if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlistlong <= ir->rvdw)) {
     sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rvdw.",
 	    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
-    warning_note(NULL);
+    warning_note(wi,warn_buf);
   }
 
   if (ir->vdwtype == evdwUSER && ir->eDispCorr != edispcNO) {
-    warning_note("You have selected user tables with dispersion correction, the dispersion will be corrected to -C6/r^6 beyond rvdw_switch (the tabulated interaction between rvdw_switch and rvdw will not be double counted). Make sure that you really want dispersion correction to -C6/r^6.");
+      warning_note(wi,"You have selected user tables with dispersion correction, the dispersion will be corrected to -C6/r^6 beyond rvdw_switch (the tabulated interaction between rvdw_switch and rvdw will not be double counted). Make sure that you really want dispersion correction to -C6/r^6.");
   }
 
   if (ir->nstlist == -1) {
@@ -491,8 +505,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	    "nstlist=-1 only works with switched or shifted potentials,\n"
 	    "suggestion: use vdw-type=%s and coulomb-type=%s",
 	    evdw_names[evdwSHIFT],eel_names[eelPMESWITCH]);
-    CHECK(!(EEL_ZERO_AT_CUTOFF(ir->coulombtype) &&
-	    EVDW_ZERO_AT_CUTOFF(ir->vdwtype)));
+    CHECK(!(EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) &&
+            EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)));
 
     sprintf(err_buf,"With nstlist=-1 rvdw and rcoulomb should be smaller than rlist to account for diffusion and possibly charge-group radii");
     CHECK(ir->rvdw >= ir->rlist || ir->rcoulomb >= ir->rlist);
@@ -502,11 +516,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   if (ir->eI == eiLBFGS && (ir->coulombtype==eelCUT || ir->vdwtype==evdwCUT)
      && ir->rvdw != 0) {
-    warning("For efficient BFGS minimization, use switch/shift/pme instead of cut-off.");
+    warning(wi,"For efficient BFGS minimization, use switch/shift/pme instead of cut-off.");
   }
 
   if (ir->eI == eiLBFGS && ir->nbfgscorr <= 0) {
-    warning("Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
+    warning(wi,"Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
   }
 
   /* FREE ENERGY */
@@ -516,19 +530,22 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     CHECK(ir->sc_alpha!=0 && ir->sc_power!=1 && ir->sc_power!=2);
   }
 
-  /* ENERGY CONSERVATION */
-  if (ir->eI == eiMD && ir->etc == etcNO) {
-    if (!EVDW_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0) {
-      sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
-	      evdw_names[evdwSHIFT]);
-      warning_note(NULL);
+    /* ENERGY CONSERVATION */
+    if (ir_NVE(ir))
+    {
+        if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
+        {
+            sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
+                    evdw_names[evdwSHIFT]);
+            warning_note(wi,warn_buf);
+        }
+        if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0)
+        {
+            sprintf(warn_buf,"You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
+                    eel_names[eelPMESWITCH],eel_names[eelRF_ZERO]);
+            warning_note(wi,warn_buf);
+        }
     }
-    if (!EEL_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0) {
-      sprintf(warn_buf,"You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
-	      eel_names[eelPMESWITCH],eel_names[eelRF_ZERO]);
-      warning_note(NULL);
-    }
-  }
 
   if(ir->coulombtype==eelGB_NOTUSED)
   {
@@ -646,15 +663,17 @@ static void add_wall_energrps(gmx_groups_t *groups,int nwall,t_symtab *symtab)
 }
 
 void get_ir(const char *mdparin,const char *mdparout,
-	    t_inputrec *ir,t_gromppopts *opts, int *nerror)
+            t_inputrec *ir,t_gromppopts *opts,
+            warninp_t wi)
 {
   char      *dumstr[2];
   double    dumdub[2][6];
   t_inpfile *inp;
   const char *tmp;
   int       i,j,m,ninp;
+  char      warn_buf[STRLEN];
   
-  inp=read_inpfile(mdparin,&ninp, NULL);
+  inp = read_inpfile(mdparin, &ninp, NULL, wi);
 
   snew(dumstr[0],STRLEN);
   snew(dumstr[1],STRLEN);
@@ -675,7 +694,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("define",	opts->define,	NULL);
     
   CCTYPE ("RUN CONTROL PARAMETERS");
-  EETYPE("integrator",  ir->eI,         ei_names, nerror, TRUE);
+  EETYPE("integrator",  ir->eI,         ei_names);
   CTYPE ("Start time and timestep in ps");
   RTYPE ("tinit",	ir->init_t,	0.0);
   RTYPE ("dt",		ir->delta_t,	0.001);
@@ -687,7 +706,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("mode for center of mass motion removal");
   CTYPE ("energy calculation and T/P-coupling frequency");
   ITYPE ("nstcalcenergy",ir->nstcalcenergy,	1);
-  EETYPE("comm-mode",   ir->comm_mode,  ecm_names, nerror, TRUE);
+  EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
   CTYPE ("number of steps for center of mass motion removal");
   ITYPE ("nstcomm",	ir->nstcomm,	1);
   CTYPE ("group(s) for center of mass motion removal");
@@ -738,12 +757,12 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("nblist update frequency");
   ITYPE ("nstlist",	ir->nstlist,	10);
   CTYPE ("ns algorithm (simple or grid)");
-  EETYPE("ns-type",     ir->ns_type,    ens_names, nerror, TRUE);
+  EETYPE("ns-type",     ir->ns_type,    ens_names);
   /* set ndelta to the optimal value of 2 */
   ir->ndelta = 2;
   CTYPE ("Periodic boundary conditions: xyz, no, xy");
-  EETYPE("pbc",         ir->ePBC,       epbc_names, nerror, TRUE);
-  EETYPE("periodic_molecules", ir->bPeriodicMols, yesno_names, nerror, TRUE);
+  EETYPE("pbc",         ir->ePBC,       epbc_names);
+  EETYPE("periodic_molecules", ir->bPeriodicMols, yesno_names);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
   CTYPE ("long-range cut-off for switched potentials");
@@ -752,7 +771,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
   CTYPE ("Method for doing electrostatics");
-  EETYPE("coulombtype",	ir->coulombtype,    eel_names, nerror, TRUE);
+  EETYPE("coulombtype",	ir->coulombtype,    eel_names);
   CTYPE ("cut-off lengths");
   RTYPE ("rcoulomb-switch",	ir->rcoulomb_switch,	0.0);
   RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
@@ -760,12 +779,12 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("epsilon_r",   ir->epsilon_r,  1.0);
   RTYPE ("epsilon_rf",  ir->epsilon_rf, 1.0);
   CTYPE ("Method for doing Van der Waals");
-  EETYPE("vdw-type",	ir->vdwtype,    evdw_names, nerror, TRUE);
+  EETYPE("vdw-type",	ir->vdwtype,    evdw_names);
   CTYPE ("cut-off lengths");
   RTYPE ("rvdw-switch",	ir->rvdw_switch,	0.0);
   RTYPE ("rvdw",	ir->rvdw,	1.0);
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
-  EETYPE("DispCorr",    ir->eDispCorr,  edispc_names, nerror, TRUE);
+  EETYPE("DispCorr",    ir->eDispCorr,  edispc_names);
   CTYPE ("Extension of the potential lookup tables beyond the cut-off");
   RTYPE ("table-extension", ir->tabext, 1.0);
   CTYPE ("Seperate tables between energy group pairs");
@@ -779,16 +798,16 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("EWALD/PME/PPPM parameters");
   ITYPE ("pme_order",   ir->pme_order,   4);
   RTYPE ("ewald_rtol",  ir->ewald_rtol, 0.00001);
-  EETYPE("ewald_geometry", ir->ewald_geometry, eewg_names, nerror,  TRUE);
+  EETYPE("ewald_geometry", ir->ewald_geometry, eewg_names);
   RTYPE ("epsilon_surface", ir->epsilon_surface, 0.0);
-  EETYPE("optimize_fft",ir->bOptFFT,  yesno_names, nerror, TRUE);
+  EETYPE("optimize_fft",ir->bOptFFT,  yesno_names);
 
   CCTYPE("IMPLICIT SOLVENT ALGORITHM");
-  EETYPE("implicit_solvent", ir->implicit_solvent, eis_names, nerror, TRUE);
+  EETYPE("implicit_solvent", ir->implicit_solvent, eis_names);
 	
   CCTYPE ("GENERALIZED BORN ELECTROSTATICS"); 
   CTYPE ("Algorithm for calculating Born radii");
-  EETYPE("gb_algorithm", ir->gb_algorithm, egb_names, nerror, TRUE);
+  EETYPE("gb_algorithm", ir->gb_algorithm, egb_names);
   CTYPE ("Frequency of calculating the Born radii inside rlist");
   ITYPE ("nstgbradii", ir->nstgbradii, 1);
   CTYPE ("Cutoff for Born radii calculation; the contribution from atoms");
@@ -803,7 +822,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("gb_obc_beta", ir->gb_obc_beta, 0.8);
   RTYPE ("gb_obc_gamma", ir->gb_obc_gamma, 4.85);	
   RTYPE ("gb_dielectric_offset", ir->gb_dielectric_offset, 0.009);
-  EETYPE("sa_algorithm", ir->sa_algorithm, esa_names, nerror, TRUE);
+  EETYPE("sa_algorithm", ir->sa_algorithm, esa_names);
   CTYPE ("Surface tension (kJ/mol/nm^2) for the SA (nonpolar surface) part of GBSA");
   CTYPE ("The default value (2.092) corresponds to 0.005 kcal/mol/Angstrom^2.");
   RTYPE ("sa_surface_tension", ir->sa_surface_tension, 2.092);
@@ -811,7 +830,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
-  EETYPE("tcoupl",	ir->etc,        etcoupl_names, nerror, TRUE);
+  EETYPE("tcoupl",	ir->etc,        etcoupl_names);
   ITYPE("nh-chain-length",     ir->opts.nhchainlength, NHCHAINLENGTH);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
@@ -819,27 +838,27 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("tau-t",	tau_t,		NULL);
   STYPE ("ref-t",	ref_t,		NULL);
   CTYPE ("Pressure coupling");
-  EETYPE("Pcoupl",	ir->epc,        epcoupl_names, nerror, TRUE);
-  EETYPE("Pcoupltype",	ir->epct,       epcoupltype_names, nerror, TRUE);
+  EETYPE("Pcoupl",	ir->epc,        epcoupl_names);
+  EETYPE("Pcoupltype",	ir->epct,       epcoupltype_names);
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
   RTYPE ("tau-p",	ir->tau_p,	1.0);
   STYPE ("compressibility",	dumstr[0],	NULL);
   STYPE ("ref-p",       dumstr[1],      NULL);
   CTYPE ("Scaling of reference coordinates, No, All or COM");
-  EETYPE ("refcoord_scaling",ir->refcoord_scaling,erefscaling_names, nerror, TRUE);
+  EETYPE ("refcoord_scaling",ir->refcoord_scaling,erefscaling_names);
 
   CTYPE ("Random seed for Andersen thermostat");
   ITYPE ("andersen_seed", ir->andersen_seed, 815131);
 
   /* QMMM */
   CCTYPE ("OPTIONS FOR QMMM calculations");
-  EETYPE("QMMM", ir->bQMMM, yesno_names, nerror, TRUE);
+  EETYPE("QMMM", ir->bQMMM, yesno_names);
   CTYPE ("Groups treated Quantum Mechanically");
   STYPE ("QMMM-grps",  QMMM,          NULL);
   CTYPE ("QM method");
   STYPE("QMmethod",     QMmethod, NULL);
   CTYPE ("QMMM scheme");
-  EETYPE("QMMMscheme",  ir->QMMMscheme,    eQMMMscheme_names, nerror, TRUE);
+  EETYPE("QMMMscheme",  ir->QMMMscheme,    eQMMMscheme_names);
   CTYPE ("QM basisset");
   STYPE("QMbasis",      QMbasis, NULL);
   CTYPE ("QM charge");
@@ -873,19 +892,19 @@ void get_ir(const char *mdparin,const char *mdparout,
   
   /* Startup run */
   CCTYPE ("GENERATE VELOCITIES FOR STARTUP RUN");
-  EETYPE("gen-vel",     opts->bGenVel,  yesno_names, nerror, TRUE);
+  EETYPE("gen-vel",     opts->bGenVel,  yesno_names);
   RTYPE ("gen-temp",    opts->tempi,    300.0);
   ITYPE ("gen-seed",    opts->seed,     173529);
   
   /* Shake stuff */
   CCTYPE ("OPTIONS FOR BONDS");
-  EETYPE("constraints",	opts->nshake,	constraints, nerror, TRUE);
+  EETYPE("constraints",	opts->nshake,	constraints);
   CTYPE ("Type of constraint algorithm");
-  EETYPE("constraint-algorithm",  ir->eConstrAlg, econstr_names, nerror, TRUE);
+  EETYPE("constraint-algorithm",  ir->eConstrAlg, econstr_names);
   CTYPE ("Do not constrain the start configuration");
-  EETYPE("continuation", ir->bContinuation, yesno_names, nerror, TRUE);
+  EETYPE("continuation", ir->bContinuation, yesno_names);
   CTYPE ("Use successive overrelaxation to reduce the number of shake iterations");
-  EETYPE("Shake-SOR", ir->bShakeSOR, yesno_names, nerror, TRUE);
+  EETYPE("Shake-SOR", ir->bShakeSOR, yesno_names);
   CTYPE ("Relative tolerance of shake");
   RTYPE ("shake-tol", ir->shake_tol, 0.0001);
   CTYPE ("Highest order in the expansion of the constraint coupling matrix");
@@ -898,7 +917,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("rotates over more degrees than");
   RTYPE ("lincs-warnangle", ir->LincsWarnAngle, 30.0);
   CTYPE ("Convert harmonic bonds to morse potentials");
-  EETYPE("morse",       opts->bMorse,yesno_names, nerror, TRUE);
+  EETYPE("morse",       opts->bMorse,yesno_names);
 
   /* Energy group exclusions */
   CCTYPE ("ENERGY GROUP EXCLUSIONS");
@@ -909,7 +928,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("WALLS");
   CTYPE ("Number of walls, type, atom types, densities and box-z scale factor for Ewald");
   ITYPE ("nwall", ir->nwall, 0);
-  EETYPE("wall_type",     ir->wall_type,   ewt_names, nerror, TRUE);
+  EETYPE("wall_type",     ir->wall_type,   ewt_names);
   RTYPE ("wall_r_linpot", ir->wall_r_linpot, -1);
   STYPE ("wall_atomtype", wall_atomtype, NULL);
   STYPE ("wall_density",  wall_density,  NULL);
@@ -918,35 +937,35 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* COM pulling */
   CCTYPE("COM PULLING");
   CTYPE("Pull type: no, umbrella, constraint or constant_force");
-  EETYPE("pull",          ir->ePull, epull_names, nerror, TRUE);
+  EETYPE("pull",          ir->ePull, epull_names);
   if (ir->ePull != epullNO) {
     snew(ir->pull,1);
-    pull_grp = read_pullparams(&ninp,&inp,ir->pull,&opts->pull_start,nerror);
+    pull_grp = read_pullparams(&ninp,&inp,ir->pull,&opts->pull_start,wi);
   }
   
   /* Enforced rotation */
   CCTYPE("ENFORCED ROTATION");
   CTYPE("Enforced rotation: No or Yes");
-  EETYPE("rotation",       ir->bRot, yesno_names, nerror, TRUE);
+  EETYPE("rotation",       ir->bRot, yesno_names);
   if (ir->bRot) {
     snew(ir->rot,1);
-    rot_grp = read_rotparams(&ninp,&inp,ir->rot);
+    rot_grp = read_rotparams(&ninp,&inp,ir->rot,wi);
   }
 
   /* Refinement */
   CCTYPE("NMR refinement stuff");
   CTYPE ("Distance restraints type: No, Simple or Ensemble");
-  EETYPE("disre",       ir->eDisre,     edisre_names, nerror, TRUE);
+  EETYPE("disre",       ir->eDisre,     edisre_names);
   CTYPE ("Force weighting of pairs in one distance restraint: Conservative or Equal");
-  EETYPE("disre-weighting", ir->eDisreWeighting, edisreweighting_names, nerror, TRUE);
+  EETYPE("disre-weighting", ir->eDisreWeighting, edisreweighting_names);
   CTYPE ("Use sqrt of the time averaged times the instantaneous violation");
-  EETYPE("disre-mixed", ir->bDisreMixed, yesno_names, nerror, TRUE);
+  EETYPE("disre-mixed", ir->bDisreMixed, yesno_names);
   RTYPE ("disre-fc",	ir->dr_fc,	1000.0);
   RTYPE ("disre-tau",	ir->dr_tau,	0.0);
   CTYPE ("Output frequency for pair distances to energy file");
   ITYPE ("nstdisreout", ir->nstdisreout, 100);
   CTYPE ("Orientation restraints: No or Yes");
-  EETYPE("orire",       opts->bOrire,   yesno_names, nerror, TRUE);
+  EETYPE("orire",       opts->bOrire,   yesno_names);
   CTYPE ("Orientation restraints force constant and tau for time averaging");
   RTYPE ("orire-fc",	ir->orires_fc,	0.0);
   RTYPE ("orire-tau",	ir->orires_tau,	0.0);
@@ -954,12 +973,12 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Output frequency for trace(SD) and S to energy file");
   ITYPE ("nstorireout", ir->nstorireout, 100);
   CTYPE ("Dihedral angle restraints: No or Yes");
-  EETYPE("dihre",       opts->bDihre,   yesno_names, nerror, TRUE);
+  EETYPE("dihre",       opts->bDihre,   yesno_names);
   RTYPE ("dihre-fc",	ir->dihre_fc,	1000.0);
 
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
-  EETYPE("free-energy",	ir->efep, efep_names, nerror, TRUE);
+  EETYPE("free-energy",	ir->efep, efep_names);
   RTYPE ("init-lambda",	ir->init_lambda,0.0);
   RTYPE ("delta-lambda",ir->delta_lambda,0.0);
   STYPE ("foreign_lambda", foreign_lambda, NULL);
@@ -968,9 +987,9 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
   ITYPE ("nstdhdl",     ir->nstdhdl, 10);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
-  EETYPE("couple-lambda0", opts->couple_lam0, couple_lam, nerror, TRUE);
-  EETYPE("couple-lambda1", opts->couple_lam1, couple_lam, nerror, TRUE);
-  EETYPE("couple-intramol", opts->bCoupleIntra, yesno_names, nerror, TRUE);
+  EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
+  EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
+  EETYPE("couple-intramol", opts->bCoupleIntra, yesno_names);
 
   /* Non-equilibrium MD stuff */  
   CCTYPE("Non-equilibrium MD stuff");
@@ -1006,7 +1025,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("userreal4",   ir->userreal4,  0);
 #undef CTYPE
 
-  write_inpfile(mdparout,ninp,inp,FALSE);
+  write_inpfile(mdparout,ninp,inp,FALSE,wi);
   for (i=0; (i<ninp); i++) {
     sfree(inp[i].name);
     sfree(inp[i].value);
@@ -1021,9 +1040,7 @@ void get_ir(const char *mdparin,const char *mdparout,
       switch (ir->epct) {
       case epctISOTROPIC:
 	if (sscanf(dumstr[m],"%lf",&(dumdub[m][XX]))!=1) {
-	  fprintf(stderr,
-		  "ERROR: pressure coupling not enough values (I need 1)\n");
-	  (*nerror)++;
+        warning_error(wi,"Pressure coupling not enough values (I need 1)");
 	}
 	dumdub[m][YY]=dumdub[m][ZZ]=dumdub[m][XX];
 	break;
@@ -1031,9 +1048,7 @@ void get_ir(const char *mdparin,const char *mdparout,
       case epctSURFACETENSION:
 	if (sscanf(dumstr[m],"%lf%lf",
 		   &(dumdub[m][XX]),&(dumdub[m][ZZ]))!=2) {
-	  fprintf(stderr,
-		  "ERROR: pressure coupling not enough values (I need 2)\n");
-	  (*nerror)++;
+        warning_error(wi,"Pressure coupling not enough values (I need 2)");
 	}
 	dumdub[m][YY]=dumdub[m][XX];
 	break;
@@ -1041,9 +1056,7 @@ void get_ir(const char *mdparin,const char *mdparout,
 	if (sscanf(dumstr[m],"%lf%lf%lf%lf%lf%lf",
 		   &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]),
 		   &(dumdub[m][3]),&(dumdub[m][4]),&(dumdub[m][5]))!=6) {
-	  fprintf(stderr,
-		  "ERROR: pressure coupling not enough values (I need 6)\n");
-	  (*nerror)++;
+        warning_error(wi,"Pressure coupling not enough values (I need 6)");
 	}
 	break;
       default:
@@ -1063,7 +1076,7 @@ void get_ir(const char *mdparin,const char *mdparout,
     ir->ref_p[XX][ZZ] = dumdub[1][4];
     ir->ref_p[YY][ZZ] = dumdub[1][5];
     if (ir->ref_p[XX][YY]!=0 && ir->ref_p[XX][ZZ]!=0 && ir->ref_p[YY][ZZ]!=0) {
-      warning("All off-diagonal reference pressures are non-zero. Are you sure you want to apply a threefold shear stress?\n");
+      warning(wi,"All off-diagonal reference pressures are non-zero. Are you sure you want to apply a threefold shear stress?\n");
     }
     ir->compress[XX][YY] = dumdub[0][3];
     ir->compress[XX][ZZ] = dumdub[0][4];
@@ -1084,21 +1097,20 @@ void get_ir(const char *mdparin,const char *mdparout,
     if (ir->efep != efepNO) {
       opts->couple_moltype = strdup(couple_moltype);
       if (opts->couple_lam0 == opts->couple_lam1)
-	warning("The lambda=0 and lambda=1 states for coupling are identical");
+	warning(wi,"The lambda=0 and lambda=1 states for coupling are identical");
       if (ir->eI == eiMD && (opts->couple_lam0 == ecouplamNONE ||
 			     opts->couple_lam1 == ecouplamNONE)) {
-	warning("For proper sampling of the (nearly) decoupled state, stochastic dynamics should be used");
+	warning(wi,"For proper sampling of the (nearly) decoupled state, stochastic dynamics should be used");
       }
     } else {
-      warning("Can not couple a molecule with free_energy = no");
+      warning(wi,"Can not couple a molecule with free_energy = no");
     }
   }
 
   do_wall_params(ir,wall_atomtype,wall_density,opts);
   
   if (opts->bOrire && str_nelem(orirefitgrp,MAXPTR,NULL)!=1) {
-    fprintf(stderr,"ERROR: Need one orientation restraint fit group\n");
-    (*nerror)++;
+      warning_error(wi,"ERROR: Need one orientation restraint fit group\n");
   }
 
   clear_mat(ir->deform);
@@ -1116,8 +1128,7 @@ void get_ir(const char *mdparin,const char *mdparout,
     for(i=0; i<3; i++)
       for(j=0; j<=i; j++)
 	if (ir->deform[i][j]!=0 && ir->compress[i][j]!=0) {
-	  fprintf(stderr,"ERROR: A box element has deform set and compressibility > 0\n");
-	  (*nerror)++;
+        warning_error(wi,"A box element has deform set and compressibility > 0");
 	}
     for(i=0; i<3; i++)
       for(j=0; j<i; j++)
@@ -1125,7 +1136,7 @@ void get_ir(const char *mdparin,const char *mdparout,
 	  for(m=j; m<DIM; m++)
 	    if (ir->compress[m][j]!=0) {
 	      sprintf(warn_buf,"An off-diagonal box element has deform set while compressibility > 0 for the same component of another box vector, this might lead to spurious periodicity effects.");
-	      warning(NULL);
+	      warning(wi,warn_buf);
 	    }
 	}
   }
@@ -1133,7 +1144,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   if (ir->efep != efepNO) {
     parse_n_double(foreign_lambda,&ir->n_flambda,&ir->flambda);
     if (ir->n_flambda > 0 && ir->rlist < max(ir->rvdw,ir->rcoulomb)) {
-      warning_note("For foreign lambda free energy differences it is assumed that the soft-core interactions have no effect beyond the neighborlist cut-off");
+      warning_note(wi,"For foreign lambda free energy differences it is assumed that the soft-core interactions have no effect beyond the neighborlist cut-off");
     }
   } else {
     ir->n_flambda = 0;
@@ -1173,15 +1184,17 @@ int search_string(char *s,int ng,char *gn[])
 }
 
 static bool do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
-			 t_blocka *block,char *gnames[],
-			 int gtype,int restnm,
-			 int grptp,bool bVerbose)
+                         t_blocka *block,char *gnames[],
+                         int gtype,int restnm,
+                         int grptp,bool bVerbose,
+                         warninp_t wi)
 {
   unsigned short *cbuf;
   t_grps *grps=&(groups->grps[gtype]);
   int    i,j,gid,aj,ognr,ntot=0;
   const char *title;
   bool   bRest;
+  char   warn_buf[STRLEN];
 
   if (debug)
     fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
@@ -1234,7 +1247,7 @@ static bool do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
     } else if (grptp == egrptpPART) {
       sprintf(warn_buf,"%d atoms are not part of any of the %s groups",
 	      natoms-ntot,title);
-      warning_note(NULL);
+      warning_note(wi,warn_buf);
     }
     /* Assign all atoms currently unassigned to a rest group */
     for(j=0; (j<natoms); j++) {
@@ -1283,7 +1296,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   t_pull  *pull;
   int     natoms,ai,aj,i,j,d,g,imin,jmin,nc;
   t_iatom *ia;
-  int     *nrdf,*na_vcm,na_tot;
+  int     *nrdf2,*na_vcm,na_tot;
   double  *nrdf_tc,*nrdf_vcm,nrdf_uc,n_sub=0;
   gmx_mtop_atomloop_all_t aloop;
   t_atom  *atom;
@@ -1316,20 +1329,20 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   for(i=0; i<groups->grps[egcVCM].nr+1; i++)
     nrdf_vcm[i] = 0;
 
-  snew(nrdf,natoms);
+  snew(nrdf2,natoms);
   aloop = gmx_mtop_atomloop_all_init(mtop);
   while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
-    nrdf[i] = 0;
+    nrdf2[i] = 0;
     if (atom->ptype == eptAtom || atom->ptype == eptNucleus) {
       g = ggrpnr(groups,egcFREEZE,i);
       /* Double count nrdf for particle i */
       for(d=0; d<DIM; d++) {
 	if (opts->nFreeze[g][d] == 0) {
-	  nrdf[i] += 2;
+	  nrdf2[i] += 2;
 	}
       }
-      nrdf_tc [ggrpnr(groups,egcTC ,i)] += 0.5*nrdf[i];
-      nrdf_vcm[ggrpnr(groups,egcVCM,i)] += 0.5*nrdf[i];
+      nrdf_tc [ggrpnr(groups,egcTC ,i)] += 0.5*nrdf2[i];
+      nrdf_vcm[ggrpnr(groups,egcVCM,i)] += 0.5*nrdf2[i];
     }
   }
 
@@ -1355,18 +1368,18 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
 	       (atom[ia[1]].ptype == eptAtom)) &&
 	      ((atom[ia[2]].ptype == eptNucleus) ||
 	       (atom[ia[2]].ptype == eptAtom))) {
-	    if (nrdf[ai] > 0) 
+	    if (nrdf2[ai] > 0) 
 	      jmin = 1;
 	    else
 	      jmin = 2;
-	    if (nrdf[aj] > 0)
+	    if (nrdf2[aj] > 0)
 	      imin = 1;
 	    else
 	      imin = 2;
-	    imin = min(imin,nrdf[ai]);
-	    jmin = min(jmin,nrdf[aj]);
-	    nrdf[ai] -= imin;
-	    nrdf[aj] -= jmin;
+	    imin = min(imin,nrdf2[ai]);
+	    jmin = min(jmin,nrdf2[aj]);
+	    nrdf2[ai] -= imin;
+	    nrdf2[aj] -= jmin;
 	    nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 0.5*imin;
 	    nrdf_tc [ggrpnr(groups,egcTC ,aj)] -= 0.5*jmin;
 	    nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 0.5*imin;
@@ -1380,8 +1393,10 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
       for(i=0; i<molt->ilist[F_SETTLE].nr; ) {
 	/* Subtract 1 dof from every atom in the SETTLE */
 	for(ai=as+ia[1]; ai<as+ia[1]+3; ai++) {
-	  nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 1;
-	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 1;
+	  imin = min(2,nrdf2[ai]);
+	  nrdf2[ai] -= imin;
+	  nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 0.5*imin;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 0.5*imin;
 	}
 	ia += 2;
 	i  += 2;
@@ -1484,7 +1499,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
 	    gnames[groups->grps[egcTC].nm_ind[i]],opts->nrdf[i]);
   }
   
-  sfree(nrdf);
+  sfree(nrdf2);
   sfree(nrdf_tc);
   sfree(nrdf_vcm);
   sfree(na_vcm);
@@ -1572,9 +1587,10 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
 }
 
 void do_index(const char* mdparin, const char *ndx,
-	      gmx_mtop_t *mtop,
-	      bool bVerbose,
-	      t_inputrec *ir,rvec *v)
+              gmx_mtop_t *mtop,
+              bool bVerbose,
+              t_inputrec *ir,rvec *v,
+              warninp_t wi)
 {
   t_blocka *grps;
   gmx_groups_t *groups;
@@ -1589,7 +1605,8 @@ void do_index(const char* mdparin, const char *ndx,
   real    SAtime;
   bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
-    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;	
+    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;
+  char    warn_buf[STRLEN];
 
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -1620,7 +1637,7 @@ void do_index(const char* mdparin, const char *ndx,
   gnames[restnm] = *(groups->grpname[i]);
   groups->ngrpname = grps->nr+1;
 
-  set_warning_line(mdparin,-1);
+  set_warning_line(wi,mdparin,-1);
 
   ntau_t = str_nelem(tau_t,MAXPTR,ptr1);
   nref_t = str_nelem(ref_t,MAXPTR,ptr2);
@@ -1632,7 +1649,7 @@ void do_index(const char* mdparin, const char *ndx,
 
   bSetTCpar = (ir->etc || EI_SD(ir->eI) || ir->eI==eiBD || EI_TPI(ir->eI));
   do_numbering(natoms,groups,ntcg,ptr3,grps,gnames,egcTC,
-	       restnm,bSetTCpar ? egrptpALL : egrptpALL_GENREST,bVerbose);
+               restnm,bSetTCpar ? egrptpALL : egrptpALL_GENREST,bVerbose,wi);
   nr = groups->grps[egcTC].nr;
   ir->opts.ngtc = nr;
   snew(ir->opts.nrdf,nr);
@@ -1657,7 +1674,7 @@ void do_index(const char* mdparin, const char *ndx,
 	  ir->opts.tau_t[i] < 10*ir->nstcalcenergy*ir->delta_t) {
 	sprintf(warn_buf,"For proper thermostat integration tau_t (%g) should be more than an order of magnitude larger than nstcalcenergy*dt (%g)",
 		ir->opts.tau_t[i],ir->nstcalcenergy*ir->delta_t);
-	warning(NULL);
+	warning(wi,warn_buf);
       }
     }
     for(i=0; (i<nr); i++) {
@@ -1756,7 +1773,7 @@ void do_index(const char* mdparin, const char *ndx,
 	    else {
 	      fprintf(stderr,"%9.1f      %5.1f\n",ir->opts.anneal_time[i][j],ir->opts.anneal_temp[i][j]);
 	      if(fabs(ir->opts.anneal_temp[i][j]-ir->opts.anneal_temp[i][0])>GMX_REAL_EPS)
-		warning_note("There is a temperature jump when your annealing loops back.\n");
+		warning_note(wi,"There is a temperature jump when your annealing loops back.\n");
 	    }
 	  }
 	} 
@@ -1778,7 +1795,7 @@ void do_index(const char* mdparin, const char *ndx,
     gmx_fatal(FARGS,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
   do_numbering(natoms,groups,nacg,ptr2,grps,gnames,egcACC,
-	       restnm,egrptpALL_GENREST,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose,wi);
   nr = groups->grps[egcACC].nr;
   snew(ir->opts.acc,nr);
   ir->opts.ngacc=nr;
@@ -1796,7 +1813,7 @@ void do_index(const char* mdparin, const char *ndx,
     gmx_fatal(FARGS,"Invalid Freezing input: %d groups and %d freeze values",
 		nfreeze,nfrdim);
   do_numbering(natoms,groups,nfreeze,ptr2,grps,gnames,egcFREEZE,
-	       restnm,egrptpALL_GENREST,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose,wi);
   nr = groups->grps[egcFREEZE].nr;
   ir->opts.ngfrz=nr;
   snew(ir->opts.nFreeze,nr);
@@ -1807,7 +1824,7 @@ void do_index(const char* mdparin, const char *ndx,
 	if (strncasecmp(ptr1[k],"N",1) != 0) {
 	  sprintf(warnbuf,"Please use Y(ES) or N(O) for freezedim only "
 		  "(not %s)", ptr1[k]);
-	  warning(NULL);
+	  warning(wi,warn_buf);
 	}
       }
     }
@@ -1817,15 +1834,15 @@ void do_index(const char* mdparin, const char *ndx,
   
   nenergy=str_nelem(energy,MAXPTR,ptr1);
   do_numbering(natoms,groups,nenergy,ptr1,grps,gnames,egcENER,
-	       restnm,egrptpALL_GENREST,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose,wi);
   add_wall_energrps(groups,ir->nwall,symtab);
   ir->opts.ngener = groups->grps[egcENER].nr;
   nvcm=str_nelem(vcm,MAXPTR,ptr1);
   bRest =
     do_numbering(natoms,groups,nvcm,ptr1,grps,gnames,egcVCM,
-		 restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose);
+                 restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose,wi);
   if (bRest) {
-    warning("Some atoms are not part of any center of mass motion removal group.\n"
+    warning(wi,"Some atoms are not part of any center of mass motion removal group.\n"
 	    "This may lead to artifacts.\n"
 	    "In most cases one should use one group for the whole system.");
   }
@@ -1851,16 +1868,16 @@ void do_index(const char* mdparin, const char *ndx,
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(natoms,groups,nuser,ptr1,grps,gnames,egcUser1,
-	       restnm,egrptpALL_GENREST,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose,wi);
   nuser=str_nelem(user2,MAXPTR,ptr1);
   do_numbering(natoms,groups,nuser,ptr1,grps,gnames,egcUser2,
-	       restnm,egrptpALL_GENREST,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose,wi);
   nuser=str_nelem(xtc_grps,MAXPTR,ptr1);
   do_numbering(natoms,groups,nuser,ptr1,grps,gnames,egcXTC,
-	       restnm,egrptpONE,bVerbose);
+               restnm,egrptpONE,bVerbose,wi);
   nofg = str_nelem(orirefitgrp,MAXPTR,ptr1);
   do_numbering(natoms,groups,nofg,ptr1,grps,gnames,egcORFIT,
-	       restnm,egrptpALL_GENREST,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose,wi);
 
   /* QMMM input processing */
   nQMg          = str_nelem(QMMM,MAXPTR,ptr1);
@@ -1872,7 +1889,7 @@ void do_index(const char* mdparin, const char *ndx,
   }
   /* group rest, if any, is always MM! */
   do_numbering(natoms,groups,nQMg,ptr1,grps,gnames,egcQMMM,
-               restnm,egrptpALL_GENREST,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose,wi);
   nr = nQMg; /*atoms->grps[egcQMMM].nr;*/
   ir->opts.ngQM = nQMg;
   snew(ir->opts.QMmethod,nr);
@@ -1945,7 +1962,7 @@ void do_index(const char* mdparin, const char *ndx,
 
   bExcl = do_egp_flag(ir,groups,"energygrp_excl",egpexcl,EGP_EXCL);
   if (bExcl && EEL_FULL(ir->coulombtype))
-    warning("Can not exclude the lattice Coulomb energy between energy groups");
+    warning(wi,"Can not exclude the lattice Coulomb energy between energy groups");
 
   bTable = do_egp_flag(ir,groups,"energygrp_table",egptable,EGP_TABLE);
   if (bTable && !(ir->vdwtype == evdwUSER) && 
@@ -2039,7 +2056,8 @@ static bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
   return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
 }
 
-void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
+void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
+                  warninp_t wi)
 {
   char err_buf[256];
   int  i,m,g,nmol,npct;
@@ -2050,11 +2068,14 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
   gmx_mtop_atomloop_all_t aloop;
   t_atom *atom;
   ivec AbsRef;
+  char warn_buf[STRLEN];
+
+  set_warning_line(wi,mdparin,-1);
 
   if (EI_DYNAMICS(ir->eI) && !EI_SD(ir->eI) && ir->eI != eiBD &&
       ir->comm_mode == ecmNO &&
       !(absolute_reference(ir,sys,AbsRef) || ir->nsteps <= 10)) {
-    warning("You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
+    warning(wi,"You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
   }
   
   bCharge = FALSE;
@@ -2067,21 +2088,19 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
   
   if (!bCharge) {
     if (EEL_FULL(ir->coulombtype)) {
-      set_warning_line(mdparin,-1);
       sprintf(err_buf,
 	      "You are using full electrostatics treatment %s for a system without charges.\n"
 	      "This costs a lot of performance for just processing zeros, consider using %s instead.\n",
 	      EELTYPE(ir->coulombtype),EELTYPE(eelCUT));
-      warning(err_buf);
+      warning(wi,err_buf);
     }
   } else {
     if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
-      set_warning_line(mdparin,-1);
       sprintf(err_buf,
 	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"
 	      "You might want to consider using %s electrostatics.\n",
 	      EELTYPE(eelPME));
-      warning_note(err_buf);
+      warning_note(wi,err_buf);
     }
   }
 
@@ -2103,10 +2122,9 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
     for(i=0; (i<ir->opts.ngtc); i++)
       gdt_max = max(gdt_max,ir->delta_t/ir->opts.tau_t[i]);
     if (0.5*gdt_max > 0.0015) {
-      set_warning_line(mdparin,-1);
       sprintf(warn_buf,"The relative error with integrator %s is 0.5*delta_t/tau_t = %g, you might want to switch to integrator %s\n",
 	      ei_names[ir->eI],0.5*gdt_max,ei_names[eiSD2]);
-      warning_note(NULL);
+      warning_note(wi,warn_buf);
     }
   }
 
@@ -2157,8 +2175,7 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
       absolute_reference(ir,sys,AbsRef);
       for(m=0; m<DIM; m++) {
 	if (ir->pull->dim[m] && !AbsRef[m]) {
-	  set_warning_line(mdparin,-1);
-	  warning("You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
+	  warning(wi,"You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
 	  break;
 	}
       }
@@ -2183,33 +2200,31 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
   check_disre(sys);
 }
 
-void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
+void double_check(t_inputrec *ir,matrix box,bool bConstr,warninp_t wi)
 {
   real min_size;
   bool bTWIN;
+  char warn_buf[STRLEN];
   const char *ptr;
   
   ptr = check_box(ir->ePBC,box);
   if (ptr) {
-    fprintf(stderr,
-	    "ERROR: %s\n",ptr);
-    (*nerror)++;
+      warning_error(wi,ptr);
   }  
 
   if (bConstr && ir->eConstrAlg == econtSHAKE) {
     if (ir->shake_tol <= 0.0) {
-      fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
-	      ir->shake_tol);
-      (*nerror)++;
+      sprintf(warn_buf,"ERROR: shake_tol must be > 0 instead of %g\n",
+              ir->shake_tol);
+      warning_error(wi,warn_buf);
     }
 
     if (IR_TWINRANGE(*ir) && ir->nstlist > 1) {
       sprintf(warn_buf,"With twin-range cut-off's and SHAKE the virial and the pressure are incorrect.");
       if (ir->epc == epcNO) {
-	warning(NULL);
+	warning(wi,warn_buf);
       } else {
-	fprintf(stderr,"ERROR: %s\n",warn_buf);
-	(*nerror)++;
+          warning_error(wi,warn_buf);
       }
     }
   }
@@ -2219,37 +2234,40 @@ void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
     if(ir->eI==eiMD && ir->etc==etcNO &&
        ir->eConstrAlg==econtLINCS && ir->nLincsIter==1) {
       sprintf(warn_buf,"For energy conservation with LINCS, lincs_iter should be 2 or larger.\n");
-      warning_note(NULL);
+      warning_note(wi,warn_buf);
     }
     
     if ((ir->eI == eiCG || ir->eI == eiLBFGS) && (ir->nProjOrder<8)) {
       sprintf(warn_buf,"For accurate %s with LINCS constraints, lincs_order should be 8 or more.",ei_names[ir->eI]);
-      warning_note(NULL);
+      warning_note(wi,warn_buf);
+    }
+    if (ir->epc==epcMTTK) {
+        warning_error(wi,"MTTK not compatible with lincs -- use shake instead.");
     }
   }
 
   if (ir->LincsWarnAngle > 90.0) {
     sprintf(warn_buf,"lincs-warnangle can not be larger than 90 degrees, setting it to 90.\n");
-    warning(NULL);
+    warning(wi,warn_buf);
     ir->LincsWarnAngle = 90.0;
   }
 
   if (ir->ePBC != epbcNONE) {
     if (ir->nstlist == 0) {
-      warning("With nstlist=0 atoms are only put into the box at step 0, therefore drifting atoms might cause the simulation to crash.");
+      warning(wi,"With nstlist=0 atoms are only put into the box at step 0, therefore drifting atoms might cause the simulation to crash.");
     }
     bTWIN = (ir->rlistlong > ir->rlist);
     if (ir->ns_type == ensGRID) {
       if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC,box)) {
-	fprintf(stderr,"ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease %s.\n",
+          sprintf(warn_buf,"ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease %s.\n",
 		bTWIN ? (ir->rcoulomb==ir->rlistlong ? "rcoulomb" : "rvdw"):"rlist");
-	(*nerror)++;
+          warning_error(wi,warn_buf);
       }
     } else {
       min_size = min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
       if (2*ir->rlistlong >= min_size) {
-	fprintf(stderr,"ERROR: One of the box lengths is smaller than twice the cut-off length. Increase the box size or decrease rlist.");
-	(*nerror)++;
+          sprintf(warn_buf,"ERROR: One of the box lengths is smaller than twice the cut-off length. Increase the box size or decrease rlist.");
+          warning_error(wi,warn_buf);
 	if (TRICLINIC(box))
 	  fprintf(stderr,"Grid search might allow larger cut-off's than simple search with triclinic boxes.");
       }
@@ -2257,3 +2275,72 @@ void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
   }
 }
 
+void check_chargegroup_radii(const gmx_mtop_t *mtop,const t_inputrec *ir,
+                             rvec *x,
+                             warninp_t wi)
+{
+    real rvdw1,rvdw2,rcoul1,rcoul2;
+    char warn_buf[STRLEN];
+
+    calc_chargegroup_radii(mtop,x,&rvdw1,&rvdw2,&rcoul1,&rcoul2);
+
+    if (rvdw1 > 0)
+    {
+        printf("Largest charge group radii for Van der Waals: %5.3f, %5.3f nm\n",
+               rvdw1,rvdw2);
+    }
+    if (rcoul1 > 0)
+    {
+        printf("Largest charge group radii for Coulomb:       %5.3f, %5.3f nm\n",
+               rcoul1,rcoul2);
+    }
+
+    if (ir->rlist > 0)
+    {
+        if (rvdw1  + rvdw2  > ir->rlist ||
+            rcoul1 + rcoul2 > ir->rlist)
+        {
+            sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than rlist (%f)\n",max(rvdw1+rvdw2,rcoul1+rcoul2),ir->rlist);
+            warning(wi,warn_buf);
+        }
+        else
+        {
+            /* Here we do not use the zero at cut-off macro,
+             * since user defined interactions might purposely
+             * not be zero at the cut-off.
+             */
+            if (EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) &&
+                rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
+            {
+                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than %s (%f) - rvdw (%f)\n",
+                        rvdw1+rvdw2,
+                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
+                        ir->rlist,ir->rvdw);
+                if (ir_NVE(ir))
+                {
+                    warning(wi,warn_buf);
+                }
+                else
+                {
+                    warning_note(wi,warn_buf);
+                }
+            }
+            if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype) &&
+                rcoul1 + rcoul2 > ir->rlistlong - ir->rcoulomb)
+            {
+                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than %s (%f) - rcoulomb (%f)\n",
+                        rcoul1+rcoul2,
+                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
+                        ir->rlistlong,ir->rcoulomb);
+                if (ir_NVE(ir))
+                {
+                    warning(wi,warn_buf);
+                }
+                else
+                {
+                    warning_note(wi,warn_buf);
+                }
+            }
+        }
+    }
+}

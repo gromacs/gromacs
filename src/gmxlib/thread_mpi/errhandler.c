@@ -35,6 +35,10 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -51,10 +55,7 @@ files.
 #include <sys/time.h>
 #endif
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 
 
@@ -191,11 +192,11 @@ void tmpi_errors_are_fatal_fn(tMPI_Comm *comm, int *err)
     tMPI_Error_string(*err, errstr, &len);
     if (comm)
     {
-        fprintf(stderr, "MPI error: %s (in valid comm)\n", errstr);
+        fprintf(stderr, "tMPI error: %s (in valid comm)\n", errstr);
     }
     else
     {
-        fprintf(stderr, "MPI error: %s\n", errstr);
+        fprintf(stderr, "tMPI error: %s\n", errstr);
     }
     abort();
     /*exit(0);*/
@@ -209,11 +210,11 @@ void tmpi_errors_return_fn(tMPI_Comm *comm, int *err)
     tMPI_Error_string(*err, errstr, &len);
     if (comm)
     {
-        fprintf(stderr, "MPI error: %s (in valid comm)\n", errstr);
+        fprintf(stderr, "tMPI error: %s (in valid comm)\n", errstr);
     }
     else
     {
-        fprintf(stderr, "MPI error: %s\n", errstr);
+        fprintf(stderr, "tMPI error: %s\n", errstr);
     }
     return;
 }

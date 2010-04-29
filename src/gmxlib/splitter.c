@@ -49,6 +49,7 @@
 #include "txtdump.h"
 #include "math.h"
 #include "assert.h"
+#include "gmx_fatal.h"
 #include "splitter.h"
 
 typedef struct {

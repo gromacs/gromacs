@@ -42,6 +42,7 @@
 #include "gmx_wallcycle.h"
 #include "gmx_cyclecounter.h"
 #include "smalloc.h"
+#include "gmx_fatal.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -289,12 +290,6 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
     {
         cycles_n[i] = (double)wcc[i].n;
         cycles[i]   = (double)wcc[i].c;
-    }
-    
-    if (wcc[ewcUPDATE].n > 0)
-    {
-        /* Remove the constraint part from the update count */
-        cycles[ewcUPDATE] -= cycles[ewcCONSTR];
     }
     
 #ifdef GMX_MPI

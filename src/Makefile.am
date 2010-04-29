@@ -10,11 +10,13 @@ EXTRA_DIST = config.win
 mdrun:		
 	(cd $(top_builddir)/src/gmxlib && $(MAKE))
 	(cd $(top_builddir)/src/mdlib && $(MAKE))
+	(cd $(top_builddir)/src/kernel && $(MAKE) lib_LTLIBRARIES)
 	(cd $(top_builddir)/src/kernel && $(MAKE) mdrun)
 
 install-mdrun:
 	(cd $(top_builddir)/src/gmxlib && $(MAKE) install ; exit 0)
 	(cd $(top_builddir)/src/mdlib && $(MAKE) install ; exit 0)
+	(cd $(top_builddir)/src/kernel && $(MAKE) install-libLTLIBRARIES ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) install-mdrun)
 
 CLEANFILES = *~ \\\#*

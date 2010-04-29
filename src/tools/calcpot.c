@@ -52,6 +52,7 @@
 #include "mdatoms.h"
 #include "main.h"
 #include "mtop_util.h"
+#include "chargegroup.h"
 
 static void c_tabpot(real tabscale,   real VFtab[],
 		     int  nri,        int  iinr[],
@@ -222,8 +223,6 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   t_state  *state;
   rvec     mutot;
   t_nrnb   nrnb;
-  t_mdebin *mdebin;
-  ener_file_t fp_ene;
   int      m;
   rvec     box_size;
   tensor   force_vir,shake_vir;
@@ -233,19 +232,19 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   *cr = init_cr_nopar();
   gmx_log_open(log,*cr,FALSE,0,&fplog);
 
+  init_nrnb(&nrnb);
+  snew(state,1);
+  init_single(fplog,inputrec,tpx,mtop,state);
+
   if (inputrec->efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
     inputrec->efep = 0;
   }
 
-  init_nrnb(&nrnb);
-  snew(state,1);
-  init_single(fplog,inputrec,tpx,mtop,state);
   clear_rvec(mutot);
   init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&lam0,
-	  &nrnb,mtop,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
-	  &mdebin,force_vir,
-	  shake_vir,mutot,&bNEMD,&bSA,NULL,NULL,0);
+	  &nrnb,mtop,NULL,-1,NULL,NULL,NULL,
+	  force_vir,shake_vir,mutot,&bNEMD,&bSA,NULL,NULL,0);
 
   init_enerdata(mtop->groups.grps[egcENER].nr,0,enerd);  
 
@@ -275,6 +274,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   /* Set vanderwaals to shift, to force tables */
   inputrec->vdwtype     = evdwSHIFT;
   inputrec->rvdw_switch = 0.0;
+  inputrec->eDispCorr   = edispcNO;
     
   /* Initiate forcerecord */
   *fr = mk_forcerec();

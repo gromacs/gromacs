@@ -26,7 +26,7 @@
 /* get gmx_gbdata_t */
 #include "../nb_kerneltype.h"
 
-#include "nb_kernel410_x86_64_sse.h"
+#include "nb_kernel400_x86_64_sse.h"
 
 
 
@@ -107,7 +107,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 	
 	nri              = *p_nri;         
     
-    gbfactor         = _mm_set1_ps( - (1.0 - (1.0/gbdata->gb_epsilon_solvent)));     
+    gbfactor         = _mm_set1_ps( - ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent)));     
     gbtabscale       = _mm_load1_ps(p_gbtabscale);  
     facel            = _mm_load1_ps(p_facel);
 

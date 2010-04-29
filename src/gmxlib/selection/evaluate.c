@@ -142,6 +142,12 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
         if (sel->child && sel->child->type == SEL_SUBEXPR)
         {
             sel->child->u.cgrp.isize = 0;
+            /* Not strictly necessary, because the value will be overwritten
+             * during first evaluation of the subexpression anyways, but we
+             * clear the group for clarity. Note that this is _not_ done during
+             * compilation because of some additional complexities involved
+             * (see compiler.c), so it should not be relied upon in
+             * _gmx_sel_evaluate_subexpr(). */
             if (sel->child->v.type == GROUP_VALUE)
             {
                 sel->child->child->v.u.g->isize = 0;

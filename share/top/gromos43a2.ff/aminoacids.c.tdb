@@ -24,8 +24,7 @@ C	CA	O2	O1	gi_1
 [ replace ]
 C	C	C	12.011	0.53
 O	O	OA	15.9994	-0.548
-[ delete ]
-OXT
+OXT	OT	O	15.9994	-0.38
 [ add ]
 1	2	OT	C	CA	N
 	O	15.9994	-0.38

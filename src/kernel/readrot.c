@@ -53,13 +53,15 @@ static void string2dvec(char buf[], dvec nums)
 }
 
 
-extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot) 
+extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
+        warninp_t wi)
 {
     int  ninp,g,m;
     t_inpfile *inp;
     const char *tmp;
     char **grpbuf;
     char buf[STRLEN];
+    char warn_buf[STRLEN];
     dvec vec;
     t_rotgrp *rotg;
 
@@ -83,20 +85,19 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
     for(g=0; g<rot->ngrp; g++) {
         rotg = &rot->grp[g];
         snew(grpbuf[g],STRLEN);
-        CTYPE("Group name");
+        CTYPE("Rotation group name");
         sprintf(buf,"rot_group%d",g);
         STYPE(buf,              grpbuf[g], "");
         
-        CTYPE("Rotation type can be fixed, fixedplane, flexible1 or flexible2");
+        CTYPE("Rotation potential. Can be iso, iso-pf, pm, pm-pf, rm, rm-pf, rm2, rm2-pf, flex or flex2");
         sprintf(buf,"rot_type%d",g);
         ETYPE(buf,              rotg->eType, erotg_names);
 
-        CTYPE("Origin can be box_origin, COG (center of geometry), or COM (center of mass)");
-        CTYPE("With COG/COM, the reference group will follow the current rotation group coordinates");
-        sprintf(buf,"rot_origin%d",g);
-        ETYPE(buf,              rotg->eOrigin, erotg_originnames);
+        CTYPE("Use mass-weighting of the rotation group positions");
+        sprintf(buf,"rot_massw%d",g);
+        ETYPE(buf,              rotg->bMassW, yesno_names);
 
-        CTYPE("Rotation vector");
+        CTYPE("Rotation vector, will get normalized");
         sprintf(buf,"rot_vec%d",g);
         STYPE(buf,              s_vec, "1.0 0.0 0.0");
         string2dvec(s_vec,vec);
@@ -110,32 +111,35 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
         for(m=0; m<DIM; m++)
             rotg->vec[m] = vec[m];
         
-        CTYPE("Pivot point for the fixed axis relative to rot_origin");
+        CTYPE("Pivot point for iso, pm, rm, rm2 potential [nm]");
         sprintf(buf,"rot_pivot%d",g);
         STYPE(buf,              s_vec, "0.0 0.0 0.0");
-        string2dvec(s_vec,vec);
+        clear_dvec(vec);
+        if ( (rotg->eType==erotgISO) || (rotg->eType==erotgPM) || (rotg->eType==erotgRM) || (rotg->eType==erotgRM2) )
+            string2dvec(s_vec,vec);
         for(m=0; m<DIM; m++)
             rotg->pivot[m] = vec[m];
-        if ( (rotg->eOrigin != erotgOriginBox) && (norm(rotg->pivot) != 0) )            
-        {
-            sprintf(warn_buf, "Using a non-zero rot_pivot%d in combination with %s subtraction.\n"
-                              "This means the pivot will be offset by this vector from the center.",
-                    g, rotg->eOrigin == erotgOriginCOG ? "COG":"COM");
-            warning(NULL);
-        }
 
-        CTYPE("Rotation rate (degree/ps) and force constant [kJ/(mol*nm^2)]");
+        CTYPE("Rotation rate [degree/ps] and force constant [kJ/(mol*nm^2)]");
         sprintf(buf,"rot_rate%d",g);
         RTYPE(buf,              rotg->rate, 0.0);
+
         sprintf(buf,"rot_k%d",g);
         RTYPE(buf,              rotg->k, 0.0);
-        CTYPE("Slab distance for flexible rotation (nm)");
-        sprintf(buf,"rot_slab_distance%d",g);
+
+        CTYPE("Slab distance for flexible rotation [nm] (flexible axis only)");
+        sprintf(buf,"rot_slab_dist%d",g);
         RTYPE(buf,              rotg->slab_dist, 1.5);
-        CTYPE("Minimum value of Gaussian for the force to be evaluated");
-        sprintf(buf,"rot_min_gaussian%d",g);
+
+        CTYPE("Minimum value of Gaussian for the force to be evaluated (for flex and flex2 potentials)");
+        sprintf(buf,"rot_min_gauss%d",g);
         RTYPE(buf,              rotg->min_gaussian, 1e-3);
-        CTYPE("Fitting method to determine actual angle of flexible groups (rmsd or norm)");
+
+        CTYPE("Value of additive constant epsilon' [nm^2] for rm2 and flex2 potentials");
+        sprintf(buf, "rot_eps%d",g);
+        RTYPE(buf,              rotg->eps, 1e-4);
+
+        CTYPE("Fitting method to determine actual angle of rotation group (rmsd or norm) (flex and flex2 pot.)");
         sprintf(buf,"rot_fit_method%d",g);
         ETYPE(buf,              rotg->eFittype, erotg_fitnames);
     }
@@ -148,10 +152,11 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
 
 
 /* Check whether the box is unchanged */
-static void check_box(matrix f_box, matrix box, char fn[])
+static void check_box(matrix f_box, matrix box, char fn[],warninp_t wi)
 {
     int i,ii;
     bool bSame=TRUE;
+    char warn_buf[STRLEN];
     
     
     for (i=0; i<DIM; i++)
@@ -161,7 +166,7 @@ static void check_box(matrix f_box, matrix box, char fn[])
     if (!bSame)
     {
         sprintf(warn_buf, "Enforced rotation: Box size in reference file %s differs from actual box size!", fn);
-        warning(NULL);
+        warning_note(wi, warn_buf);
         pr_rvecs(stderr,0,"Your box is:",box  ,3);
         pr_rvecs(stderr,0,"Box in file:",f_box,3);
     }
@@ -169,15 +174,15 @@ static void check_box(matrix f_box, matrix box, char fn[])
 
 
 /* Extract the reference positions for the rotation group(s) */
-void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
-        const char *fn)
+extern void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
+        const char *fn,warninp_t wi)
 {
-    int     g,i,ii;
+    int g,i,ii;
     t_rotgrp *rotg;
-    t_trnheader header;       /* Header information of reference file */
+    t_trnheader header;    /* Header information of reference file */
     char base[STRLEN],extension[STRLEN],reffile[STRLEN];
     char *extpos;
-    rvec        f_box[3];     /* Box from reference file */
+    rvec f_box[3];         /* Box from reference file */
 
     
     /* Base name and extension of the reference file: */
@@ -203,7 +208,7 @@ void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
              read_trn(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, NULL, NULL);
 
              /* Check whether the box is unchanged and output a warning if not: */
-             check_box(f_box,box,reffile);
+             check_box(f_box,box,reffile,wi);
          }
          else
          {

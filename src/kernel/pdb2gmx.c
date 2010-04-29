@@ -77,11 +77,11 @@ typedef struct {
   char main[6];
   char nter[6];
   char cter[6];
-} resrename_t;
+} rtprename_t;
 
 
 static const char *res2bb_notermini(const char *name,
-				    int nrr,const resrename_t *rr)
+				    int nrr,const rtprename_t *rr)
 {
   /* NOTE: This function returns the main building block name,
    *       it does not take terminal renaming into account.
@@ -99,7 +99,7 @@ static const char *res2bb_notermini(const char *name,
 static const char *select_res(int nr,int resnr,
 			      const char *name[],const char *expl[],
 			      const char *title,
-			      int nrr,const resrename_t *rr)
+			      int nrr,const rtprename_t *rr)
 {
   int sel=0;
 
@@ -116,7 +116,7 @@ static const char *select_res(int nr,int resnr,
   return name[sel];
 }
 
-static const char *get_asptp(int resnr,int nrr,const resrename_t *rr)
+static const char *get_asptp(int resnr,int nrr,const rtprename_t *rr)
 {
   enum { easp, easpH, easpNR };
   const char *lh[easpNR] = { "ASP", "ASPH" };
@@ -128,7 +128,7 @@ static const char *get_asptp(int resnr,int nrr,const resrename_t *rr)
   return select_res(easpNR,resnr,lh,expl,"ASPARTIC ACID",nrr,rr);
 }
 
-static const char *get_glutp(int resnr,int nrr,const resrename_t *rr)
+static const char *get_glutp(int resnr,int nrr,const rtprename_t *rr)
 {
   enum { eglu, egluH, egluNR };
   const char *lh[egluNR] = { "GLU", "GLUH" };
@@ -140,7 +140,7 @@ static const char *get_glutp(int resnr,int nrr,const resrename_t *rr)
   return select_res(egluNR,resnr,lh,expl,"GLUTAMIC ACID",nrr,rr);
 }
 
-static const char *get_glntp(int resnr,int nrr,const resrename_t *rr)
+static const char *get_glntp(int resnr,int nrr,const rtprename_t *rr)
 {
   enum { egln, eglnH, eglnNR };
   const char *lh[eglnNR] = { "GLN", "QLN" };
@@ -152,7 +152,7 @@ static const char *get_glntp(int resnr,int nrr,const resrename_t *rr)
   return select_res(eglnNR,resnr,lh,expl,"GLUTAMINE",nrr,rr);
 }
 
-static const char *get_lystp(int resnr,int nrr,const resrename_t *rr)
+static const char *get_lystp(int resnr,int nrr,const rtprename_t *rr)
 {
   enum { elys, elysH, elysNR };
   const  char *lh[elysNR] = { "LYS", "LYSH" };
@@ -164,7 +164,7 @@ static const char *get_lystp(int resnr,int nrr,const resrename_t *rr)
   return select_res(elysNR,resnr,lh,expl,"LYSINE",nrr,rr);
 }
 
-static const char *get_argtp(int resnr,int nrr,const resrename_t *rr)
+static const char *get_argtp(int resnr,int nrr,const rtprename_t *rr)
 {
   enum { earg, eargH, eargNR };
   const  char *lh[eargNR] = { "ARGN", "ARG" };
@@ -176,7 +176,7 @@ static const char *get_argtp(int resnr,int nrr,const resrename_t *rr)
   return select_res(eargNR,resnr,lh,expl,"ARGININE",nrr,rr);
 }
 
-static const char *get_cystp(int resnr,int nrr,const resrename_t *rr)
+static const char *get_cystp(int resnr,int nrr,const rtprename_t *rr)
 {
   enum { ecys, ecysH, ecysNR };
   const char *lh[ecysNR] = { "CYS", "CYSH" };
@@ -189,7 +189,7 @@ static const char *get_cystp(int resnr,int nrr,const resrename_t *rr)
 
 }
 
-static const char *get_histp(int resnr,int nrr,const resrename_t *rr)
+static const char *get_histp(int resnr,int nrr,const rtprename_t *rr)
 {
   const char *expl[ehisNR] = {
     "H on ND1 only",
@@ -201,16 +201,16 @@ static const char *get_histp(int resnr,int nrr,const resrename_t *rr)
   return select_res(ehisNR,resnr,hh,expl,"HISTIDINE",nrr,rr);
 }
 
-static void read_resrename(const char *fname,FILE *fp,
-			   int *nresrename,resrename_t **resrename)
+static void read_rtprename(const char *fname,FILE *fp,
+			   int *nrtprename,rtprename_t **rtprename)
 {
   char line[STRLEN],buf[STRLEN];
   int  n;
-  resrename_t *rr;
+  rtprename_t *rr;
   int  ncol,nc;
 
-  n  = *nresrename;
-  rr = *resrename;
+  n  = *nrtprename;
+  rr = *rtprename;
 
   ncol = 0;
   while(get_a_line(fp,line,STRLEN)) {
@@ -235,13 +235,13 @@ static void read_resrename(const char *fname,FILE *fp,
     n++;
   }
 
-  *nresrename = n;
-  *resrename  = rr;
+  *nrtprename = n;
+  *rtprename  = rr;
 }
 
-static void rename_residues(t_atoms *pdba,int nterpairs,int *rN,int *rC,
-			    int nrr,resrename_t *rr,t_symtab *symtab,
-			    bool bVerbose)
+static void rename_resrtp(t_atoms *pdba,int nterpairs,int *rN,int *rC,
+			  int nrr,rtprename_t *rr,t_symtab *symtab,
+			  bool bVerbose)
 {
   int  r,i,j;
   bool bN,bC;
@@ -249,10 +249,10 @@ static void rename_residues(t_atoms *pdba,int nterpairs,int *rN,int *rC,
 
   for(r=0; r<pdba->nres; r++) {
     i = 0;
-    while(i<nrr && strcmp(*pdba->resinfo[r].name,rr[i].gmx) != 0) {
+    while(i<nrr && strcmp(*pdba->resinfo[r].rtp,rr[i].gmx) != 0) {
       i++;
     }
-    /* If found in the database, rename this residue,
+    /* If found in the database, rename this residue's rtp buidling block,
      * otherwise keep the old name.
      */
     if (i < nrr) {
@@ -276,16 +276,25 @@ static void rename_residues(t_atoms *pdba,int nterpairs,int *rN,int *rC,
 	nn = rr[i].main;
       }
       if (nn[0] == '-') {
-	gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",pdba->resinfo[r].name,bN ? " as a N-terminus" : (bC ? " as a C-terminus" : ""));
+	gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",pdba->resinfo[r].rtp,bN ? " as a N-terminus" : (bC ? " as a C-terminus" : ""));
       }
-      if (strcmp(*pdba->resinfo[r].name,nn) != 0) {
+      if (strcmp(*pdba->resinfo[r].rtp,nn) != 0) {
 	if (bVerbose) {
-	  printf("Renaming residue %d '%s' to '%s'\n",
+	  printf("Changing rtp entry of residue %d %s to '%s'\n",
 		 pdba->resinfo[r].nr,*pdba->resinfo[r].name,nn);
 	}
-	pdba->resinfo[r].name = put_symtab(symtab,nn);
+	pdba->resinfo[r].rtp = put_symtab(symtab,nn);
       }
     }
+  }
+}
+
+static void pdbres_to_gmxrtp(t_atoms *pdba)
+{
+  int i;
+  
+  for(i=0; (i<pdba->nres); i++) {
+    pdba->resinfo[i].rtp = pdba->resinfo[i].name;
   }
 }
 
@@ -304,22 +313,37 @@ static void rename_pdbres(t_atoms *pdba,const char *oldnm,const char *newnm,
   }
 }
 
-static void rename_pdbresint(t_atoms *pdba,const char *oldnm,
-			     const char *gettp(int,int,const resrename_t *),
-			     bool bFullCompare,
-			     t_symtab *symtab,
-			     int nrr,const resrename_t *rr)
+static void rename_bb(t_atoms *pdba,const char *oldnm,const char *newnm,
+		      bool bFullCompare,t_symtab *symtab)
+{
+  char *bbnm;
+  int i;
+  
+  for(i=0; (i<pdba->nres); i++) {
+    bbnm = *pdba->resinfo[i].rtp;
+    if ((bFullCompare && (strcasecmp(bbnm,oldnm) == 0)) ||
+	(!bFullCompare && strstr(bbnm,oldnm) != NULL)) {
+      pdba->resinfo[i].rtp = put_symtab(symtab,newnm);
+    }
+  }
+}
+
+static void rename_bbint(t_atoms *pdba,const char *oldnm,
+			 const char *gettp(int,int,const rtprename_t *),
+			 bool bFullCompare,
+			 t_symtab *symtab,
+			 int nrr,const rtprename_t *rr)
 {
   int  i;
   const char *ptr;
-  char *resnm;
+  char *bbnm;
   
   for(i=0; i<pdba->nres; i++) {
-    resnm = *pdba->resinfo[i].name;
-    if ((bFullCompare && (strcmp(resnm,oldnm) == 0)) ||
-	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
+    bbnm = *pdba->resinfo[i].rtp;
+    if ((bFullCompare && (strcmp(bbnm,oldnm) == 0)) ||
+	(!bFullCompare && strstr(bbnm,oldnm) != NULL)) {
       ptr = gettp(i,nrr,rr);
-      pdba->resinfo[i].name = put_symtab(symtab,ptr);
+      pdba->resinfo[i].rtp = put_symtab(symtab,ptr);
     }
   }
 }
@@ -426,7 +450,7 @@ static int read_pdball(const char *inf, const char *outf,char *title,
   
   rename_pdbres(atoms,"HEM","HEME",FALSE,symtab);
 
-  rename_atoms("xlateat.dat",NULL,atoms,symtab,NULL,aan,TRUE,bVerbose);
+  rename_atoms("xlateat.dat",NULL,atoms,symtab,NULL,TRUE,aan,TRUE,bVerbose);
   
   if (natom == 0)
     return 0;
@@ -443,37 +467,40 @@ void process_chain(t_atoms *pdba, rvec *x,
 		   bool bHisMan,bool bArgMan,bool bGlnMan,
 		   bool bRenameCys,
 		   real angle,real distance,t_symtab *symtab,
-		   int nrr,const resrename_t *rr)
+		   int nrr,const rtprename_t *rr)
 {
+  /* Initialize the rtp builing block names with the residue names */
+  pdbres_to_gmxrtp(pdba);
+
   /* Rename aromatics, lys, asp and histidine */
-  if (bTyrU) rename_pdbres(pdba,"TYR","TYRU",FALSE,symtab);
-  if (bTrpU) rename_pdbres(pdba,"TRP","TRPU",FALSE,symtab);
-  if (bPheU) rename_pdbres(pdba,"PHE","PHEU",FALSE,symtab);
+  if (bTyrU) rename_bb(pdba,"TYR","TYRU",FALSE,symtab);
+  if (bTrpU) rename_bb(pdba,"TRP","TRPU",FALSE,symtab);
+  if (bPheU) rename_bb(pdba,"PHE","PHEU",FALSE,symtab);
   if (bLysMan) 
-    rename_pdbresint(pdba,"LYS",get_lystp,FALSE,symtab,nrr,rr);
+    rename_bbint(pdba,"LYS",get_lystp,FALSE,symtab,nrr,rr);
   else
-    rename_pdbres(pdba,"LYS","LYSH",FALSE,symtab);
+    rename_bb(pdba,"LYS","LYSH",FALSE,symtab);
   if (bArgMan) 
-    rename_pdbresint(pdba,"ARG",get_argtp,FALSE,symtab,nrr,rr);
+    rename_bbint(pdba,"ARG",get_argtp,FALSE,symtab,nrr,rr);
   if (bGlnMan) 
-    rename_pdbresint(pdba,"GLN",get_glntp,FALSE,symtab,nrr,rr);
+    rename_bbint(pdba,"GLN",get_glntp,FALSE,symtab,nrr,rr);
   if (bAspMan) 
-    rename_pdbresint(pdba,"ASP",get_asptp,FALSE,symtab,nrr,rr);
+    rename_bbint(pdba,"ASP",get_asptp,FALSE,symtab,nrr,rr);
   else
-    rename_pdbres(pdba,"ASPH","ASP",FALSE,symtab);
+    rename_bb(pdba,"ASPH","ASP",FALSE,symtab);
   if (bGluMan) 
-    rename_pdbresint(pdba,"GLU",get_glutp,FALSE,symtab,nrr,rr);
+    rename_bbint(pdba,"GLU",get_glutp,FALSE,symtab,nrr,rr);
   else
-    rename_pdbres(pdba,"GLUH","GLU",FALSE,symtab);
+    rename_bb(pdba,"GLUH","GLU",FALSE,symtab);
 
   if (bRenameCys)
     /* Make sure we don't have things like CYS? */ 
-    rename_pdbres(pdba,"CYS","CYS",FALSE,symtab);
+    rename_bb(pdba,"CYS","CYS",FALSE,symtab);
 
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
   else
-    rename_pdbresint(pdba,"HIS",get_histp,TRUE,symtab,nrr,rr);
+    rename_bbint(pdba,"HIS",get_histp,TRUE,symtab,nrr,rr);
 }
 
 /* struct for sorting the atoms from the pdb file */
@@ -517,7 +544,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   t_hackblock *hbr;
   t_pdbindex *pdbi;
   atom_id *a;
-  char *atomnm,*resnm;
+  char *atomnm,*bbnm;
   
   pdba=*pdbaptr;
   natoms=pdba->nr;
@@ -527,9 +554,9 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   
   for(i=0; i<natoms; i++) {
     atomnm = *pdba->atomname[i];
-    resnm = *pdba->resinfo[pdba->atom[i].resind].name;
-    if ((rptr=search_rtp(resnm,nrtp,restp)) == NULL) {
-      gmx_fatal(FARGS,"Residue type %s not found",resnm);
+    bbnm = *pdba->resinfo[pdba->atom[i].resind].rtp;
+    if ((rptr=search_rtp(bbnm,nrtp,restp)) == NULL) {
+      gmx_fatal(FARGS,"rtp entry %s not found",bbnm);
     }
     rptr = &restp[pdba->atom[i].resind];
     for(j=0; (j<rptr->natom); j++) {
@@ -545,10 +572,11 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
       else {
 	char buf[STRLEN];
 	
-	sprintf(buf,"Atom %s in residue %s %d not found in rtp entry with %d atoms\n"
-		"             while sorting atoms%s",atomnm,
-		rptr->resname,
+	sprintf(buf,"Atom %s in residue %s %d not found in rtp entry %s with %d atoms\n"
+		"while sorting atoms%s",atomnm,
+		*pdba->resinfo[pdba->atom[i].resind].name,
 		pdba->resinfo[pdba->atom[i].resind].nr,
+		rptr->resname,
 		rptr->natom,
 		is_hydrogen(atomnm) ? ". Maybe different protonation state.\n"
 		"             Remove this hydrogen or choose a different "
@@ -812,8 +840,8 @@ int main(int argc, char *argv[])
   char       rtp[STRLEN];
   int        nrrn;
   char       **rrn;
-  int        nresrename;
-  resrename_t *resrename=NULL;
+  int        nrtprename;
+  rtprename_t *rtprename=NULL;
   int        nah,nNtdb,nCtdb,ntdblist;
   t_hackblock *ntdb,*ctdb,**tdblist;
   int        nssbonds;
@@ -847,7 +875,7 @@ int main(int argc, char *argv[])
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bSort=TRUE, bAllowMissing=FALSE, bRemoveH=FALSE;
   static bool bDeuterate=FALSE,bVerbose=FALSE,bChargeGroups=TRUE,bCmap=TRUE;
-  static bool bRenumRes=FALSE;
+  static bool bRenumRes=FALSE,bRTPresname=FALSE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static const char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
@@ -917,7 +945,9 @@ int main(int argc, char *argv[])
     { "-cmap", TRUE, etBOOL, {&bCmap},
       "Use cmap torsions (if enabled in the rtp file)"  },
     { "-renum", TRUE, etBOOL, {&bRenumRes},
-      "Renumber the residues consecutively in the output"  }
+      "Renumber the residues consecutively in the output"  },
+    { "-rtpres", TRUE, etBOOL, {&bRTPresname},
+      "Use rtp entry names as residue names"  }
   };
 #define NPARGS asize(pa)
   
@@ -983,11 +1013,11 @@ int main(int argc, char *argv[])
   
   /* Read residue renaming database(s), if present */
   nrrn = fflib_search_file_end(ffdir,".r2b",FALSE,&rrn);
-  nresrename = 0;
-  resrename  = NULL;
+  nrtprename = 0;
+  rtprename  = NULL;
   for(i=0; i<nrrn; i++) {
     fp = fflib_open(rrn[i]);
-    read_resrename(rrn[i],fp,&nresrename,&resrename);
+    read_rtprename(rrn[i],fp,&nrtprename,&rtprename);
     fclose(fp);
     sfree(rrn[i]);
   }
@@ -1223,7 +1253,7 @@ int main(int argc, char *argv[])
 
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
 		  bHisMan,bArgMan,bGlnMan,bRenameCys,angle,distance,&symtab,
-		  nresrename,resrename);
+		  nrtprename,rtprename);
 
     for(i=0; i<cc->nterpairs; i++) {
       cc->chainstart[cc->nterpairs] = pdba->nres;
@@ -1239,13 +1269,13 @@ int main(int argc, char *argv[])
     }
 
     /* Check for disulphides and other special bonds */
-    rename_pdbres(pdba,"CYSH","CYS",TRUE,&symtab);
+    rename_bb(pdba,"CYSH","CYS",TRUE,&symtab);
     nssbonds=mk_specbonds(pdba,x,bCysMan,&ssbonds);
-    rename_pdbres(pdba,"CYS","CYSH",TRUE,&symtab);
+    rename_bb(pdba,"CYS","CYSH",TRUE,&symtab);
 
-    if (nresrename > 0) {
-      rename_residues(pdba,cc->nterpairs,cc->rN,cc->rC,nresrename,resrename,
-		      &symtab,bVerbose);
+    if (nrtprename > 0) {
+      rename_resrtp(pdba,cc->nterpairs,cc->rN,cc->rC,nrtprename,rtprename,
+		    &symtab,bVerbose);
     }
     
     if (debug) {
@@ -1266,6 +1296,7 @@ int main(int argc, char *argv[])
       /* First the N terminus */
       if (nNtdb > 0) {
 	strncpy(resname,*pdba->resinfo[cc->rN[i]].name,3);
+	resname[3] = '\0';
 	tdblist=filter_ter(nrtp,restp,nNtdb,ntdb,resname,&ntdblist);
 	if(ntdblist==0)
 	  gmx_fatal(FARGS,"No suitable N-terminus found in database");
@@ -1307,7 +1338,7 @@ int main(int argc, char *argv[])
      requires some re-thinking of code in gen_vsite.c, which I won't 
      do now :( AF 26-7-99 */
 
-    rename_atoms(NULL,ffdir,pdba,&symtab,restp_chain,aan,FALSE,bVerbose);
+    rename_atoms(NULL,ffdir,pdba,&symtab,restp_chain,FALSE,aan,FALSE,bVerbose);
 
     match_atomnames_with_rtp(restp_chain,hb_chain,pdba,bVerbose);
 
@@ -1417,7 +1448,7 @@ int main(int argc, char *argv[])
 	    bVsites,bVsiteAromatics,forcefield,ffdir,
 	    mHmult,nssbonds,ssbonds,
 	    long_bond_dist,short_bond_dist,bDeuterate,bChargeGroups,bCmap,
-	    bRenumRes);
+	    bRenumRes,bRTPresname);
     
     if (!cc->bAllWat)
       write_posres(posre_fn,pdba,posre_fc);
@@ -1487,6 +1518,9 @@ int main(int argc, char *argv[])
     }
     for (j=0; (j<chains[i].pdba->nres); j++) {
       atoms->resinfo[l] = chains[i].pdba->resinfo[j];
+      if (bRTPresname) {
+	atoms->resinfo[l].name = atoms->resinfo[l].rtp;
+      }
       l++;
     }
   }

@@ -81,11 +81,15 @@ int gmx_trjorder(int argc,char *argv[])
 {
   const char *desc[] = {
     "trjorder orders molecules according to the smallest distance",
-    "to atoms in a reference group. It will ask for a group of reference",
+    "to atoms in a reference group",
+    "or on z-coordinate (with option [TT]-z[tt]).",
+    "With distance ordering, it will ask for a group of reference",
     "atoms and a group of molecules. For each frame of the trajectory",
     "the selected molecules will be reordered according to the shortest",
     "distance between atom number [TT]-da[tt] in the molecule and all the",
-    "atoms in the reference group. All atoms in the trajectory are written",
+    "atoms in the reference group. The center of mass of the molecules can",
+    "be used instead of a reference atom by setting [TT]-da[tt] to 0.",
+    "All atoms in the trajectory are written",
     "to the output trajectory.[PAR]",
     "trjorder can be useful for e.g. analyzing the n waters closest to a",
     "protein.",
@@ -102,33 +106,33 @@ int gmx_trjorder(int argc,char *argv[])
   };
   static int na=3,ref_a=1;
   static real rcut=0;
-  static bool bCOM = FALSE;
+  static bool bCOM=FALSE,bZ=FALSE;
   t_pargs pa[] = {
     { "-na", FALSE, etINT,  {&na},
       "Number of atoms in a molecule" },
     { "-da", FALSE, etINT,  {&ref_a},
-      "Atom used for the distance calculation" },
+      "Atom used for the distance calculation, 0 is COM" },
     { "-com", FALSE, etBOOL, {&bCOM},
       "Use the distance to the center of mass of the reference group" },
     { "-r",  FALSE, etREAL, {&rcut},
       "Cutoff used for the distance calculation when computing the number of molecules in a shell around e.g. a protein" },
+    { "-z", FALSE, etBOOL, {&bZ},
+      "Order molecules on z-coordinate" }
   };
   FILE       *fp;
   int        status,out;
   bool       bNShell,bPDBout;
   t_topology top;
   int        ePBC;
-  rvec       *x,xcom,dx;
+  rvec       *x,*xsol,xcom,dx;
   matrix     box;
   t_pbc      pbc;
   real       t,totmass,mass,rcut2=0,n2;
   int        natoms,nwat,ncut;
   char       **grpname,title[256];
-  int        i,j,*isize;
-  atom_id    sa,sr,*swi,**index;
+  int        i,j,d,*isize,isize_ref=0,isize_sol;
+  atom_id    sa,sr,*swi,**index,*ind_ref=NULL,*ind_sol;
   output_env_t oenv;
-#define REF 0
-#define SOL 1
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD  }, 
     { efTPS, NULL, NULL, ffREAD  }, 
@@ -146,11 +150,23 @@ int gmx_trjorder(int argc,char *argv[])
   sfree(x);
 
   /* get index groups */
-  printf("Select a group of reference atoms and a group of molecules to be ordered:\n"); 
+  printf("Select %sa group of molecules to be ordered:\n",
+	 bZ ? "" : "a group of reference atoms and "); 
   snew(grpname,2);
   snew(index,2);
   snew(isize,2);
-  get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),2,isize,index,grpname);
+  get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),bZ ? 1 : 2,
+	    isize,index,grpname);
+
+  if (!bZ) {
+    isize_ref = isize[0];
+    isize_sol = isize[1];
+    ind_ref   = index[0];
+    ind_sol   = index[1];
+  } else {
+    isize_sol = isize[0];
+    ind_sol   = index[0];
+  }
 
   natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
   if (natoms > top.atoms.nr)
@@ -160,14 +176,15 @@ int gmx_trjorder(int argc,char *argv[])
       if (index[i][j] > natoms)
 	gmx_fatal(FARGS,"An atom number in group %s is larger than the number of atoms in the trajectory");
   
-  if ((isize[SOL] % na) != 0)
+  if ((isize_sol % na) != 0)
     gmx_fatal(FARGS,"Number of atoms in the molecule group (%d) is not a multiple of na (%d)",
 		isize[1],na);
 		
-  nwat = isize[SOL]/na;
+  nwat = isize_sol/na;
   if (ref_a > na)
     gmx_fatal(FARGS,"The reference atom can not be larger than the number of atoms in a molecule");
   ref_a--;
+  snew(xsol,nwat);
   snew(order,nwat);
   snew(swi,natoms);
   for(i=0; (i<natoms); i++)
@@ -197,35 +214,63 @@ int gmx_trjorder(int argc,char *argv[])
     rm_pbc(&top.idef,ePBC,natoms,box,x,x);
     set_pbc(&pbc,ePBC,box);
 
-    if (bCOM) {
+    if (ref_a == -1) {
+      /* Calculate the COM of all solvent molecules */
+      for(i=0; i<nwat; i++) {
+	totmass = 0;
+	clear_rvec(xsol[i]);
+	for(j=0; j<na; j++) {
+	  sa = ind_sol[i*na+j];
+	  mass = top.atoms.atom[sa].m;
+	  totmass += mass;
+	  for(d=0; d<DIM; d++) {
+	    xsol[i][d] += mass*x[sa][d];
+	  }
+	}
+	svmul(1/totmass,xsol[i],xsol[i]);
+      }
+    } else {
+      /* Copy the reference atom of all solvent molecules */
+      for(i=0; i<nwat; i++) {
+	copy_rvec(x[ind_sol[i*na+ref_a]],xsol[i]);
+      }
+    }
+
+    if (bZ) {
+      for(i=0; (i<nwat); i++) {
+	sa = ind_sol[na*i];
+	order[i].i   = sa;
+	order[i].d2  = xsol[i][ZZ]; 
+      }
+    } else if (bCOM) {
       totmass = 0;
       clear_rvec(xcom);
-      for(i=0; i<isize[REF]; i++) {
-	mass = top.atoms.atom[index[REF][i]].m;
+      for(i=0; i<isize_ref; i++) {
+	mass = top.atoms.atom[ind_ref[i]].m;
 	totmass += mass;
 	for(j=0; j<DIM; j++)
-	  xcom[j] += mass*x[index[REF][i]][j];
+	  xcom[j] += mass*x[ind_ref[i]][j];
       }
       svmul(1/totmass,xcom,xcom);
       for(i=0; (i<nwat); i++) {
-	sa = index[SOL][na*i];
-	pbc_dx(&pbc,xcom,x[sa+ref_a],dx);
+	sa = ind_sol[na*i];
+	pbc_dx(&pbc,xcom,xsol[i],dx);
 	order[i].i   = sa;
 	order[i].d2  = norm2(dx); 
       }
     } else {
       /* Set distance to first atom */
       for(i=0; (i<nwat); i++) {
-	sa = index[SOL][na*i];
-	pbc_dx(&pbc,x[index[REF][0]],x[sa+ref_a],dx);
+	sa = ind_sol[na*i];
+	pbc_dx(&pbc,x[ind_ref[0]],xsol[i],dx);
 	order[i].i   = sa;
 	order[i].d2  = norm2(dx); 
       }
-      for(j=1; (j<isize[REF]); j++) {
-	sr = index[REF][j];
+      for(j=1; (j<isize_ref); j++) {
+	sr = ind_ref[j];
 	for(i=0; (i<nwat); i++) {
-	  sa = index[SOL][na*i];
-	  pbc_dx(&pbc,x[sr],x[sa+ref_a],dx);
+	  sa = ind_sol[na*i];
+	  pbc_dx(&pbc,x[sr],xsol[i],dx);
 	  n2 = norm2(dx);
 	  if (n2 < order[i].d2)
 	    order[i].d2  = n2;
@@ -244,7 +289,7 @@ int gmx_trjorder(int argc,char *argv[])
       qsort(order,nwat,sizeof(*order),ocomp);
       for(i=0; (i<nwat); i++)
 	for(j=0; (j<na); j++) 
-	  swi[index[SOL][na*i]+j] = order[i].i+j;
+	  swi[ind_sol[na*i]+j] = order[i].i+j;
       
       /* Store the distance as the B-factor */
       if (bPDBout) {

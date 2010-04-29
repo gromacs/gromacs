@@ -1463,6 +1463,12 @@ void init_forcerec(FILE *fp,
 		fr->gbtab=make_gb_table(fp,oenv,fr,tabpfn,fr->gbtabscale);
 
         init_gb(&fr->born,cr,fr,ir,mtop,ir->rgbradii,ir->gb_algorithm);
+
+        /* Copy local gb data (for dd, this is done in dd_partition_system) */
+        if (!DOMAINDECOMP(cr))
+        {
+            make_local_gb(cr,fr->born,ir->gb_algorithm);
+        }
     }
 
     /* Set the charge scaling */

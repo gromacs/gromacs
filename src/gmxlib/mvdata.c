@@ -221,10 +221,10 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 {
   int i,nnht,nnhtp;
 
+  bcast_state_setup(cr,state);
+
   nnht = (state->ngtc)*(state->nhchainlength); 
   nnhtp = (state->nnhpres)*(state->nhchainlength); 
-
-  bcast_state_setup(cr,state);
 
   if (MASTER(cr)) {
     bAlloc = FALSE;

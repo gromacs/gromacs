@@ -41,8 +41,8 @@
  *  
  */
 
-#ifndef _rotation_h
-#define _rotation_h
+#ifndef _pull_rotation_h
+#define _pull_rotation_h
 
 #ifdef HAVE_CONFIG_H
   #include <config.h>
@@ -50,6 +50,11 @@
 
 #include "vec.h"
 #include "typedefs.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /*! \brief Initialize the enforced rotation groups.
@@ -121,6 +126,11 @@ extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, int step, real t
  * \param rot               Pointer to all the enforced rotation data.
  */
 extern void finish_rot(FILE *fplog,t_rot *rot);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

@@ -35,9 +35,15 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -51,10 +57,7 @@ files.
 #include <sys/time.h>
 #endif
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 
 /* this is where all the tMPI_Reduce ops are included from thread_tmpi_ops.c */
@@ -149,6 +152,7 @@ files.
 #include "tmpi_ops.c"
 
 
+/* These are the fundamental data types. They exist as global variables */
 tmpi_dt tmpi_char    ={sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
 tmpi_dt tmpi_short   ={sizeof(short),             oplist_SHORT,    0,NULL,TRUE};
 tmpi_dt tmpi_int     ={sizeof(int),               oplist_INT,      0,NULL,TRUE};
@@ -173,7 +177,7 @@ tmpi_dt tmpi_pointer ={sizeof(void*),             NULL,            0,NULL,TRUE};
 
 
 
-
+/* the variable types as they are referred to from MPI */
 const tMPI_Datatype TMPI_CHAR               = &tmpi_char;
 const tMPI_Datatype TMPI_SHORT              = &tmpi_short;
 const tMPI_Datatype TMPI_INT                = &tmpi_int;

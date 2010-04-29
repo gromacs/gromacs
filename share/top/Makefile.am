@@ -14,7 +14,8 @@ gromos43a2.ff \
 gromos45a3.ff \
 gromos53a5.ff \
 gromos53a6.ff \
-oplsaa.ff 
+oplsaa.ff \
+charmm27.ff
 
 topol_DATA = \
 	1mlg.itp	2mlg.itp	benzamide.itp	bondadd.itp	\
@@ -27,7 +28,7 @@ topol_DATA = \
 	dec50.gro	dmso.gro	spc216.gro	tip4p.gro	\
 	urea+h2o.gro    \
 	aminoacids.dat	atommass.dat	bromacs.dat	ca-shift.dat	\
-	cb-shift.dat	co-shift.dat	edissoc.dat	FF.dat		\
+	cb-shift.dat	co-shift.dat	edissoc.dat			\
 	gurgle.dat	ha-shift.dat	links.dat	phbres.dat	\
 	random.dat	refi_aa.dat	specbond.dat	surface.dat	\
 	vdwradii.dat	xlateat.dat	highway.dat			\
