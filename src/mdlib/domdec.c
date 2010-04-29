@@ -2709,7 +2709,7 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     }
 
     nso = dd->comm->npmenodes/nslab;
-    /* Determine for each PME slab the PP locacation range for dimension dim */
+    /* Determine for each PME slab the PP location range for dimension dim */
     snew(ddpme->pp_min,nslab);
     snew(ddpme->pp_max,nslab);
     for(slab=0; slab<nslab; slab++) {
@@ -2721,7 +2721,7 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
         /* For y only use our y/z slab.
          * This assumes that the PME x grid size matches the DD grid size.
          */
-        if (dimind == 0 || xyz[YY] == dd->ci[YY]) {
+        if (dimind == 0 || xyz[XX] == dd->ci[XX]) {
             pmeindex = ddindex2pmeindex(dd,i);
             if (dimind == 0) {
                 slab = pmeindex/nso;
