@@ -894,10 +894,6 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
 
     gen_local_top(mtop,NULL,FALSE,&ltop);
 
-    open_symtab(&top.symtab);
-
-    open_symtab(&top.symtab);
-
     top.name      = mtop->name;
     top.idef      = ltop.idef;
     top.atomtypes = ltop.atomtypes;
@@ -905,9 +901,13 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     top.excls     = ltop.excls;
     top.atoms     = gmx_mtop_global_atoms(mtop);
     top.mols      = mtop->mols;
+    top.symtab    = mtop->symtab;
 
     /* We only need to free the moltype and molblock data,
      * all other pointers have been copied to top.
+     *
+     * Well, except for the group data, but we can't free those, because they
+     * are used somewhere even after a call to this function.
      */
     for(mt=0; mt<mtop->nmoltype; mt++)
     {

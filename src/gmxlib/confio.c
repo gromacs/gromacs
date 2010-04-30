@@ -1450,6 +1450,11 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
     tpx_make_chain_identifiers(atoms,&top.mols);
 		
     sfree(mtop);
+    /* The strings in the symtab are still in use in the returned t_atoms
+     * structure, so we should not free them. But there is no place to put the
+     * symbols; the only choice is to leak the memory...
+     * So we clear the symbol table before freeing the topology structure. */
+    open_symtab(&top.symtab);
     done_top(&top);
 		  
     break;
