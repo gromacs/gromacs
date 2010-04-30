@@ -1333,8 +1333,9 @@ static real solve_pme_xyz(gmx_pme_t pme,t_complex *grid,
 }
 
 
-static real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
-                          real ewaldcoeff,real vol,matrix vir,t_commrec *cr)
+static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
+                         real ewaldcoeff,real vol,matrix vir,t_commrec *cr,
+                         real *mesh_energy)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
@@ -1534,7 +1535,10 @@ static real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
     vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
 	
     /* This energy should be corrected for a charged system */
-    return(0.5*energy);
+    *mesh_energy = 0.5*energy;
+
+    /* Return the loop count */
+    return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
 }
 
 
@@ -2572,6 +2576,7 @@ int gmx_pme_do(gmx_pme_t pme,
     int     q,d,i,j,ntot,npme;
     int     nx,ny,nz;
     int     n_d,local_ny;
+    int     loop_count;
     pme_atomcomm_t *atc=NULL;
     real *  grid=NULL;
     real    *ptr;
@@ -2723,19 +2728,13 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_solve_pme_start);
             wallcycle_start(wcycle,ewcPME_SOLVE);
-            /*
-              energy_AB[q] =
-                solve_pme_xyz(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr);
-            */
-            energy_AB[q] =
-              solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr);
+            loop_count =
+                solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr,
+                              &energy_AB[q]);
             wallcycle_stop(wcycle,ewcPME_SOLVE);
             where();
             GMX_MPE_LOG(ev_solve_pme_finish);
-            /* TODO: Calculate solve pme flops in parallel */
-            /*
-             inc_nrnb(nrnb,eNR_SOLVEPME,nx*local_ny*(nz/2+1));
-            */
+            inc_nrnb(nrnb,eNR_SOLVEPME,loop_count);
         }
 
         if (flags & GMX_PME_CALC_F)
@@ -2752,13 +2751,10 @@ int gmx_pme_do(gmx_pme_t pme,
             where();
             GMX_MPE_LOG(ev_gmxfft3d_finish);
 
-            if (MASTER(cr))
+            if (pme->nodeid == 0)
             {
                 ntot = pme->nkx*pme->nky*pme->nkz;
                 npme  = ntot*log((real)ntot)/log(2.0);
-                if (pme->nnodes > 1) {
-                    npme /= (cr->nnodes - cr->npmenodes);
-                }
                 inc_nrnb(nrnb,eNR_FFT,2*npme);
             }
 
