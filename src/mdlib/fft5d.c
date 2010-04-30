@@ -727,7 +727,8 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
     
 #ifdef GMX_FFT_FFTW3 
     if (plan->p3d) {
-        time=MPI_Wtime();
+        if (times!=0)
+            time=MPI_Wtime();
         FFTW(execute)(plan->p3d); 
         if (times!=0)
             times->fft+=MPI_Wtime()-time;
