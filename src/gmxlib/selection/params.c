@@ -671,6 +671,7 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
         return FALSE;
     }
 
+    child->flags   |= SEL_ALLOCVAL;
     param->val.nr   = -1;
     *param->nvalptr = param->val.nr;
     /* Rest of the initialization is done during compilation in
@@ -753,6 +754,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
             {
                 return FALSE;
             }
+            child->flags |= SEL_ALLOCVAL;
             if (child->v.type != GROUP_VALUE && (child->flags & SEL_ATOMVAL))
             {
                 /* Rest of the initialization is done during compilation in
@@ -1024,6 +1026,9 @@ convert_const_values(t_selexpr_value *values)
                     break;
                 case REAL_VALUE:
                     val->u.r.r1 = val->u.r.r2 = expr->v.u.r[0];
+                    break;
+                case STR_VALUE:
+                    val->u.s = expr->v.u.s[0];
                     break;
                 case POS_VALUE:
                     copy_rvec(expr->v.u.p->x[0], val->u.x);

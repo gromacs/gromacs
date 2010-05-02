@@ -583,7 +583,10 @@ int main(int argc,char *argv[])
       sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
 
       add_suffix_to_output_names(fnm,NFILE,suffix);
-      fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
+      if (MASTER(cr))
+      {
+          fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
+      }
   }
 
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;

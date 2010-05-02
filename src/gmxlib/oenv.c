@@ -116,7 +116,7 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
             oenv->program_name=strdup(argvzero);
     }
     if (oenv->program_name == NULL)
-        oenv->program_name="GROMACS";
+        oenv->program_name = strdup("GROMACS");
    
     /* copy command line */ 
     if (argv) 
@@ -141,6 +141,14 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
 void output_env_init_default(output_env_t oenv)
 {
     output_env_init(oenv, 0, NULL, time_ps, FALSE, exvgNONE, 0, 0);
+}
+
+
+void output_env_done(output_env_t oenv)
+{
+    sfree(oenv->program_name);
+    sfree(oenv->cmd_line);
+    sfree(oenv);
 }
 
 
@@ -231,8 +239,9 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
     pr=ret=oenv->program_name; 
     if ((pr=strrchr(ret,'/')) != NULL)
         ret=pr+1;
-    /*else
-        ret=ret;*/
+    /* Strip away the libtool prefix if it's still there. */
+    if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))
+        ret = ret + 3;
     return ret;
 }
 

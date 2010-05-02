@@ -2145,7 +2145,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 gs.sig[eglsTERM] == 0)
+                 gs.sig[eglsTERM] == 0 && gs.set[eglsTERM] == 0)
         {
             /* Signal to terminate the run */
             gs.sig[eglsTERM] = (ir->nstlist == 0 ? 1 : -1);

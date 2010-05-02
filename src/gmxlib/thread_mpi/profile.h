@@ -123,6 +123,8 @@ struct tmpi_profile
 #endif
 };
 
+extern int tMPI_Profile_started;
+
 /* initialize the profile counter */
 void tMPI_Profile_init(struct tmpi_profile *prof);
 

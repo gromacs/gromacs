@@ -65,7 +65,8 @@
 
 enum { eglsNABNSB, eglsCHKPT, eglsTERM, eglsRESETCOUNTERS, eglsNR };
 
-typedef struct {
+typedef struct
+{
     int nstms;       /* The frequency for intersimulation communication */
     int sig[eglsNR]; /* The signal set by one process in do_md */
     int set[eglsNR]; /* The communicated signal, equal for all processes */
@@ -83,7 +84,7 @@ static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
     gmx_sumi_sim(ms->nsim,buf,ms);
     bPos   = TRUE;
     bEqual = TRUE;
-    for(s=0; s<ms->nsim; s++)
+    for (s=0; s<ms->nsim; s++)
     {
         bPos   = bPos   && (buf[s] > 0);
         bEqual = bEqual && (buf[s] == buf[0]);
@@ -97,7 +98,7 @@ static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
         else
         {
             /* Find the least common multiple */
-            for(d=2; d<nmin; d++)
+            for (d=2; d<nmin; d++)
             {
                 s = 0;
                 while (s < ms->nsim && d % buf[s] == 0)
@@ -152,7 +153,7 @@ static void init_global_signals(globsig_t *gs,const t_commrec *cr,
 
     gs->nstms = 1;
 
-    for(i=0; i<eglsNR; i++)
+    for (i=0; i<eglsNR; i++)
     {
         gs->sig[i] = 0;
         gs->set[i] = 0;
@@ -161,38 +162,38 @@ static void init_global_signals(globsig_t *gs,const t_commrec *cr,
 
 
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
-             int nstglobalcomm,
-             gmx_vsite_t *vsite,gmx_constr_t constr,
-             int stepout,t_inputrec *ir,
-             gmx_mtop_t *top_global,
-             t_fcdata *fcd,
-             t_state *state_global,
-             t_mdatoms *mdatoms,
-             t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-             gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
-             real cpt_period,real max_hours,
-             const char *deviceOptions,
-             unsigned long Flags,
-             gmx_runtime_t *runtime)
+                    const output_env_t oenv, bool bVerbose,bool bCompact,
+                    int nstglobalcomm,
+                    gmx_vsite_t *vsite,gmx_constr_t constr,
+                    int stepout,t_inputrec *ir,
+                    gmx_mtop_t *top_global,
+                    t_fcdata *fcd,
+                    t_state *state_global,
+                    t_mdatoms *mdatoms,
+                    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+                    gmx_edsam_t ed,t_forcerec *fr,
+                    int repl_ex_nst,int repl_ex_seed,
+                    real cpt_period,real max_hours,
+                    const char *deviceOptions,
+                    unsigned long Flags,
+                    gmx_runtime_t *runtime)
 {
     gmx_mdoutf_t *outf;
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0;
     bool       bSimAnn,
-               bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
+    bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
     bool       bInitStep=TRUE;
     bool       bNEMD,do_ene,do_log, do_verbose,
-               bX,bV,bF,bXTC,bCPT;
+    bX,bV,bF,bCPT;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m;
     int        mdof_flags;
     rvec       mu_tot;
     t_vcm      *vcm;
     int        nchkpt=1;
-    gmx_localtop_t *top;	
+    gmx_localtop_t *top;
     t_mdebin *mdebin=NULL;
     t_state    *state=NULL;
     rvec       *f_global=NULL;
@@ -214,7 +215,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
     int         handledSignal=-1; /* compare to last_signal_recvd */
     bool        bHandledSignal=FALSE;
- 
+
     const char *ommOptions = NULL;
     void   *openmmData;
 
@@ -242,7 +243,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* needed for iteration of constraints */
     snew(ekind_save,1);
     init_ekindata(fplog,top_global,&(ir->opts),ekind_save);
-    /* Copy the cos acceleration to the groups struct */    
+    /* Copy the cos acceleration to the groups struct */
     ekind->cosacc.cos_accel = ir->cos_accel;
 
     gstat = global_stat_init(ir);
@@ -256,51 +257,51 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     io);
     }
 
-            top = gmx_mtop_generate_local_top(top_global,ir);
+    top = gmx_mtop_generate_local_top(top_global,ir);
 
-            a0 = 0;
-            a1 = top_global->natoms;
+    a0 = 0;
+    a1 = top_global->natoms;
 
-        state = partdec_init_local_state(cr,state_global);
-        f_global = f;
+    state = partdec_init_local_state(cr,state_global);
+    f_global = f;
 
-        atoms2md(top_global,ir,0,NULL,a0,a1-a0,mdatoms);
+    atoms2md(top_global,ir,0,NULL,a0,a1-a0,mdatoms);
 
-        if (vsite) {
-            set_vsite_top(vsite,top,mdatoms,cr);
-        }
+    if (vsite)
+    {
+        set_vsite_top(vsite,top,mdatoms,cr);
+    }
 
-        if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
-            graph = mk_graph(fplog,&(top->idef),0,top_global->natoms,FALSE,FALSE);
-        }
+    if (ir->ePBC != epbcNONE && !ir->bPeriodicMols)
+    {
+        graph = mk_graph(fplog,&(top->idef),0,top_global->natoms,FALSE,FALSE);
+    }
 
     update_mdatoms(mdatoms,state->lambda);
 
-                                                                                                                                                                                              
-      if(deviceOptions[0]=='\0')                                                                                                                                                              
-      {                                                                                                                                                                                       
-          /* empty options, which should default to OpenMM in this build */                                                                                                                   
-          ommOptions=deviceOptions;                                                                                                                                                           
-      }                                                                                                                                                                                       
-      else                                                                                                                                                                                    
-      {                                                                                                                                                                                       
-          if(gmx_strncasecmp(deviceOptions,"OpenMM",6)!=0)                                                                                                                                    
-          {                                                                                                                                                                                   
-              gmx_fatal(FARGS, "This Gromacs version currently only works with OpenMM. Use -device \"OpenMM:<options>\"");                                                                    
-          }                                                                                                                                                                                   
-          else                                                                                                                                                                                
-          {                                                                                                                                                                                   
-              ommOptions=strchr(deviceOptions,':');                                                                                                                                           
-              if(NULL!=ommOptions)                                                                                                                                                            
-              {                                                                                                                                                                               
-                  /* Increase the pointer to skip the colon */                                                                                                                                
-                  ommOptions++;                                     
-            }                                                                                                                                                                               
-          }                                                                                                                                                                                   
-      }                                                                                                                                                                                       
+    if (deviceOptions[0]=='\0')
+    {
+        /* empty options, which should default to OpenMM in this build */
+        ommOptions=deviceOptions;
+    }
+    else
+    {
+        if (gmx_strncasecmp(deviceOptions,"OpenMM",6)!=0)
+        {
+            gmx_fatal(FARGS, "This Gromacs version currently only works with OpenMM. Use -device \"OpenMM:<options>\"");
+        }
+        else
+        {
+            ommOptions=strchr(deviceOptions,':');
+            if (NULL!=ommOptions)
+            {
+                /* Increase the pointer to skip the colon */
+                ommOptions++;
+            }
+        }
+    }
 
-      openmmData = openmm_init(fplog, ommOptions, cr, ir, top_global, top, mdatoms, fr, state);                                                                                         
-
+    openmmData = openmm_init(fplog, ommOptions, cr, ir, top_global, top, mdatoms, fr, state);
 
     if (MASTER(cr))
     {
@@ -311,10 +312,11 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         /* Set the initial energy history in state to zero by updating once */
         update_energyhistory(&state_global->enerhist,mdebin);
-    }	
+    }
 
-    if (constr) {
-            set_constraints(constr,top,ir,mdatoms,cr);
+    if (constr)
+    {
+        set_constraints(constr,top,ir,mdatoms,cr);
     }
 
     if (!ir->bContinuation)
@@ -322,9 +324,9 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
         {
             /* Set the velocities of frozen particles to zero */
-            for(i=mdatoms->start; i<mdatoms->start+mdatoms->homenr; i++)
+            for (i=mdatoms->start; i<mdatoms->start+mdatoms->homenr; i++)
             {
-                for(m=0; m<DIM; m++)
+                for (m=0; m<DIM; m++)
                 {
                     if (ir->opts.nFreeze[mdatoms->cFREEZE[i]][m])
                     {
@@ -350,7 +352,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
     debug_gmx();
-  
+
     if (MASTER(cr))
     {
         char tbuf[20];
@@ -393,7 +395,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     debug_gmx();
     /***********************************************************
      *
-     *             Loop over MD steps 
+     *             Loop over MD steps
      *
      ************************************************************/
 
@@ -409,11 +411,10 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     step = ir->init_step;
     step_rel = 0;
-
     bLastStep = ((ir->nsteps >= 0 && step_rel > ir->nsteps));
 
-    while (!bLastStep) {
-
+    while (!bLastStep)
+    {
         wallcycle_start(wcycle,ewcSTEP);
 
         GMX_MPE_LOG(ev_timestep1);
@@ -428,7 +429,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
         do_verbose = bVerbose &&
-                  (step % stepout == 0 || bFirstStep || bLastStep);
+                     (step % stepout == 0 || bFirstStep || bLastStep);
 
         if (MASTER(cr) && do_log)
         {
@@ -451,7 +452,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gs.set[eglsCHKPT] = 0;
         }
 
-        /* Now we have the energies and forces corresponding to the 
+        /* Now we have the energies and forces corresponding to the
          * coordinates at time t. We must output all of this before
          * the update.
          * for RerunMD t is read from input trajectory
@@ -459,35 +460,53 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         GMX_MPE_LOG(ev_output_start);
 
         mdof_flags = 0;
-        if (do_per_step(step,ir->nstxout)) { mdof_flags |= MDOF_X; }
-        if (do_per_step(step,ir->nstvout)) { mdof_flags |= MDOF_V; }
-        if (do_per_step(step,ir->nstfout)) { mdof_flags |= MDOF_F; }
-        if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
-        if (bCPT) { mdof_flags |= MDOF_CPT; };
-        bX   = MDOF_X || (bLastStep && ir->nstxout);
-        bV   = MDOF_V || (bLastStep && ir->nstvout);
-        bF   = MDOF_F || (bLastStep && ir->nstfout);
-        bXTC = MDOF_XTC || (bLastStep && ir->nstxtcout);
+        if (do_per_step(step,ir->nstxout))
+        {
+            mdof_flags |= MDOF_X;
+        }
+        if (do_per_step(step,ir->nstvout))
+        {
+            mdof_flags |= MDOF_V;
+        }
+        if (do_per_step(step,ir->nstfout))
+        {
+            mdof_flags |= MDOF_F;
+        }
+        if (do_per_step(step,ir->nstxtcout))
+        {
+            mdof_flags |= MDOF_XTC;
+        }
+        if (bCPT)
+        {
+            mdof_flags |= MDOF_CPT;
+        };
         do_ene = do_per_step(step,ir->nstenergy) || (bLastStep && ir->nstenergy);
 
-      if( bX || bXTC || bV ){                                                                                                                                                                 
-        wallcycle_start(wcycle,ewcTRAJ);                                                                                                                                                              
-        openmm_copy_state(openmmData, state, &t, f, enerd, bX||bXTC, bV, 0, 0);                                                                                                               
-        wallcycle_stop(wcycle,ewcTRAJ);                                                                                                                                                       
-      }                                                                                                                                                                                       
+        if (mdof_flags != 0)
+        {
+            bX = (mdof_flags & (MDOF_X | MDOF_XTC | MDOF_CPT));
+            bV = (mdof_flags & (MDOF_V | MDOF_CPT));
 
-      openmm_take_one_step(openmmData);                                                                                                                                                       
+            wallcycle_start(wcycle,ewcTRAJ);
+            openmm_copy_state(openmmData, state, &t, f, enerd, bX, bV, 0, 0);
+            wallcycle_stop(wcycle,ewcTRAJ);
+        }
 
-      if (bX || bV || bF || bXTC || do_ene) {
-        wallcycle_start(wcycle,ewcTRAJ);
-        if( bF || do_ene ){                                                                                                                                                                   
-           openmm_copy_state(openmmData, state, &t, f, enerd, 0, 0, bF, do_ene);                                                                                                              
-      }                                                                                                                                                                                     
-     upd_mdebin(mdebin, NULL,TRUE,
-		 t,mdatoms->tmass,enerd,state,lastbox,
-		 shake_vir,force_vir,total_vir,pres,
-		 ekind,mu_tot,constr);
-         print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,fplog,step,t,
+        openmm_take_one_step(openmmData);
+
+        if (mdof_flags != 0 || do_ene)
+        {
+            wallcycle_start(wcycle,ewcTRAJ);
+            bF = (mdof_flags & MDOF_F);
+            if (bF || do_ene )
+            {
+                openmm_copy_state(openmmData, state, &t, f, enerd, 0, 0, bF, do_ene);
+            }
+            upd_mdebin(mdebin, NULL,TRUE,
+                       t,mdatoms->tmass,enerd,state,lastbox,
+                       shake_vir,force_vir,total_vir,pres,
+                       ekind,mu_tot,constr);
+            print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,fplog,step,t,
                        eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
 
             write_traj(fplog,cr,outf,mdof_flags,top_global,
@@ -499,7 +518,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
-                (Flags & MD_CONFOUT) && MASTER(cr))
+                    (Flags & MD_CONFOUT) && MASTER(cr))
             {
                 /* x and v have been collected in write_traj,
                  * because a checkpoint file will always be written
@@ -520,15 +539,15 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             wallcycle_stop(wcycle,ewcTRAJ);
         }
         GMX_MPE_LOG(ev_output_finish);
-        
+
 
         /* Determine the wallclock run time up till now */
         run_time = gmx_gettime() - (double)runtime->real;
 
-        /* Check whether everything is still allright */    
-        if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) && 
-            (handledSignal!=last_signal_number_recvd) &&
-            MASTERTHREAD(cr))
+        /* Check whether everything is still allright */
+        if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) &&
+                (handledSignal!=last_signal_number_recvd) &&
+                MASTERTHREAD(cr))
         {
             if (bGotStopNextStepSignal)
             {
@@ -542,13 +561,13 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        signal_name[last_signal_number_recvd], 
+                        signal_name[last_signal_number_recvd],
                         gs.set[eglsTERM]==-1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    signal_name[last_signal_number_recvd], 
+                    signal_name[last_signal_number_recvd],
                     gs.set[eglsTERM]==-1 ? "NS " : "");
             fflush(stderr);
             handledSignal=last_signal_number_recvd;
@@ -565,64 +584,55 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
         }
-        
 
         /* checkpoints */
         if (MASTER(cr) && (cpt_period >= 0 &&
-                           (cpt_period == 0 || 
+                           (cpt_period == 0 ||
                             run_time >= nchkpt*cpt_period*60.0)) &&
-            gs.set[eglsCHKPT] == 0)
+                gs.set[eglsCHKPT] == 0)
         {
             gs.set[eglsCHKPT] = 1;
         }
-  
-         
+
         /* Time for performance */
-        if (((step % stepout) == 0) || bLastStep) 
+        if (((step % stepout) == 0) || bLastStep)
         {
             runtime_upd_proc(runtime);
         }
- 
 
-            if (do_per_step(step,ir->nstlog))
+        if (do_per_step(step,ir->nstlog))
+        {
+            if (fflush(fplog) != 0)
             {
-                if(fflush(fplog) != 0)
-                {
-                    gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
-                }
+                gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
             }
-
+        }
 
         /* Remaining runtime */
-        if (MULTIMASTER(cr) && do_verbose) 
+        if (MULTIMASTER(cr) && do_verbose)
         {
             print_time(stderr,runtime,step,ir,cr);
         }
-
 
         bFirstStep = FALSE;
         bInitStep = FALSE;
         bStartingFromCpt = FALSE;
         step++;
         step_rel++;
-
-
-
     }
     /* End of main MD loop */
     debug_gmx();
-    
-    openmm_cleanup(fplog, openmmData);
 
     /* Stop the time */
     runtime_end(runtime);
-    
+
+    openmm_cleanup(fplog, openmmData);
 
     done_mdoutf(outf);
 
     debug_gmx();
 
     runtime->nsteps_done = step_rel;
-    
+
     return 0;
 }

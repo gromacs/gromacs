@@ -108,8 +108,9 @@ const char *ShortProgram(void)
 #endif
     if ((pr=strrchr(ret,'/')) != NULL)
         ret=pr+1;
-    /*else
-        ret=ret;*/
+    /* Strip away the libtool prefix if it's still there. */
+    if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))
+        ret = ret + 3;
     return ret;
 }
 
@@ -430,13 +431,7 @@ static FILE *man_file(const output_env_t oenv,const char *mantp)
 {
     FILE   *fp;
     char   buf[256];
-    const char *pr;
-    const char *program_name=output_env_get_program_name(oenv);
-    
-    if ( (pr=strrchr(program_name,'/')) == NULL)
-        pr=program_name;
-    else 
-        pr+=1;
+    const char *pr = output_env_get_short_program_name(oenv);
     
     if (strcmp(mantp,"ascii") != 0)
         sprintf(buf,"%s.%s",pr,mantp);
@@ -815,6 +810,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         setTimeValue(TDELTA,opt2parg_real("-dt",npall,all_pa));
     
     /* clear memory */
+    for (i = 0; i < npall; ++i)
+        sfree((void *)all_pa[i].desc);
     sfree(all_pa);
     
     if (!FF(PCA_NOEXIT_ON_ARGS)) {

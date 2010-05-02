@@ -462,6 +462,8 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     else
     {
+        /* PME, if used, is done on all nodes with 1D decomposition */
+        cr->npmenodes = 0;
         cr->duty = (DUTY_PP | DUTY_PME);
         npme_major = cr->nnodes;
         
