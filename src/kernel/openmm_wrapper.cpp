@@ -937,7 +937,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 gmx_fatal(FARGS, "The selected GPU (#%d, %s) is not supported by Gromacs! "
                           "Most probably you have a low-end GPU which would not perform well, " 
                           "or new hardware that has not been tested yet with Gromacs-OpenMM. "
-                          "If you still want to try using the device, use the force=on option.", 
+                          "If you still want to try using the device, use the force-device=yes option.", 
                           devId, gpuname);
             }
         }
