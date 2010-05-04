@@ -75,7 +75,7 @@ struct output_env
     int  verbosity; /* The level of verbosity for this program */
     int debug_level; /* the debug level */
 
-    const char *program_name; /* the program name */
+    char *program_name; /* the program name */
     char *cmd_line; /* the re-assembled command line */
 };
 
