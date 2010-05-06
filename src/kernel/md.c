@@ -968,7 +968,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0;
-    bool       bGStatEveryStep,bGStat,bNstEner,bCalcPres,bCalcEner;
+    bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
     bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
@@ -1727,26 +1727,22 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gs.set[eglsCHKPT] = 0;
         }
 
-        /* Determine the pressure:
-         * always when we want exact averages in the energy file,
-         * at ns steps when we have pressure coupling,
-         * otherwise only at energy output steps (set below).
+        /* Determine the energy and pressure:
+         * at nstcalcenergy steps and at energy output steps (set below).
          */
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
-        bCalcEner = bNstEner;
-        bCalcPres = (bNstEner || (ir->epc != epcNO && bNS));
+        bCalcEnerPres = bNstEner;
 
         /* Do we need global communication ? */
-        bGStat = (bCalcEner || bStopCM ||
+        bGStat = (bCalcEnerPres || bStopCM ||
                   (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
 
         do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
 
         if (do_ene || do_log)
         {
-            bCalcPres = TRUE;
-            bCalcEner = TRUE;
-            bGStat    = TRUE;
+            bCalcEnerPres = TRUE;
+            bGStat        = TRUE;
         }
         
         /* these CGLO_ options remain the same throughout the iteration */
@@ -1761,7 +1757,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        GMX_FORCE_ALLFORCES |
                        (bNStList ? GMX_FORCE_DOLR : 0) |
                        GMX_FORCE_SEPLRF |
-                       (bCalcEner ? GMX_FORCE_VIRIAL : 0) |
+                       (bCalcEnerPres ? GMX_FORCE_VIRIAL : 0) |
                        (bDoDHDL ? GMX_FORCE_DHDL : 0)
             );
         
@@ -1887,7 +1883,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
                                        &top->idef,shake_vir,NULL,
                                        cr,nrnb,wcycle,upd,constr,
-                                       bInitStep,TRUE,bCalcPres,vetanew);
+                                       bInitStep,TRUE,bCalcEnerPres,vetanew);
                     
                     if (!bOK && !bFFscan)
                     {
@@ -2097,8 +2093,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
     
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
-        bCalcEner = bNstEner;
-        bCalcPres = (bNstEner || (ir->epc != epcNO && bNS));
+        bCalcEnerPres = bNstEner;
         
         /* Do we need global communication ? */
         bGStat = (bGStatEveryStep || bStopCM || bNS ||
@@ -2108,8 +2103,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         if (do_ene || do_log)
         {
-            bCalcPres = TRUE;
-            bGStat    = TRUE;
+            bCalcEnerPres = TRUE;
+            bGStat        = TRUE;
         }
 
         /* Determine the wallclock run time up till now */
@@ -2285,7 +2280,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
                                    &top->idef,shake_vir,force_vir,
                                    cr,nrnb,wcycle,upd,constr,
-                                   bInitStep,FALSE,bCalcPres,state->veta);  
+                                   bInitStep,FALSE,bCalcEnerPres,state->veta);  
                 
                 if (ir->eI==eiVVAK) 
                 {
@@ -2314,7 +2309,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
                                        &top->idef,tmp_vir,force_vir,
                                        cr,nrnb,wcycle,upd,NULL,
-                                       bInitStep,FALSE,bCalcPres,state->veta);  
+                                       bInitStep,FALSE,bCalcEnerPres,
+                                       state->veta);  
                 }
                 if (!bOK && !bFFscan) 
                 {
@@ -2651,7 +2647,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
     if (MASTER(cr))
     {
-        if (bGStatEveryStep && !bRerunMD) 
+        if (ir->nstcalcenergy > 0 && !bRerunMD) 
         {
             print_ebin(outf->fp_ene,FALSE,FALSE,FALSE,fplog,step,t,
                        eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
