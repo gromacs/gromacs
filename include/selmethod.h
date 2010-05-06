@@ -99,7 +99,10 @@
  *    number of values.
  *    The number of values is determined based on the values given by the user
  *    to the method parameters (see \ref selmethods_params).
- *
+ *  .
+ * If either of these flags is specified (and the method type is not
+ * \ref GROUP_VALUE), the group passed to the evaluation callback should not
+ * be used as it can be NULL.
  * Currently, the above flags only work (have been tested) for \ref POS_VALUE
  * methods.
  *

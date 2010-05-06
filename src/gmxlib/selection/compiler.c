@@ -1873,6 +1873,7 @@ analyze_static2(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
  * Initializes a \ref SEL_ROOT element.
  *
  * \param     root Root element to initialize.
+ * \param[in] gall Group of all atoms.
  * \returns Pointer to the selection element that should replace \p root.
  *   Can be \p root itself or NULL if the selection should be removed.
  *
@@ -1884,7 +1885,7 @@ analyze_static2(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
  * automatically freed.
  */
 static t_selelem *
-init_root_item(t_selelem *root)
+init_root_item(t_selelem *root, gmx_ana_index_t *gall)
 {
     t_selelem   *expr;
     char        *name;
@@ -1919,21 +1920,31 @@ init_root_item(t_selelem *root)
     if (root->evaluate)
     {
         expr = root->child;
-        if (expr->type == SEL_SUBEXPR)
+        /* Non-atom-valued non-group expressions don't care about the group, so
+         * don't allocate any memory for it. */
+        if ((expr->flags & SEL_VARNUMVAL)
+            || ((expr->flags & SEL_SINGLEVAL) && expr->type != GROUP_VALUE))
         {
-            gmx_ana_index_copy(&root->u.cgrp, expr->cdata->gmax, TRUE);
+            gmx_ana_index_set(&root->u.cgrp, -1, NULL, NULL, 0);
+        }
+        else if (expr->cdata->gmax->isize == gall->isize)
+        {
+            /* Save some memory by only referring to the global group. */
+            gmx_ana_index_set(&root->u.cgrp, gall->isize, gall->index, NULL, 0);
         }
         else
         {
-            /* expr should evaluate the positions for a selection */
-            if (expr->v.u.p->g)
-            {
-                _gmx_selelem_set_vtype(root, GROUP_VALUE);
-                root->flags  |= (SEL_ALLOCVAL | SEL_ALLOCDATA);
-                _gmx_selvalue_reserve(&root->v, 1);
-                gmx_ana_index_copy(root->v.u.g, expr->v.u.p->g, TRUE);
-            }
-            gmx_ana_index_set(&root->u.cgrp, -1, NULL, NULL, 0);
+            gmx_ana_index_copy(&root->u.cgrp, expr->cdata->gmax, TRUE);
+        }
+        /* For selections, store the maximum group for
+         * gmx_ana_selcollection_evaluate_fin() as the value of the root
+         * element (unused otherwise). */
+        if (expr->type != SEL_SUBEXPR && expr->v.u.p->g)
+        {
+            _gmx_selelem_set_vtype(root, GROUP_VALUE);
+            root->flags  |= (SEL_ALLOCVAL | SEL_ALLOCDATA);
+            _gmx_selvalue_reserve(&root->v, 1);
+            gmx_ana_index_copy(root->v.u.g, expr->v.u.p->g, TRUE);
         }
     }
     else
@@ -1972,7 +1983,8 @@ reverse_selelem_chain(t_selelem *root)
 /*! \brief
  * Initializes the evaluation groups for \ref SEL_ROOT items.
  *
- * \param   root First selection in the whole selection chain.
+ * \param     root First selection in the whole selection chain.
+ * \param[in] gall Group of all atoms.
  * \returns The new first element for the chain.
  *
  * The function also removes static subexpressions that are no longer used.
@@ -1981,7 +1993,7 @@ reverse_selelem_chain(t_selelem *root)
  * processing is independent of the order of the elements.
  */
 static t_selelem *
-process_roots(t_selelem *root)
+process_roots(t_selelem *root, gmx_ana_index_t *gall)
 {
     t_selelem *item;
     t_selelem *next;
@@ -1990,7 +2002,7 @@ process_roots(t_selelem *root)
     do
     {
         next = root->next;
-        root = init_root_item(root);
+        root = init_root_item(root, gall);
         if (!root)
         {
             root = next;
@@ -2001,7 +2013,7 @@ process_roots(t_selelem *root)
     while (item && item->next)
     {
         next = item->next->next;
-        item->next = init_root_item(item->next);
+        item->next = init_root_item(item->next, gall);
         if (!item->next)
         {
             item->next = next;
@@ -2352,7 +2364,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     }
 
     /* Initialize evaluation groups and remove unused subexpressions. */
-    sc->root = process_roots(sc->root);
+    sc->root = process_roots(sc->root, &sc->gall);
 
     /* Initialize position calculations for methods, perform some final
      * optimization and free the memory allocated for the compilation. */
