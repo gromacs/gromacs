@@ -305,7 +305,7 @@ _gmx_selelem_free_values(t_selelem *sel);
 extern void
 _gmx_selelem_free_method(struct gmx_ana_selmethod_t *method, void *mdata,
                          bool bFreeParamData);
-/** Frees the memory allocated for the \c t_selelem::u.expr field. */
+/** Frees the memory allocated for the \c t_selelem::u field. */
 extern void
 _gmx_selelem_free_exprdata(t_selelem *sel);
 /* In compiler.c */

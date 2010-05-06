@@ -40,6 +40,12 @@
  *
  * \todo
  * The memory usage could be optimized.
+ * Currently, each selection element allocates a separate block of memory to
+ * hold the evaluated value, but most of this memory is not used
+ * simultaneously. Perhaps the cleanest solution (avoiding constant allocation
+ * and deallocation) would be to have a memory pool whose maximum size is
+ * determined at compilation time and allocate memory from the pool during
+ * evaluation.
  */
 /*! \internal
  * \page selcompiler Selection compilation
@@ -1081,6 +1087,40 @@ mark_subexpr_dynamic(t_selelem *sel, bool bDynamic)
 }
 
 /*! \brief
+ * Frees memory for subexpressions that are no longer needed.
+ *
+ * \param     sel      Selection subtree to check.
+ *
+ * Checks whether the subtree rooted at \p sel refers to any \ref SEL_SUBEXPR
+ * elements that are not referred to by anything else except their own root
+ * element. If such elements are found, all memory allocated for them is freed
+ * except the actual element. The element is left because otherwise a dangling
+ * pointer would be left at the root element, which is not traversed by this
+ * function. Later compilation passes remove the stub elements.
+ */
+static void
+release_subexpr_memory(t_selelem *sel)
+{
+    t_selelem *child;
+
+    child = sel->child;
+    while (child)
+    {
+        release_subexpr_memory(child);
+        child = child->next;
+    }
+
+    if (sel->type == SEL_SUBEXPR && sel->refcount == 2)
+    {
+        _gmx_selelem_free_values(sel);
+        _gmx_selelem_free_exprdata(sel);
+        _gmx_selelem_free_compiler_data(sel);
+        _gmx_selelem_free_chain(sel->child);
+        sel->child = NULL;
+    }
+}
+
+/*! \brief
  * Makes an evaluated selection element static.
  *
  * \param     sel   Selection element to make static.
@@ -1100,12 +1140,11 @@ make_static(t_selelem *sel)
     sel->evaluate        = NULL;
     sel->cdata->evaluate = NULL;
     /* Free the children */
+    release_subexpr_memory(sel);
     _gmx_selelem_free_chain(sel->child);
     sel->child           = NULL;
     /* Set the group value.
-     * None of the elements for which this function may be called uses
-     * the cgrp group, so we can simply overwrite the contents without
-     * worrying about memory leaks. */
+     * free_exprdata above frees the cgrp group, so we can just override it. */
     if (sel->v.type == GROUP_VALUE)
     {
         gmx_ana_index_set(&sel->u.cgrp, sel->v.u.g->isize, sel->v.u.g->index, NULL, 0);

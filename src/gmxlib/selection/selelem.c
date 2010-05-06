@@ -325,6 +325,11 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
             sel->u.expr.pc = NULL;
         }
     }
+    if (sel->type == SEL_SUBEXPR || sel->type == SEL_ROOT
+        || (sel->type == SEL_CONST && sel->v.type == GROUP_VALUE))
+    {
+        gmx_ana_index_deinit(&sel->u.cgrp);
+    }
 }
 
 /*!
@@ -360,11 +365,6 @@ _gmx_selelem_free(t_selelem *sel)
 
     /* Free other storage */
     _gmx_selelem_free_exprdata(sel);
-    if (sel->type == SEL_SUBEXPR || sel->type == SEL_ROOT
-        || (sel->type == SEL_CONST && sel->v.type == GROUP_VALUE))
-    {
-        gmx_ana_index_deinit(&sel->u.cgrp);
-    }
 
     /* Free temporary compiler data if present */
     _gmx_selelem_free_compiler_data(sel);
