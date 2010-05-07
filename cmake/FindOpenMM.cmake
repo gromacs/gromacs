@@ -1,22 +1,28 @@
-# Find OpenMM library 
+# Find OpenMM library.
 #
-# Defines: 
+# Looks for the OpenMM libraries at the default (/usr/local) location 
+# or custom location found in the OPENMM_ROOT_DIR environment variable. 
+#
+# The script defines defines: 
 #  OpenMM_FOUND     
 #  OpenMM_ROOT_DIR
 #  OpenMM_INCLUDE_DIR
 #  OpenMM_LIBRARY_DIR
-#  OpenMM_LIBRARIES
+#  OpenMM_LIBRARIES      
+#  OpenMM_LIBRARIES_D   - debug version of libraries 
 #  OpenMM_PLUGIN_DIR
 #
 
-# include(LibFindMacros) TODO get this: http://zi.fi/cmake/Modules/LibFindMacros.cmake
+# Author: Szilard Pall (pszilard@cbr.su.se)
 
 if(OpenMM_INCLUDE_DIR AND OpenMM_LIBRARY_DIR AND OpenMM_PLUGIN_DIR)
     set(OpenMM_FIND_QUIETLY)
 endif()
 
-if(IS_DIRECTORY "$ENV{OPENMM_ROOT_DIR}")
-    set(OpenMM_ROOT_DIR $ENV{OPENMM_ROOT_DIR} CACHE PATH "OpenMM installation directory" FORCE)
+file(TO_CMAKE_PATH "$ENV{OPENMM_ROOT_DIR}" _env_OPENMM_ROOT_DIR)
+
+if(IS_DIRECTORY ${_env_OPENMM_ROOT_DIR})
+    set(OpenMM_ROOT_DIR "${_env_OPENMM_ROOT_DIR}" CACHE PATH "OpenMM installation directory" FORCE)
 else()
     if(IS_DIRECTORY "/usr/local/openmm")
         set(OpenMM_ROOT_DIR "/usr/local/openmm" CACHE PATH "OpenMM installation directory" FORCE)
@@ -25,7 +31,19 @@ endif()
 
 find_library(OpenMM_LIBRARIES
     NAMES OpenMM
-    PATHS "${OpenMM_ROOT_DIR}/lib")
+    PATHS "${OpenMM_ROOT_DIR}/lib"
+    CACHE STRING "OpenMM libraries")
+
+find_library(OpenMM_LIBRARIES_D
+    NAMES OpenMM_d
+    PATHS "${OpenMM_ROOT_DIR}/lib"
+    CACHE STRING "OpenMM debug libraries")
+
+if(OpenMM_LIBRARIES_D AND NOT OpenMM_LIBRARIES)
+    set(OpenMM_LIBRARIES ${OpenMM_LIBRARIES_D}
+        CACHE STRING "OpenMM libraries" FORCE)
+    message(WARNING " Only found debug versions of the OpenMM libraries!")
+endif()
 
 get_filename_component(OpenMM_LIBRARY_DIR 
     ${OpenMM_LIBRARIES} 
@@ -43,9 +61,8 @@ if(NOT IS_DIRECTORY ${OpenMM_ROOT_DIR})
     if (IS_DIRECTORY "${OpenMM_LIBRARY_DIR}/..") # just double-checking
         get_filename_component(OpenMM_ROOT_DIR 
             "${OpenMM_LIBRARY_DIR}/.." 
-            ABSOLUTE
-            CACHE PATH "OpenMM installation directory")
-    endif()
+            ABSOLUTE)
+    endif()   
 endif()
 
 if(NOT IS_DIRECTORY ${OpenMM_ROOT_DIR})
@@ -53,7 +70,7 @@ if(NOT IS_DIRECTORY ${OpenMM_ROOT_DIR})
     "variable to the path where your OpenMM installation is located or install it to the default location (/usr/local/openmm)!")
 endif()
 
-if(NOT OpenMM_LIBRARY_DIR)
+if(NOT IS_DIRECTORY ${OpenMM_LIBRARY_DIR})
     message(FATAL_ERROR "Can't find OpenMM libraries. Check your OpenMM installation!")
 endif()
 
@@ -61,8 +78,8 @@ endif()
 if(IS_DIRECTORY "${OpenMM_LIBRARY_DIR}/plugins")
     get_filename_component(OpenMM_PLUGIN_DIR
         "${OpenMM_LIBRARY_DIR}/plugins"
-        ABSOLUTE
-        CACHE PATH "OpenMM plugins directory")
+        ABSOLUTE)
+    set(OpenMM_PLUGIN_DIR ${OpenMM_PLUGIN_DIR} CACHE PATH "OpenMM plugins directory")
 else()
     message(WARNING "Could not detect the OpenMM plugin directory at the default location (${OpenMM_LIBRARY_DIR}/plugins)."
             "Check you OpenMM installation or manually set the OPENMM_PLUGIN_DIR environment variable!")
@@ -72,10 +89,16 @@ if(NOT OpenMM_INCLUDE_DIR)
     message(FATAL_ERROR "Can't find OpenMM includes. Check your OpenMM installation!")
 endif()
 
-include (FindPackageHandleStandardArgs)
+set(OpenMM_ROOT_DIR ${OpenMM_ROOT_DIR} CACHE PATH "OpenMM installation directory")
+
+include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OpenMM DEFAULT_MSG 
                                     OpenMM_ROOT_DIR
                                     OpenMM_LIBRARIES 
                                     OpenMM_LIBRARY_DIR 
-                                    OpenMM_INCLUDE_DIR
-                                    OpenMM_PLUGIN_DIR)
+                                    OpenMM_INCLUDE_DIR)
+
+mark_as_advanced(OpenMM_INCLUDE_DIR
+    OpenMM_LIBRARIES
+    OpenMM_LIBRARIES_D
+    OpenMM_LIBRARY_DIR)
