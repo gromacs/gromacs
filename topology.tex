@@ -705,9 +705,13 @@ If one or both terminal versions are not present a dash should be entered
 in the corresponding column.
 
 There is a {\gromacs} naming convention for residues which is only
-apparent (except for the {\tt pdb2gmx} code) through the {\tt .r2b} file.
+apparent (except for the {\tt pdb2gmx} code) through the {\tt .r2b} file
+and {\tt specbond.dat} files.
 This convention is only of importance when you are adding residue types
 to an {\tt .rtp} file. The convention is listed in \tabref{r2b}.
+For special bonds with, for instance, a heme group, the {\gromacs} naming
+convention is introduced through {\tt specbond.dat}, which can
+subsequently be translated by the {\tt .r2b} file, if required.
 
 \begin{table}
 \centerline{
@@ -717,16 +721,16 @@ ARG  & protonated arginine \\
 ARGN & neutral arginine \\
 ASP  & negatively charged aspartic acid \\
 ASPH & neutral aspartic acid \\
-CYSH & neutral cysteine \\
+CYS  & neutral cysteine \\
 CYS2 & cysteine with sulfur bound to another cysteine or a heme \\
 GLU  & negatively charged glutamic acid \\
 GLUH & neutral glutamic acid \\
-HISA & neutral histidine with C$_\delta$ protonated \\
-HISB & neutral histidine with C$_\epsilon$ protonated \\
-HISH & positive histidine with both C$_\delta$ and C$_\epsilon$ protonated \\
+HISD & neutral histidine with N$_\delta$ protonated \\
+HISE & neutral histidine with N$_\epsilon$ protonated \\
+HISH & positive histidine with both N$_\delta$ and N$_\epsilon$ protonated \\
 HIS1 & histidine bound to a heme \\
-LYS  & neutral lysine \\
-LYSH & protonated lysine \\
+LYSN & neutral lysine \\
+LYS  & protonated lysine \\
 HEME & heme \\
 \dline
 \end{tabular}
