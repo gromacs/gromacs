@@ -8,9 +8,9 @@ extern "C"
 
 #ifdef GMX_OPENMM
 void* openmm_init(FILE *fplog, const char *platformOptStr,
-                    t_commrec *cr,t_inputrec *ir,
+                    t_inputrec *ir,
                     gmx_mtop_t *top_global, gmx_localtop_t *top,
-                    t_mdatoms *mdatoms, t_forcerec *fr,t_state *state);
+                    t_mdatoms *mdatoms, t_forcerec *fr, t_state *state);
 
 void openmm_take_one_step(void* data);
 
@@ -21,12 +21,12 @@ void openmm_copy_state(void *data,
 
 void openmm_cleanup(FILE *fplog, void* data);
 #else 
-/* dummy versions of the openmm wrapper functions to enable compilation of 
+/* dummy versions of the wrapper functions to enable compilation of 
    do_md_openmm even when OpenMM is not used */ 
 void* openmm_init(FILE *fplog, const char *platformOptStr,
-                    t_commrec *cr,t_inputrec *ir,
+                    t_inputrec *ir,
                     gmx_mtop_t *top_global, gmx_localtop_t *top,
-                    t_mdatoms *mdatoms, t_forcerec *fr,t_state *state){return NULL;}
+                    t_mdatoms *mdatoms, t_forcerec *fr, t_state *state){return NULL;}
 
 void openmm_take_one_step(void* data){}
 

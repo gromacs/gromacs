@@ -34,10 +34,10 @@ using namespace OpenMM;
 
 /*! 
  * \brief Convert string to integer type.
- * \param[in]  s         String to convert from.  
- * \param[in]  ios_base  Basefield format flag that takes any of the following I/O 
- *                       manipulators: dec, hex, oct.
- * \param[out]           Destination variable to convert to.  
+ * \param[in]  s    String to convert from.
+ * \param[in]  f    Basefield format flag that takes any of the following I/O
+ *                  manipulators: dec, hex, oct.
+ * \param[out] t    Destination variable to convert to.
  */
 template <class T>
 static bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
@@ -49,7 +49,7 @@ static bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
 /*!
  * \brief Split string around a given delimiter.
  * \param[in] s      String to split.
- * \param[in] delim  Delimiter character that defines the boundaries of substring in \p s.
+ * \param[in] delim  Delimiter character.
  * \returns          Vector of strings found in \p s.
  */
 static vector<string> split(const string &s, char delim)
@@ -116,7 +116,7 @@ static string toUpper(const string &s)
   GmxOpenMMPlatformOptions#memtests, GmxOpenMMPlatformOptions#deviceid, 
   GmxOpenMMPlatformOptions#force_dev.  */
 /* {@ */
-#define SIZEOF_PLATFORMS    1 
+#define SIZEOF_PLATFORMS    1  // 2
 #define SIZEOF_MEMTESTS     3 
 #define SIZEOF_DEVICEIDS    1 
 #define SIZEOF_FORCE_DEV    2 
@@ -159,10 +159,15 @@ private:
                                                                  size #SIZEOF_FORCE_DEV */
 };
 
-const char * const GmxOpenMMPlatformOptions::platforms[SIZEOF_PLATFORMS] = { "Cuda" /*,"OpenCL"*/ }; 
-const char * const GmxOpenMMPlatformOptions::memtests[SIZEOF_MEMTESTS]   = { "15", "full", "off" };
-const char * const GmxOpenMMPlatformOptions::deviceid[SIZEOF_DEVICEIDS]  = { "0" };
-const char * const GmxOpenMMPlatformOptions::force_dev[SIZEOF_FORCE_DEV] = { "no", "yes" };
+const char * const GmxOpenMMPlatformOptions::platforms[SIZEOF_PLATFORMS]
+                    = {"CUDA"};
+                    //= { "Reference", "CUDA" /*,"OpenCL"*/ };
+const char * const GmxOpenMMPlatformOptions::memtests[SIZEOF_MEMTESTS]
+                    = { "15", "full", "off" };
+const char * const GmxOpenMMPlatformOptions::deviceid[SIZEOF_DEVICEIDS]
+                    = { "0" };
+const char * const GmxOpenMMPlatformOptions::force_dev[SIZEOF_FORCE_DEV]
+                    = { "no", "yes" };
 
 /*!
  * \brief Contructor.
@@ -195,23 +200,25 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
 
         if (isStringEqNCase(opt, "platform"))
         {
+            /* no check, this will fail if platform does not exist when we try to set it */
             setOption(opt, val);
             continue;
         }
 
         if (isStringEqNCase(opt, "memtest"))
         {
-            if (!isStringEqNCase(val, "full") && !isStringEqNCase(val, "off")) /* the value has to be an integer >15 */
+            /* the value has to be an integer >15(s) or "full" OR "off" */
+            if (!isStringEqNCase(val, "full") && !isStringEqNCase(val, "off")) 
             {
                 int secs;
                 if (!from_string<int>(secs, val, std::dec))
                 {
-                    gmx_fatal(FARGS, "Invalid value for option memtestoption: \"%s\"!\n", val.c_str());
+                    gmx_fatal(FARGS, "Invalid value for option memtest option: \"%s\"!", val.c_str());
                 }
                 if (secs < 15)
                 {
                     gmx_fatal(FARGS, "Incorrect value for memtest option (%d). "
-                            "Memtest needs to run for at least 15s!\n", secs);
+                            "Memtest needs to run for at least 15s!", secs);
                 }
             }
             setOption(opt, val);
@@ -223,7 +230,7 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
             int id;
             if (!from_string<int>(id, val, std::dec) )
             {
-                gmx_fatal(FARGS, "Invalid device id: \"%s\"!\n", val.c_str());
+                gmx_fatal(FARGS, "Invalid device id: \"%s\"!", val.c_str());
             }
             setOption(opt, val);
             continue;
@@ -231,16 +238,17 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
 
         if (isStringEqNCase(opt, "force-device"))
         {
+            /* */
             if (!isStringEqNCase(val, "yes") && !isStringEqNCase(val, "no"))
             {
-                gmx_fatal(FARGS, "Invalid OpenMM force option: \"%s\"!\n", val.c_str());
+                gmx_fatal(FARGS, "Invalid OpenMM force option: \"%s\"!", val.c_str());
             }
             setOption(opt, val);
             continue;
         }
 
         // if we got till here something went wrong
-        gmx_fatal(FARGS, "Invalid OpenMM platform option: \"%s\"!\n", (*it).c_str());
+        gmx_fatal(FARGS, "Invalid OpenMM platform option: \"%s\"!", (*it).c_str());
     }
 }
 
@@ -305,7 +313,7 @@ public:
  *                      stdout messages/log between memtest carried out before and after simulation.
  *  \param[in] opt      Pointer to platform options object.
  */
-void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatformOptions *opt)
+static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatformOptions *opt)
 {
 
     char warn_buf[STRLEN];
@@ -333,8 +341,8 @@ void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatformO
     {
         case 0: /* no memtest */
             sprintf(warn_buf, "%s-simulation GPU memtest skipped. Note, that faulty memory can cause "
-                "incorrect results!\n", pre_post);
-            fprintf(fplog, "%s", warn_buf);
+                "incorrect results!", pre_post);
+            fprintf(fplog, "%s\n", warn_buf);
             gmx_warning(warn_buf);
             break; /* case 0 */
 
@@ -398,18 +406,20 @@ void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatformO
  * interrupts the execution. It also warns the user about pecularities of OpenMM 
  * implementations.
  * \param[in] ir    Gromacs structure for input options, \see ::t_inputrec
- * \param[in] top   Gromacs topology, \see ::gmx_localtop_t 
+ * \param[in] top   Gromacs local topology, \see ::gmx_localtop_t
+ * \param[in] state Gromacs state structure \see ::t_state
  */
-void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
+static void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top, t_state *state)
 {
-
     char warn_buf[STRLEN];
 
-    // Abort if unsupported critical options are present
+    /* Abort if unsupported critical options are present */
 
     /* Integrator */
     if (ir->eI ==  eiMD)
-        gmx_warning( "OpenMM does not support leap-frog, will use velocity-verlet integrator.\n");
+    {
+        gmx_warning( "OpenMM does not support leap-frog, will use velocity-verlet integrator.");
+    }
 
     if (    (ir->eI !=  eiMD)   &&
             (ir->eI !=  eiVV)   &&
@@ -418,7 +428,7 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
             (ir->eI !=  eiSD2)  &&
             (ir->eI !=  eiBD) )
     {
-        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md/md-vv/md-vv-avek, sd/sd1, and bd.\n");
+        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md/md-vv/md-vv-avek, sd/sd1, and bd.");
     }
 
     /* Electroctstics */
@@ -429,65 +439,111 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
             ( !(ir->coulombtype == eelCUT && ir->rcoulomb == 0 &&  ir->rvdw == 0)) )
     {
         gmx_fatal(FARGS,"OpenMM supports only the following methods for electrostatics: "
-                "NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.\n");
+                "NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.");
     }
 
-    if (    (ir->etc != etcNO) &&
-            (ir->eI !=  eiSD1)  &&
-            (ir->eI !=  eiSD2)  &&
-            (ir->eI !=  eiBD) )
+    if (ir->etc != etcNO &&
+        ir->eI  != eiSD1 &&
+        ir->eI  != eiSD2 &&
+        ir->eI  != eiBD )
     {
-        gmx_warning("OpenMM supports only Andersen thermostat with the md/md-vv/md-vv-avek integrators.\n");
+        gmx_warning("OpenMM supports only Andersen thermostat with the md/md-vv/md-vv-avek integrators.");
     }
 
     if (ir->opts.ngtc > 1)
-        gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.\n");
+        gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.");
 
     if (ir->epc != etcNO)
-        gmx_fatal(FARGS,"OpenMM does not support pressure coupling.\n");
+        gmx_fatal(FARGS,"OpenMM does not support pressure coupling.");
 
     if (ir->opts.annealing[0])
-        gmx_fatal(FARGS,"OpenMM does not support simulated annealing.\n");
+        gmx_fatal(FARGS,"OpenMM does not support simulated annealing.");
 
     if (ir->eConstrAlg != econtSHAKE)
-        gmx_warning("Constraints in OpenMM are done by a combination "
+        gmx_warning("OpenMM provides contraints as a combination "
                     "of SHAKE, SETTLE and CCMA. Accuracy is based on the SHAKE tolerance set "
-                    "by the \"shake_tol\" option.\n");
+                    "by the \"shake_tol\" option.");
 
     if (ir->nwall != 0)
-        gmx_fatal(FARGS,"OpenMM does not support walls.\n");
+        gmx_fatal(FARGS,"OpenMM does not support walls.");
 
     if (ir->ePull != epullNO)
-        gmx_fatal(FARGS,"OpenMM does not support pulling.\n");
+        gmx_fatal(FARGS,"OpenMM does not support pulling.");
 
-    if (top->idef.il[F_DISRES].nr > 0)
-        gmx_fatal(FARGS,"OpenMM does not support distant restraints.\n");
-
-    if (top->idef.il[F_ORIRES].nr > 0)
-        gmx_fatal(FARGS,"OpenMM does not support orientation restraints.\n");
-
-    if (top->idef.il[F_ANGRES].nr > 0)
-        gmx_fatal(FARGS,"OpenMM does not support angle restraints.\n");
-
-    if (top->idef.il[F_DIHRES].nr > 0)
-        gmx_fatal(FARGS,"OpenMM does not support dihedral restraints.\n");
+    /* check for restraints */
+    int i;
+    for (i = 0; i < F_EPOT; i++)
+    {
+        if (i != F_CONSTR &&
+            i != F_SETTLE &&
+            i != F_BONDS  &&
+            i != F_ANGLES &&
+            i != F_PDIHS &&
+            i != F_RBDIHS &&
+            i != F_LJ14 &&
+            top->idef.il[i].nr > 0)
+        {
+            /* TODO fix the message */
+            gmx_fatal(FARGS, "OpenMM does not support (some) of the provided restaint(s).");
+        }
+    }
 
     if (ir->efep != efepNO)
-        gmx_fatal(FARGS,"OpenMM does not support free energy calculations.\n");
+        gmx_fatal(FARGS,"OpenMM does not support free energy calculations.");
 
     if (ir->opts.ngacc > 1)
-        gmx_fatal(FARGS,"OpenMM does not support non-equilibrium MD (accelerated groups).\n");
+        gmx_fatal(FARGS,"OpenMM does not support non-equilibrium MD (accelerated groups).");
 
     if (IR_ELEC_FIELD(*ir))
-        gmx_fatal(FARGS,"OpenMM does not support electric fields.\n");
+        gmx_fatal(FARGS,"OpenMM does not support electric fields.");
 
     if (ir->bQMMM)
-        gmx_fatal(FARGS,"OpenMM does not support QMMM calculations.\n");
+        gmx_fatal(FARGS,"OpenMM does not support QMMM calculations.");
 
     if (ir->rcoulomb != ir->rvdw)
         gmx_fatal(FARGS,"OpenMM uses a single cutoff for both Coulomb "
-                  "and VdW interactions. Please set rcoulomb equal to rvdw.\n");
+                  "and VdW interactions. Please set rcoulomb equal to rvdw.");
+    
+    if (EEL_FULL(ir->coulombtype))
+    {
+        if (ir->ewald_geometry == eewg3DC)
+            gmx_fatal(FARGS,"OpenMM supports only Ewald 3D geometry.");
+        if (ir->epsilon_surface != 0)
+            gmx_fatal(FARGS,"OpenMM does not support dipole correction in Ewald summation.");
+    }
 
+    if (TRICLINIC(state->box))        
+    {
+        gmx_fatal(FARGS,"OpenMM does not support triclinic unit cells.");
+    }
+
+}
+
+
+/*!
+ * \brief Convert Lennard-Jones parameters c12 and c6 to sigma and epsilon.
+ * 
+ * \param[in] c12
+ * \param[in] c6
+ * \param[out] sigma 
+ * \param[out] epsilon
+ */
+static void* convert_c_12_6(double c12, double c6, double *sigma, double *epsilon)
+{
+    if (c12 == 0 && c6 == 0)
+    {
+        *epsilon    = 0.0;        
+        *sigma      = 1.0;
+    }
+    else if (c12 > 0 && c6 > 0)
+    {
+        *epsilon    = (c6*c6)/(4.0*c12);
+        *sigma      = pow(c12/c6, 1.0/6.0);
+    }
+    else 
+    {
+        gmx_fatal(FARGS,"OpenMM does only supports c6 > 0 and c12 > 0 or both 0.");
+    } 
 }
 
 /*!
@@ -504,19 +560,18 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
  * 
  * \param[in] fplog             Gromacs log file handler.
  * \param[in] platformOptStr    Platform option string. 
- * \param[in] cr                TODO remove!
- * \param[in] ir                The Gromacs input parameters.
- * \param[in] top_global        TODO
- * \param[in] top               TODO
- * \param[in] mdatoms           TODO
- * \param[in] fr                TODO
- * \param[in] state             TODO
+ * \param[in] ir                The Gromacs input parameters, see ::t_inputrec
+ * \param[in] top_global        TODO Gromacs whole system toppology, \see ::gmx_mtop_t
+ * \param[in] top               TODO Gromacs node local topology, \see gmx_localtop_t
+ * \param[in] mdatoms           TODO \see ::t_mdatoms
+ * \param[in] fr                TODO \see ::t_forcerec
+ * \param[in] state             TODO \see ::t_state
  *
  */
 void* openmm_init(FILE *fplog, const char *platformOptStr,
-                  t_commrec *cr,t_inputrec *ir,
+                  t_inputrec *ir,
                   gmx_mtop_t *top_global, gmx_localtop_t *top,
-                  t_mdatoms *mdatoms, t_forcerec *fr,t_state *state)
+                  t_mdatoms *mdatoms, t_forcerec *fr, t_state *state)
 {
 
     char warn_buf[STRLEN];
@@ -596,7 +651,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         GmxOpenMMPlatformOptions *opt = new GmxOpenMMPlatformOptions(platformOptStr);
 
         /* check wheter Gromacs options compatibility with OpenMM */
-        checkGmxOptions(ir, top);
+        checkGmxOptions(ir, top, state);
 
         // Create the system.
         const t_idef& idef = top->idef;
@@ -679,62 +734,55 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         real* masses = mdatoms->massT;
         NonbondedForce* nonbondedForce = new NonbondedForce();
         sys->addForce(nonbondedForce);
-
-        if (ir->rcoulomb == 0)
+        
+        switch (ir->ePBC)
         {
-            nonbondedForce->setNonbondedMethod(NonbondedForce::NoCutoff);
-        }
-        else
-        {
+        case epbcNONE:
+            if (ir->rcoulomb == 0)
+            {
+                nonbondedForce->setNonbondedMethod(NonbondedForce::NoCutoff);
+            }
+            else
+            {
+                nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffNonPeriodic);
+            }
+            break;
+        case epbcXYZ:
             switch (ir->coulombtype)
             {
-            case eelRF: // TODO what is the correct condition?
-                if (ir->ePBC == epbcXYZ)
-                {
-                    nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffPeriodic);
-                    sys->setPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
-                                               Vec3(0, state->box[1][1], 0), Vec3(0, 0, state->box[2][2]));
-                }
-                else if (ir->ePBC == epbcNONE)
-                    nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffNonPeriodic);
-                else
-                    gmx_fatal(FARGS,"OpenMM supports only full periodic boundary conditions "
-                              "(pbc = xyz), or none (pbc = no).\n");
-                nonbondedForce->setCutoffDistance(ir->rcoulomb);
+            case eelRF:
+                nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffPeriodic);
                 break;
 
             case eelEWALD:
-                if (ir->ewald_geometry == eewg3DC)
-                    gmx_fatal(FARGS,"OpenMM supports only Ewald 3D geometry.\n");
-                if (ir->epsilon_surface != 0)
-                    gmx_fatal(FARGS,"OpenMM does not support dipole correction in Ewald summation.\n");
                 nonbondedForce->setNonbondedMethod(NonbondedForce::Ewald);
-                nonbondedForce->setCutoffDistance(ir->rcoulomb);
-                sys->setPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
-                                           Vec3(0, state->box[1][1], 0), Vec3(0, 0, state->box[2][2]));
                 break;
 
             case eelPME:
                 nonbondedForce->setNonbondedMethod(NonbondedForce::PME);
-                nonbondedForce->setCutoffDistance(ir->rcoulomb);
-                sys->setPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
-                                           Vec3(0, state->box[1][1], 0), Vec3(0, 0, state->box[2][2]));
                 break;
 
             default:
                 gmx_fatal(FARGS,"Internal error: you should not see this message, it that the"
                           "electrosatics option check failed. Please report this error!");
-            }
+            }        
+            sys->setPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
+                                       Vec3(0, state->box[1][1], 0), Vec3(0, 0, state->box[2][2]));                    
+            nonbondedForce->setCutoffDistance(ir->rcoulomb);
+           
+            break;
+        default:            
+            gmx_fatal(FARGS,"OpenMM supports only full periodic boundary conditions "
+                              "(pbc = xyz), or none (pbc = no).");
         }
 
         for (int i = 0; i < numAtoms; ++i)
         {
-            real c6 = nbfp[types[i]*2*ntypes+types[i]*2];
-            real c12 = nbfp[types[i]*2*ntypes+types[i]*2+1];
-            if (c12 <= 0)
-                nonbondedForce->addParticle(charges[i], 1.0, 0.0);
-            else
-                nonbondedForce->addParticle(charges[i], pow(c12/c6, (real) (1.0/6.0)), c6*c6/(4.0*c12));
+            double c12 = nbfp[types[i]*2*ntypes+types[i]*2+1];
+            double c6 = nbfp[types[i]*2*ntypes+types[i]*2];
+            double sigma, epsilon;
+            convert_c_12_6(c12, c6, &sigma, &epsilon);
+            nonbondedForce->addParticle(charges[i], sigma, epsilon);
             sys->addParticle(masses[i]);
         }
 
@@ -756,19 +804,10 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int type = nb14Atoms[offset++];
             int atom1 = nb14Atoms[offset++];
             int atom2 = nb14Atoms[offset++];
-            real c6 = idef.iparams[type].lj14.c6A;
-            real c12 = idef.iparams[type].lj14.c12A;
-            real sigma, epsilon;
-            if (c12 <= 0)
-            {
-                epsilon = (real) 0.0;
-                sigma = (real) 1.0;
-            }
-            else
-            {
-                epsilon = (real) ((c6*c6)/(4.0*c12));
-                sigma = (real) pow(c12/c6, (real) (1.0/6.0));
-            }
+            double sigma, epsilon;
+            convert_c_12_6(idef.iparams[type].lj14.c12A, 
+                    idef.iparams[type].lj14.c6A,
+                    &sigma, &epsilon);
             nonbondedForce->addException(atom1, atom2,
                                          fr->fudgeQQ*charges[atom1]*charges[atom2], sigma, epsilon);
             exclusions[atom1].erase(atom2);
@@ -781,17 +820,18 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             for (set<int>::const_iterator iter = exclusions[i].begin(); iter != exclusions[i].end(); ++iter)
             {
                 if (i < *iter)
+                {
                     nonbondedForce->addException(i, *iter, 0.0, 1.0, 0.0);
+                }
             }
         }
 
         // Add GBSA if needed.
-        t_atoms        atoms;
-        atoms    = gmx_mtop_global_atoms(top_global);
-
         if (ir->implicit_solvent == eisGBSA)
         {
-            GBSAOBCForce* gbsa = new GBSAOBCForce();
+            t_atoms atoms       = gmx_mtop_global_atoms(top_global);
+            GBSAOBCForce* gbsa  = new GBSAOBCForce();
+
             sys->addForce(gbsa);
             gbsa->setSoluteDielectric(ir->epsilon_r);
             gbsa->setSolventDielectric(ir->gb_epsilon_solvent);
@@ -803,12 +843,15 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             else if (nonbondedForce->getNonbondedMethod() == NonbondedForce::CutoffPeriodic)
                 gbsa->setNonbondedMethod(GBSAOBCForce::CutoffPeriodic);
             else
-                gmx_fatal(FARGS,"OpenMM supports only Reaction-Field electrostatics with OBC/GBSA.\n");
+                gmx_fatal(FARGS,"OpenMM supports only Reaction-Field electrostatics with OBC/GBSA.");
 
             for (int i = 0; i < numAtoms; ++i)
+            {
                 gbsa->addParticle(charges[i],
                                   top_global->atomtypes.gb_radius[atoms.atom[i].type],
                                   top_global->atomtypes.S_hct[atoms.atom[i].type]);
+            }
+            free_t_atoms(&atoms, FALSE);
         }
 
         // Set constraints.
@@ -833,19 +876,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         }
 
         // Create an integrator for simulating the system.
-        real friction = (ir->opts.tau_t[0] == 0.0 ? 0.0 : 1.0/ir->opts.tau_t[0]);
+        double friction = (ir->opts.tau_t[0] == 0.0 ? 0.0 : 1.0/ir->opts.tau_t[0]);
         Integrator* integ;
-        if (ir->eI == eiMD || ir->eI == eiVV || ir->eI == eiVVAK)
-        {
-            integ = new VerletIntegrator(ir->delta_t);
-            if ( ir->etc != etcNO)
-            {
-                real collisionFreq = ir->opts.tau_t[0] / 1000; /* tau_t (ps) / 1000 = collisionFreq (fs^-1) */
-                AndersenThermostat* thermostat = new AndersenThermostat(ir->opts.ref_t[0], friction); 
-                sys->addForce(thermostat);
-            }
-        }
-        else if (ir->eI == eiBD)
+        if (ir->eI == eiBD)
         {
             integ = new BrownianIntegrator(ir->opts.ref_t[0], friction, ir->delta_t);
             static_cast<BrownianIntegrator*>(integ)->setRandomNumberSeed(ir->ld_seed); 
@@ -854,6 +887,16 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         {
             integ = new LangevinIntegrator(ir->opts.ref_t[0], friction, ir->delta_t);
             static_cast<LangevinIntegrator*>(integ)->setRandomNumberSeed(ir->ld_seed); 
+        }
+        else 
+        {
+            integ = new VerletIntegrator(ir->delta_t);
+            if ( ir->etc != etcNO)
+            {
+                real collisionFreq = ir->opts.tau_t[0] / 1000; /* tau_t (ps) / 1000 = collisionFreq (fs^-1) */
+                AndersenThermostat* thermostat = new AndersenThermostat(ir->opts.ref_t[0], friction); 
+                sys->addForce(thermostat);
+            }           
         }
         integ->setConstraintTolerance(ir->shake_tol);
 
@@ -885,7 +928,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             }
             if (context == NULL)
             {
-                gmx_fatal(FARGS, "The requested platform \"%s\" could not be found.\n", 
+                gmx_fatal(FARGS, "The requested platform \"%s\" could not be found.", 
                         opt->getOptionValue("platform").c_str());
             }
         }
@@ -905,49 +948,57 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             }
         }
 
-        /* For now this is just to double-check if OpenMM selected the GPU we wanted,
-           but when we'll let OpenMM select the GPU automatically it will query the devideId.
-         */
-        int tmp;
-        if (!from_string<int>(tmp, platform.getPropertyValue(*context, "CudaDevice"), std::dec))
+        /* only for CUDA */
+        if (isStringEqNCase(opt->getOptionValue("platform"), "CUDA"))
         {
-            gmx_fatal(FARGS, "Internal error: couldn't determine the device selected by OpenMM");
-            if (tmp != devId)
+            /* For now this is just to double-check if OpenMM selected the GPU we wanted,
+            but when we'll let OpenMM select the GPU automatically, it will query the devideId.
+            */
+            int tmp;
+            if (!from_string<int>(tmp, platform.getPropertyValue(*context, "CudaDevice"), std::dec))
             {
-                gmx_fatal(FARGS, "Internal error: OpenMM is using device #%d while initialized for device #%d",
-                        tmp, devId);
+                gmx_fatal(FARGS, "Internal error: couldn't determine the device selected by OpenMM");
+                if (tmp != devId)
+                {
+                    gmx_fatal(FARGS, "Internal error: OpenMM is using device #%d"
+                        "while initialized for device #%d", tmp, devId);
+                }
             }
-        }
-
-        /* check GPU compatibility */
-        char gpuname[STRLEN];
-        devId = atoi(opt->getOptionValue("deviceid").c_str());
-        if (!is_supported_cuda_gpu(-1, gpuname))
-        {
-            if (!gmx_strcasecmp(opt->getOptionValue("force-device").c_str(), "yes"))
+            
+            /* check GPU compatibility */
+            char gpuname[STRLEN];
+            devId = atoi(opt->getOptionValue("deviceid").c_str());
+            if (!is_supported_cuda_gpu(-1, gpuname))
             {
-                sprintf(warn_buf, "Non-supported GPU selected (#%d, %s), forced continuing.\n"
-                        "Note, that the simulation can be slow or it migth even crash.", 
-                        devId, gpuname);
-                fprintf(fplog, "%s", warn_buf);
-                gmx_warning(warn_buf);
+                if (!gmx_strcasecmp(opt->getOptionValue("force-device").c_str(), "yes"))
+                {
+                    sprintf(warn_buf, "Non-supported GPU selected (#%d, %s), forced continuing."
+                            "Note, that the simulation can be slow or it migth even crash.", 
+                            devId, gpuname);
+                    fprintf(fplog, "%s\n", warn_buf);
+                    gmx_warning(warn_buf);
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "The selected GPU (#%d, %s) is not supported by Gromacs! "
+                              "Most probably you have a low-end GPU which would not perform well, " 
+                              "or new hardware that has not been tested yet with Gromacs-OpenMM. "
+                              "If you still want to try using the device, use the force=on option.", 
+                              devId, gpuname);
+                }
             }
             else
             {
-                gmx_fatal(FARGS, "The selected GPU (#%d, %s) is not supported by Gromacs! "
-                          "Most probably you have a low-end GPU which would not perform well, " 
-                          "or new hardware that has not been tested yet with Gromacs-OpenMM. "
-                          "If you still want to try using the device, use the force=on option.", 
-                          devId, gpuname);
+                fprintf(fplog, "Gromacs will run on the GPU #%d (%s).\n", devId, gpuname);
             }
         }
-        else
+        
+        /* only for CUDA */
+        if (isStringEqNCase(opt->getOptionValue("platform"), "CUDA"))
         {
-            fprintf(fplog, "Gromacs will run on the GPU #%d (%s).\n", devId, gpuname);
+            /* pre-simulation memtest */
+            runMemtest(fplog, -1, "Pre", opt);
         }
-
-        /* do the pre-simulation memtest */
-        runMemtest(fplog, -1, "Pre", opt);
 
         vector<Vec3> pos(numAtoms);
         vector<Vec3> vel(numAtoms);
@@ -971,7 +1022,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
     }
     catch (std::exception& e)
     {
-        gmx_fatal(FARGS, "OpenMM exception caught while initializating: %s\n", e.what());
+        gmx_fatal(FARGS, "OpenMM exception caught while initializating: %s", e.what());
     }
 }
 
@@ -989,7 +1040,7 @@ void openmm_take_one_step(void* data)
     }
     catch (std::exception& e)
     {
-        gmx_fatal(FARGS, "OpenMM exception caught while taking a step: %s\n", e.what());
+        gmx_fatal(FARGS, "OpenMM exception caught while taking a step: %s", e.what());
     }
 }
 
@@ -1006,7 +1057,7 @@ void openmm_take_steps(void* data, int nstep)
     }
     catch (std::exception& e)
     {
-        gmx_fatal(FARGS, "OpenMM exception caught while taking a step: %s\n", e.what());
+        gmx_fatal(FARGS, "OpenMM exception caught while taking a step: %s", e.what());
     }
 }
 
@@ -1019,7 +1070,12 @@ void openmm_take_steps(void* data, int nstep)
 void openmm_cleanup(FILE* fplog, void* data)
 {
     OpenMMData* d = static_cast<OpenMMData*>(data);
-    runMemtest(fplog, -1, "Post", d->platformOpt);
+    /* only for CUDA */
+    if (isStringEqNCase(d->platformOpt->getOptionValue("platform"), "CUDA"))
+    {
+        /* post-simulation memtest */
+        runMemtest(fplog, -1, "Post", d->platformOpt);
+    }
     delete d->system;
     delete d->integrator;
     delete d->context;
@@ -1035,7 +1091,7 @@ void openmm_cleanup(FILE* fplog, void* data)
  * should be minimized. 
  *
  * \param[in]   data        OpenMMData object created by openmm_init().
- * \param[out]  time
+ * \param[out]  time        Simulation time for which the state was created.
  * \param[out]  state       State of the system: coordinates and velocities.
  * \param[out]  f           Forces.
  * \param[out]  enerd       Energies.
@@ -1109,6 +1165,6 @@ void openmm_copy_state(void *data,
     }
     catch (std::exception& e)
     {
-        gmx_fatal(FARGS, "OpenMM exception caught while retrieving state information: %s\n", e.what());
+        gmx_fatal(FARGS, "OpenMM exception caught while retrieving state information: %s", e.what());
     }
 }
