@@ -230,7 +230,7 @@ Thus for exact restarts or redoing part of a run it might be necessary to
 set <tt>init_step</tt> to the step number of the restart frame.
 <tt>tpbconv</tt> does this automatically.
 </dd>
-<dt><h4>nstcalcenergy: (1)</h4></dt>
+<dt><h4>nstcalcenergy: (-1)</h4></dt>
 <dd>The frequency for calculating the energies, including the temperature
 and the pressure, 0 is never.
 This option is only relevant with dynamics.
@@ -241,7 +241,10 @@ because calculating energies requires global communication between all
 processes which can become a bottleneck at high parallelization.
 With global temperature and/or pressure coupling the time step for
 the coupling algorithm is <b>nstcalcenergy</b>*<b>dt</b>.
-Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.</dd>
+Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.
+The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
+unless <b>nstlist</b> &le 0, then a value of 10 is used;
+for velocity verlet integrators <b>nstcalcenergy</b> is set to 1.</dd>
 <dt><h4>comm_mode:</h4></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
@@ -252,7 +255,7 @@ Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.</dd>
 <dt><b>No</b></dt>
 <dd>No restriction on the center of mass motion
 </dl></dd>
-<dt><h4>nstcomm: (1) [steps]</h4></dt>
+<dt><h4>nstcomm: (10) [steps]</h4></dt>
 <dd>frequency for center of mass motion removal</dd>
 <dt><h4>comm_grps:</h4></dt>
 <dd>group(s) for center of mass motion removal, default is the whole system</dd>
@@ -342,8 +345,7 @@ the last velocities are always written</dd>
 <dd>frequency to write forces to output trajectory.</dd>
 <dt><h4>nstlog: (100) [steps]</h4></dt>
 <dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
-the last energies are always written,
-should be a multiple of <b>nstcalcenergy</b></dd>
+the last energies are always written</dd>
 <dt><h4>nstenergy: (100) [steps]</h4></dt>
 <dd>frequency to write energies to energy file,
 the last energies are always written,
