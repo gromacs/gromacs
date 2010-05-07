@@ -19,7 +19,9 @@ FILE* debug;
 #include "tmpi.h"
 #else
 #ifndef HAVE_MPICOMM
+#ifndef _gmx_parallel_3dfft_h_
 typedef void* MPI_Comm;
+#endif
 #define HAVE_MPICOMM
 #endif
 double MPI_Wtime();

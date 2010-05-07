@@ -34,8 +34,10 @@
 #include <mpi.h>
 #elif defined GMX_THREADS
 #include "tmpi.h"
-#else 
+#else
+#ifndef FFT5D_H_
 typedef void* MPI_Comm;
+#endif
 #endif
 
 typedef struct gmx_parallel_3dfft *
