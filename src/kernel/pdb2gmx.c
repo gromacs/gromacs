@@ -77,6 +77,7 @@ typedef struct {
   char main[6];
   char nter[6];
   char cter[6];
+  char bter[6];
 } rtprename_t;
 
 
@@ -215,11 +216,11 @@ static void read_rtprename(const char *fname,FILE *fp,
   ncol = 0;
   while(get_a_line(fp,line,STRLEN)) {
     srenew(rr,n+1);
-    nc = sscanf(line,"%s %s %s %s %s",
-		rr[n].gmx,rr[n].main,rr[n].nter,rr[n].cter,buf);
+    nc = sscanf(line,"%s %s %s %s %s %s",
+		rr[n].gmx,rr[n].main,rr[n].nter,rr[n].cter,rr[n].bter,buf);
     if (ncol == 0) {
-      if (nc != 2 && nc != 4) {
-	gmx_fatal(FARGS,"Residue renaming database '%s' has %d columns instead of %d or %d",fname,ncol,2,4);
+      if (nc != 2 && nc != 5) {
+	gmx_fatal(FARGS,"Residue renaming database '%s' has %d columns instead of %d or %d",fname,ncol,2,5);
       }
       ncol = nc;
     } else if (nc != ncol) {
@@ -230,6 +231,7 @@ static void read_rtprename(const char *fname,FILE *fp,
       /* This file does not have special termini names, copy them from main */
       strcpy(rr[n].nter,rr[n].main);
       strcpy(rr[n].cter,rr[n].main);
+      strcpy(rr[n].bter,rr[n].main);
     }
 
     n++;
@@ -268,7 +270,9 @@ static void rename_resrtp(t_atoms *pdba,int nterpairs,int *rN,int *rC,
 	  bC = TRUE;
 	}
       }
-      if (bN) {
+      if (bN && bC) {
+	nn = rr[i].bter;
+      } else if (bN) {
 	nn = rr[i].nter;
       } else if (bC) {
 	nn = rr[i].cter;
@@ -498,9 +502,6 @@ void process_chain(t_atoms *pdba, rvec *x,
      */ 
     rename_bb(pdba,"CYS","CYSH",FALSE,symtab);
   }
-
-  /* The Gromacs rtp name for a heme is HEME */
-  rename_bb(pdba,"HEM","HEME",TRUE,symtab);
 
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
