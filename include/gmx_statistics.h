@@ -48,6 +48,8 @@ enum { estatsOK, estatsNO_POINTS, estatsNO_MEMORY, estatsERROR,
 enum { elsqWEIGHT_NONE, elsqWEIGHT_X, elsqWEIGHT_Y, 
        elsqWEIGHT_XY, elsqWEIGHT_NR  };
 
+enum { ehistoX, ehistoY, ehistoNR };
+  
 extern gmx_stats_t gmx_stats_init();
 
 extern int gmx_stats_done(gmx_stats_t stats);
@@ -112,12 +114,15 @@ extern int gmx_stats_dump_xy(gmx_stats_t gstats,FILE *fp);
 
 /* Make a histogram of the data present. Uses either bindwith to
    determine the number of bins, or nbins to determine the binwidth,
-   therefore one of these should be zero, but not the other. If
+   therefore one of these should be zero, but not the other. If *nbins = 0
+   the number of bins will be returned in this variable. ehisto should be one of 
+   ehistoX or ehistoY. If
    normalized not equal to zero, the integral of the histogram will be
    normalized to one. The output is in two arrays, *x and *y, to which
    you should pass a pointer. Memory for the arrays will be allocated
    as needed. Function returns one of the estats codes. */
-extern int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int nbins,
+extern int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int *nbins,
+				    int ehisto,
 				    int normalized,real **x,real **y);
 
 /* Return message belonging to error code */

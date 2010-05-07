@@ -63,6 +63,7 @@ _gmx_selelem_type_str(t_selelem *sel)
         case SEL_CONST:      return "CONST";
         case SEL_EXPRESSION: return "EXPR";
         case SEL_BOOLEAN:    return "BOOL";
+        case SEL_ARITHMETIC: return "ARITH";
         case SEL_ROOT:       return "ROOT";
         case SEL_SUBEXPR:    return "SUBEXPR";
         case SEL_SUBEXPRREF: return "REF";
@@ -230,75 +231,88 @@ _gmx_selelem_free_values(t_selelem *sel)
 }
 
 /*!
+ * \param[in] method Method to free.
+ * \param[in] mdata  Method data to free.
+ * \param[in] bFreeParamData If TRUE, free also the values of parameters.
+ */
+void
+_gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata,
+                         bool bFreeParamData)
+{
+    /* Free method data */
+    if (mdata)
+    {
+        if (method && method->free)
+        {
+            method->free(mdata);
+        }
+        sfree(mdata);
+    }
+    /* Free the method itself */
+    if (method)
+    {
+        int  i;
+
+        /* If the method has not yet been initialized, we must free the
+         * memory allocated for parameter values here. */
+        if (bFreeParamData)
+        {
+            for (i = 0; i < method->nparams; ++i)
+            {
+                gmx_ana_selparam_t *param = &method->param[i];
+
+                if ((param->flags & (SPAR_VARNUM | SPAR_ATOMVAL))
+                    && param->val.type != GROUP_VALUE
+                    && param->val.type != POS_VALUE)
+                {
+                    /* We don't need to check for enum values here, because
+                     * SPAR_ENUMVAL cannot be combined with the flags
+                     * required above. If it ever will be, this results
+                     * in a double free within this function, which should
+                     * be relatively easy to debug.
+                     */
+                    if (param->val.type == STR_VALUE)
+                    {
+                        int j;
+
+                        for (j = 0; j < param->val.nr; ++j)
+                        {
+                            sfree(param->val.u.s[j]);
+                        }
+                    }
+                    sfree(param->val.u.ptr);
+                }
+            }
+        }
+        /* And even if it is, the arrays allocated for enum values need
+         * to be freed. */
+        for (i = 0; i < method->nparams; ++i)
+        {
+            gmx_ana_selparam_t *param = &method->param[i];
+
+            if (param->flags & SPAR_ENUMVAL)
+            {
+                sfree(param->val.u.ptr);
+            }
+
+        }
+        sfree(method->param);
+        sfree(method);
+    }
+}
+
+/*!
  * \param[in] sel Selection to free.
  */
 void
 _gmx_selelem_free_exprdata(t_selelem *sel)
 {
-    int i;
-
     if (sel->type == SEL_EXPRESSION || sel->type == SEL_MODIFIER)
     {
-        /* Free method data */
-        if (sel->u.expr.mdata)
-        {
-            if (sel->u.expr.method && sel->u.expr.method->free)
-            {
-                sel->u.expr.method->free(sel->u.expr.mdata);
-            }
-            sfree(sel->u.expr.mdata);
-            sel->u.expr.mdata = NULL;
-        }
-        /* Free the method itself */
-        if (sel->u.expr.method)
-        {
-            /* If the method has not yet been initialized, we must free the
-             * memory allocated for parameter values here. */
-            if (!(sel->flags & SEL_METHODINIT))
-            {
-                for (i = 0; i < sel->u.expr.method->nparams; ++i)
-                {
-                    gmx_ana_selparam_t *param = &sel->u.expr.method->param[i];
-
-                    if ((param->flags & (SPAR_VARNUM | SPAR_ATOMVAL))
-                        && param->val.type != GROUP_VALUE
-                        && param->val.type != POS_VALUE)
-                    {
-                        /* We don't need to check for enum values here, because
-                         * SPAR_ENUMVAL cannot be combined with the flags
-                         * required above. If it ever will be, this results
-                         * in a double free within this function, which should
-                         * be relatively easy to debug.
-                         */
-                        if (param->val.type == STR_VALUE)
-                        {
-                            int j;
-
-                            for (j = 0; j < param->val.nr; ++j)
-                            {
-                                sfree(param->val.u.s[j]);
-                            }
-                        }
-                        sfree(param->val.u.ptr);
-                    }
-                }
-            }
-            /* And even if it is, the arrays allocated for enum values need
-             * to be freed. */
-            for (i = 0; i < sel->u.expr.method->nparams; ++i)
-            {
-                gmx_ana_selparam_t *param = &sel->u.expr.method->param[i];
-
-                if (param->flags & SPAR_ENUMVAL)
-                {
-                    sfree(param->val.u.ptr);
-                }
-
-            }
-            sfree(sel->u.expr.method->param);
-            sfree(sel->u.expr.method);
-            sel->u.expr.method = NULL;
-        }
+        _gmx_selelem_free_method(sel->u.expr.method, sel->u.expr.mdata,
+                                 !(sel->flags & SEL_METHODINIT));
+        sel->u.expr.mdata = NULL;
+        sel->u.expr.method = NULL;
         /* Free position data */
         if (sel->u.expr.pos)
         {
@@ -311,6 +325,16 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
             gmx_ana_poscalc_free(sel->u.expr.pc);
             sel->u.expr.pc = NULL;
         }
+    }
+    if (sel->type == SEL_ARITHMETIC)
+    {
+        sfree(sel->u.arith.opstr);
+        sel->u.arith.opstr = NULL;
+    }
+    if (sel->type == SEL_SUBEXPR || sel->type == SEL_ROOT
+        || (sel->type == SEL_CONST && sel->v.type == GROUP_VALUE))
+    {
+        gmx_ana_index_deinit(&sel->u.cgrp);
     }
 }
 
@@ -347,11 +371,6 @@ _gmx_selelem_free(t_selelem *sel)
 
     /* Free other storage */
     _gmx_selelem_free_exprdata(sel);
-    if (sel->type == SEL_SUBEXPR || sel->type == SEL_ROOT
-        || (sel->type == SEL_CONST && sel->v.type == GROUP_VALUE))
-    {
-        gmx_ana_index_deinit(&sel->u.cgrp);
-    }
 
     /* Free temporary compiler data if present */
     _gmx_selelem_free_compiler_data(sel);
@@ -413,6 +432,8 @@ print_evaluation_func(FILE *fp, t_selelem *sel)
         fprintf(fp, "and");
     else if (sel->evaluate == &_gmx_sel_evaluate_or)
         fprintf(fp, "or");
+    else if (sel->evaluate == &_gmx_sel_evaluate_arithmetic)
+        fprintf(fp, "arithmetic");
     else
         fprintf(fp, "%p", (void*)(sel->evaluate));
 }

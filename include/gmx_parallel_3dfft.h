@@ -23,22 +23,19 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_MPI
 
 #include "types/simple.h"
 #include "gmxcomplex.h"
 #include "gmx_fft.h"
 
-/* We NEED MPI here. */
+/* We NEED MPI Comm here. But if no MPI is used then void pointer for MPI_Comm is enough*/
+/* This saves on many ifdefs */
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
-#endif
-#ifdef GMX_THREADS
+#elif defined GMX_THREADS
 #include "tmpi.h"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
+#else 
+typedef void* MPI_Comm;
 #endif
 
 typedef struct gmx_parallel_3dfft *
@@ -73,77 +70,42 @@ gmx_parallel_3dfft_t;
  */
 int
 gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
-                           int                       ngridx,
-                           int                       ngridy,
-                           int                       ngridz,
-						   int                       *node2slab,
-						   int                       *slab2grid_x,
-                           MPI_Comm                  comm,
+                           ivec                      ndata,
+						   real **                   real_data,
+						   t_complex **              complex_data,
+                           MPI_Comm                  comm[2],
+                           int *                     slab2index_major,
+                           int *                     slab2index_minor,
                            bool                      bReproducible);
-                           
+
 
 
 
 
 /*! \brief Get direct space grid index limits
- *
- *  The z dimension is never distributed. In the direct space, the x dimension
- *  is distributed over nodes, and after the real-to-complex FFT we work with
- *  a transposed grid where the y dimension is partitioned over nodes.
- *
- *  The node2slab array translates to node ids to slab indices,
- *  when NULL the slab ids are assumed to be identical to the node ids
- *  in the communicator comm.
  */
 int
-gmx_parallel_3dfft_limits(gmx_parallel_3dfft_t      pfft_setup,
-                          int *                     local_x_start,
-                          int *                     local_nx,
-                          int *                     local_y_start,
-                          int *                     local_ny);
+gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
+							   ivec                      local_ndata,
+							   ivec                      local_offset,
+							   ivec                      local_size);
 
 
-int
-gmx_parallel_transpose(t_complex *   data,
-                       t_complex *   work,
-                       int           nx,
-                       int           ny,
-                       int           local_x_start,
-                       int           local_nx,
-                       int           local_y_start,
-                       int           local_ny,
-                       int           nelem,
-					   int           nnodes,
-					   int           *node2slab,
-                       MPI_Comm      comm);
-
-
-/*! \brief Perform forward parallel MPI FFT.
- *
- *  Direction is either GMX_FFT_REAL_TO_COMPLEX or GMX_FFT_COMPLEX_TO_REAL.
- *
- *  If input and output arrays are separate there is no packing to consider.
- *  Input is simply nx*ny*nz in real, and output ny*nx*nzc in complex.
- *
- *  In they are identical we need to make sure there is room for the complex
- *  (length nzc=nz/2+1) in the array, so the _real_ space dimensions is
- *  always padded to nzc*2.
- *  In this case, the real dimensions are nx*ny*(nzc*2) while the complex
- *  dimensions is ny*nx*nzc (of type complex).
- *
- *  Note that the X and Y dimensions are transposed in the reciprocal space
- *  to avoid extra communication!
- *
- *  The node2slab array translates to node ids to slab indices,
- *  when NULL the slab ids are assumed to be identical to the node ids
- *  in the communicator comm.
+/*! \brief Get reciprocal space grid index limits
  */
 int
-gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
-                   enum gmx_fft_direction  dir,
-                   void *                  in_data,
-                   void *                  out_data);
+gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
+                                  ivec                      complex_order,
+								  ivec                      local_ndata,
+								  ivec                      local_offset,
+								  ivec                      local_size);
 
+
+int
+gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
+						   enum gmx_fft_direction  dir,
+						   void *                  in_data,
+						   void *                  out_data);
 
 
 /*! \brief Release all data in parallel fft setup
@@ -158,11 +120,8 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
 int
 gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
 
-#ifdef __cplusplus
-}
-#endif
 
-#endif /* GMX_MPI */
+
 
 #endif /* _gmx_parallel_3dfft_h_ */
 

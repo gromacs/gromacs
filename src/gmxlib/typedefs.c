@@ -277,6 +277,8 @@ void done_atom (t_atoms *at)
   sfree(at->atom);
   sfree(at->resinfo);
   sfree(at->atomname);
+  sfree(at->atomtype);
+  sfree(at->atomtypeB);
 }
 
 void done_atomtypes(t_atomtypes *atype)
@@ -285,6 +287,7 @@ void done_atomtypes(t_atomtypes *atype)
   sfree(atype->radius);
   sfree(atype->vol);
   sfree(atype->surftens);
+  sfree(atype->atomnumber);
   sfree(atype->gb_radius);
   sfree(atype->S_hct);
 }
@@ -339,8 +342,17 @@ void done_mtop(gmx_mtop_t *mtop,bool bDoneSymtab)
 
 void done_top(t_topology *top)
 {
-  int i;
+  int f;
   
+  sfree(top->idef.functype);
+  sfree(top->idef.iparams);
+  for (f = 0; f < F_NRE; ++f)
+  {
+      sfree(top->idef.il[f].iatoms);
+      top->idef.il[f].iatoms = NULL;
+      top->idef.il[f].nalloc = 0;
+  }
+
   done_atom (&(top->atoms));
 
   /* For GB */

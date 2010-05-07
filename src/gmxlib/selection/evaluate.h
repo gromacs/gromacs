@@ -70,6 +70,9 @@ typedef struct gmx_sel_evaluate_t
 void
 _gmx_sel_evaluate_init(gmx_sel_evaluate_t *data, gmx_ana_index_t *gall,
                        t_topology *top, t_trxframe *fr, t_pbc *pbc);
+/** Evaluates the children of a general selection element. */
+int
+_gmx_sel_evaluate_children(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /** Evaluates the children of a \ref SEL_EXPRESSION element. */
 int
 _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
@@ -84,6 +87,9 @@ _gmx_sel_evaluate_root(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t
 /** Evaluates a static group selection element. */
 int
 _gmx_sel_evaluate_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
+/** Evaluates an arithmetic expression element. */
+int
+_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /*@}*/
 
 /*! \name Subexpression evaluation functions

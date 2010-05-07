@@ -59,6 +59,15 @@ static const char *help_common[] = {
     "Other subtopics give more details on certain aspects.",
 };
 
+static const char *help_arithmetic[] = {
+    "ARITHMETIC EXPRESSIONS IN SELECTIONS[PAR]",
+
+    "Basic arithmetic evaluation is supported for numeric expressions.",
+    "Supported operations are addition, subtraction, negation, multiplication,",
+    "division, and exponentiation (using ^).",
+    "Result of a division by zero or other illegal operations is undefined.",
+};
+
 static const char *help_cmdline[] = {
     "SELECTION COMMAND-LINE ARGUMENTS[PAR]",
 
@@ -166,8 +175,6 @@ static const char *help_keywords[] = {
 
 static const char *help_limits[] = {
     "SELECTION LIMITATIONS[PAR]",
-
-    "Arithmetic expressions are not implemented.[PAR]",
 
     "Some analysis programs may require a special structure for the input",
     "selections (e.g., [TT]g_angle[tt] requires the index group to be made",
@@ -284,6 +291,7 @@ static const char *help_syntax[] = {
 
 static const t_selection_help_item helpitems[] = {
     {NULL,          asize(help_common),    help_common},
+    {"arithmetic",  asize(help_arithmetic),help_arithmetic},
     {"cmdline",     asize(help_cmdline),   help_cmdline},
     {"evaluation",  asize(help_eval),      help_eval},
     {"examples",    asize(help_examples),  help_examples},
@@ -325,7 +333,14 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
             }
             else
             {
-                fprintf(stderr, "%s\n", method->name);
+                const char *symname = _gmx_sel_sym_name(symbol);
+
+                fprintf(stderr, "%s", symname);
+                if (strcmp(symname, method->name) != 0)
+                {
+                    fprintf(stderr, " (synonym for %s)", method->name);
+                }
+                fprintf(stderr, "\n");
             }
         }
         symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
