@@ -68,7 +68,7 @@
 #include "strdb.h"
 
 /* this must correspond to enum in pdb2top.h */
-const char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
+const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
 
 static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
 {
