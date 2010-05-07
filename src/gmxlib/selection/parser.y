@@ -123,9 +123,14 @@ yyerror(yyscan_t, char const *s);
 %nonassoc <str> CMP_OP
 /* A dummy token that determines the precedence of parameter reduction */
 %nonassoc       PARAM_REDUCT
-/* Operator tokens */
+/* Boolean operator tokens */
 %left           AND OR XOR
 %left           NOT
+/* Arithmetic operator tokens */
+%left           '+' '-'
+%left           '*' '/'
+%left           UNARY_NEG   /* Dummy token for unary negation precedence */
+%right          '^'
 
 /* Simple non-terminals */
 %type <r>     number
@@ -152,7 +157,7 @@ yyerror(yyscan_t, char const *s);
 %destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
 %destructor { _gmx_selexpr_free_values($$); } value_list value_list_nonempty value_item
 
-%expect 85
+%expect 91
 %debug
 %pure-parser
 
@@ -387,8 +392,20 @@ num_expr:    pos_mod KEYWORD_NUMERIC
              }
 ;
 
-/* Grouping of numeric expressions */
-num_expr:    '(' num_expr ')'   { $$ = $2; }
+/* Arithmetic evaluation and grouping */
+num_expr:    num_expr '+' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '+', scanner); }
+           | num_expr '-' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '-', scanner); }
+           | num_expr '*' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '*', scanner); }
+           | num_expr '/' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '/', scanner); }
+           | '-' num_expr %prec UNARY_NEG
+             { $$ = _gmx_sel_init_arithmetic($2, NULL, '-', scanner); }
+           | num_expr '^' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '^', scanner); }
+           | '(' num_expr ')'   { $$ = $2; }
 ;
 
 /********************************************************************

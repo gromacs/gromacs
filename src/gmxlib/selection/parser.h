@@ -69,7 +69,8 @@
      XOR = 285,
      OR = 286,
      AND = 287,
-     NOT = 288
+     NOT = 288,
+     UNARY_NEG = 289
    };
 #endif
 /* Tokens.  */
@@ -104,6 +105,7 @@
 #define OR 286
 #define AND 287
 #define NOT 288
+#define UNARY_NEG 289
 
 
 
@@ -123,7 +125,7 @@ typedef union YYSTYPE
     struct t_selexpr_param     *param;
 }
 /* Line 1489 of yacc.c.  */
-#line 127 "parser.h"
+#line 129 "parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

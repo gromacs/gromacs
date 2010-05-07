@@ -63,6 +63,7 @@ _gmx_selelem_type_str(t_selelem *sel)
         case SEL_CONST:      return "CONST";
         case SEL_EXPRESSION: return "EXPR";
         case SEL_BOOLEAN:    return "BOOL";
+        case SEL_ARITHMETIC: return "ARITH";
         case SEL_ROOT:       return "ROOT";
         case SEL_SUBEXPR:    return "SUBEXPR";
         case SEL_SUBEXPRREF: return "REF";
@@ -325,6 +326,11 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
             sel->u.expr.pc = NULL;
         }
     }
+    if (sel->type == SEL_ARITHMETIC)
+    {
+        sfree(sel->u.arith.opstr);
+        sel->u.arith.opstr = NULL;
+    }
     if (sel->type == SEL_SUBEXPR || sel->type == SEL_ROOT
         || (sel->type == SEL_CONST && sel->v.type == GROUP_VALUE))
     {
@@ -426,6 +432,8 @@ print_evaluation_func(FILE *fp, t_selelem *sel)
         fprintf(fp, "and");
     else if (sel->evaluate == &_gmx_sel_evaluate_or)
         fprintf(fp, "or");
+    else if (sel->evaluate == &_gmx_sel_evaluate_arithmetic)
+        fprintf(fp, "arithmetic");
     else
         fprintf(fp, "%p", (void*)(sel->evaluate));
 }

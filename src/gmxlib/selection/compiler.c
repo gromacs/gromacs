@@ -754,6 +754,73 @@ reorder_boolean_static_children(t_selelem *sel)
 }
 
 /********************************************************************
+ * ARITHMETIC EXPRESSION PROCESSING
+ ********************************************************************/
+
+/*! \brief
+ * Processes arithmetic expressions to simplify and speed up evaluation.
+ *
+ * \param  sel Root of the selection subtree to process.
+ *
+ * Currently, this function only converts integer constants to reals
+ * within arithmetic expressions.
+ */
+static bool
+optimize_arithmetic_expressions(t_selelem *sel)
+{
+    t_selelem  *child;
+    bool        bOk;
+
+    /* Do recursively for children. */
+    if (sel->type != SEL_SUBEXPRREF)
+    {
+        child = sel->child;
+        while (child)
+        {
+            bOk = optimize_arithmetic_expressions(child);
+            if (!bOk)
+            {
+                return bOk;
+            }
+            child = child->next;
+        }
+    }
+
+    if (sel->type != SEL_ARITHMETIC)
+    {
+        return TRUE;
+    }
+
+    /* Convert integer constants to reals. */
+    child = sel->child;
+    while (child)
+    {
+        if (child->v.type == INT_VALUE)
+        {
+            real  *r;
+
+            if (child->type != SEL_CONST)
+            {
+                gmx_impl("Non-constant integer expressions not implemented in arithmetic evaluation");
+                return FALSE;
+            }
+            snew(r, 1);
+            r[0] = child->v.u.i[0];
+            sfree(child->v.u.i);
+            child->v.u.r = r;
+            child->v.type = REAL_VALUE;
+        }
+        else if (child->v.type != REAL_VALUE)
+        {
+            gmx_bug("Internal error");
+            return FALSE;
+        }
+        child = child->next;
+    }
+    return TRUE;
+}
+
+/********************************************************************
  * EVALUATION PREPARATION COMPILER PASS
  ********************************************************************/
 
@@ -838,6 +905,10 @@ init_item_evaluation(t_selelem *sel)
                 sel->flags |= SEL_INITFRAME;
             }
             sel->evaluate = &_gmx_sel_evaluate_method;
+            break;
+
+        case SEL_ARITHMETIC:
+            sel->evaluate = &_gmx_sel_evaluate_arithmetic;
             break;
 
         case SEL_MODIFIER:
@@ -1627,6 +1698,26 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             break;
 
+        case SEL_ARITHMETIC:
+            if (!(sel->flags & SEL_DYNAMIC))
+            {
+                rc = sel->cdata->evaluate(data, sel, g);
+                if (rc == 0 && sel->cdata->bStatic)
+                {
+                    make_static(sel);
+                }
+            }
+            else
+            {
+                rc = _gmx_sel_evaluate_children(data, sel, g);
+                if (rc != 0)
+                {
+                    return rc;
+                }
+                gmx_ana_index_copy(&gmax, g, TRUE);
+            }
+            break;
+
         case SEL_ROOT:
             rc = sel->cdata->evaluate(data, sel, g);
             break;
@@ -1814,6 +1905,7 @@ analyze_static2(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
         case SEL_EXPRESSION:
         case SEL_BOOLEAN:
         case SEL_SUBEXPRREF:
+        case SEL_ARITHMETIC:
             if (sel->cdata->bStatic)
             {
                 rc = sel->cdata->evaluate(data, sel, g);
@@ -2299,9 +2391,14 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     item = sc->root;
     while (item)
     {
-        /* Process boolean expressions */
+        /* Process boolean and arithmetic expressions. */
         optimize_boolean_expressions(item);
         reorder_boolean_static_children(item);
+        if (!optimize_arithmetic_expressions(item))
+        {
+            /* FIXME: Clean up the collection */
+            return -1;
+        }
         /* Initialize evaluation */
         if (!init_item_evaluation(item))
         {
