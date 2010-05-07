@@ -67,7 +67,8 @@ extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 #define GMX_PME_SPREAD_Q      (1<<0)
 #define GMX_PME_SOLVE         (1<<1)
 #define GMX_PME_CALC_F        (1<<2)
-#define GMX_PME_DO_ALL  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
+#define GMX_PME_CALC_ENER_VIR (1<<3)
+#define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 extern int gmx_pme_do(gmx_pme_t pme,
 		      int start,       int homenr,
@@ -117,7 +118,9 @@ extern void gmx_pme_send_q(t_commrec *cr,
 /* Send the charges and maxshift to out PME-only node. */
 
 extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-			   bool bFreeEnergy, real lambda, gmx_large_int_t step);
+			   bool bFreeEnergy, real lambda,
+			   bool bEnerVir,
+			   gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
 extern void gmx_pme_finish(t_commrec *cr);
@@ -134,6 +137,7 @@ extern int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
 			    matrix box, rvec **x,rvec **f,
 			    int *maxshift0,int *maxshift1,
 			    bool *bFreeEnergy,real *lambda,
+			    bool *bEnerVir,
 			    gmx_large_int_t *step);
 /* Receive charges and/or coordinates from the PP-only nodes.
  * Returns the number of atoms, or -1 when the run is finished.

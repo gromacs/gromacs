@@ -63,7 +63,8 @@
 #define PP_PME_CHARGEB  (1<<1)
 #define PP_PME_COORD    (1<<2)
 #define PP_PME_FEP      (1<<3)
-#define PP_PME_FINISH   (1<<4)
+#define PP_PME_ENER_VIR (1<<4)
+#define PP_PME_FINISH   (1<<5)
 
 #define PME_PP_SIGSTOP     (1<<0)
 #define PME_PP_SIGSTOPNSS     (1<<1)
@@ -237,13 +238,17 @@ void gmx_pme_send_q(t_commrec *cr,
 }
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-		    bool bFreeEnergy, real lambda,gmx_large_int_t step)
+		    bool bFreeEnergy, real lambda,
+		    bool bEnerVir,
+		    gmx_large_int_t step)
 {
   int flags;
-
+  
   flags = PP_PME_COORD;
   if (bFreeEnergy)
     flags |= PP_PME_FEP;
+  if (bEnerVir)
+    flags |= PP_PME_ENER_VIR;
 
   gmx_pme_send_q_x(cr,flags,NULL,NULL,box,x,lambda,0,0,step);
 }
@@ -262,6 +267,7 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                      matrix box, rvec **x,rvec **f,
                      int *maxshift0, int *maxshift1,
                      bool *bFreeEnergy,real *lambda,
+		     bool *bEnerVir,
                      gmx_large_int_t *step)
 {
     gmx_pme_comm_n_box_t cnb;
@@ -354,6 +360,7 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
             copy_mat(cnb.box,box);
             *bFreeEnergy = (cnb.flags & PP_PME_FEP);
             *lambda      = cnb.lambda;
+	    *bEnerVir    = (cnb.flags & PP_PME_ENER_VIR);
 
             if (*bFreeEnergy && !(pme_pp->flags_charge & PP_PME_CHARGEB))
                 gmx_incons("PME-only node received free energy request, but "

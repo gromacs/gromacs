@@ -1148,7 +1148,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
 
 static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                          real ewaldcoeff,real vol,matrix vir,t_commrec *cr,
-                         real *mesh_energy)
+                         bool bEnerPres,real *mesh_energy)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
@@ -1257,80 +1257,146 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
             }
             kxend = local_offset[XX] + local_ndata[XX];
 			
-            /* Two explicit loops to avoid a conditional inside the loop */
-            for(kx=kxstart; kx<maxkx; kx++)
+            if (bEnerPres)
             {
-                mx = kx;
+                /* More expensive inner loop, especially because of the storage
+                 * of the mh elements in array's.
+                 * Because x is the minor grid index, all mh elements
+                 * depend on kx for triclinic unit cells.
+                 */
 
-                mhxk      = mx * rxx;
-                mhyk      = mx * ryx + my * ryy;
-                mhzk      = mx * rzx + my * rzy + mz * rzz;
-                m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
-                mhx[kx]   = mhxk;
+                /* Two explicit loops to avoid a conditional inside the loop */
+                mhyk      = my * ryy;
+                mhzk      = mz * rzz;
                 mhy[kx]   = mhyk;
                 mhz[kx]   = mhzk;
-                m2[kx]    = m2k;
-                denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
-                tmp1[kx]  = -factor*m2k;
-            }
 
-            for(kx=maxkx; kx<kxend; kx++)
-            {
-                mx = (kx - nx);
+                for(kx=kxstart; kx<maxkx; kx++)
+                {
+                    mx = kx;
+                    
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    mhx[kx]   = mhxk;
+                    mhy[kx]   = mhyk;
+                    mhz[kx]   = mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                }
+                
+                for(kx=maxkx; kx<kxend; kx++)
+                {
+                    mx = (kx - nx);
 
-                mhxk      = mx * rxx;
-                mhyk      = mx * ryx + my * ryy;
-                mhzk      = mx * rzx + my * rzy + mz * rzz;
-                m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
-                mhx[kx]   = mhxk;
-                mhy[kx]   = mhyk;
-                mhz[kx]   = mhzk;
-                m2[kx]    = m2k;
-                denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
-                tmp1[kx]  = -factor*m2k;
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    mhx[kx]   = mhxk;
+                    mhy[kx]   = mhyk;
+                    mhz[kx]   = mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                }
+                
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    m2inv[kx] = 1.0/m2[kx];
+                }
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    denom[kx] = 1.0/denom[kx];
+                }
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    tmp1[kx]  = exp(tmp1[kx]);
+                }
+                
+                for(kx=kxstart; kx<kxend; kx++,p0++)
+                {
+                    d1      = p0->re;
+                    d2      = p0->im;
+                    
+                    eterm    = ONE_4PI_EPS0/pme->epsilon_r*tmp1[kx]*denom[kx];
+                    
+                    p0->re  = d1*eterm;
+                    p0->im  = d2*eterm;
+                    
+                    struct2 = 2.0*(d1*d1+d2*d2);
+                    
+                    tmp1[kx] = eterm*struct2;
+                }
+                
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    ets2     = corner_fac*tmp1[kx];
+                    vfactor  = (factor*m2[kx] + 1.0)*2.0*m2inv[kx];
+                    energy  += ets2;
+                    
+                    ets2vf   = ets2*vfactor;
+                    virxx   += ets2vf*mhx[kx]*mhx[kx] - ets2;
+                    virxy   += ets2vf*mhx[kx]*mhy[kx];
+                    virxz   += ets2vf*mhx[kx]*mhz[kx];
+                    viryy   += ets2vf*mhy[kx]*mhy[kx] - ets2;
+                    viryz   += ets2vf*mhy[kx]*mhz[kx];
+                    virzz   += ets2vf*mhz[kx]*mhz[kx] - ets2;
+                }
             }
-			
-            for(kx=kxstart; kx<kxend; kx++)
+            else
             {
-                m2inv[kx] = 1.0/m2[kx];
-            }
-            for(kx=kxstart; kx<kxend; kx++)
-            {
-                denom[kx] = 1.0/denom[kx];
-            }
-            for(kx=kxstart; kx<kxend; kx++)
-            {
-                tmp1[kx]  = exp(tmp1[kx]);
-            }
+                /* We don't need to calculate the energy and the virial.
+                 * In this case the triclinic overhead is small.
+                 */
 
-            for(kx=kxstart; kx<kxend; kx++,p0++)
-            {
-                d1      = p0->re;
-                d2      = p0->im;
-				
-                eterm    = ONE_4PI_EPS0/pme->epsilon_r*tmp1[kx]*denom[kx];
-				
-                p0->re  = d1*eterm;
-                p0->im  = d2*eterm;
-				
-                struct2 = 2.0*(d1*d1+d2*d2);
-				
-                tmp1[kx] = eterm*struct2;
-            }
+                /* Two explicit loops to avoid a conditional inside the loop */
 
-            for(kx=kxstart; kx<kxend; kx++)
-            {
-                ets2     = corner_fac*tmp1[kx];
-                vfactor  = (factor*m2[kx] + 1.0)*2.0*m2inv[kx];
-                energy  += ets2;
-				
-                ets2vf   = ets2*vfactor;
-                virxx   += ets2vf*mhx[kx]*mhx[kx] - ets2;
-                virxy   += ets2vf*mhx[kx]*mhy[kx];
-                virxz   += ets2vf*mhx[kx]*mhz[kx];
-                viryy   += ets2vf*mhy[kx]*mhy[kx] - ets2;
-                viryz   += ets2vf*mhy[kx]*mhz[kx];
-                virzz   += ets2vf*mhz[kx]*mhz[kx] - ets2;
+                for(kx=kxstart; kx<maxkx; kx++)
+                {
+                    mx = kx;
+                    
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                }
+                
+                for(kx=maxkx; kx<kxend; kx++)
+                {
+                    mx = (kx - nx);
+                    
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                }
+                
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    denom[kx] = 1.0/denom[kx];
+                }
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    tmp1[kx]  = exp(tmp1[kx]);
+                }
+                
+                for(kx=kxstart; kx<kxend; kx++,p0++)
+                {
+                    d1      = p0->re;
+                    d2      = p0->im;
+                    
+                    eterm    = ONE_4PI_EPS0/pme->epsilon_r*tmp1[kx]*denom[kx];
+                    
+                    p0->re  = d1*eterm;
+                    p0->im  = d2*eterm;
+                }
             }
         }
     }
@@ -2319,6 +2385,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     matrix vir;
     float cycles;
     int  count;
+    bool bEnerVir;
     gmx_large_int_t step,step_rel;
     
     
@@ -2333,7 +2400,9 @@ int gmx_pmeonly(gmx_pme_t pme,
         natoms = gmx_pme_recv_q_x(pme_pp,
                                   &chargeA,&chargeB,box,&x_pp,&f_pp,
                                   &maxshift0,&maxshift1,
-                                  &pme->bFEP,&lambda,&step);
+                                  &pme->bFEP,&lambda,
+                                  &bEnerVir,
+                                  &step);
         
         if (natoms == -1) {
             /* We should stop: break out of the loop */
@@ -2352,7 +2421,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
                    cr,maxshift0,maxshift1,nrnb,wcycle,vir,ewaldcoeff,
                    &energy,lambda,&dvdlambda,
-                   GMX_PME_DO_ALL);
+                   GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
         
         cycles = wallcycle_stop(wcycle,ewcPMEMESH);
         
@@ -2543,7 +2612,7 @@ int gmx_pme_do(gmx_pme_t pme,
             wallcycle_start(wcycle,ewcPME_SOLVE);
             loop_count =
                 solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr,
-                              &energy_AB[q]);
+                              flags & GMX_PME_CALC_ENER_VIR,&energy_AB[q]);
             wallcycle_stop(wcycle,ewcPME_SOLVE);
             where();
             GMX_MPE_LOG(ev_solve_pme_finish);
