@@ -369,7 +369,7 @@ _gmx_selelem_update_flags(t_selelem *sel)
 {
     t_selelem          *child;
     int                 rc;
-    bool                bUseChildType;
+    bool                bUseChildType=FALSE;
     bool                bOnlySingleChildren;
 
     /* Return if the flags have already been set */
