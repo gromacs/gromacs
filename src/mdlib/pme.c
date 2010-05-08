@@ -1266,11 +1266,6 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                  */
 
                 /* Two explicit loops to avoid a conditional inside the loop */
-                mhyk      = my * ryy;
-                mhzk      = mz * rzz;
-                mhy[kxstart]  = mhyk;
-                mhz[kxstart]  = mhzk;
-
                 for(kx=kxstart; kx<maxkx; kx++)
                 {
                     mx = kx;
