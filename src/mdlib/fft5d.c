@@ -208,12 +208,12 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, ff
     
     /*for transpose we need to know the size for each processor not only our own size*/
 
-    N0 = malloc(P[0]*sizeof(int)); N1 = malloc(P[1]*sizeof(int)); 
-    M0 = malloc(P[0]*sizeof(int)); M1 = malloc(P[1]*sizeof(int));
-    K0 = malloc(P[0]*sizeof(int)); K1 = malloc(P[1]*sizeof(int));
-    oN0 = malloc(P[0]*sizeof(int));oN1 = malloc(P[1]*sizeof(int));
-    oM0 = malloc(P[0]*sizeof(int));oM1 = malloc(P[1]*sizeof(int));
-    oK0 = malloc(P[0]*sizeof(int));oK1 = malloc(P[1]*sizeof(int));
+    N0 = (int*)malloc(P[0]*sizeof(int)); N1 = (int*)malloc(P[1]*sizeof(int)); 
+    M0 = (int*)malloc(P[0]*sizeof(int)); M1 = (int*)malloc(P[1]*sizeof(int));
+    K0 = (int*)malloc(P[0]*sizeof(int)); K1 = (int*)malloc(P[1]*sizeof(int));
+    oN0 = (int*)malloc(P[0]*sizeof(int));oN1 = (int*)malloc(P[1]*sizeof(int));
+    oM0 = (int*)malloc(P[0]*sizeof(int));oM1 = (int*)malloc(P[1]*sizeof(int));
+    oK0 = (int*)malloc(P[0]*sizeof(int));oK1 = (int*)malloc(P[1]*sizeof(int));
     
     for (i=0;i<P[0];i++) 
     {

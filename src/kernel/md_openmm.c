@@ -97,8 +97,8 @@
 /* include even when OpenMM not used to force compilation of do_md_openmm */
 #include "openmm_wrapper.h"
 
-
-enum { eglsNABNSB, eglsCHKPT, eglsTERM, eglsRESETCOUNTERS, eglsNR };
+/* simulation conditions to transmit */
+enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 
 typedef struct
 {
@@ -457,7 +457,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bLastStep = (step_rel == ir->nsteps);
         t = t0 + step*ir->delta_t;
 
-        if (gs.set[eglsTERM] != 0 )
+        if (gs.set[eglsSTOPCOND] != (int)gmx_stop_cond_none )
         {
             bLastStep = TRUE;
         }
@@ -580,39 +580,30 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */
-        if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) &&
-                (handledSignal!=last_signal_number_recvd) &&
-                MASTERTHREAD(cr))
+        if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
+            MASTERTHREAD(cr))
         {
-            if (bGotStopNextStepSignal)
-            {
-                gs.set[eglsTERM] = 1;
-            }
-            else
-            {
-                gs.set[eglsTERM] = -1;
-            }
+            gs.sig[eglsSTOPCOND]=(int)gmx_get_stop_condition();
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        signal_name[last_signal_number_recvd],
-                        gs.set[eglsTERM]==-1 ? "NS " : "");
+                        gmx_get_signal_name(),
+                        gs.sig[eglsSTOPCOND]==gmx_stop_cond_next_ns ? "NS " :   "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    signal_name[last_signal_number_recvd],
-                    gs.set[eglsTERM]==-1 ? "NS " : "");
-            fflush(stderr);
-            handledSignal=last_signal_number_recvd;
+                    gmx_get_signal_name(),
+                    gs.sig[eglsSTOPCOND]==gmx_stop_cond_next_ns ? "NS " : "");
+            handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 gs.set[eglsTERM] == 0)
+                 gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
-            gs.set[eglsTERM] = 1;
+            gs.set[eglsSTOPCOND] = gmx_stop_cond_next;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);

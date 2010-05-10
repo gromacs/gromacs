@@ -102,8 +102,8 @@
 #endif
 
 
-
-enum { eglsNABNSB, eglsCHKPT, eglsTERM, eglsRESETCOUNTERS, eglsNR };
+/* simulation conditions to transmit */
+enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 /* Is the signal in one simulation independent of other simulations? */
 bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
 
@@ -1031,7 +1031,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	t_extmass   MassQ;
     int         **trotter_seq; 
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-    int         handledSignal=-1; /* compare to last_signal_recvd */
+    int         handled_stop_condition=gmx_stop_cond_none; /* compare to get_stop_condition*/
     gmx_iterate_t iterate;
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -1613,7 +1613,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         } 
 
-        if (gs.set[eglsTERM] > 0 || (gs.set[eglsTERM] < 0 && bNS))
+        if ( (gs.set[eglsSTOPCOND] == gmx_stop_cond_next) ||
+             ( (gs.set[eglsSTOPCOND] == gmx_stop_cond_next_ns) && 
+               ( bNS || ir->nstlist==0)) )
         {
             bLastStep = TRUE;
         }
@@ -2111,39 +2113,31 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */    
-        if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) && 
-            (handledSignal!=last_signal_number_recvd) &&
+        if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
             MASTERTHREAD(cr))
         {
-            if (bGotStopNextStepSignal || ir->nstlist == 0)
-            {
-                gs.sig[eglsTERM] = 1;
-            }
-            else
-            {
-                gs.sig[eglsTERM] = -1;
-            }
+            gs.sig[eglsSTOPCOND]=(int)gmx_get_stop_condition();
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        signal_name[last_signal_number_recvd], 
-                        gs.sig[eglsTERM]==-1 ? "NS " : "");
+                        gmx_get_signal_name(),
+                        gs.sig[eglsSTOPCOND]==gmx_stop_cond_next_ns ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    signal_name[last_signal_number_recvd], 
-                    gs.sig[eglsTERM]==-1 ? "NS " : "");
+                    gmx_get_signal_name(),
+                    gs.sig[eglsSTOPCOND]==gmx_stop_cond_next_ns ? "NS " : "");
             fflush(stderr);
-            handledSignal=last_signal_number_recvd;
+            handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 gs.sig[eglsTERM] == 0 && gs.set[eglsTERM] == 0)
+                 gs.sig[eglsSTOPCOND] == 0 && gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
-            gs.sig[eglsTERM] = (ir->nstlist == 0 ? 1 : -1);
+            gs.sig[eglsSTOPCOND] = gmx_stop_cond_next_ns;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
