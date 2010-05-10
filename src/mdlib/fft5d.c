@@ -524,7 +524,7 @@ enum order {
   maxN,maxM,maxK is max size of local data
   pN, pM, pK is local size specific to current processor (only different to max if not divisible)
   NG, MG, KG is size of global data*/
-static void splitaxes(fft5d_type* lin,const fft5d_type* lout,
+static void splitaxes(fft5d_type* lout,const fft5d_type* lin,
                       int maxN,int maxM,int maxK, int pN, int pM, int pK,
                       int P,int NG,int *N, int* oN) {
     int x,y,z,i;
@@ -540,7 +540,7 @@ static void splitaxes(fft5d_type* lin,const fft5d_type* lout,
                 in_y  = in_z  + y*maxN;
                 out_y = out_z + y*NG;
                 for (x=0;x<N[i];x++) { /*1. x j*/
-                    lin[in_y+x] = lout[out_y+x];
+                    lout[in_y+x] = lin[out_y+x];
                     /*after split important that each processor chunk i has size maxN*maxM*maxK and thus being the same size*/
                     /*before split data contiguos - thus if different processor get different amount oN is different*/
                 }
