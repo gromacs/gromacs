@@ -22,7 +22,7 @@ topol_DATA = \
 	buck.itp	decane.itp	dlg.itp		dmso.itp	\
 	fa.itp		ff_dum.itp	flexspc.itp	flexspce.itp	\
 	flexwat-ferguson.itp		h2p4o13.itp	h2p8o25.itp	\
-	h2po4.itp	ions.itp	methanol.itp	spc.itp		\
+	h2po4.itp	ions.itp	spc.itp		\
 	spce.itp	tfe.itp		tip3p.itp	tip4p.itp	\
 	urea.itp	dgsolv.dat	electroneg.dat			\
 	dec50.gro	dmso.gro	spc216.gro	tip4p.gro	\
