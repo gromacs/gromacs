@@ -248,8 +248,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     matrix      lastbox;
     real        reset_counters=0,reset_counters_now=0;
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-    int         handledSignal=-1; /* compare to last_signal_recvd */
-    bool        bHandledSignal=FALSE;
+    int         handled_stop_condition=gmx_stop_cond_none; 
 
     const char *ommOptions = NULL;
     void   *openmmData;
