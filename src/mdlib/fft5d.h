@@ -13,30 +13,15 @@
 FILE* debug;
 #endif
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#elif defined GMX_THREADS
-#include "tmpi.h"
-#else
-#ifndef HAVE_MPICOMM
-#ifndef _gmx_parallel_3dfft_h_
-typedef void* MPI_Comm;
-#endif
-#define HAVE_MPICOMM
-#endif
+#include <types/commrec.h>
+#ifndef GMX_LIB_MPI
 double MPI_Wtime();
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
 #endif
 
 #include "gmx_fft.h"
 
 #ifdef GMX_FFT_FFTW3
 #include <fftw3.h>
-#ifdef FFT5D_MPI_TRANSPOSE
-#include <fftw3-mpi.h>
-#endif
 #endif
 /* TODO: optional wrapper
 #ifdef GMX_FFT_MKL
@@ -89,9 +74,7 @@ struct fft5d_plan_t {
 #ifdef GMX_FFT_FFTW3 
         FFTW(plan) p2d;  /*2D plan: used for 1D decomposition if FFT supports transposed output*/
         FFTW(plan) p3d;  /*3D plan: used for 0D decomposition if FFT supports transposed output*/
-#ifdef FFT5D_MPI_TRANSPOSE
 	FFTW(plan) mpip[2];
-#endif
 #endif
 	MPI_Comm cart[2];
 

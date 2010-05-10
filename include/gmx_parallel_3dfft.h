@@ -25,20 +25,9 @@
 
 
 #include "types/simple.h"
+#include "types/commrec.h"
 #include "gmxcomplex.h"
 #include "gmx_fft.h"
-
-/* We NEED MPI Comm here. But if no MPI is used then void pointer for MPI_Comm is enough*/
-/* This saves on many ifdefs */
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#elif defined GMX_THREADS
-#include "tmpi.h"
-#else
-#ifndef FFT5D_H_
-typedef void* MPI_Comm;
-#endif
-#endif
 
 typedef struct gmx_parallel_3dfft *
 gmx_parallel_3dfft_t;
