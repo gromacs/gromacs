@@ -480,8 +480,6 @@ void process_chain(t_atoms *pdba, rvec *x,
   if (bPheU) rename_bb(pdba,"PHE","PHEU",FALSE,symtab);
   if (bLysMan) 
     rename_bbint(pdba,"LYS",get_lystp,FALSE,symtab,nrr,rr);
-  else
-    rename_bb(pdba,"LYS","LYSH",FALSE,symtab);
   if (bArgMan) 
     rename_bbint(pdba,"ARG",get_argtp,FALSE,symtab,nrr,rr);
   if (bGlnMan) 
@@ -500,7 +498,7 @@ void process_chain(t_atoms *pdba, rvec *x,
      * And rename CYS to CYSH, since that is the Gromacs standard
      * unbound cysteine rtp entry name.
      */ 
-    rename_bb(pdba,"CYS","CYSH",FALSE,symtab);
+    rename_bb(pdba,"CYS","CYS",FALSE,symtab);
   }
 
   if (!bHisMan)
