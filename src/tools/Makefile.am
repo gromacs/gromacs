@@ -15,6 +15,7 @@ libgmxana@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
 
 libgmxana@LIBSUFFIX@_la_SOURCES = \
+	geminate.c	geminate.h					\
 	autocorr.c 	expfit.c 	polynomials.c 	levenmar.c	\
 	anadih.c 	pp2shift.c 	pp2shift.h 	dlist.c		\
 	eigio.c		cmat.c 		cmat.h		\
