@@ -102,8 +102,6 @@
 #define mpi_type MPI_FLOAT
 #endif
 
-/* TODO: fix thread-safety */
-
 /* Internal datastructures */
 typedef struct {
     int send_index0;
@@ -239,14 +237,6 @@ typedef struct gmx_pme {
     real *   sum_qgrid_tmp;
     real *   sum_qgrid_dd_tmp;
 } t_gmx_pme;
-
-/* The following stuff is needed for signal handling on the PME nodes. 
- * signal_handler needs to be defined in md.c, the bGot..Signal variables
- * here */ 
-extern RETSIGTYPE signal_handler(int n);
-
-volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE; 
-
 
 
 static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
@@ -2422,7 +2412,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         
         gmx_pme_send_force_vir_ener(pme_pp,
                                     f_pp,vir,energy,dvdlambda,
-                                    cycles,bGotTermSignal,bGotUsr1Signal);
+                                    cycles);
         
         count++;
 

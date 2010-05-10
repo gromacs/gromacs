@@ -81,7 +81,8 @@ RETSIGTYPE signal_handler(int n)
             {
                 bGotStopNextNSStepSignal = TRUE;
                 last_signal_number_recvd = 1;
-            }            else if (!bGotStopNextStepSignal)
+            }            
+            else if (!bGotStopNextStepSignal)
             {
                 bGotStopNextStepSignal = TRUE;
                 last_signal_number_recvd = 2;
