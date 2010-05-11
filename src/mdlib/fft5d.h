@@ -1,8 +1,6 @@
 #ifndef FFT5D_H_     
 #define FFT5D_H_
 
-#include <complex.h>
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

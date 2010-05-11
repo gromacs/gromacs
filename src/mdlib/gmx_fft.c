@@ -68,9 +68,10 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
 
     gmx_fft_init_1d(&fft->fft,nx,flags);
     fft->howmany = howmany;
-    fft->dist = sizeof(real)*2*nx;
+    fft->dist = 2*nx;
 
     *pfft = (gmx_fft_t)fft;
+    return 0;
 }
 
 int
@@ -94,9 +95,10 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
 
     gmx_fft_init_1d_real(&fft->fft,nx,flags);
     fft->howmany = howmany;
-    fft->dist = sizeof(real)*2*(nx/2+1);
+    fft->dist = 2*(nx/2+1);
 
     *pfft = (gmx_fft_t)fft;
+    return 0;
 }
 
 int
@@ -106,14 +108,15 @@ gmx_fft_many_1d     (gmx_fft_t                  fft,
                      void *                     out_data)
 {
     gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
-    int i;
+    int i,ret;
     for (i=0;i<mfft->howmany;i++) 
     {
-        gmx_fft_1d(mfft->fft,dir,in_data,out_data);
-        in_data+=mfft->dist;
-        out_data+=mfft->dist;
+        ret=gmx_fft_1d(mfft->fft,dir,in_data,out_data);
+        if (ret!=0) return ret;
+        in_data=(real*)in_data+mfft->dist;
+        out_data=(real*)out_data+mfft->dist;
     }
-
+    return 0;
 }
 
 int
@@ -123,14 +126,15 @@ gmx_fft_many_1d_real     (gmx_fft_t                  fft,
                           void *                     out_data)
 {
     gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
-    int i;
+    int i,ret;
     for (i=0;i<mfft->howmany;i++) 
     {
-        gmx_fft_1d_real(mfft->fft,dir,in_data,out_data);
-        in_data+=mfft->dist;
-        out_data+=mfft->dist;
+        ret=gmx_fft_1d_real(mfft->fft,dir,in_data,out_data);
+        if (ret!=0) return ret;
+        in_data=(real*)in_data+mfft->dist;
+        out_data=(real*)out_data+mfft->dist;
     }
-
+    return 0;
 }
 
 
