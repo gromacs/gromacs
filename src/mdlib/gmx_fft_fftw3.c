@@ -225,7 +225,7 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
     }    
     
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx+2)*howmany);
+    p1  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx/2+1)*2*howmany + 8);
     if(p1==NULL)
     {
         FFTWPREFIX(free)(fft);
@@ -233,7 +233,7 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
         return ENOMEM;
     }
     
-    p2  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx+2)*howmany);
+    p2  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx/2+1)*2*howmany + 8);
     if(p2==NULL)
     {
         FFTWPREFIX(free)(p1);

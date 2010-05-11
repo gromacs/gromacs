@@ -499,8 +499,8 @@ static void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top, t_state *state)
 
     if (ir->opts.annealing[0])
         gmx_fatal(FARGS,"OpenMM does not support simulated annealing.");
-
-    if (ir->eConstrAlg != econtSHAKE)
+    
+    if (top->idef.il[F_CONSTR].nr > 0 && ir->eConstrAlg != econtSHAKE)
         gmx_warning("OpenMM provides contraints as a combination "
                     "of SHAKE, SETTLE and CCMA. Accuracy is based on the SHAKE tolerance set "
                     "by the \"shake_tol\" option.");
