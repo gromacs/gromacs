@@ -481,14 +481,27 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
  ***********************************************************/
 int neq_str(const char *a1,const char *a2)
 {
-  int j,l;
+    int j,l,l1,l2;;
   
-  l=min((int)strlen(a1),(int)strlen(a2));
-  j=0;
-  while ( (j<l) && (toupper(a1[j]) == toupper(a2[j])) )
-    j++;
-  
-  return j;
+    l1 = (int)strlen(a1);
+    l2 = (int)strlen(a2);
+    l = min(l1,l2);
+    
+    j=0;
+    while (j < l && toupper(a1[j]) == toupper(a2[j]))
+    {
+        j++;
+    }
+    if (j == l1 && j == l2)
+    {
+        /* Exact match */
+        return 1000;
+    }
+    else
+    {
+        /* Partial match */
+        return j;
+    }
 }
 
 t_restp *search_rtp(const char *key,int nrtp,t_restp rtp[])
