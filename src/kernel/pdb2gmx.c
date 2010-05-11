@@ -689,9 +689,9 @@ void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc,t_aa_names *aan)
   *rc=-1;
 
   for(rnr=r0; rnr<r1; rnr++) {
-    if ((*rn == -1) && (is_protein(aan,*pdba->resinfo[rnr].name)))
+    if ((*rn == -1) && (is_residue(aan,*pdba->resinfo[rnr].name)))
 	*rn=rnr;
-    if ((*rc != rnr) && (is_protein(aan,*pdba->resinfo[rnr].name)))
+    if ((*rc != rnr) && (is_residue(aan,*pdba->resinfo[rnr].name)))
       *rc=rnr;
   }
 
