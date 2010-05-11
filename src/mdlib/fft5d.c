@@ -81,12 +81,18 @@ static int lpfactor(int z) {
 }
 
 #ifndef GMX_MPI
+#ifdef HAVE_GETTIMEOFDAY
 #include <sys/time.h>
 double MPI_Wtime() {
     struct timeval tv;
     gettimeofday(&tv,0);
     return tv.tv_sec+tv.tv_usec*1e-6;
 }
+#else
+double MPI_Wtime() {
+    return 0.0;
+}
+#endif
 #endif
 
 static int vmax(int* a, int s) {
