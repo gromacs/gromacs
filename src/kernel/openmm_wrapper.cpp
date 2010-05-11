@@ -700,6 +700,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numConstraints = idef.il[F_CONSTR].nr/3;
         const int numSettle = idef.il[F_SETTLE].nr/2;
         const int numBonds = idef.il[F_BONDS].nr/3;
+        const int numUB = idef.il[F_UREY_BRADLEY].nr/3;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
         const int numRB = idef.il[F_RBDIHS].nr/5;
@@ -720,6 +721,24 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int atom2 = bondAtoms[offset++];
             bondForce->addBond(atom1, atom2,
                                idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
+        }
+        // Urey-Bradley includes both the angle and bond potential for 1-3 interactions
+        const int* ubAtoms = (int*) idef.il[F_UREY_BRADLEY].iatoms;
+        HarmonicBondForce* ubBondForce = new HarmonicBondForce();
+        HarmonicAngleForce* ubAngleForce = new HarmonicAngleForce();
+        sys->addForce(ubBondForce);
+        sys->addForce(ubAngleForce);
+        offset = 0;
+        for (int i = 0; i < numUB; ++i)
+        {
+            int type = ubAtoms[offset++];
+            int atom1 = ubAtoms[offset++];
+            int atom2 = ubAtoms[offset++];
+            int atom3 = ubAtoms[offset++];
+            ubBondForce->addBond(atom1, atom3,
+                               idef.iparams[type].u_b.r13, idef.iparams[type].u_b.kUB);
+            ubAngleForce->addAngle(atom1, atom2, atom3, 
+                    idef.iparams[type].u_b.theta*M_PI/180.0, idef.iparams[type].u_b.ktheta);
         }
         const int* angleAtoms = (int*) idef.il[F_ANGLES].iatoms;
         HarmonicAngleForce* angleForce = new HarmonicAngleForce();
