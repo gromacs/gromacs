@@ -38,6 +38,7 @@
 #endif
 #include <math.h>
 
+//#define HAVE_NN_LOOPS
 /* Set environment variable CFLAGS = "-fopenmp" when running
  * configure and define DOUSEOPENMP to make use of parallelized
  * calculation of autocorrelation function.
@@ -46,6 +47,7 @@
 //#define DOUSEOPENMP
 
 #ifdef DOUSEOPENMP
+#define HAVE_OPENMP
 #include "omp.h"
 #endif
 
@@ -70,6 +72,8 @@
 #include "gmx_ana.h"
 #include "geminate.h"
 
+typedef short int t_E;
+typedef int t_EEst;
 #define max_hx 7
 typedef int t_hx[max_hx];
 #define NRHXTYPES max_hx
@@ -82,6 +86,7 @@ char *hxtypenames[NRHXTYPES]=
 enum { gr0,  gr1,    grI,  grNR };
 enum { hbNo, hbDist, hbHB, hbNR, hbR2}; 
 enum { noDA, ACC, DON, DA, INGROUP};
+enum {NN_NULL, NN_NONE, NN_BINARY, NN_1_over_r3, NN_dipole, NN_NR};
   
 static const char *grpnames[grNR] = {"0","1","I" };
 
@@ -151,8 +156,6 @@ typedef struct {
   h_id     *nhbonds;           /* The number of HBs per H at current */
 } t_donors;
 
-#include "hbplugin.h"
-
 /* Tune this to match memory requirements. It should be a signed integer type, e.g. signed char.*/
 #define PSTYPE int
 
@@ -200,7 +203,9 @@ typedef struct {
   /* This holds a matrix with all possible hydrogen bonds */
   int         nrhb,nrdist;
   t_hbond     ***hbmap;
+#ifdef HAVE_NN_LOOPS
   t_hbEmap    hbE;
+#endif
   t_gemPeriod per;
 } t_hbdata;
 
@@ -362,6 +367,7 @@ static void mk_per(t_hbdata *hb)
   }
 }
 
+#ifdef HAVE_NN_LOOPS
 static void mk_hbEmap (t_hbdata *hb, int n0)
 {
   int i, j, k;
@@ -418,7 +424,134 @@ static void addFramesNN(t_hbdata *hb, int frame)
   }
 }
 
-void storeHbEnergy(t_hbdata *hb, int d, int a, int h, t_E E, int frame){
+static t_E calcHbEnergy(int d, int a, int h, rvec x[], t_EEst EEst,
+			matrix box, rvec hbox, t_donors *donors){
+  /* d     - donor atom
+   * a     - acceptor atom
+   * h     - hydrogen
+   * alpha - angle between dipoles
+   * x[]   - atomic positions
+   * EEst  - the type of energy estimate (see enum in hbplugin.h)
+   * box   - the box vectors   \
+   * hbox  - half box lengths  _These two are only needed for the pbc correction
+   */
+
+  t_E E;
+  rvec dist;
+  rvec dipole[2], xmol[3], xmean[2]; 
+  int i;
+  real r, realE;
+
+  if (d == a)
+    /* Self-interaction */
+    return NONSENSE_E;
+
+  switch (EEst)
+    {
+    case NN_BINARY:
+      /* This is a simple binary existence function that sets E=1 whenever
+       * the distance between the oxygens is equal too or less than 0.35 nm.
+       */
+      rvec_sub(x[d], x[a], dist);
+      pbc_correct_gem(dist, box, hbox);
+      if (norm(dist) <= 0.35)
+	E = 1;
+      else
+	E = 0;
+      break;
+
+    case NN_1_over_r3:
+      /* Negative potential energy of a dipole.
+       * E = -cos(alpha) * 1/r^3 */     
+     
+      copy_rvec(x[d], xmol[0]); /* donor */
+      copy_rvec(x[donors->hydro[donors->dptr[d]][0]], xmol[1]); /* hydrogen */
+      copy_rvec(x[donors->hydro[donors->dptr[d]][1]], xmol[2]); /* hydrogen */
+
+      svmul(15.9994*(1/1.008), xmol[0], xmean[0]);
+      rvec_inc(xmean[0], xmol[1]);
+      rvec_inc(xmean[0], xmol[2]);
+      for(i=0; i<3; i++)
+	xmean[0][i] /= (15.9994 + 1.008 + 1.008)/1.008;
+
+      /* Assumes that all acceptors are also donors. */
+      copy_rvec(x[a], xmol[0]); /* acceptor */
+      copy_rvec(x[donors->hydro[donors->dptr[a]][0]], xmol[1]); /* hydrogen */
+      copy_rvec(x[donors->hydro[donors->dptr[a]][1]], xmol[2]); /* hydrogen */
+
+
+      svmul(15.9994*(1/1.008), xmol[0], xmean[1]);
+      rvec_inc(xmean[1], xmol[1]);
+      rvec_inc(xmean[1], xmol[2]);
+      for(i=0; i<3; i++)
+	xmean[1][i] /= (15.9994 + 1.008 + 1.008)/1.008;
+
+      rvec_sub(xmean[0], xmean[1], dist);
+      pbc_correct_gem(dist, box, hbox);
+      r = norm(dist);
+
+      realE = pow(r, -3.0);
+      E = (t_E)(SCALEFACTOR_E * realE);
+      break;
+
+    case NN_dipole:
+      /* Negative potential energy of a (unpolarizable) dipole.
+       * E = -cos(alpha) * 1/r^3 */
+      clear_rvec(dipole[1]);
+      clear_rvec(dipole[0]);
+     
+      copy_rvec(x[d], xmol[0]); /* donor */
+      copy_rvec(x[donors->hydro[donors->dptr[d]][0]], xmol[1]); /* hydrogen */
+      copy_rvec(x[donors->hydro[donors->dptr[d]][1]], xmol[2]); /* hydrogen */
+
+      rvec_inc(dipole[0], xmol[1]);
+      rvec_inc(dipole[0], xmol[2]);
+      for (i=0; i<3; i++)
+	dipole[0][i] *= 0.5;
+      rvec_dec(dipole[0], xmol[0]);
+
+      svmul(15.9994*(1/1.008), xmol[0], xmean[0]);
+      rvec_inc(xmean[0], xmol[1]);
+      rvec_inc(xmean[0], xmol[2]);
+      for(i=0; i<3; i++)
+	xmean[0][i] /= (15.9994 + 1.008 + 1.008)/1.008;
+
+      /* Assumes that all acceptors are also donors. */
+      copy_rvec(x[a], xmol[0]); /* acceptor */
+      copy_rvec(x[donors->hydro[donors->dptr[a]][0]], xmol[1]); /* hydrogen */
+      copy_rvec(x[donors->hydro[donors->dptr[a]][2]], xmol[2]); /* hydrogen */
+
+
+      rvec_inc(dipole[1], xmol[1]);
+      rvec_inc(dipole[1], xmol[2]);
+      for (i=0; i<3; i++)
+	dipole[1][i] *= 0.5;
+      rvec_dec(dipole[1], xmol[0]);
+
+      svmul(15.9994*(1/1.008), xmol[0], xmean[1]);
+      rvec_inc(xmean[1], xmol[1]);
+      rvec_inc(xmean[1], xmol[2]);
+      for(i=0; i<3; i++)
+	xmean[1][i] /= (15.9994 + 1.008 + 1.008)/1.008;
+
+      rvec_sub(xmean[0], xmean[1], dist);
+      pbc_correct_gem(dist, box, hbox);
+      r = norm(dist);
+
+      double cosalpha = cos_angle(dipole[0],dipole[1]);
+      realE = cosalpha * pow(r, -3.0);
+      E = (t_E)(SCALEFACTOR_E * realE);
+      break;
+      
+    default:
+      printf("Can't do that type of energy estimate: %i\n.", EEst);
+      E = NONSENSE_E;
+    }
+
+  return E;
+}
+
+static void storeHbEnergy(t_hbdata *hb, int d, int a, int h, t_E E, int frame){
   /* hb - hbond data structure
      d  - donor
      a  - acceptor
@@ -432,13 +565,15 @@ void storeHbEnergy(t_hbdata *hb, int d, int a, int h, t_E E, int frame){
     E = 0;
 
   hb->hbE.E[d][a][h][frame] = E;
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
 #pragma omp critical
 #endif
   {
     hb->hbE.Etot[frame] += E;
   }
 }
+#endif /* HAVE_NN_LOOPS */
+
 
 /* Finds -v[] in the periodicity index */
 static int findMirror(PSTYPE p, ivec v[], PSTYPE nper)
@@ -607,6 +742,37 @@ static void inc_nhbonds(t_donors *ddd,int d, int h)
   if (j == ddd->nhydro[dptr])
     gmx_fatal(FARGS,"No such hydrogen %d on donor %d\n",h+1,d+1);
 }
+
+static int _acceptor_index(t_acceptors *a,int grp,atom_id i,
+			   const char *file,int line)
+{
+  int ai = a->aptr[i];
+
+  if (a->grp[ai] != grp) {
+    if (debug && bDebug) 
+      fprintf(debug,"Acc. group inconsist.. grp[%d] = %d, grp = %d (%s, %d)\n",
+	      ai,a->grp[ai],grp,file,line);
+    return NOTSET;
+  }
+  else
+    return ai;
+}
+#define acceptor_index(a,grp,i) _acceptor_index(a,grp,i,__FILE__,__LINE__)
+
+static int _donor_index(t_donors *d,int grp,atom_id i,const char *file,int line)
+{
+  int di = d->dptr[i];
+  
+  if (d->grp[di] != grp) {
+    if (debug && bDebug)
+      fprintf(debug,"Don. group inconsist.. grp[%d] = %d, grp = %d (%s, %d)\n",
+	      di,d->grp[di],grp,file,line);
+    return NOTSET;
+  }
+  else
+    return di;
+}
+#define donor_index(d,grp,i) _donor_index(d,grp,i,__FILE__,__LINE__)
 
 static bool isInterchangable(t_hbdata *hb, int d, int a, int grpa, int grpd)
 {
@@ -795,37 +961,6 @@ static void search_acceptors(t_topology *top,int isize,
   for(i=0; (i<a->nra); i++)
     a->aptr[a->acc[i]] = i;
 }
-
-static int _acceptor_index(t_acceptors *a,int grp,atom_id i,
-			   const char *file,int line)
-{
-  int ai = a->aptr[i];
-
-  if (a->grp[ai] != grp) {
-    if (debug && bDebug) 
-      fprintf(debug,"Acc. group inconsist.. grp[%d] = %d, grp = %d (%s, %d)\n",
-	      ai,a->grp[ai],grp,file,line);
-    return NOTSET;
-  }
-  else
-    return ai;
-}
-#define acceptor_index(a,grp,i) _acceptor_index(a,grp,i,__FILE__,__LINE__)
-
-static int _donor_index(t_donors *d,int grp,atom_id i,const char *file,int line)
-{
-  int di = d->dptr[i];
-  
-  if (d->grp[di] != grp) {
-    if (debug && bDebug)
-      fprintf(debug,"Don. group inconsist.. grp[%d] = %d, grp = %d (%s, %d)\n",
-	      di,d->grp[di],grp,file,line);
-    return NOTSET;
-  }
-  else
-    return di;
-}
-#define donor_index(d,grp,i) _donor_index(d,grp,i,__FILE__,__LINE__)
 
 static void add_h2d(int id,int ih,t_donors *ddd)
 {
@@ -2151,7 +2286,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   enum {AC_NONE, AC_NN, AC_GEM, AC_LUZAR};
 
 
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
   int *dondata=NULL, thisThread;
 #endif
 
@@ -2159,8 +2294,13 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 
   /* Decide what kind of ACF calculations to do. */
   if (NN > NN_NONE && NN < NN_NR) {
+#ifdef HAVE_NN_LOOPS
     acType = AC_NN;
     printf("using the energy estimate.\n");
+#else
+    acType = AC_NONE;
+    printf("Can't do the NN-loop. Yet.\n");
+#endif
   } else if (hb->bGem) {
     acType = AC_GEM;
     printf("according to the reversible geminate recombination model by Omer Markowitch.\n");
@@ -2178,7 +2318,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   
   nn = nframes/2;
   
-#ifndef _OPENMP
+#ifndef HAVE_OPENMP
   if (acType != AC_NN) {
     snew(h,hb->maxhydro);
     snew(g,hb->maxhydro);
@@ -2200,7 +2340,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
    * configure and define DOUSEOPENMP to make use of it.
    */
 
-#ifdef _OPENMP  /* =====================================================\
+#ifdef HAVE_OPENMP  /* =================================================\
 		 * Set up the OpenMP stuff,                             |
 		 * like the number of threads and such                  |
 		 */
@@ -2227,7 +2367,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	}
       }
       fprintf(stderr, "\n"); /*                                          | */
-#endif /* _OPENMP ======================================================/  */
+#endif /* HAVE_OPENMP ===================================================/  */
 
 
   /* Build the ACF according to acType */
@@ -2235,9 +2375,10 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
     {
       
     case AC_NN:
+#ifdef HAVE_NN_LOOPS
       /* Here we're using the estimated energy for the hydrogen bonds. */
       snew(ct,nn);
-#ifdef _OPENMP /* ======================================\ */      
+#ifdef HAVE_OPENMP /* ==================================\ */      
 #pragma omp parallel					\
   private(i, j, k, nh, E, rhbex, thisThread),		\
   default(shared)
@@ -2251,7 +2392,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	snew(rhbex, n2);
 	memset(rhbex, 0, n2*sizeof(real)); /* Trust no-one, not even malloc()! */
 
-#ifdef _OPENMP /* #####################################################	\
+#ifdef HAVE_OPENMP /* ##################################################	\
 		*                                                      #
 	        *                                                      #
 		*/
@@ -2260,7 +2401,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 #endif
 	for (i=0; i<hb->d.nrd; i++) /* loop over donors */
 	  {
-#ifdef _OPENMP /* ====== Write some output ======\ */
+#ifdef HAVE_OPENMP /* ====== Write some output ======\ */
 #pragma omp critical
 	    {
 	      dondata[thisThread] = i;
@@ -2285,7 +2426,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 		      
 			low_do_autocorr(NULL,oenv,NULL,nframes,1,-1,&(rhbex),hb->time[1]-hb->time[0],
 					eacNormal,1,FALSE,bNorm,FALSE,0,-1,0,1);
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
 #pragma omp critical
 #endif
 			{
@@ -2298,7 +2439,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	  }           /* i loop */
 	sfree(rhbex);
 #pragma omp barrier
-#ifdef _OPENMP 
+#ifdef HAVE_OPENMP 
         /*                                                             # */
       } /* End of parallel block                                       # */
       /* ##############################################################/ */
@@ -2332,17 +2473,17 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
       sfree(ct);
       sfree(ctdouble);
       sfree(timedouble);
-
+#endif /* HAVE_NN_LOOPS */
       break; /* case AC_NN */
 
     case AC_GEM:
       snew(ct,2*n2);
   
-#ifndef _OPENMP
+#ifndef HAVE_OPENMP
       fprintf(stderr, "Donor:\n");
 #endif
 
-#ifdef _OPENMP /*  ===========================================\ */
+#ifdef HAVE_OPENMP /*  =========================================\ */
 
 #pragma omp parallel default(shared),				\
   private(i, k, nh, hbh, pHist, h, g, n0, nf, np, j, m,		\
@@ -2362,10 +2503,10 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	 * the overhead to be really small compared
 	 * to the actual calculations */
 #pragma omp for schedule(dynamic,1), nowait
-#endif /* _OPENMP  ===========================================/ */
+#endif /* HAVE_OPENMP  =========================================/ */
       
 	for (i=0; i<hb->d.nrd; i++) {
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
 #pragma omp critical
 	  {
 	    dondata[thisThread] = i;
@@ -2386,7 +2527,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 		pHist = &(hb->per.pHist[i][k]);
 		if (ISHB(hbh->history[nh]) && pHist->len != 0) {
 
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
 #pragma omp critical
 #endif
 		  {	    
@@ -2417,7 +2558,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 			    snew(rHbExGem[m],2*n2);
 			    srenew(poff,np);
 			  }
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
 #pragma omp critical
 #endif
 			  {
@@ -2496,10 +2637,10 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 
 	sfree(h);
 	sfree(g);
-#if _OPENMP /* ==========================================\ */
+#if HAVE_OPENMP /* ==========================================\ */
       } /* ########## THE END OF THE ENORMOUS PARALLELIZED BLOCK ########## */
       sfree(dondata);
-#endif /* _OPENMP =======================================/ */
+#endif /* HAVE_OPENMP =======================================/ */
 
       normalizeACF(ct, NULL, nn);
 
@@ -2530,10 +2671,10 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
       /* /////////////////// */
 		
       if (bContact)
-	fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)");
+	fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)",oenv);
       else
-	fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
-      xvgr_legend(fp,asize(legGem),legGem);
+	fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)",oenv);
+      xvgr_legend(fp,asize(legGem),legGem,oenv);
 
       for(j=0; (j<nn); j++)
 	fprintf(fp,"%10g  %10g  %10g  %10g\n",
@@ -2922,6 +3063,8 @@ int gmx_hbond(int argc,char *argv[])
 
   static bool bContact=FALSE, bBallistic=FALSE, bBallisticDt=FALSE, bGemFit=FALSE;
   static real logAfterTime = 10, gemBallistic = 0.2; /* ps */
+  static char *NNtype[] = {NULL, "none", "binary", "oneOverR3", "dipole", NULL};
+
   /* options */
   t_pargs pa [] = {
     { "-ins",  FALSE,  etBOOL, {&bInsert},
@@ -2961,12 +3104,14 @@ int gmx_hbond(int argc,char *argv[])
       "Use reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details."},
     { "-diff", FALSE, etREAL, {&D},
       "Dffusion coefficient to use in the rev. gem. recomb. kinetic model. If non-positive, then it will be fitted to the ACF along with ka and kd."},
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
     { "-nthreads", FALSE, etINT, {&nThreads},
       "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
 #endif
+#ifdef HAVE_NN_LOOPS
     { "-NN", FALSE, etENUM, {NNtype},
       "Do a full all vs all loop and estimsate the interaction energy instead of having a binary existence function for hydrogen bonds."},
+#endif
     { "-gemfit", FALSE, etBOOL, {&bGemFit},
       "With -gemainate != none: fit ka and kd to the ACF"},
     { "-gemlogstart", FALSE, etREAL, {&logAfterTime},
@@ -3008,7 +3153,7 @@ int gmx_hbond(int argc,char *argv[])
   char  hbmap [HB_NR]={ ' ',    'o',      '-',       '*' };
   char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
   t_rgb hbrgb [HB_NR]={ {1,1,1},{1,0,0},   {0,0,1},    {1,0,1} };
-  
+
   int     status;
   t_topology top;
   t_inputrec ir;
@@ -3035,16 +3180,13 @@ int gmx_hbond(int argc,char *argv[])
   t_ncell    *icell,*jcell,*kcell;
   ivec       ngrid;
   unsigned char        *datable;
-<<<<<<< gmx_hbond.c
   output_env_t oenv;
-=======
   int     gemmode, NN;
   PSTYPE  peri;
   t_E     E;
   int     ii, jj, hh;
   bool    bGem, bNN;
   t_gemParams *params;
->>>>>>> ../../../../gmx4.0.5_gem/src/tools/gmx_hbond.c
     
   CopyRight(stdout,argv[0]);
 
@@ -3134,7 +3276,7 @@ int gmx_hbond(int argc,char *argv[])
 	    opt2bSet("-hbm",NFILE,fnm) ||
 	    bGem);
   
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
   printf("Compiled with OpenMP (%i)\n", _OPENMP);
 #endif
 
@@ -3270,8 +3412,10 @@ int gmx_hbond(int argc,char *argv[])
     printf("done.\n");
   }
 
+#ifdef HAVE_NN_LOOPS
   if (bNN)
     mk_hbEmap(hb, 0);
+#endif
 
   if (bGem) {
     printf("Making per structure...");
@@ -3331,7 +3475,7 @@ int gmx_hbond(int argc,char *argv[])
   snew(rdist,nrbin+1);
 
 
-#ifdef _OPENMP /* =====================================================\
+#ifdef HAVE_OPENMP /* =================================================\
 		* Set up the OpenMP stuff,                             |
 		* like the number of threads and such                  |
 		* Also start the parallel loop.                        |
@@ -3346,7 +3490,7 @@ int gmx_hbond(int argc,char *argv[])
     printf("NN-loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
     fflush(stdout);
   }
-#endif /* _OPENMP ===================================================== */
+#endif /* HAVE_OPENMP ================================================= */
 
   if (bGem && !bBox)
     gmx_fatal(FARGS, "Can't do geminate recombination without periodic box.");
@@ -3367,10 +3511,11 @@ int gmx_hbond(int argc,char *argv[])
       count_da_grid(ngrid, grid, hb->danr[nframes]);
       
     if (bNN) {
+#ifdef HAVE_NN_LOOPS /* Unlock this feature when testing */
       /* Loop over all atom pairs and estimate interaction energy */
       addFramesNN(hb, nframes);
 
-#ifdef _OPENMP      
+#ifdef HAVE_OPENMP      
 #pragma omp parallel for				\
   schedule(dynamic),					\
   private(i,j,h,ii,jj,hh,E),				\
@@ -3399,6 +3544,7 @@ int gmx_hbond(int argc,char *argv[])
 		}
 	    }
 	}
+#endif /* HAVE_NN_LOOPS */
     } else {
       if (bSelected) {
 	/* int ii; */
@@ -3472,8 +3618,8 @@ int gmx_hbond(int argc,char *argv[])
 			      gmx_fatal(FARGS,"Invalid donor %d",i);
 			    if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
 			      gmx_fatal(FARGS,"Invalid acceptor %d",j);
-			    resdist=abs(top.atoms.atom[i].resnr-
-					top.atoms.atom[j].resnr);
+			    resdist=abs(top.atoms.atom[i].resind-
+					top.atoms.atom[j].resind);
 			    if (resdist >= max_hx) 
 			      resdist = max_hx-1;
 			    hb->nhx[nframes][resdist]++;
@@ -3708,7 +3854,7 @@ int gmx_hbond(int argc,char *argv[])
       char *gemstring=NULL;
       gemstring = strdup(gemType[hb->per.gemtype]);
       do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
-	      bMerge,bContact,fit_start,temp,r2cut>0,smooth_tail_start,oenv;
+	      bMerge,bContact,fit_start,temp,r2cut>0,smooth_tail_start,oenv,
 	      params, gemstring, nThreads, NN, bBallistic, bGemFit);
     }
     if (opt2bSet("-life",NFILE,fnm))
@@ -3792,8 +3938,10 @@ int gmx_hbond(int argc,char *argv[])
     sfree(hb->per.p2i);
   }
 
+#ifdef HAVE_NN_LOOPS
   if (bNN)
     free_hbEmap(hb);
+#endif
     
   if (hb->bDAnr) {
     int  i,j,nleg;
