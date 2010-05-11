@@ -2241,7 +2241,7 @@ static void normalizeACF(real *ct, real *gt, int len)
 /* Changed contact code and added argument R2 
  * - Erik Marklund, June 29, 2006
  */
-static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
+static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 		    int nDump,bool bMerge,bool bContact, real fit_start,
                     real temp,bool R2,real smooth_tail_start, const output_env_t oenv,
 		    t_gemParams *params, const char *gemType, int nThreads,
@@ -3108,10 +3108,8 @@ int gmx_hbond(int argc,char *argv[])
     { "-nthreads", FALSE, etINT, {&nThreads},
       "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
 #endif
-#ifdef HAVE_NN_LOOPS
     { "-NN", FALSE, etENUM, {NNtype},
-      "Do a full all vs all loop and estimsate the interaction energy instead of having a binary existence function for hydrogen bonds."},
-#endif
+      "HIDDENDo a full all vs all loop and estimsate the interaction energy instead of having a binary existence function for hydrogen bonds. NOT FULLY TESTED YET! DON'T USE IT!"},
     { "-gemfit", FALSE, etBOOL, {&bGemFit},
       "With -gemainate != none: fit ka and kd to the ACF"},
     { "-gemlogstart", FALSE, etREAL, {&logAfterTime},
@@ -3936,6 +3934,7 @@ int gmx_hbond(int argc,char *argv[])
     }
     sfree(hb->per.pHist);
     sfree(hb->per.p2i);
+    fprintf(stderr, "...done.\n");
   }
 
 #ifdef HAVE_NN_LOOPS
