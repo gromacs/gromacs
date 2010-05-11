@@ -402,7 +402,7 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
   part3 = cxmul(gamma, cxmul(cxadd(alpha, beta) , cxsub(alpha, beta)));  //3(1+2)(1-2)
   part4 = cxmul(cxsub(gamma, alpha), cxmul(cxsub(alpha, beta), cxsub(beta, gamma))); //(3-1)(1-2)(2-3)
 
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
 #pragma omp parallel for				\
   private(i, tsqrt, oma, omb, omc, c1, c2, c3, c4),	\
   reduction(+:sumimaginary),				\
@@ -494,7 +494,7 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
     	 GD->params);
   
   /* Removing a bunch of points from the log-part. */
-#ifdef _OPENMP
+#ifdef HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic)	\
   firstprivate(nLin, nData, ctTheory, y),	\
   private (i, iLog, r),				\
