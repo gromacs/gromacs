@@ -2637,7 +2637,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 
 	sfree(h);
 	sfree(g);
-#if HAVE_OPENMP /* ==========================================\ */
+#ifdef HAVE_OPENMP /* =======================================\ */
       } /* ########## THE END OF THE ENORMOUS PARALLELIZED BLOCK ########## */
       sfree(dondata);
 #endif /* HAVE_OPENMP =======================================/ */
