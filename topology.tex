@@ -696,12 +696,13 @@ The {\tt .r2b} files is used to convert standard residue names to
 the force field build block names. If no {\tt .r2b} is present
 in the force field directory or a residue is not listed, the building
 block name is assumed to be identical to the residue name.
-The {\tt .r2b} can contain 2 or 4 columns. The 2-column format
+The {\tt .r2b} can contain 2 or 5 columns. The 2-column format
 has as the residue name in the first column and the building block name
-in the second. The 4-column format has 2 additional columns with
-the building block for the residue occuring in the N- and C-terminus
-(this is useful for for instance the AMBER force field).
-If one or both terminal versions are not present a dash should be entered
+in the second. The 5-column format has 3 additional columns with
+the building block for the residue occuring in the N-terminus, C-terminus
+and both termini at the same time (single residue molecule).
+This is useful for for instance the AMBER force field.
+If one or more of the terminal versions are not present a dash should be entered
 in the corresponding column.
 
 There is a {\gromacs} naming convention for residues which is only
