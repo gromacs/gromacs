@@ -68,8 +68,9 @@ int get_atomtype_type(const char *str,gpp_atomtype_t ga)
 {
   int i;
 
+  /* Atom types are always case sensitive */
   for (i=0; (i<ga->nr); i++)
-    if (strcasecmp(str,*(ga->atomname[i])) == 0)
+    if (strcmp(str,*(ga->atomname[i])) == 0)
       return i;
   
   return NOTSET;
