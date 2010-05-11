@@ -12,42 +12,22 @@ FILE* debug;
 #endif
 
 #include <types/commrec.h>
+#include "gmxcomplex.h"
+#include "gmx_fft.h"
+
 #ifndef GMX_LIB_MPI
 double MPI_Wtime();
 #endif
 
-#include "gmx_fft.h"
-
+/*currently only special optimization for FFTE*/
 #ifdef GMX_FFT_FFTW3
 #include <fftw3.h>
 #endif
-/* TODO: optional wrapper
-#ifdef GMX_FFT_MKL
-#include <fftw/fftw3.h>
-#ifdef FFT5D_MPI_TRANSPOSE
-#include <fftw/fftw3-mpi.h>
-#endif
-#endif
-*/
 
-#ifndef NOGMX
-#ifndef GMX_DOUBLE  /*TODO how to not how have to do this GMX specific in here? 
-can't be in gmx_parallel_3dfft.h because it has to be also be set when included from fft5d.c */
-#define FFT5D_SINGLE
-#endif
-#endif
-
-typedef t_complex fft5d_type; 
-#ifdef FFT5D_SINGLE
+#ifndef GMX_DOUBLE
 #define FFTW(x) fftwf_##x
-typedef float fft5d_rtype;  
-#define FFT5D_EPS __FLT_EPSILON__
-#define FFT5D_MPI_RTYPE MPI_FLOAT 
 #else
 #define FFTW(x) fftw_##x
-typedef double fft5d_rtype; 
-#define FFT5D_EPS __DBL_EPSILON__
-#define FFT5D_MPI_RTYPE MPI_DOUBLE 
 #endif
 
 struct fft5d_time_t {
@@ -66,8 +46,8 @@ typedef enum fft5d_flags_t {
 } fft5d_flags;
 
 struct fft5d_plan_t {
-	fft5d_type *lin;
-	fft5d_type *lout;
+	t_complex *lin;
+	t_complex *lout;
         gmx_fft_t p1d[3];   /*1D plans*/
 #ifdef GMX_FFT_FFTW3 
         FFTW(plan) p2d;  /*2D plan: used for 1D decomposition if FFT supports transposed output*/
@@ -97,9 +77,9 @@ struct fft5d_plan_t {
 typedef struct fft5d_plan_t *fft5d_plan;
 
 void fft5d_execute(fft5d_plan plan,fft5d_time times);
-fft5d_plan fft5d_plan_3d(int N, int M, int K, MPI_Comm comm[2], int flags, fft5d_type** lin, fft5d_type** lin2);
+fft5d_plan fft5d_plan_3d(int N, int M, int K, MPI_Comm comm[2], int flags, t_complex** lin, t_complex** lin2);
 void fft5d_local_size(fft5d_plan plan,int* N1,int* M0,int* K0,int* K1,int** coor);
 void fft5d_destroy(fft5d_plan plan);
-fft5d_plan fft5d_plan_3d_cart(int N, int M, int K, MPI_Comm comm, int P0, int flags, fft5d_type** lin, fft5d_type** lin2);
-void fft5d_compare_data(const fft5d_type* lin, const fft5d_type* in, fft5d_plan plan, int bothLocal, int normarlize);
+fft5d_plan fft5d_plan_3d_cart(int N, int M, int K, MPI_Comm comm, int P0, int flags, t_complex** lin, t_complex** lin2);
+void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan plan, int bothLocal, int normarlize);
 #endif /*FFTLIB_H_*/

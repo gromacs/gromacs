@@ -91,10 +91,10 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
         Nb=K;Mb=rN;Kb=M;  /* currently always true because ORDER_YZ always set */
     }
     
-    (*pfft_setup)->p1 = fft5d_plan_3d(rN,M,K,rcomm, flags, (fft5d_type**)real_data, (fft5d_type**)complex_data);
+    (*pfft_setup)->p1 = fft5d_plan_3d(rN,M,K,rcomm, flags, (t_complex**)real_data, complex_data);
     
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb,Mb,Kb,rcomm,
-                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, (fft5d_type**)complex_data, (fft5d_type**)real_data);
+                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data);
     
     return (*pfft_setup)->p1 != 0 && (*pfft_setup)->p2 !=0;
 }
