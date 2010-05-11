@@ -86,7 +86,9 @@ static RETSIGTYPE signal_handler(int n)
             if (stop_condition >= gmx_stop_cond_abort)
                 abort();
             break;
+	#ifdef HAVE_SIGUSR1
         case SIGUSR1:
+	#endif
         default:
             stop_condition=gmx_stop_cond_next;
             last_signal_name=6;
@@ -113,6 +115,7 @@ void signal_handler_install(void)
         }
         signal(SIGINT,signal_handler);
     }
+    #ifdef HAVE_SIGUSR1
     if (getenv("GMX_NO_USR1") == NULL)
     {
         if (debug)
@@ -121,6 +124,7 @@ void signal_handler_install(void)
         }
         signal(SIGUSR1,signal_handler);
     }
+    #endif
 }
 
 gmx_stop_cond_t gmx_get_stop_condition(void)
