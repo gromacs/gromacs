@@ -84,8 +84,9 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
   t_atom *atom;
   int  mb,nmol,atnr,cg,a,a0,ncqlj,ncq,nclj;
   bool bBHAM,bLJcut,bChargePerturbed,bWater,bQ,bLJ;
-  double nw,nqlj,nq,nlj,cost_bond,cost_pp,cost_spread,cost_fft;
-  float fq,fqlj,flj,fljtab,fqljw,fqw,fqspread,ffft,fbond;
+  double nw,nqlj,nq,nlj;
+  double cost_bond,cost_pp,cost_spread,cost_fft,cost_solve,cost_pme;
+  float fq,fqlj,flj,fljtab,fqljw,fqw,fqspread,ffft,fsolve,fbond;
   float ratio;
   t_iparams *iparams;
   gmx_moltype_t *molt;
@@ -94,23 +95,25 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
 
   bLJcut = ((ir->vdwtype == evdwCUT) && !bBHAM);
 
-  /* Computational cost relative to a tabulated q-q interaction.
+  /* Computational cost of bonded, non-bonded and PME calculations.
    * This will be machine dependent.
    * The numbers here are accurate for Intel Core2 and AMD Athlon 64
    * in single precision. In double precision PME mesh is slightly cheaper,
    * although not so much that the numbers need to be adjusted.
    */
-  fq    = 1.0;
+  fq    = 1.5;
   fqlj  = (bLJcut ? 1.5  : 2.0 );
-  flj   = (bLJcut ? 0.5  : 1.5 );
+  flj   = (bLJcut ? 1.0  : 1.75);
   /* Cost of 1 water with one Q/LJ atom */
-  fqljw = (bLJcut ? 1.75 : 2.25);
+  fqljw = (bLJcut ? 2.0  : 2.25);
   /* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
-  fqw   = 1.5;
+  fqw   = 1.75;
   /* Cost of q spreading and force interpolation per charge */
-  fqspread = 25.0;
-  /* Cost of fft's + pme_solve, will be multiplied with N log(N) */
-  ffft     =  0.4;
+  fqspread = 35.0;
+  /* Cost of fft's, will be multiplied with N log(N) */
+  ffft     =  0.25;
+  /* Cost of pme_solve, will be multiplied with N */
+  fsolve   =  1.75;
   /* Cost of a bonded interaction divided by the number of (pbc_)dx required */
   fbond = 5.0;
 
@@ -181,23 +184,27 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
   
   cost_spread = fqspread*(3*nw + nqlj + nq);
   cost_fft    = ffft*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
+  cost_solve  = fsolve*ir->nkx*ir->nky*ir->nkz;
 
   if (ir->efep != efepNO && bChargePerturbed) {
     /* All PME work, except the spline coefficient calculation, doubles */
     cost_spread *= 2;
     cost_fft    *= 2;
+    cost_solve  *= 2;
   }
 
-  ratio =
-    (cost_spread + cost_fft)/(cost_bond + cost_pp + cost_spread + cost_fft);
+  cost_pme = cost_spread + cost_fft + cost_solve;
+
+  ratio = cost_pme/(cost_bond + cost_pp + cost_pme);
 
   if (debug) {
     fprintf(debug,
 	    "cost_bond   %f\n"
 	    "cost_pp     %f\n"
 	    "cost_spread %f\n"
-	    "cost_fft    %f\n",
-	    cost_bond,cost_pp,cost_spread,cost_fft);
+	    "cost_fft    %f\n"
+	    "cost_solve  %f\n",
+	    cost_bond,cost_pp,cost_spread,cost_fft,cost_solve);
 
     fprintf(debug,"Estimate for relative PME load: %.3f\n",ratio);
   }
