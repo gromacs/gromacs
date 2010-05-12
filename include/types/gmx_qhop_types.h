@@ -22,6 +22,15 @@ typedef struct qhop *qhop_t;
 typedef struct qhop_resblocks *qhop_resblocks_t;
 typedef struct qhop_res *qhop_res_t;
 typedef struct qhop_interactions *qhop_interactions_t;
+typedef struct qhop_H_exist *qhop_H_exist_t;
+
+typedef struct qhop_H_exist {
+  int nH;   /* Number of hydrogens. Length of H. */
+  char *H;  /* existence function for all hydrogens.
+	     * I chose char since it's compact. */
+  atom_id *H2atomid;   /* maps the elements in H to atom_id */
+  int *atomid2H;       /* the inverse function */
+} qhop_H_exist;
 
 /********************
  * From gmx_qhop_db *
@@ -41,26 +50,6 @@ typedef struct qhop_resinfo_t {
   int ndonor,*donor,nacceptor,*acceptor;
 } qhop_resinfo_t;
 
-typedef struct qhop_db {
-  int                     nrtp;
-  t_restp                 *rtp;
-  /* Replacing resinfo and atype by more elaborate structures. */
-  /*qhop_resinfo_t    *resinfo; */
-  int                     bts[4];
-  int                     nrexcl;
-  bool                    bAllDih,bHH14,bRemoveDih;
-  /*t_atomtype        atype;*/
-  t_symtab                tab;
-  int                     ngqh;
-  qhop_t                  *gqh;
-  qhop_interactions_t     qi;
-  qhop_resblocks_t        rb;
-  qhop_parameters         *qhop_param;
-  int                     nres;
-} qhop_db;
-
-
-
 /**********************
  * From gmx_qhop_parm *
  *                    */
@@ -72,8 +61,11 @@ typedef struct qhop {
 } qhop;
 
 typedef struct qhop_reactant {
-  char *name;
+  int nname;     /* Length of **name */
+  int rtp;       /* indexes the t_restp-array rtp in qhop_db. */
+  char **name;   /* A list of acceptor/donor atoms, due to proton tautomerism, eg. the two oxygens in a carbonyl. */
   char *product; /* What will the res turn into when this donor/aceptor reacts? */
+  qhop_res_t productdata; /* Pointer to the product qhop_res */
   int  nH;       /* Number of protons */
   char **H    ;  /* Proton names */
 } qhop_reactant;
@@ -82,25 +74,28 @@ typedef struct qhop_res {
   char *name; /* Name of the residue */
   int na, nd; /* Number of acceptors and donors */
   qhop_reactant *acc, *don;
+  int nft;
+  t_functype *ft; /* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp*/
 } qhop_res;
 
 typedef struct qhop_resblocks {
   int nrestypes;  /* Number of restypes */
   char **restype; /* Name of the "residue family", e.g. qLYS. */
   int *nres;      /* Number of related residues, e.g. 2 for qLYS: {LYS, LYSH}*/
-  qhop_res **res; /* has size [nrestypes][nres[i]]*/
+  qhop_res **res; /* has size [nrestypes][nres[i]] */
+
+  /* The following is for the interaction library *
+   * It stores the interaction parameters for a residue.
+   * They are needed to switch between protonation states. */
+  char **files;     /* extra files containg additional parameters. */
+  int  nf;          /* number of extra files */
+  int ni;           /* Size of ilib below. */
+  t_iparams *ilib;  /* The actual interaction parameters.
+		     * ilib[0] to ilib[ni-2] are real interactions,
+		     * the last two are dummy interactions with zeroed force constants;
+		     * one for bonds with a 0.1 nm reference distance, and one with only zeroes.
+		     * ilib will be appended to the iparams in some central t_idef.*/
 } qhop_resblocks;
-
-/* Stores the interaction parameters for a residue.
- * These are needed to switch between protonation states. */
-typedef struct qhop_interactions {
-  char *resname;  /* name of the residue */
-  int  natoms;    /* the number of atoms in the residue. */
-  char **files;   /* extra files containg additional parameters. */
-  int  nf;        /* number of extra files */
-  /* not fully implemented yet */
-} qhop_interactions;
-
 
 
 /*********************
@@ -110,8 +105,9 @@ typedef struct qhop_interactions {
 typedef struct xmlrec {
   int        nqh;
   qhop_t     *gqh;          /* Hopping parameters */
-  qhop_interactions_t qi;   /* Interaction library */
-  qhop_resblocks_t rb;      /* Bunches of related residues */
+  qhop_resblocks_t    rb;   /* Bunches of related residues
+			     * and their interaction parameters */
+  t_symtab   tab;
 } xmlrec;
 
 typedef struct currentRes {
@@ -121,5 +117,21 @@ typedef struct currentRes {
   int da;   /* Finds the current don or acc in qhop_resblocks[rt][r] */
 } currentRes;
 
-
+typedef struct qhop_db {
+  int                     nrtp;
+  t_restp                 *rtp;
+  /* Replacing resinfo with more elaborate structures */
+  /*qhop_resinfo_t    *resinfo; */
+  int                     bts[4];
+  int                     nrexcl;
+  bool                    bAllDih,bHH14,bRemoveDih;
+  t_atomtype              atype;
+  t_symtab                tab;
+  int                     ngqh;
+  qhop_t                  *gqh;
+  qhop_resblocks          rb;
+  qhop_parameters         *qhop_param;
+  int                     nres;
+  qhop_H_exist            H_map;
+} qhop_db;
 #endif
