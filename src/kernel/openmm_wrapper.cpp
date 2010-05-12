@@ -301,9 +301,11 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
  */
 string GmxOpenMMPlatformOptions::getOptionValue(const string &opt)
 {
-    if (options.find(toUpper(opt)) != options.end())
+	map<string, string> :: const_iterator it = options.find(toUpper(opt));
+	if (it != options.end())
     {
-        return options[toUpper(opt)];
+		// cout << "@@@>> " << it->first << " : " << it->second << endl;
+		return it->second;
     }
     else
     {
@@ -371,7 +373,13 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
     char strout_buf[STRLEN];
     int which_test;
     int res = 0;
-    const char * test_type = opt->getOptionValue("memtest").c_str();
+	string s = opt->getOptionValue("memtest");
+	const char * test_type = 
+			s.c_str(); 
+		/* NOTE: thie code below for some misterious reason does NOT work 
+		with MSVC, but the above "fix" seems to solve the problem - not sure why though */
+			// opt->getOptionValue("memtest").c_str();
+
 
     if (!gmx_strcasecmp(test_type, "off"))
     {
@@ -393,7 +401,7 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
     {
         gmx_fatal(FARGS, "Amount of seconds for memetest is negative (%d). ", which_test);
     }
-    
+
     switch (which_test)
     {
         case 0: /* no memtest */

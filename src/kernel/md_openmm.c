@@ -585,6 +585,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
            /* this is just make gs.sig compatible with the hack 
                of sending signals around by MPI_Reduce with together with
                other floats */
+            /* NOTE: this only works for serial code. For code that allows
+               MPI nodes to propagate their condition, see kernel/md.c*/
             if ( gmx_get_stop_condition() == gmx_stop_cond_next_ns )
                 gs.set[eglsSTOPCOND]=1;
             if ( gmx_get_stop_condition() == gmx_stop_cond_next )
