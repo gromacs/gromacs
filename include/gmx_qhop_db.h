@@ -2,16 +2,20 @@
 #define _GMX_QHOP_DB_H
 
 #include "resall.h"
+//#include "mdatoms.h"
 #include "types/gmx_qhop_types.h"
 #include "hackblock.h"
 
 //typedef struct gmx_qhop_db_t *gmx_qhop_db;
 
+/* copied from symtab */
+extern char *trim_strndup(const char *s,int maxlen);
+
 /*Print to stderr*/
 extern void qhop_db_print (qhop_parameters *qhp);
 
 /* Return database if succesfull, or NULL on failure */
-extern qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top);
+extern qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda);
  
 /* Write the database to a filename. Return 1 on succes, or 0 for
    failure */
