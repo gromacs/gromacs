@@ -28,6 +28,9 @@ topol_DATA = \
 	ffoplsaa.hdb	ffoplsaa-n.tdb	ffoplsaa-c.tdb	ffoplsaa.rtp	\
 	ffoplsaa.ddb	ffoplsaa.n2t					\
 	ffoplsaa-qhop.rtp	ffoplsaa-qhop.dat			\
+	ffqamber99sb.atp    ffqamber99sb.itp	ffqamber99sbbon.itp ffqamber99sbnb.itp  \
+	ffqamber99sb.hdb	ffqamber99sb-n.tdb	ffqamber99sb-c.tdb	ffqamber99sb.rtp	\
+	ffqamber99sb-qhop.dat			\
 	qtip3p.itp      qhops.dtd                                       \
 	ffencads-c.tdb  ffencads.itp    ffencadv-c.tdb  ffencadv.itp	\
 	ffencads-n.tdb  ffencads.rtp    ffencadv-n.tdb  ffencadv.rtp	\
