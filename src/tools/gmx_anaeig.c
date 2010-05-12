@@ -143,8 +143,9 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
   real min,max,xsp,ysp;
   
   out=ffopen(file,"w"); 
-  if (!use_xmgr() && get_print_xvgr_codes(oenv))
+  if (output_env_get_xvg_format(oenv) == exvgXMGRACE) {
     fprintf(out,"@ autoscale onread none\n");
+  }
   for(g=0; g<ngraphs; g++) {
     if (y) {
       min=y[g][0];
@@ -169,7 +170,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
     max=max+0.1*(max-min);
     xsp=tick_spacing((x[n-1]-x[0])*scale_x,4);
     ysp=tick_spacing(max-min,3);
-    if (get_print_xvgr_codes(oenv)) {
+    if (output_env_get_print_xvgr_codes(oenv)) {
       fprintf(out,"@ with g%d\n@ g%d on\n",g,g);
       if (g==0) {
 	fprintf(out,"@ title \"%s\"\n",title);
@@ -208,13 +209,13 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
         for(i=0; i<n; i++) {
             if ( bSplit && i>0 && abs(x[i])<1e-5 )
             {
-                if (get_print_xvgr_codes(oenv))
+                if (output_env_get_print_xvgr_codes(oenv))
                     fprintf(out,"&\n");
             }
             fprintf(out,"%10.4f %10.5f\n",
                     x[i]*scale_x,y ? y[g][i] : sy[g][s][i]);
         }
-        if (get_print_xvgr_codes(oenv))
+        if (output_env_get_print_xvgr_codes(oenv))
             fprintf(out,"&\n");
     }
   }
@@ -501,10 +502,10 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
       ylabel[v]=strdup(str);
     }
     sprintf(str,"projection on eigenvectors (%s)",proj_unit);
-    write_xvgr_graphs(projfile, noutvec, 1, str, NULL, get_xvgr_tlabel(oenv),
+    write_xvgr_graphs(projfile, noutvec, 1, str, NULL, output_env_get_xvgr_tlabel(oenv),
 		      (const char **)ylabel,
 		      nframes, inprod[noutvec], inprod, NULL,
-		      get_time_factor(oenv), FALSE, bSplit,oenv);
+		      output_env_get_time_factor(oenv), FALSE, bSplit,oenv);
   }
   
   if (twodplotfile) {

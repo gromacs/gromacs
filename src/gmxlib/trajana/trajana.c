@@ -176,17 +176,17 @@ struct gmx_ana_traj_t
     bool                      bPBC;
 
     /** Name of the trajectory file (NULL if not provided). */
-    const char               *trjfile;
+    char                     *trjfile;
     /** Name of the topology file (NULL if no topology loaded). */
-    const char               *topfile;
+    char                     *topfile;
     /** Non-NULL name of the topology file. */
-    const char               *topfile_notnull;
+    char                     *topfile_notnull;
     /** Name of the index file (NULL if no index file provided). */
-    const char               *ndxfile;
+    char                     *ndxfile;
     /** Name of the selection file (NULL if no file provided). */
-    const char               *selfile;
+    char                     *selfile;
     /** The selection string (NULL if not provided). */
-    const char               *selection;
+    char                     *selection;
 
     /** The topology structure, or \p NULL if no topology loaded. */
     t_topology               *top;
@@ -321,6 +321,11 @@ gmx_ana_traj_free(gmx_ana_traj_t *d)
 {
     int                 i;
 
+    sfree(d->trjfile);
+    sfree(d->topfile);
+    sfree(d->topfile_notnull);
+    sfree(d->ndxfile);
+    sfree(d->selfile);
     if (d->top)
     {
         done_top(d->top);
@@ -339,6 +344,7 @@ gmx_ana_traj_free(gmx_ana_traj_t *d)
     gmx_ana_selcollection_free(d->sc);
     gmx_ana_poscalc_coll_free(d->pcc);
     sfree(d->grpnames);
+    output_env_done(d->oenv);
     sfree(d);
 }
 
@@ -682,6 +688,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
     size_t              i;
     int                 k;
     int                 rc;
+    const char         *tmp_fnm;
 
     t_filenm            def_fnm[] = {
         {efTRX, NULL,  NULL,        ffOPTRD},
@@ -838,20 +845,15 @@ parse_trjana_args(gmx_ana_traj_t *d,
                       ndesc, desc, nbugs, bugs,oenv);
     d->oenv = *oenv;
 
-    /* Copy the results back */
-    for (k = 0; k < nfile; ++k)
-    {
-        memcpy(&(fnm[k]), &(all_fnm[fnm_map[k]]), sizeof(fnm[k]));
-    }
-    for (i = 0, k = npall - npargs; i < (size_t)npargs; ++i, ++k)
-    {
-        memcpy(&(pa[i]), &(all_pa[k]), sizeof(pa[i]));
-    }
-
-    d->trjfile         = ftp2fn_null(efTRX, nfall, all_fnm);
-    d->topfile         = ftp2fn_null(efTPS, nfall, all_fnm);
-    d->topfile_notnull = ftp2fn(efTPS, nfall, all_fnm);
-    d->ndxfile         = ftp2fn_null(efNDX, nfall, all_fnm);
+    /* Process our own options.
+     * Make copies of file names for easier memory management. */
+    tmp_fnm            = ftp2fn_null(efTRX, nfall, all_fnm);
+    d->trjfile         = tmp_fnm ? strdup(tmp_fnm) : NULL;
+    tmp_fnm            = ftp2fn_null(efTPS, nfall, all_fnm);
+    d->topfile         = tmp_fnm ? strdup(tmp_fnm) : NULL;
+    d->topfile_notnull = strdup(ftp2fn(efTPS, nfall, all_fnm));
+    tmp_fnm            = ftp2fn_null(efNDX, nfall, all_fnm);
+    d->ndxfile         = tmp_fnm ? strdup(tmp_fnm) : NULL;
     if (!(d->flags & ANA_NOUSER_RMPBC))
     {
         d->bRmPBC      = bRmPBC;
@@ -861,8 +863,24 @@ parse_trjana_args(gmx_ana_traj_t *d,
         d->bPBC        = bPBC;
     }
     d->selection       = selection;
-    d->selfile         = opt2fn_null("-sf", nfall, all_fnm);
+    tmp_fnm            = opt2fn_null("-sf", nfall, all_fnm);
+    d->selfile         = tmp_fnm ? strdup(tmp_fnm) : NULL;
 
+    /* Copy the results back */
+    for (k = 0; k < nfile; ++k)
+    {
+        memcpy(&(fnm[k]), &(all_fnm[fnm_map[k]]), sizeof(fnm[k]));
+        /* Delegate responsibility of freeing the file names to caller. */
+        all_fnm[fnm_map[k]].nfiles = 0;
+        all_fnm[fnm_map[k]].fns    = NULL;
+    }
+    for (i = 0, k = npall - npargs; i < (size_t)npargs; ++i, ++k)
+    {
+        memcpy(&(pa[i]), &(all_pa[k]), sizeof(pa[i]));
+    }
+
+    /* Free memory we have allocated. */
+    done_filenms(nfall, all_fnm);
     sfree(all_fnm);
     sfree(fnm_map);
     sfree(all_pa);
@@ -1072,7 +1090,7 @@ init_default_selections(gmx_ana_traj_t *d, gmx_ana_indexgrps_t **grps)
     }
 
     /* Find the default selection file, return if none found. */
-    fnm = low_libfn("defselection.dat", FALSE);
+    fnm = low_gmxlibfn("defselection.dat", FALSE);
     if (fnm == NULL)
     {
         return 0;

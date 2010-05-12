@@ -29,15 +29,27 @@ set(GMXPREPROCESS_SOURCES
     toputil.c       
     tpbcmp.c        
     vsite_parm.c    
+    fflibutil.c
     xlate.c)
 
 set(MDRUN_SOURCES 
-    gctio.c    ionize.c
+    gctio.c    ionize.c runner.c
     do_gct.c     repl_ex.c  xutils.c
-    md.c         mdrun.c    genalg.c)
+    md.c         mdrun.c    genalg.c md_openmm.c)
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
+
+if(GMX_OPENMM) 
+    add_subdirectory(gmx_gpu_utils)
+    include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
+    link_directories(${OpenMM_LIBRARY_DIR}) 
+    add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) 
+    add_library(openmm_api_wrapper openmm_wrapper.cpp)
+#    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
+    set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils OpenMM)   
+    install(TARGETS openmm_api_wrapper DESTINATION ${LIB_INSTALL_DIR})   
+endif(GMX_OPENMM)
 
 if(GMX_FAHCORE)
   add_library(fahcore ${MDRUN_SOURCES})
@@ -70,7 +82,7 @@ add_executable(gmxcheck gmxcheck.c)
 target_link_libraries(gmxcheck ${GMX_EXTRA_LIBRARIES})
 
 add_executable(mdrun ${MDRUN_SOURCES})
-target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
 
 install(TARGETS 
         grompp
@@ -86,6 +98,4 @@ install(TARGETS
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 endif(GMX_FAHCORE)
-
-
 

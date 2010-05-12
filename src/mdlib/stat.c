@@ -66,6 +66,7 @@
 #include "constr.h"
 #include "checkpoint.h"
 #include "mdrun.h"
+#include "xvgr.h"
 
 typedef struct gmx_global_stat
 {
@@ -95,36 +96,49 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
-static void filter_enerdterm(real *afrom,real *ato, bool bTemp, bool bPres, bool bEner) {
-    int i;
+static int filter_enerdterm(real *afrom, bool bToBuffer, real *ato,
+                            bool bTemp, bool bPres, bool bEner) {
+    int i,to,from;
 
-  for (i=0;i<F_NRE;i++)
-  {
-      switch (i) {
-      case F_EKIN:
-      case F_TEMP:
-      case F_DKDL:
-          if (bTemp)
-          {
-              ato[i] = afrom[i];
-          }
-          break;
-      case F_PRES:    
-      case F_PDISPCORR:
-      case F_VTEMP:
-          if (bPres)
-          {
-              ato[i] = afrom[i];
-          }
-          break;
-      default:
-          if (bEner)
-          {
-              ato[i] = afrom[i];
-          }
-          break;
-      }
-  }
+    from = 0;
+    to   = 0;
+    for (i=0;i<F_NRE;i++)
+    {
+        if (bToBuffer)
+        {
+            from = i;
+        }
+        else
+        {
+            to = i;
+        }
+        switch (i) {
+        case F_EKIN:
+        case F_TEMP:
+        case F_DKDL:
+            if (bTemp)
+            {
+                ato[to++] = afrom[from++];
+            }
+            break;
+        case F_PRES:    
+        case F_PDISPCORR:
+        case F_VTEMP:
+            if (bPres)
+            {
+                ato[to++] = afrom[from++];
+            }
+            break;
+        default:
+            if (bEner)
+            {
+                ato[to++] = afrom[from++];
+            }
+            break;
+        }
+    }
+
+    return to;
 }
 
 void global_stat(FILE *fplog,gmx_global_stat_t gs,
@@ -132,24 +146,24 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  tensor fvir,tensor svir,rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,gmx_constr_t constr,
-                 t_vcm *vcm,int *nabnsb,
-                 real *chkpt,real *terminate,
+                 t_vcm *vcm,
+                 int nsig,real *sig,
                  gmx_mtop_t *top_global, t_state *state_local, 
                  bool bSumEkinhOld, int flags)
 /* instead of current system, booleans for summing virial, kinetic energy, and other terms */
 {
   t_bin  *rb;
   int    *itc0,*itc1;
-  int    ie,ifv,isv,irmsd=0,imu=0;
+  int    ie=0,ifv=0,isv=0,irmsd=0,imu=0;
   int    idedl=0,idvdll=0,idvdlnl=0,iepl=0,icm=0,imass=0,ica=0,inb=0;
-  int    ibnsb=-1,ichkpt=-1,iterminate;
+  int    isig=-1;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
-  real   *copyenerd;
-  int    j;
-  real   *rmsd_data,rbnsb;
+  real   copyenerd[F_NRE];
+  int    nener,j;
+  real   *rmsd_data=NULL;
   double nb;
-  bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate;
+  bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate,bReadEkin;
 
   bVV           = EI_VV(inputrec->eI);
   bTemp         = flags & CGLO_TEMPERATURE;
@@ -157,9 +171,9 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   bPres         = flags & CGLO_PRESSURE; 
   bConstrVir    = flags & CGLO_CONSTRAINT;
   bFirstIterate = flags & CGLO_FIRSTITERATE;
-  bEkinAveVel = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && IR_NPT_TROTTER(inputrec) && bPres));
+  bEkinAveVel   = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && IR_NPT_TROTTER(inputrec) && bPres));
+  bReadEkin     = flags & CGLO_READEKIN;
 
-  snew(copyenerd,F_NRE);
   rb   = gs->rb;
   itc0 = gs->itc0;
   itc1 = gs->itc1;
@@ -175,7 +189,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
      communicated and summed when they need to be, to avoid repeating
      the sums and overcounting. */
 
-  filter_enerdterm(enerd->term,copyenerd,bTemp,bPres,bEner);
+  nener = filter_enerdterm(enerd->term,TRUE,copyenerd,bTemp,bPres,bEner);
   
   /* First, the data that needs to be communicated with velocity verlet every time
      This is just the constraint virial.*/
@@ -195,11 +209,11 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               {
                   itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
               }
-              if (bEkinAveVel) 
+              if (bEkinAveVel && !bReadEkin) 
               {
                   itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinf[0]);
               } 
-              else 
+              else if (!bReadEkin)
               {
                   itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
               }
@@ -225,7 +239,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       where();
       if (bFirstIterate) 
       {
-          ie  = add_binr(rb,F_NRE,copyenerd);
+          ie  = add_binr(rb,nener,copyenerd);
       }
       where();
       if (constr) 
@@ -235,9 +249,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           {
               irmsd = add_binr(rb,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
           }
-      } else {
-          rmsd_data = NULL;
-      }
+      } 
       if (!NEED_MUTOT(*inputrec)) 
       {
           imu = add_binr(rb,DIM,mu_tot);
@@ -278,23 +290,17 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               where();
           }
       }
-      if (DOMAINDECOMP(cr)) 
-      {
-          nb = cr->dd->nbonded_local;
-          inb = add_bind(rb,1,&nb);
-      }
-      where();
-      if (nabnsb) 
-      {
-          rbnsb = *nabnsb;
-          ibnsb = add_binr(rb,1,&rbnsb);
-      }
-      if (chkpt) 
-      {
-          ichkpt   = add_binr(rb,1,chkpt);
-      }
   }
-  iterminate = add_binr(rb,1,terminate);
+  if (DOMAINDECOMP(cr)) 
+  {
+      nb = cr->dd->nbonded_local;
+      inb = add_bind(rb,1,&nb);
+      }
+  where();
+  if (nsig > 0) 
+  {
+      isig = add_binr(rb,nsig,sig);
+  }
 
   /* Global sum it all */
   if (debug)
@@ -322,10 +328,10 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               {
                   extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
               }
-              if (bEkinAveVel) {
+              if (bEkinAveVel && !bReadEkin) {
                   extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinf[0]);
               }
-              else
+              else if (!bReadEkin)
               {
                   extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinh[0]);              
               }
@@ -344,7 +350,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   {
       if (bFirstIterate) 
       {
-          extract_binr(rb,ie  ,F_NRE,copyenerd);
+          extract_binr(rb,ie,nener,copyenerd);
           if (rmsd_data) 
           {
               extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
@@ -393,26 +399,18 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               }
           }
           where();
-          if (nabnsb) 
-          {
-              extract_binr(rb,ibnsb,1,&rbnsb);
-              *nabnsb = (int)(rbnsb + 0.5);
-          }
-          where();
-          if (chkpt)
-          {
-              extract_binr(rb,ichkpt,1,chkpt);
-          }
-          extract_binr(rb,iterminate,1,terminate);
-          where();
-          
-          filter_enerdterm(copyenerd,enerd->term,bTemp,bPres,bEner);          
-/* Small hack for temp only - not entirely clear if still needed?*/
-          //enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
-      }
 
+          filter_enerdterm(copyenerd,FALSE,enerd->term,bTemp,bPres,bEner);    
+/* Small hack for temp only - not entirely clear if still needed?*/
+          /* enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes); */
+      }
   }
-  sfree(copyenerd);
+
+  if (nsig > 0) 
+  {
+      extract_binr(rb,isig,nsig,sig);
+  }
+  where();
 }
 
 int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep)
@@ -433,12 +431,104 @@ static void moveit(t_commrec *cr,
 	     xx,NULL,(cr->nnodes-cr->npmenodes)-1,NULL);
 }
 
+gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
+                          const t_commrec *cr,const t_inputrec *ir,
+                          const output_env_t oenv)
+{
+    gmx_mdoutf_t *of;
+    char filemode[3];
+
+    snew(of,1);
+
+    of->fp_trn   = -1;
+    of->fp_ene   = NULL;
+    of->fp_xtc   = -1;
+    of->fp_dhdl  = NULL;
+    of->fp_field = NULL;
+    
+    of->eIntegrator     = ir->eI;
+    of->simulation_part = ir->simulation_part;
+
+    if (MASTER(cr))
+    {
+        sprintf(filemode, bAppendFiles ? "a+" : "w+");  
+        
+        if (ir->eI != eiNM)
+        {
+            of->fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
+        }
+        if (ir->nstxtcout > 0 && !EI_ENERGY_MINIMIZATION(ir->eI))
+        {
+            of->fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
+            of->xtc_prec = ir->xtcprec;
+        }
+        of->fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
+        of->fn_cpt = opt2fn("-cpo",nfile,fnm);
+        
+        if (ir->efep != efepNO && ir->nstdhdl > 0 &&
+            !EI_ENERGY_MINIMIZATION(ir->eI))
+        {
+            if (bAppendFiles)
+            {
+                of->fp_dhdl = gmx_fio_fopen(opt2fn("-dhdl",nfile,fnm),filemode);
+            }
+            else
+            {
+                of->fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir,oenv);
+            }
+        }
+        
+        if (opt2bSet("-field",nfile,fnm) &&
+            (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n))
+        {
+            if (bAppendFiles)
+            {
+                of->fp_dhdl = gmx_fio_fopen(opt2fn("-field",nfile,fnm),
+                                            filemode);
+            }
+            else
+            {				  
+                of->fp_field = xvgropen(opt2fn("-field",nfile,fnm),
+                                        "Applied electric field","Time (ps)",
+                                        "E (V/nm)",oenv);
+            }
+        }
+    }
+
+    return of;
+}
+
+void done_mdoutf(gmx_mdoutf_t *of)
+{
+    if (of->fp_ene != NULL)
+    {
+        close_enx(of->fp_ene);
+    }
+    if (of->fp_xtc >= 0)
+    {
+        close_xtc(of->fp_xtc);
+    }
+    if (of->fp_trn >= 0)
+    {
+        close_trn(of->fp_trn);
+    }
+    if (of->fp_dhdl != NULL)
+    {
+        gmx_fio_fclose(of->fp_dhdl);
+    }
+    if (of->fp_field != NULL)
+    {
+        gmx_fio_fclose(of->fp_field);
+    }
+
+    sfree(of);
+}
+
 void write_traj(FILE *fplog,t_commrec *cr,
-                int fp_trn,bool bX,bool bV,bool bF,
-                int fp_xtc,bool bXTC,int xtc_prec,
-                const char *fn_cpt,bool bCPT,
+                gmx_mdoutf_t *of,
+                int mdof_flags,
                 gmx_mtop_t *top_global,
-                int eIntegrator,int simulation_part,gmx_large_int_t step,double t,
+                gmx_large_int_t step,double t,
                 t_state *state_local,t_state *state_global,
                 rvec *f_local,rvec *f_global,
                 int *n_xtc,rvec **x_xtc)
@@ -459,31 +549,31 @@ void write_traj(FILE *fplog,t_commrec *cr,
     
     if (DOMAINDECOMP(cr))
     {
-        if (bCPT)
+        if (mdof_flags & MDOF_CPT)
         {
             dd_collect_state(cr->dd,state_local,state_global);
         }
         else
         {
-            if (bX || bXTC)
+            if (mdof_flags & (MDOF_X | MDOF_XTC))
             {
                 dd_collect_vec(cr->dd,state_local,state_local->x,
                                state_global->x);
             }
-            if (bV)
+            if (mdof_flags & MDOF_V)
             {
                 dd_collect_vec(cr->dd,state_local,local_v,
                                global_v);
             }
         }
-        if (bF)
+        if (mdof_flags & MDOF_F)
         {
             dd_collect_vec(cr->dd,state_local,f_local,f_global);
         }
     }
     else
     {
-        if (bCPT)
+        if (mdof_flags & MDOF_CPT)
         {
             /* All pointers in state_local are equal to state_global,
              * but we need to copy the non-pointer entries.
@@ -493,13 +583,14 @@ void write_traj(FILE *fplog,t_commrec *cr,
             state_global->vol0 = state_local->vol0;
             copy_mat(state_local->box,state_global->box);
             copy_mat(state_local->boxv,state_global->boxv);
-            copy_mat(state_local->vir_prev,state_global->vir_prev);
+            copy_mat(state_local->svir_prev,state_global->svir_prev);
+            copy_mat(state_local->fvir_prev,state_global->fvir_prev);
             copy_mat(state_local->pres_prev,state_global->pres_prev);
         }
         if (cr->nnodes > 1)
         {
             /* Particle decomposition, collect the data on the master node */
-            if (bCPT)
+            if (mdof_flags & MDOF_CPT)
             {
                 if (state_local->flags & (1<<estX))   MX(state_global->x);
                 if (state_local->flags & (1<<estV))   MX(state_global->v);
@@ -528,31 +619,35 @@ void write_traj(FILE *fplog,t_commrec *cr,
             }
             else
             {
-                if (bX || bXTC) MX(state_global->x);
-                if (bV)         MX(global_v);
+                if (mdof_flags & (MDOF_X | MDOF_XTC)) MX(state_global->x);
+                if (mdof_flags & MDOF_V)              MX(global_v);
             }
-            if (bF)         MX(f_global);
-        }
-    }
-    
-    if (MASTER(cr)) {
-        if (bCPT) {
-            write_checkpoint(fn_cpt,fplog,cr,eIntegrator,simulation_part,step,t,state_global);
-        }
-        
-        if (bX || bV || bF) {
-            fwrite_trn(fp_trn,step,t,state_local->lambda,
+            if (mdof_flags & MDOF_F) MX(f_global);
+         }
+     }
+
+     if (MASTER(cr))
+     {
+         if (mdof_flags & MDOF_CPT)
+         {
+             write_checkpoint(of->fn_cpt,fplog,cr,of->eIntegrator,
+                              of->simulation_part,step,t,state_global);
+         }
+
+         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
+         {
+            fwrite_trn(of->fp_trn,step,t,state_local->lambda,
                        state_local->box,top_global->natoms,
-                       bX ? state_global->x : NULL,
-                       bV ? global_v : NULL,
-                       bF ? f_global : NULL);
-            if(gmx_fio_flush(fp_trn) != 0)
+                       (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                       (mdof_flags & MDOF_V) ? global_v : NULL,
+                       (mdof_flags & MDOF_F) ? f_global : NULL);
+            if (gmx_fio_flush(of->fp_trn) != 0)
             {
                 gmx_file("Cannot write trajectory; maybe you are out of quota?");
             }
-            gmx_fio_check_file_position(fp_trn);
+            gmx_fio_check_file_position(of->fp_trn);
         }      
-        if (bXTC) {
+        if (mdof_flags & MDOF_XTC) {
             groups = &top_global->groups;
             if (*n_xtc == -1)
             {
@@ -585,12 +680,12 @@ void write_traj(FILE *fplog,t_commrec *cr,
                     }
                 }
             }
-            if (write_xtc(fp_xtc,*n_xtc,step,t,
-                          state_local->box,xxtc,xtc_prec) == 0)
+            if (write_xtc(of->fp_xtc,*n_xtc,step,t,
+                          state_local->box,xxtc,of->xtc_prec) == 0)
             {
                 gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
             }
-            gmx_fio_check_file_position(fp_xtc);
+            gmx_fio_check_file_position(of->fp_xtc);
         }
     }
 }

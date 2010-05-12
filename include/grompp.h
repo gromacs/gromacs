@@ -107,23 +107,22 @@ typedef struct {
 
 #include "gpp_atomtype.h"
 
-extern void choose_ff(char *ff,int maxlen);
-/* Strange place for this function... */
-
 extern bool is_int(double x);
 /* Returns TRUE when x is integer */
 
 extern void print_top_comment(FILE *out,const char *filename,const char *title,bool bITP);
 
 extern void print_top_header(FILE *out,const char *filename,const char *title,bool bITP, 
-			     const char *ff,real mHmult);
+			     const char *ffdir,real mHmult);
 
-extern void print_top_mols(FILE *out, const char *title, const char *water,
+extern void print_top_mols(FILE *out,
+			   const char *title, const char *ffdir, const char *water,
 			   int nincl, char **incls,
 			   int nmol, t_mols *mols);
 
 extern void write_top(FILE *out, char *pr,char *molname,
-		      t_atoms *at,int bts[],t_params plist[],t_excls excls[],
+		      t_atoms *at,bool bRTPresname,
+		      int bts[],t_params plist[],t_excls excls[],
 		      gpp_atomtype_t atype,int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 

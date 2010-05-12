@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.99_development_20090927, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0.99-dev-20100305, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -23,7 +23,6 @@ AC_DISABLE_SHARED
 #######################################################################
 # Simple options and makefile variables
 #######################################################################
-
 
 ### Single/Double
 AC_ARG_ENABLE(float,
@@ -65,7 +64,8 @@ AC_SUBST(F77LINK,"\$(LINK)")
 ### MPI or not
 AC_ARG_ENABLE(mpi,
               [AC_HELP_STRING([--enable-mpi],
-	                      [Compile for parallel runs using MPI])],,enable_mpi=no)
+	                      [Compile for parallel runs using MPI]
+                              [(instead of threads)])],,enable_mpi=no)
 
 
 ### MPI environment
@@ -83,7 +83,9 @@ fi
 ### MPI_IN_PLACE
 AC_ARG_ENABLE(mpi-in-place,
               [AC_HELP_STRING([--disable-mpi-in-place],
-                              [Disable MPI_IN_PLACE. For MPI implementations that have broken support for it (some versions of MPICH, for example).])],, enable_mpi_in_place=yes)
+                              [Disable MPI_IN_PLACE. For MPI implementations]
+                              [that have broken support for it ]
+                              [(some versions of MPICH, for example).])],, enable_mpi_in_place=yes)
 
 
 
@@ -204,12 +206,8 @@ AC_ARG_ENABLE(fftw-measure,
 
 
 AC_ARG_ENABLE(threads,
-              [AC_HELP_STRING([--enable-threads],    
-                              [Compile for parallel runs using threads])],,enable_threads=no)
-
-# if test "$enable_threads" = "yes"; then
-#   with_threads=pthreads;
-#fi
+              [AC_HELP_STRING([--disable-threads],    
+                              [Disable parallel runs using threads])],,enable_threads=yes)
 
 
 ### Use external BLAS/LAPACK libraries if the user wants to.
@@ -266,7 +264,9 @@ if test "$with_qmmm_mopac" = "yes"; then
 fi
 
 AC_ARG_WITH(dlopen,
- [  --without-dlopen        do not compile with dlopen, needed to read VMD supported file formats],,with_dlopen=yes)
+            [AC_HELP_STRING([--without-dlopen],
+                            [do not compile with dlopen, needed to read VMD]
+                            [supported file formats])],,with_dlopen=yes)
 
 
 
@@ -279,6 +279,28 @@ AC_DEFINE_UNQUOTED([BUILD_TIME],["`date`"],[Date and time for build])
 AC_DEFINE_UNQUOTED([BUILD_USER],["`whoami`@`hostname`"],[User doing build])
 AC_DEFINE_UNQUOTED([BUILD_MACHINE],["`uname -srm`"],[Hardware and OS version for build host])
 
+
+############################################################
+# Checks for requirements for version information generation
+############################################################
+generate_version=no
+if test -d $srcdir/.git ; then
+    AC_CHECK_PROG(have_git, git, yes, no)
+    if test "$have_git" = "yes" ; then
+        AC_MSG_CHECKING(for git >= 1.5.1)
+        if test "`git --version`" \< "git version 1.5.1" ; then
+            AC_MSG_RESULT(no)
+        else
+            AC_MSG_RESULT(yes)
+            generate_version=yes
+            AC_DEFINE(USE_VERSION_H,,[Use generated version info])
+        fi
+    fi
+    if test "$generate_version" = "no" ; then
+        AC_MSG_WARN([No compatible git version found, won't be able to generate proper development version information.])
+    fi
+fi
+AM_CONDITIONAL([USE_VERSION_H],[test "$generate_version" = "yes"])
 
 
 ############################################################
@@ -318,6 +340,7 @@ AM_PROG_AS( $CC )
 # fail on platforms where MPI executables can only be run through a batchqueue.
 
 if test "$enable_mpi" = "yes"; then
+  enable_threads="no"
   AC_CHECK_PROGS(MPICC, mpxlc mpicc mpcc hcc, $CC)
 # now change the normal cc to the MPI one - see the comment above.
   CC=$MPICC
@@ -411,13 +434,50 @@ if test "$enable_threads" = "yes"; then
   if test "$with_fft" = "fftw2"; then
     AC_MSG_ERROR([fftw2 can't be used with threads. Use fftw3 or mkl.])
   fi 
+  AC_CHECK_HEADERS(unistd.h)
+  AC_CHECK_HEADERS(sys/time.h)
+  AC_CHECK_HEADERS(sched.h)
+  AC_CHECK_FUNCS(sysconf)
+
   # for now we just assume pthreads
-  ACX_PTHREAD(,AC_MSG_ERROR([Cannot find POSIX threads - required for thread    support using configure!]))
+  ACX_PTHREAD(,AC_MSG_ERROR([Cannot find POSIX threads - required for thread support using configure!]))
   LIBS="$PTHREAD_LIBS $LIBS"
-  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-  CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+  CFLAGS="$CFLAGS $PTHREAD_CFLAGS -I$srcdir/include"
+  CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS -I$srcdir/include"
   CC="$PTHREAD_CC "
   AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for thread_mpi multithreading])
+
+  # profiling
+  AC_ARG_ENABLE(tmpi-profiling,
+              [AC_HELP_STRING([--enable-tmpi-profiling],
+              [Enables profiling of thread_mpi calls and wait times])],,
+              enable_tmpi_profiling=no)
+  if test "x$enable_tmpi_profiling" = "xyes"; then
+    AC_DEFINE(TMPI_PROFILE,,[Enable profiling for call and wait times])
+  fi
+
+  # check the atomics
+  AC_MSG_CHECKING(if atomic operations are supported)
+  CFLAGS_RET="$CFLAGS"
+  CXXFLAGS_RET="$CXXFLAGS"
+  CFLAGS="$CFLAGS -I$srcdir/include -DTMPI_CHECK_ATOMICS"
+  CXXFLAGS="$CXXFLAGS -I$srcdir/include -DTMPI_CHECK_ATOMICS"
+  # this sets a variable 'tmpi_atomics' to 'yes' if there are atomics. 
+  AC_COMPILE_IFELSE([#include "thread_mpi/atomic.h" ],
+                      [AC_MSG_RESULT(yes); tmpi_atomics=yes],
+                      [AC_MSG_WARN(
+[No atomics.
+
+This compiler+CPU combination doesn't have working atomics.
+Thread support will be unbearably slow: disable threads.
+
+Atomics should work on all but the most obscure CPU+compiler combinations;
+if your system is not obscure -- like, for example, x86 with gcc --  please
+contact the developers.
+]); tmpi_atomics=no])
+  CFLAGS="$CFLAGS_RET"
+  CXXFLAGS="$CXXFLAGS_RET"
+
   AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AM_CONDITIONAL(THREAD_PARALLEL,true)
@@ -533,8 +593,10 @@ AC_TRY_COMPILE([#include<fftw3.h>],,[
 AC_MSG_RESULT(yes)
 if test "$enable_float" = "yes"; then
   AC_CHECK_LIB([fftw3f],main,,AC_MSG_ERROR([Cannot find fftw3f library]))
+  PKG_FFTW="fftw3f"
 else
   AC_CHECK_LIB([fftw3],main,,AC_MSG_ERROR([Cannot find fftw3 library]))
+  PKG_FFTW="fftw3"
 fi
   AC_DEFINE(GMX_FFT_FFTW3,,[Use FFTW3 FFT library])
 ],[
@@ -552,6 +614,7 @@ to use a slower set of FFTs built into Gromacs.
 (Just install FFTW3 unless you really know what you are doing).
 ])
 ])
+  AC_SUBST(PKG_FFTW)
   ;;
 
 mkl*)
@@ -570,6 +633,7 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
   if test "$have_mkl" == "no"; then
     # we assume it's a new MKL
     LIBS="$LIBS -liomp5 -lmkl_sequential -lmkl_core"
+    LMKL=" -liomp5 -lmkl_sequential -lmkl_core"
     AC_CHECK_LIB([mkl_intel_lp64],DftiComputeForward,,[have_mkl10_64="no"])
     if test "$have_mkl10_64" == "no"; then
       AC_CHECK_LIB([mkl_intel],DftiComputeForward,,[have_mkl10_32="no"])
@@ -579,6 +643,7 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
     fi
   fi
   AC_DEFINE(GMX_FFT_MKL,,[Use Intel MKL FFT library])
+  AC_SUBST(LMKL)
   ;;
 
 fftpack | no)
@@ -638,6 +703,7 @@ AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(sys/time.h)
+AC_CHECK_HEADERS(dirent.h)
 AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
 [No regex.h found.
 Regular expression matching in selections will be disabled.
@@ -658,6 +724,8 @@ AC_CHECK_FUNCS(strdup)
 AC_CHECK_FUNCS(gettimeofday)
 AC_CHECK_FUNCS(isnan)
 AC_CHECK_FUNCS(_isnan)
+AC_CHECK_FUNCS(isfinite)
+AC_CHECK_FUNCS(_isfinite)
 
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
@@ -709,7 +777,8 @@ fi
 
 # GNU Scientific Library or not
 AC_ARG_WITH(gsl,
- [  --with-gsl                    Link to the GNU scientific library, enables extra functions in analysis],,with_gsl=no)
+ [AC_HELP_STRING([--with-gsl],[Link to the GNU scientific library, ]
+                 [enables extra functions in analysis])],,with_gsl=no)
 
 ######
 if test "$with_gsl" = "yes"; then
@@ -720,12 +789,42 @@ if test "$with_gsl" = "yes"; then
   LDFLAGS="$ac_save_LDFLAGS -lgslcblas"
 # gslcblas library found, check main lib
   AC_CHECK_LIB(gsl,main)])])
+  PKG_GSL="gsl"
+  AC_SUBST(PKG_GSL)
 #
 fi
 
+######
+# Use OpenMM libraries
+######
+AC_ARG_WITH(openmm,
+ [  --with-openmm                 Use the OpenMM libraries to run on GPUs],,with_openmm=no)
+
+if test "$with_openmm" = "yes"; then
+
+  AC_PROG_CXX
+  CPPFLAGS="$CPPFLAGS -I$OPENMM_INSTALL_DIR/include"
+  INCLUDES="$INCLUDES -I$OPENMM_INSTALL_DIR/include"
+  LDFLAGS="$LDFLAGS -L$OPENMM_INSTALL_DIR/lib -lOpenMM"
+  #AC_CHECK_HEADERS([OpenMM.h],AC_CHECK_LIB(OpenMM,main))
+  #AC_CHECK_HEADERS([OpenMM.h],,AC_MSG_ERROR([Cannot find OpenMM.h file. Please set OPENMM_INSTALL_DIR.]))
+  AC_DEFINE([USE_OPENMM],,[Use OpenMM libraries to run on GPUs])
+
+#  AS_CASE([${host_cpu}-${host_os}-${host_vendor}],
+#    [i?86-linux*], [OPENMM_HOST=linux32],
+#    [x86_64-linux*], [OPENMM_HOST=linux64],
+#    [amd64-linux*], [OPENMM_HOST=linux64],
+#    [i?86-darwin*-apple], [OPENMM_HOST=apple],
+#    [OPENMM_HOST=""])
+#  AC_SUBST([OPENMM_HOST])
+fi
+
+AM_CONDITIONAL([USE_OPENMM],[test "$with_openmm" = "yes"])
+
 
 AC_ARG_WITH(xml,
- [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,with_xml=yes)
+ [AC_HELP_STRING([--without-xml],[do not link to the xml2 library,] 
+                 [disallows the use of certain file formats])],,with_xml=yes)
  
 #########
 # Check for libxml2, but it is optional, so dont stop
@@ -737,6 +836,8 @@ if test "$with_xml" = "yes"; then
    if test "$ac_cv_lib_xml2_main" = "yes"; then
      INCLUDES="$INCLUDES -I/usr/include/libxml2"
    fi
+   PKG_XML2="libxml-2.0"
+   AC_SUBST(PKG_XML2)
 # restore CPPFLAGS
    CPPFLAGS="$ac_save_CPPFLAGS"
 fi
@@ -773,6 +874,9 @@ AC_C_INLINE
 # AC_TYPE_UID_T is broken on Mac OS X, so use generic tests instead
 AC_CHECK_TYPES([uid_t],[],[AC_DEFINE(uid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
 AC_CHECK_TYPES([gid_t],[],[AC_DEFINE(gid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
+
+AC_CHECK_TYPES([sig_atomic_t],[],[AC_DEFINE(sig_atomic_t, int, [Define to `int' (and hope it's atomic) if <signal.h> doesn't define it.])],[[#include <signal.h>]])
+
     
 
 
@@ -985,10 +1089,16 @@ esac
 if test "$with_dlopen" = "yes"; then
       AC_MSG_CHECKING(if dlopen supported)
       CFLAGS_RET=$CFLAGS
+      #LDFLAGS="$lt_cv_dlopen_libs $LDFLAGS" #can't make the macro, which is getting lt_cv_dlopen_libs, to work
+      LDFLAGS_RET=$LDFLAGS
+      if test "$enable_all_static" = "yes"; then  #make sure we test also whether it works static
+      	 LDFLAGS="$LDFLAGS -static"
+      fi
       CFLAGS="-I$srcdir/include -DGMX_DLOPEN $CFLAGS"
       AC_TRY_LINK([#include "$srcdir/src/gmxlib/vmddlopen.c"],,[AC_MSG_RESULT([yes])\
 	AC_DEFINE(GMX_DLOPEN,,[Compile with dlopen])],AC_MSG_RESULT([no]))
       CFLAGS=$CFLAGS_RET
+      LDFLAGS=$LDFLAGS_RET
 fi
 
 
@@ -1059,6 +1169,7 @@ AC_SUBST(CCASFLAGS)
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ src/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/libgmx${LIBSUFFIX}.pc:src/gmxlib/libgmx.pc.in ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_blas/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/selection/Makefile ])
@@ -1083,8 +1194,11 @@ AC_CONFIG_FILES([ include/types/Makefile ])
 AC_CONFIG_FILES([ include/thread_mpi/Makefile ])
 AC_CONFIG_FILES([ include/thread_mpi/atomic/Makefile ])
 AC_CONFIG_FILES([ src/mdlib/Makefile ])
+AC_CONFIG_FILES([ src/mdlib/libmd${LIBSUFFIX}.pc:src/mdlib/libmd.pc.in ])
 AC_CONFIG_FILES([ src/kernel/Makefile ])
+AC_CONFIG_FILES([ src/kernel/libgmxpreprocess${LIBSUFFIX}.pc:src/kernel/libgmxpreprocess.pc.in ])
 AC_CONFIG_FILES([ src/tools/Makefile ])
+AC_CONFIG_FILES([ src/tools/libgmxana${LIBSUFFIX}.pc:src/tools/libgmxana.pc.in ])
 AC_CONFIG_FILES([ src/ngmx/Makefile ])
 AC_CONFIG_FILES([ src/contrib/Makefile ])
 AC_CONFIG_FILES([ scripts/Makefile ])
@@ -1100,6 +1214,17 @@ AC_CONFIG_FILES([ share/tutor/methanol/Makefile ])
 AC_CONFIG_FILES([ share/tutor/speptide/Makefile ])
 AC_CONFIG_FILES([ share/template/Makefile ])
 AC_CONFIG_FILES([ share/top/Makefile ])
+AC_CONFIG_FILES([ share/top/gmx.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/gmx2.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/encadv.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/encads.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/oplsaa.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/gromos43a1.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/gromos43a2.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/gromos45a3.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/gromos53a5.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/gromos53a6.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/charmm27.ff/Makefile ])
 AC_CONFIG_FILES([ share/html/Makefile ])
 AC_CONFIG_FILES([ share/html/images/Makefile ])
 AC_CONFIG_FILES([ share/html/online/Makefile ])
@@ -1142,30 +1267,15 @@ if test "$enable_shared" = "no"; then
 fi  
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if test "$tmpi_atomics" = "no"; then
+  echo ""
+  echo "* This compiler+CPU combination doesn't have working atomic operations."
+  echo "  Thread support will be unbearably slow: the default number of threads"
+  echo "  is set to 1."
+  echo "  Atomics should work on all but the most obscure CPU+compiler"
+  echo "  combinations; if your system is not obscure (like, for example, x86"
+  echo "  with gcc) please contact the developers."
+  echo ""
+fi
 
 

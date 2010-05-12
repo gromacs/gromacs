@@ -787,7 +787,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     ana_trans(clust, nf, transfn, ntransfn, log,rlo,rhi,oenv);
   
   if (clustidfn) {
-    fp=xvgropen(clustidfn,"Clusters",get_xvgr_tlabel(oenv),"Cluster #",oenv);
+    fp=xvgropen(clustidfn,"Clusters",output_env_get_xvgr_tlabel(oenv),"Cluster #",oenv);
     fprintf(fp,"@    s0 symbol 2\n");
     fprintf(fp,"@    s0 symbol size 0.2\n");
     fprintf(fp,"@    s0 linestyle 0\n");
@@ -800,7 +800,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     fprintf(fp,"@g%d type %s\n",0,"bar");
   }
   snew(structure,nf);
-  fprintf(log,"\n%3s | %3s %4s | %6s %4s | cluster members\n",
+  fprintf(log,"\n%3s | %3s  %4s | %6s %4s | cluster members\n",
 	  "cl.","#st","rmsd","middle","rmsd");
   for(cl=1; cl<=clust->ncl; cl++) {
     /* prepare structures (fit, middle, average) */
@@ -849,7 +849,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     
     /* dump cluster info to logfile */
     if (nstr > 1) {
-      sprintf(buf1,"%5.3f",clrmsd);
+      sprintf(buf1,"%6.3f",clrmsd);
       if (buf1[0] == '0')
 	buf1[0] = ' ';
       sprintf(buf2,"%5.3f",midrmsd);
@@ -859,10 +859,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
       sprintf(buf1,"%5s","");
       sprintf(buf2,"%5s","");
     }
-    fprintf(log,"%3d | %3d%s | %6g%s |",cl,nstr,buf1,time[midstr],buf2);
+    fprintf(log,"%3d | %3d %s | %6g%s |",cl,nstr,buf1,time[midstr],buf2);
     for(i=0; i<nstr; i++) {
       if ((i % 7 == 0) && i)
-	sprintf(buf,"\n%3s | %3s %4s | %6s %4s |","","","","","");
+	sprintf(buf,"\n%3s | %3s  %4s | %6s %4s |","","","","","");
       else
 	buf[0] = '\0';
       i1 = structure[i];
@@ -1016,13 +1016,13 @@ int gmx_cluster(int argc,char *argv[])
   t_topology   top;
   int          ePBC;
   t_atoms      useatoms;
-  t_matrix     *readmat;
+  t_matrix     *readmat=NULL;
   real         *tmp;
   
   int      isize=0,ifsize=0,iosize=0;
   atom_id  *index=NULL, *fitidx, *outidx;
   char     *grpname;
-  real     rmsd,**d1,**d2,*time,time_invfac,*mass=NULL;
+  real     rmsd,**d1,**d2,*time=NULL,time_invfac,*mass=NULL;
   char     buf[STRLEN],buf1[80],title[STRLEN];
   bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj;
 
@@ -1120,10 +1120,10 @@ int gmx_cluster(int argc,char *argv[])
     trx_out_fn = opt2fn("-cl",NFILE,fnm);
   else
     trx_out_fn = NULL;
-  if (bReadMat && get_time_factor(oenv)!=1) {
+  if (bReadMat && output_env_get_time_factor(oenv)!=1) {
     fprintf(stderr,
 	    "\nWarning: assuming the time unit in %s is %s\n",
-	    opt2fn("-dm",NFILE,fnm),get_time_unit(oenv));
+	    opt2fn("-dm",NFILE,fnm),output_env_get_time_unit(oenv));
   }
   if (trx_out_fn && !bReadTraj)
     fprintf(stderr,"\nWarning: "
@@ -1232,7 +1232,7 @@ int gmx_cluster(int argc,char *argv[])
     fn = opt2fn("-f",NFILE,fnm);
     
     xx = read_whole_trj(fn,isize,index,skip,&nf,&time,oenv);
-    conv_times(oenv, nf, time);
+    output_env_conv_times(oenv, nf, time);
     if (!bRMSdist || bAnalyze) {
       /* Center all frames on zero */
       snew(mass,isize);
@@ -1257,7 +1257,7 @@ int gmx_cluster(int argc,char *argv[])
     nf = readmat[0].nx;
     sfree(time);
     time = readmat[0].axis_x;
-    time_invfac = get_time_invfactor(oenv);
+    time_invfac = output_env_get_time_invfactor(oenv);
     for(i=0; i<nf; i++)
       time[i] *= time_invfac;
 
@@ -1406,7 +1406,7 @@ int gmx_cluster(int argc,char *argv[])
 	      rms->mat,0.0,rms->maxrms,rlo_top,rhi_top,&nlevels);
   } 
   else {
-    sprintf(buf,"Time (%s)",get_time_unit(oenv));
+    sprintf(buf,"Time (%s)",output_env_get_time_unit(oenv));
     sprintf(title,"RMS%sDeviation / Cluster Index",
  	    bRMSdist ? " Distance " : " ");
     if (minstruct > 1) {

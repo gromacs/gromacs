@@ -761,7 +761,7 @@ int gmx_trjconv(int argc,char *argv[])
     real         tshift=0,t0=-1,dt=0.001,prec;
     bool         bFit,bFitXY,bPFit,bReset;
     int          nfitdim;
-    bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bNoJump,bCluster;
+    bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
     bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
     bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
     bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
@@ -833,6 +833,7 @@ int gmx_trjconv(int argc,char *argv[])
         bPBCcomAtom= pbc_enum==epComAtom;
         bNoJump    = pbc_enum==epNojump;
         bCluster   = pbc_enum==epCluster;
+	bPBC       = pbc_enum!=epNone;
         unitcell_enum = nenum(unitcell_opt);
         ecenter    = nenum(center_opt) - ecTric;
 
@@ -853,6 +854,13 @@ int gmx_trjconv(int argc,char *argv[])
                 bSetUR = FALSE;
             }
         }
+	if (bFit && bPBC) {
+	    gmx_fatal(FARGS,"PBC condition treatment does not work together with rotational fit.\n"
+                      "Please do the PBC condition treatment first and then run trjconv in a second step\n"
+                      "for the rotational fit.\n"
+                      "First doing the rotational fit and then doing the PBC treatment gives incorrect\n"
+		      "results!");
+	}
         /* set flag for pdbio to terminate frames at 'TER' (iso 'ENDMDL') */
         pdb_use_ter(bTer);
 
@@ -1240,7 +1248,7 @@ int gmx_trjconv(int argc,char *argv[])
 
                     if (bTDump)
                         fprintf(stderr,"\nDumping frame at t= %g %s\n",
-                                conv_time(oenv,fr.time),get_time_unit(oenv));
+                                output_env_conv_time(oenv,fr.time),output_env_get_time_unit(oenv));
 
                     /* check for writing at each delta_t */
                     bDoIt=(delta_t == 0);
@@ -1258,7 +1266,7 @@ int gmx_trjconv(int argc,char *argv[])
                         /* print sometimes */
                         if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
                             fprintf(stderr," ->  frame %6d time %8.3f      \r",
-                                    outframe,conv_time(oenv,fr.time));
+                                    outframe,output_env_conv_time(oenv,fr.time));
 
                         if (!bPFit) {
                             /* Now modify the coords according to the flags,
@@ -1466,7 +1474,7 @@ int gmx_trjconv(int argc,char *argv[])
 
         if (!bHaveFirstFrame || (bTDump && !bDumpFrame))
             fprintf(stderr,"\nWARNING no output, "
-                    "trajectory ended at %g\n",fr.time);
+                    "last frame read at t=%g\n",fr.time);
         fprintf(stderr,"\n");
 
         close_trj(status);

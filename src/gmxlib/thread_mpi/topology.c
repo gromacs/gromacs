@@ -35,9 +35,14 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -50,11 +55,7 @@ files.
 #include <string.h>
 
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
-
+#include "impl.h"
 
 
 /* topology functions */
@@ -134,7 +135,7 @@ int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank)
     int i,mul=1,ret=0;
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Cart_get(%p, %p, %p)", comm, coords, rank);, 
+    tMPI_Trace_print("tMPI_Cart_get(%p, %p, %p)", comm, coords, rank);
 #endif
     if (!comm)
     {
@@ -272,11 +273,16 @@ static void tMPI_Cart_init(tMPI_Comm *comm_cart, int ndims, int *dims,
        every thread that is part of the new communicator */
     if (*comm_cart)
     {
-#ifndef TMPI_NO_BUSY_WAIT
-        tMPI_Spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-#else
-        tMPI_Thread_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-#endif
+        tMPI_Spinlock_barrier_wait( &( (*comm_cart)->barrier) );
+    }
+}
+
+void tMPI_Cart_destroy(struct cart_topol *cart)
+{
+    if (cart)
+    {
+        free(cart->dims);
+        free(cart->periods);
     }
 }
 
@@ -291,8 +297,8 @@ int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
     
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Cart_create(%p, %d, %p, %p, %d, %p)", comm, ndims, 
-                     dims, periods, reorder, comm_cart);
+    tMPI_Trace_print("tMPI_Cart_create(%p, %d, %p, %p, %d, %p)", comm_old, 
+                     ndims, dims, periods, reorder, comm_cart);
 #endif
     if (!comm_old)
     {
@@ -350,9 +356,9 @@ int tMPI_Cart_sub(tMPI_Comm comm, int *remain_dims, tMPI_Comm *newcomm)
     tMPI_Comm_rank(comm, &myrank);
     if ( comm->cart )
     {
-        oldcoords=tMPI_Malloc(sizeof(int)*comm->cart->ndims);
-        dims=tMPI_Malloc(sizeof(int)*comm->cart->ndims);
-        periods=tMPI_Malloc(sizeof(int)*comm->cart->ndims);
+        oldcoords=(int*)tMPI_Malloc(sizeof(int)*comm->cart->ndims);
+        dims=(int*)tMPI_Malloc(sizeof(int)*comm->cart->ndims);
+        periods=(int*)tMPI_Malloc(sizeof(int)*comm->cart->ndims);
 
         /* get old coordinates */
         tMPI_Cart_coords(comm, myrank, comm->cart->ndims, oldcoords);

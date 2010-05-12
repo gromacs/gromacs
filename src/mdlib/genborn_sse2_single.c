@@ -453,16 +453,14 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 	}
 	
 	/* Compute the radii */
-	for(i=0;i<nl->nri;i++)
+	for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
 	{		
-		ii               = nl->iinr[i];
-		
-		if(born->use[ii] != 0)
+		if(born->use[i] != 0)
 		{
-			gpi_ai           = born->gpol[ii] + work[ii]; /* add gpi to the initial pol energy gpi_ai*/
+			gpi_ai           = born->gpol[i] + work[i]; /* add gpi to the initial pol energy gpi_ai*/
 			gpi2             = gpi_ai * gpi_ai;
-			born->bRad[ii]   = factor*gmx_invsqrt(gpi2);
-			fr->invsqrta[ii] = gmx_invsqrt(born->bRad[ii]);
+			born->bRad[i]   = factor*gmx_invsqrt(gpi2);
+			fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
 		}
 	}
 		
@@ -1250,19 +1248,17 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
     if(gb_algorithm==egbHCT)
     {
         /* HCT */
-        for(i=0;i<nl->nri;i++)
+        for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
         {
-            ai      = nl->iinr[i];
-            
-            if(born->use[ai] != 0)
+			if(born->use[i] != 0)
             {
-                rr      = top->atomtypes.gb_radius[md->typeA[ai]]-doffset; 
-                sum     = 1.0/rr - work[ai];
+                rr      = top->atomtypes.gb_radius[md->typeA[i]]-doffset; 
+                sum     = 1.0/rr - work[i];
                 min_rad = rr + doffset;
                 rad     = 1.0/sum; 
                 
-                born->bRad[ai]   = rad > min_rad ? rad : min_rad;
-                fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+                born->bRad[i]   = rad > min_rad ? rad : min_rad;
+                fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
             }
         }
         
@@ -1276,28 +1272,26 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
     else
     {
         /* OBC */
-        for(i=0;i<nl->nri;i++)
+        for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
         {
-            ii      = nl->iinr[i];
-            
-            if(born->use[ii] != 0)
+			if(born->use[i] != 0)
             {
-                rr      = top->atomtypes.gb_radius[md->typeA[ii]];
+                rr      = top->atomtypes.gb_radius[md->typeA[i]];
                 rr_inv2 = 1.0/rr;
                 rr      = rr-doffset; 
                 rr_inv  = 1.0/rr;
-                sum     = rr * work[ii];
+                sum     = rr * work[i];
                 sum2    = sum  * sum;
                 sum3    = sum2 * sum;
                 
                 tsum    = tanh(born->obc_alpha*sum-born->obc_beta*sum2+born->obc_gamma*sum3);
-                born->bRad[ii] = rr_inv - tsum*rr_inv2;
-                born->bRad[ii] = 1.0 / born->bRad[ii];
+                born->bRad[i] = rr_inv - tsum*rr_inv2;
+                born->bRad[i] = 1.0 / born->bRad[i];
                 
-                fr->invsqrta[ii]=gmx_invsqrt(born->bRad[ii]);
+                fr->invsqrta[i]=gmx_invsqrt(born->bRad[i]);
                 
                 tchain  = rr * (born->obc_alpha-2*born->obc_beta*sum+3*born->obc_gamma*sum2);
-                born->drobc[ii] = (1.0-tsum*tsum)*tchain*rr_inv2;
+                born->drobc[i] = (1.0-tsum*tsum)*tchain*rr_inv2;
             }
         }
         /* Extra (local) communication required for DD */
@@ -1532,7 +1526,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
 
 
 float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda, 
-					   t_idef *idef, real gb_epsilon_solvent, real facel)
+					   t_idef *idef, real epsilon_r, real gb_epsilon_solvent, real facel)
 {
 	
 	int i,j,nral,nri;
@@ -1572,7 +1566,7 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 	aj13 = aj23 = aj33 = aj43 = 0;
 	
 	/* Scale the electrostatics by gb_epsilon_solvent */
-	facel = (-1.0) * facel * (1.0 - 1.0/gb_epsilon_solvent);
+	facel = (-1.0) * facel * ((1.0/epsilon_r) - 1.0/gb_epsilon_solvent);
 	fac        = _mm_load1_ps(&facel);
 	
 	vctot = 0.0;

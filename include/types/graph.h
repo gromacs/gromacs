@@ -36,8 +36,6 @@
 #include <config.h>
 #endif
 
-#include "gmx_fatal.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

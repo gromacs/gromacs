@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -109,6 +110,7 @@ void push_ps(FILE *fp)
 /* don't use pipes!*/
 #define popen fah_fopen
 #define pclose fah_fclose
+#define SKIP_FFOPS 1
 #else
 #ifdef ffclose
 #undef ffclose
@@ -133,9 +135,11 @@ static int pclose(FILE *fp)
 #endif
 #endif
 
-#ifndef SKIP_FFOPS
 int ffclose(FILE *fp)
 {
+#ifndef SKIP_FFOPS
+    return fclose(fp);
+#else
     t_pstack *ps,*tmp;
     int ret=0;
 #ifdef GMX_THREADS
@@ -172,9 +176,9 @@ int ffclose(FILE *fp)
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
     return ret;
+#endif
 }
 
-#endif
 
 #ifdef rewind
 #undef rewind
@@ -368,9 +372,11 @@ bool make_backup(const char * name)
 #endif
 }
 
-#ifndef SKIP_FFOPS
 FILE *ffopen(const char *file,const char *mode)
 {
+#ifdef SKIP_FFOPS
+    return fopen(file,mode);
+#else
     FILE *ff=NULL;
     char buf[256],*bf,*bufsize=0,*ptr;
     bool bRead;
@@ -421,8 +427,8 @@ FILE *ffopen(const char *file,const char *mode)
         }
     }
     return ff;
-}
 #endif
+}
 
 
 bool search_subdirs(const char *parent, char *libdir)
@@ -585,48 +591,56 @@ bool get_libdir(char *libdir)
 }
 
 
-char *low_libfn(const char *file, bool bFatal)
+char *low_gmxlibfn(const char *file, bool bFatal)
 {
-    char *ret=NULL;
+    char *ret;
     char *lib,*dir;
     char buf[1024];
     char libpath[GMX_PATH_MAX];
     bool env_is_set=FALSE;
     char   *s,tmppath[GMX_PATH_MAX];
-    bool found;
 
     /* GMXLIB can be a path now */
     lib=getenv("GMXLIB");
-    if (lib != NULL) {
+    if (lib != NULL)
+    {
         env_is_set=TRUE;
         strncpy(libpath,lib,GMX_PATH_MAX);
     } 
     else if (!get_libdir(libpath))
+    {
         strncpy(libpath,GMXLIBDIR,GMX_PATH_MAX);
+    }
 
+    ret = NULL;
     if (gmx_fexist(file))
     {
-        ret=strdup(file);
+        ret = strdup(file);
     }
     else 
     {
-        found=FALSE;
         strncpy(tmppath,libpath,GMX_PATH_MAX);
         s=tmppath;
-        while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL )
+        while(ret == NULL && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL )
         {
             sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
-            found=gmx_fexist(buf);
+            if (gmx_fexist(buf))
+            {
+                ret = strdup(buf);
+            }
         }
-        if (bFatal && !found) 
+        if (ret == NULL && bFatal) 
         {
             if (env_is_set) 
+            {
                 gmx_fatal(FARGS,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
+            }
             else
+            {
                 gmx_fatal(FARGS,"Library file %s not found in current dir nor in default directories.\n"
                         "(You can set the directories to search with the GMXLIB path variable)",file);
+            }
         }
-        ret=strdup(buf);
     }
 
     return ret;
@@ -640,23 +654,23 @@ FILE *low_libopen(const char *file,bool bFatal)
     FILE *ff;
     char *fn;
 
-    fn=low_libfn(file,bFatal);
+    fn=low_gmxlibfn(file,bFatal);
 
     if (fn==NULL) {
         ff=NULL;
     } else {
-        if (bFatal)
-            fprintf(stderr,"Opening library file %s\n",fn);
-        ff=fopen(fn,"r");
+      if (debug)
+	fprintf(debug,"Opening library file %s\n",fn);
+      ff=fopen(fn,"r");
     }
     sfree(fn);
 
     return ff;
 }
 
-char *libfn(const char *file)
+char *gmxlibfn(const char *file)
 {
-    return low_libfn(file,TRUE);
+    return low_gmxlibfn(file,TRUE);
 }
 
 FILE *libopen(const char *file)

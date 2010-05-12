@@ -50,6 +50,7 @@ extern "C" {
 typedef struct 
 {
 	real      gb_epsilon_solvent;  /* Epsilon for solvent */
+	real      epsilon_r;           /* Epsilon for inner dielectric */
 	real *    gpol;                /* Polarization energy group */
 } gmx_gbdata_t;
 	

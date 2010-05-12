@@ -135,12 +135,16 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   snew(hb,pdba->nres);
   /* first the termini */
   for(i=0; i<nterpairs; i++) {
-    copy_t_hackblock(ntdb[i], &hb[rN[i]]);
-    merge_t_hackblock(ctdb[i], &hb[rC[i]]);
+    if (ntdb[i] != NULL) {
+      copy_t_hackblock(ntdb[i], &hb[rN[i]]);
+    }
+    if (ctdb[i] != NULL) {
+      merge_t_hackblock(ctdb[i], &hb[rC[i]]);
+    }
   }
   /* then the whole hdb */
   for(rnr=0; rnr < pdba->nres; rnr++) {
-    ahptr=search_h_db(nah,ah,*pdba->resinfo[rnr].name);
+    ahptr=search_h_db(nah,ah,*pdba->resinfo[rnr].rtp);
     if ( ahptr ) {
       if (hb[rnr].name==NULL)
 	hb[rnr].name=strdup(ahptr->name);
@@ -186,8 +190,7 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
       srenew(*abi,*nabi + hbr->hack[j].nr);
       for(k=0; k < hbr->hack[j].nr; k++) {
 	copy_t_hack(&hbr->hack[j], &(*abi)[*nabi + k]);
-	for(d=0; d<DIM; d++)
-	  (*abi)[*nabi + k].newx[d]=NOTSET;
+	(*abi)[*nabi + k].bXSet = FALSE;
 	/* if we're adding (oname==NULL) and don't have a new name (nname) 
 	   yet, build it from atomname */
 	if ( (*abi)[*nabi + k].nname==NULL ) {
@@ -259,25 +262,17 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
 	if (ab[i][j].nname == NULL)
 	  gmx_incons("ab[i][j].nname not allocated");
 	/* check if the atom is already present */
-	k=pdbasearch_atom(ab[i][j].nname, rnr, pdba, "check", TRUE);
+	k = pdbasearch_atom(ab[i][j].nname, rnr, pdba, "check", TRUE);
 	if ( k != -1 ) {
-	  /* we found the added atom, so move the hack there: */
-	  srenew(ab[k], nab[k]+1);
-	  ab[k][nab[k]] = ab[i][j];
-	  ab[k][nab[k]].oname = strdup(ab[k][nab[k]].nname);
-	  /* reset any possible new coordinates: */
-	  for(d=0; d<DIM; d++)
-	    ab[k][nab[k]].newx[d]=NOTSET;
-	  /* keep count */
-	  nab[k]++;
-	  /* remove the hack from this atom: */
-	  for(k=j+1; k<nab[i]; k++)
-	    ab[i][k-1] = ab[i][k];
-	  /* keep count */
-	  nab[i]--;
-	  j--;
-	  srenew(ab[i], nab[i]);
+	  /* We found the added atom. */
+	  ab[i][j].bAlreadyPresent = TRUE;
+	  if (debug) {
+	    fprintf(debug,"Atom '%s' in residue '%s' %d is already present\n",
+		    ab[i][j].nname,
+		    *pdba->resinfo[rnr].name,pdba->resinfo[rnr].nr);
+	  }
 	} else {
+	  ab[i][j].bAlreadyPresent = FALSE;
 	  /* count how many atoms we'll add */
 	  nadd++;
 	}
@@ -320,11 +315,13 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
 	    } else {
 	      bFoundAll = FALSE;
 	      if (bCheckMissing) {
-		gmx_fatal(FARGS,"Atom %s not found in residue %s%d"
+		gmx_fatal(FARGS,"Atom %s not found in residue %s %d"
+			  ", rtp entry %s"
 			  " while adding hydrogens",
 			  ab[i][j].a[m],
 			  *pdba->resinfo[rnr].name,
-			  pdba->resinfo[rnr].nr);
+			  pdba->resinfo[rnr].nr,
+			  *pdba->resinfo[rnr].rtp);
 	      }
 	    }
 	  } else
@@ -338,8 +335,10 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
 	      else
 		xh[m][d] = NOTSET;
 	  calc_h_pos(ab[i][j].tp, xa, xh, &l);
-	  for(m=0; m<ab[i][j].nr; m++)
+	  for(m=0; m<ab[i][j].nr; m++) {
 	    copy_rvec(xh[m],ab[i][j+m].newx);
+	    ab[i][j+m].bXSet = TRUE;
+	  }
 	}
       }
     }
@@ -365,9 +364,8 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 		     bool bUpdate_pdba, bool bKeep_old_pdba)
 {
   t_atoms     *newpdba=NULL,*pdba=NULL;
-  bool        bSet;
   int         nadd;
-  int         i,newi,j,d,natoms;
+  int         i,newi,j,d,natoms,nalreadypresent;
   int         *nab=NULL;
   t_hack      **ab=NULL;
   t_hackblock *hb;
@@ -475,6 +473,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 	copy_atom(pdba,i, newpdba,newi);
       copy_rvec((*xptr)[i],xn[newi]);
       /* process the hacks for this atom */
+      nalreadypresent = 0;
       for(j=0; j<nab[i]; j++) {
 	if ( ab[i][j].oname==NULL ) { /* add */
 	  newi++;
@@ -497,6 +496,14 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 	    (ab[i][j].oname == NULL ||
 	     strcmp(ab[i][j].oname,*newpdba->atomname[newi]) == 0)) {
 	  /* add or replace */
+	  if (ab[i][j].oname == NULL && ab[i][j].bAlreadyPresent) {
+	    /* This atom is already present, copy it from the input. */
+	    nalreadypresent++;
+	    if (bUpdate_pdba) {
+	      copy_atom(pdba,i+nalreadypresent, newpdba,newi);
+	    }
+	    copy_rvec((*xptr)[i+nalreadypresent],xn[newi]);
+	  } else {
 	  if (bUpdate_pdba) {
 	    if (gmx_debug_at) {
 	      fprintf(debug,"Replacing %d '%s' with (old name '%s') %s\n",
@@ -513,17 +520,16 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 /* 	      newpdba->atom[newi].type = ab[i][j].atom->type; */
 	    }
 	  }
-	  bSet=TRUE;
-	  for(d=0; d<DIM; d++)
-	    bSet = bSet && ab[i][j].newx[d]!=NOTSET;
-	  if (bSet)
+	  if (ab[i][j].bXSet)
 	    copy_rvec(ab[i][j].newx, xn[newi]);
+	  }
 	  if (bUpdate_pdba && debug) 
 	    fprintf(debug," %s %g %g",*newpdba->atomname[newi],
 		    newpdba->atom[newi].m,newpdba->atom[newi].q);
 	}
       }
       newi++;
+      i += nalreadypresent;
       if (debug) fprintf(debug,"\n");
     }
   }
@@ -541,8 +547,9 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
   if ( bUpdate_pdba ) {
     if ( !bKeep_old_pdba ) {
       for(i=0; i < natoms; i++) {
-	sfree(*(pdba->atomname[i]));
-	/*       sfree(pdba->atomname[i]); */
+	/* Do not free the atomname string itself, it might be in symtab */
+	/* sfree(*(pdba->atomname[i])); */
+	/* sfree(pdba->atomname[i]); */
       }
       sfree(pdba->atomname);
       sfree(pdba->atom);

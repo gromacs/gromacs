@@ -64,6 +64,7 @@
 #include "sortwater.h"
 #include "convparm.h"
 #include "gmx_fatal.h"
+#include "warninp.h"
 #include "index.h"
 #include "gmxfio.h"
 #include "trnio.h"
@@ -158,24 +159,28 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
   }  
 }
 
-static void check_cg_sizes(const char *topfn,t_block *cgs)
+static void check_cg_sizes(const char *topfn,t_block *cgs,warninp_t wi)
 {
-  int maxsize,cg;
+    int  maxsize,cg;
+    char warn_buf[STRLEN];
 
-  maxsize = 0;
-  for(cg=0; cg<cgs->nr; cg++)
-    maxsize = max(maxsize,cgs->index[cg+1]-cgs->index[cg]);
+    maxsize = 0;
+    for(cg=0; cg<cgs->nr; cg++)
+    {
+        maxsize = max(maxsize,cgs->index[cg+1]-cgs->index[cg]);
+    }
  
-  if (maxsize > 10) {
-    set_warning_line(topfn,-1);
-    sprintf(warn_buf,
-	    "The largest charge group contains %d atoms.\n"
-	    "Since atoms only see each other when the centers of geometry of the charge groups they belong to are within the cut-off distance, too large charge groups can lead to serious cut-off artifacts.\n"
-	    "For efficiency and accuracy, charge group should consist of a few atoms.\n"
-	    "For all-atom force fields use: CH3, CH2, CH, NH2, NH, OH, CO2, CO, etc.",
-	    maxsize);
-    warning_note(warn_buf);
-  }
+    if (maxsize > 10)
+    {
+        set_warning_line(wi,topfn,-1);
+        sprintf(warn_buf,
+                "The largest charge group contains %d atoms.\n"
+                "Since atoms only see each other when the centers of geometry of the charge groups they belong to are within the cut-off distance, too large charge groups can lead to serious cut-off artifacts.\n"
+                "For efficiency and accuracy, charge group should consist of a few atoms.\n"
+                "For all-atom force fields use: CH3, CH2, CH, NH2, NH, OH, CO2, CO, etc.",
+                maxsize);
+        warning_note(wi,warn_buf);
+    }
 }
 
 static void check_vel(gmx_mtop_t *mtop,rvec v[])
@@ -273,13 +278,13 @@ static void molinfo2mtop(int nmi,t_molinfo *mi,gmx_mtop_t *mtop)
 
 static void
 new_status(const char *topfile,const char *topppfile,const char *confin,
-	   t_gromppopts *opts,t_inputrec *ir,bool bZero,
-	   bool bGenVel,bool bVerbose,t_state *state,
-	   gpp_atomtype_t atype,gmx_mtop_t *sys,
-	   int *nmi,t_molinfo **mi,t_params plist[],
-	   int *comb,double *reppow,real *fudgeQQ,
-	   bool bMorse,
-	   int *nerror)
+           t_gromppopts *opts,t_inputrec *ir,bool bZero,
+           bool bGenVel,bool bVerbose,t_state *state,
+           gpp_atomtype_t atype,gmx_mtop_t *sys,
+           int *nmi,t_molinfo **mi,t_params plist[],
+           int *comb,double *reppow,real *fudgeQQ,
+           bool bMorse,
+           warninp_t wi)
 {
   t_molinfo   *molinfo=NULL;
   int         nmolblock;
@@ -288,6 +293,7 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   int         mb,mbs,i,nrmols,nmismatch;
   char        buf[STRLEN];
   bool        bGB=FALSE;
+  char        warn_buf[STRLEN];
 
   init_mtop(sys);
 
@@ -297,9 +303,10 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   
   /* TOPOLOGY processing */
   sys->name = do_top(bVerbose,topfile,topppfile,opts,bZero,&(sys->symtab),
-		     plist,comb,reppow,fudgeQQ,
-		     atype,&nrmols,&molinfo,ir,
-		     &nmolblock,&molblock,bGB);
+                     plist,comb,reppow,fudgeQQ,
+                     atype,&nrmols,&molinfo,ir,
+                     &nmolblock,&molblock,bGB,
+                     wi);
   
   sys->nmolblock = 0;
   snew(sys->molblock,nmolblock);
@@ -334,25 +341,25 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   if (ir->eDisre == edrNone) {
     i = rm_interactions(F_DISRES,nrmols,molinfo);
     if (i > 0) {
-      set_warning_line("unknown",-1);
+      set_warning_line(wi,"unknown",-1);
       sprintf(warn_buf,"disre = no, removed %d distance restraints",i);
-      warning_note(NULL);
+      warning_note(wi,warn_buf);
     }
   }
   if (opts->bOrire == FALSE) {
     i = rm_interactions(F_ORIRES,nrmols,molinfo);
     if (i > 0) {
-      set_warning_line("unknown",-1);
+      set_warning_line(wi,"unknown",-1);
       sprintf(warn_buf,"orire = no, removed %d orientation restraints",i);
-      warning_note(NULL);
+      warning_note(wi,warn_buf);
     }
   }
   if (opts->bDihre == FALSE) {
     i = rm_interactions(F_DIHRES,nrmols,molinfo);
     if (i > 0) {
-      set_warning_line("unknown",-1);
+      set_warning_line(wi,"unknown",-1);
       sprintf(warn_buf,"dihre = no, removed %d dihedral restraints",i);
-      warning_note(NULL);
+      warning_note(wi,warn_buf);
     }
   }
   
@@ -375,7 +382,7 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
     char title[STRLEN];
     snew(confat,1);
     init_t_atoms(confat,state->natoms,FALSE);
-    init_state(state,state->natoms,0,0);
+    init_state(state,state->natoms,0,0,0);
     read_stx_conf(confin,title,confat,state->x,state->v,NULL,state->box);
     /* This call fixes the box shape for runs with pressure scaling */
     set_box_rel(ir,state);
@@ -389,11 +396,11 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
 	      "atom names from %s will be used\n"
 	      "atom names from %s will be ignored\n",
 	      nmismatch,(nmismatch == 1) ? "" : "s",topfile,confin);
-      warning(buf);
+      warning(wi,buf);
     }    
     if (bVerbose) 
       fprintf(stderr,"double-checking input for internal consistency...\n");
-    double_check(ir,state->box,nint_ftype(sys,molinfo,F_CONSTR),nerror);
+    double_check(ir,state->box,nint_ftype(sys,molinfo,F_CONSTR),wi);
   }
 
   if (bGenVel) {
@@ -480,9 +487,10 @@ static void cont_status(const char *slog,const char *ener,
 }
 
 static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,bool bTopB,
-			char *fn,
-			int rc_scaling, int ePBC, 
-			rvec com)
+                        char *fn,
+                        int rc_scaling, int ePBC, 
+                        rvec com,
+                        warninp_t wi)
 {
   bool   bFirst = TRUE;
   rvec   *x,*v,*xp;
@@ -491,7 +499,7 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,bool bTopB,
   t_atoms dumat;
   matrix box,invbox;
   int    natoms,npbcdim=0;
-  char   title[STRLEN];
+  char   warn_buf[STRLEN],title[STRLEN];
   int    a,i,ai,j,k,mb,nat_molb;
   gmx_molblock_t *molb;
   t_params *pr;
@@ -500,7 +508,7 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,bool bTopB,
   get_stx_coordnum(fn,&natoms);
   if (natoms != mtop->natoms) {
     sprintf(warn_buf,"The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.",fn,natoms,mtop->natoms,min(mtop->natoms,natoms),fn);
-    warning(NULL);
+    warning(wi,warn_buf);
   }
   snew(x,natoms);
   snew(v,natoms);
@@ -606,15 +614,16 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,bool bTopB,
 }
 
 static void gen_posres(gmx_mtop_t *mtop,t_molinfo *mi,
-		       char *fnA, char *fnB,
-		       int rc_scaling, int ePBC,
-		       rvec com, rvec comB)
+                       char *fnA, char *fnB,
+                       int rc_scaling, int ePBC,
+                       rvec com, rvec comB,
+                       warninp_t wi)
 {
   int i,j;
 
-  read_posres  (mtop,mi,FALSE,fnA,rc_scaling,ePBC,com);
+  read_posres  (mtop,mi,FALSE,fnA,rc_scaling,ePBC,com,wi);
   if (strcmp(fnA,fnB) != 0) {
-    read_posres(mtop,mi,TRUE ,fnB,rc_scaling,ePBC,comB);
+      read_posres(mtop,mi,TRUE ,fnB,rc_scaling,ePBC,comB,wi);
   }
 }
 
@@ -798,7 +807,7 @@ void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
 }
 
 
-static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
+static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi,warninp_t wi)
 {
   int count,count_mol,i,mb;
   gmx_molblock_t *molb;
@@ -824,7 +833,7 @@ static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
 	      "For stability and efficiency there should not be more constraints than internal number of degrees of freedom: %d.\n",
 	      *mi[molb->type].name,count_mol,
 	      nrdf_internal(&mi[molb->type].atoms));
-      warning(buf);
+      warning(wi,buf);
     }
     count += molb->nmol*count_mol;
   }
@@ -926,12 +935,12 @@ int main (int argc, char *argv[])
     "unless the [TT]-time[tt] option is used.",
     "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
     "in your [TT].mdp[tt] file. An energy file can be supplied with",
-    "[TT]-e[tt] to have exact restarts when using pressure and/or",
-    "Nose-Hoover temperature coupling. For an exact restart do not forget",
-    "to turn off velocity generation and turn on unconstrained starting",
-    "when constraints are present in the system.",
-    "If you want to continue a crashed run, it is",
-    "easier to use [TT]tpbconv[tt].[PAR]",
+    "[TT]-e[tt] to read Nose-Hoover and/or Parrinello-Rahman coupling",
+    "variables. Note that for continuation it is better and easier to supply",
+    "a checkpoint file directly to mdrun, since that always contains",
+    "the complete state of the system and you don't need to generate",
+    "a new run input file. Note that if you only want to change the number",
+    "of run steps tpbconv is more convenient than grompp.[PAR]",
 
     "Using the [TT]-morse[tt] option grompp can convert the harmonic bonds",
     "in your topology to morse potentials. This makes it possible to break",
@@ -971,13 +980,16 @@ int main (int argc, char *argv[])
   double       reppow;
   char         fn[STRLEN],fnB[STRLEN];
   const char   *mdparin;
-  int          nerror,ntype;
+  int          ntype;
   bool         bNeedVel,bGenVel;
   bool         have_atomnumber;
   int		   n12,n13,n14;
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
   output_env_t oenv;
+  bool         bVerbose;
+  warninp_t    wi;
+  char         warn_buf[STRLEN];
 
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffOPTRD },
@@ -995,13 +1007,11 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE;
+  static bool bRenum=TRUE;
   static bool bRmVSBds=TRUE,bZero=FALSE;
   static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
-    { "-v",       FALSE, etBOOL, {&bVerbose},
-      "Be loud and noisy" },
     { "-time",    FALSE, etREAL, {&fr_time},
       "Take frame at or first after this time." },
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
@@ -1017,7 +1027,6 @@ int main (int argc, char *argv[])
   CopyRight(stdout,argv[0]);
   
   /* Initiate some variables */
-  nerror=0;
   snew(ir,1);
   snew(opts,1);
   init_ir(ir,opts);
@@ -1025,17 +1034,18 @@ int main (int argc, char *argv[])
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL,&oenv);
+  bVerbose = (output_env_get_verbosity(oenv) > 0);
   
-  init_warning(maxwarn);
+  wi = init_warning(TRUE,maxwarn);
   
   /* PARAMETER file processing */
   mdparin = opt2fn("-f",NFILE,fnm);
-  set_warning_line(mdparin,-1);    
-  get_ir(mdparin,opt2fn("-po",NFILE,fnm),ir,opts,&nerror);
+  set_warning_line(wi,mdparin,-1);    
+  get_ir(mdparin,opt2fn("-po",NFILE,fnm),ir,opts,wi);
   
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
-  check_ir(mdparin,ir,opts,&nerror);
+  check_ir(mdparin,ir,opts,wi);
 
   if (ir->ld_seed == -1) {
     ir->ld_seed = make_seed();
@@ -1059,23 +1069,21 @@ int main (int argc, char *argv[])
 	     opts,ir,bZero,bGenVel,bVerbose,&state,
 	     atype,sys,&nmi,&mi,plist,&comb,&reppow,&fudgeQQ,
 	     opts->bMorse,
-	     &nerror);
+	     wi);
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
   
-  if (count_constraints(sys,mi) && (ir->eConstrAlg == econtSHAKE)) {
+  if (count_constraints(sys,mi,wi) && (ir->eConstrAlg == econtSHAKE)) {
     if (ir->eI == eiCG || ir->eI == eiLBFGS) {
-      fprintf(stderr,
-	      "ERROR: Can not do %s with %s, use %s\n",
-	      EI(ir->eI),econstr_names[econtSHAKE],econstr_names[econtLINCS]);
-      nerror++;
+        sprintf(warn_buf,"Can not do %s with %s, use %s",
+                EI(ir->eI),econstr_names[econtSHAKE],econstr_names[econtLINCS]);
+        warning_error(wi,warn_buf);
     }
     if (ir->bPeriodicMols) {
-      fprintf(stderr,
-	      "ERROR: can not do periodic molecules with %s, use %s\n",
-	      econstr_names[econtSHAKE],econstr_names[econtLINCS]);
-      nerror++;
+        sprintf(warn_buf,"Can not do periodic molecules with %s, use %s",
+                econstr_names[econtSHAKE],econstr_names[econtLINCS]);
+        warning_error(wi,warn_buf);
     }
   }
 
@@ -1086,21 +1094,21 @@ int main (int argc, char *argv[])
   }
   if (!have_atomnumber && ir->bQMMM)
   {
-    fprintf(stderr,"\n"
-            "It appears as if you are trying to run a QM/MM calculation, but the force\n"
-            "field you are using does not contain atom numbers fields. This is an\n"
-            "optional field (introduced in Gromacs 3.3) for general runs, but mandatory\n"
-            "for QM/MM. The good news is that it is easy to add - put the atom number as\n"
-            "an integer just before the mass column in ffXXXnb.itp.\n"
-            "NB: United atoms have the same atom numbers as normal ones.\n\n"); 
-    nerror++;
+      warning_error(wi,
+                    "\n"
+                    "It appears as if you are trying to run a QM/MM calculation, but the force\n"
+                    "field you are using does not contain atom numbers fields. This is an\n"
+                    "optional field (introduced in Gromacs 3.3) for general runs, but mandatory\n"
+                    "for QM/MM. The good news is that it is easy to add - put the atom number as\n"
+                    "an integer just before the mass column in ffXXXnb.itp.\n"
+                    "NB: United atoms have the same atom numbers as normal ones.\n\n"); 
   }
 
-  if (nerror) {
-    print_warn_num(FALSE);
-    
-    gmx_fatal(FARGS,"There were %d error(s) processing your input",nerror);
-  }
+  /* Check for errors in the input now, since they might cause problems
+   * during processing further down.
+   */
+  check_warning_error(wi,FARGS);
+
   if (opt2bSet("-r",NFILE,fnm))
     sprintf(fn,"%s",opt2fn("-r",NFILE,fnm));
   else
@@ -1110,23 +1118,29 @@ int main (int argc, char *argv[])
   else
     strcpy(fnB,fn);
 
-  if (nint_ftype(sys,mi,F_POSRES) > 0) {
-    if (bVerbose) {
-      fprintf(stderr,"Reading position restraint coords from %s",fn);
-      if (strcmp(fn,fnB) == 0) {
-	fprintf(stderr,"\n");
-      } else {
-	fprintf(stderr," and %s\n",fnB);
-	if (ir->efep != efepNO && ir->n_flambda > 0) {
-	  fprintf(stderr,"ERROR: can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.\n");
-	  nerror++;
-	}
-      }
+    if (nint_ftype(sys,mi,F_POSRES) > 0)
+    {
+        if (bVerbose)
+        {
+            fprintf(stderr,"Reading position restraint coords from %s",fn);
+            if (strcmp(fn,fnB) == 0)
+            {
+                fprintf(stderr,"\n");
+            }
+            else
+            {
+                fprintf(stderr," and %s\n",fnB);
+                if (ir->efep != efepNO && ir->n_flambda > 0)
+                {
+                    warning_error(wi,"Can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.");
+                }
+            }
+        }
+        gen_posres(sys,mi,fn,fnB,
+                   ir->refcoord_scaling,ir->ePBC,
+                   ir->posres_com,ir->posres_comB,
+                   wi);
     }
-    gen_posres(sys,mi,fn,fnB,
-	       ir->refcoord_scaling,ir->ePBC,
-	       ir->posres_com,ir->posres_comB);
-  }
 		
   nvsite = 0;
   /* set parameters for virtual site construction (not for vsiten) */
@@ -1145,8 +1159,8 @@ int main (int argc, char *argv[])
 	/* If we are using CMAP, setup the pre-interpolation grid */
 	if(plist->ncmap>0)
 	{
-		init_cmap_grid(&sys->cmap_grid, plist->nc, plist->grid_spacing);
-		setup_cmap(plist->grid_spacing, plist->nc, plist->cmap,&sys->cmap_grid);
+		init_cmap_grid(&sys->ffparams.cmap_grid, plist->nc, plist->grid_spacing);
+		setup_cmap(plist->grid_spacing, plist->nc, plist->cmap,&sys->ffparams.cmap_grid);
 	}
 	
   set_wall_atomtype(atype,opts,ir);
@@ -1189,22 +1203,23 @@ int main (int argc, char *argv[])
   }
     
   /* check masses */
-  check_mol(sys);
+  check_mol(sys,wi);
   
   for(i=0; i<sys->nmoltype; i++) {
-    check_cg_sizes(ftp2fn(efTOP,NFILE,fnm),&sys->moltype[i].cgs);
+      check_cg_sizes(ftp2fn(efTOP,NFILE,fnm),&sys->moltype[i].cgs,wi);
   }
 
-  check_warning_error(FARGS);
+  check_warning_error(wi,FARGS);
 	
   if (bVerbose) 
     fprintf(stderr,"initialising group options...\n");
   do_index(mdparin,ftp2fn_null(efNDX,NFILE,fnm),
-	   sys,bVerbose,ir,
-	   bGenVel ? state.v : NULL);
-	
+           sys,bVerbose,ir,
+           bGenVel ? state.v : NULL,
+           wi);
+  
   /* Init the temperature coupling state */
-  init_gtc_state(&state,ir->opts.ngtc,ir->opts.nnhchains);
+  init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nhchainlength);
 
   if (bVerbose)
     fprintf(stderr,"Checking consistency between energy and charge groups...\n");
@@ -1212,7 +1227,7 @@ int main (int argc, char *argv[])
   
   if (debug)
     pr_symtab(debug,0,"After index",&sys->symtab);
-  triple_check(mdparin,ir,sys,&nerror);
+  triple_check(mdparin,ir,sys,wi);
   close_symtab(&sys->symtab);
   if (debug)
     pr_symtab(debug,0,"After close",&sys->symtab);
@@ -1229,9 +1244,17 @@ int main (int argc, char *argv[])
 		bNeedVel,bGenVel,fr_time,ir,&state,sys,oenv);
   }
 
-  if (ir->ePBC==epbcXY && ir->nwall!=2)
-    clear_rvec(state.box[ZZ]);
+    if (ir->ePBC==epbcXY && ir->nwall!=2)
+    {
+        clear_rvec(state.box[ZZ]);
+    }
   
+    if (ir->rlist > 0)
+    {
+        set_warning_line(wi,mdparin,-1);
+        check_chargegroup_radii(sys,ir,state.x,wi);
+    }
+
   if (EEL_FULL(ir->coulombtype)) {
     /* Calculate the optimal grid dimensions */
     copy_mat(state.box,box);
@@ -1240,9 +1263,8 @@ int main (int argc, char *argv[])
     max_spacing = calc_grid(stdout,box,opts->fourierspacing,
 			    &(ir->nkx),&(ir->nky),&(ir->nkz),1);
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
-      set_warning_line(mdparin,-1);
-      sprintf(warn_buf,"Grid spacing larger then 0.1 while using PPPM.");
-      warning_note(NULL);
+        set_warning_line(wi,mdparin,-1);
+        warning_note(wi,"Grid spacing larger then 0.1 while using PPPM.");
     }
   }
 
@@ -1254,27 +1276,36 @@ int main (int argc, char *argv[])
   if (EEL_PME(ir->coulombtype)) {
     float ratio = pme_load_estimate(sys,ir,state.box);
     fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
-    if (ratio > 0.5)
-      warning_note("The optimal PME mesh load for parallel simulations is below 0.5\n"
+    /* With free energy we might need to do PME both for the A and B state
+     * charges. This will double the cost, but the optimal performance will
+     * then probably be at a slightly larger cut-off and grid spacing.
+     */
+    if ((ir->efep == efepNO && ratio > 1.0/2.0) ||
+        (ir->efep != efepNO && ratio > 2.0/3.0)) {
+        warning_note(wi,
+                     "The optimal PME mesh load for parallel simulations is below 0.5\n"
 		   "and for highly parallel simulations between 0.25 and 0.33,\n"
 		   "for higher performance, increase the cut-off and the PME grid spacing");
-  }
-
-  {
-    double cio = compute_io(ir,sys->natoms,&sys->groups,F_NRE,1);
-    sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
-    if (cio > 2000) {
-      set_warning_line(mdparin,-1);
-      warning_note(NULL);
-    } else {
-      printf("%s\n",warn_buf);
     }
   }
+
+    {
+        char warn_buf[STRLEN];
+        double cio = compute_io(ir,sys->natoms,&sys->groups,F_NRE,1);
+        sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
+        if (cio > 2000) {
+            set_warning_line(wi,mdparin,-1);
+            warning_note(wi,warn_buf);
+        } else {
+            printf("%s\n",warn_buf);
+        }
+    }
 	
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
-  print_warn_num(TRUE);
+  done_warning(wi,FARGS);
+
   state.lambda = ir->init_lambda;
   write_tpx_state(ftp2fn(efTPX,NFILE,fnm),ir,&state,sys);
   

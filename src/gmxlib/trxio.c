@@ -79,7 +79,7 @@ static void printcount_(const output_env_t oenv,const char *l,real t)
   if ((__frame < 2*SKIP1 || __frame % SKIP1 == 0) &&
       (__frame < 2*SKIP2 || __frame % SKIP2 == 0) &&
       (__frame < 2*SKIP3 || __frame % SKIP3 == 0))
-    fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,conv_time(oenv,t));
+    fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,output_env_conv_time(oenv,t));
 }
 
 static void printcount(const output_env_t oenv,real t,bool bSkip)
@@ -820,6 +820,12 @@ int read_first_frame(const output_env_t oenv,int *status,
       gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
 #endif
       break;
+  }
+
+  /* Return FALSE if we read a frame that's past the set ending time. */
+  if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0)) {
+    fr->t0 = fr->time;
+    return FALSE;
   }
   
   if (bFirst || 

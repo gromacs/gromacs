@@ -16,6 +16,7 @@ calcgrid.h \
 calch.h \
 calcmu.h \
 centerofmass.h \
+chargegroup.h \
 checkpoint.h \
 confio.h \
 constr.h \
@@ -31,7 +32,6 @@ ebin.h \
 edsam.h \
 enxio.h \
 ffscanf.h \
-fftgrid.h \
 filenm.h \
 force.h \
 futil.h \
@@ -154,9 +154,17 @@ vmddlopen.h \
 vmdio.h \
 vmdplugin.h \
 vsite.h \
+warninp.h \
 wgms.h \
 wman.h \
 writeps.h \
 xdrf.h \
 xtcio.h \
-xvgr.h 
+xvgr.h \
+tmpi.h \
+mainpage.h \
+molfile_plugin.h \
+vmddlopen.h \
+vmdplugin.h \
+oenv.h \
+sighandler.h

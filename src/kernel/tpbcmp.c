@@ -595,7 +595,7 @@ static void comp_pull_AB(FILE *fp,t_pull *pull,real ftol,real abstol)
 static void comp_state(t_state *st1, t_state *st2,
 		       bool bRMSD,real ftol,real abstol)
 {
-  int i;
+  int i,j,nc;
 
   fprintf(stdout,"comparing flags\n");
   cmp_int(stdout,"flags",-1,st1->flags,st2->flags);
@@ -605,20 +605,40 @@ static void comp_state(t_state *st1, t_state *st2,
   cmp_rvecs(stdout,"box_rel",DIM,st1->box_rel,st2->box_rel,FALSE,ftol,abstol);
   fprintf(stdout,"comparing boxv\n");
   cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,FALSE,ftol,abstol);
-  if (st1->flags & (1<<estVIR_PREV)) {
-    fprintf(stdout,"comparing vir_pres\n");
-    cmp_rvecs(stdout,"vir_prev",DIM,st1->vir_prev,st2->vir_prev,FALSE,ftol,abstol);
+  if (st1->flags & (1<<estSVIR_PREV)) {
+    fprintf(stdout,"comparing shake vir_prev\n");
+    cmp_rvecs(stdout,"svir_prev",DIM,st1->svir_prev,st2->svir_prev,FALSE,ftol,abstol);
+  }
+  if (st1->flags & (1<<estFVIR_PREV)) {
+    fprintf(stdout,"comparing force vir_prev\n");
+    cmp_rvecs(stdout,"fvir_prev",DIM,st1->fvir_prev,st2->fvir_prev,FALSE,ftol,abstol);
   }
   if (st1->flags & (1<<estPRES_PREV)) {
     fprintf(stdout,"comparing prev_pres\n");
     cmp_rvecs(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,FALSE,ftol,abstol);
   }
   cmp_int(stdout,"ngtc",-1,st1->ngtc,st2->ngtc);
-  if (st1->ngtc == st2->ngtc) {
-    for(i=0; i<st1->ngtc; i++)
-      cmp_real(stdout,"nosehoover_xi",
-	       i,st1->nosehoover_xi[i],st2->nosehoover_xi[i],ftol,abstol);
+  cmp_int(stdout,"nhchainlength",-1,st1->nhchainlength,st2->nhchainlength);
+  if (st1->ngtc == st2->ngtc && st1->nhchainlength == st2->nhchainlength){
+    for(i=0; i<st1->ngtc; i++) {
+      nc = i*st1->nhchainlength;
+      for(j=0; j<nc; j++) {
+	cmp_real(stdout,"nosehoover_xi",
+		 i,st1->nosehoover_xi[nc+j],st2->nosehoover_xi[nc+j],ftol,abstol);
+      }
+    }
   }
+  cmp_int(stdout,"nnhpres",-1,st1->nnhpres,st2->nnhpres);
+  if (st1->nnhpres == st2->nnhpres && st1->nhchainlength == st2->nhchainlength) {
+    for(i=0; i<st1->nnhpres; i++) {
+      nc = i*st1->nhchainlength;
+      for(j=0; j<nc; j++) {
+	cmp_real(stdout,"nosehoover_xi",
+		 i,st1->nhpres_xi[nc+j],st2->nhpres_xi[nc+j],ftol,abstol);
+      }
+    }
+  }
+
   cmp_int(stdout,"natoms",-1,st1->natoms,st2->natoms);
   if (st1->natoms == st2->natoms) {
     if ((st1->flags & (1<<estX)) && (st2->flags & (1<<estX))) {

@@ -46,19 +46,21 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+    struct tmpi_thread *cur=tMPI_Get_current();
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_start(cur); 
+#endif
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Scatter(%p, %d, %p, %p, %d, %p, %d, %p)", 
-                       sendbuf, sendcount, sendtype, 
-                       recvbuf, recvcount, recvtype, 
-                       root, comm);
+                     sendbuf, sendcount, sendtype, 
+                     recvbuf, recvcount, recvtype, root, comm);
 #endif
-
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    myrank=tMPI_Comm_seek_rank(comm, cur);
 
     /* we increase our counter, and determine which coll_env we get */
     cev=tMPI_Get_cev(comm, myrank, &synct);
@@ -105,18 +107,12 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 #endif
 
         /* post availability */
-#ifdef TMPI_NO_BUSY_WAIT
-        tMPI_Thread_mutex_lock( &(cev->met[myrank].wait_mutex) );
-#else
-        tMPI_Atomic_memory_barrier();
-#endif
+        for(i=0;i<cev->N;i++)
+        {
+            if (i != myrank)
+                tMPI_Event_signal( &(cev->met[i].recv_ev) );
+        }
 
-        tMPI_Atomic_set( &(cev->met[myrank].current_sync), synct);
-
-#ifdef TMPI_NO_BUSY_WAIT
-        tMPI_Thread_cond_broadcast( &(cev->met[myrank].recv_cond) );
-        tMPI_Thread_mutex_unlock( &(cev->met[myrank].wait_mutex) );
-#endif
 
 
 
@@ -153,8 +149,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             tMPI_Coll_root_xfer(comm, sendtype, recvtype,
                                 sendsize, recvtype->size*recvcount, 
                                 (char*)sendbuf+sendsize*myrank, 
-                                recvbuf,
-                                &ret);
+                                recvbuf, &ret);
         }
 
         /* and wait until everybody is done copying */
@@ -165,10 +160,13 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         /* get the root cev */
         size_t bufsize=recvcount*recvtype->size;
         /* wait until root becomes available */
-        tMPI_Wait_for_data(cev, root, synct);
+        tMPI_Wait_for_data(cur, cev, myrank);
         tMPI_Mult_recv(comm, cev, root, myrank,TMPI_SCATTER_TAG, recvtype, 
                        bufsize, recvbuf, &ret);
     }
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_stop(cur, TMPIFN_Scatter); 
+#endif
     return ret;
 }
 
@@ -182,18 +180,23 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
-
+    struct tmpi_thread *cur=tMPI_Get_current();
 
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Scatterv(%p, %p, %p, %p, %p, %d, %p, %d, %p)", 
-                       sendbuf, sendcounts, displs, sendtype, recvbuf,
-                       recvcount, recvtype, root, comm);
+                     sendbuf, sendcounts, displs, sendtype, recvbuf,
+                     recvcount, recvtype, root, comm);
 #endif
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_start(cur); 
+#endif
+
+
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    myrank=tMPI_Comm_seek_rank(comm, cur);
 
     /* we increase our counter, and determine which coll_env we get */
     cev=tMPI_Get_cev(comm, myrank, &synct);
@@ -239,18 +242,12 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 #endif
 
         /* post availability */
-#ifdef TMPI_NO_BUSY_WAIT
-        tMPI_Thread_mutex_lock( &(cev->met[myrank].wait_mutex) );
-#else
-        tMPI_Atomic_memory_barrier();
-#endif
+        for(i=0;i<cev->N;i++)
+        {
+            if (i != myrank)
+                tMPI_Event_signal( &(cev->met[i].recv_ev) );
+        }
 
-        tMPI_Atomic_set( &(cev->met[myrank].current_sync), synct);
-
-#ifdef TMPI_NO_BUSY_WAIT
-        tMPI_Thread_cond_broadcast( &(cev->met[myrank].recv_cond) );
-        tMPI_Thread_mutex_unlock( &(cev->met[myrank].wait_mutex) );
-#endif
 
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
@@ -300,10 +297,13 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         /* get the root cev */
         size_t bufsize=recvcount*recvtype->size;
         /* wait until root becomes available */
-        tMPI_Wait_for_data(cev, root, synct);
+        tMPI_Wait_for_data(cur, cev, myrank);
         tMPI_Mult_recv(comm, cev, root, myrank, TMPI_SCATTERV_TAG, 
                        recvtype, bufsize, recvbuf, &ret);
     }
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_stop(cur, TMPIFN_Scatterv); 
+#endif
     return ret;
 }
 

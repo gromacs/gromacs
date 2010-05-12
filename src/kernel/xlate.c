@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -44,105 +45,201 @@
 #include "smalloc.h"
 #include "symtab.h"
 #include "index.h"
+#include "futil.h"
+#include "fflibutil.h"
+#include "hackblock.h"
+#include "gmx_fatal.h"
 
 typedef struct {
-  char *res;
-  char *atom;
-  char *replace;
+    char *filebase;
+    char *res;
+    char *atom;
+    char *replace;
 } t_xlate_atom;
 
-static t_xlate_atom *get_xlatoms(int *nxlatom)
+static void get_xlatoms(const char *fn,FILE *fp,
+                        int *nptr,t_xlate_atom **xlptr)
 {
-  const char  *xlfile="xlateat.dat";
-  
-  t_xlate_atom *xl=NULL;
-  char rbuf[32],abuf[32],repbuf[32];
-  char **lines,*_ptr;
-  int  nlines,i,n;
-  
-  nlines = get_lines(xlfile,&lines);
-  if (nlines > 0) 
-    snew(xl,nlines);
+    char filebase[STRLEN];
+    char line[STRLEN];
+    char rbuf[1024],abuf[1024],repbuf[1024],dumbuf[1024];
+    char *_ptr;
+    int  n,na,idum;
+    t_xlate_atom *xl;
+
+    fflib_filename_base(fn,filebase,STRLEN);
+
+    n  = *nptr;
+    xl = *xlptr;
+
+    while (get_a_line(fp,line,STRLEN))
+    {
+        na = sscanf(line,"%s%s%s%s",rbuf,abuf,repbuf,dumbuf);
+        /* Check if we are reading an old format file with the number of items
+         * on the first line.
+         */
+        if (na == 1 && n == *nptr && sscanf(rbuf,"%d",&idum) == 1)
+        {
+            continue;
+        }
+        if (na != 3)
+        {
+            gmx_fatal(FARGS,"Expected a residue name and two atom names in file '%s', not '%s'",fn,line);
+        }
+        
+        srenew(xl,n+1);
+        xl[n].filebase = strdup(filebase);
+
+        /* Use wildcards... */
+        if (strcmp(rbuf,"*") != 0)
+        {
+            xl[n].res = strdup(rbuf);
+        }
+        else
+        {
+            xl[n].res = NULL;
+        }
+        
+        /* Replace underscores in the string by spaces */
+        while ((_ptr = strchr(abuf,'_')) != 0)
+        {
+            *_ptr = ' ';
+        }
+        
+        xl[n].atom = strdup(abuf);
+        xl[n].replace = strdup(repbuf);
+        n++;
+    }
+
+    *nptr  = n;
+    *xlptr = xl;
+}
+
+static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
+{
+    int i;
     
-  n = 0;
-  for(i=0; (i<nlines); i++) {
-    if (sscanf(lines[i],"%s%s%s",rbuf,abuf,repbuf) != 3) 
-      fprintf(stderr,"Invalid line '%s' in %s\n",lines[i],xlfile);
-    else {
-      /* Use wildcards... */
-      if (strcmp(rbuf,"*") != 0)
-	xl[n].res = strdup(rbuf);
-      else
-	xl[n].res = NULL;
-      
-      /* Replace underscores in the string by spaces */
-      while ((_ptr = strchr(abuf,'_')) != 0)
-	*_ptr = ' ';
-      
-      xl[n].atom = strdup(abuf);
-      xl[n].replace = strdup(repbuf);
-      n++;
+    for(i=0; (i<nxlate); i++)
+    {
+        sfree(xlatom[i].filebase);
+        if (xlatom[i].res != NULL)
+        {
+            sfree(xlatom[i].res);
+        }
+        sfree(xlatom[i].atom);
+        sfree(xlatom[i].replace);
     }
-    sfree(lines[i]);
-  }
-  if (nlines > 0)
-    sfree(lines);
-  fprintf(stderr,"%d out of %d lines of %s converted succesfully\n",
-	  n,nlines,xlfile);
-  
-  *nxlatom = n;
-  
-  return xl;
+    sfree(xlatom);
 }
 
-static void done_xlatom(int nxlate,t_xlate_atom **xlatom)
+void rename_atoms(const char *xlfile,const char *ffdir,
+                  t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
+                  bool bResname,t_aa_names *aan,bool bReorderNum,
+                  bool bVerbose)
 {
-  int i;
-  
-  for(i=0; (i<nxlate); i++) {
-    if ((*xlatom)[i].res)
-      sfree((*xlatom)[i].res);
-    if ((*xlatom)[i].atom)
-      sfree((*xlatom)[i].atom);
-    if ((*xlatom)[i].replace)
-      sfree((*xlatom)[i].replace);
-  }
-  sfree(*xlatom);
-  *xlatom = NULL;
-}
+    FILE *fp;
+    int nxlate,a,i,resind;
+    t_xlate_atom *xlatom;
+    int  nf;
+    char **f;
+    char c,*rnm,atombuf[32],*ptr0,*ptr1;
+    bool bReorderedNum,bRenamed,bMatch;
 
-void rename_atoms(t_atoms *atoms,t_symtab *symtab,t_aa_names *aan)
-{
-  int nxlate,a,i;
-  t_xlate_atom *xlatom;
-  char c,*res,atombuf[32];
-  bool bRenamed;
-
-  xlatom = get_xlatoms(&nxlate);
-
-  for(a=0; (a<atoms->nr); a++) {
-    res = *(atoms->resinfo[atoms->atom[a].resind].name);
-    strcpy(atombuf,*(atoms->atomname[a]));
-    if (isdigit(atombuf[0])) {
-      c = atombuf[0];
-      for (i=0; ((size_t)i<strlen(atombuf)-1); i++)
-	atombuf[i]=atombuf[i+1];
-      atombuf[i]=c;
+    nxlate = 0;
+    xlatom = NULL;
+    if (xlfile != NULL)
+    {
+        fp = libopen(xlfile);
+        get_xlatoms(xlfile,fp,&nxlate,&xlatom);
+        fclose(fp);
     }
-    bRenamed=FALSE;
-    for(i=0; (i<nxlate) && !bRenamed; i++) {
-      if ((xlatom[i].res == NULL) || (strcasecmp(res,xlatom[i].res) == 0) ||
-	  ((strcasecmp("protein",xlatom[i].res) == 0) && is_protein(aan,res)))
-	if (strcasecmp(atombuf,xlatom[i].atom) == 0) {
-	  /* don't free the old atomname, since it might be in the symtab */
-	  strcpy(atombuf,xlatom[i].replace);
-	  bRenamed=TRUE;
-	}
+    else
+    {
+        nf = fflib_search_file_end(ffdir,".arn",FALSE,&f);
+        for(i=0; i<nf; i++)
+        {
+            fp = fflib_open(f[i]);
+            get_xlatoms(f[i],fp,&nxlate,&xlatom);
+            fclose(fp);
+            sfree(f[i]);
+        }
+        sfree(f);
     }
-    if (strcmp(atombuf,*atoms->atomname[a]) != 0)
-      atoms->atomname[a] = put_symtab(symtab,atombuf);
-  }
 
-  done_xlatom(nxlate,&xlatom);
+    for(a=0; (a<atoms->nr); a++)
+    {
+        resind = atoms->atom[a].resind;
+        if (bResname)
+        {
+            rnm = *(atoms->resinfo[resind].name);
+        }
+        else
+        {
+            rnm = *(atoms->resinfo[resind].rtp);
+        }
+        strcpy(atombuf,*(atoms->atomname[a]));
+        bReorderedNum = FALSE;
+        if (bReorderNum)
+        {
+            if (isdigit(atombuf[0]))
+            {
+                c = atombuf[0];
+                for (i=0; ((size_t)i<strlen(atombuf)-1); i++)
+                {
+                    atombuf[i] = atombuf[i+1];
+                }
+                atombuf[i] = c;
+                bReorderedNum = TRUE;
+            }
+        }
+        bRenamed = FALSE;
+        for(i=0; (i<nxlate) && !bRenamed; i++) {
+            /* Check if the base file name of the rtp and arn entry match */
+            if (restp == NULL ||
+                strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
+            {
+                /* Match the residue name */
+                bMatch = (xlatom[i].res == NULL ||
+                          (strcasecmp("protein",xlatom[i].res) == 0 &&
+                           is_protein(aan,rnm)));
+                if (!bMatch)
+                {
+                    ptr0 = rnm;
+                    ptr1 = xlatom[i].res;
+                    while (ptr0[0] != '\0' && ptr1[0] != '\0' &&
+                           (ptr0[0] == ptr1[0] || ptr1[0] == '?'))
+                    {
+                        ptr0++;
+                        ptr1++;
+                    }
+                    bMatch = (ptr0[0] == '\0' && ptr1[0] == '\0');
+                }
+                if (bMatch && strcmp(atombuf,xlatom[i].atom) == 0)
+                {
+                    /* We have a match. */
+                    /* Don't free the old atomname,
+                     * since it might be in the symtab.
+                     */
+                    ptr0 = strdup(xlatom[i].replace);
+                    if (bVerbose)
+                    {
+                        printf("Renaming atom '%s' in residue %d %s to '%s'\n",
+                               *atoms->atomname[a],
+                               atoms->resinfo[resind].nr,
+                               *atoms->resinfo[resind].name,
+                               ptr0);
+                    }
+                    atoms->atomname[a] = put_symtab(symtab,ptr0);
+                    bRenamed = TRUE;
+                }
+            }
+        }
+        if (bReorderedNum && !bRenamed)
+        {
+            atoms->atomname[a] = put_symtab(symtab,atombuf);
+        }
+    }
+
+    done_xlatom(nxlate,xlatom);
 }
 

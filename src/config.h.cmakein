@@ -16,6 +16,9 @@
 /* Version number of package (translate from cmake to autoconf macro name) */
 #define VERSION  "@PROJECT_VERSION@"
 
+/* Use the version string from generated version.h */
+#cmakedefine USE_VERSION_H
+
 /* Default location of data files */
 #cmakedefine GMXLIBDIR "@GMXLIBDIR@"
 
@@ -152,6 +155,21 @@
 /* Have pthread.h */
 #cmakedefine HAVE_PTHREAD_H
 
+/* Define for busy wait option  */
+#cmakedefine TMPI_WAIT_FOR_NO_ONE
+
+/* Define for copy buffer option */
+#cmakedefine TMPI_COPY_BUFFER
+
+/* Define for profiling option */
+#cmakedefine TMPI_PROFILE
+
+/* Define for sysconf() */
+#cmakedefine HAVE_SYSCONF
+
+/* Define for GetSystemInfo() */
+#cmakedefine HAVE_SYSTEM_INFO
+
 /* Single-precision SSE instructions on X86_64 */
 #cmakedefine GMX_X86_64_SSE
 
@@ -218,6 +236,9 @@
 /* Define to 1 if you have the <stdlib.h> header file. */
 #cmakedefine HAVE_STDLIB_H
 
+/* Define to 1 if you have the <stdlib.h> header file. */
+#cmakedefine HAVE_SCHED_H
+
 /* Define to 1 if you have the strcasecmp() function. */
 #cmakedefine HAVE_STRCASECMP
 
@@ -239,6 +260,12 @@
 /* Define to 1 if you have the _isnan() function. */
 #cmakedefine HAVE__ISNAN
 
+/* Define to 1 if you have the isfinite() function. */
+#cmakedefine HAVE_ISFINITE
+
+/* Define to 1 if you have the _isfinite() function. */
+#cmakedefine HAVE__ISFINITE
+
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H
 
@@ -248,10 +275,8 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H
 
-#ifndef HAVE_SYS_TIME_H
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
-#endif
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H

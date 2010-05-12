@@ -732,7 +732,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
       "Length of the ACF, default is half the number of frames" },
     { "-normalize",FALSE, etBOOL, {&acf.bNormalize},
       "Normalize ACF" },
-    { "-fft",      FALSE, etBOOL, {&acf.bFour},
+    { "-fftcorr",  FALSE, etBOOL, {&acf.bFour},
       "HIDDENUse fast fourier transform for correlation function" },
     { "-nrestart", FALSE, etINT,  {&acf.nrestart},
       "HIDDENNumber of frames between time origins for ACF when no FFT is used" },

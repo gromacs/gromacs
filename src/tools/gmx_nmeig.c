@@ -340,7 +340,7 @@ int gmx_nmeig(int argc,char *argv[])
   out=xvgropen(opt2fn("-ol",NFILE,fnm), 
                "Eigenvalues","Eigenvalue index","Eigenvalue [Gromacs units]",
                oenv);
-  if (get_print_xvgr_codes(oenv)) {
+  if (output_env_get_print_xvgr_codes(oenv)) {
     if (bM)
       fprintf(out,"@ subtitle \"mass weighted\"\n");
     else 
@@ -358,7 +358,7 @@ int gmx_nmeig(int argc,char *argv[])
   out=xvgropen(opt2fn("-of",NFILE,fnm), 
                "Eigenfrequencies","Eigenvector index","Wavenumber [cm\\S-1\\N]",
                oenv);
-  if (get_print_xvgr_codes(oenv)) { 
+  if (output_env_get_print_xvgr_codes(oenv)) { 
     if (bM)
       fprintf(out,"@ subtitle \"mass weighted\"\n");
     else 

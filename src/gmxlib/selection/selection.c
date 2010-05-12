@@ -44,6 +44,7 @@
 #include <statutil.h>
 #include <string2.h>
 #include <xvgr.h>
+#include <gmx_fatal.h>
 
 #include <poscalc.h>
 #include <selection.h>
@@ -414,7 +415,7 @@ void xvgr_selcollection(FILE *out, gmx_ana_selcollection_t *sc,
 {
     int  i;
 
-    if (get_print_xvgr_codes(oenv) && sc)
+    if (output_env_get_xvg_format(oenv) != exvgNONE && sc)
     {
         fprintf(out, "# Selections:\n");
         for (i = 0; i < sc->nvars; ++i)

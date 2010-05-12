@@ -667,42 +667,41 @@ static void do_update_sd2(gmx_stochd_t *sd,bool bInitStep,
                   if (bInitStep) 
                   {
                       sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
-                      
-                      Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
-                          + ism*sig[gt].Yv*gmx_rng_gaussian_table(gaussrand);
-                      sd_V[n-start][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
-                      
-                      v[n][d] = vn*sdc[gt].em 
-                          + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                          + sd_V[n-start][d] - sdc[gt].em*Vmh;
-                      
-                      xprime[n][d] = x[n][d] + v[n][d]*tau_t[gt]*(sdc[gt].eph - sdc[gt].emh); 
-                  } 
-                  else 
-                  {
-                      
-                      /* Correct the velocities for the constraints.
-                       * This operation introduces some inaccuracy,
-                       * since the velocity is determined from differences in coordinates.
-                       */
-                      v[n][d] = 
-                          (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
-                      
-                      Xmh = sd_V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1) 
-                          + ism*sig[gt].Yx*gmx_rng_gaussian_table(gaussrand);
-                      sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
-                      
-                      xprime[n][d] += sd_X[n][d] - Xmh;
-                      
                   }
+                  Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
+                      + ism*sig[gt].Yv*gmx_rng_gaussian_table(gaussrand);
+                  sd_V[n-start][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+                  
+                  v[n][d] = vn*sdc[gt].em 
+                      + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
+                      + sd_V[n-start][d] - sdc[gt].em*Vmh;
+                  
+                  xprime[n][d] = x[n][d] + v[n][d]*tau_t[gt]*(sdc[gt].eph - sdc[gt].emh); 
               } 
               else 
               {
-                  if (bFirstHalf) 
-                  {
-                      v[n][d]        = 0.0;
-                      xprime[n][d]   = x[n][d];
-                  }
+                  
+                  /* Correct the velocities for the constraints.
+                   * This operation introduces some inaccuracy,
+                   * since the velocity is determined from differences in coordinates.
+                   */
+                  v[n][d] = 
+                      (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
+                  
+                  Xmh = sd_V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1) 
+                      + ism*sig[gt].Yx*gmx_rng_gaussian_table(gaussrand);
+                  sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
+                  
+                  xprime[n][d] += sd_X[n][d] - Xmh;
+                  
+              }
+          } 
+          else 
+          {
+              if (bFirstHalf) 
+              {
+                  v[n][d]        = 0.0;
+                  xprime[n][d]   = x[n][d];
               }
           }
       }
@@ -1244,6 +1243,17 @@ void update_extended(FILE         *fplog,
     }
 }
 
+static rvec *get_xprime(const t_state *state,gmx_update_t upd)
+{
+    if (state->nalloc > upd->xp_nalloc)
+    {
+        upd->xp_nalloc = state->nalloc;
+        srenew(upd->xp,upd->xp_nalloc);
+    }
+ 
+    return upd->xp;
+}
+
 void update_constraints(FILE         *fplog,
                         gmx_large_int_t   step,
                         real         *dvdlambda,    /* FEP stuff */
@@ -1271,7 +1281,7 @@ void update_constraints(FILE         *fplog,
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g,d;
     tensor           vir_con;
-    rvec             *vbuf,*xprime;
+    rvec             *vbuf,*xprime=NULL;
     
     if (constr) {bDoConstr=TRUE;}
     if (bFirstHalf && !EI_VV(inputrec->eI)) {bDoConstr=FALSE;} 
@@ -1302,7 +1312,8 @@ void update_constraints(FILE         *fplog,
         /* clear out constraints before applying */
         clear_mat(vir_part);
 
-        xprime = upd->xp;
+        xprime = get_xprime(state,upd);
+
         bLastStep = (step == inputrec->init_step+inputrec->nsteps);
         bLog  = (do_per_step(step,inputrec->nstlog) || bLastStep || (step < 0));
         bEner = (do_per_step(step,inputrec->nstenergy) || bLastStep);
@@ -1361,8 +1372,10 @@ void update_constraints(FILE         *fplog,
     }
     
     where();
-    if (inputrec->eI == eiSD2) 
+    if ((inputrec->eI == eiSD2) && !(bFirstHalf))
     {
+        xprime = get_xprime(state,upd);
+
         /* The second part of the SD integration */
         do_update_sd2(upd->sd,FALSE,start,homenr,
                       inputrec->opts.acc,inputrec->opts.nFreeze,
@@ -1520,7 +1533,6 @@ o               If we assume isotropic scaling, and box length scaling
         deform(upd,start,homenr,state->x,state->box,scale_tot,inputrec,step);
     }
     where();
-    inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
     dump_it_all(fplog,"After update",
                 state->natoms,state->x,upd->xp,state->v,force);
 }
@@ -1567,12 +1579,7 @@ void update_coords(FILE         *fplog,
     homenr = md->homenr;
     nrend = start+homenr;
     
-    if (state->nalloc > upd->xp_nalloc)
-    {
-        upd->xp_nalloc = state->nalloc;
-        srenew(upd->xp,upd->xp_nalloc);
-    }
-    xprime = upd->xp;
+    xprime = get_xprime(state,upd);
     
     dt   = inputrec->delta_t;
     dt_1 = 1.0/dt;

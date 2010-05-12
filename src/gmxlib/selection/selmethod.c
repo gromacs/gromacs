@@ -36,6 +36,7 @@
 #endif
 
 #include <ctype.h>
+#include <stdarg.h>
 
 #include <macros.h>
 #include <string2.h>
@@ -72,7 +73,8 @@ extern gmx_ana_selmethod_t sm_all;
 extern gmx_ana_selmethod_t sm_none;
 extern gmx_ana_selmethod_t sm_atomnr;
 extern gmx_ana_selmethod_t sm_resnr;
-extern gmx_ana_selmethod_t sm_resind;
+extern gmx_ana_selmethod_t sm_resindex;
+extern gmx_ana_selmethod_t sm_molindex;
 extern gmx_ana_selmethod_t sm_atomname;
 extern gmx_ana_selmethod_t sm_atomtype;
 extern gmx_ana_selmethod_t sm_resname;
@@ -101,39 +103,59 @@ extern gmx_ana_selmethod_t sm_plus;
 /* From sm_permute.c */
 extern gmx_ana_selmethod_t sm_permute;
 
+/*! \brief
+ * Helper structure for defining selection methods.
+ */
+typedef struct {
+    /*! \brief
+     * Name to register the method under.
+     *
+     * If NULL, use the actual name of the method.
+     * This field is used for defining synonyms.
+     */
+    const char            *name;
+    /** Method data structure to register. */
+    gmx_ana_selmethod_t   *method;
+} t_register_method;
+
 /** Array of selection methods defined in the library. */
-static gmx_ana_selmethod_t *const smtable_def[] = {
-    &sm_cog,
-    &sm_com,
+static const t_register_method smtable_def[] = {
+    {NULL,         &sm_cog},
+    {NULL,         &sm_com},
 
-    &sm_all,
-    &sm_none,
-    &sm_atomnr,
-    &sm_resnr,
-    &sm_resind,
-    &sm_atomname,
-    &sm_atomtype,
-    &sm_resname,
-    &sm_insertcode,
-    &sm_chain,
-    &sm_mass,
-    &sm_charge,
-    &sm_altloc,
-    &sm_occupancy,
-    &sm_betafactor,
-    &sm_x,
-    &sm_y,
-    &sm_z,
+    {NULL,         &sm_all},
+    {NULL,         &sm_none},
+    {NULL,         &sm_atomnr},
+    {NULL,         &sm_resnr},
+    {"resid",      &sm_resnr},
+    {NULL,         &sm_resindex},
+    {"residue",    &sm_resindex},
+    {NULL,         &sm_molindex},
+    {"mol",        &sm_molindex},
+    {"molecule",   &sm_molindex},
+    {NULL,         &sm_atomname},
+    {NULL,         &sm_atomtype},
+    {NULL,         &sm_resname},
+    {NULL,         &sm_insertcode},
+    {NULL,         &sm_chain},
+    {NULL,         &sm_mass},
+    {NULL,         &sm_charge},
+    {NULL,         &sm_altloc},
+    {NULL,         &sm_occupancy},
+    {NULL,         &sm_betafactor},
+    {NULL,         &sm_x},
+    {NULL,         &sm_y},
+    {NULL,         &sm_z},
 
-    &sm_distance,
-    &sm_mindistance,
-    &sm_within,
-    &sm_insolidangle,
-    &sm_same,
+    {NULL,         &sm_distance},
+    {NULL,         &sm_mindistance},
+    {NULL,         &sm_within},
+    {NULL,         &sm_insolidangle},
+    {NULL,         &sm_same},
 
-    &sm_merge,
-    &sm_plus,
-    &sm_permute,
+    {NULL,         &sm_merge},
+    {NULL,         &sm_plus},
+    {NULL,         &sm_permute},
 };
 
 /*! \brief
@@ -418,10 +440,6 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     /* Warn of dynamic callbacks in static methods */
     if (!(method->flags & SMETH_MODIFIER))
     {
-        if (method->init_frame && !(method->flags & SMETH_DYNAMIC))
-        {
-            report_error(fp, method->name, "warning: init_frame not used because the method is static");
-        }
         if (method->pupdate && !(method->flags & SMETH_DYNAMIC))
         {
             report_error(fp, method->name, "warning: pupdate not used because the method is static");
@@ -654,7 +672,16 @@ gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc)
     bOk = TRUE;
     for (i = 0; i < asize(smtable_def); ++i)
     {
-        rc = gmx_ana_selmethod_register(sc, smtable_def[i]->name, smtable_def[i]);
+        gmx_ana_selmethod_t *method = smtable_def[i].method;
+
+        if (smtable_def[i].name == NULL)
+        {
+            rc = gmx_ana_selmethod_register(sc, method->name, method);
+        }
+        else
+        {
+            rc = gmx_ana_selmethod_register(sc, smtable_def[i].name, method);
+        }
         if (rc != 0)
         {
             bOk = FALSE;

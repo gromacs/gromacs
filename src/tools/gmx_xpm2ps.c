@@ -103,14 +103,18 @@ void get_params(const char *mpin,const char *mpout,t_psrec *psr)
   static const char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
   /* this must correspond to t_rgb *linecolors[] below */
   static const char *colors[] = { "none", "black", "white", NULL };
+  warninp_t wi;
   t_inpfile *inp;
   const char *tmp;
   int       ninp=0;
-  
-  if (mpin)
-    inp = read_inpfile(mpin,&ninp,NULL);
-  else
+
+  wi = init_warning(FALSE,0);
+
+  if (mpin != NULL) {
+    inp = read_inpfile(mpin,&ninp,NULL,wi);
+  } else {
     inp = NULL;
+  }
   ETYPE("black&white",    psr->bw,             bools);
   RTYPE("linewidth",      psr->linewidth,      1.0);
   STYPE("titlefont",      psr->titfont,        "Helvetica");
@@ -152,8 +156,12 @@ void get_params(const char *mpin,const char *mpout,t_psrec *psr)
   STYPE("y-font",         psr->Y.font,         psr->X.font);
   RTYPE("y-tickfontsize", psr->Y.tickfontsize, psr->X.tickfontsize);
   STYPE("y-tickfont",     psr->Y.tickfont,     psr->Y.font);
-  if (mpout)
-    write_inpfile(mpout,ninp,inp,TRUE);
+
+  if (mpout != NULL) {
+    write_inpfile(mpout,ninp,inp,TRUE,wi);
+  }
+  
+  done_warning(wi,FARGS);
 }
 
 t_rgb black = { 0, 0, 0 };
@@ -650,7 +658,7 @@ void ps_mat(const char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   bool   bMap1,bNextMap1,bDiscrete;
  
   /* memory leak: */
-  libm2p = m2p ? libfn(m2p) : m2p;
+  libm2p = m2p ? gmxlibfn(m2p) : m2p;
   get_params(libm2p,m2pout,&psrec);
 
   psr=&psrec;

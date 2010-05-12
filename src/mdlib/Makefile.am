@@ -10,13 +10,16 @@ libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = libmd@LIBSUFFIX@.pc
+
 libmd@LIBSUFFIX@_la_SOURCES = \
 	calcmu.c	calcvir.c	constr.c	\
 	coupling.c	\
 	domdec.c	domdec_box.c	domdec_con.c	\
 	domdec_network.c domdec_setup.c	domdec_top.c	\
 	ebin.c		\
-	edsam.c		ewald.c         fftgrid.c	\
+	edsam.c		ewald.c         \
 	force.c  	forcerec.c	\
 	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\
@@ -30,19 +33,21 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	genborn_allvsall.h                              \
 	genborn_allvsall_sse2_single.c			\
 	genborn_allvsall_sse2_single.h			\
+	groupcoord.c                                    \
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	shellfc.c	stat.c 		\
-	tables.c	tgroup.c	\
+	tables.c	tgroup.c	tpi.c	\
 	update.c	vcm.c		vsite.c	\
 	wall.c		wnblist.c	\
 	csettle.c       clincs.c	\
 	qmmm.c		gmx_fft.c 	gmx_parallel_3dfft.c	\
-	gmx_wallcycle.c \
+	fft5d.c         fft5d.h         \
+	gmx_wallcycle.c fftgrid.c 	\
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
-	gmx_fft_mkl.c
+	gmx_fft_mkl.c	
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 

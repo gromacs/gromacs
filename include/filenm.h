@@ -146,13 +146,16 @@ extern bool is_set(const t_filenm *fnm);
 /* Return whether or not this filenm is set */
 
 /* When we do checkpointing, this routine is called to check for previous
- * output files and append a 'partNNNN' suffix before the (output) file extensions.
+ * output files and append a '.partNNNN' suffix before the (output) file extensions.
  */
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
 
 /* duplicate the filename list (to make a private copy for each thread, 
    for example) */
 t_filenm *dup_tfn(int nf, const t_filenm tfn[]);
+
+/* Free memory allocated for file names by parse_file_args(). */
+void done_filenms(int nf, t_filenm fnm[]);
 	
 #ifdef __cplusplus
 }

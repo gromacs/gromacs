@@ -128,11 +128,11 @@ enum
     TMPI_SUCCESS=0,                 /*!< No error */
     TMPI_ERR_MALLOC,                /*!< Out of memory */
     TMPI_ERR_INIT,                  /*!< Initialization error */ 
-    TMPI_ERR_FINALIZE,
-    TMPI_ERR_GROUP,
-    TMPI_ERR_COMM,
-    TMPI_ERR_STATUS,
-    TMPI_ERR_GROUP_RANK,
+    TMPI_ERR_FINALIZE,              /*!< Finalize error */
+    TMPI_ERR_GROUP,                 /*!< Group error */
+    TMPI_ERR_COMM,                  /*!< Comm error */
+    TMPI_ERR_STATUS,                /*!< Status error */
+    TMPI_ERR_GROUP_RANK,            /*!< Group rank error */
     TMPI_ERR_DIMS,
     TMPI_ERR_COORDS,
     TMPI_ERR_CART_CREATE_NPROCS,
@@ -146,6 +146,7 @@ enum
     TMPI_ERR_OP_FN,
     TMPI_ERR_ENVELOPES,
     TMPI_ERR_REQUESTS,
+    TMPI_ERR_IN_STATUS,
     TMPI_FAILURE,
     TMPI_ERR_UNKNOWN,
     N_TMPI_ERR  /* this must be the last one */
@@ -217,6 +218,7 @@ typedef struct tmpi_status_
     int TMPI_TAG;           /**< Message source tag. */
     int TMPI_ERROR;         /**< Message error. */
     size_t transferred;     /**< Number of transferred bytes */
+    int cancelled;          /**< Whether the transmission was canceled */
 } tMPI_Status;
 /*typedef struct tmpi_status_ tMPI_Status;*/
 
@@ -270,9 +272,12 @@ tMPI_Comm tMPI_Get_comm_self(void);
     \{ */
 /** Traditional MPI initializer; spawns threads that start at main(). 
   
-    Seeks the argument '-np n', where n is the number of 
-    threads that will be created. These new threads then run main() again,
-    with the original argc and argv. 
+    Seeks the argument '-nt n', where n is the number of 
+    threads that will be created. If n==0, the number of threads will
+    be the recommended number of threads for this platform as obtained
+    from tMPI_Get_recommended_ntreads(). 
+
+    The new threads then run main() again, with the original argc and argv. 
     
     \param[in] argc     argc of original main() invocation, or NULL
     \param[in] argv     argv of original main() invocation, or NULL. 
@@ -289,8 +294,13 @@ int tMPI_Init(int *argc, char ***argv);
     thread. When the function start_function returns it, will behave 
     as if tMPI_Finalize is called, and if it's a sub-thread it will
     stop running. 
+
+    If N==0, the number of threads will be the recommended number of 
+    threads for this platform as obtained from tMPI_Get_recommended_ntreads(). 
+
     
-    \param[in] N                The number of threads to start.
+    \param[in] N                The number of threads to start (or 0 to
+                                automatically determine this).
     \param[in] start_function   The function to start threads at (including 
                                 main thread). 
     \param[in] arg              An optional argument for start_function().
@@ -433,10 +443,10 @@ int tMPI_Get_processor_name(char *name, int *resultlen);
     \return time value.
     */
 double tMPI_Wtime(void);
-#if 0
-/** get the resolution of tMPI_Wtime as a double, in seconds */
+/** get the resolution of tMPI_Wtime as a double, in seconds 
+
+    \return time resolution. */
 double tMPI_Wtick(void);
-#endif
 
 #ifndef DOXYGEN
 #define tMPI_This_threadnr() (int)(tMPI_Get_current() - threads)
@@ -805,6 +815,9 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
 int tMPI_Irecv(void* buf, int count, tMPI_Datatype datatype, int source, 
               int tag, tMPI_Comm comm, tMPI_Request *request);
 
+
+
+
 /** Test whether a message is transferred. 
     
     \param[in,out]  request The request obtained wit tMPI_Isend()/tMPI_Irecv().
@@ -823,6 +836,9 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Wait(tMPI_Request *request, tMPI_Status *status);
 
+
+
+
 /** Wait until several messages are transferred. 
    
     \param[in]      count               The number of requests
@@ -834,6 +850,85 @@ int tMPI_Wait(tMPI_Request *request, tMPI_Status *status);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Waitall(int count, tMPI_Request *array_of_requests, 
                 tMPI_Status *array_of_statuses);
+
+/** Test whether several messages are transferred. 
+   
+    \param[in]      count               The number of requests
+    \param[in,out]  array_of_requests   List of count requests obtained with
+                                        tMPI_Isend()/tMPI_Irecv().
+    \param[out]     flag                Whether all requests have completed.
+    \param[out]     array_of_statuses   List of count message statuses (can 
+                                        be set to TMPI_STATUSES_IGNORE).
+
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Testall(int count, tMPI_Request *array_of_requests, int *flag,
+                tMPI_Status *array_of_statuses);
+
+/** Wait until one of several messages is transferred. 
+   
+    \param[in]      count               The number of requests
+    \param[in,out]  array_of_requests   List of count requests obtained with
+                                        tMPI_Isend()/tMPI_Irecv().
+    \param[out]     index               Index of the request that has 
+                                        completed.
+    \param[out]     status              Pointer to tMPI_Status object 
+                                        associated with completed request.
+
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Waitany(int count, tMPI_Request *array_of_requests, 
+                 int *index, tMPI_Status *status);
+
+/** Test whether one of several messages is transferred. 
+   
+    \param[in]      count               The number of requests
+    \param[in,out]  array_of_requests   List of count requests obtained with
+                                        tMPI_Isend()/tMPI_Irecv().
+    \param[out]     index               Index of the request that has 
+                                        completed.
+    \param[out]     flag                Whether any request has completed.
+    \param[out]     status              Pointer to tMPI_Status object 
+                                        associated with completed request.
+
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Testany(int count, tMPI_Request *array_of_requests, 
+                 int *index, int *flag, tMPI_Status *status);
+
+/** Wait until some of several messages are transferred. Waits until at least
+    one message is transferred.
+   
+    \param[in]      count               The number of requests
+    \param[in,out]  array_of_requests   List of count requests obtained with
+                                        tMPI_Isend()/tMPI_Irecv().
+    \param[out]     outcount            Number of completed requests
+    \param[out]     array_of_indices    Array of ints that gets filled with 
+                                        the indices of the completed requests.
+    \param[out]     array_of_statuses   List of count message statuses (can 
+                                        be set to TMPI_STATUSES_IGNORE).
+
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Waitsome(int incount, tMPI_Request *array_of_requests,
+                  int *outcount, int *array_of_indices,
+                  tMPI_Status *array_of_statuses);
+
+/** Test whether some of several messages are transferred. 
+
+    \param[in]      count               The number of requests
+    \param[in,out]  array_of_requests   List of count requests obtained with
+                                        tMPI_Isend()/tMPI_Irecv().
+    \param[out]     outcount            Number of completed requests
+    \param[out]     array_of_indices    Array of ints that gets filled with 
+                                        the indices of the completed requests.
+    \param[out]     array_of_statuses   List of count message statuses (can 
+                                        be set to TMPI_STATUSES_IGNORE).
+
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Testsome(int incount, tMPI_Request *array_of_requests,
+                 int *outcount, int *array_of_indices,
+                 tMPI_Status *array_of_statuses);
+
+
+
+
 
 
 /** get the number of actually transferred items from a receive 

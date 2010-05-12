@@ -109,7 +109,12 @@ bool be_cool(void)
    * but we dont call this routine often, and it avoids using 
    * a mutex for locking the variable...
    */
+#ifdef GMX_FAHCORE
+  /*be uncool*/
+  return FALSE;
+#else
   return (getenv("GMX_NO_QUOTES") == NULL);
+#endif
 }
 
 void space(FILE *out, int n)
@@ -224,7 +229,11 @@ void CopyRight(FILE *out,const char *szProgram)
   char buf[256],tmpstr[1024];
   int i;
 
+#ifdef GMX_FAHCORE
+  set_program_name("Gromacs");
+#else
   set_program_name(szProgram);
+#endif
 
   ster_print(out,"G  R  O  M  A  C  S");
   fprintf(out,"\n");
@@ -284,6 +293,11 @@ typedef struct {
 void please_cite(FILE *fp,const char *key)
 {
   static const t_citerec citedb[] = {
+    { "Allen1987a",
+      "M. P. Allen and D. J. Tildesley",
+      "Computer simulation of liquids",
+      "Oxford Science Publications",
+      1, 1987, "1" },
     { "Berendsen95a",
       "H. J. C. Berendsen, D. van der Spoel and R. van Drunen",
       "GROMACS: A message-passing parallel molecular dynamics implementation",
@@ -512,6 +526,14 @@ void please_cite(FILE *fp,const char *key)
   fflush(fp);
 }
 
+#ifdef USE_VERSION_H
+/* Version information generated at compile time. */
+#include "version.h"
+#else
+/* Fall back to statically defined version. */
+static const char _gmx_ver_string[]="VERSION " VERSION;
+#endif
+
 /* This routine only returns a static (constant) string, so we use a 
  * mutex to initialize it. Since the string is only written to the
  * first time, there is no risk with multiple calls overwriting the
@@ -519,9 +541,22 @@ void please_cite(FILE *fp,const char *key)
  */
 const char *GromacsVersion()
 {
+  return _gmx_ver_string;
+}
 
-  /* Concatenate the version info during preprocessing */
-  static const char ver_string[]="VERSION " VERSION;
-  
-  return ver_string;
+
+void gmx_print_version_info(FILE *fp)
+{
+    fprintf(fp, "Version:        %s\n", _gmx_ver_string);
+#ifdef USE_VERSION_H
+    fprintf(fp, "GIT SHA1 hash:  %s\n", _gmx_full_git_hash);
+    /* Only print out the branch information if present.
+     * The generating script checks whether the branch point actually
+     * coincides with the hash reported above, and produces an empty string
+     * in such cases. */
+    if (_gmx_central_base_hash[0] != 0)
+    {
+        fprintf(fp, "Branched from:  %s\n", _gmx_central_base_hash);
+    }
+#endif
 }

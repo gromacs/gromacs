@@ -40,6 +40,7 @@ mdrun:
 install-mdrun:
 	(cd $(top_builddir)/src/gmxlib && $(MAKE) install ; exit 0)
 	(cd $(top_builddir)/src/mdlib && $(MAKE) install ; exit 0)
+	(cd $(top_builddir)/src/kernel && $(MAKE) install-libLTLIBRARIES ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) install-mdrun ; exit 0)
 
 fahcore:
@@ -87,76 +88,4 @@ mpi-rpm:
 CLEANFILES = *~ \\\#* 
 
 DISTCLEANFILES = libtool config.cache config.log
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

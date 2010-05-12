@@ -53,7 +53,7 @@
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
-#include "fftgrid.h"
+#include "gmxcomplex.h"
 #include "calcgrid.h"
 #include "nrnb.h"
 #include "coulomb.h"
@@ -587,11 +587,11 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     sprintf(refgt,"%s","");
   }
   if (ng==1) {
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
       fprintf(fp,"@ subtitle \"%s%s - %s\"\n",grpname[0],refgt,grpname[1]);
   }
   else {
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
         fprintf(fp,"@ subtitle \"reference %s%s\"\n",grpname[0],refgt);
     xvgr_legend(fp,ng,grpname+1,oenv);
   }
@@ -637,11 +637,11 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     normfac = 1.0/(isize0*nframes);
     fp=xvgropen(fnCNRDF,"Cumulative Number RDF","r","number",oenv);
     if (ng==1) {
-      if (get_print_xvgr_codes(oenv))
+      if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
     }
     else {
-      if (get_print_xvgr_codes(oenv))
+      if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
       xvgr_legend(fp,ng,grpname+1,oenv);
     }
@@ -770,7 +770,7 @@ real **compute_scattering_factor_table (structure_factor * sf,int *nsftable)
 	    if (i < NCMT)
 	      sf_table[i][j] = CMSF (i,0,sf->lambda, sin_theta);
 	    else
-	      sf_table[i][j] = CMSF (i,i-NCMT+1,sf->lambda, sin_theta);
+	      sf_table[i][j] = CMSF (i%NCMT,i-NCMT+1,sf->lambda, sin_theta);
 	}
     }
     return sf_table;

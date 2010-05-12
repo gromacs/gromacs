@@ -317,11 +317,12 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         {
             ef->eo.bReadFirstStep = TRUE;
             ef->eo.first_step     = fr->step;
+            ef->eo.step_prev      = fr->step;
             ef->eo.nsum_prev      = 0;
         }
         
-        fr->nsum = fr->step - ef->eo.first_step + 1;
-        fr->nsteps = fr->nsum;
+        fr->nsum   = fr->step - ef->eo.first_step + 1;
+        fr->nsteps = fr->step - ef->eo.step_prev;
     }
 	
     return *bOK;
@@ -531,7 +532,7 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
     {
         if (bRead)
         {
-            fprintf(stderr,"\rLast energy frame read %d time %8.3f           ",
+            fprintf(stderr,"\rLast energy frame read %d time %8.3f         ",
                     ef->framenr-1,ef->frametime);
             if (!bOK)
             {
@@ -552,7 +553,7 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
             (ef->framenr <  200 || ef->framenr %  100 == 0) &&
             (ef->framenr < 2000 || ef->framenr % 1000 == 0))
         {
-            fprintf(stderr,"\rReading energy frame %6d time %8.3f           ",
+            fprintf(stderr,"\rReading energy frame %6d time %8.3f         ",
                     ef->framenr,fr->t);
         }
         ef->framenr++;
@@ -705,12 +706,17 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
     "Pcoupl-Mu-XX", "Pcoupl-Mu-YY", "Pcoupl-Mu-ZZ",
     "Pcoupl-Mu-YX", "Pcoupl-Mu-ZX", "Pcoupl-Mu-ZY"
   };
+  static const char *baro_nm[] = {
+    "Barostat"
+  };
+
+
   int ind0[] = { XX,YY,ZZ,YY,ZZ,ZZ };
   int ind1[] = { XX,YY,ZZ,XX,XX,YY };
-
-  int nre,nfr,i,ni,npcoupl,ngctch;
+  int nre,nfr,i,j,ni,npcoupl;
   char       buf[STRLEN];
-  gmx_enxnm_t *enm;
+  const char *bufi;
+  gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
   ener_file_t in;
 
@@ -739,18 +745,34 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
 
   if (ir->etc == etcNOSEHOOVER) 
   {
-      ngctch = state->ngtc;  
+      for(i=0; i<state->ngtc; i++) {
+          ni = groups->grps[egcTC].nm_ind[i];
+          bufi = *(groups->grpname[ni]);
+          for(j=0; (j<state->nhchainlength); j++) 
+          {
+              sprintf(buf,"Xi-%d-%s",j,bufi);
+              state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
+              sprintf(buf,"vXi-%d-%s",j,bufi);
+              state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
+          }
+
+      }
+      fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n",state->ngtc,fn);
+
       if (IR_NPT_TROTTER(ir)) 
       {
-          ngctch += 1; /* an extra state is needed for the barostat */
+          for(i=0; i<state->nnhpres; i++) {
+              bufi = baro_nm[0]; /* All barostat DOF's together for now */
+              for(j=0; (j<state->nhchainlength); j++) 
+              {
+                  sprintf(buf,"Xi-%d-%s",j,bufi); 
+                  state->nhpres_xi[i] = find_energy(buf,nre,enm,fr);
+                  sprintf(buf,"vXi-%d-%s",j,bufi);
+                  state->nhpres_vxi[i] = find_energy(buf,nre,enm,fr);
+              }
+          }
+          fprintf(stderr,"\nREAD %d NOSE-HOOVER BAROSTAT Xi chains FROM %s\n\n",state->nnhpres,fn);
       }
-      for(i=0; i<ngctch; i++) {
-          ni = groups->grps[egcTC].nm_ind[i];
-          sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
-          state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
-          state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
-      }
-      fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",ngctch,fn);
   } 
 
   free_enxnms(nre,enm);

@@ -59,18 +59,18 @@ static int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
     return TMPI_SUCCESS;
 }
 
-int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
+int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count, 
                      tMPI_Datatype datatype, tMPI_Op op, int root, 
                      tMPI_Comm comm)
 {
-    int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
-    int i;
+    struct tmpi_thread *cur=tMPI_Get_current();
+    int myrank=tMPI_Comm_seek_rank(comm, cur);
 
     /* this function uses a binary tree-like reduction algorithm: */
     int N=tMPI_Comm_N(comm);
     int myrank_rtr=(N+myrank-root)%N; /* my rank relative to root */
-    int Nnbrs=N; /* number of neighbours to communicate with 
-                    (decreases exponentially) */
+    int Nred=N; /* number of neighbours that still communicate 
+                   (decreases exponentially) */
     int nbr_dist=1; /* distance between communicating neighbours 
                        (increases exponentially) */
     int stepping=2; /* distance between non-communicating neighbours
@@ -96,65 +96,87 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     {
         sendbuf=recvbuf;
     }
-    comm->sendbuf[myrank]=sendbuf;
-    comm->recvbuf[myrank]=recvbuf;
-    /* there's a barrier to wait for all the processes to put their 
-       send/recvbuf in the global list */
-#ifndef TMPI_NO_BUSY_WAIT
-    tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-    tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]));
-#endif
+    /* we set our send and recv buffer s*/
+    tMPI_Atomic_ptr_set(&(comm->reduce_sendbuf[myrank]),sendbuf);
+    tMPI_Atomic_ptr_set(&(comm->reduce_recvbuf[myrank]),recvbuf);
 
-    /* check the buffers */
-    for(i=0;i<N;i++)
+    while (Nred>1)
     {
-        if ( (i!=myrank) && ( (comm->recvbuf[i]==recvbuf) || 
-                              (comm->sendbuf[i]==sendbuf) ) )
-        {
-            return tMPI_Error(comm, TMPI_ERR_XFER_BUF_OVERLAP);
-        }
-    }
+        /* calculate neighbour rank (here we use the real rank) */
+        int nbr=(myrank_rtr%stepping==0) ?  
+                  (N+myrank+nbr_dist)%N : 
+                  (N+myrank-nbr_dist)%N;
 
-    while(Nnbrs>1)
-    {
-        int nbr;
-        /* reduce between myrank and myrank+nbr_dist, if there is such
-            a neighbour. */
 #ifdef TMPI_DEBUG
-        printf("%d: iteration=%d, Nnbrs=%d, barrier size=%d and I'm still in here\n", 
-                myrank, iteration, comm->N_multicast_barrier[iteration], Nnbrs);
+        printf("%d: iteration %d: myrank_rtr=%d, stepping=%d\n", 
+               myrank, iteration, myrank_rtr, stepping);
         fflush(0);
 #endif
-        if (myrank_rtr%stepping == 0 )
+        /* check if I'm the reducing thread in this iteration's pair: */
+        if (myrank_rtr%stepping == 0)
         {
-            if (myrank_rtr+nbr_dist<N) 
+            void *a,*b;
+            int ret;
+
+            /* now wait for my neighbor's data to become ready. 
+               First check if I actually have a neighbor. */
+            if (myrank_rtr+nbr_dist<N)
             {
-                void *a,*b;
-                int ret;
 #ifdef TMPI_DEBUG
-                printf("%d: reducing with %d, iteration=%d\n", 
-                        myrank, myrank+nbr_dist, iteration);
+                printf("%d: waiting to reduce with %d, iteration=%d\n", 
+                       myrank, nbr, iteration);
                 fflush(0);
 #endif
-               /* we reduce with our neighbour*/
-                nbr=(N+myrank+nbr_dist)%N; /* here we use the real rank */
+
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+                tMPI_Profile_wait_start(cur);
+#endif
+                tMPI_Event_wait( &(comm->csync[myrank].events[nbr]) );
+                tMPI_Event_process( &(comm->csync[myrank].events[nbr]), 1);
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+                tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
+#endif
+
+#ifdef TMPI_DEBUG
+                printf("%d: reducing with %d, iteration=%d\n", 
+                       myrank, nbr, iteration);
+                fflush(0);
+#endif
+                /* we reduce with our neighbour*/
                 if (iteration==0)
                 {
+                    /* for the first iteration, the inputs are in the 
+                       sendbuf*/
                     a=sendbuf;
-                    b=(void*)(comm->sendbuf[nbr]);
+                    b=tMPI_Atomic_ptr_get(&(comm->reduce_sendbuf[nbr]));
                 }
                 else
                 {
+                    /* after the first operation, they're already in 
+                       the recvbuf */
                     a=recvbuf;
-                    b=(void*)(comm->recvbuf[nbr]);
+                    b=tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[nbr]));
                 }
+                /* here we check for overlapping buffers */
+                if (a==b)
+                {
+                    return tMPI_Error(comm, TMPI_ERR_XFER_BUF_OVERLAP);
+                }
+
+
                 if ((ret=tMPI_Reduce_run_op(recvbuf, a, b, datatype, 
                                             count, op, comm)) != TMPI_SUCCESS)
                     return ret;
+
+                /* signal to my neighbour that I'm ready. */
+                tMPI_Event_signal( &(comm->csync[nbr].events[myrank]) );
             }
             else
             {
+#ifdef TMPI_DEBUG
+            printf("%d: not waiting copying buffer\n", myrank);
+            fflush(0);
+#endif
                 /* we still need to put things in the right buffer for the next
                    iteration. We need to check for overlapping buffers
                    here because MPI_IN_PLACE might cause recvbuf to be the
@@ -162,47 +184,60 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
                 if (iteration==0 && (recvbuf!=sendbuf))
                     memcpy(recvbuf, sendbuf, datatype->size*count);
             }
-            /* split barrier */
-#ifndef TMPI_NO_BUSY_WAIT
-            tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
-#else
-            tMPI_Thread_barrier_wait( &(comm->multicast_barrier[iteration]));
-#endif
+
         }
-        else 
+        else
         {
-            /* this barrier is split because the threads not actually 
-               calculating still need to be waiting for the thread using its
-               data to finish calculating */
+            /* the other thread is doing the reducing; we can just
+               wait and break when ready */
+           /* Awake our neighbour */
+            tMPI_Event_signal( &(comm->csync[nbr].events[myrank]) );
+
+
 #ifdef TMPI_DEBUG
-            printf("%d: barrier waiting, iteration=%d\n", myrank,  iteration);
+            printf("%d: signalled %d, now waiting: iteration=%d\n", 
+                   nbr, myrank,  iteration);
             fflush(0);
 #endif
-#ifndef TMPI_NO_BUSY_WAIT
-            tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
-#else
-            tMPI_Thread_barrier_wait( &(comm->multicast_barrier[iteration]));
+ 
+            /* And wait for an incoming event from out neighbour */
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+            tMPI_Profile_wait_start(cur);
 #endif
-            break;
+            tMPI_Event_wait( &(comm->csync[myrank].events[nbr]) );
+            tMPI_Event_process( &(comm->csync[myrank].events[nbr]), 1);
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+            tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
+#endif
+            /* now we can break because our data is reduced, and
+               our neighbour goes on reducing it further. */
+            break; 
         }
+
 #ifdef TMPI_DEBUG
-        printf("%d: barrier over, iteration=%d\n", myrank,  iteration);
+        printf("%d: iteration over, iteration=%d\n", myrank,  iteration);
         fflush(0);
 #endif
-        Nnbrs = Nnbrs/2 + Nnbrs%2;
+
+        Nred = Nred/2 + Nred%2;
         nbr_dist*=2;
         stepping*=2;
         iteration++;
     }
+
     return TMPI_SUCCESS;
 }
 
 int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
                tMPI_Datatype datatype, tMPI_Op op, int root, tMPI_Comm comm)
 {
-    int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    struct tmpi_thread *cur=tMPI_Get_current();
+    int myrank=tMPI_Comm_seek_rank(comm, cur);
     int ret;
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_start(cur);
+#endif
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Reduce(%p, %p, %d, %p, %p, %d, %p)",
                        sendbuf, recvbuf, count, datatype, op, root, comm);
@@ -227,16 +262,23 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
     {
         free(recvbuf);
     }
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_stop(cur, TMPIFN_Reduce);
+#endif
     return ret;
 }
 
 int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
-                  tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm)
+                   tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm)
 {
     void *rootbuf=NULL; /* root process' receive buffer */
-    int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    struct tmpi_thread *cur=tMPI_Get_current();
+    int myrank=tMPI_Comm_seek_rank(comm, cur);
     int ret;
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_start(cur);
+#endif
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Allreduce(%p, %p, %d, %p, %p, %p)",
                      sendbuf, recvbuf, count, datatype, op, comm);
@@ -253,18 +295,19 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     }
 
     ret=tMPI_Reduce_fast(sendbuf, recvbuf, count, datatype, op, 0, comm);
-    /* distribute rootbuf */
-    rootbuf=(void*)comm->recvbuf[0];
-
-
-#ifndef TMPI_NO_BUSY_WAIT
-    tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-    tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]));
+#if defined(TMPI_PROFILE) 
+    tMPI_Profile_wait_start(cur);
 #endif
+    tMPI_Spinlock_barrier_wait( &(comm->barrier));
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+    tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
+#endif
+    /* distribute rootbuf */
+    rootbuf=tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[0]));
 
-    /* and now we just copy things back inefficiently. We should make
-       a better tMPI_Scatter, and use that. */
+    /* and now we just copy things back. We know that the root thread 
+       arrives last, so there's no point in using tMPI_Scatter with 
+       copy buffers, etc. */
     if (myrank != 0)
     {
         if (rootbuf==recvbuf)
@@ -273,12 +316,15 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
         }
         memcpy(recvbuf, rootbuf, datatype->size*count );
     }
-#ifndef TMPI_NO_BUSY_WAIT
-    tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-    tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]));
-#endif
 
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+    tMPI_Profile_wait_start(cur);
+#endif
+    tMPI_Spinlock_barrier_wait( &(comm->barrier));
+#if defined(TMPI_PROFILE)
+    tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
+    tMPI_Profile_count_stop(cur, TMPIFN_Allreduce);
+#endif
     return ret;
 }
 

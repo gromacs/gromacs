@@ -96,7 +96,7 @@ init_domain_decomposition(FILE *fplog,
                           gmx_mtop_t *mtop,t_inputrec *ir,
                           matrix box,rvec *x,
                           gmx_ddbox_t *ddbox,
-                          int *npme_major);
+                          int *npme_major, int *npme_minor);
 
 extern void dd_init_bondeds(FILE *fplog,
                             gmx_domdec_t *dd,gmx_mtop_t *mtop,
@@ -226,6 +226,10 @@ extern void dd_make_local_top(FILE *fplog,
                               rvec cellsize_min,ivec npulse,
                               t_forcerec *fr,gmx_vsite_t *vsite,
                               gmx_mtop_t *top,gmx_localtop_t *ltop);
+
+extern void dd_sort_local_top(gmx_domdec_t *dd,t_mdatoms *mdatoms,
+                              gmx_localtop_t *ltop);
+/* Sort ltop->ilist when we are doing free energy. */
 
 extern gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global);
 

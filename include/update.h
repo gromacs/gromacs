@@ -181,15 +181,9 @@ extern void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt);
 extern void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			      double xi[],double vxi[],t_extmass *MassQ);
 
-extern t_state *init_bufstate(int size, int ntc);
+extern t_state *init_bufstate(const t_state *template_state);
 
-
-/*
-extern trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
-			   t_state *state, tensor vir, t_mdatoms *md, 
-			   t_extmass *MassQ, bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep);
-*/
-
+extern void destroy_bufstate(t_state *state);
 
 extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
 			   t_state *state, tensor vir, t_mdatoms *md, 
@@ -197,8 +191,7 @@ extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t 
 
 extern int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, bool bTrotter); 
 
-
-extern real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ);
+extern real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
 extern void NBaroT_trotter(t_grpopts *opts, real dt,
@@ -212,9 +205,8 @@ extern void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 extern real vrescale_energy(t_grpopts *opts,double therm_integral[]);
 /* Returns the V-rescale contribution to the conserved energy */
 
-
-/* Set reference temp for simulated annealing at time t*/
 extern void update_annealing_target_temp(t_grpopts *opts,real t); 
+/* Set reference temp for simulated annealing at time t*/
 
 extern real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */

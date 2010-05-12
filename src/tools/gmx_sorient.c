@@ -322,7 +322,7 @@ int gmx_sorient(int argc,char *argv[])
   
   sprintf(str,"Solvent orientation between %g and %g nm",rmin,rmax);
   fp=xvgropen(opt2fn("-o",NFILE,fnm), str,"cos(\\8q\\4\\s1\\N)","",oenv); 
-  if (get_print_xvgr_codes(oenv))
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"average shell size %.1f molecules\"\n",nav);
   for(i=0; i<nbin1; i++) {
     fprintf(fp,"%g %g\n",(i+0.5)*binwidth-1,2*normfac*hist1[i]);
@@ -331,7 +331,7 @@ int gmx_sorient(int argc,char *argv[])
   
   sprintf(str,"Solvent normal orientation between %g and %g nm",rmin,rmax);
   fp=xvgropen(opt2fn("-no",NFILE,fnm), str,"cos(\\8q\\4\\s2\\N)","",oenv);
-  if (get_print_xvgr_codes(oenv))
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"average shell size %.1f molecules\"\n",nav);
   for(i=0; i<nbin2; i++) {
     fprintf(fp,"%g %g\n",(i+0.5)*binwidth,normfac*hist2[i]);
@@ -341,7 +341,7 @@ int gmx_sorient(int argc,char *argv[])
   
   sprintf(str,"Solvent orientation");
   fp=xvgropen(opt2fn("-ro",NFILE,fnm),str,"r (nm)","",oenv);
-  if (get_print_xvgr_codes(oenv))
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"as a function of distance\"\n");
   xvgr_legend(fp,2,legr,oenv);
   for(i=0; i<nrbin; i++)
@@ -352,7 +352,7 @@ int gmx_sorient(int argc,char *argv[])
   
   sprintf(str,"Cumulative solvent orientation");
   fp=xvgropen(opt2fn("-co",NFILE,fnm),str,"r (nm)","",oenv);
-  if (get_print_xvgr_codes(oenv))
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"as a function of distance\"\n");
   xvgr_legend(fp,2,legc,oenv);
   normfac = 1.0/(nrefgrp*nf);
@@ -368,7 +368,7 @@ int gmx_sorient(int argc,char *argv[])
 
   sprintf(str,"Solvent distribution");
   fp=xvgropen(opt2fn("-rc",NFILE,fnm),str,"r (nm)","molecules/nm",oenv);
-  if (get_print_xvgr_codes(oenv))
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"as a function of distance\"\n");
   normfac = 1.0/(rbinw*nf);
   for(i=0; i<nrbin; i++) {

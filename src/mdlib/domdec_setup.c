@@ -25,10 +25,10 @@
 #include "network.h"
 #include "perf_est.h"
 #include "physics.h"
-#include "pme.h"
 #include "smalloc.h"
 #include "typedefs.h"
 #include "vec.h"
+#include "names.h"
 
 /* Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
@@ -65,20 +65,34 @@ static bool fits_pme_ratio(int nnodes,int npme,float ratio)
     return ((double)npme/(double)nnodes > 0.95*ratio); 
 }
 
-static bool fits_pme_perf(FILE *fplog,
-						  t_inputrec *ir,matrix box,gmx_mtop_t *mtop,
-						  int nnodes,int npme,float ratio)
+static bool fits_pp_pme_perf(FILE *fplog,
+                             t_inputrec *ir,matrix box,gmx_mtop_t *mtop,
+                             int nnodes,int npme,float ratio)
 {
+    int ndiv,*div,*mdiv,ldiv;
+
+    ndiv = factorize(nnodes-npme,&div,&mdiv);
+    ldiv = div[ndiv-1];
+    sfree(div);
+    sfree(mdiv);
+    /* The check below gives a reasonable division:
+     * factor 5 allowed at 5 or more PP nodes,
+     * factor 7 allowed at 49 or more PP nodes.
+     */
+    if (ldiv > 3 + (int)(pow(nnodes-npme,1.0/3.0) + 0.5))
+    {
+        return FALSE;
+    }
+
     /* Does this division gives a reasonable PME load? */
-    return (fits_pme_ratio(nnodes,npme,ratio) &&
-			pme_inconvenient_nnodes(ir->nkx,ir->nky,npme) <= 1);
+    return fits_pme_ratio(nnodes,npme,ratio);
 }
 
 static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
 					  int nnodes)
 {
 	float ratio;
-	int  npme,nkx,nky,ndiv,*div,*mdiv,ldiv;
+	int  npme,nkx,nky;
 	t_inputrec ir_try;
 	
 	ratio = pme_load_estimate(mtop,ir,box);
@@ -103,14 +117,18 @@ static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
         return 0;
     }
 
-    /* First try to find npme as a factor of nnodes up to nnodes/3 */
-	npme = 1;
+    /* First try to find npme as a factor of nnodes up to nnodes/3.
+     * We start with a minimum PME node fraction of 1/16
+     * and avoid ratios which lead to large prime factors in nnodes-npme.
+     */
+    npme = (nnodes + 15)/16;
     while (npme <= nnodes/3) {
-        if (nnodes % npme == 0) {
+        if (nnodes % npme == 0)
+        {
             /* Note that fits_perf might change the PME grid,
              * in the current implementation it does not.
              */
-            if (fits_pme_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
+            if (fits_pp_pme_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
 			{
 				break;
 			}
@@ -123,20 +141,10 @@ static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
         npme = 1;
         while (npme <= nnodes/2)
         {
-            ndiv = factorize(nnodes-npme,&div,&mdiv);
-            ldiv = div[ndiv-1];
-            sfree(div);
-            sfree(mdiv);
-            /* Only use this value if nnodes-npme does not have
-             * a large prime factor (5 y, 7 n, 14 n, 15 y).
-             */
-            if (ldiv <= 3 + (int)(pow(nnodes-npme,1.0/3.0) + 0.5))
+            /* Note that fits_perf may change the PME grid */
+            if (fits_pp_pme_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
             {
-                /* Note that fits_perf may change the PME grid */
-                if (fits_pme_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
-                {
-                    break;
-                }
+                break;
             }
             npme++;
         }
@@ -183,6 +191,11 @@ static int lcd(int n1,int n2)
   return d;
 }
 
+static int div_up(int n,int f)
+{
+    return (n + f - 1)/f;
+}
+
 real comm_box_frac(ivec dd_nc,real cutoff,gmx_ddbox_t *ddbox)
 {
     int  i,j,k,npp;
@@ -219,20 +232,26 @@ real comm_box_frac(ivec dd_nc,real cutoff,gmx_ddbox_t *ddbox)
             }
         }
     }
-    /* Normalize by the number of PP nodes */
-    comm_vol /= npp;
    
     return comm_vol;
 }
 
-static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
-                           matrix box,gmx_ddbox_t *ddbox,t_inputrec *ir,
-                           float pbcdxr,
-                           int npme,ivec nc)
+static bool inhomogeneous_z(const t_inputrec *ir)
 {
-    int  i,j,k,npp;
+    return ((EEL_PME(ir->coulombtype) || ir->coulombtype==eelEWALD) &&
+            ir->ePBC==epbcXYZ && ir->ewald_geometry==eewg3DC);
+}
+
+static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
+                           matrix box,gmx_ddbox_t *ddbox,
+                           int natoms,t_inputrec *ir,
+                           float pbcdxr,
+                           int npme_tot,ivec nc)
+{
+    ivec npme={1,1,1};
+    int  i,j,k,nk,overlap;
     rvec bt;
-    float comm_vol,comm_vol_pme,cost_pbcdx;
+    float comm_vol,comm_vol_xf,comm_pme,cost_pbcdx;
     /* This is the cost of a pbc_dx call relative to the cost
      * of communicating the coordinate and force of an atom.
      * This will be machine dependent.
@@ -248,6 +267,11 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
         return -1;
     }
     
+    if (inhomogeneous_z(ir) && nc[ZZ] > 1)
+    {
+        return -1;
+    }
+
     /* Check if the triclinic requirements are met */
     for(i=0; i<DIM; i++)
     {
@@ -264,10 +288,8 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
         }
     }
     
-    npp = 1;
     for(i=0; i<DIM; i++)
     {
-        npp *= nc[i];
         bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
         
         /* Without PBC there are no cell size limits with 2 cells */
@@ -276,6 +298,13 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
             return -1;
         }
     }
+
+    if (npme_tot > 1)
+    {
+        /* Will we use 1D or 2D PME decomposition? */
+        npme[XX] = (npme_tot % nc[XX] == 0) ? nc[XX] : npme_tot;
+        npme[YY] = npme_tot/npme[XX];
+    }
     
     /* When two dimensions are (nearly) equal, use more cells
      * for the smallest index, so the decomposition does not
@@ -283,35 +312,64 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
      */
     for(i=0; i<DIM; i++)
     {
-        if (npme == 0 || i != XX)
+        for(j=i+1; j<DIM; j++)
         {
-            for(j=i+1; j<DIM; j++)
+            /* Check if dimension i and j are equivalent,
+             * both for PME and for the box size.
+             * The XX/YY check is a bit compact. If nc[YY]==npme[YY]
+             * this means the swapped nc has nc[XX]=npme[XX],
+             * and we can also swap X and Y for PME.
+             */
+            if (!((i == XX && j == YY && npme[YY] > 1 && nc[YY] != npme[YY]) ||
+                  (i == YY && j == ZZ && npme[YY] > 1)) &&
+                fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
             {
-                if (fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
-                {
-                    return -1;
-                }
+                return -1;
             }
         }
     }
+
+    /* This function determines only half of the communication cost.
+     * All PP, PME and PP-PME communication is symmetric
+     * and the "back"-communication cost is identical to the forward cost.
+     */
     
     comm_vol = comm_box_frac(nc,cutoff,ddbox);
 
-    /* Determine the largest volume that a PME only needs to communicate */
-    comm_vol_pme = 0;
-    if ((npme > 0) && (nc[XX] % npme != 0))
+    comm_pme = 0;
+    for(i=0; i<2; i++)
     {
-        if (nc[XX] > npme)
+        /* Determine the largest volume for PME x/f redistribution */
+        if (nc[i] % npme[i] != 0)
         {
-            comm_vol_pme = (npme==2 ? 1.0/3.0 : 0.5);
+            if (nc[i] > npme[i])
+            {
+                comm_vol_xf = (npme[i]==2 ? 1.0/3.0 : 0.5);
+            }
+            else
+            {
+                comm_vol_xf = 1.0 - lcd(nc[i],npme[i])/(double)npme[i];
+            }
+            comm_pme += 3*natoms*comm_vol_xf;
         }
-        else
+
+        /* Grid overlap communication */
+        if (npme[i] > 1)
         {
-            comm_vol_pme = 1.0 - lcd(nc[XX],npme)/(double)npme;
+            nk = (i==0 ? ir->nkx : ir->nky);
+            overlap = (nk % npme[i] == 0 ? ir->pme_order-1 : ir->pme_order);
+            comm_pme += npme[i]*overlap*ir->nkx*ir->nky*ir->nkz/nk;
         }
-        /* Normalize by the number of PME only nodes */
-        comm_vol_pme /= npme;
     }
+
+    /* PME FFT communication volume.
+     * This only takes the communication into account and not imbalance
+     * in the calculation. But the imbalance in communication and calculation
+     * are similar and therefore these formulas also prefer load balance
+     * in the FFT and pme_solve calculation.
+     */
+    comm_pme += (npme[YY] - 1)*npme[YY]*div_up(ir->nky,npme[YY])*div_up(ir->nkz,npme[YY])*ir->nkx;
+    comm_pme += (npme[XX] - 1)*npme[XX]*div_up(ir->nkx,npme[XX])*div_up(ir->nky,npme[XX])*ir->nkz;
     
     /* Add cost of pbc_dx for bondeds */
     cost_pbcdx = 0;
@@ -320,29 +378,30 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
         if ((ddbox->tric_dir[XX] && nc[XX] == 1) ||
             (ddbox->tric_dir[YY] && nc[YY] == 1))
         {
-            cost_pbcdx = pbcdxr*pbcdx_tric_fac/npp;
+            cost_pbcdx = pbcdxr*pbcdx_tric_fac;
         }
         else
         {
-            cost_pbcdx = pbcdxr*pbcdx_rect_fac/npp;
+            cost_pbcdx = pbcdxr*pbcdx_rect_fac;
         }
     }
     
     if (debug)
     {
         fprintf(debug,
-                "nc %2d %2d %2d vol pp %6.4f pbcdx %6.4f pme %6.4f tot %6.4f\n",
-                nc[XX],nc[YY],nc[ZZ],
-                comm_vol,cost_pbcdx,comm_vol_pme,
-                comm_vol + cost_pbcdx + comm_vol_pme);
+                "nc %2d %2d %2d %2d %2d vol pp %6.4f pbcdx %6.4f pme %9.3e tot %9.3e\n",
+                nc[XX],nc[YY],nc[ZZ],npme[XX],npme[YY],
+                comm_vol,cost_pbcdx,comm_pme,
+                3*natoms*(comm_vol + cost_pbcdx) + comm_pme);
     }
     
-    return comm_vol + cost_pbcdx + comm_vol_pme;
+    return 3*natoms*(comm_vol + cost_pbcdx) + comm_pme;
 }
 
 static void assign_factors(gmx_domdec_t *dd,
                            real limit,real cutoff,
-                           matrix box,gmx_ddbox_t *ddbox,t_inputrec *ir,
+                           matrix box,gmx_ddbox_t *ddbox,
+                           int natoms,t_inputrec *ir,
                            float pbcdxr,int npme,
                            int ndiv,int *div,int *mdiv,ivec ir_try,ivec opt)
 {
@@ -351,9 +410,11 @@ static void assign_factors(gmx_domdec_t *dd,
     
     if (ndiv == 0)
     {
-        ce = comm_cost_est(dd,limit,cutoff,box,ddbox,ir,pbcdxr,npme,ir_try);
+        ce = comm_cost_est(dd,limit,cutoff,box,ddbox,
+                           natoms,ir,pbcdxr,npme,ir_try);
         if (ce >= 0 && (opt[XX] == 0 ||
-                        ce < comm_cost_est(dd,limit,cutoff,box,ddbox,ir,pbcdxr,
+                        ce < comm_cost_est(dd,limit,cutoff,box,ddbox,
+                                           natoms,ir,pbcdxr,
                                            npme,opt)))
         {
             copy_ivec(ir_try,opt);
@@ -380,7 +441,7 @@ static void assign_factors(gmx_domdec_t *dd,
             }
             
             /* recurse */
-            assign_factors(dd,limit,cutoff,box,ddbox,ir,pbcdxr,npme,
+            assign_factors(dd,limit,cutoff,box,ddbox,natoms,ir,pbcdxr,npme,
                            ndiv-1,div+1,mdiv+1,ir_try,opt);
             
             for(i=0; i<mdiv[0]-x-y; i++)
@@ -469,6 +530,11 @@ static real optimize_ncells(FILE *fplog,
     {
         fprintf(fplog,"Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm\n",npp,limit);
 
+        if (inhomogeneous_z(ir))
+        {
+            fprintf(fplog,"Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, will not decompose in z.\n",eewg_names[ir->ewald_geometry]);
+        }
+
         if (limit > 0)
         {
             fprintf(fplog,"The maximum allowed number of cells is:");
@@ -478,6 +544,10 @@ static real optimize_ncells(FILE *fplog,
                 if (d >= ddbox->npbcdim && nmax < 2)
                 {
                     nmax = 2;
+                }
+                if (d == ZZ && inhomogeneous_z(ir))
+                {
+                    nmax = 1;
                 }
                 fprintf(fplog," %c %d",'X' + d,nmax);
             }
@@ -497,7 +567,7 @@ static real optimize_ncells(FILE *fplog,
     itry[YY] = 1;
     itry[ZZ] = 1;
     clear_ivec(nc);
-    assign_factors(dd,limit,cutoff,box,ddbox,ir,pbcdxr,
+    assign_factors(dd,limit,cutoff,box,ddbox,mtop->natoms,ir,pbcdxr,
                    npme,ndiv,div,mdiv,itry,nc);
     
     sfree(div);
@@ -530,8 +600,7 @@ real dd_choose_grid(FILE *fplog,
             }
             else
             {
-                if (cr->nnodes < 12 &&
-                    pme_inconvenient_nnodes(ir->nkx,ir->nky,cr->nnodes) == 0)
+                if (cr->nnodes <= 10)
                 {
                     cr->npmenodes = 0;
                 }

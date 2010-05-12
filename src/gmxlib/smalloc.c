@@ -49,7 +49,9 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "main.h"
-
+#ifdef WITH_DMALLOC
+#include "dmalloc.h"
+#endif
 
 #ifdef DEBUG
 static void log_action(int bMal,const char *what,const char *file,int line,

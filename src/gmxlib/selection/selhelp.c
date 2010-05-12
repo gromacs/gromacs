@@ -49,8 +49,24 @@ typedef struct {
 static const char *help_common[] = {
     "SELECTION HELP[PAR]",
 
+    "This program supports selections in addition to traditional index files.",
     "Please read the subtopic pages (available through \"help topic\") for",
     "more information.",
+    "Explanation of command-line arguments for specifying selections can be",
+    "found under the \"cmdline\" subtopic, and general selection syntax is",
+    "described under \"syntax\". Available keywords can be found under",
+    "\"keywords\", and concrete examples under \"examples\".",
+    "Other subtopics give more details on certain aspects.",
+    "\"help all\" prints the help for all subtopics.",
+};
+
+static const char *help_arithmetic[] = {
+    "ARITHMETIC EXPRESSIONS IN SELECTIONS[PAR]",
+
+    "Basic arithmetic evaluation is supported for numeric expressions.",
+    "Supported operations are addition, subtraction, negation, multiplication,",
+    "division, and exponentiation (using ^).",
+    "Result of a division by zero or other illegal operations is undefined.",
 };
 
 static const char *help_cmdline[] = {
@@ -116,6 +132,40 @@ static const char *help_eval[] = {
     "a major problem.",
 };
 
+static const char *help_examples[] = {
+    "SELECTION EXAMPLES[PAR]",
+
+    "Below, examples of increasingly complex selections are given.[PAR]",
+
+    "Selection of all water oxygens:[BR]",
+    "  resname SOL and name OW",
+    "[PAR]",
+
+    "Centers of mass of residues 1 to 5 and 10:[BR]",
+    "  res_com of resnr 1 to 5 10",
+    "[PAR]",
+
+    "All atoms farther than 1 nm of a fixed position:[BR]",
+    "  not within 1 of (1.2, 3.1, 2.4)",
+    "[PAR]",
+
+    "All atoms of a residue LIG within 0.5 nm of a protein (with a custom name):[BR]",
+    "  \"Close to protein\" resname LIG and within 0.5 of group \"Protein\"",
+    "[PAR]",
+
+    "All protein residues that have at least one atom within 0.5 nm of a residue LIG:[BR]",
+    "  group \"Protein\" and same residue as within 0.5 of resname LIG",
+    "[PAR]",
+
+    "All RES residues whose COM is between 2 and 4 nm from the COM of all of them:[BR]",
+    "  rdist = res_com distance from com of resname RES[BR]",
+    "  resname RES and rdist >= 2 and rdist <= 4",
+    "[PAR]",
+
+    "Selection like C1 C2 C2 C3 C3 C4 ... C8 C9 (e.g., for g_bond):[BR]",
+    "  name \"C[1-8]\" merge name \"C[2-9]\"",
+};
+
 static const char *help_keywords[] = {
     "SELECTION KEYWORDS[PAR]",
 
@@ -127,13 +177,11 @@ static const char *help_keywords[] = {
 static const char *help_limits[] = {
     "SELECTION LIMITATIONS[PAR]",
 
-    "Arithmetic expressions are not implemented.[PAR]",
-
     "Some analysis programs may require a special structure for the input",
     "selections (e.g., [TT]g_angle[tt] requires the index group to be made",
     "of groups of three or four atoms).",
     "For such programs, it is up to the user to provide a proper selection",
-    "expression that always returns such positions.[PAR]",
+    "expression that always returns such positions.",
 };
 
 static const char *help_positions[] = {
@@ -243,13 +291,15 @@ static const char *help_syntax[] = {
 };
 
 static const t_selection_help_item helpitems[] = {
-    {NULL,          asize(help_common),    help_common},
-    {"cmdline",     asize(help_cmdline),   help_cmdline},
-    {"evaluation",  asize(help_eval),      help_eval},
-    {"keywords",    asize(help_keywords),  help_keywords},
-    {"limitations", asize(help_limits),    help_limits},
-    {"positions",   asize(help_positions), help_positions},
-    {"syntax",      asize(help_syntax),    help_syntax},
+    {NULL,          asize(help_common),     help_common},
+    {"cmdline",     asize(help_cmdline),    help_cmdline},
+    {"syntax",      asize(help_syntax),     help_syntax},
+    {"positions",   asize(help_positions),  help_positions},
+    {"arithmetic",  asize(help_arithmetic), help_arithmetic},
+    {"keywords",    asize(help_keywords),   help_keywords},
+    {"evaluation",  asize(help_eval),       help_eval},
+    {"limitations", asize(help_limits),     help_limits},
+    {"examples",    asize(help_examples),   help_examples},
 };
 
 /*! \brief
@@ -284,7 +334,14 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
             }
             else
             {
-                fprintf(stderr, "%s\n", method->name);
+                const char *symname = _gmx_sel_sym_name(symbol);
+
+                fprintf(stderr, "%s", symname);
+                if (strcmp(symname, method->name) != 0)
+                {
+                    fprintf(stderr, " (synonym for %s)", method->name);
+                }
+                fprintf(stderr, "\n");
             }
         }
         symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
@@ -301,13 +358,26 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
 void
 _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
 {
-    const t_selection_help_item *item = 0;
+    const t_selection_help_item *item = NULL;
     int  i;
 
     /* Find the item for the topic */
     if (!topic)
     {
         item = &helpitems[0];
+    }
+    else if (strcmp(topic, "all") == 0)
+    {
+        for (i = 0; i < asize(helpitems); ++i)
+        {
+            item = &helpitems[i];
+            _gmx_sel_print_help(sc, item->topic);
+            if (i != asize(helpitems) - 1)
+            {
+                fprintf(stderr, "\n\n");
+            }
+        }
+        return;
     }
     else
     {
@@ -316,6 +386,7 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
             if (strncmp(helpitems[i].topic, topic, strlen(topic)) == 0)
             {
                 item = &helpitems[i];
+                break;
             }
         }
     }
@@ -347,10 +418,20 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
     /* Special handling of certain pages */
     if (!topic)
     {
+        int len = 0;
+
         /* Print the subtopics on the main page */
         fprintf(stderr, "\nAvailable subtopics:\n");
         for (i = 1; i < asize(helpitems); ++i)
         {
+            int len1 = strlen(helpitems[i].topic) + 2;
+
+            len += len1;
+            if (len > 79)
+            {
+                fprintf(stderr, "\n");
+                len = len1;
+            }
             fprintf(stderr, "  %s", helpitems[i].topic);
         }
         fprintf(stderr, "\n");

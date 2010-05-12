@@ -35,6 +35,11 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -49,12 +54,11 @@ files.
 #include <string.h>
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
 #include <sys/time.h>
+
 #endif
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
+
+#include "impl.h"
 
 #ifdef TMPI_TRACE
 #include <stdarg.h>
@@ -102,6 +106,12 @@ static void tMPI_Start_threads(int N, int *argc, char ***argv,
       struct tmpi_starter_, which calls main() if tmpi_start_.fn == NULL */
 static void* tMPI_Thread_starter(void *arg);
 
+/* allocate and initialize the data associated with a thread structure */
+static void tMPI_Thread_init(struct tmpi_thread *th);
+/* deallocate the data associated with a thread structure */
+static void tMPI_Thread_destroy(struct tmpi_thread *th);
+
+
 
 
 #ifdef TMPI_TRACE
@@ -129,6 +139,7 @@ void tMPI_Trace_print(const char *fmt, ...)
 void *tMPI_Malloc(size_t size)
 {
     void *ret=(void*)malloc(size);
+
     if (!ret)
     {
         tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
@@ -201,9 +212,9 @@ tMPI_Comm tMPI_Get_comm_self(void)
 int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
 {
     int i;
-    int ret=TMPI_FAILURE;
+    int ret=TMPI_SUCCESS;
 
-    *nthreads=1;
+    *nthreads=0;
     if (!optname)
     {
         i=0;
@@ -225,33 +236,24 @@ int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
         *nthreads=strtol((*argv)[i+1], &end, 10);
         if ( !end || (*end != 0) )
         {
-            *nthreads=1;
-        }
-        else if (*nthreads > 0)
-        {
-            ret=TMPI_SUCCESS;
+            *nthreads=0;
+            ret=TMPI_FAILURE;
         }
     }
     if (*nthreads<1)
-        *nthreads=1;
+    {
+        *nthreads=tMPI_Get_recommended_nthreads();
+    }
+
     return ret;
 }
 
-
-static void* tMPI_Thread_starter(void *arg)
+static void tMPI_Thread_init(struct tmpi_thread *th)
 {
-    struct tmpi_thread *th=(struct tmpi_thread*)arg;
-    int N_envelopes=(Nthreads+1)*(Nthreads+1)*N_EV_ALLOC;  
-    int N_send_envelopes=(Nthreads+1)*N_EV_ALLOC;  
-    int N_reqs=(Nthreads+1)*(Nthreads+1)*N_EV_ALLOC;  
+    int N_envelopes=(Nthreads+1)*N_EV_ALLOC;  
+    int N_send_envelopes=N_EV_ALLOC;  
+    int N_reqs=(Nthreads+1)*N_EV_ALLOC;  
     int i;
-
-    tMPI_Thread_setspecific(id_key, arg);
-
-
-#ifdef TMPI_TRACE
-    tMPI_Trace_print("Created thread nr. %d", (int)(th-threads));
-#endif
 
     /* allocate comm.self */
     th->self_comm=tMPI_Comm_alloc(TMPI_COMM_WORLD, 1);
@@ -268,40 +270,104 @@ static void* tMPI_Thread_starter(void *arg)
     {
         tMPI_Send_env_list_init( &(th->evs[i]), N_send_envelopes);
     }
-#ifndef TMPI_NO_BUSY_WAIT
-    tMPI_Atomic_set( &(th->evs_new_incoming), 0);
-#else
-    tMPI_Thread_mutex_init( &(th->ev_check_lock ) );
-    tMPI_Thread_cond_init( &(th->ev_check_cond ) );
-    th->evs_new_incoming=0;
-    th->ev_received=0;
-#endif
+
+    tMPI_Atomic_set( &(th->ev_outgoing_received), 0);
+
+    tMPI_Event_init( &(th->p2p_event) );
 
     /* allocate requests */
     tMPI_Req_list_init(&(th->rql), N_reqs);
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* allcate copy_buffer list */
-    tMPI_Copy_buffer_list_init(&(th->cbl_multi), 
-                               (Nthreads+1)*(N_COLL_ENV+1),
+    tMPI_Copy_buffer_list_init(&(th->cbl_multi), (Nthreads+1)*(N_COLL_ENV+1),
                                Nthreads*COPY_BUFFER_SIZE);
 #endif
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_init(&(th->profile));
+#endif
     /* now wait for all other threads to come on line, before we
        start the MPI program */
-    tMPI_Barrier(TMPI_COMM_WORLD);
+    tMPI_Thread_barrier_wait( &(tmpi_global->barrier) );
+}
 
+
+static void tMPI_Thread_destroy(struct tmpi_thread *th)
+{
+    int i;
+
+    tMPI_Recv_env_list_destroy( &(th->evr));
+    for(i=0;i<Nthreads;i++)
+    {
+        tMPI_Send_env_list_destroy( &(th->evs[i]));
+    }
+    free(th->evs);
+    tMPI_Free_env_list_destroy( &(th->envelopes) );
+    tMPI_Event_destroy( &(th->p2p_event) );
+    tMPI_Req_list_destroy( &(th->rql) );
+
+#ifdef USE_COLLECTIVE_COPY_BUFFER
+    tMPI_Copy_buffer_list_destroy(&(th->cbl_multi));
+#endif
+
+    for(i=0;i<th->argc;i++)
+    {
+        free(th->argv[i]);
+    }
+}
+
+static void tMPI_Global_init(struct tmpi_global *g, int Nthreads)
+{
+    g->usertypes=NULL;
+    g->N_usertypes=0;
+    g->Nalloc_usertypes=0;
+    tMPI_Thread_mutex_init(&(g->timer_mutex));
+    tMPI_Spinlock_init(&(g->datatype_lock));
+
+    tMPI_Thread_barrier_init( &(g->barrier), Nthreads);
+
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
+    /* the time at initialization. */
+    gettimeofday( &(g->timer_init), NULL);
+#else
+    /* the time at initialization. */
+    g->timer_init=GetTickCount();
+#endif
+
+}
+
+static void tMPI_Global_destroy(struct tmpi_global *g)
+{
+    tMPI_Thread_mutex_destroy(&(g->timer_mutex));
+}
+
+
+
+
+static void* tMPI_Thread_starter(void *arg)
+{
+    struct tmpi_thread *th=(struct tmpi_thread*)arg;
+    /* we set our thread id, as a thread-specific piece of global data. */
+    tMPI_Thread_setspecific(id_key, arg);
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("Created thread nr. %d", (int)(th-threads));
+#endif
+
+    tMPI_Thread_init(th);
+
+    /* start_fn, start_arg, argc and argv were set by the calling function */ 
     if (! th->start_fn )
+    {
         main(th->argc, th->argv);
+    }
     else
     {
         th->start_fn(th->start_arg);
         if (!tmpi_finalized)
             tMPI_Finalize();
     }
-
-    /* TODO: freeing the thread structures and the mpi_comms still needs to 
-       be implemented. */
 
     return 0;
 }
@@ -314,8 +380,6 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
     tMPI_Trace_print("tMPI_Start_threads(%d, %p, %p, %p, %p)", N, argc,
                        argv, start_fn, start_arg);
 #endif
-
-
     if (N>0) 
     {
         int i;
@@ -326,16 +390,12 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         /* allocate global data */
         tmpi_global=(struct tmpi_global*)
                         tMPI_Malloc(sizeof(struct tmpi_global));
-        tmpi_global->usertypes=NULL;
-        tmpi_global->N_usertypes=0;
-        tmpi_global->Nalloc_usertypes=0;
-        tMPI_Spinlock_init(&(tmpi_global->datatype_lock));
+        tMPI_Global_init(tmpi_global, N);
 
         /* allocate world and thread data */
         threads=(struct tmpi_thread*)tMPI_Malloc(sizeof(struct tmpi_thread)*N);
         TMPI_COMM_WORLD=tMPI_Comm_alloc(NULL, N);
         tMPI_GROUP_EMPTY=tMPI_Group_alloc();
-        TMPI_COMM_WORLD->grp.N=N;
 
         if (tMPI_Thread_key_create(&id_key, NULL))
         {
@@ -395,8 +455,8 @@ int tMPI_Init(int *argc, char ***argv)
 
     if (TMPI_COMM_WORLD==0) /* we're the main process */
     {
-        int N;
-        tMPI_Get_N(argc, argv, "-np", &N);
+        int N=0;
+        tMPI_Get_N(argc, argv, "-nt", &N);
         tMPI_Start_threads(N, argc, argv, NULL, NULL);
     }
     else
@@ -413,6 +473,11 @@ int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg)
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Init_fn(%d, %p, %p)", N, start_function, arg);
 #endif
+
+    if (N<1)
+    {
+        N=tMPI_Get_recommended_nthreads();
+    }
 
     if (TMPI_COMM_WORLD==0 && N>=1) /* we're the main process */
     {
@@ -435,8 +500,6 @@ int tMPI_Initialized(int *flag)
 int tMPI_Finalize(void)
 {
     int i;
-    struct tmpi_thread *th=tMPI_Get_current();
-
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Finalize()");
 #endif
@@ -445,33 +508,24 @@ int tMPI_Finalize(void)
     fflush(stdout);
 #endif
 
-    tMPI_Barrier(TMPI_COMM_WORLD);
-
-    tMPI_Recv_env_list_destroy( &(th->evr));
-    for(i=0;i<Nthreads;i++)
+#ifdef TMPI_PROFILE
     {
-        tMPI_Send_env_list_destroy( &(th->evs[i]));
+        struct tmpi_thread *cur=tMPI_Get_current();
+
+        tMPI_Profile_stop( &(cur->profile) );
+        tMPI_Thread_barrier_wait( &(tmpi_global->barrier) );
+
+        if (tMPI_Is_master())
+        {
+            tMPI_Profiles_summarize(Nthreads, threads);
+        }
     }
-    tMPI_Free_env_list_destroy( &(th->envelopes) );
-    tMPI_Req_list_destroy( &(th->rql) );
-
-#ifdef TMPI_NO_BUSY_WAIT
-    tMPI_Thread_mutex_destroy(&(th->ev_check_lock));
-    tMPI_Thread_cond_destroy(&(th->ev_check_cond));
 #endif
-#ifdef USE_COLLECTIVE_COPY_BUFFER
-    tMPI_Copy_buffer_list_destroy(&(th->cbl_multi));
-#endif
-
-    for(i=0;i<th->argc;i++)
-    {
-        free(th->argv[i]);
-    }
-
+    tMPI_Thread_barrier_wait( &(tmpi_global->barrier) );
 
     if (tMPI_Is_master())
     {
-        tMPI_Comm next;
+
         /* we just wait for all threads to finish; the order isn't very 
            relevant, as all threads should arrive at their endpoints soon. */
         for(i=1;i<Nthreads;i++)
@@ -480,21 +534,36 @@ int tMPI_Finalize(void)
             {
                 tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_FINALIZE);
             }
+            tMPI_Thread_destroy(&(threads[i]));
         }
+        /* at this point, we are the only thread left, so we can 
+           destroy the global structures with impunity. */
+        tMPI_Thread_destroy(&(threads[0]));
         free(threads);
 
-        do
+        tMPI_Thread_key_delete(id_key);
+        /* de-allocate all the comm stuctures. */
         {
-            next=TMPI_COMM_WORLD->next;
-            if (next)
-                tMPI_Comm_destroy(next);
-        } while (next && next!=TMPI_COMM_WORLD);
+            tMPI_Comm cur=TMPI_COMM_WORLD->next;
+            while(cur && (cur!=TMPI_COMM_WORLD) )
+            {
+                tMPI_Comm next=cur->next;
+                tMPI_Comm_destroy(cur);
+                cur=next;
+            }
+            tMPI_Comm_destroy(TMPI_COMM_WORLD);
+        }
 
-        free(tMPI_GROUP_EMPTY);
+        tMPI_Group_free(&tMPI_GROUP_EMPTY);
         threads=0;
         TMPI_COMM_WORLD=NULL;
         tMPI_GROUP_EMPTY=NULL;
         Nthreads=0;
+
+        /* deallocate the 'global' structure */
+        tMPI_Global_destroy(tmpi_global);
+        free(tmpi_global);
+
         tmpi_finalized=TRUE;
     }
     else
@@ -503,6 +572,7 @@ int tMPI_Finalize(void)
     }
     return TMPI_SUCCESS;
 }
+
 
 int tMPI_Finalized(int *flag)
 {
@@ -543,14 +613,13 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode)
         fprintf(stderr, "tMPI_Abort called on main thread with errorcode=%d\n",
                 errorcode);
         fflush(stderr);
-        /*sleep(1);*/
-        abort();
+        exit(errorcode);
     }
     else
     {
         int *ret;
         /* kill myself */
-        fprintf(stderr, "tMPI_Abort called wiht error code %d on thread %d\n", 
+        fprintf(stderr, "tMPI_Abort called with error code %d on thread %d\n", 
                         errorcode, tMPI_This_threadnr());
         fflush(stderr);
         ret=(int*)malloc(sizeof(int));
@@ -615,31 +684,59 @@ int tMPI_Get_processor_name(char *name, int *resultlen)
     return TMPI_SUCCESS;
 }
 
+
+
+
+
 /* TODO: there must be better ways to do this */
 double tMPI_Wtime(void)
 {
     double ret=0;
-#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
-    struct timeval tv;
-        
+
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Wtime()");
 #endif
-    gettimeofday(&tv, NULL);
-    ret=tv.tv_sec + 1000000.*tv.tv_usec;
+
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
+    {
+        struct timeval tv;
+        long int secdiff;
+        int usecdiff;
+
+        gettimeofday(&tv, NULL);
+        secdiff = tv.tv_sec - tmpi_global->timer_init.tv_sec;
+        usecdiff = tv.tv_usec - tmpi_global->timer_init.tv_usec;
+
+        ret=(double)secdiff + 1e-6*usecdiff;
+    }
 #else
-    /* TODO: make timing function work */
+    {
+        DWORD tv=GetTickCount();
+   
+        /* the windows absolute time GetTickCount() wraps around in ~49 days,
+           so it's safer to always use differences, and assume that our
+           program doesn't run that long.. */
+        ret=1e-3*((unsigned int)(tv - tmpi_global->timer_init));
+    }
 #endif
     return ret;
 }
 
-#if 0
 double tMPI_Wtick(void)
 {
-    /* this is just lying: */
-    return 1./10000.;
-}
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
+    /* In Unix, we don't really know. Any modern OS should be at least
+       this precise, though */
+    return 1./100.;
+#else
+    /* According to the Windows documentation, this is about right: */
+    return 1./100.;
 #endif
+}
+
+
+
+
 
 
 
@@ -655,7 +752,6 @@ int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count)
     *count = (int)(status->transferred/datatype->size);
     return TMPI_SUCCESS;
 }
-
 
 
 

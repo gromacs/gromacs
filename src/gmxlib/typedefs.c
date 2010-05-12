@@ -277,6 +277,8 @@ void done_atom (t_atoms *at)
   sfree(at->atom);
   sfree(at->resinfo);
   sfree(at->atomname);
+  sfree(at->atomtype);
+  sfree(at->atomtypeB);
 }
 
 void done_atomtypes(t_atomtypes *atype)
@@ -285,6 +287,7 @@ void done_atomtypes(t_atomtypes *atype)
   sfree(atype->radius);
   sfree(atype->vol);
   sfree(atype->surftens);
+  sfree(atype->atomnumber);
   sfree(atype->gb_radius);
   sfree(atype->S_hct);
 }
@@ -339,8 +342,17 @@ void done_mtop(gmx_mtop_t *mtop,bool bDoneSymtab)
 
 void done_top(t_topology *top)
 {
-  int i;
+  int f;
   
+  sfree(top->idef.functype);
+  sfree(top->idef.iparams);
+  for (f = 0; f < F_NRE; ++f)
+  {
+      sfree(top->idef.il[f].iatoms);
+      top->idef.il[f].iatoms = NULL;
+      top->idef.il[f].nalloc = 0;
+  }
+
   done_atom (&(top->atoms));
 
   /* For GB */
@@ -433,35 +445,59 @@ static void init_energyhistory(energyhistory_t *enh)
   enh->nener        = 0;
 }
 
-void init_gtc_state(t_state *state, int ngtc, int nnhchains)
+void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 {
-    int i,j,ngtcp;
+    int i,j;
 
     state->ngtc = ngtc;
-    state->nnhchains = nnhchains;
-    ngtcp = state->ngtc+1; /* need an extra state for the barostat */
-    if (state->ngtc > 0) {
-        snew(state->nosehoover_xi, state->nnhchains*ngtcp); 
-        snew(state->nosehoover_vxi, state->nnhchains*ngtcp);
-        snew(state->therm_integral, state->ngtc);
-        for(i=0; i<ngtcp; i++) {
-            for (j=0;j<state->nnhchains;j++) {
-                state->nosehoover_xi[i*state->nnhchains + j]  = 0.0;
-                state->nosehoover_vxi[i*state->nnhchains + j]  = 0.0;
+    state->nnhpres = nnhpres;
+    state->nhchainlength = nhchainlength;
+    if (state->ngtc > 0)
+    {
+        snew(state->nosehoover_xi,state->nhchainlength*state->ngtc); 
+        snew(state->nosehoover_vxi,state->nhchainlength*state->ngtc);
+        snew(state->therm_integral,state->ngtc);
+        for(i=0; i<state->ngtc; i++)
+        {
+            for (j=0;j<state->nhchainlength;j++)
+ {
+                state->nosehoover_xi[i*state->nhchainlength + j]  = 0.0;
+                state->nosehoover_vxi[i*state->nhchainlength + j]  = 0.0;
             }
         }
-        for(i=0; i<ngtc; i++) {
+        for(i=0; i<state->ngtc; i++) {
             state->therm_integral[i]  = 0.0;
         }
-    } else {
+    }
+    else
+    {
         state->nosehoover_xi  = NULL;
         state->nosehoover_vxi = NULL;
         state->therm_integral = NULL;
     }
+
+    if (state->nnhpres > 0)
+    {
+        snew(state->nhpres_xi,state->nhchainlength*nnhpres); 
+        snew(state->nhpres_vxi,state->nhchainlength*nnhpres);
+        for(i=0; i<nnhpres; i++) 
+        {
+            for (j=0;j<state->nhchainlength;j++) 
+            {
+                state->nhpres_xi[i*nhchainlength + j]  = 0.0;
+                state->nhpres_vxi[i*nhchainlength + j]  = 0.0;
+            }
+        }
+    }
+    else
+    {
+        state->nhpres_xi  = NULL;
+        state->nhpres_vxi = NULL;
+    }
 }
 
 
-void init_state(t_state *state,int natoms,int ngtc, int nnhchains)
+void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength)
 {
   int i;
 
@@ -474,8 +510,9 @@ void init_state(t_state *state,int natoms,int ngtc, int nnhchains)
   clear_mat(state->box_rel);
   clear_mat(state->boxv);
   clear_mat(state->pres_prev);
-  clear_mat(state->vir_prev);
-  init_gtc_state(state,ngtc,nnhchains);
+  clear_mat(state->svir_prev);
+  clear_mat(state->fvir_prev);
+  init_gtc_state(state,ngtc,nnhpres,nhchainlength);
   state->nalloc = state->natoms;
   if (state->nalloc > 0) {
     snew(state->x,state->nalloc);
@@ -549,6 +586,42 @@ void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b)
     do_box_rel(ir,box_rel,b,FALSE);
 }
 
+void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra)
+{
+    int i;
+    
+    if (natom_extra > 0) 
+    {
+        srenew(atoms->atomname,atoms->nr+natom_extra);
+        srenew(atoms->atom,atoms->nr+natom_extra);
+        if (NULL != atoms->pdbinfo)
+            srenew(atoms->pdbinfo,atoms->nr+natom_extra);
+        if (NULL != atoms->atomtype)
+            srenew(atoms->atomtype,atoms->nr+natom_extra);
+        if (NULL != atoms->atomtypeB)
+            srenew(atoms->atomtypeB,atoms->nr+natom_extra);
+        for(i=atoms->nr; (i<atoms->nr+natom_extra); i++) {
+            atoms->atomname[i] = NULL;
+            memset(&atoms->atom[i],0,sizeof(atoms->atom[i]));
+            if (NULL != atoms->pdbinfo)
+                memset(&atoms->pdbinfo[i],0,sizeof(atoms->pdbinfo[i]));
+            if (NULL != atoms->atomtype)
+                atoms->atomtype[i] = NULL;
+            if (NULL != atoms->atomtypeB)
+                atoms->atomtypeB[i] = NULL;
+        }
+        atoms->nr += natom_extra;
+    }
+    if (nres_extra > 0)
+    {
+        srenew(atoms->resinfo,atoms->nres+nres_extra);
+        for(i=atoms->nres; (i<atoms->nres+nres_extra); i++) {
+            memset(&atoms->resinfo[i],0,sizeof(atoms->resinfo[i]));
+        }
+        atoms->nres += nres_extra;
+    }
+}
+
 void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
 {
   atoms->nr=natoms;
@@ -564,14 +637,47 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
     atoms->pdbinfo=NULL;
 }
 
+t_atoms *copy_t_atoms(t_atoms *src)
+{
+  t_atoms *dst;
+  int i;
+    
+  snew(dst,1);
+  init_t_atoms(dst,src->nr,(NULL != src->pdbinfo));
+  dst->nr = src->nr;
+  if (NULL != src->atomname)
+      snew(dst->atomname,src->nr);
+  if (NULL != src->atomtype)
+      snew(dst->atomtype,src->nr);
+  if (NULL != src->atomtypeB)
+      snew(dst->atomtypeB,src->nr);
+  for(i=0; (i<src->nr); i++) {
+    dst->atom[i] = src->atom[i];
+    if (NULL != src->pdbinfo)
+      dst->pdbinfo[i] = src->pdbinfo[i];
+    if (NULL != src->atomname)
+        dst->atomname[i]  = src->atomname[i];
+    if (NULL != src->atomtype)
+        dst->atomtype[i] = src->atomtype[i];
+    if (NULL != src->atomtypeB)
+        dst->atomtypeB[i] = src->atomtypeB[i];
+  }  
+  dst->nres = src->nres;
+  for(i=0; (i<src->nres); i++) {
+    dst->resinfo[i] = src->resinfo[i];
+  }  
+  return dst;
+}
+
 void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
-			 const char *resname,int resnr,unsigned char ic,
-			 unsigned char chain)
+                         const char *resname,int resnr,unsigned char ic,
+                         unsigned char chain)
 {
   t_resinfo *ri;
 
   ri = &atoms->resinfo[atoms->atom[atom_ind].resind];
   ri->name  = put_symtab(symtab,resname);
+  ri->rtp   = NULL;
   ri->nr    = resnr;
   ri->ic    = ic;
   ri->chain = chain;
