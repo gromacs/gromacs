@@ -3,7 +3,10 @@
 #include "smalloc.h"
 #include "string2.h"
 
+#include "futil.h"
+#include "gmxfio.h"
 #include "hackblock.h"
+#include "resall.h"
 #include "gpp_atomtype.h"
 #include "types/gmx_qhop_types.h"
 #include "gmx_qhop_parm.h"
@@ -20,67 +23,247 @@ qhop_resblocks_t qhop_resblock_init()
   return rb;
 }
 
-/* Scan files for residues/moleculetypes
- * ff - forcefield
- * ffiles - list of extra itp-files to be scanned
- * nfiles - number of extra files
- * res    - list of residues to look for
- * nres   - size of first dimension of res
- */
-qhop_interactions* qhop_scan_rtpitp(char *ff, char **files, int nfiles, char **res, int nres)
+t_idef* qhop_build_interaction_lib(char *ff, qhop_db *qdb, gpp_atomtype_t atype)
 {
-  int i, ni;
-  bool *resfound; /* bolean record of residues found in rtp + extra files. */
-  char *dot;
-  FILE fp;
-  t_symtab symtab;
-  qhop_interactions *qi;
+  FILE *fp;
+  /* Chop up qdb a bit.*/
+  t_restp *rtp = qdb->rtp;
+  int nfiles = qdb->rb.nf;
+/*   char **files = qdb->rb.files; */
+  qhop_res *qres;
+  bool match;
+  int rr, bt, bi, i, m, rb, r,
+    *a[5], ft,  ni, np, read, nbparams=0;
+  size_t lineLen=0;
+  char *dot, format[128];
+  char const nt[]="%s";
+  char pt[MAXFORCEPARAM*2+1];
+  char line[1024], **bparams, *s, bondedname[128], p[MAXFORCEPARAM];
+#define ALL_BPARAMS &ft, &p[0],&p[1],&p[2],&p[3],&p[4],&p[5],&p[6],&p[7],&p[8],&p[9],&p[10],&p[11] /* p[0:MAXFORCEPARAM] */
+  t_idef *idef;
 
-  /* rtp-stuff */
-  bool       bAlldih,HH14,bRemoveDih;
-  int        nrexcl;
-  gpp_atomtype_t atype;
-  int        bts[ebtsNR];
-  t_restp    *restp;
-  t_aa_names *aan;
+  sprintf(pt,"%%i"); /* ftype */
+  for (i=0; i<MAXFORCEPARAM; i++)
+    sprintf(&(pt[i*2+2]),"%%f");
 
-  /* itp-stuff */
+  snew(idef,1);
+  if (strcmp(ff, "ffqamber99sb") != 0)
+    gmx_fatal(FARGS, "Qhop will only work with ffqamber99sb for now.");
+
+  /* We already have the rtp data that we need */
+  
+  /* rtp[].atom                 : Non-bonded stuff
+   *                              ptype, atomnumber, and maybe a few others are not
+   *                              set up as they should at this point.
+   *
+   * rtp[].rb[]                 : The bonded stuff
+   * rtp[].rb[].b.a[]           : The atoms for one bonded interaction
+   * rtp[].rb[].b.s             : If an interaction parameter set is defined in the rtp, 
+   *                              this is where to find it. This is typically a string
+   *                              #defined in ffXXXXbon.itp.
+   *
+   * For now, let's stick to the following:
+   * - All bonded interactions for qhop-related residues have to be set in the rtp-file
+   * - All such definitions are to be found in ffXXXXbon.itp.
+   * This may change later on, so that all force field files are scanned for parmeters,
+   * or this may all go into grompp, but this allows me to go on with other parts of
+   * qhop with less effort. Maybe that allows us to ignore the itp-scanning below for the time being. */
 
 
-  printf("Scanning rtp and itp-files...\n"
-	 "  Will store interaction parameters for protonation events\n"
-	 "  Can not do this for termini just yet.\n");
+  /* How do we store stuff? In a t_idef I guess,
+   * either in the topology itself (t_topology),
+   * or in a separate libry. Let's go for a t_idef
+   * in the qhop_resblocks structure for now. */
 
-  snew(qi,nres);
+  /* Find strings from the rtp file defined in the bonded parameter file. */
 
-  open_symtab(&symtab);
-  aan = get_aa_names();
+  fp = libopen("ffqamber99sbbon.itp");
+  while (get_a_line(fp, &line, 1023)) /* kills comments and leading spaces. */
+    {
+#define BONDED_REC_MIN_LEN 7 /* This is the length of "#define" */
+      read = strlen(line);
+      if (read >= BONDED_REC_MIN_LEN) {
+	if (strncmp(line, "#define", BONDED_REC_MIN_LEN) == 0) {
+	  s = strpbrk(line, " \t"); /* go past the #define token*/
+	  if (s != NULL) {
+	    srenew(bparams, nbparams+1);
+	    bparams[nbparams++] = strdup(s);
+	    /* This stores the whole remainder of the line as a string */
+	  }
+	}
+      }
+#undef BONDED_REC_MIN_LEN
+    }
 
-  snew(resfound, nres);
-  for (i=0; i<nres; i++)
-    resfound = 0;
+  /* now, go through the bonded definitions */
+  for (rr=0; rr<qdb->nrtp; rr++) { /* Different residues. */
+    for (bt=0; bt<ebtsNR; bt++) { /* The different bonded types */
+      for (bi=0; bi<rtp[rr].rb[bt].nb; bi++) { /* All bonded interactions of that type */
+	if (rtp[rr].rb[bt].b[bi].s != NULL) {
+	  for (m=0; m<nbparams; m++) { /* Loop over the macro definitions found in ffXXXbon.itp */
+	    s = bparams[m];
 
-  /* -----------------------------------------.
-   * First scan the rtp.                       \
-   */
-  read_resall(ff, bts, restp, atype, &symtab, &bAlldih, &nrexcl, &HH14, &bRemoveDih);
+	    /* Just match the name to begin with */
+	    if (sscanf(s, " %s", bondedname) > 0) {
+	      if (0 == strcmp(rtp[rr].rb[bt].b[bi].s, bondedname)) { /* We have a match */
+		sprintf(format," %s","%s%s%s%s");
+		memcpy((void *)(format+(+btsNiatoms[bt]*2+1)), (void *)pt, 17);
+	  
+		switch(btsNiatoms[bt])
+		  {
+		  case 2:
+		    np = sscanf(s, format, bondedname,
+				a[0], a[1], ALL_BPARAMS);
+		    break;
+		  case 3:
+		    np = sscanf(s, format, bondedname,
+				a[0], a[1], a[2], ALL_BPARAMS);
+		    break;
+		  case 4:
+		    np = sscanf(s, format, bondedname,
+				a[0], a[1], a[2], a[3], ALL_BPARAMS);
+		    break;
+		  case 5:
+		    np = sscanf(s, format, bondedname,
+				a[0], a[1], a[2], a[3], a[4], ALL_BPARAMS);
+		    break;
+		  default:
+		    /* This reeeeally shouldn't happen, unless a new bonded type is added with more than 5 atoms. */
+		    gmx_fatal(FARGS, "Wrong number of atoms requested: %d", btsNiatoms[bt]);
+		  }
+		/* Build the interaction */
+		if (np > 0)
+		  {
+		    /* We're gonna make constraints outta every bond, at least for now. */
+		    /* What about vsites? Not yet. */
+		    srenew(qdb->rb.ilib, ++qdb->rb.ni);
+		    switch(bt)
+		      {
+		      case ebtsBONDS:			/* bonds */
+			qdb->rb.ilib[ni].constr.dA = p[0];
+			break;
+		      case ebtsANGLES:			/* angles */
+			switch (ft)
+			  {
+			  case 1: /* harmonic */
+			  case 2: /* G96 */
+			    qdb->rb.ilib[ni].harmonic.rA = p[0];
+			    qdb->rb.ilib[ni].harmonic.krA = p[1];
+			    break;
+			  case 3: /* Cross bond-bond */
+			    qdb->rb.ilib[ni].cross_bb.r1e = p[0];
+			    qdb->rb.ilib[ni].cross_bb.r2e = p[1];
+			    qdb->rb.ilib[ni].cross_bb.krr = p[2];
+			    break;
+			  case 4: /* Cross bond-angle */
+			    qdb->rb.ilib[ni].cross_ba.r1e = p[0];
+			    qdb->rb.ilib[ni].cross_ba.r2e = p[1];
+			    qdb->rb.ilib[ni].cross_ba.r3e = p[2];
+			    qdb->rb.ilib[ni].cross_ba.krt = p[3];
+			    break;
+			  case 5: /* UB */
+			    qdb->rb.ilib[ni].u_b.theta  = p[0];
+			    qdb->rb.ilib[ni].u_b.ktheta = p[1];
+			    qdb->rb.ilib[ni].u_b.r13    = p[2];
+			    qdb->rb.ilib[ni].u_b.kUB    = p[3];
+			    break;
+			  case 6: /* qangle */
+			    qdb->rb.ilib[ni].qangle.theta  = p[0];
+			    for (i=0; i<6;i++)
+			      qdb->rb.ilib[ni].qangle.c[i]   = p[i+1];
+			    break;
+			  case 8: /* table */
+			    qdb->rb.ilib[ni].tab.table = (int)p[0];
+			    qdb->rb.ilib[ni].tab.kA    = p[1];
+			    qdb->rb.ilib[ni].tab.kB    = p[2];
+			    break;
+			  default:
+			    gmx_fatal(FARGS, "Unknown angle type.");
+			  }
+			break;
+		      case ebtsPDIHS:			/* proper dihedrals */
+		      case ebtsIDIHS:			/* improper dihedrals */
+			switch (ft)
+			  {
+			  case 1:
+			    qdb->rb.ilib[ni].pdihs.phiA = p[0];
+			    qdb->rb.ilib[ni].pdihs.cpA  = p[1];
+			    qdb->rb.ilib[ni].pdihs.mult = (int)p[2];
+			    break;
+			  case 2: /* improper */
+			    qdb->rb.ilib[ni].harmonic.rA  = p[0];
+			    qdb->rb.ilib[ni].harmonic.krA = p[1];
+			    break;
+			  case 3: /* RB */
+			    for (i=0; i<NR_RBDIHS;i++)
+			      qdb->rb.ilib[ni].rbdihs.rbcA[i] = p[i];
+			    break;
+			  case 5: /* Fourier. Dunno what to do here yet. */
+			    break;
+			  case 8:
+			    qdb->rb.ilib[ni].tab.table = (int)p[0];
+			    qdb->rb.ilib[ni].tab.kA    = p[1];
+			    qdb->rb.ilib[ni].tab.kB    = p[2];
+			    break;
+			  default:
+			    gmx_fatal(FARGS, "Unknown %sdihedral.", bt==ebtsIDIHS ? "improper ":"");
+			  }
+			break;
+		      default:
+			gmx_fatal(FARGS, "In the current implementation of qhop %s are unsupported.", btsNames[bt]);
+		      }
+		    /* find the res in qdb->rb*/
+		    match = FALSE;
+		    for (rb=0; rb<qdb->rb.nrestypes && !match; rb++)
+		      for (r=0; r<qdb->rb.nres[rb] && !match; r++)
+			{
+			  qres = &(qdb->rb.res[rb][r]);
+			  match = (strcmp(rtp[rr].resname, qres->name)==0);
+			  if (match)
+			    {
+			      srenew(qres->ft, qres->nft + 1);
+			      qres->ft[qres->nft] = ni;
+			    }
+			}
+		    if (!match)
+		      gmx_fatal(FARGS, "Residue %s not found in the qhop database.", rtp[rr].resname);
+		    ni++;
+		  }
+		else
+		  {
+		    gmx_fatal(FARGS, "No parameters read!");
+		  }
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
 
-  /* We'll also need some atomtype data. */
-  /*  -  read ffXXXnb.itp */
-  /*  -  read ffXXXbon.itp */
+  ffclose(fp);
 
-  /* rtp scanned.                              /
-   * -----------------------------------------'
-   */
+  /* Add dummy interactions.
+   * We need only two: one for bonds, with rA=0.1nm and one with zeroes all over. */
+
+  qdb->rb.ni+=2;
+  srenew(qdb->rb.ilib, qdb->rb.ni);
+  memset(&(qdb->rb.ilib[qdb->rb.ni-2]), 0, sizeof(t_iparams)*2); /* zeroes all over */
+  qdb->rb.ilib[qdb->rb.ni-2].harmonic.rA = 0.1; /* Dunno if this is needed, but it can sure be used for dummy constraints.
+						 * question is if we need such? */
+
 
   /* -----------------------------------------.
    * Now scan extra itp-files                  \
    */
+#if 0
+  /* Let's ignore this for now, as everything is in the rtp right now. */
   for (i=0; i<nfiles; i++){
     /* determine filetype */
     if (dot = rindex(files[i],'.'))
-      if (!strcmp(".itp", dot))
+      if (strcmp(".itp", dot) == 0)
 	{
+	  /* It's an itp file. */
 	}
       else
 	dot = NULL;
@@ -91,8 +274,7 @@ qhop_interactions* qhop_scan_rtpitp(char *ff, char **files, int nfiles, char **r
   /* itp-files scanned.                        /
    * -----------------------------------------'
    */
-  
-  return qi;
+#endif
 }
 
 /* Add a res to a restype. Requires a set of residues collected in a qhop_res_t. */

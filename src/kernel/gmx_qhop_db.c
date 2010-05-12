@@ -8,18 +8,16 @@
 #include "symtab.h"
 #include "hackblock.h"
 #include "resall.h"
+#include "mdatoms.h"
 #include "types/gmx_qhop_types.h"
 #include "gmx_qhop_parm.h"
 #include "gmx_qhop_xml.h"
 #include "gmx_qhop_db.h"
 
 #define _ERIKS_SPARKLING_NEW_CODE
-
-/* It seems we need afew special copy routines here, since
- * copy_t_restp() doesn't seem to work for our purpouses. */
-
-/* First of all, a safe strdup, copied from hackblock.c more or less. */
-static char *safe_strdup(const char *s)
+#define BUFSIZE 1000
+/* First of all, a safe strdup, more or less copied from hackblock.c. */
+char *safe_strdup(const char *s)
 {
   if (s == NULL)
     return NULL;
@@ -27,7 +25,33 @@ static char *safe_strdup(const char *s)
     return strdup(s);
 }
 
-static void qhop_copy_t_rbondeds(t_rbondeds *s, t_rbondeds *d)
+/* This one was copied from trim_string in symtab.c and modified. */
+char *trim_strndup(const char *s, int maxlen)
+     /*
+      * Returns a pointer to a newly allocated area which contains a copy 
+      * of s without leading or trailing spaces. Strings are
+      * truncated to BUFSIZE positions.
+      */
+{
+  int len,i;
+  if(strlen(s)>(size_t)(maxlen-1))
+    gmx_fatal(FARGS,"Character buffer size too small\n");
+  
+  for (; (*s)&&((*s)==' '); s++);
+  for (len=strlen(s); (len>0); len--) if (s[len-1]!=' ') break;
+  if (len>=BUFSIZE) len=BUFSIZE-1;
+
+  if (s == NULL)
+    return NULL;
+  else
+    return strndup(s, len);
+}
+
+
+/* It seems we need afew special copy routines here, since
+ * copy_t_restp() doesn't seem to work for our purpouses. */
+
+static void qhop_copy_t_rbondeds(t_rbondeds *s, t_rbondeds *d, t_symtab *tab)
 {
   int i,j;
   d->nb = s->nb;
@@ -37,17 +61,19 @@ static void qhop_copy_t_rbondeds(t_rbondeds *s, t_rbondeds *d)
   for (i=0; i<s->nb; i++)
     {
       for(j=0; j<MAXATOMLIST; j++)
-	(d->b[i]).a[j] = safe_strdup((s->b[i]).a[j]);
-      (d->b[i]).s = safe_strdup((s->b[i]).s);
+	(d->b[i]).a[j] = *(put_symtab(tab,(s->b[i]).a[j]));
+      (d->b[i]).s = *(put_symtab(tab, (s->b[i]).s));
     }
 }
 
-static void qhop_copy_t_restp(t_restp *src, t_restp *dest)
+static void qhop_copy_t_restp(t_restp *src, t_restp *dest, t_symtab *tab)
 {
-  int i;
-  dest->resname = src->resname;
+  int i, j;
+  dest->resname = *(put_symtab(tab,src->resname));
   dest->natom = src->natom;
   snew(dest->atom, dest->natom);
+  snew(dest->atomname, dest->natom);
+    
   for (i=0; i<dest->natom; i++)
     {
       dest->atom[i].m           = src->atom[i].m;
@@ -57,19 +83,154 @@ static void qhop_copy_t_restp(t_restp *src, t_restp *dest)
       dest->atom[i].ptype       = src->atom[i].ptype;
       dest->atom[i].resind      = src->atom[i].resind;
       dest->atom[i].atomnumber  = src->atom[i].atomnumber;
-      strncpy(dest->atom[i].elem, src->atom[i].elem, 4);
+      strncpy(dest->atom[i].elem, src->atom[i].elem,4);
+
+      snew(dest->atomname[i],1);
+      dest->atomname[i] = put_symtab(tab, *(src->atomname[i]));
     }
-  dest->atomname = src->atomname; /* This points to a symtab */
   snew(dest->cgnr, dest->natom);
   for (i=0; i<dest->natom; i++)
     dest->cgnr[i] = src->cgnr[i];
-  qhop_copy_t_rbondeds(src->rb, dest->rb);
+  qhop_copy_t_rbondeds(src->rb, dest->rb, tab);
 }
+
+/* Checks to see if name refers to an entry in the symtab,
+ * not checking the content but the pointer itself.
+ * Then moves the entry to the symtab, frees the old string data
+ * and has name point to the entry in the symtab.
+ * NOT safe if name points to another symtab, cuz that symtab may be messed up.
+ * USE WITH CARE! */
+/* ****************<  Redundant now. >*************** */
+/* static void safe_move_to_symtab(t_symtab *tab, char *name) */
+/* { */
+/*   t_symbuf *sb=tab->symbuf; */
+/*   bool hit = FALSE; */
+/*   char **newname; */
+/*   if (name[0] != '\0') */
+/*     { */
+/*       fprintf(stderr, "   '%s' encountered\n", name); */
+/*       while (!hit && sb != NULL) */
+/* 	{ */
+/* 	  hit = (*sb->buf == name); */
+/* 	  sb = sb->next; */
+/* 	} */
+/*       /\* Hmm. What if it points to ANOTHER symtab? Make sure that is not the case first. *\/ */
+/*       if (!hit) */
+/* 	{ */
+/* 	  newname = put_symtab(tab, name); */
+/* 	  sfree(name); */
+/* 	  name = *newname; */
+/* 	} */
+/*     } */
+/* } */
+
+/* Moves strings from atomnames and resnames and such to
+ * the symtab if they're not there already.
+ * Will NOT work if some names point to the symtab from the beginning. */
+/* *******************< This is redundant nowadays. >****************** */
+/* static void move_strings_to_symtab(qhop_db_t qdb) */
+/* { */
+/*   t_restp *r; */
+/*   t_symtab *tab = &(qdb->tab); */
+/*   t_symbuf *sb; */
+/*   qhop_resblocks    *rb = &(qdb->rb); */
+/*   qhop_reactant     *qr; */
+/*   int i,j,k,l; */
+/*   bool points_to_tab; */
+/*   pr_symtab(stderr, 2, "Before the move\n", tab); */
+/*   fprintf(stderr, " -- RESIDUES --\n"); */
+/*   /\* Residues *\/ */
+/*   for (i=0; i<qdb->nrtp; i++) */
+/*     { */
+/*       r = &(qdb->rtp[i]); */
+/*       safe_move_to_symtab(tab, r->resname); */
+/*       for (j=0; j<r->natom; j++) */
+/* 	safe_move_to_symtab(tab, *(r->atomname[j])); */
+/*     } */
+
+/*   fprintf(stderr, " -- INTERACTIONS --\n"); */
+/*   /\* Interactions *\/ */
+
+/*   for (i=0; i<rb->nf; i++) */
+/*     safe_move_to_symtab(tab, rb->files[i]); */
+  
+/*   /\* Resblocks *\/ */
+
+/*   for (i=0; i<rb->nrestypes; i++) */
+/*     { */
+/*       safe_move_to_symtab(tab, rb->restype[i]); */
+/*       for (j=0; j<rb->nres[i]; j++) */
+/* 	{ */
+/* 	  /\* Qhop_res *\/ */
+/* 	  safe_move_to_symtab(tab, rb->res[i][j].name); */
+
+/* 	  /\* Acceptors *\/ */
+/* 	  for (k=0; k<rb->res[i][j].na; k++) */
+/* 	    { */
+/* 	      qr = &(rb->res[i][j].acc[k]); */
+
+/* 	      /\*safe_move_to_symtab(tab, qr[k].name);*\/ */
+/* 	      safe_move_to_symtab(tab, qr[k].product); */
+/* 	      for (l=0; l<qr[k].nH; l++) */
+/* 		{ */
+/* 		  /\* Acceptor hydrogens *\/ */
+/* 		  safe_move_to_symtab(tab, qr[k].H[l]); */
+/* 		} */
+/* 	    } */
+
+/* 	  /\* Donors *\/ */
+/* 	  for (k=0; k<rb->res[i][j].nd; k++) */
+/* 	    { */
+/* 	      qr = &(rb->res[i][j].don[k]); */
+	  
+/* 	      /\*safe_move_to_symtab(tab, qr[k].name);*\/ */
+/* 	      safe_move_to_symtab(tab, qr[k].product); */
+/* 	      for (l=0; l<qr[k].nH; l++) */
+/* 		{ */
+/* 		  /\* Donor hydrogens *\/ */
+/* 		  safe_move_to_symtab(tab, qr[k].H[l]); */
+/* 		} */
+/* 	    } */
+	    
+/* 	} */
+/*     } */
+/*   pr_symtab(stderr, 2, "After the move\n", tab); */
+/* } */
+
+void set_reactant_products(qhop_db *qdb)
+{
+  int rb, r, p, reac, nreac[2], i;
+  qhop_reactant *da;
+  for (rb=0; rb<qdb->rb.nrestypes; rb++)
+    {
+      for (r=0; r<qdb->rb.nres[rb]; r++)
+	{
+	  nreac[0] = qdb->rb.res[rb][r].na;
+	  nreac[1] = qdb->rb.res[rb][r].nd;
+
+	  for (i=0; i<2; i++) /* Acceptors and donors */
+	    {
+	      da = (i==0) ? qdb->rb.res[rb][r].acc : qdb->rb.res[rb][r].don;
+	      for (reac=0; reac<nreac[i]; reac++)
+		for (p=0; p<qdb->rb.nres[rb]; p++)
+		  if (p!=r)
+		    if (strcmp(da[reac].product, qdb->rb.res[rb][p].name) == 0)
+		      { /* This is the product. Set the pointer and proceed
+			 * with the other acceptors/donors */
+			da[reac].productdata = &(qdb->rb.res[rb][p]);
+			break;
+		      }
+	    }
+	}
+    }
+}
+  
 
 
 /* Takes a rtp database and picks out the residues found in qdb->rb->res[][].
- * The resulting slice is stored in qdb->rtp, and its size in qdb->nrtp. */
-static void strip_rtp(char *ff, qhop_db_t qdb, t_restp *bigrtp, int nbigrtp)
+ * The resulting slice is stored in qdb->rtp, and its size in qdb->nrtp.
+ * Move strings to symtab in qdb. */
+static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 {
   printf("trim the rtp\n");
   int i,rt,r,a;
@@ -79,11 +240,11 @@ static void strip_rtp(char *ff, qhop_db_t qdb, t_restp *bigrtp, int nbigrtp)
     {
       fprintf(stderr, "rtp entry no %d", i);
       match = FALSE;
-      for (rt=0; rt<qdb->rb->nrestypes && !match; rt++) /* resblock */
+      for (rt=0; rt<qdb->rb.nrestypes && !match; rt++) /* resblock */
 	{
-	  for (r=0; r<qdb->rb->nres[rt] && !match; r++) /* res */
+	  for (r=0; r<qdb->rb.nres[rt] && !match; r++) /* res */
 	    {
-	      if (match = ((strcmp(bigrtp[i].resname, qdb->rb->res[rt][r].name) == 0)))
+	      if (match = ((strcmp(bigrtp[i].resname, qdb->rb.res[rt][r].name) == 0)))
 		{
 		  fprintf(stderr, " FOUND!");
 		  /* Keep this entry */
@@ -95,17 +256,51 @@ static void strip_rtp(char *ff, qhop_db_t qdb, t_restp *bigrtp, int nbigrtp)
 		  /* Copy content, don't trust copy t_restp. */
 		  /* copy_t_restp(&bigrtp[i], &(qdb->rtp[qdb->nrtp++])); */
 		  
-		  qhop_copy_t_restp(&(bigrtp[i]), &(qdb->rtp[(qdb->nrtp)++]));
-		  
+		  qhop_copy_t_restp(&(bigrtp[i]), &(qdb->rtp[(qdb->nrtp)++]), &(qdb->tab));
 		}
 	    }
 	}
       fprintf(stderr, "\n");
     }
+}
 
-  /* This will perhaps lead to some redundant interactions,
-   * but as they're quite small, memory wise, it's not much of a
-   * problem at this point. */
+static int init_qhop_H_exist(gmx_mtop_t *top, t_mdatoms *mda, qhop_H_exist *Hext)
+{
+  
+  int a, nH = 0, n;
+  char *H;
+  atom_id *H2atomid;
+  int *atomid2H;
+  t_atom *atom;
+  n = mda->nr;
+  snew(atomid2H, n);
+  /* Find the hydrogens */  
+  for (a=0; a<n; a++)
+    {
+      atomid2H[a] = -1;
+      gmx_mtop_atomnr_to_atom(top,a,&atom);
+      
+      if (atom->atomnumber == 1 || (atom->atomnumber == NOTSET && atom->elem[0] == 'H' ))
+	{ /* It's a H allright. */
+	  srenew(H, nH+1);
+	  srenew(H2atomid, nH+1);
+	  H[nH] = (char)0;
+	  H2atomid[nH] = a;
+	  atomid2H[a] = nH;
+	  nH++;
+	}
+    }
+  Hext->H = H;
+  Hext->H2atomid = H2atomid;
+  Hext->atomid2H = atomid2H;
+  return nH;
+}
+
+static void clear_qhop_H_exist(qhop_H_exist Hext)
+{
+  sfree(Hext.H);
+  sfree(Hext.H2atomid);
+  sfree(Hext.atomid2H);
 }
 
 /* These routines link to invalid dependencies in kernel/resall.c! */
@@ -228,29 +423,44 @@ void qhop_db_print (qhop_parameters *qhp)
   dump_qhp(stderr, qhp);
 }
 
-static void fill_resblocks(qhop_parameters *qhp, qhop_resblocks_t rb)
-{
-  int i;
-  i = 0;
-}
+/* static void fill_resblocks(qhop_parameters *qhp, qhop_resblocks_t rb) */
+/* { */
+/*   int i; */
+/*   i = 0; */
+/* } */
 
-qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
+qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
 {
   qhop_db_t qdb;
   char buf[256];
   char *fn;
-  int i,j,nrtp;
+  int i,j,nrtp, nah;
   double qtot;
   t_atomtype atype;
   t_restp *bigrtp;
+  t_symtab *stab;
+  t_hackblock *ah;
+
+  snew(stab,1);
+  open_symtab(stab);
 
   snew(qdb,1);
   open_symtab(&(qdb->tab));
-  /*  sprintf(buf,"%s-qhop",forcefield);*/
-  atype = read_atype(forcefield,&(qdb->tab));
+  /*  sprintf(buf,"%s-qhop",
+forcefield);*/
+  atype = read_atype(forcefield,stab);
   nrtp = read_resall(forcefield,qdb->bts,&(bigrtp),atype,
-		     &(qdb->tab),&(qdb->bAllDih),
+		     stab,&(qdb->bAllDih),
 		     &(qdb->nrexcl),&(qdb->bHH14),&(qdb->bRemoveDih));
+
+  nah=read_h_db(forcefield,&ah);
+
+  /* Read termini database too.
+   * Not implemented yet, which is why amber is the
+   * first forcefield to play with. */
+
+  
+
   /* snew(qdb->resinfo,qdb->nrtp); */
 
   /* I'm redoing this part from scratch in a new manner.
@@ -262,10 +472,6 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
 
 
   /* Process rtp-info AFTER reading the ffXXX-qhop.dat */
-#ifndef _ERIKS_SPARKLING_NEW_CODE
-  for(i=0; (i<qdb->nrtp); i++) 
-    fill_resinfo(&qdb->rtp[i],&qdb->resinfo[i]);
-#endif
     
   sprintf(buf,"%s-qhop.dat",forcefield);
   fn = (char *)libfn(buf);
@@ -286,6 +492,13 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
 
   /* Must process the resblocks stuff */
   strip_rtp(forcefield, qdb, bigrtp, nrtp); /* Take away stuff not found in ffXXX-qhop.dat */
+  done_symtab(stab);
+
+  set_reactant_products(qdb);
+  qhop_build_interaction_lib(forcefield, qdb, &atype, &stab);
+
+  /* This should be coded into the xml read instead. */
+  //  move_strings_to_symtab(qdb); /* Copy names to reduced symtab in qdb->tab*/
   printf("free the redundant rtp parts.\n");
   for(i=0; i<nrtp; i++) /* Can't use free_t_restp. Not entirely sure why, though.*/
     {
@@ -296,17 +509,23 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
       sfree(bigrtp[i].cgnr);
     }
 
+  /* init the hydrogen existence array. */
+  qdb->H_map.nH = init_qhop_H_exist(top, mda, &(qdb->H_map));
+  
   done_atomtype(atype);
   sfree(fn);
-  return (qhop_db_t) qdb;
+  return qdb;
 }
 
-int qhop_db_write(char *fn,qhop_db_t qdb)
+int qhop_db_write(char *fn,qhop_db *qdb)
 {
-  qhop_db_t *db = (qhop_db_t *) qdb;
+  /*  qhop_db *db = (qhop_db *) qdb;*/
+  int i;
   FILE *fp;
   
   fp=ffopen(fn,"w");
+/*   for (i ) */
+  
   /*print_resall(fp,db->bts,db->nrtp,db->rtp,db->atype,db->bAllDih,
     db->nrexcl,db->bHH14,db->bRemoveDih);*/
   fclose(fp);
@@ -314,21 +533,39 @@ int qhop_db_write(char *fn,qhop_db_t qdb)
   return 1;
 }
 
+static void clear_qhop_res(qhop_res res)
+{
+  if (res.acc != NULL) sfree(res.acc);
+  if (res.don != NULL) sfree(res.don);
+  if (res.ft  != NULL) sfree(res.ft);
+}
+
+static void clear_qhop_rb(qhop_resblocks rb)
+{
+  /* All stings point to a symtab, so don't bother sfreeing them here */
+  int rt, r, f;
+  for (rt=0; rt<rb.nrestypes; rt++)
+    {
+      for (r=0; r<rb.nres[rt]; r++)
+	{
+	  clear_qhop_res(rb.res[rt][r]);
+	}
+    }
+  if (rb.restype != NULL) sfree(rb.restype);
+  if (rb.files != NULL) sfree(rb.files);
+  if (rb.ilib != NULL) sfree(rb.ilib);
+}
+
 int qhop_db_done(qhop_db_t qdb)
 {
   int i;
   /* Free a ton of structures. */
   free_t_restp(qdb->nrtp, &(qdb->rtp));
-  /* for (i=0; i<qdb->nrtp; i++) */
-/*     { */
-/*       sfree(qdb->resinfo[i].donor); */
-/*       sfree(qdb->resinfo[i].acceptor); */
-/*     } */
-  /* done_atomtype(qdb->atype);*/
   free_symtab(&qdb->tab);
   qhop_done(*qdb->gqh);
   sfree(qdb->qhop_param);
-  /*fprintf(stderr,"qhop_db_done not implemented yet.\n");*/
+  clear_qhop_rb(qdb->rb);;
+  clear_qhop_H_exist(qdb->H_map);
 
   return 1;
 }

@@ -155,42 +155,26 @@ static int qhop_find_name(char **ss, const char *name, int n)
   return -1;/* not found */
 }
 
-
-/* add_to_record should be replaced with strdup!*/
-
-/* Copies the text in src to a new element at the end of rec and,
- * if update_index == eUPDATE_INDEX, it also updates n.
- * len is the maximal length of the data being copied. */
-/* static void add_to_record(const char *src, char **rec, int *n, int len, index_switch update_index) */
-/* { */
-/*   snew(*rec, len+1); /\* Allocate name buffer *\/ */
-/*   strncpy(*rec, src, len); */
-/*   (*rec)[len] = '\0';  /\* just in case *\/ */
-/*   if (update_index == eUPDATE_INDEX) */
-/*     (*n)++; */
-/* } */
-
-/* Adds a file with name *f to a qhop_interactions */
-static void qi_add_file(qhop_interactions_t qi, char *f)
+/* Adds a file with name *f to a qhop_resblocks*/
+static void rb_add_file(qhop_resblocks *rb, char *f, t_symtab *tab)
 {
   if NN(f)
     {
-      if (qhop_find_name(qi->files, f, qi->nf) < 0) /* New file? */
+      if (qhop_find_name(rb->files, f, rb->nf) < 0) /* New file? */
 	{
 	  printf("Adding file %s\n", f);
-	  /* Copy the filename to the array in qi.*/
-	  srenew(qi->files, qi->nf+1);
-	  qi->files[qi->nf++] = strdup(f);
-	  /*add_to_record(f, qi->files, &(qi->nf), CPYLEN, eUPDATE_INDEX);*/
+	  /* Copy the filename to the array in rb.*/
+	  srenew(rb->files, rb->nf+1);
+	  rb->files[rb->nf++] = *(put_symtab(tab, f));/*trim_strndup(f, 256);*/
 	}
     }
   else
     gmx_fatal(FARGS, "No filename found.");
 }
 
-static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name)
+static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, t_symtab *tab)
 {
-  
+  char *s;
   if NN(name)
     {
       printf("Adding restype %s\n", name);
@@ -204,7 +188,7 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name)
 	  ri->rt = rb->nrestypes;            /* Make this resblock the current one */
 	  ri->r  = -1;                       /* just to be sure... */
 	  ri->da = -1;
-	  rb->restype[rb->nrestypes++] = strdup(name);
+	  rb->restype[rb->nrestypes++] = *(put_symtab(tab, name));/*trim_strndup(name, 6);*/
 	  /*add_to_record(name, &(rb->restype[rb->nrestypes]), &(rb->nrestypes), RNMLEN, eUPDATE_INDEX);*/
 	}
     }
@@ -212,7 +196,7 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name)
     gmx_fatal(FARGS, "No name found for this resblock.");
 }
 
-static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name)
+static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name, t_symtab *tab)
 {
   bool found;
   int i;
@@ -234,7 +218,7 @@ static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name)
 	    snew(rb->res[ri->rt], 1);
 	  rb->res[ri->rt][ri->r].na = 0;
 	  rb->res[ri->rt][ri->r].nd = 0;
-	  rb->res[ri->rt][rb->nres[ri->rt]++].name = strdup(name);
+	  rb->res[ri->rt][rb->nres[ri->rt]++].name = *(put_symtab(tab, name)); /*trim_strndup(name, 6);*/
 	  /*add_to_record(name, &(rb->res[ri->rt][ri->r].name),
 	    &(rb->nres[ri->rt]), RNMLEN, eUPDATE_INDEX);*/
 	}
@@ -248,7 +232,7 @@ static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name)
 
 }
 
-static void rb_add_proton(qhop_res **res, currentRes *ri, char *name)
+static void rb_add_proton(qhop_res **res, currentRes *ri, char *name, t_symtab *tab)
 {
   qhop_reactant *r;
   int nr;
@@ -268,7 +252,7 @@ static void rb_add_proton(qhop_res **res, currentRes *ri, char *name)
 	  else
 	    snew(r->H, 1);
 
-	  r->H[r->nH++] = strdup(name);
+	  r->H[r->nH++] = *(put_symtab(tab, name)); /*trim_strndup(name,6);*/
 	  /*add_to_record(name,
 	    rb->res[ri->rt][ri->r].acc[ri->da].H,
 	    &(rb->res[ri->rt][ri->r].acc[ri->da].nH),
@@ -279,54 +263,90 @@ static void rb_add_proton(qhop_res **res, currentRes *ri, char *name)
 
 /* adds a qhop_reactant with name and product to a qhop_res 'res'.
  * If acc_or_don == exmlACCEPTOR then this is an acceptor, otherwise a donor. */
-static void rb_add_name_product(qhop_res_t res, const char *name, const char *product, currentRes *ri)
+static void rb_add_name_product(qhop_res_t res, const char *name, const char *product, currentRes *ri, t_symtab *tab)
 {
-  int i;
-  bool found;
+  /* Now, the argument 'name' may be a list of atoms,
+   * because of proton tautomerism. */
+  int i, j, k, nda, nnames;
+  bool acc, w;
+  char **s, *buf;
+  qhop_reactant *da;
   
   if (NN(name) && NN(product))
     {
-      printf("Adding name %s and product %s \n", name, product);
-            
-      found = FALSE;
-      for(i=0; i < (ri->Acc == exmlACCEPTOR ? res->na : res->nd) && !found; i++)
-	if (strcmp(ri->Acc == exmlACCEPTOR ?
-		   res->acc[i].name, name : res->don[i].name, name) == 0)
-	  {
-	    found = TRUE;
-	    ri->da = i;
-	  }
-      if (!found)
+      printf("Adding name(s) %s and product %s \n", name, product);
+
+      /* Split the name line. */
+      buf=strdup(name);
+      j = strlen(buf);
+      nnames = 0;
+      snew(s,1);
+      w = FALSE; /* Flags whether we're in a word (TRUE) or a whitespace region (FALSE) */
+      for (i=0; i<j; i++)
 	{
-	  if (ri->Acc == exmlACCEPTOR)
+	  if (buf[i] == ' '  ||
+	      buf[i] == '\t' ||
+	      buf[i] == '\n') /* Allowed separators */
 	    {
-	      if (res->na != 0)
-		srenew(res->acc, (res->na)+1);
-	      else
-		snew(res->acc, 1);
-	      
-	      res->acc[res->na].name    = strdup(name);
-	      res->acc[res->na].product = strdup(product);
-	      res->acc[res->na].nH = 0;
-	      ri->da = (res->na)++;
+	      w = FALSE; /* We're not within a word. */
+	      buf[i] = '\0'; /* So we don't have to save the lengths or end positions of the words. */
 	    }
-	  else /* A donor */
+	  else
 	    {
-	      if (res->nd != 0)
-		srenew(res->don, res->nd+1);
-	      else
-		snew(res->don, 1);
-	      
-	      res->don[res->nd].name    = strdup(name);
-	      res->don[res->nd].product = strdup(product);
-	      res->don[res->nd].nH = 0;
-	      ri->da = (res->nd)++;
+	      if (w == FALSE) /* We've hit the start of another word! */
+		{		  
+		  srenew(s,nnames+1);
+		  s[nnames++] = &(buf[i]);
+		  w = TRUE;
+		}
 	    }
 	}
+
+      if (ri->Acc == exmlACCEPTOR)
+	{
+	  nda = res->na;
+	  acc = TRUE;
+	  da = res->acc;
+	}
       else
-	/* Otherwise there's nothing to add. */
-	printf("This %s has been found before: %s.\n",
-	       ri->Acc==exmlACCEPTOR ? "acceptor" : "donor", name);
+	{
+	  nda = res->nd;
+	  acc = FALSE;
+	  da = res->don;
+	}
+
+      /* Have we seen it before?*/
+      for(i=0; i < nda; i++)
+	for (j=0; j < da->nname; j++) /* Loop over da[i].name[j] */
+	  for (k=0; k < nnames; k++)  /* Loop over name[k] */
+	    if (strcmp(da[i].name[j], name) == 0)
+	      gmx_fatal(FARGS, "%s %s has already been encountered.",
+			acc ? "Acceptor":"Donor", s[k]);
+
+      if (nda != 0)
+	srenew(da, nda+1);
+      else
+	snew(da, 1);
+      
+      srenew(da[nda].name, nnames);
+      da[nda].nname = nnames;
+      for (i=0; i<nnames; i++)
+	da[nda].name[i] = *(put_symtab(tab, s[i]));
+      da[nda].product = *(put_symtab(tab,product));
+      da[nda].nH = 0;
+      ri->da = (nda)++;
+      if(acc)
+	{
+	  res->na = nda;
+	  res->acc = da;
+	}
+      else
+	{
+	  res->nd = nda;
+	  res->don = da;
+	}
+      sfree(s);
+      sfree(buf);
     }
   else
     gmx_fatal(FARGS, "%s without %s%s%s. Can't have that!",
@@ -385,17 +405,19 @@ static void qhop_process_attr(FILE *fp,xmlAttrPtr attr,int parent,
     break;
     /* Here's where some resblocks stuff needs to be implemented. */
   case exmlRESIDUE_TYPE: /* 'name' */
-    rb_add_restype(xml->rb, ri, xbuf[exmlNAME]);
+    rb_add_restype(xml->rb, ri, xbuf[exmlNAME], &(xml->tab));
     break;
   case exmlRES: /* 'name' */
-    rb_add_res(xml->rb, ri, xbuf[exmlNAME]);
+    rb_add_res(xml->rb, ri, xbuf[exmlNAME],&(xml->tab));
     break;
 
   case exmlACCEPTOR: /* 'name', 'product' */
-    rb_add_name_product(&(xml->rb->res[ri->rt][ri->r]), xbuf[exmlNAME], xbuf[exmlPRODUCT], ri);
+    rb_add_name_product(&(xml->rb->res[ri->rt][ri->r]),
+			xbuf[exmlNAME], xbuf[exmlPRODUCT], ri, &(xml->tab));
     break;
   case exmlDONOR: /* 'name', 'product' */
-    rb_add_name_product(&(xml->rb->res[ri->rt][ri->r]), xbuf[exmlNAME], xbuf[exmlPRODUCT], ri);
+    rb_add_name_product(&(xml->rb->res[ri->rt][ri->r]),
+			xbuf[exmlNAME], xbuf[exmlPRODUCT], ri, &(xml->tab));
     break;
 
   default:
@@ -427,10 +449,8 @@ static void qhop_process_element(FILE *fp, xmlNodePtr tree, int parent,
       break;
 
     case exmlRESBLOCKS:
-      if (!xml->rb)
-	snew(xml->rb,1);
+      /* Nothing. */
       break;
-
     case exmlRESIDUE_TYPE:
       /* A new resblock will be created if this is indeed a new one.
        * That all happens in qhop_process_attr below. *rt will also be set accordingly.
@@ -438,7 +458,7 @@ static void qhop_process_element(FILE *fp, xmlNodePtr tree, int parent,
       break;
 
     case exmlFILE:
-      qi_add_file(xml->qi, (char*) (tree->children->content));
+      rb_add_file(xml->rb, (char*) (tree->children->content), &(xml->tab));
       break;
 
     case exmlRES:
@@ -464,7 +484,9 @@ static void qhop_process_element(FILE *fp, xmlNodePtr tree, int parent,
 
     case exmlPROTON:
       /* Now add this proton to the current acceptor/donor. */
+      /* Explicit protons are not in the xml-file anymore.
       rb_add_proton(xml->rb->res, ri, (char*)(tree->children->content));
+      */
       break;
 
     case exmlDON_ATOM:
@@ -504,7 +526,7 @@ static void qhop_process_tree(FILE *fp, xmlNodePtr tree, int parent,
     
     switch (tree->type) {
     case XML_ELEMENT_NODE:
-      qhop_process_element(fp, tree, parent, indent+2, xml, ri)/*, rb, &rt, &r, &da, qi)*/;
+      qhop_process_element(fp, tree, parent, indent+2, xml, ri);
       
       if (tree->children) {
 	elem = find_elem((char *)tree->name,exmlNR,exml_names);
@@ -545,26 +567,17 @@ void qhops_read(char *fn, qhop_db_t qdb)
     }
 
   snew(xml,1);
-  snew(xml->qi, 1);
-  xml->qi->nf = 0;
-
+  xml->rb = &(qdb->rb);
+  xml->rb->nf = 0;
+  xml->tab = qdb->tab;
   qhop_process_tree(NULL,doc->children,0,0,xml,&ri);
   
   xmlFreeDoc(doc);
   if (fna)
     sfree(fn);
 
-  /*snew(qdb,1);*/
-
-  
-
   qdb->ngqh = xml->nqh;
   qdb->gqh = xml->gqh;
-  qdb->qi = xml->qi;
-  qdb->rb = xml->rb;
-  
-  /* *nqhop = xml->nqh; */
-
 }
 
 static void add_xml_qhop(xmlNodePtr parent,qhop_t qht)
