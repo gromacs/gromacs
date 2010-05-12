@@ -186,6 +186,7 @@ public:
     ~GmxOpenMMPlatformOptions() { options.clear(); }
     string getOptionValue(const string &opt);
     void remOption(const string &opt);
+    void print();
 private:
     void setOption(const string &opt, const string &val);
 
@@ -330,6 +331,17 @@ void GmxOpenMMPlatformOptions::remOption(const string &opt)
     options.erase(toUpper(opt)); 
 }
 
+/*!
+ * \brief Print option-value pairs to a file (debugging function). 
+ */
+void GmxOpenMMPlatformOptions::print()
+{
+    cout << ">> Platform options: " << endl 
+         << ">> platform     = " << getOptionValue("platform") << endl
+         << ">> deviceID     = " << getOptionValue("deviceid") << endl
+         << ">> memtest      = " << getOptionValue("memtest") << endl
+         << ">> force-device = " << getOptionValue("force-device") << endl;
+}
 
 /*!
  * \brief Container for OpenMM related data structures that represent the bridge 
@@ -356,12 +368,11 @@ public:
  */
 static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatformOptions *opt)
 {
-
-    char warn_buf[STRLEN];
-
+    char strout_buf[STRLEN];
     int which_test;
-    int res;
+    int res = 0;
     const char * test_type = opt->getOptionValue("memtest").c_str();
+
     if (!gmx_strcasecmp(test_type, "off"))
     {
         which_test = 0;
@@ -378,13 +389,18 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
         }
     }
 
+    if (which_test < 0) 
+    {
+        gmx_fatal(FARGS, "Amount of seconds for memetest is negative (%d). ", which_test);
+    }
+    
     switch (which_test)
     {
         case 0: /* no memtest */
-            sprintf(warn_buf, "%s-simulation GPU memtest skipped. Note, that faulty memory can cause "
+            sprintf(strout_buf, "%s-simulation GPU memtest skipped. Note, that faulty memory can cause "
                 "incorrect results!", pre_post);
-            fprintf(fplog, "%s\n", warn_buf);
-            gmx_warning(warn_buf);
+            fprintf(fplog, "%s\n", strout_buf);
+            gmx_warning(strout_buf);
             break; /* case 0 */
 
         case 1: /* quick memtest */
@@ -392,15 +408,7 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
             fprintf(stdout, "\n%s-simulation %s GPU memtest in progress...", pre_post, test_type);
             fflush(fplog);
             fflush(stdout);
-            if (do_quick_memtest(-1) != 0)
-            {
-                gmx_fatal(FARGS,MEM_ERR_MSG(pre_post));
-            }
-            else
-            {
-                fprintf(fplog,  "Memory test completed without errors.\n");
-                fprintf(stdout, "done, no errors detected\n");
-            }
+            res = do_quick_memtest(-1);
             break; /* case 1 */
 
         case 2: /* full memtest */
@@ -408,36 +416,28 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
             fprintf(stdout, "\n%s-simulation %s memtest in progress...", pre_post, test_type);
             fflush(fplog);
             fflush(stdout);
-            if (do_full_memtest(-1) != 0)
-            {
-                gmx_fatal(FARGS, MEM_ERR_MSG(pre_post) );
-
-            }
-            else
-            {
-                fprintf(fplog, "Memory test completed without errors.\n");
-                fprintf(stdout, "done, no errors detected\n");
-            }
+            res = do_full_memtest(-1);
             break; /* case 2 */
 
         default: /* timed memtest */
-            fprintf(fplog,  "%s-simulation memtest for ~%ds in progress...\n", pre_post, which_test);
-            fprintf(stdout, "\n%s-simulation memtest for ~%ds in progress...", pre_post, which_test);
+            fprintf(fplog,  "%s-simulation ~%ds memtest in progress...\n", pre_post, which_test);
+            fprintf(stdout, "\n%s-simulation ~%ds memtest in progress...", pre_post, which_test);
             fflush(fplog);
             fflush(stdout);
-            if (do_timed_memtest(-1, which_test) != 0)
-            {
-                gmx_fatal(FARGS, MEM_ERR_MSG(pre_post));
-
-            }
-            else
-            {
-                fprintf(fplog, "Memory test completed without errors.\n");
-                fprintf(stdout, "done, no errors detected.\n");
-            }
+            res = do_timed_memtest(-1, which_test);
         }
-        fflush(fplog);
-        fflush(stdout);
+
+        if (which_test != 0 && res != 0)
+        {
+            gmx_fatal(FARGS, MEM_ERR_MSG(pre_post));
+        }
+        else
+        {
+            fprintf(fplog,  "Memory test completed without errors.\n");
+            fflush(fplog);
+            fprintf(stdout, "done, no errors detected\n");
+            fflush(stdout);           
+        }
 }
 
 /*!
@@ -569,7 +569,7 @@ static void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top, t_state *state)
  * \param[out] sigma 
  * \param[out] epsilon
  */
-static void* convert_c_12_6(double c12, double c6, double *sigma, double *epsilon)
+static void convert_c_12_6(double c12, double c6, double *sigma, double *epsilon)
 {
     if (c12 == 0 && c6 == 0)
     {
@@ -602,11 +602,11 @@ static void* convert_c_12_6(double c12, double c6, double *sigma, double *epsilo
  * \param[in] fplog             Gromacs log file handler.
  * \param[in] platformOptStr    Platform option string. 
  * \param[in] ir                The Gromacs input parameters, see ::t_inputrec
- * \param[in] top_global        TODO Gromacs whole system toppology, \see ::gmx_mtop_t
- * \param[in] top               TODO Gromacs node local topology, \see gmx_localtop_t
- * \param[in] mdatoms           TODO \see ::t_mdatoms
- * \param[in] fr                TODO \see ::t_forcerec
- * \param[in] state             TODO \see ::t_state
+ * \param[in] top_global        Gromacs whole system toppology, \see ::gmx_mtop_t
+ * \param[in] top               Gromacs node local topology, \see gmx_localtop_t
+ * \param[in] mdatoms           Gromacs atom parameters, \see ::t_mdatoms
+ * \param[in] fr                \see ::t_forcerec
+ * \param[in] state             Gromacs systems state, \see ::t_state
  *
  */
 void* openmm_init(FILE *fplog, const char *platformOptStr,
@@ -690,6 +690,11 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
         /* parse option string */
         GmxOpenMMPlatformOptions *opt = new GmxOpenMMPlatformOptions(platformOptStr);
+
+        if (debug)
+        {
+            opt->print();
+        }
 
         /* check wheter Gromacs options compatibility with OpenMM */
         checkGmxOptions(ir, top, state);
