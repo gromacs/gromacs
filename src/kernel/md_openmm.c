@@ -642,7 +642,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         /* Remaining runtime */
-        if (MULTIMASTER(cr) && do_verbose)
+        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal() ))
         {
             print_time(stderr,runtime,step,ir,cr);
         }
