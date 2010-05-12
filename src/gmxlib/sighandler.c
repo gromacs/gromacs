@@ -55,10 +55,11 @@ const char *gmx_signal_name[] =
 {
     "None",
     "INT",
-    "Second INT",
     "TERM",
-    "remote INT",
-    "remote TERM",
+    "second INT/TERM",
+    "remote INT/TERM",
+    "remote second INT/TERM",
+    "USR1",
     "Abort"
 };
 
@@ -69,21 +70,28 @@ static volatile sig_atomic_t last_signal_name=0;
 static RETSIGTYPE signal_handler(int n)
 {
     switch (n) {
-        case SIGTERM:
-            stop_condition=gmx_stop_cond_next;
-            last_signal_name=3;
-            break;
 /* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in 
    ANSI C89, and windows spawns a thread specifically to run the INT signal 
    handler), but that doesn't matter for a simple signal handler like this. */
+        case SIGTERM:
         case SIGINT:
             /* we explicitly set things up to allow this: */
             stop_condition++;
-            last_signal_name=1;
-            if (stop_condition == gmx_stop_cond_next)
+            if (n==SIGINT)
+                last_signal_name=1;
+            if (n==SIGTERM)
                 last_signal_name=2;
+            if (stop_condition == gmx_stop_cond_next)
+                last_signal_name=3;
             if (stop_condition >= gmx_stop_cond_abort)
                 abort();
+            break;
+	#ifdef HAVE_SIGUSR1
+        case SIGUSR1:
+	#endif
+        default:
+            stop_condition=gmx_stop_cond_next;
+            last_signal_name=6;
             break;
     }
 }
@@ -107,7 +115,16 @@ void signal_handler_install(void)
         }
         signal(SIGINT,signal_handler);
     }
-
+    #ifdef HAVE_SIGUSR1
+    if (getenv("GMX_NO_USR1") == NULL)
+    {
+        if (debug)
+        {
+            fprintf(debug,"Installing signal handler for SIGUSR1\n");
+        }
+        signal(SIGUSR1,signal_handler);
+    }
+    #endif
 }
 
 gmx_stop_cond_t gmx_get_stop_condition(void)

@@ -102,7 +102,11 @@
 #endif
 
 
-/* simulation conditions to transmit */
+/* simulation conditions to transmit. Keep in mind that they are 
+   transmitted to other nodes through an MPI_Reduce after
+   casting them to a real (so the signals can be sent together with other 
+   data). This means that the only meaningful values are positive, 
+   negative or zero. */
 enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 /* Is the signal in one simulation independent of other simulations? */
 bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
@@ -1613,9 +1617,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         } 
 
-        if ( (gs.set[eglsSTOPCOND] == gmx_stop_cond_next) ||
-             ( (gs.set[eglsSTOPCOND] == gmx_stop_cond_next_ns) && 
-               ( bNS || ir->nstlist==0)) )
+        /* < 0 means stop at next step, > 0 means stop at next NS step */
+        if ( (gs.set[eglsSTOPCOND] < 0 ) ||
+             ( (gs.set[eglsSTOPCOND] > 0 ) && ( bNS || ir->nstlist==0)) )
         {
             bLastStep = TRUE;
         }
@@ -2116,19 +2120,26 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
             MASTERTHREAD(cr))
         {
-            gs.sig[eglsSTOPCOND]=(int)gmx_get_stop_condition();
+            /* this is just make gs.sig compatible with the hack 
+               of sending signals around by MPI_Reduce with together with
+               other floats */
+            if ( gmx_get_stop_condition() == gmx_stop_cond_next_ns )
+                gs.sig[eglsSTOPCOND]=1;
+            if ( gmx_get_stop_condition() == gmx_stop_cond_next )
+                gs.sig[eglsSTOPCOND]=-1;
+            /* < 0 means stop at next step, > 0 means stop at next NS step */
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                         gmx_get_signal_name(),
-                        gs.sig[eglsSTOPCOND]==gmx_stop_cond_next_ns ? "NS " : "");
+                        gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                     gmx_get_signal_name(),
-                    gs.sig[eglsSTOPCOND]==gmx_stop_cond_next_ns ? "NS " : "");
+                    gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
             fflush(stderr);
             handled_stop_condition=(int)gmx_get_stop_condition();
         }
@@ -2137,7 +2148,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  gs.sig[eglsSTOPCOND] == 0 && gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
-            gs.sig[eglsSTOPCOND] = gmx_stop_cond_next_ns;
+            gs.sig[eglsSTOPCOND] = 1;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
