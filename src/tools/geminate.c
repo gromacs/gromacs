@@ -1,4 +1,8 @@
-/* #ifdef HAVE_LIBGSL */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef HAVE_LIBGSL
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
@@ -7,9 +11,8 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_version.h>
-#ifdef HAVE_CONFIG_H
-#include <config.h>
 #endif
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -479,6 +482,7 @@ extern t_gemParams *init_gemParams(double sigma, double D,
   return p;
 }
 
+#if HAVE_LIBGSL
 static double gemFunc_residual2(const gsl_vector *p, void *data)
 {
   gemFitData *GD = (gemFitData *)data;
@@ -516,6 +520,7 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
   residual2 /= GD->n;
   return residual2;
 }
+#endif
  
 extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 			const int nData, t_gemParams *params)
@@ -523,6 +528,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 #ifndef HAVE_LIBGSL
   printf("Sorry, can't do reversible geminate recombination without gsl. "
 	 "Recompile using --with-gsl.\n");
+  return -1;
 #else
   printf("Will fit ka and kd to the ACF according to the reversible geminate recombination model.\n");
 
@@ -623,15 +629,10 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 
   return d2;
 
-#endif /* HAVE_GSL */
+#endif /* HAVE_LIBGSL */
 }
 
-/* static double eq10v2(double theoryCt[], double time[], int manytimes, */
-/* 		     double ka, double kd, t_gemParams *params){ */
-	
-
-/* #endif */
-
+#ifdef HAVE_LIBGSL
 static int balFunc_f(const gsl_vector *x, void *data, gsl_vector *f)
 {
   /* C + sum{ A_i * exp(-B_i * t) }*/
@@ -706,6 +707,7 @@ static int balFunc_fdf(const gsl_vector *params, void *data,
   balFunc_df(params, data, J);
   return GSL_SUCCESS;
 }
+#endif /* HAVE_LIBGSL */
 
 /* Removes the ballistic term from the beginning of the ACF,
  * just like in Omer's paper.
@@ -719,6 +721,11 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
 
   /* /============  Set up the solver =============\ */
 
+#ifndef HAVE_LIBGSL
+  printf("Sorry, can't take away ballistic component without gsl. "
+	 "Recompile using --with-gsl.\n");
+
+#else
   int nData=0,i,status, iter=0;
   do {
     nData++;
@@ -866,4 +873,5 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
   gsl_multifit_fdfsolver_free(s);
   gsl_matrix_free(covar);
   fflush(stdout);
+#endif /* HAVE_LIBGSL */
 }
