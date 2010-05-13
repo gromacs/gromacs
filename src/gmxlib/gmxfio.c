@@ -1523,7 +1523,7 @@ static int gmx_fio_fsync_lock(int fio, bool do_lock)
 {
     int rc = 0;
 
-#if defined(HAVE_FILENO) && defined(HAVE_FSYNC)
+#if (defined(HAVE_FILENO) && defined(HAVE_FSYNC)) && !defined(FAHCORE) 
 #ifdef GMX_THREADS
     if (do_lock)
         tMPI_Thread_mutex_lock(&fio_mutex);
