@@ -157,6 +157,7 @@ static tMPI_Thread_mutex_t fio_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
  themselves, and need to make sure that the called function doesn't 
  try to lock that mutex again. */
 static int gmx_fio_flush_lock(int fio, bool do_lock);
+static int gmx_fio_fsync_lock(int fio, bool do_lock);
 static int gmx_fio_close_lock(int fio, bool do_lock);
 static bool do_xdr_lock(void *item, int nitem, int eio, const char *desc,
                         const char *srcfile, int line, bool do_lock);
@@ -1515,6 +1516,68 @@ int gmx_fio_flush(int fio)
 {
     return gmx_fio_flush_lock(fio, TRUE);
 }
+
+
+
+static int gmx_fio_fsync_lock(int fio, bool do_lock)
+{
+    int rc = 0;
+
+#if defined(HAVE_FILENO) && defined(HAVE_FSYNC)
+#ifdef GMX_THREADS
+    if (do_lock)
+        tMPI_Thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (FIO[fio].fp)
+        rc = fsync(fileno(FIO[fio].fp));
+    else if (FIO[fio].xdr)
+        rc = fsync(fileno((FILE *) FIO[fio].xdr->x_private));
+#ifdef GMX_THREADS
+    if (do_lock)
+        tMPI_Thread_mutex_unlock(&fio_mutex);
+#endif
+#endif
+
+    return rc;
+}
+
+
+int gmx_fio_fsync(int fio)
+{
+    int rc = 0;
+
+    return gmx_fio_fsync_lock(fio, TRUE);
+}
+
+
+
+int gmx_fio_all_output_fsync(void)
+{
+    int i;
+    int ret=0;
+
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&fio_mutex);
+#endif
+    for (i = 0; i < nFIO; i++)
+    {
+        /* skip debug files (shoud be the only iFTP==efNR) */
+        if (FIO[i].bOpen && !FIO[i].bRead && !FIO[i].bStdio && 
+            FIO[i].iFTP != efNR)
+        {
+            /* if any of them fails, return failure code */
+            if (gmx_fio_fsync_lock(i, FALSE) != 0)
+                ret=-1;
+        }
+    }
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&fio_mutex);
+#endif
+
+    return 0;
+}
+
 
 off_t gmx_fio_ftell(int fio)
 {

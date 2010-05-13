@@ -148,6 +148,8 @@ check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
 check_function_exists(isfinite          HAVE_ISFINITE)
 check_function_exists(_isfinite         HAVE__ISFINITE)
+check_function_exists(fsync             HAVE_FSYNC)
+check_function_exists(fileno            HAVE_FILENO)
 # After large files? check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(CheckLibraryExists)
