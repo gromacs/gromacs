@@ -272,6 +272,9 @@
 /* Define to 1 if you have the fileno() function. */
 #cmakedefine HAVE_FILENO
 
+/* Define to 1 if EINTR is defined */
+#cmakedefine HAVE_EINTR
+
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H
 

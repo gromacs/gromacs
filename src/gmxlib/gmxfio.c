@@ -39,6 +39,7 @@
 
 #include <ctype.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "gmx_fatal.h"
 #include "macros.h"
@@ -1567,8 +1568,22 @@ int gmx_fio_all_output_fsync(void)
             FIO[i].iFTP != efNR)
         {
             /* if any of them fails, return failure code */
-            if (gmx_fio_fsync_lock(i, FALSE) != 0)
+            int rc=gmx_fio_fsync_lock(i, FALSE);
+            if ( (rc != 0) 
+#ifdef HAVE_EINTR
+                 /* we don't want to report an error just because fsync()
+                    caught a signal */
+                 && (rc != EINTR)
+#endif
+                )
+            {
+                char buf[STRLEN];
+                sprintf(buf,
+                        "Cannot write file '%s'; maybe you are out of disk space or quota?",
+                        FIO[i].fn);
+                gmx_file(buf);
                 ret=-1;
+            }
         }
     }
 #ifdef GMX_THREADS

@@ -76,17 +76,19 @@ check_function_exists(sysconf       HAVE_SYSCONF)
 #check_include_files(windows.h		HAVE_WINDOWS_H)
 #check_function_exists(GetSystemInfo HAVE_SYSTEM_INFO)
 
-try_compile(TEST_ATOMICS "${CMAKE_BINARY_DIR}"
-            "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.c"
-            COMPILE_DEFINITIONS "-I${CMAKE_SOURCE_DIR}/include" )
+if (NOT DEFINED TMPI_ATOMICS)
+    try_compile(TEST_ATOMICS "${CMAKE_BINARY_DIR}"
+                "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.c"
+                COMPILE_DEFINITIONS "-I${CMAKE_SOURCE_DIR}/include" )
 
-if (TEST_ATOMICS)
-    message(STATUS "Atomics found")
-    set(TMPI_ATOMICS 1)
-else (TEST_ATOMICS)
-    message(WARNING "Atomics not found for this compiler+cpu combination. Thread support will be unbearably slow: disable threads.
+    if (TEST_ATOMICS)
+        message(STATUS "Atomics found")
+        set(CACHE INTERNAL TMPI_ATOMICS 1)
+    else (TEST_ATOMICS)
+        message(WARNING "Atomics not found for this compiler+cpu combination. Thread support will be unbearably slow: disable threads.
 Atomics should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.
 ")
-    set(TMPI_ATOMICS 0)
-endif(TEST_ATOMICS)
+        set(CACHE INTERNAL TMPI_ATOMICS 0)
+    endif(TEST_ATOMICS)
+endif(NOT DEFINED TMPI_ATOMICS)
 
