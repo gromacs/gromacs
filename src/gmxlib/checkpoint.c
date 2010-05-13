@@ -1174,7 +1174,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
     }
-#endif /* end FAHCORE block */
+#endif /* end GMX_FAHCORE block */
 
 }
 
@@ -1549,7 +1549,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     " offsets. Can not append. Run mdrun without -append",
                     outputfiles[i].filename);
             }
-#ifdef FAHCORE
+#ifdef GMX_FAHCORE
             chksum_file=gmx_fio_open(outputfiles[i].filename,"a");
 
 #else
@@ -1596,7 +1596,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             {
                 gmx_fio_close(chksum_file);
             }
-#ifndef FAHCORE            
+#ifndef GMX_FAHCORE            
             /* compare md5 chksum */
             if (outputfiles[i].chksum_size != -1 &&
                 memcmp(digest,outputfiles[i].chksum,16)!=0) 
