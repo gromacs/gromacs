@@ -1157,9 +1157,18 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
 
     do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
 
-    /* we really, REALLY, want the checkpoint file and all files it depends on to be 
-       physically written out do disk: */
+    /* we really, REALLY, want the checkpoint file and all files it depends 
+       on to be physically written out do disk: */
     gmx_fio_all_output_fsync();
+#if (defined(HAVE_FILENO) && defined(HAVE_FSYNC)) && !defined(GMX_FAHCORE)
+    /* in addition, we force these to be written out too, if they''re being
+       redirected. We don't check for errors because errors most likely mean
+       that they're not redirected. */
+    fflush(stdout);
+    fflush(stderr);
+    fsync(STDOUT_FILENO);
+    fsync(STDERR_FILENO);
+#endif
 
     if( gmx_fio_close(fp) != 0)
     {
