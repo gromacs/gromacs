@@ -1797,7 +1797,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
     atc->nodeid = 0;
     atc->pd_nalloc = 0;
 #ifdef GMX_MPI
-    if (PAR(cr))
+    if (pme->nnodes > 1)
     {
         atc->mpi_comm = pme->mpi_comm_d[dimind];
         MPI_Comm_size(atc->mpi_comm,&atc->nslab);
