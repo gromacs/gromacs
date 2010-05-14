@@ -4,6 +4,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "string2.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "symtab.h"
 #include "hackblock.h"
@@ -434,12 +435,12 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
   qhop_db_t qdb;
   char buf[256];
   char *fn;
-  int i,j,nrtp, nah;
+  int i,j,nrtp=0, nah;
   double qtot;
   t_atomtype atype;
-  t_restp *bigrtp;
-  t_symtab *stab;
-  t_hackblock *ah;
+  t_restp *bigrtp=NULL;
+  t_symtab *stab=NULL;
+  t_hackblock *ah=NULL;
 
   snew(stab,1);
   open_symtab(stab);
@@ -447,11 +448,13 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
   snew(qdb,1);
   open_symtab(&(qdb->tab));
   /*  sprintf(buf,"%s-qhop",
-forcefield);*/
+      forcefield);*/
   atype = read_atype(forcefield,stab);
-  nrtp = read_resall(forcefield,qdb->bts,&(bigrtp),atype,
-		     stab,&(qdb->bAllDih),
-		     &(qdb->nrexcl),&(qdb->bHH14),&(qdb->bRemoveDih));
+  /* read_resall has changed a lot! Rework this part. */
+  /* nrtp = read_resall(forcefield,qdb->bts,&(bigrtp),atype, */
+/* 		     stab,&(qdb->bAllDih), */
+/* 		     &(qdb->nrexcl),&(qdb->bHH14),&(qdb->bRemoveDih)); */
+  read_resall(forcefield, &nrtp, &bigrtp, atype, stab, FALSE);
 
   nah=read_h_db(forcefield,&ah);
 

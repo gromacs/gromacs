@@ -495,6 +495,26 @@ static int get_qhop_atoms(t_commrec *cr,
   return(qhop_atoms_nr);
 } /* get_qhop_atoms */
 
+static int H_exist_2_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
+			    const qhop_db *db, const int resnr)
+{
+  int i, atomid;
+  t_atom atom;
+  t_qhop_residue *qres = &(qr->qhop_residues[resnr]);
+  qhop_res *res = db->res[qres->rtype];
+  
+  /* Loop over residue subtypes */
+  for (i=0; i<db->nres[qres->rtype]; i++)
+    {
+      for (atomid=qres->atoms; atomid < qres->nr_atoms; atomid++)
+	{
+	  gmx_mtop_atomnr_to_atom(top,a,&atom);
+	}
+    }
+  
+
+}
+
 /* Qr    = qhop residue
  * to    = to what residue subtype  */
 static void set_interactions(t_qhoprec *qhoprec, qhop_db *qdb, int Qr, int to)
@@ -878,7 +898,7 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
      function to handle the io with external files.
   */
   int 
-    nr_qhop_atoms=0,nr_qhop_residues=0,i;
+    nr_qhop_atoms=0,nr_qhop_residues=0,i,target;
   t_qhoprec 
     *qhoprec=NULL; 
   t_pbc
@@ -921,7 +941,11 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 /*   get_protonation_state(cr, qhoprec); */
 /*   set_charges(cr, qhoprec, md); */
   for (i=0; i<qhoprec->nr_qhop_residues; i++)
-    set_interactions(qhoprec, *db, i);
+    {
+      /* What flavour of the residue shall we set it to? */
+      target = H_exist_2_subRes(qhoprec, *db, i);
+      set_interactions(qhoprec, *db, i, target);
+    }
   return (nr_qhop_atoms);
 } /* init_hop */
 
