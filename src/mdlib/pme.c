@@ -1138,7 +1138,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
 
 static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                          real ewaldcoeff,real vol,matrix vir,t_commrec *cr,
-                         bool bEnerPres,real *mesh_energy)
+                         bool bEnerVir,real *mesh_energy)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
@@ -1247,7 +1247,7 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
             }
             kxend = local_offset[XX] + local_ndata[XX];
 			
-            if (bEnerPres)
+            if (bEnerVir)
             {
                 /* More expensive inner loop, especially because of the storage
                  * of the mh elements in array's.
@@ -1386,20 +1386,24 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
         }
     }
     
-    /* Update virial with local values. The virial is symmetric by definition.
-     * this virial seems ok for isotropic scaling, but I'm
-     * experiencing problems on semiisotropic membranes.
-     * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
-     */
-    vir[XX][XX] = 0.25*virxx;
-    vir[YY][YY] = 0.25*viryy;
-    vir[ZZ][ZZ] = 0.25*virzz;
-    vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
-    vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
-    vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
-	
-    /* This energy should be corrected for a charged system */
-    *mesh_energy = 0.5*energy;
+    if (bEnerVir)
+    {
+        /* Update virial with local values.
+         * The virial is symmetric by definition.
+         * this virial seems ok for isotropic scaling, but I'm
+         * experiencing problems on semiisotropic membranes.
+         * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
+         */
+        vir[XX][XX] = 0.25*virxx;
+        vir[YY][YY] = 0.25*viryy;
+        vir[ZZ][ZZ] = 0.25*virzz;
+        vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
+        vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
+        vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
+        
+        /* This energy should be corrected for a charged system */
+        *mesh_energy = 0.5*energy;
+    }
 
     /* Return the loop count */
     return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
