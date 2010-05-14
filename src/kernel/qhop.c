@@ -495,7 +495,8 @@ static int get_qhop_atoms(t_commrec *cr,
   return(qhop_atoms_nr);
 } /* get_qhop_atoms */
 
-static int H_exist_2_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
+/* Reads the hydrogen existence matrix and finds out which residue subtype to set it to */
+static int H_exist_2_subRes(const t_qhoprec *qr,
 			    const qhop_db *db, const int resnr)
 {
   int i, atomid;
@@ -508,7 +509,13 @@ static int H_exist_2_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
     {
       for (atomid=qres->atoms; atomid < qres->nr_atoms; atomid++)
 	{
-	  gmx_mtop_atomnr_to_atom(top,a,&atom);
+	  if (db->H_map.atomid2H[atomid] != -1) /* A hydrogen */
+	    {
+	      if (db->H_map.H[db->H_map.atomid2H[atomid]] != 0)
+		{
+		  /* it exists! */
+		}
+	    }
 	}
     }
   
