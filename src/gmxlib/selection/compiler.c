@@ -439,8 +439,75 @@ set_evaluation_function(t_selelem *sel, sel_evalfunc eval)
 }
 
 /********************************************************************
- * SUBEXPRESSION EXTRACTION COMPILER PASS
+ * SUBEXPRESSION PROCESSING
  ********************************************************************/
+
+/*! \brief
+ * Reverses the chain of selection elements starting at \p root.
+ *
+ * \param   root First selection in the whole selection chain.
+ * \returns The new first element for the chain.
+ */
+static t_selelem *
+reverse_selelem_chain(t_selelem *root)
+{
+    t_selelem *item;
+    t_selelem *prev;
+    t_selelem *next;
+
+    prev = NULL;
+    item = root;
+    while (item)
+    {
+        next = item->next;
+        item->next = prev;
+        prev = item;
+        item = next;
+    }
+    return prev;
+}
+
+/*! \brief
+ * Removes subexpressions that don't have any references.
+ *
+ * \param     root First selection in the whole selection chain.
+ * \returns   The new first element for the chain.
+ *
+ * The elements are processed in reverse order to correctly detect
+ * subexpressions only referred to by other subexpressions.
+ */
+static t_selelem *
+remove_unused_subexpressions(t_selelem *root)
+{
+    t_selelem *item;
+    t_selelem *prev;
+    t_selelem *next;
+
+    root = reverse_selelem_chain(root);
+    while (root->child->type == SEL_SUBEXPR && root->child->refcount == 1)
+    {
+        next = root->next;
+        _gmx_selelem_free(root);
+        root = next;
+    }
+    prev = root;
+    item = root->next;
+    while (item)
+    {
+        next = item->next;
+        if (item->child->type == SEL_SUBEXPR && item->child->refcount == 1)
+        {
+            prev->next = next;
+            _gmx_selelem_free(item);
+        }
+        else
+        {
+            prev = item;
+        }
+        item = next;
+    }
+    return reverse_selelem_chain(root);
+}
 
 /*! \brief
  * Creates a name with a running number for a subexpression.
@@ -478,8 +545,7 @@ create_subexpression_name(t_selelem *sel, int i)
  * Processes and extracts subexpressions from a given selection subtree.
  *
  * \param   sel      Root of the subtree to process.
- * \param[in] gall     Index group that contains all the input atoms.
- * \param     subexprn Pointer to a subexpression counter.
+ * \param   subexprn Pointer to a subexpression counter.
  * \returns Pointer to a chain of subselections, or NULL if none were found.
  *
  * This function finds recursively all \ref SEL_SUBEXPRREF elements below
@@ -489,7 +555,7 @@ create_subexpression_name(t_selelem *sel, int i)
  * of these root elements.
  */
 static t_selelem *
-extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
+extract_item_subselections(t_selelem *sel, int *subexprn)
 {
     t_selelem *root;
     t_selelem *subexpr;
@@ -501,11 +567,11 @@ extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
     {
         if (!root)
         {
-            root = subexpr = extract_item_subselections(child, gall, subexprn);
+            root = subexpr = extract_item_subselections(child, subexprn);
         }
         else
         {
-            subexpr->next = extract_item_subselections(child, gall, subexprn);
+            subexpr->next = extract_item_subselections(child, subexprn);
         }
         while (subexpr && subexpr->next)
         {
@@ -560,7 +626,6 @@ extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
  * Extracts subexpressions of the selection chain.
  * 
  * \param   sel First selection in the whole selection chain.
- * \param[in] gall Index group that contains all the input atoms.
  * \returns The new first element for the chain.
  *
  * Finds all the subexpressions (and their subexpressions) in the
@@ -571,7 +636,7 @@ extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
  * refer to them.
  */
 static t_selelem *
-extract_subexpressions(t_selelem *sel, gmx_ana_index_t *gall)
+extract_subexpressions(t_selelem *sel)
 {
     t_selelem   *root, *item, *next;
     int          subexprn;
@@ -581,7 +646,7 @@ extract_subexpressions(t_selelem *sel, gmx_ana_index_t *gall)
     next = sel;
     while (next)
     {
-        item = extract_item_subselections(next, gall, &subexprn);
+        item = extract_item_subselections(next, &subexprn);
         if (item)
         {
             if (!root)
@@ -607,6 +672,7 @@ extract_subexpressions(t_selelem *sel, gmx_ana_index_t *gall)
     }
     return root;
 }
+
 
 /********************************************************************
  * BOOLEAN OPERATION REORDERING COMPILER PASS
@@ -2027,17 +2093,12 @@ analyze_static2(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
  *
  * \param     root Root element to initialize.
  * \param[in] gall Group of all atoms.
- * \returns Pointer to the selection element that should replace \p root.
- *   Can be \p root itself or NULL if the selection should be removed.
  *
  * Checks whether it is necessary to evaluate anything through the root
  * element, and either clears the evaluation function or initializes the
  * evaluation group.
- *
- * If the function returns NULL, the memory allocated for \p root is 
- * automatically freed.
  */
-static t_selelem *
+static void
 init_root_item(t_selelem *root, gmx_ana_index_t *gall)
 {
     t_selelem   *expr;
@@ -2046,13 +2107,7 @@ init_root_item(t_selelem *root, gmx_ana_index_t *gall)
     /* Process subexpressions */
     if (root->child->type == SEL_SUBEXPR)
     {
-        if (root->child->refcount == 1)
-        {
-            /* Free subexpressions that are no longer used */
-            _gmx_selelem_free(root);
-            return NULL;
-        }
-        else if (root->child->v.type == POS_VALUE)
+        if (root->child->v.type == POS_VALUE)
         {
             /* Position values only need to be evaluated once, by the root */
         }
@@ -2105,78 +2160,6 @@ init_root_item(t_selelem *root, gmx_ana_index_t *gall)
         gmx_ana_index_clear(&root->u.cgrp);
     }
     root->u.cgrp.name = name;
-    return root;
-}
-
-/*! \brief
- * Reverses the chain of selection elements starting at \p root.
- *
- * \param   root First selection in the whole selection chain.
- * \returns The new first element for the chain.
- */
-static t_selelem *
-reverse_selelem_chain(t_selelem *root)
-{
-    t_selelem *item;
-    t_selelem *prev;
-    t_selelem *next;
-
-    prev = NULL;
-    item = root;
-    while (item)
-    {
-        next = item->next;
-        item->next = prev;
-        prev = item;
-        item = next;
-    }
-    return prev;
-}
-
-/*! \brief
- * Initializes the evaluation groups for \ref SEL_ROOT items.
- *
- * \param     root First selection in the whole selection chain.
- * \param[in] gall Group of all atoms.
- * \returns The new first element for the chain.
- *
- * The function also removes static subexpressions that are no longer used.
- * The elements are processed in reverse order to correctly detect static
- * subexpressions referred to by other static subexpressions. All other
- * processing is independent of the order of the elements.
- */
-static t_selelem *
-process_roots(t_selelem *root, gmx_ana_index_t *gall)
-{
-    t_selelem *item;
-    t_selelem *next;
-
-    root = reverse_selelem_chain(root);
-    do
-    {
-        next = root->next;
-        root = init_root_item(root, gall);
-        if (!root)
-        {
-            root = next;
-        }
-    }
-    while (root == next);
-    item = root;
-    while (item && item->next)
-    {
-        next = item->next->next;
-        item->next = init_root_item(item->next, gall);
-        if (!item->next)
-        {
-            item->next = next;
-        }
-        else
-        {
-            item = item->next;
-        }
-    }
-    return reverse_selelem_chain(root);
 }
 
 
@@ -2450,8 +2433,10 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
      */
     _gmx_selcollection_clear_symtab(sc);
 
+    /* Remove any unused variables. */
+    sc->root = remove_unused_subexpressions(sc->root);
     /* Extract subexpressions into separate roots */
-    sc->root = extract_subexpressions(sc->root, &sc->gall);
+    sc->root = extract_subexpressions(sc->root);
 
     /* Initialize the evaluation callbacks and process the tree structure
      * to conform to the expectations of the callback functions. */
@@ -2487,7 +2472,8 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     item = sc->root;
     while (item)
     {
-        if (item->child->type == SEL_SUBEXPR && item->child->refcount > 2)
+        if (item->child->type == SEL_SUBEXPR && item->child->refcount > 2
+            && !(item->child->cdata->flags & SEL_CDATA_FULLEVAL))
         {
             mark_subexpr_dynamic(item->child, TRUE);
         }
@@ -2501,13 +2487,18 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
         item = item->next;
     }
 
+    /* At this point, static subexpressions no longer have references to them,
+     * so they can be removed. */
+    sc->root = remove_unused_subexpressions(sc->root);
+
     /* Do a second pass to evaluate static parts of common subexpressions */
     /* Note that the refcount check skips constant subexpressions completely
      * since they were already evaluated by analyze_static(). */
     item = sc->root;
     while (item)
     {
-        if (item->child->type == SEL_SUBEXPR && item->child->refcount > 2)
+        if (item->child->type == SEL_SUBEXPR && item->child->refcount > 2
+            && !(item->child->cdata->flags & SEL_CDATA_FULLEVAL))
         {
             mark_subexpr_dynamic(item->child, FALSE);
             item->child->u.cgrp.isize = 0;
@@ -2529,11 +2520,13 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
         item = item->next;
     }
 
-    /* Initialize evaluation groups and remove unused subexpressions. */
-    sc->root = process_roots(sc->root, &sc->gall);
+    /* We need a yet another pass of subexpression removal to remove static
+     * subexpressions referred to by common dynamic subexpressions. */
+    sc->root = remove_unused_subexpressions(sc->root);
 
-    /* Initialize position calculations for methods, perform some final
-     * optimization and free the memory allocated for the compilation. */
+    /* Initialize evaluation groups, position calculations for methods, perform
+     * some final optimization, and free the memory allocated for the
+     * compilation. */
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
     rc = gmx_ana_poscalc_type_from_enum(sc->rpost, &post, &flags);
@@ -2546,6 +2539,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     item = sc->root;
     while (item)
     {
+        init_root_item(item, &sc->gall);
         optimize_item_subexpressions(item);
         rc = init_item_comg(item, sc->pcc, post, flags);
         if (rc != 0)
