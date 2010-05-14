@@ -104,6 +104,8 @@ struct gmx_ana_selcollection_t
     struct gmx_ana_index_t         gall;
     /** Position calculation collection used for selection position evaluation. */
     struct gmx_ana_poscalc_coll_t *pcc;
+    /** Memory pool used for selection evaluation. */
+    struct gmx_sel_mempool_t      *mempool;
     /** Parser symbol table. */
     struct gmx_sel_symtab_t     *symtab;
 };

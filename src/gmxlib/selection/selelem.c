@@ -45,6 +45,7 @@
 
 #include "evaluate.h"
 #include "keywords.h"
+#include "mempool.h"
 #include "selelem.h"
 
 /*!
@@ -140,6 +141,7 @@ _gmx_selelem_create(e_selelem_t type)
     }
     _gmx_selvalue_clear(&sel->v);
     sel->evaluate   = NULL;
+    sel->mempool    = NULL;
     sel->child      = NULL;
     sel->next       = NULL;
     sel->refcount   = 1;
@@ -180,6 +182,65 @@ _gmx_selelem_set_vtype(t_selelem *sel, e_selvalue_t vtype)
 }
 
 /*!
+ * \param[in,out] sel   Selection element to reserve.
+ * \param[in]     count Number of values to reserve memory for.
+ * \returns       0 on success or if no memory pool, non-zero on error.
+ *
+ * Reserves memory for the values of \p sel from the \p sel->mempool
+ * memory pool. If no memory pool is set, nothing is done.
+ */
+int
+_gmx_selelem_mempool_reserve(t_selelem *sel, int count)
+{
+    int rc = 0;
+
+    if (!sel->mempool)
+    {
+        return 0;
+    }
+    switch (sel->v.type)
+    {
+        case GROUP_VALUE:
+            rc = _gmx_sel_mempool_alloc_group(sel->mempool, sel->v.u.g, count);
+            break;
+
+        default:
+            gmx_bug("mem pooling not implemented for non-group values");
+            return -1;
+    }
+    return rc;
+}
+
+/*!
+ * \param[in,out] sel   Selection element to release.
+ *
+ * Releases the memory allocated for the values of \p sel from the
+ * \p sel->mempool memory pool. If no memory pool is set, nothing is done.
+ */
+void
+_gmx_selelem_mempool_release(t_selelem *sel)
+{
+    if (!sel->mempool)
+    {
+        return;
+    }
+    switch (sel->v.type)
+    {
+        case GROUP_VALUE:
+            if (sel->v.u.g)
+            {
+                _gmx_sel_mempool_free(sel->mempool, sel->v.u.g->index);
+                sel->v.u.g->index = NULL;
+            }
+            break;
+
+        default:
+            gmx_bug("mem pooling not implemented for non-group values");
+            break;
+    }
+}
+
+/*!
  * \param[in] sel Selection to free.
  */
 void
@@ -187,6 +248,7 @@ _gmx_selelem_free_values(t_selelem *sel)
 {
     int   i, n;
 
+    _gmx_selelem_mempool_release(sel);
     if ((sel->flags & SEL_ALLOCDATA) && sel->v.u.ptr)
     {
         /* The number of position/group structures is constant, so the
@@ -481,6 +543,10 @@ _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, bool bValues, int level)
     if (!(sel->flags & SEL_VALFLAGMASK))
     {
         fprintf(fp, "0");
+    }
+    if (sel->mempool)
+    {
+        fprintf(fp, "P");
     }
     if (sel->type == SEL_CONST)
     {

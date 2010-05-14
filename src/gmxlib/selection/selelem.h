@@ -51,6 +51,7 @@ struct gmx_ana_selparam_t;
 struct gmx_ana_selmethod_t;
 
 struct gmx_sel_evaluate_t;
+struct gmx_sel_mempool_t;
 struct t_selelem;
 
 /********************************************************************/
@@ -288,6 +289,8 @@ typedef struct t_selelem
         /** Associated selection parameter for \ref SEL_SUBEXPRREF elements. */
         struct gmx_ana_selparam_t      *param;
     }                                   u;
+    /** Memory pool to use for values, or NULL if standard memory handling. */
+    struct gmx_sel_mempool_t           *mempool;
     /** Internal data for the selection compiler. */
     struct t_compiler_data             *cdata;
     
@@ -311,6 +314,12 @@ _gmx_selelem_create(e_selelem_t type);
 /** Sets the value type of a \c t_selelem. */
 extern int
 _gmx_selelem_set_vtype(t_selelem *sel, e_selvalue_t vtype);
+/** Reserves memory for value of a \c t_selelem from a memory pool. */
+extern int
+_gmx_selelem_mempool_reserve(t_selelem *sel, int count);
+/** Releases memory pool used for value of a \c t_selelem. */
+extern void
+_gmx_selelem_mempool_release(t_selelem *sel);
 /** Frees the memory allocated for a \c t_selelem structure and all its children. */
 extern void
 _gmx_selelem_free(t_selelem *sel);

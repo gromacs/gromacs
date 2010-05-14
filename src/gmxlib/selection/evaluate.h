@@ -48,11 +48,15 @@
 
 #include "selelem.h"
 
+struct gmx_sel_mempool_t;
+
 /*! \internal \brief
  * Data structure for passing information required during evaluation.
  */
 typedef struct gmx_sel_evaluate_t
 {
+    /** Memory pool for intermediate values. */
+    struct gmx_sel_mempool_t *mp;
     /** Index group that contains all the atoms. */
     gmx_ana_index_t         *gall;
     /** Topology information. */
@@ -68,7 +72,8 @@ typedef struct gmx_sel_evaluate_t
 /*@{*/
 /** Initializes an evaluation data structure. */
 void
-_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data, gmx_ana_index_t *gall,
+_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
+                       struct gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
                        t_topology *top, t_trxframe *fr, t_pbc *pbc);
 /** Evaluates the children of a general selection element. */
 int

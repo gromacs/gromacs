@@ -58,20 +58,24 @@
 #include <selmethod.h>
 
 #include "evaluate.h"
+#include "mempool.h"
 #include "selcollection.h"
 #include "selelem.h"
 
 /*!
  * \param[out] data Evaluation data structure to initialize.
+ * \param[in]  mp   Memory pool for intermediate evaluation values.
  * \param[in]  gall Index group with all the atoms.
  * \param[in]  top  Topology structure for evaluation.
  * \param[in]  fr   New frame for evaluation.
  * \param[in]  pbc  New PBC information for evaluation.
  */
 void
-_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data, gmx_ana_index_t *gall,
+_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
+                       gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
                        t_topology *top, t_trxframe *fr, t_pbc *pbc)
 {
+    data->mp   = mp;
     data->gall = gall;
     data->top  = top;
     data->fr   = fr;
@@ -133,7 +137,7 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
     int                 g, i;
     int                 rc;
 
-    _gmx_sel_evaluate_init(&data, &sc->gall, sc->top, fr, pbc);
+    _gmx_sel_evaluate_init(&data, sc->mempool, &sc->gall, sc->top, fr, pbc);
     init_frame_eval(sc->root);
     sel = sc->root;
     while (sel)
@@ -814,12 +818,17 @@ _gmx_sel_evaluate_not(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t 
 {
     int rc;
 
-    rc = sel->child->evaluate(data, sel->child, g);
+    rc = _gmx_selelem_mempool_reserve(sel->child, g->isize);
+    if (rc == 0)
+    {
+        rc = sel->child->evaluate(data, sel->child, g);
+    }
     if (rc != 0)
     {
         return rc;
     }
     gmx_ana_index_difference(sel->v.u.g, g, sel->child->v.u.g);
+    _gmx_selelem_mempool_release(sel->child);
     return 0;
 }
 
@@ -860,21 +869,31 @@ _gmx_sel_evaluate_and(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t 
     {
         child = child->next;
     }
-    rc = child->evaluate(data, child, g);
+    rc = _gmx_selelem_mempool_reserve(child, g->isize);
+    if (rc == 0)
+    {
+        rc = child->evaluate(data, child, g);
+    }
     if (rc != 0)
     {
         return rc;
     }
     gmx_ana_index_copy(sel->v.u.g, child->v.u.g, FALSE);
+    _gmx_selelem_mempool_release(child);
     child = child->next;
     while (child && sel->v.u.g->isize > 0)
     {
-        rc = child->evaluate(data, child, sel->v.u.g);
+        rc = _gmx_selelem_mempool_reserve(child, sel->v.u.g->isize);
+        if (rc == 0)
+        {
+            rc = child->evaluate(data, child, sel->v.u.g);
+        }
         if (rc != 0)
         {
             return rc;
         }
         gmx_ana_index_intersection(sel->v.u.g, sel->v.u.g, child->v.u.g);
+        _gmx_selelem_mempool_release(child);
         child = child->next;
     }
     return 0;
@@ -916,23 +935,37 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *
     child = sel->child;
     if (child->evaluate)
     {
-        rc = child->evaluate(data, child, g);
+        rc = _gmx_selelem_mempool_reserve(child, g->isize);
+        if (rc == 0)
+        {
+            rc = child->evaluate(data, child, g);
+        }
         if (rc != 0)
         {
             return rc;
         }
+        gmx_ana_index_partition(sel->v.u.g, &tmp, g, child->v.u.g);
+        _gmx_selelem_mempool_release(child);
     }
-    gmx_ana_index_partition(sel->v.u.g, &tmp, g, child->v.u.g);
+    else
+    {
+        gmx_ana_index_partition(sel->v.u.g, &tmp, g, child->v.u.g);
+    }
     child = child->next;
     while (child && tmp.isize > 0)
     {
         tmp.name = NULL;
-        rc = child->evaluate(data, child, &tmp);
+        rc = _gmx_selelem_mempool_reserve(child, tmp.isize);
+        if (rc == 0)
+        {
+            rc = child->evaluate(data, child, &tmp);
+        }
         if (rc != 0)
         {
             return rc;
         }
         gmx_ana_index_partition(&tmp, &tmp2, &tmp, child->v.u.g);
+        _gmx_selelem_mempool_release(child);
         sel->v.u.g->isize += tmp.isize;
         tmp.isize = tmp2.isize;
         tmp.index = tmp2.index;

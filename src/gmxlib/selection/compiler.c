@@ -263,6 +263,7 @@
 
 #include "evaluate.h"
 #include "keywords.h"
+#include "mempool.h"
 #include "selcollection.h"
 #include "selelem.h"
 
@@ -358,6 +359,10 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
 {
     int        nalloc;
 
+    if (sel->mempool)
+    {
+        return TRUE;
+    }
     /* Find out the number of elements to allocate */
     if (sel->flags & SEL_SINGLEVAL)
     {
@@ -928,6 +933,37 @@ init_item_evaluation(t_selelem *sel)
     return TRUE;
 }
 
+/*! \brief
+ * Sets the memory pool for selection elements that can use it.
+ *
+ * \param     sel      Root of the selection subtree to process.
+ * \param[in] mempool  Memory pool to use.
+ */
+static void
+setup_memory_pooling(t_selelem *sel, gmx_sel_mempool_t *mempool)
+{
+    bool bPoolChildren = FALSE;
+
+    if (sel->type == SEL_BOOLEAN)
+    {
+        bPoolChildren = TRUE;
+    }
+    if (sel->type != SEL_SUBEXPRREF)
+    {
+        t_selelem         *child;
+
+        child = sel->child;
+        while (child)
+        {
+            if (bPoolChildren && (child->flags & SEL_DYNAMIC))
+            {
+                child->mempool = mempool;
+            }
+            setup_memory_pooling(child, mempool);
+            child = child->next;
+        }
+    }
+}
 
 /********************************************************************
  * COMPILER DATA INITIALIZATION PASS
@@ -2400,7 +2436,13 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     int          flags;
     int          rc;
 
-    _gmx_sel_evaluate_init(&evaldata, &sc->gall, sc->top, NULL, NULL);
+    rc = _gmx_sel_mempool_create(&sc->mempool);
+    if (rc != 0)
+    {
+        return rc;
+    }
+    _gmx_sel_evaluate_init(&evaldata, sc->mempool, &sc->gall,
+                           sc->top, NULL, NULL);
 
     /* Clear the symbol table because it is not possible to parse anything
      * after compilation, and variable references in the symbol table can
@@ -2431,6 +2473,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
             /* FIXME: Clean up the collection */
             return -1;
         }
+        setup_memory_pooling(item, sc->mempool);
         /* Initialize the compiler data */
         init_item_compilerdata(item);
         init_item_staticeval(item);
@@ -2512,6 +2555,13 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
         }
         free_item_compilerdata(item);
         item = item->next;
+    }
+
+    /* Allocate memory for the evaluation memory pool. */
+    rc = _gmx_sel_mempool_reserve(sc->mempool, 0);
+    if (rc != 0)
+    {
+        return rc;
     }
 
     /* Finish up by updating some information */

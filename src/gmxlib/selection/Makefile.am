@@ -7,6 +7,7 @@ noinst_LTLIBRARIES = libselection.la
 
 libselection_la_SOURCES =	\
 	compiler.c	evaluate.c	evaluate.h	keywords.h	\
+	mempool.c	mempool.h	\
 	params.c 	parser.c	parser.h	parsetree.c	\
 	parsetree.h	\
 	scanner.c	scanner.h	scanner_flex.h	scanner_internal.c \
