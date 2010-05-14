@@ -272,12 +272,13 @@
 enum
 {
     /*! \brief
-     * Whether the element is a method parameter.
+     * Whether a subexpression needs to evaluated for all atoms.
      *
      * This flag is set for \ref SEL_SUBEXPR elements that are used to
-     * evaluate non-atom-valued selection method parameters.
+     * evaluate non-atom-valued selection method parameters, as well as
+     * those that are used directly as values of selections.
      */
-    SEL_CDATA_METHODPARAM =  1,
+    SEL_CDATA_FULLEVAL    =  1,
     /*! \brief
      * Whether the whole subexpression should be treated as static.
      *
@@ -524,11 +525,6 @@ extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
             {
                 subexpr->next = _gmx_selelem_create(SEL_ROOT);
                 subexpr       = subexpr->next;
-            }
-            /* Set the evaluation group to all atoms */
-            if (!(child->flags & SEL_ATOMVAL))
-            {
-                gmx_ana_index_set(&subexpr->u.cgrp, gall->isize, gall->index, NULL, 0);
             }
             /* Create the subexpression element and/or
              * move the actual subexpression under the created element. */
@@ -834,30 +830,6 @@ optimize_arithmetic_expressions(t_selelem *sel)
  ********************************************************************/
 
 /*! \brief
- * Initializes the evaluation groups for the selections.
- *
- * \param[in,out] sc   Selection collection data.
- *
- * The evaluation group of each \ref SEL_ROOT element corresponding to a
- * selection in \p sc is set to \p gall.
- */
-static void
-initialize_evalgrps(gmx_ana_selcollection_t *sc)
-{
-    t_selelem   *item;
-    int          i;
-
-    /* Initialize the output */
-    for (i = 0; i < sc->nr; ++i)
-    {
-        item = sc->sel[i]->selelem;
-        /* Set the evaluation group to all atoms */
-        gmx_ana_index_set(&item->u.cgrp, sc->gall.isize, sc->gall.index,
-                          item->u.cgrp.name, 0);
-    }
-}
-
-/*! \brief
  * Prepares the selection (sub)tree for evaluation.
  *
  * \param[in,out] sel Root of the selection subtree to prepare.
@@ -987,9 +959,9 @@ init_item_compilerdata(t_selelem *sel)
     {
         sel->cdata->flags |= SEL_CDATA_EVALMAX;
     }
-    /* Set the method parameter flag for non-atom-valued parameter
-     * subexpressions; the subexpression has already been initialized,
-     * so we can simply access its compilation flags.*/
+    /* Set the full evaluation flag for subexpressions that require it;
+     * the subexpression has already been initialized, so we can simply
+     * access its compilation flags.*/
     if (sel->type == SEL_EXPRESSION || sel->type == SEL_MODIFIER)
     {
         child = sel->child;
@@ -997,10 +969,14 @@ init_item_compilerdata(t_selelem *sel)
         {
             if (!(child->flags & SEL_ATOMVAL))
             {
-                child->child->cdata->flags |= SEL_CDATA_METHODPARAM;
+                child->child->cdata->flags |= SEL_CDATA_FULLEVAL;
             }
             child = child->next;
         }
+    }
+    else if (sel->type == SEL_ROOT && sel->child->type == SEL_SUBEXPRREF)
+    {
+        sel->child->child->cdata->flags |= SEL_CDATA_FULLEVAL;
     }
 
     /* Initialize children */
@@ -1085,10 +1061,10 @@ init_item_staticeval(t_selelem *sel)
 {
     t_selelem   *child;
 
-    /* Non-atom-valued method parameters should always have bStaticEval,
+    /* Subexpressions with full evaluation should always have bStaticEval,
      * so don't do anything if a reference to them is encountered. */
     if (sel->type == SEL_SUBEXPRREF
-        && (sel->child->cdata->flags & SEL_CDATA_METHODPARAM))
+        && (sel->child->cdata->flags & SEL_CDATA_FULLEVAL))
     {
         return;
     }
@@ -1140,6 +1116,38 @@ init_item_staticeval(t_selelem *sel)
             init_item_staticeval(child);
             child = child->next;
         }
+    }
+}
+
+/********************************************************************
+ * EVALUATION GROUP INITIALIZATION
+ ********************************************************************/
+
+/*! \brief
+ * Initializes evaluation groups for root items.
+ *
+ * \param[in,out] sc   Selection collection data.
+ *
+ * The evaluation group of each \ref SEL_ROOT element corresponding to a
+ * selection in \p sc is set to \p gall.  The same is done for \ref SEL_ROOT
+ * elements corresponding to subexpressions that need full evaluation.
+ */
+static void
+initialize_evalgrps(gmx_ana_selcollection_t *sc)
+{
+    t_selelem   *root;
+    int          i;
+
+    root = sc->root;
+    while (root)
+    {
+        if (root->child->type != SEL_SUBEXPR
+            || (root->child->cdata->flags & SEL_CDATA_FULLEVAL))
+        {
+            gmx_ana_index_set(&root->u.cgrp, sc->gall.isize, sc->gall.index,
+                              root->u.cgrp.name, 0);
+        }
+        root = root->next;
     }
 }
 
@@ -1798,20 +1806,9 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             break;
 
         case SEL_SUBEXPRREF:
-            /* Evaluate the subexpression if it is not yet evaluated.
-             * Can happen when a variable is passed as a parameter or as
-             * a selection. */
-            if (sel->child->u.cgrp.isize == 0)
-            {
-                rc = sel->child->evaluate(data, sel->child, g ? g : data->gall);
-                if (rc != 0)
-                {
-                    return rc;
-                }
-                /* Prevent another evaluation of the child. */
-                sel->child->evaluate = NULL;
-                alloc_selection_data(sel, sel->child->cdata->gmax->isize, TRUE);
-            }
+            /* The subexpression should have been evaluated if g is NULL
+             * (i.e., this is a method parameter or a direct value of a
+             * selection). */
             if (!g)
             {
                 alloc_selection_data(sel, sel->child->cdata->gmax->isize, TRUE);
@@ -1825,7 +1822,6 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                 sel->flags |= SEL_OUTINIT;
             }
             rc = sel->cdata->evaluate(data, sel, g);
-            sel->child->evaluate = &analyze_static;
             if (rc != 0)
             {
                 return rc;
