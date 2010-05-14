@@ -1534,6 +1534,23 @@ static int gmx_fio_fsync_lock(int fio, bool do_lock)
         rc = fsync(fileno(FIO[fio].fp));
     else if (FIO[fio].xdr)
         rc = fsync(fileno((FILE *) FIO[fio].xdr->x_private));
+
+    /* We check for these error codes this way because POSIX requires them
+       to be defined, and using anything other than macros is unlikely: */
+#ifdef EINTR
+    /* we don't want to report an error just because fsync() caught a signal.
+       For our purposes, we can just ignore this. */
+    if (rc && errno==EINTR)
+        rc=0;
+#endif
+#ifdef EINVAL
+    /* we don't want to report an error just because we tried to fsync() 
+       stdout, a socket or a pipe. */
+    if (rc && errno==EINVAL)
+        rc=0;
+#endif
+
+
 #ifdef GMX_THREADS
     if (do_lock)
         tMPI_Thread_mutex_unlock(&fio_mutex);
@@ -1569,13 +1586,7 @@ int gmx_fio_all_output_fsync(void)
         {
             /* if any of them fails, return failure code */
             int rc=gmx_fio_fsync_lock(i, FALSE);
-            if ( (rc != 0) 
-#ifdef HAVE_EINTR
-                 /* we don't want to report an error just because fsync()
-                    caught a signal */
-                 && (rc != EINTR)
-#endif
-                )
+            if (rc != 0) 
             {
                 char buf[STRLEN];
                 sprintf(buf,

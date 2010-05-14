@@ -526,15 +526,6 @@ AC_MSG_RESULT([yes])
 AC_DEFINE(HAVE_PIPES,,[Pipes (popen/pclose) supported])
 ],AC_MSG_RESULT([no]))
 
-#############
-# Check that the EINTR error exists
-#############
-AC_MSG_CHECKING([for EINTR])
-AC_TRY_COMPILE([#include <errno.h>],[int i=EINTR;],[
-AC_MSG_RESULT([yes])
-AC_DEFINE(HAVE_EINTR,,[EINTR supported and defined])
-],AC_MSG_RESULT([no]))
-
 
 
 #############
