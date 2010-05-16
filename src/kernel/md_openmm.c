@@ -97,8 +97,8 @@
 /* include even when OpenMM not used to force compilation of do_md_openmm */
 #include "openmm_wrapper.h"
 
-
-enum { eglsNABNSB, eglsCHKPT, eglsTERM, eglsRESETCOUNTERS, eglsNR };
+/* simulation conditions to transmit */
+enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 
 typedef struct
 {
@@ -248,8 +248,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     matrix      lastbox;
     real        reset_counters=0,reset_counters_now=0;
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-    int         handledSignal=-1; /* compare to last_signal_recvd */
-    bool        bHandledSignal=FALSE;
+    int         handled_stop_condition=gmx_stop_cond_none; 
 
     const char *ommOptions = NULL;
     void   *openmmData;
@@ -457,7 +456,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bLastStep = (step_rel == ir->nsteps);
         t = t0 + step*ir->delta_t;
 
-        if (gs.set[eglsTERM] != 0 )
+        if (gs.set[eglsSTOPCOND] != 0)
         {
             bLastStep = TRUE;
         }
@@ -580,39 +579,40 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */
-        if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) &&
-                (handledSignal!=last_signal_number_recvd) &&
-                MASTERTHREAD(cr))
+        if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
+            MASTERTHREAD(cr))
         {
-            if (bGotStopNextStepSignal)
-            {
-                gs.set[eglsTERM] = 1;
-            }
-            else
-            {
-                gs.set[eglsTERM] = -1;
-            }
+           /* this is just make gs.sig compatible with the hack 
+               of sending signals around by MPI_Reduce with together with
+               other floats */
+            /* NOTE: this only works for serial code. For code that allows
+               MPI nodes to propagate their condition, see kernel/md.c*/
+            if ( gmx_get_stop_condition() == gmx_stop_cond_next_ns )
+                gs.set[eglsSTOPCOND]=1;
+            if ( gmx_get_stop_condition() == gmx_stop_cond_next )
+                gs.set[eglsSTOPCOND]=1;
+            /* < 0 means stop at next step, > 0 means stop at next NS step */
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        signal_name[last_signal_number_recvd],
-                        gs.set[eglsTERM]==-1 ? "NS " : "");
+                        gmx_get_signal_name(),
+                        gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    signal_name[last_signal_number_recvd],
-                    gs.set[eglsTERM]==-1 ? "NS " : "");
+                    gmx_get_signal_name(),
+                    gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
             fflush(stderr);
-            handledSignal=last_signal_number_recvd;
+            handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 gs.set[eglsTERM] == 0)
+                 gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
-            gs.set[eglsTERM] = 1;
+            gs.set[eglsSTOPCOND] = 1;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
@@ -644,7 +644,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         /* Remaining runtime */
-        if (MULTIMASTER(cr) && do_verbose)
+        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal() ))
         {
             print_time(stderr,runtime,step,ir,cr);
         }

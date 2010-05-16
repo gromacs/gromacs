@@ -104,6 +104,7 @@ typedef struct {
   int     nctl;     /* How many control atoms there are */
   char 	  *a[4];    /* Control atoms i,j,k,l	  */
   bool    bAlreadyPresent;
+  bool    bXSet;
   rvec    newx;     /* calculated new position    */
   atom_id newi;     /* new atom index number (after additions) */
 } t_hack;

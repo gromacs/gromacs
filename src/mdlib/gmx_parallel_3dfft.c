@@ -79,11 +79,11 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
 {
     int rN=ndata[2],M=ndata[1],K=ndata[0];
     int flags = FFT5D_REALCOMPLEX | FFT5D_ORDER_YZ; /* FFT5D_DEBUG */
-    snew(*pfft_setup,1);
-    if (bReproducible) flags |= FFT5D_NOMEASURE; 
-    
     MPI_Comm rcomm[]={comm[1],comm[0]};
     int Nb,Mb,Kb; /* dimension for backtransform (in starting order) */
+    
+    snew(*pfft_setup,1);
+    if (bReproducible) flags |= FFT5D_NOMEASURE; 
     
     if (!(flags&FFT5D_ORDER_YZ)) { 
         Nb=M;Mb=K;Kb=rN;		
@@ -91,10 +91,10 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
         Nb=K;Mb=rN;Kb=M;  /* currently always true because ORDER_YZ always set */
     }
     
-    (*pfft_setup)->p1 = fft5d_plan_3d(rN,M,K,rcomm, flags, (fft5d_type**)real_data, (fft5d_type**)complex_data);
+    (*pfft_setup)->p1 = fft5d_plan_3d(rN,M,K,rcomm, flags, (t_complex**)real_data, complex_data);
     
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb,Mb,Kb,rcomm,
-                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, (fft5d_type**)complex_data, (fft5d_type**)real_data);
+                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data);
     
     return (*pfft_setup)->p1 != 0 && (*pfft_setup)->p2 !=0;
 }

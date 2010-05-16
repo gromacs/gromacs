@@ -104,7 +104,7 @@ typedef struct {
   real   energy;
   real   dvdlambda;
   float  cycles;
-  int    flags;
+  gmx_stop_cond_t stop_cond;
 } gmx_pme_comm_vir_ene_t;
 
 
@@ -423,8 +423,10 @@ static void receive_virial_energy(t_commrec *cr,
     *dvdlambda += cve.dvdlambda;
     *pme_cycles = cve.cycles;
 
-    bGotStopNextStepSignal = (cve.flags & PME_PP_SIGSTOP);
-    bGotStopNextNSStepSignal = (cve.flags & PME_PP_SIGSTOPNSS);
+    if ( cve.stop_cond != gmx_stop_cond_none )
+    {
+        gmx_set_stop_condition(cve.stop_cond);
+    }
   } else {
     *energy = 0;
     *pme_cycles = 0;
@@ -468,9 +470,7 @@ void gmx_pme_receive_f(t_commrec *cr,
 void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
 				 rvec *f, matrix vir,
 				 real energy, real dvdlambda,
-				 float cycles,
-				 bool bGotStopNextStepSignal,
-				 bool bGotStopNextNSStepSignal)
+				 float cycles)
 {
   gmx_pme_comm_vir_ene_t cve; 
   int messages,ind_start,ind_end,receiver;
@@ -495,12 +495,9 @@ void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
   copy_mat(vir,cve.vir);
   cve.energy    = energy;
   cve.dvdlambda = dvdlambda;
-  cve.flags     = 0;
-  if (bGotStopNextStepSignal)
-    cve.flags |= PME_PP_SIGSTOP;
-  if (bGotStopNextNSStepSignal)
-    cve.flags |= PME_PP_SIGSTOPNSS;
-  
+  /* check for the signals to send back to a PP node */
+  cve.stop_cond = gmx_get_stop_condition();
+ 
   cve.cycles = cycles;
   
   if (debug)

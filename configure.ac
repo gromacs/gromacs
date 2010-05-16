@@ -726,6 +726,8 @@ AC_CHECK_FUNCS(isnan)
 AC_CHECK_FUNCS(_isnan)
 AC_CHECK_FUNCS(isfinite)
 AC_CHECK_FUNCS(_isfinite)
+AC_CHECK_FUNCS(fsync)
+AC_CHECK_FUNCS(fileno)
 
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])

@@ -102,8 +102,6 @@
 #define mpi_type MPI_FLOAT
 #endif
 
-/* TODO: fix thread-safety */
-
 /* Internal datastructures */
 typedef struct {
     int send_index0;
@@ -239,14 +237,6 @@ typedef struct gmx_pme {
     real *   sum_qgrid_tmp;
     real *   sum_qgrid_dd_tmp;
 } t_gmx_pme;
-
-/* The following stuff is needed for signal handling on the PME nodes. 
- * signal_handler needs to be defined in md.c, the bGot..Signal variables
- * here */ 
-extern RETSIGTYPE signal_handler(int n);
-
-volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE; 
-
 
 
 static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
@@ -1148,7 +1138,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
 
 static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                          real ewaldcoeff,real vol,matrix vir,t_commrec *cr,
-                         bool bEnerPres,real *mesh_energy)
+                         bool bEnerVir,real *mesh_energy)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
@@ -1257,7 +1247,7 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
             }
             kxend = local_offset[XX] + local_ndata[XX];
 			
-            if (bEnerPres)
+            if (bEnerVir)
             {
                 /* More expensive inner loop, especially because of the storage
                  * of the mh elements in array's.
@@ -1266,11 +1256,6 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                  */
 
                 /* Two explicit loops to avoid a conditional inside the loop */
-                mhyk      = my * ryy;
-                mhzk      = mz * rzz;
-                mhy[kx]   = mhyk;
-                mhz[kx]   = mhzk;
-
                 for(kx=kxstart; kx<maxkx; kx++)
                 {
                     mx = kx;
@@ -1401,20 +1386,24 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
         }
     }
     
-    /* Update virial with local values. The virial is symmetric by definition.
-     * this virial seems ok for isotropic scaling, but I'm
-     * experiencing problems on semiisotropic membranes.
-     * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
-     */
-    vir[XX][XX] = 0.25*virxx;
-    vir[YY][YY] = 0.25*viryy;
-    vir[ZZ][ZZ] = 0.25*virzz;
-    vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
-    vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
-    vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
-	
-    /* This energy should be corrected for a charged system */
-    *mesh_energy = 0.5*energy;
+    if (bEnerVir)
+    {
+        /* Update virial with local values.
+         * The virial is symmetric by definition.
+         * this virial seems ok for isotropic scaling, but I'm
+         * experiencing problems on semiisotropic membranes.
+         * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
+         */
+        vir[XX][XX] = 0.25*virxx;
+        vir[YY][YY] = 0.25*viryy;
+        vir[ZZ][ZZ] = 0.25*virzz;
+        vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
+        vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
+        vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
+        
+        /* This energy should be corrected for a charged system */
+        *mesh_energy = 0.5*energy;
+    }
 
     /* Return the loop count */
     return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
@@ -1812,7 +1801,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
     atc->nodeid = 0;
     atc->pd_nalloc = 0;
 #ifdef GMX_MPI
-    if (PAR(cr))
+    if (pme->nnodes > 1)
     {
         atc->mpi_comm = pme->mpi_comm_d[dimind];
         MPI_Comm_size(atc->mpi_comm,&atc->nslab);
@@ -2427,7 +2416,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         
         gmx_pme_send_force_vir_ener(pme_pp,
                                     f_pp,vir,energy,dvdlambda,
-                                    cycles,bGotTermSignal,bGotUsr1Signal);
+                                    cycles);
         
         count++;
 

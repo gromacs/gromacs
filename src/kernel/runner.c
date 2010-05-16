@@ -732,19 +732,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         gmx_log_close(fplog);
     }	
 
-    if(bGotStopNextStepSignal)
-    {
-        rc = 1;
-    }
-    else if(bGotStopNextNSStepSignal)
-    {
-        rc = 2;
-    }
-    else
-    {
-        rc = 0;
-    }
-
+    rc=(int)gmx_get_stop_condition();
     return rc;
 }
 

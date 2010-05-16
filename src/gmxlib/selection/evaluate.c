@@ -959,7 +959,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
 {
     t_selelem  *left, *right;
     int         n, i, i1, i2;
-    real        lval, rval, val;
+    real        lval, rval, val=0.;
     int         rc;
 
     rc = _gmx_sel_evaluate_children(data, sel, g);

@@ -186,6 +186,7 @@ public:
     ~GmxOpenMMPlatformOptions() { options.clear(); }
     string getOptionValue(const string &opt);
     void remOption(const string &opt);
+    void print();
 private:
     void setOption(const string &opt, const string &val);
 
@@ -300,9 +301,11 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
  */
 string GmxOpenMMPlatformOptions::getOptionValue(const string &opt)
 {
-    if (options.find(toUpper(opt)) != options.end())
+	map<string, string> :: const_iterator it = options.find(toUpper(opt));
+	if (it != options.end())
     {
-        return options[toUpper(opt)];
+		// cout << "@@@>> " << it->first << " : " << it->second << endl;
+		return it->second;
     }
     else
     {
@@ -330,6 +333,17 @@ void GmxOpenMMPlatformOptions::remOption(const string &opt)
     options.erase(toUpper(opt)); 
 }
 
+/*!
+ * \brief Print option-value pairs to a file (debugging function). 
+ */
+void GmxOpenMMPlatformOptions::print()
+{
+    cout << ">> Platform options: " << endl 
+         << ">> platform     = " << getOptionValue("platform") << endl
+         << ">> deviceID     = " << getOptionValue("deviceid") << endl
+         << ">> memtest      = " << getOptionValue("memtest") << endl
+         << ">> force-device = " << getOptionValue("force-device") << endl;
+}
 
 /*!
  * \brief Container for OpenMM related data structures that represent the bridge 
@@ -356,12 +370,17 @@ public:
  */
 static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatformOptions *opt)
 {
-
-    char warn_buf[STRLEN];
-
+    char strout_buf[STRLEN];
     int which_test;
-    int res;
-    const char * test_type = opt->getOptionValue("memtest").c_str();
+    int res = 0;
+	string s = opt->getOptionValue("memtest");
+	const char * test_type = 
+			s.c_str(); 
+		/* NOTE: thie code below for some misterious reason does NOT work 
+		with MSVC, but the above "fix" seems to solve the problem - not sure why though */
+			// opt->getOptionValue("memtest").c_str();
+
+
     if (!gmx_strcasecmp(test_type, "off"))
     {
         which_test = 0;
@@ -378,13 +397,18 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
         }
     }
 
+    if (which_test < 0) 
+    {
+        gmx_fatal(FARGS, "Amount of seconds for memetest is negative (%d). ", which_test);
+    }
+
     switch (which_test)
     {
         case 0: /* no memtest */
-            sprintf(warn_buf, "%s-simulation GPU memtest skipped. Note, that faulty memory can cause "
+            sprintf(strout_buf, "%s-simulation GPU memtest skipped. Note, that faulty memory can cause "
                 "incorrect results!", pre_post);
-            fprintf(fplog, "%s\n", warn_buf);
-            gmx_warning(warn_buf);
+            fprintf(fplog, "%s\n", strout_buf);
+            gmx_warning(strout_buf);
             break; /* case 0 */
 
         case 1: /* quick memtest */
@@ -392,15 +416,7 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
             fprintf(stdout, "\n%s-simulation %s GPU memtest in progress...", pre_post, test_type);
             fflush(fplog);
             fflush(stdout);
-            if (do_quick_memtest(-1) != 0)
-            {
-                gmx_fatal(FARGS,MEM_ERR_MSG(pre_post));
-            }
-            else
-            {
-                fprintf(fplog,  "Memory test completed without errors.\n");
-                fprintf(stdout, "done, no errors detected\n");
-            }
+            res = do_quick_memtest(-1);
             break; /* case 1 */
 
         case 2: /* full memtest */
@@ -408,36 +424,28 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
             fprintf(stdout, "\n%s-simulation %s memtest in progress...", pre_post, test_type);
             fflush(fplog);
             fflush(stdout);
-            if (do_full_memtest(-1) != 0)
-            {
-                gmx_fatal(FARGS, MEM_ERR_MSG(pre_post) );
-
-            }
-            else
-            {
-                fprintf(fplog, "Memory test completed without errors.\n");
-                fprintf(stdout, "done, no errors detected\n");
-            }
+            res = do_full_memtest(-1);
             break; /* case 2 */
 
         default: /* timed memtest */
-            fprintf(fplog,  "%s-simulation memtest for ~%ds in progress...\n", pre_post, which_test);
-            fprintf(stdout, "\n%s-simulation memtest for ~%ds in progress...", pre_post, which_test);
+            fprintf(fplog,  "%s-simulation ~%ds memtest in progress...\n", pre_post, which_test);
+            fprintf(stdout, "\n%s-simulation ~%ds memtest in progress...", pre_post, which_test);
             fflush(fplog);
             fflush(stdout);
-            if (do_timed_memtest(-1, which_test) != 0)
-            {
-                gmx_fatal(FARGS, MEM_ERR_MSG(pre_post));
-
-            }
-            else
-            {
-                fprintf(fplog, "Memory test completed without errors.\n");
-                fprintf(stdout, "done, no errors detected.\n");
-            }
+            res = do_timed_memtest(-1, which_test);
         }
-        fflush(fplog);
-        fflush(stdout);
+
+        if (which_test != 0 && res != 0)
+        {
+            gmx_fatal(FARGS, MEM_ERR_MSG(pre_post));
+        }
+        else
+        {
+            fprintf(fplog,  "Memory test completed without errors.\n");
+            fflush(fplog);
+            fprintf(stdout, "done, no errors detected\n");
+            fflush(stdout);           
+        }
 }
 
 /*!
@@ -499,8 +507,8 @@ static void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top, t_state *state)
 
     if (ir->opts.annealing[0])
         gmx_fatal(FARGS,"OpenMM does not support simulated annealing.");
-
-    if (ir->eConstrAlg != econtSHAKE)
+    
+    if (top->idef.il[F_CONSTR].nr > 0 && ir->eConstrAlg != econtSHAKE)
         gmx_warning("OpenMM provides contraints as a combination "
                     "of SHAKE, SETTLE and CCMA. Accuracy is based on the SHAKE tolerance set "
                     "by the \"shake_tol\" option.");
@@ -569,7 +577,7 @@ static void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top, t_state *state)
  * \param[out] sigma 
  * \param[out] epsilon
  */
-static void* convert_c_12_6(double c12, double c6, double *sigma, double *epsilon)
+static void convert_c_12_6(double c12, double c6, double *sigma, double *epsilon)
 {
     if (c12 == 0 && c6 == 0)
     {
@@ -602,11 +610,11 @@ static void* convert_c_12_6(double c12, double c6, double *sigma, double *epsilo
  * \param[in] fplog             Gromacs log file handler.
  * \param[in] platformOptStr    Platform option string. 
  * \param[in] ir                The Gromacs input parameters, see ::t_inputrec
- * \param[in] top_global        TODO Gromacs whole system toppology, \see ::gmx_mtop_t
- * \param[in] top               TODO Gromacs node local topology, \see gmx_localtop_t
- * \param[in] mdatoms           TODO \see ::t_mdatoms
- * \param[in] fr                TODO \see ::t_forcerec
- * \param[in] state             TODO \see ::t_state
+ * \param[in] top_global        Gromacs whole system toppology, \see ::gmx_mtop_t
+ * \param[in] top               Gromacs node local topology, \see gmx_localtop_t
+ * \param[in] mdatoms           Gromacs atom parameters, \see ::t_mdatoms
+ * \param[in] fr                \see ::t_forcerec
+ * \param[in] state             Gromacs systems state, \see ::t_state
  *
  */
 void* openmm_init(FILE *fplog, const char *platformOptStr,
@@ -691,6 +699,11 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         /* parse option string */
         GmxOpenMMPlatformOptions *opt = new GmxOpenMMPlatformOptions(platformOptStr);
 
+        if (debug)
+        {
+            opt->print();
+        }
+
         /* check wheter Gromacs options compatibility with OpenMM */
         checkGmxOptions(ir, top, state);
 
@@ -700,6 +713,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numConstraints = idef.il[F_CONSTR].nr/3;
         const int numSettle = idef.il[F_SETTLE].nr/2;
         const int numBonds = idef.il[F_BONDS].nr/3;
+        const int numUB = idef.il[F_UREY_BRADLEY].nr/4;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
         const int numRB = idef.il[F_RBDIHS].nr/5;
@@ -720,6 +734,24 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int atom2 = bondAtoms[offset++];
             bondForce->addBond(atom1, atom2,
                                idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
+        }
+        // Urey-Bradley includes both the angle and bond potential for 1-3 interactions
+        const int* ubAtoms = (int*) idef.il[F_UREY_BRADLEY].iatoms;
+        HarmonicBondForce* ubBondForce = new HarmonicBondForce();
+        HarmonicAngleForce* ubAngleForce = new HarmonicAngleForce();
+        sys->addForce(ubBondForce);
+        sys->addForce(ubAngleForce);
+        offset = 0;
+        for (int i = 0; i < numUB; ++i)
+        {
+            int type = ubAtoms[offset++];
+            int atom1 = ubAtoms[offset++];
+            int atom2 = ubAtoms[offset++];
+            int atom3 = ubAtoms[offset++];
+            ubBondForce->addBond(atom1, atom3,
+                               idef.iparams[type].u_b.r13, idef.iparams[type].u_b.kUB);
+            ubAngleForce->addAngle(atom1, atom2, atom3, 
+                    idef.iparams[type].u_b.theta*M_PI/180.0, idef.iparams[type].u_b.ktheta);
         }
         const int* angleAtoms = (int*) idef.il[F_ANGLES].iatoms;
         HarmonicAngleForce* angleForce = new HarmonicAngleForce();
@@ -797,10 +829,29 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
             case eelEWALD:
                 nonbondedForce->setNonbondedMethod(NonbondedForce::Ewald);
+				/* 
+				 *	OpenMM uses approximate formulas to calculate the Ewald parameter:
+				 *	alpha = (1.0/cutoff)*sqrt(-log(2.0*tolerlance));
+				 *	and the grid spacing for PME:
+				 *	gridX = ceil(alpha*box[0][0]/pow(0.5*tol, 0.2));
+				 *	gridY = ceil(alpha*box[1][1]/pow(0.5*tol, 0.2));
+				 *	gridZ = ceil(alpha*box[2][2]/pow(0.5*tol, 0.2));
+				 *
+				 *	It overestimates the precision and setting it to 
+				 *	(500 x ewald_rtol) seems to give a reasonable match to the GROMACS settings
+				*/ 
+                if (ir->ewald_rtol < 1e-3)
+                	nonbondedForce->setEwaldErrorTolerance(500*ir->ewald_rtol);
+                else
+                	nonbondedForce->setEwaldErrorTolerance(0.1);
                 break;
 
             case eelPME:
                 nonbondedForce->setNonbondedMethod(NonbondedForce::PME);
+                if (ir->ewald_rtol < 1e-3)
+                	nonbondedForce->setEwaldErrorTolerance(500*ir->ewald_rtol);
+                else
+                	nonbondedForce->setEwaldErrorTolerance(0.1);
                 break;
 
             default:
