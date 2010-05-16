@@ -550,7 +550,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
   const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 #ifdef GSL_MAJOR_VERSION
 #ifdef GSL_MINOR_VERSION
-  if (((GSL_MAJOR_VERSION == 1 && GSL_MINOR_VERSION >= 14) || 
+  if ((GSL_MAJOR_VERSION == 1 && GSL_MINOR_VERSION >= 14) || 
        (GSL_MAJOR_VERSION > 1))
       T = gsl_multimin_fminimizer_nmsimplex2;
 #endif
