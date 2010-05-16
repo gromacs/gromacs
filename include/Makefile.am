@@ -112,6 +112,7 @@ selection.h \
 selmethod.h \
 selparam.h \
 selvalue.h \
+sfactor.h \
 shellfc.h \
 shift.h \
 smalloc.h \

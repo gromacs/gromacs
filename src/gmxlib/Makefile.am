@@ -61,7 +61,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	pargs.c		pbc.c		pdbio.c		princ.c		\
 	rando.c		random.c	gmx_random.c	rbin.c		\
 	readinp.c	replace.c	rmpbc.c		shift_util.c	\
-	sortwater.c	smalloc.c	statutil.c	\
+	sortwater.c	smalloc.c	statutil.c	sfactor.c	\
 	strdb.c		string2.c	symtab.c	\
 	topsort.c	tpxio.c		\
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
