@@ -359,6 +359,7 @@ void gmx_abort(int noderank,int nnodes,int errorno)
 #else
 #ifdef GMX_THREADS
   fprintf(stderr,"Halting program %s\n",ShortProgram());
+  thanx(stderr);
   exit(1);
 #else
   if (nnodes > 1)

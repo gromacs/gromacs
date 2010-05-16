@@ -217,6 +217,37 @@ gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
 
 /*!
  * \param[in] data Data for the current frame.
+ * \param[in] sel  Selection element being evaluated.
+ * \param[in] g    Group for which \p sel should be evaluated.
+ * \returns   0 on success, a non-zero error code on error.
+ *
+ * Evaluates each child of \p sel in \p g.
+ */
+int
+_gmx_sel_evaluate_children(gmx_sel_evaluate_t *data, t_selelem *sel,
+                           gmx_ana_index_t *g)
+{
+    t_selelem  *child;
+    int         rc;
+
+    child = sel->child;
+    while (child)
+    {
+        if (child->evaluate)
+        {
+            rc = child->evaluate(data, child, g);
+            if (rc != 0)
+            {
+                return rc;
+            }
+        }
+        child = child->next;
+    }
+    return 0;
+}
+
+/*!
+ * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated
  *   (not used, can be NULL).
@@ -908,5 +939,64 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *
         child = child->next;
     }
     gmx_ana_index_sort(sel->v.u.g);
+    return 0;
+}
+
+
+/********************************************************************
+ * ARITHMETIC EVALUATION
+ ********************************************************************/
+
+/*!
+ * \param[in] data Data for the current frame.
+ * \param[in] sel  Selection element being evaluated.
+ * \param[in] g    Group for which \p sel should be evaluated.
+ * \returns   0 on success, a non-zero error code on error.
+ */
+int
+_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
+                             gmx_ana_index_t *g)
+{
+    t_selelem  *left, *right;
+    int         n, i, i1, i2;
+    real        lval, rval, val=0.;
+    int         rc;
+
+    rc = _gmx_sel_evaluate_children(data, sel, g);
+    if (rc != 0)
+    {
+        return rc;
+    }
+
+    left  = sel->child;
+    right = left->next;
+    n = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
+    sel->v.nr = n;
+    for (i = i1 = i2 = 0; i < n; ++i)
+    {
+        lval = left->v.u.r[i1];
+        if (sel->u.arith.type != ARITH_NEG)
+        {
+            rval = right->v.u.r[i2];
+        }
+        switch (sel->u.arith.type)
+        {
+            case ARITH_PLUS:    val = lval + rval;     break;
+            case ARITH_MINUS:   val = lval - rval;     break;
+            case ARITH_NEG:     val = -lval;           break;
+            case ARITH_MULT:    val = lval * rval;     break;
+            case ARITH_DIV:     val = lval / rval;     break;
+            case ARITH_EXP:     val = pow(lval, rval); break;
+        }
+        sel->v.u.r[i] = val;
+        if (!(left->flags & SEL_SINGLEVAL))
+        {
+            ++i1;
+        }
+        if (sel->u.arith.type != ARITH_NEG && !(right->flags & SEL_SINGLEVAL))
+        {
+            ++i2;
+        }
+    }
     return 0;
 }

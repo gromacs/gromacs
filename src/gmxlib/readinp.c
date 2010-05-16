@@ -87,6 +87,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
   {
     sprintf(warn_buf, "%s", cpp_error(&in, status));
     warning_error(wi,warn_buf);
+    *ninp = 0;
     return NULL;
   }
   nin = lc  = 0;
@@ -100,7 +101,8 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
       {
 	sprintf(warn_buf, "%s", cpp_error(&in, status));
 	warning_error(wi,warn_buf);
-	return NULL;
+	*ninp = nin;
+	return inp;
       }
       else
 	ptr=0;
@@ -214,10 +216,13 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
   } while (ptr);
   cpp_close_file(&in);
 
-  if (debug)
+  if (debug) {
     fprintf(debug,"Done reading MDP file, there were %d entries in there\n",
 	    nin);
-  *ninp=nin;
+  }
+
+  *ninp = nin;
+
   return inp;
 }
 

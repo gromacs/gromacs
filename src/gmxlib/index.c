@@ -56,11 +56,14 @@
 #include "txtdump.h"
 #include "gmxfio.h"
 
-typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
-static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
+typedef enum { etOther, etProt, etDNA, etRNA, erestNR } eRestp;
+static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA", "RNA" };
 
-static const char   *Sugars[]     = { "A", "T", "G", "C", "U" };
-#define  NDNA asize(Sugars)
+static const char *DNA[]          = { "DA", "DT", "DG", "DC", "DU" };
+#define  NDNA asize(DNA)
+
+static const char *RNA[]          = {  "A",  "T",  "G",  "C",  "U" };
+#define  NRNA asize(RNA)
 
 static const char *Negate[] = { "SOL" };
 #define  NNEGATE asize(Negate)
@@ -452,6 +455,30 @@ t_aa_names *get_aa_names(void)
   return aan;
 }
 
+bool is_residue(t_aa_names *aan,char *resnm)
+{
+  /* gives true if resnm occurs in aminoacids.dat */
+  int i;
+  
+  for(i=0; i<aan->n; i++) {
+    if (strcasecmp(aan->aa[i],resnm) == 0) {
+      return TRUE;
+    }
+  }
+  for(i=0; i<NDNA; i++) {
+    if (strcasecmp(DNA[i],resnm) == 0) {
+      return TRUE;
+    }
+  }
+  for(i=0; i<NRNA; i++) {
+    if (strcasecmp(RNA[i],resnm) == 0) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 bool is_protein(t_aa_names *aan,char *resnm)
 {
   /* gives true if resnm occurs in aminoacids.dat */
@@ -498,11 +525,16 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     resnm = *atoms->resinfo[i].name;
     if ((restp[i] == etOther) && is_protein(aan,resnm))
       restp[i] = etProt;
-    if (restp[i] == etOther)
+    if (restp[i] == etOther) {
       for(j=0; (j<NDNA);  j++) {
-	if (strcasecmp(Sugars[j],resnm) == 0)
+	if (strcasecmp(DNA[j],resnm) == 0)
 	  restp[i] = etDNA;
       }
+      for(j=0; (j<NRNA);  j++) {
+	if (strcasecmp(RNA[j],resnm) == 0)
+	  restp[i] = etRNA;
+      }
+    }
   }
   p_status(atoms->nres,restp,bVerb);
   done_aa_names(&aan);
@@ -524,6 +556,14 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
   aid=mk_aid(atoms,restp,etDNA,&nra,TRUE);
   if (nra > 0) {
     add_grp(gb,gn,nra,aid,"DNA"); 
+    analyse_dna(restp,atoms,gb,gn,bASK,bVerb);
+  }
+  sfree(aid);
+
+  /* RNA */
+  aid=mk_aid(atoms,restp,etRNA,&nra,TRUE);
+  if (nra > 0) {
+    add_grp(gb,gn,nra,aid,"RNA"); 
     analyse_dna(restp,atoms,gb,gn,bASK,bVerb);
   }
   sfree(aid);

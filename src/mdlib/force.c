@@ -453,6 +453,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     {
                         pme_flags |= GMX_PME_CALC_F;
                     }
+                    if (flags & GMX_FORCE_VIRIAL)
+                    {
+                        pme_flags |= GMX_PME_CALC_ENER_VIR;
+                    }
                     wallcycle_start(wcycle,ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
                                         md->start,md->homenr - fr->n_tpi,

@@ -53,7 +53,7 @@
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
-#include "fftgrid.h"
+#include "gmxcomplex.h"
 #include "calcgrid.h"
 #include "nrnb.h"
 #include "coulomb.h"
@@ -770,7 +770,7 @@ real **compute_scattering_factor_table (structure_factor * sf,int *nsftable)
 	    if (i < NCMT)
 	      sf_table[i][j] = CMSF (i,0,sf->lambda, sin_theta);
 	    else
-	      sf_table[i][j] = CMSF (i,i-NCMT+1,sf->lambda, sin_theta);
+	      sf_table[i][j] = CMSF (i%NCMT,i-NCMT+1,sf->lambda, sin_theta);
 	}
     }
     return sf_table;

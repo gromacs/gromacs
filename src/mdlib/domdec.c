@@ -191,6 +191,7 @@ typedef struct gmx_domdec_comm
     /* The number of nodes doing PME (PP/PME or only PME) */
     int  npmenodes;
     int  npmenodes_major;
+    int  npmenodes_minor;
     /* The communication setup including the PME only nodes */
     bool bCartesianPP_PME;
     ivec ntot;
@@ -2708,7 +2709,7 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     }
 
     nso = dd->comm->npmenodes/nslab;
-    /* Determine for each PME slab the PP locacation range for dimension dim */
+    /* Determine for each PME slab the PP location range for dimension dim */
     snew(ddpme->pp_min,nslab);
     snew(ddpme->pp_max,nslab);
     for(slab=0; slab<nslab; slab++) {
@@ -2720,7 +2721,7 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
         /* For y only use our y/z slab.
          * This assumes that the PME x grid size matches the DD grid size.
          */
-        if (dimind == 0 || xyz[YY] == dd->ci[YY]) {
+        if (dimind == 0 || xyz[XX] == dd->ci[XX]) {
             pmeindex = ddindex2pmeindex(dd,i);
             if (dimind == 0) {
                 slab = pmeindex/nso;
@@ -5578,7 +5579,7 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
 }
 
 static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
-			       int reorder)
+                               int reorder)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -5601,18 +5602,22 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
         if (bDiv[YY] || bDiv[ZZ])
         {
             comm->bCartesianPP_PME = TRUE;
-            /* We choose the direction that provides the thinnest slab
+            /* If we have 2D PME decomposition, which is always in x+y,
+             * we stack the PME only nodes in z.
+             * Otherwise we choose the direction that provides the thinnest slab
              * of PME only nodes as this will have the least effect
              * on the PP communication.
              * But for the PME communication the opposite might be better.
              */
-            if (bDiv[YY] && (!bDiv[ZZ] || dd->nc[YY] <= dd->nc[ZZ]))
+            if (bDiv[ZZ] && (comm->npmenodes_minor > 1 ||
+                             !bDiv[YY] ||
+                             dd->nc[YY] > dd->nc[ZZ]))
             {
-                comm->cartpmedim = YY;
+                comm->cartpmedim = ZZ;
             }
             else
             {
-                comm->cartpmedim = ZZ;
+                comm->cartpmedim = YY;
             }
             comm->ntot[comm->cartpmedim]
                 += (cr->npmenodes*dd->nc[comm->cartpmedim])/dd->nnodes;
@@ -6094,7 +6099,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                                         gmx_mtop_t *mtop,t_inputrec *ir,
                                         matrix box,rvec *x,
                                         gmx_ddbox_t *ddbox,
-                                        int *npme_major)
+                                        int *npme_major,int *npme_minor)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -6389,23 +6394,35 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 
     if (EEL_PME(ir->coulombtype))
     {
-        if (FALSE && dd->nc[XX] > cr->npmenodes && cr->npmenodes % dd->nc[XX] == 0)
+        if (comm->npmenodes > dd->nc[XX] && comm->npmenodes % dd->nc[XX] == 0 &&
+            getenv("GMX_PMEONEDD") == NULL)
         {
             comm->npmedecompdim   = 2;
             comm->npmenodes_major = dd->nc[XX];
+            comm->npmenodes_minor = comm->npmenodes/comm->npmenodes_major;
         }
         else
         {
             comm->npmedecompdim   = 1;
             comm->npmenodes_major = comm->npmenodes;
+            comm->npmenodes_minor = comm->npmenodes/comm->npmenodes_major;
+        }
+        if (fplog)
+        {
+            fprintf(fplog,"PME domain decomposition: %d x %d x %d\n",
+                    comm->npmenodes_major,comm->npmenodes_minor,1);
         }
     }
     else
     {
         comm->npmedecompdim   = 0;
         comm->npmenodes_major = 0;
+        comm->npmenodes_minor = 0;
     }
+    
+    /* Technically we don't need both of these, but it simplifies code not having to recalculate it */
     *npme_major = comm->npmenodes_major;
+    *npme_minor = comm->npmenodes_minor;
         
     snew(comm->slb_frac,DIM);
     if (comm->eDLB == edlbNO)

@@ -138,6 +138,10 @@ void
 _gmx_selelem_set_method(struct t_selelem *sel,
                         struct gmx_ana_selmethod_t *method, void *scanner);
 
+/** Creates a \c t_selelem for arithmetic expression evaluation. */
+struct t_selelem *
+_gmx_sel_init_arithmetic(struct t_selelem *left, struct t_selelem *right,
+                         char op, void *scanner);
 /** Creates a \c t_selelem for comparsion expression evaluation. */
 struct t_selelem *
 _gmx_sel_init_comparison(struct t_selelem *left, struct t_selelem *right,

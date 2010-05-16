@@ -193,6 +193,15 @@
  * which are in the order given in the input.
  * The children always have \ref GROUP_VALUE, but different element types
  * are possible.
+ *
+ *
+ * \subsection selparser_tree_arith Arithmetic elements
+ *
+ * One \ref SEL_ARITHMETIC element is created for each arithmetic operation in
+ * the input, and the tree structure represents the evaluation order.
+ * The \c t_selelem::optype type gives the name of the operation.
+ * Each element has exactly two children (one for unary negation elements),
+ * which are in the order given in the input.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -360,7 +369,8 @@ _gmx_selelem_update_flags(t_selelem *sel)
 {
     t_selelem          *child;
     int                 rc;
-    bool                bUseChildType;
+    bool                bUseChildType=FALSE;
+    bool                bOnlySingleChildren;
 
     /* Return if the flags have already been set */
     if (sel->flags & SEL_FLAGSSET)
@@ -395,6 +405,11 @@ _gmx_selelem_update_flags(t_selelem *sel)
             bUseChildType = FALSE;
             break;
 
+        case SEL_ARITHMETIC:
+            sel->flags |= SEL_ATOMVAL;
+            bUseChildType = FALSE;
+            break;
+
         case SEL_MODIFIER:
             if (sel->v.type != NO_VALUE)
             {
@@ -407,11 +422,14 @@ _gmx_selelem_update_flags(t_selelem *sel)
             bUseChildType = FALSE;
             break;
 
-        default:
+        case SEL_BOOLEAN:
+        case SEL_SUBEXPR:
+        case SEL_SUBEXPRREF:
             bUseChildType = TRUE;
             break;
     }
     /* Loop through children to propagate their flags upwards */
+    bOnlySingleChildren = TRUE;
     child = sel->child;
     while (child)
     {
@@ -434,17 +452,27 @@ _gmx_selelem_update_flags(t_selelem *sel)
             }
             sel->flags |= (child->flags & SEL_VALTYPEMASK);
         }
+        if (!(child->flags & SEL_SINGLEVAL))
+        {
+            bOnlySingleChildren = FALSE;
+        }
 
         child = child->next;
     }
-    /* Mark that the flags are set */
-    sel->flags |= SEL_FLAGSSET;
+    /* For arithmetic expressions consisting only of single values,
+     * the result is also a single value. */
+    if (sel->type == SEL_ARITHMETIC && bOnlySingleChildren)
+    {
+        sel->flags = (sel->flags & ~SEL_VALTYPEMASK) | SEL_SINGLEVAL;
+    }
     /* For root elements, the type should be propagated here, after the
      * children have been updated. */
     if (sel->type == SEL_ROOT)
     {
         sel->flags |= (sel->child->flags & SEL_VALTYPEMASK);
     }
+    /* Mark that the flags are set */
+    sel->flags |= SEL_FLAGSSET;
     return 0;
 }
 
@@ -566,6 +594,42 @@ set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost)
                              rpost, sel->u.expr.method->name);
     }
     return rc;
+}
+
+/*!
+ * \param[in]  left    Selection element for the left hand side.
+ * \param[in]  right   Selection element for the right hand side.
+ * \param[in]  op      String representation of the operator.
+ * \param[in]  scanner Scanner data structure.
+ * \returns    The created selection element.
+ *
+ * This function handles the creation of a \c t_selelem object for
+ * arithmetic expressions.
+ */
+t_selelem *
+_gmx_sel_init_arithmetic(t_selelem *left, t_selelem *right, char op,
+                         yyscan_t scanner)
+{
+    t_selelem         *sel;
+    char               buf[2];
+
+    buf[0] = op;
+    buf[1] = 0;
+    sel = _gmx_selelem_create(SEL_ARITHMETIC);
+    sel->v.type        = REAL_VALUE;
+    switch(op)
+    {
+        case '+': sel->u.arith.type = ARITH_PLUS; break;
+        case '-': sel->u.arith.type = (right ? ARITH_MINUS : ARITH_NEG); break;
+        case '*': sel->u.arith.type = ARITH_MULT; break;
+        case '/': sel->u.arith.type = ARITH_DIV;  break;
+        case '^': sel->u.arith.type = ARITH_EXP;  break;
+    }
+    sel->u.arith.opstr = strdup(buf);
+    sel->name          = sel->u.arith.opstr;
+    sel->child         = left;
+    sel->child->next   = right;
+    return sel;
 }
 
 /*!

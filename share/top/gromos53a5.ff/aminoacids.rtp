@@ -1319,11 +1319,11 @@
  [ atoms ]
     N     N     0.00000     0
    CA   CH1     0.00000     1
-   CB  CH2R     0.00000     1
+   CB  CH2r     0.00000     1
    CG   CH1     0.20800     2
   OD1    OA    -0.61100     2
   HD1     H     0.40300     2
-  CD2  CH2R     0.00000     3
+  CD2  CH2r     0.00000     3
     C     C       0.450     4
     O     O      -0.450     4
  [ bonds ]
@@ -1767,9 +1767,9 @@
  [ atoms ]
     N     N     0.00000     0
    CA   CH1     0.00000     1
-   CB  CH2R     0.00000     1
-   CG  CH2R     0.00000     2
-   CD  CH2R     0.00000     2
+   CB  CH2r     0.00000     1
+   CG  CH2r     0.00000     2
+   CD  CH2r     0.00000     2
     C     C       0.450     3
     O     O      -0.450     3
  [ bonds ]
@@ -2525,7 +2525,7 @@
    N7    NR    -0.54000     7
    C8     C     0.44000     7
    H8    HC     0.10000     7
-  C2*  CH2R     0.00000     8
+  C2*  CH2r     0.00000     8
   C3*   CH1       0.000     8
   O3*    OA      -0.360     9
  [ bonds ]
@@ -2700,7 +2700,7 @@
    N7    NR    -0.54000     8
    C8     C     0.44000     8
    H8    HC     0.10000     8
-  C2*  CH2R     0.00000     9
+  C2*  CH2r     0.00000     9
   C3*   CH1       0.000     9
   O3*    OA      -0.360    10
  [ bonds ]
@@ -2878,7 +2878,7 @@
   H42     H     0.41500     6
    C5     C    -0.10000     7
    H5    HC     0.10000     7
-  C2*  CH2R     0.00000     8
+  C2*  CH2r     0.00000     8
   C3*   CH1       0.000     8
   O3*    OA      -0.360     9
  [ bonds ]
@@ -3030,7 +3030,7 @@
    O4     O    -0.45000     6
    C5     C     0.00000     7
   C5M   CH3     0.00000     7
-  C2*  CH2R     0.00000     8
+  C2*  CH2r     0.00000     8
   C3*   CH1       0.000     8
   O3*    OA      -0.360     9
  [ bonds ]
@@ -8460,7 +8460,7 @@ FC10A  FC4A   FN5  FC5A     gi_1
   OSI    OA    -0.36000     8
   SI2     P     0.54000     8
   O5*    OA    -0.36000     8
-  C5*  CH2R     0.00000     9
+  C5*  CH2r     0.00000     9
   C11   CH1     0.00000    10
  C111   CH3     0.00000    10
  C112   CH3     0.00000    10
@@ -10519,9 +10519,9 @@ AO3PB   APG AO3PG AH3PG     gd_22
   C18   CH3     0.00000     0
   C17   CH3     0.00000     0
    C1   CH0     0.00000     0
-   C2  CH2R     0.00000     1
-   C3  CH2R     0.00000     1
-   C4  CH2R     0.00000     1
+   C2  CH2r     0.00000     1
+   C3  CH2r     0.00000     1
+   C4  CH2r     0.00000     1
    C5     C     0.00000     2
   C16   CH3     0.00000     2
    C6     C     0.00000     2
@@ -10957,9 +10957,9 @@ CDms1 CDms2    gb_50
 
 [ CH3OH ]
  [ atoms ]
- Omet  OMET    -0.67400     0
+ Omet  OMet    -0.67400     0
  HMet     H     0.40800     0
- CMet  CMET     0.26600     0
+ CMet  CMet     0.26600     0
  [ bonds ]
  Omet  HMet    gb_1    
  Omet  CMet    gb_27   
@@ -10973,11 +10973,11 @@ CDms1 CDms2    gb_50
 
 [ CCL4 ]
  [ atoms ]
- CCl4  CCL4     0.00000     0
-CLCl1 CLCL4     0.00000     0
-CLCl2 CLCL4     0.00000     0
-CLCl3 CLCL4     0.00000     0
-CLCl4 CLCL4     0.00000     0
+ CCl4  CCl4     0.00000     0
+CLCl1 CLCl4     0.00000     0
+CLCl2 CLCl4     0.00000     0
+CLCl3 CLCl4     0.00000     0
+CLCl4 CLCl4     0.00000     0
  [ bonds ]
  CCl4 CLCl1    gb_43   
  CCl4 CLCl2    gb_43   
@@ -11029,12 +11029,12 @@ CLCl2 CLCl4    gb_52
 
 [ UREA ]
  [ atoms ]
-   OU OUREA    -0.39000     0
-   CU CUREA     0.14200     0
-  N1U NUREA    -0.54200     0
+   OU OUrea    -0.39000     0
+   CU CUrea     0.14200     0
+  N1U NUrea    -0.54200     0
  H11U     H     0.33300     0
  H12U     H     0.33300     0
-  N2U NUREA    -0.54200     0
+  N2U NUrea    -0.54200     0
  H21U     H     0.33300     0
  H22U     H     0.33300     0
  [ bonds ]
@@ -11079,7 +11079,3 @@ CLCl2 CLCl4    gb_52
 ;  ai    aj    ak    al   gromos type
    OU    CU   N1U  H11U     gd_15   
    OU    CU   N2U  H21U     gd_15   
-
-
-
-

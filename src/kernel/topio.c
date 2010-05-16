@@ -201,13 +201,25 @@ double check_mol(gmx_mtop_t *mtop,warninp_t wi)
 
 static void sum_q(t_atoms *atoms,int n,double *qt,double *qBt)
 {
-  int     i;
+    double qmolA,qmolB;
+    int     i;
 
-  /* sum charge */
-  for (i=0; (i<atoms->nr); i++) {
-    *qt  += n*atoms->atom[i].q;
-    *qBt += n*atoms->atom[i].qB;
-  }
+    /* sum charge */
+    qmolA = 0;
+    qmolB = 0;
+    for (i=0; i<atoms->nr; i++)
+    {
+        qmolA += atoms->atom[i].q;
+        qmolB += atoms->atom[i].qB;
+    }
+    /* Unfortunately an absolute comparison,
+     * but this avoids unnecessary warnings and gmx-users mails.
+     */
+    if (fabs(qmolA) >= 1e-6 || fabs(qmolB) >= 1e-6)
+    {
+        *qt  += n*qmolA;
+        *qBt += n*qmolB;
+    }
 }
 
 static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb,

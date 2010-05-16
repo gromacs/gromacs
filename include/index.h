@@ -104,6 +104,9 @@ extern t_aa_names *get_aa_names(void);
 extern bool is_protein(t_aa_names *aan,char *resnm);
 /* gives true if resnm occurs in aminoacids.dat */
 
+extern bool is_residue(t_aa_names *aan,char *resnm);
+/* gives true if resnm occurs in aminoacids.dat or is DNA or RNA */
+
 extern void done_aa_names(t_aa_names **aan);
 /* Free memory. Pass address of the pointer youget from get_aa_names */
 

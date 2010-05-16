@@ -140,6 +140,13 @@ extern void gmx_fio_rewind(int fio);
 int gmx_fio_flush(int fio);
 /* Flush the fio, returns 0 on success */
 
+int gmx_fio_fsync(int fio);
+/* fsync the fio, returns 0 on success. 
+   NOTE: don't use fsync function unless you're absolutely sure you need it
+   because it deliberately interferes with the OS's caching mechanisms and
+   can cause dramatically slowed down IO performance. Some OSes (Linux, 
+   for example), may implement fsync as a full sync() point. */
+
 extern off_t gmx_fio_ftell(int fio);
 /* Return file position if possible */
 
@@ -194,6 +201,16 @@ gmx_fio_check_file_position(int fio);
 int
 gmx_fio_get_output_file_positions (gmx_file_position_t ** outputfiles,
                                    int *nfiles );
+
+/* fsync all open output files. This is used for checkpointing, where
+   we need to ensure that all output is actually written out to 
+   disk. 
+   This is most important in the case of some networked file systems, 
+   where data is not synced with the file server until close() or 
+   fsync(), so data could remain in cache for days.
+   Note the caveats reported with gmx_fio_fsync(). */
+int gmx_fio_all_output_fsync(void);
+
 
 int gmx_fio_get_file_md5(int fio, off_t offset,  unsigned char digest[]);
 

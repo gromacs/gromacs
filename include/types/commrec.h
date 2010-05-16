@@ -32,15 +32,23 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _commrec_h
+#define _commrec_h
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
-#endif
+#else
 #ifdef GMX_THREADS
 #include "tmpi.h"
+#else
+typedef void* MPI_Comm;
+typedef void* MPI_Request;
+typedef void* MPI_Group;
+#endif
 #endif
 
 #include "idef.h"
@@ -105,7 +113,6 @@ typedef struct {
 } gmx_ddbox_t;
 
 
-#if defined(GMX_MPI) && !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
 typedef struct {
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
@@ -118,7 +125,6 @@ typedef struct {
   double *dbuf; /* for doubles */
   int dbuf_alloc;
 } mpi_in_place_buf_t;
-#endif
 
 
 typedef struct {
@@ -127,9 +133,7 @@ typedef struct {
    * defined in dd->comm in domdec.c
    */
   int  nnodes;
-#ifdef GMX_MPI
   MPI_Comm mpi_comm_all;
-#endif
   /* Use MPI_Sendrecv communication instead of non-blocking calls */
   bool bSendRecv2;
   /* The local DD cell index and rank */
@@ -141,10 +145,8 @@ typedef struct {
   int  pme_nodeid;
   bool pme_receive_vir_ener;
   gmx_pme_comm_n_box_p_t cnb;
-#ifdef GMX_MPI
   int  nreq_pme;
   MPI_Request req_pme[4];
-#endif
   
 
   /* The communication setup, identical for each cell, cartesian index */
@@ -223,15 +225,11 @@ typedef struct gmx_partdec *gmx_partdec_p_t;
 typedef struct {
   int nsim;
   int sim;
-#ifdef GMX_MPI
   MPI_Group mpi_group_masters;
   MPI_Comm mpi_comm_masters;
-#if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
   mpi_in_place_buf_t *mpb;
-#endif
-#endif
 } gmx_multisim_t;
 
 #define DUTY_PP  (1<<0)
@@ -239,11 +237,9 @@ typedef struct {
 
 typedef struct {
   int      bUse;
-#ifdef GMX_MPI
   MPI_Comm comm_intra;
   int      rank_intra;
   MPI_Comm comm_inter;
-#endif
   
 } gmx_nodecomm_t;
 
@@ -260,10 +256,8 @@ typedef struct {
   int threadid,nthreads;
   /* The nodeid in the PP/PME, PP or PME group */
   int nodeid;
-#ifdef GMX_MPI
   MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
-#endif
 
 #ifdef GMX_THREAD_SHM_FDECOMP
   gmx_commrec_thread_t thread;
@@ -282,11 +276,9 @@ typedef struct {
 
   gmx_multisim_t *ms;
 
-#if defined(GMX_MPI) && !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
   mpi_in_place_buf_t *mpb;
-#endif
 } t_commrec;
 
 #define MASTERNODE(cr)     ((cr)->nodeid == 0)
@@ -314,4 +306,4 @@ typedef struct {
 #ifdef __cplusplus
 }
 #endif
-
+#endif

@@ -89,6 +89,13 @@ static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
 enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
 
 
+/* Minimum number of time steps required for accurate coupling integration
+ * of first and second order thermo- and barostats:
+ */
+int nstcmin1 = 10;
+int nstcmin2 = 20;
+
+
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
 {
   snew(opts->include,STRLEN); 
@@ -128,14 +135,15 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi)
 /* Check internal consistency */
 {
-  /* Strange macro: first one fills the err_buf, and then one can check 
-   * the condition, which will print the message and increase the error
-   * counter.
-   */
+    /* Strange macro: first one fills the err_buf, and then one can check 
+     * the condition, which will print the message and increase the error
+     * counter.
+     */
 #define CHECK(b) _low_check(b,err_buf,wi)
     char err_buf[256],warn_buf[STRLEN];
-  int  ns_type=0;
-  real dt_coupl=0;
+    int  ns_type=0;
+    real dt_coupl=0;
+    int  nstcmin;
 
   set_warning_line(wi,mdparin,-1);
 
@@ -163,36 +171,70 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       warning_error(wi,"Can not have nstlist<=0 with twin-range interactions");
   }
 
-  /* GENERAL INTEGRATOR STUFF */
-  if (!(ir->eI == eiMD || EI_VV(ir->eI))) {
-    ir->etc = etcNO;
-  }
-  if (!EI_DYNAMICS(ir->eI)) {
-    ir->epc = epcNO;
-  }
-  if (EI_DYNAMICS(ir->eI)) {
-    if (ir->nstcalcenergy < 0) {
-      gmx_fatal(FARGS,"Can not have nstcalcenergy < 0");
+    /* GENERAL INTEGRATOR STUFF */
+    if (!(ir->eI == eiMD || EI_VV(ir->eI)))
+    {
+        ir->etc = etcNO;
     }
-    if ((ir->etc != etcNO || ir->epc != epcNO) && ir->nstcalcenergy == 0) {
-      gmx_fatal(FARGS,"Can not have nstcalcenergy=0 with global T/P-coupling");
+    if (!EI_DYNAMICS(ir->eI))
+    {
+        ir->epc = epcNO;
     }
-    if (IR_TWINRANGE(*ir)) {
-        check_nst("nstlist",ir->nstlist,"nstcalcenergy",&ir->nstcalcenergy,wi);
-    }
-    dt_coupl = ir->nstcalcenergy*ir->delta_t;
+    if (EI_DYNAMICS(ir->eI))
+    {
+        if (ir->nstcalcenergy < 0)
+        {
+            if (EI_VV(ir->eI))
+            {
+                /* VV coupling algorithms currently only support 1 */
+                ir->nstcalcenergy = 1;
+            }
+            else
+            {
+                if (ir->nstlist > 0)
+                {
+                    ir->nstcalcenergy = ir->nstlist;
+                }
+                else
+                {
+                    ir->nstcalcenergy = 10;
+                }
+            }
+        }
+        if (ir->etc != etcNO || ir->epc != epcNO)
+        {
+            if (ir->nstcalcenergy == 0)
+            {
+                gmx_fatal(FARGS,"Can not have nstcalcenergy=0 with global T/P-coupling");
+            }
+            if (EI_VV(ir->eI))
+            {
+                sprintf(err_buf,"T- and P-coupling with VV integrators currently only supports nstcalcenergy=1");
+                CHECK(ir->nstcalcenergy > 1);
+            }
+        }
+        if (IR_TWINRANGE(*ir))
+        {
+            check_nst("nstlist",ir->nstlist,
+                      "nstcalcenergy",&ir->nstcalcenergy,wi);
+        }
+        dt_coupl = ir->nstcalcenergy*ir->delta_t;
   
-    if (ir->nstcalcenergy > 1) {
-      /* Energy and log file writing trigger energy calculation,
-       * so we need some checks.
-       */
-        check_nst("nstcalcenergy",ir->nstcalcenergy,"nstenergy",&ir->nstenergy,wi);
-        check_nst("nstcalcenergy",ir->nstcalcenergy,"nstlog",&ir->nstlog,wi);
-      if (ir->efep != efepNO) {
-          check_nst("nstcalcenergy",ir->nstcalcenergy,"nstdhdl",&ir->nstdhdl,wi);
-      }
+        if (ir->nstcalcenergy > 1)
+        {
+            /* for storing exact averages nstenergy should be
+             * a multiple of nstcalcenergy
+             */
+            check_nst("nstcalcenergy",ir->nstcalcenergy,
+                      "nstenergy",&ir->nstenergy,wi);
+            if (ir->efep != efepNO)
+            {
+                /* nstdhdl should be a multiple of nstcalcenergy */
+                check_nst("nstcalcenergy",ir->nstcalcenergy,
+                          "nstdhdl",&ir->nstdhdl,wi);
+            }
+        }
     }
-  }
 
   /* LD STUFF */
   if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
@@ -302,80 +344,97 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
 	&& (ir->ns_type == ensSIMPLE));
   
-  /* TEMPERATURE COUPLING */
-  if(ir->etc == etcYES) {
-    ir->etc = etcBERENDSEN;
-    warning_note(wi,"Old option for temperature coupling given: "
-		 "changing \"yes\" to \"Berendsen\"\n");
-  }
-  if (ir->etc == etcNOSEHOOVER) {
-    if (ir->opts.nhchainlength < 1) 
-      {
-	sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nhchainlength);
-	ir->opts.nhchainlength =1;
-	warning(wi,warn_buf);
-      }
-    
-    if (ir->etc==etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nhchainlength > 1) {
-        warning_note(wi,"leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1");
-      ir->opts.nhchainlength = 1;
+    /* TEMPERATURE COUPLING */
+    if (ir->etc == etcYES)
+    {
+        ir->etc = etcBERENDSEN;
+        warning_note(wi,"Old option for temperature coupling given: "
+                     "changing \"yes\" to \"Berendsen\"\n");
     }
-  } else {
-    ir->opts.nhchainlength = 0;
-  }
-
-  if (ir->etc == etcBERENDSEN) {
-    sprintf(warn_buf,"The %s thermostat does not generate the correct kinetic energy distribution. You might want to consider using the %s thermostat.",
-	    ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
-    warning_note(wi,warn_buf);
-  }
   
-  if((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL ) 
-     && ir->epc==epcBERENDSEN) {
-    sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
-	    "true ensemble for the thermostat");
-    warning(wi,warn_buf);
-  }
-
-  /* PRESSURE COUPLING */
-  if (ir->epc == epcISOTROPIC) {
-    ir->epc = epcBERENDSEN;
-    warning_note(wi,"Old option for pressure coupling given: "
-                 "changing \"Isotropic\" to \"Berendsen\"\n"); 
-  }
-
-  if (ir->epc != epcNO) {
-    sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
-    CHECK(ir->tau_p <= 0);
-
-    if (ir->tau_p < 100*dt_coupl) {
-      sprintf(warn_buf,"For proper barostat integration tau_p (%g) should be more than two orders of magnitude larger than nstcalcenergy*dt (%g)",
-	      ir->tau_p,dt_coupl);
-      warning(wi,warn_buf);
-    }	
-       
-    sprintf(err_buf,"compressibility must be > 0 when using pressure" 
-	    " coupling %s\n",EPCOUPLTYPE(ir->epc));
-    CHECK(ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 || 
-	  ir->compress[ZZ][ZZ] < 0 || 
-	  (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 &&
-	   ir->compress[ZZ][XX] <= 0 && ir->compress[ZZ][YY] <= 0));
-    
-    sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
-    CHECK(ir->coulombtype == eelPPPM);
-     
-  } else if (ir->coulombtype == eelPPPM) {
-    sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
-    warning(wi,warn_buf);
-  }
-
-  if (EI_VV(ir->eI)) {
-    if (ir->epc > epcNO) {
-      if (ir->epc!=epcMTTK) {
-          warning_error(wi,"NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
-      }
+    if (ir->etc == etcNOSEHOOVER)
+    {
+        if (ir->opts.nhchainlength < 1) 
+        {
+            sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nhchainlength);
+            ir->opts.nhchainlength =1;
+            warning(wi,warn_buf);
+        }
+        
+        if (ir->etc==etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nhchainlength > 1)
+        {
+            warning_note(wi,"leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1");
+            ir->opts.nhchainlength = 1;
+        }
     }
-  }
+    else
+    {
+        ir->opts.nhchainlength = 0;
+    }
+
+    if (ir->etc == etcBERENDSEN)
+    {
+        sprintf(warn_buf,"The %s thermostat does not generate the correct kinetic energy distribution. You might want to consider using the %s thermostat.",
+                ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
+        warning_note(wi,warn_buf);
+    }
+
+    if ((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL) 
+        && ir->epc==epcBERENDSEN)
+    {
+        sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
+                "true ensemble for the thermostat");
+        warning(wi,warn_buf);
+    }
+
+    /* PRESSURE COUPLING */
+    if (ir->epc == epcISOTROPIC)
+    {
+        ir->epc = epcBERENDSEN;
+        warning_note(wi,"Old option for pressure coupling given: "
+                     "changing \"Isotropic\" to \"Berendsen\"\n"); 
+    }
+
+    if (ir->epc != epcNO)
+    {
+        sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
+        CHECK(ir->tau_p <= 0);
+        
+        nstcmin = (ir->epc == epcBERENDSEN ? nstcmin1 : nstcmin2);
+        if (ir->tau_p < nstcmin*dt_coupl)
+        {
+            sprintf(warn_buf,"For proper integration of the %s barostat, tau_p (%g) should be at least %d times larger than nstcalcenergy*dt (%g)",
+                    EPCOUPLTYPE(ir->epc),ir->tau_p,nstcmin,dt_coupl);
+            warning(wi,warn_buf);
+        }	
+        
+        sprintf(err_buf,"compressibility must be > 0 when using pressure" 
+                " coupling %s\n",EPCOUPLTYPE(ir->epc));
+        CHECK(ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 || 
+              ir->compress[ZZ][ZZ] < 0 || 
+              (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 &&
+               ir->compress[ZZ][XX] <= 0 && ir->compress[ZZ][YY] <= 0));
+        
+        sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
+        CHECK(ir->coulombtype == eelPPPM);
+        
+    }
+    else if (ir->coulombtype == eelPPPM)
+    {
+        sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
+        warning(wi,warn_buf);
+    }
+    
+    if (EI_VV(ir->eI))
+    {
+        if (ir->epc > epcNO)
+        {
+            if (ir->epc!=epcMTTK)
+            {
+                warning_error(wi,"NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
+            }
+        }
+    }
 
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
@@ -704,10 +763,10 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("simulation_part", ir->simulation_part, 1);
   CTYPE ("mode for center of mass motion removal");
   CTYPE ("energy calculation and T/P-coupling frequency");
-  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	1);
+  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
   EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
   CTYPE ("number of steps for center of mass motion removal");
-  ITYPE ("nstcomm",	ir->nstcomm,	1);
+  ITYPE ("nstcomm",	ir->nstcomm,	10);
   CTYPE ("group(s) for center of mass motion removal");
   STYPE ("comm-grps",   vcm,            NULL);
   
@@ -1589,6 +1648,7 @@ void do_index(const char* mdparin, const char *ndx,
   t_atoms atoms_all;
   char    warnbuf[STRLEN],**gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
+  int     nstcmin;
   int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
@@ -1648,32 +1708,46 @@ void do_index(const char* mdparin, const char *ndx,
   if (ir->eI==eiBD && ir->bd_fric==0) {
     fprintf(stderr,"bd_fric=0, so tau_t will be used as the inverse friction constant(s)\n"); 
   }
-  if (bSetTCpar) {
-    if (nr != nref_t)
-      gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
-    for(i=0; (i<nr); i++) {
-      ir->opts.tau_t[i]=strtod(ptr1[i],NULL);
-      if (ir->opts.tau_t[i] < 0) {
-	gmx_fatal(FARGS,"tau_t for group %d negative",i);
-      }
-      /* We check the relative magnitude of the coupling time tau_t.
-       * V-rescale works correctly, even for tau_t=0.
-       */
-      if ((ir->etc == etcBERENDSEN || ir->etc == etcNOSEHOOVER) &&
-	  ir->opts.tau_t[i] != 0 &&
-	  ir->opts.tau_t[i] < 10*ir->nstcalcenergy*ir->delta_t) {
-	sprintf(warn_buf,"For proper thermostat integration tau_t (%g) should be more than an order of magnitude larger than nstcalcenergy*dt (%g)",
-		ir->opts.tau_t[i],ir->nstcalcenergy*ir->delta_t);
-	warning(wi,warn_buf);
-      }
-    }
-    for(i=0; (i<nr); i++) {
-      ir->opts.ref_t[i]=strtod(ptr2[i],NULL);
-      if (ir->opts.ref_t[i] < 0)
-	gmx_fatal(FARGS,"ref_t for group %d negative",i);
-    }
-  }
 
+    if (bSetTCpar)
+    {
+        if (nr != nref_t)
+        {
+            gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
+        }
+        nstcmin = (ir->etc == etcBERENDSEN ? nstcmin1 : nstcmin2);
+        
+        for(i=0; (i<nr); i++)
+        {
+            ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
+            if (ir->opts.tau_t[i] < 0)
+            {
+                gmx_fatal(FARGS,"tau_t for group %d negative",i);
+            }
+            /* We check the relative magnitude of the coupling time tau_t.
+             * V-rescale works correctly, even for tau_t=0.
+             */
+            if ((ir->etc == etcBERENDSEN || ir->etc == etcNOSEHOOVER) &&
+                ir->opts.tau_t[i] != 0 &&
+                ir->opts.tau_t[i] < nstcmin*ir->nstcalcenergy*ir->delta_t)
+            {
+                sprintf(warn_buf,"For proper integration of the %s thermostat, tau_t (%g) should be at least %d times larger than nstcalcenergy*dt (%g)",
+                        ETCOUPLTYPE(ir->etc),
+                        ir->opts.tau_t[i],nstcmin,
+                        ir->nstcalcenergy*ir->delta_t);
+                warning(wi,warn_buf);
+            }
+        }
+        for(i=0; (i<nr); i++)
+        {
+            ir->opts.ref_t[i] = strtod(ptr2[i],NULL);
+            if (ir->opts.ref_t[i] < 0)
+            {
+                gmx_fatal(FARGS,"ref_t for group %d negative",i);
+            }
+        }
+    }
+    
   /* Simulated annealing for each group. There are nr groups */
   nSA = str_nelem(anneal,MAXPTR,ptr1);
   if (nSA == 1 && (ptr1[0][0]=='n' || ptr1[0][0]=='N'))

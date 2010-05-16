@@ -95,14 +95,17 @@ void read_ab(char *line,const char *fn,t_hack *hack)
   hack->nctl = ns - 3;
   if ((hack->nctl != ncontrol[hack->tp]) && (ncontrol[hack->tp] != -1))
     gmx_fatal(FARGS,"Error in hdb file %s:\nWrong number of control atoms (%d iso %d) on line:\n%s\n",fn,hack->nctl,ncontrol[hack->tp],line);
-  for(i=0; (i<hack->nctl); i++) 
+  for(i=0; (i<hack->nctl); i++) {
     hack->a[i]=strdup(a[i]);
-  for(   ; i<4; i++)
+  }
+  for(   ; i<4; i++) {
     hack->a[i]=NULL;
+  }
   hack->oname=NULL;
   hack->nname=strdup(hn);
   hack->atom=NULL;
   hack->cgnr=NOTSET;
+  hack->bXSet=FALSE;
   for(i=0; i<DIM; i++)
     hack->newx[i]=NOTSET;
 }

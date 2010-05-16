@@ -148,6 +148,8 @@ check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
 check_function_exists(isfinite          HAVE_ISFINITE)
 check_function_exists(_isfinite         HAVE__ISFINITE)
+check_function_exists(fsync             HAVE_FSYNC)
+check_function_exists(fileno            HAVE_FILENO)
 # After large files? check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(CheckLibraryExists)
@@ -291,6 +293,7 @@ gmx_test_pipes(HAVE_PIPES)
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
+
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)

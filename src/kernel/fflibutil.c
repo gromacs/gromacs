@@ -258,7 +258,9 @@ static int low_fflib_search_file_end(const char *ffdir,
                 }
             }
 
-            sort_filenames(n_thisdir,fns+n-n_thisdir,fns_short+n-n_thisdir);
+            sort_filenames(n_thisdir,
+                           fns+n-n_thisdir,
+                           fns_short==NULL ? NULL : fns_short+n-n_thisdir);
         }
     }
     while((dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL);

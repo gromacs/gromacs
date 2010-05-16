@@ -67,6 +67,8 @@ typedef enum
     SEL_EXPRESSION,
     /** Boolean expression. */
     SEL_BOOLEAN,
+    /** Arithmetic expression. */
+    SEL_ARITHMETIC,
     /** Root node of the evaluation tree. */
     SEL_ROOT,
     /** Subexpression that may be referenced several times. */
@@ -85,6 +87,17 @@ typedef enum
     BOOL_OR,            /**< Or */
     BOOL_XOR            /**< Xor (not implemented). */
 } e_boolean_t;
+
+/** Defines the arithmetic operation of \c t_selelem objects with type \ref SEL_ARITHMETIC. */
+typedef enum
+{
+    ARITH_PLUS,         /**< + */
+    ARITH_MINUS,        /**< - */
+    ARITH_NEG,          /**< Unary - */
+    ARITH_MULT,         /**< * */
+    ARITH_DIV,          /**< / */
+    ARITH_EXP,          /**< ^ (to power) */
+} e_arithmetic_t;
 
 /** Returns a string representation of the type of a \c t_selelem. */
 extern const char *
@@ -265,6 +278,13 @@ typedef struct t_selelem
         }                               expr;
         /** Operation type for \ref SEL_BOOLEAN elements. */
         e_boolean_t                     boolt;
+        /** Operation type for \ref SEL_ARITHMETIC elements. */
+        struct {
+            /** Operation type. */
+            e_arithmetic_t              type;
+            /** String representation. */
+            char                       *opstr;
+        }                               arith;
         /** Associated selection parameter for \ref SEL_SUBEXPRREF elements. */
         struct gmx_ana_selparam_t      *param;
     }                                   u;
@@ -305,7 +325,7 @@ _gmx_selelem_free_values(t_selelem *sel);
 extern void
 _gmx_selelem_free_method(struct gmx_ana_selmethod_t *method, void *mdata,
                          bool bFreeParamData);
-/** Frees the memory allocated for the \c t_selelem::u.expr field. */
+/** Frees the memory allocated for the \c t_selelem::u field. */
 extern void
 _gmx_selelem_free_exprdata(t_selelem *sel);
 /* In compiler.c */

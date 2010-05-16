@@ -40,54 +40,59 @@
 #include "gmx_fatal.h"
 #include "sighandler.h"
 
-/* The following two variables and the signal_handler function
- * are used from md.c and pme.c as well 
- *
- * Do not fear these global variables: they represent inherently process-global
- * information that needs to be shared across threads 
- */
 
-
-/* we got a signal to stop in the next step: */
-volatile sig_atomic_t bGotStopNextStepSignal=FALSE;
-/* we got a signal to stop in the next neighbour search step: */
-volatile sig_atomic_t bGotStopNextNSStepSignal=FALSE;
-
-/* our names for the handled signals. These must match the number given
-   in signal_handler. */
-const char *signal_name[] =
+const char *gmx_stop_cond_name[] =
 {
-    "TERM",
-    "INT",
-    "second INT"
+    "None",
+    "Stop at the next neighbor search step",
+    "Stop at the next step",
+    "Abort"
 };
 
-/* the last signal received, according to the numbering
-   we use in signal_name */
-volatile sig_atomic_t last_signal_number_recvd=-1;
+/* these do not neccesarily match the stop condition, but are 
+   referred to in the signal handler. */
+const char *gmx_signal_name[] =
+{
+    "None",
+    "INT",
+    "TERM",
+    "second INT/TERM",
+    "remote INT/TERM",
+    "remote second INT/TERM",
+    "USR1",
+    "Abort"
+};
 
-RETSIGTYPE signal_handler(int n)
+static volatile sig_atomic_t stop_condition=gmx_stop_cond_none;
+static volatile sig_atomic_t last_signal_name=0;
+
+static volatile sig_atomic_t usr_condition=0;
+
+static RETSIGTYPE signal_handler(int n)
 {
     switch (n) {
-        case SIGTERM:
-            bGotStopNextStepSignal = TRUE;
-            last_signal_number_recvd = 0;
-            break;
 /* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in 
    ANSI C89, and windows spawns a thread specifically to run the INT signal 
    handler), but that doesn't matter for a simple signal handler like this. */
+        case SIGTERM:
         case SIGINT:
-            if (!bGotStopNextNSStepSignal)
-            {
-                bGotStopNextNSStepSignal = TRUE;
-                last_signal_number_recvd = 1;
-            }            else if (!bGotStopNextStepSignal)
-            {
-                bGotStopNextStepSignal = TRUE;
-                last_signal_number_recvd = 2;
-            }
-            else
+            /* we explicitly set things up to allow this: */
+            stop_condition++;
+            if (n==SIGINT)
+                last_signal_name=1;
+            if (n==SIGTERM)
+                last_signal_name=2;
+            if (stop_condition == gmx_stop_cond_next)
+                last_signal_name=3;
+            if (stop_condition >= gmx_stop_cond_abort)
                 abort();
+            break;
+#ifdef HAVE_SIGUSR1
+        case SIGUSR1:
+            usr_condition=1;
+            break;
+#endif
+        default:
             break;
     }
 }
@@ -111,8 +116,49 @@ void signal_handler_install(void)
         }
         signal(SIGINT,signal_handler);
     }
-
+#ifdef HAVE_SIGUSR1
+    if (getenv("GMX_NO_USR1") == NULL)
+    {
+        if (debug)
+        {
+            fprintf(debug,"Installing signal handler for SIGUSR1\n");
+        }
+        signal(SIGUSR1,signal_handler);
+    }
+#endif
 }
 
+gmx_stop_cond_t gmx_get_stop_condition(void)
+{
+    return (gmx_stop_cond_t)stop_condition;
+}
+
+void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond)
+{
+    if (recvd_stop_cond > stop_condition)
+    {
+        stop_condition=recvd_stop_cond;
+        if (stop_condition == gmx_stop_cond_next_ns)
+            last_signal_name=4;
+        if (stop_condition == gmx_stop_cond_next)
+            last_signal_name=5;
+    }
+}
+
+const char *gmx_get_signal_name(void)
+{
+    return gmx_signal_name[last_signal_name];
+}
+
+bool gmx_got_usr_signal(void)
+{
+#ifdef HAVE_SIGUSR1
+    bool ret=(bool)usr_condition;
+    usr_condition=0;
+    return ret;
+#else
+    return FALSE;
+#endif
+}
 
 
