@@ -482,7 +482,7 @@ extern t_gemParams *init_gemParams(double sigma, double D,
   return p;
 }
 
-#if HAVE_LIBGSL
+#ifdef HAVE_LIBGSL
 static double gemFunc_residual2(const gsl_vector *p, void *data)
 {
   gemFitData *GD = (gemFitData *)data;
@@ -538,19 +538,23 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
     status  = 0,
     maxiter = 1000;
 
-  /* nmsimplex2 had convergence problems prior to gsl v1.14,
-   * but it's O(N) instead of O(N) operations, so let's use it if v >= 1.14 */
-  const gsl_multimin_fminimizer_type *T = 
-  ((GSL_MAJOR_VERSION == 1 && GSL_MINOR_VERSION >= 14) || GSL_MAJOR_VERSION > 1) ?
-    gsl_multimin_fminimizer_nmsimplex2 : gsl_multimin_fminimizer_nmsimplex;
-
   gsl_multimin_fminimizer *s;
-
   gsl_vector *x,*dx; /* parameters and initial step size */
   gsl_multimin_function fitFunc;
   size_t
     p = 2,              /* Number of parameters to fit. ka and kd.  */
     n = params->nLin*2;       /* Number of points in the reduced dataset  */
+
+  /* nmsimplex2 had convergence problems prior to gsl v1.14,
+   * but it's O(N) instead of O(N) operations, so let's use it if v >= 1.14 */
+  const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
+#ifdef GSL_MAJOR_VERSION
+#ifdef GSL_MINOR_VERSION
+  if (((GSL_MAJOR_VERSION == 1 && GSL_MINOR_VERSION >= 14) || 
+       (GSL_MAJOR_VERSION > 1))
+      T = gsl_multimin_fminimizer_nmsimplex2;
+#endif
+#endif
 
   if (nData<n) {
     fprintf(stderr, "Reduced data set larger than the complete data set!\n");
