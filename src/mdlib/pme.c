@@ -1137,8 +1137,8 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
 
 
 static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
-                         real ewaldcoeff,real vol,matrix vir,t_commrec *cr,
-                         bool bEnerVir,real *mesh_energy)
+                         real ewaldcoeff,real vol,
+                         bool bEnerVir,real *mesh_energy,matrix vir)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
@@ -2600,8 +2600,9 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_MPE_LOG(ev_solve_pme_start);
             wallcycle_start(wcycle,ewcPME_SOLVE);
             loop_count =
-                solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr,
-                              flags & GMX_PME_CALC_ENER_VIR,&energy_AB[q]);
+                solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,
+                              flags & GMX_PME_CALC_ENER_VIR,
+                              &energy_AB[q],vir_AB[q]);
             wallcycle_stop(wcycle,ewcPME_SOLVE);
             where();
             GMX_MPE_LOG(ev_solve_pme_finish);
