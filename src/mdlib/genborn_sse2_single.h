@@ -44,8 +44,8 @@
 
 float 
 calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
-					  float *xd, float *f, float *fshift, float *shift_vec, int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md);						
-
+		      float *xd, float *f, float *fshift, float *shift_vec,
+		      int gb_algorithm, gmx_genborn_t *born);
 
 int 
 calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
