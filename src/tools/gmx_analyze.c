@@ -979,12 +979,14 @@ int gmx_analyze(int argc,char *argv[])
     { "-oneacf", FALSE, etBOOL, {&bAverCorr},
       "Calculate one ACF over all sets" },
     { "-nbalexp", FALSE, etINT, {&nBalExp},
-      "HIDDENNumber of exponentials to fit to the ultrafast component."},
+      "HIDDENNumber of exponentials to fit to the ultrafast component"},
+    { "-baltime", FALSE, etREAL, {&balTime},
+      "HIDDENTime up to which the ballistic component will be fitted"},
     { "-gemtype", FALSE, etENUM, {gemType},
-      "What type of gminate recombination to use."},
+      "What type of gminate recombination to use"},
     { "-D", FALSE, etREAL, {&diffusion},
       "HIDDENThe self diffusion coefficient which is used for the reversible geminate recombination model."
-      "If non-positive, then the diffusion coefficient will be one of the parameters fitted."}
+      "If non-positive, then the diffusion coefficient will be one of the parameters fitted"}
   };
 #define NPA asize(pa)
 
