@@ -2,7 +2,7 @@
 #include <string.h>
 #include "smalloc.h"
 #include "string2.h"
-
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "gmxfio.h"
 #include "hackblock.h"
