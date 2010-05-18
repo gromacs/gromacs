@@ -44,7 +44,7 @@
  * calculation of autocorrelation function.
  * It also adds a new option -nthreads which sets the number of threads.
  * */
-#define DOUSEOPENMP
+//#define DOUSEOPENMP
 
 #ifdef DOUSEOPENMP
 #define HAVE_OPENMP
