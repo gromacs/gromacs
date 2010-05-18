@@ -2318,12 +2318,16 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   
   nn = nframes/2;
   
+  if (acType != AC_NN ||
 #ifndef HAVE_OPENMP
-  if (acType != AC_NN) {
+      TRUE
+#else
+      FALSE
+#endif
+      ) {
     snew(h,hb->maxhydro);
     snew(g,hb->maxhydro);
   }
-#endif
 
   /* Dump hbonds for debugging */
   dump_ac(hb,bMerge||bContact,nDump);
@@ -2344,11 +2348,12 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 		 * Set up the OpenMP stuff,                             |
 		 * like the number of threads and such                  |
 		 */
-      
+  if (acType != AC_LUZAR)
+    {
 #if (_OPENMP >= 200805) /* =====================\ */
-  nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
+      nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
 #else
-  nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
+      nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
 #endif /* _OPENMP >= 200805 ====================/ */
 
       omp_set_num_threads(nThreads);
@@ -2366,7 +2371,8 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	  fprintf(stderr, "%-7s", tmpstr);
 	}
       }
-      fprintf(stderr, "\n"); /*                                          | */
+      fprintf(stderr, "\n");
+    }  /*                                                                 | */
 #endif /* HAVE_OPENMP ===================================================/  */
 
 
