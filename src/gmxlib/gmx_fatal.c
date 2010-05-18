@@ -588,8 +588,8 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
     strerr = gmx_strerror(key);
     sprintf(buf,"\n%s\nProgram %s, %s\n"
             "Source code file: %s, line: %d\n\n"
-            "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS website at\n"
-            "http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
+            "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
+            "website at http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
             llines,ShortProgram(),GromacsVersion(),file,line,
             strerr,msg ? msg : errerrbuf,llines,tmpbuf);
     free(strerr);

@@ -301,9 +301,11 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
  */
 string GmxOpenMMPlatformOptions::getOptionValue(const string &opt)
 {
-    if (options.find(toUpper(opt)) != options.end())
+	map<string, string> :: const_iterator it = options.find(toUpper(opt));
+	if (it != options.end())
     {
-        return options[toUpper(opt)];
+		// cout << "@@@>> " << it->first << " : " << it->second << endl;
+		return it->second;
     }
     else
     {
@@ -371,7 +373,13 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
     char strout_buf[STRLEN];
     int which_test;
     int res = 0;
-    const char * test_type = opt->getOptionValue("memtest").c_str();
+	string s = opt->getOptionValue("memtest");
+	const char * test_type = 
+			s.c_str(); 
+		/* NOTE: thie code below for some misterious reason does NOT work 
+		with MSVC, but the above "fix" seems to solve the problem - not sure why though */
+			// opt->getOptionValue("memtest").c_str();
+
 
     if (!gmx_strcasecmp(test_type, "off"))
     {
@@ -393,7 +401,7 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
     {
         gmx_fatal(FARGS, "Amount of seconds for memetest is negative (%d). ", which_test);
     }
-    
+
     switch (which_test)
     {
         case 0: /* no memtest */
@@ -705,7 +713,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numConstraints = idef.il[F_CONSTR].nr/3;
         const int numSettle = idef.il[F_SETTLE].nr/2;
         const int numBonds = idef.il[F_BONDS].nr/3;
-        const int numUB = idef.il[F_UREY_BRADLEY].nr/3;
+        const int numUB = idef.il[F_UREY_BRADLEY].nr/4;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
         const int numRB = idef.il[F_RBDIHS].nr/5;
@@ -821,10 +829,29 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
             case eelEWALD:
                 nonbondedForce->setNonbondedMethod(NonbondedForce::Ewald);
+				/* 
+				 *	OpenMM uses approximate formulas to calculate the Ewald parameter:
+				 *	alpha = (1.0/cutoff)*sqrt(-log(2.0*tolerlance));
+				 *	and the grid spacing for PME:
+				 *	gridX = ceil(alpha*box[0][0]/pow(0.5*tol, 0.2));
+				 *	gridY = ceil(alpha*box[1][1]/pow(0.5*tol, 0.2));
+				 *	gridZ = ceil(alpha*box[2][2]/pow(0.5*tol, 0.2));
+				 *
+				 *	It overestimates the precision and setting it to 
+				 *	(500 x ewald_rtol) seems to give a reasonable match to the GROMACS settings
+				*/ 
+                if (ir->ewald_rtol < 1e-3)
+                	nonbondedForce->setEwaldErrorTolerance(500*ir->ewald_rtol);
+                else
+                	nonbondedForce->setEwaldErrorTolerance(0.1);
                 break;
 
             case eelPME:
                 nonbondedForce->setNonbondedMethod(NonbondedForce::PME);
+                if (ir->ewald_rtol < 1e-3)
+                	nonbondedForce->setEwaldErrorTolerance(500*ir->ewald_rtol);
+                else
+                	nonbondedForce->setEwaldErrorTolerance(0.1);
                 break;
 
             default:

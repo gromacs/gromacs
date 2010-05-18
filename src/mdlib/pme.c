@@ -1137,8 +1137,8 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
 
 
 static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
-                         real ewaldcoeff,real vol,matrix vir,t_commrec *cr,
-                         bool bEnerPres,real *mesh_energy)
+                         real ewaldcoeff,real vol,
+                         bool bEnerVir,real *mesh_energy,matrix vir)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
@@ -1247,7 +1247,7 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
             }
             kxend = local_offset[XX] + local_ndata[XX];
 			
-            if (bEnerPres)
+            if (bEnerVir)
             {
                 /* More expensive inner loop, especially because of the storage
                  * of the mh elements in array's.
@@ -1386,20 +1386,24 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
         }
     }
     
-    /* Update virial with local values. The virial is symmetric by definition.
-     * this virial seems ok for isotropic scaling, but I'm
-     * experiencing problems on semiisotropic membranes.
-     * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
-     */
-    vir[XX][XX] = 0.25*virxx;
-    vir[YY][YY] = 0.25*viryy;
-    vir[ZZ][ZZ] = 0.25*virzz;
-    vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
-    vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
-    vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
-	
-    /* This energy should be corrected for a charged system */
-    *mesh_energy = 0.5*energy;
+    if (bEnerVir)
+    {
+        /* Update virial with local values.
+         * The virial is symmetric by definition.
+         * this virial seems ok for isotropic scaling, but I'm
+         * experiencing problems on semiisotropic membranes.
+         * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
+         */
+        vir[XX][XX] = 0.25*virxx;
+        vir[YY][YY] = 0.25*viryy;
+        vir[ZZ][ZZ] = 0.25*virzz;
+        vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
+        vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
+        vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
+        
+        /* This energy should be corrected for a charged system */
+        *mesh_energy = 0.5*energy;
+    }
 
     /* Return the loop count */
     return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
@@ -1797,7 +1801,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
     atc->nodeid = 0;
     atc->pd_nalloc = 0;
 #ifdef GMX_MPI
-    if (PAR(cr))
+    if (pme->nnodes > 1)
     {
         atc->mpi_comm = pme->mpi_comm_d[dimind];
         MPI_Comm_size(atc->mpi_comm,&atc->nslab);
@@ -2596,8 +2600,9 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_MPE_LOG(ev_solve_pme_start);
             wallcycle_start(wcycle,ewcPME_SOLVE);
             loop_count =
-                solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr,
-                              flags & GMX_PME_CALC_ENER_VIR,&energy_AB[q]);
+                solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,
+                              flags & GMX_PME_CALC_ENER_VIR,
+                              &energy_AB[q],vir_AB[q]);
             wallcycle_stop(wcycle,ewcPME_SOLVE);
             where();
             GMX_MPE_LOG(ev_solve_pme_finish);

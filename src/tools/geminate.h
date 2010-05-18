@@ -207,14 +207,6 @@ typedef struct{
   t_gemParams *params;
 } gemFitData;
 
-/* #ifdef HAVE_LIBGSL */
-/* #include <gsl/gsl_rng.h> */
-/* #include <gsl/gsl_randist.h> */
-/* #include <gsl/gsl_vector.h> */
-//#include <gsl/gsl_blas.h>
-//#include <gsl/gsl_multifit_nlin.h>
-
-
 extern void takeAwayBallistic(double *ct, double *t,
 		       int len, real tMax,
 		       int nexp, bool bDerivative);

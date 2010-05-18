@@ -44,7 +44,7 @@
  * calculation of autocorrelation function.
  * It also adds a new option -nthreads which sets the number of threads.
  * */
-//#define DOUSEOPENMP
+#define DOUSEOPENMP
 
 #ifdef DOUSEOPENMP
 #define HAVE_OPENMP
@@ -2485,7 +2485,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 
 #ifdef HAVE_OPENMP /*  =========================================\ */
 
-#pragma omp parallel default(shared),				\
+#pragma omp parallel default(shared)				\
   private(i, k, nh, hbh, pHist, h, g, n0, nf, np, j, m,		\
 	  pfound, poff,  rHbExGem, p, ihb, mMax, thisThread)
       { /* ##########  THE START OF THE ENORMOUS PARALLELIZED BLOCK!  ########## */
@@ -2502,7 +2502,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	/* I'm using a chunk size of 1, since I expect
 	 * the overhead to be really small compared
 	 * to the actual calculations */
-#pragma omp for schedule(dynamic,1), nowait
+#pragma omp for schedule(dynamic,1) nowait
 #endif /* HAVE_OPENMP  =========================================/ */
       
 	for (i=0; i<hb->d.nrd; i++) {
