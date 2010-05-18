@@ -79,6 +79,12 @@ void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond);
 /* get the signal name that lead to the current stop condition. */
 const char *gmx_get_signal_name(void);
 
+/* check whether we received a USR1 signal. 
+   The condition is reset once a TRUE value is returned, so this function
+   only returns TRUE once for a single signal. */
+bool gmx_got_usr_signal(void);
+
+
 #ifdef __cplusplus
 }
 #endif

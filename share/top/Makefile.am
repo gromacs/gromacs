@@ -18,7 +18,7 @@ oplsaa.ff \
 charmm27.ff
 
 topol_DATA = \
-	benzamide.itp	bondadd.itp	ff_dum.itp	flexspc.itp	\
+	ff_dum.itp	flexspc.itp	\
 	flexspce.itp	flexwat-ferguson.itp		ions.itp	\
 	spc.itp		spce.itp	tip3p.itp	tip4p.itp	\
 	dgsolv.dat	electroneg.dat	\

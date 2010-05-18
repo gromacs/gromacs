@@ -83,6 +83,9 @@ typedef struct qhop_resblocks {
   char **restype; /* Name of the "residue family", e.g. qLYS. */
   int *nres;      /* Number of related residues, e.g. 2 for qLYS: {LYS, LYSH}*/
   qhop_res **res; /* has size [nrestypes][nres[i]] */
+  int *rtp;       /* indexes the t_restp-array rtp in qhop_db. One element for each restype.
+		   * Note that this is for the "residue families" only, e.g. qLYS.
+		   * Every related residue has its own index to the t_restp-array in qhop_reactant. */
 
   /* The following is for the interaction library *
    * It stores the interaction parameters for a residue.

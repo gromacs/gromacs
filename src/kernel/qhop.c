@@ -495,31 +495,47 @@ static int get_qhop_atoms(t_commrec *cr,
   return(qhop_atoms_nr);
 } /* get_qhop_atoms */
 
-/* Reads the hydrogen existence matrix and finds out which residue subtype to set it to */
-static int H_exist_2_subRes(const t_qhoprec *qr,
+
+/* Reads the info in the qhop_H_exist and finds the corresponding
+   residue subtype in the qhop_db. */
+static int H_exist_2_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 			    const qhop_db *db, const int resnr)
 {
-  int i, atomid;
+  int h, i, j, k, nH, *nHres, atomid, nres, natoms, qrtp;
+  char **Hlist=NULL, *Hname;
   t_atom atom;
   t_qhop_residue *qres = &(qr->qhop_residues[resnr]);
-  qhop_res *res = db->res[qres->rtype];
-  
-  /* Loop over residue subtypes */
-  for (i=0; i<db->nres[qres->rtype]; i++)
+ /*  qhop_res *res = db->rb.res[qres->rtype]; */
+  bool bNewH, bSameRes;
+
+  nres = db->rb.nres[qres->rtype];
+
+  /* Make a list of all hydrogens for this restype */
+  qrtp = db->rb.rtp[qres->rtype]; /* The rtp data */
+  natoms = db->rtp[qrtp].natom;
+  for (i=0, nH=0; i<natoms; i++)
     {
-      for (atomid=qres->atoms; atomid < qres->nr_atoms; atomid++)
+      if (db->rtp[qrtp].atomnr = 1)
+	{	  
+	  srenew(Hlist, nH);
+	  Hlist[nH] = *(db->rtp[qrtp].atomname[i]);
+	  nH++;
+	}
+    }
+
+  /* Loop over the residue subtypes and see which one matches */
+  for (i=0; i<nres; i++)
+    {
+      /* scan the rtp */
+      for (j=0; j<db->nrtp; j++)
 	{
-	  if (db->H_map.atomid2H[atomid] != -1) /* A hydrogen */
-	    {
-	      if (db->H_map.H[db->H_map.atomid2H[atomid]] != 0)
-		{
-		  /* it exists! */
-		}
+	  if (gmx_strcasecmp(db->rtp[j].resname, db->rb.res[qres->rtype][i]) == 0)
+	    { /* Mathcing resnames! Now look at the protons. */
+	      bSameRes = TRUE;
+	      
 	    }
 	}
     }
-  
-
 }
 
 /* Qr    = qhop residue

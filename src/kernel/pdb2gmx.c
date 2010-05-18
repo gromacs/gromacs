@@ -835,9 +835,9 @@ int main(int argc, char *argv[])
   t_aa_names *aan;
   const char *top_fn;
   char       fn[256],itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
-  char       molname[STRLEN],title[STRLEN],quote[STRLEN];
+  char       molname[STRLEN],title[STRLEN],quote[STRLEN],generator[STRLEN];
   char       *c,forcefield[STRLEN],ffdir[STRLEN];
-  char       fff[STRLEN],suffix[STRLEN];
+  char       ffname[STRLEN],suffix[STRLEN];
   const char *watres;
   int        nrtpf;
   char       **rtpf;
@@ -964,13 +964,15 @@ int main(int argc, char *argv[])
 	    forcefield,sizeof(forcefield),
 	    ffdir,sizeof(ffdir));
 
-  if (strlen(forcefield) > 2)
-    strcpy(fff,&(forcefield[2]));
-  else
-    gmx_incons(forcefield);
+  if (strlen(forcefield) > 0) {
+    strcpy(ffname,forcefield);
+    ffname[0] = toupper(ffname[0]);
+  } else {
+    gmx_fatal(FARGS,"Empty forcefield string");
+  }
   
-  printf("\nUsing force field '%s' in directory '%s'\n\n",
-	 forcefield,ffdir);
+  printf("\nUsing the %s force field in directory %s\n\n",
+	 ffname,ffdir);
     
   if (bInter) {
     /* if anything changes here, also change description of -inter */
@@ -1232,7 +1234,14 @@ int main(int argc, char *argv[])
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=gmx_fio_fopen(top_fn,"w");
-  print_top_header(top_file,top_fn,title,FALSE,ffdir,mHmult);
+  sprintf(generator,"%s - version %s",ShortProgram(),
+#ifdef PACKAGE_VERSION
+	  PACKAGE_VERSION
+#else
+	  "unknown"
+#endif
+	  );
+  print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult);
 
   nincl=0;
   nmol=0;
@@ -1436,7 +1445,7 @@ int main(int argc, char *argv[])
     nmol++;
 
     if (bITP)
-      print_top_comment(itp_file,itp_fn,title,TRUE);
+      print_top_comment(itp_file,itp_fn,generator,TRUE);
 
     if (cc->bAllWat)
       top_file2=NULL;
@@ -1544,10 +1553,13 @@ int main(int argc, char *argv[])
   printf("\t\t--------- PLEASE NOTE ------------\n");
   printf("You have succesfully generated a topology from: %s.\n",
 	 opt2fn("-f",NFILE,fnm));
-  printf("The %s force field and the %s water model are used.\n",
-	 fff,watstr[0]);
-  printf("Note that the default mechanism for selecting a force fields has\n"
-	 "changed, starting from GROMACS version 3.2.0\n");
+  if (watstr[0] != NULL) {
+    printf("The %s force field and the %s water model are used.\n",
+	   ffname,watstr[0]);
+  } else {
+    printf("The %s force field is used.\n",
+	   ffname);
+  }
   printf("\t\t--------- ETON ESAELP ------------\n");
   
 

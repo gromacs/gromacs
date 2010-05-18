@@ -456,7 +456,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bLastStep = (step_rel == ir->nsteps);
         t = t0 + step*ir->delta_t;
 
-        if (gs.set[eglsSTOPCOND] != (int)gmx_stop_cond_none )
+        if (gs.set[eglsSTOPCOND] != 0)
         {
             bLastStep = TRUE;
         }
@@ -582,19 +582,29 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
             MASTERTHREAD(cr))
         {
-            gs.sig[eglsSTOPCOND]=(int)gmx_get_stop_condition();
+           /* this is just make gs.sig compatible with the hack 
+               of sending signals around by MPI_Reduce with together with
+               other floats */
+            /* NOTE: this only works for serial code. For code that allows
+               MPI nodes to propagate their condition, see kernel/md.c*/
+            if ( gmx_get_stop_condition() == gmx_stop_cond_next_ns )
+                gs.set[eglsSTOPCOND]=1;
+            if ( gmx_get_stop_condition() == gmx_stop_cond_next )
+                gs.set[eglsSTOPCOND]=1;
+            /* < 0 means stop at next step, > 0 means stop at next NS step */
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                         gmx_get_signal_name(),
-                        gs.sig[eglsSTOPCOND]==gmx_stop_cond_next_ns ? "NS " :   "");
+                        gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                     gmx_get_signal_name(),
-                    gs.sig[eglsSTOPCOND]==gmx_stop_cond_next_ns ? "NS " : "");
+                    gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
+            fflush(stderr);
             handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) &&
@@ -602,7 +612,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
-            gs.set[eglsSTOPCOND] = gmx_stop_cond_next;
+            gs.set[eglsSTOPCOND] = 1;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
@@ -634,7 +644,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         /* Remaining runtime */
-        if (MULTIMASTER(cr) && do_verbose)
+        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal() ))
         {
             print_time(stderr,runtime,step,ir,cr);
         }

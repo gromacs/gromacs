@@ -70,11 +70,12 @@
 
 
 int 
-calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
-					  const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
+calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
+		      int natoms, gmx_localtop_t *top,
+		      const t_atomtypes *atype, float *x, t_nblist *nl,
+		      gmx_genborn_t *born)
 {
 	int i,k,n,ii,is3,ii3,nj0,nj1,offset;
-    int n0,n1;
 	int jnrA,jnrB,jnrC,jnrD,j3A,j3B,j3C,j3D;
 	int jnrE,jnrF,jnrG,jnrH,j3E,j3F,j3G,j3H;
 	int shift;
@@ -137,9 +138,6 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
     
 	n = 0;
     
-    n0 = md->start;
-    n1 = md->start+md->homenr+natoms/2+1;
-		
 	for(i=0;i<natoms;i++)
 	{
 		work[i]=0;
