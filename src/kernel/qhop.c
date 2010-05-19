@@ -2064,7 +2064,7 @@ extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
 			       t_qhoprec *qr, bool bGlobal)
 {
   bool bQhop;
-  int i,qres, bt, bi, ftype, btype, niatoms,
+  int i,qres, res, bt, bi, ftype, btype, niatoms,
     iatoms[MAXATOMLIST]; /* The atoms involved in an interaction */
   
   t_restp *rtp;
@@ -2076,12 +2076,20 @@ extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
 	{
 	  for (bi=0; bi<rtp->rb[bt].nb; bi++)
 	    {
-	      /* is this it? */
-	      bQhop = TRUE;
-	      for (i=0; i<)
-		ilist[bt][]
+	      /* Scan the ilist */
+	      i=0;
+	      do
+		{
+		  bQhop = TRUE;
+		  ftype = ilist[bt].iatoms[i++];
+		  for (j=0; j<btsNiatoms[bt]; j++)
+		    {
+		      bQhop = ilist[bt].iatoms[i++] == rtp->rb[bt].;
+		    }
+		  
 		}
+	      while (bQhop == FALSE && i<ilist[bt])
+	    }
 	}
     }
-
 }
