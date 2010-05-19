@@ -2318,12 +2318,16 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   
   nn = nframes/2;
   
+  if (acType != AC_NN ||
 #ifndef HAVE_OPENMP
-  if (acType != AC_NN) {
+      TRUE
+#else
+      FALSE
+#endif
+      ) {
     snew(h,hb->maxhydro);
     snew(g,hb->maxhydro);
   }
-#endif
 
   /* Dump hbonds for debugging */
   dump_ac(hb,bMerge||bContact,nDump);
@@ -2344,11 +2348,12 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 		 * Set up the OpenMP stuff,                             |
 		 * like the number of threads and such                  |
 		 */
-      
+  if (acType != AC_LUZAR)
+    {
 #if (_OPENMP >= 200805) /* =====================\ */
-  nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
+      nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
 #else
-  nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
+      nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
 #endif /* _OPENMP >= 200805 ====================/ */
 
       omp_set_num_threads(nThreads);
@@ -2366,7 +2371,8 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	  fprintf(stderr, "%-7s", tmpstr);
 	}
       }
-      fprintf(stderr, "\n"); /*                                          | */
+      fprintf(stderr, "\n");
+    }  /*                                                                 | */
 #endif /* HAVE_OPENMP ===================================================/  */
 
 
@@ -2485,7 +2491,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 
 #ifdef HAVE_OPENMP /*  =========================================\ */
 
-#pragma omp parallel default(shared),				\
+#pragma omp parallel default(shared)				\
   private(i, k, nh, hbh, pHist, h, g, n0, nf, np, j, m,		\
 	  pfound, poff,  rHbExGem, p, ihb, mMax, thisThread)
       { /* ##########  THE START OF THE ENORMOUS PARALLELIZED BLOCK!  ########## */
@@ -2502,7 +2508,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	/* I'm using a chunk size of 1, since I expect
 	 * the overhead to be really small compared
 	 * to the actual calculations */
-#pragma omp for schedule(dynamic,1), nowait
+#pragma omp for schedule(dynamic,1) nowait
 #endif /* HAVE_OPENMP  =========================================/ */
       
 	for (i=0; i<hb->d.nrd; i++) {

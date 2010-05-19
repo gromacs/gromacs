@@ -301,9 +301,11 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
  */
 string GmxOpenMMPlatformOptions::getOptionValue(const string &opt)
 {
-    if (options.find(toUpper(opt)) != options.end())
+	map<string, string> :: const_iterator it = options.find(toUpper(opt));
+	if (it != options.end())
     {
-        return options[toUpper(opt)];
+		// cout << "@@@>> " << it->first << " : " << it->second << endl;
+		return it->second;
     }
     else
     {
@@ -371,7 +373,13 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
     char strout_buf[STRLEN];
     int which_test;
     int res = 0;
-    const char * test_type = opt->getOptionValue("memtest").c_str();
+	string s = opt->getOptionValue("memtest");
+	const char * test_type = 
+			s.c_str(); 
+		/* NOTE: thie code below for some misterious reason does NOT work 
+		with MSVC, but the above "fix" seems to solve the problem - not sure why though */
+			// opt->getOptionValue("memtest").c_str();
+
 
     if (!gmx_strcasecmp(test_type, "off"))
     {
@@ -393,7 +401,7 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
     {
         gmx_fatal(FARGS, "Amount of seconds for memetest is negative (%d). ", which_test);
     }
-    
+
     switch (which_test)
     {
         case 0: /* no memtest */
@@ -583,7 +591,7 @@ static void convert_c_12_6(double c12, double c6, double *sigma, double *epsilon
     }
     else 
     {
-        gmx_fatal(FARGS,"OpenMM does only supports c6 > 0 and c12 > 0 or both 0.");
+        gmx_fatal(FARGS,"OpenMM only supports c6 > 0 and c12 > 0 or c6 = c12 = 0.");
     } 
 }
 
@@ -705,7 +713,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numConstraints = idef.il[F_CONSTR].nr/3;
         const int numSettle = idef.il[F_SETTLE].nr/2;
         const int numBonds = idef.il[F_BONDS].nr/3;
-        const int numUB = idef.il[F_UREY_BRADLEY].nr/3;
+        const int numUB = idef.il[F_UREY_BRADLEY].nr/4;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
         const int numRB = idef.il[F_RBDIHS].nr/5;
@@ -839,6 +847,37 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         default:            
             gmx_fatal(FARGS,"OpenMM supports only full periodic boundary conditions "
                               "(pbc = xyz), or none (pbc = no).");
+        }
+
+
+        /* Fix for PME and Ewald error tolerance 
+         *
+	 *  OpenMM uses approximate formulas to calculate the Ewald parameter:
+	 *  alpha = (1.0/cutoff)*sqrt(-log(2.0*tolerlance));
+	 *  and the grid spacing for PME:
+	 *  gridX = ceil(alpha*box[0][0]/pow(0.5*tol, 0.2));
+	 *  gridY = ceil(alpha*box[1][1]/pow(0.5*tol, 0.2));
+	 *  gridZ = ceil(alpha*box[2][2]/pow(0.5*tol, 0.2));
+         *
+	 *  It overestimates the precision and setting it to 
+	 *  (500 x ewald_rtol) seems to give a reasonable match to the GROMACS settings
+         *  
+         *  If the default ewald_rtol=1e-5 is used we silently adjust the value,
+         * otherwise a warning is issued about the action taken. 
+	 */
+        if ((ir->ePBC == epbcXYZ) && 
+            (ir->coulombtype == eelEWALD || ir->coulombtype == eelPME))
+        {
+            if (fabs(ir->ewald_rtol - 1e-5) > 1e-10)
+            {
+                gmx_warning("OpenMM uses the ewald_rtol parameter with approximate formulas "
+                        "to calculate the alpha and grid spacing parameters of the Ewald "
+                        "and PME methods. This tolerance need to be corrected in order to get "
+                        "settings close to the ones used in GROMACS. Although the internal correction "
+                        "should work for any reasonable value of ewald_rtol, using values other than "
+                        "the default 1e-5 might cause incorrect behavior.");
+            }
+            nonbondedForce->setEwaldErrorTolerance(500*ir->ewald_rtol);
         }
 
         for (int i = 0; i < numAtoms; ++i)

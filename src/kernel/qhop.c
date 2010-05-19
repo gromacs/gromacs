@@ -1884,5 +1884,212 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   free(DE_MM);
 }
 
+/* patamStr is the string form the rtp file.
+ * bts = ebtsBONDS, ..., ebtsCMAP
+ * bt is the tyep found in t_rbonded.type */
+static void str2bonded(const char *paramStr,
+		       const int bt, const int bts,
+		       t_iparams *params, int *iatoms)
+{
+
+#ifndef _ALL_BPARAMS
+#define _ALL_BPARAMS &p[0],&p[1],&p[2],&p[3],&p[4],&p[5],&p[6],&p[7],&p[8],&p[9],&p[10],&p[11] /* p[0:MAXFORCEPARAM] */
+#endif
+
+  int ft, i, niatoms=btsNiatoms[bts];
+  real p[MAXFORCEPARAMS];
+
+  t_iparams params;
+  int np, strOffset;
+  char format[1+2+MAXATOMS*2+MAXFORCEPARAMS*2];
+  /* 2 for the functype,
+   * MAXATOMS*2 for the %i belonging to each atom,
+   * MAXFORCEPARAMS*2 for the %f belonging to each forceparameter,
+   * 1 for the '\0'
+   */
+  memset(p, 0, sizeof(real)*MAXFORCEPARAMS);
+  memset(&params, 0, sizeof(t_iparams)); /* zap the params to zero */
+  strOffset = btsNiatoms[bts]*2+1; /* +1 for the initial whitespace, *2 for the "%i" */
+  sprintf(format," %s","%i%i%i%i%i%i%i"); /* the atoms */
+  for (i=0; i<MAXFORCEPARAMS; i++)
+    sprintf(&(format[i*2+2]),"%%f");
   
+  strncpy(&(format[strOffset]),
+	  pt, MAXFORCEPARAMS+MAXATOMLIST+1-strOffset);
+
+  switch(btsNiatoms[bts])
+    {
+    case 2:
+      np = sscanf(s, format,
+		  iatoms[0],
+		  iatoms[1],
+		  ALL_BPARAMS);
+      break;
+    case 3:
+      np = sscanf(s, format,
+		  iatoms[0],
+		  iatoms[1],
+		  iatoms[2],
+		  ALL_BPARAMS);
+      break;
+    case 4:
+      np = sscanf(s, format,
+		  iatoms[0],
+		  iatoms[1],
+		  iatoms[2],
+		  iatoms[3],
+		  ALL_BPARAMS);
+      break;
+    case 5:
+      np = sscanf(s, format,
+		  iatoms[0],
+		  iatoms[1],
+		  iatoms[2],
+		  iatoms[3],
+		  iatoms[4],
+		  ALL_BPARAMS);
+      break;
+    case 6:
+      np = sscanf(s, format,
+		  iatoms[0],
+		  iatoms[1],
+		  iatoms[2],
+		  iatoms[3],
+		  iatoms[4],
+		  iatoms[5],
+		  ALL_BPARAMS);
+      break;
+    default:
+      /* This reeeeally shouldn't happen, unless a new bonded type is added with more than 5 atoms. */
+      gmx_fatal(FARGS, "Wrong number of atoms requested: %d", btsNiatoms[bts]);
+    }
+
+  /*   ====  Now set the params  ====
+   * Note that tabulated potentials, vsiten, orires and cmap
+   * are not supported at this stage, simply because such information
+   * is not available in the rtp file. Other bonded types are striktly
+   * speaking also not available, e.g. vsite, but since their parameters
+   * all reals it's trivial to just pass the parameters to the t_iparams.
+   */
+  if (bts==ebtsPDIHS && bt==1) /* Ordinary proper dihedral. */
+    {
+      params.pdihs.phiA = p[0];
+      params.pdihs.cpA  = p[1];
+      params.pdihs.mult = (int)p[2]; /* <- This is why this one needs special treatment */
+      params.pdihs.phiA = p[3];
+      params.pdihs.cpA  = p[4];
+    }
+  else
+    {
+      for (i=0; i<MAXFORCEPARAMS; i++)
+	(*params).generic.buf[i] = p[i];
+    }
+}
+
+extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop)
+{
+  int rt, res, nrt, nres, bt, bi,rtpIndex,
+    natom, nqatom, i, j,
+    *iatoms[MAXATOMLIST],
+    *iatomsMapped[MAXATOMLIST],
+    *atomMap=NULL,
+    ilistEntry[MAXATOMLIST+1],
+  t_iparams params;
+
+  nrt = db->rb.nrestypes;
+  for (rt=0; rt<nrt; rt++)
+    {
+      nres = db->rb.nres[rt];
+      nqatom = db->rtp[db->rb.rtp[rt]].natom;
+      for (res=0; res<nres; res++)
+	{
+	  rtpIndex = db->rb.res[rt][res].rtp;
+
+	  /* Now map the atoms in the residue subtype (XXX)
+	   * to atoms in the residue type (qXXX) */
+	  natoms = db->rtp[rtpIndex].natom;
+	  srenew(atomMap, natoms);
+	  for (i=0; i<natoms; i++)
+	    {
+	      atomMap[i]=-1;
+	      for (j=0; j<nqatoms; i++)
+		{
+		  /* Match them on a name basis */
+		  if (gmx_strcasecmp(*(db->rtp[rtpIndex].atomname[i]),
+				     *(db->rtp[db->rb.rtp[rt].atomname[j]])) == 0)
+		    {
+		      /* It's a match! */
+		      atomMap[i] = j;
+		      break;
+		    }
+		  if (atomMap[i] == -1)
+		    gmx_fatal(FARGS, "Could not map atom %s in %s onto the atoms in %s.",
+			      *(db->rtp[rtpIndex].atomname[i]),
+			      db->rb.rtp[resIndex].resname,
+			      db->rtp[db->rb.rtp[rt].resname]);
+		}
+	    }
+
+	  /* Loop over all bonded interactions for this residue */
+	  for (bt=0; bt<etbtsNR; b++)
+	    {
+	      for (bi=0;
+		   bi<db->rtp[rtpIndex].rb[bt].nb;
+		   bi++)
+		{
+		  /* Parse the params and atoms. */
+		  str2bonded(db.>rtp[rtpIndex].rb[bt].b[b].s,
+			     bt<=ebtsIDIDS ? db->bts[bt] : 0,
+			     &params,
+			     iatoms);
+
+		  /* Store the functype/iparams index */
+		  ilistEntry[0] = gmx_mtop_append_itype(mtop, ft, params);
+
+		  /* find corresponding atoms in qXXX via atomMap.
+		   * note that the atoms in ilistEntry[1,...] are relative
+		   * to the start of the residue, so they must be offset when
+		   * actually adding this stuff to the ilist. */
+		  for (i=0; i<btsNiatoms; i++)
+		    ilistEntry[i+1] = atomsMap[iatoms[i]];
+		}
+	    }
+	}
+    }
+}
+
+/* Goes through the t_ilist and finds the bonded interactions
+ * that can be changed */
+extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
+			       t_qhoprec *qr, bool bGlobal)
+{
+  bool bQhop;
+  int i,qres, res, bt, bi, ftype, btype, niatoms,
+    iatoms[MAXATOMLIST]; /* The atoms involved in an interaction */
   
+  t_restp *rtp;
+
+  for (qres=0; qres<qr->nr_qhop_residues; qres++)
+    {
+      rtp = &(db->rtp[db->rb.res[qr->qhop_residues[qres]]]);
+      for (bt=0; bt<ebtsNR; bt++)
+	{
+	  for (bi=0; bi<rtp->rb[bt].nb; bi++)
+	    {
+	      /* Scan the ilist */
+	      i=0;
+	      do
+		{
+		  bQhop = TRUE;
+		  ftype = ilist[bt].iatoms[i++];
+		  for (j=0; j<btsNiatoms[bt]; j++)
+		    {
+		      bQhop = ilist[bt].iatoms[i++] == rtp->rb[bt].;
+		    }
+		  
+		}
+	      while (bQhop == FALSE && i<ilist[bt])
+	    }
+	}
+    }
+}

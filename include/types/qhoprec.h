@@ -69,6 +69,12 @@ typedef struct {
   /* Let's change to eQACC for deprotonated, eQACCDON for ampholytic and eQDON for fully protonated. */
   
   int    res_nr; /* Global resnr. */
+  int    **ilistPosG; /* Where in the global topology are the
+		       * bonded interactions found?
+		       * Indexes a t_ilist[F_*][interaction] */
+  int    **ilistPosL; /* Where in the local topology are the
+		       * bonded interactions found?
+		       * Indexes a t_ilist[F_*][interaction] */
 } t_qhop_residue;
 
 /* This enum can probably go, because thins are now explicit in the xml input. */

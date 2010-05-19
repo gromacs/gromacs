@@ -64,7 +64,7 @@
 #include "tmpi.h"
 #endif
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
 #ifdef GMX_DOUBLE
 #include "genborn_sse2_double.h"
 #else
@@ -1712,7 +1712,7 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     calc_gb_chainrule_sse(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
                           x[0], f[0], fr->fshift[0], fr->shift_vec[0], 
-                          gb_algorithm, born, md);    
+                          gb_algorithm, born);
 #else
     /* Calculate the forces due to chain rule terms with non sse code */
     calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 

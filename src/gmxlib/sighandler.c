@@ -66,6 +66,7 @@ const char *gmx_signal_name[] =
 static volatile sig_atomic_t stop_condition=gmx_stop_cond_none;
 static volatile sig_atomic_t last_signal_name=0;
 
+static volatile sig_atomic_t usr_condition=0;
 
 static RETSIGTYPE signal_handler(int n)
 {
@@ -86,12 +87,12 @@ static RETSIGTYPE signal_handler(int n)
             if (stop_condition >= gmx_stop_cond_abort)
                 abort();
             break;
-	#ifdef HAVE_SIGUSR1
+#ifdef HAVE_SIGUSR1
         case SIGUSR1:
-	#endif
+            usr_condition=1;
+            break;
+#endif
         default:
-            stop_condition=gmx_stop_cond_next;
-            last_signal_name=6;
             break;
     }
 }
@@ -115,7 +116,7 @@ void signal_handler_install(void)
         }
         signal(SIGINT,signal_handler);
     }
-    #ifdef HAVE_SIGUSR1
+#ifdef HAVE_SIGUSR1
     if (getenv("GMX_NO_USR1") == NULL)
     {
         if (debug)
@@ -124,7 +125,7 @@ void signal_handler_install(void)
         }
         signal(SIGUSR1,signal_handler);
     }
-    #endif
+#endif
 }
 
 gmx_stop_cond_t gmx_get_stop_condition(void)
@@ -147,6 +148,17 @@ void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond)
 const char *gmx_get_signal_name(void)
 {
     return gmx_signal_name[last_signal_name];
+}
+
+bool gmx_got_usr_signal(void)
+{
+#ifdef HAVE_SIGUSR1
+    bool ret=(bool)usr_condition;
+    usr_condition=0;
+    return ret;
+#else
+    return FALSE;
+#endif
 }
 
 

@@ -46,6 +46,7 @@
 #include "macros.h"
 #include "symtab.h"
 #include "futil.h"
+#include "statutil.h"
 #include "gmx_fatal.h"
 #include "pdb2top.h"
 #include "gpp_nextnb.h"
@@ -350,15 +351,16 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 	    "in pdb2top\n",mHmult);
 }
 
-void print_top_comment(FILE *out,const char *filename,const char *title,bool bITP)
+void print_top_comment(FILE *out,const char *filename,
+                       const char *generator,bool bITP)
 {
   char tmp[256]; 
-  
+
   nice_header(out,filename);
   fprintf(out,";\tThis is your %stopology file\n",bITP ? "include " : "");
-  cool_quote(tmp,255,NULL);
-  fprintf(out,";\t%s\n",title[0]?title:tmp);
-  fprintf(out,";\n");
+  fprintf(out,";\tit was generated using program:\n;\t%s\n",
+          (NULL == generator) ? "unknown" : generator);
+  fprintf(out,";\twith command line:\n;\t%s\n;\n\n",command_line());
 }
 
 void print_top_header(FILE *out,const char *filename, 
