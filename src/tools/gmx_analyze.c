@@ -823,6 +823,57 @@ static void do_ballisitc(const char *balFile, int nData,
 	   "The system is underdetermined, hence no ballistic term can be found.\n\n");
 }
 
+static void do_geminate(const char *gemFile, int nData,
+                        real *t, real **val, int nSet,
+                        const real D, const real logAfterTime,
+                        const output_env_t oenv)
+{
+    double **ctd=NULL, **ctdGem=NULL, *td=NULL;
+    t_gemParams *GP = init_gemParams(0.35, D, t, logAfterTime,
+                                     nData, balTime, 1, FALSE);
+    static char *leg[] = {"Ac\sgem\N(t)"};
+    FILE *fp;
+    int i, set;
+
+    snew(ctd,    nSet);
+    snew(ctdGem, nSet);
+    snew(td,  nData);
+
+    fp = xvgropen(balFile, "Hydrogen Bond Autocorrelation","Time (ps)","C'(t)", oenv);
+    xvgr_legend(fp,asize(leg),leg,oenv);
+
+    for (set=0; set<nSet; set++)
+    {
+        snew(ctd[set],    nData);
+        snew(ctdGem[set], nData);
+        for (i=0; i<nData; i++) {
+            ctd[set][i] = (double)val[set][i];
+            if (set==0)
+                td[i] = (double)t[i];
+        }
+        fitGemRecomb(ctd[set], td, &(fittedct[set]), nData, GP);
+    }
+
+    for (i=0; i<nData; i++)
+	{
+        fprintf(fp, "  %g",t[i]);
+        for (set=0; set<nSet; set++)
+	    {
+            fprintf(fp, "  %g", ctdGem[set][i]);
+	    }
+        fprintf(fp, "\n");
+	}
+
+    for (set=0; set<nSet; set++)
+    {
+        sfree(ctd[set]);
+        sfree(ctdGem[set]);
+    }
+    sfree(ctd);
+    sfree(ctdGem);
+    sfree(td);
+}
+
 int gmx_analyze(int argc,char *argv[])
 {
   static const char *desc[] = {
@@ -985,7 +1036,7 @@ int gmx_analyze(int argc,char *argv[])
     { "-gemtype", FALSE, etENUM, {gemType},
       "What type of gminate recombination to use"},
     { "-D", FALSE, etREAL, {&diffusion},
-      "HIDDENThe self diffusion coefficient which is used for the reversible geminate recombination model."
+      "The self diffusion coefficient which is used for the reversible geminate recombination model."
       "If non-positive, then the diffusion coefficient will be one of the parameters fitted"}
   };
 #define NPA asize(pa)
@@ -1146,7 +1197,7 @@ int gmx_analyze(int argc,char *argv[])
   if (balfile)
       do_ballisitc(balfile,n,t,val,nset,balTime,nBalExp,bDer,oenv);
   if (gemfile)
-      printf("Not fully implemented yet.\n");
+      do_geminate(gemfile,n,t,val,nset,D,logAfterTime,oenv)
   if (bPower)
     power_fit(n,nset,val,t);
   if (acfile) {

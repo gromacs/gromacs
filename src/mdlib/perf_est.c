@@ -35,6 +35,8 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "perf_est.h"
 #include "physics.h"
 #include "vec.h"
@@ -108,13 +110,13 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
   fqljw = (bLJcut ? 2.0  : 2.25);
   /* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
   fqw   = 1.75;
-  /* Cost of q spreading and force interpolation per charge */
-  fqspread = 35.0;
+  /* Cost of q spreading and force interpolation per charge (mainly memory) */
+  fqspread = 0.55;
   /* Cost of fft's, will be multiplied with N log(N) */
-  ffft     =  0.25;
+  ffft     = 0.20;
   /* Cost of pme_solve, will be multiplied with N */
-  fsolve   =  1.75;
-  /* Cost of a bonded interaction divided by the number of (pbc_)dx required */
+  fsolve   = 0.80;
+  /* Cost of a bonded interaction divided by the number of (pbc_)dx nrequired */
   fbond = 5.0;
 
   iparams = mtop->ffparams.iparams;
@@ -182,7 +184,7 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
 		 flj  *nlj*(nw + nqlj + nlj))
     *4/3*M_PI*ir->rlist*ir->rlist*ir->rlist/det(box);
   
-  cost_spread = fqspread*(3*nw + nqlj + nq);
+  cost_spread = fqspread*(3*nw + nqlj + nq)*pow(ir->pme_order,3);
   cost_fft    = ffft*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
   cost_solve  = fsolve*ir->nkx*ir->nky*ir->nkz;
 
