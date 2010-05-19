@@ -62,7 +62,7 @@ typedef struct qhop {
 
 typedef struct qhop_reactant {
   int nname;     /* Length of **name */
-  int rtp;       /* indexes the t_restp-array rtp in qhop_db. */
+  /* Move to qhop_res? */  int rtp;       /* indexes the t_restp-array rtp in qhop_db. */
   char **name;   /* A list of acceptor/donor atoms, due to proton tautomerism, eg. the two oxygens in a carbonyl. */
   char *product; /* What will the res turn into when this donor/aceptor reacts? */
   qhop_res_t productdata; /* Pointer to the product qhop_res */
@@ -75,7 +75,9 @@ typedef struct qhop_res {
   int na, nd; /* Number of acceptors and donors */
   qhop_reactant *acc, *don;
   int nft;
-  t_functype *ft; /* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp*/
+  int *ft;      /* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp */
+  int *mtop_ft; /* index in the mtop->ffparams.functype and ...iparams */
+  int rtp;      /* indexes the t_restp-array rtp in qhop_db. */
 } qhop_res;
 
 typedef struct qhop_resblocks {
