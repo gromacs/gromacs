@@ -42,4 +42,6 @@ extern void do_qhop(FILE *fplog,
 	     tensor force_vir,
 	     qhop_db_t db);
 
+extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop);
+
 #endif	/* _qhop_h */
