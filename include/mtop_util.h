@@ -235,6 +235,21 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir);
 extern t_topology
 gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
 
+
+/* I wrote this for use with qhop, but it may have other uses too, so
+ * I decided to put it along with other mtop funcions.
+ *
+ * Adds the interaction type to the end of idef->functype and idef->params
+ * mtop   - the gmx_mtop_t to change
+ * ft     - functype
+ * p      - prarmeters for the interaction
+ * Returns the position in the functype and params where it's stored.
+ */
+extern int gmx_mtop_append_itype(const gmx_mtop_t *mtop,
+				  const int ft,
+				  const t_iparams p);
+
+
 #ifdef __cplusplus
 }
 #endif
