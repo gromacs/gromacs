@@ -2057,3 +2057,31 @@ extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop)
 	}
     }
 }
+
+/* Goes through the t_ilist and finds the bonded interactions
+ * that can be changed */
+extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
+			       t_qhoprec *qr, bool bGlobal)
+{
+  bool bQhop;
+  int i,qres, bt, bi, ftype, btype, niatoms,
+    iatoms[MAXATOMLIST]; /* The atoms involved in an interaction */
+  
+  t_restp *rtp;
+
+  for (qres=0; qres<qr->nr_qhop_residues; qres++)
+    {
+      rtp = &(db->rtp[db->rb.res[qr->qhop_residues[qres]]]);
+      for (bt=0; bt<ebtsNR; bt++)
+	{
+	  for (bi=0; bi<rtp->rb[bt].nb; bi++)
+	    {
+	      /* is this it? */
+	      bQhop = TRUE;
+	      for (i=0; i<)
+		ilist[bt][]
+		}
+	}
+    }
+
+}

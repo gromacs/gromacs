@@ -44,4 +44,10 @@ extern void do_qhop(FILE *fplog,
 
 extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop);
 
+
+/* Goes through the t_ilist and finds the bonded interactions
+ * that can be changed */
+extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
+			       t_qhoprec *qr, bool bGlobal);
+
 #endif	/* _qhop_h */
