@@ -110,7 +110,7 @@ typedef struct {
 extern bool is_int(double x);
 /* Returns TRUE when x is integer */
 
-extern void print_top_comment(FILE *out,const char *filename,const char *title,bool bITP);
+extern void print_top_comment(FILE *out,const char *filename,const char *generator,bool bITP);
 
 extern void print_top_header(FILE *out,const char *filename,const char *title,bool bITP, 
 			     const char *ffdir,real mHmult);

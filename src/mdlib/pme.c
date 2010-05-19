@@ -88,6 +88,10 @@
 #include "gmx_parallel_3dfft.h"
 #include "pdbio.h"
 
+#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#include "gmx_sse2_single.h"
+#endif
+
 #include "mpelogging.h"
 
 #define DFT_TOL 1e-7
@@ -206,6 +210,7 @@ typedef struct gmx_pme {
     
     pme_overlap_t overlap[2]; /* Indexed on dimension, 0=x, 1=y */
 
+
     pme_atomcomm_t atc_energy; /* Only for gmx_pme_calc_energy */
     
     rvec *bufv;             /* Communication buffer */
@@ -219,6 +224,7 @@ typedef struct gmx_pme {
     real *   work_mhz;
     real *   work_m2;
     real *   work_denom;
+    real *   work_tmp1_alloc;
     real *   work_tmp1;
     real *   work_m2inv;
 
@@ -1136,9 +1142,30 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
 }
 
 
+#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+    /* Calculate exponentials through SSE in float precision */
+#define CALC_EXPONENTIALS(start,end,r_aligned)      \
+    {                                               \
+        __m128 tmp_sse;                             \
+        for(kx=0; kx<end; kx+=4)                    \
+        {                                           \
+            tmp_sse = _mm_load_ps(r_aligned+kx);    \
+            tmp_sse = gmx_mm_exp_ps_lbc(tmp_sse);   \
+            _mm_store_ps(r_aligned+kx,tmp_sse);     \
+        }                                           \
+    }
+#else
+#define CALC_EXPONENTIALS(start,end,r)          \
+    for(kx=start; kx<end; kx++)                 \
+    {                                           \
+        r[kx] = exp(r[kx]);                     \
+    }
+#endif
+
+
 static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
-                         real ewaldcoeff,real vol,matrix vir,t_commrec *cr,
-                         bool bEnerPres,real *mesh_energy)
+                         real ewaldcoeff,real vol,
+                         bool bEnerVir,real *mesh_energy,matrix vir)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
@@ -1179,19 +1206,6 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
     maxkx = (nx+1)/2;
     maxky = (ny+1)/2;
     maxkz = nz/2+1;
-    
-	if (nx > pme->work_nalloc)
-	{
-		/* At the moment the dimensions are actually fixed, but this is for the future... */
-        pme->work_nalloc = nx;
-		srenew(pme->work_mhx,pme->work_nalloc);
-		srenew(pme->work_mhy,pme->work_nalloc);
-		srenew(pme->work_mhz,pme->work_nalloc);
-		srenew(pme->work_m2,pme->work_nalloc);
-		srenew(pme->work_denom,pme->work_nalloc);
-		srenew(pme->work_tmp1,pme->work_nalloc);
-		srenew(pme->work_m2inv,pme->work_nalloc);
-	}
 	
 	mhx   = pme->work_mhx;
 	mhy   = pme->work_mhy;
@@ -1247,7 +1261,7 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
             }
             kxend = local_offset[XX] + local_ndata[XX];
 			
-            if (bEnerPres)
+            if (bEnerVir)
             {
                 /* More expensive inner loop, especially because of the storage
                  * of the mh elements in array's.
@@ -1296,11 +1310,9 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                 {
                     denom[kx] = 1.0/denom[kx];
                 }
-                for(kx=kxstart; kx<kxend; kx++)
-                {
-                    tmp1[kx]  = exp(tmp1[kx]);
-                }
-                
+
+                CALC_EXPONENTIALS(kxstart,kxend,tmp1);
+
                 for(kx=kxstart; kx<kxend; kx++,p0++)
                 {
                     d1      = p0->re;
@@ -1367,11 +1379,9 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                 {
                     denom[kx] = 1.0/denom[kx];
                 }
-                for(kx=kxstart; kx<kxend; kx++)
-                {
-                    tmp1[kx]  = exp(tmp1[kx]);
-                }
-                
+
+                CALC_EXPONENTIALS(kxstart,kxend,tmp1);
+               
                 for(kx=kxstart; kx<kxend; kx++,p0++)
                 {
                     d1      = p0->re;
@@ -1386,20 +1396,24 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
         }
     }
     
-    /* Update virial with local values. The virial is symmetric by definition.
-     * this virial seems ok for isotropic scaling, but I'm
-     * experiencing problems on semiisotropic membranes.
-     * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
-     */
-    vir[XX][XX] = 0.25*virxx;
-    vir[YY][YY] = 0.25*viryy;
-    vir[ZZ][ZZ] = 0.25*virzz;
-    vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
-    vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
-    vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
-	
-    /* This energy should be corrected for a charged system */
-    *mesh_energy = 0.5*energy;
+    if (bEnerVir)
+    {
+        /* Update virial with local values.
+         * The virial is symmetric by definition.
+         * this virial seems ok for isotropic scaling, but I'm
+         * experiencing problems on semiisotropic membranes.
+         * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
+         */
+        vir[XX][XX] = 0.25*virxx;
+        vir[YY][YY] = 0.25*viryy;
+        vir[ZZ][ZZ] = 0.25*virzz;
+        vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
+        vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
+        vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
+        
+        /* This energy should be corrected for a charged system */
+        *mesh_energy = 0.5*energy;
+    }
 
     /* Return the loop count */
     return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
@@ -1755,7 +1769,7 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
     sfree((*pmedata)->work_mhz);
     sfree((*pmedata)->work_m2);
     sfree((*pmedata)->work_denom);
-    sfree((*pmedata)->work_tmp1);
+    sfree((*pmedata)->work_tmp1_alloc);
     sfree((*pmedata)->work_m2inv);
 	
     sfree(*pmedata);
@@ -1797,7 +1811,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
     atc->nodeid = 0;
     atc->pd_nalloc = 0;
 #ifdef GMX_MPI
-    if (PAR(cr))
+    if (pme->nnodes > 1)
     {
         atc->mpi_comm = pme->mpi_comm_d[dimind];
         MPI_Comm_size(atc->mpi_comm,&atc->nslab);
@@ -2261,23 +2275,19 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pme_realloc_atomcomm_things(&pme->atc[0]);
     }
     
-    /* TODO: These work arrays should be possible to reduce further in parallel */
-    if (FALSE)
-    {
-        pme->work_nalloc = pme->nkz/2+1;
-    }
-    else
-    {
-        /* Use fft5d, order after FFT is y major, z, x minor */
-        pme->work_nalloc = pme->nkx;
-        snew(pme->work_mhx,pme->work_nalloc);
-        snew(pme->work_mhy,pme->work_nalloc);
-    }
-	snew(pme->work_mhz,pme->work_nalloc);
-	snew(pme->work_m2,pme->work_nalloc);
-	snew(pme->work_denom,pme->work_nalloc);
-	snew(pme->work_tmp1,pme->work_nalloc);
-	snew(pme->work_m2inv,pme->work_nalloc);
+    /* Use fft5d, order after FFT is y major, z, x minor */
+    pme->work_nalloc = pme->nkx;
+    snew(pme->work_mhx,pme->work_nalloc);
+    snew(pme->work_mhy,pme->work_nalloc);
+    snew(pme->work_mhz,pme->work_nalloc);
+    snew(pme->work_m2,pme->work_nalloc);
+    snew(pme->work_denom,pme->work_nalloc);
+    /* Allocate an aligned pointer for SSE operations, including 3 extra
+     * elements at the end since SSE operates on 4 elements at a time.
+     */
+    snew(pme->work_tmp1_alloc,pme->work_nalloc+8);
+    pme->work_tmp1 = (real *) (((size_t) pme->work_tmp1_alloc + 16) & (~((size_t) 15)));
+    snew(pme->work_m2inv,pme->work_nalloc);
 
     *pmedata = pme;
     
@@ -2596,8 +2606,9 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_MPE_LOG(ev_solve_pme_start);
             wallcycle_start(wcycle,ewcPME_SOLVE);
             loop_count =
-                solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr,
-                              flags & GMX_PME_CALC_ENER_VIR,&energy_AB[q]);
+                solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,
+                              flags & GMX_PME_CALC_ENER_VIR,
+                              &energy_AB[q],vir_AB[q]);
             wallcycle_stop(wcycle,ewcPME_SOLVE);
             where();
             GMX_MPE_LOG(ev_solve_pme_finish);

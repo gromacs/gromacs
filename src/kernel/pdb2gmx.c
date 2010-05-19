@@ -835,7 +835,7 @@ int main(int argc, char *argv[])
   t_aa_names *aan;
   const char *top_fn;
   char       fn[256],itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
-  char       molname[STRLEN],title[STRLEN],quote[STRLEN];
+  char       molname[STRLEN],title[STRLEN],quote[STRLEN],generator[STRLEN];
   char       *c,forcefield[STRLEN],ffdir[STRLEN];
   char       ffname[STRLEN],suffix[STRLEN];
   const char *watres;
@@ -1234,7 +1234,14 @@ int main(int argc, char *argv[])
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=gmx_fio_fopen(top_fn,"w");
-  print_top_header(top_file,top_fn,title,FALSE,ffdir,mHmult);
+  sprintf(generator,"%s - version %s",ShortProgram(),
+#ifdef PACKAGE_VERSION
+	  PACKAGE_VERSION
+#else
+	  "unknown"
+#endif
+	  );
+  print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult);
 
   nincl=0;
   nmol=0;
@@ -1438,7 +1445,7 @@ int main(int argc, char *argv[])
     nmol++;
 
     if (bITP)
-      print_top_comment(itp_file,itp_fn,title,TRUE);
+      print_top_comment(itp_file,itp_fn,generator,TRUE);
 
     if (cc->bAllWat)
       top_file2=NULL;

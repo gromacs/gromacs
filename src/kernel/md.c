@@ -833,15 +833,15 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
         }
         check_nst_param(fplog,cr,"nstlist",ir->nstlist,
                         "nstcalcenergy",&ir->nstcalcenergy);
-    }
-    check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                    "nstenergy",&ir->nstenergy);
-    check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                    "nstlog",&ir->nstlog);
-    if (ir->efep != efepNO)
-    {
-        check_nst_param(fplog,cr,"nstdhdl",ir->nstdhdl,
+        check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                         "nstenergy",&ir->nstenergy);
+        check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
+                        "nstlog",&ir->nstlog);
+        if (ir->efep != efepNO)
+        {
+            check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
+                            "nstdhdl",&ir->nstdhdl);
+        }
     }
 }
 
