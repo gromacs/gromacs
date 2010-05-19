@@ -1977,42 +1977,15 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             break;
 
         case SEL_SUBEXPR:
-            if (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
+            if (sel->cdata->flags & (SEL_CDATA_SIMPLESUBEXPR | SEL_CDATA_FULLEVAL))
             {
                 rc = sel->cdata->evaluate(data, sel, g);
                 _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
             }
-            else if (sel->cdata->flags & SEL_CDATA_FULLEVAL)
-            {
-                if (sel->u.cgrp.isize == 0)
-                {
-                    gmx_ana_index_reserve(&sel->u.cgrp, g->isize);
-                    rc = sel->cdata->evaluate(data, sel, g);
-                    _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
-                }
-            }
             else if (sel->u.cgrp.isize == 0)
             {
                 gmx_ana_index_reserve(&sel->u.cgrp, g->isize);
-                if (bDelayAlloc)
-                {
-                    /* We need to evaluate the child before we can allocate the
-                     * memory. */
-                    rc = sel->child->evaluate(data, sel->child, g);
-                    if (rc != 0)
-                    {
-                        return rc;
-                    }
-                    alloc_selection_data(sel, g->isize, TRUE);
-                    /* Do not evaluate the child again */
-                    sel->child->evaluate = NULL;
-                    rc = sel->cdata->evaluate(data, sel, g);
-                    sel->child->evaluate = &analyze_static;
-                }
-                else
-                {
-                    rc = sel->cdata->evaluate(data, sel, g);
-                }
+                rc = sel->cdata->evaluate(data, sel, g);
             }
             else
             {
@@ -2021,42 +1994,29 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                 {
                     isize += sel->u.cgrp.isize;
                     gmx_ana_index_reserve(&sel->u.cgrp, isize);
-                    if (sel->v.type == GROUP_VALUE || (sel->flags & SEL_ATOMVAL))
-                    {
-                        alloc_selection_data(sel, isize, FALSE);
-                    }
+                    alloc_selection_data(sel, isize, FALSE);
                 }
                 rc = sel->cdata->evaluate(data, sel, g);
             }
             break;
 
         case SEL_SUBEXPRREF:
-            if (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
-            {
-                rc = sel->cdata->evaluate(data, sel, g);
-                if (sel->child->child->flags & SEL_ALLOCVAL)
-                {
-                    _gmx_selvalue_setstore(&sel->v, sel->child->child->v.u.ptr);
-                }
-            }
-            else if (sel->child->cdata->flags & SEL_CDATA_FULLEVAL)
+            if (!g && !(sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR))
             {
                 /* The subexpression should have been evaluated if g is NULL
                  * (i.e., this is a method parameter or a direct value of a
                  * selection). */
-                if (!g)
-                {
-                    alloc_selection_data(sel, sel->child->cdata->gmax->isize, TRUE);
-                }
-                rc = sel->cdata->evaluate(data, sel, g);
+                alloc_selection_data(sel, sel->child->cdata->gmax->isize, TRUE);
             }
-            else
-            {
-                rc = sel->cdata->evaluate(data, sel, g);
-            }
+            rc = sel->cdata->evaluate(data, sel, g);
             if (rc != 0)
             {
                 return rc;
+            }
+            if ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
+                && (sel->child->child->flags & SEL_ALLOCVAL))
+            {
+                _gmx_selvalue_setstore(&sel->v, sel->child->child->v.u.ptr);
             }
             /* Store the parameter value if required */
             store_param_val(sel);
@@ -2326,11 +2286,21 @@ postprocess_item_subexpressions(t_selelem *sel)
         && (sel->cdata->flags & SEL_CDATA_STATICEVAL)
         && !(sel->cdata->flags & SEL_CDATA_FULLEVAL))
     {
+        char *name;
+
+        /* We need to free memory allocated for the group, because it is no
+         * longer needed (and would be lost on next call to the evaluation
+         * function). But we need to preserve the name. */
+        name = sel->u.cgrp.name;
+        gmx_ana_index_deinit(&sel->u.cgrp);
+        sel->u.cgrp.name = name;
+
         sel->evaluate = &_gmx_sel_evaluate_subexpr_staticeval;
         if (sel->cdata)
         {
             sel->cdata->evaluate = sel->evaluate;
         }
+        _gmx_selelem_free_values(sel->child);
         sel->child->mempool = NULL;
         _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
         sel->child->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);

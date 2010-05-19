@@ -345,6 +345,7 @@ _gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_a
  * there should be exactly one in \p g.
  * The compiler has taken care that the child actually stores the evaluated
  * value in the value pointer of this element.
+ * Assumes that \p g is persistent for the duration of the whole evaluation.
  *
  * This function is used as \c t_selelem::evaluate for \ref SEL_SUBEXPR
  * elements that have a static evaluation group, and hence do not need full
@@ -355,7 +356,6 @@ _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data, t_selelem *sel, g
 {
     if (sel->u.cgrp.isize == 0)
     {
-        char *name;
         int  rc;
 
         rc = sel->child->evaluate(data, sel->child, g);
@@ -364,11 +364,7 @@ _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data, t_selelem *sel, g
             return rc;
         }
         sel->v.nr = sel->child->v.nr;
-        /* We need to keep the name for the cgrp across the copy to avoid
-         * problems if g has a name set. */
-        name = sel->u.cgrp.name;
-        gmx_ana_index_copy(&sel->u.cgrp, g, FALSE);
-        sel->u.cgrp.name = name;
+        gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, sel->u.cgrp.name, 0);
     }
     return 0;
 }
@@ -402,20 +398,14 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
     if (sel->u.cgrp.isize == 0)
     {
         char *name;
-
-        /* We need to check for the presence because the compiler may clear
-         * it temporarily. */
-        if (sel->child->evaluate)
+        void *old_ptr    = sel->child->v.u.ptr;
+        int   old_nalloc = sel->child->v.nalloc;
+        _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
+        rc = sel->child->evaluate(data, sel->child, g);
+        _gmx_selvalue_setstore_alloc(&sel->child->v, old_ptr, old_nalloc);
+        if (rc != 0)
         {
-            void *old_ptr    = sel->child->v.u.ptr;
-            int   old_nalloc = sel->child->v.nalloc;
-            _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
-            rc = sel->child->evaluate(data, sel->child, g);
-            _gmx_selvalue_setstore_alloc(&sel->child->v, old_ptr, old_nalloc);
-            if (rc != 0)
-            {
-                return rc;
-            }
+            return rc;
         }
         /* We need to keep the name for the cgrp across the copy to avoid
          * problems if g has a name set. */
