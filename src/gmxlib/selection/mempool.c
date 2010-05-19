@@ -201,3 +201,10 @@ _gmx_sel_mempool_alloc_group(gmx_sel_mempool_t *mp, gmx_ana_index_t *g,
     return _gmx_sel_mempool_alloc(mp, (void **)&g->index,
                                   sizeof(*g->index)*isize);
 }
+
+void
+_gmx_sel_mempool_free_group(gmx_sel_mempool_t *mp, gmx_ana_index_t *g)
+{
+    _gmx_sel_mempool_free(mp, g->index);
+    g->index = NULL;
+}

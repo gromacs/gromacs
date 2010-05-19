@@ -332,8 +332,7 @@ extern void
 _gmx_selelem_free_values(t_selelem *sel);
 /** Frees the memory allocated for a selection method. */
 extern void
-_gmx_selelem_free_method(struct gmx_ana_selmethod_t *method, void *mdata,
-                         bool bFreeParamData);
+_gmx_selelem_free_method(struct gmx_ana_selmethod_t *method, void *mdata);
 /** Frees the memory allocated for the \c t_selelem::u field. */
 extern void
 _gmx_selelem_free_exprdata(t_selelem *sel);

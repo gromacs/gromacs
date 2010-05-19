@@ -62,5 +62,8 @@ _gmx_sel_mempool_reserve(gmx_sel_mempool_t *mp, size_t size);
 int
 _gmx_sel_mempool_alloc_group(gmx_sel_mempool_t *mp, struct gmx_ana_index_t *g,
                              int isize);
+/** Convenience function for freeing an index group from a memory pool. */
+void
+_gmx_sel_mempool_free_group(gmx_sel_mempool_t *mp, struct gmx_ana_index_t *g);
 
 #endif

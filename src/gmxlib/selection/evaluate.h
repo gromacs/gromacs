@@ -100,15 +100,18 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_i
 /*! \name Subexpression evaluation functions
  */
 /*@{*/
-/** Evaluates a subexpression, only handling the number of values. */
+/** Evaluates a subexpression when there is only one reference. */
 int
-_gmx_sel_evaluate_subexpr_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
+_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
+/** Evaluates a subexpression when the evaluation group is static. */
+int
+_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /** Evaluates a subexpression. */
 int
 _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
-/** Evaluates a subexpression reference, only handling the number of values. */
+/** Evaluates a subexpression reference when there are no other references. */
 int
-_gmx_sel_evaluate_subexprref_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
+_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /** Evaluates a subexpression reference. */
 int
 _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);

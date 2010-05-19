@@ -200,12 +200,22 @@ _gmx_selelem_mempool_reserve(t_selelem *sel, int count)
     }
     switch (sel->v.type)
     {
+        case INT_VALUE:
+            rc = _gmx_sel_mempool_alloc(sel->mempool, (void **)&sel->v.u.i,
+                                        sizeof(*sel->v.u.i)*count);
+            break;
+
+        case REAL_VALUE:
+            rc = _gmx_sel_mempool_alloc(sel->mempool, (void **)&sel->v.u.r,
+                                        sizeof(*sel->v.u.r)*count);
+            break;
+
         case GROUP_VALUE:
             rc = _gmx_sel_mempool_alloc_group(sel->mempool, sel->v.u.g, count);
             break;
 
         default:
-            gmx_bug("mem pooling not implemented for non-group values");
+            gmx_incons("mem pooling not implemented for requested type");
             return -1;
     }
     return rc;
@@ -226,16 +236,20 @@ _gmx_selelem_mempool_release(t_selelem *sel)
     }
     switch (sel->v.type)
     {
+        case INT_VALUE:
+        case REAL_VALUE:
+            _gmx_sel_mempool_free(sel->mempool, sel->v.u.ptr);
+            break;
+
         case GROUP_VALUE:
             if (sel->v.u.g)
             {
-                _gmx_sel_mempool_free(sel->mempool, sel->v.u.g->index);
-                sel->v.u.g->index = NULL;
+                _gmx_sel_mempool_free_group(sel->mempool, sel->v.u.g);
             }
             break;
 
         default:
-            gmx_bug("mem pooling not implemented for non-group values");
+            gmx_incons("mem pooling not implemented for requested type");
             break;
     }
 }
@@ -290,76 +304,75 @@ _gmx_selelem_free_values(t_selelem *sel)
         sfree(sel->v.u.ptr);
     }
     _gmx_selvalue_setstore(&sel->v, NULL);
+    if (sel->type == SEL_SUBEXPRREF && sel->u.param)
+    {
+        sel->u.param->val.u.ptr = NULL;
+    }
 }
 
 /*!
  * \param[in] method Method to free.
  * \param[in] mdata  Method data to free.
- * \param[in] bFreeParamData If TRUE, free also the values of parameters.
  */
 void
-_gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata,
-                         bool bFreeParamData)
+_gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata)
 {
-    /* Free method data */
-    if (mdata)
+    sel_freefunc free_func = NULL;
+
+    /* Save the pointer to the free function. */
+    if (method && method->free)
     {
-        if (method && method->free)
-        {
-            method->free(mdata);
-        }
-        sfree(mdata);
+        free_func = method->free;
     }
-    /* Free the method itself */
+
+    /* Free the method itself.
+     * Has to be done before freeing the method data, because parameter
+     * values are typically stored in the method data, and here we may
+     * access them. */
     if (method)
     {
-        int  i;
+        int  i, j;
 
-        /* If the method has not yet been initialized, we must free the
-         * memory allocated for parameter values here. */
-        if (bFreeParamData)
-        {
-            for (i = 0; i < method->nparams; ++i)
-            {
-                gmx_ana_selparam_t *param = &method->param[i];
-
-                if ((param->flags & (SPAR_VARNUM | SPAR_ATOMVAL))
-                    && param->val.type != GROUP_VALUE
-                    && param->val.type != POS_VALUE)
-                {
-                    /* We don't need to check for enum values here, because
-                     * SPAR_ENUMVAL cannot be combined with the flags
-                     * required above. If it ever will be, this results
-                     * in a double free within this function, which should
-                     * be relatively easy to debug.
-                     */
-                    if (param->val.type == STR_VALUE)
-                    {
-                        int j;
-
-                        for (j = 0; j < param->val.nr; ++j)
-                        {
-                            sfree(param->val.u.s[j]);
-                        }
-                    }
-                    sfree(param->val.u.ptr);
-                }
-            }
-        }
-        /* And even if it is, the arrays allocated for enum values need
-         * to be freed. */
+        /* Free the memory allocated for the parameters that are not managed
+         * by the selection method itself. */
         for (i = 0; i < method->nparams; ++i)
         {
             gmx_ana_selparam_t *param = &method->param[i];
 
-            if (param->flags & SPAR_ENUMVAL)
+            if (param->val.u.ptr)
             {
-                sfree(param->val.u.ptr);
-            }
+                if (param->val.type == GROUP_VALUE)
+                {
+                    for (j = 0; j < param->val.nr; ++j)
+                    {
+                        gmx_ana_index_deinit(&param->val.u.g[j]);
+                    }
+                }
+                else if (param->val.type == POS_VALUE)
+                {
+                    for (j = 0; j < param->val.nr; ++j)
+                    {
+                        gmx_ana_pos_deinit(&param->val.u.p[j]);
+                    }
+                }
 
+                if (param->val.nalloc > 0)
+                {
+                    sfree(param->val.u.ptr);
+                }
+            }
         }
         sfree(method->param);
         sfree(method);
+    }
+    /* Free method data. */
+    if (mdata)
+    {
+        if (free_func)
+        {
+            free_func(mdata);
+        }
+        sfree(mdata);
     }
 }
 
@@ -371,8 +384,7 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
 {
     if (sel->type == SEL_EXPRESSION || sel->type == SEL_MODIFIER)
     {
-        _gmx_selelem_free_method(sel->u.expr.method, sel->u.expr.mdata,
-                                 !(sel->flags & SEL_METHODINIT));
+        _gmx_selelem_free_method(sel->u.expr.method, sel->u.expr.mdata);
         sel->u.expr.mdata = NULL;
         sel->u.expr.method = NULL;
         /* Free position data */
@@ -410,8 +422,6 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
 void
 _gmx_selelem_free(t_selelem *sel)
 {
-    t_selelem *child, *prev;
-    
     /* Decrement the reference counter and do nothing if references remain */
     sel->refcount--;
     if (sel->refcount > 0)
@@ -419,14 +429,10 @@ _gmx_selelem_free(t_selelem *sel)
         return;
     }
 
-    /* Free the children */
-    child = sel->child;
-    while (child)
-    {
-        prev = child;
-        child = child->next;
-        _gmx_selelem_free(prev);
-    }
+    /* Free the children.
+     * Must be done before freeing other data, because the children may hold
+     * references to data in this element. */
+    _gmx_selelem_free_chain(sel->child);
 
     /* Free value storage */
     _gmx_selelem_free_values(sel);
@@ -476,12 +482,14 @@ print_evaluation_func(FILE *fp, t_selelem *sel)
         fprintf(fp, "root");
     else if (sel->evaluate == &_gmx_sel_evaluate_static)
         fprintf(fp, "static");
-    else if (sel->evaluate == &_gmx_sel_evaluate_subexpr_pass)
-        fprintf(fp, "subexpr_pass");
+    else if (sel->evaluate == &_gmx_sel_evaluate_subexpr_simple)
+        fprintf(fp, "subexpr_simple");
+    else if (sel->evaluate == &_gmx_sel_evaluate_subexpr_staticeval)
+        fprintf(fp, "subexpr_staticeval");
     else if (sel->evaluate == &_gmx_sel_evaluate_subexpr)
         fprintf(fp, "subexpr");
-    else if (sel->evaluate == &_gmx_sel_evaluate_subexprref_pass)
-        fprintf(fp, "ref_pass");
+    else if (sel->evaluate == &_gmx_sel_evaluate_subexprref_simple)
+        fprintf(fp, "ref_simple");
     else if (sel->evaluate == &_gmx_sel_evaluate_subexprref)
         fprintf(fp, "ref");
     else if (sel->evaluate == &_gmx_sel_evaluate_method)

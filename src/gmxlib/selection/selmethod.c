@@ -418,7 +418,6 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
 {
     bool         bOk = TRUE;
     bool         bNeedInit;
-    bool         bNeedFree;
     int          i;
 
     /* Make some checks on init_data and free */
@@ -455,30 +454,18 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     /* Loop through the parameters to determine if initialization callbacks
      * are needed. */
     bNeedInit = FALSE;
-    bNeedFree = FALSE;
     for (i = 0; i < method->nparams; ++i)
     {
-        if (method->param[i].val.type == POS_VALUE
-            || method->param[i].val.type == GROUP_VALUE)
-        {
-            bNeedFree = TRUE;
-        }
         if (method->param[i].val.type != POS_VALUE
             && (method->param[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
         {
             bNeedInit = TRUE;
-            bNeedFree = TRUE;
         }
     }
     /* Check that the callbacks required by the parameters are present */
     if (bNeedInit && !method->init)
     {
         report_error(fp, method->name, "error: init should be provided");
-        bOk = FALSE;
-    }
-    if (bNeedFree && !method->free)
-    {
-        report_error(fp, method->name, "error: free should be provided");
         bOk = FALSE;
     }
     return bOk;
