@@ -180,6 +180,44 @@ convert_values(t_selexpr_value *values, e_selvalue_t type, void *scanner)
 }
 
 /*! \brief
+ * Adds a child element for a parameter, keeping the parameter order.
+ *
+ * \param[in,out] root  Root element to which the child is added.
+ * \param[in]     child Child to add.
+ * \param[in]     param Parameter for which this child is a value.
+ *
+ * Puts \p child in the child list of \p root such that the list remains
+ * in the same order as the corresponding parameters.
+ */
+static void
+place_child(t_selelem *root, t_selelem *child, gmx_ana_selparam_t *param)
+{
+    gmx_ana_selparam_t *ps;
+    int                 n;
+
+    ps = root->u.expr.method->param;
+    n  = param - ps;
+    /* Put the child element in the correct place */
+    if (!root->child || n < root->child->u.param - ps)
+    {
+        child->next = root->child;
+        root->child = child;
+    }
+    else
+    {
+        t_selelem *prev;
+
+        prev = root->child;
+        while (prev->next && prev->next->u.param - ps >= n)
+        {
+            prev = prev->next;
+        }
+        child->next = prev->next;
+        prev->next  = child;
+    }
+}
+
+/*! \brief
  * Comparison function for sorting integer ranges.
  * 
  * \param[in] a Pointer to the first range.
@@ -419,13 +457,15 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
  * \param[in] nval   Number of values in \p values.
  * \param[in] values Pointer to the list of values.
  * \param     param  Parameter to parse.
+ * \param     root   Selection element to which child expressions are added.
  * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
  *
  * For integer ranges, the sequence of numbers from the first to second value
  * is stored, each as a separate value.
  */
 static bool
-parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
+parse_values_varnum(int nval, t_selexpr_value *values,
+                    gmx_ana_selparam_t *param, t_selelem *root)
 {
     t_selexpr_value    *value;
     int                 i, j;
@@ -519,6 +559,26 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
         *param->nvalptr = param->val.nr;
     }
     param->nvalptr = NULL;
+    /* Create a dummy child element to store the string values.
+     * This element is responsible for freeing the values, but carries no
+     * other function. */
+    if (param->val.type == STR_VALUE)
+    {
+        t_selelem *child;
+
+        child = _gmx_selelem_create(SEL_CONST);
+        _gmx_selelem_set_vtype(child, STR_VALUE);
+        child->name = param->name;
+        child->flags &= ~SEL_ALLOCVAL;
+        child->flags |= SEL_FLAGSSET | SEL_VARNUMVAL | SEL_ALLOCDATA;
+        child->v.nr = param->val.nr;
+        _gmx_selvalue_setstore(&child->v, param->val.u.s);
+        /* Because the child is not group-valued, the u union is not used
+         * for anything, so we can abuse it by storing the parameter value
+         * as place_child() expects, but this is really ugly... */
+        child->u.param = param;
+        place_child(root, child, param);
+    }
 
     return TRUE;
 }
@@ -539,8 +599,6 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
 static t_selelem *
 add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr)
 {
-    gmx_ana_selparam_t *ps;
-    int                 n;
     t_selelem          *child;
     int                 rc;
 
@@ -549,8 +607,6 @@ add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr)
         gmx_bug("unsupported root element for selection parameter parser");
         return NULL;
     }
-    ps = root->u.expr.method->param;
-    n  = param - ps;
     /* Create a subexpression reference element if necessary */
     if (expr->type == SEL_SUBEXPRREF)
     {
@@ -591,23 +647,7 @@ add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr)
         param->flags &= ~SPAR_DYNAMIC;
     }
     /* Put the child element in the correct place */
-    if (!root->child || n < root->child->u.param - ps)
-    {
-        child->next = root->child;
-        root->child = child;
-    }
-    else
-    {
-        t_selelem *prev;
-
-        prev = root->child;
-        while (prev->next && prev->next->u.param - ps >= n)
-        {
-            prev = prev->next;
-        }
-        child->next = prev->next;
-        prev->next  = child;
-    }
+    place_child(root, child, param);
     return child;
 
 on_error:
@@ -712,6 +752,7 @@ set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i)
             gmx_bug("internal error");
             return FALSE;
     }
+    sel->v.nr = 1;
     sel->v.nalloc = -1;
     return TRUE;
 }
@@ -1171,7 +1212,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
             }
             else
             {
-                rc = parse_values_varnum(pparam->nval, pparam->value, oparam);
+                rc = parse_values_varnum(pparam->nval, pparam->value, oparam, root);
             }
         }
         else if (oparam->flags & SPAR_ENUMVAL)

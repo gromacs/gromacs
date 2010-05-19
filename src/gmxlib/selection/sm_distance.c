@@ -230,7 +230,6 @@ free_data_common(void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
-    gmx_ana_pos_deinit(&d->p);
     gmx_ana_nbsearch_free(d->nb);
 }
 

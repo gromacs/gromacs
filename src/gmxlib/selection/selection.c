@@ -50,6 +50,7 @@
 #include <selection.h>
 #include <selmethod.h>
 
+#include "mempool.h"
 #include "selcollection.h"
 #include "selelem.h"
 #include "symrec.h"
@@ -80,6 +81,7 @@ gmx_ana_selcollection_create(gmx_ana_selcollection_t **scp,
     sc->top       = NULL;
     gmx_ana_index_clear(&sc->gall);
     sc->pcc       = pcc;
+    sc->mempool   = NULL;
     _gmx_sel_symtab_create(&sc->symtab);
     *scp = sc;
     return 0;
@@ -110,6 +112,10 @@ gmx_ana_selcollection_free(gmx_ana_selcollection_t *sc)
     }
     sfree(sc->varstrs);
     gmx_ana_index_deinit(&sc->gall);
+    if (sc->mempool)
+    {
+        _gmx_sel_mempool_destroy(sc->mempool);
+    }
     _gmx_selcollection_clear_symtab(sc);
     sfree(sc);
 }

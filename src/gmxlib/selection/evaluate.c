@@ -58,20 +58,24 @@
 #include <selmethod.h>
 
 #include "evaluate.h"
+#include "mempool.h"
 #include "selcollection.h"
 #include "selelem.h"
 
 /*!
  * \param[out] data Evaluation data structure to initialize.
+ * \param[in]  mp   Memory pool for intermediate evaluation values.
  * \param[in]  gall Index group with all the atoms.
  * \param[in]  top  Topology structure for evaluation.
  * \param[in]  fr   New frame for evaluation.
  * \param[in]  pbc  New PBC information for evaluation.
  */
 void
-_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data, gmx_ana_index_t *gall,
+_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
+                       gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
                        t_topology *top, t_trxframe *fr, t_pbc *pbc)
 {
+    data->mp   = mp;
     data->gall = gall;
     data->top  = top;
     data->fr   = fr;
@@ -133,7 +137,7 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
     int                 g, i;
     int                 rc;
 
-    _gmx_sel_evaluate_init(&data, &sc->gall, sc->top, fr, pbc);
+    _gmx_sel_evaluate_init(&data, sc->mempool, &sc->gall, sc->top, fr, pbc);
     init_frame_eval(sc->root);
     sel = sc->root;
     while (sel)
@@ -150,7 +154,7 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
              * _gmx_sel_evaluate_subexpr(). */
             if (sel->child->v.type == GROUP_VALUE)
             {
-                sel->child->child->v.u.g->isize = 0;
+                sel->child->v.u.g->isize = 0;
             }
         }
         if (sel->evaluate)
@@ -307,15 +311,15 @@ _gmx_sel_evaluate_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index
  * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates the child element (there should be exactly one) in \p g.
- * The number of values is copied from the child to \p sel->v.nr, but
- * otherwise the value of \p sel is not touched.
+ * The compiler has taken care that the child actually stores the evaluated
+ * value in the value pointer of this element.
  *
  * This function is used as \c t_selelem::evaluate for \ref SEL_SUBEXPR
  * elements that are used only once, and hence do not need full subexpression
  * handling.
  */
 int
-_gmx_sel_evaluate_subexpr_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
     int        rc;
 
@@ -328,6 +332,40 @@ _gmx_sel_evaluate_subexpr_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana
         }
     }
     sel->v.nr = sel->child->v.nr;
+    return 0;
+}
+
+/*!
+ * \param[in] data Data for the current frame.
+ * \param[in] sel  Selection element being evaluated.
+ * \param[in] g    Group for which \p sel should be evaluated.
+ * \returns   0 on success, a non-zero error code on error.
+ *
+ * If this is the first call for this frame, evaluates the child element
+ * there should be exactly one in \p g.
+ * The compiler has taken care that the child actually stores the evaluated
+ * value in the value pointer of this element.
+ * Assumes that \p g is persistent for the duration of the whole evaluation.
+ *
+ * This function is used as \c t_selelem::evaluate for \ref SEL_SUBEXPR
+ * elements that have a static evaluation group, and hence do not need full
+ * subexpression handling.
+ */
+int
+_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+{
+    if (sel->u.cgrp.isize == 0)
+    {
+        int  rc;
+
+        rc = sel->child->evaluate(data, sel->child, g);
+        if (rc != 0)
+        {
+            return rc;
+        }
+        sel->v.nr = sel->child->v.nr;
+        gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, sel->u.cgrp.name, 0);
+    }
     return 0;
 }
 
@@ -347,6 +385,9 @@ _gmx_sel_evaluate_subexpr_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana
  * The call to gmx_ana_index_difference() can take quite a lot of unnecessary
  * time if the subexpression is evaluated either several times for the same
  * group or for completely distinct groups.
+ * However, in the majority of cases, these situations occur when
+ * _gmx_sel_evaluate_subexpr_staticeval() can be used, so this should not be a
+ * major problem.
  */
 int
 _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
@@ -357,15 +398,14 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
     if (sel->u.cgrp.isize == 0)
     {
         char *name;
-        /* We need to check for the presence because the compiler may clear
-         * it temporarily. */
-        if (sel->child->evaluate)
+        void *old_ptr    = sel->child->v.u.ptr;
+        int   old_nalloc = sel->child->v.nalloc;
+        _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
+        rc = sel->child->evaluate(data, sel->child, g);
+        _gmx_selvalue_setstore_alloc(&sel->child->v, old_ptr, old_nalloc);
+        if (rc != 0)
         {
-            rc = sel->child->evaluate(data, sel->child, g);
-            if (rc != 0)
-            {
-                return rc;
-            }
+            return rc;
         }
         /* We need to keep the name for the cgrp across the copy to avoid
          * problems if g has a name set. */
@@ -376,33 +416,24 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
     }
     else
     {
-        if (sel->v.type == GROUP_VALUE)
+        /* We allocate some extra memory here to avoid some computation. */
+        rc = _gmx_sel_mempool_alloc_group(data->mp, &gmiss, g->isize);
+        if (rc != 0)
         {
-            gmx_ana_index_set(&gmiss, 0, sel->child->v.u.g->index + sel->child->v.u.g->isize, NULL, 0);
-        }
-        else
-        {
-            gmx_ana_index_set(&gmiss, 0, sel->u.cgrp.index + sel->u.cgrp.isize, NULL, 0);
+            return rc;
         }
         gmx_ana_index_difference(&gmiss, g, &sel->u.cgrp);
+        if (gmiss.isize == 0)
+        {
+            _gmx_sel_mempool_free_group(data->mp, &gmiss);
+        }
     }
     if (gmiss.isize > 0)
     {
-        /* We use the value of sel to store the old value of the child before
-         * evaluating the missing values. */
-        if (sel->v.type == GROUP_VALUE)
+        rc = _gmx_selelem_mempool_reserve(sel->child, gmiss.isize);
+        if (rc != 0)
         {
-            atom_id *tmp             = sel->child->v.u.g->index;
-            sel->child->v.u.g->index = sel->v.u.g->index;
-            sel->v.u.g->index        = tmp;
-            sel->v.u.g->isize        = sel->child->v.u.g->isize;
-            sel->child->v.u.g->isize = 0;
-        }
-        else
-        {
-            void *tmp           = sel->child->v.u.ptr;
-            sel->child->v.u.ptr = sel->v.u.ptr;
-            sel->v.u.ptr        = tmp;
+            return rc;
         }
         /* Evaluate the missing values for the child */
         rc = sel->child->evaluate(data, sel->child, &gmiss);
@@ -413,8 +444,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
         /* Merge the missing values to the existing ones. */
         if (sel->v.type == GROUP_VALUE)
         {
-            gmx_ana_index_merge(sel->child->v.u.g, sel->child->v.u.g, sel->v.u.g);
-            gmx_ana_index_merge(&sel->u.cgrp, &sel->u.cgrp, &gmiss);
+            gmx_ana_index_merge(sel->v.u.g, sel->child->v.u.g, sel->v.u.g);
         }
         else
         {
@@ -431,11 +461,11 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                     {
                         if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                         {
-                            sel->child->v.u.i[k] = sel->child->v.u.i[j--];
+                            sel->v.u.i[k] = sel->v.u.i[j--];
                         }
                         else
                         {
-                            sel->child->v.u.i[k] = sel->v.u.i[i--];
+                            sel->v.u.i[k] = sel->child->v.u.i[i--];
                         }
                     }
                     break;
@@ -445,11 +475,11 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                     {
                         if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                         {
-                            sel->child->v.u.r[k] = sel->child->v.u.r[j--];
+                            sel->v.u.r[k] = sel->v.u.r[j--];
                         }
                         else
                         {
-                            sel->child->v.u.r[k] = sel->v.u.r[i--];
+                            sel->v.u.r[k] = sel->child->v.u.r[i--];
                         }
                     }
                     break;
@@ -459,11 +489,11 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                     {
                         if (i < 0 || (j >= 0 && sel->u.cgrp.index[i] < gmiss.index[j]))
                         {
-                            sel->child->v.u.s[k] = sel->child->v.u.s[j--];
+                            sel->v.u.s[k] = sel->v.u.s[j--];
                         }
                         else
                         {
-                            sel->child->v.u.s[k] = sel->v.u.s[i--];
+                            sel->v.u.s[k] = sel->child->v.u.s[i--];
                         }
                     }
                     break;
@@ -478,10 +508,10 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                     gmx_bug("internal error");
                     return -1;
             }
-            /* TODO: With some additional storage, we could do a merge here */
-            sel->u.cgrp.isize += gmiss.isize;
-            gmx_ana_index_sort(&sel->u.cgrp);
         }
+        gmx_ana_index_merge(&sel->u.cgrp, &sel->u.cgrp, &gmiss);
+        _gmx_selelem_mempool_release(sel->child);
+        _gmx_sel_mempool_free_group(data->mp, &gmiss);
     }
     return 0;
 }
@@ -492,15 +522,30 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
  * \param[in] g   Group for which \p sel should be evaluated.
  * \returns   0 for success.
  *
+ * Sets the value pointers of the child and its child to point to the same
+ * memory as the value pointer of this element to avoid copying, and then
+ * evaluates evaluates the child.
+ *
  * This function is used as \c t_selelem:evaluate for \ref SEL_SUBEXPRREF
- * elements for which the actual value is evaluated directly by the
- * subexpression, but for which the number of values needs to be passed
- * forward.
+ * elements for which the \ref SEL_SUBEXPR does not have other references.
  */
 int
-_gmx_sel_evaluate_subexprref_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
+_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
-    sel->v.nr = sel->child->child->v.nr;
+    if (g)
+    {
+        int rc;
+
+        _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
+        _gmx_selvalue_setstore_alloc(&sel->child->child->v, sel->v.u.ptr,
+                                     sel->child->child->v.nalloc);
+        rc = sel->child->evaluate(data, sel->child, g);
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
+    sel->v.nr = sel->child->v.nr;
     if (sel->u.param)
     {
         sel->u.param->val.nr = sel->v.nr;
@@ -534,9 +579,7 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_i
     t_selelem *expr;
     int        i, j;
 
-    /* We need to check for the presence because the compiler may clear
-     * it temporarily. */
-    if (g && sel->child->evaluate)
+    if (g)
     {
         int rc;
 
@@ -546,7 +589,7 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_i
             return rc;
         }
     }
-    expr = sel->child->child;
+    expr = sel->child;
     switch (sel->v.type)
     {
         case INT_VALUE:
@@ -814,12 +857,17 @@ _gmx_sel_evaluate_not(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t 
 {
     int rc;
 
-    rc = sel->child->evaluate(data, sel->child, g);
+    rc = _gmx_selelem_mempool_reserve(sel->child, g->isize);
+    if (rc == 0)
+    {
+        rc = sel->child->evaluate(data, sel->child, g);
+    }
     if (rc != 0)
     {
         return rc;
     }
     gmx_ana_index_difference(sel->v.u.g, g, sel->child->v.u.g);
+    _gmx_selelem_mempool_release(sel->child);
     return 0;
 }
 
@@ -860,21 +908,31 @@ _gmx_sel_evaluate_and(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t 
     {
         child = child->next;
     }
-    rc = child->evaluate(data, child, g);
+    rc = _gmx_selelem_mempool_reserve(child, g->isize);
+    if (rc == 0)
+    {
+        rc = child->evaluate(data, child, g);
+    }
     if (rc != 0)
     {
         return rc;
     }
     gmx_ana_index_copy(sel->v.u.g, child->v.u.g, FALSE);
+    _gmx_selelem_mempool_release(child);
     child = child->next;
     while (child && sel->v.u.g->isize > 0)
     {
-        rc = child->evaluate(data, child, sel->v.u.g);
+        rc = _gmx_selelem_mempool_reserve(child, sel->v.u.g->isize);
+        if (rc == 0)
+        {
+            rc = child->evaluate(data, child, sel->v.u.g);
+        }
         if (rc != 0)
         {
             return rc;
         }
         gmx_ana_index_intersection(sel->v.u.g, sel->v.u.g, child->v.u.g);
+        _gmx_selelem_mempool_release(child);
         child = child->next;
     }
     return 0;
@@ -916,23 +974,37 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *
     child = sel->child;
     if (child->evaluate)
     {
-        rc = child->evaluate(data, child, g);
+        rc = _gmx_selelem_mempool_reserve(child, g->isize);
+        if (rc == 0)
+        {
+            rc = child->evaluate(data, child, g);
+        }
         if (rc != 0)
         {
             return rc;
         }
+        gmx_ana_index_partition(sel->v.u.g, &tmp, g, child->v.u.g);
+        _gmx_selelem_mempool_release(child);
     }
-    gmx_ana_index_partition(sel->v.u.g, &tmp, g, child->v.u.g);
+    else
+    {
+        gmx_ana_index_partition(sel->v.u.g, &tmp, g, child->v.u.g);
+    }
     child = child->next;
     while (child && tmp.isize > 0)
     {
         tmp.name = NULL;
-        rc = child->evaluate(data, child, &tmp);
+        rc = _gmx_selelem_mempool_reserve(child, tmp.isize);
+        if (rc == 0)
+        {
+            rc = child->evaluate(data, child, &tmp);
+        }
         if (rc != 0)
         {
             return rc;
         }
         gmx_ana_index_partition(&tmp, &tmp2, &tmp, child->v.u.g);
+        _gmx_selelem_mempool_release(child);
         sel->v.u.g->isize += tmp.isize;
         tmp.isize = tmp2.isize;
         tmp.index = tmp2.index;
