@@ -15,14 +15,14 @@
 #define assign_scal(dst,src) if (NULL != dst) *dst = src
 
 /* Return a new qhop_resblocks structure */
-qhop_resblocks_t qhop_resblock_init()
+extern qhop_resblocks_t qhop_resblock_init()
 {
   qhop_resblocks *rb;
   snew(rb,1);
   rb->nrestypes = 0;
   return rb;
 }
-
+#if 0
 t_idef* qhop_build_interaction_lib(char *ff, qhop_db *qdb, gpp_atomtype_t atype)
 {
   FILE *fp;
@@ -276,9 +276,10 @@ t_idef* qhop_build_interaction_lib(char *ff, qhop_db *qdb, gpp_atomtype_t atype)
    */
 #endif
 }
+#endif
 
 /* Add a res to a restype. Requires a set of residues collected in a qhop_res_t. */
-void qhop_add_res(qhop_resblocks_t rb, int resblocknr, qhop_res_t res, int nres)
+extern void qhop_add_res(qhop_resblocks_t rb, int resblocknr, qhop_res_t res, int nres)
 {
   int i,n;
   if (!rb->res)
@@ -300,7 +301,7 @@ void qhop_add_res(qhop_resblocks_t rb, int resblocknr, qhop_res_t res, int nres)
 }
 
 /* Add a restype. Requires a set of residues collected in a qhop_res_t. */
-void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, qhop_res_t res)
+extern void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, qhop_res_t res)
 {
   int i, j;
   if (!rb)
@@ -329,13 +330,14 @@ void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, qhop_res_t res)
 }
 
 
-void qhop_set_protonation(qhop_resblocks_t rb, qhop_res_t res)
+extern void qhop_set_protonation(qhop_resblocks_t rb, qhop_res_t res)
 {
   int i;
+  printf("Not implemented yet!\n");
 }
 
 /* Return a new qhop structure */
-qhop_t qhop_init()
+extern qhop_t qhop_init()
 {
   struct qhop *qht;
   
@@ -344,7 +346,7 @@ qhop_t qhop_init()
   return qht;
 }
 
-void qhop_set_donor(qhop_t gqh,char *donor)
+extern void qhop_set_donor(qhop_t gqh,char *donor)
 {
   if (donor != NULL) {
     printf(" donor %s,", donor);
@@ -352,7 +354,7 @@ void qhop_set_donor(qhop_t gqh,char *donor)
   }
 }
 
-void qhop_set_acceptor(qhop_t gqh,char *acceptor)
+extern void qhop_set_acceptor(qhop_t gqh,char *acceptor)
 {
   if (acceptor != NULL) {
     printf(" acceptor %s\n", acceptor);
@@ -360,7 +362,7 @@ void qhop_set_acceptor(qhop_t gqh,char *acceptor)
   }
 }
 
-void qhop_set_don_atom(qhop_t gqh,char *don_atom)
+extern void qhop_set_don_atom(qhop_t gqh,char *don_atom)
 {
   if (don_atom != NULL)
     {
@@ -369,7 +371,7 @@ void qhop_set_don_atom(qhop_t gqh,char *don_atom)
     }
 }
 
-void qhop_set_acc_atom(qhop_t gqh,char *acc_atom)
+extern void qhop_set_acc_atom(qhop_t gqh,char *acc_atom)
 {
   if (acc_atom != NULL)
     {
@@ -379,18 +381,18 @@ void qhop_set_acc_atom(qhop_t gqh,char *acc_atom)
 }
 
 
-char *qhop_get_donor(qhop_t gqh)
+extern char *qhop_get_donor(qhop_t gqh)
 {
   return gqh->donor;
 }
 
-char *qhop_get_acceptor(qhop_t gqh)
+extern char *qhop_get_acceptor(qhop_t gqh)
 {
   return gqh->acceptor;
 }
 
 /* Add parameter to gqh, return 1 if OK, 0 if not OK */
-int qhop_add_param(qhop_t gqh,char *name,char *value,char *unit)
+extern int qhop_add_param(qhop_t gqh,char *name,char *value,char *unit)
 {
   srenew(gqh->name,gqh->nparam+1);
   srenew(gqh->value,gqh->nparam+1);
@@ -405,7 +407,7 @@ int qhop_add_param(qhop_t gqh,char *name,char *value,char *unit)
 
 /* Lists the parameters, one by one on repeatedly calling the
    function. Returns 1 if OK, 0 if not OK */
-int qhop_get_param(qhop_t gqh,char **name,char **value,char **unit)
+extern int qhop_get_param(qhop_t gqh,char **name,char **value,char **unit)
 {
   if (gqh->nparam_c < gqh->nparam) {
     assign_str(name,gqh->name[gqh->nparam_c]);
@@ -422,7 +424,7 @@ int qhop_get_param(qhop_t gqh,char **name,char **value,char **unit)
 }
 
 /* Return a value corresponding to name */
-int qhop_get_value(qhop_t gqh,char *name,double *x)
+extern int qhop_get_value(qhop_t gqh,char *name,double *x)
 {
   int i;
   
@@ -436,7 +438,7 @@ int qhop_get_value(qhop_t gqh,char *name,double *x)
 }
 
 /* Liberate memory */
-void qhop_done(qhop_t gqh)
+extern void qhop_done(qhop_t gqh)
 {
   int i;
   
@@ -455,4 +457,3 @@ void qhop_done(qhop_t gqh)
   if (gqh->acceptor)
     sfree(gqh->acceptor);
 }
-
