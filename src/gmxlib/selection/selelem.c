@@ -239,6 +239,7 @@ _gmx_selelem_mempool_release(t_selelem *sel)
         case INT_VALUE:
         case REAL_VALUE:
             _gmx_sel_mempool_free(sel->mempool, sel->v.u.ptr);
+            _gmx_selvalue_setstore(&sel->v, NULL);
             break;
 
         case GROUP_VALUE:

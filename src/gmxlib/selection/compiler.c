@@ -1006,6 +1006,8 @@ setup_memory_pooling(t_selelem *sel, gmx_sel_mempool_t *mempool)
         while (child)
         {
             if ((sel->type == SEL_BOOLEAN && (child->flags & SEL_DYNAMIC))
+                || (sel->type == SEL_ARITHMETIC && child->type != SEL_CONST
+                    && !(child->flags & SEL_SINGLEVAL))
                 || (sel->type == SEL_SUBEXPR && sel->refcount > 2))
             {
                 child->mempool = mempool;
@@ -1952,22 +1954,20 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             break;
 
         case SEL_ARITHMETIC:
+            rc = sel->cdata->evaluate(data, sel, g);
+            if (rc != 0)
+            {
+                return rc;
+            }
             if (!(sel->flags & SEL_DYNAMIC))
             {
-                rc = sel->cdata->evaluate(data, sel, g);
-                if (rc == 0 && (sel->cdata->flags & SEL_CDATA_STATIC))
+                if (sel->cdata->flags & SEL_CDATA_STATIC)
                 {
                     make_static(sel);
                 }
             }
             else
             {
-                rc = _gmx_sel_evaluate_children(data, sel, g);
-                if (rc != 0)
-                {
-                    return rc;
-                }
-                sel->v.nr = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
                 gmx_ana_index_copy(&gmax, g, TRUE);
             }
             break;
