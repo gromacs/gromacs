@@ -1225,7 +1225,7 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
 	if ( bDoRshell ) {
 	  bInShell=TRUE;
 	  rvec_sub(x[ad[i]],xshell,dshell);
-	  if (bBox) 
+	  if (bBox) {
 	    if (!hb->bGem) {
 	      for(m=DIM-1; m>=0 && bInShell; m--) {
 		if ( dshell[m] < -hbox[m] )
@@ -1258,6 +1258,7 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
 		  bInShell=FALSE;
 	      }
 	    }
+          }
 	  /* if we're inside the cube, check if we're inside the sphere */
 	  if (bInShell)
 	    bInShell = norm2(dshell) < rshell2;
@@ -1529,11 +1530,12 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
 
     if (bDA || (!bDA && (rha2 <= rc2))) {
       rvec_sub(x[d],x[hh],r_dh);
-      if (bBox)
+      if (bBox) {
 	if (hb->bGem)
 	  pbc_correct_gem(r_dh,box,hbox);
 	else
 	  pbc_correct(r_dh,box,hbox);
+      }
 	
       if (!bDA)
 	HAinrange = TRUE;
@@ -2664,12 +2666,13 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
       }
 
       /* Remove ballistic term */
-      if (bBallistic)
+      if (bBallistic) {
 	if (params->ballistic/params->tDelta >= params->nExpFit*2+1)
 	  takeAwayBallistic(ctdouble, timedouble, nn, params->ballistic, params->nExpFit, params->bDt);
 	else
 	  printf("\nNumber of data points is less than the number of parameters to fit\n."
 		 "The system is underdetermined, hence no ballistic term can be found.\n\n");
+      }
       if (bGemFit)
 	fitGemRecomb(ctdouble, timedouble, &fittedct, nn, params);
     
