@@ -203,7 +203,7 @@ gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
     for (g = 0; g < sc->nr; ++g)
     {
         sel = sc->sel[g]->selelem;
-        if (sc->sel[g]->g)
+        if (sc->sel[g]->bDynamic)
         {
             gmx_ana_index_copy(sc->sel[g]->g, sel->v.u.g, FALSE);
             sc->sel[g]->g->name = NULL;

@@ -2268,10 +2268,29 @@ init_root_item(t_selelem *root, gmx_ana_index_t *gall)
          * element (unused otherwise). */
         if (expr->type != SEL_SUBEXPR && expr->v.u.p->g)
         {
-            _gmx_selelem_set_vtype(root, GROUP_VALUE);
-            root->flags  |= (SEL_ALLOCVAL | SEL_ALLOCDATA);
-            _gmx_selvalue_reserve(&root->v, 1);
-            gmx_ana_index_copy(root->v.u.g, expr->v.u.p->g, TRUE);
+            t_selelem *child = expr;
+
+            /* TODO: This code is copied from parsetree.c; it would be better
+             * to have this hardcoded only in one place. */
+            while (child->type == SEL_MODIFIER)
+            {
+                child = child->child;
+                if (child->type == SEL_SUBEXPRREF)
+                {
+                    child = child->child->child;
+                }
+            }
+            if (child->type == SEL_SUBEXPRREF)
+            {
+                child = child->child->child;
+            }
+            if (child->child->flags & SEL_DYNAMIC)
+            {
+                _gmx_selelem_set_vtype(root, GROUP_VALUE);
+                root->flags  |= (SEL_ALLOCVAL | SEL_ALLOCDATA);
+                _gmx_selvalue_reserve(&root->v, 1);
+                gmx_ana_index_copy(root->v.u.g, expr->v.u.p->g, TRUE);
+            }
         }
     }
     else
