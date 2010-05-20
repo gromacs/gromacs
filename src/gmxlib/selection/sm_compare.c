@@ -61,6 +61,10 @@ typedef enum
 #define CMP_DYNAMICVAL 2
 /** The value is real. */
 #define CMP_REALVAL    4
+/** The integer array is allocated. */
+#define CMP_ALLOCINT   16
+/** The real array is allocated. */
+#define CMP_ALLOCREAL  32
 
 /*! \internal \brief
  * Data structure for comparison expression operand values.
@@ -325,7 +329,7 @@ convert_int_real(int n, t_compare_value *val)
     /* Free the previous value if one is present. */
     sfree(val->r);
     val->r      = rv;
-    val->flags |= CMP_REALVAL;
+    val->flags |= CMP_REALVAL | CMP_ALLOCREAL;
 }
 
 /* \brief
@@ -379,6 +383,7 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
     sfree(val->i);
     val->i      = iv;
     val->flags &= ~CMP_REALVAL;
+    val->flags |= CMP_ALLOCINT;
     return 0;
 }
 
@@ -470,10 +475,22 @@ free_data_compare(void *data)
     t_methoddata_compare *d = (t_methoddata_compare *)data;
 
     sfree(d->cmpop);
-    sfree(d->left.i);
-    sfree(d->left.r);
-    sfree(d->right.i);
-    sfree(d->right.r);
+    if (d->left.flags & CMP_ALLOCINT)
+    {
+        sfree(d->left.i);
+    }
+    if (d->left.flags & CMP_ALLOCREAL)
+    {
+        sfree(d->left.r);
+    }
+    if (d->right.flags & CMP_ALLOCINT)
+    {
+        sfree(d->right.i);
+    }
+    if (d->right.flags & CMP_ALLOCREAL)
+    {
+        sfree(d->right.r);
+    }
 }
 
 /*!
