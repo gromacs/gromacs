@@ -477,7 +477,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
   /* Process rtp-info AFTER reading the ffXXX-qhop.dat */
     
   sprintf(buf,"%s-qhop.dat",forcefield);
-  fn = (char *)libfn(buf);
+  fn = (char *)gmxlibfn(buf);
   /* Read the xml data file */
   qhops_read(fn, qdb);
   sprintf(buf,"%s-qhop-debug.dat",forcefield);
@@ -498,7 +498,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
   done_symtab(stab);
 
   set_reactant_products(qdb);
-  qhop_build_interaction_lib(forcefield, qdb, &atype, &stab);
+  /* qhop_build_interaction_lib(forcefield, qdb, &atype, &stab); */
 
   /* This should be coded into the xml read instead. */
   //  move_strings_to_symtab(qdb); /* Copy names to reduced symtab in qdb->tab*/
@@ -540,7 +540,7 @@ static void clear_qhop_res(qhop_res res)
 {
   if (res.acc != NULL) sfree(res.acc);
   if (res.don != NULL) sfree(res.don);
-  if (res.ft  != NULL) sfree(res.ft);
+/*   if (res.ft  != NULL) sfree(res.ft); */
 }
 
 static void clear_qhop_rb(qhop_resblocks rb)

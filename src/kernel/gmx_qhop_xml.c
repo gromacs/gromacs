@@ -557,7 +557,7 @@ void qhops_read(char *fn, qhop_db_t qdb)
   xmlDoValidityCheckingDefaultValue = 0;
   if (NULL == fn) 
     {
-      fn = (char *)libfn(db);
+      fn = (char *)gmxlibfn(db);
       fna=TRUE;
     }
   if ((doc = xmlParseFile(fn)) == NULL)

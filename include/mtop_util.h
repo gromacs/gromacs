@@ -245,9 +245,9 @@ gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
  * p      - prarmeters for the interaction
  * Returns the position in the functype and params where it's stored.
  */
-extern int gmx_mtop_append_itype(const gmx_mtop_t *mtop,
-				  const int ft,
-				  const t_iparams p);
+extern int gmx_mtop_append_itype(gmx_mtop_t *mtop,
+				 const int ft,
+				 const t_iparams p);
 
 
 #ifdef __cplusplus

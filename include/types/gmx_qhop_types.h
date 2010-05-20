@@ -74,7 +74,9 @@ typedef struct qhop_res {
   char *name; /* Name of the residue */
   int na, nd; /* Number of acceptors and donors */
   qhop_reactant *acc, *don;
-  int nft;
+  int *iatomMap; /* maps the atoms to the atoms in qXXX */
+  int niatom;    /* = db->rtp[rtp].natom */
+  /*   int nft; */
   int rtp;      /* indexes the t_restp-array rtp in qhop_db. */
 } qhop_res;
 
@@ -90,6 +92,7 @@ typedef struct qhop_resblocks {
   /* The following is for the interaction library *
    * It stores the interaction parameters for a residue.
    * They are needed to switch between protonation states. */
+  int ****iatoms;     /* atoms involved in the interactions. iatoms[restype][bt][bi][...]*/
   int ***ft;        /* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp */
   int ***mtop_ft;   /* index in the mtop->ffparams.functype and ...iparams */
 

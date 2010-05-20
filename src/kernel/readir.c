@@ -940,7 +940,7 @@ void get_ir(const char *mdparin,const char *mdparout,
 
   /* qhop */
   CCTYPE ("Options for qhop simulations");
-  EETYPE("qhop", ir->bqhop, yesno_names, nerror, TRUE);
+  EETYPE("qhop", ir->bqhop, yesno_names); /* , nerror, TRUE); */
   STYPE ("qhop-donors",  qhopdon,          NULL);
   STYPE ("qhop-acceptors",  qhopacc,          NULL);
   ITYPE ("qhopfreq",  ir->qhopfreq,         10);
@@ -1954,12 +1954,12 @@ void do_index(const char* mdparin, const char *ndx,
   fprintf(stderr,"nqhopdonorsg = %d\n",nqhopdonorsg);
   do_numbering(natoms,groups,nqhopdonorsg,ptr1,grps,
 	       gnames,egcqhopdonors,
-               restnm,egrptpALL_GENREST,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose,wi);
   ir->opts.ngqhopdonors = nqhopdonorsg;
   nqhopacceptorsg  =  str_nelem(qhopacc,MAXPTR,ptr1);
   do_numbering(natoms,groups,nqhopacceptorsg,ptr1,
 	       grps,gnames,egcqhopacceptors,
-               restnm,egrptpALL_GENREST,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose,wi);
   ir->opts.ngqhopacceptors = nqhopacceptorsg;
   
   /* QMMM input processing */

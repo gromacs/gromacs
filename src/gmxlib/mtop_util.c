@@ -927,31 +927,31 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
 
 static int append_itype(t_functype **functype,
                         t_iparams **iparams,
-                        const int ntypes,
+                        int ntypes,
                         const int ft,
-                        const t_params p)
+                        const t_iparams p)
 {
   /* Can we find this interaction in functype and iparams?
    * If so, there's little need for redundancy.
    * For now, assume that it's new. Contigous interactions
    * for each residue may be a good thing. */
   srenew(*functype, ntypes+1);
-  srenew(*params,   ntypes+1);
-  (*functype)[idef->ntypes] = ft;
-  (*params)[idef->ntypes]   = p;
+  srenew(*iparams,   ntypes+1);
+  (*functype)[ntypes] = ft;
+  (*iparams)[ntypes]   = p;
   return ntypes+1;
 }
 
-extern int gmx_mtop_append_itype(const gmx_mtop_t *mtop,
+extern int gmx_mtop_append_itype(gmx_mtop_t *mtop,
 				 const int ft,
 				 const t_iparams p)
 {
   int n;
   n = append_itype(&(mtop->ffparams.functype),
-			      &(mtop->ffparams.iparams),
+                   &(mtop->ffparams.iparams),
 			      mtop->ffparams.ntypes, ft, p);
-  if (n == mtop->ntypes)
-    mtop->ntypes++; /* Apparently this was a new one. */
+  if (n == mtop->ffparams.ntypes)
+    mtop->ffparams.ntypes++; /* Apparently this was a new one. */
 
   return n;
 }
