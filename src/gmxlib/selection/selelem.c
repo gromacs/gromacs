@@ -605,7 +605,11 @@ _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, bool bValues, int level)
         {
             g = &sel->u.cgrp;
         }
-        if (g->isize > 0)
+        if (g->isize < 0)
+        {
+            fprintf(fp, "%*c group: (null)\n", level*2+1, ' ');
+        }
+        else if (g->isize > 0)
         {
             fprintf(fp, "%*c group:", level*2+1, ' ');
             if (g->isize <= 20)

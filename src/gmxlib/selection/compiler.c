@@ -1301,7 +1301,9 @@ init_item_minmax_groups(t_selelem *sel)
             sel->cdata->gmin = sel->v.u.g;
             sel->cdata->gmax = sel->v.u.g;
         }
-        else if (sel->type == SEL_SUBEXPR)
+        else if (sel->type == SEL_SUBEXPR
+                 && ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
+                     || (sel->cdata->flags & SEL_CDATA_FULLEVAL)))
         {
             sel->cdata->gmin = sel->child->cdata->gmin;
             sel->cdata->gmax = sel->child->cdata->gmax;
@@ -1859,17 +1861,19 @@ static int
 analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
     t_selelem       *child, *next;
-    gmx_ana_index_t  gmin, gmax;
-    bool             bDelayAlloc;
+    bool             bDoMinMax;
     int              rc;
-
-    gmx_ana_index_clear(&gmin);
-    gmx_ana_index_clear(&gmax);
-    bDelayAlloc = FALSE;
 
     if (sel->type != SEL_ROOT && g)
     {
-        bDelayAlloc = !alloc_selection_data(sel, g->isize, FALSE);
+        alloc_selection_data(sel, g->isize, FALSE);
+    }
+
+    bDoMinMax = (sel->cdata->flags & SEL_CDATA_MINMAXALLOC);
+    if (sel->type != SEL_SUBEXPR && bDoMinMax)
+    {
+        gmx_ana_index_deinit(sel->cdata->gmin);
+        gmx_ana_index_deinit(sel->cdata->gmax);
     }
 
     /* TODO: This switch is awfully long... */
@@ -1909,7 +1913,10 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                 {
                     rc = sel->cdata->evaluate(data, sel, g);
                 }
-                gmx_ana_index_copy(&gmax, g, TRUE);
+                if (bDoMinMax)
+                {
+                    gmx_ana_index_copy(sel->cdata->gmax, g, TRUE);
+                }
             }
             break;
 
@@ -1949,7 +1956,8 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                 }
 
                 /* Evaluate minimal and maximal selections */
-                evaluate_boolean_minmax_grps(sel, g, &gmin, &gmax);
+                evaluate_boolean_minmax_grps(sel, g, sel->cdata->gmin,
+                                             sel->cdata->gmax);
             }
             break;
 
@@ -1966,9 +1974,9 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                     make_static(sel);
                 }
             }
-            else
+            else if (bDoMinMax)
             {
-                gmx_ana_index_copy(&gmax, g, TRUE);
+                gmx_ana_index_copy(sel->cdata->gmax, g, TRUE);
             }
             break;
 
@@ -1986,6 +1994,11 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             {
                 gmx_ana_index_reserve(&sel->u.cgrp, g->isize);
                 rc = sel->cdata->evaluate(data, sel, g);
+                if (bDoMinMax)
+                {
+                    gmx_ana_index_copy(sel->cdata->gmin, sel->child->cdata->gmin, TRUE);
+                    gmx_ana_index_copy(sel->cdata->gmax, sel->child->cdata->gmax, TRUE);
+                }
             }
             else
             {
@@ -1997,6 +2010,19 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                     alloc_selection_data(sel, isize, FALSE);
                 }
                 rc = sel->cdata->evaluate(data, sel, g);
+                if (isize > 0 && bDoMinMax)
+                {
+                    gmx_ana_index_reserve(sel->cdata->gmin,
+                                          sel->cdata->gmin->isize
+                                          + sel->child->cdata->gmin->isize);
+                    gmx_ana_index_reserve(sel->cdata->gmax,
+                                          sel->cdata->gmax->isize
+                                          + sel->child->cdata->gmax->isize);
+                    gmx_ana_index_merge(sel->cdata->gmin, sel->cdata->gmin,
+                                        sel->child->cdata->gmin);
+                    gmx_ana_index_merge(sel->cdata->gmax, sel->cdata->gmax,
+                                        sel->child->cdata->gmax);
+                }
             }
             break;
 
@@ -2027,19 +2053,23 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                     make_static(sel);
                 }
             }
-            else
+            else if (bDoMinMax)
             {
-                if (sel->child->refcount <= 2 || !g)
+                if ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR) || !g)
                 {
-                    gmx_ana_index_copy(&gmin, sel->child->cdata->gmin, TRUE);
-                    gmx_ana_index_copy(&gmax, sel->child->cdata->gmax, TRUE);
+                    gmx_ana_index_copy(sel->cdata->gmin, sel->child->cdata->gmin, TRUE);
+                    gmx_ana_index_copy(sel->cdata->gmax, sel->child->cdata->gmax, TRUE);
                 }
                 else
                 {
-                    gmx_ana_index_reserve(&gmin, min(g->isize, sel->child->cdata->gmin->isize));
-                    gmx_ana_index_reserve(&gmax, min(g->isize, sel->child->cdata->gmax->isize));
-                    gmx_ana_index_intersection(&gmin, sel->child->cdata->gmin, g);
-                    gmx_ana_index_intersection(&gmax, sel->child->cdata->gmax, g);
+                    gmx_ana_index_reserve(sel->cdata->gmin,
+                                          min(g->isize, sel->child->cdata->gmin->isize));
+                    gmx_ana_index_reserve(sel->cdata->gmax,
+                                          min(g->isize, sel->child->cdata->gmax->isize));
+                    gmx_ana_index_intersection(sel->cdata->gmin,
+                                               sel->child->cdata->gmin, g);
+                    gmx_ana_index_intersection(sel->cdata->gmax,
+                                               sel->child->cdata->gmax, g);
                 }
             }
             break;
@@ -2051,12 +2081,14 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
     }
 
     /* Update the minimal and maximal evaluation groups */
-    if (sel->cdata->flags & SEL_CDATA_MINMAXALLOC)
+    if (bDoMinMax)
     {
-        gmx_ana_index_reserve(sel->cdata->gmin, sel->cdata->gmin->isize + gmin.isize);
-        gmx_ana_index_reserve(sel->cdata->gmax, sel->cdata->gmax->isize + gmax.isize);
-        gmx_ana_index_merge(sel->cdata->gmin, sel->cdata->gmin, &gmin);
-        gmx_ana_index_merge(sel->cdata->gmax, sel->cdata->gmax, &gmax);
+        gmx_ana_index_squeeze(sel->cdata->gmin);
+        gmx_ana_index_squeeze(sel->cdata->gmax);
+        sfree(sel->cdata->gmin->name);
+        sfree(sel->cdata->gmax->name);
+        sel->cdata->gmin->name = NULL;
+        sel->cdata->gmax->name = NULL;
     }
     /* Replace the result of the evaluation */
     /* This is not necessary for subexpressions or for boolean negations
@@ -2067,15 +2099,13 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
     {
         if (sel->cdata->flags & SEL_CDATA_EVALMAX)
         {
-            gmx_ana_index_copy(sel->v.u.g, &gmax, FALSE);
+            gmx_ana_index_copy(sel->v.u.g, sel->cdata->gmax, FALSE);
         }
         else
         {
-            gmx_ana_index_copy(sel->v.u.g, &gmin, FALSE);
+            gmx_ana_index_copy(sel->v.u.g, sel->cdata->gmin, FALSE);
         }
     }
-    gmx_ana_index_deinit(&gmin);
-    gmx_ana_index_deinit(&gmax);
 
     /* Make sure that enough data storage has been allocated */
     if (sel->type != SEL_ROOT
