@@ -770,7 +770,7 @@ static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val,
   }
 }
 
-static void do_ballisitc(const char *balFile, int nData,
+static void do_ballistic(const char *balFile, int nData,
                          real *t, real **val, int nSet,
                          real balTime, int nBalExp,
                          bool bDerivative,
@@ -781,53 +781,53 @@ static void do_ballisitc(const char *balFile, int nData,
   static char *leg[] = {"Ac'(t)"};
   FILE *fp;
   int i, set;
-
+  
   if (GP->ballistic/GP->tDelta >= GP->nExpFit*2+1)
-    {
+  {
       snew(ctd, nSet);
       snew(td,  nData);
 
       fp = xvgropen(balFile, "Hydrogen Bond Autocorrelation","Time (ps)","C'(t)", oenv);
       xvgr_legend(fp,asize(leg),leg,oenv);
-
+      
       for (set=0; set<nSet; set++)
-	{
-	  snew(ctd[set], nData);
-	  for (i=0; i<nData; i++) {
-	    ctd[set][i] = (double)val[set][i];
-	    if (set==0)
-	      td[i] = (double)t[i];
-	  }
-	  
-	  takeAwayBallistic(ctd[set], td, nData, GP->ballistic, GP->nExpFit, GP->bDt);
-	}
+      {
+          snew(ctd[set], nData);
+          for (i=0; i<nData; i++) {
+              ctd[set][i] = (double)val[set][i];
+              if (set==0)
+                  td[i] = (double)t[i];
+          }
+          
+          takeAwayBallistic(ctd[set], td, nData, GP->ballistic, GP->nExpFit, GP->bDt);
+      }
       
       for (i=0; i<nData; i++)
-	{
-	  fprintf(fp, "  %g",t[i]);
-	  for (set=0; set<nSet; set++)
-	    {
-	      fprintf(fp, "  %g", ctd[set][i]);
-	    }
-	  fprintf(fp, "\n");
-	}
+      {
+          fprintf(fp, "  %g",t[i]);
+          for (set=0; set<nSet; set++)
+          {
+              fprintf(fp, "  %g", ctd[set][i]);
+          }
+          fprintf(fp, "\n");
+      }
 
 
       for (set=0; set<nSet; set++)
-	sfree(ctd[set]);
+          sfree(ctd[set]);
       sfree(ctd);
       sfree(td);
-    }
+  }
   else
-    printf("Number of data points is less than the number of parameters to fit\n."
-	   "The system is underdetermined, hence no ballistic term can be found.\n\n");
+      printf("Number of data points is less than the number of parameters to fit\n."
+             "The system is underdetermined, hence no ballistic term can be found.\n\n");
 }
 
 static void do_geminate(const char *gemFile, int nData,
                         real *t, real **val, int nSet,
                         const real D, const real logAfterTime,
-                        const output_env_t oenv,
-                        real rcut,real balTime)
+                        real rcut, real balTime,
+                        const output_env_t oenv)
 {
     double **ctd=NULL, **ctdGem=NULL, *td=NULL;
     t_gemParams *GP = init_gemParams(rcut, D, t, logAfterTime,
@@ -835,14 +835,14 @@ static void do_geminate(const char *gemFile, int nData,
     static char *leg[] = {"Ac\\sgem\\N(t)"};
     FILE *fp;
     int i, set;
-
+    
     snew(ctd,    nSet);
     snew(ctdGem, nSet);
     snew(td,  nData);
-
+    
     fp = xvgropen(gemFile, "Hydrogen Bond Autocorrelation","Time (ps)","C'(t)", oenv);
     xvgr_legend(fp,asize(leg),leg,oenv);
-
+    
     for (set=0; set<nSet; set++)
     {
         snew(ctd[set],    nData);
@@ -1200,7 +1200,7 @@ int gmx_analyze(int argc,char *argv[])
   if (balfile)
       do_ballistic(balfile,n,t,val,nset,balTime,nBalExp,bDer,oenv);
   if (gemfile)
-      do_geminate(gemfile,n,t,val,nset,diffusion,logAfterTime,oenv,rcut,balTime);
+      do_geminate(gemfile,n,t,val,nset,diffusion,logAfterTime,rcut,balTime,oenv);
   if (bPower)
     power_fit(n,nset,val,t);
   if (acfile) {
