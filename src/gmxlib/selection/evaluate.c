@@ -63,6 +63,45 @@
 #include "selelem.h"
 
 /*!
+ * \param[in] fp       File handle to receive the output.
+ * \param[in] evalfunc Function pointer to print.
+ */
+void
+_gmx_sel_print_evalfunc_name(FILE *fp, sel_evalfunc evalfunc)
+{
+    if (!evalfunc)
+        fprintf(fp, "none");
+    else if (evalfunc == &_gmx_sel_evaluate_root)
+        fprintf(fp, "root");
+    else if (evalfunc == &_gmx_sel_evaluate_static)
+        fprintf(fp, "static");
+    else if (evalfunc == &_gmx_sel_evaluate_subexpr_simple)
+        fprintf(fp, "subexpr_simple");
+    else if (evalfunc == &_gmx_sel_evaluate_subexpr_staticeval)
+        fprintf(fp, "subexpr_staticeval");
+    else if (evalfunc == &_gmx_sel_evaluate_subexpr)
+        fprintf(fp, "subexpr");
+    else if (evalfunc == &_gmx_sel_evaluate_subexprref_simple)
+        fprintf(fp, "ref_simple");
+    else if (evalfunc == &_gmx_sel_evaluate_subexprref)
+        fprintf(fp, "ref");
+    else if (evalfunc == &_gmx_sel_evaluate_method)
+        fprintf(fp, "method");
+    else if (evalfunc == &_gmx_sel_evaluate_modifier)
+        fprintf(fp, "mod");
+    else if (evalfunc == &_gmx_sel_evaluate_not)
+        fprintf(fp, "not");
+    else if (evalfunc == &_gmx_sel_evaluate_and)
+        fprintf(fp, "and");
+    else if (evalfunc == &_gmx_sel_evaluate_or)
+        fprintf(fp, "or");
+    else if (evalfunc == &_gmx_sel_evaluate_arithmetic)
+        fprintf(fp, "arithmetic");
+    else
+        fprintf(fp, "%p", (void*)(evalfunc));
+}
+
+/*!
  * \param[out] data Evaluation data structure to initialize.
  * \param[in]  mp   Memory pool for intermediate evaluation values.
  * \param[in]  gall Index group with all the atoms.

@@ -43,7 +43,6 @@
 #include <position.h>
 #include <selmethod.h>
 
-#include "evaluate.h"
 #include "keywords.h"
 #include "mempool.h"
 #include "selelem.h"
@@ -467,48 +466,6 @@ _gmx_selelem_free_chain(t_selelem *first)
     }
 }
 
-/*! \brief
- * Writes out a human-readable name for the evaluation function.
- *
- * \param[in] fp  File handle to receive the output.
- * \param[in] sel Selection element for which the evaluation function is printed.
- */
-static void
-print_evaluation_func(FILE *fp, t_selelem *sel)
-{
-    fprintf(fp, " eval=");
-    if (!sel->evaluate)
-        fprintf(fp, "none");
-    else if (sel->evaluate == &_gmx_sel_evaluate_root)
-        fprintf(fp, "root");
-    else if (sel->evaluate == &_gmx_sel_evaluate_static)
-        fprintf(fp, "static");
-    else if (sel->evaluate == &_gmx_sel_evaluate_subexpr_simple)
-        fprintf(fp, "subexpr_simple");
-    else if (sel->evaluate == &_gmx_sel_evaluate_subexpr_staticeval)
-        fprintf(fp, "subexpr_staticeval");
-    else if (sel->evaluate == &_gmx_sel_evaluate_subexpr)
-        fprintf(fp, "subexpr");
-    else if (sel->evaluate == &_gmx_sel_evaluate_subexprref_simple)
-        fprintf(fp, "ref_simple");
-    else if (sel->evaluate == &_gmx_sel_evaluate_subexprref)
-        fprintf(fp, "ref");
-    else if (sel->evaluate == &_gmx_sel_evaluate_method)
-        fprintf(fp, "method");
-    else if (sel->evaluate == &_gmx_sel_evaluate_modifier)
-        fprintf(fp, "mod");
-    else if (sel->evaluate == &_gmx_sel_evaluate_not)
-        fprintf(fp, "not");
-    else if (sel->evaluate == &_gmx_sel_evaluate_and)
-        fprintf(fp, "and");
-    else if (sel->evaluate == &_gmx_sel_evaluate_or)
-        fprintf(fp, "or");
-    else if (sel->evaluate == &_gmx_sel_evaluate_arithmetic)
-        fprintf(fp, "arithmetic");
-    else
-        fprintf(fp, "%p", (void*)(sel->evaluate));
-}
-
 /*!
  * \param[in] fp      File handle to receive the output.
  * \param[in] sel     Root of the selection subtree to print.
@@ -586,7 +543,8 @@ _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, bool bValues, int level)
     }
     if (sel->evaluate)
     {
-        print_evaluation_func(fp, sel);
+        fprintf(fp, " eval=");
+        _gmx_sel_print_evalfunc_name(fp, sel->evaluate);
     }
     if (sel->refcount > 1)
     {
@@ -633,6 +591,11 @@ _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, bool bValues, int level)
             fprintf(fp, "%*c COM", level*2+3, '*');
             fprintf(fp, "\n");
         }
+    }
+
+    if (sel->cdata)
+    {
+        _gmx_selelem_print_compiler_info(fp, sel, level);
     }
 
     if (bValues && sel->type != SEL_CONST && sel->type != SEL_ROOT && sel->v.u.ptr)
