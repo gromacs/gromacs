@@ -329,11 +329,87 @@ extern void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, qhop_res
   rb->nrestypes++;
 }
 
-
-extern void qhop_set_protonation(qhop_resblocks_t rb, qhop_res_t res)
+static void set_H_exist(const qhop_H_exist *H_map, const atom_id H, const bool bON)
 {
-  int i;
+  H_map->H[H_map->atomid2H[H]] = (char) bON ? 1:0;
+}
+
+
+/* Redirects the interaction parameters to the ones dictated by the qres */
+static void qhop_change_interactions(t_ilist *ilist, qhop_db *db, t_qhop_residue *qres)
+{
   printf("Not implemented yet!\n");
+}
+
+/* H is global atom number */
+extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
+				 const atom_id H)
+{
+  const bool bON = db->H_map.H[db->H_map.atomid2H[H]] == 0; /* if it's zero, then the proton will appear */
+  bool bNotFound = TRUE;
+  int rt, Hloc, i, j, reactant;
+  char *Hname;
+  qhop_res *res, *product;
+  qhop_reactant *qreac;
+  const qhop_resblocks *rb = &(db->rb);
+  
+  rt = qres->rtype;
+  
+  if (db->H_map.atomid2H < 0)
+    gmx_fatal(FARGS, "In qhop_set_protonation(): Atom %i is not a hydrogen!", H);
+
+  /* Hloc is the local atom number of H */
+  Hloc = H-qres->atoms[0];
+  Hname = *(db->rtp[rt].atomname[Hloc]);
+ 
+  /* What residue subtype will this result in? */
+  res = &(rb->res[qres->rtype][qres->res]);
+  for (reactant=0;
+       reactant<bON ? res->na : res->nd;
+       reactant++)
+    {
+      qreac = bON ? &(res->acc[reactant]) : &(res->don[reactant]);
+      for (j=0; j<qreac->nH; j++)
+	{
+	  if (gmx_strcasecmp(Hname, qreac->H[j]) == 0)
+	    {
+	      bNotFound = FALSE;
+	      break;
+	    }
+	}
+    }
+  if (bNotFound)
+    gmx_fatal(FARGS, "In qhop_set_protonation(): "
+	      "Hydrogen %s not found in residue %s!",
+	      Hname, res->name);
+
+  product = &(qreac->productdata[j]);
+
+  /* Must find the index to this residue subtype
+   * Reuse bNotFound */
+
+  bNotFound = TRUE;
+  for (j=0; j<rb->nres[rt]; j++)
+    {
+      if (gmx_strcasecmp(product->name, rb->res[rt][j].name) == 0)
+	{
+	  bNotFound = FALSE;
+	  break;
+	}
+    }
+     
+  if (bNotFound)
+    gmx_fatal(FARGS, "In qhop_set_protonation(): "
+	      "Product %s not found among the residue subtypes of %s!",
+	      product->name, rb->restype[rt]);
+
+  set_H_exist(&db->H_map, H, bON);
+  /* NOW SWAP INTERACTIONS */
+}
+
+extern int qhop_get_residue_subtype(t_qhop_residue *qres)
+{
+  return qres->res;
 }
 
 /* Return a new qhop structure */

@@ -14,7 +14,11 @@ extern void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, qhop_res
 
 extern void qhop_add_res(qhop_resblocks_t rb, int resblocknr, qhop_res_t res, int nres);
 
-extern void qhop_set_protonation(qhop_resblocks_t rb, qhop_res_t res);
+/* Sets the interactions of qres according to the (de)protonation at hydrogen H.
+ * If H is not present, it's protonation, otherwise deprotonaton.
+ * db->Hmap.H is updated.*/
+extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
+				 const atom_id H);
 
 /* **********************
  * qhop parameter stuff *
