@@ -203,7 +203,7 @@ gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
     for (g = 0; g < sc->nr; ++g)
     {
         sel = sc->sel[g]->selelem;
-        if (sc->sel[g]->g)
+        if (sc->sel[g]->bDynamic)
         {
             gmx_ana_index_copy(sc->sel[g]->g, sel->v.u.g, FALSE);
             sc->sel[g]->g->name = NULL;
@@ -1034,14 +1034,24 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
     real        lval, rval, val=0.;
     int         rc;
 
-    rc = _gmx_sel_evaluate_children(data, sel, g);
-    if (rc != 0)
-    {
-        return rc;
-    }
-
     left  = sel->child;
     right = left->next;
+
+    if (left->mempool)
+    {
+        _gmx_selvalue_setstore(&left->v, sel->v.u.ptr);
+        rc = _gmx_selelem_mempool_reserve(right, g->isize);
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
+    else if (right->mempool)
+    {
+        _gmx_selvalue_setstore(&right->v, sel->v.u.ptr);
+    }
+    rc = _gmx_sel_evaluate_children(data, sel, g);
+
     n = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
     sel->v.nr = n;
     for (i = i1 = i2 = 0; i < n; ++i)
@@ -1069,6 +1079,16 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
         {
             ++i2;
         }
+    }
+
+    if (left->mempool)
+    {
+        _gmx_selvalue_setstore(&left->v, NULL);
+        _gmx_selelem_mempool_release(right);
+    }
+    else if (right->mempool)
+    {
+        _gmx_selvalue_setstore(&right->v, NULL);
     }
     return 0;
 }

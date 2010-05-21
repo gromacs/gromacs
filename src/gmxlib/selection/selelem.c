@@ -239,6 +239,7 @@ _gmx_selelem_mempool_release(t_selelem *sel)
         case INT_VALUE:
         case REAL_VALUE:
             _gmx_sel_mempool_free(sel->mempool, sel->v.u.ptr);
+            _gmx_selvalue_setstore(&sel->v, NULL);
             break;
 
         case GROUP_VALUE:
@@ -604,7 +605,11 @@ _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, bool bValues, int level)
         {
             g = &sel->u.cgrp;
         }
-        if (g->isize > 0)
+        if (g->isize < 0)
+        {
+            fprintf(fp, "%*c group: (null)\n", level*2+1, ' ');
+        }
+        else if (g->isize > 0)
         {
             fprintf(fp, "%*c group:", level*2+1, ' ');
             if (g->isize <= 20)
