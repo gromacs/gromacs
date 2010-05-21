@@ -34,7 +34,7 @@ topol_DATA = \
 	sw.itp		elements.dat	defselection.dat \
 	ffG43a1.itp     ffG53a5.itp     ffencads.itp    ffgmx2.itp \
 	ffG43a2.itp     ffG53a6.itp     ffencadv.itp    ffoplsaa-n.tst \
-	ffG45a3.itp     ffgmx.itp       ffoplsaa.itp    ffqamber99sb.itp
+	ffG45a3.itp     ffgmx.itp       ffoplsaa.itp
 
 
 EXTRA_DIST = ${topol_DATA}
