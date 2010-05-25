@@ -3020,6 +3020,7 @@ static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
   p_hb->nframes = nframes;
   memset(&(p_hb->nhx[nframes][i]), 0 ,sizeof(int)*max_hx); /* zero the helix count for this frame */
 }
+#endif
 
 int gmx_hbond(int argc,char *argv[])
 {
@@ -3183,7 +3184,7 @@ int gmx_hbond(int argc,char *argv[])
   char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
   t_rgb hbrgb [HB_NR]={ {1,1,1},{1,0,0},   {0,0,1},    {1,0,1} };
 
-  int     status;
+  int     status, trrStatus;
   t_topology top;
   t_inputrec ir;
   t_pargs *ppa;
@@ -3213,8 +3214,8 @@ int gmx_hbond(int argc,char *argv[])
   int     gemmode, NN;
   PSTYPE  peri;
   t_E     E;
-  int     ii, jj, hh;
-  bool    bGem, bNN;
+  int     ii, jj, hh, actual_nThreads;
+  bool    bGem, bNN, bParallel;
   t_gemParams *params;
     
   CopyRight(stdout,argv[0]);
@@ -3521,13 +3522,13 @@ int gmx_hbond(int argc,char *argv[])
 #define __RDIST p_rdist[threadNr]
 #define __HBDATA p_hb[threadNr]
 
-  bParallel = !bSelect && !bInsert;
+  bParallel = !bSelected && !bInsert;
 
-  if (bParallel){
+  if (bParallel) {
 #if (_OPENMP > 200805)
-    int actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
+    actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
 #else
-    int actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
+    actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
 #endif
     omp_set_num_threads(actual_nThreads);
     printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
@@ -3551,7 +3552,6 @@ int gmx_hbond(int argc,char *argv[])
       p_hb[i]->ndist = NULL;
       p_hb[i]->n_bound = NULL;
       p_hb[i]->time = NULL;
-      p_hb[i]->danr = NULL;
       p_hb[i]->nhx = NULL;
 
       p_hb[i]->bHBmap     = hb->bHBmap;
@@ -3560,27 +3560,32 @@ int gmx_hbond(int argc,char *argv[])
       p_hb[i]->wordlen    = hb->wordlen;
       p_hb[i]->nframes    = hb->nframes;
       p_hb[i]->maxhydro   = hb->maxhydro;
-      p_hb[i]->d = hb->d;
-      p_hb[i]->a = hb->a;
-      p_hb[i]->hbmap = hb->hbmap;
-      p_hb[i]->time = hb->time; /* This may need re-syncing at every frame. */
+      p_hb[i]->danr       = hb->danr;
+      p_hb[i]->d          = hb->d;
+      p_hb[i]->a          = hb->a;
+      p_hb[i]->hbmap      = hb->hbmap;
+      p_hb[i]->time       = hb->time; /* This may need re-syncing at every frame. */
+      p_hb[i]->per        = hb->per;
 
 #ifdef HAVE_NN_LOOPS
       p_hb[i]->hbE = hb->hbE;
 #endif
-      p_hb[i]->per = hb->per;
     }
-
+  
   /* Make a thread pool here,
    * instead of forking anew at every frame. */
-
+  
 #pragma omp parallel if(bParallel==TRUE)	\
-  private(i,j,h,ii,jj,hh,E,			\
-	  xi,yi,zi,threadNr)			\
+  private(i, j, h, ii, jj, hh, E,		\
+	  xi, yi, zi, threadNr,			\
+	  dist, ang, peri,			\
+	  icell, grp, ogrp, ai, xjj, yjj, zjj,	\
+	  xk, yk, zk, ihb, id,  resdist,	\
+	  xkk, ykk, zkk, kcell, ak, k)		\
   default(shared)
-  {
 #endif /* HAVE_OPENMP ================================================= */
-    
+
+  {
     do {
 
 #ifdef HAVE_OPENMP      
@@ -3604,250 +3609,263 @@ int gmx_hbond(int argc,char *argv[])
       } /* omp single */
       /* copy danr to p_hb?*/
 
-    if (bNN) {
+      if (bNN) {
 #ifdef HAVE_NN_LOOPS /* Unlock this feature when testing */
-      /* Loop over all atom pairs and estimate interaction energy */
+	/* Loop over all atom pairs and estimate interaction energy */
 #ifdef HAVE_OPENMP /* ------- */
 #pragma omp single
 #endif /* HAVE_OPENMP ------- */
-      addFramesNN(hb, nframes);
+	addFramesNN(hb, nframes);
 
 #ifdef HAVE_OPENMP /* ---------------- */
 #pragma omp barrier
 #pragma omp for schedule(dynamic)
 #endif /* HAVE_OPENMP ---------------- */
-      for (i=0; i<hb->d.nrd; i++)
-	{
-	  for(j=0;j<hb->a.nra; j++)
-	    {
-	      for (h=0;
-		   h < (bContact ? 1 : hb->d.nhydro[i]);
-		   h++)
-		{
-		  if (i==hb->d.nrd || j==hb->a.nra)
-		    gmx_fatal(FARGS, "out of bounds");
+	for (i=0; i<hb->d.nrd; i++)
+	  {
+	    for(j=0;j<hb->a.nra; j++)
+	      {
+		for (h=0;
+		     h < (bContact ? 1 : hb->d.nhydro[i]);
+		     h++)
+		  {
+		    if (i==hb->d.nrd || j==hb->a.nra)
+		      gmx_fatal(FARGS, "out of bounds");
 
-		  /* Get the real atom ids */
-		  ii = hb->d.don[i];
-		  jj = hb->a.acc[j];
-		  hh = hb->d.hydro[i][h];
+		    /* Get the real atom ids */
+		    ii = hb->d.don[i];
+		    jj = hb->a.acc[j];
+		    hh = hb->d.hydro[i][h];
 		    
-		  /* Estimate the energy from the geometry */
-		  E = calcHbEnergy(ii, jj, hh, x, NN, box, hbox, &(hb->d));
-		  /* Store the energy */
-		  storeHbEnergy(hb, i, j, h, E, nframes);
-		}
-	    }
-	}
+		    /* Estimate the energy from the geometry */
+		    E = calcHbEnergy(ii, jj, hh, x, NN, box, hbox, &(hb->d));
+		    /* Store the energy */
+		    storeHbEnergy(hb, i, j, h, E, nframes);
+		  }
+	      }
+	  }
 #endif /* HAVE_NN_LOOPS */
-    } else {
-      if (bSelected) {
+      } else {
+	if (bSelected) {
 #ifdef HAVE_OPENMP /* Don't paralleli<ze yet */
 #pragma omp single
 #endif
-	{
-	  /* int ii; */
+	  {
+	    /* int ii; */
 	
-	  for(ii=0; (ii<nsel); ii++) {
-	    int dd = index[0][i];
-	    /* int */ hh = index[0][i+1];
-	    int aa = index[0][i+2];
-	    ihb = is_hbond(hb,ii,ii,dd,aa,rcut,r2cut,ccut,x,bBox,box,
-			   hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
+	    for(ii=0; (ii<nsel); ii++) {
+	      int dd = index[0][i];
+	      /* int */ hh = index[0][i+1];
+	      int aa = index[0][i+2];
+	      ihb = is_hbond(hb,ii,ii,dd,aa,rcut,r2cut,ccut,x,bBox,box,
+			     hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
 	  
-	    if (ihb) {
-	      /* add to index if not already there */
-	      /* Add a hbond */
-	      add_hbond(hb,dd,aa,hh,ii,ii,nframes,FALSE,bMerge,ihb,bContact,peri);
+	      if (ihb) {
+		/* add to index if not already there */
+		/* Add a hbond */
+		add_hbond(hb,dd,aa,hh,ii,ii,nframes,FALSE,bMerge,ihb,bContact,peri);
+	      }
 	    }
-	  }
-	} /* omp single */
-      } else {
+	  } /* omp single */
+	} else { /* if (bSelected) */
 #ifdef HAVE_OPENMP
 #pragma omp single
 #endif
-	if (bGem)
-	  calcBoxProjection(box, hb->per.P);
+	  if (bGem)
+	    calcBoxProjection(box, hb->per.P);
 
-	/* loop over all gridcells (xi,yi,zi)      */
-	/* Removed confusing macro, DvdS 27/12/98  */
+	  /* loop over all gridcells (xi,yi,zi)      */
+	  /* Removed confusing macro, DvdS 27/12/98  */
 #ifdef HAVE_OPENMP
-	/* The outer grid loop will have to do for now. */
+	  /* The outer grid loop will have to do for now. */
 #pragma omp for schedule(dynamic)
 #endif
-	for(xi=0; (xi<ngrid[XX]); xi++)
-	  for(yi=0; (yi<ngrid[YY]); yi++)
-	    for(zi=0; (zi<ngrid[ZZ]); zi++) {
+	  for(xi=0; (xi<ngrid[XX]); xi++)
+	    for(yi=0; (yi<ngrid[YY]); yi++)
+	      for(zi=0; (zi<ngrid[ZZ]); zi++) {
 	      
-	      /* loop over donor groups gr0 (always) and gr1 (if necessary) */
-	      for (grp=gr0; (grp <= (bTwo?gr1:gr0)); grp++) {
-		icell=&(grid[zi][yi][xi].d[grp]);
+		/* loop over donor groups gr0 (always) and gr1 (if necessary) */
+		for (grp=gr0; (grp <= (bTwo?gr1:gr0)); grp++) {
+		  icell=&(grid[zi][yi][xi].d[grp]);
 		
-		if (bTwo)
-		  ogrp = 1-grp;
-		else
-		  ogrp = grp;
+		  if (bTwo)
+		    ogrp = 1-grp;
+		  else
+		    ogrp = grp;
 		
-		/* loop over all hydrogen atoms from group (grp) 
-		 * in this gridcell (icell) 
-		 */
-		for (ai=0; (ai<icell->nr); ai++) {
-		  i  = icell->atoms[ai];
+		  /* loop over all hydrogen atoms from group (grp) 
+		   * in this gridcell (icell) 
+		   */
+		  for (ai=0; (ai<icell->nr); ai++) {
+		    i  = icell->atoms[ai];
 		
-		  /* loop over all adjacent gridcells (xj,yj,zj) */
-		  /* This is a macro!!! */
-		  LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid,bTric) {
-		    jcell=&(grid[zj][yj][xj].a[ogrp]);
-		    /* loop over acceptor atoms from other group (ogrp) 
-		     * in this adjacent gridcell (jcell) 
-		     */
-		    for (aj=0; (aj<jcell->nr); aj++) {
-		      j = jcell->atoms[aj];
+		    /* loop over all adjacent gridcells (xj,yj,zj) */
+		    /* This is a macro!!! */
+		    LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid,bTric) {
+		      jcell=&(grid[zj][yj][xj].a[ogrp]);
+		      /* loop over acceptor atoms from other group (ogrp) 
+		       * in this adjacent gridcell (jcell) 
+		       */
+		      for (aj=0; (aj<jcell->nr); aj++) {
+			j = jcell->atoms[aj];
 		  
-		      /* check if this once was a h-bond */
-		      ihb = is_hbond(__HBDATA,grp,ogrp,i,j,rcut,r2cut,ccut,x,bBox,box,
-				     hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
+			/* check if this once was a h-bond */
+			ihb = is_hbond(__HBDATA,grp,ogrp,i,j,rcut,r2cut,ccut,x,bBox,box,
+				       hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
 		    
-		      if (ihb) {
-			/* add to index if not already there */
-			/* Add a hbond */
-			add_hbond(__HBDATA,i,j,h,grp,ogrp,nframes,FALSE,bMerge,ihb,bContact,peri);
+			if (ihb) {
+			  /* add to index if not already there */
+			  /* Add a hbond */
+			  add_hbond(__HBDATA,i,j,h,grp,ogrp,nframes,FALSE,bMerge,ihb,bContact,peri);
 		      
-			/* make angle and distance distributions */
-			if (ihb == hbHB && !bContact) {
-			  if (dist>rcut)
-			    gmx_fatal(FARGS,"distance is higher than what is allowed for an hbond: %f",dist);
-			  ang*=RAD2DEG;
-			  __ADIST[(int)( ang/abin)]++;
-			  __RDIST[(int)(dist/rbin)]++;
-			  if (!bTwo) {
-			    int id,ia;
-			    if ((id = donor_index(&hb->d,grp,i)) == NOTSET)
-			      gmx_fatal(FARGS,"Invalid donor %d",i);
-			    if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
-			      gmx_fatal(FARGS,"Invalid acceptor %d",j);
-			    resdist=abs(top.atoms.atom[i].resind-
-					top.atoms.atom[j].resind);
-			    if (resdist >= max_hx)
-			      resdist = max_hx-1;
-			    __HBDATA->nhx[nframes][resdist]++;
+			  /* make angle and distance distributions */
+			  if (ihb == hbHB && !bContact) {
+			    if (dist>rcut)
+			      gmx_fatal(FARGS,"distance is higher than what is allowed for an hbond: %f",dist);
+			    ang*=RAD2DEG;
+			    __ADIST[(int)( ang/abin)]++;
+			    __RDIST[(int)(dist/rbin)]++;
+			    if (!bTwo) {
+			      int id,ia;
+			      if ((id = donor_index(&hb->d,grp,i)) == NOTSET)
+				gmx_fatal(FARGS,"Invalid donor %d",i);
+			      if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
+				gmx_fatal(FARGS,"Invalid acceptor %d",j);
+			      resdist=abs(top.atoms.atom[i].resind-
+					  top.atoms.atom[j].resind);
+			      if (resdist >= max_hx)
+				resdist = max_hx-1;
+			      __HBDATA->nhx[nframes][resdist]++;
+			    }
 			  }
-			}
 #ifdef HAVE_OPENMP
 #pragma omp single
 #endif
-			if (bInsert && bSelected) {
-			  /* this has been a h-bond, or we are analyzing 
-			     selected bonds: check for inserted */
-			  bool ins_d, ins_a;
-			  real ins_d_dist, ins_d_ang, ins_a_dist, ins_a_ang;
-			  int  ins_d_k=0,ins_a_k=0;
+			  if (bInsert && bSelected) {
+			    /* this has been a h-bond, or we are analyzing 
+			       selected bonds: check for inserted */
+			    bool ins_d, ins_a;
+			    real ins_d_dist, ins_d_ang, ins_a_dist, ins_a_ang;
+			    int  ins_d_k=0,ins_a_k=0;
 			
-			  ins_d=ins_a=FALSE;
-			  ins_d_dist=ins_d_ang=ins_a_dist=ins_a_ang=1e6;
+			    ins_d=ins_a=FALSE;
+			    ins_d_dist=ins_d_ang=ins_a_dist=ins_a_ang=1e6;
 			
-			  /* loop over gridcells adjacent to i (xk,yk,zk) */
-			  LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xi,yi,zi,ngrid,bTric){
-			    kcell=&(grid[zk][yk][xk].a[grI]);
-			    /* loop over acceptor atoms from ins group 
-			       in this adjacent gridcell (kcell) */
-			    for (ak=0; (ak<kcell->nr); ak++) {
-			      k=kcell->atoms[ak];
-			      ihb = is_hbond(hb,grp,grI,i,k,rcut,r2cut,ccut,x,
-					     bBox,box,hbox,&dist,&ang,bDA,&h,
-					     bContact,bMerge,&peri);
-			      if (ihb == hbHB) {
-				if (dist < ins_d_dist) {
-				  ins_d=TRUE;
-				  ins_d_dist=dist;
-				  ins_d_ang =ang ;
-				  ins_d_k   =k   ;
+			    /* loop over gridcells adjacent to i (xk,yk,zk) */
+			    LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xi,yi,zi,ngrid,bTric){
+			      kcell=&(grid[zk][yk][xk].a[grI]);
+			      /* loop over acceptor atoms from ins group 
+				 in this adjacent gridcell (kcell) */
+			      for (ak=0; (ak<kcell->nr); ak++) {
+				k=kcell->atoms[ak];
+				ihb = is_hbond(hb,grp,grI,i,k,rcut,r2cut,ccut,x,
+					       bBox,box,hbox,&dist,&ang,bDA,&h,
+					       bContact,bMerge,&peri);
+				if (ihb == hbHB) {
+				  if (dist < ins_d_dist) {
+				    ins_d=TRUE;
+				    ins_d_dist=dist;
+				    ins_d_ang =ang ;
+				    ins_d_k   =k   ;
+				  }
 				}
 			      }
 			    }
-			  }
-			  ENDLOOPGRIDINNER;
-			  /* loop over gridcells adjacent to j (xk,yk,zk) */
-			  LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid,bTric){
-			    kcell=&grid[zk][yk][xk].d[grI];
-			    /* loop over hydrogen atoms from ins group 
-			       in this adjacent gridcell (kcell) */
-			    for (ak=0; ak<kcell->nr; ak++) {
-			      k   = kcell->atoms[ak];
-			      ihb = is_hbond(hb,grI,ogrp,k,j,rcut,r2cut,ccut,x,
-					     bBox,box,hbox,&dist,&ang,bDA,&h,
-					     bContact,bMerge,&peri);
-			      if (ihb == hbHB) {
-				if (dist<ins_a_dist) {
-				  ins_a=TRUE;
-				  ins_a_dist=dist;
-				  ins_a_ang =ang ;
-				  ins_a_k   =k   ;
+			    ENDLOOPGRIDINNER;
+			    /* loop over gridcells adjacent to j (xk,yk,zk) */
+			    LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid,bTric){
+			      kcell=&grid[zk][yk][xk].d[grI];
+			      /* loop over hydrogen atoms from ins group 
+				 in this adjacent gridcell (kcell) */
+			      for (ak=0; ak<kcell->nr; ak++) {
+				k   = kcell->atoms[ak];
+				ihb = is_hbond(hb,grI,ogrp,k,j,rcut,r2cut,ccut,x,
+					       bBox,box,hbox,&dist,&ang,bDA,&h,
+					       bContact,bMerge,&peri);
+				if (ihb == hbHB) {
+				  if (dist<ins_a_dist) {
+				    ins_a=TRUE;
+				    ins_a_dist=dist;
+				    ins_a_ang =ang ;
+				    ins_a_k   =k   ;
+				  }
 				}
 			      }
 			    }
-			  }
-			  ENDLOOPGRIDINNER;
+			    ENDLOOPGRIDINNER;
 			
-			  {
-			    ihb = is_hbond(hb,grI,grI,ins_d_k,ins_a_k,rcut,r2cut,ccut,x,
-					   bBox,box,hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
-			    if (ins_d && ins_a && ihb) {
-			      /* add to hbond index if not already there */
-			      add_hbond(hb,ins_d_k,ins_a_k,h,grI,ogrp,
-					nframes,TRUE,bMerge,ihb,bContact,peri);
+			    {
+			      ihb = is_hbond(hb,grI,grI,ins_d_k,ins_a_k,rcut,r2cut,ccut,x,
+					     bBox,box,hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
+			      if (ins_d && ins_a && ihb) {
+				/* add to hbond index if not already there */
+				add_hbond(hb,ins_d_k,ins_a_k,h,grI,ogrp,
+					  nframes,TRUE,bMerge,ihb,bContact,peri);
 			    
-			      /* print insertion info to file */
-			      /*fprintf(fpins,
-				"%4g: %4u:%3.3s%4d%3.3s -> "
-				"%4u:%3.3s%4d%3.3s (%4.2f,%2.0f) - "
-				"%4u:%3.3s%4d%3.3s (%4.2f,%2.0f)\n",t,
-				a[grIA][ins_d_k]+1,
-				*top.atoms.resname[top.atoms.atom[a[grIA][ins_d_k]].resnr],
-				top.atoms.atom[a[grIA][ins_d_k]].resnr+1,
-				*top.atoms.atomname[a[grIA][ins_d_k]],
-				a[grp+grD][i]+1,
-				*top.atoms.resname[top.atoms.atom[a[grp+grD][i]].resnr],
-				top.atoms.atom[a[grp+grD][i]].resnr+1,
-				*top.atoms.atomname[a[grp+grD][i]],
-				ins_d_dist,ins_d_ang*RAD2DEG,
-				a[ogrp+grA][j]+1,
-				*top.atoms.resname[top.atoms.atom[a[ogrp+grA][j]].resnr],
-				top.atoms.atom[a[ogrp+grA][j]].resnr+1,
-				*top.atoms.atomname[a[ogrp+grA][j]],
-				ins_a_dist,ins_a_ang*RAD2DEG);*/
+				/* print insertion info to file */
+				/*fprintf(fpins,
+				  "%4g: %4u:%3.3s%4d%3.3s -> "
+				  "%4u:%3.3s%4d%3.3s (%4.2f,%2.0f) - "
+				  "%4u:%3.3s%4d%3.3s (%4.2f,%2.0f)\n",t,
+				  a[grIA][ins_d_k]+1,
+				  *top.atoms.resname[top.atoms.atom[a[grIA][ins_d_k]].resnr],
+				  top.atoms.atom[a[grIA][ins_d_k]].resnr+1,
+				  *top.atoms.atomname[a[grIA][ins_d_k]],
+				  a[grp+grD][i]+1,
+				  *top.atoms.resname[top.atoms.atom[a[grp+grD][i]].resnr],
+				  top.atoms.atom[a[grp+grD][i]].resnr+1,
+				  *top.atoms.atomname[a[grp+grD][i]],
+				  ins_d_dist,ins_d_ang*RAD2DEG,
+				  a[ogrp+grA][j]+1,
+				  *top.atoms.resname[top.atoms.atom[a[ogrp+grA][j]].resnr],
+				  top.atoms.atom[a[ogrp+grA][j]].resnr+1,
+				  *top.atoms.atomname[a[ogrp+grA][j]],
+				  ins_a_dist,ins_a_ang*RAD2DEG);*/
+			      }
 			    }
-			  }
-			} /* if (bInsert && bSelected), omp single */
-		      }
-		    } /* for aj  */
-		  }
-		  ENDLOOPGRIDINNER;
-		} /* for ai  */
-	      } /* for grp */
-	    } /* for xi,yi,zi */
+			  } /* if (bInsert && bSelected), omp single */
+			}
+		      } /* for aj  */
+		    }
+		    ENDLOOPGRIDINNER;
+		  } /* for ai  */
+		} /* for grp */
+	      } /* for xi,yi,zi */
+	} /* if (bSelected) {...} else */ 
+
+#ifdef HAVE_OPENMP /* ------------------------ */
+#pragma omp for schedule(dynamic)          /*  */
+	/* Sum up histograms and counts from p_hb[] into hb */
+	for (i=0; i<actual_nThreads; i++)  /*  */
+	  {                                /*  */
+	    hb->nhb[nframes]   += p_hb[i]->nhb[nframes];
+	    hb->ndist[nframes] += p_hb[i]->ndist[nframes];
+	    for (j=0; j<max_hx; j++)      /*  */
+	      hb->nhx[nframes][j]  += p_hb[i]->nhx[nframes][j];
+	  }                                /*  */
+#pragma omp single                         /*  */
+#endif /* HAVE_OPENMP -------------------------*/
+	{
+	  analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,nframes,t,oenv);
+	  if (fpnhb)
+	    do_nhb_dist(fpnhb,hb,t);
+	} /* omp single */
       } /* if (bNN) {...} else */
 
 #ifdef HAVE_OPENMP
-#pragma omp for shedule(dynamic)
-      /* Sum up histograms and counts from p_hb[] into hb */
-      for (i=0; i<actual_nThreads; i++)
-	{
-	  hb->nhb[nframes]   += p_hb[i]->nhb[nframes];
-	  hb->ndist[nframes] += p_hb[i]->ndist[nframes];
-	  for (j=0; j<max_nhx; j++)
-	    hb->nhx[nframes][j]  += p_hb[i]->nhx[nframes][j];
-	}
+      /* Better wait for all threads to finnish using x[] before updating it. */
+#pragma omp barrier
 #pragma omp single
-#endif /* HAVE_OPENMP */
+#endif
       {
-	analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,nframes,t,oenv);
-	if (fpnhb)
-	  do_nhb_dist(fpnhb,hb,t);
-      } /* omp single */
-    }
-    nframes++;
-    } while (read_next_x(oenv,status,&t,natoms,x,box));
+	nframes++;
+	trrStatus = (read_next_x(oenv,status,&t,natoms,x,box));
+      }
+#ifdef HAVE_OPENMP
+      /* Better read the frame completely before starting the next iteration */
+#pragma omp barrier
+#endif
+    } while (trrStatus);
   }
   
   free_grid(ngrid,&grid);
