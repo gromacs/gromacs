@@ -2,9 +2,9 @@
 
 ; Atom type	sar     st      pi      gbr      hct
  NH1            0.155   1       1.028   0.17063  0.79 ; N
- N		0.155	1	1	0.155	 0.79 ;	Proline backbone N
- NP		0.155	1	1	0.155	 0.79 ;	Proline backbone N for Proline N-terminus
- H              0.1     1       1       0.115    0.85 ; H
+ N		0.155	1	1	0.17063	 0.79 ;	Proline backbone N
+ NP		0.155	1	1	0.17063	 0.79 ;	Proline backbone N-termini
+ H              0.1     1       1       0.115    0.85 ; Should be 0.105 when hydroxyl or carboxylic hydrogen
  CT1            0.180   1       1.276   0.190    0.72 ; C
  HB             0.1     1       1       0.125    0.85 ; H
  CT3            0.200   1       0.880   0.190    0.72 ; C
@@ -28,7 +28,7 @@
  HR1            0.1     1       1       0.125    0.85 ; H
  HR2            0.1     1       1       0.125    0.85 ; H
  NR2            0.155   1       1.215   0.17063  0.79 ; N
- HR3            0.1     1       1       0.115    0.85 ; H
+ HR3            0.1     1       1       0.125    0.85 ; H
  NR3            0.155   1       1.215   0.17063  0.79 ; N
  NH3            0.160   1       1.215   0.1625   0.79 ; N
  HP             0.1     1       1       0.125    0.85 ; H
