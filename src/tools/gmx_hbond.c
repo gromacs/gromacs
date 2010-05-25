@@ -2999,6 +2999,28 @@ static void dump_hbmap(t_hbdata *hb,
     ffclose(fplog);
 }
 
+#ifdef HAVE_OPENMP
+static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
+			int nframes, real t)
+{
+  int i;
+  if (nframes >= p_hb->max_frames)
+    {
+      p_hb->max_frames += 4096;
+      srenew(p_hb->nhb,   p_hb->max_frames);
+      srenew(p_hb->ndist, p_hb->max_frames);
+      srenew(p_hb->n_bound, p_hb->max_frames);
+      srenew(p_hb->nhx, p_hb->max_frames);
+      if (p_hb->bDAnr)
+	srenew(p_hb->danr, p_hb->max_frames);
+      memset(&(p_hb->nhb[nframes]),   0, sizeof(int) * (p_hb->max_frames-nframes));
+      memset(&(p_hb->ndist[nframes]), 0, sizeof(int) * (p_hb->max_frames-nframes));
+      p_hb->nhb[nframes] = 0;
+    }
+  p_hb->nframes = nframes;
+  memset(&(p_hb->nhx[nframes][i]), 0 ,sizeof(int)*max_hx); /* zero the helix count for this frame */
+}
+
 int gmx_hbond(int argc,char *argv[])
 {
   const char *desc[] = {
@@ -3486,11 +3508,19 @@ int gmx_hbond(int argc,char *argv[])
 
   bParallel = FALSE;
 
-#ifdef HAVE_OPENMP /* =================================================\
+#ifndef HAVE_OPENMP
+#define __ADIST adist
+#define __RDIST rdist
+#define __HBDATA hb
+#else /* HAVE_OPENMP ==================================================\
     		    * Set up the OpenMP stuff,                         |
 		    * like the number of threads and such              |
 		    * Also start the parallel loop.                    |
 		    */
+#define __ADIST p_adist[threadNr]
+#define __RDIST p_rdist[threadNr]
+#define __HBDATA p_hb[threadNr]
+
   bParallel = !bSelect && !bInsert;
 
   if (bParallel){
@@ -3502,17 +3532,57 @@ int gmx_hbond(int argc,char *argv[])
     omp_set_num_threads(actual_nThreads);
     printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
     fflush(stdout);
-
-    /* Make a thread pool here, instead of forking anew at every frame. */
-
   }
-#pragma omp parallel if(bParallel==TRUE)  \
-  private(i,j,h,ii,jj,hh,E) \
+
+  t_hbdata **p_hb;          /* one per thread, then merge after the frame loop */
+  int **p_adist, **p_rdist; /* a histogram for each thread. */
+  int threadNr;
+  snew(p_hb,    actual_nThreads);
+  snew(p_adist, actual_nThreads);
+  snew(p_rdist, actual_nThreads);
+  for (i=0; i<actual_nThreads; i++)
+    {
+      snew(p_hb[i], 1);
+      snew(p_adist[i], nabin+1);
+      snew(p_rdist[i], nrbin+1);
+
+      p_hb[i]->max_frames = 0;
+      p_hb[i]->nhb = NULL;
+      p_hb[i]->ndist = NULL;
+      p_hb[i]->n_bound = NULL;
+      p_hb[i]->time = NULL;
+      p_hb[i]->danr = NULL;
+      p_hb[i]->nhx = NULL;
+
+      p_hb[i]->bHBmap     = hb->bHBmap;
+      p_hb[i]->bDAnr      = hb->bDAnr;
+      p_hb[i]->bGem       = hb->bGem;
+      p_hb[i]->wordlen    = hb->wordlen;
+      p_hb[i]->nframes    = hb->nframes;
+      p_hb[i]->maxhydro   = hb->maxhydro;
+      p_hb[i]->d = hb->d;
+      p_hb[i]->a = hb->a;
+      p_hb[i]->hbmap = hb->hbmap;
+      p_hb[i]->time = hb->time; /* This may need re-syncing at every frame. */
+
+#ifdef HAVE_NN_LOOPS
+      p_hb[i]->hbE = hb->hbE;
+#endif
+      p_hb[i]->per = hb->per;
+    }
+
+  /* Make a thread pool here,
+   * instead of forking anew at every frame. */
+
+#pragma omp parallel if(bParallel==TRUE)	\
+  private(i,j,h,ii,jj,hh,E,			\
+	  xi,yi,zi,threadNr)			\
   default(shared)
   {
 #endif /* HAVE_OPENMP ================================================= */
-
+    
     do {
+
 #ifdef HAVE_OPENMP      
 #pragma omp single
 #endif
@@ -3520,27 +3590,32 @@ int gmx_hbond(int argc,char *argv[])
 	bTric = bBox && TRICLINIC(box);
 	build_grid(hb,x,x[shatom], bBox,box,hbox, (rcut>r2cut)?rcut:r2cut, 
 		   rshell, ngrid,grid);
-    
+	
 	reset_nhbonds(&(hb->d));
-      
+	
 	if (debug && bDebug)
 	  dump_grid(debug, ngrid, grid);
-    
+	
 	add_frames(hb,nframes);
 	init_hbframe(hb,nframes,t);
-
+	
 	if (hb->bDAnr)
 	  count_da_grid(ngrid, grid, hb->danr[nframes]);
       } /* omp single */
+      /* copy danr to p_hb?*/
 
     if (bNN) {
 #ifdef HAVE_NN_LOOPS /* Unlock this feature when testing */
       /* Loop over all atom pairs and estimate interaction energy */
+#ifdef HAVE_OPENMP /* ------- */
+#pragma omp single
+#endif /* HAVE_OPENMP ------- */
       addFramesNN(hb, nframes);
 
-#ifdef HAVE_OPENMP
+#ifdef HAVE_OPENMP /* ---------------- */
+#pragma omp barrier
 #pragma omp for schedule(dynamic)
-#endif
+#endif /* HAVE_OPENMP ---------------- */
       for (i=0; i<hb->d.nrd; i++)
 	{
 	  for(j=0;j<hb->a.nra; j++)
@@ -3567,26 +3642,39 @@ int gmx_hbond(int argc,char *argv[])
 #endif /* HAVE_NN_LOOPS */
     } else {
       if (bSelected) {
-	/* int ii; */
+#ifdef HAVE_OPENMP /* Don't paralleli<ze yet */
+#pragma omp single
+#endif
+	{
+	  /* int ii; */
 	
-	for(ii=0; (ii<nsel); ii++) {
-	  int dd = index[0][i];
-	  /* int */ hh = index[0][i+1];
-	  int aa = index[0][i+2];
-	  ihb = is_hbond(hb,ii,ii,dd,aa,rcut,r2cut,ccut,x,bBox,box,
-			 hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
+	  for(ii=0; (ii<nsel); ii++) {
+	    int dd = index[0][i];
+	    /* int */ hh = index[0][i+1];
+	    int aa = index[0][i+2];
+	    ihb = is_hbond(hb,ii,ii,dd,aa,rcut,r2cut,ccut,x,bBox,box,
+			   hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
 	  
-	  if (ihb) {
-	    /* add to index if not already there */
-	    /* Add a hbond */
-	    add_hbond(hb,dd,aa,hh,ii,ii,nframes,FALSE,bMerge,ihb,bContact,peri);
+	    if (ihb) {
+	      /* add to index if not already there */
+	      /* Add a hbond */
+	      add_hbond(hb,dd,aa,hh,ii,ii,nframes,FALSE,bMerge,ihb,bContact,peri);
+	    }
 	  }
-	}
+	} /* omp single */
       } else {
+#ifdef HAVE_OPENMP
+#pragma omp single
+#endif
 	if (bGem)
 	  calcBoxProjection(box, hb->per.P);
+
 	/* loop over all gridcells (xi,yi,zi)      */
 	/* Removed confusing macro, DvdS 27/12/98  */
+#ifdef HAVE_OPENMP
+	/* The outer grid loop will have to do for now. */
+#pragma omp for schedule(dynamic)
+#endif
 	for(xi=0; (xi<ngrid[XX]); xi++)
 	  for(yi=0; (yi<ngrid[YY]); yi++)
 	    for(zi=0; (zi<ngrid[ZZ]); zi++) {
@@ -3617,21 +3705,21 @@ int gmx_hbond(int argc,char *argv[])
 		      j = jcell->atoms[aj];
 		  
 		      /* check if this once was a h-bond */
-		      ihb = is_hbond(hb,grp,ogrp,i,j,rcut,r2cut,ccut,x,bBox,box,
+		      ihb = is_hbond(__HBDATA,grp,ogrp,i,j,rcut,r2cut,ccut,x,bBox,box,
 				     hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
 		    
 		      if (ihb) {
 			/* add to index if not already there */
 			/* Add a hbond */
-			add_hbond(hb,i,j,h,grp,ogrp,nframes,FALSE,bMerge,ihb,bContact,peri);
+			add_hbond(__HBDATA,i,j,h,grp,ogrp,nframes,FALSE,bMerge,ihb,bContact,peri);
 		      
 			/* make angle and distance distributions */
 			if (ihb == hbHB && !bContact) {
 			  if (dist>rcut)
 			    gmx_fatal(FARGS,"distance is higher than what is allowed for an hbond: %f",dist);
 			  ang*=RAD2DEG;
-			  adist[(int)( ang/abin)]++;
-			  rdist[(int)(dist/rbin)]++;
+			  __ADIST[(int)( ang/abin)]++;
+			  __RDIST[(int)(dist/rbin)]++;
 			  if (!bTwo) {
 			    int id,ia;
 			    if ((id = donor_index(&hb->d,grp,i)) == NOTSET)
@@ -3640,11 +3728,14 @@ int gmx_hbond(int argc,char *argv[])
 			      gmx_fatal(FARGS,"Invalid acceptor %d",j);
 			    resdist=abs(top.atoms.atom[i].resind-
 					top.atoms.atom[j].resind);
-			    if (resdist >= max_hx) 
+			    if (resdist >= max_hx)
 			      resdist = max_hx-1;
-			    hb->nhx[nframes][resdist]++;
+			    __HBDATA->nhx[nframes][resdist]++;
 			  }
 			}
+#ifdef HAVE_OPENMP
+#pragma omp single
+#endif
 			if (bInsert && bSelected) {
 			  /* this has been a h-bond, or we are analyzing 
 			     selected bonds: check for inserted */
@@ -3727,7 +3818,7 @@ int gmx_hbond(int argc,char *argv[])
 				ins_a_dist,ins_a_ang*RAD2DEG);*/
 			    }
 			  }
-			}
+			} /* if (bInsert && bSelected), omp single */
 		      }
 		    } /* for aj  */
 		  }
@@ -3735,10 +3826,25 @@ int gmx_hbond(int argc,char *argv[])
 		} /* for ai  */
 	      } /* for grp */
 	    } /* for xi,yi,zi */
-      }
-      analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,nframes,t,oenv);
-      if (fpnhb)
-	do_nhb_dist(fpnhb,hb,t);
+      } /* if (bNN) {...} else */
+
+#ifdef HAVE_OPENMP
+#pragma omp for shedule(dynamic)
+      /* Sum up histograms and counts from p_hb[] into hb */
+      for (i=0; i<actual_nThreads; i++)
+	{
+	  hb->nhb[nframes]   += p_hb[i]->nhb[nframes];
+	  hb->ndist[nframes] += p_hb[i]->ndist[nframes];
+	  for (j=0; j<max_nhx; j++)
+	    hb->nhx[nframes][j]  += p_hb[i]->nhx[nframes][j];
+	}
+#pragma omp single
+#endif /* HAVE_OPENMP */
+      {
+	analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,nframes,t,oenv);
+	if (fpnhb)
+	  do_nhb_dist(fpnhb,hb,t);
+      } /* omp single */
     }
     nframes++;
     } while (read_next_x(oenv,status,&t,natoms,x,box));
