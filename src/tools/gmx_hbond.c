@@ -3481,52 +3481,65 @@ int gmx_hbond(int argc,char *argv[])
   snew(adist,nabin+1);
   snew(rdist,nrbin+1);
 
+  if (bGem && !bBox)
+    gmx_fatal(FARGS, "Can't do geminate recombination without periodic box.");
+
+  bParallel = FALSE;
 
 #ifdef HAVE_OPENMP /* =================================================\
-		* Set up the OpenMP stuff,                             |
-		* like the number of threads and such                  |
-		* Also start the parallel loop.                        |
-		*/
-  if (bNN){
+    		    * Set up the OpenMP stuff,                         |
+		    * like the number of threads and such              |
+		    * Also start the parallel loop.                    |
+		    */
+  bParallel = !bSelect && !bInsert;
+
+  if (bParallel){
 #if (_OPENMP > 200805)
     int actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
 #else
     int actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
 #endif
     omp_set_num_threads(actual_nThreads);
-    printf("NN-loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
+    printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
     fflush(stdout);
+
+    /* Make a thread pool here, instead of forking anew at every frame. */
+
   }
+#pragma omp parallel if(bParallel==TRUE)  \
+  private(i,j,h,ii,jj,hh,E) \
+  default(shared)
+  {
 #endif /* HAVE_OPENMP ================================================= */
 
-  if (bGem && !bBox)
-    gmx_fatal(FARGS, "Can't do geminate recombination without periodic box.");
-  do {
-    bTric = bBox && TRICLINIC(box);
-    build_grid(hb,x,x[shatom], bBox,box,hbox, (rcut>r2cut)?rcut:r2cut, 
-               rshell, ngrid,grid);
+    do {
+#ifdef HAVE_OPENMP      
+#pragma omp single
+#endif
+      {
+	bTric = bBox && TRICLINIC(box);
+	build_grid(hb,x,x[shatom], bBox,box,hbox, (rcut>r2cut)?rcut:r2cut, 
+		   rshell, ngrid,grid);
     
-    reset_nhbonds(&(hb->d));
-
-    if (debug && bDebug)
-      dump_grid(debug, ngrid, grid);
-    
-    add_frames(hb,nframes);
-    init_hbframe(hb,nframes,t);
-
-    if (hb->bDAnr)
-      count_da_grid(ngrid, grid, hb->danr[nframes]);
+	reset_nhbonds(&(hb->d));
       
+	if (debug && bDebug)
+	  dump_grid(debug, ngrid, grid);
+    
+	add_frames(hb,nframes);
+	init_hbframe(hb,nframes,t);
+
+	if (hb->bDAnr)
+	  count_da_grid(ngrid, grid, hb->danr[nframes]);
+      } /* omp single */
+
     if (bNN) {
 #ifdef HAVE_NN_LOOPS /* Unlock this feature when testing */
       /* Loop over all atom pairs and estimate interaction energy */
       addFramesNN(hb, nframes);
 
-#ifdef HAVE_OPENMP      
-#pragma omp parallel for				\
-  schedule(dynamic),					\
-  private(i,j,h,ii,jj,hh,E),				\
-  default(shared)
+#ifdef HAVE_OPENMP
+#pragma omp for schedule(dynamic)
 #endif
       for (i=0; i<hb->d.nrd; i++)
 	{
@@ -3728,7 +3741,8 @@ int gmx_hbond(int argc,char *argv[])
 	do_nhb_dist(fpnhb,hb,t);
     }
     nframes++;
-  } while (read_next_x(oenv,status,&t,natoms,x,box));
+    } while (read_next_x(oenv,status,&t,natoms,x,box));
+  }
   
   free_grid(ngrid,&grid);
   
