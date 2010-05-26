@@ -172,6 +172,9 @@ gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
                                 gmx_ana_indexgrps_t *grps);
 
 /* In compiler.c */
+/** Set debugging flag for selection compilation. */
+extern void
+gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, bool bDebug);
 /** Prepares the selections for evaluation and performs some optimizations. */
 extern int
 gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc);

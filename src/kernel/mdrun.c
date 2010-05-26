@@ -105,7 +105,7 @@ int main(int argc,char *argv[])
 	" * Implicit solvent: Supported.\n",
 	"A detailed description can be found on the website:\n",
 	"http://www.gromacs.org/index.php?title=Download_%26_Installation/Related_Software/OpenMM[PAR]",
-// From the original mdrun documentaion
+/* From the original mdrun documentaion */
     "The mdrun program reads the run input file ([TT]-s[tt])",
     "and distributes the topology over nodes if needed.",
     "mdrun produces at least four output files.",
@@ -119,7 +119,7 @@ int main(int argc,char *argv[])
     "pressure, etc, a lot of these things are also printed in the log file.",
     "Optionally coordinates can be written to a compressed trajectory file",
     "([TT]-x[tt]).[PAR]",
-//////////////////////////////////////
+/* //////////////////////////////////// */
 	"Usage with OpenMM:[BR]",
 	"$ mdrun -device \"OpenMM:platform=Cuda,memtest=15,deviceid=0,force-device=no\"[PAR]",
 	"Options:[PAR]",
@@ -407,11 +407,11 @@ int main(int argc,char *argv[])
 
   t_pargs pa[] = {
 
-// arguments relevant to OPENMM only
+/* arguments relevant to OPENMM only */
 #ifdef GMX_OPENMM
     { "-device",  FALSE, etSTR, {&deviceOptions},
       "Device option string" },
-// args for non-OpenMM binaries
+/* args for non-OpenMM binaries */
 #else
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
@@ -470,7 +470,7 @@ int main(int argc,char *argv[])
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
       "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
 #endif
-// args for both
+/* args for both */
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-maxh",   FALSE, etREAL, {&max_hours},

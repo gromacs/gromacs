@@ -383,7 +383,7 @@ static double sqcm_per_s_to_sqA_per_ps (real D) {
 static double eq10v2(double theoryCt[], double time[], int manytimes,
 		     double ka, double kd, t_gemParams *params)
 {
-  //Finding the 3 roots
+  /* Finding the 3 roots */
   double
     kD = params->kD,
     D  = params->D,
@@ -394,16 +394,16 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
     c = kd * sqrt(D)/r;
   complex alpha, beta, gamma;
   solve(&alpha, &beta, &gamma, a, b, c);
-  //Finding the 3 roots
+  /* Finding the 3 roots */
 
   int i;
   complex c1, c2, c3, c4, oma, omb, omc, part1, part2, part3, part4;
   double tsqrt, sumimaginary=0.0;
 
-  part1 = cxmul(alpha, cxmul(cxadd(beta,  gamma), cxsub(beta,  gamma))); //1(2+3)(2-3)
-  part2 = cxmul(beta,  cxmul(cxadd(gamma, alpha), cxsub(gamma, alpha))); //2(3+1)(3-1)
-  part3 = cxmul(gamma, cxmul(cxadd(alpha, beta) , cxsub(alpha, beta)));  //3(1+2)(1-2)
-  part4 = cxmul(cxsub(gamma, alpha), cxmul(cxsub(alpha, beta), cxsub(beta, gamma))); //(3-1)(1-2)(2-3)
+  part1 = cxmul(alpha, cxmul(cxadd(beta,  gamma), cxsub(beta,  gamma))); /* 1(2+3)(2-3) */
+  part2 = cxmul(beta,  cxmul(cxadd(gamma, alpha), cxsub(gamma, alpha))); /* 2(3+1)(3-1) */
+  part3 = cxmul(gamma, cxmul(cxadd(alpha, beta) , cxsub(alpha, beta)));  /* 3(1+2)(1-2) */
+  part4 = cxmul(cxsub(gamma, alpha), cxmul(cxsub(alpha, beta), cxsub(beta, gamma))); /* (3-1)(1-2)(2-3) */
 
 #ifdef HAVE_OPENMP
 #pragma omp parallel for				\
@@ -428,7 +428,7 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
 
   return sumimaginary;
 
-} //eq10v2
+} /* eq10v2 */
 
 
 extern t_gemParams *init_gemParams(double sigma, double D,

@@ -161,11 +161,14 @@ gmx_test_selection(int argc, char *argv[])
 
     bool                bMaskOnly  = FALSE;
     bool                bFrameTree = FALSE;
+    bool                bDebugCompile = FALSE;
     int                 nref       = 0;
     int                 nmaxind    = 20;
     t_pargs             pa[] = {
         {"-mask",   FALSE, etBOOL, {&bMaskOnly},
          "Test position mask functionality"},
+        {"-compdebug", FALSE, etBOOL, {&bDebugCompile},
+         "Print intermediate trees during compilation"},
         {"-frtree", FALSE, etBOOL, {&bFrameTree},
          "Print the whole evaluation tree for each frame"},
         {"-nref",   FALSE, etINT,  {&nref},
@@ -199,6 +202,7 @@ gmx_test_selection(int argc, char *argv[])
         gmx_ana_add_flags(trj, ANA_USE_POSMASK);
         gmx_ana_selcollection_set_outpostype(d.sc, NULL, TRUE);
     }
+    gmx_ana_selcollection_set_compile_debug(d.sc, bDebugCompile);
     gmx_ana_set_nrefgrps(trj, nref);
     gmx_ana_init_selections(trj);
     gmx_ana_get_ngrps(trj, &ngrps);

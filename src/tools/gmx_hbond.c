@@ -38,13 +38,13 @@
 #endif
 #include <math.h>
 
-//#define HAVE_NN_LOOPS
+/*#define HAVE_NN_LOOPS*/
 /* Set environment variable CFLAGS = "-fopenmp" when running
  * configure and define DOUSEOPENMP to make use of parallelized
  * calculation of autocorrelation function.
  * It also adds a new option -nthreads which sets the number of threads.
  * */
-//#define DOUSEOPENMP
+/*#define DOUSEOPENMP*/
 
 #ifdef DOUSEOPENMP
 #define HAVE_OPENMP
@@ -2677,8 +2677,6 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	fitGemRecomb(ctdouble, timedouble, &fittedct, nn, params);
     
 
-      /* /////////////////// */
-		
       if (bContact)
 	fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)",oenv);
       else

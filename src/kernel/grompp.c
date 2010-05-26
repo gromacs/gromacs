@@ -1012,6 +1012,8 @@ int main (int argc, char *argv[])
   static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
+    { "-v",       FALSE, etBOOL,{&bVerbose},  
+      "Be loud and noisy" },
     { "-time",    FALSE, etREAL, {&fr_time},
       "Take frame at or first after this time." },
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
@@ -1034,7 +1036,6 @@ int main (int argc, char *argv[])
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL,&oenv);
-  bVerbose = (output_env_get_verbosity(oenv) > 0);
   
   wi = init_warning(TRUE,maxwarn);
   
