@@ -552,14 +552,18 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
     }
   /* nmsimplex2 had convergence problems prior to gsl v1.14,
    * but it's O(N) instead of O(N) operations, so let's use it if v >= 1.14 */
-  gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 #ifdef GSL_MAJOR_VERSION
 #ifdef GSL_MINOR_VERSION
-  if ((GSL_MAJOR_VERSION == 1 && GSL_MINOR_VERSION >= 14) || 
-      (GSL_MAJOR_VERSION > 1))
-    T = gsl_multimin_fminimizer_nmsimplex2;
-#endif
-#endif
+#if ((GSL_MAJOR_VERSION == 1 && GSL_MINOR_VERSION >= 14) || \
+  (GSL_MAJOR_VERSION > 1))
+    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
+#else
+  const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
+#endif /* #if ... */
+#endif /* GSL_MINOR_VERSION */
+#else
+  const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
+#endif /* GSL_MAJOR_VERSION */
   
   if (nData<n) {
     fprintf(stderr, "Reduced data set larger than the complete data set!\n");
