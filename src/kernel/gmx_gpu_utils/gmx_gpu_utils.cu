@@ -540,7 +540,7 @@ int do_timed_memtest(int dev_id, int time_constr)
 
     /* do the TIMED_TESTS set, one step at a time on the entire memory 
        that can be allocated, and stop when the given time is exceeded */
-    while ( (getTimeMilliseconds() - startt) < time_constr)
+    while ( ((int)getTimeMilliseconds() - startt) < time_constr)
     {        
         res = do_memtest(TIMED_TESTS, devmem, 1);
         if (res != 0) break;

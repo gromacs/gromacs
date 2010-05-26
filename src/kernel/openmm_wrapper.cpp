@@ -34,7 +34,7 @@
  */
 
 /*
- * Note that parts of this source code originate from the Simtk release 
+ * Note, that parts of this source code originate from the Simtk release 
  * of OpenMM accelerated Gromacs, for more details see: 
  * https://simtk.org/project/xml/downloads.xml?group_id=161#package_id600
  */
@@ -60,7 +60,6 @@ using namespace std;
 #include "string2.h"
 #include "gmx_gpu_utils.h"
 #include "mtop_util.h"
-#include "warninp.h"
 
 #include "openmm_wrapper.h"
 
@@ -218,7 +217,7 @@ const char * const GmxOpenMMPlatformOptions::force_dev[SIZEOF_FORCE_DEV]
  * of the respective constant array is taken (GmxOpenMMPlatformOptions#platforms, 
  * GmxOpenMMPlatformOptions#memtests, GmxOpenMMPlatformOptions#deviceid, 
  * GmxOpenMMPlatformOptions#force_dev). 
- * \param[in] optionString  Option string part of the mdrun -deviceoption parameter.
+ * \param[in] optionString  Option list part of the mdrun -device parameter.
  */
 GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
 {
@@ -296,8 +295,9 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
 
 
 /*!
- * \brief Returns the value of an option. 
+ * \brief Getter function.
  * \param[in] opt   Name of the option.
+ * \returns         Returns the value associated to an option. 
  */
 string GmxOpenMMPlatformOptions::getOptionValue(const string &opt)
 {
@@ -363,23 +363,19 @@ public:
 /*!
  *  \brief Runs memtest on the GPU that has alreaby been initialized by OpenMM.
  *  \param[in] fplog    Pointer to gromacs log file.
- *  \param[in] devId    Device id of the GPU to run the test on. TODO: this can be removed!
+ *  \param[in] devId    Device id of the GPU to run the test on. 
+                        Note: as OpenMM previously creates the context,for now this is always -1.
  *  \param[in] pre_post Contains either "Pre" or "Post" just to be able to differentiate in 
  *                      stdout messages/log between memtest carried out before and after simulation.
  *  \param[in] opt      Pointer to platform options object.
  */
 static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatformOptions *opt)
 {
-    char strout_buf[STRLEN];
-    int which_test;
-    int res = 0;
-	string s = opt->getOptionValue("memtest");
-	const char * test_type = 
-			s.c_str(); 
-		/* NOTE: thie code below for some misterious reason does NOT work 
-		with MSVC, but the above "fix" seems to solve the problem - not sure why though */
-			// opt->getOptionValue("memtest").c_str();
-
+    char        strout_buf[STRLEN];
+    int         which_test;
+    int         res = 0;
+    string      s = opt->getOptionValue("memtest");
+    const char  *test_type = s.c_str();
 
     if (!gmx_strcasecmp(test_type, "off"))
     {
@@ -416,7 +412,7 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
             fprintf(stdout, "\n%s-simulation %s GPU memtest in progress...", pre_post, test_type);
             fflush(fplog);
             fflush(stdout);
-            res = do_quick_memtest(-1);
+            res = do_quick_memtest(devId);
             break; /* case 1 */
 
         case 2: /* full memtest */
@@ -424,7 +420,7 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
             fprintf(stdout, "\n%s-simulation %s memtest in progress...", pre_post, test_type);
             fflush(fplog);
             fflush(stdout);
-            res = do_full_memtest(-1);
+            res = do_full_memtest(devId);
             break; /* case 2 */
 
         default: /* timed memtest */
@@ -432,20 +428,49 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
             fprintf(stdout, "\n%s-simulation ~%ds memtest in progress...", pre_post, which_test);
             fflush(fplog);
             fflush(stdout);
-            res = do_timed_memtest(-1, which_test);
+            res = do_timed_memtest(devId, which_test);
         }
 
-        if (which_test != 0 && res != 0)
+        if (which_test != 0)
         {
-            gmx_fatal(FARGS, MEM_ERR_MSG(pre_post));
+            if (res != 0)
+            {
+                gmx_fatal(FARGS, MEM_ERR_MSG(pre_post));
+            }
+            else
+            {
+                fprintf(fplog,  "Memory test completed without errors.\n");
+                fflush(fplog);
+                fprintf(stdout, "done, no errors detected\n");
+                fflush(stdout);           
+            }
         }
-        else
-        {
-            fprintf(fplog,  "Memory test completed without errors.\n");
-            fflush(fplog);
-            fprintf(stdout, "done, no errors detected\n");
-            fflush(stdout);           
-        }
+}
+
+/*!
+ * \brief Convert Lennard-Jones parameters c12 and c6 to sigma and epsilon.
+ * 
+ * \param[in] c12
+ * \param[in] c6
+ * \param[out] sigma 
+ * \param[out] epsilon
+ */
+static void convert_c_12_6(double c12, double c6, double *sigma, double *epsilon)
+{
+    if (c12 == 0 && c6 == 0)
+    {
+        *epsilon    = 0.0;        
+        *sigma      = 1.0;
+    }
+    else if (c12 > 0 && c6 > 0)
+    {
+        *epsilon    = (c6*c6)/(4.0*c12);
+        *sigma      = pow(c12/c6, 1.0/6.0);
+    }
+    else 
+    {
+        gmx_fatal(FARGS,"OpenMM only supports c6 > 0 and c12 > 0 or c6 = c12 = 0.");
+    } 
 }
 
 /*!
@@ -454,13 +479,22 @@ static void runMemtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPl
  * Checks the gromacs mdp options for features unsupported in OpenMM, case in which 
  * interrupts the execution. It also warns the user about pecularities of OpenMM 
  * implementations.
- * \param[in] ir    Gromacs structure for input options, \see ::t_inputrec
- * \param[in] top   Gromacs local topology, \see ::gmx_localtop_t
- * \param[in] state Gromacs state structure \see ::t_state
+ * \param[in] fplog         Gromacs log file pointer.
+ * \param[in] ir            Gromacs input parameters, see ::t_inputrec
+ * \param[in] top           Gromacs node local topology, \see gmx_localtop_t
+ * \param[in] state         Gromacs state structure \see ::t_state
+ * \param[in] mdatoms       Gromacs atom parameters, \see ::t_mdatoms
+ * \param[in] fr            \see ::t_forcerec
+ * \param[in] state         Gromacs systems state, \see ::t_state
  */
-static void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top, t_state *state)
+static void checkGmxOptions(FILE* fplog,
+                            t_inputrec *ir, gmx_localtop_t *top,
+                            t_forcerec *fr, t_state *state)
 {
-    char warn_buf[STRLEN];
+    char    warn_buf[STRLEN];
+    int     i, j, natoms;
+    double  c6, c12, sigma_ij, sigma_ji, sigma_ii, sigma_jj, sigma_comb,
+            eps_ij, eps_ji, eps_ii, eps_jj, eps_comb;
 
     /* Abort if unsupported critical options are present */
 
@@ -520,7 +554,6 @@ static void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top, t_state *state)
         gmx_fatal(FARGS,"OpenMM does not support pulling.");
 
     /* check for restraints */
-    int i;
     for (i = 0; i < F_EPOT; i++)
     {
         if (i != F_CONSTR &&
@@ -565,35 +598,8 @@ static void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top, t_state *state)
     {
         gmx_fatal(FARGS,"OpenMM does not support triclinic unit cells.");
     }
-
 }
 
-
-/*!
- * \brief Convert Lennard-Jones parameters c12 and c6 to sigma and epsilon.
- * 
- * \param[in] c12
- * \param[in] c6
- * \param[out] sigma 
- * \param[out] epsilon
- */
-static void convert_c_12_6(double c12, double c6, double *sigma, double *epsilon)
-{
-    if (c12 == 0 && c6 == 0)
-    {
-        *epsilon    = 0.0;        
-        *sigma      = 1.0;
-    }
-    else if (c12 > 0 && c6 > 0)
-    {
-        *epsilon    = (c6*c6)/(4.0*c12);
-        *sigma      = pow(c12/c6, 1.0/6.0);
-    }
-    else 
-    {
-        gmx_fatal(FARGS,"OpenMM only supports c6 > 0 and c12 > 0 or c6 = c12 = 0.");
-    } 
-}
 
 /*!
  * \brief Initialize OpenMM, run sanity/consistency checks, and return a pointer to 
@@ -610,12 +616,13 @@ static void convert_c_12_6(double c12, double c6, double *sigma, double *epsilon
  * \param[in] fplog             Gromacs log file handler.
  * \param[in] platformOptStr    Platform option string. 
  * \param[in] ir                The Gromacs input parameters, see ::t_inputrec
- * \param[in] top_global        Gromacs whole system toppology, \see ::gmx_mtop_t
+ * \param[in] top_global        Gromacs system toppology, \see ::gmx_mtop_t
  * \param[in] top               Gromacs node local topology, \see gmx_localtop_t
  * \param[in] mdatoms           Gromacs atom parameters, \see ::t_mdatoms
  * \param[in] fr                \see ::t_forcerec
  * \param[in] state             Gromacs systems state, \see ::t_state
- *
+ * \returns                     Pointer to a 
+ * 
  */
 void* openmm_init(FILE *fplog, const char *platformOptStr,
                   t_inputrec *ir,
@@ -689,7 +696,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             }
 
             fprintf(fplog, "\nPlugins loaded from directory %s:\t", usedPluginDir.c_str());
-            for (int i = 0; i < loadedPlugins.size(); i++)
+            for (int i = 0; i < (int)loadedPlugins.size(); i++)
             {
                 fprintf(fplog, "%s, ", loadedPlugins[i].c_str());
             }
@@ -698,6 +705,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
         /* parse option string */
         GmxOpenMMPlatformOptions *opt = new GmxOpenMMPlatformOptions(platformOptStr);
+        devId = atoi(opt->getOptionValue("deviceid").c_str());
 
         if (debug)
         {
@@ -705,7 +713,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         }
 
         /* check wheter Gromacs options compatibility with OpenMM */
-        checkGmxOptions(ir, top, state);
+        checkGmxOptions(fplog, ir, top, fr, state);
 
         // Create the system.
         const t_idef& idef = top->idef;
@@ -865,9 +873,16 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
          *  If the default ewald_rtol=1e-5 is used we silently adjust the value,
          * otherwise a warning is issued about the action taken. 
 	 */
+        double corr_ewald_rtol = 500.0 * ir->ewald_rtol;
         if ((ir->ePBC == epbcXYZ) && 
             (ir->coulombtype == eelEWALD || ir->coulombtype == eelPME))
         {
+            if (debug)
+            {
+                fprintf(debug, ">> ewald_rtol = %e (corrected = %e) \n",
+                    ir->ewald_rtol, corr_ewald_rtol);
+            }
+
             if (fabs(ir->ewald_rtol - 1e-5) > 1e-10)
             {
                 gmx_warning("OpenMM uses the ewald_rtol parameter with approximate formulas "
@@ -876,8 +891,14 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                         "settings close to the ones used in GROMACS. Although the internal correction "
                         "should work for any reasonable value of ewald_rtol, using values other than "
                         "the default 1e-5 might cause incorrect behavior.");
+
+                if (corr_ewald_rtol > 1)
+                {
+                    gmx_fatal(FARGS, "The ewald_rtol accuracy term is >1 after the "
+                            "adjustment for OpenMM (%e)", corr_ewald_rtol);
+                }
             }
-            nonbondedForce->setEwaldErrorTolerance(500*ir->ewald_rtol);
+            nonbondedForce->setEwaldErrorTolerance(corr_ewald_rtol);
         }
 
         for (int i = 0; i < numAtoms; ++i)
@@ -1018,8 +1039,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         else
         */        
         {
-            // Find which platform is it.
-            for (int i = 0; i < Platform::getNumPlatforms() && context == NULL; i++)
+            /* which platform should we use */
+            for (int i = 0; i < (int)Platform::getNumPlatforms() && context == NULL; i++)
             {
                 if (isStringEqNCase(opt->getOptionValue("platform"), Platform::getPlatform(i).getName()))
                 {
@@ -1043,11 +1064,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const vector<string>& properties = platform.getPropertyNames();
         if (debug)
         {
-            for (int i = 0; i < properties.size(); i++)
+            for (int i = 0; i < (int)properties.size(); i++)
             {
-                printf(">> %s: %s\n", properties[i].c_str(), 
-                        platform.getPropertyValue(*context, properties[i]).c_str());
-                fprintf(fplog, ">> %s: %s\n", properties[i].c_str(), 
+                fprintf(debug, ">> %s: %s\n", properties[i].c_str(), 
                         platform.getPropertyValue(*context, properties[i]).c_str());
             }
         }
@@ -1086,7 +1105,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 {
                     gmx_fatal(FARGS, "The selected GPU (#%d, %s) is not supported by Gromacs! "
                               "Most probably you have a low-end GPU which would not perform well, " 
-                              "or new hardware that has not been tested yet with Gromacs-OpenMM. "
+                              "or new hardware that has not been tested with the current release. "
                               "If you still want to try using the device, use the force-device=yes option.", 
                               devId, gpuname);
                 }
@@ -1122,12 +1141,12 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         data->removeCM = (ir->nstcomm > 0);
         data->platformOpt = opt;
         return data;
-
     }
     catch (std::exception& e)
     {
         gmx_fatal(FARGS, "OpenMM exception caught while initializating: %s", e.what());
-    }
+    } 
+    return NULL; /* just to avoid warnings */
 }
 
 /*!
