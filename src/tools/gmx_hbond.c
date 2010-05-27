@@ -81,6 +81,12 @@ char *hxtypenames[NRHXTYPES]=
 {"n-n","n-n+1","n-n+2","n-n+3","n-n+4","n-n+5","n-n>6"};
 #define MAXHH 4
 
+#ifdef HAVE_OPENMP
+#define MASTER_THREAD_ONLY(threadNr) ((threadNr)==0)
+#else
+#define MASTER_THREAD_ONLY(threadNr) ((threadNr)==(threadNr))
+#endif
+
 /* -----------------------------------------*/
 
 enum { gr0,  gr1,    grI,  grNR };
@@ -3019,7 +3025,11 @@ static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
         p_hb->nhb[nframes] = 0;
     }
     p_hb->nframes = nframes;
-    memset(&(p_hb->nhx[nframes][i]), 0 ,sizeof(int)*max_hx); /* zero the helix count for this frame */
+/*     for (i=0;) */
+/*     { */
+/*         p_hb->nhx[nframes][i] */
+/*     } */
+    memset(&(p_hb->nhx[nframes]), 0 ,sizeof(int)*max_hx); /* zero the helix count for this frame */
 }
 #endif
 
@@ -3215,7 +3225,7 @@ int gmx_hbond(int argc,char *argv[])
     int     gemmode, NN;
     PSTYPE  peri;
     t_E     E;
-    int     ii, jj, hh, actual_nThreads;
+    int     ii, jj, hh, actual_nThreads, threadNr;
     bool    bGem, bNN, bParallel;
     t_gemParams *params;
     
@@ -3543,7 +3553,6 @@ int gmx_hbond(int argc,char *argv[])
 
     t_hbdata **p_hb;          /* one per thread, then merge after the frame loop */
     int **p_adist, **p_rdist; /* a histogram for each thread. */
-    int threadNr;
     snew(p_hb,    actual_nThreads);
     snew(p_adist, actual_nThreads);
     snew(p_rdist, actual_nThreads);
@@ -3581,42 +3590,51 @@ int gmx_hbond(int argc,char *argv[])
     /* Make a thread pool here,
      * instead of forking anew at every frame. */
   
-#pragma omp parallel                                \
-    private(i, j, h, ii, jj, hh, E,                 \
-            xi, yi, zi, threadNr,                   \
-            dist, ang, peri,                        \
-            icell, grp, ogrp, ai, xjj, yjj, zjj,	\
-            xk, yk, zk, ihb, id,  resdist,          \
-            xkk, ykk, zkk, kcell, ak, k)            \
-    default(shared)
+#pragma omp parallel                                    \
+    private(i, j, h, ii, jj, hh, E,                     \
+            xi, yi, zi, xj, yj, zj, threadNr,           \
+            dist, ang, peri, icell, jcell,              \
+            grp, ogrp, ai, aj, xjj, yjj, zjj,           \
+            xk, yk, zk, ihb, id,  resdist,              \
+            xkk, ykk, zkk, kcell, ak, k, bTric)         \
+    default(none)                                       \
+    shared(hb, p_hb, p_adist, p_rdist, actual_nThreads, \
+           x, bBox, box, hbox, rcut, r2cut, rshell,     \
+           shatom, ngrid, grid, nframes, t,             \
+           bParallel, bNN, index, bMerge, bContact,     \
+           bTwo, bDA,ccut, abin, rbin, top,             \
+           bInsert, bSelected, bDebug, stderr, nsel, \
+           bGem, oenv, fnm, fpnhb, trrStatus, natoms,   \
+           status, nabin, adist, rdist, debug)
     {    /* Start of parallel region */
         threadNr = omp_get_thread_num();
 #endif /* HAVE_OPENMP ================================================= */
         do
         {
+            bTric = bBox && TRICLINIC(box);
 
 #ifdef HAVE_OPENMP
             sync_hbdata(hb, p_hb[threadNr], nframes, t);
 #pragma omp single
 #endif
             {
-                bTric = bBox && TRICLINIC(box);
                 build_grid(hb,x,x[shatom], bBox,box,hbox, (rcut>r2cut)?rcut:r2cut, 
                            rshell, ngrid,grid);
-	
                 reset_nhbonds(&(hb->d));
 	
                 if (debug && bDebug)
                     dump_grid(debug, ngrid, grid);
-	
+                
                 add_frames(hb,nframes);
                 init_hbframe(hb,nframes,t);
 	
                 if (hb->bDAnr)
                     count_da_grid(ngrid, grid, hb->danr[nframes]);
             } /* omp single */
-            /* copy danr to p_hb?*/
 
+#ifdef HAVE_OPENMP
+            p_hb[threadNr]->time = hb->time; /* This pointer may have changed. */
+#endif
             if (bNN)
             {
 #ifdef HAVE_NN_LOOPS /* Unlock this feature when testing */
@@ -3685,6 +3703,7 @@ int gmx_hbond(int argc,char *argv[])
                 {
 #ifdef HAVE_OPENMP
 #pragma omp single
+                    {
 #endif
                     if (bGem)
                         calcBoxProjection(box, hb->per.P);
@@ -3692,6 +3711,7 @@ int gmx_hbond(int argc,char *argv[])
                     /* loop over all gridcells (xi,yi,zi)      */
                     /* Removed confusing macro, DvdS 27/12/98  */
 #ifdef HAVE_OPENMP
+                    }
                     /* The outer grid loop will have to do for now. */
 #pragma omp for schedule(dynamic)
 #endif
@@ -3753,10 +3773,8 @@ int gmx_hbond(int argc,char *argv[])
                                                             __HBDATA->nhx[nframes][resdist]++;
                                                         }
                                                     }
-#ifdef HAVE_OPENMP
-#pragma omp single
-#endif
-                                                    if (bInsert && bSelected) {
+
+                                                    if (bInsert && bSelected && MASTER_THREAD_ONLY(threadNr)) {
                                                         /* this has been a h-bond, or we are analyzing 
                                                            selected bonds: check for inserted */
                                                         bool ins_d, ins_a;
@@ -3856,10 +3874,10 @@ int gmx_hbond(int argc,char *argv[])
                 {                                  /*  */
                     /* Sum up histograms and counts from p_hb[] into hb */
                     {                                /*  */
-                        hb->nhb[k]   += p_hb[i]->nhb[k];
-                        hb->ndist[k] += p_hb[i]->ndist[k];
+                        hb->nhb[k]   += p_hb[threadNr]->nhb[k];
+                        hb->ndist[k] += p_hb[threadNr]->ndist[k];
                         for (j=0; j<max_hx; j++)       /*  */
-                            hb->nhx[k][j]  += p_hb[i]->nhx[k][j];
+                            hb->nhx[k][j]  += p_hb[threadNr]->nhx[k][j];
                     }                                /*  */
                 }                                  /*  */
                 /*                                     */
@@ -3896,26 +3914,24 @@ int gmx_hbond(int argc,char *argv[])
         } while (trrStatus);
 
 #ifdef HAVE_OPENMP
-
         /* Free parallel datastructures */
         sfree(p_hb[threadNr]->nhb);
         sfree(p_hb[threadNr]->ndist);
-        for (i=0; i<p_hb[threadNr]->max_frames; i++)
-            sfree(p_hb[threadNr]->nhx[i]);
         sfree(p_hb[threadNr]->nhx);
 
 #pragma omp for
         for (i=0; i<nabin; i++)
             for (j=0; j<actual_nThreads; j++)
+            {
                 adist[i] = p_adist[j][i];
-#pragma omp for
-        for (i=0; i<nabin; i++)
-            for (j=0; j<actual_nThreads; j++)
-                adist[i] = p_adist[j][i];
+                rdist[i] = p_rdist[j][i];
+            }
     
-#pragma omp barrier
-        sfree(p_adist[i]);
+        sfree(p_adist[threadNr]);
+        sfree(p_rdist[threadNr]);
     } /* End of parallel region */
+    sfree(p_adist);
+    sfree(p_rdist);
 #endif
   
   
