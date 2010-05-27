@@ -359,7 +359,7 @@ void
 _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
 {
     const t_selection_help_item *item = NULL;
-    int  i;
+    size_t i;
 
     /* Find the item for the topic */
     if (!topic)

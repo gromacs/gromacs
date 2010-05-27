@@ -64,7 +64,7 @@ struct gmx_sel_mempool_t
     char                       *freeptr;
     int                         nblocks;
     gmx_sel_mempool_block_t    *blockstack;
-    size_t                      blockstack_nalloc;
+    int                         blockstack_nalloc;
     size_t                      maxsize;
 };
 
