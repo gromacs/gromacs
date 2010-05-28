@@ -181,7 +181,7 @@ typedef struct {
                                   *   That saves a LOT of memory, an hopefully kills a mysterious bug where
                                   *   pHist gets contaminated. */
   
-    PSTYPE nper;        /* The length of p2i */
+    PSTYPE nper;    /* The length of p2i */
     ivec *p2i;       /* Maps integer to periodic shift for a pair.*/
     matrix P;        /* Projection matrix to find the box shifts. */
     int gemtype;     /* enumerated type */
@@ -212,7 +212,10 @@ typedef struct {
 #ifdef HAVE_NN_LOOPS
     t_hbEmap    hbE;
 #endif
-    t_gemPeriod per;
+    /* For parallelization reasons this will have to be a pointer.
+     * Otherwise discrepancies may arise between the periodicity data
+     * seen by different threads. */
+    t_gemPeriod *per;
 } t_hbdata;
 
 static void dumpN(real *e, int nn)
@@ -284,16 +287,18 @@ static void calcBoxDistance(matrix P, rvec d, ivec ibd){
  */
 
 static PSTYPE periodicIndex(ivec r, t_gemPeriod *per, bool daSwap) {
-    /* Try to merge hbonds on the fly. That means:
+    /* Try to merge hbonds on the fly. That means that if the
+     * acceptor and donor are mergable, then:
      * 1) store the hb-info so that acceptor id > donor id,
      * 2) add the periodic shift in pairs, so that [-x,-y,-z] is
-     *    stored in per.p2i[]  whenever [x,y,z] is.
+     *    stored in per.p2i[] whenever acceptor id < donor id.
      * Note that [0,0,0] should already be the first element of per.p2i
      * by the time this function is called. */
 
-    /* daSwap is TRUE if the donors and acceptors were swapped.
+    /* daSwap is TRUE if the donor and acceptor were swapped.
      * If so, then the negative vector should be used. */
     PSTYPE i;
+
     if (per->p2i == NULL || per->nper == 0)
         gmx_fatal(FARGS, "'per' not initialized properly.");
     for (i=0; i<per->nper; i++) {
@@ -304,19 +309,28 @@ static PSTYPE periodicIndex(ivec r, t_gemPeriod *per, bool daSwap) {
     }
     /* Not found apparently. Add it to the list! */
     /* printf("New shift found: %i,%i,%i\n",r[XX],r[YY],r[ZZ]); */
-    if (!per->p2i) {
-        fprintf(stderr, "This shouldn't happen!\n");
-        snew(per->p2i, 1);
-    }
-    else
-        srenew(per->p2i, per->nper+2);
-    copy_ivec(r, per->p2i[per->nper]);
-    (per->nper)++;
 
-    per->p2i[per->nper][XX] = -r[XX];
-    per->p2i[per->nper][YY] = -r[YY];
-    per->p2i[per->nper][ZZ] = -r[ZZ];
-    return ((per->nper)++ - (daSwap ? 0:1));
+/* Unfortunately this needs to be critical it seems. */
+#ifdef HAVE_OPENMP
+#pragma omp critical
+#endif
+    {
+        if (!per->p2i) {
+            fprintf(stderr, "p2i not initialized. This shouldn't happen!\n");
+            snew(per->p2i, 1);
+        }
+        else
+            srenew(per->p2i, per->nper+2);
+        copy_ivec(r, per->p2i[per->nper]);
+        (per->nper)++;
+
+        /* Add the mirror too. It's rather likely that it'll be needed. */
+        per->p2i[per->nper][XX] = -r[XX];
+        per->p2i[per->nper][YY] = -r[YY];
+        per->p2i[per->nper][ZZ] = -r[ZZ];
+        (per->nper)++;
+    } /* omp critical */
+    return per->nper - 1 - (daSwap ? 0:1);
 }
 
 static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool oneHB, bool bGem, int gemmode)
@@ -332,7 +346,8 @@ static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool oneHB, bool bGem, int gem
         hb->maxhydro = 1;
     else
         hb->maxhydro = MAXHYDRO;
-    hb->per.gemtype = bGem ? gemmode : 0;
+    snew(hb->per, 1);
+    hb->per->gemtype = bGem ? gemmode : 0;
   
     return hb;
 }
@@ -357,19 +372,19 @@ static void mk_per(t_hbdata *hb)
 {
     int i,j;
     if (hb->bGem) {
-        snew(hb->per.pHist, hb->d.nrd);
+        snew(hb->per->pHist, hb->d.nrd);
         for (i=0; i<hb->d.nrd; i++) {
-            snew(hb->per.pHist[i], hb->a.nra);
-            if (hb->per.pHist[i]==NULL)
-                gmx_fatal(FARGS,"Could not allocate enough memory for per.pHist");
+            snew(hb->per->pHist[i], hb->a.nra);
+            if (hb->per->pHist[i]==NULL)
+                gmx_fatal(FARGS,"Could not allocate enough memory for per->pHist");
             for (j=0; j<hb->a.nra; j++) {
-                clearPshift(&(hb->per.pHist[i][j]));
+                clearPshift(&(hb->per->pHist[i][j]));
             }
         }
         /* add the [0,0,0] shift to element 0 of p2i. */
-        snew(hb->per.p2i, 1);
-        clear_ivec(hb->per.p2i[0]);
-        hb->per.nper = 1;
+        snew(hb->per->p2i, 1);
+        clear_ivec(hb->per->p2i[0]);
+        hb->per->nper = 1;
     }
 }
 
@@ -726,10 +741,10 @@ static void add_ff(t_hbdata *hbd,int id,int h,int ia,int frame,int ihb, PSTYPE p
     if (frame >= 0) {
         set_hb(hbd,id,h,ia,frame,ihb);
         if (bGem) {
-            if (p>=hbd->per.nper)
-                gmx_fatal(FARGS, "invalid shift: p=%u, nper=%u", p, hbd->per.nper);
+            if (p>=hbd->per->nper)
+                gmx_fatal(FARGS, "invalid shift: p=%u, nper=%u", p, hbd->per->nper);
             else
-                addPshift(&(hbd->per.pHist[id][ia]), p, frame);
+                addPshift(&(hbd->per->pHist[id][ia]), p, frame);
       
         }
     }
@@ -807,7 +822,10 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
 
     if (bMerge)
         if ((daSwap = isInterchangable(hb, d, a, grpd, grpa) || bContact) && d>a)
-            /* Then swap identity so that the id of d is lower then that of a. */
+            /* Then swap identity so that the id of d is lower then that of a.
+             *
+             * This should really be redundant by now, as is_hbond() now ought to return
+             * hbNo in the cases where this conditional is TRUE. */
         {
             k = d;
             d = a;
@@ -861,11 +879,14 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
                     hb->nrhb++;
                 }
             }
-            else if (ihb == hbDist) {
-                hb->ndist[frame]++;
-                if (!(ISDIST(hh))) {
-                    hb->hbmap[id][ia]->history[k] = hh | 1;
-                    hb->nrdist++;
+            else
+            {
+                if (ihb == hbDist) {
+                    hb->ndist[frame]++;
+                    if (!(ISDIST(hh))) {
+                        hb->hbmap[id][ia]->history[k] = hh | 1;
+                        hb->nrdist++;
+                    }
                 }
             }
         }
@@ -873,8 +894,10 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
         if (frame >= 0) {
             if (ihb == hbHB) {
                 hb->nhb[frame]++;
-            } else if (ihb == hbDist) {
-                hb->ndist[frame]++;
+            } else {
+                if (ihb == hbDist) {
+                    hb->ndist[frame]++;
+                }
             }
         }
     }
@@ -1147,10 +1170,10 @@ static void control_pHist(t_hbdata *hb, int nframes)
     PSTYPE p;
     for (i=0;i<hb->d.nrd;i++)
         for (j=0;j<hb->a.nra;j++)
-            if (hb->per.pHist[i][j].len != 0)
+            if (hb->per->pHist[i][j].len != 0)
                 for (k=hb->hbmap[i][j][0].n0; k<nframes; k++) {
-                    p = getPshift(hb->per.pHist[i][j], k);
-                    if (p>hb->per.nper)
+                    p = getPshift(hb->per->pHist[i][j], k);
+                    if (p>hb->per->nper)
                         fprintf(stderr, "Weird stuff in pHist[%i][%i].p at frame %i: p=%i\n",
                                 i,j,k,p);
                 }
@@ -1232,7 +1255,7 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
                     bInShell=TRUE;
                     rvec_sub(x[ad[i]],xshell,dshell);
                     if (bBox) {
-                        if (!hb->bGem) {
+                        if (FALSE && !hb->bGem) {
                             for(m=DIM-1; m>=0 && bInShell; m--) {
                                 if ( dshell[m] < -hbox[m] )
                                     rvec_inc(dshell,box[m]);
@@ -1248,11 +1271,11 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
                             {
                                 bDone = TRUE;
                                 for(m=DIM-1; m>=0 && bInShell; m--) {
-                                    while ( dshell[m] < -hbox[m] ) {
+                                    if ( dshell[m] < -hbox[m] ) {
                                         bDone = FALSE;
                                         rvec_inc(dshell,box[m]);
                                     }
-                                    while ( dshell[m] >= hbox[m] ) {
+                                    if ( dshell[m] >= hbox[m] ) {
                                         bDone = FALSE;
                                         dshell[m] -= 2*hbox[m];
                                     }
@@ -1277,7 +1300,7 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
                         pbc_correct_gem(x[ad[i]], box, hbox);
                     }
                     for(m=DIM-1; m>=0; m--) {
-                        if (!hb->bGem){
+                        if (TRUE || !hb->bGem){
                             /* put atom in the box */
                             while( x[ad[i]][m] < 0 )
                                 rvec_inc(x[ad[i]],box[m]);
@@ -1431,11 +1454,11 @@ void pbc_correct_gem(rvec dx,matrix box,rvec hbox)
     while (!bDone) {
         bDone = TRUE;
         for(m=DIM-1; m>=0; m--) {
-            while ( dx[m] < -hbox[m] ) {
+            if ( dx[m] < -hbox[m] ) {
                 bDone = FALSE;
                 rvec_inc(dx,box[m]);
             }
-            while ( dx[m] >= hbox[m] ) {
+            if ( dx[m] >= hbox[m] ) {
                 bDone = FALSE;
                 rvec_dec(dx,box[m]);
             }
@@ -1473,22 +1496,20 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
     rvec_sub(x[d],x[a],r_da);
     /* Insert projection code here */
 
-#if 1
-    if (d>a)
-        return hbNo;
-#endif
-
+    /* if (d>a && ((isInterchangable(hb, d, a, grpd, grpa) && bMerge) || bContact)) */
+/*         /\* Then this hbond will be found again, or it has already been found. *\/ */
+/*         return hbNo; */
 
     if (bBox){
+        if (d>a && bMerge && (bContact || isInterchangable(hb, d, a, grpd, grpa))) { /* acceptor is also a donor and vice versa? */
+            return hbNo;
+            daSwap = TRUE; /* If so, then their history should be filed with donor and acceptor swapped. */
+        }
         if (hb->bGem) {
-            if ((bMerge || bContact)
-                && isInterchangable(hb, d, a, grpd, grpa)) { /* acceptor is also a donor and vice versa? */
-                daSwap = d>a; /* If so, then their history should be filed with donor and acceptor swapped. */
-            }
             copy_rvec(r_da, r); /* Save this for later */
             pbc_correct_gem(r_da,box,hbox);
         } else {
-            pbc_correct(r_da,box,hbox);    
+            pbc_correct_gem(r_da,box,hbox);    
         }
     }
     rda2 = iprod(r_da,r_da);
@@ -1498,8 +1519,8 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
             return hbNo;
         if (rda2 <= rc2){
             if (hb->bGem){
-                calcBoxDistance(hb->per.P, r, ri);
-                *p = periodicIndex(ri, &(hb->per), daSwap); 	/* find (or add) periodicity index. */
+                calcBoxDistance(hb->per->P, r, ri);
+                *p = periodicIndex(ri, hb->per, daSwap); 	/* find (or add) periodicity index. */
             }
             return hbHB;
         }
@@ -1519,20 +1540,14 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
         if (!bDA) {
             rvec_sub(x[hh],x[a],r_ha);
             if (bBox) {
-                pbc_correct(r_ha,box,hbox);
+                pbc_correct_gem(r_ha,box,hbox);
             }
             rha2 = iprod(r_ha,r_ha);
         }
-#if 1
-        if (id == 0 && ja == 5)
-        {
-            id = id;
-        }
-#endif
 
         if (hb->bGem) {
-            calcBoxDistance(hb->per.P, r, ri);
-            *p = periodicIndex(ri, &(hb->per), daSwap); 	/* find periodicity index. */
+            calcBoxDistance(hb->per->P, r, ri);
+            *p = periodicIndex(ri, hb->per, daSwap); 	/* find periodicity index. */
         }
 
         if (bDA || (!bDA && (rha2 <= rc2))) {
@@ -1541,7 +1556,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
                 if (hb->bGem)
                     pbc_correct_gem(r_dh,box,hbox);
                 else
-                    pbc_correct(r_dh,box,hbox);
+                    pbc_correct_gem(r_dh,box,hbox);
             }
 	
             if (!bDA)
@@ -1605,16 +1620,16 @@ static void do_merge(t_hbdata *hb,int ntmp,
         mm = m+n00-nn0;
         htmp[mm] = is_hb(hb0->h[0],m);
         if (hb->bGem) {
-            pm = getPshift(hb->per.pHist[a1][a2], m+hb0->n0);
-            if (pm > hb->per.nper)
+            pm = getPshift(hb->per->pHist[a1][a2], m+hb0->n0);
+            if (pm > hb->per->nper)
                 gmx_fatal(FARGS, "Illegal shift!");
             else
-                ptmp[mm] = pm; /*hb->per.pHist[a1][a2][m];*/
+                ptmp[mm] = pm; /*hb->per->pHist[a1][a2][m];*/
         }
     }
     /* If we're doing geminate recompbination we usually don't need the distances.
      * Let's save some memory and time. */
-    if (TRUE || !hb->bGem || hb->per.gemtype == gemAD){
+    if (TRUE || !hb->bGem || hb->per->gemtype == gemAD){
         for(m=0; (m<=hb0->nframes); m++) {
             mm = m+n00-nn0;
             gtmp[mm] = is_hb(hb0->g[0],m);
@@ -1630,9 +1645,9 @@ static void do_merge(t_hbdata *hb,int ntmp,
             /* If this hbond has been seen before with donor and acceptor swapped,
              * then we need to find the mirrored (*-1) periodicity vector to truely
              * merge the hbond history. */
-            pm = findMirror(getPshift(hb->per.pHist[a2][a1],m+hb1->n0), hb->per.p2i, hb->per.nper);
+            pm = findMirror(getPshift(hb->per->pHist[a2][a1],m+hb1->n0), hb->per->p2i, hb->per->nper);
             /* Store index of mirror */
-            if (pm > hb->per.nper)
+            if (pm > hb->per->nper)
                 gmx_fatal(FARGS, "Illegal shift!");
             ptmp[mm] = pm;
         }
@@ -1642,14 +1657,14 @@ static void do_merge(t_hbdata *hb,int ntmp,
         srenew(hb0->h[0],4+nnframes/hb->wordlen);
         srenew(hb0->g[0],4+nnframes/hb->wordlen);  
     }
-    clearPshift(&(hb->per.pHist[a1][a2]));
+    clearPshift(&(hb->per->pHist[a1][a2]));
 
     /* Copy temp array to target array */
     for(m=0; (m<=nnframes); m++) {
         _set_hb(hb0->h[0],m,htmp[m]);
         _set_hb(hb0->g[0],m,gtmp[m]);
         if (hb->bGem)
-            addPshift(&(hb->per.pHist[a1][a2]), ptmp[m], m+nn0);
+            addPshift(&(hb->per->pHist[a1][a2]), ptmp[m], m+nn0);
     }
   
     /* Set scalar variables */
@@ -1701,7 +1716,7 @@ static void merge_hb(t_hbdata *hb,bool bTwo, bool bContact){
                     sfree(hb1->h[0]);
                     sfree(hb1->g[0]);
                     if (hb->bGem) {
-                        clearPshift(&(hb->per.pHist[jj][ii]));
+                        clearPshift(&(hb->per->pHist[jj][ii]));
                     }
                     hb1->h[0] = NULL;
                     hb1->g[0] = NULL;
@@ -2276,7 +2291,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
     double nhb = 0;
     int nhbi=0;
     real *rhbex=NULL,*ht,*gt,*ght,*dght,*kt;
-    real *ct,tail,tail2,dtail,ct_fac,ght_fac,*cct;
+    real *ct,*p_ct,tail,tail2,dtail,ct_fac,ght_fac,*cct;
     const real tol = 1e-3;
     int   nframes = hb->nframes,nf;
     unsigned int **h,**g;
@@ -2284,7 +2299,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
     t_hbond *hbh;
     PSTYPE p, *pfound = NULL, np;
     t_pShift *pHist;
-    int *ptimes=NULL, *poff=NULL, anhb, n0, mMax=0;
+    int *ptimes=NULL, *poff=NULL, anhb, n0, mMax=INT_MIN;
     real **rHbExGem = NULL;
     bool c;
     int acType;
@@ -2354,8 +2369,8 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
      */
 
 #ifdef HAVE_OPENMP  /* ================================================= \
-                     * Set up the OpenMP stuff,                             |
-                     * like the number of threads and such                  |
+                     * Set up the OpenMP stuff,                           |
+                     * like the number of threads and such                |
                      */
     if (acType != AC_LUZAR)
     {
@@ -2380,7 +2395,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                 fprintf(stderr, "%-7s", tmpstr);
             }
         }
-        fprintf(stderr, "\n");
+        fprintf(stderr, "\n"); /*                                         | */
     }  /*                                                                 | */
 #endif /* HAVE_OPENMP ===================================================/  */
 
@@ -2401,15 +2416,14 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 #pragma omp barrier
             thisThread = omp_get_thread_num();
             rhbex = NULL;
-
 #endif /* ==============================================/ */
 
             snew(rhbex, n2);
             memset(rhbex, 0, n2*sizeof(real)); /* Trust no-one, not even malloc()! */
 
 #ifdef HAVE_OPENMP /* ################################################## \
-                    *                                                      #
-                    *                                                      #
+                    *                                                    #
+                    *                                                    #
                     */
 #pragma omp barrier
 #pragma omp for schedule (dynamic)
@@ -2424,7 +2438,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                 }
 #else
                 fprintf(stderr, "\r %i", i);
-#endif /* =======================================/ */
+#endif /* ===========================================/ */
 
                 for (j=0; j<hb->a.nra; j++) /* loop over acceptors */
                 {
@@ -2455,7 +2469,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
             sfree(rhbex);
 #pragma omp barrier
 #ifdef HAVE_OPENMP 
-            /*                                                             # */
+            /*                                                           # */
         } /* End of parallel block                                       # */
         /* ##############################################################/ */
         sfree(dondata);
@@ -2493,16 +2507,22 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 
     case AC_GEM:
         snew(ct,2*n2);
-  
+        memset(ct,0,2*n2*sizeof(real));
 #ifndef HAVE_OPENMP
         fprintf(stderr, "Donor:\n");
+#define __ACDATA ct
+#else
+#define __ACDATA p_ct
 #endif
 
-#ifdef HAVE_OPENMP /*  =========================================\ */
-
-#pragma omp parallel default(shared)                            \
+#ifdef HAVE_OPENMP /*  =========================================\
+                    *                                          */
+#pragma omp parallel default(none)                              \
     private(i, k, nh, hbh, pHist, h, g, n0, nf, np, j, m,		\
-            pfound, poff,  rHbExGem, p, ihb, mMax, thisThread)
+            pfound, poff, rHbExGem, p, ihb, mMax,               \
+            thisThread, p_ct)                                   \
+    shared(hb, dondata, ct, nn, nThreads, n2, stderr, bNorm,    \
+           nframes, bMerge, bContact)
         { /* ##########  THE START OF THE ENORMOUS PARALLELIZED BLOCK!  ########## */
             h = NULL;
             g = NULL;
@@ -2513,11 +2533,14 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
             rHbExGem = NULL;
             poff = NULL;
             pfound = NULL;
+            p_ct = NULL;
+            snew(p_ct,2*n2);
+            memset(p_ct,0,2*n2*sizeof(real));
 
-            /* I'm using a chunk size of 1, since I expect
-             * the overhead to be really small compared
-             * to the actual calculations */
-#pragma omp for schedule(dynamic,1) nowait
+            /* I'm using a chunk size of 1, since I expect      \
+             * the overhead to be really small compared         \
+             * to the actual calculations                       \ */
+#pragma omp for schedule(dynamic,1) nowait /*                   \ */
 #endif /* HAVE_OPENMP  =========================================/ */
       
             for (i=0; i<hb->d.nrd; i++) {
@@ -2533,21 +2556,21 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	
                 for (k=0; k<hb->a.nra; k++) {
                     for (nh=0; nh < ((bMerge || bContact) ? 1 : hb->d.nhydro[i]); nh++) {
-                        /* nh=0; /\* For now. This assumes bMerge. *\/ */
                         hbh = hb->hbmap[i][k];
                         if (hbh) {
-                            /* Note that if hb->per.gemtype==gemDD, then distances will be stored in
+                            /* Note that if hb->per->gemtype==gemDD, then distances will be stored in
                              * hb->hbmap[d][a].h array anyway, because the contact flag will be set.
                              * hence, it's only with the gemAD mode that hb->hbmap[d][a].g will be used. */
-                            pHist = &(hb->per.pHist[i][k]);
+                            pHist = &(hb->per->pHist[i][k]);
                             if (ISHB(hbh->history[nh]) && pHist->len != 0) {
 
-#ifdef HAVE_OPENMP
-#pragma omp critical
-#endif
-                                {	    
+/* No need for a critical section */
+/* #ifdef HAVE_OPENMP */
+/* #pragma omp critical */
+/* #endif */
+                                {
                                     h[nh] = hbh->h[nh];
-                                    g[nh] = hb->per.gemtype==gemAD ? hbh->g[nh] : NULL;
+                                    g[nh] = hb->per->gemtype==gemAD ? hbh->g[nh] : NULL;
                                 }
                                 n0 = hbh->n0;
                                 nf = hbh->nframes;
@@ -2560,8 +2583,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                                     for (m=0; m<=np; m++) {
                                         if (m == np) { /* p not recognized in list. Add it and set up new array. */ 
                                             np++;
-                                            /* fprintf(stderr, " New np: %i (mMax=%i, m=%i)\n", np, mMax, m); */
-                                            if (np>hb->per.nper)
+                                            if (np>hb->per->nper)
                                                 gmx_fatal(FARGS, "Too many pshifts. Something's utterly wrong here.");
                                             if (m>=mMax) { /* Extend the arrays.
                                                             * Doing it like this, using mMax to keep track of the sizes,
@@ -2573,9 +2595,11 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                                                 snew(rHbExGem[m],2*n2);
                                                 srenew(poff,np);
                                             }
-#ifdef HAVE_OPENMP
-#pragma omp critical
-#endif
+
+/* This shouldn't have to be critical, right? */
+/* #ifdef HAVE_OPENMP */
+/* #pragma omp critical */
+/* #endif */
                                             {
                                                 if (rHbExGem != NULL && rHbExGem[m] != NULL) {
                                                     /* This must be done, as this array was most likey
@@ -2616,11 +2640,12 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                                                 gmx_fatal(FARGS,"Shift not found, but must be there.");
                                         }
 
-                                        ihb = is_hb(h[nh],j) || ((hb->per.gemtype!=gemAD || j==0) ? FALSE : is_hb(g[nh],j));
+                                        ihb = is_hb(h[nh],j) || ((hb->per->gemtype!=gemAD || j==0) ? FALSE : is_hb(g[nh],j));
                                         if (ihb)
                                         {
                                             if (poff[m] == -1)
-                                                poff[m] = j; /* Here's where the first hbond with shift p is, relative to the start of h[0].*/
+                                                poff[m] = j; /* Here's where the first hbond with shift p is,
+                                                              * relative to the start of h[0].*/
                                             if (j<poff[m])
                                                 gmx_fatal(FARGS, "j<poff[m]");
                                             rHbExGem[m][j-poff[m]] += 1;
@@ -2634,14 +2659,14 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                                         low_do_autocorr(NULL,oenv,NULL,nframes,1,-1,&(rHbExGem[m]),hb->time[1]-hb->time[0],
                                                         eacNormal,1,FALSE,bNorm,FALSE,0,-1,0,1);
                                         for(j=0; (j<nn); j++)
-                                            ct[j] += rHbExGem[m][j];
+                                            __ACDATA[j] += rHbExGem[m][j];
                                     }
                                 } /* Building of ac. */
                             } /* if (ISHB(...*/
                         } /* if (hbh) */
                     } /* hydrogen loop */
                 } /* acceptor loop */
-            }
+            } /* donor loop */
 
             for (m=0; m<=mMax; m++) {
                 sfree(rHbExGem[m]);
@@ -2653,6 +2678,13 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
             sfree(h);
             sfree(g);
 #ifdef HAVE_OPENMP /* =======================================\ */
+#pragma omp critical
+            {
+                for (i=0; i<nn; i++)
+                    ct[i] += p_ct[i];
+            }
+            sfree(p_ct);
+
         } /* ########## THE END OF THE ENORMOUS PARALLELIZED BLOCK ########## */
         sfree(dondata);
 #endif /* HAVE_OPENMP =======================================/ */
@@ -2841,8 +2873,8 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
         sfree(dght);
         sfree(cct);
         sfree(kt);
-        sfree(h);
-        sfree(g);
+        /* sfree(h); */
+/*         sfree(g); */
 
         break; /* case AC_LUZAR */
 
@@ -3023,6 +3055,8 @@ static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
         memset(&(p_hb->nhb[nframes]),   0, sizeof(int) * (p_hb->max_frames-nframes));
         memset(&(p_hb->ndist[nframes]), 0, sizeof(int) * (p_hb->max_frames-nframes));
         p_hb->nhb[nframes] = 0;
+        p_hb->ndist[nframes] = 0;
+
     }
     p_hb->nframes = nframes;
 /*     for (i=0;) */
@@ -3030,6 +3064,10 @@ static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
 /*         p_hb->nhx[nframes][i] */
 /*     } */
     memset(&(p_hb->nhx[nframes]), 0 ,sizeof(int)*max_hx); /* zero the helix count for this frame */
+
+    /* hb->per will remain constant througout the frame loop,
+     * even though the data its members point to will change,
+     * hence no need for re-syncing. */
 }
 #endif
 
@@ -3525,9 +3563,9 @@ int gmx_hbond(int argc,char *argv[])
 #define __RDIST rdist
 #define __HBDATA hb
 #else /* HAVE_OPENMP ==================================================	\
-       * Set up the OpenMP stuff,                         |
-       * like the number of threads and such              |
-       * Also start the parallel loop.                    |
+       * Set up the OpenMP stuff,                                       |
+       * like the number of threads and such                            |
+       * Also start the parallel loop.                                  |
        */
 #define __ADIST p_adist[threadNr]
 #define __RDIST p_rdist[threadNr]
@@ -3585,6 +3623,9 @@ int gmx_hbond(int argc,char *argv[])
 #ifdef HAVE_NN_LOOPS
         p_hb[i]->hbE = hb->hbE;
 #endif
+
+        p_hb[i]->nrhb   = 0;
+        p_hb[i]->nrdist = 0;
     }
   
     /* Make a thread pool here,
@@ -3603,9 +3644,9 @@ int gmx_hbond(int argc,char *argv[])
            shatom, ngrid, grid, nframes, t,             \
            bParallel, bNN, index, bMerge, bContact,     \
            bTwo, bDA,ccut, abin, rbin, top,             \
-           bInsert, bSelected, bDebug, stderr, nsel, \
+           bInsert, bSelected, bDebug, stderr, nsel,    \
            bGem, oenv, fnm, fpnhb, trrStatus, natoms,   \
-           status, nabin, adist, rdist, debug)
+           status, nabin, nrbin, adist, rdist, debug)
     {    /* Start of parallel region */
         threadNr = omp_get_thread_num();
 #endif /* HAVE_OPENMP ================================================= */
@@ -3678,12 +3719,12 @@ int gmx_hbond(int argc,char *argv[])
             {
                 if (bSelected)
                 {
-#ifdef HAVE_OPENMP /* Don't paralleli<ze yet */
+#ifdef HAVE_OPENMP
 #pragma omp single
 #endif
                     {
+                        /* Do not parallelize this just yet. */
                         /* int ii; */
-	
                         for(ii=0; (ii<nsel); ii++) {
                             int dd = index[0][i];
                             /* int */ hh = index[0][i+1];
@@ -3698,7 +3739,7 @@ int gmx_hbond(int argc,char *argv[])
                             }
                         }
                     } /* omp single */
-                }/* if (bSelected) */
+                } /* if (bSelected) */
                 else
                 {
 #ifdef HAVE_OPENMP
@@ -3706,7 +3747,7 @@ int gmx_hbond(int argc,char *argv[])
                     {
 #endif
                     if (bGem)
-                        calcBoxProjection(box, hb->per.P);
+                        calcBoxProjection(box, hb->per->P);
 
                     /* loop over all gridcells (xi,yi,zi)      */
                     /* Removed confusing macro, DvdS 27/12/98  */
@@ -3745,6 +3786,7 @@ int gmx_hbond(int argc,char *argv[])
                                                 j = jcell->atoms[aj];
 		  
                                                 /* check if this once was a h-bond */
+                                                peri = -1;
                                                 ihb = is_hbond(__HBDATA,grp,ogrp,i,j,rcut,r2cut,ccut,x,bBox,box,
                                                                hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
 		    
@@ -3868,52 +3910,55 @@ int gmx_hbond(int argc,char *argv[])
 
 #ifdef HAVE_OPENMP /* ---------------------------- */
                 /* Better wait for all threads to finnish using x[] before updating it. */
-                k = nframes;                       /*  */
-#pragma omp barrier                            /*  */
-#pragma omp critical                           /*  */
-                {                                  /*  */
+                k = nframes;            /*         */
+#pragma omp barrier                     /*         */
+#pragma omp critical                    /*         */
+                {                       /*         */
                     /* Sum up histograms and counts from p_hb[] into hb */
-                    {                                /*  */
+                    {                   /*         */
                         hb->nhb[k]   += p_hb[threadNr]->nhb[k];
                         hb->ndist[k] += p_hb[threadNr]->ndist[k];
-                        for (j=0; j<max_hx; j++)       /*  */
+                        for (j=0; j<max_hx; j++) /**/
                             hb->nhx[k][j]  += p_hb[threadNr]->nhx[k][j];
-                    }                                /*  */
-                }                                  /*  */
-                /*                                     */
-                /* Here are a handful of single constructs */
-#pragma omp single /* +++++++++++,                 */
-                {      /*            +                 */
-#endif /* HAVE_OPENMP -----------------------------*/
+                    }                   /*         */
+                }                       /*         */
+                /*                                 */
+                /* Here are a handful of single constructs
+                 * to share the workload a bit. The most
+                 * important one is of course the last one,
+                 * where there's a potential bottleneck in form
+                 * of slow I/O.                    */
+#pragma omp single /* ++++++++++++++++,            */
+#endif /* HAVE_OPENMP ----------------+------------*/
+                { /*                  +   */
                     analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,k,t,oenv);
-                    /*                 +   */
-#ifdef HAVE_OPENMP /*            +   */
-                }      /*            +   */
-#pragma omp single /* +++      +++   */
-                {      /*            +   */
-#endif
-                    if (fpnhb)
+                } /*                  +   */
+#ifdef HAVE_OPENMP /*                 +   */
+#pragma omp single /* +++           +++   */
+#endif       /*                       +   */
+                {  /*                 +   */
+                    if (fpnhb)  /*    +   */
                         do_nhb_dist(fpnhb,hb,t);
-#ifdef HAVE_OPENMP
-                }
-#endif
-            } /* if (bNN) {...} else */
-
-#ifdef HAVE_OPENMP /*            +   */
-#pragma omp single /* +++      +++   */
-            { /*                     +   */
-#endif
+                }  /*                 +   */
+            } /* if (bNN) {...} else  +   */
+#ifdef HAVE_OPENMP /*                 +   */
+#pragma omp single /* +++           +++   */
+#endif       /*                       +   */
+            {      /*                 +   */
                 trrStatus = (read_next_x(oenv,status,&t,natoms,x,box));
-                nframes++;
-	  
-#ifdef HAVE_OPENMP /*            +   */
-            } /* ++++++++++++++++++++´   */
-            /* Better read the frame completely before starting the next iteration */
+                nframes++;      /*    +   */
+            }      /*                 +   */
+#ifdef HAVE_OPENMP /* ++++++++++++++++´   */
 #pragma omp barrier
 #endif
         } while (trrStatus);
 
 #ifdef HAVE_OPENMP
+#pragma omp critical
+        {
+            hb->nrhb += p_hb[threadNr]->nrhb;
+            hb->nrdist += p_hb[threadNr]->nrdist;
+        }
         /* Free parallel datastructures */
         sfree(p_hb[threadNr]->nhb);
         sfree(p_hb[threadNr]->ndist);
@@ -3922,10 +3967,12 @@ int gmx_hbond(int argc,char *argv[])
 #pragma omp for
         for (i=0; i<nabin; i++)
             for (j=0; j<actual_nThreads; j++)
-            {
-                adist[i] = p_adist[j][i];
-                rdist[i] = p_rdist[j][i];
-            }
+
+                adist[i] += p_adist[j][i];
+#pragma omp for
+        for (i=0; i<=nrbin; i++)
+            for (j=0; j<actual_nThreads; j++)
+                rdist[i] += p_rdist[j][i];
     
         sfree(p_adist[threadNr]);
         sfree(p_rdist[threadNr]);
@@ -4064,7 +4111,7 @@ int gmx_hbond(int argc,char *argv[])
                     gmx_fatal(FARGS, "Could not initiate t_gemParams params.");
             }
             char *gemstring=NULL;
-            gemstring = strdup(gemType[hb->per.gemtype]);
+            gemstring = strdup(gemType[hb->per->gemtype]);
             do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
                     bMerge,bContact,fit_start,temp,r2cut>0,smooth_tail_start,oenv,
                     params, gemstring, nThreads, NN, bBallistic, bGemFit);
@@ -4136,18 +4183,19 @@ int gmx_hbond(int argc,char *argv[])
     }
 
     if (bGem) {
-        fprintf(stderr, "There were %i periodic shifts\n", hb->per.nper);
+        fprintf(stderr, "There were %i periodic shifts\n", hb->per->nper);
         fprintf(stderr, "Freeing pHist for all donors...\n");
         for (i=0; i<hb->d.nrd; i++) {
             fprintf(stderr, "\r%i",i);
-            if (hb->per.pHist[i] != NULL) {
+            if (hb->per->pHist[i] != NULL) {
                 for (j=0; j<hb->a.nra; j++)
-                    clearPshift(&(hb->per.pHist[i][j]));
-                sfree(hb->per.pHist[i]);
+                    clearPshift(&(hb->per->pHist[i][j]));
+                sfree(hb->per->pHist[i]);
             }
         }
-        sfree(hb->per.pHist);
-        sfree(hb->per.p2i);
+        sfree(hb->per->pHist);
+        sfree(hb->per->p2i);
+        sfree(hb->per);
         fprintf(stderr, "...done.\n");
     }
 
