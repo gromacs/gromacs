@@ -72,6 +72,10 @@ using namespace OpenMM;
     "overclocked and that the device is properly cooled.\n", (str)
 /*! \endcond */
 
+#define COMBRULE_CHK_TOL            1e-6
+#define COMBRULE_SIGMA(sig1, sig2)  (((sig1) + (sig2))/2)
+#define COMBRULE_EPS(eps1, eps2)    (sqrt((eps1) * (eps2)))
+
 /*! 
  * \brief Convert string to integer type.
  * \param[in]  s    String to convert from.
@@ -160,10 +164,12 @@ static string toUpper(const string &s)
 #define SIZEOF_MEMTESTS     3 
 #define SIZEOF_DEVICEIDS    1 
 #define SIZEOF_FORCE_DEV    2 
+
+#define SIZEOF_CHECK_COMBRULE 2
 /* @} */
 
 /*! Possible platform options in the mdrun -device option. */
-static const char *devOptStrings[] = { "platform", "deviceid", "memtest", "force-device" }; 
+static const char *devOptStrings[] = { "platform", "deviceid", "memtest", "force-device", "check-combrule" }; 
 
 /*! Enumerated platform options in the mdrun -device option. */
 enum devOpt
@@ -198,6 +204,8 @@ private:
                                                                  also valid any positive integer; size #SIZEOF_DEVICEIDS */
     static const char * const force_dev[SIZEOF_FORCE_DEV];  /*!< Possible values for for force-device option; 
                                                                  size #SIZEOF_FORCE_DEV */
+    static const char * const check_combrule[SIZEOF_CHECK_COMBRULE]; /* XXX temporary debug feature to 
+                                                                      turn off combination rule check */
 };
 
 const char * const GmxOpenMMPlatformOptions::platforms[SIZEOF_PLATFORMS]
@@ -209,6 +217,8 @@ const char * const GmxOpenMMPlatformOptions::deviceid[SIZEOF_DEVICEIDS]
                     = { "0" };
 const char * const GmxOpenMMPlatformOptions::force_dev[SIZEOF_FORCE_DEV]
                     = { "no", "yes" };
+const char * const GmxOpenMMPlatformOptions::check_combrule[SIZEOF_CHECK_COMBRULE] 
+                    = { "yes", "no" };
 
 /*!
  * \brief Contructor.
@@ -226,6 +236,7 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
     setOption("memtest",        memtests[0]);
     setOption("deviceid",       deviceid[0]);
     setOption("force-device",   force_dev[0]);
+    setOption("check-combrule", check_combrule[0]);
 
     string opt(optionString);
 
@@ -288,6 +299,18 @@ GmxOpenMMPlatformOptions::GmxOpenMMPlatformOptions(const char *optionString)
             continue;
         }
 
+        if (isStringEqNCase(opt, "check-combrule"))
+        {
+            /* */
+            if (!isStringEqNCase(val, "yes") && !isStringEqNCase(val, "no"))
+            {
+                gmx_fatal(FARGS, "Invalid OpenMM force option: \"%s\"!", val.c_str());
+            }
+            setOption(opt, val);
+            continue;
+        }
+
+
         // if we got till here something went wrong
         gmx_fatal(FARGS, "Invalid OpenMM platform option: \"%s\"!", (*it).c_str());
     }
@@ -304,7 +327,6 @@ string GmxOpenMMPlatformOptions::getOptionValue(const string &opt)
 	map<string, string> :: const_iterator it = options.find(toUpper(opt));
 	if (it != options.end())
     {
-		// cout << "@@@>> " << it->first << " : " << it->second << endl;
 		return it->second;
     }
     else
@@ -487,7 +509,7 @@ static void convert_c_12_6(double c12, double c6, double *sigma, double *epsilon
  * \param[in] fr            \see ::t_forcerec
  * \param[in] state         Gromacs systems state, \see ::t_state
  */
-static void checkGmxOptions(FILE* fplog,
+static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
                             t_inputrec *ir, gmx_localtop_t *top,
                             t_forcerec *fr, t_state *state)
 {
@@ -553,6 +575,8 @@ static void checkGmxOptions(FILE* fplog,
     if (ir->ePull != epullNO)
         gmx_fatal(FARGS,"OpenMM does not support pulling.");
 
+    /* TODO: DISABLED as it does not work with implicit solvent simulation */
+#if 0   
     /* check for restraints */
     for (i = 0; i < F_EPOT; i++)
     {
@@ -569,6 +593,7 @@ static void checkGmxOptions(FILE* fplog,
             gmx_fatal(FARGS, "OpenMM does not support (some) of the provided restaint(s).");
         }
     }
+#endif 
 
     if (ir->efep != efepNO)
         gmx_fatal(FARGS,"OpenMM does not support free energy calculations.");
@@ -598,6 +623,87 @@ static void checkGmxOptions(FILE* fplog,
     {
         gmx_fatal(FARGS,"OpenMM does not support triclinic unit cells.");
     }
+
+    /* XXX this is just debugging code to disable the combination rule check */
+    if ( isStringEqNCase(opt->getOptionValue("check-combrule"), "yes") )
+    {
+    /* As OpenMM by default uses hardcoded combination rules 
+       sigma_ij = (sigma_i + sigma_j)/2, eps_ij = sqrt(eps_i * eps_j)
+       we need to check whether the force field params obey this 
+       and if not, we can't use this force field so we exit 
+       grace-fatal-fully. */
+    real *nbfp = fr->nbfp;
+    natoms = fr->ntype;
+    if (debug) 
+    {   
+        fprintf(debug, ">> Atom parameters: <<\n%10s%5s %5s %5s %5s COMB\n", 
+                "", "i-j", "j-i", "i-i", "j-j");
+    }
+    /* loop over all i-j atom pairs and verify if 
+       sigma_ij = sigma_ji = sigma_comb and eps_ij = eps_ji = eps_comb */
+    for (i = 0; i < natoms; i++)
+    {
+        /* i-i */
+        c12 = C12(nbfp, natoms, i, i);
+        c6  = C6(nbfp,  natoms, i, i);
+        convert_c_12_6(c12, c6, &sigma_ii, &eps_ii);
+
+        for (j = 0; j < i; j++)
+        {
+            /* i-j */
+            c12 = C12(nbfp, natoms, i, j);
+            c6  = C6(nbfp,  natoms, i, j);
+            convert_c_12_6(c12, c6, &sigma_ij, &eps_ij);
+            /* j-i */
+            c12 = C12(nbfp, natoms, j, i);
+            c6  = C6(nbfp,  natoms, j, i);
+            convert_c_12_6(c12, c6, &sigma_ji, &eps_ji);
+            /* j-j */
+            c12 = C12(nbfp, natoms, j, j);
+            c6  = C6(nbfp,  natoms, j, j);
+            convert_c_12_6(c12, c6, &sigma_jj, &eps_jj);
+            /* OpenMM hardcoded combination rules */
+            sigma_comb = COMBRULE_SIGMA(sigma_ii, sigma_jj);
+            eps_comb = COMBRULE_EPS(eps_ii, eps_jj);
+  
+            if (debug)
+            {
+                fprintf(debug, "i=%-3d j=%-3d", i, j);
+                fprintf(debug, "%-11s", "sigma");
+                fprintf(debug, "%5.3f %5.3f %5.3f %5.3f %5.3f\n",  
+                        sigma_ij, sigma_ji, sigma_ii, sigma_jj, sigma_comb);
+                fprintf(debug, "%11s%-11s", "", "epsilon");
+                fprintf(debug, "%5.3f %5.3f %5.3f %5.3f %5.3f\n", 
+                        eps_ij, eps_ji, eps_ii, eps_jj, eps_comb);
+            }
+
+            /* check the values against the rule used by omm */
+            if((fabs(eps_ij) > COMBRULE_CHK_TOL && 
+                fabs(eps_ji) > COMBRULE_CHK_TOL) &&
+               (fabs(sigma_comb - sigma_ij) > COMBRULE_CHK_TOL ||
+               fabs(sigma_comb - sigma_ji) > COMBRULE_CHK_TOL ||
+               fabs(eps_comb - eps_ij) > COMBRULE_CHK_TOL ||
+               fabs(eps_comb - eps_ji) > COMBRULE_CHK_TOL ))
+            {
+                gmx_fatal(FARGS,
+                        "The combination rules of the used force-field do not "
+                        "match the one supported by OpenMM:  "
+                        "sigma_ij = (sigma_i + sigma_j)/2, eps_ij = sqrt(eps_i * eps_j). "
+                        "Switch to a force-field that uses these rules in order to "
+                        "simulate this system using OpenMM.\n");                        
+            }
+        }
+    }
+    if (debug) { fprintf(debug, ">><<\n\n"); }
+
+    /* if we got here, log that everything is fine */
+    if (debug)
+    {
+        fprintf(debug, ">> The combination rule of the used force matches the one used by OpenMM.\n");
+    }
+    fprintf(fplog, "The combination rule of the force used field matches the one used by OpenMM.\n");   
+
+    } /* if (are we checking the combination rules) ... */
 }
 
 
@@ -713,7 +819,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         }
 
         /* check wheter Gromacs options compatibility with OpenMM */
-        checkGmxOptions(fplog, ir, top, fr, state);
+        checkGmxOptions(fplog, opt, ir, top, fr, state);
 
         // Create the system.
         const t_idef& idef = top->idef;
