@@ -1,5 +1,5 @@
 
-                    Welcome to GROMACS 3.1!
+                    Welcome to GROMACS!
 
 Note: Detailed, step-by-step installation instructions
 are available on the website http://www.gromacs.org .
@@ -11,11 +11,9 @@ time you install GROMACS - our configuration script will check it!
 
 * SHORT INSTRUCTIONS FOR THE IMPATIENT:
 
-Starting with version 3.0, the GROMACS compile and install procedure 
-was changed to simplify things for you. We now use a standard 
-autoconf script and makefiles created by automake, like most 
-GNU programs. This means your normal installation actions are 
-limited to:
+GROMACS uses a standard autoconf script and makefiles created 
+by automake, like most GNU programs. This means your normal 
+installation actions are limited to:
 
 ./configure   
 make

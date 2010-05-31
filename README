@@ -1,12 +1,6 @@
 
                Welcome to the official version of GROMACS!
 
-There are no significant changes to the installation or use between version 
-3.1 and 3.0, so if you're already used to 3.0 you can just go ahead and update.
-A lot of things changed with version 3.0, though. Not only is the code 
-significantly faster, but we also introduced a completely new installation
-process and licensed the package under the GPL (see the COPYING file).
-
 If you are familiar with unix, it should be fairly trivial to compile and
 install GROMACS. Installation instructions are available in the INSTALL file,
 and a more extended step-by-step guide can be found on http://www.gromacs.org .
@@ -37,8 +31,8 @@ The easiest way to avoid this kind of problems is to get your modifications
 included in the main distribution. We'll be happy to consider any decent 
 code. If it's a separate program it can probably be included in the contrib 
 directory straight away (not supported by us), but for major changes in the 
-main code we appreciate if you first test that it works with MPI, 
-double precision, fortran code, etc.
+main code we appreciate if you first test that it works with (and without) 
+MPI, threads, double precision, etc.
 
 If you still want to distribute a modified version or use part of GROMACS
 in your own program, remember that the entire modified must be licensed 
@@ -56,9 +50,10 @@ To help us fund development, we humbly ask that you cite the GROMACS papers:
   H.J.C. Berendsen, D. van der Spoel and R. van Drunen
   Comp. Phys. Comm. 91, 43-56 (1995)
  
-* GROMACS 3.0: A package for molecular simulation and trajectory analysis
-  Erik Lindahl, Berk Hess and David van der Spoel
-  J. Mol. Mod. 7, 306-317 (2001)
+* GROMACS 4: Algorithms for highly efficient, load-balanced, and scalable
+  molecular simulation
+  B. Hess and C. Kutzner and D. van der Spoel and E. Lindahl
+  J. Chem. Theory Comput. 4 (2008) pp. 435-447
 
 There are a lot of cool features we'd like to include in future versions,
 but our resources are limited. All kinds of donations are welcome, both in 
