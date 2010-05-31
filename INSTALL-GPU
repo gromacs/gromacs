@@ -9,11 +9,11 @@ http://www.gromacs.org/gpu
 * INSTALLING FROM BINARY DISTRIBUTION:
 
 0. Prerequisites: 
-    • OpenMM (included in the binary release)
-    • NVIDIA CUDA libraries (version >=3.0);
-    • NVIDIA driver (for details on compatiblity consult
+    - OpenMM (included in the binary release)
+    - NVIDIA CUDA libraries (version >=3.0);
+    - NVIDIA driver (for details on compatiblity consult
 	  http://www.nvidia.com/Download/index5.aspx);
-    • NVIDIA CUDA-enabled GPU (for compatiblity list see 
+    - NVIDIA CUDA-enabled GPU (for compatiblity list see 
 	  http://www.gromacs.org/gpu).
 
 
@@ -46,12 +46,12 @@ to the openmm/lib/plugins directory, e.g. in bash:
 export OPENMM_PLUGIN_DIR=PATH_TO_GROMACS/openmm/lib/plugins
 
 
-4. At this point, running the command 
+4. At this point, running the command: 
 
 PATH_TO_GROMACS/bin/mdrun-gpu -h 
 
-should display the standard mdrun help which means that the binary 
-runs and all the necessary libraries are accessible.
+should display the standard mdrun help which means that all the 
+necessary libraries are accessible.
 
 
 
