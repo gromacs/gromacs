@@ -177,19 +177,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
         for(k=nj0; (k<nj1); k++)
         {
             jnr              = nlist->jjnr[k];
-            j3               = 3*jnr;
-            jx               = x[j3+0];
-            jy               = x[j3+1];
-            jz               = x[j3+2];
-            dx               = ix - jx;
-            dy               = iy - jy;
-            dz               = iz - jz;
-            rsq              = dx*dx+dy*dy+dz*dz;
-            rinv             = gmx_invsqrt(rsq);
-            rinvsq           = rinv*rinv;
             weight_cg2       = wf[jnr];
-
-
 
             if(!(adress_type == eAdressConst))
             {
@@ -204,31 +192,30 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
             /* at least one of the groups is coarse grained */
 	    /* -> we should not calculate ex-ex interactions */
             if (weight_product == 0)
-            {
-                /* if it's a coarse grained loop, include this molecule */
-                if(bCG)
+            {                
+		/* if it's a explicit loop, goto the next molecule (as cg is bigger this case should oocur more often) */
+                if (!bCG)
+                {
+                    continue;
+                }
+                else /* if it's a coarse grained loop, include this molecule */
                 {
                     bHybrid = FALSE;
 	            hybscal = 1.0;
-                }
-		/* if it's a explicit loop, goto the next molecule */
-                else
-                {
-                    continue;
                 }
             }
             else if (weight_product == 1)
             {
-                /* if it's a coarse grained loop, skip this molecule */
-                if(bCG)
-                {
-                    continue;
-                }
+                
 		/* if it's a explicit loop, include this molecule */
-                else
+                if(!bCG)
                 {
                     bHybrid = FALSE;
 	            hybscal = 1.0;
+                }             
+                else  /* if it's a coarse grained loop, skip this molecule */
+                {
+                    continue;
                 }
             }
             /* both have double identity, get hybrid scaling factor */
@@ -261,6 +248,18 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
                     hybscal = 1.0 - hybscal;
                 }
             }
+
+            
+            j3               = 3*jnr;
+            jx               = x[j3+0];
+            jy               = x[j3+1];
+            jz               = x[j3+2];
+            dx               = ix - jx;
+            dy               = iy - jy;
+            dz               = iz - jz;
+            rsq              = dx*dx+dy*dy+dz*dz;
+            rinv             = gmx_invsqrt(rsq);
+            rinvsq           = rinv*rinv;
 
 
 			fscal            = 0;
