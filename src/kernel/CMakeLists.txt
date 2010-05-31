@@ -94,7 +94,7 @@ target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
 # warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs
 # fatal error LNK1169: one or more multiply defined symbols found
 if(GMX_OPENMM AND MSVC)
-    set_target_properties(mdrun PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LBCMT")
+    set_target_properties(mdrun PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT")
 endif()
 
 install(TARGETS 
