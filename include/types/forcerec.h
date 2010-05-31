@@ -364,6 +364,10 @@ typedef struct {
   int  adress_ivdw;
   int  adress_site;
   rvec adress_refs;
+  int n_adress_ex_grps;
+  int * adress_ex_grp_index;
+  int n_adress_cg_grps;
+  int * adress_cg_grp_index;
   int n_adress_tf_grps;
   int * adress_tf_table_index;
   t_forcetable *  atf_tabs;

@@ -1248,7 +1248,18 @@ void init_forcerec(FILE *fp,
     fr->adress_hy_width = ir->adress_hy_width;
     fr->adress_icor     = ir->adress_icor;
     fr->adress_site     = ir->adress_site;
-    
+
+    fr->n_adress_ex_grps = ir->n_adress_ex_grps;
+    snew(fr->adress_ex_grp_index, fr->n_adress_ex_grps);
+    for (i=0; i< fr->n_adress_ex_grps; i++){
+        fr->adress_ex_grp_index[i]= ir->adress_ex_grp_index[i];
+    }
+    fr->n_adress_cg_grps = ir->n_adress_cg_grps;
+    snew(fr->adress_cg_grp_index, fr->n_adress_cg_grps);
+    for (i=0; i< fr->n_adress_cg_grps; i++){
+        fr->adress_cg_grp_index[i]= ir->adress_cg_grp_index[i];
+    }
+
     fr->n_adress_tf_grps = ir->n_adress_tf_grps;
     snew(fr->adress_tf_table_index, fr->n_adress_tf_grps);
     for (i=0; i< fr->n_adress_tf_grps; i++){

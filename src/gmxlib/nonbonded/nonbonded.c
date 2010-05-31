@@ -539,7 +539,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 		    }
 		    else
 		    {
-                       gmx_nb_generic_adress_kernel(nlist,
+                       /*gmx_nb_generic_adress_kernel(nlist,
                                                 fr,
                                                 mdatoms,
                                                 x[0],
@@ -550,7 +550,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                                 nblists->tab.scale,
                                                 tabledata,
                                                 &outeriter,
-                                                &inneriter);
+                                                &inneriter);*/
+                          gmx_fatal(FARGS,"Death & horror! Adress cgcg kernel not implemented anymore.\n");
 
 		    }
                 }
@@ -559,8 +560,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     /* Not free energy */
 
                     kernelptr = nb_kernel_list[nrnb_ind];
-                    
-                    if (kernelptr == NULL)
+                   
+                    if (kernelptr == NULL || (! fr->adress_type==eAdressOff))
                     {
                         /* Call a generic nonbonded kernel */
                         
@@ -568,6 +569,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                          * do it in this routine and make sure it is called
                          * by setting the environment variable GMX_NB_GENERIC.
                          */
+                        if (fr->adress_type==eAdressOff){
+
                         gmx_nb_generic_kernel(nlist,
                                               fr,
                                               mdatoms,
@@ -580,6 +583,22 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                               tabledata,
                                               &outeriter,
                                               &inneriter);
+                        }else{
+                            gmx_nb_generic_adress_kernel(nlist,
+                                                fr,
+                                                mdatoms,
+                                                x[0],
+                                                f[0],
+                                                fshift,
+                                                egcoul,
+                                                egnb,
+                                                nblists->tab.scale,
+                                                tabledata,
+                                                &outeriter,
+                                                &inneriter);
+                        }
+
+
                     }
                     else
                     {
