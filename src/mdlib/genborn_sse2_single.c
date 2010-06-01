@@ -68,6 +68,8 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+#include "genborn_sse2_single.h"
+
 
 int 
 calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
