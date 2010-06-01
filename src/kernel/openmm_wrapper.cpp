@@ -575,25 +575,26 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     if (ir->ePull != epullNO)
         gmx_fatal(FARGS,"OpenMM does not support pulling.");
 
-    /* TODO: DISABLED as it does not work with implicit solvent simulation */
-#if 0   
-    /* check for restraints */
+    /* check for interaction types */
     for (i = 0; i < F_EPOT; i++)
     {
-        if (i != F_CONSTR &&
-            i != F_SETTLE &&
-            i != F_BONDS  &&
-            i != F_ANGLES &&
-            i != F_PDIHS &&
-            i != F_RBDIHS &&
-            i != F_LJ14 &&
+        if (!(i == F_CONSTR ||
+            i == F_SETTLE   ||
+            i == F_BONDS    ||            
+            i == F_UREY_BRADLEY ||
+            i == F_ANGLES   ||
+            i == F_PDIHS    ||
+            i == F_RBDIHS   ||
+            i == F_LJ14     ||
+            i == F_GB12     || /* The GB parameters are hardcoded both in */
+            i == F_GB13     || /* Gromacs and OpenMM */
+            i == F_GB14   ) &&
             top->idef.il[i].nr > 0)
         {
-            /* TODO fix the message */
-            gmx_fatal(FARGS, "OpenMM does not support (some) of the provided restaint(s).");
+            gmx_fatal(FARGS, "OpenMM does not support (some) of the provided interaction " 
+                    "type(s) (%s) ", interaction_function[i].longname);
         }
     }
-#endif 
 
     if (ir->efep != efepNO)
         gmx_fatal(FARGS,"OpenMM does not support free energy calculations.");
