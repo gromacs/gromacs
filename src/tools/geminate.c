@@ -512,7 +512,11 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
     *ctTheory=GD->ctTheory,
     *y=GD->y;
 
-  eq10v2(GD->ctTheory, GD->time, GD->nData,
+  /* Now, we'd save a lot of time by not calculating eq10v2 for all
+   * time points, but only those that we sample to calculate the mse.
+   */
+
+  eq10v2(GD->ctTheory, GD->doubleLogTime/* GD->time */, nFitPoints/* GD->nData */,
     	 gsl_vector_get(p, 0), gsl_vector_get(p, 1),
     	 GD->params);
   
@@ -527,7 +531,7 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
   for(i=0; i<nFitPoints; i++)
     {
       iLog = GD->logtime[i];
-      r = log(ctTheory[iLog]);
+      r = log(ctTheory[i /* iLog */]);
       residual2 += sqr(r-log(y[iLog]));
     }
   residual2 /= nFitPoints; /* Not really necessary for the fitting, but gives more meaning to the returned data. */
@@ -605,7 +609,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 /*     n=nData; */
 /*   } */
   gemFitData *GD;
-  char *dumpstr, *dumpname;
+  char *dumpstr, dumpname[128];
   real *dumpdata;
   snew(dumpdata, nData);
   snew(GD,1);
@@ -623,10 +627,14 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
   GD->nData = nData;
   GD->params = params;
   snew(GD->logtime,params->nFitPoints);
+  snew(GD->doubleLogTime,params->nFitPoints);
 
   for (i=0; i<params->nFitPoints; i++)
     {
-      GD->logtime[i] = (int)(GETLOGINDEX(i, params));
+      GD->doubleLogTime[i] = (double)(GETLOGINDEX(i, params));
+      GD->logtime[i] = (int)(GD->doubleLogTime[i]);
+      GD->doubleLogTime[i]*=GD->tDelta;
+
       if (GD->logtime[i] >= nData)
 	{
 	  printf("Ayay. It seems we're indexing out of bounds.\n");
@@ -683,9 +691,9 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
       {
 	eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params);
 	sprintf(dumpname, "Iter_%i.xvg", iter);
-	for(i=0; i<nData; i++)
+	for(i=0; i<GD->nData; i++)
 	  dumpdata[i] = (real)(GD->ctTheory[i]);
-	dumpN(dumpdata, nData, dumpname);
+	dumpN(dumpdata, GD->nData, dumpname);
       }
   }
   while ((status == GSL_CONTINUE) && (iter < maxiter));

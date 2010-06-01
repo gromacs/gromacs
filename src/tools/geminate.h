@@ -223,6 +223,7 @@ typedef struct{
   double tDelta;    /* time difference between subsequent datapoints */
   size_t nData;     /* real size of the data */
   int    *logtime;
+  double *doubleLogTime;
   t_gemParams *params;
 } gemFitData;
 
