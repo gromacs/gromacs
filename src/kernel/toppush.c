@@ -898,7 +898,7 @@ push_gb_params (gpp_atomtype_t at, char *line,
     gfound = -1;
     for(i=0;i<get_atomtype_ntypes(at) && !found;i++)
     {
-        if(gmx_strncasecmp(atypename,get_atomtype_name(i,at),STRLEN-1)==0)
+        if (strncmp(atypename,get_atomtype_name(i,at),STRLEN-1) == 0)
         {
             found = i;
 			gfound = i;
