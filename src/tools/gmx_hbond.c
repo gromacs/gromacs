@@ -2642,7 +2642,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 
                                 /* Now, build ac. */
                                 for (m=0; m<np; m++) {
-                                    if (rHbExGem[m][0]>0  && n0+poff[n]<nn) {
+                                    if (rHbExGem[m][0]>0  && n0+poff[m]<nn) {
                                         low_do_autocorr(NULL,oenv,NULL,nframes,1,-1,&(rHbExGem[m]),hb->time[1]-hb->time[0],
                                                         eacNormal,1,FALSE,bNorm,FALSE,0,-1,0,1);
                                         for(j=0; (j<nn); j++)
