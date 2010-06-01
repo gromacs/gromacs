@@ -340,15 +340,15 @@ print_group_info(FILE *fp, const char *name, t_selelem *sel, gmx_ana_index_t *g)
     }
     else if (sel->cdata->flags & SEL_CDATA_MINMAXALLOC)
     {
-        fprintf(fp, "(%d atoms, %p)", g->isize, g);
+        fprintf(fp, "(%d atoms, %p)", g->isize, (void*)g);
     }
     else if (sel->v.type == GROUP_VALUE && g == sel->v.u.g)
     {
-        fprintf(fp, "(static, %p)", g);
+        fprintf(fp, "(static, %p)", (void*)g);
     }
     else
     {
-        fprintf(fp, "%p", g);
+        fprintf(fp, "%p", (void*)g);
     }
 }
 
