@@ -702,7 +702,7 @@ int gmx_rdf(int argc,char *argv[])
      "Energy of the incoming X-ray (keV) "}
   };
 #define NPA asize(pa)
-  const char *fnTPS,*fnNDX,*fnDAT;
+  const char *fnTPS,*fnNDX,*fnDAT=NULL;
   bool       bSQ,bRDF;
   output_env_t oenv;
   

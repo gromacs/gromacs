@@ -32,6 +32,8 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+#include "genborn_sse2_double.h"
+
 #if (defined (_MSC_VER) || defined(__INTEL_COMPILER))
 #define gmx_castsi128_pd(a) _mm_castsi128_pd(a)
 #define gmx_castpd_si128(a) _mm_castpd_si128(a)
@@ -590,7 +592,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 		_mm_store_sd(born->gpol_still_work+ai,gpi);
 	}
 	
-	/* Parallell summations */
+	/* Parallel summations */
 	if(PARTDECOMP(cr))
 	{
 		gmx_sum(natoms,born->gpol_still_work, cr);
@@ -609,7 +611,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 			gpi2   = gpi_ai*gpi_ai;
 			
 			born->bRad[i]=factor*gmx_invsqrt(gpi2);
-			fr->invsqrta[i]=gmx_invsqrt(born->bRad[ai]);
+			fr->invsqrta[i]=gmx_invsqrt(born->bRad[i]);
 		}
 	}
 	
@@ -1828,7 +1830,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			born->bRad[i] = rr_inv - tsum*rr_inv2;
 			born->bRad[i] = 1.0 / born->bRad[i];
 			
-			fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
+			fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
 			
 			tchain  = rr * (born->obc_alpha-2*born->obc_beta*sum+3*born->obc_gamma*sum2);
 			born->drobc[i] = (1.0-tsum*tsum)*tchain*rr_inv2;
