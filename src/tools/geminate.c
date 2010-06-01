@@ -687,14 +687,14 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 	    params->kd,
 	    s->fval, size, d2);
 
-    if (iter%10 == 0)
-      {
-	eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params);
-	sprintf(dumpname, "Iter_%i.xvg", iter);
-	for(i=0; i<GD->nData; i++)
-	  dumpdata[i] = (real)(GD->ctTheory[i]);
-	dumpN(dumpdata, GD->nData, dumpname);
-      }
+/*     if (iter%10 == 0) */
+/*       { */
+/* 	eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params); */
+/* 	sprintf(dumpname, "Iter_%i.xvg", iter); */
+/* 	for(i=0; i<GD->nData; i++) */
+/* 	  dumpdata[i] = (real)(GD->ctTheory[i]); */
+/* 	dumpN(dumpdata, GD->nData, dumpname); */
+/*       } */
   }
   while ((status == GSL_CONTINUE) && (iter < maxiter));
 
