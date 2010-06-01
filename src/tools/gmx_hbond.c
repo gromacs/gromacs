@@ -1179,7 +1179,7 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
     int     i,m,gr,xi,yi,zi,nr;
     atom_id *ad;
     ivec    grididx;
-    rvec    invdelta,dshell,xtemp;
+    rvec    invdelta,dshell,xtemp={0,0,0};
     t_ncell *newgrid;
     bool    bDoRshell,bInShell,bAcc;
     real    rshell2=0;
@@ -1458,7 +1458,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
                     bool bContact, bool bMerge, PSTYPE *p)
 {
     int  h,hh,id,ja,ihb;
-    rvec r_da,r_ha,r_dh, r;
+    rvec r_da,r_ha,r_dh, r={0, 0, 0};
     ivec ri;
     real rc2,r2c2,rda2,rha2,ca;
     bool HAinrange = FALSE; /* If !bDA. Needed for returning hbDist in a correct way. */
@@ -3242,7 +3242,7 @@ int gmx_hbond(int argc,char *argv[])
     matrix  box;
     real    t,ccut,dist,ang;
     double  max_nhb,aver_nhb,aver_dist;
-    int     h,i,j,k,l,start,end,id,ja,ogrp,nsel;
+    int     h,i,j,k=0,l,start,end,id,ja,ogrp,nsel;
     int     xi,yi,zi,ai;
     int     xj,yj,zj,aj,xjj,yjj,zjj;
     int     xk,yk,zk,ak,xkk,ykk,zkk;
@@ -3262,7 +3262,7 @@ int gmx_hbond(int argc,char *argv[])
     t_E     E;
     int     ii, jj, hh, actual_nThreads, threadNr;
     bool    bGem, bNN, bParallel;
-    t_gemParams *params;
+    t_gemParams *params=NULL;
     
     CopyRight(stdout,argv[0]);
 
