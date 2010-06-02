@@ -36,7 +36,8 @@
  *
  * ------------- from complex.c ------------- */
 
-gem_complex gem_cmplx(double r, double i)
+/* Complexation of a paired number (r,i)                                     */
+static gem_complex gem_cmplx(double r, double i)
 {
   gem_complex value;
   value.r = r;
@@ -44,6 +45,7 @@ gem_complex gem_cmplx(double r, double i)
   return value;
 }
 
+/* Complexation of a real number, x */
 static gem_complex gem_c(double x)
 {
   gem_complex value;
@@ -51,9 +53,15 @@ static gem_complex gem_c(double x)
   value.i=0;
   return value;
 }
+
+/* Real and Imaginary part of a complex number z -- Re (z) and Im (z)        */
 static double gem_Re(gem_complex z) {return z.r;}
 static double gem_Im(gem_complex z) {return z.i;}
+
+/* Magnitude of a complex number z                                           */
 static double gem_cx_abs(gem_complex z) { return (sqrt(z.r*z.r+z.i*z.i)); }
+
+/* Addition of two complex numbers z1 and z2                                 */
 static gem_complex gem_cxadd(gem_complex z1, gem_complex z2)
 {
   gem_complex value;
@@ -61,6 +69,8 @@ static gem_complex gem_cxadd(gem_complex z1, gem_complex z2)
   value.i=z1.i+z2.i;
   return value;
 }
+
+/* Addition of a complex number z1 and a real number r */
 static gem_complex gem_cxradd(gem_complex z, double r)
 {
   gem_complex value;
@@ -68,6 +78,8 @@ static gem_complex gem_cxradd(gem_complex z, double r)
   value.i = z.i;
   return value;
 }
+
+/* Subtraction of two complex numbers z1 and z2                              */
 static gem_complex gem_cxsub(gem_complex z1, gem_complex z2)
 {
   gem_complex value;
@@ -75,6 +87,8 @@ static gem_complex gem_cxsub(gem_complex z1, gem_complex z2)
   value.i=z1.i-z2.i;
   return value;
 }
+
+/* Multiplication of two complex numbers z1 and z2                           */
 static gem_complex gem_cxmul(gem_complex z1, gem_complex z2)
 {
   gem_complex value;
@@ -82,6 +96,8 @@ static gem_complex gem_cxmul(gem_complex z1, gem_complex z2)
   value.i = z1.r*z2.i+z1.i*z2.r;
   return value;
 }
+
+/* Square of a complex number z                                              */
 static gem_complex gem_cxsq(gem_complex z)
 {
   gem_complex value;
@@ -89,6 +105,8 @@ static gem_complex gem_cxsq(gem_complex z)
   value.i = z.r*z.i*2.;
   return value;
 }
+
+/* multiplication of a complex number z and a real number r */
 static gem_complex gem_cxrmul(gem_complex z, double r)
 {
   gem_complex value;
@@ -96,6 +114,8 @@ static gem_complex gem_cxrmul(gem_complex z, double r)
   value.i= z.i*r;
   return value;
 }
+
+/* Division of two complex numbers z1 and z2                                 */
 static gem_complex gem_cxdiv(gem_complex z1, gem_complex z2)
 {
   gem_complex value;
@@ -108,6 +128,8 @@ static gem_complex gem_cxdiv(gem_complex z1, gem_complex z2)
   value.r = (z1.r*z2.r+z1.i*z2.i)/num; value.i = (z1.i*z2.r-z1.r*z2.i)/num;
   return value;
 }
+
+/* division of a complex z number by a real number x */
 static gem_complex gem_cxrdiv(gem_complex z, double r)
 {
   gem_complex value;
@@ -115,6 +137,8 @@ static gem_complex gem_cxrdiv(gem_complex z, double r)
   value.i = z.i/r;
   return value;
 }
+
+/* division of a real number r by a complex number x */
 static gem_complex gem_rxcdiv(double r, gem_complex z)
 {
   gem_complex value;
@@ -124,10 +148,16 @@ static gem_complex gem_rxcdiv(double r, gem_complex z)
   value.i = -f*z.i;
   return value;
 }
+
+/* Integer power of a complex number z -- z^x                                */
 static gem_complex gem_cxintpow(gem_complex z, int x)
 {
   int i;
-  gem_complex value={1.,0.};
+  gem_complex value;
+
+  value.r = 1.;
+  value.i = 0.;
+
   if(x>0)
     {
       for(i=0; i < x; i++)
@@ -146,6 +176,8 @@ static gem_complex gem_cxintpow(gem_complex z, int x)
       }
     }
 }
+
+/* Exponential of a complex number-- exp (z)=|exp(z.r)|*{cos(z.i)+I*sin(z.i)}*/
 static gem_complex gem_cxdexp(gem_complex z)
 {
   gem_complex value;
@@ -155,6 +187,9 @@ static gem_complex gem_cxdexp(gem_complex z)
   value.i = exp_z_r*sin(z.i);
   return value;
 }
+
+/* Logarithm of a complex number -- log(z)=log|z|+I*Arg(z),                  */
+/*                                  where -PI < Arg(z) < PI                  */ 
 static gem_complex gem_cxlog(gem_complex z)
 {
   gem_complex value;
@@ -174,6 +209,10 @@ static gem_complex gem_cxlog(gem_complex z)
   }
   return value;
 }
+
+/* Square root of a complex number z = |z| exp(I*the) -- z^(1/2)             */
+/*                               z^(1/2)=|z|^(1/2)*[cos(the/2)+I*sin(the/2)] */
+/*                               where 0 < the < 2*PI                        */
 static gem_complex gem_cxdsqrt(gem_complex z)
 {
   gem_complex value;
@@ -186,6 +225,8 @@ static gem_complex gem_cxdsqrt(gem_complex z)
   }
   return value;
 }
+
+/* square root of a real number r  */
 static gem_complex gem_cxrsqrt(double r) {
   if (r < 0)
     {
@@ -196,12 +237,16 @@ static gem_complex gem_cxrsqrt(double r) {
       return(gem_c(sqrt(r)));
     }
 }
+
+/* Complex power of a complex number z1^z2                                   */
 static gem_complex gem_cxdpow(gem_complex z1, gem_complex z2)
 {
   gem_complex value;
   value=gem_cxdexp(gem_cxmul(gem_cxlog(z1),z2));
   return value;
 }
+
+/* Print out a complex number z as z: z.r, z.i                               */
 static void gem_cxprintf(gem_complex z) { fprintf(stdout, "z: %lg + %lg_i\n", z.r, z.i); }
 /* ------------ end of complex.c ------------ */
 
@@ -237,6 +282,23 @@ static void gem_solve(gem_complex *al, gem_complex *be, gem_complex *gam,
 
 /* This next part was derived from cerror.c and rerror.c, also received from Omer Markovitch.
  * ------------- from [cr]error.c ------------- */
+
+/************************************************************/
+/* Real valued error function and related functions         */
+/* x, y     : real variables                                */
+/* erf(x)   : error function                                */
+/* erfc(x)  : complementary error function                  */
+/* omega(x) : exp(x*x)*erfc(x)                              */
+/* W(x,y)   : exp(-x*x)*omega(x+y)=exp(2*x*y+y^2)*erfc(x+y) */
+/************************************************************/
+
+/*---------------------------------------------------------------------------*/
+/* Utilzed the series approximation of erf(x)                                */
+/* Relative error=|err(x)|/erf(x)<EPS                                        */
+/* Handbook of Mathematical functions, Abramowitz, p 297                     */
+/* Note: When x>=6 series sum deteriorates -> Asymptotic series used instead */
+/*---------------------------------------------------------------------------*/
+/*  This gives erfc(z) correctly only upto >10-15 */
 
 static double gem_erf(double x)
 {
@@ -277,6 +339,8 @@ static double gem_erf(double x)
   return x>=0.0 ? sum : -sum;
 }
 
+/* Result --> Alex's code for erfc and experfc behaves better than this      */
+/* complementray error function.                Returns 1.-erf(x)            */
 static double gem_erfc(double x)
 {
   double t,z,ans;
@@ -297,6 +361,7 @@ static double gem_erfc(double x)
   return  x>=0.0 ? ans : 2.0-ans;
 }
 
+/* omega(x)=exp(x^2)erfc(x)                                                  */
 static double gem_omega(double x)
 {
   double xm, ans, xx, x4, x6, x8, x10, x12;
@@ -317,8 +382,17 @@ static double gem_omega(double x)
   return ans;
 }
 
+/* W(x,y)=exp(-x^2)*omega(x+y)=exp(2xy+y^2)*erfc(x+y)                        */
 static double gem_W(double x, double y){ return(exp(-x*x)*gem_omega(x+y)); }
 
+/**************************************************************/
+/* Complex error function and related functions               */
+/* x, y     : real variables                                  */
+/* z        : complex variable                                */
+/* cerf(z)  : error function                                  */
+/* comega(z): exp(z*z)*cerfc(z)                               */
+/* W(x,z)   : exp(-x*x)*comega(x+z)=exp(2*x*z+z^2)*cerfc(x+z) */
+/**************************************************************/
 static gem_complex gem_cerf(gem_complex z)
 {
   gem_complex value;
@@ -368,6 +442,12 @@ static gem_complex gem_cerf(gem_complex z)
   return value;
 }
 
+/*---------------------------------------------------------------------------*/
+/* Utilzed the series approximation of erf(z=x+iy)                           */
+/* Relative error=|err(z)|/|erf(z)|<EPS                                      */
+/* Handbook of Mathematical functions, Abramowitz, p 299                     */
+/* comega(z=x+iy)=cexp(z^2)*cerfc(z)                                         */
+/*---------------------------------------------------------------------------*/
 static gem_complex gem_comega(gem_complex z)
 {
   gem_complex value;
@@ -418,6 +498,7 @@ static gem_complex gem_comega(gem_complex z)
   return (value);
 }
 
+/* W(x,z) exp(-x^2)*omega(x+z)                                               */
 static gem_complex gem_cW(double x, gem_complex z){ return(gem_cxrmul(gem_comega(gem_cxradd(z,x)),exp(-x*x))); }
 
 /* ------------ end of [cr]error.c ------------ */
