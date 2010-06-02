@@ -79,9 +79,10 @@ static t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
       cg[ncg].cg=i;
       anr=cgs->index[i];
       resnr=atoms->atom[anr].resind;
-      sprintf(buf,"%s%d",
+      sprintf(buf,"%s%d-%d",
 	      *(atoms->resinfo[resnr].name),
-	      atoms->resinfo[resnr].nr);
+	      atoms->resinfo[resnr].nr,
+	      anr+1);
       cg[ncg].label=strdup(buf);
       ncg++;
     }
@@ -124,7 +125,9 @@ int gmx_saltbr(int argc,char *argv[])
     "A minimum distance can be given, (eg. the cut-off), then groups",
     "that are never closer than that distance will not be plotted.[BR]",
     "Output will be in a number of fixed filenames, min-min.xvg, plus-min.xvg",
-    "and plus-plus.xvg, or files for every individual ion-pair if selected"
+    "and plus-plus.xvg, or files for every individual ion-pair if the [TT]-sep[tt]",
+    "option is selected. In this case files are named as [TT]sb-ResnameResnr-Atomnr[tt].",
+    "There may be many such files."
   };
   static bool bSep=FALSE;
   static real truncate=1000.0;

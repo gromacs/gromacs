@@ -10913,11 +10913,11 @@ AO3PB   APG AO3PG AH3PG     gd_22
 
 [ CHCL3 ]
  [ atoms ]
- CChl  CCHL     0.17900     0
- HChl  HCHL     0.08200     0
-CLCh1 CLCHL    -0.08700     0
-CLCh2 CLCHL    -0.08700     0
-CLCh3 CLCHL    -0.08700     0
+ CChl  CChl     0.17900     0
+ HChl  HChl     0.08200     0
+CLCh1 CLChl    -0.08700     0
+CLCh2 CLChl    -0.08700     0
+CLCh3 CLChl    -0.08700     0
  [ bonds ]
  CChl CLCh1    gb_40   
  CChl CLCh2    gb_40   
@@ -10937,10 +10937,10 @@ CLCh2 CLCh3    gb_48
 
 [ DMSO ]
  [ atoms ]
-SDmso SDMSO     0.12753     0
-ODmso ODMSO    -0.44753     0
-CDms1 CDMSO     0.16000     0
-CDms2 CDMSO     0.16000     0
+SDmso SDmso     0.12753     0
+ODmso ODmso    -0.44753     0
+CDms1 CDmso     0.16000     0
+CDms2 CDmso     0.16000     0
  [ bonds ]
 SDmso ODmso    gb_41   
 SDmso CDms1    gb_42   

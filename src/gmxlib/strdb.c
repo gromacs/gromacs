@@ -184,13 +184,13 @@ int get_file(const char *db,char ***strings)
 {
   FILE *in;
   char **ptr=NULL;
-  char buf[256];
+  char buf[STRLEN];
   int  i,nstr,maxi;
 
   in=libopen(db);
   
   i=maxi=0;
-  while (fgets2(buf,255,in)) {
+  while (fgets2(buf,STRLEN-1,in)) {
     if (i>=maxi) {
       maxi+=50;
       srenew(ptr,maxi);
