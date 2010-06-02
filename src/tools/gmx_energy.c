@@ -865,7 +865,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
   int  nexact,nnotexact;
   double x1m,x1mk;
   real Temp=-1,Pres=-1,VarV=-1,VarT=-1,VarEtot=-1,AvEtot=0,VarEnthalpy=-1;
-  int  i,j;
+  int  i,j,nout;
   real chi2;
   char buf[256],eebuf[100];
 
@@ -1100,23 +1100,27 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       /* Use trapezium rule for integration */
       integral = 0;
       intBulk  = 0;
-      for(i=1; (i<edat->nframes/2); i++) {
-	integral += 0.5*(eneset[0][i-1]  + eneset[0][i])*factor;
-	intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
-	fprintf(fp,"%10g  %10g  %10g\n",(i*Dt),integral,intBulk);
+      nout = get_acfnout();
+      if ((nout < 2) || (nout >= edat->nframes/2))
+          nout = edat->nframes/2;
+      for(i=1; (i<nout); i++) 
+      {
+          integral += 0.5*(eneset[0][i-1]  + eneset[0][i])*factor;
+          intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
+          fprintf(fp,"%10g  %10g  %10g\n",(i*Dt),integral,intBulk);
       }
       ffclose(fp);
     }
     else if (bCorr) {
       if (bFluct)
-	strcpy(buf,"Autocorrelation of Energy Fluctuations");
+          strcpy(buf,"Autocorrelation of Energy Fluctuations");
       else
-	strcpy(buf,"Energy Autocorrelation");
+          strcpy(buf,"Energy Autocorrelation");
 #if 0
       do_autocorr(corrfn,oenv,buf,edat->nframes,
-		  bSum ? 1                 : nset,
-		  bSum ? &edat->s[nset-1].ener : eneset,
-		  (delta_t/edat->nframes),eacNormal,FALSE);
+                  bSum ? 1                 : nset,
+                  bSum ? &edat->s[nset-1].ener : eneset,
+                  (delta_t/edat->nframes),eacNormal,FALSE);
 #endif
     }
   }
