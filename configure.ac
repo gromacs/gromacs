@@ -837,9 +837,26 @@ if test "$with_xml" = "yes"; then
    AC_CHECK_HEADERS([libxml/parser.h],AC_CHECK_LIB(xml2,main))
    if test "$ac_cv_lib_xml2_main" = "yes"; then
      INCLUDES="$INCLUDES -I/usr/include/libxml2"
+     PKG_XML2="libxml-2.0"
+     AC_SUBST(PKG_XML2)
+     if test "$enable_all_static" = "yes"; then
+       LDFLAGS_RET=$LDFLAGS
+       LDFLAGS="-static $LDFLAGS"
+       LIBS_RET="$LIBS"
+       LIBS="$LIBS -lz"
+       AC_MSG_CHECKING(for broken libxml2)
+       AC_TRY_RUN([
+#include <libxml/parser.h>
+main() {
+  xmlInitParser();
+  return 0;
+}],
+       AC_MSG_RESULT([no]),[AC_MSG_RESULT([yes])
+       AC_MSG_ERROR([Your libxml2 is broken for static linking, recompile it without threads or build gromacs without libxml])],[-lz])
+       LDFLAGS=$LDFLAGS_RET
+       LIBS="$LIBS_RET"
+     fi
    fi
-   PKG_XML2="libxml-2.0"
-   AC_SUBST(PKG_XML2)
 # restore CPPFLAGS
    CPPFLAGS="$ac_save_CPPFLAGS"
 fi
