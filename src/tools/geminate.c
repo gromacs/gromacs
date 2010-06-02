@@ -18,9 +18,13 @@
 #include "vec.h"
 #include "geminate.h"
 
+#ifdef DOUSEOPENMP
+#define HAVE_OPENMP
+#endif
 #ifdef HAVE_OPENMP
 #include <omp.h>
 #endif
+
 /* This first part is from complex.c which I recieved from Omer Markowitch.
  * - Erik Marklund
  *
@@ -38,7 +42,7 @@ static complex _c(double x)
 {
   complex value;
   value.r=x;
-  value.i=0.;
+  value.i=0;
   return value;
 }
 static double Re(complex z) {return z.r;}
@@ -370,6 +374,9 @@ static complex cW(double x, complex z){ return(cxrmul(comega(cxradd(z,x)),exp(-x
 
 /* ------------ end of [cr]error.c ------------ */
 
+/*_ REVERSIBLE GEMINATE RECOMBINATION
+ *
+ * Here are the functions for reversible geminate recombination. */
 
 /* Changes the unit from square cm per s to square Ångström per ps,
  * since Omers code uses the latter units while g_mds outputs the former.
@@ -411,6 +418,7 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
   reduction(+:sumimaginary),				\
   default(shared),					\
   schedule(guided)
+#endif
   for (i=0; i<manytimes; i++){
     tsqrt = sqrt(time[i]);
     oma   = comega(cxrmul(alpha, tsqrt));
@@ -424,16 +432,16 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
     theoryCt[i]  = c4.r;
     sumimaginary += c4.i * c4.i;
   }
-#endif
 
   return sumimaginary;
 
 } /* eq10v2 */
 
 
-extern t_gemParams *init_gemParams(double sigma, double D,
-				   real *t, double logAfterTime,
-				   int len, real ballistic, int nBalExp, bool bDt)
+extern t_gemParams *init_gemParams(const double sigma, const double D,
+				   const real *t, const int len, const int nFitPoints,
+				   const real begFit, const real endFit,
+				   const real ballistic, const int nBalExp, const bool bDt)
 {
   double tDelta;
   t_gemParams *p;
@@ -459,22 +467,27 @@ extern t_gemParams *init_gemParams(double sigma, double D,
   /* Parameters used by calcsquare(). Better to calculate them
    * here than in calcsquare every time it's called. */
   p->len = len;
-  p->logAfterTime = logAfterTime;
+/*   p->logAfterTime = logAfterTime; */
   tDelta       = (t[len-1]-t[0]) / len;
   if (tDelta <= 0)
     gmx_fatal(FARGS, "Time between frames is non-positive!");
   else p->tDelta = tDelta;
 
   p->nExpFit      = nBalExp;
-  p->nLin         = logAfterTime / tDelta;
+/*   p->nLin         = logAfterTime / tDelta; */
+  p->nFitPoints   = nFitPoints;
+  p->begFit       = begFit;
+  p->endFit       = endFit;
+  p->logQuota     = (double)(log(p->len))/(p->nFitPoints-1);
 /*   if (p->nLin <= 0) { */
 /*     fprintf(stderr, "Number of data points in the linear regime is non-positive!\n"); */
 /*     sfree(p); */
 /*     return NULL; */
 /*   } */
   /* We want the same number of data points in the log regime. Not crucial, but seems like a good idea. */
-  p->logDelta = log(((float)len)/p->nLin) / p->nLin;
-  p->logPF    = p->nLin*p->nLin/(float)len;
+  /* p->logDelta = log(((float)len)/p->nFitPoints) / p->nFitPoints;/\* log(((float)len)/p->nLin) / p->nLin; *\/ */
+/*   p->logPF    = p->nFitPoints*p->nFitPoints/(float)len; /\* p->nLin*p->nLin/(float)len; *\/ */
+  /* logPF and logDelta are stitched together with the macro GETLOGINDEX defined in geminate.h */
   
 /*   p->logMult      = pow((float)len, 1.0/nLin);/\* pow(t[len-1]-t[0], 1.0/p->nLin); *\/ */
   p->ballistic    =  ballistic;
@@ -482,43 +495,63 @@ extern t_gemParams *init_gemParams(double sigma, double D,
   return p;
 }
 
+/* There was a misunderstanding regarding the fitting. From our
+ * recent correspondence it appears that Omer's code require
+ * the ACF data on a log-scale and does not operate on the raw data.
+ * This needs to be redone in gemFunc_residual() as well as in the
+ * t_gemParams structure. */
 #ifdef HAVE_LIBGSL
 static double gemFunc_residual2(const gsl_vector *p, void *data)
 {
   gemFitData *GD = (gemFitData *)data;
   int i,iLog,
     nLin=GD->params->nLin,
+    nFitPoints=GD->params->nFitPoints,
     nData=GD->nData;
   double r, residual2=0,
     *ctTheory=GD->ctTheory,
     *y=GD->y;
 
-  eq10v2(GD->ctTheory, GD->time, GD->nData,
+  /* Now, we'd save a lot of time by not calculating eq10v2 for all
+   * time points, but only those that we sample to calculate the mse.
+   */
+
+  eq10v2(GD->ctTheory, GD->doubleLogTime/* GD->time */, nFitPoints/* GD->nData */,
     	 gsl_vector_get(p, 0), gsl_vector_get(p, 1),
     	 GD->params);
   
   /* Removing a bunch of points from the log-part. */
 #ifdef HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic)	\
-  firstprivate(nLin, nData, ctTheory, y),	\
-  private (i, iLog, r),				\
-  reduction(+:residual2),			\
+  firstprivate(nData, ctTheory, y, nFitPoints)	\
+  private (i, iLog, r)			\
+  reduction(+:residual2)			\
   default(shared)
 #endif
-  for (i=0; i<nLin; i++) {
-    /* Linear part ----------*/
-    r = ctTheory[i];
-    residual2 += sqr(r-y[i]);
-    /* Log part -------------*/
-    iLog = GETLOGINDEX(i, GD->params);
-    if (iLog >= nData)
-      gmx_fatal(FARGS, "log index out of bounds: %i", iLog);
-    r = ctTheory[iLog];
-    residual2 += sqr(r-y[iLog]);
-
-  }
-  residual2 /= GD->n;
+  for(i=0; i<nFitPoints; i++)
+    {
+      iLog = GD->logtime[i];
+      r = log(ctTheory[i /* iLog */]);
+      residual2 += sqr(r-log(y[iLog]));
+    }
+  residual2 /= nFitPoints; /* Not really necessary for the fitting, but gives more meaning to the returned data. */
+  /* printf("ka=%3.5f\tkd=%3.5f\trmse=%3.5f\n", gsl_vector_get(p,0), gsl_vector_get(p,1), residual2); */
   return residual2;
+
+/*   for (i=0; i<nLin; i++) { */
+/*     /\* Linear part ----------*\/ */
+/*     r = ctTheory[i]; */
+/*     residual2 += sqr(r-y[i]); */
+/*     /\* Log part -------------*\/ */
+/*     iLog = GETLOGINDEX(i, GD->params); */
+/*     if (iLog >= nData) */
+/*       gmx_fatal(FARGS, "log index out of bounds: %i", iLog); */
+/*     r = ctTheory[iLog]; */
+/*     residual2 += sqr(r-y[iLog]); */
+
+/*   } */
+/*   residual2 /= GD->n; */
+/*   return residual2; */
 }
 #endif
  
@@ -532,18 +565,24 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 #else
   printf("Will fit ka and kd to the ACF according to the reversible geminate recombination model.\n");
 
+#ifdef HAVE_OPENMP
+  int nThreads = omp_get_num_procs();
+  omp_set_num_threads(nThreads);
+  printf("We will be using %i threads.\n", nThreads);
+#endif
+
   real   size, d2, tol=1e-10;
   int i,
     iter    = 0,
     status  = 0,
-    maxiter = 1000;
+    maxiter = 100;
 
   gsl_multimin_fminimizer *s;
   gsl_vector *x,*dx; /* parameters and initial step size */
   gsl_multimin_function fitFunc;
   size_t
     p = 2,              /* Number of parameters to fit. ka and kd.  */
-    n = params->nLin*2;       /* Number of points in the reduced dataset  */
+    n = params->nFitPoints;/* params->nLin*2 */;       /* Number of points in the reduced dataset  */
 
   if (params->D <= 0)
     {
@@ -565,11 +604,14 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
   const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 #endif /* GSL_MAJOR_VERSION */
   
-  if (nData<n) {
-    fprintf(stderr, "Reduced data set larger than the complete data set!\n");
-    n=nData;
-  }
+/*   if (nData<n) { */
+/*     fprintf(stderr, "Reduced data set larger than the complete data set!\n"); */
+/*     n=nData; */
+/*   } */
   gemFitData *GD;
+  char *dumpstr, dumpname[128];
+  real *dumpdata;
+  snew(dumpdata, nData);
   snew(GD,1);
 
   GD->n = n;
@@ -584,6 +626,21 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
   GD->tDelta = time[1]-time[0];
   GD->nData = nData;
   GD->params = params;
+  snew(GD->logtime,params->nFitPoints);
+  snew(GD->doubleLogTime,params->nFitPoints);
+
+  for (i=0; i<params->nFitPoints; i++)
+    {
+      GD->doubleLogTime[i] = (double)(GETLOGINDEX(i, params));
+      GD->logtime[i] = (int)(GD->doubleLogTime[i]);
+      GD->doubleLogTime[i]*=GD->tDelta;
+
+      if (GD->logtime[i] >= nData)
+	{
+	  printf("Ayay. It seems we're indexing out of bounds.\n");
+	  params->nFitPoints = i;
+	}      
+    }
 
   fitFunc.f = &gemFunc_residual2;
   fitFunc.n = 2;
@@ -593,8 +650,8 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
   dx = gsl_vector_alloc (fitFunc.n);
   gsl_vector_set (x,  0, 25);
   gsl_vector_set (x,  1, 0.5);
-  gsl_vector_set (dx, i, 0.1);
-  gsl_vector_set (dx, i, 0.01);
+  gsl_vector_set (dx, 0, 0.1);
+  gsl_vector_set (dx, 1, 0.01);
   
   
   s = gsl_multimin_fminimizer_alloc (T, fitFunc.n);
@@ -629,6 +686,15 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 	    params->ka,
 	    params->kd,
 	    s->fval, size, d2);
+
+/*     if (iter%10 == 0) */
+/*       { */
+/* 	eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params); */
+/* 	sprintf(dumpname, "Iter_%i.xvg", iter); */
+/* 	for(i=0; i<GD->nData; i++) */
+/* 	  dumpdata[i] = (real)(GD->ctTheory[i]); */
+/* 	dumpN(dumpdata, GD->nData, dumpname); */
+/*       } */
   }
   while ((status == GSL_CONTINUE) && (iter < maxiter));
 
@@ -888,3 +954,23 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
   fflush(stdout);
 #endif /* HAVE_LIBGSL */
 }
+
+extern void dumpN(const real *e, const int nn, char *fn)
+{
+    /* For debugging only */
+
+  if (fn == NULL)
+    fn = gmx_strdup("Nt.xvg");
+  int i;
+  FILE *f;
+  f = fopen(fn, "w");
+  fprintf(f,
+	  "@ type XY\n"
+	  "@ xaxis label \"Frame\"\n"
+	  "@ yaxis label \"N\"\n"
+	  "@ s0 line type 3\n");
+  for (i=0; i<nn; i++)
+    fprintf(f, "%-10i %-g\n", i, e[i]);
+  fclose(f);
+}
+

@@ -1234,13 +1234,12 @@ int main(int argc, char *argv[])
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=gmx_fio_fopen(top_fn,"w");
-  sprintf(generator,"%s - version %s",ShortProgram(),
+
 #ifdef PACKAGE_VERSION
-	  PACKAGE_VERSION
+  sprintf(generator,"%s - version %s",ShortProgram(), PACKAGE_VERSION );
 #else
-	  "unknown"
+  sprintf(generator,"%s - version %s",ShortProgram(), "unknown" );
 #endif
-	  );
   print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult);
 
   nincl=0;

@@ -148,7 +148,7 @@ static complex cW(double x, complex z);
 /* ------------ end of [cr]error.c ------------ */
 
 
-/* ///////////////////////////////////////////////////////////////////////
+/* ///////////////// REVERSIBLE GEMINATE RECOMBINATION ///////////////////
  * Here follow routines and structs for reversible geminate recombination.
  */
 
@@ -169,9 +169,12 @@ typedef struct {
 
   /* The following members are for calcsquare() and takeAwayBallistic() */
   double tDelta;              /* Time between frames */
-  double logAfterTime;        /* Time after which we do the lsq calculations on a logarithmic timescale. */
-  double logDelta;
-  double logPF;
+  /* double logAfterTime;        /\* Time after which we do the lsq calculations on a logarithmic timescale. *\/ */
+  int nFitPoints;             /* Number of points to take from the ACF for fitting */
+  double begFit;              /* Fit from this time (ps) */
+  double endFit;              /* Fit up to this time (ps) */
+/*   double logDelta; */
+/*   double logPF; */
   /* To get an equal number of points in the lin and log regime,
    * we'll use logDelta to calculate where to sample the ACF.
    * if i and j are indices in the linear and log regime, then:
@@ -182,7 +185,22 @@ typedef struct {
    *  1) logDelta = log(len/nLin) / nLin
    *  2) logPF    = nLin**2 / len
    * and get j = logPF * exp((i+nLin) * logDelta). */
-#define GETLOGINDEX(i,params) (params)->logPF * exp(((i)+(params)->nLin) * (params)->logDelta)
+
+  /* I will redo this for a fit done entirely in log-log.
+   *  j' = j+1
+   *  nFitPoints' = nFitPoints-1
+   *  
+   *  j' = Cexp(Ai)
+   *  (j'= 1 <=> i=0)
+   *     => C=1
+   *  (j'=len <=> i=nFitPoints')
+   *     => A=log(len)/nFitPoints'
+   *     => j = exp(i*log(len)/(nFitPoints-1)) -1
+   **/
+/* #define GETLOGINDEX(i,params) (params)->logPF * exp(((i)+(params)->nLin) * (params)->logDelta)
+ */
+  double logQuota;
+#define GETLOGINDEX(i, params) (exp(((double)(i)) * (params)->logQuota) -1)
   int nLin;                 /* Number of timepoints in the linear regime */
   int len;                  /* Length of time and ct arrays */
   int nExpFit;              /* Number of exponentials to fit */       
@@ -204,21 +222,26 @@ typedef struct{
   double kd;
   double tDelta;    /* time difference between subsequent datapoints */
   size_t nData;     /* real size of the data */
+  int    *logtime;
+  double *doubleLogTime;
   t_gemParams *params;
 } gemFitData;
 
 extern void takeAwayBallistic(double *ct, double *t,
-		       int len, real tMax,
-		       int nexp, bool bDerivative);
+			      int len, real tMax,
+			      int nexp, bool bDerivative);
 
 
-extern t_gemParams *init_gemParams(double sigma, double D,
-				   real *t, double logAfterTime,
-				   int len, real ballistic, int nBalExp, bool bDt);
+extern t_gemParams *init_gemParams(const double sigma, const double D,
+				   const real *t, const int len, const int nFitPoints,
+				   const real begFit, const real endFit,
+				   const real ballistic, const int nBalExp, const bool bDt);
 
 /* Fit to geminate recombination model.
    Returns root mean square error of fit. */
 extern real fitGemRecomb(double *ct, double *time, double **ctFit,
-		  const int nData, t_gemParams *params);
+			 const int nData, t_gemParams *params);
+
+extern void dumpN(const real *e, const int nn, char *fn);
 
 #endif

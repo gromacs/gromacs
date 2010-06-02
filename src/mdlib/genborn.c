@@ -1252,7 +1252,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     switch(ir->gb_algorithm)
     {
         case egbSTILL:
-            calc_gb_rad_still_sse(cr,fr,born->nr,top, atype, x[0], nl, born, md);
+            calc_gb_rad_still_sse(cr,fr,born->nr,top, atype, x[0], nl, born);
             break;
         case egbHCT:
         case egbOBC:
@@ -1712,7 +1712,7 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     calc_gb_chainrule_sse(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
                           x[0], f[0], fr->fshift[0], fr->shift_vec[0], 
-                          gb_algorithm, born);
+                          gb_algorithm, born, md);
 #else
     /* Calculate the forces due to chain rule terms with non sse code */
     calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
