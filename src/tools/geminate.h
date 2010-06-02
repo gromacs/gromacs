@@ -4,6 +4,13 @@
 enum { gemNULL, gemNONE, gemDD, gemAD, gemAA, gemA4, gemNR};
 static char *gemType[] = {NULL, "none", "dd", "ad", "aa", "a4", NULL};
 
+/* The first few sections of this file contain functions that were adopted,
+ * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,
+ * http://folding.bmc.uu.se) from code written by Omer Markovitch (email, url).
+ * This is also the case with the function eq10v2() in geminate.c.
+ * 
+ * The parts menetioned in the previous paragraph were contributed under a BSD license.
+ */
 
 /* This first part is derived from complex.c which I recieved from Omer Markowitch.
  * - Erik Marklund
@@ -87,7 +94,6 @@ typedef struct {
 /* #define GETLOGINDEX(i,params) (params)->logPF * exp(((i)+(params)->nLin) * (params)->logDelta)
  */
   double logQuota;
-#define GETLOGINDEX(i, params) (exp(((double)(i)) * (params)->logQuota) -1)
   int nLin;                 /* Number of timepoints in the linear regime */
   int len;                  /* Length of time and ct arrays */
   int nExpFit;              /* Number of exponentials to fit */       

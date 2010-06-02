@@ -28,7 +28,10 @@
 /* The first few sections of this file contain functions that were adopted,
  * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,
  * http://folding.bmc.uu.se) from code written by Omer Markovitch (email, url).
- * This is also the case with the function eq10v2(). */
+ * This is also the case with the function eq10v2().
+ * 
+ * The parts menetioned in the previous paragraph were contributed under a BSD license.
+ */
 
 
 /* This first part is from complex.c which I recieved from Omer Markowitch.
@@ -569,6 +572,11 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
 
 } /* eq10v2 */
 
+/* This returns the real-valued index(!) to an ACF, equidistant on a log scale. */
+static double getLogIndex(const int i, const t_gemParams *params)
+{
+  return (exp(((double)(i)) * params->logQuota) -1);
+}
 
 extern t_gemParams *init_gemParams(const double sigma, const double D,
 				   const real *t, const int len, const int nFitPoints,
@@ -773,7 +781,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 
   for (i=0; i<params->nFitPoints; i++)
     {
-      GD->doubleLogTime[i] = (double)(GETLOGINDEX(i, params));
+      GD->doubleLogTime[i] = (double)(getLogIndex(i, params));
       GD->logtime[i] = (int)(GD->doubleLogTime[i]);
       GD->doubleLogTime[i]*=GD->tDelta;
 
