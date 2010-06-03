@@ -243,14 +243,14 @@ choose_ff(const char *ffsel,
         sel = 0;
     }
 
-    if (strlen(ffs[sel]) >= ff_maxlen)
+    if (strlen(ffs[sel]) >= (size_t)ff_maxlen)
     {
         gmx_fatal(FARGS,"Length of force field name (%d) >= maxlen (%d)",
                   strlen(ffs[sel]),ff_maxlen);
     }
     strcpy(forcefield,ffs[sel]);
 
-    if (strlen(ffdirs[sel]) >= ffdir_maxlen)
+    if (strlen(ffdirs[sel]) >= (size_t)ffdir_maxlen)
     {
         gmx_fatal(FARGS,"Length of force field dir (%d) >= maxlen (%d)",
                   strlen(ffdirs[sel]),ffdir_maxlen);

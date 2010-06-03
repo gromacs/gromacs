@@ -447,7 +447,8 @@ const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def)
 int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
 	       warninp_t wi)
 {
-  int  ii,i,j,n;
+  int  ii,i,j;
+  int n=0;
   char buf[STRLEN];
   
   ii=get_einp(ninp,inp,name);
