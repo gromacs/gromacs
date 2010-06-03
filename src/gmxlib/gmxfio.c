@@ -40,6 +40,9 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <errno.h>
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
 
 #include "gmx_fatal.h"
 #include "macros.h"
@@ -1523,17 +1526,41 @@ int gmx_fio_flush(int fio)
 static int gmx_fio_fsync_lock(int fio, bool do_lock)
 {
     int rc = 0;
+    int filen=-1;
 
-#if (defined(HAVE_FILENO) && defined(HAVE_FSYNC)) && !defined(GMX_FAHCORE) 
+#if ( (defined(HAVE_FILENO) && defined(HAVE_FSYNC))  || \
+      (defined(HAVE__FILENO) && defined(HAVE__COMMIT)) )
 #ifdef GMX_THREADS
     if (do_lock)
         tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (FIO[fio].fp)
-        rc = fsync(fileno(FIO[fio].fp));
+    {
+#ifdef HAVE_FILENO
+        filen=fileno(FIO[fio].fp);
+#elif HAVE__FILENO
+        filen=_fileno(FIO[fio].fp);
+#endif
+    }
     else if (FIO[fio].xdr)
-        rc = fsync(fileno((FILE *) FIO[fio].xdr->x_private));
+    {
+#ifdef HAVE_FILENO
+        filen=fileno((FILE *) FIO[fio].xdr->x_private);
+#elif HAVE__FILENO
+        filen=_fileno((FILE *) FIO[fio].xdr->x_private);
+#endif
+    }
+
+    if (filen>0)
+    {
+#if (defined(HAVE_FSYNC))
+        /* fahcore also defines HAVE_FSYNC */
+        rc=fsync(filen);
+#elif (defined(HAVE__COMMIT)) 
+        rc=_commit(filen);
+#endif
+    }
 
     /* We check for these error codes this way because POSIX requires them
        to be defined, and using anything other than macros is unlikely: */
@@ -1597,6 +1624,18 @@ int gmx_fio_all_output_fsync(void)
             }
         }
     }
+
+    /* in addition, we force these to be written out too, if they're being
+       redirected. We don't check for errors because errors most likely mean
+       that they're not redirected. */
+    fflush(stdout);
+    fflush(stderr);
+#if (defined(HAVE_FSYNC))
+    /* again, fahcore defines HAVE_FSYNC and fsync() */
+    fsync(STDOUT_FILENO);
+    fsync(STDERR_FILENO);
+#endif
+
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif

@@ -1043,6 +1043,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     char *bmach;
     char *fprog;
     char *ftime;
+    char *fntemp; /* the temporary checkpoint file name */
     time_t now;
     int  nppnodes,npmenodes,flag_64bit;
     char buf[1024];
@@ -1068,26 +1069,19 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
         nppnodes  = 1;
         npmenodes = 0;
     }
-    
-    if (gmx_fexist(fn))
-    {
-        /* Rename the previous checkpoint file */
-        strcpy(buf,fn);
-        buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-        strcat(buf,"_prev");
-        strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
-        (void)remove(buf); /* Unix will overwrite buf if it exists, but for windows we need to remove first */
-        if(rename(fn,buf) != 0)
-        {
-            gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
-        }
-    }
-    
+
+    /* make the new temporary filename */
+    snew(fntemp, strlen(fn)+5);
+    strcpy(fntemp,fn);
+    fntemp[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+    strcat(fntemp,"_tmp");
+    strcat(fntemp,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+   
     now = time(NULL);
     ftime = strdup(ctime(&now));
     ftime[strlen(ftime)-1] = '\0';
 
-	/* No need to pollute stderr every time we write a checkpoint file */
+    /* No need to pollute stderr every time we write a checkpoint file */
     /* fprintf(stderr,"\nWriting checkpoint, step %d at %s\n",step,ftime); */
     if (fplog)
     { 
@@ -1098,13 +1092,14 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     /* Get offsets for open files */
     gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles);
 
-    fp = gmx_fio_open(fn,"w");
+    fp = gmx_fio_open(fntemp,"w");
 	
     if (state->ekinstate.bUpToDate)
     {
         flags_eks =
-            ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) | (1<<eeksEKINO) | 
-             (1<<eeksEKINSCALEF) | (1<<eeksEKINSCALEH) | (1<<eeksVSCALE) | (1<<eeksDEKINDL) | (1<<eeksMVCOS));
+            ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) | 
+             (1<<eeksEKINO) | (1<<eeksEKINSCALEF) | (1<<eeksEKINSCALEH) | 
+             (1<<eeksVSCALE) | (1<<eeksDEKINDL) | (1<<eeksMVCOS));
     }
     else
     {
@@ -1138,8 +1133,9 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
-                  &state->natoms,&state->ngtc,&state->nnhpres,&state->nhchainlength,
-                  &state->flags,&flags_eks,&flags_enh,NULL);
+                  &state->natoms,&state->ngtc,&state->nnhpres,
+                  &state->nhchainlength, &state->flags,&flags_eks,&flags_enh,
+                  NULL);
     
     sfree(version);
     sfree(btime);
@@ -1147,10 +1143,11 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     sfree(bmach);
     sfree(fprog);
 
-    if( (do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)          ||
-        (do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)  ||
-        (do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)    ||
-        (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,file_version) < 0))
+    if((do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)        ||
+       (do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)||
+       (do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)  ||
+       (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,
+                     file_version) < 0))
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
     }
@@ -1160,31 +1157,42 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     /* we really, REALLY, want the checkpoint file and all files it depends 
        on to be physically written out do disk: */
     gmx_fio_all_output_fsync();
-#if (defined(HAVE_FILENO) && defined(HAVE_FSYNC)) && !defined(GMX_FAHCORE)
-    /* in addition, we force these to be written out too, if they''re being
-       redirected. We don't check for errors because errors most likely mean
-       that they're not redirected. */
-    fflush(stdout);
-    fflush(stderr);
-    fsync(STDOUT_FILENO);
-    fsync(STDERR_FILENO);
-#endif
 
     if( gmx_fio_close(fp) != 0)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
     }
 
+    if (gmx_fexist(fn))
+    {
+        /* Rename the previous checkpoint file */
+        strcpy(buf,fn);
+        buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+        strcat(buf,"_prev");
+        strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+        /* we copy here so that if something goes wrong between now and
+           the rename below, there's always a state.cpt. If renames are atomic
+           this copying is strictly speaking unneccesary */
+        gmx_file_copy(fn, buf); /* We don't really care if this fails: there's 
+                                   already a new checkpoint.  */
+    }
+    if (gmx_file_rename(fntemp, fn) != 0)
+    {
+        gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
+    }
+
     sfree(ftime);
     sfree(outputfiles);
+    sfree(fntemp);
+
 #ifdef GMX_FAHCORE
-    /*code for alternate checkpointing scheme.  moved from top of loop over steps */
+    /*code for alternate checkpointing scheme.  moved from top of loop over 
+      steps */
     fcRequestCheckPoint();
     if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
     }
 #endif /* end GMX_FAHCORE block */
-
 }
 
 static void print_flag_mismatch(FILE *fplog,int sflags,int fflags)

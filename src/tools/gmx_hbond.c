@@ -218,25 +218,6 @@ typedef struct {
     t_gemPeriod *per;
 } t_hbdata;
 
-static void dumpN(real *e, int nn)
-{
-    /* For debugging only */
-
-#define N_FILENAME "Nt.dat"
-    char *fn = N_FILENAME;
-    int i;
-    FILE *f;
-    f = fopen(fn, "w");
-    fprintf(f,
-            "@ type XY\n"
-            "@ xaxis label \"Frame\"\n"
-            "@ yaxis label \"N\"\n"
-            "@ s0 line type 3\n");
-    for (i=0; i<nn; i++)
-        fprintf(f, "%-10i %-g\n", i, e[i]);
-    fclose(f);
-}
-
 static void clearPshift(t_pShift *pShift)
 {
     if (pShift->len > 0) {
@@ -362,7 +343,7 @@ static void mk_hbmap(t_hbdata *hb,bool bTwo,bool bInsert)
         if (hb->hbmap[i] == NULL)
             gmx_fatal(FARGS,"Could not allocate enough memory for hbmap");
         for (j=0; (j>hb->a.nra); j++)
-            hb->hbmap[i][j] == NULL;
+            hb->hbmap[i][j] = NULL;
     }
 }
 
@@ -2272,16 +2253,10 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                     const int NN, const bool bBallistic, const bool bGemFit)
 {
     FILE *fp;
-    int  i,j,k,m,n,o,nd,ihb,idist,n2,nn,iter;
+    int  i,j,k,m,n,o,nd,ihb,idist,n2,nn,iter,nSets;
     static char *legNN[]   = { "Ac(t)",
                                "Ac'(t)"};
     static char **legGem;
-    snew(legGem, 3);
-    for (i=0;i<3;i++)
-        snew(legGem[i], 128);
-    sprintf(legGem[0], "Ac\\s%s\\v{}\\z{}(t)", gemType);
-    sprintf(legGem[1], "Ac'(t)");
-    sprintf(legGem[2], "Ac\\s%s,fit\\v{}\\z{}(t)", gemType);
 			      
     static char *legLuzar[] = { "Ac\\sfin sys\\v{}\\z{}(t)",
                                 "Ac(t)",
@@ -2314,6 +2289,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
     int *dondata=NULL, thisThread;
 #endif
 
+
     printf("Doing autocorrelation ");
 
     /* Decide what kind of ACF calculations to do. */
@@ -2328,6 +2304,17 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
     } else if (hb->bGem) {
         acType = AC_GEM;
         printf("according to the reversible geminate recombination model by Omer Markowitch.\n");
+
+        nSets = 1 + (bBallistic ? 1:0) + (bGemFit ? 1:0);
+        snew(legGem, nSets);
+        for (i=0;i<nSets;i++)
+            snew(legGem[i], 128);
+        sprintf(legGem[0], "Ac\\s%s\\v{}\\z{}(t)", gemType);
+        if (bBallistic)
+            sprintf(legGem[1], "Ac'(t)");
+        if (bGemFit)
+            sprintf(legGem[(bBallistic ? 3:2)], "Ac\\s%s,fit\\v{}\\z{}(t)", gemType);
+
     } else {
         acType = AC_LUZAR;
         printf("according to the theory of Luzar and Chandler.\n");
@@ -2655,7 +2642,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 
                                 /* Now, build ac. */
                                 for (m=0; m<np; m++) {
-                                    if (rHbExGem[m][0]>0/*  && n0+poff[n]<nn */) {
+                                    if (rHbExGem[m][0]>0  && n0+poff[m]<nn) {
                                         low_do_autocorr(NULL,oenv,NULL,nframes,1,-1,&(rHbExGem[m]),hb->time[1]-hb->time[0],
                                                         eacNormal,1,FALSE,bNorm,FALSE,0,-1,0,1);
                                         for(j=0; (j<nn); j++)
@@ -2723,8 +2710,14 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
         xvgr_legend(fp,asize(legGem),legGem,oenv);
 
         for(j=0; (j<nn); j++)
-            fprintf(fp,"%10g  %10g  %10g  %10g\n",
-                    hb->time[j]-hb->time[0],ct[j],ctdouble[j],fittedct[j]);
+        {
+            fprintf(fp, "%10g  %10g", hb->time[j]-hb->time[0],ct[j]);
+            if (bBallistic)
+                fprintf(fp,"  %10g", ctdouble[j]);
+            if (bGemFit)
+                fprintf(fp,"  %10g", fittedct[j]);
+            fprintf(fp,"\n");
+        }
         fclose(fp);
 
         sfree(ctdouble);
@@ -3137,9 +3130,9 @@ int gmx_hbond(int argc,char *argv[])
     };
   
     static real acut=30, abin=1, rcut=0.35, r2cut=0, rbin=0.005, rshell=-1;
-    static real maxnhb=0,fit_start=1,temp=298.15,smooth_tail_start=-1, D=-1;
+    static real maxnhb=0,fit_start=1,fit_end=60,temp=298.15,smooth_tail_start=-1, D=-1;
     static bool bNitAcc=TRUE,bInsert=FALSE,bDA=TRUE,bMerge=TRUE;
-    static int  nDump=0;
+    static int  nDump=0, nFitPoints=100;
     static int nThreads = 0, nBalExp=4;
 
     static bool bContact=FALSE, bBallistic=FALSE, bBallisticDt=FALSE, bGemFit=FALSE;
@@ -3170,7 +3163,9 @@ int gmx_hbond(int argc,char *argv[])
           "when > 0, only calculate hydrogen bonds within # nm shell around "
           "one particle" },
         { "-fitstart", FALSE, etREAL, {&fit_start},
-          "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
+          "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With -gemfit we suggest -fitstart 0" },
+        { "-fitstart", FALSE, etREAL, {&fit_start},
+          "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with -gemfit)" },
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
         { "-smooth",FALSE, etREAL, {&smooth_tail_start},
@@ -3193,17 +3188,19 @@ int gmx_hbond(int argc,char *argv[])
           "HIDDENDo a full all vs all loop and estimsate the interaction energy instead of having a binary existence function for hydrogen bonds. NOT FULLY TESTED YET! DON'T USE IT!"},
         { "-gemfit", FALSE, etBOOL, {&bGemFit},
           "With -gemainate != none: fit ka and kd to the ACF"},
-        { "-gemlogstart", FALSE, etREAL, {&logAfterTime},
-          "HIDDENWith -gemfit: After this time (ps) the data points fitted to will be equidistant in log-time."},
+/*         { "-gemlogstart", FALSE, etREAL, {&logAfterTime}, */
+/*           "HIDDENWith -gemfit: After this time (ps) the data points fitted to will be equidistant in log-time."}, */
+        { "-gemnp", FALSE, etINT, {&nFitPoints},
+          "HIDDENNuber of points in the ACF used to fit rev. gem. recomb. model"},
         { "-ballistic", FALSE, etBOOL, {&bBallistic},
-          "Calculate and remove ultrafast \"ballistic\" component in the ACF."},
+          "Calculate and remove ultrafast \"ballistic\" component in the ACF"},
         { "-ballisticlen", FALSE, etREAL, {&gemBallistic},
-          "HIDDENFitting interval for the ultrafast \"ballistic\" component in ACF."},
+          "HIDDENFitting interval for the ultrafast \"ballistic\" component in ACF"},
         { "-nbalexp", FALSE, etINT, {&nBalExp},
-          "HIDDENNumber of exponentials to fit when removing the ballistic component."},
+          "HIDDENNumber of exponentials to fit when removing the ballistic component"},
         { "-ballisticDt", FALSE, etBOOL, {&bBallisticDt},
           "HIDDENIf TRUE, finding of the fastest ballistic component will be based on the time derivative at t=0, "
-          "while if FALSE, it will be based on the exponent alone (like in Markovitch 2008)."}
+          "while if FALSE, it will be based on the exponent alone (like in Markovitch 2008)"}
     };
     const char *bugs[] = {
         "The option [TT]-sel[tt] that used to work on selected hbonds is out of order, and therefore not available for the time being."
@@ -3261,9 +3258,10 @@ int gmx_hbond(int argc,char *argv[])
     unsigned char        *datable;
     output_env_t oenv;
     int     gemmode, NN;
-    PSTYPE  peri;
+    PSTYPE  peri=0;
     t_E     E;
-    int     ii, jj, hh, actual_nThreads, threadNr;
+    int     ii, jj, hh, actual_nThreads;
+    int     threadNr=0;
     bool    bGem, bNN, bParallel;
     t_gemParams *params=NULL;
     
@@ -3394,8 +3392,8 @@ int gmx_hbond(int argc,char *argv[])
     
         for(i=0; (i<nsel); i+=3) {
             int dd = index[0][i];
-            /* int */ hh = index[0][i+1];
             int aa = index[0][i+2];
+            /* int */ hh = index[0][i+1];
             add_dh (&hb->d,dd,hh,i,datable);
             add_acc(&hb->a,aa,i);
             /* Should this be here ? */
@@ -3727,8 +3725,8 @@ int gmx_hbond(int argc,char *argv[])
                         /* int ii; */
                         for(ii=0; (ii<nsel); ii++) {
                             int dd = index[0][i];
-                            /* int */ hh = index[0][i+1];
                             int aa = index[0][i+2];
+                            /* int */ hh = index[0][i+1];
                             ihb = is_hbond(hb,ii,ii,dd,aa,rcut,r2cut,ccut,x,bBox,box,
                                            hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
 	  
@@ -4105,12 +4103,14 @@ int gmx_hbond(int argc,char *argv[])
         if (opt2bSet("-ac",NFILE,fnm) || opt2bSet("-life",NFILE,fnm))
             please_cite(stdout,"Spoel2006b");
         if (opt2bSet("-ac",NFILE,fnm)) {
+            char *gemstring=NULL;
+
             if (bGem || bNN) {
-                params = init_gemParams(rcut, D, hb->time, logAfterTime, hb->nframes/2, gemBallistic, nBalExp, bBallisticDt);
+                params = init_gemParams(rcut, D, hb->time, hb->nframes/2, nFitPoints, fit_start, fit_end,
+                                        gemBallistic, nBalExp, bBallisticDt);
                 if (params == NULL)
                     gmx_fatal(FARGS, "Could not initiate t_gemParams params.");
             }
-            char *gemstring=NULL;
             gemstring = strdup(gemType[hb->per->gemtype]);
             do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
                     bMerge,bContact,fit_start,temp,r2cut>0,smooth_tail_start,oenv,

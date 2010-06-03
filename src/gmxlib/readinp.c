@@ -447,7 +447,8 @@ const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def)
 int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
 	       warninp_t wi)
 {
-  int  ii,i,j,n;
+  int  ii,i,j;
+  int n=0;
   char buf[STRLEN];
   
   ii=get_einp(ninp,inp,name);
@@ -463,12 +464,12 @@ int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
       break;
   
   if (defs[i] == NULL) {
-    n = sprintf(buf,"Invalid enum '%s' for variable %s, using '%s'\n",
+    n += sprintf(buf,"Invalid enum '%s' for variable %s, using '%s'\n",
 		(*inp)[ii].value,name,defs[0]);
-    n = sprintf(buf+n,"Next time use one of:");
+    n += sprintf(buf+n,"Next time use one of:");
     j=0;
     while (defs[j]) {
-      n = sprintf(buf+n," '%s'",defs[j]);
+      n += sprintf(buf+n," '%s'",defs[j]);
       j++;
     }
     if (wi != NULL) {

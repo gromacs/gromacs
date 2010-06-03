@@ -777,7 +777,7 @@ static void do_ballistic(const char *balFile, int nData,
                          const output_env_t oenv)
 {
   double **ctd=NULL, *td=NULL;
-  t_gemParams *GP = init_gemParams(0, 0, t, 0, nData, balTime, nBalExp, bDerivative);
+  t_gemParams *GP = init_gemParams(0, 0, t, nData, 0, 0, 0, balTime, nBalExp, bDerivative);
   static char *leg[] = {"Ac'(t)"};
   FILE *fp;
   int i, set;
@@ -825,13 +825,13 @@ static void do_ballistic(const char *balFile, int nData,
 
 static void do_geminate(const char *gemFile, int nData,
                         real *t, real **val, int nSet,
-                        const real D, const real logAfterTime,
-                        real rcut, real balTime,
+                        const real D, const real rcut, const real balTime,
+                        const int nFitPoints, const real begFit, const real endFit,
                         const output_env_t oenv)
 {
     double **ctd=NULL, **ctdGem=NULL, *td=NULL;
-    t_gemParams *GP = init_gemParams(rcut, D, t, logAfterTime,
-                                     nData, balTime, 1, FALSE);
+    t_gemParams *GP = init_gemParams(rcut, D, t, nData, nFitPoints,
+                                     begFit, endFit, balTime, 1, FALSE);
     static char *leg[] = {"Ac\\sgem\\N(t)"};
     FILE *fp;
     int i, set;
@@ -970,8 +970,8 @@ int gmx_analyze(int argc,char *argv[])
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
   static bool bIntegrate=FALSE,bRegression=FALSE,bLuzar=FALSE,bLuzarError=FALSE; 
-  static int  nsets_in=1,d=1,nb_min=4,resol=10, nBalExp=4;
-  static real temp=298.15,fit_start=1,smooth_tail_start=-1, logAfterTime=10, balTime=0.2, diffusion=0,rcut=0.35;
+  static int  nsets_in=1,d=1,nb_min=4,resol=10, nBalExp=4, nFitPoints=100;
+  static real temp=298.15,fit_start=1, fit_end=60, smooth_tail_start=-1, balTime=0.2, diffusion=5e-5,rcut=0.35;
   
   /* must correspond to enum avbar* declared at beginning of file */
   static const char *avbar_opt[avbarNR+1] = { 
@@ -1009,6 +1009,8 @@ int gmx_analyze(int argc,char *argv[])
       "Temperature for the Luzar hydrogen bonding kinetics analysis" },
     { "-fitstart", FALSE, etREAL, {&fit_start},
       "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
+    { "-fitend", FALSE, etREAL, {&fit_end},
+      "Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with -gem" }, 
     { "-smooth",FALSE, etREAL, {&smooth_tail_start},
       "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
     { "-nbmin",   FALSE, etINT, {&nb_min},
@@ -1034,13 +1036,14 @@ int gmx_analyze(int argc,char *argv[])
       "HIDDENNumber of exponentials to fit to the ultrafast component" },
     { "-baltime", FALSE, etREAL, {&balTime},
       "HIDDENTime up to which the ballistic component will be fitted" },
+    { "-gemnp", FALSE, etINT, {&nFitPoints},
+      "HIDDENNumber of data points taken from the ACF to use for fitting to rev. gem. recomb. model."},
     { "-rcut", FALSE, etREAL, {&rcut},
       "Cut-off for hydrogen bonds in geminate algorithms" },
-    { "-gemtype", FALSE, etENUM, {gemType},
-      "What type of gminate recombination to use"},
+/*     { "-gemtype", FALSE, etENUM, {gemType}, */
+/*       "What type of gminate recombination to use"}, */
     { "-D", FALSE, etREAL, {&diffusion},
-      "The self diffusion coefficient which is used for the reversible geminate recombination model."
-      "If non-positive, then the diffusion coefficient will be one of the parameters fitted"}
+      "The self diffusion coefficient which is used for the reversible geminate recombination model."}
   };
 #define NPA asize(pa)
 
@@ -1200,7 +1203,8 @@ int gmx_analyze(int argc,char *argv[])
   if (balfile)
       do_ballistic(balfile,n,t,val,nset,balTime,nBalExp,bDer,oenv);
   if (gemfile)
-      do_geminate(gemfile,n,t,val,nset,diffusion,logAfterTime,rcut,balTime,oenv);
+      do_geminate(gemfile,n,t,val,nset,diffusion,rcut,balTime,
+                  nFitPoints, fit_start, fit_end, oenv);
   if (bPower)
     power_fit(n,nset,val,t);
   if (acfile) {
