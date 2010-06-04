@@ -918,7 +918,7 @@ static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
     }
 }
 
-static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
+static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
                                           t_restp *rptr,t_hackblock *hbr,
                                           bool bVerbose)
 {
@@ -1056,11 +1056,15 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
                     printf("Deleting atom '%s' in residue '%s' %d\n",
                            oldnm,rptr->resname,resnr);
                 }
-                sfree(pdba->atomname[atind]);
+                /* We should free the atom name,
+                 * but it might be used multiple times in the symtab.
+                 * sfree(pdba->atomname[atind]);
+                 */
                 for(k=atind+1; k<pdba->nr; k++)
                 {
                     pdba->atom[k-1]     = pdba->atom[k];
                     pdba->atomname[k-1] = pdba->atomname[k];
+                    copy_rvec(x[k],x[k-1]);
                 }
                 pdba->nr--;
                 bDeleted = TRUE;
@@ -1072,7 +1076,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
 }
     
 void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
-                              t_atoms *pdba,
+                              t_atoms *pdba,rvec *x,
                               bool bVerbose)
 {
     int  i,j,k;
@@ -1100,7 +1104,7 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
         if (j == rptr->natom)
         {
             /* Not found yet, check if we have to rename this atom */
-            if (match_atomnames_with_rtp_atom(pdba,i,
+            if (match_atomnames_with_rtp_atom(pdba,x,i,
                                               rptr,&(hb[pdba->atom[i].resind]),
                                               bVerbose))
             {
