@@ -55,6 +55,8 @@ void init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
 
 extern real calc_ewaldcoeff(real rc,real dtol);
 /* Determines the Ewald parameter, both for Ewald and PME */
+extern real calc_ewaldljcoeff(real rc,real dtol);
+/* Determines the Ewald parameter, both for Ewald and PME */
 
 
 extern real do_ewald(FILE *log,       bool bVerbose,
@@ -80,6 +82,13 @@ extern real ewald_LRcorrection(FILE *fp,
 /* Calculate the Long range correction to ewald, due to 
  * 1-4 interactions, surface dipole term and charge terms
  */
+extern real ewaldlj_LRcorrection(FILE *fplog,
+                                 int start,int end,
+                                 t_commrec *cr,t_forcerec *fr,
+                                 real *chargeA,real *chargeB,
+                                 t_blocka *excl,rvec x[],
+                                 matrix box,
+                                 real lambda,real *dvdlambda);
 
 /* Routines to set global constants for speeding up the calculation
  * of potentials and forces.

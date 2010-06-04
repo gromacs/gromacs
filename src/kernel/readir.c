@@ -856,6 +856,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("EWALD/PME/PPPM parameters");
   ITYPE ("pme_order",   ir->pme_order,   4);
   RTYPE ("ewald_rtol",  ir->ewald_rtol, 0.00001);
+  RTYPE ("ewald_rtol_lj", ir->ewald_rtol_lj, 0.1);
   EETYPE("ewald_geometry", ir->ewald_geometry, eewg_names);
   RTYPE ("epsilon_surface", ir->epsilon_surface, 0.0);
   EETYPE("optimize_fft",ir->bOptFFT,  yesno_names);

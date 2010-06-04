@@ -37,6 +37,7 @@
 #endif
 
 #include "typedefs.h"
+#include "maths.h"
 #include "mdatoms.h"
 #include "smalloc.h"
 #include "main.h"
@@ -128,6 +129,10 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     srenew(md->chargeA,md->nalloc);
     if (md->nPerturbed) {
       srenew(md->chargeB,md->nalloc);
+    }
+    srenew(md->c6A,md->nalloc);
+    if (md->nPerturbed) {
+      srenew(md->c6B,md->nalloc);
     }
     srenew(md->typeA,md->nalloc);
     if (md->nPerturbed) {
@@ -227,9 +232,11 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     }
     md->chargeA[i]	= atom->q;
     md->typeA[i]	= atom->type;
+    md->c6A[i]          = sqrt(mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c6);
     if (md->nPerturbed) {
       md->chargeB[i]	= atom->qB;
       md->typeB[i]	= atom->typeB;
+      md->c6B[i]        = sqrt(mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c6);
       md->bPerturbed[i] = PERTURBED(*atom);
     }
     md->ptype[i]	= atom->ptype;

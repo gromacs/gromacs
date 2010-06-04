@@ -635,6 +635,24 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         }
     }
+    if (EVDW_PME(inputrec->vdwtype))
+    {
+        if (PAR(cr))
+        {
+            gmx_fatal(FARGS,"LJ-PME does not yet work in parallel");
+        }
+
+        if (cr->duty & DUTY_PME)
+        {
+            status = gmx_pme_lj_init(&fr->pmeljdata,cr,npme_major,npme_minor,inputrec,
+                                     mtop ? mtop->natoms : 0,FALSE,
+                                     (Flags & MD_REPRODUCIBLE));
+            if (status != 0)
+            {
+                gmx_fatal(FARGS,"Error %d initializing LJ-PME",status);
+            }
+        }
+    }
 
 
     if (integrator[inputrec->eI].func == do_md

@@ -1320,6 +1320,18 @@ void init_forcerec(FILE *fp,
                     1/fr->ewaldcoeff);
         }
     }
+    if(EVDW_PME(ir->vdwtype))
+    {
+        if (fp)
+            fprintf(fp,"Will do PME sum in reciprocal space for C6.\n");
+        please_cite(fp,"Essman95a");
+        fr->ewaldljcoeff=calc_ewaldljcoeff(ir->rvdw, ir->ewald_rtol_lj);
+        if (fp)
+        {
+            fprintf(fp,"Using a Gaussian width (1/beta) of %g nm for Ewald\n",
+                    1/fr->ewaldljcoeff);
+        }
+    }
     
     /* Electrostatics */
     fr->epsilon_r  = ir->epsilon_r;
@@ -1360,7 +1372,7 @@ void init_forcerec(FILE *fp,
             set_shift_consts(fp,fr->rcoulomb_switch,fr->rcoulomb,box_size,fr);
     }
     
-    fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||
+    fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop,F_POSRES) > 0 ||
                        IR_ELEC_FIELD(*ir));
     

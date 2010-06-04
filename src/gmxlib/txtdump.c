@@ -540,6 +540,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("nkz",ir->nkz);
     PI("pme_order",ir->pme_order);
     PR("ewald_rtol",ir->ewald_rtol);
+    PR("ewald_rtol_lj",ir->ewald_rtol_lj);
     PR("ewald_geometry",ir->ewald_geometry);
     PR("epsilon_surface",ir->epsilon_surface);
     PS("optimize_fft",BOOL(ir->bOptFFT));

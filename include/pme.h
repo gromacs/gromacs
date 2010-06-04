@@ -58,8 +58,13 @@ extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 			int nnodes_major,int nnodes_minor,
 			t_inputrec *ir,int homenr,
 			bool bFreeEnergy, bool bReproducible);
+extern int gmx_pme_lj_init(gmx_pme_lj_t *pmedata,t_commrec *cr,
+                           int nnodes_major,int nnodes_minor,
+                           t_inputrec *ir,int homenr,
+                           bool bFreeEnergy, bool bReproducible);
 			
 extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
+extern int gmx_pme_lj_destroy(FILE *log,gmx_pme_lj_t *pmedata);
 /* Initialize and destroy the pme data structures resepectively.
  * Return value 0 indicates all well, non zero is an error code.
  */
@@ -80,6 +85,16 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      matrix lrvir,    real ewaldcoeff,
 		      real *energy,    real lambda,    
 		      real *dvdlambda, int flags);
+extern int gmx_pme_lj_do(gmx_pme_lj_t pme,
+                         int start,       int homenr,
+                         rvec x[],        rvec f[],
+                         real chargeA[],  real chargeB[],
+                         matrix box,      t_commrec *cr,
+                         int  maxshift0,  int maxshift1,
+                         t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
+                         matrix lrvir,    real ewaldcoeff,
+                         real *energy,    real lambda,
+                         real *dvdlambda, int flags);
 /* Do a PME calculation for the long range electrostatics. 
  * flags, defined above, determine which parts of the calculation are performed.
  * Return value 0 indicates all well, non zero is an error code.

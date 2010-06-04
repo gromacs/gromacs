@@ -83,7 +83,7 @@ const char *eewg_names[eewgNR+1] = {
 };
 
 const char *evdw_names[evdwNR+1] = {
-  "Cut-off", "Switch", "Shift", "User", "Encad-shift", NULL
+  "Cut-off", "Switch", "Shift", "User", "Encad-shift", "PME", NULL
 };
 
 const char *econstr_names[econtNR+1] = {

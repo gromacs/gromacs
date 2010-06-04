@@ -74,6 +74,34 @@ real calc_ewaldcoeff(real rc,real dtol)
   return x;
 }
 
+real calc_ewaldljcoeff(real rc,real dtol)
+{
+  real x=5,low,high;
+  int n,i=0;
+  
+  
+  if (dtol < 0)
+  {
+      return -1.0/dtol;
+  }
+  do {
+    i++;
+    x*=2;
+  } while (exp(-x*x*rc*rc)*(1+x*x*rc*rc+x*x*x*x*rc*rc*rc*rc/2) > dtol);
+
+  n=i+60; /* search tolerance is 2^-60 */
+  low=0;
+  high=x;
+  for(i=0;i<n;i++) {
+    x=(low+high)/2;
+    if (exp(-x*x*rc*rc)*(1+x*x*rc*rc+x*x*x*x*rc*rc*rc*rc/2) > dtol)
+      low=x;
+    else 
+      high=x;
+  }
+  return x;
+}
+
 
 
 real ewald_LRcorrection(FILE *fplog,
@@ -388,6 +416,97 @@ real ewald_LRcorrection(FILE *fplog,
 		L1*Vdipole[0]+lambda*Vdipole[1]);
       }
     }
+  }
+    
+  /* Return the correction to the energy */
+  return enercorr;
+}
+
+real ewaldlj_LRcorrection(FILE *fplog,
+                          int start,int end,
+                          t_commrec *cr,t_forcerec *fr,
+                          real *chargeA,real *chargeB,
+                          t_blocka *excl,rvec x[],
+                          matrix box,
+                          real lambda,real *dvdlambda)
+{
+  int     i,i1,i2,j,k,m,iv,jv,q;
+  atom_id *AA;
+  double  q2sumA,q2sumB,Vexcl,dvdl_excl; /* Necessary for precision */
+  real    v,vc,qiA,qiB,dr,dr2,rinv,fscal,enercorr;
+  real    VselfA,VselfB=0,rinv2,ewc=fr->ewaldljcoeff,ewcdr;
+  rvec    df,dx,dipcorrA,dipcorrB;
+  rvec    *f=fr->f_novirsum;
+  tensor  dxdf;
+  real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+  real    L1,dipole_coeff,qqA,qqB,qqL,vr0;
+  /*#define TABLES*/
+#ifdef TABLES
+  real    tabscale=fr->tabscale;
+  real    eps,eps2,VV,FF,F,Y,Geps,Heps2,Fp,fijC,r1t;
+  real    *VFtab=fr->coulvdwtab;
+  int     n0,n1,nnn;
+#else
+  double  isp=0.564189583547756;
+#endif
+  int     niat;
+  bool    bFreeEnergy = (chargeB != NULL);
+  bool    bMolPBC = fr->bMolPBC;
+
+  vr0 = ewc*2/sqrt(M_PI);
+
+  AA         = excl->a;
+  Vexcl      = 0;
+  dvdl_excl  = 0;
+  q2sumA     = 0;
+  q2sumB     = 0;
+  L1         = 1.0-lambda;
+
+  if (DOMAINDECOMP(cr))
+    niat = excl->nr;
+  else
+    niat = end; 
+      
+  clear_mat(dxdf);
+  if (!bFreeEnergy) {
+    for(i=start; (i<niat); i++) {
+      /* Initiate local variables (for this i-particle) to 0 */
+      qiA = chargeA[i];
+      if (i < end)
+	q2sumA += chargeA[i]*chargeA[i];
+    }
+  } else {
+    for(i=start; (i<niat); i++) {
+      /* Initiate local variables (for this i-particle) to 0 */
+      qiA = chargeA[i];
+      qiB = chargeB[i];
+      if (i < end) {
+	q2sumA += chargeA[i]*chargeA[i];
+	q2sumB += chargeB[i]*chargeB[i];
+      }
+    }
+  }
+/*  for(iv=0; (iv<DIM); iv++)
+    for(jv=0; (jv<DIM); jv++)
+      fr->vir_lj_recip[iv][jv] += 0.5*dxdf[iv][jv];
+*/
+      
+  VselfA = -ewc*ewc*ewc*ewc*ewc*ewc*q2sumA/12;
+
+  if (!bFreeEnergy) {
+    enercorr = - VselfA - Vexcl;
+   } else {
+    VselfB = -ewc*ewc*ewc*ewc*ewc*ewc*q2sumB/12;
+    enercorr = - (L1*VselfA + lambda*VselfB) - Vexcl;
+    *dvdlambda += - VselfB + VselfA - dvdl_excl;
+  }
+
+  if (debug) {
+    fprintf(debug,"Long Range corrections for Ewald interactions:\n");
+    fprintf(debug,"start=%d,natoms=%d\n",start,end-start);
+    fprintf(debug,"q2sum = %g, Vself=%g\n",
+	    L1*q2sumA+lambda*q2sumB,L1*VselfA+lambda*VselfB);
+    fprintf(debug,"Long Range correction: Vexcl=%g\n",Vexcl);
   }
     
   /* Return the correction to the energy */

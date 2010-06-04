@@ -874,6 +874,11 @@ void do_force(FILE *fplog,t_commrec *cr,
                 /* Add the mesh contribution to the virial */
                 m_add(vir_force,fr->vir_el_recip,vir_force);
             }
+            if (EVDW_PME(fr->vdwtype))
+            {
+                /* Add the mesh contribution to the virial */
+                m_add(vir_force,fr->vir_lj_recip,vir_force);
+            }
             if (debug)
             {
                 pr_rvecs(debug,0,"vir_force",vir_force,DIM);

@@ -546,6 +546,104 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     }
     where();
     debug_gmx();
+
+    if (EVDW_PME(fr->vdwtype))
+    {
+        bSB = (ir->nwall == 2);
+        if (bSB)
+        {
+            copy_mat(box,boxs);
+            svmul(ir->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
+            box_size[ZZ] *= ir->wall_ewald_zfac;
+        }
+
+        clear_mat(fr->vir_lj_recip);
+
+        Vcorr = 0;
+        if (fr->n_tpi == 0)
+        {
+            dvdlambda = 0;
+            Vcorr = ewaldlj_LRcorrection(fplog,md->start,md->start+md->homenr,
+                                         cr,fr,
+                                         md->c6A,
+                                         NULL,
+                                         excl,x,bSB ? boxs : box,
+                                         lambda,&dvdlambda);
+            PRINT_SEPDVDL("Ewald excl. corr.",Vcorr,dvdlambda);
+            enerd->dvdl_lin += dvdlambda;
+        }
+        else
+        {
+            Vcorr = 0;
+        }
+
+
+        dvdlambda = 0;
+        status = 0;
+        if (cr->duty & DUTY_PME)
+        {
+            if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
+            {
+                pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                if (flags & GMX_FORCE_FORCES)
+                {
+                    pme_flags |= GMX_PME_CALC_F;
+                }
+                if (flags & GMX_FORCE_VIRIAL)
+                {
+                    pme_flags |= GMX_PME_CALC_ENER_VIR;
+                }
+                wallcycle_start(wcycle,ewcPMEMESH);
+                status = gmx_pme_lj_do(fr->pmeljdata,
+                                    md->start,md->homenr - fr->n_tpi,
+                                    x,fr->f_novirsum,
+                                    md->c6A,md->c6B,
+                                    bSB ? boxs : box,cr,
+                                    DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
+                                    DOMAINDECOMP(cr) ? dd_pme_maxshift1(cr->dd) : 0,
+                                    nrnb,wcycle,
+                                    fr->vir_lj_recip,fr->ewaldljcoeff,
+                                    &Vlr,lambda,&dvdlambda,
+                                    pme_flags);
+                *cycles_pme += wallcycle_stop(wcycle,ewcPMEMESH);
+
+                /* We should try to do as little computation after
+                 * this as possible, because parallel PME synchronizes
+                 * the nodes, so we want all load imbalance of the rest
+                 * of the force calculation to be before the PME call.
+                 * DD load balancing is done on the whole time of
+                 * the force call (without PME).
+                 */
+            }
+            if (fr->n_tpi > 0)
+            {
+                gmx_fatal(FARGS,"Test particle insertion not implemented with LJ-PME");
+            }
+            PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
+        }
+        else
+        {
+            /* Energies and virial are obtained later from the PME nodes */
+            /* but values have to be zeroed out here */
+            Vlr=0.0;
+        }
+        if (status != 0)
+        {
+            gmx_fatal(FARGS,"Error %d in long range LJ routine %s",
+                      status,EVDWTYPE(fr->vdwtype));
+        }
+        enerd->dvdl_lin += dvdlambda;
+        enerd->term[F_LJ_RECIP] = Vlr + Vcorr;
+        if (debug)
+        {
+            fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
+                    Vlr,Vcorr,enerd->term[F_LJ_RECIP]);
+            pr_rvecs(debug,0,"vir_lj_recip after corr",fr->vir_lj_recip,DIM);
+            pr_rvecs(debug,0,"fshift after LR Corrections",fr->fshift,SHIFTS);
+        }
+    }
+    where();
+    debug_gmx();
 	
     if (debug)
     {

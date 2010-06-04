@@ -46,6 +46,7 @@ extern "C" {
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 typedef struct gmx_pme *gmx_pme_t;
+typedef struct gmx_pme_lj *gmx_pme_lj_t;
 
 typedef struct {
   real r;         /* range of the table */
@@ -264,11 +265,14 @@ typedef struct {
 
   /* Long-range forces and virial for PPPM/PME/Ewald */
   gmx_pme_t pmedata;
+  gmx_pme_lj_t pmeljdata;
   tensor    vir_el_recip;
+  tensor    vir_lj_recip;
 
   /* PME/Ewald stuff */
   bool bEwald;
   real ewaldcoeff;
+  real ewaldljcoeff;
   ewald_tab_t ewald_table;
 
   /* Virial Stuff */
