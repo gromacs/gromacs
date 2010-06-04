@@ -142,7 +142,7 @@ void mk_bonds(int nnm,t_nm2type nmt[],
     b.c[i] = 0.0;
     
   if (bPBC)
-    set_pbc(&pbc,epbcXYZ,box);
+    set_pbc(&pbc,-1,box);
   for(i=0; (i<atoms->nr); i++) {
     if ((i % 10) == 0)
       fprintf(stderr,"\ratom %d",i);
@@ -375,14 +375,11 @@ int main(int argc, char *argv[])
     "interactions. The equilibrium distances and angles are taken",
     "from the input coordinates, the force constant are set with",
     "command line options."
-    "The force fields supported currently are:[PAR]",
-    "G43a1  GROMOS96 43a1 Forcefield (official distribution)[PAR]",
+    "The force fields somewhat supported currently are:[PAR]",
+    "G53a5  GROMOS96 53a5 Forcefield (official distribution)[PAR]",
     "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
-    "G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)[PAR]",
-    "gmx    Gromacs Forcefield (a modified GROMOS87, see manual)[PAR]",
-    "G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)[PAR]",
     "The corresponding data files can be found in the library directory",
-    "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
+    "with name atomname2type.n2t. Check chapter 5 of the manual for more",
     "information about file formats. By default the forcefield selection",
     "is interactive, but you can use the [TT]-ff[tt] option to specify",
     "one of the short names above on the command line instead. In that",
@@ -392,7 +389,7 @@ int main(int argc, char *argv[])
     "The atom type selection is primitive. Virtually no chemical knowledge is used",
     "Periodic boundary conditions screw up the bonding",
     "No improper dihedrals are generated",
-    "The atoms to atomtype translation table is incomplete (ffG43a1.n2t file in the $GMXLIB directory). Please extend it and send the results back to the GROMACS crew."
+    "The atoms to atomtype translation table is incomplete (atomname2type.n2t files in the data directory). Please extend it and send the results back to the GROMACS crew."
   };
   FILE       *fp;
   t_params   plist[F_NRE];
@@ -416,6 +413,7 @@ int main(int argc, char *argv[])
   bool       bRTP,bTOP,bOPLS;
   t_symtab   symtab;
   real       cutoff,qtot,mtot;
+  char       n2t[STRLEN];
   output_env_t oenv;
   
   t_filenm fnm[] = {
@@ -434,7 +432,7 @@ int main(int argc, char *argv[])
   static const char *ff = "oplsaa";
   t_pargs pa[] = {
     { "-ff",     FALSE, etSTR, {&ff},
-      "Force field for your simulation. Type \"select\" for interactive selcection." },
+      "Force field for your simulation. Type \"select\" for interactive selection." },
     { "-v",      FALSE, etBOOL, {&bVerbose},
       "Generate verbose output in the top file." },
     { "-nexcl", FALSE, etINT,  {&nexcl},
@@ -482,7 +480,7 @@ int main(int argc, char *argv[])
 	    forcefield,sizeof(forcefield),
 	    ffdir,sizeof(ffdir));
 
-  bOPLS = (strcmp(forcefield,"ffoplsaa") == 0);
+  bOPLS = (strcmp(forcefield,"oplsaa") == 0);
   
     
   mymol.name = strdup(molnm);
@@ -501,11 +499,15 @@ int main(int argc, char *argv[])
 
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,&epbc,box);
 
-  nm2t = rd_nm2type(ffdir,&nnm);
-  printf("There are %d name to type translations\n",nnm);
+  sprintf(n2t,"%s",ffdir);
+  nm2t = rd_nm2type(n2t,&nnm);
+  if (nnm == 0)
+    gmx_fatal(FARGS,"No or incorrect atomname2type.n2t file found (looking for %s)",
+	      n2t);
+  else
+    printf("There are %d name to type translations in file %s\n",nnm,n2t);
   if (debug)
     dump_nm2type(debug,nnm,nm2t);
-  
   printf("Generating bonds from distances...\n");
   snew(nbonds,atoms->nr);
   mk_bonds(nnm,nm2t,atoms,x,&(plist[F_BONDS]),nbonds,forcefield,

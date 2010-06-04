@@ -69,7 +69,7 @@ extern void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
  */
 
 extern void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
-				     t_atoms *pdba,
+				     t_atoms *pdba,rvec *x,
 				     bool bVerbose);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
  * If renaming involves atoms added wrt to the rtp database,

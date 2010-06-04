@@ -44,6 +44,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#ifdef HAVE_COPYFILE_H
+/* BSD specific */
+#include <copyfile.h>
+#endif
+
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <direct.h>
 #include <io.h>
@@ -56,6 +61,7 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
+
 
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
@@ -714,8 +720,7 @@ void gmx_tmpnam(char *buf)
     /* name in Buf should now be OK */
 }
 
-    int
-gmx_truncatefile(char *path, off_t length)
+int gmx_truncatefile(char *path, off_t length)
 {
 #ifdef _MSC_VER
     /* Microsoft visual studio does not have "truncate" */
@@ -735,3 +740,74 @@ gmx_truncatefile(char *path, off_t length)
     return truncate(path,length);
 #endif
 }
+
+
+int gmx_file_rename(const char *oldname, const char *newname)
+{
+#if (!(defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)))
+    /* under unix, rename() is atomic (at least, it should be). */
+    return rename(oldname, newname);
+#else
+    if (MoveFileEx(oldname, newname, 
+                   MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))
+        return 0;
+    else
+        return 1;
+#endif
+}
+
+int gmx_file_copy(const char *oldname, const char *newname)
+{
+#if defined(HAVE_COPYFILE) && !defined(GMX_FAHCORE)
+    /* this is BSD specific, but convenient */
+    return copyfile(oldname, newname, NULL, COPYFILE_DATA);
+#elif defined(HAVE_WIN_COPYFILE) && !defined(GMX_FAHCORE)
+    if (CopyFile(oldname, newname, FALSE))
+        return 0;
+    else
+        return 1;
+#else
+#define FILECOPY_BUFSIZE (1<<16)
+    /* POSIX doesn't support any of the above. */
+    FILE *in=NULL; 
+    FILE *out=NULL;
+    char buf[FILECOPY_BUFSIZE];
+
+    in=fopen(oldname, "rb");
+    if (!in)
+        goto error;
+    out=fopen(newname, "wb");
+    if (!out)
+        goto error;
+
+    while(!feof(in))
+    {
+        size_t nread;
+        
+        nread=fread(buf, sizeof(char), FILECOPY_BUFSIZE, in);
+        if (nread>0)
+        {
+            size_t ret;
+            ret=fwrite(buf, sizeof(char), nread, out);
+            if (ret!=nread)
+            {
+                goto error;
+            }
+        }
+        if (ferror(in))
+            goto error;
+    }
+    fclose(in);
+    fclose(out);
+    return 0;
+error:
+    if (in)
+        fclose(in);
+    if (out)
+        fclose(out);
+    return 1;
+#undef FILECOPY_BUFSIZE
+#endif
+}
+
+

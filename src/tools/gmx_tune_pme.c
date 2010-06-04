@@ -57,6 +57,7 @@ enum {
     eParselogNoPerfData,
     eParselogTerm,
     eParselogResetProblem,
+    eParselogNoDDGrid,
     eParselogNr
 };
 
@@ -207,6 +208,10 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
                     else if (perfdata->nPMEnodes != npme)
                         gmx_fatal(FARGS, "PME nodes from command line and output file are not identical");
                     iFound = eFoundDDStr;
+                }
+                else if (str_starts(line, "There is no domain decomposition for"))
+                {
+                    return eParselogNoDDGrid;
                 }
                 break;
             case eFoundDDStr:
@@ -795,12 +800,14 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
     bool    bResetProblem=FALSE;
     
 
-    /* This string array corresponds to the eParselog enum type from above */
+    /* This string array corresponds to the eParselog enum type at the start
+     * of this file */
     const char* ParseLog[] = {"OK",
-                              "Logfile not found", 
-                              "No timings in log file",
+                              "Logfile not found!",
+                              "No timings, logfile truncated?",
                               "Run was terminated",
-                              "Counters were not reset properly"};
+                              "Counters were not reset properly",
+                              "No DD grid found for these settings"};
     char    str_PME_f_load[13];
 
     /* The -noaddpart option is needed so that the md.log files do not
@@ -1080,7 +1087,8 @@ static bool is_bench_option(char *opt, bool bSet)
     {
         if ( (0 == strcmp(opt, "-append" ))
           || (0 == strcmp(opt, "-addpart"))
-          || (0 == strcmp(opt, "-maxh"   )) )
+          || (0 == strcmp(opt, "-maxh"   ))
+          || (0 == strcmp(opt, "-deffnm" )) )
             return FALSE;
         else
             return TRUE;
@@ -1214,7 +1222,7 @@ static void create_command_line_snippets(
             
             if ( is_bench_file(opt, opt2bSet(opt,nfile,fnm), is_optional(&fnm[i]), is_output(&fnm[i])) )
             {
-                /* All options starting with -b* need th 'b' removed,
+                /* All options starting with -b* need the 'b' removed,
                  * therefore overwrite strbuf */
                 if (0 == strncmp(opt, "-b", 2))     
                     sprintf(strbuf, "-%s %s ", &opt[2], name);
@@ -1314,8 +1322,8 @@ int gmx_tune_pme(int argc,char *argv[])
             "'export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"'[PAR]",
             "Please call g_tune_pme with the normal options you would pass to",
             "mdrun and add [TT]-np[tt] for the number of processors to perform the",
-            "tests on, or [TT]-nt[tt] for the number of threads. You can also add [TT]-r[tt] to repeat each test several times",
-            "to get better statistics. [PAR]",
+            "tests on, or [TT]-nt[tt] for the number of threads. You can also add [TT]-r[tt]",
+            "to repeat each test several times to get better statistics. [PAR]",
             "g_tune_pme can test various real space / reciprocal space workloads",
             "for you. With [TT]-ntpr[tt] you control how many extra [TT].tpr[tt] files will be",
             "written with enlarged cutoffs and smaller fourier grids respectively.",
@@ -1325,11 +1333,12 @@ int gmx_tune_pme(int argc,char *argv[])
             "factor [TT]-fac[tt] (default 1.2). The remaining [TT].tpr[tt] files will have equally",
             "spaced values inbetween these extremes. Note that you can set [TT]-ntpr[tt] to 1",
             "if you just want to find the optimal number of PME-only nodes; in that case",
-            "your input [TT].tpr[tt] file will remain unchanged[PAR]",
-            "For the benchmark runs, 2500 time steps should suffice for most MD",
-            "systems. Note that dynamic load balancing needs about 100 time steps",
-            "to adapt to local load imbalances. To get clean benchmark numbers,",
-            "[TT]-steps[tt] should therefore always be much larger than 100![PAR]",
+            "your input [TT].tpr[tt] file will remain unchanged.[PAR]",
+            "For the benchmark runs, the default of 1000 time steps should suffice for most",
+            "MD systems. The dynamic load balancing needs about 100 time steps",
+            "to adapt to local load imbalances, therefore the time step counters",
+            "are by default reset after 100 steps. For large systems",
+            "(>1M atoms) you may have to set [TT]-resetstep[tt] to a higher value.[PAR]",
             "Example call: [TT]g_tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
             "After calling mdrun several times, detailed performance information",
             "is available in the output file perf.out. "
@@ -1451,6 +1460,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { NULL, "auto", "no", "yes", NULL };
     real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
     char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
+    char *deffnm=NULL;
 #define STD_CPT_PERIOD (15.0)
     real cpt_period=STD_CPT_PERIOD,max_hours=-1;
     bool bAppendFiles=FALSE,bAddPart=TRUE;
@@ -1487,8 +1497,8 @@ int gmx_tune_pme(int argc,char *argv[])
       /******************/
       /* mdrun options: */
       /******************/
-      /*{ "-nt",        FALSE, etINT,  {&nthreads},
-        "HIDDENNumber of threads to start on each node" },*/
+      { "-deffnm",    FALSE, etSTR, {&deffnm},
+          "Set the default filename for all file options at launch time" },
       { "-ddorder",   FALSE, etENUM, {ddno_opt},
         "DD node order" },
       { "-ddcheck",   FALSE, etBOOL, {&bDDBondCheck},

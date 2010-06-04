@@ -343,7 +343,7 @@ static void mk_hbmap(t_hbdata *hb,bool bTwo,bool bInsert)
         if (hb->hbmap[i] == NULL)
             gmx_fatal(FARGS,"Could not allocate enough memory for hbmap");
         for (j=0; (j>hb->a.nra); j++)
-            hb->hbmap[i][j] == NULL;
+            hb->hbmap[i][j] = NULL;
     }
 }
 
@@ -3264,9 +3264,10 @@ int gmx_hbond(int argc,char *argv[])
     unsigned char        *datable;
     output_env_t oenv;
     int     gemmode, NN;
-    PSTYPE  peri;
+    PSTYPE  peri=0;
     t_E     E;
-    int     ii, jj, hh, actual_nThreads, threadNr;
+    int     ii, jj, hh, actual_nThreads;
+    int     threadNr=0;
     bool    bGem, bNN, bParallel;
     t_gemParams *params=NULL;
     
@@ -3397,8 +3398,8 @@ int gmx_hbond(int argc,char *argv[])
     
         for(i=0; (i<nsel); i+=3) {
             int dd = index[0][i];
-            /* int */ hh = index[0][i+1];
             int aa = index[0][i+2];
+            /* int */ hh = index[0][i+1];
             add_dh (&hb->d,dd,hh,i,datable);
             add_acc(&hb->a,aa,i);
             /* Should this be here ? */
@@ -3730,8 +3731,8 @@ int gmx_hbond(int argc,char *argv[])
                         /* int ii; */
                         for(ii=0; (ii<nsel); ii++) {
                             int dd = index[0][i];
-                            /* int */ hh = index[0][i+1];
                             int aa = index[0][i+2];
+                            /* int */ hh = index[0][i+1];
                             ihb = is_hbond(hb,ii,ii,dd,aa,rcut,r2cut,ccut,x,bBox,box,
                                            hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
 	  
@@ -4108,13 +4109,14 @@ int gmx_hbond(int argc,char *argv[])
         if (opt2bSet("-ac",NFILE,fnm) || opt2bSet("-life",NFILE,fnm))
             please_cite(stdout,"Spoel2006b");
         if (opt2bSet("-ac",NFILE,fnm)) {
+            char *gemstring=NULL;
+
             if (bGem || bNN) {
                 params = init_gemParams(rcut, D, hb->time, hb->nframes/2, nFitPoints, fit_start, fit_end,
                                         gemBallistic, nBalExp, bBallisticDt);
                 if (params == NULL)
                     gmx_fatal(FARGS, "Could not initiate t_gemParams params.");
             }
-            char *gemstring=NULL;
             gemstring = strdup(gemType[hb->per->gemtype]);
             do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
                     bMerge,bContact,fit_start,temp,r2cut>0,smooth_tail_start,oenv,

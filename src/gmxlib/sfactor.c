@@ -365,7 +365,7 @@ extern int return_atom_type (const char *name,gmx_structurefactors_t *gsf)
   else{
 	  nrc=0;
 	  for(i=0;i<cnt;i++){
-		  if(strlen(gsft->atomnm[tndx[i]])>nrc){
+		  if(strlen(gsft->atomnm[tndx[i]])>(size_t)nrc){
 			  nrc=strlen(gsft->atomnm[tndx[i]]);
 		      fndx=tndx[i];
 		  }

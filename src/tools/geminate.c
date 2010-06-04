@@ -967,7 +967,14 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
     ddt[2];
   bool sorted;
   size_t n;
-  const size_t p = nexp*2+1;              /* Number of parameters. */
+  size_t p;
+
+  nData = 0;
+  do {
+    nData++;
+  } while (t[nData]<tMax+t[0] && nData<len);
+
+  p = nexp*2+1;              /* Number of parameters. */
 
 #ifdef HAVE_LIBGSL
   const gsl_multifit_fdfsolver_type *T

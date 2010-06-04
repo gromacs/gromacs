@@ -108,6 +108,25 @@ topology, this can be useful for normal mode analysis.</dd>
 <dt><b>md</b></dt>
 <dd>A <!--Idx-->leap-frog<!--EIdx--> algorithm for integrating Newton's
 equations of motion.</dd>
+<dt><b>md-vv</b></dt>
+<dd>A velocity Verlet algorithm for integrating Newton's equations of motion.
+For constant NVE simulations the results are analytically, but not binary,
+identical to the <b>md</b> leap-frog integrator, except for the kinetic
+energy, which is determined from the whole step velocities and is therefore
+slightly too small. The advantage of this integrator is more accurate,
+reversible Nose-Hoover and Parrinello-Rahman coupling integration
+based on Trotter expansion, as well as (slightly too small) full step velocity
+output. This all comes at the cost off extra computation, especially with
+constraints and extra communication in parallel. Note that for nearly all
+production simulations the <b>md</b> integrator is accurate enough.
+</dd>
+<dt><b>md-vv-avek</b></dt>
+<dd>A velocity Verlet algorithm identical to <b>md-vv</b>, except that
+the kinetic energy is determined more accurately as the average of
+the two half step kinetic energies as in the <b>md</b> integrator.
+With Nose-Hoover and/or Parrinello-Rahman coupling this comes with
+a slight increase in computational cost.
+</dd>
 <dt><b>sd</b></dt>
 <dd> An accurate leap-frog stochastic dynamics integrator.
 Four Gaussian random number are required
@@ -244,7 +263,7 @@ the coupling algorithm is <b>nstcalcenergy</b>*<b>dt</b>.
 Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.
 The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
 unless <b>nstlist</b> &le 0, then a value of 10 is used;
-for velocity verlet integrators <b>nstcalcenergy</b> is set to 1.</dd>
+for velocity Verlet integrators <b>nstcalcenergy</b> is set to 1.</dd>
 <dt><h4>comm_mode:</h4></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
@@ -810,7 +829,8 @@ This thermostat works correctly even for <b>tau_t</b>=0.
 For NVT simulations the conserved energy quantity is written
 to the energy and log file.</dd>
 </dl>
-
+<dt><h4>nh-chain-length (5)</h4></dt>
+<dd>the number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog <b>md</b> integrator only supports 1</dd>
 <dt><h4>tc_grps:</h4></dt>
 <dd>groups to couple separately to temperature bath</dd>
 <dt><h4>tau_t: [ps]</h4></dt>
@@ -1250,10 +1270,13 @@ The force constant is then (1 - lambda)*<b>pull_k1</b> + lambda*<b>pull_kB1</b>.
 restraint information in topology file)</dd>
 <dt><b>simple</b></dt>
 <dd>simple (per-molecule) distance restraints,
-ensemble averaging can be performed with <tt>mdrun -multi</tt></dd>
+ensemble averaging can be performed with <tt>mdrun -multi</tt>
+where the environment variable GMX_DISRE_ENSEMBLE_SIZE sets the number
+of systems within each ensemble (usually equal to the mdrun -multi value)</dd>
 <dt><b>ensemble</b></dt>
 <dd>distance restraints over an ensemble of molecules in one simulation box,
-should only be used for special cases, such as dimers</dd>
+should only be used for special cases, such as dimers
+(this option is not fuctional in the current version of GROMACS)</dd>
 </dl></dd>
 <dt><h4>disre_weighting:</h4></dt>
 <dd><dl compact>
@@ -1681,6 +1704,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#bond2">morse</A><br>
 <A HREF="#em">nbfgscorr</A><br>
 <A HREF="#xmdrun">niter</A><br>
+<A HREF="#tc">nh-chain-length</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#run">nstcalcenergy</A><br>
 <A HREF="#run">nstcomm</A><br>

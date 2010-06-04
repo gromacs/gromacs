@@ -177,6 +177,7 @@ typedef struct gmx_edsam
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
     bool          bFirst;
+    bool          bStartFromCpt;
 } t_gmx_edsam;
 
 
@@ -678,7 +679,6 @@ static void write_edo_flood(t_edpar *edi, FILE *fp, int step)
         fprintf(fp," %f",edi->flood.vecs.fproj[i]);
     
     fprintf(fp,"\n");
-    fflush(fp);
 }
 
 
@@ -963,7 +963,7 @@ static void get_flood_energies(t_edpar *edi, real Vfl[],int nnames)
 #endif
 
 
-gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],t_commrec *cr)
+gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],unsigned long Flags,t_commrec *cr)
 {   
     gmx_edsam_t ed;
     
@@ -981,7 +981,8 @@ gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],t_commrec *cr)
         /* The master opens the .edo output file */
         fprintf(stderr,"ED sampling will be performed!\n");        
         ed->edonam = ftp2fn(efEDO,nfile,fnm);
-        ed->edo    = gmx_fio_fopen(ed->edonam,"w");
+        ed->edo    = gmx_fio_fopen(ed->edonam,(Flags & MD_APPENDFILES)? "a+" : "w+");
+        ed->bStartFromCpt = Flags & MD_STARTFROMCPT;
     }
     return ed;
 }
@@ -2131,7 +2132,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             rad_project(edi, xstart, &edi->vecs.linfix, cr);
 
             /* Output to file, set the step to -1 so that write_edo knows it was called from init_edsam */
-            if (ed->edo)
+            if (ed->edo && !(ed->bStartFromCpt))
                 write_edo(nr_edi, edi, ed, -1, 0);
 
             /* Prepare for the next edi data set: */

@@ -340,7 +340,6 @@ int main(int argc,char *argv[])
     { efSTO, "-c",      "confout",  ffWRITE },
     { efEDR, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },
-    { efEDI, "-ei",     "sam",      ffOPTRD },
     { efTRX, "-rerun",  "rerun",    ffOPTRD },
     { efXVG, "-table",  "table",    ffOPTRD },
     { efXVG, "-tablep", "tablep",   ffOPTRD },
