@@ -410,6 +410,8 @@ static void get_program_paths(bool bThreads, char *cmd_mpirun[],
     const char def_mdrun[]  = "mdrun";
     const char filename[]   = "testrun.log";
     const char match_mdrun[]= "NNODES=";
+    const char match_mdrun_threads[] = "DESCRIPTION";
+    const char *match=NULL;
     const char empty_mpirun[] = "";
     bool  bFound = FALSE;
     
@@ -440,30 +442,28 @@ static void get_program_paths(bool bThreads, char *cmd_mpirun[],
     /* Run a small test to see if mpirun and mdrun work if we intend 
        to execute mdrun! */
     fprintf(stdout, "Making sure that mdrun can be executed. ");
-
+    snew(command, strlen(*cmd_mpirun) + strlen(*cmd_mdrun) + strlen(filename) + 50);
+    /* We absolutely need the -h switch so that no md.log file is (over-)written! */
     if (bThreads)
     {
-        snew(command, strlen(*cmd_mdrun) + strlen(filename) + 30);
-        sprintf(command, "%s -maxh 0.001 quiet >& %s", *cmd_mdrun, filename);
+        match = match_mdrun_threads;
+        sprintf(command, "%s -h -maxh 0.001 quiet >& %s", *cmd_mdrun, filename);
     }
     else
     {
-        snew(command, strlen(*cmd_mpirun) + strlen(*cmd_mdrun) + 
-             strlen(filename) + 30);
-        sprintf(command, "%s -np 1 %s -maxh 0.001 quiet >& %s", 
-                *cmd_mpirun, *cmd_mdrun, filename);
+        match = match_mdrun;
+        sprintf(command, "%s -np 1 %s -h -maxh 0.001 quiet >& %s", *cmd_mpirun, *cmd_mdrun, filename);
     }
-
     fprintf(stdout, "Trying '%s' ... ", command);
 
     gmx_system_call(command);
 
-    /* Check if we find the gromacs header in the log file: */
+    /* Check if we find the characteristic string in the output: */
     fp = fopen(filename, "r");
     while ( (!feof(fp)) && (bFound==FALSE) )
     {
         cp2=fgets(line, STRLEN, fp);
-        if (cp2!=NULL && str_starts(line, match_mdrun))
+        if (cp2!=NULL && str_starts(line, match))
             bFound = TRUE;
     }
 
@@ -796,7 +796,6 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
     int     cmdline_length;
     char    *command;
     char    buf[STRLEN];
-    char    *opt_noaddpart;
     bool    bResetProblem=FALSE;
     
 
@@ -810,13 +809,6 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                               "No DD grid found for these settings"};
     char    str_PME_f_load[13];
 
-    /* The -noaddpart option is needed so that the md.log files do not
-     * get renamed if checkpoints are used!
-     */
-    if (sim_part > 1) 
-        opt_noaddpart=" -noaddpart"; 
-    else
-        opt_noaddpart="";
 
     /* Allocate space for the mdrun command line. 100 extra characters should 
        be more than enough for the -npme etcetera arguments */
@@ -849,16 +841,16 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                 snew(pd->mdrun_cmd_line, cmdline_length);
                 if (bThreads)
                 {
-                    sprintf(pd->mdrun_cmd_line, "%s %s-npme %d -s %s%s",
+                    sprintf(pd->mdrun_cmd_line, "%s %s -npme %d -s %s",
                             cmd_mdrun, args_for_mdrun, 
-                            nPMEnodes, tpr_names[k], opt_noaddpart);
+                            nPMEnodes, tpr_names[k]);
                 }
                 else
                 {
                     sprintf(pd->mdrun_cmd_line, 
-                            "%s -np %d %s %s-npme %d -s %s%s",
+                            "%s -np %d %s %s -npme %d -s %s",
                             cmd_mpirun, nnodes, cmd_mdrun, args_for_mdrun, 
-                            nPMEnodes, tpr_names[k], opt_noaddpart);
+                            nPMEnodes, tpr_names[k]);
                 }
 
                 /* Do a benchmark simulation: */
@@ -867,7 +859,7 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                 else
                     buf[0]='\0';
                 fprintf(stdout, "\n=== tpr %d/%d, run %d/%d%s:\n", k+1, nr_tprs, i+1, datasets, buf);
-                sprintf(command, "%s -noaddpart >& /dev/null", pd->mdrun_cmd_line);
+                sprintf(command, "%s >& /dev/null", pd->mdrun_cmd_line);
                 fprintf(stdout, "%s\n", pd->mdrun_cmd_line);
                 gmx_system_call(command);
 
@@ -1234,7 +1226,12 @@ static void create_command_line_snippets(
                 add_to_command_line(cmd_args_launch, strbuf);
         }
     }
-#undef BUFLENGTH   
+#undef BUFLENGTH
+    /* The -noaddpart option is needed so that the md.log files do not
+     * get renamed if checkpoints are used. We also do not want to append
+     * if we are doing benchmarks, since md.log then would contain several
+     * paragraphs with performance information. */
+    add_to_command_line(cmd_args_bench, "-noappend -noaddpart");
 }
 
 
@@ -1414,6 +1411,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { efMTX, "-mtx",    "nm",       ffOPTWR },
       { efNDX, "-dn",     "dipole",   ffOPTWR },
       /* Output files that are deleted after each benchmark run */
+      /* TODO: do not delete these if -append is set! */
       { efTRN, "-bo",     "bench",    ffWRITE },
       { efXTC, "-bx",     "bench",    ffWRITE },
       { efCPT, "-bcpo",   "bench",    ffWRITE },
@@ -1534,7 +1532,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-cpt",       FALSE, etREAL, {&cpt_period},
         "Checkpoint interval (minutes)" },
       { "-append",    FALSE, etBOOL, {&bAppendFiles},
-        "Append to previous output files when continuing from checkpoint" },
+        "Append to previous output files when continuing from checkpoint (for launch only)" },
       { "-addpart",  FALSE, etBOOL,  {&bAddPart},
         "Add the simulation part number to all output files when continuing from checkpoint" },
       { "-maxh",      FALSE, etREAL, {&max_hours},
