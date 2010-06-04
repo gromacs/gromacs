@@ -1411,7 +1411,6 @@ int gmx_tune_pme(int argc,char *argv[])
       { efMTX, "-mtx",    "nm",       ffOPTWR },
       { efNDX, "-dn",     "dipole",   ffOPTWR },
       /* Output files that are deleted after each benchmark run */
-      /* TODO: do not delete these if -append is set! */
       { efTRN, "-bo",     "bench",    ffWRITE },
       { efXTC, "-bx",     "bench",    ffWRITE },
       { efCPT, "-bcpo",   "bench",    ffWRITE },
