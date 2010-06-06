@@ -141,8 +141,9 @@ int gmx_truncatefile(char *path, off_t length);
    to newname */
 int gmx_file_rename(const char *oldname, const char *newname);
 
-/* copy the file (data only) oldname to newname*/
-int gmx_file_copy(const char *oldname, const char *newname);
+/* copy the file (data only) oldname to newname. if copy_if_empty==FALSE,
+   the file won't be copied if it's empty.*/
+int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty);
 
 #ifdef __cplusplus
 }

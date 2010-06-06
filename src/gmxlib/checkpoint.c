@@ -1172,9 +1172,9 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
         strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
         /* we copy here so that if something goes wrong between now and
            the rename below, there's always a state.cpt. If renames are atomic
-           this copying is strictly speaking unneccesary */
-        gmx_file_copy(fn, buf); /* We don't really care if this fails: there's 
-                                   already a new checkpoint.  */
+           (such as in POSIX systems), this copying should be unneccesary. */
+        gmx_file_copy(fn, buf, FALSE); /* We don't really care if this fails: 
+                                          there's already a new checkpoint.  */
     }
     if (gmx_file_rename(fntemp, fn) != 0)
     {
