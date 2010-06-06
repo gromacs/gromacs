@@ -266,7 +266,8 @@ int add_atomtype(gpp_atomtype_t ga,t_symtab *tab,
   
   for(i=0; (i<ga->nr); i++) {
     if (strcmp(*ga->atomname[i],name) == 0) {
-      fprintf(stderr,"Trying to add atomtype %s again. Skipping it.\n",name);
+      if (NULL != debug)
+	fprintf(debug,"Trying to add atomtype %s again. Skipping it.\n",name);
       break;
     }
   }
