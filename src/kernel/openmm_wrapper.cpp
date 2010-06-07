@@ -555,6 +555,12 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
         gmx_warning("OpenMM supports only Andersen thermostat with the md/md-vv/md-vv-avek integrators.");
     }
 
+    if (ir->implicit_solvent == eisGBSA &&
+        ir->gb_algorithm != egbOBC  )
+    {
+        gmx_warning("OpenMM does not support the specified algorithm for Generalized Born, will use OBC instead.");
+    }
+
     if (ir->opts.ngtc > 1)
         gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.");
 
@@ -1061,6 +1067,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         // Add GBSA if needed.
         if (ir->implicit_solvent == eisGBSA)
         {
+            gmx_warning("The OBC scale factors alpha, beta and gamma are hardcoded in OpenMM with the default Gromacs values.");
             t_atoms atoms       = gmx_mtop_global_atoms(top_global);
             GBSAOBCForce* gbsa  = new GBSAOBCForce();
 
