@@ -1067,6 +1067,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         // Add GBSA if needed.
         if (ir->implicit_solvent == eisGBSA)
         {
+            gmx_warning("The OBC scale factors alpha, beta and gamma are hardcoded in OpenMM with the default Gromacs values.");
             t_atoms atoms       = gmx_mtop_global_atoms(top_global);
             GBSAOBCForce* gbsa  = new GBSAOBCForce();
 
