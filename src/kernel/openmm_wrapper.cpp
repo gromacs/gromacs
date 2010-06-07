@@ -555,6 +555,12 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
         gmx_warning("OpenMM supports only Andersen thermostat with the md/md-vv/md-vv-avek integrators.");
     }
 
+    if (ir->implicit_solvent == eisGBSA &&
+        ir->gb_algorithm != egbOBC  )
+    {
+        gmx_warning("OpenMM does not support the specified algorithm for Generalized Born, will use OBC instead.");
+    }
+
     if (ir->opts.ngtc > 1)
         gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.");
 
