@@ -3935,7 +3935,10 @@ int gmx_hbond(int argc,char *argv[])
 #pragma omp single /* ++++++++++++++++,            */
 #endif /* HAVE_OPENMP ----------------+------------*/
                 { /*                  +   */
-                    analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,k,t,oenv);
+                    if (hb != NULL)  /*   */
+                    { /*              +   */
+                        analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,k,t,oenv);
+                    } /*              +   */
                 } /*                  +   */
 #ifdef HAVE_OPENMP /*                 +   */
 #pragma omp single /* +++           +++   */
