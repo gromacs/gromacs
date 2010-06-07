@@ -756,7 +756,7 @@ int gmx_file_rename(const char *oldname, const char *newname)
 #endif
 }
 
-int gmx_file_copy(const char *oldname, const char *newname)
+int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
 {
 #if defined(HAVE_COPYFILE) && !defined(GMX_FAHCORE)
     /* this is BSD specific, but convenient */
@@ -771,14 +771,22 @@ int gmx_file_copy(const char *oldname, const char *newname)
     /* POSIX doesn't support any of the above. */
     FILE *in=NULL; 
     FILE *out=NULL;
-    char buf[FILECOPY_BUFSIZE];
+    char *buf;
+
+    snew(buf, FILECOPY_BUFSIZE); 
 
     in=fopen(oldname, "rb");
     if (!in)
         goto error;
-    out=fopen(newname, "wb");
-    if (!out)
-        goto error;
+
+    /* If we don't copy when empty, we postpone opening the file
+       until we're actually ready to write. */
+    if (copy_if_empty)
+    {
+        out=fopen(newname, "wb");
+        if (!out)
+            goto error;
+    }
 
     while(!feof(in))
     {
@@ -788,6 +796,12 @@ int gmx_file_copy(const char *oldname, const char *newname)
         if (nread>0)
         {
             size_t ret;
+            if (!out)
+            {
+                out=fopen(newname, "wb");
+                if (!out)
+                    goto error;
+            }
             ret=fwrite(buf, sizeof(char), nread, out);
             if (ret!=nread)
             {
@@ -797,10 +811,12 @@ int gmx_file_copy(const char *oldname, const char *newname)
         if (ferror(in))
             goto error;
     }
+    sfree(buf);
     fclose(in);
     fclose(out);
     return 0;
 error:
+    sfree(buf);
     if (in)
         fclose(in);
     if (out)

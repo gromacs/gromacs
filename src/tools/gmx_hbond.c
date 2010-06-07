@@ -765,6 +765,9 @@ static int _donor_index(t_donors *d,int grp,atom_id i,const char *file,int line)
 {
     int di = d->dptr[i];
   
+    if (di == NOTSET)
+        return NOTSET;
+
     if (d->grp[di] != grp) {
         if (debug && bDebug)
             fprintf(debug,"Don. group inconsist.. grp[%d] = %d, grp = %d (%s, %d)\n",
@@ -778,6 +781,9 @@ static int _donor_index(t_donors *d,int grp,atom_id i,const char *file,int line)
 
 static bool isInterchangable(t_hbdata *hb, int d, int a, int grpa, int grpd)
 {
+    /* g_hbond doesn't allow overlapping groups */
+    if (grpa!=grpd)
+        return FALSE;
     return
         donor_index(&hb->d,grpd,a) != NOTSET
         && acceptor_index(&hb->a,grpa,d) != NOTSET;

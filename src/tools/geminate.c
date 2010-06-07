@@ -599,7 +599,7 @@ extern t_gemParams *init_gemParams(const double sigma, const double D,
   p->kd       = 0;
 /*   p->lsq      = -1; */
 /*   p->lifetime = 0; */
-  p->sigma    = sigma;
+  p->sigma    = sigma*10; /* Omer uses Å, not nm */
 /*   p->lsq_old  = 99999; */
   p->D        = sqcm_per_s_to_sqA_per_ps(D);
   p->kD       = 4*acos(-1.0)*sigma*p->D;
@@ -700,7 +700,9 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
 /*   return residual2; */
 }
 #endif
- 
+
+static real* d2r(const double *d, const int nn);
+
 extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 			const int nData, t_gemParams *params)
 {
@@ -840,14 +842,14 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 	    params->kd,
 	    s->fval, size, d2);
 
-/*     if (iter%10 == 0) */
-/*       { */
-/* 	eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params); */
-/* 	sprintf(dumpname, "Iter_%i.xvg", iter); */
-/* 	for(i=0; i<GD->nData; i++) */
-/* 	  dumpdata[i] = (real)(GD->ctTheory[i]); */
-/* 	dumpN(dumpdata, GD->nData, dumpname); */
-/*       } */
+    if (iter%10 == 1)
+      {
+	eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params);
+	sprintf(dumpname, "Iter_%i.xvg", iter);
+	for(i=0; i<GD->nData; i++)
+	  dumpdata[i] = (real)(GD->ctTheory[i]);
+	dumpN(dumpdata, GD->nData, dumpname);
+      }
   }
   while ((status == GSL_CONTINUE) && (iter < maxiter));
 
@@ -980,15 +982,21 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
 
   gsl_multifit_fdfsolver *s;              /* The solver itself. */
   gsl_multifit_function_fdf fitFunction;  /* The function to be fitted. */
-  gsl_matrix *covar = gsl_matrix_alloc (p, p);  /* Covariance matrix for the parameters.
-						 * We'll not use the result, though. */
-  gsl_vector_view theParams = gsl_vector_view_array(guess, p);
+  gsl_matrix *covar;  /* Covariance matrix for the parameters.
+		       * We'll not use the result, though. */
+  gsl_vector_view theParams;
+
+  nData = 0;
+  do {
+    nData++;
+  } while (t[nData]<tMax+t[0] && nData<len);
 
   guess = NULL;
   n = nData;
 
   snew(guess, p);
   snew(A, p);
+  covar = gsl_matrix_alloc (p, p);
 
   /* Set up an initial gess for the parameters.
    * The solver is somewhat sensitive to the initial guess,
@@ -1000,6 +1008,8 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
       guess[i*2+1] = -0.5 + (((double)i)/nexp - 0.5)*0.3;
     }
   guess[nexp * 2] = 0.01;
+
+  theParams = gsl_vector_view_array(guess, p);
 
   snew(BD,1);
   BD->n     = n;
@@ -1158,3 +1168,14 @@ extern void dumpN(const real *e, const int nn, char *fn)
   fclose(f);
 }
 
+static real* d2r(const double *d, const int nn)
+{
+  real *r;
+  int i;
+  
+  snew(r, nn);
+  for (i=0; i<nn; i++)
+    r[i] = (real)d[i];
+
+  return r;
+}
