@@ -1055,6 +1055,11 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
     else {
         for(func_type=0; (func_type < F_NRE); func_type++) {
             interaction=&(top->idef.il[func_type]);
+            if (func_type == F_POSRES)
+            { /* The ilist looks strange for posre. Bug in grompp?
+               * We don't need posre interactions for hbonds anyway.*/
+                continue;
+            }
             for(i=0; i < interaction->nr; 
                 i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
                 /* next function */
