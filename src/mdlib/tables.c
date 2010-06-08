@@ -670,8 +670,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       break;
     case etabLJ6Ewald:
       Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + pow4(ewclj)*r2*r2/2);
-      Ftab  = 6.0*Vtab/r - Vtab*(-2*ewclj*ewclj*r)
-              + r6*exp(-ewclj*ewclj*r2)*2*(ewclj*ewclj*r + pow4(ewclj)*r*r2);
+      Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*pow5(ewclj)*ewclj*r2*r2*r;
       break;
     case etabRF:
     case etabRF_ZERO:
