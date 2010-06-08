@@ -64,6 +64,7 @@
 #include "nonbonded.h"
 
 #include "nb_kernel_c/nb_kernel_c.h"
+#include "nb_kernel_adress_c/nb_kernel_c_adress.h"
 #include "nb_free_energy.h"
 #include "nb_generic.h"
 #include "nb_generic_cg.h"
@@ -203,7 +204,8 @@ nb_kernel_table[eNR_NBKERNEL_NR] =
 
 static nb_kernel_t **
 nb_kernel_list = NULL;
-
+static nb_kernel_t **
+nb_kernel_list_adress = NULL;
 
 void
 gmx_setup_kernels(FILE *fplog)
@@ -211,6 +213,7 @@ gmx_setup_kernels(FILE *fplog)
     int i;
     
     snew(nb_kernel_list,eNR_NBKERNEL_NR);
+    snew(nb_kernel_list_adress,eNR_NBKERNEL_NR);
     
     /* Note that later calls overwrite earlier, so the preferred (fastest)
      * version should be at the end. For instance, we call SSE after 3DNow.
@@ -219,6 +222,7 @@ gmx_setup_kernels(FILE *fplog)
     for(i=0; i<eNR_NBKERNEL_NR; i++)
     {
         nb_kernel_list[i] = NULL;
+        nb_kernel_list_adress[i] = NULL;
     }
     
     if(getenv("GMX_NB_GENERIC") != NULL)
@@ -238,6 +242,7 @@ gmx_setup_kernels(FILE *fplog)
     }
 	
     nb_kernel_setup(fplog,nb_kernel_list);
+    nb_kernel_setup_adress(fplog,nb_kernel_list_adress);
     
     if(getenv("GMX_NOOPTIMIZEDKERNELS") != NULL)
     {
@@ -589,8 +594,11 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     }
                     if (fr->adress_type == eAdressOff){
                     kernelptr = nb_kernel_list[nrnb_ind];
+                    }else{
+                    kernelptr = nb_kernel_list_adress[nrnb_ind];
+                    }
                    
-                    if (kernelptr == NULL || (! fr->adress_type==eAdressOff))
+                    if (kernelptr == NULL)
                     {
                         /* Call a generic nonbonded kernel */
                         
@@ -635,7 +643,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     else
                     {
                         /* Call nonbonded kernel from function pointer */
-                        
+                        if (fr->adress_type==eAdressOff){
                         (*kernelptr)( &(nlist->nri),
                                       nlist->iinr,
                                       nlist->jindex,
@@ -667,6 +675,40 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                       &outeriter,
                                       &inneriter,
                                       (real *)&gbdata);
+                        }else
+                        { /* Adress kernels */
+                          (*kernelptr)( &(nlist->nri),
+                                      nlist->iinr,
+                                      nlist->jindex,
+                                      nlist->jjnr,
+                                      nlist->shift,
+                                      fr->shift_vec[0],
+                                      fshift,
+                                      nlist->gid,
+                                      x[0],
+                                      f[0],
+                                      mdatoms->chargeA,
+                                      &(fr->epsfac),
+                                      &(fr->k_rf),
+                                      &(fr->c_rf),
+                                      egcoul,
+                                      mdatoms->typeA,
+                                      &(fr->ntype),
+                                      fr->nbfp,
+                                      egnb,
+                                      &(nblists->tab.scale),
+                                      tabledata,
+                                      fr->invsqrta,
+                                      fr->dvda,
+                                      &(fr->gbtabscale),
+                                      fr->gbtab.tab,
+                                      &nthreads,
+                                      &(nlist->count),
+                                      nlist->mtx,
+                                      &outeriter,
+                                      &inneriter,
+                                      mdatoms->wf);
+                        }
                     }
                 }
                 
