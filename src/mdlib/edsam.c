@@ -2567,7 +2567,7 @@ void do_edsam(t_inputrec  *ir,
             }
 
             /* update radsam references, when required */
-            if (do_per_step(step,edi->maxedsteps) && step > edi->presteps)
+            if (do_per_step(step,edi->maxedsteps) && step >= edi->presteps)
             {
                 project(buf->xcoll, edi);
                 rad_project(edi, buf->xcoll, &edi->vecs.radacc, cr);
@@ -2576,7 +2576,7 @@ void do_edsam(t_inputrec  *ir,
             }
 
             /* update radacc references, when required */
-            if (do_per_step(step,iupdate) && step > edi->presteps)
+            if (do_per_step(step,iupdate) && step >= edi->presteps)
             {
                 edi->vecs.radacc.radius = calc_radius(&edi->vecs.radacc);
                 if (edi->vecs.radacc.radius - buf->oldrad < edi->slope)
@@ -2589,8 +2589,8 @@ void do_edsam(t_inputrec  *ir,
             }
 
             /* apply the constraints */
-            if (step > edi->presteps && ed_constraints(ed->eEDtype, edi))
-                ed_apply_constraints(buf->xcoll, edi, step, cr);
+            if (step >= edi->presteps && ed_constraints(ed->eEDtype, edi))
+                ed_apply_constraints(buf->xcoll, edi, step+1 - ir->init_step, cr);
 
             /* write to edo, when required */
             if (do_per_step(step,edi->outfrq))
