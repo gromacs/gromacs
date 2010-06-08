@@ -1240,6 +1240,37 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
 }
 
 /*!
+ * \param[in,out] m    Mapping structure to initialize.
+ * \param[in]     b    Block information to use for data.
+ *
+ * Frees some memory that is not necessary for static index group mappings.
+ * Internal pointers are set to point to data in \p b; it is the responsibility
+ * of the caller to ensure that the block information matches the contents of
+ * the mapping.
+ * After this function has been called, the index group provided to
+ * gmx_ana_indexmap_update() should always be the same as \p g given here.
+ *
+ * This function breaks modularity of the index group mapping interface in an
+ * ugly way, but allows reducing memory usage of static selections by a
+ * significant amount.
+ */
+void
+gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
+{
+    sfree(m->mapid);
+    m->mapid = m->orgid;
+    sfree(m->b.index);
+    m->b.nalloc_index = 0;
+    m->b.index = b->index;
+    sfree(m->mapb.index);
+    m->mapb.nalloc_index = 0;
+    m->mapb.index = m->b.index;
+    sfree(m->b.a);
+    m->b.nalloc_a = 0;
+    m->b.a = b->a;
+}
+
+/*!
  * \param[in,out] dest Destination data structure.
  * \param[in]     src  Source mapping.
  * \param[in]     bFirst If TRUE, memory is allocated for \p dest and a full
@@ -1401,10 +1432,22 @@ void
 gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m)
 {
     sfree(m->refid);
-    sfree(m->mapid);
-    sfree(m->mapb.index);
+    if (m->mapid != m->orgid)
+    {
+        sfree(m->mapid);
+    }
+    if (m->mapb.nalloc_index > 0)
+    {
+        sfree(m->mapb.index);
+    }
     sfree(m->orgid);
-    sfree(m->b.index);
-    sfree(m->b.a);
+    if (m->b.nalloc_index > 0)
+    {
+        sfree(m->b.index);
+    }
+    if (m->b.nalloc_a > 0)
+    {
+        sfree(m->b.a);
+    }
     gmx_ana_indexmap_clear(m);
 }

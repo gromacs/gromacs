@@ -740,7 +740,7 @@ int gmx_sdf(int argc,char *argv[])
                 "             Nothing to do!");
 
 
-  if ( bRef && fn2ftp(fnREF) != efGRO)
+  if ( bRef && (fn2ftp(fnREF) != efGRO))
     {
       fprintf(stderr,"\nOnly GROMACS format is supported for reference structures.\n");
       fprintf(stderr,"Option -r will be ignored!\n");
@@ -748,8 +748,8 @@ int gmx_sdf(int argc,char *argv[])
     }
 
 
-  if (mode < 1 || mode > 3)
-    gmx_fatal(FARGS,"Wrong -mode selection. Chose 1-, 2- oder 3-praticle mode.\n");
+  if ((mode < 1) || (mode > 3))
+    gmx_fatal(FARGS,"Wrong -mode selection. Chose 1-, 2- oder 3-particle mode.\n");
 
 
   do_sdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),

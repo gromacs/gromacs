@@ -810,6 +810,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         setTimeValue(TDELTA,opt2parg_real("-dt",npall,all_pa));
     
     /* clear memory */
+    for (i = 0; i < npall; ++i)
+        sfree((void *)all_pa[i].desc);
     sfree(all_pa);
     
     if (!FF(PCA_NOEXIT_ON_ARGS)) {

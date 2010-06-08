@@ -39,6 +39,10 @@
 
 #include <ctype.h>
 #include <stdio.h>
+#include <errno.h>
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
 
 #include "gmx_fatal.h"
 #include "macros.h"
@@ -157,6 +161,7 @@ static tMPI_Thread_mutex_t fio_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
  themselves, and need to make sure that the called function doesn't 
  try to lock that mutex again. */
 static int gmx_fio_flush_lock(int fio, bool do_lock);
+static int gmx_fio_fsync_lock(int fio, bool do_lock);
 static int gmx_fio_close_lock(int fio, bool do_lock);
 static bool do_xdr_lock(void *item, int nitem, int eio, const char *desc,
                         const char *srcfile, int line, bool do_lock);
@@ -1515,6 +1520,129 @@ int gmx_fio_flush(int fio)
 {
     return gmx_fio_flush_lock(fio, TRUE);
 }
+
+
+
+static int gmx_fio_fsync_lock(int fio, bool do_lock)
+{
+    int rc = 0;
+    int filen=-1;
+
+#if ( (defined(HAVE_FILENO) && defined(HAVE_FSYNC))  || \
+      (defined(HAVE__FILENO) && defined(HAVE__COMMIT)) )
+#ifdef GMX_THREADS
+    if (do_lock)
+        tMPI_Thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (FIO[fio].fp)
+    {
+#ifdef HAVE_FILENO
+        filen=fileno(FIO[fio].fp);
+#elif HAVE__FILENO
+        filen=_fileno(FIO[fio].fp);
+#endif
+    }
+    else if (FIO[fio].xdr)
+    {
+#ifdef HAVE_FILENO
+        filen=fileno((FILE *) FIO[fio].xdr->x_private);
+#elif HAVE__FILENO
+        filen=_fileno((FILE *) FIO[fio].xdr->x_private);
+#endif
+    }
+
+    if (filen>0)
+    {
+#if (defined(HAVE_FSYNC))
+        /* fahcore also defines HAVE_FSYNC */
+        rc=fsync(filen);
+#elif (defined(HAVE__COMMIT)) 
+        rc=_commit(filen);
+#endif
+    }
+
+    /* We check for these error codes this way because POSIX requires them
+       to be defined, and using anything other than macros is unlikely: */
+#ifdef EINTR
+    /* we don't want to report an error just because fsync() caught a signal.
+       For our purposes, we can just ignore this. */
+    if (rc && errno==EINTR)
+        rc=0;
+#endif
+#ifdef EINVAL
+    /* we don't want to report an error just because we tried to fsync() 
+       stdout, a socket or a pipe. */
+    if (rc && errno==EINVAL)
+        rc=0;
+#endif
+
+
+#ifdef GMX_THREADS
+    if (do_lock)
+        tMPI_Thread_mutex_unlock(&fio_mutex);
+#endif
+#endif
+
+    return rc;
+}
+
+
+int gmx_fio_fsync(int fio)
+{
+    int rc = 0;
+
+    return gmx_fio_fsync_lock(fio, TRUE);
+}
+
+
+
+int gmx_fio_all_output_fsync(void)
+{
+    int i;
+    int ret=0;
+
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&fio_mutex);
+#endif
+    for (i = 0; i < nFIO; i++)
+    {
+        /* skip debug files (shoud be the only iFTP==efNR) */
+        if (FIO[i].bOpen && !FIO[i].bRead && !FIO[i].bStdio && 
+            FIO[i].iFTP != efNR)
+        {
+            /* if any of them fails, return failure code */
+            int rc=gmx_fio_fsync_lock(i, FALSE);
+            if (rc != 0) 
+            {
+                char buf[STRLEN];
+                sprintf(buf,
+                        "Cannot write file '%s'; maybe you are out of disk space or quota?",
+                        FIO[i].fn);
+                gmx_file(buf);
+                ret=-1;
+            }
+        }
+    }
+
+    /* in addition, we force these to be written out too, if they're being
+       redirected. We don't check for errors because errors most likely mean
+       that they're not redirected. */
+    fflush(stdout);
+    fflush(stderr);
+#if (defined(HAVE_FSYNC))
+    /* again, fahcore defines HAVE_FSYNC and fsync() */
+    fsync(STDOUT_FILENO);
+    fsync(STDERR_FILENO);
+#endif
+
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&fio_mutex);
+#endif
+
+    return 0;
+}
+
 
 off_t gmx_fio_ftell(int fio)
 {

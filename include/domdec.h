@@ -96,7 +96,7 @@ init_domain_decomposition(FILE *fplog,
                           gmx_mtop_t *mtop,t_inputrec *ir,
                           matrix box,rvec *x,
                           gmx_ddbox_t *ddbox,
-                          int *npme_major);
+                          int *npme_major, int *npme_minor);
 
 extern void dd_init_bondeds(FILE *fplog,
                             gmx_domdec_t *dd,gmx_mtop_t *mtop,

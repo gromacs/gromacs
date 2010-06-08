@@ -77,6 +77,7 @@ typedef struct {
   char main[6];
   char nter[6];
   char cter[6];
+  char bter[6];
 } rtprename_t;
 
 
@@ -155,7 +156,7 @@ static const char *get_glntp(int resnr,int nrr,const rtprename_t *rr)
 static const char *get_lystp(int resnr,int nrr,const rtprename_t *rr)
 {
   enum { elys, elysH, elysNR };
-  const  char *lh[elysNR] = { "LYS", "LYSH" };
+  const  char *lh[elysNR] = { "LYSN", "LYS" };
   const char *expl[elysNR] = {
     "Not protonated (charge 0)",
     "Protonated (charge +1)"
@@ -179,7 +180,7 @@ static const char *get_argtp(int resnr,int nrr,const rtprename_t *rr)
 static const char *get_cystp(int resnr,int nrr,const rtprename_t *rr)
 {
   enum { ecys, ecysH, ecysNR };
-  const char *lh[ecysNR] = { "CYS", "CYSH" };
+  const char *lh[ecysNR] = { "CYS2", "CYS" };
   const char *expl[ecysNR] = {
     "Cysteine in disulfide bridge",
     "Protonated"
@@ -215,11 +216,11 @@ static void read_rtprename(const char *fname,FILE *fp,
   ncol = 0;
   while(get_a_line(fp,line,STRLEN)) {
     srenew(rr,n+1);
-    nc = sscanf(line,"%s %s %s %s %s",
-		rr[n].gmx,rr[n].main,rr[n].nter,rr[n].cter,buf);
+    nc = sscanf(line,"%s %s %s %s %s %s",
+		rr[n].gmx,rr[n].main,rr[n].nter,rr[n].cter,rr[n].bter,buf);
     if (ncol == 0) {
-      if (nc != 2 && nc != 4) {
-	gmx_fatal(FARGS,"Residue renaming database '%s' has %d columns instead of %d or %d",fname,ncol,2,4);
+      if (nc != 2 && nc != 5) {
+	gmx_fatal(FARGS,"Residue renaming database '%s' has %d columns instead of %d or %d",fname,ncol,2,5);
       }
       ncol = nc;
     } else if (nc != ncol) {
@@ -230,6 +231,7 @@ static void read_rtprename(const char *fname,FILE *fp,
       /* This file does not have special termini names, copy them from main */
       strcpy(rr[n].nter,rr[n].main);
       strcpy(rr[n].cter,rr[n].main);
+      strcpy(rr[n].bter,rr[n].main);
     }
 
     n++;
@@ -268,7 +270,9 @@ static void rename_resrtp(t_atoms *pdba,int nterpairs,int *rN,int *rC,
 	  bC = TRUE;
 	}
       }
-      if (bN) {
+      if (bN && bC) {
+	nn = rr[i].bter;
+      } else if (bN) {
 	nn = rr[i].nter;
       } else if (bC) {
 	nn = rr[i].cter;
@@ -476,8 +480,6 @@ void process_chain(t_atoms *pdba, rvec *x,
   if (bPheU) rename_bb(pdba,"PHE","PHEU",FALSE,symtab);
   if (bLysMan) 
     rename_bbint(pdba,"LYS",get_lystp,FALSE,symtab,nrr,rr);
-  else
-    rename_bb(pdba,"LYS","LYSH",FALSE,symtab);
   if (bArgMan) 
     rename_bbint(pdba,"ARG",get_argtp,FALSE,symtab,nrr,rr);
   if (bGlnMan) 
@@ -496,11 +498,8 @@ void process_chain(t_atoms *pdba, rvec *x,
      * And rename CYS to CYSH, since that is the Gromacs standard
      * unbound cysteine rtp entry name.
      */ 
-    rename_bb(pdba,"CYS","CYSH",FALSE,symtab);
+    rename_bb(pdba,"CYS","CYS",FALSE,symtab);
   }
-
-  /* The Gromacs rtp name for a heme is HEME */
-  rename_bb(pdba,"HEM","HEME",TRUE,symtab);
 
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
@@ -690,9 +689,9 @@ void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc,t_aa_names *aan)
   *rc=-1;
 
   for(rnr=r0; rnr<r1; rnr++) {
-    if ((*rn == -1) && (is_protein(aan,*pdba->resinfo[rnr].name)))
+    if ((*rn == -1) && (is_residue(aan,*pdba->resinfo[rnr].name)))
 	*rn=rnr;
-    if ((*rc != rnr) && (is_protein(aan,*pdba->resinfo[rnr].name)))
+    if ((*rc != rnr) && (is_residue(aan,*pdba->resinfo[rnr].name)))
       *rc=rnr;
   }
 
@@ -759,11 +758,11 @@ int main(int argc, char *argv[])
     "files, that allow it to make special bonds (Cys-Cys, Heme-His, etc.),",
     "if necessary this can be done manually. The program can prompt the",
     "user to select which kind of LYS, ASP, GLU, CYS or HIS residue she",
-    "wants. For LYS the choice is between LYS (two protons on NZ) or LYSH",
-    "(three protons, default), for ASP and GLU unprotonated (default) or",
-    "protonated, for HIS the proton can be either on ND1 (HISA), on NE2",
-    "(HISB) or on both (HISH). By default these selections are done",
-    "automatically. For His, this is based on an optimal hydrogen bonding",
+    "wants. For LYS the choice is between neutral (two protons on NZ) or",
+    "protonated (three protons, default), for ASP and GLU unprotonated",
+    "(default) or protonated, for HIS the proton can be either on ND1,",
+    "on NE2 or on both. By default these selections are done automatically.",
+    "For His, this is based on an optimal hydrogen bonding",
     "conformation. Hydrogen bonds are defined based on a simple geometric",
     "criterium, specified by the maximum hydrogen-donor-acceptor angle",
     "and donor-acceptor distance, which are set by [TT]-angle[tt] and",
@@ -836,9 +835,9 @@ int main(int argc, char *argv[])
   t_aa_names *aan;
   const char *top_fn;
   char       fn[256],itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
-  char       molname[STRLEN],title[STRLEN],quote[STRLEN];
+  char       molname[STRLEN],title[STRLEN],quote[STRLEN],generator[STRLEN];
   char       *c,forcefield[STRLEN],ffdir[STRLEN];
-  char       fff[STRLEN],suffix[STRLEN];
+  char       ffname[STRLEN],suffix[STRLEN];
   const char *watres;
   int        nrtpf;
   char       **rtpf;
@@ -965,13 +964,15 @@ int main(int argc, char *argv[])
 	    forcefield,sizeof(forcefield),
 	    ffdir,sizeof(ffdir));
 
-  if (strlen(forcefield) > 2)
-    strcpy(fff,&(forcefield[2]));
-  else
-    gmx_incons(forcefield);
+  if (strlen(forcefield) > 0) {
+    strcpy(ffname,forcefield);
+    ffname[0] = toupper(ffname[0]);
+  } else {
+    gmx_fatal(FARGS,"Empty forcefield string");
+  }
   
-  printf("\nUsing force field '%s' in directory '%s'\n\n",
-	 forcefield,ffdir);
+  printf("\nUsing the %s force field in directory %s\n\n",
+	 ffname,ffdir);
     
   if (bInter) {
     /* if anything changes here, also change description of -inter */
@@ -1233,7 +1234,13 @@ int main(int argc, char *argv[])
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=gmx_fio_fopen(top_fn,"w");
-  print_top_header(top_file,top_fn,title,FALSE,ffdir,mHmult);
+
+#ifdef PACKAGE_VERSION
+  sprintf(generator,"%s - version %s",ShortProgram(), PACKAGE_VERSION );
+#else
+  sprintf(generator,"%s - version %s",ShortProgram(), "unknown" );
+#endif
+  print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult);
 
   nincl=0;
   nmol=0;
@@ -1346,7 +1353,7 @@ int main(int argc, char *argv[])
 
     rename_atoms(NULL,ffdir,pdba,&symtab,restp_chain,FALSE,aan,FALSE,bVerbose);
 
-    match_atomnames_with_rtp(restp_chain,hb_chain,pdba,bVerbose);
+    match_atomnames_with_rtp(restp_chain,hb_chain,pdba,x,bVerbose);
 
     if (bSort) {
       block = new_blocka();
@@ -1437,7 +1444,7 @@ int main(int argc, char *argv[])
     nmol++;
 
     if (bITP)
-      print_top_comment(itp_file,itp_fn,title,TRUE);
+      print_top_comment(itp_file,itp_fn,generator,TRUE);
 
     if (cc->bAllWat)
       top_file2=NULL;
@@ -1545,10 +1552,13 @@ int main(int argc, char *argv[])
   printf("\t\t--------- PLEASE NOTE ------------\n");
   printf("You have succesfully generated a topology from: %s.\n",
 	 opt2fn("-f",NFILE,fnm));
-  printf("The %s force field and the %s water model are used.\n",
-	 fff,watstr[0]);
-  printf("Note that the default mechanism for selecting a force fields has\n"
-	 "changed, starting from GROMACS version 3.2.0\n");
+  if (watstr[0] != NULL) {
+    printf("The %s force field and the %s water model are used.\n",
+	   ffname,watstr[0]);
+  } else {
+    printf("The %s force field is used.\n",
+	   ffname);
+  }
   printf("\t\t--------- ETON ESAELP ------------\n");
   
 

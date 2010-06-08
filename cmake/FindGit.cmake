@@ -6,7 +6,7 @@
 # Git_VERSION       - git version
 # Git_FOUND         - tru if git was found, false otherwise
 #
-# Szilard Pall (pszilard@cbr.su.se)
+# Author: Szilard Pall (pszilard@cbr.su.se)
 
 if(Git_EXECUTABLE AND Git_VERSION)
     set(Git_FIND_QUIETLY TRUE)
@@ -14,7 +14,8 @@ endif()
 
 # search for git binary
 find_program(Git_EXECUTABLE git
-    DOC "Git version control tool")
+    PATHS ENV PATH
+    CACHE DOC "Git version control tool")
 
 if(NOT Git_EXECUTABLE)
     set(_err_msg "Git executable not found")

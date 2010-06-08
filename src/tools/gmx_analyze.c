@@ -51,9 +51,11 @@
 #include "statutil.h"
 #include "txtdump.h"
 #include "gstat.h"
+#include "gmx_matrix.h"
 #include "gmx_statistics.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
+#include "geminate.h"
 
 /* must correspond to char *avbar_opt[] declared in main() */
 enum { avbarSEL, avbarNONE, avbarSTDDEV, avbarERROR, avbar90, avbarNR };
@@ -133,30 +135,64 @@ static void plot_coscont(const char *ccfile,int n,int nset,real **val,
   ffclose(fp);
 }
 
-static void regression_analysis(int n,bool bXYdy,real *x,real **val)
+static void regression_analysis(int n,bool bXYdy,
+                                real *x,int nset,real **val)
 {
   real S,chi2,a,b,da,db,r=0;
 
-  printf("Fitting data to a function f(x) = ax + b\n");
-  printf("Minimizing residual chi2 = Sum_i w_i [f(x_i) - y_i]2\n");
-  printf("Error estimates will be given if w_i (sigma) values are given\n");
-  printf("(use option -xydy).\n\n");
-  if (bXYdy) 
-    lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r,&S);
-  else
-    lsq_y_ax_b(n,x,val[0],&a,&b,&r,&S);
-  chi2 = sqr((n-2)*S);
-  printf("Chi2                    = %g\n",chi2);
-  printf("S (Sqrt(Chi2/(n-2))     = %g\n",S);
-  printf("Correlation coefficient = %.1f%%\n",100*r);
-  printf("\n");
-  if (bXYdy) {
-    printf("a    = %g +/- %g\n",a,da);
-    printf("b    = %g +/- %g\n",b,db);
+  if (bXYdy || (nset == 1)) 
+  {
+      printf("Fitting data to a function f(x) = ax + b\n");
+      printf("Minimizing residual chi2 = Sum_i w_i [f(x_i) - y_i]2\n");
+      printf("Error estimates will be given if w_i (sigma) values are given\n");
+      printf("(use option -xydy).\n\n");
+      if (bXYdy) 
+          lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r,&S);
+      else
+          lsq_y_ax_b(n,x,val[0],&a,&b,&r,&S);
+      chi2 = sqr((n-2)*S);
+      printf("Chi2                    = %g\n",chi2);
+      printf("S (Sqrt(Chi2/(n-2))     = %g\n",S);
+      printf("Correlation coefficient = %.1f%%\n",100*r);
+      printf("\n");
+      if (bXYdy) {
+          printf("a    = %g +/- %g\n",a,da);
+          printf("b    = %g +/- %g\n",b,db);
+      }
+      else {
+          printf("a    = %g\n",a);
+          printf("b    = %g\n",b);
+      }
   }
-  else {
-    printf("a    = %g\n",a);
-    printf("b    = %g\n",b);
+  else 
+  {
+      double chi2,*a,**xx,*y;
+      int i,j;
+      
+      snew(y,n);
+      snew(xx,nset-1);
+      for(j=0; (j<nset-1); j++)
+          snew(xx[j],n);
+      for(i=0; (i<n); i++)
+      {
+          y[i] = val[0][i];
+          for(j=1; (j<nset); j++)
+              xx[j-1][i] = val[j][i];
+      }
+      snew(a,nset-1);
+      chi2 = multi_regression(NULL,n,y,nset-1,xx,a);
+      printf("Fitting %d data points in %d sets\n",n,nset-1);
+      printf("chi2 = %g\n",chi2);
+      printf("A =");
+      for(i=0; (i<nset-1); i++)
+      {
+          printf("  %g",a[i]);
+          sfree(xx[i]);
+      }
+      printf("\n");
+      sfree(xx);
+      sfree(y);
+      sfree(a);
   }
 }
 
@@ -734,6 +770,111 @@ static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val,
   }
 }
 
+static void do_ballistic(const char *balFile, int nData,
+                         real *t, real **val, int nSet,
+                         real balTime, int nBalExp,
+                         bool bDerivative,
+                         const output_env_t oenv)
+{
+  double **ctd=NULL, *td=NULL;
+  t_gemParams *GP = init_gemParams(0, 0, t, nData, 0, 0, 0, balTime, nBalExp, bDerivative);
+  static char *leg[] = {"Ac'(t)"};
+  FILE *fp;
+  int i, set;
+  
+  if (GP->ballistic/GP->tDelta >= GP->nExpFit*2+1)
+  {
+      snew(ctd, nSet);
+      snew(td,  nData);
+
+      fp = xvgropen(balFile, "Hydrogen Bond Autocorrelation","Time (ps)","C'(t)", oenv);
+      xvgr_legend(fp,asize(leg),leg,oenv);
+      
+      for (set=0; set<nSet; set++)
+      {
+          snew(ctd[set], nData);
+          for (i=0; i<nData; i++) {
+              ctd[set][i] = (double)val[set][i];
+              if (set==0)
+                  td[i] = (double)t[i];
+          }
+          
+          takeAwayBallistic(ctd[set], td, nData, GP->ballistic, GP->nExpFit, GP->bDt);
+      }
+      
+      for (i=0; i<nData; i++)
+      {
+          fprintf(fp, "  %g",t[i]);
+          for (set=0; set<nSet; set++)
+          {
+              fprintf(fp, "  %g", ctd[set][i]);
+          }
+          fprintf(fp, "\n");
+      }
+
+
+      for (set=0; set<nSet; set++)
+          sfree(ctd[set]);
+      sfree(ctd);
+      sfree(td);
+  }
+  else
+      printf("Number of data points is less than the number of parameters to fit\n."
+             "The system is underdetermined, hence no ballistic term can be found.\n\n");
+}
+
+static void do_geminate(const char *gemFile, int nData,
+                        real *t, real **val, int nSet,
+                        const real D, const real rcut, const real balTime,
+                        const int nFitPoints, const real begFit, const real endFit,
+                        const output_env_t oenv)
+{
+    double **ctd=NULL, **ctdGem=NULL, *td=NULL;
+    t_gemParams *GP = init_gemParams(rcut, D, t, nData, nFitPoints,
+                                     begFit, endFit, balTime, 1, FALSE);
+    static char *leg[] = {"Ac\\sgem\\N(t)"};
+    FILE *fp;
+    int i, set;
+    
+    snew(ctd,    nSet);
+    snew(ctdGem, nSet);
+    snew(td,  nData);
+    
+    fp = xvgropen(gemFile, "Hydrogen Bond Autocorrelation","Time (ps)","C'(t)", oenv);
+    xvgr_legend(fp,asize(leg),leg,oenv);
+    
+    for (set=0; set<nSet; set++)
+    {
+        snew(ctd[set],    nData);
+        snew(ctdGem[set], nData);
+        for (i=0; i<nData; i++) {
+            ctd[set][i] = (double)val[set][i];
+            if (set==0)
+                td[i] = (double)t[i];
+        }
+        fitGemRecomb(ctd[set], td, &(ctd[set]), nData, GP);
+    }
+
+    for (i=0; i<nData; i++)
+	{
+        fprintf(fp, "  %g",t[i]);
+        for (set=0; set<nSet; set++)
+	    {
+            fprintf(fp, "  %g", ctdGem[set][i]);
+	    }
+        fprintf(fp, "\n");
+	}
+
+    for (set=0; set<nSet; set++)
+    {
+        sfree(ctd[set]);
+        sfree(ctdGem[set]);
+    }
+    sfree(ctd);
+    sfree(ctdGem);
+    sfree(td);
+}
+
 int gmx_analyze(int argc,char *argv[])
 {
   static const char *desc[] = {
@@ -793,6 +934,20 @@ int gmx_analyze(int argc,char *argv[])
     "The complete derivation is given in",
     "B. Hess, J. Chem. Phys. 116:209-217, 2002.[PAR]",
 
+    "Option [TT]-bal[TT] finds and subtracts the ultrafast \"ballistic\"",
+    "component from a hydrogen bond autocorrelation function by the fitting",
+    "of a sum of exponentials, as described in e.g.",
+    "O. Markovitch, J. Chem. Phys. 129:084505, 2008. The fastest term",
+    "is the one with the most negative coefficient in the exponential,",
+    "or with [TT]-d[TT], the one with most negative time derivative at time 0.",
+    "[]TT-nbalexp[TT] sets the number of exponentials to fit.[PAR]",
+
+    "Option [TT]-gem[TT] fits bimolecular rate constants ka and kb",
+    "(and optionally kD) to the hydrogen bond autocorrelation function",
+    "according to the reversible geminate recombination model. Removal of",
+    "the ballistic component first is strongly adviced. The model is presented in",
+    "O. Markovitch, J. Chem. Phys. 129:084505, 2008.[PAR]",
+
     "Option [TT]-filter[tt] prints the RMS high-frequency fluctuation",
     "of each set and over all sets with respect to a filtered average.",
     "The filter is proportional to cos(pi t/len) where t goes from -len/2",
@@ -815,8 +970,8 @@ int gmx_analyze(int argc,char *argv[])
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
   static bool bIntegrate=FALSE,bRegression=FALSE,bLuzar=FALSE,bLuzarError=FALSE; 
-  static int  nsets_in=1,d=1,nb_min=4,resol=10;
-  static real temp=298.15,fit_start=1,smooth_tail_start=-1;
+  static int  nsets_in=1,d=1,nb_min=4,resol=10, nBalExp=4, nFitPoints=100;
+  static real temp=298.15,fit_start=1, fit_end=60, smooth_tail_start=-1, balTime=0.2, diffusion=5e-5,rcut=0.35;
   
   /* must correspond to enum avbar* declared at beginning of file */
   static const char *avbar_opt[avbarNR+1] = { 
@@ -847,13 +1002,15 @@ int gmx_analyze(int argc,char *argv[])
     { "-xydy",    FALSE, etBOOL, {&bXYdy},
       "Interpret second data set as error in the y values for integrating" },
     { "-regression",FALSE,etBOOL,{&bRegression},
-      "Perform a linear regression analysis on the data" },
+      "Perform a linear regression analysis on the data. If -xydy is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize chi^2 = (y - A0 x0 - A1 x1 - ... - AN xN)^2 where now Y is the first data set in the input file and xi the others. Do read the information at the option [TT]-time[tt]." },
     { "-luzar",   FALSE, etBOOL, {&bLuzar},
       "Do a Luzar and Chandler analysis on a correlation function and related as produced by g_hbond. When in addition the -xydy flag is given the second and fourth column will be interpreted as errors in c(t) and n(t)." },
     { "-temp",    FALSE, etREAL, {&temp},
       "Temperature for the Luzar hydrogen bonding kinetics analysis" },
     { "-fitstart", FALSE, etREAL, {&fit_start},
       "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
+    { "-fitend", FALSE, etREAL, {&fit_end},
+      "Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with -gem" }, 
     { "-smooth",FALSE, etREAL, {&smooth_tail_start},
       "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
     { "-nbmin",   FALSE, etINT, {&nb_min},
@@ -874,7 +1031,19 @@ int gmx_analyze(int argc,char *argv[])
     { "-subav", FALSE, etBOOL, {&bSubAv},
       "Subtract the average before autocorrelating" },
     { "-oneacf", FALSE, etBOOL, {&bAverCorr},
-      "Calculate one ACF over all sets" }
+      "Calculate one ACF over all sets" },
+    { "-nbalexp", FALSE, etINT, {&nBalExp},
+      "HIDDENNumber of exponentials to fit to the ultrafast component" },
+    { "-baltime", FALSE, etREAL, {&balTime},
+      "HIDDENTime up to which the ballistic component will be fitted" },
+    { "-gemnp", FALSE, etINT, {&nFitPoints},
+      "HIDDENNumber of data points taken from the ACF to use for fitting to rev. gem. recomb. model."},
+    { "-rcut", FALSE, etREAL, {&rcut},
+      "Cut-off for hydrogen bonds in geminate algorithms" },
+/*     { "-gemtype", FALSE, etENUM, {gemType}, */
+/*       "What type of gminate recombination to use"}, */
+    { "-D", FALSE, etREAL, {&diffusion},
+      "The self diffusion coefficient which is used for the reversible geminate recombination model."}
   };
 #define NPA asize(pa)
 
@@ -882,7 +1051,7 @@ int gmx_analyze(int argc,char *argv[])
   int      n,nlast,s,nset,i,j=0;
   real     **val,*t,dt,tot,error;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
-  const char     *acfile,*msdfile,*ccfile,*distfile,*avfile,*eefile,*fitfile;
+  const char     *acfile,*msdfile,*ccfile,*distfile,*avfile,*eefile,*balfile,*gemfile,*fitfile;
   output_env_t oenv;
   
   t_filenm fnm[] = { 
@@ -893,6 +1062,8 @@ int gmx_analyze(int argc,char *argv[])
     { efXVG, "-dist", "distr",    ffOPTWR  },
     { efXVG, "-av",   "average",  ffOPTWR  },
     { efXVG, "-ee",   "errest",   ffOPTWR  },
+    { efXVG, "-bal",  "ballisitc",ffOPTWR  },
+    { efXVG, "-gem",  "geminate", ffOPTWR  },
     { efLOG, "-g",    "fitlog",   ffOPTWR  }
   }; 
 #define NFILE asize(fnm) 
@@ -913,6 +1084,8 @@ int gmx_analyze(int argc,char *argv[])
   distfile = opt2fn_null("-dist",NFILE,fnm);
   avfile   = opt2fn_null("-av",NFILE,fnm);
   eefile   = opt2fn_null("-ee",NFILE,fnm);
+  balfile  = opt2fn_null("-bal",NFILE,fnm);
+  gemfile  = opt2fn_null("-gem",NFILE,fnm);
   if (opt2parg_bSet("-fitfn",npargs,ppa)) 
     fitfile  = opt2fn("-g",NFILE,fnm);
   else
@@ -1027,6 +1200,11 @@ int gmx_analyze(int argc,char *argv[])
   if (eefile)
     estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,
 		   bEeFitAc,bEESEF,bEENLC,oenv);
+  if (balfile)
+      do_ballistic(balfile,n,t,val,nset,balTime,nBalExp,bDer,oenv);
+  if (gemfile)
+      do_geminate(gemfile,n,t,val,nset,diffusion,rcut,balTime,
+                  nFitPoints, fit_start, fit_end, oenv);
   if (bPower)
     power_fit(n,nset,val,t);
   if (acfile) {
@@ -1038,7 +1216,7 @@ int gmx_analyze(int argc,char *argv[])
 		eacNormal,bAverCorr);
   }
   if (bRegression)
-    regression_analysis(n,bXYdy,t,val);
+      regression_analysis(n,bXYdy,t,nset,val);
 
   if (bLuzar) 
     luzar_correl(n,t,nset,val,temp,bXYdy,fit_start,smooth_tail_start,oenv);

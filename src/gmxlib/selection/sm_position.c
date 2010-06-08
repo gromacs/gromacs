@@ -352,7 +352,6 @@ free_data_pos(void *data)
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
     sfree(d->type);
-    gmx_ana_index_deinit(&d->g);
     gmx_ana_poscalc_free(d->pc);
 }
 

@@ -1,3 +1,38 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2010, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
+ * And Hey:
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -62,8 +97,8 @@
 /* include even when OpenMM not used to force compilation of do_md_openmm */
 #include "openmm_wrapper.h"
 
-
-enum { eglsNABNSB, eglsCHKPT, eglsTERM, eglsRESETCOUNTERS, eglsNR };
+/* simulation conditions to transmit */
+enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 
 typedef struct
 {
@@ -213,8 +248,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     matrix      lastbox;
     real        reset_counters=0,reset_counters_now=0;
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-    int         handledSignal=-1; /* compare to last_signal_recvd */
-    bool        bHandledSignal=FALSE;
+    int         handled_stop_condition=gmx_stop_cond_none; 
 
     const char *ommOptions = NULL;
     void   *openmmData;
@@ -301,7 +335,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
     }
 
-    openmmData = openmm_init(fplog, ommOptions, cr, ir, top_global, top, mdatoms, fr, state);
+    openmmData = openmm_init(fplog, ommOptions, ir, top_global, top, mdatoms, fr, state);
 
     if (MASTER(cr))
     {
@@ -422,7 +456,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bLastStep = (step_rel == ir->nsteps);
         t = t0 + step*ir->delta_t;
 
-        if (gs.set[eglsTERM] != 0 )
+        if (gs.set[eglsSTOPCOND] != 0)
         {
             bLastStep = TRUE;
         }
@@ -545,39 +579,40 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */
-        if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) &&
-                (handledSignal!=last_signal_number_recvd) &&
-                MASTERTHREAD(cr))
+        if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
+            MASTERTHREAD(cr))
         {
-            if (bGotStopNextStepSignal)
-            {
-                gs.set[eglsTERM] = 1;
-            }
-            else
-            {
-                gs.set[eglsTERM] = -1;
-            }
+           /* this is just make gs.sig compatible with the hack 
+               of sending signals around by MPI_Reduce with together with
+               other floats */
+            /* NOTE: this only works for serial code. For code that allows
+               MPI nodes to propagate their condition, see kernel/md.c*/
+            if ( gmx_get_stop_condition() == gmx_stop_cond_next_ns )
+                gs.set[eglsSTOPCOND]=1;
+            if ( gmx_get_stop_condition() == gmx_stop_cond_next )
+                gs.set[eglsSTOPCOND]=1;
+            /* < 0 means stop at next step, > 0 means stop at next NS step */
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        signal_name[last_signal_number_recvd],
-                        gs.set[eglsTERM]==-1 ? "NS " : "");
+                        gmx_get_signal_name(),
+                        gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    signal_name[last_signal_number_recvd],
-                    gs.set[eglsTERM]==-1 ? "NS " : "");
+                    gmx_get_signal_name(),
+                    gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
             fflush(stderr);
-            handledSignal=last_signal_number_recvd;
+            handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 gs.set[eglsTERM] == 0)
+                 gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
-            gs.set[eglsTERM] = 1;
+            gs.set[eglsSTOPCOND] = 1;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
@@ -609,7 +644,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         /* Remaining runtime */
-        if (MULTIMASTER(cr) && do_verbose)
+        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal() ))
         {
             print_time(stderr,runtime,step,ir,cr);
         }

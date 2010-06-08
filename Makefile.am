@@ -35,7 +35,6 @@ install-exec-hook:
 mdrun:		
 	(cd $(top_builddir)/src/gmxlib && $(MAKE) ; exit 0)
 	(cd $(top_builddir)/src/mdlib && $(MAKE) ; exit 0)
-	(cd $(top_builddir)/src/kernel && $(MAKE) lib_LTLIBRARIES ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) mdrun ; exit 0)
 
 install-mdrun:

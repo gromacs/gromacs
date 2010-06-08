@@ -190,8 +190,7 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
       srenew(*abi,*nabi + hbr->hack[j].nr);
       for(k=0; k < hbr->hack[j].nr; k++) {
 	copy_t_hack(&hbr->hack[j], &(*abi)[*nabi + k]);
-	for(d=0; d<DIM; d++)
-	  (*abi)[*nabi + k].newx[d]=NOTSET;
+	(*abi)[*nabi + k].bXSet = FALSE;
 	/* if we're adding (oname==NULL) and don't have a new name (nname) 
 	   yet, build it from atomname */
 	if ( (*abi)[*nabi + k].nname==NULL ) {
@@ -336,8 +335,10 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
 	      else
 		xh[m][d] = NOTSET;
 	  calc_h_pos(ab[i][j].tp, xa, xh, &l);
-	  for(m=0; m<ab[i][j].nr; m++)
+	  for(m=0; m<ab[i][j].nr; m++) {
 	    copy_rvec(xh[m],ab[i][j+m].newx);
+	    ab[i][j+m].bXSet = TRUE;
+	  }
 	}
       }
     }
@@ -363,7 +364,6 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 		     bool bUpdate_pdba, bool bKeep_old_pdba)
 {
   t_atoms     *newpdba=NULL,*pdba=NULL;
-  bool        bSet;
   int         nadd;
   int         i,newi,j,d,natoms,nalreadypresent;
   int         *nab=NULL;
@@ -520,10 +520,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 /* 	      newpdba->atom[newi].type = ab[i][j].atom->type; */
 	    }
 	  }
-	  bSet=TRUE;
-	  for(d=0; d<DIM; d++)
-	    bSet = bSet && ab[i][j].newx[d]!=NOTSET;
-	  if (bSet)
+	  if (ab[i][j].bXSet)
 	    copy_rvec(ab[i][j].newx, xn[newi]);
 	  }
 	  if (bUpdate_pdba && debug) 

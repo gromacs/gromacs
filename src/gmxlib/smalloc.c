@@ -178,7 +178,9 @@ void *save_realloc(const char *name,const char *file,int line,void *ptr,
   
   p=NULL;
   if (size==0)
-    p=NULL;
+    {
+      save_free(name, file, line, ptr);
+    }
   else
     {
 #ifdef PRINT_ALLOC_KB
@@ -201,10 +203,10 @@ void *save_realloc(const char *name,const char *file,int line,void *ptr,
 		  "Not enough memory. Failed to realloc %"gmx_large_int_fmt
 		  " bytes for %s, %s=%x\n(called from file %s, line %d)",
 		  (gmx_large_int_t)size,name,name,ptr,file,line);
-    }
 #ifdef DEBUG
-  log_action(1,name,file,line,1,size,p);
+      log_action(1,name,file,line,1,size,p);
 #endif
+    }
   return p;
 }
 

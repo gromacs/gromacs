@@ -31,7 +31,6 @@ ebin.h \
 edsam.h \
 enxio.h \
 ffscanf.h \
-fftgrid.h \
 filenm.h \
 force.h \
 futil.h \
@@ -46,6 +45,7 @@ gmx_fatal.h \
 gmx_fft.h \
 gmx_ga2la.h \
 gmx_lapack.h \
+gmx_matrix.h \
 gmx_parallel_3dfft.h \
 gmx_random.h \
 gmx_sse2_single.h \
@@ -113,6 +113,7 @@ selection.h \
 selmethod.h \
 selparam.h \
 selvalue.h \
+sfactor.h \
 shellfc.h \
 shift.h \
 smalloc.h \

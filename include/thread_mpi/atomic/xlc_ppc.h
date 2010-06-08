@@ -41,7 +41,14 @@ files.
  * particular when it comes to clobbered variables. Since this implementation
  * _could_ be buggy, we have separated it from the known-to-be-working gcc
  * one above.
+ *
+ * For now, we just disable the inline keyword if we're compiling C code:
  */
+#ifndef __cplusplus
+#define inline_defined_in_atomic 1
+#define inline
+#endif
+
 
 #define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t eieio\n"\
                                                              : : :"memory" ); }

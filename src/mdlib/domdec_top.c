@@ -728,9 +728,9 @@ static void add_posres(int mol,int a_mol,gmx_molblock_t *molb,
      * so it's index is the current number of position restraints.
      */
     n = idef->il[F_POSRES].nr/2;
-    if (n >= idef->iparams_posres_nalloc)
+    if (n+1 > idef->iparams_posres_nalloc)
     {
-        idef->iparams_posres_nalloc = over_alloc_dd(n);
+        idef->iparams_posres_nalloc = over_alloc_dd(n+1);
         srenew(idef->iparams_posres,idef->iparams_posres_nalloc);
     }
     ip = &idef->iparams_posres[n];

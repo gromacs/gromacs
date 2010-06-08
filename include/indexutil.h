@@ -332,10 +332,13 @@ gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m);
 /** Reserves memory for an index group mapping. */
 extern void
 gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize);
-/** Initialize index group mapping. */
+/** Initializes an index group mapping. */
 extern void
 gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                       t_topology *top, e_index_t type);
+/** Sets an index group mapping to be static. */
+extern void
+gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b);
 /** Frees memory allocated for index group mapping. */
 extern void
 gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m);

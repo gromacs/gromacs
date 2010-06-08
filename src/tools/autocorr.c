@@ -600,7 +600,7 @@ void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
   bool    bFour = acf.bFour;
  
   /* Check flags and parameters */ 
-  /*  nout = get_acfnout();*/
+  nout = get_acfnout();
   if (nout == -1)
     nout = acf.nout = (nframes+1)/2;
   else if (nout > nframes)

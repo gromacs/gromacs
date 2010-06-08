@@ -935,57 +935,57 @@ static int do_cpt_files(XDR *xd, bool bRead,
                         gmx_file_position_t **p_outputfiles, int *nfiles, 
                         FILE *list, int file_version)
 {
-	int    i,j;
-	off_t  offset;
-	off_t  mask = 0xFFFFFFFFL;
-	int    offset_high,offset_low;
-	char   *buf;
-	gmx_file_position_t *outputfiles;
-	
-    if (do_cpt_int(xd,"number of output files",nfiles,list) != 0)
-	{
-		return -1;
-	}
+    int    i,j;
+    off_t  offset;
+    off_t  mask = 0xFFFFFFFFL;
+    int    offset_high,offset_low;
+    char   *buf;
+    gmx_file_position_t *outputfiles;
 
-	if(bRead)
-	{
-		snew(*p_outputfiles,*nfiles);
-	}
-	
-	outputfiles = *p_outputfiles;
-	
-	for(i=0;i<*nfiles;i++)
-	{
-		/* 64-bit XDR numbers are not portable, so it is stored as separate high/low fractions */
-		if(bRead)
-		{
-			do_cpt_string_err(xd,bRead,"output filename",&buf,list);
-			strncpy(outputfiles[i].filename,buf,CPTSTRLEN-1);
-			if(list==NULL)
-			{
-				sfree(buf);			
-			}
-			
-			if (do_cpt_int(xd,"file_offset_high",&offset_high,list) != 0)
-			{
-				return -1;
-			}
-			if (do_cpt_int(xd,"file_offset_low",&offset_low,list) != 0)
-			{
-				return -1;
-			}
+    if (do_cpt_int(xd,"number of output files",nfiles,list) != 0)
+    {
+        return -1;
+    }
+
+    if(bRead)
+    {
+        snew(*p_outputfiles,*nfiles);
+    }
+
+    outputfiles = *p_outputfiles;
+
+    for(i=0;i<*nfiles;i++)
+    {
+        /* 64-bit XDR numbers are not portable, so it is stored as separate high/low fractions */
+        if(bRead)
+        {
+            do_cpt_string_err(xd,bRead,"output filename",&buf,list);
+            strncpy(outputfiles[i].filename,buf,CPTSTRLEN-1);
+            if(list==NULL)
+            {
+                sfree(buf);			
+            }
+
+            if (do_cpt_int(xd,"file_offset_high",&offset_high,list) != 0)
+            {
+                return -1;
+            }
+            if (do_cpt_int(xd,"file_offset_low",&offset_low,list) != 0)
+            {
+                return -1;
+            }
 #if (SIZEOF_OFF_T > 4)
-			outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low & mask );
+            outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low & mask );
 #else
-			outputfiles[i].offset = offset_low;
+            outputfiles[i].offset = offset_low;
 #endif
-		}
-		else
-		{
-			buf = outputfiles[i].filename;
-			do_cpt_string_err(xd,bRead,"output filename",&buf,list);
-			/* writing */
-			offset      = outputfiles[i].offset;
+        }
+        else
+        {
+            buf = outputfiles[i].filename;
+            do_cpt_string_err(xd,bRead,"output filename",&buf,list);
+            /* writing */
+            offset      = outputfiles[i].offset;
             if (offset == -1)
             {
                 offset_low  = -1;
@@ -1001,17 +1001,17 @@ static int do_cpt_files(XDR *xd, bool bRead,
                 offset_high = 0;
 #endif
             }
-			if (do_cpt_int(xd,"file_offset_high",&offset_high,list) != 0)
-			{
-				return -1;
-			}
-			if (do_cpt_int(xd,"file_offset_low",&offset_low,list) != 0)
-			{
-				return -1;
-			}
-		}
-		if (file_version >= 8)
-		{
+            if (do_cpt_int(xd,"file_offset_high",&offset_high,list) != 0)
+            {
+                return -1;
+            }
+            if (do_cpt_int(xd,"file_offset_low",&offset_low,list) != 0)
+            {
+                return -1;
+            }
+        }
+        if (file_version >= 8)
+        {
             if (do_cpt_int(xd,"file_checksum_size",&(outputfiles[i].chksum_size),
                            list) != 0)
             {
@@ -1021,13 +1021,13 @@ static int do_cpt_files(XDR *xd, bool bRead,
             {
                 return -1;
             }
-		} 
-		else 
-		{
-		    outputfiles[i].chksum_size = -1;
-		}
-	}
-	return 0;
+        } 
+        else 
+        {
+            outputfiles[i].chksum_size = -1;
+        }
+    }
+    return 0;
 }
 
 
@@ -1043,11 +1043,12 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     char *bmach;
     char *fprog;
     char *ftime;
+    char *fntemp; /* the temporary checkpoint file name */
     time_t now;
     int  nppnodes,npmenodes,flag_64bit;
     char buf[1024];
-	gmx_file_position_t *outputfiles;
-	int  noutputfiles;
+    gmx_file_position_t *outputfiles;
+    int  noutputfiles;
     int  flags_eks,flags_enh,i;
 		
     if (PAR(cr))
@@ -1068,26 +1069,19 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
         nppnodes  = 1;
         npmenodes = 0;
     }
-    
-    if (gmx_fexist(fn))
-    {
-        /* Rename the previous checkpoint file */
-        strcpy(buf,fn);
-        buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-        strcat(buf,"_prev");
-        strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
-		(void)remove(buf); /* Unix will overwrite buf if it exists, but for windows we need to remove first */
-        if(rename(fn,buf) != 0)
-		{
-			gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
-		}
-    }
-    
+
+    /* make the new temporary filename */
+    snew(fntemp, strlen(fn)+5);
+    strcpy(fntemp,fn);
+    fntemp[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+    strcat(fntemp,"_tmp");
+    strcat(fntemp,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+   
     now = time(NULL);
     ftime = strdup(ctime(&now));
     ftime[strlen(ftime)-1] = '\0';
 
-	/* No need to pollute stderr every time we write a checkpoint file */
+    /* No need to pollute stderr every time we write a checkpoint file */
     /* fprintf(stderr,"\nWriting checkpoint, step %d at %s\n",step,ftime); */
     if (fplog)
     { 
@@ -1096,15 +1090,16 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     }
     
     /* Get offsets for open files */
-	gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles);
+    gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles);
 
-    fp = gmx_fio_open(fn,"w");
+    fp = gmx_fio_open(fntemp,"w");
 	
     if (state->ekinstate.bUpToDate)
     {
         flags_eks =
-            ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) | (1<<eeksEKINO) | 
-             (1<<eeksEKINSCALEF) | (1<<eeksEKINSCALEH) | (1<<eeksVSCALE) | (1<<eeksDEKINDL) | (1<<eeksMVCOS));
+            ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) | 
+             (1<<eeksEKINO) | (1<<eeksEKINSCALEF) | (1<<eeksEKINSCALEH) | 
+             (1<<eeksVSCALE) | (1<<eeksDEKINDL) | (1<<eeksMVCOS));
     }
     else
     {
@@ -1138,8 +1133,9 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
-                  &state->natoms,&state->ngtc,&state->nnhpres,&state->nhchainlength,
-                  &state->flags,&flags_eks,&flags_enh,NULL);
+                  &state->natoms,&state->ngtc,&state->nnhpres,
+                  &state->nhchainlength, &state->flags,&flags_eks,&flags_enh,
+                  NULL);
     
     sfree(version);
     sfree(btime);
@@ -1147,31 +1143,56 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     sfree(bmach);
     sfree(fprog);
 
-    if( (do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)          ||
-		(do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)  ||
-		(do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)    ||
-	    (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,file_version) < 0))
-	{
-		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
-	}
+    if((do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)        ||
+       (do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)||
+       (do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)  ||
+       (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,
+                     file_version) < 0))
+    {
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+    }
 
     do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
 
-    if( gmx_fio_close(fp) != 0)
-	{
-		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
-	}
-    
-    sfree(ftime);
-	sfree(outputfiles);
-	#ifdef GMX_FAHCORE
-    /*code for alternate checkpointing scheme.  moved from top of loop over steps */
-      fcRequestCheckPoint();
-      if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
-        gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
-      }
-	#endif /* end FAHCORE block */
+    /* we really, REALLY, want the checkpoint file and all files it depends 
+       on to be physically written out do disk: */
+    gmx_fio_all_output_fsync();
 
+    if( gmx_fio_close(fp) != 0)
+    {
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+    }
+
+    if (gmx_fexist(fn))
+    {
+        /* Rename the previous checkpoint file */
+        strcpy(buf,fn);
+        buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+        strcat(buf,"_prev");
+        strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+        /* we copy here so that if something goes wrong between now and
+           the rename below, there's always a state.cpt. If renames are atomic
+           (such as in POSIX systems), this copying should be unneccesary. */
+        gmx_file_copy(fn, buf, FALSE); /* We don't really care if this fails: 
+                                          there's already a new checkpoint.  */
+    }
+    if (gmx_file_rename(fntemp, fn) != 0)
+    {
+        gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
+    }
+
+    sfree(ftime);
+    sfree(outputfiles);
+    sfree(fntemp);
+
+#ifdef GMX_FAHCORE
+    /*code for alternate checkpointing scheme.  moved from top of loop over 
+      steps */
+    fcRequestCheckPoint();
+    if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
+        gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
+    }
+#endif /* end GMX_FAHCORE block */
 }
 
 static void print_flag_mismatch(FILE *fplog,int sflags,int fflags)
@@ -1545,7 +1566,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     " offsets. Can not append. Run mdrun without -append",
                     outputfiles[i].filename);
             }
-#ifdef FAHCORE
+#ifdef GMX_FAHCORE
             chksum_file=gmx_fio_open(outputfiles[i].filename,"a");
 
 #else
@@ -1592,7 +1613,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             {
                 gmx_fio_close(chksum_file);
             }
-#ifndef FAHCORE            
+#ifndef GMX_FAHCORE            
             /* compare md5 chksum */
             if (outputfiles[i].chksum_size != -1 &&
                 memcmp(digest,outputfiles[i].chksum,16)!=0) 

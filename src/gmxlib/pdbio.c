@@ -765,21 +765,23 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
 	 * without identifier or with identical identifiers.
 	 */
 	nterread++;
-	if (nterread == 2 && atoms->resinfo[0].chain == ' ') {
-	  set_chainid(atoms,0,nres_ter_prev,chidmax);
-	  chidmax = 'A';
+	if (NULL != atoms->resinfo) {
+	  if (nterread == 2 && atoms->resinfo[0].chain == ' ') {
+	    set_chainid(atoms,0,nres_ter_prev,chidmax);
+	    chidmax = 'A';
+	  }
+	  if (nterread >= 2 && 
+	      (atoms->resinfo[nres_ter_prev].chain == ' ' ||
+	       (nres_ter_prev > 0 &&
+		atoms->resinfo[nres_ter_prev-1].chain !=
+		atoms->resinfo[nres_ter_prev].chain)) &&
+	      chidmax < 'Z') {
+	    chidmax++;
+	    set_chainid(atoms,nres_ter_prev,atoms->nres,chidmax);
+	  }
+	  chidmax = max(chidmax,atoms->resinfo[nres_ter_prev].chain);
+	  nres_ter_prev = atoms->nres;
 	}
-	if (nterread >= 2 && 
-	    (atoms->resinfo[nres_ter_prev].chain == ' ' ||
-	     (nres_ter_prev > 0 &&
-	      atoms->resinfo[nres_ter_prev-1].chain !=
-	      atoms->resinfo[nres_ter_prev].chain)) &&
-	    chidmax < 'Z') {
-	  chidmax++;
-	  set_chainid(atoms,nres_ter_prev,atoms->nres,chidmax);
-	}
-	chidmax = max(chidmax,atoms->resinfo[nres_ter_prev].chain);
-	nres_ter_prev = atoms->nres;
       }
       break;
     case epdbMODEL:

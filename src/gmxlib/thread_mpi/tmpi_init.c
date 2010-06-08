@@ -139,6 +139,7 @@ void tMPI_Trace_print(const char *fmt, ...)
 void *tMPI_Malloc(size_t size)
 {
     void *ret=(void*)malloc(size);
+
     if (!ret)
     {
         tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
@@ -249,9 +250,9 @@ int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
 
 static void tMPI_Thread_init(struct tmpi_thread *th)
 {
-    int N_envelopes=(Nthreads+1)*(Nthreads+1)*N_EV_ALLOC;  
-    int N_send_envelopes=(Nthreads+1)*N_EV_ALLOC;  
-    int N_reqs=(Nthreads+1)*(Nthreads+1)*N_EV_ALLOC;  
+    int N_envelopes=(Nthreads+1)*N_EV_ALLOC;  
+    int N_send_envelopes=N_EV_ALLOC;  
+    int N_reqs=(Nthreads+1)*N_EV_ALLOC;  
     int i;
 
     /* allocate comm.self */

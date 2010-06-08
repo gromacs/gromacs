@@ -73,7 +73,9 @@ static void rd_nm2type_file(const char *fn,int *nnm,t_nm2type **nmp)
   t_nm2type *nm2t=NULL;
   
   fp = fflib_open(fn);
-  
+  if (NULL == fp)
+    gmx_fatal(FARGS,"Can not find %s in library directory",fn);
+    
   nnnm = *nnm;
   nm2t = *nmp;
   do {

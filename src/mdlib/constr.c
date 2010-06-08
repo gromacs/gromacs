@@ -403,10 +403,9 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             {
                 char buf[256];
                 sprintf(buf,
-                        "\nt = %.3f ps: Water molecule starting at atom %d can not be "
-                        "settled.\nCheck for bad contacts and/or reduce the timestep.\n",
-                        ir->init_t+step*ir->delta_t,
-                        ddglatnr(cr->dd,settle->iatoms[error*2+1]));
+                        "\nstep " gmx_large_int_pfmt ": Water molecule starting at atom %d can not be "
+                        "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
+                        step,ddglatnr(cr->dd,settle->iatoms[error*2+1]));
                 if (fplog)
                 {
                     fprintf(fplog,"%s",buf);
