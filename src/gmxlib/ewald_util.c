@@ -434,26 +434,17 @@ real ewaldlj_LRcorrection(FILE *fplog,
   atom_id *AA;
   double  q2sumA,q2sumB,Vexcl,dvdl_excl; /* Necessary for precision */
   real    v,vc,qiA,qiB,dr,dr2,rinv,fscal,enercorr;
-  real    VselfA,VselfB=0,rinv2,ewc=fr->ewaldljcoeff,ewcdr;
+  real    VselfA,VselfB=0,rinv2,rinv6,ewc=fr->ewaldljcoeff,ewcdr;
   rvec    df,dx,dipcorrA,dipcorrB;
   rvec    *f=fr->f_novirsum;
   tensor  dxdf;
   real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
   real    L1,dipole_coeff,qqA,qqB,qqL,vr0;
-  /*#define TABLES*/
-#ifdef TABLES
-  real    tabscale=fr->tabscale;
-  real    eps,eps2,VV,FF,F,Y,Geps,Heps2,Fp,fijC,r1t;
-  real    *VFtab=fr->coulvdwtab;
-  int     n0,n1,nnn;
-#else
-  double  isp=0.564189583547756;
-#endif
   int     niat;
   bool    bFreeEnergy = (chargeB != NULL);
   bool    bMolPBC = fr->bMolPBC;
 
-  vr0 = ewc*2/sqrt(M_PI);
+  vr0 = -ewc*ewc*ewc*ewc*ewc*ewc/6.0;
 
   AA         = excl->a;
   Vexcl      = 0;
@@ -472,25 +463,128 @@ real ewaldlj_LRcorrection(FILE *fplog,
     for(i=start; (i<niat); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qiA = chargeA[i];
+      i1  = excl->index[i];
+      i2  = excl->index[i+1];
       if (i < end)
 	q2sumA += chargeA[i]*chargeA[i];
+
+      /* Loop over excluded neighbours */
+      for(j=i1; (j<i2); j++) {
+        k = AA[j];
+        /*
+         * First we must test whether k <> i, and then, because the
+         * exclusions are all listed twice i->k and k->i we must select
+         * just one of the two.
+         * As a minor optimization we only compute forces when the charges
+         * are non-zero.
+         */
+        if (k > i) {
+          qqA = qiA*chargeA[k];
+          if (qqA != 0.0) {
+            rvec_sub(x[i],x[k],dx);
+            if (bMolPBC) {
+              /* Cheap pbc_dx, assume excluded pairs are at short distance. */
+              for(m=DIM-1; (m>=0); m--) {
+                if (dx[m] > 0.5*box[m][m])
+                  rvec_dec(dx,box[m]);
+                else if (dx[m] < -0.5*box[m][m])
+                  rvec_inc(dx,box[m]);
+              }
+            }
+            dr2 = norm2(dx);
+            /* Distance between two excluded particles may be zero in the
+             * case of shells
+             */
+            if (dr2 != 0) {
+              rinv              = gmx_invsqrt(dr2);
+              rinv2             = rinv*rinv;
+              rinv6             = rinv2*rinv2*rinv2;
+              dr                = 1.0/rinv;
+
+              ewcdr   = ewc*dr;
+              vc      = -qqA*rinv6*(1.0 - exp(-ewcdr*ewcdr)*(1 + ewcdr*ewcdr + 0.5*ewcdr*ewcdr*ewcdr*ewcdr));
+              Vexcl  += vc;
+
+              fscal   = 6.0*vc*rinv + qqA*rinv6*exp(-ewcdr*ewcdr)*ewc*ewcdr*ewcdr*ewcdr*ewcdr*ewcdr;
+              /* The force vector is obtained by multiplication with the
+               * distance vector
+               */
+              svmul(fscal*rinv,dx,df);
+              rvec_inc(f[k],df);
+              rvec_dec(f[i],df);
+              for(iv=0; (iv<DIM); iv++)
+                for(jv=0; (jv<DIM); jv++)
+                  dxdf[iv][jv] += dx[iv]*df[jv];
+            } else {
+              Vexcl += qqA*vr0;
+            }
+          }
+        }
+      }
     }
   } else {
     for(i=start; (i<niat); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qiA = chargeA[i];
       qiB = chargeB[i];
+      i1  = excl->index[i];
+      i2  = excl->index[i+1];
       if (i < end) {
 	q2sumA += chargeA[i]*chargeA[i];
 	q2sumB += chargeB[i]*chargeB[i];
       }
+
+      /* Loop over excluded neighbours */
+      for(j=i1; (j<i2); j++) {
+        k = AA[j];
+        if (k > i) {
+          qqA = qiA*chargeA[k];
+          qqB = qiB*chargeB[k];
+          if (qqA != 0.0 || qqB != 0.0) {
+            qqL = L1*qqA + lambda*qqB;
+            rvec_sub(x[i],x[k],dx);
+            if (bMolPBC) {
+              /* Cheap pbc_dx, assume excluded pairs are at short distance. */
+              for(m=DIM-1; (m>=0); m--) {
+                if (dx[m] > 0.5*box[m][m])
+                  rvec_dec(dx,box[m]);
+                else if (dx[m] < -0.5*box[m][m])
+                  rvec_inc(dx,box[m]);
+              }
+            }
+            dr2 = norm2(dx);
+            if (dr2 != 0) {
+              rinv   = gmx_invsqrt(dr2);
+              rinv2  = rinv*rinv;
+              rinv6  = rinv2*rinv2*rinv2;
+              dr     = 1.0/rinv;
+
+              ewcdr  = ewc*dr;
+              v      = -rinv6*(1.0 - exp(-ewcdr*ewcdr)*(1 + ewcdr*ewcdr + 0.5*ewcdr*ewcdr*ewcdr*ewcdr));
+              vc     = qqL*v;
+              Vexcl += vc;
+              fscal  = 6.0*vc*rinv + qqL*rinv6*exp(-ewcdr*ewcdr)*ewc*ewcdr*ewcdr*ewcdr*ewcdr*ewcdr;
+
+              svmul(fscal*rinv,dx,df);
+              rvec_inc(f[k],df);
+              rvec_dec(f[i],df);
+              for(iv=0; (iv<DIM); iv++)
+                for(jv=0; (jv<DIM); jv++)
+                  dxdf[iv][jv] += dx[iv]*df[jv];
+              dvdl_excl += (qqB - qqA)*v;
+            } else {
+              Vexcl     +=         qqL*vr0;
+              dvdl_excl += (qqB - qqA)*vr0;
+            }
+          }
+        }
+      }
     }
   }
-/*  for(iv=0; (iv<DIM); iv++)
+  for(iv=0; (iv<DIM); iv++)
     for(jv=0; (jv<DIM); jv++)
       fr->vir_lj_recip[iv][jv] += 0.5*dxdf[iv][jv];
-*/
-      
+
   VselfA = -ewc*ewc*ewc*ewc*ewc*ewc*q2sumA/12;
 
   if (!bFreeEnergy) {
