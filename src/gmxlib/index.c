@@ -285,9 +285,9 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
 			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
   static const char *calpha[]  = { "CA" };
   static const char *bb[]      = { "N","CA","C" };
-  static const char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
-  static const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OT","OXT" };
-  static const char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT",
+  static const char *mc[]      = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT" };
+  static const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OC1","OC2","OT","OXT" };
+  static const char *mch[]     = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT",
 			     "H1","H2","H3","H" };
   /* array of arrays of atomnames: */
   static const char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
