@@ -124,12 +124,13 @@ yyerror(yyscan_t, char const *s);
 /* A dummy token that determines the precedence of parameter reduction */
 %nonassoc       PARAM_REDUCT
 /* Boolean operator tokens */
-%left           AND OR XOR
+%left           OR XOR
+%left           AND
 %left           NOT
 /* Arithmetic operator tokens */
 %left           '+' '-'
 %left           '*' '/'
-%left           UNARY_NEG   /* Dummy token for unary negation precedence */
+%right          UNARY_NEG   /* Dummy token for unary negation precedence */
 %right          '^'
 
 /* Simple non-terminals */
