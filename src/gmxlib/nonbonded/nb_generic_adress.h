@@ -51,7 +51,8 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 			 real                 tabscale,  
 			 real *               VFtab,
 			 int *                outeriter,
-			 int *                inneriter);
+			 int *                inneriter,
+                         bool                 bCG);
 
 #endif
 

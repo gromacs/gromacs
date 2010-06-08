@@ -332,6 +332,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
 	gmx_gbdata_t    gbdata;
+        bool            bCG; /* for AdresS */
+        int             k;/* for AdresS */
 
     bLR            = (flags & GMX_DONB_LR);
     bDoForces      = (flags & GMX_DONB_FORCES);
@@ -340,7 +342,11 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
 	gbdata.epsilon_r = fr->epsilon_r;
 	gbdata.gpol               = egpol;
-    
+
+    if (!fr->adress_type==eAdressOff && !bDoForces && getenv("GMX_NB_GENERIC") == NULL){
+        gmx_fatal(FARGS,"No force kernels not implemeted for adress, use enverionmentflag GMX_NB_GENERIC=1");
+    }
+
     if(fr->bAllvsAll) 
     {
         if(fr->bGB)
@@ -557,8 +563,31 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                 }
                 else
                 {
-                    /* Not free energy */
-
+                    /* AdresS*/
+                    /* for adress we need to determine for each energy group wether it is explicit or coarse-grained */
+                    if (!fr->adress_type == eAdressOff) {                        
+                        bCG = FALSE;
+                        for (k = 0; k < fr->n_adress_cg_grps; k++) {
+                            if (mdatoms->cENER[nlist->iinr[0]] == fr->adress_cg_grp_index[k]) {
+                                bCG = TRUE;
+                            }
+                        }
+                        /* if not CG make sure it is in adress ex grps and assign explicit kernel*/
+                        if (!bCG) {
+                            bCG = TRUE;
+                            for (k = 0; k < fr->n_adress_ex_grps; k++) {
+                                if (mdatoms->cENER[nlist->iinr[0]] == fr->adress_ex_grp_index[k]) {
+                                    bCG = FALSE;
+                                    /* the explicit kernels are the second part of the kernel list */
+                                    nrnb_ind += eNR_NBKERNEL_NR/2;
+                                }
+                            }
+                            if (bCG) {
+                                gmx_fatal(FARGS, "Death & horror! Explicit energy group nr %d has to be specified in adress_ex_grps.\n", mdatoms->cENER[nlist->iinr[0]]);
+                            }
+                        }
+                    }
+                    if (fr->adress_type == eAdressOff){
                     kernelptr = nb_kernel_list[nrnb_ind];
                    
                     if (kernelptr == NULL || (! fr->adress_type==eAdressOff))
@@ -583,7 +612,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                               tabledata,
                                               &outeriter,
                                               &inneriter);
-                        }else{
+                        }else /* do AdResS */
+                        {
+
                             gmx_nb_generic_adress_kernel(nlist,
                                                 fr,
                                                 mdatoms,
@@ -595,7 +626,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                                 nblists->tab.scale,
                                                 tabledata,
                                                 &outeriter,
-                                                &inneriter);
+                                                &inneriter,
+                                                bCG);
                         }
 
 

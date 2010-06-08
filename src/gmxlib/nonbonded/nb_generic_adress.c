@@ -43,6 +43,8 @@
 #include "typedefs.h"
 #include "nb_generic_adress.h"
 
+#define ALMOST_ZERO 1e-30
+#define ALMOST_ONE 1-(1e-30)
 void
 gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 					  t_forcerec *         fr,
@@ -55,7 +57,8 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 					  real                 tabscale,
 					  real *               VFtab,
 					  int *                outeriter,
-					  int *                inneriter)
+					  int *                inneriter,
+                                          bool                bCG)
 {
     int           nri,ntype,table_nelements,icoul,ivdw;
     real          facel,gbtabscale;
@@ -81,75 +84,35 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
     int *         shift;
     int *         type;
 
-     real *     wf;
-     real       weight_cg1;
-     real       weight_cg2;
-     real       weight_product;
-     real       weight_product_cg;
-     real       const_wf;
-     int        adress_type;
-     real       hybscal;
-     real       c_tmp;
-     bool       bHybrid; /*Are we in the hybrid zone ?*/
-     bool       bIntPres; /*Is interface interpolation correction enabled ?*/
-     bool       bCG; /*Are we calulating cg-cg interactions?*/
-     real       A, B; /* write force factor as A-Bww to remove ifs from innerloop */
+    real *     wf;
+    real       weight_cg1;
+    real       weight_cg2;
+    real       weight_product;
+    real       hybscal; /* the multiplicator to the force for hybrid interactions*/
+    bool       bHybrid; /*Are we in the hybrid zone ?*/
 
-     bCG                 = FALSE;//(mdatoms->ptype[nlist->iinr[0]] == eptVSite);
-     wf                  = mdatoms->wf;
-     const_wf            = fr->adress_const_wf;
-     adress_type         = fr->adress_type;
-     /* Check if we're doing the coarse grained charge group */
-     bIntPres            = (fr->adress_icor == eAdressICInterpolate);
+    wf                  = mdatoms->wf;
 
+    icoul               = nlist->icoul;
+    ivdw                = nlist->ivdw;
 
-     /* check weather we are doing cg by looping over all adress cg groupss*/
-     //printf ("XXX n CG groups %d\n", fr->n_adress_cg_grps);
+    /* avoid compiler warnings for cases that cannot happen */
+    nnn                 = 0;
+    vcoul               = 0.0;
+    eps                 = 0.0;
+    eps2                = 0.0;
 
-     for (k=0; k<fr->n_adress_cg_grps; k++){
-        // printf ("CG grp ( %d ) %d\n", k, fr->adress_cg_grp_index[k]);
-         if (mdatoms->cENER[nlist->iinr[0]] == fr->adress_cg_grp_index[k]){
-             bCG=TRUE;
-          // printf("Found CG group %d \n", mdatoms->cENER[nlist->iinr[0]] );
-         }
-     }
-   //  printf ("XXX n EX groups %d\n", fr->n_adress_ex_grps);
-     for (k=0; k<fr->n_adress_ex_grps; k++){
-       //  printf ("EX grp ( %d ) %d\n", k, fr->adress_ex_grp_index[k]);
-     }
-      /* if not CG make sure it is in adress ex grps ...uhhh that is dirty:*/
-    if(!bCG){
-        bCG=TRUE;
-        for (k=0; k<fr->n_adress_ex_grps; k++){
-             if (mdatoms->cENER[nlist->iinr[0]] == fr->adress_ex_grp_index[k]){
-              bCG=FALSE;
-            }
-        }
-        if (bCG){
-            gmx_fatal(FARGS,"Death & horror! Explicit energy group nr %d has to be specified in adress_ex_grps.\n",mdatoms->cENER[nlist->iinr[0]]);
-        }
-    }
+    /* 3 VdW parameters for buckingham, otherwise 2 */
+    nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
+    table_nelements     = (icoul==3) ? 4 : 0;
+    table_nelements    += (ivdw==3) ? 8 : 0;
 
-	icoul               = nlist->icoul;
-	ivdw                = nlist->ivdw;
-
-	/* avoid compiler warnings for cases that cannot happen */
-	nnn                 = 0;
-	vcoul               = 0.0;
-	eps                 = 0.0;
-	eps2                = 0.0;
-
-	/* 3 VdW parameters for buckingham, otherwise 2 */
-	nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
-	table_nelements     = (icoul==3) ? 4 : 0;
-	table_nelements    += (ivdw==3) ? 8 : 0;
-
-        charge              = mdatoms->chargeA;
-	type                = mdatoms->typeA;
-	facel               = fr->epsfac;
-	shiftvec            = fr->shift_vec[0];
-	vdwparam            = fr->nbfp;
-	ntype               = fr->ntype;
+    charge              = mdatoms->chargeA;
+    type                = mdatoms->typeA;
+    facel               = fr->epsfac;
+    shiftvec            = fr->shift_vec[0];
+    vdwparam            = fr->nbfp;
+    ntype               = fr->ntype;
 
    for(n=0; (n<nlist->nri); n++)
     {
@@ -172,48 +135,38 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
         fiy              = 0;
         fiz              = 0;
 
-         weight_cg1       = wf[ii];
+        weight_cg1       = wf[ii];
 
         for(k=nj0; (k<nj1); k++)
         {
             jnr              = nlist->jjnr[k];
             weight_cg2       = wf[jnr];
 
-            if(!(adress_type == eAdressConst))
-            {
-                weight_product   = weight_cg1*weight_cg2;
-            }
-            else
-            {
-                /* necessary since wf defaults to 1 and is not changed for eAdressConst */
-                weight_product    = const_wf;
-            }
+            weight_product   = weight_cg1*weight_cg2;
 
-            /* at least one of the groups is coarse grained */
-	    /* -> we should not calculate ex-ex interactions */
-            if (weight_product == 0)
+            if (weight_product < ALMOST_ZERO)
             {                
-		/* if it's a explicit loop, goto the next molecule (as cg is bigger this case should oocur more often) */
+		/* if it's a explicit loop, skip this atom */
                 if (!bCG)
                 {
                     continue;
                 }
-                else /* if it's a coarse grained loop, include this molecule */
+                else /* if it's a coarse grained loop, include this atom */
                 {
                     bHybrid = FALSE;
 	            hybscal = 1.0;
                 }
             }
-            else if (weight_product == 1)
+            else if (weight_product >= ALMOST_ONE)
             {
                 
-		/* if it's a explicit loop, include this molecule */
+		/* if it's a explicit loop, include this atom */
                 if(!bCG)
                 {
                     bHybrid = FALSE;
 	            hybscal = 1.0;
                 }             
-                else  /* if it's a coarse grained loop, skip this molecule */
+                else  /* if it's a coarse grained loop, skip this atom */
                 {
                     continue;
                 }
@@ -221,28 +174,9 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
             /* both have double identity, get hybrid scaling factor */
             else
             {
-                bHybrid = TRUE;
-                if (!(adress_type == eAdressConst))
-                {
+                bHybrid = TRUE;                       
+                hybscal = weight_product;
 
-                        /* this is the old function */
-                        hybscal = weight_product;
-
-                }
-                else
-                {
-                    /* New meaning of adress_const_wf, sets the hybscal instead of the weight.
-                     * This ensures that both weighting functions can use the same
-                     * thermoforce table generated by running several simulations
-                     * with different hybscal factors, since the thermoforce can be written
-                     * easily as a function of weight if the input for IC is dmu/dhybscal.
-                     * See adress_thermo_force function in src/mdlib/adress.c for more details. */
-                    hybscal = const_wf;
-                }
-
-                /* hybscal is the scaling factor for the forces in the hybrid region
-                 * for EX-EX interactions it is just given by the above formular
-                 * for CG-CG interactions it is 1- the EX-EX scale */
                 if(bCG)
                 {
                     hybscal = 1.0 - hybscal;
