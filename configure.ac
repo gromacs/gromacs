@@ -188,13 +188,6 @@ AC_ARG_ENABLE(all-static,
                               [Make completely static binaries])],, enable_all_static=no)
 # Dont add the -all-static flag until after the compiler test.
 
-AC_ARG_ENABLE(cgunits,
-              [AC_HELP_STRING([--enable-cgunits],
-                              [Build a gromacs with uses reduced units])],,enable_cgunits=no)
-
-if test "$enable_cgunits" = "yes"; then
-  AC_DEFINE(CGUNITS,,[Use reduced (CG) units])
-fi
 
 # FFT libraries - only use one...
 AC_ARG_WITH(fft,
