@@ -1353,7 +1353,7 @@ int main(int argc, char *argv[])
 
     rename_atoms(NULL,ffdir,pdba,&symtab,restp_chain,FALSE,aan,FALSE,bVerbose);
 
-    match_atomnames_with_rtp(restp_chain,hb_chain,pdba,bVerbose);
+    match_atomnames_with_rtp(restp_chain,hb_chain,pdba,x,bVerbose);
 
     if (bSort) {
       block = new_blocka();

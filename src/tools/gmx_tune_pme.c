@@ -57,6 +57,7 @@ enum {
     eParselogNoPerfData,
     eParselogTerm,
     eParselogResetProblem,
+    eParselogNoDDGrid,
     eParselogNr
 };
 
@@ -207,6 +208,10 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
                     else if (perfdata->nPMEnodes != npme)
                         gmx_fatal(FARGS, "PME nodes from command line and output file are not identical");
                     iFound = eFoundDDStr;
+                }
+                else if (str_starts(line, "There is no domain decomposition for"))
+                {
+                    return eParselogNoDDGrid;
                 }
                 break;
             case eFoundDDStr:
@@ -405,6 +410,8 @@ static void get_program_paths(bool bThreads, char *cmd_mpirun[],
     const char def_mdrun[]  = "mdrun";
     const char filename[]   = "testrun.log";
     const char match_mdrun[]= "NNODES=";
+    const char match_mdrun_threads[] = "DESCRIPTION";
+    const char *match=NULL;
     const char empty_mpirun[] = "";
     bool  bFound = FALSE;
     
@@ -435,30 +442,28 @@ static void get_program_paths(bool bThreads, char *cmd_mpirun[],
     /* Run a small test to see if mpirun and mdrun work if we intend 
        to execute mdrun! */
     fprintf(stdout, "Making sure that mdrun can be executed. ");
-
+    snew(command, strlen(*cmd_mpirun) + strlen(*cmd_mdrun) + strlen(filename) + 50);
+    /* We absolutely need the -h switch so that no md.log file is (over-)written! */
     if (bThreads)
     {
-        snew(command, strlen(*cmd_mdrun) + strlen(filename) + 30);
-        sprintf(command, "%s -maxh 0.001 quiet >& %s", *cmd_mdrun, filename);
+        match = match_mdrun_threads;
+        sprintf(command, "%s -h -maxh 0.001 quiet >& %s", *cmd_mdrun, filename);
     }
     else
     {
-        snew(command, strlen(*cmd_mpirun) + strlen(*cmd_mdrun) + 
-             strlen(filename) + 30);
-        sprintf(command, "%s -np 1 %s -maxh 0.001 quiet >& %s", 
-                *cmd_mpirun, *cmd_mdrun, filename);
+        match = match_mdrun;
+        sprintf(command, "%s -np 1 %s -h -maxh 0.001 quiet >& %s", *cmd_mpirun, *cmd_mdrun, filename);
     }
-
     fprintf(stdout, "Trying '%s' ... ", command);
 
     gmx_system_call(command);
 
-    /* Check if we find the gromacs header in the log file: */
+    /* Check if we find the characteristic string in the output: */
     fp = fopen(filename, "r");
     while ( (!feof(fp)) && (bFound==FALSE) )
     {
         cp2=fgets(line, STRLEN, fp);
-        if (cp2!=NULL && str_starts(line, match_mdrun))
+        if (cp2!=NULL && str_starts(line, match))
             bFound = TRUE;
     }
 
@@ -791,25 +796,19 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
     int     cmdline_length;
     char    *command;
     char    buf[STRLEN];
-    char    *opt_noaddpart;
     bool    bResetProblem=FALSE;
     
 
-    /* This string array corresponds to the eParselog enum type from above */
+    /* This string array corresponds to the eParselog enum type at the start
+     * of this file */
     const char* ParseLog[] = {"OK",
-                              "Logfile not found", 
-                              "No timings in log file",
+                              "Logfile not found!",
+                              "No timings, logfile truncated?",
                               "Run was terminated",
-                              "Counters were not reset properly"};
+                              "Counters were not reset properly",
+                              "No DD grid found for these settings"};
     char    str_PME_f_load[13];
 
-    /* The -noaddpart option is needed so that the md.log files do not
-     * get renamed if checkpoints are used!
-     */
-    if (sim_part > 1) 
-        opt_noaddpart=" -noaddpart"; 
-    else
-        opt_noaddpart="";
 
     /* Allocate space for the mdrun command line. 100 extra characters should 
        be more than enough for the -npme etcetera arguments */
@@ -842,16 +841,16 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                 snew(pd->mdrun_cmd_line, cmdline_length);
                 if (bThreads)
                 {
-                    sprintf(pd->mdrun_cmd_line, "%s %s-npme %d -s %s%s",
+                    sprintf(pd->mdrun_cmd_line, "%s %s -npme %d -s %s",
                             cmd_mdrun, args_for_mdrun, 
-                            nPMEnodes, tpr_names[k], opt_noaddpart);
+                            nPMEnodes, tpr_names[k]);
                 }
                 else
                 {
                     sprintf(pd->mdrun_cmd_line, 
-                            "%s -np %d %s %s-npme %d -s %s%s",
+                            "%s -np %d %s %s -npme %d -s %s",
                             cmd_mpirun, nnodes, cmd_mdrun, args_for_mdrun, 
-                            nPMEnodes, tpr_names[k], opt_noaddpart);
+                            nPMEnodes, tpr_names[k]);
                 }
 
                 /* Do a benchmark simulation: */
@@ -860,7 +859,7 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                 else
                     buf[0]='\0';
                 fprintf(stdout, "\n=== tpr %d/%d, run %d/%d%s:\n", k+1, nr_tprs, i+1, datasets, buf);
-                sprintf(command, "%s -noaddpart >& /dev/null", pd->mdrun_cmd_line);
+                sprintf(command, "%s >& /dev/null", pd->mdrun_cmd_line);
                 fprintf(stdout, "%s\n", pd->mdrun_cmd_line);
                 gmx_system_call(command);
 
@@ -1080,7 +1079,8 @@ static bool is_bench_option(char *opt, bool bSet)
     {
         if ( (0 == strcmp(opt, "-append" ))
           || (0 == strcmp(opt, "-addpart"))
-          || (0 == strcmp(opt, "-maxh"   )) )
+          || (0 == strcmp(opt, "-maxh"   ))
+          || (0 == strcmp(opt, "-deffnm" )) )
             return FALSE;
         else
             return TRUE;
@@ -1214,7 +1214,7 @@ static void create_command_line_snippets(
             
             if ( is_bench_file(opt, opt2bSet(opt,nfile,fnm), is_optional(&fnm[i]), is_output(&fnm[i])) )
             {
-                /* All options starting with -b* need th 'b' removed,
+                /* All options starting with -b* need the 'b' removed,
                  * therefore overwrite strbuf */
                 if (0 == strncmp(opt, "-b", 2))     
                     sprintf(strbuf, "-%s %s ", &opt[2], name);
@@ -1226,7 +1226,12 @@ static void create_command_line_snippets(
                 add_to_command_line(cmd_args_launch, strbuf);
         }
     }
-#undef BUFLENGTH   
+#undef BUFLENGTH
+    /* The -noaddpart option is needed so that the md.log files do not
+     * get renamed if checkpoints are used. We also do not want to append
+     * if we are doing benchmarks, since md.log then would contain several
+     * paragraphs with performance information. */
+    add_to_command_line(cmd_args_bench, "-noappend -noaddpart");
 }
 
 
@@ -1314,8 +1319,8 @@ int gmx_tune_pme(int argc,char *argv[])
             "'export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"'[PAR]",
             "Please call g_tune_pme with the normal options you would pass to",
             "mdrun and add [TT]-np[tt] for the number of processors to perform the",
-            "tests on, or [TT]-nt[tt] for the number of threads. You can also add [TT]-r[tt] to repeat each test several times",
-            "to get better statistics. [PAR]",
+            "tests on, or [TT]-nt[tt] for the number of threads. You can also add [TT]-r[tt]",
+            "to repeat each test several times to get better statistics. [PAR]",
             "g_tune_pme can test various real space / reciprocal space workloads",
             "for you. With [TT]-ntpr[tt] you control how many extra [TT].tpr[tt] files will be",
             "written with enlarged cutoffs and smaller fourier grids respectively.",
@@ -1325,11 +1330,12 @@ int gmx_tune_pme(int argc,char *argv[])
             "factor [TT]-fac[tt] (default 1.2). The remaining [TT].tpr[tt] files will have equally",
             "spaced values inbetween these extremes. Note that you can set [TT]-ntpr[tt] to 1",
             "if you just want to find the optimal number of PME-only nodes; in that case",
-            "your input [TT].tpr[tt] file will remain unchanged[PAR]",
-            "For the benchmark runs, 2500 time steps should suffice for most MD",
-            "systems. Note that dynamic load balancing needs about 100 time steps",
-            "to adapt to local load imbalances. To get clean benchmark numbers,",
-            "[TT]-steps[tt] should therefore always be much larger than 100![PAR]",
+            "your input [TT].tpr[tt] file will remain unchanged.[PAR]",
+            "For the benchmark runs, the default of 1000 time steps should suffice for most",
+            "MD systems. The dynamic load balancing needs about 100 time steps",
+            "to adapt to local load imbalances, therefore the time step counters",
+            "are by default reset after 100 steps. For large systems",
+            "(>1M atoms) you may have to set [TT]-resetstep[tt] to a higher value.[PAR]",
             "Example call: [TT]g_tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
             "After calling mdrun several times, detailed performance information",
             "is available in the output file perf.out. "
@@ -1451,6 +1457,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { NULL, "auto", "no", "yes", NULL };
     real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
     char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
+    char *deffnm=NULL;
 #define STD_CPT_PERIOD (15.0)
     real cpt_period=STD_CPT_PERIOD,max_hours=-1;
     bool bAppendFiles=FALSE,bAddPart=TRUE;
@@ -1487,8 +1494,8 @@ int gmx_tune_pme(int argc,char *argv[])
       /******************/
       /* mdrun options: */
       /******************/
-      /*{ "-nt",        FALSE, etINT,  {&nthreads},
-        "HIDDENNumber of threads to start on each node" },*/
+      { "-deffnm",    FALSE, etSTR, {&deffnm},
+          "Set the default filename for all file options at launch time" },
       { "-ddorder",   FALSE, etENUM, {ddno_opt},
         "DD node order" },
       { "-ddcheck",   FALSE, etBOOL, {&bDDBondCheck},
@@ -1524,7 +1531,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-cpt",       FALSE, etREAL, {&cpt_period},
         "Checkpoint interval (minutes)" },
       { "-append",    FALSE, etBOOL, {&bAppendFiles},
-        "Append to previous output files when continuing from checkpoint" },
+        "Append to previous output files when continuing from checkpoint (for launch only)" },
       { "-addpart",  FALSE, etBOOL,  {&bAddPart},
         "Add the simulation part number to all output files when continuing from checkpoint" },
       { "-maxh",      FALSE, etREAL, {&max_hours},

@@ -555,6 +555,12 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
         gmx_warning("OpenMM supports only Andersen thermostat with the md/md-vv/md-vv-avek integrators.");
     }
 
+    if (ir->implicit_solvent == eisGBSA &&
+        ir->gb_algorithm != egbOBC  )
+    {
+        gmx_warning("OpenMM does not support the specified algorithm for Generalized Born, will use OBC instead.");
+    }
+
     if (ir->opts.ngtc > 1)
         gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.");
 
@@ -575,25 +581,26 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     if (ir->ePull != epullNO)
         gmx_fatal(FARGS,"OpenMM does not support pulling.");
 
-    /* TODO: DISABLED as it does not work with implicit solvent simulation */
-#if 0   
-    /* check for restraints */
+    /* check for interaction types */
     for (i = 0; i < F_EPOT; i++)
     {
-        if (i != F_CONSTR &&
-            i != F_SETTLE &&
-            i != F_BONDS  &&
-            i != F_ANGLES &&
-            i != F_PDIHS &&
-            i != F_RBDIHS &&
-            i != F_LJ14 &&
+        if (!(i == F_CONSTR ||
+            i == F_SETTLE   ||
+            i == F_BONDS    ||            
+            i == F_UREY_BRADLEY ||
+            i == F_ANGLES   ||
+            i == F_PDIHS    ||
+            i == F_RBDIHS   ||
+            i == F_LJ14     ||
+            i == F_GB12     || /* The GB parameters are hardcoded both in */
+            i == F_GB13     || /* Gromacs and OpenMM */
+            i == F_GB14   ) &&
             top->idef.il[i].nr > 0)
         {
-            /* TODO fix the message */
-            gmx_fatal(FARGS, "OpenMM does not support (some) of the provided restaint(s).");
+            gmx_fatal(FARGS, "OpenMM does not support (some) of the provided interaction " 
+                    "type(s) (%s) ", interaction_function[i].longname);
         }
     }
-#endif 
 
     if (ir->efep != efepNO)
         gmx_fatal(FARGS,"OpenMM does not support free energy calculations.");
@@ -1060,6 +1067,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         // Add GBSA if needed.
         if (ir->implicit_solvent == eisGBSA)
         {
+            gmx_warning("The OBC scale factors alpha, beta and gamma are hardcoded in OpenMM with the default Gromacs values.");
             t_atoms atoms       = gmx_mtop_global_atoms(top_global);
             GBSAOBCForce* gbsa  = new GBSAOBCForce();
 

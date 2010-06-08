@@ -274,7 +274,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_runtime_t runtime;
     int        rc;
     gmx_large_int_t reset_counters;
-    gmx_edsam_t ed;
+    gmx_edsam_t ed=NULL;
 
     /* A parallel command line option consistency check */
     if (!PAR(cr) &&
@@ -293,15 +293,6 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 #endif
             );
     }
-
-    /* Essential dynamics */
-    if (opt2bSet("-ei",nfile,fnm)) 
-    {
-        /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(nfile,fnm,cr);
-    } 
-    else
-        ed=NULL;
 
     snew(inputrec,1);
     snew(mtop,1);
@@ -439,6 +430,13 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (PAR(cr)) 
     {
         gmx_bcast(sizeof(box),box,cr);
+    }
+
+    /* Essential dynamics */
+    if (opt2bSet("-ei",nfile,fnm))
+    {
+        /* Open input and output files, allocate space for ED data structure */
+        ed = ed_open(nfile,fnm,Flags,cr);
     }
 
     if (bVerbose && SIMMASTER(cr))

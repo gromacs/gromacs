@@ -97,7 +97,7 @@ void fflib_filename_base(const char *filename,char *filebase,int maxlen)
     {
         cptr = filename;
     }
-    if (strlen(filename) >= maxlen)
+    if (strlen(filename) >= (size_t)maxlen)
     {
         gmx_fatal(FARGS,"filename is longer (%d) than maxlen (%d)",
                   strlen(filename),maxlen);

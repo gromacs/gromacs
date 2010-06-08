@@ -179,50 +179,38 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
      */
     snew(dd->Rt_6,2*dd->nres);
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
-    if (cr->ms)
+
+    ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
+    if (cr->ms != NULL && ptr != NULL)
     {
-        ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
 #ifdef GMX_MPI
-        if (ptr == NULL)
+        dd->nsystems = 0;
+        sscanf(ptr,"%d",&dd->nsystems);
+        if (fplog)
         {
-            dd->nsystems          = cr->ms->nsim;
-            dd->mpi_comm_ensemble = cr->ms->mpi_comm_masters;
-            if (fplog)
-            {
-                fprintf(fplog,"Will apply ensemble averaging over %d systems\n",
-                        dd->nsystems);
-            }
+            fprintf(fplog,"Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n",dd->nsystems);
         }
-        else
+        check_multi_int(fplog,cr->ms,dd->nsystems,
+                        "the number of systems per ensemble");
+        if (dd->nsystems <= 0 ||  cr->ms->nsim % dd->nsystems != 0)
         {
-            dd->nsystems = 0;
-            sscanf(ptr,"%d",&dd->nsystems);
-            if (fplog)
-            {
-                fprintf(fplog,"Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n",dd->nsystems);
-            }
-            check_multi_int(fplog,cr->ms,dd->nsystems,
-                            "the number of systems per ensemble");
-            if (dd->nsystems <= 0 ||  cr->ms->nsim % dd->nsystems != 0)
-            {
-                gmx_fatal(FARGS,"The number of systems %d is not divisible by the number of systems per ensemble %d\n",cr->ms->nsim,dd->nsystems);
-            }
-            /* Split the inter-master communicator into different ensembles */
-            MPI_Comm_split(cr->ms->mpi_comm_masters,
-                           cr->ms->sim/dd->nsystems,
-                           cr->ms->sim,
-                           &dd->mpi_comm_ensemble);
-            if (fplog)
-            {
-                fprintf(fplog,"Our ensemble consists of systems:");
-                for(i=0; i<dd->nsystems; i++)
-                {
-                    fprintf(fplog," %d",
-                            (cr->ms->sim/dd->nsystems)*dd->nsystems+i);
-                }
-                fprintf(fplog,"\n");
-            }
+            gmx_fatal(FARGS,"The number of systems %d is not divisible by the number of systems per ensemble %d\n",cr->ms->nsim,dd->nsystems);
         }
+        /* Split the inter-master communicator into different ensembles */
+        MPI_Comm_split(cr->ms->mpi_comm_masters,
+                       cr->ms->sim/dd->nsystems,
+                       cr->ms->sim,
+                       &dd->mpi_comm_ensemble);
+        if (fplog)
+        {
+            fprintf(fplog,"Our ensemble consists of systems:");
+            for(i=0; i<dd->nsystems; i++)
+            {
+                fprintf(fplog," %d",
+                        (cr->ms->sim/dd->nsystems)*dd->nsystems+i);
+            }
+            fprintf(fplog,"\n");
+            }
         snew(dd->Rtl_6,dd->nres);
 #endif
     }

@@ -5,7 +5,7 @@
 GROMACS-GPU provides GPU-accelerated MD simulations.
 The current release uses the OpenMM library. 
 
-This is a first beta release and therefor it is targeted at developers 
+This is a first beta release and therefore it is targeted at developers 
 and advanced users and is NOT intended for production use. 
 
 Installation instructions are available in the INSTALL-GPU file. 
