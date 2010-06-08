@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-extern void do_edsam(t_inputrec *ir,int step,t_mdatoms *md,
+extern void do_edsam(t_inputrec *ir,gmx_large_int_t step,t_mdatoms *md,
                      t_commrec *cr,rvec xs[],rvec v[],matrix box,gmx_edsam_t ed);
 /* Essential dynamics constraints, called from constrain() */
 
