@@ -357,15 +357,25 @@ void gmx_abort(int noderank,int nnodes,int errorno)
 #ifndef GMX_MPI
   gmx_call("gmx_abort");
 #else
+#ifdef GMX_THREADS
+  fprintf(stderr,"Halting program %s\n",ShortProgram());
+  thanx(stderr);
+  exit(1);
+#else
   if (nnodes > 1)
-    fprintf(stderr,"Halting parallel program %s on CPU %d out of %d\n",
-	    ShortProgram(),noderank,nnodes);
+  {
+      fprintf(stderr,"Halting parallel program %s on CPU %d out of %d\n",
+              ShortProgram(),noderank,nnodes);
+  }
   else
-    fprintf(stderr,"Halting program %s\n",ShortProgram());
+  {
+      fprintf(stderr,"Halting program %s\n",ShortProgram());
+  }
 
   thanx(stderr);
   MPI_Abort(MPI_COMM_WORLD,errorno);
   exit(1);
+#endif
 #endif
 }
 

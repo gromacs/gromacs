@@ -20,7 +20,9 @@
 #endif
 
 /* Must come directly after config.h */
+#ifdef GMX_THREAD_SHM_FDECOMP
 #include <thread_mpi.h>
+#endif
 
 #include "ppc_altivec_util.h"
 #include "nb_kernel103_ppc_altivec.h"

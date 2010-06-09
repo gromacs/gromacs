@@ -15,6 +15,7 @@ calcgrid.h \
 calch.h \
 calcmu.h \
 centerofmass.h \
+chargegroup.h \
 checkpoint.h \
 confio.h \
 constr.h \
@@ -30,7 +31,6 @@ ebin.h \
 edsam.h \
 enxio.h \
 ffscanf.h \
-fftgrid.h \
 filenm.h \
 force.h \
 futil.h \
@@ -45,8 +45,10 @@ gmx_fatal.h \
 gmx_fft.h \
 gmx_ga2la.h \
 gmx_lapack.h \
+gmx_matrix.h \
 gmx_parallel_3dfft.h \
 gmx_random.h \
+gmx_sse2_single.h \
 gmx_statistics.h \
 gmx_system_xdr.h \
 gmx_wallcycle.h \
@@ -67,6 +69,7 @@ magic.h \
 main.h \
 maths.h \
 matio.h \
+md5.h \
 mdatoms.h \
 mdebin.h \
 mdrun.h \
@@ -110,6 +113,7 @@ selection.h \
 selmethod.h \
 selparam.h \
 selvalue.h \
+sfactor.h \
 shellfc.h \
 shift.h \
 smalloc.h \
@@ -139,7 +143,9 @@ utils.h \
 vcm.h \
 vec.h \
 viewit.h \
+vmdio.h \
 vsite.h \
+warninp.h \
 wgms.h \
 wman.h \
 writeps.h \
@@ -147,5 +153,10 @@ xdrf.h \
 xtcio.h \
 xvgr.h \
 thread_mpi.h \
-tmpi.h
-
+tmpi.h \
+mainpage.h \
+molfile_plugin.h \
+vmddlopen.h \
+vmdplugin.h \
+oenv.h \
+sighandler.h

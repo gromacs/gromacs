@@ -60,6 +60,8 @@
 #include "sparsematrix.h"
 #include "physics.h"
 #include "main.h"
+#include "gmx_ana.h"
+
 
 static void
 nma_full_hessian(real *           hess,
@@ -338,7 +340,7 @@ int gmx_nmeig(int argc,char *argv[])
   out=xvgropen(opt2fn("-ol",NFILE,fnm), 
                "Eigenvalues","Eigenvalue index","Eigenvalue [Gromacs units]",
                oenv);
-  if (get_print_xvgr_codes(oenv)) {
+  if (output_env_get_print_xvgr_codes(oenv)) {
     if (bM)
       fprintf(out,"@ subtitle \"mass weighted\"\n");
     else 
@@ -347,7 +349,7 @@ int gmx_nmeig(int argc,char *argv[])
   
   for (i=0; i<=(end-begin); i++)
       fprintf (out,"%6d %15g\n",begin+i,eigenvalues[i]);
-  fclose(out);
+  ffclose(out);
   
 
   
@@ -356,7 +358,7 @@ int gmx_nmeig(int argc,char *argv[])
   out=xvgropen(opt2fn("-of",NFILE,fnm), 
                "Eigenfrequencies","Eigenvector index","Wavenumber [cm\\S-1\\N]",
                oenv);
-  if (get_print_xvgr_codes(oenv)) { 
+  if (output_env_get_print_xvgr_codes(oenv)) { 
     if (bM)
       fprintf(out,"@ subtitle \"mass weighted\"\n");
     else 
@@ -382,7 +384,7 @@ int gmx_nmeig(int argc,char *argv[])
       value=sqrt(value*factor_gmx_to_omega2)*factor_omega_to_wavenumber;
       fprintf (out,"%6d %15g\n",begin+i,value);
   }
-  fclose(out);
+  ffclose(out);
   
   /* Writing eigenvectors. Note that if mass scaling was used, the eigenvectors 
    * were scaled back from mass weighted cartesian to plain cartesian in the

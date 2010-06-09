@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
@@ -72,7 +68,7 @@ typedef struct tMPI_Spinlock
 tMPI_Spinlock_t;
 
 
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *   a,
                                      int              oldval,
                                      int              newval)
 {
@@ -90,7 +86,7 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
 
 
 
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *  a,
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *  a,
                                            void*               oldval,
                                            void*               newval)
 {
@@ -142,7 +138,7 @@ static inline void tMPI_Atomic_add_return(tMPI_Atomic_t *       a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
     return newval;
 }
@@ -173,7 +169,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
     return oldval;
 }

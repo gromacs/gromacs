@@ -35,6 +35,8 @@
 #include "gstat.h"
 #include "matio.h"
 #include "gmx_fatal.h"
+#include "gmx_ana.h"
+
 
 #define G_REF1      0
 #define G_REF2      1
@@ -79,7 +81,7 @@ static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   int        *isize;
   int        isize_cg=0;
   int        isize_ref=3;
-  int        ref_resind[3];
+  int        ref_resind[3]={0};
   int        nrefmol=0,refc=0;
   atom_id    **index;
   atom_id    *index_cg=NULL;
@@ -738,7 +740,7 @@ int gmx_sdf(int argc,char *argv[])
                 "             Nothing to do!");
 
 
-  if ( bRef && fn2ftp(fnREF) != efGRO)
+  if ( bRef && (fn2ftp(fnREF) != efGRO))
     {
       fprintf(stderr,"\nOnly GROMACS format is supported for reference structures.\n");
       fprintf(stderr,"Option -r will be ignored!\n");
@@ -746,8 +748,8 @@ int gmx_sdf(int argc,char *argv[])
     }
 
 
-  if (mode < 1 || mode > 3)
-    gmx_fatal(FARGS,"Wrong -mode selection. Chose 1-, 2- oder 3-praticle mode.\n");
+  if ((mode < 1) || (mode > 3))
+    gmx_fatal(FARGS,"Wrong -mode selection. Chose 1-, 2- oder 3-particle mode.\n");
 
 
   do_sdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),

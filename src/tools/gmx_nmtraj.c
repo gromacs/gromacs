@@ -56,6 +56,7 @@
 #include "physics.h"
 #include "random.h"
 #include "eigio.h"
+#include "gmx_ana.h"
 
 
 int gmx_nmtraj(int argc,char *argv[])

@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifndef _TMPI_ATOMIC_H_
@@ -50,7 +46,7 @@ any papers on the package - you can find them in the top README file.
  *  fast synchronization in performance-critical regions.
  *
  *  In general, the best option is to use functions without explicit 
- *  locking, e.g. tMPI_Atomic_fetch_add() or tMPI_Atomic_cmpxchg().
+ *  locking, e.g. tMPI_Atomic_fetch_add() or tMPI_Atomic_cas().
  *  
  *  Depending on the architecture/compiler, these operations may either
  *  be provided as functions or macros; be aware that those macros may
@@ -369,7 +365,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
  *
  *   \note   The exchange occured if the return value is identical to \a old.
  */
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *    a, 
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *    a, 
                                      int               oldval,
                                      int               newval)
 {
@@ -406,7 +402,7 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *    a,
  *
  *   \note   The exchange occured if the return value is identical to \a old.
  */
-static inline void* volatile* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t* a, 
+static inline void* volatile* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, 
                                                     void*             oldval,
                                                     void*             newval)
 {
@@ -614,7 +610,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
 }
 
 
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *       a,
                                      int                  oldval,
                                      int                  newval)
 {
@@ -636,7 +632,7 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
 }
 
 
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *   a,
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *   a,
                                            void *               oldval,
                                            void *               newval)
 {
@@ -825,7 +821,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
 }
 
 
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *       a,
                                      int                  oldval,
                                      int                  newval)
 {
@@ -845,7 +841,7 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
     return prev;
 }
 
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *   a,
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *   a,
                                            void*                oldval,
                                            void*                newval)
 {
@@ -1001,11 +997,11 @@ unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 /* ia64 memory barrier */
 #define tMPI_Atomic_memory_barrier() __memory_barrier()
 /* ia64 cmpxchg */
-#define tMPI_Atomic_cmpxchg(a, oldval, newval) _InterlockedCompareExchange(&((a)->value),newval,oldval)
+#define tMPI_Atomic_cas(a, oldval, newval) _InterlockedCompareExchange(&((a)->value),newval,oldval)
 /* ia64 pointer cmpxchg */
-#define tMPI_Atomic_ptr_cmpxchg(a, oldval, newval) _InterlockedCompareExchangePointer(&((a)->value),newval,oldval)
+#define tMPI_Atomic_ptr_cas(a, oldval, newval) _InterlockedCompareExchangePointer(&((a)->value),newval,oldval)
 
-/*#define tMPI_Atomic_ptr_cmpxchg(a, oldval, newval) __sync_val_compare_and_swap(&((a)->value),newval,oldval)*/
+/*#define tMPI_Atomic_ptr_cas(a, oldval, newval) __sync_val_compare_and_swap(&((a)->value),newval,oldval)*/
 
 
 /* ia64 fetchadd, but it only works with increments +/- 1,4,8,16 */
@@ -1015,7 +1011,7 @@ unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 /* ia64 memory barrier */
 #  define tMPI_Atomic_memory_barrier() asm volatile ("":::"memory")
 /* ia64 cmpxchg */
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *   a,
                                      int              oldval,
                                      int              newval)
 {
@@ -1032,7 +1028,7 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
 }
 
 /* ia64 ptr cmpxchg */
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t * a,
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a,
                                            void*              oldval,
                                            void*              newval)
 {
@@ -1089,7 +1085,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *       a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
     return newval;
 }
@@ -1121,7 +1117,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
     return oldval;
 }
@@ -1137,7 +1133,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *   x)
 {
     tMPI_Atomic_t *a = (tMPI_Atomic_t *) x;
     unsigned long value;                                                 
-    value = tMPI_Atomic_cmpxchg(a, 0, 1);                             
+    value = tMPI_Atomic_cas(a, 0, 1);                             
     if (value)                                                           
     {                                                                    
         do                                                               
@@ -1146,7 +1142,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *   x)
             {                                                            
                 tMPI_Atomic_memory_barrier();                             
             }                                                            
-            value = tMPI_Atomic_cmpxchg(a, 0, 1);                       
+            value = tMPI_Atomic_cas(a, 0, 1);                       
         }                                                                
         while (value);                                                   
     }                                                                    
@@ -1155,7 +1151,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *   x)
 
 static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *   x)
 {
-    return (tMPI_Atomic_cmpxchg( ((tMPI_Atomic_t *)x), 0, 1) != 0);
+    return (tMPI_Atomic_cas( ((tMPI_Atomic_t *)x), 0, 1) != 0);
 }
 
 
@@ -1224,7 +1220,7 @@ typedef struct tMPI_Spinlock
 tMPI_Spinlock_t;
 
 
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *   a,
                                      int              oldval,
                                      int              newval)
 {
@@ -1242,7 +1238,7 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
 
 
 
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *  a,
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *  a,
                                            void*               oldval,
                                            void*               newval)
 {
@@ -1294,7 +1290,7 @@ static inline void tMPI_Atomic_add_return(tMPI_Atomic_t *       a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
     return newval;
 }
@@ -1325,7 +1321,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
     return oldval;
 }
@@ -1451,10 +1447,10 @@ tMPI_Spinlock_t;
 #define tMPI_Atomic_add_return(a, i)  \
     ( (i) + InterlockedExchangeAdd((LONG volatile *)(a), (LONG) (i)) )
 
-#define tMPI_Atomic_cmpxchg(a, oldval, newval) \
+#define tMPI_Atomic_cas(a, oldval, newval) \
     InterlockedCompareExchange((LONG volatile *)(a), (LONG) (newval), (LONG) (oldval))
 
-#define tMPI_Atomic_ptr_cmpxchg(a, oldval, newval) \
+#define tMPI_Atomic_ptr_cas(a, oldval, newval) \
     InterlockedCompareExchangePointer(&((a)->value), (PVOID) (newval),  \
                                       (PVOID) (oldval))
 
@@ -1525,7 +1521,7 @@ typedef struct tMPI_Spinlock
 tMPI_Spinlock_t;
 
 
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *    a,
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *    a,
                                      int               oldval,
                                      int               newval)
 {
@@ -1545,7 +1541,7 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *    a,
 }
 
 
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *a,
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                                            void*             oldval,
                                            void*             newval)
 {
@@ -1720,7 +1716,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *   a,
 }
 
 
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *           a, 
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *           a, 
                                      int                      old_val,
                                      int                      new_val)
 {
@@ -1736,7 +1732,7 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *           a,
     return t;
 }
 
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t * a, 
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, 
                                            void*              old_val,
                                            void*              new_val)
 {

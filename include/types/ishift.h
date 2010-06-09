@@ -36,6 +36,12 @@
 #include <config.h>
 #endif
 
+/* not really neccesary, right now: */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #define D_BOX_Z 1
 #define D_BOX_Y 1
 #define D_BOX_X 2
@@ -51,3 +57,9 @@
 #define IS2X(iv)      (((iv) % N_BOX_X) - D_BOX_X)
 #define IS2Y(iv)      ((((iv) / N_BOX_X) % N_BOX_Y) - D_BOX_Y)
 #define IS2Z(iv)      ((iv) / (N_BOX_X*N_BOX_Y) - D_BOX_Z)
+
+
+#ifdef __cplusplus
+}
+#endif
+

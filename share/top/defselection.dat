@@ -1,0 +1,17 @@
+protein = resname ABU ACE AIB ALA ARG ARGN ASN ASN1 ASP ASP1 ASPH
+                  CYS CYS1 CYS2 CYSH DALA GLN GLU GLUH GLY
+                  HIS HIS1 HISA HISB HISH HSD HSE HSP HYP ILE LEU
+                  LYS LYSH MELEU MET MEVAL NAC NH2 PHE PHEH PHEU PHL
+                  PRO SER THR TRP TRPH TRPU TYR TYRH TYRU VAL PGLU;
+
+"Protein"        protein;
+"Protein-H"      protein and not name "H*" "[0-9]?H.*";
+"C-alpha"        protein and name CA;
+"Backbone"       protein and name N CA C;
+"MainChain"      protein and name N CA C O O1 O2 OC1 OC2 OT OXT;
+"MainChain+Cb"   protein and name N CA CB C O O1 O2 OC1 OC2 OT OXT;
+"MainChain+H"    protein and name N CA C O O1 O2 OC1 OC2 OT OXT H1 H2 H3 H "[0-9]?H";
+"SideChain"      protein and not name N CA C O O1 O2 OT OXT H1 H2 H3 H "[0-9]?H";
+"SideChain-H"    protein and not name N CA C O O1 O2 OT OXT "H*" "[0-9]?H.*";
+"Prot-Masses"    protein and not name MN1 MN2 MCB1 MCB2 MCG1 MCG2 MCD1 MCD2 MCE1 MCE2 MNZ1 MNZ2;
+"DNA"            resname A T G C U;

@@ -1,42 +1,38 @@
 /*
-   This source code file is part of thread_mpi.  
-   Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.  
+Written by Sander Pronk, Erik Lindahl, and possibly others. 
 
-   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
-   All rights reserved.
+Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+All rights reserved.
 
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are met:
-   1) Redistributions of source code must retain the above copyright
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+1) Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   2) Redistributions in binary form must reproduce the above copyright
+2) Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   3) Neither the name of the copyright holders nor the
+3) Neither the name of the copyright holders nor the
    names of its contributors may be used to endorse or promote products
    derived from this software without specific prior written permission.
 
-   THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
-   EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-   DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
-   DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-   If you want to redistribute modifications, please consider that
-   scientific software is very special. Version control is crucial -
-   bugs must be traceable. We will be happy to consider code for
-   inclusion in the official distribution, but derived work should not
-   be called official thread_mpi. Details are found in the README & COPYING
-   files.
-
-   To help us fund development, we humbly ask that you cite
-   any papers on the package - you can find them in the top README file.
-
+If you want to redistribute modifications, please consider that
+scientific software is very special. Version control is crucial -
+bugs must be traceable. We will be happy to consider code for
+inclusion in the official distribution, but derived work should not
+be called official thread_mpi. Details are found in the README & COPYING
+files.
 */
 
 
@@ -45,9 +41,15 @@
  * We do not use HAVE_PTHREAD_H directly, since we might want to
  * turn off thread support explicity (e.g. for debugging).
  */
+
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #ifdef THREAD_WINDOWS
 
@@ -61,8 +63,11 @@
 #include <stdarg.h>
 
 
-#include "thread_mpi/threads.h"
 #include "thread_mpi/atomic.h"
+#include "thread_mpi/threads.h"
+#include "impl.h"
+
+#include "winthreads.h"
 
 /*! \brief System mutex for all one-time initialization 
  *
@@ -70,12 +75,44 @@
  *  independent of the thread library implementation. Anyway, it
  *  will only be locked a handful of times at the start of program execution.
  */
-/*
-   enum tMPI_Thread_once_status tMPI_Thread_system_lock_state=
-   TMPI_THREAD_ONCE_STATUS_NOTCALLED;
-   static CRITICAL_SECTION tMPI_Thread_system_lock;
-   */
-tMPI_Spinlock_t tMPI_Thread_system_lock=TMPI_SPINLOCK_INITIALIZER;
+
+static CRITICAL_SECTION mutex_init;   /* mutex for initializing mutexes */
+static CRITICAL_SECTION once_init;    /* mutex for initializing barriers */
+static CRITICAL_SECTION cond_init;    /* mutex for initializing thread_conds */
+static CRITICAL_SECTION barrier_init; /* mutex for initializing barriers */
+
+
+/* spinlock for initializing the above mutexes */
+static tMPI_Spinlock_t init_init=TMPI_SPINLOCK_INITIALIZER;
+
+/* whether tMPI_Thread_create has initialized these mutexes */
+tMPI_Atomic_t init_inited={ 0 };
+
+
+
+static void tMPI_Init_initers(void)
+{
+    /* we can pre-check because it's atomic */
+    if (tMPI_Atomic_get(&init_inited) == 0)
+    {
+        /* this can be a spinlock because the chances of collision are low. */
+        tMPI_Spinlock_lock( &init_init );
+
+        tMPI_Atomic_memory_barrier();
+        if (tMPI_Atomic_get(&init_inited) == 0)
+        {
+            InitializeCriticalSection(&mutex_init);
+            InitializeCriticalSection(&once_init);
+            InitializeCriticalSection(&cond_init);
+            InitializeCriticalSection(&barrier_init);
+
+            tMPI_Atomic_set(&init_inited, 1);
+            tMPI_Atomic_memory_barrier();
+        }
+
+        tMPI_Spinlock_unlock( &init_init );
+    }
+}
 
 
 void tMPI_Fatal_error(const char *file, int line, const char *message, ...)
@@ -119,6 +156,8 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
     DWORD thread_id;
     struct tMPI_Thread_starter_param *prm;
 
+    tMPI_Init_initers();
+
     /* a small memory leak to be sure that it doesn't get deallocated 
        once this function ends */
     prm=(struct tMPI_Thread_starter_param*)
@@ -126,21 +165,25 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
     prm->start_routine= start_routine;
     prm->param=arg;
 
+    *thread=(struct tMPI_Thread*)malloc(sizeof(struct tMPI_Thread)*1);
+
     if(thread==NULL)
     {
         tMPI_Fatal_error(TMPI_FARGS,"Invalid thread pointer.");
         return EINVAL;
     }
 
-    *thread = CreateThread(NULL, 0, tMPI_Win32_thread_starter, prm, 0, 
-                           &thread_id);
+    (*thread)->th = CreateThread(NULL, 0, tMPI_Win32_thread_starter, prm, 0, 
+                                 &thread_id);
 
-    if(*thread==NULL)
+    if((*thread)->th==NULL)
     {
         tMPI_Fatal_error(TMPI_FARGS,"Failed to create thread, error code=%d",
                          GetLastError());
         return -1;
     }
+    /* inherit the thread priority from the paren thread. */
+    SetThreadPriority(((*thread)->th), GetThreadPriority(GetCurrentThread()));
 
     return 0;
 }
@@ -151,7 +194,7 @@ int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr)
 {
     DWORD ret,retval;
 
-    ret = WaitForSingleObject(thread, INFINITE);
+    ret = WaitForSingleObject(thread->th, INFINITE);
 
     if (ret != 0)
     {
@@ -171,7 +214,8 @@ int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr)
             return -1;
         }
     }
-    CloseHandle(thread);
+    CloseHandle(thread->th);
+    free(thread);
 
     return 0;
 }
@@ -208,8 +252,8 @@ int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx)
         return EINVAL;
     }
 
-    InitializeCriticalSection(&(mtx->cs));
-    mtx->init_state = TMPI_THREAD_ONCE_STATUS_READY;
+    mtx->mutex=(struct tMPI_Mutex*)tMPI_Malloc(sizeof(struct tMPI_Mutex)*1);
+    InitializeCriticalSection(&(mtx->mutex->cs));
 
     return 0;
 }
@@ -222,7 +266,8 @@ int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx)
         return EINVAL;
     }
 
-    DeleteCriticalSection(&(mtx->cs));
+    DeleteCriticalSection(&(mtx->mutex->cs));
+    free(mtx->mutex);
 
     return 0;
 }
@@ -232,7 +277,7 @@ int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx)
 
 static int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
 {
-    int ret;
+    int ret=0;
 
     /* This is essentially a copy of the code from the one-time
      * initialization, but with a call to the mutex init routine instead.
@@ -241,42 +286,20 @@ static int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
      * memory barriers right. Trust me, you don't want a deadlock here...
      */ 
 
+    /* initialize the initializers */
+    tMPI_Init_initers();
     /* Lock the common one-time init mutex so we can check carefully */
-    /*EnterCriticalSection( &tMPI_Thread_system_lock );*/
-    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
-
-
-#if 0
-    /* If somebody is already initializing, wait until he is finished.
-     * In that case, the mutex will also be unlocked.
-     */
-    while (mtx->status == TMPI_THREAD_ONCE_STATUS_PROGRESS)
-        pthread_cond_wait (&tMPI_Thread_pthreads_system_cond,
-                           &tMPI_Thread_pthreads_system_mtx);
-#endif
+    EnterCriticalSection( &mutex_init );
 
     /* Do the actual (locked) check - system mutex is locked if we get here */
-    if (mtx->init_state != TMPI_THREAD_ONCE_STATUS_READY)
+    if (mtx->mutex == NULL)
     {
-        /*mtx->status = TMPI_THREAD_ONCE_STATUS_PROGRESS;*/
-
         /* No need to keep the lock during execution -
          * Only one thread can do it anyway.
          */
-        /*pthread_mutex_unlock (&tMPI_Thread_pthreads_system_mtx);*/
         ret=tMPI_Thread_mutex_init(mtx);
-        /*pthread_mutex_lock (&tMPI_Thread_pthreads_system_mtx);*/
-
-        /* Status will be marked as ready by tMPI_Thread_mutex_init(). */ 
-        /*pthread_cond_broadcast (&tMPI_Thread_pthreads_system_cond);*/
     }
-    else
-    {
-        ret = 0;
-    }
-
-    /*LeaveCriticalSection( &tMPI_Thread_system_lock );*/
-    tMPI_Spinlock_unlock( &tMPI_Thread_system_lock );
+    LeaveCriticalSection( &mutex_init );
 
     return ret;
 }
@@ -285,14 +308,14 @@ static int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
 
 int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx)
 {
-    /* Ccheck whether this mutex is initialized */
-    if(mtx->init_state != TMPI_THREAD_ONCE_STATUS_READY)
+    /* check whether the mutex is initialized */
+    if (tMPI_Atomic_get( &(mtx->initialized)  ) == 0)
     {
         tMPI_Thread_mutex_init_once(mtx);
     }
 
     /* The mutex is now guaranteed to be valid. */
-    EnterCriticalSection( &(mtx->cs) );
+    EnterCriticalSection( &(mtx->mutex->cs) );
 
     return 0;
 }
@@ -304,14 +327,14 @@ int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx)
 {
     BOOL ret;
 
-    /* Ccheck whether this mutex is initialized */
-    if(mtx->init_state != TMPI_THREAD_ONCE_STATUS_READY)
+    /* check whether the mutex is initialized */
+    if (tMPI_Atomic_get( &(mtx->initialized)  ) == 0)
     {
         tMPI_Thread_mutex_init_once(mtx);
     }
 
     /* The mutex is now guaranteed to be valid. */
-    ret=TryEnterCriticalSection( &(mtx->cs) );
+    ret=TryEnterCriticalSection( &(mtx->mutex->cs) );
 
     return (ret != 0);
 }
@@ -320,7 +343,8 @@ int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx)
 
 int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx)
 {
-    LeaveCriticalSection( &(mtx->cs) );
+    /* we should have initialized our critical section anyway */
+    LeaveCriticalSection( &(mtx->mutex->cs) );
 
     return 0;
 }
@@ -337,9 +361,12 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *))
 
 
     /* TODO: make list of destructors for thread-local storage */
-    *key=TlsAlloc();
+    key->key=(struct tMPI_Thread_key*)tMPI_Malloc(sizeof(struct 
+                                                         tMPI_Thread_key)*1);
+ 
+    (key)->key->wkey=TlsAlloc();
 
-    if ( *key == TLS_OUT_OF_INDEXES ) 
+    if ( (key)->key->wkey == TLS_OUT_OF_INDEXES ) 
     {
         tMPI_Fatal_error(TMPI_FARGS,
                          "Failed to create thread key, error code=%d.",
@@ -353,7 +380,8 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *))
 
 int tMPI_Thread_key_delete(tMPI_Thread_key_t key)
 {
-    TlsFree(key);
+    TlsFree(key.key->wkey);
+    free(key.key);
 
     return 0;
 }
@@ -364,7 +392,7 @@ void * tMPI_Thread_getspecific(tMPI_Thread_key_t key)
 {
     void *p = NULL;
 
-    p=TlsGetValue(key);
+    p=TlsGetValue(key.key->wkey);
 
     return p;
 }
@@ -374,7 +402,7 @@ int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value)
 {
     BOOL ret;
 
-    ret = TlsSetValue(key, value);
+    ret = TlsSetValue(key.key->wkey, value);
 
     return ret==0;
 }
@@ -391,10 +419,15 @@ static BOOL CALLBACK InitHandleWrapperFunction(PINIT_ONCE InitOnce,
     return TRUE;
 }
 
+CRITICAL_SECTION tMPI_Once_cs;
+tMPI_Spinlock_t tMPI_Once_cs_lock=TMPI_SPINLOCK_INITIALIZER;
+volatile int tMPI_Once_init=0;
+
 
 int tMPI_Thread_once(tMPI_Thread_once_t *once_control, 
                      void (*init_routine)(void))
 {
+#if 0
     BOOL bStatus;
     bStatus = InitOnceExecuteOnce(once_control, InitHandleWrapperFunction, 
                                   init_routine, NULL);
@@ -404,7 +437,17 @@ int tMPI_Thread_once(tMPI_Thread_once_t *once_control,
         tMPI_Fatal_error(TMPI_FARGS,"Failed to run thread_once routine");
         return -1;
     }
-
+#else
+    /* really ugly hack - and it's slow... */
+    tMPI_Init_initers();
+    EnterCriticalSection(&once_init);
+    if (tMPI_Atomic_get(&(once_control->once)) == 0)
+    {
+        (*init_routine)();
+        tMPI_Atomic_set(&(once_control->once), 1);
+    }
+    LeaveCriticalSection(&once_init);
+#endif
     return 0;
 }
 
@@ -419,18 +462,34 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond)
         return EINVAL;
     }
 
+    cond->condp=(struct tMPI_Thread_cond*)
+              tMPI_Malloc(sizeof(struct tMPI_Thread_cond)*1);
+#if 0
+    /* use this code once Vista is the minimum version required */
     InitializeConditionVariable( &(cond->cv) );
-    cond->init_state=TMPI_THREAD_ONCE_STATUS_READY;
+#else
+    cond->condp->Nwaiters=0;
+    InitializeCriticalSection(&(cond->condp->wtr_lock));
+    cond->condp->Nrelease=0;
+    cond->condp->cycle=0;
+    /* a manual reset, unsignalled event */
+    cond->condp->ev = CreateEvent(NULL, TRUE, FALSE, NULL); 
+#endif
     return 0;
 }
 
 
 int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond) 
 {
+#if 0
+    /* use this code once Vista is the minimum version required */
     /* windows doesnt have this function */
+#else
+    DeleteCriticalSection(&(cond->condp->wtr_lock));
+    free(cond->condp);
+#endif
     return 0;
 }
-
 
 
 
@@ -447,7 +506,7 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond)
  */
 static int tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *cond)
 {
-    int ret;
+    int ret=0;
 
     /* This is essentially a copy of the code from the one-time
      * initialization, but with a call to the cond init routine instead.
@@ -455,37 +514,42 @@ static int tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *cond)
      * time you call a static condition variable, and it is important to get 
      * the memory barriers right. Trust me, you don't want a deadlock here...
      */ 
+
+    /* initialize the initializers */
+    tMPI_Init_initers();
     /* Lock the common one-time init mutex so we can check carefully */
-    /*EnterCriticalSection( &tMPI_Thread_system_lock );*/
-    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
+    EnterCriticalSection( &cond_init );
+
     /* Do the actual (locked) check - system mutex is locked if we get here */
-    if (cond->init_state != TMPI_THREAD_ONCE_STATUS_READY)
+    if (cond->condp == NULL)
     {
+        /* No need to keep the lock during execution -
+         * Only one thread can do it anyway.  */
         ret=tMPI_Thread_cond_init(cond);
     }
-    else
-    {
-        ret = 0;
-    }
-    /*LeaveCriticalSection( &tMPI_Thread_system_lock );*/
-    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
+    LeaveCriticalSection( &cond_init );
+
     return ret;
 }
 
 
 
+
 int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
 {
-    BOOL ret;
-    /* Ccheck whether this condition variable is initialized */
-    if(cond->init_state != TMPI_THREAD_ONCE_STATUS_READY)
+    BOOL wait_done=FALSE;
+    BOOL last_waiter=FALSE;
+    int my_cycle;
+
+    /* check whether the condition is initialized */
+    if (tMPI_Atomic_get( &(cond->initialized)  ) == 0)
     {
         tMPI_Thread_cond_init_once(cond);
     }
-    if(mtx->init_state != TMPI_THREAD_ONCE_STATUS_READY)
-    {
-        tMPI_Thread_mutex_init_once(mtx);
-    }
+    /* the mutex must have been initialized because it should be locked here */
+
+#if 0
+    /* use this code once Vista is the minimum version required */
     ret=SleepConditionVariableCS (&(cond->cv), &(mtx->cs), INFINITE);
 
     if (!ret)
@@ -494,6 +558,58 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
                          GetLastError());
         return -1;
     }
+#else
+    /* serially increase waiter count */
+    EnterCriticalSection(&(cond->condp->wtr_lock));
+    cond->condp->Nwaiters++;
+    my_cycle = cond->condp->cycle;
+    LeaveCriticalSection(&(cond->condp->wtr_lock));
+
+    /* now it's safe to release the mutex from the fn call */
+    LeaveCriticalSection(&(mtx->mutex->cs));
+
+    /* Loop a wait until we found out we've waited for the right event.
+       Note that this loop is potentially a busy-wait loop in bad
+       circumstances (higher priority threads, for example). */
+    do
+    {
+        /* do the actual waiting */
+        if (WaitForSingleObject( cond->condp->ev, INFINITE )== WAIT_FAILED)
+        {
+            tMPI_Fatal_error(TMPI_FARGS,"Failed event reset, error code=%d",
+                             GetLastError());
+            return -1;
+        }
+
+        /* serially check whether we got the right event.  */
+        EnterCriticalSection(&(cond->condp->wtr_lock));
+        wait_done = (cond->condp->Nrelease > 0) && 
+                    (cond->condp->cycle!=my_cycle);
+        LeaveCriticalSection(&(cond->condp->wtr_lock));
+    }
+    while(!wait_done);
+
+    /* We obtain the mutex from the function call */
+    EnterCriticalSection(&(mtx->mutex->cs));
+
+    /* we serially decrease the waiter count and release count */
+    EnterCriticalSection(&(cond->condp->wtr_lock));
+    cond->condp->Nwaiters--;
+    cond->condp->Nrelease--;
+    last_waiter=(cond->condp->Nrelease==0);
+    LeaveCriticalSection(&(cond->condp->wtr_lock));
+
+    /* manually release the event if everybody's done with it */
+    if (last_waiter)
+    {
+        if (!ResetEvent( cond->condp->ev ))
+        {
+            tMPI_Fatal_error(TMPI_FARGS,"Failed event reset, error code=%d",
+                             GetLastError());
+            return -1;
+        }
+    }
+#endif
 
     return 0;
 }
@@ -503,13 +619,32 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
 
 int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond)
 {
-    /* Ccheck whether this condition variable is initialized */
-    if(cond->init_state != TMPI_THREAD_ONCE_STATUS_READY)
+    /* check whether the condition is initialized */
+    if (tMPI_Atomic_get( &(cond->initialized)  ) == 0)
     {
         tMPI_Thread_cond_init_once(cond);
     }
     /* The condition variable is now guaranteed to be valid. */
+#if 0
+    /* use this code once Vista is the minimum version required */
     WakeConditionVariable( &(cond->cv) );
+#else
+    EnterCriticalSection(&(cond->condp->wtr_lock));
+    /* check if we're not still busy with a release. If we are, do nothing. */
+    if (cond->condp->Nwaiters > cond->condp->Nrelease)
+    {
+        cond->condp->Nrelease++;
+        cond->condp->cycle++;
+        if (!SetEvent(cond->condp->ev)) /* actually release the 
+                                           waiting threads */
+        {
+            tMPI_Fatal_error(TMPI_FARGS,"Failed SetEvent, error code=%d",
+                             GetLastError());
+            return -1;
+        }
+    }
+    LeaveCriticalSection(&(cond->condp->wtr_lock));
+#endif
 
     return 0;
 }
@@ -518,14 +653,32 @@ int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond)
 
 int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *cond)
 {
-    /* Ccheck whether this condition variable is initialized */
-    if(cond->init_state != TMPI_THREAD_ONCE_STATUS_READY)
+    /* check whether the condition is initialized */
+    if (tMPI_Atomic_get( &(cond->initialized)  ) == 0)
     {
         tMPI_Thread_cond_init_once(cond);
     }
     /* The condition variable is now guaranteed to be valid. */
+#if 0
+    /* use this code once Vista is the minimum version required */
     WakeAllConditionVariable( &(cond->cv) );
-
+#else
+    EnterCriticalSection(&(cond->condp->wtr_lock));
+    /* check whether there are any waiters */
+    if (cond->condp->Nwaiters > 0)
+    {
+        cond->condp->Nrelease=cond->condp->Nwaiters;
+        cond->condp->cycle++;
+        if (!SetEvent(cond->condp->ev)) /* actually release the 
+                                           waiting threads */
+        {
+            tMPI_Fatal_error(TMPI_FARGS,"Failed SetEvent, error code=%d",
+                             GetLastError());
+            return -1;
+        }
+    }
+    LeaveCriticalSection(&(cond->condp->wtr_lock));
+#endif
     return 0;
 }
 
@@ -539,14 +692,21 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int n)
         return EINVAL;
     }
 
-    InitializeCriticalSection(&(barrier->cs));
-    InitializeConditionVariable(&(barrier->cv));
+    barrier->barrierp=(struct tMPI_Thread_barrier*)
+              tMPI_Malloc(sizeof(struct tMPI_Thread_barrier)*1);
+
+#if 0
+ /* use this once Vista is the oldest supported windows version: */
+    InitializeCriticalSection(&(barrier->barrierp->cs));
+    InitializeConditionVariable(&(barrier->barrierp->cv));
+#else
+    tMPI_Thread_mutex_init(&(barrier->barrierp->cs));
+    tMPI_Thread_cond_init(&(barrier->barrierp->cv));
+#endif
 
     barrier->threshold = n;
     barrier->count     = n;
     barrier->cycle     = 0;
-
-    barrier->init_state = TMPI_THREAD_ONCE_STATUS_READY;
 
     return 0;
 }
@@ -560,8 +720,15 @@ int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *barrier)
         return EINVAL;
     }
 
+#if 0
+    DeleteCriticalSection(&(barrier->barrierp->cs));
+#else
+    tMPI_Thread_mutex_destroy(&(barrier->barrierp->cs));
+#endif
 
-    DeleteCriticalSection(&(barrier->cs));
+    tMPI_Thread_cond_destroy(&(barrier->barrierp->cv));
+
+    free(barrier->barrierp);
 
     return 0;
 }
@@ -590,20 +757,22 @@ static int tMPI_Thread_barrier_init_once(tMPI_Thread_barrier_t *barrier, int n)
      * time you call a static condition variable, and it is important to get 
      * the memory barriers right. Trust me, you don't want a deadlock here...
      */ 
+
+
+    /* initialize the initializers */
+    tMPI_Init_initers();
+
     /* Lock the common one-time init mutex so we can check carefully */
-    /*EnterCriticalSection( &tMPI_Thread_system_lock );*/
-    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
+    EnterCriticalSection( &barrier_init );
+
     /* Do the actual (locked) check - system mutex is locked if we get here */
-    if (barrier->init_state != TMPI_THREAD_ONCE_STATUS_READY)
+    if (barrier->barrierp == NULL)
     {
+        /* No need to keep the lock during execution -
+         * Only one thread can do it anyway.  */
         ret=tMPI_Thread_barrier_init(barrier, n);
     }
-    else
-    {
-        ret = 0;
-    }
-    /*LeaveCriticalSection( &tMPI_Thread_system_lock );*/
-    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
+    LeaveCriticalSection( &barrier_init );
 
     return ret;
 }
@@ -617,14 +786,17 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier)
     int     ret=0;
     /*tMPI_Thread_pthread_barrier_t *p;*/
 
-    if(barrier->init_state != TMPI_THREAD_ONCE_STATUS_READY)
+    /* check whether the barrier is initialized */
+    if (tMPI_Atomic_get( &(barrier->initialized)  ) == 0)
     {
         tMPI_Thread_barrier_init_once(barrier,barrier->threshold);        
     }
 
-    /*p = (tMPI_Thread_pthread_barrier_t*)barrier->actual_barrier;*/
-
-    EnterCriticalSection( &(barrier->cs)  );
+#if 0
+    EnterCriticalSection( &(barrier->barrierp->cs)  );
+#else
+    tMPI_Thread_mutex_lock( &(barrier->barrierp->cs) );
+#endif
 
 
 
@@ -637,40 +809,38 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier)
     { 
         barrier->cycle = !barrier->cycle;
         barrier->count = barrier->threshold;
-
-        WakeAllConditionVariable( &(barrier->cv) );
+#if 0
+        WakeAllConditionVariable( &(barrier->barrierp->cv) );
+#else
+        tMPI_Thread_cond_broadcast( &(barrier->barrierp->cv) );
+#endif
     }
     else
     {
         while(cycle == barrier->cycle)
         {
-            rc=SleepConditionVariableCS (&(barrier->cv), &(barrier->cs), 
+#if 0
+            rc=SleepConditionVariableCS (&(barrier->barrierp->cv), 
+                                         &(barrier->barrierp->cs), 
                                          INFINITE);
             if(!rc) 
             {
                 ret=-1;
                 break;
             }
+#else
+            rc = tMPI_Thread_cond_wait(&barrier->barrierp->cv,
+                                       &barrier->barrierp->cs);
+            if(rc != 0) break;
+#endif
         }
     }
-
-    LeaveCriticalSection( &(barrier->cs)  );
+#if 0
+    LeaveCriticalSection( &(barrier->barrierp->cs)  );
+#else
+    tMPI_Thread_mutex_unlock( &(barrier->barrierp->cs) );
+#endif
     return ret;
-}
-
-
-
-void tMPI_lockfile(FILE *stream)
-{
-    /*    flockfile(stream);*/
-    /* TODO: implement this */
-}
-
-
-void tMPI_unlockfile(FILE *stream)
-{
-    /*    funlockfile(stream);*/
-    /* TODO: implement this */
 }
 
 #endif /* THREAD_WINDOWS  */

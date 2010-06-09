@@ -39,6 +39,10 @@
 #ifndef _constr_h
 #define _constr_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Abstract type for LINCS that is defined only in the file that uses it */
 typedef struct gmx_lincsdata *gmx_lincsdata_t;
 
@@ -53,5 +57,9 @@ typedef struct gmx_constr *gmx_constr_t;
 
 /* Abstract type for essential dynamics that is defined only in edsam.c */
 typedef struct gmx_edsam *gmx_edsam_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

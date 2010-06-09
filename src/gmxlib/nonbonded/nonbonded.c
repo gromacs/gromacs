@@ -37,8 +37,9 @@
 #include <config.h>
 #endif
 
-
+#ifdef GMX_THREAD_SHM_FDECOMP
 #include <thread_mpi.h>
+#endif
 
 
 #include <stdio.h>
@@ -336,6 +337,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
     bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA); 
 
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
+	gbdata.epsilon_r = fr->epsilon_r;
 	gbdata.gpol               = egpol;
     
     if(fr->bAllvsAll) 

@@ -539,7 +539,7 @@ void do_sims(int NFILE,t_filenm fnm[],t_eh_params *ehp)
     fprintf(stderr,"\rSim: %d/%d",i+1,ehp->nsim);
   }
   fprintf(stderr,"\n");
-  fclose(logfp);
+  ffclose(logfp);
   
   sfree(rptr);
   sfree(pdbbuf);

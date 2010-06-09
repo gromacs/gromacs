@@ -215,7 +215,6 @@ void init_gamess(t_commrec *cr,t_QMrec *qm, t_MMrec *mm){
       fprintf(out,"END\nBASIS %s\nRUNTYPE SADDLE\nSCFTYPE %s\n",
 	      eQMbasis_names[qm->QMbasis],
 	      eQMmethod_names[qm->QMmethod]); /* see enum.h */
-    fclose(out);
     F77_FUNC(inigms,IMIGMS)();
   }  
 }

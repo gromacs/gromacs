@@ -1,0 +1,13 @@
+CHARMM27 all-atom force field (with CMAP) - version 2.0beta
+
+******************************************************************
+*               Charmm to Gromacs port writted by                *
+*               Par Bjelkmar, bjelkmar@cbr.su.se, and            *
+*               Per Larsson.                                     *
+*               Alternative correspondance:                      *
+*               Erik Lindahl, lindahl@cbr.su.se                  *
+******************************************************************
+
+
+If using these parameters for research please site:
+Bjelkmar, Larsson, Cuendet, Hess, and Lindahl, JCTC 2010

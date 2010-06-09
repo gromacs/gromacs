@@ -42,6 +42,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void bcast_ir_mtop(const t_commrec *cr,
 			 t_inputrec *inputrec,gmx_mtop_t *mtop);
 /* Broadcasts ir and mtop from the master to all nodes in cr->mpi_comm_mygroup.
@@ -84,5 +88,9 @@ extern void move_f(FILE *log,const t_commrec *cr,
 extern void move_gpol(FILE *log,const t_commrec *cr,
                       int left,int right,real gpol[],real gpol_add[],
                       t_nrnb *nrnb);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _mvdata_h */

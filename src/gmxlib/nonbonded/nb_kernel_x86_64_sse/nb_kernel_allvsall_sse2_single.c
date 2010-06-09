@@ -729,10 +729,10 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jzSSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_mm_calc_rsq(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_mm_calc_rsq(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_mm_calc_rsq(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_mm_calc_rsq(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
 
             /* Combine masks */
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
@@ -779,7 +779,7 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             vcoul_SSE2         = _mm_mul_ps(qq_SSE2,rinv_SSE2);
             vcoul_SSE3         = _mm_mul_ps(qq_SSE3,rinv_SSE3);
 
-            vctotSSE           = _mm_add_ps(vctotSSE, gmx_mm_sum4(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
+            vctotSSE           = _mm_add_ps(vctotSSE, gmx_mm_sum4_ps(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
             
             /* Lennard-Jones interaction */
             rinvsix_SSE0       = _mm_mul_ps(rinvsq_SSE0,_mm_mul_ps(rinvsq_SSE0,rinvsq_SSE0));
@@ -795,7 +795,7 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             Vvdw12_SSE2        = _mm_mul_ps(c12_SSE2,_mm_mul_ps(rinvsix_SSE2,rinvsix_SSE2));
             Vvdw12_SSE3        = _mm_mul_ps(c12_SSE3,_mm_mul_ps(rinvsix_SSE3,rinvsix_SSE3));
 
-            VvdwtotSSE         = _mm_add_ps(VvdwtotSSE, gmx_mm_sum4(_mm_sub_ps(Vvdw12_SSE0,Vvdw6_SSE0),
+            VvdwtotSSE         = _mm_add_ps(VvdwtotSSE, gmx_mm_sum4_ps(_mm_sub_ps(Vvdw12_SSE0,Vvdw6_SSE0),
                                                                     _mm_sub_ps(Vvdw12_SSE1,Vvdw6_SSE1),
                                                                     _mm_sub_ps(Vvdw12_SSE2,Vvdw6_SSE2),
                                                                     _mm_sub_ps(Vvdw12_SSE3,Vvdw6_SSE3)));
@@ -846,9 +846,13 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             fiz_SSE3          = _mm_add_ps(fiz_SSE3,tz_SSE3);
             
             /* Decrement j atom force */
-            gmx_mm_update_j_force(fx_align+j, gmx_mm_sum4(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3));
-            gmx_mm_update_j_force(fy_align+j, gmx_mm_sum4(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3));
-            gmx_mm_update_j_force(fz_align+j, gmx_mm_sum4(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3));
+            _mm_store_ps(fx_align+j,
+                         _mm_sub_ps( _mm_load_ps(fx_align+j) , gmx_mm_sum4_ps(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3) ));
+            _mm_store_ps(fy_align+j,
+                         _mm_sub_ps( _mm_load_ps(fy_align+j) , gmx_mm_sum4_ps(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3) ));
+            _mm_store_ps(fz_align+j,
+                         _mm_sub_ps( _mm_load_ps(fz_align+j) , gmx_mm_sum4_ps(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3) ));
+            
             
             /* Inner loop uses 38 flops/iteration */
         }
@@ -875,10 +879,10 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jzSSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_mm_calc_rsq(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_mm_calc_rsq(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_mm_calc_rsq(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_mm_calc_rsq(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
             
             /* Calculate 1/r and 1/r2 */
             rinv_SSE0          = gmx_mm_invsqrt_ps(rsq_SSE0);
@@ -932,8 +936,8 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             Vvdw12_SSE2        = _mm_mul_ps(c12_SSE2,_mm_mul_ps(rinvsix_SSE2,rinvsix_SSE2));
             Vvdw12_SSE3        = _mm_mul_ps(c12_SSE3,_mm_mul_ps(rinvsix_SSE3,rinvsix_SSE3));
             
-            vctotSSE           = _mm_add_ps(vctotSSE, gmx_mm_sum4(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
-            VvdwtotSSE         = _mm_add_ps(VvdwtotSSE, gmx_mm_sum4(_mm_sub_ps(Vvdw12_SSE0,Vvdw6_SSE0),
+            vctotSSE           = _mm_add_ps(vctotSSE, gmx_mm_sum4_ps(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
+            VvdwtotSSE         = _mm_add_ps(VvdwtotSSE, gmx_mm_sum4_ps(_mm_sub_ps(Vvdw12_SSE0,Vvdw6_SSE0),
                                                                     _mm_sub_ps(Vvdw12_SSE1,Vvdw6_SSE1),
                                                                     _mm_sub_ps(Vvdw12_SSE2,Vvdw6_SSE2),
                                                                     _mm_sub_ps(Vvdw12_SSE3,Vvdw6_SSE3)));
@@ -984,9 +988,12 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             fiz_SSE3          = _mm_add_ps(fiz_SSE3,tz_SSE3);
             
             /* Decrement j atom force */
-            gmx_mm_update_j_force(fx_align+j, gmx_mm_sum4(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3));
-            gmx_mm_update_j_force(fy_align+j, gmx_mm_sum4(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3));
-            gmx_mm_update_j_force(fz_align+j, gmx_mm_sum4(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3));
+            _mm_store_ps(fx_align+j,
+                         _mm_sub_ps( _mm_load_ps(fx_align+j) , gmx_mm_sum4_ps(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3) ));
+            _mm_store_ps(fy_align+j,
+                         _mm_sub_ps( _mm_load_ps(fy_align+j) , gmx_mm_sum4_ps(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3) ));
+            _mm_store_ps(fz_align+j,
+                         _mm_sub_ps( _mm_load_ps(fz_align+j) , gmx_mm_sum4_ps(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3) ));
             
             /* Inner loop uses 38 flops/iteration */
         }
@@ -1022,10 +1029,10 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jzSSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_mm_calc_rsq(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_mm_calc_rsq(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_mm_calc_rsq(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_mm_calc_rsq(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
             
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
             jmask_SSE1         = _mm_and_ps(jmask_SSE1,imask_SSE1);
@@ -1069,7 +1076,7 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             vcoul_SSE2         = _mm_mul_ps(qq_SSE2,rinv_SSE2);
             vcoul_SSE3         = _mm_mul_ps(qq_SSE3,rinv_SSE3);
 
-            vctotSSE           = _mm_add_ps(vctotSSE, gmx_mm_sum4(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
+            vctotSSE           = _mm_add_ps(vctotSSE, gmx_mm_sum4_ps(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
             
             /* Lennard-Jones interaction */
             rinvsix_SSE0       = _mm_mul_ps(rinvsq_SSE0,_mm_mul_ps(rinvsq_SSE0,rinvsq_SSE0));
@@ -1085,7 +1092,7 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             Vvdw12_SSE2        = _mm_mul_ps(c12_SSE2,_mm_mul_ps(rinvsix_SSE2,rinvsix_SSE2));
             Vvdw12_SSE3        = _mm_mul_ps(c12_SSE3,_mm_mul_ps(rinvsix_SSE3,rinvsix_SSE3));
             
-            VvdwtotSSE         = _mm_add_ps(VvdwtotSSE, gmx_mm_sum4(_mm_sub_ps(Vvdw12_SSE0,Vvdw6_SSE0),
+            VvdwtotSSE         = _mm_add_ps(VvdwtotSSE, gmx_mm_sum4_ps(_mm_sub_ps(Vvdw12_SSE0,Vvdw6_SSE0),
                                                                     _mm_sub_ps(Vvdw12_SSE1,Vvdw6_SSE1),
                                                                     _mm_sub_ps(Vvdw12_SSE2,Vvdw6_SSE2),
                                                                     _mm_sub_ps(Vvdw12_SSE3,Vvdw6_SSE3)));
@@ -1136,10 +1143,12 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             fiz_SSE3          = _mm_add_ps(fiz_SSE3,tz_SSE3);
             
             /* Decrement j atom force */
-            gmx_mm_update_j_force(fx_align+j, gmx_mm_sum4(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3));
-            gmx_mm_update_j_force(fy_align+j, gmx_mm_sum4(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3));
-            gmx_mm_update_j_force(fz_align+j, gmx_mm_sum4(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3));
-            
+            _mm_store_ps(fx_align+j,
+                         _mm_sub_ps( _mm_load_ps(fx_align+j) , gmx_mm_sum4_ps(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3) ));
+            _mm_store_ps(fy_align+j,
+                         _mm_sub_ps( _mm_load_ps(fy_align+j) , gmx_mm_sum4_ps(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3) ));
+            _mm_store_ps(fz_align+j,
+                         _mm_sub_ps( _mm_load_ps(fz_align+j) , gmx_mm_sum4_ps(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3) ));
             /* Inner loop uses 38 flops/iteration */
         }
         

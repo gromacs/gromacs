@@ -40,9 +40,12 @@
 #include <config.h>
 #endif
 
+#include "sysstuff.h"
+#include "typedefs.h"
+#include "pbc.h"
 
 #ifdef __cplusplus
-external "C" {
+extern "C" {
 #endif
 
   /**************************************************************
@@ -53,10 +56,6 @@ external "C" {
    * can also be used with the routines in gmxfio.h
    *
    **************************************************************/
-
-#include "sysstuff.h"
-#include "typedefs.h"
-#include "pbc.h"
   
   typedef struct {
     char *name;

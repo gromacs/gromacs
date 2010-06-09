@@ -40,12 +40,13 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "typedefs.h"
 #include "xdrf.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* All functions return 1 if succesfull, 0 otherwise 
  * bOK tells if a frame is not corrupted 

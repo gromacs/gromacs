@@ -53,6 +53,7 @@
 #include "confio.h"
 #include "checkpoint.h"
 #include "wgms.h"
+#include "vmdio.h"
 #include <math.h>
 
 /* defines for frame counter output */
@@ -78,7 +79,7 @@ static void printcount_(const output_env_t oenv,const char *l,real t)
   if ((__frame < 2*SKIP1 || __frame % SKIP1 == 0) &&
       (__frame < 2*SKIP2 || __frame % SKIP2 == 0) &&
       (__frame < 2*SKIP3 || __frame % SKIP3 == 0))
-    fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,conv_time(oenv,t));
+    fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,output_env_conv_time(oenv,t));
 }
 
 static void printcount(const output_env_t oenv,real t,bool bSkip)
@@ -353,7 +354,7 @@ void close_trx(int status)
 
 int open_trx(const char *outfile,const char *filemode)
 {
-  if (filemode[0]!='w' && filemode[0]!='a')
+  if (filemode[0]!='w' && filemode[0]!='a' && filemode[1]!='+')
     gmx_fatal(FARGS,"Sorry, write_trx can only write");
 
   return gmx_fio_open(outfile,filemode);
@@ -695,8 +696,12 @@ bool read_next_frame(const output_env_t oenv,int status,t_trxframe *fr)
       bRet = gro_next_x_or_v(gmx_fio_getfp(status),fr);
       break;
     default:
+#ifdef GMX_DLOPEN
+      bRet = read_next_vmd_frame(status,fr);
+#else
       gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%d",
-		  ftp2ext(gmx_fio_getftp(status)),status);
+                ftp2ext(gmx_fio_getftp(status)),status);
+#endif
     }
     
     if (bRet) {
@@ -805,8 +810,22 @@ int read_first_frame(const output_env_t oenv,int *status,
     bFirst = FALSE;
     break;
   default:
-    gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
-    break;
+#ifdef GMX_DLOPEN
+      gmx_fio_fp_close(fp); /*only close the file without removing FIO entry*/
+      if (!read_first_vmd_frame(status,fn,fr,flags))
+      {
+	  gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
+      }
+#else
+      gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
+#endif
+      break;
+  }
+
+  /* Return FALSE if we read a frame that's past the set ending time. */
+  if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0)) {
+    fr->t0 = fr->time;
+    return FALSE;
   }
   
   if (bFirst || 
@@ -854,7 +873,7 @@ bool read_next_x(const output_env_t oenv, int status,real *t, int natoms,
 
 void close_trj(int status)
 {
-  gmx_fio_close(status);
+    gmx_fio_close(status);
 }
 
 void rewind_trj(int status)

@@ -38,6 +38,10 @@
 
 #include "grompp.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   int nr;		/* nr atoms (0 <= i < nr) (atoms->nr)	      	*/
   int nrex;		/* with nrex lists of neighbours		*/
@@ -77,5 +81,9 @@ extern void generate_excl (int nrexcl, int nratoms,
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _gpp_nextnb_h */

@@ -37,8 +37,8 @@
 #endif
 
 #include "sysstuff.h"
-#include "Xstuff.h"
 #include "xutil.h"
+#include "Xstuff.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "copyrite.h"

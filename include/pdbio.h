@@ -45,6 +45,10 @@
 #include "symtab.h"
 #include "atomprop.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct gmx_conect_t *gmx_conect;
 
 /* THE pdb format (for ATOM/HETATOM lines) */
@@ -139,5 +143,9 @@ extern gmx_conect gmx_conect_init();
 
 extern void gmx_conect_done(gmx_conect gc);
 /* Free memory */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _pdbio_h */

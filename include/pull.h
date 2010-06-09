@@ -43,6 +43,11 @@
 #include "vec.h"
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* This file contains datatypes and function declarations necessary 
    for mdrun to interface with the pull code */
 
@@ -100,5 +105,9 @@ extern void pull_calc_coms(t_commrec *cr,
 			   rvec x[],       /* local coordinates */
 			   rvec *xp        /* updated x, can be NULL */
 			   );    
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

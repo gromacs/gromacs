@@ -39,6 +39,10 @@
 #include "grompp.h"
 #include "gpp_atomtype.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* UTILITIES */
 
 extern int name2index(char *str, char ***typenames, int ntypes);
@@ -75,11 +79,16 @@ extern void done_mi(t_molinfo *mi);
 extern void print_blocka(FILE *out,const char *szName,const char *szIndex, 
 			 const char *szA,t_blocka *block);
 
-extern void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr);
+extern void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr,
+			bool bRTPresname);
 
 extern void print_bondeds(FILE *out,int natoms,directive d,
 			  int ftype,int fsubtype,t_params plist[]);
 
 extern void print_excl(FILE *out, int natoms, t_excls excls[]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _toputil_h */

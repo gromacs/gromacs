@@ -42,6 +42,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,bool bFreeEnergy);
 
 extern void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,		     
@@ -54,5 +58,9 @@ extern void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 
 extern void update_mdatoms(t_mdatoms *md,real lambda);
 /* (Re)set all the mass parameters */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

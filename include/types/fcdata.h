@@ -36,6 +36,12 @@
 #include <config.h>
 #endif
 
+#include <types/commrec.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef real rvec5[5];
 
 /* Distance restraining stuff */
@@ -59,9 +65,7 @@ typedef struct {
   real *Rt_6;         /* The calculated inst. ens. averaged r^-6 (nr)     */
   real *Rtav_6;       /* The calculated time and ens. averaged r^-6 (nr)  */
   int  nsystems;      /* The number of systems for ensemble averaging     */
-#ifdef GMX_MPI
   MPI_Comm mpi_comm_ensemble; /* For ensemble averaging                   */
-#endif
 } t_disresdata;
 
 
@@ -69,7 +73,7 @@ typedef struct {
 typedef struct {
   real   fc;          /* Force constant for the restraints                  */
   real   edt;         /* Multiplication factor for time averaging           */
-  real   edt1;        /* 1 - edt                                            */
+  real   edt_1;        /* 1 - edt                                            */
   real   exp_min_t_tau; /* Factor for slowly switching on the force         */
   int    nr;          /* The number of orientation restraints               */
   int    nex;         /* The number of experiments                          */
@@ -107,3 +111,8 @@ typedef struct {
   t_oriresdata orires;
   real         dihre_fc;
 } t_fcdata;
+
+#ifdef __cplusplus
+}
+#endif
+

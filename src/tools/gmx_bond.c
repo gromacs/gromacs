@@ -51,6 +51,8 @@
 #include "index.h"
 #include "gmx_statistics.h"
 #include "tpxio.h"
+#include "gmx_ana.h"
+
 
 static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms,
                           const output_env_t oenv)
@@ -206,7 +208,7 @@ static void do_bonds(FILE *log,const char *fn,const char *fbond,
     fac=2.0/(nframes*gnx*db);
     for(i=i0; (i<=i1); i++)
       fprintf(out,"%8.5f  %8.5f\n",b0+i*db,btab[i]*fac);
-    fclose(out);
+    ffclose(out);
   }
   else {
     fprintf(log,"%5s  %5s  %8s  %8s\n","i","j","b_aver","sigma");

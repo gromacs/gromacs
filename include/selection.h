@@ -65,6 +65,8 @@ typedef struct gmx_ana_selection_t
 {
     /** Name of the selection. */
     char                   *name;
+    /** The actual selection string. */
+    char                   *selstr;
     /** Selected positions. */
     gmx_ana_pos_t           p;
     /** Masses associated with the positions. */
@@ -125,6 +127,14 @@ gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, const char *ty
 extern void
 gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
                                      const char *type, bool bMaskOnly);
+/** Request evaluation of velocities for selections. */
+extern void
+gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
+                                    bool bVelOut);
+/** Request evaluation of forces for selections. */
+extern void
+gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
+                                      bool bForceOut);
 /** Sets the topology for a selection collection. */
 extern int
 gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,
@@ -162,6 +172,9 @@ gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
                                 gmx_ana_indexgrps_t *grps);
 
 /* In compiler.c */
+/** Set debugging flag for selection compilation. */
+extern void
+gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, bool bDebug);
 /** Prepares the selections for evaluation and performs some optimizations. */
 extern int
 gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc);

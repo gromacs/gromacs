@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
   egcTC,    egcENER,   egcACC, egcFREEZE, 
   egcUser1, egcUser2,  egcVCM, egcXTC,
@@ -75,7 +79,7 @@ typedef struct {
  */
 #define ggrpnr(groups,egc,i) ((groups)->grpnr[egc] ? (groups)->grpnr[egc][i] : 0)
 
-/* The global topology struct, based on molecule types */
+/* The global, complete system topology struct, based on molecule types */
 typedef struct {
   char           **name;	/* Name of the topology	       	        */
   gmx_ffparams_t ffparams;
@@ -84,14 +88,15 @@ typedef struct {
   int            nmolblock;
   gmx_molblock_t *molblock;
   int            natoms;
+  int            maxres_renum;  /* Parameter for residue numbering      */
+  int            maxresnr;      /* The maximum residue number in moltype */
   t_atomtypes    atomtypes;     /* Atomtype properties                  */
   t_block        mols;          /* The molecules                        */
   gmx_groups_t   groups;
   t_symtab	 symtab;        /* The symbol table			*/
-  gmx_cmap_t     cmap_grid;
 } gmx_mtop_t;
 
-/* The mdrun local topology struct, completely written out */
+/* The mdrun node-local topology struct, completely written out */
 typedef struct {
   t_idef	idef;		/* The interaction function definition	*/
   t_atomtypes   atomtypes;      /* Atomtype properties                  */
@@ -110,3 +115,8 @@ typedef struct {
   t_blocka      excls;          /* The exclusions                       */
   t_symtab	symtab;		/* The symbol table			*/
 } t_topology;
+
+#ifdef __cplusplus
+}
+#endif
+

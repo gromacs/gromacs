@@ -19,7 +19,9 @@
 #endif
 
 /* Must come directly after config.h */
+#ifdef GMX_THREAD_SHM_FDECOMP
 #include <thread_mpi.h>
+#endif
 
 #include <types/simple.h>
 #include <types/nrnb.h>

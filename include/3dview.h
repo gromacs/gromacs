@@ -42,6 +42,10 @@
 
 #include <typedefs.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define WW 3
 
 typedef real vec4[4];
@@ -108,6 +112,10 @@ extern void translate_view(t_3dview *view,int axis,bool bPositive);
 
 extern void reset_view(t_3dview *view);
 /* Reset the viewing to the initial view */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

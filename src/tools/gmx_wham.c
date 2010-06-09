@@ -48,6 +48,8 @@
 #include "statutil.h"
 #include "tpxio.h"
 #include "names.h"
+#include "gmx_ana.h"
+
 
 #ifndef HAVE_STRDUP
 #define HAVE_STRDUP
@@ -710,7 +712,7 @@ void cyclicProfByWeightedCorr(double *profile,t_UmbrellaWindow *window,
         xvgr_subtitle(fp,buf,oenv);
         for (i=0;i<bins-1;i++)
             fprintf(fp,"%g %g\n",opt->min+opt->dz*(i+1),-corr[i]);
-        fclose(fp);
+        ffclose(fp);
     }
 
     sfree(histsum);
@@ -1224,7 +1226,7 @@ FILE *pdo_open_file(const char *fn)
     }
     else
 	{
-		if((fp=fopen(fn,"r"))==NULL)
+		if((fp=ffopen(fn,"r"))==NULL)
 		{
 			gmx_fatal(FARGS,"Unable to open file %s\n",fn);
 		}		
@@ -1238,7 +1240,7 @@ pdo_close_file(FILE *fp)
 #ifdef HAVE_PIPES
 	pclose(fp);
 #else
-	fclose(fp);
+	ffclose(fp);
 #endif
 }
 
@@ -1322,7 +1324,7 @@ void read_tpr_header(const char *fn,t_UmbrellaHeader* header,
 
     if (ir.ePull != epullUMBRELLA)
         gmx_fatal(FARGS,"This is not a tpr of an umbrella simulation. Found ir.ePull = %s\n",
-                epullg_names[ir.ePull]);
+                epull_names[ir.ePull]);
 
     /* nr of pull groups */
     ngrp=ir.pull->ngrp;

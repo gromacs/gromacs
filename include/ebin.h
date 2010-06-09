@@ -45,6 +45,10 @@
 #include "typedefs.h"
 #include "enxio.h"	
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   int        nener;
   gmx_enxnm_t *enm;
@@ -94,6 +98,8 @@ extern void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
  * If bPrHead than the header is printed.
  */
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _ebin_h */

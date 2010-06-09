@@ -465,7 +465,7 @@ int main(int argc,char *argv[])
     /* Finish I/O, close files */
     if (MASTER(cr)) {
       close_trx(status);
-      fclose(fp);
+      ffclose(fp);
     }
   }
   
@@ -476,7 +476,7 @@ int main(int argc,char *argv[])
   }
   
   /* Finish the parallel stuff */  
-  if (gmx_parallel_env())
+  if (gmx_parallel_env_initialized())
     gmx_finalize(cr);
 
   /* Thank the audience, as usual */

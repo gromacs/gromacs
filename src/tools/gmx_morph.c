@@ -44,6 +44,9 @@
 #include "xvgr.h"
 #include "index.h"
 #include "do_fit.h"
+#include "gmx_ana.h"
+#include "gmx_fatal.h"
+
 
 static real dointerp(int n,rvec x1[],rvec x2[],rvec xx[],
 		    int I,int N,real first,real last)
@@ -82,7 +85,7 @@ int gmx_morph(int argc,char *argv[])
   t_filenm fnm[] = {
     { efSTX, "-f1", "conf1",  ffREAD },
     { efSTX, "-f2", "conf2",  ffREAD },
-    { efTRO, "-o",  "interm", ffWRITE },
+    { efTRX, "-o",  "interm", ffWRITE },
     { efXVG, "-or", "rms-interm", ffOPTWR },
     { efNDX, "-n",  "index",  ffOPTRD }
   };
@@ -176,7 +179,7 @@ int gmx_morph(int argc,char *argv[])
   close_trx(status); 
   
   if (bRMS) {
-    fclose(fp);
+    ffclose(fp);
     do_view(oenv,opt2fn("-or",NFILE,fnm),"-nxy");
   }
   

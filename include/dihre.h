@@ -40,12 +40,12 @@
 #include <config.h>
 #endif
 
+#include "sysstuff.h"
+#include "typedefs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "sysstuff.h"
-#include "typedefs.h"
 
   void init_dihres(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,t_fcdata *fcd);
 

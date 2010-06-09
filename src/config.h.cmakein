@@ -16,6 +16,9 @@
 /* Version number of package (translate from cmake to autoconf macro name) */
 #define VERSION  "@PROJECT_VERSION@"
 
+/* Use the version string from generated version.h */
+#cmakedefine USE_VERSION_H
+
 /* Default location of data files */
 #cmakedefine GMXLIBDIR "@GMXLIBDIR@"
 
@@ -92,7 +95,7 @@
 #cmakedefine GMX_FFT_ACML
 
 /* Single-precision SSE instructions on ia32 */
-#undef GMX_IA32_SSE
+#cmakedefine GMX_IA32_SSE
 
 /* Double-precision SSE2 instructions on ia32 */
 #undef GMX_IA32_SSE2
@@ -143,14 +146,32 @@
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
+/* Compile with dlopen */
+#cmakedefine GMX_DLOPEN
+
 /* Use pthreads for thread_mpi multithreading */
 #cmakedefine THREAD_PTHREADS
 
 /* Have pthread.h */
 #cmakedefine HAVE_PTHREAD_H
 
+/* Define for busy wait option  */
+#cmakedefine TMPI_WAIT_FOR_NO_ONE
+
+/* Define for copy buffer option */
+#cmakedefine TMPI_COPY_BUFFER
+
+/* Define for profiling option */
+#cmakedefine TMPI_PROFILE
+
+/* Define for sysconf() */
+#cmakedefine HAVE_SYSCONF
+
+/* Define for GetSystemInfo() */
+#cmakedefine HAVE_SYSTEM_INFO
+
 /* Single-precision SSE instructions on X86_64 */
-#undef GMX_X86_64_SSE
+#cmakedefine GMX_X86_64_SSE
 
 /* Double-precision SSE2 instructions on X86_64 */
 #undef GMX_X86_64_SSE2
@@ -200,6 +221,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H
 
+/* Define to 1 if you have the <regex.h> header file. */
+#cmakedefine HAVE_REGEX_H
+
 /* Define to 1 if you have the <rpc/rpc.h> header file. */
 #cmakedefine HAVE_RPC_RPC_H
 
@@ -211,6 +235,15 @@
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #cmakedefine HAVE_STDLIB_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#cmakedefine HAVE_SCHED_H
+
+/* Have copyfile.h */
+#cmakedefine HAVE_COPYFILE_H
+
+/* Have io.h (windows)*/
+#cmakedefine HAVE_IO_H
 
 /* Define to 1 if you have the strcasecmp() function. */
 #cmakedefine HAVE_STRCASECMP
@@ -227,11 +260,38 @@
 /* Define to 1 if you have the gettimeofday() function. */
 #cmakedefine HAVE_GETTIMEOFDAY
 
+/* Define to 1 if you have the cbrt() function. */
+#cmakedefine HAVE_CBRT
+
 /* Define to 1 if you have the isnan() function. */
 #cmakedefine HAVE_ISNAN
 
 /* Define to 1 if you have the _isnan() function. */
 #cmakedefine HAVE__ISNAN
+
+/* Define to 1 if you have the isfinite() function. */
+#cmakedefine HAVE_ISFINITE
+
+/* Define to 1 if you have the _isfinite() function. */
+#cmakedefine HAVE__ISFINITE
+
+/* Define to 1 if you have the fsync() function. */
+#cmakedefine HAVE_FSYNC
+
+/* Define to 1 if you have the Windows _commit() function. */
+#cmakedefine HAVE__COMMIT
+
+/* Define to 1 if you have the fileno() function. */
+#cmakedefine HAVE_FILENO
+
+/* Define to 1 if you have the _fileno() function. */
+#cmakedefine HAVE__FILENO
+
+/* Define to 1 if you have the copyfile() function. */
+#cmakedefine HAVE_COPYFILE
+
+/* Define to 1 if you have the Windows CopyFile() function. */
+#cmakedefine HAVE_WIN_COPYFILE
 
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H
@@ -242,10 +302,8 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H
 
-#ifndef HAVE_SYS_TIME_H
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
-#endif
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H

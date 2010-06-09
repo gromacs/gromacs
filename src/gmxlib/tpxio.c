@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -37,7 +38,9 @@
 #endif
 
 /* This file is completely threadsafe - keep it that way! */
+#ifdef GMX_THREADS
 #include <thread_mpi.h>
+#endif
 
 
 #include <ctype.h>
@@ -61,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 68;
+static const int tpx_version = 70;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -72,7 +75,7 @@ static const int tpx_version = 68;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 20;
+static const int tpx_generation = 22;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -122,6 +125,7 @@ static const t_ftupd ftupd[] = {
   { 34, F_FENEBONDS         },
   { 43, F_TABBONDS          },
   { 43, F_TABBONDSNC        },
+  { 70, F_RESTRBONDS        },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
@@ -152,6 +156,7 @@ static const t_ftupd ftupd[] = {
   { 46, F_COM_PULL          },
   { 20, F_EQM               },
   { 46, F_ECONSERVED        },
+  { 69, F_VTEMP             },
   { 66, F_PDISPCORR         },
   { 54, F_DHDL_CON          },
 };
@@ -670,10 +675,15 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     
     /* grpopts stuff */
     do_int(ir->opts.ngtc); 
+    if (file_version >= 69) {
+      do_int(ir->opts.nhchainlength);
+    } else {
+      ir->opts.nhchainlength = 1;
+    }
     do_int(ir->opts.ngacc); 
     do_int(ir->opts.ngfrz); 
     do_int(ir->opts.ngener);
-
+    
     if (bRead) {
       snew(ir->opts.nrdf,   ir->opts.ngtc); 
       snew(ir->opts.ref_t,  ir->opts.ngtc); 
@@ -836,7 +846,6 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   int i;
   bool bDum;
   real rdum;
-  real VA[4],VB[4];
   
   if (!bRead)
     set_comment(interaction_function[ftype].name);
@@ -857,6 +866,16 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_FENEBONDS:
     do_real(iparams->fene.bm);
     do_real(iparams->fene.kb);
+    break;
+  case F_RESTRBONDS:
+    do_real(iparams->restraint.lowA);
+    do_real(iparams->restraint.up1A);
+    do_real(iparams->restraint.up2A);
+    do_real(iparams->restraint.kA);
+    do_real(iparams->restraint.lowB);
+    do_real(iparams->restraint.up1B);
+    do_real(iparams->restraint.up2B);
+    do_real(iparams->restraint.kB);
     break;
   case F_TABBONDS:
   case F_TABBONDSNC:
@@ -1007,8 +1026,8 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     /* Fourier dihedrals are internally represented
      * as Ryckaert-Bellemans since those are faster to compute.
      */
-    ndo_real(VA,NR_RBDIHS,bDum);
-    ndo_real(VB,NR_RBDIHS,bDum);
+    ndo_real(iparams->rbdihs.rbcA, NR_RBDIHS, bDum);
+    ndo_real(iparams->rbdihs.rbcB, NR_RBDIHS, bDum);
     break;
   case F_CONSTR:
   case F_CONSTRNC:
@@ -1675,6 +1694,31 @@ static void add_posres_molblock(gmx_mtop_t *mtop)
   }
 }
 
+static void set_disres_npair(gmx_mtop_t *mtop)
+{
+  int mt,i,npair;
+  t_iparams *ip;
+  t_ilist *il;
+  t_iatom *a;
+
+  ip = mtop->ffparams.iparams;
+
+  for(mt=0; mt<mtop->nmoltype; mt++) {
+    il = &mtop->moltype[mt].ilist[F_DISRES];
+    if (il->nr > 0) {
+      a = il->iatoms;
+      npair = 0;
+      for(i=0; i<il->nr; i+=3) {
+	npair++;
+	if (i+3 == il->nr || ip[a[i]].disres.label != ip[a[i+3]].disres.label) {
+	  ip[a[i]].disres.npair = npair;
+	  npair = 0;
+	}
+      }
+    }
+  }
+}
+
 static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
 {
   int  mt,mb,i;
@@ -1739,13 +1783,13 @@ static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
 	
   if(file_version >= 65)
   {
-	  do_cmap(&mtop->cmap_grid,bRead);
+      do_cmap(&mtop->ffparams.cmap_grid,bRead);
   }
   else
   {
-	  mtop->cmap_grid.ngrid=0;
-	  mtop->cmap_grid.grid_spacing=0.1;
-	  mtop->cmap_grid.cmapdata=NULL;
+      mtop->ffparams.cmap_grid.ngrid        = 0;
+      mtop->ffparams.cmap_grid.grid_spacing = 0.1;
+      mtop->ffparams.cmap_grid.cmapdata     = NULL;
   }
 	  
   if (file_version >= 57) {
@@ -1794,7 +1838,8 @@ static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
  * 
  * If possible, we will read the inputrec even when TopOnlyOK is TRUE.
  */
-static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int *file_version, int *file_generation)
+static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, 
+                         int *file_version, int *file_generation)
 {
   char  buf[STRLEN];
   bool  bDouble;
@@ -1843,7 +1888,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
  
   if(file_version!=NULL)
     *file_version = fver;
-  if(file_version!=NULL)
+  if(file_generation!=NULL)
     *file_generation = fgen;
    
   
@@ -1914,13 +1959,13 @@ static int do_tpx(int fp,bool bRead,
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
-      init_state(state,0,tpx.ngtc);
-      state->natoms = tpx.natoms;
-      state->nalloc = tpx.natoms;
+      init_state(state,0,tpx.ngtc,0,0);  /* nose-hoover chains */ /* eventually, need to add nnhpres here? */
+      state->natoms = tpx.natoms; 
+      state->nalloc = tpx.natoms; 
       state->x = xptr;
       state->v = vptr;
     } else {
-      init_state(state,tpx.natoms,tpx.ngtc);
+      init_state(state,tpx.natoms,tpx.ngtc,0,0);  /* nose-hoover chains */
     }
   }
 
@@ -1947,8 +1992,13 @@ static int do_tpx(int fp,bool bRead,
   
   if (state->ngtc > 0 && file_version >= 28) {
     real *dumv;
-    ndo_real(state->nosehoover_xi,state->ngtc,bDum);
+    /*ndo_double(state->nosehoover_xi,state->ngtc,bDum);*/
+    /*ndo_double(state->nosehoover_vxi,state->ngtc,bDum);*/
+    /*ndo_double(state->therm_integral,state->ngtc,bDum);*/
     snew(dumv,state->ngtc);
+    if (file_version < 69) {
+      ndo_real(dumv,state->ngtc,bDum);
+    }
     /* These used to be the Berendsen tcoupl_lambda's */
     ndo_real(dumv,state->ngtc,bDum);
     sfree(dumv);
@@ -2050,23 +2100,60 @@ static int do_tpx(int fp,bool bRead,
     }
   }
 
-  if (bRead && tpx.bIr && ir) {
-    if (state->ngtc == 0) {
-      /* Reading old version without tcoupl state data: set it */
-      init_gtc_state(state,ir->opts.ngtc);
-    }
-    if (file_version < 57) {
-      if (tpx.bTop && mtop) {
-	if (mtop->moltype[0].ilist[F_DISRES].nr > 0) {
-	  ir->eDisre = edrSimple;
-	} else {
-	  ir->eDisre = edrNone;
-	}
-      }
-    }
-  }
+    if (bRead)
+    {
+        if (tpx.bIr && ir)
+        {
+            if (state->ngtc == 0)
+            {
+                /* Reading old version without tcoupl state data: set it */
+                init_gtc_state(state,ir->opts.ngtc,0,ir->opts.nhchainlength);
+            }
+            if (tpx.bTop && mtop)
+            {
+                if (file_version < 57)
+                {
+                    if (mtop->moltype[0].ilist[F_DISRES].nr > 0)
+                    {
+                        ir->eDisre = edrSimple;
+                    }
+                    else
+                    {
+                        ir->eDisre = edrNone;
+                    }
+                }
+                set_disres_npair(mtop);
+            }
+        }
 
-  return ePBC;
+        if (tpx.bTop && mtop)
+        {
+            gmx_mtop_finalize(mtop);
+        }
+
+        if (file_version >= 57)
+        {
+            char *env;
+            int  ienv;
+            env = getenv("GMX_NOCHARGEGROUPS");
+            if (env != NULL)
+            {
+                sscanf(env,"%d",&ienv);
+                fprintf(stderr,"\nFound env.var. GMX_NOCHARGEGROUPS = %d\n",
+                        ienv);
+                if (ienv > 0)
+                {
+                    fprintf(stderr,
+                            "Will make single atomic charge groups in non-solvent%s\n",
+                            ienv > 1 ? " and solvent" : "");
+                    gmx_mtop_make_atomic_charge_groups(mtop,ienv==1);
+                }
+                fprintf(stderr,"\n");
+            }
+        }
+    }
+
+    return ePBC;
 }
 
 /************************************************************

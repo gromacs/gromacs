@@ -36,7 +36,15 @@
 #include <config.h>
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* output options opaque type, for functions in statutil.c */
 typedef struct output_env *output_env_t;
 
+#ifdef __cplusplus
+}
+#endif
 

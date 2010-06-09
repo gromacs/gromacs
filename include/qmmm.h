@@ -44,8 +44,11 @@
 #include "network.h"
 #include "tgroup.h"
 
-void 
-atomic_number(int nr, char ***atomtype, int *nucnum);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void atomic_number(int nr, char ***atomtype, int *nucnum);
 
 extern t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
@@ -87,6 +90,10 @@ extern real calculate_QMMM(t_commrec *cr,
  * (listed in QMMMrec.QMpackage). The binary of the QM package is
  * called by system().
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _QMMM_h */
 

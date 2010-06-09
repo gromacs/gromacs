@@ -1,0 +1,49 @@
+    O  15.99940 ;     carbonyl oxygen (C=O)
+   OM  15.99940 ;     carboxyl oxygen (CO-)
+   OA  15.99940 ;     hydroxyl, sugar or ester oxygen
+   OW  15.99940 ;     water oxygen
+    N  14.00670 ;     peptide nitrogen (N or NH)
+   NT  14.00670 ;     terminal nitrogen (NH2)
+   NL  14.00670 ;     terminal nitrogen (NH3)
+   NR  14.00670 ;     aromatic nitrogen
+   NZ  14.00670 ;     Arg NH (NH2)
+   NE  14.00670 ;     Arg NE (NH)
+    C  12.01100 ;     bare carbon
+  CH1  13.01900 ;     aliphatic or sugar CH-group
+  CH2  14.02700 ;     aliphatic or sugar CH2-group
+  CH3  15.03500 ;     aliphatic CH3-group
+  CH4  16.04300 ;     methane
+  CR1  13.01900 ;     aromatic CH-group 
+   HC   1.00800 ;     hydrogen bound to carbon
+    H   1.00800 ;     hydrogen not bound to carbon
+  DUM   0.00000 ;     dummy atom, no idea what the mass should be. PT3-99
+    S  32.06000 ;     sulfur
+ CU1+  63.54600 ;     copper (charge 1+)
+ CU2+  63.54600 ;     copper (charge 2+)
+   FE  55.84700 ;     iron (heme)
+ ZN2+  65.37000 ;     zinc (charge 2+)
+ MG2+  24.30500 ;     magnesium (charge 2+)
+ CA2+  40.08000 ;     calcium (charge 2+)
+    P  30.97380 ;     phosphor
+   AR  39.94800 ;     argon
+    F  18.99840 ;     fluor (non-ionic)
+   CL  35.45300 ;     chlorine (non-ionic)
+   BR  79.90400 ;     bromine (non-ionic)
+ CMet  15.035   ;     CH3-group in methanol (solvent)
+ OMet  15.9994  ;     oxygen in methanol (solvent)
+  NA+  22.9898  ;     sodium (charge 1+)
+  CL-  35.45300 ;     chlorine (charge 1-)
+ CChl  12.011   ;     carbon in chloroform (solvent)
+CLChl  35.453   ;     chloride in chloroform (solvent)
+ HChl  1.008    ;     hydrogen in chloroform (solvent)
+SDmso  32.06000 ;     DMSO Sulphur (solvent)
+CDmso  15.03500 ;     DMSO Carbon (solvent)
+ODmso  15.99940 ;     DMSO Oxygen (solvent)
+ CCl4  12.011   ;     carbon in carbontetrachloride (solvent)
+CLCl4  35.453   ;     chloride in carbontetrachloride (solvent)
+   SI  28.08	;     silicon
+ MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
+   MW   0       ;     Dummy mass in rigid tyrosine rings
+   IW   0       ;     Dummy particle in TIP4P etc.
+ OWT3  15.99940 ;     TIP3P WATER OXYGEN                 
+ OWT4  15.99940 ;     TIP4P WATER OXYGEN

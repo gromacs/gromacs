@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
     fprintf(fp,"%s\n",line);
   }
 
-  fclose(fp);
+  ffclose(fp);
   
   fprintf(stderr,"Added %d HTML references\n",n_repl);
 

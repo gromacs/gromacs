@@ -54,6 +54,7 @@
 #include "index.h"
 #include "tpxio.h"
 #include "physics.h"
+#include "gmx_ana.h"
 
 typedef struct {
   char *atomname;
@@ -84,7 +85,7 @@ int get_electrons(t_electron **eltab, const char *fn)
   int nr;            /* number of atomstypes to read */
   int i;
 
-  if ( !(in = fopen(fn,"r")))
+  if ( !(in = ffopen(fn,"r")))
     gmx_fatal(FARGS,"Couldn't open %s. Exiting.\n",fn);
 
   if(NULL==fgets(buffer, 255, in))
@@ -105,6 +106,7 @@ int get_electrons(t_electron **eltab, const char *fn)
     (*eltab)[i].nr_el = tempnr;
     (*eltab)[i].atomname = strdup(tempname);
   }
+  ffclose(in);
   
   /* sort the list */
   fprintf(stderr,"Sorting list..\n");
@@ -370,7 +372,7 @@ void plot_density(real *slDensity[], const char *afile, int nslices,
     fprintf(den,"\n");
   }
 
-  fclose(den);
+  ffclose(den);
 }
  
 int gmx_density(int argc,char *argv[])

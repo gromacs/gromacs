@@ -36,12 +36,12 @@
 #include <config.h>
 #endif
 
+#include "typedefs.h"
 #include <Xstuff.h>
 #include <x11.h>
 #include "sysstuff.h"
 #include "string.h"
 #include "smalloc.h"
-#include "typedefs.h"
 #include "string2.h"
 
 /* These colours will be mapped to black on a monochrome screen */

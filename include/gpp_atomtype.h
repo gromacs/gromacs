@@ -44,6 +44,10 @@
 #include "typedefs.h"
 #include "macros.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct gpp_atomtype *gpp_atomtype_t;
 
 extern int get_atomtype_type(const char *str,gpp_atomtype_t at);
@@ -110,6 +114,11 @@ extern void renum_atype(t_params plist[],gmx_mtop_t *mtop,
 			
 extern void copy_atomtype_atomtypes(gpp_atomtype_t atype,t_atomtypes *atypes);
 /* Copy from one structure to another */
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif	/* _gpp_atomtype_h */
 
 

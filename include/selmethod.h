@@ -99,7 +99,10 @@
  *    number of values.
  *    The number of values is determined based on the values given by the user
  *    to the method parameters (see \ref selmethods_params).
- *
+ *  .
+ * If either of these flags is specified (and the method type is not
+ * \ref GROUP_VALUE), the group passed to the evaluation callback should not
+ * be used as it can be NULL.
  * Currently, the above flags only work (have been tested) for \ref POS_VALUE
  * methods.
  *
@@ -177,9 +180,10 @@
  *  - \ref SPAR_DYNAMIC : If set, the method can handle dynamic values for
  *    the parameter, i.e., the value(s) can be given by an expression that
  *    evaluates to different values for different frames.
- *  - \ref SPAR_RANGES : Can be set only for \ref INT_VALUE parameters,
+ *  - \ref SPAR_RANGES : Can be set only for \ref INT_VALUE and
+ *    \ref REAL_VALUE parameters,
  *    and cannot be combined with \ref SPAR_DYNAMIC.
- *    If set, the parameter accepts ranges of integer values.
+ *    If set, the parameter accepts ranges of values.
  *    The ranges are automatically sorted and compacted such that a minimum
  *    amount of non-overlapping ranges are given for the method.
  *  - \ref SPAR_VARNUM : If set, the parameter can have a variable number
@@ -207,7 +211,7 @@
  * In general, any of the callbacks can be NULL, but the presence of
  * parameters or other callbacks imposes some restrictions:
  *  - sel_datafunc() should be provided if the method takes parameters.
- *  - sel_initfunc() and sel_freefunc() should be provided if the method takes
+ *  - sel_initfunc() should be provided if the method takes
  *    any parameters with the \ref SPAR_VARNUM or \ref SPAR_ATOMVAL flags,
  *    except if those parameters have a \ref POS_VALUE.
  *  - sel_outinitfunc() should be provided for \ref POS_VALUE methods
@@ -215,8 +219,8 @@
  *  - sel_freefunc() should be provided if sel_datafunc() and/or
  *    sel_initfunc() allocate any dynamic memory in addition to the data
  *    structure itself.
- *  - sel_framefunc() and sel_updatefunc_pos() only make sense for methods with
- *    \ref SMETH_DYNAMIC set.
+ *  - sel_updatefunc_pos() only makes sense for methods with \ref SMETH_DYNAMIC
+ *    set.
  *  - At least one update function should be provided unless the method type is
  *    \ref NO_VALUE.
  *
@@ -369,14 +373,10 @@ struct gmx_ana_selcollection_t;
  * provided.
  *
  * For boolean parameters (type equals \ref NO_VALUE), the default value
- * should be set here. If the parameter is provided by the user, this default
- * value is negated. The parameter should be named such that this makes
- * sense.
+ * should be set here. The user can override the value by giving the parameter
+ * either as 'NAME'/'noNAME', or as 'NAME on/off/yes/no'.
  *
  * If the method takes any parameters, this function must be provided.
- *
- * \todo
- * More flexible handling of boolean parameters.
  */
 typedef void *(*sel_datafunc)(int npar, gmx_ana_selparam_t *param);
 /*! \brief
@@ -411,8 +411,8 @@ typedef void  (*sel_posfunc)(struct gmx_ana_poscalc_coll_t *pcc, void *data);
  * If a parameter had the \ref SPAR_VARNUM or \ref SPAR_ATOMVAL flag (and
  * is not \ref POS_VALUE), a pointer to the memory allocated for the values is
  * found in \c gmx_ana_selparam_t::val.
- * The pointer should be stored by this function, otherwise the memory
- * (and the values) are lost.
+ * The pointer should be stored by this function, otherwise the values
+ * cannot be accessed.
  * For \ref SPAR_VARNUM parameters, the number of values can be accessed
  * through \c gmx_ana_selparam_t::val. For parameters with \ref SPAR_DYNAMIC,
  * the number is the maximum number of values (the actual number can be
@@ -477,8 +477,8 @@ typedef int   (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
  * The data structure itself should not be freed; this is handled automatically.
  * If there is no dynamically allocated data within the structure,
  * this function is not needed.
- * The value pointers for \ref SPAR_VARNUM and \ref SPAR_ATOMVAL parameters
- * stored in sel_initfunc() should also be freed.
+ * Any memory pointers received as values of parameters are managed externally,
+ * and should not be freed.
  * Pointers set as the value pointer of \ref SPAR_ENUMVAL parameters should not
  * be freed.
  */
@@ -503,6 +503,8 @@ typedef void  (*sel_freefunc)(void *data);
  * It is ensured that this function will be called before
  * \p sel_updatefunc_* for each frame, and that it will be called at most
  * once for each frame.
+ * For static methods, it is called once, with \p fr and \p pbc set to
+ * NULL.
  */
 typedef int   (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                                void *data);

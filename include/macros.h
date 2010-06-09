@@ -40,12 +40,11 @@
 #include <config.h>
 #endif
 
+#include "typedefs.h" /* for real definition only */
+
 #ifdef __cplusplus
 extern "C" { 
 #endif
-
-
-#include "typedefs.h" /* for real definition only */
 
 /* 
  * With the macros below you don't

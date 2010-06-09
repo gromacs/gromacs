@@ -50,6 +50,8 @@
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
+#include "gmx_ana.h"
+
 
 static void add_contact_time(int **ccount,int *ccount_nalloc,int t)
 {
@@ -188,12 +190,16 @@ int gmx_dist(int argc,char *argv[])
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
-      for(d=0;(d<DIM);d++) {
-	com[g][d]=0;
-	for(i=0;(i<isize[g]);i++) {
-	  com[g][d] += x[index[g][i]][d] * top->atoms.atom[index[g][i]].m;
+      if (isize[g] == 1) {
+	copy_rvec(x[index[g][0]],com[g]);
+      } else {
+	for(d=0;(d<DIM);d++) {
+	  com[g][d]=0;
+	  for(i=0;(i<isize[g]);i++) {
+	    com[g][d] += x[index[g][i]][d] * top->atoms.atom[index[g][i]].m;
+	  }
+	  com[g][d] /= mass[g];
 	}
-	com[g][d] /= mass[g];
       }
     }
     
@@ -243,7 +249,7 @@ int gmx_dist(int argc,char *argv[])
   } while (read_next_x(oenv,status,&t,natoms,x,box));
 
   if (!bCutoff)
-    fclose(fp);
+    ffclose(fp);
 
   close_trj(status);
   
@@ -265,7 +271,7 @@ int gmx_dist(int argc,char *argv[])
 
       fprintf(fp,"%10.3f %10.3f\n",i*(t-t0)/(teller-1),sum/(double)(teller-i));
     }
-    fclose(fp);
+    ffclose(fp);
   }
   
   thanx(stderr);

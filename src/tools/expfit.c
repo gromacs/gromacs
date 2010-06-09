@@ -484,7 +484,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	  fprintf(fp,"%10.5e  %10.5e  %10.5e\n",
 		  ttt,c1[j],fit_function(eFitFn,parm,ttt));
 	}
-	fclose(fp);
+	ffclose(fp);
       }
     }
     for(i=0;(i<nparm);i++)

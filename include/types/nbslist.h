@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   int  nr;			/* Row- and Column-length of vectors	*/
   int  nrfp;			/* Number of force parameters		*/
@@ -48,4 +52,8 @@ typedef struct
   int		maxbt;		/* The number of nbs types	*/
   t_nbs		*nbs;		/* The array of nbs structs	*/
 } t_nbslist;
+
+#ifdef __cplusplus
+}
+#endif
 

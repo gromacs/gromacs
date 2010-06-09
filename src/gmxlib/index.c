@@ -56,11 +56,17 @@
 #include "txtdump.h"
 #include "gmxfio.h"
 
-typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
-static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
+typedef enum { etOther, etProt, etDNA, etRNA, erestNR } eRestp;
+static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA", "RNA" };
 
-static const char   *Sugars[]     = { "A", "T", "G", "C", "U" };
-#define  NDNA asize(Sugars)
+static const char *DNA[]          = { "DA", "DT", "DG", "DC", "DU" };
+#define  NDNA asize(DNA)
+
+static const char *RNA[]          = {  "A",  "T",  "G",  "C",  "U" };
+#define  NRNA asize(RNA)
+
+static const char *Negate[] = { "SOL" };
+#define  NNEGATE asize(Negate)
 
 static bool gmx_ask_yesno(bool bASK)
 {
@@ -172,10 +178,16 @@ atom_id *mk_aid(t_atoms *atoms,eRestp restp[],eRestp res,int *nra,
   return a;
 }
 
+typedef struct {
+  char *rname;
+  bool bNeg;
+  char *gname;
+} restp_t;
+
 static void analyse_other(eRestp Restp[],t_atoms *atoms,
 			  t_blocka *gb,char ***gn,bool bASK,bool bVerb)
 {
-  char **restp=NULL;
+  restp_t *restp=NULL;
   char **attp=NULL;
   char *rname,*aname;
   atom_id *other_ndx,*aid,*aaid;
@@ -194,11 +206,24 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
       rname = *atoms->resinfo[resind].name;
       if (Restp[resind] == etOther) {
 	for(l=0; (l<nrestp); l++)
-	  if (strcmp(restp[l],rname) == 0)
+	  if (strcmp(restp[l].rname,rname) == 0)
 	    break;
 	if (l==nrestp) {
-	  srenew(restp,++nrestp);
-	  restp[nrestp-1]=strdup(rname);
+	  srenew(restp,nrestp+1);
+	  restp[nrestp].rname = strdup(rname);
+	  restp[nrestp].bNeg  = FALSE;
+	  restp[nrestp].gname = strdup(rname);
+	  nrestp++;
+	  for(i=0; i<NNEGATE; i++) {
+	    if (strcmp(rname,Negate[i]) == 0) {
+	      srenew(restp,nrestp+1);
+	      restp[nrestp].rname = strdup(rname);
+	      restp[nrestp].bNeg  = TRUE;
+	      snew(restp[nrestp].gname,4+strlen(rname)+1);
+	      sprintf(restp[nrestp].gname,"%s%s","non-",rname);
+	      nrestp++;
+	    }
+	  }
 	}
       }
     }
@@ -207,12 +232,14 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
       naid=0;
       for(j=0; (j<atoms->nr); j++) {
 	rname = *atoms->resinfo[atoms->atom[j].resind].name;
-	if (strcmp(restp[i],rname) == 0) 
+	if ((strcmp(restp[i].rname,rname) == 0 && !restp[i].bNeg) ||
+	    (strcmp(restp[i].rname,rname) != 0 &&  restp[i].bNeg)) {
 	  aid[naid++] = j;
+	}
       }
-      add_grp(gb,gn,naid,aid,restp[i]);
+      add_grp(gb,gn,naid,aid,restp[i].gname);
       if (bASK) {
-	printf("split %s into atoms (y/n) ? ",restp[i]);
+	printf("split %s into atoms (y/n) ? ",restp[i].gname);
 	fflush(stdout);
 	if (gmx_ask_yesno(bASK)) {
 	  natp=0;
@@ -258,9 +285,9 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
 			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
   static const char *calpha[]  = { "CA" };
   static const char *bb[]      = { "N","CA","C" };
-  static const char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
-  static const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OT","OXT" };
-  static const char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT",
+  static const char *mc[]      = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT" };
+  static const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OC1","OC2","OT","OXT" };
+  static const char *mch[]     = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT",
 			     "H1","H2","H3","H" };
   /* array of arrays of atomnames: */
   static const char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
@@ -428,6 +455,30 @@ t_aa_names *get_aa_names(void)
   return aan;
 }
 
+bool is_residue(t_aa_names *aan,char *resnm)
+{
+  /* gives true if resnm occurs in aminoacids.dat */
+  int i;
+  
+  for(i=0; i<aan->n; i++) {
+    if (strcasecmp(aan->aa[i],resnm) == 0) {
+      return TRUE;
+    }
+  }
+  for(i=0; i<NDNA; i++) {
+    if (strcasecmp(DNA[i],resnm) == 0) {
+      return TRUE;
+    }
+  }
+  for(i=0; i<NRNA; i++) {
+    if (strcasecmp(RNA[i],resnm) == 0) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 bool is_protein(t_aa_names *aan,char *resnm)
 {
   /* gives true if resnm occurs in aminoacids.dat */
@@ -474,11 +525,16 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     resnm = *atoms->resinfo[i].name;
     if ((restp[i] == etOther) && is_protein(aan,resnm))
       restp[i] = etProt;
-    if (restp[i] == etOther)
+    if (restp[i] == etOther) {
       for(j=0; (j<NDNA);  j++) {
-	if (strcasecmp(Sugars[j],resnm) == 0)
+	if (strcasecmp(DNA[j],resnm) == 0)
 	  restp[i] = etDNA;
       }
+      for(j=0; (j<NRNA);  j++) {
+	if (strcasecmp(RNA[j],resnm) == 0)
+	  restp[i] = etRNA;
+      }
+    }
   }
   p_status(atoms->nres,restp,bVerb);
   done_aa_names(&aan);
@@ -493,7 +549,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
   /* Non-Protein */
   aid=mk_aid(atoms,restp,etProt,&nra,FALSE);
   if ((nra > 0) && (nra < atoms->nr))
-    add_grp(gb,gn,nra,aid,"Non-Protein"); 
+    add_grp(gb,gn,nra,aid,"non-Protein"); 
   sfree(aid);
 
   /* DNA */
@@ -504,12 +560,17 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
   }
   sfree(aid);
 
+  /* RNA */
+  aid=mk_aid(atoms,restp,etRNA,&nra,TRUE);
+  if (nra > 0) {
+    add_grp(gb,gn,nra,aid,"RNA"); 
+    analyse_dna(restp,atoms,gb,gn,bASK,bVerb);
+  }
+  sfree(aid);
+
   /* Other */
   analyse_other(restp,atoms,gb,gn,bASK,bVerb);
-  aid=mk_aid(atoms,restp,etOther,&nra,TRUE);
-  if ((nra > 0) && (nra < atoms->nr))
-    add_grp(gb,gn,nra,aid,"Other"); 
-  sfree(aid);
+
   sfree(restp);
 }
 

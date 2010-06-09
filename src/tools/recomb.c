@@ -54,7 +54,7 @@ real *read_gammaf(char *fn,int nframes)
     fscanf(in,"%lf",&y);
     gf[i]=y;
   }
-  fclose(in);
+  ffclose(in);
   fprintf(stderr,"Succesfully read gamma\n");
   return gf;
 }
@@ -97,7 +97,7 @@ void recombine(char *base,char *gammaf,int nskip,
 	write_gms_ndx(out,natoms,all_index,xxx,NULL);
       }
     }
-    fclose(out);
+    ffclose(out);
     fprintf(stderr,"\r");
   }
   fprintf(stderr,"\n");

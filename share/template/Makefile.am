@@ -23,7 +23,7 @@ template_DATA = template.c README Makefile.@host@_double
 else
 template_DATA = template.c README Makefile.@host@
 endif
-EXTRA_DIST = template.c README Template.mak
+EXTRA_DIST = template.c template_doc.c README Template.mak
 
 Makefile.@host@ Makefile.@host@_double: Template.mak Makefile 
 	cat $(srcdir)/Template.mak | \

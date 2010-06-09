@@ -40,10 +40,19 @@
 #include <config.h>
 #endif
 
+/* not neccesary at all, but we do it anyway: */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SYSCALL_TAG	0x11		/* Tag for server system calls      */
 #define SEMGET_TAG	0x10		/* Server subcommand i860_semget()  */
 #define SEMCTL_TAG	0x11		/* Server subcommand i860_semctl()  */
 #define SEMOP_TAG	0x12		/* Server subcommand i860_semop()   */
 #define SYNCALL_TAG	0x13		/* Server subcommand i860_syncall() */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _tags_h */

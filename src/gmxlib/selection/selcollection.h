@@ -82,15 +82,23 @@ struct gmx_ana_selcollection_t
     const char                 *spost;
     /** TRUE if \ref POS_MASKONLY should be used for output position evaluation. */
     bool                        bMaskOnly;
+    /** TRUE if velocities should be evaluated for output positions. */
+    bool                        bVelocities;
+    /** TRUE if forces should be evaluated for output positions. */
+    bool                        bForces;
+    /** TRUE if debugging output should be printed during compilation. */
+    bool                        bDebugCompile;
 
-    /** Full selection string as provided by the user. */
-    char                       *selstr;
     /** Root of the selection element tree. */
     struct t_selelem           *root;
     /** Number of selections in \p sel. */
     int                         nr;
     /** Array of compiled selections. */
     struct gmx_ana_selection_t **sel;
+    /** Number of variables defined. */
+    int                            nvars;
+    /** Selection strings for variables. */
+    char                         **varstrs;
 
     /** Topology for the collection. */
     t_topology                    *top;
@@ -98,6 +106,8 @@ struct gmx_ana_selcollection_t
     struct gmx_ana_index_t         gall;
     /** Position calculation collection used for selection position evaluation. */
     struct gmx_ana_poscalc_coll_t *pcc;
+    /** Memory pool used for selection evaluation. */
+    struct gmx_sel_mempool_t      *mempool;
     /** Parser symbol table. */
     struct gmx_sel_symtab_t     *symtab;
 };

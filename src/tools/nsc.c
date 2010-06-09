@@ -108,25 +108,7 @@ real safe_asin(real f) {
   return(M_PI_2);
 }
 
-#define CALLOC(n, size) mycalloc(__FILE__,__LINE__, n, size)
-void * mycalloc(const char * filename, const int linenr,
-                size_t nelem, size_t elsize) {
-  int * ip;
-  ip = (int *) calloc(nelem, elsize);
-  if(ip == NULL)
-    ERROR("CALLOC : failed in file %s at line %d", filename, linenr);
-  return(ip);
-}
 
-#define REALLOC(ptr, size) myrealloc(__FILE__,__LINE__,  ptr, size)
-void * myrealloc(const char * filename, const int linenr,
-                 void * ptr, size_t size) {
-  int * ip;
-  ip = (int *) realloc(ptr, size);
-  if(ip == NULL)
-    ERROR("REALLOC : failed in file %s at line %d", filename, linenr);
-  return(ip);
-}
 
 
 /* routines for dot distributions on the surface of the unit sphere */
@@ -200,7 +182,7 @@ int ico_dot_arc(int densit) { /* densit...required dots per unit sphere */
 	  tess, n_dot, densit);
   }
 
-  xus = (real *) CALLOC(3*n_dot, sizeof(real));
+  snew(xus,3*n_dot);
   xpunsp = xus;
   icosaeder_vertices(xus);
 
@@ -283,6 +265,7 @@ int ico_dot_arc(int densit) { /* densit...required dots per unit sphere */
       ERROR("ico_dot: n_dot(%d) and tn(%d) differ", n_dot, tn);
     }
   }		/* end of if (tess > 1) */
+    
   return n_dot;
 }		/* end of routine ico_dot_arc */
 
@@ -303,8 +286,8 @@ int ico_dot_dod(int densit) { /* densit...required dots per unit sphere */
     ERROR("ico_dot_dod: error in formula for tessalation level (%d->%d, %d)",
 	  tess, n_dot, densit);
   }
-
-  xus = (real *) CALLOC(3*n_dot, sizeof(real));
+    
+  snew(xus,3*n_dot);
   xpunsp = xus;
   icosaeder_vertices(xus);
 
@@ -426,7 +409,8 @@ int ico_dot_dod(int densit) { /* densit...required dots per unit sphere */
       ERROR("ico_dot: n_dot(%d) and tn(%d) differ", n_dot, tn);
     }
   }		/* end of if (tess > 1) */
-  return n_dot;
+
+    return n_dot;
 }		/* end of routine ico_dot_dod */
 
 int unsp_type(int densit) {
@@ -473,7 +457,7 @@ int make_unsp(int densit, int mode, int * num_dot, int cubus) {
   }
   ico_cube_cb = ico_cube*ico_cube*ico_cube;
   del_cube=2./((real)ico_cube);
-  work = (int *) CALLOC(ndot, sizeof(int));
+  snew(work,ndot);
   xus = xpunsp;
   for (l=0; l<ndot; l++) {
     i = max((int) floor((1.+xus[3*l])/del_cube), 0);
@@ -486,7 +470,8 @@ int make_unsp(int densit, int mode, int * num_dot, int cubus) {
     work[l] = ijk;
   }
 
-  ico_wk = (int *) CALLOC(2*ico_cube_cb+1, sizeof(int));
+  snew(ico_wk,2*ico_cube_cb+1);
+    
   ico_pt = ico_wk+ico_cube_cb;
   for (l=0; l<ndot; l++) {
     ico_wk[work[l]]++;   /* dots per elementary cube */
@@ -515,7 +500,9 @@ int make_unsp(int densit, int mode, int * num_dot, int cubus) {
       }		/* cycle k */
     }			/* cycle j */
   }			/* cycle i */
-  free(work); return 0;
+  free(work);
+    
+  return 0;
 }
 
 
@@ -576,12 +563,31 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
     vol=0.;
   if (mode & FLAG_DOTS) {
     maxdots = (3*n_dot*nat)/10;
-    snew(dots,maxdots);
+    /* should be set to NULL on first user call */
+      if(dots==NULL)
+      {
+          snew(dots,maxdots);
+      }
+      else
+      {
+          srenew(dots,maxdots);
+      }
+
     lfnr=0;
   }
   if (mode & FLAG_ATOM_AREA) 
-    snew(atom_area,nat);
-
+  {
+      /* should be set to NULL on first user call */
+      if(atom_area==NULL)
+      {
+          snew(atom_area,nat);
+      }
+      else
+      {
+          srenew(atom_area,nat);
+      }
+  }
+      
   /* Compute minimum size for grid cells */
   ra2max = radius[index[0]];
   for (iat_xx=1; (iat_xx<nat); iat_xx++) {
@@ -860,8 +866,8 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 	      if (wkdot[l]) {
 		lfnr++;
 		if (maxdots <= 3*lfnr+1) {
-		  maxdots = maxdots+n_dot*3;
-		  srenew(dots,maxdots);
+            maxdots = maxdots+n_dot*3;
+            srenew(dots,maxdots);
 		}
 		dots[3*lfnr-3] = ai*xus[3*l]+xi;
 		dots[3*lfnr-2] = ai*xus[1+3*l]+yi;
@@ -892,8 +898,9 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   sfree(wkbox); 
   sfree(wknb);
   if (box)
+  {
     sfree(x);
-    
+  } 
   if (mode & FLAG_VOLUME) {
     vol = vol*FOURPI/(3.* (real) n_dot);
     *value_of_vol = vol;

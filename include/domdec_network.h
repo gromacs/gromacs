@@ -32,6 +32,10 @@
 #include "tmpi.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
     dddirForward,dddirBackward
 };
@@ -108,5 +112,9 @@ extern void
 dd_gatherv(gmx_domdec_t *dd,
 	   int scount,void *sbuf,
 	   int *rcounts,int *disps,void *rbuf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _domdec_network_h */

@@ -51,6 +51,8 @@
 #include "xvgr.h"
 #include "gstat.h"
 #include "vec.h"
+#include "gmx_ana.h"
+
 
 int gmx_rotacf(int argc,char *argv[])
 {

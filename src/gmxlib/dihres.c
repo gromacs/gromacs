@@ -51,6 +51,7 @@
 #include "disre.h"
 #include "main.h"
 #include "mtop_util.h"
+#include "dihre.h"
 
 void init_dihres(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,t_fcdata *fcd)
 {
@@ -74,7 +75,7 @@ real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 {
   real vtot = 0;
   int  ai,aj,ak,al,i,k,type,typep,label,power,t1,t2,t3;
-  real phi0,phi,ddphi,ddp,dp,dp2,dphi,kfac,cos_phi,sign,d2r,fc;
+  real phi0,phi,ddphi,ddp,dp,dp2,dphi,kfac,sign,d2r,fc;
   rvec r_ij,r_kj,r_kl,m,n;
   
   fc  = fcd->dihre_fc;
@@ -94,7 +95,7 @@ real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     label = ip[type].dihres.label;
     
     phi = dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
-                    &cos_phi,&sign,&t1,&t2,&t3);	  
+                    &sign,&t1,&t2,&t3);	  
     /* 84 flops */
     
     if (debug)

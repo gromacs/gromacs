@@ -794,10 +794,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_mm_calc_rsq(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_mm_calc_rsq(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_mm_calc_rsq(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_mm_calc_rsq(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
             
             /* Combine masks */
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
@@ -851,10 +851,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             theta_SSE1         = _mm_mul_ps(ratio_SSE1,still_pip5_SSE);
             theta_SSE2         = _mm_mul_ps(ratio_SSE2,still_pip5_SSE);
             theta_SSE3         = _mm_mul_ps(ratio_SSE3,still_pip5_SSE);
-            gmx_mm_sincos_ps(theta_SSE0,&sinq_SSE0,&cosq_SSE0);            
-            gmx_mm_sincos_ps(theta_SSE1,&sinq_SSE1,&cosq_SSE1);            
-            gmx_mm_sincos_ps(theta_SSE2,&sinq_SSE2,&cosq_SSE2);            
-            gmx_mm_sincos_ps(theta_SSE3,&sinq_SSE3,&cosq_SSE3);            
+            GMX_MM_SINCOS_PS(theta_SSE0,sinq_SSE0,cosq_SSE0);            
+            GMX_MM_SINCOS_PS(theta_SSE1,sinq_SSE1,cosq_SSE1);            
+            GMX_MM_SINCOS_PS(theta_SSE2,sinq_SSE2,cosq_SSE2);            
+            GMX_MM_SINCOS_PS(theta_SSE3,sinq_SSE3,cosq_SSE3);            
             term_SSE0          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE0));
             term_SSE1          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE1));
             term_SSE2          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE2));
@@ -883,7 +883,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             icf6_SSE3          = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four_SSE,ccf_SSE3),dccf_SSE3), idr6_SSE3);
 
             _mm_store_ps(work+j , _mm_add_ps(_mm_load_ps(work+j),
-                                             gmx_mm_sum4(_mm_mul_ps(prod_ai_SSE0,icf4_SSE0),
+                                             gmx_mm_sum4_ps(_mm_mul_ps(prod_ai_SSE0,icf4_SSE0),
                                                          _mm_mul_ps(prod_ai_SSE1,icf4_SSE1),
                                                          _mm_mul_ps(prod_ai_SSE2,icf4_SSE2),
                                                          _mm_mul_ps(prod_ai_SSE3,icf4_SSE3))));
@@ -936,10 +936,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_mm_calc_rsq(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_mm_calc_rsq(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_mm_calc_rsq(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_mm_calc_rsq(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
             
             /* Calculate 1/r and 1/r2 */
             rinv_SSE0          = gmx_mm_invsqrt_ps(rsq_SSE0);
@@ -987,10 +987,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             theta_SSE1         = _mm_mul_ps(ratio_SSE1,still_pip5_SSE);
             theta_SSE2         = _mm_mul_ps(ratio_SSE2,still_pip5_SSE);
             theta_SSE3         = _mm_mul_ps(ratio_SSE3,still_pip5_SSE);
-            gmx_mm_sincos_ps(theta_SSE0,&sinq_SSE0,&cosq_SSE0);            
-            gmx_mm_sincos_ps(theta_SSE1,&sinq_SSE1,&cosq_SSE1);            
-            gmx_mm_sincos_ps(theta_SSE2,&sinq_SSE2,&cosq_SSE2);            
-            gmx_mm_sincos_ps(theta_SSE3,&sinq_SSE3,&cosq_SSE3);            
+            GMX_MM_SINCOS_PS(theta_SSE0,sinq_SSE0,cosq_SSE0);            
+            GMX_MM_SINCOS_PS(theta_SSE1,sinq_SSE1,cosq_SSE1);            
+            GMX_MM_SINCOS_PS(theta_SSE2,sinq_SSE2,cosq_SSE2);            
+            GMX_MM_SINCOS_PS(theta_SSE3,sinq_SSE3,cosq_SSE3);            
             term_SSE0          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE0));
             term_SSE1          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE1));
             term_SSE2          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE2));
@@ -1019,7 +1019,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             icf6_SSE3          = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four_SSE,ccf_SSE3),dccf_SSE3), idr6_SSE3);
             
             _mm_store_ps(work+j , _mm_add_ps(_mm_load_ps(work+j),
-                                             gmx_mm_sum4(_mm_mul_ps(prod_ai_SSE0,icf4_SSE0),
+                                             gmx_mm_sum4_ps(_mm_mul_ps(prod_ai_SSE0,icf4_SSE0),
                                                          _mm_mul_ps(prod_ai_SSE1,icf4_SSE1),
                                                          _mm_mul_ps(prod_ai_SSE2,icf4_SSE2),
                                                          _mm_mul_ps(prod_ai_SSE3,icf4_SSE3))));
@@ -1080,10 +1080,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_mm_calc_rsq(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_mm_calc_rsq(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_mm_calc_rsq(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_mm_calc_rsq(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
             
             /* Combine masks */
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
@@ -1137,10 +1137,10 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             theta_SSE1         = _mm_mul_ps(ratio_SSE1,still_pip5_SSE);
             theta_SSE2         = _mm_mul_ps(ratio_SSE2,still_pip5_SSE);
             theta_SSE3         = _mm_mul_ps(ratio_SSE3,still_pip5_SSE);
-            gmx_mm_sincos_ps(theta_SSE0,&sinq_SSE0,&cosq_SSE0);            
-            gmx_mm_sincos_ps(theta_SSE1,&sinq_SSE1,&cosq_SSE1);            
-            gmx_mm_sincos_ps(theta_SSE2,&sinq_SSE2,&cosq_SSE2);            
-            gmx_mm_sincos_ps(theta_SSE3,&sinq_SSE3,&cosq_SSE3);            
+            GMX_MM_SINCOS_PS(theta_SSE0,sinq_SSE0,cosq_SSE0);            
+            GMX_MM_SINCOS_PS(theta_SSE1,sinq_SSE1,cosq_SSE1);            
+            GMX_MM_SINCOS_PS(theta_SSE2,sinq_SSE2,cosq_SSE2);            
+            GMX_MM_SINCOS_PS(theta_SSE3,sinq_SSE3,cosq_SSE3);            
             term_SSE0          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE0));
             term_SSE1          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE1));
             term_SSE2          = _mm_mul_ps(half_SSE,_mm_sub_ps(one_SSE,cosq_SSE2));
@@ -1169,7 +1169,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             icf6_SSE3          = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four_SSE,ccf_SSE3),dccf_SSE3), idr6_SSE3);
             
             _mm_store_ps(work+j , _mm_add_ps(_mm_load_ps(work+j),
-                                             gmx_mm_sum4(_mm_mul_ps(prod_ai_SSE0,icf4_SSE0),
+                                             gmx_mm_sum4_ps(_mm_mul_ps(prod_ai_SSE0,icf4_SSE0),
                                                          _mm_mul_ps(prod_ai_SSE1,icf4_SSE1),
                                                          _mm_mul_ps(prod_ai_SSE2,icf4_SSE2),
                                                          _mm_mul_ps(prod_ai_SSE3,icf4_SSE3))));
@@ -1494,10 +1494,10 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_mm_calc_rsq(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_mm_calc_rsq(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_mm_calc_rsq(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_mm_calc_rsq(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
             
             /* Combine masks */
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
@@ -1877,7 +1877,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE3            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE3,t4_SSE3));
             
             _mm_store_ps(work+j, _mm_add_ps(_mm_load_ps(work+j),
-                                            gmx_mm_sum4(_mm_and_ps(t1_SSE0,obc_mask1_SSE0),
+                                            gmx_mm_sum4_ps(_mm_and_ps(t1_SSE0,obc_mask1_SSE0),
                                                         _mm_and_ps(t1_SSE1,obc_mask1_SSE1),
                                                         _mm_and_ps(t1_SSE2,obc_mask1_SSE2),
                                                         _mm_and_ps(t1_SSE3,obc_mask1_SSE3))));
@@ -2005,10 +2005,10 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_mm_calc_rsq(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_mm_calc_rsq(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_mm_calc_rsq(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_mm_calc_rsq(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
             
             /* Calculate 1/r and 1/r2 */
             rinv_SSE0          = gmx_mm_invsqrt_ps(rsq_SSE0);
@@ -2383,7 +2383,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE3            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE3,t4_SSE3));
             
             _mm_store_ps(work+j, _mm_add_ps(_mm_load_ps(work+j),
-                                            gmx_mm_sum4(_mm_and_ps(t1_SSE0,obc_mask1_SSE0),
+                                            gmx_mm_sum4_ps(_mm_and_ps(t1_SSE0,obc_mask1_SSE0),
                                                         _mm_and_ps(t1_SSE1,obc_mask1_SSE1),
                                                         _mm_and_ps(t1_SSE2,obc_mask1_SSE2),
                                                         _mm_and_ps(t1_SSE3,obc_mask1_SSE3))));
@@ -2518,10 +2518,10 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             dz_SSE3            = _mm_sub_ps(iz_SSE3,jz_SSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_mm_calc_rsq(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_mm_calc_rsq(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_mm_calc_rsq(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_mm_calc_rsq(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3,dy_SSE3,dz_SSE3);
             
             /* Combine masks */
             jmask_SSE0         = _mm_and_ps(jmask_SSE0,imask_SSE0);
@@ -2902,7 +2902,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
             t1_SSE3            = _mm_mul_ps(half_SSE,_mm_add_ps(t1_SSE3,t4_SSE3));
             
             _mm_store_ps(work+j, _mm_add_ps(_mm_load_ps(work+j),
-                                            gmx_mm_sum4(_mm_and_ps(t1_SSE0,obc_mask1_SSE0),
+                                            gmx_mm_sum4_ps(_mm_and_ps(t1_SSE0,obc_mask1_SSE0),
                                                         _mm_and_ps(t1_SSE1,obc_mask1_SSE1),
                                                         _mm_and_ps(t1_SSE2,obc_mask1_SSE2),
                                                         _mm_and_ps(t1_SSE3,obc_mask1_SSE3))));
@@ -3321,9 +3321,12 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
             fiz_SSE3          = _mm_add_ps(fiz_SSE3,tz_SSE3);
             
             /* Decrement j atom force */
-            gmx_mm_update_j_force(fx_align+j, gmx_mm_sum4(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3));
-            gmx_mm_update_j_force(fy_align+j, gmx_mm_sum4(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3));
-            gmx_mm_update_j_force(fz_align+j, gmx_mm_sum4(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3));
+            _mm_store_ps(fx_align+j,
+                         _mm_sub_ps( _mm_load_ps(fx_align+j) , gmx_mm_sum4_ps(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3) ));
+            _mm_store_ps(fy_align+j,
+                         _mm_sub_ps( _mm_load_ps(fy_align+j) , gmx_mm_sum4_ps(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3) ));
+            _mm_store_ps(fz_align+j,
+                         _mm_sub_ps( _mm_load_ps(fz_align+j) , gmx_mm_sum4_ps(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3) ));
         }
 		/* Add i forces to mem and shifted force list */
         _MM_TRANSPOSE4_PS(fix_SSE0,fix_SSE1,fix_SSE2,fix_SSE3);

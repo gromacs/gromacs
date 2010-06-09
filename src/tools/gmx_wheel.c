@@ -58,6 +58,7 @@
 #include "gmx_fatal.h"
 #include "writeps.h"
 #include "strdb.h"
+#include "gmx_ana.h"
 
 bool *bPhobics(int nres,char *resnm[])
 {

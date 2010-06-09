@@ -43,6 +43,7 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "string2.h"
+#include "gmx_fatal.h"
 #include "topdirs.h"
 
 int ifunc_index(directive d,int type)
@@ -50,45 +51,53 @@ int ifunc_index(directive d,int type)
   switch (d) {
   case d_bondtypes:
   case d_bonds:
-    if (type == 1)
+    switch(type) {
+    case 1: 
       return F_BONDS;
-    else if (type == 2)
+    case 2: 
       return F_G96BONDS;
-    else if (type == 3)
+    case 3:
       return F_MORSE;
-    else if (type == 4)
+    case 4:
       return F_CUBICBONDS;
-    else if (type == 5)
+    case 5:
       return F_CONNBONDS;
-    else if (type == 6)
+    case 6:
       return F_HARMONIC;
-    else if (type == 7)
+    case 7:
       return F_FENEBONDS;
-    else if (type == 8)
+    case 8:
       return F_TABBONDS;
-    else if (type == 9)
+    case 9:
       return F_TABBONDSNC;
-    else
+    case 10:
+      return F_RESTRBONDS;
+    default:
       gmx_fatal(FARGS,"Invalid bond type %d",type);
+      break;
+    }
   case d_angles:
   case d_angletypes:
-    if (type == 1)
+    switch (type) {
+    case 1:
       return F_ANGLES;
-    else if (type == 2)
+    case 2:
       return F_G96ANGLES;
-    else if (type == 3)
+    case 3:
       return F_CROSS_BOND_BONDS;
-    else if (type == 4)
+    case 4:
       return F_CROSS_BOND_ANGLES;
-    else if (type == 5)
+    case 5:
       return F_UREY_BRADLEY;
-    else if (type == 6)
+    case 6:
       return F_QUARTIC_ANGLES;
-    else if (type == 8)
+    case 7:
       return F_TABANGLES;
-    else
+    default:
       gmx_fatal(FARGS,"Invalid angle type %d",type);
-  case d_pairs:
+      break;
+    }
+    case d_pairs:
   case d_pairtypes:
     if (type == 1 || (d == d_pairtypes && type == 2))
       return F_LJ14;
@@ -114,7 +123,7 @@ int ifunc_index(directive d,int type)
     case 8:
       return F_TABDIHS;
     case 9:
-	  return F_PDIHS;  /* proper dihedrals where we allow multiple terms over single bond */
+      return F_PDIHS;  /* proper dihedrals where we allow multiple terms over single bond */
     default:
       gmx_fatal(FARGS,"Invalid dihedral type %d",type);
     }

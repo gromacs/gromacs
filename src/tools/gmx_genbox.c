@@ -59,6 +59,7 @@
 #include "addconf.h"
 #include "pdbio.h"
 #include "pbc.h"
+#include "gmx_ana.h"
 
 #ifdef DEBUG
 void print_stat(rvec *x,int natoms,matrix box)
@@ -305,7 +306,7 @@ static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
   /* initialise van der waals arrays of insert molecules */
   mk_vdw(&atoms_insrt,r_insrt,aps,r_distance);
 
-  srenew(atoms->resinfo,(atoms->nres+nmol_insrt));
+  srenew(atoms->resinfo,(atoms->nres+nmol_insrt*atoms_insrt.nres));
   srenew(atoms->atomname,(atoms->nr+atoms_insrt.nr*nmol_insrt));
   srenew(atoms->atom,(atoms->nr+atoms_insrt.nr*nmol_insrt));
   srenew(*x,(atoms->nr+atoms_insrt.nr*nmol_insrt));
@@ -315,9 +316,6 @@ static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
   while ((mol < nmol_insrt) && (trial < ntry*nmol_insrt)) {
     fprintf(stderr,"\rTry %d",trial++);
     for (i=0;(i<atoms_insrt.nr);i++) {
-      if (atoms_insrt.atom[i].resind!=0) 
-	gmx_fatal(FARGS,"more then one residue in insert molecules\n"
-		    "program terminated\n");
       copy_rvec(x_insrt[i],x_n[i]);
     }
     alfa=2*M_PI*rando(&seed);
@@ -372,7 +370,7 @@ static void add_solv(const char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
   int     onr,onres;
   char    *lfn;
 
-  lfn=libfn(fn);
+  lfn = gmxlibfn(fn);
   strncpy(filename,lfn,STRLEN);
   sfree(lfn);
   snew(atoms_solvt,1);
@@ -565,16 +563,16 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
       } else
 	fprintf(fpout,"%s",buf);
     }
-    fclose(fpin);
+    ffclose(fpin);
     if ( nsol ) {
       fprintf(stdout,"Adding line for %d solvent molecules to "
 	      "topology file (%s)\n",nsol,topinout);
       fprintf(fpout,"%-15s %5d\n","SOL",nsol);
     }
-    fclose(fpout);
+    ffclose(fpout);
     /* use ffopen to generate backup of topinout */
     fpout=ffopen(topinout,"w");
-    fclose(fpout);
+    ffclose(fpout);
     rename(TEMP_FILENM,topinout);
   }
 #undef TEMP_FILENM

@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -43,6 +44,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#ifdef HAVE_COPYFILE_H
+/* BSD specific */
+#include <copyfile.h>
+#endif
+
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <direct.h>
 #include <io.h>
@@ -56,6 +62,7 @@
 #include "smalloc.h"
 #include "statutil.h"
 
+
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
 #endif
@@ -64,8 +71,6 @@
 #ifdef _MSC_VER
 #include "windows.h"
 #endif
-
-#define MAX_PATHBUF 4096
 
 /* we keep a linked list of all files opened through pipes (i.e. 
    compressed or .gzipped files. This way we can distinguish between them
@@ -108,15 +113,17 @@ void push_ps(FILE *fp)
 }
 
 #ifdef GMX_FAHCORE
-/* redefine fclose */
-#define fclose fah_fclose
+/* don't use pipes!*/
+#define popen fah_fopen
+#define pclose fah_fclose
+#define SKIP_FFOPS 1
 #else
-#ifdef fclose
-#undef fclose
+#ifdef ffclose
+#undef ffclose
 #endif
 #endif
 
-
+#ifndef GMX_FAHCORE
 #ifndef HAVE_PIPES
 static FILE *popen(const char *nm,const char *mode)
 {
@@ -132,12 +139,15 @@ static int pclose(FILE *fp)
     return 0;
 }
 #endif
+#endif
 
-
-
-void ffclose(FILE *fp)
+int ffclose(FILE *fp)
 {
+#ifndef SKIP_FFOPS
+    return fclose(fp);
+#else
     t_pstack *ps,*tmp;
+    int ret=0;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
@@ -145,11 +155,11 @@ void ffclose(FILE *fp)
     ps=pstack;
     if (ps == NULL) {
         if (fp != NULL) 
-            fclose(fp);
+            ret = fclose(fp);
     }
     else if (ps->fp == fp) {
         if (fp != NULL)
-            pclose(fp);
+            ret = pclose(fp);
         pstack=pstack->prev;
         sfree(ps);
     }
@@ -158,20 +168,23 @@ void ffclose(FILE *fp)
             ps=ps->prev;
         if (ps->prev->fp == fp) {
             if (ps->prev->fp != NULL)
-                pclose(ps->prev->fp);
+                ret = pclose(ps->prev->fp);
             tmp=ps->prev;
             ps->prev=ps->prev->prev;
             sfree(tmp);
         }
         else {
             if (fp != NULL)
-                fclose(fp);
+                ret = fclose(fp);
         }
     }
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
+    return ret;
+#endif
 }
+
 
 #ifdef rewind
 #undef rewind
@@ -263,7 +276,7 @@ bool gmx_fexist(const char *fname)
     if (test == NULL) 
         return FALSE;
     else {
-        fclose(test);
+        ffclose(test);
         return TRUE;
     }
 }
@@ -309,7 +322,7 @@ char *backup_fn(const char *file)
     char        *directory,*fn;
     char        *buf;
 
-    smalloc(buf, MAX_PATHBUF);
+    smalloc(buf, GMX_PATH_MAX);
 
     for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--)
         ;
@@ -367,6 +380,9 @@ bool make_backup(const char * name)
 
 FILE *ffopen(const char *file,const char *mode)
 {
+#ifdef SKIP_FFOPS
+    return fopen(file,mode);
+#else
     FILE *ff=NULL;
     char buf[256],*bf,*bufsize=0,*ptr;
     bool bRead;
@@ -377,7 +393,7 @@ FILE *ffopen(const char *file,const char *mode)
     }
     where();
 
-    bRead= mode[0]=='r';
+    bRead= (mode[0]=='r'&&mode[1]!='+');
     strcpy(buf,file);
     if (gmx_fexist(buf) || !bRead) {
         if ((ff=fopen(buf,mode))==NULL)
@@ -417,8 +433,8 @@ FILE *ffopen(const char *file,const char *mode)
         }
     }
     return ff;
+#endif
 }
-
 
 
 bool search_subdirs(const char *parent, char *libdir)
@@ -475,12 +491,15 @@ bool get_libdir(char *libdir)
 {
     char bin_name[512];
     char buf[512];
-    char full_path[MAX_PATHBUF];
-    char test_file[MAX_PATHBUF];
-    char system_path[MAX_PATHBUF];
+    char full_path[GMX_PATH_MAX];
+    char test_file[GMX_PATH_MAX];
+    char system_path[GMX_PATH_MAX];
     char *dir,*ptr,*s,*pdum;
     bool found=FALSE;
     int i;
+
+    if (Program() != NULL)
+    {
 
     /* First - detect binary name */
     strncpy(bin_name,Program(),512);
@@ -528,11 +547,11 @@ bool get_libdir(char *libdir)
 #else
             pdum=getcwd(buf,sizeof(buf)-1);
 #endif
-            strncpy(full_path,buf,MAX_PATHBUF);
+            strncpy(full_path,buf,GMX_PATH_MAX);
             strcat(full_path,"/");
             strcat(full_path,bin_name);
         } else {
-            strncpy(full_path,bin_name,MAX_PATHBUF);
+            strncpy(full_path,bin_name,GMX_PATH_MAX);
         }
 
         /* Now we should have a full path and name in full_path,
@@ -543,9 +562,9 @@ bool get_libdir(char *libdir)
             buf[i]='\0';
             /* If it doesn't start with "/" it is relative */
             if (buf[0]!=DIR_SEPARATOR) {
-                strncpy(strrchr(full_path,DIR_SEPARATOR)+1,buf,MAX_PATHBUF);
+                strncpy(strrchr(full_path,DIR_SEPARATOR)+1,buf,GMX_PATH_MAX);
             } else
-                strncpy(full_path,buf,MAX_PATHBUF);
+                strncpy(full_path,buf,GMX_PATH_MAX);
         }
 #endif
 
@@ -559,6 +578,7 @@ bool get_libdir(char *libdir)
             *ptr='\0';
             found=search_subdirs(full_path,libdir);
         }
+    }
     }
     /* End of smart searching. If we didn't find it in our parent tree,
      * or if the program name wasn't set, at least try some standard 
@@ -577,48 +597,56 @@ bool get_libdir(char *libdir)
 }
 
 
-char *low_libfn(const char *file, bool bFatal)
+char *low_gmxlibfn(const char *file, bool bFatal)
 {
-    char *ret=NULL;
+    char *ret;
     char *lib,*dir;
     char buf[1024];
-    char libpath[MAX_PATHBUF];
+    char libpath[GMX_PATH_MAX];
     bool env_is_set=FALSE;
-    char   *s,tmppath[MAX_PATHBUF];
-    bool found;
+    char   *s,tmppath[GMX_PATH_MAX];
 
     /* GMXLIB can be a path now */
     lib=getenv("GMXLIB");
-    if (lib != NULL) {
+    if (lib != NULL)
+    {
         env_is_set=TRUE;
-        strncpy(libpath,lib,MAX_PATHBUF);
+        strncpy(libpath,lib,GMX_PATH_MAX);
     } 
     else if (!get_libdir(libpath))
-        strncpy(libpath,GMXLIBDIR,MAX_PATHBUF);
+    {
+        strncpy(libpath,GMXLIBDIR,GMX_PATH_MAX);
+    }
 
+    ret = NULL;
     if (gmx_fexist(file))
     {
-        ret=strdup(file);
+        ret = strdup(file);
     }
     else 
     {
-        found=FALSE;
-        strncpy(tmppath,libpath,MAX_PATHBUF);
+        strncpy(tmppath,libpath,GMX_PATH_MAX);
         s=tmppath;
-        while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL )
+        while(ret == NULL && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL )
         {
             sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
-            found=gmx_fexist(buf);
+            if (gmx_fexist(buf))
+            {
+                ret = strdup(buf);
+            }
         }
-        if (bFatal && !found) 
+        if (ret == NULL && bFatal) 
         {
             if (env_is_set) 
+            {
                 gmx_fatal(FARGS,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
+            }
             else
+            {
                 gmx_fatal(FARGS,"Library file %s not found in current dir nor in default directories.\n"
                         "(You can set the directories to search with the GMXLIB path variable)",file);
+            }
         }
-        ret=strdup(buf);
     }
 
     return ret;
@@ -632,23 +660,23 @@ FILE *low_libopen(const char *file,bool bFatal)
     FILE *ff;
     char *fn;
 
-    fn=low_libfn(file,bFatal);
+    fn=low_gmxlibfn(file,bFatal);
 
     if (fn==NULL) {
         ff=NULL;
     } else {
-        if (bFatal)
-            fprintf(stderr,"Opening library file %s\n",fn);
-        ff=fopen(fn,"r");
+      if (debug)
+	fprintf(debug,"Opening library file %s\n",fn);
+      ff=fopen(fn,"r");
     }
     sfree(fn);
 
     return ff;
 }
 
-char *libfn(const char *file)
+char *gmxlibfn(const char *file)
 {
-    return low_libfn(file,TRUE);
+    return low_gmxlibfn(file,TRUE);
 }
 
 FILE *libopen(const char *file)
@@ -692,8 +720,7 @@ void gmx_tmpnam(char *buf)
     /* name in Buf should now be OK */
 }
 
-    int
-gmx_truncatefile(char *path, off_t length)
+int gmx_truncatefile(char *path, off_t length)
 {
 #ifdef _MSC_VER
     /* Microsoft visual studio does not have "truncate" */
@@ -713,3 +740,90 @@ gmx_truncatefile(char *path, off_t length)
     return truncate(path,length);
 #endif
 }
+
+
+int gmx_file_rename(const char *oldname, const char *newname)
+{
+#if (!(defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)))
+    /* under unix, rename() is atomic (at least, it should be). */
+    return rename(oldname, newname);
+#else
+    if (MoveFileEx(oldname, newname, 
+                   MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))
+        return 0;
+    else
+        return 1;
+#endif
+}
+
+int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
+{
+#if defined(HAVE_COPYFILE) && !defined(GMX_FAHCORE)
+    /* this is BSD specific, but convenient */
+    return copyfile(oldname, newname, NULL, COPYFILE_DATA);
+#elif defined(HAVE_WIN_COPYFILE) && !defined(GMX_FAHCORE)
+    if (CopyFile(oldname, newname, FALSE))
+        return 0;
+    else
+        return 1;
+#else
+#define FILECOPY_BUFSIZE (1<<16)
+    /* POSIX doesn't support any of the above. */
+    FILE *in=NULL; 
+    FILE *out=NULL;
+    char *buf;
+
+    snew(buf, FILECOPY_BUFSIZE); 
+
+    in=fopen(oldname, "rb");
+    if (!in)
+        goto error;
+
+    /* If we don't copy when empty, we postpone opening the file
+       until we're actually ready to write. */
+    if (copy_if_empty)
+    {
+        out=fopen(newname, "wb");
+        if (!out)
+            goto error;
+    }
+
+    while(!feof(in))
+    {
+        size_t nread;
+        
+        nread=fread(buf, sizeof(char), FILECOPY_BUFSIZE, in);
+        if (nread>0)
+        {
+            size_t ret;
+            if (!out)
+            {
+                out=fopen(newname, "wb");
+                if (!out)
+                    goto error;
+            }
+            ret=fwrite(buf, sizeof(char), nread, out);
+            if (ret!=nread)
+            {
+                goto error;
+            }
+        }
+        if (ferror(in))
+            goto error;
+    }
+    sfree(buf);
+    fclose(in);
+    fclose(out);
+    return 0;
+error:
+    sfree(buf);
+    if (in)
+        fclose(in);
+    if (out)
+        fclose(out);
+    return 1;
+#undef FILECOPY_BUFSIZE
+#endif
+}
+
+

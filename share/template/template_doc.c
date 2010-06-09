@@ -149,7 +149,7 @@
  * After initializing \p trj, we can call parse_trjana_args() to parse
  * command-line arguments and initialise the rest of the \p trj structure:
  * \skip  parse_trjana_args(trj,
- * \until 0, NULL);
+ * \until oenv);
  *
  * After the call to parse_trjana_args(), all the command-line arguments are
  * available in the variables pointed by the \p pa array and can be used in

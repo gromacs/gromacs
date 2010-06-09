@@ -267,7 +267,7 @@ int main(int argc,char *argv[])
   for(i=0; (i<atnr2); i++)
     pr_iparams(fp,F_LJ,&ip[cur][i]);
   
-  fclose(fp);
+  ffclose(fp);
     
   thanx(stderr);
   

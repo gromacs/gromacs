@@ -129,7 +129,7 @@ static int strip_dssp(char *dsspfile,int nres,
     
     sprintf(mat->title,"Secondary structure");
     mat->legend[0]=0;
-    sprintf(mat->label_x,"%s",get_time_label(oenv));
+    sprintf(mat->label_x,"%s",output_env_get_time_label(oenv));
     sprintf(mat->label_y,"Residue");
     mat->bDiscrete=TRUE;
     mat->ny=nr;
@@ -159,7 +159,7 @@ static int strip_dssp(char *dsspfile,int nres,
   
   if (fTArea)
     fprintf(fTArea,"%10g  %10g  %10g\n",t,0.01*iaccb,0.01*iaccf);
-  fclose(tapeout);
+  ffclose(tapeout);
   
   /* Return the number of lines found in the dssp file (i.e. number
    * of redidues plus chain separator lines).
@@ -195,6 +195,8 @@ static void check_oo(t_atoms *atoms)
     if (strcmp(*(atoms->atomname[i]),"OXT")==0)
        *atoms->atomname[i]=OOO;
     else if (strcmp(*(atoms->atomname[i]),"O1")==0)
+      *atoms->atomname[i]=OOO;
+    else if (strcmp(*(atoms->atomname[i]),"OC1")==0)
       *atoms->atomname[i]=OOO;
   }
 }
@@ -299,8 +301,8 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     leg[s+1]=strdup(map[s].desc);
   
   fp=xvgropen(outfile,"Secondary Structure",
-	      get_xvgr_tlabel(oenv),"Number of Residues",oenv);
-  if (get_print_xvgr_codes(oenv))
+	      output_env_get_xvgr_tlabel(oenv),"Number of Residues",oenv);
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"Structure = ");
   for(s=0; s<strlen(ss_string); s++) {
     if (s>0)
@@ -328,7 +330,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     fprintf(fp,"\n");
   }
   
-  fclose(fp);
+  ffclose(fp);
   sfree(leg);
   sfree(count);
 }
@@ -473,7 +475,7 @@ int main(int argc,char *argv[])
   
   if (fnTArea) {
     fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
-		    get_xvgr_tlabel(oenv),"Area (nm\\S2\\N)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"Area (nm\\S2\\N)",oenv);
     xvgr_legend(fTArea,2,leg,oenv);
   } else
     fTArea=NULL;
@@ -494,7 +496,7 @@ int main(int argc,char *argv[])
   accr=NULL;
   naccr=0;
   do {
-    t = conv_time(oenv,t);
+    t = output_env_conv_time(oenv,t);
     if (bDoAccSurf && nframe>=naccr) {
       naccr+=10;
       srenew(accr,naccr);
@@ -504,7 +506,7 @@ int main(int argc,char *argv[])
     rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
     tapein=ffopen(pdbfile,"w");
     write_pdbfile_indexed(tapein,NULL,atoms,x,ePBC,box,0,-1,gnx,index,NULL);
-    fclose(tapein);
+    ffclose(tapein);
 
 #ifdef GMX_NO_SYSTEM
     printf("Warning-- No calls to system(3) supported on this platform.");
@@ -548,7 +550,7 @@ int main(int argc,char *argv[])
     ss_str[i] = '\0';
     ss = opt2FILE("-ssdump",NFILE,fnm,"w");
     fprintf(ss,"%d\n%s\n",nres,ss_str);
-    fclose(ss);
+    ffclose(ss);
     sfree(ss_str);
   }
   analyse_ss(fnSCount,&mat,ss_string,oenv);

@@ -51,6 +51,8 @@
 #include "statutil.h"
 #include "index.h"
 #include "nrama.h"
+#include "gmx_ana.h"
+
 
 static void plot_rama(FILE *out,t_xrama *xr)
 {
@@ -106,7 +108,7 @@ int gmx_rama(int argc,char *argv[])
     j++;
   } while (new_data(xr));
   fprintf(stderr,"\n");
-  fclose(out);
+  ffclose(out);
   
   do_view(oenv,ftp2fn(efXVG,NFILE,fnm),NULL);
   

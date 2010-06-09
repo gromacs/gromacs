@@ -42,6 +42,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void init_nrnb(t_nrnb *nrnb);
 
 extern void cp_nrnb(t_nrnb *dest, t_nrnb *src);
@@ -77,5 +81,9 @@ extern int cost_nrnb(int enr);
 
 extern const char *nrnb_str(int enr);
 /* Name of this component */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _nrnb_h */

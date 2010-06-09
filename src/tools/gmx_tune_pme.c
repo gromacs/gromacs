@@ -57,6 +57,7 @@ enum {
     eParselogNoPerfData,
     eParselogTerm,
     eParselogResetProblem,
+    eParselogNoDDGrid,
     eParselogNr
 };
 
@@ -121,10 +122,10 @@ static void cleandata(t_perf *perfdata, int test_nr)
 }
 
 
-enum {eFoundNothing, eFoundDDStr, eFoundPMEfStr, eFoundCycleStr};
+enum {eFoundNothing, eFoundDDStr, eFoundAccountingStr, eFoundCycleStr};
 
 static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr, 
-                         int presteps, gmx_large_int_t cpt_steps)
+                         int presteps, gmx_large_int_t cpt_steps, int nnodes)
 {
     FILE  *fp;
     char  line[STRLEN], dumstring[STRLEN], dumstring2[STRLEN];
@@ -132,8 +133,7 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
     const char matchstrcr[]="resetting all time and cycle counters";
     const char matchstrbal[]="Average PME mesh/force load:";
     const char matchstring[]="R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G";
-    const char errTERM[]="Received the TERM signal, stopping at the next step";
-    const char errUSR1[]="Received the USR1 signal, stopping at the next NS step";
+    const char errSIG[]="signal, stopping at the next";
     int   iFound;
     int   procs;
     float  dum1,dum2,dum3;
@@ -153,15 +153,18 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
     fp = fopen(logfile, "r");
     perfdata->PME_f_load[test_nr] = -1.0;
     perfdata->guessPME            = -1;
+    
     iFound = eFoundNothing;
+    if (1 == nnodes)
+        iFound = eFoundDDStr; /* Skip some case statements */
 
     while (fgets(line, STRLEN, fp) != NULL)
     {
         /* Remove leading spaces */
         ltrim(line);
 
-        /* Check for TERM and USR1 signals from user: */
-        if ( str_starts(line, errTERM) || str_starts(line, errUSR1) )
+        /* Check for TERM and INT signals from user: */
+        if ( strstr(line, errSIG) != NULL )
         {
             fclose(fp);
             cleandata(perfdata, test_nr);
@@ -206,6 +209,10 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
                         gmx_fatal(FARGS, "PME nodes from command line and output file are not identical");
                     iFound = eFoundDDStr;
                 }
+                else if (str_starts(line, "There is no domain decomposition for"))
+                {
+                    return eParselogNoDDGrid;
+                }
                 break;
             case eFoundDDStr:
                 /* Look for PME mesh/force balance (not necessarily present, though) */
@@ -213,9 +220,9 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
                     sscanf(&line[strlen(matchstrbal)], "%f", &(perfdata->PME_f_load[test_nr]));
                 /* Look for matchstring */
                 if (str_starts(line, matchstring))
-                    iFound = eFoundPMEfStr;
+                    iFound = eFoundAccountingStr;
                 break;
-            case eFoundPMEfStr:
+            case eFoundAccountingStr:
                 /* Already found matchstring - look for cycle data */
                 if (str_starts(line, "Total  "))
                 {
@@ -248,6 +255,7 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
 static int analyze_data(
         FILE        *fp,
         t_perf      **perfdata,
+        int         nnodes,
         int         ntprs,
         int         ntests,
         int         nrepeats,
@@ -268,7 +276,10 @@ static int analyze_data(
     {
         sep_line(fp);
         fprintf(fp, "Summary of successful runs:\n");
-        fprintf(fp, "Line tpr PME nodes  Gcycles Av.     Std.dev.       ns/day        PME/f    DD grid\n");
+        fprintf(fp, "Line tpr PME nodes  Gcycles Av.     Std.dev.       ns/day        PME/f");
+        if (nnodes > 1)
+            fprintf(fp, "    DD grid");
+        fprintf(fp, "\n");
     }
 
 
@@ -331,9 +342,12 @@ static int analyze_data(
                     s /= (nrepeats - 1);
                     s = sqrt(s);
 
-                    fprintf(fp, "%4d %3d %4d%s %12.3f %12.3f %12.3f %s  %3d %3d %3d\n",
+                    fprintf(fp, "%4d %3d %4d%s %12.3f %12.3f %12.3f %s",
                             line, k, pd->nPMEnodes, strbuf, pd->Gcycles_Av, s,
-                            pd->ns_per_day_Av, str_PME_f_load, pd->nx, pd->ny, pd->nz);
+                            pd->ns_per_day_Av, str_PME_f_load);
+                    if (nnodes > 1)
+                        fprintf(fp, "  %3d %3d %3d", pd->nx, pd->ny, pd->nz);
+                    fprintf(fp, "\n");
                 }
                 /* Store the index of the best run found so far in 'winner': */
                 if ( (k_win == -1) || (pd->Gcycles_Av < perfdata[k_win][i_win].Gcycles_Av) )
@@ -383,55 +397,9 @@ static int analyze_data(
 }
 
 
-static void counters_restore_env(int resetcount_orig, bool bHaveResetCounter)
-{
-    char *env_ptr;
-
-    
-    if (TRUE == bHaveResetCounter)
-    {
-        /* Restore the old value */
-        snew(env_ptr, 20);
-        sprintf(env_ptr, "%d", resetcount_orig);
-        setenv("GMX_RESET_COUNTERS",env_ptr,TRUE);
-        fprintf(stdout, "\nSetting GMX_RESET_COUNTERS back to %s.\n", env_ptr);
-    }
-    else
-    {
-        /* Remove the environment variable again */
-        unsetenv("GMX_RESET_COUNTERS");
-        fprintf(stdout, "\nRemoving GMX_RESET_COUNTERS from environment again.\n");
-    }
-}
-
-
-static void counters_set_env(int presteps, int *resetcount_orig, bool *bHaveResetCounter)
-{
-    char *env_ptr;
-    char *cp;
-
-    
-    /* If the GMX_RESET_COUNTERS environment is present we save it
-     * so that we can set it to the original value later again */
-    if ( (cp = getenv("GMX_RESET_COUNTERS")) != NULL)
-    {
-        sscanf(cp,"%d",resetcount_orig);
-        *bHaveResetCounter = TRUE;
-    }   
-    else
-        *bHaveResetCounter = FALSE;
-    
-    /* Set GMX_RESET_COUNTERS to the value requested in g_tune_pme */
-    snew(env_ptr, 20);
-    sprintf(env_ptr, "%d", presteps);
-    fprintf(stdout, "Setting environment variable GMX_RESET_COUNTERS to %s.\n", env_ptr);
-    setenv("GMX_RESET_COUNTERS",env_ptr,TRUE);     
-}
-
-
 /* Get the commands we need to set up the runs from environment variables */
-static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[], 
-                              char *cmd_export[], int repeats)
+static void get_program_paths(bool bThreads, char *cmd_mpirun[], 
+                              char *cmd_mdrun[], int repeats)
 {
     char *command=NULL;
     char *cp;
@@ -440,71 +408,81 @@ static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[],
     FILE *fp;
     const char def_mpirun[] = "mpirun";
     const char def_mdrun[]  = "mdrun";
-    const char def_export[] = "-x GMX_RESET_COUNTERS ";
     const char filename[]   = "testrun.log";
     const char match_mdrun[]= "NNODES=";
+    const char match_mdrun_threads[] = "DESCRIPTION";
+    const char *match=NULL;
+    const char empty_mpirun[] = "";
     bool  bFound = FALSE;
-    int   i;
     
 
     /* Get the commands we need to set up the runs from environment variables */
-     if ( (cp = getenv("MPIRUN")) != NULL)
-         *cmd_mpirun = strdup(cp);
-     else
-         *cmd_mpirun = strdup(def_mpirun);
+    if (!bThreads)
+    {
+        if ( (cp = getenv("MPIRUN")) != NULL)
+            *cmd_mpirun = strdup(cp);
+        else
+            *cmd_mpirun = strdup(def_mpirun);
+    }
+    else
+    {
+        *cmd_mpirun = strdup(empty_mpirun);
+    }
      
-     if ( (cp = getenv("MDRUN" )) != NULL )
-         *cmd_mdrun  = strdup(cp);
-     else
-         *cmd_mdrun  = strdup(def_mdrun);
-     
-     *cmd_export = strdup(def_export);
-               
-     /* If no simulations have to be performed, we are done here */
-     if (repeats <= 0)
-         return;
-     
-     /* Run a small test to see if mpirun and mdrun work if we intend to execute mdrun! */
-     fprintf(stdout, "Making shure that mdrun can be executed. ");
-     for (i=0; i<2; i++)
-     {
-         snew(command, strlen(*cmd_mpirun) +strlen(*cmd_export) + strlen(*cmd_mdrun) + strlen(filename) + 30);
-         sprintf(command, "%s %s-np 1 %s -h -quiet >& %s", *cmd_mpirun, *cmd_export, *cmd_mdrun, filename);
-         fprintf(stdout, "Trying '%s' ... ", command);
-         
-         gmx_system_call(command);
-         
-         /* Check if we find the gromacs header in the log file: */
-         fp = fopen(filename, "r");
-         while ( (!feof(fp)) && (bFound==FALSE) )
-         {
-             cp2=fgets(line, STRLEN, fp);
-             if (cp2!=NULL && str_starts(line, match_mdrun))
-                 bFound = TRUE;
-         }
-         /* 2nd try ... */
-         if (!bFound)
-         {
-             fprintf(stdout, "No success.\n");
-             *cmd_export = strdup("");
-         }
-         else 
-             break;
-     }
-     if (!bFound)
-         gmx_fatal(FARGS, "Cannot execute mdrun. Please check %s for problems!", filename);
+    if ( (cp = getenv("MDRUN" )) != NULL )
+        *cmd_mdrun  = strdup(cp);
+    else
+        *cmd_mdrun  = strdup(def_mdrun);
 
-     fclose(fp);
-     fprintf(stdout, "passed.\n");
 
-     /* Clean up ... */
-	 remove(filename);
+    /* If no simulations have to be performed, we are done here */
+    if (repeats <= 0)
+        return;
+
+    /* Run a small test to see if mpirun and mdrun work if we intend 
+       to execute mdrun! */
+    fprintf(stdout, "Making sure that mdrun can be executed. ");
+    snew(command, strlen(*cmd_mpirun) + strlen(*cmd_mdrun) + strlen(filename) + 50);
+    /* We absolutely need the -h switch so that no md.log file is (over-)written! */
+    if (bThreads)
+    {
+        match = match_mdrun_threads;
+        sprintf(command, "%s -h -maxh 0.001 quiet >& %s", *cmd_mdrun, filename);
+    }
+    else
+    {
+        match = match_mdrun;
+        sprintf(command, "%s -np 1 %s -h -maxh 0.001 quiet >& %s", *cmd_mpirun, *cmd_mdrun, filename);
+    }
+    fprintf(stdout, "Trying '%s' ... ", command);
+
+    gmx_system_call(command);
+
+    /* Check if we find the characteristic string in the output: */
+    fp = fopen(filename, "r");
+    while ( (!feof(fp)) && (bFound==FALSE) )
+    {
+        cp2=fgets(line, STRLEN, fp);
+        if (cp2!=NULL && str_starts(line, match))
+            bFound = TRUE;
+    }
+
+    if (!bFound)
+        gmx_fatal(FARGS, "Cannot execute mdrun. Please check %s for problems!", 
+                  filename);
+
+    fclose(fp);
+    fprintf(stdout, "passed.\n");
+
+    /* Clean up ... */
+    remove(filename);
 }
 
 
 static void launch_simulation(
         bool bLaunch,           /* Should the simulation be launched? */
         FILE *fp,               /* General log file */
+        bool bThreads,          /* whether to use threads */
         char *cmd_mpirun,       /* Command for mpirun */
         char *cmd_mdrun,        /* Command for mdrun */
         char *args_for_mdrun,   /* Arguments for mdrun */
@@ -518,9 +496,18 @@ static void launch_simulation(
     /* Make enough space for the system call command, 
      * (100 extra chars for -np ... etc. options should suffice): */
     snew(command, strlen(cmd_mpirun)+strlen(cmd_mdrun)+strlen(args_for_mdrun)+strlen(simulation_tpr)+100);
-    
-    sprintf(command, "%s -np %d %s %s-npme %d -s %s",
-            cmd_mpirun, nnodes, cmd_mdrun, args_for_mdrun, nPMEnodes, simulation_tpr);
+   
+    if (bThreads)
+    {
+        sprintf(command, "%s %s-npme %d -s %s",
+                cmd_mdrun, args_for_mdrun, nPMEnodes, simulation_tpr);
+    }
+    else 
+    {
+        sprintf(command, "%s -np %d %s %s-npme %d -s %s",
+                cmd_mpirun, nnodes, cmd_mdrun, args_for_mdrun, 
+                nPMEnodes, simulation_tpr);
+    }
         
     fprintf(fp, "%s this command line to launch the simulation:\n\n%s", bLaunch? "Using":"Please use", command);
     sep_line(fp);
@@ -589,7 +576,7 @@ static void make_benchmark_tprs(
     rvec         box_size;
     
 
-    sprintf(buf, "Making benchmark tpr files with %s time steps", gmx_large_int_pfmt);
+    sprintf(buf, "Making benchmark tpr file%s with %s time steps", ntprs>1? "s":"", gmx_large_int_pfmt);
     fprintf(stdout, buf, benchsteps);
     if (statesteps > 0)
     {
@@ -635,6 +622,7 @@ static void make_benchmark_tprs(
     orig_fs[YY]   = box_size[YY]/ir->nky;
     orig_fs[ZZ]   = box_size[ZZ]/ir->nkz;
      
+    fprintf(fp, "Input file fourier grid : %dx%dx%d\n", orig_nk[XX], orig_nk[YY], orig_nk[ZZ]);
     fprintf(fp, "\nWill try these real/reciprocal workload settings:\n");
     fprintf(fp, " No. scaling   r_coul   (r_vdW)     nkx  nky  nkz   (spacing)   tpr file\n");
     
@@ -674,8 +662,11 @@ static void make_benchmark_tprs(
             /* Check consistency */
             if (0 == j)
                 if ((ir->nkx != orig_nk[XX]) || (ir->nky != orig_nk[YY]) || (ir->nkz != orig_nk[ZZ]))
-                    gmx_fatal(FARGS, "Wrong fourierspacing %f, actual grid = %dx%dx%d, original grid = %dx%dx%d", 
-                            fourierspacing,ir->nkx,ir->nky,ir->nkz,orig_nk[XX],orig_nk[YY],orig_nk[ZZ]);
+                {
+                    fprintf(stderr, "WARNING: Original grid was %dx%dx%d. The fourierspacing of %f nm does not reproduce the grid\n"
+                                    "         found in the tpr input file! Will use the new settings.\n", 
+                                    orig_nk[XX],orig_nk[YY],orig_nk[ZZ],fourierspacing);
+                }
         }
         else
         {
@@ -690,9 +681,9 @@ static void make_benchmark_tprs(
                 ir->nkx=0;
                 calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
                 ir->nky=0;
-                calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+                calc_grid(stdout,state.box,orig_fs[YY]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
                 ir->nkz=0;
-                calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+                calc_grid(stdout,state.box,orig_fs[ZZ]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             }
         }
         /* r_vdw should only grow if necessary! */
@@ -725,6 +716,18 @@ static void make_benchmark_tprs(
     fflush(fp);
     
     sfree(ir);
+}
+
+
+/* Whether these files are written depends on tpr (or mdp) settings,
+ * not on mdrun command line options! */
+static bool tpr_triggers_file(const char *opt)
+{
+    if ( (0 == strcmp(opt, "-pf"))
+      || (0 == strcmp(opt, "-px")) )
+        return TRUE;
+    else
+        return FALSE;
 }
 
 
@@ -765,7 +768,8 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
             }
         }
         /* Delete the files which are created for each benchmark run: (options -b*) */
-        else if ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt,nfile,fnm) || !is_optional(&fnm[i])) )
+        else if ( ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt,nfile,fnm) || !is_optional(&fnm[i])) ) 
+                  || tpr_triggers_file(opt) )
         {
             fn = opt2fn(opt, nfile, fnm);
             if (gmx_fexist(fn))
@@ -781,7 +785,7 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
 static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, 
         int minPMEnodes,
         int datasets, t_perf **perfdata, int repeats, int nnodes, int nr_tprs,
-        char *cmd_mpirun, char *cmd_export, char *cmd_mdrun, 
+        bool bThreads, char *cmd_mpirun, char *cmd_mdrun, 
         char *args_for_mdrun,
         const t_filenm *fnm, int nfile, int sim_part, int presteps, 
         gmx_large_int_t cpt_steps)
@@ -792,30 +796,23 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
     int     cmdline_length;
     char    *command;
     char    buf[STRLEN];
-    char    *opt_noaddpart;
     bool    bResetProblem=FALSE;
     
 
-    /* This string array corresponds to the eParselog enum type from above */
+    /* This string array corresponds to the eParselog enum type at the start
+     * of this file */
     const char* ParseLog[] = {"OK",
-                              "Logfile not found", 
-                              "No timings in log file",
+                              "Logfile not found!",
+                              "No timings, logfile truncated?",
                               "Run was terminated",
-                              "Counters were not reset properly"};
+                              "Counters were not reset properly",
+                              "No DD grid found for these settings"};
     char    str_PME_f_load[13];
 
-    /* The -noaddpart option is needed so that the md.log files do not
-     * get renamed if checkpoints are used!
-     */
-    if (sim_part > 1) 
-        opt_noaddpart=" -noaddpart"; 
-    else
-        opt_noaddpart="";
 
-    /* Allocate space for the mdrun command line. 100 extra characters should be more than enough
-     * for the -npme etcetera arguments */
+    /* Allocate space for the mdrun command line. 100 extra characters should 
+       be more than enough for the -npme etcetera arguments */
     cmdline_length =  strlen(cmd_mpirun) 
-                    + strlen(cmd_export) 
                     + strlen(cmd_mdrun) 
                     + strlen(args_for_mdrun) 
                     + strlen(tpr_names[0]) + 100;
@@ -842,8 +839,19 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                 
                 /* Construct the command line to call mdrun (and save it): */
                 snew(pd->mdrun_cmd_line, cmdline_length);
-                sprintf(pd->mdrun_cmd_line, "%s %s-np %d %s %s-npme %d -s %s%s",
-                        cmd_mpirun, cmd_export, nnodes, cmd_mdrun, args_for_mdrun, nPMEnodes, tpr_names[k], opt_noaddpart);
+                if (bThreads)
+                {
+                    sprintf(pd->mdrun_cmd_line, "%s %s -npme %d -s %s",
+                            cmd_mdrun, args_for_mdrun, 
+                            nPMEnodes, tpr_names[k]);
+                }
+                else
+                {
+                    sprintf(pd->mdrun_cmd_line, 
+                            "%s -np %d %s %s -npme %d -s %s",
+                            cmd_mpirun, nnodes, cmd_mdrun, args_for_mdrun, 
+                            nPMEnodes, tpr_names[k]);
+                }
 
                 /* Do a benchmark simulation: */
                 if (repeats > 1)
@@ -851,12 +859,12 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                 else
                     buf[0]='\0';
                 fprintf(stdout, "\n=== tpr %d/%d, run %d/%d%s:\n", k+1, nr_tprs, i+1, datasets, buf);
-                sprintf(command, "%s -noaddpart >& /dev/null", pd->mdrun_cmd_line);
+                sprintf(command, "%s >& /dev/null", pd->mdrun_cmd_line);
                 fprintf(stdout, "%s\n", pd->mdrun_cmd_line);
                 gmx_system_call(command);
 
                 /* Collect the performance data from the log file */
-                ret = parse_logfile(opt2fn("-bg",nfile,fnm), pd, nr, presteps, cpt_steps);
+                ret = parse_logfile(opt2fn("-bg",nfile,fnm), pd, nr, presteps, cpt_steps, nnodes);
                 if ((presteps > 0) && (ret == eParselogResetProblem))
                     bResetProblem = TRUE;
 
@@ -940,21 +948,21 @@ static void check_input(
         int sim_part,
         int presteps)
 {
-    /* Make shure the input file exists */
+    /* Make sure the input file exists */
     if (!gmx_fexist(opt2fn("-s",nfile,fnm)))
         gmx_fatal(FARGS, "File %s not found.", opt2fn("-s",nfile,fnm));
     
-    /* Make shure that the checkpoint file is not overwritten by the benchmark runs */
+    /* Make sure that the checkpoint file is not overwritten by the benchmark runs */
     if ( (0 == strcmp(opt2fn("-cpi",nfile,fnm), opt2fn("-cpo",nfile,fnm)) ) && (sim_part > 1) )
         gmx_fatal(FARGS, "Checkpoint input and output file must not be identical,\nbecause then the input file might change during the benchmarks.");
     
-    /* Make shure that repeats is >= 0 (if == 0, only write tpr files) */
+    /* Make sure that repeats is >= 0 (if == 0, only write tpr files) */
     if (repeats < 0)
         gmx_fatal(FARGS, "Number of repeats < 0!");
 
-    /* Check whether we have enough nodes */
-    if (nnodes < 3)
-        gmx_fatal(FARGS, "Can not have separate PME nodes with 2 or less nodes, so there is nothing to optimize here.");
+    /* Check number of nodes */
+    if (nnodes < 1)
+        gmx_fatal(FARGS, "Number of nodes/threads must be a positive integer.");
 
     /* Automatically choose -ntpr if not set */
     if (*ntprs < 1)
@@ -993,7 +1001,7 @@ static void check_input(
     {
         fprintf(stderr, "WARNING: steps=");
         fprintf(stderr, gmx_large_int_pfmt, bench_nsteps);
-        fprintf(stderr, ". Are you shure you want to perform so %s steps for each benchmark?\n", (bench_nsteps < 100)? "few" : "many");
+        fprintf(stderr, ". Are you sure you want to perform so %s steps for each benchmark?\n", (bench_nsteps < 100)? "few" : "many");
     }
     
     if (presteps < 0)
@@ -1005,7 +1013,7 @@ static void check_input(
         gmx_fatal(FARGS, "Scaling factor must be larger than zero.");
     
     if (maxfac < 1.0)
-        fprintf(stderr, "WARNING: A scaling factor smaller than one means that load will be shifted to reciprocal space. Are you shure you want that?\n");
+        fprintf(stderr, "WARNING: A scaling factor smaller than one means that load will be shifted to reciprocal space. Are you sure you want that?\n");
 
     if (maxfac < 0.75 || maxfac > 1.5)
         fprintf(stderr, "WARNING: Applying extreme scaling factor. I hope you know what you are doing.\n");
@@ -1018,19 +1026,19 @@ static void check_input(
 /* Returns TRUE when "opt" is a switch for g_tune_pme itself */
 static bool is_main_switch(char *opt)
 {
-    if ( (0 == strcmp(opt,"-s"       ))
-      || (0 == strcmp(opt,"-p"       ))
-      || (0 == strcmp(opt,"-launch"  ))
-      || (0 == strcmp(opt,"-r"       ))
-      || (0 == strcmp(opt,"-ntpr"    ))
-      || (0 == strcmp(opt,"-max"     ))
-      || (0 == strcmp(opt,"-min"     ))
-      || (0 == strcmp(opt,"-fac"     ))
-      || (0 == strcmp(opt,"-four"    ))
-      || (0 == strcmp(opt,"-steps"   ))
-      || (0 == strcmp(opt,"-simsteps"))
-      || (0 == strcmp(opt,"-presteps"))
-      || (0 == strcmp(opt,"-so"      )) )
+    if ( (0 == strcmp(opt,"-s"        ))
+      || (0 == strcmp(opt,"-p"        ))
+      || (0 == strcmp(opt,"-launch"   ))
+      || (0 == strcmp(opt,"-r"        ))
+      || (0 == strcmp(opt,"-ntpr"     ))
+      || (0 == strcmp(opt,"-max"      ))
+      || (0 == strcmp(opt,"-min"      ))
+      || (0 == strcmp(opt,"-fac"      ))
+      || (0 == strcmp(opt,"-four"     ))
+      || (0 == strcmp(opt,"-steps"    ))
+      || (0 == strcmp(opt,"-simsteps" ))
+      || (0 == strcmp(opt,"-resetstep"))
+      || (0 == strcmp(opt,"-so"       )) )
     return TRUE;
     
     return FALSE;
@@ -1071,7 +1079,8 @@ static bool is_bench_option(char *opt, bool bSet)
     {
         if ( (0 == strcmp(opt, "-append" ))
           || (0 == strcmp(opt, "-addpart"))
-          || (0 == strcmp(opt, "-maxh"   )) )
+          || (0 == strcmp(opt, "-maxh"   ))
+          || (0 == strcmp(opt, "-deffnm" )) )
             return FALSE;
         else
             return TRUE;
@@ -1119,6 +1128,7 @@ static void add_to_command_line(char **cmd_args, char *buf)
 
 /* Create the command line for the benchmark as well as for the real run */
 static void create_command_line_snippets(
+        int      presteps,
         int      nfile,
         t_filenm fnm[],
         int      npargs,
@@ -1166,6 +1176,12 @@ static void create_command_line_snippets(
             }
             else 
             {
+                if (0 == strcmp(opt, "-nt"))
+                {
+                    /* this is mutually exclusive with -np */
+                    snew(*cmd_np, strlen(strbuf)+1);
+                    sprintf(*cmd_np, " %s", strbuf);
+                }
                 if (is_bench_option(opt,pa[i].bSet))
                     add_to_command_line(cmd_args_bench, strbuf);
 
@@ -1173,6 +1189,12 @@ static void create_command_line_snippets(
                     add_to_command_line(cmd_args_launch, strbuf);
             }
         }
+    }
+    if (presteps > 0)
+    {
+        /* Add equilibration steps to benchmark options */
+        sprintf(strbuf, "-resetstep %d ", presteps);
+        add_to_command_line(cmd_args_bench, strbuf);
     }
     
     /********************/
@@ -1192,7 +1214,7 @@ static void create_command_line_snippets(
             
             if ( is_bench_file(opt, opt2bSet(opt,nfile,fnm), is_optional(&fnm[i]), is_output(&fnm[i])) )
             {
-                /* All options starting with -b* need th 'b' removed,
+                /* All options starting with -b* need the 'b' removed,
                  * therefore overwrite strbuf */
                 if (0 == strncmp(opt, "-b", 2))     
                     sprintf(strbuf, "-%s %s ", &opt[2], name);
@@ -1204,7 +1226,12 @@ static void create_command_line_snippets(
                 add_to_command_line(cmd_args_launch, strbuf);
         }
     }
-#undef BUFLENGTH   
+#undef BUFLENGTH
+    /* The -noaddpart option is needed so that the md.log files do not
+     * get renamed if checkpoints are used. We also do not want to append
+     * if we are doing benchmarks, since md.log then would contain several
+     * paragraphs with performance information. */
+    add_to_command_line(cmd_args_bench, "-noappend -noaddpart");
 }
 
 
@@ -1250,12 +1277,34 @@ static void couple_files_options(int nfile, t_filenm fnm[])
 }
 
 
+static double gettime()
+{
+#ifdef HAVE_GETTIMEOFDAY
+    struct timeval t;
+    struct timezone tz = { 0,0 };
+    double seconds;
+    
+    gettimeofday(&t,&tz);
+    
+    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
+    
+    return seconds;
+#else
+    double  seconds;
+    
+    seconds = time(NULL);
+    
+    return seconds;
+#endif
+}
+
+
 #define BENCHSTEPS (1000)
 
 int gmx_tune_pme(int argc,char *argv[])
 {
     const char *desc[] = {
-            "For a given number [TT]-np[tt] of processors this program systematically",
+            "For a given number [TT]-np[tt] or [TT]-nt[tt] of processors/threads, this program systematically",
             "times mdrun with various numbers of PME-only nodes and determines",
             "which setting is fastest. It will also test whether performance can",
             "be enhanced by shifting load from the reciprocal to the real space",
@@ -1270,8 +1319,8 @@ int gmx_tune_pme(int argc,char *argv[])
             "'export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"'[PAR]",
             "Please call g_tune_pme with the normal options you would pass to",
             "mdrun and add [TT]-np[tt] for the number of processors to perform the",
-            "tests on. You can also add [TT]-r[tt] to repeat each test several times",
-            "to get better statistics. [PAR]",
+            "tests on, or [TT]-nt[tt] for the number of threads. You can also add [TT]-r[tt]",
+            "to repeat each test several times to get better statistics. [PAR]",
             "g_tune_pme can test various real space / reciprocal space workloads",
             "for you. With [TT]-ntpr[tt] you control how many extra [TT].tpr[tt] files will be",
             "written with enlarged cutoffs and smaller fourier grids respectively.",
@@ -1281,11 +1330,12 @@ int gmx_tune_pme(int argc,char *argv[])
             "factor [TT]-fac[tt] (default 1.2). The remaining [TT].tpr[tt] files will have equally",
             "spaced values inbetween these extremes. Note that you can set [TT]-ntpr[tt] to 1",
             "if you just want to find the optimal number of PME-only nodes; in that case",
-            "your input [TT].tpr[tt] file will remain unchanged[PAR]",
-            "For the benchmark runs, 2500 time steps should suffice for most MD",
-            "systems. Note that dynamic load balancing needs about 100 time steps",
-            "to adapt to local load imbalances. To get clean benchmark numbers,",
-            "[TT]-steps[tt] should therefore always be much larger than 100![PAR]",
+            "your input [TT].tpr[tt] file will remain unchanged.[PAR]",
+            "For the benchmark runs, the default of 1000 time steps should suffice for most",
+            "MD systems. The dynamic load balancing needs about 100 time steps",
+            "to adapt to local load imbalances, therefore the time step counters",
+            "are by default reset after 100 steps. For large systems",
+            "(>1M atoms) you may have to set [TT]-resetstep[tt] to a higher value.[PAR]",
             "Example call: [TT]g_tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
             "After calling mdrun several times, detailed performance information",
             "is available in the output file perf.out. "
@@ -1295,7 +1345,7 @@ int gmx_tune_pme(int argc,char *argv[])
             "optimized parameters, use the command line option [TT]-launch[tt].[PAR]",
     };
 
-    int        nnodes =3;
+    int        nnodes =1;
     int        repeats=2;
     real       maxPMEfraction=0.50;
     real       minPMEfraction=0.25;
@@ -1307,21 +1357,17 @@ int gmx_tune_pme(int argc,char *argv[])
     gmx_large_int_t new_sim_nsteps=-1;  /* -1 indicates: not set by the user */
     gmx_large_int_t cpt_steps=0;        /* Step counter in .cpt input file */
     int        presteps=100;       /* Do a full cycle reset after presteps steps */
-    bool       bHaveResetCounter=FALSE; /* Was the GMX_RESET_COUNTER env set by user? */
-    int        resetcount_orig;    /* The value of GMX_RESET_COUNTER if set */
-
-    bool        bOverwrite=FALSE;
-    bool        bLaunch=FALSE;
-    char        **tpr_names=NULL;
-    const char  *simulation_tpr=NULL;
-    int         best_npme, best_tpr;
-    int         sim_part = 1;     /* For benchmarks with checkpoint files */
+    bool       bOverwrite=FALSE;
+    bool       bLaunch=FALSE;
+    char       **tpr_names=NULL;
+    const char *simulation_tpr=NULL;
+    int        best_npme, best_tpr;
+    int        sim_part = 1;     /* For benchmarks with checkpoint files */
     
     /* Default program names if nothing else is found */
-    char        *cmd_mpirun=NULL, *cmd_mdrun=NULL, *cmd_export=NULL;
+    char        *cmd_mpirun=NULL, *cmd_mdrun=NULL;
     char        *cmd_args_bench, *cmd_args_launch, *cmd_np;
 
-    
     t_perf      **perfdata;
     t_inputinfo *info;
     int         datasets;
@@ -1329,6 +1375,9 @@ int gmx_tune_pme(int argc,char *argv[])
     FILE        *fp;
     t_commrec   *cr;
 
+    /* Print out how long the tuning took */
+    double      seconds;
+    
     static t_filenm fnm[] = {
       /* g_tune_pme */
       { efOUT, "-p",      "perf",     ffWRITE },
@@ -1386,7 +1435,6 @@ int gmx_tune_pme(int argc,char *argv[])
     /* Command line options of mdrun */
     bool bDDBondCheck = TRUE;
     bool bDDBondComm  = TRUE;
-    bool bSumEner     = TRUE;
     bool bVerbose     = FALSE;
     bool bCompact     = TRUE;
     bool bSepPot      = FALSE;
@@ -1394,13 +1442,14 @@ int gmx_tune_pme(int argc,char *argv[])
     bool bIonize      = FALSE;
     bool bConfout     = TRUE;
     bool bReproducible = FALSE;
+    bool bThreads     = FALSE;
 
     int  nmultisim=0;
+    int  nstglobalcomm=-1;
     int  repl_ex_nst=0;
     int  repl_ex_seed=-1;
     int  nstepout=100;
     int  nthreads=1;
-
 
     const char *ddno_opt[ddnoNR+1] =
       { NULL, "interleave", "pp_pme", "cartesian", NULL };
@@ -1408,6 +1457,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { NULL, "auto", "no", "yes", NULL };
     real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
     char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
+    char *deffnm=NULL;
 #define STD_CPT_PERIOD (15.0)
     real cpt_period=STD_CPT_PERIOD,max_hours=-1;
     bool bAppendFiles=FALSE,bAddPart=TRUE;
@@ -1418,7 +1468,9 @@ int gmx_tune_pme(int argc,char *argv[])
       /* g_tune_pme options: */
       /***********************/
       { "-np",       FALSE, etINT,  {&nnodes},
-        "Number of nodes to run the tests on (at least 3)" },
+        "Number of nodes to run the tests on (must be > 2 for separate PME nodes)" },
+      { "-nt",       FALSE, etINT,  {&nthreads},
+        "Number of threads to run the tests on (turns MPI&mpirun off)"},
       { "-r",        FALSE, etINT,  {&repeats},
         "Repeat each test this often" },
       { "-max",      FALSE, etREAL, {&maxPMEfraction},
@@ -1430,20 +1482,20 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-ntpr",     FALSE, etINT,  {&ntprs},
         "Number of tpr files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of tpr files to test" },
       { "-four",     FALSE, etREAL, {&fs},
-          "Fourierspacing that was chosen to create the input tpr file" },        
+        "Use this fourierspacing value instead of the grid found in the tpr input file" },        
       { "-steps",    FALSE, etGMX_LARGE_INT, {&bench_nsteps},
-        "Use these many steps for the benchmarks" }, 
-      { "-presteps", FALSE, etINT,  {&presteps},
+        "Take timings for these many steps in the benchmark runs" }, 
+      { "-resetstep",FALSE, etINT,  {&presteps},
         "Let dlb equilibrate these many steps before timings are taken" },         
       { "-simsteps", FALSE, etGMX_LARGE_INT, {&new_sim_nsteps},
-          "If non-negative, perform these many steps in the real run (overwrite nsteps from tpr, add cpt steps)" }, 
+        "If non-negative, perform these many steps in the real run (overwrite nsteps from tpr, add cpt steps)" }, 
       { "-launch",   FALSE, etBOOL, {&bLaunch},
         "Lauch the real simulation after optimization" },
       /******************/
       /* mdrun options: */
       /******************/
-      { "-nt",      FALSE, etINT, {&nthreads},
-        "HIDDENNumber of threads to start on each node" },
+      { "-deffnm",    FALSE, etSTR, {&deffnm},
+          "Set the default filename for all file options at launch time" },
       { "-ddorder",   FALSE, etENUM, {ddno_opt},
         "DD node order" },
       { "-ddcheck",   FALSE, etBOOL, {&bDDBondCheck},
@@ -1464,8 +1516,8 @@ int gmx_tune_pme(int argc,char *argv[])
         "HIDDENThe DD cell sizes in y" },
       { "-ddcsz",     FALSE, etSTR,  {&ddcsz},
         "HIDDENThe DD cell sizes in z" },
-      { "-sum",       FALSE, etBOOL, {&bSumEner},
-        "Sum the energies at every step" },
+      { "-gcom",      FALSE, etINT,  {&nstglobalcomm},
+        "Global communication frequency" },
       { "-v",         FALSE, etBOOL, {&bVerbose},
         "Be loud and noisy" },
       { "-compact",   FALSE, etBOOL, {&bCompact},
@@ -1479,8 +1531,8 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-cpt",       FALSE, etREAL, {&cpt_period},
         "Checkpoint interval (minutes)" },
       { "-append",    FALSE, etBOOL, {&bAppendFiles},
-        "Append to previous output files when continuing from checkpoint" },
-      { "-addpart",  FALSE, etBOOL, {&bAddPart},
+        "Append to previous output files when continuing from checkpoint (for launch only)" },
+      { "-addpart",  FALSE, etBOOL,  {&bAddPart},
         "Add the simulation part number to all output files when continuing from checkpoint" },
       { "-maxh",      FALSE, etREAL, {&max_hours},
         "Terminate after 0.99 times this time (hours)" },
@@ -1497,7 +1549,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-confout",   FALSE, etBOOL, {&bConfout},
         "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
       { "-stepout",   FALSE, etINT,  {&nstepout},
-        "HIDDENFrequency of writing the remaining runtime" },
+        "HIDDENFrequency of writing the remaining runtime" }
     };
 
     
@@ -1505,18 +1557,28 @@ int gmx_tune_pme(int argc,char *argv[])
 
     CopyRight(stderr,argv[0]);
 
+    seconds = gettime();
+
     parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,
                       0,NULL,&oenv);        
 
+    if (nthreads > 1)
+    {
+        bThreads=TRUE;
+        if (nnodes > 1)
+            gmx_fatal(FARGS, "Can't run multi-threaded MPI simulation yet!");
+        /* and now we just set this; a bit of an ugly hack*/
+        nnodes=nthreads;
+    }
     /* Automatically set -beo options if -eo is set etc. */
     couple_files_options(NFILE,fnm);
     
     /* Construct the command line arguments for benchmark runs 
      * as well as for the simulation run 
      */
-    create_command_line_snippets(NFILE,fnm,asize(pa),pa, 
-            &cmd_np, &cmd_args_bench, &cmd_args_launch);
+    create_command_line_snippets(presteps,NFILE,fnm,asize(pa),pa, 
+                                 &cmd_np, &cmd_args_bench, &cmd_args_launch);
 
     /* Read in checkpoint file if requested */
     sim_part = 1;
@@ -1524,35 +1586,44 @@ int gmx_tune_pme(int argc,char *argv[])
     {
         snew(cr,1);
         cr->duty=DUTY_PP; /* makes the following routine happy */
-        read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm),&sim_part,&cpt_steps,cr);
+        read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm),
+					&sim_part,&cpt_steps,cr,
+					FALSE,NULL,NULL);
         sfree(cr);
         sim_part++;
         /* sim_part will now be 1 if no checkpoint file was found */
         if (sim_part<=1)
-            gmx_fatal(FARGS, "Checkpoint file %s not found!", opt2fn("-cpi",NFILE,fnm));
+            gmx_fatal(FARGS, "Checkpoint file %s not found!", opt2fn("-cpi",
+                                                                     NFILE,
+                                                                     fnm));
     }
     
     /* Open performance output file and write header info */
     fp = ffopen(opt2fn("-p",NFILE,fnm),"w");
     
     /* Make a quick consistency check of command line parameters */
-    check_input(nnodes, repeats, &ntprs, maxfac, maxPMEfraction, minPMEfraction, 
+    check_input(nnodes, repeats, &ntprs, maxfac, maxPMEfraction, 
+                minPMEfraction, 
                 fs, bench_nsteps, fnm, NFILE, sim_part, presteps);
     
     /* Determine max and min number of PME nodes to test: */
-    maxPMEnodes = floor(maxPMEfraction*nnodes);
-    minPMEnodes = max(floor(minPMEfraction*nnodes), 0);
-    fprintf(stdout, "Will try runs with %d ", minPMEnodes);
-    if (maxPMEnodes != minPMEnodes)
-        fprintf(stdout, "- %d ", maxPMEnodes);
-    fprintf(stdout, "PME-only nodes.\n  Note that the automatic number of PME-only nodes and no separate PME nodes are always tested.\n");
+    if (nnodes > 2)
+    {
+        maxPMEnodes = floor(maxPMEfraction*nnodes);
+        minPMEnodes = max(floor(minPMEfraction*nnodes), 0);
+        fprintf(stdout, "Will try runs with %d ", minPMEnodes);
+        if (maxPMEnodes != minPMEnodes)
+            fprintf(stdout, "- %d ", maxPMEnodes);
+        fprintf(stdout, "PME-only nodes.\n  Note that the automatic number of PME-only nodes and no separate PME nodes are always tested.\n");
+    }
+    else
+    {
+        maxPMEnodes = 0;
+        minPMEnodes = 0;
+    }   
     
     /* Get the commands we need to set up the runs from environment variables */
-    get_program_paths(&cmd_mpirun, &cmd_mdrun, &cmd_export, repeats);
-
-    /* Set the GMX_RESET_COUNTERS environment variable */
-    if (presteps > 0)
-        counters_set_env(presteps, &resetcount_orig, &bHaveResetCounter);
+    get_program_paths(bThreads, &cmd_mpirun, &cmd_mdrun, repeats);
     
     /* Print some header info to file */
     sep_line(fp);
@@ -1560,17 +1631,15 @@ int gmx_tune_pme(int argc,char *argv[])
     sep_line(fp);
     fprintf(fp, "%s for Gromacs %s\n", ShortProgram(),GromacsVersion());
     fprintf(fp, "Number of nodes         : %d\n", nnodes);
-    fprintf(fp, "The mpirun command is   : %s\n", cmd_mpirun);
-    fprintf(fp, "Exporting env with      : %s\n", cmd_export);
+    if (!bThreads)
+        fprintf(fp, "The mpirun command is   : %s\n", cmd_mpirun);
     fprintf(fp, "The mdrun  command is   : %s\n", cmd_mdrun);
     fprintf(fp, "Input file is           : %s\n", opt2fn("-s",NFILE,fnm));
-    if (fs > 0.0)
-        fprintf(fp, "Basic fourierspacing    : %f\n", fs);
     fprintf(fp, "mdrun args benchmarks   : %s\n", cmd_args_bench);
     fprintf(fp, "Benchmark steps         : ");
     fprintf(fp, gmx_large_int_pfmt, bench_nsteps);
     fprintf(fp, "\n");
-    fprintf(fp, "     + presteps         : %d\n", presteps);
+    fprintf(fp, "dlb equilibration steps : %d\n", presteps);
     if (sim_part > 1)
     {
         fprintf(fp, "Checkpoint time step    : ");
@@ -1590,8 +1659,11 @@ int gmx_tune_pme(int argc,char *argv[])
         fprintf(fp, "\n");
     }   
     if (repeats > 1)
-        fprintf(fp, "Doing %d repeats for each test.\n", repeats);
-
+        fprintf(fp, "Repeats for each test   : %d\n", repeats);
+    
+    if (fs > 0.0)
+        fprintf(fp, "Requested grid spacing  : %f (tpr file will be changed accordingly)\n", fs);
+    
     /* Allocate memory for the inputinfo struct: */
     snew(info, 1);
     info->nr_inputfiles = ntprs;
@@ -1620,9 +1692,14 @@ int gmx_tune_pme(int argc,char *argv[])
     }
     
     /* Memory allocation for performance data */
-    datasets = maxPMEnodes - minPMEnodes + 3;
-    if (0 == minPMEnodes)
-        datasets--;
+    if (nnodes > 2)
+    {
+        datasets = maxPMEnodes - minPMEnodes + 3;
+        if (0 == minPMEnodes)
+            datasets--;
+    }
+    else
+        datasets = 1;
 
     /* Allocate one dataset for each tpr input file: */
     snew(perfdata, ntprs);
@@ -1645,35 +1722,38 @@ int gmx_tune_pme(int argc,char *argv[])
     /********************************************************************************/
     /* Main loop over all scenarios we need to test: tpr files, PME nodes, repeats  */
     /********************************************************************************/
-    do_the_tests(fp, tpr_names, maxPMEnodes, minPMEnodes, datasets, perfdata, repeats, nnodes, ntprs,
-            cmd_mpirun, cmd_export, cmd_mdrun, cmd_args_bench, fnm, NFILE, sim_part, presteps, cpt_steps);
-
-    /* Restore original environment */
-    if (presteps > 0)
-        counters_restore_env(resetcount_orig, bHaveResetCounter);
+    do_the_tests(fp, tpr_names, maxPMEnodes, minPMEnodes, datasets, perfdata, 
+                 repeats, nnodes, ntprs, bThreads, cmd_mpirun, cmd_mdrun, 
+                 cmd_args_bench, fnm, NFILE, sim_part, presteps, cpt_steps);
+    
+    fprintf(fp, "\nTuning took%8.1f minutes.\n", (gettime()-seconds)/60.0);
 
     /* Analyse the results and give a suggestion for optimal settings: */
-    analyze_data(fp, perfdata, ntprs, datasets, repeats, info, &best_tpr, &best_npme);
+    analyze_data(fp, perfdata, nnodes, ntprs, datasets, repeats, info, 
+                 &best_tpr, &best_npme);
     
     /* Take the best-performing tpr file and enlarge nsteps to original value */
-    if ((best_tpr > 0) || bOverwrite)
+    if ((best_tpr > 0) || bOverwrite || (fs > 0.0))
     {
         simulation_tpr = opt2fn("-so",NFILE,fnm);
-        modify_PMEsettings(bOverwrite? (new_sim_nsteps+cpt_steps):info->orig_sim_steps, tpr_names[best_tpr], simulation_tpr);            
+        modify_PMEsettings(bOverwrite? (new_sim_nsteps+cpt_steps) : 
+                           info->orig_sim_steps, tpr_names[best_tpr], 
+                           simulation_tpr);            
     }
     else
         simulation_tpr = opt2fn("-s",NFILE,fnm);
-            
+
     /* Now start the real simulation if the user requested it ... */
-    launch_simulation(bLaunch, fp, cmd_mpirun, cmd_mdrun, cmd_args_launch, 
-                      simulation_tpr, nnodes, best_npme);
-    fclose(fp);
+    launch_simulation(bLaunch, fp, bThreads, cmd_mpirun, cmd_mdrun, 
+                      cmd_args_launch, simulation_tpr, nnodes, best_npme);
+    ffclose(fp);
         
     /* ... or simply print the performance results to screen: */
     if (!bLaunch)
     {
-		fp = fopen(opt2fn("-p", NFILE, fnm),"r");
 		char buf[STRLEN];
+
+		fp = fopen(opt2fn("-p", NFILE, fnm),"r");
         fprintf(stdout,"\n\n");
 		
 		while( fgets(buf,STRLEN-1,fp) != NULL )

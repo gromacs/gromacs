@@ -39,6 +39,10 @@
 #ifndef _idef_h
 #define _idef_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST	6
@@ -60,6 +64,7 @@ enum {
   F_FENEBONDS,
   F_TABBONDS,
   F_TABBONDSNC,
+  F_RESTRBONDS,
   F_ANGLES, 
   F_G96ANGLES,
   F_CROSS_BOND_BONDS,
@@ -121,6 +126,7 @@ enum {
   F_ETOT,
   F_ECONSERVED,
   F_TEMP,
+  F_VTEMP,
   F_PDISPCORR,
   F_PRES,
   F_DVDL,
@@ -138,7 +144,8 @@ typedef union
    * bonds, angles and improper dihedrals
    */
   struct {real a,b,c;	                                   } bham;
-  struct {real rA,krA,rB,krB;           	           } harmonic; 
+  struct {real rA,krA,rB,krB;           	           } harmonic;
+  struct {real lowA,up1A,up2A,kA,lowB,up1B,up2B,kB;        } restraint;
   /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */ 
   struct {real b0,kb,kcub;                                 } cubic;
   struct {real bm,kb;                                      } fene;
@@ -169,7 +176,8 @@ typedef union
   struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];          } rbdihs;
   struct {real a,b,c,d,e,f;                               } vsite;   
   struct {int  n; real a;                                 } vsiten;   
-  struct {real low,up1,up2,kfac;int type,label;           } disres; 
+  /* NOTE: npair is only set after reading the tpx file */
+  struct {real low,up1,up2,kfac;int type,label,npair;     } disres; 
   struct {real phi,dphi,kfac;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;
@@ -235,6 +243,7 @@ typedef struct
   t_iparams  *iparams;
   double     reppow;     /* The repulsion power for VdW: C12*r^-reppow   */
   real       fudgeQQ;    /* The scaling factor for Coulomb 1-4: f*q1*q2  */
+  gmx_cmap_t cmap_grid;  /* The dihedral correction maps                 */
 } gmx_ffparams_t;
 
 enum {
@@ -248,6 +257,7 @@ typedef struct
   t_functype *functype;
   t_iparams  *iparams;
   real fudgeQQ;
+  gmx_cmap_t cmap_grid;
   t_iparams  *iparams_posres;
   int iparams_posres_nalloc;
 
@@ -285,5 +295,10 @@ typedef struct {
   real scale;     /* distance between two points */
   real *tab;      /* the actual tables, per point there are  4 numbers */
 } bondedtable_t;
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

@@ -39,7 +39,15 @@
 #ifndef _shellfc_h
 #define _shellfc_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Abstract type for shells */
 typedef struct gmx_shellfc *gmx_shellfc_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

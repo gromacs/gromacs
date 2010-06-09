@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifndef _TMPI_ATOMIC_H_
@@ -44,13 +40,13 @@ any papers on the package - you can find them in the top README file.
 
 /*! \file atomic.h
  *
- *  @brief Atomic operations for fast SMP synchronization
+ *  \brief Atomic operations for fast SMP synchronization
  *
  *  This file defines atomic integer operations and spinlocks for 
  *  fast synchronization in performance-critical regions.
  *
  *  In general, the best option is to use functions without explicit 
- *  locking, e.g. tMPI_Atomic_fetch_add() or tMPI_Atomic_cmpxchg().
+ *  locking, e.g. tMPI_Atomic_fetch_add() or tMPI_Atomic_cas().
  *  
  *  Depending on the architecture/compiler, these operations may either
  *  be provided as functions or macros; be aware that those macros may
@@ -97,19 +93,36 @@ extern "C"
 #endif
 
 
-#if ( ( (defined(__GNUC__) || defined(__INTEL_COMPILER) ||  \
-       defined(__PATHSCALE__)) && (defined(i386) || defined(__x86_64__)) ) )
 
+/* first check for gcc/icc platforms. icc on linux+mac will take this path, 
+   too */
+#if ( (defined(__GNUC__) || defined(__PATHSCALE__)) && (!defined(__xlc__)) )
+
+/* now check specifically for several architectures: */
+#if (defined(i386) || defined(__x86_64__)) 
+/* first x86: */
 #include "atomic/gcc_x86.h"
+/*#include "atomic/gcc.h"*/
 
-#elif ( defined(__GNUC__) && (defined(__powerpc__) || defined(__ppc__)))
-/* PowerPC using proper GCC inline assembly. 
- * Recent versions of xlC (>=7.0) _partially_ support this, but since it is
- * not 100% compatible we provide a separate implementation for xlC in
- * the next section.
- */
+#elif (defined(__ia64__))
+/* then ia64: */
+#include "atomic/gcc_ia64.h"
 
+#elif (defined(__powerpc__) || (defined(__ppc__)) )
+/* and powerpc: */
 #include "atomic/gcc_ppc.h"
+
+#else
+/* otherwise, there's a generic gcc intrinsics version: */
+#include "atomic/gcc.h"
+
+#endif /* end of check for gcc specific architectures */
+
+/* not gcc: */
+#elif (defined(_MSC_VER) && (_MSC_VER >= 1200))
+/* Microsoft Visual C on x86, define taken from FFTW who got it from 
+   Morten Nissov. icc on windows will take this path.  */
+#include "atomic/msvc.h"
 
 #elif ( (defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM))  && \
         (defined(__powerpc__) || defined(__ppc__)))
@@ -120,40 +133,30 @@ extern "C"
  * _could_ be buggy, we have separated it from the known-to-be-working gcc
  * one above.
  */
-
 #include "atomic/xlc_ppc.h"
 
 #elif defined(__xlC__) && defined (_AIX)
 /* IBM xlC compiler on AIX */
-
 #include "atomic/xlc_aix.h"
-
-
-#elif (defined(__ia64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER)))
-/* ia64 with GCC or Intel compilers. Since we need to define everything through
-* cmpxchg and fetchadd on ia64, we merge the different compilers and only 
-* provide different implementations for that single function. 
-* Documentation? Check the gcc/x86 section.
-*/
-
-#include "atomic/gcc_ia64.h"
 
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 /* HP compiler on ia64 */
-
 #include "atomic/hpux.h"
 
 
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1200))
-/* Microsoft Visual C on x86, define taken from FFTW who got it from Morten Nissov */
 
-
-#include "atomic/msvc.h"
 
 #else
 /* No atomic operations, use mutex fallback. Documentation is in x86 section */
 
-/*! \brief Memory barrier operation
+#ifdef TMPI_CHECK_ATOMICS
+#error No atomic operations implemented for this cpu/compiler combination. 
+#endif
+
+#define TMPI_NO_ATOMICS
+
+
+/** Memory barrier operation
 
  Modern CPUs rely heavily on out-of-order execution, and one common feature
  is that load/stores might be reordered. Also, when using inline assembly
@@ -171,7 +174,7 @@ extern "C"
 /* System mutex used for locking to guarantee atomicity */
 static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-/*! \brief Atomic operations datatype
+/** Atomic operations datatype
  *
  *  Portable synchronization primitives like mutexes are effective for
  *  many purposes, but usually not very high performance.
@@ -208,6 +211,7 @@ static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
  *
  *  Currently, we have (real) atomic operations for:
  *
+ *  - gcc version 4.1 and later (all platforms)
  *  - x86 or x86_64, using GNU compilers
  *  - x86 or x86_64, using Intel compilers 
  *  - x86 or x86_64, using Pathscale compilers
@@ -221,34 +225,34 @@ static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
  * \see
  * - tMPI_Atomic_get
  * - tMPI_Atomic_set
- * - tMPI_Atomic_cmpxchg
+ * - tMPI_Atomic_cas
  * - tMPI_Atomic_add_return
  * - tMPI_Atomic_fetch_add
  */
 typedef struct tMPI_Atomic
 {
-        volatile int value;  /*!< Volatile, to avoid compiler aliasing */
+    int value;  
 }
 tMPI_Atomic_t;
 
 
-/*! \brief Atomic pointer type equivalent to tMPI_Atomic_t
+/** Atomic pointer type equivalent to tMPI_Atomic_t
  *
  * Useful for lock-free and wait-free data structures.
  * The only operations available for this type are:
  * \see
  * - tMPI_Atomic_ptr_get
  * - tMPI_Atomic_ptr_set
- * - tMPI_Atomic_ptr_cmpxchg
+ * - tMPI_Atomic_ptr_cas
 */
 typedef struct tMPI_Atomic_ptr
 {
-        void* volatile value;  /*!< Volatile, to avoid compiler aliasing */
+    void* value;  
 }
 tMPI_Atomic_ptr_t;
 
 
-/*! \brief Spinlock
+/** Spinlock
  *
  *  Spinlocks provide a faster synchronization than mutexes,
  *  although they consume CPU-cycles while waiting. They are implemented
@@ -290,7 +294,7 @@ typedef struct
 #  define TMPI_SPINLOCK_INITIALIZER   { TMPI_THREAD_MUTEX_INITIALIZER }
 
 /* Since mutexes guarantee memory barriers this works fine */
-/*! \brief Return value of an atomic integer 
+/** Return value of an atomic integer 
  *
  *  Also implements proper memory barriers when necessary.
  *  The actual implementation is system-dependent.
@@ -301,12 +305,12 @@ typedef struct
  *  \hideinitializer
  */
 #ifdef DOXYGEN
-static inline int tMPI_Atomic_get( tMPI_Atomic_t &a);
+static inline int tMPI_Atomic_get(tMPI_Atomic_t &a);
 #else
 #define tMPI_Atomic_get(a)   ((a)->value)
 #endif
 
-/*! \brief Write value to an atomic integer 
+/** Write value to an atomic integer 
  *
  *  Also implements proper memory barriers when necessary.
  *  The actual implementation is system-dependent.
@@ -316,8 +320,7 @@ static inline int tMPI_Atomic_get( tMPI_Atomic_t &a);
  *
  *  \hideinitializer
  */
-static inline void tMPI_Atomic_set(tMPI_Atomic_t *   a, 
-                                  int              i)
+static inline void tMPI_Atomic_set(tMPI_Atomic_t *a, int i)
 {
     /* Mutexes here are necessary to guarantee memory visibility */
     tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
@@ -326,7 +329,7 @@ static inline void tMPI_Atomic_set(tMPI_Atomic_t *   a,
 }
 
 
-/*! \brief Return value of an atomic pointer 
+/** Return value of an atomic pointer 
  *
  *  Also implements proper memory barriers when necessary.
  *  The actual implementation is system-dependent.
@@ -337,7 +340,7 @@ static inline void tMPI_Atomic_set(tMPI_Atomic_t *   a,
  *  \hideinitializer
  */
 #ifdef DOXYGEN
-static inline void* tMPI_Atomic_ptr_get( tMPI_Atomic_ptr_t &a);
+static inline void* tMPI_Atomic_ptr_get(tMPI_Atomic_ptr_t &a);
 #else
 #define tMPI_Atomic_ptr_get(a)   ((a)->value)
 #endif
@@ -345,7 +348,7 @@ static inline void* tMPI_Atomic_ptr_get( tMPI_Atomic_ptr_t &a);
 
 
 
-/*! \brief Write value to an atomic pointer 
+/** Write value to an atomic pointer 
  *
  *  Also implements proper memory barriers when necessary.
  *  The actual implementation is system-dependent.
@@ -355,8 +358,7 @@ static inline void* tMPI_Atomic_ptr_get( tMPI_Atomic_ptr_t &a);
  *
  *  \hideinitializer
  */
-static inline void tMPI_Atomic_ptr_set(tMPI_Atomic_t *   a, 
-                                      void*            p)
+static inline void tMPI_Atomic_ptr_set(tMPI_Atomic_t *a, void *p)
 {
     /* Mutexes here are necessary to guarantee memory visibility */
     tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
@@ -365,7 +367,7 @@ static inline void tMPI_Atomic_ptr_set(tMPI_Atomic_t *   a,
 }
 
 
-/*! \brief Add integer to atomic variable
+/** Add integer to atomic variable
  *
  *  Also implements proper memory barriers when necessary.
  *  The actual implementation is system-dependent.
@@ -375,8 +377,7 @@ static inline void tMPI_Atomic_ptr_set(tMPI_Atomic_t *   a,
  *
  *  \return The new value (after summation).
  */
-static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *   a, 
-                                        int              i)
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 {
     int t;
     tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
@@ -388,7 +389,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *   a,
 
 
 
-/*! \brief Add to variable, return the old value.
+/** Add to variable, return the old value.
  *
  *  This operation is quite useful for synchronization counters.
  *  By performing a fetchadd with N, a thread can e.g. reserve a chunk 
@@ -403,8 +404,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *   a,
  *
  *  \return    The value of the atomic variable before addition.
  */
-static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *   a,
-                                       int              i)
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
     int old_value;
     
@@ -417,10 +417,10 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *   a,
 
 
 
-/*! \brief Atomic compare-exchange operation
+/** Atomic compare-and-swap operation
  *
  *   The \a old value is compared with the memory value in the atomic datatype.
- *   If the are identical, the atomic type is updated to the new value, 
+ *   If the are identical, the atomic type is swapped with the new value, 
  *   and otherwise left unchanged. 
  *  
  *   This is a very useful synchronization primitive: You can start by reading
@@ -442,9 +442,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *   a,
  *
  *   \note   The exchange occured if the return value is identical to \a old.
  */
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *           a, 
-                                     int                      old_val,
-                                     int                      new_val)
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val)
 {
     int t;
     
@@ -461,10 +459,10 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *           a,
 
 
 
-/*! \brief Atomic pointer compare-exchange operation
+/** Atomic pointer compare-and-swap operation
  *
  *   The \a old value is compared with the memory value in the atomic datatype.
- *   If the are identical, the atomic type is updated to the new value, 
+ *   If the are identical, the atomic type is swapped with the new value, 
  *   and otherwise left unchanged. 
  *  
  *   This is essential for implementing wait-free lists and other data
@@ -483,9 +481,8 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *           a,
  *
  *   \note   The exchange occured if the return value is identical to \a old.
  */
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t * a, 
-                                           void*              old_val,
-                                           void*              new_val)
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
+                                        void *new_val)
 {
     void *t;
     
@@ -500,7 +497,7 @@ static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t * a,
 }
 
 
-/*! \brief Initialize spinlock
+/** Initialize spinlock
  *
  *  In theory you can call this from multiple threads, but remember
  *  that we don't check for errors. If the first thread proceeded to
@@ -517,7 +514,7 @@ void tMPI_Spinlock_init( tMPI_Spinlock_t &x);
 #define tMPI_Spinlock_init(x)       tMPI_Thread_mutex_init((x)->lock)
 #endif
 
-/*! \brief Acquire spinlock
+/** Acquire spinlock
  *
  *  This routine blocks until the spinlock is available, and
  *  the locks it again before returning.
@@ -531,7 +528,7 @@ void tMPI_Spinlock_lock( tMPI_Spinlock_t &x);
 #endif
 
 
-/*! \brief Attempt to acquire spinlock
+/** Attempt to acquire spinlock
  *
  * This routine acquires the spinlock if possible, but if 
  * already locked it return an error code immediately.
@@ -547,7 +544,7 @@ void tMPI_Spinlock_trylock( tMPI_Spinlock_t &x);
 #define tMPI_Spinlock_trylock(x)    tMPI_Thread_mutex_trylock((x)->lock)
 #endif
 
-/*! \brief Release spinlock
+/** Release spinlock
  *
  *  \param x     Spinlock pointer
  *
@@ -561,7 +558,7 @@ void tMPI_Spinlock_unlock( tMPI_Spinlock_t &x);
 
 
 
-/*! \brief Check if spinlock is locked
+/** Check if spinlock is locked
  *
  *  This routine returns immediately with the lock status.
  *
@@ -569,7 +566,7 @@ void tMPI_Spinlock_unlock( tMPI_Spinlock_t &x);
  *
  *  \return 1 if the spinlock is locked, 0 otherwise.
  */
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *x)
 {
     int rc;
     
@@ -586,7 +583,7 @@ static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
     }
 }
 
-/*! \brief Wait for a spinlock to become available
+/** Wait for a spinlock to become available
  *
  *  This routine blocks until the spinlock is unlocked, 
  *  but in contrast to tMPI_Spinlock_lock() it returns without 
@@ -594,7 +591,7 @@ static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
  *
  *  \param x  Spinlock pointer
  */
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
     int rc;
     
@@ -608,112 +605,48 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 
 
 
+/* only do this if there was no better solution */
+#ifndef TMPI_HAVE_SWAP
+/** Atomic swap operation.
 
-/*! \brief Spinlock-based barrier type
- *
- *  This barrier has the same functionality as the standard
- *  tMPI_Thread_barrier_t, but since it is based on spinlocks
- *  it provides faster synchronization at the cost of busy-waiting.
- *
- *  Variables of this type should be initialized by calling
- *  tMPI_Spinlock_barrier_init() to set the number of threads
- *  that should be synchronized.
- * 
- * \see
- * - tMPI_Spinlock_barrier_init
- * - tMPI_Spinlock_barrier_wait
- */
-typedef struct tMPI_Spinlock_barrier
-{
-        tMPI_Atomic_t      count;     /*!< Number of threads remaining     */
-        int               threshold; /*!< Total number of threads         */
-        volatile int      cycle;     /*!< Current cycle (alternating 0/1) */
-}
-tMPI_Spinlock_barrier_t;
- 
+  Atomically swaps the data in the tMPI_Atomic_t operand with the value of b.
 
-
-
-/*! \brief Initialize spinlock-based barrier
- *
- *  \param barrier  Pointer to _spinlock_ barrier. Note that this is not
- *                  the same datatype as the full, thread based, barrier.
- *  \param count    Number of threads to synchronize. All threads
- *                  will be released after \a count calls to 
- *                  tMPI_Spinlock_barrier_wait().  
- */
-static inline void tMPI_Spinlock_barrier_init(
-                                    tMPI_Spinlock_barrier_t *       barrier,
-                                    int                              count)
-{
-        barrier->threshold = count;
-        barrier->cycle     = 0;
-        tMPI_Atomic_set(&(barrier->count),count);
-}
-
-
-
-
-/*! \brief Perform busy-waiting barrier synchronization
-*
-*  This routine blocks until it has been called N times,
-*  where N is the count value the barrier was initialized with.
-*  After N total calls all threads return. The barrier automatically
-*  cycles, and thus requires another N calls to unblock another time.
-*
-*  Note that spinlock-based barriers are completely different from
-*  standard ones (using mutexes and condition variables), only the 
-*  functionality and names are similar.
-*
-*  \param barrier  Pointer to previously create barrier.
-*
-*  \return The last thread returns -1, all the others 0.
+  \param a  Pointer to atomic type
+  \param b  Value to swap 
+  \return the original value of a
 */
-static inline int tMPI_Spinlock_barrier_wait(
-                                tMPI_Spinlock_barrier_t *barrier)
+static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 {
-    int    cycle;
-    int    status;
-    /*int    i;*/
-
-    /* We don't need to lock or use atomic ops here, since the cycle index 
-     * cannot change until after the last thread has performed the check
-     * further down. Further, they cannot reach this point in the next 
-     * barrier iteration until all of them have been released, and that 
-     * happens after the cycle value has been updated.
-     *
-     * No synchronization == fast synchronization.
-     */
-    cycle = barrier->cycle;
-
-    /* Decrement the count atomically and check if it is zero.
-     * This will only be true for the last thread calling us.
-     */
-    if( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
-    { 
-        tMPI_Atomic_set(&(barrier->count), barrier->threshold);
-        barrier->cycle = !barrier->cycle;
-
-        status = -1;
-    }
-    else
+    int oldval;
+    do
     {
-        /* Wait until the last thread changes the cycle index.
-         * We are both using a memory barrier, and explicit
-         * volatile pointer cast to make sure the compiler
-         * doesn't try to be smart and cache the contents.
-         */
-        do
-        { 
-            tMPI_Atomic_memory_barrier();
-        } 
-        while( *(volatile int *)(&(barrier->cycle)) == cycle);
+        oldval=(int)(a->value);
+    } while(tMPI_Atomic_cas(a, oldval, b) != oldval);
+    return oldval;
+}
+/** Atomic swap pointer operation.
 
-        status = 0;
-    }
-    return status;
+  Atomically swaps the pointer in the tMPI_Atomic_ptr_t operand with the 
+  value of b.
+
+  \param a  Pointer to atomic type
+  \param b  Value to swap 
+  \return the original value of a
+*/
+static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
+{
+    void *oldval;
+    do
+    {
+        oldval=(void*)(a->value);
+    } while(tMPI_Atomic_ptr_cas(a, oldval, b) != oldval);
+    return oldval;
 }
 
+#endif
+
+/* this allows us to use the inline keyword without breaking support for 
+   some compilers that don't support it: */
 #ifdef inline_defined_in_atomic
 #undef inline
 #endif

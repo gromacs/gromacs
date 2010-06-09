@@ -61,7 +61,7 @@ typedef struct
  *
  * It is called once for each frame.
  */
-int
+static int
 analyze_frame(t_topology *top, t_trxframe *fr, t_pbc *pbc,
               int nr, gmx_ana_selection_t *sel[], void *data)
 {
@@ -112,7 +112,7 @@ analyze_frame(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 int
 gmx_template(int argc, char *argv[])
 {
-    char               *desc[] = {
+    const char         *desc[] = {
         "This is a template for writing your own analysis tools for",
         "Gromacs. The advantage of using Gromacs for this is that you",
         "have access to all information in the topology, and your",
@@ -146,6 +146,7 @@ gmx_template(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     gmx_ana_traj_t       *trj;
+    output_env_t          oenv;
     t_analysisdata        d;
     int                   ngrps;
     gmx_ana_selection_t **sel;
@@ -161,7 +162,8 @@ gmx_template(int argc, char *argv[])
     /* If required, other functions can also be used to configure the library
      * before calling parse_trjana_args(). */
     parse_trjana_args(trj, &argc, argv, PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL);
+                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
+                      &oenv);
 
     /* You can now do any initialization you wish, using the information
      * from the trj structure.
@@ -191,7 +193,7 @@ gmx_template(int argc, char *argv[])
     if (opt2bSet("-o", NFILE, fnm))
     {
         d.fp = xvgropen(opt2fn("-o", NFILE, fnm), "Average distance",
-                        "Time [ps]", "Distance [nm]");
+                        "Time [ps]", "Distance [nm]", oenv);
         xvgr_selections(d.fp, trj);
     }
 
@@ -205,7 +207,7 @@ gmx_template(int argc, char *argv[])
     /* For the template, we close the output file if one was opened */
     if (d.fp)
     {
-        fclose(d.fp);
+        ffclose(d.fp);
     }
 
     /* We also calculate the average distance for each group */

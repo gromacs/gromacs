@@ -50,6 +50,8 @@
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
+#include "gmx_ana.h"
+
 
 /* this version only works correctly if one of the entries in the index file
    is a plane (three atoms specified) and the other a vector. Distance
@@ -203,7 +205,7 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   sprintf(buf,"Angle between %s and %s",grpn1,grpn2);
-  sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ",oenv);
+  sg_angle = xvgropen(afile,buf,"Time (ps)","Angle (degrees)",oenv);
 
   if (dfile) {
     sprintf(buf,"Distance between %s and %s",grpn1,grpn2);
@@ -241,13 +243,13 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
   
   fprintf(stderr,"\n");
   close_trj(status);
-  fclose(sg_angle);
+  ffclose(sg_angle);
   if (dfile)
-    fclose(sg_distance);
+    ffclose(sg_distance);
   if (d1file)
-    fclose(sg_distance1);
+    ffclose(sg_distance1);
   if (d2file)
-    fclose(sg_distance2);
+    ffclose(sg_distance2);
 
   sfree(x0);
 }
@@ -409,13 +411,13 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
   
   fprintf(stderr,"\n");
   close_trj(status);
-  fclose(sg_angle);
+  ffclose(sg_angle);
   if (dfile)
-    fclose(sg_distance);
+    ffclose(sg_distance);
   if (d1file)
-    fclose(sg_distance1);
+    ffclose(sg_distance1);
   if (d2file)
-    fclose(sg_distance2);
+    ffclose(sg_distance2);
   
   sfree(x0);
 }

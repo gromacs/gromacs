@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
     sprintf(buf,"Rotated %d degrees",i*(bTrimer ? 120 : 60));
     write_pdbfile(fp,buf,&atoms,xout,box,'A'+i,1+i);
   }
-  fclose(fp);
+  ffclose(fp);
   
   thanx(stderr);
   

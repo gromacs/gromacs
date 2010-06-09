@@ -42,6 +42,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   atom_id d;
   atom_id a;
@@ -80,5 +84,9 @@ typedef struct {
 } t_list;
 
 extern void determine_2struc(FILE *out,t_topology *top,t_list *list);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _struc2_h */

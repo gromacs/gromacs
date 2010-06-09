@@ -53,6 +53,8 @@
 #include "rmpbc.h"
 #include "tpxio.h"
 #include "nrjac.h"
+#include "gmx_ana.h"
+
 
 static void gyro_eigen(double **gyr,double *eig,double **eigv,int *ord)
 {
@@ -146,8 +148,8 @@ int gmx_polystat(int argc,char *argv[])
   real   t;
   rvec   *x,*bond=NULL;
   matrix box;
-  int    natoms,i,j,frame,ind0,ind1,a,d,d2,ord[DIM];
-  dvec   cm,sum_eig;
+  int    natoms,i,j,frame,ind0,ind1,a,d,d2,ord[DIM]={0};
+  dvec   cm,sum_eig={0,0,0};
   double **gyr,**gyr_all,eig[DIM],**eigv;
   double sum_eed2,sum_eed2_tot,sum_gyro,sum_gyro_tot,sum_pers_tot;
   int    *ninp=NULL;
@@ -197,13 +199,13 @@ int gmx_polystat(int argc,char *argv[])
 	  nat_min,nat_max);
 
   sprintf(title,"Size of %d polymers",nmol);
-  out = xvgropen(opt2fn("-o",NFILE,fnm),title,get_xvgr_tlabel(oenv),"(nm)",
+  out = xvgropen(opt2fn("-o",NFILE,fnm),title,output_env_get_xvgr_tlabel(oenv),"(nm)",
                 oenv);
   xvgr_legend(out,bPC ? 8 : 5,leg,oenv);
 
   if (opt2bSet("-v",NFILE,fnm)) {
     outv = xvgropen(opt2fn("-v",NFILE,fnm),"Principal components",
-		    get_xvgr_tlabel(oenv),"(nm)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(nm)",oenv);
     snew(legp,DIM*DIM);
     for(d=0; d<DIM; d++) {
       for(d2=0; d2<DIM; d2++) {
@@ -218,7 +220,7 @@ int gmx_polystat(int argc,char *argv[])
 
   if (opt2bSet("-p",NFILE,fnm)) {
     outp = xvgropen(opt2fn("-p",NFILE,fnm),"Persistence length",
-		    get_xvgr_tlabel(oenv),"bonds",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"bonds",oenv);
     snew(bond,nat_max-1);
     snew(sum_inp,nat_min/2);
     snew(ninp,nat_min/2);
@@ -336,7 +338,7 @@ int gmx_polystat(int argc,char *argv[])
     gyro_eigen(gyr_all,eig,eigv,ord);
 
     fprintf(out,"%10.3f %8.4f %8.4f %8.4f %8.4f %8.4f",
-	    t*get_time_factor(oenv),
+	    t*output_env_get_time_factor(oenv),
 	    sqrt(sum_eed2),sqrt(sum_gyro),
 	    sqrt(eig[ord[0]]),sqrt(eig[ord[1]]),sqrt(eig[ord[2]]));
     if (bPC) {
@@ -346,7 +348,7 @@ int gmx_polystat(int argc,char *argv[])
     fprintf(out,"\n");
 
     if (outv) {
-      fprintf(outv,"%10.3f",t*get_time_factor(oenv));
+      fprintf(outv,"%10.3f",t*output_env_get_time_factor(oenv));
       for(d=0; d<DIM; d++) {
 	for(d2=0; d2<DIM; d2++)
 	  fprintf(outv," %6.3f",eigv[ord[d]][d2]);
@@ -371,7 +373,7 @@ int gmx_polystat(int argc,char *argv[])
 	pers = i - 2
 	  + 2*(log(sum_inp[i-2]) + 1)/(log(sum_inp[i-2]) - log(sum_inp[i]));
       }
-      fprintf(outp,"%10.3f %8.4f\n",t*get_time_factor(oenv),pers);
+      fprintf(outp,"%10.3f %8.4f\n",t*output_env_get_time_factor(oenv),pers);
       sum_pers_tot += pers;
     }
 
@@ -380,11 +382,11 @@ int gmx_polystat(int argc,char *argv[])
 
   close_trx(status);
 
-  fclose(out);
+  ffclose(out);
   if (outv)
-    fclose(outv);
+    ffclose(outv);
   if (outp)
-    fclose(outp);
+    ffclose(outp);
 
   sum_eed2_tot /= frame;
   sum_gyro_tot /= frame;
@@ -414,7 +416,7 @@ int gmx_polystat(int argc,char *argv[])
     for (i = 0; i < j; i++) {
       fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
     }
-    fclose(outi);
+    ffclose(outi);
   }
 
   do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");

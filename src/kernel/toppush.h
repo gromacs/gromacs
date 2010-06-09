@@ -40,6 +40,7 @@
 #include "toputil.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
+#include "warninp.h"
 
 typedef struct {
   int     nr;	/* The number of entries in the list 			*/
@@ -50,51 +51,64 @@ typedef struct {
 } t_block2;
 
 extern void generate_nbparams(int comb,int funct,t_params plist[],
-			      gpp_atomtype_t atype);
+			      gpp_atomtype_t atype,
+			      warninp_t wi);
 			      
 extern void push_at (t_symtab *symtab,gpp_atomtype_t at,
 		     t_bond_atomtype bat,char *line,int nb_funct,
-		     t_nbparam ***nbparam,t_nbparam ***pair);
+		     t_nbparam ***nbparam,t_nbparam ***pair,
+		     warninp_t wi);
 
 extern void push_bt(directive d,t_params bt[], int nral,
-		    gpp_atomtype_t at,t_bond_atomtype bat,char *line);
+		    gpp_atomtype_t at,t_bond_atomtype bat,char *line,
+		    warninp_t wi);
 
 extern void push_dihedraltype(directive d,t_params bt[],
-			      t_bond_atomtype bat,char *line);
+			      t_bond_atomtype bat,char *line,
+			      warninp_t wi);
 
 extern void push_cmaptype(directive d,t_params bt[], int nral, gpp_atomtype_t at,
-						  t_bond_atomtype bat,char *line);
+			  t_bond_atomtype bat,char *line,
+			  warninp_t wi);
 
 extern void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
-		     char *plines,int nb_funct);
+		     char *plines,int nb_funct,
+		     warninp_t wi);
 
 void
 push_gb_params(gpp_atomtype_t atype,
-	       char       *line);
+	       char       *line,
+	       warninp_t wi);
 
 extern void push_atom(t_symtab   *symtab, 
 		      t_block    *cgs,
 		      t_atoms    *at,
 		      gpp_atomtype_t atype,
 		      char       *line,
-		      int        *lastcg);
+		      int        *lastcg,
+		      warninp_t  wi);
 
 extern void push_bond(directive d,t_params bondtype[],t_params bond[],
 		      t_atoms *at,gpp_atomtype_t atype,char *line,
 		      bool bBonded,bool bGenPairs,real fudgeQQ,
-		      bool bZero,bool *bWarn_copy_A_B);
+		      bool bZero,bool *bWarn_copy_A_B,
+		      warninp_t wi);
 
 extern void push_cmap(directive d, t_params bondtype[], t_params bond[],
-					  t_atoms *at, gpp_atomtype_t atype, char *line,
-					  bool *bWarn_copy_A_B);
+		      t_atoms *at, gpp_atomtype_t atype, char *line,
+		      bool *bWarn_copy_A_B,
+		      warninp_t wi);
 
 extern void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
-			 t_atoms *at,gpp_atomtype_t atype,char *line);
+			 t_atoms *at,gpp_atomtype_t atype,char *line,
+			 warninp_t wi);
 
 extern void push_mol(int nrmols,t_molinfo mols[],char *pline,
-		     int *whichmol,int *nrcopies);
+		     int *whichmol,int *nrcopies,
+		     warninp_t wi);
 
-extern void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line);
+extern void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line,
+		      warninp_t wi);
 
 extern void init_block2(t_block2 *b2, int natom);
 	

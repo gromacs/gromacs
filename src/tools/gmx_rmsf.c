@@ -56,6 +56,8 @@
 #include "rmpbc.h"
 #include "confio.h"
 #include "eigensolver.h"
+#include "gmx_ana.h"
+
 
 static real find_pdb_bfac(t_atoms *atoms,t_resinfo *ri,char *atomnm)
 {
@@ -94,26 +96,32 @@ void correlate_aniso(const char *fn,t_atoms *ref,t_atoms *calc,
 	fprintf(fp,"%10d  %10d\n",ref->pdbinfo[i].uij[j],calc->pdbinfo[i].uij[j]);
     }
   }
-  fclose(fp);
+  ffclose(fp);
 }
 
-void average_residues(real f[],int isize,atom_id index[],real w_rls[],
-		      t_atoms *atoms)
+static void average_residues(double f[],double **U,int uind,
+			     int isize,atom_id index[],real w_rls[],
+			     t_atoms *atoms)
 {
   int i,j,start;
-  real av,m;
+  double av,m;
   
   start = 0;
   av = 0;
   m = 0;
   for(i=0; i<isize; i++) {
-    av += w_rls[index[i]]*f[i];
+    av += w_rls[index[i]]*(f != NULL ? f[i] : U[i][uind]);
     m += w_rls[index[i]];
     if (i+1==isize || 
 	atoms->atom[index[i]].resind!=atoms->atom[index[i+1]].resind) {
       av /= m;
-      for(j=start; j<=i; j++)
-	f[j] = av;
+      if (f != NULL) {
+	for(j=start; j<=i; j++)
+	  f[i] = av;
+      } else {
+	for(j=start; j<=i; j++)
+	  U[j][uind] = av;
+      }
       start = i+1;
       av = 0;
       m = 0;
@@ -221,7 +229,7 @@ int gmx_rmsf(int argc,char *argv[])
   double       **U,*xav;
   atom_id      aid;
   rvec         *rmsd_x=NULL;
-  real         *rmsf,invcount,totmass;
+  double       *rmsf,invcount,totmass;
   int          d;
   real         count=0;
   rvec         xcm;
@@ -351,6 +359,12 @@ int gmx_rmsf(int argc,char *argv[])
   for(d=0; d<DIM*DIM; d++)
     Uaver[d] /= totmass;
 
+  if (bRes) {
+    for(d=0; d<DIM*DIM; d++) {
+      average_residues(NULL,U,d,isize,index,w_rls,&top.atoms);
+    }
+  }
+
   if (bAniso) {
     for(i=0; i<isize; i++) {
       aid = index[i];
@@ -364,7 +378,6 @@ int gmx_rmsf(int argc,char *argv[])
     }
   }
   if (bRes) {
-    average_residues(rmsf,isize,index,w_rls,&top.atoms);
     label = "Residue";
   } else
     label = "Atom";
@@ -377,7 +390,7 @@ int gmx_rmsf(int argc,char *argv[])
     print_dir(stdout,Uaver);
     fp = ffopen(dirfn,"w");
     print_dir(fp,Uaver);
-    fclose(fp);
+    ffclose(fp);
   }
 
   for(i=0; i<isize; i++)
@@ -402,7 +415,7 @@ int gmx_rmsf(int argc,char *argv[])
 		pdb_bfac);
       }
     }
-    fclose(fp);
+    ffclose(fp);
   } else {
     fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation",label,"(nm)",oenv);
     for(i=0; i<isize; i++)
@@ -410,7 +423,7 @@ int gmx_rmsf(int argc,char *argv[])
 	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind)
 	fprintf(fp,"%5d %8.4f\n",
 		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : i+1,sqrt(rmsf[i]));
-    fclose(fp);
+    ffclose(fp);
   }
   
   for(i=0; i<isize; i++)
@@ -420,7 +433,7 @@ int gmx_rmsf(int argc,char *argv[])
     for(i=0; i<isize; i++)
       rmsf[i] = (rmsd_x[i][XX]+rmsd_x[i][YY]+rmsd_x[i][ZZ])/count;
     if (bRes)
-      average_residues(rmsf,isize,index,w_rls,&top.atoms); 
+      average_residues(rmsf,NULL,0,isize,index,w_rls,&top.atoms); 
     /* Write RMSD output */
     fp = xvgropen(devfn,"RMS Deviation",label,"(nm)",oenv);
     for(i=0; i<isize; i++)
@@ -428,7 +441,7 @@ int gmx_rmsf(int argc,char *argv[])
 	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind)
 	fprintf(fp,"%5d %8.4f\n",
 		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : i+1,sqrt(rmsf[i]));
-    fclose(fp);
+    ffclose(fp);
   }
 
   if (opt2bSet("-oq",NFILE,fnm)) {

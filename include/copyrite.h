@@ -40,15 +40,17 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+#include <types/simple.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-  
-#include <stdio.h>
-#include <types/simple.h>
-  
+    
 /* Has to be a function, so we can get version number from autoconf */   
 const char *GromacsVersion(void);
+
+void gmx_print_version_info(FILE *fp);
   
   
 static const char *CopyrightText[] = {

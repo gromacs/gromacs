@@ -57,6 +57,8 @@
 #include "strdb.h"
 #include "xvgr.h"
 #include "pbc.h"
+#include "gmx_ana.h"
+
 
 #define NK  24
 #define NPK 4
@@ -94,7 +96,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
 	fprintf(fp," %g",tc[j][i]);
       fprintf(fp,"\n");
     }
-    fclose(fp);
+    ffclose(fp);
     do_view(oenv,fn_trans,"-nxy");
   }
   
@@ -140,7 +142,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     }
     fprintf(fp,"\n");
   }
-  fclose(fp);
+  ffclose(fp);
   do_view(oenv,fn_tc,"-nxy");
   
   if (fn_cub) {
@@ -181,7 +183,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
       fprintf(fp,"%g %g\n",i*dt,fit_function(effnVAC,fitparms,i*dt));
     fprintf(fp,"&\n");
   }
-  fclose(fp);
+  ffclose(fp);
   do_view(oenv,fn_tcf,"-nxy");
 
   if (fn_cub) {
@@ -204,10 +206,10 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
       fprintf(fp_cub,"&\n");
     }
     fprintf(fp_vk,"&\n");
-    fclose(fp_cub);
+    ffclose(fp_cub);
     do_view(oenv,fn_cub,"-nxy");
   }
-  fclose(fp_vk);
+  ffclose(fp_vk);
   do_view(oenv,fn_vk,"-nxy");
 }
 
@@ -220,7 +222,7 @@ int gmx_tcaf(int argc,char *argv[])
     "For details see: Palmer, JCP 49 (1994) pp 359-366.[PAR]",
     "Transverse currents are calculated using the",
     "k-vectors (1,0,0) and (2,0,0) each also in the y- and z-direction,",
-    "(1,1,0) and (1,-1,0) each also in the 2 other plains (these vectors",
+    "(1,1,0) and (1,-1,0) each also in the 2 other planes (these vectors",
     "are not independent) and (1,1,1) and the 3 other box diagonals (also",
     "not independent). For each k-vector the sine and cosine are used, in",
     "combination with the velocity in 2 perpendicular directions. This gives",

@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" { 
+#endif
+
 extern void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma);
 /*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis, *v can be NULL */
 
@@ -54,3 +58,7 @@ extern void gen_box(int NTB,int natoms,rvec *x, matrix box,rvec box_space,
  * generated (don't!) if bCenter then coordinates will be centered in the 
  * genereated box
  */
+
+#ifdef __cplusplus
+}
+#endif

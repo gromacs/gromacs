@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
   eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
 };
@@ -57,6 +61,7 @@ typedef struct {
   int           nr;             /* Residue number                       */
   unsigned char ic;             /* Code for insertion of residues       */
   unsigned char chain;          /* Chain identifier                     */
+  char          **rtp;          /* rtp building block name (optional)   */
 } t_resinfo;
 
 typedef struct {
@@ -104,3 +109,9 @@ typedef struct {
 
 
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))
+
+#ifdef __cplusplus
+}
+#endif
+
+

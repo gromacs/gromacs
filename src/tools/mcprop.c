@@ -197,6 +197,6 @@ void do_mc(FILE *fp,int nx,real x[],real step,real v0,real tol,
     fprintf(fp,"Converged !\n");
     fprintf(stderr,"Converged !\n");
   }
-  fclose(ftrj);
+  ffclose(ftrj);
 }
  

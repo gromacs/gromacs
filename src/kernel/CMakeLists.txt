@@ -29,15 +29,34 @@ set(GMXPREPROCESS_SOURCES
     toputil.c       
     tpbcmp.c        
     vsite_parm.c    
+    fflibutil.c
     xlate.c)
 
 set(MDRUN_SOURCES 
-    gctio.c    ionize.c
+    gctio.c    ionize.c runner.c
     do_gct.c     repl_ex.c  xutils.c
-    md.c         mdrun.c    genalg.c)
+    md.c         mdrun.c    genalg.c md_openmm.c)
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
+
+if(GMX_OPENMM) 
+    add_subdirectory(gmx_gpu_utils)
+    include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
+    link_directories(${OpenMM_LIBRARY_DIR}) 
+    # only define if this is a local build not a release 
+    # we assume that the auto-generated version is not used && 
+    # version string does not contain "-dev" => it's a release build
+    if(NOT USE_VERSION_H AND NOT PROJECT_VERSION MATCHES ".*-dev.*")  
+        add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) 
+    else()
+        add_definitions( -DOPENMM_PLUGIN_DIR="" )
+    endif()
+    add_library(openmm_api_wrapper openmm_wrapper.cpp)
+#    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
+    set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils OpenMM)   
+    install(TARGETS openmm_api_wrapper DESTINATION ${LIB_INSTALL_DIR})   
+endif(GMX_OPENMM)
 
 if(GMX_FAHCORE)
   add_library(fahcore ${MDRUN_SOURCES})
@@ -70,7 +89,13 @@ add_executable(gmxcheck gmxcheck.c)
 target_link_libraries(gmxcheck ${GMX_EXTRA_LIBRARIES})
 
 add_executable(mdrun ${MDRUN_SOURCES})
-target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
+# this is to circumvent the following MSVC error: 
+# warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs
+# fatal error LNK1169: one or more multiply defined symbols found
+if(GMX_OPENMM AND MSVC)
+    set_target_properties(mdrun PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT")
+endif()
 
 install(TARGETS 
         grompp
@@ -86,6 +111,4 @@ install(TARGETS
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 endif(GMX_FAHCORE)
-
-
 

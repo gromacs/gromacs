@@ -40,10 +40,6 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus 
-extern "C" {
-#endif
-
   /**************************************************************
    *
    * The routines in the corresponding c-file tpxio.c
@@ -53,6 +49,10 @@ extern "C" {
    *
    **************************************************************/
 #include "typedefs.h"
+
+#ifdef __cplusplus 
+extern "C" {
+#endif
 
 typedef struct
 {

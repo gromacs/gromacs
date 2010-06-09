@@ -38,6 +38,10 @@
 
 #include "types/inputrec.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,
 		      t_inputrec *ir,t_block *mols,
 		      real *capacity,int *mulitnr_cgs,int **multinr_nre,
@@ -56,5 +60,9 @@ extern void gen_sblocks(FILE *fp,int at_start,int at_end,
 /* Generate shake blocks from the constraint list. Set bSettle to yes for shake
  * blocks including settles. You normally do not want this.
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

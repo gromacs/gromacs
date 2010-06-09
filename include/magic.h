@@ -36,6 +36,14 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef GROMACS_MAGIC
 #define GROMACS_MAGIC 0xff0d
+#endif
+
+#ifdef __cplusplus
+}
 #endif

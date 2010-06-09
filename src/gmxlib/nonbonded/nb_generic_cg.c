@@ -82,6 +82,7 @@
      real *        vdwparam;
      int *         shift;
      int *         type;
+     t_excl *      excl;
        
      icoul               = nlist->icoul;
      ivdw                = nlist->ivdw;
@@ -124,7 +125,8 @@
          {
              aj0              = nlist->jjnr[k];
              aj1              = nlist->jjnr_end[k];
-             
+             excl             = &nlist->excl[k*MAX_CGCGSIZE];
+
              for(ai=ai0; (ai<ai1); ai++)
              {
                  i3               = ai*3;
@@ -142,6 +144,12 @@
 
                  for(aj=aj0; (aj<aj1); aj++)
                  {
+                     /* Check if this interaction is excluded */
+                     if (excl[aj-aj0] & (1<<(ai-ai0)))
+                     {
+                         continue;
+                     }
+
                      j3               = aj*3;
                      jx               = x[j3+0];
                      jy               = x[j3+1];

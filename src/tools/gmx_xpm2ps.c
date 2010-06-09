@@ -49,6 +49,7 @@
 #include "string2.h"
 #include "matio.h"
 #include "viewit.h"
+#include "gmx_ana.h"
 
 #define FUDGE 1.2
 #define DDD   2
@@ -102,14 +103,18 @@ void get_params(const char *mpin,const char *mpout,t_psrec *psr)
   static const char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
   /* this must correspond to t_rgb *linecolors[] below */
   static const char *colors[] = { "none", "black", "white", NULL };
+  warninp_t wi;
   t_inpfile *inp;
   const char *tmp;
   int       ninp=0;
-  
-  if (mpin)
-    inp = read_inpfile(mpin,&ninp,NULL);
-  else
+
+  wi = init_warning(FALSE,0);
+
+  if (mpin != NULL) {
+    inp = read_inpfile(mpin,&ninp,NULL,wi);
+  } else {
     inp = NULL;
+  }
   ETYPE("black&white",    psr->bw,             bools);
   RTYPE("linewidth",      psr->linewidth,      1.0);
   STYPE("titlefont",      psr->titfont,        "Helvetica");
@@ -151,8 +156,12 @@ void get_params(const char *mpin,const char *mpout,t_psrec *psr)
   STYPE("y-font",         psr->Y.font,         psr->X.font);
   RTYPE("y-tickfontsize", psr->Y.tickfontsize, psr->X.tickfontsize);
   STYPE("y-tickfont",     psr->Y.tickfont,     psr->Y.font);
-  if (mpout)
-    write_inpfile(mpout,ninp,inp,TRUE);
+
+  if (mpout != NULL) {
+    write_inpfile(mpout,ninp,inp,TRUE,wi);
+  }
+  
+  done_warning(wi,FARGS);
 }
 
 t_rgb black = { 0, 0, 0 };
@@ -589,7 +598,7 @@ void xpm_mat(const char *outf, int nmat,t_matrix *mat,t_matrix *mat2,
       write_xpm_m(out,mat[i]);
     }
   }
-  fclose(out);
+  ffclose(out);
 }
 
 static void tick_spacing(int n, real axis[], real offset, char axisnm, 
@@ -649,7 +658,7 @@ void ps_mat(const char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   bool   bMap1,bNextMap1,bDiscrete;
  
   /* memory leak: */
-  libm2p = m2p ? libfn(m2p) : m2p;
+  libm2p = m2p ? gmxlibfn(m2p) : m2p;
   get_params(libm2p,m2pout,&psrec);
 
   psr=&psrec;
@@ -972,7 +981,7 @@ void write_combined_matrix(int ecombine, const char *fn,
 		mat1[k].nx, mat1[k].ny, mat1[k].axis_x, mat1[k].axis_y, 
 		rmat1, rlo, rhi, white, black, &nlevels);	
   }
-  fclose(out);
+  ffclose(out);
 }
 
 void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,

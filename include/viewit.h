@@ -40,11 +40,12 @@
 #include <config.h>
 #endif
 
+#include "typedefs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "typedefs.h"
 
 extern void do_view(const output_env_t oenv,const char *fn, const char *opts);
 /* forks off appropriate command to view file.

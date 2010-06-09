@@ -40,10 +40,14 @@
 #include <config.h>
 #endif
 
-
 #include <stdio.h>
 #include "typedefs.h"
 #include "tpxio.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #define LINE_WIDTH	80
 #define RMARGIN		10
@@ -79,7 +83,6 @@ void pr_atomtypes(FILE *fp,int indent,const char *title,
 void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
 	     bool bShowNumbers);
 void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNumbers);
-void pr_cmap(FILE *fp,int indent,const char *title,gmx_cmap_t *cmap, bool bShowNumbers);
 /*
  * This routine prints out a (human) readable representation of 
  * the topology to the file fp. Ident specifies the number of 
@@ -94,5 +97,9 @@ void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh);
  */
 
 void pr_commrec(FILE *fp,int indent,t_commrec *cr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _txtdump_h */

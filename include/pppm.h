@@ -45,6 +45,10 @@
 #include "gmxcomplex.h"
 #include "fftgrid.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int gmx_pppm_init(FILE *log,      t_commrec *cr,
 			 const output_env_t oenv, bool bVerbose,
 			 bool bOld,      matrix box,
@@ -111,5 +115,9 @@ extern void wr_ghat(const char *fn,const output_env_t oenv,
 		    int porder,int niter,bool bSym,rvec beta,
 		    real r1,real rc,real pval,real zval,real eref,real qopt);
 /* Write a ghat file. (see above) */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

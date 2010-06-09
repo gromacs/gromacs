@@ -47,16 +47,15 @@
 
 #include <stdio.h>
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
-#endif
-
+#include <types/simple.h>
+#include <types/commrec.h>
 #include "typedefs.h"
 #include "main.h"
 #include "gmx_fatal.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern int gmx_setup(int *argc,char **argv,int *nnodes);
 /* Initializes the parallel communication, return the ID of the node */
@@ -94,13 +93,11 @@ extern void gmx_sumf(int nr,float r[],const t_commrec *cr);
 extern void gmx_sumd(int nr,double r[],const t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
-#ifdef GMX_MPI
 extern void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm);
 /* Calculate the global sum of an array of floats */
 
 extern void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm);
 /* Calculate the global sum of an array of doubles */
-#endif
 
 extern void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of ints */
@@ -134,5 +131,10 @@ if (bDebugMode()) fprintf(fp,"NODEID=%d, %s  %d\n",gmx_mpi_initialized() ? gmx_n
 #else
 #define debug_gmx()
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif	/* _network_h */

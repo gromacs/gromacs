@@ -42,6 +42,10 @@
 
 #include "types/simple.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Sparse matrix storage format
  *
  *  This structure specifies a storage format for a sparse matrix.
@@ -192,7 +196,9 @@ gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t *    A,
                                  real *                  x,
                                  real *                  y);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

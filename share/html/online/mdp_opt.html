@@ -108,6 +108,25 @@ topology, this can be useful for normal mode analysis.</dd>
 <dt><b>md</b></dt>
 <dd>A <!--Idx-->leap-frog<!--EIdx--> algorithm for integrating Newton's
 equations of motion.</dd>
+<dt><b>md-vv</b></dt>
+<dd>A velocity Verlet algorithm for integrating Newton's equations of motion.
+For constant NVE simulations the results are analytically, but not binary,
+identical to the <b>md</b> leap-frog integrator, except for the kinetic
+energy, which is determined from the whole step velocities and is therefore
+slightly too small. The advantage of this integrator is more accurate,
+reversible Nose-Hoover and Parrinello-Rahman coupling integration
+based on Trotter expansion, as well as (slightly too small) full step velocity
+output. This all comes at the cost off extra computation, especially with
+constraints and extra communication in parallel. Note that for nearly all
+production simulations the <b>md</b> integrator is accurate enough.
+</dd>
+<dt><b>md-vv-avek</b></dt>
+<dd>A velocity Verlet algorithm identical to <b>md-vv</b>, except that
+the kinetic energy is determined more accurately as the average of
+the two half step kinetic energies as in the <b>md</b> integrator.
+With Nose-Hoover and/or Parrinello-Rahman coupling this comes with
+a slight increase in computational cost.
+</dd>
 <dt><b>sd</b></dt>
 <dd> An accurate leap-frog stochastic dynamics integrator.
 Four Gaussian random number are required
@@ -230,7 +249,7 @@ Thus for exact restarts or redoing part of a run it might be necessary to
 set <tt>init_step</tt> to the step number of the restart frame.
 <tt>tpbconv</tt> does this automatically.
 </dd>
-<dt><h4>nstcalcenergy: (1)</h4></dt>
+<dt><h4>nstcalcenergy: (-1)</h4></dt>
 <dd>The frequency for calculating the energies, including the temperature
 and the pressure, 0 is never.
 This option is only relevant with dynamics.
@@ -241,7 +260,10 @@ because calculating energies requires global communication between all
 processes which can become a bottleneck at high parallelization.
 With global temperature and/or pressure coupling the time step for
 the coupling algorithm is <b>nstcalcenergy</b>*<b>dt</b>.
-Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.</dd>
+Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.
+The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
+unless <b>nstlist</b> &le 0, then a value of 10 is used;
+for velocity Verlet integrators <b>nstcalcenergy</b> is set to 1.</dd>
 <dt><h4>comm_mode:</h4></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
@@ -252,7 +274,7 @@ Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.</dd>
 <dt><b>No</b></dt>
 <dd>No restriction on the center of mass motion
 </dl></dd>
-<dt><h4>nstcomm: (1) [steps]</h4></dt>
+<dt><h4>nstcomm: (10) [steps]</h4></dt>
 <dd>frequency for center of mass motion removal</dd>
 <dt><h4>comm_grps:</h4></dt>
 <dd>group(s) for center of mass motion removal, default is the whole system</dd>
@@ -342,8 +364,7 @@ the last velocities are always written</dd>
 <dd>frequency to write forces to output trajectory.</dd>
 <dt><h4>nstlog: (100) [steps]</h4></dt>
 <dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
-the last energies are always written,
-should be a multiple of <b>nstcalcenergy</b></dd>
+the last energies are always written</dd>
 <dt><h4>nstenergy: (100) [steps]</h4></dt>
 <dd>frequency to write energies to energy file,
 the last energies are always written,
@@ -808,7 +829,8 @@ This thermostat works correctly even for <b>tau_t</b>=0.
 For NVT simulations the conserved energy quantity is written
 to the energy and log file.</dd>
 </dl>
-
+<dt><h4>nh-chain-length (5)</h4></dt>
+<dd>the number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog <b>md</b> integrator only supports 1</dd>
 <dt><h4>tc_grps:</h4></dt>
 <dd>groups to couple separately to temperature bath</dd>
 <dt><h4>tau_t: [ps]</h4></dt>
@@ -1141,7 +1163,12 @@ are not used.</dd>
 <dd>Pull along the vector connecting the two groups.
 Components can be selected with <b>pull_dim</b>.</dd>
 <dt><b>direction</b></dt>
-<dd>Pull in the direction of <b>pull_vec</b>.
+<dd>Pull in the direction of <b>pull_vec</b>.</dd>
+<dt><b>direction_periodic</b></dt>
+<dd>As <b>direction</b>, but allows the distance to be larger than
+half the box size. With this geometry the box should not be dynamic
+(e.g. no pressure scaling) in the pull dimensions and the pull force
+is not added to virial.</dd>
 <dt><b>cylinder</b></dt>
 <dd>Designed for pulling with respect to a layer where the reference COM
 is given by a local cylindrical part of the reference group.
@@ -1243,10 +1270,13 @@ The force constant is then (1 - lambda)*<b>pull_k1</b> + lambda*<b>pull_kB1</b>.
 restraint information in topology file)</dd>
 <dt><b>simple</b></dt>
 <dd>simple (per-molecule) distance restraints,
-ensemble averaging can be performed with <tt>mdrun -multi</tt></dd>
+ensemble averaging can be performed with <tt>mdrun -multi</tt>
+where the environment variable GMX_DISRE_ENSEMBLE_SIZE sets the number
+of systems within each ensemble (usually equal to the mdrun -multi value)</dd>
 <dt><b>ensemble</b></dt>
 <dd>distance restraints over an ensemble of molecules in one simulation box,
-should only be used for special cases, such as dimers</dd>
+should only be used for special cases, such as dimers
+(this option is not fuctional in the current version of GROMACS)</dd>
 </dl></dd>
 <dt><h4>disre_weighting:</h4></dt>
 <dd><dl compact>
@@ -1341,6 +1371,9 @@ to zero</dd>
 <dt><h4>couple-moltype:</h4></dt>
 <dd>Here one can supply a molecule type (as defined in the topology)
 for calculating solvation or coupling free energies.
+There is a special option <b>system</b> that couples all molecule types
+in the system. This can be useful for equilibrating a system
+starting from (nearly) random coordinates.
 <b>free_energy</b> has to be turned on.
 The Van der Waals interactions and/or charges in this molecule type can be
 turned on or off between lambda=0 and lambda=1, depending on the settings
@@ -1353,6 +1386,8 @@ the molecule definition in the topology.</dd>
 <dd>all interactions are on at lambda=0
 <dt><b>vdw</b></dt>
 <dd>the charges are zero (no Coulomb interactions) at lambda=0
+<dt><b>q</b></dt>
+<dd>the Van der Waals interactions are turned at lambda=0; soft-core interactions will be required to avoid singularities
 <dt><b>none</b></dt>
 <dd>the Van der Waals interactions are turned off and the charges are zero at lambda=0; soft-core interactions will be required to avoid singularities
 </dl>
@@ -1669,6 +1704,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#bond2">morse</A><br>
 <A HREF="#em">nbfgscorr</A><br>
 <A HREF="#xmdrun">niter</A><br>
+<A HREF="#tc">nh-chain-length</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#run">nstcalcenergy</A><br>
 <A HREF="#run">nstcomm</A><br>

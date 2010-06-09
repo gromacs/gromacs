@@ -41,6 +41,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "gstat.h"
+#include "gmx_fatal.h"
 	
 t_dlist *mk_dlist(FILE *log, 
 		  t_atoms *atoms, int *nlist,

@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern real calc_grid(FILE *fp,
 		      matrix box,real gr_sp,
 		      int *nx,int *ny,int *nz,int nnodes);
@@ -45,3 +49,7 @@ extern real calc_grid(FILE *fp,
  * can not be achieved by calc_grid.
  * Returns the maximum grid spacing.
  */
+
+#ifdef __cplusplus
+}
+#endif

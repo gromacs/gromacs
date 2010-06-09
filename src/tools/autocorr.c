@@ -600,7 +600,7 @@ void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
   bool    bFour = acf.bFour;
  
   /* Check flags and parameters */ 
-  /*  nout = get_acfnout();*/
+  nout = get_acfnout();
   if (nout == -1)
     nout = acf.nout = (nframes+1)/2;
   else if (nout > nframes)
@@ -732,7 +732,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
       "Length of the ACF, default is half the number of frames" },
     { "-normalize",FALSE, etBOOL, {&acf.bNormalize},
       "Normalize ACF" },
-    { "-fft",      FALSE, etBOOL, {&acf.bFour},
+    { "-fftcorr",  FALSE, etBOOL, {&acf.bFour},
       "HIDDENUse fast fourier transform for correlation function" },
     { "-nrestart", FALSE, etINT,  {&acf.nrestart},
       "HIDDENNumber of frames between time origins for ACF when no FFT is used" },

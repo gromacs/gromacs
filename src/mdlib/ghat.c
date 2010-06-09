@@ -47,6 +47,7 @@
 #include "xvgr.h"
 #include "fftgrid.h"
 #include "gmxfio.h"
+#include "pppm.h"
 
 static void calc_k(rvec lll,int ix,int iy,int iz,int nx,int ny,int nz,rvec k)
 {

@@ -42,6 +42,11 @@
 
 #include "vsite.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #define GMX_LEFT     0          /* channel to the left processor  */
 #define GMX_RIGHT    1          /* channel to the right processor */
 
@@ -133,5 +138,8 @@ pd_move_x_constraints(t_commrec *  cr,
 					  rvec *       x0,
 					  rvec *       x1);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

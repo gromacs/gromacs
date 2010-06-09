@@ -86,7 +86,7 @@ static void pull_set_pbcatom(t_commrec *cr, t_pullgrp *pg,
 
   if (cr && PAR(cr)) {
     if (DOMAINDECOMP(cr)) {
-      if (!ga2la_home(cr->dd->ga2la,pg->pbcatom,&a)) {
+      if (!ga2la_get_home(cr->dd->ga2la,pg->pbcatom,&a)) {
 	a = -1;
       }
     } else {
@@ -186,7 +186,7 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
     for(i=0; i<pref->nat; i++) {
       ii = pull->grp[0].ind[i];
       if (ga2la) {
-	if (!ga2la_home(ga2la,pref->ind[i],&ii)) {
+	if (!ga2la_get_home(ga2la,pref->ind[i],&ii)) {
 	  ii = -1;
 	}
       }
@@ -341,12 +341,17 @@ void pull_calc_coms(t_commrec *cr,
 	  } else {
 	    /* Sum the difference with the reference atom */
 	    pbc_dx(pbc,x[ii],x_pbc,dx);
-	    for(m=0; m<DIM; m++)
+	    for(m=0; m<DIM; m++) {
 	      com[m]    += wm*dx[m];
+	    }
 	    if (xp) {
-	      pbc_dx(pbc,xp[ii],x_pbc,dx);
-	      for(m=0; m<DIM; m++)
-		comp[m] += wm*dx[m];
+	      /* For xp add the difference between xp and x to dx,
+	       * such that we use the same periodic image,
+	       * also when xp has a large displacement.
+	       */
+	      for(m=0; m<DIM; m++) {
+		comp[m] += wm*(dx[m] + xp[ii][m] - x[ii][m]);
+	      }
 	    }
 	  }
 	} else {

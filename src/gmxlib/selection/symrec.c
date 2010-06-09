@@ -39,6 +39,7 @@
 #include <smalloc.h>
 #include <string2.h>
 #include <typedefs.h>
+#include <gmx_fatal.h>
 
 #include <poscalc.h>
 
@@ -82,6 +83,11 @@ static const char *const sym_reserved[] = {
     "and",
     "or",
     "xor",
+    "yes",
+    "no",
+    "on",
+    "off",
+    "help",
 };
 
 /*!

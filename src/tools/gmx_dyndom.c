@@ -46,6 +46,8 @@
 #include "vec.h"
 #include "physics.h"
 #include "random.h"
+#include "gmx_ana.h"
+
 
 static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,
 		     rvec head,rvec tail,matrix box,int isize,atom_id index[],

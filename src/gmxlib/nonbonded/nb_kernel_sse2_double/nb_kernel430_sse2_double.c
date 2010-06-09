@@ -113,7 +113,7 @@ void nb_kernel430_sse2_double(int *           p_nri,
 	nri        = *p_nri;
 	ntype      = *p_ntype;
 	nthreads   = *p_nthreads; 
-    facel      = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
+    facel      = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));       
 	krf        = *p_krf;
 	crf        = *p_crf;
 	tabscl     = *p_tabscale;
@@ -729,7 +729,7 @@ void nb_kernel430nf_sse2_double(
             dy11             = iy1 - jy1;      
             dz11             = iz1 - jz1;      
             rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv11           = invsqrt(rsq11);
+            rinv11           = gmx_invsqrt(rsq11);
             isaj             = invsqrta[jnr];  
             isaprod          = isai*isaj;      
             qq               = iq*charge[jnr]; 

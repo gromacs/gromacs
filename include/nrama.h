@@ -44,6 +44,10 @@
 #include "statutil.h"
 #include "mshift.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   bool bShow;
   char *label;
@@ -77,5 +81,9 @@ extern t_topology *init_rama(const output_env_t oenv, const char *infile,
                              const char *topfile, t_xrama *xr,int mult);
 
 extern bool new_data(t_xrama *xr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _nrama_h */

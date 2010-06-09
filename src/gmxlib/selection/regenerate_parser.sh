@@ -6,4 +6,4 @@
 # Bison/Flex input files.
 
 [[ parser.y  -nt parser.c ]]  && bison -d -t -o parser.c parser.y
-[[ scanner.l -nt scanner.c ]] && flex -t scanner.l >scanner.c
+[[ scanner.l -nt scanner.c ]] && flex -o scanner.c scanner.l

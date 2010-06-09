@@ -43,6 +43,10 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum { 
   eXCenter, eXLeft, eXRight
 } eXPos;
@@ -118,4 +122,9 @@ extern void viewps(char *fn);
 
 extern void ps_comment(t_psdata ps,const char *s);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif	/* _writeps_h */
+

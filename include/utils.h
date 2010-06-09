@@ -43,8 +43,16 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void print_rvec(FILE *log,char *title,rvec vect);
 
 extern void print_rvecs(FILE *log,char *title,int n,rvec vec[]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _utils_h */

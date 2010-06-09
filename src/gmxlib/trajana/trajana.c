@@ -59,11 +59,59 @@
  * There is a \ref share/template/template.c "template" for writing
  * analysis programs, the documentation for it and links from there should
  * help getting started.
+ *
+ *
+ * \internal
+ * \section libtrajana_impl Implementation details
+ *
+ * Some internal implementation details of the library are documented on
+ * separate pages:
+ *  - \subpage poscalcengine
+ *  - \subpage selparser
+ *  - \subpage selcompiler
  */
-/*! \file 
+/*! \page selengine Text-based selections
+ *
+ * \section selection_basics Basics
+ *
+ * Selections are enabled automatically for an analysis program that uses
+ * the library. The selection syntax is described in an online help that is
+ * accessible from all tools that use the library.
+ * By default, dynamic selections are allowed, and the user can freely
+ * choose whether to analyze atoms or centers of mass/geometry of
+ * residues/molecules.
+ * These defaults, as well as some others, can be changed by specifying
+ * flags for gmx_ana_traj_create().
+ *
+ * The analysis program can then access the selected positions for each frame
+ * through a \p gmx_ana_selection_t array that is passed to the frame
+ * analysis function (see gmx_analysisfunc()).
+ * As long as the analysis program is written such that it does not assume
+ * that the number of positions or the atoms in the groups groups remain
+ * constant, any kind of selection expression can be used.
+ *
+ * Some analysis programs may require a special structure for the index groups
+ * (e.g., \c g_angle requires the index group to be made of groups of three or
+ * four atoms).
+ * For such programs, it is up to the user to provide a proper selection
+ * expression that always returns such positions.
+ * Such analysis program can define \ref ANA_REQUIRE_WHOLE to make the
+ * default behavior appropriate for the most common uses where the groups
+ * should consist of atoms within a single residue/molecule.
+ *
+ * \section selection_methods Implementing new keywords
+ *
+ * New selection keywords can be easily implemented, either directly into the
+ * library or as part of analysis programs (the latter may be useful for
+ * testing or methods very specific to some analysis).
+ * For both cases, you should first create a \c gmx_ana_selmethod_t structure
+ * and fill it with the necessary information.
+ * Details can be found on a separate page: \ref selmethods.
+ */
+/*! \internal \file
  * \brief Implementation of functions in trajana.h.
  */
-/*! \dir src/gmxlib/trajana
+/*! \internal \dir src/gmxlib/trajana
  * \brief Source code for common trajectory analysis functions.
  *
  * Selection handling is found in \ref src/gmxlib/selection.
@@ -75,6 +123,7 @@
 #include <string.h>
 
 #include <filenm.h>
+#include <futil.h>
 #include <macros.h>
 #include <pbc.h>
 #include <rmpbc.h>
@@ -126,18 +175,18 @@ struct gmx_ana_traj_t
      */
     bool                      bPBC;
 
-    /** Name of the trajectory file. */
-    const char               *trjfile;
+    /** Name of the trajectory file (NULL if not provided). */
+    char                     *trjfile;
     /** Name of the topology file (NULL if no topology loaded). */
-    const char               *topfile;
+    char                     *topfile;
     /** Non-NULL name of the topology file. */
-    const char               *topfile_notnull;
+    char                     *topfile_notnull;
     /** Name of the index file (NULL if no index file provided). */
-    const char               *ndxfile;
+    char                     *ndxfile;
     /** Name of the selection file (NULL if no file provided). */
-    const char               *selfile;
+    char                     *selfile;
     /** The selection string (NULL if not provided). */
-    const char               *selection;
+    char                     *selection;
 
     /** The topology structure, or \p NULL if no topology loaded. */
     t_topology               *top;
@@ -146,7 +195,7 @@ struct gmx_ana_traj_t
     /** Coordinates from the topology (see \p bTopX). */
     rvec                     *xtop;
     /** The box loaded from the topology file. */
-    matrix                    boxTop;
+    matrix                    boxtop;
     /** The ePBC field loaded from the topology file. */
     int                       ePBC;
 
@@ -272,6 +321,11 @@ gmx_ana_traj_free(gmx_ana_traj_t *d)
 {
     int                 i;
 
+    sfree(d->trjfile);
+    sfree(d->topfile);
+    sfree(d->topfile_notnull);
+    sfree(d->ndxfile);
+    sfree(d->selfile);
     if (d->top)
     {
         done_top(d->top);
@@ -290,6 +344,7 @@ gmx_ana_traj_free(gmx_ana_traj_t *d)
     gmx_ana_selcollection_free(d->sc);
     gmx_ana_poscalc_coll_free(d->pcc);
     sfree(d->grpnames);
+    output_env_done(d->oenv);
     sfree(d);
 }
 
@@ -386,6 +441,11 @@ gmx_ana_set_rmpbc(gmx_ana_traj_t *d, bool bRmPBC)
 int
 gmx_ana_set_frflags(gmx_ana_traj_t *d, int frflags)
 {
+    if (d->sel)
+    {
+        gmx_call("cannot set trajectory flags after initializing selections");
+        return -1;
+    }
     if (d->fr)
     {
         gmx_call("cannot set trajectory flags after the first frame has been read");
@@ -628,9 +688,10 @@ parse_trjana_args(gmx_ana_traj_t *d,
     size_t              i;
     int                 k;
     int                 rc;
+    const char         *tmp_fnm;
 
     t_filenm            def_fnm[] = {
-        {efTRX, NULL,  NULL,        ffREAD},
+        {efTRX, NULL,  NULL,        ffOPTRD},
         {efTPS, NULL,  NULL,        ffREAD},
         {efDAT, "-sf", "selection", ffOPTRD},
         {efNDX, NULL,  NULL,        ffOPTRD},
@@ -784,20 +845,15 @@ parse_trjana_args(gmx_ana_traj_t *d,
                       ndesc, desc, nbugs, bugs,oenv);
     d->oenv = *oenv;
 
-    /* Copy the results back */
-    for (k = 0; k < nfile; ++k)
-    {
-        memcpy(&(fnm[k]), &(all_fnm[fnm_map[k]]), sizeof(fnm[k]));
-    }
-    for (i = 0, k = npall - npargs; i < (size_t)npargs; ++i, ++k)
-    {
-        memcpy(&(pa[i]), &(all_pa[k]), sizeof(pa[i]));
-    }
-
-    d->trjfile         = ftp2fn(efTRX, nfall, all_fnm);
-    d->topfile         = ftp2fn_null(efTPS, nfall, all_fnm);
-    d->topfile_notnull = ftp2fn(efTPS, nfall, all_fnm);
-    d->ndxfile         = ftp2fn_null(efNDX, nfall, all_fnm);
+    /* Process our own options.
+     * Make copies of file names for easier memory management. */
+    tmp_fnm            = ftp2fn_null(efTRX, nfall, all_fnm);
+    d->trjfile         = tmp_fnm ? strdup(tmp_fnm) : NULL;
+    tmp_fnm            = ftp2fn_null(efTPS, nfall, all_fnm);
+    d->topfile         = tmp_fnm ? strdup(tmp_fnm) : NULL;
+    d->topfile_notnull = strdup(ftp2fn(efTPS, nfall, all_fnm));
+    tmp_fnm            = ftp2fn_null(efNDX, nfall, all_fnm);
+    d->ndxfile         = tmp_fnm ? strdup(tmp_fnm) : NULL;
     if (!(d->flags & ANA_NOUSER_RMPBC))
     {
         d->bRmPBC      = bRmPBC;
@@ -807,8 +863,24 @@ parse_trjana_args(gmx_ana_traj_t *d,
         d->bPBC        = bPBC;
     }
     d->selection       = selection;
-    d->selfile         = opt2fn_null("-sf", nfall, all_fnm);
+    tmp_fnm            = opt2fn_null("-sf", nfall, all_fnm);
+    d->selfile         = tmp_fnm ? strdup(tmp_fnm) : NULL;
 
+    /* Copy the results back */
+    for (k = 0; k < nfile; ++k)
+    {
+        memcpy(&(fnm[k]), &(all_fnm[fnm_map[k]]), sizeof(fnm[k]));
+        /* Delegate responsibility of freeing the file names to caller. */
+        all_fnm[fnm_map[k]].nfiles = 0;
+        all_fnm[fnm_map[k]].fns    = NULL;
+    }
+    for (i = 0, k = npall - npargs; i < (size_t)npargs; ++i, ++k)
+    {
+        memcpy(&(pa[i]), &(all_pa[k]), sizeof(pa[i]));
+    }
+
+    /* Free memory we have allocated. */
+    done_filenms(nfall, all_fnm);
     sfree(all_fnm);
     sfree(fnm_map);
     sfree(all_pa);
@@ -848,6 +920,20 @@ parse_trjana_args(gmx_ana_traj_t *d,
         gmx_ana_init_selections(d);
     }
 
+    /* If no trajectory file is given, we need to set some flags to be able
+     * to prepare a frame from the loaded topology information. Also, check
+     * that a topology is provided. */
+    if (!d->trjfile)
+    {
+        if (!d->topfile)
+        {
+            gmx_input("No trajectory or topology provided, nothing to do!");
+            return -1;
+        }
+        d->flags |= ANA_REQUIRE_TOP;
+        d->flags |= ANA_USE_TOPX;
+    }
+
     /* Load the topology if so requested. */
     rc = load_topology(d, (d->flags & ANA_REQUIRE_TOP));
     if (rc != 0)
@@ -870,7 +956,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
  * \returns       0 on success, a non-zero error code on error.
  *
  * Initializes the \c gmx_ana_traj_t::top, \c gmx_ana_traj_t::bTop,
- * \c gmx_ana_traj_t::boxTop and \c gmx_ana_traj_t::ePBC fields of the
+ * \c gmx_ana_traj_t::boxtop and \c gmx_ana_traj_t::ePBC fields of the
  * analysis structure.
  * If \p bReq is TRUE, the topology is loaded even if it is not given on
  * the command line.
@@ -892,7 +978,7 @@ static int load_topology(gmx_ana_traj_t *d, bool bReq)
     {
         snew(d->top, 1);
         d->bTop = read_tps_conf(d->topfile_notnull, title, d->top,
-                                &d->ePBC, &d->xtop, NULL, d->boxTop, TRUE);
+                                &d->ePBC, &d->xtop, NULL, d->boxtop, TRUE);
         if (!(d->flags & ANA_USE_TOPX))
         {
             sfree(d->xtop);
@@ -955,7 +1041,7 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
 {
     if (box)
     {
-        copy_mat(d->boxTop, box);
+        copy_mat(d->boxtop, box);
     }
     if (ePBC)
     {
@@ -974,6 +1060,121 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
     return 0;
 }
 
+/*! \brief
+ * Loads default index groups from a selection file.
+ *
+ * \param[in,out] d     Trajectory analysis data structure.
+ * \param[out]    grps  Pointer to receive the default groups.
+ * \returns       0 on success, a non-zero error code on error.
+ */
+static int
+init_default_selections(gmx_ana_traj_t *d, gmx_ana_indexgrps_t **grps)
+{
+    gmx_ana_selcollection_t  *sc;
+    char                     *fnm;
+    int                       nr, nr_notempty, i;
+    int                       rc;
+
+    /* If an index file is provided, just load it and exit. */
+    if (d->ndxfile)
+    {
+        gmx_ana_indexgrps_init(grps, d->top, d->ndxfile);
+        return 0;
+    }
+    /* Initialize groups to NULL if we return prematurely. */
+    *grps = NULL;
+    /* Return immediately if no topology provided. */
+    if (!d->top)
+    {
+        return 0;
+    }
+
+    /* Find the default selection file, return if none found. */
+    fnm = low_gmxlibfn("defselection.dat", FALSE);
+    if (fnm == NULL)
+    {
+        return 0;
+    }
+
+    /* Create a temporary selection collection. */
+    rc = gmx_ana_selcollection_create(&sc, d->pcc);
+    if (rc != 0)
+    {
+        sfree(fnm);
+        return rc;
+    }
+    rc = gmx_ana_selmethod_register_defaults(sc);
+    if (rc != 0)
+    {
+        gmx_ana_selcollection_free(sc);
+        sfree(fnm);
+        gmx_fatal(FARGS, "default selection method registration failed");
+        return rc;
+    }
+    /* FIXME: It would be better to not have the strings here hard-coded. */
+    gmx_ana_selcollection_set_refpostype(sc, "atom");
+    gmx_ana_selcollection_set_outpostype(sc, "atom", FALSE);
+
+    /* Parse and compile the file with no external groups. */
+    rc = gmx_ana_selcollection_parse_file(sc, fnm, NULL);
+    sfree(fnm);
+    if (rc != 0)
+    {
+        gmx_ana_selcollection_free(sc);
+        fprintf(stderr, "\nWARNING: default selection(s) could not be parsed\n");
+        return rc;
+    }
+    gmx_ana_selcollection_set_topology(sc, d->top, -1);
+    rc = gmx_ana_selcollection_compile(sc);
+    if (rc != 0)
+    {
+        gmx_ana_selcollection_free(sc);
+        fprintf(stderr, "\nWARNING: default selection(s) could not be compiled\n");
+        return rc;
+    }
+
+    /* Count the non-empty groups and check that there are no dynamic
+     * selections. */
+    nr = gmx_ana_selcollection_get_count(sc);
+    nr_notempty = 0;
+    for (i = 0; i < nr; ++i)
+    {
+        gmx_ana_selection_t  *sel;
+
+        sel = gmx_ana_selcollection_get_selection(sc, i);
+        if (sel->bDynamic)
+        {
+            fprintf(stderr, "\nWARNING: dynamic default selection ignored\n");
+        }
+        else if (sel->g->isize > 0)
+        {
+            ++nr_notempty;
+        }
+    }
+
+    /* Copy the groups to the output structure */
+    gmx_ana_indexgrps_alloc(grps, nr_notempty);
+    nr_notempty = 0;
+    for (i = 0; i < nr; ++i)
+    {
+        gmx_ana_selection_t  *sel;
+
+        sel = gmx_ana_selcollection_get_selection(sc, i);
+        if (!sel->bDynamic && sel->g->isize > 0)
+        {
+            gmx_ana_index_t  *g;
+
+            g = gmx_ana_indexgrps_get_grp(*grps, nr_notempty);
+            gmx_ana_index_copy(g, sel->g, TRUE);
+            g->name = strdup(sel->name);
+            ++nr_notempty;
+        }
+    }
+
+    gmx_ana_selcollection_free(sc);
+    return 0;
+}
+
 /*!
  * \param[in,out] d     Trajectory analysis data structure.
  * \returns       0 on success, a non-zero error code on error.
@@ -986,7 +1187,8 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
  *
  * \see ANA_USER_SELINIT
  */
-int gmx_ana_init_selections(gmx_ana_traj_t *d)
+int
+gmx_ana_init_selections(gmx_ana_traj_t *d)
 {
     int                  rc;
     int                  i;
@@ -1004,6 +1206,10 @@ int gmx_ana_init_selections(gmx_ana_traj_t *d)
         return -1;
     }
 
+    gmx_ana_selcollection_set_veloutput(d->sc,
+            d->frflags & (TRX_READ_V | TRX_NEED_V));
+    gmx_ana_selcollection_set_forceoutput(d->sc,
+            d->frflags & (TRX_READ_F | TRX_NEED_F));
     /* Check if we need some information from the topology */
     if (gmx_ana_selcollection_requires_top(d->sc))
     {
@@ -1013,19 +1219,28 @@ int gmx_ana_init_selections(gmx_ana_traj_t *d)
             return rc;
         }
     }
-    /* Load the topology and init the index groups */
-    gmx_ana_indexgrps_init(&grps, d->top, d->ndxfile);
-    /* Parse the selection */
+    /* Initialize the default selection methods */
     rc = gmx_ana_selmethod_register_defaults(d->sc);
     if (rc != 0)
     {
         gmx_fatal(FARGS, "default selection method registration failed");
         return rc;
     }
+    /* Initialize index groups.
+     * We ignore the return value to continue without the default groups if
+     * there is an error there. */
+    init_default_selections(d, &grps);
+    /* Parse the selections */
     bStdIn = (d->selfile && d->selfile[0] == '-' && d->selfile[1] == 0)
              || (d->selection && d->selection[0] == 0)
              || (!d->selfile && !d->selection);
+    /* Behavior is not very pretty if we cannot check for interactive input,
+     * but at least it should compile and work in most cases. */
+#ifdef HAVE_UNISTD_H
     bInteractive = bStdIn && isatty(fileno(stdin));
+#else
+    bInteractive = bStdIn;
+#endif
     if (bStdIn && bInteractive)
     {
         /* Parse from stdin */
@@ -1042,7 +1257,7 @@ int gmx_ana_init_selections(gmx_ana_traj_t *d)
                 fprintf(stderr, "%d reference selections", d->nrefgrps);
             }
             fprintf(stderr, ":\n");
-            fprintf(stderr, "(one selection per line, use \\ for line continuation)\n");
+            fprintf(stderr, "(one selection per line, 'help' for help)\n");
             rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nrefgrps, grps, TRUE);
             nr = gmx_ana_selcollection_get_count(d->sc);
             if (rc != 0 || nr != d->nrefgrps)
@@ -1067,7 +1282,7 @@ int gmx_ana_init_selections(gmx_ana_traj_t *d)
             fprintf(stderr, "%d selections", d->nanagrps);
         }
         fprintf(stderr, " for analysis:\n");
-        fprintf(stderr, "(one selection per line, use \\ for line continuation%s)\n",
+        fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
                 d->nanagrps == -1 ? ", Ctrl-D to end" : "");
         rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nanagrps, grps, TRUE);
         fprintf(stderr, "\n");
@@ -1084,7 +1299,10 @@ int gmx_ana_init_selections(gmx_ana_traj_t *d)
     {
         rc = gmx_ana_selcollection_parse_file(d->sc, d->selfile, grps);
     }
-    gmx_ana_indexgrps_free(grps);
+    if (grps)
+    {
+        gmx_ana_indexgrps_free(grps);
+    }
     if (rc != 0)
     {
         /* Free memory for memory leak checking */
@@ -1300,22 +1518,48 @@ static int init_first_frame(gmx_ana_traj_t *d)
     d->frflags |= TRX_NEED_X;
 
     snew(d->fr, 1);
-    if (!read_first_frame(d->oenv, &d->status, d->trjfile, d->fr, d->frflags))
-    {
-        gmx_input("could not read coordinates from trajectory");
-        return EIO;
-    }
 
-    if (d->top && d->fr->natoms > d->top->atoms.nr)
+    if (d->trjfile)
     {
-        gmx_fatal(FARGS, "Trajectory (%d atoms) does not match topology (%d atoms)",
-                  d->fr->natoms, d->top->atoms.nr);
-        return -1;
+        if (!read_first_frame(d->oenv, &d->status, d->trjfile, d->fr, d->frflags))
+        {
+            gmx_input("could not read coordinates from trajectory");
+            return EIO;
+        }
+
+        if (d->top && d->fr->natoms > d->top->atoms.nr)
+        {
+            gmx_fatal(FARGS, "Trajectory (%d atoms) does not match topology (%d atoms)",
+                      d->fr->natoms, d->top->atoms.nr);
+            return -1;
+        }
+        /* check index groups */
+        for (i = 0; i < d->ngrps; ++i)
+        {
+            gmx_ana_index_check(d->sel[i]->g, d->fr->natoms);
+        }
     }
-    /* check index groups */
-    for (i = 0; i < d->ngrps; ++i)
+    else
     {
-        gmx_ana_index_check(d->sel[i]->g, d->fr->natoms);
+        /* Prepare a frame from topology information */
+        /* TODO: Initialize more of the fields */
+        if (d->frflags & (TRX_NEED_V))
+        {
+            gmx_impl("Velocity reading from a topology not implemented");
+            return -1;
+        }
+        if (d->frflags & (TRX_NEED_F))
+        {
+            gmx_input("Forces cannot be read from a topology");
+            return -1;
+        }
+        d->fr->flags  = d->frflags;
+        d->fr->natoms = d->top->atoms.nr;
+        d->fr->bX     = TRUE;
+        snew(d->fr->x, d->fr->natoms);
+        memcpy(d->fr->x, d->xtop, sizeof(*d->fr->x)*d->fr->natoms);
+        d->fr->bBox   = TRUE;
+        copy_mat(d->boxtop, d->fr->box);
     }
 
     set_trxframe_ePBC(d->fr, d->ePBC);
@@ -1413,12 +1657,18 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
 
         d->nframes++;
     }
-    while (read_next_frame(d->oenv, d->status, d->fr));
+    while (d->trjfile && read_next_frame(d->oenv, d->status, d->fr));
 
-    close_trj(d->status);
-
-    fprintf(stderr, "Analyzed %d frames, last time %.3f\n",
-            d->nframes, d->fr->time);
+    if (d->trjfile)
+    {
+        close_trj(d->status);
+        fprintf(stderr, "Analyzed %d frames, last time %.3f\n",
+                d->nframes, d->fr->time);
+    }
+    else
+    {
+        fprintf(stderr, "Analyzed topology coordinates\n");
+    }
 
     /* Restore the maximal groups for dynamic selections */
     rc = gmx_ana_selcollection_evaluate_fin(d->sc, d->nframes);

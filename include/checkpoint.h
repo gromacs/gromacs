@@ -43,6 +43,10 @@
 #include "typedefs.h"
 #include "gmxfio.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Write a checkpoint to fn */
 extern void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
 			     int eIntegrator,int simulation_part,
@@ -55,7 +59,7 @@ extern void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
  * and communicates all the modified number of steps and the parallel setup,
  * but not the state itself.
  */
-extern void load_checkpoint(const char *fn,FILE *fplog,
+extern void load_checkpoint(const char *fn,FILE **fplog,
 			    t_commrec *cr,bool bPartDecomp,ivec dd_nc,
 			    t_inputrec *ir,t_state *state,bool *bReadRNG, 
 			    bool *bReadEkin,
@@ -75,10 +79,23 @@ extern void read_checkpoint_trxframe(int fp,t_trxframe *fr);
 /* Print the complete contents of checkpoint file fn to out */
 extern void list_checkpoint(const char *fn,FILE *out);
 
-/* Read just the simulation 'generation'. This is necessary already at the beginning of mdrun,
+/* Read just the simulation 'generation' and with bAppendReq check files.
+ * This is necessary already at the beginning of mdrun,
  * to be able to rename the logfile correctly.
+ * When file appending is requested, checks which output files are present:
+ * all present: return TRUE,
+ * none present: return FALSE,
+ * part present: fatal error.
+ * When TRUE is returned, bAddPart will tell whether the simulation part
+ * needs to be added to the output file name.
  */
-void read_checkpoint_simulation_part(const char *filename,int *simulation_part,
-                                     gmx_large_int_t *step,t_commrec *cr);
+bool read_checkpoint_simulation_part(const char *filename,int *simulation_part,
+                                     gmx_large_int_t *step,t_commrec *cr,
+				     bool bAppendReq,
+				     const char *part_suffix,bool *bAddPart);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

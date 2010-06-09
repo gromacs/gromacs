@@ -39,6 +39,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* The nonbonded kernels are documented in gmxlib/nonbonded_kernels, 
  * but here's a lazy version of the numbering. The first position
  * is the Coulomb interaction (0 for none), second is Van der Waals
@@ -99,7 +103,7 @@ enum
     eNR_CONV,                 eNR_SOLVEPME,eNR_NS,      eNR_RESETX,
     eNR_SHIFTX,               eNR_CGCM,                 eNR_FSUM,
     eNR_BONDS,                eNR_G96BONDS,             eNR_FENEBONDS,
-    eNR_TABBONDS,
+    eNR_TABBONDS,             eNR_RESTRBONDS,
     eNR_ANGLES,               eNR_G96ANGLES,            eNR_QANGLES,
     eNR_TABANGLES,            eNR_PROPER,               eNR_IMPROPER,
     eNR_RB,                   eNR_FOURDIH,              eNR_TABDIHS,
@@ -126,5 +130,8 @@ typedef struct {
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

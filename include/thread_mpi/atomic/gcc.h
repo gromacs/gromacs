@@ -33,16 +33,13 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
-/* this is for newer versions of gcc that have built-in intrinsics */
+/* this is for newer versions of gcc that have built-in intrinsics,
+   on platforms not explicitly supported with inline assembly. */
 
-#define tMPI_Atomic_memory_barrier() __asm__ __volatile__("": : :"memory")
+#define tMPI_Atomic_memory_barrier()  __sync_synchronize()
 
 /* Only gcc and Intel support this check, otherwise set it to true (skip doc) */
 #if (!defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined DOXYGEN)
@@ -52,155 +49,32 @@ any papers on the package - you can find them in the top README file.
 
 typedef struct tMPI_Atomic
 {
-        volatile int       value;   /*!< Volatile, to avoid compiler aliasing */
+    volatile int value;   
 }
 tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-        void* volatile*    value;   /*!< Volatile, to avoid compiler aliasing */
+    volatile void* value;   
 }
 tMPI_Atomic_ptr_t;
 
 
-typedef struct tMPI_Spinlock
-{
-    volatile unsigned int  lock;   /*!< Volatile, to avoid compiler aliasing */
-}
-tMPI_Spinlock_t;
+
+#define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
-
-
-#define TMPI_SPINLOCK_INITIALIZER   { 1 }
-
-
-#define tMPI_Atomic_get(a)  ((a)->value) 
-
+/* for now we simply assume that int and void* assignments are atomic */
+#define tMPI_Atomic_get(a)  ((int)( (a)->value) )
 #define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
 
 
-#define tMPI_Atomic_ptr_get(a)  ((a)->value) 
-
- 
+#define tMPI_Atomic_ptr_get(a)  ((void*)((a)->value) )
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
-static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *     a, 
-                                        volatile int       i)
-{
-    int __i;
-    
-    __i = i;
-    __asm__ __volatile__("lock ; xaddl %0, %1;"
-                         :"=r"(i) :"m"(a->value), "0"(i));
-    return i + __i;
-}  
-  
-static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
-                                       volatile int       i)
-{
-#if 0
-    int __i;
 
-    __i = i;
-#endif
-    __asm__ __volatile__("lock ; xaddl %0, %1;"
-                         :"=r"(i) :"m"(a->value), "0"(i));
-    return i;
-}
+#include "gcc_intrinsics.h"
 
-
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *    a, 
-                                     int               oldval,
-                                     int               newval)
-{
-    volatile unsigned long prev;
-    
-    __asm__ __volatile__("lock ; cmpxchgl %1,%2"
-                         : "=a"(prev)
-                         : "q"(newval), "m"(a->value), "0"(oldval)
-                         : "memory");
-    
-    return prev;
-}
-
-
-static inline void* volatile* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t* a, 
-                                                    void*             oldval,
-                                                    void*             newval)
-{
-    void* volatile *prev;
-#ifndef __x86_64__ 
-    __asm__ __volatile__("lock ; cmpxchgl %1,%2"
-                         : "=a"(prev)
-                         : "q"(newval), "m"(a->value), "0"(oldval)
-                         : "memory");
-#else 
-    __asm__ __volatile__("lock ; cmpxchgq %1,%2"
-                         : "=a"(prev)
-                         : "q"(newval), "m"(a->value), "0"(oldval)
-                         : "memory");
-#endif
-    return prev;
-}
-
-
-
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)
-{
-    x->lock = 1;
-}
-
-
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
-{
-        __asm__ __volatile__("\n1:\t" 
-                             "lock ; decb %0\n\t" 
-                             "jns 3f\n" 
-                             "2:\t" 
-                             "rep;nop\n\t" 
-                             "cmpb $0,%0\n\t" 
-                             "jle 2b\n\t" 
-                             "jmp 1b\n" 
-                             "3:\n\t" 
-                             :"=m" (x->lock) : : "memory"); 
-}
-
-
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
-{
-        char old_value;
-        
-    __asm__ __volatile__("xchgb %b0,%1"
-                         :"=q" (old_value), "=m" (x->lock)
-                         :"0" (0) : "memory");
-    return (old_value <= 0);
-}
-
-
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
-{
-        char old_value = 1;
-        
-        __asm__ __volatile__(
-                         "xchgb %b0, %1" 
-                         :"=q" (old_value), "=m" (x->lock) 
-                         :"0" (old_value) : "memory"
-                         );
-}
- 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *  x)
-{
-    return (*(volatile signed char *)(&(x)->lock) <= 0);
-}
-
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
-{
-    do 
-    {
-        tMPI_Atomic_memory_barrier(); 
-    } 
-    while(tMPI_Spinlock_islocked(x));
-}
+#include "gcc_spinlock.h"
 
 

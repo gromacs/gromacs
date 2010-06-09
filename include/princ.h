@@ -42,6 +42,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void rotate_atoms(int gnx,atom_id index[],rvec x[],matrix trans);
 /* Rotate all atoms in index using matrix trans */
 
@@ -71,5 +75,9 @@ extern real sub_xcm(rvec x[],int gnx,atom_id *index,t_atom atom[],rvec xcm,
 
 extern void add_xcm(rvec x[],int gnx,atom_id *index,rvec xcm);
 /* Increment all atoms in index with xcm */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

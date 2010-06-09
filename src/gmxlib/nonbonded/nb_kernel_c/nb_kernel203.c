@@ -34,7 +34,9 @@
 #include <math.h>
 
 #include "vec.h"
+#ifdef GMX_THREAD_SHM_FDECOMP
 #include "thread_mpi.h"
+#endif
 
 #include "nb_kernel203.h"
 

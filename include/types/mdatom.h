@@ -39,6 +39,9 @@
 #ifndef _mdatom_h
 #define _mdatom_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
   real          tmassA,tmassB,tmass;
@@ -65,5 +68,10 @@ typedef struct {
   /* The lambda value used to create the contents of the struct */
   real          lambda;
 } t_mdatoms;
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

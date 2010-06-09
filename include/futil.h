@@ -43,6 +43,10 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Native windows uses backslash path separators.
  * Cygwin and everybody else in the world use slash.
  * When reading the PATH environment variable, Unix separates entries
@@ -56,9 +60,18 @@
 #define PATH_SEPARATOR ":"
 #endif
 
-#ifdef __cplusplus
-extern "C" { 
+
+/* Now get the maximum path size. */
+#ifdef PATH_MAX
+#define GMX_PATH_MAX PATH_MAX
+#else
+#ifdef MAX_PATH
+#define GMX_PATH_MAX MAX_PATH
+#else
+#define GMX_PATH_MAX 4096
 #endif
+#endif
+
   
 extern void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
@@ -89,7 +102,7 @@ extern FILE *ffopen(const char *file, const char *mode);
  * the file! Therefore, files must be closed with ffclose (see below)
  */
 
-extern void ffclose(FILE *fp);
+extern int ffclose(FILE *fp);
 /* Close files or pipes */
 
 
@@ -100,7 +113,7 @@ extern void frewind(FILE *fp);
 
 bool is_pipe(FILE *fp);
 
-extern char *libfn(const char *file);
+extern char *gmxlibfn(const char *file);
 /* allocates and returns a string with the full file name for a library file */
 
 extern FILE *libopen(const char *file);
@@ -111,7 +124,7 @@ extern FILE *libopen(const char *file);
   
 extern bool get_libdir(char *libdir);
 
-extern char *low_libfn(const char *file,bool bFatal);
+extern char *low_gmxlibfn(const char *file,bool bFatal);
 
 extern FILE *low_libopen(const char *file,bool bFatal);
 /* The same as the above, but does not terminate if (!bFatal) */
@@ -121,8 +134,16 @@ extern FILE *low_libopen(const char *file,bool bFatal);
  */
 extern void gmx_tmpnam(char *buf);
 
-int
-gmx_truncatefile(char *path, off_t length);
+/* truncte the file to the specified length */
+int gmx_truncatefile(char *path, off_t length);
+
+/* rename/move the file (atomically, if the OS makes that available) oldname 
+   to newname */
+int gmx_file_rename(const char *oldname, const char *newname);
+
+/* copy the file (data only) oldname to newname. if copy_if_empty==FALSE,
+   the file won't be copied if it's empty.*/
+int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty);
 
 #ifdef __cplusplus
 }

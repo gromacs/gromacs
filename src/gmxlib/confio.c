@@ -105,9 +105,9 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 	      resnr = oldres;
 	    else {
 	      resnr    = 1;
-	      strcpy(resnm,"???"); 
+	      strncpy(resnm,"???",sizeof(resnm)-1); 
 	    }
-	    strcpy(anm,"???"); 
+	    strncpy(anm,"???",sizeof(anm)-1); 
 	  }
 	  atoms->atomname[natoms]=put_symtab(symtab,anm);
 	  if (resnr != oldres) {
@@ -657,8 +657,9 @@ static void write_espresso_conf_indexed(FILE *out,const char *title,
   int i,j;
 
   fprintf(out,"# %s\n",title);
-  if (TRICLINIC(box))
-    fprintf(stderr,"\nWARNING: the Espresso format does not support triclinic unit-cells\n\n");
+  if (TRICLINIC(box)) {
+    gmx_warning("The Espresso format does not support triclinic unit-cells");
+  }
   fprintf(out,"{variable {box_l %f %f %f}}\n",box[0][0],box[1][1],box[2][2]);
   
   fprintf(out,"{particles {id pos type q%s}\n",v ? " v" : "");
@@ -826,8 +827,7 @@ static bool get_w_conf(FILE *in,const char *infile,char *title,
   /* box */
   fgets2 (line,STRLEN,in);
   if (sscanf (line,"%lf%lf%lf",&x1,&y1,&z1) != 3) {
-    sprintf(buf,"Bad box in file %s",infile);
-    warning(buf);
+    gmx_warning("Bad box in file %s",infile);
     
     /* Generate a cubic box */
     for(m=0; (m<DIM); m++)
@@ -1027,19 +1027,19 @@ void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
     ai=index[i];
     
     resind = atoms->atom[ai].resind;
-    strcpy(resnm," ??? ");
+    strncpy(resnm," ??? ",sizeof(resnm)-1);
     if (resind < atoms->nres) {
-      strcpy(resnm,*atoms->resinfo[resind].name);
+      strncpy(resnm,*atoms->resinfo[resind].name,sizeof(resnm)-1);
       resnr = atoms->resinfo[resind].nr;
     } else {
-      strcpy(resnm," ??? ");
+      strncpy(resnm," ??? ",sizeof(resnm)-1);
       resnr = resind + 1;
     }
     
     if (atoms->atom)
-      strcpy(nm,*atoms->atomname[ai]);
+      strncpy(nm,*atoms->atomname[ai],sizeof(nm)-1);
     else
-      strcpy(nm," ??? ");
+      strncpy(nm," ??? ",sizeof(nm)-1);
 
     fprintf(out,"%5d%-5.5s%5.5s%5d",resnr%100000,resnm,nm,(ai+1)%100000);
     /* next fprintf uses built format string */
@@ -1450,6 +1450,11 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
     tpx_make_chain_identifiers(atoms,&top.mols);
 		
     sfree(mtop);
+    /* The strings in the symtab are still in use in the returned t_atoms
+     * structure, so we should not free them. But there is no place to put the
+     * symbols; the only choice is to leak the memory...
+     * So we clear the symbol table before freeing the topology structure. */
+    open_symtab(&top.symtab);
     done_top(&top);
 		  
     break;

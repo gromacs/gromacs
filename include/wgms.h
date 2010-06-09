@@ -43,6 +43,10 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void write_gms(FILE *fp,int natoms,rvec x[],matrix box);
 /* Write a gromos-87 trajectory frame (10f8.3) + box size 
  * If box == NULL it is not written
@@ -54,5 +58,9 @@ extern void write_gms_ndx(FILE *fp,int isize,atom_id index[],
  * a subset of the atoms.
  * If box == NULL it is not written
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -44,13 +44,22 @@
 #include <stdio.h>
 #include "network.h"
 
-extern bool gmx_parallel_env(void); 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern bool gmx_parallel_env_initialized(void); 
 /* 1 when running in a parallel environment, so could also be 1 if
-   mdrun was started with: mpirun -np 1 */
+   mdrun was started with: mpirun -np 1.
+  
+   Use this function only to check whether a parallel environment has
+   been initialized, for example when checking whether gmx_finalize()
+   needs to be called. Use PAR(cr) to check whether the simulation actually
+   has more than one node/thread. */
 
 
-extern FILE *gmx_log_open(const char *fn,const t_commrec *cr,
-                          bool bMasterOnly, unsigned long Flags);
+extern void gmx_log_open(const char *fn,const t_commrec *cr,
+                          bool bMasterOnly, unsigned long Flags, FILE**);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
@@ -86,8 +95,16 @@ extern t_commrec *init_par_threads(t_commrec *cro);
    Must be called before any communication takes place by the individual
    threads. cro is the old shared commrec */
 
+extern void cancel_par_threads(t_commrec *cr);
+/* Cancel threads (for when there is no parallel version of the integration
+   algorithm). Cancels threads (actually, it calls tMPI_Finalize() on them) 
+   and re-writes commrec to new serial situation.  */
 
 extern t_commrec *init_cr_nopar(void);
 /* Returns t_commrec for non-parallel functionality */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _main_h */

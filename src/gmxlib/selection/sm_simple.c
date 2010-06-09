@@ -54,6 +54,17 @@ evaluate_atomnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static int
 evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+/** Evaluates the \p resindex selection keyword. */
+static int
+evaluate_resindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+/** Checks whether molecule information is present in the topology. */
+static int
+check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+/** Evaluates the \p molindex selection keyword. */
+static int
+evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p name selection keyword. */
 static int
 evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
@@ -167,6 +178,34 @@ gmx_ana_selmethod_t sm_resnr = {
     NULL,
     NULL,
     &evaluate_resnr,
+    NULL,
+};
+
+/** \internal Selection method data for \p resindex selection keyword. */
+gmx_ana_selmethod_t sm_resindex = {
+    "resindex", INT_VALUE, SMETH_REQTOP,
+    0, NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_resindex,
+    NULL,
+};
+
+/** \internal Selection method data for \p molindex selection keyword. */
+gmx_ana_selmethod_t sm_molindex = {
+    "molindex", INT_VALUE, SMETH_REQTOP,
+    0, NULL,
+    NULL,
+    NULL,
+    &check_molecules,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_molindex,
     NULL,
 };
 
@@ -418,6 +457,70 @@ evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     {
         resind = top->atoms.atom[g->index[i]].resind;
         out->u.i[i] = top->atoms.resinfo[resind].nr;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the residue indices for each atom in \p out->u.i.
+ */
+static int
+evaluate_resindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        out->u.i[i] = top->atoms.atom[g->index[i]].resind + 1;
+    }
+    return 0;
+}
+
+/*!
+ * \param[in] top  Topology structure.
+ * \param     npar Not used.
+ * \param     param Not used.
+ * \param     data Not used.
+ * \returns   0 if molecule info is present in the topology, -1 otherwise.
+ *
+ * If molecule information is not found, also prints an error message.
+ */
+static int
+check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+{
+    bool bOk;
+
+    bOk = (top != NULL && top->mols.nr > 0);
+    if (!bOk)
+    {
+        fprintf(stderr, "Molecule information not available in topology!\n");
+        return -1;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the molecule indices for each atom in \p out->u.i.
+ */
+static int
+evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i, j;
+
+    out->nr = g->isize;
+    for (i = j = 0; i < g->isize; ++i)
+    {
+        while (top->mols.index[j + 1] <= g->index[i]) ++j;
+        out->u.i[i] = j + 1;
     }
     return 0;
 }

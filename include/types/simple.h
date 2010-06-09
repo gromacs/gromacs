@@ -146,7 +146,12 @@ typedef long long int gmx_large_int_t;
 #define gmx_large_int_fmt   "lld"
 #define gmx_large_int_pfmt "%lld"
 #define SIZEOF_LARGE_INT SIZEOF_LONG_LONG_INT
+/* LLONG_MAX is not defined by the C-standard, so check for it */
+#if (!(defined LLONG_MAX) && SIZEOF_LONG_LONG_INT == 8)
+#define LARGE_INT_MAX 9223372036854775807LL
+#else
 #define LARGE_INT_MAX LLONG_MAX
+#endif
 #endif
 
 

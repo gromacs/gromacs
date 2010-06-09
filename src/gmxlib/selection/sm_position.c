@@ -44,6 +44,9 @@
 #include <position.h>
 #include <selmethod.h>
 
+#include "keywords.h"
+#include "selelem.h"
+
 /*! \internal \brief
  * Data structure for position keyword evaluation.
  */
@@ -170,7 +173,7 @@ init_data_pos(int npar, gmx_ana_selparam_t *param)
     data->pc       = NULL;
     data->bPBC     = FALSE;
     data->type     = NULL;
-    data->flags    = 0;
+    data->flags    = -1;
     return data;
 }
 
@@ -185,24 +188,56 @@ set_poscoll_pos(gmx_ana_poscalc_coll_t *pcc, void *data)
 }
 
 /*!
+ * \param[in,out] sel   Selection element to initialize.
  * \param[in]     type  One of the enum values acceptable for
  *   gmx_ana_poscalc_type_from_enum().
- * \param[in]     flags Default completion flags
- *   (see gmx_ana_poscalc_type_from_enum()).
- * \param[in,out] data  Should point to \c t_methoddata_pos.
  *
  * Initializes the reference position type for position evaluation.
  * If called multiple times, the first setting takes effect, and later calls
  * are neglected.
  */
 void
-_gmx_selelem_set_kwpos_type(const char *type, int flags, void *data)
+_gmx_selelem_set_kwpos_type(t_selelem *sel, const char *type)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)data;
+    t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
 
+    if (sel->type != SEL_EXPRESSION || !sel->u.expr.method
+        || sel->u.expr.method->name != sm_keyword_pos.name)
+    {
+        return;
+    }
     if (!d->type && type)
     {
         d->type  = strdup(type);
+        /* FIXME: It would be better not to have the string here hardcoded. */
+        if (type[0] != 'a')
+        {
+            sel->u.expr.method->flags |= SMETH_REQTOP;
+        }
+    }
+}
+
+/*!
+ * \param[in,out] sel   Selection element to initialize.
+ * \param[in]     flags Default completion flags
+ *   (see gmx_ana_poscalc_type_from_enum()).
+ *
+ * Initializes the flags for position evaluation.
+ * If called multiple times, the first setting takes effect, and later calls
+ * are neglected.
+ */
+void
+_gmx_selelem_set_kwpos_flags(t_selelem *sel, int flags)
+{
+    t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
+
+    if (sel->type != SEL_EXPRESSION || !sel->u.expr.method
+        || sel->u.expr.method->name != sm_keyword_pos.name)
+    {
+        return;
+    }
+    if (d->flags == -1)
+    {
         d->flags = flags;
     }
 }
@@ -301,7 +336,7 @@ init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
     gmx_ana_poscalc_init_pos(d->pc, out->u.p);
-    out->u.p->g = &d->g;
+    gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     return 0;
 }
 
@@ -317,7 +352,6 @@ free_data_pos(void *data)
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
     sfree(d->type);
-    gmx_ana_index_deinit(&d->g);
     gmx_ana_poscalc_free(d->pc);
 }
 
@@ -334,6 +368,6 @@ evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
-    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, fr->x, pbc);
+    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, fr, pbc);
     return 0;
 }

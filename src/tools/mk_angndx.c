@@ -266,7 +266,7 @@ int main(int argc,char *argv[])
       fprintf(out,"\n");
     }
   }
-  fclose(out);
+  ffclose(out);
   
   thanx(stderr);
   

@@ -394,7 +394,7 @@ t_fgrid *FGridFromFile(const char *infile)
     }
     GetBuf(in,buf);
   }
-  fclose(in);
+  ffclose(in);
   
   return fgrid;
 }

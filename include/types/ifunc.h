@@ -39,6 +39,10 @@
 #ifndef _ifunc_h
 #define _ifunc_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
 		     const t_iparams iparams[],
@@ -114,5 +118,10 @@ typedef struct
 
 extern const t_interaction_function interaction_function[F_NRE];
 /* initialised interaction functions descriptor				*/
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

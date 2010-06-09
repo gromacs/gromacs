@@ -40,6 +40,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void p_debug(char *s,char *file,int line);
 
 #ifdef  DEBUG
@@ -54,6 +58,10 @@ extern void pma(FILE *log,char *file,int line);
 #define PMA() pma(log,__FILE__,__LINE__)
 #else
 #define PMA()
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif	/* _pdebug_h */

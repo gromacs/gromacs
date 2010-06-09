@@ -174,21 +174,6 @@ extern "C" {
    * ns routine.
    */
 
-  extern void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
-			rvec pos[],rvec cg_cm[]);
-  /* Routine to compute centers of geometry of charge groups. No periodicity
-   * is used.
-   */
-  
-  extern void put_charge_groups_in_box (FILE *log,int cg0,int cg1,
-					int ePBC,matrix box,t_block *cgs,
-					rvec pos[],
-					rvec cg_cm[]);
-			    
-  /* This routine puts charge groups in the periodic box, keeping them
-   * together.
-   */
-
   extern void calc_box_center(int ecenter,matrix box,rvec box_center);
   /* Calculates the center of the box.
    * See the description for the enum ecenter above.

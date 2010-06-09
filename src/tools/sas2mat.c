@@ -125,7 +125,7 @@ int main(int argc,char *argv[])
     if (!nskip || ((i % nskip) == 0))
       k++;
   }
-  fclose(in);
+  ffclose(in);
   nframes=k;
 
   lo=10000;

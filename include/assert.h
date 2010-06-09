@@ -47,6 +47,10 @@
 #undef assert
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define assert(EXPRESSION)  \
   if (!(EXPRESSION)) { \
     fprintf(stderr,"Assertion failed for \"%s\" in file %s, " \
@@ -55,5 +59,9 @@
     if (toupper(getc(stdin))=='Y') \
       (void) abort(); else exit(-1); \
   } else 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _assert_h */

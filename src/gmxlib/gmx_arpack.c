@@ -39,6 +39,7 @@
 #include "types/simple.h"
 #include "gmx_lapack.h"
 #include "gmx_blas.h"
+#include "gmx_arpack.h"
 
 
 /* Default Fortran name mangling */

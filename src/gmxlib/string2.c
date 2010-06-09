@@ -37,11 +37,6 @@
 #include <config.h>
 #endif
 
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef GMX_CRAY_XT3
 #undef HAVE_PWD_H
 #endif
@@ -62,6 +57,7 @@
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "string2.h"
+#include "futil.h"
 
 int continuing(char *s)
 /* strip trailing spaces and if s ends with a CONTINUE remove that too.
@@ -87,9 +83,24 @@ char *fgets2(char *line, int n, FILE *stream)
  */
 {
   char *c;
-  if (fgets(line,n,stream)==NULL) return NULL;
-  if ((c=strchr(line,'\n'))!=NULL) *c=0;
-  if ((c=strchr(line,'\r'))!=NULL) *c=0;
+  if (fgets(line,n,stream) == NULL) {
+    return NULL;
+  }
+  if ((c=strchr(line,'\n')) != NULL) {
+    *c = '\0';
+  } else {
+    /* A line not ending in a newline can only occur at the end of a file,
+     * or because of n being too small.
+     * Since both cases occur very infrequently, we can check for EOF.
+     */
+    if (!gmx_eof(stream)) {
+      gmx_fatal(FARGS,"An input file contains a line longer than %d characters, while the buffer passed to fgets2 has size %d. The line starts with: '%20.20s'",n,n,line);
+    }
+  }
+  if ((c=strchr(line,'\r')) != NULL) {
+    *c = '\0';
+  }
+
   return line;
 }
 
@@ -281,6 +292,80 @@ gmx_strndup(const char *src, int n)
     strncpy(dest, src, len);
     dest[len] = 0;
     return dest;
+}
+
+/*!
+ * \param[in] pattern  Pattern to match against.
+ * \param[in] str      String to match.
+ * \returns   0 on match, GMX_NO_WCMATCH if there is no match.
+ *
+ * Matches \p str against \p pattern, which may contain * and ? wildcards.
+ * All other characters are matched literally.
+ * Currently, it is not possible to match literal * or ?.
+ */
+int
+gmx_wcmatch(const char *pattern, const char *str)
+{
+    while (*pattern)
+    {
+        if (*pattern == '*')
+        {
+            /* Skip multiple wildcards in a sequence */
+            while (*pattern == '*' || *pattern == '?')
+            {
+                ++pattern;
+                /* For ?, we need to check that there are characters left
+                 * in str. */
+                if (*pattern == '?')
+                {
+                    if (*str == 0)
+                    {
+                        return GMX_NO_WCMATCH;
+                    }
+                    else
+                    {
+                        ++str;
+                    }
+                }
+            }
+            /* If the pattern ends after the star, we have a match */
+            if (*pattern == 0)
+            {
+                return 0;
+            }
+            /* Match the rest against each possible suffix of str */
+            while (*str)
+            {
+                /* Only do the recursive call if the first character
+                 * matches. We don't have to worry about wildcards here,
+                 * since we have processed them above. */
+                if (*pattern == *str)
+                {
+                    int rc;
+                    /* Match the suffix, and return if a match or an error */
+                    rc = gmx_wcmatch(pattern, str);
+                    if (rc != GMX_NO_WCMATCH)
+                    {
+                        return rc;
+                    }
+                }
+                ++str;
+            }
+            /* If no suffix of str matches, we don't have a match */
+            return GMX_NO_WCMATCH;
+        }
+        else if ((*pattern == '?' && *str != 0) || *pattern == *str)
+        {
+            ++str;
+        }
+        else
+        {
+            return GMX_NO_WCMATCH;
+        }
+        ++pattern;
+    }
+    /* When the pattern runs out, we have a match if the string has ended. */
+    return (*str == 0) ? 0 : GMX_NO_WCMATCH;
 }
 
 char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)

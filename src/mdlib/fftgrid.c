@@ -83,6 +83,7 @@ gmx_alloc_aligned(size_t size)
     return p;
 }
 
+/*
 t_fftgrid *mk_fftgrid(int          nx,
                       int          ny,
                       int          nz,
@@ -91,7 +92,7 @@ t_fftgrid *mk_fftgrid(int          nx,
                       t_commrec *  cr,
                       bool         bReproducible)
 {
-/* parallel runs with non-parallel ffts haven't been tested yet */
+// parallel runs with non-parallel ffts haven't been tested yet 
     int           nnodes;
     int           x1,y1,maxlocalsize;
     t_fftgrid *   grid;
@@ -133,9 +134,9 @@ t_fftgrid *mk_fftgrid(int          nx,
         grid->la12c = ny*grid->la2c;
     }
     
-    /* This code assumes that the when the grid is not divisble by nnodes,
-     * the maximum difference in local grid sizes is 1.
-     */
+    // This code assumes that the when the grid is not divisble by nnodes,
+    // the maximum difference in local grid sizes is 1.
+    
     x1 = (nx % nnodes == 0 ? 0 : 1);
     y1 = (ny % nnodes == 0 ? 0 : 1);
     
@@ -180,12 +181,13 @@ t_fftgrid *mk_fftgrid(int          nx,
         grid->workspace =
             (real*)gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
     }
-#else /* no MPI */
+#else // no MPI 
     grid->workspace = (real *)gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
 #endif
 
     return grid;
 }
+*/
 
 void 
 pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid)
@@ -226,7 +228,7 @@ void done_fftgrid(t_fftgrid *grid)
   }
 }
 
-
+/*
 void gmxfft3D(t_fftgrid *grid,enum gmx_fft_direction dir,t_commrec *cr)
 {
   real *tmp;
@@ -261,7 +263,7 @@ void gmxfft3D(t_fftgrid *grid,enum gmx_fft_direction dir,t_commrec *cr)
     }
   }
 }
-
+*/
 void clear_fftgrid(t_fftgrid *grid)
 {
     /* clears the whole grid */

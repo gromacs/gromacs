@@ -40,6 +40,9 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern void reorder(t_topology *topin,t_topology topout[],
                     int nnodes,int load[],int tload[]);
@@ -53,5 +56,8 @@ extern void reorder(t_topology *topin,t_topology topout[],
       * number (modulo nnodes). The array load specifies the number of atom 
       * to be allocated to every node.
       */
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _reorder_h */

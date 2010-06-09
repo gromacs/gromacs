@@ -29,6 +29,7 @@
 #include "network.h"
 #include "vec.h"
 #include "pbc.h"
+#include "chargegroup.h"
 #include "gmx_random.h"
 #include "topsort.h"
 #include "mtop_util.h"
@@ -727,9 +728,9 @@ static void add_posres(int mol,int a_mol,gmx_molblock_t *molb,
      * so it's index is the current number of position restraints.
      */
     n = idef->il[F_POSRES].nr/2;
-    if (n >= idef->iparams_posres_nalloc)
+    if (n+1 > idef->iparams_posres_nalloc)
     {
-        idef->iparams_posres_nalloc = over_alloc_dd(n);
+        idef->iparams_posres_nalloc = over_alloc_dd(n+1);
         srenew(idef->iparams_posres,idef->iparams_posres_nalloc);
     }
     ip = &idef->iparams_posres[n];
@@ -788,7 +789,7 @@ static void add_vsite(gmx_ga2la_t ga2la,int *index,int *rtil,
     for(k=2; k<1+nral; k++)
     {
         ak_gl = a_gl + iatoms[k] - a_mol;
-        if (!ga2la_home(ga2la,ak_gl,&tiatoms[k]))
+        if (!ga2la_get_home(ga2la,ak_gl,&tiatoms[k]))
         {
             /* Copy the global index, convert later in make_local_vsites */
             tiatoms[k] = -(ak_gl + 1);
@@ -1511,14 +1512,10 @@ void dd_make_local_top(FILE *fplog,
                                                &ltop->idef,vsite);
     }
     
-    if (dd->reverse_top->ilsort == ilsortNO_FE)
-    {
-        ltop->idef.ilsort = ilsortNO_FE;
-    }
-    else
-    {
-        gmx_sort_ilist_fe(&ltop->idef);
-    }
+    /* The ilist is not sorted yet,
+     * we can only do this when we have the charge arrays.
+     */
+    ltop->idef.ilsort = ilsortUNKNOWN;
     
     nexcl = make_local_exclusions(dd,zones,mtop,bRCheckExcl,
                                   rc,dd->la2lc,pbc_null,fr->cg_cm,
@@ -1536,6 +1533,19 @@ void dd_make_local_top(FILE *fplog,
     dd->reverse_top->err_top_local  = ltop;
 }
 
+void dd_sort_local_top(gmx_domdec_t *dd,t_mdatoms *mdatoms,
+                       gmx_localtop_t *ltop)
+{
+    if (dd->reverse_top->ilsort == ilsortNO_FE)
+    {
+        ltop->idef.ilsort = ilsortNO_FE;
+    }
+    else
+    {
+        gmx_sort_ilist_fe(&ltop->idef,mdatoms->chargeA,mdatoms->chargeB);
+    }
+}
+
 gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
 {
     gmx_localtop_t *top;
@@ -1548,6 +1558,7 @@ gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
     top->idef.functype = top_global->ffparams.functype;
     top->idef.iparams  = top_global->ffparams.iparams;
     top->idef.fudgeQQ  = top_global->ffparams.fudgeQQ;
+    top->idef.cmap_grid= top_global->ffparams.cmap_grid;
     
     for(i=0; i<F_NRE; i++)
     {
@@ -1562,16 +1573,18 @@ gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
 void dd_init_local_state(gmx_domdec_t *dd,
                          t_state *state_global,t_state *state_local)
 {
-    int buf[2];
+    int i,j, buf[4];
     
     if (DDMASTER(dd))
     {
         buf[0] = state_global->flags;
         buf[1] = state_global->ngtc;
+        buf[2] = state_global->nnhpres;
+        buf[3] = state_global->nhchainlength;
     }
-    dd_bcast(dd,2*sizeof(int),buf);
+    dd_bcast(dd,4*sizeof(int),buf);
     
-    init_state(state_local,0,buf[1]);
+    init_state(state_local,0,buf[1],buf[2],buf[3]);
     state_local->flags = buf[0];
     
     /* With Langevin Dynamics we need to make proper storage space
@@ -1726,7 +1739,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
             }
             if (link->index[cg_gl+1] - link->index[cg_gl] > 0)
             {
-                SET_CGINFO_BOND_INTER(cgi_mb[mb].cginfo[cg]);
+                SET_CGINFO_BOND_INTER(cgi_mb->cginfo[cg]);
                 ncgi++;
             }
         }

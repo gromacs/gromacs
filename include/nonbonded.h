@@ -42,8 +42,11 @@
 #include "tgroup.h"
 #include "genborn.h"
 
-void
-gmx_setup_kernels(FILE *fplog);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void gmx_setup_kernels(FILE *fplog);
 
 #define GMX_DONB_LR             (1<<0)
 #define GMX_DONB_FORCES         (1<<1)
@@ -68,5 +71,9 @@ do_listed_vdw_q(int ftype,int nbonds,
 		const t_mdatoms *md,
 		const t_forcerec *fr,gmx_grppairener_t *grppener,
 		int *global_atom_index);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

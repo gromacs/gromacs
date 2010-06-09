@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
@@ -95,7 +91,7 @@ typedef pthread_t tMPI_Thread_t;
  *  with automatic storage class without calling tMPI_Thread_mutex_init().
  */
 typedef pthread_mutex_t tMPI_Thread_mutex_t;
-/*! \brief Statical initializer for tMPI_Thread_mutex_t
+/*! \brief Static initializer for tMPI_Thread_mutex_t
  *
  *  See the description of the tMPI_Thread_mutex_t datatype for instructions
  *  on how to use this. Note that any variables initialized with this value
@@ -126,7 +122,7 @@ typedef pthread_key_t tMPI_Thread_key_t;
  *
  */
 typedef pthread_once_t tMPI_Thread_once_t;
-/*! \brief Statical initializer for tMPI_Thread_once_t
+/*! \brief Static initializer for tMPI_Thread_once_t
  *
  *  See the description of the tMPI_Thread_once_t datatype for instructions
  *  on how to use this. Normally, all variables of that type should be 
@@ -153,7 +149,7 @@ typedef pthread_once_t tMPI_Thread_once_t;
 typedef pthread_cond_t tMPI_Thread_cond_t;
 
 
-/*! \brief Statical initializer for tMPI_Thread_cond_t
+/*! \brief Static initializer for tMPI_Thread_cond_t
 *
 *  See the description of the tMPI_Thread_cond_t datatype for instructions
 *  on how to use this. Note that any variables initialized with this value
@@ -161,8 +157,27 @@ typedef pthread_cond_t tMPI_Thread_cond_t;
 */
 #define TMPI_THREAD_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 
+#ifdef TMPI_RWLOCK 
+/*! \brief Read-write lock for threads
+
+    Pthread implementation of the read-write lock (a lock that allows
+    multiple readers, but only a single writer). 
+  */
+typedef pthread_rwlock_t tMPI_Thread_rwlock_t;
 
 
+#if 0
+/* this, for some reason, is not part of the POSIX standard, so we're not
+   going to implement this in a library that needs to conform. */
+/*! \brief static initializer for tMPI_Thread_rwlock_t
+
+  See the description of the tMPI_Thread_cond_t datatype for instructions
+  on how to use this. Note that any variables initialized with this value
+  MUST have static storage allocation.
+*/
+#define TMPI_THREAD_RWLOCK_INITIALIZER PTHREAD_RWLOCK_INITIALIZER
+#endif
+#endif
 
 
 /*! \brief Pthread implementation of barrier type. 
@@ -179,7 +194,7 @@ typedef struct tMPI_Thread_pthread_barrier
     int               cycle;     /*!< Alternating 0/1 to indicate round      */
 }
 tMPI_Thread_barrier_t;
-/*! \brief Statical initializer for tMPI_Thread_barrier_t
+/*! \brief Static initializer for tMPI_Thread_barrier_t
  *
  *  See the description of the tMPI_Thread_barrier_t datatype for instructions
  *  on how to use this. Note that variables initialized with this value

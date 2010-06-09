@@ -61,6 +61,8 @@
 #include "names.h"
 #include "matio.h"
 #include "mtop_util.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   int n;
@@ -535,7 +537,7 @@ static void dump_disre_matrix(const char *fn,t_dr_result *dr,int ndr,
   fp = ffopen(fn,"w");  
   write_xpm(fp,0,"Distance Violations","<V> (nm)","Residue","Residue",
 	    n_res,n_res,t_res,t_res,matrix,0,hi,rlo,rhi,&nlevels);
-  fclose(fp);
+  ffclose(fp);
 }
 
 int gmx_disre(int argc,char *argv[])
@@ -625,7 +627,7 @@ int gmx_disre(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
-  fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,FALSE,0);
+  gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,FALSE,0,&fplog);
   
   if (ntop)
     init5(ntop);
@@ -775,12 +777,12 @@ int gmx_disre(int argc,char *argv[])
     }
     dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nres,
 		      j,&top->idef,&mtop,max_dr,nlevels,bThird);
-    fclose(out);
-    fclose(aver);
-    fclose(numv);
-    fclose(maxxv);
+    ffclose(out);
+    ffclose(aver);
+    ffclose(numv);
+    ffclose(maxxv);
     if (isize > 0) {
-      fclose(xvg);
+      ffclose(xvg);
       do_view(oenv,opt2fn("-dr",NFILE,fnm),"-nxy");
     }
     do_view(oenv,opt2fn("-dn",NFILE,fnm),"-nxy");
@@ -790,7 +792,7 @@ int gmx_disre(int argc,char *argv[])
   }
   thanx(stderr);
 
-  if (gmx_parallel_env())
+  if (gmx_parallel_env_initialized())
     gmx_finalize();
 
   gmx_log_close(fplog);

@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
@@ -46,80 +42,91 @@ any papers on the package - you can find them in the top README file.
  * the next section.
  */
 
-/* Compiler-dependent stuff: GCC memory barrier */
-#define tMPI_Atomic_memory_barrier() __asm__ __volatile__("": : :"memory")
-
 
 
 typedef struct tMPI_Atomic
 {
-        volatile int       value;   /*!< Volatile, to avoid compiler aliasing */
+    volatile int value;   /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-        void* volatile*     value;   /*!< Volatile, to avoid compiler aliasing */
+    void* volatile* value;   /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_ptr_t;
 
 
 typedef struct tMPI_Spinlock
 {
-    volatile unsigned int   lock;   /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int lock;   /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Spinlock_t;
 
 
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
+#define TMPI_HAVE_SWAP
 
 #define tMPI_Atomic_get(a)        ((a)->value) 
 #define tMPI_Atomic_set(a,i)     (((a)->value) = (i))
 
-#define tMPI_Atomic_ptr_get(a)    ((a)->value) 
+#define tMPI_Atomic_ptr_get(a)    (void*)((a)->value) 
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
-static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *    a, 
-                                        int               i)
+
+#if (TMPI_GCC_VERSION >= 40100) 
+
+#include "gcc_intrinsics.h"
+
+#else
+
+/* Compiler-dependent stuff: GCC memory barrier */
+#define tMPI_Atomic_memory_barrier() __asm__ __volatile__("isync": : :"memory")
+
+
+
+#define TMPI_HAVE_ASM_SWAP
+static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 {
-    int t;
+    int ret;
     
-    __asm__ __volatile__("1:     lwarx   %0,0,%2\n"
-                         "\tadd     %0,%1,%0\n"
-                         "\tstwcx.  %0,0,%2 \n"
-                         "\tbne-    1b\n"
-                         "\tisync\n"
-                         : "=&r" (t)
-                         : "r" (i), "r" (&a->value)
-                         : "cc" , "memory");
-    return t;
+    __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
+                          "\tstwcx.  %3,0,%2 \n"
+                          "\tbne-    1b\n"
+                          : "=&r" (ret), "=m" (a->value)
+                          : "r" (&(a->value)), "r" (b)
+                          : "cc", "memory");
+   
+    return ret;
+}
+
+static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
+{
+    int ret;
+    
+#if (!defined(__PPC64__)) && (!defined(__ppc64))
+    __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
+                          "\tstwcx.  %3,0,%2 \n"
+                          "\tbne-    1b\n"
+                          : "=&r" (ret), "=m" (a->value)
+                          : "r" (&(a->value)), "r" (b)
+                          : "cc", "memory");
+#else
+    __asm__ __volatile__ ("1:    ldarx   %0,0,%2 \n"
+                          "\tstdcx.  %3,0,%2 \n"
+                          "\tbne-    1b\n"
+                          : "=&r" (ret), "=m" (a->value)
+                          : "r" (&(a->value)), "r" (b)
+                          : "cc", "memory");
+#endif
+   
+    return ret;
 }
 
 
 
-static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
-                                       int                i)
-{
-    int t;
-    
-    __asm__ __volatile__("\teieio\n"
-                         "1:     lwarx   %0,0,%2\n"                         
-                         "\tadd     %0,%1,%0\n"
-                         "\tstwcx.  %0,0,%2 \n"
-                         "\tbne-    1b\n"
-                         "\tisync\n"
-                         : "=&r" (t)
-                         : "r" (i), "r" (&a->value)
-                         : "cc", "memory");
-    
-    return (t - i);    
-}
-
-
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
-                                     int                  oldval,
-                                     int                  newval)
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
     int prev;
     
@@ -139,9 +146,8 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
 }
 
 
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *   a,
-                                           void *               oldval,
-                                           void *               newval)
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
+                                        void *newval)
 {
     void *prev;
    
@@ -173,7 +179,42 @@ static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *   a,
     return prev;
 }
 
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
+{
+    int t;
+    
+    __asm__ __volatile__("1:     lwarx   %0,0,%2\n"
+                         "\tadd     %0,%1,%0\n"
+                         "\tstwcx.  %0,0,%2 \n"
+                         "\tbne-    1b\n"
+                         "\tisync\n"
+                         : "=&r" (t)
+                         : "r" (i), "r" (&a->value)
+                         : "cc" , "memory");
+    return t;
+}
 
+
+
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
+{
+    int t;
+    
+    __asm__ __volatile__("\teieio\n"
+                         "1:     lwarx   %0,0,%2\n"                         
+                         "\tadd     %0,%1,%0\n"
+                         "\tstwcx.  %0,0,%2 \n"
+                         "\tbne-    1b\n"
+                         "\tisync\n"
+                         : "=&r" (t)
+                         : "r" (i), "r" (&a->value)
+                         : "cc", "memory");
+    
+    return (t - i);    
+}
+
+
+#endif
 
 
 static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
@@ -183,7 +224,7 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 
 
 
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
     unsigned int tmp;
     
@@ -203,7 +244,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
 }
 
 
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
+static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
     unsigned int old, t;
     unsigned int mask = 1;
@@ -223,14 +264,14 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
 }
 
 
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 {
     __asm__ __volatile__("\teieio\n": : :"memory");
     x->lock = 0;
 }
 
 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *x)
 {
     return ( x->lock != 0);
 }

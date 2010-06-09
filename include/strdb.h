@@ -42,6 +42,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern bool get_a_line(FILE *fp,char line[],int n);
 /* Read a line of at most n characters form *fp to line. 
  * Comment ';...' and leading spaces are removed, empty lines are skipped.
@@ -79,5 +83,10 @@ extern int get_file(const char *db,char ***strings);
  * Does not need number of lines as first line in the file. 
  * return the number of strings.
  */
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif	/* _strdb_h */

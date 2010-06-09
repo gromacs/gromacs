@@ -388,8 +388,6 @@ free_data_insolidangle(void *data)
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
     int                        i;
 
-    gmx_ana_pos_deinit(&d->center);
-    gmx_ana_pos_deinit(&d->span);
     if (d->tbin)
     {
         for (i = 0; i < d->ntbins; ++i)
@@ -476,17 +474,14 @@ evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
-    int                        b, i;
+    int                        b;
 
     out->u.g->isize = 0;
     for (b = 0; b < pos->nr; ++b)
     {
         if (accept_insolidangle(pos->x[b], pbc, data))
         {
-            for (i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
-            {
-                out->u.g->index[out->u.g->isize++] = pos->g->index[i];
-            }
+            gmx_ana_pos_append(NULL, out->u.g, pos, b, 0);
         }
     }
     return 0;

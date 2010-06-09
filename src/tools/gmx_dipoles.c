@@ -59,6 +59,8 @@
 #include "enxio.h"
 #include "nrjac.h"
 #include "matio.h"
+#include "gmx_ana.h"
+
 
 #define e2d(x) ENM2DEBYE*(x)
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
@@ -207,7 +209,8 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
 	  rvec_add(xk,mu[gj],xl);
 	  phi = dih_angle(xi,xj,xk,xl,&pbc,
 			  r_ij,r_kj,r_kl,mm,nn, /* out */
-			  &cosa,&sign,&t1,&t2,&t3);
+			  &sign,&t1,&t2,&t3);
+      cosa = cos(phi);
 	}
 	else {
 	  cosa = cos_angle(mu[gi],mu[gj]);
@@ -267,13 +270,13 @@ static void print_cmap(const char *cmap,t_gkrbin *gb,int *nlevels)
       yaxis[j] = (180.0*j)/(gb->ny-1.0);
     /*2.0*j/(gb->ny-1.0)-1.0;*/
   }
-  out = fopen(cmap,"w");
+  out = ffopen(cmap,"w");
   write_xpm(out,0,
 	    "Dipole Orientation Distribution","Fraction","r (nm)",
 	    gb->bPhi ? "Phi" : "Alpha",
 	    gb->nx,gb->ny,xaxis,yaxis,
 	    gb->cmap,0,hi,rlo,rhi,nlevels);
-  fclose(out);
+  ffclose(out);
   sfree(xaxis);
   sfree(yaxis);
 }
@@ -576,7 +579,7 @@ static void dump_slab_dipoles(const char *fn,int idim,int nslice,
 	    slab_dipole[i][ZZ]/nframes,
 	    mutot);
   }
-  fclose(fp);
+  ffclose(fp);
   do_view(oenv,fn,"-autoscale xy -nxy");
 }
 			    
@@ -1028,7 +1031,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       mu_aver = (mu_ave/gnx_tot)*invtel;
     
     if ((skip == 0) || ((teller % skip) == 0)) {
-      /* Write to file < |M|^2 >, < |M| >^2. And the difference between 
+      /* Write to file < |M|^2 >, |< M >|^2. And the difference between 
        * the two. Here M is sum mu_i. Further write the finite system
        * Kirkwood G factor and epsilon.
        */
@@ -1069,15 +1072,15 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   if (!bMU)
     close_trj(status);
     
-  fclose(outmtot);
-  fclose(outaver);
-  fclose(outeps);
+  ffclose(outmtot);
+  ffclose(outaver);
+  ffclose(outeps);
 
   if (fnadip)
-    fclose(adip);
+    ffclose(adip);
 
   if (cosaver)
-    fclose(caver);
+    ffclose(caver);
 
   if (dip3d) {
     fprintf(dip3d,"set xrange [0.0:%4.2f]\n",box[XX][XX]);
@@ -1085,7 +1088,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     fprintf(dip3d,"set zrange [0.0:%4.2f]\n\n",box[ZZ][ZZ]);
     fprintf(dip3d,"splot 'dummy.dat' using 1:2:3 w vec\n");
     fprintf(dip3d,"pause -1 'Hit return to continue'\n");
-    fclose(dip3d);
+    ffclose(dip3d);
   }
 
   if (bSlab) {
@@ -1151,9 +1154,9 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   printf(" Total < M_z^2 > = %g Debye^2\n\n", M2[ZZ]/teller);
 
   printf(" Total < |M|^2 > = %g Debye^2\n", M2_ave);
-  printf(" Total < |M| >^2 = %g Debye^2\n\n", M_ave2);
+  printf(" Total |< M >|^2 = %g Debye^2\n\n", M_ave2);
 
-  printf(" < |M|^2 > - < |M| >^2 = %g Debye^2\n\n", M_diff);
+  printf(" < |M|^2 > - |< M >|^2 = %g Debye^2\n\n", M_diff);
   
   if (!bMU || (mu_aver != -1)) {
     printf("Finite system Kirkwood g factor G_k = %g\n", Gk);
@@ -1168,7 +1171,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     for(i=0; (i<ndipbin); i++)
       fprintf(outdd,"%10g  %10f\n",
 	      (i*mu_max)/ndipbin,dipole_bin[i]/(double)teller);
-    fclose(outdd);
+    ffclose(outdd);
     sfree(dipole_bin);
   }
   if (bGkr) 
@@ -1209,7 +1212,7 @@ int gmx_dipoles(int argc,char *argv[])
     "center of mass of the molecule.[PAR]",
     "The file Mtot.xvg contains the total dipole moment of a frame, the",
     "components as well as the norm of the vector.",
-    "The file aver.xvg contains < |Mu|^2 > and < |Mu| >^2 during the",
+    "The file aver.xvg contains < |Mu|^2 > and |< Mu >|^2 during the",
     "simulation.",
     "The file dipdist.xvg contains the distribution of dipole moments during",
     "the simulation",

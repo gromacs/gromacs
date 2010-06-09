@@ -43,6 +43,10 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
         int *      left_import_construct;
         int        left_import_nconstruct;
@@ -108,6 +112,10 @@ extern void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

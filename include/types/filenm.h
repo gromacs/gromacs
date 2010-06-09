@@ -35,6 +35,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
  
 /* this enum should correspond to the array deffile in gmxlib/filenm.c */
 enum {
@@ -53,6 +58,7 @@ enum {
   efMTX,
   efEDI, efEDO, 
   efHAT,
+  efCUB,
   efXPM,
   efNR
 };
@@ -82,3 +88,8 @@ typedef struct {
 #define ffOPTRDMULT   (ffRDMULT | ffOPT)
 #define ffWRMULT   (ffWRITE  | ffMULT)
 #define ffOPTWRMULT   (ffWRMULT | ffOPT)
+
+#ifdef __cplusplus
+}
+#endif
+

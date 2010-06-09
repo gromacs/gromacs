@@ -50,6 +50,8 @@
 #include "smalloc.h"
 #include "pbc.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   char *label;
@@ -77,9 +79,10 @@ static t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
       cg[ncg].cg=i;
       anr=cgs->index[i];
       resnr=atoms->atom[anr].resind;
-      sprintf(buf,"%s%d",
+      sprintf(buf,"%s%d-%d",
 	      *(atoms->resinfo[resnr].name),
-	      atoms->resinfo[resnr].nr);
+	      atoms->resinfo[resnr].nr,
+	      anr+1);
       cg[ncg].label=strdup(buf);
       ncg++;
     }
@@ -122,7 +125,9 @@ int gmx_saltbr(int argc,char *argv[])
     "A minimum distance can be given, (eg. the cut-off), then groups",
     "that are never closer than that distance will not be plotted.[BR]",
     "Output will be in a number of fixed filenames, min-min.xvg, plus-min.xvg",
-    "and plus-plus.xvg, or files for every individual ion-pair if selected"
+    "and plus-plus.xvg, or files for every individual ion-pair if the [TT]-sep[tt]",
+    "option is selected. In this case files are named as [TT]sb-ResnameResnr-Atomnr[tt].",
+    "There may be many such files."
   };
   static bool bSep=FALSE;
   static real truncate=1000.0;
@@ -215,7 +220,7 @@ int gmx_saltbr(int argc,char *argv[])
 	  fp=xvgropen(buf,buf,"Time (ps)","Distance (nm)",oenv);
 	  for(k=0; (k<teller); k++) 
 	    fprintf(fp,"%10g  %10g\n",time[k],cgdist[i][j][k]);
-	  fclose(fp);
+	  ffclose(fp);
 	}
       }
     sfree(buf);
@@ -242,10 +247,11 @@ int gmx_saltbr(int argc,char *argv[])
 	  if (nset[nnn] == 0) 
 	    xvgr_legend(out[nnn],1,&buf,oenv);
 	  else {
-	    if (use_xmgr())
+	    if (output_env_get_xvg_format(oenv) == exvgXMGR) {
 	      fprintf(out[nnn],"@ legend string %d \"%s\"\n",nset[nnn],buf);
-	    else
+	    } else if (output_env_get_xvg_format(oenv) == exvgXMGRACE) {
 	      fprintf(out[nnn],"@ s%d legend \"%s\"\n",nset[nnn],buf);
+	    }
 	  }
 	  nset[nnn]++;
 	  nWithin[i][j]=nnn+1;
@@ -267,7 +273,7 @@ int gmx_saltbr(int argc,char *argv[])
 	fprintf(out[m],"\n");
     }
     for(m=0; (m<3); m++) {
-      fclose(out[m]);
+      ffclose(out[m]);
       if (nset[m] == 0)
 	remove(fn[m]);
     }
