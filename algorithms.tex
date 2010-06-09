@@ -644,7 +644,7 @@ in \secref{virial}.
 } % Brace matches ifthenelse test for gmxlite
 
 
-\subsection{Update configuration}
+\subsection{The leap frog integrator}
 \label{subsec:update}
 \begin{figure}
 \centerline{\includegraphics[width=8cm]{plots/leapfrog}}
@@ -653,9 +653,11 @@ like  frogs over each others back.}
 \label{fig:leapfrog}
 \end{figure}
 
-The {\gromacs} MD program utilizes the so-called {\em leap-frog} 
+The standard MD integrator in {\gromacs} is the so-called {\em leap-frog} 
 algorithm~\cite{Hockney74} for the integration of the equations of
-motion.  The \normindex{leap-frog} 
+motion. For extremely accurate integration is required with temperature
+and/or pressure coupling velocity Verlet integrators are also present
+(see \ssecref{vverlet}). The \normindex{leap-frog} 
 algorithm uses positions $\ve{r}$ at time $t$ and
 velocities $\ve{v}$ at time $t-\hDt$; it updates positions and
 velocities using the forces
@@ -1132,6 +1134,12 @@ account the update algorithm for the velocities becomes:
 \ve{v}(t+\hdt)~=~\ve{f}_g * \lambda * \left[ \ve{v}(t-\hdt) +\frac{\ve{F}(t)}{m}\Delta t + \ve{a}_h \Delta t \right]
 \eeq
 where $g$ and $h$ are group indices which differ per atom.
+
+\ifthenelse{\equal{\gmxlite}{1}}{}{
+\subsection{The \normindex{velocity Verlet integrator}}
+\label{subsec:vverlet}
+
+}
 
 \subsection{Output step}
 The important output of the MD run is the {\em
