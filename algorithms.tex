@@ -390,12 +390,12 @@ which represent the three basis vectors of the periodic box. %While in the
 %version. 
 
 If the run starts at $t=t_0$, the coordinates at $t=t_0$ must be
-known. The {\em leap-frog algorithm}, used to update the time step
-with $\Dt$ (see \ssecref{update}), also requires that the velocities at
-$t=t_0 - \hDt$ are known. If velocities are not available, the program
-can generate initial atomic velocities $v_i, i=1\ldots 3N$ with a
-\swapindex{Maxwell-Boltzmann}{distribution} (\figref{maxwell}) at a given
-absolute temperature $T$:
+known. The {\em leap-frog algorithm}, the default algorithm used to 
+update the time step with $\Dt$ (see \ssecref{update}), also requires 
+that the velocities at $t=t_0 - \hDt$ are known. If velocities are not 
+available, the program can generate initial atomic velocities 
+$v_i, i=1\ldots 3N$ with a \swapindex{Maxwell-Boltzmann}{distribution} 
+(\figref{maxwell}) at a given absolute temperature $T$:
 \beq 
 p(v_i) = \sqrt{\frac{m_i}{2 \pi kT}}\exp\left(-\frac{m_i v_i^2}{2kT}\right)
 \eeq
@@ -653,7 +653,7 @@ like  frogs over each others back.}
 \label{fig:leapfrog}
 \end{figure}
 
-The {\gromacs} MD program utilizes the so-called {\em leap-frog} 
+The {\gromacs} MD program as a default  utilizes the so-called {\em leap-frog} 
 algorithm~\cite{Hockney74} for the integration of the equations of
 motion.  The \normindex{leap-frog} 
 algorithm uses positions $\ve{r}$ at time $t$ and
@@ -662,8 +662,8 @@ velocities using the forces
 $\ve{F}(t)$ determined by the positions at time $t$: 
 \bea
 \label{eqn:leapfrogv}
-\ve{v}(t+\hDt)  &~=~&   \ve{v}(t-\hDt)+\frac{1}{m}\ve{F}(t)\Dt   \\
-\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\ve{v}(t+\hDt)\Dt
+\ve{v}(t+\hDt)  &~=~&   \ve{v}(t-\hDt)+\frac{\Dt}{m}\ve{F}(t)   \\
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt\ve{v}(t+\hDt)
 \eea
 The algorithm is visualized in \figref{leapfrog}.
 It is equivalent to the Verlet~\cite{Verlet67} algorithm:
@@ -673,6 +673,23 @@ It is equivalent to the Verlet~\cite{Verlet67} algorithm:
 The algorithm is of third order in $\ve{r}$ and is time-reversible.
 See ref.~\cite{Berendsen86b} for the merits of this algorithm and comparison
 with other time integration algorithms.
+
+The velocity verlet algorithm~\cite{Fox90} is also implemented in
+Gromacs, though not will all combinations of options.  In this case,
+positions $\ve{r}$ and velocities $\ve{v}$ at time $t$ are required;
+velocities at the previous half step are not required.
+\bea
+\label{eqn:velocityverlet1}
+\ve{v}(t+\hDt)  &~=~&   \ve{v}(t)+\frac{\Dt}{2m}\ve{F}(t)   \\
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt\ve{v}(t+\hDt)
+\ve{v}(t+\Dt)   &~=~&   \ve{v}(t+\hDt)+\frac{\Dt}{2m}\ve{F}(t+\Dt)
+\eea
+or equivalently:
+\bea
+\label{eqn:velocityverlet2}
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt\ve{v} + \frac{\Dt^2}{2m}\ve{F}(t)
+\ve{v}(t+\Dt)   &~=~&   \ve(v}(t)+ \frac{\Dt}{2m}\left[\ve{F}(t) + \ve{F}(t+\Dt)\right]
+\eea
  
 The \swapindex{equations of}{motion} are modified for temperature coupling
  and pressure coupling, and extended to include the conservation of
@@ -768,14 +785,15 @@ equilibration purposes the coupling time can be taken quite short
 longer ({\eg} 0.5 ps) in which case it hardly influences the
 conservative dynamics. 
 
-The Berendsen thermostat suppresses the fluctuations of the kinetic energy.
-This means that, strictly speaking, one does not generate
-a proper canonical ensemble.
-For very small systems the sampling will indeed be incorrect.
-But for larger systems most properties will not be affected significantly,
-except for the distribution of the kinetic energy itself.
-A similar thermostat which does produce a correct ensemble
-is the velocity rescaling thermostat described below.
+The Berendsen thermostat suppresses the fluctuations of the kinetic
+energy.  This means that, strictly speaking, one does not generate a
+proper canonical ensemble, so rigorously, the sampling will indeed be
+incorrect.  This error scales with $1/N$, so for very large systems
+most ensemble averages properties will not be affected significantly,
+except for the distribution of the kinetic energy itself.  A similar
+thermostat which does produce a correct ensemble is the velocity
+rescaling thermostat described below.
+% is this true for heat capacity as well?
 
 The heat flow into or out of the system is effected by scaling the
 velocities of each particle every step with a time-dependent factor
@@ -818,7 +836,7 @@ This thermostat produces a correct canonical ensemble and still has
 the advantage of the Berendsen thermostat: first order decay of
 temperature deviations and no oscillations.
 When an $NVT$ ensemble is used, the conserved energy quantity
-is written to the energy and log file.
+is written to the energy and log file.  
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{\swapindex{Nos{\'e}-Hoover}{temperature coupling}}
@@ -893,7 +911,12 @@ to exponential relaxation) also means that
 the time constant normally should be 4--5 times larger
 than the relaxation time used with weak coupling, but your 
 mileage may vary.
+
+% MRS : note to insert extra information for the Nose-Hoover
+% chain formulation here. 
+
 }  % Brace matches ifthenelse test for gmxlite
+
 
 \subsubsection{\swapindex{Group}{temperature coupling}}
 In {\gromacs} temperature coupling can be performed on groups of
@@ -1080,6 +1103,8 @@ tension.
 When $\beta_{zz}$ is set to zero (constant box height), $\Delta P_z$ is also set
 to zero, which is necessary for obtaining the correct surface tension. 
 } % Brace matches ifthenelse test for gmxlite
+
+% MRS - insert information on update scheme for velocity verlet with pressure coupling.
 
 \subsubsection{The complete update algorithm}
 \begin{figure}
