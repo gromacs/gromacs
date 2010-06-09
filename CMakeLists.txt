@@ -217,6 +217,7 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
 
 
+
 ########################################################################
 # Find external packages                                               #
 ########################################################################
@@ -265,13 +266,18 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
         # We need at least git v1.5.1 be able to parse git's date output. If not 
         # fund or the version is too small, we can't generate version information.
         find_package(Git 1.5.1)
-        if(NOT Git_FOUND OR Git_VERSION VERSION_LESS "1.5.1")
+        # this should at some point become VERSION_LESS
+        if(NOT Git_FOUND OR Git_VERSION STRLESS "1.5.1")
             message("No compatible git version found, won't be able to generate proper development version information.")
         endif()
     endif()
 else()
     set(USE_VERSION_H OFF)
 endif()
+
+if (GMX_DLOPEN)
+    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS})
+endif (GMX_DLOPEN)
 
 ########################################################################
 # Generate development version info for cache
