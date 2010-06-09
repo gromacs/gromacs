@@ -236,7 +236,7 @@ enum {
 };
 
 enum {
-  eAdressICOff,eAdressICInterpolate, eAdressICThermoForce, eAdressICNR
+  eAdressICOff, eAdressICThermoForce, eAdressICNR
 };
 
 enum {

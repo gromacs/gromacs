@@ -56,7 +56,6 @@
  *                       else - weight = 1 - explicit simulation
  * \param[in] adressr radius/size of the explicit zone
  * \param[in] adressw size of the hybrid zone 
- * \param[in] bnew_wf new weighting function or not
  * \param[in] ref center of the explicit zone
  *                for adresstype 1 - unused
  *                for adresstype 2 - only ref[0] is used
@@ -70,7 +69,6 @@ adress_weight(rvec             x,
               int              adresstype,
               real             adressr,
               real             adressw,
-              bool             bnew_wf,
               rvec *           ref,
               t_pbc *          pbc);
 

@@ -664,7 +664,6 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     /* AdResS stuff */
     if (file_version >= 68) {
       do_int(ir->adress_type);
-      do_int(ir->badress_new_wf);
       do_real(ir->adress_const_wf);
       do_real(ir->adress_ex_width);
       do_real(ir->adress_hy_width);

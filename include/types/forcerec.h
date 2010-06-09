@@ -354,7 +354,6 @@ typedef struct {
 
   /* parameter needed for AdResS simulation */
   int  adress_type;
-  bool badress_new_wf;
   bool badress_chempot_dx;
   bool badress_tf_full_box;
   real adress_const_wf;

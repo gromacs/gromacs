@@ -206,7 +206,7 @@ const char *eAdresstype_names[eAdressNR+1] = {
 };
 
 const char *eAdressICtype_names[eAdressICNR+1] = {
-  "off","interpolate", "thermoforce", NULL 
+  "off", "thermoforce", NULL 
 };
 
 const char *eAdressSITEtype_names[eAdressSITENR+1] = {

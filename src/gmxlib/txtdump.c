@@ -661,7 +661,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     pr_matrix(fp,indent,"deform",ir->deform,bMDPformat);
 
     PS("adress_type",EADRESSTYPE(ir->adress_type));
-    PS("adress_new_wf",BOOL(ir->badress_new_wf));
     PR("adress_const_wf",ir->adress_const_wf);
     PR("adress_ex_width",ir->adress_ex_width);
     PR("adress_hy_width",ir->adress_hy_width);

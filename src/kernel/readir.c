@@ -1005,7 +1005,6 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* AdResS defined thingies */
   CCTYPE ("AdResS parameters");
   EETYPE("adress_type",                ir->adress_type,         eAdresstype_names);
-  EETYPE("adress_new_wf",              ir->badress_new_wf,      yesno_names);
   EETYPE("adress_chempot_dx",          ir->badress_chempot_dx,  yesno_names);
   EETYPE("adress_tf_full_box",         ir->badress_tf_full_box, yesno_names);
   RTYPE ("adress_const_wf",            ir->adress_const_wf,     1);
@@ -2006,9 +2005,7 @@ void do_index(const char* mdparin, const char *ndx,
                  strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
               k++;
             if (k==nr) gmx_fatal(FARGS,"Adress ex energy group %s not found\n",ptr1[i]);
-
             ir->adress_ex_grp_index[i] = k;
-            printf("AAA found ex group %s id %d \n",ptr1[i], k);
 
     }
   }
@@ -2027,10 +2024,7 @@ void do_index(const char* mdparin, const char *ndx,
                  strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
               k++;
             if (k==nr) gmx_fatal(FARGS,"Adress cg energy group %s not found\n",ptr1[i]);
-
             ir->adress_cg_grp_index[i] = k;
-            printf("AAA found cg group %s id %d \n",ptr1[i], k);
-
     }
   }
 
