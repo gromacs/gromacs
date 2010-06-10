@@ -558,7 +558,7 @@ int gmx_rmsdist (int argc,char *argv[])
   static int  nlevels=40;
   static real scalemax=-1.0;
   static bool bSumH=TRUE;
-
+  static bool bPBC=TRUE;
   output_env_t oenv;
 
   t_pargs pa[] = {
@@ -567,7 +567,9 @@ int gmx_rmsdist (int argc,char *argv[])
     { "-max",   FALSE, etREAL, {&scalemax},    
       "Maximum level in matrices" },
     { "-sumh",  FALSE, etBOOL, {&bSumH},       
-      "average distance over equivalent hydrogens" }
+      "average distance over equivalent hydrogens" },
+    { "-pbc",   FALSE, etBOOL, {&bPBC},
+      "Use periodic boundary conditions when computing distances" }
   };
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
@@ -608,6 +610,9 @@ int gmx_rmsdist (int argc,char *argv[])
     
   /* get topology and index */
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&ePBC,&x,NULL,box,FALSE);
+  
+  if (!bPBC)
+    ePBC = epbcNONE;
   atoms=&(top.atoms);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
