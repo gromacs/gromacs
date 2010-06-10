@@ -139,6 +139,21 @@ Most of the groups only contain protein atoms.
 An atom is considered a protein atom if its residue name is listed
 in the {\tt \normindex{aminoacids.dat}} file.
 
+\subsection{Selections}
+\label{subsec:selections}
+{\tt g\_select}\\
+{\gromacs} also includes a {\tt g\_select} tool that can be used to
+select atoms based on more flexible criteria than in {\tt make\_ndx},
+including selecting atoms based on their coordinates.  Currently, the
+tool is experimental and only supports some basic operations, but in the
+future the functionality is planned to be included in other analysis
+tools as well.  Description of possible ways of selecting atoms can be
+read by running {\tt g\_select} and typing {\tt help} in the selection
+prompt that appears.  It is also possible to write your own analysis
+tools to take advantage of the flexibility of these selections: see the
+{\tt template.c} file in the {\tt share/gromacs/template} directory of
+your installation for an example.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Looking at your trajectory
 
 \section{Looking at your trajectory}

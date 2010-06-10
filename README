@@ -36,7 +36,7 @@ These are the items that need to be generated:
    This is done in two steps. First, copy the list of programs from the
    admin directory in the gromacs source, .e.g:
 
-   cp /home/lindahl/gromacs-3.2.1/admin/proglist.txt .
+   cp /home/lindahl/gromacs-3.2.1/admin/programs.txt .
 
    And then generate proglist.tex:
 

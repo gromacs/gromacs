@@ -523,31 +523,66 @@ for TIP3P and TIP4P~\cite{Jorgensen83}.
 TIP3P just has another geometry. TIP4P has a virtual site, but since 
 that is generated it does not need to be shaken (nor stirred).
 
-\section{\normindex{Database}s}
+\section{\normindex{pdb2gmx input files}}
+\label{sec:pdb2gmxfiles}
+The {\gromacs} program {\tt pdb2gmx} generates topologies from
+an input coordinate file. Several formats are supported for
+the coordinate file, but pdb is the most commonly used format
+(hence the name {\tt pdb2gmx}).
+{\tt pdb2gmx} searches for force field in the {\gromacs} {\tt share/top}
+directory your working directory. Force fields are recognized from
+the file {\tt forcefield.itp} in a directory with the extension {\tt .ff}.
+When a file {\tt forcefield.doc} is present, the first line in this file,
+which should be a short description of the force field, will be printed to
+help the user in choosing a force field.
+Two general files are read by {\tt pdb2gmx}, an atom type file
+(extension {\tt .atp} \ssecref{atomtype}) from the force field directory
+and a file called {\tt aminoacids.dat} from the {\gromacs} {\tt share/top}
+directory, which determines which residue names are considered aminoacids.
+{\tt pdb2gmx} can read one or multiple databases with topological information
+for different types of molecules. A set of files belonging to one database
+should have the same basename, preferably telling something about the type
+of molecules (e.g. aminoacids, rna, dna). The possible files are:
+\begin{itemize}
+\item {\tt <basename>.rtp}
+\item {\tt <basename>.r2b} (optional)
+\item {\tt <basename>.arn} (optional)
+\item {\tt <basename>.hdb} (optional)
+\item {\tt <basename>.n.tdb} (optional)
+\item {\tt <basename>.c.tdb} (optional)
+\end{itemize}
+Only the {\tt .rtp} file, which contains the topologies of the building
+blocks, sn mandatory. Information from other files will only be used 
+for builing blocks that come from an {\tt .rtp} file with the same base name.
+The user can add building blocks to a force fields by having additional
+files with the same base name in their working directory. By default only
+extra building blocks can be defined, but calling {\tt pdb2gmx} with
+the {\tt -rtpo} option will allow building blocks in a local file
+to replace the default ones in the force field.
+
 
 \subsection{Residue database}
 \label{subsec:rtp}
-The file holding the residue database is {\tt ff???.rtp}. Originally
-this file contained building blocks (amino acids) for proteins, and is
-the {\gromacs} interpretation of the {\tt rt37c4.dat} file of {\gromos}. So
-the residue file contains information (bonds, charge, charge groups
+The files holding the residue databases have the extension {\tt .rtp}.
+Originally this file contained building blocks (amino acids) for proteins,
+and is the {\gromacs} interpretation of the {\tt rt37c4.dat} file of {\gromos}.
+So the residue file contains information (bonds, charge, charge groups
 and improper dihedrals) for a frequently used building block. It is
 better {\em not} to change this file because it is standard input for
 {\tt pdb2gmx}, but if changes are needed make them in the
-{\tt *.top} file (see~\ssecref{topfile}). 
-However, in the {\tt ff???.rtp} file the user can define a new
-\normindex{building block} or molecule: see for example 2,2,2-trifluoroethanol
-(TFE) or {\em n}-decane (C10). But when defining new molecules
-(non-protein) it is preferable to create a {\tt *.itp}
-file. This will be discussed in section~\ssecref{molitp}.
+{\tt *.top} file (see~\ssecref{topfile}), or in a {\tt .rtp} file
+in the working directory as explained in \secref{pdb2gmxfiles}.
+But defining topologies of new small molecules is probably easier
+by writing an include topology file {\tt *.itp} directly.
+This will be discussed in section~\ssecref{molitp}.
 When adding a new protein residue to the database, don't forget to
 add the residue name to the {\tt \normindex{aminoacids.dat}} file,
 so that {\tt grompp}, {\tt make\_ndx} and analysis tools can recognize
 the residue as a protein residue (see \ssecref{defaultgroups}).
 
-The file {\tt ff???.rtp} is only used by {\tt pdb2gmx}.
+The {\tt .rtp} files are only used by {\tt pdb2gmx}.
 As mentioned before, the only extra information this
-program needs from {\tt ff???.rtp} is bonds, charges of atoms,
+program needs from the {\tt .rtp} database is bonds, charges of atoms,
 charge groups and improper dihedrals, because the rest is read from
 the coordinate input file (in the case of {\tt pdb2gmx}, a pdb format
 file). Some proteins contain residues that are not standard, but are
@@ -653,9 +688,76 @@ not be generated, an {\tt [~exclusions~]} field can be added, followed by
 pairs of atom names on separate lines. All non-bonded and pair interactions
 between these atoms will be excluded.
 
+\subsection{Residue to building block database}
+Each force field has its own naming convention for residues.
+Most residues have consistent naming, but some, especially those
+with different protonation states, can have many different names.
+The {\tt .r2b} files is used to convert standard residue names to
+the force field build block names. If no {\tt .r2b} is present
+in the force field directory or a residue is not listed, the building
+block name is assumed to be identical to the residue name.
+The {\tt .r2b} can contain 2 or 5 columns. The 2-column format
+has as the residue name in the first column and the building block name
+in the second. The 5-column format has 3 additional columns with
+the building block for the residue occuring in the N-terminus, C-terminus
+and both termini at the same time (single residue molecule).
+This is useful for for instance the AMBER force field.
+If one or more of the terminal versions are not present a dash should be entered
+in the corresponding column.
+
+There is a {\gromacs} naming convention for residues which is only
+apparent (except for the {\tt pdb2gmx} code) through the {\tt .r2b} file
+and {\tt specbond.dat} files.
+This convention is only of importance when you are adding residue types
+to an {\tt .rtp} file. The convention is listed in \tabref{r2b}.
+For special bonds with, for instance, a heme group, the {\gromacs} naming
+convention is introduced through {\tt specbond.dat}, which can
+subsequently be translated by the {\tt .r2b} file, if required.
+
+\begin{table}
+\centerline{
+\begin{tabular}{|ll|}
+\dline
+ARG  & protonated arginine \\
+ARGN & neutral arginine \\
+ASP  & negatively charged aspartic acid \\
+ASPH & neutral aspartic acid \\
+CYS  & neutral cysteine \\
+CYS2 & cysteine with sulfur bound to another cysteine or a heme \\
+GLU  & negatively charged glutamic acid \\
+GLUH & neutral glutamic acid \\
+HISD & neutral histidine with N$_\delta$ protonated \\
+HISE & neutral histidine with N$_\epsilon$ protonated \\
+HISH & positive histidine with both N$_\delta$ and N$_\epsilon$ protonated \\
+HIS1 & histidine bound to a heme \\
+LYSN & neutral lysine \\
+LYS  & protonated lysine \\
+HEME & heme \\
+\dline
+\end{tabular}
+}
+\caption{Internal {\gromacs} residue naming convention.}
+\label{tab:r2b}
+\end{table}
+
+\subsection{Atom renaming database}
+Force field often use atom names which do not follow IUPAC or pdb convention.
+The {\tt .arn} database is used to translate the atom names in the coordinate
+file to the force field names. Atoms which are not listed keep their names.
+The file has three columns which contain the building block name,
+the old atom name and the new atom name respectively. The residue name
+supports questionmark wildcards, which match a single character.
+
+An additional general atom renaming file called {\tt xlateat.dat} is present
+in the {\tt share/top} directory, which translated common non-standard
+atom names in the coordinate file to IUPAC/pdb convention. Thus when writing
+force fields files, you can assume standard atom names and no further
+atom name translation is required, except for that from standard atom names
+to the force field ones.
+
 \subsection{Hydrogen database}
 \label{subsec:hdb}
-The \swapindex{hydrogen}{database} is stored in {\tt ff???.hdb}. It
+The \swapindex{hydrogen}{database} is stored in {\tt .hdb} files. It
 contains information for the {\tt pdb2gmx} program on how to connect
 hydrogen atoms to existing atoms. In versions of the database before
 {\gromacs} 3.3, hydrogen atoms were named after the atom they are
@@ -751,12 +853,12 @@ on the code selected (for water there is only one control atom).
 
 \subsection{Termini database}
 \label{subsec:tdb}
-The \swapindex{termini}{database}s are stored in {\tt ff???-n.tdb} and
-{\tt ff???-c.tdb} for the N- and C-termini respectively. They contain
+The \swapindex{termini}{database}s are stored in {\tt ???.n.tdb} and
+{\tt ???.c.tdb} for the N- and C-termini respectively. They contain
 information for the {\tt pdb2gmx} program on how to connect new atoms
 to existing ones, which atoms should be removed or changed and which
 bonded interactions should be added. The format of the is as follows
-(this is an example from the {\tt ffgmx-c.tdb}):
+(this is an example from {\tt gmx.ff/aminoacids.c.tdb}):
 
 \begin{tt}
 [ None ]\\
@@ -798,7 +900,15 @@ Per block the following options are present:
 \begin{itemize}
 \item {\tt [~replace~]} \\
 replace an existing atom by one with a different atom type, atom name,
-charge and/or mass. For each atom to be replaced on line should be
+charge and/or mass. This entry can be used to replace an atom that is
+present both in the input coordinates and in the {\tt .rtp} database,
+but also to only rename an atom in the input coordinates such that
+it matches the name in the force field. In the latter case there
+should also be a corresponding {\tt [~add~]} section present that
+allows to add the same atom, such that the position in the sequence
+and the bonding is known. Such an atom can be present in the input
+coordinates and kept or not present and constructed by {\tt pdb2gmx}.
+For each atom to be replaced on line should be
 entered with the following fields:
 \begin{itemize}
 \item name of the atom to be replaced
@@ -947,14 +1057,16 @@ connection	& {\tts bonds}$^{(excl)}$     & 2 & 5	& & \\
 harmonic pot.	& {\tts bonds}		      & 2 & 6	& $b_0$ (nm); $k_b$ (\kJmolnm{-2})	& all	\\
 FENE bond	& {\tts bonds}$^{(excl)}$     & 2 & 7	& $b_m$ (nm); $k_b$ (\kJmolnm{-2})	& 	\\
 tab. bond	& {\tts bonds}$^{(excl)}$     & 2 & 8	& table number ($\geq 0$); $k$ (\kJmol) & $k$ 	\\
-tab. bond n.c.  & {\tts bonds}                & 2 & 9	& table number ($\geq 0$); $k$ (\kJmol) & $k$ 	\\
+tab. bond n.c.  & {\tts bonds}                & 2 & 9 	& table number ($\geq 0$); $k$ (\kJmol) & $k$ 	\\
+restraint pot.  & {\tts bonds}		      & 2 & 10	& low, up$_1$, up$_2$ (nm);             & all	\\
+               	&                   	      &   &  	& $k_{dr}$ (\kJmolnm{-2})               & 	\\
 LJ/Coul. 1-4	& {\tts pairs}		      & 2 & 1	& $V^{(cr)}$; $W^{(cr)}$ & all \\
 LJ/Coul. 1-4	& {\tts pairs}		      & 2 & 2	& fudge QQ (); $q_i$, $q_j$ (e), $V^{(cr)}$; $W^{(cr)}$ &     \\
 LJ/C. pair NB	& {\tts pairs\_nb}	      & 2 & 1	& $q_i$, $q_j$ (e); $V^{(cr)}$; $W^{(cr)}$ &    \\
 angle		& {\tts angles}$^{(con)}$     & 3 & 1	& $\theta_0$ (deg); $k_\theta$ (\kJmolrad{-2}) & all	\\
 G96 angle	& {\tts angles}$^{(con)}$     & 3 & 2	& $\theta_0$ (deg); $k_\theta$ (\kJmol) & all	\\
-Cross bond-bond	& {\tts angles}               & 3 & 3	& $r_{1e}$, $r_{2e}$ (nm); $k_{rr'}$ (\kJmolnm{-2}) & 	\\
-Cross bond-angle& {\tts angles}               & 3 & 4	&$r_{1e}$, $r_{2e}$ $r_{3e}$ (nm); $k_{r\theta}$ (\kJmolnm{-2}) & 	\\
+cross bond-bond	& {\tts angles}               & 3 & 3	& $r_{1e}$, $r_{2e}$ (nm); $k_{rr'}$ (\kJmolnm{-2}) & 	\\
+cross bond-angle& {\tts angles}               & 3 & 4	&$r_{1e}$, $r_{2e}$ $r_{3e}$ (nm); $k_{r\theta}$ (\kJmolnm{-2}) & 	\\
 Urey-Bradley    & {\tts angles}$^{(con)}$     & 3 & 5	& $\theta_0$ (deg); $k_\theta$ (\kJmol); $r_{13}$ (nm); & \\
                 &                             &   &     & $k_{UB}$ (\kJmol) & \\
 quartic angle	& {\tts angles}$^{(con)}$     & 3 & 6	& \multicolumn{2}{l|}{$\theta_0$ (deg); $C_{i=0,1,2,3,4}$ (\kJmolrad{-i})}	\\
@@ -1002,6 +1114,8 @@ vsite COM	& {\tts virtual\_sitesn}	& 1 & 2	& one or more construc. atom ind.   	
 vsite COW  	& {\tts virtual\_sitesn}	& 1 & 3	& one or more pairs consisting of	& 	\\
                 &                               &   &   & a construc. atom ind. and weight           &       \\
 position res.	& {\tts position\_restraints}   & 1 & 1	& $k_{x}$, $k_{y}$, $k_{z}$ (\kJmolnm{-2}) & all	\\
+restr. pot.	& {\tts bonds}		        & 2 & 10	& low, up$_1$, up$_2$ (nm);             & all	\\
+               	&                   	        &   &  	& $k_{dr}$ (\kJmolnm{-2})               & 	\\
 distance res.	& {\tts distance\_restraints}   & 2 & 1	& type; label; low, up$_1$, up$_2$ (nm); & \\
                 &                               &   &   & weight () & \\
 orient. res.    & \multicolumn{3}{l}{\tts orientation\_restraints} & &\\
