@@ -59,7 +59,7 @@
 #include "gen_ad.h"
 #include "gpp_nextnb.h"
 #include "vec.h"
-#include "x2top.h"
+#include "g_x2top.h"
 #include "atomprop.h"
 
 char atp[7] = "HCNOSX";
