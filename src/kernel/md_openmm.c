@@ -445,7 +445,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     step = ir->init_step;
     step_rel = 0;
-    bLastStep = ((ir->nsteps >= 0 && step_rel > ir->nsteps));
 
     while (!bLastStep)
     {
@@ -514,7 +513,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             mdof_flags |= MDOF_CPT;
         };
-        do_ene = do_per_step(step,ir->nstenergy) || (bLastStep && ir->nstenergy);
+        do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
 
         if (mdof_flags != 0)
         {
@@ -528,11 +527,11 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         openmm_take_one_step(openmmData);
 
-        if (mdof_flags != 0 || do_ene)
+        if (mdof_flags != 0 || do_ene || do_log)
         {
             wallcycle_start(wcycle,ewcTRAJ);
             bF = (mdof_flags & MDOF_F);
-            if (bF || do_ene )
+            if (bF || do_ene || do_log)
             {
                 openmm_copy_state(openmmData, state, &t, f, enerd, 0, 0, bF, do_ene);
             }
@@ -540,9 +539,9 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        t,mdatoms->tmass,enerd,state,lastbox,
                        shake_vir,force_vir,total_vir,pres,
                        ekind,mu_tot,constr);
-            print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,fplog,step,t,
-                       eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
-
+            print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,do_log?fplog:NULL,
+                       step,t,
+                       eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
             write_traj(fplog,cr,outf,mdof_flags,top_global,
                        step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
             if (bCPT)
@@ -660,6 +659,15 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     /* Stop the time */
     runtime_end(runtime);
+
+    if (MASTER(cr))
+    {
+        if (ir->nstcalcenergy > 0) 
+        {
+            print_ebin(outf->fp_ene,FALSE,FALSE,FALSE,fplog,step,t,
+                       eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
+        }
+    }
 
     openmm_cleanup(fplog, openmmData);
 
