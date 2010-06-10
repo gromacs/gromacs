@@ -50,8 +50,8 @@ bin_PROGRAMS = \
 	do_dssp		editconf	eneconv		\
 	genbox		genconf		genrestr	g_nmtraj	\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
-	trjorder	wheel		xpm2ps		genion		\
-	anadock		make_edi	\
+	trjorder	g_wheel		xpm2ps		genion		\
+	g_anadock	make_edi	\
 	g_analyze   	g_anaeig    	g_bar		\
 	g_angle     	g_bond      	\
 	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
@@ -72,7 +72,7 @@ bin_PROGRAMS = \
 	g_tcaf      	g_traj      	g_tune_pme   \
 	g_vanhove	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_wham		g_kinetics	\
-	sigeps
+	g_sigeps
 
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
