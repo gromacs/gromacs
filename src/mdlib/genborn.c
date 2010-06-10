@@ -1559,8 +1559,8 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
     {
         ai   = nl->iinr[i];
         
-        nj0     = nl->jindex[ai];
-        nj1  = nl->jindex[ai+1];
+        nj0  = nl->jindex[i];
+        nj1  = nl->jindex[i+1];
         
         /* Load shifts for this list */
         shift   = nl->shift[i];
