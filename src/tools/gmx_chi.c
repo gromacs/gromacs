@@ -938,7 +938,9 @@ static void order_params(FILE *log,
   
   if (NULL != pdbfn) {
     real x0,y0,z0;
-    
+
+    if (NULL == atoms->pdbinfo)
+      snew(atoms->pdbinfo,atoms->nr);
     for(i=0; (i<atoms->nr); i++)
       atoms->pdbinfo[i].bfac=bfac_init;
     
