@@ -936,7 +936,7 @@ static void order_params(FILE *log,
   }
   ffclose(fp);
   
-  if (pdbfn) {
+  if (NULL != pdbfn) {
     real x0,y0,z0;
     
     for(i=0; (i<atoms->nr); i++)
