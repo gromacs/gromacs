@@ -430,7 +430,7 @@ static int do_memtest(unsigned int which_tests, int megs, int iter)
 int do_quick_memtest(int dev_id)
 {
     cudaDeviceProp  dev_prop;
-    int             devmem, res, time;
+    int             devmem, res, time=0;
 
     if (debug) { time = getTimeMilliseconds(); }
 
@@ -472,7 +472,7 @@ int do_quick_memtest(int dev_id)
 int do_full_memtest(int dev_id)
 {
     cudaDeviceProp  dev_prop;
-    int             devmem, res, time;
+    int             devmem, res, time=0;
 
     if (debug) { time = getTimeMilliseconds(); }
 
@@ -517,7 +517,7 @@ int do_full_memtest(int dev_id)
 int do_timed_memtest(int dev_id, int time_constr)
 {
     cudaDeviceProp  dev_prop;
-    int             devmem, res, time, startt;
+    int             devmem, res=0, time=0, startt;
 
     if (debug) { time = getTimeMilliseconds(); }
 
