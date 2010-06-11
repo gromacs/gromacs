@@ -131,7 +131,7 @@ real do_ewald(FILE *log,       bool bVerbose,
               ewald_tab_t et)
 {
   real factor=-1.0/(4*ewaldcoeff*ewaldcoeff);
-  real scaleRecip =4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0/ir->epsilon_r; // 1/(Vol*e0) //
+  real scaleRecip =4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0/ir->epsilon_r; /* 1/(Vol*e0) */
   real *charge,energy_AB[2],energy;
   rvec lll;
   int  lowiy,lowiz,ix,iy,iz,n,q;
