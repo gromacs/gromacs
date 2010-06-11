@@ -155,7 +155,9 @@ static void mdrunner_start_fn(void *arg)
                                         but those are all const. */
     t_commrec *cr;  /* we need a local version of this */
     FILE *fplog=NULL;
-    t_filenm *fnm=dup_tfn(mc.nfile, mc.fnm);
+    t_filenm *fnm;
+
+    fnm=dup_tfn(mc.nfile, mc.fnm);
 
     cr=init_par_threads(mc.cr);
     if (MASTER(cr))
@@ -163,8 +165,7 @@ static void mdrunner_start_fn(void *arg)
         fplog=mc.fplog;
     }
 
-
-    mda->ret=mdrunner(cr->nthreads, fplog, cr, mc.nfile, mc.fnm, mc.oenv, 
+    mda->ret=mdrunner(cr->nthreads, fplog, cr, mc.nfile, fnm, mc.oenv, 
                       mc.bVerbose, mc.bCompact, mc.nstglobalcomm, 
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
@@ -189,49 +190,54 @@ static t_commrec *mdrunner_start_threads(int nthreads,
               const char *deviceOptions, unsigned long Flags)
 {
     int ret;
-    struct mdrunner_arglist mda;
+    struct mdrunner_arglist *mda;
     t_commrec *crn; /* the new commrec */
+    t_filenm *fnmn;
 
     /* first check whether we even need to start tMPI */
     if (nthreads<2)
         return cr;
 
+    /* a few small, one-time, almost unavoidable memory leaks: */
+    snew(mda,1);
+    fnmn=dup_tfn(nfile, fnm);
+
     /* fill the data structure to pass as void pointer to thread start fn */
-    mda.fplog=fplog;
-    mda.cr=cr;
-    mda.nfile=nfile;
-    mda.fnm=fnm;
-    mda.oenv=oenv;
-    mda.bVerbose=bVerbose;
-    mda.bCompact=bCompact;
-    mda.nstglobalcomm=nstglobalcomm;
-    mda.ddxyz[XX]=ddxyz[XX];
-    mda.ddxyz[YY]=ddxyz[YY];
-    mda.ddxyz[ZZ]=ddxyz[ZZ];
-    mda.dd_node_order=dd_node_order;
-    mda.rdd=rdd;
-    mda.rconstr=rconstr;
-    mda.dddlb_opt=dddlb_opt;
-    mda.dlb_scale=dlb_scale;
-    mda.ddcsx=ddcsx;
-    mda.ddcsy=ddcsy;
-    mda.ddcsz=ddcsz;
-    mda.nstepout=nstepout;
-    mda.resetstep=resetstep;
-    mda.nmultisim=nmultisim;
-    mda.repl_ex_nst=repl_ex_nst;
-    mda.repl_ex_seed=repl_ex_seed;
-    mda.pforce=pforce;
-    mda.cpt_period=cpt_period;
-    mda.max_hours=max_hours;
-    mda.deviceOptions=deviceOptions;
-    mda.Flags=Flags;
+    mda->fplog=fplog;
+    mda->cr=cr;
+    mda->nfile=nfile;
+    mda->fnm=fnmn;
+    mda->oenv=oenv;
+    mda->bVerbose=bVerbose;
+    mda->bCompact=bCompact;
+    mda->nstglobalcomm=nstglobalcomm;
+    mda->ddxyz[XX]=ddxyz[XX];
+    mda->ddxyz[YY]=ddxyz[YY];
+    mda->ddxyz[ZZ]=ddxyz[ZZ];
+    mda->dd_node_order=dd_node_order;
+    mda->rdd=rdd;
+    mda->rconstr=rconstr;
+    mda->dddlb_opt=dddlb_opt;
+    mda->dlb_scale=dlb_scale;
+    mda->ddcsx=ddcsx;
+    mda->ddcsy=ddcsy;
+    mda->ddcsz=ddcsz;
+    mda->nstepout=nstepout;
+    mda->resetstep=resetstep;
+    mda->nmultisim=nmultisim;
+    mda->repl_ex_nst=repl_ex_nst;
+    mda->repl_ex_seed=repl_ex_seed;
+    mda->pforce=pforce;
+    mda->cpt_period=cpt_period;
+    mda->max_hours=max_hours;
+    mda->deviceOptions=deviceOptions;
+    mda->Flags=Flags;
 
     fprintf(stderr, "Starting %d threads\n",nthreads);
     fflush(stderr);
     /* now spawn new threads that start mdrunner_start_fn(), while 
        the main thread returns */
-    ret=tMPI_Init_fn(TRUE, nthreads, mdrunner_start_fn, (void*)(&mda) );
+    ret=tMPI_Init_fn(TRUE, nthreads, mdrunner_start_fn, (void*)(mda) );
     if (ret!=TMPI_SUCCESS)
         return NULL;
 

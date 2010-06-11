@@ -458,7 +458,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     return cr;
 }
 
-t_commrec *init_par_threads(t_commrec *cro)
+t_commrec *init_par_threads(const t_commrec *cro)
 {
 #ifdef GMX_THREADS
     int initialized;
