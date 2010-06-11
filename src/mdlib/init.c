@@ -149,86 +149,17 @@ void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
   init_energyhistory(&state->enerhist);
 }
 
-#if 0
-void init_single(FILE *fplog,t_inputrec *inputrec,
-		 const char *tpxfile,gmx_mtop_t *mtop, 
-                 t_state *state)
-{
-  read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
-  set_state_entries(state,inputrec,1);
-
-  if (fplog)
-    pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
-}
-#endif
 
 void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop, t_state *state)
 {
-#if 0  
-  char buf[256];
-
-  if (MASTER(cr)) {
-    init_inputrec(inputrec);
-    read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
-    /* When we will be doing domain decomposition with separate PME nodes
-     * the rng entries will be too large, we correct for this later.
-     */
-    set_state_entries(state,inputrec,cr->nnodes);
-  }
-#endif
   bcast_ir_mtop(cr,inputrec,mtop);
 
-#if 0
-#ifdef GMX_THREADS
-    /* Check if we did not automatically start multiple threads,
-     * while an algorithm does not support parallel simulation.
-     */
-    if (inputrec->eI == eiLBFGS ||
-        inputrec->eI == eiNM ||
-        inputrec->coulombtype == eelEWALD)
-    {
-        if (cr->nnodes > 1 && MASTERTHREAD(cr))
-        {
-            fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs.\n");
-        }
-        cancel_par_threads(cr); 
-    }
-    else
-    {
-        if ( (cr->nthreads_requested < 1) &&
-             (mtop->natoms/cr->nthreads < MAX_ATOMS_PER_THREAD) )
-        {
-        }
-    }
-#endif
-#endif
 
   if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */
     inputrec->ld_seed += cr->nodeid;
   }
-#if 0 
-  /* Printing */
-  if (list!=0 && log!=NULL) 
-  {
-	  if (list&LIST_INPUTREC)
-		  pr_inputrec(log,0,"parameters of the run",inputrec,FALSE);
-	  if (list&LIST_X)
-		  pr_rvecs(log,0,"box",state->box,DIM);
-	  if (list&LIST_X)
-		  pr_rvecs(log,0,"box_rel",state->box_rel,DIM);
-	  if (list&LIST_V)
-		  pr_rvecs(log,0,"boxv",state->boxv,DIM);
-	  if (list&LIST_X)
-		  pr_rvecs(log,0,int_title("x",0,buf,255),state->x,state->natoms);
-	  if (list&LIST_V)
-		  pr_rvecs(log,0,int_title("v",0,buf,255),state->v,state->natoms);
-	  if (list&LIST_TOP)
-		  pr_mtop(log,0,int_title("topology",cr->nodeid,buf,255),mtop,TRUE);
-	  fflush(log);
-  }
-#endif
 }
 
 

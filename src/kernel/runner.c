@@ -143,7 +143,7 @@ struct mdrunner_arglist
 };
 
 
-/* the function to run when spawning threads. Extracts the mdrunner() 
+/* The function used for spawning threads. Extracts the mdrunner() 
    arguments from its one argument and calls mdrunner(), after making
    a commrec. */
 static void mdrunner_start_fn(void *arg)
@@ -194,7 +194,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
 
     /* first check whether we even need to start tMPI */
     if (nthreads<2)
-        return NULL;
+        return cr;
 
     /* fill the data structure to pass as void pointer to thread start fn */
     mda.fplog=fplog;
@@ -238,6 +238,53 @@ static t_commrec *mdrunner_start_threads(int nthreads,
     /* make a new comm_rec to reflect the new situation */
     crn=init_par_threads(cr);
     return crn;
+}
+
+
+/* get the number of threads based on how many there were requested, 
+   which algorithms we're using, and how many particles there are. */
+static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
+                        gmx_mtop_t *mtop)
+{
+    int nthreads=nthreads_requested;
+
+    /* determine # of hardware threads. */
+    if (nthreads_requested < 1)
+    {
+        nthreads=tMPI_Get_recommended_nthreads();
+    }
+    /* Check if an algorithm does not support parallel simulation.  */
+    if (nthreads != 1 && 
+        ( inputrec->eI == eiLBFGS ||
+          inputrec->eI == eiNM ||
+          inputrec->coulombtype == eelEWALD) )
+    {        
+        fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs. Not starting any threads.\n");
+        nthreads=1;
+    }
+    else if ((nthreads_requested < 1) &&             
+             (mtop->natoms/nthreads < MIN_ATOMS_PER_THREAD) )
+    {
+        /* the thread number was chosen automatically, but there's too many
+           threads (too few atoms per thread) */
+        int nthreads_new = mtop->natoms/MIN_ATOMS_PER_THREAD; 
+
+        if (nthreads < 8 || nthreads_new<=4) 
+        {
+            /* for small numbers of cores, we just take this number */
+            nthreads=nthreads_new;
+        }
+        else
+        {
+            /* for large numbers of cores, round down to a number divisible 
+               by 4*/
+            nthreads=4*(nthreads_new/4);
+        }
+
+        fprintf(stderr,"\nNOTE: Parallelization is limited by the small number of atoms,\n");
+        fprintf(stderr,"      Only starting %d threads.\n\n",nthreads);
+    }
+    return nthreads;
 }
 #endif
 
@@ -302,28 +349,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                        mtop);
         /* NOW the threads will be started: */
 #ifdef GMX_THREADS
-        nthreads=nthreads_requested;
-        /* determine # of threads. */
-        if (nthreads < 1)
-        {
-            nthreads=tMPI_Get_recommended_nthreads();
-        }
-        /* Check if an algorithm does not support parallel simulation.  */
-        if (nthreads_requested != 1 && 
-            ( inputrec->eI == eiLBFGS ||
-              inputrec->eI == eiNM ||
-              inputrec->coulombtype == eelEWALD) )
-        {        
-            fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs. Not starting any threads.\n");
-            nthreads=1;
-        }   
-        if ((nthreads_requested < 1) &&             
-            (mtop->natoms/nthreads < MIN_ATOMS_PER_THREAD) )
-        {
-            nthreads = mtop->natoms/MIN_ATOMS_PER_THREAD; 
-            fprintf(stderr,"\nNOTE: Parallelization is limited by the small number of atoms,\n");
-            fprintf(stderr,"      Only starting %d threads.\n\n",nthreads);
-        }
+        nthreads=get_nthreads(nthreads_requested, inputrec, mtop);
         if (nthreads>1)
         {
             /* now start the threads. */
@@ -345,14 +371,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* END OF CAUTION: cr is now reliable */
 
     /* now make sure the state is initialized and propagated */
-    if (!PAR(cr))
+    set_state_entries(state,inputrec,cr->nnodes);
+    if (PAR(cr))
     {
-        set_state_entries(state,inputrec,1);
-    }
-    else
-    {
-        set_state_entries(state,inputrec,cr->nnodes);
-
         /* now broadcast everything to the non-master nodes/threads: */
         init_parallel(fplog, cr, inputrec, mtop, state);
     }

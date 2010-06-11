@@ -148,7 +148,7 @@ extern tMPI_Thread_mutex_t deform_init_box_mutex;
 
 /* the maximum number of atoms per thread. With fewer atoms than this,
    the number of threads will get lowered. */
-#define MIN_ATOMS_PER_THREAD    150
+#define MIN_ATOMS_PER_THREAD    100
 #endif
 
 
@@ -310,15 +310,6 @@ typedef enum
 extern void check_nnodes_top(char *fn,t_topology *top);
 /* Reset the tpr file to work with one node if necessary */
 
-#if 0
-extern void init_single(FILE *log, t_inputrec *inputrec, const char *tpbfile, 
-                        gmx_mtop_t *mtop, t_state *state);
-     /*
-      * Allocates space for the topology (top), the coordinates x, the
-      * velocities v, masses mass. Reads the parameters, topology,
-      * coordinates and velocities from the file specified in tpbfile
-      */
-#endif
 
 /* check the version */
 void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
@@ -355,21 +346,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
 	     const char *deviceOptions, unsigned long Flags);
 /* Driver routine, that calls the different methods */
-
-#if 0
-int mdrunner_threads(int nthreads,
-                     FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-                     const output_env_t oenv, bool bVerbose,bool bCompact,
-                     int nstglobalcomm, 
-                     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-                     const char *dddlb_opt,real dlb_scale,
-                     const char *ddcsx,const char *ddcsy,const char *ddcsz,
-                     int nstepout,int resetstep,int nmultisim, int repl_ex_nst,
-                     int repl_ex_seed, real pforce,real cpt_period,
-                     real max_hours, const char *deviceOptions, unsigned long Flags);
-/* initializes nthread threads before running mdrunner: is the preferred
-   way to start a simulation (even if nthreads=1 and no threads are started) */
-#endif
 
 extern void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);
 /* Print a warning message to stderr on the master node
