@@ -146,9 +146,10 @@ extern matrix              deform_init_box_tpx;
 #ifdef GMX_THREADS
 extern tMPI_Thread_mutex_t deform_init_box_mutex;
 
-/* the maximum number of atoms per thread. With fewer atoms than this,
-   the number of threads will get lowered. */
-#define MIN_ATOMS_PER_THREAD    100
+/* The minimum number of atoms per thread. With fewer atoms than this,
+ * the number of threads will get lowered.
+ */
+#define MIN_ATOMS_PER_THREAD    90
 #endif
 
 
