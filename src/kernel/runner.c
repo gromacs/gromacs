@@ -157,9 +157,10 @@ static void mdrunner_start_fn(void *arg)
     FILE *fplog=NULL;
     t_filenm *fnm;
 
-    fnm=dup_tfn(mc.nfile, mc.fnm);
+    fnm = dup_tfn(mc.nfile, mc.fnm);
 
-    cr=init_par_threads(mc.cr);
+    cr = init_par_threads(mc.cr);
+
     if (MASTER(cr))
     {
         fplog=mc.fplog;
@@ -252,43 +253,51 @@ static t_commrec *mdrunner_start_threads(int nthreads,
 static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
                         gmx_mtop_t *mtop)
 {
-    int nthreads=nthreads_requested;
+    int nthreads,nthreads_new;
+
+    nthreads = nthreads_requested;
 
     /* determine # of hardware threads. */
     if (nthreads_requested < 1)
     {
-        nthreads=tMPI_Get_recommended_nthreads();
+        nthreads = tMPI_Get_recommended_nthreads();
     }
     /* Check if an algorithm does not support parallel simulation.  */
     if (nthreads != 1 && 
         ( inputrec->eI == eiLBFGS ||
           inputrec->eI == eiNM ||
           inputrec->coulombtype == eelEWALD) )
-    {        
+    {
         fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs. Not starting any threads.\n");
-        nthreads=1;
+        nthreads = 1;
     }
-    else if ((nthreads_requested < 1) &&             
+    else if ((nthreads_requested < 1) &&
              (mtop->natoms/nthreads < MIN_ATOMS_PER_THREAD) )
     {
-        /* the thread number was chosen automatically, but there's too many
+        /* the thread number was chosen automatically, but there are too many
            threads (too few atoms per thread) */
-        int nthreads_new = mtop->natoms/MIN_ATOMS_PER_THREAD; 
+        nthreads_new = max(1,mtop->natoms/MIN_ATOMS_PER_THREAD);
 
-        if (nthreads < 8 || nthreads_new<=4) 
+        if (nthreads_new > 8 || (nthreads == 8 && nthreads_new > 4))
         {
-            /* for small numbers of cores, we just take this number */
-            nthreads=nthreads_new;
+            /* Use only multiples of 4 above 8 threads
+             * or with an 8-core processor
+             * (to avoid 6 threads on 8 core processors with 4 real cores).
+             */
+            nthreads_new = (nthreads_new/4)*4;
         }
-        else
+        else if (nthreads_new > 4)
         {
-            /* for large numbers of cores, round down to a number divisible 
-               by 4*/
-            nthreads=4*(nthreads_new/4);
+            /* Avoid 5 or 7 threads */
+            nthreads_new = (nthreads_new/2)*2;
         }
 
-        fprintf(stderr,"\nNOTE: Parallelization is limited by the small number of atoms,\n");
-        fprintf(stderr,"      Only starting %d threads.\n\n",nthreads);
+        nthreads = nthreads_new;
+
+        fprintf(stderr,"\n");
+        fprintf(stderr,"NOTE: Parallelization is limited by the small number of atoms,\n");
+        fprintf(stderr,"      only starting %d threads.\n",nthreads);
+        fprintf(stderr,"      You can use the -nt option to optimize the number of threads.\n\n");
     }
     return nthreads;
 }
@@ -351,12 +360,14 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     snew(state,1);
     if (MASTER(cr)) 
     {
-        read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state, NULL,
-                       mtop);
+        /* Read (nearly) all data required for the simulation */
+        read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
+
         /* NOW the threads will be started: */
 #ifdef GMX_THREADS
-        nthreads=get_nthreads(nthreads_requested, inputrec, mtop);
-        if (nthreads>1)
+        nthreads = get_nthreads(nthreads_requested, inputrec, mtop);
+
+        if (nthreads > 1)
         {
             /* now start the threads. */
             cr=mdrunner_start_threads(nthreads, fplog, cr_old, nfile, fnm, 
@@ -369,8 +380,10 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       Flags);
             /* the main thread continues here with a new cr. We don't deallocate
                the old cr because other threads may still be reading it. */
-            if (!cr) 
+            if (cr == NULL)
+            {
                 gmx_comm("Failed to spawn threads");
+            }
         }
 #endif
     }
@@ -385,7 +398,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     }
 
     if (fplog)
+    {
         pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
+    }
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
