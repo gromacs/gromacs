@@ -10089,18 +10089,18 @@ FC10A  FC4A   FN5  FC5A     gi_1
  AC5*   CH2     0.00000     8
  AO5*    OA    -0.36000     9
   APA     P     0.70500     9
-AO1PA    OM    -0.63500     9
-AO2PA    OM    -0.63500     9
-AO3PA    OA    -0.36000    10
+AO1A    OM    -0.63500     9
+AO2A    OM    -0.63500     9
+AO3A    OA    -0.36000    10
   APB     P     0.70500    10
-AO1PB    OM    -0.63500    10
-AO2PB    OM    -0.63500    10
-AO3PB    OA    -0.36000    11
+AO1B    OM    -0.63500    10
+AO2B    OM    -0.63500    10
+AO3B    OA    -0.36000    11
   APG     P     0.63000    11
-AO1PG    OM    -0.63500    11
-AO2PG    OM    -0.63500    11
-AO3PG    OA    -0.54800    11
-AH3PG     H     0.39800    11
+AO1G    OM    -0.63500    11
+AO2G    OM    -0.63500    11
+AO3G    OA    -0.54800    11
+AH3G     H     0.39800    11
  [ bonds ]
   AN9   AC4    gb_10   
   AN9   AC8    gb_10   
@@ -10128,18 +10128,18 @@ AH3PG     H     0.39800    11
  AO3*  AH3*    gb_1    
  AC5*  AO5*    gb_20   
  AO5*   APA    gb_28   
-  APA AO1PA    gb_24   
-  APA AO2PA    gb_24   
-  APA AO3PA    gb_28   
-AO3PA   APB    gb_28   
-  APB AO1PB    gb_24   
-  APB AO2PB    gb_24   
-  APB AO3PB    gb_28   
-AO3PB   APG    gb_28   
-  APG AO1PG    gb_24   
-  APG AO2PG    gb_24   
-  APG AO3PG    gb_28   
-AO3PG AH3PG    gb_1    
+  APA AO1A    gb_24   
+  APA AO2A    gb_24   
+  APA AO3A    gb_28   
+AO3A   APB    gb_28   
+  APB AO1B    gb_24   
+  APB AO2B    gb_24   
+  APB AO3B    gb_28   
+AO3B   APG    gb_28   
+  APG AO1G    gb_24   
+  APG AO2G    gb_24   
+  APG AO3G    gb_28   
+AO3G AH3G    gb_1    
  [ exclusions ]
 ;  ai    aj
   AN9   AC2
@@ -10156,9 +10156,9 @@ AO3PG AH3PG    gb_1
   AC6   AC8
   AC5  AC1*
   AN7  AC1*
-AO3PB AH3PG
-AO1PG AH3PG
-AO2PG AH3PG
+AO3B AH3G
+AO1G AH3G
+AO2G AH3G
  [ angles ]
 ;  ai    aj    ak   gromos type
   AC4   AN9   AC8     ga_7    
@@ -10198,27 +10198,27 @@ AO2PG AH3PG
  AC3*  AO3*  AH3*     ga_12   
  AC4*  AC5*  AO5*     ga_9    
  AC5*  AO5*   APA     ga_26   
- AO5*   APA AO1PA     ga_14   
- AO5*   APA AO2PA     ga_14   
- AO5*   APA AO3PA     ga_5    
-AO1PA   APA AO2PA     ga_29   
-AO1PA   APA AO3PA     ga_14   
-AO2PA   APA AO3PA     ga_14   
-  APA AO3PA   APB     ga_26   
-AO3PA   APB AO1PB     ga_14   
-AO3PA   APB AO2PB     ga_14   
-AO3PA   APB AO3PB     ga_5    
-AO1PB   APB AO2PB     ga_29   
-AO1PB   APB AO3PB     ga_14   
-AO2PB   APB AO3PB     ga_14   
-  APB AO3PB   APG     ga_26   
-AO3PB   APG AO1PG     ga_14   
-AO3PB   APG AO2PG     ga_14   
-AO3PB   APG AO3PG     ga_5    
-AO1PG   APG AO2PG     ga_29   
-AO1PG   APG AO3PG     ga_14   
-AO2PG   APG AO3PG     ga_14   
-  APG AO3PG AH3PG     ga_12   
+ AO5*   APA AO1A     ga_14   
+ AO5*   APA AO2A     ga_14   
+ AO5*   APA AO3A     ga_5    
+AO1A   APA AO2A     ga_29   
+AO1A   APA AO3A     ga_14   
+AO2A   APA AO3A     ga_14   
+  APA AO3A   APB     ga_26   
+AO3A   APB AO1B     ga_14   
+AO3A   APB AO2B     ga_14   
+AO3A   APB AO3B     ga_5    
+AO1B   APB AO2B     ga_29   
+AO1B   APB AO3B     ga_14   
+AO2B   APB AO3B     ga_14   
+  APB AO3B   APG     ga_26   
+AO3B   APG AO1G     ga_14   
+AO3B   APG AO2G     ga_14   
+AO3B   APG AO3G     ga_5    
+AO1G   APG AO2G     ga_29   
+AO1G   APG AO3G     ga_14   
+AO2G   APG AO3G     ga_14   
+  APG AO3G AH3G     ga_12   
  [ impropers ]
 ;  ai    aj    ak    al   gromos type
   AN9   AC4   AC5   AN7     gi_1    
@@ -10265,18 +10265,18 @@ AO2PG   APG AO3PG     ga_14
  AO2*  AC2*  AC3*  AO3*     gd_18   
  AC4*  AC3*  AO3*  AH3*     gd_23   
  AC4*  AC5*  AO5*   APA     gd_29   
- AC5*  AO5*   APA AO3PA     gd_19   
- AC5*  AO5*   APA AO3PA     gd_22   
- AO5*   APA AO3PA   APB     gd_19   
- AO5*   APA AO3PA   APB     gd_22   
-  APA AO3PA   APB AO3PB     gd_19   
-  APA AO3PA   APB AO3PB     gd_22   
-AO3PA   APB AO3PB   APG     gd_19   
-AO3PA   APB AO3PB   APG     gd_22   
-  APB AO3PB   APG AO3PG     gd_19   
-  APB AO3PB   APG AO3PG     gd_22   
-AO3PB   APG AO3PG AH3PG     gd_19   
-AO3PB   APG AO3PG AH3PG     gd_22   
+ AC5*  AO5*   APA AO3A     gd_19   
+ AC5*  AO5*   APA AO3A     gd_22   
+ AO5*   APA AO3A   APB     gd_19   
+ AO5*   APA AO3A   APB     gd_22   
+  APA AO3A   APB AO3B     gd_19   
+  APA AO3A   APB AO3B     gd_22   
+AO3A   APB AO3B   APG     gd_19   
+AO3A   APB AO3B   APG     gd_22   
+  APB AO3B   APG AO3G     gd_19   
+  APB AO3B   APG AO3G     gd_22   
+AO3B   APG AO3G AH3G     gd_19   
+AO3B   APG AO3G AH3G     gd_22   
 
 [ PMB ]
  [ atoms ]
