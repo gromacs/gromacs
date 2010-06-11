@@ -68,7 +68,7 @@ static char *int_title(const char *title,int nodeid,char buf[], int size)
   return buf;
 }
 
-static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
+void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
 {
   int nnhpres;
 
@@ -149,6 +149,7 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
   init_energyhistory(&state->enerhist);
 }
 
+#if 0
 void init_single(FILE *fplog,t_inputrec *inputrec,
 		 const char *tpxfile,gmx_mtop_t *mtop, 
                  t_state *state)
@@ -159,14 +160,14 @@ void init_single(FILE *fplog,t_inputrec *inputrec,
   if (fplog)
     pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
 }
+#endif
 
-void init_parallel(FILE *log,const char *tpxfile,t_commrec *cr,
-		   t_inputrec *inputrec,gmx_mtop_t *mtop,
-		   t_state *state,
-		   int list)
+void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
+                   gmx_mtop_t *mtop, t_state *state)
 {
+#if 0  
   char buf[256];
-  
+
   if (MASTER(cr)) {
     init_inputrec(inputrec);
     read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
@@ -175,8 +176,10 @@ void init_parallel(FILE *log,const char *tpxfile,t_commrec *cr,
      */
     set_state_entries(state,inputrec,cr->nnodes);
   }
+#endif
   bcast_ir_mtop(cr,inputrec,mtop);
 
+#if 0
 #ifdef GMX_THREADS
     /* Check if we did not automatically start multiple threads,
      * while an algorithm does not support parallel simulation.
@@ -191,13 +194,21 @@ void init_parallel(FILE *log,const char *tpxfile,t_commrec *cr,
         }
         cancel_par_threads(cr); 
     }
+    else
+    {
+        if ( (cr->nthreads_requested < 1) &&
+             (mtop->natoms/cr->nthreads < MAX_ATOMS_PER_THREAD) )
+        {
+        }
+    }
+#endif
 #endif
 
   if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */
     inputrec->ld_seed += cr->nodeid;
   }
-  
+#if 0 
   /* Printing */
   if (list!=0 && log!=NULL) 
   {
@@ -217,6 +228,7 @@ void init_parallel(FILE *log,const char *tpxfile,t_commrec *cr,
 		  pr_mtop(log,0,int_title("topology",cr->nodeid,buf,255),mtop,TRUE);
 	  fflush(log);
   }
+#endif
 }
 
 

@@ -100,8 +100,9 @@ struct tmpi_global *tmpi_global=NULL;
 
 
 /* start N threads with argc, argv (used by tMPI_Init)*/
-static void tMPI_Start_threads(int N, int *argc, char ***argv,
-                               void (*start_fn)(void*), void *start_arg);
+static void tMPI_Start_threads(bool main_returns, int N, int *argc, 
+                               char ***argv, void (*start_fn)(void*), 
+                               void *start_arg);
 /* starter function for threads; takes a void pointer to a
       struct tmpi_starter_, which calls main() if tmpi_start_.fn == NULL */
 static void* tMPI_Thread_starter(void *arg);
@@ -255,6 +256,9 @@ static void tMPI_Thread_init(struct tmpi_thread *th)
     int N_reqs=(Nthreads+1)*N_EV_ALLOC;  
     int i;
 
+    /* we set our thread id, as a thread-specific piece of global data. */
+    tMPI_Thread_setspecific(id_key, th);
+
     /* allocate comm.self */
     th->self_comm=tMPI_Comm_alloc(TMPI_COMM_WORLD, 1);
     th->self_comm->grp.peers[0]=th;
@@ -348,8 +352,6 @@ static void tMPI_Global_destroy(struct tmpi_global *g)
 static void* tMPI_Thread_starter(void *arg)
 {
     struct tmpi_thread *th=(struct tmpi_thread*)arg;
-    /* we set our thread id, as a thread-specific piece of global data. */
-    tMPI_Thread_setspecific(id_key, arg);
 
 #ifdef TMPI_TRACE
     tMPI_Trace_print("Created thread nr. %d", (int)(th-threads));
@@ -373,7 +375,7 @@ static void* tMPI_Thread_starter(void *arg)
 }
 
 
-void tMPI_Start_threads(int N, int *argc, char ***argv, 
+void tMPI_Start_threads(bool main_returns, int N, int *argc, char ***argv, 
                         void (*start_fn)(void*), void *start_arg)
 {
 #ifdef TMPI_TRACE
@@ -401,7 +403,6 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         {
             tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_INIT);
         }
-        /*printf("thread keys created\n"); fflush(NULL);*/
         for(i=0;i<N;i++)
         {
             TMPI_COMM_WORLD->grp.peers[i]=&(threads[i]);
@@ -439,9 +440,12 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
                 tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_INIT);
             }
         }
-        /* the main thread now also runs start_fn */
-        /*threads[0].thread_id=NULL; we can't count on this being a pointer*/
-        tMPI_Thread_starter((void*)&(threads[0]));
+        /* the main thread now also runs start_fn if we don't want
+           it to return */
+        if (!main_returns)
+            tMPI_Thread_starter((void*)&(threads[0]));
+        else
+            tMPI_Thread_init((void*)&(threads[0]));
     }
 }
 
@@ -457,7 +461,7 @@ int tMPI_Init(int *argc, char ***argv)
     {
         int N=0;
         tMPI_Get_N(argc, argv, "-nt", &N);
-        tMPI_Start_threads(N, argc, argv, NULL, NULL);
+        tMPI_Start_threads(FALSE, N, argc, argv, NULL, NULL);
     }
     else
     {
@@ -468,7 +472,8 @@ int tMPI_Init(int *argc, char ***argv)
     return TMPI_SUCCESS;
 }
 
-int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg)
+int tMPI_Init_fn(int main_thread_returns, int N, 
+                 void (*start_function)(void*), void *arg)
 {
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Init_fn(%d, %p, %p)", N, start_function, arg);
@@ -481,7 +486,7 @@ int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg)
 
     if (TMPI_COMM_WORLD==0 && N>=1) /* we're the main process */
     {
-        tMPI_Start_threads(N, 0, 0, start_function, arg);
+        tMPI_Start_threads(main_thread_returns, N, 0, 0, start_function, arg);
     }
     return TMPI_SUCCESS;
 }
@@ -597,7 +602,7 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode)
     if (comm==TMPI_COMM_WORLD)
         fprintf(stderr, " on TMPI_COMM_WORLD");
     fprintf(stderr,"\n");
-    fflush(0);
+    fflush(stdout);
 
     abort();
 #else

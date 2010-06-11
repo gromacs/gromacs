@@ -298,29 +298,34 @@ int tMPI_Init(int *argc, char ***argv);
     If N==0, the number of threads will be the recommended number of 
     threads for this platform as obtained from tMPI_Get_recommended_ntreads(). 
 
-    
-    \param[in] N                The number of threads to start (or 0 to
-                                automatically determine this).
-    \param[in] start_function   The function to start threads at (including 
-                                main thread). 
-    \param[in] arg              An optional argument for start_function().
+    \param[in]  main_thread_returns   whether the control in the main thread 
+                                      should return immediately (if true), or 
+                                      the start_function() should be called 
+                                      from the main thread, too (if false).
+    \param[in] N                      The number of threads to start (or 0 to
+                                      automatically determine this).
+    \param[in] start_function         The function to start threads at 
+                                      (including main thread if 
+                                      main_thread_returns). 
+    \param[in] arg                    An optional argument for start_function().
 
-    \return  TMPI_FAILURE on failure, TMPI_SUCCESS on succes, after all
-             threads have finished.
-    */
-int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg);
+    \return  TMPI_FAILURE on failure, TMPI_SUCCESS on succes (after all
+             threads have finished if main_thread_returns=true).  */
+int tMPI_Init_fn(int main_thread_returns, int N, 
+                 void (*start_function)(void*), void *arg);
 
 /** get the number of threads from the command line
   
     can be called before tMPI_Init() 
 
-    \param[in]  argc            argc from main()
-    \param[in]  argv            argv from main()
-    \param[in]  optname         name of the argument specifying the number of 
-                                threads to run. If this is NULL, this function
-                                will read the first argument and interpret
-                                it as the number of threads.
-    \param[out] nthreads        the number of threads
+    \param[in]  argc                    argc from main()
+    \param[in]  argv                    argv from main()
+    \param[in]  optname                 name of the argument specifying the 
+                                        number of threads to run. If this is 
+                                        NULL, this function will read the first 
+                                        argument and interpret it as the number 
+                                        of threads.
+    \param[out] nthreads                the number of threads
     
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads);

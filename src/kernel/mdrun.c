@@ -416,8 +416,10 @@ int main(int argc,char *argv[])
       "Use particle decompostion" },
     { "-dd",      FALSE, etRVEC,{&realddxyz},
       "Domain decomposition grid, 0 is optimize" },
+#ifdef GMX_THREADS
     { "-nt",      FALSE, etINT, {&nthreads},
       "Number of threads to start (0 is guess)" },
+#endif
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME, -1 is guess" },
     { "-ddorder", FALSE, etENUM, {ddno_opt},
@@ -521,14 +523,7 @@ int main(int argc,char *argv[])
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
 
-#ifdef GMX_THREADS
-  /* now determine the number of threads automatically. The threads are
-     only started at mdrunner_threads, though. */
-  if (nthreads<1)
-  {
-      nthreads=tMPI_Get_recommended_nthreads();
-  }
-#else
+#ifndef GMX_THREADS
   nthreads=1;
 #endif
 
@@ -623,13 +618,11 @@ int main(int argc,char *argv[])
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-  /* even if nthreads = 1, we still call this one */
-  rc = mdrunner_threads(nthreads,
-                        fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,nstglobalcomm,
-                        ddxyz,dd_node_order,rdd,rconstr,
-                        dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                        nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
-                        pforce, cpt_period,max_hours,deviceOptions,Flags);
+  rc = mdrunner(nthreads, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
+                nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
+                dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
+                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
+                pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();

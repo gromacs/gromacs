@@ -220,9 +220,11 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   }
   MPE_Init_log();
 #endif
-  
+ 
+#ifdef GMX_LIB_MPI 
   fprintf(stderr,"NNODES=%d, MYRANK=%d, HOSTNAME=%s\n",
 	  mpi_num_nodes,mpi_my_rank,mpi_hostname);
+#endif
   
   *nnodes=mpi_num_nodes;
   

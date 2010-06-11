@@ -248,12 +248,14 @@ typedef struct {
 } gmx_commrec_thread_t;
 
 typedef struct {
-  /* The nodids in one sim are numbered sequentially from 0.
+  /* The nodeids in one sim are numbered sequentially from 0.
    * All communication within some simulation should happen
    * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
    */
   int sim_nodeid,nnodes,npmenodes;
-  int threadid,nthreads;
+
+  /* thread numbers: */
+  int threadid, nthreads;
   /* The nodeid in the PP/PME, PP or PME group */
   int nodeid;
   MPI_Comm mpi_comm_mysim;
