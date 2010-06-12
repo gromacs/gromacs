@@ -398,10 +398,11 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 #ifdef GMX_FFT_FFTW3  /*if not FFTW - then we don't do a 3d plan but insead only 1D plans */
     if ((!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1))) {  /*don't do 3d plan in parallel or if in_place requested */  
             int fftwflags=FFTW_DESTROY_INPUT;
-            if (!(flags&FFT5D_NOMEASURE)) fftwflags|=FFTW_MEASURE;
             fftw_iodim dims[3];
             int inNG=NG,outMG=MG,outKG=KG;
+
             FFTW_LOCK;
+            if (!(flags&FFT5D_NOMEASURE)) fftwflags|=FFTW_MEASURE;
             if (flags&FFT5D_REALCOMPLEX) {
                 if (!(flags&FFT5D_BACKWARD)) {  /*input pointer is not complex*/
                     inNG*=2; 
@@ -748,6 +749,7 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
     double time_fft=0,time_local=0,time_mpi[2]={0},time=0;    
     int *N=plan->N,*M=plan->M,*K=plan->K,*pN=plan->pN,*pM=plan->pM,*pK=plan->pK,
         *C=plan->C,*P=plan->P,**iNin=plan->iNin,**oNin=plan->oNin,**iNout=plan->iNout,**oNout=plan->oNout;
+    int s=0;
     
     
 #ifdef GMX_FFT_FFTW3 
@@ -762,7 +764,6 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 #endif
 
     /*lin: x,y,z*/
-    int s=0;
     if (plan->flags&FFT5D_DEBUG) print_localdata(lin, "%d %d: copy in lin\n", s, plan);
     for (s=0;s<2;s++) {
         if (times!=0)

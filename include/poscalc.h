@@ -118,7 +118,7 @@ typedef enum
     POS_RES,     /**< Calculate center for each residue. */
     POS_MOL,     /**< Calculate center for each molecule. */
     POS_ALL,     /**< Calculate center for the whole group. */
-    POS_ALL_PBC, /**< Calculate center for the whole group with PBC. */
+    POS_ALL_PBC  /**< Calculate center for the whole group with PBC. */
 } e_poscalc_t;
 
 /** Collection of \c gmx_ana_poscalc_t structures for the same topology. */

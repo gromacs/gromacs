@@ -386,7 +386,7 @@ int main (int argc, char *argv[])
   bTraj   = (opt2bSet("-f",NFILE,fnm) || bTime);
 
   top_fn = ftp2fn(efTPX,NFILE,fnm);
-  fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
+  fprintf(stderr,"Reading toplogy and stuff from %s\n",top_fn);
   
   snew(ir,1);
   read_tpx_state(top_fn,ir,&state,NULL,&mtop);
