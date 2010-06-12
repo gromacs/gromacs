@@ -366,13 +366,13 @@ void read_eigenvalues(int vecs[],const char *eigfile, real values[],
   if (bHesse)
     for (i=0; vecs[i]; i++) {
       if (vecs[i]<7)
-	gmx_fatal(FARGS,"ERROR: You have choosen one of the first 6 eigenvectors of the HESSE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
+	gmx_fatal(FARGS,"ERROR: You have chosen one of the first 6 eigenvectors of the HESSE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
       values[i]=eigval[1][vecs[i]-1]/kT;
     }
   else
     for (i=0; vecs[i]; i++) {
       if (vecs[i]>(neig-6))
-	gmx_fatal(FARGS,"ERROR: You have choosen one of the last 6 eigenvectors of the COVARIANCE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
+	gmx_fatal(FARGS,"ERROR: You have chosen one of the last 6 eigenvectors of the COVARIANCE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
       values[i]=1/eigval[1][vecs[i]-1];
     }
   /* free memory */

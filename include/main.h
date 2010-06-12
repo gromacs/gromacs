@@ -76,7 +76,7 @@ extern void check_multi_int(FILE *log,const gmx_multisim_t *ms,
 
 extern void init_multisystem(t_commrec *cr,int nsim,int nfile,
                              const t_filenm fnm[], bool bParFn);
-/* Splits the communication into nsim seperate simulations
+/* Splits the communication into nsim separate simulations
  * and creates a communication structure between the master
  * these simulations.
  * If bParFn is set, the nodeid is appended to the tpx and each output file.

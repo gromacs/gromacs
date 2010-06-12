@@ -692,7 +692,7 @@ static void compute_offsets(fft5d_plan plan, int xs[], int xl[], int xc[], int N
         case 3: xs[i]=C[s]*pM[s];xc[i]=oK[s]; xl[i]=pK[s];break;
         }
     }
-    /*input order is different for test programm to match FFTW order 
+    /*input order is different for test program to match FFTW order 
       (important for complex to real)*/
     if (plan->flags&FFT5D_BACKWARD) {
         rotate(xs);

@@ -344,7 +344,7 @@ structure if needed */
     rm_pbc(&top.idef,ePBC,natoms,box,x,x);
 
 
-    /* Dynamically build the ref tripels */
+    /* Dynamically build the ref triples */
     if ( mode == 2 )
       {
         isize[NDX_REF1]=0;
@@ -564,7 +564,7 @@ structure if needed */
 
 
   /* Calculate the mean probability density */
-  fprintf(stderr,"\nNumber of configuations used for SDF: %d\n",(int)normfac);
+  fprintf(stderr,"\nNumber of configurations used for SDF: %d\n",(int)normfac);
 
 
   normfac = nbin[0]*nbin[1]*nbin[2] / normfac;
@@ -652,7 +652,7 @@ int gmx_sdf(int argc,char *argv[])
     "file to work. ",
     "You have to setup 4 groups in the index file before using g_sdf: [PAR]",
     "The first three groups are used to define the SDF coordinate system.",
-    "The programm will dynamically generate the atom tripels according to ",
+    "The program will dynamically generate the atom triples according to ",
     "the selected -mode: ", 
     "In -mode 1 the triples will be just the 1st, 2nd, 3rd, ... atoms from ",
     "groups 1, 2 and 3. Hence the nth entries in groups 1, 2 and 3 must be from the",
@@ -680,7 +680,7 @@ int gmx_sdf(int argc,char *argv[])
     "Use -bin to set the binwidth for grid.[PAR]",
     "The output will be a binary 3D-grid file (gom_plt.dat) in the .plt format that can be be",
     "read directly by gOpenMol. ",
-    "The option -r will generate a .gro file with the reference molecule(s) transfered to",
+    "The option -r will generate a .gro file with the reference molecule(s) transferred to",
     "the SDF coordinate system. Load this file into gOpenMol and display the",
     "SDF as a contour plot (see http://www.csc.fi/gopenmol/index.phtml for ",
     "further documentation). [PAR]",

@@ -538,7 +538,7 @@ int gmx_editconf(int argc, char *argv[])
     const char *bugs[] =
         {
             "For complex molecules, the periodicity removal routine may break down, "
-                "in that case you can use trjconv" };
+                "in that case you can use trjconv." };
     static real dist = 0.0, rbox = 0.0, to_diam = 0.0;
     static bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
         FALSE, bCONECT = FALSE;

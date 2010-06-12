@@ -773,7 +773,7 @@ int main(int argc, char *argv[])
     "with a disulfide brigde or intermolecular distance restraints.[PAR]",
     
     "pdb2gmx will also check the occupancy field of the pdb file.",
-    "If any of the occupanccies are not one, indicating that the atom is",
+    "If any of the occupancies are not one, indicating that the atom is",
     "not resolved well in the structure, a warning message is issued.",
     "When a pdb file does not originate from an X-Ray structure determination",
     "all occupancy fields may be zero. Either way, it is up to the user",
@@ -1550,7 +1550,7 @@ int main(int argc, char *argv[])
   write_sto_conf(ftp2fn(efSTO,NFILE,fnm),title,atoms,x,NULL,ePBC,box);
 
   printf("\t\t--------- PLEASE NOTE ------------\n");
-  printf("You have succesfully generated a topology from: %s.\n",
+  printf("You have successfully generated a topology from: %s.\n",
 	 opt2fn("-f",NFILE,fnm));
   if (watstr[0] != NULL) {
     printf("The %s force field and the %s water model are used.\n",

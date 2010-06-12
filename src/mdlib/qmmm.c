@@ -351,7 +351,7 @@ static void init_QMrec(int grpnr, t_QMrec *qm,int nr, int *atomarray,
   /* Lennard-Jones coefficients */ 
   snew(qm->c6,nr);
   snew(qm->c12,nr);
-  /* do we optimize the QM seperately using the algorithms of the QM program??
+  /* do we optimize the QM separately using the algorithms of the QM program??
    */
   qm->bTS      = ir->opts.bTS[grpnr];
   qm->bOPT     = ir->opts.bOPT[grpnr];

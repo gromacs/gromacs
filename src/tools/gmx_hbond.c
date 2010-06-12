@@ -984,7 +984,7 @@ static void add_h2d(int id,int ih,t_donors *ddd)
   
     for(i=0; (i<ddd->nhydro[id]); i++) 
         if (ddd->hydro[id][i] == ih) {
-            printf("Hm. This isn't first time I find this donor (%d,%d)\n",
+            printf("Hm. This isn't the first time I found this donor (%d,%d)\n",
                    ddd->don[id],ih);
             break;
         }
@@ -3131,7 +3131,7 @@ int gmx_hbond(int argc,char *argv[])
         "into hydrogen bonds. Ordering is identical to that in [TT]-hbn[tt]",
         "index file.[BR]",
         "[TT]-dan[tt]: write out the number of donors and acceptors analyzed for",
-        "each timeframe. This is especially usefull when using [TT]-shell[tt].[BR]",
+        "each timeframe. This is especially useful when using [TT]-shell[tt].[BR]",
         "[TT]-nhbdist[tt]: compute the number of HBonds per hydrogen in order to",
         "compare results to Raman Spectroscopy.",
         "[PAR]",
@@ -3196,7 +3196,7 @@ int gmx_hbond(int argc,char *argv[])
           "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
 #endif
         { "-NN", FALSE, etENUM, {NNtype},
-          "HIDDENDo a full all vs all loop and estimsate the interaction energy instead of having a binary existence function for hydrogen bonds. NOT FULLY TESTED YET! DON'T USE IT!"},
+          "HIDDENDo a full all vs all loop and estimate the interaction energy instead of having a binary existence function for hydrogen bonds. NOT FULLY TESTED YET! DON'T USE IT!"},
         { "-gemfit", FALSE, etBOOL, {&bGemFit},
           "With -gemainate != none: fit ka and kd to the ACF"},
 /*         { "-gemlogstart", FALSE, etREAL, {&logAfterTime}, */

@@ -94,7 +94,7 @@ t_specbond *get_specbonds(int *nspecbond)
   }
   if (nlines > 0)
     sfree(lines);
-  fprintf(stderr,"%d out of %d lines of %s converted succesfully\n",
+  fprintf(stderr,"%d out of %d lines of %s converted successfully\n",
 	  n,nlines,sbfile);
 	  
   *nspecbond = n;
