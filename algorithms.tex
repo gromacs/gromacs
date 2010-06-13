@@ -135,9 +135,9 @@ a_x>0,~~~~b_y>0,~~~~c_z>0
 |c_x| \leq \frac{1}{2} \, a_x,~~~~
 |c_y| \leq \frac{1}{2} \, b_y
 \eeq
-Equations \ref{eqn:box_rot} can always be statisfied by rotating the box.
+Equations \ref{eqn:box_rot} can always be satisfied by rotating the box.
 Inequalities (\ref{eqn:box_shift1}) and (\ref{eqn:box_shift2}) can always be
-statisfied by adding and subtracting box vectors.
+satisfied by adding and subtracting box vectors.
 
 Even when simulating using a triclinic box, {\gromacs} always keeps the
 particles in a brick-shaped volume, for efficiency reasons,
@@ -720,7 +720,7 @@ corresponding to $t-\hDt$, while velocity Verlet will interpret them
 as corresponding to the timepoint $t$.
 
 Even if the trajectory and potential energy are identical between
-leapfrog and velocity verley, the kinetic energy and
+leapfrog and velocity Verlet, the kinetic energy and
 temperature will not be.  Velocity Verlet uses the velocities at the
 current timestep to calculate the kinetic energy and thus the
 temperature at time $t$; the kinetic energy is the sum over all
@@ -732,7 +732,7 @@ $\frac{1}{2}\frac{1}{2m}\left(\ve(t-\Dt)^2 + \ve(t+\Dt)^2\right)$.  A
 variant of velocity Verlet which averages the kinetic energies
 $t+\hDt$ and $t-\hDt$ is also implemented (as mdp option {\em
   md-vv-avek}).  Without temperature and pressure coupling, velocity
-verlet with half-step-averaged kinetic energies and leapfrog
+Verlet with half-step-averaged kinetic energies and leapfrog
 will be identical up to numerical precision.  For temperature and
 pressure control schemes, however, velocity Verlet with
 half-step-averaged kinetic energies and leapfrog will be
@@ -828,12 +828,25 @@ as a function of the long-range time step length for the irreversible
 \subsection{\swapindex{Temperature}{coupling}}
 \index{temperature coupling}
 
-For several reasons (drift during equilibration, drift as a result of
-force truncation and integration errors, heating due to external or
-frictional forces), it is necessary to control the temperature of the
-system. {\gromacs} can use either
-the {\em weak coupling} scheme of Berendsen~\cite{Berendsen84} or
-the extended ensemble Nos{\'e}-Hoover scheme~\cite{Nose84,Hoover85}.
+While direct use of molecular dynamics gives rise to the NVE (constant
+number, constant volume, constant energy ensemble), most quantities
+that we wish to calculate are actually from a constant temperature
+(NVT) ensemble. {\gromacs} can use either the {\em weak coupling}
+scheme of Berendsen~\cite{Berendsen84}, the extended ensemble
+Nos{\'e}-Hoover scheme~\cite{Nose84,Hoover85}, or the velocity
+rescaling scheme~\cite{Bussi2007a} to simulate constant temperature,
+with advantages of each of the schemes laid out below.
+
+There are several other reasons why it might be necessary to control
+the temperature of the system (drift during equilibration, drift as a
+result of force truncation and integration errors, heating due to
+external or frictional forces), but this is not entirely correct to do
+from a thermodynamic standpoint, and in some cases only masks the
+symptoms (increase in temperature of the system) rather than the
+underlying problem (deviations from physicality in the dynamics).  For
+larger systems and small drifts, this error is usually negligible, but
+very few comprehensive comparisons have been carried out, and some
+caution must be taking in interpreting the results.
 
 \subsubsection{\swapindex{Berendsen}{temperature coupling}}
 \index{weak coupling}
@@ -919,7 +932,7 @@ correct canonical ensemble. This is unfortunately not the case for
 the weak coupling scheme, although the difference is usually negligible.
 
 To enable canonical ensemble simulations, {\gromacs} also supports the 
-extended-ensemble approach first proposed by Nos\'e~\cite{Nose84} and later 
+extended-ensemble approach first proposed by Nos{\'e}~\cite{Nose84} and later 
 modified by Hoover\cite{Hoover85}. The system Hamiltonian 
 is extended by introducing a 
 thermal reservoir and a friction term in the equations of motion.
@@ -970,12 +983,12 @@ relaxation), and in addition $\tau_T$ is independent of system size
 and reference temperature.
 
 It is however important to keep the difference between the 
-weak coupling scheme and the Nos\'e-Hoover algorithm in mind: 
+weak coupling scheme and the Nos{\'e}-Hoover algorithm in mind: 
 Using weak coupling you get a
 strongly damped {\em exponential relaxation}, 
-while the Nos\'e-Hoover approach
+while the Nos{\'e}-Hoover approach
 produces an {\em oscillatory relaxation}. 
-The actual time it takes to relax with Nos\'e-Hoover coupling is 
+The actual time it takes to relax with Nos{\'e}-Hoover coupling is 
 several times larger than the period of the
 oscillations that you select. These oscillations (in contrast
 to exponential relaxation) also means that
@@ -983,12 +996,12 @@ the time constant normally should be 4--5 times larger
 than the relaxation time used with weak coupling, but your 
 mileage may vary.
 
-Nos\'e-Hoover dynamics in simple systems such as collections of
+Nos{\'e}-Hoover dynamics in simple systems such as collections of
 harmonic oscillators, can be {\em nonergodic}, meaning that only a
 subsection of phase space is ever sampled, even if the simulations
-were to run for infinitely long.  For this reason, the Nos\'e-Hoover
-chain approach was developed, where each of the Nos\'e-Hoover
-thermostats is has it's own Nos\'e-Hoover thermostat controlling it's
+were to run for infinitely long.  For this reason, the Nos{\'e}-Hoover
+chain approach was developed, where each of the Nos{\'e}-Hoover
+thermostats is has it's own Nos{\'e}-Hoover thermostat controlling it's
 temperature.  In the limit of an infinite chain of thermostats, the
 dynamics are guaranteed to be ergodic, but in practice, just a few are
 required.  The default is 10, but this can be controlled by user
@@ -1001,13 +1014,13 @@ following way to include a chain of thermostatting particles~\cite{Martyna1992}:
 \frac {\de \xi_{N}}{\de t} &~=~& \frac{1}{Q_N}\left(Q_{N-1}\xi_{N-1}^2 -kT\right)
 \label{eqn:NH-chain-eqn-of-motion}
 \eea
-The values of the Nos\'e-Hoover thermostat variables are generally not
+The values of the Nos{\'e}-Hoover thermostat variables are generally not
 included in the output, as they take up a fair amount of space and are
 generally not important for analysis of simulations, but this can be
 overridden by setting the environment variable GMX\_NOSEHOOVER\_CHAINS
 to true, which will print the values of all the positions and
-velocities of all Nos\'e-Hoover particles in the chain.  Leapfrog
-simulations currently can only have Nos\'e-Hoover chain lengths of 1,
+velocities of all Nos{\'e}-Hoover particles in the chain.  Leapfrog
+simulations currently can only have Nos{\'e}-Hoover chain lengths of 1,
 but this will likely be updated in later version.
 
 For temperature coupling, the reference temperature is calculated
@@ -1019,14 +1032,14 @@ energy.
 
 \subsubsection{\swapindex{Group}{temperature coupling}}
 In {\gromacs} temperature coupling can be performed on groups of
-atoms, typically a protein and solvent. The reason such algorithmes
+atoms, typically a protein and solvent. The reason such algorithms
 were introduced is that energy exchange between different components
 is not perfect, due to different effects including cut-offs etc. If
 now the whole system is coupled to one heat bath, water (which
 experiences the largest cut-off noise) will tend to heat up and the
 protein will cool down. Typically 100 K differences can be obtained.
 With the use of proper electrostatic methods (PME) these difference
-are much smaller but still not negligable. The parameters for
+are much smaller but still not negligible. The parameters for
 temperature coupling in groups are given in the {\tt mdp} file. One
 special case should be mentioned: it is possible to T-couple only part
 of the system (or nothing at all obviously). This is done by
@@ -1106,11 +1119,11 @@ exact ensemble is not well-defined for the weak coupling scheme.
 
 For this reason, {\gromacs} also supports constant-pressure simulations using 
 the Parrinello-Rahman approach\cite{Parrinello81,Nose83}, which is similar
-to the Nos\'e-Hoover temperature coupling. With the Parrinello-Rahman 
+to the Nos{\'e}-Hoover temperature coupling. With the Parrinello-Rahman 
 barostat, the box vectors as represented by the matrix \ve{b} obey
 the matrix equation of motion\footnote{The box matrix representation \ve{b} in 
 {\gromacs} corresponds to the transpose of the box matrix representation 
-\ve{h} in the paper by Nos\'e and Klein. Because of this, some of our 
+\ve{h} in the paper by Nos{\'e} and Klein. Because of this, some of our 
 equations will look slightly different.}
 
 \beq
@@ -1122,8 +1135,8 @@ the strength of the coupling. The matrices \ve{P} and \ve{P}$_{ref}$ are the
 current and reference pressures, respectively.
 
 The equations of motion for the particles are also changed, just as
-for the Nos\'e-Hoover coupling. In most cases you would combine the 
-Parrinello-Rahman barostat with the Nos\'e-Hoover
+for the Nos{\'e}-Hoover coupling. In most cases you would combine the 
+Parrinello-Rahman barostat with the Nos{\'e}-Hoover
 thermostat, but to keep it simple we only show the Parrinello-Rahman 
 modification here:
 
@@ -1147,7 +1160,7 @@ and the pressure time constant $\tau_p$ in the input file
 \left( \ve{W}^{-1} \right)_{ij} = \frac{4 \pi^2 \beta_{ij}}{3 \tau_p^2 L}.
 \eeq
 
-Just as for the Nos\'e-Hoover thermostat, you should realize that
+Just as for the Nos{\'e}-Hoover thermostat, you should realize that
 the Parrinello-Rahman time constant is {\em not} equivalent to the 
 relaxation time used in the Berendsen pressure coupling algorithm. 
 In most cases you will need to use a 4--5
@@ -1214,10 +1227,12 @@ compute a fully correct NPT ensemble.
 
 The full equations, combining both pressure coupling and temperature
 coupling, are taken from Martyna {\em et al.}~\cite{Martyna1996} and
-Tuckerman~\cite{Tuckerman2006}.  We introduce for convenience
-$\epsilon = (1/3)\ln (V/V_0)$, where $V_0$ is a reference volume.  The
-momentum of $\epsilon$ is $\veps = p_{\epsilon}/W = \dot{\epsilon} =
-\dot{V}/3V$, and define $\alpha = 1 + 3/N_{dof}$ (see Ref~\cite{Tuckerman2006}) 
+Tuckerman~\cite{Tuckerman2006} and are referred to here as MTTK
+equations (Martyna-Tuckerman-Tobias-Klein).  We introduce for
+convenience $\epsilon = (1/3)\ln (V/V_0)$, where $V_0$ is a reference
+volume.  The momentum of $\epsilon$ is $\veps = p_{\epsilon}/W =
+\dot{\epsilon} = \dot{V}/3V$, and define $\alpha = 1 + 3/N_{dof}$ (see
+Ref~\cite{Tuckerman2006})
 
 The isobaric equations are then:
 \bea
@@ -1246,7 +1261,7 @@ For these equations, the conserved quantity is:
 \begin{eqnarray}
 H = \sum_{i=1}^{N} \frac{\pb_i^2}{2m_i} + U\left(\rv_1,\rv_2,\ldots,\rv_N\right) + \frac{p_\eta}{2m_i} + PV
 \end{eqnarray}
-The next step is to add temperature control.  Adding Nos\'e-Hoover chains, the equations become:
+The next step is to add temperature control.  Adding Nos{\'e}-Hoover chains, the equations become:
 \bea
 \dot{\rv}_i &=& \frac{\pb_i}{m_i} + \frac{\peps}{W} \rv_i \nonumber \\
 \frac{\dot{\pb}_i}{m_i} &=& \frac{1}{m_i}\F_i - \alpha\frac{\peps}{W} \frac{\pb_i}{m_i} - \frac{\pb_{\eta_1}}{Q_1}\frac{\pb_i}{m_i}\nonumber \\
@@ -1303,7 +1318,7 @@ Then a short time approximation of the true dynamics will be:
 \exp(iL\Dt) = \exp(iL_2\hDt) \exp(iL_1\Dt) \exp(iL_2\Dt) + \mathcal{O}(\Dt^3) 
 \eea
 Which corresponds to velocity Verlet integration.
-In the case of Nos\'e-Hoover dynamics (for simplicity, using a chain
+In the case of Nos{\'e}-Hoover dynamics (for simplicity, using a chain
 with $N=1$, with more details at Ref.~\cite{Martyna1996}), we split
 the Liouville operator as:
 \beq
@@ -1315,7 +1330,7 @@ iL_1 &=& \sum_{i=1}^N \left[\frac{\pb_i}{m_i}\right]\cdot \frac{\partial}{\parti
 iL_2 &=& \sum_{i=1}^N \F_i\cdot \frac{\partial}{\partial \pb_i} \nonumber \\
 iL_{\mathrm{NHC-particles}} &=& \sum_{i=1}-\xi \vv_i\dot \nabla_{\vv_i} + \dot{\xi}\frac{\partial }{\partial \xi} + \frac{1}{Q}\left( T - T_0 \right)\frac{\partial }{\partial \dot{\xi}}
 \eea
-For standard velocity Verlet with Nos\'e-Hoover temperature control, this becomes:
+For standard velocity Verlet with Nos{\'e}-Hoover temperature control, this becomes:
 \bea  
 \exp(iL\dt) &=& \exp\left(iL_{\mathrm{NHC-particles}}\dt/2\right) \exp\left(iL_2 \dt/2\right) \nonumber \\
 &&\exp\left(iL_1 \dt\right) \exp\left(iL_2 \dt/2\right) \exp\left(iL_{\mathrm{NHC-particles}}\dt/2\right) + \mathcal{O}(\Dt^3)
@@ -1335,11 +1350,9 @@ Eq.~\ref{eq:half_step_NHC_integrator} just before the $\exp\left(iL_1
 \exp(iL\dt) &=&  \exp\left(iL_1 \dt\right) \exp\left(iL_{\mathrm{NHC-particles}}\dt/2\right) \nonumber \\
 &&\exp\left(iL_2 \dt\right) \exp\left(iL_{\mathrm{NHC-particles}}\dt/2\right) + \mathcal{O}(\Dt^3)
 \eea
-and then using some algebra tricks to get around the
-requirement that some quantities are required before they are
-calculated.~\cite{Holian95}
+and then using some algebra tricks to solve for some quantities are required before they are actually calculated.~\cite{Holian95}
 
-For pressure control must add to have a thermostat and to control it's
+For pressure control must add to have a thermostat and to control its
 temperature, which means we add additional terms~\cite{Martyna1996}:
 \begin{eqnarray}
 iL = iL_1 + iL_2 + iL_{\epsilon,1} + iL_{\epsilon,2} + iL_{\mathrm{NHC-baro}} + iL_{\mathrm{NHC-particles}}
@@ -1366,7 +1379,7 @@ Using the Trotter decomposition, we get:
 The action of $\exp\left(iL_1 \dt\right)$ comes from the solution of
 the the differential equation 
 $\dot{\rv}_i = \vv_i + \veps \rv_i$
-with $\vv_i = \pb_i/m_i$ and $\veps$ constant with initial condtion
+with $\vv_i = \pb_i/m_i$ and $\veps$ constant with initial condition
 $\rv_i(0)$, evaluate at $t=\Delta t$.  This yields the evolution:
 \beq
 \rv_i(\dt) = \rv_i(0)e^{\veps \dt} + \Delta t \vv_i(0) e^{\veps \dt/2} \sinhx{\veps \dt/2}
@@ -1379,7 +1392,7 @@ of the differential equation $\dot{\vv}_i = \frac{\F_i}{m_i} -
 \eeq
 
 The half-step-averaged version of velocity Verlet uses a separate
-rearragement, using the full step kinetic energy for the pressure
+rearrangement, using the full step kinetic energy for the pressure
 control, but the half-step-averaged kinetic energy for the
 temperature, yielding:
 
@@ -2072,7 +2085,7 @@ G &=& A + pV,
 where $\beta = 1/(k_BT)$ and $c = (N! h^{3N})^{-1}$.
 These integrals over phase space cannot be evaluated from a
 simulation, but it is possible to evaluate the derivative with 
-repect to $\lambda$ as an ensemble average:
+respect to $\lambda$ as an ensemble average:
 \beq
  \frac{dA}{d\lambda} =  \frac{\int\!\!\int (\partial H/ \partial
 \lambda) \exp[-\beta H(p,q;\lambda)]\,dp\,dq}{\int\!\!\int \exp[-\beta
@@ -2180,7 +2193,7 @@ P(1 \leftrightarrow 2)
 \approx \exp\left(-\epsilon^2 \frac{c}{2} N_{df} \right)
 \eeq
 Thus for a probability of $e^{-2}\approx 0.135$
-one obtaines $\epsilon \approx 2/\sqrt{c\,N_{df}}$.
+one obtains $\epsilon \approx 2/\sqrt{c\,N_{df}}$.
 With all bonds constrainted one has $N_{df} \approx 2\, N_{atoms}$
 and thus for $c$ = 2 one should choose $\epsilon$ as $1/\sqrt{N_{atoms}}$.
 However there is one problem when using pressure coupling. The density at
@@ -2226,9 +2239,9 @@ sampling efficiency with respect to usual MD
 to sample its available configuration space more systematically than
 in a diffusion-like path that proteins usually take.
 
-Another possiblity to enhance sampling is \normindex{flooding}.
+Another possibility to enhance sampling is \normindex{flooding}.
 Here a flooding potential is added to certain
-(collective) degrees of freedom to expell the system out
+(collective) degrees of freedom to expel the system out
 of a region of phase space \cite{Lange2006a}.
 
 The procedure for essential dynamics sampling or flooding is as follows.
@@ -2551,3 +2564,17 @@ and separate PME-mesh nodes.
 \label{fig:dd_flow}
 }
 \end{figure}
+
+% LocalWords:  GROningen MAchine BIOSON Groningen GROMACS Berendsen der Spoel
+% LocalWords:  Drunen Comp Phys Comm ROck NS FFT pbc EM ifthenelse gmxlite ff
+% LocalWords:  octahedra triclinic Ewald PME PPPM Gromacs trjconv xy solvated
+% LocalWords:  boxtypes boxshapes editconf Lennard mdpopt COM XTC kT defunits
+% LocalWords:  Boltzmann's Mueller nb int mdrun chargegroup simplerc prefactor
+% LocalWords:  pme waterloops CH NH CO df com virial integrator Verlet vverlet
+% LocalWords:  integrators ref timepoint timestep timesteps mdp md vv avek NVE
+% LocalWords:  NVT off's leapfrogv lll LR rmfast SPC fs Nos physicality ps GMX
+% LocalWords:  Tcoupling nonergodic thermostatting NOSEHOOVER algorithmes ij yx
+% LocalWords:  Parrinello Rahman rescales atm anisotropically ccc xz zx yy yz
+% LocalWords:  zy zz se barostat compressibilities MTTK NPT Martyna al isobaric
+% LocalWords:  Tuckerman vir PV fkT iLt iL Liouville Liuoville NHC Eq baro mu
+% LocalWords:  freezegroup Shannon's polarizability Overhauser
