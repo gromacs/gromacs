@@ -693,9 +693,9 @@ conservation of constraints, all of which are described below.
 
 \subsection{The velocity Verlet integrator}
 \label{subsec:vverlet}
-The velocity verlet algorithm~\cite{Swope82} is also implemented in
+The velocity Verlet algorithm~\cite{Swope82} is also implemented in
 Gromacs, though it is still being combined with different combinations of
-options.  In velocity verlet positions $\ve{r}$ and velocities $\ve{v}$ at
+options.  In velocity Verlet positions $\ve{r}$ and velocities $\ve{v}$ at
 time $t$ are used to integrate the equations of motion; velocities at the previous half step are not
 required.  
 \bea
@@ -714,13 +714,13 @@ or equivalently:
 With no temperature or pressure coupling, and with corresponding
 starting points, leapfrog and velocity Verlet will generate identical
 trajectories.  Given a single starting file with the {\em same}
-starting point, leapfrog and velocity verlet will {\em not} give
+starting point, leapfrog and velocity Verlet will {\em not} give
 identical trajectories, as leapfrog will interpret the velocities as
 corresponding to $t-\hDt$, while velocity Verlet will interpret them
 as corresponding to the timepoint $t$.
 
 Even if the trajectory and potential energy are identical between
-leapfrog verlet and velocity verley, the kinetic energy and
+leapfrog and velocity verley, the kinetic energy and
 temperature will not be.  Velocity Verlet uses the velocities at the
 current timestep to calculate the kinetic energy and thus the
 temperature at time $t$; the kinetic energy is the sum over all
@@ -729,13 +729,13 @@ particles of $\frac{1}{2}\frac{1}{2m}\left((\ve(t-\Dt) +
 $t$ based on the average kinetic energies at the timesteps $t+\hDt$
 and $t-\hDt$, or the sum over all particles of
 $\frac{1}{2}\frac{1}{2m}\left(\ve(t-\Dt)^2 + \ve(t+\Dt)^2\right)$.  A
-variant of velocity verlet which averages the kinetic energies
+variant of velocity Verlet which averages the kinetic energies
 $t+\hDt$ and $t-\hDt$ is also implemented (as mdp option {\em
   md-vv-avek}).  Without temperature and pressure coupling, velocity
-verlet with half-step-averaged kinetic energies and leapfrog verlet
+verlet with half-step-averaged kinetic energies and leapfrog
 will be identical up to numerical precision.  For temperature and
-pressure control schemes, however, velocity verlet with
-half-step-averaged kinetic energies and leapfrog verlet will be
+pressure control schemes, however, velocity Verlet with
+half-step-averaged kinetic energies and leapfrog will be
 different.
 
 The half-step-averaged kinetic energy temperature are slightly more
@@ -755,14 +755,14 @@ kinetic energy, but the drift will be identical in both cases.
 
 %MRS: will need to run a set of simulations to test this eventually.
 
-In general, the velocity verlet integrator has been tuned with methods
+In general, the velocity Verlet integrator has been tuned with methods
 that give the highest degree of thermodynamic accuracy but has not yet
 been optimized for communication speed.  In most cases, and especially
 for large systems where communication speed is important for
 parallelization and differences between thermodynamic ensembles vanish
 in the $1/N$ limit, leapfrog will be the best integrator.  For smaller
 systems where the fine details of the thermodynamics or differences
-between ensembles are most important, likely the velocity verlet
+between ensembles are most important, likely the velocity Verlet
 implementation will give a wider range of options that allow for more
 accurate calculations.
 
@@ -1011,8 +1011,8 @@ simulations currently can only have Nos\'e-Hoover chain lengths of 1,
 but this will likely be updated in later version.
 
 For temperature coupling, the reference temperature is calculated
-differently in velocity verlet and leapfrog verlet dynamics, as
-mentioned before; velocity verlet uses the full-step kinetic energy,
+differently in velocity Verlet and leapfrog dynamics, as
+mentioned before; velocity Verlet uses the full-step kinetic energy,
 while leapfrog and {\em md-vv-avek} use the half-step-averaged kinetic
 energy.
 }
@@ -1208,7 +1208,7 @@ to zero, which is necessary for obtaining the correct surface tension.
 One weakness of leapfrog is in constant pressure simulations, since
 the pressure requires a calculation of both the virial and the kinetic
 energy at the full time step; for leapfrog, this information is not
-available until {\em after} the full timestep.  Velocity verlet does
+available until {\em after} the full timestep.  Velocity Verlet does
 allow the calculation, at the cost of some extra communication, can
 compute a fully correct NPT ensemble. 
 
@@ -1327,7 +1327,7 @@ For half-step-averaged temperature control, then this becomes:
 \label{eq:half_step_NHC_integrator}
 \eea
 This formalism allows us to easily see the difference between the
-different flavors of velocity verlet integrator.  The leapfrog
+different flavors of velocity Verlet integrator.  The leapfrog
 integrator can be seen as starting with
 Eq.~\ref{eq:half_step_NHC_integrator} just before the $\exp\left(iL_1
 \dt\right)$ term, yielding:
@@ -1378,7 +1378,7 @@ of the differential equation $\dot{\vv}_i = \frac{\F_i}{m_i} -
 \vv_i(\dt/2) = \vv_i(0)e^{-\alpha\veps \dt/2} + \frac{\Delta t}{2m_i}\F_i(0) e^{-\alpha\veps \dt/4}\sinhx{\alpha\veps \dt/4}
 \eeq
 
-The half-step-averaged version of velocity verlet uses a separate
+The half-step-averaged version of velocity Verlet uses a separate
 rearragement, using the full step kinetic energy for the pressure
 control, but the half-step-averaged kinetic energy for the
 temperature, yielding:
