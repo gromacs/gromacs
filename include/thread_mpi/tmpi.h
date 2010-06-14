@@ -170,6 +170,18 @@ extern tMPI_Errhandler TMPI_ERRORS_ARE_FATAL;
 /** pre-defined error handler that tries to continue on every error */
 extern tMPI_Errhandler TMPI_ERRORS_RETURN;
 
+/*! \name tMPI_Comm_compare() return codes */
+/*! \{ */
+/** Identical comms*/
+#define TMPI_COMM_IDENT 0
+/** Comms with the same members in the same order*/
+#define TMPI_COMM_CONGRUENT 1
+/** Comms with the same members in the different order*/
+#define TMPI_COMM_SIMILAR 2
+/** Comms with the different  members */
+#define TMPI_COMM_UNEQUAL 3
+/*! \} */
+
 
 /** Source number wildcard so tMPI_Recv(), etc. can receive from 
            any source. */
@@ -536,6 +548,20 @@ int tMPI_Comm_size(tMPI_Comm comm, int *size);
     \param[out] rank        Thread rank in comm.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Comm_rank(tMPI_Comm comm, int *rank);
+
+/** Compare two comms. Returns TMPI_IDENT if the two comms point to
+    the same underlying comm structure, TMPI_CONGRUENT if all 
+    members appear in the both comms in the same order, TMPI_SIMILAR
+    if both comms have the smae members but not in the same order, or
+    TMPI_UNEQUAL if the comms have different members.
+
+    \param[in]  comm1        The first comm to compare.
+    \param[in]  comm2        The second comm to compare.
+    \param[out] result       The output result, one of the values
+                             described above. 
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result);
+
 
 /** De-allocate a comm 
 
