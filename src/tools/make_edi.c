@@ -471,7 +471,7 @@ int main(int argc,char *argv[])
       "([TT]-linfix[tt], [TT]-linacc[tt], [TT]-radfix[tt], [TT]-radacc[tt], [TT]-radcon[tt]),",
       "to keep the position along a certain (set of) coordinate(s) fixed ([TT]-linfix[tt]),",
       "or to only monitor the projections of the positions onto",
-      "these coordinates ([TT]-mon[tt]).[PAR]".
+      "these coordinates ([TT]-mon[tt]).[PAR]",
       "References:[BR]",
       "A. Amadei, A.B.M. Linssen, B.L. de Groot, D.M.F. van Aalten and ",
       "H.J.C. Berendsen; An efficient method for sampling the essential subspace ",
