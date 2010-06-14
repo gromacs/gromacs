@@ -1643,9 +1643,9 @@ int gmx_wham(int argc,char *argv[])
             "[TT]*[tt] Same as the previous input mode, except that the the user",
             "  provides the pull force ouput file names (pullf.xvg) with option -if.",
             "  From the pull force the position in the ubrella potential is",
-            "  computed. This does not work with tabulated umbrella potentials."
+            "  computed. This does not work with tabulated umbrella potentials.",
             "[TT]*[tt] With option [TT]-ip[tt], the user provides filenames of (gzipped) pdo files, i.e.",
-            "  the gromacs 3.3 umbrella output files. If you have some unusual"
+            "  the gromacs 3.3 umbrella output files. If you have some unusual",
             "  reaction coordinate you may also generate your own pdo files and",
             "  feed them with the -ip option into to g_wham. The pdo file header",
             "  must be similar to the folowing:[BR]",
@@ -1684,7 +1684,7 @@ int gmx_wham(int argc,char *argv[])
             "position to be zero, choose with -zprof0 (useful with bootstrapping, see below).[PAR]",
             "For cyclic (or periodic) reaction coordinates (dihedral angle, channel PMF",
             "without osmotic gradient), -cycl is useful.[BR]",
-            "[TT]-cycl yes[tt]        min and max are assumed to "
+            "[TT]-cycl yes[tt]        min and max are assumed to",
             "be neighboring points and histogram points outside min and max are mapped into ",
             "the interval [min,max] (compare histogram output). [BR]",
             "[TT]-cycl weighted[tt]   First, a non-cyclic profile is computed. Subsequently, ",
@@ -1770,7 +1770,7 @@ int gmx_wham(int argc,char *argv[])
             { "-bs-seed", FALSE, etINT, {&opt.bsSeed},
               "seed for bootstrapping. (-1 = use time)"},
             { "-histbs", FALSE, etBOOL, {&opt.bHistBootStrap},
-              "In bootstrapping, consider complete histograms as one data point."
+              "In bootstrapping, consider complete histograms as one data point. "
               "Accounts better for long autocorrelations."},
             { "-histbs-block", FALSE, etINT, {&opt.histBootStrapBlockLength},
               "when mixin histograms only mix within blocks of -histBS_block."},

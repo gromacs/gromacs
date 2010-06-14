@@ -3093,7 +3093,7 @@ int gmx_hbond(int argc,char *argv[])
         "If you set -shell, you will be asked for an additional index group",
         "which should contain exactly one atom. In this case, only hydrogen",
         "bonds between atoms within the shell distance from the one atom are",
-        "considered.[PAR]"
+        "considered.[PAR]",
     
         /*    "It is also possible to analyse specific hydrogen bonds with",
               "[TT]-sel[tt]. This index file must contain a group of atom triplets",

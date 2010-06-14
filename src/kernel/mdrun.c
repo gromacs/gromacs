@@ -70,8 +70,8 @@ int main(int argc,char *argv[])
 	" * The current release runs only on modern nVidia GPU hardware with CUDA support.",
 	"Make sure that the necessary CUDA drivers and libraries for your operating system",
 	"are already installed. The CUDA SDK also should be installed in order to compile",
-	"the program from source (http://www.nvidia.com/object/cuda_home.html).[PAR]"
-	" * Multiple GPU cards are not supported.[PAR]"
+	"the program from source (http://www.nvidia.com/object/cuda_home.html).[PAR]",
+	" * Multiple GPU cards are not supported.[PAR]",
 	" * Only a small subset of the GROMACS features and options are supported on the GPUs.",
 	"See below for a detailed list.[PAR]",
 	" * Consumer level GPU cards are known to often have problems with faulty memory.",
@@ -79,7 +79,7 @@ int main(int argc,char *argv[])
 	"(for example, using the memtest=full option).",
 	"A partial memory check (for example, memtest=15) before and",
 	"after the simulation run would help spot",
-	"problems resulting from processor overheating.[PAR]"
+	"problems resulting from processor overheating.[PAR]",
 	" * The maximum size of the simulated systems depends on the available",
 	"GPU memory,for example, a GTX280 with 1GB memory has been tested with systems",
 	"of up to about 100,000 atoms.[PAR]",
@@ -87,7 +87,7 @@ int main(int argc,char *argv[])
 	"have been implemented in a very different way than they are on the CPUs.",
 	"Therefore numercal correspondence between properties of the state of",
 	"simulated systems should not be expected. Moreover, the values will likely vary",
-	"when simulations are done on different GPU hardware.[PAR]"
+	"when simulations are done on different GPU hardware.[PAR]",
 	" * Frequent retrieval of system state information such as",
 	"trajectory coordinates and energies can greatly influence the performance",
 	"of the program due to slow CPU<->GPU memory transfer speed.[PAR]",
@@ -229,7 +229,7 @@ int main(int argc,char *argv[])
     "high or low spatial inhomogeneity of the system.",
     "[PAR]",
     "The option [TT]-gcom[tt] can be used to only do global communication",
-    "every n steps."
+    "every n steps.",
     "This can improve performance for highly parallel simulations",
     "where this global communication step becomes the bottleneck.",
     "For a global thermostat and/or barostat the temperature",
@@ -312,7 +312,7 @@ int main(int argc,char *argv[])
     "The result with appending will be the same as from a single run.",
     "The contents will be binary identical, unless you use a different number",
     "of nodes or dynamic load balancing or the FFT library uses optimizations",
-    "through timing."
+    "through timing.",
     "[PAR]",
     "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
     "file is written at the first neighbor search step where the run time",

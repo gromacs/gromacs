@@ -374,7 +374,7 @@ int main(int argc, char *argv[])
     "and force constants will be printed in the topology for all",
     "interactions. The equilibrium distances and angles are taken",
     "from the input coordinates, the force constant are set with",
-    "command line options."
+    "command line options.",
     "The force fields somewhat supported currently are:[PAR]",
     "G53a5  GROMOS96 53a5 Forcefield (official distribution)[PAR]",
     "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",

@@ -126,7 +126,7 @@ int gmx_sorient(int argc,char *argv[])
   const char *desc[] = {
     "g_sorient analyzes solvent orientation around solutes.", 
     "It calculates two angles between the vector from one or more",
-    "reference positions to the first atom of each solvent molecule:[BR]"
+    "reference positions to the first atom of each solvent molecule:[BR]",
     "theta1: the angle with the vector from the first atom of the solvent",
     "molecule to the midpoint between atoms 2 and 3.[BR]",
     "theta2: the angle with the normal of the solvent plane, defined by the",
