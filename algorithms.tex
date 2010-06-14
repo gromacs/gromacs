@@ -302,7 +302,10 @@ that would lead to 256$\times$256 items! Better use this concept
 sparingly.
 
 All non-bonded interactions between pairs of energy monitor groups can
-be excluded\index{exclusions, energy monitor group} (see \secref{mdpopt}).
+be excluded\index{exclusions, energy monitor group}
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{(see \secref{mdpopt}).}
 Pairs of particles from excluded pairs of energy monitor groups
 are not put into the pair list.
 This can result in a significant speedup
@@ -379,9 +382,12 @@ actual MD run check the online manual at {\wwwpage}.
 \subsection{Initial conditions}
 \subsubsection{Topology and force field}
 The system topology, including a description of the force field, must
-be read in. Force fields and topologies are described in \chref{ff} 
-and \ref{ch:top}, respectively. All this information is static; it is 
-never modified during the run.
+be read in.
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{Force fields and topologies are described in \chref{ff}
+and \ref{ch:top}, respectively.}
+All this information is static; it is never modified during the run.
 
 \subsubsection{Coordinates and velocities}
 \begin{figure}
@@ -797,8 +803,11 @@ this, since we use a different philosophy. Bonds can be constrained
 oscillator), which allows the smallest time step to be increased
 to the larger one. This not only halves the number of force calculations,
 but also the update calculations. For even larger time steps, angle vibrations
-involving hydrogen atoms can be removed using virtual interaction sites
-(see \secref{rmfast}), which brings the shortest time step up to
+involving hydrogen atoms can be removed using virtual interaction
+\ifthenelse{\equal{\gmxlite}{1}}
+{sites,}
+{sites (see \secref{rmfast}),}
+which brings the shortest time step up to
 PME mesh update frequency of a multiple time stepping scheme.
 
 As an example we show the energy conservation for integrating
@@ -2401,7 +2410,9 @@ on different processors, bond constraints can cross cell boundaries.
 Therefore a parallel constraint algorithm is required.
 {\gromacs} uses the \normindex{P-LINCS} algorithm\cite{Hess2008a},
 which is the parallel version of the \normindex{LINCS} algorithm\cite{Hess97}
-(see \ssecref{lincs}).
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{(see \ssecref{lincs}).}
 The P-LINCS procedure is illustrated in \figref{plincs}.
 When molecules cross the cell boundaries, atoms in such molecules
 up to LINCS order plus one bonds away are communicated over the cell boundaries.
@@ -2486,7 +2497,10 @@ one might want to set $r_{mb}$ by hand to reduce this cost.
 \label{subsec:mpmd_pme}
 Electrostatics interactions are long range, therefore special
 algorithms are used to avoid summation over many atom pairs.
-In {\gromacs} this is usually PME (\secref{pme}).
+In {\gromacs} this is usually
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{PME (\secref{pme}).}
 Since with PME all particles interact with each other, global communication
 is required. This will usually be the limiting factor on
 the scaling with domain decomposition.
