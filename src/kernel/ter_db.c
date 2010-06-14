@@ -313,7 +313,7 @@ static void read_ter_db_file(char *fn,
   *tbptr  = tb;
 }
 
-int read_ter_db(const char *ffdir,char ter,
+int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
 		t_hackblock **tbptr,gpp_atomtype_t atype)
 {
   char ext[STRLEN];
@@ -326,7 +326,7 @@ int read_ter_db(const char *ffdir,char ter,
   /* Search for termini database files.
    * Do not generate an error when none are found.
    */
-  ntdbf = fflib_search_file_end(ffdir,ext,FALSE,&tdbf);
+  ntdbf = fflib_search_file_end(ffdir,bAddCWD,ext,FALSE,&tdbf);
   ntb    = 0;
   *tbptr = NULL;
   for(f=0; f<ntdbf; f++) {
