@@ -701,13 +701,13 @@ required.
 \bea
 \label{eqn:velocityverlet1}
 \ve{v}(t+\hDt)  &~=~&   \ve{v}(t)+\frac{\Dt}{2m}\ve{F}(t)   \\
-\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt\ve{v}(t+\hDt) \\
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt\,\ve{v}(t+\hDt) \\
 \ve{v}(t+\Dt)   &~=~&   \ve{v}(t+\hDt)+\frac{\Dt}{2m}\ve{F}(t+\Dt)
 \eea
 or equivalently:
 \bea
 \label{eqn:velocityverlet2}
-\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+ \Dt\ve{v} + \frac{\Dt^2}{2m}\ve{F}(t) \\
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+ \Dt\,\ve{v} + \frac{\Dt^2}{2m}\ve{F}(t) \\
 \ve{v}(t+\Dt)   &~=~&   \ve{v}(t)+ \frac{\Dt}{2m}\left[\ve{F}(t) + \ve{F}(t+\Dt)\right]
 \eea
 
@@ -1214,7 +1214,6 @@ but with surface tension coupling it affects the convergence of the surface
 tension. 
 When $\beta_{zz}$ is set to zero (constant box height), $\Delta P_z$ is also set
 to zero, which is necessary for obtaining the correct surface tension. 
-} % Brace matches ifthenelse test for gmxlite
 
 \subsubsection{MTTK pressure control algorithms}
 
@@ -1407,8 +1406,9 @@ complicated, in that each of these equations need to be solved
 iteratively.  The discussion is beyond the scope of this manual;
 readers are encouraged to see the implementation described in
 Ref.~\cite{Yu2010}.
- 
-\subsubsection{The complete update algorithm}
+ } % Brace matches ifthenelse test for gmxlite
+
+\subsection{The complete update algorithm}
 \begin{figure}
 \begin{center}
 \addtolength{\fboxsep}{0.5cm}
@@ -1420,7 +1420,7 @@ Positions $\ve{r}$ of all atoms at time $t$ \\
 Velocities $\ve{v}$ of all atoms at time $t-\hDt$ \\
 Accelerations $\ve{F}/m$ on all atoms at time $t$.\\
 (Forces are computed disregarding any constraints)\\
-Total kinetic energy and virial \\
+Total kinetic energy and virial at $t-\Dt$\\
 $\Downarrow$ \\
 {\bf 1.} Compute the scaling factors $\lambda$ and $\mu$\\
 according to \eqnsref{lambda}{mu}\\   
@@ -1440,7 +1440,7 @@ $\Downarrow$ \\
 {\bf 6.} Scale coordinates and box: $\ve{r} = \mu \ve{r}''; \ve{b} =
 \mu  \ve{b}$ \\
 \end{shadowenv}
-\caption{The MD update algorithm}
+\caption{The MD update algorithm with the leap frog integrator}
 \label{fig:complete-update}
 \end{center}
 \end{figure}
