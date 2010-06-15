@@ -104,23 +104,23 @@ int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result)
 #endif
     if (comm1 == comm2)
     {
-        *result=TMPI_COMM_IDENT;
+        *result=TMPI_IDENT;
         return TMPI_SUCCESS;
     }
 
     if ( (!comm1) || (!comm2) )
     {
-        *result=TMPI_COMM_UNEQUAL;
+        *result=TMPI_UNEQUAL;
         return TMPI_SUCCESS;
     }
 
     if (comm1->grp.N != comm2->grp.N)
     {
-        *result=TMPI_COMM_UNEQUAL;
+        *result=TMPI_UNEQUAL;
         return TMPI_SUCCESS;
     }
 
-    *result=TMPI_COMM_CONGRUENT;
+    *result=TMPI_CONGRUENT;
     /* we assume that there are two identical comm members within a comm */
     for(i=0;i<comm1->grp.N;i++)
     {
@@ -128,7 +128,7 @@ int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result)
         {
             bool found=FALSE;
 
-            *result=TMPI_COMM_SIMILAR;
+            *result=TMPI_SIMILAR;
             for(j=0;j<comm2->grp.N;j++)
             {
                 if (comm1->grp.peers[i] == comm2->grp.peers[j])
@@ -139,7 +139,7 @@ int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result)
             }
             if (!found)
             {
-                *result=TMPI_COMM_UNEQUAL;
+                *result=TMPI_UNEQUAL;
                 return TMPI_SUCCESS;
             }
         }

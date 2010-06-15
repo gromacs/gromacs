@@ -135,10 +135,10 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 #define MPI_ANY_TAG             TMPI_ANY_TAG
 
 /* comm_compare defines */
-#define MPI_COMM_IDENT          TMPI_COMM_IDENT         
-#define MPI_COMM_CONGRUENT      TMPI_COMM_CONGRUENT
-#define MPI_COMM_SIMILAR        TMPI_COMM_SIMILAR 
-#define MPI_COMM_UNEQUAL        TMPI_COMM_UNEQUAL 
+#define MPI_IDENT               TMPI_IDENT
+#define MPI_CONGRUENT           TMPI_CONGRUENT
+#define MPI_SIMILAR             TMPI_SIMILAR
+#define MPI_UNEQUAL             TMPI_UNEQUAL
 
 
 /* topology test defines */
