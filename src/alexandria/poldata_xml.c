@@ -91,7 +91,7 @@ enum {
     exmlATOM3, exmlANGLE, 
     exmlBSATOMS, exmlBSATOM,
     exmlMILATOMS, exmlTAU_UNIT, exmlAHP_UNIT,
-    exmlMILATOM, exmlMILNAME, exmlSPOEL_EQUIV,
+    exmlMILATOM, exmlMILNAME, exmlALEXANDRIA_EQUIV,
     exmlATOMNUMBER, exmlTAU_AHC, exmlALPHA_AHP,
     exmlSYMMETRIC_CHARGES, exmlSYM_CHARGE,
     exmlCENTRAL, exmlATTACHED, exmlNUMATTACH,
@@ -113,7 +113,7 @@ static const char *exml_names[exmlNR] = {
     "atom3", "angle",
     "bsatoms", "bsatom",
     "milatoms", "tau_ahc_unit", "alpha_ahp_unit",
-    "milatom", "milname", "spoel_equiv",
+    "milatom", "milname", "alexandria_equiv",
     "atomnumber", "tau_ahc", "alpha_ahp",
     "symmetric_charges", "sym_charge",
     "central", "attached", "numattach",
@@ -174,7 +174,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     switch (elem) {
     case exmlSMATOMS:
         if (NN(xbuf[exmlPOLAR_UNIT])) 
-            gmx_poldata_set_spoel_unit(pd,xbuf[exmlPOLAR_UNIT]);
+            gmx_poldata_set_alexandria_unit(pd,xbuf[exmlPOLAR_UNIT]);
         break;
     case exmlBSATOMS:
         if (NN(xbuf[exmlPOLAR_UNIT])) 
@@ -198,7 +198,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
             NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlNUMBONDS]) && 
             NN(xbuf[exmlNEIGHBORS]) &&
             NN(xbuf[exmlSPREF]) && NN(xbuf[exmlSMTYPE]) && NN(xbuf[exmlSMNAME]))
-            gmx_poldata_add_spoel(pd,xbuf[exmlELEM],
+            gmx_poldata_add_alexandria(pd,xbuf[exmlELEM],
                                   xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
                                   xbuf[exmlSMNAME],xbuf[exmlSMTYPE],
                                   xbuf[exmlMILLER_EQUIV],
@@ -215,7 +215,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
             NN(xbuf[exmlTAU_AHC]) && NN(xbuf[exmlALPHA_AHP])) 
             gmx_poldata_add_miller(pd,xbuf[exmlMILNAME],atoi(xbuf[exmlATOMNUMBER]),
                                    atof(xbuf[exmlTAU_AHC]),atof(xbuf[exmlALPHA_AHP]),
-                                   xbuf[exmlSPOEL_EQUIV]);
+                                   xbuf[exmlALEXANDRIA_EQUIV]);
         break;
     case exmlBSATOM:
         if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlPOLARIZABILITY]))
@@ -345,7 +345,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     xmlNodePtr child,grandchild,comp;
     int    i,charge,atomnumber,numbonds,
         numattach,element,model;
-    char *elem,*miller_equiv,*geometry,*name,*smtype,*spoel_equiv,*spref,*blu,
+    char *elem,*miller_equiv,*geometry,*name,*smtype,*alexandria_equiv,*spref,*blu,
         *atom1,*atom2,*atom3,*tmp,*central,*attached,*tau_unit,*ahp_unit,
         *epref,*desc;
     char *neighbors,*zeta,*qstr,*rowstr;
@@ -353,11 +353,11 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         bondorder;
   
     child = add_xml_child(parent,exml_names[exmlSMATOMS]);
-    tmp = gmx_poldata_get_spoel_unit(pd);
+    tmp = gmx_poldata_get_alexandria_unit(pd);
     if (tmp)
         add_xml_char(child,exml_names[exmlPOLAR_UNIT],tmp);
   
-    while ((name = gmx_poldata_get_spoel(pd,NULL,&elem,&desc,&smtype,&miller_equiv,
+    while ((name = gmx_poldata_get_alexandria(pd,NULL,&elem,&desc,&smtype,&miller_equiv,
                                          &charge,&geometry,
                                          &numbonds,&neighbors,
                                          &polarizability,&sig_pol,&spref)) != NULL) {
@@ -414,14 +414,14 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     if (ahp_unit)
         add_xml_char(child,exml_names[exmlAHP_UNIT],ahp_unit);
   
-    while ((name = gmx_poldata_get_miller(pd,NULL,&atomnumber,&tau_ahc,&alpha_ahp,&spoel_equiv)) != NULL) {
+    while ((name = gmx_poldata_get_miller(pd,NULL,&atomnumber,&tau_ahc,&alpha_ahp,&alexandria_equiv)) != NULL) {
         grandchild = add_xml_child(child,exml_names[exmlMILATOM]);
         add_xml_char(grandchild,exml_names[exmlMILNAME],name);
         add_xml_int(grandchild,exml_names[exmlATOMNUMBER],atomnumber);
         add_xml_double(grandchild,exml_names[exmlTAU_AHC],tau_ahc);
         add_xml_double(grandchild,exml_names[exmlALPHA_AHP],alpha_ahp);
-        if (spoel_equiv)
-            add_xml_char(grandchild,exml_names[exmlSPOEL_EQUIV],spoel_equiv);
+        if (alexandria_equiv)
+            add_xml_char(grandchild,exml_names[exmlALEXANDRIA_EQUIV],alexandria_equiv);
     }
 
     child = add_xml_child(parent,exml_names[exmlSYMMETRIC_CHARGES]);

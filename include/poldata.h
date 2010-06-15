@@ -44,7 +44,7 @@ typedef struct gmx_poldata *gmx_poldata_t;
 
 extern gmx_poldata_t gmx_poldata_init();
 
-extern void gmx_poldata_add_spoel(gmx_poldata_t pd,char *elem,char *desc,
+extern void gmx_poldata_add_alexandria(gmx_poldata_t pd,char *elem,char *desc,
                                   char *smname,char *smtype,
                                   char *miller_equiv,
                                   int charge,char *geometry,int numbonds,
@@ -52,15 +52,15 @@ extern void gmx_poldata_add_spoel(gmx_poldata_t pd,char *elem,char *desc,
                                   double polarizability,double sig_pol,
                                   char *spref);
 
-extern void gmx_poldata_set_spoel(gmx_poldata_t pd,char *smtype,
+extern void gmx_poldata_set_alexandria(gmx_poldata_t pd,char *smtype,
 				  double polarizability,double sig_pol,
 				  char *spref);
 		
-extern void gmx_poldata_set_spoel_unit(gmx_poldata_t pd,char *polar_unit);
+extern void gmx_poldata_set_alexandria_unit(gmx_poldata_t pd,char *polar_unit);
 
 extern void gmx_poldata_set_length_unit(gmx_poldata_t pd,char *length_unit);
 
-extern char *gmx_poldata_get_spoel_unit(gmx_poldata_t pd);
+extern char *gmx_poldata_get_alexandria_unit(gmx_poldata_t pd);
 
 extern char *gmx_poldata_get_length_unit(gmx_poldata_t pd);
 
@@ -77,7 +77,7 @@ extern char *gmx_poldata_get_smtype(gmx_poldata_t pd,char *smatom);
 extern char *gmx_poldata_get_desc(gmx_poldata_t pd,char *smatom);
 
 /* Returns name or NULL if last or not found */
-extern char *gmx_poldata_get_spoel(gmx_poldata_t pd,char *name,char **elem,char **desc,
+extern char *gmx_poldata_get_alexandria(gmx_poldata_t pd,char *name,char **elem,char **desc,
                                    char **smtype,char **miller_equiv,
                                    int *charge,char **geometry,
                                    int *numbonds,char **neighbors,
@@ -91,7 +91,7 @@ extern int gmx_poldata_smtype_polarizability(gmx_poldata_t pd,char *smtype,
 extern void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
                                    int atomnumber,
                                    double tau_ahc,double alpha_ahp,
-                                   char *spoel_equiv);
+                                   char *alexandria_equiv);
 
 extern void gmx_poldata_set_miller_units(gmx_poldata_t pd,char *tau_unit,
                                          char *ahp_unit);
@@ -103,7 +103,7 @@ extern void gmx_poldata_get_miller_units(gmx_poldata_t pd,char **tau_unit,
 extern char *gmx_poldata_get_miller(gmx_poldata_t pd,char *name,
                                     int *atomnumber,
                                     double *tau_ahc,double *alpha_ahp,
-                                    char **spoel_equiv);
+                                    char **alexandria_equiv);
 
 extern char *gmx_poldata_get_miller_equiv(gmx_poldata_t pd,char *smname);
 

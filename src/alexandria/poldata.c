@@ -49,7 +49,7 @@ typedef struct {
     char   **nb;
     int    charge,numbonds,numnb;
     double polarizability,sig_pol;
-} t_spoel;
+} t_alexandria;
 
 typedef struct {
     char   *atom1,*atom2;
@@ -67,7 +67,7 @@ typedef struct {
 } t_bosque;
 
 typedef struct {
-    char   *name,*spoel_equiv;
+    char   *name,*alexandria_equiv;
     int    atomnumber;
     double tau_ahc,alpha_ahp;
 } t_miller;
@@ -92,9 +92,9 @@ typedef struct {
 } t_epref;
 
 typedef struct gmx_poldata {
-    int nspoel,nspoel_c;
-    t_spoel *spoel;
-    char *spoel_polar_unit;
+    int nspoel,nalexandria_c;
+    t_alexandria *spoel;
+    char *alexandria_polar_unit;
     int nsmbond,nsmbond_c;
     char *sm_length_unit;
     t_smbond *smbond;
@@ -127,7 +127,7 @@ gmx_poldata_t gmx_poldata_init()
     return (gmx_poldata_t) pold;
 }
 
-void gmx_poldata_add_spoel(gmx_poldata_t pd,char *elem,char *desc,
+void gmx_poldata_add_alexandria(gmx_poldata_t pd,char *elem,char *desc,
                            char *smname,char *smtype,
                            char *miller_equiv,
                            int charge,
@@ -137,7 +137,7 @@ void gmx_poldata_add_spoel(gmx_poldata_t pd,char *elem,char *desc,
                            char *spref)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
-    t_spoel *sp;
+    t_alexandria *sp;
     char    buf[EEMBUFSIZE];
     int     i;
   
@@ -169,11 +169,11 @@ void gmx_poldata_add_spoel(gmx_poldata_t pd,char *elem,char *desc,
         fprintf(stderr,"Atom %s was already added to poldata record\n",smname);
 }
 
-void gmx_poldata_set_spoel(gmx_poldata_t pd,char *smtype,
+void gmx_poldata_set_alexandria(gmx_poldata_t pd,char *smtype,
                            double polarizability,double sig_pol,char *spref)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
-    t_spoel *sp;
+    t_alexandria *sp;
     int i;
   
     for(i=0; (i<pold->nspoel); i++) {
@@ -188,11 +188,11 @@ void gmx_poldata_set_spoel(gmx_poldata_t pd,char *smtype,
     }
 }		
 
-char *gmx_poldata_get_spoel_unit(gmx_poldata_t pd)
+char *gmx_poldata_get_alexandria_unit(gmx_poldata_t pd)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
 
-    return pold->spoel_polar_unit;
+    return pold->alexandria_polar_unit;
 }
 
 char *gmx_poldata_get_length_unit(gmx_poldata_t pd)
@@ -202,11 +202,11 @@ char *gmx_poldata_get_length_unit(gmx_poldata_t pd)
     return pold->sm_length_unit;
 }
 
-void gmx_poldata_set_spoel_unit(gmx_poldata_t pd,char *polar_unit)
+void gmx_poldata_set_alexandria_unit(gmx_poldata_t pd,char *polar_unit)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
 
-    pold->spoel_polar_unit   = strdup(polar_unit);
+    pold->alexandria_polar_unit   = strdup(polar_unit);
 }
 
 void gmx_poldata_set_length_unit(gmx_poldata_t pd,char *length_unit)
@@ -268,7 +268,7 @@ char *gmx_poldata_get_smtype(gmx_poldata_t pd,char *smatom)
     return NULL;
 }
 
-static int count_neighbors(t_spoel *spoel,int nbond,char *nbhybrid[])
+static int count_neighbors(t_alexandria *spoel,int nbond,char *nbhybrid[])
 {
     int i,j,ni=0,*jj,i_found;
         
@@ -348,7 +348,7 @@ int gmx_poldata_smtype_polarizability(gmx_poldata_t pd,char *smtype,double *pola
 char *gmx_poldata_get_miller_equiv(gmx_poldata_t pd,char *smname)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
-    t_spoel *sp;
+    t_alexandria *sp;
     int i;
 
     for(i=0; (i<pold->nspoel); i++) 
@@ -357,14 +357,14 @@ char *gmx_poldata_get_miller_equiv(gmx_poldata_t pd,char *smname)
     return NULL;
 }
 
-char *gmx_poldata_get_spoel(gmx_poldata_t pd,char *smname,char **elem,char **desc,
+char *gmx_poldata_get_alexandria(gmx_poldata_t pd,char *smname,char **elem,char **desc,
                             char **smtype,char **miller_equiv,
                             int *charge,char **geometry,
                             int *numbonds,char **neighbors,
                             double *polarizability,double *sig_pol,char **spref)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
-    t_spoel *sp;
+    t_alexandria *sp;
     int i;
   
     if (smname) {
@@ -373,7 +373,7 @@ char *gmx_poldata_get_spoel(gmx_poldata_t pd,char *smname,char **elem,char **des
                 break;
     }
     else
-        i = pold->nspoel_c;
+        i = pold->nalexandria_c;
       
     if (i<pold->nspoel) {
         sp = &(pold->spoel[i]);
@@ -389,12 +389,12 @@ char *gmx_poldata_get_spoel(gmx_poldata_t pd,char *smname,char **elem,char **des
         assign_str(spref,sp->spref);
         assign_str(neighbors,sp->neighbors);
         if (!smname)
-            pold->nspoel_c++;
+            pold->nalexandria_c++;
     
         return sp->name;
     }
     else
-        pold->nspoel_c = 0;
+        pold->nalexandria_c = 0;
     
     return NULL;
 }
@@ -429,7 +429,7 @@ double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *elem1,char *elem2,
 void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
                             int atomnumber,
                             double tau_ahc,double alpha_ahp,
-                            char *spoel_equiv)
+                            char *alexandria_equiv)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_miller *mil;
@@ -441,10 +441,10 @@ void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
     mil->atomnumber = atomnumber;
     mil->tau_ahc    = tau_ahc;
     mil->alpha_ahp  = alpha_ahp;
-    if (spoel_equiv)
-        mil->spoel_equiv = strdup(spoel_equiv);
+    if (alexandria_equiv)
+        mil->alexandria_equiv = strdup(alexandria_equiv);
     else
-        mil->spoel_equiv = NULL;
+        mil->alexandria_equiv = NULL;
 }
 				  
 void gmx_poldata_set_miller_units(gmx_poldata_t pd,char *tau_unit,char *ahp_unit)
@@ -466,7 +466,7 @@ void gmx_poldata_get_miller_units(gmx_poldata_t pd,char **tau_unit,
 
 char *gmx_poldata_get_miller(gmx_poldata_t pd,char *name,
                              int *atomnumber,double *tau_ahc,
-                             double *alpha_ahp,char **spoel_equiv)
+                             double *alpha_ahp,char **alexandria_equiv)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_miller *mil;
@@ -485,7 +485,7 @@ char *gmx_poldata_get_miller(gmx_poldata_t pd,char *name,
         assign_scal(atomnumber,mil->atomnumber);
         assign_scal(tau_ahc,mil->tau_ahc);
         assign_scal(alpha_ahp,mil->alpha_ahp);
-        assign_str(spoel_equiv,mil->spoel_equiv);
+        assign_str(alexandria_equiv,mil->alexandria_equiv);
         if (!name)
             pold->nmiller_c++;
     
