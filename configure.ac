@@ -864,6 +864,14 @@ main() {
    CPPFLAGS="$ac_save_CPPFLAGS"
 fi
 
+AC_LANG_PUSH([C++])
+AC_PROG_CXX
+AC_CHECK_HEADERS([cln/cln.h],,AC_MSG_ERROR([Can not find CLN headers]))
+# header found, check for libraries 
+AC_CHECK_LIB([cln],main,,AC_MSG_ERROR([Can not find CLN library]))
+AC_LANG_POP([C++])
+
+
 #### 
 # And collect the f77 libs to the linker - on Solaris, f77 stuff must go first,
 # and we need -L/usr/ucblib to find libucb... (stupid OS)
@@ -1223,6 +1231,7 @@ AC_CONFIG_FILES([ src/tools/Makefile ])
 AC_CONFIG_FILES([ src/tools/libgmxana${LIBSUFFIX}.pc:src/tools/libgmxana.pc.in ])
 AC_CONFIG_FILES([ src/ngmx/Makefile ])
 AC_CONFIG_FILES([ src/contrib/Makefile ])
+AC_CONFIG_FILES([ src/alexandria/Makefile ])
 AC_CONFIG_FILES([ scripts/Makefile ])
 AC_CONFIG_FILES([ admin/Makefile ])
 AC_CONFIG_FILES([ share/Makefile ])

@@ -36,7 +36,6 @@
 #ifndef _xutil_h
 #define _xutil_h
 
-#include "typedefs.h"
 #include "writeps.h"
 #include "Xstuff.h"
 #include "x11.h"

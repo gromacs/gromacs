@@ -40,9 +40,9 @@
 #include <smalloc.h>
 #include <sysstuff.h>
 #include <string2.h>
-#include <Xstuff.h>
-#include "xutil.h"
 #include "futil.h"
+#include "Xstuff.h"
+#include "xutil.h"
 
 typedef struct {
   XColor    xc;
@@ -265,7 +265,7 @@ main(int argc, char *argv[])
   if (argc > 1)
     fn=argv[1];
   else
-    fn="/usr/lib/X11/rgb.txt";
+    fn=(char *)"/usr/lib/X11/rgb.txt";
   if (!gmx_fexist(fn)) {
     fprintf(stderr,"Usage: %s rgb.txt\n",argv[0]);
     fprintf(stderr,"rgb.txt is usually somewhere in your X windows directories.\n");

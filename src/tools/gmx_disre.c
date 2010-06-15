@@ -709,8 +709,8 @@ int gmx_disre(int argc,char *argv[])
   update_mdatoms(mdatoms,ir.init_lambda);
   fr      = mk_forcerec();
   fprintf(fplog,"Made forcerec\n");
-  init_forcerec(fplog,oenv,fr,NULL,&ir,&mtop,cr,box,FALSE,NULL,NULL,NULL,
-                FALSE,-1);
+  init_forcerec(fplog,oenv,fr,NULL,&ir,&mtop,cr,box,FALSE,
+		NULL,NULL,NULL,NULL,FALSE,-1);
   init_nrnb(&nrnb);
   j=0;
   do {
