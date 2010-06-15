@@ -481,7 +481,7 @@ int gmx_mindist(int argc,char *argv[])
     "with multiple atoms in the first group is counted as one contact",
     "instead of as multiple contacts.",
     "With [TT]-or[tt], minimum distances to each residue in the first",
-    "group are determined and plotted as a function of reisdue number.[PAR]",
+    "group are determined and plotted as a function of residue number.[PAR]",
     "With option [TT]-pi[tt] the minimum distance of a group to its",
     "periodic image is plotted. This is useful for checking if a protein",
     "has seen its periodic image during a simulation. Only one shift in",

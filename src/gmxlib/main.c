@@ -458,16 +458,18 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     return cr;
 }
 
-t_commrec *init_par_threads(t_commrec *cro)
+t_commrec *init_par_threads(const t_commrec *cro)
 {
 #ifdef GMX_THREADS
     int initialized;
     t_commrec *cr;
 
+    /* make a thread-specific commrec */
     snew(cr,1);
     /* now copy the whole thing, so settings like the number of PME nodes
        get propagated. */
     *cr=*cro;
+
     /* and we start setting our own thread-specific values for things */
     MPI_Initialized(&initialized);
     if (!initialized)
@@ -491,27 +493,6 @@ t_commrec *init_par_threads(t_commrec *cro)
 #endif
 }
 
-void cancel_par_threads(t_commrec *cr)
-{
-#ifdef GMX_THREADS
-    if (MASTERTHREAD(cr))
-    {
-        fprintf(stderr, "\nCANCELING %d THREADS\n", cr->nthreads-1);
-        cr->nnodes     = 1; 
-        cr->nthreads   = 1;
-        cr->sim_nodeid = 0;
-        cr->nodeid     = 0;
-        cr->threadid   = 0;
-        cr->duty       = (DUTY_PP | DUTY_PME);
-    }
-    else
-    {
-        tMPI_Finalize();
-    }
-#else
-    gmx_incons("cancel_par_threads called without thread support");
-#endif
-}
 
 t_commrec *init_cr_nopar(void)
 {

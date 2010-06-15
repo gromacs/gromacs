@@ -1401,11 +1401,34 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
     print_dd_statistics(cr,inputrec,fplog);
   }
 
-  if (SIMMASTER(cr)) {
-    if (PARTDECOMP(cr)) {
-      pr_load(fplog,cr,nrnb_tot);
-    }
+#ifdef GMX_MPI
+    if (PARTDECOMP(cr))
+    {
+        if (MASTER(cr))
+        {
+            t_nrnb     *nrnb_all;
+            int        s;
+            MPI_Status stat;
 
+            snew(nrnb_all,cr->nnodes);
+            nrnb_all[0] = *nrnb;
+            for(s=1; s<cr->nnodes; s++)
+            {
+                MPI_Recv(nrnb_all[s].n,eNRNB,MPI_DOUBLE,s,0,
+                         cr->mpi_comm_mysim,&stat);
+            }
+            pr_load(fplog,cr,nrnb_all);
+            sfree(nrnb_all);
+        }
+        else
+        {
+            MPI_Send(nrnb->n,eNRNB,MPI_DOUBLE,MASTERRANK(cr),0,
+                     cr->mpi_comm_mysim);
+        }
+    }
+#endif  
+
+  if (SIMMASTER(cr)) {
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,runtime->realtime,
                     wcycle,cycles);
 

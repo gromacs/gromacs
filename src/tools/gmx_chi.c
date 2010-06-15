@@ -886,6 +886,7 @@ static void order_params(FILE *log,
 {
   FILE *fp;
   int  nh[edMax];
+  char buf[STRLEN];
   int  i,Dih,Xi;
   real S2Max, S2Min;
 
@@ -897,8 +898,8 @@ static void order_params(FILE *log,
   
   char *leg[2+edMax];	
 	
-	for(i=0;i<NLEG;i++)
-		leg[i]=strdup(const_leg[i]);
+  for(i=0;i<NLEG;i++)
+    leg[i]=strdup(const_leg[i]);
 	
   /* Print order parameters */
   fp=xvgropen(fn,"Dihedral Order Parameters","Residue","S2",oenv);
@@ -936,9 +937,11 @@ static void order_params(FILE *log,
   }
   ffclose(fp);
   
-  if (pdbfn) {
+  if (NULL != pdbfn) {
     real x0,y0,z0;
-    
+
+    if (NULL == atoms->pdbinfo)
+      snew(atoms->pdbinfo,atoms->nr);
     for(i=0; (i<atoms->nr); i++)
       atoms->pdbinfo[i].bfac=bfac_init;
     
@@ -968,9 +971,11 @@ static void order_params(FILE *log,
     x0*=10.0;/* nm -> angstrom */
     y0*=10.0;/* nm -> angstrom */
     z0*=10.0;/* nm -> angstrom */
-    for (i=0; (i<10); i++)
-      fprintf(fp,pdbformat,"ATOM  ", atoms->nr+1+i, "CA", "LEG",' ', 
-	      atoms->nres+1, x0, y0, z0+(1.2*i), 0.0, -0.1*i);
+    sprintf(buf,"%s%%6.f%%6.2f\n",pdbformat);
+    for (i=0; (i<10); i++) {
+      fprintf(fp,buf,"ATOM  ", atoms->nr+1+i, "CA", "LEG",' ', 
+	      atoms->nres+1, ' ',x0, y0, z0+(1.2*i), 0.0, -0.1*i);
+    }
     ffclose(fp);
   }
   
@@ -989,8 +994,8 @@ static void order_params(FILE *log,
       fprintf(log,"%4d  ",nh[NONCHI+Xi]);
   fprintf(log,"\n");
 	
-	for(i=0;i<NLEG;i++)
-		sfree(leg[i]);
+  for(i=0;i<NLEG;i++)
+    sfree(leg[i]);
 
 }
 

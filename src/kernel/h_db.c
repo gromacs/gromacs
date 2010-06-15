@@ -190,7 +190,7 @@ static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
   *ah     = aah;
 }
 
-int read_h_db(const char *ffdir,t_hackblock **ah)
+int read_h_db(const char *ffdir,bool bAddCWD,t_hackblock **ah)
 {
   int  nhdbf,f;
   char **hdbf;
@@ -200,7 +200,7 @@ int read_h_db(const char *ffdir,t_hackblock **ah)
   /* Read the hydrogen database file(s).
    * Do not generate an error when no files are found.
    */
-  nhdbf = fflib_search_file_end(ffdir,".hdb",FALSE,&hdbf);
+  nhdbf = fflib_search_file_end(ffdir,bAddCWD,".hdb",FALSE,&hdbf);
   nah = 0;
   *ah = NULL;
   for(f=0; f<nhdbf; f++) {

@@ -97,7 +97,7 @@ typedef enum
     ARITH_NEG,          /**< Unary - */
     ARITH_MULT,         /**< * */
     ARITH_DIV,          /**< / */
-    ARITH_EXP,          /**< ^ (to power) */
+    ARITH_EXP           /**< ^ (to power) */
 } e_arithmetic_t;
 
 /** Returns a string representation of the type of a \c t_selelem. */

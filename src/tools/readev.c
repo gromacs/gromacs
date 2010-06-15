@@ -84,7 +84,7 @@ real **read_proj(int nev,int nframes,char *base)
     }
     ffclose(in);
   }
-  fprintf(stderr,"\rSuccesfully read eigenvector projections\n");
+  fprintf(stderr,"\rSuccessfully read eigenvector projections\n");
   
   return evprj;
 }

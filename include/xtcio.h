@@ -48,7 +48,7 @@
 extern "C" {
 #endif
 
-/* All functions return 1 if succesfull, 0 otherwise 
+/* All functions return 1 if successful, 0 otherwise 
  * bOK tells if a frame is not corrupted 
  */  
 

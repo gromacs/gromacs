@@ -882,7 +882,7 @@ int gmx_analyze(int argc,char *argv[])
     "A line in the input file may start with a time",
     "(see option [TT]-time[tt]) and any number of y values may follow.",
     "Multiple sets can also be",
-    "read when they are seperated by & (option [TT]-n[tt]),",
+    "read when they are separated by & (option [TT]-n[tt]),",
     "in this case only one y value is read from each line.",
     "All lines starting with # and @ are skipped.",
     "All analyses can also be done for the derivative of a set",
@@ -893,7 +893,7 @@ int gmx_analyze(int argc,char *argv[])
 
     "g_analyze always shows the average and standard deviation of each",
     "set. For each set it also shows the relative deviation of the third",
-    "and forth cumulant from those of a Gaussian distribution with the same",
+    "and fourth cumulant from those of a Gaussian distribution with the same",
     "standard deviation.[PAR]",
 
     "Option [TT]-ac[tt] produces the autocorrelation function(s).[PAR]",
@@ -986,7 +986,7 @@ int gmx_analyze(int argc,char *argv[])
     { "-e",       FALSE, etREAL, {&te},
       "Last time to read from set" },
     { "-n",       FALSE, etINT, {&nsets_in},
-      "Read # sets seperated by &" },
+      "Read # sets separated by &" },
     { "-d",       FALSE, etBOOL, {&bDer},
 	"Use the derivative" },
     { "-dp",      FALSE, etINT, {&d}, 

@@ -50,7 +50,7 @@
 #include "pgutil.h"
 #include "fflibutil.h"
 
-gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab)
+gpp_atomtype_t read_atype(const char *ffdir,bool bAddCWD,t_symtab *tab)
 {
     int        nfile,f;
     char       **file;
@@ -62,7 +62,7 @@ gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab)
     t_atom     *a;
     t_param    *nb;
     
-    nfile = fflib_search_file_end(ffdir,".atp",TRUE,&file);
+    nfile = fflib_search_file_end(ffdir,bAddCWD,".atp",TRUE,&file);
     at = init_atomtype();
     snew(a,1);
     snew(nb,1);

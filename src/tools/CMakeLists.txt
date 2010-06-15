@@ -38,8 +38,8 @@ target_link_libraries(gmxana md ${GMX_EXTRA_LIBRARIES})
 #
 set(GMX_TOOLS_PROGRAMS
     do_dssp editconf eneconv genbox genconf genrestr g_nmtraj 
-    make_ndx mk_angndx trjcat trjconv trjorder wheel 
-    xpm2ps genion anadock make_edi g_analyze g_anaeig
+    make_ndx mk_angndx trjcat trjconv trjorder g_wheel 
+    xpm2ps genion g_anadock make_edi g_analyze g_anaeig
     g_angle g_bond g_bundle g_chi g_cluster g_confrms g_covar
     g_current g_density g_densmap g_dih g_dielectric
     g_helixorient g_principal g_dipoles g_disre g_dist
@@ -48,7 +48,7 @@ set(GMX_TOOLS_PROGRAMS
     g_nmens g_order g_polystat g_potential g_rama g_rdf g_rms
     g_rmsf g_rotacf g_saltbr g_sas g_select g_sgangle g_sham g_sorient
     g_spol g_sdf g_spatial g_tcaf g_traj g_tune_pme g_vanhove
-    g_velacc g_clustsize g_mdmat g_wham g_kinetics sigeps g_bar
+    g_velacc g_clustsize g_mdmat g_wham g_kinetics g_sigeps g_bar
     )
 
 

@@ -1308,7 +1308,7 @@ int gmx_tune_pme(int argc,char *argv[])
             "times mdrun with various numbers of PME-only nodes and determines",
             "which setting is fastest. It will also test whether performance can",
             "be enhanced by shifting load from the reciprocal to the real space",
-            "part of the Ewald sum. "
+            "part of the Ewald sum. ",
             "Simply pass your [TT].tpr[tt] file to g_tune_pme together with other options",
             "for mdrun as needed.[PAR]",
             "Which executables are used can be set in the environment variables",
@@ -1338,9 +1338,9 @@ int gmx_tune_pme(int argc,char *argv[])
             "(>1M atoms) you may have to set [TT]-resetstep[tt] to a higher value.[PAR]",
             "Example call: [TT]g_tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
             "After calling mdrun several times, detailed performance information",
-            "is available in the output file perf.out. "
+            "is available in the output file perf.out. ",
             "Note that during the benchmarks a couple of temporary files are written",
-            "(options -b*), these will be automatically deleted after each test.[PAR]"
+            "(options -b*), these will be automatically deleted after each test.[PAR]",
             "If you want the simulation to be started automatically with the",
             "optimized parameters, use the command line option [TT]-launch[tt].[PAR]",
     };

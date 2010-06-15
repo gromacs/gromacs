@@ -97,7 +97,7 @@ real numerical_deriv(int nx,real x[],real y[],real fity[],real combined[],real d
   else {
     i0 = max(0,nbegin);
     i1 = min(nx-1,nbegin+nsmooth);
-    printf("Making smooth transition from %d thru %d\n",i0,i1);
+    printf("Making smooth transition from %d through %d\n",i0,i1);
     for(i=0; (i<i0); i++)
       combined[i]=y[i];
     for(i=i0; (i<=i1); i++) {
@@ -201,10 +201,10 @@ int gmx_dielectric(int argc,char *argv[])
     "For an estimate of the error you can run g_statistics on the",
     "ACF, and use the output thus generated for this program.",
     "The functional forms of the available functions are:[PAR]",
-    "One parmeter  : y = Exp[-a1 x]",
-    "Two parmeters : y = a2 Exp[-a1 x]",
-    "Three parmeter: y = a2 Exp[-a1 x] + (1 - a2) Exp[-a3 x]",
-    "Startvalues for the fit procedure can be given on the commandline.",
+    "One parameter  : y = Exp[-a1 x],",
+    "Two parameters : y = a2 Exp[-a1 x],",
+    "Three parameters: y = a2 Exp[-a1 x] + (1 - a2) Exp[-a3 x].",
+    "Start values for the fit procedure can be given on the command line.",
     "It is also possible to fix parameters at their start value, use -fix",
     "with the number of the parameter you want to fix.",
     "[PAR]",
@@ -213,10 +213,10 @@ int gmx_dielectric(int argc,char *argv[])
     "numerical derivative of the combination data/fit.",
     "The second file contains the real and imaginary parts of the",
     "frequency-dependent dielectric constant, the last gives a plot",
-    "known as the Cole-Cole plot, in which the  imaginary",
+    "known as the Cole-Cole plot, in which the imaginary",
     "component is plotted as a function of the real component.",
     "For a pure exponential relaxation (Debye relaxation) the latter",
-    "plot should be one half of a circle"
+    "plot should be one half of a circle."
   };
   t_filenm fnm[] = {
     { efXVG, "-f", "dipcorr",ffREAD  },

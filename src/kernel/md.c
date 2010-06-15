@@ -316,7 +316,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir) && bPres) || bReadEkin);
 
     /* in initalization, it sums the shake virial in vv, and to 
-       sums ekinh_old in leapfrog (or if we are calculating ekinh_old for other reasons */
+       sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
 
     /* ########## Kinetic energy  ############## */
     
@@ -1017,7 +1017,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     bool        bAppend;
     bool        bResetCountersHalfMaxH=FALSE;
-    bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
+    bool        bVV,bIterations,bFirstIterate,bTemp,bPres,bTrotter;
     real        temp0,mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
     atom_id     *grpindex=NULL;
@@ -1355,7 +1355,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     "RMS relative constraint deviation after constraining: %.2e\n",
                     constr_rmsd(constr,FALSE));
         }
-        if (bVV) 
+        if (!bVV) 
         {
             enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
                                          and there is no previous step */
@@ -1821,42 +1821,36 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         if (!bStartingFromCpt && !bRerunMD)
         {
-            if (ir->eI == eiVV)
+            if (ir->eI==eiVV && bInitStep) 
             {
-                if (bInitStep)
-                {
-                    /* if using velocity verlet with full time step Ekin,
-                     * take the first half step only to compute the 
-                     * virial for the first step. From there,
-                     * revert back to the initial coordinates
-                     * so that the input is actually the initial step.
-                     */
-                    copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
-                }
-                
+                /* if using velocity verlet with full time step Ekin,
+                 * take the first half step only to compute the 
+                 * virial for the first step. From there,
+                 * revert back to the initial coordinates
+                 * so that the input is actually the initial step.
+                 */
+                copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
+            } else {
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
-                if (!bInitStep)
-                {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
-                }
-                
-                update_coords(fplog,step,ir,mdatoms,state,
-                              f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,
-                              cr,nrnb,constr,&top->idef);
-                
-                if (bIterations)
-                {
-                    gmx_iterate_init(&iterate,bIterations && !bInitStep);
-                }
-                /* for iterations, we save these vectors, as we will be self-consistently iterating
-                   the calculations */
-                /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
-                
-                /* save the state */
-                if (bIterations && iterate.bIterate) { 
-                    copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
-                }
+                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
+            }
+            
+            update_coords(fplog,step,ir,mdatoms,state,
+                          f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                          ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,
+                          cr,nrnb,constr,&top->idef);
+            
+            if (bIterations)
+            {
+                gmx_iterate_init(&iterate,bIterations && !bInitStep);
+            }
+            /* for iterations, we save these vectors, as we will be self-consistently iterating
+               the calculations */
+            /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
+            
+            /* save the state */
+            if (bIterations && iterate.bIterate) { 
+                copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
             }
             
             bFirstIterate = TRUE;
@@ -1918,7 +1912,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     | (bTemp ? CGLO_TEMPERATURE:0) 
                                     | (bPres ? CGLO_PRESSURE : 0) 
                                     | (bPres ? CGLO_CONSTRAINT : 0)
-                                    | (iterate.bIterate ? CGLO_ITERATE : 0)  
+                                    | ((bIterations && iterate.bIterate) ? CGLO_ITERATE : 0)  
                                     | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                                     | CGLO_SCALEEKIN 
                         );
@@ -2295,7 +2289,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                     constr,NULL,FALSE,lastbox,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                                    cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT    
+                                    cglo_flags | CGLO_TEMPERATURE    
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);            
@@ -2629,6 +2623,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
             wcycle_set_reset_counters(wcycle,-1);
+            /* Correct max_hours for the elapsed time */
+            max_hours -= run_time/(60.0*60.0);
             bResetCountersHalfMaxH = FALSE;
             gs.set[eglsRESETCOUNTERS] = 0;
         }

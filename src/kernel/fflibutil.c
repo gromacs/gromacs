@@ -143,6 +143,7 @@ static void sort_filenames(int n,char **name,char **name2)
 }
 
 static int low_fflib_search_file_end(const char *ffdir,
+                                     bool bAddCWD,
                                      const char *file_end,
                                      bool bFatalError,
                                      char ***filenames,
@@ -179,23 +180,26 @@ static int low_fflib_search_file_end(const char *ffdir,
         /* GMXLIB can be a path now */
         lib = getenv("GMXLIB");
         snew(libpath,GMX_PATH_MAX);
+        if (bAddCWD)
+        {
+            sprintf(libpath,"%s%s",".",PATH_SEPARATOR);
+        }
         if (lib != NULL)
         {
             env_is_set = TRUE;
-            strncpy(libpath,lib,GMX_PATH_MAX);
+            strncat(libpath,lib,GMX_PATH_MAX);
         } 
-        else if (!get_libdir(libpath))
+        else if (!get_libdir(libpath+strlen(libpath)))
         {
-            strncpy(libpath,GMXLIBDIR,GMX_PATH_MAX);
+            strncat(libpath,GMXLIBDIR,GMX_PATH_MAX);
         }
     }
     s = libpath;
     n = 0;
     fns       = NULL;
     fns_short = NULL;
-    /* Start with the current directory, continue with libpath */
-    dir = ".";
-    do
+    /* Loop over all the entries in libpath */
+    while ((dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
     {
         dirptr = opendir(dir);
         if (dirptr != NULL)
@@ -263,7 +267,6 @@ static int low_fflib_search_file_end(const char *ffdir,
                            fns_short==NULL ? NULL : fns_short+n-n_thisdir);
         }
     }
-    while((dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL);
 
     sfree(libpath);
 
@@ -289,11 +292,13 @@ static int low_fflib_search_file_end(const char *ffdir,
 #endif
 }
 
-int fflib_search_file_end(const char *ffdir,const char *file_end,
+int fflib_search_file_end(const char *ffdir,bool bAddCWD,
+                          const char *file_end,
                           bool bFatalError,
                           char ***filenames)
 {
-    return low_fflib_search_file_end(ffdir,file_end,bFatalError,filenames,NULL);
+    return low_fflib_search_file_end(ffdir,bAddCWD,file_end,bFatalError,
+                                     filenames,NULL);
 }
 
 int fflib_search_file_in_dirend(const char *filename,const char *dirend,
@@ -311,7 +316,7 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
     struct dirent *dirent;
 
     /* Find all files (not only dir's) ending on dirend */
-    nf = low_fflib_search_file_end(NULL,dirend,FALSE,&f,&f_short);
+    nf = low_fflib_search_file_end(NULL,TRUE,dirend,FALSE,&f,&f_short);
 
     n = 0;
     dns = NULL;
