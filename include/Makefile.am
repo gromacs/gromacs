@@ -159,4 +159,10 @@ molfile_plugin.h \
 vmddlopen.h \
 vmdplugin.h \
 oenv.h \
-sighandler.h
+sighandler.h \
+gaussian_integrals.h \
+poldata.h \
+slater_integrals.h \
+xml_util.h \
+gmx_simple_comm.h \
+poldata_xml.h
