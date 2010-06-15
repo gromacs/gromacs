@@ -10,8 +10,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 lib_LTLIBRARIES = libalexandria@LIBSUFFIX@.la
 
-pkgconfigdir = ${libdir}/pkgconfig
-pkgconfig_DATA = libalexandria@LIBSUFFIX@.pc
+#pkgconfigdir = ${libdir}/pkgconfig
+#pkgconfig_DATA = libalexandria@LIBSUFFIX@.pc
 
 LDADD = $(lib_LTLIBRARIES)
 
@@ -19,7 +19,7 @@ libalexandria@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la ../m
 libalexandria@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../tools/libgmxana@LIBSUFFIX@.la
 libalexandria@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
-bin_PROGRAMS 	=  	pdtest		gauss_test	slater_test
+bin_PROGRAMS 	=  	g_poldata_test		g_gauss_test	g_slater_test
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
@@ -47,11 +47,11 @@ libalexandria@LIBSUFFIX@_la_SOURCES = \
 			Slater_5S_5S.cpp Slater_5S_6S.cpp Slater_6S_6S.cpp 
 
 
-slater_test_SOURCES	= slater_test.c
+g_slater_test_SOURCES	= g_slater_test.c
 
-gauss_test_SOURCES	= gauss_test.c
+g_gauss_test_SOURCES	= g_gauss_test.c
 
-pdtest_SOURCES	= pdtest.c
+g_poldata_test_SOURCES	= g_poldata_test.c
 
 CLEANFILES   = 	*~ \\\#*
 
