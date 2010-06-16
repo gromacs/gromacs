@@ -297,9 +297,20 @@ int main(int argc,char *argv[])
     "A simulation can be continued by reading the full state from file",
     "with option [TT]-cpi[tt]. This option is intelligent in the way that",
     "if no checkpoint file is found, Gromacs just assumes a normal run and",
-    "starts from the first step of the tpr file.",
-    "The simulation part number is added to all output files,",
-    "unless [TT]-append[tt] or [TT]-noaddpart[tt] are set.",
+    "starts from the first step of the tpr file. By default the output",
+    "will be appending to the existing output files. The checkpoint file",
+    "contains checksums of all output files, such that you will never",
+    "loose data when some output files are modified, corrupt or removed.",
+    "There are three scenarios with [TT]-cpi[tt]:[BR]",
+    "* no files with matching names are present: new output files are written[BR]",
+    "* all files are present with names and checksums matching those stored",
+    "in the checkpoint file: files are appended[BR]",
+    "* otherwise no files are modified and a fatal error is generated[BR]",
+    "With [TT]-noappend[tt] new output files are opened and the simulation",
+    "part number is added to all output file names.",
+    "Note that in all cases the checkpoint file itself is not renamed",
+    "and will be overwritten, unless its name does not match",
+    "the [TT]-cpo[tt] option.",
     "[PAR]",
     "With checkpointing the output is appended to previously written",
     "output files, unless [TT]-noappend[tt] is used or none of the previous",
@@ -393,13 +404,14 @@ int main(int argc,char *argv[])
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
-  bool bAppendFiles=TRUE,bAddPart=TRUE;
+  bool bAppendFiles=TRUE;
   bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
 
   t_pargs pa[] = {
 
+/* arguments relevant to OPENMM only */
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
     { "-dd",      FALSE, etRVEC,{&realddxyz},
@@ -432,6 +444,8 @@ int main(int argc,char *argv[])
       "HIDDENThe DD cell sizes in z" },
     { "-gcom",    FALSE, etINT,{&nstglobalcomm},
       "Global communication frequency" },
+    { "-v",       FALSE, etBOOL,{&bVerbose},  
+      "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
       "Write a compact log file" },
     { "-seppot",  FALSE, etBOOL, {&bSepPot},
@@ -440,6 +454,12 @@ int main(int argc,char *argv[])
       "Print all forces larger than this (kJ/mol nm)" },
     { "-reprod",  FALSE, etBOOL,{&bReproducible},  
       "Try to avoid optimizations that affect binary reproducibility" },
+    { "-cpt",     FALSE, etREAL, {&cpt_period},
+      "Checkpoint interval (minutes)" },
+    { "-append",  FALSE, etBOOL, {&bAppendFiles},
+      "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
+    { "-maxh",   FALSE, etREAL, {&max_hours},
+      "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
@@ -457,27 +477,18 @@ int main(int argc,char *argv[])
     { "-resetstep", FALSE, etINT, {&resetstep},
       "HIDDENReset cycle counters after these many time steps" },
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
-      "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
-    { "-v",       FALSE, etBOOL,{&bVerbose},  
-      "Be loud and noisy" },
-    { "-maxh",   FALSE, etREAL, {&max_hours},
-      "Terminate after 0.99 times this time (hours)" },
-    { "-cpt",     FALSE, etREAL, {&cpt_period},
-      "Checkpoint interval (minutes)" },
-    { "-append",  FALSE, etBOOL, {&bAppendFiles},
-      "Append to previous output files when continuing from checkpoint" },
-    { "-addpart",  FALSE, etBOOL, {&bAddPart},
-      "Add the simulation part number to all output files when continuing from checkpoint" },
+      "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" }
 #ifdef GMX_OPENMM
+    ,
     { "-device",  FALSE, etSTR, {&deviceOptions},
-      "Device option string" },
+      "Device option string" }
 #endif
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
   ivec     ddxyz;
   int      dd_node_order;
-  bool     HaveCheckpoint;
+  bool     bAddPart;
   FILE     *fplog,*fptest;
   int      sim_part,sim_part_fn;
   const char *part_suffix=".part";
@@ -529,6 +540,8 @@ int main(int argc,char *argv[])
 #endif
   }
 
+  bAddPart = !bAppendFiles;
+
   /* Check if there is ANY checkpoint file available */	
   sim_part    = 1;
   sim_part_fn = sim_part;
@@ -559,10 +572,9 @@ int main(int argc,char *argv[])
       sim_part_fn = sim_part;
   }
 
-  if (bAddPart && sim_part_fn > 1)
+  if (bAddPart)
   {
-      /* This is a continuation run, rename trajectory output files 
-         (except checkpoint files) */
+      /* Rename all output files (except checkpoint files) */
       /* create new part name first (zero-filled) */
       sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
 
