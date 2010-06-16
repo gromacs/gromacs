@@ -340,11 +340,6 @@ int main(int argc,char *argv[])
     { efSTO, "-c",      "confout",  ffWRITE },
     { efEDR, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },
-    { efTRX, "-rerun",  "rerun",    ffOPTRD },
-    { efXVG, "-table",  "table",    ffOPTRD },
-    { efXVG, "-tablep", "tablep",   ffOPTRD },
-    { efXVG, "-tableb", "table",    ffOPTRD },
-#ifndef GMX_OPENMM
     { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
     { efXVG, "-field",  "field",    ffOPTWR },
     { efXVG, "-table",  "table",    ffOPTRD },
@@ -364,7 +359,6 @@ int main(int argc,char *argv[])
     { efXVG, "-pf",     "pullf",    ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
     { efNDX, "-dn",     "dipole",   ffOPTWR }
-#endif
   };
 #define NFILE asize(fnm)
 
@@ -406,12 +400,6 @@ int main(int argc,char *argv[])
 
   t_pargs pa[] = {
 
-/* arguments relevant to OPENMM only */
-#ifdef GMX_OPENMM
-    { "-device",  FALSE, etSTR, {&deviceOptions},
-      "Device option string" },
-/* args for non-OpenMM binaries */
-#else
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
     { "-dd",      FALSE, etRVEC,{&realddxyz},
@@ -470,8 +458,6 @@ int main(int argc,char *argv[])
       "HIDDENReset cycle counters after these many time steps" },
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
       "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
-#endif
-/* args for both */
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
@@ -482,6 +468,10 @@ int main(int argc,char *argv[])
       "Append to previous output files when continuing from checkpoint" },
     { "-addpart",  FALSE, etBOOL, {&bAddPart},
       "Add the simulation part number to all output files when continuing from checkpoint" },
+#ifdef GMX_OPENMM
+    { "-device",  FALSE, etSTR, {&deviceOptions},
+      "Device option string" },
+#endif
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
