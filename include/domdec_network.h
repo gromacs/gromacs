@@ -103,15 +103,17 @@ dd_scatter(gmx_domdec_t *dd,int nbytes,void *src,void *dest);
 extern void
 dd_gather(gmx_domdec_t *dd,int nbytes,void *src,void *dest);
 
+/* If rcount==0, rbuf is allowed to be NULL */
 extern void
 dd_scatterv(gmx_domdec_t *dd,
-	    int *scounts,int *disps,void *sbuf,
-	    int rcount,void *rbuf);
+            int *scounts,int *disps,void *sbuf,
+            int rcount,void *rbuf);
 
+/* If scount==0, sbuf is allowed to be NULL */
 extern void
 dd_gatherv(gmx_domdec_t *dd,
-	   int scount,void *sbuf,
-	   int *rcounts,int *disps,void *rbuf);
+           int scount,void *sbuf,
+           int *rcounts,int *disps,void *rbuf);
 
 #ifdef __cplusplus
 }
