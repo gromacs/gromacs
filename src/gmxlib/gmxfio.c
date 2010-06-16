@@ -1541,9 +1541,9 @@ static int gmx_fio_fsync_lock(int fio, bool do_lock)
 #ifdef GMX_FAHCORE
 	/* the fahcore defines its own os-independent fsync */
 	rc=fah_fsync(FIO[fio].fp); 
-#elif HAVE_FILENO
+#elif defined(HAVE_FILENO)
         filen=fileno(FIO[fio].fp);
-#elif HAVE__FILENO
+#elif defined(HAVE__FILENO)
         filen=_fileno(FIO[fio].fp);
 #endif
     }
@@ -1552,9 +1552,9 @@ static int gmx_fio_fsync_lock(int fio, bool do_lock)
 #ifdef GMX_FAHCORE
 	/* the fahcore defines its own os-independent fsync */
         rc=fah_fsync((FILE *) FIO[fio].xdr->x_private);
-#elif HAVE_FILENO
+#elif defined(HAVE_FILENO)
         filen=fileno((FILE *) FIO[fio].xdr->x_private);
-#elif HAVE__FILENO
+#elif defined(HAVE__FILENO)
         filen=_fileno((FILE *) FIO[fio].xdr->x_private);
 #endif
     }
