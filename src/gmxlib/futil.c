@@ -758,7 +758,7 @@ int gmx_file_rename(const char *oldname, const char *newname)
 
 int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
 {
-#if defined(HAVE_COPYFILE) && !defined(GMX_FAHCORE)
+#if defined(HAVE_COPYFILE_H) && !defined(GMX_FAHCORE)
     /* this is BSD specific, but convenient */
     return copyfile(oldname, newname, NULL, COPYFILE_DATA);
 #elif defined(HAVE_WIN_COPYFILE) && !defined(GMX_FAHCORE)

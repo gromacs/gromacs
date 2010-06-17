@@ -6421,12 +6421,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
     if (cr->nnodes - dd->nnodes != cr->npmenodes)
     {
-        gmx_fatal(FARGS,"The size of the domain decomposition grid (%d) does not match the number of nodes (%d). The total number of nodes is %d",
-                  dd->nnodes,cr->nnodes - cr->npmenodes,cr->nnodes);
+        gmx_fatal_collective(FARGS,cr,NULL,
+                             "The size of the domain decomposition grid (%d) does not match the number of nodes (%d). The total number of nodes is %d",
+                             dd->nnodes,cr->nnodes - cr->npmenodes,cr->nnodes);
     }
     if (cr->npmenodes > dd->nnodes)
     {
-        gmx_fatal(FARGS,"The number of separate PME node (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
+        gmx_fatal_collective(FARGS,cr,NULL,
+                             "The number of separate PME node (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
     }
     if (cr->npmenodes > 0)
     {
@@ -6805,7 +6807,8 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         comm->npmenodes = 0;
         if (dd->pme_nodeid >= 0)
         {
-            gmx_fatal(FARGS,"Can not have separate PME nodes without PME electrostatics");
+            gmx_fatal_collective(FARGS,NULL,dd,
+                                 "Can not have separate PME nodes without PME electrostatics");
         }
     }
     

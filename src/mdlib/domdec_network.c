@@ -241,6 +241,13 @@ void dd_scatterv(gmx_domdec_t *dd,
                  int rcount,void *rbuf)
 {
 #ifdef GMX_MPI
+    int dum;
+
+    if (rcount == 0)
+    {
+        /* MPI does not allow NULL pointers */
+        rbuf = &dum;
+    }
     MPI_Scatterv(sbuf,scounts,disps,MPI_BYTE,
                  rbuf,rcount,MPI_BYTE,
                  DDMASTERRANK(dd),dd->mpi_comm_all);
@@ -252,6 +259,13 @@ void dd_gatherv(gmx_domdec_t *dd,
                 int *rcounts,int *disps,void *rbuf)
 {
 #ifdef GMX_MPI
+    int dum;
+
+    if (scount == 0)
+    {
+        /* MPI does not allow NULL pointers */
+        sbuf = &dum;
+    }
     MPI_Gatherv(sbuf,scount,MPI_BYTE,
                 rbuf,rcounts,disps,MPI_BYTE,
                 DDMASTERRANK(dd),dd->mpi_comm_all);
