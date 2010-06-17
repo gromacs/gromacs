@@ -951,6 +951,42 @@ static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t st
     }
 }
 
+static void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
+                                bool *bNotLastFrame)
+{
+    bool bAlloc;
+
+    bAlloc = (fr->natoms == 0);
+
+    if (MASTER(cr) && !*bNotLastFrame)
+    {
+        fr->natoms = -1;
+    }
+    gmx_bcast(sizeof(*fr),fr,cr);
+
+    *bNotLastFrame = (fr->natoms >= 0);
+
+    if (*bNotLastFrame && PARTDECOMP(cr))
+    {
+        /* x and v are the only variable size quantities stored in trr
+         * that are required for rerun (f is not needed).
+         */
+        if (bAlloc)
+        {
+            snew(fr->x,fr->natoms);
+            snew(fr->v,fr->natoms);
+        }
+        if (fr->bX)
+        {
+            gmx_bcast(fr->natoms*sizeof(fr->x[0]),fr->x[0],cr);
+        }
+        if (fr->bV)
+        {
+            gmx_bcast(fr->natoms*sizeof(fr->v[0]),fr->v[0],cr);
+        }
+    }
+}
+
 double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,
              int nstglobalcomm,
@@ -1432,27 +1468,39 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bForceUpdate = TRUE;
         }
 
-        bNotLastFrame = read_first_frame(oenv,&status,
-                                         opt2fn("-rerun",nfile,fnm),
-                                         &rerun_fr,TRX_NEED_X | TRX_READ_V);
-        if (rerun_fr.natoms != top_global->natoms)
+        rerun_fr.natoms = 0;
+        if (MASTER(cr))
         {
-            gmx_fatal(FARGS,
-                      "Number of atoms in trajectory (%d) does not match the "
-                      "run input file (%d)\n",
-                      rerun_fr.natoms,top_global->natoms);
+            bNotLastFrame = read_first_frame(oenv,&status,
+                                             opt2fn("-rerun",nfile,fnm),
+                                             &rerun_fr,TRX_NEED_X | TRX_READ_V);
+            if (rerun_fr.natoms != top_global->natoms)
+            {
+                gmx_fatal(FARGS,
+                          "Number of atoms in trajectory (%d) does not match the "
+                          "run input file (%d)\n",
+                          rerun_fr.natoms,top_global->natoms);
+            }
+            if (ir->ePBC != epbcNONE)
+            {
+                if (!rerun_fr.bBox)
+                {
+                    gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
+                }
+                if (max_cutoff2(ir->ePBC,rerun_fr.box) < sqr(fr->rlistlong))
+                {
+                    gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f has too small box dimensions",rerun_fr.step,rerun_fr.time);
+                }
+            }
         }
+
+        if (PAR(cr))
+        {
+            rerun_parallel_comm(cr,&rerun_fr,&bNotLastFrame);
+        }
+
         if (ir->ePBC != epbcNONE)
         {
-            if (!rerun_fr.bBox)
-            {
-                gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
-            }
-            if (max_cutoff2(ir->ePBC,rerun_fr.box) < sqr(fr->rlistlong))
-            {
-                gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f has too small box dimensions",rerun_fr.step,rerun_fr.time);
-            }
-
             /* Set the shift vectors.
              * Necessary here when have a static box different from the tpr box.
              */
@@ -2595,8 +2643,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         if (bRerunMD) 
         {
-            /* read next frame from input trajectory */
-            bNotLastFrame = read_next_frame(oenv,status,&rerun_fr);
+            if (MASTER(cr))
+            {
+                /* read next frame from input trajectory */
+                bNotLastFrame = read_next_frame(oenv,status,&rerun_fr);
+            }
+
+            if (PAR(cr))
+            {
+                rerun_parallel_comm(cr,&rerun_fr,&bNotLastFrame);
+            }
         }
         
         if (!bRerunMD || !rerun_fr.bStep)
@@ -2630,7 +2686,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Stop the time */
     runtime_end(runtime);
     
-    if (bRerunMD)
+    if (bRerunMD && MASTER(cr))
     {
         close_trj(status);
     }
