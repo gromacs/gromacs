@@ -2554,20 +2554,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bExchanged = replica_exchange(fplog,cr,repl_ex,
                                           state_global,enerd->term,
                                           state,step,t);
-        }
-        if (bExchanged && PAR(cr)) 
-        {
-            if (DOMAINDECOMP(cr)) 
+
+            if (bExchanged && DOMAINDECOMP(cr)) 
             {
                 dd_partition_system(fplog,step,cr,TRUE,1,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
                                     nrnb,wcycle,FALSE);
-            } 
-            else 
-            {
-                bcast_state(cr,state,FALSE);
             }
         }
         
