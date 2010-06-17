@@ -102,7 +102,7 @@ int gmx_trjorder(int argc,char *argv[])
     "will be stored in the B-factor field in order to color with e.g. rasmol.",
     "[PAR]",
     "With option [TT]-nshell[tt] the number of molecules within a shell",
-    "of radius [TT]-r[tt] around the refernce group are printed."
+    "of radius [TT]-r[tt] around the reference group are printed."
   };
   static int na=3,ref_a=1;
   static real rcut=0;

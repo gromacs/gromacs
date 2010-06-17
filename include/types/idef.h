@@ -281,10 +281,17 @@ typedef struct
  *      function to use. Every "bond" with the same function but different 
  *	force parameters is a different force type. The type identifier in the 
  *	forceatoms[] array is an index in this array.
-     t_iparams *iparams;
+ *   t_iparams *iparams
  *	array of length ntypes, defines the parameters for every interaction
  *      type. The type identifier in the actual interaction list
- *      (bondeds.iatoms[] or shakes.iatoms[]) is an index in this array.
+ *      (ilist[ftype].iatoms[]) is an index in this array.
+ *   gmx_cmap_t cmap_grid
+ *      the grid for the dihedral pair correction maps.
+ *   t_iparams *iparams_posres
+ *	defines the parameters for position restraints only.
+ *      Position restraints are the only interactions that have different
+ *      parameters (reference positions) for different molecules
+ *      of the same type. ilist[F_POSRES].iatoms[] is an index in this array.
  *   t_ilist il[F_NRE]
  *      The list of interactions for each type. Note that some,
  *      such as LJ and COUL will have 0 entries.

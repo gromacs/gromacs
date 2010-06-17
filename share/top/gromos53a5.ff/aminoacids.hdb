@@ -27,6 +27,11 @@ ASP1    2
 ASPH    2       
 1	1	H	N	-C	CA
 1	2	HD2	OD2	CG	CB
+ATP    4
+2      3       AH6     AN6     AC6     AC5
+1      2       AH2*    AO2*    AC2*    AC3*
+1      2       AH3*    AO3*    AC3*    AC2*
+1      2       AH3G    AO3G    APG     AO2G
 BEN     7       
 1	1	H2	C2	C1	C3
 1	1	H3	C3	C2	C4
@@ -40,6 +45,13 @@ CYS2    1
 CYSH    2       
 1	1	H	N	-C	CA
 1	2	HG	SG	CB	CA
+DADE   3
+1      1       H2      C2      N1      N3
+1      1       H8      C8      N7      N9
+2      3       H6      N6      C6      C5
+DTHY   2
+1      1       H3      N3      C2      C4
+1      1       H6      C6      C5      N1
 FAD     7       
 2	3	HN6	AN6	AC6	AC5
 1	2	HO2*	AO2*	AC2*	AC1*

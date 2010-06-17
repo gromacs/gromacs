@@ -117,7 +117,7 @@ int gmx_enemat(int argc,char *argv[])
     { "-skip", FALSE, etINT,  {&skip},
       "Skip number of frames between data points" },
     { "-mean", FALSE, etBOOL, {&bMeanEmtx},
-      "with -groups extracts matrix of mean energies in stead of "
+      "with -groups extracts matrix of mean energies instead of "
       "matrix for each timestep" },
     { "-nlevels", FALSE, etINT, {&nlevels},"number of levels for matrix colors"},
     { "-max",FALSE, etREAL, {&cutmax},"max value for energies"},

@@ -53,7 +53,7 @@ typedef enum
     REAL_VALUE,         /**< One or more real values. */
     STR_VALUE,          /**< One or more string values. */
     POS_VALUE,          /**< One or more position values. */
-    GROUP_VALUE,        /**< One group of atoms. */
+    GROUP_VALUE         /**< One group of atoms. */
 } e_selvalue_t;
 
 /*! \brief

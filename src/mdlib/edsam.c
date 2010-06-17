@@ -748,7 +748,7 @@ static void flood_blowup(t_edpar *edi, rvec *forces_cart)
      for every atom we add all the contributions to this atom from all the different eigenvectors.
 
      NOTE: one could add directly to the forcefield forces, would mean we wouldn't have to clear the 
-     field forces_cart prior the computation, but momentarily we want to compute the forces seperately 
+     field forces_cart prior the computation, but momentarily we want to compute the forces separately 
      to have them accessible for diagnostics
      */
     int  j,eig;

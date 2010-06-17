@@ -75,7 +75,7 @@ typedef enum
     INDEX_ATOM,    /**< Each atom in a separate block.*/
     INDEX_RES,     /**< Each residue in a separate block.*/
     INDEX_MOL,     /**< Each molecule in a separate block.*/
-    INDEX_ALL,     /**< All atoms in a single block.*/
+    INDEX_ALL      /**< All atoms in a single block.*/
 } e_index_t;
 
 /*! \brief

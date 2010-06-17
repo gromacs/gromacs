@@ -53,8 +53,11 @@
 #include "smalloc.h"
 #include "gmxfio.h"
 
+#ifdef GMX_LIB_MPI
+#include <mpi.h>
+#endif
 #ifdef GMX_THREADS
-#include "thread_mpi.h"
+#include "tmpi.h"
 #endif
 
 static bool bDebug = FALSE;
@@ -192,10 +195,12 @@ static void quit_gmx(const char *msg)
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
-    if (!fatal_errno) 
+    if (fatal_errno == 0) 
     {
-        if (log_file) 
+        if (log_file)
+        {
             fprintf(log_file,"%s\n",msg);
+        }
         fprintf(stderr,"%s\n",msg);
         /* we set it to no-zero because if this function is called, something 
            has gone wrong */
@@ -204,12 +209,15 @@ static void quit_gmx(const char *msg)
     else 
     {
         if (fatal_errno != -1)
+        {
             errno=fatal_errno;
+        }
         perror(msg);
     }
 
 #ifndef GMX_THREADS 
-    if (gmx_parallel_env_initialized()) {
+    if (gmx_parallel_env_initialized())
+    {
         int  nnodes;
         int  noderank;
 
@@ -235,6 +243,47 @@ static void quit_gmx(const char *msg)
     }
 
     exit(fatal_errno);
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&debug_mutex);
+#endif
+}
+
+/* The function below should be identical to quit_gmx,
+ * except that is does not actually quit and call gmx_abort.
+ */
+static void quit_gmx_noquit(const char *msg)
+{
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&debug_mutex);
+#endif
+    if (!fatal_errno) 
+    {
+        if (log_file) 
+            fprintf(log_file,"%s\n",msg);
+        fprintf(stderr,"%s\n",msg);
+        /* we set it to no-zero because if this function is called, something 
+           has gone wrong */
+        fatal_errno=255;
+    }
+    else 
+    {
+        if (fatal_errno != -1)
+            errno=fatal_errno;
+        perror(msg);
+    }
+
+    if (!gmx_parallel_env_initialized())
+    {
+        if (debug)
+            fflush(debug);
+        if (bDebugMode()) {
+            fprintf(stderr,"dump core (y/n):"); 
+            fflush(stderr);
+            if (toupper(getc(stdin))!='N') 
+                (void) abort(); 
+        }
+    }
+
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
@@ -392,13 +441,37 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 }
 
 void gmx_fatal_collective(int f_errno,const char *file,int line,
-                          bool bMaster,
+                          t_commrec *cr,gmx_domdec_t *dd,
                           const char *fmt,...)
 {
+    bool    bFinalize;
     va_list ap;
     char    msg[STRLEN];
-    
-    if (bMaster)
+#ifdef GMX_MPI
+    int     result;
+#endif
+
+    bFinalize = TRUE;
+
+#ifdef GMX_MPI
+    if (gmx_parallel_env_initialized())
+    {
+        /* Check if we are calling on all processes in MPI_COMM_WORLD */ 
+        if (cr != NULL)
+        {
+            MPI_Comm_compare(cr->mpi_comm_mysim,MPI_COMM_WORLD,&result);
+        }
+        else
+        {
+            MPI_Comm_compare(dd->mpi_comm_all,MPI_COMM_WORLD,&result);
+        }
+        /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
+        bFinalize = (result != MPI_UNEQUAL);
+    }
+#endif
+
+    if ((cr != NULL && MASTER(cr)  ) ||
+        (dd != NULL && DDMASTER(dd)))
     {
         va_start(ap,fmt);
         
@@ -418,15 +491,42 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
         tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 
+        if (bFinalize)
+        {
+            /* Use an error handler that does not quit */
+            set_gmx_error_handler(quit_gmx_noquit);
+        }
+
         _gmx_error("fatal",msg,file,line);
     }
 
 #ifdef GMX_MPI
-    /* Let all other processes wait till the master has printed
-     * the error message and issued MPI_Abort.
-     */
-    MPI_Barrier(MPI_COMM_WORLD);
+    if (gmx_parallel_env_initialized())
+    {
+        if (bFinalize)
+        {
+            /* Broadcast the fatal error number possibly modified
+             * on the master process, in case the user would like
+             * to use the return status on a non-master process.
+             * The master process in cr and dd always has global rank 0.
+             */
+            MPI_Bcast(&fatal_errno,sizeof(fatal_errno),MPI_BYTE,
+                      0,MPI_COMM_WORLD);
+
+            /* Finalize nicely instead of aborting */
+            MPI_Finalize();
+        }
+        else
+        {
+            /* Let all other processes wait till the master has printed
+             * the error message and issued MPI_Abort.
+             */
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+    }
 #endif
+
+    exit(fatal_errno);
 }
 
 void _invalid_case(const char *fn,int line)

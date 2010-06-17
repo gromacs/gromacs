@@ -266,6 +266,91 @@ choose_ff(const char *ffsel,
     sfree(ffs);
 }
 
+void choose_watermodel(const char *wmsel,const char *ffdir,
+                       char **watermodel)
+{
+    const char *fn_watermodels="watermodels.dat";
+    char fn_list[STRLEN];
+    FILE *fp;
+    char buf[STRLEN];
+    int  nwm,sel,i;
+    char **model;
+    char *pret;
+
+    if (strcmp(wmsel,"none") == 0)
+    {
+        *watermodel = NULL;
+        
+        return;
+    }
+    else if (strcmp(wmsel,"select") != 0)
+    {
+        *watermodel = strdup(wmsel);
+
+        return;
+    }
+
+    sprintf(fn_list,"%s%c%s",ffdir,DIR_SEPARATOR,fn_watermodels);
+    
+    if (!fflib_fexist(fn_list))
+    {
+        fprintf(stderr,"No file '%s' found, will not include a water model\n",
+                fn_watermodels);
+        *watermodel = NULL;
+        
+        return;
+    }
+
+    fp = fflib_open(fn_list);
+    printf("\nSelect the Water Model:\n");
+    nwm = 0;
+    model = NULL;
+    while (get_a_line(fp,buf,STRLEN))
+    {
+        srenew(model,nwm+1);
+        snew(model[nwm],STRLEN);
+        sscanf(buf,"%s%n",model[nwm],&i);
+        if (i > 0)
+        {
+            ltrim(buf+i);
+            fprintf(stderr,"%2d: %s\n",nwm,buf+i);
+            nwm++;
+        }
+        else
+        {
+            sfree(model[nwm]);
+        }
+    }
+    fclose(fp);
+    fprintf(stderr,"%2d: %s\n",nwm,"None");
+
+    do
+    {
+        pret = fgets(buf,STRLEN,stdin);
+        
+        if(pret != NULL)
+        {
+            sscanf(buf,"%d",&sel);
+        }
+    }
+    while (pret == NULL || sel < 0 || sel > nwm);
+
+    if (sel == nwm)
+    {
+        *watermodel = NULL;
+    }
+    else
+    {
+        *watermodel = strdup(model[sel]);
+    }
+
+    for(i=0; i<nwm; i++)
+    {
+        sfree(model[i]);
+    }
+    sfree(model);
+}
+
 static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype, 
 		     t_restp restp[])
 {
@@ -1184,7 +1269,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
              int *rn, int *rc, bool bAllowMissing,
              bool bVsites, bool bVsiteAromatics,
-             const char *ff, const char *ffdir, real mHmult,
+             const char *ff, const char *ffdir, bool bAddCWD,
+             real mHmult,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
              bool bDeuterate, bool bChargeGroups, bool bCmap,
@@ -1239,7 +1325,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* determine which atoms will be vsites and add dummy masses 
        also renumber atom numbers in plist[0..F_NRE]! */
     do_vsites(nrtp, rtp, atype, atoms, tab, x, plist, 
-              &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir);
+              &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir, bAddCWD);
   }
   
   /* Make Angles and Dihedrals */

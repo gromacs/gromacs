@@ -52,4 +52,4 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              unsigned long Flags,
              gmx_runtime_t *runtime);
 
-#endif // _MD_OPENMM_H
+#endif /* _MD_OPENMM_H */

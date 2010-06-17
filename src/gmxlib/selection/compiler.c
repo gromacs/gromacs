@@ -307,7 +307,7 @@ enum
     /** Whether subexpressions use simple pass evaluation functions. */
     SEL_CDATA_SIMPLESUBEXPR = 32,
     /** Whether this expressions is a part of a common subexpression. */
-    SEL_CDATA_COMMONSUBEXPR = 64,
+    SEL_CDATA_COMMONSUBEXPR = 64 
 };
 
 /*! \internal \brief

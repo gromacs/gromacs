@@ -538,7 +538,7 @@ static bool xyz_next_x(FILE *status, const output_env_t oenv,
 static int xyz_first_x(FILE *status, const output_env_t oenv, 
                        real *t, rvec **x, matrix box)
 /* Reads status, mallocs x, and returns x and box
- * Returns natoms when succesful, FALSE otherwise
+ * Returns natoms when successful, FALSE otherwise
  */
 {
   int    m;

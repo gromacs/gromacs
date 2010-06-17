@@ -369,7 +369,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 	return 0;
     }
     
-    /* next test isn't usefull in the case of C language
+    /* next test isn't useful in the case of C language
      * but is used for the Fortran interface
      * (C users are expected to pass the address of an already allocated
      * XDR staructure)
