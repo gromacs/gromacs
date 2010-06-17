@@ -119,14 +119,14 @@ void nb_kernel430_sse2_single(int *           p_nri,
 	gpol            = gbdata->gpol;
 		
 	nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel            = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));       
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
-    gbtabscale       = *p_gbtabscale;  
-    nj1              = 0;
+  ntype            = *p_ntype;       
+  nthreads         = *p_nthreads;    
+  facel            = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));       
+  krf              = *p_krf;         
+  crf              = *p_crf;         
+  tabscale         = *p_tabscale;    
+  gbtabscale       = *p_gbtabscale;  
+  nj1              = 0;
 
 	/* Splat variables */
 	fac_sse        = _mm_load1_ps(&facel);
@@ -934,7 +934,19 @@ void nb_kernel430_sse2_single(int *           p_nri,
 		xmm4    = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
 		_mm_store_ss(faction+ii3+2,xmm4);
 		
-        ggid             = gid[n];         
+    /* Load, add and store i shift forces */
+    xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (fshift+is3));
+    xmm5 = _mm_load1_ps(fshift+is3+2);
+    xmm4 = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
+      
+    xmm4 = _mm_add_ps(xmm4,xmm2);
+      
+    _mm_storel_pi( (__m64 *) (fshift+is3),xmm4);
+    xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
+    _mm_store_ss(fshift+is3+2,xmm4);
+      
+    /* Coulomb potential */
+    ggid             = gid[n];         
 		
 		vcoul   = _mm_movehl_ps(vcoul,vctot);
 		vctot   = _mm_add_ps(vctot,vcoul);
