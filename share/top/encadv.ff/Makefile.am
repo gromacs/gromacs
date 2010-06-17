@@ -9,7 +9,7 @@ aminoacids.c.tdb	atomtypes.atp		\
 aminoacids.hdb		ffbonded.itp		\
 aminoacids.n.tdb	ffnonbonded.itp		\
 aminoacids.rtp		forcefield.doc		\
-aminoacids.r2b		forcefield.itp	
+aminoacids.r2b		forcefield.itp		watermodels.dat
 
 EXTRA_DIST = ${topol_DATA}
 

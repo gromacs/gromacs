@@ -843,6 +843,7 @@ int main(int argc, char *argv[])
   char       molname[STRLEN],title[STRLEN],quote[STRLEN],generator[STRLEN];
   char       *c,forcefield[STRLEN],ffdir[STRLEN];
   char       ffname[STRLEN],suffix[STRLEN];
+  char       *watermodel;
   const char *watres;
   int        nrtpf;
   char       **rtpf;
@@ -888,7 +889,7 @@ int main(int argc, char *argv[])
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static const char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
-  static const char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", "f3c", NULL };
+  static const char *watstr[] = { NULL, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
   static const char *ff = "select";
 
   t_pargs pa[] = {
@@ -907,7 +908,7 @@ int main(int argc, char *argv[])
     { "-ff",     FALSE, etSTR,  {&ff},
       "Force field, interactive by default. Use -h for information." },
     { "-water",  FALSE, etENUM, {watstr},
-      "Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P" },
+      "Water model to use" },
     { "-inter",  FALSE, etBOOL, {&bInter},
       "Set the next 8 options to interactive"},
     { "-ss",     FALSE, etBOOL, {&bCysMan}, 
@@ -981,6 +982,8 @@ int main(int argc, char *argv[])
   printf("\nUsing the %s force field in directory %s\n\n",
 	 ffname,ffdir);
     
+  choose_watermodel(watstr[0],ffdir,&watermodel);
+
   if (bInter) {
     /* if anything changes here, also change description of -inter */
     bCysMan = TRUE;
@@ -1036,21 +1039,14 @@ int main(int argc, char *argv[])
   }
   sfree(rrn);
 
-  /* Encad only works with the f3c water model */
-  if(strncmp(forcefield,"ffencad",7) == 0)
-  {
-      printf("Encad detected, switching to the F3C water model...\n");
-      watstr[0] = "f3c";
-      watres = "WAT";
-  }    
-
   clear_mat(box);
-  if (strcmp(watstr[0],"tip4p") == 0)
+  if (watermodel != NULL && strncmp(watermodel,"tip4p",5) == 0) {
     watres = "HO4";
-  else if (strcmp(watstr[0],"tip5p") == 0)
+  } else if (watermodel != NULL && strncmp(watermodel,"tip5p",5) == 0) {
     watres = "HO5";
-  else
+  } else {
     watres = "HOH";
+  }
     
   aps = gmx_atomprop_init();
   natom = read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
@@ -1490,20 +1486,22 @@ int main(int argc, char *argv[])
       write_sto_conf(fn,quote,pdba,x,NULL,ePBC,box);
     }
   }
-  
-  sprintf(buf_fn,"%s%c%s.itp",ffdir,DIR_SEPARATOR,watstr[0]);
-  if (!fflib_fexist(buf_fn)) {
+
+  if (watermodel == NULL) {
     for(chain=0; chain<nch; chain++) {
       if (chains[chain].bAllWat) {
-	gmx_fatal(FARGS,"The topology file '%s' for the selected water model '%s' can not be found in the force field directory. Select a different water model or remove the water from your input file.",
-		  buf_fn,watstr[0]);
+	gmx_fatal(FARGS,"You have chosen not to include a water model, but there is water in the input file. Select a water model or remove the water from your input file.");
       }
     }
-    /* Do not include the water topology file. */
-    watstr[0] = NULL;
+  } else {
+    sprintf(buf_fn,"%s%c%s.itp",ffdir,DIR_SEPARATOR,watermodel);
+    if (!fflib_fexist(buf_fn)) {
+      gmx_fatal(FARGS,"The topology file '%s' for the selected water model '%s' can not be found in the force field directory. Select a different water model.",
+		buf_fn,watermodel);
+    }
   }
 
-  print_top_mols(top_file,title,ffdir,watstr[0],nincl,incls,nmol,mols);
+  print_top_mols(top_file,title,ffdir,watermodel,nincl,incls,nmol,mols);
   gmx_fio_fclose(top_file);
 
   done_aa_names(&aan);

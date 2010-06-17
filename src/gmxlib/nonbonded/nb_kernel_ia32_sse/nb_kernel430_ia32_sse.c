@@ -120,15 +120,15 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 	gpol            = gbdata->gpol;
 	
 	nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel            = *p_facel; 
+  ntype            = *p_ntype;       
+  nthreads         = *p_nthreads;    
+  facel            = *p_facel; 
 	scl_gb           = (1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent);
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
-    gbtabscale       = *p_gbtabscale;  
-    nj1              = 0;
+  krf              = *p_krf;         
+  crf              = *p_crf;         
+  tabscale         = *p_tabscale;    
+  gbtabscale       = *p_gbtabscale;  
+  nj1              = 0;
 
 	/* Splat variables */
 	fac_sse        = _mm_load1_ps(&facel);
@@ -949,7 +949,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 		_mm_store_ss(fshift+is3+2,xmm4);
 		
 		/* Coulomb potential */
-        ggid             = gid[n];         
+    ggid             = gid[n];         
 		
 		vcoul   = _mm_movehl_ps(vcoul,vctot);
 		vctot   = _mm_add_ps(vctot,vcoul);

@@ -173,13 +173,13 @@ extern tMPI_Errhandler TMPI_ERRORS_RETURN;
 /*! \name tMPI_Comm_compare() return codes */
 /*! \{ */
 /** Identical comms*/
-#define TMPI_COMM_IDENT 0
+#define TMPI_IDENT 0
 /** Comms with the same members in the same order*/
-#define TMPI_COMM_CONGRUENT 1
+#define TMPI_CONGRUENT 1
 /** Comms with the same members in the different order*/
-#define TMPI_COMM_SIMILAR 2
+#define TMPI_SIMILAR 2
 /** Comms with the different  members */
-#define TMPI_COMM_UNEQUAL 3
+#define TMPI_UNEQUAL 3
 /*! \} */
 
 

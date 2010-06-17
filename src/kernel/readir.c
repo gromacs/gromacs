@@ -631,6 +631,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 		  sprintf(err_buf,"With GBSA, vdw-type must be equal to %s\n",evdw_names[evdwCUT]);
 		  CHECK(ir->vdwtype!=evdwCUT);
 	  }
+    
+    if(ir->nstgbradii<1)
+    {
+      sprintf(warn_buf,"Using GBSA with nstgbradii<1, setting nstgbradii=1");
+      warning_note(wi,warn_buf);
+      ir->nstgbradii=1;
+    }
   }
 }
 

@@ -44,6 +44,7 @@ enable_language(C)
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 option(USE_VERSION_H "Generate development version string/information" ON)
+option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
@@ -291,6 +292,9 @@ endif (GMX_DLOPEN)
 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
+
+# check for buggy GCC 4.1.x 
+include(gmxCheckGCCVersion)
 
 include(gmxCFlags)
 gmx_c_flags()

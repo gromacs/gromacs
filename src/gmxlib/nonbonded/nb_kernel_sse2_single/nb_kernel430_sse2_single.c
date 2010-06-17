@@ -21,6 +21,7 @@
 
 #include <xmmintrin.h>
 #include <emmintrin.h>
+#include <gmx_sse2_single.h>
 
 /* get gmx_gbdata_t */
 #include "../nb_kerneltype.h"
@@ -34,12 +35,12 @@ _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 static inline __m128
 my_invrsq_ps(__m128 x)
 {
-	const __m128 three = (const __m128) {3.0f, 3.0f, 3.0f, 3.0f};
-	const __m128 half  = (const __m128) {0.5f, 0.5f, 0.5f, 0.5f};
+	const __m128 three = {3.0f, 3.0f, 3.0f, 3.0f};
+	const __m128 half  = {0.5f, 0.5f, 0.5f, 0.5f};
 	
 	__m128 t1 = _mm_rsqrt_ps(x);
 	
-	return (__m128) _mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1)))));
+	return gmx_mm_castps_ps128(_mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1))))));
 }
 
 void nb_kernel430_sse2_single(int *           p_nri,
@@ -119,14 +120,14 @@ void nb_kernel430_sse2_single(int *           p_nri,
 	gpol            = gbdata->gpol;
 		
 	nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel            = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));       
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
-    gbtabscale       = *p_gbtabscale;  
-    nj1              = 0;
+  ntype            = *p_ntype;       
+  nthreads         = *p_nthreads;    
+  facel            = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));       
+  krf              = *p_krf;         
+  crf              = *p_crf;         
+  tabscale         = *p_tabscale;    
+  gbtabscale       = *p_gbtabscale;  
+  nj1              = 0;
 
 	/* Splat variables */
 	fac_sse        = _mm_load1_ps(&facel);
@@ -620,15 +621,15 @@ void nb_kernel430_sse2_single(int *           p_nri,
 				mask  = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
 			}
 			
-			jx      = _mm_and_ps( (__m128) mask, xmm6);
-			jy      = _mm_and_ps( (__m128) mask, xmm4);
-			jz      = _mm_and_ps( (__m128) mask, xmm5);
+			jx      = _mm_and_ps( gmx_mm_castsi128_ps(mask), xmm6);
+			jy      = _mm_and_ps( gmx_mm_castsi128_ps(mask), xmm4);
+			jz      = _mm_and_ps( gmx_mm_castsi128_ps(mask), xmm5);
 			
-			c6      = _mm_and_ps( (__m128) mask, c6);
-			c12     = _mm_and_ps( (__m128) mask, c12);
-			dvdaj   = _mm_and_ps( (__m128) mask, dvdaj);
-			isaj    = _mm_and_ps( (__m128) mask, isaj);			
-			q       = _mm_and_ps( (__m128) mask, q);
+			c6      = _mm_and_ps( gmx_mm_castsi128_ps(mask), c6);
+			c12     = _mm_and_ps( gmx_mm_castsi128_ps(mask), c12);
+			dvdaj   = _mm_and_ps( gmx_mm_castsi128_ps(mask), dvdaj);
+			isaj    = _mm_and_ps( gmx_mm_castsi128_ps(mask), isaj);			
+			q       = _mm_and_ps( gmx_mm_castsi128_ps(mask), q);
 			
 			dx1     = _mm_sub_ps(ix,jx);
 			dy1     = _mm_sub_ps(iy,jy);
@@ -705,8 +706,8 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			xmm1    = _mm_mul_ps(xmm1,isaj);
 			dvdaj   = _mm_add_ps(dvdaj,xmm1);
 			
-			vcoul   = _mm_and_ps( (__m128) mask, vcoul);
-			vgb     = _mm_and_ps( (__m128) mask, vgb);
+			vcoul   = _mm_and_ps( gmx_mm_castsi128_ps(mask), vcoul);
+			vgb     = _mm_and_ps( gmx_mm_castsi128_ps(mask), vgb);
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
@@ -892,9 +893,9 @@ void nb_kernel430_sse2_single(int *           p_nri,
 				_mm_store_ss(faction+j33+2,xmm7); 
 			}
 			
-			t1 = _mm_and_ps( (__m128) mask, t1);
-			t2 = _mm_and_ps( (__m128) mask, t2);
-			t3 = _mm_and_ps( (__m128) mask, t3);
+			t1 = _mm_and_ps( gmx_mm_castsi128_ps(mask), t1);
+			t2 = _mm_and_ps( gmx_mm_castsi128_ps(mask), t2);
+			t3 = _mm_and_ps( gmx_mm_castsi128_ps(mask), t3);
 			
 			fix = _mm_add_ps(fix,t1);
 			fiy = _mm_add_ps(fiy,t2);
@@ -919,7 +920,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 		
 		xmm2    = _mm_unpacklo_ps(fix,fiy); /* fx, fy, - - */
 		xmm2    = _mm_movelh_ps(xmm2,fiz); 
-		xmm2    = _mm_and_ps( (__m128) maski, xmm2);
+		xmm2    = _mm_and_ps( gmx_mm_castsi128_ps(maski), xmm2);
 		
 		/* load i force from memory */
 		xmm4    = _mm_loadl_pi(xmm4, (__m64 *) (faction+ii3));
@@ -934,7 +935,19 @@ void nb_kernel430_sse2_single(int *           p_nri,
 		xmm4    = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
 		_mm_store_ss(faction+ii3+2,xmm4);
 		
-        ggid             = gid[n];         
+    /* Load, add and store i shift forces */
+    xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (fshift+is3));
+    xmm5 = _mm_load1_ps(fshift+is3+2);
+    xmm4 = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
+      
+    xmm4 = _mm_add_ps(xmm4,xmm2);
+      
+    _mm_storel_pi( (__m64 *) (fshift+is3),xmm4);
+    xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
+    _mm_store_ss(fshift+is3+2,xmm4);
+      
+    /* Coulomb potential */
+    ggid             = gid[n];         
 		
 		vcoul   = _mm_movehl_ps(vcoul,vctot);
 		vctot   = _mm_add_ps(vctot,vcoul);

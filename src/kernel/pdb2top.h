@@ -58,6 +58,13 @@ extern void choose_ff(const char *ffsel,
  * If ffsel==NULL: interactive selection.
  */
 
+extern void choose_watermodel(const char *wmsel,const char *ffdir,
+			      char **watermodel);
+/* Choose, possibly interactively, which water model to include,
+ * based on the wmsel command line option choice and watermodels.dat
+ * in ffdir.
+ */
+
 extern void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp, 
 			       int nrtp, t_restp rtp[],
 			       int nres, t_resinfo *resinfo, 

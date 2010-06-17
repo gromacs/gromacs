@@ -10,7 +10,8 @@ aminoacids.hdb		ffbonded.itp		spc.itp		\
 aminoacids.n.tdb	ffnonbonded.itp		spce.itp	\
 aminoacids.rtp		forcefield.doc		tip3p.itp	\
 aminoacids.vsd		forcefield.itp		tip4p.itp	\
-aminoacids.r2b		methanol.itp		methanol216.gro
+aminoacids.r2b		methanol.itp		methanol216.gro	\
+watermodels.dat
 
 EXTRA_DIST = ${topol_DATA}
 
