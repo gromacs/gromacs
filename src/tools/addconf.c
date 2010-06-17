@@ -307,7 +307,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     dump_nblist(debug,cr,fr,0);
 
   if (bVerbose)    
-    fprintf(stderr,"Succesfully made neighbourlist\n");
+    fprintf(stderr,"Successfully made neighbourlist\n");
 }
 
 bool bXor(bool b1,bool b2)

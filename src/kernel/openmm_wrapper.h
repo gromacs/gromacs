@@ -72,7 +72,7 @@ void openmm_copy_state(void *data,
 
 void openmm_cleanup(FILE *fplog, void* data){}
 
-#endif //GMX_OPENMM
+#endif /*GMX_OPENMM*/
 
 
 #ifdef __cplusplus

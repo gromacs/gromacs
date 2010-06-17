@@ -121,13 +121,13 @@ static void rd_nm2type_file(const char *fn,int *nnm,t_nm2type **nmp)
   *nmp = nm2t;
 }
 
-t_nm2type *rd_nm2type(const char *ffdir,int *nnm)
+t_nm2type *rd_nm2type(const char *ffdir,bool bAddCWD,int *nnm)
 {
   int  nff,f;
   char **ff;
   t_nm2type *nm;
 
-  nff = fflib_search_file_end(ffdir,".n2t",FALSE,&ff);
+  nff = fflib_search_file_end(ffdir,bAddCWD,".n2t",FALSE,&ff);
   *nnm = 0;
   nm   = NULL;
   for(f=0; f<nff; f++) {

@@ -124,7 +124,7 @@ int gmx_genconf(int argc, char *argv[])
     
   };
   const char *bugs[] = {
-    "The program should allow for random displacement off lattice points." };
+    "The program should allow for random displacement of lattice points." };
 
   int     vol;          
   t_atoms *atoms;       /* list with all atoms */

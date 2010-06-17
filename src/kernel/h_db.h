@@ -47,7 +47,7 @@ extern const int ncontrol[];
 extern void read_ab(char *line,const char *fn,t_hack *ab);
 /* Read one add block */
 
-extern int read_h_db(const char *ffdir,t_hackblock **ah);
+extern int read_h_db(const char *ffdir,bool bAddCWD,t_hackblock **ah);
 /* Read the database from hdb file(s) in ffdir or current dir */
 
 extern void print_ab(FILE *out,t_hack *ab,char *nname);

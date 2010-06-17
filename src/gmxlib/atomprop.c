@@ -128,7 +128,7 @@ static int get_prop_index(aprop_t *ap,t_aa_names *aan,
   if (debug) {
     fprintf(debug,"searching residue: %4s atom: %4s\n",resnm,atomnm);
     if (j == NOTFOUND)
-      fprintf(debug," not succesful\n");
+      fprintf(debug," not successful\n");
     else
       fprintf(debug," match: %4s %4s\n",ap->resnm[j],ap->atomnm[j]);
   }

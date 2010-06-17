@@ -126,6 +126,13 @@ forcerec_set_ranges(t_forcerec *fr,
 		    int natoms_force,int natoms_f_novirsum);
 /* Set the number of cg's and atoms for the force calculation */
 
+extern bool can_use_allvsall(const t_inputrec *ir,
+                             bool bPrintNote,t_commrec *cr,FILE *fp);
+/* Returns if we can use all-vs-all loops.
+ * If bPrintNote==TRUE, prints a note, if necessary, to stderr
+ * and fp (if !=NULL) on the master node.
+ */
+
 extern void init_forcerec(FILE       *fplog,     
                           const output_env_t oenv,
 			  t_forcerec *fr,   

@@ -404,7 +404,7 @@ int gmx_trjcat(int argc, char *argv[])
             "Obviously the file to append to has to be the one with lowest starting",
             "time since one can only append at the end of a file.[PAR]",
             "If the [TT]-demux[tt] option is given, the N trajectories that are",
-            "read, are written in another order as specified in the xvg file."
+            "read, are written in another order as specified in the xvg file.",
             "The xvg file should contain something like:[PAR]",
             "0  0  1  2  3  4  5[BR]",
             "2  1  0  2  3  5  4[BR]",

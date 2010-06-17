@@ -235,16 +235,16 @@ gmx_mm_log_ps(__m128 x)
 static __m128 
 gmx_mm_exp_ps(__m128 x)
 {
-    const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   // 0.5e+0f
-    const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   // 127
-    const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   // log2(e)
+    const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   /* 0.5e+0f */
+    const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   /* 127 */
+    const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   /* log2(e) */
 	
-    const __m128i D5   = _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905);   // 1.8775767e-3f
-    const __m128i D4   = _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806);   // 8.9893397e-3f
-    const __m128i D3   = _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23);   // 5.5826318e-2f
-    const __m128i D2   = _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4);   // 2.4015361e-1f
-    const __m128i D1   = _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B);   // 6.9315308e-1f
-    const __m128i D0   = _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF);   // 9.9999994e-1f
+    const __m128i D5   = _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905);   /* 1.8775767e-3f */
+    const __m128i D4   = _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806);   /* 8.9893397e-3f */
+    const __m128i D3   = _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23);   /* 5.5826318e-2f */
+    const __m128i D2   = _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4);   /* 2.4015361e-1f */
+    const __m128i D1   = _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B);   /* 6.9315308e-1f */
+    const __m128i D0   = _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF);   /* 9.9999994e-1f */
 	
 	__m128 xmm0,xmm1;
 	__m128i xmm2;
@@ -282,17 +282,17 @@ gmx_mm_exp_ps(__m128 x)
 static __m128 
 gmx_mm_exp_ps_lbc(__m128 x)
 {
-    const __m128i lim  = _mm_set_epi32(0xC2AE0000, 0xC2AE0000, 0xC2AE0000, 0xC2AE0000);   // -87
-    const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   // 0.5e+0f
-    const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   // 127
-    const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   // log2(e)
+    const __m128i lim  = _mm_set_epi32(0xC2AE0000, 0xC2AE0000, 0xC2AE0000, 0xC2AE0000);   /* -87 */
+    const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   /* 0.5e+0f */
+    const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   /* 127 */
+    const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   /* log2(e) */
 	
-    const __m128i D5   = _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905);   // 1.8775767e-3f
-    const __m128i D4   = _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806);   // 8.9893397e-3f
-    const __m128i D3   = _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23);   // 5.5826318e-2f
-    const __m128i D2   = _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4);   // 2.4015361e-1f
-    const __m128i D1   = _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B);   // 6.9315308e-1f
-    const __m128i D0   = _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF);   // 9.9999994e-1f
+    const __m128i D5   = _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905);   /* 1.8775767e-3f */
+    const __m128i D4   = _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806);   /* 8.9893397e-3f */
+    const __m128i D3   = _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23);   /* 5.5826318e-2f */
+    const __m128i D2   = _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4);   /* 2.4015361e-1f */
+    const __m128i D1   = _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B);   /* 6.9315308e-1f */
+    const __m128i D0   = _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF);   /* 9.9999994e-1f */
 	
 	__m128 xmm0,xmm1;
 	__m128i xmm2;

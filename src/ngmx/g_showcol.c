@@ -276,4 +276,6 @@ main(int argc, char *argv[])
   XMapSubwindows(x11->disp,sc->wd.self);
   x11->MainLoop(x11);
   x11->CleanUp(x11);
+
+  return 0;
 }

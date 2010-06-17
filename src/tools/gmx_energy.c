@@ -878,7 +878,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
     /* Calculate the time difference */
     delta_t = t - start_t;
     
-    fprintf(stdout,"\nStatistics over %s steps [ %.4f thru %.4f ps ], %d data sets\n",
+    fprintf(stdout,"\nStatistics over %s steps [ %.4f through %.4f ps ], %d data sets\n",
 	    gmx_step_str(nsteps,buf),start_t,t,nset);
 
     calc_averages(nset,edat,nbmin,nbmax);
@@ -1305,7 +1305,7 @@ int gmx_energy(int argc,char *argv[])
     "difference with an ideal gas state: [BR]",
     "  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
     "  Delta G = G(N,p,T) - G_idgas(N,p,T) = kT ln < e^(Upot/kT) >[BR]",
-    "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and"
+    "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and",
     "the average is over the ensemble (or time in a trajectory).",
     "Note that this is in principle",
     "only correct when averaging over the whole (Boltzmann) ensemble",

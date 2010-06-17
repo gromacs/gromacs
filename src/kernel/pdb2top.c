@@ -1184,7 +1184,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
              int *rn, int *rc, bool bAllowMissing,
              bool bVsites, bool bVsiteAromatics,
-             const char *ff, const char *ffdir, real mHmult,
+             const char *ff, const char *ffdir, bool bAddCWD,
+             real mHmult,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
              bool bDeuterate, bool bChargeGroups, bool bCmap,
@@ -1239,7 +1240,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* determine which atoms will be vsites and add dummy masses 
        also renumber atom numbers in plist[0..F_NRE]! */
     do_vsites(nrtp, rtp, atype, atoms, tab, x, plist, 
-              &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir);
+              &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir, bAddCWD);
   }
   
   /* Make Angles and Dihedrals */
