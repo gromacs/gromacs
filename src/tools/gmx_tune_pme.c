@@ -418,10 +418,10 @@ static void get_program_paths(bool bThreads, char *cmd_mpirun[], char cmd_np[],
     const char def_mdrun[]  = "mdrun";
     const char filename[]   = "benchtest.log";
     const char match_mpi[]  = "NNODES=";
-    const char match_threads[]= "Program: ";
-    const char *match=NULL;
+    const char match_mdrun[]= "Program: ";
     const char empty_mpirun[] = "";
-    bool  bFound = FALSE;
+    bool  bMdrun = FALSE;
+    bool  bMPI   = FALSE;
     
 
     /* Get the commands we need to set up the runs from environment variables */
@@ -451,13 +451,11 @@ static void get_program_paths(bool bThreads, char *cmd_mpirun[], char cmd_np[],
     fprintf(stdout, "Making sure that mdrun can be executed. ");
     if (bThreads)
     {
-        match = match_threads;
         snew(command, strlen(*cmd_mdrun) + strlen(cmd_np) + strlen(filename) + 50);
         sprintf(command, "%s%s-version -maxh 0.001 1> %s 2>&1", *cmd_mdrun, cmd_np, filename);
     }	
     else
     {
-        match = match_mpi;
         snew(command, strlen(*cmd_mpirun) + strlen(cmd_np) + strlen(*cmd_mdrun) + strlen(filename) + 50);
         sprintf(command, "%s%s%s -version -maxh 0.001 1> %s 2>&1", *cmd_mpirun, cmd_np, *cmd_mdrun, filename);
     }
@@ -470,34 +468,48 @@ static void get_program_paths(bool bThreads, char *cmd_mpirun[], char cmd_np[],
         gmx_fatal(FARGS, "Output from test run could not be found.");
 
     fp = fopen(filename, "r");
-    cp2=fgets(line, STRLEN, fp);
-    if (cp2!=NULL && str_starts(line, match))
-        bFound = TRUE;
-
-    if (!bFound)
+    /* We need to scan the whole output file, since sometimes the queuing system
+     * also writes stuff to stdout/err */
+    while ( !feof(fp) )
     {
-        if (str_starts(line, match_mpi))
+        cp2=fgets(line, STRLEN, fp);
+        if (cp2!=NULL)
+        {
+            if ( str_starts(line, match_mdrun) )
+                bMdrun = TRUE;
+            if ( str_starts(line, match_mpi) )
+                bMPI = TRUE;
+        }
+    }
+    fclose(fp);
+
+    if (bThreads)
+    {
+        if (bMPI)
         {
             gmx_fatal(FARGS, "Need a threaded version of mdrun. This one\n"
-                             "(%s)\n"
-                             "seems to have been compiled with MPI instead.",
-                             *cmd_mdrun);
+                    "(%s)\n"
+                    "seems to have been compiled with MPI instead.",
+                    *cmd_mdrun);
         }
-        else if (str_starts(line, match_threads))
+    }
+    else
+    {
+        if (bMdrun && !bMPI)
         {
             gmx_fatal(FARGS, "Need an MPI-enabled version of mdrun. This one\n"
-                             "(%s)\n"
-                             "seems to have been compiled without MPI support.",
-                             *cmd_mdrun);
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Cannot execute mdrun. Please check %s for problems!",
-                    filename);
+                    "(%s)\n"
+                    "seems to have been compiled without MPI support.",
+                    *cmd_mdrun);
         }
     }
 
-    fclose(fp);
+    if (!bMdrun)
+    {
+        gmx_fatal(FARGS, "Cannot execute mdrun. Please check %s for problems!",
+                filename);
+    }
+
     fprintf(stdout, "passed.\n");
 
     /* Clean up ... */
@@ -1109,9 +1121,9 @@ static bool is_bench_option(char *opt, bool bSet)
     if (bSet)
     {
         if ( (0 == strcmp(opt, "-append" ))
-          || (0 == strcmp(opt, "-addpart"))
           || (0 == strcmp(opt, "-maxh"   ))
-          || (0 == strcmp(opt, "-deffnm" )) )
+          || (0 == strcmp(opt, "-deffnm" ))
+          || (0 == strcmp(opt, "-resethway")) )
             return FALSE;
         else
             return TRUE;
@@ -1270,11 +1282,6 @@ static void create_command_line_snippets(
         }
     }
 #undef BUFLENGTH
-    /* The -noaddpart option is needed so that the md.log files do not
-     * get renamed if checkpoints are used. We also do not want to append
-     * if we are doing benchmarks, since md.log then would contain several
-     * paragraphs with performance information. */
-    add_to_command_line(cmd_args_bench, "-noappend -noaddpart");
 }
 
 
@@ -1504,8 +1511,9 @@ int gmx_tune_pme(int argc,char *argv[])
     char *deffnm=NULL;
 #define STD_CPT_PERIOD (15.0)
     real cpt_period=STD_CPT_PERIOD,max_hours=-1;
-    bool bAppendFiles=FALSE,bAddPart=TRUE;
-    output_env_t oenv;
+    bool bAppendFiles=TRUE;
+    bool bResetCountersHalfWay=FALSE;
+    output_env_t oenv=NULL;
 
     t_pargs pa[] = {
       /***********************/
@@ -1530,7 +1538,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-steps",    FALSE, etGMX_LARGE_INT, {&bench_nsteps},
         "Take timings for these many steps in the benchmark runs" }, 
       { "-resetstep",FALSE, etINT,  {&presteps},
-        "Let dlb equilibrate these many steps before timings are taken" },         
+        "Let dlb equilibrate these many steps before timings are taken (reset cycle counters after these many steps)" },
       { "-simsteps", FALSE, etGMX_LARGE_INT, {&new_sim_nsteps},
         "If non-negative, perform these many steps in the real run (overwrite nsteps from tpr, add cpt steps)" }, 
       { "-omitnp",   FALSE, etBOOL, {&bOmit},
@@ -1577,9 +1585,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-cpt",       FALSE, etREAL, {&cpt_period},
         "Checkpoint interval (minutes)" },
       { "-append",    FALSE, etBOOL, {&bAppendFiles},
-        "Append to previous output files when continuing from checkpoint (for launch only)" },
-      { "-addpart",  FALSE, etBOOL,  {&bAddPart},
-        "Add the simulation part number to all output files when continuing from checkpoint" },
+        "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names (for launch only)" },
       { "-maxh",      FALSE, etREAL, {&max_hours},
         "Terminate after 0.99 times this time (hours)" },
       { "-multi",     FALSE, etINT,  {&nmultisim},
@@ -1595,7 +1601,9 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-confout",   FALSE, etBOOL, {&bConfout},
         "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
       { "-stepout",   FALSE, etINT,  {&nstepout},
-        "HIDDENFrequency of writing the remaining runtime" }
+        "HIDDENFrequency of writing the remaining runtime" },
+      { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
+        "HIDDENReset the cycle counters after half the number of steps or halfway -maxh (launch only)" }
     };
 
     
