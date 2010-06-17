@@ -46,7 +46,8 @@ adress_weight(rvec            x,
               real            adressr,
               real            adressw,
               rvec *          ref,
-              t_pbc *         pbc)
+              t_pbc *         pbc,
+              t_forcerec *         fr )
 {
     int  i;
     real l2 = adressr+adressw;
@@ -72,7 +73,7 @@ adress_weight(rvec            x,
         return 1;
     case eAdressConst:              
         /* constant value for weighting function = adressw */
-        return adressw;
+        return fr->adress_const_wf;
     case eAdressXSplit:              
         /* plane through center of ref, varies in x direction */
         sqr_dl         = dx[0]*dx[0];
@@ -128,12 +129,22 @@ update_adress_weights_com(FILE *               fplog,
     real *         massT;
     real *         wf;
 
+
+    int n_hyb, n_ex, n_cg;
+
+    n_hyb=0;
+    n_cg=0;
+    n_ex=0;
+
     adresstype         = fr->adress_type;
     adressr            = fr->adress_ex_width;
     adressw            = fr->adress_hy_width;
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refs);
+
+    mdatoms->purecg = FALSE;
+    mdatoms->pureex = FALSE;
 
     /* Since this is center of mass AdResS, the vsite is not guaranteed
      * to be on the same node as the constructing atoms.  Therefore we 
@@ -156,7 +167,10 @@ update_adress_weights_com(FILE *               fplog,
         nrcg    = k1-k0;
         if (nrcg == 1)
         {
-            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,ref,pbc);
+            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,ref,pbc,fr);
+            if (wf[k0]==0){ n_cg++;}
+            else if (wf[k0]==1){ n_ex++;}
+            else {n_hyb++;}
         }
         else
         {
@@ -202,13 +216,23 @@ update_adress_weights_com(FILE *               fplog,
             }
 
             /* Set wf of all atoms in charge group equal to wf of com */
-            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,ref,pbc);
+            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,ref,pbc, fr);
+
+            if (wf[k0]==0){ n_cg++;}
+            else if (wf[k0]==1){ n_ex++;}
+            else {n_hyb++;}
+
             for(k=(k0+1); (k<k1); k++)
             {
                 wf[k] = wf[k0];
             }
         }
     }
+   
+    if (debug) fprintf (debug, "adress.c (cg0 %d cg1 %d) ex %d hyb %d cg %d\n", cg0, cg1,n_ex, n_hyb, n_cg);
+
+    if (n_hyb ==0 && n_ex == 0) mdatoms->purecg = TRUE;
+    if (n_hyb ==0 && n_cg == 0) mdatoms->pureex = TRUE;
 }
         
 void
@@ -251,7 +275,7 @@ update_adress_weights_cog(t_iparams            ip[],
                 /* The vsite and first constructing atom */
                 avsite     = ia[1];
                 ai         = ia[2];
-                wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,ref,pbc);
+                wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,ref,pbc,fr);
                 wf[ai]     = wf[avsite];
 
                 /* Assign the vsite wf to rest of constructing atoms depending on type */
@@ -356,7 +380,7 @@ update_adress_weights_atom(int                  cg0,
     {
         k0      = cgindex[icg];
         k1      = cgindex[icg+1];
-        wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,ref,pbc);
+        wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,ref,pbc,fr);
 
         /* Set wf of all atoms in charge group equal to wf of first atom in charge group*/
         for(k=(k0+1); (k<k1); k++)

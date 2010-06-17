@@ -449,7 +449,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
     /* should probably move this to the forcerec since it doesn't change */
-    bDoAdressWF   = ((fr->adress_type!=eAdressOff) && (fr->adress_type!=eAdressConst));
+    bDoAdressWF   = ((fr->adress_type!=eAdressOff));
 
     if (bStateChanged)
     {

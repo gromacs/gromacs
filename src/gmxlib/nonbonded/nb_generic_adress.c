@@ -137,6 +137,9 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 
         weight_cg1       = wf[ii];
 
+        /* TODO: why does this line her not speed up things ?
+         * if ((!bCG) && weight_cg1 < ALMOST_ZERO) continue;
+         */
         for(k=nj0; (k<nj1); k++)
         {
             jnr              = nlist->jjnr[k];

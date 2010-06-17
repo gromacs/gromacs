@@ -167,6 +167,9 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     if (ir->adress_type!=eAdressOff)
       srenew(md->wf,md->nalloc);
       srenew(md->tf_table_index,md->nalloc);
+
+      md->purecg = FALSE;
+      md->pureex = FALSE;
   }
 
   for(i=0; (i<md->nr); i++) {

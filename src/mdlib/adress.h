@@ -70,7 +70,8 @@ adress_weight(rvec             x,
               real             adressr,
               real             adressw,
               rvec *           ref,
-              t_pbc *          pbc);
+              t_pbc *          pbc,
+              t_forcerec *         fr);
 
 /** \brief update the weight of all coarse-grained particles in several charge groups for com vsites
  *

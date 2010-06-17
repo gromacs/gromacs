@@ -342,7 +342,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 
     bLR            = (flags & GMX_DONB_LR);
     bDoForces      = (flags & GMX_DONB_FORCES);
-    bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA); 
+    bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA);
 
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
 	gbdata.epsilon_r = fr->epsilon_r;
@@ -584,7 +584,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                 if (mdatoms->cENER[nlist->iinr[0]] == fr->adress_ex_grp_index[k]) {
                                     bCG = FALSE;
                                     /* the explicit kernels are the second part of the kernel list */
-                                    nrnb_ind += eNR_NBKERNEL_NR/2;
+                                    
                                 }
                             }
                             if (bCG) {
@@ -592,10 +592,19 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                             }
                         }
                     }
-                    if (fr->adress_type == eAdressOff){
-                    kernelptr = nb_kernel_list[nrnb_ind];
+
+                    if (mdatoms->pureex && bCG) continue;
+                    if (mdatoms->purecg && !bCG) continue;
+
+                    if (fr->adress_type == eAdressOff ||
+                            mdatoms->pureex ||
+                            mdatoms->purecg){
+                        
+                        kernelptr = nb_kernel_list[nrnb_ind];
                     }else{
-                    kernelptr = nb_kernel_list_adress[nrnb_ind];
+                        /* the explicit kernels are the second part of the kernel list */
+                        if (!bCG) nrnb_ind += eNR_NBKERNEL_NR/2;                      
+                        kernelptr = nb_kernel_list_adress[nrnb_ind];
                     }
                    
                     if (kernelptr == NULL)
