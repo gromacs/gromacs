@@ -955,6 +955,7 @@ static void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
                                 bool *bNotLastFrame)
 {
     bool bAlloc;
+    rvec *xp,*vp;
 
     bAlloc = (fr->natoms == 0);
 
@@ -962,7 +963,11 @@ static void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
     {
         fr->natoms = -1;
     }
+    xp = fr->x;
+    vp = fr->v;
     gmx_bcast(sizeof(*fr),fr,cr);
+    fr->x = xp;
+    fr->v = vp;
 
     *bNotLastFrame = (fr->natoms >= 0);
 
