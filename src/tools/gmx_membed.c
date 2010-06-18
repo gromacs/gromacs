@@ -3572,6 +3572,9 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        rc;
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed=NULL;
+    t_commrec   *cr_old=cr;
+    int        nthreads=1,nthreads_requested=1;
+
 
 	char			*ins;
 	int				rm_bonded_at,fr_id,fr_i,tmp_id,warn=0;
@@ -3589,13 +3592,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	t_pbc			*pbc;
 	char            **piecename;
 
-     /* Essential dynamics */
-    if (opt2bSet("-ei",nfile,fnm))
-    {
-        /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(nfile,fnm,Flags,cr);
-    }
-
+    /* CAUTION: threads may be started later on in this function, so
+       cr doesn't reflect the final parallel state right now */
     snew(inputrec,1);
     snew(mtop,1);
 
@@ -3609,30 +3607,32 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         fplog = NULL;
     }
 
+    snew(state,1);
+    if (MASTER(cr))
+    {
+        /* Read (nearly) all data required for the simulation */
+        read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
+
+        /* NOW the threads will be started: */
+#ifdef GMX_THREADS
+#endif
+    }
+    /* END OF CAUTION: cr is now reliable */
+
+    /* now make sure the state is initialized and propagated */
+    set_state_entries(state,inputrec,cr->nnodes);
     if (PAR(cr))
     {
-        /* The master thread on the master node reads from disk,
-         * then distributes everything to the other processors.
-         */
-
-        list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
-
-        snew(state,1);
-        /* NOTE: if the run is thread-parallel but the integrator doesn't support this
-                 such as with LBGFS, this function may cancel the threads
-                 through cancel_par_threads(), and make the commrec serial. The
-                 rest of the simulation is then only performed by the main thread,
-                 as if it were a serial run. */
-        init_parallel(fplog, opt2fn_master("-s",nfile,fnm,cr),cr,
-                      inputrec,mtop,state,list);
-
+        /* now broadcast everything to the non-master nodes/threads: */
+        init_parallel(fplog, cr, inputrec, mtop, state);
     }
-    else
+
+    if (can_use_allvsall(inputrec,TRUE,cr,fplog))
     {
-        /* Read a file for a single processor */
-        snew(state,1);
-        init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),mtop,state);
+        /* All-vs-all loops do not work with domain decomposition */
+        Flags |= MD_PARTDEC;
     }
+
     if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC))
     {
         cr->npmenodes = 0;
