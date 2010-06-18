@@ -515,8 +515,9 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
 {
     char    warn_buf[STRLEN];
     int     i, j, natoms;
-    double  c6, c12, sigma_ij, sigma_ji, sigma_ii, sigma_jj, sigma_comb,
-            eps_ij, eps_ji, eps_ii, eps_jj, eps_comb;
+    double  c6, c12;
+    double  sigma_ij=0, sigma_ji=0, sigma_ii=0, sigma_jj=0, sigma_comb;
+    double  eps_ij=0, eps_ji=0, eps_ii=0, eps_jj=0, eps_comb;
 
     /* Abort if unsupported critical options are present */
 
@@ -808,7 +809,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                           " plugin directory in the OPENMM_PLUGIN_DIR environment variable.", pluginDir);
             }
 
-            fprintf(fplog, "\nPlugins loaded from directory %s:\t", usedPluginDir.c_str());
+            fprintf(fplog, "\nOpenMM plugins loaded from directory %s:\t", usedPluginDir.c_str());
             for (int i = 0; i < (int)loadedPlugins.size(); i++)
             {
                 fprintf(fplog, "%s, ", loadedPlugins[i].c_str());
@@ -1018,7 +1019,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         {
             double c12 = nbfp[types[i]*2*ntypes+types[i]*2+1];
             double c6 = nbfp[types[i]*2*ntypes+types[i]*2];
-            double sigma, epsilon;
+            double sigma=0.0, epsilon=0.0;
             convert_c_12_6(c12, c6, &sigma, &epsilon);
             nonbondedForce->addParticle(charges[i], sigma, epsilon);
             sys->addParticle(masses[i]);
@@ -1042,7 +1043,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int type = nb14Atoms[offset++];
             int atom1 = nb14Atoms[offset++];
             int atom2 = nb14Atoms[offset++];
-            double sigma, epsilon;
+            double sigma=0, epsilon=0;
             convert_c_12_6(idef.iparams[type].lj14.c12A, 
                     idef.iparams[type].lj14.c6A,
                     &sigma, &epsilon);
@@ -1188,19 +1189,22 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         /* only for CUDA */
         if (isStringEqNCase(opt->getOptionValue("platform"), "CUDA"))
         {
-            /* For now this is just to double-check if OpenMM selected the GPU we wanted,
-            but when we'll let OpenMM select the GPU automatically, it will query the devideId.
-            */
             int tmp;
             if (!from_string<int>(tmp, platform.getPropertyValue(*context, "CudaDevice"), std::dec))
             {
                 gmx_fatal(FARGS, "Internal error: couldn't determine the device selected by OpenMM");
-                if (tmp != devId)
-                {
-                    gmx_fatal(FARGS, "Internal error: OpenMM is using device #%d"
-                        "while initialized for device #%d", tmp, devId);
-                }
+
             }
+
+            /* For now this is just to double-check if OpenMM selected the GPU we wanted,
+            but when we'll let OpenMM select the GPU automatically, it will query the devideId.
+            */            
+            if (tmp != devId)
+            {
+                gmx_fatal(FARGS, "Internal error: OpenMM is using device #%d"
+                        "while initialized for device #%d", tmp, devId);
+            }        
+            cout << ">>>>> OpenMM devId=" << tmp << endl;
             
             /* check GPU compatibility */
             char gpuname[STRLEN];

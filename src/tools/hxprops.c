@@ -509,7 +509,7 @@ void do_start_end(int nres,t_bb bb[],rvec x[],int *nbb,atom_id bbindex[],
     /* Find start and end of longest helix fragment */
     check_ahx(nres,bb,x,&hstart,&hend);
   }
-  fprintf(stderr,"helix from: %d thru %d\n",
+  fprintf(stderr,"helix from: %d through %d\n",
 	  bb[hstart].resno,bb[hend].resno);
   
   for(j=0,i=hstart; (i<=hend); i++) {

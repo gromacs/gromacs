@@ -420,7 +420,7 @@ void done_grid(t_grid *grid)
   grid->dc_nalloc = 0;
 
   if (debug) 
-    fprintf(debug,"Succesfully freed memory for grid pointers.");
+    fprintf(debug,"Successfully freed memory for grid pointers.");
 }
 
 int xyz2ci_(int nry,int nrz,int x,int y,int z)

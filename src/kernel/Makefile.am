@@ -56,10 +56,10 @@ xlate.c		xlate.h
 
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
-	protonate	luck		gmxdump				\
-	gmxcheck	x2top
+	g_protonate	g_luck		gmxdump				\
+	gmxcheck	g_x2top
 
-x2top_SOURCES = x2top.c nm2type.c x2top.h
+g_x2top_SOURCES = g_x2top.c nm2type.c g_x2top.h
 
 mdrun_SOURCES = \
 	gctio.c 	\

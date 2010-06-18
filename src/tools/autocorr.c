@@ -745,7 +745,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
     { "-beginfit", FALSE, etREAL, {&acf.tbeginfit},
       "Time where to begin the exponential fit of the correlation function" },
     { "-endfit",   FALSE, etREAL, {&acf.tendfit},
-      "Time where to end the exponential fit of the correlation function, -1 is till the end" },
+      "Time where to end the exponential fit of the correlation function, -1 is until the end" },
    };
 #define NPA asize(acfpa)
   t_pargs *ppa;

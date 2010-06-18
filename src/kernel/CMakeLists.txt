@@ -73,17 +73,17 @@ target_link_libraries(tpbconv ${GMX_EXTRA_LIBRARIES})
 add_executable(pdb2gmx pdb2gmx.c)
 target_link_libraries(pdb2gmx ${GMX_EXTRA_LIBRARIES})
 
-add_executable(protonate protonate.c)
-target_link_libraries(protonate ${GMX_EXTRA_LIBRARIES})
+add_executable(g_protonate g_protonate.c)
+target_link_libraries(g_protonate ${GMX_EXTRA_LIBRARIES})
 
-add_executable(luck luck.c)
-target_link_libraries(luck ${GMX_EXTRA_LIBRARIES})
+add_executable(g_luck g_luck.c)
+target_link_libraries(g_luck ${GMX_EXTRA_LIBRARIES})
 
 add_executable(gmxdump gmxdump.c)
 target_link_libraries(gmxdump ${GMX_EXTRA_LIBRARIES})
 
-add_executable(x2top x2top.c)
-target_link_libraries(x2top ${GMX_EXTRA_LIBRARIES})
+add_executable(g_x2top g_x2top.c)
+target_link_libraries(g_x2top ${GMX_EXTRA_LIBRARIES})
 
 add_executable(gmxcheck gmxcheck.c)
 target_link_libraries(gmxcheck ${GMX_EXTRA_LIBRARIES})
@@ -101,10 +101,10 @@ install(TARGETS
         grompp
         tpbconv
         pdb2gmx
-        protonate
-        luck
+        g_protonate
+        g_luck
         gmxdump
-        x2top
+        g_x2top
         gmxcheck
         mdrun
 	gmxpreprocess DESTINATION ${LIB_INSTALL_DIR}

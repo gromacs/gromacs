@@ -442,7 +442,7 @@ int gmx_sgangle(int argc,char *argv[])
     "Here is what some of the file options do:[BR]",
     "-oa: Angle between the two groups specified in the index file. If a group contains three atoms the normal to the plane defined by those three atoms will be used. If a group contains two atoms, the vector defined by those two atoms will be used.[BR]",
     "-od: Distance between two groups. Distance is taken from the center of one group to the center of the other group.[BR]",
-    "-od1: If one plane and one vector is given, the distances for each of the atoms from the center of the plane is given seperately.[BR]",
+    "-od1: If one plane and one vector is given, the distances for each of the atoms from the center of the plane is given separately.[BR]",
     "-od2: For two planes this option has no meaning."
   };
 

@@ -254,10 +254,13 @@ static void compact_graph(FILE *fplog,t_graph *g)
     for(j=0; j<g->nedge[i]; j++) {
       g->edge[0][n++] = g->edge[i][j];
     }
-    g->edge[i] = g->edge[0] + n - g->nedge[i];
     max_nedge = max(max_nedge,g->nedge[i]);
   }
   srenew(g->edge[0],n);
+  /* set pointers after srenew because edge[0] might move */
+  for(i=1; i<g->nnodes; i++) {
+    g->edge[i] = g->edge[i-1] + g->nedge[i-1];
+  }
 
   if (fplog) {
     fprintf(fplog,"Max number of graph edges per atom is %d\n",

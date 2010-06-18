@@ -73,7 +73,7 @@ int gmx_morph(int argc,char *argv[])
     "generic trajectory. The number of intermediates can be controlled with",
     "the -ninterm flag. The first and last flag correspond to the way of",
     "interpolating: 0 corresponds to input structure 1 while",
-    "1 corresponds to input strucutre 2.",
+    "1 corresponds to input structure 2.",
     "If you specify first < 0 or last > 1 extrapolation will be",
     "on the path from input structure x1 to x2. In general the coordinates",
     "of the intermediate x(i) out of N total intermidates correspond to:[PAR]",

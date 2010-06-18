@@ -1684,9 +1684,9 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); 
 			isaj  = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 			
-			isaprod = _mm_mul_ps(isai,isaj); // rb2 in tinker
+			isaprod = _mm_mul_ps(isai,isaj); /* rb2 in tinker */
 			inv_isaprod = _mm_mul_ps(isaprod,isaprod);
-			inv_isaprod = gmx_mm_inv_ps(inv_isaprod); //1/rb2 in tinker
+			inv_isaprod = gmx_mm_inv_ps(inv_isaprod); /* 1/rb2 in tinker*/
 			
 			/* Load charges for ai's and aj's */
 			xmm1 = _mm_load_ss(charge+ai1); 

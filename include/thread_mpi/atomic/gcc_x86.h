@@ -268,6 +268,7 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
                          "\tpause\n"              /* otherwise: small pause
                                                      as recommended by Intel */
                          "\tjmp 1b\n"             /* and jump back */  
+                         "2:\n"
                          : "=m"(x->lock)         /* input & output var */
                          : 
                          : "memory"/* we changed memory */

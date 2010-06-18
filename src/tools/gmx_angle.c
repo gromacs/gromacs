@@ -104,7 +104,7 @@ int gmx_g_angle(int argc,char *argv[])
     "It should be noted that the indexfile should contain",
     "atom-triples for angles or atom-quadruplets for dihedrals.",
     "If this is not the case, the program will crash.[PAR]",
-    "With option [TT]-or[tt] a trajectory file is dumped containing cos and"
+    "With option [TT]-or[tt] a trajectory file is dumped containing cos and",
     "sin of selected dihedral angles which subsequently can be used as",
     "input for a PCA analysis using [TT]g_covar[tt]."
   };

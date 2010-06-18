@@ -669,13 +669,13 @@ int gmx_kinetics(int argc,char *argv[])
 {
   const char *desc[] = {
     "g_kinetics reads two xvg files, each one containing data for N replicas.",
-    "The first file contains the temperature of each replica at each timestep,"
+    "The first file contains the temperature of each replica at each timestep,",
     "and the second contains real values that can be interpreted as",
     "an indicator for folding. If the value in the file is larger than",
     "the cutoff it is taken to be unfolded and the other way around.[PAR]",
     "From these data an estimate of the forward and backward rate constants",
-    "for folding is made at a reference temperature. In addition,"
-    "a theoretical melting curve and free energy as a function of temperature"
+    "for folding is made at a reference temperature. In addition,",
+    "a theoretical melting curve and free energy as a function of temperature",
     "are printed in an xvg file.[PAR]",
     "The user can give a max value to be regarded as intermediate",
     "([TT]-ucut[tt]), which, when given will trigger the use of an intermediate state",

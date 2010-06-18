@@ -752,7 +752,7 @@ int gmx_current(int argc,char *argv[])
     "[PAR]",
     "The flag [TT]-caf[tt] is for the output of the current autocorrelation function and [TT]-mc[tt] writes the",
     "correlation of the rotational and translational part of the dipole moment in the corresponding",
-    "file. However this option is only available for trajectories containing velocities."
+    "file. However this option is only available for trajectories containing velocities.",
     "Options [TT]-sh[tt] and [TT]-tr[tt] are responsible for the averaging and integration of the",
     "autocorrelation functions. Since averaging proceeds by shifting the starting point",
     "through the trajectory, the shift can be modified with [TT]-sh[tt] to enable the choice of uncorrelated",
@@ -761,7 +761,7 @@ int gmx_current(int argc,char *argv[])
     "the number of frames. The option [TT]-tr[tt] controls the region of the integral taken into account",
     "for calculating the static dielectric constant.",
     "[PAR]",
-    "Option [TT]-temp[tt] sets the temperature required for the computation of the static dielectric constant."
+    "Option [TT]-temp[tt] sets the temperature required for the computation of the static dielectric constant.",
     "[PAR]",
     "Option [TT]-eps[tt] controls the dielectric constant of the surrounding medium for simulations using",
     "a Reaction Field or dipole corrections of the Ewald summation (eps=0 corresponds to",

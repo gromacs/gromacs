@@ -604,7 +604,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             warning_note(wi,warn_buf);
         }
     }
-
+  
+  /* IMPLICIT SOLVENT */
   if(ir->coulombtype==eelGB_NOTUSED)
   {
     ir->coulombtype=eelCUT;
@@ -618,6 +619,24 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   {
       sprintf(err_buf,"With GBSA implicit solvent, rgbradii must be equal to rlist.");
       CHECK(ir->rgbradii != ir->rlist);
+	  
+	  if(ir->coulombtype!=eelCUT)
+	  {
+		  sprintf(err_buf,"With GBSA, coulombtype must be equal to %s\n",eel_names[eelCUT]);
+		  CHECK(ir->coulombtype!=eelCUT);
+	  }
+	  if(ir->vdwtype!=evdwCUT)
+	  {
+		  sprintf(err_buf,"With GBSA, vdw-type must be equal to %s\n",evdw_names[evdwCUT]);
+		  CHECK(ir->vdwtype!=evdwCUT);
+	  }
+    
+    if(ir->nstgbradii<1)
+    {
+      sprintf(warn_buf,"Using GBSA with nstgbradii<1, setting nstgbradii=1");
+      warning_note(wi,warn_buf);
+      ir->nstgbradii=1;
+    }
   }
 }
 
