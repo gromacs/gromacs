@@ -940,22 +940,7 @@ int gmx_fio_open(const char *fn, const char *mode)
             {
 #ifndef GMX_FAHCORE
                 /* only make backups for normal gromacs */
-                if (gmx_fexist(fn))
-                {
-                    char *bf=(char *)backup_fn(fn);
-                    if (rename(fn,bf) == 0)
-                    {
-                        fprintf(stderr,
-                                "\nBack Off! I just backed up %s to %s\n",
-                                fn,bf);
-                    }
-                    else
-                    {
-                        fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",
-                                fn,bf);
-                    }
-                    sfree(bf);
-                }
+                make_backup(fn);
 #endif
             }
             else 
