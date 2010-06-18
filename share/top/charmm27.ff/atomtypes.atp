@@ -202,3 +202,7 @@ HR3	1.008000 ;	For imidazole model compound (NF)
 HR1	1.008000 ;	For imidazole model compound (NF) 
 NR1	14.007000 ;	For nitrogen in imidazol (NF) 
 NR2	14.007000 ;	For nitrogen in imidazol (NF) 
+
+OWT4	15.999400 ;     For TIP4P
+HWT4	1.008000 ;	For TIP4P
+MWT4	0.000000 ;	For TIP4P
