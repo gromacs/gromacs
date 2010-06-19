@@ -809,7 +809,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                           " plugin directory in the OPENMM_PLUGIN_DIR environment variable.", pluginDir);
             }
 
-            fprintf(fplog, "\nPlugins loaded from directory %s:\t", usedPluginDir.c_str());
+            fprintf(fplog, "\nOpenMM plugins loaded from directory %s:\t", usedPluginDir.c_str());
             for (int i = 0; i < (int)loadedPlugins.size(); i++)
             {
                 fprintf(fplog, "%s, ", loadedPlugins[i].c_str());
@@ -1189,19 +1189,22 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         /* only for CUDA */
         if (isStringEqNCase(opt->getOptionValue("platform"), "CUDA"))
         {
-            /* For now this is just to double-check if OpenMM selected the GPU we wanted,
-            but when we'll let OpenMM select the GPU automatically, it will query the devideId.
-            */
             int tmp;
             if (!from_string<int>(tmp, platform.getPropertyValue(*context, "CudaDevice"), std::dec))
             {
                 gmx_fatal(FARGS, "Internal error: couldn't determine the device selected by OpenMM");
-                if (tmp != devId)
-                {
-                    gmx_fatal(FARGS, "Internal error: OpenMM is using device #%d"
-                        "while initialized for device #%d", tmp, devId);
-                }
+
             }
+
+            /* For now this is just to double-check if OpenMM selected the GPU we wanted,
+            but when we'll let OpenMM select the GPU automatically, it will query the devideId.
+            */            
+            if (tmp != devId)
+            {
+                gmx_fatal(FARGS, "Internal error: OpenMM is using device #%d"
+                        "while initialized for device #%d", tmp, devId);
+            }        
+            cout << ">>>>> OpenMM devId=" << tmp << endl;
             
             /* check GPU compatibility */
             char gpuname[STRLEN];

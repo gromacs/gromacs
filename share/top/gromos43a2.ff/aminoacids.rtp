@@ -9217,11 +9217,10 @@ AO3PB   APG AO3PG AH3PG     gd_9
    OW  OWT4    0.0     0
   HW1     H    0.52     0
   HW2     H    0.52     0
-  HW3    IW   -1.04     0
+   MW    IW   -1.04     0
  [ bonds ]
    OW   HW1    gb_35
    OW   HW2    gb_35
-   OW   HW3    gb_35
  [ angles ]
 ;   ai    aj    ak  gromos type
  [ impropers ]

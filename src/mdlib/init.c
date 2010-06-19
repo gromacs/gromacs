@@ -93,9 +93,15 @@ void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
       snew(state->sd_X,state->nalloc);
     }
   }
-  if (ir->eI == eiCG) {
-    state->flags |= (1<<estCGP);
-  }
+    if (ir->eI == eiCG)
+    {
+        state->flags |= (1<<estCGP);
+        if (state->cg_p == NULL)
+        {
+            /* cg_p is not stored in the tpx file, so we need to allocate it */
+            snew(state->cg_p,state->nalloc);
+        }
+    }
   if (EI_SD(ir->eI) || ir->eI == eiBD || ir->etc == etcVRESCALE) {
     state->nrng  = gmx_rng_n();
     state->nrngi = 1;

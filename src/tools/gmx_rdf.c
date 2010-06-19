@@ -627,7 +627,7 @@ int gmx_rdf(int argc,char *argv[])
     "or to the closest particle in a set ([TT]-surf[tt]).",
     "With all methods rdf's can also be calculated around axes parallel",
     "to the z-axis with option [TT]-xy[tt].",
-    "With option [TT]-surf[tt] normalization can not be used.[PAR]"
+    "With option [TT]-surf[tt] normalization can not be used.[PAR]",
     "The option [TT]-rdf[tt] sets the type of rdf to be computed.",
     "Default is for atoms or particles, but one can also select center",
     "of mass or geometry of molecules or residues. In all cases only",
@@ -651,7 +651,7 @@ int gmx_rdf(int argc,char *argv[])
     "Option [TT]-cn[tt] produces the cumulative number rdf,",
     "i.e. the average number of particles within a distance r.[PAR]",
     "To bridge the gap between theory and experiment structure factors can",
-    "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid"
+    "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid",
     "spacing of which is determined by option [TT]-grid[tt]."
   };
   static bool bCM=FALSE,bXY=FALSE,bPBC=TRUE,bNormalize=TRUE;
