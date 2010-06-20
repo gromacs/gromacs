@@ -456,7 +456,8 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
         if (ir->eI != eiNM &&
             (ir->nstxout > 0 ||
              ir->nstvout > 0 ||
-             ir->nstfout > 0))
+             ir->nstfout > 0 ||
+	     defined(GMX_FAHCORE)))
         {
             of->fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
         }
