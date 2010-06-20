@@ -51,7 +51,7 @@
 #define NTROTTERCALLS 5
 #define NTROTTERPARTS 3
 
-/* these integration routines are only references inside this file */
+/* these integration routines are only referenced inside this file */
 static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtfull,
                         double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ, bool bEkinAveVel)
 
@@ -646,6 +646,12 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     double *scalefac;
     rvec sumv,consk;
 
+    bCouple = (ir->nstcalcenergy == 1 ||
+               do_per_step(step+ir->nstcalcenergy-1,
+                           ir->nstcalcenergy));
+    dtc = inputrec->nstcalcenergy*inputrec->delta_t;
+
+
     /* signal we are returning if nothing is going to be done in this routine */
     if (trotter_seq[0] == etrtSKIPALL) 
     {
@@ -664,13 +670,13 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
         /* allow for doubled intgrators by doubling dt instead of making 2 calls */
         if ((trotter_seq[i] == etrtBAROV2) || (trotter_seq[i] == etrtBARONHC2) || (trotter_seq[i] == etrtNHC2))
         {
-            dt = 2 * ir->delta_t;
+            dt = 2 * dtc;
         }
         else 
         {
-            dt = ir->delta_t;
+            dt = dtc;
         }
-            
+
         switch (trotter_seq[i])
         {
         case etrtBAROV:
