@@ -1305,7 +1305,7 @@ int gmx_energy(int argc,char *argv[])
     "difference with an ideal gas state: [BR]",
     "  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
     "  Delta G = G(N,p,T) - G_idgas(N,p,T) = kT ln < e^(Upot/kT) >[BR]",
-    "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and"
+    "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and",
     "the average is over the ensemble (or time in a trajectory).",
     "Note that this is in principle",
     "only correct when averaging over the whole (Boltzmann) ensemble",

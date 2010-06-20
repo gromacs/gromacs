@@ -239,7 +239,7 @@ Parallel tpic gives identical results to single node tpic.
 <dd>time step for integration (only makes sense for integrators <tt>md</tt>,
 <tt>sd</tt> and <tt>bd</tt>)</dd>
 <dt><h4>nsteps: (0)</h4></dt>
-<dd>maximum number of steps to integrate</dd>
+<dd>maximum number of steps to integrate or minimize, -1 is no maximum</dd>
 <dt><h4>init_step: (0)</h4></dt>
 <dd>The starting step.
 The time at an step i in a run is calculated as: t = <tt>tinit</tt> + <tt>dt</tt>*(<tt>init_step</tt> + i).

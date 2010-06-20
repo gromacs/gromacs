@@ -483,7 +483,7 @@ int gmx_trjconv(int argc,char *argv[])
     const char *desc[] = {
         "trjconv can convert trajectory files in many ways:[BR]",
         "[BB]1.[bb] from one format to another[BR]",
-        "[BB]2.[bb] select a subset of atoms[BR]"
+        "[BB]2.[bb] select a subset of atoms[BR]",
         "[BB]3.[bb] change the periodicity representation[BR]",
         "[BB]4.[bb] keep multimeric molecules together[BR]",
         "[BB]5.[bb] center atoms in the box[BR]",

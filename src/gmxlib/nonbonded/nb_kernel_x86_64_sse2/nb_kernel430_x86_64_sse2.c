@@ -91,7 +91,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 	__m128d       Y,F,G,H,Fp,VV,FF,vgb,fijC,fijD,fijR,dvdatmp,dvdasum,vctot,n0d;
 	__m128d		  xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
 	__m128d       c6,c12,Vvdw6,Vvdw12,Vvdwtmp,Vvdwtot,vgbtot,rinvsq,rinvsix;
-	__m128d       fac,tabscale,gbtabscale;
+	__m128d       fac,tabscale,gbtabscale,gbfactor;
 	__m128i       n0,nnn;
 	
 	const __m128d neg    = {-1.0f,-1.0f};
@@ -110,7 +110,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 	nri        = *p_nri;
 	ntype      = *p_ntype;
 	nthreads   = *p_nthreads; 
-    facel      = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));       
+  facel      = *p_facel;       
 	krf        = *p_krf;
 	crf        = *p_crf;
 	tabscl     = *p_tabscale;
@@ -121,6 +121,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 	fac        = _mm_load1_pd(&facel);
 	tabscale   = _mm_load1_pd(&tabscl);
 	gbtabscale = _mm_load1_pd(&gbtabscl);
+  gbfactor   = _mm_set1_pd(((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent)));
 		
 	/* Keep compiler happy */
 	Vvdwtmp = _mm_setzero_pd();
@@ -214,6 +215,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 			vcoul	= _mm_mul_pd(qq,rinv);
 			fscal	= _mm_mul_pd(vcoul,rinv);
 			qq		= _mm_mul_pd(isaprod,qq);
+      qq      = _mm_mul_pd(qq,gbfactor);
 			qq		= _mm_mul_pd(qq,neg);
 			gbscale	= _mm_mul_pd(isaprod,gbtabscale);
 			
@@ -414,6 +416,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 			fscal	= _mm_mul_sd(vcoul,rinv);
 			qq		= _mm_mul_sd(isaprod,qq);
 			qq		= _mm_mul_sd(qq,neg);
+      qq      = _mm_mul_sd(qq,gbfactor);
 			gbscale	= _mm_mul_sd(isaprod,gbtabscale);
 			
 			/* Load VdW parameters */

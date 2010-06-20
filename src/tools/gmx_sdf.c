@@ -665,10 +665,10 @@ int gmx_sdf(int argc,char *argv[])
     "meeting the further conditions. The triple will only be used if all three atoms",
     "have different res-id's.[PAR]",
     "The local coordinate system is always defined using the following scheme:",
-    "Atom 1 will be used as the point of origin for the SDF. "
+    "Atom 1 will be used as the point of origin for the SDF. ",
     "Atom 1 and 2 will define the principle axis (Z) of the coordinate system.",
     "The other two axis will be defined inplane (Y) and normal (X) to the plane through",
-    "Atoms 1, 2 and 3. "
+    "Atoms 1, 2 and 3. ",
     "The fourth group",
     "contains the atoms for which the SDF will be evaluated.[PAR]",
     "For -mode 2 and 3 you have to define the distance conditions for the ",
@@ -676,7 +676,7 @@ int gmx_sdf(int argc,char *argv[])
     "The SDF will be sampled in cartesian coordinates.",
     "Use '-grid x y z' to define the size of the SDF grid around the ",
     "reference molecule. ",
-    "The Volume of the SDF grid will be V=x*y*z (nm^3). "
+    "The Volume of the SDF grid will be V=x*y*z (nm^3). ",
     "Use -bin to set the binwidth for grid.[PAR]",
     "The output will be a binary 3D-grid file (gom_plt.dat) in the .plt format that can be be",
     "read directly by gOpenMol. ",

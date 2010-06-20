@@ -154,8 +154,6 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   return hb;
 }
 
-static const char Hnum[] = "123456";
-
 static void expand_hackblocks_one(t_hackblock *hbr, char *atomname, 
 				  int *nabi, t_hack **abi, bool bN, bool bC)
 {
@@ -208,11 +206,24 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
 	  sfree((*abi)[*nabi + k].nname);
 	  (*abi)[*nabi + k].nname=strdup(hbr->hack[j].nname);
 	}
-	/* if adding more than one atom, number them */
-	if ( hbr->hack[j].nr > 1 ) {
+
+	if (hbr->hack[j].tp == 10 && k == 2) {
+	  /* This is a water virtual site, not a hydrogen */
+	  /* Ugly hardcoded name hack */
+	  (*abi)[*nabi + k].nname[0] = 'M';
+	} else if (hbr->hack[j].tp == 11 && k >= 2) {
+	  /* This is a water lone pair, not a hydrogen */
+	  /* Ugly hardcoded name hack */
+	  srenew((*abi)[*nabi + k].nname,4);
+	  (*abi)[*nabi + k].nname[0] = 'L';
+	  (*abi)[*nabi + k].nname[1] = 'P';
+	  (*abi)[*nabi + k].nname[2] = '1' + k - 2;
+	  (*abi)[*nabi + k].nname[3] = '\0';
+	} else if ( hbr->hack[j].nr > 1 ) {
+	  /* adding more than one atom, number them */
 	  l = strlen((*abi)[*nabi + k].nname);
 	  srenew((*abi)[*nabi + k].nname, l+2);
-	  (*abi)[*nabi + k].nname[l] = Hnum[k]; /* 1, 2, 3 .... */
+	  (*abi)[*nabi + k].nname[l]   = '1' + k;
 	  (*abi)[*nabi + k].nname[l+1] = '\0';
 	}
       }
@@ -629,13 +640,13 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
     /* set forcefield to use: */
     strcpy(protdata->FF,"ffgmx2");
     /* get the databases: */
-    protdata->nah=read_h_db(protdata->FF,&protdata->ah);
+    protdata->nah=read_h_db(protdata->FF,FALSE,&protdata->ah);
     open_symtab(&protdata->tab); 
-    protdata->atype=read_atype(protdata->FF,&protdata->tab);
-    nntdb = read_ter_db(protdata->FF,'n',&protdata->ntdb,protdata->atype);
+    protdata->atype=read_atype(protdata->FF,FALSE,&protdata->tab);
+    nntdb = read_ter_db(protdata->FF,FALSE,'n',&protdata->ntdb,protdata->atype);
     if (nntdb < 1)
       gmx_fatal(FARGS,"no n-terminus db");
-    nctdb = read_ter_db(protdata->FF,'c',&protdata->ctdb,protdata->atype);
+    nctdb = read_ter_db(protdata->FF,FALSE,'c',&protdata->ctdb,protdata->atype);
     if (nctdb < 1)
       gmx_fatal(FARGS,"no c-terminus db");
     
