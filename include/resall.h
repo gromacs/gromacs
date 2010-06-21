@@ -48,7 +48,7 @@ extern "C" {
 extern t_restp *search_rtp(const char *key,int nrtp,t_restp rtp[]);
 /* Search for an entry in the rtp database */
 
-extern gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab);
+extern gpp_atomtype_t read_atype(const char *ffdir,bool bAddCWD,t_symtab *tab);
 /* read atom type database(s) */
 
 extern void read_resall(char *resdb, int *nrtp,t_restp **rtp, 

@@ -100,7 +100,7 @@ static void calc_entropy_schlitter(FILE *fp,int n,int nskip,
 
   hbar = PLANCK1/(2*M_PI);
   kt   = BOLTZMANN*temp;
-  kteh = kt*exp(2.0)/(hbar*hbar)*AMU*sqr(NANO);
+  kteh = kt*exp(2.0)/(hbar*hbar)*AMU*(NANO*NANO);
   if (debug)
     fprintf(debug,"n = %d, nskip = %d kteh = %g\n",n,nskip,kteh);
   
@@ -737,7 +737,7 @@ int gmx_anaeig(int argc,char *argv[])
 {
   static const char *desc[] = {
     "[TT]g_anaeig[tt] analyzes eigenvectors. The eigenvectors can be of a",
-    "covariance matrix ([TT]g_covar[tt]) or of a Normal Modes anaysis",
+    "covariance matrix ([TT]g_covar[tt]) or of a Normal Modes analysis",
     "([TT]g_nmeig[tt]).[PAR]",
     
     "When a trajectory is projected on eigenvectors, all structures are",
@@ -757,7 +757,7 @@ int gmx_anaeig(int argc,char *argv[])
     "[TT]-first[tt] to [TT]-last[tt].",
     "The projections of a trajectory on the eigenvectors of its",
     "covariance matrix are called principal components (pc's).",
-    "It is often useful to check the cosine content the pc's,",
+    "It is often useful to check the cosine content of the pc's,",
     "since the pc's of random diffusion are cosines with the number",
     "of periods equal to half the pc index.",
     "The cosine content of the pc's can be calculated with the program",

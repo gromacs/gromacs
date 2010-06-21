@@ -43,15 +43,15 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_trjconv.c	gmx_trjcat.c	gmx_trjorder.c	gmx_xpm2ps.c	\
 	gmx_editconf.c	gmx_genbox.c	gmx_genion.c	gmx_genconf.c	\
 	gmx_genpr.c	gmx_eneconv.c	gmx_vanhove.c	gmx_wheel.c	\
-	addconf.c 	addconf.h	gmx_tune_pme.c    \
+	addconf.c 	addconf.h	gmx_tune_pme.c  gmx_membed.c    \
 	calcpot.c 	calcpot.h 	edittop.c
 
 bin_PROGRAMS = \
 	do_dssp		editconf	eneconv		\
 	genbox		genconf		genrestr	g_nmtraj	\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
-	trjorder	wheel		xpm2ps		genion		\
-	anadock		make_edi	\
+	trjorder	g_wheel		xpm2ps		genion		\
+	g_anadock	make_edi	\
 	g_analyze   	g_anaeig    	g_bar		\
 	g_angle     	g_bond      	\
 	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
@@ -70,9 +70,9 @@ bin_PROGRAMS = \
 	g_sham 		g_sorient   	g_spol		\
 	g_sdf		g_spatial	\
 	g_tcaf      	g_traj      	g_tune_pme   \
-	g_vanhove	g_velacc    	\
+	g_vanhove	g_velacc    	g_membed      \
 	g_clustsize 	g_mdmat     	g_wham		g_kinetics	\
-	sigeps
+	g_sigeps
 
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \

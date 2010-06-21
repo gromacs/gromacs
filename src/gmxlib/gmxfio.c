@@ -40,6 +40,9 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <errno.h>
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
 
 #include "gmx_fatal.h"
 #include "macros.h"
@@ -937,22 +940,7 @@ int gmx_fio_open(const char *fn, const char *mode)
             {
 #ifndef GMX_FAHCORE
                 /* only make backups for normal gromacs */
-                if (gmx_fexist(fn))
-                {
-                    char *bf=(char *)backup_fn(fn);
-                    if (rename(fn,bf) == 0)
-                    {
-                        fprintf(stderr,
-                                "\nBack Off! I just backed up %s to %s\n",
-                                fn,bf);
-                    }
-                    else
-                    {
-                        fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",
-                                fn,bf);
-                    }
-                    sfree(bf);
-                }
+                make_backup(fn);
 #endif
             }
             else 
@@ -1523,17 +1511,50 @@ int gmx_fio_flush(int fio)
 static int gmx_fio_fsync_lock(int fio, bool do_lock)
 {
     int rc = 0;
+    int filen=-1;
 
-#if (defined(HAVE_FILENO) && defined(HAVE_FSYNC)) && !defined(GMX_FAHCORE) 
+#if ( ( (defined(HAVE_FILENO) || (defined(HAVE__FILENO) ) ) && \
+	(defined(HAVE_FSYNC))  || defined(HAVE__COMMIT)  ) || \
+	 defined(FAHCORE) )
 #ifdef GMX_THREADS
     if (do_lock)
         tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (FIO[fio].fp)
-        rc = fsync(fileno(FIO[fio].fp));
+    {
+#ifdef GMX_FAHCORE
+	/* the fahcore defines its own os-independent fsync */
+	rc=fah_fsync(FIO[fio].fp); 
+#elif defined(HAVE_FILENO)
+        filen=fileno(FIO[fio].fp);
+#elif defined(HAVE__FILENO)
+        filen=_fileno(FIO[fio].fp);
+#endif
+    }
     else if (FIO[fio].xdr)
-        rc = fsync(fileno((FILE *) FIO[fio].xdr->x_private));
+    {
+#ifdef GMX_FAHCORE
+	/* the fahcore defines its own os-independent fsync */
+        rc=fah_fsync((FILE *) FIO[fio].xdr->x_private);
+#elif defined(HAVE_FILENO)
+        filen=fileno((FILE *) FIO[fio].xdr->x_private);
+#elif defined(HAVE__FILENO)
+        filen=_fileno((FILE *) FIO[fio].xdr->x_private);
+#endif
+    }
+
+#ifndef GMX_FAHCORE
+    if (filen>0)
+    {
+#if (defined(HAVE_FSYNC))
+        /* fahcore also defines HAVE_FSYNC */
+        rc=fsync(filen);
+#elif (defined(HAVE__COMMIT)) 
+        rc=_commit(filen);
+#endif
+    }
+#endif
 
     /* We check for these error codes this way because POSIX requires them
        to be defined, and using anything other than macros is unlikely: */
@@ -1590,13 +1611,25 @@ int gmx_fio_all_output_fsync(void)
             {
                 char buf[STRLEN];
                 sprintf(buf,
-                        "Cannot write file '%s'; maybe you are out of disk space or quota?",
+                        "Cannot fsync file '%s'; maybe you are out of disk space or quota?",
                         FIO[i].fn);
                 gmx_file(buf);
                 ret=-1;
             }
         }
     }
+
+    /* in addition, we force these to be written out too, if they're being
+       redirected. We don't check for errors because errors most likely mean
+       that they're not redirected. */
+    fflush(stdout);
+    fflush(stderr);
+#if (defined(HAVE_FSYNC))
+    /* again, fahcore defines HAVE_FSYNC and fsync() */
+    fsync(STDOUT_FILENO);
+    fsync(STDERR_FILENO);
+#endif
+
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif

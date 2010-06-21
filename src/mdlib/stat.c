@@ -453,11 +453,18 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
     {
         sprintf(filemode, bAppendFiles ? "a+" : "w+");  
         
-        if (ir->eI != eiNM)
+        if (ir->eI != eiNM 
+            #ifndef GMX_FAHCORE
+            && (ir->nstxout > 0 ||
+             ir->nstvout > 0 ||
+             ir->nstfout > 0)
+            #endif
+	    )
         {
             of->fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
         }
-        if (ir->nstxtcout > 0 && !EI_ENERGY_MINIMIZATION(ir->eI))
+        if (!EI_ENERGY_MINIMIZATION(ir->eI) &&
+            ir->nstxtcout > 0)
         {
             of->fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
             of->xtc_prec = ir->xtcprec;

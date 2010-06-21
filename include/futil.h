@@ -88,16 +88,13 @@ extern bool gmx_eof(FILE *fp);
 extern bool is_pipe(FILE *fp);
 /* Check whether the file (opened by ffopen) is a pipe */
 
-extern char *backup_fn(const char *file);
-/* Return a backup name for file (name with # before and after) */
-
 /*  Make a backup of file if necessary.  
     Return false if there was a problem.
 */
 extern bool make_backup(const char * file);
 
 extern FILE *ffopen(const char *file, const char *mode);
-/* Return a valid file pointer when succesfull, exits otherwise 
+/* Return a valid file pointer when successful, exits otherwise 
  * If the file is in compressed format, open a pipe which uncompresses
  * the file! Therefore, files must be closed with ffclose (see below)
  */
@@ -134,8 +131,16 @@ extern FILE *low_libopen(const char *file,bool bFatal);
  */
 extern void gmx_tmpnam(char *buf);
 
-int
-gmx_truncatefile(char *path, off_t length);
+/* truncte the file to the specified length */
+int gmx_truncatefile(char *path, off_t length);
+
+/* rename/move the file (atomically, if the OS makes that available) oldname 
+   to newname */
+int gmx_file_rename(const char *oldname, const char *newname);
+
+/* copy the file (data only) oldname to newname. if copy_if_empty==FALSE,
+   the file won't be copied if it's empty.*/
+int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty);
 
 #ifdef __cplusplus
 }

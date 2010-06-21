@@ -46,7 +46,7 @@ typedef enum
     SYMBOL_RESERVED,    /**< The symbol is a reserved keyword. */
     SYMBOL_VARIABLE,    /**< The symbol is a variable. */
     SYMBOL_METHOD,      /**< The symbol is a selection method. */
-    SYMBOL_POS,         /**< The symbol is a position keyword. */
+    SYMBOL_POS          /**< The symbol is a position keyword. */
 } e_symbol_t;
 
 /** Symbol table for the selection parser. */

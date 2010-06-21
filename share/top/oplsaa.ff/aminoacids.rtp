@@ -869,32 +869,27 @@
     OW   HW2
 
 [ HO4 ] 
-; TIP4P For software reasons, the MW particle should be called HW as well
+; TIP4P
  [ atoms ]
     OW   opls_113    0.00      0
    HW1   opls_114    0.52      0
    HW2   opls_114    0.52      0
-   HW3   opls_115   -1.04      0
+    MW   opls_115   -1.04      0
  [ bonds ]
     OW   HW1
     OW   HW2
-; Superfluous bonds are necessary to make pdb2gmx happy    
-    OW   HW3
 
 [ HO5 ] 
-; TIP5P. For software reasons, the lone pairs should be called HW as well
+; TIP5P
  [ atoms ]
+    OW   opls_118    0.00      0
    HW1   opls_119    0.248     0
    HW2   opls_119    0.248     0
-   HW3   opls_120   -0.248     0
-   HW4   opls_120   -0.248     0
-    OW   opls_118    0.00      0
+   LP1   opls_120   -0.248     0
+   LP2   opls_120   -0.248     0
  [ bonds ]
     OW   HW1
     OW   HW2
-; Superfluous bonds are necessary to make pdb2gmx happy    
-    OW   HW3
-    OW   HW4
 
 [ ILE ]
  [ atoms ]

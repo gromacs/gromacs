@@ -17,7 +17,7 @@ extern void qhop_db_print (qhop_parameters *qhp);
 /* Return database if succesfull, or NULL on failure */
 extern qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda);
  
-/* Write the database to a filename. Return 1 on succes, or 0 for
+/* Write the database to a filename. Return 1 on success, or 0 for
    failure */
 extern int qhop_db_write(char *fn,qhop_db_t qdb);
 

@@ -1332,7 +1332,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	       t_atoms *at, t_symtab *symtab, rvec *x[], 
 	       t_params plist[], int *vsite_type[], int *cgnr[], 
 	       real mHmult, bool bVsiteAromatics,
-	       const char *ffdir)
+	       const char *ffdir,bool bAddCWD)
 {
 #define MAXATOMSPERRESIDUE 16
   int  i,j,k,i0,ni0,whatres,resind,add_shift,ftype,nvsite,nadd;
@@ -1408,7 +1408,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     fprintf(debug,"# # # VSITES # # #\n");
   }
 
-  ndb = fflib_search_file_end(ffdir,".vsd",FALSE,&db);
+  ndb = fflib_search_file_end(ffdir,bAddCWD,".vsd",FALSE,&db);
   nvsiteconf    = 0;
   vsiteconflist = NULL;
   nvsitetop     = 0;

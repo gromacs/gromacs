@@ -87,9 +87,13 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
 
 extern void
 gmx_fatal_collective(int f_errno,const char *file,int line,
-		     bool bMaster,
+		     t_commrec *cr,gmx_domdec_t *dd,
 		     const char *fmt,...);
-/* As gmx_fatal, but only process with bMaster=TRUE prints the error message.
+/* As gmx_fatal, but only the master process prints the error message.
+ * This should only be called one of the following two situations:
+ * 1) On all nodes in cr->mpi_comm_mysim, with cr!=NULL,dd==NULL.
+ * 2) On all nodes in dd->mpi_comm_all,   with cr==NULL,dd!=NULL.
+ * This will call MPI_Finalize instead of MPI_Abort when possible,
  * This is useful for handling errors in code that is executed identically
  * for all processes.
  */

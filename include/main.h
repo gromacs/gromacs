@@ -76,7 +76,7 @@ extern void check_multi_int(FILE *log,const gmx_multisim_t *ms,
 
 extern void init_multisystem(t_commrec *cr,int nsim,int nfile,
                              const t_filenm fnm[], bool bParFn);
-/* Splits the communication into nsim seperate simulations
+/* Splits the communication into nsim separate simulations
  * and creates a communication structure between the master
  * these simulations.
  * If bParFn is set, the nodeid is appended to the tpx and each output file.
@@ -90,15 +90,12 @@ extern t_commrec *init_par(int *argc,char ***argv_ptr);
  * array of argument strings.
  */
 
-extern t_commrec *init_par_threads(t_commrec *cro);
-/* Initiate the communication records for thread-parallel simulations. 
-   Must be called before any communication takes place by the individual
-   threads. cro is the old shared commrec */
-
-extern void cancel_par_threads(t_commrec *cr);
-/* Cancel threads (for when there is no parallel version of the integration
-   algorithm). Cancels threads (actually, it calls tMPI_Finalize() on them) 
-   and re-writes commrec to new serial situation.  */
+extern t_commrec *init_par_threads(const t_commrec *cro);
+/* Initialize communication records for thread-parallel simulations. 
+   Must be called on all threads before any communication takes place by 
+   the individual threads. Copies the original commrec to 
+   thread-local versions (a small memory leak results because we don't 
+   deallocate the old shared version).  */
 
 extern t_commrec *init_cr_nopar(void);
 /* Returns t_commrec for non-parallel functionality */

@@ -13,9 +13,9 @@
 # taken directly from ifp43a1.dat. For a description of what the numbers
 # mean, see the GROMOS96 manual and the fie ifp43a1.dat
 
-# set the input seperator to #--- so we read one atom entry at a time
-# make sure the records are actually seperated by #---\n and not by say #--\n!!
-# don't put a seperator at the end of the file, only between records
+# set the input separator to #--- so we read one atom entry at a time
+# make sure the records are actually separated by #---\n and not by say #--\n!!
+# don't put a separator at the end of the file, only between records
 $/= "#---\n"; 
 
 # start arrays with 1 instead of 0

@@ -462,8 +462,8 @@ int gmx_editconf(int argc, char *argv[])
                 "[PAR]",
                 "Option [TT]-bt[tt] determines the box type: [TT]triclinic[tt] is a",
                 "triclinic box, [TT]cubic[tt] is a rectangular box with all sides equal",
-                "[TT]dodecahedron[tt] represents a rhombic dodecahedron and "
-                    "[TT]octahedron[tt] is a truncated octahedron.",
+                "[TT]dodecahedron[tt] represents a rhombic dodecahedron and",
+                "[TT]octahedron[tt] is a truncated octahedron.",
                 "The last two are special cases of a triclinic box.",
                 "The length of the three box vectors of the truncated octahedron is the",
                 "shortest distance between two opposite hexagons.",
@@ -529,7 +529,7 @@ int gmx_editconf(int argc, char *argv[])
 				"with an optional center of rotation specified by [TT]-aligncenter[tt].",
                 "[PAR]",
                 "Finally with option [TT]-label[tt] editconf can add a chain identifier",
-                "to a pdb file, which can be useful for analysis with e.g. rasmol."
+                "to a pdb file, which can be useful for analysis with e.g. rasmol.",
                     "[PAR]",
                 "To convert a truncated octrahedron file produced by a package which uses",
                 "a cubic box with the corners cut off (such as Gromos) use:[BR]",
@@ -537,8 +537,8 @@ int gmx_editconf(int argc, char *argv[])
                 "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2." };
     const char *bugs[] =
         {
-            "For complex molecules, the periodicity removal routine may break down, "
-                "in that case you can use trjconv" };
+            "For complex molecules, the periodicity removal routine may break down, ",
+                "in that case you can use trjconv." };
     static real dist = 0.0, rbox = 0.0, to_diam = 0.0;
     static bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
         FALSE, bCONECT = FALSE;

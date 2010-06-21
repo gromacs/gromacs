@@ -86,6 +86,8 @@ struct gmx_ana_selcollection_t
     bool                        bVelocities;
     /** TRUE if forces should be evaluated for output positions. */
     bool                        bForces;
+    /** TRUE if debugging output should be printed during compilation. */
+    bool                        bDebugCompile;
 
     /** Root of the selection element tree. */
     struct t_selelem           *root;

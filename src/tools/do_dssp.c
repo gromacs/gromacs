@@ -196,6 +196,8 @@ static void check_oo(t_atoms *atoms)
        *atoms->atomname[i]=OOO;
     else if (strcmp(*(atoms->atomname[i]),"O1")==0)
       *atoms->atomname[i]=OOO;
+    else if (strcmp(*(atoms->atomname[i]),"OC1")==0)
+      *atoms->atomname[i]=OOO;
   }
 }
 

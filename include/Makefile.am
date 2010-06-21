@@ -52,6 +52,7 @@ gmx_qhop_db.h \
 gmx_qhop_parm.h \
 gmx_qhop_xml.h \
 gmx_random.h \
+gmx_sort.h \
 gmx_sse2_single.h \
 gmx_statistics.h \
 gmx_system_xdr.h \

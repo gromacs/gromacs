@@ -145,6 +145,11 @@ extern gmx_large_int_t     deform_init_init_step_tpx;
 extern matrix              deform_init_box_tpx;
 #ifdef GMX_THREADS
 extern tMPI_Thread_mutex_t deform_init_box_mutex;
+
+/* The minimum number of atoms per thread. With fewer atoms than this,
+ * the number of threads will get lowered.
+ */
+#define MIN_ATOMS_PER_THREAD    90
 #endif
 
 
@@ -306,42 +311,19 @@ typedef enum
 extern void check_nnodes_top(char *fn,t_topology *top);
 /* Reset the tpr file to work with one node if necessary */
 
-extern void init_single(FILE *log, t_inputrec *inputrec, const char *tpbfile, 
-                        gmx_mtop_t *mtop, t_state *state);
-     /*
-      * Allocates space for the topology (top), the coordinates x, the
-      * velocities v, masses mass. Reads the parameters, topology,
-      * coordinates and velocities from the file specified in tpbfile
-      */
 
 /* check the version */
 void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
                                t_inputrec *ir,gmx_mtop_t *mtop);
 
+/* Allocate and initialize node-local state entries. */
+void set_state_entries(t_state *state,t_inputrec *ir,int nnodes);
 
-extern void init_parallel(FILE *log,const char *tpxfile, t_commrec *cr,
-			  t_inputrec *inputrec,gmx_mtop_t *mtop,
-			  t_state *state, int list);
-     /*
-      * Loads the data for a simulation from the ring. Parameters, topology
-      * coordinates, velocities, and masses are initialised equal to using
-      * init_single() in the single processor version. The extra argument
-      * f_add is allocated to use for the update of the forces, the load
-      * array specifies in which part of the x and f array the subsystems
-      * of the other processors are located. Homenr0, homenr1, nparts0 and
-      * nparts1 are necessary to calculate the non bonded interaction using
-      * the symmetry and thus calculating every force only once. List is a 
-      * facility for logging (and debugging). One can decide to print none or a 
-      * set of * selected parameters to the file specified by log. Parameters 
-      * are printed by or-ing the corresponding items from t_listitem. A 0 
-      * (zero) specifies that nothing is to be printed on the file. The function
-      * returns the number of shifts over the ring to perform to calculate
-      * all interactions.
-      *
-      * NOTE: for threaded simulations that don't support parallel runs (at
-      * the moment that's only the LBGFS integrator), this function may
-      * cancel them and re-write the commrec.
-      */
+/* Broadcast the data for a simulation, and allocate node-specific settings
+   such as rng generators. */
+extern void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
+                          gmx_mtop_t *mtop, t_state *state);
+
 
 extern void do_constrain_first(FILE *log,gmx_constr_t constr,
 			       t_inputrec *inputrec,t_mdatoms *md,
@@ -356,28 +338,15 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
  * based on their coordinates in the "dimension" direction.
  */
 				   
-int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-	     const output_env_t oenv, bool bVerbose,bool bCompact,
-	     int nstglobalcomm, ivec ddxyz,int dd_node_order,real rdd,
-             real rconstr, const char *dddlb_opt,real dlb_scale,
+int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
+             const t_filenm fnm[], const output_env_t oenv, bool bVerbose,
+             bool bCompact, int nstglobalcomm, ivec ddxyz,int dd_node_order,
+             real rdd, real rconstr, const char *dddlb_opt,real dlb_scale,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
-	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,int repl_ex_seed,
-	     real pforce,real cpt_period,real max_hours,
+	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,
+             int repl_ex_seed, real pforce,real cpt_period,real max_hours,
 	     const char *deviceOptions, unsigned long Flags);
 /* Driver routine, that calls the different methods */
-
-int mdrunner_threads(int nthreads,
-                     FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-                     const output_env_t oenv, bool bVerbose,bool bCompact,
-                     int nstglobalcomm, 
-                     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-                     const char *dddlb_opt,real dlb_scale,
-                     const char *ddcsx,const char *ddcsy,const char *ddcsz,
-                     int nstepout,int resetstep,int nmultisim, int repl_ex_nst,
-                     int repl_ex_seed, real pforce,real cpt_period,
-                     real max_hours, const char *deviceOptions, unsigned long Flags);
-/* initializes nthread threads before running mdrunner: is the preferred
-   way to start a simulation (even if nthreads=1 and no threads are started) */
 
 extern void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);
 /* Print a warning message to stderr on the master node

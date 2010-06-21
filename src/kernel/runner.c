@@ -70,6 +70,8 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
+#include "tpxio.h"
+#include "txtdump.h"
 
 #include "md_openmm.h"
 
@@ -141,6 +143,9 @@ struct mdrunner_arglist
 };
 
 
+/* The function used for spawning threads. Extracts the mdrunner() 
+   arguments from its one argument and calls mdrunner(), after making
+   a commrec. */
 static void mdrunner_start_fn(void *arg)
 {
     struct mdrunner_arglist *mda=(struct mdrunner_arglist*)arg;
@@ -150,17 +155,19 @@ static void mdrunner_start_fn(void *arg)
                                         but those are all const. */
     t_commrec *cr;  /* we need a local version of this */
     FILE *fplog=NULL;
-    t_filenm *fnm=dup_tfn(mc.nfile, mc.fnm);
+    t_filenm *fnm;
 
-    cr=init_par_threads(mc.cr);
+    fnm = dup_tfn(mc.nfile, mc.fnm);
+
+    cr = init_par_threads(mc.cr);
+
     if (MASTER(cr))
     {
         fplog=mc.fplog;
     }
 
-
-    mda->ret=mdrunner(fplog, cr, mc.nfile, mc.fnm, mc.oenv, mc.bVerbose,
-                      mc.bCompact, mc.nstglobalcomm, 
+    mda->ret=mdrunner(cr->nthreads, fplog, cr, mc.nfile, fnm, mc.oenv, 
+                      mc.bVerbose, mc.bCompact, mc.nstglobalcomm, 
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
                       mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, 
@@ -168,87 +175,144 @@ static void mdrunner_start_fn(void *arg)
                       mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
 }
 
-#endif
-
-int mdrunner_threads(int nthreads, 
-                     FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-                     const output_env_t oenv, bool bVerbose,bool bCompact,
-                     int nstglobalcomm,
-                     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-                     const char *dddlb_opt,real dlb_scale,
-                     const char *ddcsx,const char *ddcsy,const char *ddcsz,
-                     int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
-                     int repl_ex_seed, real pforce,real cpt_period,
-                     real max_hours, const char *deviceOptions, unsigned long Flags)
+/* called by mdrunner() to start a specific number of threads (including 
+   the main thread) for thread-parallel runs. This in turn calls mdrunner()
+   for each thread. 
+   All options besides nthreads are the same as for mdrunner(). */
+static t_commrec *mdrunner_start_threads(int nthreads, 
+              FILE *fplog,t_commrec *cr,int nfile, 
+              const t_filenm fnm[], const output_env_t oenv, bool bVerbose,
+              bool bCompact, int nstglobalcomm,
+              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
+              const char *dddlb_opt,real dlb_scale,
+              const char *ddcsx,const char *ddcsy,const char *ddcsz,
+              int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
+              int repl_ex_seed, real pforce,real cpt_period, real max_hours, 
+              const char *deviceOptions, unsigned long Flags)
 {
     int ret;
-    /* first check whether we even need to start tMPI */
-    if (nthreads < 2)
-    {
-        ret=mdrunner(fplog, cr, nfile, fnm, oenv, bVerbose, bCompact,
-                     nstglobalcomm,
-                     ddxyz, dd_node_order, rdd, rconstr, dddlb_opt, dlb_scale,
-                     ddcsx, ddcsy, ddcsz, nstepout, resetstep, nmultisim, repl_ex_nst, 
-                     repl_ex_seed, pforce, cpt_period, max_hours, deviceOptions, Flags);
-    }
-    else
-    {
-#ifdef GMX_THREADS
-        struct mdrunner_arglist mda;
-        /* fill the data structure to pass as void pointer to thread start fn */
-        mda.fplog=fplog;
-        mda.cr=cr;
-        mda.nfile=nfile;
-        mda.fnm=fnm;
-        mda.oenv=oenv;
-        mda.bVerbose=bVerbose;
-        mda.bCompact=bCompact;
-        mda.nstglobalcomm=nstglobalcomm;
-        mda.ddxyz[XX]=ddxyz[XX];
-        mda.ddxyz[YY]=ddxyz[YY];
-        mda.ddxyz[ZZ]=ddxyz[ZZ];
-        mda.dd_node_order=dd_node_order;
-        mda.rdd=rdd;
-        mda.rconstr=rconstr;
-        mda.dddlb_opt=dddlb_opt;
-        mda.dlb_scale=dlb_scale;
-        mda.ddcsx=ddcsx;
-        mda.ddcsy=ddcsy;
-        mda.ddcsz=ddcsz;
-        mda.nstepout=nstepout;
-        mda.resetstep=resetstep;
-        mda.nmultisim=nmultisim;
-        mda.repl_ex_nst=repl_ex_nst;
-        mda.repl_ex_seed=repl_ex_seed;
-        mda.pforce=pforce;
-        mda.cpt_period=cpt_period;
-        mda.max_hours=max_hours;
-        mda.deviceOptions=deviceOptions;
-        mda.Flags=Flags;
+    struct mdrunner_arglist *mda;
+    t_commrec *crn; /* the new commrec */
+    t_filenm *fnmn;
 
-        fprintf(stderr, "Starting %d threads\n",nthreads);
-        fflush(stderr);
-        tMPI_Init_fn(nthreads, mdrunner_start_fn, (void*)(&mda) );
-        ret=mda.ret;
-#else
-        ret=-1;
-        gmx_comm("Multiple threads requested but not compiled with threads");
-#endif
-    }
-    return ret;
+    /* first check whether we even need to start tMPI */
+    if (nthreads<2)
+        return cr;
+
+    /* a few small, one-time, almost unavoidable memory leaks: */
+    snew(mda,1);
+    fnmn=dup_tfn(nfile, fnm);
+
+    /* fill the data structure to pass as void pointer to thread start fn */
+    mda->fplog=fplog;
+    mda->cr=cr;
+    mda->nfile=nfile;
+    mda->fnm=fnmn;
+    mda->oenv=oenv;
+    mda->bVerbose=bVerbose;
+    mda->bCompact=bCompact;
+    mda->nstglobalcomm=nstglobalcomm;
+    mda->ddxyz[XX]=ddxyz[XX];
+    mda->ddxyz[YY]=ddxyz[YY];
+    mda->ddxyz[ZZ]=ddxyz[ZZ];
+    mda->dd_node_order=dd_node_order;
+    mda->rdd=rdd;
+    mda->rconstr=rconstr;
+    mda->dddlb_opt=dddlb_opt;
+    mda->dlb_scale=dlb_scale;
+    mda->ddcsx=ddcsx;
+    mda->ddcsy=ddcsy;
+    mda->ddcsz=ddcsz;
+    mda->nstepout=nstepout;
+    mda->resetstep=resetstep;
+    mda->nmultisim=nmultisim;
+    mda->repl_ex_nst=repl_ex_nst;
+    mda->repl_ex_seed=repl_ex_seed;
+    mda->pforce=pforce;
+    mda->cpt_period=cpt_period;
+    mda->max_hours=max_hours;
+    mda->deviceOptions=deviceOptions;
+    mda->Flags=Flags;
+
+    fprintf(stderr, "Starting %d threads\n",nthreads);
+    fflush(stderr);
+    /* now spawn new threads that start mdrunner_start_fn(), while 
+       the main thread returns */
+    ret=tMPI_Init_fn(TRUE, nthreads, mdrunner_start_fn, (void*)(mda) );
+    if (ret!=TMPI_SUCCESS)
+        return NULL;
+
+    /* make a new comm_rec to reflect the new situation */
+    crn=init_par_threads(cr);
+    return crn;
 }
 
 
-int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
-             int nstglobalcomm,
+/* get the number of threads based on how many there were requested, 
+   which algorithms we're using, and how many particles there are. */
+static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
+                        gmx_mtop_t *mtop)
+{
+    int nthreads,nthreads_new;
+
+    nthreads = nthreads_requested;
+
+    /* determine # of hardware threads. */
+    if (nthreads_requested < 1)
+    {
+        nthreads = tMPI_Get_recommended_nthreads();
+    }
+    /* Check if an algorithm does not support parallel simulation.  */
+    if (nthreads != 1 && 
+        ( inputrec->eI == eiLBFGS ||
+          inputrec->eI == eiNM ||
+          inputrec->coulombtype == eelEWALD) )
+    {
+        fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs. Not starting any threads.\n");
+        nthreads = 1;
+    }
+    else if ((nthreads_requested < 1) &&
+             (mtop->natoms/nthreads < MIN_ATOMS_PER_THREAD) )
+    {
+        /* the thread number was chosen automatically, but there are too many
+           threads (too few atoms per thread) */
+        nthreads_new = max(1,mtop->natoms/MIN_ATOMS_PER_THREAD);
+
+        if (nthreads_new > 8 || (nthreads == 8 && nthreads_new > 4))
+        {
+            /* Use only multiples of 4 above 8 threads
+             * or with an 8-core processor
+             * (to avoid 6 threads on 8 core processors with 4 real cores).
+             */
+            nthreads_new = (nthreads_new/4)*4;
+        }
+        else if (nthreads_new > 4)
+        {
+            /* Avoid 5 or 7 threads */
+            nthreads_new = (nthreads_new/2)*2;
+        }
+
+        nthreads = nthreads_new;
+
+        fprintf(stderr,"\n");
+        fprintf(stderr,"NOTE: Parallelization is limited by the small number of atoms,\n");
+        fprintf(stderr,"      only starting %d threads.\n",nthreads);
+        fprintf(stderr,"      You can use the -nt option to optimize the number of threads.\n\n");
+    }
+    return nthreads;
+}
+#endif
+
+
+int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
+             const t_filenm fnm[], const output_env_t oenv, bool bVerbose,
+             bool bCompact, int nstglobalcomm,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
-             int nstepout,int resetstep,int nmultisim,int repl_ex_nst,int repl_ex_seed,
-             real pforce,real cpt_period,real max_hours,
-             const char *deviceOptions,
-             unsigned long Flags)
+             int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
+             int repl_ex_seed, real pforce,real cpt_period,real max_hours,
+             const char *deviceOptions, unsigned long Flags)
 {
     double     nodetime=0,realtime;
     t_inputrec *inputrec;
@@ -274,9 +338,72 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_runtime_t runtime;
     int        rc;
     gmx_large_int_t reset_counters;
-    gmx_edsam_t ed;
+    gmx_edsam_t ed=NULL;
+    t_commrec   *cr_old=cr; 
+    int         nthreads=1;
 
-    /* A parallel command line option consistency check */
+    /* CAUTION: threads may be started later on in this function, so
+       cr doesn't reflect the final parallel state right now */
+    snew(inputrec,1);
+    snew(mtop,1);
+
+    if (bVerbose && SIMMASTER(cr))
+    {
+        fprintf(stderr,"Getting Loaded...\n");
+    }
+    
+    if (Flags & MD_APPENDFILES) 
+    {
+        fplog = NULL;
+    }
+
+    snew(state,1);
+    if (MASTER(cr)) 
+    {
+        /* Read (nearly) all data required for the simulation */
+        read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
+
+        /* NOW the threads will be started: */
+#ifdef GMX_THREADS
+        nthreads = get_nthreads(nthreads_requested, inputrec, mtop);
+
+        if (nthreads > 1)
+        {
+            /* now start the threads. */
+            cr=mdrunner_start_threads(nthreads, fplog, cr_old, nfile, fnm, 
+                                      oenv, bVerbose, bCompact, nstglobalcomm, 
+                                      ddxyz, dd_node_order, rdd, rconstr, 
+                                      dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
+                                      nstepout, resetstep, nmultisim, 
+                                      repl_ex_nst, repl_ex_seed, pforce, 
+                                      cpt_period, max_hours, deviceOptions, 
+                                      Flags);
+            /* the main thread continues here with a new cr. We don't deallocate
+               the old cr because other threads may still be reading it. */
+            if (cr == NULL)
+            {
+                gmx_comm("Failed to spawn threads");
+            }
+        }
+#endif
+    }
+    /* END OF CAUTION: cr is now reliable */
+
+    /* now make sure the state is initialized and propagated */
+    set_state_entries(state,inputrec,cr->nnodes);
+    if (PAR(cr))
+    {
+        /* now broadcast everything to the non-master nodes/threads: */
+        init_parallel(fplog, cr, inputrec, mtop, state);
+    }
+
+    if (fplog)
+    {
+        pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
+    }
+
+    /* A parallel command line option consistency check that we can
+       only do after any threads have started. */
     if (!PAR(cr) &&
         (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || cr->npmenodes > 0))
     {
@@ -294,52 +421,12 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             );
     }
 
-    /* Essential dynamics */
-    if (opt2bSet("-ei",nfile,fnm)) 
+    if (can_use_allvsall(inputrec,TRUE,cr,fplog))
     {
-        /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(nfile,fnm,cr);
-    } 
-    else
-        ed=NULL;
-
-    snew(inputrec,1);
-    snew(mtop,1);
-
-    if (bVerbose && SIMMASTER(cr))
-    {
-        fprintf(stderr,"Getting Loaded...\n");
-    }
-    
-    if (Flags & MD_APPENDFILES) 
-    {
-        fplog = NULL;
+        /* All-vs-all loops do not work with domain decomposition */
+        Flags |= MD_PARTDEC;
     }
 
-    if (PAR(cr))
-    {
-        /* The master thread on the master node reads from disk, 
-         * then distributes everything to the other processors.
-         */
-
-        list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
-
-        snew(state,1);
-        /* NOTE: if the run is thread-parallel but the integrator doesn't support this
-                 such as with LBGFS, this function may cancel the threads 
-                 through cancel_par_threads(), and make the commrec serial. The
-                 rest of the simulation is then only performed by the main thread,
-                 as if it were a serial run. */
-        init_parallel(fplog, opt2fn_master("-s",nfile,fnm,cr),cr,
-                      inputrec,mtop,state,list);
-
-    }
-    else
-    {
-        /* Read a file for a single processor */
-        snew(state,1);
-        init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),mtop,state);
-    }
     if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC))
     {
         cr->npmenodes = 0;
@@ -439,6 +526,13 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (PAR(cr)) 
     {
         gmx_bcast(sizeof(box),box,cr);
+    }
+
+    /* Essential dynamics */
+    if (opt2bSet("-ei",nfile,fnm))
+    {
+        /* Open input and output files, allocate space for ED data structure */
+        ed = ed_open(nfile,fnm,Flags,cr);
     }
 
     if (bVerbose && SIMMASTER(cr))
@@ -733,6 +827,17 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }	
 
     rc=(int)gmx_get_stop_condition();
+
+#ifdef GMX_THREADS
+    /* we need to join all threads. The sub-threads join when they
+       exit this function, but the master thread needs to be told to 
+       wait for that. */
+    if (nthreads>1 && MASTERTHREAD(cr) )
+    {
+        tMPI_Finalize();
+    }
+#endif
+
     return rc;
 }
 

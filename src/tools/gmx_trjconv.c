@@ -483,7 +483,7 @@ int gmx_trjconv(int argc,char *argv[])
     const char *desc[] = {
         "trjconv can convert trajectory files in many ways:[BR]",
         "[BB]1.[bb] from one format to another[BR]",
-        "[BB]2.[bb] select a subset of atoms[BR]"
+        "[BB]2.[bb] select a subset of atoms[BR]",
         "[BB]3.[bb] change the periodicity representation[BR]",
         "[BB]4.[bb] keep multimeric molecules together[BR]",
         "[BB]5.[bb] center atoms in the box[BR]",
@@ -518,7 +518,7 @@ int gmx_trjconv(int argc,char *argv[])
         "append output to an existing trajectory file.",
         "No checks are performed to ensure integrity",
         "of the resulting combined trajectory file.[PAR]",
-        "Option [TT]-sep[tt] can be used to write every frame to a seperate",
+        "Option [TT]-sep[tt] can be used to write every frame to a separate",
         ".gro, .g96 or .pdb file, default all frames all written to one file.",
         "[TT].pdb[tt] files with all frames concatenated can be viewed with",
         "[TT]rasmol -nmrpdb[tt].[PAR]",
@@ -559,7 +559,7 @@ int gmx_trjconv(int argc,char *argv[])
         "* [TT]whole[tt] only makes broken molecules whole.[PAR]",
         "Option [TT]-ur[tt] sets the unit cell representation for options",
         "[TT]mol[tt], [TT]res[tt] and [TT]atom[tt] of [TT]-pbc[tt].",
-        "All three options give different results for triclinc boxes and",
+        "All three options give different results for triclinic boxes and",
         "identical results for rectangular boxes.",
         "[TT]rect[tt] is the ordinary brick shape.",
         "[TT]tric[tt] is the triclinic unit cell.", 

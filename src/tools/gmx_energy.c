@@ -865,7 +865,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
   int  nexact,nnotexact;
   double x1m,x1mk;
   real Temp=-1,Pres=-1,VarV=-1,VarT=-1,VarEtot=-1,AvEtot=0,VarEnthalpy=-1;
-  int  i,j;
+  int  i,j,nout;
   real chi2;
   char buf[256],eebuf[100];
 
@@ -878,7 +878,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
     /* Calculate the time difference */
     delta_t = t - start_t;
     
-    fprintf(stdout,"\nStatistics over %s steps [ %.4f thru %.4f ps ], %d data sets\n",
+    fprintf(stdout,"\nStatistics over %s steps [ %.4f through %.4f ps ], %d data sets\n",
 	    gmx_step_str(nsteps,buf),start_t,t,nset);
 
     calc_averages(nset,edat,nbmin,nbmax);
@@ -1100,23 +1100,27 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       /* Use trapezium rule for integration */
       integral = 0;
       intBulk  = 0;
-      for(i=1; (i<edat->nframes/2); i++) {
-	integral += 0.5*(eneset[0][i-1]  + eneset[0][i])*factor;
-	intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
-	fprintf(fp,"%10g  %10g  %10g\n",(i*Dt),integral,intBulk);
+      nout = get_acfnout();
+      if ((nout < 2) || (nout >= edat->nframes/2))
+          nout = edat->nframes/2;
+      for(i=1; (i<nout); i++) 
+      {
+          integral += 0.5*(eneset[0][i-1]  + eneset[0][i])*factor;
+          intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
+          fprintf(fp,"%10g  %10g  %10g\n",(i*Dt),integral,intBulk);
       }
       ffclose(fp);
     }
     else if (bCorr) {
       if (bFluct)
-	strcpy(buf,"Autocorrelation of Energy Fluctuations");
+          strcpy(buf,"Autocorrelation of Energy Fluctuations");
       else
-	strcpy(buf,"Energy Autocorrelation");
+          strcpy(buf,"Energy Autocorrelation");
 #if 0
       do_autocorr(corrfn,oenv,buf,edat->nframes,
-		  bSum ? 1                 : nset,
-		  bSum ? &edat->s[nset-1].ener : eneset,
-		  (delta_t/edat->nframes),eacNormal,FALSE);
+                  bSum ? 1                 : nset,
+                  bSum ? &edat->s[nset-1].ener : eneset,
+                  (delta_t/edat->nframes),eacNormal,FALSE);
 #endif
     }
   }
@@ -1301,7 +1305,7 @@ int gmx_energy(int argc,char *argv[])
     "difference with an ideal gas state: [BR]",
     "  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
     "  Delta G = G(N,p,T) - G_idgas(N,p,T) = kT ln < e^(Upot/kT) >[BR]",
-    "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and"
+    "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and",
     "the average is over the ensemble (or time in a trajectory).",
     "Note that this is in principle",
     "only correct when averaging over the whole (Boltzmann) ensemble",

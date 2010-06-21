@@ -97,7 +97,7 @@ typedef enum
     ARITH_NEG,          /**< Unary - */
     ARITH_MULT,         /**< * */
     ARITH_DIV,          /**< / */
-    ARITH_EXP,          /**< ^ (to power) */
+    ARITH_EXP           /**< ^ (to power) */
 } e_arithmetic_t;
 
 /** Returns a string representation of the type of a \c t_selelem. */
@@ -308,6 +308,11 @@ typedef struct t_selelem
     int                                  refcount;
 } t_selelem;
 
+/* In evaluate.c */
+/** Writes out a human-readable name for an evaluation function. */
+extern void
+_gmx_sel_print_evalfunc_name(FILE *fp, sel_evalfunc evalfunc);
+
 /** Allocates memory and performs some common initialization for a \c t_selelem. */
 extern t_selelem *
 _gmx_selelem_create(e_selelem_t type);
@@ -344,6 +349,10 @@ _gmx_selelem_free_compiler_data(t_selelem *sel);
 /** Prints a human-readable version of a selection element subtree. */
 extern void
 _gmx_selelem_print_tree(FILE *fp, t_selelem *root, bool bValues, int level);
+/* In compile.c */
+/** Prints a human-readable version of the internal compiler data structure. */
+extern void
+_gmx_selelem_print_compiler_info(FILE *fp, t_selelem *sel, int level);
 
 /** Returns TRUE if the selection element subtree requires topology information for evaluation. */
 extern bool

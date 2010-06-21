@@ -48,9 +48,10 @@ main(int argc, char *argv[])
     fprintf(stderr,"No X!\n");
     exit(1);
   }
-  logo=init_logo(x11,x11->root);
+  logo=init_logo(x11,x11->root,TRUE);
   show_logo(x11,logo);
   x11->MainLoop(x11);
 
   x11->CleanUp(x11);
+  return 0;
 }

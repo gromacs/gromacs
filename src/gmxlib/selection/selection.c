@@ -73,6 +73,7 @@ gmx_ana_selcollection_create(gmx_ana_selcollection_t **scp,
     sc->bMaskOnly = FALSE;
     sc->bVelocities = FALSE;
     sc->bForces   = FALSE;
+    sc->bDebugCompile = FALSE;
     sc->root      = NULL;
     sc->nr        = 0;
     sc->sel       = NULL;

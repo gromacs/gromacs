@@ -52,7 +52,7 @@ typedef enum
     CMP_GTR,            /**< '>' */
     CMP_GEQ,            /**< '>=' */
     CMP_EQUAL,          /**< '==' */
-    CMP_NEQ,            /**< '!=' */
+    CMP_NEQ             /**< '!=' */
 } e_comparison_t;
 
 /** The operand has a single value. */

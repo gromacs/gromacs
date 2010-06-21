@@ -131,40 +131,55 @@ gmx_gettime()
 void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,   
                 t_inputrec *ir, t_commrec *cr)
 {
-  time_t finish;
-
-  double dt;
-  char buf[48];
-
+    time_t finish;
+    
+    double dt;
+    char buf[48];
+    
 #ifndef GMX_THREADS
-  if (!PAR(cr))
+    if (!PAR(cr))
 #endif
-    fprintf(out,"\r");
-  fprintf(out,"step %s",gmx_step_str(step,buf));
-  if ((step >= ir->nstlist)) {
-    if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0)) {
-      /* We have done a full cycle let's update time_per_step */
-      runtime->last = gmx_gettime();
-      dt = difftime(runtime->last,runtime->real);
-      runtime->time_per_step = dt/(step - ir->init_step + 1);
+    {
+        fprintf(out,"\r");
     }
-    dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
-
-    if (dt >= 300) {    
-      finish = (time_t) (runtime->last + dt);
-      sprintf(buf,"%s",ctime(&finish));
-      buf[strlen(buf)-1]='\0';
-      fprintf(out,", will finish %s",buf);
+    fprintf(out,"step %s",gmx_step_str(step,buf));
+    if ((step >= ir->nstlist))
+    {
+        if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0))
+        {
+            /* We have done a full cycle let's update time_per_step */
+            runtime->last = gmx_gettime();
+            dt = difftime(runtime->last,runtime->real);
+            runtime->time_per_step = dt/(step - ir->init_step + 1);
+        }
+        dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
+        
+        if (ir->nsteps >= 0)
+        {
+            if (dt >= 300)
+            {    
+                finish = (time_t) (runtime->last + dt);
+                sprintf(buf,"%s",ctime(&finish));
+                buf[strlen(buf)-1]='\0';
+                fprintf(out,", will finish %s",buf);
+            }
+            else
+                fprintf(out,", remaining runtime: %5d s          ",(int)dt);
+        }
+        else
+        {
+            fprintf(out," performance: %.1f ns/day    ",
+                    ir->delta_t/1000*24*60*60/runtime->time_per_step);
+        }
     }
-    else
-      fprintf(out,", remaining runtime: %5d s          ",(int)dt);
-  }
 #ifndef GMX_THREADS
-  if (PAR(cr))
-    fprintf(out,"\n");
+    if (PAR(cr))
+    {
+        fprintf(out,"\n");
+    }
 #endif
 
-  fflush(out);
+    fflush(out);
 }
 
 #ifdef NO_CLOCK 
@@ -1364,11 +1379,34 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
     print_dd_statistics(cr,inputrec,fplog);
   }
 
-  if (SIMMASTER(cr)) {
-    if (PARTDECOMP(cr)) {
-      pr_load(fplog,cr,nrnb_tot);
-    }
+#ifdef GMX_MPI
+    if (PARTDECOMP(cr))
+    {
+        if (MASTER(cr))
+        {
+            t_nrnb     *nrnb_all;
+            int        s;
+            MPI_Status stat;
 
+            snew(nrnb_all,cr->nnodes);
+            nrnb_all[0] = *nrnb;
+            for(s=1; s<cr->nnodes; s++)
+            {
+                MPI_Recv(nrnb_all[s].n,eNRNB,MPI_DOUBLE,s,0,
+                         cr->mpi_comm_mysim,&stat);
+            }
+            pr_load(fplog,cr,nrnb_all);
+            sfree(nrnb_all);
+        }
+        else
+        {
+            MPI_Send(nrnb->n,eNRNB,MPI_DOUBLE,MASTERRANK(cr),0,
+                     cr->mpi_comm_mysim);
+        }
+    }
+#endif  
+
+  if (SIMMASTER(cr)) {
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,runtime->realtime,
                     wcycle,cycles);
 

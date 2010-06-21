@@ -449,7 +449,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
   open_symtab(&(qdb->tab));
   /*  sprintf(buf,"%s-qhop",
       forcefield);*/
-  atype = read_atype(forcefield,stab);
+  atype = read_atype(forcefield, TRUE ,stab);
   /* read_resall has changed a lot! Rework this part. */
   /* nrtp = read_resall(forcefield,qdb->bts,&(bigrtp),atype, */
 /* 		     stab,&(qdb->bAllDih), */
