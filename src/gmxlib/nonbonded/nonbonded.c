@@ -588,7 +588,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                 }
                             }
                             if (bCG) {
-                                gmx_fatal(FARGS, "Death & horror! Explicit energy group nr %d has to be specified in adress_ex_grps.\n", mdatoms->cENER[nlist->iinr[0]]);
+                                gmx_fatal(FARGS, "Death & horror! Explicit energy group nr %d has to be specified in adress_ex_grps (%d).\n", mdatoms->cENER[nlist->iinr[0]], fr->n_adress_ex_grps);
                             }
                         }
                     }
