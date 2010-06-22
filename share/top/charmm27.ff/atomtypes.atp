@@ -190,19 +190,6 @@ ON6B	15.999400 ;	Nucleic acid ribose ring oxygen  ### For DNA
 ON2B	15.999400 ;	Nucleic acid phosphate ester oxygen (pres tp1/tp2, toppar_tyr_ser_thr_phosphate.str)  ### For DNA 
 FN1	18.998400 ;	Fluorine for sugar derivatives (NF)  ### For DNA 
 FNA	18.998400 ;	Aromatic fluorine  ### For DNA 
-CC1A	12.011000 ;	alkene conjugation  ### For DNA 
-CC1B	12.011000 ;	alkene conjugation  ### For DNA 
-CC2	12.011000 ;	alkene conjugation  ### For DNA 
-NS1	14.007000 ;	N for deprotonated Schiff's base  ### For DNA 
-NS2	14.007000 ;	N for protonated Schiff's base  ### For DNA 
-SP	32.060000 ;	positive Sulphur, S-adenosylmethionine (SAM)  ### For DNA 
-CPH1	12.011000 ;	For imidazole model compound (NF) 
-CPH2	12.011000 ;	For imidazole model compound (NF) 
-HR3	1.008000 ;	For imidazole model compound (NF) 
-HR1	1.008000 ;	For imidazole model compound (NF) 
-NR1	14.007000 ;	For nitrogen in imidazol (NF) 
-NR2	14.007000 ;	For nitrogen in imidazol (NF) 
-
 OWT4	15.999400 ;     For TIP4P
 HWT4	1.008000 ;	For TIP4P
 MWT4	0.000000 ;	For TIP4P
