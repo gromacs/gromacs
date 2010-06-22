@@ -86,9 +86,19 @@ typedef struct
     int  nr_inputfiles;         /* The number of tpr and mdp input files */
     gmx_large_int_t orig_sim_steps;  /* Number of steps to be done in the real simulation */
     real *r_coulomb;            /* The coulomb radii [0...nr_inputfiles] */
-    real *r_vdW;                /* The vdW radii */
+    real *r_vdw;                /* The vdW radii */
+    real *r_coulomb_switch;     /* For switched Coulomb potential types */
+    real *r_vdw_switch;         /* For switched van der Waals potentials */
+    real *rlistlong;
     int  *fourier_nx, *fourier_ny, *fourier_nz;
     real *fourier_sp;           /* Fourierspacing */
+
+    /* Original values as in inputfile: */
+    real orig_rcoulomb, orig_rcoulomb_switch;
+    real orig_rvdw, orig_rvdw_switch;
+    real orig_rlistlong;
+    int  orig_nk[DIM];
+    real orig_fs[DIM];
 } t_inputinfo;
 
 
@@ -123,6 +133,22 @@ static void cleandata(t_perf *perfdata, int test_nr)
     perfdata->PME_f_load[test_nr] = 0.0;
     
     return;
+}
+
+
+static bool is_equal(real a, real b)
+{
+    real diff, eps=1.0e-6;
+
+
+    diff = a - b;
+
+    if (diff < 0.0) diff = -diff;
+
+    if (diff < eps)
+        return TRUE;
+    else
+        return FALSE;
 }
 
 
@@ -265,7 +291,7 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
 }
 
 
-static int analyze_data(
+static bool analyze_data(
         FILE        *fp,
         const char  *fn,
         t_perf      **perfdata,
@@ -284,6 +310,7 @@ static int analyze_data(
     t_perf *pd;
     char strbuf[STRLEN];
     char str_PME_f_load[13];
+    bool bCanUseOrigTPR;
 
 
     if (nrepeats > 1)
@@ -387,19 +414,52 @@ static int analyze_data(
         sprintf(strbuf, "%d", winPME);
     fprintf(fp, "Best performance was achieved with %s PME nodes", strbuf);
     if (nrepeats > 1)
-        fprintf(fp, " (see line %d) ", line_win);
-    if (ntprs > 1)
-        fprintf(fp, "\nand %s PME settings. ", (k_win ? "optimized" : "original"));
+        fprintf(fp, " (see line %d)", line_win);
     fprintf(fp, "\n");
 
-    /* Only mention settings if rcoulomb, rvdv, nkx, nky, or nkz was modified: */
-    if (k_win)
+    /* Only mention settings if they were modified: */
+    bCanUseOrigTPR = TRUE;
+    if ( !is_equal(info->r_coulomb[k_win], info->orig_rcoulomb) )
     {
-        fprintf(fp, "Optimized PME settings:\n");
-        fprintf(fp, "r_coulomb = %f, r_vdW = %f, nx,ny,nz = %d %d %d\n",
-                info->r_coulomb[k_win], info->r_vdW[k_win],
-                info->fourier_nx[k_win], info->fourier_ny[k_win], info->fourier_nz[k_win]);
+        fprintf(fp, "Optimized PME settings:\n"
+                    "   New Coulomb radius: %f nm (was %f nm)\n",
+                    info->r_coulomb[k_win], info->orig_rcoulomb);
+        bCanUseOrigTPR = FALSE;
     }
+
+    if ( !is_equal(info->r_coulomb_switch[k_win], info->orig_rcoulomb_switch) )
+    {
+        fprintf(fp, "   New Coulomb switch radius: %f nm (was %f nm)\n",
+                info->r_coulomb_switch[k_win], info->orig_rcoulomb_switch);
+        bCanUseOrigTPR = FALSE;
+    }
+
+    if ( !is_equal(info->r_vdw[k_win], info->orig_rvdw) )
+    {
+        fprintf(fp, "   New Van der Waals radius: %f nm (was %f nm)\n",
+                info->r_vdw[k_win], info->orig_rvdw);
+        bCanUseOrigTPR = FALSE;
+    }
+
+    if ( !is_equal(info->r_vdw_switch[k_win], info->orig_rvdw_switch) )
+    {
+        fprintf(fp, "   New Van der Waals switch radius: %f nm (was %f nm)\n",
+                info->r_vdw_switch[k_win], info->orig_rvdw_switch);
+        bCanUseOrigTPR = FALSE;
+    }
+
+    if ( ! (info->fourier_nx[k_win]==info->orig_nk[XX] &&
+            info->fourier_ny[k_win]==info->orig_nk[YY] &&
+            info->fourier_nz[k_win]==info->orig_nk[ZZ] ) )
+    {
+        fprintf(fp, "   New Fourier grid xyz: %d %d %d (was %d %d %d)\n",
+                info->fourier_nx[k_win], info->fourier_ny[k_win], info->fourier_nz[k_win],
+                info->orig_nk[XX], info->orig_nk[YY], info->orig_nk[ZZ]);
+        bCanUseOrigTPR = FALSE;
+    }
+    if (bCanUseOrigTPR && ntprs > 1)
+        fprintf(fp, "and original PME settings.\n");
+    
     fflush(fp);
     
     /* Return the index of the mdp file that showed the highest performance
@@ -407,7 +467,7 @@ static int analyze_data(
     *index_tpr    = k_win; 
     *npme_optimal = winPME;
     
-    return 0;
+    return bCanUseOrigTPR;
 }
 
 
@@ -572,7 +632,7 @@ static void launch_simulation(
 
 
 static void modify_PMEsettings(
-        gmx_large_int_t simsteps, /* Set this value as number of time steps */
+        gmx_large_int_t simsteps,  /* Set this value as number of time steps */
         const char *fn_best_tpr,   /* tpr file with the best performance */
         const char *fn_sim_tpr)    /* name of tpr file to be launched */
 {
@@ -616,11 +676,10 @@ static void make_benchmark_tprs(
     t_state      state;
     gmx_mtop_t   mtop;
     real         fac;
-    real         orig_rcoulomb, orig_rvdw, orig_rlist;
-    rvec         orig_fs;      /* original fourierspacing per dimension */
-    ivec         orig_nk;      /* original number of grid points per dimension */
+    real         coulomb_buffer, vdw_buffer; /* Thickness of the buffer regions for switched potentials */
     char         buf[200];
     rvec         box_size;
+    bool         bNote = FALSE;
     
 
     sprintf(buf, "Making benchmark tpr file%s with %s time steps", ntprs>1? "s":"", gmx_large_int_pfmt);
@@ -659,21 +718,47 @@ static void make_benchmark_tprs(
     }
     
     /* Remember the original values: */
-    orig_rvdw     = ir->rvdw;
-    orig_rcoulomb = ir->rcoulomb;
-    orig_rlist    = ir->rlist;
-    orig_nk[XX]   = ir->nkx;
-    orig_nk[YY]   = ir->nky;
-    orig_nk[ZZ]   = ir->nkz;
-    orig_fs[XX]   = box_size[XX]/ir->nkx;  /* fourierspacing in x direction */
-    orig_fs[YY]   = box_size[YY]/ir->nky;
-    orig_fs[ZZ]   = box_size[ZZ]/ir->nkz;
-     
-    fprintf(fp, "Input file Fourier grid : %dx%dx%d\n", orig_nk[XX], orig_nk[YY], orig_nk[ZZ]);
-    fprintf(fp, "           Coulomb rad. : %f nm\n", orig_rcoulomb);
-    fprintf(fp, "           Van d. Waals : %f nm\n", orig_rvdw);
+    info->orig_rvdw            = ir->rvdw;
+    info->orig_rvdw_switch     = ir->rvdw_switch;
+    info->orig_rcoulomb        = ir->rcoulomb;
+    info->orig_rcoulomb_switch = ir->rcoulomb_switch;
+    info->orig_rlistlong       = ir->rlistlong;
+    info->orig_nk[XX]          = ir->nkx;
+    info->orig_nk[YY]          = ir->nky;
+    info->orig_nk[ZZ]          = ir->nkz;
+    info->orig_fs[XX]          = box_size[XX]/ir->nkx;  /* fourierspacing in x direction */
+    info->orig_fs[YY]          = box_size[YY]/ir->nky;
+    info->orig_fs[ZZ]          = box_size[ZZ]/ir->nkz;
+
+    /* For switched potentials, keep the radial distance of the buffer region */
+    coulomb_buffer = info->orig_rcoulomb - info->orig_rcoulomb_switch;
+    vdw_buffer     = info->orig_rvdw     - info->orig_rvdw_switch;
+
+    fprintf(fp, "   Fourier nkx nky nkz  : %d %d %d\n",
+            info->orig_nk[XX], info->orig_nk[YY], info->orig_nk[ZZ]);
+    fprintf(fp, "   rcoulomb             : %f nm\n", info->orig_rcoulomb);
+    if (EEL_SWITCHED(ir->coulombtype))
+        fprintf(fp, "   rcoulomb_switch      : %f nm\n", info->orig_rcoulomb_switch);
+    fprintf(fp, "   rvdw                 : %f nm\n", info->orig_rvdw);
+    if (EVDW_SWITCHED(ir->vdwtype))
+        fprintf(fp, "   rvdw_switch          : %f nm\n", info->orig_rvdw_switch);
+    if (info->orig_rlistlong != max_cutoff(ir->rvdw,ir->rcoulomb))
+        fprintf(fp, "   rlistlong            : %f nm\n", info->orig_rlistlong);
+
+    /* Print a descriptive line about the tpr settings tested */
     fprintf(fp, "\nWill try these real/reciprocal workload settings:\n");
-    fprintf(fp, " No. scaling   r_coul   (r_vdW)     nkx  nky  nkz   (spacing)   tpr file\n");
+    fprintf(fp, " No.   scaling  rcoulomb");
+    if (EEL_SWITCHED(ir->coulombtype))
+        fprintf(fp, "  rcswitch");
+    fprintf(fp, "  nkx  nky  nkz");
+    if (fourierspacing > 0)
+        fprintf(fp, "   spacing");
+    fprintf(fp, "      rvdw");
+    if (EVDW_SWITCHED(ir->vdwtype))
+        fprintf(fp, "  rvswitch");
+    if (info->orig_rlistlong != max_cutoff(info->orig_rvdw,info->orig_rcoulomb))
+        fprintf(fp, " rlistlong");
+    fprintf(fp, "  tpr file\n");
     
     if (ntprs > 1)
     {
@@ -689,15 +774,31 @@ static void make_benchmark_tprs(
     {
         /* Rcoulomb scaling factor for this file: */
         if (ntprs == 1)
-            fac = 1.0;
+            fac = downfac;
          else
             fac = (upfac-downfac)/(ntprs-1) * j + downfac;
         fprintf(stdout, "--- Scaling factor %f ---\n", fac);
         
-        ir->rcoulomb = orig_rcoulomb*fac;
-        ir->rlist    = orig_rlist   *fac;
-        ir->rvdw     = orig_rvdw    *fac;
+        ir->rcoulomb = info->orig_rcoulomb*fac;
+        ir->rvdw     = info->orig_rvdw    *fac;
         
+        /* r_vdw should only grow if necessary! */
+        ir->rvdw = min(ir->rvdw, info->orig_rcoulomb*fac);
+        ir->rvdw = max(ir->rvdw, info->orig_rvdw);
+
+        /* Switched potentials */
+        if (EVDW_SWITCHED(ir->vdwtype))
+            ir->rvdw_switch = max(ir->rvdw-vdw_buffer, 0.0);
+        else /* leave the original value */
+            ir->rvdw_switch = info->orig_rvdw_switch;
+
+        if (EEL_SWITCHED(ir->coulombtype))
+            ir->rcoulomb_switch = max(ir->rcoulomb-coulomb_buffer, 0.0);
+        else
+            ir->rcoulomb_switch = info->orig_rcoulomb_switch;
+
+        ir->rlistlong = max_cutoff(ir->rvdw,ir->rcoulomb);
+
         /* Try to reduce the number of reciprocal grid points in a smart way */
         /* Did the user supply a value for fourierspacing on the command line? */
         if (fourierspacing > 0)
@@ -710,11 +811,12 @@ static void make_benchmark_tprs(
             calc_grid(stdout,state.box,info->fourier_sp[j],&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             /* Check consistency */
             if (0 == j)
-                if ((ir->nkx != orig_nk[XX]) || (ir->nky != orig_nk[YY]) || (ir->nkz != orig_nk[ZZ]))
+                if ((ir->nkx != info->orig_nk[XX]) || (ir->nky != info->orig_nk[YY]) || (ir->nkz != info->orig_nk[ZZ]))
                 {
                     fprintf(stderr, "WARNING: Original grid was %dx%dx%d. The fourierspacing of %f nm does not reproduce the grid\n"
                                     "         found in the tpr input file! Will use the new settings.\n", 
-                                    orig_nk[XX],orig_nk[YY],orig_nk[ZZ],fourierspacing);
+                                    info->orig_nk[XX],info->orig_nk[YY],info->orig_nk[ZZ],fourierspacing);
+                    bNote = TRUE;
                 }
         }
         else
@@ -722,26 +824,27 @@ static void make_benchmark_tprs(
             if (0 == j)
             {
                 /* Print out fourierspacing from input tpr */
-                fprintf(stdout, "Input file fourier grid is %dx%dx%d\n", orig_nk[XX], orig_nk[YY], orig_nk[ZZ]);
+                fprintf(stdout, "Input file fourier grid is %dx%dx%d\n",
+                        info->orig_nk[XX], info->orig_nk[YY], info->orig_nk[ZZ]);
             }
             /* Reconstruct fourierspacing for each dimension from the input file */
             ir->nkx=0;
-            calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             ir->nky=0;
-            calc_grid(stdout,state.box,orig_fs[YY]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[YY]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             ir->nkz=0;
-            calc_grid(stdout,state.box,orig_fs[ZZ]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[ZZ]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
         }
-        /* r_vdw should only grow if necessary! */
-        ir->rvdw = min(ir->rvdw, orig_rcoulomb*fac);
-        ir->rvdw = max(ir->rvdw, orig_rvdw);
 
         /* Save modified radii and fourier grid components for later output: */
-        info->r_coulomb[j] = ir->rcoulomb;
-        info->r_vdW[j]     = ir->rvdw;        
-        info->fourier_nx[j]= ir->nkx;
-        info->fourier_ny[j]= ir->nky;
-        info->fourier_nz[j]= ir->nkz;
+        info->r_coulomb[j]        = ir->rcoulomb;
+        info->r_coulomb_switch[j] = ir->rcoulomb_switch;
+        info->r_vdw[j]            = ir->rvdw;
+        info->r_vdw_switch[j]     = ir->rvdw_switch;
+        info->fourier_nx[j]       = ir->nkx;
+        info->fourier_ny[j]       = ir->nky;
+        info->fourier_nz[j]       = ir->nkz;
+        info->rlistlong[j]        = ir->rlistlong;
 
         /* Write the benchmark tpr file */
         strncpy(fn_bench_tprs[j],fn_sim_tpr,strlen(fn_sim_tpr)-strlen(".tpr"));
@@ -752,13 +855,35 @@ static void make_benchmark_tprs(
         fprintf(stdout,", scaling factor %f\n", fac);
         write_tpx_state(fn_bench_tprs[j],ir,&state,&mtop);
         
-        /* Write some info to log file */
-        fprintf(fp, "%3d %9f %9f (%7f) %4d %4d %4d   %9f   %-14s\n",
-                j, fac, ir->rcoulomb, ir->rvdw, ir->nkx, ir->nky, ir->nkz, info->fourier_sp[j],fn_bench_tprs[j]);
+        /* Write information about modified tpr settings to log file */
+        fprintf(fp, "%4d%10f%10f", j, fac, ir->rcoulomb);
+        if (EEL_SWITCHED(ir->coulombtype))
+            fprintf(fp, "%10f", ir->rcoulomb_switch);
+        fprintf(fp, "%5d%5d%5d", ir->nkx, ir->nky, ir->nkz);
+        if (fourierspacing > 0)
+            fprintf(fp, "%9f ", info->fourier_sp[j]);
+        fprintf(fp, "%10f", ir->rvdw);
+        if (EVDW_SWITCHED(ir->vdwtype))
+            fprintf(fp, "%10f", ir->rvdw_switch);
+        if (info->orig_rlistlong != max_cutoff(info->orig_rvdw,info->orig_rcoulomb))
+            fprintf(fp, "%10f", ir->rlistlong);
+        fprintf(fp, "  %-14s\n",fn_bench_tprs[j]);
+
+        /* Make it clear to the user that some additional settings were modified */
+        if (   !is_equal(ir->rvdw           , info->orig_rvdw)
+            || !is_equal(ir->rcoulomb_switch, info->orig_rcoulomb_switch)
+            || !is_equal(ir->rvdw_switch    , info->orig_rvdw_switch)
+            || !is_equal(ir->rlistlong      , info->orig_rlistlong) )
+        {
+            bNote = TRUE;
+        }
     }
+    if (bNote)
+        fprintf(fp, "\nNote that in addition to rcoulomb and the fourier grid\n"
+                    "also other input settings were changed (see table above).\n"
+                    "Please check if the modified settings are appropriate.\n");
     fflush(stdout);
     fflush(fp);
-    
     sfree(ir);
 }
 
@@ -968,28 +1093,12 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
 }
 
 
-static bool is_equal(real a, real b)
-{
-    real diff, eps=1.0e-6;
-    
-    
-    diff = a - b;
-    
-    if (diff < 0.0) diff = -diff;
-    
-    if (diff < eps)
-        return TRUE;
-    else
-        return FALSE;
-}
-
-
 static void check_input(
         int nnodes, 
         int repeats, 
         int *ntprs, 
-        real upfac,
-        real downfac,
+        real *upfac,
+        real *downfac,
         real maxPMEfraction,
         real minPMEfraction,
         real fourierspacing,
@@ -997,7 +1106,9 @@ static void check_input(
         const t_filenm *fnm,
         int nfile,
         int sim_part,
-        int presteps)
+        int presteps,
+        int npargs,
+        t_pargs *pa)
 {
     /* Make sure the input file exists */
     if (!gmx_fexist(opt2fn("-s",nfile,fnm)))
@@ -1026,11 +1137,11 @@ static void check_input(
     }
     else
     {
-        if ( (1 == *ntprs) && (!is_equal(upfac,1.0) || !is_equal(downfac,1.0)) )
+        if (1 == *ntprs)
             fprintf(stderr, "Note: Choose ntpr>1 to shift PME load between real and reciprocal space.\n");
     }
     
-    if ( is_equal(downfac,upfac) && (*ntprs > 1) )
+    if ( is_equal(*downfac,*upfac) && (*ntprs > 1) )
     {
         fprintf(stderr, "WARNING: Resetting -ntpr to 1 since both scaling factors are the same.\n"
                         "Please choose upfac unequal to downfac to test various PME grid settings\n");
@@ -1061,15 +1172,35 @@ static void check_input(
         gmx_fatal(FARGS, "Cannot have a negative number of presteps.\n");
     }
     
-    if (upfac <= 0.0 || downfac <= 0.0 || downfac > upfac)
-        gmx_fatal(FARGS, "Both scaling factors must be larger than zero and "
-                         "upper scaling limit must be larger than lower limit");
+    if (*upfac <= 0.0 || *downfac <= 0.0 || *downfac > *upfac)
+        gmx_fatal(FARGS, "Both scaling factors must be larger than zero and upper\n"
+                         "scaling limit (%f) must be larger than lower limit (%f).",
+                         *upfac, *downfac);
 
-    if (downfac < 0.75 || upfac > 1.5)
+    if (*downfac < 0.75 || *upfac > 1.5)
         fprintf(stderr, "WARNING: Applying extreme scaling factor. I hope you know what you are doing.\n");
     
     if (fourierspacing < 0)
         gmx_fatal(FARGS, "Please choose a positive value for fourierspacing.");
+
+    /* Make shure that the scaling factor options are compatible with the number of tprs */
+    if ( (1 == *ntprs) && ( opt2parg_bSet("-upfac",npargs,pa) || opt2parg_bSet("-downfac",npargs,pa) ) )
+    {
+        if (opt2parg_bSet("-upfac",npargs,pa) && opt2parg_bSet("-downfac",npargs,pa) && !is_equal(*upfac,*downfac))
+        {
+            gmx_fatal(FARGS, "Please specify -ntpr > 1 for both scaling factors to take effect.\n"
+                             "(upfac=%f, downfac=%f)\n", *upfac, *downfac);
+        }
+        if (opt2parg_bSet("-upfac",npargs,pa))
+            *downfac = *upfac;
+        if (opt2parg_bSet("-downfac",npargs,pa))
+            *upfac = *downfac;
+        if (!is_equal(*upfac, 1.0))
+        {
+            fprintf(stderr, "WARNING: Using a scaling factor of %f with -ntpr 1, thus not testing the original tpr settings.\n",
+                    *upfac);
+        }
+    }
 }
 
 
@@ -1437,7 +1568,7 @@ int gmx_tune_pme(int argc,char *argv[])
     gmx_large_int_t new_sim_nsteps=-1;   /* -1 indicates: not set by the user */
     gmx_large_int_t cpt_steps=0;         /* Step counter in .cpt input file   */
     int        presteps=100;    /* Do a full cycle reset after presteps steps */
-    bool       bOverwrite=FALSE;
+    bool       bOverwrite=FALSE, bKeepTPR;
     bool       bLaunch=FALSE;
     char       **tpr_names=NULL;
     const char *simulation_tpr=NULL;
@@ -1570,7 +1701,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-ntpr",     FALSE, etINT,  {&ntprs},
         "Number of tpr files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of tpr files to test" },
       { "-four",     FALSE, etREAL, {&fs},
-        "Use this fourierspacing value instead of the grid found in the tpr input file" },        
+        "Use this fourierspacing value instead of the grid found in the tpr input file. (Spacing applies to a scaling factor of 1.0 if multiple tpr files are written)" },
       { "-steps",    FALSE, etGMX_LARGE_INT, {&bench_nsteps},
         "Take timings for these many steps in the benchmark runs" }, 
       { "-resetstep",FALSE, etINT,  {&presteps},
@@ -1693,8 +1824,9 @@ int gmx_tune_pme(int argc,char *argv[])
     fp = ffopen(opt2fn("-p",NFILE,fnm),"w");
     
     /* Make a quick consistency check of command line parameters */
-    check_input(nnodes, repeats, &ntprs, upfac, downfac, maxPMEfraction,
-                minPMEfraction, fs, bench_nsteps, fnm, NFILE, sim_part, presteps);
+    check_input(nnodes, repeats, &ntprs, &upfac, &downfac, maxPMEfraction,
+                minPMEfraction, fs, bench_nsteps, fnm, NFILE, sim_part, presteps,
+                asize(pa),pa);
     
     /* Determine max and min number of PME nodes to test: */
     if (nnodes > 2)
@@ -1733,7 +1865,6 @@ int gmx_tune_pme(int argc,char *argv[])
         fprintf(fp, "Number of threads       : %d\n", nnodes);
 
     fprintf(fp, "The mdrun  command is   : %s\n", cmd_mdrun);
-    fprintf(fp, "Input file is           : %s\n", opt2fn("-s",NFILE,fnm));
     fprintf(fp, "mdrun args benchmarks   : %s\n", cmd_args_bench);
     fprintf(fp, "Benchmark steps         : ");
     fprintf(fp, gmx_large_int_pfmt, bench_nsteps);
@@ -1761,19 +1892,27 @@ int gmx_tune_pme(int argc,char *argv[])
         fprintf(fp, "Repeats for each test   : %d\n", repeats);
     
     if (fs > 0.0)
+    {
         fprintf(fp, "Requested grid spacing  : %f (tpr file will be changed accordingly)\n", fs);
+        fprintf(fp, "                          This will be the grid spacing at a scaling factor of 1.0\n");
+    }
     
+    fprintf(fp, "Input file              : %s\n", opt2fn("-s",NFILE,fnm));
+
     /* Allocate memory for the inputinfo struct: */
     snew(info, 1);
     info->nr_inputfiles = ntprs;
     for (i=0; i<ntprs; i++)
     {
-        snew(info->r_coulomb , ntprs);
-        snew(info->r_vdW     , ntprs);
-        snew(info->fourier_nx, ntprs);
-        snew(info->fourier_ny, ntprs);
-        snew(info->fourier_nz, ntprs);
-        snew(info->fourier_sp, ntprs);
+        snew(info->r_coulomb       , ntprs);
+        snew(info->r_coulomb_switch, ntprs);
+        snew(info->r_vdw           , ntprs);
+        snew(info->r_vdw_switch    , ntprs);
+        snew(info->rlistlong       , ntprs);
+        snew(info->fourier_nx      , ntprs);
+        snew(info->fourier_ny      , ntprs);
+        snew(info->fourier_nz      , ntprs);
+        snew(info->fourier_sp      , ntprs);
     }
     /* Make alternative tpr files to test: */
     snew(tpr_names, ntprs);
@@ -1829,19 +1968,21 @@ int gmx_tune_pme(int argc,char *argv[])
     fprintf(fp, "\nTuning took%8.1f minutes.\n", (gettime()-seconds)/60.0);
 
     /* Analyse the results and give a suggestion for optimal settings: */
-    analyze_data(fp, opt2fn("-p", NFILE, fnm), perfdata, nnodes, ntprs, datasets,
-                 repeats, info, &best_tpr, &best_npme);
+    bKeepTPR = analyze_data(fp, opt2fn("-p", NFILE, fnm), perfdata, nnodes, ntprs, datasets,
+                            repeats, info, &best_tpr, &best_npme);
     
     /* Take the best-performing tpr file and enlarge nsteps to original value */
-    if ((best_tpr > 0) || bOverwrite || (fs > 0.0))
+    if ( bKeepTPR && !bOverwrite && !(fs > 0.0) )
+    {
+        simulation_tpr = opt2fn("-s",NFILE,fnm);
+    }
+    else
     {
         simulation_tpr = opt2fn("-so",NFILE,fnm);
         modify_PMEsettings(bOverwrite? (new_sim_nsteps+cpt_steps) : 
                            info->orig_sim_steps, tpr_names[best_tpr], 
                            simulation_tpr);            
     }
-    else
-        simulation_tpr = opt2fn("-s",NFILE,fnm);
 
     /* Now start the real simulation if the user requested it ... */
     launch_simulation(bLaunch, fp, bThreads, cmd_mpirun, cmd_np, cmd_mdrun,
