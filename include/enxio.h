@@ -80,9 +80,9 @@ extern "C" {
 
   typedef struct {
     double   t;	            /* Timestamp of this frame	                     */
-    gmx_large_int_t step;        /* MD step	   		                     */
-    gmx_large_int_t nsteps;      /* The number of steps between frames            */
-    gmx_large_int_t nsum;        /* The number of terms for the sums in ener      */
+    gmx_large_int_t step;   /* MD step	   		                     */
+    gmx_large_int_t nsteps; /* The number of steps between frames            */
+    int      nsum;          /* The number of terms for the sums in ener      */
     int      nre;           /* Number of energies			     */
     int      ndisre;        /* Number of distance restraints	             */
     int      nblock;        /* Number of following energy blocks              */

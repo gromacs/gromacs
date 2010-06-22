@@ -257,7 +257,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
              */
             if (!gmx_fio_do_int(ef->fio, zero))      *bOK = FALSE;
         } else {
-            if (!gmx_fio_do_gmx_large_int(ef->fio, fr->nsum))  *bOK = FALSE;
+            if (!gmx_fio_do_int(ef->fio, fr->nsum))  *bOK = FALSE;
         }
         if (*file_version >= 3)
         {
