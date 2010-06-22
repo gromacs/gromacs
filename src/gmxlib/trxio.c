@@ -743,7 +743,7 @@ bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe *fr)
 #else
       gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%s",
                 ftp2ext(gmx_fio_getftp(status->fio)),
-                gmx_fio_getfn(status->fio));
+                gmx_fio_getname(status->fio));
 #endif
     }
     
