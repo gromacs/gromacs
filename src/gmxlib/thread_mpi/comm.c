@@ -95,6 +95,59 @@ int tMPI_Comm_rank(tMPI_Comm comm, int *rank)
     return tMPI_Group_rank(&(comm->grp), rank);
 }
 
+
+int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result)
+{
+    int i,j;
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_compare(%p, %p, %p)", comm1, comm2, result);
+#endif
+    if (comm1 == comm2)
+    {
+        *result=TMPI_IDENT;
+        return TMPI_SUCCESS;
+    }
+
+    if ( (!comm1) || (!comm2) )
+    {
+        *result=TMPI_UNEQUAL;
+        return TMPI_SUCCESS;
+    }
+
+    if (comm1->grp.N != comm2->grp.N)
+    {
+        *result=TMPI_UNEQUAL;
+        return TMPI_SUCCESS;
+    }
+
+    *result=TMPI_CONGRUENT;
+    /* we assume that there are two identical comm members within a comm */
+    for(i=0;i<comm1->grp.N;i++)
+    {
+        if (comm1->grp.peers[i] != comm2->grp.peers[i])
+        {
+            bool found=FALSE;
+
+            *result=TMPI_SIMILAR;
+            for(j=0;j<comm2->grp.N;j++)
+            {
+                if (comm1->grp.peers[i] == comm2->grp.peers[j])
+                {
+                    found=TRUE;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                *result=TMPI_UNEQUAL;
+                return TMPI_SUCCESS;
+            }
+        }
+    }
+    return TMPI_SUCCESS;
+}
+
+
 tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 {
     struct tmpi_comm_ *ret;

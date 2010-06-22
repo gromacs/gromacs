@@ -11,15 +11,15 @@ typedef struct{
 	
 typedef struct gmx_qhop_db_t *gmx_qhop_db;
 
-/* Return database if succesfull, or NULL on failure */
+/* Return database if successful, or NULL on failure */
 extern gmx_qhop_db gmx_qhop_db_read(char *forcefield);
  
-/* Write the database to a filename. Return 1 on succes, or 0 for
+/* Write the database to a filename. Return 1 on success, or 0 for
    failure */
 extern int gmx_qhop_db_write(char *fn,gmx_qhop_db qdb);
 
 /* Destroy the internal datastructures to free memory. Return 1 on
-   succes, 0 for failure */
+   success, 0 for failure */
 extern int gmx_qhop_db_done(gmx_qhop_db qdb);
 
 /* Return the number of states in the database for a given residue

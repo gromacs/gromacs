@@ -292,10 +292,10 @@ static void zeroq(int n,atom_id index[],gmx_mtop_t *mtop)
 int main (int argc, char *argv[])
 {
   const char *desc[] = {
-    "tpbconv can edit run input files in four ways.[PAR]"
+    "tpbconv can edit run input files in four ways.[PAR]",
     "[BB]1st.[bb] by modifying the number of steps in a run input file",
     "with option [TT]-nsteps[tt] or option [TT]-runtime[tt].[PAR]",
-    "[BB]2st.[bb] (OBSOLETE) by creating a run input file",
+    "[BB]2nd.[bb] (OBSOLETE) by creating a run input file",
     "for a continuation run when your simulation has crashed due to e.g.",
     "a full disk, or by making a continuation run input file.",
     "This option is obsolete, since mdrun now writes and reads",
@@ -304,11 +304,11 @@ int main (int argc, char *argv[])
     "When pressure and/or Nose-Hoover temperature coupling is used",
     "an energy file can be supplied to get an exact continuation",
     "of the original run.[PAR]",
-    "[BB]3nd.[bb] by creating a tpx file for a subset of your original",
+    "[BB]3rd.[bb] by creating a tpx file for a subset of your original",
     "tpx file, which is useful when you want to remove the solvent from",
     "your tpx file, or when you want to make e.g. a pure Ca tpx file.",
     "[BB]WARNING: this tpx file is not fully functional[bb].",
-    "[BB]4rd.[bb] by setting the charges of a specified group",
+    "[BB]4th.[bb] by setting the charges of a specified group",
     "to zero. This is useful when doing free energy estimates",
     "using the LIE (Linear Interaction Energy) method."
   };
@@ -386,7 +386,7 @@ int main (int argc, char *argv[])
   bTraj   = (opt2bSet("-f",NFILE,fnm) || bTime);
 
   top_fn = ftp2fn(efTPX,NFILE,fnm);
-  fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
+  fprintf(stderr,"Reading toplogy and stuff from %s\n",top_fn);
   
   snew(ir,1);
   read_tpx_state(top_fn,ir,&state,NULL,&mtop);

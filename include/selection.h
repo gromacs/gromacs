@@ -55,7 +55,7 @@ struct gmx_ana_poscalc_coll_t;
 typedef enum
 {
     CFRAC_NONE,         /**< No covered fraction (everything covered). */
-    CFRAC_SOLIDANGLE,   /**< Fraction of a solid (3D) angle covered. */
+    CFRAC_SOLIDANGLE    /**< Fraction of a solid (3D) angle covered. */
 } e_coverfrac_t;
 
 /*! \brief

@@ -10,8 +10,8 @@ LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 if USE_X11
 
-bin_PROGRAMS     = ngmx xrama highway
-EXTRA_PROGRAMS   = gmxlogo dlg scrollw showcol
+bin_PROGRAMS     = ngmx g_xrama g_highway g_logo  g_showcol
+EXTRA_PROGRAMS   = test_ngmx_dialog
 
 endif
 
@@ -34,12 +34,10 @@ EXTRA_DIST = 	alert.bm 	gromacs.bm 	play.bm 	\
 
 
 ngmx_SOURCES    = ngmx.c $(XSRC)
-xrama_SOURCES   = xrama.c $(XSRC)
-highway_SOURCES = highway.c $(XSRC) 
-gmxlogo_SOURCES = gmxlogo.c logo.c $(XSRC)
-dlg_SOURCES     = dlg.c $(XSRC)
-scrollw_SOURCES = scrollw.c $(XSRC)
-showcol_SOURCES = showcol.c $(XSRC)
-
+g_xrama_SOURCES   = g_xrama.c $(XSRC)
+g_highway_SOURCES = g_highway.c $(XSRC) 
+g_logo_SOURCES = g_logo.c $(XSRC)
+g_showcol_SOURCES = g_showcol.c $(XSRC)
+test_ngmx_dialog_SOURCES     = test_ngmx_dialog.c $(XSRC)
 
 CLEANFILES   = 	*~ \\\#*

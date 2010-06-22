@@ -59,7 +59,7 @@
 #include "gen_ad.h"
 #include "gpp_nextnb.h"
 #include "vec.h"
-#include "x2top.h"
+#include "g_x2top.h"
 #include "atomprop.h"
 
 char atp[7] = "HCNOSX";
@@ -374,7 +374,7 @@ int main(int argc, char *argv[])
     "and force constants will be printed in the topology for all",
     "interactions. The equilibrium distances and angles are taken",
     "from the input coordinates, the force constant are set with",
-    "command line options."
+    "command line options.",
     "The force fields somewhat supported currently are:[PAR]",
     "G53a5  GROMOS96 53a5 Forcefield (official distribution)[PAR]",
     "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
@@ -422,6 +422,7 @@ int main(int argc, char *argv[])
     { efRTP, "-r", "out",  ffOPTWR }
   };
 #define NFILE asize(fnm)
+  static bool bAddCWD = FALSE;
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
   static int  nexcl = 3;
   static bool bRemoveDih = FALSE;
@@ -433,6 +434,8 @@ int main(int argc, char *argv[])
   t_pargs pa[] = {
     { "-ff",     FALSE, etSTR, {&ff},
       "Force field for your simulation. Type \"select\" for interactive selection." },
+    { "-cwd",    FALSE, etBOOL, {&bAddCWD},
+      "Also read force field files from the current working directory" },
     { "-v",      FALSE, etBOOL, {&bVerbose},
       "Generate verbose output in the top file." },
     { "-nexcl", FALSE, etINT,  {&nexcl},
@@ -500,7 +503,7 @@ int main(int argc, char *argv[])
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,&epbc,box);
 
   sprintf(n2t,"%s",ffdir);
-  nm2t = rd_nm2type(n2t,&nnm);
+  nm2t = rd_nm2type(n2t,bAddCWD,&nnm);
   if (nnm == 0)
     gmx_fatal(FARGS,"No or incorrect atomname2type.n2t file found (looking for %s)",
 	      n2t);

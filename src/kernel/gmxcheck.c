@@ -108,7 +108,7 @@ static void tpx2params(FILE *fp,t_inputrec *ir)
   fprintf(fp,"\\subsection{Simulation settings}\n");
   fprintf(fp,"A total of %g ns were simulated with a time step of %g fs.\n",
 	  ir->nsteps*ir->delta_t*0.001,1000*ir->delta_t);
-  fprintf(fp,"Neighborsearching was performed every %d steps.\n",ir->nstlist);
+  fprintf(fp,"Neighbor searching was performed every %d steps.\n",ir->nstlist);
   fprintf(fp,"The %s algorithm was used for electrostatic interactions.\n",
 	  EELTYPE(ir->coulombtype));
   fprintf(fp,"with a cut-off of %g nm.\n",ir->rcoulomb);  
@@ -605,13 +605,13 @@ int main(int argc,char *argv[])
     "radii) and atoms outside the box (these may occur often and are",
     "no problem). If velocities are present, an estimated temperature",
     "will be calculated from them.[PAR]",
-    "If an index file is given it's contents will be sumamrized.[PAR]",
+    "If an index file, is given its contents will be summarized.[PAR]",
     "If both a trajectory and a tpr file are given (with [TT]-s1[tt])",
     "the program will check whether the bond lengths defined in the tpr",
     "file are indeed correct in the trajectory. If not you may have",
     "non-matching files due to e.g. deshuffling or due to problems with",
-    "virtual sites. With these flags, gmxcheck provides a quick check for such problems.[PAR]"
-    "The program can compare run two input ([TT].tpr[tt], [TT].tpb[tt] or",
+    "virtual sites. With these flags, gmxcheck provides a quick check for such problems.[PAR]",
+    "The program can compare two run input ([TT].tpr[tt], [TT].tpb[tt] or",
     "[TT].tpa[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",
     "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
@@ -619,7 +619,7 @@ int main(int argc,char *argv[])
     "For free energy simulations the A and B state topology from one",
     "run input file can be compared with options [TT]-s1[tt] and [TT]-ab[tt].[PAR]",
     "In case the [TT]-m[tt] flag is given a LaTeX file will be written",
-    "consisting a rough outline for a methods section for a paper."
+    "consisting of a rough outline for a methods section for a paper."
   };
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffOPTRD },

@@ -961,7 +961,7 @@ int gmx_cluster(int argc,char *argv[])
     
     "Monte Carlo: reorder the RMSD matrix using Monte Carlo.[PAR]",
     
-    "diagonalization: diagonalize the RMSD matrix.[PAR]"
+    "diagonalization: diagonalize the RMSD matrix.[PAR]",
     
     "gromos: use algorithm as described in Daura [IT]et al.[it]",
     "([IT]Angew. Chem. Int. Ed.[it] [BB]1999[bb], [IT]38[it], pp 236-240).",
@@ -976,7 +976,7 @@ int gmx_cluster(int argc,char *argv[])
     "the smallest average distance to the others or the average structure",
     "or all structures for each cluster will be written to a trajectory",
     "file. When writing all structures, separate numbered files are made",
-    "for each cluster.[PAR]"
+    "for each cluster.[PAR]",
     
     "Two output files are always written:[BR]",
     "[TT]-o[tt] writes the RMSD values in the upper left half of the matrix",

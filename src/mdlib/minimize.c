@@ -101,18 +101,28 @@ static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
   fprintf(out,"   Number of steps    = %12d\n",nsteps);
 }
 
-static void warn_step(FILE *fp,real ftol,bool bConstrain)
+static void warn_step(FILE *fp,real ftol,bool bLastStep,bool bConstrain)
 {
-  fprintf(fp,"\nStepsize too small, or no change in energy.\n"
-	  "Converged to machine precision,\n"
-	  "but not to the requested precision Fmax < %g\n",
-	  ftol);
-  if (sizeof(real)<sizeof(double))
-      fprintf(fp,"\nDouble precision normally gives you higher accuracy.\n");
-	
-  if (bConstrain)
-    fprintf(fp,"You might need to increase your constraint accuracy, or turn\n"
-	    "off constraints alltogether (set constraints = none in mdp file)\n");
+    if (bLastStep)
+    {
+        fprintf(fp,"\nReached the maximum number of steps before reaching Fmax < %g\n",ftol);
+    }
+    else
+    {
+        fprintf(fp,"\nStepsize too small, or no change in energy.\n"
+                "Converged to machine precision,\n"
+                "but not to the requested precision Fmax < %g\n",
+                ftol);
+        if (sizeof(real)<sizeof(double))
+        {
+            fprintf(fp,"\nDouble precision normally gives you higher accuracy.\n");
+        }
+        if (bConstrain)
+        {
+            fprintf(fp,"You might need to increase your constraint accuracy, or turn\n"
+                    "off constraints alltogether (set constraints = none in mdp file)\n");
+        }
+    }
 }
 
 
@@ -244,11 +254,6 @@ void init_em(FILE *fplog,const char *title,
     }
     
     state_global->ngtc = 0;
-    if (ir->eI == eiCG)
-    {
-        state_global->flags |= (1<<estCGP);
-        snew(state_global->cg_p,state_global->nalloc);
-    }
     
     /* Initiate some variables */
     if (ir->efep != efepNO)
@@ -940,7 +945,8 @@ double do_cg(FILE *fplog,t_commrec *cr,
    * Each successful step is counted, and we continue until
    * we either converge or reach the max number of steps.
    */
-  for(step=0,converged=FALSE;( step<=number_steps || number_steps==0) && !converged;step++) {
+  converged = FALSE;
+  for(step=0; (number_steps<0 || (number_steps>=0 && step<=number_steps)) && !converged;step++) {
     
     /* start taking steps in a new direction 
      * First time we enter the routine, beta=0, and the direction is 
@@ -1284,13 +1290,15 @@ double do_cg(FILE *fplog,t_commrec *cr,
   if (converged)	
     step--; /* we never took that last step in this case */
   
-  if (s_min->fmax > inputrec->em_tol) {
-    if (MASTER(cr)) {
-      warn_step(stderr,inputrec->em_tol,FALSE);
-      warn_step(fplog,inputrec->em_tol,FALSE);
+    if (s_min->fmax > inputrec->em_tol)
+    {
+        if (MASTER(cr))
+        {
+            warn_step(stderr,inputrec->em_tol,step-1==number_steps,FALSE);
+            warn_step(fplog ,inputrec->em_tol,step-1==number_steps,FALSE);
+        }
+        converged = FALSE; 
     }
-    converged = FALSE; 
-  }
   
   if (MASTER(cr)) {
     /* If we printed energy and/or logfile last step (which was the last step)
@@ -1543,7 +1551,8 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   ncorr=0;
 
   /* Set the gradient from the force */
-  for(step=0,converged=FALSE;( step<=number_steps || number_steps==0) && !converged;step++) {
+  converged = FALSE;
+  for(step=0; (number_steps<0 || (number_steps>=0 && step<=number_steps)) && !converged; step++) {
     
     /* Write coordinates if necessary */
     do_x = do_per_step(step,inputrec->nstxout);
@@ -1926,13 +1935,15 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   if(converged)	
     step--; /* we never took that last step in this case */
   
-  if(fmax>inputrec->em_tol) {
-    if (MASTER(cr)) {
-      warn_step(stderr,inputrec->em_tol,FALSE);
-      warn_step(fplog,inputrec->em_tol,FALSE);
+    if(fmax>inputrec->em_tol)
+    {
+        if (MASTER(cr))
+        {
+            warn_step(stderr,inputrec->em_tol,step-1==number_steps,FALSE);
+            warn_step(fplog ,inputrec->em_tol,step-1==number_steps,FALSE);
+        }
+        converged = FALSE; 
     }
-    converged = FALSE; 
-  }
   
   /* If we printed energy and/or logfile last step (which was the last step)
    * we don't have to do it again, but otherwise print the final values.
@@ -2057,7 +2068,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
   bDone  = FALSE;
   bAbort = FALSE;
   while( !bDone && !bAbort ) {
-    bAbort = (nsteps > 0) && (count==nsteps);
+    bAbort = (nsteps >= 0) && (count == nsteps);
     
     /* set new coordinates, except for first step */
     if (count > 0) {
@@ -2141,17 +2152,18 @@ double do_steep(FILE *fplog,t_commrec *cr,
     
     /* Check if stepsize is too small, with 1 nm as a characteristic length */
 #ifdef GMX_DOUBLE
-    if (ustep < 1e-12)
+        if (count == nsteps || ustep < 1e-12)
 #else
-    if (ustep < 1e-6)
+        if (count == nsteps || ustep < 1e-6)
 #endif
-      {
-	if (MASTER(cr)) {
-	  warn_step(stderr,inputrec->em_tol,constr!=NULL);
-	  warn_step(fplog,inputrec->em_tol,constr!=NULL);
-	}
-	bAbort=TRUE;
-      }
+        {
+            if (MASTER(cr))
+            {
+                warn_step(stderr,inputrec->em_tol,count==nsteps,constr!=NULL);
+                warn_step(fplog ,inputrec->em_tol,count==nsteps,constr!=NULL);
+            }
+            bAbort=TRUE;
+        }
     
     count++;
   } /* End of the loop  */

@@ -984,7 +984,7 @@ static void add_h2d(int id,int ih,t_donors *ddd)
   
     for(i=0; (i<ddd->nhydro[id]); i++) 
         if (ddd->hydro[id][i] == ih) {
-            printf("Hm. This isn't first time I find this donor (%d,%d)\n",
+            printf("Hm. This isn't the first time I found this donor (%d,%d)\n",
                    ddd->don[id],ih);
             break;
         }
@@ -1055,6 +1055,11 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
     else {
         for(func_type=0; (func_type < F_NRE); func_type++) {
             interaction=&(top->idef.il[func_type]);
+            if (func_type == F_POSRES)
+            { /* The ilist looks strange for posre. Bug in grompp?
+               * We don't need posre interactions for hbonds anyway.*/
+                continue;
+            }
             for(i=0; i < interaction->nr; 
                 i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
                 /* next function */
@@ -2477,11 +2482,21 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
         }
 
         /* Remove ballistic term */
-        if (params->ballistic/params->tDelta >= params->nExpFit*2+1)
-            takeAwayBallistic(ctdouble, timedouble, nn, params->ballistic, params->nExpFit, params->bDt);
-        else
-            printf("\nNumber of data points is less than the number of parameters to fit\n."
-                   "The system is underdetermined, hence no ballistic term can be found.\n\n");
+        /* Ballistic component removal and fitting to the reversible geminate recombination model
+         * will be taken out for the time being. First of all, one can remove the ballistic
+         * component with g_analyze afterwards. Secondly, and more importantly, there are still
+         * problems with the robustness of the fitting to the model. More work is needed.
+         * A third reason is that we're currently using gsl for this and wish to reduce dependence
+         * on external libraries. There are Levenberg-Marquardt and nsimplex solvers that come with
+         * a BSD-licence that can do the job.
+         *
+         * - Erik Marklund, June 18 2010. 
+         */
+/*         if (params->ballistic/params->tDelta >= params->nExpFit*2+1) */
+/*             takeAwayBallistic(ctdouble, timedouble, nn, params->ballistic, params->nExpFit, params->bDt); */
+/*         else */
+/*             printf("\nNumber of data points is less than the number of parameters to fit\n." */
+/*                    "The system is underdetermined, hence no ballistic term can be found.\n\n"); */
 
         fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
         xvgr_legend(fp,asize(legNN),legNN);
@@ -2698,15 +2713,25 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
         }
 
         /* Remove ballistic term */
-        if (bBallistic) {
-            if (params->ballistic/params->tDelta >= params->nExpFit*2+1)
-                takeAwayBallistic(ctdouble, timedouble, nn, params->ballistic, params->nExpFit, params->bDt);
-            else
-                printf("\nNumber of data points is less than the number of parameters to fit\n."
-                       "The system is underdetermined, hence no ballistic term can be found.\n\n");
-        }
-        if (bGemFit)
-            fitGemRecomb(ctdouble, timedouble, &fittedct, nn, params);
+        /* Ballistic component removal and fitting to the reversible geminate recombination model
+         * will be taken out for the time being. First of all, one can remove the ballistic
+         * component with g_analyze afterwards. Secondly, and more importantly, there are still
+         * problems with the robustness of the fitting to the model. More work is needed.
+         * A third reason is that we're currently using gsl for this and wish to reduce dependence
+         * on external libraries. There are Levenberg-Marquardt and nsimplex solvers that come with
+         * a BSD-licence that can do the job.
+         *
+         * - Erik Marklund, June 18 2010. 
+         */
+/*         if (bBallistic) { */
+/*             if (params->ballistic/params->tDelta >= params->nExpFit*2+1) */
+/*                 takeAwayBallistic(ctdouble, timedouble, nn, params->ballistic, params->nExpFit, params->bDt); */
+/*             else */
+/*                 printf("\nNumber of data points is less than the number of parameters to fit\n." */
+/*                        "The system is underdetermined, hence no ballistic term can be found.\n\n"); */
+/*         } */
+/*         if (bGemFit) */
+/*             fitGemRecomb(ctdouble, timedouble, &fittedct, nn, params); */
     
 
         if (bContact)
@@ -3088,7 +3113,7 @@ int gmx_hbond(int argc,char *argv[])
         "If you set -shell, you will be asked for an additional index group",
         "which should contain exactly one atom. In this case, only hydrogen",
         "bonds between atoms within the shell distance from the one atom are",
-        "considered.[PAR]"
+        "considered.[PAR]",
     
         /*    "It is also possible to analyse specific hydrogen bonds with",
               "[TT]-sel[tt]. This index file must contain a group of atom triplets",
@@ -3126,7 +3151,7 @@ int gmx_hbond(int argc,char *argv[])
         "into hydrogen bonds. Ordering is identical to that in [TT]-hbn[tt]",
         "index file.[BR]",
         "[TT]-dan[tt]: write out the number of donors and acceptors analyzed for",
-        "each timeframe. This is especially usefull when using [TT]-shell[tt].[BR]",
+        "each timeframe. This is especially useful when using [TT]-shell[tt].[BR]",
         "[TT]-nhbdist[tt]: compute the number of HBonds per hydrogen in order to",
         "compare results to Raman Spectroscopy.",
         "[PAR]",
@@ -3190,23 +3215,24 @@ int gmx_hbond(int argc,char *argv[])
         { "-nthreads", FALSE, etINT, {&nThreads},
           "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
 #endif
-        { "-NN", FALSE, etENUM, {NNtype},
-          "HIDDENDo a full all vs all loop and estimsate the interaction energy instead of having a binary existence function for hydrogen bonds. NOT FULLY TESTED YET! DON'T USE IT!"},
-        { "-gemfit", FALSE, etBOOL, {&bGemFit},
-          "With -gemainate != none: fit ka and kd to the ACF"},
+        /* The ballistic/geminate fitting will be taken away temporarily sue to problems with stability. */
+/*         { "-NN", FALSE, etENUM, {NNtype}, */
+/*           "HIDDENDo a full all vs all loop and estimate the interaction energy instead of having a binary existence function for hydrogen bonds. NOT FULLY TESTED YET! DON'T USE IT!"}, */
+/*         { "-gemfit", FALSE, etBOOL, {&bGemFit}, */
+/*           "With -gemainate != none: fit ka and kd to the ACF"}, */
 /*         { "-gemlogstart", FALSE, etREAL, {&logAfterTime}, */
 /*           "HIDDENWith -gemfit: After this time (ps) the data points fitted to will be equidistant in log-time."}, */
-        { "-gemnp", FALSE, etINT, {&nFitPoints},
-          "HIDDENNuber of points in the ACF used to fit rev. gem. recomb. model"},
-        { "-ballistic", FALSE, etBOOL, {&bBallistic},
-          "Calculate and remove ultrafast \"ballistic\" component in the ACF"},
-        { "-ballisticlen", FALSE, etREAL, {&gemBallistic},
-          "HIDDENFitting interval for the ultrafast \"ballistic\" component in ACF"},
-        { "-nbalexp", FALSE, etINT, {&nBalExp},
-          "HIDDENNumber of exponentials to fit when removing the ballistic component"},
-        { "-ballisticDt", FALSE, etBOOL, {&bBallisticDt},
-          "HIDDENIf TRUE, finding of the fastest ballistic component will be based on the time derivative at t=0, "
-          "while if FALSE, it will be based on the exponent alone (like in Markovitch 2008)"}
+/*         { "-gemnp", FALSE, etINT, {&nFitPoints}, */
+/*           "HIDDENNuber of points in the ACF used to fit rev. gem. recomb. model"}, */
+/*         { "-ballistic", FALSE, etBOOL, {&bBallistic}, */
+/*           "Calculate and remove ultrafast \"ballistic\" component in the ACF"}, */
+/*         { "-ballisticlen", FALSE, etREAL, {&gemBallistic}, */
+/*           "HIDDENFitting interval for the ultrafast \"ballistic\" component in ACF"}, */
+/*         { "-nbalexp", FALSE, etINT, {&nBalExp}, */
+/*           "HIDDENNumber of exponentials to fit when removing the ballistic component"}, */
+/*         { "-ballisticDt", FALSE, etBOOL, {&bBallisticDt}, */
+/*           "HIDDENIf TRUE, finding of the fastest ballistic component will be based on the time derivative at t=0, " */
+/*           "while if FALSE, it will be based on the exponent alone (like in Markovitch 2008)"} */
     };
     const char *bugs[] = {
         "The option [TT]-sel[tt] that used to work on selected hbonds is out of order, and therefore not available for the time being."

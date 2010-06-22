@@ -1162,6 +1162,53 @@ static real cutoff_inf(real cutoff)
     return cutoff;
 }
 
+bool can_use_allvsall(const t_inputrec *ir,
+                      bool bPrintNote,t_commrec *cr,FILE *fp)
+{
+    bool bAllvsAll;
+
+#ifdef GMX_DOUBLE
+    /* double not done yet */
+    bAllvsAll = FALSE;
+#else
+    bAllvsAll =
+        (ir->rlist==0            &&
+         ir->rcoulomb==0         &&
+         ir->rvdw==0             &&
+         ir->ePBC==epbcNONE      &&
+         ir->vdwtype==evdwCUT    &&
+         ir->coulombtype==eelCUT &&
+         ir->efep==efepNO        &&
+         (ir->implicit_solvent == eisNO || 
+          (ir->implicit_solvent==eisGBSA && (ir->gb_algorithm==egbSTILL || 
+                                             ir->gb_algorithm==egbHCT   || 
+                                             ir->gb_algorithm==egbOBC))) &&
+         getenv("GMX_NO_ALLVSALL") == NULL
+            );
+
+    if (bAllvsAll && ir->opts.ngener > 1)
+    {
+        const char *note="NOTE: Can not use all-vs-all force loops, because there are multiple energy monitor groups; you might get significantly higher performance when using only a single energy monitor group.\n";
+
+        if (bPrintNote)
+        {
+            if (MASTER(cr))
+            {
+                fprintf(stderr,"\n%s\n",note);
+            }
+            if (fp != NULL)
+            {
+                fprintf(fp,"\n%s\n",note);
+            }
+        }
+        bAllvsAll = FALSE;
+    }
+#endif
+
+    return bAllvsAll;
+}
+
+
 void init_forcerec(FILE *fp,
                    const output_env_t oenv,
                    t_forcerec *fr,
@@ -1229,36 +1276,7 @@ void init_forcerec(FILE *fp,
     fr->sc_sigma6  = pow(ir->sc_sigma,6);
     
     /* Check if we can/should do all-vs-all kernels */
-#ifdef GMX_DOUBLE
-    /* double not done yet */
-    fr->bAllvsAll = FALSE;
-#else
-    fr->bAllvsAll = (ir->rlist==0            &&
-                     ir->rcoulomb==0         &&
-                     ir->rvdw==0             &&
-                     ir->ePBC==epbcNONE      &&
-                     ir->vdwtype==evdwCUT    &&
-                     ir->coulombtype==eelCUT &&
-                     ir->efep==efepNO        &&
-                     (ir->implicit_solvent == eisNO || 
-                      (ir->implicit_solvent==eisGBSA && (ir->gb_algorithm==egbSTILL || 
-                                                         ir->gb_algorithm==egbHCT   || 
-                                                         ir->gb_algorithm==egbOBC)))
-                     );
-    if (fr->bAllvsAll && ir->opts.ngener > 1)
-    {
-        const char *note="NOTE: Can not use all-vs-all force loops, because there are multiple energy monitor groups; you might get significantly higher performance when using only a single energy monitor group.\n";
-        if (MASTER(cr))
-        {
-            fprintf(stderr,"\n%s\n",note);
-        }
-        if (fp != NULL)
-        {
-            fprintf(fp,"\n%s\n",note);
-        }
-        fr->bAllvsAll = FALSE;
-    }
-#endif
+    fr->bAllvsAll       = can_use_allvsall(ir,FALSE,NULL,NULL);
     fr->AllvsAll_work   = NULL;
     fr->AllvsAll_workgb = NULL;
 

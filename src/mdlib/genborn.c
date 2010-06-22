@@ -75,7 +75,7 @@
 
 #include "genborn_allvsall.h"
 
-    //#define DISABLE_SSE
+/*#define DISABLE_SSE*/
 
 typedef struct {
     int shift;
@@ -1173,7 +1173,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         }
     }
 
-#ifndef DOUBLE
+#ifndef GMX_DOUBLE
     if(fr->bAllvsAll)
     {
         cnt = md->homenr*(md->nr/2+1);
@@ -1559,8 +1559,8 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
     {
         ai   = nl->iinr[i];
         
-        nj0     = nl->jindex[ai];
-        nj1  = nl->jindex[ai+1];
+        nj0  = nl->jindex[i];
+        nj1  = nl->jindex[i+1];
         
         /* Load shifts for this list */
         shift   = nl->shift[i];
@@ -1679,7 +1679,7 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
         dd_atom_spread_real(cr->dd,fr->dvda);
     }
 
-#ifndef DOUBLE
+#ifndef GMX_DOUBLE
     if(fr->bAllvsAll)
     {
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )

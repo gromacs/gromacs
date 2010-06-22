@@ -47,7 +47,8 @@ endif()
 
 # if git executable xists and it's compatible version
 # build the development version string 
-if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION VERSION_LESS "1.5.1")
+# this should at some point become VERSION_LESS
+if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
     # refresh git index 
     execute_process(COMMAND ${Git_EXECUTABLE} update-index -q --refresh
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -81,7 +82,8 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION VERSION_LESS "1.5.1")
 
     # if git is older then 1.5.3 we need to extract the RFC2822 style date 
     # and massage it, otherwise the ISO 8601 format is more trusworthy
-    if (NOT Git_VERSION STREQUAL "" AND Git_VERSION VERSION_LESS "1.5.3")
+    # this should at some point become VERSION_LESS
+    if (NOT Git_VERSION STREQUAL "" AND Git_VERSION STRLESS "1.5.3")
         execute_process(COMMAND ${Git_EXECUTABLE} rev-list -n1 "--pretty=format:%cD" HEAD
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT_VARIABLE HEAD_DATE

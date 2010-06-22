@@ -366,13 +366,13 @@ void read_eigenvalues(int vecs[],const char *eigfile, real values[],
   if (bHesse)
     for (i=0; vecs[i]; i++) {
       if (vecs[i]<7)
-	gmx_fatal(FARGS,"ERROR: You have choosen one of the first 6 eigenvectors of the HESSE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
+	gmx_fatal(FARGS,"ERROR: You have chosen one of the first 6 eigenvectors of the HESSE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
       values[i]=eigval[1][vecs[i]-1]/kT;
     }
   else
     for (i=0; vecs[i]; i++) {
       if (vecs[i]>(neig-6))
-	gmx_fatal(FARGS,"ERROR: You have choosen one of the last 6 eigenvectors of the COVARIANCE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
+	gmx_fatal(FARGS,"ERROR: You have chosen one of the last 6 eigenvectors of the COVARIANCE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
       values[i]=1/eigval[1][vecs[i]-1];
     }
   /* free memory */
@@ -471,14 +471,14 @@ int main(int argc,char *argv[])
       "([TT]-linfix[tt], [TT]-linacc[tt], [TT]-radfix[tt], [TT]-radacc[tt], [TT]-radcon[tt]),",
       "to keep the position along a certain (set of) coordinate(s) fixed ([TT]-linfix[tt]),",
       "or to only monitor the projections of the positions onto",
-      "these coordinates ([TT]-mon[tt]).[PAR]"
+      "these coordinates ([TT]-mon[tt]).[PAR]",
       "References:[BR]",
       "A. Amadei, A.B.M. Linssen, B.L. de Groot, D.M.F. van Aalten and ",
       "H.J.C. Berendsen; An efficient method for sampling the essential subspace ",
       "of proteins., J. Biomol. Struct. Dyn. 13:615-626 (1996)[BR]",
       "B.L. de Groot, A. Amadei, D.M.F. van Aalten and H.J.C. Berendsen; ",
       "Towards an exhaustive sampling of the configurational spaces of the ",
-      "two forms of the peptide hormone guanylin,"
+      "two forms of the peptide hormone guanylin,",
       "J. Biomol. Struct. Dyn. 13 : 741-751 (1996)[BR]",
       "B.L. de Groot, A.Amadei, R.M. Scheek, N.A.J. van Nuland and H.J.C. Berendsen; ",
       "An extended sampling of the configurational space of HPr from E. coli",
@@ -495,16 +495,16 @@ int main(int argc,char *argv[])
       "(steps in the desired direction will be accepted, others will be rejected).",
       "Note: by default the starting MD structure will be taken as origin of the first",
       "expansion cycle for radius expansion. If [TT]-ori[tt] is specified, you will be able",
-      "to read in a structure file that defines an external origin.[PAR]"
+      "to read in a structure file that defines an external origin.[PAR]",
       "[TT]-radcon[tt]: perform acceptance radius contraction along selected eigenvectors",
-      "towards a target structure specified with [TT]-tar[tt].[PAR]"
-      "NOTE: each eigenvector can be selected only once. [PAR]"
+      "towards a target structure specified with [TT]-tar[tt].[PAR]",
+      "NOTE: each eigenvector can be selected only once. [PAR]",
       "[TT]-outfrq[tt]: frequency (in steps) of writing out projections etc. to .edo file[PAR]",
       "[TT]-slope[tt]: minimal slope in acceptance radius expansion. A new expansion",
       "cycle will be started if the spontaneous increase of the radius (in nm/step)",
-      "is less than the value specified.[PAR]" 
+      "is less than the value specified.[PAR]",
       "[TT]-maxedsteps[tt]: maximum number of steps per cycle in radius expansion",
-      "before a new cycle is started.[PAR]"
+      "before a new cycle is started.[PAR]",
       "Note on the parallel implementation: since ED sampling is a 'global' thing",
       "(collective coordinates etc.), at least on the 'protein' side, ED sampling",
       "is not very parallel-friendly from an implentation point of view. Because",

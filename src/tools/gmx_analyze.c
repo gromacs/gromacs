@@ -882,7 +882,7 @@ int gmx_analyze(int argc,char *argv[])
     "A line in the input file may start with a time",
     "(see option [TT]-time[tt]) and any number of y values may follow.",
     "Multiple sets can also be",
-    "read when they are seperated by & (option [TT]-n[tt]),",
+    "read when they are separated by & (option [TT]-n[tt]),",
     "in this case only one y value is read from each line.",
     "All lines starting with # and @ are skipped.",
     "All analyses can also be done for the derivative of a set",
@@ -893,7 +893,7 @@ int gmx_analyze(int argc,char *argv[])
 
     "g_analyze always shows the average and standard deviation of each",
     "set. For each set it also shows the relative deviation of the third",
-    "and forth cumulant from those of a Gaussian distribution with the same",
+    "and fourth cumulant from those of a Gaussian distribution with the same",
     "standard deviation.[PAR]",
 
     "Option [TT]-ac[tt] produces the autocorrelation function(s).[PAR]",
@@ -986,7 +986,7 @@ int gmx_analyze(int argc,char *argv[])
     { "-e",       FALSE, etREAL, {&te},
       "Last time to read from set" },
     { "-n",       FALSE, etINT, {&nsets_in},
-      "Read # sets seperated by &" },
+      "Read # sets separated by &" },
     { "-d",       FALSE, etBOOL, {&bDer},
 	"Use the derivative" },
     { "-dp",      FALSE, etINT, {&d}, 
@@ -1036,14 +1036,14 @@ int gmx_analyze(int argc,char *argv[])
       "HIDDENNumber of exponentials to fit to the ultrafast component" },
     { "-baltime", FALSE, etREAL, {&balTime},
       "HIDDENTime up to which the ballistic component will be fitted" },
-    { "-gemnp", FALSE, etINT, {&nFitPoints},
-      "HIDDENNumber of data points taken from the ACF to use for fitting to rev. gem. recomb. model."},
-    { "-rcut", FALSE, etREAL, {&rcut},
-      "Cut-off for hydrogen bonds in geminate algorithms" },
+/*     { "-gemnp", FALSE, etINT, {&nFitPoints}, */
+/*       "HIDDENNumber of data points taken from the ACF to use for fitting to rev. gem. recomb. model."}, */
+/*     { "-rcut", FALSE, etREAL, {&rcut}, */
+/*       "Cut-off for hydrogen bonds in geminate algorithms" }, */
 /*     { "-gemtype", FALSE, etENUM, {gemType}, */
 /*       "What type of gminate recombination to use"}, */
-    { "-D", FALSE, etREAL, {&diffusion},
-      "The self diffusion coefficient which is used for the reversible geminate recombination model."}
+/*     { "-D", FALSE, etREAL, {&diffusion}, */
+/*       "The self diffusion coefficient which is used for the reversible geminate recombination model."} */
   };
 #define NPA asize(pa)
 
@@ -1063,7 +1063,7 @@ int gmx_analyze(int argc,char *argv[])
     { efXVG, "-av",   "average",  ffOPTWR  },
     { efXVG, "-ee",   "errest",   ffOPTWR  },
     { efXVG, "-bal",  "ballisitc",ffOPTWR  },
-    { efXVG, "-gem",  "geminate", ffOPTWR  },
+/*     { efXVG, "-gem",  "geminate", ffOPTWR  }, */
     { efLOG, "-g",    "fitlog",   ffOPTWR  }
   }; 
 #define NFILE asize(fnm) 
@@ -1085,7 +1085,7 @@ int gmx_analyze(int argc,char *argv[])
   avfile   = opt2fn_null("-av",NFILE,fnm);
   eefile   = opt2fn_null("-ee",NFILE,fnm);
   balfile  = opt2fn_null("-bal",NFILE,fnm);
-  gemfile  = opt2fn_null("-gem",NFILE,fnm);
+/*   gemfile  = opt2fn_null("-gem",NFILE,fnm); */
   if (opt2parg_bSet("-fitfn",npargs,ppa)) 
     fitfile  = opt2fn("-g",NFILE,fnm);
   else
@@ -1202,9 +1202,9 @@ int gmx_analyze(int argc,char *argv[])
 		   bEeFitAc,bEESEF,bEENLC,oenv);
   if (balfile)
       do_ballistic(balfile,n,t,val,nset,balTime,nBalExp,bDer,oenv);
-  if (gemfile)
-      do_geminate(gemfile,n,t,val,nset,diffusion,rcut,balTime,
-                  nFitPoints, fit_start, fit_end, oenv);
+/*   if (gemfile) */
+/*       do_geminate(gemfile,n,t,val,nset,diffusion,rcut,balTime, */
+/*                   nFitPoints, fit_start, fit_end, oenv); */
   if (bPower)
     power_fit(n,nset,val,t);
   if (acfile) {

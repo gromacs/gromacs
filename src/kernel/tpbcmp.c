@@ -856,7 +856,7 @@ void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *
     else if (!b1 && b2) 
       fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn1,fn2);
     else if (!b1 && !b2)
-      fprintf(stdout,"\nFiles read succesfully\n");
+      fprintf(stdout,"\nFiles read successfully\n");
     else {
       cmp_real(stdout,"t",-1,fr1->t,fr2->t,ftol,abstol);
       cmp_int(stdout,"step",-1,fr1->step,fr2->step);

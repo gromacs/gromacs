@@ -88,16 +88,13 @@ extern bool gmx_eof(FILE *fp);
 extern bool is_pipe(FILE *fp);
 /* Check whether the file (opened by ffopen) is a pipe */
 
-extern char *backup_fn(const char *file);
-/* Return a backup name for file (name with # before and after) */
-
 /*  Make a backup of file if necessary.  
     Return false if there was a problem.
 */
 extern bool make_backup(const char * file);
 
 extern FILE *ffopen(const char *file, const char *mode);
-/* Return a valid file pointer when succesfull, exits otherwise 
+/* Return a valid file pointer when successful, exits otherwise 
  * If the file is in compressed format, open a pipe which uncompresses
  * the file! Therefore, files must be closed with ffclose (see below)
  */

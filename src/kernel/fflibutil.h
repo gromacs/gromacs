@@ -62,11 +62,13 @@ extern void fflib_filename_base(const char *filename,char *filebase,int maxlen);
  * base should be at least of size maxlen.
  */
 
-extern int fflib_search_file_end(const char *ffdir,const char *file_end,
+extern int fflib_search_file_end(const char *ffdir,bool bAddCWD,
+				 const char *file_end,
 				 bool bFatalError,
 				 char ***filenames);
 /* Search for files ending on file_end in the force field directory fflib.
- * fflib should be in the current working directory or the GROMACS lib.path.
+ * fflib should be in the GROMACS lib.path or, when bAddCWD is set,
+ * in the current working directory.
  * Return the number of files and the file names in filenames.
  */
 
