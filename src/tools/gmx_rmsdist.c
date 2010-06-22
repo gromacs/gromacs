@@ -542,7 +542,8 @@ int gmx_rmsdist (int argc,char *argv[])
   rvec         *x;
   FILE         *fp;
 
-  int      status,isize,gnr=0;
+  t_trxstatus *status;
+  int      isize,gnr=0;
   atom_id  *index, *noe_index;
   char     *grpname;
   real     **d_r,**d,**dtot,**dtot2,**mean,**rms,**rmsc,*resnr;
@@ -669,7 +670,7 @@ int gmx_rmsdist (int argc,char *argv[])
   ffclose(fp);
   close_trj(status);
 
-  teller = nframes_read();
+  teller = nframes_read(status);
   calc_rms(isize,teller,dtot,dtot2,mean,&meanmax,rms,&rmsmax,rmsc,&rmscmax);
   fprintf(stderr,"rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
   

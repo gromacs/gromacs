@@ -247,7 +247,7 @@ void chk_trj(const output_env_t oenv,const char *fn,const char *tpr,real tol)
   off_t        fpos;
   real         rdum,tt,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE,bOK,newline=FALSE;
-  int          status;
+  t_trxstatus *status;
   gmx_mtop_t   mtop;
   gmx_localtop_t *top;
   t_state      state;
@@ -339,7 +339,7 @@ void chk_trj(const output_env_t oenv,const char *fn,const char *tpr,real tol)
     INC(fr,count,first,last,bF);
     INC(fr,count,first,last,bBox);
 #undef INC
-    fpos = gmx_fio_ftell(status);
+    fpos = gmx_fio_ftell(trx_get_fileio(status));
   } while (read_next_frame(oenv,status,&fr));
   
   fprintf(stderr,"\n");

@@ -43,6 +43,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "pbc.h"
+#include "gmxfio.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -123,7 +124,7 @@ extern "C" {
 
   extern ener_file_t open_enx(const char *fn,const char *mode);
 
-  extern int enx_file_pointer(const ener_file_t ef);
+  extern t_fileio *enx_file_pointer(const ener_file_t ef);
 
   extern void close_enx(ener_file_t ef);
   

@@ -133,7 +133,7 @@ static void print_data(FILE *fp,real time,rvec x[],real *mass,bool bCom,
     low_print_data(fp,time,x,isize[0],index[0],bDim);
 }
 
-static void write_trx_x(int status,t_trxframe *fr,real *mass,bool bCom,
+static void write_trx_x(t_trxstatus *status,t_trxframe *fr,real *mass,bool bCom,
 			int ngrps,int isize[],atom_id **index)
 {
   static rvec *xav=NULL;
@@ -528,7 +528,8 @@ int gmx_traj(int argc,char *argv[])
   rvec       *xtop,*xp=NULL;
   rvec       *sumxv=NULL,*sumv=NULL,*sumxf=NULL,*sumf=NULL;
   matrix     topbox;
-  int        status,status_out=-1;
+  t_trxstatus *status;
+  t_trxstatus *status_out=NULL;
   int        i,j,n;
   int        nr_xfr,nr_vfr,nr_ffr;
   char       **grpname;

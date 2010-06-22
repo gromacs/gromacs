@@ -588,7 +588,8 @@ int gmx_disre(int argc,char *argv[])
   t_nrnb      nrnb;
   t_commrec   *cr;
   t_graph     *g;
-  int         status,ntopatoms,natoms,i,j,kkk;
+  int         ntopatoms,natoms,i,j,kkk;
+  t_trxstatus *status;
   real        t;
   rvec        *x,*f,*xav=NULL;
   matrix      box;

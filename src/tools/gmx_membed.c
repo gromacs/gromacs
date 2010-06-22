@@ -208,37 +208,38 @@ int get_type(int mol_id,int nmblock,gmx_molblock_t *mblock)
 	return -1;
 }
 
-int get_tpr_version(char *infile)
+int get_tpr_version(const char *infile)
 {
 	char  	buf[STRLEN];
 	bool  	bDouble;
-	int 	precision,fver,fp;
+	int 	precision,fver;
+        t_fileio *fio;
 	bool 	bRead=TRUE;
 
-	fp = open_tpx(infile,"r");
-	gmx_fio_select(fp);
+	fio = open_tpx(infile,"r");
+	gmx_fio_checktype(fio);
 
 	precision = sizeof(real);
 
-	do_string(buf);
+	gmx_fio_do_string(fio,buf);
 	if (strncmp(buf,"VERSION",7))
 		gmx_fatal(FARGS,"Can not read file %s,\n"
 				"             this file is from a Gromacs version which is older than 2.0\n"
 				"             Make a new one with grompp or use a gro or pdb file, if possible",
-				gmx_fio_getname(fp));
-	do_int(precision);
+				gmx_fio_getname(fio));
+	gmx_fio_do_int(fio,precision);
 	bDouble = (precision == sizeof(double));
 	if ((precision != sizeof(float)) && !bDouble)
 		gmx_fatal(FARGS,"Unknown precision in file %s: real is %d bytes "
 				"instead of %d or %d",
-				gmx_fio_getname(fp),precision,sizeof(float),sizeof(double));
-	gmx_fio_setprecision(fp,bDouble);
+				gmx_fio_getname(fio),precision,sizeof(float),sizeof(double));
+	gmx_fio_setprecision(fio,bDouble);
 	fprintf(stderr,"Reading file %s, %s (%s precision)\n",
-			gmx_fio_getname(fp),buf,bDouble ? "double" : "single");
+			gmx_fio_getname(fio),buf,bDouble ? "double" : "single");
 
-	do_int(fver);
+	gmx_fio_do_int(fio,fver);
 
-	close_tpx(fp);
+	close_tpx(fio);
 
 	return fver;
 }
@@ -262,7 +263,8 @@ void set_inbox(int natom, rvec *x)
 
 int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 {
-	int i,j,nr,mol_id,type;
+	int i,j,nr,mol_id;
+        int type=0;
 	bool bNEW;
 
 	nr=0;
@@ -438,7 +440,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	real z,zmin,zmax,mem_area;
 	bool bNew;
 	atom_id *mol_id;
-	int type;
+	int type=0;
 
 	nmol=count=0;
 	mem_a=&(mem_p->mem_at);
@@ -561,7 +563,8 @@ void resize(t_block *ins_at, rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
 int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop_t *mtop,
 		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, bool bALLOW_ASYMMETRY)
 {
-	int i,j,k,l,at,at2,mol_id,type;
+	int i,j,k,l,at,at2,mol_id;
+        int type=0;
 	int nrm,nupper,nlower;
 	real r_min_rad,z_lip,min_norm;
 	bool bRM;
@@ -851,7 +854,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	return rm_at;
 }
 
-void top_update(char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
+void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 {
 #define TEMP_FILENM "temp.top"
 	bool	bMolecules=FALSE;
@@ -1810,7 +1813,8 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
-    int        i,m,status;
+    int        i,m;
+    t_trxstatus *status;
     rvec       mu_tot;
     t_vcm      *vcm;
     t_state    *bufstate=NULL;

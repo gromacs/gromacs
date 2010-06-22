@@ -85,7 +85,7 @@ int gmx_principal(int argc,char *argv[])
   t_pargs pa[] = {
 	  { "-foo",      FALSE, etBOOL, {&foo}, "Dummy option to avoid empty array" }
   };
-  int        status;
+  t_trxstatus *status;
   t_topology top;
   int        ePBC;
   real       t;
