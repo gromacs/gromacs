@@ -410,7 +410,8 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
                              real start_q,real end_q,
                              real energy,int ng,const output_env_t oenv)
 {
-    int i,*isize,status,flags = TRX_READ_X,**index_atp;
+    int i,*isize,flags = TRX_READ_X,**index_atp;
+    t_trxstatus *status;
     char **grpname,title[STRLEN];
     atom_id **index;
     t_topology top;

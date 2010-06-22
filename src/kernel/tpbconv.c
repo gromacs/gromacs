@@ -314,7 +314,7 @@ int main (int argc, char *argv[])
   };
 
   const char   *top_fn,*frame_fn;
-  int          fp;
+  t_fileio     *fp;
   ener_file_t  fp_ener=NULL;
   t_trnheader head;
   int          i;

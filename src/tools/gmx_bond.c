@@ -93,7 +93,8 @@ static void do_bonds(FILE *log,const char *fn,const char *fbond,
     int    counter;*/
   rvec   *x;
   rvec   dx;
-  int    status,natoms;
+  t_trxstatus *status;
+  int    natoms;
   matrix box;
   real   t,fac;
   int    bind,i,nframes,i0,i1;

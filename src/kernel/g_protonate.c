@@ -74,7 +74,8 @@ int main (int argc,char *argv[])
   t_atoms     *atoms,*iatoms;
   t_protonate protdata;
   atom_id     *index;
-  int         status,out;
+  t_trxstatus *status;
+  t_trxstatus *out;
   t_trxframe  fr,frout;
   rvec        *x,*ix;
   int         nidx,natoms,natoms_out;

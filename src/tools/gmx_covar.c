@@ -112,7 +112,8 @@ int gmx_covar(int argc,char *argv[])
       "Apply corrections for periodic boundary conditions" }
   };
   FILE       *out;
-  int        status,trjout;
+  t_trxstatus *status;
+  t_trxstatus *trjout;
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;  

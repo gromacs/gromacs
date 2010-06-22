@@ -564,7 +564,8 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
   rvec         *xa[2]; /* the coordinates to calculate displacements for */
   rvec         com={0};
   real         t,t_prev=0;
-  int          natoms,i,j,status,cur=0,maxframes=0;
+  int          natoms,i,j,cur=0,maxframes=0;
+  t_trxstatus *status;
 #define        prev (1-cur)
   matrix       box;
   bool         bFirst;

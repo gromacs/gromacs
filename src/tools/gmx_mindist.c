@@ -108,7 +108,7 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 {
   FILE   *out;
   char *leg[5] = { "min per.","max int.","box1","box2","box3" };
-  int    status;
+  t_trxstatus *status;
   real   t;
   rvec   *x;
   matrix box;
@@ -252,11 +252,12 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
                const output_env_t oenv)
 {
   FILE         *atm,*dist,*num;
-  int          trxout;
+  t_trxstatus  *trxout;
   char         buf[256];
   char         **leg;
   real         t,dmin,dmax,**mindres=NULL,**maxdres=NULL;
-  int          nmin,nmax,status;
+  int          nmin,nmax;
+  t_trxstatus  *status;
   int          i=-1,j,k,natoms;
   int	       min1,min2,max1,max2;
   atom_id      oindex[2];
@@ -274,7 +275,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   sprintf(buf,"Number of Contacts %s %g nm",bMin ? "<" : ">",rcut);
   num = nfile ? xvgropen(nfile,buf,output_env_get_time_label(oenv),"Number",oenv) : NULL;
   atm = afile ? ffopen(afile,"w") : NULL;
-  trxout = xfile ? open_trx(xfile,"w") : NOTSET;
+  trxout = xfile ? open_trx(xfile,"w") : NULL;
   
   if (bMat) {
     if (ng == 1) {
@@ -385,7 +386,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 		output_env_conv_time(oenv,t),1+(bMin ? min1 : max1),
                                   1+(bMin ? min2 : max2));
     
-    if (trxout>=0) {
+    if (trxout) {
       oindex[0]=bMin?min1:max1;
       oindex[1]=bMin?min2:max2;
       write_trx(trxout,2,oindex,atoms,i,t,box,x0,NULL,NULL);
@@ -411,7 +412,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   ffclose(dist);
   if (num) ffclose(num);
   if (atm) ffclose(atm);
-  if (trxout>=0) close_xtc(trxout);
+  if (trxout) close_trx(trxout);
   
   if(nres && !bEachResEachTime) {
     FILE *res;

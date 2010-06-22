@@ -1446,7 +1446,8 @@ int gmx_tune_pme(int argc,char *argv[])
     
     /* Default program names if nothing else is found */
     char        *cmd_mpirun=NULL, *cmd_mdrun=NULL;
-    char        *cmd_args_bench, *cmd_args_launch, *cmd_np;
+    char        *cmd_args_bench, *cmd_args_launch;
+    char        *cmd_np=NULL;
 
     t_perf      **perfdata;
     t_inputinfo *info;

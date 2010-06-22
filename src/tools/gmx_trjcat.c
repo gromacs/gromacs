@@ -76,7 +76,8 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
                            const output_env_t oenv)
 {
     /* Check start time of all files */
-    int i, status, natoms = 0;
+    int i, natoms = 0;
+    t_trxstatus *status;
     real t;
     t_trxframe fr;
     bool ok;
@@ -291,7 +292,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
                      atom_id index[], real dt, const output_env_t oenv)
 {
     int i, j, k, natoms, nnn;
-    int *fp_in, *fp_out;
+    t_trxstatus **fp_in, **fp_out;
     bool bCont, *bSet;
     real t, first_time = 0;
     t_trxframe *trx;
@@ -451,13 +452,14 @@ int gmx_trjcat(int argc, char *argv[])
             { "-cat", FALSE, etBOOL,
                 { &bCat }, "do not discard double time frames" } };
 #define npargs asize(pa)
-    int status, ftpin, i, frame, frame_out, step = 0, trjout = 0;
+    int ftpin, i, frame, frame_out, step = 0, trjout = 0;
+    t_trxstatus *status;
     rvec *x, *v;
     real xtcpr, t_corr;
     t_trxframe fr, frout;
     char **fnms, **fnms_out, *in_file, *out_file;
     int n_append;
-    int trxout = -1;
+    t_trxstatus *trxout = NULL;
     bool bNewFile, bIndex, bWrite;
     int earliersteps, nfile_in, nfile_out, *cont_type, last_ok_step;
     real *readtime, *timest, *settime;
@@ -619,8 +621,12 @@ int gmx_trjcat(int argc, char *argv[])
         }
         else 
         {
+            t_fileio *stfio;
+
             if (!read_first_frame(oenv,&status,out_file,&fr,FLAGS))
                 gmx_fatal(FARGS,"Reading first frame from %s",out_file);
+
+            stfio=trx_get_fileio(status);
             if (!bKeepLast && !bOverwrite)
             {
                 fprintf(stderr, "\n\nWARNING: Appending without -overwrite implies -keeplast "
@@ -631,9 +637,12 @@ int gmx_trjcat(int argc, char *argv[])
                 /* Fails if last frame is incomplete
                  * We can't do anything about it without overwriting
                  * */
-                if (gmx_fio_getftp(status) == efXTC) 
+                if (gmx_fio_getftp(stfio) == efXTC) 
                 {
-                    lasttime = xdr_xtc_get_last_frame_time(gmx_fio_getfp(status),gmx_fio_getxdr(status),fr.natoms,&bOK);
+                    lasttime = 
+                         xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
+                                                     gmx_fio_getxdr(stfio),
+                                                     fr.natoms,&bOK);
                     fr.time = lasttime;
                     if (!bOK)
                     {
@@ -652,10 +661,13 @@ int gmx_trjcat(int argc, char *argv[])
             }
             else if (bOverwrite)
             {
-                if (gmx_fio_getftp(status) != efXTC) {
+                if (gmx_fio_getftp(stfio) != efXTC) {
                     gmx_fatal(FARGS,"Overwrite only supported for XTC." );
                 }
-                last_frame_time = xdr_xtc_get_last_frame_time(gmx_fio_getfp(status),gmx_fio_getxdr(status),fr.natoms,&bOK);
+                last_frame_time = 
+                          xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
+                                                      gmx_fio_getxdr(stfio),
+                                                      fr.natoms,&bOK);
                 if (!bOK)
                 {
                    gmx_fatal(FARGS,"Error reading last frame. Maybe seek not supported." );
@@ -672,7 +684,7 @@ int gmx_trjcat(int argc, char *argv[])
                 {
                     searchtime = last_frame_time;
                 }
-                if (xtc_seek_time(searchtime,status,fr.natoms))
+                if (xtc_seek_time(stfio,searchtime,fr.natoms))
                 {
                     gmx_fatal(FARGS,"Error seeking to append position.");
                 }
@@ -683,10 +695,10 @@ int gmx_trjcat(int argc, char *argv[])
                               searchtime,fr.time);
                 }
                 lasttime = fr.time;             
-                fpos = gmx_fio_ftell(status);
+                fpos = gmx_fio_ftell(stfio);
                 close_trj(status);
                 trxout = open_trx(out_file,"r+");
-                if (gmx_fio_seek(trxout,fpos)) {
+                if (gmx_fio_seek(trx_get_fileio(trxout),fpos)) {
                     gmx_fatal(FARGS,"Error seeking to append position.");
                 }
             }
@@ -822,7 +834,8 @@ int gmx_trjcat(int argc, char *argv[])
 
                         if (bIndex)
                         {
-                            write_trxframe_indexed(trxout,&frout,isize,index,NULL);
+                            write_trxframe_indexed(trxout,&frout,isize,index,
+                                                   NULL);
                         }
                         else
                         {
@@ -841,7 +854,7 @@ int gmx_trjcat(int argc, char *argv[])
 
             earliersteps+=step;	  
         }  
-        if (trxout >= 0)
+        if (trxout)
         {
             close_trx(trxout);
         }
