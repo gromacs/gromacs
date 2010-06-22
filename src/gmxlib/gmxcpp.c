@@ -191,7 +191,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
 {
   gmx_cpp_t cpp;
   char *buf,*pdum;
-  const char *ptr;
+  char *ptr;
   int i;
   unsigned int i1;
   
@@ -212,22 +212,51 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   
   snew(cpp,1);
   *handle      = cpp;
-  ptr = strrchr(filenm,'/');
-  if (NULL == ptr) {
+  cpp->fn      = NULL;
+  /* Find the file. First check whether it is in the current directory. */
+  if (gmx_fexist(filenm))
+  {
+    cpp->fn = strdup(filenm);
+  }
+  else
+  {
+    /* If not, check all the paths given with -I. */
+    for (i = 0; i < nincl; ++i)
+    {
+      snew(buf, strlen(incl[i]) + strlen(filenm) + 2);
+      sprintf(buf, "%s%c%s", incl[i], DIR_SEPARATOR, filenm);
+      if (gmx_fexist(buf))
+      {
+        cpp->fn = buf;
+        break;
+      }
+      sfree(buf);
+    }
+    /* If still not found, check the Gromacs library search path. */
+    if (!cpp->fn)
+    {
+      cpp->fn = low_gmxlibfn(filenm, FALSE);
+    }
+  }
+  if (!cpp->fn)
+  {
+    gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm);
+  }
+  /* If the file name has a path component, we need to change to that
+   * directory. */
+  ptr = strrchr(cpp->fn, DIR_SEPARATOR);
+  if (!ptr)
+  {
     cpp->path = NULL;
     cpp->cwd  = NULL;
-    cpp->fn   = strdup(filenm);
   }
-  else {
-    buf = strdup(filenm);
-    buf[ptr-filenm] = '\0';
+  else
+  {
+    cpp->path = cpp->fn;
+    *ptr      = '\0';
     cpp->fn   = strdup(ptr+1);
     snew(cpp->cwd,STRLEN);
 
-    /* Search for the directory in cwd and the GROMACS search path */
-    cpp->path = gmxlibfn(buf);
-    sfree(buf);
-      
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
       pdum=_getcwd(cpp->cwd,STRLEN);
       _chdir(cpp->path);
@@ -249,19 +278,8 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   cpp->ifdefs  = NULL;
   cpp->child   = NULL;
   cpp->parent  = NULL;
-  i = 0;
-  while (((cpp->fp = fopen(cpp->fn,"r")) == NULL) && (i<nincl)) {
-    snew(buf,strlen(incl[i])+strlen(filenm)+2);
-    sprintf(buf,"%s/%s",incl[i],filenm);
-    sfree(cpp->fn);
-    cpp->fn = strdup(buf);
-    sfree(buf);
-    i++;
-  }
   if (cpp->fp == NULL) {
-    sfree(cpp->fn);
-    cpp->fn = strdup(filenm);
-    cpp->fp = libopen(filenm);
+    cpp->fp = fopen(cpp->fn, "r");
   }
   if (cpp->fp == NULL) {
     switch(errno) {
