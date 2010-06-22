@@ -547,7 +547,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     where();
     debug_gmx();
 
-    if (EVDW_PME(fr->vdwtype))
+    if (EVDW_PME(fr->vdwtype) && do_per_step(step,ir->nstlist))
     {
         bSB = (ir->nwall == 2);
         if (bSB)
@@ -596,7 +596,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 wallcycle_start(wcycle,ewcPMEMESH);
                 status = gmx_pme_lj_do(fr->pmeljdata,
                                     md->start,md->homenr - fr->n_tpi,
-                                    x,fr->f_novirsum,
+                                    x,fr->f_twin,
                                     md->c6A,md->c6B,
                                     bSB ? boxs : box,cr,
                                     DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
@@ -605,6 +605,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                     fr->vir_lj_recip,fr->ewaldljcoeff,
                                     &Vlr,lambda,&dvdlambda,
                                     pme_flags);
+                for(i=0; (i<fr->f_novirsum_n); i++)
+                    rvec_inc(fr->f_novirsum[i],fr->f_twin[i]);
                 *cycles_pme += wallcycle_stop(wcycle,ewcPMEMESH);
 
                 /* We should try to do as little computation after
