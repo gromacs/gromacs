@@ -569,6 +569,8 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 	real r_min_rad,z_lip,min_norm;
 	bool bRM;
 	rvec dr,dr_tmp;
+	real *dist;
+	int *order;
 
 	r_min_rad=probe_rad*probe_rad;
 	snew(rm_p->mol,mtop->mols.nr);
@@ -615,8 +617,6 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 		}
 	}
 
-	real *dist;
-	int *order;
 	/*make sure equal number of lipids from upper and lower layer are removed */
 	if( (nupper!=nlower) && (!bALLOW_ASYMMETRY) )
 	{
