@@ -104,9 +104,9 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,
-      **slCount,         /* nr. of atoms in one slice for a group */
+  int natoms;            /* nr. atoms in trj */
+  t_trxstatus *status;
+  int **slCount,         /* nr. of atoms in one slice for a group */
       i,j,n,             /* loop indices */
       teller = 0,      
       ax1=0, ax2=0,

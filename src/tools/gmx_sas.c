@@ -229,7 +229,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   const char   *vfile;
   real         t;
   gmx_atomprop_t aps=NULL;
-  int          status,ndefault;
+  t_trxstatus  *status;
+  int          ndefault;
   int          i,j,ii,nfr,natoms,flag,nsurfacedots,res;
   rvec         *xtop,*x;
   matrix       topbox,box;

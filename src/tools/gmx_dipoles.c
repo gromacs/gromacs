@@ -673,7 +673,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   t_enxframe *fr;
   int        nframes=1000,nre,timecheck=0,ncolour=0;
   ener_file_t fmu=NULL;
-  int        i,j,k,n,m,natom=0,nmol,status,gnx_tot,teller,tel3;
+  int        i,j,k,n,m,natom=0,nmol,gnx_tot,teller,tel3;
+  t_trxstatus *status;
   int        *dipole_bin,ndipbin,ibin,iVol,step,idim=-1;
   unsigned long mode;
   char       buf[STRLEN];

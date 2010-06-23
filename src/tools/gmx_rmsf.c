@@ -211,7 +211,8 @@ int gmx_rmsf(int argc,char *argv[])
 
   matrix       box,pdbbox;
   rvec         *x,*pdbx,*xref;
-  int          status,npdbatoms,res0;
+  t_trxstatus   *status;
+  int          npdbatoms,res0;
   char         buf[256];
   const char   *label;
   char         title[STRLEN];

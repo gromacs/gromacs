@@ -391,7 +391,7 @@ static void HandleClient(t_x11 *x11,t_manager *man,long data[])
     draw_mol(x11,man);
     break;
   case IDREWIND:
-    if (man->status != -1) {
+    if (man->status) {
       rewind_trj(man->status);
       read_next_x(man->oenv,man->status,&(man->time),man->natom,man->x,
                   man->box);
@@ -547,7 +547,7 @@ void map_man(t_x11 *x11,t_manager *man)
 
 bool toggle_animate (t_x11 *x11,t_manager *man)
 { 
-  if (man->status != -1) {
+  if (man->status) {
     man->bAnimate=!man->bAnimate;
     man->bStop=TRUE;
     man->bEof=FALSE;
@@ -576,7 +576,7 @@ t_manager *init_man(t_x11 *x11,Window Parent,
   t_manager *man;
 
   snew(man,1);
-  man->status=-1;
+  man->status=NULL;
   man->bPlus=TRUE;
   man->bSort=TRUE;
   man->oenv=oenv;

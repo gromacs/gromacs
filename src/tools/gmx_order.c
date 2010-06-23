@@ -238,7 +238,7 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
   t_topology top;
   int        ePBC;
   char       title[STRLEN],fn[STRLEN],subtitle[STRLEN];
-  int        status;
+  t_trxstatus *status;
   int        natoms;
   real       t;
   rvec       *xtop,*x;
@@ -348,7 +348,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
     *x1,             /* coordinates without pbc                        */
     dist;            /* vector between two atoms                       */
   matrix box;        /* box (3x3)                                      */
-  int   status;  
+  t_trxstatus *status;  
   rvec  cossum,      /* sum of vector angles for three axes            */
     Sx, Sy, Sz,      /* the three molecular axes                       */
     tmp1, tmp2,      /* temp. rvecs for calculating dot products       */
@@ -708,7 +708,7 @@ void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int n
 {
 	/*function to write order parameters as B factors in PDB file using 
           first frame of trajectory*/
-	int status;
+	t_trxstatus *status;
 	int natoms;
 	t_trxframe fr, frout;
 	t_atoms useatoms;

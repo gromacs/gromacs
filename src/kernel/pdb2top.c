@@ -201,7 +201,6 @@ choose_ff(const char *ffsel,
             else
             {
                 desc[i] = strdup(ffs[i]);
-                printf("%2d: %s\n",i,ffs[i]);
             }
         }
         for(i=0; (i<nff); i++)
@@ -222,7 +221,7 @@ choose_ff(const char *ffsel,
         printf("\nSelect the Force Field:\n");
         for(i=0; (i<nff); i++)
         {
-            printf("%2d: %s\n",i,desc[i]);
+            printf("%2d: %s\n",i+1,desc[i]);
             sfree(desc[i]);
         }
         sfree(desc);
@@ -231,9 +230,10 @@ choose_ff(const char *ffsel,
         {
             pret = fgets(buf,STRLEN,stdin);
             
-            if(pret != NULL)
+            if (pret != NULL)
             {
                 sscanf(buf,"%d",&sel);
+                sel--;
             }
         }
         while ( pret==NULL || (sel < 0) || (sel >= nff));
@@ -313,7 +313,7 @@ void choose_watermodel(const char *wmsel,const char *ffdir,
         if (i > 0)
         {
             ltrim(buf+i);
-            fprintf(stderr,"%2d: %s\n",nwm,buf+i);
+            fprintf(stderr,"%2d: %s\n",nwm+1,buf+i);
             nwm++;
         }
         else
@@ -328,9 +328,10 @@ void choose_watermodel(const char *wmsel,const char *ffdir,
     {
         pret = fgets(buf,STRLEN,stdin);
         
-        if(pret != NULL)
+        if (pret != NULL)
         {
             sscanf(buf,"%d",&sel);
+            sel--;
         }
     }
     while (pret == NULL || sel < 0 || sel > nwm);

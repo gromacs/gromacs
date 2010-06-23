@@ -175,7 +175,7 @@ int gmx_gyrate(int argc,char *argv[])
       "Calculate the 2D radii of gyration of # slices along the z-axis" },
   };
   FILE       *out;
-  int        status;
+  t_trxstatus *status;
   t_topology top;
   int        ePBC;
   rvec       *x,*x_s;

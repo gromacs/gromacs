@@ -36,7 +36,7 @@ typedef struct
     bool bV;
 } t_gmxvmdplugin;
     
-int read_first_vmd_frame(int *status,const char *fn, struct trxframe *fr,int flags);
+int read_first_vmd_frame(int  *status,const char *fn, struct trxframe *fr,int flags);
 bool read_next_vmd_frame(int status,struct trxframe *fr);
 int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin);
 

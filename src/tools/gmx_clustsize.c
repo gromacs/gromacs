@@ -75,7 +75,8 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 {
   FILE    *fp,*gp,*hp,*tp;
   atom_id *index=NULL;
-  int     nindex,natoms,status;
+  int     nindex,natoms;
+  t_trxstatus *status;
   rvec    *x=NULL,*v=NULL,dx;
   t_pbc   pbc;
   char    *gname;

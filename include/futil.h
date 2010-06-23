@@ -88,9 +88,6 @@ extern bool gmx_eof(FILE *fp);
 extern bool is_pipe(FILE *fp);
 /* Check whether the file (opened by ffopen) is a pipe */
 
-extern char *backup_fn(const char *file);
-/* Return a backup name for file (name with # before and after) */
-
 /*  Make a backup of file if necessary.  
     Return false if there was a problem.
 */

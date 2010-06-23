@@ -555,7 +555,9 @@ rvec **read_whole_trj(const char *fn,int isize,atom_id index[],int skip,
   matrix box;
   real   t;
   int    i,i0,j,max_nf;
-  int    status,natom;
+  int    natom;
+  t_trxstatus *status;
+
   
   max_nf = 0;
   xx     = NULL;
@@ -735,7 +737,8 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 {
   FILE *fp=NULL;
   char buf[STRLEN],buf1[40],buf2[40],buf3[40],*trxsfn;
-  int  trxout=0,trxsout=0;
+  t_trxstatus *trxout=NULL;
+  t_trxstatus *trxsout=NULL;
   int  i,i1,cl,nstr,*structure,first=0,midstr;
   bool *bWrite=NULL;
   real r,clrmsd,midrmsd;
@@ -776,7 +779,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
   
     /* Prepare a reference structure for the orientation of the clusters  */
     if (bFit)
-    reset_x(ifsize,fitidx,natom,NULL,xtps,mass);
+        reset_x(ifsize,fitidx,natom,NULL,xtps,mass);
     trxout = open_trx(trxfn,"w");
     /* Calculate the average structure in each cluster,               *
      * all structures are fitted to the first struture of the cluster */

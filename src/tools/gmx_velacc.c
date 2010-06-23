@@ -137,7 +137,8 @@ int gmx_velacc(int argc,char *argv[])
   char       *grpname;
   char       title[256];
   real       t0,t1,m;
-  int        status,teller,n_alloc,i,j,tel3,k,l;
+  t_trxstatus *status;
+  int        teller,n_alloc,i,j,tel3,k,l;
   rvec       mv_mol;
   real       **c1;
   real	     *normm=NULL;

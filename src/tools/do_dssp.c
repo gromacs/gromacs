@@ -375,7 +375,7 @@ int main(int argc,char *argv[])
       "Secondary structures for structure count"}
   };
   
-  int        status;
+  t_trxstatus *status;
   FILE       *tapein;
   FILE       *ss,*acc,*fTArea,*tmpf;
   const char *fnSCount,*fnArea,*fnTArea,*fnAArea;

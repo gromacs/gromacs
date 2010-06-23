@@ -126,8 +126,8 @@ typedef struct {
 } gmx_runtime_t;
 
 typedef struct {
-  int  fp_trn;
-  int  fp_xtc;
+  t_fileio *fp_trn;
+  t_fileio *fp_xtc;
   int  xtc_prec;
   ener_file_t fp_ene;
   const char *fn_cpt;

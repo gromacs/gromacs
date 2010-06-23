@@ -133,7 +133,8 @@ int gmx_vanhove(int argc,char *argv[])
   int      ePBC;
   matrix   boxtop,box,*sbox,avbox,corr;
   rvec     *xtop,*x,**sx;
-  int      status,isize,nalloc,nallocn,natom;
+  int      isize,nalloc,nallocn,natom;
+  t_trxstatus *status;
   atom_id  *index;
   char     *grpname;
   int      nfr,f,ff,i,m,mat_nx=0,nbin=0,bin,mbin,fbin;

@@ -165,7 +165,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
                    const output_env_t oenv)
 {
   FILE       *fp;
-  int        status;
+  t_trxstatus *status;
   char       outf1[STRLEN],outf2[STRLEN];
   char       title[STRLEN],gtitle[STRLEN],refgt[30];
   int        g,natoms,i,ii,j,k,nbin,j0,j1,n,nframes;

@@ -144,7 +144,7 @@ int gmx_polystat(int argc,char *argv[])
   int    ePBC;
   int    isize,*index,nmol,*molind,mol,nat_min=0,nat_max=0;
   char   *grpname;
-  int    status;
+  t_trxstatus *status;
   real   t;
   rvec   *x,*bond=NULL;
   matrix box;

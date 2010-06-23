@@ -49,6 +49,7 @@
    *
    **************************************************************/
 #include "typedefs.h"
+#include "gmxfio.h"
 
 #ifdef __cplusplus 
 extern "C" {
@@ -81,11 +82,11 @@ typedef struct
  * but double and single precision can be read by either.
  */
 
-extern int open_tpx(const char *fn, const char *mode);
-/* Return an integer corresponding to the file you have just opened */
+extern t_fileio *open_tpx(const char *fn, const char *mode);
+/* Return an file pointer corresponding to the file you have just opened */
   
-extern void close_tpx(int fp);
-/*  Close the file corresponding to fp */
+extern void close_tpx(t_fileio *fio);
+/*  Close the file corresponding to fio */
   
 extern void read_tpxheader(const char *fn, t_tpxheader *tpx, bool TopOnlyOK,
                            int *version, int *generation);
@@ -136,8 +137,7 @@ extern bool read_tps_conf(const char *infile,char *title,t_topology *top,
  * else if bMass=TRUE, read the masses into top.atoms from the mass database.
  */
 
-void
-tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols);
+void tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols);
 	
 #ifdef __cplusplus
 }

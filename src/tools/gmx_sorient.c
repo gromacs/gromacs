@@ -99,7 +99,7 @@ int gmx_sorient(int argc,char *argv[])
   t_topology top;
   int      ePBC;
   char     title[STRLEN];
-  int      status;
+  t_trxstatus *status;
   int      natoms;
   real     t;
   rvec     *xtop,*x;

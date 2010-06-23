@@ -2645,11 +2645,10 @@
    OW  OWT4    0.0      0
   HW1    HW    0.52     0
   HW2    HW    0.52     0
-  HW3    IW   -1.04     0
+   MW    IW   -1.04     0
  [ bonds ]
    OW   HW1    gb_35
    OW   HW2    gb_35
-   OW   HW3    gb_35
 
 [ HYP ]
  [ atoms ]
