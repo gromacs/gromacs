@@ -128,6 +128,13 @@ if test "$enable_ppc_altivec" = "undef"; then
   esac
 fi
 
+###################################
+## Detect buggy version of gcc
+###################################
+AC_ARG_ENABLE(gcc41_check,
+              [AC_HELP_STRING([--disable-gcc41-check],
+                              [Disable the check for buggy gcc 4.1])],,enable_gcc41_check=yes)
+
 
 
 ### ia64 assembly code
@@ -331,6 +338,18 @@ AC_PROG_CC( $cc_names )
 if test -z "$CC_FOR_BUILD"; then
   CC_FOR_BUILD=$CC
 fi
+
+if test "$enable_gcc41_check" = "yes"; then
+    if $CC --version 2>&1 | grep 'gcc.* 4\.1' > /dev/null 2>&1; then
+        AC_MSG_ERROR([Uh-oh. Your compilers appears to be GCC version 4.1, which unfortunately produces]
+[buggy code at high optimimzation levels. It would be a good idea to update or]
+[use a different compiler. If you are ABSOLUTELY sure what you are doing, you]
+[can override this check with --disable-gcc41-check.])
+    fi
+fi
+
+
+
 AC_SUBST(CC_FOR_BUILD) 
 
 if test "$enable_fortran" = "yes"; then 
