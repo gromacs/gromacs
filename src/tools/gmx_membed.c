@@ -3581,20 +3581,20 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 
 	char			*ins;
-	int				rm_bonded_at,fr_id,fr_i,tmp_id,warn=0;
+	int 			rm_bonded_at,fr_id,fr_i=0,tmp_id,warn=0;
 	int        		ng,j,max_lip_rm,ins_grp_id,ins_nat,mem_nat,ntype,lip_rm,tpr_version;
-	real			xy_step,z_step;
+	real			xy_step=0,z_step=0;
 	real		 	prot_area;
-	rvec			*r_ins,fac;
+	rvec			*r_ins=NULL,fac;
 	t_block 		*ins_at,*rest_at;
 	pos_ins_t 		*pos_ins;
 	mem_t			*mem_p;
 	rm_t			*rm_p;
-	gmx_groups_t 	*groups;
+	gmx_groups_t 		*groups;
 	bool		 	bExcl=FALSE;
 	t_atoms			atoms;
 	t_pbc			*pbc;
-	char            **piecename;
+	char		        **piecename=NULL;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -3669,14 +3669,14 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		pos_ins->pieces=pieces;
 		snew(pos_ins->nidx,pieces);
 		snew(pos_ins->subindex,pieces);
-		snew(piecename,pieces);
+		snew(piecename,pieces);	
 		if (pieces>1)
 		{
 			fprintf(stderr,"\nSelect pieces to embed:\n");
 			get_index(&atoms,ftp2fn_null(efNDX,nfile,fnm),pieces,pos_ins->nidx,pos_ins->subindex,piecename);
 		}
 		else
-		{
+		{	
 			/*use whole embedded group*/
 			snew(pos_ins->nidx,1);
 			snew(pos_ins->subindex,1);
@@ -4263,7 +4263,7 @@ int gmx_membed(int argc,char *argv[])
 			"The output is a structure file containing the protein embedded in the membrane. If a topology",
 			"file is provided, the number of lipid and ",
 			"solvent molecules will be updated to match the new structure file.\n",
-			"For a more extensive manual see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507:Appendix.\n",
+			"For a more extensive manual see Wolf et al, J Comp Chem 31 (2010) 2169-2174, Appendix.\n",
 			"\n",
 			"SHORT METHOD DESCRIPTION\n",
 			"------------------------\n",
@@ -4280,12 +4280,12 @@ int gmx_membed(int argc,char *argv[])
 			"is incremented first. The resize factor for the z-direction is not changed until the -xy factor",
 			"is 1 (thus after -nxy iteration).\n",
 			"5. Repeat step 3 and 4 until the protein reaches its original size (-nxy + -nz iterations).\n",
-			"For a more extensive method descrition see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507.\n",
+			"For a more extensive method descrition see Wolf et al, J Comp Chem, 31 (2010) 2169-2174.\n",
 			"\n",
 			"NOTE\n----\n",
 			" - Protein can be any molecule you want to insert in the membrane.\n",
 			" - It is recommended to perform a short equilibration run after the embedding",
-			"(see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507) to re-equilibrate the membrane. Clearly",
+			"(see Wolf et al, J Comp Chem 31 (2010) 2169-2174, to re-equilibrate the membrane. Clearly",
 			"protein equilibration might require longer.\n",
 			"\n"
 	};
@@ -4620,7 +4620,7 @@ int gmx_membed(int argc,char *argv[])
 
 	/* Log file has to be closed in mdrunner if we are appending to it
    (fplog not set here) */
-	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem, doi 10.1002/jcc.21507.\n");
+	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
 
 	if (MASTER(cr) && !bAppendFiles)
 	{
