@@ -411,6 +411,11 @@ static void update_ee_sum(int nre,
     fr_nsum = 1;
   }
 
+  if (debug) {
+    fprintf(debug,"out_step %4d ee_sum_step %4d nsteps %4d ee_sum_nsum %4d fr->nsteps %4d\n",
+	    out_step,*ee_sum_step,*ee_sum_nsum,nsteps,fr->nsteps);
+  }
+
   if (nsteps == 0) {
     if (fr_nsum == 1) {
       for(i=0;i<nre;i++) {
@@ -425,7 +430,7 @@ static void update_ee_sum(int nre,
     }
     nsteps = fr->nsteps;
     nsum   = fr_nsum;
-  } else if (out_step - *ee_sum_step == nsteps + fr->nsteps) {
+  } else if (out_step + *ee_sum_nsum - *ee_sum_step == nsteps + fr->nsteps) {
     if (fr_nsum == 1) {
       for(i=0;i<nre;i++) {
 	ee_sum[i].eav  +=
