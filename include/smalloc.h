@@ -143,6 +143,12 @@ void save_free(const char *name,const char *file,int line, void *ptr);
 size_t maxavail(void);
 size_t memavail(void);
 
+/* Aligned-memory counterparts */
+
+void *save_calloc_aligned(char *name,char *file,int line,
+			  unsigned nelem,size_t elsize,size_t alignment); 
+void save_free_aligned(char *name,char *file,int line, void *ptr);
+
 #ifdef __cplusplus
 }
 
@@ -212,28 +218,5 @@ void _snew_aligned(const char *name, const char *file, int line,
 
 #define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))
 #define sfree_aligned(ptr) save_free_aligned(#ptr,__FILE__,__LINE__,(ptr))
-
-#ifdef CPLUSPLUS 
-extern "C" { 
-#endif
-
-void *save_malloc(char *name,char *file,int line,size_t size); 
-void *save_calloc(char *name,char *file,int line,
-		  unsigned nelem,size_t elsize); 
-void *save_realloc(char *name,char *file,int line,
-		   void *ptr,unsigned nelem,size_t elsize);
-void save_free(char *name,char *file,int line, void *ptr);
-size_t maxavail(void);
-size_t memavail(void);
-
-/* Aligned-memory counterparts */
-
-void *save_calloc_aligned(char *name,char *file,int line,
-			  unsigned nelem,size_t elsize,size_t alignment); 
-void save_free_aligned(char *name,char *file,int line, void *ptr);
-
-#ifdef CPLUSPLUS
-}
-#endif
 
 #endif	/* _smalloc_h */

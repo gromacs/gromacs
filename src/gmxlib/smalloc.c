@@ -280,7 +280,7 @@ static int num_saved_ptrs = 0;
  * freeing memory that needed to be adjusted to achieve
  * the necessary alignment. */
 void *save_calloc_aligned(char *name,char *file,int line,unsigned nelem,
-                          unsigned elsize,unsigned alignment)
+                          size_t elsize,size_t alignment)
 {
     void *p0,*p;
     bool allocate_fail;
@@ -301,7 +301,7 @@ void *save_calloc_aligned(char *name,char *file,int line,unsigned nelem,
 #endif
     
     p0 = NULL;
-    if ((nelem==0)||(elsize==0))
+    if (nelem ==0 || elsize == 0)
     {
         p  = NULL;
     }
@@ -317,11 +317,11 @@ void *save_calloc_aligned(char *name,char *file,int line,unsigned nelem,
 
         allocate_fail = FALSE; /* stop compiler warnings */
 #ifdef HAVE_POSIX_MEMALIGN
-        allocate_fail = (0 != posix_memalign(&p, alignment, (size_t)nelem*(size_t)elsize));
+        allocate_fail = (0 != posix_memalign(&p, alignment, nelem*elsize));
 #elif HAVE_MEMALIGN
-        allocate_fail = ((p = memalign(alignment, (size_t)nelem*(size_t)elsize)) == NULL);
+        allocate_fail = ((p = memalign(alignment, nelem*elsize)) == NULL);
 #else
-        allocate_fail = ((p0 = malloc((size_t)nelem*(size_t)elsize+(size_t)alignment))==NULL);
+        allocate_fail = ((p0 = malloc(nelem*elsize+alignment))==NULL);
 #endif
         if (allocate_fail)
         {
