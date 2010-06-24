@@ -570,4 +570,11 @@ add_subdirectory(man)
 
 add_subdirectory(src)
 
+########################################################################
+# Tests                                                                #
+########################################################################
 
+enable_testing()
+add_test(TestBuildAll make)
+
+add_subdirectory(tests)
