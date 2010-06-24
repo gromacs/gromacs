@@ -40,6 +40,7 @@ set(MDRUN_SOURCES
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
 set_target_properties(gmxpreprocess PROPERTIES OUTPUT_NAME "gmxpreprocess${GMX_BINARY_SUFFIX}")
+set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_BINARY_SUFFIX}")
 
 if(GMX_OPENMM) 
     add_subdirectory(gmx_gpu_utils)
