@@ -68,14 +68,14 @@ static int xdr_r2f(XDR *xdrs,real *r,bool bRead)
 }
 
 
-int open_xtc(const char *fn,const char *mode)
+t_fileio *open_xtc(const char *fn,const char *mode)
 {
-  return gmx_fio_open(fn,mode);
+    return gmx_fio_open(fn,mode);
 }
 
-void close_xtc(int fp)
+void close_xtc(t_fileio *fio)
 {
-  gmx_fio_close(fp);
+    gmx_fio_close(fio);
 }
 
 static void check_xtc_magic(int magic)
@@ -153,7 +153,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
       }
       fprec = *prec;
   }
-  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,&fprec));
+  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,&fprec,bRead));
   
   /* Copy from temp. array if reading */
   if(bRead)
@@ -168,7 +168,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
   }  
   sfree(ftmp);
 #else
-    result=XTC_CHECK("x",xdr3dfcoord(xd,x[0],natoms,prec)); 
+    result=XTC_CHECK("x",xdr3dfcoord(xd,x[0],natoms,prec,bRead)); 
 #endif 
     
   return result;
@@ -176,7 +176,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
 
 
 
-int write_xtc(int fp,
+int write_xtc(t_fileio *fio,
 	      int natoms,int step,real time,
 	      matrix box,rvec *x,real prec)
 {
@@ -185,7 +185,7 @@ int write_xtc(int fp,
   bool bDum;
   int bOK;
 	
-  xd = gmx_fio_getxdr(fp);
+  xd = gmx_fio_getxdr(fio);
   /* write magic number and xtc identidier */
   if (xtc_header(xd,&magic_number,&natoms,&step,&time,FALSE,&bDum) == 0)
   {
@@ -197,7 +197,7 @@ int write_xtc(int fp,
 
   if(bOK)
   {
-	  if(gmx_fio_flush(fp) !=0)
+	  if(gmx_fio_flush(fio) !=0)
 	  {
 		  bOK = 0;
 	  }
@@ -205,14 +205,14 @@ int write_xtc(int fp,
   return bOK;  /* 0 if bad, 1 if writing went well */
 }
 
-int read_first_xtc(int fp,int *natoms,int *step,real *time,
+int read_first_xtc(t_fileio *fio,int *natoms,int *step,real *time,
 		   matrix box,rvec **x,real *prec,bool *bOK)
 {
   int magic;
   XDR *xd;
   
   *bOK=TRUE;
-  xd = gmx_fio_getxdr(fp);
+  xd = gmx_fio_getxdr(fio);
   
   /* read header and malloc x */
   if ( !xtc_header(xd,&magic,natoms,step,time,TRUE,bOK))
@@ -228,7 +228,7 @@ int read_first_xtc(int fp,int *natoms,int *step,real *time,
   return *bOK;
 }
 
-int read_next_xtc(int fp,
+int read_next_xtc(t_fileio* fio,
 		  int natoms,int *step,real *time,
 		  matrix box,rvec *x,real *prec,bool *bOK)
 {
@@ -237,7 +237,7 @@ int read_next_xtc(int fp,
   XDR *xd;
 
   *bOK=TRUE;
-  xd = gmx_fio_getxdr(fp);
+  xd = gmx_fio_getxdr(fio);
   
   /* read header */
   if (!xtc_header(xd,&magic,&n,step,time,TRUE,bOK))

@@ -135,7 +135,8 @@ static void calc_axes(rvec x[],t_atom atom[],int gnx[],atom_id *index[],
   }
 }
 
-static void dump_axes(int fp,t_trxframe *fr,t_atoms *outat,t_bundle *bun)
+static void dump_axes(t_trxstatus *status,t_trxframe *fr,t_atoms *outat,
+                      t_bundle *bun)
 {
   t_trxframe  frout;
   static rvec *xout=NULL;
@@ -160,7 +161,7 @@ static void dump_axes(int fp,t_trxframe *fr,t_atoms *outat,t_bundle *bun)
   frout.natoms = outat->nr;
   frout.atoms  = outat;
   frout.x      = xout;
-  write_trxframe(fp,&frout,NULL);
+  write_trxframe(status,&frout,NULL);
 }
 
 int gmx_bundle(int argc,char *argv[])
@@ -198,7 +199,8 @@ int gmx_bundle(int argc,char *argv[])
   };
   FILE       *out,*flen,*fdist,*fz,*ftilt,*ftiltr,*ftiltl;
   FILE       *fkink=NULL,*fkinkr=NULL,*fkinkl=NULL;
-  int        status,fpdb;
+  t_trxstatus *status;
+  t_trxstatus *fpdb;
   t_topology top;
   int        ePBC;
   rvec       *xtop;
@@ -302,7 +304,7 @@ int gmx_bundle(int argc,char *argv[])
     }
     fpdb = open_trx(opt2fn("-oa",NFILE,fnm),"w");
   } else
-    fpdb = -1;
+    fpdb = NULL;
   
   read_first_frame(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&fr,TRX_NEED_X); 
   
@@ -361,13 +363,13 @@ int gmx_bundle(int argc,char *argv[])
       fprintf(fkinkr,"\n");
       fprintf(fkinkl,"\n");
     }
-    if (fpdb >= 0)
+    if (fpdb )
       dump_axes(fpdb,&fr,&outatoms,&bun);
   } while(read_next_frame(oenv,status,&fr));
 
   close_trx(status);
   
-  if (fpdb >= 0)
+  if (fpdb )
     close_trx(fpdb);
   ffclose(flen);
   ffclose(fdist);

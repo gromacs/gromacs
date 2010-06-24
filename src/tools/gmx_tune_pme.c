@@ -43,6 +43,7 @@
 #include "calcgrid.h"
 #include "checkpoint.h"
 #include "gmx_ana.h"
+#include "names.h"
 
 
 
@@ -86,9 +87,18 @@ typedef struct
     int  nr_inputfiles;         /* The number of tpr and mdp input files */
     gmx_large_int_t orig_sim_steps;  /* Number of steps to be done in the real simulation */
     real *r_coulomb;            /* The coulomb radii [0...nr_inputfiles] */
-    real *r_vdW;                /* The vdW radii */
+    real *r_vdw;                /* The vdW radii */
+    real *rlist;                /* Neighbourlist cutoff radius */
+    real *rlistlong;
     int  *fourier_nx, *fourier_ny, *fourier_nz;
     real *fourier_sp;           /* Fourierspacing */
+
+    /* Original values as in inputfile: */
+    real orig_rcoulomb;
+    real orig_rvdw;
+    real orig_rlist, orig_rlistlong;
+    int  orig_nk[DIM];
+    real orig_fs[DIM];
 } t_inputinfo;
 
 
@@ -123,6 +133,41 @@ static void cleandata(t_perf *perfdata, int test_nr)
     perfdata->PME_f_load[test_nr] = 0.0;
     
     return;
+}
+
+
+static bool is_equal(real a, real b)
+{
+    real diff, eps=1.0e-6;
+
+
+    diff = a - b;
+
+    if (diff < 0.0) diff = -diff;
+
+    if (diff < eps)
+        return TRUE;
+    else
+        return FALSE;
+}
+
+
+static void finalize(const char *fn_out)
+{
+    char buf[STRLEN];
+    FILE *fp;
+
+
+    fp = fopen(fn_out,"r");
+    fprintf(stdout,"\n\n");
+
+    while( fgets(buf,STRLEN-1,fp) != NULL )
+    {
+        fprintf(stdout,"%s",buf);
+    }
+    fclose(fp);
+    fprintf(stdout,"\n\n");
+    thanx(stderr);
 }
 
 
@@ -265,7 +310,7 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
 }
 
 
-static int analyze_data(
+static bool analyze_data(
         FILE        *fp,
         const char  *fn,
         t_perf      **perfdata,
@@ -284,6 +329,7 @@ static int analyze_data(
     t_perf *pd;
     char strbuf[STRLEN];
     char str_PME_f_load[13];
+    bool bCanUseOrigTPR;
 
 
     if (nrepeats > 1)
@@ -387,19 +433,38 @@ static int analyze_data(
         sprintf(strbuf, "%d", winPME);
     fprintf(fp, "Best performance was achieved with %s PME nodes", strbuf);
     if (nrepeats > 1)
-        fprintf(fp, " (see line %d) ", line_win);
-    if (ntprs > 1)
-        fprintf(fp, "\nand %s PME settings. ", (k_win ? "optimized" : "original"));
+        fprintf(fp, " (see line %d)", line_win);
     fprintf(fp, "\n");
 
-    /* Only mention settings if rcoulomb, rvdv, nkx, nky, or nkz was modified: */
-    if (k_win)
+    /* Only mention settings if they were modified: */
+    bCanUseOrigTPR = TRUE;
+    if ( !is_equal(info->r_coulomb[k_win], info->orig_rcoulomb) )
     {
-        fprintf(fp, "Optimized PME settings:\n");
-        fprintf(fp, "r_coulomb = %f, r_vdW = %f, nx,ny,nz = %d %d %d\n",
-                info->r_coulomb[k_win], info->r_vdW[k_win],
-                info->fourier_nx[k_win], info->fourier_ny[k_win], info->fourier_nz[k_win]);
+        fprintf(fp, "Optimized PME settings:\n"
+                    "   New Coulomb radius: %f nm (was %f nm)\n",
+                    info->r_coulomb[k_win], info->orig_rcoulomb);
+        bCanUseOrigTPR = FALSE;
     }
+
+    if ( !is_equal(info->r_vdw[k_win], info->orig_rvdw) )
+    {
+        fprintf(fp, "   New Van der Waals radius: %f nm (was %f nm)\n",
+                info->r_vdw[k_win], info->orig_rvdw);
+        bCanUseOrigTPR = FALSE;
+    }
+
+    if ( ! (info->fourier_nx[k_win]==info->orig_nk[XX] &&
+            info->fourier_ny[k_win]==info->orig_nk[YY] &&
+            info->fourier_nz[k_win]==info->orig_nk[ZZ] ) )
+    {
+        fprintf(fp, "   New Fourier grid xyz: %d %d %d (was %d %d %d)\n",
+                info->fourier_nx[k_win], info->fourier_ny[k_win], info->fourier_nz[k_win],
+                info->orig_nk[XX], info->orig_nk[YY], info->orig_nk[ZZ]);
+        bCanUseOrigTPR = FALSE;
+    }
+    if (bCanUseOrigTPR && ntprs > 1)
+        fprintf(fp, "and original PME settings.\n");
+    
     fflush(fp);
     
     /* Return the index of the mdp file that showed the highest performance
@@ -407,7 +472,7 @@ static int analyze_data(
     *index_tpr    = k_win; 
     *npme_optimal = winPME;
     
-    return 0;
+    return bCanUseOrigTPR;
 }
 
 
@@ -572,7 +637,7 @@ static void launch_simulation(
 
 
 static void modify_PMEsettings(
-        gmx_large_int_t simsteps, /* Set this value as number of time steps */
+        gmx_large_int_t simsteps,  /* Set this value as number of time steps */
         const char *fn_best_tpr,   /* tpr file with the best performance */
         const char *fn_sim_tpr)    /* name of tpr file to be launched */
 {
@@ -597,6 +662,8 @@ static void modify_PMEsettings(
 }
 
 
+#define EPME_SWITCHED(e) ((e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
+
 /* Make additional TPR files with more computational load for the
  * direct space processors: */
 static void make_benchmark_tprs(
@@ -616,11 +683,10 @@ static void make_benchmark_tprs(
     t_state      state;
     gmx_mtop_t   mtop;
     real         fac;
-    real         orig_rcoulomb, orig_rvdw, orig_rlist;
-    rvec         orig_fs;      /* original fourierspacing per dimension */
-    ivec         orig_nk;      /* original number of grid points per dimension */
+    real         nlist_buffer; /* Thickness of the buffer regions for PME-switch potentials: */
     char         buf[200];
     rvec         box_size;
+    bool         bNote = FALSE;
     
 
     sprintf(buf, "Making benchmark tpr file%s with %s time steps", ntprs>1? "s":"", gmx_large_int_pfmt);
@@ -637,19 +703,29 @@ static void make_benchmark_tprs(
     snew(ir,1);
     read_tpx_state(fn_sim_tpr,ir,&state,NULL,&mtop);
 
-    /* Check if PME was chosen */
+    /* Check if some kind of PME was chosen */
     if (EEL_PME(ir->coulombtype) == FALSE)
-        gmx_fatal(FARGS, "Can only do optimizations for simulations with PME");
+        gmx_fatal(FARGS, "Can only do optimizations for simulations with %s electrostatics.",
+                EELTYPE(eelPME));
     
-    /* Check if rcoulomb == rlist, which is necessary for PME */
-    if (!(ir->rcoulomb == ir->rlist))
-        gmx_fatal(FARGS, "PME requires rcoulomb (%f) to be equal to rlist (%f).", ir->rcoulomb, ir->rlist);
+    /* Check if rcoulomb == rlist, which is necessary for plain PME. */
+    if (  (eelPME == ir->coulombtype) && !(ir->rcoulomb == ir->rlist) )
+    {
+        gmx_fatal(FARGS, "%s requires rcoulomb (%f) to be equal to rlist (%f).",
+                EELTYPE(eelPME), ir->rcoulomb, ir->rlist);
+    }
+    /* For other PME types, rcoulomb is allowed to be smaller than rlist */
+    else if (ir->rcoulomb > ir->rlist)
+    {
+        gmx_fatal(FARGS, "%s requires rcoulomb (%f) to be equal to or smaller than rlist (%f)",
+                EELTYPE(ir->coulombtype), ir->rcoulomb, ir->rlist);
+    }
 
     /* Reduce the number of steps for the benchmarks */
     info->orig_sim_steps = ir->nsteps;
     ir->nsteps           = benchsteps;
     
-    /* Determine lenght of triclinic box vectors */
+    /* Determine length of triclinic box vectors */
     for(d=0; d<DIM; d++)
     {
         box_size[d] = 0;
@@ -659,21 +735,47 @@ static void make_benchmark_tprs(
     }
     
     /* Remember the original values: */
-    orig_rvdw     = ir->rvdw;
-    orig_rcoulomb = ir->rcoulomb;
-    orig_rlist    = ir->rlist;
-    orig_nk[XX]   = ir->nkx;
-    orig_nk[YY]   = ir->nky;
-    orig_nk[ZZ]   = ir->nkz;
-    orig_fs[XX]   = box_size[XX]/ir->nkx;  /* fourierspacing in x direction */
-    orig_fs[YY]   = box_size[YY]/ir->nky;
-    orig_fs[ZZ]   = box_size[ZZ]/ir->nkz;
-     
-    fprintf(fp, "Input file Fourier grid : %dx%dx%d\n", orig_nk[XX], orig_nk[YY], orig_nk[ZZ]);
-    fprintf(fp, "           Coulomb rad. : %f nm\n", orig_rcoulomb);
-    fprintf(fp, "           Van d. Waals : %f nm\n", orig_rvdw);
+    info->orig_rvdw            = ir->rvdw;
+    info->orig_rcoulomb        = ir->rcoulomb;
+    info->orig_rlist           = ir->rlist;
+    info->orig_rlistlong       = ir->rlistlong;
+    info->orig_nk[XX]          = ir->nkx;
+    info->orig_nk[YY]          = ir->nky;
+    info->orig_nk[ZZ]          = ir->nkz;
+    info->orig_fs[XX]          = box_size[XX]/ir->nkx;  /* fourierspacing in x direction */
+    info->orig_fs[YY]          = box_size[YY]/ir->nky;
+    info->orig_fs[ZZ]          = box_size[ZZ]/ir->nkz;
+
+    /* For PME-switch potentials, keep the radial distance of the buffer region */
+    nlist_buffer   = info->orig_rlist    - info->orig_rcoulomb;
+
+    /* Print information about settings of which some are potentially modified: */
+    fprintf(fp, "   Coulomb type         : %s\n", EELTYPE(ir->coulombtype));
+    fprintf(fp, "   Fourier nkx nky nkz  : %d %d %d\n",
+            info->orig_nk[XX], info->orig_nk[YY], info->orig_nk[ZZ]);
+    fprintf(fp, "   rcoulomb             : %f nm\n", info->orig_rcoulomb);
+    fprintf(fp, "   Van der Waals type   : %s\n", EVDWTYPE(ir->vdwtype));
+    fprintf(fp, "   rvdw                 : %f nm\n", info->orig_rvdw);
+    if (EVDW_SWITCHED(ir->vdwtype))
+        fprintf(fp, "   rvdw_switch          : %f nm\n", ir->rvdw_switch);
+    if (EPME_SWITCHED(ir->coulombtype))
+        fprintf(fp, "   rlist                : %f nm\n", info->orig_rlist);
+    if (info->orig_rlistlong != max_cutoff(ir->rvdw,ir->rcoulomb))
+        fprintf(fp, "   rlistlong            : %f nm\n", info->orig_rlistlong);
+
+    /* Print a descriptive line about the tpr settings tested */
     fprintf(fp, "\nWill try these real/reciprocal workload settings:\n");
-    fprintf(fp, " No. scaling   r_coul   (r_vdW)     nkx  nky  nkz   (spacing)   tpr file\n");
+    fprintf(fp, " No.   scaling  rcoulomb");
+    fprintf(fp, "  nkx  nky  nkz");
+    if (fourierspacing > 0)
+        fprintf(fp, "   spacing");
+    if (evdwCUT == ir->vdwtype)
+        fprintf(fp, "      rvdw");
+    if (EPME_SWITCHED(ir->coulombtype))
+        fprintf(fp, "     rlist");
+    if ( info->orig_rlistlong != max_cutoff(info->orig_rlist,max_cutoff(info->orig_rvdw,info->orig_rcoulomb)) )
+        fprintf(fp, " rlistlong");
+    fprintf(fp, "  tpr file\n");
     
     if (ntprs > 1)
     {
@@ -689,15 +791,34 @@ static void make_benchmark_tprs(
     {
         /* Rcoulomb scaling factor for this file: */
         if (ntprs == 1)
-            fac = 1.0;
+            fac = downfac;
          else
             fac = (upfac-downfac)/(ntprs-1) * j + downfac;
         fprintf(stdout, "--- Scaling factor %f ---\n", fac);
         
-        ir->rcoulomb = orig_rcoulomb*fac;
-        ir->rlist    = orig_rlist   *fac;
-        ir->rvdw     = orig_rvdw    *fac;
-        
+        /* Scale the Coulomb radius */
+        ir->rcoulomb = info->orig_rcoulomb*fac;
+
+        /* Adjust other radii since various conditions neet to be fulfilled */
+        if (eelPME == ir->coulombtype)
+        {
+            /* plain PME, rcoulomb must be equal to rlist */
+            ir->rlist = ir->rcoulomb;
+        }
+        else
+        {
+            /* rlist must be >= rcoulomb, we keep the size of the buffer region */
+            ir->rlist = ir->rcoulomb + nlist_buffer;
+        }
+
+        if (evdwCUT == ir->vdwtype)
+        {
+            /* For vdw cutoff, rvdw >= rlist */
+            ir->rvdw = max(info->orig_rvdw, ir->rlist);
+        }
+
+        ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
+
         /* Try to reduce the number of reciprocal grid points in a smart way */
         /* Did the user supply a value for fourierspacing on the command line? */
         if (fourierspacing > 0)
@@ -710,11 +831,12 @@ static void make_benchmark_tprs(
             calc_grid(stdout,state.box,info->fourier_sp[j],&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             /* Check consistency */
             if (0 == j)
-                if ((ir->nkx != orig_nk[XX]) || (ir->nky != orig_nk[YY]) || (ir->nkz != orig_nk[ZZ]))
+                if ((ir->nkx != info->orig_nk[XX]) || (ir->nky != info->orig_nk[YY]) || (ir->nkz != info->orig_nk[ZZ]))
                 {
                     fprintf(stderr, "WARNING: Original grid was %dx%dx%d. The fourierspacing of %f nm does not reproduce the grid\n"
                                     "         found in the tpr input file! Will use the new settings.\n", 
-                                    orig_nk[XX],orig_nk[YY],orig_nk[ZZ],fourierspacing);
+                                    info->orig_nk[XX],info->orig_nk[YY],info->orig_nk[ZZ],fourierspacing);
+                    bNote = TRUE;
                 }
         }
         else
@@ -722,26 +844,26 @@ static void make_benchmark_tprs(
             if (0 == j)
             {
                 /* Print out fourierspacing from input tpr */
-                fprintf(stdout, "Input file fourier grid is %dx%dx%d\n", orig_nk[XX], orig_nk[YY], orig_nk[ZZ]);
+                fprintf(stdout, "Input file fourier grid is %dx%dx%d\n",
+                        info->orig_nk[XX], info->orig_nk[YY], info->orig_nk[ZZ]);
             }
             /* Reconstruct fourierspacing for each dimension from the input file */
             ir->nkx=0;
-            calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             ir->nky=0;
-            calc_grid(stdout,state.box,orig_fs[YY]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[YY]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             ir->nkz=0;
-            calc_grid(stdout,state.box,orig_fs[ZZ]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[ZZ]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
         }
-        /* r_vdw should only grow if necessary! */
-        ir->rvdw = min(ir->rvdw, orig_rcoulomb*fac);
-        ir->rvdw = max(ir->rvdw, orig_rvdw);
 
         /* Save modified radii and fourier grid components for later output: */
-        info->r_coulomb[j] = ir->rcoulomb;
-        info->r_vdW[j]     = ir->rvdw;        
-        info->fourier_nx[j]= ir->nkx;
-        info->fourier_ny[j]= ir->nky;
-        info->fourier_nz[j]= ir->nkz;
+        info->r_coulomb[j]        = ir->rcoulomb;
+        info->r_vdw[j]            = ir->rvdw;
+        info->fourier_nx[j]       = ir->nkx;
+        info->fourier_ny[j]       = ir->nky;
+        info->fourier_nz[j]       = ir->nkz;
+        info->rlist[j]            = ir->rlist;
+        info->rlistlong[j]        = ir->rlistlong;
 
         /* Write the benchmark tpr file */
         strncpy(fn_bench_tprs[j],fn_sim_tpr,strlen(fn_sim_tpr)-strlen(".tpr"));
@@ -752,13 +874,32 @@ static void make_benchmark_tprs(
         fprintf(stdout,", scaling factor %f\n", fac);
         write_tpx_state(fn_bench_tprs[j],ir,&state,&mtop);
         
-        /* Write some info to log file */
-        fprintf(fp, "%3d %9f %9f (%7f) %4d %4d %4d   %9f   %-14s\n",
-                j, fac, ir->rcoulomb, ir->rvdw, ir->nkx, ir->nky, ir->nkz, info->fourier_sp[j],fn_bench_tprs[j]);
+        /* Write information about modified tpr settings to log file */
+        fprintf(fp, "%4d%10f%10f", j, fac, ir->rcoulomb);
+        fprintf(fp, "%5d%5d%5d", ir->nkx, ir->nky, ir->nkz);
+        if (fourierspacing > 0)
+            fprintf(fp, "%9f ", info->fourier_sp[j]);
+        if (evdwCUT == ir->vdwtype)
+            fprintf(fp, "%10f", ir->rvdw);
+        if (EPME_SWITCHED(ir->coulombtype))
+            fprintf(fp, "%10f", ir->rlist);
+        if ( info->orig_rlistlong != max_cutoff(info->orig_rlist,max_cutoff(info->orig_rvdw,info->orig_rcoulomb)) )
+            fprintf(fp, "%10f", ir->rlistlong);
+        fprintf(fp, "  %-14s\n",fn_bench_tprs[j]);
+
+        /* Make it clear to the user that some additional settings were modified */
+        if (   !is_equal(ir->rvdw           , info->orig_rvdw)
+            || !is_equal(ir->rlistlong      , info->orig_rlistlong) )
+        {
+            bNote = TRUE;
+        }
     }
+    if (bNote)
+        fprintf(fp, "\nNote that in addition to rcoulomb and the fourier grid\n"
+                    "also other input settings were changed (see table above).\n"
+                    "Please check if the modified settings are appropriate.\n");
     fflush(stdout);
     fflush(fp);
-    
     sfree(ir);
 }
 
@@ -826,31 +967,179 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
 }
 
 
-static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, 
-        int minPMEnodes,
-        int datasets, t_perf **perfdata, int repeats, int nnodes, int nr_tprs,
-        bool bThreads, char *cmd_mpirun, char *cmd_np, char *cmd_mdrun,
-        char *cmd_args_bench,
-        const t_filenm *fnm, int nfile, int sim_part, int presteps, 
-        gmx_large_int_t cpt_steps)
+/* Returns the largest common factor of n1 and n2 */
+static int largest_common_factor(int n1, int n2)
 {
-    int     i,nr,k,ret;
-    int     nPMEnodes;
+    int factor, nmax;
+
+    nmax = min(n1, n2);
+    for (factor=nmax; factor > 0; factor--)
+    {
+        if ( 0==(n1 % factor) && 0==(n2 % factor) )
+        {
+            return(factor);
+        }
+    }
+    return 0; /* one for the compiler */
+}
+
+enum {eNpmeAuto, eNpmeAll, eNpmeReduced, eNpmeSubset, eNpmeNr};
+
+/* Create a list of numbers of PME nodes to test */
+static void make_npme_list(
+        const char *npmevalues_opt,  /* Make a complete list with all
+                           * possibilities or a short list that keeps only
+                           * reasonable numbers of PME nodes                  */
+        int *nentries,    /* Number of entries we put in the nPMEnodes list   */
+        int *nPMEnodes[], /* Each entry contains the value for -npme          */
+        int nnodes,       /* Total number of nodes to do the tests on         */
+        int minPMEnodes,  /* Minimum number of PME nodes                      */
+        int maxPMEnodes)  /* Maximum number of PME nodes                      */
+{
+    int i,npme,npp;
+    int min_factor=1;     /* We request that npp and npme have this minimal
+                           * largest common factor (depends on npp)           */
+    int nlistmax;         /* Max. list size                                   */
+    int nlist;            /* Actual number of entries in list                 */
+    int eNPME;
+
+
+    /* Do we need to check all possible values for -npme or is a reduced list enough? */
+    if ( 0 == strcmp(npmevalues_opt, "all") )
+    {
+        eNPME = eNpmeAll;
+    }
+    else if ( 0 == strcmp(npmevalues_opt, "subset") )
+    {
+        eNPME = eNpmeSubset;
+    }
+    else if ( 0 == strcmp(npmevalues_opt, "auto") )
+    {
+        if (nnodes <= 64)
+            eNPME = eNpmeAll;
+        else if (nnodes < 128)
+            eNPME = eNpmeReduced;
+        else
+            eNPME = eNpmeSubset;
+    }
+    else
+    {
+        gmx_fatal(FARGS, "Unknown option for -npme in make_npme_list");
+    }
+
+    /* Calculate how many entries we could possibly have (in case of -npme all) */
+    if (nnodes > 2)
+    {
+        nlistmax = maxPMEnodes - minPMEnodes + 3;
+        if (0 == minPMEnodes)
+            nlistmax--;
+    }
+    else
+        nlistmax = 1;
+
+    /* Now make the actual list which is at most of size nlist */
+    snew(*nPMEnodes, nlistmax);
+    nlist = 0; /* start counting again, now the real entries in the list */
+    for (i = 0; i < nlistmax - 2; i++)
+    {
+        npme = maxPMEnodes - i;
+        npp  = nnodes-npme;
+        switch (eNPME)
+        {
+            case eNpmeAll:
+                min_factor = 1;
+                break;
+            case eNpmeReduced:
+                min_factor = 2;
+                break;
+            case eNpmeSubset:
+                /* For 2d PME we want a common largest factor of at least the cube
+                 * root of the number of PP nodes */
+                min_factor = (int) pow(npp, 1.0/3.0);
+                break;
+            default:
+                gmx_fatal(FARGS, "Unknown option for eNPME in make_npme_list");
+                break;
+        }
+        if (largest_common_factor(npp, npme) >= min_factor)
+        {
+            (*nPMEnodes)[nlist] = npme;
+            nlist++;
+        }
+    }
+    /* We always test 0 PME nodes and the automatic number */
+    *nentries = nlist + 2;
+    (*nPMEnodes)[nlist  ] =  0;
+    (*nPMEnodes)[nlist+1] = -1;
+
+    fprintf(stderr, "Will try the following %d different values for -npme:\n", *nentries);
+    for (i=0; i<*nentries-1; i++)
+        fprintf(stderr, "%d, ", (*nPMEnodes)[i]);
+    fprintf(stderr, "and %d (auto).\n", (*nPMEnodes)[*nentries-1]);
+}
+
+
+/* Allocate memory to store the performance data */
+static void init_perfdata(t_perf *perfdata[], int ntprs, int datasets, int repeats)
+{
+    int i, j, k;
+
+
+    for (k=0; k<ntprs; k++)
+    {
+        snew(perfdata[k], datasets);
+        for (i=0; i<datasets; i++)
+        {
+            for (j=0; j<repeats; j++)
+            {
+                snew(perfdata[k][i].Gcycles   , repeats);
+                snew(perfdata[k][i].ns_per_day, repeats);
+                snew(perfdata[k][i].PME_f_load, repeats);
+            }
+        }
+    }
+}
+
+
+static void do_the_tests(
+        FILE *fp,                   /* General g_tune_pme output file         */
+        char **tpr_names,           /* Filenames of the input files to test   */
+        int maxPMEnodes,            /* Max fraction of nodes to use for PME   */
+        int minPMEnodes,            /* Min fraction of nodes to use for PME   */
+        const char *npmevalues_opt, /* Which -npme values should be tested    */
+        t_perf **perfdata,          /* Here the performace data is stored     */
+        int *pmeentries,            /* Entries in the nPMEnodes list          */
+        int repeats,                /* Repeat each test this often            */
+        int nnodes,                 /* Total number of nodes = nPP + nPME     */
+        int nr_tprs,                /* Total number of tpr files to test      */
+        bool bThreads,              /* Threads or MPI?                        */
+        char *cmd_mpirun,           /* mpirun command string                  */
+        char *cmd_np,               /* "-np", "-n", whatever mpirun needs     */
+        char *cmd_mdrun,            /* mdrun command string                   */
+        char *cmd_args_bench,       /* arguments for mdrun in a string        */
+        const t_filenm *fnm,        /* List of filenames from command line    */
+        int nfile,                  /* Number of files specified on the cmdl. */
+        int sim_part,               /* For checkpointing                      */
+        int presteps,               /* DLB equilibration steps, is checked    */
+        gmx_large_int_t cpt_steps)  /* Time step counter in the checkpoint    */
+{
+    int     i,nr,k,ret,count=0,totaltests;
+    int     *nPMEnodes=NULL;
     t_perf  *pd=NULL;
     int     cmdline_length;
-    char    *command;
+    char    *command, *cmd_stub;
     char    buf[STRLEN];
     bool    bResetProblem=FALSE;
-    
+
 
     /* This string array corresponds to the eParselog enum type at the start
      * of this file */
-    const char* ParseLog[] = {"OK",
+    const char* ParseLog[] = {"OK.",
                               "Logfile not found!",
                               "No timings, logfile truncated?",
-                              "Run was terminated",
-                              "Counters were not reset properly",
-                              "No DD grid found for these settings",
+                              "Run was terminated.",
+                              "Counters were not reset properly.",
+                              "No DD grid found for these settings.",
                               "TPX version conflict!",
                               "mdrun was not started in parallel!"};
     char    str_PME_f_load[13];
@@ -863,49 +1152,65 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                     + strlen(cmd_mdrun) 
                     + strlen(cmd_args_bench) 
                     + strlen(tpr_names[0]) + 100;
-    snew(command, cmdline_length);
+    snew(command , cmdline_length);
+    snew(cmd_stub, cmdline_length);
 
-    /* Loop over all tpr files to test: */
+    /* Construct the part of the command line that stays the same for all tests: */
+    if (bThreads)
+    {
+        sprintf(cmd_stub, "%s%s%s", cmd_mdrun, cmd_np, cmd_args_bench);
+    }
+    else
+    {
+        sprintf(cmd_stub, "%s%s%s %s", cmd_mpirun, cmd_np, cmd_mdrun, cmd_args_bench);
+    }
+
+    /* Create a list of numbers of PME nodes to test */
+    make_npme_list(npmevalues_opt, pmeentries, &nPMEnodes,
+                   nnodes, minPMEnodes, maxPMEnodes);
+
+    if (0 == repeats)
+    {
+        fprintf(fp, "\nNo benchmarks done since number of repeats (-r) is 0.\n");
+        fclose(fp);
+        finalize(opt2fn("-p", nfile, fnm));
+        exit(0);
+    }
+
+    /* Allocate one dataset for each tpr input file: */
+    init_perfdata(perfdata, nr_tprs, *pmeentries, repeats);
+
+    /*****************************************/
+    /* Main loop over all tpr files to test: */
+    /*****************************************/
+    totaltests = nr_tprs*(*pmeentries)*repeats;
     for (k=0; k<nr_tprs;k++)
     {
         fprintf(fp, "\nIndividual timings for input file %d (%s):\n", k, tpr_names[k]);
         fprintf(fp, "PME nodes      Gcycles       ns/day        PME/f    Remark\n");
-        i=0;
-        /* Start with the maximum number of PME only nodes: */
-        nPMEnodes = maxPMEnodes;
-
         /* Loop over various numbers of PME nodes: */
-        for (i = 0; i<datasets; i++)
+        for (i = 0; i < *pmeentries; i++)
         {
             pd = &perfdata[k][i];
 
             /* Loop over the repeats for each scenario: */
             for (nr = 0; nr < repeats; nr++)
             {
-                pd->nPMEnodes = nPMEnodes;
+                pd->nPMEnodes = nPMEnodes[i];
                 
-                /* Construct the command line to call mdrun (and save it): */
+                /* Add -npme and -s to the command line and save it: */
                 snew(pd->mdrun_cmd_line, cmdline_length);
-                if (bThreads)
-                {
-                    sprintf(pd->mdrun_cmd_line, "%s%s%s-npme %d -s %s",
-                            cmd_mdrun, cmd_np,
-                            cmd_args_bench,nPMEnodes, tpr_names[k]);
-                }
-                else
-                {
-                    sprintf(pd->mdrun_cmd_line, 
-                            "%s%s%s %s-npme %d -s %s",
-                            cmd_mpirun, cmd_np, cmd_mdrun,
-                            cmd_args_bench,nPMEnodes, tpr_names[k]);
-                }
+                sprintf(pd->mdrun_cmd_line, "%s-npme %d -s %s",
+                        cmd_stub, pd->nPMEnodes, tpr_names[k]);
 
                 /* Do a benchmark simulation: */
                 if (repeats > 1)
                     sprintf(buf, ", pass %d/%d", nr+1, repeats);
                 else
                     buf[0]='\0';
-                fprintf(stdout, "\n=== tpr %d/%d, run %d/%d%s:\n", k+1, nr_tprs, i+1, datasets, buf);
+                fprintf(stdout, "\n=== Progress %2.0f%%, tpr %d/%d, run %d/%d%s:\n",
+                        (100.0*count)/totaltests,
+                        k+1, nr_tprs, i+1, *pmeentries, buf);
                 sprintf(command, "%s 1> /dev/null 2>&1", pd->mdrun_cmd_line);
                 fprintf(stdout, "%s\n", pd->mdrun_cmd_line);
                 gmx_system_call(command);
@@ -915,7 +1220,7 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                 if ((presteps > 0) && (ret == eParselogResetProblem))
                     bResetProblem = TRUE;
 
-                if (nPMEnodes == -1)
+                if (-1 == pd->nPMEnodes)
                     sprintf(buf, "(%3d)", pd->guessPME);
                 else
                     sprintf(buf, "     ");
@@ -927,33 +1232,27 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                     sprintf(str_PME_f_load, "%s", "         -  ");
                 
                 /* Write the data we got to disk */
-                fprintf(fp, "%4d%s %12.3f %12.3f %s    %s", pd->nPMEnodes, buf, pd->Gcycles[nr], pd->ns_per_day[nr], str_PME_f_load, ParseLog[ret]);
-                if (ret != eParselogOK)
+                fprintf(fp, "%4d%s %12.3f %12.3f %s    %s", pd->nPMEnodes,
+                        buf, pd->Gcycles[nr], pd->ns_per_day[nr], str_PME_f_load, ParseLog[ret]);
+                if (! (ret==eParselogOK || ret==eParselogNoDDGrid || ret==eParselogNotFound) )
                     fprintf(fp, " Check log file for problems.");
                 fprintf(fp, "\n");
                 fflush(fp);
+                count++;
 
                 /* Do some cleaning up and delete the files we do not need any more */
-                cleanup(fnm, nfile, k, nnodes, nPMEnodes, nr);
+                cleanup(fnm, nfile, k, nnodes, pd->nPMEnodes, nr);
 
                 /* If the first run with this number of processors already failed, do not try again: */
                 if (pd->Gcycles[0] <= 0.0 && repeats > 1)
                 {
                     fprintf(stdout, "Skipping remaining passes of unsuccessful setting, see log file for details.\n");
+                    count += repeats-(nr+1);
                     break;
                 }
-            }
-            /* Prepare for the next number of PME only nodes */
-            /* The last but one check is always without MPMD PME ... */
-            if ((nPMEnodes == minPMEnodes) && (0 != minPMEnodes)) 
-                nPMEnodes = 0;
-            /* ... and the last check with the guessed settings */
-            else if (nPMEnodes == 0)
-                nPMEnodes = -1;
-            else
-                nPMEnodes--;
-        }
-    }
+            } /* end of repeats loop */
+        } /* end of -npme loop */
+    } /* end of tpr file loop */
     if (bResetProblem)
     {
         sep_line(fp);
@@ -968,28 +1267,12 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
 }
 
 
-static bool is_equal(real a, real b)
-{
-    real diff, eps=1.0e-6;
-    
-    
-    diff = a - b;
-    
-    if (diff < 0.0) diff = -diff;
-    
-    if (diff < eps)
-        return TRUE;
-    else
-        return FALSE;
-}
-
-
 static void check_input(
         int nnodes, 
         int repeats, 
         int *ntprs, 
-        real upfac,
-        real downfac,
+        real *upfac,
+        real *downfac,
         real maxPMEfraction,
         real minPMEfraction,
         real fourierspacing,
@@ -997,7 +1280,9 @@ static void check_input(
         const t_filenm *fnm,
         int nfile,
         int sim_part,
-        int presteps)
+        int presteps,
+        int npargs,
+        t_pargs *pa)
 {
     /* Make sure the input file exists */
     if (!gmx_fexist(opt2fn("-s",nfile,fnm)))
@@ -1026,11 +1311,11 @@ static void check_input(
     }
     else
     {
-        if ( (1 == *ntprs) && (!is_equal(upfac,1.0) || !is_equal(downfac,1.0)) )
+        if (1 == *ntprs)
             fprintf(stderr, "Note: Choose ntpr>1 to shift PME load between real and reciprocal space.\n");
     }
     
-    if ( is_equal(downfac,upfac) && (*ntprs > 1) )
+    if ( is_equal(*downfac,*upfac) && (*ntprs > 1) )
     {
         fprintf(stderr, "WARNING: Resetting -ntpr to 1 since both scaling factors are the same.\n"
                         "Please choose upfac unequal to downfac to test various PME grid settings\n");
@@ -1061,15 +1346,35 @@ static void check_input(
         gmx_fatal(FARGS, "Cannot have a negative number of presteps.\n");
     }
     
-    if (upfac <= 0.0 || downfac <= 0.0 || downfac > upfac)
-        gmx_fatal(FARGS, "Both scaling factors must be larger than zero and "
-                         "upper scaling limit must be larger than lower limit");
+    if (*upfac <= 0.0 || *downfac <= 0.0 || *downfac > *upfac)
+        gmx_fatal(FARGS, "Both scaling factors must be larger than zero and upper\n"
+                         "scaling limit (%f) must be larger than lower limit (%f).",
+                         *upfac, *downfac);
 
-    if (downfac < 0.75 || upfac > 1.5)
+    if (*downfac < 0.75 || *upfac > 1.5)
         fprintf(stderr, "WARNING: Applying extreme scaling factor. I hope you know what you are doing.\n");
     
     if (fourierspacing < 0)
         gmx_fatal(FARGS, "Please choose a positive value for fourierspacing.");
+
+    /* Make shure that the scaling factor options are compatible with the number of tprs */
+    if ( (1 == *ntprs) && ( opt2parg_bSet("-upfac",npargs,pa) || opt2parg_bSet("-downfac",npargs,pa) ) )
+    {
+        if (opt2parg_bSet("-upfac",npargs,pa) && opt2parg_bSet("-downfac",npargs,pa) && !is_equal(*upfac,*downfac))
+        {
+            gmx_fatal(FARGS, "Please specify -ntpr > 1 for both scaling factors to take effect.\n"
+                             "(upfac=%f, downfac=%f)\n", *upfac, *downfac);
+        }
+        if (opt2parg_bSet("-upfac",npargs,pa))
+            *downfac = *upfac;
+        if (opt2parg_bSet("-downfac",npargs,pa))
+            *upfac = *downfac;
+        if (!is_equal(*upfac, 1.0))
+        {
+            fprintf(stderr, "WARNING: Using a scaling factor of %f with -ntpr 1, thus not testing the original tpr settings.\n",
+                    *upfac);
+        }
+    }
 }
 
 
@@ -1090,7 +1395,8 @@ static bool is_main_switch(char *opt)
       || (0 == strcmp(opt,"-simsteps" ))
       || (0 == strcmp(opt,"-resetstep"))
       || (0 == strcmp(opt,"-so"       ))
-      || (0 == strcmp(opt,"-npstring" )) )
+      || (0 == strcmp(opt,"-npstring" ))
+      || (0 == strcmp(opt,"-npme"     )) )
     return TRUE;
     
     return FALSE;
@@ -1358,25 +1664,6 @@ static double gettime()
 }
 
 
-static void finalize(const char *fn_out)
-{
-    char buf[STRLEN];
-    FILE *fp;
-
-
-    fp = fopen(fn_out,"r");
-    fprintf(stdout,"\n\n");
-
-    while( fgets(buf,STRLEN-1,fp) != NULL )
-    {
-        fprintf(stdout,"%s",buf);
-    }
-    fclose(fp);
-    fprintf(stdout,"\n\n");
-    thanx(stderr);
-}
-
-
 #define BENCHSTEPS (1000)
 
 int gmx_tune_pme(int argc,char *argv[])
@@ -1402,7 +1689,7 @@ int gmx_tune_pme(int argc,char *argv[])
             "g_tune_pme can test various real space / reciprocal space workloads",
             "for you. With [TT]-ntpr[tt] you control how many extra [TT].tpr[tt] files will be",
             "written with enlarged cutoffs and smaller fourier grids respectively.",
-            "The first test (no. 0) will be with the settings from the input",
+            "Typically, the first test (no. 0) will be with the settings from the input",
             "[TT].tpr[tt] file; the last test (no. [TT]ntpr[tt]) will have cutoffs multiplied",
             "by (and at the same time fourier grid dimensions divided by) the scaling",
             "factor [TT]-fac[tt] (default 1.2). The remaining [TT].tpr[tt] files will have equally",
@@ -1427,6 +1714,7 @@ int gmx_tune_pme(int argc,char *argv[])
 
     int        nnodes =1;
     int        repeats=2;
+    int        pmeentries=0; /* How many values for -npme do we actually test for each tpr file */
     real       maxPMEfraction=0.50;
     real       minPMEfraction=0.25;
     int        maxPMEnodes, minPMEnodes;
@@ -1437,7 +1725,7 @@ int gmx_tune_pme(int argc,char *argv[])
     gmx_large_int_t new_sim_nsteps=-1;   /* -1 indicates: not set by the user */
     gmx_large_int_t cpt_steps=0;         /* Step counter in .cpt input file   */
     int        presteps=100;    /* Do a full cycle reset after presteps steps */
-    bool       bOverwrite=FALSE;
+    bool       bOverwrite=FALSE, bKeepTPR;
     bool       bLaunch=FALSE;
     char       **tpr_names=NULL;
     const char *simulation_tpr=NULL;
@@ -1446,12 +1734,12 @@ int gmx_tune_pme(int argc,char *argv[])
     
     /* Default program names if nothing else is found */
     char        *cmd_mpirun=NULL, *cmd_mdrun=NULL;
-    char        *cmd_args_bench, *cmd_args_launch, *cmd_np;
+    char        *cmd_args_bench, *cmd_args_launch;
+    char        *cmd_np=NULL;
 
-    t_perf      **perfdata;
+    t_perf      **perfdata=NULL;
     t_inputinfo *info;
-    int         datasets;
-    int         i,j,k;
+    int         i;
     FILE        *fp;
     t_commrec   *cr;
 
@@ -1537,6 +1825,8 @@ int gmx_tune_pme(int argc,char *argv[])
       { NULL, "auto", "no", "yes", NULL };
     const char *procstring[] =
       { NULL, "-np", "-n", "none", NULL };
+    const char *npmevalues_opt[] =
+      { NULL, "auto", "all", "subset", NULL };
     real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
     char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
     char *deffnm=NULL;
@@ -1562,6 +1852,8 @@ int gmx_tune_pme(int argc,char *argv[])
         "Max fraction of PME nodes to test with" },
       { "-min",      FALSE, etREAL, {&minPMEfraction},
         "Min fraction of PME nodes to test with" },
+      { "-npme",     FALSE, etENUM, {npmevalues_opt},
+        "Benchmark all possible values for -npme or just the subset that is expected to perform well"},
       { "-upfac",    FALSE, etREAL, {&upfac},
         "Upper limit for rcoulomb scaling factor (Note that rcoulomb upscaling results in fourier grid downscaling)" },
       { "-downfac",  FALSE, etREAL, {&downfac},
@@ -1569,7 +1861,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-ntpr",     FALSE, etINT,  {&ntprs},
         "Number of tpr files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of tpr files to test" },
       { "-four",     FALSE, etREAL, {&fs},
-        "Use this fourierspacing value instead of the grid found in the tpr input file" },        
+        "Use this fourierspacing value instead of the grid found in the tpr input file. (Spacing applies to a scaling factor of 1.0 if multiple tpr files are written)" },
       { "-steps",    FALSE, etGMX_LARGE_INT, {&bench_nsteps},
         "Take timings for these many steps in the benchmark runs" }, 
       { "-resetstep",FALSE, etINT,  {&presteps},
@@ -1692,8 +1984,9 @@ int gmx_tune_pme(int argc,char *argv[])
     fp = ffopen(opt2fn("-p",NFILE,fnm),"w");
     
     /* Make a quick consistency check of command line parameters */
-    check_input(nnodes, repeats, &ntprs, upfac, downfac, maxPMEfraction,
-                minPMEfraction, fs, bench_nsteps, fnm, NFILE, sim_part, presteps);
+    check_input(nnodes, repeats, &ntprs, &upfac, &downfac, maxPMEfraction,
+                minPMEfraction, fs, bench_nsteps, fnm, NFILE, sim_part, presteps,
+                asize(pa),pa);
     
     /* Determine max and min number of PME nodes to test: */
     if (nnodes > 2)
@@ -1732,7 +2025,6 @@ int gmx_tune_pme(int argc,char *argv[])
         fprintf(fp, "Number of threads       : %d\n", nnodes);
 
     fprintf(fp, "The mdrun  command is   : %s\n", cmd_mdrun);
-    fprintf(fp, "Input file is           : %s\n", opt2fn("-s",NFILE,fnm));
     fprintf(fp, "mdrun args benchmarks   : %s\n", cmd_args_bench);
     fprintf(fp, "Benchmark steps         : ");
     fprintf(fp, gmx_large_int_pfmt, bench_nsteps);
@@ -1760,15 +2052,22 @@ int gmx_tune_pme(int argc,char *argv[])
         fprintf(fp, "Repeats for each test   : %d\n", repeats);
     
     if (fs > 0.0)
+    {
         fprintf(fp, "Requested grid spacing  : %f (tpr file will be changed accordingly)\n", fs);
+        fprintf(fp, "                          This will be the grid spacing at a scaling factor of 1.0\n");
+    }
     
+    fprintf(fp, "Input file              : %s\n", opt2fn("-s",NFILE,fnm));
+
     /* Allocate memory for the inputinfo struct: */
     snew(info, 1);
     info->nr_inputfiles = ntprs;
     for (i=0; i<ntprs; i++)
     {
         snew(info->r_coulomb , ntprs);
-        snew(info->r_vdW     , ntprs);
+        snew(info->r_vdw     , ntprs);
+        snew(info->rlist     , ntprs);
+        snew(info->rlistlong , ntprs);
         snew(info->fourier_nx, ntprs);
         snew(info->fourier_ny, ntprs);
         snew(info->fourier_nz, ntprs);
@@ -1782,65 +2081,33 @@ int gmx_tune_pme(int argc,char *argv[])
     make_benchmark_tprs(opt2fn("-s",NFILE,fnm), tpr_names, bench_nsteps+presteps,
             cpt_steps, upfac, downfac, ntprs, fs, info, fp);
 
-    if (repeats == 0)
-    {
-        fprintf(fp, "\nNo benchmarks done since number of repeats (-r) is 0.\n");
-        fclose(fp);
-        finalize(opt2fn("-p", NFILE, fnm));
-        return 0;
-    }
-    
-    /* Memory allocation for performance data */
-    if (nnodes > 2)
-    {
-        datasets = maxPMEnodes - minPMEnodes + 3;
-        if (0 == minPMEnodes)
-            datasets--;
-    }
-    else
-        datasets = 1;
-
-    /* Allocate one dataset for each tpr input file: */
-    snew(perfdata, ntprs);
-
-    /* Allocate a subset for each test with a given number of PME nodes */
-    for (k=0; k<ntprs; k++)
-    {
-        snew(perfdata[k], datasets);
-        for (i=0; i<datasets; i++)
-        {
-            for (j=0; j<repeats; j++)
-            {
-                snew(perfdata[k][i].Gcycles   , repeats);
-                snew(perfdata[k][i].ns_per_day, repeats);
-                snew(perfdata[k][i].PME_f_load, repeats);
-            }
-        }
-    }
 
     /********************************************************************************/
     /* Main loop over all scenarios we need to test: tpr files, PME nodes, repeats  */
     /********************************************************************************/
-    do_the_tests(fp, tpr_names, maxPMEnodes, minPMEnodes, datasets, perfdata,
+    snew(perfdata, ntprs);
+    do_the_tests(fp, tpr_names, maxPMEnodes, minPMEnodes, npmevalues_opt[0], perfdata, &pmeentries,
                  repeats, nnodes, ntprs, bThreads, cmd_mpirun, cmd_np, cmd_mdrun,
                  cmd_args_bench, fnm, NFILE, sim_part, presteps, cpt_steps);
     
     fprintf(fp, "\nTuning took%8.1f minutes.\n", (gettime()-seconds)/60.0);
 
     /* Analyse the results and give a suggestion for optimal settings: */
-    analyze_data(fp, opt2fn("-p", NFILE, fnm), perfdata, nnodes, ntprs, datasets,
-                 repeats, info, &best_tpr, &best_npme);
+    bKeepTPR = analyze_data(fp, opt2fn("-p", NFILE, fnm), perfdata, nnodes, ntprs, pmeentries,
+                            repeats, info, &best_tpr, &best_npme);
     
     /* Take the best-performing tpr file and enlarge nsteps to original value */
-    if ((best_tpr > 0) || bOverwrite || (fs > 0.0))
+    if ( bKeepTPR && !bOverwrite && !(fs > 0.0) )
+    {
+        simulation_tpr = opt2fn("-s",NFILE,fnm);
+    }
+    else
     {
         simulation_tpr = opt2fn("-so",NFILE,fnm);
         modify_PMEsettings(bOverwrite? (new_sim_nsteps+cpt_steps) : 
                            info->orig_sim_steps, tpr_names[best_tpr], 
                            simulation_tpr);            
     }
-    else
-        simulation_tpr = opt2fn("-s",NFILE,fnm);
 
     /* Now start the real simulation if the user requested it ... */
     launch_simulation(bLaunch, fp, bThreads, cmd_mpirun, cmd_np, cmd_mdrun,

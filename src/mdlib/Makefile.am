@@ -46,10 +46,10 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	csettle.c       clincs.c	\
 	qmmm.c		gmx_fft.c 	gmx_parallel_3dfft.c	\
 	fft5d.c         fft5d.h         \
-	gmx_wallcycle.c fftgrid.c 	\
+	gmx_wallcycle.c	\
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
-	gmx_fft_mkl.c	
+	gmx_fft_mkl.c	qm_orca.c
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 

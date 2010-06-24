@@ -846,7 +846,6 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
   bool        b14only,bReadTab,bGenTab;
   real        x0,y0,yp;
   int         i,j,k,nx,nx0,tabsel[etiNR];
-  void *      p_tmp;
   
   t_forcetable table;
 
@@ -909,21 +908,11 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
   }
 
   /* Each table type (e.g. coul,lj6,lj12) requires four 
-   * numbers per datapoint. For performance reasons we want
-   * the table data to be aligned to 16-byte. This is accomplished
-   * by allocating 16 bytes extra to a temporary pointer, and then
-   * calculating an aligned pointer. This new pointer must not be
-   * used in a free() call, but thankfully we're sloppy enough not
-   * to do this :-)
+   * numbers per nx+1 data points. For performance reasons we want
+   * the table data to be aligned to 16-byte.
    */
+  snew_aligned(table.tab, 12*(nx+1)*sizeof(real),16);
 
-  /* 12 fp entries per table point, nx+1 points, and 16 bytes extra to align it. */
-  p_tmp = malloc(12*(nx+1)*sizeof(real)+16);
-  
-  /* align it - size_t has the same same as a pointer */
-  table.tab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));  
-  
-  
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
       init_table(out,nx,nx0,

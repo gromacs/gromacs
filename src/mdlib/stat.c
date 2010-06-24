@@ -440,9 +440,9 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
 
     snew(of,1);
 
-    of->fp_trn   = -1;
+    of->fp_trn   = NULL;
     of->fp_ene   = NULL;
-    of->fp_xtc   = -1;
+    of->fp_xtc   = NULL;
     of->fp_dhdl  = NULL;
     of->fp_field = NULL;
     
@@ -454,11 +454,13 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
         sprintf(filemode, bAppendFiles ? "a+" : "w+");  
         
         if (ir->eI != eiNM 
-            #ifndef GMX_FAHCORE
-            && (ir->nstxout > 0 ||
-             ir->nstvout > 0 ||
-             ir->nstfout > 0)
-            #endif
+#ifndef GMX_FAHCORE
+            &&
+            !(EI_DYNAMICS(ir->eI) &&
+              ir->nstxout == 0 &&
+              ir->nstvout == 0 &&
+              ir->nstfout == 0)
+#endif
 	    )
         {
             of->fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
@@ -511,11 +513,11 @@ void done_mdoutf(gmx_mdoutf_t *of)
     {
         close_enx(of->fp_ene);
     }
-    if (of->fp_xtc >= 0)
+    if (of->fp_xtc)
     {
         close_xtc(of->fp_xtc);
     }
-    if (of->fp_trn >= 0)
+    if (of->fp_trn)
     {
         close_trn(of->fp_trn);
     }

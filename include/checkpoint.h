@@ -74,7 +74,7 @@ extern void read_checkpoint_state(const char *fn,int *simulation_part,
 				  gmx_large_int_t *step,double *t,t_state *state);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
-extern void read_checkpoint_trxframe(int fp,t_trxframe *fr);
+extern void read_checkpoint_trxframe(t_fileio *fp,t_trxframe *fr);
 
 /* Print the complete contents of checkpoint file fn to out */
 extern void list_checkpoint(const char *fn,FILE *out);

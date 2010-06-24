@@ -3262,7 +3262,8 @@ int gmx_hbond(int argc,char *argv[])
     char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
     t_rgb hbrgb [HB_NR]={ {1,1,1},{1,0,0},   {0,0,1},    {1,0,1} };
 
-    int     status, trrStatus=1;
+    t_trxstatus *status;
+    int trrStatus=1;
     t_topology top;
     t_inputrec ir;
     t_pargs *ppa;

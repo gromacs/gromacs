@@ -43,7 +43,6 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "gmxcomplex.h"
-#include "fftgrid.h"
 #include "gmx_wallcycle.h"
 
 #ifdef __cplusplus
@@ -92,9 +91,6 @@ extern int gmx_pmeonly(gmx_pme_t pme,
 		       t_inputrec *ir);
 /* Called on the nodes that do PME exclusively (as slaves) 
  */
-
-extern void gmx_sum_qgrid(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
-			  int direction);
 
 extern void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V);
 /* Calculate the PME grid energy V for n charges with a potential

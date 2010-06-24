@@ -87,7 +87,8 @@ int gmx_rotacf(int argc,char *argv[])
       "Average over molecules" }
   };
 
-  int        status,isize;
+  t_trxstatus *status;
+  int        isize;
   atom_id    *index;
   char       *grpname;
   rvec       *x,*x_s;
