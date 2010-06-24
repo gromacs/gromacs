@@ -46,6 +46,9 @@ option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 option(USE_VERSION_H "Generate development version string/information" ON)
 option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
 
+set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
+
+
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
@@ -63,7 +66,7 @@ if(GMX_OPENMM)
     if(GMX_SOFTWARE_INVSQRT)
         set(GMX_SOFTWARE_INVSQRT OFF)
     endif(GMX_SOFTWARE_INVSQRT)
-    if(NOT GMX_ACCELERATION MATCHES "none")    
+    if(NOT GMX_ACCELERATION MATCHES "none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
         message(WARNING "The OpenMM build does not support other acceleration modes!")
         set(GMX_ACCELERATION "none")
     endif()

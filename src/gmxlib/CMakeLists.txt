@@ -105,6 +105,7 @@ endif(GMX_FAHCORE)
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_MORESSE_SOURCES} ${GMX_SSE2_SOURCES} ${THREAD_MPI_SRC})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})
 add_dependencies(gmx gmx_version) 
+set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}")
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})
 
