@@ -1040,9 +1040,11 @@ int main(int argc, char *argv[])
   sfree(rrn);
 
   clear_mat(box);
-  if (watermodel != NULL && strncmp(watermodel,"tip4p",5) == 0) {
+  if (watermodel != NULL && (strstr(watermodel,"4p") ||
+			     strstr(watermodel,"4P"))) {
     watres = "HO4";
-  } else if (watermodel != NULL && strncmp(watermodel,"tip5p",5) == 0) {
+  } else if (watermodel != NULL && (strstr(watermodel,"5p") ||
+				    strstr(watermodel,"5P"))) {
     watres = "HO5";
   } else {
     watres = "HOH";
