@@ -58,16 +58,18 @@
 extern "C" {
 #endif
 
+
+/* THESE 3 FUNCTIONS (xdropen, xdrclose and xdr_get_fp) ARE NOW OBSOLETE 
+   AND ONLY PROVIDED FOR BACKWARD COMPATIBILITY OF 3D PARTY TOOLS. 
+   THEY SHOULD NOT BE USED ANYWHERE IN GROMACS ITSELF. 
 int xdropen(XDR *xdrs, const char *filename, const char *type);
-
-
 int xdrclose(XDR *xdrs);
+*/
 
-FILE * xdr_get_fp(int xdrid);
 
 
 /* Read or write reduced precision *float* coordinates */
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead);
 
 
 /* Read or write a *real* value (stored as float) */
@@ -75,7 +77,7 @@ int xdr_real(XDR *xdrs,real *r);
 
 
 /* Read or write reduced precision *real* coordinates */
-int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
+int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision, bool bRead);
 
 
 extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);

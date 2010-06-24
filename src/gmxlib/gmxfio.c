@@ -250,15 +250,15 @@ static void gmx_fio_set_iotype(t_fileio *fio)
    type of access to the fio's elements. */
 void gmx_fio_lock(t_fileio *fio)
 {
-#ifdef TMPI_THREADS
-    tMPI_Thread_mutex_lock(&(fio->mtx));
+#ifdef GMX_THREADS
+    tMPI_Spinlock_lock(&(fio->mtx));
 #endif
 }
 /* unlock the mutex associated with this fio.  */
 void gmx_fio_unlock(t_fileio *fio)
 {
-#ifdef TMPI_THREADS
-    tMPI_Thread_mutex_unlock(&(fio->mtx));
+#ifdef GMX_THREADS
+    tMPI_Spinlock_unlock(&(fio->mtx));
 #endif
 }
 
@@ -272,8 +272,8 @@ static void gmx_fio_make_dummy(void)
         open_files->fn=NULL;
         open_files->next=open_files;
         open_files->prev=open_files;
-#ifdef TMPI_THREADS
-        tMPI_Thread_mutex_init(&(open_files->mtx));
+#ifdef GMX_THREADS
+        tMPI_Spinlock_init(&(open_files->mtx));
 #endif
     }
 }
@@ -295,7 +295,7 @@ static void gmx_fio_make_dummy(void)
 static void gmx_fio_insert(t_fileio *fio)
 {
     t_fileio *prev;
-#ifdef TMPI_THREADS
+#ifdef GMX_THREADS
     /* first lock the big open_files mutex. */
     tMPI_Thread_mutex_lock(&open_file_mutex);
 #endif
@@ -327,13 +327,14 @@ static void gmx_fio_insert(t_fileio *fio)
     gmx_fio_unlock(open_files);
     gmx_fio_unlock(fio);
 
-#ifdef TMPI_THREADS
+#ifdef GMX_THREADS
     /* now unlock the big open_files mutex.  */
     tMPI_Thread_mutex_unlock(&open_file_mutex);
 #endif
 }
 
-/* remove a t_fileio into the list. We assume the fio is locked */
+/* remove a t_fileio into the list. We assume the fio is locked, and we leave 
+   it locked. */
 static void gmx_fio_remove(t_fileio *fio)
 {    
     t_fileio *prev;
@@ -377,20 +378,24 @@ static t_fileio *gmx_fio_get_first(void)
 {
     t_fileio *ret;
     /* first lock the big open_files mutex and the dummy's mutex */
-#ifdef GMX_THREAD
-    tMPI_Thread_mutex_lock(&open_file_mutex);
-#endif
+
     gmx_fio_make_dummy();
-    /* after this, the open_file pointer should never change */
-#ifdef GMX_THREAD
-    tMPI_Thread_mutex_unlock(&open_file_mutex);
+#ifdef GMX_THREADS
+    /* first lock the big open_files mutex. */
+    tMPI_Thread_mutex_lock(&open_file_mutex);
 #endif
 
     gmx_fio_lock(open_files);
     ret=open_files->next;
+
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&open_file_mutex);
+#endif
+
     /* check whether there were any to begin with */
     if (ret==open_files)
     {
+        /* after this, the open_file pointer should never change */
         ret=NULL;
     }
     else
@@ -398,6 +403,7 @@ static t_fileio *gmx_fio_get_first(void)
         gmx_fio_lock(open_files->next);
     }
     gmx_fio_unlock(open_files);
+
 
     return ret;
 }
@@ -419,6 +425,7 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
         gmx_fio_lock(ret);
     }
     gmx_fio_unlock(fio);
+
     return ret;
 }
 
@@ -486,8 +493,8 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     }
 
     snew(fio, 1);
-#ifdef TMPI_THREADS
-    tMPI_Thread_mutex_init(&(fio->mtx));
+#ifdef GMX_THREADS
+    tMPI_Spinlock_init(&(fio->mtx));
 #endif
     bRead = (newmode[0]=='r' && newmode[1]!='+');
     bReadWrite = (newmode[1]=='+');
@@ -520,16 +527,21 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
                     gmx_open(fn);
                 }
             }
-            snew(fio->xdr,1);
-            xdrid = xdropen(fio->xdr,fn,newmode); 
-            if (xdrid == 0)
+            /* Open the file */
+            fio->fp = ffopen(fn,newmode);
+
+            /* determine the XDR direction */
+            if (newmode[0] == 'w' || newmode[0]=='a')
             {
-                if(newmode[0]=='r' && newmode[1]!='+') 
-                    gmx_fatal(FARGS,"Cannot open file %s for reading\nCheck permissions if it exists.",fn); 
-                else
-                    gmx_fatal(FARGS,"Cannot open file %s for writing.\nCheck your permissions, disk space and/or quota.",fn);
+                fio->xdrmode=XDR_ENCODE;
             }
-            fio->fp = xdr_get_fp(xdrid);
+            else
+            {
+                fio->xdrmode=XDR_DECODE;
+            }
+
+            snew(fio->xdr,1);
+            xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
         }
         else
         {
@@ -565,28 +577,23 @@ int gmx_fio_close(t_fileio *fio)
     int rc = 0;
 
     gmx_fio_lock(fio);
+    /* first remove it from the list */
+    gmx_fio_remove(fio);
+
     if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
     {
-        rc = !xdrclose(fio->xdr); /* xdrclose returns 1 if happy, 
-         negate it */
+        xdr_destroy(fio->xdr);
         sfree(fio->xdr);
     }
-    else
-    {
-        /* Don't close stdin and stdout! */
-        if (!fio->bStdio && fio->fp!=NULL)
-            rc = ffclose(fio->fp); /* fclose returns 0 if happy */
-    }
+
+    /* Don't close stdin and stdout! */
+    if (!fio->bStdio && fio->fp!=NULL)
+        rc = ffclose(fio->fp); /* fclose returns 0 if happy */
 
     fio->bOpen = FALSE;
 
-    /* now get rid of it */
-    gmx_fio_remove(fio);
     gmx_fio_unlock(fio);
 
-#ifdef TMPI_THREADS
-    tMPI_Thread_mutex_destroy(&(fio->mtx));
-#endif
     sfree(fio);
 
     return rc;
@@ -623,6 +630,7 @@ FILE * gmx_fio_fopen(const char *fn, const char *mode)
 int gmx_fio_fclose(FILE *fp)
 {
     t_fileio *cur;
+    t_fileio *found=NULL;
 
     cur=gmx_fio_get_first();
     while(cur)
@@ -630,11 +638,15 @@ int gmx_fio_fclose(FILE *fp)
         if (cur->fp == fp)
         {
             gmx_fio_unlock(cur);
-            return gmx_fio_close(cur);
+            found=cur;
+            /* we let it loop until  the end */
         }
         cur=gmx_fio_get_next(cur);
     }
-    return -1;
+
+    if (!found)
+        return -1;
+    return gmx_fio_close(found);
 }
 
 /* internal variant of get_file_md5 that operates on a locked file */
@@ -671,7 +683,6 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, off_t offset,
     }
     if (ret) /*either no fp, not readwrite, or fseek not successful */
     {
-        gmx_fio_unlock(fio);
         return -1;
     }
 
@@ -788,7 +799,7 @@ int gmx_fio_check_file_position(t_fileio *fio)
     {
         fio->bLargerThan_off_t = TRUE;
     }
-    gmx_fio_lock(fio);
+    gmx_fio_unlock(fio);
 #endif
 
     return 0;
@@ -888,55 +899,6 @@ void gmx_fio_checktype(t_fileio *fio)
 
 }
 
-#if 0
-this evil function is now dead.
-void gmx_fio_select(int fio)
-{
-#ifdef DEBUG
-    fprintf(stderr,"Select fio called with type %d for file %s\n",
-            FIO[fio].iFTP,FIO[fio].fn);
-#endif
-
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&fio_mutex);
-#endif
-    gmx_fio_check(fio);
-    if (in_ftpset(FIO[fio].iFTP, asize(ftpXDR), ftpXDR))
-    {
-#ifdef USE_XDR    
-        do_read = do_xdr;
-        do_write = do_xdr;
-#else
-        gmx_fatal(FARGS,"Sorry, no XDR");
-#endif
-    }
-    else if (in_ftpset(FIO[fio].iFTP, asize(ftpASC), ftpASC))
-    {
-        do_read = do_ascread;
-        do_write = do_ascwrite;
-    }
-    else if (in_ftpset(FIO[fio].iFTP, asize(ftpBIN), ftpBIN))
-    {
-        do_read = do_binread;
-        do_write = do_binwrite;
-    }
-#ifdef HAVE_XMl
-    else if (in_ftpset(FIO[fio].iFTP,asize(ftpXML),ftpXML))
-    {
-        do_read = do_dummy;
-        do_write = do_dummy;
-    }
-#endif
-    else
-        gmx_fatal(FARGS, "Can not read/write topologies to file type %s",
-                  ftp2ext(curfio->iFTP));
-
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&fio_mutex);
-#endif
-    curfio = &(FIO[fio]);
-}
-#endif
 
 void gmx_fio_setprecision(t_fileio *fio, bool bDouble)
 {
@@ -990,9 +952,9 @@ void gmx_fio_rewind(t_fileio* fio)
 
     if (fio->xdr)
     {
-        xdrclose(fio->xdr);
-        /* File is always opened as binary by xdropen */
-        xdropen(fio->xdr, fio->fn, fio->bRead ? "r" : "w");
+        xdr_destroy(fio->xdr);
+        frewind(fio->fp);
+        xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
     }
     else
     {
