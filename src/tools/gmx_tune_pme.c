@@ -966,101 +966,116 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
     }
 }
 
-/* Returns TRUE if n1 and n2 have at least one common factor */
-static bool have_common_factor(int n1, int n2)
+
+/* Returns the largest common factor of n1 and n2 */
+static int largest_common_factor(int n1, int n2)
 {
     int factor, nmax;
 
     nmax = min(n1, n2);
-    for (factor=2; factor <= nmax; factor++)
+    for (factor=nmax; factor > 0; factor--)
     {
         if ( 0==(n1 % factor) && 0==(n2 % factor) )
-            return TRUE;
+        {
+            return(factor);
+        }
     }
-    return FALSE;
+    return 0; /* one for the compiler */
 }
 
+enum {eNpmeAuto, eNpmeAll, eNpmeReduced, eNpmeSubset, eNpmeNr};
 
 /* Create a list of numbers of PME nodes to test */
 static void make_npme_list(
         const char *npmevalues_opt,  /* Make a complete list with all
                            * possibilities or a short list that keeps only
                            * reasonable numbers of PME nodes                  */
-        int *nentries,    /* How many entries are in the nPMEnodes list       */
+        int *nentries,    /* Number of entries we put in the nPMEnodes list   */
         int *nPMEnodes[], /* Each entry contains the value for -npme          */
         int nnodes,       /* Total number of nodes to do the tests on         */
         int minPMEnodes,  /* Minimum number of PME nodes                      */
         int maxPMEnodes)  /* Maximum number of PME nodes                      */
 {
     int i,npme,npp;
-    int *list=NULL;
-    int *full=NULL;
-    int *reduced=NULL;
-    int nfull,nreduced;
-    bool bShort;
+    int min_factor=1;     /* We request that npp and npme have this minimal
+                           * largest common factor (depends on npp)           */
+    int nlistmax;         /* Max. list size                                   */
+    int nlist;            /* Actual number of entries in list                 */
+    int eNPME;
 
 
-    /* Do we need to check all possible values for -npme or is a short list enough? */
-    if (   ( 0 == strcmp(npmevalues_opt, "subset") )
-        || ( 0 == strcmp(npmevalues_opt, "auto"  ) && nnodes > 128 ) )
-        bShort = TRUE;
-    else
-        bShort = FALSE;
-
-    /* Calculate how many entries we have */
-    if (nnodes > 2)
+    /* Do we need to check all possible values for -npme or is a reduced list enough? */
+    if ( 0 == strcmp(npmevalues_opt, "all") )
     {
-        *nentries = maxPMEnodes - minPMEnodes + 3;
-        if (0 == minPMEnodes)
-            *nentries = *nentries-1;
+        eNPME = eNpmeAll;
+    }
+    else if ( 0 == strcmp(npmevalues_opt, "subset") )
+    {
+        eNPME = eNpmeSubset;
+    }
+    else if ( 0 == strcmp(npmevalues_opt, "auto") )
+    {
+        if (nnodes <= 64)
+            eNPME = eNpmeAll;
+        else if (nnodes < 128)
+            eNPME = eNpmeReduced;
+        else
+            eNPME = eNpmeSubset;
     }
     else
-        *nentries = 1;
+    {
+        gmx_fatal(FARGS, "Unknown option for -npme in make_npme_list");
+    }
 
-    /* Make a complete and a reduced list with -npme entries */
-    nfull = *nentries;
-    snew(full   , nfull);
-    snew(reduced, nfull);
-    nreduced = 0;
-    for (i = 0; i < nfull - 2; i++)
+    /* Calculate how many entries we could possibly have (in case of -npme all) */
+    if (nnodes > 2)
+    {
+        nlistmax = maxPMEnodes - minPMEnodes + 3;
+        if (0 == minPMEnodes)
+            nlistmax--;
+    }
+    else
+        nlistmax = 1;
+
+    /* Now make the actual list which is at most of size nlist */
+    snew(*nPMEnodes, nlistmax);
+    nlist = 0; /* start counting again, now the real entries in the list */
+    for (i = 0; i < nlistmax - 2; i++)
     {
         npme = maxPMEnodes - i;
         npp  = nnodes-npme;
-        full[i] = npme;
-        if (have_common_factor(npp, npme))
+        switch (eNPME)
         {
-            reduced[nreduced] = npme;
-            nreduced++;
+            case eNpmeAll:
+                min_factor = 1;
+                break;
+            case eNpmeReduced:
+                min_factor = 2;
+                break;
+            case eNpmeSubset:
+                /* For 2d PME we want a common largest factor of at least the cube
+                 * root of the number of PP nodes */
+                min_factor = (int) pow(npp, 1.0/3.0);
+                break;
+            default:
+                gmx_fatal(FARGS, "Unknown option for eNPME in make_npme_list");
+                break;
+        }
+        if (largest_common_factor(npp, npme) >= min_factor)
+        {
+            (*nPMEnodes)[nlist] = npme;
+            nlist++;
         }
     }
-    full[nfull-2] =  0;
-    full[nfull-1] = -1;
-    reduced[nreduced  ] =  0;
-    reduced[nreduced+1] = -1;
-
-    if (bShort)
-    {
-        *nentries = nreduced + 2;
-        list = reduced;
-    }
-    else
-    {
-        list = full;
-    }
-
-    snew(*nPMEnodes, *nentries);
-    for (i=0; i<*nentries; i++)
-    {
-        (*nPMEnodes)[i] = list[i];
-    }
+    /* We always test 0 PME nodes and the automatic number */
+    *nentries = nlist + 2;
+    (*nPMEnodes)[nlist  ] =  0;
+    (*nPMEnodes)[nlist+1] = -1;
 
     fprintf(stderr, "Will try the following %d different values for -npme:\n", *nentries);
     for (i=0; i<*nentries-1; i++)
         fprintf(stderr, "%d, ", (*nPMEnodes)[i]);
     fprintf(stderr, "and %d (auto).\n", (*nPMEnodes)[*nentries-1]);
-
-    sfree(reduced);
-    sfree(full);
 }
 
 
