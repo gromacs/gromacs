@@ -1680,7 +1680,10 @@ void load_checkpoint(const char *fn,FILE **fplog,
       gmx_bcast(sizeof(*bReadEkin),bReadEkin,cr);
     }
     ir->bContinuation    = TRUE;
-    ir->nsteps          += ir->init_step - step;
+    if (ir->nsteps >= 0)
+    {
+        ir->nsteps          += ir->init_step - step;
+    }
     ir->init_step        = step;
 	ir->simulation_part += 1;
 }
