@@ -64,26 +64,6 @@ static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 }
 #endif
 
-
-void *
-gmx_alloc_aligned(size_t size)
-{
-    void *p0,*p;
-    
-    p0 = malloc(size+32);
-    
-    if(p0 == NULL)
-    {
-        gmx_fatal(FARGS,"Failed to allocated %u bytes of aligned memory.",size+32);
-    }
-    
-    p = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
-    
-    /* Yeah, yeah, we cannot free this pointer, but who cares... */
-    return p;
-}
-
-/*
 t_fftgrid *mk_fftgrid(int          nx,
                       int          ny,
                       int          nz,
@@ -162,7 +142,7 @@ t_fftgrid *mk_fftgrid(int          nx,
     {
         gmx_fft_init_3d_real(&grid->fft_setup,nx,ny,nz,bReproducible ? GMX_FFT_FLAG_CONSERVATIVE : GMX_FFT_FLAG_NONE);
     }
-    grid->ptr = (real *)gmx_alloc_aligned(grid->nptr*sizeof(*(grid->ptr)));
+    snew_aligned(grid->ptr,grid->nptr,32);
     
 #ifdef GMX_MPI
     if (grid->bParallel && debug) 
@@ -173,21 +153,18 @@ t_fftgrid *mk_fftgrid(int          nx,
     {
         maxlocalsize = max((nx/nnodes + x1)*ny*grid->la2c*2,
                            (ny/nnodes + y1)*nx*grid->la2c*2);
-        grid->workspace = (real *)
-            gmx_alloc_aligned(maxlocalsize*sizeof(*(grid->workspace)));
+        snew_aligned(grid->workspace,maxlocalsize,32);
     }
     else
     {
-        grid->workspace =
-            (real*)gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
+        snew_aligned(grid->workspace,grid->nptr,32);
     }
-#else // no MPI 
-    grid->workspace = (real *)gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
+#else /* no MPI */
+    snew_aligned(grid->workspace,grid->nptr,32);
 #endif
 
     return grid;
 }
-*/
 
 void 
 pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid)
@@ -216,14 +193,13 @@ pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid)
 
 void done_fftgrid(t_fftgrid *grid)
 {
-  /* memory can't be freed because it is allocated by gmx_alloc_aligned */
   if (grid->ptr) {
-    /* sfree(grid->ptr); */
+    sfree_aligned(grid->ptr);
     grid->ptr = NULL;
   }
  
   if (grid->workspace) {
-    /* sfree(grid->workspace); */
+    sfree_aligned(grid->workspace);
     grid->workspace=NULL;
   }
 }
