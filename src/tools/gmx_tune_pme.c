@@ -1396,7 +1396,8 @@ static bool is_main_switch(char *opt)
       || (0 == strcmp(opt,"-resetstep"))
       || (0 == strcmp(opt,"-so"       ))
       || (0 == strcmp(opt,"-npstring" ))
-      || (0 == strcmp(opt,"-npme"     )) )
+      || (0 == strcmp(opt,"-npme"     ))
+      || (0 == strcmp(opt,"-passall"  )) )
     return TRUE;
     
     return FALSE;
@@ -1472,15 +1473,15 @@ static bool is_bench_file(char *opt, bool bSet, bool bOptional, bool bIsOutput)
 }
 
 
-/* Adds 'buf' to 'cmd_args' */
-static void add_to_command_line(char **cmd_args, char *buf)
+/* Adds 'buf' to 'str' */
+static void add_to_string(char **str, char *buf)
 {
     int len;
     
     
-    len = strlen(*cmd_args) + strlen(buf) + 1;
-    srenew(*cmd_args, len);
-    strcat(*cmd_args, buf);
+    len = strlen(*str) + strlen(buf) + 1;
+    srenew(*str, len);
+    strcat(*str, buf);
 }
 
 
@@ -1495,7 +1496,8 @@ static void create_command_line_snippets(
         const char *procstring,      /* How to pass the number of processors to $MPIRUN */
         char     *cmd_np[],          /* Actual command line snippet, e.g. '-np <N>' */
         char     *cmd_args_bench[],  /* command line arguments for benchmark runs */
-        char     *cmd_args_launch[]) /* command line arguments for simulation run */
+        char     *cmd_args_launch[], /* command line arguments for simulation run */
+        char     extra_args[])       /* Add this to the end of the command line */
 {
     int        i;
     char       *opt;
@@ -1526,7 +1528,6 @@ static void create_command_line_snippets(
     {
         /* What command line switch are we currently processing: */
         opt = (char *)pa[i].option;
-        
         /* Skip options not meant for mdrun */        
         if (!is_main_switch(opt))
         {
@@ -1553,10 +1554,10 @@ static void create_command_line_snippets(
             else 
             {
                 if (is_bench_option(opt,pa[i].bSet))
-                    add_to_command_line(cmd_args_bench, strbuf);
+                    add_to_string(cmd_args_bench, strbuf);
 
                 if (is_launch_option(opt,pa[i].bSet))
-                    add_to_command_line(cmd_args_launch, strbuf);
+                    add_to_string(cmd_args_launch, strbuf);
             }
         }
     }
@@ -1564,7 +1565,7 @@ static void create_command_line_snippets(
     {
         /* Add equilibration steps to benchmark options */
         sprintf(strbuf, "-resetstep %d ", presteps);
-        add_to_command_line(cmd_args_bench, strbuf);
+        add_to_string(cmd_args_bench, strbuf);
     }
     
     /********************/
@@ -1589,13 +1590,16 @@ static void create_command_line_snippets(
                 if (0 == strncmp(opt, "-b", 2))     
                     sprintf(strbuf, "-%s %s ", &opt[2], name);
                 
-                add_to_command_line(cmd_args_bench, strbuf);
+                add_to_string(cmd_args_bench, strbuf);
             }
             
             if ( is_launch_file(opt,opt2bSet(opt,nfile,fnm)) )
-                add_to_command_line(cmd_args_launch, strbuf);
+                add_to_string(cmd_args_launch, strbuf);
         }
     }
+
+    add_to_string(cmd_args_bench , extra_args);
+    add_to_string(cmd_args_launch, extra_args);
 #undef BUFLENGTH
 }
 
@@ -1727,6 +1731,8 @@ int gmx_tune_pme(int argc,char *argv[])
     int        presteps=100;    /* Do a full cycle reset after presteps steps */
     bool       bOverwrite=FALSE, bKeepTPR;
     bool       bLaunch=FALSE;
+    bool       bPassAll=FALSE;
+    char       *ExtraArgs=NULL;
     char       **tpr_names=NULL;
     const char *simulation_tpr=NULL;
     int        best_npme, best_tpr;
@@ -1844,6 +1850,8 @@ int gmx_tune_pme(int argc,char *argv[])
         "Number of nodes to run the tests on (must be > 2 for separate PME nodes)" },
       { "-npstring", FALSE, etENUM, {procstring},
         "Specify the number of processors to $MPIRUN using this string"},
+      { "-passall",  FALSE, etBOOL, {&bPassAll},
+        "HIDDENPut arguments unknown to mdrun at the end of the command line. Can e.g. be used for debugging purposes. "},
       { "-nt",       FALSE, etINT,  {&nthreads},
         "Number of threads to run the tests on (turns MPI & mpirun off)"},
       { "-r",        FALSE, etINT,  {&repeats},
@@ -1942,6 +1950,23 @@ int gmx_tune_pme(int argc,char *argv[])
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,
                       0,NULL,&oenv);        
 
+    /* Store the remaining unparsed command line entries in a string */
+    snew(ExtraArgs, 1);
+    ExtraArgs[0] = '\0';
+    for (i=1; i<argc; i++) /* argc will now be 1 if everything was understood */
+    {
+        add_to_string(&ExtraArgs, argv[i]);
+        add_to_string(&ExtraArgs, " ");
+    }
+    if ( !bPassAll && (ExtraArgs[0] != '\0') )
+    {
+        fprintf(stderr, "\nWARNING: The following arguments you provided have no effect:\n"
+                        "%s\n"
+                        "Use the -passall option to force them to appear on the command lines\n"
+                        "for the benchmark simulations%s.\n\n",
+                        ExtraArgs, bLaunch? " and at launch time" : "");
+    }
+
     if (opt2parg_bSet("-nt",asize(pa),pa))
     {
         bThreads=TRUE;
@@ -1960,7 +1985,8 @@ int gmx_tune_pme(int argc,char *argv[])
      * as well as for the simulation run 
      */
     create_command_line_snippets(bThreads,presteps,NFILE,fnm,asize(pa),pa,procstring[0],
-                                 &cmd_np, &cmd_args_bench, &cmd_args_launch);
+                                 &cmd_np, &cmd_args_bench, &cmd_args_launch,
+                                 bPassAll? ExtraArgs : "");
 
     /* Read in checkpoint file if requested */
     sim_part = 1;
@@ -2038,6 +2064,8 @@ int gmx_tune_pme(int argc,char *argv[])
     }
     if (bLaunch)
         fprintf(fp, "mdrun args at launchtime: %s\n", cmd_args_launch);
+    if (!bPassAll && ExtraArgs[0] != '\0')
+        fprintf(fp, "Unused arguments        : %s\n", ExtraArgs);
     if (new_sim_nsteps >= 0)
     {
         bOverwrite = TRUE;
