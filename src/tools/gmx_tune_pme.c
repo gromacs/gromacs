@@ -63,6 +63,7 @@ enum {
     eParselogNoDDGrid,
     eParselogTPXVersion,
     eParselogNotParallel,
+    eParselogFatal,
     eParselogNr
 };
 
@@ -173,8 +174,9 @@ static void finalize(const char *fn_out)
 
 enum {eFoundNothing, eFoundDDStr, eFoundAccountingStr, eFoundCycleStr};
 
-static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr, 
-                         int presteps, gmx_large_int_t cpt_steps, int nnodes)
+static int parse_logfile(const char *logfile, const char *errfile,
+        t_perf *perfdata, int test_nr, int presteps, gmx_large_int_t cpt_steps,
+        int nnodes)
 {
     FILE  *fp;
     char  line[STRLEN], dumstring[STRLEN], dumstring2[STRLEN];
@@ -191,6 +193,29 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
     bool  bFoundResetStr = FALSE;
     bool  bResetChecked  = FALSE;
 
+
+    /* Before we start parsing the logfile, check for fatal errors on stdout */
+    if (gmx_fexist(errfile))
+    {
+        fp = fopen(errfile, "r");
+        while (fgets(line, STRLEN, fp) != NULL)
+        {
+            if ( str_starts(line, "Fatal error:") )
+            {
+                if (fgets(line, STRLEN, fp) != NULL)
+                    fprintf(stderr, "\nWARNING: A fatal error has occured during this benchmark:\n"
+                                    "%s\n", line);
+                fclose(fp);
+                cleandata(perfdata, test_nr);
+                return eParselogFatal;
+            }
+        }
+        fclose(fp);
+    }
+    else
+    {
+        fprintf(stderr, "WARNING: Could not find stderr file %s.\n", errfile);
+    }
 
     if (!gmx_fexist(logfile))
     {
@@ -605,19 +630,20 @@ static void launch_simulation(
     
     
     /* Make enough space for the system call command, 
-     * (100 extra chars for -np ... etc. options should suffice): */
-    snew(command, strlen(cmd_mpirun)+strlen(cmd_mdrun)+strlen(args_for_mdrun)+strlen(simulation_tpr)+100);
+     * (100 extra chars for -npme ... etc. options should suffice): */
+    snew(command, strlen(cmd_mpirun)+strlen(cmd_mdrun)+strlen(cmd_np)+strlen(args_for_mdrun)+strlen(simulation_tpr)+100);
    
+    /* Note that the -passall options requires args_for_mdrun to be at the end
+     * of the command line string */
     if (bThreads)
     {
-        sprintf(command, "%s%s%s-npme %d -s %s",
-                cmd_mdrun, cmd_np, args_for_mdrun, nPMEnodes, simulation_tpr);
+        sprintf(command, "%s%s-npme %d -s %s %s",
+                cmd_mdrun, cmd_np, nPMEnodes, simulation_tpr, args_for_mdrun);
     }
     else 
     {
-        sprintf(command, "%s%s%s %s-npme %d -s %s",
-                cmd_mpirun, cmd_np, cmd_mdrun, args_for_mdrun,
-                nPMEnodes, simulation_tpr);
+        sprintf(command, "%s%s%s -npme %d -s %s %s",
+                cmd_mpirun, cmd_np, cmd_mdrun, nPMEnodes, simulation_tpr, args_for_mdrun);
     }
         
     fprintf(fp, "%s this command line to launch the simulation:\n\n%s", bLaunch? "Using":"Please use", command);
@@ -919,7 +945,7 @@ static bool tpr_triggers_file(const char *opt)
 /* Rename the files we want to keep to some meaningful filename and
  * delete the rest */
 static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes, 
-                    int nPMEnodes, int nr)
+                    int nPMEnodes, int nr, bool bKeepStderr)
 {
     char numstring[STRLEN];
     char newfilename[STRLEN];
@@ -950,6 +976,30 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
                 fprintf(stdout, "renaming log file to %s\n", newfilename);
                 make_backup(newfilename);
                 rename(opt2fn("-bg",nfile,fnm), newfilename);
+            }
+        }
+        else if (strcmp(opt, "-err") == 0)
+        {
+            /* This file contains the output of stderr. We want to keep it in
+             * cases where there have been problems. */
+            fn = opt2fn(opt, nfile, fnm);
+            numstring[0] = '\0';
+            if (nr > 0)
+                sprintf(numstring, "_%d", nr);
+            sprintf(newfilename, "%s_no%d_np%d_npme%d%s", fn, k, nnodes, nPMEnodes, numstring);
+            if (gmx_fexist(fn))
+            {
+                if (bKeepStderr)
+                {
+                    fprintf(stdout, "Saving stderr output in %s\n", newfilename);
+                    make_backup(newfilename);
+                    rename(fn, newfilename);
+                }
+                else
+                {
+                    fprintf(stdout, "Deleting %s\n", fn);
+                    remove(fn);
+                }
             }
         }
         /* Delete the files which are created for each benchmark run: (options -b*) */
@@ -1141,7 +1191,8 @@ static void do_the_tests(
                               "Counters were not reset properly.",
                               "No DD grid found for these settings.",
                               "TPX version conflict!",
-                              "mdrun was not started in parallel!"};
+                              "mdrun was not started in parallel!",
+                              "A fatal error occured!" };
     char    str_PME_f_load[13];
 
 
@@ -1158,11 +1209,11 @@ static void do_the_tests(
     /* Construct the part of the command line that stays the same for all tests: */
     if (bThreads)
     {
-        sprintf(cmd_stub, "%s%s%s", cmd_mdrun, cmd_np, cmd_args_bench);
+        sprintf(cmd_stub, "%s%s", cmd_mdrun, cmd_np);
     }
     else
     {
-        sprintf(cmd_stub, "%s%s%s %s", cmd_mpirun, cmd_np, cmd_mdrun, cmd_args_bench);
+        sprintf(cmd_stub, "%s%s%s ", cmd_mpirun, cmd_np, cmd_mdrun);
     }
 
     /* Create a list of numbers of PME nodes to test */
@@ -1198,10 +1249,12 @@ static void do_the_tests(
             {
                 pd->nPMEnodes = nPMEnodes[i];
                 
-                /* Add -npme and -s to the command line and save it: */
+                /* Add -npme and -s to the command line and save it. Note that
+                 * the -passall (if set) options requires cmd_args_bench to be
+                 * at the end of the command line string */
                 snew(pd->mdrun_cmd_line, cmdline_length);
-                sprintf(pd->mdrun_cmd_line, "%s-npme %d -s %s",
-                        cmd_stub, pd->nPMEnodes, tpr_names[k]);
+                sprintf(pd->mdrun_cmd_line, "%s-npme %d -s %s %s",
+                        cmd_stub, pd->nPMEnodes, tpr_names[k], cmd_args_bench);
 
                 /* Do a benchmark simulation: */
                 if (repeats > 1)
@@ -1211,12 +1264,15 @@ static void do_the_tests(
                 fprintf(stdout, "\n=== Progress %2.0f%%, tpr %d/%d, run %d/%d%s:\n",
                         (100.0*count)/totaltests,
                         k+1, nr_tprs, i+1, *pmeentries, buf);
-                sprintf(command, "%s 1> /dev/null 2>&1", pd->mdrun_cmd_line);
+                make_backup(opt2fn("-err",nfile,fnm));
+                sprintf(command, "%s 1> /dev/null 2>%s", pd->mdrun_cmd_line, opt2fn("-err",nfile,fnm));
                 fprintf(stdout, "%s\n", pd->mdrun_cmd_line);
                 gmx_system_call(command);
 
-                /* Collect the performance data from the log file */
-                ret = parse_logfile(opt2fn("-bg",nfile,fnm), pd, nr, presteps, cpt_steps, nnodes);
+                /* Collect the performance data from the log file; also check stderr
+                 * for fatal errors */
+                ret = parse_logfile(opt2fn("-bg",nfile,fnm), opt2fn("-err",nfile,fnm),
+                        pd, nr, presteps, cpt_steps, nnodes);
                 if ((presteps > 0) && (ret == eParselogResetProblem))
                     bResetProblem = TRUE;
 
@@ -1235,13 +1291,13 @@ static void do_the_tests(
                 fprintf(fp, "%4d%s %12.3f %12.3f %s    %s", pd->nPMEnodes,
                         buf, pd->Gcycles[nr], pd->ns_per_day[nr], str_PME_f_load, ParseLog[ret]);
                 if (! (ret==eParselogOK || ret==eParselogNoDDGrid || ret==eParselogNotFound) )
-                    fprintf(fp, " Check log file for problems.");
+                    fprintf(fp, " Check %s file for problems.", ret==eParselogFatal? "err":"log");
                 fprintf(fp, "\n");
                 fflush(fp);
                 count++;
 
                 /* Do some cleaning up and delete the files we do not need any more */
-                cleanup(fnm, nfile, k, nnodes, pd->nPMEnodes, nr);
+                cleanup(fnm, nfile, k, nnodes, pd->nPMEnodes, nr, ret==eParselogFatal);
 
                 /* If the first run with this number of processors already failed, do not try again: */
                 if (pd->Gcycles[0] <= 0.0 && repeats > 1)
@@ -1264,6 +1320,8 @@ static void do_the_tests(
                     "value normally provided by -presteps.");
         sep_line(fp);
     }
+    sfree(command);
+    sfree(cmd_stub);
 }
 
 
@@ -1755,6 +1813,7 @@ int gmx_tune_pme(int argc,char *argv[])
     static t_filenm fnm[] = {
       /* g_tune_pme */
       { efOUT, "-p",      "perf",     ffWRITE },
+      { efLOG, "-err",    "errors",   ffWRITE },
       { efTPX, "-so",     "tuned",    ffWRITE },
       /* mdrun: */
       { efTPX, NULL,      NULL,       ffREAD },
