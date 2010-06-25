@@ -196,6 +196,8 @@ static void check_oo(t_atoms *atoms)
        *atoms->atomname[i]=OOO;
     else if (strcmp(*(atoms->atomname[i]),"O1")==0)
       *atoms->atomname[i]=OOO;
+    else if (strcmp(*(atoms->atomname[i]),"OC1")==0)
+      *atoms->atomname[i]=OOO;
   }
 }
 
@@ -373,7 +375,7 @@ int main(int argc,char *argv[])
       "Secondary structures for structure count"}
   };
   
-  int        status;
+  t_trxstatus *status;
   FILE       *tapein;
   FILE       *ss,*acc,*fTArea,*tmpf;
   const char *fnSCount,*fnArea,*fnTArea,*fnAArea;

@@ -264,11 +264,7 @@ extern void vecrecip(real in[],real out[],int n);
  * versions if your hardware supports it.
  *
  * To use those routines, your memory HAS TO BE CACHE-ALIGNED.
- * Start by allocating 31 bytes more than you need, put
- * this in a temp variable (e.g. _buf, so you can free it later), and
- * create your aligned array buf with
- * 
- *  buf=(real *) ( ( (unsigned long int)_buf + 31 ) & (~0x1f) );
+ * Use snew_aligned(ptr,size,32) to allocate and sfree_aligned to free.
  */
 
 

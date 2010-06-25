@@ -299,8 +299,6 @@ free_data_merge(void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
 
-    gmx_ana_pos_deinit(&d->p1);
-    gmx_ana_pos_deinit(&d->p2);
     gmx_ana_index_deinit(&d->g);
 }
 

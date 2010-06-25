@@ -48,11 +48,15 @@
 
 #include "selelem.h"
 
+struct gmx_sel_mempool_t;
+
 /*! \internal \brief
  * Data structure for passing information required during evaluation.
  */
 typedef struct gmx_sel_evaluate_t
 {
+    /** Memory pool for intermediate values. */
+    struct gmx_sel_mempool_t *mp;
     /** Index group that contains all the atoms. */
     gmx_ana_index_t         *gall;
     /** Topology information. */
@@ -68,8 +72,12 @@ typedef struct gmx_sel_evaluate_t
 /*@{*/
 /** Initializes an evaluation data structure. */
 void
-_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data, gmx_ana_index_t *gall,
+_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
+                       struct gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
                        t_topology *top, t_trxframe *fr, t_pbc *pbc);
+/** Evaluates the children of a general selection element. */
+int
+_gmx_sel_evaluate_children(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /** Evaluates the children of a \ref SEL_EXPRESSION element. */
 int
 _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
@@ -84,20 +92,26 @@ _gmx_sel_evaluate_root(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t
 /** Evaluates a static group selection element. */
 int
 _gmx_sel_evaluate_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
+/** Evaluates an arithmetic expression element. */
+int
+_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /*@}*/
 
 /*! \name Subexpression evaluation functions
  */
 /*@{*/
-/** Evaluates a subexpression, only handling the number of values. */
+/** Evaluates a subexpression when there is only one reference. */
 int
-_gmx_sel_evaluate_subexpr_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
+_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
+/** Evaluates a subexpression when the evaluation group is static. */
+int
+_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /** Evaluates a subexpression. */
 int
 _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
-/** Evaluates a subexpression reference, only handling the number of values. */
+/** Evaluates a subexpression reference when there are no other references. */
 int
-_gmx_sel_evaluate_subexprref_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
+_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /** Evaluates a subexpression reference. */
 int
 _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);

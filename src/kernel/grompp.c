@@ -436,7 +436,7 @@ static void cont_status(const char *slog,const char *ener,
      /* If fr_time == -1 read the last frame available which is complete */
 {
   t_trxframe  fr;
-  int         fp;
+  t_trxstatus *fp;
 
   fprintf(stderr,
 	  "Reading Coordinates%s and Box size from old trajectory\n",
@@ -935,12 +935,12 @@ int main (int argc, char *argv[])
     "unless the [TT]-time[tt] option is used.",
     "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
     "in your [TT].mdp[tt] file. An energy file can be supplied with",
-    "[TT]-e[tt] to have exact restarts when using pressure and/or",
-    "Nose-Hoover temperature coupling. For an exact restart do not forget",
-    "to turn off velocity generation and turn on unconstrained starting",
-    "when constraints are present in the system.",
-    "If you want to continue a crashed run, it is",
-    "easier to use [TT]tpbconv[tt].[PAR]",
+    "[TT]-e[tt] to read Nose-Hoover and/or Parrinello-Rahman coupling",
+    "variables. Note that for continuation it is better and easier to supply",
+    "a checkpoint file directly to mdrun, since that always contains",
+    "the complete state of the system and you don't need to generate",
+    "a new run input file. Note that if you only want to change the number",
+    "of run steps tpbconv is more convenient than grompp.[PAR]",
 
     "Using the [TT]-morse[tt] option grompp can convert the harmonic bonds",
     "in your topology to morse potentials. This makes it possible to break",
@@ -1012,6 +1012,8 @@ int main (int argc, char *argv[])
   static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
+    { "-v",       FALSE, etBOOL,{&bVerbose},  
+      "Be loud and noisy" },
     { "-time",    FALSE, etREAL, {&fr_time},
       "Take frame at or first after this time." },
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
@@ -1034,7 +1036,6 @@ int main (int argc, char *argv[])
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL,&oenv);
-  bVerbose = (output_env_get_verbosity(oenv) > 0);
   
   wi = init_warning(TRUE,maxwarn);
   

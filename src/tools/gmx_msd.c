@@ -116,7 +116,7 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
   int     i;
 
   snew(curr,1);
-  curr->type      = type;
+  curr->type      = (msd_type)type;
   curr->axis      = axis;
   curr->ngrp      = nrgrp;
   curr->nrestart  = 0;
@@ -564,7 +564,8 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
   rvec         *xa[2]; /* the coordinates to calculate displacements for */
   rvec         com={0};
   real         t,t_prev=0;
-  int          natoms,i,j,status,cur=0,maxframes=0;
+  int          natoms,i,j,cur=0,maxframes=0;
+  t_trxstatus *status;
 #define        prev (1-cur)
   matrix       box;
   bool         bFirst;
@@ -839,8 +840,12 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
       lsq_y_ax_b(N,&(msd->time[i0]),&(msd->data[j][i0]),&(DD[j]),&b,&r,&chi2);
       DD[j]     *= FACTOR/msd->dim_factor;
       SigmaD[j] *= FACTOR/msd->dim_factor;
-      fprintf(stdout,"D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",
-	      grpname[j],DD[j],SigmaD[j]);
+      if (DD[j] > 0.01 && DD[j] < 1e4)
+          fprintf(stdout,"D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",
+                  grpname[j],DD[j],SigmaD[j]);
+      else
+          fprintf(stdout,"D[%10s] %.4g (+/- %.4g) 1e-5 cm^2/s\n",
+                  grpname[j],DD[j], SigmaD[j]);
     }
   }
   /* Print mean square displacement */
@@ -952,7 +957,7 @@ int gmx_msd(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,
-                    PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                    PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   trx_file = ftp2fn_null(efTRX,NFILE,fnm);
   tps_file = ftp2fn_null(efTPS,NFILE,fnm);

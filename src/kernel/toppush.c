@@ -882,7 +882,7 @@ push_gb_params (gpp_atomtype_t at, char *line,
                 warninp_t wi)
 {
     int nfield;
-    int i,n,k,found,gfound;
+    int atype;
     double radius,vol,surftens,gb_radius,S_hct;
     char atypename[STRLEN];
     char errbuf[STRLEN];
@@ -894,24 +894,15 @@ push_gb_params (gpp_atomtype_t at, char *line,
     }
     
     /* Search for atomtype */
-    found = 0;
-    gfound = -1;
-    for(i=0;i<get_atomtype_ntypes(at) && !found;i++)
-    {
-        if(gmx_strncasecmp(atypename,get_atomtype_name(i,at),STRLEN-1)==0)
-        {
-            found = i;
-			gfound = i;
-		}
-    }
+    atype = get_atomtype_type(atypename,at);
 	
-	if (gfound==-1)
+	if (atype == NOTSET)
     {
 		printf("Couldn't find topology match for atomtype %s\n",atypename);
 		abort();
     }
     
-	set_atomtype_gbparam(at,found,radius,vol,surftens,gb_radius,S_hct);
+	set_atomtype_gbparam(at,atype,radius,vol,surftens,gb_radius,S_hct);
 }
 
 void 

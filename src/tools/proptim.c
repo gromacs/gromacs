@@ -151,11 +151,11 @@ void proptrj(char *fngro,char *fndat,t_topology *top,t_pinp *p)
   snew(xav,natoms);
   snew(vav,natoms);
   read_conf(fngro,buf,&natoms,xav,vav,box);
-  fprintf(stderr,"Succesfully read average positions (%s)\n",buf);
+  fprintf(stderr,"Successfully read average positions (%s)\n",buf);
   
   EV=read_ev(fndat,natoms);
   
-  fprintf(stderr,"Succesfully read eigenvectors\n");
+  fprintf(stderr,"Successfully read eigenvectors\n");
 
   snew(index,nev);
   for(i=0; (i<nev); i++)

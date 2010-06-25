@@ -23,3 +23,5 @@ Makefile
 lib*.pc
 Doxyfile
 doxygen-doc
+.project
+.cproject

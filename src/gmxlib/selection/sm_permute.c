@@ -216,9 +216,7 @@ free_data_permute(void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
 
-    gmx_ana_pos_deinit(&d->p);
     gmx_ana_index_deinit(&d->g);
-    sfree(d->perm);
     sfree(d->rperm);
 }
 

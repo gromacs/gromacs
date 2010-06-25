@@ -43,6 +43,7 @@
 #include "3dview.h"
 #include "nleg.h"
 #include "buttons.h"
+#include "statutil.h"
 
 /* Some window sizes */
 #define EWIDTH  	200
@@ -91,7 +92,7 @@ typedef struct {
  *
  */
 typedef struct {
-  int       status;
+  t_trxstatus *status;
   const char  *trajfile;
   int       natom;		/* The number of atoms			*/
   t_topology top;               /* topology                             */

@@ -89,7 +89,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 	__m128d		  q,iq,qq,isai,isaj,isaprod,vcoul,gbscale,dvdai,dvdaj;
 	__m128d       Y,F,G,H,Fp,VV,FF,vgb,fijC,dvdatmp,dvdasum,vctot,vgbtot,n0d;
 	__m128d		  xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
-	__m128d       fac,tabscale,gbtabscale;
+	__m128d       fac,tabscale,gbtabscale,gbfactor;
 	__m128i       n0,nnn;
 	
 	const __m128d neg    = {-1.0f,-1.0f};
@@ -104,7 +104,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 	nri        = *p_nri;
 	ntype      = *p_ntype;
 	nthreads   = *p_nthreads; 
-    facel      = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));       
+ 	facel      = *p_facel;
 	krf        = *p_krf;
 	crf        = *p_crf;
 	tabscl     = *p_tabscale;
@@ -115,6 +115,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 	fac        = _mm_load1_pd(&facel);
 	tabscale   = _mm_load1_pd(&tabscl);
 	gbtabscale = _mm_load1_pd(&gbtabscl);
+	gbfactor   = _mm_set1_pd(((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent)));
 		
 	/* Keep compiler happy */
 	dvdatmp = _mm_setzero_pd();
@@ -201,6 +202,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 			fscal	= _mm_mul_pd(vcoul,rinv);
 			qq		= _mm_mul_pd(isaprod,qq);
 			qq		= _mm_mul_pd(qq,neg);
+			qq      = _mm_mul_pd(qq,gbfactor);
 			gbscale	= _mm_mul_pd(isaprod,gbtabscale);
 			
 			/* Load dvdaj */
@@ -296,7 +298,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 			
 			/* .. then fz */
 			_mm_storel_pd(faction+j13+2,xmm7);
-			_mm_storel_pd(faction+j23+2,xmm7);
+			_mm_storeh_pd(faction+j23+2,xmm7);
 		}
 
 		/* In double precision, offset can only be either 0 or 1 */
@@ -326,6 +328,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 			fscal	= _mm_mul_sd(vcoul,rinv);
 			qq		= _mm_mul_sd(isaprod,qq);
 			qq		= _mm_mul_sd(qq,neg);
+			qq      = _mm_mul_pd(qq,gbfactor);
 			gbscale	= _mm_mul_sd(isaprod,gbtabscale);
 			
 			r		= _mm_mul_sd(rsq11,rinv);

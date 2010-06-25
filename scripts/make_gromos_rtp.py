@@ -253,7 +253,7 @@ for resnum in range(start,stop):	# loop through all residues
     f.getRESname(f.all[resnum])		# residue name
     f.getNATOM  (f.all[resnum])		# number of atoms
 
-    if f.nlin != 0:			# 0 for a seperate molecule
+    if f.nlin != 0:			# 0 for a separate molecule
           f.getEXCLUS(f.all[resnum])	# number of exclusions
 
     f.getATOM   (f.all[resnum])		# atoms			=> f.atoms

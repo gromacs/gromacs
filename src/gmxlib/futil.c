@@ -44,6 +44,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#ifdef HAVE_COPYFILE_H
+/* BSD specific */
+#include <copyfile.h>
+#endif
+
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <direct.h>
 #include <io.h>
@@ -56,6 +61,7 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
+
 
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
@@ -270,7 +276,7 @@ bool gmx_fexist(const char *fname)
     if (test == NULL) 
         return FALSE;
     else {
-        ffclose(test);
+        fclose(test);
         return TRUE;
     }
 }
@@ -305,7 +311,7 @@ bool gmx_eof(FILE *fp)
     }
 }
 
-char *backup_fn(const char *file)
+static char *backup_fn(const char *file,int count_max)
 {
     /* Use a reasonably low value for countmax; we might
      * generate 4-5 files in each round, and we dont
@@ -315,6 +321,11 @@ char *backup_fn(const char *file)
     int         i,count=1;
     char        *directory,*fn;
     char        *buf;
+
+    if (count_max == -1)
+    {
+        count_max = COUNTMAX;
+    }
 
     smalloc(buf, GMX_PATH_MAX);
 
@@ -336,12 +347,13 @@ char *backup_fn(const char *file)
     do {
         sprintf(buf,"%s/#%s.%d#",directory,fn,count);
         count++;
-    } while ((count < COUNTMAX) && gmx_fexist(buf));
+    } while ((count <= count_max) && gmx_fexist(buf));
 
     /* Arbitrarily bail out */
-    if (count == COUNTMAX) 
-        gmx_fatal(FARGS,"Won't make more than %d backups of %s for you",
-                COUNTMAX,fn);
+    if (count > count_max) 
+        gmx_fatal(FARGS,"Won't make more than %d backups of %s for you.\n"
+                  "The env.var. GMX_MAXBACKUP controls this maximum, -1 disables backups.",
+                  count_max,fn);
 
     sfree(directory);
     sfree(fn);
@@ -351,14 +363,33 @@ char *backup_fn(const char *file)
 
 bool make_backup(const char * name)
 {
+    char * env;
+    int  count_max;
     char * backup;
 
 #ifdef GMX_FAHCORE
     return FALSE; /* skip making backups */
 #else
 
-    if(gmx_fexist(name)) {
-        backup = backup_fn(name);
+    if (gmx_fexist(name))
+    {
+        env = getenv("GMX_MAXBACKUP");
+        if (env != NULL)
+        {
+            count_max = 0;
+            sscanf(env,"%d",&count_max);
+            if (count_max == -1)
+            {
+                /* Do not make backups and possibly overwrite old files */
+                return TRUE;
+            }
+        }
+        else
+        {
+            /* Use the default maximum */
+            count_max = -1;
+        }
+        backup = backup_fn(name,count_max);
         if(rename(name, backup) == 0) {
             fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
                     name, backup);
@@ -714,8 +745,7 @@ void gmx_tmpnam(char *buf)
     /* name in Buf should now be OK */
 }
 
-    int
-gmx_truncatefile(char *path, off_t length)
+int gmx_truncatefile(char *path, off_t length)
 {
 #ifdef _MSC_VER
     /* Microsoft visual studio does not have "truncate" */
@@ -735,3 +765,90 @@ gmx_truncatefile(char *path, off_t length)
     return truncate(path,length);
 #endif
 }
+
+
+int gmx_file_rename(const char *oldname, const char *newname)
+{
+#if (!(defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)))
+    /* under unix, rename() is atomic (at least, it should be). */
+    return rename(oldname, newname);
+#else
+    if (MoveFileEx(oldname, newname, 
+                   MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))
+        return 0;
+    else
+        return 1;
+#endif
+}
+
+int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
+{
+#if defined(HAVE_COPYFILE_H) && !defined(GMX_FAHCORE)
+    /* this is BSD specific, but convenient */
+    return copyfile(oldname, newname, NULL, COPYFILE_DATA);
+#elif defined(HAVE_WIN_COPYFILE) && !defined(GMX_FAHCORE)
+    if (CopyFile(oldname, newname, FALSE))
+        return 0;
+    else
+        return 1;
+#else
+#define FILECOPY_BUFSIZE (1<<16)
+    /* POSIX doesn't support any of the above. */
+    FILE *in=NULL; 
+    FILE *out=NULL;
+    char *buf;
+
+    snew(buf, FILECOPY_BUFSIZE); 
+
+    in=fopen(oldname, "rb");
+    if (!in)
+        goto error;
+
+    /* If we don't copy when empty, we postpone opening the file
+       until we're actually ready to write. */
+    if (copy_if_empty)
+    {
+        out=fopen(newname, "wb");
+        if (!out)
+            goto error;
+    }
+
+    while(!feof(in))
+    {
+        size_t nread;
+        
+        nread=fread(buf, sizeof(char), FILECOPY_BUFSIZE, in);
+        if (nread>0)
+        {
+            size_t ret;
+            if (!out)
+            {
+                out=fopen(newname, "wb");
+                if (!out)
+                    goto error;
+            }
+            ret=fwrite(buf, sizeof(char), nread, out);
+            if (ret!=nread)
+            {
+                goto error;
+            }
+        }
+        if (ferror(in))
+            goto error;
+    }
+    sfree(buf);
+    fclose(in);
+    fclose(out);
+    return 0;
+error:
+    sfree(buf);
+    if (in)
+        fclose(in);
+    if (out)
+        fclose(out);
+    return 1;
+#undef FILECOPY_BUFSIZE
+#endif
+}
+
+

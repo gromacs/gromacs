@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 project(Gromacs)
+include(Dart)
 # PROJECT_VERSION should have the following structure: 
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
 set(PROJECT_VERSION "4.0.99-dev-20100315"
@@ -8,6 +9,11 @@ set(PROJECT_VERSION "4.0.99-dev-20100315"
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
 
 ########################################################################
 # User input options                                                   #
@@ -26,7 +32,7 @@ set(GMX_FFT_LIBRARY "fftw3"
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
 set(GMX_QMMM_PROGRAM "none" 
-    CACHE STRING "QM package choices: none,gaussian,mopac,gamess")
+    CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" OFF)
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
@@ -38,6 +44,10 @@ enable_language(C)
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 option(USE_VERSION_H "Generate development version string/information" ON)
+option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
+
+set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
+
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
@@ -56,7 +66,7 @@ if(GMX_OPENMM)
     if(GMX_SOFTWARE_INVSQRT)
         set(GMX_SOFTWARE_INVSQRT OFF)
     endif(GMX_SOFTWARE_INVSQRT)
-    if(NOT GMX_ACCELERATION MATCHES "none")    
+    if(NOT GMX_ACCELERATION MATCHES "none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
         message(WARNING "The OpenMM build does not support other acceleration modes!")
         set(GMX_ACCELERATION "none")
     endif()
@@ -116,6 +126,7 @@ endif(GMX_MPI)
 ########################################################################
 include(CheckIncludeFiles)
 check_include_files(string.h     HAVE_STRING_H)
+check_include_files(math.h       HAVE_MATH_H)
 check_include_files(limits.h     HAVE_LIMITS_H)
 check_include_files(memory.h     HAVE_MEMORY_H)
 check_include_files(unistd.h	 HAVE_UNISTD_H)
@@ -126,6 +137,7 @@ check_include_files(pthread.h    HAVE_PTHREAD_H)
 check_include_files(dirent.h     HAVE_DIRENT_H)
 check_include_files(inttypes.h   HAVE_INTTYPES_H)
 check_include_files(regex.h      HAVE_REGEX_H)
+check_include_files(copyfile.h   HAVE_COPYFILE_H)
 check_include_files(sys/types.h  HAVE_SYS_TYPES_H)
 check_include_files(sys/stat.h   HAVE_SYS_STAT_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
@@ -136,21 +148,32 @@ check_include_files(xmmintrin.h  HAVE_XMMINTRIN_H)
 check_include_files(emmintrin.h  HAVE_EMMINTRIN_H)
 check_include_files(pmmintrin.h  HAVE_PMMINTRIN_H)
 check_include_files(smmintrin.h  HAVE_SMMINTRIN_H)
+check_include_files(io.h  		 HAVE_IO_H)
+
 
 include(CheckFunctionExists)
 check_function_exists(strcasecmp        HAVE_STRCASECMP)
 check_function_exists(strdup            HAVE_STRDUP)
 check_function_exists(vprintf           HAVE_VPRINTF)
 check_function_exists(memcmp            HAVE_MEMCMP)
+check_function_exists(posix_memalign    HAVE_POSIX_MEMALIGN)
+check_function_exists(memalign          HAVE_MEMALIGN)
 check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
 check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
 check_function_exists(isfinite          HAVE_ISFINITE)
 check_function_exists(_isfinite         HAVE__ISFINITE)
+check_function_exists(fsync             HAVE_FSYNC)
+check_function_exists(_fileno           HAVE__FILENO)
+check_function_exists(fileno            HAVE_FILENO)
+check_function_exists(_commit           HAVE__COMMIT)
+check_function_exists(copyfile          HAVE_COPYFILE)
+# check_function_exists(CopyFile          HAVE_WIN_COPYFILE)
 # After large files? check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
+check_library_exists(m cbrt "" HAVE_CBRT)
 
 include(CheckTypeSize)
 check_type_size("bool"          SIZEOF_BOOL) # will also set HAVE_BOOL
@@ -159,6 +182,12 @@ check_type_size("long int"      SIZEOF_LONG_INT)
 check_type_size("long long int" SIZEOF_LONG_LONG_INT) 
 check_type_size("off_t"         SIZEOF_OFF_T)
 check_type_size("void *"        SIZEOF_VOIDP)
+
+if (SIZEOF_VOIDP LESS 8)
+    set(GMX_64_BIT FALSE)
+else (SIZEOF_VOIDP LESS 8)
+    set(GMX_64_BIT TRUE)
+endif (SIZEOF_VOIDP LESS 8)
 
 # Check for some basic types that we *need*, so set these to int if they are not present 
 check_type_size(uid_t uid_t)
@@ -191,6 +220,7 @@ endif(NOT off_t)
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
+
 
 
 
@@ -242,13 +272,18 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
         # We need at least git v1.5.1 be able to parse git's date output. If not 
         # fund or the version is too small, we can't generate version information.
         find_package(Git 1.5.1)
-        if(NOT Git_FOUND OR Git_VERSION VERSION_LESS "1.5.1")
+        # this should at some point become VERSION_LESS
+        if(NOT Git_FOUND OR Git_VERSION STRLESS "1.5.1")
             message("No compatible git version found, won't be able to generate proper development version information.")
         endif()
     endif()
 else()
     set(USE_VERSION_H OFF)
 endif()
+
+if (GMX_DLOPEN)
+    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS})
+endif (GMX_DLOPEN)
 
 ########################################################################
 # Generate development version info for cache
@@ -259,6 +294,12 @@ endif()
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
+
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+# check for buggy GCC 4.1.x 
+include(gmxCheckGCCVersion)
 
 include(gmxCFlags)
 gmx_c_flags()
@@ -290,6 +331,24 @@ gmx_test_pipes(HAVE_PIPES)
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
+
+# reasonable defaults for fast binaries.
+if (NOT DEFINED GMX_SSE_SET)
+    if (GMX_X86_GCC_INLINE_ASM)
+        set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec" FORCE)
+        if (GMX_64_BIT)
+            set(GMX_X86_64_ASM ON CACHE BOOL 
+                "Add SSE assembly files for x86_64" FORCE)
+        else (GMX_64_BIT)
+            set(GMX_IA32_ASM ON CACHE BOOL 
+                "Add SSE assembly files for IA32" FORCE)
+        endif (GMX_64_BIT)
+    endif (GMX_X86_GCC_INLINE_ASM)
+    set (GMX_SSE_SET true CACHE INTERNAL "SSE is set" FORCE)
+endif (NOT DEFINED GMX_SSE_SET)
+
+
+
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
@@ -324,6 +383,17 @@ string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+    if (NOT GMX_64_BIT)
+        # for 32-bit compiles, we might need to turn on sse 
+        CHECK_C_COMPILER_FLAG("-msse2" XFLAGS_SSE)
+        if (XFLAGS_SSE)
+            set(GROMACS_C_FLAGS "-msse2 ${GROMACS_C_FLAGS}")
+        endif (XFLAGS_SSE)
+        CHECK_CXX_COMPILER_FLAG("-msse2" XXFLAGS_SSE)
+        if (XXFLAGS_SSE)
+            set(GROMACS_CXX_FLAGS "-msse2 ${GROMACS_CXX_FLAGS}")
+        endif (XXFLAGS_SSE)
+    endif (NOT GMX_64_BIT)
     if(HAVE_XMMINTRIN_H)
         if(GMX_IA32_ASM)
           option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
@@ -382,10 +452,12 @@ elseif(${GMX_QMMM_PROGRAM} STREQUAL "MOPAC")
     set(GMX_QMMM_MOPAC 1)
 elseif(${GMX_QMMM_PROGRAM} STREQUAL "GAMESS")
     set(GMX_QMMM_GAMESS 1)
+elseif(${GMX_QMMM_PROGRAM} STREQUAL "ORCA")
+    set(GMX_QMMM_ORCA 1)
 elseif(${GMX_QMMM_PROGRAM} STREQUAL "NONE")
     # nothing to do
 else(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
-    MESSAGE(FATAL_ERROR "Invalid QM/MM program option: ${GMX_QMMM_PROGRAM}. Choose one of: Gaussian, Mopac, Gamess, None")
+    MESSAGE(FATAL_ERROR "Invalid QM/MM program option: ${GMX_QMMM_PROGRAM}. Choose one of: Gaussian, Mopac, Gamess, Orca, None")
 endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
 
 # Process FFT library settings - if not OpenMM build 
@@ -471,8 +543,18 @@ if(GMX_FAHCORE)
 endif(GMX_FAHCORE)
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
-set(CMAKE_C_FLAGS ${GROMACS_C_FLAGS} CACHE STRING "Compiler flags")
-set(CMAKE_EXE_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} CACHE STRING "Linker flags")
+# these are set after everything else
+if (NOT DEFINED GROMACS_C_FLAGS_SET)
+    set(GROMACS_C_FLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" 
+        FORCE)
+    set(CMAKE_C_FLAGS "${GROMACS_C_FLAGS} ${CMAKE_C_FLAGS}" CACHE STRING 
+        "Flags used by the compiler during all build types" FORCE)
+    set(CMAKE_CXX_FLAGS "${GROMACS_CXX_FLAGS} ${CMAKE_CXX_FLAGS}" CACHE STRING 
+        "Flags used by the compiler during all build types" FORCE)
+    set(CMAKE_EXE_LINKER_FLAGS 
+        "${GROMACS_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" 
+        CACHE STRING "Linker flags" FORCE) 
+endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #
@@ -491,4 +573,11 @@ add_subdirectory(man)
 
 add_subdirectory(src)
 
+########################################################################
+# Tests                                                                #
+########################################################################
 
+enable_testing()
+add_test(TestBuildAll make)
+
+add_subdirectory(tests)

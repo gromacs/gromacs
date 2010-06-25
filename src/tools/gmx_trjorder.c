@@ -102,7 +102,7 @@ int gmx_trjorder(int argc,char *argv[])
     "will be stored in the B-factor field in order to color with e.g. rasmol.",
     "[PAR]",
     "With option [TT]-nshell[tt] the number of molecules within a shell",
-    "of radius [TT]-r[tt] around the refernce group are printed."
+    "of radius [TT]-r[tt] around the reference group are printed."
   };
   static int na=3,ref_a=1;
   static real rcut=0;
@@ -120,7 +120,8 @@ int gmx_trjorder(int argc,char *argv[])
       "Order molecules on z-coordinate" }
   };
   FILE       *fp;
-  int        status,out;
+  t_trxstatus *out;
+  t_trxstatus *status;
   bool       bNShell,bPDBout;
   t_topology top;
   int        ePBC;
@@ -190,7 +191,7 @@ int gmx_trjorder(int argc,char *argv[])
   for(i=0; (i<natoms); i++)
     swi[i] = i;
 
-  out     = -1;
+  out     = NULL;
   fp      = NULL;
   bNShell = ((opt2bSet("-nshell",NFILE,fnm)) ||
 	     (opt2parg_bSet("-r",asize(pa),pa)));
@@ -285,7 +286,7 @@ int gmx_trjorder(int argc,char *argv[])
 	  ncut++;
       fprintf(fp,"%10.3f  %8d\n",t,ncut);
     }
-    if (out != -1) {
+    if (out) {
       qsort(order,nwat,sizeof(*order),ocomp);
       for(i=0; (i<nwat); i++)
 	for(j=0; (j<na); j++) 
@@ -303,7 +304,7 @@ int gmx_trjorder(int argc,char *argv[])
     }
   } while(read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
-  if (out != -1)
+  if (out)
     close_trx(out);
   if (fp)
     ffclose(fp);

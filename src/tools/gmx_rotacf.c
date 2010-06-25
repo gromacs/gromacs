@@ -73,7 +73,7 @@ int gmx_rotacf(int argc,char *argv[])
     "This will calculate the rotational correlation function using a first",
     "order Legendre polynomial of the angle of a vector defined by the index",
     "file. The correlation function will be fitted from 2.5 ps till 20.0 ps",
-    "to a two parameter exponential",
+    "to a two parameter exponential.",
 
 
     ""
@@ -87,7 +87,8 @@ int gmx_rotacf(int argc,char *argv[])
       "Average over molecules" }
   };
 
-  int        status,isize;
+  t_trxstatus *status;
+  int        isize;
   atom_id    *index;
   char       *grpname;
   rvec       *x,*x_s;

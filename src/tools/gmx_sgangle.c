@@ -196,7 +196,8 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
     distance,            /* distance between two groups. */
     distance1,           /* distance between plane and one of two atoms */
     distance2;           /* same for second of two atoms */
-  int        status,natoms,teller=0;
+  t_trxstatus *status;
+  int        natoms,teller=0;
   rvec       *x0;   /* coordinates, and coordinates corrected for pb */
   matrix     box;        
   char       buf[256];   /* for xvgr title */
@@ -355,7 +356,8 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
     distance,            /* distance between two groups. */
     distance1,           /* distance between plane and one of two atoms */
     distance2;           /* same for second of two atoms */
-  int        status,natoms,teller=0;
+  t_trxstatus *status;
+  int        natoms,teller=0;
   int        i;
   rvec       *x0;   /* coordinates, and coordinates corrected for pb */
   rvec       *xzero;
@@ -442,7 +444,7 @@ int gmx_sgangle(int argc,char *argv[])
     "Here is what some of the file options do:[BR]",
     "-oa: Angle between the two groups specified in the index file. If a group contains three atoms the normal to the plane defined by those three atoms will be used. If a group contains two atoms, the vector defined by those two atoms will be used.[BR]",
     "-od: Distance between two groups. Distance is taken from the center of one group to the center of the other group.[BR]",
-    "-od1: If one plane and one vector is given, the distances for each of the atoms from the center of the plane is given seperately.[BR]",
+    "-od1: If one plane and one vector is given, the distances for each of the atoms from the center of the plane is given separately.[BR]",
     "-od2: For two planes this option has no meaning."
   };
 

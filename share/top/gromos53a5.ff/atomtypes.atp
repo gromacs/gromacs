@@ -15,7 +15,7 @@
   CH2  14.02700 ;     aliphatic or sugar CH2-group
   CH3  15.03500 ;     aliphatic CH3-group
   CH4  16.04300 ;     methane
- CH2R  14.02700 ;     CH2-group in a ring
+ CH2r  14.02700 ;     CH2-group in a ring
   CR1  13.01900 ;     aromatic CH-group 
    HC   1.00800 ;     hydrogen bound to carbon
     H   1.00800 ;     hydrogen not bound to carbon
@@ -32,25 +32,25 @@
     F  18.99840 ;     fluor (non-ionic)
    CL  35.45300 ;     chlorine (non-ionic)
    BR  79.90400 ;     bromine (non-ionic)
- CMET  15.035   ;     CH3-group in methanol (solvent)
- OMET  15.9994  ;     oxygen in methanol (solvent)
+ CMet  15.035   ;     CH3-group in methanol (solvent)
+ OMet  15.9994  ;     oxygen in methanol (solvent)
   NA+  22.9898  ;     sodium (charge 1+)
   CL-  35.45300 ;     chlorine (charge 1-)
- CCHL  12.011   ;     carbon in chloroform (solvent)
-CLCHL  35.453   ;     chloride in chloroform (solvent)
- HCHL  1.008    ;     hydrogen in chloroform (solvent)
-SDMSO  32.06000 ;     DMSO Sulphur (solvent)
-CDMSO  15.03500 ;     DMSO Carbon (solvent)
-ODMSO  15.99940 ;     DMSO Oxygen (solvent)
- CCL4  12.011   ;     carbon in carbontetrachloride (solvent)
-CLCL4  35.453   ;     chloride in carbontetrachloride (solvent)
+ CChl  12.011   ;     carbon in chloroform (solvent)
+CLChl  35.453   ;     chloride in chloroform (solvent)
+ HChl  1.008    ;     hydrogen in chloroform (solvent)
+SDmso  32.06000 ;     DMSO Sulphur (solvent)
+CDmso  15.03500 ;     DMSO Carbon (solvent)
+ODmso  15.99940 ;     DMSO Oxygen (solvent)
+ CCl4  12.011   ;     carbon in carbontetrachloride (solvent)
+CLCl4  35.453   ;     chloride in carbontetrachloride (solvent)
  FTFE  18.99840 ;     fluor in trifluoroethanol
  CTFE  12.01100 ;     carbon in trifluoroethanol
 CHTFE  14.0270  ;     CH2-group in trifluoroethanol
  OTFE  15.99940 ;     oxygen in trifluoroethanol
-CUREA  12.01100 ;     carbon in urea
-OUREA  15.99940 ;     oxygen in urea
-NUREA  14.00670 ;     nitrogen in urea
+CUrea  12.01100 ;     carbon in urea
+OUrea  15.99940 ;     oxygen in urea
+NUrea  14.00670 ;     nitrogen in urea
    SI  28.08	;     silicon
  MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
    MW   0       ;     Dummy mass in rigid tyrosine rings

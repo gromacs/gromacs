@@ -68,13 +68,16 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+#include "genborn_sse2_single.h"
+
 
 int 
-calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
-					  const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
+calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
+		      int natoms, gmx_localtop_t *top,
+		      const t_atomtypes *atype, float *x, t_nblist *nl,
+		      gmx_genborn_t *born)
 {
 	int i,k,n,ii,is3,ii3,nj0,nj1,offset;
-    int n0,n1;
 	int jnrA,jnrB,jnrC,jnrD,j3A,j3B,j3C,j3D;
 	int jnrE,jnrF,jnrG,jnrH,j3E,j3F,j3G,j3H;
 	int shift;
@@ -137,9 +140,6 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
     
 	n = 0;
     
-    n0 = md->start;
-    n1 = md->start+md->homenr+natoms/2+1;
-		
 	for(i=0;i<natoms;i++)
 	{
 		work[i]=0;
@@ -1684,9 +1684,9 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); 
 			isaj  = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 			
-			isaprod = _mm_mul_ps(isai,isaj); // rb2 in tinker
+			isaprod = _mm_mul_ps(isai,isaj); /* rb2 in tinker */
 			inv_isaprod = _mm_mul_ps(isaprod,isaprod);
-			inv_isaprod = gmx_mm_inv_ps(inv_isaprod); //1/rb2 in tinker
+			inv_isaprod = gmx_mm_inv_ps(inv_isaprod); /* 1/rb2 in tinker*/
 			
 			/* Load charges for ai's and aj's */
 			xmm1 = _mm_load_ss(charge+ai1); 

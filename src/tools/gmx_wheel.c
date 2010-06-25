@@ -203,7 +203,7 @@ void wheel2(const char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
 int gmx_wheel(int argc,char *argv[])
 {
   const char *desc[] = {
-    "wheel plots a helical wheel representation of your sequence."
+    "wheel plots a helical wheel representation of your sequence.",
     "The input sequence is in the .dat file where the first line contains",
     "the number of residues and each consecutive line contains a residue"
     "name."

@@ -102,7 +102,8 @@ int gmx_filter(int argc,char *argv[])
   int        isize;
   atom_id    *index;
   real       *w_rls=NULL;
-  int        in,outl,outh;
+  t_trxstatus *in;
+  t_trxstatus *outl,*outh;
   int        nffr,i,fr,nat,j,d,m;
   atom_id    *ind;
   real       flen,*filt,sum,*t;

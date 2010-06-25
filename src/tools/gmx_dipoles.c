@@ -673,7 +673,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   t_enxframe *fr;
   int        nframes=1000,nre,timecheck=0,ncolour=0;
   ener_file_t fmu=NULL;
-  int        i,j,k,n,m,natom=0,nmol,status,gnx_tot,teller,tel3;
+  int        i,j,k,n,m,natom=0,nmol,gnx_tot,teller,tel3;
+  t_trxstatus *status;
   int        *dipole_bin,ndipbin,ibin,iVol,step,idim=-1;
   unsigned long mode;
   char       buf[STRLEN];
@@ -1221,7 +1222,7 @@ int gmx_dipoles(int argc,char *argv[])
     "option -corr is used. The output file name is given with the [TT]-c[tt]",
     "option.",
     "The correlation functions can be averaged over all molecules",
-    "([TT]mol[tt]), plotted per molecule seperately ([TT]molsep[tt])",
+    "([TT]mol[tt]), plotted per molecule separately ([TT]molsep[tt])",
     "or it can be computed over the total dipole moment of the simulation box",
     "([TT]total[tt]).[PAR]",
     "Option [TT]-g[tt] produces a plot of the distance dependent Kirkwood",
@@ -1256,7 +1257,7 @@ int gmx_dipoles(int argc,char *argv[])
     { "-mumax",    FALSE, etREAL, {&mu_max},
       "max dipole in Debye (for histrogram)" },
     { "-epsilonRF",FALSE, etREAL, {&epsilonRF},
-      "epsilon of the reaction field used during the simulation, needed for dieclectric constant calculation. WARNING: 0.0 means infinity (default)" },
+      "epsilon of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default)" },
     { "-skip",     FALSE, etINT, {&skip},
       "Skip steps in the output (but not in the computations)" },
     { "-temp",     FALSE, etREAL, {&temp},

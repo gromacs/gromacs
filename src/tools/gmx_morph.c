@@ -73,7 +73,7 @@ int gmx_morph(int argc,char *argv[])
     "generic trajectory. The number of intermediates can be controlled with",
     "the -ninterm flag. The first and last flag correspond to the way of",
     "interpolating: 0 corresponds to input structure 1 while",
-    "1 corresponds to input strucutre 2.",
+    "1 corresponds to input structure 2.",
     "If you specify first < 0 or last > 1 extrapolation will be",
     "on the path from input structure x1 to x2. In general the coordinates",
     "of the intermediate x(i) out of N total intermidates correspond to:[PAR]",
@@ -85,7 +85,7 @@ int gmx_morph(int argc,char *argv[])
   t_filenm fnm[] = {
     { efSTX, "-f1", "conf1",  ffREAD },
     { efSTX, "-f2", "conf2",  ffREAD },
-    { efTRO, "-o",  "interm", ffWRITE },
+    { efTRX, "-o",  "interm", ffWRITE },
     { efXVG, "-or", "rms-interm", ffOPTWR },
     { efNDX, "-n",  "index",  ffOPTRD }
   };
@@ -106,7 +106,8 @@ int gmx_morph(int argc,char *argv[])
   };
   char *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
   FILE     *fp=NULL;
-  int      i,isize,is_lsq,status,nat1,nat2;
+  int      i,isize,is_lsq,nat1,nat2;
+  t_trxstatus *status;
   atom_id  *index,*index_lsq,*index_all,*dummy;
   t_atoms  atoms;
   rvec     *x1,*x2,*xx,*v;

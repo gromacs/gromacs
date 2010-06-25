@@ -14,7 +14,7 @@ AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
-SHARED_VERSION_INFO="5:0:0"
+SHARED_VERSION_INFO="6:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 AC_DISABLE_SHARED
@@ -23,10 +23,6 @@ AC_DISABLE_SHARED
 #######################################################################
 # Simple options and makefile variables
 #######################################################################
-
-# This is currently not defined by CMake, because it's tricky to generate
-# version.h portably (the autoconf rules for it are in src/gmxlib/Makefile.am).
-AC_DEFINE(USE_VERSION_H,,[Use the version string from generated version.h])
 
 ### Single/Double
 AC_ARG_ENABLE(float,
@@ -131,6 +127,13 @@ if test "$enable_ppc_altivec" = "undef"; then
     *) enable_ppc_altivec=no ;;
   esac
 fi
+
+###################################
+## Detect buggy version of gcc
+###################################
+AC_ARG_ENABLE(gcc41_check,
+              [AC_HELP_STRING([--disable-gcc41-check],
+                              [Disable the check for buggy gcc 4.1])],,enable_gcc41_check=yes)
 
 
 
@@ -267,14 +270,21 @@ if test "$with_qmmm_mopac" = "yes"; then
   AC_DEFINE(GMX_QMMM_MOPAC,,[Use (modified) Mopac 7 for QM-MM calculations])
 fi
 
+
+AC_ARG_WITH(qmmm_orca,
+              [AC_HELP_STRING([--without-qmmm-mopac],
+                              [Use ORCA for QM-MM])],,with_qmmm_orca=no)
+if test "$with_qmmm_orca"="yes"; then
+  AC_DEFINE(GMX_QMMM_ORCA,,[Use ORCA for QM-MM calculations])
+fi
+
+
 AC_ARG_WITH(dlopen,
             [AC_HELP_STRING([--without-dlopen],
                             [do not compile with dlopen, needed to read VMD]
                             [supported file formats])],,with_dlopen=yes)
 
 
-
-   
 
 ############################################################
 # Add some debug info: Who is building, and on what machine?
@@ -283,6 +293,28 @@ AC_DEFINE_UNQUOTED([BUILD_TIME],["`date`"],[Date and time for build])
 AC_DEFINE_UNQUOTED([BUILD_USER],["`whoami`@`hostname`"],[User doing build])
 AC_DEFINE_UNQUOTED([BUILD_MACHINE],["`uname -srm`"],[Hardware and OS version for build host])
 
+
+############################################################
+# Checks for requirements for version information generation
+############################################################
+generate_version=no
+if test -d $srcdir/.git ; then
+    AC_CHECK_PROG(have_git, git, yes, no)
+    if test "$have_git" = "yes" ; then
+        AC_MSG_CHECKING(for git >= 1.5.1)
+        if test "`git --version`" \< "git version 1.5.1" ; then
+            AC_MSG_RESULT(no)
+        else
+            AC_MSG_RESULT(yes)
+            generate_version=yes
+            AC_DEFINE(USE_VERSION_H,,[Use generated version info])
+        fi
+    fi
+    if test "$generate_version" = "no" ; then
+        AC_MSG_WARN([No compatible git version found, won't be able to generate proper development version information.])
+    fi
+fi
+AM_CONDITIONAL([USE_VERSION_H],[test "$generate_version" = "yes"])
 
 
 ############################################################
@@ -306,6 +338,18 @@ AC_PROG_CC( $cc_names )
 if test -z "$CC_FOR_BUILD"; then
   CC_FOR_BUILD=$CC
 fi
+
+if test "$enable_gcc41_check" = "yes"; then
+    if $CC --version 2>&1 | grep 'gcc.* 4\.1' > /dev/null 2>&1; then
+        AC_MSG_ERROR([Uh-oh. Your compilers appears to be GCC version 4.1, which unfortunately produces]
+[buggy code at high optimimzation levels. It would be a good idea to update or]
+[use a different compiler. If you are ABSOLUTELY sure what you are doing, you]
+[can override this check with --disable-gcc41-check.])
+    fi
+fi
+
+
+
 AC_SUBST(CC_FOR_BUILD) 
 
 if test "$enable_fortran" = "yes"; then 
@@ -686,6 +730,7 @@ AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(sys/time.h)
 AC_CHECK_HEADERS(dirent.h)
+AC_CHECK_HEADERS(copyfile.h)
 AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
 [No regex.h found.
 Regular expression matching in selections will be disabled.
@@ -704,13 +749,19 @@ AM_WITH_DMALLOC
 AC_CHECK_FUNCS(strcasecmp)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_FUNCS(gettimeofday)
+AC_CHECK_FUNCS(cbrt)
 AC_CHECK_FUNCS(isnan)
 AC_CHECK_FUNCS(_isnan)
 AC_CHECK_FUNCS(isfinite)
 AC_CHECK_FUNCS(_isfinite)
+AC_CHECK_FUNCS(fsync)
+AC_CHECK_FUNCS(fileno)
+AC_CHECK_FUNCS(copyfile)
 
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
+AC_SEARCH_LIBS(posix_memalign, c, AC_DEFINE(HAVE_POSIX_MEMALIGN, 1, Define to 1 if you have the posix_memalign function))
+AC_SEARCH_LIBS(memalign, c, AC_DEFINE(HAVE_MEMALIGN, 1, Define to 1 if you have the memalign function))
 
 
 
@@ -817,9 +868,26 @@ if test "$with_xml" = "yes"; then
    AC_CHECK_HEADERS([libxml/parser.h],AC_CHECK_LIB(xml2,main))
    if test "$ac_cv_lib_xml2_main" = "yes"; then
      INCLUDES="$INCLUDES -I/usr/include/libxml2"
+     PKG_XML2="libxml-2.0"
+     AC_SUBST(PKG_XML2)
+     if test "$enable_all_static" = "yes"; then
+       LDFLAGS_RET=$LDFLAGS
+       LDFLAGS="-static $LDFLAGS"
+       LIBS_RET="$LIBS"
+       LIBS="$LIBS -lz"
+       AC_MSG_CHECKING(for broken libxml2)
+       AC_TRY_RUN([
+#include <libxml/parser.h>
+main() {
+  xmlInitParser();
+  return 0;
+}],
+       AC_MSG_RESULT([no]),[AC_MSG_RESULT([yes])
+       AC_MSG_ERROR([Your libxml2 is broken for static linking, recompile it without threads or build gromacs without libxml])],[-lz])
+       LDFLAGS=$LDFLAGS_RET
+       LIBS="$LIBS_RET"
+     fi
    fi
-   PKG_XML2="libxml-2.0"
-   AC_SUBST(PKG_XML2)
 # restore CPPFLAGS
    CPPFLAGS="$ac_save_CPPFLAGS"
 fi

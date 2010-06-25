@@ -149,9 +149,9 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,  
-      i,n,               /* loop indices */
+  int natoms;            /* nr. atoms in trj */
+  t_trxstatus *status;  
+  int i,n,               /* loop indices */
       ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
@@ -251,9 +251,9 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,  
-      **slCount,         /* nr. of atoms in one slice for a group */
+  int natoms;            /* nr. atoms in trj */
+  t_trxstatus *status;  
+  int  **slCount,         /* nr. of atoms in one slice for a group */
       i,j,n,               /* loop indices */
       teller = 0,      
       ax1=0, ax2=0,

@@ -190,7 +190,8 @@ int gmx_mdmat(int argc,char *argv[])
   char       *grpname;
   int        *rndx,*natm,prevres,newres;
   
-  int        i,j,status,nres,natoms,nframes,it,trxnat;
+  int        i,j,nres,natoms,nframes,it,trxnat;
+  t_trxstatus *status;
   int        nr0;
   bool       bCalcN,bFrames;
   real       t,ratio;

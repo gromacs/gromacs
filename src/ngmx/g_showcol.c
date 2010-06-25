@@ -42,6 +42,7 @@
 #include <string2.h>
 #include <Xstuff.h>
 #include "xutil.h"
+#include "futil.h"
 
 typedef struct {
   XColor    xc;
@@ -265,9 +266,16 @@ main(int argc, char *argv[])
     fn=argv[1];
   else
     fn="/usr/lib/X11/rgb.txt";
+  if (!gmx_fexist(fn)) {
+    fprintf(stderr,"Usage: %s rgb.txt\n",argv[0]);
+    fprintf(stderr,"rgb.txt is usually somewhere in your X windows directories.\n");
+    exit(1);
+  }
   sc=init_sc(x11,x11->root,fn);
   XMapWindow(x11->disp,sc->wd.self);
   XMapSubwindows(x11->disp,sc->wd.self);
   x11->MainLoop(x11);
   x11->CleanUp(x11);
+
+  return 0;
 }

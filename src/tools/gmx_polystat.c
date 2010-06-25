@@ -109,10 +109,10 @@ int gmx_polystat(int argc,char *argv[])
     "gyration tensors are written.",
     "With option [TT]-i[tt] the mean square internal distances are",
     "written.[PAR]",
-    "With option [TT]-p[tt] the presistence length is determined.",
+    "With option [TT]-p[tt] the persistence length is determined.",
     "The chosen index group should consist of atoms that are",
     "consecutively bonded in the polymer mainchains.",
-    "The presistence length is then determined from the cosine of",
+    "The persistence length is then determined from the cosine of",
     "the angles between bonds with an index difference that is even,",
     "the odd pairs are not used, because straight polymer backbones",
     "are usually all trans and therefore only every second bond aligns.",
@@ -144,7 +144,7 @@ int gmx_polystat(int argc,char *argv[])
   int    ePBC;
   int    isize,*index,nmol,*molind,mol,nat_min=0,nat_max=0;
   char   *grpname;
-  int    status;
+  t_trxstatus *status;
   real   t;
   rvec   *x,*bond=NULL;
   matrix box;

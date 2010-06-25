@@ -186,7 +186,10 @@ extern void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
  */
 
 void free_t_atoms(t_atoms *atoms,bool bFreeNames);
-/* free all the arrays and set the nr and nres to 0 */
+/* Free all the arrays and set the nr and nres to 0.
+ * bFreeNames tells if to free the atom and residue name strings,
+ * don't free them if they still need to be used in e.g. the topology struct.
+ */
 
 t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 /* generate a t_atoms struct for the system from gmx_mtop_t */ 

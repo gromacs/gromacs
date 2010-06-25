@@ -129,7 +129,7 @@ int gmx_spatial(int argc,char *argv[])
   t_trxframe fr;
   rvec       *xtop,*shx[26];
   matrix     box,box_pbc;
-  int        status;
+  t_trxstatus *status;
   int        flags = TRX_READ_X;
   t_pbc      pbc;
   t_atoms    *atoms;

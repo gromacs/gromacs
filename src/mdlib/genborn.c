@@ -64,7 +64,7 @@
 #include "tmpi.h"
 #endif
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
 #ifdef GMX_DOUBLE
 #include "genborn_sse2_double.h"
 #else
@@ -75,7 +75,7 @@
 
 #include "genborn_allvsall.h"
 
-    //#define DISABLE_SSE
+/*#define DISABLE_SSE*/
 
 typedef struct {
     int shift;
@@ -1173,7 +1173,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         }
     }
 
-#ifndef DOUBLE
+#ifndef GMX_DOUBLE
     if(fr->bAllvsAll)
     {
         cnt = md->homenr*(md->nr/2+1);
@@ -1252,7 +1252,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     switch(ir->gb_algorithm)
     {
         case egbSTILL:
-            calc_gb_rad_still_sse(cr,fr,born->nr,top, atype, x[0], nl, born, md);
+            calc_gb_rad_still_sse(cr,fr,born->nr,top, atype, x[0], nl, born);
             break;
         case egbHCT:
         case egbOBC:
@@ -1559,8 +1559,8 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
     {
         ai   = nl->iinr[i];
         
-        nj0     = nl->jindex[ai];
-        nj1  = nl->jindex[ai+1];
+        nj0  = nl->jindex[i];
+        nj1  = nl->jindex[i+1];
         
         /* Load shifts for this list */
         shift   = nl->shift[i];
@@ -1679,7 +1679,7 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
         dd_atom_spread_real(cr->dd,fr->dvda);
     }
 
-#ifndef DOUBLE
+#ifndef GMX_DOUBLE
     if(fr->bAllvsAll)
     {
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
@@ -1712,7 +1712,7 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     calc_gb_chainrule_sse(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
                           x[0], f[0], fr->fshift[0], fr->shift_vec[0], 
-                          gb_algorithm, born, md);    
+                          gb_algorithm, born, md);
 #else
     /* Calculate the forces due to chain rule terms with non sse code */
     calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 

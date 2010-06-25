@@ -76,7 +76,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
        com;              /* center of mass of micel, with bMicel */
   rvec *dip;             /* sum of dipoles, unnormalized */
   matrix box;            /* box (3x3) */
-  int   status;
+  t_trxstatus *status;
   real  t,               /* time from trajectory */
        *sum,             /* sum of all cosines of dipoles, per slice */
        *frame;           /* order over one frame */
