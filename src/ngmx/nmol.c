@@ -495,7 +495,7 @@ void draw_mol(t_x11 *x11,t_manager *man)
   real      sx,sy;
   vec4      x4;
 
-  if (man->status == -1)
+  if (!man->status)
     return;
 
   view=man->view;

@@ -276,7 +276,7 @@ bool gmx_fexist(const char *fname)
     if (test == NULL) 
         return FALSE;
     else {
-        ffclose(test);
+        fclose(test);
         return TRUE;
     }
 }

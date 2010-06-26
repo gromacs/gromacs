@@ -226,7 +226,7 @@ int gmx_rms(int argc, char *argv[])
     matrix box;
     rvec *x, *xp, *xm = NULL, **mat_x = NULL, **mat_x2, *mat_x2_j = NULL, vec1,
         vec2;
-    int status;
+    t_trxstatus *status;
     char buf[256], buf2[256];
     int ncons = 0;
     FILE *fp;

@@ -87,7 +87,7 @@ int gmx_dist(int argc,char *argv[])
   real t,t0,cut2,dist2;
   rvec *x=NULL,*v=NULL,dx;
   matrix box;
-  int status;
+  t_trxstatus *status;
   int natoms;
 
   int g,d,i,j,res,teller=0;

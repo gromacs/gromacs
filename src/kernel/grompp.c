@@ -436,7 +436,7 @@ static void cont_status(const char *slog,const char *ener,
      /* If fr_time == -1 read the last frame available which is complete */
 {
   t_trxframe  fr;
-  int         fp;
+  t_trxstatus *fp;
 
   fprintf(stderr,
 	  "Reading Coordinates%s and Box size from old trajectory\n",
