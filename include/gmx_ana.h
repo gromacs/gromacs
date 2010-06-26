@@ -145,6 +145,9 @@ int
 gmx_kinetics(int argc,char *argv[]);
 
 int 
+gmx_membed(int argc,char *argv[]);
+
+int 
 gmx_mindist(int argc,char *argv[]);
 
 int 
