@@ -3647,7 +3647,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	snew(pos_ins,1);
 	if(MASTER(cr))
 	{
-		tpr_version = get_tpr_version(ftp2fn(efTPX,nfile,fnm));
+	  tpr_version = get_tpr_version((char *)ftp2fn(efTPX,nfile,fnm));
 		if (tpr_version<58)
 			gmx_fatal(FARGS,"Version of *.tpr file to old (%d). Rerun grompp with gromacs VERSION 4.0.3 or newer.\n",tpr_version);
 
@@ -3844,7 +3844,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		if (MASTER(cr))
 		{
 			if (ftp2bSet(efTOP,nfile,fnm))
-				top_update(opt2fn("-p",nfile,fnm),ins,rm_p,mtop);
+			  top_update((char *)opt2fn("-p",nfile,fnm),ins,rm_p,mtop);
 		}
 
 		sfree(pbc);
@@ -4026,7 +4026,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Initiate forcerecord */
         fr = mk_forcerec();
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
-                      opt2fn("-table",nfile,fnm),
+                      NULL,
+		      opt2fn("-table",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),FALSE,pforce);
 
