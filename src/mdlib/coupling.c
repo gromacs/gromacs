@@ -47,6 +47,7 @@
 #include "txtdump.h"
 #include "nrnb.h"
 #include "gmx_random.h"
+#include "mdrun.h"
 
 #define NTROTTERCALLS 5
 #define NTROTTERPARTS 3
@@ -631,7 +632,7 @@ void destroy_bufstate(t_state *state)
     sfree(state);
 }  
 
-void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, 
+void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind, 
                     gmx_enerdata_t *enerd, t_state *state, 
                     tensor vir, t_mdatoms *md, 
                     t_extmass *MassQ, int *trotter_seq) 
@@ -643,20 +644,20 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     real ecorr,pcorr,dvdlcorr;
     real bmass,qmass,reft,kT,dt,nd;
     tensor dumpres,dumvir;
-    double *scalefac;
+    double *scalefac,dtc;
     rvec sumv,consk;
+    bool bCouple;
 
     bCouple = (ir->nstcalcenergy == 1 ||
-               do_per_step(step+ir->nstcalcenergy-1,
-                           ir->nstcalcenergy));
-    dtc = inputrec->nstcalcenergy*inputrec->delta_t;
-
-
+               do_per_step(step+ir->nstcalcenergy,ir->nstcalcenergy));
+    
     /* signal we are returning if nothing is going to be done in this routine */
-    if (trotter_seq[0] == etrtSKIPALL) 
+    if ((trotter_seq[0] == etrtSKIPALL)  || !(bCouple))
     {
         return;
     }
+
+    dtc = ir->nstcalcenergy*ir->delta_t;
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
     snew(scalefac,opts->ngtc);
@@ -1024,9 +1025,12 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
         
             for (j=0;j<nh;j++) 
             {
-                ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
-                /* contribution from the thermal variable of the NH chain */
-                ener_npt += ixi[j]*kT;
+                if (iQinv[j] > 0)
+                {
+                    ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
+                    /* contribution from the thermal variable of the NH chain */
+                    ener_npt += ixi[j]*kT;
+                }
                 if (debug) 
                 {
                     fprintf(debug,"P-T-group: %10d Chain %4d ThermV: %15.8f ThermX: %15.8f",i,j,ivxi[j],ixi[j]);
@@ -1054,16 +1058,18 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
                     /* contribution from the thermal momenta of the NH chain */
                     for (j=0;j<nh;j++) 
                     {
-                        ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
-                        /* contribution from the thermal variable of the NH chain */
-                        if (j==0) {
-                            ndj = nd;
-                        } 
-                        else 
-                        {
-                            ndj = 1;
-                        } 
-                        ener_npt += ndj*ixi[j]*kT;
+                        if (iQinv[j] > 0) {
+                            ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
+                            /* contribution from the thermal variable of the NH chain */
+                            if (j==0) {
+                                ndj = nd;
+                            } 
+                            else 
+                            {
+                                ndj = 1;
+                            } 
+                            ener_npt += ndj*ixi[j]*kT;
+                        }
                     }
                 }
                 else  /* Other non Trotter temperature NH control  -- no chains yet. */
