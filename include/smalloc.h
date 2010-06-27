@@ -192,7 +192,7 @@ template <typename T>
 void _snew_aligned(const char *name, const char *file, int line,
 		   T *&ptr, size_t nelem, size_t elsize,size_t alignment)
 {
-    ptr = (T *)save_calloc_aligned(name, file, line, nelem, elsize, alignment);
+  ptr = (T *)save_calloc_aligned((char *)name, (char *)file, line, nelem, elsize, alignment);
 }
 
 #define snew(ptr,nelem) _snew(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)))

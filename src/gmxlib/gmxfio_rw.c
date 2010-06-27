@@ -283,6 +283,27 @@ bool gmx_fio_doe_double(t_fileio *fio, double *item,
 }
 
 
+bool gmx_fio_doe_bool(t_fileio *fio, bool *item,
+                      const char *desc, const char *srcfile, int line)
+{
+    bool ret;
+    int itmp;
+    
+    gmx_fio_lock(fio);
+    if (fio->bRead)
+    {
+        ret=fio->iotp->nread(fio, &itmp, 1, eioINT, desc, srcfile, line);
+        *item = itmp;
+    }
+    else
+    {
+        itmp = *item;
+        ret=fio->iotp->nwrite(fio, &itmp, 1, eioINT, desc, srcfile, line);
+    }
+    gmx_fio_unlock(fio);
+    return ret;
+}
+
 bool gmx_fio_doe_int(t_fileio *fio, int *item,
                      const char *desc, const char *srcfile, int line)
 {
@@ -664,6 +685,32 @@ bool gmx_fio_ndoe_double(t_fileio *fio, double *item, int n,
 }
 
 
+
+bool gmx_fio_ndoe_bool(t_fileio *fio, bool *item, int n,
+                      const char *desc, const char *srcfile, int line)
+{
+    bool ret=TRUE;
+    int i,itmp;
+    
+    gmx_fio_lock(fio);
+    for(i=0;i<n;i++)
+    {
+        if (fio->bRead)
+        {
+            ret=ret && fio->iotp->nread(fio, &itmp, 1, eioINT, desc, 
+                                  srcfile, line);
+            item[i] = itmp;
+        }
+        else
+        {
+            itmp = item[i];
+            ret=ret && fio->iotp->nwrite(fio, &itmp, 1, eioINT, desc, 
+                                   srcfile, line);
+        }
+    }
+    gmx_fio_unlock(fio);
+    return ret;
+}
 
 bool gmx_fio_ndoe_int(t_fileio *fio, int *item, int n,
                       const char *desc, const char *srcfile, int line)

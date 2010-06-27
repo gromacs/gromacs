@@ -87,6 +87,7 @@
 #include "tpxio.h"
 #include "string2.h"
 #include "sighandler.h"
+#include "gmx_ana.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>

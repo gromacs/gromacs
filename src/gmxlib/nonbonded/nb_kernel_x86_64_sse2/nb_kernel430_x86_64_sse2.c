@@ -24,6 +24,7 @@
 /* get gmx_gbdata_t */
 #include "../nb_kerneltype.h"
 
+#include "nb_kernel430_x86_64_sse2.h"
 
 static inline __m128d
 my_invrsq_pd(__m128d x)

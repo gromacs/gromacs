@@ -241,7 +241,7 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
                     &qm->xQM[i][YY],
                     &qm->xQM[i][ZZ]);
 #else
-         sscanf(buf,"%s%f%f%f\n",
+         sscanf(buf,"%d%f%f%f\n",
                     &atnum,
                     &qm->xQM[i][XX],
                     &qm->xQM[i][YY],

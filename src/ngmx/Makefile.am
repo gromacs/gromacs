@@ -10,8 +10,8 @@ LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 if USE_X11
 
-bin_PROGRAMS     = ngmx g_xrama g_highway g_logo  g_showcol
-EXTRA_PROGRAMS   = test_ngmx_dialog
+bin_PROGRAMS     = ngmx g_xrama g_highway g_logo 
+EXTRA_PROGRAMS   = test_ngmx_dialog  g_showcol
 
 endif
 

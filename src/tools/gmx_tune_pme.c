@@ -2045,7 +2045,7 @@ int gmx_tune_pme(int argc,char *argv[])
      */
     create_command_line_snippets(bThreads,presteps,NFILE,fnm,asize(pa),pa,procstring[0],
                                  &cmd_np, &cmd_args_bench, &cmd_args_launch,
-                                 bPassAll? ExtraArgs : "");
+                                 bPassAll? ExtraArgs : (char *)"");
 
     /* Read in checkpoint file if requested */
     sim_part = 1;
