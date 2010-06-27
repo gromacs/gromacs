@@ -80,7 +80,7 @@ int gmx_helixorient(int argc,char *argv[])
     real t;
     rvec *x=NULL,dx;
     matrix box;
-    int status;
+    t_trxstatus *status;
     int natoms;
     real theta1,theta2,theta3;
 

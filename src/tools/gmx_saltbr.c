@@ -159,7 +159,8 @@ int gmx_saltbr(int argc,char *argv[])
   t_topology *top;
   int        ePBC;
   char       *buf;
-  int        status,i,j,k,m,nnn,teller,ncg,n1,n2,n3,natoms;
+  t_trxstatus *status;
+  int        i,j,k,m,nnn,teller,ncg,n1,n2,n3,natoms;
   real       t,*time,qi,qj;
   t_charge   *cg;
   real       ***cgdist;

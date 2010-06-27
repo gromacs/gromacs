@@ -56,6 +56,7 @@
  **************************************************************/
 	
 #include "typedefs.h"
+#include "gmxfio.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,13 +84,13 @@ typedef struct		/* This struct describes the order and the	*/
   real	lambda;		/* Current value of lambda			*/
 } t_trnheader;
 
-extern int open_trn(const char *fn,const char *mode);
+extern t_fileio *open_trn(const char *fn,const char *mode);
 /* Open a trj / trr file */
 
-extern void close_trn(int fp);
+extern void close_trn(t_fileio *fio);
 /* Close it */
 
-extern bool fread_trnheader(int fp,t_trnheader *trn,bool *bOK);
+extern bool fread_trnheader(t_fileio *fio,t_trnheader *trn,bool *bOK);
 /* Read the header of a trn file. Return FALSE if there is no frame.
  * bOK will be FALSE when the header is incomplete.
  */
@@ -106,18 +107,18 @@ extern bool is_trn(FILE *fp);
  * afterwards.
  */
 
-extern void fwrite_trn(int fp,int step,real t,real lambda,
+extern void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
 		       rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
-extern bool fread_htrn(int fp,t_trnheader *sh,
+extern bool fread_htrn(t_fileio *fio,t_trnheader *sh,
 		       rvec *box,rvec *x,rvec *v,rvec *f);
 /* Extern read a frame except the header (that should be pre-read,
  * using routine read_trnheader, see above) from a trn file.
  * Return FALSE on error
  */
  
-extern bool fread_trn(int fp,int *step,real *t,real *lambda,
+extern bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
 		      rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
 /* Read a trn frame, including the header from fp. box, x, v, f may
  * be NULL, in which case the data will be skipped over.

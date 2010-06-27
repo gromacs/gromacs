@@ -732,7 +732,7 @@ void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2,
   int i;
   const char *fn[2];
   t_trxframe fr[2];
-  int status[2];
+  t_trxstatus *status[2];
   bool b[2];
   
   fn[0]=fn1;

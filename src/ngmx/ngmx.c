@@ -358,7 +358,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[],
   int                  ePBC;
   matrix               box;
   t_trxframe           fr;
-  int                  status;
+  t_trxstatus          *status;
   char                 quote[256];
   
   snew(gmx,1);

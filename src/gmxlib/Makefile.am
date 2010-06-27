@@ -51,8 +51,9 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	3dview.c	atomprop.c	bondfree.c	\
 	calcgrid.c	calch.c		chargegroup.c	checkpoint.c	\
 	confio.c	copyrite.c	disre.c		do_fit.c	\
-	enxio.c		ewald_util.c	gmx_fatal.c	ffscanf.c	\
-	filenm.c	futil.c		gbutil.c	gmxcpp.c \
+	enxio.c		ewald_util.c	ffscanf.c	\
+	filenm.c	futil.c		gbutil.c	gmx_fatal.c	\
+	gmx_sort.c	gmxcpp.c \
 	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
 	invblock.c	macros.c	orires.c	sparsematrix.c  \
 	main.c		maths.c		matio.c		mshift.c	\
@@ -72,7 +73,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	dihres.c	gmx_random_gausstable.h		\
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		\
 	gmx_system_xdr.c md5.c vmdio.c vmddlopen.c	sighandler.c 	\
-	oenv.c
+	oenv.c		gmxfio_rw.c	gmxfio_asc.c	gmxfio_bin.c	\
+	gmxfio_xdr.c
 
 pkgconfigdir = ${libdir}/pkgconfig
 pkgconfig_DATA = libgmx@LIBSUFFIX@.pc

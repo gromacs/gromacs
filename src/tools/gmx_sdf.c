@@ -71,7 +71,7 @@ static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
                    rvec dtri, const output_env_t oenv)
 {
   FILE       *fp;
-  int        status;
+  t_trxstatus *status;
   int        ng,natoms,i,j,k,l,X,Y,Z,lc,dest;
   ivec       nbin;
   int        ***count;

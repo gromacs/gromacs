@@ -209,7 +209,7 @@ void ps_draw_mol(t_psdata ps,t_manager *man)
   real      sx,sy;
   vec4      x4;
 
-  if (man->status == -1)
+  if (!man->status)
     return;
 
   view=man->view;

@@ -211,7 +211,7 @@ int gmx_helix(int argc,char *argv[])
   output_env_t oenv;
   FILE       *otrj;
   char       buf[54],prop[256];
-  int        status;
+  t_trxstatus *status;
   int        natoms,nre,nres;
   t_bb       *bb;
   int        i,j,ai,m,nall,nbb,nca,teller,nSel=0;

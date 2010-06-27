@@ -271,7 +271,8 @@ int gmx_tcaf(int argc,char *argv[])
   char       *grpname;
   char       title[256];
   real       t0,t1,dt,m,mtot,sysmass,rho,sx,cx;
-  int        status,nframes,n_alloc,i,j,k,d;
+  t_trxstatus *status;
+  int        nframes,n_alloc,i,j,k,d;
   rvec       mv_mol,cm_mol,kfac[NK];
   int        nkc,nk,ntc;
   real       **c1,**tc;

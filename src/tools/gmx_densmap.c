@@ -134,7 +134,7 @@ int gmx_densmap(int argc,char *argv[])
   };
   bool       bXmin,bXmax,bRadial;
   FILE       *fp;
-  int        status;
+  t_trxstatus *status;
   t_topology top;
   int        ePBC=-1;
   rvec       *x,xcom[2],direction,center,dx;

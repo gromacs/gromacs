@@ -133,8 +133,8 @@ typedef struct {
 	int		id;
 	char	*name;
 	int 	nr;
-	int 	natoms;			//nr of atoms per lipid
-	int		mol1;			//id of the first lipid molecule
+	int 	natoms;	    /*nr of atoms per lipid*/
+	int	mol1;	    /*id of the first lipid molecule*/
 	real 	area;
 } lip_t;
 
@@ -208,37 +208,38 @@ int get_type(int mol_id,int nmblock,gmx_molblock_t *mblock)
 	return -1;
 }
 
-int get_tpr_version(char *infile)
+int get_tpr_version(const char *infile)
 {
 	char  	buf[STRLEN];
 	bool  	bDouble;
-	int 	precision,fver,fp;
+	int 	precision,fver;
+        t_fileio *fio;
 	bool 	bRead=TRUE;
 
-	fp = open_tpx(infile,"r");
-	gmx_fio_select(fp);
+	fio = open_tpx(infile,"r");
+	gmx_fio_checktype(fio);
 
 	precision = sizeof(real);
 
-	do_string(buf);
+	gmx_fio_do_string(fio,buf);
 	if (strncmp(buf,"VERSION",7))
 		gmx_fatal(FARGS,"Can not read file %s,\n"
 				"             this file is from a Gromacs version which is older than 2.0\n"
 				"             Make a new one with grompp or use a gro or pdb file, if possible",
-				gmx_fio_getname(fp));
-	do_int(precision);
+				gmx_fio_getname(fio));
+	gmx_fio_do_int(fio,precision);
 	bDouble = (precision == sizeof(double));
 	if ((precision != sizeof(float)) && !bDouble)
 		gmx_fatal(FARGS,"Unknown precision in file %s: real is %d bytes "
 				"instead of %d or %d",
-				gmx_fio_getname(fp),precision,sizeof(float),sizeof(double));
-	gmx_fio_setprecision(fp,bDouble);
+				gmx_fio_getname(fio),precision,sizeof(float),sizeof(double));
+	gmx_fio_setprecision(fio,bDouble);
 	fprintf(stderr,"Reading file %s, %s (%s precision)\n",
-			gmx_fio_getname(fp),buf,bDouble ? "double" : "single");
+			gmx_fio_getname(fio),buf,bDouble ? "double" : "single");
 
-	do_int(fver);
+	gmx_fio_do_int(fio,fver);
 
-	close_tpx(fp);
+	close_tpx(fio);
 
 	return fver;
 }
@@ -262,7 +263,8 @@ void set_inbox(int natom, rvec *x)
 
 int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 {
-	int i,j,nr,mol_id,type;
+	int i,j,nr,mol_id;
+        int type=0;
 	bool bNEW;
 
 	nr=0;
@@ -366,7 +368,7 @@ int init_ins_at(t_block *ins_at,t_block *rest_at,t_state *state, pos_ins_t *pos_
 		pos_ins->xmax[YY]=ymax;
 	}
 
-	// 6.0 is estimated thickness of bilayer
+	/* 6.0 is estimated thickness of bilayer */
 	if( (zmax-zmin) < 6.0 )
 	{
 		pos_ins->xmin[ZZ]=zmin+(zmax-zmin)/2.0-3.0;
@@ -438,12 +440,12 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	real z,zmin,zmax,mem_area;
 	bool bNew;
 	atom_id *mol_id;
-	int type;
+	int type=0;
 
 	nmol=count=0;
 	mem_a=&(mem_p->mem_at);
 	snew(mol_id,mem_a->nr);
-//	snew(index,mem_a->nr);
+/*	snew(index,mem_a->nr); */
 	zmin=pos_ins->xmax[ZZ];
 	zmax=pos_ins->xmin[ZZ];
 	for(i=0;i<mem_a->nr;i++)
@@ -470,7 +472,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 			if(z<zmin)					zmin=z;
 			if(z>zmax)					zmax=z;
 
-//			index[count]=at;
+/*			index[count]=at;*/
 			count++;
 		}
 	}
@@ -478,10 +480,10 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	mem_p->nmol=nmol;
 	srenew(mol_id,nmol);
 	mem_p->mol_id=mol_id;
-//	srenew(index,count);
-//	mem_p->mem_at.nr=count;
-//	sfree(mem_p->mem_at.index);
-//	mem_p->mem_at.index=index;
+/*	srenew(index,count);*/
+/*	mem_p->mem_at.nr=count;*/
+/*	sfree(mem_p->mem_at.index);*/
+/*	mem_p->mem_at.index=index;*/
 
 	if((zmax-zmin)>(box[ZZ][ZZ]-0.5))
 		gmx_fatal(FARGS,"Something is wrong with your membrane. Max and min z values are %f and %f.\n"
@@ -492,7 +494,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	mem_p->zmax=zmax;
 	mem_p->zmed=(zmax-zmin)/2+zmin;
 
-	//number of membrane molecules in protein box
+	/*number of membrane molecules in protein box*/
 	nmolbox = count/mtop->molblock[type].natoms_mol;
 	/*mem_area = box[XX][XX]*box[YY][YY]-box[XX][YY]*box[YY][XX];
 	mem_p->lip_area = 2.0*mem_area/(double)mem_p->nmol;*/
@@ -561,11 +563,14 @@ void resize(t_block *ins_at, rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
 int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop_t *mtop,
 		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, bool bALLOW_ASYMMETRY)
 {
-	int i,j,k,l,at,at2,mol_id,type;
+	int i,j,k,l,at,at2,mol_id;
+        int type=0;
 	int nrm,nupper,nlower;
 	real r_min_rad,z_lip,min_norm;
 	bool bRM;
 	rvec dr,dr_tmp;
+	real *dist;
+	int *order;
 
 	r_min_rad=probe_rad*probe_rad;
 	snew(rm_p->mol,mtop->mols.nr);
@@ -589,7 +594,7 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 						bRM=FALSE;
 				if(bRM)
 				{
-					//fprintf(stderr,"%d wordt toegevoegd\n",mol_id);
+					/*fprintf(stderr,"%d wordt toegevoegd\n",mol_id);*/
 					rm_p->mol[nrm]=mol_id;
 					rm_p->type[nrm]=type;
 					nrm++;
@@ -612,9 +617,7 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 		}
 	}
 
-	real *dist;
-	int *order;
-	//make sure equal number of lipids from upper and lower layer are removed
+	/*make sure equal number of lipids from upper and lower layer are removed */
 	if( (nupper!=nlower) && (!bALLOW_ASYMMETRY) )
 	{
 		snew(dist,mem_p->nmol);
@@ -851,7 +854,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	return rm_at;
 }
 
-void top_update(char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
+void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 {
 #define TEMP_FILENM "temp.top"
 	bool	bMolecules=FALSE;
@@ -1810,14 +1813,15 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
-    int        i,m,status;
+    int        i,m;
+    t_trxstatus *status;
     rvec       mu_tot;
     t_vcm      *vcm;
     t_state    *bufstate=NULL;
     matrix     *scale_tot,pcoupl_mu,M,ebox;
     gmx_nlheur_t nlh;
     t_trxframe rerun_fr;
-//    gmx_repl_ex_t repl_ex=NULL;
+/*    gmx_repl_ex_t repl_ex=NULL;*/
     int        nchkpt=1;
 
     gmx_localtop_t *top;
@@ -1849,7 +1853,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int         a0,a1,gnx=0,ii;
     atom_id     *grpindex=NULL;
     char        *grpname;
-//    t_coupl_rec *tcr=NULL;
+/*    t_coupl_rec *tcr=NULL; */
     rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
     matrix      boxcopy={{0}},lastbox;
 	tensor      tmpvir;
@@ -2833,7 +2837,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (do_per_step(step,ir->nstvout)) { mdof_flags |= MDOF_V; }
         if (do_per_step(step,ir->nstfout)) { mdof_flags |= MDOF_F; }
         if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
-//        if (bCPT) { mdof_flags |= MDOF_CPT; };
+/*        if (bCPT) { mdof_flags |= MDOF_CPT; };*/
 
 #ifdef GMX_FAHCORE
         if (MASTER(cr))
@@ -3577,20 +3581,20 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 
 	char			*ins;
-	int				rm_bonded_at,fr_id,fr_i,tmp_id,warn=0;
+	int 			rm_bonded_at,fr_id,fr_i=0,tmp_id,warn=0;
 	int        		ng,j,max_lip_rm,ins_grp_id,ins_nat,mem_nat,ntype,lip_rm,tpr_version;
-	real			xy_step,z_step;
+	real			xy_step=0,z_step=0;
 	real		 	prot_area;
-	rvec			*r_ins,fac;
+	rvec			*r_ins=NULL,fac;
 	t_block 		*ins_at,*rest_at;
 	pos_ins_t 		*pos_ins;
 	mem_t			*mem_p;
 	rm_t			*rm_p;
-	gmx_groups_t 	*groups;
+	gmx_groups_t 		*groups;
 	bool		 	bExcl=FALSE;
 	t_atoms			atoms;
 	t_pbc			*pbc;
-	char            **piecename;
+	char		        **piecename=NULL;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -3665,14 +3669,14 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		pos_ins->pieces=pieces;
 		snew(pos_ins->nidx,pieces);
 		snew(pos_ins->subindex,pieces);
-		snew(piecename,pieces);
+		snew(piecename,pieces);	
 		if (pieces>1)
 		{
 			fprintf(stderr,"\nSelect pieces to embed:\n");
 			get_index(&atoms,ftp2fn_null(efNDX,nfile,fnm),pieces,pos_ins->nidx,pos_ins->subindex,piecename);
 		}
 		else
-		{
+		{	
 			/*use whole embedded group*/
 			snew(pos_ins->nidx,1);
 			snew(pos_ins->subindex,1);
@@ -3748,13 +3752,13 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		if (!bExcl)
 			gmx_input("No energy exclusion groups defined. This is necessary for energy exclusion in the freeze group");
 
-		// Set all atoms in box
-		//set_inbox(state->natoms,state->x);
+		/* Set all atoms in box*/
+		/*set_inbox(state->natoms,state->x);*/
 
-		// Guess the area the protein will occupy in the membrane plane	// Calculate area per lipid
+		/* Guess the area the protein will occupy in the membrane plane	 Calculate area per lipid*/
 		snew(rest_at,1);
 		ins_nat = init_ins_at(ins_at,rest_at,state,pos_ins,groups,ins_grp_id,xy_max);
-		// Check moleculetypes in insertion group
+		/* Check moleculetypes in insertion group */
 		check_types(ins_at,rest_at,mtop);
 
 		mem_nat = init_mem_at(mem_p,mtop,state->x,state->box,pos_ins);
@@ -3774,7 +3778,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		printf("The estimated area of the protein in the membrane is %.3f nm^2\n",prot_area);
 		printf("\nThere are %d lipids in the membrane part that overlaps the protein.\nThe area per lipid is %.4f nm^2.\n",mem_p->nmol,mem_p->lip_area);
 
-		// Maximum number of lipids to be removed
+		/* Maximum number of lipids to be removed*/
 		max_lip_rm=(int)(2*prot_area/mem_p->lip_area);
 		printf("Maximum number of lipids that will be removed is %d.\n",max_lip_rm);
 
@@ -3782,7 +3786,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 				"This resizing will be done with respect to the geometrical center of all protein atoms\n"
 				"that span the membrane region, i.e. z between %.3f and %.3f\n\n",xy_fac,z_fac,mem_p->zmin,mem_p->zmax);
 
-		// resize the protein by xy and by z if necessary
+		/* resize the protein by xy and by z if necessary*/
 		snew(r_ins,ins_at->nr);
 		init_resize(ins_at,r_ins,pos_ins,mem_p,state->x,bALLOW_ASYMMETRY);
 		fac[0]=fac[1]=xy_fac;
@@ -3793,8 +3797,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 		resize(ins_at,r_ins,state->x,pos_ins,fac);
 
-		// remove overlapping lipids and water from the membrane box
-		//mark molecules to be removed
+		/* remove overlapping lipids and water from the membrane box*/
+		/*mark molecules to be removed*/
 		snew(pbc,1);
 		set_pbc(pbc,inputrec->ePBC,state->box);
 
@@ -3822,7 +3826,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 					"Try making the -xyinit resize factor smaller. If you are sure about this increase maxwarn.\n\n",warn);
 		}
 
-		//freeze all lipids and waters that should be removed and exclude interactions
+		/*freeze all lipids and waters that should be removed and exclude interactions*/
 		freeze_rm_group(inputrec,groups,mtop,rm_p,state);
 
 		rm_bonded_at = rm_bonded(ins_at,mtop);
@@ -3893,8 +3897,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * This should be thread safe, since they are only written once
          * and with identical values.
          */
-//        deform_init_init_step_tpx = inputrec->init_step;
-//        copy_mat(box,deform_init_box_tpx);
+/*        deform_init_init_step_tpx = inputrec->init_step;*/
+/*        copy_mat(box,deform_init_box_tpx);*/
     }
 
     if (opt2bSet("-cpi",nfile,fnm))
@@ -4145,7 +4149,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * is communicated to the PP nodes.
          */
         signal_handler_install();
-//    }
+/*    }*/
 
     if (cr->duty & DUTY_PP)
     {
@@ -4259,7 +4263,7 @@ int gmx_membed(int argc,char *argv[])
 			"The output is a structure file containing the protein embedded in the membrane. If a topology",
 			"file is provided, the number of lipid and ",
 			"solvent molecules will be updated to match the new structure file.\n",
-			"For a more extensive manual see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507:Appendix.\n",
+			"For a more extensive manual see Wolf et al, J Comp Chem 31 (2010) 2169-2174, Appendix.\n",
 			"\n",
 			"SHORT METHOD DESCRIPTION\n",
 			"------------------------\n",
@@ -4276,12 +4280,12 @@ int gmx_membed(int argc,char *argv[])
 			"is incremented first. The resize factor for the z-direction is not changed until the -xy factor",
 			"is 1 (thus after -nxy iteration).\n",
 			"5. Repeat step 3 and 4 until the protein reaches its original size (-nxy + -nz iterations).\n",
-			"For a more extensive method descrition see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507.\n",
+			"For a more extensive method descrition see Wolf et al, J Comp Chem, 31 (2010) 2169-2174.\n",
 			"\n",
 			"NOTE\n----\n",
 			" - Protein can be any molecule you want to insert in the membrane.\n",
 			" - It is recommended to perform a short equilibration run after the embedding",
-			"(see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507) to re-equilibrate the membrane. Clearly",
+			"(see Wolf et al, J Comp Chem 31 (2010) 2169-2174, to re-equilibrate the membrane. Clearly",
 			"protein equilibration might require longer.\n",
 			"\n"
 	};
@@ -4373,7 +4377,7 @@ int gmx_membed(int argc,char *argv[])
     bool bALLOW_ASYMMETRY=FALSE;
 
 
-// arguments relevant to OPENMM only
+/* arguments relevant to OPENMM only*/
 #ifdef GMX_OPENMM
     gmx_input("g_membed not functional in openmm");
 #endif
@@ -4616,7 +4620,7 @@ int gmx_membed(int argc,char *argv[])
 
 	/* Log file has to be closed in mdrunner if we are appending to it
    (fplog not set here) */
-	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem, doi 10.1002/jcc.21507.\n");
+	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
 
 	if (MASTER(cr) && !bAppendFiles)
 	{

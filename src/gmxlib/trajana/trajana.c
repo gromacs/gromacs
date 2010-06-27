@@ -202,7 +202,7 @@ struct gmx_ana_traj_t
     /** The current frame, or \p NULL if no frame loaded yet. */
     t_trxframe               *fr;
     /** Used to store the status variable from read_first_frame(). */
-    int                       status;
+    t_trxstatus              *status;
     /** The number of frames read. */
     int                       nframes;
 
@@ -306,7 +306,7 @@ gmx_ana_traj_create(gmx_ana_traj_t **data, unsigned long flags)
         *data = NULL;
         return rc;
     }
-    d->status          = -1;
+    d->status          = NULL;
     d->oenv            = NULL;
 
     *data              = d;

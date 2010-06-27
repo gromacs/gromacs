@@ -48,6 +48,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "gmx_ga2la.h"
+#include "gmx_sort.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -7809,7 +7810,7 @@ static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
     int i1,i2,i_new;
     
     /* The new indices are not very ordered, so we qsort them */
-    qsort(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
+    qsort_threadsafe(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
     
     /* sort2 is already ordered, so now we can merge the two arrays */
     i1 = 0;
@@ -7925,7 +7926,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
             fprintf(debug,"qsort cgs: %d new home %d\n",dd->ncg_home,ncg_new);
         }
         /* Determine the order of the charge groups using qsort */
-        qsort(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
+        qsort_threadsafe(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
     }
     cgsort = sort->sort1;
     

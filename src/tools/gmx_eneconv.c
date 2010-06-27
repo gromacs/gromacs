@@ -425,7 +425,7 @@ static void update_ee_sum(int nre,
     }
     nsteps = fr->nsteps;
     nsum   = fr_nsum;
-  } else if (out_step - *ee_sum_step == nsteps + fr->nsteps) {
+  } else if (out_step + *ee_sum_nsum - *ee_sum_step == nsteps + fr->nsteps) {
     if (fr_nsum == 1) {
       for(i=0;i<nre;i++) {
 	ee_sum[i].eav  +=
@@ -661,7 +661,8 @@ int gmx_eneconv(int argc,char *argv[])
 	if (ee_sum_nsum <= 1) {
 	  fro->nsum = 0;
 	} else {
-	  fro->nsum = ee_sum_nsum;
+	  fro->nsum = gmx_large_int_to_int(ee_sum_nsum,
+					   "energy average summation");
 	  /* Copy the energy sums */
 	  for(i=0; i<nre; i++) {
 	    fro->ener[i].esum = ee_sum[i].esum;

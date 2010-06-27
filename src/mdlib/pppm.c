@@ -508,7 +508,7 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
   rvec  box_diag,spacing;
 
 #ifdef DISABLE_PPPM
-    gmx_fatal(FARGS,"PPPM temporarily disabled while working on 2DPME\n");
+    gmx_fatal(FARGS,"PPPM is not functional in the current version, we plan to implement PPPM through a small modification of the PME code.");
     return -1;
 #else
     

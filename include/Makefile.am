@@ -48,6 +48,7 @@ gmx_lapack.h \
 gmx_matrix.h \
 gmx_parallel_3dfft.h \
 gmx_random.h \
+gmx_sort.h \
 gmx_sse2_single.h \
 gmx_statistics.h \
 gmx_system_xdr.h \
@@ -121,7 +122,6 @@ sortwater.h \
 sparsematrix.h \
 split.h \
 splitter.h \
-statusio.h \
 statutil.h \
 strdb.h \
 string2.h \
