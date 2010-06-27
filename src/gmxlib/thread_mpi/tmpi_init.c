@@ -445,7 +445,7 @@ void tMPI_Start_threads(bool main_returns, int N, int *argc, char ***argv,
         if (!main_returns)
             tMPI_Thread_starter((void*)&(threads[0]));
         else
-            tMPI_Thread_init((void*)&(threads[0]));
+            tMPI_Thread_init(&(threads[0]));
     }
 }
 
