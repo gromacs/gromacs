@@ -946,7 +946,9 @@ refinement}\index{refinement,nmr}.
 In {\gromacs} there are three ways to impose restraints on pairs of atoms:
 \begin{itemize}
 \item Simple harmonic restraints: use {\tt [ bonds ]} type 6
-(see \secref{excl}).
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{(see \secref{excl}).}
 \item Piecewise linear/harmonic restraints: {\tt [ bonds ]} type 10.
 \item Complex NMR distance restraints, optionally with pair, time and/or
 ensemble averaging.
@@ -993,7 +995,9 @@ The forces are
 For restraints not derived from NMR data, this functionality
 will usually suffice and a section of {\tt [ bonds ]} type 10
 can be used to apply individual restraints between pairs of atoms,
-see \ssecref{topfile}.
+\ifthenelse{\equal{\gmxlite}{1}}
+{atoms.}
+{atoms, see \ssecref{topfile}.}
 For applying restraints derived from NMR measurements more complex
 functionality might be required, which is provided through
 the {\tt [ distance\_restraints ]} section and is described below.

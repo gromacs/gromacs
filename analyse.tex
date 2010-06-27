@@ -532,7 +532,10 @@ possibilities:
 \begin{description}
 \item[$\bullet$] 
 The {\em distance between the geometrical centers} of two groups can be 
-calculated with the program {\tt \normindex{g\_sgangle}}, as explained in \secref{bad}. 
+calculated with the program
+\ifthenelse{\equal{\gmxlite}{1}}{
+{\tt \normindex{g\_sgangle}}.}
+{{\tt \normindex{g\_sgangle}}, as explained in \secref{bad}.}
 \item[$\bullet$] 
 The {\em minimum distance} between two groups of atoms during time 
 can be calculated with the program {\tt \normindex{g\_mindist}}. It also calculates the 
