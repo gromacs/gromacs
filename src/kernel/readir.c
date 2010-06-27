@@ -187,7 +187,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             if (EI_VV(ir->eI))
             {
                 /* VV coupling algorithms currently only support 1 */
-                //ir->nstcalcenergy = 1;
+                ir->nstcalcenergy = 1;
             }
             else
             {
@@ -209,8 +209,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             }
             if (EI_VV(ir->eI))
             {
-                //sprintf(err_buf,"T- and P-coupling with VV integrators currently only supports nstcalcenergy=1");
-                //CHECK(ir->nstcalcenergy > 1);
+                sprintf(err_buf,"T- and P-coupling with VV integrators currently only supports nstcalcenergy=1");
+                CHECK(ir->nstcalcenergy > 1);
             }
         }
         if (IR_TWINRANGE(*ir))
