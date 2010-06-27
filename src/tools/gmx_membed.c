@@ -2671,7 +2671,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
                 if (!bInitStep)
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
                 }
 
                 update_coords(fplog,step,ir,mdatoms,state,
@@ -2710,7 +2710,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                            of veta.  */
 
                         veta_save = state->veta;
-                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
                         vetanew = state->veta;
                         state->veta = veta_save;
                     }
@@ -2768,7 +2768,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (bVV && !bInitStep)
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
 
                 if (bIterations &&
@@ -3087,7 +3087,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         m_add(force_vir,shake_vir,total_vir);
                         clear_mat(shake_vir);
                     }
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
                 }
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
@@ -3132,7 +3132,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
