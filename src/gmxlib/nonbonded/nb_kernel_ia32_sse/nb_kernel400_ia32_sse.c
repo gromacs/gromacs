@@ -512,7 +512,9 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 		gmx_mm_update_iforce_1atom_ps(fix,fiy,fiz,faction+ii3,fshift+is3);
 		
         ggid             = gid[n];         
-		gmx_mm_update_2pot_ps(vctot,vc+ggid,vgbtot,gpol+ggid);
+
+		gmx_mm_update_1pot_ps(vctot,vc+ggid);
+		gmx_mm_update_1pot_ps(vgbtot,gpol+ggid);
 		gmx_mm_update_1pot_ps(dvdasum,dvda+ii);
     }
 	

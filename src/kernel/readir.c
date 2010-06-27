@@ -438,6 +438,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
+    if (ir->coulombtype == eelPPPM)
+    {
+        warning_error(wi,"PPPM is not functional in the current version, we plan to implement PPPM through a small modification of the PME code");
+    }
+
   if (ir->coulombtype == eelSWITCH) {
     sprintf(warn_buf,"coulombtype = %s is only for testing purposes and can lead to serious artifacts, advice: use coulombtype = %s",
 	    eel_names[ir->coulombtype],
@@ -630,6 +635,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 		  sprintf(err_buf,"With GBSA, vdw-type must be equal to %s\n",evdw_names[evdwCUT]);
 		  CHECK(ir->vdwtype!=evdwCUT);
 	  }
+    
+    if(ir->nstgbradii<1)
+    {
+      sprintf(warn_buf,"Using GBSA with nstgbradii<1, setting nstgbradii=1");
+      warning_note(wi,warn_buf);
+      ir->nstgbradii=1;
+    }
   }
 }
 

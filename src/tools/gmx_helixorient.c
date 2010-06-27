@@ -64,10 +64,10 @@ int gmx_helixorient(int argc,char *argv[])
     "As input, you need to specify an index group with alpha carbon atoms",
     "corresponding to an alpha helix of continuous residues. Sidechain",
     "directions require a second index group of the same size, containing",
-    "the heavy atom in each residue that should represent the sidechain.[PAR]"
+    "the heavy atom in each residue that should represent the sidechain.[PAR]",
     "Note that this program does not do any fitting of structures.[PAR]",
     "We need four Calpha coordinates to define the local direction of the helix",
-    "axis.[PAR]"
+    "axis.[PAR]",
     "The tilt/rotation is calculated from Euler rotations, where we define",
     "the helix axis as the local X axis, the residues/CA-vector as Y, and the",
     "Z axis from their cross product. We use the Euler Y-Z-X rotation, meaning",
@@ -80,7 +80,7 @@ int gmx_helixorient(int argc,char *argv[])
     real t;
     rvec *x=NULL,dx;
     matrix box;
-    int status;
+    t_trxstatus *status;
     int natoms;
     real theta1,theta2,theta3;
 

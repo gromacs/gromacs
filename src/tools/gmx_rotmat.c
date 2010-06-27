@@ -64,7 +64,7 @@ static void get_refx(output_env_t oenv,const char *trxfn,int nfitdim,int skip,
                      bool bMW,t_topology *top,int ePBC,rvec *x_ref)
 {
     int    natoms,nfr_all,nfr,i,j,a,r,c,min_fr;
-    int    status;
+    t_trxstatus *status;
     real   *ti,min_t;
     double tot_mass,msd,*srmsd,min_srmsd,srmsd_tot;
     rvec   *x,**xi;
@@ -216,7 +216,7 @@ int gmx_rotmat(int argc,char *argv[])
           "Use mass weighted fitting" }
     };
     FILE       *out;
-    int        status;
+    t_trxstatus *status;
     t_topology top;
     int        ePBC;
     rvec       *x_ref,*x;

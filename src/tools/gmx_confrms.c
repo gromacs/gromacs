@@ -364,7 +364,7 @@ int gmx_confrms(int argc,char *argv[])
     "only the two index groups used for the fit need to be identical.",
     "With [TT]-name[tt] only matching atom names from the selected groups",
     "will be used for the fit and RMSD calculation. This can be useful ",
-    "when comparing mutants of a protein."
+    "when comparing mutants of a protein.",
     "[PAR]",
     "The superimposed structures are written to file. In a [TT].pdb[tt] file",
     "the two structures will be written as separate models",

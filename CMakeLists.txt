@@ -32,7 +32,7 @@ set(GMX_FFT_LIBRARY "fftw3"
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
 set(GMX_QMMM_PROGRAM "none" 
-    CACHE STRING "QM package choices: none,gaussian,mopac,gamess")
+    CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" OFF)
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
@@ -44,6 +44,10 @@ enable_language(C)
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 option(USE_VERSION_H "Generate development version string/information" ON)
+option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
+
+set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
+
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
@@ -62,7 +66,7 @@ if(GMX_OPENMM)
     if(GMX_SOFTWARE_INVSQRT)
         set(GMX_SOFTWARE_INVSQRT OFF)
     endif(GMX_SOFTWARE_INVSQRT)
-    if(NOT GMX_ACCELERATION MATCHES "none")    
+    if(NOT GMX_ACCELERATION MATCHES "none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
         message(WARNING "The OpenMM build does not support other acceleration modes!")
         set(GMX_ACCELERATION "none")
     endif()
@@ -152,6 +156,8 @@ check_function_exists(strcasecmp        HAVE_STRCASECMP)
 check_function_exists(strdup            HAVE_STRDUP)
 check_function_exists(vprintf           HAVE_VPRINTF)
 check_function_exists(memcmp            HAVE_MEMCMP)
+check_function_exists(posix_memalign    HAVE_POSIX_MEMALIGN)
+check_function_exists(memalign          HAVE_MEMALIGN)
 check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
 check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
@@ -291,6 +297,9 @@ endif (GMX_DLOPEN)
 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
+
+# check for buggy GCC 4.1.x 
+include(gmxCheckGCCVersion)
 
 include(gmxCFlags)
 gmx_c_flags()
@@ -443,10 +452,12 @@ elseif(${GMX_QMMM_PROGRAM} STREQUAL "MOPAC")
     set(GMX_QMMM_MOPAC 1)
 elseif(${GMX_QMMM_PROGRAM} STREQUAL "GAMESS")
     set(GMX_QMMM_GAMESS 1)
+elseif(${GMX_QMMM_PROGRAM} STREQUAL "ORCA")
+    set(GMX_QMMM_ORCA 1)
 elseif(${GMX_QMMM_PROGRAM} STREQUAL "NONE")
     # nothing to do
 else(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
-    MESSAGE(FATAL_ERROR "Invalid QM/MM program option: ${GMX_QMMM_PROGRAM}. Choose one of: Gaussian, Mopac, Gamess, None")
+    MESSAGE(FATAL_ERROR "Invalid QM/MM program option: ${GMX_QMMM_PROGRAM}. Choose one of: Gaussian, Mopac, Gamess, Orca, None")
 endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
 
 # Process FFT library settings - if not OpenMM build 
@@ -562,4 +573,11 @@ add_subdirectory(man)
 
 add_subdirectory(src)
 
+########################################################################
+# Tests                                                                #
+########################################################################
 
+enable_testing()
+add_test(TestBuildAll make)
+
+add_subdirectory(tests)

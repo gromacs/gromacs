@@ -678,11 +678,10 @@
    OW  OWT4    0.0     0
   HW1     H    0.52     0
   HW2     H    0.52     0
-  HW3    IW   -1.04     0
+   MW    IW   -1.04     0
  [ bonds ]
    OW   HW1
    OW   HW2
-   OW   HW3
 
 [ HYP ]
  [ atoms ]

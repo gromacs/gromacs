@@ -452,7 +452,8 @@ static int read_pdball(const char *inf, const char *outf,char *title,
   rename_pdbres(atoms,"SOL",watres,FALSE,symtab);
   rename_pdbres(atoms,"WAT",watres,FALSE,symtab);
 
-  rename_atoms("xlateat.dat",NULL,atoms,symtab,NULL,TRUE,aan,TRUE,bVerbose);
+  rename_atoms("xlateat.dat",NULL,FALSE,
+	       atoms,symtab,NULL,TRUE,aan,TRUE,bVerbose);
   
   if (natom == 0)
     return 0;
@@ -743,9 +744,13 @@ int main(int argc, char *argv[])
       
     "The corresponding data files can be found in the library directory",
     "in the subdirectory <forcefield>.ff.",
-    "Check chapter 5 of the manual for more",
-    "information about file formats. By default the forcefield selection",
-    "is interactive, but you can use the [TT]-ff[tt] option to specify",
+    "Note that pdb2gmx will also look for a [TT]forcefield.itp[tt] file",
+    "in such subdirectories in the current working directory.",
+    "After choosing a force field, all files will be read only from",
+    "the corresponding directory, unless the [TT]-cwd[tt] option is used.",
+    "Check chapter 5 of the manual for more information about file formats.",
+    "By default the forcefield selection is interactive,",
+    "but you can use the [TT]-ff[tt] option to specify",
     "one of the short names above on the command line instead. In that",
     "case pdb2gmx just looks for the corresponding file.[PAR]",
     
@@ -838,6 +843,7 @@ int main(int argc, char *argv[])
   char       molname[STRLEN],title[STRLEN],quote[STRLEN],generator[STRLEN];
   char       *c,forcefield[STRLEN],ffdir[STRLEN];
   char       ffname[STRLEN],suffix[STRLEN];
+  char       *watermodel;
   const char *watres;
   int        nrtpf;
   char       **rtpf;
@@ -871,7 +877,7 @@ int main(int argc, char *argv[])
  
 
   /* Command line arguments must be static */
-  static bool bNewRTP=FALSE,bAllowOverrideRTP=FALSE,bMerge=FALSE;
+  static bool bNewRTP=FALSE,bAddCWD=FALSE,bAllowOverrideRTP=FALSE,bMerge=FALSE;
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bGlnMan=FALSE, bArgMan=FALSE;
@@ -883,12 +889,14 @@ int main(int argc, char *argv[])
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static const char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
-  static const char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", "f3c", NULL };
+  static const char *watstr[] = { NULL, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
   static const char *ff = "select";
 
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
+    { "-cwd",    FALSE, etBOOL, {&bAddCWD},
+      "Also read force field files from the current working directory" },
     { "-rtpo",  FALSE, etBOOL,  {&bAllowOverrideRTP},
       "Allow an entry in a local rtp file to override a library rtp entry"},
     { "-lb",     FALSE, etREAL, {&long_bond_dist},
@@ -900,7 +908,7 @@ int main(int argc, char *argv[])
     { "-ff",     FALSE, etSTR,  {&ff},
       "Force field, interactive by default. Use -h for information." },
     { "-water",  FALSE, etENUM, {watstr},
-      "Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P" },
+      "Water model to use" },
     { "-inter",  FALSE, etBOOL, {&bInter},
       "Set the next 8 options to interactive"},
     { "-ss",     FALSE, etBOOL, {&bCysMan}, 
@@ -974,6 +982,8 @@ int main(int argc, char *argv[])
   printf("\nUsing the %s force field in directory %s\n\n",
 	 ffname,ffdir);
     
+  choose_watermodel(watstr[0],ffdir,&watermodel);
+
   if (bInter) {
     /* if anything changes here, also change description of -inter */
     bCysMan = TRUE;
@@ -1018,7 +1028,7 @@ int main(int argc, char *argv[])
   aan = get_aa_names();
   
   /* Read residue renaming database(s), if present */
-  nrrn = fflib_search_file_end(ffdir,".r2b",FALSE,&rrn);
+  nrrn = fflib_search_file_end(ffdir,bAddCWD,".r2b",FALSE,&rrn);
   nrtprename = 0;
   rtprename  = NULL;
   for(i=0; i<nrrn; i++) {
@@ -1029,21 +1039,16 @@ int main(int argc, char *argv[])
   }
   sfree(rrn);
 
-  /* Encad only works with the f3c water model */
-  if(strncmp(forcefield,"ffencad",7) == 0)
-  {
-      printf("Encad detected, switching to the F3C water model...\n");
-      watstr[0] = "f3c";
-      watres = "WAT";
-  }    
-
   clear_mat(box);
-  if (strcmp(watstr[0],"tip4p") == 0)
+  if (watermodel != NULL && (strstr(watermodel,"4p") ||
+			     strstr(watermodel,"4P"))) {
     watres = "HO4";
-  else if (strcmp(watstr[0],"tip5p") == 0)
+  } else if (watermodel != NULL && (strstr(watermodel,"5p") ||
+				    strstr(watermodel,"5P"))) {
     watres = "HO5";
-  else
+  } else {
     watres = "HOH";
+  }
     
   aps = gmx_atomprop_init();
   natom = read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
@@ -1206,11 +1211,11 @@ int main(int argc, char *argv[])
   check_occupancy(&pdba_all,opt2fn("-f",NFILE,fnm),bVerbose);
   
   /* Read atomtypes... */
-  atype = read_atype(ffdir,&symtab);
+  atype = read_atype(ffdir,bAddCWD,&symtab);
   
   /* read residue database */
   printf("Reading residue database... (%s)\n",forcefield);
-  nrtpf = fflib_search_file_end(ffdir,".rtp",TRUE,&rtpf);
+  nrtpf = fflib_search_file_end(ffdir,bAddCWD,".rtp",TRUE,&rtpf);
   nrtp  = 0;
   restp = NULL;
   for(i=0; i<nrtpf; i++) {
@@ -1226,11 +1231,11 @@ int main(int argc, char *argv[])
   }
     
   /* read hydrogen database */
-  nah = read_h_db(ffdir,&ah);
+  nah = read_h_db(ffdir,bAddCWD,&ah);
   
   /* Read Termini database... */
-  nNtdb=read_ter_db(ffdir,'n',&ntdb,atype);
-  nCtdb=read_ter_db(ffdir,'c',&ctdb,atype);
+  nNtdb=read_ter_db(ffdir,bAddCWD,'n',&ntdb,atype);
+  nCtdb=read_ter_db(ffdir,bAddCWD,'c',&ctdb,atype);
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=gmx_fio_fopen(top_fn,"w");
@@ -1351,7 +1356,8 @@ int main(int argc, char *argv[])
      requires some re-thinking of code in gen_vsite.c, which I won't 
      do now :( AF 26-7-99 */
 
-    rename_atoms(NULL,ffdir,pdba,&symtab,restp_chain,FALSE,aan,FALSE,bVerbose);
+    rename_atoms(NULL,ffdir,bAddCWD,
+		 pdba,&symtab,restp_chain,FALSE,aan,FALSE,bVerbose);
 
     match_atomnames_with_rtp(restp_chain,hb_chain,pdba,x,bVerbose);
 
@@ -1458,7 +1464,7 @@ int main(int argc, char *argv[])
 	    nrtp,restp,
 	    restp_chain,hb_chain,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bAllowMissing,
-	    bVsites,bVsiteAromatics,forcefield,ffdir,
+	    bVsites,bVsiteAromatics,forcefield,ffdir,bAddCWD,
 	    mHmult,nssbonds,ssbonds,
 	    long_bond_dist,short_bond_dist,bDeuterate,bChargeGroups,bCmap,
 	    bRenumRes,bRTPresname);
@@ -1482,20 +1488,22 @@ int main(int argc, char *argv[])
       write_sto_conf(fn,quote,pdba,x,NULL,ePBC,box);
     }
   }
-  
-  sprintf(buf_fn,"%s%c%s.itp",ffdir,DIR_SEPARATOR,watstr[0]);
-  if (!fflib_fexist(buf_fn)) {
+
+  if (watermodel == NULL) {
     for(chain=0; chain<nch; chain++) {
       if (chains[chain].bAllWat) {
-	gmx_fatal(FARGS,"The topology file '%s' for the selected water model '%s' can not be found in the force field directory. Select a different water model or remove the water from your input file.",
-		  buf_fn,watstr[0]);
+	gmx_fatal(FARGS,"You have chosen not to include a water model, but there is water in the input file. Select a water model or remove the water from your input file.");
       }
     }
-    /* Do not include the water topology file. */
-    watstr[0] = NULL;
+  } else {
+    sprintf(buf_fn,"%s%c%s.itp",ffdir,DIR_SEPARATOR,watermodel);
+    if (!fflib_fexist(buf_fn)) {
+      gmx_fatal(FARGS,"The topology file '%s' for the selected water model '%s' can not be found in the force field directory. Select a different water model.",
+		buf_fn,watermodel);
+    }
   }
 
-  print_top_mols(top_file,title,ffdir,watstr[0],nincl,incls,nmol,mols);
+  print_top_mols(top_file,title,ffdir,watermodel,nincl,incls,nmol,mols);
   gmx_fio_fclose(top_file);
 
   done_aa_names(&aan);

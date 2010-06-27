@@ -405,7 +405,9 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
                     const output_env_t oenv)
 {
   FILE    *xvgrout=NULL;
-  int     status,out=0,nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
+  int     nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
+  t_trxstatus *out=NULL;
+  t_trxstatus *status;
   int     noutvec_extr,*imin,*imax;
   atom_id *all_at;
   matrix  box;
@@ -486,7 +488,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
       }
       nfr++;
     } while (read_next_x(oenv,status,&t,nat,xread,box));
-    close_trj(status);
+    close_trj(out);
      sfree(x);
      if (filterfile)
        close_trx(out);

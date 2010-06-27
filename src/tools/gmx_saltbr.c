@@ -121,7 +121,7 @@ int gmx_saltbr(int argc,char *argv[])
 {
   const char *desc[] = {
     "g_saltbr plots the distance between all combination of charged groups",
-    "as a function of time. The groups are combined in different ways."
+    "as a function of time. The groups are combined in different ways.",
     "A minimum distance can be given, (eg. the cut-off), then groups",
     "that are never closer than that distance will not be plotted.[BR]",
     "Output will be in a number of fixed filenames, min-min.xvg, plus-min.xvg",
@@ -159,7 +159,8 @@ int gmx_saltbr(int argc,char *argv[])
   t_topology *top;
   int        ePBC;
   char       *buf;
-  int        status,i,j,k,m,nnn,teller,ncg,n1,n2,n3,natoms;
+  t_trxstatus *status;
+  int        i,j,k,m,nnn,teller,ncg,n1,n2,n3,natoms;
   real       t,*time,qi,qj;
   t_charge   *cg;
   real       ***cgdist;

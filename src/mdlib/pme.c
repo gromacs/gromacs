@@ -532,8 +532,8 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
     }
     if (bX) {
         if (atc->count[atc->nodeid] + nsend != n)
-            gmx_fatal(FARGS,"%d particles communicated to PME node %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c"
-                      "This usually means that your system is not well equilibrated",
+            gmx_fatal(FARGS,"%d particles communicated to PME node %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
+                      "This usually means that your system is not well equilibrated.",
                       n - (atc->count[atc->nodeid] + nsend),
                       pme->nodeid,'x'+atc->dimind);
         

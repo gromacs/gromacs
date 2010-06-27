@@ -53,7 +53,6 @@
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
-#include "fftgrid.h"
 #include "calcgrid.h"
 #include "nrnb.h"
 #include "coulomb.h"
@@ -165,7 +164,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
                    const output_env_t oenv)
 {
   FILE       *fp;
-  int        status;
+  t_trxstatus *status;
   char       outf1[STRLEN],outf2[STRLEN];
   char       title[STRLEN],gtitle[STRLEN],refgt[30];
   int        g,natoms,i,ii,j,k,nbin,j0,j1,n,nframes;
@@ -627,7 +626,7 @@ int gmx_rdf(int argc,char *argv[])
     "or to the closest particle in a set ([TT]-surf[tt]).",
     "With all methods rdf's can also be calculated around axes parallel",
     "to the z-axis with option [TT]-xy[tt].",
-    "With option [TT]-surf[tt] normalization can not be used.[PAR]"
+    "With option [TT]-surf[tt] normalization can not be used.[PAR]",
     "The option [TT]-rdf[tt] sets the type of rdf to be computed.",
     "Default is for atoms or particles, but one can also select center",
     "of mass or geometry of molecules or residues. In all cases only",
@@ -651,7 +650,7 @@ int gmx_rdf(int argc,char *argv[])
     "Option [TT]-cn[tt] produces the cumulative number rdf,",
     "i.e. the average number of particles within a distance r.[PAR]",
     "To bridge the gap between theory and experiment structure factors can",
-    "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid"
+    "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid",
     "spacing of which is determined by option [TT]-grid[tt]."
   };
   static bool bCM=FALSE,bXY=FALSE,bPBC=TRUE,bNormalize=TRUE;

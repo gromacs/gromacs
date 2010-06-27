@@ -313,8 +313,10 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
-    bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir) && bPres) || bReadEkin);
-
+    /*bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir) && bPres) || bReadEkin);*/
+    
+    bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && bPres) || bReadEkin);
+    
     /* in initalization, it sums the shake virial in vv, and to 
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
 
@@ -441,7 +443,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         /* Sum the kinetic energies of the groups & calc temp */
         /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with IR_NPT_TROTTER */
         /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).  
-           Leap with AveVel is also an option for the future but not supported now.  
+           Leap with AveVel is not supported; it's not clear that it will actually work.  
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy. 
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
            bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.  
@@ -951,6 +953,47 @@ static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t st
     }
 }
 
+static void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
+                                bool *bNotLastFrame)
+{
+    bool bAlloc;
+    rvec *xp,*vp;
+
+    bAlloc = (fr->natoms == 0);
+
+    if (MASTER(cr) && !*bNotLastFrame)
+    {
+        fr->natoms = -1;
+    }
+    xp = fr->x;
+    vp = fr->v;
+    gmx_bcast(sizeof(*fr),fr,cr);
+    fr->x = xp;
+    fr->v = vp;
+
+    *bNotLastFrame = (fr->natoms >= 0);
+
+    if (*bNotLastFrame && PARTDECOMP(cr))
+    {
+        /* x and v are the only variable size quantities stored in trr
+         * that are required for rerun (f is not needed).
+         */
+        if (bAlloc)
+        {
+            snew(fr->x,fr->natoms);
+            snew(fr->v,fr->natoms);
+        }
+        if (fr->bX)
+        {
+            gmx_bcast(fr->natoms*sizeof(fr->x[0]),fr->x[0],cr);
+        }
+        if (fr->bV)
+        {
+            gmx_bcast(fr->natoms*sizeof(fr->v[0]),fr->v[0],cr);
+        }
+    }
+}
+
 double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,
              int nstglobalcomm,
@@ -983,7 +1026,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
-    int        i,m,status;
+    int        i,m;
+    t_trxstatus *status;
     rvec       mu_tot;
     t_vcm      *vcm;
     t_state    *bufstate=NULL;   
@@ -1308,9 +1352,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */ 
-        /* we do the same call as above, but turn the pressure off -- internally, this 
-           is recognized as a velocity verlet half-step kinetic energy calculation.
-           This minimized excess variables, but perhaps loses some logic?*/
+        /* we do the same call as above, but turn the pressure off -- internally to 
+           compute_globals, this is recognized as a velocity verlet half-step 
+           kinetic energy calculation.  This minimized excess variables, but 
+           perhaps loses some logic?*/
         
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                         wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
@@ -1432,27 +1477,39 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bForceUpdate = TRUE;
         }
 
-        bNotLastFrame = read_first_frame(oenv,&status,
-                                         opt2fn("-rerun",nfile,fnm),
-                                         &rerun_fr,TRX_NEED_X | TRX_READ_V);
-        if (rerun_fr.natoms != top_global->natoms)
+        rerun_fr.natoms = 0;
+        if (MASTER(cr))
         {
-            gmx_fatal(FARGS,
-                      "Number of atoms in trajectory (%d) does not match the "
-                      "run input file (%d)\n",
-                      rerun_fr.natoms,top_global->natoms);
+            bNotLastFrame = read_first_frame(oenv,&status,
+                                             opt2fn("-rerun",nfile,fnm),
+                                             &rerun_fr,TRX_NEED_X | TRX_READ_V);
+            if (rerun_fr.natoms != top_global->natoms)
+            {
+                gmx_fatal(FARGS,
+                          "Number of atoms in trajectory (%d) does not match the "
+                          "run input file (%d)\n",
+                          rerun_fr.natoms,top_global->natoms);
+            }
+            if (ir->ePBC != epbcNONE)
+            {
+                if (!rerun_fr.bBox)
+                {
+                    gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
+                }
+                if (max_cutoff2(ir->ePBC,rerun_fr.box) < sqr(fr->rlistlong))
+                {
+                    gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f has too small box dimensions",rerun_fr.step,rerun_fr.time);
+                }
+            }
         }
+
+        if (PAR(cr))
+        {
+            rerun_parallel_comm(cr,&rerun_fr,&bNotLastFrame);
+        }
+
         if (ir->ePBC != epbcNONE)
         {
-            if (!rerun_fr.bBox)
-            {
-                gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
-            }
-            if (max_cutoff2(ir->ePBC,rerun_fr.box) < sqr(fr->rlistlong))
-            {
-                gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f has too small box dimensions",rerun_fr.step,rerun_fr.time);
-            }
-
             /* Set the shift vectors.
              * Necessary here when have a static box different from the tpr box.
              */
@@ -1832,7 +1889,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
             } else {
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
-                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
+                trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
             }
             
             update_coords(fplog,step,ir,mdatoms,state,
@@ -1870,7 +1927,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                            of veta.  */
                         
                         veta_save = state->veta;
-                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
                         vetanew = state->veta;
                         state->veta = veta_save;
                     } 
@@ -1900,9 +1957,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 
                 if (bVV) {
                     /* if VV, compute the pressure and constraints */
-                    /* if VV2, the pressure and constraints only if using pressure control.*/
-                    bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); 
-                    bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));
+                    /* For VV2, we strictly only need this if using pressure control, but we really would 
+                       like to have accurate pressures printed out.  Think about ways around this in the future?
+                       For now, keep this choice in comments  */
+                    /*bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); */
+                    /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
+                    bPres = TRUE;
+                    bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK));
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                     constr,NULL,FALSE,state->box,
@@ -1921,14 +1982,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                    a) We compute Ekin at the full time step
                    if 1) we are using the AveVel Ekin, and it's not the
                    initial step, or 2) if we are using AveEkin, but need the full
-                   time step kinetic energy for the pressure.
+                   time step kinetic energy for the pressure (always true now, since we want accurate statistics).
                    b) If we are using EkinAveEkin for the kinetic energy for the temperture control, we still feed in 
                    EkinAveVel because it's needed for the pressure */
                 
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (bVV && !bInitStep) 
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
                 
                 if (bIterations &&
@@ -2218,17 +2279,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             /* #########   START SECOND UPDATE STEP ################# */
             GMX_MPE_LOG(ev_update_start);
+            /* Box is changed in update() when we do pressure coupling,
+             * but we should still use the old box for energy corrections and when
+             * writing it to the energy file, so it matches the trajectory files for
+             * the same timestep above. Make a copy in a separate array.
+             */
+            copy_mat(state->box,lastbox);
+
             bOK = TRUE;
-            if (!bRerunMD || rerun_fr.bV || bForceUpdate) 
+            if (!(bRerunMD && !rerun_fr.bV && !bForceUpdate))
             {
                 wallcycle_start(wcycle,ewcUPDATE);
                 dvdl = 0;
-                /* Box is changed in update() when we do pressure coupling,
-                 * but we should still use the old box for energy corrections and when
-                 * writing it to the energy file, so it matches the trajectory files for
-                 * the same timestep above. Make a copy in a separate array.
-                 */
-                copy_mat(state->box,lastbox);
                 /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
                 if (bTrotter) 
                 {
@@ -2247,7 +2309,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         m_add(force_vir,shake_vir,total_vir);
                         clear_mat(shake_vir);
                     }
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
                 }
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
@@ -2292,7 +2354,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     cglo_flags | CGLO_TEMPERATURE    
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);            
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);            
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
@@ -2553,20 +2615,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bExchanged = replica_exchange(fplog,cr,repl_ex,
                                           state_global,enerd->term,
                                           state,step,t);
-        }
-        if (bExchanged && PAR(cr)) 
-        {
-            if (DOMAINDECOMP(cr)) 
+
+            if (bExchanged && DOMAINDECOMP(cr)) 
             {
                 dd_partition_system(fplog,step,cr,TRUE,1,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
                                     nrnb,wcycle,FALSE);
-            } 
-            else 
-            {
-                bcast_state(cr,state,FALSE);
             }
         }
         
@@ -2600,8 +2656,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         if (bRerunMD) 
         {
-            /* read next frame from input trajectory */
-            bNotLastFrame = read_next_frame(oenv,status,&rerun_fr);
+            if (MASTER(cr))
+            {
+                /* read next frame from input trajectory */
+                bNotLastFrame = read_next_frame(oenv,status,&rerun_fr);
+            }
+
+            if (PAR(cr))
+            {
+                rerun_parallel_comm(cr,&rerun_fr,&bNotLastFrame);
+            }
         }
         
         if (!bRerunMD || !rerun_fr.bStep)
@@ -2635,7 +2699,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Stop the time */
     runtime_end(runtime);
     
-    if (bRerunMD)
+    if (bRerunMD && MASTER(cr))
     {
         close_trj(status);
     }

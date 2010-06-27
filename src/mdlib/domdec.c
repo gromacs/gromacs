@@ -48,6 +48,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "gmx_ga2la.h"
+#include "gmx_sort.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -2917,7 +2918,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
         if (d < ddbox->npbcdim &&
             dd->nc[d] > 1 && npulse[d] >= dd->nc[d])
         {
-            gmx_fatal_collective(FARGS,DDMASTER(dd),
+            gmx_fatal_collective(FARGS,NULL,dd,
                                  "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
                                  dim2char(d),ddbox->box_size[d],ddbox->skew_fac[d],
                                  comm->cutoff,
@@ -6160,6 +6161,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     }
     
     snew(dd,1);
+
     dd->comm = init_dd_comm();
     comm = dd->comm;
     snew(comm->cggl_flag,DIM*2);
@@ -6378,7 +6380,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             {
                 fprintf(fplog,"ERROR: The initial cell size (%f) is smaller than the cell size limit (%f)\n",acs,comm->cellsize_limit);
             }
-            gmx_fatal_collective(FARGS,MASTER(cr),
+            gmx_fatal_collective(FARGS,cr,NULL,
                                  "The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",
                                  acs,comm->cellsize_limit);
         }
@@ -6401,7 +6403,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                     comm->eDLB!=edlbNO ? " or -dds" : "",
                     bC ? " or your LINCS settings" : "");
 
-            gmx_fatal_collective(FARGS,MASTER(cr),
+            gmx_fatal_collective(FARGS,cr,NULL,
                                  "There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
                                  "%s\n"
                                  "Look in the log file for details on the domain decomposition",
@@ -6420,12 +6422,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
     if (cr->nnodes - dd->nnodes != cr->npmenodes)
     {
-        gmx_fatal(FARGS,"The size of the domain decomposition grid (%d) does not match the number of nodes (%d). The total number of nodes is %d",
-                  dd->nnodes,cr->nnodes - cr->npmenodes,cr->nnodes);
+        gmx_fatal_collective(FARGS,cr,NULL,
+                             "The size of the domain decomposition grid (%d) does not match the number of nodes (%d). The total number of nodes is %d",
+                             dd->nnodes,cr->nnodes - cr->npmenodes,cr->nnodes);
     }
     if (cr->npmenodes > dd->nnodes)
     {
-        gmx_fatal(FARGS,"The number of separate PME node (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
+        gmx_fatal_collective(FARGS,cr,NULL,
+                             "The number of separate PME node (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
     }
     if (cr->npmenodes > 0)
     {
@@ -6804,7 +6808,8 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         comm->npmenodes = 0;
         if (dd->pme_nodeid >= 0)
         {
-            gmx_fatal(FARGS,"Can not have separate PME nodes without PME electrostatics");
+            gmx_fatal_collective(FARGS,NULL,dd,
+                                 "Can not have separate PME nodes without PME electrostatics");
         }
     }
     
@@ -7805,7 +7810,7 @@ static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
     int i1,i2,i_new;
     
     /* The new indices are not very ordered, so we qsort them */
-    qsort(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
+    qsort_threadsafe(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
     
     /* sort2 is already ordered, so now we can merge the two arrays */
     i1 = 0;
@@ -7921,7 +7926,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
             fprintf(debug,"qsort cgs: %d new home %d\n",dd->ncg_home,ncg_new);
         }
         /* Determine the order of the charge groups using qsort */
-        qsort(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
+        qsort_threadsafe(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
     }
     cgsort = sort->sort1;
     

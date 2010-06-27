@@ -126,7 +126,7 @@ int gmx_spol(int argc,char *argv[])
   t_inputrec *ir;
   t_atom     *atom;
   char     title[STRLEN];
-  int      status;
+  t_trxstatus *status;
   int      nrefat,natoms,nf,ntot;
   real     t;
   rvec     *xtop,*x,xref,trial,dx={0},dip,dir;

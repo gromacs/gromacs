@@ -24,6 +24,7 @@
 /* get gmx_gbdata_t */
 #include "../nb_kerneltype.h"
 
+#include "nb_kernel410_x86_64_sse2.h"
 
 static inline __m128d
 my_invrsq_pd(__m128d x)
@@ -108,8 +109,7 @@ void nb_kernel410_x86_64_sse2(int *           p_nri,
 	nri        = *p_nri;
 	ntype      = *p_ntype;
 	nthreads   = *p_nthreads; 
-    //facel      = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));      
-	facel      = *p_facel;
+ 	facel      = *p_facel;
 	krf        = *p_krf;
 	crf        = *p_crf;
 	tabscl     = *p_tabscale;

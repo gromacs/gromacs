@@ -252,3 +252,120 @@ size_t memavail(void)
   }
   return size;
 }
+
+/* If we don't have useful routines for allocating aligned memory,
+ * then we have to use the old-style GROMACS approach bitwise-ANDing
+ * pointers to ensure alignment. Freeing such a pointer requires
+ * keeping track of the original pointer, so we set up an array
+ * to store the original and aligned pointers. */
+
+#if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN)
+
+#define SAVED_POINTERS_REALLOC 32
+
+typedef struct
+{
+    void *freeable_ptr;
+    void *aligned_ptr;
+} saved_ptr_t;
+
+static saved_ptr_t *saved_ptrs = NULL;
+static int num_saved_ptrs = 0;
+
+#endif
+
+/* Pointers allocated with this routine should only be freed
+ * with save_free_aligned, however this will only matter
+ * on systems that lack posix_memalign() and memalign() when 
+ * freeing memory that needed to be adjusted to achieve
+ * the necessary alignment. */
+void *save_calloc_aligned(char *name,char *file,int line,unsigned nelem,
+                          size_t elsize,size_t alignment)
+{
+    void *p0,*p;
+    bool allocate_fail;
+
+    if (alignment == 0)
+    {
+        gmx_fatal(errno,__FILE__,__LINE__,
+                  "Cannot allocate aligned memory with alignment of zero!\n(called from file %s, line %d)",file,line);
+    }
+
+#if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN)
+    if (0 == num_saved_ptrs % SAVED_POINTERS_REALLOC) {
+#ifdef DEBUG
+        log_action(0,name,file,line,0,0,ptr);
+#endif
+        srealloc(saved_ptrs, num_saved_ptrs + SAVED_POINTERS_REALLOC);
+    }
+#endif
+    
+    p0 = NULL;
+    if (nelem ==0 || elsize == 0)
+    {
+        p  = NULL;
+    }
+    else
+    {
+#ifdef PRINT_ALLOC_KB
+        if (nelem*elsize >= PRINT_ALLOC_KB*1024)
+        {
+            printf("Allocating %.1f MB for %s\n",
+                   nelem*elsize/(PRINT_ALLOC_KB*1024.0),name);
+        }
+#endif
+
+        allocate_fail = FALSE; /* stop compiler warnings */
+#ifdef HAVE_POSIX_MEMALIGN
+        allocate_fail = (0 != posix_memalign(&p, alignment, nelem*elsize));
+#elif HAVE_MEMALIGN
+        allocate_fail = ((p = memalign(alignment, nelem*elsize)) == NULL);
+#else
+        allocate_fail = ((p0 = malloc(nelem*elsize+alignment))==NULL);
+#endif
+        if (allocate_fail)
+        {
+            gmx_fatal(errno,__FILE__,__LINE__,
+                      "Not enough memory. Failed to allocate %u aligned elements of size %u for %s\n(called from file %s, line %d)",nelem,elsize,name,file,line);
+        }
+  
+#if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN)
+	/* Make the aligned pointer p, and save the underlying pointer that
+	 * we're allowed to free(). */
+	p = (void *) (((size_t) p0 + alignment - 1) & (~((size_t) (alignment-1))));
+	saved_ptrs[num_saved_ptrs].freeable_ptr = p0;
+	saved_ptrs[num_saved_ptrs].aligned_ptr = p;
+	num_saved_ptrs++;
+#endif
+
+	memset(p, 0,(size_t) (nelem * elsize));
+    }
+    return p;
+}
+
+/* This routine can be called with any pointer */
+void save_free_aligned(char *name,char *file,int line,void *ptr)
+{
+    int i, j;
+    if (NULL != ptr)
+    {
+#if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN)
+        /* Manage the saved-pointers data structure. */
+        for (i = num_saved_ptrs-1; i >= 0; i--)
+        {
+            if ((size_t) ptr == (size_t) saved_ptrs[i].aligned_ptr)
+            {
+	        ptr = saved_ptrs[i].freeable_ptr;
+                /* Now remove the record of this saved pointer, replacing
+                 * it with the one at the end of the array. */
+		saved_ptrs[i] = saved_ptrs[num_saved_ptrs-1];
+                num_saved_ptrs--;
+                break;
+            }
+        }
+#endif
+        /* (Now) we're allowed to use a normal free() on this pointer. */
+        save_free(name,file,line,ptr);
+    }
+}
+

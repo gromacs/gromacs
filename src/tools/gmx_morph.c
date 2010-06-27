@@ -106,7 +106,8 @@ int gmx_morph(int argc,char *argv[])
   };
   char *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
   FILE     *fp=NULL;
-  int      i,isize,is_lsq,status,nat1,nat2;
+  int      i,isize,is_lsq,nat1,nat2;
+  t_trxstatus *status;
   atom_id  *index,*index_lsq,*index_all,*dummy;
   t_atoms  atoms;
   rvec     *x1,*x2,*xx,*v;

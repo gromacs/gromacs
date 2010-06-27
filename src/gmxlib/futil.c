@@ -276,7 +276,7 @@ bool gmx_fexist(const char *fname)
     if (test == NULL) 
         return FALSE;
     else {
-        ffclose(test);
+        fclose(test);
         return TRUE;
     }
 }
@@ -311,7 +311,7 @@ bool gmx_eof(FILE *fp)
     }
 }
 
-char *backup_fn(const char *file)
+static char *backup_fn(const char *file,int count_max)
 {
     /* Use a reasonably low value for countmax; we might
      * generate 4-5 files in each round, and we dont
@@ -321,6 +321,11 @@ char *backup_fn(const char *file)
     int         i,count=1;
     char        *directory,*fn;
     char        *buf;
+
+    if (count_max == -1)
+    {
+        count_max = COUNTMAX;
+    }
 
     smalloc(buf, GMX_PATH_MAX);
 
@@ -342,12 +347,13 @@ char *backup_fn(const char *file)
     do {
         sprintf(buf,"%s/#%s.%d#",directory,fn,count);
         count++;
-    } while ((count < COUNTMAX) && gmx_fexist(buf));
+    } while ((count <= count_max) && gmx_fexist(buf));
 
     /* Arbitrarily bail out */
-    if (count == COUNTMAX) 
-        gmx_fatal(FARGS,"Won't make more than %d backups of %s for you",
-                COUNTMAX,fn);
+    if (count > count_max) 
+        gmx_fatal(FARGS,"Won't make more than %d backups of %s for you.\n"
+                  "The env.var. GMX_MAXBACKUP controls this maximum, -1 disables backups.",
+                  count_max,fn);
 
     sfree(directory);
     sfree(fn);
@@ -357,14 +363,33 @@ char *backup_fn(const char *file)
 
 bool make_backup(const char * name)
 {
+    char * env;
+    int  count_max;
     char * backup;
 
 #ifdef GMX_FAHCORE
     return FALSE; /* skip making backups */
 #else
 
-    if(gmx_fexist(name)) {
-        backup = backup_fn(name);
+    if (gmx_fexist(name))
+    {
+        env = getenv("GMX_MAXBACKUP");
+        if (env != NULL)
+        {
+            count_max = 0;
+            sscanf(env,"%d",&count_max);
+            if (count_max == -1)
+            {
+                /* Do not make backups and possibly overwrite old files */
+                return TRUE;
+            }
+        }
+        else
+        {
+            /* Use the default maximum */
+            count_max = -1;
+        }
+        backup = backup_fn(name,count_max);
         if(rename(name, backup) == 0) {
             fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
                     name, backup);
@@ -758,7 +783,7 @@ int gmx_file_rename(const char *oldname, const char *newname)
 
 int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
 {
-#if defined(HAVE_COPYFILE) && !defined(GMX_FAHCORE)
+#if defined(HAVE_COPYFILE_H) && !defined(GMX_FAHCORE)
     /* this is BSD specific, but convenient */
     return copyfile(oldname, newname, NULL, COPYFILE_DATA);
 #elif defined(HAVE_WIN_COPYFILE) && !defined(GMX_FAHCORE)
