@@ -47,6 +47,7 @@
 #include "txtdump.h"
 #include "nrnb.h"
 #include "gmx_random.h"
+#include "update.h"
 #include "mdrun.h"
 
 #define NTROTTERCALLS 5
