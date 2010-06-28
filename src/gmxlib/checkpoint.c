@@ -1031,7 +1031,8 @@ static int do_cpt_files(XDR *xd, bool bRead,
 }
 
 
-void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
+void write_checkpoint(const char *fn,bool bNumberAndKeep,
+                      FILE *fplog,t_commrec *cr,
                       int eIntegrator,int simulation_part,
                       gmx_large_int_t step,double t,t_state *state)
 {
@@ -1046,7 +1047,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     char *fntemp; /* the temporary checkpoint file name */
     time_t now;
     int  nppnodes,npmenodes,flag_64bit;
-    char buf[1024];
+    char buf[1024],suffix[5+STEPSTRSIZE],sbuf[STEPSTRSIZE];
     gmx_file_position_t *outputfiles;
     int  noutputfiles;
     int  flags_eks,flags_enh,i;
@@ -1074,7 +1075,8 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     snew(fntemp, strlen(fn)+5);
     strcpy(fntemp,fn);
     fntemp[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-    strcat(fntemp,"_tmp");
+    sprintf(suffix,"_%s%s","step",gmx_step_str(step,sbuf));
+    strcat(fntemp,suffix);
     strcat(fntemp,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
    
     now = time(NULL);
@@ -1163,26 +1165,33 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
     }
 
-    if (gmx_fexist(fn))
+    if (!bNumberAndKeep)
     {
-        /* Rename the previous checkpoint file */
-        strcpy(buf,fn);
-        buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-        strcat(buf,"_prev");
-        strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+        if (gmx_fexist(fn))
+        {
+            /* Rename the previous checkpoint file */
+            strcpy(buf,fn);
+            buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+            strcat(buf,"_prev");
+            strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
 #ifndef GMX_FAHCORE
-        /* we copy here so that if something goes wrong between now and
-           the rename below, there's always a state.cpt. If renames are atomic
-           (such as in POSIX systems), this copying should be unneccesary. */
-        gmx_file_copy(fn, buf, FALSE); /* We don't really care if this fails: 
-                                          there's already a new checkpoint.  */
+            /* we copy here so that if something goes wrong between now and
+             * the rename below, there's always a state.cpt.
+             * If renames are atomic (such as in POSIX systems),
+             * this copying should be unneccesary.
+             */
+            gmx_file_copy(fn, buf, FALSE);
+            /* We don't really care if this fails: 
+             * there's already a new checkpoint.
+             */
 #else
-	gmx_file_rename(fn, buf);
+            gmx_file_rename(fn, buf);
 #endif
-    }
-    if (gmx_file_rename(fntemp, fn) != 0)
-    {
-        gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
+        }
+        if (gmx_file_rename(fntemp, fn) != 0)
+        {
+            gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
+        }
     }
 
     sfree(ftime);

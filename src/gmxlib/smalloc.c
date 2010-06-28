@@ -279,8 +279,8 @@ static int num_saved_ptrs = 0;
  * on systems that lack posix_memalign() and memalign() when 
  * freeing memory that needed to be adjusted to achieve
  * the necessary alignment. */
-void *save_calloc_aligned(char *name,char *file,int line,unsigned nelem,
-                          size_t elsize,size_t alignment)
+void *save_calloc_aligned(const char *name,const char *file,int line,
+                          unsigned nelem,size_t elsize,size_t alignment)
 {
     void *p0,*p;
     bool allocate_fail;
@@ -344,7 +344,7 @@ void *save_calloc_aligned(char *name,char *file,int line,unsigned nelem,
 }
 
 /* This routine can be called with any pointer */
-void save_free_aligned(char *name,char *file,int line,void *ptr)
+void save_free_aligned(const char *name,const char *file,int line,void *ptr)
 {
     int i, j;
     if (NULL != ptr)

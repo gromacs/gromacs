@@ -294,6 +294,8 @@ int main(int argc,char *argv[])
     "The previous checkpoint is backed up to [TT]state_prev.cpt[tt] to",
     "make sure that a recent state of the system is always available,",
     "even when the simulation is terminated while writing a checkpoint.",
+    "With [TT]-cpnum[tt] all checkpoint files are kept and appended",
+    "with the step number.",
     "A simulation can be continued by reading the full state from file",
     "with option [TT]-cpi[tt]. This option is intelligent in the way that",
     "if no checkpoint file is found, Gromacs just assumes a normal run and",
@@ -410,6 +412,7 @@ int main(int argc,char *argv[])
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
   bool bAppendFiles=TRUE;
+  bool bKeepAndNumCPT=FALSE;
   bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
@@ -460,6 +463,8 @@ int main(int argc,char *argv[])
       "Try to avoid optimizations that affect binary reproducibility" },
     { "-cpt",     FALSE, etREAL, {&cpt_period},
       "Checkpoint interval (minutes)" },
+    { "-cpnum",   FALSE, etBOOL, {&bKeepAndNumCPT},
+      "Keep and number checkpoint files" },
     { "-append",  FALSE, etBOOL, {&bAppendFiles},
       "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
@@ -599,6 +604,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
+  Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
   Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
 
