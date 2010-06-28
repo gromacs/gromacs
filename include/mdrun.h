@@ -59,21 +59,22 @@
 extern "C" {
 #endif
 
-#define MD_POLARISE     (1<<2)
-#define MD_IONIZE       (1<<3)
-#define MD_RERUN        (1<<4)
-#define MD_RERUN_VSITE  (1<<5)
-#define MD_FFSCAN       (1<<6)
-#define MD_SEPPOT       (1<<7)
-#define MD_PARTDEC      (1<<9)
-#define MD_DDBONDCHECK  (1<<10)
-#define MD_DDBONDCOMM   (1<<11)
-#define MD_CONFOUT      (1<<12)
-#define MD_REPRODUCIBLE (1<<14)
-#define MD_READ_RNG     (1<<15)
-#define MD_APPENDFILES  (1<<16)
-#define MD_READ_EKIN    (1<<17)
-#define MD_STARTFROMCPT (1<<18)
+#define MD_POLARISE       (1<<2)
+#define MD_IONIZE         (1<<3)
+#define MD_RERUN          (1<<4)
+#define MD_RERUN_VSITE    (1<<5)
+#define MD_FFSCAN         (1<<6)
+#define MD_SEPPOT         (1<<7)
+#define MD_PARTDEC        (1<<9)
+#define MD_DDBONDCHECK    (1<<10)
+#define MD_DDBONDCOMM     (1<<11)
+#define MD_CONFOUT        (1<<12)
+#define MD_REPRODUCIBLE   (1<<13)
+#define MD_READ_RNG       (1<<14)
+#define MD_APPENDFILES    (1<<15)
+#define MD_KEEPANDNUMCPT  (1<<16)
+#define MD_READ_EKIN      (1<<17)
+#define MD_STARTFROMCPT   (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
 
 /* Define a number of flags to better control the information
@@ -131,6 +132,7 @@ typedef struct {
   int  xtc_prec;
   ener_file_t fp_ene;
   const char *fn_cpt;
+  bool bKeepAndNumCPT;
   int  eIntegrator;
   int  simulation_part;
   FILE *fp_dhdl;
@@ -228,7 +230,7 @@ extern void global_stat(FILE *log,gmx_global_stat_t gs,
 /* Communicate statistics over cr->mpi_comm_mysim */
 
 extern gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],
-				 bool bAppendFiles,
+				 int mdrun_flags,
 				 const t_commrec *cr,const t_inputrec *ir,
 				 const output_env_t oenv);
 /* Returns a pointer to a data structure with all output file pointers
