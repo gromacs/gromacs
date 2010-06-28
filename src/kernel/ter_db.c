@@ -128,7 +128,7 @@ static void print_atom(FILE *out,t_atom *a,gpp_atomtype_t atype,char *newnm)
 	  get_atomtype_name(a->type,atype),a->m,a->q);
 }
 
-static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],
+static void print_ter_db(const char *ff,char C,int nb,t_hackblock tb[],
 			 gpp_atomtype_t atype) 
 {
   FILE *out;
