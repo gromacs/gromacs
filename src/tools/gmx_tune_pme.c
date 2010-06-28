@@ -194,29 +194,6 @@ static int parse_logfile(const char *logfile, const char *errfile,
     bool  bResetChecked  = FALSE;
 
 
-    /* Before we start parsing the logfile, check for fatal errors on stdout */
-    if (gmx_fexist(errfile))
-    {
-        fp = fopen(errfile, "r");
-        while (fgets(line, STRLEN, fp) != NULL)
-        {
-            if ( str_starts(line, "Fatal error:") )
-            {
-                if (fgets(line, STRLEN, fp) != NULL)
-                    fprintf(stderr, "\nWARNING: A fatal error has occured during this benchmark:\n"
-                                    "%s\n", line);
-                fclose(fp);
-                cleandata(perfdata, test_nr);
-                return eParselogFatal;
-            }
-        }
-        fclose(fp);
-    }
-    else
-    {
-        fprintf(stderr, "WARNING: Could not find stderr file %s.\n", errfile);
-    }
-
     if (!gmx_fexist(logfile))
     {
         fprintf(stderr, "WARNING: Could not find logfile %s.\n", logfile);
@@ -327,6 +304,33 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 break;
         }
     } /* while */
+    
+    /* Check why there is no performance data in the log file.
+     * Did a fatal errors occur? */
+    if (gmx_fexist(errfile))
+    {
+        fp = fopen(errfile, "r");
+        while (fgets(line, STRLEN, fp) != NULL)
+        {
+            if ( str_starts(line, "Fatal error:") )
+            {
+                if (fgets(line, STRLEN, fp) != NULL)
+                    fprintf(stderr, "\nWARNING: A fatal error has occured during this benchmark:\n"
+                                    "%s\n", line);
+                fclose(fp);
+                cleandata(perfdata, test_nr);
+                return eParselogFatal;
+            }
+        }
+        fclose(fp);
+    }
+    else
+    {
+        fprintf(stderr, "WARNING: Could not find stderr file %s.\n", errfile);
+    }
+
+    /* Giving up ... we could not find out why there is no performance data in
+     * the log file. */
     fprintf(stdout, "No performance data in log file.\n");
     fclose(fp);
     cleandata(perfdata, test_nr);
