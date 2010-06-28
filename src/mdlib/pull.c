@@ -59,6 +59,7 @@
 #include "mtop_util.h"
 #include "mdrun.h"
 #include "gmx_ga2la.h"
+#include "copyrite.h"
 
 static void pull_print_x_grp(FILE *out,bool bRef,ivec dim,t_pullgrp *pgrp) 
 {
@@ -1194,6 +1195,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     t_pull    *pull;
     t_pullgrp *pgrp;
     int       g,start=0,end=0,m;
+    bool      bCite;
     
     pull = ir->pull;
     
@@ -1218,6 +1220,21 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
         {
             fprintf(fplog,"with an absolute reference on %d group%s\n",
                     pull->ngrp,pull->ngrp==1 ? "" : "s");
+        }
+        bCite = FALSE;
+        for(g=0; g<pull->ngrp+1; g++)
+        {
+            if (pull->grp[g].nat > 0 &&
+                pull->grp[g].pbcatom < 0)
+            {
+                /* We are using cosine weighting */
+                fprintf(fplog,"Cosine weighting is used for groupd %d\n",g);
+                bCite = TRUE;
+            }
+        }
+        if (bCite)
+        {
+            please_cite(fplog,"Engin2010");
         }
     }
     
