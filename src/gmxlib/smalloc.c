@@ -272,6 +272,11 @@ typedef struct
 static saved_ptr_t *saved_ptrs = NULL;
 static int num_saved_ptrs = 0;
 
+#ifdef GMX_THREADS
+/* we need to serialize access to this structure */
+static tMPI_Thread_mutex_t saved_ptr_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
+
 #endif
 
 /* Pointers allocated with this routine should only be freed
@@ -292,6 +297,7 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
     }
 
 #if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN)
+    tMPI_Thread_mutex_lock(&saved_ptr_mutex);
     if (0 == num_saved_ptrs % SAVED_POINTERS_REALLOC) {
 #ifdef DEBUG
         log_action(0,name,file,line,0,0,ptr);
@@ -340,6 +346,9 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
 
 	memset(p, 0,(size_t) (nelem * elsize));
     }
+#if defined THREADS && (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN)
+    tMPI_Thread_mutex_unlock(&saved_ptr_mutex);
+#endif
     return p;
 }
 
@@ -351,6 +360,7 @@ void save_free_aligned(const char *name,const char *file,int line,void *ptr)
     {
 #if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN)
         /* Manage the saved-pointers data structure. */
+        tMPI_Thread_mutex_lock(&saved_ptr_mutex);
         for (i = num_saved_ptrs-1; i >= 0; i--)
         {
             if ((size_t) ptr == (size_t) saved_ptrs[i].aligned_ptr)
@@ -363,6 +373,7 @@ void save_free_aligned(const char *name,const char *file,int line,void *ptr)
                 break;
             }
         }
+        tMPI_Thread_mutex_unlock(&saved_ptr_mutex);
 #endif
         /* (Now) we're allowed to use a normal free() on this pointer. */
         save_free(name,file,line,ptr);
