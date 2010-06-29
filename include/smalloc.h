@@ -217,6 +217,9 @@ void _snew_aligned(const char *name, const char *file, int line,
 #endif
 
 #define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))
+
+/* call this ONLY with a pointer obtained through snew_aligned or 
+   smalloc_aligned: */
 #define sfree_aligned(ptr) save_free_aligned(#ptr,__FILE__,__LINE__,(ptr))
 
 #endif	/* _smalloc_h */
