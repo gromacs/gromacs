@@ -131,7 +131,7 @@ In this case there is no reference distance of pull rate.
 
 \subsubsection{Definition of the center of mass}
 
-In {\gromacs} there are two ways to define the center of mass of a group.
+In {\gromacs} there are three ways to define the center of mass of a group.
 The standard way is a ``plain'' center of mass, possibly with additional
 weighting factors. With periodic boundary conditions it is no longer
 possible to uniquely define the center of mass of a group of atoms.
@@ -160,15 +160,30 @@ cylinder (which causes jumps in the pull forces).
 
 \begin{figure}
 \centerline{\includegraphics[width=6cm]{plots/pullref}}
-\caption{Overview of the different reference group possibilities,
-applied to interface systems. C is the reference group. The circles
-represent the center of mass of two groups plus the reference group,
+\caption{Comparison of a plain center of mass reference group versus a cylinder
+reference group applied to interface systems. C is the reference group.
+The circles represent the center of mass of two groups plus the reference group,
 $d_c$ is the reference distance.}
 \label{fi:pullref} 
 \end{figure}   
 
+For a group of molecules in a periodic system a plain reference group
+might not be well defined. An example is a water slab which is connected
+periodically in $x$ and $y$, but has two liquid-vapor interfaces along $z$.
+In such a setup water molecules can evaporate from the liquid and they
+will move through the vapor through the periodic boundary to the other
+interface. Such a system is inherently periodic and there is no proper way
+of defining a ``plain'' center of mass along $z$. A proper solution is to using
+a cosine shaped weighting profile for all atoms in the reference group.
+The profile is a cosine with a single period in the unit cell. Its phase
+is optimized to give the maximum sum of weights, including mass weighting.
+This provides a unique and contiunuous reference position that is nearly
+identical to the plain center of mass position in case all atoms are all
+within a half of the unit-cell length. See ref \cite{Engin2010a} for details.
+
 When relative weights $w_i$ are used during the calculations, either
-by supplying weights in the input or due to cylinder geometry,
+by supplying weights in the input or due to cylinder geometry
+or due to cosine weighting,
 the weights need to be scaled to conserve momentum:
 \beq
 w'_i = w_i
