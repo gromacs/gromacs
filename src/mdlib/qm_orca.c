@@ -236,7 +236,7 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
          fgets(buf,300,xyz);
 #ifdef GMX_DOUBLE
          sscanf(buf,"%s%lf%lf%lf\n",
-                    &tmp,
+                    tmp,
                     &qm->xQM[i][XX],
                     &qm->xQM[i][YY],
                     &qm->xQM[i][ZZ]);

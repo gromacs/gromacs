@@ -1498,10 +1498,11 @@ static bool is_bench_option(char *opt, bool bSet)
      * This includes -cpi */
     if (bSet)
     {
-        if ( (0 == strcmp(opt, "-append" ))
-          || (0 == strcmp(opt, "-maxh"   ))
-          || (0 == strcmp(opt, "-deffnm" ))
-          || (0 == strcmp(opt, "-resethway")) )
+        if ( (0 == strcmp(opt, "-append"   ))
+          || (0 == strcmp(opt, "-maxh"     ))
+          || (0 == strcmp(opt, "-deffnm"   ))
+          || (0 == strcmp(opt, "-resethway"))
+          || (0 == strcmp(opt, "-cpnum"    )) )
             return FALSE;
         else
             return TRUE;
@@ -1902,6 +1903,7 @@ int gmx_tune_pme(int argc,char *argv[])
 #define STD_CPT_PERIOD (15.0)
     real cpt_period=STD_CPT_PERIOD,max_hours=-1;
     bool bAppendFiles=TRUE;
+    bool bKeepAndNumCPT=FALSE;
     bool bResetCountersHalfWay=FALSE;
     output_env_t oenv=NULL;
 
@@ -1980,6 +1982,8 @@ int gmx_tune_pme(int argc,char *argv[])
         "Try to avoid optimizations that affect binary reproducibility" },
       { "-cpt",       FALSE, etREAL, {&cpt_period},
         "Checkpoint interval (minutes)" },
+      { "-cpnum",   FALSE, etBOOL, {&bKeepAndNumCPT},
+        "Keep and number checkpoint files" },
       { "-append",    FALSE, etBOOL, {&bAppendFiles},
         "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names (for launch only)" },
       { "-maxh",      FALSE, etREAL, {&max_hours},
