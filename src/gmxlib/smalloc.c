@@ -298,7 +298,8 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
 #elif HAVE_MEMALIGN
         allocate_fail = ((malloced=memalign(alignment, nelem*elsize)) == NULL);
 #else
-        allocate_fail = ((malloced = malloc(nelem*elsize+alignment))==NULL);
+        allocate_fail = ((malloced = malloc(nelem*elsize+alignment+
+                                            sizeof(void*)))==NULL);
 #endif
         if (allocate_fail)
         {
