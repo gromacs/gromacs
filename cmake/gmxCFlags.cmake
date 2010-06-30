@@ -83,15 +83,15 @@ endif()
 if (NOT DEFINED GMXCFLAGS_SET)
     set(GMXCFLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" FORCE)
     # C
-    set(CMAKE_CFLAGS "${GMXC_CFLAGS} ${CMAKE_CFLAGS}" 
+    set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}" 
         CACHE STRING "Flags used by the compiler during all build types" FORCE)
-    set(CMAKE_CFLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_CFLAGS_RELEASE}" 
+    set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}" 
         CACHE STRING "Flags used by the compiler during release build" FORCE)
     # C++
-    set(CMAKE_CXXFLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXXFLAGS}" 
+    set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}" 
         CACHE STRING "Flags used by the compiler during all build types" FORCE)
-    set(CMAKE_CXXFLAGS_RELEASE 
-        "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXXFLAGS_RELEASE}" 
+    set(CMAKE_CXX_FLAGS_RELEASE 
+        "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}" 
         CACHE STRING "Flags used by the compiler during all release build" 
         FORCE)
 endif()
