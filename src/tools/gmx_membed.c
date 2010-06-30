@@ -800,6 +800,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	int i,j,m;
 	int type,natom,nmol,at,atom1=0,rm_at=0;
 	bool *bRM,bINS;
+	/*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
 
 
 	snew(bRM,mtop->nmoltype);
@@ -808,31 +809,33 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 		bRM[i]=TRUE;
 	}
 
-	for (i=0;i<mtop->nmolblock;i++)
+	for (i=0;i<mtop->nmolblock;i++) 
 	{
+	    /*loop over molecule blocks*/
 		type        =mtop->molblock[i].type;
 		natom	    =mtop->molblock[i].natoms_mol;
 		nmol		=mtop->molblock[i].nmol;
 
-		for(j=0;j<natom*nmol && bRM[type]==TRUE;j++)
+		for(j=0;j<natom*nmol && bRM[type]==TRUE;j++) 
 		{
-			at=j+atom1;
-			m=0;
+		    /*loop over atoms in the block*/
+			at=j+atom1; /*atom index = block index + offset*/
 			bINS=FALSE;
-			do
+
+			for (m=0;(m<ins_at->nr) && (bINS==FALSE);m++)
 			{
+			    /*loop over atoms in insertion index group to determine if we're inserting one*/
 				if(at==ins_at->index[m])
 				{
 					bINS=TRUE;
 				}
-				m++;
-			} while ( (m<ins_at->nr) && bINS==FALSE);
+			}
 			bRM[type]=bINS;
 		}
-		atom1+=natom*nmol;
+		atom1+=natom*nmol; /*update offset*/
 		if(bRM[type])
 		{
-			rm_at+=natom*nmol;
+			rm_at+=natom*nmol; /*increment bonded removal counter by # atoms in block*/
 		}
 	}
 

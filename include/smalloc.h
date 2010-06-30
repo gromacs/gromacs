@@ -145,9 +145,9 @@ size_t memavail(void);
 
 /* Aligned-memory counterparts */
 
-void *save_calloc_aligned(char *name,char *file,int line,
+void *save_calloc_aligned(const char *name,const char *file,int line,
 			  unsigned nelem,size_t elsize,size_t alignment); 
-void save_free_aligned(char *name,char *file,int line, void *ptr);
+void save_free_aligned(const char *name,const char *file,int line, void *ptr);
 
 #ifdef __cplusplus
 }
@@ -192,7 +192,7 @@ template <typename T>
 void _snew_aligned(const char *name, const char *file, int line,
 		   T *&ptr, size_t nelem, size_t elsize,size_t alignment)
 {
-  ptr = (T *)save_calloc_aligned((char *)name, (char *)file, line, nelem, elsize, alignment);
+  ptr = (T *)save_calloc_aligned(name, file, line, nelem, elsize, alignment);
 }
 
 #define snew(ptr,nelem) _snew(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)))
@@ -217,6 +217,9 @@ void _snew_aligned(const char *name, const char *file, int line,
 #endif
 
 #define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))
+
+/* call this ONLY with a pointer obtained through snew_aligned or 
+   smalloc_aligned: */
 #define sfree_aligned(ptr) save_free_aligned(#ptr,__FILE__,__LINE__,(ptr))
 
 #endif	/* _smalloc_h */

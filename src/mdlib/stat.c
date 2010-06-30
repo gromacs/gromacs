@@ -432,12 +432,13 @@ static void moveit(t_commrec *cr,
 	     xx,NULL,(cr->nnodes-cr->npmenodes)-1,NULL);
 }
 
-gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
+gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
                           const t_commrec *cr,const t_inputrec *ir,
                           const output_env_t oenv)
 {
     gmx_mdoutf_t *of;
     char filemode[3];
+    bool bAppendFiles;
 
     snew(of,1);
 
@@ -452,6 +453,10 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
 
     if (MASTER(cr))
     {
+        bAppendFiles = (mdrun_flags & MD_APPENDFILES);
+
+        of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
+
         sprintf(filemode, bAppendFiles ? "a+" : "w+");  
         
         if (ir->eI != eiNM 
@@ -640,7 +645,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
      {
          if (mdof_flags & MDOF_CPT)
          {
-             write_checkpoint(of->fn_cpt,fplog,cr,of->eIntegrator,
+             write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
+                              fplog,cr,of->eIntegrator,
                               of->simulation_part,step,t,state_global);
          }
 

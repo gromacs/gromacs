@@ -67,7 +67,7 @@ static void *
 qsort_med3(void *        a,
            void *        b, 
            void *        c, 
-           int          (*compar) (void *a,void *b))
+           int          (*compar) (const void *a, const void *b))
 {   
     if(compar(a,b) < 0)
     {
@@ -94,7 +94,7 @@ void
 gmx_qsort(void *           base,
           size_t           nmemb,
           size_t           size,
-          int            (*compar)(void *,void *))
+          int            (*compar)(const void *, const void *))
 {
 #define QSORT_EXCH(a, b, t) (t = a, a = b, b = t);
 #define QSORT_SWAP(a, b) swaptype != 0 ? qsort_swapfunc(a, b, size, swaptype) : \

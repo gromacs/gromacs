@@ -53,7 +53,7 @@ void
 gmx_qsort(void *           base, 
           size_t           nmemb, 
           size_t           size, 
-          int            (*compar)(void *, void *));
+          int            (*compar)(const void *, const void *));
 
 
 #ifdef GMX_THREADS
