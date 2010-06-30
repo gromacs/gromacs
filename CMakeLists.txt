@@ -121,6 +121,21 @@ if(GMX_MPI)
     set(GMX_LIB_MPI 1)
 endif(GMX_MPI)
 
+######################################################################
+# compiler tests
+#####################################################################
+
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+# check for buggy GCC 4.1.x 
+include(gmxCheckGCCVersion)
+
+include(gmxCFlags)
+gmx_c_flags()
+
+
+
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -295,15 +310,6 @@ endif (GMX_DLOPEN)
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
-
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-# check for buggy GCC 4.1.x 
-include(gmxCheckGCCVersion)
-
-include(gmxCFlags)
-gmx_c_flags()
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_BINARY_DIR}/src)
