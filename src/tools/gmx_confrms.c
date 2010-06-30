@@ -575,7 +575,7 @@ int gmx_confrms(int argc,char *argv[])
 	atoms1->pdbinfo[index1[i]].type = eptAtom;
 	atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE;
 	if (bBfac)
-	  atoms1->pdbinfo[index1[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+	  atoms1->pdbinfo[index1[i]].bfac = 800*M_PI*M_PI/3.0*msds[i];
 	if (bLabel)
 	  atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A';
       }
