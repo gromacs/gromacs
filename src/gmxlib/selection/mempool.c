@@ -166,7 +166,7 @@ _gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr)
     mp->currsize -= size;
     if (mp->buffer)
     {
-        mp->freeptr = ptr;
+        mp->freeptr = (char *)ptr;
         mp->freesize += size;
     }
     else

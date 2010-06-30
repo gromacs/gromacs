@@ -185,7 +185,8 @@ extern t_state *init_bufstate(const t_state *template_state);
 
 extern void destroy_bufstate(t_state *state);
 
-extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
+extern void trotter_update(t_inputrec *ir,gmx_large_int_t step,
+			   gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
 			   t_state *state, tensor vir, t_mdatoms *md, 
 			   t_extmass *MassQ, int *trotter_seq);
 

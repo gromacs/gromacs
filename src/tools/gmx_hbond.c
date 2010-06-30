@@ -3168,7 +3168,7 @@ int gmx_hbond(int argc,char *argv[])
 
     static bool bContact=FALSE, bBallistic=FALSE, bBallisticDt=FALSE, bGemFit=FALSE;
     static real logAfterTime = 10, gemBallistic = 0.2; /* ps */
-    static char *NNtype[] = {NULL, "none", "binary", "oneOverR3", "dipole", NULL};
+    static const char *NNtype[] = {NULL, "none", "binary", "oneOverR3", "dipole", NULL};
 
     /* options */
     t_pargs pa [] = {
@@ -3259,7 +3259,7 @@ int gmx_hbond(int argc,char *argv[])
 #define NFILE asize(fnm)
   
     char  hbmap [HB_NR]={ ' ',    'o',      '-',       '*' };
-    char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
+    const char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
     t_rgb hbrgb [HB_NR]={ {1,1,1},{1,0,0},   {0,0,1},    {1,0,1} };
 
     t_trxstatus *status;

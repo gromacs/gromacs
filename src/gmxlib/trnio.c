@@ -73,7 +73,6 @@ static int nFloatSize(t_trnheader *sh)
 static bool do_trnheader(t_fileio *fio,bool bRead,t_trnheader *sh, bool *bOK)
 {
   int magic=GROMACS_MAGIC;
-  char *version = "GMX_trn_file";
   static bool bFirst=TRUE;
   char buf[256];
   
@@ -89,8 +88,10 @@ static bool do_trnheader(t_fileio *fio,bool bRead,t_trnheader *sh, bool *bOK)
     if (bFirst)
       fprintf(stderr,"trn version: %s ",buf);
   }
-  else
-    *bOK = *bOK && gmx_fio_do_string(fio,version);
+  else {
+    sprintf(buf,"GMX_trn_file");
+    *bOK = *bOK && gmx_fio_do_string(fio,buf);
+  }
   *bOK = *bOK && gmx_fio_do_int(fio,sh->ir_size);
   *bOK = *bOK && gmx_fio_do_int(fio,sh->e_size);
   *bOK = *bOK && gmx_fio_do_int(fio,sh->box_size);

@@ -87,6 +87,7 @@
 #include "tpxio.h"
 #include "string2.h"
 #include "sighandler.h"
+#include "gmx_ana.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -799,6 +800,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	int i,j,m;
 	int type,natom,nmol,at,atom1=0,rm_at=0;
 	bool *bRM,bINS;
+	/*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
 
 
 	snew(bRM,mtop->nmoltype);
@@ -807,31 +809,33 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 		bRM[i]=TRUE;
 	}
 
-	for (i=0;i<mtop->nmolblock;i++)
+	for (i=0;i<mtop->nmolblock;i++) 
 	{
+	    /*loop over molecule blocks*/
 		type        =mtop->molblock[i].type;
 		natom	    =mtop->molblock[i].natoms_mol;
 		nmol		=mtop->molblock[i].nmol;
 
-		for(j=0;j<natom*nmol && bRM[type]==TRUE;j++)
+		for(j=0;j<natom*nmol && bRM[type]==TRUE;j++) 
 		{
-			at=j+atom1;
-			m=0;
+		    /*loop over atoms in the block*/
+			at=j+atom1; /*atom index = block index + offset*/
 			bINS=FALSE;
-			do
+
+			for (m=0;(m<ins_at->nr) && (bINS==FALSE);m++)
 			{
+			    /*loop over atoms in insertion index group to determine if we're inserting one*/
 				if(at==ins_at->index[m])
 				{
 					bINS=TRUE;
 				}
-				m++;
-			} while ( (m<ins_at->nr) && bINS==FALSE);
+			}
 			bRM[type]=bINS;
 		}
-		atom1+=natom*nmol;
+		atom1+=natom*nmol; /*update offset*/
 		if(bRM[type])
 		{
-			rm_at+=natom*nmol;
+			rm_at+=natom*nmol; /*increment bonded removal counter by # atoms in block*/
 		}
 	}
 
@@ -2670,7 +2674,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
                 if (!bInitStep)
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
                 }
 
                 update_coords(fplog,step,ir,mdatoms,state,
@@ -2709,7 +2713,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                            of veta.  */
 
                         veta_save = state->veta;
-                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
                         vetanew = state->veta;
                         state->veta = veta_save;
                     }
@@ -2767,7 +2771,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (bVV && !bInitStep)
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
 
                 if (bIterations &&
@@ -3086,7 +3090,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         m_add(force_vir,shake_vir,total_vir);
                         clear_mat(shake_vir);
                     }
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
                 }
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
@@ -3131,7 +3135,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 

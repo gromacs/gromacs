@@ -461,9 +461,9 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     else
       gmx_fio_do_real(fio,ir->epsilon_surface);
     
-    gmx_fio_do_int(fio,ir->bOptFFT);
+    gmx_fio_do_bool(fio,ir->bOptFFT);
 
-    gmx_fio_do_int(fio,ir->bContinuation); 
+    gmx_fio_do_bool(fio,ir->bContinuation); 
     gmx_fio_do_int(fio,ir->etc);
     /* before version 18, ir->etc was a bool (ir->btc),
      * but the values 0 and 1 still mean no and
@@ -528,7 +528,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       ir->andersen_seed=0;
     
     if(file_version < 26) {
-      gmx_fio_do_int(fio,bSimAnn); 
+      gmx_fio_do_bool(fio,bSimAnn); 
       gmx_fio_do_real(fio,zerotemptime);
     }
     
@@ -587,7 +587,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       else
 	ir->eDisreWeighting = edrwConservative;
     }
-    gmx_fio_do_int(fio,ir->bDisreMixed); 
+    gmx_fio_do_bool(fio,ir->bDisreMixed); 
     gmx_fio_do_real(fio,ir->dr_fc); 
     gmx_fio_do_real(fio,ir->dr_tau); 
     gmx_fio_do_int(fio,ir->nstdisreout);
@@ -613,7 +613,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     gmx_fio_do_real(fio,ir->em_stepsize); 
     gmx_fio_do_real(fio,ir->em_tol); 
     if (file_version >= 22) 
-      gmx_fio_do_int(fio,ir->bShakeSOR);
+      gmx_fio_do_bool(fio,ir->bShakeSOR);
     else if (bRead)
       ir->bShakeSOR = TRUE;
     if (file_version >= 11)
@@ -798,7 +798,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     
     /* QMMM stuff */
     if(file_version>=39){
-      gmx_fio_do_int(fio,ir->bQMMM);
+      gmx_fio_do_bool(fio,ir->bQMMM);
       gmx_fio_do_int(fio,ir->QMMMscheme);
       gmx_fio_do_real(fio,ir->scalefactor);
       gmx_fio_do_int(fio,ir->opts.ngQM);
@@ -821,14 +821,14 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
         bDum=gmx_fio_ndo_int(fio,ir->opts.QMbasis,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.QMcharge,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.QMmult,ir->opts.ngQM);
-        bDum=gmx_fio_ndo_int(fio,ir->opts.bSH,ir->opts.ngQM);
+        bDum=gmx_fio_ndo_bool(fio,ir->opts.bSH,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.CASorbitals,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.CASelectrons,ir->opts.ngQM);
         bDum=gmx_fio_ndo_real(fio,ir->opts.SAon,ir->opts.ngQM);
         bDum=gmx_fio_ndo_real(fio,ir->opts.SAoff,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.SAsteps,ir->opts.ngQM);
-        bDum=gmx_fio_ndo_int(fio,ir->opts.bOPT,ir->opts.ngQM);
-        bDum=gmx_fio_ndo_int(fio,ir->opts.bTS,ir->opts.ngQM);
+        bDum=gmx_fio_ndo_bool(fio,ir->opts.bOPT,ir->opts.ngQM);
+        bDum=gmx_fio_ndo_bool(fio,ir->opts.bTS,ir->opts.ngQM);
       }
       /* end of QMMM stuff */
     }    
@@ -2092,7 +2092,7 @@ static int do_tpx(t_fileio *fio, bool bRead,
 	  bPeriodicMols = ir->bPeriodicMols;
 	}
 	gmx_fio_do_int(fio,ePBC);
-	gmx_fio_do_int(fio,bPeriodicMols);
+	gmx_fio_do_bool(fio,bPeriodicMols);
       }
       if (file_generation <= tpx_generation && ir) {
 	do_inputrec(fio, ir,bRead,file_version,mtop ? &mtop->ffparams.fudgeQQ : NULL);

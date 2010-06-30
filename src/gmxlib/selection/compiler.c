@@ -2286,7 +2286,7 @@ init_root_item(t_selelem *root, gmx_ana_index_t *gall)
         /* Non-atom-valued non-group expressions don't care about the group, so
          * don't allocate any memory for it. */
         if ((expr->flags & SEL_VARNUMVAL)
-            || ((expr->flags & SEL_SINGLEVAL) && expr->type != GROUP_VALUE))
+            || ((expr->flags & SEL_SINGLEVAL) && expr->v.type != GROUP_VALUE))
         {
             gmx_ana_index_set(&root->u.cgrp, -1, NULL, NULL, 0);
         }

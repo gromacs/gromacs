@@ -121,6 +121,21 @@ if(GMX_MPI)
     set(GMX_LIB_MPI 1)
 endif(GMX_MPI)
 
+######################################################################
+# compiler tests
+#####################################################################
+
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+# check for buggy GCC 4.1.x 
+include(gmxCheckGCCVersion)
+
+include(gmxCFlags)
+gmx_c_flags()
+
+
+
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -158,6 +173,7 @@ check_function_exists(vprintf           HAVE_VPRINTF)
 check_function_exists(memcmp            HAVE_MEMCMP)
 check_function_exists(posix_memalign    HAVE_POSIX_MEMALIGN)
 check_function_exists(memalign          HAVE_MEMALIGN)
+check_function_exists(_aligned_malloc   HAVE__ALIGNED_MALLOC)
 check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
 check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
@@ -294,15 +310,6 @@ endif (GMX_DLOPEN)
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
-
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-# check for buggy GCC 4.1.x 
-include(gmxCheckGCCVersion)
-
-include(gmxCFlags)
-gmx_c_flags()
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_BINARY_DIR}/src)
