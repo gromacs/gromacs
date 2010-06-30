@@ -707,8 +707,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
-    if (EEL_PME(inputrec->coulombtype))
+    if (EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
     {
+        if (EVDW_PME(inputrec->vdwtype) && PAR(cr))
+        {
+            gmx_fatal(FARGS,"LJ-PME does not yet work in parallel");
+        }
         if (mdatoms)
         {
             nChargePerturbed = mdatoms->nChargePerturbed;
@@ -729,25 +733,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             }
         }
     }
-    if (EVDW_PME(inputrec->vdwtype))
-    {
-        if (PAR(cr))
-        {
-            gmx_fatal(FARGS,"LJ-PME does not yet work in parallel");
-        }
-
-        if (cr->duty & DUTY_PME)
-        {
-            status = gmx_pme_lj_init(&fr->pmeljdata,cr,npme_major,npme_minor,inputrec,
-                                     mtop ? mtop->natoms : 0,FALSE,
-                                     (Flags & MD_REPRODUCIBLE));
-            if (status != 0)
-            {
-                gmx_fatal(FARGS,"Error %d initializing LJ-PME",status);
-            }
-        }
-    }
-
 
     if (integrator[inputrec->eI].func == do_md
 #ifdef GMX_OPENMM

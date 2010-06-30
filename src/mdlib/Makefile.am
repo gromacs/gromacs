@@ -37,7 +37,6 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	gmx_qhop_xml.c	gmx_qhop_xml.h			\
 	groupcoord.c                                    \
 	pme.c		pme_pp.c	pppm.c		\
-	pme_lj.c					\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	shellfc.c	stat.c 		\

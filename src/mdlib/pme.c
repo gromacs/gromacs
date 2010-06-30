@@ -1419,6 +1419,277 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
     return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
 }
 
+static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex *grid,
+                            real ewaldcoeff, real vol,
+                            bool bEnerVir, real *mesh_energy, matrix vir)
+{
+    /* do recip sum over local cells in grid */
+    /* y major, z middle, x minor or continuous */
+    t_complex *p0;
+    int     kx,ky,kz,maxkx,maxky,maxkz;
+    int     nx,ny,nz,iy,iz,kxstart,kxend;
+    real    mx,my,mz;
+    real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
+    real    ets2,struct2,ets2vf;
+    real    eterm,vterm,d1,d2,energy=0;
+    real    by,bz;
+    real    virxx=0,virxy=0,virxz=0,viryy=0,viryz=0,virzz=0;
+    real    rxx,ryx,ryy,rzx,rzy,rzz;
+    real    *mhx,*mhy,*mhz,*m2,*denom,*tmp1,*tmp2;
+    real    mhxk,mhyk,mhzk,m2k;
+    real    mk;
+    real    corner_fac;
+    ivec    complex_order;
+    ivec    local_ndata,local_offset,local_size;
+
+    nx = pme->nkx;
+    ny = pme->nky;
+    nz = pme->nkz;
+
+    /* Dimensions should be identical for A/B grid, so we just use A here */
+    gmx_parallel_3dfft_complex_limits(pme->pfft_setupA,
+                                      complex_order,
+                                      local_ndata,
+                                      local_offset,
+                                      local_size);
+
+    rxx = pme->recipbox[XX][XX];
+    ryx = pme->recipbox[YY][XX];
+    ryy = pme->recipbox[YY][YY];
+    rzx = pme->recipbox[ZZ][XX];
+    rzy = pme->recipbox[ZZ][YY];
+    rzz = pme->recipbox[ZZ][ZZ];
+
+    maxkx = (nx+1)/2;
+    maxky = (ny+1)/2;
+    maxkz = nz/2+1;
+
+    mhx   = pme->work_mhx;
+    mhy   = pme->work_mhy;
+    mhz   = pme->work_mhz;
+    m2    = pme->work_m2;
+    denom = pme->work_denom;
+    tmp1  = pme->work_tmp1;
+    tmp2  = pme->work_m2inv;
+
+    for(iy=0;iy<local_ndata[YY];iy++)
+    {
+        ky = iy + local_offset[YY];
+
+        if (ky < maxky)
+        {
+            my = ky;
+        }
+        else
+        {
+            my = (ky - ny);
+        }
+
+        by = 3.0*vol*pme->bsp_mod[YY][ky]
+             / (M_PI*sqrt(M_PI)*ewaldcoeff*ewaldcoeff*ewaldcoeff);
+
+        for(iz=0;iz<local_ndata[ZZ];iz++)
+        {
+            kz = iz + local_offset[ZZ];
+
+            mz = kz;
+
+            bz = pme->bsp_mod[ZZ][kz];
+
+            /* 0.5 correction for corner points */
+            corner_fac = 1;
+            if (kz == 0)
+                corner_fac = 0.5;
+            if (kz == (nz+1)/2)
+                corner_fac = 0.5;
+
+            p0 = grid + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
+
+            kxstart = local_offset[XX];
+            kxend = local_offset[XX] + local_ndata[XX];
+
+            if (bEnerVir)
+            {
+                /* More expensive inner loop, especially because of the storage
+                 * of the mh elements in array's.
+                 * Because x is the minor grid index, all mh elements
+                 * depend on kx for triclinic unit cells.
+                 */
+
+                /* Two explicit loops to avoid a conditional inside the loop */
+                for(kx=kxstart; kx<maxkx; kx++)
+                {
+                    mx = kx;
+
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    mhx[kx]   = mhxk;
+                    mhy[kx]   = mhyk;
+                    mhz[kx]   = mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                    tmp2[kx]  = sqrt(factor*m2k);
+                }
+
+                for(kx=maxkx; kx<kxend; kx++)
+                {
+                    mx = (kx - nx);
+
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    mhx[kx]   = mhxk;
+                    mhy[kx]   = mhyk;
+                    mhz[kx]   = mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                    tmp2[kx]  = sqrt(factor*m2k);
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    denom[kx] = 1.0/denom[kx];
+                }
+
+                CALC_EXPONENTIALS(kxstart,kxend,tmp1);
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    mk = tmp2[kx];
+                    tmp2[kx] = sqrt(M_PI)*mk*gmx_erfc(mk);
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    m2k = factor*m2[kx];
+                    eterm = -((1.0 - 2.0*m2k)*tmp1[kx]
+                              + 2.0*m2k*tmp2[kx]);
+                    vterm = 3.0*(-tmp1[kx] + tmp2[kx]);
+                    tmp1[kx] = eterm;
+                    tmp2[kx] = vterm;
+                }
+
+                for(kx=kxstart; kx<kxend; kx++,p0++)
+                {
+                    d1      = p0->re;
+                    d2      = p0->im;
+
+                    eterm   = tmp1[kx]*denom[kx];
+                    vterm   = tmp2[kx]*denom[kx];
+
+                    p0->re  = d1*eterm;
+                    p0->im  = d2*eterm;
+
+                    struct2 = 2.0*(d1*d1+d2*d2);
+
+                    tmp1[kx] = eterm*struct2;
+                    tmp2[kx] = vterm*struct2;
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    ets2     = corner_fac*tmp1[kx];
+                    vterm    = 2.0*factor*tmp2[kx];
+                    energy  += ets2;
+
+                    ets2vf   = corner_fac*vterm;
+                    virxx   += ets2vf*mhx[kx]*mhx[kx] - ets2;
+                    virxy   += ets2vf*mhx[kx]*mhy[kx];
+                    virxz   += ets2vf*mhx[kx]*mhz[kx];
+                    viryy   += ets2vf*mhy[kx]*mhy[kx] - ets2;
+                    viryz   += ets2vf*mhy[kx]*mhz[kx];
+                    virzz   += ets2vf*mhz[kx]*mhz[kx] - ets2;
+                }
+            }
+            else
+            {
+                /* We don't need to calculate the energy and the virial.
+                 * In this case the triclinic overhead is small.
+                 */
+
+                /* Two explicit loops to avoid a conditional inside the loop */
+
+                for(kx=kxstart; kx<maxkx; kx++)
+                {
+                    mx = kx;
+
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                }
+
+                for(kx=maxkx; kx<kxend; kx++)
+                {
+                    mx = (kx - nx);
+
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    denom[kx] = 1.0/denom[kx];
+                }
+
+                CALC_EXPONENTIALS(kxstart,kxend,tmp1);
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    mk = sqrt(factor*m2[kx]);
+                    tmp1[kx] = -((1.0 - 2.0*factor*m2[kx])*tmp1[kx]
+                                 + 2.0*sqrt(M_PI)*mk*factor*m2[kx]*gmx_erfc(mk));
+                }
+
+                for(kx=kxstart; kx<kxend; kx++,p0++)
+                {
+                    d1      = p0->re;
+                    d2      = p0->im;
+
+                    eterm   = tmp1[kx]*denom[kx];
+
+                    p0->re  = d1*eterm;
+                    p0->im  = d2*eterm;
+                }
+            }
+        }
+    }
+
+    if (bEnerVir)
+    {
+        /* Update virial with local values.
+         * The virial is symmetric by definition.
+         * this virial seems ok for isotropic scaling, but I'm
+         * experiencing problems on semiisotropic membranes.
+         * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
+         */
+        vir[XX][XX] = 0.25*virxx;
+        vir[YY][YY] = 0.25*viryy;
+        vir[ZZ][ZZ] = 0.25*virzz;
+        vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
+        vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
+        vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
+
+        /* This energy should be corrected for a charged system */
+        *mesh_energy = 0.5*energy;
+    }
+
+    /* Return the loop count */
+    return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
+}
+
 
 #define DO_FSPLINE(order)                      \
 for(ithx=0; (ithx<order); ithx++)              \
@@ -2416,7 +2687,8 @@ int gmx_pmeonly(gmx_pme_t pme,
         gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
                    cr,maxshift0,maxshift1,nrnb,wcycle,vir,ewaldcoeff,
                    &energy,lambda,&dvdlambda,
-                   GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
+                   GMX_PME_DO_COULOMB | GMX_PME_DO_ALL_F
+                       | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
         
         cycles = wallcycle_stop(wcycle,ewcPMEMESH);
         
@@ -2554,7 +2826,7 @@ int gmx_pme_do(gmx_pme_t pme,
             fprintf(debug,"Node= %6d, pme local particles=%6d\n",
                     cr->nodeid,atc->n);
 
-        if (flags & GMX_PME_SPREAD_Q)
+        if (flags & GMX_PME_SPREAD)
         {
             wallcycle_start(wcycle,ewcPME_SPREADGATHER);
 
@@ -2605,10 +2877,20 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_solve_pme_start);
             wallcycle_start(wcycle,ewcPME_SOLVE);
-            loop_count =
-                solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,
-                              flags & GMX_PME_CALC_ENER_VIR,
-                              &energy_AB[q],vir_AB[q]);
+            if (flags & GMX_PME_DO_COULOMB)
+            {
+                loop_count =
+                    solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,
+                                  flags & GMX_PME_CALC_ENER_VIR,
+                                  &energy_AB[q],vir_AB[q]);
+            }
+            else if (flags & GMX_PME_DO_LJ)
+            {
+                loop_count =
+                    solve_pme_lj_yzx(pme,cfftgrid,ewaldcoeff,vol,
+                                     flags & GMX_PME_CALC_ENER_VIR,
+                                     &energy_AB[q],vir_AB[q]);
+            }
             wallcycle_stop(wcycle,ewcPME_SOLVE);
             where();
             GMX_MPE_LOG(ev_solve_pme_finish);

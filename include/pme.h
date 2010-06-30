@@ -57,22 +57,19 @@ extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 			int nnodes_major,int nnodes_minor,
 			t_inputrec *ir,int homenr,
 			bool bFreeEnergy, bool bReproducible);
-extern int gmx_pme_lj_init(gmx_pme_lj_t *pmedata,t_commrec *cr,
-                           int nnodes_major,int nnodes_minor,
-                           t_inputrec *ir,int homenr,
-                           bool bFreeEnergy, bool bReproducible);
 			
 extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
-extern int gmx_pme_lj_destroy(FILE *log,gmx_pme_lj_t *pmedata);
 /* Initialize and destroy the pme data structures resepectively.
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-#define GMX_PME_SPREAD_Q      (1<<0)
+#define GMX_PME_SPREAD        (1<<0)
 #define GMX_PME_SOLVE         (1<<1)
 #define GMX_PME_CALC_F        (1<<2)
 #define GMX_PME_CALC_ENER_VIR (1<<3)
-#define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
+#define GMX_PME_DO_COULOMB    (1<<4)
+#define GMX_PME_DO_LJ         (1<<5)
+#define GMX_PME_DO_ALL_F      (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 extern int gmx_pme_do(gmx_pme_t pme,
 		      int start,       int homenr,
@@ -84,16 +81,6 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      matrix lrvir,    real ewaldcoeff,
 		      real *energy,    real lambda,    
 		      real *dvdlambda, int flags);
-extern int gmx_pme_lj_do(gmx_pme_lj_t pme,
-                         int start,       int homenr,
-                         rvec x[],        rvec f[],
-                         real chargeA[],  real chargeB[],
-                         matrix box,      t_commrec *cr,
-                         int  maxshift0,  int maxshift1,
-                         t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-                         matrix lrvir,    real ewaldcoeff,
-                         real *energy,    real lambda,
-                         real *dvdlambda, int flags);
 /* Do a PME calculation for the long range electrostatics. 
  * flags, defined above, determine which parts of the calculation are performed.
  * Return value 0 indicates all well, non zero is an error code.

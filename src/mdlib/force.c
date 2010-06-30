@@ -448,7 +448,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             {
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
-                    pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                    pme_flags = GMX_PME_DO_COULOMB | GMX_PME_SPREAD | GMX_PME_SOLVE;
                     if (flags & GMX_FORCE_FORCES)
                     {
                         pme_flags |= GMX_PME_CALC_F;
@@ -584,7 +584,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         {
             if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
             {
-                pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                pme_flags = GMX_PME_DO_LJ | GMX_PME_SPREAD | GMX_PME_SOLVE;
                 if (flags & GMX_FORCE_FORCES)
                 {
                     pme_flags |= GMX_PME_CALC_F;
@@ -594,7 +594,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     pme_flags |= GMX_PME_CALC_ENER_VIR;
                 }
                 wallcycle_start(wcycle,ewcPMEMESH);
-                status = gmx_pme_lj_do(fr->pmeljdata,
+                status = gmx_pme_do(fr->pmedata,
                                     md->start,md->homenr - fr->n_tpi,
                                     x,fr->f_twin,
                                     md->c6A,md->c6B,
