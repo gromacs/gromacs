@@ -110,10 +110,10 @@ topology, this can be useful for normal mode analysis.</dd>
 equations of motion.</dd>
 <dt><b>md-vv</b></dt>
 <dd>A velocity Verlet algorithm for integrating Newton's equations of motion.
-For constant NVE simulations the results are analytically, but not binary,
-identical to the <b>md</b> leap-frog integrator, except for the kinetic
+For constant NVE simulations started from corresponding points in the same trajectory, the trajectories 
+are analytically, but not binary, identical to the <b>md</b> leap-frog integrator.  The the kinetic
 energy, which is determined from the whole step velocities and is therefore
-slightly too small. The advantage of this integrator is more accurate,
+slightly too high. The advantage of this integrator is more accurate,
 reversible Nose-Hoover and Parrinello-Rahman coupling integration
 based on Trotter expansion, as well as (slightly too small) full step velocity
 output. This all comes at the cost off extra computation, especially with
@@ -122,8 +122,8 @@ production simulations the <b>md</b> integrator is accurate enough.
 </dd>
 <dt><b>md-vv-avek</b></dt>
 <dd>A velocity Verlet algorithm identical to <b>md-vv</b>, except that
-the kinetic energy is determined more accurately as the average of
-the two half step kinetic energies as in the <b>md</b> integrator.
+the kinetic energy is determined as the average of
+the two half step kinetic energies as in the <b>md</b> integrator, and this thus more accurate.
 With Nose-Hoover and/or Parrinello-Rahman coupling this comes with
 a slight increase in computational cost.
 </dd>
@@ -515,7 +515,8 @@ The grid dimensions are controlled by <b>fourierspacing</b>.
 Reasonable grid spacing for PPPM is 0.05-0.1 nm.
 See <tt>Shift</tt> for the details of the particle-particle potential.
 <br>
-NOTE: the pressure in incorrect when using PPPM.</dd>
+NOTE: PPPM is not functional in the current version, we plan to implement
+PPPM through a small modification of the PME code.</dd>
 
 <dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
@@ -811,7 +812,7 @@ temperature <b>ref_t</b> [K], with time constant <b>tau_t</b> [ps].
 Several groups can be coupled separately, these are specified in the
 <b>tc_grps</b> field separated by spaces.</dd>
 <dt><b>nose-hoover</b></dt>
-<dd>Temperature coupling with a by using a Nose-Hoover extended
+<dd>Temperature coupling using a Nose-Hoover extended
 ensemble. The reference temperature and coupling groups are selected
 as above, but in this case <b>tau_t</b> [ps] controls the period
 of the temperature fluctuations at equilibrium, which is slightly
@@ -829,8 +830,8 @@ This thermostat works correctly even for <b>tau_t</b>=0.
 For NVT simulations the conserved energy quantity is written
 to the energy and log file.</dd>
 </dl>
-<dt><h4>nh-chain-length (5)</h4></dt>
-<dd>the number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog <b>md</b> integrator only supports 1</dd>
+<dt><h4>nh-chain-length (10)</h4></dt>
+<dd>the number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog <b>md</b> integrator only supports 1.  Data for the NH chain variables is not printed to the .edr, but can be using the GMX_NOSEHOOVER_CHAINS environment variable</dd>
 <dt><h4>tc_grps:</h4></dt>
 <dd>groups to couple separately to temperature bath</dd>
 <dt><h4>tau_t: [ps]</h4></dt>
@@ -856,14 +857,27 @@ argued that this does not yield a correct thermodynamic ensemble,
 but it is the most efficient way to scale a box at the beginning
 of a run.</dd>
 <dt><b>Parrinello-Rahman</b></dt>
-<dd>Extended-ensemble pressure coupling where the box vectors
-are subject to an equation of motion. The equation of motion for
-the atoms is coupled to this. No instantaneous scaling takes place.
+<dd>Extended-ensemble pressure coupling where the box vectors are
+subject to an equation of motion. The equation of motion for the atoms
+is coupled to this. No instantaneous scaling takes place.  As for
+Nose-Hoover temperature coupling the time constant <b>tau_p</b> [ps]
+is the period of pressure fluctuations at equilibrium. This is
+probably a better method when you want to apply pressure scaling
+during data collection, but beware that you can get very large
+oscillations if you are starting from a different pressure. For
+simulations where the exact fluctation of the NPT ensemble are
+important, or if the pressure coupling time is very short,it may not
+be appropriate, as the previous time step pressure is used in some
+steps of the gromacs implementation for the current time step pressure.</dd>
+</dl></dd>
+<dt><b>MTTK</b></dt>
+<dd>Martyna-Tuckerman-Tobias-Klein implementation, only useable with <b>md-vv</b>
+or <b>md-vv-avek</b>, very similar to Parinello-Raphman.  
 As for Nose-Hoover temperature coupling the time constant <b>tau_p</b>
 [ps] is the period of pressure fluctuations at equilibrium. This is
 probably a better method when you want to apply pressure scaling
 during data collection, but beware that you can get very large
-oscillations if you are starting from a different pressure.</dd>
+oscillations if you are starting from a different pressure. Currently only supports isotropic scaling.</dd>
 </dl></dd>
 </dl>
 
@@ -1240,7 +1254,10 @@ is larger than half the shortest box vector.
 For determining the COM, all atoms in the group are put at their periodic image
 which is closest to <b>pull_pbcatom1</b>.
 A value of 0 means that the middle atom (number wise) is used.
-This parameter is not used with geometry <b>cylinder</b>.</dd>
+This parameter is not used with geometry <b>cylinder</b>.
+A value of -1 turns on cosine weighting, which is useful for a group
+of molecules in a periodic system, e.g. a water slab (see Engin et al.
+J. Chem. Phys. B 2010).</dd>
 <dt><h4>pull_vec1: (0.0 0.0 0.0)</h4></dt>
 <dd>The pull direction. <tt>grompp</tt> normalizes the vector.</dd>
 <dt><h4>pull_init1: (0.0) / (0.0 0.0 0.0) [nm]</h4></dt>

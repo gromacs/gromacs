@@ -32,7 +32,7 @@ add_library(gmxana
             gmx_membed.c    )
 
 target_link_libraries(gmxana md ${GMX_EXTRA_LIBRARIES})
-
+set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_BINARY_SUFFIX}")
 
 # List of programs with single corresponding .c source file,
 # used to create build rules automatically.
@@ -58,6 +58,7 @@ set(GMX_TOOLS_PROGRAMS
 foreach(TOOL ${GMX_TOOLS_PROGRAMS})
     add_executable(${TOOL} ${TOOL}.c)
     target_link_libraries(${TOOL} gmxana)
+    set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")
 endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 
 
 

@@ -87,6 +87,7 @@ struct t_fileio
          bReadWrite; /* the file is open for reading and writing */
     char *fn; /* the file name */
     XDR *xdr; /* the xdr data pointer */
+    enum xdr_op xdrmode; /* the xdr mode */
     int iFTP; /* the file type identifier */
 
     const char *comment; /* a comment string for debugging */
@@ -94,7 +95,10 @@ struct t_fileio
     t_fileio *next, *prev; /* next and previous file pointers in the
                               linked list */
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_t mtx;  /* content locking mutex */
+    tMPI_Spinlock_t  mtx;  /* content locking mutex. This is a spinlock
+                              for performance reasons: in some cases every
+                              single byte that gets read/written requires
+                              a lock */
 #endif
 }; 
 

@@ -87,6 +87,7 @@
 #include "tpxio.h"
 #include "string2.h"
 #include "sighandler.h"
+#include "gmx_ana.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -799,6 +800,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	int i,j,m;
 	int type,natom,nmol,at,atom1=0,rm_at=0;
 	bool *bRM,bINS;
+	/*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
 
 
 	snew(bRM,mtop->nmoltype);
@@ -807,31 +809,33 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 		bRM[i]=TRUE;
 	}
 
-	for (i=0;i<mtop->nmolblock;i++)
+	for (i=0;i<mtop->nmolblock;i++) 
 	{
+	    /*loop over molecule blocks*/
 		type        =mtop->molblock[i].type;
 		natom	    =mtop->molblock[i].natoms_mol;
 		nmol		=mtop->molblock[i].nmol;
 
-		for(j=0;j<natom*nmol && bRM[type]==TRUE;j++)
+		for(j=0;j<natom*nmol && bRM[type]==TRUE;j++) 
 		{
-			at=j+atom1;
-			m=0;
+		    /*loop over atoms in the block*/
+			at=j+atom1; /*atom index = block index + offset*/
 			bINS=FALSE;
-			do
+
+			for (m=0;(m<ins_at->nr) && (bINS==FALSE);m++)
 			{
+			    /*loop over atoms in insertion index group to determine if we're inserting one*/
 				if(at==ins_at->index[m])
 				{
 					bINS=TRUE;
 				}
-				m++;
-			} while ( (m<ins_at->nr) && bINS==FALSE);
+			}
 			bRM[type]=bINS;
 		}
-		atom1+=natom*nmol;
+		atom1+=natom*nmol; /*update offset*/
 		if(bRM[type])
 		{
-			rm_at+=natom*nmol;
+			rm_at+=natom*nmol; /*increment bonded removal counter by # atoms in block*/
 		}
 	}
 
@@ -2670,7 +2674,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
                 if (!bInitStep)
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
                 }
 
                 update_coords(fplog,step,ir,mdatoms,state,
@@ -2709,7 +2713,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                            of veta.  */
 
                         veta_save = state->veta;
-                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
                         vetanew = state->veta;
                         state->veta = veta_save;
                     }
@@ -2767,7 +2771,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (bVV && !bInitStep)
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
 
                 if (bIterations &&
@@ -3086,7 +3090,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         m_add(force_vir,shake_vir,total_vir);
                         clear_mat(shake_vir);
                     }
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
                 }
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
@@ -3131,7 +3135,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
@@ -3581,20 +3585,20 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 
 	char			*ins;
-	int				rm_bonded_at,fr_id,fr_i,tmp_id,warn=0;
+	int 			rm_bonded_at,fr_id,fr_i=0,tmp_id,warn=0;
 	int        		ng,j,max_lip_rm,ins_grp_id,ins_nat,mem_nat,ntype,lip_rm,tpr_version;
-	real			xy_step,z_step;
+	real			xy_step=0,z_step=0;
 	real		 	prot_area;
-	rvec			*r_ins,fac;
+	rvec			*r_ins=NULL,fac;
 	t_block 		*ins_at,*rest_at;
 	pos_ins_t 		*pos_ins;
 	mem_t			*mem_p;
 	rm_t			*rm_p;
-	gmx_groups_t 	*groups;
+	gmx_groups_t 		*groups;
 	bool		 	bExcl=FALSE;
 	t_atoms			atoms;
 	t_pbc			*pbc;
-	char            **piecename;
+	char		        **piecename=NULL;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -3669,14 +3673,14 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		pos_ins->pieces=pieces;
 		snew(pos_ins->nidx,pieces);
 		snew(pos_ins->subindex,pieces);
-		snew(piecename,pieces);
+		snew(piecename,pieces);	
 		if (pieces>1)
 		{
 			fprintf(stderr,"\nSelect pieces to embed:\n");
 			get_index(&atoms,ftp2fn_null(efNDX,nfile,fnm),pieces,pos_ins->nidx,pos_ins->subindex,piecename);
 		}
 		else
-		{
+		{	
 			/*use whole embedded group*/
 			snew(pos_ins->nidx,1);
 			snew(pos_ins->subindex,1);
@@ -4263,7 +4267,7 @@ int gmx_membed(int argc,char *argv[])
 			"The output is a structure file containing the protein embedded in the membrane. If a topology",
 			"file is provided, the number of lipid and ",
 			"solvent molecules will be updated to match the new structure file.\n",
-			"For a more extensive manual see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507:Appendix.\n",
+			"For a more extensive manual see Wolf et al, J Comp Chem 31 (2010) 2169-2174, Appendix.\n",
 			"\n",
 			"SHORT METHOD DESCRIPTION\n",
 			"------------------------\n",
@@ -4280,12 +4284,12 @@ int gmx_membed(int argc,char *argv[])
 			"is incremented first. The resize factor for the z-direction is not changed until the -xy factor",
 			"is 1 (thus after -nxy iteration).\n",
 			"5. Repeat step 3 and 4 until the protein reaches its original size (-nxy + -nz iterations).\n",
-			"For a more extensive method descrition see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507.\n",
+			"For a more extensive method descrition see Wolf et al, J Comp Chem, 31 (2010) 2169-2174.\n",
 			"\n",
 			"NOTE\n----\n",
 			" - Protein can be any molecule you want to insert in the membrane.\n",
 			" - It is recommended to perform a short equilibration run after the embedding",
-			"(see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507) to re-equilibrate the membrane. Clearly",
+			"(see Wolf et al, J Comp Chem 31 (2010) 2169-2174, to re-equilibrate the membrane. Clearly",
 			"protein equilibration might require longer.\n",
 			"\n"
 	};
@@ -4620,7 +4624,7 @@ int gmx_membed(int argc,char *argv[])
 
 	/* Log file has to be closed in mdrunner if we are appending to it
    (fplog not set here) */
-	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem, doi 10.1002/jcc.21507.\n");
+	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
 
 	if (MASTER(cr) && !bAppendFiles)
 	{

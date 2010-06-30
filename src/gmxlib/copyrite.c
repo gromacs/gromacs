@@ -492,7 +492,12 @@ void please_cite(FILE *fp,const char *key)
       "J. S. Hub and B. L. de Groot",
       "Mechanism of selectivity in aquaporins and aquaglyceroporins",
       "PNAS",
-      105, 2008, "1198-1203" }
+      105, 2008, "1198-1203" },
+    { "Engin2010",
+      "O. Engin, A. Villa, M. Sayar and B. Hess",
+      "Driving Forces for Adsorption of Amphiphilic Peptides to Air-Water Interface",
+      "J. Phys. Chem. B",
+      0, 2010, "???" }
   };
 #define NSTR (int)asize(citedb)
   

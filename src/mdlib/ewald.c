@@ -43,7 +43,6 @@
 #include "gmxcomplex.h"
 #include "smalloc.h"
 #include "futil.h"
-#include "fftgrid.h"
 #include "gmx_fatal.h"
 #include "physics.h"
 #include "coulomb.h"

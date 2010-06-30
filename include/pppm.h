@@ -43,7 +43,6 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "gmxcomplex.h"
-#include "fftgrid.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -92,7 +92,7 @@ static void pv(FILE *log,char *s,rvec x)
 }
 
 void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
-	    real dist2[],real xp[],real rij[],real m2[],real omega,
+            real dist2[],real xp[],real rij[],real m2[],real omega,
             real invmass[],real tt[],real lagr[],int *nerror)
 {
   /*
@@ -110,7 +110,8 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
   real    xh,yh,zh,rijx,rijy,rijz;
   real    tix,tiy,tiz;
   real    tjx,tjy,tjz;
-  int     nit,error,iconv,nconv;
+  int     nit,error,nconv;
+  real    iconvf;
 
   error=0;
   nconv=1;
@@ -139,11 +140,13 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
       toler   = dist2[ll];
       diff    = toler-rpij2;
       
-      /* iconv is zero when the error is smaller than a bound */
-      iconv   = fabs(diff)*tt[ll];
+      /* iconvf is less than 1 when the error is smaller than a bound */
+      /* But if tt is too big, then it will result in looping in iconv */
+
+      iconvf = fabs(diff)*tt[ll];
       
-      if (iconv != 0) {
-          nconv   = nconv + iconv;
+      if (iconvf > 1) {
+          nconv   = iconvf;
           rrpr    = rijx*tx+rijy*ty+rijz*tz;
 	
           if (rrpr < toler*mytol) 
@@ -456,8 +459,8 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
     real    xh,yh,zh,rijx,rijy,rijz;
     real    tix,tiy,tiz;
     real    tjx,tjy,tjz;
-    int     nit,error,iconv,nconv;
-    real    veta,vscale_nhc;
+    int     nit,error,nconv;
+    real    veta,vscale_nhc,iconvf;
 
     veta = vetavar->veta;
     vscale_nhc = vetavar->vscale_nhc[0];  /* for now, just use the first state */
@@ -491,10 +494,10 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
             xdotd   = vpijd*vscale_nhc + veta*toler;
             
             /* iconv is zero when the error is smaller than a bound */
-            iconv   = fabs(xdotd)*(tt[ll]/invdt);
+            iconvf   = fabs(xdotd)*(tt[ll]/invdt);
             
-            if (iconv != 0) {
-                nconv     = nconv + iconv;
+            if (iconvf > 1) {
+                nconv     = iconvf;
                 fac       = omega*2.0*m2[ll]/toler;
                 acor      = -fac*xdotd;
                 lagr[ll] += acor;                

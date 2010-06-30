@@ -122,7 +122,6 @@ sortwater.h \
 sparsematrix.h \
 split.h \
 splitter.h \
-statusio.h \
 statutil.h \
 strdb.h \
 string2.h \
