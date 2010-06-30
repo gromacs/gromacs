@@ -216,6 +216,7 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
    QMener;
  FILE
    *xyz, *pcgrad, *engrad;
+ int k;
  t_QMMMrec
    *QMMMrec;
  QMMMrec = fr->qr;
@@ -279,7 +280,7 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
   * now comes the gradient, one value per line:
   * (atom1 x \n atom1 y \n atom1 z \n atom2 x ...
   */
- int k;
+ 
  for(i=0;i<3*qm->nrQMatoms;i++){
      k = i/3;
      fgets(buf,300,engrad);
