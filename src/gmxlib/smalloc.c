@@ -258,6 +258,12 @@ size_t memavail(void)
  * pointers to ensure alignment. We store the pointer to the originally
  * allocated region in the space before the returned pointer */
 
+/* we create a positive define for the absence of an system-provided memalign */
+#if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN && \
+     !defined HAVE__ALIGNED_MALLOC)
+#define GMX_OWN_MEMALIGN
+#endif
+
 
 /* Pointers allocated with this routine should only be freed
  * with save_free_aligned, however this will only matter
@@ -295,8 +301,11 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
         allocate_fail = FALSE; /* stop compiler warnings */
 #ifdef HAVE_POSIX_MEMALIGN
         allocate_fail = (0!=posix_memalign(&malloced, alignment, nelem*elsize));
-#elif HAVE_MEMALIGN
+#elif defined HAVE_MEMALIGN
         allocate_fail = ((malloced=memalign(alignment, nelem*elsize)) == NULL);
+#elif defined HAVE__ALIGNED_MALLOC
+        allocate_fail = ((malloced=_aligned_malloc(nelem*elsize, alignment)) 
+                         == NULL);
 #else
         allocate_fail = ((malloced = malloc(nelem*elsize+alignment+
                                             sizeof(void*)))==NULL);
@@ -309,7 +318,7 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
         /* we start with the original pointer */
         aligned=(void**)malloced;
   
-#if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN)
+#ifdef GMX_OWN_MEMALIGN
 	/* Make the aligned pointer, and save the underlying pointer that
 	 * we're allowed to free(). */
 
@@ -335,12 +344,17 @@ void save_free_aligned(const char *name,const char *file,int line,void *ptr)
 
     if (NULL != ptr)
     {
-#if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN)
+#ifdef GMX_OWN_MEMALIGN 
         /* we get the pointer from just before the memaligned pointer */
         free= ((void**)ptr)[-1];
 #endif
+
+#ifndef HAVE__ALIGNED_MALLOC
         /* (Now) we're allowed to use a normal free() on this pointer. */
         save_free(name,file,line,free);
+#else
+        _aligned_free(free);
+#endif
     }
 }
 

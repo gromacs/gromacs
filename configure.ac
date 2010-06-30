@@ -762,6 +762,9 @@ AC_CHECK_FUNCS(copyfile)
 AC_CHECK_TYPES([bool])
 AC_SEARCH_LIBS(posix_memalign, c, AC_DEFINE(HAVE_POSIX_MEMALIGN, 1, Define to 1 if you have the posix_memalign function))
 AC_SEARCH_LIBS(memalign, c, AC_DEFINE(HAVE_MEMALIGN, 1, Define to 1 if you have the memalign function))
+AC_CHECK_FUNCS(_aligned_malloc)
+#AC_SEARCH_LIBS(_aligned_malloc, c, AC_DEFINE(HAVE__ALIGNED_MALLOC, 1, Define to 1 if you have the _aligned_malloc function))
+
 
 
 
