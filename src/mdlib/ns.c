@@ -61,6 +61,7 @@
 #include "mtop_util.h"
 
 #include "domdec.h"
+#include "adress.h"
 
 
 /* Uncomment the define below to use the generic charge group - charge group
@@ -2191,6 +2192,15 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                     if (dx0 > dx1)
                     {
                         continue;
+                    }
+                    /* Adress: an explicit cg that has a weigthing function of 0 is excluded
+                     *  from the neigbour list as it will not interact  */
+                    if (fr->adress_type == eAdressXSplit){
+                        if (md->wf[cgs->index[icg]]==0 &&
+                                fabs(XI-fr->adress_refs[0])> fr->adress_ex_width+fr->adress_hy_width &&
+                                egp_explicit(fr, igid)){
+                            continue;
+                        }
                     }
                     /* Get shift vector */	  
                     shift=XYZ2IS(tx,ty,tz);

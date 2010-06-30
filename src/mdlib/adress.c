@@ -143,8 +143,6 @@ update_adress_weights_com(FILE *               fplog,
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refs);
 
-    mdatoms->purecg = FALSE;
-    mdatoms->pureex = FALSE;
 
     /* Since this is center of mass AdResS, the vsite is not guaranteed
      * to be on the same node as the constructing atoms.  Therefore we 
@@ -231,10 +229,34 @@ update_adress_weights_com(FILE *               fplog,
    
     if (debug) fprintf (debug, "adress.c (cg0 %d cg1 %d) ex %d hyb %d cg %d\n", cg0, cg1,n_ex, n_hyb, n_cg);
 
-    if (n_hyb ==0 && n_ex == 0) mdatoms->purecg = TRUE;
-    if (n_hyb ==0 && n_cg == 0) mdatoms->pureex = TRUE;
+    if (n_hyb ==0 && n_ex == 0){
+     /* all particles on this proc are cg, */
+        if (!mdatoms->purecg){
+             mdatoms->purecg = TRUE;
+        }
+    }
+    else
+    {
+        if (mdatoms->purecg){
+         /* now this processor has hybrid particles again, call the hybrid kernels */
+            mdatoms->purecg = FALSE;
+        }
+    }
+
+    if (n_hyb ==0 && n_cg == 0){
+    /* all particles on this proc are atomisti */
+        if (!mdatoms->pureex){
+             mdatoms->pureex = TRUE;
+        }
+    }
+    else
+    {
+        if (mdatoms->pureex){
+            mdatoms->pureex = FALSE;
+        }
+    }
+    
 }
-        
 void
 update_adress_weights_cog(t_iparams            ip[],
                           t_ilist              ilist[],
@@ -537,4 +559,24 @@ adress_thermo_force(int                  cg0,
             }
         }
     }
+}
+bool egp_explicit(t_forcerec *   fr, int egp_nr)
+{
+    int i;
+        for (i=0;i<fr->n_adress_ex_grps;i++){
+            if(fr->adress_ex_grp_index[i]==egp_nr){
+                return TRUE;
+            }
+        }
+   return FALSE;
+}
+bool egp_coarsegrained(t_forcerec *   fr, int egp_nr)
+{
+    int i;
+        for (i=0;i<fr->n_adress_cg_grps;i++){
+            if(fr->adress_cg_grp_index[i]==egp_nr){
+                return TRUE;
+            }
+        }
+   return FALSE;
 }

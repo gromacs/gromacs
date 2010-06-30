@@ -149,4 +149,7 @@ adress_thermo_force(int                  cg0,
                     t_forcerec *         fr,
                     t_mdatoms *          mdatoms,
                     t_pbc *              pbc);
+/* functions to look up if a energy group is explicit or coarse-grained*/
+bool egp_explicit(t_forcerec *   fr, int egp_nr);
+bool egp_coarsegrained(t_forcerec *   fr, int egp_nr);
 #endif
