@@ -84,10 +84,15 @@ MACRO(gmx_c_flags)
     endif()
 
     # Pathscale: There is currently no good way to test for this one.
-    #if (CMAKE_CXX_COMPILER_ID MATCHES "Pathscale")
-    #    GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math" 
-    #                     GMXC_CXXFLAGS)
-    #endif()
+    if (CMAKE_C_COMPILER_ID MATCHES "PathScale")
+        GMX_TEST_CFLAG(CFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math" 
+                         GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_LANG "-std=gnu99" GMXC_CFLAGS)
+    endif()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "PathScale")
+        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math" 
+                         GMXC_CXXFLAGS)
+    endif()
 
     # xlc
     if (CMAKE_C_COMPILER_ID MATCHES "XL")
