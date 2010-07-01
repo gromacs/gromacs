@@ -173,7 +173,7 @@ void nb_kernel123_adress_cg(
                 }
                 else if (weight_product >= ALMOST_ONE)
                 {
-                  /* if it's a coarse grained loop, skip this molecule */
+                  /* force is zero, skip this molecule */
                        continue;
                 }
                 else
@@ -448,7 +448,7 @@ void nb_kernel123_adress_ex(
                 weight_cg2       = wf[jnr];        
                 weight_product   = weight_cg1*weight_cg2;
                 if (weight_product < ALMOST_ZERO) {
-                /* if it's a cg loop, skip this molecule */
+                /* force is zero, skip this molecule */
                  continue;
                 }
                 else if (weight_product >= ALMOST_ONE)
