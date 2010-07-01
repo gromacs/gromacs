@@ -51,8 +51,6 @@
 #include "warninp.h"
 #include "gmx_fatal.h"
 
-static int inp_count = 1;
-
 /* find an entry; return index, or -1 if not found */
 static int search_einp(int ninp, const t_inpfile *inp, const char *name);
 
@@ -75,7 +73,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
     
   if (debug)
     fprintf(debug,"Reading MDP file %s\n",fn);
-  inp_count = 1;
+
   if (!cppopts)
     cppopts_given=cppopts;
   else
@@ -182,6 +180,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
 	      {
 		/* add a new item */
 		srenew(inp,++nin);
+                inp[nin-1].inp_count  = 1;
 		inp[nin-1].count      = 0;
 		inp[nin-1].bObsolete  = FALSE;
 		inp[nin-1].bSet       = FALSE;
@@ -332,7 +331,7 @@ static int get_einp(int *ninp,t_inpfile **inp,const char *name)
     (*inp)[i].name=strdup(name);
     (*inp)[i].bSet=TRUE;
   }
-  (*inp)[i].count = inp_count++;
+  (*inp)[i].count = (*inp)[0].inp_count++;
   (*inp)[i].bSet  = TRUE;
   if (debug) 
     fprintf(debug,"Inp %d = %s\n",(*inp)[i].count,(*inp)[i].name);

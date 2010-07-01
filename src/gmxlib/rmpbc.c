@@ -56,10 +56,16 @@ void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],rvec x_s[])
   static int ngraph=0;
   static multi_graph *mgraph=NULL;
   static bool bFirst=TRUE;
+#ifdef GMX_THREADS
+  static tMPI_Thread_mutex_t pbc_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
   rvec   sv[SHIFTS];
   int    n,i;
   bool   bNeedToCopy;
 
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_lock(&pbc_mutex);
+#endif
   if (ePBC == -1)
     ePBC = guess_ePBC(box);
 
@@ -93,6 +99,9 @@ void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],rvec x_s[])
   if (bNeedToCopy)
     for (i=0; i<natoms; i++)
       copy_rvec(x[i],x_s[i]);
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_unlock(&pbc_mutex);
+#endif
 }
 
 void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)

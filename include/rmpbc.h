@@ -56,6 +56,9 @@ extern void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],
  * natoms is the size of x and x_s and can be smaller than the number 
  * of atoms in idef, but should only contain complete molecules.
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
+ *
+ * This function is thread-safe, but only because it's fully serialized
+ * Do not use this in performance-critical multi-threaded code.
  */
 
 extern void rm_gropbc(t_atoms *atoms,rvec x[],matrix box);

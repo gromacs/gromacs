@@ -582,6 +582,9 @@ static int first_colour(int fC,egCol Col,t_graph *g,egCol egc[])
 void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
 {
   static int nerror_tot = 0;
+#ifdef GMX_THREADS
+  static tMPI_Thread_mutex_t error_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
   int    npbcdim;
   int    ng,nnodes,i;
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
@@ -664,6 +667,9 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
     }
   }
   if (nerror > 0) {
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&error_mutex);
+#endif
     nerror_tot++;
     if (nerror_tot <= 100) {
       fprintf(stderr,"There were %d inconsistent shifts. Check your topology\n",
@@ -679,6 +685,9 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
 	fprintf(log,"Will stop reporting inconsistent shifts\n");
       }
     }
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&error_mutex);
+#endif
   }
 }
 
