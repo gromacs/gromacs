@@ -318,7 +318,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     t_inputrec *inputrec;
     t_state    *state=NULL;
     matrix     box;
-    gmx_ddbox_t ddbox;
+    gmx_ddbox_t ddbox={0};
     int        npme_major,npme_minor;
     real       tmpr1,tmpr2;
     t_nrnb     *nrnb;
