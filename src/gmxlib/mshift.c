@@ -580,7 +580,6 @@ static int first_colour(int fC,egCol Col,t_graph *g)
 
 void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
 {
-  /*static int nerror_tot = 0;*/
   int    npbcdim;
   int    ng,i;
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
@@ -664,21 +663,12 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
     }
   }
   if (nerror > 0) {
-    /*nerror_tot++;
-      if (nerror_tot <= 100) {*/
     fprintf(stderr,"There were %d inconsistent shifts. Check your topology\n",
 	    nerror);
     if (log) {
       fprintf(log,"There were %d inconsistent shifts. Check your topology\n",
 	      nerror);
-            }
-    /*	      }
-	      if (nerror_tot == 100) {
-	      fprintf(stderr,"Will stop reporting inconsistent shifts\n");
-	      if (log) {
-	      fprintf(log,"Will stop reporting inconsistent shifts\n");
-	      }
-	      }*/
+    }
   }
   printf("End. g->nnodes = %d\n",g->nnodes);
 }

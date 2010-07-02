@@ -78,7 +78,6 @@ static void gen_waterhydrogen(int nh,rvec xa[], rvec xh[],int *l)
 #undef AA
 #undef BB
 #undef CC
-  /*static int l=0; removed due to thread-safety issues*/
   int        m;
   rvec       kkk;
   

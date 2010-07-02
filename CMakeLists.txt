@@ -14,6 +14,34 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+enable_language(C)
+
+
+########################################################################
+# Fix stupid flags on MSVC
+########################################################################
+IF(CMAKE_GENERATOR MATCHES "Visual Studio")
+    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)   
+ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
+
+set(GMX_EXTRA_LIBRARIES)
+
+######################################################################
+# compiler tests
+# these need ot be done early (before further tests).
+#####################################################################
+
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+# check for buggy GCC 4.1.x 
+include(gmxCheckGCCVersion)
+
+include(gmxCFlags)
+gmx_c_flags()
 
 ########################################################################
 # User input options                                                   #
@@ -39,7 +67,6 @@ option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 
-enable_language(C)
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
@@ -49,44 +76,6 @@ option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
 
 
-#######################################################################
-# Check for options incompatible with OpenMM build                    #
-#######################################################################
-if(GMX_OPENMM)
-    cmake_minimum_required(VERSION 2.6.4)
-    # we'll use the built-in fft to avoid unnecessary dependencies
-    set (GMX_FFT_LIBRARY "fftpack")
-    if(GMX_MPI)
-        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
-    endif(GMX_MPI)
-    if(GMX_THREADS)
-        message(STATUS "Threads not compatible with OpenMM build, disabled")
-        set(GMX_THREADS OFF)
-    endif(GMX_THREADS)
-    if(GMX_SOFTWARE_INVSQRT)
-        set(GMX_SOFTWARE_INVSQRT OFF)
-    endif(GMX_SOFTWARE_INVSQRT)
-    if(NOT GMX_ACCELERATION MATCHES "none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
-        message(WARNING "The OpenMM build does not support other acceleration modes!")
-        set(GMX_ACCELERATION "none")
-    endif()
-    if(GMX_FAHCORE)
-        message(FATAL_ERROR "The OpenMM build does not support FAH build!")
-    endif(GMX_FAHCORE)
-endif(GMX_OPENMM)
-
-
-########################################################################
-# Fix stupid flags on MSVC
-########################################################################
-IF(CMAKE_GENERATOR MATCHES "Visual Studio")
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)   
-ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
-
-set(GMX_EXTRA_LIBRARIES)
 
 ########################################################################
 #Process MPI settings
@@ -120,6 +109,35 @@ if(GMX_MPI)
     endif(GMX_CRAY_XT3)
     set(GMX_LIB_MPI 1)
 endif(GMX_MPI)
+
+
+#######################################################################
+# Check for options incompatible with OpenMM build                    #
+#######################################################################
+if(GMX_OPENMM)
+    cmake_minimum_required(VERSION 2.6.4)
+    # we'll use the built-in fft to avoid unnecessary dependencies
+    set (GMX_FFT_LIBRARY "fftpack")
+    if(GMX_MPI)
+        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
+    endif(GMX_MPI)
+    if(GMX_THREADS)
+        message(STATUS "Threads not compatible with OpenMM build, disabled")
+        set(GMX_THREADS OFF)
+    endif(GMX_THREADS)
+    if(GMX_SOFTWARE_INVSQRT)
+        set(GMX_SOFTWARE_INVSQRT OFF)
+    endif(GMX_SOFTWARE_INVSQRT)
+    if(NOT GMX_ACCELERATION MATCHES "none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
+        message(WARNING "The OpenMM build does not support other acceleration modes!")
+        set(GMX_ACCELERATION "none")
+    endif()
+    if(GMX_FAHCORE)
+        message(FATAL_ERROR "The OpenMM build does not support FAH build!")
+    endif(GMX_FAHCORE)
+endif(GMX_OPENMM)
+
+
 
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
@@ -295,15 +313,6 @@ endif (GMX_DLOPEN)
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
-
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-# check for buggy GCC 4.1.x 
-include(gmxCheckGCCVersion)
-
-include(gmxCFlags)
-gmx_c_flags()
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_BINARY_DIR}/src)

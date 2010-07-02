@@ -59,14 +59,13 @@ gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
   snew(gpbc,1);
   
   gpbc->natoms=natoms;
-  
+
   if (ePBC == -1)
     gpbc->ePBC = guess_ePBC(box);
   else
     gpbc->ePBC = ePBC;
     
   if ((ePBC != epbcNONE) && (idef->ntypes!=-1)) {
-    /* make a new graph if there isn't one with this number of atoms */
     gpbc->gr = mk_graph(NULL,idef,0,natoms,FALSE,FALSE);
   } 
   else {
