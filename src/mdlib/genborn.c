@@ -64,7 +64,7 @@
 #include "tmpi.h"
 #endif
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
 #ifdef GMX_DOUBLE
 #include "genborn_sse2_double.h"
 #else
