@@ -114,8 +114,7 @@ MACRO(gmx_c_flags)
         set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}" 
             CACHE STRING "Flags used by the compiler during all build types." 
             FORCE)
-        set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} 
-            ${CMAKE_C_FLAGS_RELEASE}" 
+        set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}" 
             CACHE STRING "Flags used by the compiler during release builds." 
             FORCE)
         set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}" 
