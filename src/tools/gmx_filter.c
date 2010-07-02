@@ -109,6 +109,7 @@ int gmx_filter(int argc,char *argv[])
   real       flen,*filt,sum,*t;
   rvec       xcmtop,xcm,**x,*ptr,*xf,*xn,*xp,hbox;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
 
 #define NLEG asize(leg)
   t_filenm fnm[] = { 
@@ -132,12 +133,12 @@ int gmx_filter(int argc,char *argv[])
     topfile = ftp2fn_null(efTPS,NFILE,fnm);
     lowfile = opt2fn("-ol",NFILE,fnm);
   }
-
   if (topfile) {
     bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,
 			 &xtop,NULL,topbox,TRUE);
     if (bTop) {
-      rm_pbc(&(top.idef),ePBC,top.atoms.nr,topbox,xtop,xtop);
+      gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,topbox);
+      gmx_rmpbc(gpbc,topbox,xtop,xtop);
     }
   }
 
@@ -213,7 +214,7 @@ int gmx_filter(int argc,char *argv[])
 	  }
     }
     if (bTop) {
-      rm_pbc(&(top.idef),ePBC,nat,box[nffr - 1],xn,xn);
+      gmx_rmpbc(gpbc,box[nffr - 1],xn,xn);
     }
     if (bFit) {
       calc_xcm(xn,isize,index,top.atoms.atom,xcm,FALSE);
@@ -265,6 +266,9 @@ int gmx_filter(int argc,char *argv[])
     fr++;
   } while (read_next_x(oenv,in,&(t[nffr - 1]),nat,x[nffr - 1],box[nffr - 1]));
   
+  if (bTop)
+    gmx_rmpbc_done(gpbc);
+
   if (outh)
     close_trx(outh);
   if (outl)

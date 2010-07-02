@@ -378,6 +378,9 @@ void mk_graph_ilist(FILE *fplog,
         g->nbound++;
   }
 
+  g->negc = 0;
+  g->egc = NULL;
+
   sfree(nbond);
 
   if (gmx_debug_at)
@@ -506,7 +509,7 @@ static void mk_1shift_screw(matrix box,rvec hbox,
   }
 }
 
-static int mk_grey(FILE *log,t_graph *g,int *AtomI,
+static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
 		   int npbcdim,matrix box,rvec x[],int *nerror)
 {
   int      m,j,ng,ai,aj,g0;
@@ -521,13 +524,11 @@ static int mk_grey(FILE *log,t_graph *g,int *AtomI,
   
   ng=0;
   ai=*AtomI;
-  range_check(ai,0,g->negc);
   
   g0=g->start;
   /* Loop over all the bonds */
   for(j=0; (j<g->nedge[ai]); j++) {
     aj=g->edge[ai][j]-g0;
-    range_check(aj,0,g->negc);
     /* If there is a white one, make it grey and set pbc */
     if (g->bScrewPBC)
       mk_1shift_screw(box,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
@@ -536,10 +537,10 @@ static int mk_grey(FILE *log,t_graph *g,int *AtomI,
     else
       mk_1shift(npbcdim,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
     
-    if (g->egc[aj] == egcolWhite) {
+    if (egc[aj] == egcolWhite) {
       if (aj < *AtomI)
 	*AtomI = aj;
-      g->egc[aj] = egcolGrey;
+      egc[aj] = egcolGrey;
       
       copy_ivec(is_aj,g->ishift[aj]);
 
@@ -564,7 +565,7 @@ static int mk_grey(FILE *log,t_graph *g,int *AtomI,
   return ng;
 }
 
-static int first_colour(int fC,egCol Col,t_graph *g)
+static int first_colour(int fC,egCol Col,t_graph *g,egCol egc[])
 /* Return the first node with colour Col starting at fC.
  * return -1 if none found.
  */
@@ -572,7 +573,7 @@ static int first_colour(int fC,egCol Col,t_graph *g)
   int i;
   
   for(i=fC; (i<g->nnodes); i++)
-    if ((g->nedge[i] > 0) && (g->egc[i]==Col))
+    if ((g->nedge[i] > 0) && (egc[i]==Col))
       return i;
   
   return -1;
@@ -580,13 +581,13 @@ static int first_colour(int fC,egCol Col,t_graph *g)
 
 void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
 {
+  static int nerror_tot = 0;
   int    npbcdim;
-  int    ng,i;
+  int    ng,nnodes,i;
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
   int    fW,fG;			/* First of each category	*/
   int    nerror=0;
 
-  printf("Start. g->nnodes = %d\n",g->nnodes);
   g->bScrewPBC = (ePBC == epbcSCREW);
 
   if (ePBC == epbcXY)
@@ -606,12 +607,12 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
   if (!g->nbound)
     return;
 
-  if (g->nnodes > g->negc) {
-    g->negc = g->nnodes;
+  nnodes=g->nnodes;
+  if (nnodes > g->negc) {
+    g->negc = nnodes;
     srenew(g->egc,g->negc);
   }
-  for(i=0; (i<g->nnodes); i++)
-    g->egc[i] = egcolWhite;
+  memset(g->egc,0,(size_t)(nnodes*sizeof(g->egc[0])));
 
   nW=g->nbound;
   nG=0;
@@ -630,7 +631,7 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
      * number than before, because no nodes are made white
      * in the loop
      */
-    if ((fW=first_colour(fW,egcolWhite,g)) == -1) 
+    if ((fW=first_colour(fW,egcolWhite,g,g->egc)) == -1) 
       gmx_fatal(FARGS,"No WHITE nodes found while nW=%d\n",nW);
     
     /* Make the first white node grey */
@@ -645,7 +646,7 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
 	    nW,nG,nB,nW+nG+nB);
 #endif
     while (nG > 0) {
-      if ((fG=first_colour(fG,egcolGrey,g)) == -1)
+      if ((fG=first_colour(fG,egcolGrey,g,g->egc)) == -1)
 	gmx_fatal(FARGS,"No GREY nodes found while nG=%d\n",nG);
       
       /* Make the first grey node black */
@@ -656,21 +657,29 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
       /* Make all the neighbours of this black node grey
        * and set their periodicity 
        */
-      ng=mk_grey(log,g,&fG,npbcdim,box,x,&nerror);
+      ng=mk_grey(log,nnodes,g->egc,g,&fG,npbcdim,box,x,&nerror);
       /* ng is the number of white nodes made grey */
       nG+=ng;
       nW-=ng;
     }
   }
   if (nerror > 0) {
-    fprintf(stderr,"There were %d inconsistent shifts. Check your topology\n",
-	    nerror);
-    if (log) {
-      fprintf(log,"There were %d inconsistent shifts. Check your topology\n",
+    nerror_tot++;
+    if (nerror_tot <= 100) {
+      fprintf(stderr,"There were %d inconsistent shifts. Check your topology\n",
 	      nerror);
+      if (log) {
+	fprintf(log,"There were %d inconsistent shifts. Check your topology\n",
+		nerror);
+      }
+    }
+    if (nerror_tot == 100) {
+      fprintf(stderr,"Will stop reporting inconsistent shifts\n");
+      if (log) {
+	fprintf(log,"Will stop reporting inconsistent shifts\n");
+      }
     }
   }
-  printf("End. g->nnodes = %d\n",g->nnodes);
 }
 
 /************************************************************

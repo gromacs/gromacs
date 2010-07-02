@@ -92,16 +92,6 @@ void gmx_rmpbc(gmx_rmpbc_t gpbc,matrix box,rvec x[],rvec x_s[])
       copy_rvec(x[i],x_s[i]);
 }
 
-void rm_pbc(t_idef *idef,int ePBC,int natoms,
-	    matrix box,rvec x[],rvec x_s[])
-{
-  static gmx_rmpbc_t gpbc=NULL;
-  
-  if (NULL == gpbc)
-    gpbc = gmx_rmpbc_init(idef,ePBC,natoms,box);
-  gmx_rmpbc(gpbc,box,x,x_s);
-}
-
 void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
 {
   real dist;

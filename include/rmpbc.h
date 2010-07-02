@@ -64,8 +64,8 @@ extern "C" {
    * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
   
-  extern void rm_pbc(t_idef *idef,int ePBC,int natoms,
-		     matrix box,rvec x[],rvec x_s[]);
+  /*extern void rm_pbc(t_idef *idef,int ePBC,int natoms,
+    matrix box,rvec x[],rvec x_s[]);*/
   /* Convenience function that still holds a static variable. */
   
   extern void rm_gropbc(t_atoms *atoms,rvec x[],matrix box);
