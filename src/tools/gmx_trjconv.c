@@ -763,6 +763,7 @@ int gmx_trjconv(int argc,char *argv[])
     real         tshift=0,t0=-1,dt=0.001,prec;
     bool         bFit,bFitXY,bPFit,bReset;
     int          nfitdim;
+    gmx_rmpbc_t  gpbc=NULL;
     bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
     bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
     bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
@@ -846,6 +847,7 @@ int gmx_trjconv(int argc,char *argv[])
         if (bFit || bReset)
             nfitdim = (fit_enum==efFitXY || fit_enum==efResetXY) ? 2 : 3;
         bRmPBC = bFit || bPBCWhole || bPBCcomRes || bPBCcomMol;
+	  
         if (bSetUR) {
             if (!(bPBCcomRes || bPBCcomMol ||  bPBCcomAtom)) {
                 fprintf(stderr,
@@ -945,6 +947,8 @@ int gmx_trjconv(int argc,char *argv[])
 
             if (bCONECT)
                 gc = gmx_conect_generate(&top);
+	    if (bRmPBC)
+	      gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,top_box);
         }
 
         /* get frame number index */
@@ -1011,7 +1015,7 @@ int gmx_trjconv(int argc,char *argv[])
             /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
             if (bRmPBC)
-                rm_pbc(&(top.idef),ePBC,atoms->nr,top_box,xp,xp);
+	      gmx_rmpbc(gpbc,top_box,xp,xp);
             copy_rvec(xp[index[0]],x_shift);
             reset_x_ndim(nfitdim,ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
             rvec_dec(x_shift,xp[index[0]]);
@@ -1202,7 +1206,7 @@ int gmx_trjconv(int argc,char *argv[])
                     /* Now modify the coords according to the flags,
 	     for normal fit, this is only done for output frames */
                     if (bRmPBC)
-                        rm_pbc(&(top.idef),ePBC,natoms,fr.box,fr.x,fr.x);
+		      gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
 
                     reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
                     do_fit(natoms,w_rls,xp,fr.x);
@@ -1280,7 +1284,7 @@ int gmx_trjconv(int argc,char *argv[])
                                for PFit we did this already! */
 
                             if (bRmPBC)
-                                rm_pbc(&(top.idef),ePBC,natoms,fr.box,fr.x,fr.x);
+			      gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
 
                             if (bReset) {
                                 reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
@@ -1486,7 +1490,9 @@ int gmx_trjconv(int argc,char *argv[])
         fprintf(stderr,"\n");
 
         close_trj(status);
-
+	if (bRmPBC)
+	  gmx_rmpbc_done(gpbc);
+	
         if (trxout)
             close_trx(trxout);
         else if (out != NULL)

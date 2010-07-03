@@ -506,7 +506,10 @@ int main(int argc,char *argv[])
 
 
   cr = init_par(&argc,&argv);
-   
+
+  if (MASTER(cr))
+    CopyRight(stderr, argv[0]);
+
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
   

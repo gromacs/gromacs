@@ -57,21 +57,12 @@
 #include <math.h>
 
 /* defines for frame counter output */
-#if 0
-static int __frame=NOTSET;
-#endif
 #define SKIP1   10
 #define SKIP2  100
 #define SKIP3 1000
-#if 0
-#define INITCOUNT __frame=-1
-#endif
 
-#if 0
-/* frames for read_first/next_x */
-static t_trxframe *xframe=NULL;
-static int nxframe=0;
-#endif
+/* Globals for gromos-87 input */
+typedef enum { effXYZ, effXYZBox, effG87, effG87Box, effNR } eFileFormat;
 
 struct t_trxstatus
 {
@@ -79,6 +70,10 @@ struct t_trxstatus
     t_trxframe *xframe;
     int nxframe;
     t_fileio *fio;
+    eFileFormat eFF;
+    int         NATOMS;
+    double      DT,BOX[3];
+    bool        bReadBox;
 };
 
 static void initcount(t_trxstatus *status)
@@ -148,12 +143,6 @@ t_fileio *trx_get_fileio(t_trxstatus *status)
 }
 
 
-/* Globals for gromos-87 input */
-typedef enum { effXYZ, effXYZBox, effG87, effG87Box, effNR } eFileFormat;
-static eFileFormat eFF;
-static int         NATOMS;
-static double      DT,BOX[3];
-static bool        bReadBox;
 
 void clear_trxframe(t_trxframe *fr,bool bFirst)
 {
@@ -448,6 +437,8 @@ static void choose_ff(FILE *fp)
 {
   int i,m,c;
   int rc;
+  eFileFormat eFF;
+  t_trxstatus *stat;
 
   printf("\n\n");
   printf("   Select File Format\n");
@@ -456,6 +447,9 @@ static void choose_ff(FILE *fp)
   printf("2. XYZ File with Box\n");
   printf("3. Gromos-87 Ascii Trajectory\n");
   printf("4. Gromos-87 Ascii Trajectory with Box\n");
+
+  snew(stat,1);
+  status_init(stat);
 
   do {
     printf("\nChoice: ");
@@ -469,16 +463,16 @@ static void choose_ff(FILE *fp)
   } while ((i < 0) || (i >= effNR));
   printf("\n");
   
-  eFF = (eFileFormat) i;
+  stat->eFF = (eFileFormat) i;
 
-  for(m=0; (m<DIM); m++) BOX[m]=0;
+  for(m=0; (m<DIM); m++) stat->BOX[m]=0;
   
-  bReadBox = (eFF == effG87Box) || (eFF == effXYZBox);
+  stat->bReadBox = (stat->eFF == effG87Box) || (stat->eFF == effXYZBox);
     
-  switch (eFF) {
+  switch (stat->eFF) {
   case effXYZ:
   case effXYZBox:
-    if( 5 != fscanf(fp,"%d%lf%lf%lf%lf",&NATOMS,&BOX[XX],&BOX[YY],&BOX[ZZ],&DT)) 
+    if( 5 != fscanf(fp,"%d%lf%lf%lf%lf",&stat->NATOMS,&stat->BOX[XX],&stat->BOX[YY],&stat->BOX[ZZ],&stat->DT)) 
     {
       gmx_fatal(FARGS,"Error reading natoms/box in file");
     }
@@ -488,22 +482,22 @@ static void choose_ff(FILE *fp)
     printf("GROMOS! OH DEAR...\n\n");
     printf("Number of atoms ? ");
     fflush(stdout);
-    if (1 != scanf("%d",&NATOMS))
+    if (1 != scanf("%d",&stat->NATOMS))
     {
 	gmx_fatal(FARGS,"Error reading natoms in file");
     }
 
     printf("Time between timeframes ? ");
     fflush(stdout);
-    if( 1 != scanf("%lf",&DT))
+    if( 1 != scanf("%lf",&stat->DT))
     {
 	gmx_fatal(FARGS,"Error reading dt from file");
     }
 
-    if (eFF == effG87) {
+    if (stat->eFF == effG87) {
       printf("Box X Y Z ? ");
       fflush(stdout);
-      if(3 != scanf("%lf%lf%lf",&BOX[XX],&BOX[YY],&BOX[ZZ]))
+      if(3 != scanf("%lf%lf%lf",&stat->BOX[XX],&stat->BOX[YY],&stat->BOX[ZZ]))
       { 
 	  gmx_fatal(FARGS,"Error reading box in file");
       }
@@ -520,7 +514,8 @@ static void choose_ff(FILE *fp)
   }
 }
 
-static bool do_read_xyz(FILE *fp,int natoms,rvec x[],matrix box)
+static bool do_read_xyz(t_trxstatus *status, FILE *fp,int natoms,
+                        rvec x[],matrix box)
 {
   int    i,m;
   double x0;
@@ -536,7 +531,7 @@ static bool do_read_xyz(FILE *fp,int natoms,rvec x[],matrix box)
       x[i][m]=x0;
     }
   }
-  if (bReadBox) {
+  if (status->bReadBox) {
     for(m=0; (m<DIM); m++) {
       if (fscanf(fp,"%lf",&x0) != 1) 
 	return FALSE;
@@ -556,20 +551,20 @@ static bool xyz_next_x(t_trxstatus *status, FILE *fp, const output_env_t oenv,
   
   pt=*t;
   while (!bTimeSet(TBEGIN) || (*t < rTimeValue(TBEGIN))) {
-    if (!do_read_xyz(fp,natoms,x,box))
+    if (!do_read_xyz(status,fp,natoms,x,box))
       return FALSE;
     printcount(status,oenv,*t,FALSE);
-    *t+=DT;
+    *t+=status->DT;
     pt=*t;
   }
   if (!bTimeSet(TEND) || (*t <= rTimeValue(TEND))) {
-    if (!do_read_xyz(fp,natoms,x,box)) {
+    if (!do_read_xyz(status,fp,natoms,x,box)) {
       printlast(status, oenv,*t);
       return FALSE;
     }
     printcount(status,oenv,*t,FALSE);
     pt=*t;
-    *t+=DT;
+    *t+=status->DT;
     return TRUE;
   }
   printlast(status,oenv,pt);
@@ -590,15 +585,15 @@ static int xyz_first_x(t_trxstatus *status, FILE *fp, const output_env_t oenv,
   choose_ff(fp);
 
   for(m=0; (m<DIM); m++)
-    box[m][m]=BOX[m];
+    box[m][m]=status->BOX[m];
 
-  snew(*x,NATOMS);
-  *t=DT;
-  if (!xyz_next_x(status, fp,oenv,t,NATOMS,*x,box)) 
+  snew(*x,status->NATOMS);
+  *t=status->DT;
+  if (!xyz_next_x(status, fp,oenv,t,status->NATOMS,*x,box)) 
     return 0;
   *t=0.0;
   
-  return NATOMS;
+  return status->NATOMS;
 }
 
 static bool pdb_next_x(t_trxstatus *status, FILE *fp,t_trxframe *fr)

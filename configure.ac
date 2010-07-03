@@ -139,8 +139,8 @@ AC_ARG_ENABLE(gcc41_check,
 
 ### ia64 assembly code
 AC_ARG_ENABLE(ia64_asm,
-	      [AC_HELP_STRING([--disable-ia64-asm],
-	                      [Don't build assembly loops on ia64])],,enable_ia64_asm=yes)
+	      [AC_HELP_STRING([--enable-ia64-asm],
+	                      [Build assembly loops on ia64])],,enable_ia64_asm=no)
 case "${host_cpu}" in
    ia64) ;;
    *) enable_ia64_asm=no ;;
@@ -762,6 +762,9 @@ AC_CHECK_FUNCS(copyfile)
 AC_CHECK_TYPES([bool])
 AC_SEARCH_LIBS(posix_memalign, c, AC_DEFINE(HAVE_POSIX_MEMALIGN, 1, Define to 1 if you have the posix_memalign function))
 AC_SEARCH_LIBS(memalign, c, AC_DEFINE(HAVE_MEMALIGN, 1, Define to 1 if you have the memalign function))
+AC_CHECK_FUNCS(_aligned_malloc)
+#AC_SEARCH_LIBS(_aligned_malloc, c, AC_DEFINE(HAVE__ALIGNED_MALLOC, 1, Define to 1 if you have the _aligned_malloc function))
+
 
 
 

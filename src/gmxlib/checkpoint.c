@@ -1072,7 +1072,7 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     }
 
     /* make the new temporary filename */
-    snew(fntemp, strlen(fn)+5);
+    snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
     strcpy(fntemp,fn);
     fntemp[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
     sprintf(suffix,"_%s%s","step",gmx_step_str(step,sbuf));
