@@ -795,7 +795,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
     {
         /* Some timing stats */  
-        if (MASTER(cr))
+        if (SIMMASTER(cr))
         {
             if (runtime.proc == 0)
             {
