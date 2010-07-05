@@ -35,80 +35,66 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifdef HAVE_TMPI_CONFIG_H
-#include "tmpi_config.h"
-#endif
+#ifndef _TMPI_FASTLOCK_H_
+#define _TMPI_FASTLOCK_H_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "wait.h"
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-
-#include "impl.h"
-
-
-
-void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count)
+/** Fast (possibly busy-wait-based) lock type
+ *
+ *  This lock type forms an intermediate between the spinlocks and mutexes:
+ *  it is based on a busy-wait loop, but yields to the scheduler if the lock
+ *  is locked.  This is therefore the preferred type of  lock for when waits 
+ *  are expected to be reasonably short.
+ *
+ *  Variables of this type should be initialized by calling
+ *  tMPI_Lock_init().  
+ * 
+ * \see
+ * - tMPI_Lock_init
+ * - tMPI_Lock_lock
+ */
+typedef struct tMPI_Lock tMPI_Lock_t;
+struct tMPI_Lock
 {
-    barrier->threshold = count;
-    barrier->cycle     = 0;
-    tMPI_Atomic_set(&(barrier->count),count);
-    TMPI_YIELD_WAIT_DATA_INIT(barrier);
-}
+    tMPI_Spinlock_t   lock;      /*!< The underlying spin lock */
+    TMPI_YIELD_WAIT_DATA
+};
 
 
-int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
-{
-    int    cycle;
-    int    status;
-    /*int    i;*/
-
-    /* We don't need to lock or use atomic ops here, since the cycle index 
-     * cannot change until after the last thread has performed the check
-     * further down. Further, they cannot reach this point in the next 
-     * barrier iteration until all of them have been released, and that 
-     * happens after the cycle value has been updated.
-     *
-     * No synchronization == fast synchronization.
-     */
-    cycle = barrier->cycle;
-
-    /* Decrement the count atomically and check if it is zero.
-     * This will only be true for the last thread calling us.
-     */
-    if( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
-    {
-        tMPI_Atomic_set(&(barrier->count), barrier->threshold);
-        barrier->cycle = !barrier->cycle;
-
-        status = -1;
-    }
-    else
-    {
-        /* Wait until the last thread changes the cycle index.
-         * We are both using a memory barrier, and explicit
-         * volatile pointer cast to make sure the compiler
-         * doesn't try to be smart and cache the contents.
-         */
-        do
-        {
-            TMPI_YIELD_WAIT(barrier);
-            tMPI_Atomic_memory_barrier();
-        }
-        while( *(volatile int *)(&(barrier->cycle)) == cycle);
-
-        status = 0;
-    }
-    return status;
-}
+/** Initialize lock
+ *
+ *  \param lock     Pointer to the new lock. 
+ */
+void tMPI_Lock_init(tMPI_Lock_t *lock);
 
 
+/** Perform yielding, busy-waiting locking 
+  *
+  *  This function blocks until the lock is locked.
+  *
+  *  \param lock  Pointer to previously created lock.
+  */
+void tMPI_Lock_lock(tMPI_Lock_t *lock);
+
+/** Unlock the lock
+  *
+  *  \param lock  Pointer to previously created lock.
+  */
+void tMPI_Lock_unlock(tMPI_Lock_t *lock);
+
+/** Try to lock the lock but don't block if it is locked.
+  *
+  *  \param lock  Pointer to previously created lock.
+  */
+int tMPI_Lock_trylock(tMPI_Lock_t *lock);
+
+/** Check the status of the lock without affecting its state
+  *
+  *  \param lock  Pointer to previously created lock.
+  */
+int tMPI_Lock_islocked(const tMPI_Lock_t *lock);
+
+
+
+#endif

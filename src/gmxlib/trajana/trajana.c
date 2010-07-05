@@ -1614,7 +1614,8 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
     t_pbc               pbc;
     t_pbc              *ppbc;
     int                 rc;
-
+    gmx_rmpbc_t         gpbc=NULL;
+    
     rc = init_first_frame(d);
     if (rc != 0)
     {
@@ -1626,14 +1627,16 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
     {
         d->bRmPBC = FALSE;
     }
-
+    if (d->bRmPBC) 
+    {
+	gpbc = gmx_rmpbc_init(&d->top->idef,d->ePBC,d->fr->natoms,d->fr->box);
+    }
     d->nframes = 0;
     do
     {
         if (d->bRmPBC)
         {
-            rm_pbc(&d->top->idef, d->ePBC, d->fr->natoms, d->fr->box,
-                   d->fr->x, d->fr->x);
+  	    gmx_rmpbc(gpbc,d->fr->box,d->fr->x, d->fr->x);
         }
         if (ppbc)
         {
@@ -1658,7 +1661,10 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
         d->nframes++;
     }
     while (d->trjfile && read_next_frame(d->oenv, d->status, d->fr));
-
+    if (d->bRmPBC)
+    {
+        gmx_rmpbc_done(gpbc);
+    }
     if (d->trjfile)
     {
         close_trj(d->status);

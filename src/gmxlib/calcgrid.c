@@ -61,8 +61,8 @@ static void make_list(int start_fac)
     n_list++;
 
     for(i=start_fac; i<facNR; i++) {
-      /* allow any power of 2, 3, 5 and 7, but only one of 11 or 13 */
-      if (i<4 || (decomp[4]+decomp[5]==0)) {
+      /* allow any power of 2, 3 and 5, but only one of 7, 11 or 13 */
+      if (i<3 || (decomp[3]+decomp[4]+decomp[5]==0)) {
 	ng*=factor[i];
 	decomp[i]++;
 	make_list(i);

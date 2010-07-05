@@ -139,8 +139,8 @@ AC_ARG_ENABLE(gcc41_check,
 
 ### ia64 assembly code
 AC_ARG_ENABLE(ia64_asm,
-	      [AC_HELP_STRING([--disable-ia64-asm],
-	                      [Don't build assembly loops on ia64])],,enable_ia64_asm=yes)
+	      [AC_HELP_STRING([--enable-ia64-asm],
+	                      [Build assembly loops on ia64])],,enable_ia64_asm=no)
 case "${host_cpu}" in
    ia64) ;;
    *) enable_ia64_asm=no ;;

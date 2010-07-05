@@ -375,6 +375,7 @@ int write_trx(t_trxstatus *status,int nind,atom_id *ind,t_atoms *atoms,
 void close_trx(t_trxstatus *status)
 {
   gmx_fio_close(status->fio);
+  sfree(status);
 }
 
 t_trxstatus *open_trx(const char *outfile,const char *filemode)

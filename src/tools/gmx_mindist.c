@@ -115,7 +115,8 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   int    natoms,ind_min[2]={0,0},ind_mini=0,ind_minj=0;
   real   r,rmin,rmax,rmint,tmint;
   bool   bFirst;
-  
+  gmx_rmpbc_t  gpbc=NULL;
+
   natoms=read_first_x(oenv,&status,trxfn,&t,&x,box);
   
   check_index(NULL,n,index,NULL,natoms);
@@ -129,11 +130,14 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   rmint = box[XX][XX];
   tmint = 0;
   
+  if (NULL != top)
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+
   bFirst=TRUE;  
   do {
-    if (top) {
-      rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
-    }
+    if (NULL != top) 
+      gmx_rmpbc(gpbc,box,x,x);
+    
     periodic_dist(box,x,n,index,&rmin,&rmax,ind_min);
     if (rmin < rmint) {
       rmint = rmin;
@@ -147,6 +151,9 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 	    output_env_conv_time(oenv,t),rmin,rmax,norm(box[0]),norm(box[1]),norm(box[2]));
     bFirst=FALSE;
   } while(read_next_x(oenv,status,&t,natoms,x,box));
+
+  if (NULL != top)
+    gmx_rmpbc_done(gpbc);
     
   ffclose(out);
   

@@ -43,7 +43,7 @@
 #include <mpi.h>
 #else
 #ifdef GMX_THREADS
-#include "tmpi.h"
+#include "../tmpi.h"
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;

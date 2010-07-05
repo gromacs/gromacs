@@ -1982,15 +1982,19 @@ make_gridindex5_to_localindex(int n,int local_start,int local_end,
              * between zero and values close to the precision of a real,
              * which is anyhow the accuracy of the whole mesh calculation.
              */
-            if (gtl[i] == n-1)
+            /* With local_size=0 we should not change i=local_start */
+            if (i % n != local_start)
             {
-                gtl[i] = 0;
-                fsh[i] = -1; 
-            }
-            if (gtl[i] == local_size)
-            {
-                gtl[i] = local_size - 1;
-                fsh[i] = 1;
+                if (gtl[i] == n-1)
+                {
+                    gtl[i] = 0;
+                    fsh[i] = -1; 
+                }
+                else if (gtl[i] == local_size)
+                {
+                    gtl[i] = local_size - 1;
+                    fsh[i] = 1;
+                }
             }
         }
     }

@@ -434,7 +434,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 int read_xpm_matrix(const char *fnm,t_matrix **matrix)
 {
   FILE *in;
-  char *line;
+  char *line=NULL;
   int nmat;
   int llalloc=0;
 

@@ -201,6 +201,8 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
   rvec       *x0;   /* coordinates, and coordinates corrected for pb */
   matrix     box;        
   char       buf[256];   /* for xvgr title */
+  gmx_rmpbc_t  gpbc=NULL;
+  
 
   if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
@@ -223,11 +225,13 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
     sg_distance2 = xvgropen(d2file,buf,"Time (ps","Distance (nm)",oenv);
   }
 
+  gpbc = gmx_rmpbc_init(&(top->idef),ePBC,natoms,box);
+  
   do 
     {
       teller++;
 
-      rm_pbc(&(top->idef),ePBC,natoms,box,x0,x0);
+      gmx_rmpbc(gpbc,box,x0,x0);
       
       calc_angle(ePBC,box,x0,index1,index2,gnx1,gnx2,&angle,
 		 &distance,&distance1,&distance2);
@@ -241,7 +245,9 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
 	fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
 
     } while (read_next_x(oenv,status,&t,natoms,x0,box));
-  
+    
+  gmx_rmpbc_done(gpbc);
+
   fprintf(stderr,"\n");
   close_trj(status);
   ffclose(sg_angle);
@@ -363,7 +369,9 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
   rvec       *xzero;
   matrix     box;        
   char       buf[256];   /* for xvgr title */
+  gmx_rmpbc_t  gpbc=NULL;
   
+
   if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
@@ -386,11 +394,12 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
   }
   
   snew(xzero,natoms);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
 
   do {
     teller++;
     
-    rm_pbc(&(top->idef),ePBC,natoms,box,x0,x0);
+    gmx_rmpbc(gpbc,box,x0,x0);
     if (teller==1) {
       for(i=0;i<natoms;i++)
 	copy_rvec(x0[i],xzero[i]);
@@ -410,6 +419,7 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
       fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
     
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
+  gmx_rmpbc_done(gpbc);
   
   fprintf(stderr,"\n");
   close_trj(status);

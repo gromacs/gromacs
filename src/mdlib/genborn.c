@@ -64,14 +64,16 @@
 #include "tmpi.h"
 #endif
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
 #ifdef GMX_DOUBLE
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )
 #include "genborn_sse2_double.h"
+#endif
 #else
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
 #include "genborn_sse2_single.h"
 #include "genborn_allvsall_sse2_single.h"
-#endif /* GMX_DOUBLE */
 #endif /* GMX_SSE */
+#endif /* GMX_DOUBLE */
 
 #include "genborn_allvsall.h"
 
