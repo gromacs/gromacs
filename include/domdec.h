@@ -257,7 +257,7 @@ extern void write_dd_pdb(const char *fn,gmx_large_int_t step,const char *title,
 /* In domdec_setup.c */
 
 extern real comm_box_frac(ivec dd_nc,real cutoff,gmx_ddbox_t *ddbox);
-/* Returns the volume fraction of the system communicated by each node */
+/* Returns the volume fraction of the system that is communicated */
 
 extern real dd_choose_grid(FILE *fplog,
                            t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
