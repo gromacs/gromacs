@@ -1051,6 +1051,7 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     gmx_file_position_t *outputfiles;
     int  noutputfiles;
     int  flags_eks,flags_enh,i;
+    t_fileio *ret;
 		
     if (PAR(cr))
     {
@@ -1158,14 +1159,32 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
 
     /* we really, REALLY, want the checkpoint file and all files it depends 
        on to be physically written out do disk: */
-    gmx_fio_all_output_fsync();
+    ret=gmx_fio_all_output_fsync();
+    if (ret)
+    {
+        char buf[STRLEN];
+        sprintf(buf,
+                "Cannot fsync '%s'; maybe you are out of disk space or quota?",
+                gmx_fio_getname(ret));
+
+        if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV)==NULL)
+        {
+            gmx_file(buf);
+        }
+        else
+        {
+            gmx_warning(buf);
+        }
+    }
 
     if( gmx_fio_close(fp) != 0)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
     }
 
-    if (!bNumberAndKeep)
+    /* we don't move the checkpoint if the user specified they didn't want it,
+       or if the fsyncs failed */
+    if (!bNumberAndKeep && !ret)
     {
         if (gmx_fexist(fn))
         {

@@ -1053,11 +1053,10 @@ int gmx_fio_fsync(t_fileio *fio)
 
 
 
-int gmx_fio_all_output_fsync(void)
+t_fileio *gmx_fio_all_output_fsync(void)
 {
-    int ret=0;
+    t_fileio *ret=NULL;
     t_fileio *cur;
-
 
     cur=gmx_fio_get_first();
     while(cur)
@@ -1070,14 +1069,9 @@ int gmx_fio_all_output_fsync(void)
         {
             /* if any of them fails, return failure code */
             int rc=gmx_fio_int_fsync(cur);
-            if (rc != 0) 
+            if (rc != 0 && !ret) 
             {
-                char buf[STRLEN];
-                sprintf(buf,
-                        "Cannot fsync file '%s'; maybe you are out of disk space or quota?",
-                        cur->fn);
-                gmx_file(buf);
-                ret=-1;
+                ret=cur;
             }
         }
         cur=gmx_fio_get_next(cur);
@@ -1094,7 +1088,7 @@ int gmx_fio_all_output_fsync(void)
     fsync(STDERR_FILENO);
 #endif
 
-    return 0;
+    return ret;
 }
 
 
