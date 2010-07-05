@@ -815,7 +815,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	/*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
 	/*this routine does not live as dangerously as it seems. There is namely a check in mdrunner_membed to make
          *sure that g_membed exits with a warning when there are molecules of the same type not in the 
-	 *ins_at index group. */
+	 *ins_at index group. MGWolf 050710 */
 
 
 	snew(bRM,mtop->nmoltype);
