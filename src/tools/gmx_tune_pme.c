@@ -1055,7 +1055,7 @@ static void make_npme_list(
                            * largest common factor (depends on npp)           */
     int nlistmax;         /* Max. list size                                   */
     int nlist;            /* Actual number of entries in list                 */
-    int eNPME;
+    int eNPME=0;
 
 
     /* Do we need to check all possible values for -npme or is a reduced list enough? */

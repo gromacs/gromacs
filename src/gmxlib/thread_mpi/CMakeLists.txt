@@ -4,7 +4,7 @@
 add_library(thread_mpi STATIC threads.c tmpi_init.c errhandler.c 
             type.c group.c comm.c topology.c p2p.c collective.c 
             once.c list.c reduce_fast.c profile.c event.c barrier.c
-            hwinfo.c)
+            lock.c hwinfo.c)
 
 # make it link to the threads library (-lpthreads, for example)
 target_link_libraries(thread_mpi ${THREAD_LIB})
