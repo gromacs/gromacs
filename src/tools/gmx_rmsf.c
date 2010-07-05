@@ -199,7 +199,8 @@ int gmx_rmsf(int argc,char *argv[])
     { "-fit", FALSE, etBOOL, {&bFit},
       "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
   };
-  int          step,nre,natom,natoms,i,g,m,teller=0;
+  int          natom=0;
+  int          step,nre,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms;
   
   t_tpxheader  header;

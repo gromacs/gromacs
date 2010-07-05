@@ -16,7 +16,7 @@ libthread_mpi_la_SOURCES = group.c       barrier.c      list.c  \
 			   once.c        tmpi_init.c    comm.c \
 			   profile.c     errhandler.c   topology.c \
 			   event.c       type.c         reduce_fast.c \
-			   hwinfo.c
+			   hwinfo.c	 lock.c
 
 CLEANFILES     = *.la *~ \\\#*
 
