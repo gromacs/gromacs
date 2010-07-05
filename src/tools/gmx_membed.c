@@ -215,7 +215,6 @@ int get_tpr_version(const char *infile)
 	bool  	bDouble;
 	int 	precision,fver;
         t_fileio *fio;
-	bool 	bRead=TRUE;
 
 	fio = open_tpx(infile,"r");
 	gmx_fio_checktype(fio);
@@ -436,7 +435,6 @@ void init_lip(matrix box, gmx_mtop_t *mtop, lip_t *lip)
 int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *pos_ins)
 {
 	int i,j,at,mol,nmol,nmolbox,count;
-	atom_id *index;
 	t_block *mem_a;
 	real z,zmin,zmax,mem_area;
 	bool bNew;
@@ -551,13 +549,14 @@ void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *mem_p,rve
 
 void resize(t_block *ins_at, rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
 {
-	int i,j,k,at;
+	int i,j,k,at,c=0;
 	for (k=0;k<pos_ins->pieces;k++)
 		for(i=0;i<pos_ins->nidx[k];i++)
 		{
 			at=pos_ins->subindex[k][i];
 			for(j=0;j<DIM;j++)
-				r[at][j]=pos_ins->geom_cent[k][j]+fac[j]*(r_ins[at][j]-pos_ins->geom_cent[k][j]);
+				r[at][j]=pos_ins->geom_cent[k][j]+fac[j]*(r_ins[c][j]-pos_ins->geom_cent[k][j]);
+			c++;
 		}
 }
 
@@ -698,9 +697,9 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 	return nupper+nlower;
 }
 
-void freeze_rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state)
+void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state, t_block *ins_at, pos_ins_t *pos_ins)
 {
-	int i,j,n,rm,mol_id,at,type;
+	int i,j,k,n,rm,mol_id,at,type;
 	rvec *x_tmp,*v_tmp;
 	atom_id *list,*new_mols;
 	unsigned char  *new_egrp[egcNR];
@@ -778,6 +777,19 @@ void freeze_rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
 			}
 			copy_rvec(state->x[i],x_tmp[i-rm]);
 			copy_rvec(state->v[i],v_tmp[i-rm]);
+			for(j=0;j<ins_at->nr;j++)
+			{
+				if (i==ins_at->index[j])
+					ins_at->index[j]=i-rm;
+			}
+			for(j=0;j<pos_ins->pieces;j++)
+			{
+				for(k=0;k<pos_ins->nidx[j];k++)
+				{
+					if (i==pos_ins->subindex[j][k])
+						pos_ins->subindex[j][k]=i-rm;
+				}
+			}
 		}
 	}
 	sfree(state->x);
@@ -801,6 +813,9 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	int type,natom,nmol,at,atom1=0,rm_at=0;
 	bool *bRM,bINS;
 	/*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
+	/*this routine does not live as dangerously as it seems. There is namely a check in mdrunner_membed to make
+         *sure that g_membed exits with a warning when there are molecules of the same type not in the 
+	 *ins_at index group. */
 
 
 	snew(bRM,mtop->nmoltype);
@@ -1123,11 +1138,11 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 {
     int  i,gsi;
     real gs_buf[eglsNR];
-    tensor corr_vir,corr_pres,shakeall_vir;
-    bool bEner,bPres,bTemp, bVV;
+    tensor corr_vir,corr_pres;
+    bool bEner,bPres,bTemp;
     bool bRerunMD, bStopCM, bGStat, bNEMD, bIterate,
         bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
-    real ekin,temp,prescorr,enercorr,dvdlcorr;
+    real prescorr,enercorr,dvdlcorr;
 
     /* translate CGLO flags to booleans */
     bRerunMD = flags & CGLO_RERUNMD;
@@ -1402,7 +1417,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
        0.02, which is smaller that would ever be necessary in
        practice. Generally, 3-5 iterations will be sufficient */
 
-    real relerr,err,xmin;
+    real relerr,err;
     char buf[256];
     int i;
     bool incycle;
@@ -1853,20 +1868,15 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool        bAppend;
     bool        bResetCountersHalfMaxH=FALSE;
     bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
-    real        temp0,mu_aver=0,dvdl;
-    int         a0,a1,gnx=0,ii;
-    atom_id     *grpindex=NULL;
-    char        *grpname;
-/*    t_coupl_rec *tcr=NULL; */
+    real        temp0,dvdl;
+    int         a0,a1,ii;
     rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
     matrix      boxcopy={{0}},lastbox;
-	tensor      tmpvir;
-	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
+	real        veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
     double      cycles;
 	real        last_conserved = 0;
     real        last_ekin = 0;
-	int         iter_i;
 	t_extmass   MassQ;
     int         **trotter_seq;
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
@@ -3705,9 +3715,16 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		if(it_xy<1000)
 		{
 			warn++;
-			fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow in %s (%d) is probably too small.\n"
-					"If you are sure, you can increase maxwarn.\n\n",warn,ins,it_xy);
+			fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow the xy-coordinates of %s (%d) is probably too small.\n"
+					"Increase -nxy or, if you are sure, you can increase maxwarn.\n\n",warn,ins,it_xy);
 		}
+
+		if( (it_z<100) && ( z_fac<0.99999999 || z_fac>1.0000001) )
+                {
+                        warn++;
+                        fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d) is probably too small.\n"
+                                       "Increase -nz or, if you are sure, you can increase maxwarn.\n\n",warn,ins,it_z);
+                }
 
 		if(it_xy+it_z>inputrec->nsteps)
 		{
@@ -3797,7 +3814,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		fac[2]=z_fac;
 
 		xy_step =(xy_max-xy_fac)/(double)(it_xy);
-		z_step  =(z_max-z_fac)/(double)it_z;
+		z_step  =(z_max-z_fac)/(double)(it_z-1);
 
 		resize(ins_at,r_ins,state->x,pos_ins,fac);
 
@@ -3830,8 +3847,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 					"Try making the -xyinit resize factor smaller. If you are sure about this increase maxwarn.\n\n",warn);
 		}
 
-		/*freeze all lipids and waters that should be removed and exclude interactions*/
-		freeze_rm_group(inputrec,groups,mtop,rm_p,state);
+		/*remove all lipids and waters overlapping and update all important structures*/
+		rm_group(inputrec,groups,mtop,rm_p,state,ins_at,pos_ins);
 
 		rm_bonded_at = rm_bonded(ins_at,mtop);
 		if (rm_bonded_at != ins_at->nr)
