@@ -41,7 +41,7 @@
 #endif
 
 
-#include "types/simple.h"
+#include "simple.h"
 
 #ifdef __cplusplus
 extern "C" {

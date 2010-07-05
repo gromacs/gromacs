@@ -63,8 +63,6 @@ extern "C"
 } /* Avoids screwing up auto-indentation */
 #endif
 
-/*#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"*/
 
 
 /** tMPI Communicator
