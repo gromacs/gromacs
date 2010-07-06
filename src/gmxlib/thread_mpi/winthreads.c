@@ -407,7 +407,8 @@ int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value)
     return ret==0;
 }
 
-
+#if 0
+/* use once Vista is minimum required version */
 static BOOL CALLBACK InitHandleWrapperFunction(PINIT_ONCE InitOnce,
                                                PVOID Parameter,
                                                PVOID *lpContext)
@@ -422,12 +423,13 @@ static BOOL CALLBACK InitHandleWrapperFunction(PINIT_ONCE InitOnce,
 CRITICAL_SECTION tMPI_Once_cs;
 tMPI_Spinlock_t tMPI_Once_cs_lock=TMPI_SPINLOCK_INITIALIZER;
 volatile int tMPI_Once_init=0;
-
+#endif
 
 int tMPI_Thread_once(tMPI_Thread_once_t *once_control, 
                      void (*init_routine)(void))
 {
 #if 0
+    /* use once Vista is minimum required version */
     BOOL bStatus;
     bStatus = InitOnceExecuteOnce(once_control, InitHandleWrapperFunction, 
                                   init_routine, NULL);

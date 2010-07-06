@@ -59,16 +59,30 @@
 #endif
 
 
+/* This is just for clarity - it can never be anything but 4! */
+#define XDR_INT_SIZE 4
+
+
+
+#ifndef GMX_THREADS
+
+/* NOTE: DO NOT USE THESE ANYWHERE IN GROMACS ITSELF. 
+   These are necessary for the backward-compatile io routines for 3d party
+   tools */
 #define MAXID 256
 static FILE *xdrfiles[MAXID];
 static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
 
-/* This is just for clarity - it can never be anything but 4! */
-#define XDR_INT_SIZE 4
+#endif
 
 #ifdef GMX_FORTRAN
+
+
+/* the open&close prototypes */
+int xdropen(XDR *xdrs, const char *filename, const char *type);
+int xdrclose(XDR *xdrs);
 
 typedef void (* F77_FUNC(xdrfproc,XDRFPROC))(int *, void *, int *);
 
@@ -275,48 +289,18 @@ F77_FUNC(xdrfopen,XDRFOPEN)(int *xdrid, char *fp_ptr, char *mode_ptr,
 }
 #endif /* GMX_FORTRAN */
 
-/*___________________________________________________________________________
- |
- | what follows are the C routines for opening, closing xdr streams
- | and the routine to read/write compressed coordinates together
- | with some routines to assist in this task (those are marked
- | static and cannot be called from user programs)
-*/
-#define MAXABS INT_MAX-2
-
-#ifndef MIN
-#define MIN(x,y) ((x) < (y) ? (x):(y))
-#endif
-#ifndef MAX
-#define MAX(x,y) ((x) > (y) ? (x):(y))
-#endif
-#ifndef SQR
-#define SQR(x) ((x)*(x))
-#endif
-static int magicints[] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
-    8, 10, 12, 16, 20, 25, 32, 40, 50, 64,
-    80, 101, 128, 161, 203, 256, 322, 406, 512, 645,
-    812, 1024, 1290, 1625, 2048, 2580, 3250, 4096, 5060, 6501,
-    8192, 10321, 13003, 16384, 20642, 26007, 32768, 41285, 52015, 65536,
-    82570, 104031, 131072, 165140, 208063, 262144, 330280, 416127, 524287, 660561,
-    832255, 1048576, 1321122, 1664510, 2097152, 2642245, 3329021, 4194304, 5284491, 6658042,
-    8388607, 10568983, 13316085, 16777216 };
-
-#define FIRSTIDX 9
-/* note that magicints[FIRSTIDX-1] == 0 */
-#define LASTIDX (sizeof(magicints) / sizeof(*magicints))
-
-
+#ifndef GMX_THREADS
 /*__________________________________________________________________________
  |
  | xdropen - open xdr file
  |
  | This versions differs from xdrstdio_create, because I need to know
- | the state of the file (read or write) so I can use xdr3dfcoord
- | in eigther read or write mode, and the file descriptor
+ | the state of the file (read or write)  and the file descriptor
  | so I can close the file (something xdr_destroy doesn't do).
  |
+ | NOTE: THIS FUNCTION IS NOW OBSOLETE AND ONLY PROVIDED FOR BACKWARD
+ |       COMPATIBILITY OF 3D PARTY TOOLS. IT SHOULD NOT BE USED ANYWHERE 
+ |       IN GROMACS ITSELF. 
 */
 
 int xdropen(XDR *xdrs, const char *filename, const char *type) {
@@ -383,7 +367,6 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     }
     return xdrid;
 }
-
 /*_________________________________________________________________________
  |
  | xdrclose - close a xdr file
@@ -392,6 +375,9 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
  | It also closes the associated file descriptor (this is *not*
  | done by xdr_destroy).
  |
+ | NOTE: THIS FUNCTION IS NOW OBSOLETE AND ONLY PROVIDED FOR BACKWARD
+ |       COMPATIBILITY OF 3D PARTY TOOLS. IT SHOULD NOT BE USED ANYWHERE 
+ |       IN GROMACS ITSELF. 
 */
  
 int xdrclose(XDR *xdrs) {
@@ -418,11 +404,39 @@ int xdrclose(XDR *xdrs) {
     return 0;    
 }
 
-FILE *
-xdr_get_fp(int xdrid)
-{
-	return xdrfiles[xdrid];
-}
+#endif
+
+
+/*___________________________________________________________________________
+ |
+ | what follows are the C routine to read/write compressed coordinates together
+ | with some routines to assist in this task (those are marked
+ | static and cannot be called from user programs)
+*/
+#define MAXABS INT_MAX-2
+
+#ifndef MIN
+#define MIN(x,y) ((x) < (y) ? (x):(y))
+#endif
+#ifndef MAX
+#define MAX(x,y) ((x) > (y) ? (x):(y))
+#endif
+#ifndef SQR
+#define SQR(x) ((x)*(x))
+#endif
+static const int magicints[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    8, 10, 12, 16, 20, 25, 32, 40, 50, 64,
+    80, 101, 128, 161, 203, 256, 322, 406, 512, 645,
+    812, 1024, 1290, 1625, 2048, 2580, 3250, 4096, 5060, 6501,
+    8192, 10321, 13003, 16384, 20642, 26007, 32768, 41285, 52015, 65536,
+    82570, 104031, 131072, 165140, 208063, 262144, 330280, 416127, 524287, 660561,
+    832255, 1048576, 1321122, 1664510, 2097152, 2642245, 3329021, 4194304, 5284491, 6658042,
+    8388607, 10568983, 13316085, 16777216 };
+
+#define FIRSTIDX 9
+/* note that magicints[FIRSTIDX-1] == 0 */
+#define LASTIDX (sizeof(magicints) / sizeof(*magicints))
 
 
 /*____________________________________________________________________________
@@ -696,9 +710,8 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
  |
  */
  
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
-    
-
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead) 
+{
     static int *ip = NULL;
     static int oldsize;
     static int *buf;
@@ -721,18 +734,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
     prevcoord[0]  = prevcoord[1]  = prevcoord[2]  = 0;
-    
-    /* find out if xdrs is opened for reading or for writing */
-    xdrid = 0;
-    while (xdridptr[xdrid] != xdrs) {
-	xdrid++;
-	if (xdrid >= MAXID) {
-	    fprintf(stderr, "xdr error. no open xdr stream\n");
-	    exit (1);
-	}
-    }
-    if ((xdrmodes[xdrid] == 'w') || (xdrmodes[xdrid] == 'a')) {
-
+   
+    if (!bRead)
+    {
 	/* xdrs is open for writing */
 
 	if (xdr_int(xdrs, size) == 0)

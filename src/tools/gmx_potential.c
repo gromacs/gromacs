@@ -104,9 +104,9 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,
-      **slCount,         /* nr. of atoms in one slice for a group */
+  int natoms;            /* nr. atoms in trj */
+  t_trxstatus *status;
+  int **slCount,         /* nr. of atoms in one slice for a group */
       i,j,n,             /* loop indices */
       teller = 0,      
       ax1=0, ax2=0,
@@ -117,7 +117,8 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
   real t;
   double z;
   rvec xcm;
-  
+  gmx_rmpbc_t  gpbc=NULL;
+
   switch(axis)
   {
   case 0:
@@ -152,13 +153,15 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
     snew((*slPotential)[i], *nslices);
   }
 
+
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+  
   /*********** Start processing trajectory ***********/
   do 
   {
     *slWidth = box[axis][axis]/(*nslices);
     teller++;
-    
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
+    gmx_rmpbc(gpbc,box,x0,x0);
 
     /* calculate position of center of mass based on group 1 */
     calc_xcm(x0, gnx[0], index[0], top->atoms.atom, xcm, FALSE);
@@ -200,6 +203,8 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
     }
     nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
+
+  gmx_rmpbc_done(gpbc);
 
   /*********** done with status file **********/
   close_trj(status);

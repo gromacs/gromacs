@@ -549,9 +549,9 @@ int gmx_confrms(int argc,char *argv[])
   }
   rms = sqrt(rms/totmass);
   
-  printf("Root mean square deviation after lsq fit = %g\n",rms);
+  printf("Root mean square deviation after lsq fit = %g nm\n",rms);
   if (bBfac)
-    printf("Atomic MSD's range from %g to %g\n",minmsd, maxmsd);
+    printf("Atomic MSD's range from %g to %g nm^2\n",minmsd, maxmsd);
   
   if (bFit) {
     /* reset coordinates of reference and fitted structure */
@@ -569,25 +569,46 @@ int gmx_confrms(int argc,char *argv[])
   case efBRK:
   case efENT:
     if (bBfac || bLabel) {
-      snew(atoms1->pdbinfo, atoms1->nr);
-      snew(atoms1->atom, atoms1->nr);
-      for(i=0; i<isize1; i++) {
-	atoms1->pdbinfo[index1[i]].type = eptAtom;
-	atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE;
+      srenew(atoms1->pdbinfo, atoms1->nr);
+      srenew(atoms1->atom, atoms1->nr);      /* Why renew atom? */
+
+      /* Avoid segfaults when writing the pdb-file */
+      for (i=0; i<atoms1->nr; i++) {
+	atoms1->pdbinfo[i].type = eptAtom;
+	atoms1->pdbinfo[i].bAnisotropic = FALSE;
 	if (bBfac)
-	  atoms1->pdbinfo[index1[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+	  atoms1->pdbinfo[i].bfac = 0;
 	if (bLabel)
-	  atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A';
+	  atoms1->resinfo[atoms1->atom[i].resind].chain = 'A';
       }
-      snew(atoms2->pdbinfo, atoms2->nr);
-      snew(atoms2->atom, atoms2->nr);
-      for(i=0; i<isize2; i++) {
-	atoms2->pdbinfo[index2[i]].type = eptAtom;
-	atoms2->pdbinfo[index2[i]].bAnisotropic = FALSE;
+
+      for(i=0; i<isize1; i++) {
+	/* atoms1->pdbinfo[index1[i]].type = eptAtom; */
+/* 	atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE; */
 	if (bBfac)
-	  atoms2->pdbinfo[index2[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+	  atoms1->pdbinfo[index1[i]].bfac = (800*M_PI*M_PI/3.0)*msds[i];
+/* 	if (bLabel) */
+/* 	  atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A'; */
+      }
+      srenew(atoms2->pdbinfo, atoms2->nr);
+      srenew(atoms2->atom, atoms2->nr);      /* Why renew atom? */
+
+      for (i=0; i<atoms2->nr; i++) {
+	atoms2->pdbinfo[i].type = eptAtom;
+	atoms2->pdbinfo[i].bAnisotropic = FALSE;
+	if (bBfac)
+	  atoms2->pdbinfo[i].bfac = 0;
 	if (bLabel)
-	  atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B';
+	  atoms2->resinfo[atoms1->atom[i].resind].chain = 'B';
+      }
+
+      for(i=0; i<isize2; i++) {
+	/* atoms2->pdbinfo[index2[i]].type = eptAtom; */
+/* 	atoms2->pdbinfo[index2[i]].bAnisotropic = FALSE; */
+	if (bBfac)
+	  atoms2->pdbinfo[index2[i]].bfac = (800*M_PI*M_PI/3.0)*msds[i];
+/* 	if (bLabel) */
+/* 	  atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B'; */
       }
     }
     fp=ffopen(outfile,"w");

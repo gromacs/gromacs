@@ -108,7 +108,7 @@ void nb_kernel410_ia32_sse2(int *           p_nri,
 	nri        = *p_nri;
 	ntype      = *p_ntype;
 	nthreads   = *p_nthreads; 
-  facel      = *p_facel     
+  facel      = *p_facel;     
 	krf        = *p_krf;
 	crf        = *p_crf;
 	tabscl     = *p_tabscale;

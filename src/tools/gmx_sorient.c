@@ -99,7 +99,7 @@ int gmx_sorient(int argc,char *argv[])
   t_topology top;
   int      ePBC;
   char     title[STRLEN];
-  int      status;
+  t_trxstatus *status;
   int      natoms;
   real     t;
   rvec     *xtop,*x;
@@ -117,6 +117,7 @@ int gmx_sorient(int argc,char *argv[])
   char    str[STRLEN];
   bool    bTPS;
   rvec    xref,dx,dxh1,dxh2,outer;
+  gmx_rmpbc_t gpbc=NULL;
   t_pbc   pbc;
   char *legr[] = { "<cos(\\8q\\4\\s1\\N)>", 
 	 	         "<3cos\\S2\\N(\\8q\\4\\s2\\N)-1>" };
@@ -219,14 +220,14 @@ int gmx_sorient(int argc,char *argv[])
   rcut2 = sqr(rcut);
 
   invbw = 1/binwidth;
-  nbin1 = (int)(2*invbw + 0.5);
-  nbin2 = (int)(invbw + 0.5);
+  nbin1 = 1+(int)(2*invbw + 0.5);
+  nbin2 = 1+(int)(invbw + 0.5);
 
   invrbw = 1/rbinw;
   
-  snew(hist1,nbin1+1);
-  snew(hist2,nbin2+1);
-  nrbin = rcut/rbinw;
+  snew(hist1,nbin1);
+  snew(hist2,nbin2);
+  nrbin = 1+(int)(rcut/rbinw);
   if (nrbin == 0)
     nrbin = 1;
   snew(histi1,nrbin);
@@ -238,11 +239,15 @@ int gmx_sorient(int argc,char *argv[])
   sum1 = 0;
   sum2 = 0;
 
+  if (bTPS) {
+    /* make molecules whole again */
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
+  }
   /* start analysis of trajectory */
   do {
     if (bTPS) {
       /* make molecules whole again */
-      rm_pbc(&top.idef,ePBC,natoms,box,x,x);
+      gmx_rmpbc(gpbc,box,x,x);
     }
     
     set_pbc(&pbc,ePBC,box);
@@ -259,6 +264,9 @@ int gmx_sorient(int argc,char *argv[])
 	sa0 = index[1][m];
 	sa1 = index[1][m+1];
 	sa2 = index[1][m+2];
+	range_check(sa0,0,natoms);
+	range_check(sa1,0,natoms);
+	range_check(sa2,0,natoms);
 	pbc_dx(&pbc,x[sa0],xref,dx);
 	r2  = norm2(dx);
 	if (r2 < rcut2) {
@@ -280,15 +288,24 @@ int gmx_sorient(int argc,char *argv[])
 	    unitv(dxh2,dxh2);
 	    outp = iprod(dx,dxh2)/r;
 	  }
-	  (histi1[(int)(invrbw*r)]) += inp;
-	  (histi2[(int)(invrbw*r)]) += 3*sqr(outp) - 1;
-	  (histn[(int)(invrbw*r)])++;
-	  if (r2>=rmin2 && r2<rmax2) {
-	    (hist1[(int)(invbw*(inp + 1))])++;
-	    (hist2[(int)(invbw*fabs(outp))])++;
+	  {
+	    int ii = (int)(invrbw*r);
+	    range_check(ii,0,nrbin);
+	    histi1[ii] += inp;
+	    histi2[ii] += 3*sqr(outp) - 1;
+	    histn[ii]++;
+	  }
+	  if ((r2>=rmin2) && (r2<rmax2)) {
+	    int ii1 = (int)(invbw*(inp + 1));
+	    int ii2 = (int)(invbw*fabs(outp));
+	    
+	    range_check(ii1,0,nbin1);
+	    range_check(ii2,0,nbin2);
+	    hist1[ii1]++;
+	    hist2[ii2]++;
 	    sum1 += inp;
 	    sum2 += outp;
-	     n++;
+	    n++;
 	  }
 	}
       }
@@ -301,7 +318,8 @@ int gmx_sorient(int argc,char *argv[])
   /* clean up */
   sfree(x);
   close_trj(status);
-
+  gmx_rmpbc_done(gpbc);
+  
   /* Add the bin for the exact maximum to the previous bin */
   hist1[nbin1-1] += hist1[nbin1];
   hist2[nbin2-1] += hist2[nbin2];

@@ -313,8 +313,10 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
-    bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir) && bPres) || bReadEkin);
-
+    /*bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir) && bPres) || bReadEkin);*/
+    
+    bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && bPres) || bReadEkin);
+    
     /* in initalization, it sums the shake virial in vv, and to 
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
 
@@ -441,7 +443,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         /* Sum the kinetic energies of the groups & calc temp */
         /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with IR_NPT_TROTTER */
         /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).  
-           Leap with AveVel is also an option for the future but not supported now.  
+           Leap with AveVel is not supported; it's not clear that it will actually work.  
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy. 
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
            bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.  
@@ -1024,7 +1026,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
-    int        i,m,status;
+    int        i,m;
+    t_trxstatus *status;
     rvec       mu_tot;
     t_vcm      *vcm;
     t_state    *bufstate=NULL;   
@@ -1349,9 +1352,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */ 
-        /* we do the same call as above, but turn the pressure off -- internally, this 
-           is recognized as a velocity verlet half-step kinetic energy calculation.
-           This minimized excess variables, but perhaps loses some logic?*/
+        /* we do the same call as above, but turn the pressure off -- internally to 
+           compute_globals, this is recognized as a velocity verlet half-step 
+           kinetic energy calculation.  This minimized excess variables, but 
+           perhaps loses some logic?*/
         
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                         wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
@@ -1885,7 +1889,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
             } else {
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
-                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
+                trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
             }
             
             update_coords(fplog,step,ir,mdatoms,state,
@@ -1923,7 +1927,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                            of veta.  */
                         
                         veta_save = state->veta;
-                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
                         vetanew = state->veta;
                         state->veta = veta_save;
                     } 
@@ -1953,9 +1957,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 
                 if (bVV) {
                     /* if VV, compute the pressure and constraints */
-                    /* if VV2, the pressure and constraints only if using pressure control.*/
-                    bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); 
-                    bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));
+                    /* For VV2, we strictly only need this if using pressure control, but we really would 
+                       like to have accurate pressures printed out.  Think about ways around this in the future?
+                       For now, keep this choice in comments  */
+                    /*bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); */
+                    /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
+                    bPres = TRUE;
+                    bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK));
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                     constr,NULL,FALSE,state->box,
@@ -1974,14 +1982,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                    a) We compute Ekin at the full time step
                    if 1) we are using the AveVel Ekin, and it's not the
                    initial step, or 2) if we are using AveEkin, but need the full
-                   time step kinetic energy for the pressure.
+                   time step kinetic energy for the pressure (always true now, since we want accurate statistics).
                    b) If we are using EkinAveEkin for the kinetic energy for the temperture control, we still feed in 
                    EkinAveVel because it's needed for the pressure */
                 
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (bVV && !bInitStep) 
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
                 
                 if (bIterations &&
@@ -2301,7 +2309,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         m_add(force_vir,shake_vir,total_vir);
                         clear_mat(shake_vir);
                     }
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
                 }
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
@@ -2346,7 +2354,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     cglo_flags | CGLO_TEMPERATURE    
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);            
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);            
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 

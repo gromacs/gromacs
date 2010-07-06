@@ -87,6 +87,7 @@
 #include "tpxio.h"
 #include "string2.h"
 #include "sighandler.h"
+#include "gmx_ana.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -133,8 +134,8 @@ typedef struct {
 	int		id;
 	char	*name;
 	int 	nr;
-	int 	natoms;			//nr of atoms per lipid
-	int		mol1;			//id of the first lipid molecule
+	int 	natoms;	    /*nr of atoms per lipid*/
+	int	mol1;	    /*id of the first lipid molecule*/
 	real 	area;
 } lip_t;
 
@@ -151,7 +152,7 @@ typedef struct {
 
 typedef struct {
 	int		*mol;
-	int		*type;
+	int		*block;
 	int 	nr;
 } rm_t;
 
@@ -168,7 +169,7 @@ int search_string(char *s,int ng,char ***gn)
 	return -1;
 }
 
-int get_mol_id(int at,int nmblock,gmx_molblock_t *mblock, int *type)
+int get_mol_id(int at,int nmblock,gmx_molblock_t *mblock, int *type, int *block)
 {
 	int mol_id=0;
 	int i;
@@ -179,6 +180,7 @@ int get_mol_id(int at,int nmblock,gmx_molblock_t *mblock, int *type)
 		{
 			mol_id+=at/mblock[i].natoms_mol;
 			*type = mblock[i].type;
+			*block = i;
 			return mol_id;
 		} else {
 			at-= mblock[i].nmol*mblock[i].natoms_mol;
@@ -191,7 +193,7 @@ int get_mol_id(int at,int nmblock,gmx_molblock_t *mblock, int *type)
 	return -1;
 }
 
-int get_type(int mol_id,int nmblock,gmx_molblock_t *mblock)
+int get_block(int mol_id,int nmblock,gmx_molblock_t *mblock)
 {
 	int i;
 	int nmol=0;
@@ -200,7 +202,7 @@ int get_type(int mol_id,int nmblock,gmx_molblock_t *mblock)
 	{
 		nmol+=mblock[i].nmol;
 		if(mol_id<nmol)
-			return mblock[i].type;
+			return i;
 	}
 
 	gmx_fatal(FARGS,"mol_id %d larger than total number of molecules %d.\n",mol_id,nmol);
@@ -208,37 +210,37 @@ int get_type(int mol_id,int nmblock,gmx_molblock_t *mblock)
 	return -1;
 }
 
-int get_tpr_version(char *infile)
+int get_tpr_version(const char *infile)
 {
 	char  	buf[STRLEN];
 	bool  	bDouble;
-	int 	precision,fver,fp;
-	bool 	bRead=TRUE;
+	int 	precision,fver;
+        t_fileio *fio;
 
-	fp = open_tpx(infile,"r");
-	gmx_fio_select(fp);
+	fio = open_tpx(infile,"r");
+	gmx_fio_checktype(fio);
 
 	precision = sizeof(real);
 
-	do_string(buf);
+	gmx_fio_do_string(fio,buf);
 	if (strncmp(buf,"VERSION",7))
 		gmx_fatal(FARGS,"Can not read file %s,\n"
 				"             this file is from a Gromacs version which is older than 2.0\n"
 				"             Make a new one with grompp or use a gro or pdb file, if possible",
-				gmx_fio_getname(fp));
-	do_int(precision);
+				gmx_fio_getname(fio));
+	gmx_fio_do_int(fio,precision);
 	bDouble = (precision == sizeof(double));
 	if ((precision != sizeof(float)) && !bDouble)
 		gmx_fatal(FARGS,"Unknown precision in file %s: real is %d bytes "
 				"instead of %d or %d",
-				gmx_fio_getname(fp),precision,sizeof(float),sizeof(double));
-	gmx_fio_setprecision(fp,bDouble);
+				gmx_fio_getname(fio),precision,sizeof(float),sizeof(double));
+	gmx_fio_setprecision(fio,bDouble);
 	fprintf(stderr,"Reading file %s, %s (%s precision)\n",
-			gmx_fio_getname(fp),buf,bDouble ? "double" : "single");
+			gmx_fio_getname(fio),buf,bDouble ? "double" : "single");
 
-	do_int(fver);
+	gmx_fio_do_int(fio,fver);
 
-	close_tpx(fp);
+	close_tpx(fio);
 
 	return fver;
 }
@@ -262,7 +264,8 @@ void set_inbox(int natom, rvec *x)
 
 int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 {
-	int i,j,nr,mol_id,type;
+	int i,j,nr,mol_id;
+        int type=0,block=0;
 	bool bNEW;
 
 	nr=0;
@@ -270,7 +273,7 @@ int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 	for (i=0;i<at->nr;i++)
 	{
 		bNEW=TRUE;
-		mol_id = get_mol_id(at->index[i],mtop->nmolblock,mtop->molblock,&type);
+		mol_id = get_mol_id(at->index[i],mtop->nmolblock,mtop->molblock,&type,&block);
 		for(j=0;j<nr;j++)
 		{
 			if(tlist->index[j]==type)
@@ -366,7 +369,7 @@ int init_ins_at(t_block *ins_at,t_block *rest_at,t_state *state, pos_ins_t *pos_
 		pos_ins->xmax[YY]=ymax;
 	}
 
-	// 6.0 is estimated thickness of bilayer
+	/* 6.0 is estimated thickness of bilayer */
 	if( (zmax-zmin) < 6.0 )
 	{
 		pos_ins->xmin[ZZ]=zmin+(zmax-zmin)/2.0-3.0;
@@ -433,17 +436,16 @@ void init_lip(matrix box, gmx_mtop_t *mtop, lip_t *lip)
 int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *pos_ins)
 {
 	int i,j,at,mol,nmol,nmolbox,count;
-	atom_id *index;
 	t_block *mem_a;
 	real z,zmin,zmax,mem_area;
 	bool bNew;
 	atom_id *mol_id;
-	int type;
+	int type=0,block=0;
 
 	nmol=count=0;
 	mem_a=&(mem_p->mem_at);
 	snew(mol_id,mem_a->nr);
-//	snew(index,mem_a->nr);
+/*	snew(index,mem_a->nr); */
 	zmin=pos_ins->xmax[ZZ];
 	zmax=pos_ins->xmin[ZZ];
 	for(i=0;i<mem_a->nr;i++)
@@ -453,7 +455,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 			(r[at][YY]>pos_ins->xmin[YY]) && (r[at][YY]<pos_ins->xmax[YY]) &&
 			(r[at][ZZ]>pos_ins->xmin[ZZ]) && (r[at][ZZ]<pos_ins->xmax[ZZ]) )
 		{
-			mol = get_mol_id(at,mtop->nmolblock,mtop->molblock,&type);
+			mol = get_mol_id(at,mtop->nmolblock,mtop->molblock,&type,&block);
 
 			bNew=TRUE;
 			for(j=0;j<nmol;j++)
@@ -470,7 +472,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 			if(z<zmin)					zmin=z;
 			if(z>zmax)					zmax=z;
 
-//			index[count]=at;
+/*			index[count]=at;*/
 			count++;
 		}
 	}
@@ -478,10 +480,10 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	mem_p->nmol=nmol;
 	srenew(mol_id,nmol);
 	mem_p->mol_id=mol_id;
-//	srenew(index,count);
-//	mem_p->mem_at.nr=count;
-//	sfree(mem_p->mem_at.index);
-//	mem_p->mem_at.index=index;
+/*	srenew(index,count);*/
+/*	mem_p->mem_at.nr=count;*/
+/*	sfree(mem_p->mem_at.index);*/
+/*	mem_p->mem_at.index=index;*/
 
 	if((zmax-zmin)>(box[ZZ][ZZ]-0.5))
 		gmx_fatal(FARGS,"Something is wrong with your membrane. Max and min z values are %f and %f.\n"
@@ -492,8 +494,8 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	mem_p->zmax=zmax;
 	mem_p->zmed=(zmax-zmin)/2+zmin;
 
-	//number of membrane molecules in protein box
-	nmolbox = count/mtop->molblock[type].natoms_mol;
+	/*number of membrane molecules in protein box*/
+	nmolbox = count/mtop->molblock[block].natoms_mol;
 	/*mem_area = box[XX][XX]*box[YY][YY]-box[XX][YY]*box[YY][XX];
 	mem_p->lip_area = 2.0*mem_area/(double)mem_p->nmol;*/
 	mem_area = (pos_ins->xmax[XX]-pos_ins->xmin[XX])*(pos_ins->xmax[YY]-pos_ins->xmin[YY]);
@@ -548,28 +550,32 @@ void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *mem_p,rve
 
 void resize(t_block *ins_at, rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
 {
-	int i,j,k,at;
+	int i,j,k,at,c=0;
 	for (k=0;k<pos_ins->pieces;k++)
 		for(i=0;i<pos_ins->nidx[k];i++)
 		{
 			at=pos_ins->subindex[k][i];
 			for(j=0;j<DIM;j++)
-				r[at][j]=pos_ins->geom_cent[k][j]+fac[j]*(r_ins[at][j]-pos_ins->geom_cent[k][j]);
+				r[at][j]=pos_ins->geom_cent[k][j]+fac[j]*(r_ins[c][j]-pos_ins->geom_cent[k][j]);
+			c++;
 		}
 }
 
 int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop_t *mtop,
 		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, bool bALLOW_ASYMMETRY)
 {
-	int i,j,k,l,at,at2,mol_id,type;
+	int i,j,k,l,at,at2,mol_id;
+        int type=0,block=0;
 	int nrm,nupper,nlower;
 	real r_min_rad,z_lip,min_norm;
 	bool bRM;
 	rvec dr,dr_tmp;
+	real *dist;
+	int *order;
 
 	r_min_rad=probe_rad*probe_rad;
 	snew(rm_p->mol,mtop->mols.nr);
-	snew(rm_p->type,mtop->mols.nr);
+	snew(rm_p->block,mtop->mols.nr);
 	nrm=nupper=0;
 	nlower=low_up_rm;
 	for(i=0;i<ins_at->nr;i++)
@@ -582,16 +588,16 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 
 			if(norm2(dr)<r_min_rad)
 			{
-				mol_id = get_mol_id(at2,mtop->nmolblock,mtop->molblock,&type);
+				mol_id = get_mol_id(at2,mtop->nmolblock,mtop->molblock,&type,&block);
 				bRM=TRUE;
 				for(l=0;l<nrm;l++)
 					if(rm_p->mol[l]==mol_id)
 						bRM=FALSE;
 				if(bRM)
 				{
-					//fprintf(stderr,"%d wordt toegevoegd\n",mol_id);
+					/*fprintf(stderr,"%d wordt toegevoegd\n",mol_id);*/
 					rm_p->mol[nrm]=mol_id;
-					rm_p->type[nrm]=type;
+					rm_p->block[nrm]=block;
 					nrm++;
 					z_lip=0.0;
 					for(l=0;l<mem_p->nmol;l++)
@@ -600,7 +606,7 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 						{
 							for(k=mtop->mols.index[mol_id];k<mtop->mols.index[mol_id+1];k++)
 								z_lip+=r[k][ZZ];
-							z_lip/=mtop->molblock[type].natoms_mol;
+							z_lip/=mtop->molblock[block].natoms_mol;
 							if(z_lip<mem_p->zmed)
 								nlower++;
 							else
@@ -612,9 +618,7 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 		}
 	}
 
-	real *dist;
-	int *order;
-	//make sure equal number of lipids from upper and lower layer are removed
+	/*make sure equal number of lipids from upper and lower layer are removed */
 	if( (nupper!=nlower) && (!bALLOW_ASYMMETRY) )
 	{
 		snew(dist,mem_p->nmol);
@@ -651,7 +655,7 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 		while(nupper!=nlower)
 		{
 			mol_id=mem_p->mol_id[order[i]];
-			type=get_type(mol_id,mtop->nmolblock,mtop->molblock);
+			block=get_block(mol_id,mtop->nmolblock,mtop->molblock);
 
 			bRM=TRUE;
 			for(l=0;l<nrm;l++)
@@ -662,18 +666,18 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 				z_lip=0;
 				for(k=mtop->mols.index[mol_id];k<mtop->mols.index[mol_id+1];k++)
 					z_lip+=r[k][ZZ];
-				z_lip/=mtop->molblock[type].natoms_mol;
+				z_lip/=mtop->molblock[block].natoms_mol;
 				if(nupper>nlower && z_lip<mem_p->zmed)
 				{
 					rm_p->mol[nrm]=mol_id;
-					rm_p->type[nrm]=type;
+					rm_p->block[nrm]=block;
 					nrm++;
 					nlower++;
 				}
 				else if (nupper<nlower && z_lip>mem_p->zmed)
 				{
 					rm_p->mol[nrm]=mol_id;
-					rm_p->type[nrm]=type;
+					rm_p->block[nrm]=block;
 					nrm++;
 					nupper++;
 				}
@@ -689,14 +693,14 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 
 	rm_p->nr=nrm;
 	srenew(rm_p->mol,nrm);
-	srenew(rm_p->type,nrm);
+	srenew(rm_p->block,nrm);
 
 	return nupper+nlower;
 }
 
-void freeze_rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state)
+void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state, t_block *ins_at, pos_ins_t *pos_ins)
 {
-	int i,j,n,rm,mol_id,at,type;
+	int i,j,k,n,rm,mol_id,at,block;
 	rvec *x_tmp,*v_tmp;
 	atom_id *list,*new_mols;
 	unsigned char  *new_egrp[egcNR];
@@ -708,9 +712,9 @@ void freeze_rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
 	{
 		mol_id=rm_p->mol[i];
 		at=mtop->mols.index[mol_id];
-		type =rm_p->type[i];
-		mtop->molblock[type].nmol--;
-		for(j=0;j<mtop->molblock[type].natoms_mol;j++)
+		block =rm_p->block[i];
+		mtop->molblock[block].nmol--;
+		for(j=0;j<mtop->molblock[block].natoms_mol;j++)
 		{
 			list[n]=at+j;
 			n++;
@@ -774,6 +778,19 @@ void freeze_rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_
 			}
 			copy_rvec(state->x[i],x_tmp[i-rm]);
 			copy_rvec(state->v[i],v_tmp[i-rm]);
+			for(j=0;j<ins_at->nr;j++)
+			{
+				if (i==ins_at->index[j])
+					ins_at->index[j]=i-rm;
+			}
+			for(j=0;j<pos_ins->pieces;j++)
+			{
+				for(k=0;k<pos_ins->nidx[j];k++)
+				{
+					if (i==pos_ins->subindex[j][k])
+						pos_ins->subindex[j][k]=i-rm;
+				}
+			}
 		}
 	}
 	sfree(state->x);
@@ -796,6 +813,10 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	int i,j,m;
 	int type,natom,nmol,at,atom1=0,rm_at=0;
 	bool *bRM,bINS;
+	/*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
+	/*this routine does not live as dangerously as it seems. There is namely a check in mdrunner_membed to make
+         *sure that g_membed exits with a warning when there are molecules of the same type not in the 
+	 *ins_at index group. MGWolf 050710 */
 
 
 	snew(bRM,mtop->nmoltype);
@@ -804,31 +825,33 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 		bRM[i]=TRUE;
 	}
 
-	for (i=0;i<mtop->nmolblock;i++)
+	for (i=0;i<mtop->nmolblock;i++) 
 	{
+	    /*loop over molecule blocks*/
 		type        =mtop->molblock[i].type;
 		natom	    =mtop->molblock[i].natoms_mol;
 		nmol		=mtop->molblock[i].nmol;
 
-		for(j=0;j<natom*nmol && bRM[type]==TRUE;j++)
+		for(j=0;j<natom*nmol && bRM[type]==TRUE;j++) 
 		{
-			at=j+atom1;
-			m=0;
+		    /*loop over atoms in the block*/
+			at=j+atom1; /*atom index = block index + offset*/
 			bINS=FALSE;
-			do
+
+			for (m=0;(m<ins_at->nr) && (bINS==FALSE);m++)
 			{
+			    /*loop over atoms in insertion index group to determine if we're inserting one*/
 				if(at==ins_at->index[m])
 				{
 					bINS=TRUE;
 				}
-				m++;
-			} while ( (m<ins_at->nr) && bINS==FALSE);
+			}
 			bRM[type]=bINS;
 		}
-		atom1+=natom*nmol;
+		atom1+=natom*nmol; /*update offset*/
 		if(bRM[type])
 		{
-			rm_at+=natom*nmol;
+			rm_at+=natom*nmol; /*increment bonded removal counter by # atoms in block*/
 		}
 	}
 
@@ -851,10 +874,10 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	return rm_at;
 }
 
-void top_update(char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
+void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 {
 #define TEMP_FILENM "temp.top"
-	bool	bMolecules=FALSE;
+	int	bMolecules=0;
 	FILE	*fpin,*fpout;
 	char	buf[STRLEN],buf2[STRLEN],*temp;
 	int		i,*nmol_rm,nmol,line;
@@ -864,7 +887,7 @@ void top_update(char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 
 	snew(nmol_rm,mtop->nmoltype);
 	for(i=0;i<rm_p->nr;i++)
-		nmol_rm[rm_p->type[i]]++;
+		nmol_rm[rm_p->block[i]]++;
 
 	line=0;
 	while(fgets(buf,STRLEN,fpin))
@@ -888,23 +911,30 @@ void top_update(char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 					buf2[strlen(buf2)-1]='\0';
 					ltrim(buf2);
 					rtrim(buf2);
-					bMolecules=(strcasecmp(buf2,"molecules")==0);
+					if (strcasecmp(buf2,"molecules")==0)
+						bMolecules=1;
 				}
-			} else if (bMolecules)
+				fprintf(fpout,"%s",buf);
+			} else if (bMolecules==1)
 			{
-				/* check if this is a line with solvent or lipid molecules */
-				sscanf(buf,"%s",buf2);
-				for(i=0;i<mtop->nmoltype;i++)
+				for(i=0;i<mtop->nmolblock;i++)
 				{
-					if(strcmp(buf2,*(mtop->moltype[i].name))==0)
-					{
-						nmol=mtop->molblock[i].nmol;
-						sprintf(buf,"%-15s %5d\n",buf2,nmol);
-					}
+					nmol=mtop->molblock[i].nmol;
+					sprintf(buf,"%-15s %5d\n",*(mtop->moltype[mtop->molblock[i].type].name),nmol);
+					fprintf(fpout,"%s",buf);
 				}
+				bMolecules=2;
+			} else if (bMolecules==2)
+			{
+				/* print nothing */
+			} else 
+			{
+				fprintf(fpout,"%s",buf);
 			}
+		} else 
+		{
+			fprintf(fpout,"%s",buf);
 		}
-		fprintf(fpout,"%s",buf);
 	}
 
 	fclose(fpout);
@@ -1116,11 +1146,11 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 {
     int  i,gsi;
     real gs_buf[eglsNR];
-    tensor corr_vir,corr_pres,shakeall_vir;
-    bool bEner,bPres,bTemp, bVV;
+    tensor corr_vir,corr_pres;
+    bool bEner,bPres,bTemp;
     bool bRerunMD, bStopCM, bGStat, bNEMD, bIterate,
         bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
-    real ekin,temp,prescorr,enercorr,dvdlcorr;
+    real prescorr,enercorr,dvdlcorr;
 
     /* translate CGLO flags to booleans */
     bRerunMD = flags & CGLO_RERUNMD;
@@ -1395,7 +1425,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
        0.02, which is smaller that would ever be necessary in
        practice. Generally, 3-5 iterations will be sufficient */
 
-    real relerr,err,xmin;
+    real relerr,err;
     char buf[256];
     int i;
     bool incycle;
@@ -1810,14 +1840,15 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
-    int        i,m,status;
+    int        i,m;
+    t_trxstatus *status;
     rvec       mu_tot;
     t_vcm      *vcm;
     t_state    *bufstate=NULL;
     matrix     *scale_tot,pcoupl_mu,M,ebox;
     gmx_nlheur_t nlh;
     t_trxframe rerun_fr;
-//    gmx_repl_ex_t repl_ex=NULL;
+/*    gmx_repl_ex_t repl_ex=NULL;*/
     int        nchkpt=1;
 
     gmx_localtop_t *top;
@@ -1845,20 +1876,15 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool        bAppend;
     bool        bResetCountersHalfMaxH=FALSE;
     bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
-    real        temp0,mu_aver=0,dvdl;
-    int         a0,a1,gnx=0,ii;
-    atom_id     *grpindex=NULL;
-    char        *grpname;
-//    t_coupl_rec *tcr=NULL;
+    real        temp0,dvdl;
+    int         a0,a1,ii;
     rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
     matrix      boxcopy={{0}},lastbox;
-	tensor      tmpvir;
-	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
+	real        veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
     double      cycles;
 	real        last_conserved = 0;
     real        last_ekin = 0;
-	int         iter_i;
 	t_extmass   MassQ;
     int         **trotter_seq;
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
@@ -2666,7 +2692,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
                 if (!bInitStep)
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
                 }
 
                 update_coords(fplog,step,ir,mdatoms,state,
@@ -2705,7 +2731,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                            of veta.  */
 
                         veta_save = state->veta;
-                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
                         vetanew = state->veta;
                         state->veta = veta_save;
                     }
@@ -2763,7 +2789,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (bVV && !bInitStep)
                 {
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
 
                 if (bIterations &&
@@ -2833,7 +2859,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (do_per_step(step,ir->nstvout)) { mdof_flags |= MDOF_V; }
         if (do_per_step(step,ir->nstfout)) { mdof_flags |= MDOF_F; }
         if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
-//        if (bCPT) { mdof_flags |= MDOF_CPT; };
+/*        if (bCPT) { mdof_flags |= MDOF_CPT; };*/
 
 #ifdef GMX_FAHCORE
         if (MASTER(cr))
@@ -3082,7 +3108,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         m_add(force_vir,shake_vir,total_vir);
                         clear_mat(shake_vir);
                     }
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
                 }
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
@@ -3127,7 +3153,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
@@ -3572,30 +3598,28 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        rc;
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed=NULL;
+    t_commrec   *cr_old=cr;
+    int        nthreads=1,nthreads_requested=1;
+
 
 	char			*ins;
-	int				rm_bonded_at,fr_id,fr_i,tmp_id,warn=0;
+	int 			rm_bonded_at,fr_id,fr_i=0,tmp_id,warn=0;
 	int        		ng,j,max_lip_rm,ins_grp_id,ins_nat,mem_nat,ntype,lip_rm,tpr_version;
-	real			xy_step,z_step;
+	real			xy_step=0,z_step=0;
 	real		 	prot_area;
-	rvec			*r_ins,fac;
+	rvec			*r_ins=NULL,fac;
 	t_block 		*ins_at,*rest_at;
 	pos_ins_t 		*pos_ins;
 	mem_t			*mem_p;
 	rm_t			*rm_p;
-	gmx_groups_t 	*groups;
+	gmx_groups_t 		*groups;
 	bool		 	bExcl=FALSE;
 	t_atoms			atoms;
 	t_pbc			*pbc;
-	char            **piecename;
+	char		        **piecename=NULL;
 
-     /* Essential dynamics */
-    if (opt2bSet("-ei",nfile,fnm))
-    {
-        /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(nfile,fnm,Flags,cr);
-    }
-
+    /* CAUTION: threads may be started later on in this function, so
+       cr doesn't reflect the final parallel state right now */
     snew(inputrec,1);
     snew(mtop,1);
 
@@ -3609,30 +3633,32 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         fplog = NULL;
     }
 
+    snew(state,1);
+    if (MASTER(cr))
+    {
+        /* Read (nearly) all data required for the simulation */
+        read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
+
+        /* NOW the threads will be started: */
+#ifdef GMX_THREADS
+#endif
+    }
+    /* END OF CAUTION: cr is now reliable */
+
+    /* now make sure the state is initialized and propagated */
+    set_state_entries(state,inputrec,cr->nnodes);
     if (PAR(cr))
     {
-        /* The master thread on the master node reads from disk,
-         * then distributes everything to the other processors.
-         */
-
-        list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
-
-        snew(state,1);
-        /* NOTE: if the run is thread-parallel but the integrator doesn't support this
-                 such as with LBGFS, this function may cancel the threads
-                 through cancel_par_threads(), and make the commrec serial. The
-                 rest of the simulation is then only performed by the main thread,
-                 as if it were a serial run. */
-        init_parallel(fplog, opt2fn_master("-s",nfile,fnm,cr),cr,
-                      inputrec,mtop,state,list);
-
+        /* now broadcast everything to the non-master nodes/threads: */
+        init_parallel(fplog, cr, inputrec, mtop, state);
     }
-    else
+
+    if (can_use_allvsall(inputrec,mtop,TRUE,cr,fplog))
     {
-        /* Read a file for a single processor */
-        snew(state,1);
-        init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),mtop,state);
+        /* All-vs-all loops do not work with domain decomposition */
+        Flags |= MD_PARTDEC;
     }
+
     if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC))
     {
         cr->npmenodes = 0;
@@ -3665,14 +3691,14 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		pos_ins->pieces=pieces;
 		snew(pos_ins->nidx,pieces);
 		snew(pos_ins->subindex,pieces);
-		snew(piecename,pieces);
+		snew(piecename,pieces);	
 		if (pieces>1)
 		{
 			fprintf(stderr,"\nSelect pieces to embed:\n");
 			get_index(&atoms,ftp2fn_null(efNDX,nfile,fnm),pieces,pos_ins->nidx,pos_ins->subindex,piecename);
 		}
 		else
-		{
+		{	
 			/*use whole embedded group*/
 			snew(pos_ins->nidx,1);
 			snew(pos_ins->subindex,1);
@@ -3697,9 +3723,16 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		if(it_xy<1000)
 		{
 			warn++;
-			fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow in %s (%d) is probably too small.\n"
-					"If you are sure, you can increase maxwarn.\n\n",warn,ins,it_xy);
+			fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow the xy-coordinates of %s (%d) is probably too small.\n"
+					"Increase -nxy or, if you are sure, you can increase maxwarn.\n\n",warn,ins,it_xy);
 		}
+
+		if( (it_z<100) && ( z_fac<0.99999999 || z_fac>1.0000001) )
+                {
+                        warn++;
+                        fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d) is probably too small.\n"
+                                       "Increase -nz or, if you are sure, you can increase maxwarn.\n\n",warn,ins,it_z);
+                }
 
 		if(it_xy+it_z>inputrec->nsteps)
 		{
@@ -3748,13 +3781,13 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		if (!bExcl)
 			gmx_input("No energy exclusion groups defined. This is necessary for energy exclusion in the freeze group");
 
-		// Set all atoms in box
-		//set_inbox(state->natoms,state->x);
+		/* Set all atoms in box*/
+		/*set_inbox(state->natoms,state->x);*/
 
-		// Guess the area the protein will occupy in the membrane plane	// Calculate area per lipid
+		/* Guess the area the protein will occupy in the membrane plane	 Calculate area per lipid*/
 		snew(rest_at,1);
 		ins_nat = init_ins_at(ins_at,rest_at,state,pos_ins,groups,ins_grp_id,xy_max);
-		// Check moleculetypes in insertion group
+		/* Check moleculetypes in insertion group */
 		check_types(ins_at,rest_at,mtop);
 
 		mem_nat = init_mem_at(mem_p,mtop,state->x,state->box,pos_ins);
@@ -3774,7 +3807,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		printf("The estimated area of the protein in the membrane is %.3f nm^2\n",prot_area);
 		printf("\nThere are %d lipids in the membrane part that overlaps the protein.\nThe area per lipid is %.4f nm^2.\n",mem_p->nmol,mem_p->lip_area);
 
-		// Maximum number of lipids to be removed
+		/* Maximum number of lipids to be removed*/
 		max_lip_rm=(int)(2*prot_area/mem_p->lip_area);
 		printf("Maximum number of lipids that will be removed is %d.\n",max_lip_rm);
 
@@ -3782,19 +3815,19 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 				"This resizing will be done with respect to the geometrical center of all protein atoms\n"
 				"that span the membrane region, i.e. z between %.3f and %.3f\n\n",xy_fac,z_fac,mem_p->zmin,mem_p->zmax);
 
-		// resize the protein by xy and by z if necessary
+		/* resize the protein by xy and by z if necessary*/
 		snew(r_ins,ins_at->nr);
 		init_resize(ins_at,r_ins,pos_ins,mem_p,state->x,bALLOW_ASYMMETRY);
 		fac[0]=fac[1]=xy_fac;
 		fac[2]=z_fac;
 
 		xy_step =(xy_max-xy_fac)/(double)(it_xy);
-		z_step  =(z_max-z_fac)/(double)it_z;
+		z_step  =(z_max-z_fac)/(double)(it_z-1);
 
 		resize(ins_at,r_ins,state->x,pos_ins,fac);
 
-		// remove overlapping lipids and water from the membrane box
-		//mark molecules to be removed
+		/* remove overlapping lipids and water from the membrane box*/
+		/*mark molecules to be removed*/
 		snew(pbc,1);
 		set_pbc(pbc,inputrec->ePBC,state->box);
 
@@ -3806,13 +3839,13 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 			for(i=0;i<rm_p->nr;i++)
 				fprintf(fplog,"rm mol %d\n",rm_p->mol[i]);
 
-		for(i=0;i<mtop->nmoltype;i++)
+		for(i=0;i<mtop->nmolblock;i++)
 		{
 			ntype=0;
 			for(j=0;j<rm_p->nr;j++)
-				if(rm_p->type[j]==i)
+				if(rm_p->block[j]==i)
 					ntype++;
-			printf("Will remove %d %s molecules\n",ntype,*(mtop->moltype[i].name));
+			printf("Will remove %d %s molecules\n",ntype,*(mtop->moltype[mtop->molblock[i].type].name));
 		}
 
 		if(lip_rm>max_lip_rm)
@@ -3822,8 +3855,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 					"Try making the -xyinit resize factor smaller. If you are sure about this increase maxwarn.\n\n",warn);
 		}
 
-		//freeze all lipids and waters that should be removed and exclude interactions
-		freeze_rm_group(inputrec,groups,mtop,rm_p,state);
+		/*remove all lipids and waters overlapping and update all important structures*/
+		rm_group(inputrec,groups,mtop,rm_p,state,ins_at,pos_ins);
 
 		rm_bonded_at = rm_bonded(ins_at,mtop);
 		if (rm_bonded_at != ins_at->nr)
@@ -3893,8 +3926,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * This should be thread safe, since they are only written once
          * and with identical values.
          */
-//        deform_init_init_step_tpx = inputrec->init_step;
-//        copy_mat(box,deform_init_box_tpx);
+/*        deform_init_init_step_tpx = inputrec->init_step;*/
+/*        copy_mat(box,deform_init_box_tpx);*/
     }
 
     if (opt2bSet("-cpi",nfile,fnm))
@@ -4145,7 +4178,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * is communicated to the PP nodes.
          */
         signal_handler_install();
-//    }
+/*    }*/
 
     if (cr->duty & DUTY_PP)
     {
@@ -4259,7 +4292,7 @@ int gmx_membed(int argc,char *argv[])
 			"The output is a structure file containing the protein embedded in the membrane. If a topology",
 			"file is provided, the number of lipid and ",
 			"solvent molecules will be updated to match the new structure file.\n",
-			"For a more extensive manual see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507:Appendix.\n",
+			"For a more extensive manual see Wolf et al, J Comp Chem 31 (2010) 2169-2174, Appendix.\n",
 			"\n",
 			"SHORT METHOD DESCRIPTION\n",
 			"------------------------\n",
@@ -4276,12 +4309,12 @@ int gmx_membed(int argc,char *argv[])
 			"is incremented first. The resize factor for the z-direction is not changed until the -xy factor",
 			"is 1 (thus after -nxy iteration).\n",
 			"5. Repeat step 3 and 4 until the protein reaches its original size (-nxy + -nz iterations).\n",
-			"For a more extensive method descrition see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507.\n",
+			"For a more extensive method descrition see Wolf et al, J Comp Chem, 31 (2010) 2169-2174.\n",
 			"\n",
 			"NOTE\n----\n",
 			" - Protein can be any molecule you want to insert in the membrane.\n",
 			" - It is recommended to perform a short equilibration run after the embedding",
-			"(see Wolf et al, J Comp Chem, doi 10.1002/jcc.21507) to re-equilibrate the membrane. Clearly",
+			"(see Wolf et al, J Comp Chem 31 (2010) 2169-2174, to re-equilibrate the membrane. Clearly",
 			"protein equilibration might require longer.\n",
 			"\n"
 	};
@@ -4373,7 +4406,7 @@ int gmx_membed(int argc,char *argv[])
     bool bALLOW_ASYMMETRY=FALSE;
 
 
-// arguments relevant to OPENMM only
+/* arguments relevant to OPENMM only*/
 #ifdef GMX_OPENMM
     gmx_input("g_membed not functional in openmm");
 #endif
@@ -4616,7 +4649,7 @@ int gmx_membed(int argc,char *argv[])
 
 	/* Log file has to be closed in mdrunner if we are appending to it
    (fplog not set here) */
-	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem, doi 10.1002/jcc.21507.\n");
+	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
 
 	if (MASTER(cr) && !bAppendFiles)
 	{

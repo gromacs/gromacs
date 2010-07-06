@@ -75,7 +75,8 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
 				    real time,
 				    real *sgmean, real *skmean,
 				    int nslice,int slice_dim,
-				    real sgslice[],real skslice[])
+				    real sgslice[],real skslice[],
+				    gmx_rmpbc_t gpbc)
 {
   FILE    *fpoutdist;
   char    fnsgdist[32];
@@ -89,9 +90,7 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
   int     m1,mm,sl_index;
   int    **nnb,*sl_count;
   real   onethird=1.0/3.0;
-  
   /*  dmat = init_mat(maxidx, FALSE); */
-
   box2 = box[XX][XX] * box[XX][XX];
   snew(sl_count,nslice);
   for (i=0; (i<4); i++) {
@@ -108,7 +107,8 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
 
   /* Must init pbc every step because of pressure coupling */
   set_pbc(&pbc,ePBC,box);
-  rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+  
+  gmx_rmpbc(gpbc,box,x,x);
 
   nsgbin = 1 + 1/0.0005;
   snew(sgbin,nsgbin);
@@ -238,7 +238,7 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
   t_topology top;
   int        ePBC;
   char       title[STRLEN],fn[STRLEN],subtitle[STRLEN];
-  int        status;
+  t_trxstatus *status;
   int        natoms;
   real       t;
   rvec       *xtop,*x;
@@ -248,7 +248,9 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
   char       **grpname;
   int        i,*isize,ng,nframes;
   real       *sg_slice,*sg_slice_tot,*sk_slice,*sk_slice_tot;
-  
+  gmx_rmpbc_t  gpbc=NULL;
+
+
   read_tps_conf(fnTPS,title,&top,&ePBC,&xtop,NULL,box,FALSE);
 
   snew(sg_slice,nslice);
@@ -276,10 +278,11 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
                 oenv);
 
   /* loop over frames */
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   nframes = 0;
   do {
     find_nearest_neighbours(top,ePBC,natoms,box,x,isize[0],index[0],t,
-			    &sg,&sk,nslice,slice_dim,sg_slice,sk_slice);
+			    &sg,&sk,nslice,slice_dim,sg_slice,sk_slice,gpbc);
     for(i=0; (i<nslice); i++) {
       sg_slice_tot[i] += sg_slice[i];
       sk_slice_tot[i] += sk_slice[i];
@@ -289,7 +292,8 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
     nframes++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
- 
+  gmx_rmpbc_done(gpbc);
+
   sfree(grpname);
   sfree(index);
   sfree(isize);
@@ -348,7 +352,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
     *x1,             /* coordinates without pbc                        */
     dist;            /* vector between two atoms                       */
   matrix box;        /* box (3x3)                                      */
-  int   status;  
+  t_trxstatus *status;  
   rvec  cossum,      /* sum of vector angles for three axes            */
     Sx, Sy, Sz,      /* the three molecular axes                       */
     tmp1, tmp2,      /* temp. rvecs for calculating dot products       */
@@ -373,6 +377,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
    char *grpname=NULL;
    t_pbc pbc;
    real arcdist;
+   gmx_rmpbc_t  gpbc=NULL;
 
   /* PBC added for center-of-mass vector*/
   /* Initiate the pbc structure */
@@ -440,14 +445,15 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 
   teller = 0; 
 
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
     if (bSliced)
       *slWidth = box[axis][axis]/nslices;
     teller++;
     
-	set_pbc(&pbc,ePBC,box);
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x1);
+    set_pbc(&pbc,ePBC,box);
+    gmx_rmpbc(gpbc,box,x0,x1);
 
     /* Now loop over all groups. There are ngrps groups, the order parameter can
        be calculated for grp 1 to grp ngrps - 1. For each group, loop over all 
@@ -608,7 +614,8 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
   /*********** done with status file **********/
   
   fprintf(stderr,"\nRead trajectory. Printing parameters to file\n");
-  
+  gmx_rmpbc_done(gpbc);
+
   /* average over frames */
   for (i = 1; i < ngrps - 1; i++) {
     svmul(1.0/nr_frames, (*order)[i], (*order)[i]);
@@ -708,7 +715,7 @@ void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int n
 {
 	/*function to write order parameters as B factors in PDB file using 
           first frame of trajectory*/
-	int status;
+	t_trxstatus *status;
 	int natoms;
 	t_trxframe fr, frout;
 	t_atoms useatoms;

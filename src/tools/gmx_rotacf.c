@@ -87,7 +87,8 @@ int gmx_rotacf(int argc,char *argv[])
       "Average over molecules" }
   };
 
-  int        status,isize;
+  t_trxstatus *status;
+  int        isize;
   atom_id    *index;
   char       *grpname;
   rvec       *x,*x_s;
@@ -97,6 +98,7 @@ int gmx_rotacf(int argc,char *argv[])
   int        i,m,teller,n_alloc,natoms,nvec,ai,aj,ak;
   unsigned long mode;
   real       t,t0,t1,dt;
+  gmx_rmpbc_t  gpbc=NULL;
   t_topology *top;
   int        ePBC;
   t_filenm   fnm[] = {
@@ -142,6 +144,8 @@ int gmx_rotacf(int argc,char *argv[])
   natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(x_s,natoms);
   
+  gpbc = gmx_rmpbc_init(&(top->idef),ePBC,natoms,box);
+
   /* Start the loop over frames */
   t1 = t0 = t;
   teller  = 0;
@@ -154,8 +158,8 @@ int gmx_rotacf(int argc,char *argv[])
     t1 = t;
     
     /* Remove periodicity */
-    rm_pbc(&(top->idef),ePBC,natoms,box,x,x_s);
-    
+    gmx_rmpbc(gpbc,box,x,x_s);
+  
     /* Compute crossproducts for all vectors, if triplets.
      * else, just get the vectors in case of doublets.
      */
@@ -186,6 +190,9 @@ int gmx_rotacf(int argc,char *argv[])
   close_trj(status); 
   fprintf(stderr,"\nDone with trajectory\n");
   
+  gmx_rmpbc_done(gpbc);
+
+
   /* Autocorrelation function */
   if (teller < 2)
     fprintf(stderr,"Not enough frames for correlation function\n");

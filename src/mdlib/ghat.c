@@ -45,9 +45,9 @@
 #include "coulomb.h"
 #include "pppm.h"
 #include "xvgr.h"
-#include "fftgrid.h"
 #include "gmxfio.h"
 #include "pppm.h"
+#include "smalloc.h"
 
 static void calc_k(rvec lll,int ix,int iy,int iz,int nx,int ny,int nz,rvec k)
 {
@@ -216,6 +216,28 @@ void pr_scalar_gk(const char *fn,const output_env_t oenv,int nx,int ny,int nz,
     }
   }
   gmx_fio_fclose(fp);
+}
+
+static real ***mk_rgrid(int nx,int ny,int nz)
+{
+  real *ptr1;
+  real **ptr2;
+  real ***ptr3;
+  int  i,j,n2,n3;
+
+  snew(ptr1,nx*ny*nz);
+  snew(ptr2,nx*ny);
+  snew(ptr3,nx);
+
+  n2=n3=0;
+  for(i=0; (i<nx); i++) {
+    ptr3[i]=&(ptr2[n2]);
+    for(j=0; (j<ny); j++,n2++) {
+      ptr2[n2] = &(ptr1[n3]);
+      n3 += nz;
+    }
+  }
+  return ptr3;
 }
 
 real ***rd_ghat(FILE *log,const output_env_t oenv,char *fn,ivec igrid,

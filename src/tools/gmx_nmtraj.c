@@ -96,7 +96,7 @@ int gmx_nmtraj(int argc,char *argv[])
     
 #define NPA asize(pa)
   
-  int        out;
+  t_trxstatus *out;
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;

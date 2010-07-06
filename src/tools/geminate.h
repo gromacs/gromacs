@@ -2,7 +2,7 @@
 #define _GEMINATE_H
 
 enum { gemNULL, gemNONE, gemDD, gemAD, gemAA, gemA4, gemNR};
-static char *gemType[] = {NULL, "none", "dd", "ad", "aa", "a4", NULL};
+static const char *gemType[] = {NULL, "none", "dd", "ad", "aa", "a4", NULL};
 
 /* The first few sections of this file contain functions that were adopted,
  * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,

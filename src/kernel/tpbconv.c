@@ -294,7 +294,8 @@ int main (int argc, char *argv[])
   const char *desc[] = {
     "tpbconv can edit run input files in four ways.[PAR]",
     "[BB]1st.[bb] by modifying the number of steps in a run input file",
-    "with option [TT]-nsteps[tt] or option [TT]-runtime[tt].[PAR]",
+    "with options [TT]-extend[tt], [TT]-until[tt] or [TT]-nsteps[tt]",
+    "(nsteps=-1 means unlimited number of steps)[PAR]",
     "[BB]2nd.[bb] (OBSOLETE) by creating a run input file",
     "for a continuation run when your simulation has crashed due to e.g.",
     "a full disk, or by making a continuation run input file.",
@@ -314,7 +315,7 @@ int main (int argc, char *argv[])
   };
 
   const char   *top_fn,*frame_fn;
-  int          fp;
+  t_fileio     *fp;
   ener_file_t  fp_ener=NULL;
   t_trnheader head;
   int          i;
@@ -347,21 +348,18 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static int  nsteps_req_int = -1;
-  static real runtime_req = -1;
+  static int  nsteps_req_int = 0;
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
   static bool bContinuation = TRUE,bZeroQ = FALSE,bVel=TRUE;
   static t_pargs pa[] = {
-    { "-nsteps",        FALSE, etINT,  {&nsteps_req_int},
-      "Change the number of steps" },
-    { "-runtime",       FALSE, etREAL, {&runtime_req},
-      "Set the run time (ps)" },
-    { "-time",          FALSE, etREAL, {&start_t}, 
-      "Continue from frame at this time (ps) instead of the last frame" },
     { "-extend",        FALSE, etREAL, {&extend_t}, 
       "Extend runtime by this amount (ps)" },
     { "-until",         FALSE, etREAL, {&until_t}, 
       "Extend runtime until this ending time (ps)" },
+    { "-nsteps",        FALSE, etINT,  {&nsteps_req_int},
+      "Change the number of steps" },
+    { "-time",          FALSE, etREAL, {&start_t}, 
+      "Continue from frame at this time (ps) instead of the last frame" },
     { "-zeroq",         FALSE, etBOOL, {&bZeroQ},
       "Set the charges of a group (from the index) to zero" },
     { "-vel",           FALSE, etBOOL, {&bVel},
@@ -379,7 +377,7 @@ int main (int argc, char *argv[])
 
   /* Convert int to gmx_large_int_t */
   nsteps_req = nsteps_req_int;
-  bNsteps = (nsteps_req >= 0 || runtime_req >= 0);
+  bNsteps = opt2parg_bSet("-nsteps",asize(pa),pa);
   bExtend = opt2parg_bSet("-extend",asize(pa),pa);
   bUntil  = opt2parg_bSet("-until",asize(pa),pa);
   bTime   = opt2parg_bSet("-time",asize(pa),pa);
@@ -523,13 +521,6 @@ int main (int argc, char *argv[])
   }
 
   if (bNsteps) {
-    if (nsteps_req < 0) {
-      if (!EI_DYNAMICS(ir->eI)) {
-	gmx_fatal(FARGS,"Can not set the run time with integrator '%s'",
-		  EI(ir->eI));
-      }
-      nsteps_req = (int)(runtime_req/ir->delta_t + 0.5);
-    }
     fprintf(stderr,"Setting nsteps to %s\n",gmx_step_str(nsteps_req,buf));
     ir->nsteps = nsteps_req;
   } else {

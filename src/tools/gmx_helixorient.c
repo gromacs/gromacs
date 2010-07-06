@@ -80,7 +80,7 @@ int gmx_helixorient(int argc,char *argv[])
     real t;
     rvec *x=NULL,dx;
     matrix box;
-    int status;
+    t_trxstatus *status;
     int natoms;
     real theta1,theta2,theta3;
 
@@ -135,6 +135,7 @@ int gmx_helixorient(int argc,char *argv[])
     int ePBC;
 
     output_env_t oenv;
+    gmx_rmpbc_t  gpbc=NULL;
 
     static  bool bSC=FALSE;
     static bool bIncremental = FALSE;
@@ -249,12 +250,14 @@ int gmx_helixorient(int argc,char *argv[])
     unitaxes[1][1]=1;
     unitaxes[2][2]=1;
 
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+
   do 
   {
       /* initialisation for correct distance calculations */
     set_pbc(&pbc,ePBC,box);
       /* make molecules whole again */
-    rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,box,x,x);
       
       /* copy coords to our smaller arrays */
       for(i=0;i<iCA;i++)
@@ -499,7 +502,9 @@ int gmx_helixorient(int argc,char *argv[])
       
       teller++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
-    
+        
+    gmx_rmpbc_done(gpbc);
+
     ffclose(fpaxis);
     ffclose(fpcenter);
     ffclose(fptilt);

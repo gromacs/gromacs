@@ -76,7 +76,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
        com;              /* center of mass of micel, with bMicel */
   rvec *dip;             /* sum of dipoles, unnormalized */
   matrix box;            /* box (3x3) */
-  int   status;
+  t_trxstatus *status;
   real  t,               /* time from trajectory */
        *sum,             /* sum of all cosines of dipoles, per slice */
        *frame;           /* order over one frame */
@@ -84,7 +84,8 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
       i,j,teller = 0,
       slice=0,           /* current slice number */
       *count;            /* nr. of atoms in one slice */
-
+  gmx_rmpbc_t  gpbc=NULL;
+  
   if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
@@ -121,13 +122,14 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 
   teller = 0; 
 
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do 
   {
     *slWidth = box[axis][axis]/(*nslices);
     teller++;
     
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
+    gmx_rmpbc(gpbc,box,x0,x0);
 
     if (bMicel)
       calc_xcm(x0, nmic, micel, top->atoms.atom, com, FALSE);
@@ -197,6 +199,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
   /*********** done with status file **********/
  
   fprintf(stderr,"\nRead trajectory. Printing parameters to file\n");
+  gmx_rmpbc_done(gpbc);
 
   for (i = 0; i < *nslices; i++)  /* average over frames */
   {

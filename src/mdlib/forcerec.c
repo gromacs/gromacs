@@ -1190,7 +1190,7 @@ static void make_adress_tf_tables(FILE *fp,const output_env_t oenv,
 
 }
 
-bool can_use_allvsall(const t_inputrec *ir,
+bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
                       bool bPrintNote,t_commrec *cr,FILE *fp)
 {
     bool bAllvsAll;
@@ -1200,7 +1200,10 @@ bool can_use_allvsall(const t_inputrec *ir,
     bAllvsAll = FALSE;
 #else
     bAllvsAll =
-        (ir->rlist==0            &&
+        (
+         /* disable for very small systems (bug 416) */
+         mtop->natoms > 64       &&
+         ir->rlist==0            &&
          ir->rcoulomb==0         &&
          ir->rvdw==0             &&
          ir->ePBC==epbcNONE      &&
@@ -1332,7 +1335,7 @@ void init_forcerec(FILE *fp,
     fr->sc_sigma6  = pow(ir->sc_sigma,6);
     
     /* Check if we can/should do all-vs-all kernels */
-    fr->bAllvsAll       = can_use_allvsall(ir,FALSE,NULL,NULL);
+    fr->bAllvsAll       = can_use_allvsall(ir,mtop,FALSE,NULL,NULL);
     fr->AllvsAll_work   = NULL;
     fr->AllvsAll_workgb = NULL;
 

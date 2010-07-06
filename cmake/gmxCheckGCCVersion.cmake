@@ -21,7 +21,7 @@ if(CMAKE_COMPILER_IS_GNUCC)
         OUTPUT_STRIP_TRAILING_WHITESPACE)
     # if gcc returned with error the -dumpversion is not available 
     if(${_gcc_dumpversion_res} EQUAL 0)
-        if(${_gcc_dumpversion_out} MATCHES ".*4\\.1.*")
+        if(${_gcc_dumpversion_out} MATCHES ".*4\\.1\\.[0-9]+.*")
             message(FATAL_ERROR " The GCC compiler in use seems to belong to the 4.1.x 
                 family (detected version: ${_gcc_dumpversion_out}). These compilers 
                 contain an optimization related bug which might results in code that 
@@ -34,7 +34,7 @@ if(CMAKE_COMPILER_IS_GNUCC)
         execute_process(COMMAND ${CMAKE_C_COMPILER} --version
             OUTPUT_VARIABLE _gcc_version_out
             OUTPUT_STRIP_TRAILING_WHITESPACE)            
-        if("${_gcc_version_out}" MATCHES ".*4\\.1.*")        
+        if("${_gcc_version_out}" MATCHES ".*4\\.1\\.[0-9]+.*")
             message(FATAL_ERROR " The GCC compiler in use seems to belong to the 4.1.x 
                 family. These compiler  compilers contain an optimization related bug 
                 which might results in code that exhibits incorrect behaviour and 

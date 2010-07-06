@@ -58,7 +58,8 @@
 static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
                          real dt)
 {
-  int    i,j,k,l,m,na,trn;
+  int    i,j,k,l,m,na;
+  t_fileio *trn;
   rvec   *x;
   matrix box = {{2,0,0},{0,2,0},{0,0,2}};  
   

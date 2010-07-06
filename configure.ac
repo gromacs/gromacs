@@ -128,12 +128,19 @@ if test "$enable_ppc_altivec" = "undef"; then
   esac
 fi
 
+###################################
+## Detect buggy version of gcc
+###################################
+AC_ARG_ENABLE(gcc41_check,
+              [AC_HELP_STRING([--disable-gcc41-check],
+                              [Disable the check for buggy gcc 4.1])],,enable_gcc41_check=yes)
+
 
 
 ### ia64 assembly code
 AC_ARG_ENABLE(ia64_asm,
-	      [AC_HELP_STRING([--disable-ia64-asm],
-	                      [Don't build assembly loops on ia64])],,enable_ia64_asm=yes)
+	      [AC_HELP_STRING([--enable-ia64-asm],
+	                      [Build assembly loops on ia64])],,enable_ia64_asm=no)
 case "${host_cpu}" in
    ia64) ;;
    *) enable_ia64_asm=no ;;
@@ -263,14 +270,21 @@ if test "$with_qmmm_mopac" = "yes"; then
   AC_DEFINE(GMX_QMMM_MOPAC,,[Use (modified) Mopac 7 for QM-MM calculations])
 fi
 
+
+AC_ARG_WITH(qmmm_orca,
+              [AC_HELP_STRING([--without-qmmm-mopac],
+                              [Use ORCA for QM-MM])],,with_qmmm_orca=no)
+if test "$with_qmmm_orca"="yes"; then
+  AC_DEFINE(GMX_QMMM_ORCA,,[Use ORCA for QM-MM calculations])
+fi
+
+
 AC_ARG_WITH(dlopen,
             [AC_HELP_STRING([--without-dlopen],
                             [do not compile with dlopen, needed to read VMD]
                             [supported file formats])],,with_dlopen=yes)
 
 
-
-   
 
 ############################################################
 # Add some debug info: Who is building, and on what machine?
@@ -324,6 +338,18 @@ AC_PROG_CC( $cc_names )
 if test -z "$CC_FOR_BUILD"; then
   CC_FOR_BUILD=$CC
 fi
+
+if test "$enable_gcc41_check" = "yes"; then
+    if $CC --version 2>&1 | grep 'gcc.* 4\.1' > /dev/null 2>&1; then
+        AC_MSG_ERROR([Uh-oh. Your compilers appears to be GCC version 4.1, which unfortunately produces]
+[buggy code at high optimimzation levels. It would be a good idea to update or]
+[use a different compiler. If you are ABSOLUTELY sure what you are doing, you]
+[can override this check with --disable-gcc41-check.])
+    fi
+fi
+
+
+
 AC_SUBST(CC_FOR_BUILD) 
 
 if test "$enable_fortran" = "yes"; then 
@@ -734,6 +760,11 @@ AC_CHECK_FUNCS(copyfile)
 
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
+AC_SEARCH_LIBS(posix_memalign, c, AC_DEFINE(HAVE_POSIX_MEMALIGN, 1, Define to 1 if you have the posix_memalign function))
+AC_SEARCH_LIBS(memalign, c, AC_DEFINE(HAVE_MEMALIGN, 1, Define to 1 if you have the memalign function))
+AC_CHECK_FUNCS(_aligned_malloc)
+#AC_SEARCH_LIBS(_aligned_malloc, c, AC_DEFINE(HAVE__ALIGNED_MALLOC, 1, Define to 1 if you have the _aligned_malloc function))
+
 
 
 

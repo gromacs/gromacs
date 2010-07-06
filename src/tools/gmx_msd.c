@@ -564,10 +564,12 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
   rvec         *xa[2]; /* the coordinates to calculate displacements for */
   rvec         com={0};
   real         t,t_prev=0;
-  int          natoms,i,j,status,cur=0,maxframes=0;
+  int          natoms,i,j,cur=0,maxframes=0;
+  t_trxstatus *status;
 #define        prev (1-cur)
   matrix       box;
   bool         bFirst;
+  gmx_rmpbc_t  gpbc=NULL;
 
   natoms = read_first_x(oenv,&status,fn,&curr->t0,&(x[cur]),box);
 #ifdef DEBUG
@@ -593,6 +595,9 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
   t=curr->t0;
   if (x_pdb)
     *x_pdb = NULL;
+
+  if (bMol)
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
 
   /* the loop over all frames */
   do 
@@ -665,7 +670,7 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 
     /* make the molecules whole */
     if (bMol)
-      rm_pbc(&top->idef,ePBC,natoms,box,x[cur],x[cur]);
+      gmx_rmpbc(gpbc,box,x[cur],x[cur]);
 
     /* first remove the periodic boundary condition crossings */
     for(i=0;i<curr->ngrp;i++)
@@ -700,8 +705,12 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
   fprintf(stderr,"\nUsed %d restart points spaced %g %s over %g %s\n\n", 
 	  curr->nrestart, 
 	  output_env_conv_time(oenv,dt), output_env_get_time_unit(oenv),
-	  output_env_conv_time(oenv,curr->time[curr->nframes-1]), output_env_get_time_unit(oenv) );
+	  output_env_conv_time(oenv,curr->time[curr->nframes-1]), 
+	  output_env_get_time_unit(oenv) );
   
+  if (bMol)
+    gmx_rmpbc_done(gpbc);
+
   close_trj(status);
 
   return natoms;
@@ -752,7 +761,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
   int          *gnx_com=NULL; /* the COM removal group size  */
   atom_id      **index_com=NULL; /* the COM removal group atom indices */
   char         **grpname_com=NULL; /* the COM removal group name */
-  
+
   snew(gnx,nrgrp);
   snew(index,nrgrp);
   snew(grpname,nrgrp);
@@ -769,7 +778,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
       fprintf(stderr, "\nNow select a group for center of mass removal:\n");
       get_index(&top->atoms, ndx_file, 1, gnx_com, index_com, grpname_com);
   }
-
+  
   if (mol_file)
     index_atom2mol(&gnx[0],index[0],&top->mols);
 
@@ -782,7 +791,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
 	      (mol_file!=NULL) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
 	      bTen, gnx_com, index_com, dt,t_pdb,
               pdb_file ? &x : NULL,box,oenv);
-  
+
   /* Correct for the number of points */
   for(j=0; (j<msd->ngrp); j++) {
     for(i=0; (i<msd->nframes); i++) {

@@ -236,6 +236,16 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             }
         }
     }
+    else
+    {
+        ir->nstcalcenergy = 1;
+    }
+    /* Currently T and P coupling update in linked to nstcalcenergy,
+     * but we already have separate variables ready in the tpx format.
+     */
+    ir->nsttcouple = ir->nstcalcenergy;
+    ir->nstpcouple = ir->nstcalcenergy;
+
 
   /* LD STUFF */
   if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
@@ -439,6 +449,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
+    if (ir->coulombtype == eelPPPM)
+    {
+        warning_error(wi,"PPPM is not functional in the current version, we plan to implement PPPM through a small modification of the PME code");
+    }
+
   if (ir->coulombtype == eelSWITCH) {
     sprintf(warn_buf,"coulombtype = %s is only for testing purposes and can lead to serious artifacts, advice: use coulombtype = %s",
 	    eel_names[ir->coulombtype],
@@ -1055,6 +1070,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("sc-power",ir->sc_power,0);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
   ITYPE ("nstdhdl",     ir->nstdhdl, 10);
+  ITYPE ("dh_table_size", ir->dh_table_size, 0);
+  RTYPE ("dh_table_spacing", ir->dh_table_spacing, 0.1);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
   EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
   EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);

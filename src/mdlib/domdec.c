@@ -48,6 +48,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "gmx_ga2la.h"
+#include "gmx_sort.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -162,7 +163,7 @@ const char *edlb_names[edlbNR] = { "auto", "no", "yes" };
 
 typedef struct
 {
-    int  dimind;   /* The dimension index                                    */
+    int  dim;      /* The dimension                                          */
     int  nslab;    /* The number of PME slabs in this dimension              */
     real *slb_dim_f; /* Cell sizes for determining the PME comm. with SLB    */
     int  *pp_min;  /* The minimum pp node location, size nslab               */
@@ -2665,33 +2666,27 @@ static float dd_force_load(gmx_domdec_comm_t *comm)
     return load;
 }
 
-static void set_slb_pme_dim_f(gmx_domdec_t *dd,int dimind,real **dim_f)
+static void set_slb_pme_dim_f(gmx_domdec_t *dd,int dim,real **dim_f)
 {
     gmx_domdec_comm_t *comm;
     int i;
     
     comm = dd->comm;
     
-    if (dd->dim[dimind] != dimind)
-    {
-        *dim_f = NULL;
-        return;
-    }
-    
-    snew(*dim_f,dd->nc[dimind]+1);
+    snew(*dim_f,dd->nc[dim]+1);
     (*dim_f)[0] = 0;
-    for(i=1; i<dd->nc[dimind]; i++)
+    for(i=1; i<dd->nc[dim]; i++)
     {
-        if (comm->slb_frac[dimind])
+        if (comm->slb_frac[dim])
         {
-            (*dim_f)[i] = (*dim_f)[i-1] + comm->slb_frac[dimind][i-1];
+            (*dim_f)[i] = (*dim_f)[i-1] + comm->slb_frac[dim][i-1];
         }
         else
         {
-            (*dim_f)[i] = (real)i/(real)dd->nc[dimind];
+            (*dim_f)[i] = (real)i/(real)dd->nc[dim];
         }
     }
-    (*dim_f)[dd->nc[dimind]] = 1;
+    (*dim_f)[dd->nc[dim]] = 1;
 }
 
 static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
@@ -2700,8 +2695,8 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     int	 pmeindex,slab,nso,i;
     ivec xyz;
     
-    ddpme->dimind = dimind;
-    ddpme->nslab  = nslab;
+    ddpme->dim   = dd->dim[dimind];
+    ddpme->nslab = nslab;
 
     if (nslab <= 1)
     {
@@ -2733,7 +2728,7 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
         }
     }
 
-    set_slb_pme_dim_f(dd,ddpme->dimind,&ddpme->slb_dim_f);
+    set_slb_pme_dim_f(dd,ddpme->dim,&ddpme->slb_dim_f);
 }
 
 int dd_pme_maxshift0(gmx_domdec_t *dd)
@@ -2743,24 +2738,33 @@ int dd_pme_maxshift0(gmx_domdec_t *dd)
 
 int dd_pme_maxshift1(gmx_domdec_t *dd)
 {
-    return dd->comm->ddpme[1].maxshift;
+    /* This should return the maxshift for dim Y,
+     * where comm indexes ddpme with dimind.
+     */
+    if (dd->comm->npmedecompdim == 1 && dd->dim[0] == YY)
+    {
+        return dd->comm->ddpme[0].maxshift;
+    }
+    else
+    {
+        return dd->comm->ddpme[1].maxshift;
+    }
 }
 
 static void set_pme_maxshift(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
                              bool bUniform,gmx_ddbox_t *ddbox,real *cell_f)
 {
     gmx_domdec_comm_t *comm;
-    int  dim,nc,ns,s;
+    int  nc,ns,s;
     int  *xmin,*xmax;
     real range,pme_boundary;
     int  sh;
     
     comm = dd->comm;
-    dim = ddpme->dimind;
-    nc  = dd->nc[dim];
+    nc  = dd->nc[ddpme->dim];
     ns  = ddpme->nslab;
     
-    if (dd->dim[dim] != dim)
+    if (nc == 1)
     {
         /* PP decomposition is not along dim: the worst situation */
         sh = ns/2;
@@ -2782,7 +2786,7 @@ static void set_pme_maxshift(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
          * between performance and support for most charge-group/cut-off
          * combinations.
          */
-        range  = 2.0/3.0*comm->cutoff/ddbox->box_size[dim];
+        range  = 2.0/3.0*comm->cutoff/ddbox->box_size[ddpme->dim];
         /* Avoid extra communication when we are exactly at a boundary */
         range *= 0.999;
         
@@ -2815,8 +2819,8 @@ static void set_pme_maxshift(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     
     if (debug)
     {
-        fprintf(debug,"PME slab communication range for dimind %d is %d\n",
-                ddpme->dimind,ddpme->maxshift);
+        fprintf(debug,"PME slab communication range for dim %d is %d\n",
+                ddpme->dim,ddpme->maxshift);
     }
 }
 
@@ -6143,7 +6147,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                                         gmx_mtop_t *mtop,t_inputrec *ir,
                                         matrix box,rvec *x,
                                         gmx_ddbox_t *ddbox,
-                                        int *npme_major,int *npme_minor)
+                                        int *npme_x,int *npme_y)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -6441,7 +6445,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 
     if (EEL_PME(ir->coulombtype))
     {
-        if (comm->npmenodes > dd->nc[XX] && comm->npmenodes % dd->nc[XX] == 0 &&
+        if (dd->nc[XX] > 1 && dd->nc[YY] > 1 &&
+            comm->npmenodes > dd->nc[XX] && comm->npmenodes % dd->nc[XX] == 0 &&
             getenv("GMX_PMEONEDD") == NULL)
         {
             comm->npmedecompdim   = 2;
@@ -6467,9 +6472,19 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         comm->npmenodes_minor = 0;
     }
     
-    /* Technically we don't need both of these, but it simplifies code not having to recalculate it */
-    *npme_major = comm->npmenodes_major;
-    *npme_minor = comm->npmenodes_minor;
+    /* Technically we don't need both of these,
+     * but it simplifies code not having to recalculate it.
+     */
+    if (comm->npmedecompdim == 1 && dd->dim[0] == YY)
+    {
+        *npme_x = 1;
+        *npme_y = comm->npmenodes;
+    }
+    else
+    {
+        *npme_x = comm->npmenodes_major;
+        *npme_y = comm->npmenodes_minor;
+    }
         
     snew(comm->slb_frac,DIM);
     if (comm->eDLB == edlbNO)
@@ -7809,7 +7824,7 @@ static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
     int i1,i2,i_new;
     
     /* The new indices are not very ordered, so we qsort them */
-    qsort(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
+    qsort_threadsafe(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
     
     /* sort2 is already ordered, so now we can merge the two arrays */
     i1 = 0;
@@ -7925,7 +7940,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
             fprintf(debug,"qsort cgs: %d new home %d\n",dd->ncg_home,ncg_new);
         }
         /* Determine the order of the charge groups using qsort */
-        qsort(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
+        qsort_threadsafe(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
     }
     cgsort = sort->sort1;
     
@@ -8119,7 +8134,7 @@ void dd_partition_system(FILE            *fplog,
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
-    gmx_ddbox_t ddbox;
+    gmx_ddbox_t ddbox={0};
     t_block *cgs_gl;
     gmx_large_int_t step_pcoupl;
     rvec cell_ns_x0,cell_ns_x1;

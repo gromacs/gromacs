@@ -71,7 +71,7 @@ static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
                    rvec dtri, const output_env_t oenv)
 {
   FILE       *fp;
-  int        status;
+  t_trxstatus *status;
   int        ng,natoms,i,j,k,l,X,Y,Z,lc,dest;
   ivec       nbin;
   int        ***count;
@@ -96,6 +96,7 @@ static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   real       delta;
   atom_id    ix,jx;
   t_topology top;
+  gmx_rmpbc_t  gpbc=NULL;
   int        ePBC=-1;
   t_pbc      pbc;
   bool       bTop=FALSE,bRefDone=FALSE,bInGroup=FALSE;
@@ -337,13 +338,13 @@ structure if needed */
 
   normfac = 0;
 
-
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
+  
   do {
     /* Must init pbc every step because of pressure coupling */
     set_pbc(&pbc,ePBC,box);
-    rm_pbc(&top.idef,ePBC,natoms,box,x,x);
-
-
+    gmx_rmpbc(gpbc,box,x,x);
+  
     /* Dynamically build the ref triples */
     if ( mode == 2 )
       {
@@ -537,6 +538,9 @@ structure if needed */
   } while (read_next_x(oenv,status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   
+  gmx_rmpbc_done(gpbc);
+
+
   close_trj(status);
   
   sfree(x);

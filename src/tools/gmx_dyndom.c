@@ -167,7 +167,8 @@ int gmx_dyndom(int argc,char *argv[])
     { "-tail",     FALSE, etRVEC, {tail},
       "Last atom of the arrow vector" }
   };
-  int     i,j,natoms,isize,status;
+  int     i,j,natoms,isize;
+  t_trxstatus *status;
   atom_id *index=NULL,*index_all;
   char    title[256],*grpname;
   t_atoms atoms;

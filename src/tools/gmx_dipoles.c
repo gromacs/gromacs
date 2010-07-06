@@ -673,7 +673,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   t_enxframe *fr;
   int        nframes=1000,nre,timecheck=0,ncolour=0;
   ener_file_t fmu=NULL;
-  int        i,j,k,n,m,natom=0,nmol,status,gnx_tot,teller,tel3;
+  int        i,j,k,n,m,natom=0,nmol,gnx_tot,teller,tel3;
+  t_trxstatus *status;
   int        *dipole_bin,ndipbin,ibin,iVol,step,idim=-1;
   unsigned long mode;
   char       buf[STRLEN];
@@ -690,6 +691,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   rvec       *slab_dipoles=NULL;
   t_atom     *atom=NULL;
   t_block    *mols=NULL;
+  gmx_rmpbc_t gpbc=NULL;
 
   gnx_tot = gnx[0];
   if (ncos > 1) {
@@ -847,6 +849,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 
     gkrbin = mk_gkrbin(rcut,rcmax,bPhi,ndegrees); 
   }
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natom,box);
 
   /* Start while loop over frames */
   t1 = t0 = t;
@@ -875,7 +878,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 	M_av[m] = 0;
 	M_av2[m] = 0;
       }
-      rm_pbc(&(top->idef),ePBC,natom,box,x,x);
+      gmx_rmpbc(gpbc,box,x,x);
       
       muframelsq = gmx_stats_init();
       /* Begin loop of all molecules in frame */
@@ -1069,6 +1072,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       bCont = read_next_x(oenv,status,&t,natom,x,box);
   } while (bCont);
   
+  gmx_rmpbc_done(gpbc);
+
   if (!bMU)
     close_trj(status);
     

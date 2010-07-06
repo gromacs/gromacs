@@ -120,13 +120,15 @@ int gmx_trjorder(int argc,char *argv[])
       "Order molecules on z-coordinate" }
   };
   FILE       *fp;
-  int        status,out;
+  t_trxstatus *out;
+  t_trxstatus *status;
   bool       bNShell,bPDBout;
   t_topology top;
   int        ePBC;
   rvec       *x,*xsol,xcom,dx;
   matrix     box;
   t_pbc      pbc;
+  gmx_rmpbc_t gpbc;
   real       t,totmass,mass,rcut2=0,n2;
   int        natoms,nwat,ncut;
   char       **grpname,title[256];
@@ -190,7 +192,7 @@ int gmx_trjorder(int argc,char *argv[])
   for(i=0; (i<natoms); i++)
     swi[i] = i;
 
-  out     = -1;
+  out     = NULL;
   fp      = NULL;
   bNShell = ((opt2bSet("-nshell",NFILE,fnm)) ||
 	     (opt2parg_bSet("-r",asize(pa),pa)));
@@ -210,8 +212,9 @@ int gmx_trjorder(int argc,char *argv[])
     }
     out = open_trx(opt2fn("-o",NFILE,fnm),"w");
   }
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   do {
-    rm_pbc(&top.idef,ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,box,x,x);
     set_pbc(&pbc,ePBC,box);
 
     if (ref_a == -1) {
@@ -285,7 +288,7 @@ int gmx_trjorder(int argc,char *argv[])
 	  ncut++;
       fprintf(fp,"%10.3f  %8d\n",t,ncut);
     }
-    if (out != -1) {
+    if (out) {
       qsort(order,nwat,sizeof(*order),ocomp);
       for(i=0; (i<nwat); i++)
 	for(j=0; (j<na); j++) 
@@ -303,11 +306,12 @@ int gmx_trjorder(int argc,char *argv[])
     }
   } while(read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
-  if (out != -1)
+  if (out)
     close_trx(out);
   if (fp)
     ffclose(fp);
-
+  gmx_rmpbc_done(gpbc);
+  
   thanx(stderr);
   
   return 0;

@@ -530,6 +530,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->sc_power",-1,ir1->sc_power,ir2->sc_power);
   cmp_real(fp,"inputrec->sc_sigma",-1,ir1->sc_sigma,ir2->sc_sigma,ftol,abstol);
   cmp_int(fp,"inputrec->nstdhdl",-1,ir1->nstdhdl,ir2->nstdhdl);
+  cmp_int(fp,"inputrec->dh_table_size",-1,ir1->dh_table_size,ir2->dh_table_size);
+  cmp_double(fp,"inputrec->dh_table_spacing",-1,ir1->dh_table_spacing,ir2->dh_table_spacing,ftol,abstol);
 
   cmp_int(fp,"inputrec->nwall",-1,ir1->nwall,ir2->nwall);
   cmp_int(fp,"inputrec->wall_type",-1,ir1->wall_type,ir2->wall_type);
@@ -745,7 +747,7 @@ void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2,
   int i;
   const char *fn[2];
   t_trxframe fr[2];
-  int status[2];
+  t_trxstatus *status[2];
   bool b[2];
   
   fn[0]=fn1;

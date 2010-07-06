@@ -226,7 +226,7 @@ int gmx_rms(int argc, char *argv[])
     matrix box;
     rvec *x, *xp, *xm = NULL, **mat_x = NULL, **mat_x2, *mat_x2_j = NULL, vec1,
         vec2;
-    int status;
+    t_trxstatus *status;
     char buf[256], buf2[256];
     int ncons = 0;
     FILE *fp;
@@ -245,6 +245,8 @@ int gmx_rms(int argc, char *argv[])
     char *gn_fit, **gn_rms;
     t_rgb rlo, rhi;
     output_env_t oenv;
+    gmx_rmpbc_t  gpbc=NULL;
+
     t_filenm fnm[] =
         {
             { efTPS, NULL, NULL, ffREAD },
@@ -429,8 +431,10 @@ int gmx_rms(int argc, char *argv[])
         }
     }
     /* Prepare reference frame */
-    if (bPBC)
-        rm_pbc(&(top.idef),ePBC,top.atoms.nr,box,xp,xp);
+    if (bPBC) {
+      gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,box);
+      gmx_rmpbc(gpbc,box,xp,xp);
+    }
     if (bReset)
         reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
     if (bMirror) {
@@ -529,7 +533,7 @@ int gmx_rms(int argc, char *argv[])
     teller = 0;
     do {
         if (bPBC) 
-            rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+	  gmx_rmpbc(gpbc,box,x,x);
 
         if (bReset)
             reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
@@ -611,7 +615,7 @@ int gmx_rms(int argc, char *argv[])
         teller2 = 0;
         do {
             if (bPBC) 
-                rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+	      gmx_rmpbc(gpbc,box,x,x);
 
             if (bReset)
                 reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
@@ -649,6 +653,7 @@ int gmx_rms(int argc, char *argv[])
         tel_mat2=tel_mat;
         freq2=freq;
     }
+    gmx_rmpbc_done(gpbc);
 
     if (bMat || bBond) {
         /* calculate RMS matrix */
