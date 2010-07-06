@@ -6,7 +6,7 @@
 # Git_VERSION       - git version
 # Git_FOUND         - tru if git was found, false otherwise
 #
-# Szilard Pall (pszilard@cbr.su.se)
+# Author: Szilard Pall (pszilard@cbr.su.se)
 
 if(Git_EXECUTABLE AND Git_VERSION)
     set(Git_FIND_QUIETLY TRUE)
@@ -14,7 +14,8 @@ endif()
 
 # search for git binary
 find_program(Git_EXECUTABLE git
-    DOC "Git version control tool")
+    PATHS ENV PATH
+    CACHE DOC "Git version control tool")
 
 if(NOT Git_EXECUTABLE)
     set(_err_msg "Git executable not found")
@@ -35,7 +36,8 @@ if(Git_EXECUTABLE AND NOT Git_VERSION)
     
     # check version
     set(_git_version_ok TRUE)
-    if(Git_FIND_VERSION_EXACT AND NOT Git_VERSION VERSION_EQUAL Git_FIND_VERSION)
+    # this should at some point become VERSION_EQUAL
+    if(Git_FIND_VERSION_EXACT AND NOT Git_VERSION STREQUAL Git_FIND_VERSION)
         set(_err_msg "Found git version ${Git_VERSION} but this does not match the requested ${Git_FIND_VERSION}")
         if(Git_FIND_REQUIRED)
             message(FATAL_ERROR " ${_err_msg}")
@@ -44,7 +46,8 @@ if(Git_EXECUTABLE AND NOT Git_VERSION)
         endif()
         set(_git_version_ok FALSE)
     endif()
-    if(Git_FIND_VERSION AND Git_VERSION VERSION_LESS Git_FIND_VERSION)
+    # this should at some point become VERSION_LESS
+    if(Git_FIND_VERSION AND Git_VERSION STRLESS Git_FIND_VERSION)
         set(_err_msg "Found git version ${Git_VERSION} but this is less then the requested ${Git_FIND_VERSION}")
         if(Git_FIND_REQUIRED)
             message(FATAL_ERROR " ${_err_msg}")

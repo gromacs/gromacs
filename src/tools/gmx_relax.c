@@ -389,6 +389,7 @@ void spectrum(bool bVerbose,
   rvec   **corr;
   real   **Corr;
   t_sij  *spec;
+  gmx_rmpbc_t  gpbc=NULL;
 
   snew(spec,npair);
   
@@ -401,6 +402,8 @@ void spectrum(bool bVerbose,
   natoms  = read_first_x(&status,trj,&t0,&x,box);
   if (natoms > nat)
     gmx_fatal(FARGS,"Not enough atoms in trajectory");
+  gpbc = gmx_rmpbc_init(idef,ePBC,natoms,box);
+
   do {
     if (nframes >= maxframes) {
       fprintf(stderr,"\nThere are more than the %d frames you told me!",
@@ -410,7 +413,7 @@ void spectrum(bool bVerbose,
     t1 = t;
     if (bVerbose)
       fprintf(stderr,"\rframe: %d",nframes);
-    rm_pbc(idef,natoms,box,x,x);
+    gmx_rmpbc(gpbc,box,x,x);
     if (bFit)
       do_fit(natoms,w_rls,xp,x);  
     
@@ -437,6 +440,8 @@ void spectrum(bool bVerbose,
   if (bVerbose)
     fprintf(stderr,"\n");
  
+  gmx_rmpbc_done(gpbc);
+
   fp=ffopen("ylm.out","w");
   calc_aver(fp,nframes,npair,pair,spec,maxdist);
   ffclose(fp);

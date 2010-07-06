@@ -51,8 +51,6 @@
 #include "warninp.h"
 #include "gmx_fatal.h"
 
-static int inp_count = 1;
-
 /* find an entry; return index, or -1 if not found */
 static int search_einp(int ninp, const t_inpfile *inp, const char *name);
 
@@ -75,7 +73,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
     
   if (debug)
     fprintf(debug,"Reading MDP file %s\n",fn);
-  inp_count = 1;
+
   if (!cppopts)
     cppopts_given=cppopts;
   else
@@ -87,6 +85,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
   {
     sprintf(warn_buf, "%s", cpp_error(&in, status));
     warning_error(wi,warn_buf);
+    *ninp = 0;
     return NULL;
   }
   nin = lc  = 0;
@@ -100,7 +99,8 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
       {
 	sprintf(warn_buf, "%s", cpp_error(&in, status));
 	warning_error(wi,warn_buf);
-	return NULL;
+	*ninp = nin;
+	return inp;
       }
       else
 	ptr=0;
@@ -180,6 +180,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
 	      {
 		/* add a new item */
 		srenew(inp,++nin);
+                inp[nin-1].inp_count  = 1;
 		inp[nin-1].count      = 0;
 		inp[nin-1].bObsolete  = FALSE;
 		inp[nin-1].bSet       = FALSE;
@@ -214,10 +215,13 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
   } while (ptr);
   cpp_close_file(&in);
 
-  if (debug)
+  if (debug) {
     fprintf(debug,"Done reading MDP file, there were %d entries in there\n",
 	    nin);
-  *ninp=nin;
+  }
+
+  *ninp = nin;
+
   return inp;
 }
 
@@ -327,7 +331,7 @@ static int get_einp(int *ninp,t_inpfile **inp,const char *name)
     (*inp)[i].name=strdup(name);
     (*inp)[i].bSet=TRUE;
   }
-  (*inp)[i].count = inp_count++;
+  (*inp)[i].count = (*inp)[0].inp_count++;
   (*inp)[i].bSet  = TRUE;
   if (debug) 
     fprintf(debug,"Inp %d = %s\n",(*inp)[i].count,(*inp)[i].name);
@@ -442,7 +446,8 @@ const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def)
 int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
 	       warninp_t wi)
 {
-  int  ii,i,j,n;
+  int  ii,i,j;
+  int n=0;
   char buf[STRLEN];
   
   ii=get_einp(ninp,inp,name);
@@ -458,12 +463,12 @@ int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
       break;
   
   if (defs[i] == NULL) {
-    n = sprintf(buf,"Invalid enum '%s' for variable %s, using '%s'\n",
+    n += sprintf(buf,"Invalid enum '%s' for variable %s, using '%s'\n",
 		(*inp)[ii].value,name,defs[0]);
-    n = sprintf(buf+n,"Next time use one of:");
+    n += sprintf(buf+n,"Next time use one of:");
     j=0;
     while (defs[j]) {
-      n = sprintf(buf+n," '%s'",defs[j]);
+      n += sprintf(buf+n," '%s'",defs[j]);
       j++;
     }
     if (wi != NULL) {

@@ -49,6 +49,7 @@
 #include "fflibutil.h"
 #include "hackblock.h"
 #include "gmx_fatal.h"
+#include "xlate.h"
 
 typedef struct {
     char *filebase;
@@ -132,7 +133,7 @@ static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
     sfree(xlatom);
 }
 
-void rename_atoms(const char *xlfile,const char *ffdir,
+void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
                   t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
                   bool bResname,t_aa_names *aan,bool bReorderNum,
                   bool bVerbose)
@@ -155,7 +156,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,
     }
     else
     {
-        nf = fflib_search_file_end(ffdir,".arn",FALSE,&f);
+        nf = fflib_search_file_end(ffdir,bAddCWD,".arn",FALSE,&f);
         for(i=0; i<nf; i++)
         {
             fp = fflib_open(f[i]);

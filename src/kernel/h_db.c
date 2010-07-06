@@ -95,14 +95,17 @@ void read_ab(char *line,const char *fn,t_hack *hack)
   hack->nctl = ns - 3;
   if ((hack->nctl != ncontrol[hack->tp]) && (ncontrol[hack->tp] != -1))
     gmx_fatal(FARGS,"Error in hdb file %s:\nWrong number of control atoms (%d iso %d) on line:\n%s\n",fn,hack->nctl,ncontrol[hack->tp],line);
-  for(i=0; (i<hack->nctl); i++) 
+  for(i=0; (i<hack->nctl); i++) {
     hack->a[i]=strdup(a[i]);
-  for(   ; i<4; i++)
+  }
+  for(   ; i<4; i++) {
     hack->a[i]=NULL;
+  }
   hack->oname=NULL;
   hack->nname=strdup(hn);
   hack->atom=NULL;
   hack->cgnr=NOTSET;
+  hack->bXSet=FALSE;
   for(i=0; i<DIM; i++)
     hack->newx[i]=NOTSET;
 }
@@ -187,7 +190,7 @@ static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
   *ah     = aah;
 }
 
-int read_h_db(const char *ffdir,t_hackblock **ah)
+int read_h_db(const char *ffdir,bool bAddCWD,t_hackblock **ah)
 {
   int  nhdbf,f;
   char **hdbf;
@@ -197,7 +200,7 @@ int read_h_db(const char *ffdir,t_hackblock **ah)
   /* Read the hydrogen database file(s).
    * Do not generate an error when no files are found.
    */
-  nhdbf = fflib_search_file_end(ffdir,".hdb",FALSE,&hdbf);
+  nhdbf = fflib_search_file_end(ffdir,bAddCWD,".hdb",FALSE,&hdbf);
   nah = 0;
   *ah = NULL;
   for(f=0; f<nhdbf; f++) {

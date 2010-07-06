@@ -86,6 +86,8 @@ struct gmx_ana_selcollection_t
     bool                        bVelocities;
     /** TRUE if forces should be evaluated for output positions. */
     bool                        bForces;
+    /** TRUE if debugging output should be printed during compilation. */
+    bool                        bDebugCompile;
 
     /** Root of the selection element tree. */
     struct t_selelem           *root;
@@ -104,6 +106,8 @@ struct gmx_ana_selcollection_t
     struct gmx_ana_index_t         gall;
     /** Position calculation collection used for selection position evaluation. */
     struct gmx_ana_poscalc_coll_t *pcc;
+    /** Memory pool used for selection evaluation. */
+    struct gmx_sel_mempool_t      *mempool;
     /** Parser symbol table. */
     struct gmx_sel_symtab_t     *symtab;
 };

@@ -70,8 +70,8 @@ int main(int argc,char *argv[])
 	" * The current release runs only on modern nVidia GPU hardware with CUDA support.",
 	"Make sure that the necessary CUDA drivers and libraries for your operating system",
 	"are already installed. The CUDA SDK also should be installed in order to compile",
-	"the program from source (http://www.nvidia.com/object/cuda_home.html).[PAR]"
-	" * Multiple GPU cards are not supported.[PAR]"
+	"the program from source (http://www.nvidia.com/object/cuda_home.html).[PAR]",
+	" * Multiple GPU cards are not supported.[PAR]",
 	" * Only a small subset of the GROMACS features and options are supported on the GPUs.",
 	"See below for a detailed list.[PAR]",
 	" * Consumer level GPU cards are known to often have problems with faulty memory.",
@@ -79,7 +79,7 @@ int main(int argc,char *argv[])
 	"(for example, using the memtest=full option).",
 	"A partial memory check (for example, memtest=15) before and",
 	"after the simulation run would help spot",
-	"problems resulting from processor overheating.[PAR]"
+	"problems resulting from processor overheating.[PAR]",
 	" * The maximum size of the simulated systems depends on the available",
 	"GPU memory,for example, a GTX280 with 1GB memory has been tested with systems",
 	"of up to about 100,000 atoms.[PAR]",
@@ -87,7 +87,7 @@ int main(int argc,char *argv[])
 	"have been implemented in a very different way than they are on the CPUs.",
 	"Therefore numercal correspondence between properties of the state of",
 	"simulated systems should not be expected. Moreover, the values will likely vary",
-	"when simulations are done on different GPU hardware.[PAR]"
+	"when simulations are done on different GPU hardware.[PAR]",
 	" * Frequent retrieval of system state information such as",
 	"trajectory coordinates and energies can greatly influence the performance",
 	"of the program due to slow CPU<->GPU memory transfer speed.[PAR]",
@@ -98,14 +98,14 @@ int main(int argc,char *argv[])
 	"can be as high as 20 times, but in most other setups involving cutoffs and PME the",
 	"acceleration is usually only 4~6 times relative to a 3GHz CPU.[PAR]",
 	"Supported features:[PAR]",
-	" * Integrators: md, md-vv, md-vv2, sd and bd.\n",
+	" * Integrators: md/md-vv/md-vv-avek, sd/sd1 and bd.\n",
 	" * Long-range interactions (option coulombtype): Reaction-Field, Ewald, PME.\n",
-	" * Temperature control: Supported only with the sd, bd, md-vv and md-vv2 integrators.\n",
+	" * Temperature control: Supported only with the md/md-vv/md-vv-avek, sd/sd1 and bd integrators.\n",
 	" * Pressure control: Not supported.\n",
 	" * Implicit solvent: Supported.\n",
 	"A detailed description can be found on the website:\n",
-	"http://www.gromacs.org/index.php?title=Download_%26_Installation/Related_Software/OpenMM[PAR]",
-// From the original mdrun documentaion
+	"http://www.gromacs.org/gpu[PAR]",
+/* From the original mdrun documentaion */
     "The mdrun program reads the run input file ([TT]-s[tt])",
     "and distributes the topology over nodes if needed.",
     "mdrun produces at least four output files.",
@@ -119,7 +119,7 @@ int main(int argc,char *argv[])
     "pressure, etc, a lot of these things are also printed in the log file.",
     "Optionally coordinates can be written to a compressed trajectory file",
     "([TT]-x[tt]).[PAR]",
-//////////////////////////////////////
+/* openmm specific information */
 	"Usage with OpenMM:[BR]",
 	"$ mdrun -device \"OpenMM:platform=Cuda,memtest=15,deviceid=0,force-device=no\"[PAR]",
 	"Options:[PAR]",
@@ -229,7 +229,7 @@ int main(int argc,char *argv[])
     "high or low spatial inhomogeneity of the system.",
     "[PAR]",
     "The option [TT]-gcom[tt] can be used to only do global communication",
-    "every n steps."
+    "every n steps.",
     "This can improve performance for highly parallel simulations",
     "where this global communication step becomes the bottleneck.",
     "For a global thermostat and/or barostat the temperature",
@@ -294,12 +294,25 @@ int main(int argc,char *argv[])
     "The previous checkpoint is backed up to [TT]state_prev.cpt[tt] to",
     "make sure that a recent state of the system is always available,",
     "even when the simulation is terminated while writing a checkpoint.",
+    "With [TT]-cpnum[tt] all checkpoint files are kept and appended",
+    "with the step number.",
     "A simulation can be continued by reading the full state from file",
     "with option [TT]-cpi[tt]. This option is intelligent in the way that",
     "if no checkpoint file is found, Gromacs just assumes a normal run and",
-    "starts from the first step of the tpr file.",
-    "The simulation part number is added to all output files,",
-    "unless [TT]-append[tt] or [TT]-noaddpart[tt] are set.",
+    "starts from the first step of the tpr file. By default the output",
+    "will be appending to the existing output files. The checkpoint file",
+    "contains checksums of all output files, such that you will never",
+    "loose data when some output files are modified, corrupt or removed.",
+    "There are three scenarios with [TT]-cpi[tt]:[BR]",
+    "* no files with matching names are present: new output files are written[BR]",
+    "* all files are present with names and checksums matching those stored",
+    "in the checkpoint file: files are appended[BR]",
+    "* otherwise no files are modified and a fatal error is generated[BR]",
+    "With [TT]-noappend[tt] new output files are opened and the simulation",
+    "part number is added to all output file names.",
+    "Note that in all cases the checkpoint file itself is not renamed",
+    "and will be overwritten, unless its name does not match",
+    "the [TT]-cpo[tt] option.",
     "[PAR]",
     "With checkpointing the output is appended to previously written",
     "output files, unless [TT]-noappend[tt] is used or none of the previous",
@@ -312,7 +325,7 @@ int main(int argc,char *argv[])
     "The result with appending will be the same as from a single run.",
     "The contents will be binary identical, unless you use a different number",
     "of nodes or dynamic load balancing or the FFT library uses optimizations",
-    "through timing."
+    "through timing.",
     "[PAR]",
     "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
     "file is written at the first neighbor search step where the run time",
@@ -340,12 +353,6 @@ int main(int argc,char *argv[])
     { efSTO, "-c",      "confout",  ffWRITE },
     { efEDR, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },
-    { efEDI, "-ei",     "sam",      ffOPTRD },
-    { efTRX, "-rerun",  "rerun",    ffOPTRD },
-    { efXVG, "-table",  "table",    ffOPTRD },
-    { efXVG, "-tablep", "tablep",   ffOPTRD },
-    { efXVG, "-tableb", "table",    ffOPTRD },
-#ifndef GMX_OPENMM
     { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
     { efXVG, "-field",  "field",    ffOPTWR },
     { efXVG, "-table",  "table",    ffOPTRD },
@@ -369,7 +376,6 @@ int main(int argc,char *argv[])
     { efLOG, "-rt",     "rottorque",ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
     { efNDX, "-dn",     "dipole",   ffOPTWR }
-#endif
   };
 #define NFILE asize(fnm)
 
@@ -404,25 +410,22 @@ int main(int argc,char *argv[])
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
-  bool bAppendFiles=TRUE,bAddPart=TRUE;
+  bool bAppendFiles=TRUE;
+  bool bKeepAndNumCPT=FALSE;
   bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
 
   t_pargs pa[] = {
 
-// arguments relevant to OPENMM only
-#ifdef GMX_OPENMM
-    { "-device",  FALSE, etSTR, {&deviceOptions},
-      "Device option string" },
-// args for non-OpenMM binaries
-#else
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
     { "-dd",      FALSE, etRVEC,{&realddxyz},
       "Domain decomposition grid, 0 is optimize" },
+#ifdef GMX_THREADS
     { "-nt",      FALSE, etINT, {&nthreads},
       "Number of threads to start (0 is guess)" },
+#endif
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME, -1 is guess" },
     { "-ddorder", FALSE, etENUM, {ddno_opt},
@@ -447,6 +450,8 @@ int main(int argc,char *argv[])
       "HIDDENThe DD cell sizes in z" },
     { "-gcom",    FALSE, etINT,{&nstglobalcomm},
       "Global communication frequency" },
+    { "-v",       FALSE, etBOOL,{&bVerbose},  
+      "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
       "Write a compact log file" },
     { "-seppot",  FALSE, etBOOL, {&bSepPot},
@@ -455,6 +460,14 @@ int main(int argc,char *argv[])
       "Print all forces larger than this (kJ/mol nm)" },
     { "-reprod",  FALSE, etBOOL,{&bReproducible},  
       "Try to avoid optimizations that affect binary reproducibility" },
+    { "-cpt",     FALSE, etREAL, {&cpt_period},
+      "Checkpoint interval (minutes)" },
+    { "-cpnum",   FALSE, etBOOL, {&bKeepAndNumCPT},
+      "Keep and number checkpoint files" },
+    { "-append",  FALSE, etBOOL, {&bAppendFiles},
+      "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
+    { "-maxh",   FALSE, etREAL, {&max_hours},
+      "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
@@ -472,25 +485,18 @@ int main(int argc,char *argv[])
     { "-resetstep", FALSE, etINT, {&resetstep},
       "HIDDENReset cycle counters after these many time steps" },
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
-      "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
+      "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" }
+#ifdef GMX_OPENMM
+    ,
+    { "-device",  FALSE, etSTR, {&deviceOptions},
+      "Device option string" }
 #endif
-// args for both
-    { "-v",       FALSE, etBOOL,{&bVerbose},  
-      "Be loud and noisy" },
-    { "-maxh",   FALSE, etREAL, {&max_hours},
-      "Terminate after 0.99 times this time (hours)" },
-    { "-cpt",     FALSE, etREAL, {&cpt_period},
-      "Checkpoint interval (minutes)" },
-    { "-append",  FALSE, etBOOL, {&bAppendFiles},
-      "Append to previous output files when continuing from checkpoint" },
-    { "-addpart",  FALSE, etBOOL, {&bAddPart},
-      "Add the simulation part number to all output files when continuing from checkpoint" },
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
   ivec     ddxyz;
   int      dd_node_order;
-  bool     HaveCheckpoint;
+  bool     bAddPart;
   FILE     *fplog,*fptest;
   int      sim_part,sim_part_fn;
   const char *part_suffix=".part";
@@ -499,7 +505,10 @@ int main(int argc,char *argv[])
 
 
   cr = init_par(&argc,&argv);
-   
+
+  if (MASTER(cr))
+    CopyRight(stderr, argv[0]);
+
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
   
@@ -519,19 +528,17 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL, &oenv);
 
-#ifdef GMX_THREADS
-  if (nthreads<1)
-  {
-      nthreads=tMPI_Get_recommended_nthreads();
-  }
-#else
-  nthreads=1;
-#endif
-  cr->nthreads = nthreads;
- 
-
+  /* we set these early because they might be used in init_multisystem() 
+     Note that there is the potential for npme>nnodes until the number of
+     threads is set later on, if there's thread parallelization. That shouldn't
+     lead to problems. */ 
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
+
+#ifndef GMX_THREADS
+  nthreads=1;
+#endif
+
 
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
@@ -544,45 +551,50 @@ int main(int argc,char *argv[])
 #endif
   }
 
-    /* Check if there is ANY checkpoint file available */	
-    sim_part    = 1;
-    sim_part_fn = sim_part;
-    if (opt2bSet("-cpi",NFILE,fnm))
-    {
-        bAppendFiles =
-            read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),
-                                            &sim_part_fn,NULL,cr,
-                                            bAppendFiles,
-                                            part_suffix,&bAddPart);
-        if (sim_part_fn==0 && MASTER(cr))
-        {
-            fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
-        }
-        else
-        {
-            sim_part = sim_part_fn + 1;
-        }
-    } 
-    else
-    {
-        bAppendFiles = FALSE;
-    }
-    
-    if (!bAppendFiles)
-    {
-        sim_part_fn = sim_part;
-    }
+  bAddPart = !bAppendFiles;
 
-    if (bAddPart && sim_part_fn > 1)
-    {
-        /* This is a continuation run, rename trajectory output files 
-           (except checkpoint files) */
-        /* create new part name first (zero-filled) */
-        sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
+  /* Check if there is ANY checkpoint file available */	
+  sim_part    = 1;
+  sim_part_fn = sim_part;
+  if (opt2bSet("-cpi",NFILE,fnm))
+  {
+      bAppendFiles =
+                read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
+                                                              fnm,cr),
+                                                &sim_part_fn,NULL,cr,
+                                                bAppendFiles,
+                                                part_suffix,&bAddPart);
+      if (sim_part_fn==0 && MASTER(cr))
+      {
+          fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
+      }
+      else
+      {
+          sim_part = sim_part_fn + 1;
+      }
+  } 
+  else
+  {
+      bAppendFiles = FALSE;
+  }
 
-        add_suffix_to_output_names(fnm,NFILE,suffix);
-        fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
-    }
+  if (!bAppendFiles)
+  {
+      sim_part_fn = sim_part;
+  }
+
+  if (bAddPart)
+  {
+      /* Rename all output files (except checkpoint files) */
+      /* create new part name first (zero-filled) */
+      sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
+
+      add_suffix_to_output_names(fnm,NFILE,suffix);
+      if (MASTER(cr))
+      {
+          fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
+      }
+  }
 
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
@@ -594,6 +606,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
+  Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
   Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
 
@@ -615,27 +628,15 @@ int main(int argc,char *argv[])
       fplog = NULL;
   }
 
-#if 0
-  /* this is now done in mdrunner: */
-  /* Essential dynamics */
-  if (opt2bSet("-ei",NFILE,fnm)) {
-      /* Open input and output files, allocate space for ED data structure */
-      ed = ed_open(NFILE,fnm,cr);
-  } else
-      ed=NULL;
-#endif
-
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-  /* even if nthreads = 1, we still call this one */
-  rc = mdrunner_threads(nthreads,
-                        fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,nstglobalcomm,
-                        ddxyz,dd_node_order,rdd,rconstr,
-                        dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                        nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
-                        pforce, cpt_period,max_hours,deviceOptions,Flags);
+  rc = mdrunner(nthreads, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
+                nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
+                dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
+                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
+                pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();

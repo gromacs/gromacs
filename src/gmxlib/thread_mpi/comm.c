@@ -95,6 +95,59 @@ int tMPI_Comm_rank(tMPI_Comm comm, int *rank)
     return tMPI_Group_rank(&(comm->grp), rank);
 }
 
+
+int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result)
+{
+    int i,j;
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_compare(%p, %p, %p)", comm1, comm2, result);
+#endif
+    if (comm1 == comm2)
+    {
+        *result=TMPI_IDENT;
+        return TMPI_SUCCESS;
+    }
+
+    if ( (!comm1) || (!comm2) )
+    {
+        *result=TMPI_UNEQUAL;
+        return TMPI_SUCCESS;
+    }
+
+    if (comm1->grp.N != comm2->grp.N)
+    {
+        *result=TMPI_UNEQUAL;
+        return TMPI_SUCCESS;
+    }
+
+    *result=TMPI_CONGRUENT;
+    /* we assume that there are two identical comm members within a comm */
+    for(i=0;i<comm1->grp.N;i++)
+    {
+        if (comm1->grp.peers[i] != comm2->grp.peers[i])
+        {
+            bool found=FALSE;
+
+            *result=TMPI_SIMILAR;
+            for(j=0;j<comm2->grp.N;j++)
+            {
+                if (comm1->grp.peers[i] == comm2->grp.peers[j])
+                {
+                    found=TRUE;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                *result=TMPI_UNEQUAL;
+                return TMPI_SUCCESS;
+            }
+        }
+    }
+    return TMPI_SUCCESS;
+}
+
+
 tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 {
     struct tmpi_comm_ *ret;
@@ -117,7 +170,7 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 
 
     /* initialize the main barrier */
-    tMPI_Spinlock_barrier_init(&(ret->barrier), N);
+    tMPI_Barrier_init(&(ret->barrier), N);
 
 #if 0
     {
@@ -130,13 +183,13 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
         } 
 
         ret->Nreduce_barriers=Nbarriers;
-        ret->reduce_barrier=(tMPI_Spinlock_barrier_t*)
-                  tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
+        ret->reduce_barrier=(tMPI_Barrier_t*)
+                  tMPI_Malloc(sizeof(tMPI_Barrier_t)*(Nbarriers+1));
         ret->N_reduce_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
         Nred=N;
         for(i=0;i<Nbarriers;i++)
         {
-            tMPI_Spinlock_barrier_init( &(ret->reduce_barrier[i]), Nred);
+            tMPI_Barrier_init( &(ret->reduce_barrier[i]), Nred);
             ret->N_reduce_barrier[i]=Nred;
             /* Nred is now Nred/2 + a rest term because solitary 
                process at the end of the list must still be accounter for */
@@ -159,8 +212,8 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 
         ret->N_reduce_iter=Niter;
         /* allocate the list */
-        ret->reduce_barrier=(tMPI_Spinlock_barrier_t**)
-                  tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t*)*(Niter+1));
+        ret->reduce_barrier=(tMPI_Barrier_t**)
+                  tMPI_Malloc(sizeof(tMPI_Barrier_t*)*(Niter+1));
         ret->N_reduce=(int*)tMPI_Malloc(sizeof(int)*(Niter+1));
 
         /* we re-set Nred to N */
@@ -172,11 +225,11 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
             Nred = Nred/2 + Nred%2;
             ret->N_reduce[i] = Nred;
             /* allocate the sub-list */
-            ret->reduce_barrier[i]=(tMPI_Spinlock_barrier_t*)
-                      tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nred));
+            ret->reduce_barrier[i]=(tMPI_Barrier_t*)
+                      tMPI_Malloc(sizeof(tMPI_Barrier_t)*(Nred));
             for(j=0;j<Nred;j++)
             {
-                tMPI_Spinlock_barrier_init(&(ret->reduce_barrier[i][j]),2);
+                tMPI_Barrier_init(&(ret->reduce_barrier[i][j]),2);
             }
         }
     }

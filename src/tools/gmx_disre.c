@@ -588,7 +588,8 @@ int gmx_disre(int argc,char *argv[])
   t_nrnb      nrnb;
   t_commrec   *cr;
   t_graph     *g;
-  int         status,ntopatoms,natoms,i,j,kkk;
+  int         ntopatoms,natoms,i,j,kkk;
+  t_trxstatus *status;
   real        t;
   rvec        *x,*f,*xav=NULL;
   matrix      box;
@@ -605,7 +606,8 @@ int gmx_disre(int argc,char *argv[])
   int         my_clust;
   FILE        *fplog;
   output_env_t oenv;
-
+  gmx_rmpbc_t  gpbc=NULL;
+  
   t_filenm fnm[] = {
     { efTPX, NULL, NULL, ffREAD },
     { efTRX, "-f", NULL, ffREAD },
@@ -712,13 +714,16 @@ int gmx_disre(int argc,char *argv[])
   init_forcerec(fplog,oenv,fr,NULL,&ir,&mtop,cr,box,FALSE,NULL,NULL,NULL,
                 FALSE,-1);
   init_nrnb(&nrnb);
+  if (ir.ePBC != epbcNONE)
+    gpbc = gmx_rmpbc_init(&top->idef,ir.ePBC,natoms,box);
+  
   j=0;
   do {
     if (ir.ePBC != epbcNONE) {
       if (ir.bPeriodicMols)
 	set_pbc(&pbc,ir.ePBC,box);
       else
-	rm_pbc(&top->idef,ir.ePBC,natoms,box,x,x);
+	gmx_rmpbc(gpbc,box,x,x);
     }
     
     if (clust) {
@@ -760,6 +765,8 @@ int gmx_disre(int argc,char *argv[])
     j++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
+  if (ir.ePBC != epbcNONE)
+    gmx_rmpbc_done(gpbc);
 
   if (clust) {
     dump_clust_stats(fplog,fcd.disres.nres,&(top->idef.il[F_DISRES]),

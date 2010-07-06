@@ -177,6 +177,7 @@ typedef struct gmx_edsam
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
     bool          bFirst;
+    bool          bStartFromCpt;
 } t_gmx_edsam;
 
 
@@ -288,8 +289,8 @@ static void project_to_eigvectors(rvec       *x,    /* The positions to project 
 static void project(rvec      *x,     /* positions to project */ 
                     t_edpar   *edi)   /* edi data set */
 {
-    /* It is not more work to subtract the average position in every s
-     * ubroutine again, because these routines are rarely used simultanely */
+    /* It is not more work to subtract the average position in every
+     * subroutine again, because these routines are rarely used simultanely */
     project_to_eigvectors(x, &edi->vecs.mon   , edi);
     project_to_eigvectors(x, &edi->vecs.linfix, edi);
     project_to_eigvectors(x, &edi->vecs.linacc, edi);
@@ -678,7 +679,6 @@ static void write_edo_flood(t_edpar *edi, FILE *fp, int step)
         fprintf(fp," %f",edi->flood.vecs.fproj[i]);
     
     fprintf(fp,"\n");
-    fflush(fp);
 }
 
 
@@ -748,7 +748,7 @@ static void flood_blowup(t_edpar *edi, rvec *forces_cart)
      for every atom we add all the contributions to this atom from all the different eigenvectors.
 
      NOTE: one could add directly to the forcefield forces, would mean we wouldn't have to clear the 
-     field forces_cart prior the computation, but momentarily we want to compute the forces seperately 
+     field forces_cart prior the computation, but momentarily we want to compute the forces separately 
      to have them accessible for diagnostics
      */
     int  j,eig;
@@ -963,7 +963,7 @@ static void get_flood_energies(t_edpar *edi, real Vfl[],int nnames)
 #endif
 
 
-gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],t_commrec *cr)
+gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],unsigned long Flags,t_commrec *cr)
 {   
     gmx_edsam_t ed;
     
@@ -981,7 +981,8 @@ gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],t_commrec *cr)
         /* The master opens the .edo output file */
         fprintf(stderr,"ED sampling will be performed!\n");        
         ed->edonam = ftp2fn(efEDO,nfile,fnm);
-        ed->edo    = gmx_fio_fopen(ed->edonam,"w");
+        ed->edo    = gmx_fio_fopen(ed->edonam,(Flags & MD_APPENDFILES)? "a+" : "w+");
+        ed->bStartFromCpt = Flags & MD_STARTFROMCPT;
     }
     return ed;
 }
@@ -1861,7 +1862,7 @@ static void do_radcon(rvec *xcoll, t_edpar *edi, t_commrec *cr)
 }
 
 
-static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, int step, t_commrec *cr)
+static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, gmx_large_int_t step, t_commrec *cr)
 {
     int i;
 
@@ -2131,7 +2132,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             rad_project(edi, xstart, &edi->vecs.linfix, cr);
 
             /* Output to file, set the step to -1 so that write_edo knows it was called from init_edsam */
-            if (ed->edo)
+            if (ed->edo && !(ed->bStartFromCpt))
                 write_edo(nr_edi, edi, ed, -1, 0);
 
             /* Prepare for the next edi data set: */
@@ -2235,7 +2236,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
 
 
 void do_edsam(t_inputrec  *ir,
-              int         step,
+              gmx_large_int_t step,
               t_mdatoms   *md,
               t_commrec   *cr,
               rvec        xs[],   /* The local current positions on this processor */
@@ -2333,7 +2334,7 @@ void do_edsam(t_inputrec  *ir,
             }
 
             /* update radsam references, when required */
-            if (do_per_step(step,edi->maxedsteps) && step > edi->presteps)
+            if (do_per_step(step,edi->maxedsteps) && step >= edi->presteps)
             {
                 project(buf->xcoll, edi);
                 rad_project(edi, buf->xcoll, &edi->vecs.radacc, cr);
@@ -2342,7 +2343,7 @@ void do_edsam(t_inputrec  *ir,
             }
 
             /* update radacc references, when required */
-            if (do_per_step(step,iupdate) && step > edi->presteps)
+            if (do_per_step(step,iupdate) && step >= edi->presteps)
             {
                 edi->vecs.radacc.radius = calc_radius(&edi->vecs.radacc);
                 if (edi->vecs.radacc.radius - buf->oldrad < edi->slope)
@@ -2355,8 +2356,12 @@ void do_edsam(t_inputrec  *ir,
             }
 
             /* apply the constraints */
-            if (step > edi->presteps && ed_constraints(ed->eEDtype, edi))
-                ed_apply_constraints(buf->xcoll, edi, step, cr);
+            if (step >= edi->presteps && ed_constraints(ed->eEDtype, edi))
+            {
+                /* ED constraints should be applied already in the first MD step
+                 * (which is step 0), therfore we pass step+1 to the routine */
+                ed_apply_constraints(buf->xcoll, edi, step+1 - ir->init_step, cr);
+            }
 
             /* write to edo, when required */
             if (do_per_step(step,edi->outfrq))

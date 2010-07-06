@@ -69,6 +69,9 @@ static const char *pdbtp[epdbNR]={
   "CONECT"
 };
 
+
+/* this is not very good, 
+   but these are only used in gmx_trjconv and gmx_editconv */
 static bool bTER=FALSE;
 static bool bWideFormat=FALSE;
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
@@ -670,8 +673,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
 		 gmx_conect conect)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
-  static t_symtab symtab;
-  static bool bFirst=TRUE;
+  t_symtab symtab;
   bool bCOMPND;
   bool bConnWarn = FALSE;
   char line[STRLEN+1];
@@ -688,10 +690,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
   if (box != NULL) 
     clear_mat(box);
 
-  if (bFirst) {
-    open_symtab(&symtab);
-    bFirst=FALSE;
-  }
+  open_symtab(&symtab);
 
   bCOMPND=FALSE;
   title[0]='\0';
@@ -765,21 +764,23 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
 	 * without identifier or with identical identifiers.
 	 */
 	nterread++;
-	if (nterread == 2 && atoms->resinfo[0].chain == ' ') {
-	  set_chainid(atoms,0,nres_ter_prev,chidmax);
-	  chidmax = 'A';
+	if (NULL != atoms->resinfo) {
+	  if (nterread == 2 && atoms->resinfo[0].chain == ' ') {
+	    set_chainid(atoms,0,nres_ter_prev,chidmax);
+	    chidmax = 'A';
+	  }
+	  if (nterread >= 2 && 
+	      (atoms->resinfo[nres_ter_prev].chain == ' ' ||
+	       (nres_ter_prev > 0 &&
+		atoms->resinfo[nres_ter_prev-1].chain !=
+		atoms->resinfo[nres_ter_prev].chain)) &&
+	      chidmax < 'Z') {
+	    chidmax++;
+	    set_chainid(atoms,nres_ter_prev,atoms->nres,chidmax);
+	  }
+	  chidmax = max(chidmax,atoms->resinfo[nres_ter_prev].chain);
+	  nres_ter_prev = atoms->nres;
 	}
-	if (nterread >= 2 && 
-	    (atoms->resinfo[nres_ter_prev].chain == ' ' ||
-	     (nres_ter_prev > 0 &&
-	      atoms->resinfo[nres_ter_prev-1].chain !=
-	      atoms->resinfo[nres_ter_prev].chain)) &&
-	    chidmax < 'Z') {
-	  chidmax++;
-	  set_chainid(atoms,nres_ter_prev,atoms->nres,chidmax);
-	}
-	chidmax = max(chidmax,atoms->resinfo[nres_ter_prev].chain);
-	nres_ter_prev = atoms->nres;
       }
       break;
     case epdbMODEL:
@@ -802,6 +803,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
     }
   }
   
+  free_symtab(&symtab);
   return natom;
 }
 

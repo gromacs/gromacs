@@ -46,34 +46,34 @@
 
 #include <sys/types.h>
 #include <sysstuff.h>
-#include <types/simple.h>
-#include <types/enums.h>
-#include <types/block.h>
-#include <types/symtab.h>
-#include <types/idef.h>
-#include <types/atoms.h>
-#include <types/trx.h>
-#include <types/topology.h>
-#include <types/energy.h>
-#include <types/inputrec.h>
-#include <types/ishift.h>
-#include <types/graph.h>
-#include <types/nrnb.h>
-#include <types/nblist.h>
-#include <types/nsgrid.h>
-#include <types/commrec.h>
-#include <types/forcerec.h>
-#include <types/fcdata.h>
-#include <types/mdatom.h>
-#include <types/pbc.h>
-#include <types/ifunc.h>
-#include <types/filenm.h>
-#include <types/group.h>
-#include <types/state.h>
-#include <types/shellfc.h>
-#include <types/constr.h>
-#include <types/matrix.h>
-#include <types/oenv.h>
+#include "types/simple.h"
+#include "types/enums.h"
+#include "types/block.h"
+#include "types/symtab.h"
+#include "types/idef.h"
+#include "types/atoms.h"
+#include "types/trx.h"
+#include "types/topology.h"
+#include "types/energy.h"
+#include "types/inputrec.h"
+#include "types/ishift.h"
+#include "types/graph.h"
+#include "types/nrnb.h"
+#include "types/nblist.h"
+#include "types/nsgrid.h"
+#include "types/commrec.h"
+#include "types/forcerec.h"
+#include "types/fcdata.h"
+#include "types/mdatom.h"
+#include "types/pbc.h"
+#include "types/ifunc.h"
+#include "types/filenm.h"
+#include "types/group.h"
+#include "types/state.h"
+#include "types/shellfc.h"
+#include "types/constr.h"
+#include "types/matrix.h"
+#include "types/oenv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -186,7 +186,10 @@ extern void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
  */
 
 void free_t_atoms(t_atoms *atoms,bool bFreeNames);
-/* free all the arrays and set the nr and nres to 0 */
+/* Free all the arrays and set the nr and nres to 0.
+ * bFreeNames tells if to free the atom and residue name strings,
+ * don't free them if they still need to be used in e.g. the topology struct.
+ */
 
 t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 /* generate a t_atoms struct for the system from gmx_mtop_t */ 

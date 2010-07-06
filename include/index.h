@@ -61,9 +61,11 @@ void rd_index(const char *statfile,int ngrps,int isize[],
 /* Assume the group file is generated, so the
  * format need not be user-friendly. The format is:
  * nr of groups, total nr of atoms
- * for each group: name nr of element, elements
- * The function opens a file, reads ngrps groups, puts the
- * sizes in isize, the atom_id s in index and the names of
+ * for each group: name nr of element, elements.
+ *
+ * The function opens a file, reads ngrps groups, asks the 
+ * user for group numbers, and puts the resulting sizes in 
+ * isize, the atom_id s in index and the names of
  * the groups in grpnames.
  *
  * It is also assumed, that when ngrps groups are requested
@@ -101,6 +103,9 @@ extern t_aa_names *get_aa_names(void);
 
 extern bool is_protein(t_aa_names *aan,char *resnm);
 /* gives true if resnm occurs in aminoacids.dat */
+
+extern bool is_residue(t_aa_names *aan,char *resnm);
+/* gives true if resnm occurs in aminoacids.dat or is DNA or RNA */
 
 extern void done_aa_names(t_aa_names **aan);
 /* Free memory. Pass address of the pointer youget from get_aa_names */

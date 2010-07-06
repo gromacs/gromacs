@@ -126,7 +126,7 @@ int gmx_spol(int argc,char *argv[])
   t_inputrec *ir;
   t_atom     *atom;
   char     title[STRLEN];
-  int      status;
+  t_trxstatus *status;
   int      nrefat,natoms,nf,ntot;
   real     t;
   rvec     *xtop,*x,xref,trial,dx={0},dip,dir;
@@ -141,6 +141,8 @@ int gmx_spol(int argc,char *argv[])
   double  sdip,sdip2,sinp,sdinp,nmol;
   int     *hist;
   t_pbc   pbc;
+  gmx_rmpbc_t  gpbc=NULL;
+
   
   const char *desc[] = {
     "g_spol analyzes dipoles around a solute; it is especially useful",
@@ -236,12 +238,14 @@ int gmx_spol(int argc,char *argv[])
 
   molindex = top->mols.index;
   atom     = top->atoms.atom;
+  
+  gpbc = gmx_rmpbc_init(&top->idef,ir->ePBC,natoms,box);
 
   /* start analysis of trajectory */
   do {
     /* make molecules whole again */
-    rm_pbc(&top->idef,ir->ePBC,natoms,box,x,x);
-    
+    gmx_rmpbc(gpbc,box,x,x);
+
     set_pbc(&pbc,ir->ePBC,box);
     if (bCom)
       calc_com_pbc(nrefat,top,x,&pbc,index[0],xref,ir->ePBC,box);
@@ -296,6 +300,8 @@ int gmx_spol(int argc,char *argv[])
     nf++;
 
   }  while (read_next_x(oenv,status,&t,natoms,x,box));
+  
+  gmx_rmpbc_done(gpbc);
 
   /* clean up */
   sfree(x);

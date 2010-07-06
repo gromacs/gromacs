@@ -412,7 +412,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
   nparm = nfp_ffn[eFitFn];
   if (debug) {
     fprintf(debug,"There are %d points to fit %d vars!\n",ndata,nparm);
-    fprintf(debug,"Fit to function %d from %g thru %g, dt=%g\n",
+    fprintf(debug,"Fit to function %d from %g through %g, dt=%g\n",
 	    eFitFn,begintimefit,endtimefit,dt);
   }
 

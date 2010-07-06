@@ -109,10 +109,10 @@ int gmx_polystat(int argc,char *argv[])
     "gyration tensors are written.",
     "With option [TT]-i[tt] the mean square internal distances are",
     "written.[PAR]",
-    "With option [TT]-p[tt] the presistence length is determined.",
+    "With option [TT]-p[tt] the persistence length is determined.",
     "The chosen index group should consist of atoms that are",
     "consecutively bonded in the polymer mainchains.",
-    "The presistence length is then determined from the cosine of",
+    "The persistence length is then determined from the cosine of",
     "the angles between bonds with an index difference that is even,",
     "the odd pairs are not used, because straight polymer backbones",
     "are usually all trans and therefore only every second bond aligns.",
@@ -144,7 +144,7 @@ int gmx_polystat(int argc,char *argv[])
   int    ePBC;
   int    isize,*index,nmol,*molind,mol,nat_min=0,nat_max=0;
   char   *grpname;
-  int    status;
+  t_trxstatus *status;
   real   t;
   rvec   *x,*bond=NULL;
   matrix box;
@@ -162,6 +162,7 @@ int gmx_polystat(int argc,char *argv[])
 	 	         "<R\\sg\\N> eig1", "<R\\sg\\N> eig2", "<R\\sg\\N> eig3",
 		         "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>" };
   char   **legp,buf[STRLEN];
+  gmx_rmpbc_t  gpbc=NULL;
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,
@@ -253,8 +254,11 @@ int gmx_polystat(int argc,char *argv[])
   sum_eed2_tot = 0;
   sum_gyro_tot = 0;
   sum_pers_tot = 0;
+  
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+  
   do {
-    rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,box,x,x);
     
     sum_eed2 = 0;
     for(d=0; d<DIM; d++)
@@ -379,6 +383,8 @@ int gmx_polystat(int argc,char *argv[])
 
     frame++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
+  
+  gmx_rmpbc_done(gpbc);
 
   close_trx(status);
 

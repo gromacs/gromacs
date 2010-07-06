@@ -37,6 +37,123 @@
  * files like gmx_fft_fftw3.c or gmx_fft_intel_mkl.c for that.
  */
 
+#ifndef GMX_FFT_FFTW3
+
+ struct gmx_many_fft {
+     int howmany;
+     int dist;
+     gmx_fft_t fft;
+ };
+
+typedef struct gmx_many_fft* gmx_many_fft_t ;
+
+int
+gmx_fft_init_many_1d(gmx_fft_t *        pfft,
+		     int                nx,
+		     int                howmany,
+		     gmx_fft_flag       flags) 
+{
+    gmx_many_fft_t fft;
+    if(pfft==NULL)
+    {
+        gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
+        return EINVAL;
+    }
+    *pfft = NULL;
+    
+    if( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == NULL)
+    {
+        return ENOMEM;
+    }
+
+    gmx_fft_init_1d(&fft->fft,nx,flags);
+    fft->howmany = howmany;
+    fft->dist = 2*nx;
+
+    *pfft = (gmx_fft_t)fft;
+    return 0;
+}
+
+int
+gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
+		     int                nx,
+		     int                howmany,
+		     gmx_fft_flag       flags) 
+{
+    gmx_many_fft_t fft;
+    if(pfft==NULL)
+    {
+        gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
+        return EINVAL;
+    }
+    *pfft = NULL;
+    
+    if( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == NULL)
+    {
+        return ENOMEM;
+    }
+
+    gmx_fft_init_1d_real(&fft->fft,nx,flags);
+    fft->howmany = howmany;
+    fft->dist = 2*(nx/2+1);
+
+    *pfft = (gmx_fft_t)fft;
+    return 0;
+}
+
+int
+gmx_fft_many_1d     (gmx_fft_t                  fft,
+                     enum gmx_fft_direction     dir,
+                     void *                     in_data,
+                     void *                     out_data)
+{
+    gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
+    int i,ret;
+    for (i=0;i<mfft->howmany;i++) 
+    {
+        ret=gmx_fft_1d(mfft->fft,dir,in_data,out_data);
+        if (ret!=0) return ret;
+        in_data=(real*)in_data+mfft->dist;
+        out_data=(real*)out_data+mfft->dist;
+    }
+    return 0;
+}
+
+int
+gmx_fft_many_1d_real     (gmx_fft_t                  fft,
+                          enum gmx_fft_direction     dir,
+                          void *                     in_data,
+                          void *                     out_data)
+{
+    gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
+    int i,ret;
+    for (i=0;i<mfft->howmany;i++) 
+    {
+        ret=gmx_fft_1d_real(mfft->fft,dir,in_data,out_data);
+        if (ret!=0) return ret;
+        in_data=(real*)in_data+mfft->dist;
+        out_data=(real*)out_data+mfft->dist;
+    }
+    return 0;
+}
+
+
+void
+gmx_many_fft_destroy(gmx_fft_t    fft)
+{
+    gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
+    if (mfft!=NULL) 
+    {
+        if (mfft->fft!=NULL) 
+        {
+            gmx_fft_destroy(mfft->fft);
+        }
+        free(mfft);
+    }
+}
+
+#endif
+
 int gmx_fft_transpose_2d(t_complex *          in_data,
                          t_complex *          out_data,
                          int                  nx,

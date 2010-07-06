@@ -106,9 +106,12 @@
 #     specified.  All of the non CUDA C files are compiled using the standard
 #     build rules specified by CMAKE and the cuda files are compiled to object
 #     files using nvcc and the host compiler.  In addition CUDA_INCLUDE_DIRS is
-#     added automatically to include_directories().  Standard CMake target calls
-#     can be used on the target after calling this macro
-#     (e.g. set_target_properties and target_link_libraries).
+#     added automatically to include_directories().  Some standard CMake target
+#     calls can be used on the target after calling this macro
+#     (e.g. set_target_properties and target_link_libraries), but setting
+#     properties that adjust compilation flags will not affect code compiled by
+#     nvcc.  Such flags should be modified before calling CUDA_ADD_EXECUTABLE,
+#     CUDA_ADD_LIBRARY or CUDA_WRAP_SRCS.
 #
 #  CUDA_ADD_LIBRARY( cuda_target file0 file1 ...
 #                    [STATIC | SHARED | MODULE] [EXCLUDE_FROM_ALL] [OPTIONS ...] )
@@ -476,7 +479,7 @@ mark_as_advanced(CUDA_NVCC_EXECUTABLE)
 
 if(CUDA_NVCC_EXECUTABLE AND NOT CUDA_VERSION)
   # Compute the version.
-  exec_program(${CUDA_NVCC_EXECUTABLE} ARGS "--version" OUTPUT_VARIABLE NVCC_OUT)
+  execute_process (COMMAND ${CUDA_NVCC_EXECUTABLE} "--version" OUTPUT_VARIABLE NVCC_OUT)
   string(REGEX REPLACE ".*release ([0-9]+)\\.([0-9]+).*" "\\1" CUDA_VERSION_MAJOR ${NVCC_OUT})
   string(REGEX REPLACE ".*release ([0-9]+)\\.([0-9]+).*" "\\2" CUDA_VERSION_MINOR ${NVCC_OUT})
   set(CUDA_VERSION "${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}" CACHE STRING "Version of CUDA as computed from nvcc.")
@@ -543,6 +546,14 @@ endmacro()
 # CUDA_LIBRARIES
 find_library_local_first(CUDA_CUDART_LIBRARY cudart "\"cudart\" library")
 set(CUDA_LIBRARIES ${CUDA_CUDART_LIBRARY})
+if(APPLE)
+  # We need to add the path to cudart to the linker using rpath, since the
+  # library name for the cuda libraries is prepended with @rpath.
+  get_filename_component(_cuda_path_to_cudart "${CUDA_CUDART_LIBRARY}" PATH)
+  if(_cuda_path_to_cudart)
+    list(APPEND CUDA_LIBRARIES -Wl,-rpath "-Wl,${_cuda_path_to_cudart}")
+  endif()
+endif()
 
 # 1.1 toolkit on linux doesn't appear to have a separate library on
 # some platforms.
@@ -813,7 +824,11 @@ macro(CUDA_WRAP_SRCS cuda_target format generated_files)
   if(CUDA_HOST_COMPILATION_CPP)
     set(CUDA_C_OR_CXX CXX)
   else(CUDA_HOST_COMPILATION_CPP)
-    set(nvcc_flags ${nvcc_flags} --host-compilation C)
+    if(CUDA_VERSION VERSION_LESS "3.0")
+      set(nvcc_flags ${nvcc_flags} --host-compilation C)
+    else()
+      message(WARNING "--host-compilation flag is deprecated in CUDA version >= 3.0.  Removing --host-compilation C flag" )
+    endif()
     set(CUDA_C_OR_CXX C)
   endif(CUDA_HOST_COMPILATION_CPP)
 

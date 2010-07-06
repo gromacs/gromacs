@@ -1002,3 +1002,17 @@ t_filenm *dup_tfn(int nf, const t_filenm tfn[])
     return ret;
 }
 
+void done_filenms(int nf, t_filenm fnm[])
+{
+    int i, j;
+
+    for (i = 0; i < nf; ++i)
+    {
+        for (j = 0; j < fnm[i].nfiles; ++j)
+        {
+            sfree(fnm[i].fns[j]);
+        }
+        sfree(fnm[i].fns);
+        fnm[i].fns = NULL;
+    }
+}

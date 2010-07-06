@@ -87,7 +87,7 @@ int gmx_dist(int argc,char *argv[])
   real t,t0,cut2,dist2;
   rvec *x=NULL,*v=NULL,dx;
   matrix box;
-  int status;
+  t_trxstatus *status;
   int natoms;
 
   int g,d,i,j,res,teller=0;
@@ -105,6 +105,7 @@ int gmx_dist(int argc,char *argv[])
   int     *contact_time=NULL,*ccount=NULL,ccount_nalloc=0,sum;
   char    buf[STRLEN];
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
   
   char *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
@@ -181,12 +182,13 @@ int gmx_dist(int argc,char *argv[])
   else
     pbc = NULL;
     
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
   do {
     /* initialisation for correct distance calculations */
     if (pbc) {
       set_pbc(pbc,ePBC,box);
       /* make molecules whole again */
-      rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+      gmx_rmpbc(gpbc,box,x,x);
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
@@ -247,6 +249,7 @@ int gmx_dist(int argc,char *argv[])
     
     teller++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
+  gmx_rmpbc_done(gpbc);
 
   if (!bCutoff)
     ffclose(fp);

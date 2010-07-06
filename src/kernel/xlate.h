@@ -41,7 +41,7 @@
 /* If bResname is true renames atoms based on residue names,
  * otherwise renames atoms based on rtp entry names.
  */
-extern void rename_atoms(const char *xlfile,const char *ffdir,
+extern void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
 			 t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
 			 bool bResname,t_aa_names *aan,bool bReorderNum,
 			 bool bVerbose);

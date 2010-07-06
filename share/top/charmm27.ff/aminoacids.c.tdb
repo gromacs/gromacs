@@ -11,19 +11,19 @@
 [ impropers ]
  C	CA	OT2	OT1      
 
-; Not part of CHARMM27, created by Michel Cuendet.
+; Created by Cuendet and Bjelkmar.
 [ COOH ]
 [ replace ]
- C		CD		12.011	0.72
+ C	C	CD		12.011	0.72
+ O	OT1	OB		15.9994 -0.55 
+ OXT	OT2	OH		15.9994	-0.61
 [ add ]
  2	8	OT	C	CA	N
  	OB	15.9994	-0.55
  1	2	HT2	OT2	C	CA
  	H	1.008	0.44
 [ replace ]
- OT2		OH1		15.9994	-0.61
-[ delete ]
- O
+ OT2	OT2	OH1		15.9994	-0.61
 [ impropers ]
  C	CA	OT2	OT1
 

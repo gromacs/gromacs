@@ -200,7 +200,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Spread Q",                        6 },
     { "Spread Q Bspline",                2 }, 
     { "Gather F",                      23  },
-    { "Gather F Bspline",              12  }, 
+    { "Gather F Bspline",              6   }, 
     { "3D-FFT",                        8   },
     { "Convolution",                   4   },
     { "Solve PME",                     64  },

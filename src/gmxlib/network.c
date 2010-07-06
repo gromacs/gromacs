@@ -236,9 +236,11 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   }
   MPE_Init_log();
 #endif
-  
+ 
+#ifdef GMX_LIB_MPI 
   fprintf(stderr,"NNODES=%d, MYRANK=%d, HOSTNAME=%s\n",
 	  mpi_num_nodes,mpi_my_rank,mpi_hostname);
+#endif
   
   *nnodes=mpi_num_nodes;
   
@@ -375,6 +377,7 @@ void gmx_abort(int noderank,int nnodes,int errorno)
 #else
 #ifdef GMX_THREADS
   fprintf(stderr,"Halting program %s\n",ShortProgram());
+  thanx(stderr);
   exit(1);
 #else
   if (nnodes > 1)

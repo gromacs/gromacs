@@ -999,6 +999,11 @@ if test "$GCC" = "yes"; then
    esac
    ACX_CHECK_CC_FLAGS(-funroll-all-loops,funroll_all_loops,xCFLAGS="$xCFLAGS -funroll-all-loops")
    ACX_CHECK_CC_FLAGS(-std=gnu99,stdgnu99,xCFLAGS="$xCFLAGS -std=gnu99")
+   # C99 requires strict IEEE 754 floating point compliance. Since gcc>=4.5.0 
+   # this is on when asking for c99, potentially impacting floating point 
+   # performance, so we turn it off here.
+   ACX_CHECK_CC_FLAGS(-fexcess-precision=fast, fexcess_precision_fast, 
+                      xCFLAGS="$xCFLAGS -fexcess-precision=fast")
 fi
 
 if test "$enable_debug" = "yes"; then

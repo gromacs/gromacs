@@ -128,7 +128,7 @@ static void print_atom(FILE *out,t_atom *a,gpp_atomtype_t atype,char *newnm)
 	  get_atomtype_name(a->type,atype),a->m,a->q);
 }
 
-static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],
+static void print_ter_db(const char *ff,char C,int nb,t_hackblock tb[],
 			 gpp_atomtype_t atype) 
 {
   FILE *out;
@@ -313,7 +313,7 @@ static void read_ter_db_file(char *fn,
   *tbptr  = tb;
 }
 
-int read_ter_db(const char *ffdir,char ter,
+int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
 		t_hackblock **tbptr,gpp_atomtype_t atype)
 {
   char ext[STRLEN];
@@ -326,7 +326,7 @@ int read_ter_db(const char *ffdir,char ter,
   /* Search for termini database files.
    * Do not generate an error when none are found.
    */
-  ntdbf = fflib_search_file_end(ffdir,ext,FALSE,&tdbf);
+  ntdbf = fflib_search_file_end(ffdir,bAddCWD,ext,FALSE,&tdbf);
   ntb    = 0;
   *tbptr = NULL;
   for(f=0; f<ntdbf; f++) {
@@ -345,6 +345,7 @@ int read_ter_db(const char *ffdir,char ter,
 t_hackblock **filter_ter(int nrtp,t_restp rtp[],
 			 int nb,t_hackblock tb[],
 			 const char *resname,
+			 const char *rtpname,
 			 int *nret)
 {
   /* Since some force fields (e.g. OPLS) needs different
@@ -374,7 +375,7 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
   char *s,*s2,*c;
   t_hackblock **list;
 
-  restp = search_rtp(resname,nrtp,rtp);
+  restp = search_rtp(rtpname,nrtp,rtp);
   
   n=0;
   list=NULL;

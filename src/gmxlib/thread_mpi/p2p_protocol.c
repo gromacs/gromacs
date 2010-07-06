@@ -121,7 +121,7 @@ void tMPI_Send_env_list_init(struct send_envelope_list *evl, int N)
 #endif
     evl->Nalloc=N;
 
-    evl->alloc_head=(struct envelope*)tMPI_Malloc(sizeof(struct envelope)*N );
+    evl->alloc_head=(struct envelope*)tMPI_Malloc(sizeof(struct envelope)*N);
     for(i=0;i<N;i++) 
     { 
         evl->alloc_head[i].next=(i<(N-1)) ? &(evl->alloc_head[i+1]) : NULL;

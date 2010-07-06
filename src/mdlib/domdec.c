@@ -48,6 +48,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "gmx_ga2la.h"
+#include "gmx_sort.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -162,7 +163,7 @@ const char *edlb_names[edlbNR] = { "auto", "no", "yes" };
 
 typedef struct
 {
-    int  dimind;   /* The dimension index                                    */
+    int  dim;      /* The dimension                                          */
     int  nslab;    /* The number of PME slabs in this dimension              */
     real *slb_dim_f; /* Cell sizes for determining the PME comm. with SLB    */
     int  *pp_min;  /* The minimum pp node location, size nslab               */
@@ -191,6 +192,7 @@ typedef struct gmx_domdec_comm
     /* The number of nodes doing PME (PP/PME or only PME) */
     int  npmenodes;
     int  npmenodes_major;
+    int  npmenodes_minor;
     /* The communication setup including the PME only nodes */
     bool bCartesianPP_PME;
     ivec ntot;
@@ -2664,33 +2666,27 @@ static float dd_force_load(gmx_domdec_comm_t *comm)
     return load;
 }
 
-static void set_slb_pme_dim_f(gmx_domdec_t *dd,int dimind,real **dim_f)
+static void set_slb_pme_dim_f(gmx_domdec_t *dd,int dim,real **dim_f)
 {
     gmx_domdec_comm_t *comm;
     int i;
     
     comm = dd->comm;
     
-    if (dd->dim[dimind] != dimind)
-    {
-        *dim_f = NULL;
-        return;
-    }
-    
-    snew(*dim_f,dd->nc[dimind]+1);
+    snew(*dim_f,dd->nc[dim]+1);
     (*dim_f)[0] = 0;
-    for(i=1; i<dd->nc[dimind]; i++)
+    for(i=1; i<dd->nc[dim]; i++)
     {
-        if (comm->slb_frac[dimind])
+        if (comm->slb_frac[dim])
         {
-            (*dim_f)[i] = (*dim_f)[i-1] + comm->slb_frac[dimind][i-1];
+            (*dim_f)[i] = (*dim_f)[i-1] + comm->slb_frac[dim][i-1];
         }
         else
         {
-            (*dim_f)[i] = (real)i/(real)dd->nc[dimind];
+            (*dim_f)[i] = (real)i/(real)dd->nc[dim];
         }
     }
-    (*dim_f)[dd->nc[dimind]] = 1;
+    (*dim_f)[dd->nc[dim]] = 1;
 }
 
 static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
@@ -2699,8 +2695,8 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     int	 pmeindex,slab,nso,i;
     ivec xyz;
     
-    ddpme->dimind = dimind;
-    ddpme->nslab  = nslab;
+    ddpme->dim   = dd->dim[dimind];
+    ddpme->nslab = nslab;
 
     if (nslab <= 1)
     {
@@ -2708,7 +2704,7 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     }
 
     nso = dd->comm->npmenodes/nslab;
-    /* Determine for each PME slab the PP locacation range for dimension dim */
+    /* Determine for each PME slab the PP location range for dimension dim */
     snew(ddpme->pp_min,nslab);
     snew(ddpme->pp_max,nslab);
     for(slab=0; slab<nslab; slab++) {
@@ -2720,7 +2716,7 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
         /* For y only use our y/z slab.
          * This assumes that the PME x grid size matches the DD grid size.
          */
-        if (dimind == 0 || xyz[YY] == dd->ci[YY]) {
+        if (dimind == 0 || xyz[XX] == dd->ci[XX]) {
             pmeindex = ddindex2pmeindex(dd,i);
             if (dimind == 0) {
                 slab = pmeindex/nso;
@@ -2732,7 +2728,7 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
         }
     }
 
-    set_slb_pme_dim_f(dd,ddpme->dimind,&ddpme->slb_dim_f);
+    set_slb_pme_dim_f(dd,ddpme->dim,&ddpme->slb_dim_f);
 }
 
 int dd_pme_maxshift0(gmx_domdec_t *dd)
@@ -2742,24 +2738,33 @@ int dd_pme_maxshift0(gmx_domdec_t *dd)
 
 int dd_pme_maxshift1(gmx_domdec_t *dd)
 {
-    return dd->comm->ddpme[1].maxshift;
+    /* This should return the maxshift for dim Y,
+     * where comm indexes ddpme with dimind.
+     */
+    if (dd->comm->npmedecompdim == 1 && dd->dim[0] == YY)
+    {
+        return dd->comm->ddpme[0].maxshift;
+    }
+    else
+    {
+        return dd->comm->ddpme[1].maxshift;
+    }
 }
 
 static void set_pme_maxshift(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
                              bool bUniform,gmx_ddbox_t *ddbox,real *cell_f)
 {
     gmx_domdec_comm_t *comm;
-    int  dim,nc,ns,s;
+    int  nc,ns,s;
     int  *xmin,*xmax;
     real range,pme_boundary;
     int  sh;
     
     comm = dd->comm;
-    dim = ddpme->dimind;
-    nc  = dd->nc[dim];
+    nc  = dd->nc[ddpme->dim];
     ns  = ddpme->nslab;
     
-    if (dd->dim[dim] != dim)
+    if (nc == 1)
     {
         /* PP decomposition is not along dim: the worst situation */
         sh = ns/2;
@@ -2776,12 +2781,13 @@ static void set_pme_maxshift(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
          */
         xmin = ddpme->pp_min;
         xmax = ddpme->pp_max;
-        /* Allow for atoms to be maximally half the cell size or cut-off
-         * out of their DD cell.
+        /* Allow for atoms to be maximally 2/3 times the cut-off
+         * out of their DD cell. This is a reasonable balance between
+         * between performance and support for most charge-group/cut-off
+         * combinations.
          */
-        range  = 0.5*min(comm->cellsize_min[dim],comm->cutoff);
-        range /= ddbox->skew_fac[dim]*ddbox->box_size[dim];
-        /* Avoid unlucky rounding at exactly 0.5 */
+        range  = 2.0/3.0*comm->cutoff/ddbox->box_size[ddpme->dim];
+        /* Avoid extra communication when we are exactly at a boundary */
         range *= 0.999;
         
         sh = 1;
@@ -2813,8 +2819,8 @@ static void set_pme_maxshift(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     
     if (debug)
     {
-        fprintf(debug,"PME slab communication range for dimind %d is %d\n",
-                ddpme->dimind,ddpme->maxshift);
+        fprintf(debug,"PME slab communication range for dim %d is %d\n",
+                ddpme->dim,ddpme->maxshift);
     }
 }
 
@@ -2915,7 +2921,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
         if (d < ddbox->npbcdim &&
             dd->nc[d] > 1 && npulse[d] >= dd->nc[d])
         {
-            gmx_fatal_collective(FARGS,DDMASTER(dd),
+            gmx_fatal_collective(FARGS,NULL,dd,
                                  "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
                                  dim2char(d),ddbox->box_size[d],ddbox->skew_fac[d],
                                  comm->cutoff,
@@ -4040,7 +4046,7 @@ static void clear_and_mark_ind(int ncg,int *move,
 static void print_cg_move(FILE *fplog,
                           gmx_domdec_t *dd,
                           gmx_large_int_t step,int cg,int dim,int dir,
-                          real limitd,
+                          bool bHaveLimitdAndCMOld,real limitd,
                           rvec cm_old,rvec cm_new,real pos_d)
 {
     gmx_domdec_comm_t *comm;
@@ -4049,12 +4055,23 @@ static void print_cg_move(FILE *fplog,
     comm = dd->comm;
 
     fprintf(fplog,"\nStep %s:\n",gmx_step_str(step,buf));
-    fprintf(fplog,"The charge group starting at atom %d moved than the distance allowed by the domain decomposition (%f) in direction %c\n",
-            ddglatnr(dd,dd->cgindex[cg]),limitd,dim2char(dim));
+    if (bHaveLimitdAndCMOld)
+    {
+        fprintf(fplog,"The charge group starting at atom %d moved than the distance allowed by the domain decomposition (%f) in direction %c\n",
+                ddglatnr(dd,dd->cgindex[cg]),limitd,dim2char(dim));
+    }
+    else
+    {
+        fprintf(fplog,"The charge group starting at atom %d moved than the distance allowed by the domain decomposition in direction %c\n",
+                ddglatnr(dd,dd->cgindex[cg]),dim2char(dim));
+    }
     fprintf(fplog,"distance out of cell %f\n",
             dir==1 ? pos_d - comm->cell_x1[dim] : pos_d - comm->cell_x0[dim]);
-    fprintf(fplog,"Old coordinates: %8.3f %8.3f %8.3f\n",
-            cm_old[XX],cm_old[YY],cm_old[ZZ]);
+    if (bHaveLimitdAndCMOld)
+    {
+        fprintf(fplog,"Old coordinates: %8.3f %8.3f %8.3f\n",
+                cm_old[XX],cm_old[YY],cm_old[ZZ]);
+    }
     fprintf(fplog,"New coordinates: %8.3f %8.3f %8.3f\n",
             cm_new[XX],cm_new[YY],cm_new[ZZ]);
     fprintf(fplog,"Old cell boundaries in direction %c: %8.3f %8.3f\n",
@@ -4068,14 +4085,16 @@ static void print_cg_move(FILE *fplog,
 static void cg_move_error(FILE *fplog,
                           gmx_domdec_t *dd,
                           gmx_large_int_t step,int cg,int dim,int dir,
-                          real limitd,
+                          bool bHaveLimitdAndCMOld,real limitd,
                           rvec cm_old,rvec cm_new,real pos_d)
 {
     if (fplog)
     {
-        print_cg_move(fplog, dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
+        print_cg_move(fplog, dd,step,cg,dim,dir,
+                      bHaveLimitdAndCMOld,limitd,cm_old,cm_new,pos_d);
     }
-    print_cg_move(stderr,dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
+    print_cg_move(stderr,dd,step,cg,dim,dir,
+                  bHaveLimitdAndCMOld,limitd,cm_old,cm_new,pos_d);
     gmx_fatal(FARGS,
               "A charge group moved too far between two domain decomposition steps\n"
               "This usually means that your system is not well equilibrated");
@@ -4211,8 +4230,19 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
         {
             cell_x1[d] = comm->cell_x1[d];
         }
-        limit0[d] = comm->old_cell_x0[d] - limitd[d];
-        limit1[d] = comm->old_cell_x1[d] + limitd[d];
+        if (d < npbcdim)
+        {
+            limit0[d] = comm->old_cell_x0[d] - limitd[d];
+            limit1[d] = comm->old_cell_x1[d] + limitd[d];
+        }
+        else
+        {
+            /* We check after communication if a charge group moved
+             * more than one cell. Set the pre-comm check limit to float_max.
+             */
+            limit0[d] = -GMX_FLOAT_MAX;
+            limit1[d] =  GMX_FLOAT_MAX;
+        }
     }
     
     make_tric_corr_matrix(npbcdim,state->box,tcm);
@@ -4267,7 +4297,7 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
                 {
                     if (pos_d >= limit1[d])
                     {
-                        cg_move_error(fplog,dd,step,cg,d,1,limitd[d],
+                        cg_move_error(fplog,dd,step,cg,d,1,TRUE,limitd[d],
                                       cg_cm[cg],cm_new,pos_d);
                     }
                     dev[d] = 1;
@@ -4293,7 +4323,7 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
                 {
                     if (pos_d < limit0[d])
                     {
-                        cg_move_error(fplog,dd,step,cg,d,-1,limitd[d],
+                        cg_move_error(fplog,dd,step,cg,d,-1,TRUE,limitd[d],
                                       cg_cm[cg],cm_new,pos_d);
                     }
                     dev[d] = -1;
@@ -4509,6 +4539,26 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
         for(cg=0; cg<ncg_recv; cg++)
         {
             flag = comm->buf_int[cg*DD_CGIBS+1];
+
+            if (dim >= npbcdim && dd->nc[dim] > 2)
+            {
+                /* No pbc in this dim and more than one domain boundary.
+                 * We to a separate check if a charge did not move too far.
+                 */
+                if (((flag & DD_FLAG_FW(d)) &&
+                     comm->vbuf.v[buf_pos][d] > cell_x1[dim]) ||
+                    ((flag & DD_FLAG_BW(d)) &&
+                     comm->vbuf.v[buf_pos][d] < cell_x0[dim]))
+                {
+                    cg_move_error(fplog,dd,step,cg,d,
+                                  (flag & DD_FLAG_FW(d)) ? 1 : 0,
+                                   FALSE,0,
+                                   comm->vbuf.v[buf_pos],
+                                   comm->vbuf.v[buf_pos],
+                                   comm->vbuf.v[buf_pos][d]);
+                }
+            }
+
             mc = -1;
             if (d < dd->ndim-1)
             {
@@ -5577,7 +5627,7 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
 }
 
 static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
-			       int reorder)
+                               int reorder)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -5600,18 +5650,22 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
         if (bDiv[YY] || bDiv[ZZ])
         {
             comm->bCartesianPP_PME = TRUE;
-            /* We choose the direction that provides the thinnest slab
+            /* If we have 2D PME decomposition, which is always in x+y,
+             * we stack the PME only nodes in z.
+             * Otherwise we choose the direction that provides the thinnest slab
              * of PME only nodes as this will have the least effect
              * on the PP communication.
              * But for the PME communication the opposite might be better.
              */
-            if (bDiv[YY] && (!bDiv[ZZ] || dd->nc[YY] <= dd->nc[ZZ]))
+            if (bDiv[ZZ] && (comm->npmenodes_minor > 1 ||
+                             !bDiv[YY] ||
+                             dd->nc[YY] > dd->nc[ZZ]))
             {
-                comm->cartpmedim = YY;
+                comm->cartpmedim = ZZ;
             }
             else
             {
-                comm->cartpmedim = ZZ;
+                comm->cartpmedim = YY;
             }
             comm->ntot[comm->cartpmedim]
                 += (cr->npmenodes*dd->nc[comm->cartpmedim])/dd->nnodes;
@@ -6093,7 +6147,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                                         gmx_mtop_t *mtop,t_inputrec *ir,
                                         matrix box,rvec *x,
                                         gmx_ddbox_t *ddbox,
-                                        int *npme_major)
+                                        int *npme_x,int *npme_y)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -6110,6 +6164,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     }
     
     snew(dd,1);
+
     dd->comm = init_dd_comm();
     comm = dd->comm;
     snew(comm->cggl_flag,DIM*2);
@@ -6328,7 +6383,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             {
                 fprintf(fplog,"ERROR: The initial cell size (%f) is smaller than the cell size limit (%f)\n",acs,comm->cellsize_limit);
             }
-            gmx_fatal_collective(FARGS,MASTER(cr),
+            gmx_fatal_collective(FARGS,cr,NULL,
                                  "The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",
                                  acs,comm->cellsize_limit);
         }
@@ -6351,7 +6406,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                     comm->eDLB!=edlbNO ? " or -dds" : "",
                     bC ? " or your LINCS settings" : "");
 
-            gmx_fatal_collective(FARGS,MASTER(cr),
+            gmx_fatal_collective(FARGS,cr,NULL,
                                  "There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
                                  "%s\n"
                                  "Look in the log file for details on the domain decomposition",
@@ -6370,12 +6425,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
     if (cr->nnodes - dd->nnodes != cr->npmenodes)
     {
-        gmx_fatal(FARGS,"The size of the domain decomposition grid (%d) does not match the number of nodes (%d). The total number of nodes is %d",
-                  dd->nnodes,cr->nnodes - cr->npmenodes,cr->nnodes);
+        gmx_fatal_collective(FARGS,cr,NULL,
+                             "The size of the domain decomposition grid (%d) does not match the number of nodes (%d). The total number of nodes is %d",
+                             dd->nnodes,cr->nnodes - cr->npmenodes,cr->nnodes);
     }
     if (cr->npmenodes > dd->nnodes)
     {
-        gmx_fatal(FARGS,"The number of separate PME node (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
+        gmx_fatal_collective(FARGS,cr,NULL,
+                             "The number of separate PME node (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
     }
     if (cr->npmenodes > 0)
     {
@@ -6388,23 +6445,46 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 
     if (EEL_PME(ir->coulombtype))
     {
-        if (FALSE && dd->nc[XX] > cr->npmenodes && cr->npmenodes % dd->nc[XX] == 0)
+        if (dd->nc[XX] > 1 && dd->nc[YY] > 1 &&
+            comm->npmenodes > dd->nc[XX] && comm->npmenodes % dd->nc[XX] == 0 &&
+            getenv("GMX_PMEONEDD") == NULL)
         {
             comm->npmedecompdim   = 2;
             comm->npmenodes_major = dd->nc[XX];
+            comm->npmenodes_minor = comm->npmenodes/comm->npmenodes_major;
         }
         else
         {
             comm->npmedecompdim   = 1;
             comm->npmenodes_major = comm->npmenodes;
+            comm->npmenodes_minor = comm->npmenodes/comm->npmenodes_major;
+        }
+        if (fplog)
+        {
+            fprintf(fplog,"PME domain decomposition: %d x %d x %d\n",
+                    comm->npmenodes_major,comm->npmenodes_minor,1);
         }
     }
     else
     {
         comm->npmedecompdim   = 0;
         comm->npmenodes_major = 0;
+        comm->npmenodes_minor = 0;
     }
-    *npme_major = comm->npmenodes_major;
+    
+    /* Technically we don't need both of these,
+     * but it simplifies code not having to recalculate it.
+     */
+    if (comm->npmedecompdim == 1 && dd->dim[0] == YY)
+    {
+        *npme_x = 1;
+        *npme_y = comm->npmenodes;
+    }
+    else
+    {
+        *npme_x = comm->npmenodes_major;
+        *npme_y = comm->npmenodes_minor;
+    }
         
     snew(comm->slb_frac,DIM);
     if (comm->eDLB == edlbNO)
@@ -6742,7 +6822,8 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         comm->npmenodes = 0;
         if (dd->pme_nodeid >= 0)
         {
-            gmx_fatal(FARGS,"Can not have separate PME nodes without PME electrostatics");
+            gmx_fatal_collective(FARGS,NULL,dd,
+                                 "Can not have separate PME nodes without PME electrostatics");
         }
     }
     
@@ -6868,7 +6949,15 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         print_dd_settings(fplog,dd,ir,TRUE,dlb_scale,ddbox);
     }
 
-    vol_frac = 1/(real)dd->nnodes + comm_box_frac(dd->nc,comm->cutoff,ddbox);
+    if (ir->ePBC == epbcNONE)
+    {
+        vol_frac = 1;
+    }
+    else
+    {
+        vol_frac =
+            1/(real)dd->nnodes + comm_box_frac(dd->nc,comm->cutoff,ddbox);
+    }
     if (debug)
     {
         fprintf(debug,"Volume fraction for all DD zones: %f\n",vol_frac);
@@ -7735,7 +7824,7 @@ static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
     int i1,i2,i_new;
     
     /* The new indices are not very ordered, so we qsort them */
-    qsort(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
+    qsort_threadsafe(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
     
     /* sort2 is already ordered, so now we can merge the two arrays */
     i1 = 0;
@@ -7851,7 +7940,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
             fprintf(debug,"qsort cgs: %d new home %d\n",dd->ncg_home,ncg_new);
         }
         /* Determine the order of the charge groups using qsort */
-        qsort(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
+        qsort_threadsafe(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
     }
     cgsort = sort->sort1;
     
@@ -8045,7 +8134,7 @@ void dd_partition_system(FILE            *fplog,
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
-    gmx_ddbox_t ddbox;
+    gmx_ddbox_t ddbox={0};
     t_block *cgs_gl;
     gmx_large_int_t step_pcoupl;
     rvec cell_ns_x0,cell_ns_x1;

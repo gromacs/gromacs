@@ -175,7 +175,7 @@ int gmx_gyrate(int argc,char *argv[])
       "Calculate the 2D radii of gyration of # slices along the z-axis" },
   };
   FILE       *out;
-  int        status;
+  t_trxstatus *status;
   t_topology top;
   int        ePBC;
   rvec       *x,*x_s;
@@ -191,6 +191,7 @@ int gmx_gyrate(int argc,char *argv[])
   int        i,j,m,gnx,nam,mol;
   atom_id    *index;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
   char *leg[]  = { "Rg", "RgX", "RgY", "RgZ" }; 
   char *legI[] = { "Itot", "I1", "I2", "I3" }; 
 #define NLEG asize(leg) 
@@ -260,9 +261,11 @@ int gmx_gyrate(int argc,char *argv[])
 	fprintf(out,"@ subtitle \"Axes are principal component axes\"\n");
     xvgr_legend(out,NLEG,leg,oenv);
   }
+  if (nz == 0)
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   do {
     if (nz == 0)
-      rm_pbc(&top.idef,ePBC,natoms,box,x,x_s);
+      gmx_rmpbc(gpbc,box,x,x_s);
     gyro = 0;
     clear_rvec(gvec);
     clear_rvec(d);
@@ -300,6 +303,8 @@ int gmx_gyrate(int argc,char *argv[])
     j++;
   } while(read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
+  if (nz == 0)
+    gmx_rmpbc_done(gpbc);
   
   ffclose(out);
 

@@ -662,7 +662,8 @@ void read_ang_dih(const char *trj_fn,
                   const output_env_t oenv)
 {
   t_pbc      *pbc;
-  int        i,angind,status,natoms,total,teller;
+  t_trxstatus *status;
+  int        i,angind,natoms,total,teller;
   int        nangles,n_alloc;
   real       t,fraction,pifac,aa,angle;
   real       *angles[2];
