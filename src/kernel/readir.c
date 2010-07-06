@@ -235,6 +235,16 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             }
         }
     }
+    else
+    {
+        ir->nstcalcenergy = 1;
+    }
+    /* Currently T and P coupling update in linked to nstcalcenergy,
+     * but we already have separate variables ready in the tpx format.
+     */
+    ir->nsttcouple = ir->nstcalcenergy;
+    ir->nstpcouple = ir->nstcalcenergy;
+
 
   /* LD STUFF */
   if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
