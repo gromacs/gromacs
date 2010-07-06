@@ -2657,6 +2657,75 @@ and separate PME-mesh nodes.
 }
 \end{figure}
 
+
+\section{\swapindex{Implicit}{solvent}}
+\label{sec:gbsa}
+Implcit solvent models provide an efficent way of representing 
+the electrostatic effects of solvent molecules, while saving a 
+large piece of the computations involved in an accurate, aqueous 
+description of the surrounding water in molecular dynamics simulations. 
+Implicit solvation models offer several advantages compared with 
+explicit solvation, including no need for equilibration of water 
+around the solute, and absense of viscosity allowing the protein 
+to more quickly explore conformational space.
+
+Implicit solvent calculations in GROMACS can be done using the 
+generalized Born-formalism, and the Still~\cite{Still97}, HCT~\cite{Truhlar96}, 
+and OBC~\cite{Case04} models are available for calculating the Born radii.
+
+Here, the free energy $G_{solv}$ of solvation is the sum of three terms, 
+a solvent-solvent cavity term ($G_{cav}$), a solute-solvent van der 
+Waals term ($G_{vdw}$), and finally a solvent-solute electrostatics 
+polarization term ($G_{pol}$).
+
+The sum of $G_{cav}$ and $G_{vdw}$ corresponds to the (non-polar) 
+free energy of solvation for a molecule from which all charges 
+have been removed, and is commonly called $G_{np}$, and
+calculated from the total solvent accessible surface area 
+multiplied with a surface tension. 
+The total expression for the solvation free energy then becomes:
+
+\beq
+G_{solv} = G_{np}  + G_{pol}
+\label{eqn:gb_solv}
+\eeq
+
+Under the generalized Born model, $G_{pol}$ is calculated from the generalized Born equation~\cite{Still97}
+
+\beq
+G_{pol} = (1-\frac{1}{\epsilon} \sum_{i=1}^n \sum_{j>i}^n \frac {q_i q_j}{\sqrt{r^2_{ij} + b_i b_j exp(\frac{-r^2_{ij}}{4 b_i b_j})}}
+\label{eqn:gb_still}
+\eeq
+
+In GROMACS we have introduced the subsitution~\cite{Larsson10} 
+
+\beq
+c_i=\frac{1}{\sqrt{b_i}}
+\label{eqn:gb_subst}
+\eeq
+
+which makes it possible to introduce a cheap transformation to a new 
+variable x when evaluating each interaction, such that
+
+\beq
+x=\frac{r_{ij}}{\sqrt{b_i b_j }} = r_{ij} c_i c_j
+\label{eqn:gb_subst2}
+\eeq
+
+In the end, the full re-formulation of~\ref{eqn:gb_still} becomes:
+ 
+\beq
+G_{pol} = (1-\frac{1}{\epsilon}) \sum_{i=1}^n \sum_{j>i}^n \frac{q_i q_j}{\sqrt{b_i  b_j}} ~\xi (x) = (1-\frac{1}{\epsilon}) \sum_{i=1}^n  (q_i c_i) \sum_{j>i}^n (q_j c_j)~\xi (x)
+\label{eqn:gb_final}
+\eeq 
+
+The non-polar part ($G_{np}$) of Eqn.~\ref{eqn:gb_solv} is calculated 
+directly from the Born radius of each atom using a simple ACE type 
+approximation by Schaefer et al~\cite{Karplus98}, including a 
+simple loop over all atoms. 
+This requires only one extra solvation parameter, independent of atom type, 
+but differing slightly between the three Born radii models.
+
 % LocalWords:  GROningen MAchine BIOSON Groningen GROMACS Berendsen der Spoel
 % LocalWords:  Drunen Comp Phys Comm ROck NS FFT pbc EM ifthenelse gmxlite ff
 % LocalWords:  octahedra triclinic Ewald PME PPPM Gromacs trjconv xy solvated
