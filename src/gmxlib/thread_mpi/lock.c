@@ -60,7 +60,7 @@ files.
 void tMPI_Lock_init(tMPI_Lock_t *lock)
 {
     tMPI_Spinlock_init(&(lock->lock));
-    TMPI_YIELD_WAIT_DATA_INIT(barrier);
+    TMPI_YIELD_WAIT_DATA_INIT(lock);
 }
 
 
@@ -68,7 +68,7 @@ void tMPI_Lock_lock(tMPI_Lock_t *lock)
 {
     while(!tMPI_Spinlock_trylock(&(lock->lock)))
     {
-        TMPI_YIELD_WAIT(barrier);
+        TMPI_YIELD_WAIT(lock);
     }
 }
 
