@@ -1292,7 +1292,7 @@ void init_forcerec(FILE *fp,
     fr->eeltype    = ir->coulombtype;
     fr->vdwtype    = ir->vdwtype;
     
-    fr->bTwinRange = fr->rlistlong > fr->rlist || EVDW_PME(fr->vdwtype);
+    fr->bTwinRange = fr->rlistlong > fr->rlist; /* || EVDW_PME(fr->vdwtype); */
     fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype==eelEWALD);
     
     fr->reppow     = mtop->ffparams.reppow;

@@ -2877,6 +2877,7 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_solve_pme_start);
             wallcycle_start(wcycle,ewcPME_SOLVE);
+            loop_count = 0;
             if (flags & GMX_PME_DO_COULOMB)
             {
                 loop_count =

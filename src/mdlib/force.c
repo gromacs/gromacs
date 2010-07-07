@@ -138,7 +138,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 {
     int     i,status;
     int     donb_flags;
-    bool    bDoEpot,bSepDVDL,bSB;
+    bool    bDoEpot,bSepDVDL,bSB=FALSE;
     int     pme_flags;
     matrix  boxs;
     rvec    box_size;
@@ -333,7 +333,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     /* Check whether we need to do bondeds or correct for exclusions */
     if (fr->bMolPBC &&
         ((flags & GMX_FORCE_BONDED)
-         || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)))
+         || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype)))
     {
         /* Since all atoms are in the rectangular or triclinic unit-cell,
          * only single box vector shifts (2 in x) are required.
@@ -383,7 +383,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     where();
 
     *cycles_pme = 0;
-    if (EEL_FULL(fr->eeltype))
+    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
     {
         bSB = (ir->nwall == 2);
         if (bSB)
@@ -392,7 +392,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             svmul(ir->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
             box_size[ZZ] *= ir->wall_ewald_zfac;
         }
-        
+    }
+
+    if (EEL_FULL(fr->eeltype))
+    {
         clear_mat(fr->vir_el_recip);	
         
         if (fr->bEwald)
@@ -547,16 +550,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     where();
     debug_gmx();
 
-    if (EVDW_PME(fr->vdwtype) && do_per_step(step,ir->nstlist))
+    if (EVDW_PME(fr->vdwtype)) /* && do_per_step(step,ir->nstlist)) */
     {
-        bSB = (ir->nwall == 2);
-        if (bSB)
-        {
-            copy_mat(box,boxs);
-            svmul(ir->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
-            box_size[ZZ] *= ir->wall_ewald_zfac;
-        }
-
         clear_mat(fr->vir_lj_recip);
 
         Vcorr = 0;
@@ -577,7 +572,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             Vcorr = 0;
         }
 
-
         dvdlambda = 0;
         status = 0;
         if (cr->duty & DUTY_PME)
@@ -596,7 +590,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 wallcycle_start(wcycle,ewcPMEMESH);
                 status = gmx_pme_do(fr->pmedata,
                                     md->start,md->homenr - fr->n_tpi,
-                                    x,fr->f_twin,
+                                    x,fr->f_novirsum,
                                     md->c6A,md->c6B,
                                     bSB ? boxs : box,cr,
                                     DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
@@ -605,8 +599,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                     fr->vir_lj_recip,fr->ewaldljcoeff,
                                     &Vlr,lambda,&dvdlambda,
                                     pme_flags);
+                /*
                 for(i=0; (i<fr->f_novirsum_n); i++)
                     rvec_inc(fr->f_novirsum[i],fr->f_twin[i]);
+                */
                 *cycles_pme += wallcycle_stop(wcycle,ewcPMEMESH);
 
                 /* We should try to do as little computation after

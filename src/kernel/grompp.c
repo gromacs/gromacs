@@ -1256,7 +1256,7 @@ int main (int argc, char *argv[])
         check_chargegroup_radii(sys,ir,state.x,wi);
     }
 
-  if (EEL_FULL(ir->coulombtype)) {
+  if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype)) {
     /* Calculate the optimal grid dimensions */
     copy_mat(state.box,box);
     if (ir->ePBC==epbcXY && ir->nwall==2)

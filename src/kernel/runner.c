@@ -427,7 +427,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         Flags |= MD_PARTDEC;
     }
 
-    if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC))
+    /* Separate PME nodes not yet supported with LJ PME. */
+    if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC)
+        || EVDW_PME(inputrec->vdwtype))
     {
         cr->npmenodes = 0;
     }
@@ -709,10 +711,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
      * either on all nodes or on dedicated PME nodes only. */
     if (EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
     {
-        if (EVDW_PME(inputrec->vdwtype) && PAR(cr))
-        {
-            gmx_fatal(FARGS,"LJ-PME does not yet work in parallel");
-        }
         if (mdatoms)
         {
             nChargePerturbed = mdatoms->nChargePerturbed;
