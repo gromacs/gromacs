@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -43,34 +44,46 @@
 #include "gmx_fatal.h"
 #include "calcgrid.h"
 
-#define facNR 6
-int factor[facNR] = {2,3,5,7,11,13};
-int decomp[facNR];
-int ng,ng_max,*list,n_list,n_list_alloc;
+#define facNR 4
+const int factor[facNR] = {2,3,5,7};
 
-static void make_list(int start_fac)
+static void make_list(int start_fac,int *ng,int ng_max,int *n_list,int **list)
 {
-  int i;
+    int i,fac;
   
-  if (ng < ng_max) {
-    if (n_list >= n_list_alloc) {
-      n_list_alloc += 100;
-      srenew(list,n_list_alloc);
+    if (*ng < ng_max)
+    {
+        if (*n_list % 100 == 0)
+        {
+            srenew(*list,*n_list+100);
+        }
+        (*list)[*n_list] = *ng;
+        (*n_list)++;
+        
+        for(i=start_fac; i<facNR; i++)
+        {
+            fac = factor[i];
+            /* The choice of grid size is based on benchmarks of fftw
+             * and the need for a lot of factors for nice DD decomposition.
+             * The base criterion is that a grid size is not included
+             * when there is a larger grid size that produces a faster 3D FFT.
+             * Allow any power for 2, two for 3 and 5, but only one for 7.
+             * Three for 3 are ok when there is also a factor of 2.
+             * Two factors of 5 are not allowed with a factor of 3 or 7.
+             * A factor of 7 does not go with a factor of 5, 7 or 9.
+             */
+            if ((fac == 2) ||
+                (fac == 3 && (*ng % 9 != 0 ||
+                              (*ng % 2 == 0 && *ng % 27 != 0))) ||
+                (fac == 5 && *ng % 15 && *ng % 25 != 0) ||
+                (fac == 7 && *ng % 5 != 0 && *ng % 7 != 0 && *ng % 9 != 0))
+            {
+                *ng *= fac;
+                make_list(i,ng,ng_max,n_list,list);
+                *ng /= fac;
+            }
+        }
     }
-    list[n_list] = ng;
-    n_list++;
-
-    for(i=start_fac; i<facNR; i++) {
-      /* allow any power of 2, 3 and 5, but only one of 7, 11 or 13 */
-      if (i<3 || (decomp[3]+decomp[4]+decomp[5]==0)) {
-	ng*=factor[i];
-	decomp[i]++;
-	make_list(i);
-	ng/=factor[i];
-	decomp[i]--;
-      }
-    }
-  }
 }
 
 static int list_comp(const void *a,const void *b)
@@ -79,93 +92,102 @@ static int list_comp(const void *a,const void *b)
 }
 
 real calc_grid(FILE *fp,matrix box,real gr_sp,
-	       int *nx,int *ny,int *nz,int nnodes)
+               int *nx,int *ny,int *nz)
 {
-  int  d,n[DIM];
-  int  i,j,nmin[DIM];
-  rvec box_size,spacing;
-  real max_spacing;
-  real tmp[3];
-  
-  if (gr_sp <= 0)
-    gmx_fatal(FARGS,"invalid fourier grid spacing: %g",gr_sp);
+    int  d,n[DIM];
+    int  i,j,nmin[DIM];
+    rvec box_size,spacing;
+    real max_spacing;
+    int  ng_max,ng;
+    int  n_list,*list;
 
-  /* New grid calculation setup:
-   *
-   * To maintain similar accuracy for triclinic PME grids as for rectangular
-   * ones, the max grid spacing should set along the box vectors rather than
-   * cartesian X/Y/Z directions. This will lead to slightly larger grids, but
-   * it is much better than having to go to pme_order=6.
-   *
-   * Thus, instead of just extracting the diagonal elements to box_size[d], we
-   * now calculate the cartesian length of the vectors.
-   *
-   * /Erik Lindahl, 20060402.
-   */
-  for(d=0; d<DIM; d++)
-  {
-	  box_size[d] = 0;
-	  for(i=0;i<DIM;i++)
-	  {
-		  box_size[d] += box[d][i]*box[d][i];
-	  }
-	  box_size[d] = sqrt(box_size[d]);
-  }
-  
-  
-  n[XX] = *nx;
-  n[YY] = *ny;
-  n[ZZ] = *nz;
+    if (gr_sp <= 0)
+    {
+        gmx_fatal(FARGS,"invalid fourier grid spacing: %g",gr_sp);
+    }
 
-  ng = 1;
-  ng_max = 1;
-  for(d=0; d<DIM; d++) {
-    nmin[d] = (int)(box_size[d]/gr_sp + 0.999);
-    if (2*nmin[d] > ng_max)
-      ng_max = 2*nmin[d];
-  }
-  n_list=0;
-  n_list_alloc=0;
-  list=NULL;
-  for(i=0; i<facNR; i++)
-    decomp[i]=0;
-  make_list(0);
+    /* New grid calculation setup:
+     *
+     * To maintain similar accuracy for triclinic PME grids as for rectangular
+     * ones, the max grid spacing should set along the box vectors rather than
+     * cartesian X/Y/Z directions. This will lead to slightly larger grids, but
+     * it is much better than having to go to pme_order=6.
+     *
+     * Thus, instead of just extracting the diagonal elements to box_size[d], we
+     * now calculate the cartesian length of the vectors.
+     *
+     * /Erik Lindahl, 20060402.
+     */
+    for(d=0; d<DIM; d++)
+    {
+        box_size[d] = 0;
+        for(i=0;i<DIM;i++)
+        {
+            box_size[d] += box[d][i]*box[d][i];
+        }
+        box_size[d] = sqrt(box_size[d]);
+    }
+    
+    n[XX] = *nx;
+    n[YY] = *ny;
+    n[ZZ] = *nz;
+    
+    ng = 1;
+    ng_max = 1;
+    for(d=0; d<DIM; d++)
+    {
+        nmin[d] = (int)(box_size[d]/gr_sp + 0.999);
+        if (2*nmin[d] > ng_max)
+        {
+            ng_max = 2*nmin[d];
+        }
+    }
+    n_list=0;
+    list=NULL;
+    make_list(0,&ng,ng_max,&n_list,&list);
+    
+    if ((*nx<=0) || (*ny<=0) || (*nz<=0))
+    {
+        fprintf(fp,"Calculating fourier grid dimensions for%s%s%s\n",
+                *nx > 0 ? "":" X",*ny > 0 ? "":" Y",*nz > 0 ? "":" Z");
+    }
+    
+    qsort(list,n_list,sizeof(list[0]),list_comp);
+    if (debug)
+    {
+        for(i=0; i<n_list; i++)
+            fprintf(debug,"grid: %d\n",list[i]);
+    }
+        
+    for(d=0; d<DIM; d++)
+    {
+        for(i=0; (i<n_list) && (n[d]<=0); i++)
+        {
+            if (list[i] >= nmin[d])
+            {
+                n[d] = list[i];
+            }
+        }
+    }
+    
+    sfree(list);
+    
+    max_spacing = 0;
+    for(d=0; d<DIM; d++)
+    {
+        spacing[d] = box_size[d]/n[d];
+        if (spacing[d] > max_spacing)
+        {
+            max_spacing = spacing[d];
+        }
+    }
+    *nx = n[XX];
+    *ny = n[YY];
+    *nz = n[ZZ];
+    fprintf(fp,"Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
+            *nx,*ny,*nz,spacing[XX],spacing[YY],spacing[ZZ]);
 
-  if ((*nx<=0) || (*ny<=0) || (*nz<=0))
-    fprintf(fp,"Calculating fourier grid dimensions for%s%s%s\n",
-	    *nx > 0 ? "":" X",*ny > 0 ? "":" Y",*nz > 0 ? "":" Z");
-
-  qsort(list,n_list,sizeof(list[0]),list_comp);
-  if (debug)
-    for(i=0; i<n_list; i++)
-      fprintf(debug,"grid: %d\n",list[i]);
-  
-  if (((*nx>0) && (*nx != nnodes*(*nx/nnodes))) ||
-      ((*ny>0) && (*ny != nnodes*(*ny/nnodes))))
-    gmx_fatal(FARGS,"the x or y grid spacing (nx %d, ny %d) is not divisible by the number of nodes (%d)",*nx,*ny,nnodes);
-  
-  for(d=0; d<DIM; d++) {
-    for(i=0; (i<n_list) && (n[d]<=0); i++)
-      if ((list[i] >= nmin[d]) && 
-	  ((d == ZZ) || (list[i] == nnodes*(list[i]/nnodes))))
-	n[d] = list[i];
-    if (n[d] <= 0)
-      gmx_fatal(FARGS ,"could not find a grid spacing with nx and ny divisible by the number of nodes (%d)",nnodes);
-  }
-  
-  max_spacing = 0;
-  for(d=0; d<DIM; d++) {
-    spacing[d] = box_size[d]/n[d];
-    if (spacing[d] > max_spacing)
-      max_spacing = spacing[d];
-  }
-  *nx = n[XX];
-  *ny = n[YY];
-  *nz = n[ZZ];
-  fprintf(fp,"Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
-	  *nx,*ny,*nz,spacing[XX],spacing[YY],spacing[ZZ]);
-
-  return max_spacing;
+    return max_spacing;
 }
 
 

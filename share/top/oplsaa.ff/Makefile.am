@@ -12,7 +12,7 @@ aminoacids.rtp		forcefield.doc		tip3p.itp	\
 aminoacids.vsd		forcefield.itp		tip4p.itp	\
 aminoacids.r2b		tip5p.itp	\
 methanol.itp		ethanol.itp		1propanol.itp	\
-atomname2type.n2t	watermodels.dat
+atomname2type.n2t	watermodels.dat		gbsa.itp
 
 EXTRA_DIST = ${topol_DATA}
 

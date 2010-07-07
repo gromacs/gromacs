@@ -858,7 +858,8 @@ static void make_benchmark_tprs(
             ir->nkx = 0;
             ir->nky = 0;
             ir->nkz = 0;
-            calc_grid(stdout,state.box,info->fourier_sp[j],&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->fourier_sp[j],
+		      &(ir->nkx),&(ir->nky),&(ir->nkz));
             /* Check consistency */
             if (0 == j)
                 if ((ir->nkx != info->orig_nk[XX]) || (ir->nky != info->orig_nk[YY]) || (ir->nkz != info->orig_nk[ZZ]))
@@ -879,11 +880,14 @@ static void make_benchmark_tprs(
             }
             /* Reconstruct fourierspacing for each dimension from the input file */
             ir->nkx=0;
-            calc_grid(stdout,state.box,info->orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[XX]*fac,
+		      &(ir->nkx),&(ir->nky),&(ir->nkz));
             ir->nky=0;
-            calc_grid(stdout,state.box,info->orig_fs[YY]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[YY]*fac,
+		      &(ir->nkx),&(ir->nky),&(ir->nkz));
             ir->nkz=0;
-            calc_grid(stdout,state.box,info->orig_fs[ZZ]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[ZZ]*fac,
+		      &(ir->nkx),&(ir->nky),&(ir->nkz));
         }
 
         /* Save modified radii and fourier grid components for later output: */
