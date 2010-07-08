@@ -708,21 +708,21 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     
     /* AdResS stuff */
     if (file_version >= 68) {
-      do_int(ir->adress_type);
-      do_int(ir->badress_new_wf);
-      do_real(ir->adress_const_wf);
-      do_real(ir->adress_ex_width);
-      do_real(ir->adress_hy_width);
-      do_int(ir->adress_icor);
-      do_int(ir->adress_ivdw);
-      do_int(ir->badress_chempot_dx);
-      do_int(ir->badress_tf_full_box);
-      do_int(ir->adress_site);
-      do_rvec(ir->adress_refs);
-      do_int(ir->n_adress_tf_grps);
+      gmx_fio_do_int(fio,ir->adress_type);
+      gmx_fio_do_int(fio,ir->badress_new_wf);
+      gmx_fio_do_real(fio,ir->adress_const_wf);
+      gmx_fio_do_real(fio,ir->adress_ex_width);
+      gmx_fio_do_real(fio,ir->adress_hy_width);
+      gmx_fio_do_int(fio,ir->adress_icor);
+      gmx_fio_do_int(fio,ir->adress_ivdw);
+      gmx_fio_do_int(fio,ir->badress_chempot_dx);
+      gmx_fio_do_int(fio,ir->badress_tf_full_box);
+      gmx_fio_do_int(fio,ir->adress_site);
+      gmx_fio_do_rvec(fio,ir->adress_refs);
+      gmx_fio_do_int(fio,ir->n_adress_tf_grps);
       if (bRead)snew(ir->adress_tf_table_index,ir->n_adress_tf_grps);
       if (ir->n_adress_tf_grps > 0) {
-        ndo_int(ir->adress_tf_table_index,ir->n_adress_tf_grps,bDum);
+        bDum=gmx_fio_ndo_int(fio,ir->adress_tf_table_index,ir->n_adress_tf_grps);
       }
     }
 
