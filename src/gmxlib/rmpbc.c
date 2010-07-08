@@ -65,28 +65,32 @@ gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
   else
     gpbc->ePBC = ePBC;
     
-  if ((ePBC != epbcNONE) && (idef->ntypes!=-1)) {
-    gpbc->gr = mk_graph(NULL,idef,0,natoms,FALSE,FALSE);
-  } 
-  else {
+  if (idef->ntypes <= 0)
     fprintf(stderr,
 	    "\nWarning: if there are broken molecules in the trajectory file,\n"
 	    "         they can not be made whole without a run input file\n\n");
-  }
+  else if (ePBC == epbcNONE) 
+    fprintf(stderr,"\nNot treating periodicity since it is turned off in the input file\n");
+  else
+    gpbc->gr = mk_graph(NULL,idef,0,natoms,FALSE,FALSE);
+
   return gpbc;
 }
 
 void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
 {
-  done_graph(gpbc->gr);
+  if (NULL != gpbc->gr)
+    done_graph(gpbc->gr);
 }
 
 void gmx_rmpbc(gmx_rmpbc_t gpbc,matrix box,rvec x[],rvec x_s[])
 {
   int    i;
 
-  mk_mshift(stdout,gpbc->gr,gpbc->ePBC,box,x);
-  shift_x(gpbc->gr,box,x,x_s);
+  if (NULL != gpbc->gr) {
+    mk_mshift(stdout,gpbc->gr,gpbc->ePBC,box,x);
+    shift_x(gpbc->gr,box,x,x_s);
+  }
   if (x != x_s)
     for (i=0; i<gpbc->natoms; i++)
       copy_rvec(x[i],x_s[i]);
