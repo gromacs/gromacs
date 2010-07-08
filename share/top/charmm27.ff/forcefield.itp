@@ -9,7 +9,7 @@
 
 
 #define _FF_CHARMM
-; The user has the choice between:
+; The user has the recommended choice between:
 ;     - Original TIP3P model [Jorgensen et al. J Chem Phys, 1983] , which uses
 ;     the fast gromacs optimizations
 ;     - CHARMM TIP3P [MacKerell et al. J Phys Chem B, 1998] with LJ interaction
