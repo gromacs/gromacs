@@ -116,7 +116,7 @@ typedef struct {
 typedef struct {
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
-  float *ibuf; /* for ints */
+  int *ibuf; /* for ints */
   int ibuf_alloc;
 
   float *fbuf; /* for floats */
