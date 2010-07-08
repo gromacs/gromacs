@@ -75,12 +75,15 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      int start,       int homenr,
 		      rvec x[],        rvec f[],
 		      real chargeA[],  real chargeB[],
+		      real c6A[],      real c6B[],
 		      matrix box,      t_commrec *cr,
 		      int  maxshift0,  int maxshift1,
 		      t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-		      matrix lrvir,    real ewaldcoeff,
-		      real *energy,    real lambda,    
-		      real *dvdlambda, int flags);
+		      matrix vir_q,    real ewaldcoeff_q,
+		      matrix vir_lj,   real ewaldcoeff_lj,
+		      real *energy,    real *energy_lj,
+                      real lambda,     real *dvdlambda,
+                      int flags);
 /* Do a PME calculation for the long range electrostatics. 
  * flags, defined above, determine which parts of the calculation are performed.
  * Return value 0 indicates all well, non zero is an error code.

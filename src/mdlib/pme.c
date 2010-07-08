@@ -1869,9 +1869,9 @@ static real gather_energy_bsplines(gmx_pme_t pme,real *grid,
     return energy;
 }
 
-void make_bsplines(splinevec theta,splinevec dtheta,int order,
-                   rvec fractx[],int nr,real charge[],
-                   bool bFreeEnergy)
+static void make_bsplines(splinevec theta, splinevec dtheta, int order,
+                          rvec fractx[], int nr, real charge[],
+                          bool bDoAll)
 {
     /* construct splines for local atoms */
     int  i,j,k,l;
@@ -1883,7 +1883,7 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,
          * In most cases this will be more efficient than calling make_bsplines
          * twice, since usually more than half the particles have charges.
          */
-        if (bFreeEnergy || charge[i] != 0.0) {
+        if (bDoAll || charge[i] != 0.0) {
             xptr = fractx[i];
             for(j=0; (j<DIM); j++) {
                 dr  = xptr[j];
@@ -2567,7 +2567,8 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 
 static void spread_on_grid(gmx_pme_t pme,
                            pme_atomcomm_t *atc,real *grid,
-                           bool bCalcSplines,bool bSpread)
+                           bool bCalcSplines,bool bSpread,
+                           bool bAllSplines)
 {    
     if (bCalcSplines)
     {
@@ -2579,7 +2580,7 @@ static void spread_on_grid(gmx_pme_t pme,
         
         /* make local bsplines  */
         make_bsplines(atc->theta,atc->dtheta,pme->pme_order,
-                      atc->fractx,atc->n,atc->q,pme->bFEP);
+                      atc->fractx,atc->n,atc->q,bAllSplines);
     }    
     
     if (bSpread)
@@ -2615,7 +2616,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V)
     /* We only use the A-charges grid */
     grid = pme->pmegridA;
 
-    spread_on_grid(pme,atc,grid,TRUE,FALSE);
+    spread_on_grid(pme,atc,grid,TRUE,FALSE,FALSE);
 
     *V = gather_energy_bsplines(pme,grid,atc);
 }
@@ -2684,9 +2685,9 @@ int gmx_pmeonly(gmx_pme_t pme,
         
         dvdlambda = 0;
         clear_mat(vir);
-        gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
-                   cr,maxshift0,maxshift1,nrnb,wcycle,vir,ewaldcoeff,
-                   &energy,lambda,&dvdlambda,
+        gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,NULL,NULL,box,
+                   cr,maxshift0,maxshift1,nrnb,wcycle,vir,ewaldcoeff,NULL,0,
+                   &energy,NULL,lambda,&dvdlambda,
                    GMX_PME_DO_COULOMB | GMX_PME_DO_ALL_F
                        | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
         
@@ -2715,14 +2716,18 @@ int gmx_pme_do(gmx_pme_t pme,
                int start,       int homenr,
                rvec x[],        rvec f[],
                real *chargeA,   real *chargeB,
+               real *c6A,       real *c6B,
                matrix box,	t_commrec *cr,
                int  maxshift0,  int maxshift1,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-               matrix vir,      real ewaldcoeff,
-               real *energy,    real lambda, 
-               real *dvdlambda, int flags)
+               matrix vir_q,    real ewaldcoeff_q,
+               matrix vir_lj,   real ewaldcoeff_lj,
+               real *energy_q,  real *energy_lj,
+               real lambda,     real *dvdlambda,
+               int flags)
 {
     int     q,d,i,j,ntot,npme;
+    bool    bFirst, bDoAllSplines;
     int     nx,ny,nz;
     int     n_d,local_ny;
     int     loop_count;
@@ -2731,8 +2736,8 @@ int gmx_pme_do(gmx_pme_t pme,
     real    *ptr;
     rvec    *x_d,*f_d;
     real    *charge=NULL,*q_d,vol;
-    real    energy_AB[2];
-    matrix  vir_AB[2];
+    real    energy_AB[4];
+    matrix  vir_AB[4];
     bool    bClearF;
     gmx_parallel_3dfft_t pfft_setup;
     real *  fftgrid;
@@ -2748,21 +2753,54 @@ int gmx_pme_do(gmx_pme_t pme,
         atc->maxshift = (atc->dimind==0 ? maxshift0 : maxshift1);
     }
     
-    for(q=0; q<(pme->bFEP ? 2 : 1); q++) {
-        if (q == 0) {
+    bFirst = TRUE;
+    /* For simplicity, we construct the splines for all particles if more than
+     * one PME calculations is needed. Some optimization could be done by
+     * keeping track of which atoms have splines constructed, and construct new
+     * splines on each pass for atoms that don't yet have them.
+     */
+    bDoAllSplines = pme->bFEP || ((flags & GMX_PME_DO_COULOMB) && (flags & GMX_PME_DO_LJ));
+    /* We need a maximum of four separate PME calculations:
+     *   q=0: Coulomb PME with charges from state A
+     *   q=1: Coulomb PME with charges from state B
+     *   q=2: LJ PME with C6 from state A
+     *   q=3: LJ PME with C6 from state B
+     */
+    for (q = 0; q < 4; ++q)
+    {
+        if ((!pme->bFEP && q % 2 == 1)
+            || (!(flags & GMX_PME_DO_COULOMB) && q < 2)
+            || (!(flags & GMX_PME_DO_LJ) && q >= 2))
+        {
+            continue;
+        }
+        /* Unpack structure */
+        if (q % 2 == 0) {
             grid = pme->pmegridA;
             fftgrid = pme->fftgridA;
             cfftgrid = pme->cfftgridA;
             pfft_setup = pme->pfft_setupA;
-            charge = chargeA+start;
         } else {
             grid = pme->pmegridB;
             fftgrid = pme->fftgridB;
             cfftgrid = pme->cfftgridB;
             pfft_setup = pme->pfft_setupB;
-            charge = chargeB+start;
         }
-        /* Unpack structure */
+        switch (q)
+        {
+            case 0:
+                charge = chargeA + start;
+                break;
+            case 1:
+                charge = chargeB + start;
+                break;
+            case 2:
+                charge = c6A + start;
+                break;
+            case 3:
+                charge = c6B + start;
+                break;
+        }
         if (debug) {
             fprintf(debug,"PME: nnodes = %d, nodeid = %d\n",
                     cr->nnodes,cr->nodeid);
@@ -2812,9 +2850,9 @@ int gmx_pme_do(gmx_pme_t pme,
                 GMX_BARRIER(cr->mpi_comm_mygroup);
                 /* Redistribute x (only once) and qA or qB */
                 if (DOMAINDECOMP(cr)) {
-                    dd_pmeredist_x_q(pme, n_d, q==0, x_d, q_d, atc);
+                    dd_pmeredist_x_q(pme, n_d, bFirst, x_d, q_d, atc);
                 } else {
-                    pmeredist_pd(pme, TRUE, n_d, q==0, x_d, q_d, atc);
+                    pmeredist_pd(pme, TRUE, n_d, bFirst, x_d, q_d, atc);
                 }
             }
             where();
@@ -2832,12 +2870,10 @@ int gmx_pme_do(gmx_pme_t pme,
 
             /* Spread the charges on a grid */
             GMX_MPE_LOG(ev_spread_on_grid_start);
-            
-            /* Spread the charges on a grid */
-            spread_on_grid(pme,&pme->atc[0],grid,q==0,TRUE);
+            spread_on_grid(pme, &pme->atc[0], grid, bFirst, TRUE, bDoAllSplines);
             GMX_MPE_LOG(ev_spread_on_grid_finish);
 
-            if (q == 0)
+            if (bFirst)
             {
                 inc_nrnb(nrnb,eNR_WEIGHTS,DIM*atc->n);
             }
@@ -2878,17 +2914,17 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_MPE_LOG(ev_solve_pme_start);
             wallcycle_start(wcycle,ewcPME_SOLVE);
             loop_count = 0;
-            if (flags & GMX_PME_DO_COULOMB)
+            if (q < 2)
             {
                 loop_count =
-                    solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,
+                    solve_pme_yzx(pme,cfftgrid,ewaldcoeff_q,vol,
                                   flags & GMX_PME_CALC_ENER_VIR,
                                   &energy_AB[q],vir_AB[q]);
             }
-            else if (flags & GMX_PME_DO_LJ)
+            else
             {
                 loop_count =
-                    solve_pme_lj_yzx(pme,cfftgrid,ewaldcoeff,vol,
+                    solve_pme_lj_yzx(pme,cfftgrid,ewaldcoeff_lj,vol,
                                      flags & GMX_PME_CALC_ENER_VIR,
                                      &energy_AB[q],vir_AB[q]);
             }
@@ -2944,9 +2980,9 @@ int gmx_pme_do(gmx_pme_t pme,
              * atc->f is the actual force array, not a buffer,
              * therefore we should not clear it.
              */
-            bClearF = (q == 0 && PAR(cr));
+            bClearF = (bFirst && PAR(cr));
             gather_f_bsplines(pme,grid,bClearF,&pme->atc[0],
-                              pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
+                              pme->bFEP ? (q % 2 == 0 ? 1.0-lambda : lambda) : 1.0);
             where();
             
             GMX_MPE_LOG(ev_gather_f_bsplines_finish);
@@ -2954,7 +2990,9 @@ int gmx_pme_do(gmx_pme_t pme,
             inc_nrnb(nrnb,eNR_GATHERFBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
             wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
-       }
+        }
+
+        bFirst = FALSE;
     } /* of q-loop */
     
     if ((flags & GMX_PME_CALC_F) && pme->nnodes > 1) {
@@ -2985,19 +3023,42 @@ int gmx_pme_do(gmx_pme_t pme,
     }
     where();
     
-    if (!pme->bFEP) {
-        *energy = energy_AB[0];
-        m_add(vir,vir_AB[0],vir);
-    } else {
-        *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
-        *dvdlambda += energy_AB[1] - energy_AB[0];
-        for(i=0; i<DIM; i++)
-            for(j=0; j<DIM; j++)
-                vir[i][j] += (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+    if (flags & GMX_PME_DO_COULOMB)
+    {
+        if (!pme->bFEP)
+        {
+            *energy_q = energy_AB[0];
+            m_add(vir_q, vir_AB[0], vir_q);
+        }
+        else
+        {
+            *energy_q = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
+            *dvdlambda += energy_AB[1] - energy_AB[0];
+            for(i=0; i<DIM; i++)
+                for(j=0; j<DIM; j++)
+                    vir_q[i][j] += (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+        }
+        if (debug)
+            fprintf(debug, "Coulomb PME mesh energy: %g\n", *energy_q);
+    }
+    if (flags & GMX_PME_DO_LJ)
+    {
+        if (!pme->bFEP)
+        {
+            *energy_lj = energy_AB[2];
+            m_add(vir_lj, vir_AB[2], vir_lj);
+        }
+        else
+        {
+            *energy_lj = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
+            *dvdlambda += energy_AB[1] - energy_AB[0];
+            for(i=0; i<DIM; i++)
+                for(j=0; j<DIM; j++)
+                    vir_lj[i][j] += (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+        }
+        if (debug)
+            fprintf(debug, "LJ PME mesh energy: %g\n", *energy_lj);
     }
 
-    if (debug)
-        fprintf(debug,"PME mesh energy: %g\n",*energy);
-    
     return 0;
 }

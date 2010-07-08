@@ -382,7 +382,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 
     where();
 
-    *cycles_pme = 0;
+    /* Scale up the non-periodic direction for wall simulations with Ewald. */
     if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
     {
         bSB = (ir->nwall == 2);
@@ -394,6 +394,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         }
     }
 
+    /* Do long-range electrostatics, including related short-range corrections.
+     * Reciprocal PME is not done here, because it is handled together with
+     * LJ-PME afterwards. */
     if (EEL_FULL(fr->eeltype))
     {
         clear_mat(fr->vir_el_recip);	
@@ -447,59 +450,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         case eelPME:
         case eelPMESWITCH:
         case eelPMEUSER:
-            if (cr->duty & DUTY_PME)
-            {
-                if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
-                {
-                    pme_flags = GMX_PME_DO_COULOMB | GMX_PME_SPREAD | GMX_PME_SOLVE;
-                    if (flags & GMX_FORCE_FORCES)
-                    {
-                        pme_flags |= GMX_PME_CALC_F;
-                    }
-                    if (flags & GMX_FORCE_VIRIAL)
-                    {
-                        pme_flags |= GMX_PME_CALC_ENER_VIR;
-                    }
-                    wallcycle_start(wcycle,ewcPMEMESH);
-                    status = gmx_pme_do(fr->pmedata,
-                                        md->start,md->homenr - fr->n_tpi,
-                                        x,fr->f_novirsum,
-                                        md->chargeA,md->chargeB,
-                                        bSB ? boxs : box,cr,
-                                        DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
-                                        DOMAINDECOMP(cr) ? dd_pme_maxshift1(cr->dd) : 0,
-                                        nrnb,wcycle,
-                                        fr->vir_el_recip,fr->ewaldcoeff,
-                                        &Vlr,lambda,&dvdlambda,
-                                        pme_flags);
-                    *cycles_pme = wallcycle_stop(wcycle,ewcPMEMESH);
-
-                    /* We should try to do as little computation after
-                     * this as possible, because parallel PME synchronizes
-                     * the nodes, so we want all load imbalance of the rest
-                     * of the force calculation to be before the PME call.
-                     * DD load balancing is done on the whole time of
-                     * the force call (without PME).
-                     */
-                }
-                if (fr->n_tpi > 0)
-                {
-                    /* Determine the PME grid energy of the test molecule
-                     * with the PME grid potential of the other charges.
-                     */
-                    gmx_pme_calc_energy(fr->pmedata,fr->n_tpi,
-                                        x + md->homenr - fr->n_tpi,
-                                        md->chargeA + md->homenr - fr->n_tpi,
-                                        &Vlr);
-                }
-                PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
-            } 
-            else
-            {
-                /* Energies and virial are obtained later from the PME nodes */
-                /* but values have to be zeroed out here */
-                Vlr=0.0;
-            }
+            /* Energies and virial are calculated later or obtained from the
+             * PME nodes, but values have to be zeroed out here. */
+            Vlr=0.0;
             break;
         case eelEWALD:
             Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_novirsum,
@@ -550,10 +503,13 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     where();
     debug_gmx();
 
+    /* Do short-range corrections for LJ-PME.
+     * Reciprocal PME is handled separately together with Coulomb PME. */
     if (EVDW_PME(fr->vdwtype)) /* && do_per_step(step,ir->nstlist)) */
     {
         clear_mat(fr->vir_lj_recip);
 
+        Vlr = 0;
         Vcorr = 0;
         if (fr->n_tpi == 0)
         {
@@ -571,67 +527,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         {
             Vcorr = 0;
         }
-
-        dvdlambda = 0;
-        status = 0;
-        if (cr->duty & DUTY_PME)
-        {
-            if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
-            {
-                pme_flags = GMX_PME_DO_LJ | GMX_PME_SPREAD | GMX_PME_SOLVE;
-                if (flags & GMX_FORCE_FORCES)
-                {
-                    pme_flags |= GMX_PME_CALC_F;
-                }
-                if (flags & GMX_FORCE_VIRIAL)
-                {
-                    pme_flags |= GMX_PME_CALC_ENER_VIR;
-                }
-                wallcycle_start(wcycle,ewcPMEMESH);
-                status = gmx_pme_do(fr->pmedata,
-                                    md->start,md->homenr - fr->n_tpi,
-                                    x,fr->f_novirsum,
-                                    md->c6A,md->c6B,
-                                    bSB ? boxs : box,cr,
-                                    DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
-                                    DOMAINDECOMP(cr) ? dd_pme_maxshift1(cr->dd) : 0,
-                                    nrnb,wcycle,
-                                    fr->vir_lj_recip,fr->ewaldljcoeff,
-                                    &Vlr,lambda,&dvdlambda,
-                                    pme_flags);
-                /*
-                for(i=0; (i<fr->f_novirsum_n); i++)
-                    rvec_inc(fr->f_novirsum[i],fr->f_twin[i]);
-                */
-                *cycles_pme += wallcycle_stop(wcycle,ewcPMEMESH);
-
-                /* We should try to do as little computation after
-                 * this as possible, because parallel PME synchronizes
-                 * the nodes, so we want all load imbalance of the rest
-                 * of the force calculation to be before the PME call.
-                 * DD load balancing is done on the whole time of
-                 * the force call (without PME).
-                 */
-            }
-            if (fr->n_tpi > 0)
-            {
-                gmx_fatal(FARGS,"Test particle insertion not implemented with LJ-PME");
-            }
-            PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
-        }
-        else
-        {
-            /* Energies and virial are obtained later from the PME nodes */
-            /* but values have to be zeroed out here */
-            Vlr=0.0;
-        }
-        if (status != 0)
-        {
-            gmx_fatal(FARGS,"Error %d in long range LJ routine %s",
-                      status,EVDWTYPE(fr->vdwtype));
-        }
         enerd->dvdl_lin += dvdlambda;
-        enerd->term[F_LJ_RECIP] = Vlr + Vcorr;
+        enerd->term[F_LJ_RECIP] = Vcorr;
         if (debug)
         {
             fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
@@ -639,6 +536,87 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             pr_rvecs(debug,0,"vir_lj_recip after corr",fr->vir_lj_recip,DIM);
             pr_rvecs(debug,0,"fshift after LR Corrections",fr->fshift,SHIFTS);
         }
+    }
+    where();
+    debug_gmx();
+
+    /* Do reciprocal PME for Coulomb and/or LJ. */
+    *cycles_pme = 0;
+    if ((cr->duty & DUTY_PME) && (EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)))
+    {
+        real Vlrq = 0, Vlrlj = 0;
+
+        dvdlambda = 0;
+        if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
+        {
+            pme_flags = 0;
+            if (EEL_PME(fr->eeltype))
+            {
+                pme_flags |= GMX_PME_DO_COULOMB;
+            }
+            if (EVDW_PME(fr->vdwtype))
+            {
+                pme_flags |= GMX_PME_DO_LJ;
+            }
+            pme_flags |= GMX_PME_SPREAD | GMX_PME_SOLVE;
+            if (flags & GMX_FORCE_FORCES)
+            {
+                pme_flags |= GMX_PME_CALC_F;
+            }
+            if (flags & GMX_FORCE_VIRIAL)
+            {
+                pme_flags |= GMX_PME_CALC_ENER_VIR;
+            }
+            wallcycle_start(wcycle,ewcPMEMESH);
+            status = gmx_pme_do(fr->pmedata,
+                                md->start, md->homenr - fr->n_tpi,
+                                x, fr->f_novirsum,
+                                md->chargeA, md->chargeB,
+                                md->c6A, md->c6B,
+                                bSB ? boxs : box, cr,
+                                DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
+                                DOMAINDECOMP(cr) ? dd_pme_maxshift1(cr->dd) : 0,
+                                nrnb, wcycle,
+                                fr->vir_el_recip, fr->ewaldcoeff,
+                                fr->vir_lj_recip, fr->ewaldljcoeff,
+                                &Vlrq, &Vlrlj, lambda, &dvdlambda,
+                                pme_flags);
+            /*
+            for(i=0; (i<fr->f_novirsum_n); i++)
+                rvec_inc(fr->f_novirsum[i],fr->f_twin[i]);
+            */
+            *cycles_pme += wallcycle_stop(wcycle,ewcPMEMESH);
+            if (status != 0)
+            {
+                gmx_fatal(FARGS, "Error %d in reciprocal PME routine", status);
+            }
+
+            /* We should try to do as little computation after
+             * this as possible, because parallel PME synchronizes
+             * the nodes, so we want all load imbalance of the rest
+             * of the force calculation to be before the PME call.
+             * DD load balancing is done on the whole time of
+             * the force call (without PME).
+             */
+        }
+        if (fr->n_tpi > 0)
+        {
+            if (EVDW_PME(ir->vdwtype))
+            {
+                gmx_fatal(FARGS,"Test particle insertion not implemented with LJ-PME");
+            }
+            /* Determine the PME grid energy of the test molecule
+             * with the PME grid potential of the other charges.
+             */
+            gmx_pme_calc_energy(fr->pmedata, fr->n_tpi,
+                                x + md->homenr - fr->n_tpi,
+                                md->chargeA + md->homenr - fr->n_tpi,
+                                &Vlrq);
+        }
+        enerd->dvdl_lin += dvdlambda;
+        enerd->term[F_COUL_RECIP] += Vlrq;
+        enerd->term[F_LJ_RECIP]   += Vlrlj;
+        PRINT_SEPDVDL("PME mesh",Vlrq + Vlrlj,dvdlambda);
     }
     where();
     debug_gmx();
