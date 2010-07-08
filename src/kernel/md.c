@@ -2061,15 +2061,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
         if (bCPT) { mdof_flags |= MDOF_CPT; };
 
-#ifdef GMX_FAHCORE
-        if (MASTER(cr))
-            fcReportProgress( ir->nsteps, step );
-
+#if defined(GMX_FAHCORE) || defined(GMX_WRITELASTSTEP)
         if (bLastStep)
         {
             /* Enforce writing positions and velocities at end of run */
             mdof_flags |= (MDOF_X | MDOF_V);
         }
+#endif
+#ifdef GMX_FAHCORE
+        if (MASTER(cr))
+            fcReportProgress( ir->nsteps, step );
+
         {
             int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
             int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
