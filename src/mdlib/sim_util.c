@@ -422,7 +422,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
-    real   e,v,dvdl;
+    real   v,dvdl;
     t_pbc  pbc;
     float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
   
@@ -523,7 +523,8 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     gmx_pme_send_x(cr,bBS ? boxs : box,x,
                    mdatoms->nChargePerturbed,lambda,
-                   ( flags & GMX_FORCE_VIRIAL),step);
+                   EEL_PME(fr->eeltype), EVDW_PME(fr->vdwtype),
+                   (flags & GMX_FORCE_VIRIAL),step);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);
@@ -837,6 +838,8 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
+        real e_q, e_lj;
+
         cycles_ppdpme = wallcycle_stop(wcycle,ewcPPDURINGPME);
         dd_cycles_add(cr->dd,cycles_ppdpme,ddCyclPPduringPME);
 
@@ -845,13 +848,15 @@ void do_force(FILE *fplog,t_commrec *cr,
          */    
         wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
         dvdl = 0;
-        gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdl,
+        gmx_pme_receive_f(cr, fr->f_novirsum, fr->vir_el_recip, &e_q,
+                          fr->vir_lj_recip, &e_lj, &dvdl,
                           &cycles_seppme);
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
+            fprintf(fplog,sepdvdlformat,"PME mesh",e_q,dvdl);
         }
-        enerd->term[F_COUL_RECIP] += e;
+        enerd->term[F_COUL_RECIP] += e_q;
+        enerd->term[F_LJ_RECIP]   += e_lj;
         enerd->dvdl_lin += dvdl;
         if (wcycle)
         {

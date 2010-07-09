@@ -92,7 +92,7 @@ extern int gmx_pme_do(gmx_pme_t pme,
 extern int gmx_pmeonly(gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
 		       gmx_wallcycle_t wcycle,
-		       real ewaldcoeff,   bool bGatherOnly,
+                       real ewaldcoeff_q, real ewaldcoeff_lj,
 		       t_inputrec *ir);
 /* Called on the nodes that do PME exclusively (as slaves) 
  */
@@ -115,11 +115,12 @@ extern gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 
 extern void gmx_pme_send_q(t_commrec *cr,
 			   bool bFreeEnergy, real *chargeA, real *chargeB,
-			   int maxshift0, int maxshift1);
+                           real *c6A, real *c6B, int maxshift0, int maxshift1);
 /* Send the charges and maxshift to out PME-only node. */
 
 extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
 			   bool bFreeEnergy, real lambda,
+                           bool bCoulomb, bool bLJ,
 			   bool bEnerVir,
 			   gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
@@ -128,26 +129,27 @@ extern void gmx_pme_finish(t_commrec *cr);
 /* Tell our PME-only node to finish */
 
 extern void gmx_pme_receive_f(t_commrec *cr,
-			      rvec f[], matrix vir, 
-			      real *energy, real *dvdlambda,
+                              rvec f[], matrix vir_q, real *energy_q,
+                              matrix vir_lj, real *energy_lj, real *dvdlambda,
 			      float *pme_cycles);
 /* PP nodes receive the long range forces from the PME nodes */
 
 extern int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
 			    real **chargeA, real **chargeB,
+                            real **c6A, real **c6B,
 			    matrix box, rvec **x,rvec **f,
 			    int *maxshift0,int *maxshift1,
 			    bool *bFreeEnergy,real *lambda,
-			    bool *bEnerVir,
+                            int *pme_flags,
 			    gmx_large_int_t *step);
 /* Receive charges and/or coordinates from the PP-only nodes.
  * Returns the number of atoms, or -1 when the run is finished.
  */
 
 extern void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
-					rvec *f, matrix vir,
-					real energy, real dvdlambda,
-					float cycles);
+                                        rvec *f, matrix vir_q, real energy_q,
+                                        matrix vir_lj, real energy_lj,
+                                        real dvdlambda, float cycles);
 /* Send the PME mesh force, virial and energy to the PP-only nodes */
 
 #ifdef __cplusplus

@@ -2638,7 +2638,7 @@ static void reset_pmeonly_counters(t_commrec *cr,gmx_wallcycle_t wcycle,
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,    t_nrnb *nrnb,
                 gmx_wallcycle_t wcycle,
-                real ewaldcoeff,  bool bGatherOnly,
+                real ewaldcoeff_q, real ewaldcoeff_lj,
                 t_inputrec *ir)
 {
     gmx_pme_pp_t pme_pp;
@@ -2646,13 +2646,14 @@ int gmx_pmeonly(gmx_pme_t pme,
     matrix box;
     rvec *x_pp=NULL,*f_pp=NULL;
     real *chargeA=NULL,*chargeB=NULL;
+    real *c6A=NULL,*c6B=NULL;
     real lambda=0;
     int  maxshift0=0,maxshift1=0;
-    real energy,dvdlambda;
-    matrix vir;
+    real   energy_q, energy_lj, dvdlambda;
+    matrix vir_q, vir_lj;
     float cycles;
     int  count;
-    bool bEnerVir;
+    int  pme_flags;
     gmx_large_int_t step,step_rel;
     
     
@@ -2660,15 +2661,16 @@ int gmx_pmeonly(gmx_pme_t pme,
     
     init_nrnb(nrnb);
     
+    energy_q = energy_lj = 0;
     count = 0;
     do /****** this is a quasi-loop over time steps! */
     {
         /* Domain decomposition */
         natoms = gmx_pme_recv_q_x(pme_pp,
-                                  &chargeA,&chargeB,box,&x_pp,&f_pp,
+                                  &chargeA,&chargeB,&c6A,&c6B,box,&x_pp,&f_pp,
                                   &maxshift0,&maxshift1,
                                   &pme->bFEP,&lambda,
-                                  &bEnerVir,
+                                  &pme_flags,
                                   &step);
         
         if (natoms == -1) {
@@ -2684,18 +2686,19 @@ int gmx_pmeonly(gmx_pme_t pme,
         wallcycle_start(wcycle,ewcPMEMESH);
         
         dvdlambda = 0;
-        clear_mat(vir);
-        gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,NULL,NULL,box,
-                   cr,maxshift0,maxshift1,nrnb,wcycle,vir,ewaldcoeff,NULL,0,
-                   &energy,NULL,lambda,&dvdlambda,
-                   GMX_PME_DO_COULOMB | GMX_PME_DO_ALL_F
-                       | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
+        clear_mat(vir_q);
+        clear_mat(vir_lj);
+        gmx_pme_do(pme, 0, natoms, x_pp, f_pp, chargeA, chargeB, c6A, c6B, box,
+                   cr, maxshift0, maxshift1, nrnb, wcycle,
+                   vir_q, ewaldcoeff_q, vir_lj, ewaldcoeff_lj,
+                   &energy_q, &energy_lj, lambda, &dvdlambda,
+                   pme_flags);
         
         cycles = wallcycle_stop(wcycle,ewcPMEMESH);
         
         gmx_pme_send_force_vir_ener(pme_pp,
-                                    f_pp,vir,energy,dvdlambda,
-                                    cycles);
+                                    f_pp, vir_q, energy_q, vir_lj, energy_lj,
+                                    dvdlambda, cycles);
         
         count++;
 

@@ -326,7 +326,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     t_mdatoms  *mdatoms=NULL;
     t_forcerec *fr=NULL;
     t_fcdata   *fcd=NULL;
-    real       ewaldcoeff=0;
+    real       ewaldcoeff_q=0, ewaldcoeff_lj=0;
     gmx_pme_t  *pmedata=NULL;
     gmx_vsite_t *vsite=NULL;
     gmx_constr_t constr;
@@ -427,9 +427,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         Flags |= MD_PARTDEC;
     }
 
-    /* Separate PME nodes not yet supported with LJ PME. */
-    if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC)
-        || EVDW_PME(inputrec->vdwtype))
+    if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
+        || (Flags & MD_PARTDEC))
     {
         cr->npmenodes = 0;
     }
@@ -688,7 +687,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         if (EEL_PME(fr->eeltype))
         {
-            ewaldcoeff = fr->ewaldcoeff;
+            ewaldcoeff_q = fr->ewaldcoeff;
+            ewaldcoeff_lj = fr->ewaldljcoeff;
             pmedata = &fr->pmedata;
         }
         else
@@ -703,7 +703,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         /* We don't need the state */
         done_state(state);
 
-        ewaldcoeff = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
+        ewaldcoeff_q = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
+        ewaldcoeff_lj = calc_ewaldljcoeff(inputrec->rvdw, inputrec->ewald_rtol_lj);
         snew(pmedata,1);
     }
 
@@ -790,7 +791,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     else 
     {
         /* do PME only */
-        gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE,inputrec);
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle,
+                    ewaldcoeff_q, ewaldcoeff_lj, inputrec);
     }
 
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
