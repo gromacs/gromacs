@@ -128,6 +128,7 @@ int gmx_trjorder(int argc,char *argv[])
   rvec       *x,*xsol,xcom,dx;
   matrix     box;
   t_pbc      pbc;
+  gmx_rmpbc_t gpbc;
   real       t,totmass,mass,rcut2=0,n2;
   int        natoms,nwat,ncut;
   char       **grpname,title[256];
@@ -211,8 +212,9 @@ int gmx_trjorder(int argc,char *argv[])
     }
     out = open_trx(opt2fn("-o",NFILE,fnm),"w");
   }
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   do {
-    rm_pbc(&top.idef,ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,box,x,x);
     set_pbc(&pbc,ePBC,box);
 
     if (ref_a == -1) {
@@ -308,7 +310,8 @@ int gmx_trjorder(int argc,char *argv[])
     close_trx(out);
   if (fp)
     ffclose(fp);
-
+  gmx_rmpbc_done(gpbc);
+  
   thanx(stderr);
   
   return 0;

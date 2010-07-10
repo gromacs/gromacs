@@ -191,7 +191,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   t_blocka   *excl;
   t_atom     *atom=NULL;
   t_pbc      pbc;
-
+  gmx_rmpbc_t  gpbc=NULL;
   int        *is=NULL,**coi=NULL,cur,mol,i1,res,a;
 
   excl=NULL;
@@ -353,12 +353,15 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   snew(x_i1,max_i);
   nframes = 0;
   invvol_sum = 0;
+  if (bPBC && (NULL != top))
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+
   do {
     /* Must init pbc every step because of pressure coupling */
     copy_mat(box,box_pbc);
     if (bPBC) {
       if (top != NULL)
-	rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+	gmx_rmpbc(gpbc,box,x,x);
       if (bXY) {
 	check_box_c(box);
 	clear_rvec(box_pbc[ZZ]);
@@ -465,6 +468,9 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   } while (read_next_x(oenv,status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   
+  if (bPBC && (NULL != top))
+    gmx_rmpbc_done(gpbc);
+
   close_trj(status);
   
   sfree(x);

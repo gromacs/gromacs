@@ -298,7 +298,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 #if defined(TMPI_PROFILE) 
     tMPI_Profile_wait_start(cur);
 #endif
-    tMPI_Spinlock_barrier_wait( &(comm->barrier));
+    tMPI_Barrier_wait( &(comm->barrier));
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
     tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
 #endif
@@ -320,7 +320,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
     tMPI_Profile_wait_start(cur);
 #endif
-    tMPI_Spinlock_barrier_wait( &(comm->barrier));
+    tMPI_Barrier_wait( &(comm->barrier));
 #if defined(TMPI_PROFILE)
     tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
     tMPI_Profile_count_stop(cur, TMPIFN_Allreduce);

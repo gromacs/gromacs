@@ -131,8 +131,8 @@ void gmx_mtxio_write(const char *             filename,
         /* Sparse storage */
         i = GMX_MTXIO_SPARSE_MATRIX;
         gmx_fio_do_int(fio, i);
-        
-        gmx_fio_do_int(fio, sparse_matrix->compressed_symmetric);
+
+        gmx_fio_do_bool(fio, sparse_matrix->compressed_symmetric);
         gmx_fio_do_int(fio, sparse_matrix->nrow);
         if(sparse_matrix->nrow != nrow)
         {
@@ -216,7 +216,7 @@ gmx_mtxio_read (const char *            filename,
         printf("Sparse matrix storage format, nrow=%d, ncols=%d\n",*nrow,*ncol);
 
         snew((*sparse_matrix),1);
-        gmx_fio_do_int(fio, (*sparse_matrix)->compressed_symmetric);
+        gmx_fio_do_bool(fio, (*sparse_matrix)->compressed_symmetric);
         gmx_fio_do_int(fio, (*sparse_matrix)->nrow);        
         if((*sparse_matrix)->nrow != *nrow)
         {

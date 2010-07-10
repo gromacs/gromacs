@@ -194,29 +194,6 @@ static int parse_logfile(const char *logfile, const char *errfile,
     bool  bResetChecked  = FALSE;
 
 
-    /* Before we start parsing the logfile, check for fatal errors on stdout */
-    if (gmx_fexist(errfile))
-    {
-        fp = fopen(errfile, "r");
-        while (fgets(line, STRLEN, fp) != NULL)
-        {
-            if ( str_starts(line, "Fatal error:") )
-            {
-                if (fgets(line, STRLEN, fp) != NULL)
-                    fprintf(stderr, "\nWARNING: A fatal error has occured during this benchmark:\n"
-                                    "%s\n", line);
-                fclose(fp);
-                cleandata(perfdata, test_nr);
-                return eParselogFatal;
-            }
-        }
-        fclose(fp);
-    }
-    else
-    {
-        fprintf(stderr, "WARNING: Could not find stderr file %s.\n", errfile);
-    }
-
     if (!gmx_fexist(logfile))
     {
         fprintf(stderr, "WARNING: Could not find logfile %s.\n", logfile);
@@ -327,6 +304,33 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 break;
         }
     } /* while */
+    
+    /* Check why there is no performance data in the log file.
+     * Did a fatal errors occur? */
+    if (gmx_fexist(errfile))
+    {
+        fp = fopen(errfile, "r");
+        while (fgets(line, STRLEN, fp) != NULL)
+        {
+            if ( str_starts(line, "Fatal error:") )
+            {
+                if (fgets(line, STRLEN, fp) != NULL)
+                    fprintf(stderr, "\nWARNING: A fatal error has occured during this benchmark:\n"
+                                    "%s\n", line);
+                fclose(fp);
+                cleandata(perfdata, test_nr);
+                return eParselogFatal;
+            }
+        }
+        fclose(fp);
+    }
+    else
+    {
+        fprintf(stderr, "WARNING: Could not find stderr file %s.\n", errfile);
+    }
+
+    /* Giving up ... we could not find out why there is no performance data in
+     * the log file. */
     fprintf(stdout, "No performance data in log file.\n");
     fclose(fp);
     cleandata(perfdata, test_nr);
@@ -854,7 +858,8 @@ static void make_benchmark_tprs(
             ir->nkx = 0;
             ir->nky = 0;
             ir->nkz = 0;
-            calc_grid(stdout,state.box,info->fourier_sp[j],&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->fourier_sp[j],
+		      &(ir->nkx),&(ir->nky),&(ir->nkz));
             /* Check consistency */
             if (0 == j)
                 if ((ir->nkx != info->orig_nk[XX]) || (ir->nky != info->orig_nk[YY]) || (ir->nkz != info->orig_nk[ZZ]))
@@ -875,11 +880,14 @@ static void make_benchmark_tprs(
             }
             /* Reconstruct fourierspacing for each dimension from the input file */
             ir->nkx=0;
-            calc_grid(stdout,state.box,info->orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[XX]*fac,
+		      &(ir->nkx),&(ir->nky),&(ir->nkz));
             ir->nky=0;
-            calc_grid(stdout,state.box,info->orig_fs[YY]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[YY]*fac,
+		      &(ir->nkx),&(ir->nky),&(ir->nkz));
             ir->nkz=0;
-            calc_grid(stdout,state.box,info->orig_fs[ZZ]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->orig_fs[ZZ]*fac,
+		      &(ir->nkx),&(ir->nky),&(ir->nkz));
         }
 
         /* Save modified radii and fourier grid components for later output: */
@@ -1051,7 +1059,7 @@ static void make_npme_list(
                            * largest common factor (depends on npp)           */
     int nlistmax;         /* Max. list size                                   */
     int nlist;            /* Actual number of entries in list                 */
-    int eNPME;
+    int eNPME=0;
 
 
     /* Do we need to check all possible values for -npme or is a reduced list enough? */
@@ -1494,10 +1502,11 @@ static bool is_bench_option(char *opt, bool bSet)
      * This includes -cpi */
     if (bSet)
     {
-        if ( (0 == strcmp(opt, "-append" ))
-          || (0 == strcmp(opt, "-maxh"   ))
-          || (0 == strcmp(opt, "-deffnm" ))
-          || (0 == strcmp(opt, "-resethway")) )
+        if ( (0 == strcmp(opt, "-append"   ))
+          || (0 == strcmp(opt, "-maxh"     ))
+          || (0 == strcmp(opt, "-deffnm"   ))
+          || (0 == strcmp(opt, "-resethway"))
+          || (0 == strcmp(opt, "-cpnum"    )) )
             return FALSE;
         else
             return TRUE;
@@ -1898,6 +1907,7 @@ int gmx_tune_pme(int argc,char *argv[])
 #define STD_CPT_PERIOD (15.0)
     real cpt_period=STD_CPT_PERIOD,max_hours=-1;
     bool bAppendFiles=TRUE;
+    bool bKeepAndNumCPT=FALSE;
     bool bResetCountersHalfWay=FALSE;
     output_env_t oenv=NULL;
 
@@ -1976,6 +1986,8 @@ int gmx_tune_pme(int argc,char *argv[])
         "Try to avoid optimizations that affect binary reproducibility" },
       { "-cpt",       FALSE, etREAL, {&cpt_period},
         "Checkpoint interval (minutes)" },
+      { "-cpnum",   FALSE, etBOOL, {&bKeepAndNumCPT},
+        "Keep and number checkpoint files" },
       { "-append",    FALSE, etBOOL, {&bAppendFiles},
         "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names (for launch only)" },
       { "-maxh",      FALSE, etREAL, {&max_hours},
@@ -2045,7 +2057,7 @@ int gmx_tune_pme(int argc,char *argv[])
      */
     create_command_line_snippets(bThreads,presteps,NFILE,fnm,asize(pa),pa,procstring[0],
                                  &cmd_np, &cmd_args_bench, &cmd_args_launch,
-                                 bPassAll? ExtraArgs : "");
+                                 bPassAll? ExtraArgs : (char *)"");
 
     /* Read in checkpoint file if requested */
     sim_part = 1;

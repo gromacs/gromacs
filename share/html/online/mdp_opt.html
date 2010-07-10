@@ -1254,7 +1254,10 @@ is larger than half the shortest box vector.
 For determining the COM, all atoms in the group are put at their periodic image
 which is closest to <b>pull_pbcatom1</b>.
 A value of 0 means that the middle atom (number wise) is used.
-This parameter is not used with geometry <b>cylinder</b>.</dd>
+This parameter is not used with geometry <b>cylinder</b>.
+A value of -1 turns on cosine weighting, which is useful for a group
+of molecules in a periodic system, e.g. a water slab (see Engin et al.
+J. Chem. Phys. B 2010).</dd>
 <dt><h4>pull_vec1: (0.0 0.0 0.0)</h4></dt>
 <dd>The pull direction. <tt>grompp</tt> normalizes the vector.</dd>
 <dt><h4>pull_init1: (0.0) / (0.0 0.0 0.0) [nm]</h4></dt>

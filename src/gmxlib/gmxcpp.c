@@ -151,18 +151,10 @@ static void add_include(const char *include)
   }
 }
 
-static void add_define(const char *define)
+static void add_define(const char *name, const char *value)
 {
   int  i;
-  const char *ptr;
-  char name[256];
-  
-  sscanf(define,"%s%n",name,&i);
-  ptr = define + i;
-  
-  while ((*ptr != '\0') && isspace(*ptr))
-    ptr++;
-    
+
   for(i=0; (i<ndef); i++) {
     if (strcmp(defs[i].name,name) == 0) {
       break;
@@ -179,8 +171,8 @@ static void add_define(const char *define)
       fprintf(debug,"Overriding define %s\n",name);
     sfree(defs[i].def);
   }
-  if (strlen(ptr) > 0)
-    defs[i].def  = strdup(ptr);
+  if (value && strlen(value) > 0)
+    defs[i].def  = strdup(value);
   else
     defs[i].def  = NULL;
 }
@@ -203,7 +195,20 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
       if (strstr(cppopts[i],"-I") == cppopts[i])
 	add_include(cppopts[i]+2);
       if (strstr(cppopts[i],"-D") == cppopts[i])
-	add_define(cppopts[i]+2);
+      {
+        /* If the option contains a =, split it into name and value. */
+        ptr = strchr(cppopts[i], '=');
+        if (ptr)
+        {
+          buf = strndup(cppopts[i] + 2, ptr - cppopts[i] - 2);
+          add_define(buf, ptr + 1);
+          sfree(buf);
+        }
+        else
+        {
+          add_define(cppopts[i] + 2, NULL);
+        }
+      }
       i++;
     }
   }
@@ -298,6 +303,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
   int  i,i0,len,status;
   unsigned int i1;
   char *inc_fn,*name;
+  const char *ptr;
   int  bIfdef,bIfndef;
 
   /* #ifdef or ifndef statement */
@@ -391,7 +397,17 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
   
   /* #define statement */
   if (strcmp(dname,"define") == 0) {
-    add_define(dval);
+    /* Split it into name and value. */
+    ptr = dval;
+    while ((*ptr != '\0') && !isspace(*ptr))
+      ptr++;
+    name = strndup(dval, ptr - dval);
+
+    while ((*ptr != '\0') && isspace(*ptr))
+      ptr++;
+
+    add_define(name, ptr);
+    sfree(name);
     return eCPP_OK;
   }
   

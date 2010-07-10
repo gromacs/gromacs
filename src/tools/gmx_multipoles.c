@@ -628,6 +628,7 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
   tensor3    *m3;
   tensor4    *m4;
   matrix     trans;
+  gmx_rmpbc_t  gpbc=NULL;
 
   top  = read_top(topfn);
   rd_index(molndxfn,1,&gnx,&grpindex,&grpname);
@@ -639,12 +640,13 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
   snew(m2,gnx);
   snew(m3,gnx);
   snew(m4,gnx);
-  
+
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+
   /* Start while loop over frames */
   do {
     /* PvM, bug in rm_pbc??? Does not work for virtual sites ...
-    rm_pbc(&(top->idef),top->atoms.nr,box,x,x_s); */
-
+    gmx_rmpbc(gpbc,box,x,x_s); */
 
     /* Begin loop of all molecules in index file */
     for(i=0; (i<gnx); i++) {
@@ -673,6 +675,9 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
     
     bCont = read_next_x(status,&t,natoms,x,box);
   } while(bCont);
+  gmx_rmpbc_done(gpbc);
+
+  
   
 }
 

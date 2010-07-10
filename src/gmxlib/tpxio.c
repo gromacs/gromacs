@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 70;
+static const int tpx_version = 71;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -250,23 +250,30 @@ static void do_pull(t_fileio *fio, t_pull *pull,bool bRead, int file_version)
 static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead, 
                         int file_version, real *fudgeQQ)
 {
-  int  i,j,k,*tmp,idum=0; 
-  bool bDum=TRUE;
-  real rdum,bd_temp;
-  rvec vdum;
-  bool bSimAnn;
-  real zerotemptime,finish_t,init_temp,finish_temp;
-  
-  if (file_version != tpx_version) {
-    /* Give a warning about features that are not accessible */
-    fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
-	    file_version,tpx_version);
-  }
+    int  i,j,k,*tmp,idum=0; 
+    bool bDum=TRUE;
+    real rdum,bd_temp;
+    rvec vdum;
+    bool bSimAnn;
+    real zerotemptime,finish_t,init_temp,finish_temp;
+    
+    if (file_version != tpx_version)
+    {
+        /* Give a warning about features that are not accessible */
+        fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
+                file_version,tpx_version);
+    }
 
-  if (bRead)
-    init_inputrec(ir);
+    if (bRead)
+    {
+        init_inputrec(ir);
+    }
 
-  if (file_version >= 1) {  
+    if (file_version == 0)
+    {
+        return;
+    }
+
     /* Basic inputrec stuff */  
     gmx_fio_do_int(fio,ir->eI); 
     if (file_version >= 62) {
@@ -461,35 +468,61 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     else
       gmx_fio_do_real(fio,ir->epsilon_surface);
     
-    gmx_fio_do_int(fio,ir->bOptFFT);
+    gmx_fio_do_bool(fio,ir->bOptFFT);
 
-    gmx_fio_do_int(fio,ir->bContinuation); 
+    gmx_fio_do_bool(fio,ir->bContinuation); 
     gmx_fio_do_int(fio,ir->etc);
     /* before version 18, ir->etc was a bool (ir->btc),
      * but the values 0 and 1 still mean no and
      * berendsen temperature coupling, respectively.
      */
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->nsttcouple);
+    }
+    else
+    {
+        ir->nsttcouple = ir->nstcalcenergy;
+    }
     if (file_version <= 15)
-      gmx_fio_do_int(fio,idum);
-    if (file_version <=17) {
-      gmx_fio_do_int(fio,ir->epct); 
-      if (file_version <= 15) {
-	if (ir->epct == 5)
-	  ir->epct = epctSURFACETENSION;
-	gmx_fio_do_int(fio,idum);
-      }
-      ir->epct -= 1;
-      /* we have removed the NO alternative at the beginning */
-      if(ir->epct==-1) {
-	ir->epc=epcNO;
-	ir->epct=epctISOTROPIC;
-      } 
-      else
-	ir->epc=epcBERENDSEN;
+    {
+        gmx_fio_do_int(fio,idum);
+    }
+    if (file_version <=17)
+    {
+        gmx_fio_do_int(fio,ir->epct); 
+        if (file_version <= 15)
+        {
+            if (ir->epct == 5)
+            {
+                ir->epct = epctSURFACETENSION;
+            }
+            gmx_fio_do_int(fio,idum);
+        }
+        ir->epct -= 1;
+        /* we have removed the NO alternative at the beginning */
+        if(ir->epct==-1)
+        {
+            ir->epc=epcNO;
+            ir->epct=epctISOTROPIC;
+        } 
+        else
+        {
+            ir->epc=epcBERENDSEN;
+        }
     } 
-    else {
-      gmx_fio_do_int(fio,ir->epc);
-      gmx_fio_do_int(fio,ir->epct);
+    else
+    {
+        gmx_fio_do_int(fio,ir->epc);
+        gmx_fio_do_int(fio,ir->epct);
+    }
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->nstpcouple);
+    }
+    else
+    {
+        ir->nstpcouple = ir->nstcalcenergy;
     }
     gmx_fio_do_real(fio,ir->tau_p); 
     if (file_version <= 15) {
@@ -528,7 +561,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       ir->andersen_seed=0;
     
     if(file_version < 26) {
-      gmx_fio_do_int(fio,bSimAnn); 
+      gmx_fio_do_bool(fio,bSimAnn); 
       gmx_fio_do_real(fio,zerotemptime);
     }
     
@@ -577,6 +610,16 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     } else {
       ir->nstdhdl = 1;
     }
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->dh_table_size);
+        gmx_fio_do_double(fio,ir->dh_table_spacing);
+    }
+    else
+    {
+        ir->dh_table_size    = 0;
+        ir->dh_table_spacing = 0.1;
+    }
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 
     }
@@ -587,7 +630,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       else
 	ir->eDisreWeighting = edrwConservative;
     }
-    gmx_fio_do_int(fio,ir->bDisreMixed); 
+    gmx_fio_do_bool(fio,ir->bDisreMixed); 
     gmx_fio_do_real(fio,ir->dr_fc); 
     gmx_fio_do_real(fio,ir->dr_tau); 
     gmx_fio_do_int(fio,ir->nstdisreout);
@@ -613,7 +656,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     gmx_fio_do_real(fio,ir->em_stepsize); 
     gmx_fio_do_real(fio,ir->em_tol); 
     if (file_version >= 22) 
-      gmx_fio_do_int(fio,ir->bShakeSOR);
+      gmx_fio_do_bool(fio,ir->bShakeSOR);
     else if (bRead)
       ir->bShakeSOR = TRUE;
     if (file_version >= 11)
@@ -798,7 +841,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     
     /* QMMM stuff */
     if(file_version>=39){
-      gmx_fio_do_int(fio,ir->bQMMM);
+      gmx_fio_do_bool(fio,ir->bQMMM);
       gmx_fio_do_int(fio,ir->QMMMscheme);
       gmx_fio_do_real(fio,ir->scalefactor);
       gmx_fio_do_int(fio,ir->opts.ngQM);
@@ -821,18 +864,17 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
         bDum=gmx_fio_ndo_int(fio,ir->opts.QMbasis,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.QMcharge,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.QMmult,ir->opts.ngQM);
-        bDum=gmx_fio_ndo_int(fio,ir->opts.bSH,ir->opts.ngQM);
+        bDum=gmx_fio_ndo_bool(fio,ir->opts.bSH,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.CASorbitals,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.CASelectrons,ir->opts.ngQM);
         bDum=gmx_fio_ndo_real(fio,ir->opts.SAon,ir->opts.ngQM);
         bDum=gmx_fio_ndo_real(fio,ir->opts.SAoff,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.SAsteps,ir->opts.ngQM);
-        bDum=gmx_fio_ndo_int(fio,ir->opts.bOPT,ir->opts.ngQM);
-        bDum=gmx_fio_ndo_int(fio,ir->opts.bTS,ir->opts.ngQM);
+        bDum=gmx_fio_ndo_bool(fio,ir->opts.bOPT,ir->opts.ngQM);
+        bDum=gmx_fio_ndo_bool(fio,ir->opts.bTS,ir->opts.ngQM);
       }
       /* end of QMMM stuff */
     }    
-  }
 }
 
 
@@ -2092,7 +2134,7 @@ static int do_tpx(t_fileio *fio, bool bRead,
 	  bPeriodicMols = ir->bPeriodicMols;
 	}
 	gmx_fio_do_int(fio,ePBC);
-	gmx_fio_do_int(fio,bPeriodicMols);
+	gmx_fio_do_bool(fio,bPeriodicMols);
       }
       if (file_generation <= tpx_generation && ir) {
 	do_inputrec(fio, ir,bRead,file_version,mtop ? &mtop->ffparams.fudgeQQ : NULL);

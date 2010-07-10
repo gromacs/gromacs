@@ -194,14 +194,18 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t ** outputfiles,
  * point to a list of open files.
  */
 
-int gmx_fio_all_output_fsync(void);
+t_fileio *gmx_fio_all_output_fsync(void);
 /* fsync all open output files. This is used for checkpointing, where
    we need to ensure that all output is actually written out to 
    disk. 
    This is most important in the case of some networked file systems, 
    where data is not synced with the file server until close() or 
    fsync(), so data could remain in cache for days.
-   Note the caveats reported with gmx_fio_fsync(). */
+   Note the caveats reported with gmx_fio_fsync(). 
+   
+    returns: NULL if no error occurred, or a pointer to the first file that
+             failed if an error occurred 
+*/
 
 
 int gmx_fio_get_file_md5(t_fileio *fio, off_t offset,  unsigned char digest[]);
@@ -270,6 +274,8 @@ bool gmx_fio_doe_real(t_fileio *fio, real *item,
                       const char *desc, const char *srcfile, int line);
 bool gmx_fio_doe_double(t_fileio *fio, double *item, 
                         const char *desc, const char *srcfile, int line);
+bool gmx_fio_doe_bool(t_fileio *fio, bool *item, 
+                     const char *desc, const char *srcfile, int line);
 bool gmx_fio_doe_int(t_fileio *fio, int *item, 
                      const char *desc, const char *srcfile, int line);
 bool gmx_fio_doe_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, 
@@ -334,6 +340,8 @@ bool gmx_fio_ndoe_real(t_fileio *fio, real *item, int n,
                        const char *desc, const char *srcfile, int line);
 bool gmx_fio_ndoe_double(t_fileio *fio, double *item, int n, 
                          const char *desc, const char *srcfile, int line);
+bool gmx_fio_ndoe_bool(t_fileio *fio, bool *item, int n, 
+                      const char *desc, const char *srcfile, int line);
 bool gmx_fio_ndoe_int(t_fileio *fio, int *item, int n, 
                       const char *desc, const char *srcfile, int line);
 bool gmx_fio_ndoe_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, int n, 
@@ -375,6 +383,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 
 #define gmx_fio_do_real(fio, item)              gmx_fio_doe_real(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_double(fio, item)            gmx_fio_doe_double(fio, &item, (#item), __FILE__, __LINE__)
+#define gmx_fio_do_bool(fio, item)              gmx_fio_doe_bool(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_int(fio, item)               gmx_fio_doe_int(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_gmx_large_int(fio, item)     gmx_fio_doe_gmx_large_int(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_uchar(fio, item)             gmx_fio_doe_uchar(fio, &item, (#item), __FILE__, __LINE__)
@@ -408,6 +417,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 
 #define gmx_fio_ndo_real(fio, item, n)              gmx_fio_ndoe_real(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_double(fio, item, n)            gmx_fio_ndoe_double(fio, item, n, (#item), __FILE__, __LINE__)
+#define gmx_fio_ndo_bool(fio, item, n)              gmx_fio_ndoe_bool(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_int(fio, item, n)               gmx_fio_ndoe_int(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_gmx_large_int(fio, item, n)     gmx_fio_ndoe_gmx_large_int(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_uchar(fio, item, n)             gmx_fio_ndoe_uchar(fio, item, n, (#item), __FILE__, __LINE__)

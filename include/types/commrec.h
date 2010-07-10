@@ -43,7 +43,7 @@
 #include <mpi.h>
 #else
 #ifdef GMX_THREADS
-#include "tmpi.h"
+#include "../tmpi.h"
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;
@@ -116,7 +116,7 @@ typedef struct {
 typedef struct {
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
-  float *ibuf; /* for ints */
+  int *ibuf; /* for ints */
   int ibuf_alloc;
 
   float *fbuf; /* for floats */

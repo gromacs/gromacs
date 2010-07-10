@@ -415,6 +415,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
   real    t,inp,**inprod=NULL,min=0,max=0;
   char    str[STRLEN],str2[STRLEN],**ylabel,*c;
   real    fact;
+  gmx_rmpbc_t  gpbc=NULL;
 
   snew(x,natoms);
   
@@ -442,12 +443,18 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
     if (nat>atoms->nr)
       gmx_fatal(FARGS,"the number of atoms in your trajectory (%d) is larger than the number of atoms in your structure file (%d)",nat,atoms->nr); 
     snew(all_at,nat);
+    
+    if (top)
+      gpbc = gmx_rmpbc_init(&top->idef,ePBC,nat,box);
+    if (top)
+    gmx_rmpbc_done(gpbc);
+
     for(i=0; i<nat; i++)
       all_at[i]=i;
     do {
       if (nfr % skip == 0) {
 	if (top)
-	  rm_pbc(&(top->idef),ePBC,nat,box,xread,xread);
+	  gmx_rmpbc(gpbc,box,xread,xread);
 	if (nframes>=snew_size) {
 	  snew_size+=100;
 	  for(i=0; i<noutvec+1; i++)
@@ -496,6 +503,9 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
   else
     snew(xread,atoms->nr);
   
+  if (top)
+    gmx_rmpbc_done(gpbc);
+
 
   if (projfile) {
     snew(ylabel,noutvec);
@@ -866,7 +876,8 @@ int gmx_anaeig(int argc,char *argv[])
   int        neig1,neig2;
   double     **xvgdata;
   output_env_t oenv;
-  
+  gmx_rmpbc_t  gpbc=NULL;
+
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
     { efTRN, "-v2",   "eigenvec2",   ffOPTRD },
@@ -988,13 +999,15 @@ int gmx_anaeig(int argc,char *argv[])
   nfit=0;
   ifit=NULL;
   w_rls=NULL;
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,atoms->nr,topbox);
+
   if (!bTPS)
     bTop=FALSE;
   else {
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
 		       title,&top,&ePBC,&xtop,NULL,topbox,bM);
     atoms=&top.atoms;
-    rm_pbc(&(top.idef),ePBC,atoms->nr,topbox,xtop,xtop);
+    gmx_rmpbc(gpbc,topbox,xtop,xtop);
     /* Fitting is only required for the projection */ 
     if (bProj && bFit1) {
       if (xref1 == NULL) {
@@ -1027,7 +1040,8 @@ int gmx_anaeig(int argc,char *argv[])
       }
     }
   }
-  
+  gmx_rmpbc_done(gpbc);
+
   if (bIndex) {
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
     get_index(atoms,indexfile,1,&i,&index,&grpname);

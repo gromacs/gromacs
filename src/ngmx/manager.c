@@ -198,6 +198,7 @@ void set_file(t_x11 *x11,t_manager *man,const char *trajectory,
   snew(man->bHydro,sh.natoms);
   snew(bB,sh.natoms);
   read_tpx_top(status,NULL,man->box,&man->natom,NULL,NULL,NULL,&man->top);
+  man->gpbc = gmx_rmpbc_init(&man->top.idef,-1,man->natom,man->box);
   
   man->natom=
     read_first_x(man->oenv,&man->status,trajectory,&(man->time),&(man->x),
@@ -337,8 +338,7 @@ static bool step_man(t_manager *man,int *nat)
       break;
     }
     if (man->bPbc) {
-      rm_pbc(&(man->top.idef),man->molw->ePBC,
-	     man->natom,man->box,man->x,man->x);
+      gmx_rmpbc(man->gpbc,man->box,man->x,man->x);
       reset_mols(&(man->top.mols),man->box,man->x);
     }
     ncount=0;

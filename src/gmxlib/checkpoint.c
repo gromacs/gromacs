@@ -1031,7 +1031,8 @@ static int do_cpt_files(XDR *xd, bool bRead,
 }
 
 
-void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
+void write_checkpoint(const char *fn,bool bNumberAndKeep,
+                      FILE *fplog,t_commrec *cr,
                       int eIntegrator,int simulation_part,
                       gmx_large_int_t step,double t,t_state *state)
 {
@@ -1046,10 +1047,11 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     char *fntemp; /* the temporary checkpoint file name */
     time_t now;
     int  nppnodes,npmenodes,flag_64bit;
-    char buf[1024];
+    char buf[1024],suffix[5+STEPSTRSIZE],sbuf[STEPSTRSIZE];
     gmx_file_position_t *outputfiles;
     int  noutputfiles;
     int  flags_eks,flags_enh,i;
+    t_fileio *ret;
 		
     if (PAR(cr))
     {
@@ -1071,10 +1073,11 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     }
 
     /* make the new temporary filename */
-    snew(fntemp, strlen(fn)+5);
+    snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
     strcpy(fntemp,fn);
     fntemp[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-    strcat(fntemp,"_tmp");
+    sprintf(suffix,"_%s%s","step",gmx_step_str(step,sbuf));
+    strcat(fntemp,suffix);
     strcat(fntemp,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
    
     now = time(NULL);
@@ -1156,33 +1159,58 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
 
     /* we really, REALLY, want the checkpoint file and all files it depends 
        on to be physically written out do disk: */
-    gmx_fio_all_output_fsync();
+    ret=gmx_fio_all_output_fsync();
+    if (ret)
+    {
+        char buf[STRLEN];
+        sprintf(buf,
+                "Cannot fsync '%s'; maybe you are out of disk space or quota?",
+                gmx_fio_getname(ret));
+
+        if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV)==NULL)
+        {
+            gmx_file(buf);
+        }
+        else
+        {
+            gmx_warning(buf);
+        }
+    }
 
     if( gmx_fio_close(fp) != 0)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
     }
 
-    if (gmx_fexist(fn))
+    /* we don't move the checkpoint if the user specified they didn't want it,
+       or if the fsyncs failed */
+    if (!bNumberAndKeep && !ret)
     {
-        /* Rename the previous checkpoint file */
-        strcpy(buf,fn);
-        buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-        strcat(buf,"_prev");
-        strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+        if (gmx_fexist(fn))
+        {
+            /* Rename the previous checkpoint file */
+            strcpy(buf,fn);
+            buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+            strcat(buf,"_prev");
+            strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
 #ifndef GMX_FAHCORE
-        /* we copy here so that if something goes wrong between now and
-           the rename below, there's always a state.cpt. If renames are atomic
-           (such as in POSIX systems), this copying should be unneccesary. */
-        gmx_file_copy(fn, buf, FALSE); /* We don't really care if this fails: 
-                                          there's already a new checkpoint.  */
+            /* we copy here so that if something goes wrong between now and
+             * the rename below, there's always a state.cpt.
+             * If renames are atomic (such as in POSIX systems),
+             * this copying should be unneccesary.
+             */
+            gmx_file_copy(fn, buf, FALSE);
+            /* We don't really care if this fails: 
+             * there's already a new checkpoint.
+             */
 #else
-	gmx_file_rename(fn, buf);
+            gmx_file_rename(fn, buf);
 #endif
-    }
-    if (gmx_file_rename(fntemp, fn) != 0)
-    {
-        gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
+        }
+        if (gmx_file_rename(fntemp, fn) != 0)
+        {
+            gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
+        }
     }
 
     sfree(ftime);

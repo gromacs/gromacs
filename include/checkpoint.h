@@ -47,8 +47,15 @@
 extern "C" {
 #endif
 
-/* Write a checkpoint to fn */
-extern void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
+/* the name of the environment variable to disable fsync failure checks with */
+#define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
+
+/* Write a checkpoint to <fn>.cpt
+ * Appends the _step<step>.cpt with bNumberAndKeep,
+ * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
+ */
+extern void write_checkpoint(const char *fn,bool bNumberAndKeep,
+			     FILE *fplog,t_commrec *cr,
 			     int eIntegrator,int simulation_part,
 			     gmx_large_int_t step,double t,
 			     t_state *state);

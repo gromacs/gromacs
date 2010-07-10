@@ -254,7 +254,7 @@ gmx_mm_exp_ps(__m128 x)
 	xmm2 = _mm_cvtps_epi32(xmm1); 
 	xmm1 = _mm_cvtepi32_ps(xmm2); 
 	
-	xmm2 = _mm_add_epi32(xmm2,gmx_mm_castps_si128(base));
+	xmm2 = _mm_add_epi32(xmm2,base);
 	xmm2 = _mm_slli_epi32(xmm2,23);
 	
 	xmm0 = _mm_sub_ps(xmm0,xmm1);
@@ -303,7 +303,7 @@ gmx_mm_exp_ps_lbc(__m128 x)
 	xmm2 = _mm_cvtps_epi32(xmm1); 
 	xmm1 = _mm_cvtepi32_ps(xmm2); 
 	
-	xmm2 = _mm_add_epi32(xmm2,gmx_mm_castps_si128(base));
+	xmm2 = _mm_add_epi32(xmm2,base);
 	xmm2 = _mm_slli_epi32(xmm2,23);
 	
 	xmm0 = _mm_sub_ps(xmm0,xmm1);

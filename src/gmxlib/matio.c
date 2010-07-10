@@ -187,20 +187,18 @@ void do_wmap(FILE *out,int i0,int imax,
   }
 }
 
-char *fgetline(char **line,int llmax,FILE *in)
+static char *fgetline(char **line,int llmax,int *llalloc,FILE *in)
 {
-  static char *line0=NULL;
-  static int  linelengthmax=0;
   char *fg;
-  
-  if (llmax > linelengthmax) {
-    linelengthmax = llmax;
-    srenew(line0,linelengthmax);
+
+  if (llmax > *llalloc)
+  {
+      srenew(*line,llmax+1);
+      *llalloc=llmax;
   }
-  fg=fgets(line0,linelengthmax,in);
-  *line=line0;
+  fg=fgets(*line,llmax,in);
   trim(*line);
-  
+
   return fg;
 }
 
@@ -251,6 +249,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   t_mapping *map;
   char *line=NULL,*str,buf[256];
   int i,m,col_len,nch,n_axis_x,n_axis_y,llmax;
+  int llalloc=0;
   unsigned int r,g,b;
   double u;
   bool bGetOnWithIt;
@@ -268,7 +267,8 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 
   llmax = STRLEN;
 
-  while (fgetline(&line,llmax,in) && (strncmp(line,"static",6) != 0)) {
+  while ((NULL != fgetline(&line,llmax,&llalloc,in)) && 
+         (strncmp(line,"static",6) != 0)) {
     parsestring(line,"title",(mm->title));
     parsestring(line,"legend",(mm->legend));
     parsestring(line,"x-label",(mm->label_x));
@@ -286,7 +286,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     gmx_input("Invalid XPixMap");
   /* Read sizes */
   bGetOnWithIt=FALSE;
-  while (!bGetOnWithIt && fgetline(&line,llmax,in)) {
+  while (!bGetOnWithIt && (NULL != fgetline(&line,llmax,&llalloc,in))) {
     while (( line[0] != '\"' ) && ( line[0] != '\0' ))
       line++;
 
@@ -306,7 +306,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   /* Read color map */
   snew(map,mm->nmap);
   m=0;
-  while ((m < mm->nmap) && fgetline(&line,llmax,in)) {
+  while ((m < mm->nmap) && (NULL != fgetline(&line,llmax,&llalloc,in))) {
     line=strchr(line,'\"');
     if  (line) {
       line++;
@@ -394,7 +394,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	skipstr(&line);
       }
     }
-  } while ((line[0] != '\"') && fgetline(&line,llmax,in));
+  } while ((line[0] != '\"') && (NULL != fgetline(&line,llmax,&llalloc,in)));
 
   /* Read matrix */
   snew(mm->matrix,mm->nx);
@@ -420,21 +420,25 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	}
       m--;
     }
-  } while ((m>=0) && fgetline(&line,llmax,in));
+  } while ((m>=0) && (NULL != fgetline(&line,llmax,&llalloc,in)));
   if (m>=0)
     gmx_incons("Not enough rows in the matrix");
+
+  /* This code makes me cry. DvdS 2010-07-08 */
+  /*sfree(line);*/
 }
 
 int read_xpm_matrix(const char *fnm,t_matrix **matrix)
 {
   FILE *in;
-  char *line;
+  char *line=NULL;
   int nmat;
+  int llalloc=0;
 
   in=gmx_fio_fopen(fnm,"r");
   
   nmat=0;
-  while (fgetline(&line,STRLEN,in)) {
+  while (NULL != fgetline(&line,STRLEN,&llalloc,in)) {
     if (strstr(line,"/* XPM */")) {
       srenew(*matrix,nmat+1);
       read_xpm_entry(in,&(*matrix)[nmat]);
@@ -445,6 +449,8 @@ int read_xpm_matrix(const char *fnm,t_matrix **matrix)
 
   if (nmat==0)
     gmx_file("Invalid XPixMap");
+
+  sfree(line);
 
   return nmat;
 }

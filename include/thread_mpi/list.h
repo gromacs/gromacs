@@ -38,7 +38,7 @@ files.
 #ifndef _TMPI_LIST_H_
 #define _TMPI_LIST_H_
 
-#include "thread_mpi/atomic.h"
+#include "atomic.h"
 
 
 /** \file 

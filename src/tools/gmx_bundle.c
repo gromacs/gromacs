@@ -218,6 +218,8 @@ int gmx_bundle(int argc,char *argv[])
   bool       bKink;
   rvec       va,vb,vc,vr,vl;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
+  
 #define NLEG asize(leg) 
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
@@ -307,9 +309,10 @@ int gmx_bundle(int argc,char *argv[])
     fpdb = NULL;
   
   read_first_frame(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&fr,TRX_NEED_X); 
-  
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,fr.natoms,fr.box);
+
   do {
-    rm_pbc(&top.idef,ePBC,fr.natoms,fr.box,fr.x,fr.x);
+    gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
     calc_axes(fr.x,top.atoms.atom,gnx,index,!bZ,&bun);
     t = output_env_conv_time(oenv,fr.time);
     fprintf(flen," %10g",t);
@@ -366,6 +369,7 @@ int gmx_bundle(int argc,char *argv[])
     if (fpdb )
       dump_axes(fpdb,&fr,&outatoms,&bun);
   } while(read_next_frame(oenv,status,&fr));
+  gmx_rmpbc_done(gpbc);
 
   close_trx(status);
   

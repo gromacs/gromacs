@@ -44,6 +44,7 @@
 #include "nleg.h"
 #include "buttons.h"
 #include "statutil.h"
+#include "rmpbc.h"
 
 /* Some window sizes */
 #define EWIDTH  	200
@@ -119,7 +120,8 @@ typedef struct {
   bool      bPlus;		/* Draw plus for single atom		*/
   int       nSkip;		/* Skip n steps after each frame	*/
   int       nWait;		/* Wait n ms after each frame           */
-
+  gmx_rmpbc_t gpbc;             /* For removing peridiocity             */
+  
   t_windata   wd;               /* The manager subwindow                */
   t_windata   title;		/* Title window				*/
   t_3dview    *view;            /* The 3d struct                        */

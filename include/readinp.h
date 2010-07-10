@@ -54,6 +54,8 @@ typedef struct {
   bool bSet; /* whether it it has been read out */
   char *name; /* name of the parameter */
   char *value; /* parameter value string */
+  int inp_count; /* number of einps read. Only valid for the first item
+                                          in the inpfile list. */
 } t_inpfile;
 /* entry in input files (like .mdp files). 
  Initally read in with read_inpfile, then filled in with missing values
