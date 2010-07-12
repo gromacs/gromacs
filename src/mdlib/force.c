@@ -150,6 +150,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     double  lam_i;
     real    dvdl_dum;
 
+    set_pbc(&pbc,-1,box);
 #ifdef GMX_MPI
     double  t0=0.0,t1,t2,t3; /* time measurement for coarse load balancing */
 #endif
