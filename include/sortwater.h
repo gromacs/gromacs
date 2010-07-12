@@ -51,17 +51,20 @@ extern void randwater(int astart,int nwater,int nwatom,
 /* Randomize the order of nwater molecules of length nwatom, the
  * first atom of which is at astart.
  * If v is not NULL it will be shuffled along
+ * IS NOT THREAD SAFE 
  */
 
 
 extern void sortwater(int astart,int nwater,int nwatom,rvec x[],rvec v[]);
 /* Sort the order of nwater molecules of length nwatom on X coordinate
  * If v is not NULL it will be shuffled along
+ * IS NOT THREAD SAFE 
  */
 
 extern void mkcompact(int astart,int nwater,int nwatom,rvec x[],rvec v[],
 		      int nnode,matrix box);
-/* Make compact subboxes */
+/* Make compact subboxes 
+ * IS NOT THREAD SAFE  */
 
 #ifdef __cplusplus
 }

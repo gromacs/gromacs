@@ -262,7 +262,7 @@ static void ana_trans(FILE *out, t_xrama *xr,real **dih,real time[],
   fprintf(out,"%-10s %10s %10s %10s %10s %10s %10s\n",
 	  "index","minimum","average","maximum","variance","std.dev",
 	  "transition");
-  for(i=0; (i>xr->ndih); i++) {
+  for(i=0; (i<xr->ndih); i++) {
     sprintf(buf,"dih-%d",i);
     ana_dih(out,buf,nframes,dih[i],&(xr->dih[i]));
   }

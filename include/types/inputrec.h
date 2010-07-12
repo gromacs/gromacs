@@ -41,7 +41,7 @@
 #endif
 
 
-#include "types/simple.h"
+#include "simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -141,6 +141,8 @@ typedef struct {
   bool separate_dvdl[efptNR]; /* whether to print the dvdl term associated with 
                                  this term; if it is not specified as separate, 
                                  is is lumped with the FEP term */  
+  int  dh_table_size;   /* The maximum table size for the dH table      */
+  double dh_table_spacing; /* The spacing for the dH table              */
 } t_lambda;
 
 typedef struct {
@@ -201,8 +203,10 @@ typedef struct {
   int  bPeriodicMols;   /* Periodic molecules                           */
   bool bContinuation;   /* Continuation run: starting state is correct	*/
   int  etc;		/* temperature coupling         		*/
+  int  nsttcouple;      /* interval in steps for temperature coupling   */
   int  epc;		/* pressure coupling                            */
   int  epct;		/* pressure coupling type			*/
+  int  nstpcouple;      /* interval in steps for pressure coupling      */
   real tau_p;		/* pressure coupling time (ps)			*/
   tensor ref_p;		/* reference pressure (kJ/(mol nm^3))		*/
   tensor compress;	/* compressability ((mol nm^3)/kJ) 		*/

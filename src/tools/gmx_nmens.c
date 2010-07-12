@@ -86,7 +86,7 @@ int gmx_nmens(int argc,char *argv[])
   };
 #define NPA asize(pa)
   
-  int        out;
+  t_trxstatus *out;
   int        status,trjout;
   t_topology top;
   int        ePBC;

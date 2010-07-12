@@ -1094,6 +1094,10 @@ void
 gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
 {
     gmx_ana_indexmap_init(&p->m, &pc->gmax, pc->coll->top, pc->itype);
+    if (!(pc->flags & POS_DYNAMIC))
+    {
+        gmx_ana_indexmap_set_static(&p->m, &pc->b);
+    }
     gmx_ana_pos_reserve(p, p->m.nr, 0);
     if (pc->flags & POS_VELOCITIES)
     {
@@ -1210,12 +1214,18 @@ gmx_ana_poscalc_init_eval(gmx_ana_poscalc_coll_t *pcc)
             }
         }
         /* Free the block data for dynamic calculations */
-        if ((pc->flags & POS_DYNAMIC) && pc->b.nalloc_index > 0)
+        if (pc->flags & POS_DYNAMIC)
         {
-            sfree(pc->b.index);
-            sfree(pc->b.a);
-            pc->b.nalloc_index = 0;
-            pc->b.nalloc_a     = 0;
+            if (pc->b.nalloc_index > 0)
+            {
+                sfree(pc->b.index);
+                pc->b.nalloc_index = 0;
+            }
+            if (pc->b.nalloc_a > 0)
+            {
+                sfree(pc->b.a);
+                pc->b.nalloc_a = 0;
+            }
         }
         pc = pc->next;
     }

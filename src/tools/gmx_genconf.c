@@ -124,7 +124,7 @@ int gmx_genconf(int argc, char *argv[])
     
   };
   const char *bugs[] = {
-    "The program should allow for random displacement off lattice points." };
+    "The program should allow for random displacement of lattice points." };
 
   int     vol;          
   t_atoms *atoms;       /* list with all atoms */
@@ -137,7 +137,8 @@ int gmx_genconf(int argc, char *argv[])
   rvec    shift;         
   int     natoms;       /* number of atoms in one molecule  */
   int     nres;         /* number of molecules? */
-  int     i,j,k,l,m,ndx,nrdx,nx,ny,nz,status=-1;
+  int     i,j,k,l,m,ndx,nrdx,nx,ny,nz;
+  t_trxstatus *status;
   bool    bTRX;
   output_env_t oenv;
   

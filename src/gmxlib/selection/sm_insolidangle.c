@@ -388,8 +388,6 @@ free_data_insolidangle(void *data)
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
     int                        i;
 
-    gmx_ana_pos_deinit(&d->center);
-    gmx_ana_pos_deinit(&d->span);
     if (d->tbin)
     {
         for (i = 0; i < d->ntbins; ++i)

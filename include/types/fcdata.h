@@ -36,6 +36,8 @@
 #include <config.h>
 #endif
 
+#include <types/commrec.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -63,9 +65,7 @@ typedef struct {
   real *Rt_6;         /* The calculated inst. ens. averaged r^-6 (nr)     */
   real *Rtav_6;       /* The calculated time and ens. averaged r^-6 (nr)  */
   int  nsystems;      /* The number of systems for ensemble averaging     */
-#ifdef GMX_MPI
   MPI_Comm mpi_comm_ensemble; /* For ensemble averaging                   */
-#endif
 } t_disresdata;
 
 
@@ -93,6 +93,11 @@ typedef struct {
   rvec5  *tmp;        /* An array of temporary 5-vectors (nex);             */ 
   real   ***TMP;      /* An array of temporary 5x5 matrices (nex);          */
   real   *eig;        /* Eigenvalues/vectors, for output only (nex x 12)    */
+
+  /* variables for diagonalization with diagonalize_orires_tensors()*/
+  double **M;
+  double *eig_diag;
+  double **v;
 } t_oriresdata;
 
 /* 

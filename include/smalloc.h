@@ -71,6 +71,16 @@
  * sfree(ptr)
  *    Frees memory referenced by ptr.
  *
+ * snew_aligned(ptr,nelem,alignment)
+ *    Allocates memory for nelem elements and returns this in ptr.
+ *    The allocated memory is initialized to zeroes.
+ *    alignment=n will constrain ptr to be n-byte aligned.
+ *    This pointer should only be freed with sfree_aligned, since
+ *    it may not be the value returned by the underlying malloc.
+ *
+ * sfree_aligned(ptr)
+ *    Frees aligned memory referenced by ptr.
+ *
  ****************************************************************************
  *
  * Functions which are used by the macro's:
@@ -107,6 +117,17 @@
  *    the sum of the previously allocated space. As mentioned with maxavail,
  *    it is important that free can undo the effect of a malloc.
  * 
+ * extern void *save_malloc_aligned(char *name,char *file,int line,size_t size,size_t alignment);
+ *    Like alloc, returns a pointer to the allocated space, uses name, file
+ *    and line to generate an error message when allocation failed.
+ *    The returned pointer will be n-byte aligned, where n=alignment.
+ *    The pointer should only be freed with a call to save_free.
+ *
+ * extern void save_free_aligned(char *name,char *file,int line, void *ptr);
+ *    Like free, uses name, file and line to generate an error message when 
+ *    the free failed. This function is intended to be called for
+ *    pointers allocated with save_malloc_aligned, and may not work
+ *    on normal pointers.
  */
 
 #ifdef __cplusplus
@@ -121,6 +142,12 @@ void *save_realloc(const char *name,const char *file,int line,
 void save_free(const char *name,const char *file,int line, void *ptr);
 size_t maxavail(void);
 size_t memavail(void);
+
+/* Aligned-memory counterparts */
+
+void *save_calloc_aligned(const char *name,const char *file,int line,
+			  unsigned nelem,size_t elsize,size_t alignment); 
+void save_free_aligned(const char *name,const char *file,int line, void *ptr);
 
 #ifdef __cplusplus
 }
@@ -161,11 +188,18 @@ void _srealloc(const char *name, const char *file, int line, T *&ptr, size_t siz
 {
     ptr = (T *)save_realloc(name, file, line, ptr, size, sizeof(char));
 }
+template <typename T>
+void _snew_aligned(const char *name, const char *file, int line,
+		   T *&ptr, size_t nelem, size_t elsize,size_t alignment)
+{
+  ptr = (T *)save_calloc_aligned(name, file, line, nelem, elsize, alignment);
+}
 
 #define snew(ptr,nelem) _snew(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)))
 #define srenew(ptr,nelem) _srenew(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)))
 #define smalloc(ptr, size) _smalloc(#ptr,__FILE__,__LINE__,(ptr),(size))
 #define srealloc(ptr, size) _srealloc(#ptr,__FILE__,__LINE__,(ptr),(size))
+#define snew_aligned(ptr,nelem,alignment) _snew_aligned(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)),alignment)
 
 #else
 
@@ -179,8 +213,13 @@ void _srealloc(const char *name, const char *file, int line, T *&ptr, size_t siz
 		(ptr)=save_calloc(#ptr,__FILE__,__LINE__,nelem,elsize)
 #define srealloc(ptr,size) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
 			(ptr),size,1)
+#define snew_aligned(ptr,nelem,alignment) (ptr)=save_calloc_aligned(#ptr,__FILE__,__LINE__,(nelem),sizeof(*(ptr)),alignment)
 #endif
 
 #define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))
+
+/* call this ONLY with a pointer obtained through snew_aligned or 
+   smalloc_aligned: */
+#define sfree_aligned(ptr) save_free_aligned(#ptr,__FILE__,__LINE__,(ptr))
 
 #endif	/* _smalloc_h */

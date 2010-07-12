@@ -207,7 +207,8 @@ static void list_top(const char *fn)
 
 static void list_trn(const char *fn)
 {
-  int         fpread,fpwrite,nframe,indent;
+  t_fileio    *fpread, *fpwrite;
+  int         nframe,indent;
   char        buf[256];
   rvec        *x,*v,*f;
   matrix      box;
@@ -261,7 +262,8 @@ static void list_trn(const char *fn)
 
 void list_xtc(const char *fn, bool bXVG)
 {
-  int    xd,indent;
+  t_fileio *xd;
+  int    indent;
   char   buf[256];
   rvec   *x;
   matrix box;

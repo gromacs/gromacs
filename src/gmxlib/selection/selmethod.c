@@ -73,7 +73,8 @@ extern gmx_ana_selmethod_t sm_all;
 extern gmx_ana_selmethod_t sm_none;
 extern gmx_ana_selmethod_t sm_atomnr;
 extern gmx_ana_selmethod_t sm_resnr;
-extern gmx_ana_selmethod_t sm_resind;
+extern gmx_ana_selmethod_t sm_resindex;
+extern gmx_ana_selmethod_t sm_molindex;
 extern gmx_ana_selmethod_t sm_atomname;
 extern gmx_ana_selmethod_t sm_atomtype;
 extern gmx_ana_selmethod_t sm_resname;
@@ -127,8 +128,11 @@ static const t_register_method smtable_def[] = {
     {NULL,         &sm_atomnr},
     {NULL,         &sm_resnr},
     {"resid",      &sm_resnr},
-    {NULL,         &sm_resind},
-    {"residue",    &sm_resind},
+    {NULL,         &sm_resindex},
+    {"residue",    &sm_resindex},
+    {NULL,         &sm_molindex},
+    {"mol",        &sm_molindex},
+    {"molecule",   &sm_molindex},
     {NULL,         &sm_atomname},
     {NULL,         &sm_atomtype},
     {NULL,         &sm_resname},
@@ -414,7 +418,6 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
 {
     bool         bOk = TRUE;
     bool         bNeedInit;
-    bool         bNeedFree;
     int          i;
 
     /* Make some checks on init_data and free */
@@ -451,30 +454,18 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     /* Loop through the parameters to determine if initialization callbacks
      * are needed. */
     bNeedInit = FALSE;
-    bNeedFree = FALSE;
     for (i = 0; i < method->nparams; ++i)
     {
-        if (method->param[i].val.type == POS_VALUE
-            || method->param[i].val.type == GROUP_VALUE)
-        {
-            bNeedFree = TRUE;
-        }
         if (method->param[i].val.type != POS_VALUE
             && (method->param[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
         {
             bNeedInit = TRUE;
-            bNeedFree = TRUE;
         }
     }
     /* Check that the callbacks required by the parameters are present */
     if (bNeedInit && !method->init)
     {
         report_error(fp, method->name, "error: init should be provided");
-        bOk = FALSE;
-    }
-    if (bNeedFree && !method->free)
-    {
-        report_error(fp, method->name, "error: free should be provided");
         bOk = FALSE;
     }
     return bOk;

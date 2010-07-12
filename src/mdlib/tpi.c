@@ -131,7 +131,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   rvec   *f;
   real   lambda,t,temp,beta,drmax,epot;
   double embU,sum_embU,*sum_UgembU,V,V_all,VembU_all;
-  int    status;
+  t_trxstatus   *status;
   t_trxframe rerun_fr;
   bool   bDispCorr,bCharge,bRFExcl,bNotLastFrame,bStateChanged,bNS,bOurStep;
   tensor force_vir,shake_vir,vir,pres;

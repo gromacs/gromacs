@@ -542,7 +542,8 @@ int gmx_rmsdist (int argc,char *argv[])
   rvec         *x;
   FILE         *fp;
 
-  int      status,isize,gnr=0;
+  t_trxstatus *status;
+  int      isize,gnr=0;
   atom_id  *index, *noe_index;
   char     *grpname;
   real     **d_r,**d,**dtot,**dtot2,**mean,**rms,**rmsc,*resnr;
@@ -558,7 +559,7 @@ int gmx_rmsdist (int argc,char *argv[])
   static int  nlevels=40;
   static real scalemax=-1.0;
   static bool bSumH=TRUE;
-
+  static bool bPBC=TRUE;
   output_env_t oenv;
 
   t_pargs pa[] = {
@@ -567,7 +568,9 @@ int gmx_rmsdist (int argc,char *argv[])
     { "-max",   FALSE, etREAL, {&scalemax},    
       "Maximum level in matrices" },
     { "-sumh",  FALSE, etBOOL, {&bSumH},       
-      "average distance over equivalent hydrogens" }
+      "average distance over equivalent hydrogens" },
+    { "-pbc",   FALSE, etBOOL, {&bPBC},
+      "Use periodic boundary conditions when computing distances" }
   };
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
@@ -608,6 +611,9 @@ int gmx_rmsdist (int argc,char *argv[])
     
   /* get topology and index */
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&ePBC,&x,NULL,box,FALSE);
+  
+  if (!bPBC)
+    ePBC = epbcNONE;
   atoms=&(top.atoms);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
@@ -664,7 +670,7 @@ int gmx_rmsdist (int argc,char *argv[])
   ffclose(fp);
   close_trj(status);
 
-  teller = nframes_read();
+  teller = nframes_read(status);
   calc_rms(isize,teller,dtot,dtot2,mean,&meanmax,rms,&rmsmax,rmsc,&rmscmax);
   fprintf(stderr,"rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
   

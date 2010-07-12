@@ -220,9 +220,11 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   }
   MPE_Init_log();
 #endif
-  
+ 
+#ifdef GMX_LIB_MPI 
   fprintf(stderr,"NNODES=%d, MYRANK=%d, HOSTNAME=%s\n",
 	  mpi_num_nodes,mpi_my_rank,mpi_hostname);
+#endif
   
   *nnodes=mpi_num_nodes;
   
@@ -359,6 +361,7 @@ void gmx_abort(int noderank,int nnodes,int errorno)
 #else
 #ifdef GMX_THREADS
   fprintf(stderr,"Halting program %s\n",ShortProgram());
+  thanx(stderr);
   exit(1);
 #else
   if (nnodes > 1)
@@ -585,7 +588,7 @@ void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm)
     /* this function is only used in code that is not performance critical,
        (during setup, when comm_rec is not the appropriate communication  
        structure), so this isn't as bad as it looks. */
-    double *buf;
+    float *buf;
     int i;
 
     snew(buf, nr);

@@ -57,7 +57,7 @@ files.
 
 
 
-void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count)
+void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count)
 {
     barrier->threshold = count;
     barrier->cycle     = 0;
@@ -66,7 +66,7 @@ void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count)
 }
 
 
-int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier)
+int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
 {
     int    cycle;
     int    status;

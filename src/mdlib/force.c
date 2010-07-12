@@ -152,6 +152,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     real    dvdl_dum[efptNR], dvdlambda[efptNR], lam_i[efptNR];
     real    dvdlsum;
 
+    set_pbc(&pbc,-1,box);
 #ifdef GMX_MPI
     double  t0=0.0,t1,t2,t3; /* time measurement for coarse load balancing */
 #endif
@@ -478,6 +479,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     if (flags & GMX_FORCE_FORCES)
                     {
                         pme_flags |= GMX_PME_CALC_F;
+                    }
+                    if (flags & GMX_FORCE_VIRIAL)
+                    {
+                        pme_flags |= GMX_PME_CALC_ENER_VIR;
                     }
                     wallcycle_start(wcycle,ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,

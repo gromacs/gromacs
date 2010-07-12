@@ -97,7 +97,7 @@ extern t_3dview *init_view(matrix box);
  */
 
 extern bool zoom_3d(t_3dview *view,real fac);
-/* Zoom in or out with factor fac, returns TRUE when zoom succesful,
+/* Zoom in or out with factor fac, returns TRUE when zoom successful,
  * FALSE otherwise.
  */
 

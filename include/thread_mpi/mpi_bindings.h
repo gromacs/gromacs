@@ -134,6 +134,13 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 #define MPI_ANY_SOURCE          TMPI_ANY_SOURCE
 #define MPI_ANY_TAG             TMPI_ANY_TAG
 
+/* comm_compare defines */
+#define MPI_IDENT               TMPI_IDENT
+#define MPI_CONGRUENT           TMPI_CONGRUENT
+#define MPI_SIMILAR             TMPI_SIMILAR
+#define MPI_UNEQUAL             TMPI_UNEQUAL
+
+
 /* topology test defines */
 #define MPI_CART                TMPI_CART
 #define MPI_GRAPH               TMPI_GRAPH
@@ -200,6 +207,7 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 
 #define MPI_Comm_size               tMPI_Comm_size
 #define MPI_Comm_rank               tMPI_Comm_rank
+#define MPI_Comm_compare            tMPI_Comm_compare
 #define MPI_Comm_free               tMPI_Comm_free
 #define MPI_Comm_create             tMPI_Comm_create
 #define MPI_Comm_split              tMPI_Comm_split

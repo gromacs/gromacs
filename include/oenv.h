@@ -75,7 +75,7 @@ struct output_env
     int  verbosity; /* The level of verbosity for this program */
     int debug_level; /* the debug level */
 
-    const char *program_name; /* the program name */
+    char *program_name; /* the program name */
     char *cmd_line; /* the re-assembled command line */
 };
 
@@ -91,6 +91,9 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
 void output_env_init_default(output_env_t oenv);
 /* initialize an output_env structure, with reasonable default settings.
     (the time unit is set to time_ps, which means no conversion).  */
+
+extern void output_env_done(output_env_t oenv);
+/* free memory allocated for an output_env structure. */
 
 
 extern int output_env_get_verbosity(const output_env_t oenv);

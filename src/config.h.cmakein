@@ -215,6 +215,9 @@
 /* Define to 1 if you have the xml2 library (-lxml2). */
 #cmakedefine HAVE_LIBXML2
 
+/* Define to 1 if you have the dl library (-ldl). */
+#cmakedefine HAVE_LIBDL
+
 /* Define to 1 if you have the <limits.h> header file. */
 #cmakedefine HAVE_LIMITS_H
 
@@ -239,6 +242,12 @@
 /* Define to 1 if you have the <stdlib.h> header file. */
 #cmakedefine HAVE_SCHED_H
 
+/* Have copyfile.h */
+#cmakedefine HAVE_COPYFILE_H
+
+/* Have io.h (windows)*/
+#cmakedefine HAVE_IO_H
+
 /* Define to 1 if you have the strcasecmp() function. */
 #cmakedefine HAVE_STRCASECMP
 
@@ -251,8 +260,20 @@
 /* Define to 1 if you have the memcmp() function. */
 #cmakedefine HAVE_MEMCMP
 
+/* Define to 1 if you have the posix_memalign() function. */
+#cmakedefine HAVE_POSIX_MEMALIGN
+
+/* Define to 1 if you have the memalign() function. */
+#cmakedefine HAVE_MEMALIGN
+
+/* Define to 1 if you have the MSVC _aligned_malloc() function. */
+#cmakedefine HAVE__ALIGNED_MALLOC
+
 /* Define to 1 if you have the gettimeofday() function. */
 #cmakedefine HAVE_GETTIMEOFDAY
+
+/* Define to 1 if you have the cbrt() function. */
+#cmakedefine HAVE_CBRT
 
 /* Define to 1 if you have the isnan() function. */
 #cmakedefine HAVE_ISNAN
@@ -265,6 +286,24 @@
 
 /* Define to 1 if you have the _isfinite() function. */
 #cmakedefine HAVE__ISFINITE
+
+/* Define to 1 if you have the fsync() function. */
+#cmakedefine HAVE_FSYNC
+
+/* Define to 1 if you have the Windows _commit() function. */
+#cmakedefine HAVE__COMMIT
+
+/* Define to 1 if you have the fileno() function. */
+#cmakedefine HAVE_FILENO
+
+/* Define to 1 if you have the _fileno() function. */
+#cmakedefine HAVE__FILENO
+
+/* Define to 1 if you have the copyfile() function. */
+#cmakedefine HAVE_COPYFILE
+
+/* Define to 1 if you have the Windows CopyFile() function. */
+#cmakedefine HAVE_WIN_COPYFILE
 
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H

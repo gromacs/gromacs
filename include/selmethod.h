@@ -99,7 +99,10 @@
  *    number of values.
  *    The number of values is determined based on the values given by the user
  *    to the method parameters (see \ref selmethods_params).
- *
+ *  .
+ * If either of these flags is specified (and the method type is not
+ * \ref GROUP_VALUE), the group passed to the evaluation callback should not
+ * be used as it can be NULL.
  * Currently, the above flags only work (have been tested) for \ref POS_VALUE
  * methods.
  *
@@ -208,7 +211,7 @@
  * In general, any of the callbacks can be NULL, but the presence of
  * parameters or other callbacks imposes some restrictions:
  *  - sel_datafunc() should be provided if the method takes parameters.
- *  - sel_initfunc() and sel_freefunc() should be provided if the method takes
+ *  - sel_initfunc() should be provided if the method takes
  *    any parameters with the \ref SPAR_VARNUM or \ref SPAR_ATOMVAL flags,
  *    except if those parameters have a \ref POS_VALUE.
  *  - sel_outinitfunc() should be provided for \ref POS_VALUE methods
@@ -408,8 +411,8 @@ typedef void  (*sel_posfunc)(struct gmx_ana_poscalc_coll_t *pcc, void *data);
  * If a parameter had the \ref SPAR_VARNUM or \ref SPAR_ATOMVAL flag (and
  * is not \ref POS_VALUE), a pointer to the memory allocated for the values is
  * found in \c gmx_ana_selparam_t::val.
- * The pointer should be stored by this function, otherwise the memory
- * (and the values) are lost.
+ * The pointer should be stored by this function, otherwise the values
+ * cannot be accessed.
  * For \ref SPAR_VARNUM parameters, the number of values can be accessed
  * through \c gmx_ana_selparam_t::val. For parameters with \ref SPAR_DYNAMIC,
  * the number is the maximum number of values (the actual number can be
@@ -474,8 +477,8 @@ typedef int   (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
  * The data structure itself should not be freed; this is handled automatically.
  * If there is no dynamically allocated data within the structure,
  * this function is not needed.
- * The value pointers for \ref SPAR_VARNUM and \ref SPAR_ATOMVAL parameters
- * stored in sel_initfunc() should also be freed.
+ * Any memory pointers received as values of parameters are managed externally,
+ * and should not be freed.
  * Pointers set as the value pointer of \ref SPAR_ENUMVAL parameters should not
  * be freed.
  */

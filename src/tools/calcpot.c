@@ -234,7 +234,12 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 
   init_nrnb(&nrnb);
   snew(state,1);
-  init_single(fplog,inputrec,tpx,mtop,state);
+  read_tpx_state(tpx,inputrec,state, NULL, mtop);
+  set_state_entries(state,inputrec,1);
+  if (fplog)
+      pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
+
+
 
   if (inputrec->efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");

@@ -46,7 +46,7 @@ H1	N	CA	C	gd_29
 [ replace ]
 N		NT	14.0067	0.128
 CA		CH1	13.019	0.188
-CD		CH2R	14.027	0.188
+CD		CH2r	14.027	0.188
 [ add ]
 2	4	H	N	CA	C
 	H	1.008	0.248

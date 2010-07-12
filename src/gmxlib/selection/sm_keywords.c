@@ -71,12 +71,6 @@ init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes data for string keyword evaluation. */
 static int
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/** Frees the memory allocated for integer keyword evaluation. */
-static void
-free_data_kwint(void *data);
-/** Frees the memory allocated for real keyword evaluation. */
-static void
-free_data_kwreal(void *data);
 /** Frees the memory allocated for string keyword evaluation. */
 static void
 free_data_kwstr(void *data);
@@ -184,7 +178,7 @@ gmx_ana_selmethod_t sm_keyword_int = {
      NULL,
     &init_kwint,
      NULL,
-    &free_data_kwint,
+     NULL,
      NULL,
     &evaluate_keyword_int,
      NULL,
@@ -199,7 +193,7 @@ gmx_ana_selmethod_t sm_keyword_real = {
      NULL,
     &init_kwreal,
      NULL,
-    &free_data_kwreal,
+     NULL,
      NULL,
     &evaluate_keyword_real,
      NULL,
@@ -296,20 +290,6 @@ init_kwint(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 }
 
 /*!
- * \param data Data to free (should point to a \ref t_methoddata_kwint).
- *
- * Frees the memory allocated for t_methoddata_kwint::r.
- */
-static void
-free_data_kwint(void *data)
-{
-    t_methoddata_kwint *d = (t_methoddata_kwint *)data;
-
-    sfree(d->v);
-    sfree(d->r);
-}
-
-/*!
  * See sel_updatefunc() for description of the parameters.
  * \p data should point to a \c t_methoddata_kwint.
  *
@@ -398,20 +378,6 @@ init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     d->n = param[1].val.nr;
     d->r = param[1].val.u.r;
     return 0;
-}
-
-/*!
- * \param data Data to free (should point to a \ref t_methoddata_kwreal).
- *
- * Frees the memory allocated for t_methoddata_kwreal::r.
- */
-static void
-free_data_kwreal(void *data)
-{
-    t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
-
-    sfree(d->v);
-    sfree(d->r);
 }
 
 /*!
@@ -535,10 +501,6 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
                 fprintf(stderr, "WARNING: error in regular expression,\n"
                                 "         will match '%s' as a simple string\n", s);
             }
-            else
-            {
-                sfree(s);
-            }
             sfree(buf);
 #else
             bRegExp = FALSE;
@@ -552,7 +514,6 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         }
         d->m[i].bRegExp = bRegExp;
     }
-    sfree(param[1].val.u.s);
     return 0;
 }
 
@@ -567,7 +528,6 @@ free_data_kwstr(void *data)
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
     int                 i;
 
-    sfree(d->v);
     for (i = 0; i < d->n; ++i)
     {
         if (d->m[i].bRegExp)
@@ -577,10 +537,6 @@ free_data_kwstr(void *data)
              * are available, but the ifdef is still needed. */
             regfree(&d->m[i].u.r);
 #endif
-        }
-        else
-        {
-            sfree(d->m[i].u.s);
         }
     }
     sfree(d->m);
@@ -683,8 +639,7 @@ free_data_kweval(void *data)
 {
     t_methoddata_kweval *d = (t_methoddata_kweval *)data;
 
-    _gmx_selelem_free_method(d->kwmethod, d->kwmdata, FALSE);
-    gmx_ana_index_deinit(&d->g);
+    _gmx_selelem_free_method(d->kwmethod, d->kwmdata);
 }
 
 /*!

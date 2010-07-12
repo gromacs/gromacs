@@ -69,7 +69,7 @@ typedef enum
      *
      * Use gmx_histogram_add_item() or gmx_histogram_add_item_to_bin() to sample.
      */
-    HIST_BINAVER,
+    HIST_BINAVER 
 } e_histogram_t;
 
 /** Whether bins are centered at integer values. */

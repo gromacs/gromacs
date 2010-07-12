@@ -102,7 +102,7 @@ static bool LogoCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   static t_mess Mess[] = {
     { "GROMACS",                         0,       20, NULL },
     { NULL,                             16,        9, NULL },
-    { "Copyright (c) 1991-2004",        COFFS+ 2,  9, NULL },
+    { "Copyright (c) 1991-2010",        COFFS+ 2,  9, NULL },
     { "D.v.d.Spoel, E.Lindahl, B.Hess", COFFS+11,  9, NULL },
     { "& Groningen University ",        COFFS+20,  9, NULL },
     { "click to dismiss",               COFFS+31,  8, NULL }
@@ -154,6 +154,7 @@ static bool LogoCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
     break;
   case ButtonPress:
     hide_logo(x11,logo);
+    return logo->bQuitOnClick;
     break;
   default:
     break;
@@ -162,7 +163,7 @@ static bool LogoCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-t_logo *init_logo(t_x11 *x11,Window parent)
+t_logo *init_logo(t_x11 *x11,Window parent,bool bQuitOnClick)
 {
   static const char *bfname[]= {
     "-b&h-lucida-bold-i-normal-sans-34-240-100-100-p-215-iso8859-1",
@@ -185,6 +186,7 @@ t_logo *init_logo(t_x11 *x11,Window parent)
   t_logo *logo;
 
   snew(logo,1);
+  logo->bQuitOnClick = bQuitOnClick;
   InitWin(&logo->wd,0,0,360,270,1,"GROMACS");
   bg=LIGHTGREY;
   if ((newcol=getenv("LOGO"))!=NULL)

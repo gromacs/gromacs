@@ -91,7 +91,7 @@ int ifunc_index(directive d,int type)
       return F_UREY_BRADLEY;
     case 6:
       return F_QUARTIC_ANGLES;
-    case 7:
+    case 8:
       return F_TABANGLES;
     default:
       gmx_fatal(FARGS,"Invalid angle type %d",type);

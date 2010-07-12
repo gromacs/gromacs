@@ -55,7 +55,7 @@ files.
 
 
 /* the number of envelopes to allocate per thread-to-thread path */
-#define N_EV_ALLOC 8
+#define N_EV_ALLOC 16
 
 /* the normal maximum number of threads for pre-defined arrays
    (if the actual number of threads is bigger than this, it'll

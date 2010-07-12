@@ -254,10 +254,13 @@ static void compact_graph(FILE *fplog,t_graph *g)
     for(j=0; j<g->nedge[i]; j++) {
       g->edge[0][n++] = g->edge[i][j];
     }
-    g->edge[i] = g->edge[0] + n - g->nedge[i];
     max_nedge = max(max_nedge,g->nedge[i]);
   }
   srenew(g->edge[0],n);
+  /* set pointers after srenew because edge[0] might move */
+  for(i=1; i<g->nnodes; i++) {
+    g->edge[i] = g->edge[i-1] + g->nedge[i-1];
+  }
 
   if (fplog) {
     fprintf(fplog,"Max number of graph edges per atom is %d\n",
@@ -847,47 +850,3 @@ void unshift_self(t_graph *g,matrix box,rvec x[])
   }
 }
 #undef GCHECK
-
-#ifdef DEBUGMSHIFT
-void main(int argc,char *argv[])
-{
-  FILE         *out;
-  t_args       targ;
-  t_topology   top;
-  t_statheader sh;
-  rvec         *x;
-  ivec         *mshift;
-  matrix       box;
-
-  t_graph      *g;
-  int          i,idum,pid;
-  real         rdum;
-
-  CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,&targ,PCA_NEED_INOUT,NULL);
-  if (argc > 1)
-    pid=strtol(argv[1], NULL, 10);
-  else
-    pid=0;
-  
-  read_status_header(targ.infile,&sh);
-  snew(x,sh.natoms);
-  snew(mshift,sh.natoms);
-
-  fprintf(stderr,"Reading Status %s\n",targ.infile);
-  read_status(targ.infile,&idum,&rdum,&rdum,NULL,
-	      box,NULL,NULL,&idum,x,NULL,NULL,&idum,NULL,&top);
-
-  fprintf(stderr,"Making Graph Structure...\n");
-  g=mk_graph(&(top.idef),top.atoms.nr,FALSE,FALSE);
-
-  out=gmx_fio_fopen(targ.outfile,"w");
-
-  fprintf(stderr,"Making Shift...\n");
-  mk_mshift(out,g,box,x,mshift);
-
-  p_graph(out,"In Den Haag daar woont een graaf...",g);
-  gmx_fio_fclose(out);
-}
-#endif
-

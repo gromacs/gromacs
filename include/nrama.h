@@ -66,7 +66,7 @@ typedef struct {
   t_dih     *dih;
   int       npp;
   t_phipsi  *pp;
-  int       traj;
+  t_trxstatus *traj;
   int       natoms;
   int       amin,amax;
   real      t;

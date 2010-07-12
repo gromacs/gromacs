@@ -364,7 +364,8 @@ gmx_wcmatch(const char *pattern, const char *str)
         }
         ++pattern;
     }
-    return 0;
+    /* When the pattern runs out, we have a match if the string has ended. */
+    return (*str == 0) ? 0 : GMX_NO_WCMATCH;
 }
 
 char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)

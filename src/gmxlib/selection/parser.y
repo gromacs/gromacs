@@ -123,9 +123,15 @@ yyerror(yyscan_t, char const *s);
 %nonassoc <str> CMP_OP
 /* A dummy token that determines the precedence of parameter reduction */
 %nonassoc       PARAM_REDUCT
-/* Operator tokens */
-%left           AND OR XOR
+/* Boolean operator tokens */
+%left           OR XOR
+%left           AND
 %left           NOT
+/* Arithmetic operator tokens */
+%left           '+' '-'
+%left           '*' '/'
+%right          UNARY_NEG   /* Dummy token for unary negation precedence */
+%right          '^'
 
 /* Simple non-terminals */
 %type <r>     number
@@ -137,6 +143,7 @@ yyerror(yyscan_t, char const *s);
 %type <sel>   selection
 %type <sel>   sel_expr
 %type <sel>   num_expr
+%type <sel>   str_expr
 %type <sel>   pos_expr
 
 /* Parameter/value non-terminals */
@@ -147,11 +154,11 @@ yyerror(yyscan_t, char const *s);
 %destructor { if($$) free($$);              } PARAM
 %destructor { if($$) _gmx_selelem_free($$); } command cmd_plain
 %destructor { _gmx_selelem_free_chain($$);  } selection
-%destructor { _gmx_selelem_free($$);        } sel_expr num_expr pos_expr
+%destructor { _gmx_selelem_free($$);        } sel_expr num_expr str_expr pos_expr
 %destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
 %destructor { _gmx_selexpr_free_values($$); } value_list value_list_nonempty value_item
 
-%expect 72
+%expect 91
 %debug
 %pure-parser
 
@@ -386,8 +393,38 @@ num_expr:    pos_mod KEYWORD_NUMERIC
              }
 ;
 
-/* Grouping of numeric expressions */
-num_expr:    '(' num_expr ')'   { $$ = $2; }
+/* Arithmetic evaluation and grouping */
+num_expr:    num_expr '+' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '+', scanner); }
+           | num_expr '-' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '-', scanner); }
+           | num_expr '*' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '*', scanner); }
+           | num_expr '/' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '/', scanner); }
+           | '-' num_expr %prec UNARY_NEG
+             { $$ = _gmx_sel_init_arithmetic($2, NULL, '-', scanner); }
+           | num_expr '^' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '^', scanner); }
+           | '(' num_expr ')'   { $$ = $2; }
+;
+
+/********************************************************************
+ * STRING EXPRESSIONS
+ ********************************************************************/
+
+str_expr:    string
+             {
+                 $$ = _gmx_selelem_create(SEL_CONST);
+                 _gmx_selelem_set_vtype($$, STR_VALUE);
+                 _gmx_selvalue_reserve(&$$->v, 1);
+                 $$->v.u.s[0] = $1;
+             }
+           | pos_mod KEYWORD_STR
+             {
+                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
+                 if ($$ == NULL) YYERROR;
+             }
 ;
 
 /********************************************************************
@@ -478,6 +515,8 @@ value_item:  sel_expr            %prec PARAM_REDUCT
              { $$ = _gmx_selexpr_create_value_expr($1); }
            | num_expr            %prec PARAM_REDUCT
              { $$ = _gmx_selexpr_create_value_expr($1); }
+           | str_expr            %prec PARAM_REDUCT
+             { $$ = _gmx_selexpr_create_value_expr($1); }
            | TOK_INT TO TOK_INT
              {
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
@@ -492,11 +531,6 @@ value_item:  sel_expr            %prec PARAM_REDUCT
              {
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
                  $$->u.r.r1 = $1; $$->u.r.r2 = $3;
-             }
-           | string
-             {
-                 $$ = _gmx_selexpr_create_value(STR_VALUE);
-                 $$->u.s = $1;
              }
 ;
 

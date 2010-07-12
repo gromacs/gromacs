@@ -149,14 +149,15 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,  
-      i,n,               /* loop indices */
+  int natoms;            /* nr. atoms in trj */
+  t_trxstatus *status;  
+  int i,n,               /* loop indices */
       ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   t_electron *found;     /* found by bsearch */
   t_electron sought;     /* thingie thought by bsearch */
+  gmx_rmpbc_t  gpbc=NULL;
  
   real t, 
         z;
@@ -186,9 +187,10 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
   
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
+    gmx_rmpbc(gpbc,box,x0,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -224,7 +226,8 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
     }
       nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
-  
+  gmx_rmpbc_done(gpbc);
+
   /*********** done with status file **********/
   close_trj(status);
   
@@ -251,9 +254,9 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,  
-      **slCount,         /* nr. of atoms in one slice for a group */
+  int natoms;            /* nr. atoms in trj */
+  t_trxstatus *status;  
+  int  **slCount,         /* nr. of atoms in one slice for a group */
       i,j,n,               /* loop indices */
       teller = 0,      
       ax1=0, ax2=0,
@@ -262,6 +265,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   real t, 
         z;
   char *buf;             /* for tmp. keeping atomname */
+  gmx_rmpbc_t  gpbc=NULL;
 
   switch(axis) {
   case 0:
@@ -289,9 +293,10 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
   
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
+    gmx_rmpbc(gpbc,box,x0,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -315,7 +320,8 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 
     nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
-  
+  gmx_rmpbc_done(gpbc);
+
   /*********** done with status file **********/
   close_trj(status);
   

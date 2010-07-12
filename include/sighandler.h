@@ -46,33 +46,44 @@
 extern "C" {
 #endif
 
-/* The following two variables and the signal_handler function
- * are used from md.c and pme.c as well 
- *
- * Do not fear these global variables: they represent inherently process-global
- * information that needs to be shared across threads 
- */
+/* NOTE: the terminology is:
+   incoming signals (provided by the operating system, or transmitted from 
+   other nodes) lead to stop conditions. These stop conditions should be 
+   checked for and acted on by the outer loop of the simulation */
 
+/* the stop conditions. They are explicitly allowed to be compared against
+   each other. */
+typedef enum
+{
+    gmx_stop_cond_none=0,
+    gmx_stop_cond_next_ns, /* stop a the next neighbour searching step */
+    gmx_stop_cond_next, /* stop a the next step */
+    gmx_stop_cond_abort  /* stop now. (this should never be seen) */
+} gmx_stop_cond_t;
 
-/* we got a signal to stop in the next step: */
-extern volatile sig_atomic_t bGotStopNextStepSignal;
-/* we got a signal to stop in the next neighbour search step: */
-extern volatile sig_atomic_t bGotStopNextNSStepSignal;
+/* Our names for the stop conditions. 
+   These must match the number given in gmx_stop_cond_t.*/
+extern const char *gmx_stop_cond_name[];
 
-/* our names for the handled signals. These must match the number given
-   in signal_handler.*/
-extern const char *signal_name[];
-/* the last signal received, according to the numbering
-   we use in signal_name. Is set to -1 if no signal has (yet) 
-   been  received */
-extern volatile sig_atomic_t last_signal_number_recvd;
+/* the externally visible functions: */
 
-
-/* prototype for the signal handler */
-extern RETSIGTYPE signal_handler(int n);
-
-/* install the signal handlers */
+/* install the signal handlers that can set the stop condition. */
 void signal_handler_install(void);
+
+/* get the current stop condition */
+gmx_stop_cond_t gmx_get_stop_condition(void);
+
+/* set the stop condition upon receiving a remote one */
+void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond);
+
+/* get the signal name that lead to the current stop condition. */
+const char *gmx_get_signal_name(void);
+
+/* check whether we received a USR1 signal. 
+   The condition is reset once a TRUE value is returned, so this function
+   only returns TRUE once for a single signal. */
+bool gmx_got_usr_signal(void);
+
 
 #ifdef __cplusplus
 }

@@ -600,7 +600,7 @@ void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
   bool    bFour = acf.bFour;
  
   /* Check flags and parameters */ 
-  /*  nout = get_acfnout();*/
+  nout = get_acfnout();
   if (nout == -1)
     nout = acf.nout = (nframes+1)/2;
   else if (nout > nframes)
@@ -745,7 +745,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
     { "-beginfit", FALSE, etREAL, {&acf.tbeginfit},
       "Time where to begin the exponential fit of the correlation function" },
     { "-endfit",   FALSE, etREAL, {&acf.tendfit},
-      "Time where to end the exponential fit of the correlation function, -1 is till the end" },
+      "Time where to end the exponential fit of the correlation function, -1 is until the end" },
    };
 #define NPA asize(acfpa)
   t_pargs *ppa;

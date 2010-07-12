@@ -42,33 +42,34 @@
 
 
 #include "typedefs.h"
+#include "gmxfio.h"
 #include "xdrf.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* All functions return 1 if succesfull, 0 otherwise 
+/* All functions return 1 if successful, 0 otherwise 
  * bOK tells if a frame is not corrupted 
  */  
 
-extern int open_xtc(const char *filename,const char *mode);
+extern t_fileio *open_xtc(const char *filename,const char *mode);
 /* Open a file for xdr I/O */
   
-extern void close_xtc(int fp);
+extern void close_xtc(t_fileio *fio);
 /* Close the file for xdr I/O */
   
-extern int read_first_xtc(int fp,
+extern int read_first_xtc(t_fileio *fio,
 			  int *natoms,int *step,real *time,
 			  matrix box,rvec **x,real *prec,bool *bOK);
 /* Open xtc file, read xtc file first time, allocate memory for x */
 
-extern int read_next_xtc(int fp,
+extern int read_next_xtc(t_fileio *fio,
 			 int natoms,int *step,real *time,
 			 matrix box,rvec *x,real *prec,bool *bOK);
 /* Read subsequent frames */
 
-extern int write_xtc(int fp,
+extern int write_xtc(t_fileio *fio,
 		     int natoms,int step,real time,
 		     matrix box,rvec *x,real prec);
 /* Write a frame to xtc file */

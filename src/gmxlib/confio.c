@@ -188,9 +188,8 @@ static int read_g96_vel(char line[],FILE *fp,const char *infile,
 
 int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr)
 {
-  static t_symtab *symtab=NULL;
-  static char line[STRLEN+1]; /* VERY DIRTY, you can not read two       *
-		               * Gromos96 trajectories at the same time */  
+  t_symtab *symtab=NULL;
+  char line[STRLEN+1]; 
   bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
   int    natoms,nbp;
   double db1,db2,db3,db4,db5,db6,db7,db8,db9;
@@ -282,7 +281,7 @@ int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr)
     }
   } while (!bFinished && fgets2(line,STRLEN,fp));
   
-  close_symtab(symtab);
+  free_symtab(symtab);
 
   fr->natoms = natoms;
   
@@ -446,7 +445,7 @@ const char *esp_prop[espNR] = { "id", "pos", "type", "q", "v", "f",
 static void read_espresso_conf(const char *infile,
 			       t_atoms *atoms,rvec x[],rvec *v,matrix box)
 {
-  static t_symtab *symtab=NULL;
+  t_symtab *symtab=NULL;
   FILE *fp;
   char word[STRLEN],buf[STRLEN];
   int  natoms,level,npar,r,nprop,p,i,m,molnr;
@@ -702,7 +701,7 @@ static void get_coordnum (const char *infile,int *natoms)
 static bool get_w_conf(FILE *in,const char *infile,char *title,
 		       t_atoms *atoms, int *ndec, rvec x[],rvec *v, matrix box)
 {
-  static t_symtab *symtab=NULL;
+  t_symtab *symtab=NULL;
   char   name[6];
   char   line[STRLEN+1],*ptr;
   char   buf[256];
@@ -1450,6 +1449,11 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
     tpx_make_chain_identifiers(atoms,&top.mols);
 		
     sfree(mtop);
+    /* The strings in the symtab are still in use in the returned t_atoms
+     * structure, so we should not free them. But there is no place to put the
+     * symbols; the only choice is to leak the memory...
+     * So we clear the symbol table before freeing the topology structure. */
+    open_symtab(&top.symtab);
     done_top(&top);
 		  
     break;

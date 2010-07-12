@@ -41,8 +41,8 @@
  * not be allocated.
  */ 
 
-#include "molfile_plugin.h"
-#include "vmdio.h"
+#include "../molfile_plugin.h"
+#include "../vmdio.h"
 
 #ifdef __cplusplus
 extern "C" {

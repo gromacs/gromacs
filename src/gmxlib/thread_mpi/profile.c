@@ -68,6 +68,8 @@ files.
 #include <stdarg.h>
 #endif
 
+int tMPI_Profile_started=0;
+
 
 /* this must match the tmpi_functions enum: */
 const char *tmpi_function_names[] = 
@@ -144,6 +146,7 @@ void tMPI_Profile_init(struct tmpi_profile *prof)
     prof->buffered_coll_xfers=0;
     prof->total_p2p_xfers=0;
     prof->total_coll_xfers=0;
+    tMPI_Profile_started=1;
 }
 
 
@@ -160,6 +163,7 @@ void tMPI_Profile_stop(struct tmpi_profile *prof)
 #ifdef TMPI_CYCLE_COUNT
     prof->global_stop=tmpi_cycles_read();
 #endif
+    tMPI_Profile_started=0;
 }
 
 /* output functions */

@@ -8,8 +8,8 @@ SUBDIRS = . atomic
 pkgincludethread_mpidir = ${pkgincludedir}/thread_mpi
 
 pkgincludethread_mpi_HEADERS = \
-	atomic.h       list.h         nothreads.h    threads.h      \
-	winthreads.h   collective.h   mpi_bindings.h pthreads.h     \
-	tmpi.h
-	
+	atomic.h       hwinfo.h       nothreads.h    wait.h 	    \
+	barrier.h      list.h         pthreads.h     winthreads.h   \
+	collective.h   lock.h         threads.h	     \
+	event.h        mpi_bindings.h tmpi.h
 
