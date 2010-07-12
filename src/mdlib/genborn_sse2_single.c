@@ -453,7 +453,9 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
 	}
 	
 	/* Compute the radii */
-	for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
+	/*for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
+	for(i=0;i<born->nlocal;i++) 
+	/* DVDS 2010-07-12: changed to born->local to avoid SEGV */
 	{		
 		if(born->use[i] != 0)
 		{
