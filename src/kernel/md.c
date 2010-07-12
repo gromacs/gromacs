@@ -1372,6 +1372,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             copy_mat(ekind->tcstat[i].ekinh,ekind->tcstat[i].ekinh_old);
         } 
     }
+    if (ir->eI != eiVV) 
+    {
+        enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
+                                     and there is no previous step */
+    }
     temp0 = enerd->term[F_TEMP];
     
     /* if using an iterative algorithm, we need to create a working directory for the state. */
@@ -1399,11 +1404,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fprintf(fplog,
                     "RMS relative constraint deviation after constraining: %.2e\n",
                     constr_rmsd(constr,FALSE));
-        }
-        if (!bVV) 
-        {
-            enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
-                                         and there is no previous step */
         }
         fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
         if (bRerunMD)
