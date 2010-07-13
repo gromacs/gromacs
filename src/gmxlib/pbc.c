@@ -159,6 +159,7 @@ real max_cutoff2(int ePBC,matrix box)
     return min(min_hv2,min_ss*min_ss);
 }
 
+/* this one is mostly harmless... */
 static bool bWarnedGuess=FALSE;
 
 int guess_ePBC(matrix box)
@@ -1163,12 +1164,15 @@ void calc_compact_unitcell_vertices(int ecenter,matrix box,rvec vert[])
 int *compact_unitcell_edges()
 {
     /* this is an index in vert[] (see calc_box_vertices) */
-    static int edge[NCUCEDGE*2];
-    static int hexcon[24] = { 0,9, 1,19, 2,15, 3,21, 
+    /*static int edge[NCUCEDGE*2];*/
+    int *edge;
+    static const int hexcon[24] = { 0,9, 1,19, 2,15, 3,21, 
         4,17, 5,11, 6,23, 7,13,
         8,20, 10,18, 12,16, 14,22 };
     int e,i,j;
     bool bFirst = TRUE;
+
+    snew(edge,NCUCEDGE*2);
 
     if (bFirst) {
         e = 0;

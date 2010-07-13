@@ -318,7 +318,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     t_inputrec *inputrec;
     t_state    *state=NULL;
     matrix     box;
-    gmx_ddbox_t ddbox;
+    gmx_ddbox_t ddbox={0};
     int        npme_major,npme_minor;
     real       tmpr1,tmpr2;
     t_nrnb     *nrnb;
@@ -421,7 +421,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             );
     }
 
-    if (can_use_allvsall(inputrec,TRUE,cr,fplog))
+    if (can_use_allvsall(inputrec,mtop,TRUE,cr,fplog))
     {
         /* All-vs-all loops do not work with domain decomposition */
         Flags |= MD_PARTDEC;
@@ -795,7 +795,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
     {
         /* Some timing stats */  
-        if (MASTER(cr))
+        if (SIMMASTER(cr))
         {
             if (runtime.proc == 0)
             {

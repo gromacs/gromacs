@@ -79,9 +79,6 @@ static unsigned int cnt;
 
 #ifdef GMX_FORTRAN
 
-#ifdef GMX_THREADS
-#error The Fortran IO routines cannot be thread safe.
-#endif
 
 /* the open&close prototypes */
 int xdropen(XDR *xdrs, const char *filename, const char *type);
@@ -427,7 +424,7 @@ int xdrclose(XDR *xdrs) {
 #ifndef SQR
 #define SQR(x) ((x)*(x))
 #endif
-static int magicints[] = {
+static const int magicints[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0,
     8, 10, 12, 16, 20, 25, 32, 40, 50, 64,
     80, 101, 128, 161, 203, 256, 322, 406, 512, 645,

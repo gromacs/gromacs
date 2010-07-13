@@ -530,6 +530,7 @@ int gmx_traj(int argc,char *argv[])
   matrix     topbox;
   t_trxstatus *status;
   t_trxstatus *status_out=NULL;
+  gmx_rmpbc_t  gpbc=NULL;
   int        i,j,n;
   int        nr_xfr,nr_vfr,nr_ffr;
   char       **grpname;
@@ -721,6 +722,8 @@ int gmx_traj(int argc,char *argv[])
   nr_xfr = 0;
   nr_vfr = 0;
   nr_ffr = 0;
+
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,fr.natoms,fr.box);
   
   do {
     time = output_env_conv_time(oenv,fr.time);
@@ -735,7 +738,7 @@ int gmx_traj(int argc,char *argv[])
     }
     
     if (fr.bX && bCom)
-      rm_pbc(&(top.idef),ePBC,fr.natoms,fr.box,fr.x,fr.x);
+      gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
 
     if (bVD && fr.bV) 
       update_histo(isize[0],index[0],fr.v,&nvhisto,&vhisto,binwidth);
@@ -803,6 +806,7 @@ int gmx_traj(int argc,char *argv[])
     
   } while(read_next_frame(oenv,status,&fr));
   
+  gmx_rmpbc_done(gpbc);
 
   /* clean up a bit */
   close_trj(status);

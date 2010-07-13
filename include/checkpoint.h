@@ -47,6 +47,9 @@
 extern "C" {
 #endif
 
+/* the name of the environment variable to disable fsync failure checks with */
+#define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
+
 /* Write a checkpoint to <fn>.cpt
  * Appends the _step<step>.cpt with bNumberAndKeep,
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt

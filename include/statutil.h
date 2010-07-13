@@ -153,7 +153,7 @@ void close_trx(t_trxstatus *status);
  */
 
 t_trxstatus *open_trx(const char *outfile,const char *filemode);
-/* Open a TRX file and return the status number */
+/* Open a TRX file and return an allocated status pointer */
 
 /* get a fileio from a trxstatus */
 t_fileio *trx_get_fileio(t_trxstatus *status);
@@ -235,8 +235,8 @@ extern int read_first_x(const output_env_t oenv,t_trxstatus **status,
  * The integer in status should be passed to calls of read_next_x
  */
 
-extern bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,int natoms,
-                        rvec x[],matrix box);
+extern bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
+                        int natoms, rvec x[],matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.

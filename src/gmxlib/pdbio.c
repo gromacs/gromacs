@@ -69,6 +69,9 @@ static const char *pdbtp[epdbNR]={
   "CONECT"
 };
 
+
+/* this is not very good, 
+   but these are only used in gmx_trjconv and gmx_editconv */
 static bool bTER=FALSE;
 static bool bWideFormat=FALSE;
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
@@ -670,8 +673,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
 		 gmx_conect conect)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
-  static t_symtab symtab;
-  static bool bFirst=TRUE;
+  t_symtab symtab;
   bool bCOMPND;
   bool bConnWarn = FALSE;
   char line[STRLEN+1];
@@ -688,10 +690,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
   if (box != NULL) 
     clear_mat(box);
 
-  if (bFirst) {
-    open_symtab(&symtab);
-    bFirst=FALSE;
-  }
+  open_symtab(&symtab);
 
   bCOMPND=FALSE;
   title[0]='\0';
@@ -804,6 +803,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
     }
   }
   
+  free_symtab(&symtab);
   return natom;
 }
 

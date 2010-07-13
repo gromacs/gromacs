@@ -6951,12 +6951,12 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 
     if (ir->ePBC == epbcNONE)
     {
-        vol_frac = 1;
+        vol_frac = 1 - 1/(double)dd->nnodes;
     }
     else
     {
         vol_frac =
-            1/(real)dd->nnodes + comm_box_frac(dd->nc,comm->cutoff,ddbox);
+            (1 + comm_box_frac(dd->nc,comm->cutoff,ddbox))/(double)dd->nnodes;
     }
     if (debug)
     {
@@ -8134,7 +8134,7 @@ void dd_partition_system(FILE            *fplog,
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
-    gmx_ddbox_t ddbox;
+    gmx_ddbox_t ddbox={0};
     t_block *cgs_gl;
     gmx_large_int_t step_pcoupl;
     rvec cell_ns_x0,cell_ns_x1;

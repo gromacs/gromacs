@@ -61,7 +61,7 @@ extern "C" {
 #endif
 
 #ifdef USE_MPE
-#include "mpe.h"
+#include <mpe.h>
      /* Define MPE logging events here */
      /* General events */
      int ev_timestep1,               ev_timestep2;

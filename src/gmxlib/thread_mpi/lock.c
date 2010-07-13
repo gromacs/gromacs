@@ -35,12 +35,55 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
 
-struct tMPI_Event
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "impl.h"
+
+
+
+void tMPI_Lock_init(tMPI_Lock_t *lock)
 {
-    tMPI_Atomic_t sync; /* the event sync counter */
-    int last_sync; /* the last sync event looked at */
-    TMPI_YIELD_WAIT_DATA   /* data associated with yielding */
-};
+    tMPI_Spinlock_init(&(lock->lock));
+    TMPI_YIELD_WAIT_DATA_INIT(lock);
+}
 
 
+void tMPI_Lock_lock(tMPI_Lock_t *lock)
+{
+    while(!tMPI_Spinlock_trylock(&(lock->lock)))
+    {
+        TMPI_YIELD_WAIT(lock);
+    }
+}
+
+
+void tMPI_Lock_unlock(tMPI_Lock_t *lock)
+{
+    tMPI_Spinlock_unlock(&(lock->lock));
+}
+
+int tMPI_Lock_trylock(tMPI_Lock_t *lock)
+{
+    return tMPI_Spinlock_trylock(&(lock->lock));
+}
+
+int tMPI_Lock_islocked(const tMPI_Lock_t *lock)
+{
+    return tMPI_Spinlock_islocked(&(lock->lock));
+}

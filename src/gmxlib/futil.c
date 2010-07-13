@@ -317,7 +317,7 @@ static char *backup_fn(const char *file,int count_max)
      * generate 4-5 files in each round, and we dont
      * want to hit directory limits of 1024 or 2048 files.
      */
-#define COUNTMAX 128
+#define COUNTMAX 99
     int         i,count=1;
     char        *directory,*fn;
     char        *buf;

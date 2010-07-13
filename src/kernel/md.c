@@ -1372,6 +1372,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             copy_mat(ekind->tcstat[i].ekinh,ekind->tcstat[i].ekinh_old);
         } 
     }
+    if (ir->eI != eiVV) 
+    {
+        enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
+                                     and there is no previous step */
+    }
     temp0 = enerd->term[F_TEMP];
     
     /* if using an iterative algorithm, we need to create a working directory for the state. */
@@ -1399,11 +1404,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fprintf(fplog,
                     "RMS relative constraint deviation after constraining: %.2e\n",
                     constr_rmsd(constr,FALSE));
-        }
-        if (!bVV) 
-        {
-            enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
-                                         and there is no previous step */
         }
         fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
         if (bRerunMD)
@@ -2061,15 +2061,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
         if (bCPT) { mdof_flags |= MDOF_CPT; };
 
-#ifdef GMX_FAHCORE
-        if (MASTER(cr))
-            fcReportProgress( ir->nsteps, step );
-
+#if defined(GMX_FAHCORE) || defined(GMX_WRITELASTSTEP)
         if (bLastStep)
         {
             /* Enforce writing positions and velocities at end of run */
             mdof_flags |= (MDOF_X | MDOF_V);
         }
+#endif
+#ifdef GMX_FAHCORE
+        if (MASTER(cr))
+            fcReportProgress( ir->nsteps, step );
+
         {
             int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
             int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
