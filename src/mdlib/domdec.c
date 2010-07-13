@@ -6951,12 +6951,12 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 
     if (ir->ePBC == epbcNONE)
     {
-        vol_frac = 1;
+        vol_frac = 1 - 1/(double)dd->nnodes;
     }
     else
     {
         vol_frac =
-            1/(real)dd->nnodes + comm_box_frac(dd->nc,comm->cutoff,ddbox);
+            (1 + comm_box_frac(dd->nc,comm->cutoff,ddbox))/(double)dd->nnodes;
     }
     if (debug)
     {

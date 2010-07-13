@@ -475,6 +475,7 @@ static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos,
 #define PI(t,s) pr_int(fp,indent,t,s)
 #define PSTEP(t,s) pr_gmx_large_int(fp,indent,t,s)
 #define PR(t,s) pr_real(fp,indent,t,s)
+#define PD(t,s) pr_double(fp,indent,t,s)
 
 static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
 {
@@ -578,8 +579,10 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("bContinuation",BOOL(ir->bContinuation));
     PS("bShakeSOR",BOOL(ir->bShakeSOR));
     PS("etc",ETCOUPLTYPE(ir->etc));
+    PI("nsttcouple",ir->nsttcouple);
     PS("epc",EPCOUPLTYPE(ir->epc));
     PS("epctype",EPCOUPLTYPETYPE(ir->epct));
+    PI("nstpcouple",ir->nstpcouple);
     PR("tau_p",ir->tau_p);
     pr_matrix(fp,indent,"ref_p",ir->ref_p,bMDPformat);
     pr_matrix(fp,indent,"compress",ir->compress,bMDPformat);
@@ -648,6 +651,8 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("sc_power",ir->sc_power);
     PR("sc_sigma",ir->sc_sigma);
     PI("nstdhdl", ir->nstdhdl);
+    PI("dh_table_size", ir->dh_table_size);
+    PD("dh_table_spacing", ir->dh_table_spacing);
 
     PI("nwall",ir->nwall);
     PS("wall_type",EWALLTYPE(ir->wall_type));

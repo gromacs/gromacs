@@ -289,23 +289,30 @@ static void do_rot(t_fileio *fio, t_rot *rot,bool bRead, int file_version)
 static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead, 
                         int file_version, real *fudgeQQ)
 {
-  int  i,j,k,*tmp,idum=0; 
-  bool bDum=TRUE;
-  real rdum,bd_temp;
-  rvec vdum;
-  bool bSimAnn;
-  real zerotemptime,finish_t,init_temp,finish_temp;
-  
-  if (file_version != tpx_version) {
-    /* Give a warning about features that are not accessible */
-    fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
-	    file_version,tpx_version);
-  }
+    int  i,j,k,*tmp,idum=0; 
+    bool bDum=TRUE;
+    real rdum,bd_temp;
+    rvec vdum;
+    bool bSimAnn;
+    real zerotemptime,finish_t,init_temp,finish_temp;
+    
+    if (file_version != tpx_version)
+    {
+        /* Give a warning about features that are not accessible */
+        fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
+                file_version,tpx_version);
+    }
 
-  if (bRead)
-    init_inputrec(ir);
+    if (bRead)
+    {
+        init_inputrec(ir);
+    }
 
-  if (file_version >= 1) {  
+    if (file_version == 0)
+    {
+        return;
+    }
+
     /* Basic inputrec stuff */  
     gmx_fio_do_int(fio,ir->eI); 
     if (file_version >= 62) {
@@ -508,27 +515,53 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
      * but the values 0 and 1 still mean no and
      * berendsen temperature coupling, respectively.
      */
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->nsttcouple);
+    }
+    else
+    {
+        ir->nsttcouple = ir->nstcalcenergy;
+    }
     if (file_version <= 15)
-      gmx_fio_do_int(fio,idum);
-    if (file_version <=17) {
-      gmx_fio_do_int(fio,ir->epct); 
-      if (file_version <= 15) {
-	if (ir->epct == 5)
-	  ir->epct = epctSURFACETENSION;
-	gmx_fio_do_int(fio,idum);
-      }
-      ir->epct -= 1;
-      /* we have removed the NO alternative at the beginning */
-      if(ir->epct==-1) {
-	ir->epc=epcNO;
-	ir->epct=epctISOTROPIC;
-      } 
-      else
-	ir->epc=epcBERENDSEN;
+    {
+        gmx_fio_do_int(fio,idum);
+    }
+    if (file_version <=17)
+    {
+        gmx_fio_do_int(fio,ir->epct); 
+        if (file_version <= 15)
+        {
+            if (ir->epct == 5)
+            {
+                ir->epct = epctSURFACETENSION;
+            }
+            gmx_fio_do_int(fio,idum);
+        }
+        ir->epct -= 1;
+        /* we have removed the NO alternative at the beginning */
+        if(ir->epct==-1)
+        {
+            ir->epc=epcNO;
+            ir->epct=epctISOTROPIC;
+        } 
+        else
+        {
+            ir->epc=epcBERENDSEN;
+        }
     } 
-    else {
-      gmx_fio_do_int(fio,ir->epc);
-      gmx_fio_do_int(fio,ir->epct);
+    else
+    {
+        gmx_fio_do_int(fio,ir->epc);
+        gmx_fio_do_int(fio,ir->epct);
+    }
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->nstpcouple);
+    }
+    else
+    {
+        ir->nstpcouple = ir->nstcalcenergy;
     }
     gmx_fio_do_real(fio,ir->tau_p); 
     if (file_version <= 15) {
@@ -615,6 +648,16 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       gmx_fio_do_int(fio,ir->nstdhdl);
     } else {
       ir->nstdhdl = 1;
+    }
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->dh_table_size);
+        gmx_fio_do_double(fio,ir->dh_table_spacing);
+    }
+    else
+    {
+        ir->dh_table_size    = 0;
+        ir->dh_table_spacing = 0.1;
     }
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 
@@ -883,7 +926,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       }
       /* end of QMMM stuff */
     }    
-  }
 }
 
 

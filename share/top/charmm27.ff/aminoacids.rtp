@@ -242,7 +242,7 @@
 [ CYS2 ]  ; disulfide cystine residue provided by Michel Cuendet
  [ atoms ]
         N       NH1     -0.47   0
-        H       H       0.31    0
+        HN      H       0.31    0
         CA      CT1     0.07    0
         HA      HB      0.09    0
         CB      CT2     -0.10   1
@@ -254,7 +254,7 @@
  [ bonds ]
         CB      CA
         SG      CB
-        N       H
+        N       HN
         N       CA
         C       CA
         C       +N
@@ -263,7 +263,7 @@
         CB      HB2
         O       C
  [ impropers ]
-        N       -C      CA      H
+        N       -C      CA      HN
         C       CA      +N      O
 [ cmap ]
         -C      N       CA      C       +N
@@ -720,7 +720,7 @@
 [ LSN ] ; neutral lysine residue
  [ atoms ]
         N       NH1     -0.47   0
-        H       H       0.31    0
+        HN      H       0.31    0
         CA      CT1     0.07    0
         HA      HB      0.09    0
         CB      CT2     -0.18   1
@@ -746,7 +746,7 @@
         CD      CG
         CE      CD
         NZ      CE
-        N       H
+        N       HN
         N       CA
         C       CA
         C       +N
@@ -763,7 +763,7 @@
         NZ      HZ1
         NZ      HZ2
  [ impropers ]
-        N       -C      CA      H
+        N       -C      CA      HN
         C       CA      +N      O
 [ cmap ]
         -C      N       CA      C       +N
@@ -1644,17 +1644,6 @@
  [ bonds ]
 	OH2	H1
 	OH2	H2
-
-[ HO4 ] 
-; TIP4P
- [ atoms ]
-	OW	OWT4	0.00	0
-	HW1	HWT4	0.52	0
-	HW2	HWT4	0.52	0
-	MW	MWT4	-1.04	0
- [ bonds ]
-	OW	HW1
-	OW	HW2
 
 [ SOD ]
  [ atoms ]

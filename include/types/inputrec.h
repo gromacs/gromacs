@@ -216,8 +216,10 @@ typedef struct {
   int  bPeriodicMols;   /* Periodic molecules                           */
   bool bContinuation;   /* Continuation run: starting state is correct	*/
   int  etc;		/* temperature coupling         		*/
+  int  nsttcouple;      /* interval in steps for temperature coupling   */
   int  epc;		/* pressure coupling                            */
   int  epct;		/* pressure coupling type			*/
+  int  nstpcouple;      /* interval in steps for pressure coupling      */
   real tau_p;		/* pressure coupling time (ps)			*/
   tensor ref_p;		/* reference pressure (kJ/(mol nm^3))		*/
   tensor compress;	/* compressability ((mol nm^3)/kJ) 		*/
@@ -260,7 +262,9 @@ typedef struct {
   real sc_alpha;        /* free energy soft-core parameter              */
   int  sc_power;        /* lambda power for soft-core interactions      */
   real sc_sigma;        /* free energy soft-core sigma when c6 or c12=0 */
-  int  nstdhdl;         /* The frequency for calculating dhdl           */
+  int  nstdhdl;         /* The frequency for writing to dhdl.xvg        */
+  int  dh_table_size;   /* The maximum table size for the dH table      */
+  double dh_table_spacing; /* The spacing for the dH table              */
   int  eDisre;          /* Type of distance restraining                 */
   real dr_fc;		    /* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
