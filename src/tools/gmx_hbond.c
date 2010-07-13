@@ -3308,11 +3308,12 @@ int gmx_hbond(int argc,char *argv[])
 
     /* NN-loop? If so, what estimator to use ?*/
     NN = 1;
+    /* Outcommented for now DvdS 2010-07-13
     while (NN < NN_NR && strcasecmp(NNtype[0], NNtype[NN])!=0)
         NN++;
     if (NN == NN_NR)
         gmx_fatal(FARGS, "Invalid NN-loop type.");
-
+    */
     bNN = FALSE;
     for (i=2; bNN==FALSE && i<NN_NR; i++)
         bNN = bNN || NN == i;
