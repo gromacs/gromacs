@@ -194,14 +194,18 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t ** outputfiles,
  * point to a list of open files.
  */
 
-int gmx_fio_all_output_fsync(void);
+t_fileio *gmx_fio_all_output_fsync(void);
 /* fsync all open output files. This is used for checkpointing, where
    we need to ensure that all output is actually written out to 
    disk. 
    This is most important in the case of some networked file systems, 
    where data is not synced with the file server until close() or 
    fsync(), so data could remain in cache for days.
-   Note the caveats reported with gmx_fio_fsync(). */
+   Note the caveats reported with gmx_fio_fsync(). 
+   
+    returns: NULL if no error occurred, or a pointer to the first file that
+             failed if an error occurred 
+*/
 
 
 int gmx_fio_get_file_md5(t_fileio *fio, off_t offset,  unsigned char digest[]);

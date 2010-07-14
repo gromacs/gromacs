@@ -191,14 +191,9 @@ static char *fgetline(char **line,int llmax,int *llalloc,FILE *in)
 {
   char *fg;
 
-  if (!(*line))
+  if (llmax > *llalloc)
   {
-      snew(*line, llmax);
-      *llalloc=llmax;
-  }
-  else if (llmax > *llalloc)
-  {
-      srenew(*line,llmax);
+      srenew(*line,llmax+1);
       *llalloc=llmax;
   }
   fg=fgets(*line,llmax,in);
@@ -272,7 +267,8 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 
   llmax = STRLEN;
 
-  while (fgetline(&line,llmax,&llalloc,in) && (strncmp(line,"static",6) != 0)) {
+  while ((NULL != fgetline(&line,llmax,&llalloc,in)) && 
+         (strncmp(line,"static",6) != 0)) {
     parsestring(line,"title",(mm->title));
     parsestring(line,"legend",(mm->legend));
     parsestring(line,"x-label",(mm->label_x));
@@ -290,7 +286,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     gmx_input("Invalid XPixMap");
   /* Read sizes */
   bGetOnWithIt=FALSE;
-  while (!bGetOnWithIt && fgetline(&line,llmax,&llalloc,in)) {
+  while (!bGetOnWithIt && (NULL != fgetline(&line,llmax,&llalloc,in))) {
     while (( line[0] != '\"' ) && ( line[0] != '\0' ))
       line++;
 
@@ -310,7 +306,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   /* Read color map */
   snew(map,mm->nmap);
   m=0;
-  while ((m < mm->nmap) && fgetline(&line,llmax,&llalloc,in)) {
+  while ((m < mm->nmap) && (NULL != fgetline(&line,llmax,&llalloc,in))) {
     line=strchr(line,'\"');
     if  (line) {
       line++;
@@ -398,7 +394,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	skipstr(&line);
       }
     }
-  } while ((line[0] != '\"') && fgetline(&line,llmax,&llalloc,in));
+  } while ((line[0] != '\"') && (NULL != fgetline(&line,llmax,&llalloc,in)));
 
   /* Read matrix */
   snew(mm->matrix,mm->nx);
@@ -424,24 +420,25 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	}
       m--;
     }
-  } while ((m>=0) && fgetline(&line,llmax,&llalloc,in));
+  } while ((m>=0) && (NULL != fgetline(&line,llmax,&llalloc,in)));
   if (m>=0)
     gmx_incons("Not enough rows in the matrix");
 
-  sfree(line);
+  /* This code makes me cry. DvdS 2010-07-08 */
+  /*sfree(line);*/
 }
 
 int read_xpm_matrix(const char *fnm,t_matrix **matrix)
 {
   FILE *in;
-  char *line;
+  char *line=NULL;
   int nmat;
   int llalloc=0;
 
   in=gmx_fio_fopen(fnm,"r");
   
   nmat=0;
-  while (fgetline(&line,STRLEN,&llalloc,in)) {
+  while (NULL != fgetline(&line,STRLEN,&llalloc,in)) {
     if (strstr(line,"/* XPM */")) {
       srenew(*matrix,nmat+1);
       read_xpm_entry(in,&(*matrix)[nmat]);

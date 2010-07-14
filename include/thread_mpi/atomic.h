@@ -566,7 +566,7 @@ void tMPI_Spinlock_unlock( tMPI_Spinlock_t &x);
  *
  *  \return 1 if the spinlock is locked, 0 otherwise.
  */
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
     int rc;
     

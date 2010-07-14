@@ -1,7 +1,7 @@
 
 #ifdef _FF_CHARMM
 
-[ moleculetype ] 
+[ moleculetype ] ; added by Bjelkmar Jan 2010, from c32b1/toppar/stream/toppar_water_ions.str
 ; molname	nrexcl
 OH		1
 

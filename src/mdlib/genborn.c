@@ -1852,6 +1852,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
     struct gbtmpnbls *nls;
     gbtmpnbl_t *list =NULL;
     
+    set_pbc(&pbc,fr->ePBC,box);
     nls   = born->nblist_work;
     
     for(i=0;i<born->nr;i++)
@@ -2021,6 +2022,8 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
     /* Reallocation of local arrays if necessary */
     if(born->nlocal < dd->nat_tot)
     {
+        int tmp = born->nlocal;
+        
         born->nlocal = dd->nat_tot;
         
         /* Arrays specific to different gb algorithms */
@@ -2029,15 +2032,30 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
             srenew(born->gpol,  born->nlocal+3);
             srenew(born->vsolv, born->nlocal+3);
             srenew(born->gb_radius, born->nlocal+3);
+            for(i=tmp; (i<born->nlocal+3); i++) 
+            {
+                born->gpol[i] = 0;
+                born->vsolv[i] = 0;
+                born->gb_radius[i] = 0;
+            }
         }
         else
         {
             srenew(born->param, born->nlocal+3);
             srenew(born->gb_radius, born->nlocal+3);
+            for(i=tmp; (i<born->nlocal+3); i++) 
+            {
+                born->param[i] = 0;
+                born->gb_radius[i] = 0;
+            }
         }
         
         /* All gb-algorithms use the array for vsites exclusions */
         srenew(born->use,    born->nlocal+3);
+        for(i=tmp; (i<born->nlocal+3); i++) 
+        {
+            born->use[i] = 0;
+        }
     }
     
     /* With dd, copy algorithm specific arrays */

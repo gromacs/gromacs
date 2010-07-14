@@ -27,7 +27,7 @@ topol_DATA = \
 	cb-shift.dat	co-shift.dat	edissoc.dat			\
 	gurgle.dat	ha-shift.dat	links.dat	phbres.dat	\
 	random.dat	refi_aa.dat	specbond.dat	surface.dat	\
-	vdwradii.dat	xlateat.dat	highway.dat			\
+	vdwradii.dat	xlateat.dat	highway.dat	sfactor.dat	\
 	export.dlg	bonds.dlg	ss.map		ps.m2p		\
 	table6-10.xvg  	table6-11.xvg  	table6-12.xvg  	table6-8.xvg  	\
 	table6-9.xvg 	atom_nom.tbl	tip5p.gro	\

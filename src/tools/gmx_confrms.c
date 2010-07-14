@@ -575,6 +575,7 @@ int gmx_confrms(int argc,char *argv[])
       /* Avoid segfaults when writing the pdb-file */
       for (i=0; i<atoms1->nr; i++) {
 	atoms1->pdbinfo[i].type = eptAtom;
+	atoms1->pdbinfo[i].occup = 1.00;
 	atoms1->pdbinfo[i].bAnisotropic = FALSE;
 	if (bBfac)
 	  atoms1->pdbinfo[i].bfac = 0;
@@ -595,6 +596,7 @@ int gmx_confrms(int argc,char *argv[])
 
       for (i=0; i<atoms2->nr; i++) {
 	atoms2->pdbinfo[i].type = eptAtom;
+	atoms2->pdbinfo[i].occup = 1.00;
 	atoms2->pdbinfo[i].bAnisotropic = FALSE;
 	if (bBfac)
 	  atoms2->pdbinfo[i].bfac = 0;

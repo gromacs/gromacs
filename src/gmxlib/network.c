@@ -588,7 +588,7 @@ void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm)
     /* this function is only used in code that is not performance critical,
        (during setup, when comm_rec is not the appropriate communication  
        structure), so this isn't as bad as it looks. */
-    double *buf;
+    float *buf;
     int i;
 
     snew(buf, nr);

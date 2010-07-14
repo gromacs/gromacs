@@ -35,13 +35,66 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifndef _TMPI_FASTLOCK_H_
+#define _TMPI_FASTLOCK_H_
 
-struct tMPI_Spinlock_barrier
+#include "wait.h"
+
+/** Fast (possibly busy-wait-based) lock type
+ *
+ *  This lock type forms an intermediate between the spinlocks and mutexes:
+ *  it is based on a busy-wait loop, but yields to the scheduler if the lock
+ *  is locked.  This is therefore the preferred type of  lock for when waits 
+ *  are expected to be reasonably short.
+ *
+ *  Variables of this type should be initialized by calling
+ *  tMPI_Lock_init().  
+ * 
+ * \see
+ * - tMPI_Lock_init
+ * - tMPI_Lock_lock
+ */
+typedef struct tMPI_Lock tMPI_Lock_t;
+struct tMPI_Lock
 {
-    tMPI_Atomic_t     count;     /*!< Number of threads remaining     */
-    int               threshold; /*!< Total number of threads         */
-    volatile int      cycle;     /*!< Current cycle (alternating 0/1) */
+    tMPI_Spinlock_t   lock;      /*!< The underlying spin lock */
     TMPI_YIELD_WAIT_DATA
 };
 
 
+/** Initialize lock
+ *
+ *  \param lock     Pointer to the new lock. 
+ */
+void tMPI_Lock_init(tMPI_Lock_t *lock);
+
+
+/** Perform yielding, busy-waiting locking 
+  *
+  *  This function blocks until the lock is locked.
+  *
+  *  \param lock  Pointer to previously created lock.
+  */
+void tMPI_Lock_lock(tMPI_Lock_t *lock);
+
+/** Unlock the lock
+  *
+  *  \param lock  Pointer to previously created lock.
+  */
+void tMPI_Lock_unlock(tMPI_Lock_t *lock);
+
+/** Try to lock the lock but don't block if it is locked.
+  *
+  *  \param lock  Pointer to previously created lock.
+  */
+int tMPI_Lock_trylock(tMPI_Lock_t *lock);
+
+/** Check the status of the lock without affecting its state
+  *
+  *  \param lock  Pointer to previously created lock.
+  */
+int tMPI_Lock_islocked(const tMPI_Lock_t *lock);
+
+
+
+#endif
