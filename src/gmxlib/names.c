@@ -140,6 +140,14 @@ const char *efpt_names[efptNR+1] = {
   "fep-lambda", "mass-lambda", "coul-lambda", "vdw-lambda", "bonded-lambda", "restraint-lambda",NULL
 };
 
+const char *elamstats_names[elamstatsNR+1] = {
+  "No", "metropolis-transition","barker-transition", "minvar", "mbar", "bennett", "wang-landau", "gibbs-wang-landau", NULL
+};
+
+const char *elmcmove_names[elmcmoveNR+1] = {
+  "No","metropolis", "barker", "gibbs", "metropolized-gibbs", NULL
+};
+
 const char *esol_names[esolNR+1] = {
   "No", "SPC", "TIP4p", NULL
 };

@@ -228,7 +228,7 @@ static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, bool bRead,
   }
 }
 
-static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version) 
+static void do_fepvals(t_fileio *fio,t_lambda *fepvals,bool bRead, int file_version) 
 {
   /* i is defined in the ndo_double macro; use g to iterate. */
   int i,g;
@@ -239,22 +239,22 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
   /* free energy values */
   if (file_version >= 72)
   {
-      gmx_fio_do_int(fepvals->init_fep_state);
-      gmx_fio_do_double(fepvals->init_lambda); 
-      gmx_fio_do_double(fepvals->delta_lambda);
+      gmx_fio_do_int(fio,fepvals->init_fep_state);
+      gmx_fio_do_double(fio,fepvals->init_lambda); 
+      gmx_fio_do_double(fio,fepvals->delta_lambda);
   }
   else if (file_version >= 59) {
-      gmx_fio_do_double(fepvals->init_lambda);
-      gmx_fio_do_double(fepvals->delta_lambda);
+      gmx_fio_do_double(fio,fepvals->init_lambda);
+      gmx_fio_do_double(fio,fepvals->delta_lambda);
   } else {
-      gmx_fio_do_real(rdum);
+      gmx_fio_do_real(fio,rdum);
       fv = rdum;
-      gmx_fio_do_real(rdum);
+      gmx_fio_do_real(fio,rdum);
       fv = rdum;
   }
   if (file_version >= 72) 
   {
-      gmx_fio_do_int(fepvals->n_lambda);
+      gmx_fio_do_int(fio,fepvals->n_lambda);
       if (bRead) 
       {
           snew(fepvals->all_lambda,efptNR);
@@ -265,19 +265,19 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
           {
               snew(fepvals->all_lambda[g],fepvals->n_lambda);
           }
-          gmx_fio_ndo_double(fepvals->all_lambda[g],fepvals->n_lambda,bDum);
-          gmx_fio_ndo_int(fepvals->separate_dvdl,efptNR,bDum);
+          bDum=gmx_fio_ndo_double(fio,fepvals->all_lambda[g],fepvals->n_lambda);
+          bDum=gmx_fio_ndo_int(fio,fepvals->separate_dvdl,efptNR);
       }
   }
   else if (file_version >= 64) 
   {
-      gmx_fio_do_int(fepvals->n_lambda);
+      gmx_fio_do_int(fio,fepvals->n_lambda);
       snew(fepvals->all_lambda,efptNR);
       if (bRead) 
       {
           snew(fepvals->all_lambda[efptFEP],fepvals->n_lambda);
       }
-      gmx_fio_ndo_double(fepvals->all_lambda[efptFEP],fepvals->n_lambda,bDum);
+      bDum=gmx_fio_ndo_double(fio,fepvals->all_lambda[efptFEP],fepvals->n_lambda);
   } 
   else 
   {
@@ -286,7 +286,7 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
   }
   if (file_version >= 13) 
   {
-      gmx_fio_do_real(fepvals->sc_alpha);
+      gmx_fio_do_real(fio,fepvals->sc_alpha);
   }
   else
   {
@@ -294,7 +294,7 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
   }
   if (file_version >= 38)
   {
-      gmx_fio_do_int(fepvals->sc_power);
+      gmx_fio_do_int(fio,fepvals->sc_power);
   }
   else
   {
@@ -302,7 +302,7 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
   }
   if (file_version >= 15)
   {
-      gmx_fio_do_real(fepvals->sc_sigma);
+      gmx_fio_do_real(fio,fepvals->sc_sigma);
   }
   else
   {
@@ -311,7 +311,7 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
 
   if (file_version >= 72) 
   {
-      gmx_fio_do_int(fepvals->bScCoul);
+      gmx_fio_do_int(fio,fepvals->bScCoul);
   }
   else
   {
@@ -320,28 +320,22 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
 
   if (file_version >= 72)
   {
-      gmx_fio_do_int(fepvals->bPrintEnergy);
+      gmx_fio_do_int(fio,fepvals->bPrintEnergy);
   }
   else
   {
       fepvals->bPrintEnergy = FALSE;
   }
-    gmx_fio_do_fepvals(ir->fepvals,bRead,file_version);
-    if (file_version >= 64) {
-      gmx_fio_do_int(fio,ir->nstdhdl);
-    } else {
-      ir->nstdhdl = 1;
-    }
-    if (file_version >= 71)
-    {
-        gmx_fio_do_int(fio,ir->dh_table_size);
-        gmx_fio_do_double(fio,ir->dh_table_spacing);
-    }
-    else
-    {
-        ir->dh_table_size    = 0;
-        ir->dh_table_spacing = 0.1;
-    }
+  if (file_version >= 71)
+  {
+      gmx_fio_do_int(fio,fepvals->dh_table_size);
+      gmx_fio_do_double(fio,fepvals->dh_table_spacing);
+  }
+  else
+  {
+      fepvals->dh_table_size    = 0;
+      fepvals->dh_table_spacing = 0.1;
+  }
 }
 
 static void do_pull(t_fileio *fio, t_pull *pull,bool bRead, int file_version)
@@ -686,6 +680,13 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     gmx_fio_do_real(fio,ir->shake_tol);
     if (file_version < 54)
       gmx_fio_do_real(fio,*fudgeQQ);
+
+    do_fepvals(fio,ir->fepvals,bRead,file_version);
+    if (file_version >= 64) {
+        gmx_fio_do_int(fio,ir->nstdhdl);
+    } else {
+        ir->nstdhdl = 1;
+    }
     gmx_fio_do_int(fio,ir->efep);
     if (file_version <= 14 && ir->efep > efepNO)
       ir->efep = efepYES;
@@ -1116,15 +1117,15 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     gmx_fio_do_real(fio,iparams->orires.kfac);
     break;
   case F_DIHRES:
-    gmx_fio_do_int (iparams->dihres.power);
-    gmx_fio_do_int (iparams->dihres.label);
-    gmx_fio_do_real(iparams->dihres.phiA);
-    gmx_fio_do_real(iparams->dihres.dphiA);
-    gmx_fio_do_real(iparams->dihres.kfacA);
-    if (file_version >= 71) {
-      gmx_fio_do_real(iparams->dihres.phiB);
-      gmx_fio_do_real(iparams->dihres.dphiB);
-      gmx_fio_do_real(iparams->dihres.kfacB);
+    gmx_fio_do_int(fio,iparams->dihres.power);
+    gmx_fio_do_int(fio,iparams->dihres.label);
+    gmx_fio_do_real(fio,iparams->dihres.phiA);
+    gmx_fio_do_real(fio,iparams->dihres.dphiA);
+    gmx_fio_do_real(fio,iparams->dihres.kfacA);
+    if (file_version >= 72) {
+        gmx_fio_do_real(fio,iparams->dihres.phiB);
+        gmx_fio_do_real(fio,iparams->dihres.dphiB);
+        gmx_fio_do_real(fio,iparams->dihres.kfacB);
     }
     break;
   case F_POSRES:
@@ -2033,11 +2034,11 @@ static void do_tpxheader(t_fileio *fio,bool bRead,t_tpxheader *tpx,
   else
     tpx->ngtc = 0;
   if (fver < 62) {
-    gmx_fio_do_int(fio,idum);
-    gmx_fio_do_real(fio,rdum);
+      gmx_fio_do_int(fio,idum);
+      gmx_fio_do_real(fio,rdum);
   }
   if (fver >= 72) {
-    gmx_fio_do_int(tpx->fep_state);  /*eventually replace lambda with fep state - MRS*/
+    gmx_fio_do_int(fio,tpx->fep_state);  /*eventually replace lambda with fep state - MRS*/
   }
 
   gmx_fio_do_real(fio,tpx->lambda);

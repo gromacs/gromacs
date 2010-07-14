@@ -129,6 +129,7 @@ typedef struct {
   double init_lambda;    /* Keeping this value for now (legacy, but useable   */
   int init_fep_state;    /* the initial number of the state                   */
   double delta_lambda;	 /* change of lambda per time step (fraction of (0.1) */
+  real nstfep;           /* How frequently to calculate foreign lambdas       */
   real  energy;          /* Potential energy of the current state             */
   bool bPrintEnergy;     /* Whether to print the energy in the dhdl           */
   int  n_lambda;         /* The number of foreign lambda points               */
@@ -141,8 +142,45 @@ typedef struct {
   bool separate_dvdl[efptNR]; /* whether to print the dvdl term associated with 
                                  this term; if it is not specified as separate, 
                                  is is lumped with the FEP term */  
-  int  dh_table_size;   /* The maximum table size for the dH table      */
-  double dh_table_spacing; /* The spacing for the dH table              */
+  int  dh_table_size;        /* The maximum table size for the dH table      */
+  double dh_table_spacing;   /* The spacing for the dH table              */
+  int  elamstats;            /* which type of move updating do we use for lambda monte carlo (or no for none) */
+  int  elmcmove;             /* what move set will be we using -- Gibbs, or MH */
+  
+  int mc_seed;               /* random number seed for mc switches */
+  int  *n_at_lam;            /* number of points observed at each lambda */
+  real  *wl_histo;           /* histogram for WL flatness determination */
+
+  real *sum_weights;         /* weights of the states */
+  real *sum_dg;              /* free energies of the states -- not actually used for weighting, but informational */
+  real *sum_minvar;          /* corrections to weights for minimum variance */
+  real *sum_variance;        /* variances of the states */
+
+  bool minvar;               /* whether to use minumum variance weighting */
+  int  minvarmin;            /* the number of samples needed before kicking into minvar routine */
+  real minvar_const;         /* the offset for the variance in MinVar */
+  int  c_range;              /* range of cvalues used for BAR */
+
+  real **accum_p1;           /* accumulated bennett weights for n+1 */
+  real **accum_m1;           /* accumulated bennett weights for n-1 */
+  real **accum_p2;           /* accumulated bennett weights for n+1 */
+  real **accum_m2;           /* accumulated bennett weights for n-1 */
+
+  real **Tij;                /* transition matrix */
+  real **Tij_empirical;      /* Empirical transition matrix */
+  bool bSymmetrizedTMatrix;  /* whether to print symmetrized matrices */
+  int *statesvisited;        /* the sequence of states visited saved for the logfile */
+  int  lmc_repeats;          /* number of repetitions in the MC lambda jumps */  /*MRS -- VERIFY THIS */
+  int  lmc_nequil;           /* minimum number of samples for each state before freezing the weights */
+  int  lmc_nstart;           /* minimum number of samples for each state before equilibration */ /* MRS -- VERIFY THIS! */
+  int  fastmbar;             /* to speed MBAR, we only take samples every mcfastMBAR interval */
+  int  gibbsdeltalam;        /* distance in lambda space for the gibbs interval */
+  real  wl_delta;             /* delta for wang-landau */
+  real  wl_scale;             /* scaling factor for wang-landau */
+  real  wl_ratio;            /* ratio between largest and smallest number for freezing the weights */
+
+  bool init_weights;         /* did we initialize the weights? */
+  real *fep_keep;            /* pointer to array for MBAR */
 } t_lambda;
 
 typedef struct {

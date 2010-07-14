@@ -159,6 +159,29 @@ enum {
   efptFEP,efptMASS,efptCOUL,efptVDW,efptBONDED,efptRESTRAINT,efptNR
 };
 
+  /* How the lambda weights are calculated:                        
+     elamstatsMETROPOLIS = using the metropolis criteria                                               
+     elamstatsBARKER = using the Barker critera for transition weights - also called unoptimized Bennett  
+     elamstatsMINVAR = using Barker + minimum variance for weights                                          
+     elamstatsMBAR = using MBAR (uses lots of memory, very expensive)                                   
+     elamstatsBENNETT = using Bennett (uses lots of memory, not as expensive) - not implemented yet            
+     elamstatsWL = Wang-Landu (using visitation counts)               
+     elamstatsGWL = Gibbs-weighted Wang-Landau (using weighted visitation counts)                 
+  */
+  enum {
+    elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsMBAR, elamstatsBENNETT, elamstatsWL, elamstatsGWL, elamstatsNR
+  };
+
+  /* How moves in lambda are calculated:                                                                                 
+     elmovemcMETROPOLIS - using the Metropolis criteria, and 50% up and down        
+     elmovemcBARKER - using the Barker criteria, and 50% up and down                     
+     elmovemcGIBBS - computing the transition using the marginalized probabilities of the lambdas   
+     elmovemcMETGIBBS - computing the transition using the metropolized version of Gibbs (Liu, p. 134)     
+  */
+  enum {
+    elmcmoveNO,elmcmoveMETROPOLIS, elmcmoveBARKER, elmcmoveGIBBS, elmcmoveMETGIBBS, elmcmoveNR
+  };
+  
 /* Solvent model */
 enum {
   esolNO, esolSPC, esolTIP4P, esolNR

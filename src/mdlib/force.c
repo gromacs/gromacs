@@ -307,7 +307,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
            need to go through the vdw calculation anyway */
         /* if ((fepvals->sc_alpha!=0) && fepvals->bScCoul) */
     {
-            enerd->dvdl_nonlin[efptCOUL] += dvdlambda[efptCOUL];
+        enerd->dvdl_nonlin[efptCOUL] += dvdlambda[efptCOUL];
     }
     else
     {

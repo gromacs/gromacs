@@ -521,8 +521,8 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
     PS("bScPrintEnergy",BOOL(fepvals->bPrintEnergy));
     PI("sc_power",fepvals->sc_power);
     PR("sc_sigma",fepvals->sc_sigma);
-    PI("dh_table_size", ir->dh_table_size);
-    PD("dh_table_spacing", ir->dh_table_spacing);
+    PI("dh_table_size", fepvals->dh_table_size);
+    PD("dh_table_spacing", fepvals->dh_table_spacing);
 };
 
 static void pr_pull(FILE *fp,int indent,t_pull *pull)
@@ -631,13 +631,12 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("gb_dielectric_offset",ir->gb_dielectric_offset);
     PS("sa_algorithm",ESAALGORITHM(ir->gb_algorithm));
     PR("sa_surface_tension",ir->sa_surface_tension);
-	  
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
     PS("free_energy",EFEPTYPE(ir->efep));
-    PI("nstdhdl", ir->nstdhdl);
     if (ir->efep != efepNO) {
         pr_fepvals(fp,indent,ir->fepvals,bMDPformat);
     }
+    PI("nstdhdl", ir->nstdhdl);
     PI("nwall",ir->nwall);
     PS("wall_type",EWALLTYPE(ir->wall_type));
     PI("wall_atomtype[0]",ir->wall_atomtype[0]);

@@ -536,8 +536,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->nstdhdl",-1,ir1->nstdhdl,ir2->nstdhdl);
   cmp_bool(fp,"inputrec->fepvals->bPrintEnergy",-1,ir1->fepvals->bPrintEnergy,ir1->fepvals->bPrintEnergy);
   cmp_bool(fp,"inputrec->fepvals->bScCoul",-1,ir1->fepvals->bScCoul,ir1->fepvals->bScCoul);
-  cmp_int(fp,"inputrec->fepvals->dh_table_size",-1,ir1->dh_table_size,ir2->dh_table_size);
-  cmp_double(fp,"inputrec->fepvals->dh_table_spacing",-1,ir1->dh_table_spacing,ir2->dh_table_spacing,ftol,abstol);
+  cmp_int(fp,"inputrec->fepvals->dh_table_size",-1,ir1->fepvals->dh_table_size,ir2->fepvals->dh_table_size);
+  cmp_double(fp,"inputrec->fepvals->dh_table_spacing",-1,ir1->fepvals->dh_table_spacing,ir2->fepvals->dh_table_spacing,ftol,abstol);
   cmp_int(fp,"inputrec->nwall",-1,ir1->nwall,ir2->nwall);
   cmp_int(fp,"inputrec->wall_type",-1,ir1->wall_type,ir2->wall_type);
   cmp_int(fp,"inputrec->wall_atomtype[0]",-1,ir1->wall_atomtype[0],ir2->wall_atomtype[0]);

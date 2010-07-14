@@ -51,6 +51,7 @@ extern "C" {
 
 /* for now, define the length of the NH chains here */
 #define NHCHAINLENGTH 10
+#define MAXLAMBDAS 1024
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,

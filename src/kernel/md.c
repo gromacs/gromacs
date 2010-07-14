@@ -552,6 +552,7 @@ static void gmx_iterate_init(gmx_iterate_t *iterate,bool bIterate)
     }
 }
 
+/* should steps here be a gmx_large_int_t? */
 static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, bool bFirstIterate, real fom, real *newf) 
 {    
     /* monitor convergence, and use a secant search to propose new
@@ -2558,6 +2559,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
         
         sum_dhdl(enerd,state->lambda,ir->fepvals);
+        /* perform extended ensemble sampling in lambda */
+        if ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && 
+            (mod(step,ir->fepvals->nstfep)==0) && (step > 0)) {
+            state->fep_state = ExpandedEnsembleDynamics(fplog,ir,state->fep_state,enerd,step);
+        }
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 
         {

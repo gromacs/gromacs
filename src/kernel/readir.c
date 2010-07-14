@@ -1247,6 +1247,19 @@ void get_ir(const char *mdparin,const char *mdparout,
                                                          it was not entered */
   ITYPE ("init-lambda-state", ir->fepvals->init_fep_state,0);
   RTYPE ("delta-lambda",ir->fepvals->delta_lambda,0.0);
+  EETYPE("lambda-stats",   ir->fepvals->elamstats, elamstats_names);
+  EETYPE("lambda-mc-move",     ir->fepvals->elmcmove, elmcmove_names);
+  ITYPE ("lmc-repeats",ir->fepvals->lmc_repeats,1);
+  ITYPE ("lmc-gibbsdelta",ir->fepvals->gibbsdeltalam,-1);
+  ITYPE ("lmc-start-equil",ir->fepvals->lmc_nequil,-1);
+  ITYPE ("lmc-nstart",ir->fepvals->lmc_nstart,100);  
+  EETYPE("symmetrized-transition-matrix", ir->fepvals->bSymmetrizedTMatrix, yesno_names);
+  ITYPE ("fastmbar",ir->fepvals->fastmbar,10);
+  ITYPE ("mininum-var-min",ir->fepvals->minvarmin, 100); /*default is reasonable */
+  ITYPE ("weight-c-range",ir->fepvals->c_range, 0); /* default is just C=0 */
+  RTYPE ("wl-scale",ir->fepvals->wl_scale,0.8);
+  RTYPE ("wl-delta",ir->fepvals->wl_delta,1.0);
+  RTYPE ("wl-ratio",ir->fepvals->wl_ratio,0.7);
   STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
   STYPE ("mass-lambdas", fep_lambda[efptMASS], NULL);
   STYPE ("coul-lambdas", fep_lambda[efptCOUL], NULL);
@@ -1258,9 +1271,9 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("sc-power",ir->fepvals->sc_power,0);
   RTYPE ("sc-sigma",ir->fepvals->sc_sigma,0.3);
   EETYPE("sc-coul",ir->fepvals->bScCoul,yesno_names);
-  ITYPE ("nstdhdl",     ir->nstdhdl, 10);
-  ITYPE ("dh_table_size", ir->dh_table_size, 0);
-  RTYPE ("dh_table_spacing", ir->dh_table_spacing, 0.1);
+  ITYPE ("nstdhdl",ir->nstdhdl, 10);
+  ITYPE ("dh_table_size", ir->fepvals->dh_table_size, 0);
+  RTYPE ("dh_table_spacing", ir->fepvals->dh_table_spacing, 0.1);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
   EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
   EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
