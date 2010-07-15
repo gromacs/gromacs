@@ -497,7 +497,6 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         *pcurr = enerd->term[F_PRES];
         /* calculate temperature using virial */
         enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
-        
     }    
 }
 
@@ -1139,6 +1138,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     nstglobalcomm = check_nstglobalcomm(fplog,cr,nstglobalcomm,ir);
     bGStatEveryStep = (nstglobalcomm == 1);
 
+    /* initialize the expanded ensembles memory before it is used.*/
+    InitializeExpandedEnsembles(ir);
+    
     if (!bGStatEveryStep && ir->nstlist == -1 && fplog != NULL)
     {
         fprintf(fplog,
@@ -2560,9 +2562,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         sum_dhdl(enerd,state->lambda,ir->fepvals);
         /* perform extended ensemble sampling in lambda */
-        if ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && 
-            (mod(step,ir->fepvals->nstfep)==0) && (step > 0)) {
-            state->fep_state = ExpandedEnsembleDynamics(fplog,ir,state->fep_state,enerd,step);
+        if ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && (ir->fepvals->nstfep > 0)) {
+            if ((mod(step,ir->fepvals->nstfep)==0) && (step > 0)) {
+                state->fep_state = ExpandedEnsembleDynamics(fplog,ir,state->fep_state,enerd,step);
+            }
         }
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 

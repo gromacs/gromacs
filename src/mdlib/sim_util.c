@@ -1635,7 +1635,7 @@ int FindMinimum(real *min_metric, int N) {
 }
 
 
-void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real *weighted_lamee, int step) {
+static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real *weighted_lamee, int step) {
 
     static bool equil=FALSE;
     real maxdiff = 0.000000001;
@@ -2054,7 +2054,7 @@ void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real *weigh
     }
 }
 
-int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weighted_lamee, real *p_k) 
+static int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weighted_lamee, real *p_k) 
 {
     /* Choose New lambda value, and update transition matrix */
     
@@ -2276,7 +2276,7 @@ int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weighted_lam
     return lamnew;
 }
 
-bool CheckHistogramRatios(t_lambda *fep) 
+static bool CheckHistogramRatios(t_lambda *fep) 
 {
     
     int ifep,nlim;
@@ -2306,7 +2306,7 @@ bool CheckHistogramRatios(t_lambda *fep)
 
 
 /* print out the weights to the log, along with current state */
-void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, int nlam, int frequency, gmx_large_int_t step)
+static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, int nlam, int frequency, gmx_large_int_t step)
 {
     int nlim,i,ifep,jfep;
     real dw,dg,dv,dm,Tprint;
@@ -2501,6 +2501,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_ener
     
     snew(scaled_lamee,nlim);
     snew(weighted_lamee,nlim);
+    snew(pfep_lamee,nlim);
     snew(p_k,nlim);
 
     /* need to calculate the PV term somewhere, but not needed here */
@@ -2643,7 +2644,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_ener
     return lamnew;
 }
 
-void InitializeFreeEnergy(t_inputrec *ir)
+extern void InitializeExpandedEnsembles(t_inputrec *ir)
 {
     int i,tsize;
     t_lambda *fep;
@@ -2680,15 +2681,21 @@ void InitializeFreeEnergy(t_inputrec *ir)
     } 
 
     if (fep->elamstats==elamstatsMBAR) {
-        if (fep->lmc_nequil == -1) {
-            tsize = (ir->nsteps/fep->nstfep)*(fep->n_lambda);
-        } else {
-            tsize = (fep->lmc_nequil/fep->nstfep)*(fep->n_lambda); /* Altered by JDC to reflect current use of mcnequil as number of steps after which weights should be frozen. */
-        }
-        snew(fep->fep_keep,tsize);
+        if (fep->nstfep > 0) 
+        {
+            if (fep->lmc_nequil == -1) 
+            {
+                tsize = (ir->nsteps/fep->nstfep)*(fep->n_lambda);
+            } else {
+                tsize = (fep->lmc_nequil/fep->nstfep)*(fep->n_lambda); /* Altered by JDC to reflect current use of mcnequil as number of steps after which weights should be frozen. */
+            }
+            snew(fep->fep_keep,tsize);           
+        } 
     }
-    tsize = (ir->nsteps/fep->nstfep);
-    snew(fep->statesvisited,tsize);
-
+    if (fep->nstfep > 0) 
+    {
+        tsize = (ir->nsteps/fep->nstfep);
+        snew(fep->statesvisited,tsize);
+    }
 }    
 

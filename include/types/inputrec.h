@@ -129,8 +129,8 @@ typedef struct {
   double init_lambda;    /* Keeping this value for now (legacy, but useable   */
   int init_fep_state;    /* the initial number of the state                   */
   double delta_lambda;	 /* change of lambda per time step (fraction of (0.1) */
-  real nstfep;           /* How frequently to calculate foreign lambdas       */
-  real  energy;          /* Potential energy of the current state             */
+  int  nstfep;           /* How frequently to calculate foreign lambdas       */
+  real energy;          /* Potential energy of the current state             */
   bool bPrintEnergy;     /* Whether to print the energy in the dhdl           */
   int  n_lambda;         /* The number of foreign lambda points               */
   double **all_lambda;   /* The array of all lambda values                    */
@@ -147,7 +147,7 @@ typedef struct {
   int  elamstats;            /* which type of move updating do we use for lambda monte carlo (or no for none) */
   int  elmcmove;             /* what move set will be we using -- Gibbs, or MH */
   
-  int mc_seed;               /* random number seed for mc switches */
+  int mc_seed;               /* random number seed for mc switches? */
   int  *n_at_lam;            /* number of points observed at each lambda */
   real  *wl_histo;           /* histogram for WL flatness determination */
 
@@ -180,7 +180,9 @@ typedef struct {
   real  wl_ratio;            /* ratio between largest and smallest number for freezing the weights */
 
   bool init_weights;         /* did we initialize the weights? */
+  real *lam_weights;         /* initial weights to start with  */
   real *fep_keep;            /* pointer to array for MBAR */
+  
 } t_lambda;
 
 typedef struct {

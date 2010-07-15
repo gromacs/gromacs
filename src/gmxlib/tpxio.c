@@ -261,12 +261,14 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,bool bRead, int file_vers
       }
       for (g=0;g<efptNR;g++)
       {
-          if (bRead) 
+          if (bRead)
           {
               snew(fepvals->all_lambda[g],fepvals->n_lambda);
           }
-          bDum=gmx_fio_ndo_double(fio,fepvals->all_lambda[g],fepvals->n_lambda);
-          bDum=gmx_fio_ndo_int(fio,fepvals->separate_dvdl,efptNR);
+          if (fepvals->n_lambda > 0) {
+              bDum=gmx_fio_ndo_double(fio,fepvals->all_lambda[g],fepvals->n_lambda);
+              bDum=gmx_fio_ndo_int(fio,fepvals->separate_dvdl,efptNR);
+          }
       }
   }
   else if (file_version >= 64) 
@@ -283,6 +285,23 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,bool bRead, int file_vers
   {
       fepvals->n_lambda = 0;
       fepvals->all_lambda   = NULL;
+  }
+  if (file_version >= 72) 
+  {
+      gmx_fio_do_int(fio,fepvals->elmcmove);
+      gmx_fio_do_int(fio,fepvals->elamstats);
+      gmx_fio_do_int(fio,fepvals->lmc_repeats);
+      gmx_fio_do_int(fio,fepvals->gibbsdeltalam);
+      gmx_fio_do_int(fio,fepvals->lmc_nequil);
+      gmx_fio_do_int(fio,fepvals->lmc_nstart);
+      gmx_fio_do_bool(fio,fepvals->bSymmetrizedTMatrix);
+      gmx_fio_do_int(fio,fepvals->fastmbar);
+      gmx_fio_do_int(fio,fepvals->minvarmin);
+      gmx_fio_do_int(fio,fepvals->c_range);
+      gmx_fio_do_real(fio,fepvals->wl_scale);
+      gmx_fio_do_real(fio,fepvals->wl_delta);
+      gmx_fio_do_real(fio,fepvals->wl_ratio);
+      gmx_fio_do_int(fio,fepvals->nstfep);
   }
   if (file_version >= 13) 
   {

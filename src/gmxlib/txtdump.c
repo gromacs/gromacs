@@ -523,6 +523,21 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
     PR("sc_sigma",fepvals->sc_sigma);
     PI("dh_table_size", fepvals->dh_table_size);
     PD("dh_table_spacing", fepvals->dh_table_spacing);
+    PS("lambda-stats", elamstats_names[fepvals->elamstats]);
+    PS("lambda-mc-move", elmcmove_names[fepvals->elmcmove]);
+    PI("lmc-repeats",fepvals->lmc_repeats);
+    PI("lmc-gibbsdelta",fepvals->gibbsdeltalam);
+    PI("lmc-start-equil",fepvals->lmc_nequil);
+    PI("lmc-nstart",fepvals->lmc_nstart);  
+    PS("symmetrized-transition-matrix", BOOL(fepvals->bSymmetrizedTMatrix));
+    PI("fastmbar",fepvals->fastmbar);
+    PI("mininum-var-min",fepvals->minvarmin); /*default is reasonable */
+    PI("weight-c-range",fepvals->c_range); /* default is just C=0 */
+    PR("wl-scale",fepvals->wl_scale);
+    PR("wl-delta",fepvals->wl_delta);
+    PR("wl-ratio",fepvals->wl_ratio);
+    PI("nstfep",fepvals->nstfep);
+    PI("mc-seed",fepvals->mc_seed);
 };
 
 static void pr_pull(FILE *fp,int indent,t_pull *pull)

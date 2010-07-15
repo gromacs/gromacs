@@ -78,6 +78,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
   wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
 static char fep_lambda[efptNR][STRLEN];
+static char lambda_weights[STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
@@ -308,25 +309,26 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     CHECK((fep->init_fep_state >= fep->n_lambda));
     
     for (j=0;j<efptNR;j++)
-      {
-	for (i=0;i<fep->n_lambda;i++) 
-	  {
-	    sprintf(err_buf,"Entry %d for %s must be between 0 and 1, instead is %g",i,efpt_names[j],fep->all_lambda[j][i]);
-	    CHECK((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1));
-	  }
-      }
+    {
+        for (i=0;i<fep->n_lambda;i++) 
+        {
+            sprintf(err_buf,"Entry %d for %s must be between 0 and 1, instead is %g",i,efpt_names[j],fep->all_lambda[j][i]);
+            CHECK((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1));
+        }
+    }
     
-    if ((fep->sc_alpha>0) && (!fep->bScCoul)) {
-      for (i=0;i<fep->n_lambda;i++) 
-	{
-	  sprintf(err_buf,"For state %d, vdw-lambda (%f) is changing with vdw softcore, while coul-lambda (%f) is nonzero without coulomb softcore: this will lead to crashes, and is not supported.",i,fep->all_lambda[efptVDW][i],
-                  fep->all_lambda[efptCOUL][i]);
-          CHECK((fep->sc_alpha>0) && 
-                (((fep->all_lambda[efptCOUL][i] > 0.0) && 
-                  (fep->all_lambda[efptCOUL][i] < 1.0)) &&
-                 ((fep->all_lambda[efptVDW][i] > 0.0) && 
-                  (fep->all_lambda[efptVDW][i] < 1.0))));
-	}
+    if ((fep->sc_alpha>0) && (!fep->bScCoul)) 
+    {
+        for (i=0;i<fep->n_lambda;i++) 
+        {
+            sprintf(err_buf,"For state %d, vdw-lambda (%f) is changing with vdw softcore, while coul-lambda (%f) is nonzero without coulomb softcore: this will lead to crashes, and is not supported.",i,fep->all_lambda[efptVDW][i],
+                    fep->all_lambda[efptCOUL][i]);
+            CHECK((fep->sc_alpha>0) && 
+                  (((fep->all_lambda[efptCOUL][i] > 0.0) && 
+                    (fep->all_lambda[efptCOUL][i] < 1.0)) &&
+                   ((fep->all_lambda[efptVDW][i] > 0.0) && 
+                    (fep->all_lambda[efptVDW][i] < 1.0))));
+        }
     }
 
     if (fep->bScCoul) 
@@ -410,6 +412,26 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
   CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM)
 	&& (ir->efep!=efepNO));
+
+  /*  Free Energy Checks -- In an ideal world, slow growth and FEP would                                               
+      be treated differently, but that's the next step */
+  
+  for (i=0;i<efptNR;i++) {
+      for (j=0;j<ir->fepvals->n_lambda;j++) {
+          sprintf(err_buf,"%s[%d] must be between 0 and 1",efpt_names[i],j);
+          CHECK((ir->fepvals->all_lambda[i][j] < 0) || (ir->fepvals->all_lambda[i][j] > 1));
+      }
+  }
+  sprintf(err_buf,"wl-ratio (%f) must be between 0 and 1",ir->fepvals->wl_ratio);
+  CHECK((ir->fepvals->wl_ratio < 0) || (ir->fepvals->wl_ratio > 1));
+  sprintf(err_buf,"wl-scale (%f) must be between 0 and 1",ir->fepvals->wl_scale);
+  CHECK((ir->fepvals->wl_scale < 0) || (ir->fepvals->wl_scale > 1));
+  sprintf(err_buf,"nstdhdl (%d) must be an integer multiple of nstfep (%d)",
+          ir->nstdhdl,ir->fepvals->nstfep);
+  CHECK((mod(ir->nstdhdl,ir->fepvals->nstfep)!=0));
+  sprintf(err_buf,"nstfep (%d) must be an integer multiple of nstlist (%d)",
+          ir->fepvals->nstfep,ir->nstlist);  /* MRS -- WHAT ABOUT IF IT'S VARIABLE NSLIST? */
+  CHECK((mod(ir->nstdhdl,ir->fepvals->nstfep)!=0));
   
   sprintf(err_buf,"Twin-range neighbour searching (NS) with simple NS"
 	  " algorithm not implemented");
@@ -779,101 +801,115 @@ static void parse_n_double(char *str,int *n,double **r)
   }
 }
 
-static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
+static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights_lambda[STRLEN]) {
 
-  int i,j,max_n_lambda,nfep[efptNR];
-  t_lambda *fep = ir->fepvals;
-  double **count_fep_lambdas;
-  
-  snew(count_fep_lambdas,efptNR);
+    int i,j,max_n_lambda,nweights,nfep[efptNR];
+    t_lambda *fep = ir->fepvals;
+    double **count_fep_lambdas;
+    
+    snew(count_fep_lambdas,efptNR);
 
-  /* FEP input processing */
-  /* first, identify the number of lambda values for each type.  
-     All that are nonzero must have the same number */
+    /* FEP input processing */
+    /* first, identify the number of lambda values for each type.  
+       All that are nonzero must have the same number */
   
-  fep->n_lambda = -1;
-  for (i=0;i<efptNR;i++) 
+    fep->n_lambda = -1;
+    for (i=0;i<efptNR;i++) 
     {
-      parse_n_double(fep_lambda[i],&(nfep[i]),&(count_fep_lambdas[i]));
+        parse_n_double(fep_lambda[i],&(nfep[i]),&(count_fep_lambdas[i]));
     }
-
-  /* now, determine the number.  All must be either zero, or equal. */
-
-  max_n_lambda = 0;
-  for (i=0;i<efptNR;i++) 
+    
+    /* now, determine the number.  All must be either zero, or equal. */
+    
+    max_n_lambda = 0;
+    for (i=0;i<efptNR;i++) 
     {
-      if (nfep[i] > 0) {
-	max_n_lambda = nfep[i];  /* here's a nonzero one.  Everything else 
-				    must have the same number as this if it's 
-                                    not zero.*/
-	break;
-      }
+        if (nfep[i] > 0) {
+            max_n_lambda = nfep[i];  /* here's a nonzero one.  Everything else 
+                                        must have the same number as this if it's 
+                                        not zero.*/
+            break;
+        }
     }
-  
-  for (i=0;i<efptNR;i++) 
+    
+    for (i=0;i<efptNR;i++) 
     {
-      if (nfep[i] == 0) 
-	{
-	  ir->fepvals->separate_dvdl[i] = FALSE;
-	}
-      else if (nfep[i] == max_n_lambda)
-	{
-	  ir->fepvals->separate_dvdl[i] = TRUE;
-	}
-      else
-	{
-	  gmx_fatal(FARGS,"Number of lambdas (%d) for FEP type %s not equal to number of other types (%d)",
-		    nfep[i],efpt_names[i],max_n_lambda);	
-	}
+        if (nfep[i] == 0) 
+        {
+            ir->fepvals->separate_dvdl[i] = FALSE;
+        }
+        else if (nfep[i] == max_n_lambda)
+        {
+            ir->fepvals->separate_dvdl[i] = TRUE;
+        }
+        else
+        {
+            gmx_fatal(FARGS,"Number of lambdas (%d) for FEP type %s not equal to number of other types (%d)",
+                      nfep[i],efpt_names[i],max_n_lambda);	
+        }
     }
-  
-  /* the number of lambdas is the number we've read in, which is either zero 
-     or the same for all */
-  fep->n_lambda = max_n_lambda;  
-  
-  /* now allocate the space for all of the lambdas, and transfer the data */
-  snew(fep->all_lambda,efptNR);
-  for (i=0;i<efptNR;i++) 
+    
+    /* the number of lambdas is the number we've read in, which is either zero 
+       or the same for all */
+    fep->n_lambda = max_n_lambda;  
+    
+    /* now allocate the space for all of the lambdas, and transfer the data */
+    snew(fep->all_lambda,efptNR);
+    for (i=0;i<efptNR;i++) 
     {
-      snew(fep->all_lambda[i],fep->n_lambda);
-      if (nfep[i] > 0)  /* if it's zero, then the count_fep_lambda arrays 
-                           are zero */
-	{
-	  for (j=0;j<fep->n_lambda;j++) 
-	    {
-	      fep->all_lambda[i][j] = count_fep_lambdas[i][j];
-	    }
-	  sfree(count_fep_lambdas[i]);
-	}
+        snew(fep->all_lambda[i],fep->n_lambda);
+        if (nfep[i] > 0)  /* if it's zero, then the count_fep_lambda arrays 
+                             are zero */
+        {
+            for (j=0;j<fep->n_lambda;j++) 
+            {
+                fep->all_lambda[i][j] = count_fep_lambdas[i][j];
+            }
+            sfree(count_fep_lambdas[i]);
+        }
     }
-  
-  sfree(count_fep_lambdas);
-
-  /* "fep-vals" is either zero or the full number. If zero, we'll need to define fep-lambda for internal
-     bookkeeping -- for now, zero it out (resulting in all A state). */
-
-  if (nfep[efptFEP] == 0) 
+    
+    sfree(count_fep_lambdas);
+    
+    /* "fep-vals" is either zero or the full number. If zero, we'll need to define fep-lambda for internal
+       bookkeeping -- for now, zero it out (resulting in all A state). */
+    
+    if (nfep[efptFEP] == 0) 
     {
-      for (i=0;i<fep->n_lambda;i++) 
-	{
-	  fep->all_lambda[efptFEP][i] = 0;
-	}
+        for (i=0;i<fep->n_lambda;i++) 
+        {
+            fep->all_lambda[efptFEP][i] = 0;
+        }
     }  
-
-
-  /* Fill in the others with the efptFEP if they are not explicitly
-     specified (i.e. nfep[i] == 0).  This means if fep is not defined,
-     they are all zero. */
-
-  for (i=0;i<efptNR;i++) 
+    
+    /* Fill in the others with the efptFEP if they are not explicitly
+       specified (i.e. nfep[i] == 0).  This means if fep is not defined,
+       they are all zero. */
+    
+    for (i=0;i<efptNR;i++) 
     {
-      if ((nfep[i] == 0) && (i!=efptFEP)) 
-	{
-	  for (j=0;j<fep->n_lambda;j++) 
-	    {
-	      fep->all_lambda[i][j] = fep->all_lambda[efptFEP][j];
-	    }
-	}
+        if ((nfep[i] == 0) && (i!=efptFEP)) 
+        {
+            for (j=0;j<fep->n_lambda;j++) 
+            {
+                fep->all_lambda[i][j] = fep->all_lambda[efptFEP][j];
+            }
+        }
+    }
+
+    /* now read in the weights - error handling? */
+    parse_n_double(lambda_weights,&nweights,&(fep->lam_weights));
+    if (nweights == 0) 
+    {
+        fep->init_weights = 0;
+    } 
+    else if (nweights != fep->n_lambda)
+    {
+        gmx_fatal(FARGS,"Number of weights (%d) is not equal to number of lambda values (%d)",
+                  nweights,fep->n_lambda);
+    } 
+    else {
+        fep->init_weights = 1;
     }
 }
 
@@ -1247,8 +1283,9 @@ void get_ir(const char *mdparin,const char *mdparout,
                                                          it was not entered */
   ITYPE ("init-lambda-state", ir->fepvals->init_fep_state,0);
   RTYPE ("delta-lambda",ir->fepvals->delta_lambda,0.0);
-  EETYPE("lambda-stats",   ir->fepvals->elamstats, elamstats_names);
-  EETYPE("lambda-mc-move",     ir->fepvals->elmcmove, elmcmove_names);
+  EETYPE("lambda-stats", ir->fepvals->elamstats, elamstats_names);
+  EETYPE("lambda-mc-move", ir->fepvals->elmcmove, elmcmove_names);
+  ITYPE("mc-seed",ir->fepvals->mc_seed,-1);
   ITYPE ("lmc-repeats",ir->fepvals->lmc_repeats,1);
   ITYPE ("lmc-gibbsdelta",ir->fepvals->gibbsdeltalam,-1);
   ITYPE ("lmc-start-equil",ir->fepvals->lmc_nequil,-1);
@@ -1272,6 +1309,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("sc-sigma",ir->fepvals->sc_sigma,0.3);
   EETYPE("sc-coul",ir->fepvals->bScCoul,yesno_names);
   ITYPE ("nstdhdl",ir->nstdhdl, 10);
+  ITYPE ("nstfep",ir->fepvals->nstfep, 10);
   ITYPE ("dh_table_size", ir->fepvals->dh_table_size, 0);
   RTYPE ("dh_table_spacing", ir->fepvals->dh_table_spacing, 0.1);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
@@ -1397,13 +1435,13 @@ void get_ir(const char *mdparin,const char *mdparout,
 
   /* FREE ENERGY OPTIONS */
   if (ir->efep != efepNO) 
-    {
-      do_fep_params(ir,fep_lambda);
-    } 
+  {
+      do_fep_params(ir,fep_lambda,lambda_weights);
+  } 
   else
-    {
+  {
       ir->fepvals->n_lambda = 0;
-    }
+  }
   
   do_wall_params(ir,wall_atomtype,wall_density,opts);
   

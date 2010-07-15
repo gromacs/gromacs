@@ -299,17 +299,20 @@ extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 			  matrix box,real lambda,tensor pres,tensor virial,
 			  real *prescorr, real *enercorr, real *dvdlcorr);
 
-extern real do_logsum(int N, real *a_n);
+  //extern real do_logsum(int N, real *a_n);
 
-extern void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real *weighted_lamee, int step);
+  //extern void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real *weighted_lamee, int step);
 
-extern int FindMinimum(real *min_metric, int N);
+  //extern int FindMinimum(real *min_metric, int N);
 
-extern int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state,real *weighted_lamee, real *p_k);
+  //extern int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state,real *weighted_lamee, real *p_k);
 
-extern bool CheckHistogramRatios(t_lambda *fep);
+  //extern bool CheckHistogramRatios(t_lambda *fep);
 
 extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_enerdata_t *enerd, gmx_large_int_t step);
+
+extern void InitializeExpandedEnsembles(t_inputrec *ir);
+
 typedef enum
 {
   LIST_SCALARS	=0001,
