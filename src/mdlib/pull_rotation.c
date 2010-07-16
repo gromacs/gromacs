@@ -2056,15 +2056,6 @@ static real do_flex_lowlevel(
             erg->f_rot_loc[j][m] = rotg->k*tmp_f[m];
 
 #ifdef INFOF
-//        static bool bFirst=1;
-//        char buf[255];
-//        static FILE *fp;
-//        if (bFirst)
-//        {
-//            sprintf(buf, "forces%d.txt", cr->nodeid);
-//            fp = fopen(buf, "w");
-//            bFirst = 0;
-//        }
         fprintf(stderr," FORCE on atom %d  = %15.8f %15.8f %15.8f   1: %15.8f %15.8f %15.8f   2: %15.8f %15.8f %15.8f\n", iigrp,
                 rotg->k*tmp_f[XX] ,  rotg->k*tmp_f[YY] ,  rotg->k*tmp_f[ZZ] ,
                -rotg->k*sum_n1[XX], -rotg->k*sum_n1[YY], -rotg->k*sum_n1[ZZ],
