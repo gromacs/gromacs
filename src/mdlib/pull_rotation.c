@@ -1364,17 +1364,17 @@ static int get_single_atom_gaussians(
 }
 
 
-#define PRECALC
-#ifdef PRECALC
+#define FLEX2_PRECALC
+#ifdef FLEX2_PRECALC
 static void flex2_precalc_inner_sum(t_rotgrp *rotg, t_commrec *cr)
 {
     int  i,n,islab;
-    rvec  xi;            /* positions in the i-sum                */
+    rvec  xi;                /* positions in the i-sum                        */
     rvec  xcn, ycn;          /* the current and the reference slab centers    */
     real gaussian_xi;
     rvec yi0;
 
-    rvec  rin;   /* Helper variables            */
+    rvec  rin;               /* Helper variables                              */
     real  fac,fac2;
 
     rvec innersumvec;
@@ -1468,6 +1468,91 @@ static void flex2_precalc_inner_sum(t_rotgrp *rotg, t_commrec *cr)
 #endif
 
 
+#ifdef FLEX_PRECALC
+static void flex_precalc_inner_sum(t_rotgrp *rotg, t_commrec *cr)
+{
+    int   count,i,ic,ii,iii,j,m,n,islab,iigrp;
+    rvec  xi, xj;            /* positions in the i- and j-sums                */
+    rvec  yi0, yj0;          /* the reference positions in the i- and j-sums  */
+    rvec  xcn, ycn;          /* the current and the reference slab centers    */
+    rvec  qin, qjn;          /* q_i^n for the i- and j-sum                    */
+
+    rvec  sum_n1,sum_n2;     /* Two contributions to the rotation force       */
+    rvec  innersumvec;       /* Inner part of sum_n2                          */
+    rvec  force_n;           /* Single force from slab n on one atom          */
+
+    rvec  r,dum,dum2,dummy1,tmp_f,tmp, tmp2;   /* Helper variables            */
+
+    real  V;                 /* The rotation potential energy                 */
+    real  OOsigma2;          /* 1/(sigma^2)                                   */
+    real  beta;              /* beta_n(xj)                                    */
+    real  bjn, bin;          /* b_j^n and b_i^n                               */
+    real  gaussian_xj, gaussian_xi;  /* Gaussian weights gn(xj), gn(xi)       */
+    real  fac, betan_xj_sigma2;
+
+    /* for mass weighting: */
+    real      mj,wj,wi;      /* Mass-weighting of the positions               */
+    real      N_M;           /* N/M                                           */
+
+    gmx_enfrotgrp_t erg;    /* Pointer to enforced rotation group data */
+
+#ifdef PRINTINTERACT
+    int interactions=0;
+#endif
+
+    erg=rotg->enfrotgrp;
+    N_M = rotg->nat * erg->invmass;
+
+    /*************************************************************/
+    /* For the term sum_n2 we need to loop over all atoms again: */
+    /*************************************************************/
+    clear_rvec(innersumvec);
+
+    for (i=erg->firstatom[islab]; i<=erg->lastatom[islab]; i++)
+    {
+        /* Index of a rotation group atom  */
+        iii = rotg->ind[i];
+
+        /* Save this atom's position in xi and its weight in wi */
+        copy_rvec(erg->xc[i],xi);
+        wi = N_M*erg->mc_sorted[i];
+
+        gaussian_xi = gaussian_weight(xi,rotg,n);
+
+        /* Calculate r = Omega*(yi0 - ycn) for atom i in slab n: */
+        /* Unrotated reference position yi0: */
+        copy_rvec(erg->xc_ref_sorted[i],yi0);
+
+        /* The reference center of this slab is still in ycn */
+        rvec_sub(yi0, ycn, tmp);     /* tmp =            yi0-ycn      */
+        mvmul(erg->rotmat, tmp, r);  /* r   =     Omega*(yi0-ycn)     */
+        cprod(rotg->vec, r, tmp);    /* tmp = v x Omega*(yi0-ycn)     */
+
+                                     /*        v x Omega*(yi0-ycn)    */
+        unitv(tmp, qin);             /* qin = ---------------------   */
+                                     /*       |v x Omega*(yi0-ycn)|   */
+
+        /* With qin we can now calculate the whole i-sum: */
+        rvec_sub(xcn, xj, tmp);      /* tmp = xcn - xj                */
+        /* tmp2 = beta/sigma^2 * (qin*(xcn-xj)) * v   */
+        svmul(betan_xj_sigma2*iprod(tmp,qin), rotg->vec, tmp2);
+        rvec_add(tmp2, qin, tmp);    /* tmp = qin + tmp2              */
+
+        /* Calculate bin */
+        rvec_sub(xi, xcn, tmp2);     /* tmp2 =                xi-xcn  */
+        bin = iprod(qin, tmp2);      /* bin  =           qin*(xi-xcn) */
+
+        fac = wi*gaussian_xi*bin;    /* fac  = wi*gn(xi)*qin*(xi-xcn) */
+        svmul(fac, tmp, tmp2);       /* tmp2 = wi*gn(xi)*qin*(xi-xcn) * (qin + beta/sigma^2 * (qin*(xcn-xj)) * v) */
+
+        /* Add this contribution to the inner sum: */
+        rvec_add(innersumvec, tmp2, innersumvec);
+
+    } /* now we have the inner sum for this atom in this slab */
+}
+#endif
+
+
 static real do_flex2_lowlevel(
         t_rotgrp  *rotg,
         real      sigma,    /* The Gaussian width sigma */
@@ -1507,12 +1592,12 @@ static real do_flex2_lowlevel(
     real slab_sum3part,slab_sum4part;
     rvec slab_sum1vec, slab_sum2vec, slab_sum3vec, slab_sum4vec;
 
-#ifndef PRECALC
+#ifndef FLEX2_PRECALC
     int i;
-    rvec  xi;                /* position in the i-sum                         */
+    rvec xi;                 /* position in the i-sum                         */
     real gaussian_xi;
     rvec yi0;
-    rvec  rin;               /* Helper variables                              */
+    rvec rin;                /* Helper variables                              */
     real OOpsii,OOpsiistar;
     real sin_rin;
     rvec s_in;
@@ -1521,8 +1606,7 @@ static real do_flex2_lowlevel(
 
     erg=rotg->enfrotgrp;
 
-    
-#ifdef PRECALC
+#ifdef FLEX2_PRECALC
     /* Pre-calculate the inner sums, so that we do not have to calculate
      * them again for every atom */
     flex2_precalc_inner_sum(rotg, cr);
@@ -1638,7 +1722,7 @@ static real do_flex2_lowlevel(
              * get_slab_centers that it is non-zero. */
             Wjn = gaussian_xj*mj/erg->slab_weights[islab];
 
-#ifdef PRECALC
+#ifdef FLEX2_PRECALC
             /* We already have precalculated the inner sum for slab n */
             copy_rvec(erg->slab_innersumvec[islab], innersumvec);
 #else
@@ -1776,7 +1860,7 @@ static real do_flex_lowlevel(
     rvec  qin, qjn;          /* q_i^n for the i- and j-sum                    */
 
     rvec  sum_n1,sum_n2;     /* Two contributions to the rotation force       */
-    rvec  sum_i;             /* Inner part of sum_n2                          */
+    rvec  innersumvec;       /* Inner part of sum_n2                          */
     rvec  force_n;           /* Single force from slab n on one atom          */
 
     rvec  r,dum,dum2,dummy1,tmp_f,tmp, tmp2;   /* Helper variables            */
@@ -1796,6 +1880,12 @@ static real do_flex_lowlevel(
 
     
     erg=rotg->enfrotgrp;
+
+#ifdef FLEX_PRECALC
+    /* Pre-calculate the inner sums, so that we do not have to calculate
+     * them again for every atom */
+    flex_precalc_inner_sum(rotg, cr);
+#endif
 
     /********************************************************/
     /* Main loop over all local atoms of the rotation group */
@@ -1884,15 +1974,18 @@ static real do_flex_lowlevel(
             /* Sum over n: */
             rvec_inc(sum_n1,dummy1);
             
+#ifdef FLEX_PRECALC
+            /* We already have precalculated the inner sum for slab n */
+            copy_rvec(erg->slab_innersumvec[islab], innersumvec);
+#else
             /*************************************************************/
             /* For the term sum_n2 we need to loop over all atoms again: */
             /*************************************************************/
-            clear_rvec(sum_i);
+            clear_rvec(innersumvec);
             
             GMX_MPE_LOG(ev_inner_loop_start);
             
-            /* TODO: Need slabind instead of n here?! */
-            for (i=erg->firstatom[n]; i<=erg->lastatom[n]; i++)
+            for (i=erg->firstatom[islab]; i<=erg->lastatom[islab]; i++)
             {
                 /* Index of a rotation group atom  */
                 iii = rotg->ind[i];
@@ -1930,15 +2023,15 @@ static real do_flex_lowlevel(
                 svmul(fac, tmp, tmp2);       /* tmp2 = wi*gn(xi)*qin*(xi-xcn) * (qin + beta/sigma^2 * (qin*(xcn-xj)) * v) */
 
                 /* Add this contribution to the inner sum: */
-                rvec_add(sum_i, tmp2, sum_i);
+                rvec_add(innersumvec, tmp2, innersumvec);
                 
             } /* now we have the i-sum for this atom in this slab */
-            
+#endif
             /* We can safely divide by slab_weights since we check in get_slab_centers
              * that it is non-zero. */
-            svmul(gaussian_xj/erg->slab_weights[islab], sum_i, sum_i);
+            svmul(gaussian_xj/erg->slab_weights[islab], innersumvec, innersumvec);
 
-            rvec_add(sum_n2, sum_i, sum_n2);
+            rvec_add(sum_n2, innersumvec, sum_n2);
             
             GMX_MPE_LOG(ev_inner_loop_finish);
 
@@ -1946,7 +2039,7 @@ static real do_flex_lowlevel(
             if (bCalcTorque)
             {
                 /* The force on atom ii from slab n only: */
-                rvec_sub(sum_i, dummy1, force_n);
+                rvec_sub(innersumvec, dummy1, force_n);
                 svmul(rotg->k, force_n, force_n);
                 erg->slab_torque_v[islab] += torque(rotg->vec, force_n, xj, xcn);
             }
@@ -1963,15 +2056,15 @@ static real do_flex_lowlevel(
             erg->f_rot_loc[j][m] = rotg->k*tmp_f[m];
 
 #ifdef INFOF
-        static bool bFirst=1;
-        char buf[255];
-        static FILE *fp;
-        if (bFirst)
-        {
-            sprintf(buf, "forces%d.txt", cr->nodeid);
-            fp = fopen(buf, "w");
-            bFirst = 0;
-        }
+//        static bool bFirst=1;
+//        char buf[255];
+//        static FILE *fp;
+//        if (bFirst)
+//        {
+//            sprintf(buf, "forces%d.txt", cr->nodeid);
+//            fp = fopen(buf, "w");
+//            bFirst = 0;
+//        }
         fprintf(stderr," FORCE on atom %d  = %15.8f %15.8f %15.8f   1: %15.8f %15.8f %15.8f   2: %15.8f %15.8f %15.8f\n", iigrp,
                 rotg->k*tmp_f[XX] ,  rotg->k*tmp_f[YY] ,  rotg->k*tmp_f[ZZ] ,
                -rotg->k*sum_n1[XX], -rotg->k*sum_n1[YY], -rotg->k*sum_n1[ZZ],
@@ -2299,7 +2392,7 @@ static void do_fixed(
     real      alpha;           /* a single angle between an actual and a reference position */
     real      weight;          /* single weight for a single angle */
     gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
-    rvec      xdum;
+    rvec      tmpvec;
 
     /* for mass weighting: */
     real      wi;              /* Mass-weighting of the positions */
@@ -2320,14 +2413,14 @@ static void do_fixed(
 
     N_M = rotg->nat * erg->invmass;
 
-    /* Each processor calculates the forces on its local atoms */
+    /* Each process calculates the forces on its local atoms */
     for (i=0; i<erg->nat_loc; i++)
     {
         /* Calculate (x_i-x_c) resp. (x_i-u) */
-        rvec_sub(erg->x_loc_pbc[i], erg->xc_center, xdum);
+        rvec_sub(erg->x_loc_pbc[i], erg->xc_center, tmpvec);
 
         /* Calculate Omega*(y_i-y_c)-(x_i-x_c) */
-        rvec_sub(erg->xr_loc[i], xdum, dr);
+        rvec_sub(erg->xr_loc[i], tmpvec, dr);
         
         if (bProject)
             project_onto_plane(dr, rotg->vec);
@@ -2351,7 +2444,7 @@ static void do_fixed(
             erg->fix_torque_v += torque(rotg->vec, tmp_f, erg->x_loc_pbc[i], erg->xc_center);
             
             /* Calculate the angle between reference and actual rotation group atom. */
-            angle(rotg, xdum, erg->xr_loc[i], &alpha, &weight);  /* angle in rad, weighted */
+            angle(rotg, tmpvec, erg->xr_loc[i], &alpha, &weight);  /* angle in rad, weighted */
             erg->fix_angles_v += alpha * weight;
             erg->fix_weight_v += weight;
         }
@@ -2370,6 +2463,416 @@ static void do_fixed(
                 erg->xc_ref_ind[i],erg->f_rot_loc[i][XX], erg->f_rot_loc[i][YY], erg->f_rot_loc[i][ZZ],erg->fix_torque_v);
 #endif
     } /* end of loop over local rotation group atoms */
+}
+
+
+/* Calculate the radial motion potential and forces */
+static void do_radial_motion(
+        t_commrec *cr,
+        t_rotgrp  *rotg,        /* The rotation group          */
+        rvec      x[],          /* The positions               */
+        matrix    box,          /* The simulation box          */
+        double    t,            /* Time in picoseconds         */
+        int       step,         /* The time step               */
+        bool      bTorque)
+{
+    int       j;
+    rvec      tmp_f;           /* Force */
+    real      alpha;           /* a single angle between an actual and a reference position */
+    real      weight;          /* single weight for a single angle */
+    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
+    rvec      xj_u;            /* xj - u */
+    rvec      tmpvec;
+    real      fac,fac2,sum;
+    rvec      pj;
+
+    /* For mass weighting: */
+    real      wj;              /* Mass-weighting of the positions */
+    real      N_M;             /* N/M */
+
+
+    erg=rotg->enfrotgrp;
+
+    /* Clear values from last time step */
+    erg->V            = 0.0;
+    sum               = 0.0;
+    erg->fix_torque_v = 0.0;
+    erg->fix_angles_v = 0.0;
+    erg->fix_weight_v = 0.0;
+
+    N_M = rotg->nat * erg->invmass;
+
+    /* Each process calculates the forces on its local atoms */
+    for (j=0; j<erg->nat_loc; j++)
+    {
+        /* Calculate (xj-u) */
+        rvec_sub(erg->x_loc_pbc[j], erg->xc_center, xj_u);  /* xj_u = xj-u */
+
+        /* Calculate Omega.(yj-u) */
+        cprod(rotg->vec, erg->xr_loc[j], tmpvec);  /* tmpvec = v x Omega.(yj-u) */
+
+                              /*         v x Omega.(yj-u)     */
+        unitv(tmpvec, pj);    /*  pj = --------------------   */
+                              /*       | v x Omega.(yj-u) |   */
+
+        fac = iprod(pj, xj_u);  /* fac = pj.(xj-u) */
+        fac2 = fac*fac;
+
+        /* Mass-weighting */
+        wj = N_M*erg->m_loc[j];
+
+        /* Store the additional force so that it can be added to the force
+         * array after the normal forces have been evaluated */
+        svmul(-rotg->k*wj*fac, pj, tmp_f);
+        copy_rvec(tmp_f, erg->f_rot_loc[j]);
+        sum += wj*fac2;
+        if (bTorque)
+        {
+            /* Add to the torque of this rotation group */
+            erg->fix_torque_v += torque(rotg->vec, tmp_f, erg->x_loc_pbc[j], erg->xc_center);
+
+            /* Calculate the angle between reference and actual rotation group atom. */
+            angle(rotg, xj_u, erg->xr_loc[j], &alpha, &weight);  /* angle in rad, weighted */
+            erg->fix_angles_v += alpha * weight;
+            erg->fix_weight_v += weight;
+        }
+#ifdef INFOF
+        fprintf(stderr,"RM: step %d node%d FORCE on ATOM %d = (%15.8f %15.8f %15.8f)  torque=%15.8f\n", step, cr->nodeid,
+                erg->xc_ref_ind[j],erg->f_rot_loc[j][XX], erg->f_rot_loc[j][YY], erg->f_rot_loc[j][ZZ],erg->fix_torque_v);
+#endif
+    } /* end of loop over local rotation group atoms */
+    erg->V = 0.5*rotg->k*sum;
+}
+
+
+/* Calculate the radial motion pivot-free potential and forces */
+static void do_radial_motion_pf(
+        t_commrec *cr,
+        t_rotgrp  *rotg,        /* The rotation group          */
+        rvec      x[],          /* The positions               */
+        matrix    box,          /* The simulation box          */
+        double    t,            /* Time in picoseconds         */
+        int       step,         /* The time step               */
+        bool      bTorque)
+{
+    int       i,ii,iigrp,j;
+    rvec      xj;              /* Current position */
+    rvec      xj_xc;           /* xj  - xc  */
+    rvec      yj0_yc0;         /* yj0 - yc0 */
+    rvec      tmp_f;           /* Force */
+    real      alpha;           /* a single angle between an actual and a reference position */
+    real      weight;          /* single weight for a single angle */
+    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
+    rvec      tmpvec, tmpvec2;
+    rvec      innersumvec;     /* Precalculation of the inner sum */
+    rvec      innersumveckM;
+    real      fac,fac2,V;
+    rvec      qi,qj;
+
+    /* For mass weighting: */
+    real      mj,wi,wj;        /* Mass-weighting of the positions */
+    real      N_M;             /* N/M */
+
+
+    erg=rotg->enfrotgrp;
+
+    /* Clear values from last time step */
+    erg->V            = 0.0;
+    V                 = 0.0;
+    erg->fix_torque_v = 0.0;
+    erg->fix_angles_v = 0.0;
+    erg->fix_weight_v = 0.0;
+
+    N_M = rotg->nat * erg->invmass;
+
+    /* Get the current center of the rotation group: */
+    get_center(erg->xc, erg->mc, rotg->nat, erg->xc_center);
+
+    /* Precalculate Sum_i [ wi qi.(xi-xc) qi ] which is needed for every single j */
+    clear_rvec(innersumvec);
+    for (i=0; i < rotg->nat; i++)
+    {
+        /* Mass-weighting */
+        wi = N_M*erg->mc[i];
+
+        /* Calculate qi. Note that xc_ref_center has already been subtracted from
+         * x_ref in init_rot_group.*/
+        mvmul(erg->rotmat, rotg->x_ref[i], tmpvec);  /* tmpvec  = Omega.(yi0-yc0) */
+
+        cprod(rotg->vec, tmpvec, tmpvec2);          /* tmpvec2 = v x Omega.(yi0-yc0) */
+
+                              /*         v x Omega.(yi0-yc0)     */
+        unitv(tmpvec2, qi);   /*  qi = -----------------------   */
+                              /*       | v x Omega.(yi0-yc0) |   */
+
+        rvec_sub(erg->xc[i], erg->xc_center, tmpvec);  /* tmpvec = xi-xc */
+
+        svmul(wi*iprod(qi, tmpvec), qi, tmpvec2);
+
+        rvec_inc(innersumvec, tmpvec2);
+    }
+    svmul(rotg->k*erg->invmass, innersumvec, innersumveckM);
+
+    /* Each process calculates the forces on its local atoms */
+    for (j=0; j<erg->nat_loc; j++)
+    {
+        /* Local index of a rotation group atom  */
+        ii = erg->ind_loc[j];
+        /* Position of this atom in the collective array */
+        iigrp = erg->xc_ref_ind[j];
+        /* Mass-weighting */
+        mj = erg->mc[iigrp];  /* need the unsorted mass here */
+        wj = N_M*mj;
+
+        /* Current position of this atom: x[ii][XX/YY/ZZ] */
+        copy_rvec(x[ii], xj);
+
+        /* Shift this atom such that it is near its reference */
+        shift_single_coord(box, xj, erg->xc_shifts[iigrp]);
+
+        /* The (unrotated) reference position is yj0. yc0 has already
+         * been subtracted in init_rot_group */
+        copy_rvec(rotg->x_ref[iigrp], yj0_yc0);   /* yj0_yc0 = yj0 - yc0      */
+
+        /* Calculate Omega.(yj0-yc0) */
+        mvmul(erg->rotmat, yj0_yc0, tmpvec2);     /* tmpvec2 = Omega.(yj0 - yc0)  */
+
+        cprod(rotg->vec, tmpvec2, tmpvec);  /* tmpvec = v x Omega.(yj0-yc0) */
+
+                              /*         v x Omega.(yj0-yc0)     */
+        unitv(tmpvec, qj);    /*  qj = -----------------------   */
+                              /*       | v x Omega.(yj0-yc0) |   */
+
+        /* Calculate (xj-xc) */
+        rvec_sub(xj, erg->xc_center, xj_xc);  /* xj_xc = xj-xc */
+
+        fac = iprod(qj, xj_xc);  /* fac = qj.(xj-xc) */
+        fac2 = fac*fac;
+
+        /* Store the additional force so that it can be added to the force
+         * array after the normal forces have been evaluated */
+        svmul(-rotg->k*wj*fac, qj, tmp_f); /* part 1 of force */
+        svmul(mj, innersumveckM, tmpvec);  /* part 2 of force */
+        rvec_inc(tmp_f, tmpvec);
+        copy_rvec(tmp_f, erg->f_rot_loc[j]);
+        V += wj*fac2;
+        if (bTorque)
+        {
+            /* Add to the torque of this rotation group */
+            erg->fix_torque_v += torque(rotg->vec, tmp_f, xj, erg->xc_center);
+
+            /* Calculate the angle between reference and actual rotation group atom. */
+            angle(rotg, xj_xc, yj0_yc0, &alpha, &weight);  /* angle in rad, weighted */
+            erg->fix_angles_v += alpha * weight;
+            erg->fix_weight_v += weight;
+        }
+#ifdef INFOF
+        fprintf(stderr,"RM-PF: step %d node%d FORCE on ATOM %d = (%15.8f %15.8f %15.8f)  torque=%15.8f\n", step, cr->nodeid,
+                erg->xc_ref_ind[j],erg->f_rot_loc[j][XX], erg->f_rot_loc[j][YY], erg->f_rot_loc[j][ZZ],erg->fix_torque_v);
+#endif
+    } /* end of loop over local rotation group atoms */
+    erg->V = 0.5*rotg->k*V;
+}
+
+
+/* Precalculate the inner sum for the radial motion 2 forces */
+static void radial_motion2_precalc_inner_sum(t_rotgrp  *rotg, rvec innersumvec)
+{
+    int       i;
+    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
+    rvec      xi_xc;           /* xj - xc */
+    rvec      tmpvec,tmpvec2;
+    real      fac,fac2;
+    rvec      ri,si;
+    real      siri;
+    rvec      v_xi_xc;          /* v x (xj - u) */
+    real      psii,psiistar;
+    real      wi;              /* Mass-weighting of the positions */
+    real      N_M;             /* N/M */
+    rvec      sumvec;
+
+    erg=rotg->enfrotgrp;
+    N_M = rotg->nat * erg->invmass;
+
+    /* Loop over the collective set of positions */
+    clear_rvec(sumvec);
+    for (i=0; i<rotg->nat; i++)
+    {
+        /* Mass-weighting */
+        wi = N_M*erg->mc[i];
+
+        rvec_sub(erg->xc[i], erg->xc_center, xi_xc); /* xi_xc = xi-xc         */
+
+        /* Calculate ri. Note that xc_ref_center has already been subtracted from
+         * x_ref in init_rot_group.*/
+        mvmul(erg->rotmat, rotg->x_ref[i], ri);      /* ri  = Omega.(yi0-yc0) */
+
+        cprod(rotg->vec, xi_xc, v_xi_xc);            /* v_xi_xc = v x (xi-u)  */
+
+        fac = norm2(v_xi_xc);
+                                          /*                      1           */
+        psiistar = 1.0/(fac + rotg->eps); /* psiistar = --------------------- */
+                                          /*            |v x (xi-xc)|^2 + eps */
+
+        psii = gmx_invsqrt(fac);          /*                 1                */
+                                          /*  psii    = -------------         */
+                                          /*            |v x (xi-xc)|         */
+
+        svmul(psii, v_xi_xc, si);          /*  si = psii * (v x (xi-xc) )     */
+
+        fac = iprod(v_xi_xc, ri);                   /* fac = (v x (xi-xc)).ri */
+        fac2 = fac*fac;
+
+        siri = iprod(si, ri);                       /* siri = si.ri           */
+
+        svmul(psiistar/psii, ri, tmpvec);
+        svmul(psiistar*psiistar/(psii*psii*psii) * siri, si, tmpvec2);
+        rvec_dec(tmpvec, tmpvec2);
+        cprod(tmpvec, rotg->vec, tmpvec2);
+
+        svmul(wi*siri, tmpvec2, tmpvec);
+
+        rvec_inc(sumvec, tmpvec);
+    }
+    svmul(rotg->k*erg->invmass, sumvec, innersumvec);
+}
+
+
+/* Calculate the radial motion 2 potential and forces */
+static void do_radial_motion2(
+        t_commrec *cr,
+        t_rotgrp  *rotg,        /* The rotation group          */
+        rvec      x[],          /* The positions               */
+        matrix    box,          /* The simulation box          */
+        double    t,            /* Time in picoseconds         */
+        int       step,         /* The time step               */
+        bool      bTorque)
+{
+    int       ii,iigrp,j;
+    rvec      xj;              /* Position */
+    real      alpha;           /* a single angle between an actual and a reference position */
+    real      weight;          /* single weight for a single angle */
+    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
+    rvec      xj_u;            /* xj - u */
+    rvec      tmpvec,tmpvec2;
+    real      fac,fac2,Vpart;
+    rvec      rj,sj;
+    real      sjrj;
+    rvec      v_xj_u;          /* v x (xj - u) */
+    real      psij,psijstar;
+    real      mj,wj;           /* For mass-weighting of the positions */
+    real      N_M;             /* N/M */
+    bool      bPF;
+    rvec      innersumvec;
+
+
+    erg=rotg->enfrotgrp;
+
+    bPF = rotg->eType==erotgRM2PF;
+    clear_rvec(innersumvec);
+    if (bPF)
+    {
+        /* For the pivot-free variant we have to use the current center of
+         * mass of the rotation group instead of the pivot u */
+        get_center(erg->xc, erg->mc, rotg->nat, erg->xc_center);
+
+        /* Also, we precalculate the second term of the forces that is identical
+         * (up to the weight factor mj) for all forces */
+        radial_motion2_precalc_inner_sum(rotg,innersumvec);
+    }
+
+    /* Clear values from last time step */
+    erg->V            = 0.0;
+    Vpart             = 0.0;
+    erg->fix_torque_v = 0.0;
+    erg->fix_angles_v = 0.0;
+    erg->fix_weight_v = 0.0;
+
+    N_M = rotg->nat * erg->invmass;
+
+    /* Each process calculates the forces on its local atoms */
+    for (j=0; j<erg->nat_loc; j++)
+    {
+        if (bPF)
+        {
+            /* Local index of a rotation group atom  */
+            ii = erg->ind_loc[j];
+            /* Position of this atom in the collective array */
+            iigrp = erg->xc_ref_ind[j];
+            /* Mass-weighting */
+            mj = erg->mc[iigrp];
+
+            /* Current position of this atom: x[ii] */
+            copy_rvec(x[ii], xj);
+
+            /* Shift this atom such that it is near its reference */
+            shift_single_coord(box, xj, erg->xc_shifts[iigrp]);
+
+            /* The (unrotated) reference position is yj0. yc0 has already
+             * been subtracted in init_rot_group */
+            copy_rvec(rotg->x_ref[iigrp], tmpvec);     /* tmpvec = yj0 - yc0  */
+
+            /* Calculate Omega.(yj0-yc0) */
+            mvmul(erg->rotmat, tmpvec, rj);          /* rj = Omega.(yj0-yc0)  */
+        }
+        else
+        {
+            mj = erg->m_loc[j];
+            copy_rvec(erg->x_loc_pbc[j], xj);
+            copy_rvec(erg->xr_loc[j], rj);           /* rj = Omega.(yj0-u)    */
+        }
+        /* Mass-weighting */
+        wj = N_M*mj;
+
+        /* Calculate (xj-u) resp. (xj-xc) */
+        rvec_sub(xj, erg->xc_center, xj_u);          /* xj_u = xj-u           */
+
+        cprod(rotg->vec, xj_u, v_xj_u);              /* v_xj_u = v x (xj-u)   */
+
+        fac = norm2(v_xj_u);
+                                          /*                      1           */
+        psijstar = 1.0/(fac + rotg->eps); /*  psistar = --------------------  */
+                                          /*            |v x (xj-u)|^2 + eps  */
+
+        psij = gmx_invsqrt(fac);          /*                 1                */
+                                          /*  psij    = ------------          */
+                                          /*            |v x (xj-u)|          */
+
+        svmul(psij, v_xj_u, sj);          /*  sj = psij * (v x (xj-u) )       */
+
+        fac = iprod(v_xj_u, rj);                     /* fac = (v x (xj-u)).rj */
+        fac2 = fac*fac;
+
+        sjrj = iprod(sj, rj);                        /* sjrj = sj.rj          */
+
+        svmul(psijstar/psij, rj, tmpvec);
+        svmul(psijstar*psijstar/(psij*psij*psij) * sjrj, sj, tmpvec2);
+        rvec_dec(tmpvec, tmpvec2);
+        cprod(tmpvec, rotg->vec, tmpvec2);
+
+        /* Store the additional force so that it can be added to the force
+         * array after the normal forces have been evaluated */
+        svmul(-rotg->k*wj*sjrj, tmpvec2, tmpvec);
+        svmul(mj, innersumvec, tmpvec2);  /* This is != 0 only for the pivot-free variant */
+
+        rvec_add(tmpvec2, tmpvec, erg->f_rot_loc[j]);
+        Vpart += wj*psijstar*fac2;
+        if (bTorque)
+        {
+            /* Add to the torque of this rotation group */
+            erg->fix_torque_v += torque(rotg->vec, erg->f_rot_loc[j], xj, erg->xc_center);
+
+            /* Calculate the angle between reference and actual rotation group atom. */
+            angle(rotg, xj_u, rj, &alpha, &weight);  /* angle in rad, weighted */
+            erg->fix_angles_v += alpha * weight;
+            erg->fix_weight_v += weight;
+        }
+#ifdef INFOF
+        fprintf(stderr,"RM2: step %d node%d FORCE on ATOM %d = (%15.8f %15.8f %15.8f)  torque=%15.8f\n", step, cr->nodeid,
+                erg->xc_ref_ind[j],erg->f_rot_loc[j][XX], erg->f_rot_loc[j][YY], erg->f_rot_loc[j][ZZ],erg->fix_torque_v);
+#endif
+    } /* end of loop over local rotation group atoms */
+    erg->V = 0.5*rotg->k*Vpart;
 }
 
 
@@ -2555,7 +3058,8 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
         for (i=0; i<rotg->nat; i++)
             erg->xc_ref_ind[i] = i;
 
-    /* Copy the masses so that the COM can be determined */
+    /* Copy the masses so that the COM can be determined. For all types of
+     * enforced rotation, we store the masses in the erg->mc array. */
     snew(erg->mc, rotg->nat);
     if (bFlex)
         snew(erg->mc_sorted, rotg->nat);
@@ -2908,14 +3412,45 @@ extern void do_rotation(
         erg->degangle = rotg->rate * t;
         calc_rotmat(rotg->vec,erg->degangle,erg->rotmat);
 
-        if (!bFlex)
+        if (bColl)
         {
-            /* Calculate Omega*(y_i-y_c) for the local positions */
-            rotate_local_reference(rotg);
+            /* Transfer the rotation group's positions such that every node has
+             * all of them. Every node contributes its local positions x and stores
+             * it in the collective erg->xc array. */
+            communicate_group_positions(cr,erg->xc, erg->xc_shifts, erg->xc_eshifts, bNS,
+                    x, rotg->nat, erg->nat_loc, erg->ind_loc, erg->xc_ref_ind, erg->xc_old, box);
         }
+        else
+        {
+            /* Get the center of the rotation group */
+            if ( (rotg->eType==erotgISOPF) || (rotg->eType==erotgPMPF) )
+                get_center_comm(cr, erg->x_loc_pbc, erg->m_loc, erg->nat_loc, rotg->nat, erg->xc_center);
+        }
+
+    } /* End of loop over rotation groups */
+
+    /**************************************************************************/
+    /* Done communicating, we can start to count cycles now ... */
+    wallcycle_start(wcycle, ewcROT);
+    GMX_MPE_LOG(ev_rotcycles_start);
+
+#ifdef TAKETIME
+    t0 = MPI_Wtime();
+#endif
+
+    for(g=0; g<rot->ngrp; g++)
+    {
+        rotg = &rot->grp[g];
+        erg=rotg->enfrotgrp;
+
+        bFlex = (rotg->eType==erotgFLEX) || (rotg->eType==erotgFLEX2);
+        bColl = bFlex || (rotg->eType==erotgRMPF) || (rotg->eType==erotgRM2PF);
 
         if (!bColl)
         {
+            /* Calculate Omega*(y_i-y_c) for the local positions */
+            rotate_local_reference(rotg);
+
             /* Choose the nearest PBC images of the group atoms with respect
              * to the rotated reference positions */
             choose_pbc_image(x, rotg, box, 3);
@@ -2933,38 +3468,6 @@ extern void do_rotation(
             }
         }
 
-        /* For the pivot free fixed potentials, update the center of the
-         * rotation group */
-        if ( (rotg->eType==erotgISOPF) || (rotg->eType==erotgPMPF) || (rotg->eType==erotgRMPF) || (rotg->eType==erotgRM2PF) )
-        {
-            /* Save the center in erg->xc_center */
-            get_center_comm(cr, erg->x_loc_pbc, erg->m_loc, erg->nat_loc, rotg->nat, erg->xc_center);
-        }
-
-        if (bFlex)
-        {
-            /* Transfer the rotation group's positions such that every node has
-             * all of them. Every node contributes its local positions x and stores
-             * it in the collective erg->xc array. */
-            communicate_group_positions(cr,erg->xc, erg->xc_shifts, erg->xc_eshifts, bNS,
-                    x, rotg->nat, erg->nat_loc, erg->ind_loc, erg->xc_ref_ind, erg->xc_old, box);
-        }
-    } /* End of loop over rotation groups */
-
-    /**************************************************************************/
-    /* Done communicating, we can start to count cycles now ... */
-    wallcycle_start(wcycle, ewcROT);
-    GMX_MPE_LOG(ev_rotcycles_start);
-
-#ifdef TAKETIME
-    t0 = MPI_Wtime();
-#endif
-
-    for(g=0; g<rot->ngrp; g++)
-    {
-        rotg = &rot->grp[g];
-        erg=rotg->enfrotgrp;
-
         if (outstep_torque && MASTER(cr))
             fprintf(er->out_rot, "%12.4f", erg->degangle);
 
@@ -2977,10 +3480,14 @@ extern void do_rotation(
                 do_fixed(cr,rotg,x,box,t,step,outstep_torque);
                 break;
             case erotgRM:
+                do_radial_motion(cr,rotg,x,box,t,step,outstep_torque);
+                break;
             case erotgRMPF:
+                do_radial_motion_pf(cr,rotg,x,box,t,step,outstep_torque);
                 break;
             case erotgRM2:
             case erotgRM2PF:
+                do_radial_motion2(cr,rotg,x,box,t,step,outstep_torque);
                 break;
             case erotgFLEX:
             case erotgFLEX2:
