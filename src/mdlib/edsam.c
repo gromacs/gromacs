@@ -81,8 +81,11 @@ typedef struct
     rvec  **vec;     /* eigenvector components         */
     real  *xproj;    /* instantaneous x projections    */
     real  *fproj;    /* instantaneous f projections    */
-    real  *refproj;  /* starting or target projecions  */
     real  radius;    /* instantaneous radius           */
+    real  *refproj;  /* starting or target projecions  */
+    /* When using flooding as harmonic restraint: The current reference projection
+     * is at each step calculated from the initial refproj0 and the slope. */
+    real  *refproj0,*refprojslope;
 } t_eigvec;
 
 
@@ -667,27 +670,53 @@ and call
   two edsam files from two peptide chains
 */
 
-static void write_edo_flood(t_edpar *edi, FILE *fp, int step) 
+static void write_edo_flood(t_edpar *edi, FILE *fp, gmx_large_int_t step)
 {
     int i;
+    char buf[22];
+    bool bOutputRef=FALSE;
 
     
-    fprintf(fp,"%d.th FL: %d %g %g %g\n",edi->flood.flood_id,step, edi->flood.Efl, edi->flood.Vfl, edi->flood.deltaF);
+    fprintf(fp,"%d.th FL: %s %12.5e %12.5e %12.5e\n",
+            edi->flood.flood_id, gmx_step_str(step,buf),
+            edi->flood.Efl, edi->flood.Vfl, edi->flood.deltaF);
+
+
+    /* Check whether any of the references changes with time (this can happen
+     * in case flooding is used as harmonic restraint). If so, output all the
+     * current reference projections. */
+    if (edi->flood.bHarmonic)
+    {
+        for (i = 0; i < edi->flood.vecs.neig; i++)
+        {
+            if (edi->flood.vecs.refprojslope[i] != 0.0)
+                bOutputRef=TRUE;
+        }
+        if (bOutputRef)
+        {
+            fprintf(fp, "Ref. projs.: ");
+            for (i = 0; i < edi->flood.vecs.neig; i++)
+            {
+                fprintf(fp, "%12.5e ", edi->flood.vecs.refproj[i]);
+            }
+            fprintf(fp, "\n");
+        }
+    }
     fprintf(fp,"FL_FORCES: ");
     
     for (i=0; i<edi->flood.vecs.neig; i++)
-        fprintf(fp," %f",edi->flood.vecs.fproj[i]);
+        fprintf(fp," %12.5e",edi->flood.vecs.fproj[i]);
     
     fprintf(fp,"\n");
 }
 
 
 /* From flood.xproj compute the Vfl(x) at this point */
-static real flood_energy(t_edpar *edi)
+static real flood_energy(t_edpar *edi, gmx_large_int_t step)
 {
     /* compute flooding energy Vfl
      Vfl = Efl * exp( - \frac {kT} {2Efl alpha^2} * sum_i { \lambda_i c_i^2 } )
-     \lambda_i is the reciproce eigenvalue 1/\sigma_i
+     \lambda_i is the reciprocal eigenvalue 1/\sigma_i
          it is already computed by make_edi and stored in stpsz[i]
      bHarmonic:
        Vfl = - Efl * 1/2(sum _i {\frac 1{\lambda_i} c_i^2})
@@ -696,6 +725,18 @@ static real flood_energy(t_edpar *edi)
     real Vfl;
     int i;
 
+
+    /* Each time this routine is called (i.e. each time step), we add a small
+     * value to the reference projection. This way a harmonic restraint towards
+     * a moving reference is realized. If no value for the additive constant
+     * is provided in the edi file, the reference will not change. */
+    if (edi->flood.bHarmonic)
+    {
+        for (i=0; i<edi->flood.vecs.neig; i++)
+        {
+            edi->flood.vecs.refproj[i] = edi->flood.vecs.refproj0[i] + step * edi->flood.vecs.refprojslope[i];
+        }
+    }
     
     sum=0.0;
     /* Compute sum which will be the exponent of the exponential */
@@ -704,9 +745,13 @@ static real flood_energy(t_edpar *edi)
     
     /* Compute the Gauss function*/
     if (edi->flood.bHarmonic)
+    {
         Vfl = -0.5*edi->flood.Efl*sum;  /* minus sign because Efl is negative, if restrain is on. */
+    }
     else
+    {
         Vfl = edi->flood.Efl!=0 ? edi->flood.Efl*exp(-edi->flood.kT/2/edi->flood.Efl/edi->flood.alpha2*sum) :0;
+    }
 
     return Vfl;
 }
@@ -799,13 +844,14 @@ static void update_adaption(t_edpar *edi)
 }
 
 
-static void do_single_flood(FILE *edo,
-                            rvec x[],
-                            rvec force[],
-                            t_edpar *edi,
-                            int step,
-                            matrix box,
-                            t_commrec *cr) 
+static void do_single_flood(
+        FILE *edo,
+        rvec x[],
+        rvec force[],
+        t_edpar *edi,
+        gmx_large_int_t step,
+        matrix box,
+        t_commrec *cr)
 {  
     int i;
     matrix  rotmat;         /* rotation matrix */
@@ -847,7 +893,7 @@ static void do_single_flood(FILE *edo,
     project_to_eigvectors(buf->xcoll,&edi->flood.vecs,edi); 
             
     /* Compute Vfl(x) from flood.xproj */
-    edi->flood.Vfl = flood_energy(edi);
+    edi->flood.Vfl = flood_energy(edi, step);
     
     update_adaption(edi);
 
@@ -873,13 +919,14 @@ static void do_single_flood(FILE *edo,
 
 
 /* Main flooding routine, called from do_force */
-extern void do_flood(FILE       *log,      /* md.log file */
-                     t_commrec   *cr,      /* Communication record */
-                     rvec        x[],      /* Positions on the local processor */
-                     rvec        force[],  /* forcefield forces, to these the flooding forces are added */
-                     gmx_edsam_t ed,       /* ed data structure contains all ED and flooding datasets */
-                     matrix      box,      /* the box */
-                     int         step)     /* The time step */
+extern void do_flood(
+        FILE            *log,    /* md.log file */
+        t_commrec       *cr,     /* Communication record */
+        rvec            x[],     /* Positions on the local processor */
+        rvec            force[], /* forcefield forces, to these the flooding forces are added */
+        gmx_edsam_t     ed,      /* ed data structure contains all ED and flooding datasets */
+        matrix          box,     /* the box */
+        gmx_large_int_t step)    /* The relative time step since ir->init_step is already subtracted */
 {
     t_edpar *edi;
 
@@ -1028,7 +1075,7 @@ static void bc_ed_positions(t_commrec *cr, struct gmx_edx *s, int stype)
 
 
 /* Broadcasts the eigenvector data */
-static void bc_ed_vecs(t_commrec *cr, t_eigvec *ev, int length)
+static void bc_ed_vecs(t_commrec *cr, t_eigvec *ev, int length, bool bHarmonic)
 {
     int i;
 
@@ -1049,6 +1096,15 @@ static void bc_ed_vecs(t_commrec *cr, t_eigvec *ev, int length)
     {
         snew_bc(cr, ev->vec[i], length);
         nblock_bc(cr, length, ev->vec[i]);
+    }
+
+    /* For harmonic restraints the reference projections can change with time */
+    if (bHarmonic)
+    {
+        snew_bc(cr, ev->refproj0    , ev->neig);
+        snew_bc(cr, ev->refprojslope, ev->neig);
+        nblock_bc(cr, ev->neig, ev->refproj0    );
+        nblock_bc(cr, ev->neig, ev->refprojslope);
     }
 }
 
@@ -1079,14 +1135,14 @@ static void broadcast_ed_data(t_commrec *cr, gmx_edsam_t ed, int numedis)
         bc_ed_positions(cr, &(edi->sori), eedORI); /* origin positions                                */
 
         /* Broadcast eigenvectors */
-        bc_ed_vecs(cr, &edi->vecs.mon   , edi->sav.nr);
-        bc_ed_vecs(cr, &edi->vecs.linfix, edi->sav.nr);
-        bc_ed_vecs(cr, &edi->vecs.linacc, edi->sav.nr);
-        bc_ed_vecs(cr, &edi->vecs.radfix, edi->sav.nr);
-        bc_ed_vecs(cr, &edi->vecs.radacc, edi->sav.nr);
-        bc_ed_vecs(cr, &edi->vecs.radcon, edi->sav.nr);
-        /* Broadcast flooding eigenvectors */
-        bc_ed_vecs(cr, &edi->flood.vecs,  edi->sav.nr);
+        bc_ed_vecs(cr, &edi->vecs.mon   , edi->sav.nr, FALSE);
+        bc_ed_vecs(cr, &edi->vecs.linfix, edi->sav.nr, FALSE);
+        bc_ed_vecs(cr, &edi->vecs.linacc, edi->sav.nr, FALSE);
+        bc_ed_vecs(cr, &edi->vecs.radfix, edi->sav.nr, FALSE);
+        bc_ed_vecs(cr, &edi->vecs.radacc, edi->sav.nr, FALSE);
+        bc_ed_vecs(cr, &edi->vecs.radcon, edi->sav.nr, FALSE);
+        /* Broadcast flooding eigenvectors and, if needed, values for the moving reference */
+        bc_ed_vecs(cr, &edi->flood.vecs,  edi->sav.nr, edi->flood.bHarmonic);
         
         /* Set the pointer to the next ED dataset */
         if (edi->next_edi)
@@ -1264,30 +1320,51 @@ static void scan_edvec(FILE *in,int nr,rvec *vec)
 static void read_edvec(FILE *in,int nr,t_eigvec *tvec,bool bReadRefproj)
 {
     int i,idum,nscan;
-    double rdum,refproj_dum=0.0;
+    double rdum,refproj_dum=0.0,refprojslope_dum=0.0;
     char line[STRLEN+1];
 
     
     tvec->neig=read_checked_edint(in,"NUMBER OF EIGENVECTORS");
     if (tvec->neig >0)
     {
-        snew(tvec->ieig,tvec->neig);
-        snew(tvec->stpsz,tvec->neig);
-        snew(tvec->vec,tvec->neig);
-        snew(tvec->xproj,tvec->neig);
-        snew(tvec->fproj,tvec->neig);
+        snew(tvec->ieig   ,tvec->neig);
+        snew(tvec->stpsz  ,tvec->neig);
+        snew(tvec->vec    ,tvec->neig);
+        snew(tvec->xproj  ,tvec->neig);
+        snew(tvec->fproj  ,tvec->neig);
         snew(tvec->refproj,tvec->neig);
+        if (bReadRefproj)
+        {
+            snew(tvec->refproj0    ,tvec->neig);
+            snew(tvec->refprojslope,tvec->neig);
+        }
+
         for(i=0; (i < tvec->neig); i++)
         {
             fgets2 (line,STRLEN,in);
             if (bReadRefproj) /* only when using flooding as harmonic restraint */
             {
-                nscan = sscanf(line,"%d%lf%lf",&idum,&rdum,&refproj_dum);
-                if (nscan != 3)
-                    gmx_fatal(FARGS,"Expected 3 values for flooding vec: <nr> <spring const> <refproj> \n");
+                nscan = sscanf(line,"%d%lf%lf%lf",&idum,&rdum,&refproj_dum,&refprojslope_dum);
+                if (4 == nscan)
+                {
+                    fprintf(stdout, "ED: Will add %15.8e to the reference projection of eigenvector %d at each time step.\n",
+                            refprojslope_dum, i);
+                }
+                else
+                {
+                    refprojslope_dum = 0.0;
+                    if (nscan != 3)
+                    {
+                        /* Neither 3, nor 4 values found */
+                        gmx_fatal(FARGS,"Expected 4 (not %d) values for flooding vec: <nr> <spring const> <refproj> <refproj-slope>\n",
+                                nscan);
+                    }
+                }
                 tvec->ieig[i]=idum;
                 tvec->stpsz[i]=rdum;
                 tvec->refproj[i]=refproj_dum;
+                tvec->refproj0[i]=refproj_dum;
+                tvec->refprojslope[i]=refprojslope_dum;
             }
             else
             {
@@ -1891,9 +1968,10 @@ static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, gmx_large_int_t step
 
 
 /* Write out the projections onto the eigenvectors */
-static void write_edo(int nr_edi, t_edpar *edi, gmx_edsam_t ed, int step,real rmsd)
+static void write_edo(int nr_edi, t_edpar *edi, gmx_edsam_t ed, gmx_large_int_t step,real rmsd)
 {  
     int i;
+    char buf[22];
 
        
     if (edi->bNeedDoEdsam)
@@ -1902,7 +1980,7 @@ static void write_edo(int nr_edi, t_edpar *edi, gmx_edsam_t ed, int step,real rm
             fprintf(ed->edo, "Initial projections:\n");
         else
         {
-            fprintf(ed->edo,"Step %d, ED #%d  ",step,nr_edi);
+            fprintf(ed->edo,"Step %s, ED #%d  ", gmx_step_str(step, buf), nr_edi);
             fprintf(ed->edo,"  RMSD %f nm\n",rmsd);
             if (ed->eEDtype == eEDflood)
                 fprintf(ed->edo, "  Efl=%f  deltaF=%f  Vfl=%f\n",edi->flood.Efl,edi->flood.deltaF,edi->flood.Vfl);
@@ -2359,7 +2437,7 @@ void do_edsam(t_inputrec  *ir,
             if (step >= edi->presteps && ed_constraints(ed->eEDtype, edi))
             {
                 /* ED constraints should be applied already in the first MD step
-                 * (which is step 0), therfore we pass step+1 to the routine */
+                 * (which is step 0), therefore we pass step+1 to the routine */
                 ed_apply_constraints(buf->xcoll, edi, step+1 - ir->init_step, cr);
             }
 

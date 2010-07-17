@@ -1560,9 +1560,9 @@ int main(int argc, char *argv[])
   printf("\t\t--------- PLEASE NOTE ------------\n");
   printf("You have successfully generated a topology from: %s.\n",
 	 opt2fn("-f",NFILE,fnm));
-  if (watstr[0] != NULL) {
+  if (watermodel != NULL) {
     printf("The %s force field and the %s water model are used.\n",
-	   ffname,watstr[0]);
+	   ffname,watermodel);
   } else {
     printf("The %s force field is used.\n",
 	   ffname);
