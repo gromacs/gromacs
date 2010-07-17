@@ -1657,10 +1657,10 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
     }
     
     enough = TRUE;
-    nlim = fep->n_lambda-1; /* for simplicity */
+    nlim = fep->n_lambda; /* for simplicity */
     
     totalsteps = 0;
-    for (i=1;i<=nlim;i++) 
+    for (i=0;i<nlim;i++) 
     {
         totalsteps += fep->n_at_lam[i];
         if (fep->n_at_lam[i] < fep->lmc_nstart) /* we are still doing the initial sweep */
@@ -1711,8 +1711,8 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
         else if (fep->elamstats==elamstatsGWL) 
         {
             snew(p_k,fep->n_lambda);
-            GenerateGibbsProbabilities(weighted_lamee,p_k,&pks,1,nlim);
-            for (i=1;i<=nlim;i++) 
+            GenerateGibbsProbabilities(weighted_lamee,p_k,&pks,0,nlim-1);
+            for (i=0;i<nlim;i++) 
             {
                 fep->sum_weights[i] -= fep->wl_delta*p_k[i];
                 fep->wl_histo[i] += p_k[i];
@@ -1720,10 +1720,11 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
             sfree(p_k);
         }
         
-        for (i=nlim;i>=1;i--) 
+        for (i=1;i<nlim;i++) 
         {
-            fep->sum_weights[i] -= fep->sum_weights[1];
+            fep->sum_weights[i] -= fep->sum_weights[0];
         }
+        fep->sum_weights[0] = 0.0;
     }
     
     if (fep->elamstats==elamstatsBARKER || fep->elamstats==elamstatsMETROPOLIS || fep->elamstats==elamstatsMINVAR) {
@@ -1745,7 +1746,7 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
         
         /* unpack the current lambdas -- we will only update 2 of these */
         
-        for (i=1;i<nlim;i++) 
+        for (i=0;i<nlim;i++) 
         { /* only through the second to last */
             lam_dg[i] = fep->sum_dg[i+1] - fep->sum_dg[i]; 
             lam_variance[i] = pow(fep->sum_variance[i+1],2) - pow(fep->sum_variance[i],2); 
@@ -1754,7 +1755,6 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
         /* accumulate running averages */
         for (nval = 0; nval<maxc; nval++) 
         {
-            
             /* constants for later use */
             cnval = (real)(nval-fep->c_range); 
             /* actually, should be able to rewrite it w/o this, for better numerical stability */
@@ -1927,16 +1927,22 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
         {
             bSufficientSamples = TRUE;
             /* make sure they are all past a threshold */
-            for (i=1;i<=nlim;i++) 
+            for (i=0;i<nlim;i++) 
             {
-                if (fep->n_at_lam[i] < fep->minvarmin) {bSufficientSamples = FALSE;} 
+                if (fep->n_at_lam[i] < fep->minvarmin) 
+                {
+                    bSufficientSamples = FALSE;
+                } 
             }
             if (bSufficientSamples) 
             {
                 fep->sum_minvar[fep_state] = clam_minvar; 
                 if (fep_state==1) 
                 {
-                    for (i=2;i<=nlim;i++) {fep->sum_minvar[i]+=(fep->minvar_const-clam_minvar);}
+                    for (i=1;i<=nlim;i++) 
+                    {
+                        fep->sum_minvar[i]+=(fep->minvar_const-clam_minvar);
+                    }
                     fep->minvar_const = clam_minvar;
                     fep->sum_minvar[fep_state] = 0.0;
                 } 
@@ -1947,12 +1953,12 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
             }
         } 
         
-        /* we need to rezero minvar now, since it could change at fep_state = 1 */
-        fep->sum_dg[1] = 0.0;
-        fep->sum_variance[1] = 0.0;
-        fep->sum_weights[1] = fep->sum_dg[1] + fep->sum_minvar[1]; /* should be zero */
+        /* we need to rezero minvar now, since it could change at fep_state = 0 */
+        fep->sum_dg[0] = 0.0;
+        fep->sum_variance[0] = 0.0;
+        fep->sum_weights[0] = fep->sum_dg[0] + fep->sum_minvar[0]; /* should be zero */
         
-        for (i=2;i<=nlim;i++) 
+        for (i=1;i<nlim;i++) 
         {
             fep->sum_dg[i] = lam_dg[i-1] + fep->sum_dg[i-1];
             fep->sum_variance[i] = sqrt(lam_variance[i-1] + pow(fep->sum_variance[i-1],2)); 
@@ -1991,7 +1997,7 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
             maxdr = 2.0*maxdiff;
             while (maxdr > maxdiff) 
             {
-                for (i=1;i<=nlim;i++) 
+                for (i=0;i<nlim;i++) 
                 {
                     if (fep->n_at_lam[i] != 0) 
                     {
@@ -2004,13 +2010,13 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
                     }
                 }
                 
-                for (i=1;i<=nlim;i++) 
+                for (i=0;i<nlim;i++) 
                 {
                     for (n=0;n<totali;n++) 
                     {
                         nz = 0;
                         indexi = i-1 + n*nlim;	  
-                        for (k=1;k<=nlim;k++) 
+                        for (k=0;k<nlim;k++) 
                         {
                             if (nonzero[k]) 
                             {
@@ -2024,13 +2030,14 @@ static void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real
                     sum_weights[i] = -do_logsum(totali,ssamples);
                 }
                 
-                for (i=nlim;i>=1;i--) 
+                for (i=1;i<nlim;i++) 
                 {
-                    sum_weights[i] -= sum_weights[1];
+                    sum_weights[i] -= sum_weights[0];
                 }
+                sum_weights[0] = 0.0;
                 
                 maxdr = 0;
-                for (i=1;i<=nlim;i++) 
+                for (i=0;i<nlim;i++) 
                 {
                     dr = fabs(sum_weights[i] - fep->sum_weights[i]);
                     if (dr > maxdr) 
@@ -2058,7 +2065,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weigh
 {
     /* Choose New lambda value, and update transition matrix */
     
-    int i,ifep,jfep,minfep,maxfep,nlim,lamnew,lamtrial;
+    int i,ifep,jfep,minfep,maxfep,nlim,lamnew,lamtrial,starting_fep_state;
     real r1,r2,pks,de_old,de_new,de,tprob,trialprob;
     real **Tij;
     real *propose,*accept,*remainder;
@@ -2067,6 +2074,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weigh
 
     fep = ir->fepvals;
     nlim = fep->n_lambda-1;;
+    starting_fep_state = fep_state;
     snew(propose,fep->n_lambda+1);
     snew(accept,fep->n_lambda+1);
     snew(remainder,fep->n_lambda+1);
@@ -2074,7 +2082,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weigh
     for (i=0;i<fep->lmc_repeats;i++) 
     {
         
-        for(ifep=1;ifep<=nlim;ifep++) 
+        for(ifep=0;ifep<nlim;ifep++) 
         {
             propose[ifep] = 0;
             accept[ifep] = 0;
@@ -2085,20 +2093,20 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weigh
             /* use the Gibbs sampler, with variable locality */
             if (fep->gibbsdeltalam < 0) 
             {
-                minfep = 1; 
-                maxfep = nlim;
+                minfep = 0; 
+                maxfep = nlim-1;
             } 
             else 
             {
                 minfep = fep_state - fep->gibbsdeltalam;
                 maxfep = fep_state + fep->gibbsdeltalam;
-                if (minfep < 1) 
+                if (minfep < 0) 
                 { 
-                    minfep = 1;
+                    minfep = 0;
                 }
-                if (maxfep > nlim) 
+                if (maxfep > nlim-1) 
                 {
-                    maxfep = nlim;
+                    maxfep = nlim-1;
                 } 
             }
             
@@ -2182,7 +2190,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weigh
                     {
                         tprob = trialprob;
                     }
-                    /* probability for fep_state=1, but that's fine, it's never proposed! */
+                    /* probability for fep_state=0, but that's fine, it's never proposed! */
                     accept[ifep] = tprob;
                 }
             }
@@ -2206,7 +2214,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weigh
             r1 = rando(&(fep->mc_seed));
             if (r1 < 0.5) 
             {
-                if (fep_state == 1) {
+                if (fep_state == 0) {
                     lamtrial = fep_state;
                 }  
                 else 
@@ -2216,7 +2224,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weigh
             } 
             else 
             {
-                if (fep_state == nlim) {
+                if (fep_state == nlim-1) {
                     lamtrial = fep_state;
                 }  
                 else 
@@ -2258,16 +2266,15 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state, real *weigh
             }
         }
         
-        for (ifep=1;ifep<=nlim;ifep++) 
+        for (ifep=0;ifep<nlim;ifep++) 
         {
             fep->Tij[fep_state][ifep] += propose[ifep]*accept[ifep];
             fep->Tij[fep_state][fep_state] += propose[ifep]*(1.0-accept[ifep]);
         }
-        fep->n_at_lam[fep_state]+=1;
         fep_state = lamnew;
     }
     
-    fep->Tij_empirical[fep_state][lamnew] += 1.0;  
+    fep->Tij_empirical[starting_fep_state][lamnew] += 1.0;  
     
     sfree(propose);
     sfree(accept);
@@ -2284,9 +2291,9 @@ static bool CheckHistogramRatios(t_lambda *fep)
     bool bIfReset;
     
     nmean = 0;
-    nlim = fep->n_lambda-1;
+    nlim = fep->n_lambda;
     
-    for (ifep=1;ifep<=nlim;ifep++) 
+    for (ifep=0;ifep<nlim;ifep++) 
     {
         nmean += fep->wl_histo[ifep];
     }
@@ -2294,7 +2301,7 @@ static bool CheckHistogramRatios(t_lambda *fep)
     nmean *= fep->wl_ratio;
     
     bIfReset = TRUE;
-    for (ifep=1;ifep<=nlim;ifep++) 
+    for (ifep=0;ifep<nlim;ifep++) 
     {
         if (fep->wl_histo[ifep]<nmean) 
         {
@@ -2310,8 +2317,8 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, int nlam, in
 {
     int nlim,i,ifep,jfep;
     real dw,dg,dv,dm,Tprint;
-
-    nlim = fep->n_lambda-1;
+    const char *print_names[efptNR] = {" FEPL","MassL","CoulL"," VdwL","BondL","RestT"};
+    nlim = fep->n_lambda;
     
     if (mod(step,frequency)==0) 
     {
@@ -2331,7 +2338,15 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, int nlam, in
 #endif
         fprintf(outfile,"\n");
         fprintf(outfile,"             MC-lambda information\n");
-        fprintf(outfile,"  N  CoulL   VdwL  BondL  RestL  TempL    Count   ");
+        fprintf(outfile,"  N");
+        for (i=0;i<efptNR;i++) 
+        {
+            if (fep->separate_dvdl[i]) 
+            {
+                fprintf(outfile,"%7s",print_names[i]);
+            }
+        }
+        fprintf(outfile,"    Count   ");
         if (fep->elamstats==elamstatsMINVAR) 
         {
             fprintf(outfile,"W(in kT)   G(in kT)  dG(in kT)  dV(in kT)\n");
@@ -2340,26 +2355,30 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, int nlam, in
         {
             fprintf(outfile,"G(in kT)  dG(in kT)\n");	    
         }
-        for (ifep=1;ifep<=nlim;ifep++) 
+        for (ifep=0;ifep<nlim;ifep++) 
         {
-            if (ifep<nlim) 
-            {
-                dw = fep->sum_weights[ifep+1] - fep->sum_weights[ifep];
-                dg = fep->sum_dg[ifep+1] - fep->sum_dg[ifep];
-                dv = sqrt(pow(fep->sum_variance[ifep+1],2) - pow(fep->sum_variance[ifep],2));
-                dm = fep->sum_minvar[ifep+1] - fep->sum_minvar[ifep];
-            } 
-            else 
+            if (ifep==nlim-1) 
             {
                 dw=0.0;
                 dg=0.0;
                 dv=0.0;
                 dm=0.0;
+            } 
+            else 
+            {
+                dw = fep->sum_weights[ifep+1] - fep->sum_weights[ifep];
+                dg = fep->sum_dg[ifep+1] - fep->sum_dg[ifep];
+                dv = sqrt(pow(fep->sum_variance[ifep+1],2) - pow(fep->sum_variance[ifep],2));
+                dm = fep->sum_minvar[ifep+1] - fep->sum_minvar[ifep];
+
             }
-            fprintf(outfile,"%3d",ifep);
+            fprintf(outfile,"%3d",(ifep+1));
             for (i=0;i<efptNR;i++) 
             {
-                fprintf(outfile,"%7.3f",fep->all_lambda[i][ifep]);
+                if (fep->separate_dvdl[i]) 
+                {
+                    fprintf(outfile,"%7.3f",fep->all_lambda[i][ifep]);
+                }
             }
             if ((fep->elamstats==elamstatsWL || fep->elamstats==elamstatsGWL)) 
             {
@@ -2400,27 +2419,27 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, int nlam, in
         if (step > 0) 
         {
             fprintf(outfile,"                     Transition Matrix\n");
-            for (ifep=1;ifep<=nlim;ifep++) 
+            for (ifep=0;ifep<nlim;ifep++) 
             {
                 if (biglog) 
                 {
-                    fprintf(outfile,"%12d",ifep);
+                    fprintf(outfile,"%12d",(ifep+1));
                 } 
                 else 
                 {
-                    fprintf(outfile,"%7d",ifep);
+                    fprintf(outfile,"%7d",(ifep+1));
                 }
             }
             fprintf(outfile,"\n");
-            for (ifep=1;ifep<=nlim;ifep++) 
+            for (ifep=0;ifep<nlim;ifep++) 
             {
-                for (jfep=1;jfep<=nlim;jfep++) 
+                for (jfep=0;jfep<nlim;jfep++) 
                 {
                     if (fep->n_at_lam[ifep] > 0) 
                     {
                         if (fep->bSymmetrizedTMatrix) 
                         {
-                            Tprint = (fep->Tij[ifep][jfep]+fep->Tij[jfep][ifep])/(2*(fep->n_at_lam[ifep]));
+                            Tprint = (fep->Tij[ifep][jfep]+fep->Tij[jfep][ifep])/(fep->n_at_lam[ifep]+fep->n_at_lam[jfep]);
                         } else {
                             Tprint = (fep->Tij[ifep][jfep])/(fep->n_at_lam[ifep]);
                         }
@@ -2438,32 +2457,32 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, int nlam, in
                         fprintf(outfile,"%7.3f",Tprint);
                     } 
                 }
-                fprintf(outfile,"%3d",ifep);
+                fprintf(outfile,"%3d",(ifep+1));
                 fprintf(outfile,"\n");
             }
             
             fprintf(outfile,"                  Empirical Transition Matrix\n");
-            for (ifep=1;ifep<=nlim;ifep++) 
+            for (ifep=0;ifep<nlim;ifep++) 
             {
                 if (biglog) 
                 {
-                    fprintf(outfile,"%12d",ifep);
+                    fprintf(outfile,"%12d",(ifep+1));
                 } 
                 else 
                 {
-                  fprintf(outfile,"%7d",ifep);
+                    fprintf(outfile,"%7d",(ifep+1));
                 }
             }
             fprintf(outfile,"\n");	  
-            for (ifep=1;ifep<=nlim;ifep++) 
+            for (ifep=0;ifep<nlim;ifep++) 
             {
-                for (jfep=1;jfep<=nlim;jfep++) 
+                for (jfep=0;jfep<nlim;jfep++) 
                 {
                     if (fep->n_at_lam[ifep] > 0) 
                     {
                         if (fep->bSymmetrizedTMatrix) 
                         {
-                            Tprint = (fep->Tij_empirical[ifep][jfep]+fep->Tij_empirical[jfep][ifep])/(2*fep->n_at_lam[ifep]);
+                            Tprint = (fep->Tij_empirical[ifep][jfep]+fep->Tij_empirical[jfep][ifep])/(fep->n_at_lam[ifep]+fep->n_at_lam[jfep]);
                         } else {
                             Tprint = fep->Tij_empirical[ifep][jfep]/(fep->n_at_lam[ifep]);
                         }
@@ -2481,7 +2500,7 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, int nlam, in
                         fprintf(outfile,"%7.3f",Tprint);
                     } 
                 }
-                fprintf(outfile,"%3d",ifep);
+                fprintf(outfile,"%3d",(ifep+1));
                 fprintf(outfile,"\n");
             }
         }
@@ -2511,7 +2530,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_ener
 	mckt = BOLTZ*ir->opts.ref_t[0]; /* use the system reft for now */
 
     //where does this PV term go?
-	//for (ifep=0;ifep<=nlim;ifep++) {	
+	//for (ifep=0;ifep<nlim;ifep++) {	
     //    fep_lamee[ifep] += pVTerm;  /* add PV Term */  
 	//}
 
@@ -2519,7 +2538,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_ener
 	/* we don't need to include the pressure term, since the volume is the same between the two.
 	   is there some term we are neglecting, however? */
     
-	for (ifep=0;ifep<=nlim;ifep++) {
+	for (ifep=0;ifep<nlim;ifep++) {
         scaled_lamee[ifep] = (enerd->enerpart_lambda[ifep]-enerd->enerpart_lambda[nlam])/mckt;
         
         /* save these energies for printing, so they don't get overwritten by the next step */
@@ -2565,7 +2584,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_ener
 	/* save the values for MBAR */
 	if (fep->elamstats == elamstatsMBAR) 
     {
-        for (ifep=1;ifep<=nlim;ifep++) 
+        for (ifep=0;ifep<nlim;ifep++) 
         {
             store_index = ifep-1 + nlim*(step/fep->nstfep);
             fep->fep_keep[store_index] = scaled_lamee[ifep];
@@ -2625,14 +2644,11 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_ener
         
         if (bIfReset) 
         {
-            for (ifep=1;ifep<=nlim;ifep++) 
+            for (ifep=0;ifep<nlim;ifep++) 
             {
                 fep->wl_histo[ifep] = 0;
             }
             fep->wl_delta *= fep->wl_scale;
-        }
-        if (mod(step,ir->nstlog)==0) 
-        {
             fprintf(log,"\nStep %d: Wang-Landau weight is now %14.8f\n",(int)step,fep->wl_delta);
         }
 	}
