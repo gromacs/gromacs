@@ -1969,7 +1969,12 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                 }
                 else if (nexist > 0)
                 {
-                    fprintf(stderr,"Output files present:");
+                    fprintf(stderr,
+                            "Output file appending has been requested,\n"
+                            "but some output files listed in the checkpoint file %s\n"
+                            "are not present or are named differently by the current program:\n",
+                            filename);
+                    fprintf(stderr,"output files present:");
                     for(f=0; f<nfiles; f++)
                     {
                         if (exist_output_file(outputfiles[f].filename,
@@ -1979,7 +1984,7 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                         }
                     }
                     fprintf(stderr,"\n");
-                    fprintf(stderr,"Output files not present:");
+                    fprintf(stderr,"output files not present or named differently:");
                     for(f=0; f<nfiles; f++)
                     {
                         if (!exist_output_file(outputfiles[f].filename,
