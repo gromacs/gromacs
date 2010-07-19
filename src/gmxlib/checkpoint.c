@@ -1900,10 +1900,28 @@ void list_checkpoint(const char *fn,FILE *out)
 }
 
 
+static bool exist_output_file(const char *fnm_cp,int nfile,const t_filenm fnm[])
+{
+    int i;
+
+    /* Check if the output file name stored in the checkpoint file
+     * is one of the output file names of mdrun.
+     */
+    i = 0;
+    while (i < nfile &&
+           !(is_output(&fnm[i]) && strcmp(fnm_cp,fnm[i].fns[0]) == 0))
+    {
+        i++;
+    }
+    
+    return (i < nfile && gmx_fexist(fnm_cp));
+}
+
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                                      gmx_large_int_t *cpt_step,t_commrec *cr,
                                      bool bAppendReq,
+                                     int nfile,const t_filenm fnm[],
                                      const char *part_suffix,bool *bAddPart)
 {
     t_fileio *fp;
@@ -1940,7 +1958,7 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                 nexist = 0;
                 for(f=0; f<nfiles; f++)
                 {
-                    if (gmx_fexist(outputfiles[f].filename))
+                    if (exist_output_file(outputfiles[f].filename,nfile,fnm))
                     {
                         nexist++;
                     }
@@ -1951,19 +1969,26 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                 }
                 else if (nexist > 0)
                 {
-                    fprintf(stderr,"Output files present:");
+                    fprintf(stderr,
+                            "Output file appending has been requested,\n"
+                            "but some output files listed in the checkpoint file %s\n"
+                            "are not present or are named differently by the current program:\n",
+                            filename);
+                    fprintf(stderr,"output files present:");
                     for(f=0; f<nfiles; f++)
                     {
-                        if (gmx_fexist(outputfiles[f].filename))
+                        if (exist_output_file(outputfiles[f].filename,
+                                              nfile,fnm))
                         {
                             fprintf(stderr," %s",outputfiles[f].filename);
                         }
                     }
                     fprintf(stderr,"\n");
-                    fprintf(stderr,"Output files not present:");
+                    fprintf(stderr,"output files not present or named differently:");
                     for(f=0; f<nfiles; f++)
                     {
-                        if (!gmx_fexist(outputfiles[f].filename))
+                        if (!exist_output_file(outputfiles[f].filename,
+                                               nfile,fnm))
                         {
                             fprintf(stderr," %s",outputfiles[f].filename);
                         }

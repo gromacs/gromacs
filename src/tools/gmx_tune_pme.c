@@ -2264,7 +2264,7 @@ int gmx_tune_pme(int argc,char *argv[])
         cr->duty=DUTY_PP; /* makes the following routine happy */
         read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm),
 					&sim_part,&cpt_steps,cr,
-					FALSE,NULL,NULL);
+					FALSE,NFILE,fnm,NULL,NULL);
         sfree(cr);
         sim_part++;
         /* sim_part will now be 1 if no checkpoint file was found */
