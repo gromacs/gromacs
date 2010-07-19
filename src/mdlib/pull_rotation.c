@@ -3413,6 +3413,18 @@ extern void do_rotation(
         }
         else
         {
+            /* Fill the local masses array;
+             * this array changes in DD/neighborsearching steps */
+            if (bNS)
+            {
+                for (i=0; i<erg->nat_loc; i++)
+                {
+                    /* Index of local atom w.r.t. the collective rotation group */
+                    ii = erg->xc_ref_ind[i];
+                    erg->m_loc[i] = erg->mc[ii];
+                }
+            }
+
             /* Get the center of the rotation group */
             if ( (rotg->eType==erotgISOPF) || (rotg->eType==erotgPMPF) )
                 get_center_comm(cr, erg->x_loc_pbc, erg->m_loc, erg->nat_loc, rotg->nat, erg->xc_center);
@@ -3445,18 +3457,6 @@ extern void do_rotation(
             /* Choose the nearest PBC images of the group atoms with respect
              * to the rotated reference positions */
             choose_pbc_image(x, rotg, box, 3);
-
-            /* Fill the local masses array;
-             * this array changes in DD/neighborsearching steps */
-            if (bNS)
-            {
-                for (i=0; i<erg->nat_loc; i++)
-                {
-                    /* Index of local atom w.r.t. the collective rotation group */
-                    ii = erg->xc_ref_ind[i];
-                    erg->m_loc[i] = erg->mc[ii];
-                }
-            }
         }
 
         if (outstep_torque && MASTER(cr))
