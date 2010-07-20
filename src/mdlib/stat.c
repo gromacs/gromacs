@@ -447,7 +447,10 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
     of->fp_field = NULL;
     
     of->eIntegrator     = ir->eI;
+    of->efep            = ir->efep;
     of->simulation_part = ir->simulation_part;
+    of->fep.elamstats = ir->fepvals->elamstats;
+    of->fep.n_lambda   = ir->fepvals->n_lambda;
 
     if (MASTER(cr))
     {
@@ -644,7 +647,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
          if (mdof_flags & MDOF_CPT)
          {
              write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
-                              fplog,cr,of->eIntegrator,
+                              fplog,cr,of->eIntegrator,of->efep,&(of->fep),
                               of->simulation_part,step,t,state_global);
          }
 

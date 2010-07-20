@@ -2630,7 +2630,7 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                     }
                     if (!bForeign) 
                     {
-                        enerd->dvdl_nonlin[efptFTYPE] += cdvdl[efptFTYPE];
+                        enerd->dvdl_nonlin[efptFTYPE] += *cdvdl;
                         if (bPrintSepPot && !bForeign) 
                         {
                             fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
@@ -2668,10 +2668,10 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                         {
                             fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
                                     interaction_function[ftype].longname,
-                                    interaction_function[F_LJ14].longname,nbonds/nat1,cdvdl[efptVDW]);
+                                    interaction_function[F_LJ14].longname,nbonds/nat1,dvdl[efptVDW]);
                             fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
                                     interaction_function[ftype].longname,
-                                    interaction_function[F_COUL14].longname,nbonds/nat1,cdvdl[efptCOUL]);
+                                    interaction_function[F_COUL14].longname,nbonds/nat1,dvdl[efptCOUL]);
                         }
                     }
                 }

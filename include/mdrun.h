@@ -134,6 +134,8 @@ typedef struct {
   const char *fn_cpt;
   bool bKeepAndNumCPT;
   int  eIntegrator;
+  int  efep;
+  t_lambda fep;
   int  simulation_part;
   FILE *fp_dhdl;
   FILE *fp_field;
@@ -299,19 +301,11 @@ extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 			  matrix box,real lambda,tensor pres,tensor virial,
 			  real *prescorr, real *enercorr, real *dvdlcorr);
 
-  //extern real do_logsum(int N, real *a_n);
+extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_enerdata_t *enerd, df_history_t *dfhist,gmx_large_int_t step);
 
-  //extern void UpdateWeights(t_lambda *fep, int fep_state, real *scaled_lamee, real *weighted_lamee, int step);
+extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
 
-  //extern int FindMinimum(real *min_metric, int N);
-
-  //extern int ChooseNewLambda(FILE *log, t_inputrec *ir, int fep_state,real *weighted_lamee, real *p_k);
-
-  //extern bool CheckHistogramRatios(t_lambda *fep);
-
-extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_enerdata_t *enerd, gmx_large_int_t step);
-
-extern void InitializeExpandedEnsembles(t_inputrec *ir);
+extern void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
 
 typedef enum
 {

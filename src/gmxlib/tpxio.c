@@ -299,8 +299,8 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,bool bRead, int file_vers
       gmx_fio_do_int(fio,fepvals->minvarmin);
       gmx_fio_do_int(fio,fepvals->c_range);
       gmx_fio_do_real(fio,fepvals->wl_scale);
-      gmx_fio_do_real(fio,fepvals->wl_delta);
       gmx_fio_do_real(fio,fepvals->wl_ratio);
+      gmx_fio_do_real(fio,fepvals->initial_wl_delta);
       gmx_fio_do_int(fio,fepvals->nstfep);
   }
   if (file_version >= 13) 
@@ -2112,16 +2112,16 @@ static int do_tpx(t_fileio *fio, bool bRead,
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
-      init_state(state,0,tpx.ngtc,0,0);  /* nose-hoover chains */ /* eventually, need to add nnhpres here? */
+      init_state(state,0,tpx.ngtc,0,0,0);  /* nose-hoover chains */ /* eventually, need to add nnhpres here? */
       state->natoms = tpx.natoms; 
       state->nalloc = tpx.natoms; 
       state->x = xptr;
       state->v = vptr;
     } else {
-      init_state(state,tpx.natoms,tpx.ngtc,0,0);  /* nose-hoover chains */
+        init_state(state,tpx.natoms,tpx.ngtc,0,0,0);  /* nose-hoover chains */
     }
   }
-
+  
 #define do_test(fio,b,p) if (bRead && (p!=NULL) && !b) gmx_fatal(FARGS,"No %s in %s",#p,gmx_fio_getname(fio)) 
 
   do_test(fio,tpx.bBox,state->box);

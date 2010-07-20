@@ -104,6 +104,30 @@ typedef struct
 
 typedef struct
 {
+  gmx_large_int_t nsteps;    /* the number of steps in the history */
+  int           nlambda;     /* total number of lambda states - for history*/
+
+  bool bEquil;               /* reached equilibration */
+  int  *n_at_lam;            /* number of points observed at each lambda */
+  real  *wl_histo;           /* histogram for WL flatness determination */
+  real wl_delta;             /* current wang-landau delta */
+
+  real *sum_weights;         /* weights of the states */
+  real *sum_dg;              /* free energies of the states -- not actually used for weighting, but informational */
+  real *sum_minvar;          /* corrections to weights for minimum variance */
+  real *sum_variance;        /* variances of the states */
+
+  real **accum_p;            /* accumulated bennett weights for n+1 */
+  real **accum_m;            /* accumulated bennett weights for n-1 */
+  real **accum_p2;           /* accumulated squared bennett weights for n+1 */
+  real **accum_m2;           /* accumulated squared bennett weights for n-1 */
+
+  real **Tij;                /* transition matrix */
+  real **Tij_empirical;      /* Empirical transition matrix */
+} df_history_t;
+
+typedef struct
+{
   gmx_large_int_t nsteps;       /* The number of steps in the history            */
   gmx_large_int_t nsum;         /* The nr. of steps in the ener_ave and ener_sum */
   double *   ener_ave;     /* Energy term history sum to get fluctuations   */
@@ -153,7 +177,8 @@ typedef struct
   ekinstate_t   ekinstate; /* The state of the kinetic energy data      */
 
   energyhistory_t  enerhist; /* Energy history for statistics           */
-	
+  df_history_t  dfhist; /*Free energy history for free energy analysis  */
+
   int           ddp_count; /* The DD partitioning count for this state  */
   int           ddp_count_cg_gl; /* The DD part. count for index_gl     */
   int           ncg_gl; /* The number of local charge groups            */

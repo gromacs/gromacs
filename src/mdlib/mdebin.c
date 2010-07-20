@@ -1124,7 +1124,7 @@ void
 update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
 {
     int i;
-    
+
     enerhist->nsteps     = mdebin->ebin->nsteps;
     enerhist->nsum       = mdebin->ebin->nsum;
     enerhist->nsteps_sim = mdebin->ebin->nsteps_sim;

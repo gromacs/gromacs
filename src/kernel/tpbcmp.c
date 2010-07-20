@@ -464,7 +464,7 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
   cmp_int(fp,"mininum-var-min",-1,fep1->minvarmin,fep2->minvarmin); /*default is reasonable */
   cmp_int(fp,"weight-c-range",-1,fep1->c_range,fep2->c_range); /* default is just C=0 */
   cmp_real(fp,"wl-scale",-1,fep1->wl_scale,fep2->wl_scale,ftol,abstol);
-  cmp_real(fp,"wl-delta",-1,fep1->wl_delta,fep2->wl_delta,ftol,abstol);
+  cmp_real(fp,"initial-wl-delta",-1,fep1->initial_wl_delta,fep2->initial_wl_delta,ftol,abstol);
   cmp_real(fp,"wl-ratio",-1,fep1->wl_ratio,fep2->wl_ratio,ftol,abstol);
   cmp_int(fp,"nstfep",-1,fep1->nstfep,fep2->nstfep);
   cmp_int(fp,"mc-seed",-1,fep1->mc_seed,fep2->mc_seed);

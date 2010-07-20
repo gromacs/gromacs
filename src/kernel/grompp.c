@@ -381,7 +381,7 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
     char title[STRLEN];
     snew(confat,1);
     init_t_atoms(confat,state->natoms,FALSE);
-    init_state(state,state->natoms,0,0,0);
+    init_state(state,state->natoms,0,0,0,0);
     read_stx_conf(confin,title,confat,state->x,state->v,NULL,state->box);
     /* This call fixes the box shape for runs with pressure scaling */
     set_box_rel(ir,state);

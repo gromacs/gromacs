@@ -163,13 +163,11 @@ enum {
      elamstatsMETROPOLIS = using the metropolis criteria                                               
      elamstatsBARKER = using the Barker critera for transition weights - also called unoptimized Bennett  
      elamstatsMINVAR = using Barker + minimum variance for weights                                          
-     elamstatsMBAR = using MBAR (uses lots of memory, very expensive)                                   
-     elamstatsBENNETT = using Bennett (uses lots of memory, not as expensive) - not implemented yet            
      elamstatsWL = Wang-Landu (using visitation counts)               
      elamstatsGWL = Gibbs-weighted Wang-Landau (using weighted visitation counts)                 
   */
   enum {
-    elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsMBAR, elamstatsBENNETT, elamstatsWL, elamstatsGWL, elamstatsNR
+    elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsGWL, elamstatsNR
   };
 
   /* How moves in lambda are calculated:                                                                                 

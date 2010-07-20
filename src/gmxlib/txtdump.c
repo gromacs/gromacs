@@ -534,7 +534,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
     PI("mininum-var-min",fepvals->minvarmin); /*default is reasonable */
     PI("weight-c-range",fepvals->c_range); /* default is just C=0 */
     PR("wl-scale",fepvals->wl_scale);
-    PR("wl-delta",fepvals->wl_delta);
+    PR("initial-wl-delta",fepvals->initial_wl_delta);
     PR("wl-ratio",fepvals->wl_ratio);
     PI("nstfep",fepvals->nstfep);
     PI("mc-seed",fepvals->mc_seed);

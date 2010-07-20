@@ -56,7 +56,7 @@ extern "C" {
  */
 extern void write_checkpoint(const char *fn,bool bNumberAndKeep,
 			     FILE *fplog,t_commrec *cr,
-			     int eIntegrator,int simulation_part,
+			     int eIntegrator,int efep, t_lambda *fep, int simulation_part,
 			     gmx_large_int_t step,double t,
 			     t_state *state);
 

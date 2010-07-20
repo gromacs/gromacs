@@ -1295,8 +1295,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("mininum-var-min",ir->fepvals->minvarmin, 100); /*default is reasonable */
   ITYPE ("weight-c-range",ir->fepvals->c_range, 0); /* default is just C=0 */
   RTYPE ("wl-scale",ir->fepvals->wl_scale,0.8);
-  RTYPE ("wl-delta",ir->fepvals->wl_delta,1.0);
   RTYPE ("wl-ratio",ir->fepvals->wl_ratio,0.7);
+  RTYPE ("initial-wl-delta",ir->fepvals->initial_wl_delta,1.0);
   STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
   STYPE ("mass-lambdas", fep_lambda[efptMASS], NULL);
   STYPE ("coul-lambdas", fep_lambda[efptCOUL], NULL);

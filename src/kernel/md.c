@@ -1043,6 +1043,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     gmx_localtop_t *top;	
     t_mdebin *mdebin=NULL;
+    df_history_t df_history;
     t_state    *state=NULL;
     rvec       *f_global=NULL;
     int        n_xtc=-1;
@@ -1138,9 +1139,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     nstglobalcomm = check_nstglobalcomm(fplog,cr,nstglobalcomm,ir);
     bGStatEveryStep = (nstglobalcomm == 1);
 
-    /* initialize the expanded ensembles memory before it is used.*/
-    InitializeExpandedEnsembles(ir);
-    
     if (!bGStatEveryStep && ir->nstlist == -1 && fplog != NULL)
     {
         fprintf(fplog,
@@ -1285,9 +1283,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if ( Flags & MD_APPENDFILES )
         {
             restore_energyhistory_from_state(mdebin,&state_global->enerhist);
+            copy_df_history(&df_history,&state_global->dfhist);
         }
         /* Set the initial energy history in state to zero by updating once */
         update_energyhistory(&state_global->enerhist,mdebin);
+        /* initialize the expanded ensembles memory before it is used.*/
+        init_df_history(&df_history,ir->fepvals->n_lambda,ir->fepvals->initial_wl_delta);
     }	
 
     if ((state->flags & (1<<estLD_RNG)) && (Flags & MD_READ_RNG)) {
@@ -2564,7 +2565,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* perform extended ensemble sampling in lambda */
         if ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && (ir->fepvals->nstfep > 0)) {
             if ((mod(step,ir->fepvals->nstfep)==0) && (step > 0)) {
-                state->fep_state = ExpandedEnsembleDynamics(fplog,ir,state->fep_state,enerd,step);
+                state->fep_state = ExpandedEnsembleDynamics(fplog,ir,state->fep_state,enerd,&df_history,step);
             }
         }
         /* use the directly determined last velocity, not actually the averaged half steps */

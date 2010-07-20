@@ -495,7 +495,7 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 }
 
 
-void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength)
+void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda)
 {
   int i;
 
@@ -530,6 +530,8 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
   init_ekinstate(&state->ekinstate);
 
   init_energyhistory(&state->enerhist);
+
+  init_df_history(&state->dfhist,nlambda,0);
 
   state->ddp_count = 0;
   state->ddp_count_cg_gl = 0;
