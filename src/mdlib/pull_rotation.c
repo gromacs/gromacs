@@ -1468,87 +1468,73 @@ static void flex2_precalc_inner_sum(t_rotgrp *rotg, t_commrec *cr)
 #endif
 
 
+#define FLEX_PRECALC
 #ifdef FLEX_PRECALC
 static void flex_precalc_inner_sum(t_rotgrp *rotg, t_commrec *cr)
 {
-    int   count,i,ic,ii,iii,j,m,n,islab,iigrp;
-    rvec  xi, xj;            /* positions in the i- and j-sums                */
-    rvec  yi0, yj0;          /* the reference positions in the i- and j-sums  */
+    int   i,n,islab;
+    rvec  xi;                /* position                                      */
     rvec  xcn, ycn;          /* the current and the reference slab centers    */
-    rvec  qin, qjn;          /* q_i^n for the i- and j-sum                    */
-
-    rvec  sum_n1,sum_n2;     /* Two contributions to the rotation force       */
+    rvec  qin,rin;           /* q_i^n and r_i^n                               */
+    real  bin;
+    rvec  tmpvec;
     rvec  innersumvec;       /* Inner part of sum_n2                          */
-    rvec  force_n;           /* Single force from slab n on one atom          */
-
-    rvec  r,dum,dum2,dummy1,tmp_f,tmp, tmp2;   /* Helper variables            */
-
-    real  V;                 /* The rotation potential energy                 */
-    real  OOsigma2;          /* 1/(sigma^2)                                   */
-    real  beta;              /* beta_n(xj)                                    */
-    real  bjn, bin;          /* b_j^n and b_i^n                               */
-    real  gaussian_xj, gaussian_xi;  /* Gaussian weights gn(xj), gn(xi)       */
-    real  fac, betan_xj_sigma2;
-
-    /* for mass weighting: */
-    real      mj,wj,wi;      /* Mass-weighting of the positions               */
-    real      N_M;           /* N/M                                           */
+    real  gaussian_xi;       /* Gaussian weight gn(xi)                        */
+    real  mi,wi;             /* Mass-weighting of the positions               */
+    real  N_M;               /* N/M                                           */
 
     gmx_enfrotgrp_t erg;    /* Pointer to enforced rotation group data */
 
-#ifdef PRINTINTERACT
-    int interactions=0;
-#endif
 
     erg=rotg->enfrotgrp;
     N_M = rotg->nat * erg->invmass;
 
-    /*************************************************************/
-    /* For the term sum_n2 we need to loop over all atoms again: */
-    /*************************************************************/
-    clear_rvec(innersumvec);
-
-    for (i=erg->firstatom[islab]; i<=erg->lastatom[islab]; i++)
+    /* Loop over all slabs that contain something */
+    for (n=erg->slab_first; n <= erg->slab_last; n++)
     {
-        /* Index of a rotation group atom  */
-        iii = rotg->ind[i];
+        islab = n - erg->slab_first; /* slab index */
 
-        /* Save this atom's position in xi and its weight in wi */
-        copy_rvec(erg->xc[i],xi);
-        wi = N_M*erg->mc_sorted[i];
+        /* The current center of this slab is saved in xcn: */
+        copy_rvec(erg->slab_center[islab], xcn);
+        /* ... and the reference center in ycn: */
+        copy_rvec(erg->slab_center_ref[islab+erg->slab_buffer], ycn);
 
-        gaussian_xi = gaussian_weight(xi,rotg,n);
+        /* For slab n, we need to loop over all atoms i again. Since we sorted
+         * the atoms with respect to the rotation vector, we know that it is sufficient
+         * to calculate from firstatom to lastatom only. All other contributions will
+         * be very small. */
+        clear_rvec(innersumvec);
+        for (i=erg->firstatom[islab]; i<=erg->lastatom[islab]; i++)
+        {
+            /* Coordinate xi of this atom */
+            copy_rvec(erg->xc[i],xi);
 
-        /* Calculate r = Omega*(yi0 - ycn) for atom i in slab n: */
-        /* Unrotated reference position yi0: */
-        copy_rvec(erg->xc_ref_sorted[i],yi0);
+            /* The i-weights */
+            gaussian_xi = gaussian_weight(xi,rotg,n);
+            mi = erg->mc_sorted[i];  /* need the sorted mass here */
+            wi = N_M*mi;
 
-        /* The reference center of this slab is still in ycn */
-        rvec_sub(yi0, ycn, tmp);     /* tmp =            yi0-ycn      */
-        mvmul(erg->rotmat, tmp, r);  /* r   =     Omega*(yi0-ycn)     */
-        cprod(rotg->vec, r, tmp);    /* tmp = v x Omega*(yi0-ycn)     */
+            /* Calculate rin and qin */
+            rvec_sub(erg->xc_ref_sorted[i], ycn, tmpvec); /* tmpvec = yi0-ycn */
+            mvmul(erg->rotmat, tmpvec, rin);      /* rin = Omega.(yi0 - ycn)  */
+            cprod(rotg->vec, rin, tmpvec);    /* tmpvec = v x Omega*(yi0-ycn) */
 
-                                     /*        v x Omega*(yi0-ycn)    */
-        unitv(tmp, qin);             /* qin = ---------------------   */
-                                     /*       |v x Omega*(yi0-ycn)|   */
+                                             /*        v x Omega*(yi0-ycn)    */
+            unitv(tmpvec, qin);              /* qin = ---------------------   */
+                                             /*       |v x Omega*(yi0-ycn)|   */
 
-        /* With qin we can now calculate the whole i-sum: */
-        rvec_sub(xcn, xj, tmp);      /* tmp = xcn - xj                */
-        /* tmp2 = beta/sigma^2 * (qin*(xcn-xj)) * v   */
-        svmul(betan_xj_sigma2*iprod(tmp,qin), rotg->vec, tmp2);
-        rvec_add(tmp2, qin, tmp);    /* tmp = qin + tmp2              */
+            /* Calculate bin */
+            rvec_sub(xi, xcn, tmpvec);            /* tmpvec = xi-xcn          */
+            bin = iprod(qin, tmpvec);             /* bin  = qin*(xi-xcn)      */
 
-        /* Calculate bin */
-        rvec_sub(xi, xcn, tmp2);     /* tmp2 =                xi-xcn  */
-        bin = iprod(qin, tmp2);      /* bin  =           qin*(xi-xcn) */
+            svmul(wi*gaussian_xi*bin, qin, tmpvec);
 
-        fac = wi*gaussian_xi*bin;    /* fac  = wi*gn(xi)*qin*(xi-xcn) */
-        svmul(fac, tmp, tmp2);       /* tmp2 = wi*gn(xi)*qin*(xi-xcn) * (qin + beta/sigma^2 * (qin*(xcn-xj)) * v) */
-
-        /* Add this contribution to the inner sum: */
-        rvec_add(innersumvec, tmp2, innersumvec);
-
-    } /* now we have the inner sum for this atom in this slab */
+            /* Add this contribution to the inner sum: */
+            rvec_add(innersumvec, tmpvec, innersumvec);
+        } /* now we have the inner sum vector S^n for this slab */
+        /* Save it to be used in do_flex_lowlevel */
+        copy_rvec(innersumvec, erg->slab_innersumvec[islab]);
+    }
 }
 #endif
 
@@ -1853,17 +1839,19 @@ static real do_flex_lowlevel(
         matrix    box,
         t_commrec *cr)
 {
-    int   count,i,ic,ii,iii,j,m,n,islab,iigrp;
+    int   count,i,ic,ii,j,m,n,islab,iigrp;
     rvec  xi, xj;            /* positions in the i- and j-sums                */
     rvec  yi0, yj0;          /* the reference positions in the i- and j-sums  */
     rvec  xcn, ycn;          /* the current and the reference slab centers    */
+    rvec  xj_xcn;            /* xj - xcn                                      */
     rvec  qin, qjn;          /* q_i^n for the i- and j-sum                    */
 
     rvec  sum_n1,sum_n2;     /* Two contributions to the rotation force       */
     rvec  innersumvec;       /* Inner part of sum_n2                          */
+    rvec  s_n;
     rvec  force_n;           /* Single force from slab n on one atom          */
 
-    rvec  r,dum,dum2,dummy1,tmp_f,tmp, tmp2;   /* Helper variables            */
+    rvec  r,dum,dum2,dummy1,tmp_f,tmpvec, tmp2;   /* Helper variables            */
 
     real  V;                 /* The rotation potential energy                 */
     real  OOsigma2;          /* 1/(sigma^2)                                   */
@@ -1871,10 +1859,8 @@ static real do_flex_lowlevel(
     real  bjn, bin;          /* b_j^n and b_i^n                               */
     real  gaussian_xj, gaussian_xi;  /* Gaussian weights gn(xj), gn(xi)       */
     real  fac, betan_xj_sigma2;
-
-    /* for mass weighting: */
-    real      mj,wj,wi;      /* Mass-weighting of the positions               */
-    real      N_M;           /* N/M                                           */
+    real  mj,wj,wi;          /* Mass-weighting of the positions               */
+    real  N_M;               /* N/M                                           */
 
     gmx_enfrotgrp_t erg;     /* Pointer to enforced rotation group data       */
 
@@ -1942,16 +1928,16 @@ static real do_flex_lowlevel(
             mvmul(erg->rotmat, dum, dum2); /* dum2 = Omega.(yj0 - ycn) */
             
             /* Subtract the slab center from xj */
-            rvec_sub(xj, xcn, dum); /* dum = xj - xcn */
+            rvec_sub(xj, xcn, xj_xcn); /* xj_xcn = xj - xcn */
             
             /* Calculate qjn */
-            cprod(rotg->vec, dum2, tmp);  /* tmp = v x Omega.(xj-xcn) */
+            cprod(rotg->vec, dum2, tmpvec);  /* tmp = v x Omega.(xj-xcn) */
 
                               /*         v x Omega.(xj-xcn)    */
-            unitv(tmp,qjn);   /*  qjn = --------------------   */
+            unitv(tmpvec,qjn);   /*  qjn = --------------------   */
                               /*        |v x Omega.(xj-xcn)|   */
 
-            bjn = iprod(qjn, dum);   /* bjn = qjn * (xj - xcn) */
+            bjn = iprod(qjn, xj_xcn);   /* bjn = qjn * (xj - xcn) */
             
             /*********************************/
             /* Add to the rotation potential */
@@ -1966,30 +1952,32 @@ static real do_flex_lowlevel(
             /* The next lines calculate
              *  qjn - (bjn*beta(xj)/(2sigma^2))v  */
             svmul(bjn*0.5*betan_xj_sigma2, rotg->vec, dummy1);
-            rvec_sub(qjn,dummy1,tmp);
+            rvec_sub(qjn,dummy1,tmpvec);
 
             /* Multiply with gn(xj)*bjn: */
-            svmul(gaussian_xj*bjn,tmp,dummy1);
+            svmul(gaussian_xj*bjn,tmpvec,dummy1);
 
             /* Sum over n: */
             rvec_inc(sum_n1,dummy1);
             
-#ifdef FLEX_PRECALC
-            /* We already have precalculated the inner sum for slab n */
-            copy_rvec(erg->slab_innersumvec[islab], innersumvec);
-#else
             /*************************************************************/
             /* For the term sum_n2 we need to loop over all atoms again: */
             /*************************************************************/
+#ifdef FLEX_PRECALC
+            /* We already have precalculated the Sn term for slab n */
+            copy_rvec(erg->slab_innersumvec[islab], s_n);
+                                                                          /*          beta_n(xj)              */
+            svmul(betan_xj_sigma2*iprod(s_n, xj_xcn), rotg->vec, tmpvec); /* tmpvec = ---------- s_n (xj-xcn) */
+                                                                          /*            sigma^2               */
+
+            rvec_sub(s_n, tmpvec, innersumvec);
+#else
             clear_rvec(innersumvec);
             
             GMX_MPE_LOG(ev_inner_loop_start);
             
             for (i=erg->firstatom[islab]; i<=erg->lastatom[islab]; i++)
             {
-                /* Index of a rotation group atom  */
-                iii = rotg->ind[i];
-                
                 /* Save this atom's position in xi and its weight in wi */
                 copy_rvec(erg->xc[i],xi);
                 wi = N_M*erg->mc_sorted[i];
@@ -2001,26 +1989,26 @@ static real do_flex_lowlevel(
                 copy_rvec(erg->xc_ref_sorted[i],yi0);
                 
                 /* The reference center of this slab is still in ycn */
-                rvec_sub(yi0, ycn, tmp);     /* tmp =            yi0-ycn      */
-                mvmul(erg->rotmat, tmp, r);  /* r   =     Omega*(yi0-ycn)     */
-                cprod(rotg->vec, r, tmp);    /* tmp = v x Omega*(yi0-ycn)     */
+                rvec_sub(yi0, ycn, tmpvec);     /* tmp =            yi0-ycn      */
+                mvmul(erg->rotmat, tmpvec, r);  /* r   =     Omega*(yi0-ycn)     */
+                cprod(rotg->vec, r, tmpvec);    /* tmp = v x Omega*(yi0-ycn)     */
 
                                              /*        v x Omega*(yi0-ycn)    */
-                unitv(tmp, qin);             /* qin = ---------------------   */
+                unitv(tmpvec, qin);             /* qin = ---------------------   */
                                              /*       |v x Omega*(yi0-ycn)|   */
 
                 /* With qin we can now calculate the whole i-sum: */
-                rvec_sub(xcn, xj, tmp);      /* tmp = xcn - xj                */
+                rvec_sub(xcn, xj, tmpvec);      /* tmp = xcn - xj                */
                 /* tmp2 = beta/sigma^2 * (qin*(xcn-xj)) * v   */
-                svmul(betan_xj_sigma2*iprod(tmp,qin), rotg->vec, tmp2);
-                rvec_add(tmp2, qin, tmp);    /* tmp = qin + tmp2              */
+                svmul(betan_xj_sigma2*iprod(tmpvec,qin), rotg->vec, tmp2);
+                rvec_add(tmp2, qin, tmpvec);    /* tmp = qin + tmp2              */
 
                 /* Calculate bin */
                 rvec_sub(xi, xcn, tmp2);     /* tmp2 =                xi-xcn  */
                 bin = iprod(qin, tmp2);      /* bin  =           qin*(xi-xcn) */
 
                 fac = wi*gaussian_xi*bin;    /* fac  = wi*gn(xi)*qin*(xi-xcn) */
-                svmul(fac, tmp, tmp2);       /* tmp2 = wi*gn(xi)*qin*(xi-xcn) * (qin + beta/sigma^2 * (qin*(xcn-xj)) * v) */
+                svmul(fac, tmpvec, tmp2);       /* tmp2 = wi*gn(xi)*qin*(xi-xcn) * (qin + beta/sigma^2 * (qin*(xcn-xj)) * v) */
 
                 /* Add this contribution to the inner sum: */
                 rvec_add(innersumvec, tmp2, innersumvec);
