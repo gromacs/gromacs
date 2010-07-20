@@ -565,8 +565,8 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     if (ir->opts.ngtc > 1)
         gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.");
 
-    if (ir->epc != etcNO)
-        gmx_fatal(FARGS,"OpenMM does not support pressure coupling.");
+    if (ir->epc != epcNO)
+        gmx_warning("OpenMM supports only Monte Carlo barostat for pressure coupling.");
 
     if (ir->opts.annealing[0])
         gmx_fatal(FARGS,"OpenMM does not support simulated annealing.");
@@ -961,7 +961,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 gmx_fatal(FARGS,"Internal error: you should not see this message, it that the"
                           "electrosatics option check failed. Please report this error!");
             }        
-            sys->setPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
+            sys->setDefaultPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
                                        Vec3(0, state->box[1][1], 0), Vec3(0, 0, state->box[2][2]));                    
             nonbondedForce->setCutoffDistance(ir->rcoulomb);
            
@@ -1133,11 +1133,22 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             integ = new VerletIntegrator(ir->delta_t);
             if ( ir->etc != etcNO)
             {
-                real collisionFreq = ir->opts.tau_t[0] / 1000; /* tau_t (ps) / 1000 = collisionFreq (fs^-1) */
                 AndersenThermostat* thermostat = new AndersenThermostat(ir->opts.ref_t[0], friction); 
                 sys->addForce(thermostat);
             }           
         }
+
+		// Add pressure coupling
+        if (ir->epc != epcNO)
+		{
+          // convert gromacs pressure tensor to a scalar
+          double pressure = (ir->ref_p[0][0] + ir->ref_p[1][1] + ir->ref_p[2][2]) / 3.0;
+          int frequency = int(ir->tau_p / ir->delta_t); // update frequency in time steps
+          if (frequency < 1) frequency = 1;
+          double temperature = ir->opts.ref_t[0]; // in kelvin
+          sys->addForce(new MonteCarloBarostat(pressure, temperature, frequency));
+		}
+
         integ->setConstraintTolerance(ir->shake_tol);
 
         // Create a context and initialize it.
