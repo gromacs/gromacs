@@ -345,7 +345,7 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 # turn on SSE if supported with reasonable defaults.
 if (${GMX_ACCELERATION} STREQUAL "auto")
     if (GMX_X86_GCC_INLINE_ASM)
-        set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec" FORCE)
+        set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
         if (GMX_64_BIT)
             set(GMX_X86_64_ASM ON CACHE BOOL 
                 "Add SSE assembly files for x86_64" FORCE)

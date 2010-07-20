@@ -986,7 +986,6 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
          *  
          *  If the default ewald_rtol=1e-5 is used we silently adjust the value,
          * otherwise a warning is issued about the action taken. 
-	 */
         double corr_ewald_rtol = 500.0 * ir->ewald_rtol;
         if ((ir->ePBC == epbcXYZ) && 
             (ir->coulombtype == eelEWALD || ir->coulombtype == eelPME))
@@ -1013,6 +1012,12 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 }
             }
             nonbondedForce->setEwaldErrorTolerance(corr_ewald_rtol);
+        }
+	 */
+        if ((ir->ePBC == epbcXYZ) && 
+            (ir->coulombtype == eelEWALD || ir->coulombtype == eelPME))
+        {
+            nonbondedForce->setEwaldErrorTolerance(ir->ewald_rtol);
         }
 
         for (int i = 0; i < numAtoms; ++i)
