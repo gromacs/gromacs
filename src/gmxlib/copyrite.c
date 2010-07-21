@@ -497,7 +497,17 @@ void please_cite(FILE *fp,const char *key)
       "O. Engin, A. Villa, M. Sayar and B. Hess",
       "Driving Forces for Adsorption of Amphiphilic Peptides to Air-Water Interface",
       "J. Phys. Chem. B",
-      0, 2010, "???" }
+      0, 2010, "???" },
+    { "Praprotnik05",
+      "M. Praprotnik, L. Delle Site and K. Kremer",
+      "Adaptive resolution molecular-dynamics simulation: Changing the degrees of freedom on the fly",
+      "J. Phys. Chem.",
+      123, 2005, "224106" },
+    { "Junghans10",
+      "C. Junghans and S. Poblete",
+      "A reference implementation of the adaptive resolution scheme in ESPResSo",
+      "Comp. Phys. Comm.",
+      181, 2010, "1449" }
   };
 #define NSTR (int)asize(citedb)
   

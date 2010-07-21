@@ -1557,6 +1557,11 @@ void init_md(FILE *fplog,
                               mtop,ir);
     }
     
+    if (ir->adress_type != eAdressOff)
+    {
+      please_cite(fplog,"Praprotnik05");
+      please_cite(fplog,"Junghans10");
+    }
     /* Initiate variables */  
     clear_mat(force_vir);
     clear_mat(shake_vir);
