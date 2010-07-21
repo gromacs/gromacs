@@ -804,8 +804,6 @@ esac
 # Look for X
 AC_PATH_XTRA
 if test "$no_x" != "yes"; then
-  LIBS="$X_LIBS $LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
-  INCLUDES="$INCLUDES $X_CFLAGS"
   AM_CONDITIONAL(USE_X11,true)
 else
   AM_CONDITIONAL(USE_X11,false)

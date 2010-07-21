@@ -729,6 +729,9 @@ int gmx_rdf(int argc,char *argv[])
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
 
   bSQ   = opt2bSet("-sq",NFILE,fnm);
+  if (bSQ)
+    please_cite(stdout,"Cromer1968a");
+
   bRDF  = opt2bSet("-o",NFILE,fnm) || !bSQ;
   if (bSQ || bCM || closet[0][0]!='n' || rdft[0][0]=='m' || rdft[0][6]=='m') {
     fnTPS = ftp2fn(efTPS,NFILE,fnm);
