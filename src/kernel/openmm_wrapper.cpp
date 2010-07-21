@@ -977,16 +977,17 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 	 *  OpenMM uses approximate formulas to calculate the Ewald parameter:
 	 *  alpha = (1.0/cutoff)*sqrt(-log(2.0*tolerlance));
 	 *  and the grid spacing for PME:
-	 *  gridX = ceil(alpha*box[0][0]/pow(0.5*tol, 0.2));
-	 *  gridY = ceil(alpha*box[1][1]/pow(0.5*tol, 0.2));
-	 *  gridZ = ceil(alpha*box[2][2]/pow(0.5*tol, 0.2));
+	 *  gridX = ceil(2*alpha*box[0][0]/3*(pow(tol, 0.2)));
+	 *  gridY = ceil(2*alpha*box[1][1]/3*(pow(tol, 0.2)));
+	 *  gridZ = ceil(2*alpha*box[2][2]/3*(pow(tol, 0.2)));
          *
 	 *  It overestimates the precision and setting it to 
-	 *  (500 x ewald_rtol) seems to give a reasonable match to the GROMACS settings
+	 *  (100 x ewald_rtol) seems to give a reasonable match to the GROMACS settings
          *  
          *  If the default ewald_rtol=1e-5 is used we silently adjust the value,
          * otherwise a warning is issued about the action taken. 
-        double corr_ewald_rtol = 500.0 * ir->ewald_rtol;
+	 */
+        double corr_ewald_rtol = 100.0 * ir->ewald_rtol;
         if ((ir->ePBC == epbcXYZ) && 
             (ir->coulombtype == eelEWALD || ir->coulombtype == eelPME))
         {
@@ -1012,12 +1013,6 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 }
             }
             nonbondedForce->setEwaldErrorTolerance(corr_ewald_rtol);
-        }
-	 */
-        if ((ir->ePBC == epbcXYZ) && 
-            (ir->coulombtype == eelEWALD || ir->coulombtype == eelPME))
-        {
-            nonbondedForce->setEwaldErrorTolerance(ir->ewald_rtol);
         }
 
         for (int i = 0; i < numAtoms; ++i)
