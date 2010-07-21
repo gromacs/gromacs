@@ -652,7 +652,7 @@
     CA    +N     C     O    improper_O_C_X_Y 
 
 
-[ HISA ]   ; HISD in OPLS terminology
+[ HISD ] 
  [ atoms ]
      N    opls_238   -0.500     1
      H    opls_241    0.300     1
@@ -754,7 +754,7 @@
    ND1   NE2   CE1   HE1    improper_Z_CA_X_Y 
 
 
-[ HISB ]   ; HISE in OPLS terminology
+[ HISE ] 
  [ atoms ]
      N    opls_238   -0.500     1
      H    opls_241    0.300     1
