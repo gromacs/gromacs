@@ -2159,6 +2159,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         state_global->ekinstate.bUpToDate = TRUE;
                     }
                     update_energyhistory(&state_global->enerhist,mdebin);
+                    if (ir->efep>efepNO) 
+                    {
+                        copy_df_history(&state_global->dfhist,&df_history);
+                    }
                 }
             }
             write_traj(fplog,cr,outf,mdof_flags,top_global,

@@ -168,13 +168,12 @@ void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
 void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop, t_state *state)
 {
-  bcast_ir_mtop(cr,inputrec,mtop);
-
-
-  if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
-    /* Make sure the random seeds are different on each node */
-    inputrec->ld_seed += cr->nodeid;
-  }
+    bcast_ir_mtop(cr,inputrec,mtop);
+  
+    if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
+        /* Make sure the random seeds are different on each node */
+        inputrec->ld_seed += cr->nodeid;
+    }
 }
 
 

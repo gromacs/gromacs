@@ -53,6 +53,7 @@
 
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
+#define CPTSTRLEN 1024
 
 /* The source code in this file should be thread-safe. 
    Please keep it that way. */
@@ -99,12 +100,12 @@ const char *eenh_names[eenhNR]=
     "energy_nsteps", "energy_nsteps_sim" 
 };
 
-enum { edfhNATLAMBDA,edfhWLHISTO,edfhWLDELTA,edfhSUMWEIGHTS,edfhSUMDG,edfhSUMMINVAR,edfhSUMVAR,
+enum { edfhBEQUIL,edfhNATLAMBDA,edfhWLHISTO,edfhWLDELTA,edfhSUMWEIGHTS,edfhSUMDG,edfhSUMMINVAR,edfhSUMVAR,
        edfhACCUMP,edfhACCUMM,edfhACCUMP2,edfhACCUMM2,edfhTIJ,edfhTIJEMP,edfhNR };
 
 const char *edfh_names[edfhNR]=
 {
-    "N_at_state", "Wang-Landau_Histogram", "wl-delta", "weights", "df", "minvar","variance"
+    "bEquilibrated","N_at_state", "Wang-Landau_Histogram", "Wang-Landau-delta", "Weights", "Free Energies", "minvar","variance",
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical" 
 };
 
@@ -161,7 +162,6 @@ static void cp_error()
 
 static void do_cpt_string_err(XDR *xd,bool bRead,const char *desc,char **s,FILE *list)
 {
-#define CPTSTRLEN 1024
     bool_t res=0;
     
     if (bRead)
@@ -558,8 +558,13 @@ static int do_cpte_nmatrix(XDR *xd,int cptp,int ecpt,int sflags,
     int i;
     real *vr;
     real ret,reti;
+    char name[CPTSTRLEN];
 
     ret = 0;
+    if (v==NULL) 
+    {
+        snew(v,n);
+    }
     for (i=0;i<n;i++)
     {
         reti = 0;
@@ -567,7 +572,8 @@ static int do_cpte_nmatrix(XDR *xd,int cptp,int ecpt,int sflags,
         reti = do_cpte_reals_low(xd,cptp,ecpt,sflags,n,&(v[i]),NULL,ecprREAL);
         if (list && reti == 0)
         {
-            pr_reals(list,0,st_names(cptp,ecpt),v[i],n);
+            sprintf(name,"%s[%d]",st_names(cptp,ecpt),i);
+            pr_reals(list,0,name,v[i],n);
         }
         if (reti == 0) 
         {
@@ -1002,8 +1008,10 @@ static int do_cpt_df_hist(XDR *xd,bool bRead,int fflags,df_history_t *dfhist,FIL
         {
             switch (i)
             {
+			case edfhBEQUIL:       ret = do_cpte_int(xd,cptpEDFH,i,fflags,&dfhist->bEquil,list); break;
 			case edfhNATLAMBDA:    ret = do_cpte_ints(xd,cptpEDFH,i,fflags,nlambda,&dfhist->n_at_lam,list); break;
 			case edfhWLHISTO:      ret = do_cpte_reals(xd,cptpEDFH,i,fflags,nlambda,&dfhist->wl_histo,list); break;
+			case edfhWLDELTA:      ret = do_cpte_real(xd,cptpEDFH,i,fflags,&dfhist->wl_delta,list); break;
             case edfhSUMWEIGHTS:   ret = do_cpte_reals(xd,cptpEDFH,i,fflags,nlambda,&dfhist->sum_weights,list); break;
             case edfhSUMDG:        ret = do_cpte_reals(xd,cptpEDFH,i,fflags,nlambda,&dfhist->sum_dg,list); break;
             case edfhSUMMINVAR:    ret = do_cpte_reals(xd,cptpEDFH,i,fflags,nlambda,&dfhist->sum_minvar,list); break;
@@ -1221,13 +1229,13 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
 
     if (efep>0)
     {
-        flags_dfh = ((1<<edfhNATLAMBDA) | (1<<edfhSUMWEIGHTS) |  (1<<edfhSUMDG)  |
+        flags_dfh = ((1<<edfhBEQUIL) | (1<<edfhNATLAMBDA) | (1<<edfhSUMWEIGHTS) |  (1<<edfhSUMDG)  |
                      (1<<edfhTIJ) | (1<<edfhTIJEMP)); 
         if ((fep->elamstats == elamstatsWL) || (fep->elamstats == elamstatsGWL)) 
         {
             flags_dfh |= ((1<<edfhWLDELTA) | (1<<edfhWLHISTO)); 
         }
-        if (fep->elamstats == elamstatsMINVAR) 
+        if ((fep->elamstats == elamstatsMINVAR) || (fep->elamstats == elamstatsBARKER) || (fep->elamstats == elamstatsMETROPOLIS))
         { 
             flags_dfh |= ((1<<edfhACCUMP) | (1<<edfhACCUMM) | (1<<edfhACCUMP2) | (1<<edfhACCUMP2) 
                           | (1<<edfhSUMMINVAR) | (1<<edfhSUMVAR));
@@ -1877,6 +1885,12 @@ static void read_checkpoint_data(t_fileio *fp,int *simulation_part,
     {
         cp_error();
     }
+    ret = do_cpt_df_hist(gmx_fio_getxdr(fp),TRUE,
+                          flags_dfh,&state->dfhist,NULL);
+    if (ret)
+    {
+        cp_error();
+    }
 
     ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,
                        outputfiles != NULL ? outputfiles : &files_loc,
@@ -1980,7 +1994,7 @@ void list_checkpoint(const char *fn,FILE *out)
     gmx_file_position_t *outputfiles;
 	int  nfiles;
 	
-    init_state(&state,-1,-1,-1,-1,-1);
+    init_state(&state,-1,-1,-1,-1,0);
 
     fp = gmx_fio_open(fn,"r");
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
@@ -2005,6 +2019,7 @@ void list_checkpoint(const char *fn,FILE *out)
 
     if (ret == 0) 
     {
+        init_df_history(&state.dfhist,state.dfhist.nlambda,0); /* reinitialize state with correct sizes */
         ret = do_cpt_df_hist(gmx_fio_getxdr(fp),TRUE,
                              flags_dfh,&state.dfhist,out);
     }

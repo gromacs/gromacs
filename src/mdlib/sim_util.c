@@ -2603,24 +2603,24 @@ extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
     df_dest->bEquil = df_source->bEquil;
     for (i=0;i<df_dest->nlambda;i++) 
     {
-        df_source->sum_weights[i]  = df_dest->sum_weights[i];
-        df_source->sum_dg[i]       = df_dest->sum_dg[i];
-        df_source->sum_minvar[i]   = df_dest->sum_minvar[i];
-        df_source->sum_variance[i] = df_dest->sum_variance[i];
-        df_source->n_at_lam[i]     = df_dest->n_at_lam[i];
-        df_source->wl_histo[i]     = df_dest->wl_histo[i];
-        df_source->accum_p[i]      = df_dest->accum_p[i];
-        df_source->accum_m[i]      = df_dest->accum_m[i];
-        df_source->accum_p2[i]     = df_dest->accum_p2[i];
-        df_source->accum_m2[i]     = df_dest->accum_m2[i];
+        df_dest->sum_weights[i]  = df_source->sum_weights[i];
+        df_dest->sum_dg[i]       = df_source->sum_dg[i];
+        df_dest->sum_minvar[i]   = df_source->sum_minvar[i];
+        df_dest->sum_variance[i] = df_source->sum_variance[i];
+        df_dest->n_at_lam[i]     = df_source->n_at_lam[i];
+        df_dest->wl_histo[i]     = df_source->wl_histo[i];
+        df_dest->accum_p[i]      = df_source->accum_p[i];
+        df_dest->accum_m[i]      = df_source->accum_m[i];
+        df_dest->accum_p2[i]     = df_source->accum_p2[i];
+        df_dest->accum_m2[i]     = df_source->accum_m2[i];
     }
 
     for (i=0;i<df_dest->nlambda;i++) 
     {
         for (j=0;j<df_dest->nlambda;j++) 
         {
-            df_source->Tij[i][j]  = df_dest->Tij[i][j];
-            df_source->Tij_empirical[i][j]  = df_dest->Tij_empirical[i][j];
+            df_dest->Tij[i][j]  = df_source->Tij[i][j];
+            df_dest->Tij_empirical[i][j]  = df_source->Tij_empirical[i][j];
         }
     }
 }
