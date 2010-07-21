@@ -3645,13 +3645,13 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     /* END OF CAUTION: cr is now reliable */
 
-    /* now make sure the state is initialized and propagated */
-    set_state_entries(state,inputrec,cr->nnodes);
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(fplog, cr, inputrec, mtop, state);
+        init_parallel(fplog, cr, inputrec, mtop);
     }
+    /* now make sure the state is initialized and propagated */
+    set_state_entries(state,inputrec,cr->nnodes);
 
     if (can_use_allvsall(inputrec,mtop,TRUE,cr,fplog))
     {
