@@ -1335,7 +1335,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	       const char *ffdir,bool bAddCWD)
 {
 #define MAXATOMSPERRESIDUE 16
-  int  i,j,k,i0,ni0,whatres,resind,add_shift,ftype,nvsite,nadd;
+  int  i,j,k,m,i0,ni0,whatres,resind,add_shift,ftype,nvsite,nadd;
   int  ai,aj,ak,al;
   int  nrfound=0,needed,nrbonds,nrHatoms,Heavy,nrheavies,tpM,tpHeavy;
   int  Hatoms[4],heavies[4],bb;
@@ -1402,7 +1402,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
       "ND1", "HD1", "CD2", "HD2",
       "CE1", "HE1", "NE2", "HE2", NULL }
   };
-  
+    
   if (debug) {
     printf("Searching for atoms to make virtual sites ...\n");
     fprintf(debug,"# # # VSITES # # #\n");
@@ -1473,31 +1473,38 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	  whatres=j;
 	  /* get atoms we will be needing for the conversion */
 	  nrfound=0;
-	  for (k=0; atnms[j][k]; k++) {
+	  for (k=0; atnms[j][k]; k++) 
+      {
 	    ats[k]=NOTSET;
-	    i0=i;
-	    while (i<at->nr && at->atom[i].resind==resind && ats[k]==NOTSET) {
-	      if (strcasecmp(*(at->atomname[i]),atnms[j][k])==0) {
-		ats[k]=i;
-		nrfound++;
+          for(m=i; m<at->nr && at->atom[m].resind==resind && ats[k]==NOTSET;m++) 
+        {
+	      if (strcasecmp(*(at->atomname[m]),atnms[j][k])==0) 
+          {
+              ats[k]=m;
+              nrfound++;
 	      }
-	      i++;
 	    }
-	    /* if nothing found, search next atom from same point */
-	    if (ats[k]==NOTSET)
-	      i=i0;
 	  }
-	  /* now k is number of atom names in atnms[j] */
-	  if (j==resHIS)
-	    needed = k-3;
+        
+      /* now k is number of atom names in atnms[j] */
+      if (j==resHIS)
+      {
+          needed = k-3;
+      }
 	  else
-	    needed = k;
-	  if (nrfound<needed)
-	    gmx_fatal(FARGS,"not enough atoms found (%d, need %d) in "
-		      "residue %s %d while\n             "
-		      "generating aromatics virtual site construction",
-		      nrfound,needed,resnm,at->resinfo[resind].nr);
-	}
+	  {
+          needed = k;
+      }
+      if (nrfound<needed)
+	  {
+          gmx_fatal(FARGS,"not enough atoms found (%d, need %d) in "
+                    "residue %s %d while\n             "
+                    "generating aromatics virtual site construction",
+                    nrfound,needed,resnm,at->resinfo[resind].nr);
+      }
+      /* Advance overall atom counter */
+      i++;
+    }
       }
       /* the enums for every residue MUST correspond to atnms[residue] */
       switch (whatres) {

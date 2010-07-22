@@ -1,0 +1,47 @@
+
+; missing protein torsions
+#define backbone_prop_1   20.92000     0.00000   -20.92000     0.00000     0.00000     0.00000
+#define backbone_prop_2   29.28800    -8.36800   -20.92000     0.00000     0.00000     0.00000
+#define backbone_prop_3    2.84512    -4.10032    16.73600     2.51040   -16.73600     0.00000
+#define backbone_prop_4   10.46000    -3.34720    -7.11280     0.00000     0.00000     0.00000
+#define sidechain_prop_1  20.08320     0.00000   -20.08320     0.00000     0.00000     0.00000
+#define proline_prop_1     2.84512    -4.10032    16.73600     2.51040   -16.73600     0.00000
+#define hyp_prop_1         0.65270     1.95811    12.46832    -2.61082     0.00000     0.00000 ; HYP for amber99: S Park, R J Radmer, T E Klein & V S Pande (submitted).
+#define aromatic_prop_1   30.33400     0.00000   -30.33400     0.00000     0.00000     0.00000 ; X-CA-CA-X
+#define aromatic_prop_2   19.24640     0.00000   -19.24640     0.00000     0.00000     0.00000 ; X-C -OH-X (TYR)
+#define aromatic_prop_3   11.71520     0.00000   -11.71520     0.00000     0.00000     0.00000 ; X-CC-NA-X (HIX)
+#define aromatic_prop_3a  20.08320     0.00000   -20.08320     0.00000     0.00000     0.00000 ; X-CC-NB-X (HIX)
+#define aromatic_prop_4   12.55200     0.00000   -12.55200     0.00000     0.00000     0.00000 ; X-CW-NA-X (HIX)
+#define aromatic_prop_4a  20.08320     0.00000   -20.08320     0.00000     0.00000     0.00000 ; X-CV-NB-X (HIX)
+#define aromatic_prop_5   19.45560     0.00000   -19.45560     0.00000     0.00000     0.00000 ; X-CR-NA-X (HIX)
+#define aromatic_prop_5a  41.84000     0.00000   -41.84000     0.00000     0.00000     0.00000 ; X-CR-NB-X (HIX)
+#define aromatic_prop_6   44.97800     0.00000   -44.97800     0.00000     0.00000     0.00000 ; X-CC-CW-X (HIX)
+#define aromatic_prop_6a  43.09520     0.00000   -43.09520     0.00000     0.00000     0.00000 ; X-CC-CV-X (HIX)
+#define aromatic_prop_7	  54.60120     0.00000   -54.60120     0.00000     0.00000     0.00000 ; X-C*-CW-X (TRP) 
+#define aromatic_prop_8	  14.01640     0.00000   -14.01640     0.00000     0.00000     0.00000 ; X-C*-CB-X (TRP)
+#define aromatic_prop_9	  12.76120     0.00000   -12.76120     0.00000     0.00000     0.00000 ; X-NA-CN-X (TRP)
+#define aromatic_prop_10  25.10400     0.00000   -25.10400     0.00000     0.00000     0.00000 ; X-CN-CB-X (TRP)
+#define aromatic_prop_11  30.33400     0.00000   -30.33400     0.00000     0.00000     0.00000 ; X-CN-CA-X (TRP)
+#define aromatic_prop_12  29.28800     0.00000   -29.28800     0.00000     0.00000     0.00000 ; X-CB-CA-X (TRP)
+
+; missing nucleic torsions
+#define proper_X_CT_N*_X   0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+#define proper_X_CM_CT_X   0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+#define proper_X_CK_N*_X  14.22560     0.00000   -14.22560     0.00000     0.00000     0.00000
+#define proper_X_CB_N*_X  13.80720     0.00000   -13.80720     0.00000     0.00000     0.00000
+#define proper_X_CA_NC_X  40.16640     0.00000   -40.16640     0.00000     0.00000     0.00000
+#define proper_X_CQ_NC_X  56.90240     0.00000   -56.90240     0.00000     0.00000     0.00000
+#define proper_X_C_N*_X   12.13360     0.00000   -12.13360     0.00000     0.00000     0.00000
+#define proper_X_CM_CM_X  55.64720     0.00000   -55.64720     0.00000     0.00000     0.00000
+#define proper_X_C_NC_X   33.47200     0.00000   -33.47200     0.00000     0.00000     0.00000
+#define proper_X_CA_CM_X  21.33840     0.00000   -21.33840     0.00000     0.00000     0.00000
+#define proper_X_C_NA_X   11.29680     0.00000   -11.29680     0.00000     0.00000     0.00000
+#define proper_X_CA_NA_X  12.55200     0.00000   -12.55200     0.00000     0.00000     0.00000
+#define proper_X_CK_NB_X  83.68000     0.00000   -83.68000     0.00000     0.00000     0.00000
+#define proper_X_C_CM_X   18.20040     0.00000   -18.20040     0.00000     0.00000     0.00000
+#define proper_CM_CM_C_O  19.45560     3.76560   -18.20040    -5.02080     0.00000     0.00000
+#define proper_HC_CT_CM_CM 6.40152    -9.58136     0.00000     6.35968     0.00000     0.00000 
+#define proper_X_CA_N2_X  20.08320     0.00000   -20.08320     0.00000     0.00000     0.00000
+#define proper_X_N*_CM_X  15.48080     0.00000   -15.48080     0.00000     0.00000     0.00000
+#define proper_H_CT_CT_O  1.696840     0.90653     0.00000    -2.60338     0.00000     0.00000
+ 

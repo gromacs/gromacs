@@ -223,14 +223,18 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     set_ljparams(comb,reppow,old[0],old[1],&newparam->lj.c6,&newparam->lj.c12);
     break;
   case F_PDIHS:
+  case F_PIDIHS:
   case F_ANGRES:
   case F_ANGRESZ:
     newparam->pdihs.phiA = old[0];
     newparam->pdihs.cpA  = old[1];
 		  
-    /* Dont do any checks if all parameters are zero (such interactions will be removed) */
+    /* Dont do any checks if all parameters are zero (such interactions will be removed).
+     * Change 20100720: Amber occasionally uses negative multiplicities (mathematically OK),
+     * so I have changed the lower limit to -99 /EL
+     */
     tmp=fabs(old[0])+fabs(old[1])+fabs(old[2])+fabs(old[3])+fabs(old[4]);
-    newparam->pdihs.mult = (tmp < GMX_REAL_MIN) ? 0 : round_check(old[2],1,ftype,"multiplicity");
+    newparam->pdihs.mult = (tmp < GMX_REAL_MIN) ? 0 : round_check(old[2],-99,ftype,"multiplicity");
 		  
     newparam->pdihs.phiB = old[3];
     newparam->pdihs.cpB  = old[4];
