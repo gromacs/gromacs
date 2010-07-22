@@ -364,8 +364,11 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     int xdrid;
     char newtype[5];
 
+
+#ifdef GMX_THREADS
     if (!tMPI_Thread_mutex_islocked( &xdr_fortran_mutex ))  
         gmx_incons("xdropen called without locked mutex. NEVER call this function");
+#endif 
 
     if (init_done == 0) {
 	for (xdrid = 1; xdrid < MAXID; xdrid++) {
@@ -444,8 +447,10 @@ int xdrclose(XDR *xdrs) {
     int xdrid;
     int rc = 0;
 
+#ifdef GMX_THREADS
     if (!tMPI_Thread_mutex_islocked( &xdr_fortran_mutex ))  
         gmx_incons("xdropen called without locked mutex. NEVER call this function");
+#endif
 
     if (xdrs == NULL) {
 	fprintf(stderr, "xdrclose: passed a NULL pointer\n");
