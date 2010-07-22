@@ -50,6 +50,10 @@ extern "C" {
 #endif
 
   /**************************************************************
+   * These are the base datatypes + functions for reading and 
+   * writing energy files (.edr). They are either called directly 
+   * (as in the processing tools), or indirectly through mdebin.c 
+   * during mdrun.
    *
    * The routines in the corresponding c-file enxio.c
    * are based on the lower level routines in gmxfio.c
@@ -78,6 +82,7 @@ extern "C" {
 	      */
   };
 
+  /* The frames that are read/written */
   typedef struct {
     double   t;	            /* Timestamp of this frame	                     */
     gmx_large_int_t step;   /* MD step	   		                     */
