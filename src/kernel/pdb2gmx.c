@@ -220,7 +220,7 @@ static void read_rtprename(const char *fname,FILE *fp,
 		rr[n].gmx,rr[n].main,rr[n].nter,rr[n].cter,rr[n].bter,buf);
     if (ncol == 0) {
       if (nc != 2 && nc != 5) {
-	gmx_fatal(FARGS,"Residue renaming database '%s' has %d columns instead of %d or %d",fname,ncol,2,5);
+	gmx_fatal(FARGS,"Residue renaming database '%s' has %d columns instead of %d, %d or %d",fname,ncol,2,5);
       }
       ncol = nc;
     } else if (nc != ncol) {
