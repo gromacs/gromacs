@@ -45,7 +45,7 @@
 #define BIG_STRLEN 1048576
 
 #include <sys/types.h>
-#include <sysstuff.h>
+#include "sysstuff.h"
 #include "types/simple.h"
 #include "types/enums.h"
 #include "types/block.h"
