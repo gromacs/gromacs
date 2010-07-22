@@ -75,10 +75,10 @@ const char *est_names[estNR]=
     "FE-lambda",
     "box", "box-rel", "box-v", "pres_prev",
     "nosehoover-xi", "thermostat-integral",
-    "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
+    "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i", 
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
-    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev","fep_state"
+    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev","fep_state", "MC-rng", "MC-rng-i"
 };
 
 enum { eeksEKIN_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksNR };
@@ -844,6 +844,7 @@ static int do_cpt_state(XDR *xd,bool bRead,
         rng_p  = NULL;
         rngi_p = NULL;
     }
+    /* I think we want the MC_RNG the same across all the notes for now -- lambda MC is global */
 
     sflags = state->flags;
     for(i=0; (i<estNR && ret == 0); i++)
@@ -872,6 +873,8 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estSDX:     ret = do_cpte_rvecs(xd,cptpEST,i,sflags,state->natoms,&state->sd_X,list); break;
             case estLD_RNG:  ret = do_cpte_ints(xd,cptpEST,i,sflags,state->nrng,rng_p,list); break;
             case estLD_RNGI: ret = do_cpte_ints(xd,cptpEST,i,sflags,state->nrngi,rngi_p,list); break;
+            case estMC_RNG:  ret = do_cpte_ints(xd,cptpEST,i,sflags,state->nmcrng,&state->mc_rng,list); break;
+            case estMC_RNGI: ret = do_cpte_ints(xd,cptpEST,i,sflags,1,&state->mc_rngi,list); break;
             case estDISRE_INITF:  ret = do_cpte_real (xd,cptpEST,i,sflags,&state->hist.disre_initf,list); break;
             case estDISRE_RM3TAV: ret = do_cpte_reals(xd,cptpEST,i,sflags,state->hist.ndisrepairs,&state->hist.disre_rm3tav,list); break;
             case estORIRE_INITF:  ret = do_cpte_real (xd,cptpEST,i,sflags,&state->hist.orire_initf,list); break;
@@ -996,11 +999,6 @@ static int do_cpt_df_hist(XDR *xd,bool bRead,int fflags,df_history_t *dfhist,FIL
 
     nlambda = dfhist->nlambda;
     ret = 0;
-    /* how do we get these numbers right?*/
-    if (bRead)
-    {
-        dfhist->nsteps     = 0;
-    }
 
     for(i=0; (i<edfhNR && ret == 0); i++)
     {
@@ -2046,10 +2044,28 @@ void list_checkpoint(const char *fn,FILE *out)
 }
 
 
+static bool exist_output_file(const char *fnm_cp,int nfile,const t_filenm fnm[])
+{
+    int i;
+
+    /* Check if the output file name stored in the checkpoint file
+     * is one of the output file names of mdrun.
+     */
+    i = 0;
+    while (i < nfile &&
+           !(is_output(&fnm[i]) && strcmp(fnm_cp,fnm[i].fns[0]) == 0))
+    {
+        i++;
+    }
+    
+    return (i < nfile && gmx_fexist(fnm_cp));
+}
+
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                                      gmx_large_int_t *cpt_step,t_commrec *cr,
                                      bool bAppendReq,
+                                     int nfile,const t_filenm fnm[],
                                      const char *part_suffix,bool *bAddPart)
 {
     t_fileio *fp;
@@ -2086,7 +2102,7 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                 nexist = 0;
                 for(f=0; f<nfiles; f++)
                 {
-                    if (gmx_fexist(outputfiles[f].filename))
+                    if (exist_output_file(outputfiles[f].filename,nfile,fnm))
                     {
                         nexist++;
                     }
@@ -2097,19 +2113,26 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                 }
                 else if (nexist > 0)
                 {
-                    fprintf(stderr,"Output files present:");
+                    fprintf(stderr,
+                            "Output file appending has been requested,\n"
+                            "but some output files listed in the checkpoint file %s\n"
+                            "are not present or are named differently by the current program:\n",
+                            filename);
+                    fprintf(stderr,"output files present:");
                     for(f=0; f<nfiles; f++)
                     {
-                        if (gmx_fexist(outputfiles[f].filename))
+                        if (exist_output_file(outputfiles[f].filename,
+                                              nfile,fnm))
                         {
                             fprintf(stderr," %s",outputfiles[f].filename);
                         }
                     }
                     fprintf(stderr,"\n");
-                    fprintf(stderr,"Output files not present:");
+                    fprintf(stderr,"output files not present or named differently:");
                     for(f=0; f<nfiles; f++)
                     {
-                        if (!gmx_fexist(outputfiles[f].filename))
+                        if (!exist_output_file(outputfiles[f].filename,
+                                               nfile,fnm))
                         {
                             fprintf(stderr," %s",outputfiles[f].filename);
                         }

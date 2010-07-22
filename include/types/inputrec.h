@@ -148,28 +148,13 @@ typedef struct {
   int  elmcmove;             /* what move set will be we using -- Gibbs, or MH */
   
   int mc_seed;               /* random number seed for mc switches? */
-  /*int  *n_at_lam;            /* number of points observed at each lambda */
-  /*real  *wl_histo;           /* histogram for WL flatness determination */
-
-  /*real *sum_weights;         /* weights of the states */
-  /*real *sum_dg;              /* free energies of the states -- not actually used for weighting, but informational */
-  /*real *sum_minvar;          /* corrections to weights for minimum variance */
-  /*real *sum_variance;        /* variances of the states */
 
   bool minvar;               /* whether to use minumum variance weighting */
   int  minvarmin;            /* the number of samples needed before kicking into minvar routine */
   real minvar_const;         /* the offset for the variance in MinVar */
   int  c_range;              /* range of cvalues used for BAR */
 
-  /*real **accum_p1;           /* accumulated bennett weights for n+1 */
-  /*real **accum_m1;           /* accumulated bennett weights for n-1 */
-  /*real **accum_p2;           /* accumulated bennett weights for n+1 */
-  /*real **accum_m2;           /* accumulated bennett weights for n-1 */
-
-  /*real **Tij;                /* transition matrix */
-  /*real **Tij_empirical;      /* Empirical transition matrix */
   bool bSymmetrizedTMatrix;  /* whether to print symmetrized matrices */
-  /*int *statesvisited;        /* the sequence of states visited saved for the logfile */
   int  lmc_repeats;          /* number of repetitions in the MC lambda jumps */  /*MRS -- VERIFY THIS */
   int  lmc_nequil;           /* minimum number of samples for each state before freezing the weights */
   int  lmc_nstart;           /* minimum number of samples for each state before equilibration */ /* MRS -- VERIFY THIS! */
@@ -181,7 +166,6 @@ typedef struct {
 
   bool init_weights;         /* did we initialize the weights? */
   real *lam_weights;         /* initial weights to start with  */
-  /*real *fep_keep;            /* pointer to array for MBAR */
   
 } t_lambda;
 

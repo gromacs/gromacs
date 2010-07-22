@@ -951,7 +951,7 @@ void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
     }
 }
 
-void init_ekinstate(ekinstate_t *ekinstate,t_inputrec *ir)
+void init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir)
 {
     ekinstate->ekin_n = ir->opts.ngtc;
     snew(ekinstate->ekinh,ekinstate->ekin_n);

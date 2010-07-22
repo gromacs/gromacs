@@ -60,7 +60,8 @@ extern void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
 /* Make a selection of the home atoms for the ED groups. 
  * Should be called at every domain decomposition. */
  
-extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], gmx_edsam_t ed, matrix box, int step);
+extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], gmx_edsam_t ed,
+        matrix box, gmx_large_int_t step);
 /* Flooding - called from do_force() */
 
 #ifdef __cplusplus

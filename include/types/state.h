@@ -59,14 +59,14 @@ extern "C" {
  */
   enum { estLAMBDA,
 	 estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
-	 estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
+	 estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI, 
 	 estDISRE_INITF, estDISRE_RM3TAV,
 	 estORIRE_INITF, estORIRE_DTAV,
 	 estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
-	 estFEPSTATE, 
+	 estFEPSTATE, estMC_RNG, estMC_RNGI,
 	 estNR };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estFEPSTATE)))
+#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estMC_RNGI)))
 
 /* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];
@@ -104,7 +104,6 @@ typedef struct
 
 typedef struct
 {
-  gmx_large_int_t nsteps;    /* the number of steps in the history */
   int           nlambda;     /* total number of lambda states - for history*/
 
   bool bEquil;               /* reached equilibration */
@@ -171,6 +170,10 @@ typedef struct
 
   unsigned int  *ld_rng;  /* RNG random state                           */
   int           *ld_rngi; /* RNG index                                  */
+
+  int           nmcrng;   /* number of RNG states                       */
+  unsigned int  *mc_rng;  /* lambda MC RNG random state                 */
+  int           *mc_rngi; /* lambda MC RNG index                        */
 
   history_t     hist;   /* Time history for restraints                  */
 

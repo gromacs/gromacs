@@ -1733,26 +1733,12 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     t_commrec   *cr_old=cr;
     int        nthreads=1,nthreads_requested=1;
 
-
-	char			*ins;
-	int 			rm_bonded_at,fr_id,fr_i=0,tmp_id,warn=0;
-	int        		ng,j,max_lip_rm,ins_grp_id,ins_nat,mem_nat,ntype,lip_rm,tpr_version;
-	real			xy_step=0,z_step=0;
-	real		 	prot_area;
-	rvec			*r_ins=NULL,fac;
-	t_block 		*ins_at,*rest_at;
-	pos_ins_t 		*pos_ins;
-	mem_t			*mem_p;
-	rm_t			*rm_p;
-	gmx_groups_t 		*groups;
-	bool		 	bExcl=FALSE;
-	t_atoms			atoms;
-	t_pbc			*pbc;
-	char		        **piecename=NULL;
-	
-	return 0;
+    return 0;
 }
+
+
 int gmx_membed(int argc,char *argv[])
 {
+  return 0;
 
 }

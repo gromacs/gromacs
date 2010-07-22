@@ -1573,7 +1573,9 @@ gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
 void dd_init_local_state(gmx_domdec_t *dd,
                          t_state *state_global,t_state *state_local)
 {
-    int buf[5];
+    int nitem = 5;
+
+    int buf[nitem];
 
     if (DDMASTER(dd))
     {
@@ -1583,7 +1585,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
         buf[3] = state_global->nhchainlength;
         buf[4] = state_global->dfhist.nlambda;
     }
-    dd_bcast(dd,4*sizeof(int),buf);
+    dd_bcast(dd,nitem*sizeof(int),buf);
     
     init_state(state_local,0,buf[1],buf[2],buf[3],buf[4]);
     state_local->flags = buf[0];

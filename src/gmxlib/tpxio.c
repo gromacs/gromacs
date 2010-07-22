@@ -294,6 +294,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,bool bRead, int file_vers
       gmx_fio_do_int(fio,fepvals->gibbsdeltalam);
       gmx_fio_do_int(fio,fepvals->lmc_nequil);
       gmx_fio_do_int(fio,fepvals->lmc_nstart);
+      gmx_fio_do_int(fio,fepvals->mc_seed);
       gmx_fio_do_bool(fio,fepvals->bSymmetrizedTMatrix);
       gmx_fio_do_int(fio,fepvals->fastmbar);
       gmx_fio_do_int(fio,fepvals->minvarmin);

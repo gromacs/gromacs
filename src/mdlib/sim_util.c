@@ -80,7 +80,6 @@
 #include "trnio.h"
 #include "xtcio.h"
 #include "copyrite.h"
-#include "random.h"
 #include "gmx_random.h"
 #include "mpelogging.h"
 #include "domdec.h"
@@ -1760,7 +1759,7 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
             cnval = (real)(nval-fep->c_range); 
             /* actually, should be able to rewrite it w/o this, for better numerical stability */
             
-            if (fep_state > 1) 
+            if (fep_state > 0) 
             {
                 de = exp(cnval - (scaled_lamee[fep_state]-scaled_lamee[fep_state-1]));
                 if (fep->elamstats==elamstatsBARKER || fep->elamstats==elamstatsMINVAR) 
@@ -1783,7 +1782,7 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
             }
             
     
-            if (fep_state < nlim) 
+            if (fep_state < nlim-1) 
             {
                 de = exp(-cnval + (scaled_lamee[fep_state+1]-scaled_lamee[fep_state]));
                 if (fep->elamstats==elamstatsBARKER || fep->elamstats==elamstatsMINVAR) 
@@ -1839,7 +1838,7 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
             clam_varm = 0;
             clam_varp = 0;
             
-            if (fep_state > 1) 
+            if (fep_state > 0) 
             {
                 omega_m1_0 = chi_m2_0/pow(chi_m1_0,2) - 1.0;
                 if (nm1 > 0) 
@@ -1850,7 +1849,7 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
                 } 
             }
             
-            if (fep_state < nlim) 
+            if (fep_state < nlim-1) 
             {  
                 omega_p1_0 = chi_p2_0/pow(chi_p1_0,2) - 1.0;
                 if (np1 > 0) 
@@ -1912,13 +1911,13 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
         
         //    printf("\n%4d%4d%11.5f%11.5f%11.5f%11.5f%11.5f%11.5f\n",fep_state,min_nval,clam_minvar,clam_osum);
         
-        if (fep_state > 1) 
+        if (fep_state > 0) 
         {
             lam_dg[fep_state-1] = clam_weightsm; 
             lam_variance[fep_state-1] = clam_varm;
         } 
         
-        if (fep_state < nlim) 
+        if (fep_state < nlim-1) 
         {
             lam_dg[fep_state] = clam_weightsp;
             lam_variance[fep_state] = clam_varp;
@@ -1982,7 +1981,7 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
     }
 }
 
-static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int fep_state, real *weighted_lamee, real *p_k) 
+static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int fep_state, real *weighted_lamee, real *p_k, gmx_rng_t rng) 
 {
     /* Choose New lambda value, and update transition matrix */
     
@@ -2041,7 +2040,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
                     accept[ifep] = 1.0;
                 }
                 /* Gibbs sampling */
-                r1 = rando(&(fep->mc_seed));
+                r1 = gmx_rng_uniform_real(rng);
                 for (lamnew=minfep;lamnew<=maxfep;lamnew++) 
                 {
                     if (r1 <= p_k[lamnew]) 
@@ -2070,7 +2069,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
                     }
                 }
                 
-                r1 = rando(&(fep->mc_seed));
+                r1 = gmx_rng_uniform_real(rng);
                 for (lamtrial=minfep;lamtrial<=maxfep;lamtrial++) 
                 {
                     pnorm = p_k[lamtrial]/remainder[fep_state];
@@ -2092,7 +2091,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
                 {
                     tprob = trialprob;
                 }
-                r2 = rando(&(fep->mc_seed));
+                r2 = gmx_rng_uniform_real(rng);
                 if (r2 < tprob) 
                 {
                     lamnew = lamtrial;
@@ -2132,7 +2131,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
         else if ((fep->elmcmove==elmcmoveMETROPOLIS) || (fep->elmcmove==elmcmoveBARKER)) 
         {
             /* use the metropolis sampler with trial +/- 1 */
-            r1 = rando(&(fep->mc_seed));
+            r1 = gmx_rng_uniform_real(rng);
             if (r1 < 0.5) 
             {
                 if (fep_state == 0) {
@@ -2179,7 +2178,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
                 accept[lamtrial] = 1.0;
             }
             
-            r2 = rando(&(fep->mc_seed));
+            r2 = gmx_rng_uniform_real(rng);
             if (r2 < tprob) {
                 lamnew = lamtrial;
             } else {
@@ -2415,7 +2414,18 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
 	}
 }
 
-extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_enerdata_t *enerd, df_history_t *dfhist, gmx_large_int_t step)
+void get_mc_state(gmx_rng_t rng,t_state *state)
+{
+    gmx_rng_get_state(rng,state->mc_rng,state->mc_rngi);
+}
+
+void set_mc_state(gmx_rng_t rng,t_state *state)
+{
+    gmx_rng_set_state(rng,state->mc_rng,state->mc_rngi[0]);
+}
+
+extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
+                                    int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng)
 { 
     real *pfep_lamee,*p_k, *scaled_lamee, *weighted_lamee;
     int nlim,ifep,end_lam,lamnew,store_index,nstate;
@@ -2433,18 +2443,23 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_ener
 
     if (step == 0) 
     {
-        dfhist->wl_delta == fep->initial_wl_delta;  /* MRS -- this would fit better somewhere else */
-    }
-    /* need to calculate the PV term somewhere, but not needed here */
-	//pVTerm = 0;
+        dfhist->wl_delta == fep->initial_wl_delta;  /* MRS -- this would fit better somewhere else? */
+    } 
+
+    /* need to calculate the PV term somewhere, but not needed here? Not until there's a lambda state that's 
+       pressure controlled.*/
+    /*
+      pVTerm = 0;
+      where does this PV term go?
+      for (ifep=0;ifep<nlim;ifep++) 
+      {	
+      fep_lamee[ifep] += pVTerm; 
+      }
+    */
 
 	/* set some constants */
 	mckt = BOLTZ*ir->opts.ref_t[0]; /* use the system reft for now */
 
-    //where does this PV term go?
-	//for (ifep=0;ifep<nlim;ifep++) {	
-    //    fep_lamee[ifep] += pVTerm;  /* add PV Term */  
-	//}
 
 	/* determine the minimum value to avoid overflow.  Probably a better way to do this */
 	/* we don't need to include the pressure term, since the volume is the same between the two.
@@ -2525,7 +2540,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, int nlam, gmx_ener
 	} 
     else 
     { 
-        lamnew = ChooseNewLambda(log,ir,dfhist,nlam,weighted_lamee,p_k);
+        lamnew = ChooseNewLambda(log,ir,dfhist,nlam,weighted_lamee,p_k,mcrng);
 	}
 
 	/* required for serial tempering? */
@@ -2624,3 +2639,4 @@ extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
         }
     }
 }
+

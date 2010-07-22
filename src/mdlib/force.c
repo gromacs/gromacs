@@ -152,7 +152,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     real    dvdl_dum[efptNR], dvdlambda[efptNR], lam_i[efptNR];
     real    dvdlsum;
 
-    set_pbc(&pbc,-1,box);
 #ifdef GMX_MPI
     double  t0=0.0,t1,t2,t3; /* time measurement for coarse load balancing */
 #endif
@@ -160,6 +159,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 #define PRINT_SEPDVDL(s,v,dvdlambda) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdlambda);
     
     GMX_MPE_LOG(ev_force_start);
+    set_pbc(&pbc,fr->ePBC,box);
     
     /* reset free energy components */
     for (i=0;i<efptNR;i++) 

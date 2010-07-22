@@ -1053,6 +1053,11 @@ int main (int argc, char *argv[])
     fprintf(stderr,"Setting the LD random seed to %d\n",ir->ld_seed);
   }
 
+  if (ir->fepvals->mc_seed == -1) {
+    ir->fepvals->mc_seed = make_seed();
+    fprintf(stderr,"Setting the lambda MC random seed to %d\n",ir->fepvals->mc_seed);
+  }
+
   bNeedVel = EI_STATE_VELOCITY(ir->eI);
   bGenVel  = (bNeedVel && opts->bGenVel);
 

@@ -99,6 +99,7 @@ extern void list_checkpoint(const char *fn,FILE *out);
 bool read_checkpoint_simulation_part(const char *filename,int *simulation_part,
                                      gmx_large_int_t *step,t_commrec *cr,
 				     bool bAppendReq,
+				     int nfile,const t_filenm fnm[],
 				     const char *part_suffix,bool *bAddPart);
 
 #ifdef __cplusplus

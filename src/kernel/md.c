@@ -1054,6 +1054,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_update_t upd=NULL;
     t_graph    *graph=NULL;
     globsig_t   gs;
+    gmx_rng_t mcrng=NULL;
 
     bool        bFFscan;
     gmx_groups_t *groups;
@@ -1180,6 +1181,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         snew(f,top_global->natoms);
     }
 
+    /* lambda Monte carlo random number generator  */
+    mcrng = gmx_rng_init(ir->fepvals->mc_seed);
+    
+    /* copy the state into df_history */
+    copy_df_history(&df_history,&state_global->dfhist);
+
     /* Kinetic energy data */
     snew(ekind,1);
     init_ekindata(fplog,top_global,&(ir->opts),ekind);
@@ -1283,17 +1290,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if ( Flags & MD_APPENDFILES )
         {
             restore_energyhistory_from_state(mdebin,&state_global->enerhist);
-            copy_df_history(&df_history,&state_global->dfhist);
         }
         /* Set the initial energy history in state to zero by updating once */
         update_energyhistory(&state_global->enerhist,mdebin);
-        /* initialize the expanded ensembles memory before it is used.*/
-        init_df_history(&df_history,ir->fepvals->n_lambda,ir->fepvals->initial_wl_delta);
     }	
 
-    if ((state->flags & (1<<estLD_RNG)) && (Flags & MD_READ_RNG)) {
+    if ((state->flags & (1<<estLD_RNG)) && (Flags & MD_READ_RNG)) 
+    {
         /* Set the random state if we read a checkpoint file */
         set_stochd_state(upd,state);
+    }
+
+    if (state->flags & (1<<estMC_RNG))
+    {
+        set_mc_state(mcrng,state);
     }
 
     /* Initialize constraints */
@@ -2147,6 +2157,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 {
                     get_stochd_state(upd,state);
                 }
+                if (state->flags  & (1<<estMC_RNG)) 
+                {
+                    get_mc_state(mcrng,state);
+                }
                 if (MASTER(cr))
                 {
                     if (bSumEkinhOld)
@@ -2569,7 +2583,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* perform extended ensemble sampling in lambda */
         if ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && (ir->fepvals->nstfep > 0)) {
             if ((mod(step,ir->fepvals->nstfep)==0) && (step > 0)) {
-                state->fep_state = ExpandedEnsembleDynamics(fplog,ir,state->fep_state,enerd,&df_history,step);
+                state->fep_state = ExpandedEnsembleDynamics(fplog,ir,enerd,state->fep_state,&df_history,step,mcrng);
             }
         }
         /* use the directly determined last velocity, not actually the averaged half steps */

@@ -453,21 +453,21 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
   cmp_bool(fp,"inputrec->fepvals->bScCoul",-1,fep1->bScCoul,fep1->bScCoul);
   cmp_int(fp,"inputrec->fepvals->dh_table_size",-1,fep1->dh_table_size,fep2->dh_table_size);
   cmp_double(fp,"inputrec->fepvals->dh_table_spacing",-1,fep1->dh_table_spacing,fep2->dh_table_spacing,ftol,abstol);
-  cmp_int(fp,"lambda-stats", -1,fep1->elamstats,fep2->elamstats);
-  cmp_int(fp,"lambda-mc-move", -1,fep1->elmcmove,fep2->elmcmove);
-  cmp_int(fp,"lmc-repeats",-1,fep1->lmc_repeats,fep2->lmc_repeats);
-  cmp_int(fp,"lmc-gibbsdelta",-1,fep1->gibbsdeltalam,fep2->gibbsdeltalam);
-  cmp_int(fp,"lmc-start-equil",-1,fep1->lmc_nequil,fep2->lmc_nequil);
+  cmp_int(fp,"inputrec->fepvals->lambda-stats", -1,fep1->elamstats,fep2->elamstats);
+  cmp_int(fp,"inputrec->fepvals->lambda-mc-move", -1,fep1->elmcmove,fep2->elmcmove);
+  cmp_int(fp,"inputrec->fepvals->lmc-repeats",-1,fep1->lmc_repeats,fep2->lmc_repeats);
+  cmp_int(fp,"inputrec->fepvals->lmc-gibbsdelta",-1,fep1->gibbsdeltalam,fep2->gibbsdeltalam);
+  cmp_int(fp,"inputrec->fepvals->lmc-start-equil",-1,fep1->lmc_nequil,fep2->lmc_nequil);
   cmp_int(fp,"lmc-nstart",-1,fep1->lmc_nstart,fep2->lmc_nstart);  
-  cmp_bool(fp,"symmetrized-transition-matrix",-1,fep1->bSymmetrizedTMatrix,fep2->bSymmetrizedTMatrix);
-  cmp_int(fp,"fastmbar",-1,fep1->fastmbar,fep2->fastmbar);
-  cmp_int(fp,"mininum-var-min",-1,fep1->minvarmin,fep2->minvarmin); /*default is reasonable */
-  cmp_int(fp,"weight-c-range",-1,fep1->c_range,fep2->c_range); /* default is just C=0 */
-  cmp_real(fp,"wl-scale",-1,fep1->wl_scale,fep2->wl_scale,ftol,abstol);
-  cmp_real(fp,"initial-wl-delta",-1,fep1->initial_wl_delta,fep2->initial_wl_delta,ftol,abstol);
+  cmp_bool(fp,"inputrec->fepvals->symmetrized-transition-matrix",-1,fep1->bSymmetrizedTMatrix,fep2->bSymmetrizedTMatrix);
+  cmp_int(fp,"inputrec->fepvals->fastmbar",-1,fep1->fastmbar,fep2->fastmbar);
+  cmp_int(fp,"inputrec->fepvals->mininum-var-min",-1,fep1->minvarmin,fep2->minvarmin); /*default is reasonable */
+  cmp_int(fp,"inputrec->fepvals->weight-c-range",-1,fep1->c_range,fep2->c_range); /* default is just C=0 */
+  cmp_real(fp,"inputrec->fepvals->wl-scale",-1,fep1->wl_scale,fep2->wl_scale,ftol,abstol);
+  cmp_real(fp,"inputrec->fepvals->initial-wl-delta",-1,fep1->initial_wl_delta,fep2->initial_wl_delta,ftol,abstol);
   cmp_real(fp,"wl-ratio",-1,fep1->wl_ratio,fep2->wl_ratio,ftol,abstol);
-  cmp_int(fp,"nstfep",-1,fep1->nstfep,fep2->nstfep);
-  cmp_int(fp,"mc-seed",-1,fep1->mc_seed,fep2->mc_seed);
+  cmp_int(fp,"inputrec->fepvals->nstfep",-1,fep1->nstfep,fep2->nstfep);
+  cmp_int(fp,"inputrec->fepvals->mc-seed",-1,fep1->mc_seed,fep2->mc_seed);
 }
 
 static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, real abstol)
