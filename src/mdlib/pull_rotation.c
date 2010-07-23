@@ -1715,7 +1715,6 @@ static real do_flex2_lowlevel(
         for (m=0; m<DIM; m++)
             erg->f_rot_loc[j][m] = rotg->k * (-sum1vec[m] + sum2vec[m] - sum3vec[m] + 0.5*sum4vec[m]);
 
-#define INFOF
 #ifdef INFOF
         fprintf(stderr," FORCE on ATOM %d/%d  = (%15.8f %15.8f %15.8f)  \n",
                 j,ii,erg->f_rot_loc[j][XX], erg->f_rot_loc[j][YY], erg->f_rot_loc[j][ZZ]);
