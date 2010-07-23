@@ -156,7 +156,10 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,
 
     at_loc = (atnr_global - a_start) % atoms->nr;
     *atomname = *(atoms->atomname[at_loc]);
-    *resnr    = resnr_offset + atoms->atom[at_loc].resnr;
+    *resnr    =
+        resnr_offset +
+        (atnr_global - a_start)/atoms->nr*atoms->nres +
+        atoms->atom[at_loc].resnr;
     *resname  = *(atoms->resname[atoms->atom[at_loc].resnr]);
 }
 
