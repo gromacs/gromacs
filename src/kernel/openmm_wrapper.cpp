@@ -538,14 +538,23 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     }
 
     /* Electroctstics */
-    if (    (ir->coulombtype != eelPME) &&
-            (ir->coulombtype != eelRF) &&
-            (ir->coulombtype != eelEWALD) &&
-            // no-cutoff
-            ( !(ir->coulombtype == eelCUT && ir->rcoulomb == 0 &&  ir->rvdw == 0)) )
+    if (   !(ir->coulombtype == eelPME   ||
+             EEL_RF(ir->coulombtype)     ||
+             ir->coulombtype == eelRF    ||
+             ir->coulombtype == eelEWALD ||
+             // no-cutoff
+             (ir->coulombtype == eelCUT && ir->rcoulomb == 0 &&  ir->rvdw == 0) ||
+             // we could have cut-off combined with GBSA (openmm will use RF)
+             ir->implicit_solvent == eisGBSA)   )
     {
         gmx_fatal(FARGS,"OpenMM supports only the following methods for electrostatics: "
                 "NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.");
+    }
+
+    if (EEL_RF(ir->coulombtype) && ir->epsilon_rf != 0)
+    {
+        // openmm has epsilon_rf=inf hard-coded
+        gmx_warning("OpenMM will use a Reaction-Field epsilon of infinity instead of %g.",ir->epsilon_rf);
     }
 
     if (ir->etc != etcNO &&
@@ -946,6 +955,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             switch (ir->coulombtype)
             {
             case eelRF:
+            case eelGRF:
+            case eelRF_NEC:
+            case eelRF_ZERO:
                 nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffPeriodic);
                 break;
 
