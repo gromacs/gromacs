@@ -1545,7 +1545,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 			gmx_fatal(FARGS,
 					  "Output file appending requested, but input/checkpoint integrators do not match.\n"
 					  "Stopping the run to prevent you from ruining all your data...\n"
-					  "If you _really_ know what you are doing, try without the -append option.\n");
+					  "If you _really_ know what you are doing, try with the -noappend option.\n");
 		}
         if (fplog)
         {
@@ -1605,7 +1605,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 				gmx_fatal(FARGS,
 						  "Output file appending requested, but input and checkpoint states are not identical.\n"
 						  "Stopping the run to prevent you from ruining all your data...\n"
-						  "You can try without the -append option, and get more info in the log file.\n");
+						  "You can try with the -noappend option, and get more info in the log file.\n");
 			}
 			
             fprintf(stderr,
@@ -1702,12 +1702,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     sfree(buser);
     sfree(bmach);
 	
-	/* If the user wants to append to output files (danger), we use the file pointer
-	 * positions of the output files stored in the checkpoint file and truncate the
-	 * files such that any frames written after the checkpoint time are removed.
-	 *
-	 * You will get REALLY fun problems if you use the -append option by provide
-	 * mdrun with other input files (in-frame truncation in the wrong places). Suit yourself!
+	/* If the user wants to append to output files,
+     * we use the file pointer positions of the output files stored
+     * in the checkpoint file and truncate the files such that any frames
+     * written after the checkpoint time are removed.
+     * All files are md5sum checked such that we can be sure that
+     * we do not truncate other (maybe imprortant) files.
 	 */
     if (bAppendOutputFiles)
     {
@@ -1721,11 +1721,11 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         }
         for(i=0;i<nfiles;i++)
         {
-            if (outputfiles[i].filename,outputfiles[i].offset < 0)
+            if (outputfiles[i].offset < 0)
             {
                 gmx_fatal(FARGS,"The original run wrote a file called '%s' which "
                     "is larger than 2 GB, but mdrun did not support large file"
-                    " offsets. Can not append. Run mdrun without -append",
+                    " offsets. Can not append. Run mdrun with -noappend",
                     outputfiles[i].filename);
             }
 #ifdef GMX_FAHCORE

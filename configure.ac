@@ -452,7 +452,8 @@ ACX_COMPILER_MAXOPT
 
 
 # We've postponed the threads check because we need to check with the right
-# compilers/flags 
+# compilers/flags
+SAVED_LIBS="$LIBS"
 if test "$enable_threads" = "yes"; then 
   if test "$enable_mpi" = "yes"; then
     AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
@@ -510,6 +511,7 @@ contact the developers.
 else
   AM_CONDITIONAL(THREAD_PARALLEL,false)
 fi
+LIBS="$SAVED_LIBS"
 
 
 
@@ -589,7 +591,12 @@ fi
 # Disable MASS support for now.
 #####
 
+#save current LIBS
+SAVED_LIBS="$LIBS"
 
+#set empty defaults
+PKG_FFT=""
+FFT_LIBS=""
 case "$with_fft" in
 fftw2)
   if test "$enable_float" = "yes"; then
@@ -599,6 +606,7 @@ fftw2)
   fi
   ACX_CHECK_FFTW2(fftw,$sizeof_real)
   ACX_CHECK_FFTW2(rfftw,$sizeof_real)
+  FFT_LIBS="-lfftw -lrfftw"
 
   case ${ac_fftw_savedprefix} in
    d) AC_DEFINE(FFTW2_NAME_DFFTW,,[Use the d prefix on fftw2 includes]) ;;
@@ -619,10 +627,12 @@ AC_TRY_COMPILE([#include<fftw3.h>],,[
 AC_MSG_RESULT(yes)
 if test "$enable_float" = "yes"; then
   AC_CHECK_LIB([fftw3f],main,,AC_MSG_ERROR([Cannot find fftw3f library]))
-  PKG_FFTW="fftw3f"
+  PKG_FFT="fftw3f"
+  FFT_LIBS="-lfftw3f"
 else
   AC_CHECK_LIB([fftw3],main,,AC_MSG_ERROR([Cannot find fftw3 library]))
-  PKG_FFTW="fftw3"
+  PKG_FFT="fftw3"
+  FFT_LIBS="-lfftw3"
 fi
   AC_DEFINE(GMX_FFT_FFTW3,,[Use FFTW3 FFT library])
 ],[
@@ -640,7 +650,6 @@ to use a slower set of FFTs built into Gromacs.
 (Just install FFTW3 unless you really know what you are doing).
 ])
 ])
-  AC_SUBST(PKG_FFTW)
   ;;
 
 mkl*)
@@ -661,8 +670,10 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
     LIBS="$LIBS -liomp5 -lmkl_sequential -lmkl_core"
     LMKL=" -liomp5 -lmkl_sequential -lmkl_core"
     AC_CHECK_LIB([mkl_intel_lp64],DftiComputeForward,,[have_mkl10_64="no"])
+    FFT_LIBS="$LMKL -lmkl_intel_lp64"
     if test "$have_mkl10_64" == "no"; then
       AC_CHECK_LIB([mkl_intel],DftiComputeForward,,[have_mkl10_32="no"])
+      FFT_LIBS="$LMKL -lmkl_intel"
       if test "$have_mkl10_32" == "no"; then
         AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0])
       fi
@@ -681,7 +692,18 @@ Are you sure you don't want to use FFTW? It is free and much faster...])
   AC_MSG_ERROR([Unknown FFT library])
   ;;
 esac
+#restore LIBS from before fft check
+LIBS="$SAVED_LIBS"
 
+#only fftw3 has support for pkg-config
+AC_SUBST(PKG_FFT)
+if test -z "${PKG_FFT}"; then
+  AC_SUBST(PKG_FFT_LIBS,"$FFT_LIBS")
+else
+  AC_SUBST(PKG_FFT_LIBS,"")
+fi
+#flag for Makefile
+AC_SUBST(FFT_LIBS)
 
 if test "$enable_fftw_measure" != "yes"; then
    AC_DEFINE(GMX_DISABLE_FFTW_MEASURE,,[Do not optimize FFTW setups (not needed with SSE FFT kernels)])
@@ -815,18 +837,25 @@ AC_ARG_WITH(gsl,
                  [enables extra functions in analysis])],,with_gsl=no)
 
 ######
+PKG_GSL=""
+GSL_LIBS=""
 if test "$with_gsl" = "yes"; then
-  ac_save_LDFLAGS="$LDFLAGS"
+  SAVED_LIBS="$LIBS"
   AC_CHECK_HEADERS([gsl/gsl_version.h],[
 # header found, check for libraries 
   AC_CHECK_LIB(gslcblas,main,[
-  LDFLAGS="$ac_save_LDFLAGS -lgslcblas"
 # gslcblas library found, check main lib
-  AC_CHECK_LIB(gsl,main)])])
+  AC_CHECK_LIB(gsl,main,[
+# everything need for gsl found
+  GSL_LIBS="-lgsl -lgslcblas"
+#gsl has pkg-config support
   PKG_GSL="gsl"
-  AC_SUBST(PKG_GSL)
+  ],[:],[-lgslcblas])])])
+  LIBS="$SAVED_LIBS"
 #
 fi
+AC_SUBST(PKG_GSL)
+AC_SUBST(GSL_LIBS)
 
 ######
 # Use OpenMM libraries
@@ -863,14 +892,17 @@ AC_ARG_WITH(xml,
 #########
 # Check for libxml2, but it is optional, so dont stop
 # if it isnt there.
+PKG_XML=""
+XML_LIBS=""
 if test "$with_xml" = "yes"; then
+   SAVED_LIBS="$LIBS"
    ac_save_CPPFLAGS="$CPPFLAGS"
    CPPFLAGS="$ac_save_CPPFLAGS -I/usr/include/libxml2"
    AC_CHECK_HEADERS([libxml/parser.h],AC_CHECK_LIB(xml2,main))
    if test "$ac_cv_lib_xml2_main" = "yes"; then
      INCLUDES="$INCLUDES -I/usr/include/libxml2"
-     PKG_XML2="libxml-2.0"
-     AC_SUBST(PKG_XML2)
+     PKG_XML="libxml-2.0"
+     XML_LIBS="-lxml2"
      if test "$enable_all_static" = "yes"; then
        LDFLAGS_RET=$LDFLAGS
        LDFLAGS="-static $LDFLAGS"
@@ -891,7 +923,10 @@ main() {
    fi
 # restore CPPFLAGS
    CPPFLAGS="$ac_save_CPPFLAGS"
+   LIBS="$SAVED_LIBS"
 fi
+AC_SUBST(PKG_XML)
+AC_SUBST(XML_LIBS)
 
 #### 
 # And collect the f77 libs to the linker - on Solaris, f77 stuff must go first,

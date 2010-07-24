@@ -232,12 +232,24 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     /* Dont do any checks if all parameters are zero (such interactions will be removed).
      * Change 20100720: Amber occasionally uses negative multiplicities (mathematically OK),
      * so I have changed the lower limit to -99 /EL
-     */
-    tmp=fabs(old[0])+fabs(old[1])+fabs(old[2])+fabs(old[3])+fabs(old[4]);
-    newparam->pdihs.mult = (tmp < GMX_REAL_MIN) ? 0 : round_check(old[2],-99,ftype,"multiplicity");
-		  
+     *
+     * Second, if the force constant is zero in both A and B states, we set the phase
+     * and multiplicity to zero too so the interaction gets removed during clean-up.
+     */	
     newparam->pdihs.phiB = old[3];
     newparam->pdihs.cpB  = old[4];
+          
+    if( fabs(newparam->pdihs.cpA) < GMX_REAL_MIN && fabs(newparam->pdihs.cpB) < GMX_REAL_MIN )
+    {
+        newparam->pdihs.phiA = 0.0; 
+        newparam->pdihs.phiB = 0.0; 
+        newparam->pdihs.mult = 0; 
+    } 
+    else
+    {
+        newparam->pdihs.mult = round_check(old[2],-99,ftype,"multiplicity");
+    }
+          
     break;
   case F_POSRES:
     newparam->posres.fcA[XX]   = old[0];

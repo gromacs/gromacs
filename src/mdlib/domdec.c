@@ -1966,7 +1966,7 @@ void write_dd_pdb(const char *fn,gmx_large_int_t step,const char *title,
         }
         fprintf(out,strlen(atomname)<4 ? format : format4,
                 "ATOM",(ii+1)%100000,
-                atomname,resname,' ',(resnr+1)%10000,' ',
+                atomname,resname,' ',resnr%10000,' ',
                 10*x[i][XX],10*x[i][YY],10*x[i][ZZ],1.0,b);
     }
     fprintf(out,"TER\n");

@@ -184,50 +184,60 @@ void too_many_constraint_warnings(int eConstrAlg,int warncount)
 }
 
 static void write_constr_pdb(const char *fn,const char *title,
-			     gmx_mtop_t *mtop,
-			     int start,int homenr,t_commrec *cr,
-			     rvec x[],matrix box)
+                             gmx_mtop_t *mtop,
+                             int start,int homenr,t_commrec *cr,
+                             rvec x[],matrix box)
 {
-  char fname[STRLEN],format[STRLEN];
-  FILE *out;
-  int  dd_ac0=0,dd_ac1=0,i,ii,resnr;
-  gmx_domdec_t *dd;
-  char *anm,*resnm;
+    char fname[STRLEN],format[STRLEN];
+    FILE *out;
+    int  dd_ac0=0,dd_ac1=0,i,ii,resnr;
+    gmx_domdec_t *dd;
+    char *anm,*resnm;
   
-  dd = NULL;
-  if (PAR(cr)) {
-    sprintf(fname,"%s_n%d.pdb",fn,cr->sim_nodeid);
-    if (DOMAINDECOMP(cr)) {
-      dd = cr->dd;
-      dd_get_constraint_range(dd,&dd_ac0,&dd_ac1);
-      start = 0;
-      homenr = dd_ac1;
+    dd = NULL;
+    if (PAR(cr))
+    {
+        sprintf(fname,"%s_n%d.pdb",fn,cr->sim_nodeid);
+        if (DOMAINDECOMP(cr))
+        {
+            dd = cr->dd;
+            dd_get_constraint_range(dd,&dd_ac0,&dd_ac1);
+            start = 0;
+            homenr = dd_ac1;
+        }
     }
-  } else {
-    sprintf(fname,"%s.pdb",fn);
-  }
-  sprintf(format,"%s\n",pdbformat);
-
-  out = gmx_fio_fopen(fname,"w");
-
-  fprintf(out,"TITLE     %s\n",title);
-  gmx_write_pdb_box(out,-1,box);
-  for(i=start; i<start+homenr; i++) {
-    if (dd) {
-      if (i >= dd->nat_home && i < dd_ac0)
-	continue;
-      ii = dd->gatindex[i];
-    } else {
-      ii = i;
+    else
+    {
+        sprintf(fname,"%s.pdb",fn);
     }
-    gmx_mtop_atominfo_global(mtop,ii,&anm,&resnr,&resnm);
-    fprintf(out,format,"ATOM",(ii+1)%100000,
-	    anm,resnm,' ',(resnr+1)%10000,' ',
-	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
-  }
-  fprintf(out,"TER\n");
+    sprintf(format,"%s\n",pdbformat);
+    
+    out = gmx_fio_fopen(fname,"w");
+    
+    fprintf(out,"TITLE     %s\n",title);
+    gmx_write_pdb_box(out,-1,box);
+    for(i=start; i<start+homenr; i++)
+    {
+        if (dd != NULL)
+        {
+            if (i >= dd->nat_home && i < dd_ac0)
+            {
+                continue;
+            }
+            ii = dd->gatindex[i];
+        }
+        else
+        {
+            ii = i;
+        }
+        gmx_mtop_atominfo_global(mtop,ii,&anm,&resnr,&resnm);
+        fprintf(out,format,"ATOM",(ii+1)%100000,
+                anm,resnm,' ',resnr%10000,' ',
+                10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
+    }
+    fprintf(out,"TER\n");
 
-  gmx_fio_fclose(out);
+    gmx_fio_fclose(out);
 }
 			     
 static void dump_confs(FILE *fplog,gmx_large_int_t step,gmx_mtop_t *mtop,

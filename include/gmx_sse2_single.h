@@ -277,12 +277,16 @@ gmx_mm_exp_ps(__m128 x)
 
 /* Same as gmx_mm_exp_ps, but has a lower bound check, such that it can
  * be safely called with x < -87.33.
+ * We use a limit of -70 such that the smallest return value is exp(-70),
+ * which allows for some margin against underflow.
+ * We might rather return exactly zero for x < -87, but achieving that
+ * is probably expensive in sse.
  * WARNING: no check against overflows (x > 87)
  */
 static __m128 
 gmx_mm_exp_ps_lbc(__m128 x)
 {
-    const __m128i lim  = _mm_set_epi32(0xC2AE0000, 0xC2AE0000, 0xC2AE0000, 0xC2AE0000);   /* -87 */
+    const __m128i lim  = _mm_set_epi32(0xC28C0000, 0xC28C0000, 0xC28C0000, 0xC28C0000);   /* -70 */
     const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   /* 0.5e+0f */
     const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   /* 127 */
     const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   /* log2(e) */

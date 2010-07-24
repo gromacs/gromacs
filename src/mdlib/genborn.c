@@ -545,11 +545,7 @@ int init_gb(gmx_genborn_t **p_born,
     snew(born->nblist_work,natoms);
     
     /* Domain decomposition specific stuff */
-    if(DOMAINDECOMP(cr))
-    {
-        snew(born->dd_work,natoms);
-        born->nlocal = cr->dd->nat_tot; /* cr->dd->nat_tot will be zero here */
-    }
+    born->nalloc = 0;
     
     return 0;
 }
@@ -2020,19 +2016,20 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
     }
     
     /* Reallocation of local arrays if necessary */
-    if(born->nlocal < dd->nat_tot)
+    /* fr->natoms_force is equal to dd->nat_tot */
+    if (DOMAINDECOMP(cr) && dd->nat_tot > born->nalloc)
     {
-        int tmp = born->nlocal;
-        
-        born->nlocal = dd->nat_tot;
-        
+        int nalloc;
+
+        nalloc = dd->nat_tot;
+
         /* Arrays specific to different gb algorithms */
-        if(gb_algorithm==egbSTILL)
+        if (gb_algorithm == egbSTILL)
         {
-            srenew(born->gpol,  born->nlocal+3);
-            srenew(born->vsolv, born->nlocal+3);
-            srenew(born->gb_radius, born->nlocal+3);
-            for(i=tmp; (i<born->nlocal+3); i++) 
+            srenew(born->gpol,  nalloc+3);
+            srenew(born->vsolv, nalloc+3);
+            srenew(born->gb_radius, nalloc+3);
+            for(i=born->nalloc; (i<nalloc+3); i++) 
             {
                 born->gpol[i] = 0;
                 born->vsolv[i] = 0;
@@ -2041,9 +2038,9 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
         }
         else
         {
-            srenew(born->param, born->nlocal+3);
-            srenew(born->gb_radius, born->nlocal+3);
-            for(i=tmp; (i<born->nlocal+3); i++) 
+            srenew(born->param, nalloc+3);
+            srenew(born->gb_radius, nalloc+3);
+            for(i=born->nalloc; (i<nalloc+3); i++) 
             {
                 born->param[i] = 0;
                 born->gb_radius[i] = 0;
@@ -2051,11 +2048,13 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
         }
         
         /* All gb-algorithms use the array for vsites exclusions */
-        srenew(born->use,    born->nlocal+3);
-        for(i=tmp; (i<born->nlocal+3); i++) 
+        srenew(born->use,    nalloc+3);
+        for(i=born->nalloc; (i<nalloc+3); i++) 
         {
             born->use[i] = 0;
         }
+
+        born->nalloc = nalloc;
     }
     
     /* With dd, copy algorithm specific arrays */
