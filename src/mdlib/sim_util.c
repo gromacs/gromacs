@@ -2553,7 +2553,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 	   is there some term we are neglecting, however? */
     
 	for (ifep=0;ifep<nlim;ifep++) {
-        scaled_lamee[ifep] = (enerd->enerpart_lambda[ifep]-enerd->enerpart_lambda[nlam])/mckt;
+        scaled_lamee[ifep] = (enerd->enerpart_lambda[ifep+1]-enerd->enerpart_lambda[0])/mckt;
         
         /* save these energies for printing, so they don't get overwritten by the next step */
         /* they aren't overwritten in the non-free energy case, but we always print with these
