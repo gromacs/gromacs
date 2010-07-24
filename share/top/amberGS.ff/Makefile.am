@@ -2,7 +2,7 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-topoldir = ${pkgdatadir}/top/amber99.ff
+topoldir = ${pkgdatadir}/top/amberGS.ff
 
 topol_DATA = \
 	aminoacids.arn   aminoacids.vsd   \

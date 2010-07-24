@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.99-dev-20100305, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5-beta1, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -1311,6 +1311,13 @@ AC_CONFIG_FILES([ share/top/gromos45a3.ff/Makefile ])
 AC_CONFIG_FILES([ share/top/gromos53a5.ff/Makefile ])
 AC_CONFIG_FILES([ share/top/gromos53a6.ff/Makefile ])
 AC_CONFIG_FILES([ share/top/charmm27.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber94.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber96.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amberGS.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber99.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber99sb.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber99sb-ildn.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber03.ff/Makefile ])
 AC_CONFIG_FILES([ share/html/Makefile ])
 AC_CONFIG_FILES([ share/html/images/Makefile ])
 AC_CONFIG_FILES([ share/html/online/Makefile ])

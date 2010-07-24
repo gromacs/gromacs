@@ -398,7 +398,7 @@ C   CT  N   H        4      180.00     4.60240     2 	; new99
 C   CT  N   O        4      180.00     4.60240     2    ; new99
 CB  CK  N*  CT       4      180.00     4.18400     2	; 
 C   CM  N*  CT       4      180.00     4.18400     2	; dac guess, 9/94
-CT  N*  C   CM       4      180.00     4.18400     2    ; 
+CT  N*  C   CM       4      180.00     4.18400     2    ;
 CM  C   CM  CT       4      180.00     4.60240     2	; 
 CT  O   C   OH       4      180.00    43.93200     2	; 
 NA  CV  CC  CT       4      180.00     4.60240     2	; 
@@ -442,15 +442,17 @@ X   X   CA  H5       4      180.00     4.60240     2	; bsd.on C6H6 nmodes
 ;i   j   k   l	   func	
  CT  CT  OS  CT    9       0.0      1.60247     3  ; 
  CT  CT  OS  CT    9     180.0      0.41840     2  ; 
- C   N   CT  C     9     180.0      3.55640     2  ; 
- C   N   CT  C     9       0.0      3.34720     1  ; 
- N   CT  C   N     9     180.0      7.11280     1  ; 
- N   CT  C   N     9     180.0      8.36800     2  ; 
- CT  CT  N   C     9     180.0      2.09200     4  ; phi,psi,parm94
- CT  CT  N   C     9     180.0      0.62760     3  ; phi,psi,parm94
- CT  CT  N   C     9       0.0      2.21752     1  ; phi,psi,parm94
- CT  CT  C   N     9       0.0      0.41840     4  ; phi,psi,parm94
- CT  CT  C   N     9       0.0      0.29288     2  ; phi,psi,parm94
+ C   N   CT  C     9       0.0      1.12968     2  ; new for 99sb
+ C   N   CT  C     9       0.0      1.75728     3  ; new for 99sb
+ N   CT  C   N     9     180.0      1.88280     1  ; new for 99sb
+ N   CT  C   N     9     180.0      6.61072     2  ; new for 99sb
+ N   CT  C   N     9     180.0      2.30120     3  ; new for 99sb
+ CT  CT  N   C     9       0.0      8.36800     1  ; new for 99sb
+ CT  CT  N   C     9       0.0      8.36800     2  ; new for 99sb
+ CT  CT  N   C     9       0.0      1.67360     3  ; new for 99sb
+ CT  CT  C   N     9       0.0      0.83680     1  ; new for 99sb
+ CT  CT  C   N     9       0.0      0.83680     2  ; new for 99sb
+ CT  CT  C   N     9       0.0      1.67360     3  ; new for 99sb
  H   N   C   O     9     180.0     10.46000     2  ; JCC,7,(1986),230
  H   N   C   O     9       0.0      8.36800     1  ; J.C.cistrans-NMA DE
  CT  S   S   CT    9       0.0     14.64400     2  ; JCC,7,(1986),230

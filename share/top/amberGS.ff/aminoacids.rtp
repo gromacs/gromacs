@@ -141,21 +141,8 @@
    N1    H12
    N2    H21
    N2    H22
- [ dihedrals ]
-     O	   C	N1   H11	backbone_prop_2_mult1
-     O	   C	N1   H11	backbone_prop_2_mult2
-     O	   C	N1   H12	backbone_prop_2_mult1
-     O	   C	N1   H12	backbone_prop_2_mult2
-     O	   C	N2   H21  	backbone_prop_2_mult1
-     O	   C	N2   H21  	backbone_prop_2_mult2
-     O	   C	N2   H22	backbone_prop_2_mult1
-     O	   C	N2   H22	backbone_prop_2_mult2
-    N1	   C	N2   H21	backbone_prop_1
-    N1	   C	N2   H22 	backbone_prop_1
-    N2	   C	N1   H11	backbone_prop_1
-    N2	   C	N1   H12	backbone_prop_1
  [ impropers ]
-    N1	  N2	 C     O	urea_improper_1
+    N1	  N2	 C     O	
      C	 H11	N1   H12
      C	 H21	N2   H22   	
 
@@ -173,12 +160,6 @@
    CH3  HH33
    CH3     C
      C     O
- [ dihedrals ]
-   CH3     C    +N   +CA    backbone_prop_1
-   CH3     C    +N    +H    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
  [ impropers ]
    CH3    +N     C     O
                         
@@ -197,9 +178,6 @@
    CH3  HH32
    CH3  HH33
     -C     N
- [ dihedrals ]
-    -O    -C     N   CH3    backbone_prop_1
-   -CA    -C     N   CH3    backbone_prop_1
  [ impropers ]
     -C   CH3     N     H
                         
@@ -212,13 +190,6 @@
      N    H1
      N    H2
     -C     N
- [ dihedrals ]
-   -CA    -C     N    H1    backbone_prop_1
-   -CA    -C     N    H2    backbone_prop_1
-    -O    -C     N    H1    backbone_prop_2_mult1
-    -O    -C     N    H1    backbone_prop_2_mult2
-    -O    -C     N    H2    backbone_prop_2_mult1
-    -O    -C     N    H2    backbone_prop_2_mult2
  [ impropers ]
     -C    H1     N    H2
 
@@ -231,13 +202,6 @@
      N    H1
      N    H2
     -C     N
- [ dihedrals ]
-   -CA    -C     N    H1    backbone_prop_1
-   -CA    -C     N    H2    backbone_prop_1
-    -O    -C     N    H1    backbone_prop_2_mult1
-    -O    -C     N    H1    backbone_prop_2_mult2
-    -O    -C     N    H2    backbone_prop_2_mult1
-    -O    -C     N    H2    backbone_prop_2_mult2
  [ impropers ]
     -C    H1     N    H2
 
@@ -266,17 +230,6 @@
     CB   HB3
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -298,17 +251,6 @@
     CA     C
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -338,17 +280,6 @@
     OG    HG
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -384,17 +315,6 @@
    OG1   HG1
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -440,17 +360,6 @@
    CD2  HD23
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -496,17 +405,6 @@
     CD   HD3
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -546,17 +444,6 @@
    CG2  HG23
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -592,23 +479,6 @@
    ND2  HD22
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CB    CG   ND2  HD21    backbone_prop_1
-    CB    CG   ND2  HD22    backbone_prop_1
-   OD1    CG   ND2  HD21    backbone_prop_2_mult1
-   OD1    CG   ND2  HD21    backbone_prop_2_mult2
-   OD1    CG   ND2  HD22    backbone_prop_2_mult1
-   OD1    CG   ND2  HD22    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -652,23 +522,6 @@
    NE2  HE22
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CG    CD   NE2  HE21    backbone_prop_1
-    CG    CD   NE2  HE22    backbone_prop_1
-   OE1    CD   NE2  HE21    backbone_prop_2_mult1
-   OE1    CD   NE2  HE21    backbone_prop_2_mult2
-   OE1    CD   NE2  HE22    backbone_prop_2_mult1
-   OE1    CD   NE2  HE22    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -726,25 +579,6 @@
    NH2  HH22
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-  HH12    NH1   CZ   NH2    sidechain_prop_1
-  HH11    NH1   CZ   NH2    sidechain_prop_1
-    HE    NE    CZ   NH1    sidechain_prop_1
-    HE    NE    CZ   NH2    sidechain_prop_1
-    NE    CZ   NH1  HH11    sidechain_prop_1
-    NE    CZ   NH1  HH12    sidechain_prop_1
-    CD    NE    CZ   NH1    sidechain_prop_1
-    CD    NE    CZ   NH2    sidechain_prop_1
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -791,33 +625,6 @@
    CD2   HD2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   ND1   HD1    aromatic_prop_3
-   HD1   ND1   CE1   HE1    aromatic_prop_5
-   NE2   CE1   ND1   HD1    aromatic_prop_5
-   HD1   ND1    CG   CD2    aromatic_prop_3
-    CB    CG   ND1   CE1    aromatic_prop_3
-    CB    CG   CD2   HD2    aromatic_prop_6a
-    CB    CG   CD2   NE2    aromatic_prop_6a
-    CG   ND1   CE1   HE1    aromatic_prop_5
-    CG   ND1   CE1   NE2    aromatic_prop_5
-   ND1   CE1   NE2   CD2    aromatic_prop_5a
-   ND1    CG   CD2   HD2    aromatic_prop_6a
-   ND1    CG   CD2   NE2    aromatic_prop_6a
-   CE1   NE2   CD2   HD2    aromatic_prop_4a
-   CE1   NE2   CD2   CG     aromatic_prop_4a
-   HE1   CE1   NE2   CD2    aromatic_prop_5a
-   CD2    CG   ND1   CE1    aromatic_prop_3
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -864,33 +671,6 @@
    CD2   HD2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CG   CD2   NE2   HE2    aromatic_prop_4
-   HE1   CE1   NE2   HE2    aromatic_prop_5
-   HD2   CD2   NE2   HE2    aromatic_prop_4
-   ND1   CE1   NE2   HE2    aromatic_prop_5
-    CB    CG   ND1   CE1    aromatic_prop_3a
-    CB    CG   CD2   HD2    aromatic_prop_6
-    CB    CG   CD2   NE2    aromatic_prop_6
-    CG   ND1   CE1   HE1    aromatic_prop_5a
-    CG   ND1   CE1   NE2    aromatic_prop_5a
-   ND1   CE1   NE2   CD2    aromatic_prop_5
-   HE1   CE1   NE2   CD2    aromatic_prop_5
-   ND1    CG   CD2   HD2    aromatic_prop_6
-   ND1    CG   CD2   NE2    aromatic_prop_6
-   CE1   NE2   CD2    CG    aromatic_prop_4
-   CE1   NE2   CD2   HD2    aromatic_prop_4
-   CD2    CG   ND1   CE1    aromatic_prop_3a
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -939,37 +719,6 @@
    CD2   HD2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   ND1   HD1    aromatic_prop_3
-    CG   CD2   NE2   HE2    aromatic_prop_4
-   HD1   ND1   CE1   HE1    aromatic_prop_5
-   HE1   CE1   NE2   HE2    aromatic_prop_5
-   HD2   CD2   NE2   HE2    aromatic_prop_4
-   ND1   CE1   NE2   HE2    aromatic_prop_5
-   NE2   CE1   ND1   HD1    aromatic_prop_5
-   HD1   ND1    CG   CD2    aromatic_prop_3
-    CB    CG   ND1   CE1    aromatic_prop_3
-    CB    CG   CD2   HD2    aromatic_prop_6
-    CB    CG   CD2   NE2    aromatic_prop_6
-    CG   ND1   CE1   HE1    aromatic_prop_5
-    CG   ND1   CE1   NE2    aromatic_prop_5
-    CG   CD2   NE2   CE1    aromatic_prop_4
-   ND1   CE1   NE2   CD2    aromatic_prop_5
-   ND1    CG   CD2   HD2    aromatic_prop_6
-   ND1    CG   CD2   NE2    aromatic_prop_6
-   CE1   NE2   CD2   HD2    aromatic_prop_4
-   HE1   CE1   NE2   CD2    aromatic_prop_5
-   CD2    CG   ND1   CE1    aromatic_prop_3
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1032,56 +781,6 @@
    CE3   CD2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   CD1   HD1    aromatic_prop_7
-    CB    CG   CD1   NE1    aromatic_prop_7
-    CB    CG   CD2   CE2    aromatic_prop_8
-    CB    CG   CD2   CE3    aromatic_prop_8
-    CG   CD1   NE1   HE1    aromatic_prop_4
-    CG   CD1   NE1   CE2    aromatic_prop_4   
-    CG   CD2   CE2   NE1    aromatic_prop_10
-    CG   CD2   CE2   CZ2    aromatic_prop_10
-    CG   CD2   CE3   HE3    aromatic_prop_12
-    CG   CD2   CE3   CZ3    aromatic_prop_12
-   CD1    CG   CD2   CE2    aromatic_prop_8
-   CD1    CG   CD2   CE3    aromatic_prop_8
-   CD1   NE1   CE2   CD2    aromatic_prop_9
-   CD1   NE1   CE2   CZ2    aromatic_prop_9
-   HD1   CD1   NE1   HE1    aromatic_prop_4
-   HD1   CD1   NE1   CE2    aromatic_prop_4
-   HD1   CD1    CG   CD2    aromatic_prop_7
-   HE1   NE1   CE2   CD2    aromatic_prop_9
-   HE1   NE1   CE2   CZ2    aromatic_prop_9
-   NE1   CD1    CG   CD2    aromatic_prop_7
-   NE1   CE2   CD2   CE3    aromatic_prop_10
-   NE1   CE2   CZ2   HZ2    aromatic_prop_11
-   NE1   CE2   CZ2   CH2    aromatic_prop_11
-   CE2   CD2   CE3   HE3    aromatic_prop_12
-   CE2   CD2   CE3   CZ3    aromatic_prop_12
-   CE2   CZ2   CH2   HH2    aromatic_prop_1
-   CE2   CZ2   CH2   CZ3    aromatic_prop_1
-   CZ2   CH2   CZ3   HZ3    aromatic_prop_1
-   CZ2   CH2   CZ3   CE3    aromatic_prop_1
-   CZ2   CE2   CD2   CE3    aromatic_prop_10
-   HZ2   CZ2   CH2   HH2    aromatic_prop_1
-   HZ2   CZ2   CH2   CZ3    aromatic_prop_1
-   CH2   CZ2   CE2   CD2    aromatic_prop_11
-   CH2   CZ3   CE3   HE3    aromatic_prop_1
-   CH2   CZ3   CE3   CD2    aromatic_prop_1
-   HH2   CH2   CZ3   HZ3    aromatic_prop_1
-   HH2   CH2   CZ3   CE3    aromatic_prop_1   
-   HZ3   CZ3   CE3   HE3    aromatic_prop_1
-   HZ3   CZ3   CE3   CD2    aromatic_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1137,41 +836,6 @@
    CD2   HD2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   CD1   HD1    aromatic_prop_1
-    CB    CG   CD2   HD2    aromatic_prop_1
-    CB    CG   CD1   CE1    aromatic_prop_1
-    CB    CG   CD2   CE2    aromatic_prop_1
-    CG   CD1   CE1   HE1    aromatic_prop_1
-    CG   CD2   CE2   HE2    aromatic_prop_1
-    CG   CD1   CE1    CZ    aromatic_prop_1
-    CG   CD2   CE2    CZ    aromatic_prop_1
-    CD1  CE1    CZ    HZ    aromatic_prop_1
-    CD1  CE1    CZ   CE2    aromatic_prop_1
-    CD2  CE2    CZ    HZ    aromatic_prop_1
-    CD2  CE2    CZ   CE1    aromatic_prop_1
-    CE1   CZ   CE2   HE2    aromatic_prop_1
-    CE2   CZ   CE1   HE1    aromatic_prop_1
-    HD1  CD1   CE1   HE1    aromatic_prop_1
-    HD2  CD2   CE2   HE2    aromatic_prop_1
-    HE1  CE1    CZ    HZ    aromatic_prop_1
-    HE2  CE2    CZ    HZ    aromatic_prop_1
-    HD1  CD1   CE1    CZ    aromatic_prop_1
-    HD2  CD2   CE2    CZ    aromatic_prop_1
-    HD1  CD1    CG   CD2    aromatic_prop_1	
-    CD1   CG   CD2   HD2    aromatic_prop_1
-    CE1  CD1    CG   CD2    aromatic_prop_1
-    CD1   CG   CD2   CE2    aromatic_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1228,43 +892,6 @@
    CD2   HD2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   CD1   HD1    aromatic_prop_1
-    CB    CG   CD2   HD2    aromatic_prop_1
-    CB    CG   CD1   CE1    aromatic_prop_1
-    CB    CG   CD2   CE2    aromatic_prop_1
-    CG   CD1   CE1   HE1    aromatic_prop_1
-    CG   CD2   CE2   HE2    aromatic_prop_1
-    CG   CD1   CE1    CZ    aromatic_prop_1
-    CG   CD2   CE2    CZ    aromatic_prop_1
-    CD1  CE1    CZ   CE2    aromatic_prop_1
-    CD2  CE2    CZ   CE1    aromatic_prop_1
-    CE1   CZ   CE2   HE2    aromatic_prop_1
-    CE2   CZ   CE1   HE1    aromatic_prop_1
-    HD1  CD1   CE1   HE1    aromatic_prop_1
-    HD2  CD2   CE2   HE2    aromatic_prop_1
-    HD1  CD1   CE1    CZ    aromatic_prop_1
-    HD2  CD2   CE2    CZ    aromatic_prop_1
-    CD1  CE1    CZ    OH    aromatic_prop_1
-    CD2  CE2    CZ    OH    aromatic_prop_1
-    HE1  CE1    CZ    OH    aromatic_prop_1
-    HE2  CE2    CZ    OH    aromatic_prop_1
-    CE1   CZ    OH    HH    aromatic_prop_2 
-    CE2   CZ    OH    HH    aromatic_prop_2 
-    HD1  CD1    CG   CD2    aromatic_prop_1
-    CD1   CG   CD2   HD2    aromatic_prop_1
-    CE1  CD1    CG   CD2    aromatic_prop_1
-    CD1   CG   CD2   CE2    aromatic_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1308,17 +935,6 @@
     CD   OE2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1351,17 +967,6 @@
     CG   OD2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1414,17 +1019,6 @@
     NZ   HZ3
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1470,17 +1064,6 @@
     NE   HE3
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1520,17 +1103,6 @@
     ND   HD3
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1580,17 +1152,6 @@
     NZ   HZ2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1627,23 +1188,6 @@
     CA     C
      C     O
     -C     N
- [ dihedrals ]
-   -CA    -C     N    CD    backbone_prop_1
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-  -CH3    -C     N    CD    backbone_prop_1
-    -O    -C     N    CD    backbone_prop_1
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    -C     N    CD   CG	    proline_prop_1_mult1
-    -C     N    CD   CG	    proline_prop_1_mult3
-    -C     N    CD   CG	    proline_prop_1_mult4
  [ impropers ]
     CA    +N     C     O
     -C    CD     N    CA	
@@ -1682,25 +1226,6 @@
     CA     C
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-  -CH3    -C     N   CD2    backbone_prop_1
-    -O    -C     N   CD2    backbone_prop_1
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    -C     N   CD2   CG	    proline_prop_1_mult1
-    -C     N   CD2   CG	    proline_prop_1_mult3
-    -C     N   CD2   CG	    proline_prop_1_mult4
-     N   CD2    CG   OD1    hyp_prop_1_mult2
-     N   CD2    CG   OD1    hyp_prop_1_mult3
-   -CA    -C     N   CD2    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
     -C   CD2     N    CA
@@ -1730,17 +1255,6 @@
     SG    HG
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1768,17 +1282,6 @@
     CB    SG
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1806,17 +1309,6 @@
     CB    SG
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1844,17 +1336,6 @@
     CB    SG
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1896,17 +1377,6 @@
     CE   HE3
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1942,17 +1412,6 @@
    OD2   HD2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -1994,17 +1453,6 @@
    OE2   HE2
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
@@ -2037,12 +1485,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2066,12 +1508,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2103,12 +1539,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2146,12 +1576,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2199,12 +1623,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2252,12 +1670,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2299,12 +1711,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2342,18 +1748,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CB    CG   ND2  HD21    backbone_prop_1
-    CB    CG   ND2  HD22    backbone_prop_1
-   OD1    CG   ND2  HD21    backbone_prop_2_mult1
-   OD1    CG   ND2  HD21    backbone_prop_2_mult2
-   OD1    CG   ND2  HD22    backbone_prop_2_mult1
-   OD1    CG   ND2  HD22    backbone_prop_2_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2399,18 +1793,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CG    CD   NE2  HE21    backbone_prop_1
-    CG    CD   NE2  HE22    backbone_prop_1
-   OE1    CD   NE2  HE21    backbone_prop_2_mult1
-   OE1    CD   NE2  HE21    backbone_prop_2_mult2
-   OE1    CD   NE2  HE22    backbone_prop_2_mult1
-   OE1    CD   NE2  HE22    backbone_prop_2_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2470,20 +1852,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-  HH12   NH1    CZ   NH2    sidechain_prop_1
-  HH11   NH1    CZ   NH2    sidechain_prop_1
-    HE    NE    CZ   NH1    sidechain_prop_1
-    HE    NE    CZ   NH2    sidechain_prop_1
-    NE    CZ   NH1  HH11    sidechain_prop_1
-    NE    CZ   NH1  HH12    sidechain_prop_1
-    CD    NE    CZ   NH1    sidechain_prop_1
-    CD    NE    CZ   NH2    sidechain_prop_1
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2532,28 +1900,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CB    CG   ND1   HD1    aromatic_prop_3
-   HD1   ND1   CE1   HE1    aromatic_prop_5
-   NE2   CE1   ND1   HD1    aromatic_prop_5
-   HD1   ND1    CG   CD2    aromatic_prop_3
-    CB    CG   ND1   CE1    aromatic_prop_3
-    CB    CG   CD2   HD2    aromatic_prop_6a
-    CB    CG   CD2   NE2    aromatic_prop_6a
-    CG   ND1   CE1   HE1    aromatic_prop_5
-    CG   ND1   CE1   NE2    aromatic_prop_5
-   ND1   CE1   NE2   CD2    aromatic_prop_5a
-   ND1    CG   CD2   HD2    aromatic_prop_6a
-   ND1    CG   CD2   NE2    aromatic_prop_6a
-   CE1   NE2   CD2   HD2    aromatic_prop_4a
-   CE1   NE2   CD2    CG    aromatic_prop_4a
-   HE1   CE1   NE2   CD2    aromatic_prop_5a
-   CD2    CG   ND1   CE1    aromatic_prop_3
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2602,28 +1948,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CG   CD2   NE2   HE2    aromatic_prop_4
-   HE1   CE1   NE2   HE2    aromatic_prop_5
-   HD2   CD2   NE2   HE2    aromatic_prop_4
-   ND1   CE1   NE2   HE2    aromatic_prop_5
-    CB    CG   ND1   CE1    aromatic_prop_3a
-    CB    CG   CD2   HD2    aromatic_prop_6
-    CB    CG   CD2   NE2    aromatic_prop_6
-    CG   ND1   CE1   HE1    aromatic_prop_5a
-    CG   ND1   CE1   NE2    aromatic_prop_5a
-   ND1   CE1   NE2   CD2    aromatic_prop_5
-   HE1   CE1   NE2   CD2    aromatic_prop_5
-   ND1    CG   CD2   HD2    aromatic_prop_6
-   ND1    CG   CD2   NE2    aromatic_prop_6
-   CE1   NE2   CD2    CG    aromatic_prop_4
-   CE1   NE2   CD2   HD2    aromatic_prop_4
-   CD2    CG   ND1   CE1    aromatic_prop_3a
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2674,32 +1998,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CB    CG   ND1   HD1    aromatic_prop_3
-    CG   CD2   NE2   HE2    aromatic_prop_4
-   HD1   ND1   CE1   HE1    aromatic_prop_5
-   HE1   CE1   NE2   HE2    aromatic_prop_5
-   HD2   CD2   NE2   HE2    aromatic_prop_4
-   ND1   CE1   NE2   HE2    aromatic_prop_5
-   NE2   CE1   ND1   HD1    aromatic_prop_5
-   HD1   ND1    CG   CD2    aromatic_prop_3
-    CB    CG   ND1   CE1    aromatic_prop_3
-    CB    CG   CD2   HD2    aromatic_prop_6
-    CB    CG   CD2   NE2    aromatic_prop_6
-    CG   ND1   CE1   HE1    aromatic_prop_5
-    CG   ND1   CE1   NE2    aromatic_prop_5
-    CG   CD2   NE2   CE1    aromatic_prop_4
-   ND1   CE1   NE2   CD2    aromatic_prop_5
-   ND1    CG   CD2   HD2    aromatic_prop_6
-   ND1    CG   CD2   NE2    aromatic_prop_6
-   CE1   NE2   CD2   HD2    aromatic_prop_4
-   HE1   CE1   NE2   CD2    aromatic_prop_5
-   CD2    CG   ND1   CE1    aromatic_prop_3
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2764,51 +2062,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CB    CG   CD1   HD1    aromatic_prop_7
-    CB    CG   CD1   NE1    aromatic_prop_7
-    CB    CG   CD2   CE2    aromatic_prop_8
-    CB    CG   CD2   CE3    aromatic_prop_8
-    CG   CD1   NE1   HE1    aromatic_prop_4
-    CG   CD1   NE1   CE2    aromatic_prop_4
-    CG   CD2   CE2   NE1    aromatic_prop_10
-    CG   CD2   CE2   CZ2    aromatic_prop_10
-    CG   CD2   CE3   HE3    aromatic_prop_12
-    CG   CD2   CE3   CZ3    aromatic_prop_12
-   CD1    CG   CD2   CE2    aromatic_prop_8
-   CD1    CG   CD2   CE3    aromatic_prop_8
-   CD1   NE1   CE2   CD2    aromatic_prop_9
-   CD1   NE1   CE2   CZ2    aromatic_prop_9
-   HD1   CD1   NE1   HE1    aromatic_prop_4
-   HD1   CD1   NE1   CE2    aromatic_prop_4
-   HD1   CD1    CG   CD2    aromatic_prop_7
-   HE1   NE1   CE2   CD2    aromatic_prop_9
-   HE1   NE1   CE2   CZ2    aromatic_prop_9
-   NE1   CD1    CG   CD2    aromatic_prop_7
-   NE1   CE2   CD2   CE3    aromatic_prop_10
-   NE1   CE2   CZ2   HZ2    aromatic_prop_11
-   NE1   CE2   CZ2   CH2    aromatic_prop_11
-   CE2   CD2   CE3   HE3    aromatic_prop_12
-   CE2   CD2   CE3   CZ3    aromatic_prop_12
-   CE2   CZ2   CH2   HH2    aromatic_prop_1
-   CE2   CZ2   CH2   CZ3    aromatic_prop_1
-   CZ2   CH2   CZ3   HZ3    aromatic_prop_1
-   CZ2   CH2   CZ3   CE3    aromatic_prop_1
-   CZ2   CE2   CD2   CE3    aromatic_prop_10
-   HZ2   CZ2   CH2   HH2    aromatic_prop_1
-   HZ2   CZ2   CH2   CZ3    aromatic_prop_1
-   CH2   CZ2   CE2   CD2    aromatic_prop_11
-   CH2   CZ3   CE3   HE3    aromatic_prop_1
-   CH2   CZ3   CE3   CD2    aromatic_prop_1
-   HH2   CH2   CZ3   HZ3    aromatic_prop_1
-   HH2   CH2   CZ3   CE3    aromatic_prop_1
-   HZ3   CZ3   CE3   HE3    aromatic_prop_1
-   HZ3   CZ3   CE3   CD2    aromatic_prop_1
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2866,36 +2119,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CB    CG   CD1   HD1    aromatic_prop_1
-    CB    CG   CD2   HD2    aromatic_prop_1
-    CB    CG   CD1   CE1    aromatic_prop_1
-    CB    CG   CD2   CE2    aromatic_prop_1
-    CG   CD1   CE1   HE1    aromatic_prop_1
-    CG   CD2   CE2   HE2    aromatic_prop_1
-    CG   CD1   CE1    CZ    aromatic_prop_1
-    CG   CD2   CE2    CZ    aromatic_prop_1
-   CD1   CE1    CZ    HZ    aromatic_prop_1
-   CD1   CE1    CZ   CE2    aromatic_prop_1
-   CD2   CE2    CZ    HZ    aromatic_prop_1
-   CD2   CE2    CZ   CE1    aromatic_prop_1
-   CE1    CZ   CE2   HE2    aromatic_prop_1
-   CE2    CZ   CE1   HE1    aromatic_prop_1
-   HD1   CD1   CE1   HE1    aromatic_prop_1
-   HD2   CD2   CE2   HE2    aromatic_prop_1
-   HE1   CE1    CZ    HZ    aromatic_prop_1
-   HE2   CE2    CZ    HZ    aromatic_prop_1
-   HD1   CD1   CE1    CZ    aromatic_prop_1
-   HD2   CD2   CE2    CZ    aromatic_prop_1
-   HD1   CD1    CG   CD2    aromatic_prop_1
-   CD1    CG   CD2   HD2    aromatic_prop_1
-   CE1   CD1    CG   CD2    aromatic_prop_1
-   CD1    CG   CD2   CE2    aromatic_prop_1
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -2954,38 +2177,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-    CB    CG   CD1   HD1    aromatic_prop_1
-    CB    CG   CD2   HD2    aromatic_prop_1
-    CB    CG   CD1   CE1    aromatic_prop_1
-    CB    CG   CD2   CE2    aromatic_prop_1
-    CG   CD1   CE1   HE1    aromatic_prop_1
-    CG   CD2   CE2   HE2    aromatic_prop_1
-    CG   CD1   CE1    CZ    aromatic_prop_1
-    CG   CD2   CE2    CZ    aromatic_prop_1
-   CD1   CE1    CZ   CE2    aromatic_prop_1
-   CD2   CE2    CZ   CE1    aromatic_prop_1
-   CE1    CZ   CE2   HE2    aromatic_prop_1
-   CE2    CZ   CE1   HE1    aromatic_prop_1
-   HD1   CD1   CE1   HE1    aromatic_prop_1
-   HD2   CD2   CE2   HE2    aromatic_prop_1
-   HD1   CD1   CE1    CZ    aromatic_prop_1
-   HD2   CD2   CE2    CZ    aromatic_prop_1
-   CD1   CE1    CZ    OH    aromatic_prop_1
-   CD2   CE2    CZ    OH    aromatic_prop_1
-   HE1   CE1    CZ    OH    aromatic_prop_1
-   HE2   CE2    CZ    OH    aromatic_prop_1
-   CE1    CZ    OH    HH    aromatic_prop_2
-   CE2    CZ    OH    HH    aromatic_prop_2
-   HD1   CD1    CG   CD2    aromatic_prop_1
-   CD1    CG   CD2   HD2    aromatic_prop_1
-   CE1   CD1    CG   CD2    aromatic_prop_1
-   CD1    CG   CD2   CE2    aromatic_prop_1
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -3031,12 +2222,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -3071,12 +2256,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -3131,12 +2310,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -3175,18 +2348,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-   -CA    -C     N    CD    backbone_prop_1
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
-  -CH3    -C     N    CD    backbone_prop_1
-    -O    -C     N    CD    backbone_prop_1
-    -C     N    CD    CG    proline_prop_1_mult1
-    -C     N    CD    CG    proline_prop_1_mult3
-    -C     N    CD    CG    proline_prop_1_mult4
  [ impropers ]
     CA   OC1     C   OC2    
     -C    CD     N    CA    
@@ -3218,12 +2379,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -3253,12 +2408,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -3302,12 +2451,6 @@
      C   OC1
      C   OC2
     -C     N
- [ dihedrals ]
-    -C     N    CA    CB    backbone_prop_3_mult1
-    -C     N    CA    CB    backbone_prop_3_mult3
-    -C     N    CA    CB    backbone_prop_3_mult4
-    -C     N    CA     C    backbone_prop_4_mult1
-    -C     N    CA     C    backbone_prop_4_mult2
  [ impropers ]
     -C    CA     N     H    
     CA   OC1     C   OC2    
@@ -3341,12 +2484,6 @@
     CB   HB3
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -3371,12 +2508,6 @@
     CA     C
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -3409,12 +2540,6 @@
     OG    HG
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -3453,12 +2578,6 @@
    OG1   HG1
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -3507,12 +2626,6 @@
    CD2  HD23
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -3561,12 +2674,6 @@
     CD   HD3
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -3609,12 +2716,6 @@
    CG2  HG23
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -3653,18 +2754,6 @@
    ND2  HD22
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CB    CG   ND2  HD21    backbone_prop_1
-    CB    CG   ND2  HD22    backbone_prop_1
-   OD1    CG   ND2  HD21    backbone_prop_2_mult1
-   OD1    CG   ND2  HD21    backbone_prop_2_mult2
-   OD1    CG   ND2  HD22    backbone_prop_2_mult1
-   OD1    CG   ND2  HD22    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
     CB   ND2    CG   OD1
@@ -3711,18 +2800,6 @@
    NE2  HE22
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CG    CD   NE2  HE21    backbone_prop_1
-    CG    CD   NE2  HE22    backbone_prop_1
-   OE1    CD   NE2  HE21    backbone_prop_2_mult1
-   OE1    CD   NE2  HE21    backbone_prop_2_mult2
-   OE1    CD   NE2  HE22    backbone_prop_2_mult1
-   OE1    CD   NE2  HE22    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
     CG   NE2    CD   OE1
@@ -3783,20 +2860,6 @@
    NH2  HH22
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-  HH12    NH1   CZ   NH2    sidechain_prop_1
-  HH11    NH1   CZ   NH2    sidechain_prop_1
-    HE    NE    CZ   NH1    sidechain_prop_1
-    HE    NE    CZ   NH2    sidechain_prop_1
-    NE    CZ   NH1  HH11    sidechain_prop_1
-    NE    CZ   NH1  HH12    sidechain_prop_1
-    CD    NE    CZ   NH1    sidechain_prop_1
-    CD    NE    CZ   NH2    sidechain_prop_1
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
     NE   NH1    CZ   NH2
@@ -3846,28 +2909,6 @@
    CD2   HD2
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   ND1   HD1    aromatic_prop_3
-   HD1   ND1   CE1   HE1    aromatic_prop_5
-   NE2   CE1   ND1   HD1    aromatic_prop_5
-   HD1   ND1    CG   CD2    aromatic_prop_3
-    CB    CG   ND1   CE1    aromatic_prop_3
-    CB    CG   CD2   HD2    aromatic_prop_6a
-    CB    CG   CD2   NE2    aromatic_prop_6a
-    CG   ND1   CE1   HE1    aromatic_prop_5
-    CG   ND1   CE1   NE2    aromatic_prop_5
-   ND1   CE1   NE2   CD2    aromatic_prop_5a
-   ND1    CG   CD2   HD2    aromatic_prop_6a
-   ND1    CG   CD2   NE2    aromatic_prop_6a
-   CE1   NE2   CD2   HD2    aromatic_prop_4a
-   CE1   NE2   CD2   CG     aromatic_prop_4a
-   HE1   CE1   NE2   CD2    aromatic_prop_5a
-   CD2    CG   ND1   CE1    aromatic_prop_3
  [ impropers ]
     CA    +N     C     O
     CG   CE1   ND1   HD1
@@ -3917,28 +2958,6 @@
    CD2   HD2
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CG   CD2   NE2   HE2    aromatic_prop_4
-   HE1   CE1   NE2   HE2    aromatic_prop_5
-   HD2   CD2   NE2   HE2    aromatic_prop_4
-   ND1   CE1   NE2   HE2    aromatic_prop_5
-    CB    CG   ND1   CE1    aromatic_prop_3a
-    CB    CG   CD2   HD2    aromatic_prop_6
-    CB    CG   CD2   NE2    aromatic_prop_6
-    CG   ND1   CE1   HE1    aromatic_prop_5a
-    CG   ND1   CE1   NE2    aromatic_prop_5a
-   ND1   CE1   NE2   CD2    aromatic_prop_5
-   HE1   CE1   NE2   CD2    aromatic_prop_5
-   ND1    CG   CD2   HD2    aromatic_prop_6
-   ND1    CG   CD2   NE2    aromatic_prop_6
-   CE1   NE2   CD2    CG    aromatic_prop_4
-   CE1   NE2   CD2   HD2    aromatic_prop_4
-   CD2    CG   ND1   CE1    aromatic_prop_3a
  [ impropers ]
     CA    +N     C     O
    CE1   CD2   NE2   HE2
@@ -3990,32 +3009,6 @@
    CD2   HD2
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   ND1   HD1    aromatic_prop_3
-    CG   CD2   NE2   HE2    aromatic_prop_4
-   HD1   ND1   CE1   HE1    aromatic_prop_5
-   HE1   CE1   NE2   HE2    aromatic_prop_5
-   HD2   CD2   NE2   HE2    aromatic_prop_4
-   ND1   CE1   NE2   HE2    aromatic_prop_5
-   NE2   CE1   ND1   HD1    aromatic_prop_5
-   HD1   ND1    CG   CD2    aromatic_prop_3
-    CB    CG   ND1   CE1    aromatic_prop_3
-    CB    CG   CD2   HD2    aromatic_prop_6
-    CB    CG   CD2   NE2    aromatic_prop_6
-    CG   ND1   CE1   HE1    aromatic_prop_5
-    CG   ND1   CE1   NE2    aromatic_prop_5
-    CG   CD2   NE2   CE1    aromatic_prop_4
-   ND1   CE1   NE2   CD2    aromatic_prop_5
-   ND1    CG   CD2   HD2    aromatic_prop_6
-   ND1    CG   CD2   NE2    aromatic_prop_6
-   CE1   NE2   CD2   HD2    aromatic_prop_4
-   HE1   CE1   NE2   CD2    aromatic_prop_5
-   CD2    CG   ND1   CE1    aromatic_prop_3
  [ impropers ]
     CA    +N     C     O
     CG   CE1   ND1   HD1
@@ -4081,51 +3074,6 @@
    CE3   CD2
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   CD1   HD1    aromatic_prop_7
-    CB    CG   CD1   NE1    aromatic_prop_7
-    CB    CG   CD2   CE2    aromatic_prop_8
-    CB    CG   CD2   CE3    aromatic_prop_8
-    CG   CD1   NE1   HE1    aromatic_prop_4
-    CG   CD1   NE1   CE2    aromatic_prop_4   
-    CG   CD2   CE2   NE1    aromatic_prop_10
-    CG   CD2   CE2   CZ2    aromatic_prop_10
-    CG   CD2   CE3   HE3    aromatic_prop_12
-    CG   CD2   CE3   CZ3    aromatic_prop_12
-   CD1    CG   CD2   CE2    aromatic_prop_8
-   CD1    CG   CD2   CE3    aromatic_prop_8
-   CD1   NE1   CE2   CD2    aromatic_prop_9
-   CD1   NE1   CE2   CZ2    aromatic_prop_9
-   HD1   CD1   NE1   HE1    aromatic_prop_4
-   HD1   CD1   NE1   CE2    aromatic_prop_4
-   HD1   CD1    CG   CD2    aromatic_prop_7
-   HE1   NE1   CE2   CD2    aromatic_prop_9
-   HE1   NE1   CE2   CZ2    aromatic_prop_9
-   NE1   CD1    CG   CD2    aromatic_prop_7
-   NE1   CE2   CD2   CE3    aromatic_prop_10
-   NE1   CE2   CZ2   HZ2    aromatic_prop_11
-   NE1   CE2   CZ2   CH2    aromatic_prop_11
-   CE2   CD2   CE3   HE3    aromatic_prop_12
-   CE2   CD2   CE3   CZ3    aromatic_prop_12
-   CE2   CZ2   CH2   HH2    aromatic_prop_1
-   CE2   CZ2   CH2   CZ3    aromatic_prop_1
-   CZ2   CH2   CZ3   HZ3    aromatic_prop_1
-   CZ2   CH2   CZ3   CE3    aromatic_prop_1
-   CZ2   CE2   CD2   CE3    aromatic_prop_10
-   HZ2   CZ2   CH2   HH2    aromatic_prop_1
-   HZ2   CZ2   CH2   CZ3    aromatic_prop_1
-   CH2   CZ2   CE2   CD2    aromatic_prop_11
-   CH2   CZ3   CE3   HE3    aromatic_prop_1
-   CH2   CZ3   CE3   CD2    aromatic_prop_1
-   HH2   CH2   CZ3   HZ3    aromatic_prop_1
-   HH2   CH2   CZ3   CE3    aromatic_prop_1   
-   HZ3   CZ3   CE3   HE3    aromatic_prop_1
-   HZ3   CZ3   CE3   CD2    aromatic_prop_1
  [ impropers ]
     CA    +N     C     O
    CD1   CE2   NE1   HE1
@@ -4184,36 +3132,6 @@
    CD2   HD2
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   CD1   HD1    aromatic_prop_1
-    CB    CG   CD2   HD2    aromatic_prop_1
-    CB    CG   CD1   CE1    aromatic_prop_1
-    CB    CG   CD2   CE2    aromatic_prop_1
-    CG   CD1   CE1   HE1    aromatic_prop_1
-    CG   CD2   CE2   HE2    aromatic_prop_1
-    CG   CD1   CE1    CZ    aromatic_prop_1
-    CG   CD2   CE2    CZ    aromatic_prop_1
-    CD1  CE1    CZ    HZ    aromatic_prop_1
-    CD1  CE1    CZ   CE2    aromatic_prop_1
-    CD2  CE2    CZ    HZ    aromatic_prop_1
-    CD2  CE2    CZ   CE1    aromatic_prop_1
-    CE1   CZ   CE2   HE2    aromatic_prop_1
-    CE2   CZ   CE1   HE1    aromatic_prop_1
-    HD1  CD1   CE1   HE1    aromatic_prop_1
-    HD2  CD2   CE2   HE2    aromatic_prop_1
-    HE1  CE1    CZ    HZ    aromatic_prop_1
-    HE2  CE2    CZ    HZ    aromatic_prop_1
-    HD1  CD1   CE1    CZ    aromatic_prop_1
-    HD2  CD2   CE2    CZ    aromatic_prop_1
-    HD1  CD1    CG   CD2    aromatic_prop_1	
-    CD1   CG   CD2   HD2    aromatic_prop_1
-    CE1  CD1    CG   CD2    aromatic_prop_1
-    CD1   CG   CD2   CE2    aromatic_prop_1
  [ impropers ]
     CA    +N     C     O
     CG   CE2   CD2   HD2
@@ -4273,38 +3191,6 @@
    CD2   HD2
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
-    CB    CG   CD1   HD1    aromatic_prop_1
-    CB    CG   CD2   HD2    aromatic_prop_1
-    CB    CG   CD1   CE1    aromatic_prop_1
-    CB    CG   CD2   CE2    aromatic_prop_1
-    CG   CD1   CE1   HE1    aromatic_prop_1
-    CG   CD2   CE2   HE2    aromatic_prop_1
-    CG   CD1   CE1    CZ    aromatic_prop_1
-    CG   CD2   CE2    CZ    aromatic_prop_1
-    CD1  CE1    CZ   CE2    aromatic_prop_1
-    CD2  CE2    CZ   CE1    aromatic_prop_1
-    CE1   CZ   CE2   HE2    aromatic_prop_1
-    CE2   CZ   CE1   HE1    aromatic_prop_1
-    HD1  CD1   CE1   HE1    aromatic_prop_1
-    HD2  CD2   CE2   HE2    aromatic_prop_1
-    HD1  CD1   CE1    CZ    aromatic_prop_1
-    HD2  CD2   CE2    CZ    aromatic_prop_1
-    CD1  CE1    CZ    OH    aromatic_prop_1
-    CD2  CE2    CZ    OH    aromatic_prop_1
-    HE1  CE1    CZ    OH    aromatic_prop_1
-    HE2  CE2    CZ    OH    aromatic_prop_1
-    CE1   CZ    OH    HH    aromatic_prop_2 
-    CE2   CZ    OH    HH    aromatic_prop_2 
-    HD1  CD1    CG   CD2    aromatic_prop_1
-    CD1   CG   CD2   HD2    aromatic_prop_1
-    CE1  CD1    CG   CD2    aromatic_prop_1
-    CD1   CG   CD2   CE2    aromatic_prop_1
  [ impropers ]
     CA    +N     C     O
     CG   CE2   CD2   HD2
@@ -4352,12 +3238,6 @@
     CD   OE2
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
     CG   OE1    CD   OE2
@@ -4393,12 +3273,6 @@
     CG   OD2
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
     CB   OD1    CG   OD2
@@ -4454,12 +3328,6 @@
     NZ   HZ3
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -4499,15 +3367,6 @@
     CA     C
      C     O
      C    +N
- [ dihedrals ]
-   -CA    -C     N    CD    backbone_prop_1
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2
-    -C     N    CA    CB    backbone_prop_3
-  -CH3    -C     N    CD    backbone_prop_1
-    -O    -C     N    CD    backbone_prop_1
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -4540,12 +3399,6 @@
     SG    HG
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -4576,12 +3429,6 @@
     CB    SG
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
                         
@@ -4626,12 +3473,6 @@
     CE   HE3
      C     O
      C    +N
- [ dihedrals ]
-    CA     C    +N    +H    backbone_prop_1
-     O     C    +N    +H    backbone_prop_2_mult1
-     O     C    +N    +H    backbone_prop_2_mult2
-    CA     C    +N   +CA    backbone_prop_1
-     O     C    +N   +CA    backbone_prop_1
  [ impropers ]
     CA    +N     C     O
 
