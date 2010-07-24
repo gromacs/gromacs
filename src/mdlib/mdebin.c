@@ -524,14 +524,18 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
           *remain="remaining";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  i,np,nps,nsets,nsets_de,nsetsbegin;
+    t_lambda *fep;
     char **setname,buf[STRLEN];
     int nsets_dhdl = 0;
     int s = 0;
     int nsetsextend;
-    
+
+    /* for simplicity */
+    fep = ir->fepvals;
+
     /* consider adding an option for printing the full potential at each step, instead of the differences. */
     
-    if (ir->fepvals->n_lambda == 0) 
+    if (fep->n_lambda == 0) 
     {
         sprintf(title,"%s",dhdl);
         sprintf(label_y,"%s (%s %s)",
@@ -546,10 +550,10 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     fp = gmx_fio_fopen(filename,"w+");
     xvgr_header(fp,title,label_x,label_y,exvggtXNY,oenv);
 
-    if (ir->fepvals->delta_lambda == 0)
+    if (fep->delta_lambda == 0)
     {
         sprintf(buf,"T = %g (K), %s = %g",
-                ir->opts.ref_t[0],lambda,ir->fepvals->init_lambda);
+                ir->opts.ref_t[0],lambda,fep->init_lambda);
     }
     else
     {
@@ -560,61 +564,76 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 
     for (i=0;i<efptNR;i++) 
     {
-        if (ir->fepvals->separate_dvdl[i]) {nsets_dhdl++;}
+        if (fep->separate_dvdl[i]) {nsets_dhdl++;}
     }
     
     /* count the number of delta_g states */
-    nsets_de = ir->fepvals->n_lambda;
+    nsets_de = fep->n_lambda;
     
     nsets = nsets_dhdl + nsets_de; /* dhdl + fep differences */
-    if (ir->fepvals->bPrintEnergy)  
+
+    if (fep->bPrintEnergy)  
     { 
         nsets += 1;  /* add energy to the dhdl as well */
+    }
+
+    if (fep->n_lambda>0) 
+    {
+        nsets += 1;   /*add fep state to the dhdl */
     }
 
     nsetsextend = nsets;
     if (ir->epc!=epcNO) 
     {
-        nsetsextend +=1; /* for PV term, other terms possible if required for the reduced potential */ 
+        nsetsextend += 1; /* for PV term, other terms possible if required for the reduced potential */ 
     }
     snew(setname,nsetsextend); 
     
-    if (ir->fepvals->bPrintEnergy)  
+    if (fep->bPrintEnergy)  
     { 
         sprintf(buf,"%s (%s)","Energy",unit_energy);
+        setname[s] = strdup(buf);
+        s+=1;
+    }
+    
+    if (fep->n_lambda > 0) 
+    {
+        /* state for the fep_vals */
+        sprintf(buf,"%s","Alchemical state");
         setname[s] = strdup(buf);
         s+=1;
     }
 
     for (i=0;i<efptNR;i++) 
     {
-        if (ir->fepvals->separate_dvdl[i]) { 
+        if (fep->separate_dvdl[i]) { 
             sprintf(buf,"%s (%s)",dhdl,efpt_names[i]);
             setname[s] = strdup(buf);
             s+=1;
         }
     }
 
-    if (ir->fepvals->n_lambda > 0)
+    if (fep->n_lambda > 0)
     {
         /* g_bar has to determine the lambda values used in this simulation
          * from this xvg legend.
          */
 
-        nsetsbegin = nsets_dhdl;
-        if (ir->fepvals->bPrintEnergy)  
+        nsetsbegin = 1;  /* for FEP state */
+        if (fep->bPrintEnergy)  
         { 
-            nsetsbegin = nsets_dhdl + 1;
+            nsetsbegin += 1;
         }
+        nsetsbegin += nsets_dhdl;
 
         for(s=nsetsbegin; s<nsets; s++)
         {
             nps = sprintf(buf,"%s %s (",deltag,lambda);  
             for (i=0;i<efptNR;i++) 
             {
-                if (ir->fepvals->separate_dvdl[i]) 
+                if (fep->separate_dvdl[i]) 
                 { 
-                    np = sprintf(&buf[nps],"%g,",ir->fepvals->all_lambda[i][s-(nsetsbegin)]);
+                    np = sprintf(&buf[nps],"%g,",fep->all_lambda[i][s-(nsetsbegin)]);
                     nps += np;
                 }
             }
@@ -862,6 +881,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         {
             fprintf(fp_dhdl,"%.4f ",fepvals->energy);
         }
+        /* the current free energy state */
+        fprintf(fp_dhdl,"%4d",state->fep_state);
         for (i=0;i<efptNR;i++) 
         {
             if (fepvals->separate_dvdl[i])
