@@ -170,6 +170,8 @@ enum {
     elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsGWL, elamstatsNR
   };
 
+#define EWL(e) ((e) == elamstatsGWL || (e) == elamstatsWL)  
+
   /* How moves in lambda are calculated:                                                                                 
      elmovemcMETROPOLIS - using the Metropolis criteria, and 50% up and down        
      elmovemcBARKER - using the Barker criteria, and 50% up and down                     
@@ -179,7 +181,18 @@ enum {
   enum {
     elmcmoveNO,elmcmoveMETROPOLIS, elmcmoveBARKER, elmcmoveGIBBS, elmcmoveMETGIBBS, elmcmoveNR
   };
-  
+  /* how we decide whether weights have reached equilibrium 
+     elmceqNO - never stop, weights keep going 
+     elmceqWLDELTA - stop when the WL-delta falls below a certain level 
+     elmceqNUMATLAM - stop when we have a certain number of samples at every step 
+     elmceqSTEPS - stop when we've run a certain total number of steps 
+     elmceqSAMPLES - stop when we've run a certain total number of samples
+     elmceqRATIO - stop when the ratio of samples (lowest to highest) is sufficiently large 
+   */
+  enum {
+    elmceqNO,elmceqWLDELTA,elmceqNUMATLAM,elmceqSTEPS,elmceqSAMPLES,elmceqRATIO,elmceqNR
+  };
+
 /* Solvent model */
 enum {
   esolNO, esolSPC, esolTIP4P, esolNR

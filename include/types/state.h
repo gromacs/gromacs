@@ -108,7 +108,7 @@ typedef struct
 
   bool bEquil;               /* reached equilibration */
   int  *n_at_lam;            /* number of points observed at each lambda */
-  real  *wl_histo;           /* histogram for WL flatness determination */
+  real *wl_histo;           /* histogram for WL flatness determination */
   real wl_delta;             /* current wang-landau delta */
 
   real *sum_weights;         /* weights of the states */

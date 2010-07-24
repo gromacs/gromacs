@@ -112,6 +112,10 @@ enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
+enum {
+   flatbyAVERAGE,flatbyEXTREMES
+};
+
 typedef struct {
   double real;
 #ifdef GMX_CRAY_XT3

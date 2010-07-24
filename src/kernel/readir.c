@@ -284,61 +284,148 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   /* verify FEP options */
 
   if (ir->efep != efepNO) {
-    fep = ir->fepvals;
-    sprintf(err_buf,"The soft-core power is %d and can only be 1 or 2",
-	    fep->sc_power);
-    CHECK(fep->sc_alpha!=0 && fep->sc_power!=1 && fep->sc_power!=2);
+      fep = ir->fepvals;
+      sprintf(err_buf,"The soft-core power is %d and can only be 1 or 2",
+              fep->sc_power);
+      CHECK(fep->sc_alpha!=0 && fep->sc_power!=1 && fep->sc_power!=2);
 
-    /* check validity of options */
-    if (fep->n_lambda > 0 && ir->rlist < max(ir->rvdw,ir->rcoulomb)) 
+      /* check validity of options */
+      if (fep->n_lambda > 0 && ir->rlist < max(ir->rvdw,ir->rcoulomb)) 
       {
-	sprintf(warn_buf,
-                "For foreign lambda free energy differences it is assumed that the soft-core interactions have no effect beyond the neighborlist cut-off");
-        warning(wi,warn_buf);
+          sprintf(warn_buf,
+                  "For foreign lambda free energy differences it is assumed that the soft-core interactions have no effect beyond the neighborlist cut-off");
+          warning(wi,warn_buf);
       }
     
-    sprintf(err_buf,"Can't use postive delta-lambda (%g) if initial state/lambda does not start at zero",fep->delta_lambda);    
-    CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state !=0) ||  (fep->init_lambda !=0))); 
-    
+      sprintf(err_buf,"Can't use postive delta-lambda (%g) if initial state/lambda does not start at zero",fep->delta_lambda);    
+      CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state !=0) ||  (fep->init_lambda !=0))); 
+      
+      sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
+      CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM));
+      
+      /* check validty of lambda inputs */
+      sprintf(err_buf,"initial fep state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda);
+      CHECK((fep->init_fep_state >= fep->n_lambda));
+      
+      for (j=0;j<efptNR;j++)
+      {
+          for (i=0;i<fep->n_lambda;i++) 
+          {
+              sprintf(err_buf,"Entry %d for %s must be between 0 and 1, instead is %g",i,efpt_names[j],fep->all_lambda[j][i]);
+              CHECK((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1));
+          }
+      }
+      
+      if ((fep->sc_alpha>0) && (!fep->bScCoul)) 
+      {
+          for (i=0;i<fep->n_lambda;i++) 
+          {
+              sprintf(err_buf,"For state %d, vdw-lambda (%f) is changing with vdw softcore, while coul-lambda (%f) is nonzero without coulomb softcore: this will lead to crashes, and is not supported.",i,fep->all_lambda[efptVDW][i],
+                      fep->all_lambda[efptCOUL][i]);
+              CHECK((fep->sc_alpha>0) && 
+                    (((fep->all_lambda[efptCOUL][i] > 0.0) && 
+                      (fep->all_lambda[efptCOUL][i] < 1.0)) &&
+                     ((fep->all_lambda[efptVDW][i] > 0.0) && 
+                      (fep->all_lambda[efptVDW][i] < 1.0))));
+          }
+      }
+      
+      if (fep->bScCoul) 
+      {
+          
+          sprintf(warn_buf,"Coulomb soft core not exact because of the reciprocal space calculation, as is not advised.  If you wish to use, decrease the reciprocal space energy, and increase the cutoff radius."); 
+          warning(wi, warn_buf);
+      }
+      sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
+      CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM)
+            && (ir->efep!=efepNO));
+      
+      /*  Free Energy Checks -- In an ideal world, slow growth and FEP would                                               
+          be treated differently, but that's the next step */
+      
+      for (i=0;i<efptNR;i++) {
+          for (j=0;j<ir->fepvals->n_lambda;j++) {
+              sprintf(err_buf,"%s[%d] must be between 0 and 1",efpt_names[i],j);
+              CHECK((ir->fepvals->all_lambda[i][j] < 0) || (ir->fepvals->all_lambda[i][j] > 1));
+          }
+      }
 
-    sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
-    CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM));
-    
-    /* check validty of lambda inputs */
-    sprintf(err_buf,"initial fep state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda);
-    CHECK((fep->init_fep_state >= fep->n_lambda));
-    
-    for (j=0;j<efptNR;j++)
-    {
-        for (i=0;i<fep->n_lambda;i++) 
-        {
-            sprintf(err_buf,"Entry %d for %s must be between 0 and 1, instead is %g",i,efpt_names[j],fep->all_lambda[j][i]);
-            CHECK((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1));
-        }
-    }
-    
-    if ((fep->sc_alpha>0) && (!fep->bScCoul)) 
-    {
-        for (i=0;i<fep->n_lambda;i++) 
-        {
-            sprintf(err_buf,"For state %d, vdw-lambda (%f) is changing with vdw softcore, while coul-lambda (%f) is nonzero without coulomb softcore: this will lead to crashes, and is not supported.",i,fep->all_lambda[efptVDW][i],
-                    fep->all_lambda[efptCOUL][i]);
-            CHECK((fep->sc_alpha>0) && 
-                  (((fep->all_lambda[efptCOUL][i] > 0.0) && 
-                    (fep->all_lambda[efptCOUL][i] < 1.0)) &&
-                   ((fep->all_lambda[efptVDW][i] > 0.0) && 
-                    (fep->all_lambda[efptVDW][i] < 1.0))));
-        }
-    }
+      /* checking equilibration of weights inputs for validity */
 
-    if (fep->bScCoul) 
-    {
+      sprintf(err_buf,"weight-equil-number-all-lambda (%d) is ignored if lmc-weight-equil is not equal to %s",
+              fep->equil_n_at_lam,elmceq_names[elmceqNUMATLAM]);
+      CHECK((fep->equil_n_at_lam>0) && (fep->elmceq!=elmceqNUMATLAM));
+            
+      sprintf(err_buf,"weight-equil-number-samples (%d) is ignored if lmc-weight-equil is not equal to %s",
+              fep->equil_samples,elmceq_names[elmceqSAMPLES]);
+      CHECK((fep->equil_samples>0) && (fep->elmceq!=elmceqSAMPLES));
+      
+      sprintf(err_buf,"weight-equil-number-steps (%d) is ignored if lmc-weight-equil is not equal to %s",
+              fep->equil_steps,elmceq_names[elmceqSTEPS]);
+      CHECK((fep->equil_steps>0) && (fep->elmceq!=elmceqSTEPS));
+      
+      sprintf(err_buf,"weight-equil-wl-delta (%d) is ignored if lmc-weight-equil is not equal to %s",
+              fep->equil_samples,elmceq_names[elmceqWLDELTA]);
+      CHECK((fep->equil_wl_delta>0) && (fep->elmceq!=elmceqWLDELTA));
+      
+      sprintf(err_buf,"weight-equil-count-ratio (%f) is ignored if lmc-weight-equil is not equal to %s",
+              fep->equil_ratio,elmceq_names[elmceqRATIO]);
+      CHECK((fep->equil_ratio>0) && (fep->elmceq!=elmceqRATIO));
 
-	sprintf(warn_buf,"Coulomb soft core not exact because of the reciprocal space calculation, as is not advised.  If you wish to use, decrease the reciprocal space energy, and increase the cutoff radius."); 
-        warning(wi, warn_buf);
-    }
-    /* other FEP checks that might need to be added . . . */
+
+      sprintf(err_buf,"weight-equil-number-all-lambda (%d) must be a positive integer if lmc-weight-equil=%s",
+              fep->equil_n_at_lam,elmceq_names[elmceqNUMATLAM]);
+      CHECK((fep->equil_n_at_lam<=0) && (fep->elmceq==elmceqNUMATLAM));
+            
+      sprintf(err_buf,"weight-equil-number-samples (%d) must be a positive integer if lmc-weight-equil=%s",
+              fep->equil_samples,elmceq_names[elmceqSAMPLES]);
+      CHECK((fep->equil_samples<=0) && (fep->elmceq==elmceqSAMPLES));
+      
+      sprintf(err_buf,"weight-equil-number-steps (%d) must be a positive integer if lmc-weight-equil=%s",
+              fep->equil_steps,elmceq_names[elmceqSTEPS]);
+      CHECK((fep->equil_steps<=0) && (fep->elmceq==elmceqSTEPS));
+      
+      sprintf(err_buf,"weight-equil-wl-delta (%f) must be > 0 if lmc-weight-equil=%s",
+              fep->equil_samples,elmceq_names[elmceqWLDELTA]);
+      CHECK((fep->equil_wl_delta<=0) && (fep->elmceq==elmceqWLDELTA));
+
+      sprintf(err_buf,"weight-equil-count-ratio (%f) must be > 0 if lmc-weight-equil=%s",
+              fep->equil_ratio,elmceq_names[elmceqRATIO]);
+      CHECK((fep->equil_ratio<=0) && (fep->elmceq==elmceqRATIO));
+      
+      sprintf(err_buf,"lmc-weight-equil=%s only possible when lmc-stats = %s or lmc-stats %s",
+              elmceq_names[elmceqWLDELTA],elamstats_names[elamstatsWL],elamstats_names[elamstatsGWL]);
+      CHECK((fep->elmceq==elmceqWLDELTA) && (!EWL(fep->elamstats)));
+
+      sprintf(err_buf,"lmc-repeats (%d) must be greater than 0",fep->lmc_repeats);
+      CHECK((fep->lmc_repeats <= 0));      
+      sprintf(err_buf,"minimum-var-min (%d) must be greater than 0",fep->minvarmin);
+      CHECK((fep->minvarmin <= 0));
+      sprintf(err_buf,"weight-c-range (%d) must be greater or equal to 0",fep->c_range);
+      CHECK((fep->c_range < 0));
+      sprintf(err_buf,"init-lambda-state (%d) must be zero if lmc-forced-nstart > 0",
+              fep->lmc_forced_nstart);
+      CHECK((fep->init_fep_state!=0) && (fep->lmc_forced_nstart>0));      
+      sprintf(err_buf,"lmc-forced-nstart (%d) must not be negative",fep->lmc_forced_nstart);
+      CHECK((fep->lmc_forced_nstart < 0));  
+      sprintf(err_buf,"init-lambda-state (%d) must be in the interval [0,number of lambdas)",fep->init_fep_state);
+      CHECK((fep->init_fep_state < 0) || (fep->init_fep_state >= fep->n_lambda));  
+
+      sprintf(err_buf,"init-wl-delta (%f) must be greater than or equal to 0",fep->init_wl_delta);
+      CHECK((fep->init_wl_delta < 0));
+      sprintf(err_buf,"wl-ratio (%f) must be between 0 and 1",fep->wl_ratio);
+      CHECK((fep->wl_ratio <= 0) || (fep->wl_ratio >= 1));
+      sprintf(err_buf,"wl-scale (%f) must be between 0 and 1",fep->wl_scale);
+      CHECK((fep->wl_scale <= 0) || (fep->wl_scale >= 1));
+      sprintf(err_buf,"nstdhdl (%d) must be an integer multiple of nstfep (%d)",
+              ir->nstdhdl,fep->nstfep);
+      CHECK((mod(ir->nstdhdl,fep->nstfep)!=0));
+      sprintf(err_buf,"nstfep (%d) must be an integer multiple of nstlist (%d)",
+              fep->nstfep,ir->nstlist);  /* MRS -- WHAT ABOUT IF IT'S VARIABLE NSLIST? */
+      CHECK((mod(ir->nstdhdl,fep->nstfep)!=0));
+      /* other FEP checks that might need to be added . . . */
   }
+  
   
   /* PBC/WALLS */
   sprintf(err_buf,"walls only work with pbc=%s",epbc_names[epbcXY]);
@@ -408,30 +495,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   if (EI_STATE_VELOCITY(ir->eI) && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
       warning_note(wi,"Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
-  
-  sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
-  CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM)
-	&& (ir->efep!=efepNO));
-
-  /*  Free Energy Checks -- In an ideal world, slow growth and FEP would                                               
-      be treated differently, but that's the next step */
-  
-  for (i=0;i<efptNR;i++) {
-      for (j=0;j<ir->fepvals->n_lambda;j++) {
-          sprintf(err_buf,"%s[%d] must be between 0 and 1",efpt_names[i],j);
-          CHECK((ir->fepvals->all_lambda[i][j] < 0) || (ir->fepvals->all_lambda[i][j] > 1));
-      }
-  }
-  sprintf(err_buf,"wl-ratio (%f) must be between 0 and 1",ir->fepvals->wl_ratio);
-  CHECK((ir->fepvals->wl_ratio < 0) || (ir->fepvals->wl_ratio > 1));
-  sprintf(err_buf,"wl-scale (%f) must be between 0 and 1",ir->fepvals->wl_scale);
-  CHECK((ir->fepvals->wl_scale < 0) || (ir->fepvals->wl_scale > 1));
-  sprintf(err_buf,"nstdhdl (%d) must be an integer multiple of nstfep (%d)",
-          ir->nstdhdl,ir->fepvals->nstfep);
-  CHECK((mod(ir->nstdhdl,ir->fepvals->nstfep)!=0));
-  sprintf(err_buf,"nstfep (%d) must be an integer multiple of nstlist (%d)",
-          ir->fepvals->nstfep,ir->nstlist);  /* MRS -- WHAT ABOUT IF IT'S VARIABLE NSLIST? */
-  CHECK((mod(ir->nstdhdl,ir->fepvals->nstfep)!=0));
   
   sprintf(err_buf,"Twin-range neighbour searching (NS) with simple NS"
 	  " algorithm not implemented");
@@ -1283,20 +1346,24 @@ void get_ir(const char *mdparin,const char *mdparout,
                                                          it was not entered */
   ITYPE ("init-lambda-state", ir->fepvals->init_fep_state,0);
   RTYPE ("delta-lambda",ir->fepvals->delta_lambda,0.0);
-  EETYPE("lambda-stats", ir->fepvals->elamstats, elamstats_names);
-  EETYPE("lambda-mc-move", ir->fepvals->elmcmove, elmcmove_names);
-  ITYPE("mc-seed",ir->fepvals->mc_seed,-1);
+  EETYPE("lmc-stats", ir->fepvals->elamstats, elamstats_names);
+  EETYPE("lmc-mc-move", ir->fepvals->elmcmove, elmcmove_names);
+  EETYPE("lmc-weights-equil",ir->fepvals->elmceq,elmceq_names);
+  ITYPE ("weight-equil-number-all-lambda",ir->fepvals->equil_n_at_lam,-1);
+  ITYPE ("weight-equil-number-samples",ir->fepvals->equil_samples,-1);
+  ITYPE ("weight-equil-number-steps",ir->fepvals->equil_steps,-1);
+  RTYPE ("weight-equil-wl-delta",ir->fepvals->equil_wl_delta,-1);
+  RTYPE ("weight-equil-count-ratio",ir->fepvals->equil_ratio,-1);
+  ITYPE ("mc-seed",ir->fepvals->mc_seed,-1);
   ITYPE ("lmc-repeats",ir->fepvals->lmc_repeats,1);
   ITYPE ("lmc-gibbsdelta",ir->fepvals->gibbsdeltalam,-1);
-  ITYPE ("lmc-start-equil",ir->fepvals->lmc_nequil,-1);
-  ITYPE ("lmc-nstart",ir->fepvals->lmc_nstart,100);  
+  ITYPE ("lmc-forced-nstart",ir->fepvals->lmc_forced_nstart,0);  
   EETYPE("symmetrized-transition-matrix", ir->fepvals->bSymmetrizedTMatrix, yesno_names);
-  ITYPE ("fastmbar",ir->fepvals->fastmbar,10);
   ITYPE ("mininum-var-min",ir->fepvals->minvarmin, 100); /*default is reasonable */
   ITYPE ("weight-c-range",ir->fepvals->c_range, 0); /* default is just C=0 */
   RTYPE ("wl-scale",ir->fepvals->wl_scale,0.8);
-  RTYPE ("wl-ratio",ir->fepvals->wl_ratio,0.7);
-  RTYPE ("initial-wl-delta",ir->fepvals->initial_wl_delta,1.0);
+  RTYPE ("wl-ratio",ir->fepvals->wl_ratio,0.8);
+  RTYPE ("init-wl-delta",ir->fepvals->init_wl_delta,1.0);
   STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
   STYPE ("mass-lambdas", fep_lambda[efptMASS], NULL);
   STYPE ("coul-lambdas", fep_lambda[efptCOUL], NULL);

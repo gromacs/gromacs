@@ -141,11 +141,15 @@ const char *efpt_names[efptNR+1] = {
 };
 
 const char *elamstats_names[elamstatsNR+1] = {
-  "No", "metropolis-transition","barker-transition", "minvar", "wang-landau", "gibbs-wang-landau", NULL
+  "no", "metropolis-transition","barker-transition", "minvar", "wang-landau", "gibbs-wang-landau", NULL
 };
 
 const char *elmcmove_names[elmcmoveNR+1] = {
-  "No","metropolis", "barker", "gibbs", "metropolized-gibbs", NULL
+  "no", "metropolis", "barker", "gibbs", "metropolized-gibbs", NULL
+};
+
+const char *elmceq_names[elmceqNR+1] = {
+  "no", "wl-delta", "number-all-lambda", "number-steps", "number-samples", "count-ratio", NULL   
 };
 
 const char *esol_names[esolNR+1] = {

@@ -873,7 +873,7 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estSDX:     ret = do_cpte_rvecs(xd,cptpEST,i,sflags,state->natoms,&state->sd_X,list); break;
             case estLD_RNG:  ret = do_cpte_ints(xd,cptpEST,i,sflags,state->nrng,rng_p,list); break;
             case estLD_RNGI: ret = do_cpte_ints(xd,cptpEST,i,sflags,state->nrngi,rngi_p,list); break;
-            case estMC_RNG:  ret = do_cpte_ints(xd,cptpEST,i,sflags,state->nmcrng,&state->mc_rng,list); break;
+            case estMC_RNG:  ret = do_cpte_ints(xd,cptpEST,i,sflags,state->nmcrng,(int **)&state->mc_rng,list); break;
             case estMC_RNGI: ret = do_cpte_ints(xd,cptpEST,i,sflags,1,&state->mc_rngi,list); break;
             case estDISRE_INITF:  ret = do_cpte_real (xd,cptpEST,i,sflags,&state->hist.disre_initf,list); break;
             case estDISRE_RM3TAV: ret = do_cpte_reals(xd,cptpEST,i,sflags,state->hist.ndisrepairs,&state->hist.disre_rm3tav,list); break;

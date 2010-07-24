@@ -1633,15 +1633,164 @@ int FindMinimum(real *min_metric, int N) {
     return min_nval;
 }
 
+static bool CheckHistogramRatios(int nhisto, real *histo, real ratio, int flatcriteria) 
+{
+    
+    int i;
+    real nmean,maxval,minval;
+    bool bIfFlat;
+    
+    nmean = 0;
+    minval = histo[0];
+    maxval = histo[0];
+    for (i=0;i<nhisto;i++) 
+    {
+        if (histo[i] > maxval) 
+        {
+            maxval = histo[i];
+        }
+        
+        if (histo[i] < minval) 
+        {
+            minval = histo[i];
+        }
+        nmean += histo[i];
+    }
 
-static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, real *scaled_lamee, real *weighted_lamee, int step) 
+    if (nmean == 0) 
+    {
+        /* no samples! is bad!*/
+        bIfFlat = FALSE;
+        return bIfFlat;
+    }
+    nmean /= (real)nhisto;
+    
+    bIfFlat = FALSE;
+    if (flatcriteria==flatbyEXTREMES) 
+    {
+        if (minval/maxval > ratio)
+        {
+            bIfFlat = TRUE;
+        }
+    }
+    if (flatcriteria==flatbyAVERAGE) 
+    {
+        bIfFlat = TRUE;
+        for (i=0;i<nhisto;i++) 
+        {
+            /* make sure that all points are in the ratio < x <  1/ratio range  */
+            if (!((histo[i]/nmean < 1.0/ratio) && (histo[i]/nmean > ratio)))
+            {
+                bIfFlat = FALSE;
+                break;
+            }
+        }
+    }
+    return bIfFlat;
+}
+
+static bool CheckIfDoneEquilibrating(t_lambda *fep, df_history_t *dfhist, gmx_large_int_t step) 
 {
 
-    static bool equil=FALSE;
+    int i,nlim,totalsamples;
+    bool bDoneEquilibrating,bIfFlat;
+    
+    nlim = fep->n_lambda; /* for simplicity */
+
+    /* assume we have equilibrated the weights, then check to see if any of the conditions are not met */
+
+    /* calculate the total number of samples */
+    switch (fep->elmceq) {
+        
+    case elmceqSTEPS:
+        /* first, check if we are equilibrating by steps, if we're still under */
+        if (step < fep->equil_steps)
+        {
+            bDoneEquilibrating = FALSE;
+        }
+        break;
+    case elmceqSAMPLES:
+        totalsamples = 0;
+        for (i=0;i<nlim;i++) 
+        {
+            totalsamples += dfhist->n_at_lam[i];
+        }
+        if (totalsamples < fep->equil_samples) 
+        {
+            bDoneEquilibrating = FALSE;
+        }
+        break;
+    case elmceqNUMATLAM:
+        for (i=0;i<nlim;i++) 
+        {
+            if (dfhist->n_at_lam[i] < fep->equil_n_at_lam) /* we are still doing the initial sweep, so we're definitely not
+                                                              done equilibrating*/
+            {
+                bDoneEquilibrating  = FALSE;
+                break;
+            }
+        }
+        break;
+    case elmceqWLDELTA:
+        if (EWL(fep->elamstats)) /* This check should be in readir as well, but 
+                                    just to be sure */
+        {
+            if (dfhist->wl_delta > fep->equil_wl_delta) 
+            {
+                bDoneEquilibrating = FALSE;
+            }
+        }
+        break;
+    case elmceqRATIO:
+        
+        /* we can use the flatness as a judge of good weights, as long as
+           we're not doing minvar, or Wang-Landau. 
+           But turn off for now until we figure out exactly how we do this.
+        */
+        
+        if (!(EWL(fep->elamstats) || fep->elamstats==elamstatsMINVAR)) 
+        { 
+            /* we want to use flatness -avoiding- the forced-through samples.  Plus, we need to convert to 
+               floats for this histogram function. */
+
+            real *modhisto;
+            snew(modhisto,fep->n_lambda);
+            for (i=0;i<fep->n_lambda;i++) {
+                modhisto[i] = 1.0*(dfhist->n_at_lam[i]-fep->lmc_forced_nstart);
+            }
+            bIfFlat = CheckHistogramRatios(fep->n_lambda,modhisto,fep->equil_ratio,flatbyEXTREMES);
+            sfree(modhisto);
+            if (!bIfFlat) 
+            {
+                bDoneEquilibrating = FALSE;
+            }
+        }
+    default:
+        bDoneEquilibrating = TRUE;
+    }
+    /* one last case to go though, if we are doing slow growth to get initial values */
+    
+    if (fep->lmc_forced_nstart > 0) 
+    {
+        for (i=0;i<nlim;i++) 
+        {
+            if (dfhist->n_at_lam[i] < fep->lmc_forced_nstart) /* we are still doing the initial sweep, so we're definitely not
+                                                                 done equilibrating*/
+            { 
+                bDoneEquilibrating = FALSE;
+                break;
+            }
+        }
+    }
+    return bDoneEquilibrating;
+}
+    
+static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_large_int_t step) 
+{
     real maxdiff = 0.000000001;
-    bool enough,bIfFlat,bSufficientSamples;
+    bool bSufficientSamples;
     int i, k, n, nz, indexi, indexk, min_n, max_n, nlam, nlim, totali;
-    int n0,np1,nm1,nval,min_nvalm,min_nvalp,maxc,totalsteps;
+    int n0,np1,nm1,nval,min_nvalm,min_nvalp,maxc;
     real chi_m1_0,chi_p1_0,chi_m2_0,chi_p2_0,chi_p1_m1,chi_p2_m1,chi_m1_p1,chi_m2_p1;
     real omega_m1_0,omega_p1_m1,omega_m1_p1,omega_p1_0,clam_osum;
     real de,de_function,dr,denom,maxdr,pks;
@@ -1651,58 +1800,26 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
     real *lam_weights, *lam_minvar_corr, *lam_variance, *lam_dg, *p_k;
     int *nonzero;
 
+    /* if we have equilibrated the weights, exit now */
     if (dfhist->bEquil) 
     {
-        return;
+        return FALSE;
     }
     
-    enough = TRUE;
-    nlim = fep->n_lambda; /* for simplicity */
-    
-    totalsteps = 0;
-    for (i=0;i<nlim;i++) 
-    {
-        totalsteps += dfhist->n_at_lam[i];
-        if (dfhist->n_at_lam[i] < fep->lmc_nstart) /* we are still doing the initial sweep */
-        { 
-            enough = FALSE;
-            break;
-        }
-    }
-    
-    totalsteps *= fep->nstfep;
-    if ((fep->lmc_nequil == -1) || (totalsteps <= fep->lmc_nequil)) 
-    {
-        enough = FALSE;
-    }
-    
-    /* we can use the flatness as a judge of good weights, as long as
-       we're not doing minvar, or Wang-Landau, if we so choose. 
-       But turn off for now until we figure out exactly how we do this. Might need to
-       recode CheckHistogramRatios to look at the histograms. */
-    
-    /*
-      if (!(fep->elamstats==elamstatsWL || fep->elamstats==elamstatsGWL || fep->elamstats==MINVAR)) 
-      { 
-          bIfFlat = CheckHistogramRatios(fep,dfhist);
-          if (!bIfFlat) 
-          {
-              enough = FALSE;
-          }
-      }
-    */
-
-    if (enough) 
+    if (CheckIfDoneEquilibrating(fep,dfhist,step))
     {
         dfhist->bEquil = TRUE; 
-        return;
+        return TRUE;
     }
     
-    /* we have not equilibrated yet, keep on going resetting the weights */
+    /* If we reached this far, we have not equilibrated yet, keep on
+       going resetting the weights */
     
-    if ((fep->elamstats==elamstatsWL) || (fep->elamstats==elamstatsGWL)) 
+    /* for simplicity */
+    nlim = fep->n_lambda;
+
+    if (EWL(fep->elamstats))
     {
-        
         if (fep->elamstats==elamstatsWL) 
         {
             dfhist->sum_weights[fep_state] -= dfhist->wl_delta; 
@@ -1710,7 +1827,7 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
         } 
         else if (fep->elamstats==elamstatsGWL) 
         {
-            snew(p_k,fep->n_lambda);
+            snew(p_k,nlim);
             GenerateGibbsProbabilities(weighted_lamee,p_k,&pks,0,nlim-1);
             for (i=0;i<nlim;i++) 
             {
@@ -1731,8 +1848,8 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
         
         maxc = 2*fep->c_range+1;
         
-        snew(lam_dg,fep->n_lambda);
-        snew(lam_variance,fep->n_lambda);
+        snew(lam_dg,nlim);
+        snew(lam_variance,nlim);
         
         snew(omegap_array,maxc);
         snew(weightsp_array,maxc);
@@ -1746,7 +1863,7 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
         
         /* unpack the current lambdas -- we will only update 2 of these */
         
-        for (i=0;i<nlim;i++) 
+        for (i=0;i<nlim-1;i++) 
         { /* only through the second to last */
             lam_dg[i] = dfhist->sum_dg[i+1] - dfhist->sum_dg[i]; 
             lam_variance[i] = pow(dfhist->sum_variance[i+1],2) - pow(dfhist->sum_variance[i],2); 
@@ -1781,7 +1898,6 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
                 dfhist->accum_m2[fep_state][nval] += de_function*de_function;
             }
             
-    
             if (fep_state < nlim-1) 
             {
                 de = exp(-cnval + (scaled_lamee[fep_state+1]-scaled_lamee[fep_state]));
@@ -1804,12 +1920,11 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
                 dfhist->accum_p2[fep_state][nval] += de_function*de_function;
             }
             
-            
             /* Metropolis transition and Barker transition (unoptimized Bennett) acceptance weight determination */
             
             n0  = dfhist->n_at_lam[fep_state];
-            if (fep_state > 1) {nm1 = dfhist->n_at_lam[fep_state-1];} else {nm1 = 0;}     
-            if (fep_state < nlim) {np1 = dfhist->n_at_lam[fep_state+1];} else {np1 = 0;}
+            if (fep_state > 0) {nm1 = dfhist->n_at_lam[fep_state-1];} else {nm1 = 0;}     
+            if (fep_state < nlim-1) {np1 = dfhist->n_at_lam[fep_state+1];} else {np1 = 0;}
             
             if (n0 > 0) 
             {
@@ -1825,7 +1940,7 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
                 chi_p2_m1 = dfhist->accum_p2[fep_state-1][nval]/nm1;
             }
             
-            if ((fep_state < nlim) && (np1 > 0)) 
+            if ((fep_state < nlim-1) && (np1 > 0)) 
             {
                 chi_m1_p1 = dfhist->accum_m[fep_state+1][nval]/np1;	
                 chi_m2_p1 = dfhist->accum_m2[fep_state+1][nval]/np1;	
@@ -1979,11 +2094,12 @@ static void UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
         sfree(varp_array);    
         sfree(dwp_array);
     }
+    return FALSE;
 }
 
 static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int fep_state, real *weighted_lamee, real *p_k, gmx_rng_t rng) 
 {
-    /* Choose New lambda value, and update transition matrix */
+    /* Choose new lambda value, and update transition matrix */
     
     int i,ifep,jfep,minfep,maxfep,nlim,lamnew,lamtrial,starting_fep_state;
     real r1,r2,pks,de_old,de_new,de,tprob,trialprob;
@@ -1995,6 +2111,32 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
     fep = ir->fepvals;
     nlim = fep->n_lambda;
     starting_fep_state = fep_state;
+    
+    if (!EWL(fep->elamstats))   /* ignore equilibrating the weights if using WL */
+    {
+        if ((fep->lmc_forced_nstart > 0) && (dfhist->n_at_lam[nlim-1] <= fep->lmc_forced_nstart))
+        {
+            /* Use a marching method to run through the lambdas and get preliminary free energy data, 
+               before starting 'free' sampling.  We start free sampling when we have enough at each lambda */
+            
+            /* if we have enough at this lambda, move on to the next one */
+            
+            if (dfhist->n_at_lam[fep_state] == fep->lmc_forced_nstart)
+            {
+                lamnew = fep_state+1;
+                if (lamnew == nlim)  /* whoops, stepped too far! */
+                {
+                    lamnew -= 1;
+                }
+            } 
+            else
+            {
+                lamnew = fep_state;
+            }
+            return lamnew;
+        }
+    }
+
     snew(propose,fep->n_lambda);
     snew(accept,fep->n_lambda);
     snew(remainder,fep->n_lambda);
@@ -2060,12 +2202,15 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
                 }
                 
                 /* find the proposal probabilities */
-                propose[fep_state] = 0;
                 for (ifep=minfep;ifep<=maxfep;ifep++) 
                 {
                     if (ifep != fep_state) 
                     {
                         propose[ifep] = p_k[ifep]/remainder[fep_state];
+                    }
+                    else 
+                    {
+                        propose[ifep] = 0;
                     }
                 }
                 
@@ -2163,7 +2308,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
                     tprob = trialprob;
                 }
                 propose[fep_state] = 0; 
-                propose[lamtrial] = 1; /* note that this overwrites the above line if fep_state = ntrial, which only occurs at the ends */
+                propose[lamtrial] = 1.0; /* note that this overwrites the above line if fep_state = ntrial, which only occurs at the ends */
                 accept[fep_state] = 1.0; /* doesn't actually matter, never proposed unless fep_state = ntrial, in which case it's 1.0 anyway */
                 accept[lamtrial] = tprob;
                 
@@ -2202,35 +2347,6 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
     
     return lamnew;
 }
-
-static bool CheckHistogramRatios(t_lambda *fep, df_history_t *dfhist) 
-{
-    
-    int ifep,nlim;
-    float nmean;
-    bool bIfReset;
-    
-    nmean = 0;
-    nlim = fep->n_lambda;
-    
-    for (ifep=0;ifep<nlim;ifep++) 
-    {
-        nmean += dfhist->wl_histo[ifep];
-    }
-    nmean /= nlim;
-    nmean *= fep->wl_ratio;
-    
-    bIfReset = TRUE;
-    for (ifep=0;ifep<nlim;ifep++) 
-    {
-        if (dfhist->wl_histo[ifep]<nmean) 
-        {
-            bIfReset = FALSE;
-        }
-    }
-    return bIfReset;
-}
-
 
 /* print out the weights to the log, along with current state */
 static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t *dfhist, 
@@ -2287,7 +2403,7 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
                     fprintf(outfile,"%7.3f",fep->all_lambda[i][ifep]);
                 }
             }
-            if ((fep->elamstats==elamstatsWL || fep->elamstats==elamstatsGWL)) 
+            if (EWL(fep->elamstats))
             {
                 fprintf(outfile,"%9.3f",dfhist->wl_histo[ifep]);
             } 
@@ -2432,6 +2548,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     real mckt,maxscaled,maxweighted;
     t_lambda *fep;
     bool bIfReset;
+    bool bDoneEquilibrating;
 
     fep = ir->fepvals;
 	nlim = fep->n_lambda;
@@ -2443,8 +2560,13 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 
     if (step == 0) 
     {
-        dfhist->wl_delta == fep->initial_wl_delta;  /* MRS -- this would fit better somewhere else? */
+        dfhist->wl_delta == fep->init_wl_delta;  /* MRS -- this would fit better somewhere else? */
     } 
+
+	/* update the count at the current lambda*/
+	dfhist->n_at_lam[nlam]++;	
+
+    PrintFreeEnergyInfoToFile(log,fep,dfhist,nlam,ir->nstlog,step);
 
     /* need to calculate the PV term somewhere, but not needed here? Not until there's a lambda state that's 
        pressure controlled.*/
@@ -2460,7 +2582,6 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 	/* set some constants */
 	mckt = BOLTZ*ir->opts.ref_t[0]; /* use the system reft for now */
 
-
 	/* determine the minimum value to avoid overflow.  Probably a better way to do this */
 	/* we don't need to include the pressure term, since the volume is the same between the two.
 	   is there some term we are neglecting, however? */
@@ -2473,12 +2594,6 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
            for simplicity */
         
         pfep_lamee[ifep] = scaled_lamee[ifep];
-	  
-        /* initialize weights to differences in potential energies if they are not specified */
-        /* generally bad idea */
-        //if ((step == 0) && (!fep->init_weights)) {
-        //  fep->sum_weights[ifep]  = (scaled_lamee[ifep]-scaled_lamee[1]);
-        //}
         
         weighted_lamee[ifep] = dfhist->sum_weights[ifep] - scaled_lamee[ifep]; 
         if (ifep==0) 
@@ -2505,55 +2620,24 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
         weighted_lamee[ifep] -= maxweighted;
 	}
 	
-	/* update the count at the current lambda*/
-	dfhist->n_at_lam[nlam]++;	
-    
 	/* update weights - we decide whether or not to actually this inside */
 
-	UpdateWeights(fep,dfhist,nlam,scaled_lamee,weighted_lamee,step);
-
-	/* Use a marching mthod to run through the lambdas and get preliminary free energy data, before
-       starting direct sampling */
-    
-	/* figure out which lambda level we start with, and which we need to come around to */
-	if ((fep->lmc_nstart>0) && (step==0)) 
+	bDoneEquilibrating = UpdateWeights(fep,dfhist,nlam,scaled_lamee,weighted_lamee,step);
+    if (bDoneEquilibrating) 
     {
-        if (nlam == 0) 
-        {
-            end_lam = nlim;
-        } 
-        else 
-        {
-            end_lam = nlam-1;
-        }
+        fprintf(log,"\nStep %d: Weights have equilibrated, using criteria: %s\n",(int)step,elmceq_names[fep->elmceq]);
     }
-	
-	/* if we have enough at this lambda, move on to the next one */
-	if ((dfhist->n_at_lam[nlam] == fep->lmc_nstart) && (nlam != end_lam) && (fep->lmc_nstart>0)) 
-    {
-        lamnew = nlam+1;
-	} 
-    else if ((dfhist->n_at_lam[nlam] < fep->lmc_nstart) && (fep->lmc_nstart>0)) 
-    {
-        lamnew = nlam;
-        /* if we have enough data, then start using a sampling method */
-	} 
-    else 
-    { 
-        lamnew = ChooseNewLambda(log,ir,dfhist,nlam,weighted_lamee,p_k,mcrng);
-	}
+    
+    lamnew = ChooseNewLambda(log,ir,dfhist,nlam,weighted_lamee,p_k,mcrng);
 
 	/* required for serial tempering? */
 	/*fep->opts.ref_t[0]          = TemperatureBase*fep->temperature_lambdas[lamnew]; */
 
-    PrintFreeEnergyInfoToFile(log,fep,dfhist,lamnew,ir->nstlog,step);
-    
 	/* now check on the Wang-Landau updating critera */
 	
-	if ((fep->elamstats==elamstatsWL || fep->elamstats==elamstatsGWL)) 
+	if (EWL(fep->elamstats)) 
     {
-        
-        bIfReset = CheckHistogramRatios(fep,dfhist);
+        bIfReset = CheckHistogramRatios(fep->n_lambda,dfhist->wl_histo,fep->wl_ratio,flatbyAVERAGE);
         
         if (bIfReset) 
         {

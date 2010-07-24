@@ -142,31 +142,31 @@ typedef struct {
   bool separate_dvdl[efptNR]; /* whether to print the dvdl term associated with 
                                  this term; if it is not specified as separate, 
                                  it is lumped with the FEP term */  
-  int  dh_table_size;        /* The maximum table size for the dH table      */
+  int dh_table_size;         /* The maximum table size for the dH table      */
   double dh_table_spacing;   /* The spacing for the dH table              */
-  int  elamstats;            /* which type of move updating do we use for lambda monte carlo (or no for none) */
-  int  elmcmove;             /* what move set will be we using -- Gibbs, or MH */
-  
-  int mc_seed;               /* random number seed for mc switches? */
-
+  int elamstats;             /* which type of move updating do we use for lambda monte carlo (or no for none) */
+  int elmcmove;              /* what move set will be we using -- Gibbs, or MH */
+  int elmceq;                /* the method we use to decide of we have equilibrated the weights */
+  int equil_n_at_lam;        /* the minumum number of samples at each lambda for deciding whether we have reached a minimum */
+  real equil_wl_delta;       /* WL delta at which we stop equilibrating weights */
+  real equil_ratio;          /* use the ratio of weights (ratio of minimum to maximum) to decide when to stop equilibrating */
+  int equil_steps;           /* after equil_steps steps we stop equilibrating the weights */
+  int equil_samples;         /* after equil_samples total samples (steps/nstfep), we stop equilibrating the weights */
+  int mc_seed;               /* random number seed for lambda mc switches */
   bool minvar;               /* whether to use minumum variance weighting */
-  int  minvarmin;            /* the number of samples needed before kicking into minvar routine */
+  int minvarmin;             /* the number of samples needed before kicking into minvar routine */
   real minvar_const;         /* the offset for the variance in MinVar */
-  int  c_range;              /* range of cvalues used for BAR */
+  int c_range;               /* range of cvalues used for BAR */
 
   bool bSymmetrizedTMatrix;  /* whether to print symmetrized matrices */
   int  lmc_repeats;          /* number of repetitions in the MC lambda jumps */  /*MRS -- VERIFY THIS */
-  int  lmc_nequil;           /* minimum number of samples for each state before freezing the weights */
-  int  lmc_nstart;           /* minimum number of samples for each state before equilibration */ /* MRS -- VERIFY THIS! */
-  int  fastmbar;             /* to speed MBAR, we only take samples every mcfastMBAR interval */
+  int  lmc_forced_nstart;    /* minimum number of samples for each state before free samplin */ /* MRS -- VERIFY THIS! */
   int  gibbsdeltalam;        /* distance in lambda space for the gibbs interval */
-  real  wl_scale;             /* scaling factor for wang-landau */
+  real  wl_scale;            /* scaling factor for wang-landau */
   real  wl_ratio;            /* ratio between largest and smallest number for freezing the weights */
-  real  initial_wl_delta;    /* starting delta for wang-landau */
-
+  real  init_wl_delta;       /* starting delta for wang-landau */
   bool init_weights;         /* did we initialize the weights? */
   real *lam_weights;         /* initial weights to start with  */
-  
 } t_lambda;
 
 typedef struct {

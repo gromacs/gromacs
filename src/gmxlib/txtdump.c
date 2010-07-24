@@ -527,17 +527,21 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
     PS("lambda-mc-move", elmcmove_names[fepvals->elmcmove]);
     PI("lmc-repeats",fepvals->lmc_repeats);
     PI("lmc-gibbsdelta",fepvals->gibbsdeltalam);
-    PI("lmc-start-equil",fepvals->lmc_nequil);
-    PI("lmc-nstart",fepvals->lmc_nstart);  
+    PI("lmc-nstart",fepvals->lmc_forced_nstart);  
     PS("symmetrized-transition-matrix", BOOL(fepvals->bSymmetrizedTMatrix));
-    PI("fastmbar",fepvals->fastmbar);
     PI("mininum-var-min",fepvals->minvarmin); /*default is reasonable */
     PI("weight-c-range",fepvals->c_range); /* default is just C=0 */
     PR("wl-scale",fepvals->wl_scale);
-    PR("initial-wl-delta",fepvals->initial_wl_delta);
+    PR("init-wl-delta",fepvals->init_wl_delta);
     PR("wl-ratio",fepvals->wl_ratio);
     PI("nstfep",fepvals->nstfep);
     PI("mc-seed",fepvals->mc_seed);
+    PS("lambda-weights-equil",elmceq_names[fepvals->elmceq]);
+    PI("weight-equil-number-all-lambda",fepvals->equil_n_at_lam);
+    PI("weight-equil-number-samples",fepvals->equil_samples);
+    PI("weight-equil-number-steps",fepvals->equil_steps);
+    PR("weight-equil-wl-delta",fepvals->equil_wl_delta);
+    PR("weight-equil-count-ratio",fepvals->equil_ratio);
 };
 
 static void pr_pull(FILE *fp,int indent,t_pull *pull)

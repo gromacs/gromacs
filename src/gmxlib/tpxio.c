@@ -292,17 +292,21 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,bool bRead, int file_vers
       gmx_fio_do_int(fio,fepvals->elamstats);
       gmx_fio_do_int(fio,fepvals->lmc_repeats);
       gmx_fio_do_int(fio,fepvals->gibbsdeltalam);
-      gmx_fio_do_int(fio,fepvals->lmc_nequil);
-      gmx_fio_do_int(fio,fepvals->lmc_nstart);
+      gmx_fio_do_int(fio,fepvals->lmc_forced_nstart);
       gmx_fio_do_int(fio,fepvals->mc_seed);
       gmx_fio_do_bool(fio,fepvals->bSymmetrizedTMatrix);
-      gmx_fio_do_int(fio,fepvals->fastmbar);
       gmx_fio_do_int(fio,fepvals->minvarmin);
       gmx_fio_do_int(fio,fepvals->c_range);
       gmx_fio_do_real(fio,fepvals->wl_scale);
       gmx_fio_do_real(fio,fepvals->wl_ratio);
-      gmx_fio_do_real(fio,fepvals->initial_wl_delta);
+      gmx_fio_do_real(fio,fepvals->init_wl_delta);
       gmx_fio_do_int(fio,fepvals->nstfep);
+      gmx_fio_do_int(fio,fepvals->elmceq);
+      gmx_fio_do_int(fio,fepvals->equil_steps);
+      gmx_fio_do_int(fio,fepvals->equil_samples);
+      gmx_fio_do_int(fio,fepvals->equil_n_at_lam);
+      gmx_fio_do_real(fio,fepvals->equil_wl_delta);
+      gmx_fio_do_real(fio,fepvals->equil_ratio);
   }
   if (file_version >= 13) 
   {

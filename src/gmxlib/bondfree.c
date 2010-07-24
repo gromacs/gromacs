@@ -1147,12 +1147,12 @@ real pdihs(int nbonds,
     
     phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
                   &sign,&t1,&t2,&t3);			/*  84 		*/
-    *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
-			  forceparams[type].pdihs.cpB,
-			  forceparams[type].pdihs.phiA,
-			  forceparams[type].pdihs.phiB,
-			  forceparams[type].pdihs.mult,
-			  phi,lambda,&vpd,&ddphi);
+    *dvdl += dopdihs(forceparams[type].pdihs.cpA,
+                     forceparams[type].pdihs.cpB,
+                     forceparams[type].pdihs.phiA,
+                     forceparams[type].pdihs.phiB,
+                     forceparams[type].pdihs.mult,
+                     phi,lambda,&vpd,&ddphi);
 
     vtot += vpd;
     do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
