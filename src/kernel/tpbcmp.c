@@ -477,6 +477,7 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
   cmp_real(fp,"inputrec->fepvals->wl-ratio",-1,fep1->wl_ratio,fep2->wl_ratio,ftol,abstol);
   cmp_int(fp,"inputrec->fepvals->nstfep",-1,fep1->nstfep,fep2->nstfep);
   cmp_int(fp,"inputrec->fepvals->mc-seed",-1,fep1->mc_seed,fep2->mc_seed);
+  cmp_real(fp,"inputrec->fepvals->mc-temperature",-1,fep1->mc_temp,fep2->mc_temp,ftol,abstol);
 }
 
 static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, real abstol)

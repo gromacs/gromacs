@@ -2273,7 +2273,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
                 {
                     fprintf(log,"%3d,%17.10e%17.10e%17.10e\n",ifep,weighted_lamee[ifep],p_k[ifep],dfhist->sum_weights[ifep]);
                 }
-                gmx_fatal(FARGS,"Something wrong in Extended Ensemble Gibbs move -- probably underflow in weight determination");
+                gmx_fatal(FARGS,"Something wrong in choosing new lambda state with a Gibbs move -- probably underflow in weight determination");
             }
         } 
         else if ((fep->elmcmove==elmcmoveMETROPOLIS) || (fep->elmcmove==elmcmoveBARKER)) 
@@ -2545,9 +2545,9 @@ extern void ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *e
       fep_lamee[ifep] += pVTerm; 
       }
     */
-
+    
 	/* set some constants */
-	mckt = BOLTZ*ir->opts.ref_t[0]; /* use the system reft for now */
+	mckt = BOLTZ*fep->mc_temp; /* currently set to the system reft unless otherwise defined */
 
 	/* determine the minimum value to avoid overflow.  Probably a better way to do this */
 	/* we don't need to include the pressure term, since the volume is the same between the two.

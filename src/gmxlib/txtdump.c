@@ -545,6 +545,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
     PR("wl-ratio",fepvals->wl_ratio);
     PI("nstfep",fepvals->nstfep);
     PI("mc-seed",fepvals->mc_seed);
+    PR("mc-temperature",fepvals->mc_seed);
     PS("lambda-weights-equil",elmceq_names[fepvals->elmceq]);
     PI("weight-equil-number-all-lambda",fepvals->equil_n_at_lam);
     PI("weight-equil-number-samples",fepvals->equil_samples);

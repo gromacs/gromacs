@@ -427,6 +427,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               fep->nstTij,ir->nstlog);
       CHECK((mod(fep->nstTij,ir->nstlog)!=0));
 
+      if (fep->mc_temp < 0) 
+      {
+          fep->mc_temp = ir->opts.tau_t[0];
+      }
+      sprintf(err_buf,"If system temperature is not set, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
+      CHECK((ir->etc==etcNO) && (fep->mc_temp <=0) && (fep->elmcmove != elmcmoveNO));
+
       /* other FEP checks that might need to be added . . . */
   }
   
@@ -1360,6 +1367,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("weight-equil-wl-delta",ir->fepvals->equil_wl_delta,-1);
   RTYPE ("weight-equil-count-ratio",ir->fepvals->equil_ratio,-1);
   ITYPE ("mc-seed",ir->fepvals->mc_seed,-1);
+  RTYPE ("mc-temperature",ir->fepvals->mc_temp,-1);
   ITYPE ("lmc-repeats",ir->fepvals->lmc_repeats,1);
   ITYPE ("lmc-gibbsdelta",ir->fepvals->gibbsdeltalam,-1);
   ITYPE ("lmc-forced-nstart",ir->fepvals->lmc_forced_nstart,0);  
