@@ -149,7 +149,7 @@ const char *elmcmove_names[elmcmoveNR+1] = {
 };
 
 const char *elmceq_names[elmceqNR+1] = {
-  "no", "wl-delta", "number-all-lambda", "number-steps", "number-samples", "count-ratio", NULL   
+  "no", "yes", "wl-delta", "number-all-lambda", "number-steps", "number-samples", "count-ratio", NULL   
 };
 
 const char *esol_names[esolNR+1] = {

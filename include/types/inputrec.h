@@ -167,7 +167,7 @@ typedef struct {
   real  wl_ratio;            /* ratio between largest and smallest number for freezing the weights */
   real  init_wl_delta;       /* starting delta for wang-landau */
   bool init_weights;         /* did we initialize the weights? */
-  real *lam_weights;         /* initial weights to start with  */
+  real *init_lambda_weights;         /* initial weights to start with  */
 } t_lambda;
 
 typedef struct {

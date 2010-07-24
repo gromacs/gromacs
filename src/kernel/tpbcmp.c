@@ -446,6 +446,10 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
 	  cmp_double(fp,"inputrec->fepvals->all_lambda",-1,fep1->all_lambda[i][j],fep2->all_lambda[i][j],ftol,abstol);
 	}
     }
+  for(i=0; i<min(fep1->n_lambda,fep2->n_lambda); i++) 
+    {
+      cmp_real(fp,"inputrec->fepvals->init_lambda_weights",-1,fep1->init_lambda_weights[i],fep2->init_lambda_weights[i],ftol,abstol);
+    }
   cmp_real(fp,"inputrec->fepvals->sc_alpha",-1,fep1->sc_alpha,fep2->sc_alpha,ftol,abstol);
   cmp_int(fp,"inputrec->fepvals->sc_power",-1,fep1->sc_power,fep2->sc_power);
   cmp_real(fp,"inputrec->fepvals->sc_sigma",-1,fep1->sc_sigma,fep2->sc_sigma,ftol,abstol);

@@ -376,7 +376,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"weight-equil-number-all-lambda (%d) must be a positive integer if lmc-weight-equil=%s",
               fep->equil_n_at_lam,elmceq_names[elmceqNUMATLAM]);
       CHECK((fep->equil_n_at_lam<=0) && (fep->elmceq==elmceqNUMATLAM));
-            
+      
       sprintf(err_buf,"weight-equil-number-samples (%d) must be a positive integer if lmc-weight-equil=%s",
               fep->equil_samples,elmceq_names[elmceqSAMPLES]);
       CHECK((fep->equil_samples<=0) && (fep->elmceq==elmceqSAMPLES));
@@ -388,7 +388,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"weight-equil-wl-delta (%f) must be > 0 if lmc-weight-equil=%s",
               fep->equil_samples,elmceq_names[elmceqWLDELTA]);
       CHECK((fep->equil_wl_delta<=0) && (fep->elmceq==elmceqWLDELTA));
-
+      
       sprintf(err_buf,"weight-equil-count-ratio (%f) must be > 0 if lmc-weight-equil=%s",
               fep->equil_ratio,elmceq_names[elmceqRATIO]);
       CHECK((fep->equil_ratio<=0) && (fep->elmceq==elmceqRATIO));
@@ -868,7 +868,7 @@ static void parse_n_double(char *str,int *n,double **r)
   }
 }
 
-static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights_lambda[STRLEN]) {
+static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights[STRLEN]) {
 
     int i,j,max_n_lambda,nweights,nfep[efptNR];
     t_lambda *fep = ir->fepvals;
@@ -965,7 +965,8 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
     }
 
     /* now read in the weights - error handling? */
-    parse_n_double(lambda_weights,&nweights,&(fep->lam_weights));
+    snew(fep->init_lambda_weights,fep->n_lambda);
+    parse_n_double(weights,&nweights,&(fep->init_lambda_weights));
     if (nweights == 0) 
     {
         fep->init_weights = 0;
@@ -975,7 +976,8 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
         gmx_fatal(FARGS,"Number of weights (%d) is not equal to number of lambda values (%d)",
                   nweights,fep->n_lambda);
     } 
-    else {
+    else 
+    {
         fep->init_weights = 1;
     }
 }
@@ -1375,6 +1377,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("vdw-lambdas", fep_lambda[efptVDW], NULL);
   STYPE ("bonded-lambdas", fep_lambda[efptBONDED], NULL);
   STYPE ("restraint-lambdas", fep_lambda[efptRESTRAINT], NULL);
+  STYPE ("init-lambda-weights",lambda_weights,NULL);
   EETYPE("dhdl-print-energy", ir->fepvals->bPrintEnergy, yesno_names);
   RTYPE ("sc-alpha",ir->fepvals->sc_alpha,0.0);
   ITYPE ("sc-power",ir->fepvals->sc_power,0);

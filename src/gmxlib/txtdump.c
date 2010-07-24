@@ -515,7 +515,15 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
             }
             fprintf(fp,"\n");
         }
+        pr_indent(fp,indent);
+        fprintf(fp,"init_lambda_weights%s\n",bMDPformat ? " = " : ":");
+        for(i=0; i<fepvals->n_lambda; i++)
+        {
+            fprintf(fp,"  %10g",fepvals->init_lambda_weights[i]);
+        }
+        fprintf(fp,"\n");
     }
+
     PR("sc_alpha",fepvals->sc_alpha);
     PS("bScCoul",BOOL(fepvals->bScCoul));
     PS("bScPrintEnergy",BOOL(fepvals->bPrintEnergy));

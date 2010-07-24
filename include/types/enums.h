@@ -183,6 +183,7 @@ enum {
   };
   /* how we decide whether weights have reached equilibrium 
      elmceqNO - never stop, weights keep going 
+     elmceqYES - fix the weights from the beginning; no movement 
      elmceqWLDELTA - stop when the WL-delta falls below a certain level 
      elmceqNUMATLAM - stop when we have a certain number of samples at every step 
      elmceqSTEPS - stop when we've run a certain total number of steps 
@@ -190,7 +191,7 @@ enum {
      elmceqRATIO - stop when the ratio of samples (lowest to highest) is sufficiently large 
    */
   enum {
-    elmceqNO,elmceqWLDELTA,elmceqNUMATLAM,elmceqSTEPS,elmceqSAMPLES,elmceqRATIO,elmceqNR
+    elmceqNO,elmceqYES,elmceqWLDELTA,elmceqNUMATLAM,elmceqSTEPS,elmceqSAMPLES,elmceqRATIO,elmceqNR
   };
 
 /* Solvent model */
