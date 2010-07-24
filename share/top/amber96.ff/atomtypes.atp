@@ -1,0 +1,72 @@
+amber94_1         79.90000	; BR  bromine
+amber94_2         12.01000	; C  sp2 C carbonyl group 
+amber94_3         12.01000	; CA  sp2 C pure aromatic (benzene)
+amber94_4         12.01000	; CB  sp2 aromatic C, 5&6 membered ring junction
+amber94_5         12.01000	; CC  sp2 aromatic C, 5 memb. ring HIS
+amber94_6         12.01000	; CK  sp2 C 5 memb.ring in purines
+amber94_7         12.01000	; CM  sp2 C  pyrimidines in pos. 5 & 6
+amber94_8         12.01000	; CN  sp2 C aromatic 5&6 memb.ring junct.(TRP)
+amber94_9         12.01000	; CQ  sp2 C in 5 mem.ring of purines between 2 N
+amber94_10        12.01000	; CR  sp2 arom as CQ but in HIS
+amber94_11        12.01000	; CT  sp3 aliphatic C
+amber94_12        12.01000	; CV  sp2 arom. 5 memb.ring w/1 N and 1 H (HIS)
+amber94_13        12.01000	; CW  sp2 arom. 5 memb.ring w/1 N-H and 1 H (HIS)
+amber94_14        12.01000	; C*  sp2 arom. 5 memb.ring w/1 subst. (TRP)
+amber94_15        40.08000	; Ca2+  calcium
+amber94_16        19.00000	; F  fluorine
+amber94_17         1.00800	; H  H bonded to nitrogen atoms
+amber94_18         1.00800	; HC  H aliph. bond. to C without electrwd.group
+amber94_19         1.00800	; H1  H aliph. bond. to C with 1 electrwd. group
+amber94_20         1.00800	; H2  H aliph. bond. to C with 2 electrwd.groups
+amber94_21         1.00800	; H3  H aliph. bond. to C with 3 eletrwd.groups
+amber94_22         1.00800	; HA  H arom. bond. to C without elctrwd. groups
+amber94_23         1.00800	; H4  H arom. bond. to C with 1 electrwd. group
+amber94_24         1.00800	; H5  H arom. bond. to C with 2 electrwd. groups
+amber94_25         1.00800	; HO  hydroxyl group
+amber94_26         1.00800	; HS  hydrogen bonded to sulphur
+amber94_27         1.00800	; HW  H in TIP3P water
+amber94_28         1.00800	; HP  H bonded to C next to positively charged gr
+amber94_29       126.90000	; I  iodine
+amber94_30        35.45000	; Cl-
+amber94_31        22.99000	; Na+
+amber94_32       131.00000	; IB  'big ion w/ waters' for vacuum (Na+, 6H2O)
+amber94_33        24.30000	; Mg2+  magnesium
+amber94_34        14.01000	; N  sp2 nitrogen in amide groups
+amber94_35        14.01000	; NA  sp2 N in 5 memb.ring w/H atom (HIS)
+amber94_36        14.01000	; NB  sp2 N in 5 memb.ring w/LP (HIS,ADE,GUA)
+amber94_37        14.01000	; NC  sp2 N in 6 memb.ring w/LP (ADE,GUA)
+amber94_38        14.01000	; N2  sp2 N in amino groups
+amber94_39        14.01000	; N3  sp3 N for charged amino groups (Lys, etc)
+amber94_40        14.01000	; N*  sp2 N 
+amber94_41        16.00000	; O  carbonyl group oxygen
+amber94_42        16.00000	; OW  oxygen in TIP3P water
+amber94_43        16.00000	; OH  oxygen in hydroxyl group
+amber94_44        16.00000	; OS  ether and ester oxygen
+amber94_45        16.00000	; O2  carboxyl and phosphate group oxygen
+amber94_46        30.97000	; P  phosphate
+amber94_47        32.06000	; S  sulphur in disulfide linkage
+amber94_48        32.06000	; SH  sulphur in cystine
+amber94_49        63.55000	; CU  copper
+amber94_50        55.00000	; FE  iron
+amber94_51        39.10000	; K+  potassium
+amber94_52        85.47000	; Rb+  rubidium
+amber94_53       132.90000	; Cs+  cesium
+amber94_54        15.99940      ; SPC Water OW
+amber94_55         1.00800      ; SPC Water HW
+amber94_56         6.94000      ; Li+ from parm94/96
+amber94_57        65.40000      ; Zn2+ from parm99
+amber94_58        87.62000      ; Sr2+ from Tinker/ponder
+amber94_59       137.33000      ; Ba2+ from Tinker/ponder
+amber94_60         1.00800      ; tip4pEW HW
+amber94_61        16.00000      ; tip4pEW OW
+amber94_62         1.00800      ; tip4p HW
+amber94_63        16.00000      ; tip4p OW
+amber94_64         1.00800      ; tip5p HW
+amber94_65        16.00000      ; tip5p OW
+amber94_66         4.03200      ; TIP3P HEAVY dummy water HW
+amber94_67         9.95200      ; TIP3P heavy dummy water OW
+MW                 0.00000      ; Dummy mass for tip4p/5p water extra point charge
+MNH3               0.00000      ; Dummy mass in rigid tetraedrical NH3 group
+MNH2               0.00000      ; Dummy mass in rigid umbrella-shaped NH2 group
+MCH3A              0.00000      ; Dummy mass in rigid tetraedrical CH3 group
+MCH3B              0.00000      ; Dummy mass in rigid tetraedrical CH3 group

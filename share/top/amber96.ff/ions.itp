@@ -1,0 +1,107 @@
+[ moleculetype ]
+; molname       nrexcl
+IB+             1       ; big positive ion
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_32          1       IB+            IB      1    1.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Ca+             1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_15          1       Ca+            Ca      1    2.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Cl-             1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_30          1       Cl-            Ca      1   -1.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Na+             1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_31          1       Na+            Na      1    1.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Mg+             1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_33          1       Mg+            Mg      1    2.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+K+              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_51          1       K+             K       1    1.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Rb+             1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_52          1       Rb+            Rb      1    1.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Cs+             1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_53          1       Cs+            Cs      1    1.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Li+             1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_56          1       Li+            Li      1    1.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Zn+             1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_57          1       Zn+            Zn      1    2.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Sr+             1   ; From ponder/tinker amber
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_58          1       Sr+            Sr      1    2.00000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Ba+             1   ; From ponder/tinker amber 
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+   1    amber94_59          1       Ba+            Ba      1    2.00000
+
