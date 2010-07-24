@@ -62,8 +62,16 @@
 /* This is just for clarity - it can never be anything but 4! */
 #define XDR_INT_SIZE 4
 
-
-
+/* same order as the definition of xdr_datatype */
+const char *xdr_datatype_names[] =
+{
+    "int",
+    "float",
+    "double",
+    "large int",
+    "char",
+    "string"
+};
 
 
 #ifdef GMX_FORTRAN

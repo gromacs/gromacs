@@ -687,7 +687,7 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, off_t offset,
     }
 
     /* the read puts the file position back to offset */
-    if (fread(buf, 1, read_len, fio->fp) != read_len)
+    if ((off_t)fread(buf, 1, read_len, fio->fp) != read_len)
     {
         /* not fatal: md5sum check to prevent overwriting files
          * works (less safe) without

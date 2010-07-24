@@ -65,10 +65,6 @@
  */
 static const int cpt_version = 12;
 
-enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
-
-const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
-
 const char *est_names[estNR]=
 {
     "FE-lambda",
@@ -260,9 +256,9 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
 {
     bool_t res=0;
 #ifndef GMX_DOUBLE
-    int  dtc=ecpdtFLOAT;
+    int  dtc=xdr_datatype_float; 
 #else
-    int  dtc=ecpdtDOUBLE;
+    int  dtc=xdr_datatype_double;
 #endif
     real *vp,*va=NULL;
     float  *vf;
@@ -288,7 +284,8 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
     if (dt != dtc)
     {
         fprintf(stderr,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                st_names(cptp,ecpt),ecpdt_names[dtc],ecpdt_names[dt]);
+                st_names(cptp,ecpt),xdr_datatype_names[dtc],
+                xdr_datatype_names[dt]);
     }
     if (list || !(sflags & (1<<ecpt)))
     {
@@ -303,9 +300,9 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
         }
         vp = *v;
     }
-    if (dt == ecpdtFLOAT)
+    if (dt == xdr_datatype_float)
     {
-        if (dtc == ecpdtFLOAT)
+        if (dtc == xdr_datatype_float)
         {
             vf = (float *)vp;
         }
@@ -319,7 +316,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
         {
             return -1;
         }
-        if (dtc != ecpdtFLOAT)
+        if (dtc != xdr_datatype_float)
         {
             for(i=0; i<nf; i++)
             {
@@ -330,7 +327,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
     }
     else
     {
-        if (dtc == ecpdtDOUBLE)
+        if (dtc == xdr_datatype_double)
         {
             vd = (double *)vp;
         }
@@ -344,7 +341,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
         {
             return -1;
         }
-        if (dtc != ecpdtDOUBLE)
+        if (dtc != xdr_datatype_double)
         {
             for(i=0; i<nf; i++)
             {
@@ -394,7 +391,7 @@ static int do_cpte_ints(XDR *xd,int cptp,int ecpt,int sflags,
                         int n,int **v,FILE *list)
 {
     bool_t res=0;
-    int  dtc=ecpdtINT;
+    int  dtc=xdr_datatype_int;
     int *vp,*va=NULL;
     int  nf,dt,i;
     
@@ -417,7 +414,8 @@ static int do_cpte_ints(XDR *xd,int cptp,int ecpt,int sflags,
     if (dt != dtc)
     {
         gmx_fatal(FARGS,"Type mismatch for state entry %s, code type is %s, file type is %s\n",
-                  st_names(cptp,ecpt),ecpdt_names[dtc],ecpdt_names[dt]);
+                  st_names(cptp,ecpt),xdr_datatype_names[dtc],
+                  xdr_datatype_names[dt]);
     }
     if (list || !(sflags & (1<<ecpt)) || v == NULL)
     {
@@ -460,7 +458,7 @@ static int do_cpte_doubles(XDR *xd,int cptp,int ecpt,int sflags,
                            int n,double **v,FILE *list)
 {
     bool_t res=0;
-    int  dtc=ecpdtDOUBLE;
+    int  dtc=xdr_datatype_double;
     double *vp,*va=NULL;
     int  nf,dt,i;
     
@@ -483,7 +481,8 @@ static int do_cpte_doubles(XDR *xd,int cptp,int ecpt,int sflags,
     if (dt != dtc)
     {
         gmx_fatal(FARGS,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                  st_names(cptp,ecpt),ecpdt_names[dtc],ecpdt_names[dt]);
+                  st_names(cptp,ecpt),xdr_datatype_names[dtc],
+                  xdr_datatype_names[dt]);
     }
     if (list || !(sflags & (1<<ecpt)))
     {

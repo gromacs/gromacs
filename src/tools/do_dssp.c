@@ -291,7 +291,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
   FILE *fp;
   t_mapping *map;
   int s,f,r,*count,ss_count;
-  char **leg;
+  const char** leg;
   
   map=mat->map;
   snew(count,mat->nmap);
@@ -379,7 +379,7 @@ int main(int argc,char *argv[])
   FILE       *tapein;
   FILE       *ss,*acc,*fTArea,*tmpf;
   const char *fnSCount,*fnArea,*fnTArea,*fnAArea;
-  char *leg[] = { "Phobic", "Phylic" };
+  const char *leg[] = { "Phobic", "Phylic" };
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;

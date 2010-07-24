@@ -119,9 +119,9 @@ int gmx_sorient(int argc,char *argv[])
   rvec    xref,dx,dxh1,dxh2,outer;
   gmx_rmpbc_t gpbc=NULL;
   t_pbc   pbc;
-  char *legr[] = { "<cos(\\8q\\4\\s1\\N)>", 
+  const char *legr[] = { "<cos(\\8q\\4\\s1\\N)>", 
 	 	         "<3cos\\S2\\N(\\8q\\4\\s2\\N)-1>" };
-  char *legc[] = { "cos(\\8q\\4\\s1\\N)", 
+  const char *legc[] = { "cos(\\8q\\4\\s1\\N)", 
 		         "3cos\\S2\\N(\\8q\\4\\s2\\N)-1" };
   
   const char *desc[] = {

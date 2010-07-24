@@ -593,7 +593,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
     for(i=0; (i<NKKKCHI); i++){
       leg[i+NKKKPHI+NKKKPSI]=strdup(kkkchi1[i].name); 
     }      
-    xvgr_legend(fp,NJC,leg,oenv);
+    xvgr_legend(fp,NJC,(const char**)leg,oenv);
     fprintf(fp,"%5s ","#Res.");
     for(i=0; (i<NJC); i++)
       fprintf(fp,"%10s ",leg[i]); 
@@ -857,7 +857,7 @@ static void print_transitions(const char *fn,int maxchi,int nlist,
   /* Print order parameters */
   fp=xvgropen(fn,"Dihedral Rotamer Transitions","Residue","Transitions/ns",
                 oenv);
-  xvgr_legend(fp,NONCHI+maxchi,leg,oenv);
+  xvgr_legend(fp,NONCHI+maxchi,(const char**)leg,oenv);
   
   for (Dih=0; (Dih<edMax); Dih++)
     nh[Dih]=0;
@@ -903,7 +903,7 @@ static void order_params(FILE *log,
 	
   /* Print order parameters */
   fp=xvgropen(fn,"Dihedral Order Parameters","Residue","S2",oenv);
-  xvgr_legend(fp,2+NONCHI+maxchi,leg,oenv);
+  xvgr_legend(fp,2+NONCHI+maxchi,const_leg,oenv);
   
   for (Dih=0; (Dih<edMax); Dih++)
     nh[Dih]=0;

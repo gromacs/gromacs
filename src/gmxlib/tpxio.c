@@ -1158,8 +1158,9 @@ static void do_ilist(t_fileio *fio, t_ilist *ilist,bool bRead,int file_version,
 static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
 			bool bRead, int file_version)
 {
-  int  idum,i,j,k;
+  int  idum,i,j;
   bool bDum=TRUE;
+  unsigned int k;
 
   gmx_fio_do_int(fio,ffparams->atnr);
   if (file_version < 57) {
@@ -1218,8 +1219,9 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
 static void do_ilists(t_fileio *fio, t_ilist *ilist,bool bRead, 
                       int file_version)
 {
-  int i,j,k,renum[F_NRE];
+  int i,j,renum[F_NRE];
   bool bDum=TRUE,bClear;
+  unsigned int k;
   
   for(j=0; (j<F_NRE); j++) {
     bClear = FALSE;

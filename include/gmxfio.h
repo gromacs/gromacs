@@ -52,7 +52,7 @@ enum { eitemHEADER, eitemIR, eitemBOX,
        eitemTOP, eitemX, eitemV, eitemF, eitemNR };
        
 /* Enumerated for data types in files */
-enum { eioREAL, eioDOUBLE, eioINT, eioGMX_LARGE_INT,
+enum { eioREAL, eioFLOAT, eioDOUBLE, eioINT, eioGMX_LARGE_INT,
        eioUCHAR, eioNUCHAR, eioUSHORT,
        eioRVEC, eioNRVEC, eioIVEC, eioSTRING, eioNR };
 
@@ -233,6 +233,8 @@ extern void gmx_fio_unset_comment(t_fileio *fio);
 /* basic reading & writing */
 bool gmx_fio_reade_real(t_fileio *fio, real *item, 
                         const char *desc, const char *srcfile, int line);
+bool gmx_fio_reade_float(t_fileio *fio, float *item, 
+                          const char *desc, const char *srcfile, int line);
 bool gmx_fio_reade_double(t_fileio *fio, double *item, 
                           const char *desc, const char *srcfile, int line);
 bool gmx_fio_reade_int(t_fileio *fio, int *item, 
@@ -252,6 +254,8 @@ bool gmx_fio_reade_string(t_fileio *fio, char *item,
 
 bool gmx_fio_writee_real(t_fileio *fio, real item, 
                          const char *desc, const char *srcfile, int line);
+bool gmx_fio_writee_float(t_fileio *fio, float item, 
+                           const char *desc, const char *srcfile, int line);
 bool gmx_fio_writee_double(t_fileio *fio, double item, 
                            const char *desc, const char *srcfile, int line);
 bool gmx_fio_writee_int(t_fileio *fio, int item, 
@@ -272,6 +276,8 @@ bool gmx_fio_writee_string(t_fileio *fio, const char *item,
 /* reading or writing, depending on the file's opening mode string */
 bool gmx_fio_doe_real(t_fileio *fio, real *item, 
                       const char *desc, const char *srcfile, int line);
+bool gmx_fio_doe_float(t_fileio *fio, float *item, 
+                       const char *desc, const char *srcfile, int line);
 bool gmx_fio_doe_double(t_fileio *fio, double *item, 
                         const char *desc, const char *srcfile, int line);
 bool gmx_fio_doe_bool(t_fileio *fio, bool *item, 
@@ -297,6 +303,8 @@ bool gmx_fio_doe_string(t_fileio *fio, char *item,
 /* array reading & writing */
 bool gmx_fio_nreade_real(t_fileio *fio, real *item, int n, 
                          const char *desc, const char *srcfile, int line);
+bool gmx_fio_nreade_float(t_fileio *fio, float *item, int n, 
+                          const char *desc, const char *srcfile, int line);
 bool gmx_fio_nreade_double(t_fileio *fio, double *item, int n, 
                            const char *desc, const char *srcfile, int line);
 bool gmx_fio_nreade_int(t_fileio *fio, int *item, int n, 
@@ -317,6 +325,8 @@ bool gmx_fio_nreade_string(t_fileio *fio, char *item[], int n,
 
 bool gmx_fio_nwritee_real(t_fileio *fio, const real *item, int n, 
                           const char *desc, const char *srcfile, int line);
+bool gmx_fio_nwritee_float(t_fileio *fio, const float *item, int n, 
+                           const char *desc, const char *srcfile, int line);
 bool gmx_fio_nwritee_double(t_fileio *fio, const double *item, int n, 
                             const char *desc, const char *srcfile, int line);
 bool gmx_fio_nwritee_int(t_fileio *fio, const int *item, int n, 
@@ -338,6 +348,8 @@ bool gmx_fio_nwritee_string(t_fileio *fio, const char *item[], int n,
 
 bool gmx_fio_ndoe_real(t_fileio *fio, real *item, int n, 
                        const char *desc, const char *srcfile, int line);
+bool gmx_fio_ndoe_float(t_fileio *fio, float *item, int n, 
+                         const char *desc, const char *srcfile, int line);
 bool gmx_fio_ndoe_double(t_fileio *fio, double *item, int n, 
                          const char *desc, const char *srcfile, int line);
 bool gmx_fio_ndoe_bool(t_fileio *fio, bool *item, int n, 
@@ -362,6 +374,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 
 /* convenience macros */
 #define gmx_fio_read_real(fio, item)           gmx_fio_reade_real(fio, &item, (#item), __FILE__, __LINE__)
+#define gmx_fio_read_float(fio, item)          gmx_fio_reade_float(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_read_double(fio, item)         gmx_fio_reade_double(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_read_int(fio, item)            gmx_fio_reade_int(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_read_gmx_large_int(fio, item)  gmx_fio_reade_gmx_large_int(fio, &item, (#item), __FILE__, __LINE__)
@@ -372,6 +385,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 #define gmx_fio_read_string(fio, item)         gmx_fio_reade_string(fio, item, (#item), __FILE__, __LINE__)
 
 #define gmx_fio_write_real(fio, item)           gmx_fio_writee_real(fio, item, (#item), __FILE__, __LINE__)
+#define gmx_fio_write_float(fio, item)          gmx_fio_writee_float(fio, item, (#item), __FILE__, __LINE__)
 #define gmx_fio_write_double(fio, item)         gmx_fio_writee_double(fio, item, (#item), __FILE__, __LINE__)
 #define gmx_fio_write_int(fio, item)            gmx_fio_writee_int(fio, item, (#item), __FILE__, __LINE__)
 #define gmx_fio_write_gmx_large_int(fio, item)  gmx_fio_writee_gmx_large_int(fio, item, (#item), __FILE__, __LINE__)
@@ -382,6 +396,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 #define gmx_fio_write_string(fio, item)         gmx_fio_writee_string(fio, item, (#item), __FILE__, __LINE__)
 
 #define gmx_fio_do_real(fio, item)              gmx_fio_doe_real(fio, &item, (#item), __FILE__, __LINE__)
+#define gmx_fio_do_float(fio, item)             gmx_fio_doe_float(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_double(fio, item)            gmx_fio_doe_double(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_bool(fio, item)              gmx_fio_doe_bool(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_int(fio, item)               gmx_fio_doe_int(fio, &item, (#item), __FILE__, __LINE__)
@@ -396,6 +411,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 
 
 #define gmx_fio_nread_real(fio, item, n)            gmx_fio_nreade_real(fio, item, n, (#item), __FILE__, __LINE__)
+#define gmx_fio_nread_float(fio, item, n)           gmx_fio_nreade_float(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_nread_double(fio, item, n)          gmx_fio_nreade_double(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_nread_int(fio, item, n)             gmx_fio_nreade_int(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_nread_gmx_large_int(fio, item, n)   gmx_fio_nreade_gmx_large_int(fio, item, n, (#item), __FILE__, __LINE__)
@@ -406,6 +422,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 #define gmx_fio_nread_string(fio, item, n)          gmx_fio_nreade_string(fio, item, n, (#item), __FILE__, __LINE__)
 
 #define gmx_fio_nwrite_real(fio, item, n)           gmx_fio_nwritee_real(fio, item, n, (#item), __FILE__, __LINE__)
+#define gmx_fio_nwrite_float(fio, item, n)          gmx_fio_nwritee_float(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_nwrite_double(fio, item, n)         gmx_fio_nwritee_double(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_nwrite_int(fio, item, n)            gmx_fio_nwritee_int(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_nwrite_gmx_large_int(fio, item, n)  gmx_fio_nwritee_gmx_large_int(fio, item, n, (#item), __FILE__, __LINE__)
@@ -416,6 +433,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 #define gmx_fio_nwrite_string(fio, item, n)         gmx_fio_nwritee_string(fio, item, n, (#item), __FILE__, __LINE__)
 
 #define gmx_fio_ndo_real(fio, item, n)              gmx_fio_ndoe_real(fio, item, n, (#item), __FILE__, __LINE__)
+#define gmx_fio_ndo_float(fio, item, n)             gmx_fio_ndoe_float(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_double(fio, item, n)            gmx_fio_ndoe_double(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_bool(fio, item, n)              gmx_fio_ndoe_bool(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_int(fio, item, n)               gmx_fio_ndoe_int(fio, item, n, (#item), __FILE__, __LINE__)
