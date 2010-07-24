@@ -423,6 +423,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"nstfep (%d) must be an integer multiple of nstlist (%d)",
               fep->nstfep,ir->nstlist);  /* MRS -- WHAT ABOUT IF IT'S VARIABLE NSLIST? */
       CHECK((mod(ir->nstdhdl,fep->nstfep)!=0));
+      sprintf(err_buf,"nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
+              fep->nstTij,ir->nstlog);
+      CHECK((mod(fep->nstTij,ir->nstlog)!=0));
+
       /* other FEP checks that might need to be added . . . */
   }
   
@@ -1359,6 +1363,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("lmc-gibbsdelta",ir->fepvals->gibbsdeltalam,-1);
   ITYPE ("lmc-forced-nstart",ir->fepvals->lmc_forced_nstart,0);  
   EETYPE("symmetrized-transition-matrix", ir->fepvals->bSymmetrizedTMatrix, yesno_names);
+  ITYPE("nst-transition-matrix", ir->fepvals->nstTij, 1000);
   ITYPE ("mininum-var-min",ir->fepvals->minvarmin, 100); /*default is reasonable */
   ITYPE ("weight-c-range",ir->fepvals->c_range, 0); /* default is just C=0 */
   RTYPE ("wl-scale",ir->fepvals->wl_scale,0.8);

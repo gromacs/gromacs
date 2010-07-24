@@ -529,6 +529,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
     PI("lmc-gibbsdelta",fepvals->gibbsdeltalam);
     PI("lmc-nstart",fepvals->lmc_forced_nstart);  
     PS("symmetrized-transition-matrix", BOOL(fepvals->bSymmetrizedTMatrix));
+    PI("nstTij",fepvals->nstTij);
     PI("mininum-var-min",fepvals->minvarmin); /*default is reasonable */
     PI("weight-c-range",fepvals->c_range); /* default is just C=0 */
     PR("wl-scale",fepvals->wl_scale);

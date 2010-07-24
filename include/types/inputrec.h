@@ -159,6 +159,7 @@ typedef struct {
   int c_range;               /* range of cvalues used for BAR */
 
   bool bSymmetrizedTMatrix;  /* whether to print symmetrized matrices */
+  int  nstTij;                /* How frequently to print the transition matrices */
   int  lmc_repeats;          /* number of repetitions in the MC lambda jumps */  /*MRS -- VERIFY THIS */
   int  lmc_forced_nstart;    /* minimum number of samples for each state before free samplin */ /* MRS -- VERIFY THIS! */
   int  gibbsdeltalam;        /* distance in lambda space for the gibbs interval */

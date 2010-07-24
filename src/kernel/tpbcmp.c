@@ -465,6 +465,7 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
   cmp_real(fp,"inputrec->fepvals->weight-equil-wl-delta",-1,fep1->equil_wl_delta,fep2->equil_wl_delta,ftol,abstol);
   cmp_real(fp,"inputrec->fepvals->weight-equil-count-ratio",-1,fep1->equil_ratio,fep2->equil_ratio,ftol,abstol);
   cmp_bool(fp,"inputrec->fepvals->symmetrized-transition-matrix",-1,fep1->bSymmetrizedTMatrix,fep2->bSymmetrizedTMatrix);
+  cmp_int(fp,"inputrec->fepvals->nstTij",-1,fep1->nstTij,fep2->nstTij);
   cmp_int(fp,"inputrec->fepvals->mininum-var-min",-1,fep1->minvarmin,fep2->minvarmin); /*default is reasonable */
   cmp_int(fp,"inputrec->fepvals->weight-c-range",-1,fep1->c_range,fep2->c_range); /* default is just C=0 */
   cmp_real(fp,"inputrec->fepvals->wl-scale",-1,fep1->wl_scale,fep2->wl_scale,ftol,abstol);

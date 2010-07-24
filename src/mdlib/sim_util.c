@@ -2359,7 +2359,6 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
 
     if (mod(step,frequency)==0)
     {
-        fprintf(outfile,"\n");
         fprintf(outfile,"             MC-lambda information\n");
         fprintf(outfile,"  N");
         for (i=0;i<efptNR;i++) 
@@ -2429,30 +2428,13 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
         }
         fprintf(outfile,"\n");
         
-        int biglog;
-        if (mod(step,20*frequency)==0) 
-        {
-            biglog = 1;
-        } 
-        else 
-        {
-            biglog = 0;
-        }
-
-        if (step > 0) 
-        {
+        if ((mod(step,fep->nstTij)==0) && (step > 0))
+        {            
             fprintf(outfile,"                     Transition Matrix\n");
             for (ifep=0;ifep<nlim;ifep++) 
             {
-                if (biglog) 
-                {
-                    fprintf(outfile,"%12d",(ifep+1));
-                } 
-                else 
-                {
-                    fprintf(outfile,"%7d",(ifep+1));
-                }
-            }
+                fprintf(outfile,"%12d",(ifep+1));
+            } 
             fprintf(outfile,"\n");
             for (ifep=0;ifep<nlim;ifep++) 
             {
@@ -2471,30 +2453,15 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
                     {
                         Tprint = 0.0;
                     }
-                    if (biglog) 
-                    {
-                        fprintf(outfile,"%12.8f",Tprint);
-                    } 
-                    else 
-                    {
-                        fprintf(outfile,"%7.3f",Tprint);
-                    } 
+                    fprintf(outfile,"%12.8f",Tprint);
                 }
-                fprintf(outfile,"%3d",(ifep+1));
-                fprintf(outfile,"\n");
-            }
+                fprintf(outfile,"%3d\n",(ifep+1));
+             }
             
             fprintf(outfile,"                  Empirical Transition Matrix\n");
             for (ifep=0;ifep<nlim;ifep++) 
             {
-                if (biglog) 
-                {
-                    fprintf(outfile,"%12d",(ifep+1));
-                } 
-                else 
-                {
-                    fprintf(outfile,"%7d",(ifep+1));
-                }
+                fprintf(outfile,"%12d",(ifep+1));
             }
             fprintf(outfile,"\n");	  
             for (ifep=0;ifep<nlim;ifep++) 
@@ -2514,17 +2481,9 @@ static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
                     {
                         Tprint = 0.0;
                     }
-                    if (biglog) 
-                    {
-                      fprintf(outfile,"%12.8f",Tprint);
-                    } 
-                    else 
-                    {
-                        fprintf(outfile,"%7.3f",Tprint);
-                    } 
+                    fprintf(outfile,"%12.8f",Tprint);
                 }
-                fprintf(outfile,"%3d",(ifep+1));
-                fprintf(outfile,"\n");
+                fprintf(outfile,"%3d\n",(ifep+1));
             }
         }
 	}
