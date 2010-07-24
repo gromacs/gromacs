@@ -1790,7 +1790,7 @@ static bool CheckIfDoneEquilibrating(t_lambda *fep, df_history_t *dfhist, gmx_la
     }
     return bDoneEquilibrating;
 }
-    
+
 static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_large_int_t step) 
 {
     real maxdiff = 0.000000001;
@@ -2595,7 +2595,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     }
     
     lamnew = ChooseNewLambda(log,ir,dfhist,nlam,weighted_lamee,p_k,mcrng);
-
+    
 	/* required for serial tempering? */
 	/*fep->opts.ref_t[0]          = TemperatureBase*fep->temperature_lambdas[lamnew]; */
 

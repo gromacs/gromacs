@@ -403,9 +403,9 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       CHECK((fep->minvarmin <= 0));
       sprintf(err_buf,"weight-c-range (%d) must be greater or equal to 0",fep->c_range);
       CHECK((fep->c_range < 0));
-      sprintf(err_buf,"init-lambda-state (%d) must be zero if lmc-forced-nstart > 0",
-              fep->lmc_forced_nstart);
-      CHECK((fep->init_fep_state!=0) && (fep->lmc_forced_nstart>0));      
+      sprintf(err_buf,"init-lambda-state (%d) must be zero if lmc-forced-nstart (%d)> 0 and lmc-move != 'no'",
+              fep->init_fep_state, fep->lmc_forced_nstart);
+      CHECK((fep->init_fep_state!=0) && (fep->lmc_forced_nstart>0) && (fep->elmcmove!=elmcmoveNO));      
       sprintf(err_buf,"lmc-forced-nstart (%d) must not be negative",fep->lmc_forced_nstart);
       CHECK((fep->lmc_forced_nstart < 0));  
       sprintf(err_buf,"init-lambda-state (%d) must be in the interval [0,number of lambdas)",fep->init_fep_state);

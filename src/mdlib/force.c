@@ -759,29 +759,32 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
      * (investigate how to overcome this - MRS)
      */
     
-    for(i=0; i<enerd->n_lambda; i++)
-    {
+    for(i=0; i<fepvals->n_lambda; i++)  
+    {                                         /* note we are iterating over fepvals here!
+                                                 For the current lam, dlam = 0 automatically,
+                                                 so we don't need to add anything to the 
+                                                 enerd->enerpart_lambda[0] */
         
-        /* we don't need to worry about dvdl contributions to the currenta lambda, because 
+        /* we don't need to worry about dvdl contributions to the current lambda, because 
            it's automatically zero */
         
         /* first kinetic energy term */
         dlam = (fepvals->all_lambda[efptMASS][i] - lambda[efptMASS]);
         
         /* make sure constraint terms are added on correctly here or elsewhere! MRS */
-        enerd->enerpart_lambda[i] += enerd->term[F_DKDL]*dlam;    
+        enerd->enerpart_lambda[i+1] += enerd->term[F_DKDL]*dlam;    
         
         for (j=0;j<efptNR;j++) 
         {
             if (j==efptMASS) {continue;}
             
             dlam = (fepvals->all_lambda[j][i]-lambda[j]);
-            enerd->enerpart_lambda[i] += dlam*enerd->dvdl_lin[j];
+            enerd->enerpart_lambda[i+1] += dlam*enerd->dvdl_lin[j];
             if (debug)
             {
                 fprintf(debug,"enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
                         fepvals->all_lambda[j][i],efpt_names[j],
-                        (enerd->enerpart_lambda[i] - enerd->enerpart_lambda[0]),
+                        (enerd->enerpart_lambda[i+1] - enerd->enerpart_lambda[0]),
                         dlam,enerd->dvdl_lin[j]);
             }
         }
