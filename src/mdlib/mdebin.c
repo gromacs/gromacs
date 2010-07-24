@@ -544,6 +544,7 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     else 
     {
         sprintf(title,"%s and %s",dhdl,deltag);
+        sprintf(label_x,"Time (ps)");
         sprintf(label_y,"%s and %s (%s %s)",
                 dhdl,deltag,unit_energy,"[\\8l\\4]\\S-1\\N");
     }
@@ -644,7 +645,7 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
             np = sprintf(buf,"pV (%s)",unit_energy);        
             setname[nsetsextend-1] = strdup(buf);  /* the first entry after nsets */
         }
-
+        
         xvgr_legend(fp,nsetsextend,setname,oenv);
         
         for(s=0; s<nsetsextend; s++)
