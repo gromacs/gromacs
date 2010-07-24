@@ -1632,13 +1632,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         state_global->lambda[i] = ir->fepvals->all_lambda[i][fep_state];
                     }
                 }
-            } 
-            for (i=0;i<efptNR;i++) 
-            {
-                state->lambda[i] = state_global->lambda[i];
+                for (i=0;i<efptNR;i++) 
+                {
+                    state->lambda[i] = state_global->lambda[i];
+                } 
             }
+            bDoDHDL = do_per_step(step,ir->nstdhdl);
         }
-        bDoDHDL = do_per_step(step,ir->nstdhdl);
 
         if (bSimAnn) 
         {
@@ -2580,12 +2580,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
         
         sum_dhdl(enerd,state->lambda,ir->fepvals);
-        /* perform extended ensemble sampling in lambda */
-        if ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && (ir->fepvals->nstfep > 0)) {
-            if ((mod(step,ir->fepvals->nstfep)==0) && (step > 0)) {
-                state->fep_state = ExpandedEnsembleDynamics(fplog,ir,enerd,state->fep_state,&df_history,step,mcrng);
-            }
-        }
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 
         {
@@ -2678,7 +2672,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
             }
         }
-
+        /* perform extended ensemble sampling in lambda */
+        if ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && (ir->fepvals->nstfep > 0)) {
+            if ((mod(step,ir->fepvals->nstfep)==0) && (step > 0)) {
+                ExpandedEnsembleDynamics(fplog,ir,enerd,state,&df_history,step,mcrng);
+            }
+        }
 
         /* Remaining runtime */
         if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal() ))

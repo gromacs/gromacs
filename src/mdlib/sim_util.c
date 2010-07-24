@@ -2502,11 +2502,11 @@ void set_mc_state(gmx_rng_t rng,t_state *state)
     gmx_rng_set_state(rng,state->mc_rng,state->mc_rngi[0]);
 }
 
-extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
-                                    int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng)
+extern void ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
+                                     t_state *state, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng)
 { 
     real *pfep_lamee,*p_k, *scaled_lamee, *weighted_lamee;
-    int i,nlim,ifep,end_lam,lamnew,store_index,nstate;
+    int i,nlam,nlim,ifep,end_lam,lamnew,store_index,nstate;
     real mckt,maxscaled,maxweighted;
     t_lambda *fep;
     bool bIfReset;
@@ -2514,6 +2514,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 
     fep = ir->fepvals;
 	nlim = fep->n_lambda;
+    nlam = state->fep_state;
     
     snew(scaled_lamee,nlim);
     snew(weighted_lamee,nlim);
@@ -2619,8 +2620,13 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     sfree(weighted_lamee);
     sfree(p_k);
 
-    /* return the new state */
-    return lamnew;
+    /* set the new state */
+    state->fep_state = lamnew;
+    for (i=0;i<efptNR;i++) 
+    {
+        state->lambda[i] = fep->all_lambda[i][lamnew];
+    }
+    return;
 }
 
 extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta)

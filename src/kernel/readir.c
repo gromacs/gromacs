@@ -430,7 +430,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       /* other FEP checks that might need to be added . . . */
   }
   
-  
   /* PBC/WALLS */
   sprintf(err_buf,"walls only work with pbc=%s",epbc_names[epbcXY]);
   CHECK(ir->nwall && ir->ePBC!=epbcXY);

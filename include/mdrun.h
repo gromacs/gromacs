@@ -304,10 +304,10 @@ extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 			  gmx_large_int_t step, int natoms, 
 			  matrix box,real lambda,tensor pres,tensor virial,
 			  real *prescorr, real *enercorr, real *dvdlcorr);
-
-extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
-                                    int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng);
-
+  
+extern void ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
+				     t_state *state, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng);
+  
 extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
 
 extern void copy_df_history(df_history_t * df_dest, df_history_t *df_source);

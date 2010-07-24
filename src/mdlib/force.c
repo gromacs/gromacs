@@ -695,8 +695,12 @@ void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
 
   epot[F_EPOT] = 0;
   for(i=0; (i<F_EPOT); i++)
-    if (i != F_DISRESVIOL && i != F_ORIRESDEV && i != F_DIHRESVIOL)
-      epot[F_EPOT] += epot[i];
+  {
+      if (i != F_DISRESVIOL && i != F_ORIRESDEV && i != F_DIHRESVIOL)
+      {
+          epot[F_EPOT] += epot[i];
+      }
+  }
 }
 
 void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
