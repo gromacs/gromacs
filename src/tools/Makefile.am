@@ -63,22 +63,12 @@ bin_PROGRAMS = \
 	g_sdf		g_spatial	\
 	g_tcaf      	g_traj      	g_vanhove	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_wham		g_kinetics	\
-	sigeps
+	sigeps		g_lipidhead
 
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
 
-
-# link the mpi library to non-mpi names if the latter are not present
-install-exec-hook:
-	libname="libgmxana@LIBSUFFIX@"; \
-	nompi="`echo $$libname | sed -e 's,_mpi,,'`"; \
-	libdir="$(libdir)"; \
-	if echo $$libname | grep mpi >/dev/null ; then \
-	  (cd $$libdir && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
-	  (cd $$libdir && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
-	fi; 
 
 CLEANFILES   = *.la *~ \\\#*
 
