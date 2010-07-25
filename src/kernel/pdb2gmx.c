@@ -1345,49 +1345,77 @@ int main(int argc, char *argv[])
       write_sto_conf(fn,title,pdba,x,NULL,ePBC,box);
     }
 
-    for(i=0; i<cc->nterpairs; i++) {
-      /* Set termini.
-       * We first apply a filter so we only have the
-       * termini that can be applied to the residue in question
-       * (or a generic terminus if no-residue specific is available).
-       */
-      /* First the N terminus */
-      if (nNtdb > 0) {
-	tdblist = filter_ter(nrtp,restp,nNtdb,ntdb,
-			     *pdba->resinfo[cc->r_start[i]].name,
-			     *pdba->resinfo[cc->r_start[i]].rtp,
-			     &ntdblist);
-	if(ntdblist==0)
-	  gmx_fatal(FARGS,"No suitable start (N or 5') terminus found in database");
-	
-	if(bTerMan && ntdblist>1)
-	  cc->ntdb[i] = choose_ter(ntdblist,tdblist,"Select start terminus type");
-	else
-	  cc->ntdb[i] = tdblist[0];
-	printf("Start terminus: %s\n",(cc->ntdb[i])->name);
-	sfree(tdblist);
-      } else {
-	cc->ntdb[i] = NULL;
-      }
-      
-      /* And the C terminus */
-      if (nCtdb > 0) {
-	tdblist = filter_ter(nrtp,restp,nCtdb,ctdb,
-			     *pdba->resinfo[cc->r_start[i]].name,
-			     *pdba->resinfo[cc->r_end[i]].rtp,
-			     &ntdblist);
-	if(ntdblist==0)
-	  gmx_fatal(FARGS,"No suitable end terminus found in database");
-	
-	if(bTerMan && ntdblist>1)
-	  cc->ctdb[i] = choose_ter(ntdblist,tdblist,"Select end terminus type");
-	else
-	  cc->ctdb[i] = tdblist[0];
-	printf("End terminus: %s\n",(cc->ctdb[i])->name);
-	sfree(tdblist);
-      } else {
-	cc->ctdb[i] = NULL;
-      }
+    for(i=0; i<cc->nterpairs; i++) 
+    {
+        /* Set termini.
+         * We first apply a filter so we only have the
+         * termini that can be applied to the residue in question
+         * (or a generic terminus if no-residue specific is available).
+         */
+        /* First the N terminus */
+        if (nNtdb > 0) 
+        {
+            tdblist = filter_ter(nrtp,restp,nNtdb,ntdb,
+                                 *pdba->resinfo[cc->r_start[i]].name,
+                                 *pdba->resinfo[cc->r_start[i]].rtp,
+                                 &ntdblist);
+            if(ntdblist==0)
+            {
+                printf("No suitable end (N or 5') terminus found in database - assuming this residue\n"
+                       "is already in a terminus-specific form and skipping terminus selection.\n");
+                cc->ntdb[i]=NULL;
+            }
+            else 
+            {
+                if(bTerMan && ntdblist>1)
+                {
+                    cc->ntdb[i] = choose_ter(ntdblist,tdblist,"Select start terminus type");
+                }
+                else
+                {
+                    cc->ntdb[i] = tdblist[0];
+                }
+                
+                printf("Start terminus: %s\n",(cc->ntdb[i])->name);
+                sfree(tdblist);
+            }
+        }
+        else 
+        {
+            cc->ntdb[i] = NULL;
+        }
+        
+        /* And the C terminus */
+        if (nCtdb > 0)
+        {
+            tdblist = filter_ter(nrtp,restp,nCtdb,ctdb,
+                                 *pdba->resinfo[cc->r_start[i]].name,
+                                 *pdba->resinfo[cc->r_end[i]].rtp,
+                                 &ntdblist);
+            if(ntdblist==0)
+            {
+                printf("No suitable end (C or 3') terminus found in database - assuming this residue\n"
+                       "is already in a terminus-specific form and skipping terminus selection.\n");
+                cc->ctdb[i] = NULL;
+            }
+            else 
+            {
+                if(bTerMan && ntdblist>1)
+                {
+                    cc->ctdb[i] = choose_ter(ntdblist,tdblist,"Select end terminus type");
+                }
+                else
+                {
+                    cc->ctdb[i] = tdblist[0];
+                }
+                printf("End terminus: %s\n",(cc->ctdb[i])->name);
+                sfree(tdblist);
+            }
+        }
+        else 
+        {
+            cc->ctdb[i] = NULL;
+        }
     }
     /* lookup hackblocks and rtp for all residues */
     get_hackblocks_rtp(&hb_chain, &restp_chain,
