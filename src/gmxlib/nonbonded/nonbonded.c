@@ -240,10 +240,6 @@ gmx_setup_kernels(FILE *fplog)
     
     if(getenv("GMX_NOOPTIMIZEDKERNELS") != NULL)
     {
-        if(fplog)
-            fprintf(fplog,
-                    "Found environment variable GMX_NOOPTIMIZEDKERNELS.\n"
-                    "Disabling SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
         return;
     }
     
@@ -331,7 +327,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
 	gmx_gbdata_t    gbdata;
-
+    
     bLR            = (flags & GMX_DONB_LR);
     bDoForces      = (flags & GMX_DONB_FORCES);
     bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA); 
@@ -353,10 +349,17 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                              &outeriter,&inneriter,&fr->AllvsAll_work);
  */
 #  else
-            nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                             &outeriter,&inneriter,&fr->AllvsAll_work);
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                                 &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else
+            {
+                nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                     &outeriter,&inneriter,&fr->AllvsAll_work);        
+            }
 #  endif
-#else
             nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                  &outeriter,&inneriter,&fr->AllvsAll_work);        
 #endif     
@@ -373,8 +376,17 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                            &outeriter,&inneriter,&fr->AllvsAll_work);
  */
 #  else
-            nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
-                                           &outeriter,&inneriter,&fr->AllvsAll_work);
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                               &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else 
+            {
+                nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                   &outeriter,&inneriter,&fr->AllvsAll_work);            
+            }
+
 #  endif
 #else
             nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,

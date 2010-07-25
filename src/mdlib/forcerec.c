@@ -1173,8 +1173,6 @@ bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
 #else
     bAllvsAll =
         (
-         /* disable for very small systems (bug 416) */
-         mtop->natoms > 64       &&
          ir->rlist==0            &&
          ir->rcoulomb==0         &&
          ir->rvdw==0             &&
@@ -1278,11 +1276,21 @@ void init_forcerec(FILE *fp,
     fr->sc_power   = ir->sc_power;
     fr->sc_sigma6  = pow(ir->sc_sigma,6);
     
+    fr->UseOptimizedKernels = (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL);
+    if(fp && fr->UseOptimizedKernels==FALSE)
+    {
+        fprintf(fp,
+                "\nFound environment variable GMX_NOOPTIMIZEDKERNELS.\n"
+                "Disabling SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
+    }    
+    
     /* Check if we can/should do all-vs-all kernels */
     fr->bAllvsAll       = can_use_allvsall(ir,mtop,FALSE,NULL,NULL);
     fr->AllvsAll_work   = NULL;
     fr->AllvsAll_workgb = NULL;
 
+    
+    
     /* Neighbour searching stuff */
     fr->bGrid      = (ir->ns_type == ensGRID);
     fr->ePBC       = ir->ePBC;

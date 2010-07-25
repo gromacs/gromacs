@@ -140,6 +140,8 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
+  bool UseOptimizedKernels;
+
   /* Use special N*N kernels? */
   bool bAllvsAll;
   /* Private work data */

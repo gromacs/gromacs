@@ -346,7 +346,6 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
 			 int nb,t_hackblock tb[],
 			 const char *resname,
 			 const char *rtpname,
-             const char *restype,
 			 int *nret)
 {
     /* Since some force fields (e.g. OPLS) needs different
