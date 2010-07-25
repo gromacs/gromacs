@@ -335,6 +335,9 @@ gmx_test_retsigtype(RETSIGTYPE)
 include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)
 
+include(gmxTestRestrict)
+gmx_test_inline(RESTRICT_KEYWORD)
+
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 

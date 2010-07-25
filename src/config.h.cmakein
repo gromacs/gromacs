@@ -374,6 +374,10 @@
 #define inline ${INLINE_KEYWORD}
 #endif
 
+/* Define to __restrict__ or __restrict if that is what the C compiler
+   calls it, or to nothing if restrict is not supported under any name.  */
+#define restrict ${RESTRICT_KEYWORD}
+
 #ifndef CPLUSPLUS
 #ifdef __cplusplus
 #define CPLUSPLUS

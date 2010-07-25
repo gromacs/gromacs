@@ -969,6 +969,7 @@ AC_C_CONST
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
 AC_C_INLINE
+AC_C_RESTRICT
 
 # AC_TYPE_UID_T is broken on Mac OS X, so use generic tests instead
 AC_CHECK_TYPES([uid_t],[],[AC_DEFINE(uid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
