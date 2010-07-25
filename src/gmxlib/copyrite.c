@@ -503,9 +503,8 @@ void please_cite(FILE *fp,char *key)
  */
 const char *GromacsVersion()
 {
-
-  /* Concatenate the version info during preprocessing */
-  static const char ver_string[]="VERSION " VERSION;
+  /* Version generated at compile time. */
+  #include "version.h"
   
   return ver_string;
 }

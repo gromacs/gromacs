@@ -190,8 +190,15 @@ static void calc_1se(t_graph *g,int ftype,t_ilist *il,
 	if (iaa >= at_start && iaa < at_end) {
 	  g->start=min(g->start,iaa);
 	  g->end  =max(g->end,  iaa);
-	  /*if (interaction_function[tp].flags & IF_CHEMBOND)*/
-	  nbond[iaa]++;
+	  /* When making the graph we (might) link all atoms in an interaction
+	   * sequentially. Therefore the end atoms add 1 to the count,
+	   * the middle atoms 2.
+	   */
+	  if (k == 1 || k == nratoms) {
+	    nbond[iaa] += 1;
+	  } else {
+	    nbond[iaa] += 2;
+	  }
 	}
       }
     }

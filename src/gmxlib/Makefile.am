@@ -74,9 +74,29 @@ EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
 #	fi; 
 
 # clean all libtool libraries, since the target names might have changed
-CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl 
+CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl version.h
 
-
+#version.h contains git version or version defined in VERSION
+copyrite.$(OBJEXT): version.h
+#Although documented in the automake manual as being the right way of doing
+#things, the above dependency actually doesn't seem to work together with
+#libtool. The additional dependency below should fix things.
+#A dependency like copyrite.c: version.h also seems to work, but is more
+#obscure. If there still are problems, adding BUILT_SOURCES = version.h
+#should solve them once and for all.
+copyrite.lo: version.h
+#The empty target FORCE forces make to run the commands every time. But
+#version.h is only changed if the version actually has changed, and hence
+#rebuilds are only triggered when they are needed.
+#Having the commands in the update_version rule does about the same thing,
+#except that one needs to run make twice if the version has changed to rebuild
+#copyrite.c.
+version.h: FORCE
+	[ -f version.h ] || touch version.h
+	version=`git --git-dir=$(top_srcdir)/.git describe --always --long --abbrev=20 HEAD 2>/dev/null || echo @VERSION@`; \
+	version="static const char ver_string[] = \"VERSION $$version\";"; \
+	echo "$$version" | cmp -s version.h - || echo "$$version" > version.h
+FORCE:
 
 
 

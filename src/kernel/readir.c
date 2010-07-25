@@ -1120,7 +1120,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   t_pull  *pull;
   int     natoms,ai,aj,i,j,d,g,imin,jmin,nc;
   t_iatom *ia;
-  int     *nrdf,*na_vcm,na_tot;
+  int     *nrdf2,*na_vcm,na_tot;
   double  *nrdf_tc,*nrdf_vcm,nrdf_uc,n_sub=0;
   gmx_mtop_atomloop_all_t aloop;
   t_atom  *atom;
@@ -1153,20 +1153,20 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   for(i=0; i<groups->grps[egcVCM].nr+1; i++)
     nrdf_vcm[i] = 0;
 
-  snew(nrdf,natoms);
+  snew(nrdf2,natoms);
   aloop = gmx_mtop_atomloop_all_init(mtop);
   while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
-    nrdf[i] = 0;
+    nrdf2[i] = 0;
     if (atom->ptype == eptAtom || atom->ptype == eptNucleus) {
       g = ggrpnr(groups,egcFREEZE,i);
       /* Double count nrdf for particle i */
       for(d=0; d<DIM; d++) {
 	if (opts->nFreeze[g][d] == 0) {
-	  nrdf[i] += 2;
+	  nrdf2[i] += 2;
 	}
       }
-      nrdf_tc [ggrpnr(groups,egcTC ,i)] += 0.5*nrdf[i];
-      nrdf_vcm[ggrpnr(groups,egcVCM,i)] += 0.5*nrdf[i];
+      nrdf_tc [ggrpnr(groups,egcTC ,i)] += 0.5*nrdf2[i];
+      nrdf_vcm[ggrpnr(groups,egcVCM,i)] += 0.5*nrdf2[i];
     }
   }
 
@@ -1191,18 +1191,18 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
 	     (atom[ia[1]].ptype == eptAtom)) &&
 	    ((atom[ia[2]].ptype == eptNucleus) ||
 	     (atom[ia[2]].ptype == eptAtom))) {
-	  if (nrdf[ai] > 0) 
+	  if (nrdf2[ai] > 0) 
 	    jmin = 1;
 	  else
 	    jmin = 2;
-	  if (nrdf[aj] > 0)
+	  if (nrdf2[aj] > 0)
 	    imin = 1;
 	  else
 	    imin = 2;
-	  imin = min(imin,nrdf[ai]);
-	  jmin = min(jmin,nrdf[aj]);
-	  nrdf[ai] -= imin;
-	  nrdf[aj] -= jmin;
+	  imin = min(imin,nrdf2[ai]);
+	  jmin = min(jmin,nrdf2[aj]);
+	  nrdf2[ai] -= imin;
+	  nrdf2[aj] -= jmin;
 	  nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 0.5*imin;
 	  nrdf_tc [ggrpnr(groups,egcTC ,aj)] -= 0.5*jmin;
 	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 0.5*imin;
@@ -1215,8 +1215,10 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
       for(i=0; i<molt->ilist[F_SETTLE].nr; ) {
 	/* Subtract 1 dof from every atom in the SETTLE */
 	for(ai=as+ia[1]; ai<as+ia[1]+3; ai++) {
-	  nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 1;
-	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 1;
+	  imin = min(2,nrdf2[ai]);
+	  nrdf2[ai] -= imin;
+	  nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 0.5*imin;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 0.5*imin;
 	}
 	ia += 2;
 	i  += 2;
@@ -1319,7 +1321,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
 	    gnames[groups->grps[egcTC].nm_ind[i]],opts->nrdf[i]);
   }
   
-  sfree(nrdf);
+  sfree(nrdf2);
   sfree(nrdf_tc);
   sfree(nrdf_vcm);
   sfree(na_vcm);

@@ -2479,7 +2479,8 @@ void do_edsam(t_inputrec  *ir,
     struct t_do_edsam *buf;
     t_edpar *edi;
     real    rmsdev=-1;      /* RMSD from reference structure prior to applying the constraints */
-
+    bool    bSuppress=FALSE; /* Write .edo file on master? */
+    
 
 #ifdef DEBUGPRINT
     static FILE *fdebug;
@@ -2496,6 +2497,11 @@ void do_edsam(t_inputrec  *ir,
     if ( ed->eEDtype==eEDnone )
         return;
 
+    /* Suppress output on first call of do_edsam if
+     * two-step sd2 integrator ist used */
+    if ( (ir->eI==eiSD2) && (v != NULL) )
+        bSuppress = TRUE;
+        
     dt_1 = 1.0/ir->delta_t;
     
     /* Loop over all ED datasets (usually one) */
@@ -2561,7 +2567,7 @@ void do_edsam(t_inputrec  *ir,
             }
 
             /* update radsam references, when required */
-            if (do_per_step(step,edi->maxedsteps) && step > edi->presteps)
+            if (do_per_step(step,edi->maxedsteps) && step >= edi->presteps)
             {
                 project(buf->xcoll, edi);
                 rad_project(edi, buf->xcoll, &edi->vecs.radacc, cr);
@@ -2570,7 +2576,7 @@ void do_edsam(t_inputrec  *ir,
             }
 
             /* update radacc references, when required */
-            if (do_per_step(step,iupdate) && step > edi->presteps)
+            if (do_per_step(step,iupdate) && step >= edi->presteps)
             {
                 edi->vecs.radacc.radius = calc_radius(&edi->vecs.radacc);
                 if (edi->vecs.radacc.radius - buf->oldrad < edi->slope)
@@ -2583,14 +2589,14 @@ void do_edsam(t_inputrec  *ir,
             }
 
             /* apply the constraints */
-            if (step > edi->presteps && ed_constraints(ed->eEDtype, edi))
-                ed_apply_constraints(buf->xcoll, edi, step, cr);
+            if (step >= edi->presteps && ed_constraints(ed->eEDtype, edi))
+                ed_apply_constraints(buf->xcoll, edi, step+1 - ir->init_step, cr);
 
             /* write to edo, when required */
             if (do_per_step(step,edi->outfrq))
             {
                 project(buf->xcoll, edi);
-                if (MASTER(cr))
+                if (MASTER(cr) && !bSuppress)
                     write_edo(edinr, edi, ed, step, rmsdev);
             }
             
@@ -2611,11 +2617,14 @@ void do_edsam(t_inputrec  *ir,
                     
                     /* dx is the ED correction to the coordinates: */
                     rvec_sub(x_unsh, xs[edi->sav.anrs_loc[i]], dx);
-                    /* dv is the ED correction to the velocity: */
-                    svmul(dt_1, dx, dv);
-                    /* apply the velocity correction: */
-                    rvec_inc(v[edi->sav.anrs_loc[i]], dv);
                     
+                    if (v != NULL)
+                    {
+                        /* dv is the ED correction to the velocity: */
+                        svmul(dt_1, dx, dv);
+                        /* apply the velocity correction: */
+                        rvec_inc(v[edi->sav.anrs_loc[i]], dv);
+                    }
                     /* Finally apply the position correction due to ED: */
                     copy_rvec(x_unsh, xs[edi->sav.anrs_loc[i]]);
                 }

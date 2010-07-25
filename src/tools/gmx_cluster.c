@@ -1017,13 +1017,13 @@ int gmx_cluster(int argc,char *argv[])
   t_topology   top;
   int          ePBC;
   t_atoms      useatoms;
-  t_matrix     *readmat;
+  t_matrix     *readmat=NULL;
   real         *tmp;
   
   int      isize=0,ifsize=0,iosize=0;
   atom_id  *index=NULL, *fitidx, *outidx;
   char     *grpname;
-  real     rmsd,**d1,**d2,*time,time_invfac,*mass=NULL;
+  real     rmsd,**d1,**d2,*time=NULL,time_invfac,*mass=NULL;
   char     buf[STRLEN],buf1[80],title[STRLEN];
   bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj;
 

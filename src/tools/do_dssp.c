@@ -77,7 +77,7 @@ static void strip_dssp(char *dsspfile,int nres,
     fgets2(buf,STRLEN,tapeout);
   } while (strstr(buf,"KAPPA") == NULL);
   if (bFirst) {
-    snew(ssbuf,nres+10);
+    snew(ssbuf,2*nres-1);
   }
   
   iaccb=iaccf=0;
