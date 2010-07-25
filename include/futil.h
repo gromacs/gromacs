@@ -118,7 +118,30 @@ extern FILE *libopen(const char *file);
  * first, and then in the library directory. If the file is not found,
  * it terminates with a fatal_error
  */
-  
+
+/* Opaque data type to list directories */
+typedef struct gmx_directory *
+gmx_directory_t;
+
+/* Open a directory for reading. The first argument should be a pointer
+ * to a declared gmx_directory_t variable. Returns 0 on success.
+ */
+int
+gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname);
+
+/* Given an initialized gmx_directory_t, if there are more files in
+ * the directory this routine returns 0 and sets the second argument
+ * to a pointer to that file name.
+ */
+int
+gmx_directory_nextfile(gmx_directory_t gmxdir,const char **p_name);
+    
+/* Release all data for a directory structure */
+int 
+gmx_directory_close(gmx_directory_t gmxdir);
+    
+
+    
 extern bool get_libdir(char *libdir);
 
 extern char *low_gmxlibfn(const char *file,bool bFatal);

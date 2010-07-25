@@ -751,7 +751,18 @@ AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(sys/time.h)
-AC_CHECK_HEADERS(dirent.h)
+AC_CHECK_HEADERS(dirent.h,,[AC_MSG_WARN(
+[
+********************************************************************
+* WARNING! We could not find the header file dirent.h              *
+*                                                                  *
+* Without this header, we will not be able to scan directories for *
+* files, which completely breaks pdb2gmx. You will still be able   *
+* to run simulations, but you cannot prepare input data.           *
+* dirent.h is part of the POSIX 2001-1 standard, and should be     *
+* present on all UNIX-like systems, CygWin, and MinGW.             *
+********************************************************************])])
+## NOTE: On native windows we do not use configure.ac
 AC_CHECK_HEADERS(copyfile.h)
 AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
 [No regex.h found.
@@ -759,6 +770,8 @@ Regular expression matching in selections will be disabled.
 Selections still work, but the default groups can differ from
 those obtained with regular expressions enabled.
 Consider installing the regular expression library from GNU libc.])])
+
+
 
 #####
 # Checks for additional and/or optional functions or libraries.
