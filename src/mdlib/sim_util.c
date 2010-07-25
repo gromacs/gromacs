@@ -2588,7 +2588,9 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 	bDoneEquilibrating = UpdateWeights(fep,dfhist,nlam,scaled_lamee,weighted_lamee,step);
     if (bDoneEquilibrating) 
     {
-        fprintf(log,"\nStep %d: Weights have equilibrated, using criteria: %s\n",(int)step,elmceq_names[fep->elmceq]);
+        if (log) {
+            fprintf(log,"\nStep %d: Weights have equilibrated, using criteria: %s\n",(int)step,elmceq_names[fep->elmceq]);
+        }
     }
     
     lamnew = ChooseNewLambda(log,ir,dfhist,nlam,weighted_lamee,p_k,mcrng);
@@ -2609,7 +2611,9 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
                 dfhist->wl_histo[i] = 0;
             }
             dfhist->wl_delta *= fep->wl_scale;
-            fprintf(log,"\nStep %d: Wang-Landau weight is now %14.8f\n",(int)step,dfhist->wl_delta);
+            if (log) {
+                fprintf(log,"\nStep %d: Wang-Landau weight is now %14.8f\n",(int)step,dfhist->wl_delta);
+            }
         }
 	}
     sfree(scaled_lamee);
