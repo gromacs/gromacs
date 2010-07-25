@@ -880,7 +880,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         fprintf(fp_dhdl,"%.4f ",time);
         if (fepvals->bPrintEnergy) 
         {
-            fprintf(fp_dhdl,"%.4f ",fepvals->energy);
+            fprintf(fp_dhdl,"%.4f ",enerd->term[F_ETOT]);
         }
         /* the current free energy state */
         fprintf(fp_dhdl,"%4d",state->fep_state);

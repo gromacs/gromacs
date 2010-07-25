@@ -130,7 +130,6 @@ typedef struct {
   int init_fep_state;    /* the initial number of the state                   */
   double delta_lambda;	 /* change of lambda per time step (fraction of (0.1) */
   int  nstfep;           /* How frequently to calculate foreign lambdas       */
-  real energy;          /* Potential energy of the current state             */
   bool bPrintEnergy;     /* Whether to print the energy in the dhdl           */
   int  n_lambda;         /* The number of foreign lambda points               */
   double **all_lambda;   /* The array of all lambda values                    */

@@ -2352,7 +2352,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
 }
 
 /* print out the weights to the log, along with current state */
-static void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t *dfhist, 
+extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t *dfhist, 
                                       int nlam, int frequency, gmx_large_int_t step)
 {
     int nlim,i,ifep,jfep;
@@ -2502,19 +2502,17 @@ void set_mc_state(gmx_rng_t rng,t_state *state)
     gmx_rng_set_state(rng,state->mc_rng,state->mc_rngi[0]);
 }
 
-extern void ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
-                                     t_state *state, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng)
+extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
+                                     int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng)
 { 
     real *pfep_lamee,*p_k, *scaled_lamee, *weighted_lamee;
-    int i,nlam,nlim,ifep,end_lam,lamnew,store_index,nstate;
+    int i,nlim,lamnew;
     real mckt,maxscaled,maxweighted;
     t_lambda *fep;
-    bool bIfReset;
-    bool bDoneEquilibrating;
+    bool bIfReset,bDoneEquilibrating;
 
     fep = ir->fepvals;
 	nlim = fep->n_lambda;
-    nlam = state->fep_state;
     
     snew(scaled_lamee,nlim);
     snew(weighted_lamee,nlim);
@@ -2532,17 +2530,15 @@ extern void ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *e
 
 	/* update the count at the current lambda*/
 	dfhist->n_at_lam[nlam]++;	
-
-    PrintFreeEnergyInfoToFile(log,fep,dfhist,nlam,ir->nstlog,step);
-
+    
     /* need to calculate the PV term somewhere, but not needed here? Not until there's a lambda state that's 
        pressure controlled.*/
     /*
       pVTerm = 0;
       where does this PV term go?
-      for (ifep=0;ifep<nlim;ifep++) 
+      for (i=0;i<nlim;i++) 
       {	
-      fep_lamee[ifep] += pVTerm; 
+      fep_lamee[i] += pVTerm; 
       }
     */
     
@@ -2553,38 +2549,38 @@ extern void ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *e
 	/* we don't need to include the pressure term, since the volume is the same between the two.
 	   is there some term we are neglecting, however? */
     
-	for (ifep=0;ifep<nlim;ifep++) {
-        scaled_lamee[ifep] = (enerd->enerpart_lambda[ifep+1]-enerd->enerpart_lambda[0])/mckt;
+	for (i=0;i<nlim;i++) {
+        scaled_lamee[i] = (enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0])/mckt;
         
         /* save these energies for printing, so they don't get overwritten by the next step */
         /* they aren't overwritten in the non-free energy case, but we always print with these
            for simplicity */
         
-        pfep_lamee[ifep] = scaled_lamee[ifep];
+        pfep_lamee[i] = scaled_lamee[i];
         
-        weighted_lamee[ifep] = dfhist->sum_weights[ifep] - scaled_lamee[ifep]; 
-        if (ifep==0) 
+        weighted_lamee[i] = dfhist->sum_weights[i] - scaled_lamee[i]; 
+        if (i==0) 
         {
-            maxscaled = scaled_lamee[ifep];
-            maxweighted = weighted_lamee[ifep]; 
+            maxscaled = scaled_lamee[i];
+            maxweighted = weighted_lamee[i]; 
         } 
         else 
         {
-            if (scaled_lamee[ifep] > maxscaled) 
+            if (scaled_lamee[i] > maxscaled) 
             {
-                maxscaled = scaled_lamee[ifep];
+                maxscaled = scaled_lamee[i];
             }
-            if (weighted_lamee[ifep] > maxweighted) 
+            if (weighted_lamee[i] > maxweighted) 
             {
-                maxweighted = weighted_lamee[ifep];
+                maxweighted = weighted_lamee[i];
             }
         }
 	}
     
-	for (ifep=0;ifep<nlim;ifep++) 
+	for (i=0;i<nlim;i++) 
     {
-        scaled_lamee[ifep] -= maxscaled;
-        weighted_lamee[ifep] -= maxweighted;
+        scaled_lamee[i] -= maxscaled;
+        weighted_lamee[i] -= maxweighted;
 	}
 	
 	/* update weights - we decide whether or not to actually this inside */
@@ -2608,9 +2604,9 @@ extern void ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *e
         
         if (bIfReset) 
         {
-            for (ifep=0;ifep<nlim;ifep++) 
+            for (i=0;i<nlim;i++) 
             {
-                dfhist->wl_histo[ifep] = 0;
+                dfhist->wl_histo[i] = 0;
             }
             dfhist->wl_delta *= fep->wl_scale;
             fprintf(log,"\nStep %d: Wang-Landau weight is now %14.8f\n",(int)step,dfhist->wl_delta);
@@ -2620,13 +2616,7 @@ extern void ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *e
     sfree(weighted_lamee);
     sfree(p_k);
 
-    /* set the new state */
-    state->fep_state = lamnew;
-    for (i=0;i<efptNR;i++) 
-    {
-        state->lambda[i] = fep->all_lambda[i][lamnew];
-    }
-    return;
+    return lamnew;
 }
 
 extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta)

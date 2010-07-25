@@ -471,6 +471,8 @@ static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
   block_bc(cr,fepvals->init_lambda);   
   block_bc(cr,fepvals->init_fep_state);
   block_bc(cr,fepvals->delta_lambda);	
+  block_bc(cr,fepvals->nstfep);
+  block_bc(cr,fepvals->bPrintEnergy);
   block_bc(cr,fepvals->n_lambda);        
   snew_bc(cr,fepvals->all_lambda,efptNR);
   nblock_bc(cr,efptNR,fepvals->all_lambda);
@@ -483,7 +485,36 @@ static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
   block_bc(cr,fepvals->sc_sigma);        
   block_bc(cr,fepvals->bScCoul);
   nblock_bc(cr,efptNR,&(fepvals->separate_dvdl[0]));
-  if (debug) fprintf(debug,"after bc_fepvals\n");
+  block_bc(cr,fepvals->dh_table_size);
+  block_bc(cr,fepvals->dh_table_spacing);
+  block_bc(cr,fepvals->elamstats);
+  block_bc(cr,fepvals->elmcmove);
+  block_bc(cr,fepvals->elmceq);
+  block_bc(cr,fepvals->equil_n_at_lam);
+  block_bc(cr,fepvals->equil_wl_delta);
+  block_bc(cr,fepvals->equil_ratio);
+  block_bc(cr,fepvals->equil_steps);
+  block_bc(cr,fepvals->equil_samples);
+  block_bc(cr,fepvals->mc_seed);
+  block_bc(cr,fepvals->minvar);
+  block_bc(cr,fepvals->minvar_const);
+  block_bc(cr,fepvals->c_range);
+  block_bc(cr,fepvals->bSymmetrizedTMatrix);
+  block_bc(cr,fepvals->nstTij);
+  block_bc(cr,fepvals->lmc_repeats);
+  block_bc(cr,fepvals->lmc_forced_nstart);
+  block_bc(cr,fepvals->gibbsdeltalam);
+  block_bc(cr,fepvals->wl_scale);
+  block_bc(cr,fepvals->wl_ratio);
+  block_bc(cr,fepvals->init_wl_delta);
+  block_bc(cr,fepvals->init_weights);
+  snew_bc(cr,fepvals->init_lambda_weights,fepvals->n_lambda);
+  nblock_bc(cr,fepvals->n_lambda,fepvals->init_lambda_weights);
+  block_bc(cr,fepvals->mc_temp);
+  if (debug) 
+  {
+      fprintf(debug,"after bc_fepvals\n");
+  }
 }
 
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)

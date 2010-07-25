@@ -1019,7 +1019,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0[efptNR];
-    bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
+    bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres,bExpandedEnsemble;
     bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
@@ -1078,7 +1078,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	tensor      tmpvir;
 	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
-
+    int         lamnew;
     /* for FEP */
     int         fep_state=0;
     real        frac;
@@ -1858,6 +1858,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
         bCalcEnerPres = bNstEner;
+        bExpandedEnsemble =  ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && (ir->fepvals->nstfep > 0) &&
+                              (mod(step,ir->fepvals->nstfep)==0) && (step > 0));
+
 
         /* Do we need global communication ? */
         bGStat = (bCalcEnerPres || bStopCM ||
@@ -2228,7 +2231,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
         bCalcEnerPres = bNstEner;
-        
+                
         /* Do we need global communication ? */
         bGStat = (bGStatEveryStep || bStopCM || bNS ||
                   (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
@@ -2580,6 +2583,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
         
         sum_dhdl(enerd,state->lambda,ir->fepvals);
+        /* perform extended ensemble sampling in lambda - we don't actually move to the new state before 
+           outputting statistics */
+        if (bExpandedEnsemble) {
+            lamnew = ExpandedEnsembleDynamics(fplog,ir,enerd,state->fep_state,&df_history,step,mcrng);
+        }
+
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 
         {
@@ -2637,11 +2646,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             bool do_dr,do_or;
             
+            if (fplog && do_log) 
+            {
+                PrintFreeEnergyInfoToFile(fplog,ir->fepvals,&df_history,state->fep_state,ir->nstlog,step);
+            }
             if (!(bStartingFromCpt && (EI_VV(ir->eI)))) 
             {
                 if (bNstEner)
                 {
-                    ir->fepvals->energy = enerd->term[F_ETOT];
                     upd_mdebin(mdebin,bDoDHDL ? outf->fp_dhdl : NULL,TRUE,
                                t,mdatoms->tmass,enerd,state,ir->fepvals,lastbox,
                                shake_vir,force_vir,total_vir,pres,
@@ -2672,10 +2684,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
             }
         }
-        /* perform extended ensemble sampling in lambda */
-        if ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && (ir->fepvals->nstfep > 0)) {
-            if ((mod(step,ir->fepvals->nstfep)==0) && (step > 0)) {
-                ExpandedEnsembleDynamics(fplog,ir,enerd,state,&df_history,step,mcrng);
+        if (bExpandedEnsemble)
+        {
+            /* Have to do this part after outputting the logfile and the edr file */
+            state->fep_state = lamnew;
+            for (i=0;i<efptNR;i++) 
+            {
+                state->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
             }
         }
 
