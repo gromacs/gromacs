@@ -63,7 +63,7 @@ bin_PROGRAMS = \
 	g_sdf		g_spatial	\
 	g_tcaf      	g_traj      	g_vanhove	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_wham		g_kinetics	\
-	sigeps		g_lipidhead
+	sigeps
 
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
