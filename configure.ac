@@ -724,7 +724,7 @@ AC_TYPE_SIZE_T
 AC_STRUCT_TM
 AC_TYPE_UID_T
 AC_C_INLINE
-    
+AC_C_RESTRICT
 
 
 # Test stuff for ia32 and x86_64 assembly, and add objects/libraries.
