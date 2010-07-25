@@ -343,11 +343,10 @@ int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
 }
 
 t_hackblock **filter_ter(int nrtp,t_restp rtp[],
-			 int nb,t_hackblock tb[],
-			 const char *resname,
-			 const char *rtpname,
-             const char *restype,
-			 int *nret)
+                         int nb,t_hackblock tb[],
+                         const char *resname,
+                         const char *rtpname,
+                         int *nret)
 {
     /* Since some force fields (e.g. OPLS) needs different
      * atomtypes for different residues there could be a lot
