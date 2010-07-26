@@ -35,7 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is #included from collective.c */
+/* this file is #included from collective.c; it's not really a header file,
+   but this defines a lot of functions that probably need to be inlined.*/
 
 
 /* run a single binary reduce operation on src_a and src_b, producing dest. 

@@ -35,7 +35,9 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is #included from collective.c */
+/* this file is #included from collective.c; it's not really a header file,
+      but this defines a lot of functions that probably need to be inlined.*/
+
 
 int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                   void* recvbuf, int recvcount, tMPI_Datatype recvtype,

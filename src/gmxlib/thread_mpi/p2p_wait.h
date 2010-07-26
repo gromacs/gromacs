@@ -35,7 +35,8 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is #included from p2p.c */
+/* this file is #included from p2p.c;it's not really a header file,
+   but this defines a lot of functions that probably need to be inlined.*/
 
 
 

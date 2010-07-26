@@ -36,7 +36,8 @@ files.
 */
 
 
-/* this file is to be #included from collective.c */
+/* this file is to be #included from collective.c; it's not really a header 
+   file, but this defines a lot of functions that probably need to be inlined.*/
 
 /* broadcast */
 int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
