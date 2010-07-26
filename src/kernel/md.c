@@ -1023,7 +1023,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
-    bool       bDoDHDL=FALSE;
+    bool       bDoDHDL,bDoFEP=FALSE;
     bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
                bForceUpdate=FALSE,bCPT;
     int        mdof_flags;
@@ -1638,6 +1638,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 } 
             }
             bDoDHDL = do_per_step(step,ir->nstdhdl);
+            bDoFEP  = do_per_step(step,ir->fepvals->nstfep);
         }
 
         if (bSimAnn) 
@@ -1858,9 +1859,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
         bCalcEnerPres = bNstEner;
-        bExpandedEnsemble =  ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && (ir->fepvals->nstfep > 0) &&
-                              (mod(step,ir->fepvals->nstfep)==0) && (step > 0));
-
+        bExpandedEnsemble =  ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && 
+                              (bDoFEP) && (step > 0));
+        
 
         /* Do we need global communication ? */
         bGStat = (bCalcEnerPres || bStopCM ||
@@ -1887,7 +1888,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        (bNStList ? GMX_FORCE_DOLR : 0) |
                        GMX_FORCE_SEPLRF |
                        (bCalcEnerPres ? GMX_FORCE_VIRIAL : 0) |
-                       (bDoDHDL ? GMX_FORCE_DHDL : 0)
+                       (bDoFEP ? GMX_FORCE_DHDL : 0)
             );
         
         if (shellfc)
@@ -2693,7 +2694,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 state->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
             }
         }
-
         /* Remaining runtime */
         if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal() ))
         {
