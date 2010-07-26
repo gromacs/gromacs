@@ -273,8 +273,8 @@ void add_blocks_enxframe(t_enxframe *fr, size_t n)
 
 t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev)
 {
-    off_t starti=0;
-    off_t i;
+    gmx_off_t starti=0;
+    gmx_off_t i;
 
     if (prev)
     {

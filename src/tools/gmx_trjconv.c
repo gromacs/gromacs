@@ -417,7 +417,7 @@ void do_trunc(const char *fn, real t0)
     FILE         *fp;
     bool         bStop,bOK;
     t_trnheader  sh;
-    off_t        fpos;
+    gmx_off_t    fpos;
     char         yesno[256];
     int          j;
     real         t=0;
@@ -439,14 +439,10 @@ void do_trunc(const char *fn, real t0)
         bStop= FALSE;
         while (!bStop && fread_trnheader(in,&sh,&bOK)) {
             fread_htrn(in,&sh,NULL,NULL,NULL,NULL);
-            fpos=ftell(fp);
+            fpos=gmx_ftell(fp);
             t=sh.t;
             if (t>=t0) {
-#ifdef HAVE_FSEEKO	
-                fseeko(fp,fpos,SEEK_SET);
-#else
-                fseek(fp,fpos,SEEK_SET);
-#endif	
+                gmx_fseek(fp, fpos, SEEK_SET);
                 bStop=TRUE;
             }
         }

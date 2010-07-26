@@ -935,8 +935,8 @@ static int do_cpt_files(XDR *xd, bool bRead,
                         FILE *list, int file_version)
 {
     int    i,j;
-    off_t  offset;
-    off_t  mask = 0xFFFFFFFFL;
+    gmx_off_t  offset;
+    gmx_off_t  mask = 0xFFFFFFFFL;
     int    offset_high,offset_low;
     char   *buf;
     gmx_file_position_t *outputfiles;
@@ -974,7 +974,7 @@ static int do_cpt_files(XDR *xd, bool bRead,
                 return -1;
             }
 #if (SIZEOF_OFF_T > 4)
-            outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low & mask );
+            outputfiles[i].offset = ( ((gmx_off_t) offset_high) << 32 ) | ( (gmx_off_t) offset_low & mask );
 #else
             outputfiles[i].offset = offset_low;
 #endif
