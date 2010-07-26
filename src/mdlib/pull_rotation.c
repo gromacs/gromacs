@@ -37,6 +37,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "domdec.h"
 #include "gmx_wallcycle.h"
 #include "trnio.h"
@@ -1629,9 +1630,9 @@ static real do_flex2_lowlevel(
             V += 0.5*rotg->k*wj*gaussian_xj*numerator/OOpsijstar;
 
 
-            /******************************************/
-            /* Now lets calculate the force on atom j */
-            /******************************************/
+            /*************************************/
+            /* Now calculate the force on atom j */
+            /*************************************/
 
             OOpsij = norm(tmpvec);    /* OOpsij = 1 / psij = |v x (xj - xcn)| */
 
