@@ -153,7 +153,7 @@
 #cmakedefine THREAD_PTHREADS
 
 /* Define when Windows threads are used */
-#cmakedefine THREAD_WINTHREADS
+#cmakedefine THREAD_WINDOWS
 
 /* Have pthread.h */
 #cmakedefine HAVE_PTHREAD_H
