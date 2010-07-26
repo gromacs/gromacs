@@ -43,7 +43,7 @@
  */
 extern void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
 			 t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
-			 bool bResname,t_aa_names *aan,bool bReorderNum,
+			 bool bResname,gmx_residuetype_t rt,bool bReorderNum,
 			 bool bVerbose);
 
 #endif

@@ -51,8 +51,8 @@ extern "C" {
 #endif
 
 
-/* This is the collection of energy averages collected during mdrun, and to be written out
-   to the .edr file. */
+/* This is the collection of energy averages collected during mdrun, and to 
+   be written out to the .edr file. */
 typedef struct {
   t_ebin *ebin;
   int    ie,iconrmsd,ib,ivol,idens,ipv,ienthalpy;

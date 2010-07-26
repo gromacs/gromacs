@@ -1,0 +1,62 @@
+[ moleculetype ]
+; molname	nrexcl
+SOL		1
+
+[ atoms ]
+; 	at type	      res nr  res name	at name	      cg nr	charge	   mass
+1       amber99_61	1	SOL	 OW		1	0        16.00000
+2	amber99_60	1	SOL	HW2		1	0.52422	  1.00800
+3	amber99_60	1	SOL	HW3		1	0.52422	  1.00800
+4	MW		1	SOL	MW4		1      -1.04844   0.00000
+
+#ifndef FLEXIBLE
+[ settles ]
+; i	funct	doh	dhh ---> same as standard tip4p
+1	1	0.09572	0.15139
+
+#else
+[ bonds ]
+; i     j       funct   length  force.c.
+1       2       1       0.09572 502416.0 0.09572        502416.0 
+1       3       1       0.09572 502416.0 0.09572        502416.0 
+        
+[ angles ]
+; i     j       k       funct   angle   force.c.
+2       1       3       1       104.52  628.02  104.52  628.02  
+#endif
+
+
+[ exclusions ]
+1	2	3	4
+2	1	3	4
+3	1	2	4
+4	1	2	3
+
+
+[ virtual_sites3 ]
+; Dummy from                    funct   a               b
+4       1       2       3       1       0.106676721     0.106676721
+
+
+; The position of the dummy is computed as follows:
+;
+;		O
+;  	      
+;	    	D
+;	  
+;	H		H
+;
+; Ewald tip4p:
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.0125 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const = 0.106676721
+;
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+;
+; standard tip4p:
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.015 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const
+;
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+

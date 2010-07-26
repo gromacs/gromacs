@@ -365,7 +365,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
 	leg[e++] = strdup(str);
       }
     }
-    xvgr_legend(fp_tpi,4+nener,leg,oenv);
+    xvgr_legend(fp_tpi,4+nener,(const char**)leg,oenv);
     for(i=0; i<4+nener; i++)
       sfree(leg[i]);
     sfree(leg);
@@ -732,7 +732,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
 		    "\\betaU - log(V/<V>)","count",oenv);
   sprintf(str,"number \\betaU > %g: %9.3e",bU_bin_limit,bin[0]);
   xvgr_subtitle(fp_tpi,str,oenv);
-  xvgr_legend(fp_tpi,2,(char **)tpid_leg,oenv);
+  xvgr_legend(fp_tpi,2,(const char **)tpid_leg,oenv);
   for(i=nbin-1; i>0; i--) {
     bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
     fprintf(fp_tpi,"%6.2f %10d %12.5e\n",

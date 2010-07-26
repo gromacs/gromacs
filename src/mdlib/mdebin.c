@@ -516,7 +516,8 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  nsets,s;
-    char **setname,buf[STRLEN];
+    char **setname;
+    char buf[STRLEN];
 
     sprintf(label_x,"%s (%s)","Time",unit_time);
     if (ir->n_flambda == 0)
@@ -559,7 +560,7 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
             sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s-1]);
             setname[s] = strdup(buf);
         }
-        xvgr_legend(fp,nsets,setname,oenv);
+        xvgr_legend(fp,nsets,(const char**)setname,oenv);
 
         for(s=0; s<nsets; s++)
         {
@@ -851,24 +852,32 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
 {
     /*static char **grpnms=NULL;*/
     char        buf[246];
-    int         i,j,n,ni,nj,ndr,nor;
+    int         i,j,n,ni,nj,ndr,nor,b;
+    int         ndisre=0;
+    real        *disre_rm3tav, *disre_rt;
+
+    /* these are for the old-style blocks (1 subblock, only reals), because
+       there can be only one per ID for these */
     int         nr[enxNR];
+    int         id[enxNR];
     real        *block[enxNR];
+
     t_enxframe  fr;
 	
     switch (mode)
     {
     case eprNORMAL:
+        init_enxframe(&fr);
         fr.t            = time;
         fr.step         = step;
         fr.nsteps       = md->ebin->nsteps;
         fr.nsum         = md->ebin->nsum;
         fr.nre          = (bEne) ? md->ebin->nener : 0;
         fr.ener         = md->ebin->e;
-        fr.ndisre       = bDR ? fcd->disres.npair : 0;
-        fr.disre_rm3tav = fcd->disres.rm3tav;
-        fr.disre_rt     = fcd->disres.rt;
-        /* Optional additional blocks */
+        ndisre          = bDR ? fcd->disres.npair : 0;
+        disre_rm3tav    = fcd->disres.rm3tav;
+        disre_rt        = fcd->disres.rt;
+        /* Optional additional old-style (real-only) blocks. */
         for(i=0; i<enxNR; i++)
         {
             nr[i] = 0;
@@ -878,12 +887,16 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
             diagonalize_orires_tensors(&(fcd->orires));
             nr[enxOR]     = fcd->orires.nr;
             block[enxOR]  = fcd->orires.otav;
+            id[enxOR]     = enxOR;
             nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ? 
-                fcd->orires.nr : 0;
+                             fcd->orires.nr : 0;
             block[enxORI] = fcd->orires.oinsl;
+            id[enxORI]    = enxORI;
             nr[enxORT]    = fcd->orires.nex*12;
             block[enxORT] = fcd->orires.eig;
+            id[enxORT]    = enxORT;
         }
+        /* the old-style blocks go first */
         fr.nblock = 0;
         for(i=0; i<enxNR; i++)
         {
@@ -892,9 +905,78 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
                 fr.nblock = i + 1;
             }
         }
-        fr.nr         = nr;
-        fr.block      = block;
-        if (fr.nre || fr.ndisre || fr.nr[enxOR] || fr.nr[enxORI])
+        add_blocks_enxframe(&fr, fr.nblock);
+        for(b=0;b<fr.nblock;b++)
+        {
+            add_subblocks_enxblock(&(fr.block[b]), 1);
+            fr.block[b].id=id[b]; 
+            fr.block[b].sub[0].nr = nr[b];
+#ifndef GMX_DOUBLE
+            fr.block[b].sub[0].type = xdr_datatype_float;
+            fr.block[b].sub[0].fval = block[b];
+#else
+            fr.block[b].sub[0].type = xdr_datatype_double;
+            fr.block[b].sub[0].dval = block[b];
+#endif
+        }
+
+        /* check for disre block & fill it. */
+        if (ndisre>0)
+        {
+            int db = fr.nblock;
+            fr.nblock+=1;
+            add_blocks_enxframe(&fr, fr.nblock);
+
+            add_subblocks_enxblock(&(fr.block[db]), 2);
+            fr.block[db].id=enxDISRE;
+            fr.block[db].sub[0].nr=ndisre;
+            fr.block[db].sub[1].nr=ndisre;
+#ifndef GMX_DOUBLE
+            fr.block[db].sub[0].type=xdr_datatype_float;
+            fr.block[db].sub[1].type=xdr_datatype_float;
+            fr.block[db].sub[0].fval=disre_rt;
+            fr.block[db].sub[1].fval=disre_rm3tav;
+#else
+            fr.block[db].sub[0].type=xdr_datatype_double;
+            fr.block[db].sub[1].type=xdr_datatype_double;
+            fr.block[db].sub[0].dval=disre_rt;
+            fr.block[db].sub[1].dval=disre_rm3tav;
+#endif
+        }
+        /* here we can put new-style blocks */
+
+#if 0
+        /* example: (can be removed once BAR histograms are working) */
+        {
+            int b=fr.nblock;
+            float c[]={ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
+            int d[]={ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int i;
+
+            for(i=0;i<10;i++)
+            {
+                c[i] += fr.t;
+                d[i] += fr.step;
+            }
+
+            fr.nblock+=1;
+            add_blocks_enxframe(&fr, fr.nblock);
+            
+            add_subblocks_enxblock(&(fr.block[b]), 2);
+            fr.block[b].id=enxBARHIST;
+            fr.block[b].sub[0].nr=10;
+            fr.block[b].sub[0].type=xdr_datatype_int;
+            fr.block[b].sub[0].ival=d;
+
+            fr.block[b].sub[1].nr=10;
+            fr.block[b].sub[1].type=xdr_datatype_float;
+            fr.block[b].sub[1].fval=c;
+        }
+#endif
+
+
+
+        if (fr.nre || ndisre || nr[enxOR] || nr[enxORI])
         {
             do_enx(fp_ene,&fr);
             gmx_fio_check_file_position(enx_file_pointer(fp_ene));
@@ -904,6 +986,7 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
                 reset_ebin_sums(md->ebin);
             }
         }
+        free_enxframe(&fr);
         break;
     case eprAVER:
         if (log)
@@ -1021,7 +1104,6 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
                 fprintf(log,"\n");
             }
         }
-
     }
 }
 

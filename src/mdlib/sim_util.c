@@ -590,7 +590,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (fr->bTwinRange)
         {
             /* Reset the (long-range) forces if necessary */
-            clear_rvecs(fr->natoms_force,bSepLRF ? fr->f_twin : f);
+            clear_rvecs(fr->natoms_force_constr,bSepLRF ? fr->f_twin : f);
         }
 
         /* Do the actual neighbour searching and if twin range electrostatics
@@ -673,7 +673,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (bSepLRF)
         {
             /* Add the long range forces to the short range forces */
-            for(i=0; i<fr->natoms_force; i++)
+            for(i=0; i<fr->natoms_force_constr; i++)
             {
                 copy_rvec(fr->f_twin[i],f[i]);
             }
@@ -681,7 +681,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         else if (!(fr->bTwinRange && bNS))
         {
             /* Clear the short-range forces */
-            clear_rvecs(fr->natoms_force,f);
+            clear_rvecs(fr->natoms_force_constr,f);
         }
 
         clear_rvec(fr->vir_diag_posres);

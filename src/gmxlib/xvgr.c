@@ -324,7 +324,7 @@ void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
     }
 }
 
-void xvgr_legend(FILE *out,int nsets,char **setname,const output_env_t oenv)
+void xvgr_legend(FILE *out,int nsets,const char** setname,const output_env_t oenv)
 {
     int  i;
     char buf[STRLEN];
@@ -601,7 +601,7 @@ int read_xvg(const char *fn,double ***y,int *ny)
 }
 
 void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
-               char **leg,const output_env_t oenv)
+               const char **leg,const output_env_t oenv)
 {
     FILE *fp;
     int  i,j;

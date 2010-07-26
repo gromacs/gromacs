@@ -83,6 +83,9 @@ static bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
     case eioREAL:
         size = sizeof(real);
         break;
+    case eioFLOAT:
+        size = sizeof(float);
+        break;
     case eioDOUBLE:
         size = sizeof(double);
         break;
@@ -145,6 +148,9 @@ static bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
             size = sizeof(double);
         else
             size = sizeof(float);
+        break;
+    case eioFLOAT:
+        size = sizeof(float);
         break;
     case eioDOUBLE:
         size = sizeof(double);

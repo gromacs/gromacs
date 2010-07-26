@@ -35,7 +35,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	genborn_allvsall_sse2_single.h			\
 	gmx_qhop_parm.c	gmx_qhop_parm.h			\
 	gmx_qhop_xml.c	gmx_qhop_xml.h			\
-	groupcoord.c                                    \
+	groupcoord.c			groupcoord.h    \
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
@@ -59,21 +59,3 @@ gmx_qhop_db_test_LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#*
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

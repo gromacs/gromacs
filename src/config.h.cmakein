@@ -149,8 +149,11 @@
 /* Compile with dlopen */
 #cmakedefine GMX_DLOPEN
 
-/* Use pthreads for thread_mpi multithreading */
+/* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
+
+/* Define when Windows threads are used */
+#cmakedefine THREAD_WINDOWS
 
 /* Have pthread.h */
 #cmakedefine HAVE_PTHREAD_H
@@ -373,6 +376,10 @@
 #ifndef __cplusplus
 #define inline ${INLINE_KEYWORD}
 #endif
+
+/* Define to __restrict__ or __restrict if that is what the C compiler
+   calls it, or to nothing if restrict is not supported under any name.  */
+#define restrict ${RESTRICT_KEYWORD}
 
 #ifndef CPLUSPLUS
 #ifdef __cplusplus

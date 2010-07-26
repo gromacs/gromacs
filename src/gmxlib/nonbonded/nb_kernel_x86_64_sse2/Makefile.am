@@ -55,7 +55,12 @@ libnb_kernel_x86_64_sse2_la_SOURCES = \
 	nb_kernel410_x86_64_sse2.c	nb_kernel410_x86_64_sse2.h	\
 	nb_kernel430_x86_64_sse2.c	nb_kernel430_x86_64_sse2.h	\
 	nb_kernel_x86_64_sse2_test.s	nb_kernel_x86_64_sse2_test.h	\
-	nb_kernel_x86_64_sse2.c		nb_kernel_x86_64_sse2.h
+	nb_kernel_x86_64_sse2.c		nb_kernel_x86_64_sse2.h		\
+	nb_kernel_allvsall_sse2_double.c \
+	nb_kernel_allvsall_sse2_double.h \
+	nb_kernel_allvsallgb_sse2_double.c \
+	nb_kernel_allvsallgb_sse2_double.h 
+
 
 
 EXTRA_DIST = \

@@ -335,7 +335,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 
 void plot_potential(double *potential[], double *charge[], double *field[], 
 		    const char *afile, const char *bfile, const char *cfile, 
-                    int nslices, int nr_grps, char *grpname[], double slWidth,
+                    int nslices, int nr_grps, const char *grpname[], double slWidth,
                     const output_env_t oenv)
 {
   FILE       *pot,     /* xvgr file with potential */
@@ -464,7 +464,7 @@ int gmx_potential(int argc,char *argv[])
 
   plot_potential(potential, charge, field, opt2fn("-o",NFILE,fnm),
 		 opt2fn("-oc",NFILE,fnm), opt2fn("-of",NFILE,fnm),
-		 nslices, ngrps, grpname, slWidth,oenv);
+		 nslices, ngrps, (const char**)grpname, slWidth,oenv);
 
   do_view(oenv,opt2fn("-o",NFILE,fnm), NULL);       /* view xvgr file */
   do_view(oenv,opt2fn("-oc",NFILE,fnm), NULL);      /* view xvgr file */  

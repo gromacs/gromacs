@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.99-dev-20100305, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5-beta1, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -751,7 +751,18 @@ AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(sys/time.h)
-AC_CHECK_HEADERS(dirent.h)
+AC_CHECK_HEADERS(dirent.h,,[AC_MSG_WARN(
+[
+********************************************************************
+* WARNING! We could not find the header file dirent.h              *
+*                                                                  *
+* Without this header, we will not be able to scan directories for *
+* files, which completely breaks pdb2gmx. You will still be able   *
+* to run simulations, but you cannot prepare input data.           *
+* dirent.h is part of the POSIX 2001-1 standard, and should be     *
+* present on all UNIX-like systems, CygWin, and MinGW.             *
+********************************************************************])])
+## NOTE: On native windows we do not use configure.ac
 AC_CHECK_HEADERS(copyfile.h)
 AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
 [No regex.h found.
@@ -759,6 +770,8 @@ Regular expression matching in selections will be disabled.
 Selections still work, but the default groups can differ from
 those obtained with regular expressions enabled.
 Consider installing the regular expression library from GNU libc.])])
+
+
 
 #####
 # Checks for additional and/or optional functions or libraries.
@@ -956,6 +969,7 @@ AC_C_CONST
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
 AC_C_INLINE
+AC_C_RESTRICT
 
 # AC_TYPE_UID_T is broken on Mac OS X, so use generic tests instead
 AC_CHECK_TYPES([uid_t],[],[AC_DEFINE(uid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
@@ -1311,6 +1325,13 @@ AC_CONFIG_FILES([ share/top/gromos45a3.ff/Makefile ])
 AC_CONFIG_FILES([ share/top/gromos53a5.ff/Makefile ])
 AC_CONFIG_FILES([ share/top/gromos53a6.ff/Makefile ])
 AC_CONFIG_FILES([ share/top/charmm27.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber94.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber96.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amberGS.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber99.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber99sb.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber99sb-ildn.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber03.ff/Makefile ])
 AC_CONFIG_FILES([ share/html/Makefile ])
 AC_CONFIG_FILES([ share/html/images/Makefile ])
 AC_CONFIG_FILES([ share/html/online/Makefile ])
