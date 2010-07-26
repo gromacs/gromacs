@@ -149,8 +149,11 @@
 /* Compile with dlopen */
 #cmakedefine GMX_DLOPEN
 
-/* Use pthreads for thread_mpi multithreading */
+/* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
+
+/* Define when Windows threads are used */
+#cmakedefine THREAD_WINTHREADS
 
 /* Have pthread.h */
 #cmakedefine HAVE_PTHREAD_H
