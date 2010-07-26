@@ -44,10 +44,11 @@
 #include "statutil.h"
 #include "xdrf.h"
 #include "string2.h"
+#include "futil.h"
 
 
 
-
+#if 0
 #ifdef HAVE_FSEEKO
 #  define gmx_fseek(A,B,C) fseeko(A,B,C)
 #  define gmx_ftell(A) ftello(A)
@@ -56,6 +57,7 @@
 #  define gmx_fseek(A,B,C) fseek(A,B,C)
 #  define gmx_ftell(A) ftell(A)
 #  define gmx_off_t int
+#endif
 #endif
 
 

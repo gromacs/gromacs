@@ -471,7 +471,7 @@ int gmx_trjcat(int argc, char *argv[])
     real **val = NULL, *t = NULL, dt_remd;
     int n, nset;
     bool bOK;
-    off_t fpos;
+    gmx_off_t fpos;
     output_env_t oenv;
     t_filenm fnm[] =
         {
