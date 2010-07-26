@@ -3,9 +3,9 @@
 SOL		1
 
 [ atoms ]
-     1	amber94_42   1	SOL     OW      1      -0.834   16.00000
-     2	amber94_27   1	SOL    HW1      1       0.417    1.00800
-     3	amber94_27   1	SOL    HW2 	1       0.417    1.00800
+     1	OW           1	SOL     OW      1      -0.834   16.00000
+     2	HW           1	SOL    HW1      1       0.417    1.00800
+     3	HW           1	SOL    HW2 	1       0.417    1.00800
 
 #ifndef FLEXIBLE
 

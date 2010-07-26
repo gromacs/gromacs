@@ -4,9 +4,9 @@ SOL		1
 
 [ atoms ]
 ; 	at type	      res nr  res name	at name	      cg nr	charge	   mass
-1       amber99_61	1	SOL	 OW		1	0        16.00000
-2	amber99_60	1	SOL	HW2		1	0.52422	  1.00800
-3	amber99_60	1	SOL	HW3		1	0.52422	  1.00800
+1       OW_tip4pew	1	SOL	 OW		1	0        16.00000
+2	HW_tip4pew	1	SOL	HW2		1	0.52422	  1.00800
+3	HW_tip4pew	1	SOL	HW3		1	0.52422	  1.00800
 4	MW		1	SOL	MW4		1      -1.04844   0.00000
 
 #ifndef FLEXIBLE
