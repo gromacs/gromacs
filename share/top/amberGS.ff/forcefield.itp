@@ -10,14 +10,18 @@
 ********************************************************************
 
 #define _FF_AMBER
-#define _FF_AMBER99
+#define _FF_AMBER96
 
 [ defaults ]
-[ defaults ]
 ; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+#ifdef TRUE_AMBERGS_NOVDW14_SCALING
+1               2               yes             1.0     0.8333
+#else
 1               2               yes             0.5     0.8333
+#endif
 
 #include "ffnb.itp"
 #include "ffbon.itp"
+#include "gbsa.itp"
 
 
