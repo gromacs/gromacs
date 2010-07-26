@@ -18,7 +18,7 @@
   NTYR	     H		     H1
   NGLU	     H		     H1
   NASP	     H		     H1
-  NLYP	     H		     H1
+  NLYS	     H		     H1
   NPRO	     H		     H1
   NCYN	     H		     H1
   NCYX	     H		     H1
@@ -65,8 +65,8 @@
   CGLU	     OXT             OC1
   CASP       O               OC2
   CASP	     OXT             OC1
-  CLYP       O               OC2
-  CLYP	     OXT             OC1
+  CLYS       O               OC2
+  CLYS	     OXT             OC1
   CPRO       O               OC2
   CPRO	     OXT             OC1
   CCYN       O               OC2
