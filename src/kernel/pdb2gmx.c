@@ -686,38 +686,70 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],bool bVerbose)
 void find_nc_ter(t_atoms *pdba,int r0,int r1,int *r_start,int *r_end,gmx_residuetype_t rt)
 {
     int i;
-    const char *p_firstrestype;
+    const char *p_startrestype;
     const char *p_restype;
+    int         nstartwarn,nendwarn;
     
     *r_start = -1;
     *r_end   = -1;
+
+    nstartwarn = 0;
+    nendwarn   = 0;
     
- 
-    /* First residue */
-    gmx_residuetype_get_type(rt,*pdba->resinfo[r0].name,&p_firstrestype);
-    if(gmx_strcasecmp(p_firstrestype,"Protein") &&
-       gmx_strcasecmp(p_firstrestype,"DNA") &&
-       gmx_strcasecmp(p_firstrestype,"RNA"))
+    /* Find the starting terminus (typially N or 5') */
+    for(i=r0;i<r1 && *r_start==-1;i++)
     {
-        /* This is not a protein/dna/rna residue */
-        printf("Starting residue %s%d in chain not identified as Protein/RNA/DNA.",*pdba->resinfo[r0].name,pdba->resinfo[r0].nr);
-        return;
-    }
-    *r_start=r0;
-
-    for(i=r0+1;i<r1;i++)
-    {
-        gmx_residuetype_get_type(rt,*pdba->resinfo[i].name,&p_restype);
-
-        if(gmx_strcasecmp(p_firstrestype,p_restype))
+        gmx_residuetype_get_type(rt,*pdba->resinfo[i].name,&p_startrestype);
+        if( gmx_strcasecmp(p_startrestype,"Protein") || gmx_strcasecmp(p_startrestype,"DNA") || gmx_strcasecmp(p_startrestype,"RNA") )
         {
-            printf("Residue %s%d has different type (%s) from first in chain %s%d (%s).",
-                   *pdba->resinfo[i].name,pdba->resinfo[i].nr,p_restype,
-                   *pdba->resinfo[r0].name,pdba->resinfo[r0].nr,p_firstrestype);
-            return;
+            printf("Identified residue %s%d as a starting terminus.\n",*pdba->resinfo[i].name,pdba->resinfo[i].nr);
+            *r_start=i;
+        }
+        else 
+        {            
+            if(nstartwarn < 5)
+            {    
+                printf("Warning: Starting residue %s%d in chain not identified as Protein/RNA/DNA.\n",*pdba->resinfo[i].name,pdba->resinfo[i].nr);
+            }
+            if(nstartwarn == 5)
+            {
+                printf("More than 5 unidentified residues at start of chain - disabling further warnings.\n");
+            }
+            nstartwarn++;
         }
     }
-    *r_end=r1-1;
+
+    if(*r_start>=0)
+    {
+        /* Go through the rest of the residues, check that they are the same class, and identify the ending terminus. */
+        for(i=*r_start;i<r1;i++)
+        {
+            gmx_residuetype_get_type(rt,*pdba->resinfo[i].name,&p_restype);
+            if( !gmx_strcasecmp(p_restype,p_startrestype) && nendwarn==0)
+            {
+                *r_end=i;
+            }
+            else 
+            {
+                if(nendwarn < 5)
+                {    
+                    printf("Warning: Residue %s%d in chain has different type (%s) from starting residue %s%d (%s).\n",
+                           *pdba->resinfo[i].name,pdba->resinfo[i].nr,p_restype,
+                           *pdba->resinfo[*r_start].name,pdba->resinfo[*r_start].nr,p_startrestype);
+                }
+                if(nendwarn == 5)
+                {
+                    printf("More than 5 unidentified residues at end of chain - disabling further warnings.\n");
+                }
+                nendwarn++;                
+            }
+        }  
+    }
+    
+    if(*r_end>=0)
+    {
+        printf("Identified residue %s%d as a ending terminus.\n",*pdba->resinfo[*r_end].name,pdba->resinfo[*r_end].nr);
+    }
 }
 
 
