@@ -128,7 +128,7 @@ ASP	3
 1	1	H	N	-C	CA	
 1	5	HA	CA	N	CB	C	
 2	6	HB	CB	CA	CG	
-LYP	7
+LYS	7
 1	1	H	N	-C	CA	
 1	5	HA	CA	N	CB	C	
 2	6	HB	CB	CA	CG	
@@ -337,7 +337,7 @@ CASP	4
 1	5	HA	CA	N	CB	C	
 2	6	HB	CB	CA	CG	
 1       1       OC1     C       CA      OC2
-CLYP	8
+CLYS	8
 1	1	H	N	-C	CA	
 1	5	HA	CA	N	CB	C	
 2	6	HB	CB	CA	CG	
@@ -487,7 +487,7 @@ NASP 	3
 3	4	H	N	CA	CB	
 1	5	HA	CA	N	CB	C	
 2	6	HB	CB	CA	CG	
-NLYP 	7
+NLYS 	7
 3	4	H	N	CA	CB	
 1	5	HA	CA	N	CB	C	
 2	6	HB	CB	CA	CG	
