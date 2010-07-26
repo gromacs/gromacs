@@ -342,12 +342,16 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
         {
 #if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
 # ifdef GMX_DOUBLE
-            /* double not done yet */
-            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
-/*
- nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                             &outeriter,&inneriter,&fr->AllvsAll_work);
- */
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                                 &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else
+            {
+                nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                     &outeriter,&inneriter,&fr->AllvsAll_work);        
+            }
 #  else
             if(fr->UseOptimizedKernels)
             {
@@ -369,12 +373,17 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
         { 
 #if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
 # ifdef GMX_DOUBLE
-            /* double not done yet */
-            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
-/*
-            nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
-                                           &outeriter,&inneriter,&fr->AllvsAll_work);
- */
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                               &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else 
+            {
+                nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                   &outeriter,&inneriter,&fr->AllvsAll_work);            
+            }
+            
 #  else
             if(fr->UseOptimizedKernels)
             {

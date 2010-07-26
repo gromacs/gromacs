@@ -203,7 +203,11 @@ void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
                           (strcasecmp("protein",xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt,rnm)));
+                           gmx_residuetype_is_protein(rt,rnm)) ||
+                          (strcasecmp("DNA",xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_dna(rt,rnm)) ||
+                          (strcasecmp("RNA",xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_rna(rt,rnm)));
                 if (!bMatch)
                 {
                     ptr0 = rnm;
