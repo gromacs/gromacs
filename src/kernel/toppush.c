@@ -967,8 +967,12 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	sl = 0;
 	for(i=0;i<ncmap;i++)
 	{
-		nn=sscanf(line+start+sl,"%s",s);
-		sl+=strlen(s)+1;
+    while(isspace(*(line+start+sl))) 
+    { 
+      sl++; 
+    }
+    nn=sscanf(line+start+sl," %s ",s);
+    sl+=strlen(s);
 		bt->cmap[i+(bt->ncmap)-nrfp]=strtod(s,NULL);
 		
 		if(nn==1)
