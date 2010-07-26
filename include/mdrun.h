@@ -311,6 +311,10 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t *dfhist, 
                                       int nlam, int frequency, gmx_large_int_t step);
   
+extern void get_mc_state(gmx_rng_t rng,t_state *state);
+
+extern void set_mc_state(gmx_rng_t rng,t_state *state);
+
 extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
 
 extern void copy_df_history(df_history_t * df_dest, df_history_t *df_source);

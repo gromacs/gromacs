@@ -1797,9 +1797,9 @@ static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
     bool bSufficientSamples;
     int i, k, n, nz, indexi, indexk, min_n, max_n, nlam, nlim, totali;
     int n0,np1,nm1,nval,min_nvalm,min_nvalp,maxc;
-    real chi_m1_0,chi_p1_0,chi_m2_0,chi_p2_0,chi_p1_m1,chi_p2_m1,chi_m1_p1,chi_m2_p1;
+    real chi_m1_0,chi_p1_0,chi_m2_0,chi_p2_0,chi_p1_m1,chi_p2_m1,chi_m1_p1,chi_m2_p1=0;
     real omega_m1_0,omega_p1_m1,omega_m1_p1,omega_p1_0,clam_osum;
-    real idgm,idgp,de,de_function,dr,denom,maxdr,pks;
+    real idgm,idgp,de,de_function,dr,denom,maxdr,pks=0;
     real min_val, cnvalm,cnvalp,zero_sum_weights;
     real *omegam_array, *weightsm_array, *omegap_array, *weightsp_array, *varm_array, *varp_array, *dwp_array, *dwm_array;    
     real clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
@@ -2105,7 +2105,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
     /* Choose new lambda value, and update transition matrix */
     
     int i,ifep,jfep,minfep,maxfep,nlim,lamnew,lamtrial,starting_fep_state;
-    real r1,r2,pks,de_old,de_new,de,tprob,trialprob;
+    real r1,r2,pks,de_old,de_new,de,trialprob,tprob=0;
     real **Tij;
     real *propose,*accept,*remainder;
     real sum,pnorm;
@@ -2114,7 +2114,8 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
     fep = ir->fepvals;
     nlim = fep->n_lambda;
     starting_fep_state = fep_state;
-    
+    lamnew = fep_state; /* so that there is a default setting -- stays the same */ 
+     
     if (!EWL(fep->elamstats))   /* ignore equilibrating the weights if using WL */
     {
         if ((fep->lmc_forced_nstart > 0) && (dfhist->n_at_lam[nlim-1] <= fep->lmc_forced_nstart))
@@ -2492,12 +2493,12 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
 	}
 }
 
-void get_mc_state(gmx_rng_t rng,t_state *state)
+extern void get_mc_state(gmx_rng_t rng,t_state *state)
 {
     gmx_rng_get_state(rng,state->mc_rng,state->mc_rngi);
 }
 
-void set_mc_state(gmx_rng_t rng,t_state *state)
+extern void set_mc_state(gmx_rng_t rng,t_state *state)
 {
     gmx_rng_set_state(rng,state->mc_rng,state->mc_rngi[0]);
 }
@@ -2507,13 +2508,13 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 { 
     real *pfep_lamee,*p_k, *scaled_lamee, *weighted_lamee;
     int i,nlim,lamnew;
-    real mckt,maxscaled,maxweighted;
+    real mckt,maxscaled=0,maxweighted=0;
     t_lambda *fep;
-    bool bIfReset,bDoneEquilibrating;
+    bool bIfReset,bDoneEquilibrating=FALSE;
 
     fep = ir->fepvals;
 	nlim = fep->n_lambda;
-    
+
     snew(scaled_lamee,nlim);
     snew(weighted_lamee,nlim);
     snew(pfep_lamee,nlim);

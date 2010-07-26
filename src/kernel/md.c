@@ -1078,7 +1078,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	tensor      tmpvir;
 	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
-    int         lamnew;
+    int         lamnew=0;
     /* for FEP */
     int         fep_state=0;
     real        frac;

@@ -386,7 +386,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       CHECK((fep->equil_steps<=0) && (fep->elmceq==elmceqSTEPS));
       
       sprintf(err_buf,"weight-equil-wl-delta (%f) must be > 0 if lmc-weight-equil=%s",
-              fep->equil_samples,elmceq_names[elmceqWLDELTA]);
+              fep->equil_wl_delta,elmceq_names[elmceqWLDELTA]);
       CHECK((fep->equil_wl_delta<=0) && (fep->elmceq==elmceqWLDELTA));
       
       sprintf(err_buf,"weight-equil-count-ratio (%f) must be > 0 if lmc-weight-equil=%s",

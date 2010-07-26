@@ -2072,7 +2072,7 @@ static void do_tpxheader(t_fileio *fio,bool bRead,t_tpxheader *tpx,
       gmx_fio_do_real(fio,rdum);
   }
   if (fver >= 72) {
-    gmx_fio_do_int(fio,tpx->fep_state);  /*eventually replace lambda with fep state - MRS*/
+      gmx_fio_do_int(fio,tpx->fep_state);  /*eventually replace lambda with fep state - MRS*/
   }
 
   gmx_fio_do_real(fio,tpx->lambda);

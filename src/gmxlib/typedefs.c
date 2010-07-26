@@ -42,6 +42,7 @@
 #include "symtab.h"
 #include "vec.h"
 #include "pbc.h"
+#include "mdrun.h"
 #include <string.h>
 
 #ifdef GMX_THREADS
@@ -422,7 +423,7 @@ void done_inputrec(t_inputrec *ir)
   }
 }
 
-static void init_ekinstate(ekinstate_t *eks)
+static void init_state_ekinstate(ekinstate_t *eks)
 {
   eks->ekin_n         = 0;
   eks->ekinh          = NULL;
@@ -435,7 +436,7 @@ static void init_ekinstate(ekinstate_t *eks)
   eks->mvcos          = 0;
 }
 
-static void init_energyhistory(energyhistory_t *enh)
+static void init_state_energyhistory(energyhistory_t *enh)
 {
   enh->ener_ave     = NULL;
   enh->ener_sum     = NULL;
@@ -527,9 +528,9 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
   state->sd_X = NULL;
   state->cg_p = NULL;
 
-  init_ekinstate(&state->ekinstate);
+  init_state_ekinstate(&state->ekinstate);
 
-  init_energyhistory(&state->enerhist);
+  init_state_energyhistory(&state->enerhist);
 
   init_df_history(&state->dfhist,nlambda,0);
 

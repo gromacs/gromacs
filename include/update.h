@@ -167,7 +167,7 @@ extern void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
  */
 
 extern void
-init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir);
+init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir);
 
 extern void
 update_ekinstate(ekinstate_t *ekinstate,gmx_ekindata_t *ekind);
