@@ -1116,7 +1116,8 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
 
 void forcerec_set_ranges(t_forcerec *fr,
                          int ncg_home,int ncg_force,
-                         int natoms_force,int natoms_f_novirsum)
+                         int natoms_force,
+                         int natoms_force_constr,int natoms_f_novirsum)
 {
     fr->cg0 = 0;
     fr->hcg = ncg_home;
@@ -1124,12 +1125,13 @@ void forcerec_set_ranges(t_forcerec *fr,
     /* fr->ncg_force is unused in the standard code,
      * but it can be useful for modified code dealing with charge groups.
      */
-    fr->ncg_force    = ncg_force;
-    fr->natoms_force = natoms_force;
+    fr->ncg_force           = ncg_force;
+    fr->natoms_force        = natoms_force;
+    fr->natoms_force_constr = natoms_force_constr;
 
-    if (fr->natoms_force > fr->nalloc_force)
+    if (fr->natoms_force_constr > fr->nalloc_force)
     {
-        fr->nalloc_force = over_alloc_dd(fr->natoms_force);
+        fr->nalloc_force = over_alloc_dd(fr->natoms_force_constr);
 
         if (fr->bTwinRange)
         {
@@ -1660,7 +1662,7 @@ void init_forcerec(FILE *fp,
          * which sets fr->hcg, is corrected later in do_md and init_em.
          */
         forcerec_set_ranges(fr,ncg_mtop(mtop),ncg_mtop(mtop),
-                            mtop->natoms,mtop->natoms);
+                            mtop->natoms,mtop->natoms,mtop->natoms);
     }
     
     fr->print_force = print_force;

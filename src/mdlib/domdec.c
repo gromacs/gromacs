@@ -8520,7 +8520,7 @@ void dd_partition_system(FILE            *fplog,
      * probably not worth the complications ande checking.
      */
     forcerec_set_ranges(fr,dd->ncg_home,dd->ncg_tot,
-                        comm->nat[ddnatCON],nat_f_novirsum);
+                        dd->nat_tot,comm->nat[ddnatCON],nat_f_novirsum);
 
     /* We make the all mdatoms up to nat_tot_con.
      * We could save some work by only setting invmass
