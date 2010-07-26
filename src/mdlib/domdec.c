@@ -164,6 +164,7 @@ const char *edlb_names[edlbNR] = { "auto", "no", "yes" };
 typedef struct
 {
     int  dim;      /* The dimension                                          */
+    bool dim_match;/* Tells if DD and PME dims match                         */
     int  nslab;    /* The number of PME slabs in this dimension              */
     real *slb_dim_f; /* Cell sizes for determining the PME comm. with SLB    */
     int  *pp_min;  /* The minimum pp node location, size nslab               */
@@ -2695,10 +2696,19 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     int	 pmeindex,slab,nso,i;
     ivec xyz;
     
-    ddpme->dim   = dd->dim[dimind];
+    if (dd->comm->npmedecompdim == 1 && dd->dim[0] == YY)
+    {
+        ddpme->dim = YY;
+    }
+    else
+    {
+        ddpme->dim = dimind;
+    }
+    ddpme->dim_match = (ddpme->dim == dd->dim[dimind]);
+
     ddpme->nslab = nslab;
 
-    if (nslab <= 1)
+    if (ddpme->nslab <= 1)
     {
         return;
     }
@@ -2764,7 +2774,7 @@ static void set_pme_maxshift(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     nc  = dd->nc[ddpme->dim];
     ns  = ddpme->nslab;
     
-    if (nc == 1)
+    if (!ddpme->dim_match)
     {
         /* PP decomposition is not along dim: the worst situation */
         sh = ns/2;

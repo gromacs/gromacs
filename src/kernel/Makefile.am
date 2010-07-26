@@ -68,7 +68,7 @@ mdrun_SOURCES = \
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
 	xutils.c	runner.c	md.c		mdrun.c		\
-	genalg.c	genalg.h
+	genalg.c	genalg.h	md_openmm.h
 
 if GMX_FAHCORE
   noinst_LTLIBRARIES = libfahcore.la

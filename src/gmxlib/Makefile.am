@@ -70,7 +70,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
 	libxdrf.c	gmx_arpack.c	gmx_matrix.c		\
-	dihres.c	gmx_random_gausstable.h		\
+	dihres.c	gmx_random_gausstable.h	gmxfio_int.h\
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		\
 	gmx_system_xdr.c md5.c vmdio.c vmddlopen.c	sighandler.c 	\
 	oenv.c		gmxfio_rw.c	gmxfio_asc.c	gmxfio_bin.c	\

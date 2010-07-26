@@ -3,14 +3,14 @@
 URE		3
 
 [ atoms ]
-     1  amber99_2    1  URE 	 C      1     0.880229  12.01000       ; amber C  type
-     2  amber99_41   1  URE	 O      2    -0.613359  16.00000       ; amber O  type
-     3  amber99_34   1  URE     N1      3    -0.923545  14.01000       ; amber N  type
-     4  amber99_17   1  URE    H11      4     0.395055   1.00800       ; amber H  type
-     5  amber99_17   1  URE    H12      5     0.395055   1.00800       ; amber H  type
-     6  amber99_34   1  URE     N2      6    -0.923545  14.01000       ; amber N  type
-     7  amber99_17   1  URE    H21      7     0.395055   1.00800       ; amber H  type
-     8  amber99_17   1  URE    H22      8     0.395055   1.00800       ; amber H  type
+     1  C            1  URE 	 C      1     0.880229  12.01000       ; amber C  type
+     2  O            1  URE	 O      2    -0.613359  16.00000       ; amber O  type
+     3  N            1  URE     N1      3    -0.923545  14.01000       ; amber N  type
+     4  H            1  URE    H11      4     0.395055   1.00800       ; amber H  type
+     5  H            1  URE    H12      5     0.395055   1.00800       ; amber H  type
+     6  N            1  URE     N2      6    -0.923545  14.01000       ; amber N  type
+     7  H            1  URE    H21      7     0.395055   1.00800       ; amber H  type
+     8  H            1  URE    H22      8     0.395055   1.00800       ; amber H  type
 
 [ bonds ]
     1	2

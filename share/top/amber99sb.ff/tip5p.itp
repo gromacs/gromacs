@@ -4,9 +4,9 @@ SOL		1
 
 [ atoms ]
 ; id	at type		res nr 	residu name	at name		cg nr	charge 	mass
-1	amber99_65	1	SOL		OW		1	0	16.00000
-2	amber99_64	1	SOL		HW1		1	0.241	 1.00800
-3	amber99_64	1	SOL		HW2		1	0.241	 1.00800
+1	OW_tip5p  	1	SOL		OW		1	0	16.00000
+2	HW_tip5p  	1	SOL		HW1		1	0.241	 1.00800
+3	HW_tip5p  	1	SOL		HW2		1	0.241	 1.00800
 4	MW		1	SOL		LP1		1	-0.241	 0.00000
 5       MW	  	1       SOL             LP2		1	-0.241   0.00000
 
