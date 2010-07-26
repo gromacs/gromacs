@@ -1168,7 +1168,6 @@ bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
     bool bAllvsAll;
 
 #ifdef GMX_DOUBLE
-    /* double not done yet */
     bAllvsAll = FALSE;
 #else
     bAllvsAll =
@@ -1186,7 +1185,8 @@ bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
                                              ir->gb_algorithm==egbOBC))) &&
          getenv("GMX_NO_ALLVSALL") == NULL
             );
-
+#endif
+    
     if (bAllvsAll && ir->opts.ngener > 1)
     {
         const char *note="NOTE: Can not use all-vs-all force loops, because there are multiple energy monitor groups; you might get significantly higher performance when using only a single energy monitor group.\n";
@@ -1204,8 +1204,12 @@ bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
         }
         bAllvsAll = FALSE;
     }
-#endif
 
+    if(bAllvsAll && fp && MASTER(cr))
+    {
+        fprintf(fp,"\nUsing accelerated all-vs-all kernels.\n\n");
+    }
+    
     return bAllvsAll;
 }
 
