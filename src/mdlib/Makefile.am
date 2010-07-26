@@ -59,21 +59,3 @@ gmx_qhop_db_test_LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#*
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

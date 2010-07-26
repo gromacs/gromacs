@@ -15,7 +15,7 @@ if USE_OPENMM
 #AM_CPPFLAGS += -I$(top_srcdir)/libraries/openmm/include
 #LDADD += $(top_srcdir)/libraries/openmm/lib/linux64/libOpenMM.*
 lib_LTLIBRARIES += libopenmminterface.la
-libopenmminterface_la_SOURCES = md_openmm.cpp
+libopenmminterface_la_SOURCES = md_openmm.c
 #mdrun_LINK = $(CXXLINK)
 endif
 
