@@ -959,8 +959,10 @@ int main(int argc, char *argv[])
       "HIDDENLong bond warning distance" },
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
-    { "-mergechid", FALSE, etBOOL, {&bMatchChainID},
+/* Not yet enabled.
+ { "-mergechid", FALSE, etBOOL, {&bMatchChainID},
       "Merge chains across TER records if they have the same chain ID" },          
+ */
     { "-merge",  FALSE, etBOOL, {&bMerge},
       "Interactively merge chains into one molecule definition"},
     { "-ff",     FALSE, etSTR,  {&ff},
