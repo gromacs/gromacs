@@ -22,7 +22,7 @@ endif
 libgmxpreprocess@LIBSUFFIX@_la_LIBADD       = ../mdlib/libmd@LIBSUFFIX@.la
 libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
 
-libgmxpreprocess@LIBSUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@ $(PTHREAD_LIBS)
+libgmxpreprocess@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ $(PTHREAD_LIBS)
 
 libgmxpreprocess@LIBSUFFIX@_la_SOURCES = \
 add_par.c	add_par.h	\
