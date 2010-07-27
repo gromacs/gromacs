@@ -20,8 +20,8 @@
 1               2               yes             0.5     0.8333
 #endif
 
-#include "ffnb.itp"
-#include "ffbon.itp"
+#include "ffnonbonded.itp"
+#include "ffbonded.itp"
 #include "gbsa.itp"
 
 
