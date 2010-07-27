@@ -26,7 +26,7 @@ amber03.ff
 
 
 topol_DATA = \
-	ff_dum.itp	flexspc.itp	\
+	flexspc.itp	\
 	flexspce.itp	flexwat-ferguson.itp		ions.itp	\
 	spc.itp		spce.itp	tip3p.itp	tip4p.itp	\
 	dgsolv.dat	electroneg.dat	\
