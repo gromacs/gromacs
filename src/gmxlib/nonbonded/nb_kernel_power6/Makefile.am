@@ -38,7 +38,7 @@ libnb_kernel_power6_la_SOURCES = \
 	nb_kernel323_power6.h nb_kernel324_power6.h nb_kernel330_power6.h nb_kernel331_power6.h \
 	nb_kernel332_power6.h nb_kernel333_power6.h nb_kernel334_power6.h nb_kernel400_power6.h \
 	nb_kernel410_power6.h nb_kernel420_power6.h nb_kernel430_power6.h                       \
-	nb_kernel_power6.c    nb_kernel_power6.h	                                        \
+	nb_kernel_power6.c    nb_kernel_power6.h    nb_kernel_f77sync.c                         \
 	pwr6kernel010.F       pwr6kernel020.F       pwr6kernel030.F       pwr6kernel100.F       \
 	pwr6kernel101.F       pwr6kernel102.F       pwr6kernel103.F       pwr6kernel104.F       \
 	pwr6kernel110.F       pwr6kernel111.F       pwr6kernel112.F       pwr6kernel113.F       \

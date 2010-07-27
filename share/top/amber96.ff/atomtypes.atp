@@ -64,7 +64,5 @@ OW_tip5p          16.00000      ; tip5p OW
 HW_tip3p           4.03200      ; TIP3P HEAVY dummy water HW
 OW_tip3p           9.95200      ; TIP3P heavy dummy water OW
 MW                 0.00000      ; Dummy mass for tip4p/5p water extra point charge
-MNH3               0.00000      ; Dummy mass in rigid tetraedrical NH3 group
-MNH2               0.00000      ; Dummy mass in rigid umbrella-shaped NH2 group
-MCH3A              0.00000      ; Dummy mass in rigid tetraedrical CH3 group
-MCH3B              0.00000      ; Dummy mass in rigid tetraedrical CH3 group
+MCH3               0.00000      ; Dummy mass in rigid tetrahedral CH3 group
+MNH3               0.00000      ; Dummy mass in rigid tetrahedral NH3 group

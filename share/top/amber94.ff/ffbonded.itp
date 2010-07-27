@@ -84,59 +84,26 @@
   S  S          1    0.20380   138908.8 ; 7,(1986),230; CYX   (SCHERAGA)
   CT F          1    0.13800   307105.6 ; 13,(1992),963;CF4; R0=1.332 FOR CHF3
 
+
+
 [ constrainttypes ]
 ; this section is implemented manually from bond & angle values
-; account for larger inertia with heavy hydrogens
-#ifdef HEAVY_H
-; constraints for the rigid NH3 groups
- MNH3     CT 2    0.188929
- MNH3   MNH3 2    0.160473
-; constraints for rigid umbrella-shaped NH2 group
- MNH2     CT 2    0.175302
- MNH2   MNH2 2    0.135084
-; constraints for 1st type rigid CH3 (angle *-CT-HC is 109.5)
- MCH3A     C 2    0.203533
- MCH3A    CW 2    0.201930
- MCH3A    CV 2    0.201930
- MCH3A    CS 2    0.201129
- MCH3A    CA 2    0.202464
- MCH3A    CB 2    0.202464
- MCH3A     N 2    0.197052
- MCH3A     S 2    0.229582
- MCH3A MCH3A 2    0.184320
-; constraints for 2nd type rigid CH3 (angle *-CT-HC is 110.7)
- MCH3B    CT 2    0.205384
- MCH3B MCH3B 2    0.182913
-#else
-; no heavy hydrogens.
-; constraints for the rigid NH3 groups
- MNH3     CT 2    0.158255
- MNH3   MNH3 2    0.080236
-; constraints for rigid umbrella-shaped NH2 group
- MNH2     CT 2    0.152820
- MNH2   MNH2 2    0.067542
-; constraints for 1st type rigid CH3 (angle *-CT-HC is 109.5)
- MCH3A     C 2    0.166040
- MCH3A    CW 2    0.164312
- MCH3A    CV 2    0.164312
- MCH3A    CS 2    0.163448
- MCH3A    CA 2    0.164888
- MCH3A    CB 2    0.164888
- MCH3A     N 2    0.159040
- MCH3A     S 2    0.193874
- MCH3A MCH3A 2    0.092160
-; constraints for 2nd type rigid CH3 (angle *-CT-HC is 110.7)
- MCH3B    CT 2    0.167031
- MCH3B MCH3B 2    0.091456
-#endif
+
+; constraints for rigid CH3 groups
+ MCH3   CT      2    0.169888
+ MCH3   S       2    0.193875
+ MCH3   MCH3    2    0.092163
+; constraints for rigid NH3 groups
+ MNH3   CT      2    0.158254
+ MNH3   MNH3    2    0.080229
+
 ; angle-derived constraints for OH and SH groups in proteins
 ; The constraint A-C is calculated from the angle A-B-C and bonds A-B, B-C.
-  N       HO 2    0.18682
-  C       HO 2    0.19393
-  CA      HO 2    0.19393
-  CT      HO 2    0.19305
-  CT      HS 2    0.23593
-  CA      HS 2    0.23018
+  C     HO      2    0.195074
+  CA    HO      2    0.195074
+  CT    HO      2    0.194132
+  CT    HS      2    0.235935
+
 
 
 [ angletypes ]
@@ -337,59 +304,59 @@ N   C   N            1   120.000    585.760 ; Added for Urea (same as N2-CA-N2) 
 [ dihedraltypes ]
 ;i  j   k  l	 func      phase      kd      pn
 ;impropers treated as propers in GROMACS to use correct AMBER analytical function
-CB  CK  N*  CT       4      180.00     4.18400     2    ;
-CK  CB  N*  CT       4      180.00     4.18400     2    ; 
+CB  CK  N*  CT       4      180.00     4.18400     2	; 
+CK  CB  N*  CT       4      180.00     4.18400     2	; 
 CM  C   N*  CT       4      180.00     4.18400     2    ; dac guess, 9/94
-C   CM  N*  CT       4      180.00     4.18400     2    ; dac guess, 9/94
-CT  N*  C   CM       4      180.00     4.18400     2    ;
-CM  C   CM  CT       4      180.00     4.60240     2    ;
-C   CM  CM  CT       4      180.00     4.60240     2    ; 
-CT  O   C   OH       4      180.00    43.93200     2    ; 
-CT  CV  CC  NA       4      180.00     4.60240     2    ; 
-NA  CV  CC  CT       4      180.00     4.60240     2    ;
-CT  CW  CC  NB       4      180.00     4.60240     2    ; 
-NB  CW  CC  CT       4      180.00     4.60240     2    ;
+C   CM  N*  CT       4      180.00     4.18400     2	; dac guess, 9/94
+CT  N*  C   CM       4      180.00     4.18400     2    ; 
+CM  C   CM  CT       4      180.00     4.60240     2	; 
+C   CM  CM  CT       4      180.00     4.60240     2	; 
+CT  O   C   OH       4      180.00    43.93200     2	; 
+CT  CV  CC  NA       4      180.00     4.60240     2	; 
+NA  CV  CC  CT       4      180.00     4.60240     2	; 
+CT  CW  CC  NB       4      180.00     4.60240     2	; 
+NB  CW  CC  CT       4      180.00     4.60240     2	; 
 CT  CW  CC  NA       4      180.00     4.60240     2    ;
-NA  CW  CC  CT       4      180.00     4.60240     2    ; 
-CB  CT  C*  CW       4      180.00     4.60240     2    ; 
-CW  CB  C*  CT       4      180.00     4.60240     2    ;
-CA  CA  CA  CT       4      180.00     4.60240     2    ; 
-C   CM  CM  CT       4      180.00     4.60240     2    ; dac guess, 9/94
-CM  N2  CA  NC       4      180.00     4.60240     2    ; dac guess, 9/94
-NC  CM  CA  N2       4      180.00     4.60240     2    ; dac guess, 9/94
-CB  N2  CA  NC       4      180.00     4.60240     2    ; dac, 10/94
-CB  NC  CA  N2       4      180.00     4.60240     2    ; dac, 10/94
-N2  NA  CA  NC       4      180.00     4.60240     2    ; dac, 10/94
-NA  NC  CA  N2       4      180.00     4.60240     2    ; dac, 10/94
-CA  CA  C   OH       4      180.00     4.60240     2    ; 
-N   N   C   O        4      180.00    43.93200     2    ; urea
-X   O2  C   O2       4      180.00    43.93200     2    ; JCC,7,(1986),230
-X   N2  CA  N2       4      180.00    43.93200     2    ; JCC,7,(1986),230
-X   CT  N   CT       4      180.00     4.18400     2    ; JCC,7,(1986),230
-X   X   C   O        4      180.00    43.93200     2    ; JCC,7,(1986),230
-X   X   N   H        4      180.00     4.18400     2    ; JCC,7,(1986),230
-X   X   N2  H        4      180.00     4.18400     2    ; JCC,7,(1986),230
-X   X   NA  H        4      180.00     4.18400     2    ; JCC,7,(1986),230
-X   X   CA  HA       4      180.00     4.60240     2    ; bsd.on C6H6 nmodes
-X   X   CW  H4       4      180.00     4.60240     2    ; 
-X   X   CR  H5       4      180.00     4.60240     2    ; 
-X   X   CV  H4       4      180.00     4.60240     2    ; 
-X   X   CQ  H5       4      180.00     4.60240     2    ; 
-X   X   CK  H5       4      180.00     4.60240     2    ; 
-X   X   CM  H4       4      180.00     4.60240     2    ; 
-X   X   CM  HA       4      180.00     4.60240     2    ; 
-X   X   CA  H4       4      180.00     4.60240     2    ; bsd.on C6H6 nmodes 
-X   X   CA  H5       4      180.00     4.60240     2    ; bsd.on C6H6 nmodes
+NA  CW  CC  CT       4      180.00     4.60240     2	; 
+CB  CT  C*  CW       4      180.00     4.60240     2	; 
+CW  CB  C*  CT       4      180.00     4.60240     2	; 
+CA  CA  CA  CT       4      180.00     4.60240     2	; 
+C   CM  CM  CT       4      180.00     4.60240     2	; dac guess, 9/94
+CM  N2  CA  NC       4      180.00     4.60240     2	; dac guess, 9/94
+NC  CM  CA  N2       4      180.00     4.60240     2	; dac guess, 9/94
+CB  N2  CA  NC       4      180.00     4.60240     2	; dac, 10/94
+CB  NC  CA  N2       4      180.00     4.60240     2	; dac, 10/94
+N2  NA  CA  NC       4      180.00     4.60240     2	; dac, 10/94
+NA  NC  CA  N2       4      180.00     4.60240     2	; dac, 10/94
+CA  CA  C   OH       4      180.00     4.60240     2	; 
+N   N   C   O        4      180.00    43.93200     2	; urea
+X   O2  C   O2       4      180.00    43.93200     2	; JCC,7,(1986),230
+X   N2  CA  N2       4      180.00    43.93200     2	; JCC,7,(1986),230
+X   CT  N   CT       4      180.00     4.18400     2	; JCC,7,(1986),230
+X   X   C   O        4      180.00    43.93200     2	; JCC,7,(1986),230
+X   X   N   H        4      180.00     4.18400     2	; JCC,7,(1986),230
+X   X   N2  H        4      180.00     4.18400     2	; JCC,7,(1986),230
+X   X   NA  H        4      180.00     4.18400     2	; JCC,7,(1986),230
+X   X   CA  HA       4      180.00     4.60240     2	; bsd.on C6H6 nmodes
+X   X   CW  H4       4      180.00     4.60240     2	; 
+X   X   CR  H5       4      180.00     4.60240     2	; 
+X   X   CV  H4       4      180.00     4.60240     2	; 
+X   X   CQ  H5       4      180.00     4.60240     2	; 
+X   X   CK  H5       4      180.00     4.60240     2	; 
+X   X   CM  H4       4      180.00     4.60240     2	; 
+X   X   CM  HA       4      180.00     4.60240     2	; 
+X   X   CA  H4       4      180.00     4.60240     2	; bsd.on C6H6 nmodes 
+X   X   CA  H5       4      180.00     4.60240     2	; bsd.on C6H6 nmodes
 
 
 [ dihedraltypes ]
 ;i  j   k  l	 func	C0  ...  C5
  CT  CT  OS  CT    9     180.0      0.41840     2  ; 
  CT  CT  OS  CT    9       0.0      1.60247     3  ; 
- C   N   CT  C     9       0.0      3.55640     1  ; Kollman et al. 1997
- C   N   CT  C     9     180.0      1.25520     2  ; Kollman et al. 1997
- N   CT  C   N     9       0.0      3.55640     1  ; Kollman et al. 1997
- N   CT  C   N     9     180.0      1.25520     2  ; Kollman et al. 1997
+ C   N   CT  C     9     180.0      0.83680     2  ; 
+ N   CT  C   N     9     180.0      3.13800     1  ; 
+ N   CT  C   N     9     180.0      5.64840     2  ; 
+ N   CT  C   N     9     180.0      1.67360     4  ; 
  CT  CT  N   C     9       0.0      2.21752     1  ; 
  CT  CT  N   C     9     180.0      0.62760     3  ; 
  CT  CT  N   C     9     180.0      2.09200     4  ; 

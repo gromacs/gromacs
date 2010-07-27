@@ -50,7 +50,7 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
-if test "$enable_fortran" = "yes"; then
+if test "$enable_fortran" = "yes" -a "$enable_power6" = "no"; then
   AC_DEFINE(GMX_FORTRAN,,[Enable Fortran support])
 fi
 # Generic fortran kernels will be turned off below if you enable power6-specific optimization!
@@ -154,6 +154,7 @@ AC_ARG_ENABLE(power6,
 # Turn off generic fortran loops if we are using power6-specific optimization
 if test "$enable_power6" = "yes"; then
   enable_fortran=no;
+  AC_DEFINE(GMX_POWER6,,[Enable IBM Pwr6/PPC440/PPC450-specific F77 kernels])
 fi
 
 AC_ARG_ENABLE(bluegene,
@@ -352,7 +353,7 @@ fi
 
 AC_SUBST(CC_FOR_BUILD) 
 
-if test "$enable_fortran" = "yes"; then 
+if test "$enable_fortran" = "yes" -o "$enable_power6" = "yes"; then 
   AC_PROG_F77( $f77_names )
   if test -z "$F77"; then
     AC_MSG_ERROR([No fortran compiler found])
@@ -427,7 +428,7 @@ AH_TEMPLATE([F77_OR_C_FUNC_],
 
 
 
-if test "$enable_fortran" = "yes"; then
+if test "$enable_fortran" = "yes" -o "$enable_power6" = "yes"; then
   AC_F77_LIBRARY_LDFLAGS
   AC_F77_WRAPPERS
   AC_DEFINE([F77_OR_C_FUNC(name,NAME)],[F77_FUNC(name,NAME)])

@@ -53,8 +53,6 @@ Rb                85.47000	; Rb+  rubidium
 Cs               132.90000	; Cs+  cesium
 OW_spc            15.99940      ; SPC Water OW
 HW_spc             1.00800      ; SPC Water HW
-;OW_spc             9.95140      ; SPC Water OW heavy
-;HW_spc             4.03200      ; SPC Water HW heavy
 Li                 6.94000      ; Li+ from parm94/96
 Zn                65.40000      ; Zn2+ from parm99
 HW_tip4pew         1.00800      ; tip4pEW HW
@@ -66,7 +64,5 @@ OW_tip5p          16.00000      ; tip5p OW
 HW_tip3p           4.03200      ; TIP3P HEAVY dummy water HW
 OW_tip3p           9.95200      ; TIP3P heavy dummy water OW
 MW                 0.00000      ; Dummy mass for tip4p/5p water extra point charge
-MNH3               0.00000      ; Dummy mass in rigid tetraedrical NH3 group
-MNH2               0.00000      ; Dummy mass in rigid umbrella-shaped NH2 group
-MCH3A              0.00000      ; Dummy mass in rigid tetraedrical CH3 group
-MCH3B              0.00000      ; Dummy mass in rigid tetraedrical CH3 group
+MCH3               0.00000      ; Dummy mass in rigid tetrahedral CH3 group
+MNH3               0.00000      ; Dummy mass in rigid tetrahedral NH3 group
