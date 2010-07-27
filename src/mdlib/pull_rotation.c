@@ -671,10 +671,11 @@ static FILE *open_slab_out(t_rot *rot, const char *fn)
 static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv, 
                           unsigned long Flags)
 {
-    FILE      *fp;
-    int       g,nsets;
-    t_rotgrp  *rotg;
-    char      **setname,buf[50];
+    FILE       *fp;
+    int        g,nsets;
+    t_rotgrp   *rotg;
+    const char **setname;
+    char       buf[50];
     gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
 
     
@@ -765,8 +766,6 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
         
         if (nsets > 1)
             xvgr_legend(fp, nsets, setname, oenv);
-        for(g=0; g<nsets; g++)
-            sfree(setname[g]);
         sfree(setname);
         
         fflush(fp);
@@ -3317,7 +3316,6 @@ extern void do_rotation(
             case erotgFLEX2:
                 /* Subtract the center of the rotation group */
                 /* get_center(erg->xc, erg->mc, rotg->nat, center); */
-                /* TODO: output the center somewhere */
                 /* svmul(-1.0, center, transvec); */
                 /* translate_x(erg->xc, rotg->nat, transvec); */
                 do_flexible(cr,er,rotg,g,x,box,t,step,outstep_torque);
