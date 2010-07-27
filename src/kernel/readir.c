@@ -967,11 +967,12 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
     }
 
     /* now read in the weights - error handling? */
-    snew(fep->init_lambda_weights,fep->n_lambda);
+    /*snew(fep->init_lambda_weights,fep->n_lambda); */
     parse_n_double(weights,&nweights,&(fep->init_lambda_weights));
     if (nweights == 0) 
     {
         fep->init_weights = 0;
+        snew(fep->init_lambda_weights,fep->n_lambda); /* initialize to zero */
     } 
     else if (nweights != fep->n_lambda)
     {
