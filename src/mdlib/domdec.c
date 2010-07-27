@@ -6083,7 +6083,7 @@ static void set_dd_dim(FILE *fplog,gmx_domdec_t *dd)
     int dim;
 
     dd->ndim = 0;
-    if (getenv("GMX_DD_ORDER_ZYX"))
+    if (getenv("GMX_DD_ORDER_ZYX") != NULL)
     {
         /* Decomposition order z,y,x */
         if (fplog)
@@ -6458,8 +6458,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     {
         /* The following choices should match those
          * in comm_cost_est in domdec_setup.c.
+         * Note that here the checks have to take into account
+         * that the decomposition might occur in a different order than xyz
+         * (for instance through the env.var. GMX_DD_ORDER_ZYX),
+         * in which case they will not match those in comm_cost_est,
+         * but since that is mainly for testing purposes that's fine.
          */
-        if (dd->nc[XX] > 1 && dd->nc[YY] > 1 &&
+        if (dd->ndim >= 2 && dd->dim[0] == XX && dd->dim[1] == YY &&
             comm->npmenodes > dd->nc[XX] && comm->npmenodes % dd->nc[XX] == 0 &&
             getenv("GMX_PMEONEDD") == NULL)
         {
@@ -6467,20 +6472,22 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             comm->npmenodes_x   = dd->nc[XX];
             comm->npmenodes_y   = comm->npmenodes/comm->npmenodes_x;
         }
-        else if (dd->nc[XX] == 1 && dd->nc[YY] > 1 && dd->dim[0] == YY)
-        {
-            comm->npmedecompdim = 1;
-            comm->npmenodes_x   = 1;
-            comm->npmenodes_y   = comm->npmenodes;
-        }
         else
         {
             /* In case nc is 1 in both x and y we could still choose to
              * decompose pme in y instead of x, but we use x for simplicity.
              */
             comm->npmedecompdim = 1;
-            comm->npmenodes_x   = comm->npmenodes;
-            comm->npmenodes_y   = 1;
+            if (dd->dim[0] == YY)
+            {
+                comm->npmenodes_x = 1;
+                comm->npmenodes_y = comm->npmenodes;
+            }
+            else
+            {
+                comm->npmenodes_x = comm->npmenodes;
+                comm->npmenodes_y = 1;
+            }
         }    
         if (fplog)
         {
