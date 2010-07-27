@@ -630,7 +630,7 @@ int gmx_trjconv(int argc,char *argv[])
             "progressive", NULL };
 
     static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
-    static bool  bCenter=FALSE,bTer=FALSE;
+    static bool  bCenter=FALSE;
     static int   skip_nr=1,ndec=3,nzero=0;
     static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
     static rvec  newbox = {0,0,0}, shift = {0,0,0}, trans = {0,0,0};
@@ -711,10 +711,6 @@ int gmx_trjconv(int argc,char *argv[])
                         { &nzero },
                         "Prepend file number in case you use the -sep flag "
                         "with this number of zeroes" },
-                    { "-ter", FALSE, etBOOL,
-                        { &bTer },
-                        "Use 'TER' in pdb file as end of frame in stead of "
-                        "default 'ENDMDL'" },
                     { "-dropunder", FALSE, etREAL,
                         { &dropunder }, "Drop all frames below this value" },
                     { "-dropover", FALSE, etREAL,
@@ -861,8 +857,6 @@ int gmx_trjconv(int argc,char *argv[])
                       "First doing the rotational fit and then doing the PBC treatment gives incorrect\n"
 		      "results!");
 	}
-        /* set flag for pdbio to terminate frames at 'TER' (iso 'ENDMDL') */
-        pdb_use_ter(bTer);
 
         /* ndec is in nr of decimal places, prec is a multiplication factor: */
         prec = 1;
@@ -1427,7 +1421,7 @@ int gmx_trjconv(int argc,char *argv[])
                                 else
                                     model_nr++;
                                 write_pdbfile(out,title,&useatoms,frout.x,
-                                              frout.ePBC,frout.box,0,model_nr,gc);
+                                              frout.ePBC,frout.box,' ',model_nr,gc,TRUE);
                                 break;
                             case efG96:
                                 frout.title = title;
