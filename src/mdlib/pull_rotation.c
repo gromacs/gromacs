@@ -3261,6 +3261,13 @@ extern void do_rotation(
                 }
             }
 
+            /* Calculate Omega*(y_i-y_c) for the local positions */
+            rotate_local_reference(rotg);
+
+            /* Choose the nearest PBC images of the group atoms with respect
+             * to the rotated reference positions */
+            choose_pbc_image(x, rotg, box, 3);
+
             /* Get the center of the rotation group */
             if ( (rotg->eType==erotgISOPF) || (rotg->eType==erotgPMPF) )
                 get_center_comm(cr, erg->x_loc_pbc, erg->m_loc, erg->nat_loc, rotg->nat, erg->xc_center);
@@ -3284,16 +3291,6 @@ extern void do_rotation(
 
         bFlex = (rotg->eType==erotgFLEX) || (rotg->eType==erotgFLEX2);
         bColl = bFlex || (rotg->eType==erotgRMPF) || (rotg->eType==erotgRM2PF);
-
-        if (!bColl)
-        {
-            /* Calculate Omega*(y_i-y_c) for the local positions */
-            rotate_local_reference(rotg);
-
-            /* Choose the nearest PBC images of the group atoms with respect
-             * to the rotated reference positions */
-            choose_pbc_image(x, rotg, box, 3);
-        }
 
         if (outstep_torque && MASTER(cr))
             fprintf(er->out_rot, "%12.4f", erg->degangle);
