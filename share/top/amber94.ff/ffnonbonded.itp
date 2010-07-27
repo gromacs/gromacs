@@ -1,5 +1,5 @@
 [ atomtypes ]
-; name    bond_type   mass   charge ptype   sigma      epsilon
+; name     bond_type  mass   charge ptype  sigma      epsilon
 Br            BR     0.0000  0.0000  A   0.00000e+00  0.00000e+00
 C             C      0.0000  0.0000  A   3.39967e-01  3.59824e-01
 CA            CA     0.0000  0.0000  A   3.39967e-01  3.59824e-01
@@ -54,18 +54,18 @@ K             K      0.0000  0.0000  A   4.73602e-01  1.37235e-03
 Rb            Rb     0.0000  0.0000  A   5.26699e-01  7.11280e-04
 Cs            Cs     0.0000  0.0000  A   6.04920e-01  3.37230e-04
 ; spc water - use only with spc.itp & settles
-OW_spc        OW     0.0000  0.0000  A   3.16557e-01  6.50629e-01 
+OW_spc        OW     0.0000  0.0000  A   3.16557e-01  6.50629e-01
 HW_spc        HW     0.0000  0.0000  A   0.00000e+00  0.00000e+00
 Li            Li     0.0000  0.0000  A   2.02590e-01  7.65672e-02
 Zn            Zn     0.0000  0.0000  A   1.95998e-01  5.23000e-02
 ;tip4p-EW
 HW_tip4pew    HW     0.0000  0.0000  A   0.00000e+00  0.00000e+00
 OW_tip4pew    OW     0.0000  0.0000  A   3.16435e-01  6.80946e-01
-; tip4p  
-HW_tip4p      HW     0.0000  0.0000  A   0.00000e+00  0.00000e+00	
+; tip4p
+HW_tip4p      HW     0.0000  0.0000  A   0.00000e+00  0.00000e+00
 OW_tip4p      OW     0.0000  0.0000  A   3.15365e-01  6.48520e-01
 ;tip5p
-HW_tip5p      HW     0.0000  0.0000  A   0.00000e+00  0.00000e+00	
+HW_tip5p      HW     0.0000  0.0000  A   0.00000e+00  0.00000e+00
 OW_tip5p      OW     0.0000  0.0000  A   3.12000e-01  6.69440e-01
 ;tip3p heavy
 HW_tip3p      HW     4.0320  0.0000  A   0.00000e+00  0.00000e+00
@@ -73,8 +73,6 @@ OW_tip3p      OW     9.9520  0.0000  A   3.15061e-01  6.36386e-01
 ; dummy defs
 ; MW=Dummy mass for tip4p/EW/5p water extra point charge
 MW           MW      0.0000  0.0000  A   0.00000e+00  0.00000e+00
+; Dummy masses for rigid CH3 and NH3 groups
+MCH3         MCH3    0.0000  0.0000  A   0.00000e+00  0.00000e+00
 MNH3         MNH3    0.0000  0.0000  A   0.00000e+00  0.00000e+00
-MNH2         MNH2    0.0000  0.0000  A   0.00000e+00  0.00000e+00
-MCH3A        MCH3A   0.0000  0.0000  A   0.00000e+00  0.00000e+00
-MCH3B        MCH3B   0.0000  0.0000  A   0.00000e+00  0.00000e+00
-
