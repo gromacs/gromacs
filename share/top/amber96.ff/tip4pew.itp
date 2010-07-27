@@ -4,10 +4,10 @@ SOL		2
 
 [ atoms ]
 ; id  at type     res nr  res name  at name  cg nr  charge    mass
-  1   OW_tip4p    1       SOL       OW       1       0        16.00000
-  2   HW_tip4p    1       SOL       HW1      1       0.52      1.00800
-  3   HW_tip4p    1       SOL       HW2      1       0.52      1.00800
-  4   MW          1       SOL       MW       1      -1.04      0.00000
+  1   OW_tip4pew  1       SOL       OW       1       0        16.00000
+  2   HW_tip4pew  1       SOL       HW1      1       0.52422   1.00800
+  3   HW_tip4pew  1       SOL       HW2      1       0.52422   1.00800
+  4   MW          1       SOL       MW       1      -1.04844   0.00000
 
 #ifndef FLEXIBLE
 
@@ -16,7 +16,6 @@ SOL		2
 1	1	0.09572	0.15139
 
 #else
-
 [ bonds ]
 ; i     j       funct   length  force.c.
 1       2       1       0.09572 502416.0 0.09572        502416.0 
@@ -31,7 +30,7 @@ SOL		2
 
 [ virtual_sites3 ]
 ; Vsite from                    funct   a               b
-4       1       2       3       1       0.128012065     0.128012065
+4       1       2       3       1       0.106676721     0.106676721
 
 
 [ exclusions ]
@@ -49,7 +48,9 @@ SOL		2
 ;	  
 ;	H		H
 ;
+; Ewald tip4p:
 ; const = distance (OV) / [ cos (angle(VOH)) 	* distance (OH) ]
-;	  0.015 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	  0.0125 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const = 0.106676721
 ;
 ; Vsite pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
