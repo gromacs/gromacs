@@ -4,7 +4,7 @@ IB+             1       ; big positive ion
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_32          1       IB+            IB      1    1.00000
+   1    IB                  1       IB+            IB      1    1.00000
 
 
 [ moleculetype ]
@@ -13,7 +13,7 @@ Ca+             1
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_15          1       Ca+            Ca      1    2.00000
+   1    C0                  1       Ca+            Ca      1    2.00000
 
 
 [ moleculetype ]
@@ -22,7 +22,7 @@ Cl-             1
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_30          1       Cl-            Ca      1   -1.00000
+   1    Cl                  1       Cl-            Ca      1   -1.00000
 
 
 [ moleculetype ]
@@ -31,7 +31,7 @@ Na+             1
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_31          1       Na+            Na      1    1.00000
+   1    Na                  1       Na+            Na      1    1.00000
 
 
 [ moleculetype ]
@@ -40,7 +40,7 @@ Mg+             1
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_33          1       Mg+            Mg      1    2.00000
+   1    MG                  1       Mg+            Mg      1    2.00000
 
 
 [ moleculetype ]
@@ -49,7 +49,7 @@ K+              1
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_51          1       K+             K       1    1.00000
+   1    K                   1       K+             K       1    1.00000
 
 
 [ moleculetype ]
@@ -58,7 +58,7 @@ Rb+             1
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_52          1       Rb+            Rb      1    1.00000
+   1    Rb                  1       Rb+            Rb      1    1.00000
 
 
 [ moleculetype ]
@@ -67,7 +67,7 @@ Cs+             1
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_53          1       Cs+            Cs      1    1.00000
+   1    Cs                  1       Cs+            Cs      1    1.00000
 
 
 [ moleculetype ]
@@ -76,7 +76,7 @@ Li+             1
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_56          1       Li+            Li      1    1.00000
+   1    Li                  1       Li+            Li      1    1.00000
 
 
 [ moleculetype ]
@@ -85,23 +85,4 @@ Zn+             1
 
 [ atoms ]
 ; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_57          1       Zn+            Zn      1    2.00000
-
-
-[ moleculetype ]
-; molname       nrexcl
-Sr+             1   ; From ponder/tinker amber
-
-[ atoms ]
-; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_58          1       Sr+            Sr      1    2.00000
-
-
-[ moleculetype ]
-; molname       nrexcl
-Ba+             1   ; From ponder/tinker amber 
-
-[ atoms ]
-; id    at type         res nr  residu name     at name  cg nr  charge
-   1    amber99_59          1       Ba+            Ba      1    2.00000
-
+   1    Zn                  1       Zn+            Zn      1    2.00000

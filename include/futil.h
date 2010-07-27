@@ -72,6 +72,17 @@ extern "C" {
 #endif
 #endif
 
+
+#ifdef HAVE_FSEEKO
+typedef off_t gmx_off_t;
+#else
+#ifdef HAVE__FSEEKI64 
+typedef __int64 gmx_off_t;
+#else
+typedef long int gmx_off_t;
+#endif
+#endif
+
   
 extern void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
@@ -107,6 +118,14 @@ extern void frewind(FILE *fp);
 /* Does not rewind pipes, but does so for normal files */
 
 #define rewind frewind
+
+
+int gmx_fseek(FILE *stream, gmx_off_t offset, int whence); 
+/* OS-independent fseek. 64-bit when available */
+
+gmx_off_t gmx_ftell(FILE *stream); 
+/* OS-independent fseek. 64-bit when available. */
+
 
 bool is_pipe(FILE *fp);
 
@@ -155,7 +174,7 @@ extern FILE *low_libopen(const char *file,bool bFatal);
 extern void gmx_tmpnam(char *buf);
 
 /* truncte the file to the specified length */
-int gmx_truncatefile(char *path, off_t length);
+int gmx_truncatefile(char *path, gmx_off_t length);
 
 /* rename/move the file (atomically, if the OS makes that available) oldname 
    to newname */

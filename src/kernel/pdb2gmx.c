@@ -653,8 +653,8 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],bool bVerbose)
 	ri = &pdba->resinfo[pdba->atom[i].resind];
 	printf("deleting duplicate atom %4s  %s%4d%c",
 	       *pdba->atomname[i],*ri->name,ri->nr,ri->ic);
-	if (ri->chain && (ri->chain != ' '))
-	  printf(" ch %c", ri->chain);
+	if (ri->chainid && (ri->chainid != ' '))
+	  printf(" ch %c", ri->chainid);
 	if (pdba->pdbinfo) {
 	  if (pdba->pdbinfo[i].atomnr)
 	    printf("  pdb nr %4d",pdba->pdbinfo[i].atomnr);
@@ -754,7 +754,7 @@ void find_nc_ter(t_atoms *pdba,int r0,int r1,int *r_start,int *r_end,gmx_residue
 
 
 typedef struct {
-  char chain;
+  char chainid;
   int  start;
   int  natom;
   bool bAllWat;
@@ -763,7 +763,7 @@ typedef struct {
 } t_pdbchain;
 
 typedef struct {
-  char chain;
+  char chainid;
   bool bAllWat;
   int nterpairs;
   int *chainstart;
@@ -933,6 +933,7 @@ int main(int argc, char *argv[])
 
   /* Command line arguments must be static */
   static bool bNewRTP=FALSE,bAddCWD=FALSE,bAllowOverrideRTP=FALSE,bMerge=FALSE;
+  static bool bMatchChainID=FALSE;
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bGlnMan=FALSE, bArgMan=FALSE;
@@ -958,8 +959,12 @@ int main(int argc, char *argv[])
       "HIDDENLong bond warning distance" },
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
+/* Not yet enabled.
+ { "-mergechid", FALSE, etBOOL, {&bMatchChainID},
+      "Merge chains across TER records if they have the same chain ID" },          
+ */
     { "-merge",  FALSE, etBOOL, {&bMerge},
-      "Merge chains into one molecule definition"},
+      "Interactively merge chains into one molecule definition"},
     { "-ff",     FALSE, etSTR,  {&ff},
       "Force field, interactive by default. Use -h for information." },
     { "-water",  FALSE, etENUM, {watstr},
@@ -1140,10 +1145,10 @@ int main(int argc, char *argv[])
   for (i=0; (i<natom); i++) {
     ri = &pdba_all.resinfo[pdba_all.atom[i].resind];
     bWat = strcasecmp(*ri->name,watres) == 0;
-    if ((i == 0) || (ri->chain != pchain) || (bWat != bPrevWat)) {
+    if ((i == 0) || (ri->chainid != pchain) || (bWat != bPrevWat)) {
       if (bMerge && i>0 && !bWat) {
 	printf("Merge chain '%c' and '%c'? (n/y) ",
-	       pchain,ri->chain);
+	       pchain,ri->chainid);
 	if(NULL==fgets(select,STRLEN-1,stdin))
         {
 	    gmx_fatal(FARGS,"Error reading from stdin");
@@ -1151,7 +1156,7 @@ int main(int argc, char *argv[])
       } 
       else
 	select[0] = 'n';
-      pchain = ri->chain;
+      pchain = ri->chainid;
       if (select[0] == 'y') {
 	pdb_ch[nch-1].chainstart[pdb_ch[nch-1].nterpairs] = 
 	  pdba_all.atom[i].resind;
@@ -1163,21 +1168,21 @@ int main(int argc, char *argv[])
 	  pdb_ch[nch-1].natom=i-pdb_ch[nch-1].start;
 	if (bWat) {
 	  nwaterchain++;
-	  ri->chain = ' ';
+	  ri->chainid = ' ';
 	}
 	/* check if chain identifier was used before */
 	for (j=0; (j<nch); j++) {
-	  if (pdb_ch[j].chain != ' ' && pdb_ch[j].chain == ri->chain) {
+	  if (pdb_ch[j].chainid != ' ' && pdb_ch[j].chainid == ri->chainid) {
 	    gmx_fatal(FARGS,"Chain identifier '%c' was used "
 		      "in two non-sequential blocks (residue %d, atom %d)",
-		      ri->chain,ri->nr,i+1);
+		      ri->chainid,ri->nr,i+1);
 	  }
 	}
 	if (nch == maxch) {
 	  maxch += 16;
 	  srenew(pdb_ch,maxch);
 	}
-	pdb_ch[nch].chain = ri->chain;
+	pdb_ch[nch].chainid = ri->chainid;
 	pdb_ch[nch].start=i;
 	pdb_ch[nch].bAllWat=bWat;
 	if (bWat)
@@ -1214,7 +1219,7 @@ int main(int argc, char *argv[])
   /* copy pdb data and x for all chains */
   for (i=0; (i<nch); i++) {
     si=swap_index[i];
-    chains[i].chain   = pdb_ch[si].chain;
+    chains[i].chainid = pdb_ch[si].chainid;
     chains[i].bAllWat = pdb_ch[si].bAllWat;
     chains[i].nterpairs = pdb_ch[si].nterpairs;
     chains[i].chainstart = pdb_ch[si].chainstart;
@@ -1223,15 +1228,15 @@ int main(int argc, char *argv[])
     snew(chains[i].r_start,pdb_ch[si].nterpairs);
     snew(chains[i].r_end,pdb_ch[si].nterpairs);
     /* check for empty chain identifiers */
-    if (nch-nwaterchain > 1 && !pdb_ch[si].bAllWat && chains[i].chain==' ') {
+    if (nch-nwaterchain > 1 && !pdb_ch[si].bAllWat && chains[i].chainid==' ') {
       bUsed=TRUE;
       for(k='A'; (k<='Z') && bUsed; k++) {
 	bUsed=FALSE;
 	for(j=0; j<nch; j++)
-	  bUsed = bUsed || pdb_ch[j].chain==k || chains[j].chain==k;
+	  bUsed = bUsed || pdb_ch[j].chainid==k || chains[j].chainid==k;
 	if (!bUsed) {
 	  printf("Gave chain %d chain identifier '%c'\n",i+1,k);
-	  chains[i].chain=k;
+	  chains[i].chainid=k;
 	}
       }
     }
@@ -1259,7 +1264,7 @@ int main(int argc, char *argv[])
       snew(chains[i].pdba->resinfo[j].name,1);
       *chains[i].pdba->resinfo[j].name = strdup(*pdba_all.resinfo[k+j].name);
       /* make all chain identifiers equal to that of the chain */
-      chains[i].pdba->resinfo[j].chain = pdb_ch[si].chain;
+      chains[i].pdba->resinfo[j].chainid = pdb_ch[si].chainid;
     }
   }
 
@@ -1275,7 +1280,7 @@ int main(int argc, char *argv[])
   printf("\n  %5s  %4s %6s\n","chain","#res","#atoms");
   for (i=0; (i<nch); i++)
     printf("  %d '%c' %5d %6d  %s\n",
-	   i+1, chains[i].chain ? chains[i].chain:'-',
+	   i+1, chains[i].chainid ? chains[i].chainid:'-',
 	   chains[i].pdba->nres, chains[i].pdba->nr,
 	   chains[i].bAllWat ? "(only water)":"");
   printf("\n");
@@ -1333,9 +1338,9 @@ int main(int argc, char *argv[])
     natom=cc->pdba->nr;
     nres =cc->pdba->nres;
     
-    if (cc->chain && ( cc->chain != ' ' ) )
+    if (cc->chainid && ( cc->chainid != ' ' ) )
       printf("Processing chain %d '%c' (%d atoms, %d residues)\n",
-	      chain+1,cc->chain,natom,nres);
+	      chain+1,cc->chainid,natom,nres);
     else
       printf("Processing chain %d (%d atoms, %d residues)\n",
 	      chain+1,natom,nres);
@@ -1369,10 +1374,10 @@ int main(int argc, char *argv[])
     }
     
     if (debug) {
-      if (cc->chain == ' ') {
+      if (cc->chainid == ' ') {
 	sprintf(fn,"chain.pdb");
       } else {
-	sprintf(fn,"chain_%c.pdb",cc->chain);
+	sprintf(fn,"chain_%c.pdb",cc->chainid);
       }
       write_sto_conf(fn,title,pdba,x,NULL,ePBC,box);
     }
@@ -1493,7 +1498,7 @@ int main(int argc, char *argv[])
 		NULL,NULL,TRUE,FALSE);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
-    if (debug) write_pdbfile(debug,title,pdba,x,ePBC,box,0,0,NULL);
+    if (debug) write_pdbfile(debug,title,pdba,x,ePBC,box,' ',0,NULL,TRUE);
 
     if (debug)
       for(i=0; (i<natom); i++)
@@ -1508,13 +1513,13 @@ int main(int argc, char *argv[])
     if (cc->bAllWat) {
       sprintf(molname,"Water");
     } else {
-      if (cc->chain != ' ') {
-	if (cc->chain <= 'Z') {
-	  sprintf(suffix,"_%c",cc->chain);
+      if (cc->chainid != ' ') {
+	if (cc->chainid <= 'Z') {
+	  sprintf(suffix,"_%c",cc->chainid);
 	} else {
 	  sprintf(suffix,"_%c%c",
-		  'A' - 1 + (cc->chain - 'A') / ('Z' - 'A' + 1),
-		  'A' + (cc->chain - 'A') % ('Z' - 'A' + 1));
+		  'A' - 1 + (cc->chainid - 'A') / ('Z' - 'A' + 1),
+		  'A' + (cc->chainid - 'A') % ('Z' - 'A' + 1));
 	}
       }
       sprintf(molname,"Protein%s",suffix);
@@ -1582,10 +1587,10 @@ int main(int argc, char *argv[])
     cc->x = x;
     
     if (debug) {
-      if (cc->chain == ' ')
+      if (cc->chainid == ' ')
 	sprintf(fn,"chain.pdb");
       else
-	sprintf(fn,"chain_%c.pdb",cc->chain);
+	sprintf(fn,"chain_%c.pdb",cc->chainid);
       cool_quote(quote,255,NULL);
       write_sto_conf(fn,quote,pdba,x,NULL,ePBC,box);
     }
@@ -1635,7 +1640,7 @@ int main(int argc, char *argv[])
       atoms->atom[k]=chains[i].pdba->atom[j];
       atoms->atom[k].resind += l; /* l is processed nr of residues */
       atoms->atomname[k]=chains[i].pdba->atomname[j];
-      atoms->resinfo[atoms->atom[k].resind].chain = chains[i].chain;
+      atoms->resinfo[atoms->atom[k].resind].chainid = chains[i].chainid;
       copy_rvec(chains[i].x[j],x[k]);
       k++;
     }

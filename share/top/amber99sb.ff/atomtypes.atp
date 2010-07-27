@@ -1,72 +1,70 @@
-amber99_1         79.90000	; BR  bromine
-amber99_2         12.01000	; C  sp2 C carbonyl group 
-amber99_3         12.01000	; CA  sp2 C pure aromatic (benzene)
-amber99_4         12.01000	; CB  sp2 aromatic C, 5&6 membered ring junction
-amber99_5         12.01000	; CC  sp2 aromatic C, 5 memb. ring HIS
-amber99_6         12.01000	; CK  sp2 C 5 memb.ring in purines
-amber99_7         12.01000	; CM  sp2 C  pyrimidines in pos. 5 & 6
-amber99_8         12.01000	; CN  sp2 C aromatic 5&6 memb.ring junct.(TRP)
-amber99_9         12.01000	; CQ  sp2 C in 5 mem.ring of purines between 2 N
-amber99_10        12.01000	; CR  sp2 arom as CQ but in HIS
-amber99_11        12.01000	; CT  sp3 aliphatic C
-amber99_12        12.01000	; CV  sp2 arom. 5 memb.ring w/1 N and 1 H (HIS)
-amber99_13        12.01000	; CW  sp2 arom. 5 memb.ring w/1 N-H and 1 H (HIS)
-amber99_14        12.01000	; C*  sp2 arom. 5 memb.ring w/1 subst. (TRP)
-amber99_15        40.08000	; Ca2+  calcium
-amber99_16        19.00000	; F  fluorine
-amber99_17         1.00800	; H  H bonded to nitrogen atoms
-amber99_18         1.00800	; HC  H aliph. bond. to C without electrwd.group
-amber99_19         1.00800	; H1  H aliph. bond. to C with 1 electrwd. group
-amber99_20         1.00800	; H2  H aliph. bond. to C with 2 electrwd.groups
-amber99_21         1.00800	; H3  H aliph. bond. to C with 3 eletrwd.groups
-amber99_22         1.00800	; HA  H arom. bond. to C without elctrwd. groups
-amber99_23         1.00800	; H4  H arom. bond. to C with 1 electrwd. group
-amber99_24         1.00800	; H5  H arom. bond. to C with 2 electrwd. groups
-amber99_25         1.00800	; HO  hydroxyl group
-amber99_26         1.00800	; HS  hydrogen bonded to sulphur
-amber99_27         1.00800	; HW  H in TIP3P water
-amber99_28         1.00800	; HP  H bonded to C next to positively charged gr
-amber99_29       126.90000	; I  iodine
-amber99_30        35.45000	; Cl-
-amber99_31        22.99000	; Na+
-amber99_32       131.00000	; IB  'big ion w/ waters' for vacuum (Na+, 6H2O)
-amber99_33        24.30000	; Mg2+  magnesium
-amber99_34        14.01000	; N  sp2 nitrogen in amide groups
-amber99_35        14.01000	; NA  sp2 N in 5 memb.ring w/H atom (HIS)
-amber99_36        14.01000	; NB  sp2 N in 5 memb.ring w/LP (HIS,ADE,GUA)
-amber99_37        14.01000	; NC  sp2 N in 6 memb.ring w/LP (ADE,GUA)
-amber99_38        14.01000	; N2  sp2 N in amino groups
-amber99_39        14.01000	; N3  sp3 N for charged amino groups (Lys, etc)
-amber99_40        14.01000	; N*  sp2 N 
-amber99_41        16.00000	; O  carbonyl group oxygen
-amber99_42        16.00000	; OW  oxygen in TIP3P water
-amber99_43        16.00000	; OH  oxygen in hydroxyl group
-amber99_44        16.00000	; OS  ether and ester oxygen
-amber99_45        16.00000	; O2  carboxyl and phosphate group oxygen
-amber99_46        30.97000	; P  phosphate
-amber99_47        32.06000	; S  sulphur in disulfide linkage
-amber99_48        32.06000	; SH  sulphur in cystine
-amber99_49        63.55000	; CU  copper
-amber99_50        55.00000	; FE  iron
-amber99_51        39.10000	; K+  potassium
-amber99_52        85.47000	; Rb+  rubidium
-amber99_53       132.90000	; Cs+  cesium
-amber99_54        15.99940      ; SPC Water OW
-amber99_55         1.00800      ; SPC Water HW
-;amber99_54         9.95140      ; SPC Water OW heavy
-;amber99_55         4.03200      ; SPC Water HW heavy
-amber99_56         6.94000      ; Li+ from parm94/96
-amber99_57        65.40000      ; Zn2+ from parm99
-amber99_58        87.62000      ; Sr2+ from Tinker/ponder
-amber99_59       137.33000      ; Ba2+ from Tinker/ponder
-amber99_60         1.00800      ; tip4pEW HW
-amber99_61        16.00000      ; tip4pEW OW
-amber99_62         1.00800      ; tip4p HW
-amber99_63        16.00000      ; tip4p OW
-amber99_64         1.00800      ; tip5p HW
-amber99_65        16.00000      ; tip5p OW
-amber99_66         4.03200      ; TIP3P HEAVY dummy water HW
-amber99_67         9.95200      ; TIP3P heavy dummy water OW
+Br                79.90000	; BR  bromine
+C                 12.01000	; C  sp2 C carbonyl group 
+CA                12.01000	; CA  sp2 C pure aromatic (benzene)
+CB                12.01000	; CB  sp2 aromatic C, 5&6 membered ring junction
+CC                12.01000	; CC  sp2 aromatic C, 5 memb. ring HIS
+CK                12.01000	; CK  sp2 C 5 memb.ring in purines
+CM                12.01000	; CM  sp2 C  pyrimidines in pos. 5 & 6
+CN                12.01000	; CN  sp2 C aromatic 5&6 memb.ring junct.(TRP)
+CQ                12.01000	; CQ  sp2 C in 5 mem.ring of purines between 2 N
+CR                12.01000	; CR  sp2 arom as CQ but in HIS
+CT                12.01000	; CT  sp3 aliphatic C
+CV                12.01000	; CV  sp2 arom. 5 memb.ring w/1 N and 1 H (HIS)
+CW                12.01000	; CW  sp2 arom. 5 memb.ring w/1 N-H and 1 H (HIS)
+C*                12.01000	; C*  sp2 arom. 5 memb.ring w/1 subst. (TRP)
+C0                40.08000	; Ca2+  calcium
+F                 19.00000	; F  fluorine
+H                  1.00800	; H  H bonded to nitrogen atoms
+HC                 1.00800	; HC  H aliph. bond. to C without electrwd.group
+H1                 1.00800	; H1  H aliph. bond. to C with 1 electrwd. group
+H2                 1.00800	; H2  H aliph. bond. to C with 2 electrwd.groups
+H3                 1.00800	; H3  H aliph. bond. to C with 3 eletrwd.groups
+HA                 1.00800	; HA  H arom. bond. to C without elctrwd. groups
+H4                 1.00800	; H4  H arom. bond. to C with 1 electrwd. group
+H5                 1.00800	; H5  H arom. bond. to C with 2 electrwd. groups
+HO                 1.00800	; HO  hydroxyl group
+HS                 1.00800	; HS  hydrogen bonded to sulphur
+HW                 1.00800	; HW  H in TIP3P water
+HP                 1.00800	; HP  H bonded to C next to positively charged gr
+I                126.90000	; I  iodine
+Cl                35.45000	; Cl-
+Na                22.99000	; Na+
+IB               131.00000	; IB  'big ion w/ waters' for vacuum (Na+, 6H2O)
+MG                24.30000	; Mg2+  magnesium
+N                 14.01000	; N  sp2 nitrogen in amide groups
+NA                14.01000	; NA  sp2 N in 5 memb.ring w/H atom (HIS)
+NB                14.01000	; NB  sp2 N in 5 memb.ring w/LP (HIS,ADE,GUA)
+NC                14.01000	; NC  sp2 N in 6 memb.ring w/LP (ADE,GUA)
+N2                14.01000	; N2  sp2 N in amino groups
+N3                14.01000	; N3  sp3 N for charged amino groups (Lys, etc)
+N*                14.01000	; N*  sp2 N 
+O                 16.00000	; O  carbonyl group oxygen
+OW                16.00000	; OW  oxygen in TIP3P water
+OH                16.00000	; OH  oxygen in hydroxyl group
+OS                16.00000	; OS  ether and ester oxygen
+O2                16.00000	; O2  carboxyl and phosphate group oxygen
+P                 30.97000	; P  phosphate
+S                 32.06000	; S  sulphur in disulfide linkage
+SH                32.06000	; SH  sulphur in cystine
+CU                63.55000	; CU  copper
+FE                55.00000	; FE  iron
+K                 39.10000	; K+  potassium
+Rb                85.47000	; Rb+  rubidium
+Cs               132.90000	; Cs+  cesium
+OW_spc            15.99940      ; SPC Water OW
+HW_spc             1.00800      ; SPC Water HW
+;OW_spc             9.95140      ; SPC Water OW heavy
+;HW_spc             4.03200      ; SPC Water HW heavy
+Li                 6.94000      ; Li+ from parm94/96
+Zn                65.40000      ; Zn2+ from parm99
+HW_tip4pew         1.00800      ; tip4pEW HW
+OW_tip4pew        16.00000      ; tip4pEW OW
+HW_tip4p           1.00800      ; tip4p HW
+OW_tip4p          16.00000      ; tip4p OW
+HW_tip5p           1.00800      ; tip5p HW
+OW_tip5p          16.00000      ; tip5p OW
+HW_tip3p           4.03200      ; TIP3P HEAVY dummy water HW
+OW_tip3p           9.95200      ; TIP3P heavy dummy water OW
 MW                 0.00000      ; Dummy mass for tip4p/5p water extra point charge
 MNH3               0.00000      ; Dummy mass in rigid tetraedrical NH3 group
 MNH2               0.00000      ; Dummy mass in rigid umbrella-shaped NH2 group

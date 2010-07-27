@@ -1,43 +1,43 @@
 
 [ CH3 ]
-; amber99_11 sp3 aliphatic C 
+; CT         sp3 aliphatic C 
  ;bound to sp2/sp3 carbons
-   amber99_11   amber99_2       MCH3B
-   amber99_11   amber99_3       MCH3B
-   amber99_11   amber99_4       MCH3B
-   amber99_11   amber99_5       MCH3B
-   amber99_11   amber99_6       MCH3B
-   amber99_11   amber99_7       MCH3B
-   amber99_11   amber99_8       MCH3B
-   amber99_11   amber99_9       MCH3B
-   amber99_11   amber99_10      MCH3B
-   amber99_11   amber99_11      MCH3B
-   amber99_11   amber99_12      MCH3B
-   amber99_11   amber99_13      MCH3B
-   amber99_11   amber99_14      MCH3B
-   amber99_11   amber99_34      MCH3B
-   amber99_11   amber99_47      MCH3A
+   CT           C               MCH3B
+   CT           CA              MCH3B
+   CT           CB              MCH3B
+   CT           CC              MCH3B
+   CT           CK              MCH3B
+   CT           CM              MCH3B
+   CT           CN              MCH3B
+   CT           CQ              MCH3B
+   CT           CR              MCH3B
+   CT           CT              MCH3B
+   CT           CV              MCH3B
+   CT           CW              MCH3B
+   CT           C*              MCH3B
+   CT           N               MCH3B
+   CT           S               MCH3A
 
 [ NH3 ]
-; amber99_39 sp3 N for charged amino groups
-   amber99_39   amber99_2       MNH3
-   amber99_39   amber99_3       MNH3
-   amber99_39   amber99_4       MNH3
-   amber99_39   amber99_5       MNH3
-   amber99_39   amber99_6       MNH3
-   amber99_39   amber99_7       MNH3
-   amber99_39   amber99_8       MNH3
-   amber99_39   amber99_9       MNH3
-   amber99_39   amber99_10      MNH3
-   amber99_39   amber99_11      MNH3
-   amber99_39   amber99_12      MNH3
-   amber99_39   amber99_13      MNH3
-   amber99_39   amber99_14      MNH3
+; N3         sp3 N for charged amino groups
+   N3           C               MNH3
+   N3           CA              MNH3
+   N3           CB              MNH3
+   N3           CC              MNH3
+   N3           CK              MNH3
+   N3           CM              MNH3
+   N3           CN              MNH3
+   N3           CQ              MNH3
+   N3           CR              MNH3
+   N3           CT              MNH3
+   N3           CV              MNH3
+   N3           CW              MNH3
+   N3           C*              MNH3
 
 [ NH2 ]
-; amber99_34 sp2 nitrogen in amide groups
-   amber99_34   planar
-   amber99_38   planar
+; N          sp2 nitrogen in amide groups
+   N            planar
+   N2           planar
 
 
 ; Data for generating dummy aromatic rings.

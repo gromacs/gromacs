@@ -1641,28 +1641,46 @@ static void do_cmap(t_fileio *fio, gmx_cmap_t *cmap_grid, bool bRead)
 
 void tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols)
 {
-  int m,a,a0,a1,r;
-  unsigned char c,chain;
+    int m,a,a0,a1,r;
+    char c,chainid;
+    int  chainnum;
+    
+    /* We always assign a new chain number, but save the chain id characters 
+     * for larger molecules.
+     */
 #define CHAIN_MIN_ATOMS 15
-
-  chain='A';
-  for(m=0; m<mols->nr; m++) {
-    a0=mols->index[m];
-    a1=mols->index[m+1];
-    if ((a1-a0 >= CHAIN_MIN_ATOMS) && (chain <= 'Z')) {
-      c=chain;
-      chain++;
-    } else
-      c=' ';
-    for(a=a0; a<a1; a++) {
-      atoms->resinfo[atoms->atom[a].resind].chain = c;
+    
+    chainnum=0;
+    chainid='A';
+    for(m=0; m<mols->nr; m++) 
+    {
+        a0=mols->index[m];
+        a1=mols->index[m+1];
+        if ((a1-a0 >= CHAIN_MIN_ATOMS) && (chainid <= 'Z')) 
+        {
+            c=chainid;
+            chainid++;
+        } 
+        else
+        {
+            c=' ';
+        }
+        for(a=a0; a<a1; a++) 
+        {
+            atoms->resinfo[atoms->atom[a].resind].chainnum = chainnum;
+            atoms->resinfo[atoms->atom[a].resind].chainid  = c;
+        }
+        chainnum++;
     }
-  }
-  if (chain == 'B') {
-    for(r=0; r<atoms->nres; r++) {
-      atoms->resinfo[r].chain = ' ';
+    
+    /* Blank out the chain id if there was only one chain */
+    if (chainid == 'B') 
+    {
+        for(r=0; r<atoms->nres; r++) 
+        {
+            atoms->resinfo[r].chainid = ' ';
+        }
     }
-  }
 }
   
 static void do_moltype(t_fileio *fio, gmx_moltype_t *molt,bool bRead,

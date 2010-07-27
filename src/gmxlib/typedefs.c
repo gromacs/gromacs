@@ -668,7 +668,7 @@ t_atoms *copy_t_atoms(t_atoms *src)
 
 void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
                          const char *resname,int resnr,unsigned char ic,
-                         unsigned char chain)
+                         int chainnum, char chainid)
 {
   t_resinfo *ri;
 
@@ -677,7 +677,8 @@ void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
   ri->rtp   = NULL;
   ri->nr    = resnr;
   ri->ic    = ic;
-  ri->chain = chain;
+  ri->chainnum = chainnum;
+  ri->chainid = chainid;
 }
 
 void free_t_atoms(t_atoms *atoms,bool bFreeNames)

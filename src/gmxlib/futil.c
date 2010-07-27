@@ -220,6 +220,33 @@ void frewind(FILE *fp)
 #endif
 }
 
+int gmx_fseek(FILE *stream, gmx_off_t offset, int whence)
+{
+#ifdef HAVE_FSEEKO
+    return fseeko(stream, offset, whence);
+#else
+#ifdef HAVE__FSEEKI64
+    return _fseeki64(stream, offset, whence);
+#else
+    return fseek(stream, offset, whence);
+#endif
+#endif
+}
+
+gmx_off_t gmx_ftell(FILE *stream)
+{
+#ifdef HAVE_FSEEKO
+    return ftello(stream);
+#else
+#ifdef HAVE__FSEEKI64 
+    return _ftelli64(stream);
+#else
+    return ftell(stream);
+#endif
+#endif
+}
+
+
 bool is_pipe(FILE *fp)
 {
     t_pstack *ps;
@@ -312,7 +339,7 @@ bool gmx_eof(FILE *fp)
         return feof(fp);
     else {
         if ((beof=fread(data,1,1,fp))==1)
-            fseek(fp,-1,SEEK_CUR);
+            gmx_fseek(fp,-1,SEEK_CUR);
         return !beof;
     }
 }
@@ -932,7 +959,7 @@ void gmx_tmpnam(char *buf)
     /* name in Buf should now be OK */
 }
 
-int gmx_truncatefile(char *path, off_t length)
+int gmx_truncatefile(char *path, gmx_off_t length)
 {
 #ifdef _MSC_VER
     /* Microsoft visual studio does not have "truncate" */

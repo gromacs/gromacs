@@ -6,7 +6,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 libmd@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la	
 libmd@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la	
-libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@ $(FFT_LIBS) $(XML_LIBS) $(PTHREAD_LIBS)
+libmd@LIBSUFFIX@_la_LDFLAGS        = -no-undefined -version-info @SHARED_VERSION_INFO@ $(FFT_LIBS) $(XML_LIBS) $(PTHREAD_LIBS)
 
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 

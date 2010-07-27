@@ -44,8 +44,10 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "xdrf.h"
+#include "futil.h"
 
 /* types */
+
 
 /* Enumerated for different items in files */
 enum { eitemHEADER, eitemIR, eitemBOX, 
@@ -148,10 +150,10 @@ int gmx_fio_fsync(t_fileio *fio);
    can cause dramatically slowed down IO performance. Some OSes (Linux, 
    for example), may implement fsync as a full sync() point. */
 
-extern off_t gmx_fio_ftell(t_fileio *fio);
+extern gmx_off_t gmx_fio_ftell(t_fileio *fio);
 /* Return file position if possible */
 
-extern int gmx_fio_seek(t_fileio *fio,off_t fpos);
+extern int gmx_fio_seek(t_fileio *fio,gmx_off_t fpos);
 /* Set file position if possible, quit otherwise */
 
 extern FILE *gmx_fio_getfp(t_fileio *fio);
@@ -165,14 +167,14 @@ extern XDR *gmx_fio_getxdr(t_fileio *fio);
 
 
 /* Element with information about position in a currently open file.
- * off_t should be defined by autoconf if your system does not have it.
+ * gmx_off_t should be defined by autoconf if your system does not have it.
  * If you do not have it on some other platform you do not have largefile 
  * support at all, and you can define it to int (or better, find out how to 
  * enable large files).  */
 typedef struct
 {
 	char      filename[STRLEN];
-	off_t     offset; 
+	gmx_off_t offset; 
 	unsigned char chksum[16];
 	int       chksum_size;
 } 
@@ -208,7 +210,8 @@ t_fileio *gmx_fio_all_output_fsync(void);
 */
 
 
-int gmx_fio_get_file_md5(t_fileio *fio, off_t offset,  unsigned char digest[]);
+int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,  
+                         unsigned char digest[]);
 
 
 extern int xtc_seek_frame(t_fileio *fio, int frame, int natoms);

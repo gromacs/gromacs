@@ -192,11 +192,7 @@ static bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
     else
     {
         /* Skip over it if we have a NULL pointer here */
-#ifdef HAVE_FSEEKO
-        fseeko(fio->fp, (off_t) (size * nitem), SEEK_CUR);
-#else
-        fseek(fio->fp,(size*nitem),SEEK_CUR);
-#endif    
+        gmx_fseek(fio->fp, (gmx_off_t)(size*nitem), SEEK_CUR);
         rsize = nitem;
     }
     if ((rsize != nitem) && (fio->bDebug))

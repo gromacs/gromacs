@@ -650,7 +650,7 @@ evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     for (i = 0; i < g->isize; ++i)
     {
         resind = top->atoms.atom[g->index[i]].resind;
-        out->u.s[i][0] = top->atoms.resinfo[resind].chain;
+        out->u.s[i][0] = top->atoms.resinfo[resind].chainid;
     }
     return 0;
 }
