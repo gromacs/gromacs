@@ -427,11 +427,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               fep->nstTij,ir->nstlog);
       CHECK((mod(fep->nstTij,ir->nstlog)!=0));
 
-      if (fep->mc_temp < 0) 
-      {
-          fep->mc_temp = ir->opts.tau_t[0];
-      }
-      sprintf(err_buf,"If system temperature is not set, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
+      sprintf(err_buf,"If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
       CHECK((ir->etc==etcNO) && (fep->mc_temp <=0) && (fep->elmcmove != elmcmoveNO));
 
       /* other FEP checks that might need to be added . . . */
@@ -2107,7 +2103,13 @@ void do_index(const char* mdparin, const char *ndx,
             }
         }
     }
-    
+  
+    /* set the lambda mc temperature to the md temperature if it's negative */
+    if ((ir->etc>etcNO) && (ir->fepvals->mc_temp < 0))
+    {
+        ir->fepvals->mc_temp = ir->opts.ref_t[0];  /*for now, do set to the first reft */
+    }
+
   /* Simulated annealing for each group. There are nr groups */
   nSA = str_nelem(anneal,MAXPTR,ptr1);
   if (nSA == 1 && (ptr1[0][0]=='n' || ptr1[0][0]=='N'))
