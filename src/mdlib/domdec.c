@@ -2742,23 +2742,31 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,int dimind)
     set_slb_pme_dim_f(dd,ddpme->dim,&ddpme->slb_dim_f);
 }
 
-int dd_pme_maxshift0(gmx_domdec_t *dd)
+int dd_pme_maxshift_x(gmx_domdec_t *dd)
 {
-    return dd->comm->ddpme[0].maxshift;
-}
-
-int dd_pme_maxshift1(gmx_domdec_t *dd)
-{
-    /* This should return the maxshift for dim Y,
-     * where comm indexes ddpme with dimind.
-     */
-    if (dd->comm->npmedecompdim == 1 && dd->dim[0] == YY)
+    if (dd->comm->ddpme[0].dim == XX)
     {
         return dd->comm->ddpme[0].maxshift;
     }
     else
     {
+        return 0;
+    }
+}
+
+int dd_pme_maxshift_y(gmx_domdec_t *dd)
+{
+    if (dd->comm->ddpme[0].dim == YY)
+    {
+        return dd->comm->ddpme[0].maxshift;
+    }
+    else if (dd->comm->npmedecompdim >= 2 && dd->comm->ddpme[1].dim == YY)
+    {
         return dd->comm->ddpme[1].maxshift;
+    }
+    else
+    {
+        return 0;
     }
 }
 
