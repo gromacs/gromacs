@@ -218,6 +218,9 @@
 /* Define to 1 if you have the dl library (-ldl). */
 #cmakedefine HAVE_LIBDL
 
+/* Have io.h (windows)*/
+#cmakedefine HAVE_IO_H
+
 /* Define to 1 if you have the strcasecmp() function. */
 #cmakedefine HAVE_STRCASECMP
 
