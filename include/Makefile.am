@@ -105,7 +105,6 @@ qmmm.h \
 random.h \
 rbin.h \
 rdgroup.h \
-readcomp.h \
 readinp.h \
 reorder.h \
 resall.h \
