@@ -10,9 +10,9 @@
 ; bonds  angles  dihedrals  impropers all_dihedrals nrexcl HH14 RemoveDih
      1       1          9          4        1         3      1     0
 
-; first are tip3p, heavy tip3p, tip4p, tip4p-EW, and tip5p; then ion definitions, urea, and terminal caps
+; now: water, ions, urea, terminal caps, AA's and terminal AA's
 
-;tip3p
+; tip3p
 [ HOH ]
  [ atoms ]
     OW   OW           -0.834    0
@@ -22,55 +22,13 @@
     OW   HW1
     OW   HW2
 
-[ T3P ]
+; tip4p
+[ HO4 ]
  [ atoms ]
-    OW   OW           -0.834    0
-   HW1   HW            0.417    0
-   HW2   HW            0.417    0
- [ bonds ]
-    OW   HW1
-    OW   HW2
-
-;tip3p (heavy)
-[ T3H ]
- [ atoms ]
-    OW   OW_tip3p     -0.834    0
-   HW1   HW_tip3p      0.417    0
-   HW2   HW_tip3p      0.417    0
- [ bonds ]
-    OW   HW1
-    OW   HW2
-
-;tip4p
-[ T4P ]
- [ atoms ]
-    OW   OW_tip4p      0.000    0
-   HW2   HW_tip4p      0.520    0
-   HW3   HW_tip4p      0.520    0
-   MW4   MW           -1.040    0
- [ bonds ]
-    OW   HW1
-    OW   HW2
-
-;tip4p-EW
-[ T4E ]
- [ atoms ]
-    OW   OW_tip4pew    0.000    0
-   HW1   HW_tip4pew    0.52422  0
-   HW2   HW_tip4pew    0.52422  0
-    MW   MW           -1.04844  0
- [ bonds ]
-    OW   HW1
-    OW   HW2
-
-;tip5p
-[ T5P ]
- [ atoms ]
-    OW   OW_tip5p      0.000    0
-   HW1   HW_tip5p      0.241    0
-   HW2   HW_tip5p      0.241    0
-   LP1   MW           -0.241    0
-   LP2   MW           -0.241    0
+    OW   OW_tip4p      0.00     0
+   HW1   HW            0.52     0
+   HW2   HW            0.52     0
+    MW   MW           -1.04     0
  [ bonds ]
     OW   HW1
     OW   HW2
@@ -113,11 +71,11 @@
 
 [ Zn+ ]
  [ atoms ]
-   Zn     Zn           2.00000     1 
+   Zn     Zn           2.00000     1
 
-[ URE ] ; added in by EJS, resp charges by Jim Caldwell 
+[ URE ] ; urea added in by EJS, resp charges by Jim Caldwell
  [ atoms ]
-    C	   C          	0.880229	1
+    C	   C          	0.880229	1	
     O	   O           -0.613359	2	
    N1	   N           -0.923545	3	
   H11 	   H          	0.395055	4	
