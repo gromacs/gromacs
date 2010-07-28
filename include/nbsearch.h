@@ -41,9 +41,9 @@
 #ifndef NBSEARCH_H
 #define NBSEARCH_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
-#include <indexutil.h>
+#include "indexutil.h"
 
 #ifdef __cplusplus
 extern "C" {
