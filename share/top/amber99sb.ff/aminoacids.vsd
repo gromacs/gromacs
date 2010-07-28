@@ -2,21 +2,21 @@
 [ CH3 ]
 ; CT         sp3 aliphatic C 
  ;bound to sp2/sp3 carbons
-   CT           C               MCH3B
-   CT           CA              MCH3B
-   CT           CB              MCH3B
-   CT           CC              MCH3B
-   CT           CK              MCH3B
-   CT           CM              MCH3B
-   CT           CN              MCH3B
-   CT           CQ              MCH3B
-   CT           CR              MCH3B
-   CT           CT              MCH3B
-   CT           CV              MCH3B
-   CT           CW              MCH3B
-   CT           C*              MCH3B
-   CT           N               MCH3B
-   CT           S               MCH3A
+   CT           C               MCH3
+   CT           CA              MCH3
+   CT           CB              MCH3
+   CT           CC              MCH3
+   CT           CK              MCH3
+   CT           CM              MCH3
+   CT           CN              MCH3
+   CT           CQ              MCH3
+   CT           CR              MCH3
+   CT           CT              MCH3
+   CT           CV              MCH3
+   CT           CW              MCH3
+   CT           C*              MCH3
+   CT           N               MCH3
+   CT           S               MCH3
 
 [ NH3 ]
 ; N3         sp3 N for charged amino groups

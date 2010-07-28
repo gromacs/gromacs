@@ -2742,23 +2742,31 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,int dimind)
     set_slb_pme_dim_f(dd,ddpme->dim,&ddpme->slb_dim_f);
 }
 
-int dd_pme_maxshift0(gmx_domdec_t *dd)
+int dd_pme_maxshift_x(gmx_domdec_t *dd)
 {
-    return dd->comm->ddpme[0].maxshift;
-}
-
-int dd_pme_maxshift1(gmx_domdec_t *dd)
-{
-    /* This should return the maxshift for dim Y,
-     * where comm indexes ddpme with dimind.
-     */
-    if (dd->comm->npmedecompdim == 1 && dd->dim[0] == YY)
+    if (dd->comm->ddpme[0].dim == XX)
     {
         return dd->comm->ddpme[0].maxshift;
     }
     else
     {
+        return 0;
+    }
+}
+
+int dd_pme_maxshift_y(gmx_domdec_t *dd)
+{
+    if (dd->comm->ddpme[0].dim == YY)
+    {
+        return dd->comm->ddpme[0].maxshift;
+    }
+    else if (dd->comm->npmedecompdim >= 2 && dd->comm->ddpme[1].dim == YY)
+    {
         return dd->comm->ddpme[1].maxshift;
+    }
+    else
+    {
+        return 0;
     }
 }
 
@@ -6083,7 +6091,7 @@ static void set_dd_dim(FILE *fplog,gmx_domdec_t *dd)
     int dim;
 
     dd->ndim = 0;
-    if (getenv("GMX_DD_ORDER_ZYX"))
+    if (getenv("GMX_DD_ORDER_ZYX") != NULL)
     {
         /* Decomposition order z,y,x */
         if (fplog)
@@ -6458,8 +6466,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     {
         /* The following choices should match those
          * in comm_cost_est in domdec_setup.c.
+         * Note that here the checks have to take into account
+         * that the decomposition might occur in a different order than xyz
+         * (for instance through the env.var. GMX_DD_ORDER_ZYX),
+         * in which case they will not match those in comm_cost_est,
+         * but since that is mainly for testing purposes that's fine.
          */
-        if (dd->nc[XX] > 1 && dd->nc[YY] > 1 &&
+        if (dd->ndim >= 2 && dd->dim[0] == XX && dd->dim[1] == YY &&
             comm->npmenodes > dd->nc[XX] && comm->npmenodes % dd->nc[XX] == 0 &&
             getenv("GMX_PMEONEDD") == NULL)
         {
@@ -6467,20 +6480,22 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             comm->npmenodes_x   = dd->nc[XX];
             comm->npmenodes_y   = comm->npmenodes/comm->npmenodes_x;
         }
-        else if (dd->nc[XX] == 1 && dd->nc[YY] > 1 && dd->dim[0] == YY)
-        {
-            comm->npmedecompdim = 1;
-            comm->npmenodes_x   = 1;
-            comm->npmenodes_y   = comm->npmenodes;
-        }
         else
         {
             /* In case nc is 1 in both x and y we could still choose to
              * decompose pme in y instead of x, but we use x for simplicity.
              */
             comm->npmedecompdim = 1;
-            comm->npmenodes_x   = comm->npmenodes;
-            comm->npmenodes_y   = 1;
+            if (dd->dim[0] == YY)
+            {
+                comm->npmenodes_x = 1;
+                comm->npmenodes_y = comm->npmenodes;
+            }
+            else
+            {
+                comm->npmenodes_x = comm->npmenodes;
+                comm->npmenodes_y = 1;
+            }
         }    
         if (fplog)
         {

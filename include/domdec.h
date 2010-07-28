@@ -77,11 +77,11 @@ extern void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
 			    int *nmy_ddnodes,int **my_ddnodes,int *node_peer);
 /* Returns the set of DD nodes that communicate with pme node cr->nodeid */
 
-extern int dd_pme_maxshift0(gmx_domdec_t *dd);
-/* Returns the maximum shift for coordinate communication in PME, dim 0 */
+extern int dd_pme_maxshift_x(gmx_domdec_t *dd);
+/* Returns the maximum shift for coordinate communication in PME, dim x */
 
-extern int dd_pme_maxshift1(gmx_domdec_t *dd);
-/* Returns the maximum shift for coordinate communication in PME, dim 1 */
+extern int dd_pme_maxshift_y(gmx_domdec_t *dd);
+/* Returns the maximum shift for coordinate communication in PME, dim y */
 
 extern void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order);
 

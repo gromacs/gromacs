@@ -1,14 +1,14 @@
 [ moleculetype ]
 ; molname	nrexcl
-SOL		1
+SOL		2
 
 [ atoms ]
-; id	at type		res nr 	residu name	at name		cg nr	charge 	mass
-1	OW_tip5p  	1	SOL		OW		1	0	16.00000
-2	HW_tip5p  	1	SOL		HW1		1	0.241	 1.00800
-3	HW_tip5p  	1	SOL		HW2		1	0.241	 1.00800
-4	MW		1	SOL		LP1		1	-0.241	 0.00000
-5       MW	  	1       SOL             LP2		1	-0.241   0.00000
+; id  at type     res nr  res name  at name  cg nr  charge    mass
+  1   OW_tip5p    1       SOL       OW       1       0        16.00000
+  2   HW_tip5p    1       SOL       HW1      1       0.241     1.00800
+  3   HW_tip5p    1       SOL       HW2      1       0.241     1.00800
+  4   MW          1       SOL       LP1      1      -0.241     0.00000
+  5   MW          1       SOL       LP2      1      -0.241     0.00000
 
 #ifndef FLEXIBLE
 
@@ -17,6 +17,7 @@ SOL		1
 1	1	0.09572	0.15139
 
 #else
+
 [ bonds ]
 ; i     j       funct   length  force.c.
 1       2       1       0.09572 502416.0 0.09572        502416.0 
@@ -30,7 +31,7 @@ SOL		1
 
 
 [ virtual_sites3 ]
-; Dummy from                    funct   a               b               c
+; Vsite from                    funct   a               b               c
 4      1       2       3       4        -0.344908262    -0.34490826     -6.4437903493
 5      1       2       3       4        -0.344908262    -0.34490826     6.4437903493
 
@@ -42,7 +43,8 @@ SOL		1
 4	1	2	3	5
 5	1	2	3	4
 
-; The position of the dummy is computed as follows:
+
+; The positions of the vsites are computed as follows:
 ;
 ;	     LP1 LP2
 ;  	      

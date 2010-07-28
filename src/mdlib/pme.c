@@ -2379,7 +2379,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     rvec *x_pp=NULL,*f_pp=NULL;
     real *chargeA=NULL,*chargeB=NULL;
     real lambda=0;
-    int  maxshift0=0,maxshift1=0;
+    int  maxshift_x=0,maxshift_y=0;
     real energy,dvdlambda;
     matrix vir;
     float cycles;
@@ -2398,7 +2398,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         /* Domain decomposition */
         natoms = gmx_pme_recv_q_x(pme_pp,
                                   &chargeA,&chargeB,box,&x_pp,&f_pp,
-                                  &maxshift0,&maxshift1,
+                                  &maxshift_x,&maxshift_y,
                                   &pme->bFEP,&lambda,
                                   &bEnerVir,
                                   &step);
@@ -2418,7 +2418,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         dvdlambda = 0;
         clear_mat(vir);
         gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
-                   cr,maxshift0,maxshift1,nrnb,wcycle,vir,ewaldcoeff,
+                   cr,maxshift_x,maxshift_y,nrnb,wcycle,vir,ewaldcoeff,
                    &energy,lambda,&dvdlambda,
                    GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
         
@@ -2448,7 +2448,7 @@ int gmx_pme_do(gmx_pme_t pme,
                rvec x[],        rvec f[],
                real *chargeA,   real *chargeB,
                matrix box,	t_commrec *cr,
-               int  maxshift0,  int maxshift1,
+               int  maxshift_x, int maxshift_y,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
                matrix vir,      real ewaldcoeff,
                real *energy,    real lambda, 
@@ -2477,7 +2477,7 @@ int gmx_pme_do(gmx_pme_t pme,
             atc->pd_nalloc = over_alloc_dd(atc->npd);
             srenew(atc->pd,atc->pd_nalloc);
         }
-        atc->maxshift = (atc->dimind==0 ? maxshift0 : maxshift1);
+        atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
     }
     
     for(q=0; q<(pme->bFEP ? 2 : 1); q++) {
@@ -2537,7 +2537,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     atc->pd_nalloc = over_alloc_dd(atc->npd);
                     srenew(atc->pd,atc->pd_nalloc);
                 }
-                atc->maxshift = (atc->dimind==0 ? maxshift0 : maxshift1);
+                atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
                 pme_calc_pidx(n_d,pme->recipbox,x_d,atc);
                 where();
                 
