@@ -103,7 +103,7 @@
 ; this section is implemented manually from bond & angle values
 
 ; constraints for rigid CH3 groups
- MCH3   CT      2    0.169888
+ MCH3   CT      2    0.166426
  MCH3   S       2    0.193875
  MCH3   MCH3    2    0.092163
 ; constraints for rigid NH3 groups
