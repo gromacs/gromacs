@@ -698,17 +698,16 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     p_status(restype,atoms->nres,p_typename,ntypes,bVerb);
 
     for(k=0;k<ntypes;k++)
-    {
+    {        
         aid=mk_aid(atoms,restype,p_typename[k],&nra,TRUE);
-        add_grp(gb,gn,nra,aid,p_typename[k]); 
-        sfree(aid);
 
         /* Check for special types to do fancy stuff with */
         
-        /* PROTEIN */
         if(!gmx_strcasecmp(p_typename[k],"Protein") && nra>0)
         {
-                analyse_prot(restype,atoms,gb,gn,bASK,bVerb);
+            sfree(aid);
+            /* PROTEIN */
+            analyse_prot(restype,atoms,gb,gn,bASK,bVerb);
             
             /* Create a Non-Protein group */
             aid=mk_aid(atoms,restype,"Protein",&nra,FALSE);
@@ -718,14 +717,12 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
             }
             sfree(aid);
         }
-        
-        /* DNA */
-        
-        /* RNA */
-        
-        /* Solvent, create a negated group */
-        if(!gmx_strcasecmp(p_typename[k],"Solvent") && nra>0)
+        else if(!gmx_strcasecmp(p_typename[k],"Solvent") && nra>0)
         {
+            add_grp(gb,gn,nra,aid,p_typename[k]); 
+            sfree(aid);
+
+            /* Solvent, create a negated group too */
             aid=mk_aid(atoms,restype,"Solvent",&nra,FALSE);
             if ((nra > 0) && (nra < atoms->nr))
             {
@@ -733,12 +730,13 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
             }
             sfree(aid);
         }
-        
-        
-        /* Other */
-        analyse_other(restype,atoms,gb,gn,bASK,bVerb);
-
-        
+        else if(nra>0)
+        {
+            /* Other */
+            add_grp(gb,gn,nra,aid,p_typename[k]); 
+            sfree(aid);
+            analyse_other(restype,atoms,gb,gn,bASK,bVerb);
+        }
     }
     
             
