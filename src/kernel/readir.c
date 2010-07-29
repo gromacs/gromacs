@@ -1,4 +1,4 @@
-/*   -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * 
  *                This source code is part of
@@ -698,42 +698,51 @@ static void parse_n_double(char *str,int *n,double **r)
 }
 
 static void do_wall_params(t_inputrec *ir,
-			   char *wall_atomtype, char *wall_density,
-			   t_gromppopts *opts)
+                           char *wall_atomtype, char *wall_density,
+                           t_gromppopts *opts)
 {
-  int  nstr,i;
-  char *names[MAXPTR];
-  double dbl;
+    int  nstr,i;
+    char *names[MAXPTR];
+    double dbl;
 
-  opts->wall_atomtype[0] = NULL;
-  opts->wall_atomtype[1] = NULL;
+    opts->wall_atomtype[0] = NULL;
+    opts->wall_atomtype[1] = NULL;
 
-  ir->wall_atomtype[0] = -1;
-  ir->wall_atomtype[1] = -1;
-  ir->wall_density[0] = 0;
-  ir->wall_density[1] = 0;
+    ir->wall_atomtype[0] = -1;
+    ir->wall_atomtype[1] = -1;
+    ir->wall_density[0] = 0;
+    ir->wall_density[1] = 0;
   
-  if (ir->nwall > 0) {
-    nstr = str_nelem(wall_atomtype,MAXPTR,names);
-    if (nstr != ir->nwall)
-      gmx_fatal(FARGS,"Expected %d elements for wall_atomtype, found %d",
-		ir->nwall,nstr);
-    for(i=0; i<ir->nwall; i++)
-      opts->wall_atomtype[i] = strdup(names[i]);
+    if (ir->nwall > 0)
+    {
+        nstr = str_nelem(wall_atomtype,MAXPTR,names);
+        if (nstr != ir->nwall)
+        {
+            gmx_fatal(FARGS,"Expected %d elements for wall_atomtype, found %d",
+                      ir->nwall,nstr);
+        }
+        for(i=0; i<ir->nwall; i++)
+        {
+            opts->wall_atomtype[i] = strdup(names[i]);
+        }
     
-    if (ir->wall_type != ewtTABLE) {
-      nstr = str_nelem(wall_density,MAXPTR,names);
-      if (nstr != ir->nwall)
-	gmx_fatal(FARGS,"Expected %d elements for wall_density, found %d",
-		  ir->nwall,nstr);
-      for(i=0; i<ir->nwall; i++) {
-	sscanf(names[i],"%lf",&dbl);
-	if (dbl <= 0)
-	  gmx_fatal(FARGS,"wall_density[%d] = %f\n",i,dbl);
-	ir->wall_density[i] = dbl;
-      }
+        if (ir->wall_type == ewt93 || ir->wall_type == ewt104) {
+            nstr = str_nelem(wall_density,MAXPTR,names);
+            if (nstr != ir->nwall)
+            {
+                gmx_fatal(FARGS,"Expected %d elements for wall_density, found %d",ir->nwall,nstr);
+            }
+            for(i=0; i<ir->nwall; i++)
+            {
+                sscanf(names[i],"%lf",&dbl);
+                if (dbl <= 0)
+                {
+                    gmx_fatal(FARGS,"wall_density[%d] = %f\n",i,dbl);
+                }
+                ir->wall_density[i] = dbl;
+            }
+        }
     }
-  }
 }
 
 static void add_wall_energrps(gmx_groups_t *groups,int nwall,t_symtab *symtab)

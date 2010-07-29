@@ -109,3 +109,5 @@ set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}")
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmx.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)

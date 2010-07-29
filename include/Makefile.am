@@ -105,7 +105,6 @@ qmmm.h \
 random.h \
 rbin.h \
 rdgroup.h \
-readcomp.h \
 readinp.h \
 reorder.h \
 resall.h \
@@ -159,4 +158,5 @@ molfile_plugin.h \
 vmddlopen.h \
 vmdplugin.h \
 oenv.h \
-sighandler.h
+sighandler.h \
+gmx_sse2_double.h

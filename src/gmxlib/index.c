@@ -670,6 +670,8 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     int     ntypes;
     char *  p;
     const char ** p_typename;
+    int     iwater,iion;
+    int     nwater,nion;
     
     if (bVerb)
     {
@@ -698,17 +700,16 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     p_status(restype,atoms->nres,p_typename,ntypes,bVerb);
 
     for(k=0;k<ntypes;k++)
-    {
+    {        
         aid=mk_aid(atoms,restype,p_typename[k],&nra,TRUE);
-        add_grp(gb,gn,nra,aid,p_typename[k]); 
-        sfree(aid);
 
         /* Check for special types to do fancy stuff with */
         
-        /* PROTEIN */
         if(!gmx_strcasecmp(p_typename[k],"Protein") && nra>0)
         {
-                analyse_prot(restype,atoms,gb,gn,bASK,bVerb);
+            sfree(aid);
+            /* PROTEIN */
+            analyse_prot(restype,atoms,gb,gn,bASK,bVerb);
             
             /* Create a Non-Protein group */
             aid=mk_aid(atoms,restype,"Protein",&nra,FALSE);
@@ -718,33 +719,78 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
             }
             sfree(aid);
         }
-        
-        /* DNA */
-        
-        /* RNA */
-        
-        /* Solvent, create a negated group */
-        if(!gmx_strcasecmp(p_typename[k],"Solvent") && nra>0)
+        else if(!gmx_strcasecmp(p_typename[k],"Water") && nra>0)
         {
-            aid=mk_aid(atoms,restype,"Solvent",&nra,FALSE);
+            add_grp(gb,gn,nra,aid,p_typename[k]); 
+            /* Add this group as 'SOL' too, for backward compatibility with older gromacs versions */
+            add_grp(gb,gn,nra,aid,"SOL"); 
+
+            sfree(aid);
+
+            /* Solvent, create a negated group too */
+            aid=mk_aid(atoms,restype,"Water",&nra,FALSE);
             if ((nra > 0) && (nra < atoms->nr))
             {
-                add_grp(gb,gn,nra,aid,"non-Solvent"); 
+                add_grp(gb,gn,nra,aid,"non-Water"); 
             }
             sfree(aid);
         }
-        
-        
-        /* Other */
-        analyse_other(restype,atoms,gb,gn,bASK,bVerb);
-
-        
+        else if(nra>0)
+        {
+            /* Other */
+            add_grp(gb,gn,nra,aid,p_typename[k]); 
+            sfree(aid);
+            analyse_other(restype,atoms,gb,gn,bASK,bVerb);
+        }
     }
     
-            
     sfree(p_typename);
     sfree(restype);
     gmx_residuetype_destroy(rt);      
+    
+    /* Create a merged water_and_ions group */
+    iwater = -1;
+    iion   = -1;
+    nwater = 0;
+    nion   = 0;
+        
+    for(i=0;i<gb->nr;i++)
+    {        
+        if(!gmx_strcasecmp((*gn)[i],"Water"))
+        {
+            iwater = i;
+            nwater = gb->index[i+1]-gb->index[i];
+        }
+        else if(!gmx_strcasecmp((*gn)[i],"Ion"))
+        {
+            iion = i;
+            nion = gb->index[i+1]-gb->index[i];
+        }
+    }
+    
+    if(nwater>0 && nion>0)
+    {
+        srenew(gb->index,gb->nr+2);
+        srenew(*gn,gb->nr+1);
+        (*gn)[gb->nr] = strdup("Water_and_ions");
+        srenew(gb->a,gb->nra+nwater+nion);
+        if(nwater>0)
+        {
+            for(i=gb->index[iwater];i<gb->index[iwater+1];i++)
+            {
+                gb->a[gb->nra++] = gb->a[i];
+            }
+        }
+        if(nion>0)
+        {
+            for(i=gb->index[iion];i<gb->index[iion+1];i++)
+            {
+                gb->a[gb->nra++] = gb->a[i];
+            }
+        }
+        gb->nr++;
+        gb->index[gb->nr]=gb->nra;
+    }
 }
 
 
@@ -928,7 +974,7 @@ static void rd_groups(t_blocka *grps,char **grpname,char *gnames[],
   if (grps->nr==0)
     gmx_fatal(FARGS,"Error: no groups in indexfile");
   for(i=0; (i<grps->nr); i++)
-    fprintf(stderr,"Group %5d (%12s) has %5d elements\n",i,grpname[i],
+    fprintf(stderr,"Group %5d (%15s) has %5d elements\n",i,grpname[i],
 	   grps->index[i+1]-grps->index[i]);
   for(i=0; (i<ngrps); i++) {
     if (grps->nr > 1)

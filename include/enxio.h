@@ -94,7 +94,7 @@ extern "C" {
      has a number of values of a single data type in a .edr file. */
   typedef struct
   {
-      size_t nr;            /* number of items in subblock */
+      int nr;               /* number of items in subblock */
       xdr_datatype type;    /* the block type */
 
       /* the values: pointers for each type */
@@ -107,22 +107,22 @@ extern "C" {
 
       /* the allocated sizes, defined separately. 
          (nonzero sizes can be free()d later): */
-      size_t fval_alloc;
-      size_t dval_alloc;
-      size_t ival_alloc;
-      size_t lval_alloc;
-      size_t cval_alloc;
-      size_t sval_alloc; 
+      int fval_alloc;
+      int dval_alloc;
+      int ival_alloc;
+      int lval_alloc;
+      int cval_alloc;
+      int sval_alloc; 
   } t_enxsubblock;
 
 
   /* the energy file blocks. Each block contains a number of sub-blocks
      of a single type that contain the actual data. */
   typedef struct t_enxblock{
-      int id;                   /* block id, from the enx enums above */
-      size_t nsub;              /* number of subblocks */
-      t_enxsubblock *sub;       /* the subblocks */
-      size_t nsub_alloc;        /* number of allocated subblocks */
+      int id;               /* block id, from the enx enums above */
+      int nsub;             /* number of subblocks */
+      t_enxsubblock *sub;   /* the subblocks */
+      int nsub_alloc;       /* number of allocated subblocks */
   } t_enxblock;
  
 
@@ -136,9 +136,9 @@ extern "C" {
     int      e_size;        /* Size (in bytes) of energies		     */
     int      e_alloc;       /* Allocated size (in elements) of ener          */
     t_energy *ener;         /* The energies                                  */
-    int   nblock;           /* Number of following energy blocks             */
+    int      nblock;        /* Number of following energy blocks             */
     t_enxblock *block;      /* The blocks                                    */
-    size_t   nblock_alloc;  /* The number of blocks allocated                */
+    int      nblock_alloc;  /* The number of blocks allocated                */
   } t_enxframe;
 
   /* file handle */
@@ -195,7 +195,7 @@ extern "C" {
   /* block funtions */
 
   /* allocate n blocks to a frame (if neccesary). Don't touch existing blocks */
-  void add_blocks_enxframe(t_enxframe *ef, size_t n);
+  void add_blocks_enxframe(t_enxframe *ef, int n);
 
   /* find a block by id number; if prev!=NULL, it searches from 
      that block's next block. 
@@ -205,7 +205,7 @@ extern "C" {
 
    /* allocate n subblocks to a block (if neccesary). Don't touch existing 
       subbblocks. */
-  void add_subblocks_enxblock(t_enxblock *eb, size_t n);
+  void add_subblocks_enxblock(t_enxblock *eb, int n);
 
 
   

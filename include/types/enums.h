@@ -195,7 +195,7 @@ enum {
 
 /* Wall types */
 enum {
-  ewt93, ewt104, ewtTABLE, ewtNR
+  ewt93, ewt104, ewtTABLE, ewt126, ewtNR
 };
 
 /* Pull stuff */

@@ -13,6 +13,8 @@ lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 pkgconfigdir = ${libdir}/pkgconfig
 pkgconfig_DATA = libmd@LIBSUFFIX@.pc
 
+EXTRA_DIST = libmd.pc.cmakein
+
 libmd@LIBSUFFIX@_la_SOURCES = \
 	calcmu.c	calcvir.c	constr.c	\
 	coupling.c	\

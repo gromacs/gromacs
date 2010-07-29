@@ -284,11 +284,11 @@
 #ifndef SELMETHOD_H
 #define SELMETHOD_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
-#include <indexutil.h>
-#include <selparam.h>
-#include <selvalue.h>
+#include "indexutil.h"
+#include "selparam.h"
+#include "selvalue.h"
 
 #ifdef __cplusplus
 extern "C"

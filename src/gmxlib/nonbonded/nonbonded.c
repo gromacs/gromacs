@@ -344,8 +344,11 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 # ifdef GMX_DOUBLE
             if(fr->UseOptimizedKernels)
             {
+                gmx_fatal(FARGS,"Cannot do double precision SSE2 all-vs-all kernels for now.");
+#if 0
                 nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                                  &outeriter,&inneriter,&fr->AllvsAll_work);
+#endif
             }
             else
             {
@@ -375,8 +378,11 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 # ifdef GMX_DOUBLE
             if(fr->UseOptimizedKernels)
             {
+                gmx_fatal(FARGS,"Cannot do double precision SSE2 all-vs-all kernels for now.");
+#if 0
                 nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                                &outeriter,&inneriter,&fr->AllvsAll_work);
+#endif
             }
             else 
             {
