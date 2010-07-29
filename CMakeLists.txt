@@ -48,12 +48,12 @@ gmx_c_flags()
 ########################################################################
 option(GMX_DOUBLE "Use double precision" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" ON)
+option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS)" ON)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library" OFF)
-set(GMX_ACCELERATION "none" 
-    CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec")
+set(GMX_ACCELERATION "auto" 
+    CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
@@ -128,7 +128,7 @@ if(GMX_OPENMM)
     if(GMX_SOFTWARE_INVSQRT)
         set(GMX_SOFTWARE_INVSQRT OFF)
     endif(GMX_SOFTWARE_INVSQRT)
-    if(NOT GMX_ACCELERATION MATCHES "none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
+    if(NOT GMX_ACCELERATION MATCHES "auto|none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
         message(WARNING "The OpenMM build does not support other acceleration modes!")
         set(GMX_ACCELERATION "none")
     endif()
@@ -272,7 +272,7 @@ endif(GMX_THREADS)
 
 if(GMX_OPENMM)
     set(CUDA_BUILD_EMULATION OFF)
-    find_package(CUDA 2.3 REQUIRED)
+    find_package(CUDA 3.1 REQUIRED)
     add_definitions(-DGMX_OPENMM)
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
         set(CUDA_VERBOSE_BUILD ON)
@@ -335,6 +335,9 @@ gmx_test_retsigtype(RETSIGTYPE)
 include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)
 
+include(gmxTestRestrict)
+gmx_test_inline(RESTRICT_KEYWORD)
+
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
@@ -342,10 +345,10 @@ include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 
-# reasonable defaults for fast binaries.
-if (NOT DEFINED GMX_SSE_SET)
+# turn on SSE if supported with reasonable defaults.
+if (${GMX_ACCELERATION} STREQUAL "auto")
     if (GMX_X86_GCC_INLINE_ASM)
-        set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec" FORCE)
+        set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
         if (GMX_64_BIT)
             set(GMX_X86_64_ASM ON CACHE BOOL 
                 "Add SSE assembly files for x86_64" FORCE)
@@ -354,8 +357,7 @@ if (NOT DEFINED GMX_SSE_SET)
                 "Add SSE assembly files for IA32" FORCE)
         endif (GMX_64_BIT)
     endif (GMX_X86_GCC_INLINE_ASM)
-    set (GMX_SSE_SET true CACHE INTERNAL "SSE is set" FORCE)
-endif (NOT DEFINED GMX_SSE_SET)
+endif (${GMX_ACCELERATION} STREQUAL "auto")
 
 
 

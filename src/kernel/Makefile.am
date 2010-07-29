@@ -15,12 +15,14 @@ if USE_OPENMM
 #AM_CPPFLAGS += -I$(top_srcdir)/libraries/openmm/include
 #LDADD += $(top_srcdir)/libraries/openmm/lib/linux64/libOpenMM.*
 lib_LTLIBRARIES += libopenmminterface.la
-libopenmminterface_la_SOURCES = md_openmm.cpp
+libopenmminterface_la_SOURCES = md_openmm.c
 #mdrun_LINK = $(CXXLINK)
 endif
 
 libgmxpreprocess@LIBSUFFIX@_la_LIBADD       = ../mdlib/libmd@LIBSUFFIX@.la
 libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
+
+libgmxpreprocess@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ $(PTHREAD_LIBS)
 
 libgmxpreprocess@LIBSUFFIX@_la_SOURCES = \
 add_par.c	add_par.h	\
@@ -66,7 +68,7 @@ mdrun_SOURCES = \
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
 	xutils.c	runner.c	md.c		mdrun.c		\
-	genalg.c	genalg.h
+	genalg.c	genalg.h	md_openmm.h
 
 if GMX_FAHCORE
   noinst_LTLIBRARIES = libfahcore.la

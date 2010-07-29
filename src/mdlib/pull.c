@@ -207,7 +207,7 @@ static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv,
         }
         if (bCoord || nsets > 1)
         {
-            xvgr_legend(fp,nsets,setname,oenv);
+            xvgr_legend(fp,nsets,(const char**)setname,oenv);
         }
         for(g=0; g<nsets; g++)
         {

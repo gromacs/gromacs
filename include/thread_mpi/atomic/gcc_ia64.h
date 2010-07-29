@@ -296,7 +296,7 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 }
 
 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
     return (x->lock != 0);
 }

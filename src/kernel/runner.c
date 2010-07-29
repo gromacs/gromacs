@@ -389,18 +389,18 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     }
     /* END OF CAUTION: cr is now reliable */
 
-    /* now make sure the state is initialized and propagated */
-    set_state_entries(state,inputrec,cr->nnodes);
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(fplog, cr, inputrec, mtop, state);
+        init_parallel(fplog, cr, inputrec, mtop);
     }
-
-    if (fplog)
+    if (fplog != NULL)
     {
         pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
     }
+
+    /* now make sure the state is initialized and propagated */
+    set_state_entries(state,inputrec,cr->nnodes);
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */

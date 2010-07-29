@@ -538,14 +538,23 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     }
 
     /* Electroctstics */
-    if (    (ir->coulombtype != eelPME) &&
-            (ir->coulombtype != eelRF) &&
-            (ir->coulombtype != eelEWALD) &&
-            // no-cutoff
-            ( !(ir->coulombtype == eelCUT && ir->rcoulomb == 0 &&  ir->rvdw == 0)) )
+    if (   !(ir->coulombtype == eelPME   ||
+             EEL_RF(ir->coulombtype)     ||
+             ir->coulombtype == eelRF    ||
+             ir->coulombtype == eelEWALD ||
+             // no-cutoff
+             (ir->coulombtype == eelCUT && ir->rcoulomb == 0 &&  ir->rvdw == 0) ||
+             // we could have cut-off combined with GBSA (openmm will use RF)
+             ir->implicit_solvent == eisGBSA)   )
     {
         gmx_fatal(FARGS,"OpenMM supports only the following methods for electrostatics: "
                 "NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.");
+    }
+
+    if (EEL_RF(ir->coulombtype) && ir->epsilon_rf != 0)
+    {
+        // openmm has epsilon_rf=inf hard-coded
+        gmx_warning("OpenMM will use a Reaction-Field epsilon of infinity instead of %g.",ir->epsilon_rf);
     }
 
     if (ir->etc != etcNO &&
@@ -565,8 +574,8 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     if (ir->opts.ngtc > 1)
         gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.");
 
-    if (ir->epc != etcNO)
-        gmx_fatal(FARGS,"OpenMM does not support pressure coupling.");
+    if (ir->epc != epcNO)
+        gmx_warning("OpenMM supports only Monte Carlo barostat for pressure coupling.");
 
     if (ir->opts.annealing[0])
         gmx_fatal(FARGS,"OpenMM does not support simulated annealing.");
@@ -946,6 +955,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             switch (ir->coulombtype)
             {
             case eelRF:
+            case eelGRF:
+            case eelRF_NEC:
+            case eelRF_ZERO:
                 nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffPeriodic);
                 break;
 
@@ -961,7 +973,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 gmx_fatal(FARGS,"Internal error: you should not see this message, it that the"
                           "electrosatics option check failed. Please report this error!");
             }        
-            sys->setPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
+            sys->setDefaultPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
                                        Vec3(0, state->box[1][1], 0), Vec3(0, 0, state->box[2][2]));                    
             nonbondedForce->setCutoffDistance(ir->rcoulomb);
            
@@ -974,20 +986,19 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
         /* Fix for PME and Ewald error tolerance 
          *
-	 *  OpenMM uses approximate formulas to calculate the Ewald parameter:
-	 *  alpha = (1.0/cutoff)*sqrt(-log(2.0*tolerlance));
-	 *  and the grid spacing for PME:
-	 *  gridX = ceil(alpha*box[0][0]/pow(0.5*tol, 0.2));
-	 *  gridY = ceil(alpha*box[1][1]/pow(0.5*tol, 0.2));
-	 *  gridZ = ceil(alpha*box[2][2]/pow(0.5*tol, 0.2));
-         *
-	 *  It overestimates the precision and setting it to 
-	 *  (500 x ewald_rtol) seems to give a reasonable match to the GROMACS settings
-         *  
-         *  If the default ewald_rtol=1e-5 is used we silently adjust the value,
-         * otherwise a warning is issued about the action taken. 
-	 */
-        double corr_ewald_rtol = 500.0 * ir->ewald_rtol;
+		 *  OpenMM uses approximate formulas to calculate the Ewald parameter:
+		 *  alpha = (1.0/cutoff)*sqrt(-log(2.0*tolerlance));
+		 *  and the grid spacing for PME:
+		 *  gridX = ceil(2*alpha*box[0][0]/3*(pow(tol, 0.2)))
+		 *  gridY = ceil(2*alpha*box[1][1]/3*(pow(tol, 0.2)));
+		 *  gridZ = ceil(2*alpha*box[2][2]/3*(pow(tol, 0.2)));
+		 *
+		 *  
+		 *  If the default ewald_rtol=1e-5 is used we silently adjust the value to the 
+		 *  OpenMM default of 5e-4 otherwise a warning is issued about the action taken. 
+		 *
+		*/
+        double corr_ewald_rtol = 50.0 * ir->ewald_rtol;
         if ((ir->ePBC == epbcXYZ) && 
             (ir->coulombtype == eelEWALD || ir->coulombtype == eelPME))
         {
@@ -1133,11 +1144,22 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             integ = new VerletIntegrator(ir->delta_t);
             if ( ir->etc != etcNO)
             {
-                real collisionFreq = ir->opts.tau_t[0] / 1000; /* tau_t (ps) / 1000 = collisionFreq (fs^-1) */
                 AndersenThermostat* thermostat = new AndersenThermostat(ir->opts.ref_t[0], friction); 
                 sys->addForce(thermostat);
             }           
         }
+
+		// Add pressure coupling
+        if (ir->epc != epcNO)
+		{
+          // convert gromacs pressure tensor to a scalar
+          double pressure = (ir->ref_p[0][0] + ir->ref_p[1][1] + ir->ref_p[2][2]) / 3.0;
+          int frequency = int(ir->tau_p / ir->delta_t); // update frequency in time steps
+          if (frequency < 1) frequency = 1;
+          double temperature = ir->opts.ref_t[0]; // in kelvin
+          sys->addForce(new MonteCarloBarostat(pressure, temperature, frequency));
+		}
+
         integ->setConstraintTolerance(ir->shake_tol);
 
         // Create a context and initialize it.

@@ -416,7 +416,7 @@ static void print_bonds(FILE *fp, int o2n[],
 }
 
 static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
-		     t_aa_names *aan)
+                     gmx_residuetype_t rt)
 {
   int type;
   bool bNterm;
@@ -428,7 +428,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
   else {
     /* get type from rtp */
     rtpp = search_rtp(*(at->resinfo[at->atom[atom].resind].name),nrtp,rtp);
-    bNterm = is_protein(aan,*(at->resinfo[at->atom[atom].resind].name)) && 
+    bNterm = gmx_residuetype_is_protein(rt,*(at->resinfo[at->atom[atom].resind].name)) && 
       (at->atom[atom].resind == 0);
     j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
     type=rtpp->atom[j].type;
@@ -449,7 +449,7 @@ static int vsite_nm2type(const char *name, gpp_atomtype_t atype)
 }
 
 static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
-		      t_aa_names *aan)
+                      gmx_residuetype_t rt)
 {
   real mass;
   bool bNterm;
@@ -461,7 +461,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
   else {
     /* get mass from rtp */
     rtpp = search_rtp(*(at->resinfo[at->atom[atom].resind].name),nrtp,rtp);
-    bNterm = is_protein(aan,*(at->resinfo[at->atom[atom].resind].name)) && 
+    bNterm = gmx_residuetype_is_protein(rt,*(at->resinfo[at->atom[atom].resind].name)) && 
       (at->atom[atom].resind == 0);
     j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
     mass=rtpp->atom[j].m;
@@ -1335,7 +1335,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	       const char *ffdir,bool bAddCWD)
 {
 #define MAXATOMSPERRESIDUE 16
-  int  i,j,k,i0,ni0,whatres,resind,add_shift,ftype,nvsite,nadd;
+  int  i,j,k,m,i0,ni0,whatres,resind,add_shift,ftype,nvsite,nadd;
   int  ai,aj,ak,al;
   int  nrfound=0,needed,nrbonds,nrHatoms,Heavy,nrheavies,tpM,tpHeavy;
   int  Hatoms[4],heavies[4],bb;
@@ -1355,7 +1355,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
   char **db;
   int  nvsiteconf,nvsitetop,cmplength;
   bool isN,planarN,bFound;
-  t_aa_names *aan;
+  gmx_residuetype_t rt;
+    
   t_vsiteconf *vsiteconflist; 
   /* pointer to a list of CH3/NH3/NH2 configuration entries.
    * See comments in read_vsite_database. It isnt beautiful,
@@ -1402,7 +1403,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
       "ND1", "HD1", "CD2", "HD2",
       "CE1", "HE1", "NE2", "HE2", NULL }
   };
-  
+    
   if (debug) {
     printf("Searching for atoms to make virtual sites ...\n");
     fprintf(debug,"# # # VSITES # # #\n");
@@ -1437,7 +1438,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
   /* make index to tell which residues were already processed */
   snew(bResProcessed,at->nres);
     
-  aan = get_aa_names();
+  gmx_residuetype_init(&rt);
     
   /* generate vsite constructions */
   /* loop over all atoms */
@@ -1456,7 +1457,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     if ( bVsiteAromatics &&
 	 !strcmp(*(at->atomname[i]),"CA") &&
 	 !bResProcessed[resind] &&
-	 is_protein(aan,*(at->resinfo[resind].name)) ) {
+	 gmx_residuetype_is_protein(rt,*(at->resinfo[resind].name)) ) {
       /* mark this residue */
       bResProcessed[resind] = TRUE;
       /* find out if this residue needs converting */
@@ -1473,31 +1474,38 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	  whatres=j;
 	  /* get atoms we will be needing for the conversion */
 	  nrfound=0;
-	  for (k=0; atnms[j][k]; k++) {
+	  for (k=0; atnms[j][k]; k++) 
+      {
 	    ats[k]=NOTSET;
-	    i0=i;
-	    while (i<at->nr && at->atom[i].resind==resind && ats[k]==NOTSET) {
-	      if (strcasecmp(*(at->atomname[i]),atnms[j][k])==0) {
-		ats[k]=i;
-		nrfound++;
+          for(m=i; m<at->nr && at->atom[m].resind==resind && ats[k]==NOTSET;m++) 
+        {
+	      if (strcasecmp(*(at->atomname[m]),atnms[j][k])==0) 
+          {
+              ats[k]=m;
+              nrfound++;
 	      }
-	      i++;
 	    }
-	    /* if nothing found, search next atom from same point */
-	    if (ats[k]==NOTSET)
-	      i=i0;
 	  }
-	  /* now k is number of atom names in atnms[j] */
-	  if (j==resHIS)
-	    needed = k-3;
+        
+      /* now k is number of atom names in atnms[j] */
+      if (j==resHIS)
+      {
+          needed = k-3;
+      }
 	  else
-	    needed = k;
-	  if (nrfound<needed)
-	    gmx_fatal(FARGS,"not enough atoms found (%d, need %d) in "
-		      "residue %s %d while\n             "
-		      "generating aromatics virtual site construction",
-		      nrfound,needed,resnm,at->resinfo[resind].nr);
-	}
+	  {
+          needed = k;
+      }
+      if (nrfound<needed)
+	  {
+          gmx_fatal(FARGS,"not enough atoms found (%d, need %d) in "
+                    "residue %s %d while\n             "
+                    "generating aromatics virtual site construction",
+                    nrfound,needed,resnm,at->resinfo[resind].nr);
+      }
+      /* Advance overall atom counter */
+      i++;
+    }
       }
       /* the enums for every residue MUST correspond to atnms[residue] */
       switch (whatres) {
@@ -1541,7 +1549,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
       count_bonds(i, &plist[F_BONDS], at->atomname, 
 		  &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
       /* get Heavy atom type */
-      tpHeavy=get_atype(Heavy,at,nrtp,rtp,aan);
+      tpHeavy=get_atype(Heavy,at,nrtp,rtp,rt);
       strcpy(tpname,get_atomtype_name(tpHeavy,atype));
 
       bWARNING=FALSE;
@@ -1627,7 +1635,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	  (*vsite_type)[Hatoms[j]] = Hat_vsite_type[j];
 	/* get dummy mass type from first char of heavy atom type (N or C) */
 	
-	strcpy(nexttpname,get_atomtype_name(get_atype(heavies[0],at,nrtp,rtp,aan),atype));
+	strcpy(nexttpname,get_atomtype_name(get_atype(heavies[0],at,nrtp,rtp,rt),atype));
 	ch=get_dummymass_name(vsiteconflist,nvsiteconf,tpname,nexttpname);
 
 	if (ch == NULL) {
@@ -1664,10 +1672,10 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	mHtot=0;
 	/* get atom masses, and set Heavy and Hatoms mass to zero */
 	for(j=0; j<nrHatoms; j++) {
-	  mHtot += get_amass(Hatoms[j],at,nrtp,rtp,aan);
+	  mHtot += get_amass(Hatoms[j],at,nrtp,rtp,rt);
 	  at->atom[Hatoms[j]].m = at->atom[Hatoms[j]].mB = 0;
 	}
-	mtot = mHtot + get_amass(Heavy,at,nrtp,rtp,aan);
+	mtot = mHtot + get_amass(Heavy,at,nrtp,rtp,rt);
 	at->atom[Heavy].m = at->atom[Heavy].mB = 0;
 	if (mHmult != 1.0)
 	  mHtot *= mHmult;
@@ -1755,7 +1763,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     
   } /* for i < at->nr */
 
-  done_aa_names(&aan);
+  gmx_residuetype_destroy(rt);
     
   if (debug) {
     fprintf(debug,"Before inserting new atoms:\n");

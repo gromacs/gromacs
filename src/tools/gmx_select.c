@@ -321,14 +321,14 @@ gmx_select(int argc, char *argv[])
     {
         d.sfp = xvgropen(fnSize, "Selection size", "Time (ps)", "Number",oenv);
         xvgr_selections(d.sfp, trj);
-        xvgr_legend(d.sfp, ngrps, grpnames, oenv);
+        xvgr_legend(d.sfp, ngrps, (const char**)grpnames, oenv);
     }
     if (fnFrac)
     {
         d.cfp = xvgropen(fnFrac, "Covered fraction", "Time (ps)", "Fraction",
                          oenv);
         xvgr_selections(d.cfp, trj);
-        xvgr_legend(d.cfp, ngrps, grpnames, oenv);
+        xvgr_legend(d.cfp, ngrps, (const char**)grpnames, oenv);
     }
     if (fnIndex)
     {

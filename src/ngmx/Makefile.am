@@ -2,14 +2,14 @@
 # Note: Makefile is automatically generated from Makefile.in by the configure
 # script, and Makefile.in is generated from Makefile.am by automake.
 
-AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
-
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 # Ngmx requires X11 - nothing is built if it doesn't exist
 
 if USE_X11
 
+AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\" $(X_CFLAGS)
+AM_LDFLAGS = $(X_LIBS) $(X_PRE_LIBS) -lX11 $(X_EXTRA_LIBS)
 bin_PROGRAMS     = ngmx g_xrama g_highway g_logo 
 EXTRA_PROGRAMS   = test_ngmx_dialog  g_showcol
 

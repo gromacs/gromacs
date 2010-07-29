@@ -650,15 +650,15 @@ int gmx_fio_fclose(FILE *fp)
 }
 
 /* internal variant of get_file_md5 that operates on a locked file */
-static int gmx_fio_int_get_file_md5(t_fileio *fio, off_t offset, 
+static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset, 
                                     unsigned char digest[])
 {
     /*1MB: large size important to catch almost identical files */
 #define CPT_CHK_LEN  1048576 
     md5_state_t state;
     unsigned char buf[CPT_CHK_LEN];
-    off_t read_len;
-    off_t seek_offset;
+    gmx_off_t read_len;
+    gmx_off_t seek_offset;
     int ret = -1;
 
     seek_offset = offset - CPT_CHK_LEN;
@@ -671,14 +671,10 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, off_t offset,
 
     if (fio->fp && fio->bReadWrite)
     {
-#ifdef HAVE_FSEEKO
-        ret = fseeko(fio->fp, seek_offset, SEEK_SET);
-#else
-        ret=fseek(fio->fp,seek_offset,SEEK_SET);
-#endif
+        ret=gmx_fseek(fio->fp, seek_offset, SEEK_SET);
         if (ret)
         {
-            fseek(fio->fp, 0, SEEK_END);
+            gmx_fseek(fio->fp, 0, SEEK_END);
         }
     }
     if (ret) /*either no fp, not readwrite, or fseek not successful */
@@ -687,7 +683,7 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, off_t offset,
     }
 
     /* the read puts the file position back to offset */
-    if (fread(buf, 1, read_len, fio->fp) != read_len)
+    if ((gmx_off_t)fread(buf, 1, read_len, fio->fp) != read_len)
     {
         /* not fatal: md5sum check to prevent overwriting files
          * works (less safe) without
@@ -709,12 +705,12 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, off_t offset,
                 fio->fn);
         }
 
-        fseek(fio->fp, 0, SEEK_END);
+        gmx_fseek(fio->fp, 0, SEEK_END);
 
         ret = -1;
     }
-    fseek(fio->fp, 0, SEEK_END); /*is already at end, but under windows 
-     it gives problems otherwise*/
+    gmx_fseek(fio->fp, 0, SEEK_END); /*is already at end, but under windows 
+                                       it gives problems otherwise*/
 
     if (debug)
     {
@@ -740,7 +736,8 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, off_t offset,
  * offset: starting pointer of region to use for md5
  * digest: return array of md5 sum 
  */
-int gmx_fio_get_file_md5(t_fileio *fio, off_t offset, unsigned char digest[])
+int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset, 
+                         unsigned char digest[])
 {
     int ret;
 
@@ -752,7 +749,7 @@ int gmx_fio_get_file_md5(t_fileio *fio, off_t offset, unsigned char digest[])
 }
 
 /* The fio_mutex should ALWAYS be locked when this function is called */
-static int gmx_fio_int_get_file_position(t_fileio *fio, off_t *offset)
+static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
 {
     char buf[STRLEN];
 
@@ -773,22 +770,18 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, off_t *offset)
      about the first 64 bits - we'll have to fix
      this when exabyte-size output files are common...
      */
-#ifdef HAVE_FSEEKO
-    *offset = ftello(fio->fp);
-#else
-    *offset = ftell(fio->fp);
-#endif
+    *offset=gmx_ftell(fio->fp);
 
     return 0;
 }
 
 int gmx_fio_check_file_position(t_fileio *fio)
 {
-    /* If off_t is 4 bytes we can not store file offset > 2 GB.
+    /* If gmx_off_t is 4 bytes we can not store file offset > 2 GB.
      * If we do not have ftello, we will play it safe.
      */
 #if (SIZEOF_OFF_T == 4 || !defined HAVE_FSEEKO)
-    off_t offset;
+    gmx_off_t offset;
 
     gmx_fio_lock(fio);
     gmx_fio_int_get_file_position(fio,&offset);
@@ -1092,29 +1085,25 @@ t_fileio *gmx_fio_all_output_fsync(void)
 }
 
 
-off_t gmx_fio_ftell(t_fileio* fio)
+gmx_off_t gmx_fio_ftell(t_fileio* fio)
 {
-    off_t ret = 0;
+    gmx_off_t ret = 0;
 
     gmx_fio_lock(fio);
     if (fio->fp)
-        ret = ftell(fio->fp);
+        ret = gmx_ftell(fio->fp);
     gmx_fio_unlock(fio);
     return ret;
 }
 
-int gmx_fio_seek(t_fileio* fio, off_t fpos)
+int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
 {
     int rc;
 
     gmx_fio_lock(fio);
     if (fio->fp)
     {
-#ifdef HAVE_FSEEKO
-        rc = fseeko(fio->fp, fpos, SEEK_SET);
-#else
-        rc = fseek(fio->fp,fpos,SEEK_SET);
-#endif
+        gmx_fseek(fio->fp, fpos, SEEK_SET);
     }
     else
     {

@@ -246,7 +246,7 @@ int gmx_saltbr(int argc,char *argv[])
 	    nnn=1;
 	  
 	  if (nset[nnn] == 0) 
-	    xvgr_legend(out[nnn],1,&buf,oenv);
+	    xvgr_legend(out[nnn],1,(const char**)&buf,oenv);
 	  else {
 	    if (output_env_get_xvg_format(oenv) == exvgXMGR) {
 	      fprintf(out[nnn],"@ legend string %d \"%s\"\n",nset[nnn],buf);

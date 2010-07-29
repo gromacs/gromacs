@@ -1116,7 +1116,8 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
 
 void forcerec_set_ranges(t_forcerec *fr,
                          int ncg_home,int ncg_force,
-                         int natoms_force,int natoms_f_novirsum)
+                         int natoms_force,
+                         int natoms_force_constr,int natoms_f_novirsum)
 {
     fr->cg0 = 0;
     fr->hcg = ncg_home;
@@ -1124,12 +1125,13 @@ void forcerec_set_ranges(t_forcerec *fr,
     /* fr->ncg_force is unused in the standard code,
      * but it can be useful for modified code dealing with charge groups.
      */
-    fr->ncg_force    = ncg_force;
-    fr->natoms_force = natoms_force;
+    fr->ncg_force           = ncg_force;
+    fr->natoms_force        = natoms_force;
+    fr->natoms_force_constr = natoms_force_constr;
 
-    if (fr->natoms_force > fr->nalloc_force)
+    if (fr->natoms_force_constr > fr->nalloc_force)
     {
-        fr->nalloc_force = over_alloc_dd(fr->natoms_force);
+        fr->nalloc_force = over_alloc_dd(fr->natoms_force_constr);
 
         if (fr->bTwinRange)
         {
@@ -1168,13 +1170,10 @@ bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
     bool bAllvsAll;
 
 #ifdef GMX_DOUBLE
-    /* double not done yet */
     bAllvsAll = FALSE;
 #else
     bAllvsAll =
         (
-         /* disable for very small systems (bug 416) */
-         mtop->natoms > 64       &&
          ir->rlist==0            &&
          ir->rcoulomb==0         &&
          ir->rvdw==0             &&
@@ -1188,7 +1187,8 @@ bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
                                              ir->gb_algorithm==egbOBC))) &&
          getenv("GMX_NO_ALLVSALL") == NULL
             );
-
+#endif
+    
     if (bAllvsAll && ir->opts.ngener > 1)
     {
         const char *note="NOTE: Can not use all-vs-all force loops, because there are multiple energy monitor groups; you might get significantly higher performance when using only a single energy monitor group.\n";
@@ -1206,8 +1206,12 @@ bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
         }
         bAllvsAll = FALSE;
     }
-#endif
 
+    if(bAllvsAll && fp && MASTER(cr))
+    {
+        fprintf(fp,"\nUsing accelerated all-vs-all kernels.\n\n");
+    }
+    
     return bAllvsAll;
 }
 
@@ -1278,11 +1282,21 @@ void init_forcerec(FILE *fp,
     fr->sc_power   = ir->sc_power;
     fr->sc_sigma6  = pow(ir->sc_sigma,6);
     
+    fr->UseOptimizedKernels = (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL);
+    if(fp && fr->UseOptimizedKernels==FALSE)
+    {
+        fprintf(fp,
+                "\nFound environment variable GMX_NOOPTIMIZEDKERNELS.\n"
+                "Disabling SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
+    }    
+    
     /* Check if we can/should do all-vs-all kernels */
     fr->bAllvsAll       = can_use_allvsall(ir,mtop,FALSE,NULL,NULL);
     fr->AllvsAll_work   = NULL;
     fr->AllvsAll_workgb = NULL;
 
+    
+    
     /* Neighbour searching stuff */
     fr->bGrid      = (ir->ns_type == ensGRID);
     fr->ePBC       = ir->ePBC;
@@ -1652,7 +1666,7 @@ void init_forcerec(FILE *fp,
          * which sets fr->hcg, is corrected later in do_md and init_em.
          */
         forcerec_set_ranges(fr,ncg_mtop(mtop),ncg_mtop(mtop),
-                            mtop->natoms,mtop->natoms);
+                            mtop->natoms,mtop->natoms,mtop->natoms);
     }
     
     fr->print_force = print_force;

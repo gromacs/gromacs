@@ -3645,13 +3645,13 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     /* END OF CAUTION: cr is now reliable */
 
-    /* now make sure the state is initialized and propagated */
-    set_state_entries(state,inputrec,cr->nnodes);
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(fplog, cr, inputrec, mtop, state);
+        init_parallel(fplog, cr, inputrec, mtop);
     }
+    /* now make sure the state is initialized and propagated */
+    set_state_entries(state,inputrec,cr->nnodes);
 
     if (can_use_allvsall(inputrec,mtop,TRUE,cr,fplog))
     {
@@ -4559,11 +4559,10 @@ int gmx_membed(int argc,char *argv[])
 	if (opt2bSet("-cpi",NFILE,fnm))
 	{
 		bAppendFiles =
-			read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
-					fnm,cr),
-					&sim_part_fn,NULL,cr,
-					bAppendFiles,
-					part_suffix,&bAddPart);
+			read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,fnm,cr),
+							&sim_part_fn,NULL,cr,
+							bAppendFiles,NFILE,fnm,
+							part_suffix,&bAddPart);
 		if (sim_part_fn==0 && MASTER(cr))
 		{
 			fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");

@@ -60,96 +60,96 @@ files.
 #include "impl.h"
 
 
-/* this is where all the tMPI_Reduce ops are included from thread_tmpi_ops.c */
+/* this is where all the tMPI_Reduce ops are included from tmpi_ops.h */
 #define THREAD_MPI_OPS 1
 
 #define TYPE char
 #define TYPENM CHAR
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE short
 #define TYPENM SHORT
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE int
 #define TYPENM INT
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE long
 #define TYPENM LONG
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #ifdef SIZEOF_LONG_LONG_INT
 
 #define TYPE long long
 #define TYPENM L_LONG
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE long long int
 #define TYPENM L_L_INT
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #endif
 
 #define TYPE signed char
 #define TYPENM S_CHAR
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE unsigned char
 #define TYPENM U_CHAR
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE unsigned short
 #define TYPENM U_SHORT
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE unsigned 
 #define TYPENM UNSIGNED
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE unsigned long
 #define TYPENM U_LONG
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #ifdef SIZEOF_LONG_LONG_INT
 
 #define TYPE unsigned long long
 #define TYPENM U_L_LONG
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #endif
 
 #define TYPE float
 #define TYPENM FLOAT
 #define INTTYPE 0
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE double
 #define TYPENM DOUBLE
 #define INTTYPE 0
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE long double
 #define TYPENM L_DOUBLE
 #define INTTYPE 0
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE char
 #define TYPENM BYTE
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 
 /* These are the fundamental data types. They exist as global variables */

@@ -60,7 +60,8 @@ typedef struct {
   char          **name;         /* Pointer to the residue name          */
   int           nr;             /* Residue number                       */
   unsigned char ic;             /* Code for insertion of residues       */
-  unsigned char chain;          /* Chain identifier                     */
+  int           chainnum;       /* Iincremented at TER or new chain id  */    
+  char          chainid;        /* Chain identifier written/read to pdb */
   char          **rtp;          /* rtp building block name (optional)   */
 } t_resinfo;
 
