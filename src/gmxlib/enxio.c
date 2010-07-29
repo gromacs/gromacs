@@ -135,12 +135,14 @@ static void enxsubblock_free(t_enxsubblock *sb)
     }
     if (sb->sval_alloc)
     {
-        size_t i;
+        int i;
 
         for(i=0;i<sb->sval_alloc;i++)
         {
             if (sb->sval[i])
+            {
                 free(sb->sval[i]);
+            }
         }
         free(sb->sval);
         sb->sval_alloc=0;
@@ -192,11 +194,13 @@ static void enxsubblock_alloc(t_enxsubblock *sb)
         case xdr_datatype_string:
             if (sb->nr > sb->sval_alloc)
             {
-                size_t i;
+                int i;
 
                 srenew(sb->sval, sb->nr);
                 for(i=sb->sval_alloc;i<sb->nr;i++)
+                {
                     sb->sval[i]=NULL;
+                }
                 sb->sval_alloc=sb->nr;
             }
             break;
@@ -217,7 +221,7 @@ static void enxblock_free(t_enxblock *eb)
 {
     if (eb->nsub_alloc>0)
     {
-        size_t i;
+        int i;
         for(i=0;i<eb->nsub_alloc;i++)
         {
             enxsubblock_free(&(eb->sub[i]));
@@ -246,24 +250,28 @@ void init_enxframe(t_enxframe *fr)
 
 void free_enxframe(t_enxframe *fr)
 {
-  size_t b;
+  int b;
 
   if (fr->e_alloc)
+  {
     sfree(fr->ener);
+  }
   for(b=0; b<fr->nblock_alloc; b++)
+  {
       enxblock_free(&(fr->block[b]));
+  }
   free(fr->block);
 }
 
-void add_blocks_enxframe(t_enxframe *fr, size_t n)
+void add_blocks_enxframe(t_enxframe *fr, int n)
 {
     fr->nblock=n;
     if (n > fr->nblock_alloc)
     {
-        size_t b;
+        int b;
 
         srenew(fr->block, n);
-        for(b=fr->nblock_alloc;b<(size_t)fr->nblock;b++)
+        for(b=fr->nblock_alloc;b<fr->nblock;b++)
         {
             enxblock_init(&(fr->block[b]));
         }
@@ -288,12 +296,12 @@ t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev)
     return NULL;
 }
 
-void add_subblocks_enxblock(t_enxblock *eb, size_t n)
+void add_subblocks_enxblock(t_enxblock *eb, int n)
 {
     eb->nsub=n;
     if (eb->nsub > eb->nsub_alloc)
     {
-        size_t b;
+        int b;
 
         srenew(eb->sub, n);
         for(b=eb->nsub_alloc; b<n; b++)
@@ -575,7 +583,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             int i;
             /* in the new version files, the block header only contains
                the ID and the number of subblocks */
-            int nsub=(int)(fr->block[b].nsub);
+            int nsub=(gmx_large_int_t)fr->block[b].nsub;
             *bOK = *bOK && gmx_fio_do_int(ef->fio, fr->block[b].id);
             *bOK = *bOK && gmx_fio_do_int(ef->fio, nsub);
 
@@ -587,13 +595,11 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             for(i=0;i<nsub;i++)
             {
                 t_enxsubblock *sub=&(fr->block[b].sub[i]); /* shortcut */
-                gmx_large_int_t nr=(gmx_large_int_t)sub->nr;
                 int typenr=sub->type;
 
                 *bOK=*bOK && gmx_fio_do_int(ef->fio, typenr);
-                *bOK=*bOK && gmx_fio_do_gmx_large_int(ef->fio, nr);
+                *bOK=*bOK && gmx_fio_do_int(ef->fio, sub->nr);
 
-                sub->nr=(size_t)nr;
                 sub->type=(xdr_datatype)typenr;
             }
         }
@@ -921,8 +927,8 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
     for(b=0; b<fr->nblock; b++)
     {
         /* now read the subblocks. */
-        size_t nsub=fr->block[b].nsub; /* shortcut */
-        size_t i;
+        int nsub=fr->block[b].nsub; /* shortcut */
+        int i;
 
         for(i=0;i<nsub;i++)
         {
