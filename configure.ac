@@ -872,34 +872,6 @@ fi
 AC_SUBST(PKG_GSL)
 AC_SUBST(GSL_LIBS)
 
-######
-# Use OpenMM libraries
-######
-AC_ARG_WITH(openmm,
- [  --with-openmm                 Use the OpenMM libraries to run on GPUs],,with_openmm=no)
-
-if test "$with_openmm" = "yes"; then
-
-  AC_PROG_CXX
-  CPPFLAGS="$CPPFLAGS -I$OPENMM_INSTALL_DIR/include"
-  INCLUDES="$INCLUDES -I$OPENMM_INSTALL_DIR/include"
-  LDFLAGS="$LDFLAGS -L$OPENMM_INSTALL_DIR/lib -lOpenMM"
-  #AC_CHECK_HEADERS([OpenMM.h],AC_CHECK_LIB(OpenMM,main))
-  #AC_CHECK_HEADERS([OpenMM.h],,AC_MSG_ERROR([Cannot find OpenMM.h file. Please set OPENMM_INSTALL_DIR.]))
-  AC_DEFINE([USE_OPENMM],,[Use OpenMM libraries to run on GPUs])
-
-#  AS_CASE([${host_cpu}-${host_os}-${host_vendor}],
-#    [i?86-linux*], [OPENMM_HOST=linux32],
-#    [x86_64-linux*], [OPENMM_HOST=linux64],
-#    [amd64-linux*], [OPENMM_HOST=linux64],
-#    [i?86-darwin*-apple], [OPENMM_HOST=apple],
-#    [OPENMM_HOST=""])
-#  AC_SUBST([OPENMM_HOST])
-fi
-
-AM_CONDITIONAL([USE_OPENMM],[test "$with_openmm" = "yes"])
-
-
 AC_ARG_WITH(xml,
  [AC_HELP_STRING([--without-xml],[do not link to the xml2 library,] 
                  [disallows the use of certain file formats])],,with_xml=yes)

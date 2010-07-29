@@ -158,4 +158,5 @@ molfile_plugin.h \
 vmddlopen.h \
 vmdplugin.h \
 oenv.h \
-sighandler.h
+sighandler.h \
+gmx_sse2_double.h

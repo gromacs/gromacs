@@ -11,14 +11,6 @@ pkgconfig_DATA = libgmxpreprocess@LIBSUFFIX@.pc
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
-if USE_OPENMM
-#AM_CPPFLAGS += -I$(top_srcdir)/libraries/openmm/include
-#LDADD += $(top_srcdir)/libraries/openmm/lib/linux64/libOpenMM.*
-lib_LTLIBRARIES += libopenmminterface.la
-libopenmminterface_la_SOURCES = md_openmm.c
-#mdrun_LINK = $(CXXLINK)
-endif
-
 libgmxpreprocess@LIBSUFFIX@_la_LIBADD       = ../mdlib/libmd@LIBSUFFIX@.la
 libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
 
@@ -68,7 +60,7 @@ mdrun_SOURCES = \
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
 	xutils.c	runner.c	md.c		mdrun.c		\
-	genalg.c	genalg.h	md_openmm.h
+	genalg.c	genalg.h	md_openmm.h	md_openmm.c
 
 if GMX_FAHCORE
   noinst_LTLIBRARIES = libfahcore.la
