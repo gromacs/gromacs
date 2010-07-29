@@ -37,41 +37,41 @@
  [ atoms ]
    IB     IB           1.00000     1
 
-[ Ca+ ]
+[ CA ]
  [ atoms ]
-   Ca     C0           2.00000     1
+   CA     C0           2.00000     1
 
-[ Cl- ]
+[ CL ]
  [ atoms ]
-   Cl     Cl          -1.00000     1
+   CL     Cl          -1.00000     1
 
-[ Na+ ]
+[ NA ]
  [ atoms ]
-   Na     Na           1.00000     1
+   NA     Na           1.00000     1
 
-[ Mg+ ]
+[ MG ]
  [ atoms ]
-   Mg     MG           2.00000     1
+   MG     MG           2.00000     1
 
-[ K+ ]
+[ K ]
  [ atoms ]
    K      K            1.00000     1
 
-[ Rb+ ]
+[ RB ]
  [ atoms ]
-   Rb     Rb           1.00000     1
+   RB     Rb           1.00000     1
 
-[ Cs+ ]
+[ CS ]
  [ atoms ]
    CS     Cs           1.00000     1
 
-[ Li+ ]
+[ LI ]
  [ atoms ]
-   Li     Li           1.00000     1 
+   LI     Li           1.00000     1 
 
-[ Zn+ ]
+[ ZN ]
  [ atoms ]
-   Zn     Zn           2.00000     1
+   ZN     Zn           2.00000     1
 
 [ URE ] ; urea added in by EJS, resp charges by Jim Caldwell
  [ atoms ]
@@ -92,7 +92,7 @@
    N2    H21
    N2    H22
  [ impropers ]
-    N1	  N2	 C     O	
+    N1	  N2	 C     O
      C	 H11	N1   H12
      C	 H21	N2   H22   	
 
@@ -111,9 +111,9 @@
    CH3     C
      C     O
  [ impropers ]
-   CH3    +N     C     O
+   CH3    +N     C     O   
                         
-[ NME ] 
+[ NME ]
  [ atoms ]
      N    N           -0.41570     1
      H    H            0.27190     2
@@ -536,7 +536,7 @@
     CD    CZ    NE    HE
     CZ  HH11   NH1  HH12
     CZ  HH21   NH2  HH22
-               
+                        
 [ HID ]
  [ atoms ]
      N    N           -0.41570     1
@@ -795,7 +795,7 @@
    CD1    CZ   CE1   HE1
     CG   CE1   CD1   HD1
    CD1   CD2    CG    CB
-                       
+                        
 [ TYR ]
  [ atoms ]
      N    N           -0.41570     1
@@ -1140,10 +1140,10 @@
     -C     N
  [ impropers ]
     CA    +N     C     O
-    -C    CD     N    CA	
+    -C    CD     N    CA
 
-[ HYP ] ; S Park, R J Radmer, T E Klein & V S Pande (submitted).
- [ atoms ] 
+[ HYP ] ; S D Mooney, P A Kollman & T E Klein (2002), Biopolymers 64, 63.
+ [ atoms ]
      N    N           -0.25480     1
    CD2    CT           0.05950     2
   HD21    H1           0.07000     3
@@ -1366,8 +1366,7 @@
     -C    CA     N     H
     CA    +N     C     O
     CB   OD1    CG   OD2
-                   
-
+                        
 [ GLH ]
  [ atoms ]
      N    N           -0.41570     1
@@ -3374,8 +3373,8 @@
     CA    HA
     CA    CB
     CA     C
-    CB   HB2
     CB   HB1
+    CB   HB2
     CB    SG
      C     O
      C    +N
@@ -3425,4 +3424,4 @@
      C    +N
  [ impropers ]
     CA    +N     C     O
-
+                        
