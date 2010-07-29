@@ -670,6 +670,8 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     int     ntypes;
     char *  p;
     const char ** p_typename;
+    int     iwater,iion;
+    int     nwater,nion;
     
     if (bVerb)
     {
@@ -717,16 +719,19 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
             }
             sfree(aid);
         }
-        else if(!gmx_strcasecmp(p_typename[k],"Solvent") && nra>0)
+        else if(!gmx_strcasecmp(p_typename[k],"Water") && nra>0)
         {
             add_grp(gb,gn,nra,aid,p_typename[k]); 
+            /* Add this group as 'SOL' too, for backward compatibility with older gromacs versions */
+            add_grp(gb,gn,nra,aid,"SOL"); 
+
             sfree(aid);
 
             /* Solvent, create a negated group too */
-            aid=mk_aid(atoms,restype,"Solvent",&nra,FALSE);
+            aid=mk_aid(atoms,restype,"Water",&nra,FALSE);
             if ((nra > 0) && (nra < atoms->nr))
             {
-                add_grp(gb,gn,nra,aid,"non-Solvent"); 
+                add_grp(gb,gn,nra,aid,"non-Water"); 
             }
             sfree(aid);
         }
@@ -739,10 +744,57 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
         }
     }
     
-            
     sfree(p_typename);
     sfree(restype);
     gmx_residuetype_destroy(rt);      
+    
+    /* Create a merged water_and_ions group */
+    iwater = -1;
+    iion   = -1;
+    nwater = 0;
+    nion   = 0;
+    
+    printf("Debug, will create w+i group. gb->nr=%d\n",gb->nr);
+    
+    for(i=0;i<gb->nr;i++)
+    {
+        printf("group %d, name=%s\n",i,(*gn)[i]);
+        
+        if(!gmx_strcasecmp((*gn)[i],"Water"))
+        {
+            iwater = i;
+            nwater = gb->index[i+1]-gb->index[i];
+        }
+        else if(!gmx_strcasecmp((*gn)[i],"Ion"))
+        {
+            iion = i;
+            nion = gb->index[i+1]-gb->index[i];
+        }
+    }
+    
+    if(nwater>0 || nion>0)
+    {
+        srenew(gb->index,gb->nr+2);
+        srenew(*gn,gb->nr+1);
+        (*gn)[gb->nr] = strdup("Water_and_ions");
+        srenew(gb->a,gb->nra+nwater+nion);
+        if(nwater>0)
+        {
+            for(i=gb->index[iwater];i<gb->index[iwater+1];i++)
+            {
+                gb->a[gb->nra++] = gb->a[i];
+            }
+        }
+        if(nion>0)
+        {
+            for(i=gb->index[iion];i<gb->index[iion+1];i++)
+            {
+                gb->a[gb->nra++] = gb->a[i];
+            }
+        }
+        gb->nr++;
+        gb->index[gb->nr]=gb->nra;
+    }
 }
 
 
