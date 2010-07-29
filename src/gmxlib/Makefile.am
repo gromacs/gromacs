@@ -94,4 +94,4 @@ version.c: FORCE
 FORCE:
 endif
 
-EXTRA_DIST = version.h
+EXTRA_DIST = version.h libgmx.pc.cmakein

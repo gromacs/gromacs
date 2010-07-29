@@ -9,6 +9,8 @@ lib_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la
 pkgconfigdir = ${libdir}/pkgconfig
 pkgconfig_DATA = libgmxpreprocess@LIBSUFFIX@.pc
 
+EXTRA_DIST = libgmxpreprocess.pc.cmakein
+
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
 libgmxpreprocess@LIBSUFFIX@_la_LIBADD       = ../mdlib/libmd@LIBSUFFIX@.la
