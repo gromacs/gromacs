@@ -26,6 +26,8 @@ EXTRA_DIST = config/depcomp \
 			 share/CMakeLists.txt \
 			 src/kernel/gmx_gpu_utils \
 			 src/kernel/CMakeLists.txt \
+			 src/kernel/openmm_wrapper.cpp \
+			 src/kernel/openmm_wrapper.h \
 			 src/ngmx/CMakeLists.txt \
 			 src/mdlib/CMakeLists.txt \
 			 src/config.h.cmakein \

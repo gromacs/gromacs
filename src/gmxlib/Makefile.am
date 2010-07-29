@@ -94,6 +94,4 @@ version.c: FORCE
 FORCE:
 endif
 
-
-
-
+EXTRA_DIST = version.h
