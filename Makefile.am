@@ -7,6 +7,7 @@
 # automake. Presently, this means automake version 1.4f. In Groningen, you
 # can find that under ~lindahl/gnu/bin , or download a copy from www.gromacs.org
 
+ACLOCAL_AMFLAGS = -I config
 
 AUTOMAKE_OPTIONS = foreign 
 
