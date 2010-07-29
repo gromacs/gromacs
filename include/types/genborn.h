@@ -41,6 +41,8 @@
 extern "C" {
 #endif
 
+#include "simple.h"
+
 typedef struct
 {
 	int nbonds;

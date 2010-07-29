@@ -443,6 +443,7 @@ fi
 AC_PROG_CPP
 # Needed by libtool scripts?
 AC_PROG_EGREP
+AC_PROG_LN_S
 
 if test "$enable_cpu_optimization" = "yes"; then
   ACX_DETECT_GMXCPU

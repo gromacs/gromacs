@@ -39,6 +39,7 @@
 #include "ns.h"
 #include "genborn.h"
 #include "qmmmrec.h"
+#include "idef.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -28,21 +28,17 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <gromacs/copyrite.h>
+#include <gromacs/filenm.h>
+#include <gromacs/macros.h>
+#include <gromacs/pbc.h>
+#include <gromacs/smalloc.h>
+#include <gromacs/statutil.h>
+#include <gromacs/vec.h>
+#include <gromacs/xvgr.h>
 
-#include <copyrite.h>
-#include <filenm.h>
-#include <macros.h>
-#include <pbc.h>
-#include <smalloc.h>
-#include <statutil.h>
-#include <vec.h>
-#include <xvgr.h>
-
-#include <nbsearch.h>
-#include <trajana.h>
+#include <gromacs/nbsearch.h>
+#include <gromacs/trajana.h>
 
 /*! \brief
  * Template analysis data structure.

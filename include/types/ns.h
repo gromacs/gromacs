@@ -37,6 +37,7 @@
 #endif
 
 #include "nsgrid.h"
+#include "nblist.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -39,6 +39,8 @@
 extern "C" {
 #endif
 
+#include "typedefs.h"
+
 typedef struct gmx_stats *gmx_stats_t;
 	
 /* Error codes returned by the routines */
