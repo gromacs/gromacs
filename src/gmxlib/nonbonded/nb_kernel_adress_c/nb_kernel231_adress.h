@@ -73,7 +73,7 @@ nb_kernel231_adress_ex
                  real          GBtab[],    int *         nthreads, 
                  int *         count,      void *        mtx,
                  int *         outeriter,  int *         inneriter,
-                 real          * wf);
+                 real          force_cap, real * wf);
 
 
 /*! \brief Nonbonded kernel adress 231 without forces.
@@ -103,7 +103,7 @@ nb_kernel231_adress_cg
                  real          GBtab[],    int *         nthreads, 
                  int *         count,      void *        mtx,
                  int *         outeriter,  int *         inneriter,
-                 real          * wf);
+                 real          force_cap, real * wf);
 
 
 #ifdef __cplusplus

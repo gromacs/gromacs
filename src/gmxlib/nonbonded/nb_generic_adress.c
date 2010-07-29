@@ -90,8 +90,11 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
     real       weight_product;
     real       hybscal; /* the multiplicator to the force for hybrid interactions*/
     bool       bHybrid; /*Are we in the hybrid zone ?*/
+    real       force_cap;
 
     wf                  = mdatoms->wf;
+
+    force_cap = fr->adress_ex_forcecap;
 
     icoul               = nlist->icoul;
     ivdw                = nlist->ivdw;
@@ -113,6 +116,9 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
     shiftvec            = fr->shift_vec[0];
     vdwparam            = fr->nbfp;
     ntype               = fr->ntype;
+
+
+
 
    for(n=0; (n<nlist->nri); n++)
     {
@@ -317,6 +323,10 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 						fijR             = c12*FF;
 						fscal           += -(fijD+fijR)*tabscale*rinv;
 						Vvdwtot          = Vvdwtot + Vvdw_disp + Vvdw_rep;
+                                                if(!bCG && force_cap>0 && (fabs(fscal)> force_cap))
+                                                {
+                                                     fscal=force_cap*fscal/fabs(fscal);
+                                                }
 						break;
 
 					default:

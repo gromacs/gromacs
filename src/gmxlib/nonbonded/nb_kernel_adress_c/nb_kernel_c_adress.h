@@ -41,7 +41,7 @@
 #include "../nb_kerneltype.h"
 
 void
-nb_kernel_setup_adress(FILE *fplog,nb_kernel_t **list);
+nb_kernel_setup_adress(FILE *fplog,nb_adress_kernel_t **list);
 
 #endif /* _NBKERNEL_H_ */
 

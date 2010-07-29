@@ -370,6 +370,7 @@ typedef struct {
   int n_adress_tf_grps;
   int * adress_tf_table_index;
   t_forcetable *  atf_tabs;
+  real adress_ex_forcecap;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

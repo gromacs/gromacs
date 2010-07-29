@@ -204,7 +204,7 @@ nb_kernel_table[eNR_NBKERNEL_NR] =
 
 static nb_kernel_t **
 nb_kernel_list = NULL;
-static nb_kernel_t **
+static nb_adress_kernel_t **
 nb_kernel_list_adress = NULL;
 
 void
@@ -330,6 +330,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	t_nblists       *nblists;
 	bool            bWater;
 	nb_kernel_t *   kernelptr;
+        nb_adress_kernel_t * adresskernelptr;
 	FILE *          fp;
 	int             fac=0;
 	int             nthreads = 1;
@@ -596,6 +597,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     if (mdatoms->pureex && bCG) continue;
                     if (mdatoms->purecg && !bCG) continue;
 
+                    kernelptr = NULL;
+                    adresskernelptr = NULL;
+
                     if (fr->adress_type == eAdressOff ||
                             mdatoms->pureex ||
                             mdatoms->purecg){
@@ -604,10 +608,10 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     }else{
                         /* the explicit kernels are the second part of the kernel list */
                         if (!bCG) nrnb_ind += eNR_NBKERNEL_NR/2;                      
-                        kernelptr = nb_kernel_list_adress[nrnb_ind];
+                        adresskernelptr = nb_kernel_list_adress[nrnb_ind];
                     }
                    
-                    if (kernelptr == NULL)
+                    if (kernelptr == NULL && adresskernelptr == NULL)
                     {
                         /* Call a generic nonbonded kernel */
                         
@@ -652,7 +656,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     else
                     {
                         /* Call nonbonded kernel from function pointer */
-                        if (fr->adress_type==eAdressOff){
+                        if (kernelptr!=NULL){
                         (*kernelptr)( &(nlist->nri),
                                       nlist->iinr,
                                       nlist->jindex,
@@ -684,9 +688,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                       &outeriter,
                                       &inneriter,
                                       (real *)&gbdata);
-                        }else
+                        }else if (adresskernelptr != NULL)
                         { /* Adress kernels */
-                          (*kernelptr)( &(nlist->nri),
+                          (*adresskernelptr)( &(nlist->nri),
                                       nlist->iinr,
                                       nlist->jindex,
                                       nlist->jjnr,
@@ -716,6 +720,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                       nlist->mtx,
                                       &outeriter,
                                       &inneriter,
+                                      fr->adress_ex_forcecap,
                                       mdatoms->wf);
                         }
                     }

@@ -110,7 +110,7 @@
 
 
 
-static nb_kernel_t *
+static nb_adress_kernel_t *
 kernellist_adress[eNR_NBKERNEL_NR] =
 {
     nb_kernel010_adress_cg,
@@ -248,10 +248,10 @@ kernellist_adress[eNR_NBKERNEL_NR] =
 };
 
 void
-nb_kernel_setup_adress(FILE *log, nb_kernel_t **list_adress)
+nb_kernel_setup_adress(FILE *log, nb_adress_kernel_t **list_adress)
 {
   int i;
-  nb_kernel_t *p;
+  nb_adress_kernel_t *p;
 
     if(NULL != log)
   fprintf(log,"Configuring adress C nonbonded kernels...\n");

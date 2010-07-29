@@ -292,6 +292,7 @@ typedef struct {
   int  adress_ivdw;     /* AdResS vdw switch                            */
   int  adress_site;     /* AdResS CG site location                      */
   rvec adress_refs;     /* Coordinates for AdResS reference             */
+  int adress_ex_forcecap; /* in the hybrid zone, cap forces large then this to adress_ex_forcecap */
 
   int n_adress_ex_grps;
   int * adress_ex_grp_index; /* list of the explicitly treated energy grps*/

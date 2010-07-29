@@ -676,6 +676,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_int(ir->n_adress_ex_grps);
       do_int(ir->n_adress_cg_grps);
       do_int(ir->n_adress_tf_grps);
+      do_real(ir->adress_ex_forcecap);
 
       if (bRead)snew(ir->adress_ex_grp_index,ir->n_adress_ex_grps);
       if (ir->n_adress_ex_grps > 0) {

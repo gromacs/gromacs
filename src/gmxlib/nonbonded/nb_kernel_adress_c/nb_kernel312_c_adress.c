@@ -64,6 +64,7 @@ void nb_kernel312_adress_cg(
                     void *          mtx,
                     int *           outeriter,
                     int *           inneriter,
+                    float           force_cap,
                     float *         wf)
 {
     int           nri,ntype,nthreads;
@@ -102,7 +103,6 @@ void nb_kernel312_adress_cg(
     float         c6,c12;
     float         weight_cg1, weight_cg2, weight_product;
     float         hybscal;
-    int           hybrid_flag, bHybrid;
 
     nri              = *p_nri;         
     ntype            = *p_ntype;       
@@ -123,7 +123,6 @@ void nb_kernel312_adress_cg(
 
     nouter           = 0;              
     ninner           = 0;              
-    bHybrid          = 0;              
     
     do
     {
@@ -570,6 +569,7 @@ void nb_kernel312_adress_ex(
                     void *          mtx,
                     int *           outeriter,
                     int *           inneriter,
+                    float           force_cap,
                     float *         wf)
 {
     int           nri,ntype,nthreads;
@@ -608,7 +608,6 @@ void nb_kernel312_adress_ex(
     float         c6,c12;
     float         weight_cg1, weight_cg2, weight_product;
     float         hybscal;
-    int           hybrid_flag, bHybrid;
 
     nri              = *p_nri;         
     ntype            = *p_ntype;       
@@ -629,7 +628,6 @@ void nb_kernel312_adress_ex(
 
     nouter           = 0;              
     ninner           = 0;              
-    bHybrid          = 0;              
     
     do
     {
@@ -773,6 +771,9 @@ void nb_kernel312_adress_ex(
                 Vvdwtot          = Vvdwtot+Vvdw12-Vvdw6;
                 fscal            = (12.0*Vvdw12-6.0*Vvdw6)*rinvsq-((fijC)*tabscale)*rinv11;
                 fscal *= hybscal;
+                if(force_cap>0 && (fabs(fscal)> force_cap)){
+                fscal=force_cap*fscal/fabs(fscal);
+                }
                 tx               = fscal*dx11;     
                 ty               = fscal*dy11;     
                 tz               = fscal*dz11;     
@@ -801,6 +802,9 @@ void nb_kernel312_adress_ex(
                 vctot            = vctot + vcoul;  
                 fscal            = -((fijC)*tabscale)*rinv12;
                 fscal *= hybscal;
+                if(force_cap>0 && (fabs(fscal)> force_cap)){
+                fscal=force_cap*fscal/fabs(fscal);
+                }
                 tx               = fscal*dx12;     
                 ty               = fscal*dy12;     
                 tz               = fscal*dz12;     
@@ -829,6 +833,9 @@ void nb_kernel312_adress_ex(
                 vctot            = vctot + vcoul;  
                 fscal            = -((fijC)*tabscale)*rinv13;
                 fscal *= hybscal;
+                if(force_cap>0 && (fabs(fscal)> force_cap)){
+                fscal=force_cap*fscal/fabs(fscal);
+                }
                 tx               = fscal*dx13;     
                 ty               = fscal*dy13;     
                 tz               = fscal*dz13;     
@@ -857,6 +864,9 @@ void nb_kernel312_adress_ex(
                 vctot            = vctot + vcoul;  
                 fscal            = -((fijC)*tabscale)*rinv21;
                 fscal *= hybscal;
+                if(force_cap>0 && (fabs(fscal)> force_cap)){
+                fscal=force_cap*fscal/fabs(fscal);
+                }
                 tx               = fscal*dx21;     
                 ty               = fscal*dy21;     
                 tz               = fscal*dz21;     
@@ -885,6 +895,9 @@ void nb_kernel312_adress_ex(
                 vctot            = vctot + vcoul;  
                 fscal            = -((fijC)*tabscale)*rinv22;
                 fscal *= hybscal;
+                if(force_cap>0 && (fabs(fscal)> force_cap)){
+                fscal=force_cap*fscal/fabs(fscal);
+                }
                 tx               = fscal*dx22;     
                 ty               = fscal*dy22;     
                 tz               = fscal*dz22;     
@@ -913,6 +926,9 @@ void nb_kernel312_adress_ex(
                 vctot            = vctot + vcoul;  
                 fscal            = -((fijC)*tabscale)*rinv23;
                 fscal *= hybscal;
+                if(force_cap>0 && (fabs(fscal)> force_cap)){
+                fscal=force_cap*fscal/fabs(fscal);
+                }
                 tx               = fscal*dx23;     
                 ty               = fscal*dy23;     
                 tz               = fscal*dz23;     
@@ -941,6 +957,9 @@ void nb_kernel312_adress_ex(
                 vctot            = vctot + vcoul;  
                 fscal            = -((fijC)*tabscale)*rinv31;
                 fscal *= hybscal;
+                if(force_cap>0 && (fabs(fscal)> force_cap)){
+                fscal=force_cap*fscal/fabs(fscal);
+                }
                 tx               = fscal*dx31;     
                 ty               = fscal*dy31;     
                 tz               = fscal*dz31;     
@@ -969,6 +988,9 @@ void nb_kernel312_adress_ex(
                 vctot            = vctot + vcoul;  
                 fscal            = -((fijC)*tabscale)*rinv32;
                 fscal *= hybscal;
+                if(force_cap>0 && (fabs(fscal)> force_cap)){
+                fscal=force_cap*fscal/fabs(fscal);
+                }
                 tx               = fscal*dx32;     
                 ty               = fscal*dy32;     
                 tz               = fscal*dz32;     
@@ -997,6 +1019,9 @@ void nb_kernel312_adress_ex(
                 vctot            = vctot + vcoul;  
                 fscal            = -((fijC)*tabscale)*rinv33;
                 fscal *= hybscal;
+                if(force_cap>0 && (fabs(fscal)> force_cap)){
+                fscal=force_cap*fscal/fabs(fscal);
+                }
                 tx               = fscal*dx33;     
                 ty               = fscal*dy33;     
                 tz               = fscal*dz33;     

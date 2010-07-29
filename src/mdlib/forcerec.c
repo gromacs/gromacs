@@ -1247,6 +1247,7 @@ void init_forcerec(FILE *fp,
     fr->adress_hy_width = ir->adress_hy_width;
     fr->adress_icor     = ir->adress_icor;
     fr->adress_site     = ir->adress_site;
+    fr->adress_ex_forcecap = ir->adress_ex_forcecap;
 
     fr->n_adress_ex_grps = ir->n_adress_ex_grps;
     snew(fr->adress_ex_grp_index, fr->n_adress_ex_grps);

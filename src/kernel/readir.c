@@ -1010,6 +1010,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("adress_const_wf",            ir->adress_const_wf,     1);
   RTYPE ("adress_ex_width",            ir->adress_ex_width,     0);
   RTYPE ("adress_hy_width",            ir->adress_hy_width,     0);
+  RTYPE ("adress_ex_forcecap",            ir->adress_ex_forcecap,     0);
   EETYPE("adress_interface_correction",ir->adress_icor,         eAdressICtype_names);
   EETYPE("adress_exvdw",               ir->adress_ivdw,         evdw_names);
   EETYPE("adress_site",                ir->adress_site,         eAdressSITEtype_names);

@@ -64,6 +64,7 @@ void nb_kernel300_adress_cg(
                     void *          mtx,
                     int *           outeriter,
                     int *           inneriter,
+                    float           force_cap,
                     float *         wf)
 {
     int           nri,ntype,nthreads;
@@ -84,7 +85,6 @@ void nb_kernel300_adress_cg(
     float         dx11,dy11,dz11,rsq11,rinv11;
     float         weight_cg1, weight_cg2, weight_product;
     float         hybscal;
-    int           hybrid_flag, bHybrid;
 
     nri              = *p_nri;         
     ntype            = *p_ntype;       
@@ -95,7 +95,6 @@ void nb_kernel300_adress_cg(
     tabscale         = *p_tabscale;    
     nouter           = 0;              
     ninner           = 0;              
-    bHybrid          = 0;              
     
     do
     {
@@ -248,6 +247,7 @@ void nb_kernel300_adress_ex(
                     void *          mtx,
                     int *           outeriter,
                     int *           inneriter,
+                    float           force_cap,
                     float *         wf)
 {
     int           nri,ntype,nthreads;
@@ -268,7 +268,6 @@ void nb_kernel300_adress_ex(
     float         dx11,dy11,dz11,rsq11,rinv11;
     float         weight_cg1, weight_cg2, weight_product;
     float         hybscal;
-    int           hybrid_flag, bHybrid;
 
     nri              = *p_nri;         
     ntype            = *p_ntype;       
@@ -279,7 +278,6 @@ void nb_kernel300_adress_ex(
     tabscale         = *p_tabscale;    
     nouter           = 0;              
     ninner           = 0;              
-    bHybrid          = 0;              
     
     do
     {
