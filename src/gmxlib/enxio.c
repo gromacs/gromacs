@@ -568,22 +568,22 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
                     gmx_incons("Writing an old version .edr file the wrong subblock type");
                 }
             }
-            nrint=(int)(fr->block[b].sub[0].nr);
+            nrint = fr->block[b].sub[0].nr;
             
             if (!gmx_fio_do_int(ef->fio, nrint))
             {
                 *bOK = FALSE;
             }
-            fr->block[b].id=(int)(b-startb);
-            fr->block[b].sub[0].nr=nrint;
-            fr->block[b].sub[0].type=dtreal;
+            fr->block[b].id          = b - startb;
+            fr->block[b].sub[0].nr   = nrint;
+            fr->block[b].sub[0].type = dtreal;
         }
         else
         {
             int i;
             /* in the new version files, the block header only contains
                the ID and the number of subblocks */
-            int nsub=(gmx_large_int_t)fr->block[b].nsub;
+            int nsub=fr->block[b].nsub;
             *bOK = *bOK && gmx_fio_do_int(ef->fio, fr->block[b].id);
             *bOK = *bOK && gmx_fio_do_int(ef->fio, nsub);
 
@@ -600,7 +600,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
                 *bOK=*bOK && gmx_fio_do_int(ef->fio, typenr);
                 *bOK=*bOK && gmx_fio_do_int(ef->fio, sub->nr);
 
-                sub->type=(xdr_datatype)typenr;
+                sub->type = (xdr_datatype)typenr;
             }
         }
     }
