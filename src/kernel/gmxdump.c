@@ -364,8 +364,8 @@ void list_ene(const char *fn)
             for(b=0; b<fr->nblock; b++)
             {
                 t_enxblock *eb=&(fr->block[b]);
-                printf("Block data %2d (%3ld subblocks, id=%d)\n",b, eb->nsub, 
-                       (int)eb->id);
+                printf("Block data %2d (%3ld subblocks, id=%d)\n",b, 
+                       (gmx_large_int_t)eb->nsub, (int)eb->id);
                 printf("  id='%s'\n", enx_block_id_name[eb->id]);
                 for(i=0;i<eb->nsub;i++)
                 {
@@ -373,7 +373,8 @@ void list_ene(const char *fn)
                     const char *typestr=NULL;
 
                     printf("  Sub block %3d (%5ld elems, type=%s) values:\n", 
-                           i, sb->nr, xdr_datatype_names[sb->type]);
+                           i, (gmx_large_int_t)sb->nr, 
+                           xdr_datatype_names[sb->type]);
 
                     switch(sb->type)
                     {

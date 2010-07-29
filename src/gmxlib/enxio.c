@@ -575,7 +575,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             int i;
             /* in the new version files, the block header only contains
                the ID and the number of subblocks */
-            int nsub=(gmx_large_int_t)fr->block[b].nsub;
+            int nsub=(int)(fr->block[b].nsub);
             *bOK = *bOK && gmx_fio_do_int(ef->fio, fr->block[b].id);
             *bOK = *bOK && gmx_fio_do_int(ef->fio, nsub);
 
