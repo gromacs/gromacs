@@ -753,13 +753,9 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     iion   = -1;
     nwater = 0;
     nion   = 0;
-    
-    printf("Debug, will create w+i group. gb->nr=%d\n",gb->nr);
-    
-    for(i=0;i<gb->nr;i++)
-    {
-        printf("group %d, name=%s\n",i,(*gn)[i]);
         
+    for(i=0;i<gb->nr;i++)
+    {        
         if(!gmx_strcasecmp((*gn)[i],"Water"))
         {
             iwater = i;
@@ -772,7 +768,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
         }
     }
     
-    if(nwater>0 || nion>0)
+    if(nwater>0 && nion>0)
     {
         srenew(gb->index,gb->nr+2);
         srenew(*gn,gb->nr+1);
