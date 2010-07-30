@@ -92,7 +92,6 @@ orires.h \
 partdec.h \
 pbc.h \
 pdbio.h \
-pdebug.h \
 perf_est.h \
 physics.h \
 pme.h \
@@ -106,7 +105,6 @@ random.h \
 rbin.h \
 rdgroup.h \
 readinp.h \
-reorder.h \
 resall.h \
 rmpbc.h \
 selection.h \
@@ -124,21 +122,17 @@ splitter.h \
 statutil.h \
 strdb.h \
 string2.h \
-struc2.h \
 symtab.h \
 sysstuff.h \
-tags.h \
 tgroup.h \
 topsort.h \
 toputil.h \
 tpxio.h \
 trajana.h \
-transfer.h \
 trnio.h \
 txtdump.h \
 typedefs.h \
 update.h \
-utils.h \
 vcm.h \
 vec.h \
 viewit.h \
