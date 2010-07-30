@@ -70,6 +70,7 @@
 #include "nb_generic_cg.h"
 #include "nb_generic_adress.h"
 
+
 /* 1,4 interactions uses kernel 330 directly */
 #include "nb_kernel_c/nb_kernel330.h" 
 
@@ -577,6 +578,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                         }
                     
 
+                        /* If this processor has only explicit atoms (w=1)
+                          skip the coarse grained force calculation. Same for
+                         only coarsegrained atoms and explicit interactions*/
                         if (mdatoms->pureex && bCG) continue;
                         if (mdatoms->purecg && !bCG) continue;
 
@@ -587,15 +591,21 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     if (fr->adress_type == eAdressOff ||
                             mdatoms->pureex ||
                             mdatoms->purecg){
-                        
+                        /* if we only have to calculate pure cg/ex interactions
+                         we can use the faster standard gromacs kernels*/
                         kernelptr = nb_kernel_list[nrnb_ind];
                     }else{
-                        /* the explicit kernels are the second part of the kernel list */
+                        /* This processor has hybrid interactions which means
+                         * we have to
+                         * use our own kernels. We have two kernel types: one that
+                         * calculates the forces with the explicit prefactor w1*w2
+                         * and one for coarse-grained with (1-w1*w2)
+                         * explicit kernels are the second part of the kernel
+                         *  list */
                         if (!bCG) nrnb_ind += eNR_NBKERNEL_NR/2;                      
                         adresskernelptr = nb_kernel_list_adress[nrnb_ind];
                     }
                     
-                   
                     if (kernelptr == NULL && adresskernelptr == NULL)
                     {
                         /* Call a generic nonbonded kernel */
@@ -618,7 +628,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                               tabledata,
                                               &outeriter,
                                               &inneriter);
-                        }else /* do AdResS */
+                        }else /* do generic AdResS kernels (slow)*/
                         {
 
                             gmx_nb_generic_adress_kernel(nlist,

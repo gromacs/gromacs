@@ -1992,7 +1992,6 @@ void do_index(const char* mdparin, const char *ndx,
 
     /* AdResS coarse grained groups input */
   
-  /* same for cg grps */
   nr = groups->grps[egcENER].nr;
   snew(ir->adress_group_explicit, nr);
   for (i=0; i <nr; i++){
