@@ -74,7 +74,10 @@ static t_fileio *open_files = NULL;
 
    For now, we use this as a coarse grained lock on all file 
    insertion/deletion operations because it makes avoiding deadlocks 
-   easier, and adds almost no overhead . */
+   easier, and adds almost no overhead: the only overhead is during
+   opening and closing of files, or during global operations like
+   iterating along all open files. All these cases should be rare
+   during the simulation. */
 static tMPI_Thread_mutex_t open_file_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -335,35 +338,20 @@ static void gmx_fio_insert(t_fileio *fio)
 
 /* remove a t_fileio into the list. We assume the fio is locked, and we leave 
    it locked. */
-static void gmx_fio_remove(t_fileio *fio)
+static void gmx_fio_remove(t_fileio *fio, bool global_lock)
 {    
     t_fileio *prev;
 
 #ifdef GMX_THREADS
     /* first lock the big open_files mutex. */
     /* We don't want two processes operating on this list at the same time */
-    tMPI_Thread_mutex_lock(&open_file_mutex);
+    if (global_lock)
+        tMPI_Thread_mutex_lock(&open_file_mutex);
 #endif
- 
-    /* this looks a bit complicated because we're trying to avoid a 
-       deadlock with threads that are walking through the structure
-       with gmx_fio_get_next(): if they're trying to lock our current structure
-       while we are trying to lock the previous structure, we get a deadlock.
-       */
-    do
-    {
-        /* we remember the prev */
-        prev=fio->prev;
-        /* and unlock it to prevent deadlocks */
-        gmx_fio_unlock(fio);
-        /* lock the prev nbr */
-        gmx_fio_lock(prev);
-        /* now that that one is locked, we can safely lock original one again */
-        gmx_fio_lock(fio);
+   
+    /* lock prev, because we're changing it */ 
+    gmx_fio_lock(fio->prev);
 
-        /* and normally, we should be able to get out of this loop, but maybe
-           things have changed when we unlocked our original fio */
-    } while((prev->next != fio) || (fio->prev != prev)); 
     /* now set the prev's pointer */
     fio->prev->next=fio->next;
     gmx_fio_unlock(fio->prev);
@@ -378,7 +366,8 @@ static void gmx_fio_remove(t_fileio *fio)
 
 #ifdef GMX_THREADS
     /* now unlock the big open_files mutex.  */
-    tMPI_Thread_mutex_unlock(&open_file_mutex);
+    if (global_lock)
+        tMPI_Thread_mutex_unlock(&open_file_mutex);
 #endif
 
 }
@@ -391,18 +380,15 @@ static t_fileio *gmx_fio_get_first(void)
     t_fileio *ret;
     /* first lock the big open_files mutex and the dummy's mutex */
 
-    gmx_fio_make_dummy();
 #ifdef GMX_THREADS
     /* first lock the big open_files mutex. */
     tMPI_Thread_mutex_lock(&open_file_mutex);
 #endif
+    gmx_fio_make_dummy();
 
     gmx_fio_lock(open_files);
     ret=open_files->next;
 
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&open_file_mutex);
-#endif
 
     /* check whether there were any to begin with */
     if (ret==open_files)
@@ -431,6 +417,9 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
     if (fio->next==open_files)
     {
         ret=NULL;
+#ifdef GMX_THREADS
+        tMPI_Thread_mutex_unlock(&open_file_mutex);
+#endif
     }
     else
     {
@@ -439,6 +428,15 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
     gmx_fio_unlock(fio);
 
     return ret;
+}
+
+/* Stop looping through the open_files.  Unlocks the global lock. */
+static void gmx_fio_stop_getting_next(t_fileio *fio)
+{
+    gmx_fio_unlock(fio);
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&open_file_mutex);
+#endif
 }
 
 
@@ -584,13 +582,9 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     return fio;
 }
 
-int gmx_fio_close(t_fileio *fio)
+static int gmx_fio_close_locked(t_fileio *fio)
 {
     int rc = 0;
-
-    gmx_fio_lock(fio);
-    /* first remove it from the list */
-    gmx_fio_remove(fio);
 
     if (!fio->bOpen)
     {
@@ -609,6 +603,17 @@ int gmx_fio_close(t_fileio *fio)
 
     fio->bOpen = FALSE;
 
+    return rc;
+}
+
+int gmx_fio_close(t_fileio *fio)
+{
+    int rc = 0;
+
+    gmx_fio_lock(fio);
+    /* first remove it from the list */
+    gmx_fio_remove(fio, TRUE);
+    rc=gmx_fio_close_locked(fio);
     gmx_fio_unlock(fio);
 
     sfree(fio);
@@ -648,22 +653,22 @@ int gmx_fio_fclose(FILE *fp)
 {
     t_fileio *cur;
     t_fileio *found=NULL;
+    int rc=-1;
 
     cur=gmx_fio_get_first();
     while(cur)
     {
         if (cur->fp == fp)
         {
-            gmx_fio_unlock(cur);
-            found=cur;
-            /* we let it loop until  the end */
+            rc=gmx_fio_close_locked(cur);
+            gmx_fio_remove(cur,FALSE);
+            gmx_fio_stop_getting_next(cur);
+            break;
         }
         cur=gmx_fio_get_next(cur);
     }
 
-    if (!found)
-        return -1;
-    return gmx_fio_close(found);
+    return rc;
 }
 
 /* internal variant of get_file_md5 that operates on a locked file */
