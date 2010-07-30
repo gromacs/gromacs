@@ -183,7 +183,7 @@ AC_ARG_ENABLE(ppc-sqrt,
 			     [set --enable-ppc-sqrt=1 for better speed.])],,
 			     enable_ppc_sqrt=no)
 if test "$enable_ppc_sqrt" != "no"; then
-   if test "$enable_ppc_sqrt" == "1"; then
+   if test "$enable_ppc_sqrt" = "1"; then
      ppc_sqrt_niter=1;
    else 
      ppc_sqrt_niter=2;
@@ -193,7 +193,7 @@ AC_DEFINE_UNQUOTED(GMX_POWERPC_SQRT,$ppc_sqrt_niter,[Use PowerPC 1/sqrt(x) table
    enable_software_sqrt="no";
 fi
 AM_CONDITIONAL([GMX_POWERPC_SQRT],[test "$enable_ppc_sqrt" != "no"])
-AM_CONDITIONAL([GMX_POWERPC_SQRT_SINGLE_ITERATION],[test "$ppc_sqrt_niter" == "1"])
+AM_CONDITIONAL([GMX_POWERPC_SQRT_SINGLE_ITERATION],[test "$ppc_sqrt_niter" = "1"])
 
 
 if test "$enable_software_sqrt" = "yes"; then
@@ -963,13 +963,22 @@ AC_SUBST(GMXANA_LIBOBJS)
 # However, the non-suffixed names are linked to the _mpi and/or _d suffixed
 # ones upon installation if that is the only version available.
 
-if test "$enable_mpi" = "yes"; then
-  LIBSUFFIX="_mpi"
+AC_ARG_VAR(
+  [LIBSUFFIX],
+  [To tell libraries apart, a suffix can be used. This is normally done
+   automatically during ./configure (_d|_mpi|_mpi_d). But with this
+   variable you can overwrite it
+  ]
+)
+if test -z ${LIBSUFFIX} ; then
+  if test "$enable_mpi" = "yes"; then
+    LIBSUFFIX="_mpi"
+  fi
+  if test "$enable_float" = "no"; then
+    LIBSUFFIX="${LIBSUFFIX}_d"
+  fi
 fi
-if test "$enable_float" = "no"; then
-  LIBSUFFIX="${LIBSUFFIX}_d"
-fi
-AC_SUBST(LIBSUFFIX) 
+AC_SUBST(LIBSUFFIX)
 
 # Unless the user has explicitly requested a prefix/suffix/transform, we
 # use _d on double precision files. Don't add anything for mpi, but at the
