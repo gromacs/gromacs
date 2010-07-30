@@ -148,12 +148,15 @@ gmx_directory_t;
 int
 gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname);
 
+    
 /* Given an initialized gmx_directory_t, if there are more files in
- * the directory this routine returns 0 and sets the second argument
- * to a pointer to that file name.
+ * the directory this routine returns 0 and write the next name
+ * into the USER-PROVIDED buffer name. The last argument is the max
+ * number of characters that will be written. Just as strncpy, the
+ * string will NOT be terminated it it is longer than maxlength_name.
  */
 int
-gmx_directory_nextfile(gmx_directory_t gmxdir,const char **p_name);
+gmx_directory_nextfile(gmx_directory_t gmxdir,char *name,int maxlength_name);
     
 /* Release all data for a directory structure */
 int 

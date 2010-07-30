@@ -588,31 +588,32 @@ gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname)
 
 
 int
-gmx_directory_nextfile(gmx_directory_t gmxdir,const char **p_name)
+gmx_directory_nextfile(gmx_directory_t gmxdir,char *name,int maxlength_name)
 {
     int                     rc;
     
 #ifdef HAVE_DIRENT_H
     
-    struct dirent *         tmp_dirent;
+    struct dirent           tmp_dirent;
+    struct dirent *         p;
+    
     
     if(gmxdir!=NULL && gmxdir->dirent_handle!=NULL)
     {
-        tmp_dirent   = readdir(gmxdir->dirent_handle);
-        if(tmp_dirent != NULL)
+        rc = readdir_r(gmxdir->dirent_handle,&tmp_dirent,&p);
+        if(p!=NULL && rc==0)
         {
-            *p_name      = tmp_dirent->d_name;
-            rc           = 0;
+            strncpy(name,tmp_dirent.d_name,maxlength_name);
         }
         else
         {
-            *p_name      = NULL;
-            rc           = ENOENT;
+            name[0] = '\0';
+            rc      = ENOENT;
         }
     }
     else 
     {
-        *p_name = NULL;
+        name[0] = '\0';
         rc      = EINVAL;
     }
     
@@ -622,12 +623,13 @@ gmx_directory_nextfile(gmx_directory_t gmxdir,const char **p_name)
     {
         if(gmxdir->windows_handle<=0)
         {
-            *p_name = 0;
+            
+            name[0] = '\0';
             rc      = ENOENT;
         }
         else if(gmxdir->first==1)
         {
-            *p_name       = gmxdir->finddata.name;
+            strncpy(name,gmxdir->finddata.name,maxlength_name);
             rc            = 0;
             gmxdir->first = 0;
         }
@@ -635,11 +637,12 @@ gmx_directory_nextfile(gmx_directory_t gmxdir,const char **p_name)
         {
             if(_findnext(gmxdir->windows_handle,&gmxdir->finddata)==0)
             {
-                *p_name = gmxdir->finddata.name;
+                strncpy(name,gmxdir->finddata.name,maxlength_name);
                 rc      = 0;
             }
             else
             {
+                name[0] = '\0';
                 rc      = ENOENT;
             }
         }
