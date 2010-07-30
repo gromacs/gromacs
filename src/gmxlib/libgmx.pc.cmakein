@@ -6,7 +6,7 @@ Description: Gromacs default lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
 Requires:
-Libs.private: -lm @PTHREADS_LIBRARY@
+Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
 Libs: -L${libdir} -lgmx@LIBSUFFIX@
 Cflags: -I${includedir}
 
