@@ -745,27 +745,24 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
     print_date_and_time(fplog,cr->nodeid,"Restarted time",runtime);
 }
 
+static void min_zero(int *n,int i)
+{
+    if (i > 0 && (*n == 0 || i < *n))
+    {
+        *n = i;
+    }
+}
+
 static int lcd4(int i1,int i2,int i3,int i4)
 {
-    int nst=0;
+    int nst;
 
-    if (i1 > 0)
-    {
-        nst = i1;
-    }
-    else if (i2 > 0)
-    {
-        nst = i2;
-    }
-    else if (i3 > 0)
-    {
-        nst = i3;
-    }
-    else if (i4 > 0)
-    {
-        nst = i4;
-    }
-    else
+    nst = 0;
+    min_zero(&nst,i1);
+    min_zero(&nst,i2);
+    min_zero(&nst,i3);
+    min_zero(&nst,i4);
+    if (nst == 0)
     {
         gmx_incons("All 4 inputs for determininig nstglobalcomm are <= 0");
     }
