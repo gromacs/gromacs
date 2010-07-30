@@ -592,6 +592,11 @@ int gmx_fio_close(t_fileio *fio)
     /* first remove it from the list */
     gmx_fio_remove(fio);
 
+    if (!fio->bOpen)
+    {
+        gmx_fatal(FARGS,"File %s closed twice!\n", fio->fn);
+    }
+
     if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
     {
         xdr_destroy(fio->xdr);
