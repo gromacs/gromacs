@@ -728,7 +728,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       }
       if (bRead)snew(ir->adress_group_explicit,ir->n_energy_grps);
       if (ir->n_energy_grps > 0) {
-        ndo_int(ir->adress_group_explicit,ir->n_energy_grps,bDum);
+        bDum=gmx_fio_ndo_int(fio, ir->adress_group_explicit,ir->n_energy_grps);
       }
     }
 
