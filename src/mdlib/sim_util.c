@@ -132,7 +132,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
                 t_inputrec *ir, t_commrec *cr)
 {
     time_t finish;
-    
+    char   timebuf[STRLEN];
     double dt;
     char buf[48];
     
@@ -159,7 +159,8 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
             if (dt >= 300)
             {    
                 finish = (time_t) (runtime->last + dt);
-                sprintf(buf,"%s",ctime(&finish));
+                gmx_ctime_r(&finish,timebuf,STRLEN);
+                sprintf(buf,"%s",timebuf);
                 buf[strlen(buf)-1]='\0';
                 fprintf(out,", will finish %s",buf);
             }
@@ -244,7 +245,8 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
                          const gmx_runtime_t *runtime)
 {
     int i;
-    char *ts,time_string[STRLEN];
+    char timebuf[STRLEN];
+    char time_string[STRLEN];
     time_t tmptime;
 
     if (fplog)
@@ -252,16 +254,16 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
         if (runtime != NULL)
         {
             tmptime = (time_t) runtime->real;
-        ts = ctime(&tmptime);
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
         }
         else
         {
             tmptime = (time_t) gmx_gettime();
-            ts = ctime(&tmptime);
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
         }
-        for(i=0; ts[i]>=' '; i++)
+        for(i=0; timebuf[i]>=' '; i++)
         {
-            time_string[i]=ts[i];
+            time_string[i]=timebuf[i];
         }
         time_string[i]='\0';
 

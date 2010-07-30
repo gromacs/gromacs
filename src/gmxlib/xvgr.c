@@ -231,11 +231,12 @@ void xvgr_header(FILE *fp,const char *title,const char *xaxis,
 {
     char pukestr[100],buf[STRLEN];
     time_t t;
-
+ 
     if (output_env_get_print_xvgr_codes(oenv)) 
     {
         time(&t);
-        fprintf(fp,"# This file was created %s",ctime(&t));
+        gmx_ctime_r(&t,buf,STRLEN);
+        fprintf(fp,"# This file was created %s",buf);
         fprintf(fp,"# by the following command:\n# %s\n#\n",command_line());
         fprintf(fp,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
         bromacs(pukestr,99);

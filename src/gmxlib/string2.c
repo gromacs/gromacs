@@ -188,12 +188,13 @@ void nice_header (FILE *out,const char *fn)
   int    gh;
   uid_t  uid;
   char   buf[256];
+  char   timebuf[STRLEN];
 #ifdef HAVE_PWD_H
   struct passwd *pw;
 #endif
 
   /* Print a nice header above the file */
-  clock = time (0);
+  time(&clock);
   fprintf (out,"%c\n",COMMENTSIGN);
   fprintf (out,"%c\tFile '%s' was generated\n",COMMENTSIGN,fn ? fn : unk);
   
@@ -207,11 +208,12 @@ void nice_header (FILE *out,const char *fn)
   gh  = -1;
 #endif
   
+  gmx_ctime_r(&clock,timebuf,STRLEN);
   fprintf (out,"%c\tBy user: %s (%d)\n",COMMENTSIGN,
 	   user ? user : unk,(int) uid);
   fprintf(out,"%c\tOn host: %s\n",COMMENTSIGN,(gh == 0) ? buf : unk);
 
-  fprintf (out,"%c\tAt date: %s",COMMENTSIGN,ctime(&clock));
+  fprintf (out,"%c\tAt date: %s",COMMENTSIGN,timebuf);
   fprintf (out,"%c\n",COMMENTSIGN);
 }
 

@@ -50,6 +50,7 @@
 #include "filenm.h"
 #include "mdrun.h"
 #include "gmxfio.h"
+#include "string2.h"
 
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
@@ -181,6 +182,7 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
   int  len,testlen,pid;
   char buf[256],host[256];
   time_t t;
+  char timebuf[STRLEN];
   FILE *fp=*fplog;
   char *tmpnm;
 
@@ -250,10 +252,11 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
 			  );
   }
 	
+  gmx_ctime_r(&t,timebuf,STRLEN);
   fprintf(fp,
 	  "Log file opened on %s"
 	  "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
-	  ctime(&t),host,pid,cr->nodeid,cr->nnodes);
+	  timebuf,host,pid,cr->nodeid,cr->nnodes);
 
 #if (defined BUILD_MACHINE && defined BUILD_TIME && defined BUILD_USER) 
   fprintf(fp,

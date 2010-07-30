@@ -1042,13 +1042,14 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     char *buser;
     char *bmach;
     char *fprog;
-    char *ftime;
     char *fntemp; /* the temporary checkpoint file name */
     time_t now;
+    char timebuf[STRLEN];
     int  nppnodes,npmenodes,flag_64bit;
     char buf[1024],suffix[5+STEPSTRSIZE],sbuf[STEPSTRSIZE];
     gmx_file_position_t *outputfiles;
     int  noutputfiles;
+    char *ftime;
     int  flags_eks,flags_enh,i;
     t_fileio *ret;
 		
@@ -1079,16 +1080,13 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     strcat(fntemp,suffix);
     strcat(fntemp,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
    
-    now = time(NULL);
-    ftime = strdup(ctime(&now));
-    ftime[strlen(ftime)-1] = '\0';
+    time(&now);
+    gmx_ctime_r(&now,timebuf,STRLEN);
 
-    /* No need to pollute stderr every time we write a checkpoint file */
-    /* fprintf(stderr,"\nWriting checkpoint, step %d at %s\n",step,ftime); */
     if (fplog)
     { 
         fprintf(fplog,"Writing checkpoint, step %s at %s\n\n",
-                gmx_step_str(step,buf),ftime);
+                gmx_step_str(step,buf),timebuf);
     }
     
     /* Get offsets for open files */
@@ -1131,6 +1129,8 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     bmach   = strdup(BUILD_MACHINE);
     fprog   = strdup(Program());
 
+    ftime   = &(timebuf[0]);
+    
     do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
@@ -1212,7 +1212,6 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
         }
     }
 
-    sfree(ftime);
     sfree(outputfiles);
     sfree(fntemp);
 
