@@ -561,8 +561,8 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
   int  i,j,np=d->nparams;
   real rhs,tauf,taub,fff,DG;
   real *params;
-  char *leg[] = { "Measured", "Fit", "Difference" };
-  char *mleg[] = { "Folded fraction","DG (kJ/mole)"};
+  const char *leg[] = { "Measured", "Fit", "Difference" };
+  const char *mleg[] = { "Folded fraction","DG (kJ/mole)"};
   char **rleg;
   real fac[] = { 0.97, 0.98, 0.99, 1.0, 1.01, 1.02, 1.03 };
 #define NFAC asize(fac)
@@ -594,7 +594,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
       sprintf(rleg[2*i+1],"\\f{12}F \\f{4}(t) %d",i);
     }
     fp = xvgropen(rfn,"Optimized fit to data","Time (ps)","Fraction Folded",oenv);
-    xvgr_legend(fp,d->nreplica*2,rleg,oenv);
+    xvgr_legend(fp,d->nreplica*2,(const char**)rleg,oenv);
     for(j=0; (j<d->nframe); j++) {
       if ((skip <= 0) || ((j % skip) == 0)) {
 	fprintf(fp,"%12.5e",d->time[j]);
