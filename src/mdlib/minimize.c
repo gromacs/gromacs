@@ -94,11 +94,33 @@ static em_state_t *init_em_state()
   return ems;
 }
 
+static void print_em_start(FILE *fplog,t_commrec *cr,gmx_runtime_t *runtime,
+                           gmx_wallcycle_t wcycle,
+                           const char *name)
+{
+    char buf[STRLEN];
+
+    runtime_start(runtime);
+
+    sprintf(buf,"Started %s",name);
+    print_date_and_time(fplog,cr->nodeid,buf,NULL);
+
+    wallcycle_start(wcycle,ewcRUN);
+}
+static void em_time_end(FILE *fplog,t_commrec *cr,gmx_runtime_t *runtime,
+                        gmx_wallcycle_t wcycle)
+{
+    wallcycle_stop(wcycle,ewcRUN);
+
+    runtime_end(runtime);
+}
+
 static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
 {
-  fprintf(out,"%s:\n",minimizer);
-  fprintf(out,"   Tolerance (Fmax)   = %12.5e\n",ftol);
-  fprintf(out,"   Number of steps    = %12d\n",nsteps);
+    fprintf(out,"\n");
+    fprintf(out,"%s:\n",minimizer);
+    fprintf(out,"   Tolerance (Fmax)   = %12.5e\n",ftol);
+    fprintf(out,"   Number of steps    = %12d\n",nsteps);
 }
 
 static void warn_step(FILE *fp,real ftol,bool bLastStep,bool bConstrain)
@@ -391,7 +413,8 @@ void init_em(FILE *fplog,const char *title,
     calc_shifts(ems->s.box,fr->shift_vec);
 }
 
-static void finish_em(FILE *fplog,t_commrec *cr,gmx_mdoutf_t *outf)
+static void finish_em(FILE *fplog,t_commrec *cr,gmx_mdoutf_t *outf,
+                      gmx_runtime_t *runtime,gmx_wallcycle_t wcycle)
 {
   if (!(cr->duty & DUTY_PME)) {
     /* Tell the PME only node to finish */
@@ -399,6 +422,8 @@ static void finish_em(FILE *fplog,t_commrec *cr,gmx_mdoutf_t *outf)
   }
 
   done_mdoutf(outf);
+
+  em_time_end(fplog,cr,runtime,wcycle);
 }
 
 static void swap_em_state(em_state_t *ems1,em_state_t *ems2)
@@ -894,9 +919,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
           nfile,fnm,&outf,&mdebin);
   
   /* Print to log file */
-  print_date_and_time(fplog,cr->nodeid,
-		      "Started Polak-Ribiere Conjugate Gradients",NULL);
-  wallcycle_start(wcycle,ewcRUN);
+  print_em_start(fplog,cr,runtime,wcycle,CG);
   
   /* Max number of steps */
   number_steps=inputrec->nsteps;
@@ -1349,7 +1372,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
     fprintf(fplog,"\nPerformed %d energy evaluations in total.\n",neval);
   }
   
-  finish_em(fplog,cr,outf);
+  finish_em(fplog,cr,outf,runtime,wcycle);
   
   /* To print the actual number of steps we needed somewhere */
   runtime->nsteps_done = step;
@@ -1459,9 +1482,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   end   = mdatoms->homenr + start;
     
   /* Print to log file */
-  print_date_and_time(fplog,cr->nodeid,
-		      "Started Low-Memory BFGS Minimization",NULL);
-  wallcycle_start(wcycle,ewcRUN);
+  print_em_start(fplog,cr,runtime,wcycle,LBFGS);
   
   do_log = do_ene = do_x = do_f = TRUE;
   
@@ -1985,7 +2006,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
     fprintf(fplog,"\nPerformed %d energy evaluations in total.\n",neval);
   }
   
-  finish_em(fplog,cr,outf);
+  finish_em(fplog,cr,outf,runtime,wcycle);
 
   /* To print the actual number of steps we needed somewhere */
   runtime->nsteps_done = step;
@@ -2044,8 +2065,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
           nfile,fnm,&outf,&mdebin);
 	
   /* Print to log file  */
-  print_date_and_time(fplog,cr->nodeid,"Started Steepest Descents",NULL);
-  wallcycle_start(wcycle,ewcRUN);
+  print_em_start(fplog,cr,runtime,wcycle,SD);
     
   /* Set variables for stepsize (in nm). This is the largest  
    * step that we are going to make in any direction. 
@@ -2188,7 +2208,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
 		    s_min->epot,s_min->fmax,s_min->a_fmax,fnormn);
   }
 
-  finish_em(fplog,cr,outf);
+  finish_em(fplog,cr,outf,runtime,wcycle);
   
   /* To print the actual number of steps we needed somewhere */
   inputrec->nsteps=count;
@@ -2320,8 +2340,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
     where();
     
     /* Write start time and temperature */
-    print_date_and_time(fplog,cr->nodeid,"Started nmrun",NULL);
-    wallcycle_start(wcycle,ewcRUN);
+    print_em_start(fplog,cr,runtime,wcycle,NM);
 
     /* fudge nr of steps to nr of atoms */
     inputrec->nsteps = natoms*2;
@@ -2485,7 +2504,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
         gmx_mtxio_write(ftp2fn(efMTX,nfile,fnm),sz,sz,full_matrix,sparse_matrix);
     }
 
-    finish_em(fplog,cr,outf);
+    finish_em(fplog,cr,outf,runtime,wcycle);
 
     runtime->nsteps_done = natoms*2;
     
