@@ -865,6 +865,7 @@ if test "$with_gsl" = "yes"; then
   GSL_LIBS="-lgsl -lgslcblas"
 #gsl has pkg-config support
   PKG_GSL="gsl"
+  AC_DEFINE(HAVE_LIBGSL,1,[Do we have libgsl])
   ],[:],[-lgslcblas])])])
   LIBS="$SAVED_LIBS"
 #

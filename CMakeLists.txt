@@ -261,7 +261,7 @@ set(PKG_GSL "")
 if(GSL_FOUND)
     include_directories(${GSL_INCLUDE_DIR})
     set(PKG_GSL gsl)
-    set(HAVE_GSL_GSL_VERSION_H 1)
+    set(HAVE_LIBGSL 1)
 endif(GSL_FOUND)
 
 find_package(X11)
