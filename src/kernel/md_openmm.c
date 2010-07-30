@@ -578,8 +578,11 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */
-        if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
-            MASTERTHREAD(cr))
+        if (((int)gmx_get_stop_condition() > handled_stop_condition)
+#ifdef GMX_THREADS
+            && MASTER(cr)
+#endif
+            )
         {
            /* this is just make gs.sig compatible with the hack 
                of sending signals around by MPI_Reduce with together with

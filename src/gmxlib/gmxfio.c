@@ -339,6 +339,12 @@ static void gmx_fio_remove(t_fileio *fio)
 {    
     t_fileio *prev;
 
+#ifdef GMX_THREADS
+    /* first lock the big open_files mutex. */
+    /* We don't want two processes operating on this list at the same time */
+    tMPI_Thread_mutex_lock(&open_file_mutex);
+#endif
+ 
     /* this looks a bit complicated because we're trying to avoid a 
        deadlock with threads that are walking through the structure
        with gmx_fio_get_next(): if they're trying to lock our current structure
@@ -369,6 +375,12 @@ static void gmx_fio_remove(t_fileio *fio)
 
     /* and make sure we point nowhere in particular */
     fio->next=fio->prev=fio;
+
+#ifdef GMX_THREADS
+    /* now unlock the big open_files mutex.  */
+    tMPI_Thread_mutex_unlock(&open_file_mutex);
+#endif
+
 }
 
 
@@ -579,6 +591,11 @@ int gmx_fio_close(t_fileio *fio)
     gmx_fio_lock(fio);
     /* first remove it from the list */
     gmx_fio_remove(fio);
+
+    if (!fio->bOpen)
+    {
+        gmx_fatal(FARGS,"File %s closed twice!\n", fio->fn);
+    }
 
     if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
     {

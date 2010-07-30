@@ -149,7 +149,7 @@ static int pclose(FILE *fp)
 
 int ffclose(FILE *fp)
 {
-#ifndef SKIP_FFOPS
+#ifdef SKIP_FFOPS
     return fclose(fp);
 #else
     t_pstack *ps,*tmp;

@@ -166,7 +166,7 @@ static void mdrunner_start_fn(void *arg)
         fplog=mc.fplog;
     }
 
-    mda->ret=mdrunner(cr->nthreads, fplog, cr, mc.nfile, fnm, mc.oenv, 
+    mda->ret=mdrunner(cr->nnodes, fplog, cr, mc.nfile, fnm, mc.oenv, 
                       mc.bVerbose, mc.bCompact, mc.nstglobalcomm, 
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
@@ -254,6 +254,7 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
                         gmx_mtop_t *mtop)
 {
     int nthreads,nthreads_new;
+    int min_atoms_per_thread;
 
     nthreads = nthreads_requested;
 
@@ -262,21 +263,31 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
     {
         nthreads = tMPI_Get_recommended_nthreads();
     }
+
+    if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
+    {
+        /* Steps are divided over the nodes iso splitting the atoms */
+        min_atoms_per_thread = 0;
+    }
+    else
+    {
+        min_atoms_per_thread = MIN_ATOMS_PER_THREAD;
+    }
+
     /* Check if an algorithm does not support parallel simulation.  */
     if (nthreads != 1 && 
         ( inputrec->eI == eiLBFGS ||
-          inputrec->eI == eiNM ||
-          inputrec->coulombtype == eelEWALD) )
+          inputrec->coulombtype == eelEWALD ) )
     {
         fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs. Not starting any threads.\n");
         nthreads = 1;
     }
-    else if ((nthreads_requested < 1) &&
-             (mtop->natoms/nthreads < MIN_ATOMS_PER_THREAD) )
+    else if (nthreads_requested < 1 &&
+             mtop->natoms/nthreads < min_atoms_per_thread)
     {
         /* the thread number was chosen automatically, but there are too many
            threads (too few atoms per thread) */
-        nthreads_new = max(1,mtop->natoms/MIN_ATOMS_PER_THREAD);
+        nthreads_new = max(1,mtop->natoms/min_atoms_per_thread);
 
         if (nthreads_new > 8 || (nthreads == 8 && nthreads_new > 4))
         {
@@ -832,7 +843,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* we need to join all threads. The sub-threads join when they
        exit this function, but the master thread needs to be told to 
        wait for that. */
-    if (nthreads>1 && MASTERTHREAD(cr) )
+    if (PAR(cr) && MASTER(cr))
     {
         tMPI_Finalize();
     }
