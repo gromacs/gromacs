@@ -294,12 +294,10 @@ typedef struct {
   rvec adress_refs;     /* Coordinates for AdResS reference             */
   int adress_ex_forcecap; /* in the hybrid zone, cap forces large then this to adress_ex_forcecap */
 
-  int n_adress_ex_grps;
-  int * adress_ex_grp_index; /* list of the explicitly treated energy grps*/
-  int n_adress_cg_grps;
-  int * adress_cg_grp_index; /* list of the cg energy grps*/
   int * adress_tf_table_index; /* contains mapping of energy group index -> i-th adress tf table*/
   int n_adress_tf_grps;
+  int *adress_group_explicit;
+  int   n_energy_grps;
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)
