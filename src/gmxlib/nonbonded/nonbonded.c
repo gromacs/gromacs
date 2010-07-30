@@ -70,7 +70,6 @@
 #include "nb_generic_cg.h"
 #include "nb_generic_adress.h"
 
-
 /* 1,4 interactions uses kernel 330 directly */
 #include "nb_kernel_c/nb_kernel330.h" 
 
@@ -573,32 +572,17 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     /* for adress we need to determine for each energy group wether it is explicit or coarse-grained */
                     if (!fr->adress_type == eAdressOff) {                        
                         bCG = FALSE;
-                        for (k = 0; k < fr->n_adress_cg_grps; k++) {
-                            if (mdatoms->cENER[nlist->iinr[0]] == fr->adress_cg_grp_index[k]) {
-                                bCG = TRUE;
-                            }
+                        if ( !fr->adress_group_explicit[ mdatoms->cENER[nlist->iinr[0]] ] ){
+                            bCG=TRUE;
                         }
-                        /* if not CG make sure it is in adress ex grps and assign explicit kernel*/
-                        if (!bCG) {
-                            bCG = TRUE;
-                            for (k = 0; k < fr->n_adress_ex_grps; k++) {
-                                if (mdatoms->cENER[nlist->iinr[0]] == fr->adress_ex_grp_index[k]) {
-                                    bCG = FALSE;
-                                    /* the explicit kernels are the second part of the kernel list */
-                                    
-                                }
-                            }
-                            if (bCG) {
-                                gmx_fatal(FARGS, "Death & horror! Explicit energy group nr %d has to be specified in adress_ex_grps (%d).\n", mdatoms->cENER[nlist->iinr[0]], fr->n_adress_ex_grps);
-                            }
-                        }
+                    
+
+                        if (mdatoms->pureex && bCG) continue;
+                        if (mdatoms->purecg && !bCG) continue;
+
+                        kernelptr = NULL;
+                        adresskernelptr = NULL;
                     }
-
-                    if (mdatoms->pureex && bCG) continue;
-                    if (mdatoms->purecg && !bCG) continue;
-
-                    kernelptr = NULL;
-                    adresskernelptr = NULL;
 
                     if (fr->adress_type == eAdressOff ||
                             mdatoms->pureex ||
@@ -610,6 +594,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                         if (!bCG) nrnb_ind += eNR_NBKERNEL_NR/2;                      
                         adresskernelptr = nb_kernel_list_adress[nrnb_ind];
                     }
+                    
                    
                     if (kernelptr == NULL && adresskernelptr == NULL)
                     {

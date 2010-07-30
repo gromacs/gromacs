@@ -673,22 +673,17 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_int(ir->badress_tf_full_box);
       do_int(ir->adress_site);
       do_rvec(ir->adress_refs);
-      do_int(ir->n_adress_ex_grps);
-      do_int(ir->n_adress_cg_grps);
       do_int(ir->n_adress_tf_grps);
       do_real(ir->adress_ex_forcecap);
+      do_int(ir->n_energy_grps);
 
-      if (bRead)snew(ir->adress_ex_grp_index,ir->n_adress_ex_grps);
-      if (ir->n_adress_ex_grps > 0) {
-        ndo_int(ir->adress_ex_grp_index,ir->n_adress_ex_grps,bDum);
-      }
-      if (bRead)snew(ir->adress_cg_grp_index,ir->n_adress_cg_grps);
-      if (ir->n_adress_cg_grps > 0) {
-        ndo_int(ir->adress_cg_grp_index,ir->n_adress_cg_grps,bDum);
-      }
       if (bRead)snew(ir->adress_tf_table_index,ir->n_adress_tf_grps);
       if (ir->n_adress_tf_grps > 0) {
         ndo_int(ir->adress_tf_table_index,ir->n_adress_tf_grps,bDum);
+      }
+      if (bRead)snew(ir->adress_group_explicit,ir->n_energy_grps);
+      if (ir->n_energy_grps > 0) {
+        ndo_int(ir->adress_group_explicit,ir->n_energy_grps,bDum);
       }
     }
 

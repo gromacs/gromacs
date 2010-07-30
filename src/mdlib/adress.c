@@ -562,21 +562,23 @@ adress_thermo_force(int                  cg0,
 }
 bool egp_explicit(t_forcerec *   fr, int egp_nr)
 {
-    int i;
+    /*int i;
         for (i=0;i<fr->n_adress_ex_grps;i++){
             if(fr->adress_ex_grp_index[i]==egp_nr){
                 return TRUE;
             }
         }
-   return FALSE;
+   return FALSE;*/
+    return fr->adress_group_explicit[egp_nr];
 }
 bool egp_coarsegrained(t_forcerec *   fr, int egp_nr)
 {
-    int i;
+    /*int i;
         for (i=0;i<fr->n_adress_cg_grps;i++){
             if(fr->adress_cg_grp_index[i]==egp_nr){
                 return TRUE;
             }
         }
-   return FALSE;
+   return FALSE;*/
+   return !fr->adress_group_explicit[egp_nr];
 }
