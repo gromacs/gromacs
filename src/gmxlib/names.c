@@ -210,6 +210,6 @@ const char *eAdressICtype_names[eAdressICNR+1] = {
 };
 
 const char *eAdressSITEtype_names[eAdressSITENR+1] = {
-  "com","cog", "atom", NULL 
+  "com","cog", "atom", "atomperatom", NULL
 };
 

@@ -226,37 +226,72 @@ update_adress_weights_com(FILE *               fplog,
             }
         }
     }
-   
-    if (debug) fprintf (debug, "adress.c (cg0 %d cg1 %d) ex %d hyb %d cg %d\n", cg0, cg1,n_ex, n_hyb, n_cg);
 
-    if (n_hyb ==0 && n_ex == 0){
-     /* all particles on this proc are cg, */
-        if (!mdatoms->purecg){
-             mdatoms->purecg = TRUE;
-        }
-    }
-    else
-    {
-        if (mdatoms->purecg){
-         /* now this processor has hybrid particles again, call the hybrid kernels */
-            mdatoms->purecg = FALSE;
-        }
-    }
 
-    if (n_hyb ==0 && n_cg == 0){
-    /* all particles on this proc are atomisti */
-        if (!mdatoms->pureex){
-             mdatoms->pureex = TRUE;
-        }
-    }
-    else
-    {
-        if (mdatoms->pureex){
-            mdatoms->pureex = FALSE;
-        }
-    }
+    adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
+
     
 }
+void update_adress_weights_atom_per_atom(
+                            int                  cg0,
+                          int                  cg1,
+                          t_block *            cgs,
+                          rvec                 x[],
+                          t_forcerec *         fr,
+                          t_mdatoms *          mdatoms,
+                          t_pbc *              pbc)
+{
+    int            icg,k,k0,k1,d;
+    real           nrcg,inv_ncg,mtot,inv_mtot;
+    atom_id *      cgindex;
+    rvec           ix;
+    int            adresstype;
+    real           adressr,adressw;
+    rvec *         ref;
+    real *         massT;
+    real *         wf;
+
+
+    int n_hyb, n_ex, n_cg;
+
+    n_hyb=0;
+    n_cg=0;
+    n_ex=0;
+
+    adresstype         = fr->adress_type;
+    adressr            = fr->adress_ex_width;
+    adressw            = fr->adress_hy_width;
+    massT              = mdatoms->massT;
+    wf                 = mdatoms->wf;
+    ref                = &(fr->adress_refs);
+
+    cgindex = cgs->index;
+
+    /* Weighting function is determined for each atom individually.
+     * This is an approximation
+     * as in the theory requires an interpolation based on the center of masses.
+     * Should be used with caution */
+   
+    for (icg = cg0; (icg < cg1); icg++) {
+        k0 = cgindex[icg];
+        k1 = cgindex[icg + 1];
+        nrcg = k1 - k0;
+
+        for (k = (k0); (k < k1); k++) {
+            wf[k] = adress_weight(x[k], adresstype, adressr, adressw, ref, pbc, fr);
+            if (wf[k] == 0) {
+                n_cg++;
+            } else if (wf[k] == 1) {
+                n_ex++;
+            } else {
+                n_hyb++;
+            }
+        }
+
+    }
+    adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
+}
+
 void
 update_adress_weights_cog(t_iparams            ip[],
                           t_ilist              ilist[],
@@ -279,6 +314,13 @@ update_adress_weights_cog(t_iparams            ip[],
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refs);
 
+    int n_hyb, n_ex, n_cg;
+
+    n_hyb=0;
+    n_cg=0;
+    n_ex=0;
+
+
     /* Since this is center of geometry AdResS, we know the vsite
      * is in the same charge group node as the constructing atoms.
      * Loop over vsite types, calculate the weight of the vsite,
@@ -299,6 +341,14 @@ update_adress_weights_cog(t_iparams            ip[],
                 ai         = ia[2];
                 wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,ref,pbc,fr);
                 wf[ai]     = wf[avsite];
+
+                if (wf[ai]  == 0) {
+                    n_cg++;
+                } else if (wf[ai]  == 1) {
+                    n_ex++;
+                } else {
+                    n_hyb++;
+                }
 
                 /* Assign the vsite wf to rest of constructing atoms depending on type */
                 inc = nra+1;
@@ -366,6 +416,8 @@ update_adress_weights_cog(t_iparams            ip[],
             }
         }
     }
+
+    adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
 }
 
 void
@@ -408,6 +460,42 @@ update_adress_weights_atom(int                  cg0,
         for(k=(k0+1); (k<k1); k++)
         {
             wf[k] = wf[k0];
+        }
+    }
+}
+
+void adress_set_kernel_flags(int n_ex, int n_hyb, int n_cg, t_mdatoms * mdatoms){
+
+    /* With domain decomposition we can check weather a cpu calculates only
+     * coarse-grained or explicit interactions. If so we use standard gromacs kernels
+     * on this proc. See also nonbonded.c */
+
+    if (n_hyb ==0 && n_ex == 0){
+     /* all particles on this proc are coarse-grained, use standard gromacs kernels */
+        if (!mdatoms->purecg){
+            mdatoms->purecg = TRUE;
+           if (debug) fprintf (debug, "adress.c: pure cg kernels on this proc\n");
+        }
+    }
+    else
+    {
+        if (mdatoms->purecg){
+         /* now this processor has hybrid particles again, call the hybrid kernels */
+            mdatoms->purecg = FALSE;
+        }
+    }
+
+    if (n_hyb ==0 && n_cg == 0){
+    /* all particles on this proc are atomistic, use standard gromacs kernels */
+        if (!mdatoms->pureex){
+             mdatoms->pureex = TRUE;
+             if (debug) fprintf (debug, "adress.c: pure ex kernels on this proc\n");
+        }
+    }
+    else
+    {
+        if (mdatoms->pureex){
+            mdatoms->pureex = FALSE;
         }
     }
 }
@@ -562,23 +650,9 @@ adress_thermo_force(int                  cg0,
 }
 bool egp_explicit(t_forcerec *   fr, int egp_nr)
 {
-    /*int i;
-        for (i=0;i<fr->n_adress_ex_grps;i++){
-            if(fr->adress_ex_grp_index[i]==egp_nr){
-                return TRUE;
-            }
-        }
-   return FALSE;*/
     return fr->adress_group_explicit[egp_nr];
 }
 bool egp_coarsegrained(t_forcerec *   fr, int egp_nr)
 {
-    /*int i;
-        for (i=0;i<fr->n_adress_cg_grps;i++){
-            if(fr->adress_cg_grp_index[i]==egp_nr){
-                return TRUE;
-            }
-        }
-   return FALSE;*/
    return !fr->adress_group_explicit[egp_nr];
 }

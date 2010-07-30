@@ -554,6 +554,10 @@ void do_force(FILE *fplog,t_commrec *cr,
                 update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
                                           inputrec->ePBC==epbcNONE ? NULL : &pbc);
             }
+            else if (fr->adress_site == eAdressSITEatomatom){
+                update_adress_weights_atom_per_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
             else
             {
                 update_adress_weights_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,

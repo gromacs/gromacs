@@ -240,7 +240,7 @@ enum {
 };
 
 enum {
-  eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITENR
+  eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
 };
 #ifdef __cplusplus
 }
