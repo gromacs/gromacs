@@ -166,7 +166,7 @@ static void mdrunner_start_fn(void *arg)
         fplog=mc.fplog;
     }
 
-    mda->ret=mdrunner(cr->nthreads, fplog, cr, mc.nfile, fnm, mc.oenv, 
+    mda->ret=mdrunner(cr->nnodes, fplog, cr, mc.nfile, fnm, mc.oenv, 
                       mc.bVerbose, mc.bCompact, mc.nstglobalcomm, 
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
@@ -832,7 +832,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* we need to join all threads. The sub-threads join when they
        exit this function, but the master thread needs to be told to 
        wait for that. */
-    if (nthreads>1 && MASTERTHREAD(cr) )
+    if (PAR(cr) && MASTER(cr))
     {
         tMPI_Finalize();
     }

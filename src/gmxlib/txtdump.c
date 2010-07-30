@@ -1450,8 +1450,10 @@ void pr_commrec(FILE *fp,int indent,t_commrec *cr)
   fprintf(fp,"nnodes    = %d\n",cr->nnodes);
   pr_indent(fp,indent);
   fprintf(fp,"npmenodes = %d\n",cr->npmenodes);
+  /*
   pr_indent(fp,indent);
   fprintf(fp,"threadid  = %d\n",cr->threadid);
   pr_indent(fp,indent);
   fprintf(fp,"nthreads  = %d\n",cr->nthreads);
+  */
 }
