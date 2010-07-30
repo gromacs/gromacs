@@ -61,6 +61,7 @@
 #include "mtop_util.h"
 
 #include "domdec.h"
+#include "adress.h"
 
 
 /* Uncomment the define below to use the generic charge group - charge group
@@ -315,7 +316,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        ivdw = 1;
    }
 
-   fr->ns.bCGlist = ((fr->adress_type!=eAdressOff)||(getenv("GMX_NBLISTCG") != 0));
+   fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0);
    if (!fr->ns.bCGlist)
    {
        enlist_def = enlistATOM_ATOM;
@@ -2191,6 +2192,13 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                     if (dx0 > dx1)
                     {
                         continue;
+                    }
+                    /* Adress: an explicit cg that has a weigthing function of 0 is excluded
+                     *  from the neigbour list as it will not interact  */
+                    if (fr->adress_type != eAdressOff){
+                        if (md->wf[cgs->index[icg]]==0 && egp_explicit(fr, igid)){
+                            continue;
+                        }
                     }
                     /* Get shift vector */	  
                     shift=XYZ2IS(tx,ty,tz);

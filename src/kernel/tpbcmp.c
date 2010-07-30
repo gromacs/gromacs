@@ -573,7 +573,6 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_rvec(fp,"inputrec->deform(c)",-1,ir1->deform[ZZ],ir2->deform[ZZ],ftol,abstol);
 
   cmp_int(fp,"ir->adress_type" ,-1,ir1->adress_type,ir2->adress_type);
-  cmp_int(fp,"ir->badress_new_wf" ,-1,ir1->badress_new_wf,ir2->badress_new_wf);
   cmp_int(fp,"ir->badress_chempot_dx" ,-1,ir1->badress_chempot_dx,ir2->badress_chempot_dx);
   cmp_int(fp,"ir->badress_tf_full_box" ,-1,ir1->badress_tf_full_box,ir2->badress_tf_full_box);
   cmp_real(fp,"ir->adress_const_wf" ,-1,ir1->adress_const_wf,ir2->adress_const_wf,ftol,abstol);
@@ -583,6 +582,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"ir->adress_ivdw" ,-1,ir1->adress_ivdw,ir2->adress_ivdw);
   cmp_int(fp,"ir->adress_site" ,-1,ir1->adress_site,ir2->adress_site);
   cmp_rvec(fp,"ir->adress_refs" ,-1,ir1->adress_refs,ir2->adress_refs,ftol,abstol);
+  cmp_real(fp,"ir->adress_ex_forcecap", -1,ir1->adress_ex_forcecap,ir2->adress_ex_forcecap,ftol,abstol);
 
   cmp_int(fp,"inputrec->userint1",-1,ir1->userint1,ir2->userint1);
   cmp_int(fp,"inputrec->userint2",-1,ir1->userint2,ir2->userint2);

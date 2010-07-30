@@ -475,6 +475,14 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
     bc_cosines(cr,&(inputrec->ex[i]));
     bc_cosines(cr,&(inputrec->et[i]));
   }
+  if (inputrec->n_adress_tf_grps > 0){
+        snew_bc(cr,inputrec->adress_tf_table_index,inputrec->n_adress_tf_grps);
+        nblock_bc(cr,inputrec->n_adress_tf_grps,inputrec->adress_tf_table_index);
+  }
+  if (inputrec->n_energy_grps > 0){
+        snew_bc(cr,inputrec->adress_group_explicit,inputrec->n_energy_grps);
+        nblock_bc(cr,inputrec->n_energy_grps,inputrec->adress_group_explicit);
+  }
 }
 
 static void bc_moltype(const t_commrec *cr,t_symtab *symtab,

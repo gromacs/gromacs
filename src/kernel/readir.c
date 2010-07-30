@@ -76,7 +76,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
   wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN],adress_refs[STRLEN],
-  adress_tf_grp_names[STRLEN];
+  adress_tf_grp_names[STRLEN], adress_cg_grp_names[STRLEN];
 static char foreign_lambda[STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
@@ -1100,17 +1100,18 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* AdResS defined thingies */
   CCTYPE ("AdResS parameters");
   EETYPE("adress_type",                ir->adress_type,         eAdresstype_names);
-  EETYPE("adress_new_wf",              ir->badress_new_wf,      yesno_names);
   EETYPE("adress_chempot_dx",          ir->badress_chempot_dx,  yesno_names);
   EETYPE("adress_tf_full_box",         ir->badress_tf_full_box, yesno_names);
   RTYPE ("adress_const_wf",            ir->adress_const_wf,     1);
   RTYPE ("adress_ex_width",            ir->adress_ex_width,     0);
   RTYPE ("adress_hy_width",            ir->adress_hy_width,     0);
+  RTYPE ("adress_ex_forcecap",            ir->adress_ex_forcecap,     0);
   EETYPE("adress_interface_correction",ir->adress_icor,         eAdressICtype_names);
   EETYPE("adress_exvdw",               ir->adress_ivdw,         evdw_names);
   EETYPE("adress_site",                ir->adress_site,         eAdressSITEtype_names);
   STYPE ("adress_reference_coords",    adress_refs,             NULL);
   STYPE ("adress_tf_grp_names",        adress_tf_grp_names,     NULL);
+  STYPE ("adress_cg_grp_names",        adress_cg_grp_names,     NULL);
 
   /* User defined thingies */
   CCTYPE ("User defined thingies");
@@ -1703,6 +1704,7 @@ void do_index(const char* mdparin, const char *ndx,
   int     nstcmin;
   int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser;
   int     nadress_refs, nadress_tf_grp_names;
+  int     nadress_cg_grp_names;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   real    SAtime;
@@ -2098,6 +2100,32 @@ void do_index(const char* mdparin, const char *ndx,
   decode_cos(efield_yt,&(ir->et[YY]),TRUE);
   decode_cos(efield_z,&(ir->ex[ZZ]),FALSE);
   decode_cos(efield_zt,&(ir->et[ZZ]),TRUE);
+
+    /* AdResS coarse grained groups input */
+  
+  nr = groups->grps[egcENER].nr;
+  snew(ir->adress_group_explicit, nr);
+  for (i=0; i <nr; i++){
+      ir->adress_group_explicit[i] = TRUE;
+  }
+  ir->n_energy_grps = nr;
+
+  nadress_cg_grp_names = str_nelem(adress_cg_grp_names,MAXPTR,ptr1);
+
+  if (nadress_cg_grp_names > 0){
+        for (i=0; i <nadress_cg_grp_names; i++){
+        //search for the group name mathching the tf group name
+            k = 0;
+            while ((k < nr) &&
+                 strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
+              k++;
+            if (k==nr) gmx_fatal(FARGS,"Adress cg energy group %s not found\n",ptr1[i]);
+            ir->adress_group_explicit[k] = FALSE;
+            printf ("AdResS: Energy group %s is treated as coarse-grained \n",
+              (char*)(gnames[groups->grps[egcENER].nm_ind[k]]));
+    }
+  }
+
 
   /* AdResS multiple tf tables input */
   nadress_tf_grp_names = str_nelem(adress_tf_grp_names,MAXPTR,ptr1);

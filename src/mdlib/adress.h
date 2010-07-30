@@ -56,7 +56,6 @@
  *                       else - weight = 1 - explicit simulation
  * \param[in] adressr radius/size of the explicit zone
  * \param[in] adressw size of the hybrid zone 
- * \param[in] bnew_wf new weighting function or not
  * \param[in] ref center of the explicit zone
  *                for adresstype 1 - unused
  *                for adresstype 2 - only ref[0] is used
@@ -70,9 +69,9 @@ adress_weight(rvec             x,
               int              adresstype,
               real             adressr,
               real             adressw,
-              bool             bnew_wf,
               rvec *           ref,
-              t_pbc *          pbc);
+              t_pbc *          pbc,
+              t_forcerec *         fr);
 
 /** \brief update the weight of all coarse-grained particles in several charge groups for com vsites
  *
@@ -130,6 +129,15 @@ update_adress_weights_atom(int                  cg0,
                            t_mdatoms *          mdatoms,
                            t_pbc *              pbc);
 
+void
+update_adress_weights_atom_per_atom(int                  cg0,
+                           int                  cg1,
+                           t_block *            cgs,
+                           rvec                 x[],
+                           t_forcerec *         fr,
+                           t_mdatoms *          mdatoms,
+                           t_pbc *              pbc);
+
 /** \brief add AdResS IC thermodynamic force to f_novirsum
  *
  * \param[in] cg0 first charge group to update
@@ -150,4 +158,9 @@ adress_thermo_force(int                  cg0,
                     t_forcerec *         fr,
                     t_mdatoms *          mdatoms,
                     t_pbc *              pbc);
+
+void adress_set_kernel_flags(int n_ex, int n_hyb, int n_cg, t_mdatoms * mdatoms);
+/* functions to look up if a energy group is explicit or coarse-grained*/
+inline bool egp_explicit(t_forcerec *   fr, int egp_nr);
+inline bool egp_coarsegrained(t_forcerec *   fr, int egp_nr);
 #endif

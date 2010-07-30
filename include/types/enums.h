@@ -236,11 +236,11 @@ enum {
 };
 
 enum {
-  eAdressICOff,eAdressICInterpolate, eAdressICThermoForce, eAdressICNR
+  eAdressICOff, eAdressICThermoForce, eAdressICNR
 };
 
 enum {
-  eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITENR
+  eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
 };
 #ifdef __cplusplus
 }

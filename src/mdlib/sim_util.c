@@ -464,7 +464,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
     /* should probably move this to the forcerec since it doesn't change */
-    bDoAdressWF   = ((fr->adress_type!=eAdressOff) && (fr->adress_type!=eAdressConst));
+    bDoAdressWF   = ((fr->adress_type!=eAdressOff));
 
     if (bStateChanged)
     {
@@ -569,6 +569,10 @@ void do_force(FILE *fplog,t_commrec *cr,
             else if (fr->adress_site == eAdressSITEcom)
             {
                 update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+            else if (fr->adress_site == eAdressSITEatomatom){
+                update_adress_weights_atom_per_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
                                           inputrec->ePBC==epbcNONE ? NULL : &pbc);
             }
             else

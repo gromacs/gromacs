@@ -63,7 +63,7 @@ SUBDIRS =       $(IA32_SSE)     $(IA32_SSE2)    $(IA32_3DNOW)           \
                 $(X86_64_SSE)   $(X86_64_SSE2)  $(PPC_ALTIVEC)          \
                 $(IA64_SINGLE)  $(IA64_DOUBLE)  $(BLUEGENE)             \
 		$(POWER6)       $(F77_DOUBLE)   $(F77_SINGLE)           \
-                nb_kernel_c
+                nb_kernel_c	nb_kernel_adress_c
 
 
 # Convenience library for nonbonded interactions - not installed.
@@ -78,7 +78,8 @@ libnonbonded_la_LIBADD = \
         $(IA32_SSE_OBJ)         $(IA32_SSE2_OBJ)        $(IA32_3DNOW_OBJ)  \
         $(X86_64_SSE_OBJ)       $(X86_64_SSE2_OBJ)      $(PPC_ALTIVEC_OBJ) \
         $(IA64_SINGLE_OBJ)      $(IA64_DOUBLE_OBJ)      $(BLUEGENE_OBJ)    \
-	$(POWER6_OBJ)           $(F77_DOUBLE_OBJ)       $(F77_SINGLE_OBJ)  
+	$(POWER6_OBJ)           $(F77_DOUBLE_OBJ)       $(F77_SINGLE_OBJ) \
+	nb_kernel_adress_c/libnb_kernel_adress_c.la 
 
 
 libnonbonded_la_SOURCES = \

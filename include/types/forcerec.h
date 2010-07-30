@@ -354,7 +354,6 @@ typedef struct {
 
   /* parameter needed for AdResS simulation */
   int  adress_type;
-  bool badress_new_wf;
   bool badress_chempot_dx;
   bool badress_tf_full_box;
   real adress_const_wf;
@@ -366,7 +365,9 @@ typedef struct {
   rvec adress_refs;
   int n_adress_tf_grps;
   int * adress_tf_table_index;
+  int *adress_group_explicit;
   t_forcetable *  atf_tabs;
+  real adress_ex_forcecap;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

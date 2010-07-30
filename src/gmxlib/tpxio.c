@@ -709,7 +709,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     /* AdResS stuff */
     if (file_version >= 68) {
       gmx_fio_do_int(fio,ir->adress_type);
-      gmx_fio_do_int(fio,ir->badress_new_wf);
       gmx_fio_do_real(fio,ir->adress_const_wf);
       gmx_fio_do_real(fio,ir->adress_ex_width);
       gmx_fio_do_real(fio,ir->adress_hy_width);
@@ -720,9 +719,16 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       gmx_fio_do_int(fio,ir->adress_site);
       gmx_fio_do_rvec(fio,ir->adress_refs);
       gmx_fio_do_int(fio,ir->n_adress_tf_grps);
+      gmx_fio_do_real(fio, ir->adress_ex_forcecap);
+      gmx_fio_do_int(fio, ir->n_energy_grps);
+             
       if (bRead)snew(ir->adress_tf_table_index,ir->n_adress_tf_grps);
       if (ir->n_adress_tf_grps > 0) {
         bDum=gmx_fio_ndo_int(fio,ir->adress_tf_table_index,ir->n_adress_tf_grps);
+      }
+      if (bRead)snew(ir->adress_group_explicit,ir->n_energy_grps);
+      if (ir->n_energy_grps > 0) {
+        ndo_int(ir->adress_group_explicit,ir->n_energy_grps,bDum);
       }
     }
 

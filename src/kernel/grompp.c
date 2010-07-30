@@ -1109,9 +1109,6 @@ int main (int argc, char *argv[])
     if ((ir->adress_const_wf>1) || (ir->adress_const_wf<0)) {
       warning_error(wi,"AdResS contant weighting function should be between 0 and 1\n\n");
     }
-    if (ir->badress_new_wf && ir->badress_chempot_dx){
-      warning_error(wi,"adress_chempot_dx and adress_new_wf are currently exclusive (not implemented)\n\n");
-    }
     /** \TODO check size of ex+hy width against box size */
   }
  

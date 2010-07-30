@@ -1263,7 +1263,7 @@ void init_forcerec(FILE *fp,
     bool    bTab,bSep14tab,bNormalnblists;
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
-    
+   
     fr->bDomDec = DOMAINDECOMP(cr);
 
     natoms = mtop->natoms;
@@ -1290,7 +1290,6 @@ void init_forcerec(FILE *fp,
     
     /* Copy AdResS parameters */
     fr->adress_type     = ir->adress_type;
-    fr->badress_new_wf  = ir->badress_new_wf;
     fr->badress_chempot_dx = ir->badress_chempot_dx;
     fr->badress_tf_full_box = ir->badress_tf_full_box;
     fr->adress_const_wf = ir->adress_const_wf;
@@ -1298,7 +1297,14 @@ void init_forcerec(FILE *fp,
     fr->adress_hy_width = ir->adress_hy_width;
     fr->adress_icor     = ir->adress_icor;
     fr->adress_site     = ir->adress_site;
-    
+    fr->adress_ex_forcecap = ir->adress_ex_forcecap;
+
+
+    snew(fr->adress_group_explicit , ir->n_energy_grps);
+    for (i=0; i< ir->n_energy_grps; i++){
+        fr->adress_group_explicit[i]= ir->adress_group_explicit[i];
+    }
+
     fr->n_adress_tf_grps = ir->n_adress_tf_grps;
     snew(fr->adress_tf_table_index, fr->n_adress_tf_grps);
     for (i=0; i< fr->n_adress_tf_grps; i++){

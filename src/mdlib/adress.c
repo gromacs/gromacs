@@ -45,9 +45,9 @@ adress_weight(rvec            x,
               int             adresstype,
               real            adressr,
               real            adressw,
-              bool            bnew_wf,
               rvec *          ref,
-              t_pbc *         pbc)
+              t_pbc *         pbc,
+              t_forcerec *         fr )
 {
     int  i;
     real l2 = adressr+adressw;
@@ -73,7 +73,7 @@ adress_weight(rvec            x,
         return 1;
     case eAdressConst:              
         /* constant value for weighting function = adressw */
-        return adressw;
+        return fr->adress_const_wf;
     case eAdressXSplit:              
         /* plane through center of ref, varies in x direction */
         sqr_dl         = dx[0]*dx[0];
@@ -102,11 +102,6 @@ adress_weight(rvec            x,
         return 1;
     }
     /* hybrid region */
-    else if (bnew_wf)
-    {
-        tmp=1.0-(dl-adressr)/adressw;
-        return tmp;
-    }
     else
     {
         tmp=cos((dl-adressr)*M_PI/2/adressw);
@@ -130,18 +125,24 @@ update_adress_weights_com(FILE *               fplog,
     rvec           ix;
     int            adresstype;
     real           adressr,adressw;
-    bool           bnew_wf;
     rvec *         ref;
     real *         massT;
     real *         wf;
 
+
+    int n_hyb, n_ex, n_cg;
+
+    n_hyb=0;
+    n_cg=0;
+    n_ex=0;
+
     adresstype         = fr->adress_type;
     adressr            = fr->adress_ex_width;
     adressw            = fr->adress_hy_width;
-    bnew_wf            = fr->badress_new_wf;
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refs);
+
 
     /* Since this is center of mass AdResS, the vsite is not guaranteed
      * to be on the same node as the constructing atoms.  Therefore we 
@@ -164,7 +165,10 @@ update_adress_weights_com(FILE *               fplog,
         nrcg    = k1-k0;
         if (nrcg == 1)
         {
-            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,bnew_wf,ref,pbc);
+            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,ref,pbc,fr);
+            if (wf[k0]==0){ n_cg++;}
+            else if (wf[k0]==1){ n_ex++;}
+            else {n_hyb++;}
         }
         else
         {
@@ -210,15 +214,84 @@ update_adress_weights_com(FILE *               fplog,
             }
 
             /* Set wf of all atoms in charge group equal to wf of com */
-            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,bnew_wf,ref,pbc);
+            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,ref,pbc, fr);
+
+            if (wf[k0]==0){ n_cg++;}
+            else if (wf[k0]==1){ n_ex++;}
+            else {n_hyb++;}
+
             for(k=(k0+1); (k<k1); k++)
             {
                 wf[k] = wf[k0];
             }
         }
     }
+
+
+    adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
+
+    
 }
-        
+void update_adress_weights_atom_per_atom(
+                            int                  cg0,
+                          int                  cg1,
+                          t_block *            cgs,
+                          rvec                 x[],
+                          t_forcerec *         fr,
+                          t_mdatoms *          mdatoms,
+                          t_pbc *              pbc)
+{
+    int            icg,k,k0,k1,d;
+    real           nrcg,inv_ncg,mtot,inv_mtot;
+    atom_id *      cgindex;
+    rvec           ix;
+    int            adresstype;
+    real           adressr,adressw;
+    rvec *         ref;
+    real *         massT;
+    real *         wf;
+
+
+    int n_hyb, n_ex, n_cg;
+
+    n_hyb=0;
+    n_cg=0;
+    n_ex=0;
+
+    adresstype         = fr->adress_type;
+    adressr            = fr->adress_ex_width;
+    adressw            = fr->adress_hy_width;
+    massT              = mdatoms->massT;
+    wf                 = mdatoms->wf;
+    ref                = &(fr->adress_refs);
+
+    cgindex = cgs->index;
+
+    /* Weighting function is determined for each atom individually.
+     * This is an approximation
+     * as in the theory requires an interpolation based on the center of masses.
+     * Should be used with caution */
+   
+    for (icg = cg0; (icg < cg1); icg++) {
+        k0 = cgindex[icg];
+        k1 = cgindex[icg + 1];
+        nrcg = k1 - k0;
+
+        for (k = (k0); (k < k1); k++) {
+            wf[k] = adress_weight(x[k], adresstype, adressr, adressw, ref, pbc, fr);
+            if (wf[k] == 0) {
+                n_cg++;
+            } else if (wf[k] == 1) {
+                n_ex++;
+            } else {
+                n_hyb++;
+            }
+        }
+
+    }
+    adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
+}
+
 void
 update_adress_weights_cog(t_iparams            ip[],
                           t_ilist              ilist[],
@@ -232,16 +305,21 @@ update_adress_weights_cog(t_iparams            ip[],
     t_iatom        avsite,ai,aj,ak,al;
     t_iatom *      ia;
     real           adressr,adressw;
-    bool           bnew_wf;
     rvec *         ref;
     real *         wf;
 
     adresstype         = fr->adress_type;
     adressr            = fr->adress_ex_width;
     adressw            = fr->adress_hy_width;
-    bnew_wf            = fr->badress_new_wf;
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refs);
+
+    int n_hyb, n_ex, n_cg;
+
+    n_hyb=0;
+    n_cg=0;
+    n_ex=0;
+
 
     /* Since this is center of geometry AdResS, we know the vsite
      * is in the same charge group node as the constructing atoms.
@@ -261,8 +339,16 @@ update_adress_weights_cog(t_iparams            ip[],
                 /* The vsite and first constructing atom */
                 avsite     = ia[1];
                 ai         = ia[2];
-                wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,bnew_wf,ref,pbc);
+                wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,ref,pbc,fr);
                 wf[ai]     = wf[avsite];
+
+                if (wf[ai]  == 0) {
+                    n_cg++;
+                } else if (wf[ai]  == 1) {
+                    n_ex++;
+                } else {
+                    n_hyb++;
+                }
 
                 /* Assign the vsite wf to rest of constructing atoms depending on type */
                 inc = nra+1;
@@ -330,6 +416,8 @@ update_adress_weights_cog(t_iparams            ip[],
             }
         }
     }
+
+    adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
 }
 
 void
@@ -345,7 +433,6 @@ update_adress_weights_atom(int                  cg0,
     atom_id *      cgindex;
     int            adresstype;
     real           adressr,adressw;
-    bool           bnew_wf;
     rvec *         ref;
     real *         massT;
     real *         wf;
@@ -353,7 +440,6 @@ update_adress_weights_atom(int                  cg0,
     adresstype         = fr->adress_type;
     adressr            = fr->adress_ex_width;
     adressw            = fr->adress_hy_width;
-    bnew_wf            = fr->badress_new_wf;
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refs);
@@ -368,12 +454,48 @@ update_adress_weights_atom(int                  cg0,
     {
         k0      = cgindex[icg];
         k1      = cgindex[icg+1];
-        wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,bnew_wf,ref,pbc);
+        wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,ref,pbc,fr);
 
         /* Set wf of all atoms in charge group equal to wf of first atom in charge group*/
         for(k=(k0+1); (k<k1); k++)
         {
             wf[k] = wf[k0];
+        }
+    }
+}
+
+void adress_set_kernel_flags(int n_ex, int n_hyb, int n_cg, t_mdatoms * mdatoms){
+
+    /* With domain decomposition we can check weather a cpu calculates only
+     * coarse-grained or explicit interactions. If so we use standard gromacs kernels
+     * on this proc. See also nonbonded.c */
+
+    if (n_hyb ==0 && n_ex == 0){
+     /* all particles on this proc are coarse-grained, use standard gromacs kernels */
+        if (!mdatoms->purecg){
+            mdatoms->purecg = TRUE;
+           if (debug) fprintf (debug, "adress.c: pure cg kernels on this proc\n");
+        }
+    }
+    else
+    {
+        if (mdatoms->purecg){
+         /* now this processor has hybrid particles again, call the hybrid kernels */
+            mdatoms->purecg = FALSE;
+        }
+    }
+
+    if (n_hyb ==0 && n_cg == 0){
+    /* all particles on this proc are atomistic, use standard gromacs kernels */
+        if (!mdatoms->pureex){
+             mdatoms->pureex = TRUE;
+             if (debug) fprintf (debug, "adress.c: pure ex kernels on this proc\n");
+        }
+    }
+    else
+    {
+        if (mdatoms->pureex){
+            mdatoms->pureex = FALSE;
         }
     }
 }
@@ -391,7 +513,6 @@ adress_thermo_force(int                  cg0,
     int              icg,k0,k1,n0,nnn,nrcg, i;
     int              adresstype;
     real             adressw, adressr;
-    bool             bnew_wf;
     bool	     badress_chempot_dx, badress_tf_full_box;
     atom_id *        cgindex;
     unsigned short * ptype;
@@ -406,7 +527,6 @@ adress_thermo_force(int                  cg0,
     adresstype       = fr->adress_type;
     adressw          = fr->adress_hy_width;
     adressr           = fr->adress_ex_width;
-    bnew_wf          = fr->badress_new_wf;
     cgindex          = cgs->index;
     ptype            = mdatoms->ptype;
     ref              = &(fr->adress_refs);
@@ -457,17 +577,10 @@ adress_thermo_force(int                  cg0,
                         dwp_dr           = 1.0/adressw;
         
                         /* get the dwp_dr part of the force */
-                        if(bnew_wf)
-                        {
-                            wmin1sq      = wmin1*wmin1;
-                            wp           = 1.0-exp(-M_LN2*wsq/wmin1sq);
-                            dwp_dr      *= M_LN2*w*exp(M_LN2*(1.0-2.0*w)/wmin1sq)/(wmin1*wmin1sq);
-                        }
-                        else
-                        {
-                            wp           = wsq;
-                            dwp_dr      *= -2.0*M_PI*sqrt(-wsq*w*wmin1);
-                        }
+
+                       wp           = wsq;
+                       dwp_dr      *= -2.0*M_PI*sqrt(-wsq*w*wmin1);
+                        
         
                         /* now get the dmu/dwp part from the table */
                         wt               = wp*tabscale;
@@ -534,4 +647,12 @@ adress_thermo_force(int                  cg0,
             }
         }
     }
+}
+bool egp_explicit(t_forcerec *   fr, int egp_nr)
+{
+    return fr->adress_group_explicit[egp_nr];
+}
+bool egp_coarsegrained(t_forcerec *   fr, int egp_nr)
+{
+   return !fr->adress_group_explicit[egp_nr];
 }

@@ -666,7 +666,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     pr_matrix(fp,indent,"deform",ir->deform,bMDPformat);
 
     PS("adress_type",EADRESSTYPE(ir->adress_type));
-    PS("adress_new_wf",BOOL(ir->badress_new_wf));
     PR("adress_const_wf",ir->adress_const_wf);
     PR("adress_ex_width",ir->adress_ex_width);
     PR("adress_hy_width",ir->adress_hy_width);
@@ -675,6 +674,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("adress_chempot_dx",BOOL(ir->badress_chempot_dx));
     PS("adress_tf_full_box",BOOL(ir->badress_tf_full_box));
     PS("adress_site",EADRESSSITETYPE(ir->adress_site));
+    PR("adress_ex_force_cap",ir->adress_ex_forcecap);
     pr_rvecs(fp,indent,"adress_reference_coords",&(ir->adress_refs),bMDPformat);
 
     PI("userint1",ir->userint1);
