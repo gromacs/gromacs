@@ -63,6 +63,12 @@ typedef struct t_fileio t_fileio;
 extern const char *itemstr[eitemNR];
 extern const char *comment_str[eitemNR];
 
+/* NOTE ABOUT THREAD SAFETY:
+
+   The functions are all thread-safe, provided that two threads don't 
+   do something silly like closing the same file, or one thread 
+   accesses a file that has been closed by another.
+   */
 
 /********************************************************
  * Open and Close 

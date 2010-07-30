@@ -649,8 +649,8 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
     rvec sumv,consk;
     bool bCouple;
 
-    bCouple = (ir->nstcalcenergy == 1 ||
-               do_per_step(step+ir->nstcalcenergy,ir->nstcalcenergy));
+    bCouple = (ir->nsttcouple == 1 ||
+               do_per_step(step+ir->nsttcouple,ir->nsttcouple));
     
     /* signal we are returning if nothing is going to be done in this routine */
     if ((trotter_seq[0] == etrtSKIPALL)  || !(bCouple))
@@ -658,7 +658,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
         return;
     }
 
-    dtc = ir->nstcalcenergy*ir->delta_t;
+    dtc = ir->nsttcouple*ir->delta_t;
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
     snew(scalefac,opts->ngtc);
