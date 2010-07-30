@@ -64,6 +64,7 @@ hackblock.h \
 histogram.h \
 index.h \
 indexutil.h \
+inputrec.h \
 invblock.h \
 macros.h \
 magic.h \

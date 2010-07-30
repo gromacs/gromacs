@@ -745,6 +745,42 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
     print_date_and_time(fplog,cr->nodeid,"Restarted time",runtime);
 }
 
+static int lcd4(int i1,int i2,int i3,int i4)
+{
+    int nst=0;
+
+    if (i1 > 0)
+    {
+        nst = i1;
+    }
+    else if (i2 > 0)
+    {
+        nst = i2;
+    }
+    else if (i3 > 0)
+    {
+        nst = i3;
+    }
+    else if (i4 > 0)
+    {
+        nst = i4;
+    }
+    else
+    {
+        gmx_incons("All 4 inputs for determininig nstglobalcomm are <= 0");
+    }
+    
+    while (nst > 1 && ((i1 > 0 && i1 % nst != 0)  ||
+                       (i2 > 0 && i2 % nst != 0)  ||
+                       (i3 > 0 && i3 % nst != 0)  ||
+                       (i4 > 0 && i4 % nst != 0)))
+    {
+        nst--;
+    }
+
+    return nst;
+}
+
 static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
                                int nstglobalcomm,t_inputrec *ir)
 {
@@ -757,7 +793,10 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
 
     if (nstglobalcomm == -1)
     {
-        if (ir->nstcalcenergy == 0 && ir->nstlist == 0)
+        if (!(ir->nstcalcenergy > 0 ||
+              ir->nstlist > 0 ||
+              ir->etc != etcNO ||
+              ir->epc != epcNO))
         {
             nstglobalcomm = 10;
             if (ir->nstenergy > 0 && ir->nstenergy < nstglobalcomm)
@@ -767,18 +806,13 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
         }
         else
         {
-            /* We assume that if nstcalcenergy > nstlist,
-             * nstcalcenergy is a multiple of nstlist.
+            /* Ensure that we do timely global communication for
+             * (possibly) each of the four following options.
              */
-            if (ir->nstcalcenergy == 0 ||
-                (ir->nstlist > 0 && ir->nstlist < ir->nstcalcenergy))
-            {
-                nstglobalcomm = ir->nstlist;
-            }
-            else
-            {
-                nstglobalcomm = ir->nstcalcenergy;
-            }
+            nstglobalcomm = lcd4(ir->nstcalcenergy,
+                                 ir->nstlist,
+                                 ir->etc != etcNO ? ir->nsttcouple : 0,
+                                 ir->epc != epcNO ? ir->nstpcouple : 0);
         }
     }
     else
@@ -790,10 +824,20 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
             sprintf(buf,"WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n",nstglobalcomm);
             md_print_warning(cr,fplog,buf);
         }
-        if (nstglobalcomm > ir->nstcalcenergy)
+        if (ir->nstcalcenergy > 0)
         {
             check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
                             "nstcalcenergy",&ir->nstcalcenergy);
+        }
+        if (ir->etc != etcNO && ir->nsttcouple > 0)
+        {
+            check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
+                            "nsttcouple",&ir->nsttcouple);
+        }
+        if (ir->epc != epcNO && ir->nstpcouple > 0)
+        {
+            check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
+                            "nstpcouple",&ir->nstpcouple);
         }
 
         check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
@@ -1793,11 +1837,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
          */
-        bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
-        bCalcEnerPres = bNstEner;
+        bNstEner = do_per_step(step,ir->nstcalcenergy);
+        bCalcEnerPres =
+            (bNstEner ||
+             (ir->epc != epcNO && do_per_step(step,ir->nstpcouple)));
 
         /* Do we need global communication ? */
         bGStat = (bCalcEnerPres || bStopCM ||
+                  do_per_step(step,nstglobalcomm) ||
                   (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
 
         do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
