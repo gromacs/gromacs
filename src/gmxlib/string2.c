@@ -76,6 +76,8 @@ int continuing(char *s)
     return FALSE;
 }
 
+
+
 char *fgets2(char *line, int n, FILE *stream)
 /* This routine reads a string from stream of max length n
  * and zero terminated, without newlines
@@ -161,6 +163,23 @@ void trim (char *str)
   rtrim (str);
 }
 
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n)
+{
+    char tmpbuf[STRLEN];
+  
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    /* Windows */
+    ctime_s( tmpbuf, STRLEN, clock );
+#else
+    ctime_r(clock,tmpbuf);
+#endif
+    strncpy(buf,tmpbuf,n-1);
+    buf[n-1]='\0';
+    
+    return buf;
+}
+          
 void nice_header (FILE *out,const char *fn)
 {
   const char *unk = "onbekend";
