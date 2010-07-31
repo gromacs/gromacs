@@ -9,32 +9,39 @@ templatedir = ${pkgdatadir}/template
 # Since a Makefile is used for the installation, we call the
 # template makefile Template.mak, and rename it to Makefile when installing.
 # We add the GMX_DOUBLE define to CPPFLAGS, so users can do without config.h
-LDFLAGS = -L@libdir@ @LDFLAGS@
-LIBS = -lmd@LIBSUFFIX@ -lgmx@LIBSUFFIX@ @LIBS@ 
-CC = @CC@
+XLDFLAGS = -L@libdir@ @LDFLAGS@
+XLIBS = -lmd@LIBSUFFIX@ -lgmx@LIBSUFFIX@ @LIBS@ 
+XCC = @CC@
 if GMX_DOUBLE
-MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -I@includedir@/gromacs -DGMX_DOUBLE
+MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -DGMX_DOUBLE
 else
-MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -I@includedir@/gromacs
+MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@
 endif
 
 if GMX_DOUBLE
-template_DATA = template.c README Makefile.@host@_double
+template_DATA = template.c README Makefile.@host@_double Makefile.pkg
 else
-template_DATA = template.c README Makefile.@host@
+template_DATA = template.c README Makefile.@host@ Makefile.pkg
 endif
-EXTRA_DIST = template.c template_doc.c README Template.mak
+EXTRA_DIST = template.c template_doc.c README Template.mak Makefile.pkg
 
 Makefile.@host@ Makefile.@host@_double: Template.mak Makefile 
 	cat $(srcdir)/Template.mak | \
-	sed 's,@LDFLAGS\@,$(LDFLAGS),' | \
-	sed 's,@LIBS\@,$(LIBS),' | \
+	sed 's,@LDFLAGS\@,$(XLDFLAGS),' | \
+	sed 's,@LIBS\@,$(XLIBS),' | \
 	sed 's,@CFLAGS\@,$(MYCFLAGS),' | \
-	sed 's,@CC\@,$(CC),' | \
+	sed 's,@CC\@,$(XCC),' | \
 	sed 's,@host\@,@host@,' >$@
 
 CLEANFILES = Makefile.@host@ Makefile.@host@_double *~ \\\#*
 
+template_SOURCES = template.c
+noinst_PROGRAMS = template
+LDADD = ../../src/mdlib/libmd@LIBSUFFIX@.la ../../src/gmxlib/libgmx@LIBSUFFIX@.la
+template.$(OBJEXT): gromacs
 
+gromacs:
+	$(LN_S) $(top_srcdir)/include gromacs
 
-
+clean-local:
+	rm -rf gromacs

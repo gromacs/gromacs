@@ -49,6 +49,8 @@
 extern "C" {
 #endif
 
+
+/* This is a running averaging structure ('energy bin') for use during mdrun. */
 typedef struct {
   int        nener;
   gmx_enxnm_t *enm;

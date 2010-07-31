@@ -231,11 +231,12 @@ void xvgr_header(FILE *fp,const char *title,const char *xaxis,
 {
     char pukestr[100],buf[STRLEN];
     time_t t;
-
+ 
     if (output_env_get_print_xvgr_codes(oenv)) 
     {
         time(&t);
-        fprintf(fp,"# This file was created %s",ctime(&t));
+        gmx_ctime_r(&t,buf,STRLEN);
+        fprintf(fp,"# This file was created %s",buf);
         fprintf(fp,"# by the following command:\n# %s\n#\n",command_line());
         fprintf(fp,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
         bromacs(pukestr,99);
@@ -324,7 +325,7 @@ void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
     }
 }
 
-void xvgr_legend(FILE *out,int nsets,char **setname,const output_env_t oenv)
+void xvgr_legend(FILE *out,int nsets,const char** setname,const output_env_t oenv)
 {
     int  i;
     char buf[STRLEN];
@@ -601,7 +602,7 @@ int read_xvg(const char *fn,double ***y,int *ny)
 }
 
 void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
-               char **leg,const output_env_t oenv)
+               const char **leg,const output_env_t oenv)
 {
     FILE *fp;
     int  i,j;

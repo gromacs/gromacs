@@ -99,7 +99,7 @@ int main(int argc,char *argv[])
   };
   output_env_t oenv;
 #define NFILE asize(fnm)
-  char *legend[] = { "Lennard-Jones", "Buckingham" };
+  const char *legend[] = { "Lennard-Jones", "Buckingham" };
   FILE      *fp;
   int       i;
   bool      bBham;

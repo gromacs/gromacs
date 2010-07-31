@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "macros.h"
+#include "grompp.h"
 
 #ifdef __cplusplus
 extern "C" {

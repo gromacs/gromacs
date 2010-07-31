@@ -360,7 +360,7 @@ int gmx_vanhove(int argc,char *argv[])
       sprintf(buf,"%g ps",(fbin + 1)*fshift*dt);
       legend[fbin] = strdup(buf);
     }
-    xvgr_legend(fp,nr,legend,oenv);
+    xvgr_legend(fp,nr,(const char**)legend,oenv);
     for(i=0; i<nalloc; i++) {
       fprintf(fp,"%g",i*rbin);
       for(fbin=0; fbin<nr; fbin++)

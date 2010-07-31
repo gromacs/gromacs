@@ -155,6 +155,7 @@ static bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio,
     switch (eio)
     {
     case eioREAL:
+    case eioFLOAT:
     case eioDOUBLE:
         res = fprintf(fp, "%18.10e%s\n", *((real *) item), 
                       gmx_fio_dbgstr(fio, desc, buf));
@@ -283,6 +284,7 @@ static bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
     switch (eio)
     {
     case eioREAL:
+    case eioFLOAT:
     case eioDOUBLE:
         res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%lf", &d);
         if (item)

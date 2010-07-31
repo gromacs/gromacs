@@ -36,6 +36,7 @@
 #ifndef _splitter_h
 #define _splitter_h
 
+#include "typedefs.h"
 #include "types/inputrec.h"
 
 #ifdef __cplusplus

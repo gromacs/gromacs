@@ -40,6 +40,9 @@
 #include <config.h>
 #endif
 
+#include "typedefs.h"
+#include "smalloc.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

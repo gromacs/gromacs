@@ -142,7 +142,7 @@ static bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
 
 
 
-#include "p2p_protocol.c"
-#include "p2p_send_recv.c"
-#include "p2p_wait.c"
+#include "p2p_protocol.h"
+#include "p2p_send_recv.h"
+#include "p2p_wait.h"
 

@@ -715,7 +715,7 @@ void push_dihedraltype(directive d,t_params bt[],
     warning_error(wi,errbuf);
     return;
   }
-	
+    	
 	if(ft == 9)
 	{
 		/* Previously, we have always overwritten parameters if e.g. a torsion
@@ -723,7 +723,7 @@ void push_dihedraltype(directive d,t_params bt[],
 		 some other force fields specify multiple dihedrals over some bonds, 
 		 including cosines with multiplicity 6 and somethimes even higher.
 		 Thus, they cannot be represented with Ryckaert-Bellemans terms.
-		 To add support for these force fields, Dihedral type 4 is identical to
+		 To add support for these force fields, Dihedral type 9 is identical to
 		 normal proper dihedrals, but repeated entries are allowed. 
 		 */
 		bAllowRepeat = TRUE;
@@ -967,8 +967,12 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	sl = 0;
 	for(i=0;i<ncmap;i++)
 	{
-		nn=sscanf(line+start+sl,"%s",s);
-		sl+=strlen(s)+1;
+    while(isspace(*(line+start+sl))) 
+    { 
+      sl++; 
+    }
+    nn=sscanf(line+start+sl," %s ",s);
+    sl+=strlen(s);
 		bt->cmap[i+(bt->ncmap)-nrfp]=strtod(s,NULL);
 		
 		if(nn==1)
@@ -1377,7 +1381,7 @@ static bool default_params(int ftype,t_params bt[],
   /* OPLS uses 1000s of dihedraltypes, so in order to speed up the scanning we have a 
    * special case for this. Check for B state outside loop to speed it up.
    */
-  if( ftype==F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS) 
+  if( ftype==F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS || ftype == F_PIDIHS) 
   {
 	  if (bB) 
 	  {
@@ -1550,6 +1554,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   /* Get force params for normal and free energy perturbation
    * studies, as determined by types!
    */
+    
   if (bBonded) {
     bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE,&param_defA,&nparam_defA);
     if (bFoundA) {
@@ -1640,9 +1645,6 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     nread = 0;
   }
   /* nread now holds the number of force parameters read! */
- 
-	
-	
 	
 	if (bDef) 
 	{

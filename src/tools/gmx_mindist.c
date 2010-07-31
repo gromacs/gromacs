@@ -107,7 +107,7 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
                                   const output_env_t oenv)
 {
   FILE   *out;
-  char *leg[5] = { "min per.","max int.","box1","box2","box3" };
+  const char *leg[5] = { "min per.","max int.","box1","box2","box3" };
   t_trxstatus *status;
   real   t;
   rvec   *x;
@@ -289,8 +289,8 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
       snew(leg,1);
       sprintf(buf,"Internal in %s",grpn[0]);
       leg[0]=strdup(buf);
-      xvgr_legend(dist,0,leg,oenv);
-      if (num) xvgr_legend(num,0,leg,oenv);
+      xvgr_legend(dist,0,(const char**)leg,oenv);
+      if (num) xvgr_legend(num,0,(const char**)leg,oenv);
     } 
     else {
       snew(leg,(ng*(ng-1))/2);
@@ -300,8 +300,8 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	  leg[j]=strdup(buf);
 	}
       }
-      xvgr_legend(dist,j,leg,oenv);
-      if (num) xvgr_legend(num,j,leg,oenv);
+      xvgr_legend(dist,j,(const char**)leg,oenv);
+      if (num) xvgr_legend(num,j,(const char**)leg,oenv);
     }
   }
   else {  
@@ -310,15 +310,15 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
       sprintf(buf,"%s-%s",grpn[0],grpn[i+1]);
       leg[i]=strdup(buf);
     }
-    xvgr_legend(dist,ng-1,leg,oenv);
-    if (num) xvgr_legend(num,ng-1,leg,oenv);
+    xvgr_legend(dist,ng-1,(const char**)leg,oenv);
+    if (num) xvgr_legend(num,ng-1,(const char**)leg,oenv);
   }
   
   if (bEachResEachTime)
   {
     sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
     respertime=xvgropen(rfile,buf,output_env_get_time_label(oenv),"Distance (nm)",oenv);
-    xvgr_legend(respertime,ng-1,leg,oenv);
+    xvgr_legend(respertime,ng-1,(const char**)leg,oenv);
 	if (bPrintResName) 
 	  fprintf(respertime,"# ");
 	    for (j=0; j<nres; j++)
@@ -426,7 +426,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
     
     sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
     res=xvgropen(rfile,buf,"Residue (#)","Distance (nm)",oenv);
-    xvgr_legend(res,ng-1,leg,oenv);
+    xvgr_legend(res,ng-1,(const char**)leg,oenv);
     for(j=0; j<nres; j++) {
       fprintf(res, "%4d", j+1);
       for(i=1; i<ng; i++) {

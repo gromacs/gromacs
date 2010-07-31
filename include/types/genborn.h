@@ -1,5 +1,6 @@
-/*
- * 
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
+ *
  *                This source code is part of
  * 
  *                 G   R   O   M   A   C   S
@@ -40,6 +41,8 @@
 extern "C" {
 #endif
 
+#include "simple.h"
+
 typedef struct
 {
 	int nbonds;
@@ -56,7 +59,8 @@ typedef struct
 	int n12;                  /* number of 1-2 (bond) interactions       */
 	int n13;                  /* number of 1-3 (angle) terms             */
 	int n14;                  /* number of 1-4 (torsion) terms           */
-	int nlocal;               /* Length of local arrays (with DD)        */
+	int nalloc;               /* Allocation of local arrays (with DD)    */
+  
 	
 	/* Arrays below that end with _globalindex are used for setting up initial values of
 	 * all gb parameters and values. They all have length natoms, which for DD is the 
@@ -99,7 +103,6 @@ typedef struct
 	
 	real *work;               /* Used for parallel summation and in the chain rule, length natoms         */
 	real *buf;                /* Used for parallel summation and in the chain rule, length natoms         */
-	real *dd_work;            /* Used for domain decomposition parallel runs, length natoms              */
 	int  *count;              /* Used for setting up the special gb nblist, length natoms                 */
 	gbtmpnbls_t nblist_work;  /* Used for setting up the special gb nblist, dim natoms*nblist_work_nalloc */
 	int  nblist_work_nalloc;  /* Length of second dimension of nblist_work                                */

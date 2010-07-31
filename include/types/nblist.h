@@ -32,6 +32,9 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _nblist_h
+#define _nblist_h
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -101,3 +104,4 @@ typedef struct
 }
 #endif
 
+#endif

@@ -39,7 +39,7 @@
 #ifndef _SPARSEMATRIX_H_
 #define _SPARSEMATRIX_H_
 
-
+#include "typedefs.h"
 #include "types/simple.h"
 
 #ifdef __cplusplus

@@ -45,10 +45,10 @@ extern int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
 /* Read database for N&C terminal hacking */
 
 extern t_hackblock **filter_ter(int nrtp,t_restp rtp[],
-				int nb,t_hackblock tb[],
-				const char *resname,
-				const char *rtpname,
-				int *nret);
+                                int nb,t_hackblock tb[],
+                                const char *resname,
+                                const char *rtpname,
+                                int *nret);
 /* Return a list of pointers to blocks that match residue name */
 
 extern t_hackblock *choose_ter(int nb,t_hackblock **tb,const char *title);

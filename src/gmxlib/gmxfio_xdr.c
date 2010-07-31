@@ -109,6 +109,13 @@ static bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 *((real *) item) = f;
         }
         break;
+    case eioFLOAT:
+        if (item && !fio->bRead)
+            f = *((float *) item);
+        res = xdr_float(fio->xdr, &f);
+        if (item)
+            *((float *) item) = f;
+        break;
     case eioDOUBLE:
         if (item && !fio->bRead)
             d = *((double *) item);

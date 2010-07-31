@@ -5,7 +5,7 @@
 SUBDIRS = gmxlib mdlib kernel tools ngmx contrib
 # don't do anything for the local directory
 
-EXTRA_DIST = config.win
+#EXTRA_DIST = config.win
 
 mdrun:		
 	(cd $(top_builddir)/src/gmxlib && $(MAKE))

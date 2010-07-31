@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#include <types/commrec.h>
+#include "commrec.h"
 
 #ifdef __cplusplus
 extern "C" {

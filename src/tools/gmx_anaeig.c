@@ -656,7 +656,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
       for(frame=0; frame<nextr; frame++) {
 	if ((extreme==0) && (nextr<=3))
 	  for(i=0; i<natoms; i++) {
-	    atoms->resinfo[atoms->atom[index[i]].resind].chain = 'A' + frame;
+	    atoms->resinfo[atoms->atom[index[i]].resind].chainid = 'A' + frame;
 	  }
 	for(i=0; i<natoms; i++)
 	  for(d=0; d<DIM; d++) 

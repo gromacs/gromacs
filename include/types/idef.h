@@ -39,6 +39,8 @@
 #ifndef _idef_h
 #define _idef_h
 
+#include "simple.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

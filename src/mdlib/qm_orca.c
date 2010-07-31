@@ -116,7 +116,7 @@ void write_orca_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
           }
      }
      if (didStart) fprintf(out,"     end\n   end\n");
-     // make a file with information on the C6 and C12 coefficients
+     /* make a file with information on the C6 and C12 coefficients */
      if(QMMMrec->QMMMscheme!=eQMMMschemeoniom && mm->nrMMatoms){
          snew(exclInName,200);
          snew(exclOutName,200);
@@ -126,7 +126,7 @@ void write_orca_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
          snew(LJCoeffFilename,200);
          sprintf(LJCoeffFilename,"%s.LJ",qm->orca_basename);
          fprintf(out,"%s%s%s\n","%LJCOEFFICIENTS \"",LJCoeffFilename,"\"");
-         // make a file with information on the C6 and C12 coefficients
+         /* make a file with information on the C6 and C12 coefficients */
          LJCoeff = fopen(LJCoeffFilename,"w");
          fprintf(LJCoeff,"%d\n",qm->nrQMatoms);
          for (i=0;i<qm->nrQMatoms;i++){

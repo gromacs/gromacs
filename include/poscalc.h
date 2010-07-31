@@ -45,7 +45,7 @@
 #ifndef POSCALC_H
 #define POSCALC_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

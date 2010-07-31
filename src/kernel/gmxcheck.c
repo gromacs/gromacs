@@ -244,7 +244,7 @@ void chk_trj(const output_env_t oenv,const char *fn,const char *tpr,real tol)
   t_count      count;
   t_fr_time    first,last;
   int          j=-1,new_natoms,natoms;
-  off_t        fpos;
+  gmx_off_t    fpos;
   real         rdum,tt,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE,bOK,newline=FALSE;
   t_trxstatus *status;
