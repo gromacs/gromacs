@@ -133,8 +133,8 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
     int i,j,k;
     int ni0,ni1,nj0,nj1,nj;
     int imin,imax;
-    int firstinteraction[UNROLLI];
     int ibase;
+    int firstinteraction;
     int max_offset;
     int max_excl_offset;
     int iexcl;
@@ -206,7 +206,6 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
     /* Create the exclusion masks for the prologue part */
 	snew(aadata->prologue_mask,natoms+UNROLLI); /* list of pointers */
 	
-    /* First zero everything to avoid uninitialized data */
     for(i=0;i<natoms+UNROLLI;i++)
     {
         aadata->prologue_mask[i] = NULL;
@@ -220,22 +219,41 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
         /* First find maxoffset for the next 4 atoms (or fewer if we are close to end) */
         imax = ((ibase+UNROLLI) < end) ? (ibase+UNROLLI) : end;
         
+        /* Which atom is the first we (might) interact with? */
+        imin = natoms; /* Guaranteed to be overwritten by one of 'firstinteraction' */
         for(i=ibase;i<imax;i++)
         {
-            /* Before exclusions, which atom is the first we (might) interact with? */
-            firstinteraction[i-ibase] = i+1;
+            firstinteraction = i+1;
             max_offset = calc_maxoffset(i,natoms);
             
             nj0   = excl->index[i];
             nj1   = excl->index[i+1];
             for(j=nj0; j<nj1; j++)
             {
+                if(excl->a[j] == firstinteraction)
+                {
+                    firstinteraction++;
+                }
+            }
+            imin = (firstinteraction < imin) ? firstinteraction : imin;
+        }
+        /* round down to j unrolling factor */
+        imin = (imin/UNROLLJ)*UNROLLJ;
+        
+        for(i=ibase;i<imax;i++)
+        {
+            max_offset = calc_maxoffset(i,natoms);
+            
+            nj0   = excl->index[i];
+            nj1   = excl->index[i+1];
+            for(j=nj0; j<nj1; j++)
+            {                
                 if(excl->a[j]>i+max_offset)
                 {
                     continue;
                 }
                 
-                k = excl->a[j] - ibase;
+                k = excl->a[j] - imin;
                 
                 if( k+natoms <= max_offset )
                 {
@@ -243,30 +261,19 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
                 }
                 
                 max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
-                
-                /* Exclusions are sorted, so this can be done iteratively */
-                if(excl->a[j] == firstinteraction[i-ibase])
-                {
-                    firstinteraction[i-ibase]++;
-                }
             }
         }
         
+        /* The offset specifies the last atom to be excluded, so add one unit to get an upper loop limit */
+        max_excl_offset++;
         /* round up to j unrolling factor */
         max_excl_offset = (max_excl_offset/UNROLLJ+1)*UNROLLJ;
-        
-        imin = firstinteraction[0];
-        for(i=ibase;i<imax;i++)
-        {
-            imin = (imin < firstinteraction[i-ibase]) ? imin : firstinteraction[i-ibase];
-        }
-        imin = (imin/UNROLLJ)*UNROLLJ;
         
         /* Set all the prologue masks length to this value (even for i>end) */
         for(i=ibase;i<ibase+UNROLLI;i++)
         {
             aadata->jindex[4*i]   = imin;
-            aadata->jindex[4*i+1] = ibase+max_excl_offset;
+            aadata->jindex[4*i+1] = imin+max_excl_offset;
         }        
     }
     
@@ -308,21 +315,22 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
                 nj0   = excl->index[i];
                 nj1   = excl->index[i+1];
                 for(j=nj0; j<nj1; j++)
-                {
+                {                    
                     if(excl->a[j]>i+max_offset)
                     {
                         continue;
                     }
                     
                     k = excl->a[j] - i;
+                    
                     if( k+natoms <= max_offset )
                     {
                         k+=natoms;
                     }
                     
-                    if(k>0)
-                    {
-                        k = k+i-imin;
+                    k = k+i-imin;
+                    if(k>=0)
+                    {                        
                         aadata->prologue_mask[i][k] = 0;
                     }
                 }

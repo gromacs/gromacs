@@ -271,7 +271,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     fr = mk_forcerec();
   snew(cr,1);
   cr->nnodes   = 1;
-  cr->nthreads = 1;
+  /* cr->nthreads = 1; */
   
   /*    ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
 	printf("Neighborsearching with a cut-off of %g\n",rlong);

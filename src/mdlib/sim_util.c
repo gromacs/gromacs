@@ -132,7 +132,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
                 t_inputrec *ir, t_commrec *cr)
 {
     time_t finish;
-    
+    char   timebuf[STRLEN];
     double dt;
     char buf[48];
     
@@ -159,7 +159,8 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
             if (dt >= 300)
             {    
                 finish = (time_t) (runtime->last + dt);
-                sprintf(buf,"%s",ctime(&finish));
+                gmx_ctime_r(&finish,timebuf,STRLEN);
+                sprintf(buf,"%s",timebuf);
                 buf[strlen(buf)-1]='\0';
                 fprintf(out,", will finish %s",buf);
             }
@@ -244,26 +245,28 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
                          const gmx_runtime_t *runtime)
 {
     int i;
-    char *ts,time_string[STRLEN];
+    char timebuf[STRLEN];
+    char time_string[STRLEN];
     time_t tmptime;
 
-    if (runtime != NULL)
-    {
-		tmptime = (time_t) runtime->real;
-        ts = ctime(&tmptime);
-    }
-    else
-    {
-        tmptime = (time_t) gmx_gettime();
-        ts = ctime(&tmptime);
-    }
-    for(i=0; ts[i]>=' '; i++)
-    {
-        time_string[i]=ts[i];
-    }
-    time_string[i]='\0';
     if (fplog)
     {
+        if (runtime != NULL)
+        {
+            tmptime = (time_t) runtime->real;
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
+        }
+        else
+        {
+            tmptime = (time_t) gmx_gettime();
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
+        }
+        for(i=0; timebuf[i]>=' '; i++)
+        {
+            time_string[i]=timebuf[i];
+        }
+        time_string[i]='\0';
+
         fprintf(fplog,"%s on node %d %s\n",title,nodeid,time_string);
     }
 }
@@ -590,7 +593,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (fr->bTwinRange)
         {
             /* Reset the (long-range) forces if necessary */
-            clear_rvecs(fr->natoms_force,bSepLRF ? fr->f_twin : f);
+            clear_rvecs(fr->natoms_force_constr,bSepLRF ? fr->f_twin : f);
         }
 
         /* Do the actual neighbour searching and if twin range electrostatics
@@ -665,7 +668,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (bSepLRF)
         {
             /* Add the long range forces to the short range forces */
-            for(i=0; i<fr->natoms_force; i++)
+            for(i=0; i<fr->natoms_force_constr; i++)
             {
                 copy_rvec(fr->f_twin[i],f[i]);
             }
@@ -673,7 +676,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         else if (!(fr->bTwinRange && bNS))
         {
             /* Clear the short-range forces */
-            clear_rvecs(fr->natoms_force,f);
+            clear_rvecs(fr->natoms_force_constr,f);
         }
 
         clear_rvec(fr->vir_diag_posres);

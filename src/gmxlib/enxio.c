@@ -44,12 +44,21 @@
 #include "gmxfio.h"
 #include "enxio.h"
 #include "vec.h"
+#include "xdrf.h"
 
 /* The source code in this file should be thread-safe. 
          Please keep it that way. */
 
 /* This number should be increased whenever the file format changes! */
-static const int enx_version = 3;
+static const int enx_version = 4;
+
+const char *enx_block_id_name[] = {
+    "Averaged orientation restraints",
+    "Instantaneous orientation restraints",
+    "Orientation restraint order tensor(s)",
+    "Distance restraints",
+    "BAR histogram"
+};
 
 
 /* Stuff for reading pre 4.1 energy files */
@@ -70,23 +79,239 @@ struct ener_file
     real frametime;
 };
 
+static void enxsubblock_init(t_enxsubblock *sb)
+{
+    sb->nr=0;
+#ifdef GMX_DOUBLE
+    sb->type=xdr_datatype_double;
+#else
+    sb->type=xdr_datatype_float;
+#endif
+    sb->fval = NULL;
+    sb->dval = NULL;
+    sb->ival = NULL;
+    sb->lval = NULL;
+    sb->cval = NULL;
+    sb->sval = NULL;
+    sb->fval_alloc = 0;
+    sb->dval_alloc = 0;
+    sb->ival_alloc = 0;
+    sb->lval_alloc = 0;
+    sb->cval_alloc = 0;
+    sb->sval_alloc = 0;
+}
+
+static void enxsubblock_free(t_enxsubblock *sb)
+{
+    if (sb->fval_alloc)
+    {
+        free(sb->fval);
+        sb->fval_alloc=0;
+        sb->fval=NULL;
+    }
+    if (sb->dval_alloc)
+    {
+        free(sb->dval);
+        sb->dval_alloc=0;
+        sb->dval=NULL;
+    }
+    if (sb->ival_alloc)
+    {
+        free(sb->ival);
+        sb->ival_alloc=0;
+        sb->ival=NULL;
+    }
+    if (sb->lval_alloc)
+    {
+        free(sb->lval);
+        sb->lval_alloc=0;
+        sb->lval=NULL;
+    }
+    if (sb->cval_alloc)
+    {
+        free(sb->cval);
+        sb->cval_alloc=0;
+        sb->cval=NULL;
+    }
+    if (sb->sval_alloc)
+    {
+        int i;
+
+        for(i=0;i<sb->sval_alloc;i++)
+        {
+            if (sb->sval[i])
+            {
+                free(sb->sval[i]);
+            }
+        }
+        free(sb->sval);
+        sb->sval_alloc=0;
+        sb->sval=NULL;
+    }
+}
+
+/* allocate the appropriate amount of memory for the given type and nr */
+static void enxsubblock_alloc(t_enxsubblock *sb)
+{
+    /* allocate the appropriate amount of memory */
+    switch(sb->type)
+    {
+        case xdr_datatype_float:
+            if (sb->nr > sb->fval_alloc)
+            {
+                srenew(sb->fval, sb->nr);
+                sb->fval_alloc=sb->nr;
+            }
+            break;
+        case xdr_datatype_double:
+            if (sb->nr > sb->dval_alloc)
+            {
+                srenew(sb->dval, sb->nr);
+                sb->dval_alloc=sb->nr;
+            }
+            break;
+        case xdr_datatype_int:
+            if (sb->nr > sb->ival_alloc)
+            {
+                srenew(sb->ival, sb->nr);
+                sb->ival_alloc=sb->nr;
+            }
+            break;
+        case xdr_datatype_large_int:
+            if (sb->nr > sb->lval_alloc)
+            {
+                srenew(sb->lval, sb->nr);
+                sb->lval_alloc=sb->nr;
+            }
+            break;
+        case xdr_datatype_char:
+            if (sb->nr > sb->cval_alloc)
+            {
+                srenew(sb->cval, sb->nr);
+                sb->cval_alloc=sb->nr;
+            }
+            break;
+        case xdr_datatype_string:
+            if (sb->nr > sb->sval_alloc)
+            {
+                int i;
+
+                srenew(sb->sval, sb->nr);
+                for(i=sb->sval_alloc;i<sb->nr;i++)
+                {
+                    sb->sval[i]=NULL;
+                }
+                sb->sval_alloc=sb->nr;
+            }
+            break;
+        default:
+            gmx_incons("Unknown block type");
+    }
+}
+
+static void enxblock_init(t_enxblock *eb)
+{
+    eb->id=enxOR;
+    eb->nsub=0;
+    eb->sub=NULL;
+    eb->nsub_alloc=0;
+}
+
+static void enxblock_free(t_enxblock *eb)
+{
+    if (eb->nsub_alloc>0)
+    {
+        int i;
+        for(i=0;i<eb->nsub_alloc;i++)
+        {
+            enxsubblock_free(&(eb->sub[i]));
+        }
+        free(eb->sub);
+        eb->nsub_alloc=0;
+        eb->sub=NULL;
+    }
+}
+
+void init_enxframe(t_enxframe *fr)
+{
+    fr->e_alloc=0;
+    fr->ener=NULL;
+
+    /*fr->d_alloc=0;*/
+    fr->ener=NULL;
+
+    /*fr->ndisre=0;*/
+
+    fr->nblock=0;
+    fr->nblock_alloc=0;
+    fr->block=NULL;
+}
+
 
 void free_enxframe(t_enxframe *fr)
 {
   int b;
 
   if (fr->e_alloc)
+  {
     sfree(fr->ener);
-  if (fr->d_alloc) {
-    sfree(fr->disre_rm3tav);
-    sfree(fr->disre_rt);
   }
-  for(b=0; b<fr->nblock; b++)
-    sfree(fr->block[b]);
-  sfree(fr->block);
-  sfree(fr->b_alloc);
-  sfree(fr->nr);
+  for(b=0; b<fr->nblock_alloc; b++)
+  {
+      enxblock_free(&(fr->block[b]));
+  }
+  free(fr->block);
 }
+
+void add_blocks_enxframe(t_enxframe *fr, int n)
+{
+    fr->nblock=n;
+    if (n > fr->nblock_alloc)
+    {
+        int b;
+
+        srenew(fr->block, n);
+        for(b=fr->nblock_alloc;b<fr->nblock;b++)
+        {
+            enxblock_init(&(fr->block[b]));
+        }
+        fr->nblock_alloc=n;
+    }
+}
+
+t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev)
+{
+    gmx_off_t starti=0;
+    gmx_off_t i;
+
+    if (prev)
+    {
+        starti=(prev - ef->block) + 1;
+    }
+    for(i=starti; i<ef->nblock; i++)
+    {
+        if (ef->block[i].id == id)
+            return &(ef->block[i]);
+    }
+    return NULL;
+}
+
+void add_subblocks_enxblock(t_enxblock *eb, int n)
+{
+    eb->nsub=n;
+    if (eb->nsub > eb->nsub_alloc)
+    {
+        int b;
+
+        srenew(eb->sub, n);
+        for(b=eb->nsub_alloc; b<n; b++)
+        {
+            enxsubblock_init(&(eb->sub[b]));
+        } 
+        eb->nsub_alloc=n;
+    }
+}
+
 
 static void edr_strings(XDR *xdr,bool bRead,int file_version,
                         int n,gmx_enxnm_t **nms)
@@ -203,9 +428,16 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
 {
     int  magic=-7777777;
     real r;
-    int  block,i,zero=0,dum=0;
+    int  b,i,zero=0,dum=0;
     bool bRead = gmx_fio_getread(ef->fio);
     int  tempfix_nr=0;
+    int  ndisre=0;
+    int  startb=0;
+#ifndef GMX_DOUBLE
+    xdr_datatype dtreal=xdr_datatype_float; 
+#else
+    xdr_datatype dtreal=xdr_datatype_double; 
+#endif
     
     if (nre_test >= 0)
     {
@@ -269,38 +501,114 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         }
     }
     if (!gmx_fio_do_int(ef->fio, fr->nre))     *bOK = FALSE;
-    if (!gmx_fio_do_int(ef->fio, fr->ndisre))  *bOK = FALSE;
+    if (*file_version < 4)
+    {
+        if (!gmx_fio_do_int(ef->fio, ndisre))  *bOK = FALSE;
+    }
+    else
+    {
+        /* now reserved for possible future use */
+        if (!gmx_fio_do_int(ef->fio, dum))  *bOK = FALSE;
+    }
+
     if (!gmx_fio_do_int(ef->fio, fr->nblock))  *bOK = FALSE;
+
+    if (ndisre!=0)
+    {
+        if (*file_version >= 4)
+            gmx_incons("Distance restraint blocks in old style in new style file");
+        fr->nblock+=1;
+    }
+
 
     /* Frames could have nre=0, so we can not rely only on the fr->nre check */
     if (bRead && nre_test >= 0 &&
         ((fr->nre > 0 && fr->nre != nre_test) ||
-         fr->nre < 0 || fr->ndisre < 0 || fr->nblock < 0))
+         fr->nre < 0 || ndisre < 0 || fr->nblock < 0))
     {
         *bWrongPrecision = TRUE;
         return *bOK;
     }
-	
-    if (*bOK && bRead && fr->nblock>fr->nr_alloc)
+
+    if (*bOK && bRead)
+        add_blocks_enxframe(fr, fr->nblock);
+
+    startb=0;
+    if (ndisre>0)
     {
-        srenew(fr->nr,fr->nblock);
-        srenew(fr->b_alloc,fr->nblock);
-        srenew(fr->block,fr->nblock);
-        for(i=fr->nr_alloc; i<fr->nblock; i++) {
-            fr->block[i]   = NULL;
-            fr->b_alloc[i] = 0;
-        }
-        fr->nr_alloc = fr->nblock;
+        /* sub[0] is the instantaneous data, sub[1] is time averaged */
+        add_subblocks_enxblock(&(fr->block[0]), 2);
+        fr->block[0].id=enxDISRE;
+        fr->block[0].sub[0].nr=ndisre;
+        fr->block[0].sub[1].nr=ndisre;
+        fr->block[0].sub[0].type=dtreal;
+        fr->block[0].sub[1].type=dtreal;
+        startb++;
     }
-    for(block=0; block<fr->nblock; block++)
+
+    /* read block header info */
+    for(b=startb; b<fr->nblock; b++)
     {
-        if (!gmx_fio_do_int(ef->fio, fr->nr[block])) 
+        if (*file_version<4)
         {
-            *bOK = FALSE;
+            /* blocks in old version files always have 1 subblock that 
+               consists of reals. */
+            int nrint;
+
+            if (bRead)
+            {
+                add_subblocks_enxblock(&(fr->block[b]), 1);
+            }
+            else
+            {
+                if (fr->block[b].nsub != 1)
+                    gmx_incons("Writing an old version .edr file with too many subblocks");
+                if (fr->block[b].sub[0].type != dtreal)
+                {
+                    gmx_incons("Writing an old version .edr file the wrong subblock type");
+                }
+            }
+            nrint = fr->block[b].sub[0].nr;
+            
+            if (!gmx_fio_do_int(ef->fio, nrint))
+            {
+                *bOK = FALSE;
+            }
+            fr->block[b].id          = b - startb;
+            fr->block[b].sub[0].nr   = nrint;
+            fr->block[b].sub[0].type = dtreal;
+        }
+        else
+        {
+            int i;
+            /* in the new version files, the block header only contains
+               the ID and the number of subblocks */
+            int nsub=fr->block[b].nsub;
+            *bOK = *bOK && gmx_fio_do_int(ef->fio, fr->block[b].id);
+            *bOK = *bOK && gmx_fio_do_int(ef->fio, nsub);
+
+            fr->block[b].nsub=nsub;
+            if (bRead)
+                add_subblocks_enxblock(&(fr->block[b]), nsub);
+
+            /* read/write type & size for each subblock */
+            for(i=0;i<nsub;i++)
+            {
+                t_enxsubblock *sub=&(fr->block[b].sub[i]); /* shortcut */
+                int typenr=sub->type;
+
+                *bOK=*bOK && gmx_fio_do_int(ef->fio, typenr);
+                *bOK=*bOK && gmx_fio_do_int(ef->fio, sub->nr);
+
+                sub->type = (xdr_datatype)typenr;
+            }
         }
     }
     if (!gmx_fio_do_int(ef->fio, fr->e_size))  *bOK = FALSE;
-    if (!gmx_fio_do_int(ef->fio, fr->d_size))  *bOK = FALSE;
+
+    /* now reserved for possible future use */
+    if (!gmx_fio_do_int(ef->fio, dum))  *bOK = FALSE;
+
     /* Do a dummy int to keep the format compatible with the old code */
     if (!gmx_fio_do_int(ef->fio, dum))         *bOK = FALSE;
     
@@ -391,10 +699,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
         /* Now check whether this file is in single precision */
         if (!bWrongPrecision &&
             ((fr->e_size && (fr->nre == nre) && 
-              (nre*4*(long int)sizeof(float) == fr->e_size)) ||
-             (fr->d_size && 
-              (fr->ndisre*(long int)sizeof(float)*2+(long int)sizeof(int) 
-               == fr->d_size))))
+              (nre*4*(long int)sizeof(float) == fr->e_size)) ) )
         {
             fprintf(stderr,"Opened %s as single precision energy file\n",fn);
             free_enxnms(nre,nms);
@@ -412,11 +717,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
             }
 
             if (((fr->e_size && (fr->nre == nre) && 
-                            (nre*4*(long int)sizeof(double) == fr->e_size)) ||
-                        (fr->d_size && 
-                         (fr->ndisre*(long int)sizeof(double)*2+
-                                     (long int)sizeof(int) == 
-                          fr->d_size))))
+                            (nre*4*(long int)sizeof(double) == fr->e_size)) ))
                 fprintf(stderr,"Opened %s as double precision energy file\n",
                         fn);
             else {
@@ -437,7 +738,6 @@ ener_file_t open_enx(const char *fn,const char *mode)
 
     ef->framenr=0;
     ef->frametime=0;
-
     return ef;
 }
 
@@ -513,18 +813,18 @@ static void convert_full_sums(ener_old_t *ener_old,t_enxframe *fr)
 bool do_enx(ener_file_t ef,t_enxframe *fr)
 {
     int       file_version=-1;
-    int       i,block;
+    int       i,b;
     bool      bRead,bOK,bOK1,bSane;
     real      tmp1,tmp2,rdum;
     char      buf[22];
+    /*int       d_size;*/
     
     bOK = TRUE;
     bRead = gmx_fio_getread(ef->fio);
     if (!bRead)
     {  
         fr->e_size = fr->nre*sizeof(fr->ener[0].e)*4;
-        fr->d_size = fr->ndisre*(sizeof(fr->disre_rm3tav[0]) + 
-                                 sizeof(fr->disre_rt[0]));
+        /*d_size = fr->ndisre*(sizeof(real)*2);*/
     }
     gmx_fio_checktype(ef->fio);
 
@@ -560,18 +860,18 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
         ef->frametime = fr->t;
     }
     /* Check sanity of this header */
-    bSane = (fr->nre > 0 || fr->ndisre > 0);
-    for(block=0; block<fr->nblock; block++)
+    bSane = fr->nre > 0 ;
+    for(b=0; b<fr->nblock; b++)
     {
-        bSane = bSane || (fr->nr[block] > 0);
+        bSane = bSane || (fr->block[b].nsub > 0);
     }
     if (!((fr->step >= 0) && bSane))
     {
         fprintf(stderr,"\nWARNING: there may be something wrong with energy file %s\n",
                 gmx_fio_getname(ef->fio));
-        fprintf(stderr,"Found: step=%s, nre=%d, ndisre=%d, nblock=%d, time=%g.\n"
+        fprintf(stderr,"Found: step=%s, nre=%d, nblock=%d, time=%g.\n"
                 "Trying to skip frame expect a crash though\n",
-                gmx_step_str(fr->step,buf),fr->nre,fr->ndisre,fr->nblock,fr->t);
+                gmx_step_str(fr->step,buf),fr->nre,fr->nblock,fr->t);
     }
     if (bRead && fr->nre > fr->e_alloc)
     {
@@ -623,28 +923,49 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
         /* Convert old full simulation sums to sums between energy frames */
         convert_full_sums(&(ef->eo),fr);
     }
-    if (fr->ndisre)
+    /* read the blocks */
+    for(b=0; b<fr->nblock; b++)
     {
-        if (bRead && fr->ndisre>fr->d_alloc)
+        /* now read the subblocks. */
+        int nsub=fr->block[b].nsub; /* shortcut */
+        int i;
+
+        for(i=0;i<nsub;i++)
         {
-            srenew(fr->disre_rm3tav,fr->ndisre);
-            srenew(fr->disre_rt,fr->ndisre);
-            fr->d_alloc = fr->ndisre;
+            t_enxsubblock *sub=&(fr->block[b].sub[i]); /* shortcut */
+
+            if (bRead)
+            {
+                enxsubblock_alloc(sub);
+            }
+
+            /* read/write data */
+            bOK1=TRUE;
+            switch (sub->type)
+            {
+                case xdr_datatype_float:
+                    bOK1=gmx_fio_ndo_float(ef->fio, sub->fval, sub->nr); 
+                    break;
+                case xdr_datatype_double:
+                    bOK1=gmx_fio_ndo_double(ef->fio, sub->dval, sub->nr); 
+                    break;
+                case xdr_datatype_int:
+                    bOK1=gmx_fio_ndo_int(ef->fio, sub->ival, sub->nr);
+                    break;
+                case xdr_datatype_large_int:
+                    bOK1=gmx_fio_ndo_gmx_large_int(ef->fio, sub->lval, sub->nr);
+                    break;
+                case xdr_datatype_char:
+                    bOK1=gmx_fio_ndo_uchar(ef->fio, sub->cval, sub->nr);
+                    break;
+                case xdr_datatype_string:
+                    bOK1=gmx_fio_ndo_string(ef->fio, sub->sval, sub->nr);
+                    break;
+                default:
+                    gmx_incons("Reading unknown block type");
+            }
+            bOK = bOK && bOK1;
         }
-        bOK1=gmx_fio_ndo_real(ef->fio, fr->disre_rm3tav,fr->ndisre);
-        bOK = bOK && bOK1;
-        bOK1=gmx_fio_ndo_real(ef->fio, fr->disre_rt,fr->ndisre);
-        bOK = bOK && bOK1;
-    }
-    for(block=0; block<fr->nblock; block++)
-    {
-        if (bRead && fr->nr[block]>fr->b_alloc[block])
-        {
-            srenew(fr->block[block],fr->nr[block]);
-            fr->b_alloc[block] = fr->nr[block];
-        }
-        bOK1=gmx_fio_ndo_real(ef->fio, fr->block[block],fr->nr[block]);
-        bOK = bOK && bOK1;
     }
     
     if(!bRead)

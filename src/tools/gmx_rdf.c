@@ -545,7 +545,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   else {
     if (output_env_get_print_xvgr_codes(oenv))
         fprintf(fp,"@ subtitle \"reference %s%s\"\n",grpname[0],refgt);
-    xvgr_legend(fp,ng,grpname+1,oenv);
+    xvgr_legend(fp,ng,(const char**)(grpname+1),oenv);
   }
   for(i=0; (i<nrdf); i++) {
     fprintf(fp,"%10g",i*binwidth);
@@ -595,7 +595,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     else {
       if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
-      xvgr_legend(fp,ng,grpname+1,oenv);
+      xvgr_legend(fp,ng,(const char**)(grpname+1),oenv);
     }
     snew(sum,ng);
     for(i=0; (i<=nbin/2); i++) {

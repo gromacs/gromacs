@@ -301,9 +301,25 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
 
     if (npme_tot > 1)
     {
-        /* Will we use 1D or 2D PME decomposition? */
-        npme[XX] = (npme_tot % nc[XX] == 0) ? nc[XX] : npme_tot;
-        npme[YY] = npme_tot/npme[XX];
+        /* The following choices should match those
+         * in init_domain_decomposition in domdec.c.
+         */
+        if (nc[XX] == 1 && nc[YY] > 1)
+        {
+            npme[XX] = 1;
+            npme[YY] = npme_tot;
+        }
+        else if (nc[YY] == 1)
+        {
+            npme[XX] = npme_tot;
+            npme[YY] = 1;
+        }
+        else
+        {
+            /* Will we use 1D or 2D PME decomposition? */
+            npme[XX] = (npme_tot % nc[XX] == 0) ? nc[XX] : npme_tot;
+            npme[YY] = npme_tot/npme[XX];
+        }
     }
     
     /* When two dimensions are (nearly) equal, use more cells

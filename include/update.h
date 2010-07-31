@@ -40,6 +40,7 @@
 #include <config.h>
 #endif
 
+
 #include "typedefs.h"
 #include "mshift.h"
 #include "tgroup.h"
@@ -47,6 +48,7 @@
 #include "force.h"
 #include "pull.h"
 #include "gmx_random.h"
+#include "maths.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -167,7 +169,7 @@ extern void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
  */
 
 extern void
-init_ekinstate(ekinstate_t *ekinstate,t_inputrec *ir);
+init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir);
 
 extern void
 update_ekinstate(ekinstate_t *ekinstate,gmx_ekindata_t *ekind);

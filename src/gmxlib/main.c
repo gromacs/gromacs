@@ -50,6 +50,7 @@
 #include "filenm.h"
 #include "mdrun.h"
 #include "gmxfio.h"
+#include "string2.h"
 
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
@@ -181,6 +182,7 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
   int  len,testlen,pid;
   char buf[256],host[256];
   time_t t;
+  char timebuf[STRLEN];
   FILE *fp=*fplog;
   char *tmpnm;
 
@@ -250,10 +252,11 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
 			  );
   }
 	
+  gmx_ctime_r(&t,timebuf,STRLEN);
   fprintf(fp,
 	  "Log file opened on %s"
 	  "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
-	  ctime(&t),host,pid,cr->nodeid,cr->nnodes);
+	  timebuf,host,pid,cr->nodeid,cr->nnodes);
 
 #if (defined BUILD_MACHINE && defined BUILD_TIME && defined BUILD_USER) 
   fprintf(fp,
@@ -478,9 +481,6 @@ t_commrec *init_par_threads(const t_commrec *cro)
     /* once threads will be used together with MPI, we'll
        fill the cr structure with distinct data here. This might even work: */
     cr->sim_nodeid = gmx_setup(0,NULL, &cr->nnodes);
-    /* note that we're explicitly using tMPI */
-    tMPI_Comm_size(TMPI_COMM_WORLD, &cr->nthreads);
-    tMPI_Comm_rank(TMPI_COMM_WORLD, &cr->threadid);
 
     cr->mpi_comm_mysim = MPI_COMM_WORLD;
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
@@ -501,10 +501,10 @@ t_commrec *init_cr_nopar(void)
     snew(cr,1);
 
     cr->nnodes     = 1; 
-    cr->nthreads   = 1;
+    /* cr->nthreads   = 1; */
     cr->sim_nodeid = 0;
     cr->nodeid     = 0;
-    cr->threadid   = 0;
+    /* cr->threadid   = 0; */
     cr->duty       = (DUTY_PP | DUTY_PME);
 
     return cr;

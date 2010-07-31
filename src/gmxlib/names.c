@@ -169,7 +169,7 @@ const char *esa_names[esaNR+1] = {
 };
 
 const char *ewt_names[ewtNR+1] = {
-  "9-3", "10-4", "table", NULL
+  "9-3", "10-4", "table", "12-6", NULL
 };
 
 const char *epull_names[epullNR+1] = { 

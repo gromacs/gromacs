@@ -54,7 +54,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <time.h>
 #include <errno.h>
+#include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 
 
 /*#include "typedefs.h"*/
@@ -99,6 +105,11 @@ extern int gmx_strncasecmp(const char *str1, const char *str2, int n);
 
 extern char *gmx_strdup(const char *src);
 extern char *gmx_strndup(const char *src, int n);
+    
+/* Portable version of ctime_r */
+char *gmx_ctime_r(const time_t *clock,char *buf, int n);
+    
+
 
 #ifndef HAVE_STRCASECMP
 #define strcasecmp gmx_strcasecmp

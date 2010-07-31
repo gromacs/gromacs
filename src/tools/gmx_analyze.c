@@ -359,7 +359,7 @@ static void estimate_error(const char *eefile,int nb_min,int resol,int n,
                 (n-1)*dt,n);
     }
     snew(leg,2*nset);
-    xvgr_legend(fp,2*nset,leg,oenv);
+    xvgr_legend(fp,2*nset,(const char**)leg,oenv);
     sfree(leg);
 
     spacing = pow(2,1.0/resol);
@@ -788,7 +788,7 @@ static void do_ballistic(const char *balFile, int nData,
       snew(td,  nData);
 
       fp = xvgropen(balFile, "Hydrogen Bond Autocorrelation","Time (ps)","C'(t)", oenv);
-      xvgr_legend(fp,asize(leg),leg,oenv);
+      xvgr_legend(fp,asize(leg),(const char**)leg,oenv);
       
       for (set=0; set<nSet; set++)
       {
@@ -832,7 +832,7 @@ static void do_geminate(const char *gemFile, int nData,
     double **ctd=NULL, **ctdGem=NULL, *td=NULL;
     t_gemParams *GP = init_gemParams(rcut, D, t, nData, nFitPoints,
                                      begFit, endFit, balTime, 1, FALSE);
-    static char *leg[] = {"Ac\\sgem\\N(t)"};
+    const char *leg[] = {"Ac\\sgem\\N(t)"};
     FILE *fp;
     int i, set;
     

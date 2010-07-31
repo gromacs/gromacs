@@ -67,7 +67,7 @@
 #ifndef CENTEROFMASS_H
 #define CENTEROFMASS_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C"

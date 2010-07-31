@@ -677,7 +677,7 @@ int gmx_disre(int argc,char *argv[])
       snew(leg[i],12);
       sprintf(leg[i],"index %d",index[i]);
     }
-    xvgr_legend(xvg,isize,leg,oenv);
+    xvgr_legend(xvg,isize,(const char**)leg,oenv);
   }
   else 
     isize=0;

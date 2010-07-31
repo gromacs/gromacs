@@ -123,7 +123,8 @@ extern void pr_forcerec(FILE *fplog,t_forcerec *fr,t_commrec *cr);
 extern void
 forcerec_set_ranges(t_forcerec *fr,
 		    int ncg_home,int ncg_force,
-		    int natoms_force,int natoms_f_novirsum);
+		    int natoms_force,
+		    int natoms_force_constr,int natoms_f_novirsum);
 /* Set the number of cg's and atoms for the force calculation */
 
 extern bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,

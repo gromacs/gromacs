@@ -50,10 +50,14 @@ extern "C" {
 #endif
 
   /**************************************************************
+   * These are the base datatypes + functions for reading and 
+   * writing energy files (.edr). They are either called directly 
+   * (as in the processing tools), or indirectly through mdebin.c 
+   * during mdrun.
    *
    * The routines in the corresponding c-file enxio.c
-   * are based on the lower level routines in gmxfio.c
-   * The integer file pointer returned from open_enx
+   * are based on the lower level routines in gmxfio.c.
+   * The file pointer returned from open_enx
    * can also be used with the routines in gmxfio.h
    *
    **************************************************************/
@@ -64,39 +68,77 @@ extern "C" {
   } gmx_enxnm_t;
   
   /* 
-   * Index for the additional blocks in the energy file.
+   * Index for the IDs of additional blocks in the energy file.
    * Blocks can be added without sacrificing backward and forward
    * compatibility of the energy files.
+   *
+   * For backward compatibility, the order of these should not be changed.
    */
   enum {
-    enxOR,   /* Time and ensemble averaged data for orientation restraints */
-    enxORI,  /* Instantaneous data for orientation restraints              */
-    enxORT,  /* Order tensor(s) for orientation restraints                 */
-    enxNR    /* Total number of extra blocks in the current code,
-              * note that the enxio code can read files written by
-	      * future code which contain more blocks.
-	      */
+    enxOR,     /* Time and ensemble averaged data for orientation restraints */
+    enxORI,    /* Instantaneous data for orientation restraints              */
+    enxORT,    /* Order tensor(s) for orientation restraints                 */
+    enxDISRE,  /* Distance restraint blocks                                  */
+    enxBARHIST,/* BAR histogram */
+    enxNR      /* Total number of extra blocks in the current code,
+                * note that the enxio code can read files written by
+	        * future code which contain more blocks.
+	        */
   };
 
+  /* names for the above enum */
+  extern const char *enx_block_id_name[];
+
+
+  /* the subblocks that are contained in energy file blocks. Each of these
+     has a number of values of a single data type in a .edr file. */
+  typedef struct
+  {
+      int nr;               /* number of items in subblock */
+      xdr_datatype type;    /* the block type */
+
+      /* the values: pointers for each type */
+      float*             fval;
+      double*            dval;
+      int*               ival;
+      gmx_large_int_t*   lval;
+      unsigned char*     cval;
+      char**             sval;
+
+      /* the allocated sizes, defined separately. 
+         (nonzero sizes can be free()d later): */
+      int fval_alloc;
+      int dval_alloc;
+      int ival_alloc;
+      int lval_alloc;
+      int cval_alloc;
+      int sval_alloc; 
+  } t_enxsubblock;
+
+
+  /* the energy file blocks. Each block contains a number of sub-blocks
+     of a single type that contain the actual data. */
+  typedef struct t_enxblock{
+      int id;               /* block id, from the enx enums above */
+      int nsub;             /* number of subblocks */
+      t_enxsubblock *sub;   /* the subblocks */
+      int nsub_alloc;       /* number of allocated subblocks */
+  } t_enxblock;
+ 
+
+  /* The frames that are read/written */
   typedef struct {
     double   t;	            /* Timestamp of this frame	                     */
     gmx_large_int_t step;   /* MD step	   		                     */
     gmx_large_int_t nsteps; /* The number of steps between frames            */
     int      nsum;          /* The number of terms for the sums in ener      */
     int      nre;           /* Number of energies			     */
-    int      ndisre;        /* Number of distance restraints	             */
-    int      nblock;        /* Number of following energy blocks              */
-    int      *nr;           /* Number of things in additional blocks (nblock) */
     int      e_size;        /* Size (in bytes) of energies		     */
-    int      d_size;        /* Size (in bytes) of disre blocks              */
-    int      nr_alloc;      /* Allocated size of nr and block                 */
-    int      e_alloc;       /* Allocated size (in elements) of ener           */
-    int      d_alloc;       /* Allocated size (in elements) of rav and rt     */
-    int      *b_alloc;      /* Allocated size (in elements) of each block     */
-    t_energy *ener;         /* The energies                                   */
-    real     *disre_rm3tav; /* Time averaged data for distance restraints     */
-    real     *disre_rt;     /* Instantaneous data for distance restraints     */
-    real     **block;       /* Additional energy blocks (nblock x b_alloc[b]) */
+    int      e_alloc;       /* Allocated size (in elements) of ener          */
+    t_energy *ener;         /* The energies                                  */
+    int      nblock;        /* Number of following energy blocks             */
+    t_enxblock *block;      /* The blocks                                    */
+    int      nblock_alloc;  /* The number of blocks allocated                */
   } t_enxframe;
 
   /* file handle */
@@ -117,10 +159,14 @@ extern "C" {
    * free_enxframe(fr);
    * sfree(fr);
    */
-  
   /* New energy reading and writing interface */
-  extern void free_enxframe(t_enxframe *fr);
-  /* Frees all allocated memory in fr */
+
+
+  /* initialize a pre-allocated frame */
+  extern void init_enxframe(t_enxframe *ef);
+  /* delete a frame's memory (except the ef itself) */
+  extern void free_enxframe(t_enxframe *ef);
+
 
   extern ener_file_t open_enx(const char *fn,const char *mode);
 
@@ -144,6 +190,24 @@ extern "C" {
    * atoms and ir are required for determining which things must be read.
    * Currently pcoupl and tcoupl state are read from enx.
    */
+
+
+  /* block funtions */
+
+  /* allocate n blocks to a frame (if neccesary). Don't touch existing blocks */
+  void add_blocks_enxframe(t_enxframe *ef, int n);
+
+  /* find a block by id number; if prev!=NULL, it searches from 
+     that block's next block. 
+     Returns NULL if no block is found with the given id. */
+  t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev);
+
+
+   /* allocate n subblocks to a block (if neccesary). Don't touch existing 
+      subbblocks. */
+  void add_subblocks_enxblock(t_enxblock *eb, int n);
+
+
   
 #ifdef __cplusplus
 }

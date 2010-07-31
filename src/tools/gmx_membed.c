@@ -2182,6 +2182,11 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             copy_mat(ekind->tcstat[i].ekinh,ekind->tcstat[i].ekinh_old);
         }
     }
+    if (ir->eI != eiVV) 
+    {
+        enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
+                                     and there is no previous step */
+    }
     temp0 = enerd->term[F_TEMP];
 
     /* if using an iterative algorithm, we need to create a working directory for the state. */
@@ -2209,11 +2214,6 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fprintf(fplog,
                     "RMS relative constraint deviation after constraining: %.2e\n",
                     constr_rmsd(constr,FALSE));
-        }
-        if (bVV)
-        {
-            enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
-                                         and there is no previous step */
         }
         fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
         if (bRerunMD)
@@ -2972,8 +2972,11 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */
-        if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
-            MASTERTHREAD(cr))
+        if (((int)gmx_get_stop_condition() > handled_stop_condition)
+#ifdef GMX_THREADS
+	    && MASTER(cr)
+#endif
+	    )
         {
             /* this is just make gs.sig compatible with the hack
                of sending signals around by MPI_Reduce with together with
@@ -3645,13 +3648,13 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     /* END OF CAUTION: cr is now reliable */
 
-    /* now make sure the state is initialized and propagated */
-    set_state_entries(state,inputrec,cr->nnodes);
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(fplog, cr, inputrec, mtop, state);
+        init_parallel(fplog, cr, inputrec, mtop);
     }
+    /* now make sure the state is initialized and propagated */
+    set_state_entries(state,inputrec,cr->nnodes);
 
     if (can_use_allvsall(inputrec,mtop,TRUE,cr,fplog))
     {
@@ -4560,11 +4563,10 @@ int gmx_membed(int argc,char *argv[])
 	if (opt2bSet("-cpi",NFILE,fnm))
 	{
 		bAppendFiles =
-			read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
-					fnm,cr),
-					&sim_part_fn,NULL,cr,
-					bAppendFiles,
-					part_suffix,&bAddPart);
+			read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,fnm,cr),
+							&sim_part_fn,NULL,cr,
+							bAppendFiles,NFILE,fnm,
+							part_suffix,&bAddPart);
 		if (sim_part_fn==0 && MASTER(cr))
 		{
 			fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");

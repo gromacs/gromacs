@@ -951,7 +951,7 @@ void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
     }
 }
 
-void init_ekinstate(ekinstate_t *ekinstate,t_inputrec *ir)
+void init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir)
 {
     ekinstate->ekin_n = ir->opts.ngtc;
     snew(ekinstate->ekinh,ekinstate->ekin_n);
@@ -1154,10 +1154,11 @@ void update_extended(FILE         *fplog,
                      bool         bFirstHalf,
                      t_extmass    *MassQ)
 {
-    bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bCouple;
-    double           dt;
-    real             dt_1,dtc;
-    int              start,homenr,nrend,i,n,m,g;
+    bool   bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    bool   bTCouple=FALSE,bPCouple=FALSE;
+    double dt;
+    real   dt_1,dttc=0,dtpc=0;
+    int    start,homenr,nrend,i,n,m,g;
     
     start  = md->start;
     homenr = md->homenr;
@@ -1171,10 +1172,20 @@ void update_extended(FILE         *fplog,
     
     /* We should only couple after a step where energies were determined */
     
-    bCouple = (inputrec->nstcalcenergy == 1 ||
-               do_per_step(step+inputrec->nstcalcenergy-1,
-                           inputrec->nstcalcenergy));
-    dtc = inputrec->nstcalcenergy*inputrec->delta_t;
+    if (inputrec->etc != etcNO)
+    {
+        bTCouple = (inputrec->nsttcouple == 1 ||
+                    do_per_step(step+inputrec->nsttcouple-1,
+                                inputrec->nsttcouple));
+        dttc = inputrec->nsttcouple*inputrec->delta_t;
+    }
+    if (inputrec->epc != epcNO)
+    {
+        bPCouple = (inputrec->nstpcouple == 1 ||
+                    do_per_step(step+inputrec->nstpcouple-1,
+                                inputrec->nstpcouple));
+        dtpc = inputrec->nstpcouple*inputrec->delta_t;
+    }
     
     bNH = (inputrec->etc == etcNOSEHOOVER);
     bPR = (inputrec->epc == epcPARRINELLORAHMAN);
@@ -1190,25 +1201,36 @@ void update_extended(FILE         *fplog,
     
     clear_mat(M);
     
-    if (bCouple)  
+    if (bTCouple)  
     {
         switch (inputrec->etc) 
         {
         case etcNO:
             break;
         case etcBERENDSEN:
-            berendsen_tcoupl(&(inputrec->opts),ekind,dtc);
+            berendsen_tcoupl(&(inputrec->opts),ekind,dttc);
             break;
         case etcNOSEHOOVER:
-            nosehoover_tcoupl(&(inputrec->opts),ekind,dtc,
+            nosehoover_tcoupl(&(inputrec->opts),ekind,dttc,
                               state->nosehoover_xi,state->nosehoover_vxi,MassQ);
             break;
         case etcVRESCALE:
-            vrescale_tcoupl(&(inputrec->opts),ekind,dtc,
+            vrescale_tcoupl(&(inputrec->opts),ekind,dttc,
                             state->therm_integral,upd->sd->gaussrand);
             break;
         }
-        
+    }
+    else 
+    {
+        /* Set the T scaling lambda to 1 to have no scaling */
+        for(i=0; (i<inputrec->opts.ngtc); i++)
+        {
+            ekind->tcstat[i].lambda = 1.0;
+        }
+    }
+     
+    if (bPCouple)
+    {
         switch (inputrec->epc) 
         {
             /* We can always pcoupl, even if we did not sum the energies
@@ -1220,12 +1242,12 @@ void update_extended(FILE         *fplog,
         case (epcBERENDSEN):
             if (!bInitStep) 
             {
-                berendsen_pcoupl(fplog,step,inputrec,dtc,state->pres_prev,state->box,
+                berendsen_pcoupl(fplog,step,inputrec,dtpc,state->pres_prev,state->box,
                                  pcoupl_mu);
             }
             break;
         case (epcPARRINELLORAHMAN):
-            parrinellorahman_pcoupl(fplog,step,inputrec,dtc,state->pres_prev,
+            parrinellorahman_pcoupl(fplog,step,inputrec,dtpc,state->pres_prev,
                                     state->box,state->box_rel,state->boxv,
                                     M,pcoupl_mu,bInitStep);
             break;
@@ -1233,14 +1255,6 @@ void update_extended(FILE         *fplog,
             break;
         }  
     } 
-    else 
-    {
-        /* Set the T scaling lambda to 1 to have no scaling */
-        for(i=0; (i<inputrec->opts.ngtc); i++)
-        {
-            ekind->tcstat[i].lambda = 1.0;
-        }
-    }
 }
 
 static rvec *get_xprime(const t_state *state,gmx_update_t upd)

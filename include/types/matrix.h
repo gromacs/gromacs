@@ -40,6 +40,7 @@
 extern "C" {
 #endif
 
+#include "simple.h"
 
 typedef struct {
   real r,g,b;

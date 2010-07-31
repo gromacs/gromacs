@@ -39,6 +39,7 @@
 #include "ns.h"
 #include "genborn.h"
 #include "qmmmrec.h"
+#include "idef.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -139,6 +140,8 @@ typedef struct {
   int  rc_scaling;
   rvec posres_com;
   rvec posres_comB;
+
+  bool UseOptimizedKernels;
 
   /* Use special N*N kernels? */
   bool bAllvsAll;
@@ -242,6 +245,8 @@ typedef struct {
   int ncg_force;
   /* The number of atoms participating in do_force_lowlevel */
   int natoms_force;
+  /* The number of atoms participating in force and constraints */
+  int natoms_force_constr;
   /* The allocation size of vectors of size natoms_force */
   int nalloc_force;
 
