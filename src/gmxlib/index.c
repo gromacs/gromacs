@@ -571,30 +571,30 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
 {
     int      i,j,n;
     int      found;
-    const char **  typename;
+    const char **  my_typename;
     char *   p;
     
     n=0;
     
-    typename=NULL;
+    my_typename=NULL;
     for(i=0;i<rt->n;i++)
     {
         p=rt->restype[i];
         found=0;
         for(j=0;j<n && !found;j++)
         {
-            found=!gmx_strcasecmp(p,typename[j]);
+            found=!gmx_strcasecmp(p,my_typename[j]);
         }
         
         if(!found)
         {
-            srenew(typename,n+1);
-            typename[n]=p;
+            srenew(my_typename,n+1);
+            my_typename[n]=p;
             n++;
         }
     }
     *ntypes=n;
-    *p_typenames=typename; 
+    *p_typenames=my_typename; 
     
     return 0;
 }
