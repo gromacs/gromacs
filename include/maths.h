@@ -96,10 +96,6 @@ static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1]
     {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
 };*/
 
-#ifndef M_LN2
-#define M_LN2       0.693147180560
-#endif
-
 extern	int		gmx_nint(real a);
 extern  real    sign(real x,real y);
 
