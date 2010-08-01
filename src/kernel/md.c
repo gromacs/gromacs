@@ -876,6 +876,11 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
         }
         check_nst_param(fplog,cr,"nstlist",ir->nstlist,
                         "nstcalcenergy",&ir->nstcalcenergy);
+        if (ir->epc != epcNO)
+        {
+            check_nst_param(fplog,cr,"nstlist",ir->nstlist,
+                            "nstpcouple",&ir->nstpcouple);
+        }
         check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                         "nstenergy",&ir->nstenergy);
         check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
