@@ -136,7 +136,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 #define CHECK(b) _low_check(b,err_buf,wi)
     char err_buf[256],warn_buf[STRLEN];
     int  ns_type=0;
-    real dt_pcoupl=0;
+    real dt_pcoupl;
 
   set_warning_line(wi,mdparin,-1);
 
@@ -190,12 +190,16 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             {
                 ir->nstpcouple = ir_optimal_nstpcouple(ir);
             }
-            dt_pcoupl = ir->nstpcouple*ir->delta_t;
         }
         if (IR_TWINRANGE(*ir))
         {
             check_nst("nstlist",ir->nstlist,
                       "nstcalcenergy",&ir->nstcalcenergy,wi);
+            if (ir->epc != epcNO)
+            {
+                check_nst("nstlist",ir->nstlist,
+                          "nstpcouple",&ir->nstpcouple,wi); 
+            }
         }
 
         if (ir->nstcalcenergy > 1)
@@ -375,6 +379,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->epc != epcNO)
     {
+        dt_pcoupl = ir->nstpcouple*ir->delta_t;
+
         sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
         CHECK(ir->tau_p <= 0);
         

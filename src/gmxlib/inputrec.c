@@ -169,7 +169,7 @@ int ir_optimal_nstpcouple(const t_inputrec *ir)
 {
     int  nmin,nwanted,n;
 
-    nmin = pcouple_min_integration_steps(ir->etc);
+    nmin = pcouple_min_integration_steps(ir->epc);
 
     nwanted = nst_wanted(ir);
 

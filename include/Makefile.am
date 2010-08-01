@@ -93,6 +93,7 @@ orires.h \
 partdec.h \
 pbc.h \
 pdbio.h \
+pdb2top.h \
 perf_est.h \
 physics.h \
 pme.h \
