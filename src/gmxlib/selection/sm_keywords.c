@@ -37,6 +37,9 @@
 #endif
 
 #include <ctype.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>  /*old Mac needs types before regex.h*/
+#endif
 #ifdef HAVE_REGEX_H
 #include <regex.h>
 #define USE_REGEX
