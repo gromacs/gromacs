@@ -1745,8 +1745,11 @@ void init_forcerec(FILE *fp,
     /* Initialize neighbor search */
     init_ns(fp,cr,&fr->ns,fr,mtop,box);
     
-    if (cr->duty & DUTY_PP)
+    if (cr->duty & DUTY_PP){
         gmx_setup_kernels(fp);
+        if (ir->adress_type!=eAdressOff)
+            gmx_setup_adress_kernels(fp);
+    }
 }
 
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)

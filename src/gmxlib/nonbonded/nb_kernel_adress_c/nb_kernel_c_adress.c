@@ -254,7 +254,7 @@ nb_kernel_setup_adress(FILE *log, nb_adress_kernel_t **list_adress)
   nb_adress_kernel_t *p;
 
     if(NULL != log)
-  fprintf(log,"Configuring adress C nonbonded kernels...\n");
+  fprintf(log,"AdResS simulation: Configuring adress C nonbonded kernels...\n");
 
   for(i=0;i<eNR_NBKERNEL_NR;i++)
   {

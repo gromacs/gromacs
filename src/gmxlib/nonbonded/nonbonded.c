@@ -213,7 +213,6 @@ gmx_setup_kernels(FILE *fplog)
     int i;
     
     snew(nb_kernel_list,eNR_NBKERNEL_NR);
-    snew(nb_kernel_list_adress,eNR_NBKERNEL_NR);
     
     /* Note that later calls overwrite earlier, so the preferred (fastest)
      * version should be at the end. For instance, we call SSE after 3DNow.
@@ -222,7 +221,6 @@ gmx_setup_kernels(FILE *fplog)
     for(i=0; i<eNR_NBKERNEL_NR; i++)
     {
         nb_kernel_list[i] = NULL;
-        nb_kernel_list_adress[i] = NULL;
     }
     
     if(getenv("GMX_NB_GENERIC") != NULL)
@@ -242,8 +240,7 @@ gmx_setup_kernels(FILE *fplog)
     }
 	
     nb_kernel_setup(fplog,nb_kernel_list);
-    nb_kernel_setup_adress(fplog,nb_kernel_list_adress);
-    
+        
     if(getenv("GMX_NOOPTIMIZEDKERNELS") != NULL)
     {
         if(fplog)
@@ -316,6 +313,15 @@ gmx_setup_kernels(FILE *fplog)
     }
 }
 
+void
+gmx_setup_adress_kernels(FILE *fplog) {
+    int i;
+    snew(nb_kernel_list_adress, eNR_NBKERNEL_NR);
+    for (i = 0; i < eNR_NBKERNEL_NR; i++) {
+        nb_kernel_list_adress[i] = NULL;
+    }
+    nb_kernel_setup_adress(fplog, nb_kernel_list_adress);
+}
 
 void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,t_blocka *excl,
