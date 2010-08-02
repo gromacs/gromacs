@@ -2665,8 +2665,8 @@ the electrostatic effects of solvent molecules, while saving a
 large piece of the computations involved in an accurate, aqueous 
 description of the surrounding water in molecular dynamics simulations. 
 Implicit solvation models offer several advantages compared with 
-explicit solvation, including no need for equilibration of water 
-around the solute, and absence of viscosity allowing the protein 
+explicit solvation, including eliminating the need for the equilibration of water 
+around the solute, and the absence of viscosity, which allows the protein 
 to more quickly explore conformational space.
 
 Implicit solvent calculations in GROMACS can be done using the 
@@ -2693,7 +2693,7 @@ G_{solv} = G_{np}  + G_{pol}
 Under the generalized Born model, $G_{pol}$ is calculated from the generalized Born equation~\cite{Still97}
 
 \beq
-G_{pol} = (1-\frac{1}{\epsilon} \sum_{i=1}^n \sum_{j>i}^n \frac {q_i q_j}{\sqrt{r^2_{ij} + b_i b_j exp(\frac{-r^2_{ij}}{4 b_i b_j})}}
+G_{pol} = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n \sum_{j>i}^n \frac {q_i q_j}{\sqrt{r^2_{ij} + b_i b_j \exp\left(\frac{-r^2_{ij}}{4 b_i b_j}\right)}}
 \label{eqn:gb_still}
 \eeq
 
@@ -2705,7 +2705,7 @@ c_i=\frac{1}{\sqrt{b_i}}
 \eeq
 
 which makes it possible to introduce a cheap transformation to a new 
-variable x when evaluating each interaction, such that
+variable $x$ when evaluating each interaction, such that
 
 \beq
 x=\frac{r_{ij}}{\sqrt{b_i b_j }} = r_{ij} c_i c_j
@@ -2715,7 +2715,7 @@ x=\frac{r_{ij}}{\sqrt{b_i b_j }} = r_{ij} c_i c_j
 In the end, the full re-formulation of~\ref{eqn:gb_still} becomes:
  
 \beq
-G_{pol} = (1-\frac{1}{\epsilon}) \sum_{i=1}^n \sum_{j>i}^n \frac{q_i q_j}{\sqrt{b_i  b_j}} ~\xi (x) = (1-\frac{1}{\epsilon}) \sum_{i=1}^n  (q_i c_i) \sum_{j>i}^n (q_j c_j)~\xi (x)
+G_{pol} = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n \sum_{j>i}^n \frac{q_i q_j}{\sqrt{b_i  b_j}} ~\xi (x) = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n q_i c_i \sum_{j>i}^n q_j c_j~\xi (x)
 \label{eqn:gb_final}
 \eeq 
 
