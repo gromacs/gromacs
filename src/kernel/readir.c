@@ -654,6 +654,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       ir->nstgbradii=1;
     }
   }
+
+  if (ir->adress_type != eAdressOff && !EI_SD(ir->eI)){
+       warning_error(wi,"AdresS simulation supports only stochastic dynamics");
+  }
+
 }
 
 static int str_nelem(const char *str,int maxptr,char *ptr[])
@@ -2124,9 +2129,11 @@ void do_index(const char* mdparin, const char *ndx,
             printf ("AdResS: Energy group %s is treated as coarse-grained \n",
               (char*)(gnames[groups->grps[egcENER].nm_ind[k]]));
     }
+  }else if (ir->adress_type != eAdressOff){
+      warning(wi,"For an AdResS simulation at least one coarse-grained energy group has to be specified in adress_cg_grp_names");
   }
 
-
+  
   /* AdResS multiple tf tables input */
   nadress_tf_grp_names = str_nelem(adress_tf_grp_names,MAXPTR,ptr1);
   ir->n_adress_tf_grps = nadress_tf_grp_names;
