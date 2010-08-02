@@ -42,6 +42,7 @@
 
 
 #include "simple.h"
+#include "../sysstuff.h"
 
 #ifdef __cplusplus
 extern "C" {

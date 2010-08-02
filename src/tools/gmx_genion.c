@@ -330,9 +330,12 @@ int gmx_genion(int argc, char *argv[])
     "can be specified with the option [TT]-table[tt].",
     "The group of solvent molecules should be continuous and all molecules",
     "should have the same number of atoms.",
-    "The user should add the ion molecules to the topology file and include",
-    "the file [TT]ions.itp[tt].",
-    "Ion names for Gromos96 should include the charge.[PAR]",
+    "The user should add the ion molecules to the topology file or use",
+    "the [TT]-p[tt] option to automatically modify the topology.[PAR]",
+    "The ion molecule type, residue and atom names in all force fields",
+    "are the capitalized element names without sign. Ions which can have",
+    "multiple charge states get the multiplicilty added, without sign,",
+    "for the uncommon states only.[PAR]",
     "With the option [TT]-pot[tt] the potential can be written as B-factors",
     "in a pdb file (for visualisation using e.g. rasmol).",
     "The unit of the potential is 1000 kJ/(mol e), the scaling be changed",
@@ -344,7 +347,7 @@ int gmx_genion(int argc, char *argv[])
     "If you specify a salt concentration existing ions are not taken into account. In effect you therefore specify the amount of salt to be added."
   };
   static int  p_num=0,n_num=0,p_q=1,n_q=-1;
-  static const char *p_name="Na",*n_name="Cl";
+  static const char *p_name="NA",*n_name="CL";
   static real rmin=0.6,scale=0.001,conc=0;
   static int  seed=1993;
   static bool bRandom=TRUE,bNeutral=FALSE;

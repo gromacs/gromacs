@@ -133,6 +133,11 @@ static bool equal_real(real i1,real i2,real ftol,real abstol)
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2)<=abstol );
 }
 
+static bool equal_float(float i1,float i2,float ftol,float abstol)
+{
+    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2)<=abstol );
+}
+
 static bool equal_double(double i1,double i2,real ftol,real abstol)
 {
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2)<=abstol );
@@ -148,6 +153,19 @@ cmp_real(FILE *fp,const char *s,int index,real i1,real i2,real ftol,real abstol)
       fprintf(fp,"%s (%e - %e)\n",s,i1,i2);
   }
 }
+
+static void 
+cmp_float(FILE *fp,const char *s,int index,float i1,float i2,float ftol,float abstol)
+{
+  if (!equal_float(i1,i2,ftol,abstol)) {
+    if (index != -1)
+      fprintf(fp,"%s[%2d] (%e - %e)\n",s,index,i1,i2);
+    else
+      fprintf(fp,"%s (%e - %e)\n",s,i1,i2);
+  }
+}
+
+
 
 static void 
 cmp_double(FILE *fp,const char *s,int index,double i1,double i2,double ftol,double abstol)
@@ -812,6 +830,7 @@ static void cmp_energies(FILE *fp,int step1,int step2,int nre,
   }
 }
 
+#if 0
 static void cmp_disres(t_enxframe *fr1,t_enxframe *fr2,real ftol, real abstol)
 {
   int i;
@@ -827,24 +846,95 @@ static void cmp_disres(t_enxframe *fr1,t_enxframe *fr2,real ftol, real abstol)
     }
   }
 }
+#endif
 
 static void cmp_eblocks(t_enxframe *fr1,t_enxframe *fr2,real ftol, real abstol)
 {
-  int i,j;
-  char buf[64],bs[22];
-    
-  cmp_int(stdout,"nblock",-1,fr1->nblock,fr2->nblock);  
-  if ((fr1->nblock == fr2->nblock) && (fr1->nblock > 0)) {
-    for(j=0; (j<fr1->nblock); j++) {
-      sprintf(buf,"step %s: block[%d]",gmx_step_str(fr1->step,bs),j);
-      cmp_int(stdout,buf,-1,fr1->nr[j],fr2->nr[j]);
-      if ((fr1->nr[j] == fr2->nr[j]) && (fr1->nr[j] > 0)) {
-	for(i=0; (i<fr1->nr[j]); i++) {
-	  cmp_real(stdout,buf,i,fr1->block[i][j],fr2->block[i][j],ftol,abstol);
-	}
-      }
+    int i,j,k;
+    char buf[64],bs[22];
+
+    cmp_int(stdout,"nblock",-1,fr1->nblock,fr2->nblock);  
+    if ((fr1->nblock == fr2->nblock) && (fr1->nblock > 0)) 
+    {
+        for(j=0; (j<fr1->nblock); j++) 
+        {
+            t_enxblock *b1, *b2; /* convenience vars */
+
+            b1=&(fr1->block[j]);
+            b2=&(fr2->block[j]);
+
+            sprintf(buf,"step %s: block[%d]",gmx_step_str(fr1->step,bs),j);
+            cmp_int(stdout,buf,-1,b1->nsub,b2->nsub);
+            cmp_int(stdout,buf,-1,b1->id,b2->id);
+
+            if ( (b1->nsub==b2->nsub) && (b1->id==b2->id) )
+            {
+                for(i=0;i<b1->nsub;i++)
+                {
+                    t_enxsubblock *s1, *s2;
+
+                    s1=&(b1->sub[i]);
+                    s2=&(b2->sub[i]);
+
+                    cmp_int(stdout, buf, -1, (int)s1->type, (int)s2->type);
+                    cmp_gmx_large_int(stdout, buf, s1->nr, s2->nr);
+
+                    if ((s1->type == s2->type) && (s1->nr == s2->nr))
+                    {
+                        switch(s1->type)
+                        {
+                            case xdr_datatype_float:
+                                for(k=0;k<s1->nr;k++)
+                                {
+                                    cmp_float(stdout, buf, i,
+                                             s1->fval[k], s2->fval[k], 
+                                             ftol, abstol);
+                                }
+                                break;
+                            case xdr_datatype_double:
+                                for(k=0;k<s1->nr;k++)
+                                {
+                                    cmp_double(stdout, buf, i,
+                                             s1->dval[k], s2->dval[k], 
+                                             ftol, abstol);
+                                }
+                                break;
+                            case xdr_datatype_int:
+                                for(k=0;k<s1->nr;k++)
+                                {
+                                    cmp_int(stdout, buf, i,
+                                            s1->ival[k], s2->ival[k]);
+                                }
+                                break;
+                            case xdr_datatype_large_int:
+                                for(k=0;k<s1->nr;k++)
+                                {
+                                    cmp_gmx_large_int(stdout, buf, 
+                                                      s1->lval[k], s2->lval[k]);
+                                }
+                                break;
+                            case xdr_datatype_char:
+                                for(k=0;k<s1->nr;k++)
+                                {
+                                    cmp_uc(stdout, buf, i,
+                                           s1->cval[k], s2->cval[k]);
+                                }
+                                break;
+                            case xdr_datatype_string:
+                                for(k=0;k<s1->nr;k++)
+                                {
+                                    cmp_str(stdout, buf, i,
+                                            s1->sval[k], s2->sval[k]);
+                                }
+                                break;
+                            default:
+                                gmx_incons("Unknown data type!!");
+                        }
+                    }
+                }
+            }
+        }
     }
-  }
 }
 
 void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *lastener)
@@ -900,7 +990,7 @@ void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *
       if ((fr1->nre == nre) && (fr2->nre == nre))
 	cmp_energies(stdout,fr1->step,fr1->step,nre,fr1->ener,fr2->ener,
 		     enm1,enm2,ftol,abstol,maxener);
-      cmp_disres(fr1,fr2,ftol,abstol);
+      /*cmp_disres(fr1,fr2,ftol,abstol);*/
       cmp_eblocks(fr1,fr2,ftol,abstol);
     }
   } while (b1 && b2);

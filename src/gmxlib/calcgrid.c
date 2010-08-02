@@ -75,7 +75,7 @@ static void make_list(int start_fac,int *ng,int ng_max,int *n_list,int **list)
             if ((fac == 2) ||
                 (fac == 3 && (*ng % 9 != 0 ||
                               (*ng % 2 == 0 && *ng % 27 != 0))) ||
-                (fac == 5 && *ng % 15 && *ng % 25 != 0) ||
+                (fac == 5 && *ng % 15 != 0 && *ng % 25 != 0) ||
                 (fac == 7 && *ng % 5 != 0 && *ng % 7 != 0 && *ng % 9 != 0))
             {
                 *ng *= fac;

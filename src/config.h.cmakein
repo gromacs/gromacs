@@ -149,11 +149,11 @@
 /* Compile with dlopen */
 #cmakedefine GMX_DLOPEN
 
-/* Use pthreads for thread_mpi multithreading */
+/* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
 
-/* Have pthread.h */
-#cmakedefine HAVE_PTHREAD_H
+/* Define when Windows threads are used */
+#cmakedefine THREAD_WINDOWS
 
 /* Define for busy wait option  */
 #cmakedefine TMPI_WAIT_FOR_NO_ONE
@@ -203,8 +203,8 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
 
-/* Define to 1 if you have the <inttypes.h> header file. */
-#cmakedefine HAVE_INTTYPES_H
+/* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
+#cmakedefine HAVE__FSEEKI64
 
 /* Define to 1 if you have the m library (-lm). */
 #cmakedefine HAVE_LIBM
@@ -215,35 +215,11 @@
 /* Define to 1 if you have the xml2 library (-lxml2). */
 #cmakedefine HAVE_LIBXML2
 
+/* Define to 1 if you have the gsl library (-lgsl). */
+#cmakedefine HAVE_LIBGSL
+
 /* Define to 1 if you have the dl library (-ldl). */
 #cmakedefine HAVE_LIBDL
-
-/* Define to 1 if you have the <limits.h> header file. */
-#cmakedefine HAVE_LIMITS_H
-
-/* Define to 1 if you have the <memory.h> header file. */
-#cmakedefine HAVE_MEMORY_H
-
-/* Define to 1 if you have the <regex.h> header file. */
-#cmakedefine HAVE_REGEX_H
-
-/* Define to 1 if you have the <rpc/rpc.h> header file. */
-#cmakedefine HAVE_RPC_RPC_H
-
-/* Define to 1 if you have the <rpc/xdr.h> header file. */
-#cmakedefine HAVE_RPC_XDR_H
-
-/* Define to 1 if you have the <stdint.h> header file. */
-#cmakedefine HAVE_STDINT_H
-
-/* Define to 1 if you have the <stdlib.h> header file. */
-#cmakedefine HAVE_STDLIB_H
-
-/* Define to 1 if you have the <stdlib.h> header file. */
-#cmakedefine HAVE_SCHED_H
-
-/* Have copyfile.h */
-#cmakedefine HAVE_COPYFILE_H
 
 /* Have io.h (windows)*/
 #cmakedefine HAVE_IO_H
@@ -308,17 +284,71 @@
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H
 
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#cmakedefine HAVE_SYS_STAT_H
+/* Define to 1 if yo have the <math.h> header file. */
+#cmakedefine HAVE_MATH_H
+
+/* Define to 1 if yo have the <limits.h> header file. */
+#cmakedefine HAVE_LIMITS_H
+
+/* Define to 1 if yo have the <memory.h> header file. */
+#cmakedefine HAVE_MEMORY_H
+
+/* Define to 1 if yo have the <unistd.h> header file. */
+#cmakedefine HAVE_UNISTD_H
+
+/* Define to 1 if yo have the <pwd.h> header file. */
+#cmakedefine HAVE_PWD_H
+
+/* Define to 1 if yo have the <stdint.h> header file. */
+#cmakedefine HAVE_STDINT_H
+
+/* Define to 1 if yo have the <stdlib.h> header file. */
+#cmakedefine HAVE_STDLIB_H
+
+/* Define to 1 if yo have the <pthread.h> header file. */
+#cmakedefine HAVE_PTHREAD_H
+
+/* Define to 1 if yo have the <dirent.h> header file. */
+#cmakedefine HAVE_DIRENT_H
+
+/* Define to 1 if yo have the <inttypes.h> header file. */
+#cmakedefine HAVE_INTTYPES_H
+
+/* Define to 1 if yo have the <regex.h> header file. */
+#cmakedefine HAVE_REGEX_H
+
+/* Define to 1 if yo have the <copyfile.h> header file. */
+#cmakedefine HAVE_COPYFILE_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H
 
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#cmakedefine HAVE_SYS_STAT_H
+
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
 
-/* Define to 1 if you have the <unistd.h> header file. */
-#cmakedefine HAVE_UNISTD_H
+/* Define to 1 if you have the <rpc/rpc.h> header file. */
+#cmakedefine HAVE_RPC_RPC_H
+
+/* Define to 1 if you have the <rpc/xdr.h> header file. */
+#cmakedefine HAVE_RPC_XDR_H
+
+/* Define to 1 if yo have the <xmmintrin.h> header file. */
+#cmakedefine HAVE_XMMINTRIN_H
+
+/* Define to 1 if yo have the <emmintrin.h> header file. */
+#cmakedefine HAVE_EMMINTRIN_H
+
+/* Define to 1 if yo have the <pmmintrin.h> header file. */
+#cmakedefine HAVE_PMMINTRIN_H
+
+/* Define to 1 if yo have the <smmintrin.h> header file. */
+#cmakedefine HAVE_SMMINTRIN_H
+
+/* Define for sched.h (this is for thread_mpi)*/
+#define HAVE_SCHED_H
 
 /* Define to 1 if you have the vprintf() function. */
 #cmakedefine HAVE_VPRINTF
@@ -373,6 +403,10 @@
 #ifndef __cplusplus
 #define inline ${INLINE_KEYWORD}
 #endif
+
+/* Define to __restrict__ or __restrict if that is what the C compiler
+   calls it, or to nothing if restrict is not supported under any name.  */
+#define restrict ${RESTRICT_KEYWORD}
 
 #ifndef CPLUSPLUS
 #ifdef __cplusplus

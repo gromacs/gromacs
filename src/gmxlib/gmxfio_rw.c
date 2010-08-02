@@ -76,6 +76,17 @@ bool gmx_fio_reade_real(t_fileio *fio, real *item,
     return ret;
 }
 
+bool gmx_fio_reade_float(t_fileio *fio, float *item,
+                          const char *desc, const char *srcfile, int line)
+{
+    bool ret;
+    gmx_fio_lock(fio);
+    ret=fio->iotp->nread(fio, item, 1, eioFLOAT, desc, srcfile, line);
+    gmx_fio_unlock(fio);
+    return ret;
+}
+
+
 bool gmx_fio_reade_double(t_fileio *fio, double *item,
                           const char *desc, const char *srcfile, int line)
 {
@@ -166,6 +177,16 @@ bool gmx_fio_writee_real(t_fileio *fio, real item,
     bool ret;
     gmx_fio_lock(fio);
     ret=fio->iotp->nwrite(fio, &item, 1, eioREAL, desc, srcfile, line);
+    gmx_fio_unlock(fio);
+    return ret;
+}
+
+bool gmx_fio_writee_float(t_fileio *fio, float item,
+                           const char *desc, const char *srcfile, int line)
+{
+    bool ret;
+    gmx_fio_lock(fio);
+    ret=fio->iotp->nwrite(fio, &item, 1, eioFLOAT, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -266,8 +287,21 @@ bool gmx_fio_doe_real(t_fileio *fio, real *item,
         ret=fio->iotp->nwrite(fio, item, 1, eioREAL, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
+
 }
 
+bool gmx_fio_doe_float(t_fileio *fio, float *item,
+                        const char *desc, const char *srcfile, int line)
+{
+    bool ret;
+    gmx_fio_lock(fio);
+    if (fio->bRead)
+        ret=fio->iotp->nread(fio, item, 1, eioFLOAT, desc, srcfile, line);
+    else
+        ret=fio->iotp->nwrite(fio, item, 1, eioFLOAT, desc, srcfile, line);
+    gmx_fio_unlock(fio);
+    return ret;
+}
 
 bool gmx_fio_doe_double(t_fileio *fio, double *item,
                         const char *desc, const char *srcfile, int line)
@@ -415,6 +449,20 @@ bool gmx_fio_nreade_real(t_fileio *fio, real *item, int n,
     return ret;
 }
 
+bool gmx_fio_nreade_float(t_fileio *fio, float *item, int n,
+                            const char *desc, const char *srcfile, int line)
+{
+    bool ret=TRUE;
+    int i;
+    gmx_fio_lock(fio);
+    for(i=0;i<n;i++)
+        ret= ret && fio->iotp->nread(fio, &(item[i]), 1, eioFLOAT, desc, 
+                                     srcfile, line);
+    gmx_fio_unlock(fio);
+    return ret;
+}
+
+
 bool gmx_fio_nreade_double(t_fileio *fio, double *item, int n,
                             const char *desc, const char *srcfile, int line)
 {
@@ -422,8 +470,8 @@ bool gmx_fio_nreade_double(t_fileio *fio, double *item, int n,
     int i;
     gmx_fio_lock(fio);
     for(i=0;i<n;i++)
-        ret= ret && fio->iotp->nread(fio, &(item[i]), 1, eioDOUBLE, desc, srcfile, 
-                               line);
+        ret= ret && fio->iotp->nread(fio, &(item[i]), 1, eioDOUBLE, desc, 
+                                     srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -529,6 +577,18 @@ bool gmx_fio_nwritee_real(t_fileio *fio, const real *item, int n,
     return ret;
 }
 
+bool gmx_fio_nwritee_float(t_fileio *fio, const float *item, int n,
+                           const char *desc, const char *srcfile, int line)
+{
+    bool ret=TRUE;
+    int i;
+    gmx_fio_lock(fio);
+    for(i=0;i<n;i++)
+        ret=ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioFLOAT, desc, 
+                                     srcfile, line);
+    gmx_fio_unlock(fio);
+    return ret;
+}
 
 bool gmx_fio_nwritee_double(t_fileio *fio, const double *item, int n,
                             const char *desc, const char *srcfile, int line)
@@ -542,7 +602,6 @@ bool gmx_fio_nwritee_double(t_fileio *fio, const double *item, int n,
     gmx_fio_unlock(fio);
     return ret;
 }
-
 
 bool gmx_fio_nwritee_int(t_fileio *fio, const int *item, int n,
                          const char *desc, const char *srcfile, int line)
@@ -652,6 +711,31 @@ bool gmx_fio_ndoe_real(t_fileio *fio, real *item, int n,
         else
         {
             ret=ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioREAL, desc, 
+                                   srcfile, line);
+        }
+    }
+    gmx_fio_unlock(fio);
+    return ret;
+}
+
+
+
+bool gmx_fio_ndoe_float(t_fileio *fio, float *item, int n,
+                        const char *desc, const char *srcfile, int line)
+{
+    bool ret=TRUE;
+    int i;
+    gmx_fio_lock(fio);
+    for(i=0;i<n;i++)
+    {
+        if (fio->bRead)
+        {
+            ret=ret && fio->iotp->nread(fio, &(item[i]), 1, eioFLOAT, desc, 
+                                  srcfile, line);
+        }
+        else
+        {
+            ret=ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioFLOAT, desc, 
                                    srcfile, line);
         }
     }

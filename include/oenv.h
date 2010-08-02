@@ -40,6 +40,7 @@
 #include <config.h>
 #endif
 
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

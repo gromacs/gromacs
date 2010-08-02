@@ -44,10 +44,11 @@
 #include "statutil.h"
 #include "xdrf.h"
 #include "string2.h"
+#include "futil.h"
 
 
 
-
+#if 0
 #ifdef HAVE_FSEEKO
 #  define gmx_fseek(A,B,C) fseeko(A,B,C)
 #  define gmx_ftell(A) ftello(A)
@@ -57,13 +58,22 @@
 #  define gmx_ftell(A) ftell(A)
 #  define gmx_off_t int
 #endif
+#endif
 
 
 /* This is just for clarity - it can never be anything but 4! */
 #define XDR_INT_SIZE 4
 
-
-
+/* same order as the definition of xdr_datatype */
+const char *xdr_datatype_names[] =
+{
+    "int",
+    "float",
+    "double",
+    "large int",
+    "char",
+    "string"
+};
 
 
 #ifdef GMX_FORTRAN

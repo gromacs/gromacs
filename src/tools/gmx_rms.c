@@ -873,7 +873,7 @@ int gmx_rms(int argc, char *argv[])
                 (nrms==1)?"":"of "    , gn_rms[0], fitgraphlabel[efit],
                     bFit     ?" to ":""   , bFit?gn_fit:"");
     if (nrms != 1)
-        xvgr_legend(fp,nrms,gn_rms,oenv);
+        xvgr_legend(fp,nrms,(const char**)gn_rms,oenv);
     for(i=0; (i<teller); i++) {
         if ( bSplit && i>0 && 
             abs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv))<1e-5 ) 
@@ -904,7 +904,7 @@ int gmx_rms(int argc, char *argv[])
         else {
             if (output_env_get_print_xvgr_codes(oenv))
                 fprintf(fp,"@ subtitle \"after lsq fit to mirror %s\"\n",gn_fit);
-            xvgr_legend(fp,nrms,gn_rms,oenv);
+            xvgr_legend(fp,nrms,(const char**)gn_rms,oenv);
         }
         for(i=0; (i<teller); i++) {
             if ( bSplit && i>0 && abs(time[i])<1e-5 ) 

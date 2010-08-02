@@ -72,6 +72,17 @@ extern "C" {
 #endif
 #endif
 
+
+#ifdef HAVE_FSEEKO
+typedef off_t gmx_off_t;
+#else
+#ifdef HAVE__FSEEKI64 
+typedef __int64 gmx_off_t;
+#else
+typedef long int gmx_off_t;
+#endif
+#endif
+
   
 extern void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
@@ -108,6 +119,14 @@ extern void frewind(FILE *fp);
 
 #define rewind frewind
 
+
+int gmx_fseek(FILE *stream, gmx_off_t offset, int whence); 
+/* OS-independent fseek. 64-bit when available */
+
+gmx_off_t gmx_ftell(FILE *stream); 
+/* OS-independent fseek. 64-bit when available. */
+
+
 bool is_pipe(FILE *fp);
 
 extern char *gmxlibfn(const char *file);
@@ -118,7 +137,33 @@ extern FILE *libopen(const char *file);
  * first, and then in the library directory. If the file is not found,
  * it terminates with a fatal_error
  */
-  
+
+/* Opaque data type to list directories */
+typedef struct gmx_directory *
+gmx_directory_t;
+
+/* Open a directory for reading. The first argument should be a pointer
+ * to a declared gmx_directory_t variable. Returns 0 on success.
+ */
+int
+gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname);
+
+    
+/* Given an initialized gmx_directory_t, if there are more files in
+ * the directory this routine returns 0 and write the next name
+ * into the USER-PROVIDED buffer name. The last argument is the max
+ * number of characters that will be written. Just as strncpy, the
+ * string will NOT be terminated it it is longer than maxlength_name.
+ */
+int
+gmx_directory_nextfile(gmx_directory_t gmxdir,char *name,int maxlength_name);
+    
+/* Release all data for a directory structure */
+int 
+gmx_directory_close(gmx_directory_t gmxdir);
+    
+
+    
 extern bool get_libdir(char *libdir);
 
 extern char *low_gmxlibfn(const char *file,bool bFatal);
@@ -132,7 +177,7 @@ extern FILE *low_libopen(const char *file,bool bFatal);
 extern void gmx_tmpnam(char *buf);
 
 /* truncte the file to the specified length */
-int gmx_truncatefile(char *path, off_t length);
+int gmx_truncatefile(char *path, gmx_off_t length);
 
 /* rename/move the file (atomically, if the OS makes that available) oldname 
    to newname */

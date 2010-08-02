@@ -71,7 +71,7 @@ static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms,
 	    *(atoms->resinfo[atoms->atom[index[i+1]].resind].name),
             atoms->resinfo[atoms->atom[index[i+1]].resind].nr);
   }
-  xvgr_legend(fp,gnx/2,leg,oenv);
+  xvgr_legend(fp,gnx/2,(const char**)leg,oenv);
   for(i=0; i<gnx/2; i++)
     sfree(leg[i]);
   sfree(leg);

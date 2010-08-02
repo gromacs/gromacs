@@ -40,6 +40,7 @@
 #include <config.h>
 #endif
 
+
 #include "typedefs.h"
 #include "mshift.h"
 #include "tgroup.h"
@@ -47,6 +48,7 @@
 #include "force.h"
 #include "pull.h"
 #include "gmx_random.h"
+#include "maths.h"
 
 #ifdef __cplusplus
 extern "C" {

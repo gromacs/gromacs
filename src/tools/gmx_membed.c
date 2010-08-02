@@ -1690,7 +1690,6 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     return 0;
 }
 
-
 int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,
              int nstglobalcomm,
@@ -1735,7 +1734,6 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     return 0;
 }
-
 
 int gmx_membed(int argc,char *argv[])
 {

@@ -36,6 +36,12 @@
 #include <config.h>
 #endif
 
+#include "atoms.h"
+#include "idef.h"
+#include "block.h"
+#include "simple.h"
+#include "symtab.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

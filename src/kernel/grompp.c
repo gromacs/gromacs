@@ -987,7 +987,7 @@ int main (int argc, char *argv[])
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
   output_env_t oenv;
-  bool         bVerbose;
+  bool         bVerbose = FALSE;
   warninp_t    wi;
   char         warn_buf[STRLEN];
 

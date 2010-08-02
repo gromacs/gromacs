@@ -41,6 +41,7 @@
  * not be allocated.
  */ 
 
+#include "atoms.h"
 #include "../molfile_plugin.h"
 #include "../vmdio.h"
 

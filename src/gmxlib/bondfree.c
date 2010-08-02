@@ -1848,9 +1848,9 @@ real cmap_dihs(int nbonds,
 		ty12[3]   = cmapd[pos4*4+3];
 		
 		/* Switch to degrees */
-		dx = 15;
+		dx = 360.0 / cmap_grid->grid_spacing;
 		xphi1 = xphi1 * RAD2DEG;
-		xphi2 = xphi2 * RAD2DEG; /* HERE */
+		xphi2 = xphi2 * RAD2DEG; 
 		
 		for(i=0;i<4;i++) /* 16 */
 		{

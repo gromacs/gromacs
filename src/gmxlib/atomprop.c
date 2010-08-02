@@ -64,7 +64,7 @@ typedef struct {
 typedef struct gmx_atomprop {
   bool       bWarned;
   aprop_t    prop[epropNR];
-  t_aa_names *aan;
+  gmx_residuetype_t restype;
 } gmx_atomprop;
 
 
@@ -87,7 +87,7 @@ static int dbcmp_len(char *search, char *database)
   return i;
 }
 
-static int get_prop_index(aprop_t *ap,t_aa_names *aan,
+static int get_prop_index(aprop_t *ap,gmx_residuetype_t restype,
 			  char *resnm,char *atomnm,
 			  bool *bExact)
 {
@@ -96,7 +96,7 @@ static int get_prop_index(aprop_t *ap,t_aa_names *aan,
   long int malen,mrlen;
   bool bProtein,bProtWild;
   
-  bProtein  = is_protein(aan,resnm);
+  bProtein  = gmx_residuetype_is_protein(restype,resnm);
   bProtWild = (strcmp(resnm,"AAA")==0);
   malen = NOTFOUND;
   mrlen = NOTFOUND;
@@ -135,14 +135,14 @@ static int get_prop_index(aprop_t *ap,t_aa_names *aan,
   return j;
 }
 
-static void add_prop(aprop_t *ap,t_aa_names *aan,
+static void add_prop(aprop_t *ap,gmx_residuetype_t restype,
 		     char *resnm,char *atomnm,
 		     real p,int line) 
 {
   int  i,j;
   bool bExact;
   
-  j = get_prop_index(ap,aan,resnm,atomnm,&bExact);
+  j = get_prop_index(ap,restype,resnm,atomnm,&bExact);
   
   if (!bExact) {
     if (ap->nprop >= ap->maxprop) {
@@ -199,7 +199,7 @@ static void read_prop(gmx_atomprop_t aps,int eprop,double factor)
     line_no++;
     if (sscanf(line,"%s %s %lf",resnm,atomnm,&pp) == 3) {
       pp *= factor;
-      add_prop(ap,aps->aan,resnm,atomnm,pp,line_no);
+      add_prop(ap,aps->restype,resnm,atomnm,pp,line_no);
     }
     else 
       fprintf(stderr,"WARNING: Error in file %s at line %d ignored\n",
@@ -247,7 +247,7 @@ gmx_atomprop_t gmx_atomprop_init(void)
 
   snew(aps,1);
 
-  aps->aan = get_aa_names();
+  gmx_residuetype_init(&aps->restype);
   aps->bWarned = FALSE;
 
   return (gmx_atomprop_t)aps;
@@ -285,7 +285,7 @@ void gmx_atomprop_destroy(gmx_atomprop_t aps)
     destroy_prop(&ap->prop[p]);
   }
 
-  done_aa_names(&ap->aan);
+  gmx_residuetype_destroy(ap->restype);
 
   sfree(ap);
 }
@@ -321,7 +321,7 @@ bool gmx_atomprop_query(gmx_atomprop_t aps,
   strncpy(resname,resnm,MAXQ-1);
   upstring(resname);
   
-  j = get_prop_index(&(ap->prop[eprop]),ap->aan,resname,
+  j = get_prop_index(&(ap->prop[eprop]),ap->restype,resname,
 		     atomname,&bExact);
   
   if (j >= 0) {

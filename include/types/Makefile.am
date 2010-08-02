@@ -9,7 +9,7 @@ pkgincludetypes_HEADERS = \
 	mdatom.h  	simple.h	block.h    	constr.h	\
 	energy.h  	graph.h     	inputrec.h  	nblist.h 	\
 	ns.h 		nsgrid.h    	symtab.h	commrec.h	\
-	enums.h   	group.h     	ishift.h    	nbslist.h  	\
+	enums.h   	group.h     	ishift.h    	\
 	topology.h	fcdata.h  	filenm.h  	idef.h 		\
 	matrix.h    	nrnb.h     	trx.h		state.h		\
 	pbc.h		qmmmrec.h	shellfc.h	genborn.h

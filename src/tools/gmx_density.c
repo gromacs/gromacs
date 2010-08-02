@@ -361,7 +361,7 @@ void plot_density(real *slDensity[], const char *afile, int nslices,
   
   den = xvgropen(afile, "Partial densities", "Box (nm)", ylabel,oenv);
 
-  xvgr_legend(den,nr_grps,grpname,oenv);
+  xvgr_legend(den,nr_grps,(const char**)grpname,oenv);
 
   for (slice = 0; (slice < nslices); slice++) { 
     fprintf(den,"%12g  ", slice * slWidth);

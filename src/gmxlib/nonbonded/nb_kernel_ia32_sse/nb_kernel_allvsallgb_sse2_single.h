@@ -6,10 +6,6 @@
 #include "typedefs.h"
 
 void
-nisse();
-  
-
-void
 nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
                                  t_mdatoms *            mdatoms,
                                  t_blocka *             excl,    

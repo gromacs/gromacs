@@ -67,10 +67,6 @@
  */
 static const int cpt_version = 12;
 
-enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
-
-const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
-
 const char *est_names[estNR]=
 {
     "FE-lambda",
@@ -271,9 +267,9 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
 {
     bool_t res=0;
 #ifndef GMX_DOUBLE
-    int  dtc=ecpdtFLOAT;
+    int  dtc=xdr_datatype_float; 
 #else
-    int  dtc=ecpdtDOUBLE;
+    int  dtc=xdr_datatype_double;
 #endif
     real *vp,*va=NULL;
     float  *vf;
@@ -299,7 +295,8 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
     if (dt != dtc)
     {
         fprintf(stderr,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                st_names(cptp,ecpt),ecpdt_names[dtc],ecpdt_names[dt]);
+                st_names(cptp,ecpt),xdr_datatype_names[dtc],
+                xdr_datatype_names[dt]);
     }
     if (list || !(sflags & (1<<ecpt)))
     {
@@ -314,9 +311,9 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
         }
         vp = *v;
     }
-    if (dt == ecpdtFLOAT)
+    if (dt == xdr_datatype_float)
     {
-        if (dtc == ecpdtFLOAT)
+        if (dtc == xdr_datatype_float)
         {
             vf = (float *)vp;
         }
@@ -330,7 +327,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
         {
             return -1;
         }
-        if (dtc != ecpdtFLOAT)
+        if (dtc != xdr_datatype_float)
         {
             for(i=0; i<nf; i++)
             {
@@ -341,7 +338,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
     }
     else
     {
-        if (dtc == ecpdtDOUBLE)
+        if (dtc == xdr_datatype_double)
         {
             vd = (double *)vp;
         }
@@ -355,7 +352,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
         {
             return -1;
         }
-        if (dtc != ecpdtDOUBLE)
+        if (dtc != xdr_datatype_double)
         {
             for(i=0; i<nf; i++)
             {
@@ -405,7 +402,7 @@ static int do_cpte_ints(XDR *xd,int cptp,int ecpt,int sflags,
                         int n,int **v,FILE *list)
 {
     bool_t res=0;
-    int  dtc=ecpdtINT;
+    int  dtc=xdr_datatype_int;
     int *vp,*va=NULL;
     int  nf,dt,i;
     
@@ -428,7 +425,8 @@ static int do_cpte_ints(XDR *xd,int cptp,int ecpt,int sflags,
     if (dt != dtc)
     {
         gmx_fatal(FARGS,"Type mismatch for state entry %s, code type is %s, file type is %s\n",
-                  st_names(cptp,ecpt),ecpdt_names[dtc],ecpdt_names[dt]);
+                  st_names(cptp,ecpt),xdr_datatype_names[dtc],
+                  xdr_datatype_names[dt]);
     }
     if (list || !(sflags & (1<<ecpt)) || v == NULL)
     {
@@ -471,7 +469,7 @@ static int do_cpte_doubles(XDR *xd,int cptp,int ecpt,int sflags,
                            int n,double **v,FILE *list)
 {
     bool_t res=0;
-    int  dtc=ecpdtDOUBLE;
+    int  dtc=xdr_datatype_double;
     double *vp,*va=NULL;
     int  nf,dt,i;
     
@@ -494,7 +492,8 @@ static int do_cpte_doubles(XDR *xd,int cptp,int ecpt,int sflags,
     if (dt != dtc)
     {
         gmx_fatal(FARGS,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                  st_names(cptp,ecpt),ecpdt_names[dtc],ecpdt_names[dt]);
+                  st_names(cptp,ecpt),xdr_datatype_names[dtc],
+                  xdr_datatype_names[dt]);
     }
     if (list || !(sflags & (1<<ecpt)))
     {
@@ -1037,8 +1036,8 @@ static int do_cpt_files(XDR *xd, bool bRead,
                         FILE *list, int file_version)
 {
     int    i,j;
-    off_t  offset;
-    off_t  mask = 0xFFFFFFFFL;
+    gmx_off_t  offset;
+    gmx_off_t  mask = 0xFFFFFFFFL;
     int    offset_high,offset_low;
     char   *buf;
     gmx_file_position_t *outputfiles;
@@ -1076,7 +1075,7 @@ static int do_cpt_files(XDR *xd, bool bRead,
                 return -1;
             }
 #if (SIZEOF_OFF_T > 4)
-            outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low & mask );
+            outputfiles[i].offset = ( ((gmx_off_t) offset_high) << 32 ) | ( (gmx_off_t) offset_low & mask );
 #else
             outputfiles[i].offset = offset_low;
 #endif
@@ -1144,13 +1143,14 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     char *buser;
     char *bmach;
     char *fprog;
-    char *ftime;
     char *fntemp; /* the temporary checkpoint file name */
     time_t now;
+    char timebuf[STRLEN];
     int  nppnodes,npmenodes,flag_64bit;
     char buf[1024],suffix[5+STEPSTRSIZE],sbuf[STEPSTRSIZE];
     gmx_file_position_t *outputfiles;
     int  noutputfiles;
+    char *ftime;
     int  flags_eks,flags_enh,flags_dfh,i;
     t_fileio *ret;
 		
@@ -1181,16 +1181,13 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     strcat(fntemp,suffix);
     strcat(fntemp,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
    
-    now = time(NULL);
-    ftime = strdup(ctime(&now));
-    ftime[strlen(ftime)-1] = '\0';
+    time(&now);
+    gmx_ctime_r(&now,timebuf,STRLEN);
 
-    /* No need to pollute stderr every time we write a checkpoint file */
-    /* fprintf(stderr,"\nWriting checkpoint, step %d at %s\n",step,ftime); */
     if (fplog)
     { 
         fprintf(fplog,"Writing checkpoint, step %s at %s\n\n",
-                gmx_step_str(step,buf),ftime);
+                gmx_step_str(step,buf),timebuf);
     }
     
     /* Get offsets for open files */
@@ -1249,6 +1246,8 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     bmach   = strdup(BUILD_MACHINE);
     fprog   = strdup(Program());
 
+    ftime   = &(timebuf[0]);
+    
     do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
@@ -1331,7 +1330,6 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
         }
     }
 
-    sfree(ftime);
     sfree(outputfiles);
     sfree(fntemp);
 

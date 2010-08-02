@@ -74,7 +74,7 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      rvec x[],        rvec f[],
 		      real chargeA[],  real chargeB[],
 		      matrix box,      t_commrec *cr,
-		      int  maxshift0,  int maxshift1,
+		      int  maxshift_x, int maxshift_y,
 		      t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
 		      matrix lrvir,    real ewaldcoeff,
 		      real *energy,    real lambda,    
@@ -110,7 +110,7 @@ extern gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 
 extern void gmx_pme_send_q(t_commrec *cr,
 			   bool bFreeEnergy, real *chargeA, real *chargeB,
-			   int maxshift0, int maxshift1);
+			   int maxshift_x, int maxshift_y);
 /* Send the charges and maxshift to out PME-only node. */
 
 extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
@@ -131,7 +131,7 @@ extern void gmx_pme_receive_f(t_commrec *cr,
 extern int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
 			    real **chargeA, real **chargeB,
 			    matrix box, rvec **x,rvec **f,
-			    int *maxshift0,int *maxshift1,
+			    int *maxshift_x,int *maxshift_y,
 			    bool *bFreeEnergy,real *lambda,
 			    bool *bEnerVir,
 			    gmx_large_int_t *step);

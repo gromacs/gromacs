@@ -37,6 +37,7 @@
 #endif
 
 #include "typedefs.h"
+#include "vsite.h"
 
 #ifdef __cplusplus
 extern "C" {

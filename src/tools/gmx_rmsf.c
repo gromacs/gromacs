@@ -239,7 +239,7 @@ int gmx_rmsf(int argc,char *argv[])
 
   output_env_t oenv;
 
-  char  *leg[2] = { "MD", "X-Ray" };
+  const char  *leg[2] = { "MD", "X-Ray" };
 
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL,     ffREAD  },
