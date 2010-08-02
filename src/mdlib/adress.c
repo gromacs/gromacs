@@ -531,7 +531,6 @@ adress_thermo_force(int                  cg0,
     ptype            = mdatoms->ptype;
     ref              = &(fr->adress_refs);
     wf               = mdatoms->wf;
-    badress_chempot_dx = fr->badress_chempot_dx;
     badress_tf_full_box = fr->badress_tf_full_box;
 
     for(icg=cg0; (icg<cg1); icg++)

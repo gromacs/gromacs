@@ -1116,6 +1116,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	real        x0,y0,yp,rtab;
 	int         i,j,k,nx,nx0,tabsel[etiNR];
 	void *      p_tmp;
+        real        rx, ry, rz, box_r;
 	
 	t_forcetable table;
 	
@@ -1125,10 +1126,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	 */
 	snew(td,1);
 
-        if (!fr->badress_chempot_dx){
-            table.r         = 1;
-        }
-        else if (fr->badress_tf_full_box){
+        if (fr->badress_tf_full_box){
             // take half box x direction as tab range
             table.r         = box[0][0]/2;
         }
@@ -1154,32 +1152,36 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	  {
 	    read_tables(out,fn,1,0,td);
 	    rtab      = td[0].x[td[0].nx-1];
-            if (!fr->badress_chempot_dx){
-                if ((rtab > 1) || (rtab < 1))
+            
+            if (fr->badress_tf_full_box){
+                // TODO : should really check tf is defined everywhere (in box)
+               if (fr->adress_type == eAdressXSplit && (rtab < box[0][0]/2)){
+                   gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
+                                "\tshould extend to at least half the length of the longest box side"
+                                "%f\n",fn,rtab, box[0][0]/2);
+               }
+               if (fr->adress_type == eAdressSphere){
+                   rx = 0.5*box[0][0]+0.5*box[1][0]+0.5*box[2][0];
+                   ry = 0.5*box[0][1]+0.5*box[1][1]+0.5*box[2][1];
+                   rz = 0.5*box[0][2]+0.5*box[1][2]+0.5*box[2][2];
+                   box_r = sqrt(rx*rx+ry*ry+rz*rz);
+                   if (rtab < box_r){
+                           gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
+                            "\tshould extend to at least for spherical adress"
+                            "%f (=distance from center to furthermost point in box \n",fn,rtab, box_r);
+                   }
+                                   
+               }
+            }
+            else{
+                 if ((rtab < fr->adress_hy_width) || (rtab > fr->adress_hy_width))
                   {
-                    gmx_fatal(FARGS,"AdResS Table in file %s extends to %f:\n"
-                                "\tshould extend to exactly 1\n",fn,rtab);
+                    gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
+                                "\tshould extend to exactly the size of the hybrid zone"
+                                "%f\n",fn,rtab, fr->adress_hy_width);
                   }
             }
-            else
-            {
-                if (fr->badress_tf_full_box){
-                    // TODO : should really check tf is defined everywhere (in box)
-                   if ((rtab < fr->adress_hy_width+fr->adress_ex_width)){
-                       gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
-                                    "\tshould extend to at least half the length of the longest box side"
-                                    "%f\n",fn,rtab, fr->adress_hy_width);
-                   }
-                }
-                else{
-                     if ((rtab < fr->adress_hy_width) || (rtab > fr->adress_hy_width))
-                      {
-                        gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
-                                    "\tshould extend to exactly the size of the hybrid zone"
-                                    "%f\n",fn,rtab, fr->adress_hy_width);
-                      }
-                }
-            }
+
 	    table.n   = td[0].nx;
 	    nx        = table.n;
 	    table.scale = td[0].tabscale;

@@ -1083,7 +1083,6 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* AdResS defined thingies */
   CCTYPE ("AdResS parameters");
   EETYPE("adress_type",                ir->adress_type,         eAdresstype_names);
-  EETYPE("adress_chempot_dx",          ir->badress_chempot_dx,  yesno_names);
   EETYPE("adress_tf_full_box",         ir->badress_tf_full_box, yesno_names);
   RTYPE ("adress_const_wf",            ir->adress_const_wf,     1);
   RTYPE ("adress_ex_width",            ir->adress_ex_width,     0);
