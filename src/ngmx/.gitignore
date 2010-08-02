@@ -1,5 +1,6 @@
 .deps
 .libs
-highway
+g_highway
+g_logo
+g_xrama
 ngmx
-xrama

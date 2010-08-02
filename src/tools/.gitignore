@@ -1,9 +1,9 @@
 .deps
 .libs
-anadock
 do_dssp
 editconf
 eneconv
+g_anadock
 g_anaeig
 g_analyze
 g_angle
@@ -35,6 +35,7 @@ g_helixorient
 g_kinetics
 g_lie
 g_mdmat
+g_membed
 g_mindist
 g_morph
 g_msd
@@ -51,12 +52,14 @@ g_rms
 g_rmsdist
 g_rmsf
 g_rotacf
+g_rotmat
 g_saltbr
 g_sas
 g_sdf
 g_select
 g_sgangle
 g_sham
+g_sigeps
 g_sorient
 g_spatial
 g_spol
@@ -66,6 +69,7 @@ g_tune_pme
 g_vanhove
 g_velacc
 g_wham
+g_wheel
 genbox
 genconf
 genion
@@ -73,10 +77,7 @@ genrestr
 make_edi
 make_ndx
 mk_angndx
-sigeps
 trjcat
 trjconv
 trjorder
-wheel
 xpm2ps
-g_rotmat

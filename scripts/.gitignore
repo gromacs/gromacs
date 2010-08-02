@@ -1,4 +1,2 @@
 GMXRC
-GMXRC.bash
-GMXRC.csh
-GMXRC.zsh
+GMXRC.*

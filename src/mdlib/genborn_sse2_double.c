@@ -27,8 +27,11 @@
 #include "tmpi.h"
 #endif
 
+/* Double precision SSE2 genborn disabled while waiting for transcendental implementations... */
+#if 0
+
 /* Only compile this file if SSE2 intrinsics are available */
-#if ( (defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2)) && defined(GMX_DOUBLE) )
+/* #if ( (defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2)) && defined(GMX_DOUBLE) ) */
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
