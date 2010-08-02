@@ -8,9 +8,6 @@ noinst_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la
 
 LDADD = $(noinst_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
-pkgconfigdir = ${libdir}/pkgconfig
-pkgconfig_DATA = libgmxpreprocess@LIBSUFFIX@.pc
-
 libgmxpreprocess@LIBSUFFIX@_la_LIBADD       =
 libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
 

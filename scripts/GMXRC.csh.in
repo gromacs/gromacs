@@ -6,6 +6,7 @@
 
 # zero possibly unset vars to avoid warnings
 if (! $?LD_LIBRARY_PATH) setenv LD_LIBRARY_PATH ""
+if (! $?PKG_CONFIG_PATH) setenv PKG_CONFIG_PATH ""
 if (! $?PATH) setenv PATH ""
 if (! $?MANPATH) setenv MANPATH ""
 if (! $?GMXLDLIB) setenv GMXLDLIB ""
@@ -18,6 +19,13 @@ foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
   if ( "$i" != "$GMXLDLIB" ) set tmppath = "${tmppath}:$i"
 end
 setenv LD_LIBRARY_PATH $tmppath
+
+# remove previous gromacs part from PKG_CONFIG_PATH
+set tmppath = ""
+foreach i ( `echo $PKG_CONFIG_PATH | sed "s/:/ /g"` )
+  if ( "$i" != "$GMXLDLIB/pkgconfig" ) set tmppath = "${tmppath}:$i"
+end
+setenv PKG_CONFIG_PATH $tmppath
 
 # remove gromacs stuff from binary path
 set tmppath = ""
@@ -46,6 +54,7 @@ setenv GMXDATA @datadir@
 # old variables begin with ':' now, or are empty.
 setenv PATH ${GMXBIN}${PATH}
 setenv LD_LIBRARY_PATH ${GMXLDLIB}${LD_LIBRARY_PATH}
+setenv PKG_CONFIG_PATH ${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH}
 setenv MANPATH ${GMXMAN}${MANPATH}
 
 setenv GMXFONT	10x20
