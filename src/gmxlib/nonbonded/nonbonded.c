@@ -347,6 +347,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
     bDoForces      = (flags & GMX_DONB_FORCES);
     bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA);
 
+    bCG = FALSE;  /* for AdresS */
+    adresskernelptr = NULL;
+    
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
 	gbdata.epsilon_r = fr->epsilon_r;
 	gbdata.gpol               = egpol;
