@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.99-dev-20100305, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5-beta1, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -50,7 +50,7 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
-if test "$enable_fortran" = "yes"; then
+if test "$enable_fortran" = "yes" -a "$enable_power6" = "no"; then
   AC_DEFINE(GMX_FORTRAN,,[Enable Fortran support])
 fi
 # Generic fortran kernels will be turned off below if you enable power6-specific optimization!
@@ -154,6 +154,7 @@ AC_ARG_ENABLE(power6,
 # Turn off generic fortran loops if we are using power6-specific optimization
 if test "$enable_power6" = "yes"; then
   enable_fortran=no;
+  AC_DEFINE(GMX_POWER6,,[Enable IBM Pwr6/PPC440/PPC450-specific F77 kernels])
 fi
 
 AC_ARG_ENABLE(bluegene,
@@ -352,7 +353,7 @@ fi
 
 AC_SUBST(CC_FOR_BUILD) 
 
-if test "$enable_fortran" = "yes"; then 
+if test "$enable_fortran" = "yes" -o "$enable_power6" = "yes"; then 
   AC_PROG_F77( $f77_names )
   if test -z "$F77"; then
     AC_MSG_ERROR([No fortran compiler found])
@@ -427,7 +428,7 @@ AH_TEMPLATE([F77_OR_C_FUNC_],
 
 
 
-if test "$enable_fortran" = "yes"; then
+if test "$enable_fortran" = "yes" -o "$enable_power6" = "yes"; then
   AC_F77_LIBRARY_LDFLAGS
   AC_F77_WRAPPERS
   AC_DEFINE([F77_OR_C_FUNC(name,NAME)],[F77_FUNC(name,NAME)])
@@ -442,6 +443,7 @@ fi
 AC_PROG_CPP
 # Needed by libtool scripts?
 AC_PROG_EGREP
+AC_PROG_LN_S
 
 if test "$enable_cpu_optimization" = "yes"; then
   ACX_DETECT_GMXCPU
@@ -452,7 +454,8 @@ ACX_COMPILER_MAXOPT
 
 
 # We've postponed the threads check because we need to check with the right
-# compilers/flags 
+# compilers/flags
+SAVED_LIBS="$LIBS"
 if test "$enable_threads" = "yes"; then 
   if test "$enable_mpi" = "yes"; then
     AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
@@ -510,6 +513,7 @@ contact the developers.
 else
   AM_CONDITIONAL(THREAD_PARALLEL,false)
 fi
+LIBS="$SAVED_LIBS"
 
 
 
@@ -589,7 +593,12 @@ fi
 # Disable MASS support for now.
 #####
 
+#save current LIBS
+SAVED_LIBS="$LIBS"
 
+#set empty defaults
+PKG_FFT=""
+FFT_LIBS=""
 case "$with_fft" in
 fftw2)
   if test "$enable_float" = "yes"; then
@@ -599,6 +608,7 @@ fftw2)
   fi
   ACX_CHECK_FFTW2(fftw,$sizeof_real)
   ACX_CHECK_FFTW2(rfftw,$sizeof_real)
+  FFT_LIBS="-lfftw -lrfftw"
 
   case ${ac_fftw_savedprefix} in
    d) AC_DEFINE(FFTW2_NAME_DFFTW,,[Use the d prefix on fftw2 includes]) ;;
@@ -619,10 +629,12 @@ AC_TRY_COMPILE([#include<fftw3.h>],,[
 AC_MSG_RESULT(yes)
 if test "$enable_float" = "yes"; then
   AC_CHECK_LIB([fftw3f],main,,AC_MSG_ERROR([Cannot find fftw3f library]))
-  PKG_FFTW="fftw3f"
+  PKG_FFT="fftw3f"
+  FFT_LIBS="-lfftw3f"
 else
   AC_CHECK_LIB([fftw3],main,,AC_MSG_ERROR([Cannot find fftw3 library]))
-  PKG_FFTW="fftw3"
+  PKG_FFT="fftw3"
+  FFT_LIBS="-lfftw3"
 fi
   AC_DEFINE(GMX_FFT_FFTW3,,[Use FFTW3 FFT library])
 ],[
@@ -640,7 +652,6 @@ to use a slower set of FFTs built into Gromacs.
 (Just install FFTW3 unless you really know what you are doing).
 ])
 ])
-  AC_SUBST(PKG_FFTW)
   ;;
 
 mkl*)
@@ -656,14 +667,16 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
 #    AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0]))
   # first check for older MKLs
   AC_CHECK_LIB([mkl],DftiComputeForward,,[have_mkl="no"])
-  if test "$have_mkl" == "no"; then
+  if test "$have_mkl" = "no"; then
     # we assume it's a new MKL
     LIBS="$LIBS -liomp5 -lmkl_sequential -lmkl_core"
     LMKL=" -liomp5 -lmkl_sequential -lmkl_core"
     AC_CHECK_LIB([mkl_intel_lp64],DftiComputeForward,,[have_mkl10_64="no"])
-    if test "$have_mkl10_64" == "no"; then
+    FFT_LIBS="$LMKL -lmkl_intel_lp64"
+    if test "$have_mkl10_64" = "no"; then
       AC_CHECK_LIB([mkl_intel],DftiComputeForward,,[have_mkl10_32="no"])
-      if test "$have_mkl10_32" == "no"; then
+      FFT_LIBS="$LMKL -lmkl_intel"
+      if test "$have_mkl10_32" = "no"; then
         AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0])
       fi
     fi
@@ -681,7 +694,18 @@ Are you sure you don't want to use FFTW? It is free and much faster...])
   AC_MSG_ERROR([Unknown FFT library])
   ;;
 esac
+#restore LIBS from before fft check
+LIBS="$SAVED_LIBS"
 
+#only fftw3 has support for pkg-config
+AC_SUBST(PKG_FFT)
+if test -z "${PKG_FFT}"; then
+  AC_SUBST(PKG_FFT_LIBS,"$FFT_LIBS")
+else
+  AC_SUBST(PKG_FFT_LIBS,"")
+fi
+#flag for Makefile
+AC_SUBST(FFT_LIBS)
 
 if test "$enable_fftw_measure" != "yes"; then
    AC_DEFINE(GMX_DISABLE_FFTW_MEASURE,,[Do not optimize FFTW setups (not needed with SSE FFT kernels)])
@@ -729,7 +753,18 @@ AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(sys/time.h)
-AC_CHECK_HEADERS(dirent.h)
+AC_CHECK_HEADERS(dirent.h,,[AC_MSG_WARN(
+[
+********************************************************************
+* WARNING! We could not find the header file dirent.h              *
+*                                                                  *
+* Without this header, we will not be able to scan directories for *
+* files, which completely breaks pdb2gmx. You will still be able   *
+* to run simulations, but you cannot prepare input data.           *
+* dirent.h is part of the POSIX 2001-1 standard, and should be     *
+* present on all UNIX-like systems, CygWin, and MinGW.             *
+********************************************************************])])
+## NOTE: On native windows we do not use configure.ac
 AC_CHECK_HEADERS(copyfile.h)
 AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
 [No regex.h found.
@@ -737,6 +772,8 @@ Regular expression matching in selections will be disabled.
 Selections still work, but the default groups can differ from
 those obtained with regular expressions enabled.
 Consider installing the regular expression library from GNU libc.])])
+
+
 
 #####
 # Checks for additional and/or optional functions or libraries.
@@ -815,46 +852,26 @@ AC_ARG_WITH(gsl,
                  [enables extra functions in analysis])],,with_gsl=no)
 
 ######
+PKG_GSL=""
+GSL_LIBS=""
 if test "$with_gsl" = "yes"; then
-  ac_save_LDFLAGS="$LDFLAGS"
+  SAVED_LIBS="$LIBS"
   AC_CHECK_HEADERS([gsl/gsl_version.h],[
 # header found, check for libraries 
   AC_CHECK_LIB(gslcblas,main,[
-  LDFLAGS="$ac_save_LDFLAGS -lgslcblas"
 # gslcblas library found, check main lib
-  AC_CHECK_LIB(gsl,main)])])
+  AC_CHECK_LIB(gsl,main,[
+# everything need for gsl found
+  GSL_LIBS="-lgsl -lgslcblas"
+#gsl has pkg-config support
   PKG_GSL="gsl"
-  AC_SUBST(PKG_GSL)
+  AC_DEFINE(HAVE_LIBGSL,1,[Do we have libgsl])
+  ],[:],[-lgslcblas])])])
+  LIBS="$SAVED_LIBS"
 #
 fi
-
-######
-# Use OpenMM libraries
-######
-AC_ARG_WITH(openmm,
- [  --with-openmm                 Use the OpenMM libraries to run on GPUs],,with_openmm=no)
-
-if test "$with_openmm" = "yes"; then
-
-  AC_PROG_CXX
-  CPPFLAGS="$CPPFLAGS -I$OPENMM_INSTALL_DIR/include"
-  INCLUDES="$INCLUDES -I$OPENMM_INSTALL_DIR/include"
-  LDFLAGS="$LDFLAGS -L$OPENMM_INSTALL_DIR/lib -lOpenMM"
-  #AC_CHECK_HEADERS([OpenMM.h],AC_CHECK_LIB(OpenMM,main))
-  #AC_CHECK_HEADERS([OpenMM.h],,AC_MSG_ERROR([Cannot find OpenMM.h file. Please set OPENMM_INSTALL_DIR.]))
-  AC_DEFINE([USE_OPENMM],,[Use OpenMM libraries to run on GPUs])
-
-#  AS_CASE([${host_cpu}-${host_os}-${host_vendor}],
-#    [i?86-linux*], [OPENMM_HOST=linux32],
-#    [x86_64-linux*], [OPENMM_HOST=linux64],
-#    [amd64-linux*], [OPENMM_HOST=linux64],
-#    [i?86-darwin*-apple], [OPENMM_HOST=apple],
-#    [OPENMM_HOST=""])
-#  AC_SUBST([OPENMM_HOST])
-fi
-
-AM_CONDITIONAL([USE_OPENMM],[test "$with_openmm" = "yes"])
-
+AC_SUBST(PKG_GSL)
+AC_SUBST(GSL_LIBS)
 
 AC_ARG_WITH(xml,
  [AC_HELP_STRING([--without-xml],[do not link to the xml2 library,] 
@@ -863,14 +880,17 @@ AC_ARG_WITH(xml,
 #########
 # Check for libxml2, but it is optional, so dont stop
 # if it isnt there.
+PKG_XML=""
+XML_LIBS=""
 if test "$with_xml" = "yes"; then
+   SAVED_LIBS="$LIBS"
    ac_save_CPPFLAGS="$CPPFLAGS"
    CPPFLAGS="$ac_save_CPPFLAGS -I/usr/include/libxml2"
    AC_CHECK_HEADERS([libxml/parser.h],AC_CHECK_LIB(xml2,main))
    if test "$ac_cv_lib_xml2_main" = "yes"; then
      INCLUDES="$INCLUDES -I/usr/include/libxml2"
-     PKG_XML2="libxml-2.0"
-     AC_SUBST(PKG_XML2)
+     PKG_XML="libxml-2.0"
+     XML_LIBS="-lxml2"
      if test "$enable_all_static" = "yes"; then
        LDFLAGS_RET=$LDFLAGS
        LDFLAGS="-static $LDFLAGS"
@@ -891,7 +911,10 @@ main() {
    fi
 # restore CPPFLAGS
    CPPFLAGS="$ac_save_CPPFLAGS"
+   LIBS="$SAVED_LIBS"
 fi
+AC_SUBST(PKG_XML)
+AC_SUBST(XML_LIBS)
 
 #### 
 # And collect the f77 libs to the linker - on Solaris, f77 stuff must go first,
@@ -921,6 +944,7 @@ AC_C_CONST
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
 AC_C_INLINE
+AC_C_RESTRICT
 
 # AC_TYPE_UID_T is broken on Mac OS X, so use generic tests instead
 AC_CHECK_TYPES([uid_t],[],[AC_DEFINE(uid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
@@ -1171,13 +1195,22 @@ AC_SUBST(INCLUDES)          # should be automatic, but doesnt seem to be?
 # However, the non-suffixed names are linked to the _mpi and/or _d suffixed
 # ones upon installation if that is the only version available.
 
-if test "$enable_mpi" = "yes"; then
-  LIBSUFFIX="_mpi"
+AC_ARG_VAR(
+  [LIBSUFFIX],
+  [To tell libraries apart, a suffix can be used. This is normally done
+   automatically during ./configure (_d|_mpi|_mpi_d). But with this
+   variable you can overwrite it
+  ]
+)
+if test -z ${LIBSUFFIX} ; then
+  if test "$enable_mpi" = "yes"; then
+    LIBSUFFIX="_mpi"
+  fi
+  if test "$enable_float" = "no"; then
+    LIBSUFFIX="${LIBSUFFIX}_d"
+  fi
 fi
-if test "$enable_float" = "no"; then
-  LIBSUFFIX="${LIBSUFFIX}_d"
-fi
-AC_SUBST(LIBSUFFIX) 
+AC_SUBST(LIBSUFFIX)
 
 # Unless the user has explicitly requested a prefix/suffix/transform, we
 # use _d on double precision files. Don't add anything for mpi, but at the
@@ -1277,6 +1310,13 @@ AC_CONFIG_FILES([ share/top/gromos45a3.ff/Makefile ])
 AC_CONFIG_FILES([ share/top/gromos53a5.ff/Makefile ])
 AC_CONFIG_FILES([ share/top/gromos53a6.ff/Makefile ])
 AC_CONFIG_FILES([ share/top/charmm27.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber94.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber96.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amberGS.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber99.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber99sb.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber99sb-ildn.ff/Makefile ])
+AC_CONFIG_FILES([ share/top/amber03.ff/Makefile ])
 AC_CONFIG_FILES([ share/html/Makefile ])
 AC_CONFIG_FILES([ share/html/images/Makefile ])
 AC_CONFIG_FILES([ share/html/online/Makefile ])

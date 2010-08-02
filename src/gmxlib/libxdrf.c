@@ -44,10 +44,11 @@
 #include "statutil.h"
 #include "xdrf.h"
 #include "string2.h"
+#include "futil.h"
 
 
 
-
+#if 0
 #ifdef HAVE_FSEEKO
 #  define gmx_fseek(A,B,C) fseeko(A,B,C)
 #  define gmx_ftell(A) ftello(A)
@@ -57,14 +58,25 @@
 #  define gmx_ftell(A) ftell(A)
 #  define gmx_off_t int
 #endif
+#endif
 
 
 /* This is just for clarity - it can never be anything but 4! */
 #define XDR_INT_SIZE 4
 
+/* same order as the definition of xdr_datatype */
+const char *xdr_datatype_names[] =
+{
+    "int",
+    "float",
+    "double",
+    "large int",
+    "char",
+    "string"
+};
 
 
-#ifndef GMX_THREADS
+#ifdef GMX_FORTRAN
 
 /* NOTE: DO NOT USE THESE ANYWHERE IN GROMACS ITSELF. 
    These are necessary for the backward-compatile io routines for 3d party
@@ -74,15 +86,30 @@ static FILE *xdrfiles[MAXID];
 static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
-
+#ifdef GMX_THREADS
+/* we need this because of the global variables above for FORTRAN binding. 
+   The I/O operations are going to be slow. */
+static tMPI_Thread_mutex_t xdr_fortran_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
-#ifdef GMX_FORTRAN
+static void xdr_fortran_lock(void)
+{
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&xdr_fortran_mutex);
+#endif
+}
+static void xdr_fortran_unlock(void)
+{
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&xdr_fortran_mutex);
+#endif
+}
+
 
 
 /* the open&close prototypes */
-int xdropen(XDR *xdrs, const char *filename, const char *type);
-int xdrclose(XDR *xdrs);
+static int xdropen(XDR *xdrs, const char *filename, const char *type);
+static int xdrclose(XDR *xdrs);
 
 typedef void (* F77_FUNC(xdrfproc,XDRFPROC))(int *, void *, int *);
 
@@ -124,63 +151,81 @@ int ctofstr(char *ds, int dl, char *ss)
 void
 F77_FUNC(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret) 
 {
+        xdr_fortran_lock();
 	*ret = xdr_bool(xdridptr[*xdrid], pb);
 	cnt += XDR_INT_SIZE;
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfchar,XDRFCHAR)(int *xdrid, char *cp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_char(xdridptr[*xdrid], cp);
 	cnt += sizeof(char);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfdouble,XDRFDOUBLE)(int *xdrid, double *dp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_double(xdridptr[*xdrid], dp);
 	cnt += sizeof(double);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrffloat,XDRFFLOAT)(int *xdrid, float *fp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_float(xdridptr[*xdrid], fp);
 	cnt += sizeof(float);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfint,XDRFINT)(int *xdrid, int *ip, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_int(xdridptr[*xdrid], ip);
 	cnt += XDR_INT_SIZE;
+        xdr_fortran_unlock();
 }
 
 F77_FUNC(xdrfshort,XDRFSHORT)(int *xdrid, short *sp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_short(xdridptr[*xdrid], sp);
   	cnt += sizeof(sp);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfuchar,XDRFUCHAR)(int *xdrid, unsigned char *ucp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_u_char(xdridptr[*xdrid], (u_char *)ucp);
 	cnt += sizeof(char);
+        xdr_fortran_unlock();
 }
 
 
 void
 F77_FUNC(xdrfushort,XDRFUSHORT)(int *xdrid, unsigned short *usp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_u_short(xdridptr[*xdrid], (unsigned short *)usp);
 	cnt += sizeof(unsigned short);
+        xdr_fortran_unlock();
 }
 
 void 
 F77_FUNC(xdrf3dfcoord,XDRF3DFCOORD)(int *xdrid, float *fp, int *size, float *precision, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr3dfcoord(xdridptr[*xdrid], fp, size, precision);
+        xdr_fortran_unlock();
 }
 
 void
@@ -189,6 +234,7 @@ F77_FUNC(xdrfstring,XDRFSTRING)(int *xdrid, char * sp_ptr,
 {
 	char *tsp;
 
+        xdr_fortran_lock();
 	tsp = (char*) malloc((size_t)(((sp_len) + 1) * sizeof(char)));
 	if (tsp == NULL) {
 	    *ret = -1;
@@ -197,12 +243,14 @@ F77_FUNC(xdrfstring,XDRFSTRING)(int *xdrid, char * sp_ptr,
 	if (ftocstr(tsp, *maxsize+1, sp_ptr, sp_len)) {
 	    *ret = -1;
 	    free(tsp);
+            xdr_fortran_unlock();
 	    return;
 	}
         *ret = xdr_string(xdridptr[*xdrid], (char **) &tsp, (unsigned int) *maxsize);
 	ctofstr( sp_ptr, sp_len , tsp);
 	cnt += *maxsize;
 	free(tsp);
+        xdr_fortran_unlock();
 }
 
 void
@@ -211,41 +259,52 @@ F77_FUNC(xdrfwrapstring,XDRFWRAPSTRING)(int *xdrid, char *sp_ptr,
 {
 	char *tsp;
 	int maxsize;
+
+        xdr_fortran_lock();
 	maxsize = (sp_len) + 1;
 	tsp = (char*) malloc((size_t)(maxsize * sizeof(char)));
 	if (tsp == NULL) {
 	    *ret = -1;
 	    return;
+            xdr_fortran_unlock();
 	}
 	if (ftocstr(tsp, maxsize, sp_ptr, sp_len)) {
 	    *ret = -1;
 	    free(tsp);
 	    return;
+            xdr_fortran_unlock();
 	}
 	*ret = xdr_string(xdridptr[*xdrid], (char **) &tsp, (u_int)maxsize);
 	ctofstr( sp_ptr, sp_len, tsp);
 	cnt += maxsize;
 	free(tsp);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfopaque,XDRFOPAQUE)(int *xdrid, caddr_t *cp, int *ccnt, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_opaque(xdridptr[*xdrid], (caddr_t)*cp, (u_int)*ccnt);
 	cnt += *ccnt;
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfsetpos,XDRFSETPOS)(int *xdrid, int *pos, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_setpos(xdridptr[*xdrid], (u_int) *pos);
+        xdr_fortran_unlock();
 }
 
 
 void
 F77_FUNC(xdrf,XDRF)(int *xdrid, int *pos)
 {
+        xdr_fortran_lock();
 	*pos = xdr_getpos(xdridptr[*xdrid]);
+        xdr_fortran_unlock();
 }
 
 void
@@ -253,17 +312,21 @@ F77_FUNC(xdrfvector,XDRFVECTOR)(int *xdrid, char *cp, int *size, F77_FUNC(xdrfpr
 {
 	int lcnt;
 	cnt = 0;
+        xdr_fortran_lock();
 	for (lcnt = 0; lcnt < *size; lcnt++) {
 		elproc(xdrid, (cp+cnt) , ret);
 	}
+        xdr_fortran_unlock();
 }
 
 
 void
 F77_FUNC(xdrfclose,XDRFCLOSE)(int *xdrid, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdrclose(xdridptr[*xdrid]);
 	cnt = 0;
+        xdr_fortran_unlock();
 }
 
 void
@@ -273,6 +336,7 @@ F77_FUNC(xdrfopen,XDRFOPEN)(int *xdrid, char *fp_ptr, char *mode_ptr,
 	char fname[512];
 	char fmode[3];
 
+        xdr_fortran_lock();
 	if (ftocstr(fname, sizeof(fname), fp_ptr, fp_len)) {
 		*ret = 0;
 	}
@@ -286,10 +350,9 @@ F77_FUNC(xdrfopen,XDRFOPEN)(int *xdrid, char *fp_ptr, char *mode_ptr,
 		*ret = 0;
 	else 
 		*ret = 1;	
+        xdr_fortran_unlock();
 }
-#endif /* GMX_FORTRAN */
 
-#ifndef GMX_THREADS
 /*__________________________________________________________________________
  |
  | xdropen - open xdr file
@@ -297,6 +360,8 @@ F77_FUNC(xdrfopen,XDRFOPEN)(int *xdrid, char *fp_ptr, char *mode_ptr,
  | This versions differs from xdrstdio_create, because I need to know
  | the state of the file (read or write)  and the file descriptor
  | so I can close the file (something xdr_destroy doesn't do).
+ |
+ | It assumes xdr_fortran_mutex is locked.
  |
  | NOTE: THIS FUNCTION IS NOW OBSOLETE AND ONLY PROVIDED FOR BACKWARD
  |       COMPATIBILITY OF 3D PARTY TOOLS. IT SHOULD NOT BE USED ANYWHERE 
@@ -308,7 +373,13 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     enum xdr_op lmode;
     int xdrid;
     char newtype[5];
-	
+
+
+#ifdef GMX_THREADS
+    if (!tMPI_Thread_mutex_islocked( &xdr_fortran_mutex ))  
+        gmx_incons("xdropen called without locked mutex. NEVER call this function");
+#endif 
+
     if (init_done == 0) {
 	for (xdrid = 1; xdrid < MAXID; xdrid++) {
 	    xdridptr[xdrid] = NULL;
@@ -375,6 +446,8 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
  | It also closes the associated file descriptor (this is *not*
  | done by xdr_destroy).
  |
+ | It assumes xdr_fortran_mutex is locked.
+ |
  | NOTE: THIS FUNCTION IS NOW OBSOLETE AND ONLY PROVIDED FOR BACKWARD
  |       COMPATIBILITY OF 3D PARTY TOOLS. IT SHOULD NOT BE USED ANYWHERE 
  |       IN GROMACS ITSELF. 
@@ -383,6 +456,11 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 int xdrclose(XDR *xdrs) {
     int xdrid;
     int rc = 0;
+
+#ifdef GMX_THREADS
+    if (!tMPI_Thread_mutex_islocked( &xdr_fortran_mutex ))  
+        gmx_incons("xdropen called without locked mutex. NEVER call this function");
+#endif
 
     if (xdrs == NULL) {
 	fprintf(stderr, "xdrclose: passed a NULL pointer\n");
@@ -404,7 +482,7 @@ int xdrclose(XDR *xdrs) {
     return 0;    
 }
 
-#endif
+#endif /* GMX_FORTRAN */
 
 
 /*___________________________________________________________________________

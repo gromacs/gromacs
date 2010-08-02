@@ -76,6 +76,8 @@ int continuing(char *s)
     return FALSE;
 }
 
+
+
 char *fgets2(char *line, int n, FILE *stream)
 /* This routine reads a string from stream of max length n
  * and zero terminated, without newlines
@@ -161,6 +163,23 @@ void trim (char *str)
   rtrim (str);
 }
 
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n)
+{
+    char tmpbuf[STRLEN];
+  
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    /* Windows */
+    ctime_s( tmpbuf, STRLEN, clock );
+#else
+    ctime_r(clock,tmpbuf);
+#endif
+    strncpy(buf,tmpbuf,n-1);
+    buf[n-1]='\0';
+    
+    return buf;
+}
+          
 void nice_header (FILE *out,const char *fn)
 {
   const char *unk = "onbekend";
@@ -169,12 +188,13 @@ void nice_header (FILE *out,const char *fn)
   int    gh;
   uid_t  uid;
   char   buf[256];
+  char   timebuf[STRLEN];
 #ifdef HAVE_PWD_H
   struct passwd *pw;
 #endif
 
   /* Print a nice header above the file */
-  clock = time (0);
+  time(&clock);
   fprintf (out,"%c\n",COMMENTSIGN);
   fprintf (out,"%c\tFile '%s' was generated\n",COMMENTSIGN,fn ? fn : unk);
   
@@ -188,11 +208,12 @@ void nice_header (FILE *out,const char *fn)
   gh  = -1;
 #endif
   
+  gmx_ctime_r(&clock,timebuf,STRLEN);
   fprintf (out,"%c\tBy user: %s (%d)\n",COMMENTSIGN,
 	   user ? user : unk,(int) uid);
   fprintf(out,"%c\tOn host: %s\n",COMMENTSIGN,(gh == 0) ? buf : unk);
 
-  fprintf (out,"%c\tAt date: %s",COMMENTSIGN,ctime(&clock));
+  fprintf (out,"%c\tAt date: %s",COMMENTSIGN,timebuf);
   fprintf (out,"%c\n",COMMENTSIGN);
 }
 

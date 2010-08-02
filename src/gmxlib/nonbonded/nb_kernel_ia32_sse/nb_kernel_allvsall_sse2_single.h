@@ -6,8 +6,6 @@
 #include "types/simple.h"
 #include "typedefs.h"
 
-void nisse();
-
 void
 nb_kernel_allvsall_sse2_single(t_forcerec *fr, 
                                t_mdatoms *            mdatoms,

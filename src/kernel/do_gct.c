@@ -110,9 +110,9 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
   t_coupl_LJ  *tclj;
   t_coupl_BU  *tcbu;
   char        buf[256];
-  char *      leg[]  =  { "C12", "C6" };
-  char *      eleg[] =  { "Epsilon", "Sigma" };
-  char *      bleg[] = { "A", "B", "C" };
+  const char *leg[]  =  { "C12", "C6" };
+  const char *eleg[] =  { "Epsilon", "Sigma" };
+  const char *bleg[] = { "A", "B", "C" };
   char        **raleg;
   int         i,j,index;
   
@@ -127,7 +127,7 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 	raleg[j++] = strdup(buf);
       }
     }
-    xvgr_legend(prop,j,raleg,oenv);
+    xvgr_legend(prop,j,(const char**)raleg,oenv);
     for(i=0; (i<j); i++) 
       sfree(raleg[i]);
     sfree(raleg);
@@ -258,7 +258,7 @@ static void pr_dev(t_coupl_rec *tcr,
     for(i=j=0; (i<eoObsNR); i++)
       if (tcr->bObsUsed[i])
 		  ptr[j++] = strdup(eoNames[i]);
-	  xvgr_legend(fp,j,ptr,oenv);
+	  xvgr_legend(fp,j,(const char**)ptr,oenv);
 	  for(i=0;i<j;i++)
 		  sfree(ptr[i]);
     sfree(ptr);

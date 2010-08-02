@@ -212,7 +212,7 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,
     else
     {
         /* Single residue molecule, keep counting */
-        *resnr = maxresnr + 1 + at_loc/atoms->nr*atoms->nres + atoms->atom[at_loc].resind;
+        *resnr = maxresnr + 1 + (atnr_global - a_start)/atoms->nr*atoms->nres + atoms->atom[at_loc].resind;
     }
     *resname  = *(atoms->resinfo[atoms->atom[at_loc].resind].name);
 }

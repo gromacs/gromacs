@@ -45,7 +45,7 @@ libgmx@LIBSUFFIX@_la_DEPENDENCIES = nonbonded/libnonbonded.la         \
 
 #	
 #
-libgmx@LIBSUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
+libgmx@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ $(PTHREAD_LIBS)
 
 libgmx@LIBSUFFIX@_la_SOURCES = \
 	3dview.c	atomprop.c	bondfree.c	\
@@ -54,7 +54,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	enxio.c		ewald_util.c	ffscanf.c	\
 	filenm.c	futil.c		gbutil.c	gmx_fatal.c	\
 	gmx_sort.c	gmxcpp.c \
-	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
+	gmxfio.c	ifunc.c		index.c		inputrec.c	\
+	cinvsqrtdata.c	\
 	invblock.c	macros.c	orires.c	sparsematrix.c  \
 	main.c		maths.c		matio.c		mshift.c	\
 	mtop_util.c	mtxio.c		mvdata.c	names.c		\
@@ -70,7 +71,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
 	libxdrf.c	gmx_arpack.c	gmx_matrix.c		\
-	dihres.c	gmx_random_gausstable.h		\
+	dihres.c	gmx_random_gausstable.h	gmxfio_int.h\
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		\
 	gmx_system_xdr.c md5.c vmdio.c vmddlopen.c	sighandler.c 	\
 	oenv.c		gmxfio_rw.c	gmxfio_asc.c	gmxfio_bin.c	\
@@ -94,6 +95,4 @@ version.c: FORCE
 FORCE:
 endif
 
-
-
-
+EXTRA_DIST = version.h libgmx.pc.cmakein

@@ -55,12 +55,12 @@
 #ifndef TRAJANA_H
 #define TRAJANA_H
 
-#include <typedefs.h>
-#include <filenm.h>
-#include <readinp.h>
+#include "typedefs.h"
+#include "filenm.h"
+#include "readinp.h"
 
-#include <indexutil.h>
-#include <selection.h>
+#include "indexutil.h"
+#include "selection.h"
 
 #ifdef __cplusplus
 extern "C" {

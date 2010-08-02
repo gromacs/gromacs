@@ -36,6 +36,8 @@
 #include <config.h>
 #endif
 
+#include "idef.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

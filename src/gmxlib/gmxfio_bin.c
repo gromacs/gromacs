@@ -83,6 +83,9 @@ static bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
     case eioREAL:
         size = sizeof(real);
         break;
+    case eioFLOAT:
+        size = sizeof(float);
+        break;
     case eioDOUBLE:
         size = sizeof(double);
         break;
@@ -146,6 +149,9 @@ static bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
         else
             size = sizeof(float);
         break;
+    case eioFLOAT:
+        size = sizeof(float);
+        break;
     case eioDOUBLE:
         size = sizeof(double);
         break;
@@ -186,11 +192,7 @@ static bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
     else
     {
         /* Skip over it if we have a NULL pointer here */
-#ifdef HAVE_FSEEKO
-        fseeko(fio->fp, (off_t) (size * nitem), SEEK_CUR);
-#else
-        fseek(fio->fp,(size*nitem),SEEK_CUR);
-#endif    
+        gmx_fseek(fio->fp, (gmx_off_t)(size*nitem), SEEK_CUR);
         rsize = nitem;
     }
     if ((rsize != nitem) && (fio->bDebug))

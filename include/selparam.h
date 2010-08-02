@@ -41,10 +41,10 @@
 #ifndef SELPARAM_H
 #define SELPARAM_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
-#include <indexutil.h>
-#include <selvalue.h>
+#include "indexutil.h"
+#include "selvalue.h"
 
 #ifdef __cplusplus
 extern "C"

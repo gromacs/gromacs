@@ -7,10 +7,8 @@ Name: libgmx
 Description: Gromacs default lib
 URL: http://www.gromacs.org
 Version: @VERSION@
-Requires: @PKG_XML2@
-Libs.private: @LIBS@
-# Once deps have been split change to this
-# Libs.private: -lm -lpthread
+Requires:
+Libs.private: -lm @PTHREAD_LIBS@
 Libs: -L${libdir} -lgmx@LIBSUFFIX@
-Cflags: -I${includedir}/gromacs
+Cflags: -I${includedir} @PTHREAD_CFLAGS@
 

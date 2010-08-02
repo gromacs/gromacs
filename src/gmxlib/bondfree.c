@@ -1137,6 +1137,7 @@ real pdihs(int nbonds,
   real phi,sign,ddphi,vpd,vtot;
 
   vtot = 0.0;
+
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
     ai   = forceatoms[i++];
@@ -1146,14 +1147,14 @@ real pdihs(int nbonds,
     
     phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
                   &sign,&t1,&t2,&t3);			/*  84 		*/
-		
+
     *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
 			  forceparams[type].pdihs.cpB,
 			  forceparams[type].pdihs.phiA,
 			  forceparams[type].pdihs.phiB,
 			  forceparams[type].pdihs.mult,
 			  phi,lambda,&vpd,&ddphi);
-		       
+
     vtot += vpd;
     do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
 	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
@@ -1840,9 +1841,9 @@ real cmap_dihs(int nbonds,
 		ty12[3]   = cmapd[pos4*4+3];
 		
 		/* Switch to degrees */
-		dx = 15;
+		dx = 360.0 / cmap_grid->grid_spacing;
 		xphi1 = xphi1 * RAD2DEG;
-		xphi2 = xphi2 * RAD2DEG; /* HERE */
+		xphi2 = xphi2 * RAD2DEG; 
 		
 		for(i=0;i<4;i++) /* 16 */
 		{

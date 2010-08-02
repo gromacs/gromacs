@@ -234,7 +234,7 @@ int gmx_rotmat(int argc,char *argv[])
     atom_id    *index;
     output_env_t oenv;
     real       *w_rls;
-    char *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" }; 
+    const char *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" }; 
 #define NLEG asize(leg) 
     t_filenm fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD }, 

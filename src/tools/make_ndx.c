@@ -473,7 +473,7 @@ static int select_chainnames(t_atoms *atoms,int n_names,char **names,
   name[1]=0;
   *nr=0;
   for(i=0; i<atoms->nr; i++) {
-    name[0] = atoms->resinfo[atoms->atom[i].resind].chain;
+    name[0] = atoms->resinfo[atoms->atom[i].resind].chainid;
     j=0; 
     while (j<n_names && !comp_name(name,names[j])) 
       j++;

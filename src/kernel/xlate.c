@@ -135,7 +135,7 @@ static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
 
 void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
                   t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
-                  bool bResname,t_aa_names *aan,bool bReorderNum,
+                  bool bResname,gmx_residuetype_t rt,bool bReorderNum,
                   bool bVerbose)
 {
     FILE *fp;
@@ -178,6 +178,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
         {
             rnm = *(atoms->resinfo[resind].rtp);
         }
+               
         strcpy(atombuf,*(atoms->atomname[a]));
         bReorderedNum = FALSE;
         if (bReorderNum)
@@ -202,7 +203,11 @@ void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
                           (strcasecmp("protein",xlatom[i].res) == 0 &&
-                           is_protein(aan,rnm)));
+                           gmx_residuetype_is_protein(rt,rnm)) ||
+                          (strcasecmp("DNA",xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_dna(rt,rnm)) ||
+                          (strcasecmp("RNA",xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_rna(rt,rnm)));
                 if (!bMatch)
                 {
                     ptr0 = rnm;

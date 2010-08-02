@@ -45,7 +45,7 @@
 #define BIG_STRLEN 1048576
 
 #include <sys/types.h>
-#include <sysstuff.h>
+#include "sysstuff.h"
 #include "types/simple.h"
 #include "types/enums.h"
 #include "types/block.h"
@@ -180,7 +180,7 @@ extern void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra);
  
 extern void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
 				const char *resname,int resnr,unsigned char ic,
-				unsigned char chain);
+				int chainnum, char chainid);
 /* Set the residue name, number, insertion code and chain identifier
  * of atom index atom_ind.
  */

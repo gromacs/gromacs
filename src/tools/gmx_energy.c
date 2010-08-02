@@ -1046,7 +1046,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
         Dt = 0;
     }
     if (bVisco) {
-      char *leg[] = { "Shear", "Bulk" };
+      const char* leg[] = { "Shear", "Bulk" };
       real factor;
       real **eneset;
       real **enesum;
@@ -1144,8 +1144,8 @@ static void fec(const char *ene2fn, const char *runavgfn,
 		enerdata_t *edat, double time[],
                 const output_env_t oenv)
 {
-  char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
-	   	      "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
+  const char* ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
+                           "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
   FILE *fp;
   ener_file_t enx;
   int  nre,timecheck,step,nenergy,nenergy2,maxenergy;
@@ -1358,7 +1358,7 @@ int gmx_energy(int argc,char *argv[])
     { "-ovec", FALSE, etBOOL, {&bOvec},
       "Also plot the eigenvectors with -oten" }
   };
-  char *drleg[] = {
+  const char* drleg[] = {
     "Running average",
     "Instantaneous"
   };
@@ -1403,6 +1403,10 @@ int gmx_energy(int argc,char *argv[])
   const char *orinst_sub = "@ subtitle \"instantaneous\"\n";
   char       buf[256];
   output_env_t oenv;
+  t_enxblock *blk=NULL;
+  t_enxblock *blk_disre=NULL;
+  int        ndisre=0;
+
   t_filenm   fnm[] = {
     { efEDR, "-f",    NULL,      ffREAD  },
     { efEDR, "-f2",   NULL,      ffOPTRD },
@@ -1502,10 +1506,10 @@ int gmx_energy(int argc,char *argv[])
       leg[i] = enm[set[i]].name;
     if (bSum) {
       leg[nset]=strdup("Sum");
-      xvgr_legend(out,nset+1,leg,oenv);
+      xvgr_legend(out,nset+1,(const char**)leg,oenv);
     }
     else
-      xvgr_legend(out,nset,leg,oenv);
+      xvgr_legend(out,nset,(const char**)leg,oenv);
 
     snew(bIsEner,nset);
     for(i=0; (i<nset); i++) {
@@ -1578,7 +1582,7 @@ int gmx_energy(int argc,char *argv[])
 			"Time (ps)","",oenv);
 	  if (bOrinst)
 	    fprintf(fort,"%s",orinst_sub);
-	  xvgr_legend(fort,norsel,odtleg,oenv);
+	  xvgr_legend(fort,norsel,(const char**)odtleg,oenv);
 	}
 	if (bODT) {
 	  fodt=xvgropen(opt2fn("-odt",NFILE,fnm),
@@ -1586,7 +1590,7 @@ int gmx_energy(int argc,char *argv[])
 			"Time (ps)","",oenv);
 	  if (bOrinst)
 	    fprintf(fodt,"%s",orinst_sub);
-	  xvgr_legend(fodt,norsel,odtleg,oenv);
+	  xvgr_legend(fodt,norsel,(const char**)odtleg,oenv);
 	}
       }
     }
@@ -1606,7 +1610,7 @@ int gmx_energy(int argc,char *argv[])
 	  }
 	}
       }
-      xvgr_legend(foten,bOvec ? nex*12 : nex*3,otenleg,oenv);
+      xvgr_legend(foten,bOvec ? nex*12 : nex*3,(const char**)otenleg,oenv);
     }
   }
   else {
@@ -1741,39 +1745,50 @@ int gmx_energy(int argc,char *argv[])
        * Define distance restraint legends. Can only be done after
        * the first frame has been read... (Then we know how many there are)
        */
-      if (bDisRe && bDRAll && !leg && (fr->ndisre > 0)) {
-	t_iatom   *fa;
-	t_iparams *ip;
-	
-	fa = top->idef.il[F_DISRES].iatoms; 
-	ip = top->idef.iparams;
+      blk_disre=find_block_id_enxframe(fr, enxDISRE, NULL);
+      if (bDisRe && bDRAll && !leg && blk_disre) 
+      {
+          t_iatom   *fa;
+          t_iparams *ip;
 
-	if (fr->ndisre != top->idef.il[F_DISRES].nr/3)
-	  gmx_fatal(FARGS,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
-		      fr->ndisre,top->idef.il[F_DISRES].nr/3);
-	
-	snew(pairleg,fr->ndisre);
-	for(i=0; i<fr->ndisre; i++) {
-	  snew(pairleg[i],30);
-	  j=fa[3*i+1];
-	  k=fa[3*i+2];
-	  gmx_mtop_atominfo_global(&mtop,j,&anm_j,&resnr_j,&resnm_j);
-	  gmx_mtop_atominfo_global(&mtop,k,&anm_k,&resnr_k,&resnm_k);
-	  sprintf(pairleg[i],"%d %s %d %s (%d)",
-		  resnr_j+1,anm_j,resnr_k+1,anm_k,
-		  ip[fa[3*i]].disres.label);
-	}
-	set=select_it(fr->ndisre,pairleg,&nset);
-	snew(leg,2*nset);
-	for(i=0; (i<nset); i++) {
-	  snew(leg[2*i],32);
-	  sprintf(leg[2*i],  "a %s",pairleg[set[i]]);
-	  snew(leg[2*i+1],32);
-	  sprintf(leg[2*i+1],"i %s",pairleg[set[i]]);
-	}
-	xvgr_legend(fp_pairs,2*nset,leg,oenv);    
+          fa = top->idef.il[F_DISRES].iatoms; 
+          ip = top->idef.iparams;
+          if (blk_disre->nsub != 2 || 
+              (blk_disre->sub[0].nr != blk_disre->sub[1].nr) )
+          {
+              gmx_incons("Number of disre sub-blocks not equal to 2");
+          }
+
+          ndisre=blk_disre->sub[0].nr ;
+          if (ndisre != top->idef.il[F_DISRES].nr/3)
+          {
+              gmx_fatal(FARGS,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
+                        ndisre,top->idef.il[F_DISRES].nr/3);
+          }
+          snew(pairleg,ndisre);
+          for(i=0; i<ndisre; i++) 
+          {
+              snew(pairleg[i],30);
+              j=fa[3*i+1];
+              k=fa[3*i+2];
+              gmx_mtop_atominfo_global(&mtop,j,&anm_j,&resnr_j,&resnm_j);
+              gmx_mtop_atominfo_global(&mtop,k,&anm_k,&resnr_k,&resnm_k);
+              sprintf(pairleg[i],"%d %s %d %s (%d)",
+                      resnr_j,anm_j,resnr_k,anm_k,
+                      ip[fa[3*i]].disres.label);
+          }
+          set=select_it(ndisre,pairleg,&nset);
+          snew(leg,2*nset);
+          for(i=0; (i<nset); i++) 
+          {
+              snew(leg[2*i],32);
+              sprintf(leg[2*i],  "a %s",pairleg[set[i]]);
+              snew(leg[2*i+1],32);
+              sprintf(leg[2*i+1],"i %s",pairleg[set[i]]);
+          }
+          xvgr_legend(fp_pairs,2*nset,(const char**)leg,oenv);    
       }
-      
+
       /* 
        * Store energies for analysis afterwards... 
        */
@@ -1792,13 +1807,22 @@ int gmx_energy(int argc,char *argv[])
 	  /*******************************************
 	   * D I S T A N C E   R E S T R A I N T S  
 	   *******************************************/
-	  if (fr->ndisre > 0) {
+	  if (ndisre > 0) 
+          {
+#ifndef GMX_DOUBLE
+            float *disre_rt =     blk_disre->sub[0].fval;
+            float *disre_rm3tav = blk_disre->sub[1].fval;
+#else
+            double *disre_rt =     blk_disre->sub[0].dval;
+            double *disre_rm3tav = blk_disre->sub[1].dval;
+#endif
+
 	    print_time(out,fr->t);
 	    if (violaver == NULL)
-	      snew(violaver,fr->ndisre);
+	      snew(violaver,ndisre);
 	    
 	    /* Subtract bounds from distances, to calculate violations */
-	    calc_violations(fr->disre_rt,fr->disre_rm3tav,
+	    calc_violations(disre_rt, disre_rm3tav,
 			    nbounds,pair,bounds,violaver,&sumt,&sumaver);
 
 	    fprintf(out,"  %8.4f  %8.4f\n",sumaver,sumt);
@@ -1806,10 +1830,8 @@ int gmx_energy(int argc,char *argv[])
 	      print_time(fp_pairs,fr->t);
 	      for(i=0; (i<nset); i++) {
 		sss=set[i];
-		fprintf(fp_pairs,"  %8.4f",
-			mypow(fr->disre_rm3tav[sss],minthird));
-		fprintf(fp_pairs,"  %8.4f",
-			fr->disre_rt[sss]);
+		fprintf(fp_pairs,"  %8.4f", mypow(disre_rm3tav[sss],minthird));
+		fprintf(fp_pairs,"  %8.4f", disre_rt[sss]);
 	      }
 	      fprintf(fp_pairs,"\n");
 	    }
@@ -1863,37 +1885,89 @@ int gmx_energy(int argc,char *argv[])
                 fprintf(out,"\n");
             }
 	  }
-	  if (bORIRE && fr->nblock>enx_i && fr->nr[enx_i]>0) {
-	    if (fr->nr[enx_i] != nor)
-	      gmx_fatal(FARGS,"Number of orientation restraints in energy file (%d) does not match with the topology (%d)",fr->nr[enx_i],nor);
-	    if (bORA || bODA)
-	      for(i=0; i<nor; i++)
-		orient[i] += fr->block[enx_i][i];
-	    if (bODR)
-	      for(i=0; i<nor; i++)
-		odrms[i] += sqr(fr->block[enx_i][i]-oobs[i]);
-	    if (bORT) {
-	      fprintf(fort,"  %10f",fr->t);
-	      for(i=0; i<norsel; i++)
-		fprintf(fort," %g",fr->block[enx_i][orsel[i]]); 
-	      fprintf(fort,"\n");
-	    }
-	    if (bODT) {
-	      fprintf(fodt,"  %10f",fr->t);
-	      for(i=0; i<norsel; i++)
-		fprintf(fodt," %g",fr->block[enx_i][orsel[i]]-oobs[orsel[i]]); 
-	      fprintf(fodt,"\n");
-	    }
-	    norfr++;
-	  }
-	  if (bOTEN && fr->nblock>enxORT) {
-	    if (fr->nr[enxORT] != nex*12)
-	      gmx_fatal(FARGS,"Number of orientation experiments in energy file (%g) does not match with the topology (%d)",fr->nr[enxORT]/12,nex);
-	    fprintf(foten,"  %10f",fr->t);
-	    for(i=0; i<nex; i++)
-	      for(j=0; j<(bOvec?12:3); j++)
-	      	fprintf(foten," %g",fr->block[enxORT][i*12+j]);
-	    fprintf(foten,"\n");
+#if 0
+          /* we first count the blocks that have id 0: the orire blocks */
+          block_orire=0;
+          for(b=0;b<fr->nblock;b++)
+          {
+              if (fr->block[b].id == mde_block_type_orire)
+                  nblock_orire++;
+          }
+#endif
+          blk = find_block_id_enxframe(fr, enx_i, NULL);
+	  if (bORIRE && blk)
+          {
+#ifndef GMX_DOUBLE
+              xdr_datatype dt=xdr_datatype_float;
+#else
+              xdr_datatype dt=xdr_datatype_double;
+#endif
+              real *vals;
+
+              if ( (blk->nsub != 1) || (blk->sub[0].type!=dt) )
+              {
+                  gmx_fatal(FARGS,"Orientational restraints read in incorrectly");
+              }
+#ifndef GMX_DOUBLE
+              vals=blk->sub[0].fval;
+#else
+              vals=blk->sub[0].dval;
+#endif
+
+              if (blk->sub[0].nr != (size_t)nor) 
+                  gmx_fatal(FARGS,"Number of orientation restraints in energy file (%d) does not match with the topology (%d)", blk->sub[0].nr);
+              if (bORA || bODA)
+              {
+                  for(i=0; i<nor; i++)
+                      orient[i] += vals[i];
+              }
+              if (bODR)
+              {
+                  for(i=0; i<nor; i++)
+                      odrms[i] += sqr(vals[i]-oobs[i]);
+              }
+              if (bORT) 
+              {
+                  fprintf(fort,"  %10f",fr->t);
+                  for(i=0; i<norsel; i++)
+                      fprintf(fort," %g",vals[orsel[i]]);
+                  fprintf(fort,"\n");
+              }
+              if (bODT) 
+              {
+                  fprintf(fodt,"  %10f",fr->t);
+                  for(i=0; i<norsel; i++)
+                      fprintf(fodt," %g", vals[orsel[i]]-oobs[orsel[i]]);
+                  fprintf(fodt,"\n");
+              }
+              norfr++;
+          }
+          blk = find_block_id_enxframe(fr, enxORT, NULL);
+          if (bOTEN && blk) 
+          {
+#ifndef GMX_DOUBLE
+              xdr_datatype dt=xdr_datatype_float;
+#else
+              xdr_datatype dt=xdr_datatype_double;
+#endif
+              real *vals;
+ 
+              if ( (blk->nsub != 1) || (blk->sub[0].type!=dt) )
+                  gmx_fatal(FARGS,"Orientational restraints read in incorrectly");
+#ifndef GMX_DOUBLE
+              vals=blk->sub[0].fval;
+#else
+              vals=blk->sub[0].dval;
+#endif
+
+              if (blk->sub[0].nr != (size_t)(nex*12))
+                  gmx_fatal(FARGS,"Number of orientation experiments in energy file (%g) does not match with the topology (%d)",
+                            blk->sub[0].nr/12, nex);
+              fprintf(foten,"  %10f",fr->t);
+              for(i=0; i<nex; i++)
+                  for(j=0; j<(bOvec?12:3); j++)
+                      fprintf(foten," %g",vals[i*12+j]);
+              fprintf(foten,"\n");
 	  }
 	}
       }

@@ -107,7 +107,7 @@ int gmx_dist(int argc,char *argv[])
   output_env_t oenv;
   gmx_rmpbc_t  gpbc=NULL;
   
-  char *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
+  const char *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
   static real cut=0;
   

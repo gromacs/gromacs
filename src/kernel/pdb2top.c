@@ -322,7 +322,7 @@ void choose_watermodel(const char *wmsel,const char *ffdir,
         }
     }
     fclose(fp);
-    fprintf(stderr,"%2d: %s\n",nwm,"None");
+    fprintf(stderr,"%2d: %s\n",nwm+1,"None");
 
     do
     {
@@ -360,8 +360,8 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
   bool    bProt, bNterm;
   double  qt;
   int     nmissat;
-  t_aa_names *aan;
-  
+  gmx_residuetype_t rt;
+    
   nmissat = 0;
 
   resind=-1;
@@ -374,13 +374,13 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
   curcg=0;
   cg=-1;
   j=NOTSET;
-  aan = get_aa_names();
+  gmx_residuetype_init(&rt);
   
   for(i=0; (i<at->nr); i++) {
     prevresind=resind;
     if (at->atom[i].resind != resind) {
       resind = at->atom[i].resind;
-      bProt = is_protein(aan,*(at->resinfo[resind].name));
+      bProt = gmx_residuetype_is_protein(rt,*(at->resinfo[resind].name));
       bNterm=bProt && (resind == 0);
       if (resind > 0) {
           nmissat += missing_atoms(&restp[prevresind],prevresind,at,i0,i);
@@ -421,7 +421,7 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
   }
   nmissat += missing_atoms(&restp[resind],resind,at,i0,i);
 
-  done_aa_names(&aan);
+  gmx_residuetype_destroy(rt);
 			   
   return nmissat;
 }

@@ -54,6 +54,7 @@ files.
  * \sa http://www.mpi-forum.org/docs/docs.html for MPI documentation.
 */
 
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" 

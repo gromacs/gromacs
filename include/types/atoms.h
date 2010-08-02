@@ -32,9 +32,14 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _atoms_h
+#define _atoms_h
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include "simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,7 +65,8 @@ typedef struct {
   char          **name;         /* Pointer to the residue name          */
   int           nr;             /* Residue number                       */
   unsigned char ic;             /* Code for insertion of residues       */
-  unsigned char chain;          /* Chain identifier                     */
+  int           chainnum;       /* Iincremented at TER or new chain id  */    
+  char          chainid;        /* Chain identifier written/read to pdb */
   char          **rtp;          /* rtp building block name (optional)   */
 } t_resinfo;
 
@@ -114,4 +120,4 @@ typedef struct {
 }
 #endif
 
-
+#endif

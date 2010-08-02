@@ -23,7 +23,7 @@ if ! libtool --version 2>&1 | grep GNU >/dev/null 2>&1; then
     fi
 fi
 
-aclocal
+aclocal -I config
 # fix for OSX producing debug directories; replace rm -f with rm -rf in built-in scripts
 cat aclocal.m4 | sed -e 's/rm="rm -f"/rm="rm -rf"/' | sed -e 's/rm -f /rm -rf /' > aclocal.tmp && mv aclocal.tmp aclocal.m4
 autoheader

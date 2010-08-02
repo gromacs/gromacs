@@ -120,7 +120,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 	    if (newres+1 > atoms->nres) {
 	      atoms->nres = newres+1;
 	    }
-	    t_atoms_set_resinfo(atoms,natoms,symtab,resnm,resnr,' ',' ');
+	    t_atoms_set_resinfo(atoms,natoms,symtab,resnm,resnr,' ',0,' ');
 	  } else {
 	    atoms->atom[natoms].resind = newres;
 	  }
@@ -539,9 +539,10 @@ static void read_espresso_conf(const char *infile,
 		  atoms->resinfo[atoms->atom[i-1].resind].nr != molnr) {
 		atoms->atom[i].resind =
 		  (i == 0 ? 0 : atoms->atom[i-1].resind+1); 
-		atoms->resinfo[atoms->atom[i].resind].nr    = molnr;
-		atoms->resinfo[atoms->atom[i].resind].ic    = ' ';
-		atoms->resinfo[atoms->atom[i].resind].chain = ' ';
+		atoms->resinfo[atoms->atom[i].resind].nr      = molnr;
+		atoms->resinfo[atoms->atom[i].resind].ic      = ' ';
+		atoms->resinfo[atoms->atom[i].resind].chainid = ' ';
+        atoms->resinfo[atoms->atom[i].resind].chainnum = molnr; /* Not sure if this is right? */
 	      } else {
 		atoms->atom[i].resind = atoms->atom[i-1].resind;
 	      }
@@ -566,7 +567,7 @@ static void read_espresso_conf(const char *infile,
 	      sprintf(buf,"T%c%c",
 		      'A'+atoms->atom[i].type/26,'A'+atoms->atom[i].type%26);
 	    }
-	    t_atoms_set_resinfo(atoms,i,symtab,buf,i,' ',' ');
+	    t_atoms_set_resinfo(atoms,i,symtab,buf,i,' ',0,' ');
 	  }	  
 
 	  if (r == 3)
@@ -776,7 +777,7 @@ static bool get_w_conf(FILE *in,const char *infile,char *title,
 	gmx_fatal(FARGS,"More residues than atoms in %s (natoms = %d)",
 		    infile,natoms);
       atoms->atom[i].resind = newres;
-      t_atoms_set_resinfo(atoms,i,symtab,name,resnr,' ',' ');
+      t_atoms_set_resinfo(atoms,i,symtab,name,resnr,' ',0,' ');
     } else {
       atoms->atom[i].resind = newres;
     }
@@ -1162,7 +1163,7 @@ void write_sto_conf_indexed(const char *outfile,const char *title,
   case efENT:
   case efPQR:
     out=gmx_fio_fopen(outfile,"w");
-    write_pdbfile_indexed(out,title,atoms,x,ePBC,box,0,-1,nindex,index,NULL);
+    write_pdbfile_indexed(out,title,atoms,x,ePBC,box,' ',-1,nindex,index,NULL,TRUE);
     gmx_fio_fclose(out);
     break;
   case efESP:
@@ -1246,7 +1247,7 @@ void write_sto_conf(const char *outfile,const char *title,t_atoms *atoms,
   case efBRK:
   case efENT:
     out=gmx_fio_fopen(outfile,"w");
-    write_pdbfile(out, title, atoms, x, ePBC, box, 0, -1,NULL);
+    write_pdbfile(out, title, atoms, x, ePBC, box, ' ', -1,NULL,TRUE);
     gmx_fio_fclose(out);
     break;
   case efESP:

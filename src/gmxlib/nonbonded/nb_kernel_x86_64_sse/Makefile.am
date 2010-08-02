@@ -54,12 +54,10 @@ libnb_kernel_x86_64_sse_la_SOURCES = \
 	nb_kernel400_x86_64_sse.c	nb_kernel400_x86_64_sse.h	\
 	nb_kernel410_x86_64_sse.c	nb_kernel410_x86_64_sse.h	\
 	nb_kernel430_x86_64_sse.c	nb_kernel430_x86_64_sse.h	\
-	nb_kernel_x86_64_sse_test_asm.s	nb_kernel_x86_64_sse_test_asm.h	\
 	nb_kernel_x86_64_sse.c		nb_kernel_x86_64_sse.h		\
-	nb_kernel_allvsall_sse2_single.c   \
-	nb_kernel_allvsall_sse2_single.h   \
-	nb_kernel_allvsallgb_sse2_single.c \
-	nb_kernel_allvsallgb_sse2_single.h
+	nb_kernel_x86_64_sse_test_asm.s		nb_kernel_x86_64_sse_test_asm.h	\
+	nb_kernel_allvsall_sse2_single.c	nb_kernel_allvsall_sse2_single.h   \
+	nb_kernel_allvsallgb_sse2_single.c	nb_kernel_allvsallgb_sse2_single.h
 
 
 
@@ -87,5 +85,6 @@ EXTRA_DIST = \
 	nb_kernel313_x86_64_sse.intel_syntax.s	nb_kernel314_x86_64_sse.intel_syntax.s	\
 	nb_kernel330_x86_64_sse.intel_syntax.s	nb_kernel331_x86_64_sse.intel_syntax.s	\
 	nb_kernel332_x86_64_sse.intel_syntax.s	nb_kernel333_x86_64_sse.intel_syntax.s	\
-	nb_kernel334_x86_64_sse.intel_syntax.s	nb_kernel_x86_64_sse_test_asm.intel_syntax.s
-
+	nb_kernel334_x86_64_sse.intel_syntax.s	nb_kernel400_x86_64_sse.intel_syntax.s  \
+	nb_kernel410_x86_64_sse.intel_syntax.s  nb_kernel430_x86_64_sse.intel_syntax.s  \
+	nb_kernel_x86_64_sse_test_asm.intel_syntax.s

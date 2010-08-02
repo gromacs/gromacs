@@ -196,7 +196,7 @@ static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
 	  sprintf(leg[j],"atom %d%s",index[i]+1,dimtxt[d]);
 	j++;
       }
-  xvgr_legend(fp,j,leg,oenv);
+  xvgr_legend(fp,j,(const char**)leg,oenv);
   for(i=0; i<j; i++)
     sfree(leg[i]);
   sfree(leg);
@@ -540,7 +540,7 @@ int gmx_traj(int argc,char *argv[])
   t_block    *mols;
   bool       bTop,bOX,bOXT,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF;
   bool       bDim[4],bDum[4],bVD;
-  char *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
+  const char *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
   output_env_t oenv;
 
   t_filenm fnm[] = {

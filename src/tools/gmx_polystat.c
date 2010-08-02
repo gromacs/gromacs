@@ -158,7 +158,7 @@ int gmx_polystat(int argc,char *argv[])
   double mmol,m;
   char   title[STRLEN];
   FILE   *out,*outv,*outp, *outi;
-  char *leg[8] = { "end to end", "<R\\sg\\N>",
+  const char *leg[8] = { "end to end", "<R\\sg\\N>",
 	 	         "<R\\sg\\N> eig1", "<R\\sg\\N> eig2", "<R\\sg\\N> eig3",
 		         "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>" };
   char   **legp,buf[STRLEN];
@@ -214,7 +214,7 @@ int gmx_polystat(int argc,char *argv[])
 	legp[d*DIM+d2] = strdup(buf);
       }
     }
-    xvgr_legend(outv,DIM*DIM,legp,oenv);
+    xvgr_legend(outv,DIM*DIM,(const char**)legp,oenv);
   } else {
     outv = NULL;
   }

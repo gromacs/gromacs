@@ -40,8 +40,9 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, rvdw_switch, rvdw, DispCorr)
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp_table)
 <li><A HREF="#ewald"><b>Ewald</b></A> (fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, epsilon_surface, optimize_fft)
-<li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
-<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p, refcoord_scaling)
+<li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, nsttcouple, tc_grps, tau_t, ref_t)
+<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype,
+  nstpcouple, tau_p, compressibility, ref_p, refcoord_scaling)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, annealing_npoints, annealing_time, annealing_temp)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
@@ -250,8 +251,7 @@ set <tt>init_step</tt> to the step number of the restart frame.
 <tt>tpbconv</tt> does this automatically.
 </dd>
 <dt><h4>nstcalcenergy: (-1)</h4></dt>
-<dd>The frequency for calculating the energies, including the temperature
-and the pressure, 0 is never.
+<dd>The frequency for calculating the energies, 0 is never.
 This option is only relevant with dynamics.
 With a twin-range cut-off setup <b>nstcalcenergy</b> should be equal to
 or a multiple of <b>nstlist</b>.
@@ -262,8 +262,7 @@ With global temperature and/or pressure coupling the time step for
 the coupling algorithm is <b>nstcalcenergy</b>*<b>dt</b>.
 Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.
 The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
-unless <b>nstlist</b> &le 0, then a value of 10 is used;
-for velocity Verlet integrators <b>nstcalcenergy</b> is set to 1.</dd>
+unless <b>nstlist</b> &le 0, then a value of 10 is used.
 <dt><h4>comm_mode:</h4></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
@@ -830,6 +829,12 @@ This thermostat works correctly even for <b>tau_t</b>=0.
 For NVT simulations the conserved energy quantity is written
 to the energy and log file.</dd>
 </dl>
+<dt><h4>nsttcouple: (-1)</h4></dt>
+<dd>The frequency for coupling the temperature.
+The default value of -1 sets <b>nsttcouple</b> equal to <b>nstlist</b>,
+unless <b>nstlist</b> &le 0, then a value of 10 is used.
+For velocity Verlet integrators <b>nsttcouple</b> is set to 1.</dd>
+</dd>
 <dt><h4>nh-chain-length (10)</h4></dt>
 <dd>the number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog <b>md</b> integrator only supports 1.  Data for the NH chain variables is not printed to the .edr, but can be using the GMX_NOSEHOOVER_CHAINS environment variable</dd>
 <dt><h4>tc_grps:</h4></dt>
@@ -914,6 +919,13 @@ The value for the z-compressibility should be reasonably accurate since it
 influences the convergence of the surface-tension, it can also be set to zero
 to have a box with constant height.</dd>
 </dl></dd>
+
+<dt><h4>nstpcouple: (-1)</h4></dt>
+<dd>The frequency for coupling the pressure.
+The default value of -1 sets <b>nstpcouple</b> equal to <b>nstlist</b>,
+unless <b>nstlist</b> &le 0, then a value of 10 is used.
+For velocity Verlet integrators <b>nstpcouple</b> is set to 1.</dd>
+</dd>
 
 <dt><h4>tau_p: (1) [ps]</h4></dt>
 <dd>time constant for coupling</dd>
@@ -1118,6 +1130,8 @@ off in the z-direction.</dd>
 <dd>LJ integrated over the volume behind the wall: 9-3 potential</dd>
 <dt><b>10-4</b></dt>
 <dd>LJ integrated over the wall surface: 10-4 potential</dd>
+<dt><b>12-6</b></dt>
+<dd>direct LJ potential with the z distance from the wall</dd>
 <dt><b>table</b></dt><dd>user defined potentials indexed with the z distance from the wall, the tables are read analogously to
 the <b><A HREF="#table">energygrp_table</A></b> option,
 where the first name is for a "normal" energy group and the second name
@@ -1731,6 +1745,8 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstfout</A><br>
 <A HREF="#nl">nstlist</A><br>
 <A HREF="#out">nstlog</A><br>
+<A HREF="#pc">nstpcouple</A><br>
+<A HREF="#tc">nsttcouple</A><br>
 <A HREF="#out">nstvout</A><br>
 <A HREF="#out">nstxout</A><br>
 <A HREF="#out">nstxtcout</A><br>
