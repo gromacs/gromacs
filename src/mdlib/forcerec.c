@@ -1171,13 +1171,9 @@ static void make_adress_tf_tables(FILE *fp,const output_env_t oenv,
 {
   char buf[STRLEN];
   int i,j;
-  gmx_groups_t *groups;
-  char   **gnames;
 
-  groups = &mtop->groups;
   if (tabfn == NULL) {
-    if (debug)
-      fprintf(debug,"No table file name passed, can not read table, can not do adress tf table\n");
+        gmx_fatal(FARGS,"No thermoforce table file given. Use -tablea to specify a file\n");
     return;
   }
 
@@ -1185,8 +1181,9 @@ static void make_adress_tf_tables(FILE *fp,const output_env_t oenv,
 
   for (i=0; i<ir->n_adress_tf_grps; i++){
     j = ir->adress_tf_table_index[i]; /* get energy group index */
-    sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_tf_%s.%s", *(groups->grpname[groups->grps[egcENER].nm_ind[j]]) ,ftp2ext(efXVG));
-    printf("loading tf table for energy index %d from %s\n", ir->adress_tf_table_index[j], buf);
+    sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_tf_%s.%s",
+        *(mtop->groups.grpname[mtop->groups.grps[egcENER].nm_ind[j]]) ,ftp2ext(efXVG));
+    printf("loading tf table for energygrp index %d from %s\n", ir->adress_tf_table_index[j], buf);
     fr->atf_tabs[i] = make_atf_table(fp,oenv,fr,buf, box);
   }
 
