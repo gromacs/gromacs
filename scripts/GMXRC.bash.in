@@ -13,6 +13,15 @@ for i in `echo $LD_LIBRARY_PATH | sed "s/:/ /g"`; do
 done
 LD_LIBRARY_PATH=$tmppath
 
+# remove gromacs part of PKG_CONFIG_PATH
+tmppath=""
+for i in `echo $PKG_CONFIG_PATH | sed "s/:/ /g"`; do
+  if test "$i" != "$GMXLDLIB/pkgconfig"; then
+    tmppath=${tmppath}:$i
+  fi
+done
+PKG_CONFIG_PATH=$tmppath
+
 # remove gromacs part of path
 tmppath=""
 for i in `echo $PATH | sed "s/:/ /g"`; do
@@ -43,11 +52,12 @@ GMXDATA=@datadir@
 	
 # NB: The variables already begin with ':' now, or are empty
 LD_LIBRARY_PATH=${GMXLDLIB}${LD_LIBRARY_PATH}
+PKG_CONFIG_PATH=${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH}
 PATH=${GMXBIN}${PATH}
 MANPATH=${GMXMAN}${MANPATH}
 
 # export should be separate, so /bin/sh understands it
-export GMXBIN GMXLDLIB GMXMAN GMXDATA LD_LIBRARY_PATH PATH MANPATH
+export GMXBIN GMXLDLIB GMXMAN GMXDATA LD_LIBRARY_PATH PATH MANPATH PKG_CONFIG_PATH
 
 # read bash completions if understand how to use them
 # and this shell supports extended globbing

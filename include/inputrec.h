@@ -30,6 +30,8 @@
 
 #include <stdlib.h>
 
+#include "types/inputrec.h"
+
 #ifdef __cplusplus
 extern "C"
 {
