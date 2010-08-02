@@ -120,7 +120,7 @@ a number of default groups are generated to choose from:
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \item[{\tt Prot-Masses}]\mbox{}\\
         protein atoms excluding dummy masses (as used in virtual site
-        constructions of NH$_3$ groups and Tryptophane sidechains),
+        constructions of NH$_3$ groups and tryptophan side-chains),
         see also \secref{vsitetop}; this group is only included when
         it differs from the '{\tt Protein}' group
 } % Brace matches ifthenelse test for gmxlite
@@ -167,7 +167,7 @@ your installation for an example.
 \end{figure}
 
 Before analyzing your trajectory it is often informative to look at
-your trajectory first. Gromacs comes with a simple trajectory
+your trajectory first. {\gromacs} comes with a simple trajectory
 viewer {\tt \normindex{ngmx}}; the advantage with this one is that it does not
 require OpenGL, which usually isn't present e.g. on supercomputers.
 It is also possible to generate a
@@ -225,8 +225,8 @@ $r_{max}$ (see \figref{rdfex}C).
 {\includegraphics[width=7cm,angle=270]{plots/rdf}}}
 \caption[Definition of slices in {\tt g\_rdf}.]{Definition of slices
 in {\tt g\_rdf}: A. $g_{AB}(r)$. B. $g_{AB}(r,\theta)$. The slices are
-colored grey. C. Normalization $\langle\rho_B\rangle_{local}$. D. Normalization
-$\langle\rho_B\rangle_{local,\:\theta }$. Normalization volumes are colored grey.}
+colored gray. C. Normalization $\langle\rho_B\rangle_{local}$. D. Normalization
+$\langle\rho_B\rangle_{local,\:\theta }$. Normalization volumes are colored gray.}
 \label{fig:rdfex}
 \end{figure}
 
@@ -374,7 +374,7 @@ D_A ~=~ {1\over 3} \int_0^{\infty} \langle {\bf v}_i(t) \cdot {\bf v}_i(0) \rang
 which is just the integral of the velocity autocorrelation function.
 There is a widely held belief that the velocity ACF converges faster than the mean
 square displacement (\secref{msd}), which can also be used for the computation of 
-diffusion constants. However, Allen \& Tildesly~\cite{Allen87} 
+diffusion constants. However, Allen \& Tildesley~\cite{Allen87} 
 warn us that the long time 
 contribution to the velocity ACF can not be ignored, so care must be taken.
 
@@ -708,7 +708,7 @@ into account. All eigenvectors are weighted equally and when
 degenerate subspaces are present (equal eigenvalues) the calculated overlap
 will be too low.
 
-Another useful check is the cosine content. It has been proven the
+Another useful check is the cosine content. It has been proved that the
 the principal components of random diffusion are cosines with the number of
 periods equal to half the principal component index\cite{Hess2000,Hess2002b}.
 The eigenvalues are proportional to the index to the power $-2$.
@@ -895,7 +895,7 @@ in your protein. You can use the program {\tt \normindex{xrama}} for this.
 
 When studying $\alpha$-helices 
 it is useful to have a {\em helical wheel} projection
-of your peptide, to see whether a peptide is amphipatic. This can be done
+of your peptide, to see whether a peptide is amphipathic. This can be done
 using the {\tt \normindex{wheel}} program. Two examples are 
 plotted in \figref{wheel}.
 
@@ -979,3 +979,12 @@ to be more up-to-date.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 } % Brace matches ifthenelse test for gmxlite
+
+% LocalWords:  Xmgr ndx mk angndx rdf dihedrals grompp hydrogens MainChain Prot
+% LocalWords:  oxygens SideChain tryptophan vsitetop aminoacids dat ngmx dr SPC
+% LocalWords:  OO ACF fg xmgr corrmd ACFs kM iM FFT th NMR nd corrleg rotacf dt
+% LocalWords:  velacc Kubo msd Tildesley corrtime msdwater sgangle cis dih xpm
+% LocalWords:  mindist mdmat rms rmsdist rmsd jj diag eigenvectors covar anaeig
+% LocalWords:  macromolecule trr tpr gro pdb nofit hbond rclcl HB multi Luzar
+% LocalWords:  dssp rama xrama rg Ramachandran phipsi amphipathic HPr xvgr pvd
+% LocalWords:  Scripps

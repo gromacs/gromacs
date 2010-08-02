@@ -92,7 +92,7 @@ which is the total force on $i$ resp. $j$. Because we use Newton's third law
 \eeq
 we must in the implementation double the term containing the shift $\delta_i$.
 
-\subsection{The intramolecular shift (mol-shift).}
+\subsection{The intra-molecular shift (mol-shift).}
 For the bonded-forces and shake it is possible to make a {\em mol-shift}
 list, in which the periodicity is stored. We simple have an array {\tt mshift}
 in which for each atom an index in the {\tt shiftvec} array is stored.
@@ -106,15 +106,15 @@ as edges.
 \item[3]	make one of the white atoms black (atom $i$) and put it in the
 		central box
 \item[4]	make all of the neighbors of $i$ that are currently 
-		white, grey 
-\item[5]	pick one of the grey atoms (atom $j$), give it the
+		white, gray 
+\item[5]	pick one of the gray atoms (atom $j$), give it the
 		correct periodicity with respect to any of 
 		its black neighbors
 		and make it black
 \item[6]	make all of the neighbors of $j$ that are currently 
-		white, grey
-\item[7]	if any grey atom remains, goto [5]
-\item[8]	if any white atom remains, goto [3]
+		white, gray
+\item[7]	if any gray atom remains, go to [5]
+\item[8]	if any white atom remains, go to [3]
 \end{enumerate}
 Using this algorithm we can 
 \begin{itemize}
@@ -144,7 +144,7 @@ The virial contribution from the bonds then is
 An important contribution to the virial comes from shake. Satisfying 
 the constraints a force {\bf G} is exerted on the particles shaken. If this
 force does not come out of the algorithm (as in standard shake) it can be
-calculated afterwards (when using {\em leap-frog}) by:
+calculated afterward (when using {\em leap-frog}) by:
 \bea
 \Delta\rvi&~=~&\rvi(t+\Dt)-
 [\rvi(t)+{\bf v}_i(t-\frac{\Dt}{2})\Dt+\frac{\Fvi}{m_i}\Dt^2]	\\
@@ -203,13 +203,13 @@ And for four site water models similar to TIP4P~\cite{Jorgensen83}:
 \item   Atom four has only coulomb interactions.
 \end{enumerate}
 
-The gain of these implementations is that there are more floating point
+The gain of these implementations is that there are more floating-point
 operations in a single loop, which implies that some compilers
 can schedule the code better. However, it turns out that even
 some of the most advanced compilers have problems with scheduling, 
 implying that manual tweaking is necessary to get optimum 
 \normindex{performance}.
-This may include common-subexpression elimination, or moving
+This may include common-sub-expression elimination, or moving
 code around. 
 
 \subsection{Fortran Code}
@@ -234,10 +234,10 @@ Y(x) = \frac{1}{ \sqrt{x} }
 As the project continued, the {\intel} processor was used to implement
 {\gromacs}, which now turned into almost a full software project.  The
 $1/\sqrt{x}$ processor was implemented using a Newton-Raphson
-iteration scheme for one step. For this it needed lookup tables to
+iteration scheme for one step. For this it needed look-up tables to
 provide the initial approximation. The $1/\sqrt{x}$ function makes it
 possible to use two almost independent tables for the exponent seed
-and the fraction seed with the IEEE floating point representation.
+and the fraction seed with the IEEE floating-point representation.
 
 \subsection{General}
 According to~\cite{Bekker87} the $1/\sqrt{x}$ can be calculated using
@@ -273,8 +273,8 @@ using Taylor series expansion to estimate the error results in
 according to~\cite{Bekker87} equation (3.2). This is an estimation of the
 absolute error.
 
-\subsection{Applied to floating point numbers}
-Floating point numbers in IEEE 32 bit single precision format have a nearly
+\subsection{Applied to floating-point numbers}
+floating-point numbers in IEEE 32 bit single-precision format have a nearly
 constant relative error of $\Delta x / x = 2^{-24}$. As seen earlier in the
 Taylor series expansion equation (\eqnref{taylor}), the error in every
 iteration step is absolute and in general dependent of $y$. If the error is
@@ -386,11 +386,11 @@ calculated with a specified accuracy.
 \put(140,400){\makebox(0,0)[lb]{\raisebox{0pt}[0pt][0pt]{\twltt $Value=(-1)^{S}(2^{E-127})(1.F)$}}}
 \end{picture}
 \end{center}
-\caption{IEEE single precision floating point format}
+\caption{IEEE single-precision floating-point format}
 \label{fig:ieee}
 \end{figure}
 
-\subsection{Specification of the lookup table}
+\subsection{Specification of the look-up table}
 To calculate the function $1/\sqrt{x}$ using the previously mentioned
 iteration scheme, it is clear that the first estimation of the solution must
 be accurate enough to get precise results. The requirements for the
@@ -402,21 +402,21 @@ calculation are
 
 The first requirement states that the result of $1/\sqrt{x}$ may have a
 relative error $\varepsilon_{r}$ equal to the $\varepsilon_{r}$ of a IEEE 32
-bit single precision floating point number. From this the $1/\sqrt{x}$
+bit single-precision floating-point number. From this the $1/\sqrt{x}$
 of the initial approximation can be derived, rewriting the definition of
 the relative error for succeeding steps, equation (\eqnref{epsr})
 \begin{equation}
 \frac{\varepsilon_{n}}{y} =
 \sqrt{\varepsilon_ {r_{n+1}} \frac{2f'}{yf''}}
 \end{equation}
-So for the lookup table the needed accuracy is
+So for the look-up table the needed accuracy is
 \begin{equation}
 \frac{\Delta Y}{Y} = \sqrt{\frac{2}{3} 2^{-24}}
 \label{eqn:accy}
 \end{equation}
 which defines the width of the table that must be $\geq 13$ bit.
 
-At this point the relative error $\varepsilon_{r_{n}}$ of the lookup table
+At this point the relative error $\varepsilon_{r_{n}}$ of the look-up table
 is known. From this the maximum relative error in the argument can be 
 calculated as follows. The absolute error
 $\Delta x$ is defined as
@@ -432,28 +432,28 @@ and thus
 \Delta x = constant \frac{Y}{Y'}
 \end{equation}
 for the $1/\sqrt{x}$ function $Y / Y' \sim x$ holds, so
-$\Delta x / x = constant$. This is a property of the used floating point
+$\Delta x / x = constant$. This is a property of the used floating-point
 representation as earlier mentioned. The needed accuracy of the argument of the
-lookup table follows from
+look-up table follows from
 \begin{equation}
 \frac{\Delta x}{x} = -2 \frac{\Delta Y}{Y}
 \end{equation}
-so, using the floating point accuracy, equation (\eqnref{accy})
+so, using the floating-point accuracy, equation (\eqnref{accy})
 \begin{equation}
 \frac{\Delta x}{x} = -2 \sqrt{\frac{2}{3} 2^{-24}}
 \end{equation}
-This defines the length of the lookup table which should be $\geq 12$ bit.
+This defines the length of the look-up table which should be $\geq 12$ bit.
 
 \subsection{Separate exponent and fraction computation}
-The used IEEE 32 bit single precision floating point format specifies
+The used IEEE 32 bit single-precision floating-point format specifies
 that a number is represented by a exponent and a fraction. The previous 
-section specifies for every possible floating point number the lookup table 
-length and width. Only the size of the fraction of a floating point number 
+section specifies for every possible floating-point number the look-up table 
+length and width. Only the size of the fraction of a floating-point number 
 defines the accuracy. The conclusion from this can be that the size of the 
-lookup table is length of lookup table, earlier specified, times the size of 
+look-up table is length of look-up table, earlier specified, times the size of 
 the exponent ($2^{12}2^{8}, 1Mb$). The $1/\sqrt{x}$  function has the 
 property that the exponent is independent of the fraction. This becomes clear 
-if the floating point representation is used. Define
+if the floating-point representation is used. Define
 \begin{equation}
 x \equiv (-1)^{S}(2^{E-127})(1.F)
 \label{eqn:fpdef}
@@ -484,7 +484,7 @@ Define
 then $\frac{1}{\sqrt{2}} < 1.F' \leq 1$ holds, so the condition
 $1 \leq 1.F' < 2$ which is essential for normalized real representation is
 not valid anymore. By introducing an extra term this can be corrected.
-Rewrite the $1/\sqrt{x}$ function applied to floating point numbers, equation
+Rewrite the $1/\sqrt{x}$ function applied to floating-point numbers, equation
 (\eqnref{yx}) as
 \begin{equation}
 y(x) = (2^{\frac{127-E}{2}-1}) (2(1.F)^{-1/2})
@@ -499,7 +499,7 @@ and
 \label{eqn:frac}
 \end{equation}
 then $\sqrt{2} < 1.F \leq 2$ holds. This is not the exact valid range as
-defined for normalized floating point numbers in equation (\eqnref{fpdef}). 
+defined for normalized floating-point numbers in equation (\eqnref{fpdef}). 
 The value $2$  causes the problem. By mapping this value on the nearest
 representation $< 2$ this can be solved. The small error that is introduced
 by this approximation is within the allowable range. 
@@ -527,8 +527,8 @@ mentioned, so the exponent does not need an extra correction.
 
 The conclusions from this are:
 \begin{itemize}
-\item The fraction and exponent lookup table are independent. The fraction
-lookup table exists of two tables (odd and even exponent) so the odd/even
+\item The fraction and exponent look-up table are independent. The fraction
+look-up table exists of two tables (odd and even exponent) so the odd/even
 information of the exponent (lsb bit) has to be used to select the right
 table.
 \item The exponent table is an 256 x 8 bit table, initialized for $odd$
@@ -536,8 +536,8 @@ and $even$.% as specified before
 \end{itemize}
 
 \subsection{Implementation}
-The lookup tables can be generated by a small C program, which uses
-floating point numbers and operations with IEEE 32 bit single precision format.
+The look-up tables can be generated by a small C program, which uses
+floating-point numbers and operations with IEEE 32 bit single-precision format.
 Note that because of the $odd$/$even$ information that is needed, the
 fraction table is twice the size earlier specified (13 bit i.s.o. 12 bit).
 %\figref{expgen} in the appendix shows how to fill the exponent table,
@@ -561,11 +561,11 @@ or
 \begin{equation}
 y_{n+1} = \frac{y_{n}}{2} (3 - a y^{2}_{n})
 \end{equation}
-Where $y_{0}$ can be found in the lookup tables, and $y_{1}$ gives the result
+Where $y_{0}$ can be found in the look-up tables, and $y_{1}$ gives the result
 to the maximum accuracy. 
 %In \figref{as_implementation}) the assembler implementation is given. 
 It is clear that only one iteration extra (in double 
-precision) is needed for a double precision result.
+precision) is needed for a double-precision result.
 
 \section{Modifying GROMACS}
 The following files have to be edited in case you want to add a bonded
@@ -585,3 +585,7 @@ potential of any type.
 \item {\tt src/kernel/topdirs.c}
 \item {\tt src/kernel/topio.c}
 \end{enumerate}
+
+% LocalWords:  Virial virial triclinic intra mol mshift shiftvec sqrt SPC lj yf
+% LocalWords:  coul Fortran SGI AMD Raphson IEEE taylor epsr accy ieee yx fpdef
+% LocalWords:  lsb nr inversef src

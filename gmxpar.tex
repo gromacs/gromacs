@@ -77,7 +77,7 @@ Connection Machine (CM-5), because of portability to other hardware,
 the poor performance of the code produced by the compilers 
 and because this way of programming
 has the same drawback as vectorization: the part of the program that is
-not vectorized or parallelized determines the runtime of the program
+not vectorized or parallelized determines the run time of the program
 (\normindex{Amdahl's law}).
 
 The approach we took to parallelism was a minimalist one: use as few
@@ -88,8 +88,8 @@ routines as possible. We only use 5 communication routines that are
 non-standard. It is therefore very easy to port our code to other machines.
 
 For an $O(N^2)$ problem like MD, one of the best schemes for the
-interprocessor connections is a ring, so our software demands that a
-ring is present in the interprocessor connections. A ring can essentially
+inter-processor connections is a ring, so our software demands that a
+ring is present in the inter-processor connections. A ring can essentially
 always be mapped onto another network like a \normindex{hypercube}, a
 bus interface (Ethernet {\eg} using 
 \seeindex{Message Passing Interface}{MPI} \normindex{MPI}) or 
@@ -253,7 +253,7 @@ a side excursion to parallel sorting.
 Please note the following which we use throughout this chapter:\\
 {\bf definition:} {\natom}: Number of particles, {\nproc} number of processors.\\
 {\gromacs} employs two different grids: the neighbor searching grid ({\nsgrid})
-and the combined charge/po\-ten\-tial grid ({\fftgrid}), as will be described below.
+and the combined charge/potential grid ({\fftgrid}), as will be described below.
 To maximize the confusion, 
 these two grids are mapped onto a grid of processors when {\gromacs} runs on a 
 parallel computer.
@@ -457,7 +457,7 @@ For the domain decomposition bit of {\gromacs} it is necessary to sort the
 coordinates (or rather the index to coordinates) every time a neighbor list is made.
 If we use brute force, and sort all coordinates on each processor (which is 
 technically possible since we have all the coordinates), then this sorting procedure
-will take a constant wallclock time, proportional to {\natom}$^2\log${\natom}, 
+will take a constant wall clock time, proportional to {\natom}$^2\log${\natom}, 
 regardless of the number of processors. We can however do a little
 better, if we assume that particles diffuse only slowly.
 A parallel sorting algorithm can be conceived as follows: \\
@@ -485,3 +485,9 @@ At subsequent steps of the simulation:
 %Suppose our box size is 4.0 nm and the cut-off is 0.8 nm. For neighborsearching 
 %we use {\dgrid} = 2, such that there 10 {\nsgrid} cells.
 
+
+% LocalWords:  Parallelization parallelization parallelize Fortran vectorizing
+% LocalWords:  parallelized vectorize Amdahl's MPI ij ji decomp mdpar nprocs gx
+% LocalWords:  pid rvec vecs homenr dihedrals indices parsort nsgrid editconf
+% LocalWords:  preprocessor grompp PPPM pppm trunc FFTW FFT FFTs Convolute un
+% LocalWords:  SGI Quicksort

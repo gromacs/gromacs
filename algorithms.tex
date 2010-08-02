@@ -284,7 +284,7 @@ in particular when constraints are used as well (in this case you will
 get very large pressures).  Because of this it is recommended to not
 combine freeze groups with constraints and pressure coupling. For the
 sake of equilibration it could suffice to start with freezing in a
-constant volume simulation, and afterwards use position restraints in
+constant volume simulation, and afterward use position restraints in
 conjunction with constant pressure.
 
 \item[Accelerate group]
@@ -377,7 +377,7 @@ A global flow scheme for MD is given in \figref{global}. Each
 MD or  EM run requires as input a set of initial coordinates and --
 optionally -- initial velocities of all particles involved. This
 chapter does not describe how these are obtained; for the setup of an
-actual MD run check the online manual at {\wwwpage}.
+actual MD run check the on-line manual at {\wwwpage}.
 
 \subsection{Initial conditions}
 \subsubsection{Topology and force field}
@@ -1185,7 +1185,7 @@ coupling. This is done by specifying zero for the time constant
 $\tau_T$ for the group of which should not be thermostatted.  If only
 part of the system is thermostatted, the system will still eventually
 converge to an NVT system.  In fact, one suggestion for minimizing
-errors in the temperature due descritized timesteps is that if
+errors in the temperature caused by discretized timesteps is that if
 constraints on the water are used, then only the water degrees of
 freedom should be thermostatted, not protein degrees of freedom, as
 the higher frequency modes in the protein can cause larger deviations
@@ -1577,7 +1577,7 @@ lower frequencies.
 a shell particle representing the electronic degrees of freedom is
 attached to a nucleus by a spring. The potential energy is minimized with
 respect to the shell position  at every step of the simulation (see below).
-Succesful applications of shell models in {\gromacs} have been published
+Successful applications of shell models in {\gromacs} have been published
 for $N_2$~\cite{Jordan95} and water~\cite{Maaren2001a}.
 
 \subsection{Optimization of the shell positions}
@@ -2226,7 +2226,7 @@ intermediate values of $\lambda$. This can easily be done by setting
 the stepsize \textbf{delta\_lambda} to zero. Each simulation can be
 equilibrated first, and a proper error estimate can be made for each
 value of $dG/d\lambda$ from the fluctuation of $\partial H/\partial
-\lambda$. The total free energy change is then determined afterwards
+\lambda$. The total free energy change is then determined afterward
 by an appropriate numerical integration procedure.
 
 The $\lambda$-dependence for the force-field contributions is
@@ -2660,13 +2660,13 @@ and separate PME-mesh nodes.
 
 \section{\swapindex{Implicit}{solvent}}
 \label{sec:gbsa}
-Implcit solvent models provide an efficent way of representing 
+Implicit solvent models provide an efficient way of representing 
 the electrostatic effects of solvent molecules, while saving a 
 large piece of the computations involved in an accurate, aqueous 
 description of the surrounding water in molecular dynamics simulations. 
 Implicit solvation models offer several advantages compared with 
 explicit solvation, including no need for equilibration of water 
-around the solute, and absense of viscosity allowing the protein 
+around the solute, and absence of viscosity allowing the protein 
 to more quickly explore conformational space.
 
 Implicit solvent calculations in GROMACS can be done using the 
@@ -2697,7 +2697,7 @@ G_{pol} = (1-\frac{1}{\epsilon} \sum_{i=1}^n \sum_{j>i}^n \frac {q_i q_j}{\sqrt{
 \label{eqn:gb_still}
 \eeq
 
-In GROMACS we have introduced the subsitution~\cite{Larsson10} 
+In GROMACS we have introduced the substitution~\cite{Larsson10} 
 
 \beq
 c_i=\frac{1}{\sqrt{b_i}}
@@ -2719,7 +2719,7 @@ G_{pol} = (1-\frac{1}{\epsilon}) \sum_{i=1}^n \sum_{j>i}^n \frac{q_i q_j}{\sqrt{
 \label{eqn:gb_final}
 \eeq 
 
-The non-polar part ($G_{np}$) of Eqn.~\ref{eqn:gb_solv} is calculated 
+The non-polar part ($G_{np}$) of Equation~\ref{eqn:gb_solv} is calculated 
 directly from the Born radius of each atom using a simple ACE type 
 approximation by Schaefer et al~\cite{Karplus98}, including a 
 simple loop over all atoms. 
@@ -2737,12 +2737,15 @@ but differing slightly between the three Born radii models.
 % LocalWords:  Tcoupling nonergodic thermostatting NOSEHOOVER algorithmes ij yx
 % LocalWords:  Parrinello Rahman rescales atm anisotropically ccc xz zx yy yz
 % LocalWords:  zy zz se barostat compressibilities MTTK NPT Martyna al isobaric
-% LocalWords:  Tuckerman vir PV fkT iLt iL Liouville NHC Eq baro mu
+% LocalWords:  Tuckerman vir PV fkT iLt iL Liouville NHC Eq baro mu trj mol bc
 % LocalWords:  freezegroup Shannon's polarizability Overhauser barostats iLn KE
-% LocalWords:  negligibly thermostatted descritized Tobias 
+% LocalWords:  negligibly thermostatted Tobias  rhombic maxwell et
 % LocalWords:  waals LINCS holonomic plincs lincs unc ang SA Langevin SD amu BD
 % LocalWords:  bfgs Broyden Goldfarb Shanno mkT kJ DFLEXIBLE Nocedal diag nmeig
 % LocalWords:  diagonalization anaeig nmens covanal ddg feia BT dp dq pV dV dA
 % LocalWords:  NpT eq stepsize REMD constrainted website Okabe MPI covar edi dd
 % LocalWords:  progman NMR ddcells innerloops ddtric tric dds rdd conf rcon est
-% LocalWords:  mb PP MPMD ddorder pp cartesian grompp npme parallelizable
+% LocalWords:  mb PP MPMD ddorder pp cartesian grompp npme parallelizable rlong
+% LocalWords:  macromolecule rshort nstlist vacuo parallelization dof indices
+% LocalWords:  TOL numerics parallelized eigenvectors dG parallelepipeds VdW np
+% LocalWords:  Coul multi solvation HCT OBC solv cav vdw Schaefer
