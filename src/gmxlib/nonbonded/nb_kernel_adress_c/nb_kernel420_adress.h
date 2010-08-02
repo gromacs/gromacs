@@ -73,7 +73,7 @@ nb_kernel420_adress_ex
                  real          GBtab[],    int *         nthreads, 
                  int *         count,      void *        mtx,
                  int *         outeriter,  int *         inneriter,
-                 real *        work);
+                 real force_cap, real * wf);
 
 
 /*! \brief Nonbonded kernel adress 420 without forces.
@@ -103,7 +103,7 @@ nb_kernel420_adress_cg
                  real          GBtab[],    int *         nthreads, 
                  int *         count,      void *        mtx,
                  int *         outeriter,  int *         inneriter,
-                 real *        work);
+                 real force_cap, real * wf);
 
 
 #ifdef __cplusplus
