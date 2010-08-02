@@ -388,7 +388,7 @@ parallelized:
         decomposition. If each processor only has particles in a certain region
         of space, it only has to calculate the charge distribution for 
         that region of space. Since {\gromacs} works with slabs, this means that
-        each processor fills the {\fftgrid} cells corresponding to it's slab in space
+        each processor fills the {\fftgrid} cells corresponding to its slab in space
         and addition of {\fftgrid}s need only be done for neighboring slabs.\\
         To be more precise, the slab $x$ for processor $i$ is defined as:
         \beq
@@ -477,7 +477,7 @@ At subsequent steps of the simulation:
 \item   Sort the combined indices of the three (or two) processors. Note that
         the CPU time associated with sorting is now
         (3{\natom}/{\nproc})$^2\log$ (3{\natom}/{\nproc}).
-\item   On each processor, the indices belonging to it's slab can be determined
+\item   On each processor, the indices belonging to its slab can be determined
         from the order of the array (\figref{parsort}).
 \end{enumerate}
 

@@ -847,7 +847,7 @@ ensemble to be calculated.  In either case, simulation with double
 precision may be required to get fine details of thermodynamics
 correct.
 
-\subsection{\normindex{Twin-range cut-off's}}
+\subsection{\normindex{Twin-range cut-offs}}
 To save computation time, slowly varying forces can be calculated
 less often than rapidly varying forces. In {\gromacs}
 such a \normindex{multiple time step} splitting is possible between
@@ -905,7 +905,7 @@ they are mainly affected by translation of water molecules, not rotation.
 \begin{figure}
 \centerline{\includegraphics[width=12cm]{plots/drift_all}}
 \caption{Energy drift per degree of freedom in SPC/E water
-with twin-range cut-off's
+with twin-range cut-offs
 for reaction field (left) and Lennard Jones interaction (right)
 as a function of the long-range time step length for the irreversible
 ``\gromos'' scheme and a reversible Trotter scheme.}
@@ -1086,7 +1086,7 @@ harmonic oscillators, can be {\em nonergodic}, meaning that only a
 subsection of phase space is ever sampled, even if the simulations
 were to run for infinitely long.  For this reason, the Nos{\'e}-Hoover
 chain approach was developed, where each of the Nos{\'e}-Hoover
-thermostats is has it's own Nos{\'e}-Hoover thermostat controlling it's
+thermostats is has its own Nos{\'e}-Hoover thermostat controlling its
 temperature.  In the limit of an infinite chain of thermostats, the
 dynamics are guaranteed to be ergodic, but in practice, just a few are
 required.  The default is 10, but this can be controlled by user
@@ -2616,7 +2616,7 @@ For machines with a real 3-D torus and proper communication software
 that assigns the processors accordingly one should use
 {\tt mdrun -ddorder cartesian}.
 
-To optimize the performance one should usually set up the cut-off's
+To optimize the performance one should usually set up the cut-offs
 and the PME grid such that the PME load is 25 to 33\% of the total
 calculation load. {\tt grompp} will print an estimate for this load
 at the end and also {\tt mdrun} calculates the same estimate
