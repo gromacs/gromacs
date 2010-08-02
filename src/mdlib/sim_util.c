@@ -1799,8 +1799,8 @@ static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
     int n0,np1,nm1,nval,min_nvalm,min_nvalp,maxc;
     real chi_m1_0,chi_p1_0,chi_m2_0,chi_p2_0,chi_p1_m1,chi_p2_m1,chi_m1_p1,chi_m2_p1;
     real omega_m1_0,omega_p1_m1,omega_m1_p1,omega_p1_0,clam_osum;
-    real idgm,idgp,de,de_function,dr,denom,maxdr,pks=0;
-    real min_val, cnvalm,cnvalp,zero_sum_weights;
+    real de,de_function,dr,denom,maxdr,pks=0;
+    real min_val,cnval,zero_sum_weights;
     real *omegam_array, *weightsm_array, *omegap_array, *weightsp_array, *varm_array, *varp_array, *dwp_array, *dwm_array;    
     real clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
     real *lam_weights, *lam_minvar_corr, *lam_variance, *lam_dg, *p_k;
@@ -1875,19 +1875,15 @@ static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
             lam_variance[i] = pow(dfhist->sum_variance[i+1],2) - pow(dfhist->sum_variance[i],2); 
         }
         
-        idgm = fep->init_lambda_weights[fep_state-1]-fep->init_lambda_weights[fep_state];
-        idgp = fep->init_lambda_weights[fep_state]-fep->init_lambda_weights[fep_state+1];
-            
         /* accumulate running averages */
         for (nval = 0; nval<maxc; nval++) 
         {
             /* constants for later use */
-            cnvalm = (real)(nval-fep->c_range) + idgm; 
-            cnvalp = (real)(nval-fep->c_range) + idgp; 
-            /* actually, should be able to rewrite it w/o this, for better numerical stability */
+            cnval = (real)(nval-fep->c_range); 
+            /* actually, should be able to rewrite it w/o exponential, for better numerical stability */
             if (fep_state > 0) 
             {
-                de = exp(cnvalm - (scaled_lamee[fep_state]-scaled_lamee[fep_state-1]));
+                de = exp(cnval - (scaled_lamee[fep_state]-scaled_lamee[fep_state-1]));
                 if (fep->elamstats==elamstatsBARKER || fep->elamstats==elamstatsMINVAR) 
                 {
                     de_function = 1.0/(1.0+de);
@@ -1909,7 +1905,7 @@ static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
             
             if (fep_state < nlim-1) 
             {
-                de = exp(-cnvalp + (scaled_lamee[fep_state+1]-scaled_lamee[fep_state]));
+                de = exp(-cnval + (scaled_lamee[fep_state+1]-scaled_lamee[fep_state]));
                 if (fep->elamstats==elamstatsBARKER || fep->elamstats==elamstatsMINVAR) 
                 {
                     de_function = 1.0/(1.0+de);
@@ -1968,7 +1964,7 @@ static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
                 if (nm1 > 0) 
                 {
                     omega_p1_m1 = chi_p2_m1/pow(chi_p1_m1,2) - 1.0;
-                    clam_weightsm = (log(chi_m1_0) - log(chi_p1_m1)) + cnvalm;
+                    clam_weightsm = (log(chi_m1_0) - log(chi_p1_m1)) + cnval;
                     clam_varm = (1.0/n0)*(omega_m1_0) + (1.0/nm1)*(omega_p1_m1);
                 } 
             }
@@ -1979,7 +1975,7 @@ static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
                 if (np1 > 0) 
                 {
                     omega_m1_p1 = chi_m2_p1/pow(chi_m1_p1,2) - 1.0;
-                    clam_weightsp = (log(chi_m1_p1) - log(chi_p1_0)) + cnvalp;
+                    clam_weightsp = (log(chi_m1_p1) - log(chi_p1_0)) + cnval;
                     clam_varp = (1.0/np1)*(omega_m1_p1) + (1.0/n0)*(omega_p1_0);
                 }
             }
@@ -1989,11 +1985,11 @@ static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
             varm_array[nval]               = clam_varm;
             if (nm1 > 0) 
             {
-                dwm_array[nval]  = fabs( (cnvalm + log((1.0*n0)/nm1)) - lam_dg[fep_state-1] );
+                dwm_array[nval]  = fabs( (cnval + log((1.0*n0)/nm1)) - lam_dg[fep_state-1] );
             } 
             else 
             {
-                dwm_array[nval]  = fabs( cnvalm - lam_dg[fep_state-1] );
+                dwm_array[nval]  = fabs( cnval - lam_dg[fep_state-1] );
             }
             
             omegap_array[nval]             = omega_p1_0;
@@ -2001,11 +1997,11 @@ static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, re
             varp_array[nval]               = clam_varp;
             if (np1 > 0) 
             {
-                dwp_array[nval]  = fabs( (cnvalp + log((1.0*np1)/n0)) - lam_dg[fep_state] );
+                dwp_array[nval]  = fabs( (cnval + log((1.0*np1)/n0)) - lam_dg[fep_state] );
             } 
             else 
             {
-                dwp_array[nval]  = fabs( cnvalp - lam_dg[fep_state] );
+                dwp_array[nval]  = fabs( cnval - lam_dg[fep_state] );
             }
             
         }
