@@ -513,7 +513,7 @@ adress_thermo_force(int                  cg0,
     int              icg,k0,k1,n0,nnn,nrcg, i;
     int              adresstype;
     real             adressw, adressr;
-    bool	     badress_chempot_dx, badress_tf_full_box;
+    bool	     badress_tf_full_box;
     atom_id *        cgindex;
     unsigned short * ptype;
     rvec *           ref;
@@ -570,71 +570,45 @@ adress_thermo_force(int                  cg0,
 
                     rinv             = gmx_invsqrt(dr[0]*dr[0]+dr[1]*dr[1]+dr[2]*dr[2]);
                     
-                    if (!badress_chempot_dx){
-                        wsq              = w*w;
-                        wmin1            = w - 1.0;
-                        dwp_dr           = 1.0/adressw;
-        
-                        /* get the dwp_dr part of the force */
 
-                       wp           = wsq;
-                       dwp_dr      *= -2.0*M_PI*sqrt(-wsq*w*wmin1);
-                        
-        
-                        /* now get the dmu/dwp part from the table */
-                        wt               = wp*tabscale;
-                        n0               = wt;
-                        eps              = wt-n0;
-                        eps2             = eps*eps;
-                        nnn              = 4*n0;
-                        F                = ATFtab[nnn+1];
-                        Geps             = eps*ATFtab[nnn+2];
-                        Heps2            = eps2*ATFtab[nnn+3];
-                        Fp               = F+Geps+Heps2;
-                        dmu_dwp          = (Fp+Geps+2.0*Heps2)*tabscale;
-        
-                        fscal            = dmu_dwp*dwp_dr*rinv;
+                   //calculate distace to adress center again
+                    sqr_dl =0.0;
+                    switch(adresstype)
+                    {
+                    case eAdressXSplit:
+                        /* plane through center of ref, varies in x direction */
+                        sqr_dl         = dr[0]*dr[0];
+                        break;
+                    case eAdressSphere:
+                        /* point at center of ref, assuming cubic geometry */
+                        for(i=0;i<3;i++){
+                            sqr_dl    += dr[i]*dr[i];
+                        }
+                        break;
+                    }
+
+                    dl=sqrt(sqr_dl);
+                    if (badress_tf_full_box){
+                        // table origin is center of box
+                        wt               = dl*tabscale;
                     }
                     else
                     {
-                       //calculate distace to adress center again
-                        sqr_dl =0.0;
-                        switch(adresstype)
-                        {
-                        case eAdressXSplit:              
-                            /* plane through center of ref, varies in x direction */
-                            sqr_dl         = dr[0]*dr[0];
-                            break;
-                        case eAdressSphere:
-                            /* point at center of ref, assuming cubic geometry */
-                            for(i=0;i<3;i++){
-                                sqr_dl    += dr[i]*dr[i];
-                            }
-                            break;
-                        }
-
-                        dl=sqrt(sqr_dl);
-                        if (badress_tf_full_box){
-                            // table origin is center of box
-                            wt               = dl*tabscale;
-                        }
-                        else
-                        {
-                            // table origin is begin of the hybrid zone
-                            wt               = (dl-adressr)*tabscale;
-                        }
-                        n0               = wt;
-                        eps              = wt-n0;
-                        eps2             = eps*eps;
-                        nnn              = 4*n0;
-                        F                = ATFtab[nnn+1];
-                        Geps             = eps*ATFtab[nnn+2];
-                        Heps2            = eps2*ATFtab[nnn+3];
-                        Fp               = F+Geps+Heps2;
-                        F                = (Fp+Geps+2.0*Heps2)*tabscale;
-        
-                        fscal            = F*rinv;
+                        // table origin is begin of the hybrid zone
+                        wt               = (dl-adressr)*tabscale;
                     }
+                    n0               = wt;
+                    eps              = wt-n0;
+                    eps2             = eps*eps;
+                    nnn              = 4*n0;
+                    F                = ATFtab[nnn+1];
+                    Geps             = eps*ATFtab[nnn+2];
+                    Heps2            = eps2*ATFtab[nnn+3];
+                    Fp               = F+Geps+Heps2;
+                    F                = (Fp+Geps+2.0*Heps2)*tabscale;
+
+                    fscal            = F*rinv;
+                    
                     /* now add thermo force to f_novirsum */
                     f[k0][0]        += fscal*dr[0];
                     if (adresstype != eAdressXSplit)
