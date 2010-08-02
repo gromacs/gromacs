@@ -22,7 +22,8 @@ endif()
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 file(GLOB GMXLIB_SOURCES *.c 
      selection/*.c trajana/*.c
-     statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
+     statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c
+     nonbonded/nb_kernel_adress_c/*.c)
 
 # add version.c to the list of sources and tell cmake that it is generated
 if(USE_VERSION_H)
