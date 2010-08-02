@@ -845,7 +845,7 @@ gmx_mm_int_2_genborn_pd(__m128d r, __m128d isai,
 	
 	ftmp     = _mm_mul_pd(_mm_mul_pd(qq, FF), gbtabscale);
 	
-	dvdatmp  = _mm_mul_pd(half,(vgb+ftmp*r));
+	dvdatmp  = _mm_mul_pd(half,_mm_add_pd(vgb,_mm_mul_pd(ftmp,r)));
 	
 	*dvdasum = _mm_add_pd(*dvdasum,dvdatmp);
 	
@@ -910,7 +910,7 @@ gmx_mm_int_1_genborn_pd(__m128d r, __m128d isai,
 	
 	ftmp     = _mm_mul_pd(_mm_mul_pd(qq, FF), gbtabscale);
 	
-	dvdatmp  = _mm_mul_pd(half,(vgb+ftmp*r));
+	dvdatmp  = _mm_mul_pd(half,_mm_add_pd(vgb,_mm_mul_pd(ftmp,r)));
 	
 	*dvdasum = _mm_add_pd(*dvdasum,dvdatmp);
 	
