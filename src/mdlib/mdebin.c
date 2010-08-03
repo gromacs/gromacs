@@ -642,20 +642,14 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
             sprintf(&buf[nps-1],")");  /* -1 to overwrite the last comma */
             setname[s] = strdup(buf);
         }
-<<<<<<< HEAD:src/mdlib/mdebin.c
         if (ir->epc!=epcNO) {
             np = sprintf(buf,"pV (%s)",unit_energy);        
             setname[nsetsextend-1] = strdup(buf);  /* the first entry after nsets */
         }
         
-        xvgr_legend(fp,nsetsextend,setname,oenv);
+        xvgr_legend(fp,nsetsextend,(const char **)setname,oenv);
         
         for(s=0; s<nsetsextend; s++)
-=======
-        xvgr_legend(fp,nsets,(const char**)setname,oenv);
-
-        for(s=0; s<nsets; s++)
->>>>>>> master:src/mdlib/mdebin.c
         {
             sfree(setname[s]);
         }

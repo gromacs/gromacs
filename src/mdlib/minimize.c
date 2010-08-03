@@ -2254,7 +2254,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
     rvec       *f;
     gmx_global_stat_t gstat;
     t_graph    *graph;
-    real       t,lambda;
+    real       t,t0,lambda,lam0;
     bool       bNS;
     tensor     vir,pres;
     rvec       mu_tot;
