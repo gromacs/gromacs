@@ -37,7 +37,7 @@ The package is mainly distributed as source code, but we also provide
 RPM packages for Linux.
 On the home page you will find all the information you need to 
 \normindex{install} the package, mailing lists with archives,
-and several additional online resources like contributed topologies, etc.
+and several additional on-line resources like contributed topologies, etc.
 The default installation action is simply to unpack the source code and
 the issue\\
 \begin{tt}
@@ -72,10 +72,10 @@ the last one or two decimals of the forces are non-significant.
 The virial is less accurate than the forces, since the virial is only one
 order of magnitude larger than the size of each element in the sum over
 all atoms (\secref{virial}).
-In most cases this is not really a problem, since the fluctuations in de
+In most cases this is not really a problem, since the fluctuations in the
 virial can be 2 orders of magnitude larger than the average.
 In periodic charged systems these errors are often negligible.
-Especially cut-off's for the Coulomb interactions cause large errors
+Especially cut-offs for the Coulomb interactions cause large errors
 in the energies, forces and virial.
 Even when using a reaction-field or lattice sum method the errors
 are larger than or comparable to the errors due to the single precision.
@@ -91,7 +91,7 @@ for the conjugate gradient or l-bfgs minimization and the calculation and
 diagonalization of the Hessian
 \item calculation of the constraint force between two large groups of atoms
 \item energy conservation (this can only be done without temperature coupling
-and without cut-off's)
+and without cut-offs)
 \end{itemize}
 
 \section{Porting {\gromacs}}
@@ -102,11 +102,11 @@ features:
 
 \begin{enumerate}
 \item   A UNIX-like operating system (BSD 4.x or SYSTEM V rev.3 or higher) 
-        or UNIX-like libraries running under e.g. CygWin
+        or UNIX-like libraries running under e.g. Cygwin
 \item   an ANSI C compiler 
 \item   optionally a Fortran-77 compiler or Fortran-90 compiler
         for faster (on some computers) inner loop routines
-\item   optionally the Nasm assembler to use the assembly innerloops
+\item   optionally the Nasm assembler to use the assembly inner loops
         on x86 processors.
 \end{enumerate}
 
@@ -208,7 +208,7 @@ are essential for running and compiling {\gromacs}. Other variables are:
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as
-TOTAL for the {\tt \normindex{do\_shift}} program, and DSPP for the
+TOTAL for the {\tt \normindex{do\_shift}} program, and DSSP for the
 {\tt \normindex{do\_dssp}} program.
 
 \section{Running {\gromacs} in parallel}
@@ -217,12 +217,12 @@ you can compile {\gromacs} with this library to run simulations in parallel.
 All supercomputers are shipped with MPI libraries optimized for 
 that particular platform, and if you are using a cluster of workstations
 there are several good free MPI implementations. You can find updated links
-to these on the gromacs homepage {\wwwpage}. Once you have an MPI library
+to these on the {\gromacs} homepage {\wwwpage}. Once you have an MPI library
 installed it's trivial to compile {\gromacs} with MPI support: Just set
 the option {\tt --enable-mpi} to the configure script and recompile.
 (But don't forget to make distclean before running configure if you have
 previously compiled with a different configuration.) If you are using a 
-supercomputer you might also want to turn of the default nicing of the
+supercomputer you might also want to turn of the default nice-ing of the
 mdrun process with the {\tt --disable-nice} option.
 
 There is usually a program called {\tt mpirun} with which you can fire
@@ -239,10 +239,18 @@ In this example MPI reads the first option from the command line.
 Since {\tt mdrun} also wants to know the number of processes you have to
 type it twice.
 
-Check your local manuals (or online manual) for exact details
+Check your local manuals (or on-line manual) for exact details
 of your MPI implementation.
 
 If you are interested in programming MPI yourself, you can find
 manuals and reference literature on the internet.
 
 
+
+% LocalWords:  Opteron Itanium PowerPC Altivec Athlon Fortran virial bfgs Nasm
+% LocalWords:  diagonalization Cygwin MPI Multi GMXHOME extern gmx tx pid buf
+% LocalWords:  bufsize txs rx rxs init nprocs fp msg GMXRC DUMPNL BUFS GMXNPRI
+% LocalWords:  unbuffered SGI npri mdrun nmrun covar nmeig setenv XPM XVG EPS
+% LocalWords:  PDB xvg xpm eps pdb xmgrace ghostview rasmol GMXTIMEUNIT fs dssp
+% LocalWords:  mpi distclean ing mpirun goofus doofus fred topol np
+% LocalWords:  internet

@@ -34,6 +34,17 @@
 \newcommand{\nsgrid}{NS grid}
 \newcommand{\fftgrid}{FFT grid}
 \newcommand{\dgrid}{\mbox{$\delta_{grid}$}}
+\newcommand{\bfv}[1]{{\mbox{\boldmath{$#1$}}}}
+% non-italicized boldface for math (e.g. matrices)                              
+\newcommand{\bfm}[1]{{\bf #1}}
+\newcommand{\dt}{\Delta t}
+\newcommand{\rv}{\bfv{r}}
+\newcommand{\vv}{\bfv{v}}
+\newcommand{\F}{\bfv{F}}
+\newcommand{\pb}{\bfv{p}}
+\newcommand{\veps}{v_{\epsilon}}
+\newcommand{\peps}{p_{\epsilon}}
+\newcommand{\sinhx}[1]{\frac{\sinh{\left( #1\right)}}{#1}}
 \chapter{Algorithms}
 \label{ch:algorithms}
 \section{Introduction}
@@ -124,9 +135,9 @@ a_x>0,~~~~b_y>0,~~~~c_z>0
 |c_x| \leq \frac{1}{2} \, a_x,~~~~
 |c_y| \leq \frac{1}{2} \, b_y
 \eeq
-Equations \ref{eqn:box_rot} can always be statisfied by rotating the box.
+Equations \ref{eqn:box_rot} can always be satisfied by rotating the box.
 Inequalities (\ref{eqn:box_shift1}) and (\ref{eqn:box_shift2}) can always be
-statisfied by adding and subtracting box vectors.
+satisfied by adding and subtracting box vectors.
 
 Even when simulating using a triclinic box, {\gromacs} always keeps the
 particles in a brick-shaped volume, for efficiency reasons,
@@ -273,7 +284,7 @@ in particular when constraints are used as well (in this case you will
 get very large pressures).  Because of this it is recommended to not
 combine freeze groups with constraints and pressure coupling. For the
 sake of equilibration it could suffice to start with freezing in a
-constant volume simulation, and afterwards use position restraints in
+constant volume simulation, and afterward use position restraints in
 conjunction with constant pressure.
 
 \item[Accelerate group]
@@ -291,7 +302,10 @@ that would lead to 256$\times$256 items! Better use this concept
 sparingly.
 
 All non-bonded interactions between pairs of energy monitor groups can
-be excluded\index{exclusions, energy monitor group} (see \secref{mdpopt}).
+be excluded\index{exclusions, energy monitor group}
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{(see \secref{mdpopt}).}
 Pairs of particles from excluded pairs of energy monitor groups
 are not put into the pair list.
 This can result in a significant speedup
@@ -363,14 +377,17 @@ A global flow scheme for MD is given in \figref{global}. Each
 MD or  EM run requires as input a set of initial coordinates and --
 optionally -- initial velocities of all particles involved. This
 chapter does not describe how these are obtained; for the setup of an
-actual MD run check the online manual at {\wwwpage}.
+actual MD run check the on-line manual at {\wwwpage}.
 
 \subsection{Initial conditions}
 \subsubsection{Topology and force field}
 The system topology, including a description of the force field, must
-be read in. Force fields and topologies are described in \chref{ff} 
-and \ref{ch:top}, respectively. All this information is static; it is 
-never modified during the run.
+be read in.
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{Force fields and topologies are described in \chref{ff}
+and \ref{ch:top}, respectively.}
+All this information is static; it is never modified during the run.
 
 \subsubsection{Coordinates and velocities}
 \begin{figure}
@@ -390,12 +407,12 @@ which represent the three basis vectors of the periodic box. %While in the
 %version. 
 
 If the run starts at $t=t_0$, the coordinates at $t=t_0$ must be
-known. The {\em leap-frog algorithm}, used to update the time step
-with $\Dt$ (see \ssecref{update}), also requires that the velocities at
-$t=t_0 - \hDt$ are known. If velocities are not available, the program
-can generate initial atomic velocities $v_i, i=1\ldots 3N$ with a
-\swapindex{Maxwell-Boltzmann}{distribution} (\figref{maxwell}) at a given
-absolute temperature $T$:
+known. The {\em leap-frog algorithm}, the default algorithm used to 
+update the time step with $\Dt$ (see \ssecref{update}), also requires 
+that the velocities at $t=t_0 - \hDt$ are known. If velocities are not 
+available, the program can generate initial atomic velocities 
+$v_i, i=1\ldots 3N$ with a \swapindex{Maxwell-Boltzmann}{distribution} 
+(\figref{maxwell}) at a given absolute temperature $T$:
 \beq 
 p(v_i) = \sqrt{\frac{m_i}{2 \pi kT}}\exp\left(-\frac{m_i v_i^2}{2kT}\right)
 \eeq
@@ -492,12 +509,12 @@ while 99.99\% of the particles are fine.
 \subsubsection{\swapindex{Simple}{search}}
 Due to \eqnsref{box_rot}{simplerc}, the vector $\rvij$
 connecting images within the cut-off $R_c$ can be found by constructing:
-\begin{eqnarray}
+\bea
 \ve{r}'''   & = & \ve{r}_j-\ve{r}_i \\
 \ve{r}''    & = & \ve{r}''' - {\bf c}*\verb'round'(r'''_z/c_z)) \\
 \ve{r}'     & = & \ve{r}'' - {\bf b}*\verb'round'(r''_y/b_y) \\
 \ve{r}_{ij} & = & \ve{r}' - {\bf a}*\verb'round'(r'_x/a_x)
-\end{eqnarray}
+\eea
 When distances between two particles in a triclinic box are needed
 that do not obey \eqnref{box_rot},
 many shifts of combinations of box vectors need to be considered to find
@@ -644,7 +661,7 @@ in \secref{virial}.
 } % Brace matches ifthenelse test for gmxlite
 
 
-\subsection{Update configuration}
+\subsection{The leap frog integrator}
 \label{subsec:update}
 \begin{figure}
 \centerline{\includegraphics[width=8cm]{plots/leapfrog}}
@@ -653,32 +670,184 @@ like  frogs over each others back.}
 \label{fig:leapfrog}
 \end{figure}
 
-The {\gromacs} MD program utilizes the so-called {\em leap-frog} 
+The default MD integrator in {\gromacs} is the so-called {\em leap-frog} 
 algorithm~\cite{Hockney74} for the integration of the equations of
-motion.  The \normindex{leap-frog} 
+motion.  When extremely accurate integration is  temperature
+and/or pressure coupling velocity Verlet integrators are also present and may be preferable (see \ssecref{vverlet}). The \normindex{leap-frog} 
 algorithm uses positions $\ve{r}$ at time $t$ and
 velocities $\ve{v}$ at time $t-\hDt$; it updates positions and
 velocities using the forces
 $\ve{F}(t)$ determined by the positions at time $t$: 
 \bea
 \label{eqn:leapfrogv}
-\ve{v}(t+\hDt)  &~=~&   \ve{v}(t-\hDt)+\frac{1}{m}\ve{F}(t)\Dt   \\
-\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\ve{v}(t+\hDt)\Dt
+\ve{v}(t+\hDt)  &~=~&   \ve{v}(t-\hDt)+\frac{\Dt}{m}\ve{F}(t)   \\
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt\ve{v}(t+\hDt)
 \eea
 The algorithm is visualized in \figref{leapfrog}.
-It is equivalent to the Verlet~\cite{Verlet67} algorithm:
+It produces trajectories that are identical to the Verlet~\cite{Verlet67} algorithm:
 \beq
 \ve{r}(t+\Dt)~=~2\ve{r}(t) - \ve{r}(t-\Dt) + \frac{1}{m}\ve{F}(t)\Dt^2+O(\Dt^4)
 \eeq
 The algorithm is of third order in $\ve{r}$ and is time-reversible.
 See ref.~\cite{Berendsen86b} for the merits of this algorithm and comparison
 with other time integration algorithms.
- 
-The \swapindex{equations of}{motion} are modified for temperature coupling
- and pressure coupling, and extended to include the conservation of
-constraints, all of which are described below.
 
-\subsection{\normindex{Twin-range cut-off's}}
+The \swapindex{equations of}{motion} are modified for temperature
+coupling and pressure coupling, and extended to include the
+conservation of constraints, all of which are described below.  
+
+\subsection{The velocity Verlet integrator}
+\label{subsec:vverlet}
+The velocity Verlet algorithm~\cite{Swope82} is also implemented in
+Gromacs, though it is not yet fully integrated with all sets of
+options.  In velocity Verlet positions $\ve{r}$ and velocities
+$\ve{v}$ at time $t$ are used to integrate the equations of motion;
+velocities at the previous half step are not required.  \bea
+\label{eqn:velocityverlet1}
+\ve{v}(t+\hDt)  &~=~&   \ve{v}(t)+\frac{\Dt}{2m}\ve{F}(t)   \\
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt\,\ve{v}(t+\hDt) \\
+\ve{v}(t+\Dt)   &~=~&   \ve{v}(t+\hDt)+\frac{\Dt}{2m}\ve{F}(t+\Dt)
+\eea
+or equivalently:
+\bea
+\label{eqn:velocityverlet2}
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+ \Dt\,\ve{v} + \frac{\Dt^2}{2m}\ve{F}(t) \\
+\ve{v}(t+\Dt)   &~=~&   \ve{v}(t)+ \frac{\Dt}{2m}\left[\ve{F}(t) + \ve{F}(t+\Dt)\right]
+\eea
+With no temperature or pressure coupling, and with corresponding
+starting points, leapfrog and velocity Verlet will generate identical
+trajectories, as can easily be verified by hand from the equations
+above.  Given a single starting file with the {\em same} starting
+point $\ve{x}(0)$ and $\ve{v}(0)$, leapfrog and velocity Verlet will
+{\em not} give identical trajectories, as leapfrog will interpret the
+velocities as corresponding to $t=-\hDt$, while velocity Verlet will
+interpret them as corresponding to the timepoint $t=0$.
+
+\subsection{Understanding integrators: The Trotter decomposition}
+To further understand the relationship between velocity Verlet and
+leapfrog integration, we introduce the reversible Trotter formulation
+of dynamics, which is also useful to understanding implementations of
+thermostats and barostats in Gromacs.
+
+A system of coupled, first order differential equations can be evolved
+from time $t = 0$ to time $t$ by applying the evolution operator
+\bea
+\Gamma(t) &=& \exp(iLt) \Gamma(0) \nonumber \\
+iL &=& \dot{\Gamma}\cdot \nabla_{\Gamma} 
+\eea
+Where $L$ is the Liouville operator, and $\Gamma$ is the
+multidimensional vector of independent variables (positions and
+velocities).
+A short-time approximation to the true operator, accurate at time $\Dt
+= t/P$, is applied $P$ times in succession to evolve the system:
+\beq
+\Gamma(t) = \prod_{i=1}^P \exp(iL\Dt) \Gamma(0)
+\eeq
+For NVE dynamics, the Liouville operator is:
+\bea
+iL = \sum_{i=1}^{N} \vv_i \cdot \nabla_{\rv_i} + \sum_{i=1}^N \frac{1}{m_i}\F(r_i) \cdot \nabla_{\vv_i}
+\eea
+If this is split into two operators:
+\bea
+iL_1 &=& \sum_{i=1}^N \frac{1}{m_i}\F(r_i) \cdot \nabla_{\vv_i} \nonumber \\
+iL_2 &=& \sum_{i=1}^{N} \vv_i \cdot \nabla_{\rv_i} 
+\eea
+Then a short time, symmetric, and thus reversible approximation of the true dynamics will be:
+\bea
+\exp(iL\Dt) = \exp(iL_2\hDt) \exp(iL_1\Dt) \exp(iL_2\hDt) + \mathcal{O}(\Dt^3) 
+\label{eq:NVE_trotter}
+\eea
+Which corresponds to velocity Verlet integration.  The first
+exponential term over $\hDt$ corresponds to a velocity half-step, the
+second exponential term over $\Dt$ corresponds to a full velocity
+step, and the last exponential term over $\hDt$ is the final velocity
+half step.  For future times $t = n\Dt$, this becomes:
+\bea
+\exp(iLn\Dt) &\approx&  \left(\exp(iL_2\hDt) \exp(iL_1\Dt) \exp(iL_2\hDt)\right)^n \nonumber \\
+             &\approx&  \exp(iL_2\hDt) \bigg(\exp(iL_1\Dt) \exp(iL_2\Dt)\bigg)^{n-1} \nonumber \\
+             &       &  \;\;\;\; \exp(iL_1\Dt) \exp(iL_2\hDt) 
+\eea
+This formalism allows us to easily see the difference between the
+different flavors of Verlet integrators.  The leapfrog integrator can
+be seen as starting with Eq.~\ref{eq:NVE_trotter} with the
+$\exp\left(iL_1 \dt\right)$ term, instead of the half-step velocity
+term, yielding:
+\bea 
+\exp(iLn\dt) &=& \exp\left(iL_1 \dt\right) \exp\left(iL_2 \Dt \right) + \mathcal{O}(\Dt^3)
+\eea 
+Where the full step in velocity is between $t-\hDt$ and $t+\hDt$,
+since it is a combination of the velocity half steps in velocity
+Verlet. For future times $t = n\Dt$, this becomes: 
+\bea 
+\exp(iLn\dt) &\approx& \bigg(\exp\left(iL_1 \dt\right) \exp\left(iL_2 \Dt \right)  \bigg)^n
+\eea 
+Although this does not at first appear symmetric, as long as the full velocity
+step is between $t-\hDt$ and $t+\hDt$, then it is simply a way of
+starting velocity Verlet at a different place in the cycle.
+
+Even though the trajectory and thus potential energies are identical
+between leapfrog and velocity Verlet, the kinetic energy and
+temperature will not necessarily be the same.  Standard velocity
+Verlet uses the velocities at the $t$ to calculate the kinetic energy
+and thus the temperature only at time $t$; the kinetic energy is then the sum over all particles of: 
+\bea
+KE_{\mathrm{full}}(t) &=& \sum_i \left(\frac{1}{2m_i}(\ve{v}_i(t)\right)^2 \nonumber\\ 
+      &=& \sum_i \frac{1}{2m_i}\left(\frac{1}{2}\ve{v}_i(t-\hDt)+\frac{1}{2}\ve{v}_i(t+\hDt)\right)^2
+\eea
+with the square on the {\em outside} of the average.  Standard
+Leapfrog calculates the kinetic energy at time $t$ based on the
+average kinetic energies at the timesteps $t+\hDt$ and $t-\hDt$, or
+the sum over all particles of
+\bea
+KE_{\mathrm{average}}(t) &=& \sum_i \frac{1}{2m_i}\left(\frac{1}{2}\ve{v}_i(t-\hDt)^2+\frac{1}{2}\ve{v}_i(t+\hDt)^2\right)
+\eea
+With the square inside the average.
+
+A nonstandard variant of velocity Verlet which averages the kinetic
+energies $KE(t+\hDt)$ and $KE(t-\hDt)$, exactly like leapfrog, is also
+now implemented in Gromacs (as mdp option {\em md-vv-avek}).  Without
+temperature and pressure coupling, velocity Verlet with
+half-step-averaged kinetic energies and leapfrog will be identical up
+to numerical precision.  For temperature and pressure control schemes,
+however, velocity Verlet with half-step-averaged kinetic energies and
+leapfrog will be different, as will be discussed in the section in
+thermostats and barostats.
+
+The half-step-averaged kinetic energy temperature are slightly more
+accurate, in that for a given time step size, the difference in
+average kinetic energies using the half-step-averaged kinetic energies
+({\em md} and {\em md-vv-avek}) will be closer to the kinetic energy
+obtained in the limit of small step size than will the full-step
+kinetic energy (using {\em md-vv}).  For NVE simulations, this
+difference is usually not significant, since the trajectories are
+still identical; it makes a difference in the way the simulations are
+{\em interpreted}, not in the trajectories that are actually produced.
+The only difference is that the effective temperature will be
+interpreted slightly differently.  For NVT simulations, however, there
+{\em will} be a difference, as discussed in the section on temperature
+control, since we measure how to adjust the thermostat based on the
+estimated temperature kinetic energy.  Although the kinetic energy is
+more accurate with the averaged half step method (in that it it is
+also more noisy.  The noise in the half-step-averaged kinetic energy
+will be higher (about twice as high in most cases) than the full-step
+kinetic energy.  The drift will still be the same, however, as the
+trajectories are identical.
+
+In general, the velocity Verlet integrator has been tuned with methods
+that give the highest degree of thermodynamic accuracy but has not yet
+been optimized for performance.  The integration itself takes
+negligibly more time than leapfrog, but currently twice as many
+communication calls are required.  In most cases, and especially for
+large systems where communication speed is important for
+parallelization and differences between thermodynamic ensembles vanish
+in the $1/N$ limit, leapfrog will be the best integrator.  For
+pressure control simulations where the fine details of the
+thermodynamics are important, only velocity Verlet allows the true
+ensemble to be calculated.  In either case, simulation with double
+precision may be required to get fine details of thermodynamics
+correct.
+
+\subsection{\normindex{Twin-range cut-offs}}
 To save computation time, slowly varying forces can be calculated
 less often than rapidly varying forces. In {\gromacs}
 such a \normindex{multiple time step} splitting is possible between
@@ -689,19 +858,21 @@ every $n$ steps the long range forces are determined and these are
 then also used (without modification) for the next $n-1$ integration steps
 in \eqnref{leapfrogv}. Such an irreversible scheme can result in bad energy
 conservation and, possibly, bad sampling.
-Since version 4.1 a leap-frog version of the reversible, symplectic
-Trotter decomposition scheme\cite{Tuckerman1992a} is used.
+Since version 4.5, a leap-frog version of the reversible Trotter decomposition scheme\cite{Tuckerman1992a} is used.
 In this integrator the long-range forces are determined every $n$ steps
 and are then integrated into the velocity in \eqnref{leapfrogv} using
 a time step of $\Dt_\mathrm{LR} = n \Dt$:
 \beq
 \ve{v}(t+\hDt) =
 \left\{ \begin{array}{lll} \displaystyle
-  \ve{v}(t-\hDt) + \frac{1}{m}\left[\ve{F}_\mathrm{SR}(t) + n \ve{F}_\mathrm{LR}(t)\right] \Dt &,& \mathrm{step} ~\%~ n = 0  \\ \noalign{\medskip} \displaystyle
+  \ve{v}(t-\hDt) + \frac{1}{m}\left[\ve{v}_\mathrm{SR}(t) + n \ve{F}_\mathrm{LR}(t)\right] \Dt &,& \mathrm{step} ~\%~ n = 0  \\ \noalign{\medskip} \displaystyle
   \ve{v}(t-\hDt) + \frac{1}{m}\ve{F}_\mathrm{SR}(t)\Dt &,& \mathrm{step} ~\%~ n \neq 0  \\
 \end{array} \right.
 \eeq
-The parameter $n$ is equal to the neighbor list update frequency.
+
+The parameter $n$ is equal to the neighbor list update frequency. In
+4.5, the velocity Verlet version of multiple time-stepping is not yet
+fully implemented.
 
 Several other simulation packages uses multiple time stepping for
 bonds and/or the PME mesh forces. In {\gromacs} we have not implemented
@@ -710,8 +881,11 @@ this, since we use a different philosophy. Bonds can be constrained
 oscillator), which allows the smallest time step to be increased
 to the larger one. This not only halves the number of force calculations,
 but also the update calculations. For even larger time steps, angle vibrations
-involving hydrogen atoms can be removed using virtual interaction sites
-(see \secref{rmfast}), which brings the shortest time step up to
+involving hydrogen atoms can be removed using virtual interaction
+\ifthenelse{\equal{\gmxlite}{1}}
+{sites,}
+{sites (see \secref{rmfast}),}
+which brings the shortest time step up to
 PME mesh update frequency of a multiple time stepping scheme.
 
 As an example we show the energy conservation for integrating
@@ -731,21 +905,35 @@ they are mainly affected by translation of water molecules, not rotation.
 \begin{figure}
 \centerline{\includegraphics[width=12cm]{plots/drift_all}}
 \caption{Energy drift per degree of freedom in SPC/E water
-with twin-range cut-off's
+with twin-range cut-offs
 for reaction field (left) and Lennard Jones interaction (right)
 as a function of the long-range time step length for the irreversible
-``\gromos'' scheme and a symplectic Trotter scheme.}
+``\gromos'' scheme and a reversible Trotter scheme.}
 \label{fig:twinrangeener}
 \end{figure}
 
 \subsection{\swapindex{Temperature}{coupling}}
 \index{temperature coupling}
-For several reasons (drift during equilibration, drift as a result of
-force truncation and integration errors, heating due to external or
-frictional forces), it is necessary to control the temperature of the
-system. {\gromacs} can use either
-the {\em weak coupling} scheme of Berendsen~\cite{Berendsen84} or
-the extended ensemble Nos{\'e}-Hoover scheme~\cite{Nose84,Hoover85}.
+
+While direct use of molecular dynamics gives rise to the NVE (constant
+number, constant volume, constant energy ensemble), most quantities
+that we wish to calculate are actually from a constant temperature
+(NVT) ensemble. {\gromacs} can use either the {\em weak coupling}
+scheme of Berendsen~\cite{Berendsen84}, the extended ensemble
+Nos{\'e}-Hoover scheme~\cite{Nose84,Hoover85}, or the velocity
+rescaling scheme~\cite{Bussi2007a} to simulate constant temperature,
+with advantages of each of the schemes laid out below.
+
+There are several other reasons why it might be necessary to control
+the temperature of the system (drift during equilibration, drift as a
+result of force truncation and integration errors, heating due to
+external or frictional forces), but this is not entirely correct to do
+from a thermodynamic standpoint, and in some cases only masks the
+symptoms (increase in temperature of the system) rather than the
+underlying problem (deviations from physicality in the dynamics).  For
+larger systems and small drifts, this error is usually negligible, but
+very few comprehensive comparisons have been carried out, and some
+caution must be taking in interpreting the results.
 
 \subsubsection{\swapindex{Berendsen}{temperature coupling}}
 \index{weak coupling}
@@ -768,14 +956,15 @@ equilibration purposes the coupling time can be taken quite short
 longer ({\eg} 0.5 ps) in which case it hardly influences the
 conservative dynamics. 
 
-The Berendsen thermostat suppresses the fluctuations of the kinetic energy.
-This means that, strictly speaking, one does not generate
-a proper canonical ensemble.
-For very small systems the sampling will indeed be incorrect.
-But for larger systems most properties will not be affected significantly,
-except for the distribution of the kinetic energy itself.
-A similar thermostat which does produce a correct ensemble
-is the velocity rescaling thermostat described below.
+The Berendsen thermostat suppresses the fluctuations of the kinetic
+energy.  This means that, strictly speaking, one does not generate a
+proper canonical ensemble, so rigorously, the sampling will indeed be
+incorrect.  This error scales with $1/N$, so for very large systems
+most ensemble averages properties will not be affected significantly,
+except for the distribution of the kinetic energy itself.  A similar
+thermostat which does produce a correct ensemble is the velocity
+rescaling thermostat\cite{Bussi2007a} described below.
+% is this true for heat capacity as well?
 
 The heat flow into or out of the system is effected by scaling the
 velocities of each particle every step with a time-dependent factor
@@ -818,7 +1007,7 @@ This thermostat produces a correct canonical ensemble and still has
 the advantage of the Berendsen thermostat: first order decay of
 temperature deviations and no oscillations.
 When an $NVT$ ensemble is used, the conserved energy quantity
-is written to the energy and log file.
+is written to the energy and log file.  
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{\swapindex{Nos{\'e}-Hoover}{temperature coupling}}
@@ -829,95 +1018,187 @@ has reached equilibrium it might be more important to probe a
 correct canonical ensemble. This is unfortunately not the case for
 the weak coupling scheme, although the difference is usually negligible.
 
-To enable canonical ensemble simulations, {\gromacs} also supports the 
-extended-ensemble approach first proposed by Nos\'e\cite{Nose84} and later 
-modified by Hoover\cite{Hoover85}. The system Hamiltonian 
-is extended by introducing a 
-thermal reservoir and a friction term in the equations of motion.
-The friction force is proportional to the product of each particle's
-velocity and a friction parameter $\xi$. This friction
-parameter (or 'heat bath' variable) is a fully dynamic quantity with
-its own equation of motion; the time 
-derivative is calculated from the difference between the current
-kinetic energy and the reference temperature. 
+To enable canonical ensemble simulations, {\gromacs} also supports the
+extended-ensemble approach first proposed by Nos{\'e}~\cite{Nose84}
+and later modified by Hoover\cite{Hoover85}. The system Hamiltonian is
+extended by introducing a thermal reservoir and a friction term in the
+equations of motion.  The friction force is proportional to the
+product of each particle's velocity and a friction parameter $\xi$
+This friction parameter (or 'heat bath' variable) is a fully
+dynamic quantity with its own momentum $p_{\xi}$ and equation of
+motion; the time derivative is calculated from the difference between
+the current kinetic energy and the reference temperature.  
 
-In Hoover's formulation, the particles' equations of motion in
+In this formulation, the particles' equations of motion in
 \figref{global} are replaced by
-
 \beq
 \frac {\de^2\ve{r}_i}{\de t^2} = \frac{\ve{F}_i}{m_i} - 
-\xi \frac{\de \ve{r}_i}{\de t} ,
+\frac{p_{\xi}}{Q}\frac{\de \ve{r}_i}{\de t} ,
 \label{eqn:NH-eqn-of-motion}
-\eeq
+\eeq where the equation of motion for the heat bath parameter $\xi$ is
+\beq \frac {\de p_{\xi}}{\de t} = \left( T - T_0 \right).  \eeq The
+reference temperature is denoted $T_0$, while $T$ is the current
+instantaneous temperature of the system. The strength of the coupling
+is determined by the constant $Q$ (usually called the 'mass parameter'
+of the reservoir) in combination with the reference
+temperature.~\footnote{Note that some derivations, an alternative
+  notation $\xi_{\mathrm{alt}} = v_{\xi} = p_{\xi}/Q$ is used.}
 
-where the equation of motion for the heat bath parameter $\xi$ is
+The conserved quantity for the Nos\`{e}-Hoover equations of motion is not the total energy, but rather
+\bea
+H = \sum_{i=1}^{N} \frac{\pb_i}{2m_i} + U\left(\rv_1,\rv_2,\ldots,\rv_N\right) +\frac{p_{\xi}^2}{2Q} + N_fkT\xi 
+\eea
+Where $N_f$ is the total number of degrees of freedom.
 
-\beq
-\frac {\de \xi}{\de t} = \frac{1}{Q}\left( T - T_0 \right).
-\eeq
-
-The reference temperature is denoted $T_0$, while $T$ is the current
-instantaneous temperature of the system. The strength of the coupling is
-determined by the constant $Q$ (usually called the 'mass parameter' 
-of the reservoir) in combination with the reference temperature.
-
-In our opinion, the mass parameter is a somewhat awkward way of 
+In our opinion, the mass parameter is a somewhat awkward way of
 describing coupling strength, especially due to its dependence on
-reference temperature (and some implementations even include the number
-of degrees of freedom in your system when defining $Q$). 
-To maintain the coupling strength, one would have to change $Q$ in
-proportion to the change in reference temperature. For this reason,
-we prefer to let the {\gromacs} user work instead with the
-period $\tau_T$ of the oscillations of kinetic energy between the 
-system and the reservoir instead. It is directly related to $Q$ and $T_0$ via
-
+reference temperature (and some implementations even include the
+number of degrees of freedom in your system when defining $Q$).  To
+maintain the coupling strength, one would have to change $Q$ in
+proportion to the change in reference temperature. For this reason, we
+prefer to let the {\gromacs} user work instead with the period
+$\tau_T$ of the oscillations of kinetic energy between the system and
+the reservoir instead. It is directly related to $Q$ and $T_0$ via
 \beq
 Q = \frac {\tau_T^2 T_0}{4 \pi^2}.
 \eeq
-
-This provides a much more intuitive way of selecting the Nos{\'e}-Hoover
-coupling strength (similar to the weak coupling relaxation), 
-and in addition $\tau_T$ is independent of system size and reference
-temperature. 
+This provides a much more intuitive way of selecting the
+Nos{\'e}-Hoover coupling strength (similar to the weak coupling
+relaxation), and in addition $\tau_T$ is independent of system size
+and reference temperature.
 
 It is however important to keep the difference between the 
-weak coupling scheme and the Nos\'e-Hoover algorithm in mind: 
+weak coupling scheme and the Nos{\'e}-Hoover algorithm in mind: 
 Using weak coupling you get a
 strongly damped {\em exponential relaxation}, 
-while the Nos\'e-Hoover approach
+while the Nos{\'e}-Hoover approach
 produces an {\em oscillatory relaxation}. 
-The actual time it takes to relax with Nos\'e-Hoover coupling is 
+The actual time it takes to relax with Nos{\'e}-Hoover coupling is 
 several times larger than the period of the
 oscillations that you select. These oscillations (in contrast
 to exponential relaxation) also means that
 the time constant normally should be 4--5 times larger
 than the relaxation time used with weak coupling, but your 
 mileage may vary.
-}  % Brace matches ifthenelse test for gmxlite
+
+Nos{\'e}-Hoover dynamics in simple systems such as collections of
+harmonic oscillators, can be {\em nonergodic}, meaning that only a
+subsection of phase space is ever sampled, even if the simulations
+were to run for infinitely long.  For this reason, the Nos{\'e}-Hoover
+chain approach was developed, where each of the Nos{\'e}-Hoover
+thermostats is has its own Nos{\'e}-Hoover thermostat controlling its
+temperature.  In the limit of an infinite chain of thermostats, the
+dynamics are guaranteed to be ergodic, but in practice, just a few are
+required.  The default is 10, but this can be controlled by user
+option.  In the case of chains, the equations are modified in the
+following way to include a chain of thermostatting particles~\cite{Martyna1992}:
+\bea
+\frac {\de^2\ve{r}_i}{\de t^2} &~=~& \frac{\ve{F}_i}{m_i} - \frac{p_{{\xi}_1}}{Q_1} \frac{\de \ve{r}_i}{\de t} \nonumber \\
+\frac {\de p_{{\xi}_1}}{\de t} &~=~& \left( T - T_0 \right) - p_{{\xi}_1} \frac{p_{{\xi}_2}}{Q_2} \nonumber \\
+\frac {\de p_{{\xi}_{i=2\ldots N}}}{\de t} &~=~& \left(\frac{p_{\xi_{i-1}}^2}{Q_{i-1}} -kT\right) - p_{\xi_i} \frac{p_{\xi_{i+1}}}{Q_{i+1}} \nonumber \\
+\frac {\de p_{\xi_N}}{\de t} &~=~& \left(\frac{p_{\xi_{N-1}}^2}{Q_{N-1}}-kT\right)
+\label{eqn:NH-chain-eqn-of-motion}
+\eea
+The conserved quantity for Nos\`{e}-Hoover chains is:
+\bea
+H = \sum_{i=1}^{N} \frac{\pb_i}{2m_i} + U\left(\rv_1,\rv_2,\ldots,\rv_N\right) +\sum_{k=1}^M\frac{p^2_{\xi_k}}{2Q^{\prime}_k} + N_fkT\xi_1 + kT\sum_{k=2}^M \xi_k 
+\eea
+The values and velocities of the Nos{\'e}-Hoover thermostat variables
+are generally not included in the output, as they take up a fair
+amount of space and are generally not important for analysis of
+simulations, but this can be overridden by defining the environment
+variable GMX\_NOSEHOOVER\_CHAINS, which will print the values of all
+the positions and velocities of all Nos{\'e}-Hoover particles in the
+chain.  Leapfrog simulations currently can only have Nos{\'e}-Hoover
+chain lengths of 1, but this will likely be updated in later version.
+
+For temperature coupling, the reference temperature is calculated
+differently in velocity Verlet and leapfrog dynamics; velocity Verlet
+({\em md-vv}) uses the full-step kinetic energy, while leapfrog and
+{\em md-vv-avek} use the half-step-averaged kinetic energy, discussed
+earlier in the integrator section.
+
+We can examine the Trotter decomposition again to better understand
+the differences between these constant-temperature integrators.  In
+the case of Nos{\'e}-Hoover dynamics (for simplicity, using a chain
+with $N=1$, with more details at Ref.~\cite{Martyna1996}), we split
+the Liouville operator as:
+\beq
+iL = iL_1 + iL_2 + iL_{\mathrm{NHC}}
+\eeq
+where:
+\bea
+iL_1 &=& \sum_{i=1}^N \left[\frac{\pb_i}{m_i}\right]\cdot \frac{\partial}{\partial \rv_i} \nonumber \\
+iL_2 &=& \sum_{i=1}^N \F_i\cdot \frac{\partial}{\partial \pb_i} \nonumber \\
+iL_{\mathrm{NHC}} &=& \sum_{i=1}^N-\frac{p_{\xi}}{Q}\vv_i\cdot \nabla_{\vv_i} +\frac{p_{\xi}}{Q}\frac{\partial }{\partial \xi} + \left( T - T_0 \right)\frac{\partial }{\partial p_{\xi}}
+\eea
+For standard velocity Verlet with Nos{\'e}-Hoover temperature control, this becomes:
+\bea  
+\exp(iL\dt) &=& \exp\left(iL_{\mathrm{NHC}}\dt/2\right) \exp\left(iL_2 \dt/2\right) \nonumber \\
+&&\exp\left(iL_1 \dt\right) \exp\left(iL_2 \dt/2\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right) + \mathcal{O}(\Dt^3)
+\eea
+For half-step-averaged temperature control, this decomposition will
+not work, since we do not have the full step temperature until after
+the second velocity step.  However, we can construct an alternate
+decomposition that is still reversible, by switching the place of the
+NHC and velocity portions of the decomposition.
+\bea  
+\exp(iL\dt) &=&  \exp\left(iL_2 \dt/2\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right)\exp\left(iL_1 \dt\right)\nonumber \\
+&&\exp\left(iL_{\mathrm{NHC}}\dt/2\right) \exp\left(iL_2 \dt/2\right)+ \mathcal{O}(\Dt^3)
+\label{eq:half_step_NHC_integrator}
+\eea
+This formalism allows us to easily see the difference between the
+different flavors of velocity Verlet integrator.  The leapfrog
+integrator can be seen as starting with
+Eq.~\ref{eq:half_step_NHC_integrator} just before the $\exp\left(iL_1
+\dt\right)$ term, yielding:
+\bea  
+\exp(iL\dt) &=&  \exp\left(iL_1 \dt\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right) \nonumber \\
+&&\exp\left(iL_2 \dt\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right) + \mathcal{O}(\Dt^3)
+\eea
+and then using some algebra tricks to solve for some quantities are
+required before they are actually calculated.~\cite{Holian95}
+
+}
 
 \subsubsection{\swapindex{Group}{temperature coupling}}
 In {\gromacs} temperature coupling can be performed on groups of
-atoms, typically a protein and solvent. The reason such algorithmes
+atoms, typically a protein and solvent. The reason such algorithms
 were introduced is that energy exchange between different components
 is not perfect, due to different effects including cut-offs etc. If
 now the whole system is coupled to one heat bath, water (which
 experiences the largest cut-off noise) will tend to heat up and the
 protein will cool down. Typically 100 K differences can be obtained.
 With the use of proper electrostatic methods (PME) these difference
-are much smaller but still not negligable. The parameters for
-temperature coupling in groups are given in the {\tt mdp} file. One
-special case should be mentioned: it is possible to T-couple only part
-of the system (or nothing at all obviously). This is done by
-specifying zero for the time constant $\tau_T$ for the group of interest.
+are much smaller but still not negligible.  The parameters for
+temperature coupling in groups are given in the {\tt mdp} file.
+Recent investigation has shown that small temperature differences
+between protein and water may actually be an artifact of the way
+temperature is calculated when there are finite timesteps, and very
+large differences in temperature are likely a sign of something else
+seriously going wrong with the system, and should be investigated
+carefully.~\cite{Eastwood2010}
 
+One special case should be mentioned: it is possible to T-couple only
+part of the system, leaving other parts without temperature
+coupling. This is done by specifying zero for the time constant
+$\tau_T$ for the group of which should not be thermostatted.  If only
+part of the system is thermostatted, the system will still eventually
+converge to an NVT system.  In fact, one suggestion for minimizing
+errors in the temperature caused by discretized timesteps is that if
+constraints on the water are used, then only the water degrees of
+freedom should be thermostatted, not protein degrees of freedom, as
+the higher frequency modes in the protein can cause larger deviations
+from the ``true'' temperature, the temperature obtained with small
+timesteps.~\cite{Eastwood2010}
 
 \subsection{\swapindex{Pressure}{coupling}}
 In the same spirit as the temperature coupling, the system can also be
-coupled to a 'pressure bath'. 
-{\gromacs} supports both the Berendsen algorithm~\cite{Berendsen84} 
-that scales coordinates and box vectors every step, and the 
-extended ensemble Parrinello-Rahman approach. Both of these can be
-combined with any of the temperature coupling methods above.
+coupled to a 'pressure bath'. {\gromacs} supports both the Berendsen
+algorithm~\cite{Berendsen84} that scales coordinates and box vectors
+every step, and the extended ensemble Parrinello-Rahman approach. Both
+of these can be combined with any of the temperature coupling methods
+above.
 
 \subsubsection{Berendsen pressure coupling}
 \label{sec:berendsen_pressure_coupling}
@@ -969,26 +1250,31 @@ In this case the $x/y$-directions are scaled isotropically and the $z$
 direction is scaled independently. The compressibility in the $x/y$ or
 $z$-direction can be set to zero, to scale only in the other direction(s).
 
-If you allow full anisotropic deformations and use constraints
-you might have to scale more slowly or decrease your timestep to avoid 
-errors from the constraint algorithms. 
-
+If you allow full anisotropic deformations and use constraints you
+might have to scale more slowly or decrease your timestep to avoid
+errors from the constraint algorithms.  It is important to note that
+although the Berendsen pressure control algorithm yields a simulation
+with the correct average pressure, it does not yield the exact NPT
+ensemble, and it is not yet clear exactly errors this approximation
+may yield.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{\swapindex{Parrinello-Rahman}{pressure coupling}}
 
-In cases where the fluctuations in pressure or volume 
-are important {\em per se} ({\eg} to calculate thermodynamic
-properties) it might at least theoretically be a problem that the 
-exact ensemble is not well-defined for the weak coupling scheme. 
+In cases where the fluctuations in pressure or volume are important
+{\em per se} ({\eg} to calculate thermodynamic properties), especially
+for small systems, it may be a problem that the exact ensemble is not
+well-defined for the weak coupling scheme, and that it does not
+simulate the true NPT ensemble.
 
-For this reason, {\gromacs} also supports constant-pressure simulations using 
-the Parrinello-Rahman approach\cite{Parrinello81,Nose83}, which is similar
-to the Nos\'e-Hoover temperature coupling. With the Parrinello-Rahman 
-barostat, the box vectors as represented by the matrix \ve{b} obey
-the matrix equation of motion\footnote{The box matrix representation \ve{b} in 
-{\gromacs} corresponds to the transpose of the box matrix representation 
-\ve{h} in the paper by Nos\'e and Klein. Because of this, some of our 
+{\gromacs} also supports constant-pressure simulations using the
+Parrinello-Rahman approach\cite{Parrinello81,Nose83}, which is similar
+to the Nos{\'e}-Hoover temperature coupling, and in theory gives the
+true NPT ensemble.  With the Parrinello-Rahman barostat, the box
+vectors as represented by the matrix \ve{b} obey the matrix equation
+of motion\footnote{The box matrix representation \ve{b} in {\gromacs}
+corresponds to the transpose of the box matrix representation \ve{h}
+in the paper by Nos{\'e} and Klein. Because of this, some of our
 equations will look slightly different.}
 
 \beq
@@ -1000,8 +1286,8 @@ the strength of the coupling. The matrices \ve{P} and \ve{P}$_{ref}$ are the
 current and reference pressures, respectively.
 
 The equations of motion for the particles are also changed, just as
-for the Nos\'e-Hoover coupling. In most cases you would combine the 
-Parrinello-Rahman barostat with the Nos\'e-Hoover
+for the Nos{\'e}-Hoover coupling. In most cases you would combine the 
+Parrinello-Rahman barostat with the Nos{\'e}-Hoover
 thermostat, but to keep it simple we only show the Parrinello-Rahman 
 modification here:
 
@@ -1020,22 +1306,22 @@ You only have to provide the approximate
 isothermal compressibilities {\boldmath $\beta$} 
 and the pressure time constant $\tau_p$ in the input file
 ($L$ is the largest box matrix element):
-
 \beq
 \left( \ve{W}^{-1} \right)_{ij} = \frac{4 \pi^2 \beta_{ij}}{3 \tau_p^2 L}.
 \eeq
-
-Just as for the Nos\'e-Hoover thermostat, you should realize that
-the Parrinello-Rahman time constant is {\em not} equivalent to the 
-relaxation time used in the Berendsen pressure coupling algorithm. 
-In most cases you will need to use a 4--5
-times larger time constant with Parrinello-Rahman coupling. If
-your pressure is very far from equilibrium, the Parrinello-Rahman
-coupling may result in very
-large box oscillations that could even crash your run. 
-In that case you would have to increase the time constant, or (better)
-use the weak coupling scheme to reach the target pressure, and then
-switch to Parrinello-Rahman coupling once the system is in equilibrium.
+Just as for the Nos{\'e}-Hoover thermostat, you should realize that
+the Parrinello-Rahman time constant is {\em not} equivalent to the
+relaxation time used in the Berendsen pressure coupling algorithm.  In
+most cases you will need to use a 4--5 times larger time constant with
+Parrinello-Rahman coupling. If your pressure is very far from
+equilibrium, the Parrinello-Rahman coupling may result in very large
+box oscillations that could even crash your run.  In that case you
+would have to increase the time constant, or (better) use the weak
+coupling scheme to reach the target pressure, and then switch to
+Parrinello-Rahman coupling once the system is in equilibrium.
+Additionally, using the leapfrog algorithm, the pressure at time $t$
+is not available until after the time step has completed, and so the
+pressure from the previous step must be used. 
 
 
 \subsubsection{\swapindex{Surface tension}{coupling}}
@@ -1046,13 +1332,13 @@ to a pressure bath. Presently, this only works with the Berendsen
 pressure coupling algorithm in {\gromacs}.
 The average surface tension $\gamma(t)$ can be calculated from
 the difference between the normal and the lateral pressure:
-\begin{eqnarray}
+\bea
 \gamma(t) & = & 
 \frac{1}{n} \int_0^{L_z}
 \left\{ P_{zz}(z,t) - \frac{P_{xx}(z,t) + P_{yy}(z,t)}{2} \right\} \mbox{d}z \\
 & = &
 \frac{L_z}{n} \left\{ P_{zz}(t) - \frac{P_{xx}(t) + P_{yy}(t)}{2} \right\}
-\end{eqnarray}
+\eea
 where $L_z$ is the height of the box and $n$ is the number of surfaces.
 The pressure in the z-direction is corrected by scaling the height of
 the box with $\mu_z$:
@@ -1079,9 +1365,138 @@ but with surface tension coupling it affects the convergence of the surface
 tension. 
 When $\beta_{zz}$ is set to zero (constant box height), $\Delta P_z$ is also set
 to zero, which is necessary for obtaining the correct surface tension. 
-} % Brace matches ifthenelse test for gmxlite
 
-\subsubsection{The complete update algorithm}
+\subsubsection{MTTK pressure control algorithms}
+
+As mentioned in the previous section, one weakness of leapfrog
+integration is in constant pressure simulations, since the pressure
+requires a calculation of both the virial and the kinetic energy at
+the full time step; for leapfrog, this information is not available
+until {\em after} the full timestep.  Velocity Verlet does allow the
+calculation, at the cost of an extra round of global communication,
+and can compute, mod any integration errors, the true NPT ensemble.
+
+The full equations, combining both pressure coupling and temperature
+coupling, are taken from Martyna {\em et al.}~\cite{Martyna1996} and
+Tuckerman~\cite{Tuckerman2006} and are referred to here as MTTK
+equations (Martyna-Tuckerman-Tobias-Klein).  We introduce for
+convenience $\epsilon = (1/3)\ln (V/V_0)$, where $V_0$ is a reference
+volume.  The momentum of $\epsilon$ is $\veps = p_{\epsilon}/W =
+\dot{\epsilon} = \dot{V}/3V$, and define $\alpha = 1 + 3/N_{dof}$ (see
+Ref~\cite{Tuckerman2006})
+
+The isobaric equations are then:
+\bea
+\dot{\rv}_i &=& \frac{\pb_i}{m_i} + \frac{\peps}{W} \rv_i \nonumber \\
+\frac{\dot{\pb}_i}{m_i} &=& \frac{1}{m_i}\F_i - \alpha\frac{\peps}{W} \frac{\pb_i}{m_i} \nonumber \\
+\dot{\epsilon} &=& \frac{\peps}{W} \nonumber \\
+\frac{\dot{\peps}}{W} &=& \frac{3V}{W}(P_{\mathrm{int}} - P) + (\alpha-1)\left(\sum_{n=1}^N\frac{\pb_i^2}{m_i}\right)\\
+\eea
+where: 
+\bea
+P_{\mathrm{int}} &=& P_{\mathrm{kin}} -P_{\mathrm{vir}} = \frac{1}{3V}\left[\sum_{i=1}^N \left(\frac{\pb_i^2}{2m_i} - \rv_i \cdot \F_i\
+\right)\right]
+\eea
+The terms including $\alpha$ are required to make phase space
+incompressible~\cite{Tuckerman2006}. The $\epsilon$ acceleration term
+can be rewritten as:
+\bea
+\frac{\dot{\peps}}{W} &=& \frac{3V}{W}\left(\alpha P_{\mathrm{kin}} - P_{\mathrm{vir}} - P\right)
+\eea
+In terms of velocities, these equations become:
+\bea
+\dot{\rv}_i &=& \vv_i + \veps \rv_i \nonumber \\
+\dot{\vv}_i &=& \frac{1}{m_i}\F_i - \alpha\veps \vv_i \nonumber \\
+\dot{\epsilon} &=& \veps \nonumber \\
+\dot{\veps} &=& \frac{3V}{W}(P_{\mathrm{int}} - P) + (\alpha-1)\left( \sum_{n=1}^N \frac{1}{2} m_i \vv_i^2\right)\nonumber \\
+P_{\mathrm{int}} &=& P_{\mathrm{kin}} - P_{\mathrm{vir}} = \frac{1}{3V}\left[\sum_{i=1}^N \left(\frac{1}{2} m_i\vv_i^2 - \rv_i \cdot \F_i\right)\right]
+\eea
+For these equations, the conserved quantity is:
+\bea
+H = \sum_{i=1}^{N} \frac{\pb_i^2}{2m_i} + U\left(\rv_1,\rv_2,\ldots,\rv_N\right) + \frac{p_\epsilon}{2W} + PV
+\eea
+The next step is to add temperature control.  Adding Nos{\'e}-Hoover
+chains, including to the barostat degree of freedom, where we use
+$\eta$ for the barostat Nos{\'e}-Hoover variables, and $Q^{\prime}$
+for the coupling constants of the thermostats of the barostats, we get:
+\bea
+\dot{\rv}_i &=& \frac{\pb_i}{m_i} + \frac{\peps}{W} \rv_i \nonumber \\
+\frac{\dot{\pb}_i}{m_i} &=& \frac{1}{m_i}\F_i - \alpha\frac{\peps}{W} \frac{\pb_i}{m_i} - \frac{p_{\xi_1}}{Q_1}\frac{\pb_i}{m_i}\nonumber \\
+\dot{\epsilon} &=& \frac{\peps}{W} \nonumber \\
+\frac{\dot{\peps}}{W} &=& \frac{3V}{W}(\alpha P_{\mathrm{kin}} - P_{\mathrm{vir}} - P) -\frac{p_{\eta_1}}{Q^{\prime}_1}\peps \nonumber \\
+\dot{\xi}_k &=& \frac{p_{\xi_k}}{Q_k} \nonumber \\ 
+\dot{\eta}_k &=& \frac{p_{\eta_k}}{Q^{\prime}_k} \nonumber \\
+\dot{p}_{\xi_k} &=& G_k - \frac{p_{\xi_{k+1}}}{Q_{k+1}} \;\;\;\; k=1,\ldots, M-1 \nonumber \\ 
+\dot{p}_{\eta_k} &=& G^\prime_k - \frac{p_{\eta_{k+1}}}{Q^\prime_{k+1}} \;\;\;\; k=1,\ldots, M-1 \nonumber \\
+\dot{p}_{\xi_M} &=& G_M \nonumber \\
+\dot{p}_{\eta_M} &=& G^\prime_M \nonumber \\
+\eea
+Where:
+\bea
+P_{\mathrm{int}} &=& P_{\mathrm{kin}} - P_{\mathrm{vir}} = \frac{1}{3V}\left[\sum_{i=1}^N \left(\frac{\pb_i^2}{2m_i} - \rv_i \cdot \F_i\right)\right] \nonumber \\
+G_1  &=& \sum_{i=1}^N \frac{\pb^2_i}{m_i} - N_f kT \nonumber \\
+G_k  &=&  \frac{p^2_{\xi_{k-1}}}{2Q_{k-1}} - kT \;\; k = 2,\ldots,M \nonumber \\
+G^\prime_1 &=& \frac{\peps^2}{2W} - kT \nonumber \\
+G^\prime_k &=& \frac{p^2_{\eta_{k-1}}}{2Q^\prime_{k-1}} - kT \;\; k = 2,\ldots,M
+\eea
+The conserved quantity is now:
+\bea
+H = \sum_{i=1}^{N} \frac{\pb_i}{2m_i} + U\left(\rv_1,\rv_2,\ldots,\rv_N\right) + \frac{p^2_\epsilon}{2W} + PV + \nonumber \\
+\sum_{k=1}^M\frac{p^2_{\xi_k}}{2Q_k} +\sum_{k=1}^M\frac{p^2_{\eta_k}}{2Q^{\prime}_k} + N_fkT\xi_1 +  kT\sum_{i=2}^M \xi_k + kT\sum_{k=1}^M \eta_k
+\eea
+Returning to the Trotter decomposition formalism, for pressure control and temperature control we get:~\cite{Martyna1996}
+\bea
+iL = iL_1 + iL_2 + iL_{\epsilon,1} + iL_{\epsilon,2} + iL_{\mathrm{NHC-baro}} + iL_{\mathrm{NHC}}
+\eea
+where NHC-baro correspond to the Nose-Hoover chain of the barostat,
+and NHC corresponds to the NHC of the particles.
+\bea
+iL_1 &=& \sum_{i=1}^N \left[\frac{\pb_i}{m_i} + \frac{\peps}{W}\rv_i\right]\cdot \frac{\partial}{\partial \rv_i} \\
+iL_2 &=& \sum_{i=1}^N \F_i - \alpha \frac{\peps}{W}\pb_i \cdot \frac{\partial}{\partial \pb_i} \\
+iL_{\epsilon,1} &=& \frac{p_\epsilon}{W} \frac{\partial}{\partial \epsilon}\\
+iL_{\epsilon,2} &=& G_{\epsilon} \frac{\partial}{\partial p_\epsilon}
+\eea
+and where
+\bea
+G_{\epsilon} = 3V\left(\alpha P_{\mathrm{kin}} - P_{\mathrm{vir}} - P\right)
+\eea 
+Using the Trotter decomposition, we get: 
+\bea  
+\exp(iL\dt) &=& \exp\left(iL_{\mathrm{NHC-baro}}\dt/2\right)\exp\left(iL_{\mathrm{NHC}}\dt/2\right) \nonumber \nonumber \\
+&&\exp\left(iL_{\epsilon,2}\dt/2\right) \exp\left(iL_2 \dt/2\right) \nonumber \nonumber \\
+&&\exp\left(iL_{\epsilon,1}\dt\right) \exp\left(iL_1 \dt\right) \nonumber \nonumber \\
+&&\exp\left(iL_2 \dt/2\right) \exp\left(iL_{\epsilon,2}\dt/2\right) \nonumber \nonumber \\
+&&\exp\left(iL_{\mathrm{NHC}}\dt/2\right)\exp\left(iL_{\mathrm{NHC-baro}}\dt/2\right) + \mathcal{O}(\dt^3)
+\eea
+The action of $\exp\left(iL_1 \dt\right)$ comes from the solution of
+the the differential equation 
+$\dot{\rv}_i = \vv_i + \veps \rv_i$
+with $\vv_i = \pb_i/m_i$ and $\veps$ constant with initial condition
+$\rv_i(0)$, evaluate at $t=\Delta t$.  This yields the evolution:
+\beq
+\rv_i(\dt) = \rv_i(0)e^{\veps \dt} + \Delta t \vv_i(0) e^{\veps \dt/2} \sinhx{\veps \dt/2}
+\eeq
+The action of $\exp(\left(iL_2 \dt/2\right)$ comes from the solution
+of the differential equation $\dot{\vv}_i = \frac{\F_i}{m_i} -
+\alpha\veps\vv_i$, yielding:
+\beq
+\vv_i(\dt/2) = \vv_i(0)e^{-\alpha\veps \dt/2} + \frac{\Delta t}{2m_i}\F_i(0) e^{-\alpha\veps \dt/4}\sinhx{\alpha\veps \dt/4}
+\eeq
+The {\em md-vv-avek} uses the full step kinetic energies for determining the pressure with the pressure control,
+but the half-step-averaged kinetic energy for the temperatures, which can be written as a Trotter decomposition as:
+\bea  
+\exp(iL\dt) &=& \exp\left(iL_{\mathrm{NHC-baro}}\dt/2\right)\nonumber \exp\left(iL_{\epsilon,2}\dt/2\right) \exp\left(iL_2 \dt/2\right) \nonumber \\
+&&\exp\left(iL_{\mathrm{NHC}}\dt/2\right) \exp\left(iL_{\epsilon,1}\dt\right) \exp\left(iL_1 \dt\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right) \nonumber \\
+&&\exp\left(iL_2 \dt/2\right) \exp\left(iL_{\epsilon,2}\dt/2\right) \exp\left(iL_{\mathrm{NHC-baro}}\dt/2\right) + \mathcal{O}(\dt^3)
+\eea
+With constraints, the equations becomes significantly more
+complicated, in that each of these equations need to be solved
+iteratively for the constraint forces.  The discussion of the details of the iteration
+is beyond the scope of this manual; readers are encouraged to see the
+implementation described in Ref.~\cite{Yu2010}.
+ } % Brace matches ifthenelse test for gmxlite
+
+\subsection{The complete update algorithm}
 \begin{figure}
 \begin{center}
 \addtolength{\fboxsep}{0.5cm}
@@ -1093,7 +1508,7 @@ Positions $\ve{r}$ of all atoms at time $t$ \\
 Velocities $\ve{v}$ of all atoms at time $t-\hDt$ \\
 Accelerations $\ve{F}/m$ on all atoms at time $t$.\\
 (Forces are computed disregarding any constraints)\\
-Total kinetic energy and virial \\
+Total kinetic energy and virial at $t-\Dt$\\
 $\Downarrow$ \\
 {\bf 1.} Compute the scaling factors $\lambda$ and $\mu$\\
 according to \eqnsref{lambda}{mu}\\   
@@ -1113,12 +1528,12 @@ $\Downarrow$ \\
 {\bf 6.} Scale coordinates and box: $\ve{r} = \mu \ve{r}''; \ve{b} =
 \mu  \ve{b}$ \\
 \end{shadowenv}
-\caption{The MD update algorithm}
+\caption{The MD update algorithm with the leap frog integrator}
 \label{fig:complete-update}
 \end{center}
 \end{figure}
 The complete algorithm for the update of velocities and coordinates is
-given in \figref{complete-update}. The SHAKE algorithm of step
+given using leapfrog in \figref{complete-update}. The SHAKE algorithm of step
 4 is explained below. 
 
 {\gromacs} has a provision to ''freeze''  (prevent motion of) selected
@@ -1132,6 +1547,12 @@ account the update algorithm for the velocities becomes:
 \ve{v}(t+\hdt)~=~\ve{f}_g * \lambda * \left[ \ve{v}(t-\hdt) +\frac{\ve{F}(t)}{m}\Delta t + \ve{a}_h \Delta t \right]
 \eeq
 where $g$ and $h$ are group indices which differ per atom.
+
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\subsection{The \normindex{velocity Verlet integrator}}
+%\label{subsec:vverlet}
+
+%}
 
 \subsection{Output step}
 The important output of the MD run is the {\em
@@ -1156,7 +1577,7 @@ lower frequencies.
 a shell particle representing the electronic degrees of freedom is
 attached to a nucleus by a spring. The potential energy is minimized with
 respect to the shell position  at every step of the simulation (see below).
-Succesfull applications of shell models in {\gromacs} have been published
+Successful applications of shell models in {\gromacs} have been published
 for $N_2$~\cite{Jordan95} and water~\cite{Maaren2001a}.
 
 \subsection{Optimization of the shell positions}
@@ -1167,7 +1588,7 @@ components:
 \end{equation}
 where \ve{F}$_{bond}$ denotes the component representing the
 polarization energy, usually represented by a harmonic potential and
-\ve{F}$_{nb}$ is the sum of Coulomb and Van der Waals interactions. If we
+\ve{F}$_{nb}$ is the sum of Coulomb and van der Waals interactions. If we
 assume that \ve{F}$_{nb}$ is almost constant we can analytically derive the
 optimal position of the shell, i.e. where \ve{F}$_S$ = 0. If we have the
 shell S connected to atom A we have
@@ -1487,7 +1908,7 @@ When $1/\xi_i$ is small compared to the time scales present in the system,
 the dynamics will be completely different from MD, but the sampling is
 still correct.
 
-In {\gromacs} there are two algorithm ot integrate equation (\ref{SDeq}).
+In {\gromacs} there are two algorithm to integrate equation (\ref{SDeq}).
 An efficient one, where the relative error in the temperature
 is $\frac{1}{2}\Delta t\, \xi$.
 And a more complex leap frog algorithm~\cite{Gunsteren88},
@@ -1752,7 +2173,7 @@ G &=& A + pV,
 where $\beta = 1/(k_BT)$ and $c = (N! h^{3N})^{-1}$.
 These integrals over phase space cannot be evaluated from a
 simulation, but it is possible to evaluate the derivative with 
-repect to $\lambda$ as an ensemble average:
+respect to $\lambda$ as an ensemble average:
 \beq
  \frac{dA}{d\lambda} =  \frac{\int\!\!\int (\partial H/ \partial
 \lambda) \exp[-\beta H(p,q;\lambda)]\,dp\,dq}{\int\!\!\int \exp[-\beta
@@ -1770,7 +2191,6 @@ H}{\partial \lambda} \right\rangle_{NVT;\lambda} \,d\lambda
 H}{\partial \lambda} \right\rangle_{NpT;\lambda} \,d\lambda.
 \label{eq:delG}
 \eea
- 
 If one wishes to evaluate $G\sB(p,T)-G\sA(p,T)$,
 the natural choice is a constant-pressure simulation. However, this
 quantity can also be obtained from a slow-growth simulation at
@@ -1806,7 +2226,7 @@ intermediate values of $\lambda$. This can easily be done by setting
 the stepsize \textbf{delta\_lambda} to zero. Each simulation can be
 equilibrated first, and a proper error estimate can be made for each
 value of $dG/d\lambda$ from the fluctuation of $\partial H/\partial
-\lambda$. The total free energy change is then determined afterwards
+\lambda$. The total free energy change is then determined afterward
 by an appropriate numerical integration procedure.
 
 The $\lambda$-dependence for the force-field contributions is
@@ -1860,8 +2280,8 @@ P(1 \leftrightarrow 2)
 \approx \exp\left(-\epsilon^2 \frac{c}{2} N_{df} \right)
 \eeq
 Thus for a probability of $e^{-2}\approx 0.135$
-one obtaines $\epsilon \approx 2/\sqrt{c\,N_{df}}$.
-With all bonds constrainted one has $N_{df} \approx 2\, N_{atoms}$
+one obtains $\epsilon \approx 2/\sqrt{c\,N_{df}}$.
+With all bonds constrained one has $N_{df} \approx 2\, N_{atoms}$
 and thus for $c$ = 2 one should choose $\epsilon$ as $1/\sqrt{N_{atoms}}$.
 However there is one problem when using pressure coupling. The density at
 higher temperatures will decrease, leading to higher energy\cite{Seibert2005a}
@@ -1884,7 +2304,7 @@ term is negligible. It only plays a role when the difference between
 $P_1$ and $P_2$ is large or in phase transitions.
 
 Replica exchange is an option of the {\tt mdrun} program. It will only
-work when MPI is installed, due to the inherent parallellism in the
+work when MPI is installed, due to the inherent parallelism in the
 algorithm. For efficiency each replica can run on a separate node.
 See the manual page of {\tt mdrun} on how to use it.
 } % Brace matches ifthenelse test for gmxlite
@@ -1906,9 +2326,9 @@ sampling efficiency with respect to usual MD
 to sample its available configuration space more systematically than
 in a diffusion-like path that proteins usually take.
 
-Another possiblity to enhance sampling is \normindex{flooding}.
+Another possibility to enhance sampling is \normindex{flooding}.
 Here a flooding potential is added to certain
-(collective) degrees of freedom to expell the system out
+(collective) degrees of freedom to expel the system out
 of a region of phase space \cite{Lange2006a}.
 
 The procedure for essential dynamics sampling or flooding is as follows.
@@ -2068,7 +2488,9 @@ on different processors, bond constraints can cross cell boundaries.
 Therefore a parallel constraint algorithm is required.
 {\gromacs} uses the \normindex{P-LINCS} algorithm\cite{Hess2008a},
 which is the parallel version of the \normindex{LINCS} algorithm\cite{Hess97}
-(see \ssecref{lincs}).
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{(see \ssecref{lincs}).}
 The P-LINCS procedure is illustrated in \figref{plincs}.
 When molecules cross the cell boundaries, atoms in such molecules
 up to LINCS order plus one bonds away are communicated over the cell boundaries.
@@ -2153,7 +2575,10 @@ one might want to set $r_{mb}$ by hand to reduce this cost.
 \label{subsec:mpmd_pme}
 Electrostatics interactions are long range, therefore special
 algorithms are used to avoid summation over many atom pairs.
-In {\gromacs} this is usually PME (\secref{pme}).
+In {\gromacs} this is usually
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{PME (\secref{pme}).}
 Since with PME all particles interact with each other, global communication
 is required. This will usually be the limiting factor on
 the scaling with domain decomposition.
@@ -2191,7 +2616,7 @@ For machines with a real 3-D torus and proper communication software
 that assigns the processors accordingly one should use
 {\tt mdrun -ddorder cartesian}.
 
-To optimize the performance one should usually set up the cut-off's
+To optimize the performance one should usually set up the cut-offs
 and the PME grid such that the PME load is 25 to 33\% of the total
 calculation load. {\tt grompp} will print an estimate for this load
 at the end and also {\tt mdrun} calculates the same estimate
@@ -2231,3 +2656,96 @@ and separate PME-mesh nodes.
 \label{fig:dd_flow}
 }
 \end{figure}
+
+
+\section{\swapindex{Implicit}{solvent}}
+\label{sec:gbsa}
+Implicit solvent models provide an efficient way of representing 
+the electrostatic effects of solvent molecules, while saving a 
+large piece of the computations involved in an accurate, aqueous 
+description of the surrounding water in molecular dynamics simulations. 
+Implicit solvation models offer several advantages compared with 
+explicit solvation, including eliminating the need for the equilibration of water 
+around the solute, and the absence of viscosity, which allows the protein 
+to more quickly explore conformational space.
+
+Implicit solvent calculations in GROMACS can be done using the 
+generalized Born-formalism, and the Still~\cite{Still97}, HCT~\cite{Truhlar96}, 
+and OBC~\cite{Case04} models are available for calculating the Born radii.
+
+Here, the free energy $G_{solv}$ of solvation is the sum of three terms, 
+a solvent-solvent cavity term ($G_{cav}$), a solute-solvent van der 
+Waals term ($G_{vdw}$), and finally a solvent-solute electrostatics 
+polarization term ($G_{pol}$).
+
+The sum of $G_{cav}$ and $G_{vdw}$ corresponds to the (non-polar) 
+free energy of solvation for a molecule from which all charges 
+have been removed, and is commonly called $G_{np}$, and
+calculated from the total solvent accessible surface area 
+multiplied with a surface tension. 
+The total expression for the solvation free energy then becomes:
+
+\beq
+G_{solv} = G_{np}  + G_{pol}
+\label{eqn:gb_solv}
+\eeq
+
+Under the generalized Born model, $G_{pol}$ is calculated from the generalized Born equation~\cite{Still97}
+
+\beq
+G_{pol} = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n \sum_{j>i}^n \frac {q_i q_j}{\sqrt{r^2_{ij} + b_i b_j \exp\left(\frac{-r^2_{ij}}{4 b_i b_j}\right)}}
+\label{eqn:gb_still}
+\eeq
+
+In GROMACS we have introduced the substitution~\cite{Larsson10} 
+
+\beq
+c_i=\frac{1}{\sqrt{b_i}}
+\label{eqn:gb_subst}
+\eeq
+
+which makes it possible to introduce a cheap transformation to a new 
+variable $x$ when evaluating each interaction, such that
+
+\beq
+x=\frac{r_{ij}}{\sqrt{b_i b_j }} = r_{ij} c_i c_j
+\label{eqn:gb_subst2}
+\eeq
+
+In the end, the full re-formulation of~\ref{eqn:gb_still} becomes:
+ 
+\beq
+G_{pol} = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n \sum_{j>i}^n \frac{q_i q_j}{\sqrt{b_i  b_j}} ~\xi (x) = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n q_i c_i \sum_{j>i}^n q_j c_j~\xi (x)
+\label{eqn:gb_final}
+\eeq 
+
+The non-polar part ($G_{np}$) of Equation~\ref{eqn:gb_solv} is calculated 
+directly from the Born radius of each atom using a simple ACE type 
+approximation by Schaefer et al~\cite{Karplus98}, including a 
+simple loop over all atoms. 
+This requires only one extra solvation parameter, independent of atom type, 
+but differing slightly between the three Born radii models.
+
+% LocalWords:  GROningen MAchine BIOSON Groningen GROMACS Berendsen der Spoel
+% LocalWords:  Drunen Comp Phys Comm ROck NS FFT pbc EM ifthenelse gmxlite ff
+% LocalWords:  octahedra triclinic Ewald PME PPPM Gromacs trjconv xy solvated
+% LocalWords:  boxtypes boxshapes editconf Lennard mdpopt COM XTC kT defunits
+% LocalWords:  Boltzmann's Mueller nb int mdrun chargegroup simplerc prefactor
+% LocalWords:  pme waterloops CH NH CO df com virial integrator Verlet vverlet
+% LocalWords:  integrators ref timepoint timestep timesteps mdp md vv avek NVE
+% LocalWords:  NVT off's leapfrogv lll LR rmfast SPC fs Nos physicality ps GMX
+% LocalWords:  Tcoupling nonergodic thermostatting NOSEHOOVER algorithmes ij yx
+% LocalWords:  Parrinello Rahman rescales atm anisotropically ccc xz zx yy yz
+% LocalWords:  zy zz se barostat compressibilities MTTK NPT Martyna al isobaric
+% LocalWords:  Tuckerman vir PV fkT iLt iL Liouville NHC Eq baro mu trj mol bc
+% LocalWords:  freezegroup Shannon's polarizability Overhauser barostats iLn KE
+% LocalWords:  negligibly thermostatted Tobias  rhombic maxwell et
+% LocalWords:  waals LINCS holonomic plincs lincs unc ang SA Langevin SD amu BD
+% LocalWords:  bfgs Broyden Goldfarb Shanno mkT kJ DFLEXIBLE Nocedal diag nmeig
+% LocalWords:  diagonalization anaeig nmens covanal ddg feia BT dp dq pV dV dA
+% LocalWords:  NpT eq stepsize REMD constrainted website Okabe MPI covar edi dd
+% LocalWords:  progman NMR ddcells innerloops ddtric tric dds rdd conf rcon est
+% LocalWords:  mb PP MPMD ddorder pp cartesian grompp npme parallelizable rlong
+% LocalWords:  macromolecule rshort nstlist vacuo parallelization dof indices
+% LocalWords:  TOL numerics parallelized eigenvectors dG parallelepipeds VdW np
+% LocalWords:  Coul multi solvation HCT OBC solv cav vdw Schaefer

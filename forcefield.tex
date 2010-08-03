@@ -102,14 +102,14 @@ C_{ij}^{(12)}   &=& \left({C_{ii}^{(12)} \, C_{jj}^{(12)}}\right)^{1/2}
 \label{eqn:comb}
 \end{array}
 \eeq
-or, alternatively the Lorentz-Bertelot rules can be used. An arithmetic average is used for the sigma's, while a geometric average is used for the epsilon's (type 2):
+or, alternatively the Lorentz-Bertelot rules can be used. An arithmetic average is used to calculate $\sigma_{ij}$, while a geometric average is used to calculate $\epsilon_{ij}$ (type 2):
 \beq
 \begin{array}{rcl}
  \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii} + \sigma_{jj})        \\
  \epsilon_{ij} &=& \left({\epsilon_{ii} \, \epsilon_{jj}}\right)^{1/2}
 \end{array}
 \eeq
-finally an geometric average for both the sigma's and epsilon's can be used (type 3):
+finally an geometric average for both parameters can be used (type 3):
 \beq
 \begin{array}{rcl}
  \sigma_{ij}   &=& \left({\sigma_{ii} \, \sigma_{jj}}\right)^{1/2}        \\
@@ -269,7 +269,7 @@ There is {\em no} fundamental difference between a switch function
 (which adds a function to the force or potential)~\cite{Spoel2006a}. The switch
 function is a special case of the shift function, which we apply to
 the {\em force function} $F(r)$, related to the electrostatic or
-Van der Waals force acting on particle $i$ by particle $j$ as
+van der Waals force acting on particle $i$ by particle $j$ as
 \beq
 \ve{F}_i = c F(r_{ij}) \frac{\rvij}{r_{ij}}
 \eeq
@@ -508,7 +508,7 @@ The force corresponding to this potential is:
 \subsection{FENE bond stretching potential}
 \index{FENE potential}
 In coarse-grained polymer simulations the beads are often connected
-by a FENE (finitely extendible nonlinear elastic) potential~\cite{Warner72}:
+by a FENE (finitely extensible nonlinear elastic) potential~\cite{Warner72}:
 \beq
 V_{\mbox{\small FENE}}(\rij) =
   -\half k^b_{ij} b^2_{ij} \log\left(1 - \frac{\rij^2}{b^2_{ij}}\right)
@@ -622,7 +622,7 @@ $i-j$ and $k-j$ is given by~\cite{Lawrence2003b}:
 V_{r\theta} ~=~ k_{r\theta} \left(\left|\ve{r}_{i}-\ve{r}_k\right|-r_{3e} \right) \left(\left|\ve{r}_{i}-\ve{r}_j\right|-r_{1e} + \left|\ve{r}_{k}-\ve{r}_j\right|-r_{2e}\right)
 \end{equation}
 where $k_{r\theta}$ is the force constant, $r_{3e}$ is the $i-k$ distance,
-and the other constants are the same as in Eqn.~\ref{crossbb}. The force
+and the other constants are the same as in Equation~\ref{crossbb}. The force
 associated with the potential on atom $i$ is:
 \begin{equation}
 \ve{F}_{i} ~=~ -k_{r\theta}\left[\left(\left|\ve{r}_{i}-\ve{r}_{k}\right|-r_{3e}\right)\frac{\ve{r}_i-\ve{r}_j}{\left|\ve{r}_{i}-\ve{r}_j\right|} \\
@@ -946,7 +946,9 @@ refinement}\index{refinement,nmr}.
 In {\gromacs} there are three ways to impose restraints on pairs of atoms:
 \begin{itemize}
 \item Simple harmonic restraints: use {\tt [ bonds ]} type 6
-(see \secref{excl}).
+\ifthenelse{\equal{\gmxlite}{1}}
+{.}
+{(see \secref{excl}).}
 \item Piecewise linear/harmonic restraints: {\tt [ bonds ]} type 10.
 \item Complex NMR distance restraints, optionally with pair, time and/or
 ensemble averaging.
@@ -993,7 +995,9 @@ The forces are
 For restraints not derived from NMR data, this functionality
 will usually suffice and a section of {\tt [ bonds ]} type 10
 can be used to apply individual restraints between pairs of atoms,
-see \ssecref{topfile}.
+\ifthenelse{\equal{\gmxlite}{1}}
+{atoms.}
+{atoms, see \ssecref{topfile}.}
 For applying restraints derived from NMR measurements more complex
 functionality might be required, which is provided through
 the {\tt [ distance\_restraints ]} section and is described below.
@@ -1076,7 +1080,7 @@ to distinguish between the protons, therefore they should all be taken into
 account when calculating the distance between this methyl group and another
 proton (or group of protons).
 Due to the physical nature of magnetic resonance, the intensity of the
-NOE signal is inversely proportional to the sixth power of the interatomic 
+NOE signal is inversely proportional to the sixth power of the inter-atomic 
 distance.
 Thus, when combining atom pairs, 
 a fixed list of $N$ restraints may be taken together, 
@@ -1173,7 +1177,7 @@ Some parameters for NMR refinement can be specified in the
 	Normally one would perform ensemble averaging over multiple
 	subsystems, each in a separate box, using {\tt mdrun -multi};
 	supply {\tt topol0.tpr}, {\tt topol1.tpr}, ... with different
-	coordiates and/or velocities.
+	coordinates and/or velocities.
 \item[{\tt disre\_weighting}: force-weighting in restraints with
          multiple pairs.]
         By default, the force due to the distance restraint is distributed equally
@@ -1215,7 +1219,7 @@ Some parameters for NMR refinement can be specified in the
 This section describes how orientations between vectors,
 as measured in certain NMR experiments, can be calculated
 and restrained in MD simulations.
-The presented refinement methodology and a comparision of results
+The presented refinement methodology and a comparison of results
 with and without time and ensemble averaging have been
 published~\cite{Hess2003}.
 \subsubsection{Theory}
@@ -1270,8 +1274,8 @@ ${\mathbf T}$ it can be transformed into the following form:
 where $-1 \leq s \leq 1$ and $0 \leq \eta \leq 1$.
 $s$ is called the order parameter and $\eta$ the asymmetry of the
 order tensor $\SSS$. When the molecule tumbles isotropically in the
-solvent $s$ is zero and no orientational effects can be observed
-as all $\delta_i$ are zero.
+solvent, $s$ is zero, and no orientational effects can be observed
+because all $\delta_i$ are zero.
 
 %\newpage
 
@@ -1447,7 +1451,7 @@ force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
 	Ensemble averaging can be performed using {\tt mdrun -multi},
 	which simulates multiple subsystems in separate boxes;
 	supply {\tt topol0.tpr}, {\tt topol1.tpr}, ... with different
-	coordiates and/or velocities.
+	coordinates and/or velocities.
 \item[{\tt orire\_fc}: force constant $k$ for orientation restraints.] 
 	The unit of $k$ is kJ mol$^{-1}$.
 	Note that the force constant for a restraint is this force constant
@@ -1492,14 +1496,14 @@ a single shell particle~\cite{Maaren2001a}.
 Based on early work by \normindex{Thole}~\cite{Thole81} Roux and
 coworkers have implemented potentials for molecules like
 ethanol~\cite{Lamoureux2003a,Lamoureux2003b,Noskov2005a}. Within such
-molecules there are intramolecular interactions between shell
+molecules there are intra-molecular interactions between shell
 particles, however these must be screened because full Coulomb would
 be too strong. The potential between two shell particles $i$ and $j$ is:
 \newcommand{\rbij}{\bar{r}_{ij}}
 \beq
 V_{thole} ~=~ \frac{q_i q_j}{r_{ij}}\left[1-\left(1+\frac{\rbij}{2}\right){\rm exp}^{-\rbij}\right]
 \eeq
-(note that there is a sign error in Eqn. 1 of Noskov {\em et al.}~\cite{Noskov2005a}), where
+(note that there is a sign error in Equation~1 of Noskov {\em et al.}~\cite{Noskov2005a}), where
 \beq
 \rbij ~=~ a\frac{r_{ij}}{(\alpha_i \alpha_j)^{1/6}}
 \eeq
@@ -1606,7 +1610,7 @@ V_{LJ}  &=&     \frac{\LL C_{12}^A + \LAM\, C_{12}^B}{\rij^{12}} -
 \eea
 It should be noted that it is also possible to express a pathway from
 state A to state B using $\sigma$ and $\epsilon$ (see \eqnref{sigeps}).
-It may seem to make sense  physically, to vary the forcefield parameters
+It may seem to make sense  physically, to vary the force field parameters
 $\sigma$ and $\epsilon$ rather 
 than the derived parameters $C_{12}$ and $C_{6}$.
 However, the difference between the pathways in parameter space
@@ -1661,7 +1665,7 @@ $C_6^A=C_{12}^A=C_6^B=C_{12}^B=1$.}
 \end{figure}
 In a free-energy calculation where particles grow out of nothing, or 
 particles disappear, using the the simple linear interpolation of the 
-Lennard-Jones and Coulomb potentials as described in Eqs.~\ref{eq:dVljdlambda}
+Lennard-Jones and Coulomb potentials as described in Equations~\ref{eq:dVljdlambda}
 and \ref{eq:dVcoulombdlambda} may lead to poor convergence: when the particles have nearly disappeared, or are close to appearing (at $\LAM$ close to 0 or 1), the interaction energy will be weak enough for particles to get very 
 close to each other, leading to large fluctuations in the measured values of 
 $\partial V/\partial \LAM$ (which, because of the simple linear 
@@ -1717,7 +1721,7 @@ The contribution to the derivative of the free energy is:
 	       \LL F^A(r_A) r^{-5}_A \sigma_A^6 \LAM^{p-1} \right]
 \eea
 
-The original Gromos Lennard-Jones soft-core function~\cite{Beutler94}
+The original GROMOS Lennard-Jones soft-core function~\cite{Beutler94}
 uses $p=2$, but $p=1$ gives a smoother $\partial H/\partial\LAM$ curve.
 When the changes between the two states involve both the disappearing
 and appearing of atoms, it is important that the overlapping of atoms
@@ -1798,11 +1802,11 @@ there can be quite a number of parameters to set. These parameters are
 set in the input file for grompp. There are two sort of parameters
 that affect the cut-off interactions; you can select which type
 of interaction to use in each case, and which cut-offs should be
-used in the neighborsearching.
+used in the neighbor searching.
 
 For both Coulomb and van der Waals interactions there are interaction
 type selectors (termed {\tt vdwtype} and {\tt coulombtype}) and two
-parameters, for a total of six nonbonded interaction parameters. See
+parameters, for a total of six non-bonded interaction parameters. See
 \secref{mdpopt} for a complete description of these parameters.
 
 The neighbor searching (NS) can be performed using a single-range, or a twin-range 
@@ -1824,7 +1828,7 @@ long-range forces.
 This means that the virial can be slightly asymmetrical at non-NS steps.
 In single precision the virial is almost always asymmetrical, because the
 off-diagonal elements are about as large as each element in the sum.
-In most cases this is not really a problem, since the fluctuations in de
+In most cases this is not really a problem, since the fluctuations in the
 virial can be 2 orders of magnitude larger than the average.
 
 Except for the plain cut-off,
@@ -1938,7 +1942,7 @@ general case redistribution should be done first.
 \centerline{\includegraphics[width=15cm]{plots/dummies}}
 \caption[Virtual site construction.]{The six different types of virtual
 site construction in \protect{\gromacs}. The constructing atoms are
-shown as black circles, the virutal sites in grey.}
+shown as black circles, the virtual sites in gray.}
 \label{fig:vsites}
 \end{figure}
 
@@ -2174,7 +2178,7 @@ in a system with $N$ particles and particle density $\rho$ = $N/V$ is:
 V_{lr}  ~=~ \half N \rho\int_0^{\infty}   4\pi r^2 g(r) \left( V(r) -V_c(r) \right) {\dr}
 \eeq
 We will integrate this for the shift function, which is the most general
-form of Van der Waals interaction available in Gromacs.
+form of Van der Waals interaction available in {\gromacs}.
 The shift function has a constant difference $S$ from 0 to $r_1$
 and is 0 beyond the cut-off distance $r_c$.
 We can integrate \eqnref{enercorr} assuming that the density in the sphere
@@ -2361,7 +2365,7 @@ ewald\_rtol      = 1e-5\\
 
 In this case the {\tt fourierspacing} parameter determines the maximum
 spacing for the FFT grid and {\tt pme\_order} controls the
-interpolation order. Using 4th order (cubic) interpolation and this
+interpolation order. Using fourth-order (cubic) interpolation and this
 spacing should give electrostatic energies accurate to about
 $5\cdot10^{-3}$. Since the Lennard-Jones energies are not this
 accurate it might even be possible to increase this spacing slightly.
@@ -2428,13 +2432,13 @@ fourierspacing  = 0.075\\
 
 For details on the switch parameters see the section on modified
 long-range interactions in this manual. When using PPPM we recommend
-to take at most 0.075 nm per gridpoint ({\eg} 20 gridpoints for 1.5
+to take at most 0.075 nm per grid point ({\eg} 20 grid points for 1.5
 nm).  PPPM does not provide the same accuracy as PME but can be
 slightly faster in some cases. Due to the problem with the pressure
 tensor you shouldn't use it with pressure coupling.
 
 We're somewhat ambivalent about PPPM, so if you use it please contact
-us - otherwise it might be removed from future relases so we can concentrate
+us - otherwise it might be removed from future releases so we can concentrate
 our efforts on PME.
 
 
@@ -2460,7 +2464,7 @@ in your {\tt .mdp} file.
 When running in parallel the grid must be communicated several times
 and thus hurting scaling performance. With PME you can improve this
 by increasing grid spacing while simultaneously increasing the
-interpolation to {\eg} 6th order. 
+interpolation to {\eg} sixth order. 
 Since the interpolation is entirely local a this will
 improve the scaling in most cases.
 
@@ -2510,13 +2514,13 @@ parameters form a consistent set. It is in general dangerous to make
 {\em ad hoc} changes in a subset of parameters, because the various
 contributions to the total force are usually interdependent. This
 means in principle that every change should be documented, verified by
-comparison to experimental data and published in a peer-reviewd
+comparison to experimental data and published in a peer-reviewed
 journal before it can be used.
 
 {\gromacs} {\gmxver} includes several force fields, and additional
 ones are available on the website. If you do not know which one to
 select we recommend Gromos96 for united-atom setups and OPLS-AA/L for
-all-atom parameters. That said, we describe the availabe options in
+all-atom parameters. That said, we describe the available options in
 some detail.
 
 \subsection{GROMOS87\index{gromos-87 force field}}
@@ -2536,9 +2540,9 @@ in~\cite{Buuren93b,Mark94}.
 
 \subsubsection{\swapindex{All-hydrogen}{force-field}}
 The {\gromacs} all-hydrogen force-field is almost identical to the
-normal {\gromacs} forcefield, since the extra hydrogens have no
+normal {\gromacs} force field, since the extra hydrogens have no
 Lennard-Jones interaction and zero charge. The only differences are in
-the bond angle and improper dihedral angle terms. This forcefield is
+the bond angle and improper dihedral angle terms. This force field is
 only useful when you need the exact hydrogen positions, for instance
 for distance restraints derived from NMR measurements. When citing
 this force field please read the previous paragraph.
@@ -2550,7 +2554,7 @@ dihedrals) and 43b1 (vacuum) force fields are included.  All standard
 building blocks are included and topologies can be build automatically
 by {\tt pdb2gmx}.  The \gromosv{96} force field is a further
 development of the \gromosv{87} force field on which the {\gromacs}
-forcefield is based. The \gromosv{96} force field has improvements
+force field is based. The \gromosv{96} force field has improvements
 over the {\gromacs} force field for proteins and small molecules.
 It is not, however, recommended for use with long alkanes and
 lipids.  The \gromosv{96} force field differs from the {\gromacs}
@@ -2609,5 +2613,28 @@ of the blocks. Note that all {\gromacs} programs can read compressed
 
 \subsection{CHARMM\index{Charmm force field}}
 
+As of version 4.5, {\gromacs} supports the CHARMM27 force field for proteins~\cite{mackerell04, mackerell98}, lipids~\cite{feller00} and nucleic acids~\cite{foloppe00}. The protein parameters (and to some extent the lipid and nucleic acid parameters) were thoroughly tested -- both by comparing potential energies between the port and the standard parameter set in the CHARMM molecular simulation package, as well by how the protein force field behaves together with {\gromacs}-specific techniques such as virtual sites (enabling long time steps) and a fast implicit solvent recently implemented (Larsson et al. 2010, in press) -- and the details and results are presented in the paper by Bjelkmar et al.~\cite{Bjelkmar10}. The nucleic acid parameters, as well as the ones for HEME, were converted and tested by Michel Cuendet.
+
+When selecting the CHARMM force field in \normindex{pdb2gmx} the default option is to use CMAP (dihedral cross terms for protein backbone), use -nocmap flag otherwise.
+
 \subsection{Martini\index{Martini force field}}
 
+
+% LocalWords:  dihedrals centro ij dV dr LJ lj rcl jj Bertelot OPLS bh bham rf
+% LocalWords:  coul defunits grompp crf vcrf fcrf Tironi Debye kgrf cgrf krf dx
+% LocalWords:  PPPM der Waals erfc lr elstat chirality bstretch bondpot kT kJ
+% LocalWords:  anharmonic morse mol betaij expminx SPC timestep fs FENE ijk kj
+% LocalWords:  anglepot CHARMm UB ik rr substituents ijkl Ryckaert Bellemans rb
+% LocalWords:  alkanes pdb gmx IUPAC IUB jkl cis rbdih crb kcal cubicspline xvg
+% LocalWords:  topfile mdrun posres ar dihr lcllll NMR nmr lcllllll NOEs lclll
+% LocalWords:  rav preprocessor ccccccccc ai aj fac disre mdp multi topol tpr
+% LocalWords:  fc ravdisre nstdisreout dipolar lll ccc orientational MSD const
+% LocalWords:  orire fitgrp nstorireout drude intra Noskov et al fecalc coulrf
+% LocalWords:  polarizabilities parameterized sigeps Ek sc softcore GROMOS NBF
+% LocalWords:  hydrogens alkane vdwtype coulombtype mdpopt rlist rcoulomb rvdw
+% LocalWords:  nstlist virial funcparm VdW jk jl fvsite fd vsites lcr vsitetop
+% LocalWords:  vsite lclllll lcl parameterize parameterization enercorr avcsix
+% LocalWords:  pcorr ecorr totalcoulomb dir fourierspacing ewald rtol Darden gz
+% LocalWords:  FFT parallelization MPMD mpmd pme fft hoc Gromos gromos oxygens
+% LocalWords:  virials POSITIONRED VELOCITYRED gzipped Charmm Larsson Bjelkmar
+% LocalWords:  Cuendet CMAP nocmap

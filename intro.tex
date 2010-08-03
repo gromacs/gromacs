@@ -223,7 +223,7 @@ four times as large when bonds are constrained than when they are
 oscillators~\cite{Gunsteren77}. {\gromacs} has this option for the
 bonds and bond angles.  The flexibility of the latter is
 rather essential to allow for the realistic motion and coverage of
-configurational space~\cite{Gunsteren77}.
+configurational space~\cite{Gunsteren82}.
 
 \item[{\bf Electrons are in the ground state}]\mbox{}\\
 In MD we use a {\em conservative} force field that is a
@@ -308,8 +308,8 @@ complex landscape (or {\em hyper surface}) in a large number of
 dimensions. It has one deepest point, the {\em global minimum} and a
 very large number of {\em local minima}, where all derivatives of the
 potential energy function with respect to the coordinates are zero and
-all second derivatives are nonnegative. The matrix of second
-derivatives, which is called the {\em Hessian matrix}, has nonnegative
+all second derivatives are non-negative. The matrix of second
+derivatives, which is called the {\em Hessian matrix}, has non-negative
 eigenvalues; only the collective coordinates that correspond to
 translation and rotation (for an isolated molecule) have zero
 eigenvalues. In between the local minima there are {\em saddle
@@ -394,3 +394,8 @@ you {\em very} close to the local minimum, but performs worse far away
 from the minimum. {\gromacs} also supports the L-BFGS minimizer, which
 is mostly comparable to {\em conjugate gradient method}, but in some 
 cases converges faster.
+
+% LocalWords:  Schr dinger initio parameterization QSAR equilibria solubilities
+% LocalWords:  mesoscopic BT wavenumber rl HOH CX sciss CCC libration kT minima
+% LocalWords:  wavenumbers polarizabilities polarizability parameterized BFGS
+% LocalWords:  alkanes Compchem librational
