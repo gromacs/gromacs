@@ -37,8 +37,9 @@ set(GMX_EXTRA_LIBRARIES)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
+# --- REMOVED as bugzilla 431 turned out to be a bug in GB
 # check for buggy GCC 4.1.x 
-include(gmxCheckGCCVersion)
+# include(gmxCheckGCCVersion)
 
 include(gmxCFlags)
 gmx_c_flags()
