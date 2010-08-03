@@ -2674,7 +2674,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /*  ############### START FIRST UPDATE HALF-STEP ############### */
 
-        if (!bStartingFromCpt && !bRerunMD)
+        if (bVV && !bStartingFromCpt && !bRerunMD)
         {
             if (ir->eI == eiVV)
             {
@@ -2695,9 +2695,14 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
                 }
 
+		if (ir->eI == eiVVAK)
+		{
+		    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+		}
+
                 update_coords(fplog,step,ir,mdatoms,state,
                               f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,
+                              ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
                               cr,nrnb,constr,&top->idef);
 
                 if (bIterations)
@@ -3119,12 +3124,16 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * step % nstlist = 1 with bGStatEveryStep=FALSE.
                  */
 
-                update_extended(fplog,step,ir,mdatoms,state,ekind,pcoupl_mu,M,wcycle,
-                                upd,bInitStep,FALSE,&MassQ);
+		if (ir->eI != eiVVAK)
+                {
+                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+                }
+                update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
+                                upd,bInitStep);
 
                 /* velocity (for VV) */
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,FALSE,etrtVELOCITY,cr,nrnb,constr,&top->idef);
+                              ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,cr,nrnb,constr,&top->idef);
 
                 /* Above, initialize just copies ekinh into ekin,
                  * it doesn't copy position (for VV),
