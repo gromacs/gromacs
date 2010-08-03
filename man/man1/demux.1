@@ -1,0 +1,43 @@
+.TH "demux" "1" "13 Oct 2008" "GROMACS suite, Version 4.0"
+.SH NAME
+demux \- Convert XPLOR distance restraints to Gromacs format
+.SH SYNOPSIS
+\f3demux\fP
+.B "md0.log "
+.B "extra "
+.SH DESCRIPTION
+If you would like to make your trajectories continuous again you can use
+.B demux
+to read your md0.log file (you can
+concatenate several if necessary) and produce a few output files. One of these
+is a .xvg file (\fIreplica_ndx.xvg\fR) that can be passed to 
+.BR trjcat(1)
+along with the
+original trajectory files, in order to produce continuous trajectories. The
+other file (\fIreplica_temp.xvg\fR) contains the temperatures for each replica,
+starting at the original temperature. So if your replica of interest starts at,
+say, 300 K, you can follow its trajectory through temperature space. It would
+be interesting to add some functionality to make histograms of temperature
+distributions for each replica, which according to most authors, should be
+flat. The demuxed trajectories can be used with
+.BR g_kinetics(1)
+to obtain protein folding kinetics from REMD trajectories.
+
+.SH OPTIONS
+.B md0.log
+Log file of the trajectory run you wish to make continuous.  Multiple files can
+be appended together.
+
+.B extra
+Number of times each entry in the log file will be copied.  (Integer)
+
+.SH LIMITATIONS
+If your exchange was every N ps and you saved every M ps you can make for
+the missing frames by setting \fBextra\fR to (N/M - 1). If N/M is not integer,
+you're out of luck and you will not be able to demux your trajectories at all.
+
+.SH SEE ALSO
+.BR gromacs (7),
+.BR trjcat (1),
+.BR g_kinetics (1),
+.I <http://wiki.gromacs.org/index.php/REMD>

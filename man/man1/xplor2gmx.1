@@ -1,0 +1,27 @@
+.TH "xplor2gmx" "1" "13 Oct 2008" "GROMACS suite, Version 4.0"
+.SH NAME
+xplor2gmx \- Convert XPLOR distance restraints to Gromacs format
+.SH SYNOPSIS
+\f3xplor2gmx\fP
+.BI "(residue offset)" ""
+.BI " input.pdb " ""
+.SH DESCRIPTION
+.B xplor2gmx
+reads an XPLOR input file with distance restraint data
+as sometimes is found in the pdb database (http://www.pdb.org).
+From this input file dihedral restrints should be removed, such that
+only distance restraints are left. The script can handle ambiguous restraints.
+It converts the distance restraints to GROMACS format.
+
+A restraints file (.dat) should be provided on STDIN, and a suitable
+output file (.itp) is sent to STDOUT.
+
+.SH EXAMPLES
+xplor2gmx.pl 33 conf.pdb < restraints.dat > disre.itp
+
+.SH OPTIONS
+.B xplor2gmx
+requires two command line options: first, the residue offset (integer);
+second, the .pdb filename.  The pdb file must have correct atom numbers.
+.SH SEE ALSO
+.BR gromacs (7)
