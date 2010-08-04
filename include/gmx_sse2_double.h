@@ -405,7 +405,7 @@ gmx_mm_log_pd(__m128d x)
 }
 
 
-static inline 
+static int
 gmx_mm_sincos_pd(__m128d x,
                  __m128d *sinval,
                  __m128d *cosval)
