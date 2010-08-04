@@ -2126,17 +2126,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (MASTER(cr))
             fcReportProgress( ir->nsteps, step );
 
-        {
-            int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
-            int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
-            
-            /*Gromacs drives checkpointing; no ||  
-              fcCheckPointPendingThreads(cr->nodeid,
-              nthreads*nnodes);*/
-            /* sync bCPT and fc record-keeping */
-            if (bCPT && MASTER(cr))
-                fcRequestCheckPoint();
-        }
+        /* sync bCPT and fc record-keeping */
+        if (bCPT && MASTER(cr))
+            fcRequestCheckPoint();
 #endif
         
         if (mdof_flags != 0)
