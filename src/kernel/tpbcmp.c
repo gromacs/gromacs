@@ -52,6 +52,7 @@
 #include "tpxio.h"
 #include "enxio.h"
 #include "mtop_util.h"
+#include "string2.h"
 
 static void cmp_int(FILE *fp,const char *s,int index,int i1,int i2)
 {
@@ -121,6 +122,17 @@ static void cmp_str(FILE *fp, const char *s, int index,
 		    const char *s1, const char *s2)
 {
   if (strcmp(s1,s2) != 0) {
+    if (index != -1)
+      fprintf(fp,"%s[%d] (%s - %s)\n",s,index,s1,s2);
+    else
+      fprintf(fp,"%s (%s - %s)\n",s,s1,s2);
+  }
+}
+
+static void cmp_str_case(FILE *fp, const char *s, int index,
+			 const char *s1, const char *s2)
+{
+  if (gmx_strcasecmp(s1,s2) != 0) {
     if (index != -1)
       fprintf(fp,"%s[%d] (%s - %s)\n",s,index,s1,s2);
     else
@@ -779,6 +791,53 @@ void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2,
     fprintf(stdout,"\nBoth files read correctly\n");
 }
 
+static real ener_tensor_diag(int n,gmx_enxnm_t *enm1,gmx_enxnm_t *enm2,
+			     int *tensi,int i,
+			     t_energy e1[],t_energy e2[])
+{
+  int  d1,d2;
+  int  len;
+  int  j;
+  real prod1,prod2;
+  int  nfound;
+
+  if (gmx_strcasecmp(enm1[i].name,enm2[i].name) != 0) {
+    /* Strings don't match, forget the relative check */
+    return 0;
+  }
+
+  d1 = tensi[i]/DIM;
+  d2 = tensi[i] - d1;
+  
+  /* Find the diagonal elements d1 and d2 */
+  len = strlen(enm1[i].name);
+  prod1 = 1;
+  prod2 = 1;
+  nfound = 0;
+  for(j=0; j<n; j++) {
+    if (tensi[j] >= 0 &&
+	strlen(enm1[j].name) == len &&
+	strncmp(enm1[i].name,enm1[j].name,len-2) == 0 &&
+	(tensi[j] == d1*DIM+d1 || tensi[j] == d2*DIM+d2)) {
+      prod1 *= fabs(e1[j].e);
+      nfound++;
+    }
+    if (tensi[j] >= 0 &&
+	strlen(enm2[j].name) == len &&
+	strncmp(enm2[i].name,enm2[j].name,len-2) == 0 &&
+	(tensi[j] == d1*DIM+d1 || tensi[j] == d2*DIM+d2)) {
+      prod2 *= fabs(e2[j].e);
+      nfound++;
+    }
+  }
+
+  if (nfound == 4) {
+    return 0.5*(sqrt(prod1) + sqrt(prod2));
+  } else {
+    return 0;
+  }
+}
+
 static void cmp_energies(FILE *fp,int step1,int step2,int nre,
 			 t_energy e1[],t_energy e2[],
 			 gmx_enxnm_t *enm1,gmx_enxnm_t *enm2,
@@ -786,14 +845,55 @@ static void cmp_energies(FILE *fp,int step1,int step2,int nre,
 			 int maxener)
 {
   int  i;
+  int  *tensi,len,d1,d2;
+  real ftol_i,abstol_i;
+
+  snew(tensi,maxener);
+  /* Check for tensor elements ending on "-XX", "-XY", ... , "-ZZ" */
+  for(i=0; (i<maxener); i++) {
+    tensi[i] = -1;
+    len = strlen(enm1[i].name);
+    if (len > 3 && enm1[i].name[len-3] == '-') {
+      d1 = enm1[i].name[len-2] - 'X';
+      d2 = enm1[i].name[len-1] - 'X';
+      if (d1 >= 0 && d1 < DIM &&
+	  d2 >= 0 && d2 < DIM) {
+	tensi[i] = d1*DIM + d2;
+      }
+    }
+  }
   
   for(i=0; (i<maxener); i++) {
-    if (!equal_real(e1[i].e,e2[i].e,ftol,abstol))
+    /* Check if this is an off-diagonal tensor element */
+    if (tensi[i] >= 0 && tensi[i] != 0 && tensi[i] != 4 && tensi[i] != 8) {
+      /* Turn on the relative tolerance check (4 is maximum relative diff.) */
+      ftol_i = 5;
+      /* Do the relative tolerance through an absolute tolerance times
+       * the size of diagonal components of the tensor.
+       */
+      abstol_i = ftol*ener_tensor_diag(maxener,enm1,enm2,tensi,i,e1,e2);
+      if (abstol_i > 0) {
+	//printf("'%s' val %f diag %f\n",
+	//     enm1[i].name,e1[i].e,abstol_i/ftol);
+	/* We found a diagonal, we need to check with the minimum tolerance */
+	abstol_i = min(abstol_i,abstol);
+      } else {
+	/* We did not find a diagonal, ignore the relative tolerance check */
+	abstol_i = abstol;
+      }
+    } else {
+      ftol_i   = ftol;
+      abstol_i = abstol;
+    }
+    if (!equal_real(e1[i].e,e2[i].e,ftol_i,abstol_i)) {
       fprintf(fp,"%-15s  step %3d:  %12g, %s step %3d: %12g\n",
 	      enm1[i].name,step1,e1[i].e,
 	      strcmp(enm1[i].name,enm2[i].name)!=0 ? enm2[i].name:"",
 	      step2,e2[i].e);
+    }
   }
+
+  sfree(tensi);
 }
 
 #if 0
@@ -911,7 +1011,7 @@ void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *
   char       buf[256];
   gmx_enxnm_t *enm1=NULL,*enm2=NULL;
   t_enxframe *fr1,*fr2;
-  bool       b1,b2;
+  bool       bDiffNames,b1,b2;
   
   fprintf(stdout,"comparing energy file %s and %s\n\n",fn1,fn2);
 
@@ -920,21 +1020,36 @@ void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *
   do_enxnms(in1,&nre1,&enm1);
   do_enxnms(in2,&nre2,&enm2);
   if (nre1 != nre2) {
-    fprintf(stdout,"%s: nre=%d, %s: nre=%d\n",fn1,nre1,fn2,nre2);
-    return;
+    fprintf(stdout,"There are %d and %d terms in the energy files\n\n",
+	    nre1,nre2);
+  } else {
+    fprintf(stdout,"There are %d terms in the energy files\n\n",nre1);
   }
-  nre = nre1;
-  fprintf(stdout,"There are %d terms in the energy files\n\n",nre);
-  
+
+  nre = min(nre1,nre2);
   maxener = nre;
-  for(i=0; (i<nre); i++) {
-    cmp_str(stdout,"enm",i,enm1[i].name,enm2[i].name);
+  bDiffNames = FALSE;
+  for(i=0; i<nre; i++) {
+    if (gmx_strcasecmp(enm1[i].name,enm2[i].name) != 0) {
+      bDiffNames = TRUE;
+    }
+    cmp_str_case(stdout,"enm",i,enm1[i].name,enm2[i].name);
     cmp_str(stdout,"unit",i,enm1[i].unit,enm2[i].unit);
     if ((lastener != NULL) && (strstr(enm1[i].name,lastener) != NULL)) {
       maxener=i+1;
       break;
     }
   }
+  if (bDiffNames) {
+    fprintf(stdout,
+	    "\n"
+	    "The energy term names in '%s' and '%s' differ,\n"
+	    "will not compare energies.\n"
+	    "The -lastener option might allow the comparison of identically named terms.\n",
+	    fn1,fn2);
+    return;
+  }
+
   fprintf(stdout,"There are %d terms to compare in the energy files\n\n",
 	  maxener);
   
