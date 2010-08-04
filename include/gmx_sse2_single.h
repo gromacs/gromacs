@@ -31,9 +31,12 @@
 #include <config.h>
 #endif
 
+#ifndef _gmx_sse2_single_h_
+#define _gmx_sse2_single_h_
+
 /* We require SSE2 now! */
 
-#include <math.h>
+#include <math.h> 
 
 
 #include <xmmintrin.h> /* SSE */
@@ -150,6 +153,20 @@ gmx_mm_invsqrt_ps(__m128 x)
 }
 
 static inline __m128
+gmx_mm_sqrt_ps(__m128 x)
+{
+    __m128 mask;
+    __m128 res;
+    
+    mask = _mm_cmpeq_ps(x,_mm_setzero_ps());
+    res  = _mm_andnot_ps(mask,gmx_mm_invsqrt_ps(x));
+    
+    res  = _mm_mul_ps(x,res);
+    
+    return res;
+}
+
+static inline __m128
 gmx_mm_inv_ps(__m128 x)
 {
 	const __m128 two = {2.0f,2.0f,2.0f,2.0f};
@@ -176,260 +193,505 @@ gmx_mm_sum4_ps(__m128 t0, __m128 t1, __m128 t2, __m128 t3)
 }
 
 
-static __m128 
+static __m128
 gmx_mm_log_ps(__m128 x)
 {
-	const __m128 exp_ps  = gmx_mm_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
-	const __m128 one_ps  = gmx_mm_castsi128_ps( _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000) ); 
-	const __m128 off_ps  = gmx_mm_castsi128_ps( _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000) ); 
-	const __m128 mant_ps = gmx_mm_castsi128_ps( _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF) );
-	const __m128 base_ps = gmx_mm_castsi128_ps( _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000) );
-	const __m128 loge_ps = gmx_mm_castsi128_ps( _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218) );
-	
-	const __m128 D5      = gmx_mm_castsi128_ps( _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5) );
-	const __m128 D4      = gmx_mm_castsi128_ps( _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD) ); 
-	const __m128 D3      = gmx_mm_castsi128_ps( _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9) );
-	const __m128 D2      = gmx_mm_castsi128_ps( _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B) );
-	const __m128 D1      = gmx_mm_castsi128_ps( _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD) ); 
-	const __m128 D0      = gmx_mm_castsi128_ps( _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A) );
-	
-	__m128  xmm0,xmm1,xmm2;
-	
-	xmm0  = x;
-	xmm1  = xmm0;
-	xmm1  = _mm_and_ps(xmm1, exp_ps);
-	xmm1 = gmx_mm_castsi128_ps( _mm_srli_epi32( gmx_mm_castps_si128(xmm1),8) ); 
-	
-	xmm1  = _mm_or_ps(xmm1, one_ps);
-	xmm1  = _mm_sub_ps(xmm1, off_ps);
-	
-	xmm1  = _mm_mul_ps(xmm1, base_ps);
-	xmm0  = _mm_and_ps(xmm0, mant_ps);
-	xmm0  = _mm_or_ps(xmm0, one_ps);
-	
-	xmm2  = _mm_mul_ps(xmm0, D5);
-	xmm2  = _mm_add_ps(xmm2, D4);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, D3);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, D2);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, D1);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, D0);
-	xmm0  = _mm_sub_ps(xmm0, one_ps);
-	xmm0  = _mm_mul_ps(xmm0,xmm2);
-	xmm1  = _mm_add_ps(xmm1,xmm0);
-	
-	x     = xmm1;
-	x  = _mm_mul_ps(x, loge_ps);
-	
-    return x;
+    /* Same algorithm as cephes library */
+	const __m128  expmask    = gmx_mm_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
+    const __m128i expbase_m1 = _mm_set1_epi32(127-1); /* We want non-IEEE format */
+    const __m128  half       = _mm_set1_ps(0.5f);
+    const __m128  one        = _mm_set1_ps(1.0f);
+    const __m128  invsq2     = _mm_set1_ps(1.0f/sqrt(2.0f));
+    const __m128  corr1      = _mm_set1_ps(-2.12194440e-4f);
+    const __m128  corr2      = _mm_set1_ps(0.693359375f);
+    
+    const __m128 CA_1        = _mm_set1_ps(0.070376836292f);
+    const __m128 CB_0        = _mm_set1_ps(1.6714950086782716f);
+    const __m128 CB_1        = _mm_set1_ps(-2.452088066061482f);
+    const __m128 CC_0        = _mm_set1_ps(1.5220770854701728f);
+    const __m128 CC_1        = _mm_set1_ps(-1.3422238433233642f);
+    const __m128 CD_0        = _mm_set1_ps(1.386218787509749f);
+    const __m128 CD_1        = _mm_set1_ps(0.35075468953796346f);
+    const __m128 CE_0        = _mm_set1_ps(1.3429983063133937f);
+    const __m128 CE_1        = _mm_set1_ps(1.807420826584643f);
+    
+    __m128  fexp,fexp1;
+    __m128i iexp;
+    __m128  mask;
+    __m128  x1,x2;
+    __m128  y;
+    __m128  pA,pB,pC,pD,pE,tB,tC,tD,tE;
+    
+    /* Separate x into exponent and mantissa, with a mantissa in the range [0.5..1[ (not IEEE754 standard!) */
+    fexp  = _mm_and_ps(x,expmask);
+    iexp  = gmx_mm_castps_si128(fexp);
+    iexp  = _mm_srli_epi32(iexp,23);
+    iexp  = _mm_sub_epi32(iexp,expbase_m1);
+    
+    x     = _mm_andnot_ps(expmask,x);
+    x     = _mm_or_ps(x,one);
+    x     = _mm_mul_ps(x,half);
+    
+    mask  = _mm_cmplt_ps(x,invsq2);
+    
+    x     = _mm_add_ps(x,_mm_and_ps(mask,x));
+    x     = _mm_sub_ps(x,one);
+    iexp  = _mm_add_epi32(iexp,gmx_mm_castps_si128(mask)); /* 0xFFFFFFFF = -1 as int */
+    
+    x2    = _mm_mul_ps(x,x);
+    
+    pA    = _mm_mul_ps(CA_1,x);
+    pB    = _mm_mul_ps(CB_1,x);
+    pC    = _mm_mul_ps(CC_1,x);
+    pD    = _mm_mul_ps(CD_1,x);
+    pE    = _mm_mul_ps(CE_1,x);
+    tB    = _mm_add_ps(CB_0,x2);
+    tC    = _mm_add_ps(CC_0,x2);
+    tD    = _mm_add_ps(CD_0,x2);
+    tE    = _mm_add_ps(CE_0,x2);
+    pB    = _mm_add_ps(pB,tB);
+    pC    = _mm_add_ps(pC,tC);
+    pD    = _mm_add_ps(pD,tD);
+    pE    = _mm_add_ps(pE,tE);
+    
+    pA    = _mm_mul_ps(pA,pB);
+    pC    = _mm_mul_ps(pC,pD);
+    pE    = _mm_mul_ps(pE,x2);
+    pA    = _mm_mul_ps(pA,pC);
+    y     = _mm_mul_ps(pA,pE);
+    
+    fexp  = _mm_cvtepi32_ps(iexp);
+    y     = _mm_add_ps(y,_mm_mul_ps(fexp,corr1));
+    
+    y     = _mm_sub_ps(y, _mm_mul_ps(half,x2));
+    x2    = _mm_add_ps(x,y);
+    
+    x2    = _mm_add_ps(x2,_mm_mul_ps(fexp,corr2));
+    
+    return x2;
 }
 
 
-/* This exp-routine has a relative precision of:
- *   2^-22.33 bits (essentially single precision :-)
- * WARNING: no check against over or underflows (x beyond +-87)
+/* 
+ * Exponential function.
+ * 
+ * Exp(x) is calculate from the relation Exp(x)=2^(y), where y=log2(e)*x
+ * Thus, the contents of this routine is mostly about calculating 2^y.
+ *
+ * This is done by separating y=z+w, where z=[y] is an integer. For technical reasons it is easiest
+ * for us to round to the _nearest_ integer and have w in [-0.5,0.5] rather than always rounding down.
+ * (It is not until SSE4 there was an efficient operation to do rounding towards -infinity).
+ *
+ * With this we get 2^y=2^z*2^w
+ *
+ * Since we have IEEE fp representation, we can easily calculate 2^z by adding the FP exponent bias
+ * (127 in single), and shifting the integer to the exponent field of the FP number (23 bits up).
+ *
+ * The 2^w term is calculated from a (5,0)-th order (no denominator) Minimax polynomia on the interval
+ * [-0.5,0.5]. The coefficiencts of this was derived in Mathematica using the command:
+ *
+ * MiniMaxApproximation[(2^x), {x, {-0.5, 0.5}, 5, 0}, WorkingPrecision -> 15]
+ *
+ * The lowest exponent we can represent in IEEE single-precision binary format is 2^-126; below that 
+ * it will wrap around and lead to very large positive numbers. This corresponds to a lower bound
+ * on the argument for exp(x) of roughly -87.33. For smaller arguments the return value will be 0.0.
+ *
+ * There appears to be a slight loss of precision for large arguments (~50), where the largest relative
+ * error reaches ~3e-6. However, since the actual value for that argument is around 10^21, it might
+ * not matter for typical single precision workloads. This is likely caused by the polynomial evaluation,
+ * and the only way around would then be a table-based version, which I haven't managed to get the
+ * same performance from.
+ * 
+ * The _average_ accuracy is 22.7 bits in the range [-10,10], and the worst roughly 1 bit worse.
  */
 static __m128 
 gmx_mm_exp_ps(__m128 x)
 {
-    const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   /* 0.5e+0f */
-    const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   /* 127 */
-    const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   /* log2(e) */
-	
-    const __m128i D5   = _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905);   /* 1.8775767e-3f */
-    const __m128i D4   = _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806);   /* 8.9893397e-3f */
-    const __m128i D3   = _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23);   /* 5.5826318e-2f */
-    const __m128i D2   = _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4);   /* 2.4015361e-1f */
-    const __m128i D1   = _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B);   /* 6.9315308e-1f */
-    const __m128i D0   = _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF);   /* 9.9999994e-1f */
-	
-	__m128 xmm0,xmm1;
-	__m128i xmm2;
-	
-	xmm0 = _mm_mul_ps(x,gmx_mm_castsi128_ps(CC));
-	xmm1 = _mm_sub_ps(xmm0,gmx_mm_castsi128_ps(half));
-	xmm2 = _mm_cvtps_epi32(xmm1); 
-	xmm1 = _mm_cvtepi32_ps(xmm2); 
-	
-	xmm2 = _mm_add_epi32(xmm2,base);
-	xmm2 = _mm_slli_epi32(xmm2,23);
-	
-	xmm0 = _mm_sub_ps(xmm0,xmm1);
-	xmm1 = _mm_mul_ps(xmm0,gmx_mm_castsi128_ps(D5));
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D4));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D3));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D2));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D1));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D0));
-	xmm1 = _mm_mul_ps(xmm1,gmx_mm_castsi128_ps(xmm2));
-	
-	/* 18 instructions currently */
-	return xmm1;
+    const __m128  argscale = _mm_set1_ps(1.442695040888963f);
+    /* Lower bound: We do not allow numbers that would lead to an IEEE fp representation exponent smaller than -126. */
+    const __m128  arglimit = _mm_set1_ps(-126.0f/1.442695040888963f);
+    
+    const __m128i expbase  = _mm_set1_epi32(127);
+    const __m128  CA0      = _mm_set1_ps(0.00132764719920600f);
+    const __m128  CB0      = _mm_set1_ps(3.17196359322f);
+    const __m128  CC0      = _mm_set1_ps(20.36135752425f);
+    const __m128  CC1      = _mm_set1_ps(-0.681627790451f);
+    const __m128  CD0      = _mm_set1_ps(11.66225206128f);
+    const __m128  CD1      = _mm_set1_ps(4.79739947827f);
+    
+    
+    __m128  valuemask;
+    __m128i iexppart;
+    __m128  fexppart;
+    __m128  intpart;
+    __m128  z,z2;
+    __m128  factB,factC,factD;
+    
+	z         = _mm_mul_ps(x,argscale);     
+    iexppart  = _mm_cvtps_epi32(z);
+#if GMX_SSE4
+    /* This reduces latency and speeds up the code by roughly 5% when supported */
+    intpart   = _mm_round_ps(z,0);
+#else
+    intpart   = _mm_cvtepi32_ps(iexppart);
+#endif
+    iexppart  = _mm_slli_epi32(_mm_add_epi32(iexppart,expbase),23);    
+    valuemask = _mm_cmpgt_ps(x,arglimit);
+    
+	z         = _mm_sub_ps(z,intpart);
+    z2        = _mm_mul_ps(z,z);  
+    
+    fexppart  = _mm_and_ps(valuemask,gmx_mm_castsi128_ps(iexppart));
+    
+    /* Since SSE floating-point has relatively high latency it is faster to do 
+     * factorized polynomial summation with independent terms than using alternating add/multiply, i.e.
+     * p(z) = A0 * (B0 + z) * (C0 + C1*z + z^2) * (D0 + D1*z + z^2) 
+     */
+    factB     = _mm_add_ps(CB0,z);
+    factC     = _mm_add_ps(CC0,_mm_mul_ps(CC1,z) );
+    factC     = _mm_add_ps(factC,z2);
+    factD     = _mm_add_ps(CD0,_mm_mul_ps(CD1,z) );
+    factD     = _mm_add_ps(factD,z2);
+    
+    z         = _mm_mul_ps(CA0,fexppart);
+    factB     = _mm_mul_ps(factB,factC);
+    z         = _mm_mul_ps(z,factD);
+    z         = _mm_mul_ps(z,factB);
+    
+	/* Currently uses 22 actual (real, not including casts) SSE instructions */
+	return  z;
 }
 
 
-/* Same as gmx_mm_exp_ps, but has a lower bound check, such that it can
- * be safely called with x < -87.33.
- * We use a limit of -70 such that the smallest return value is exp(-70),
- * which allows for some margin against underflow.
- * We might rather return exactly zero for x < -87, but achieving that
- * is probably expensive in sse.
- * WARNING: no check against overflows (x > 87)
- */
-static __m128 
-gmx_mm_exp_ps_lbc(__m128 x)
+
+static int 
+gmx_mm_sincos_ps(__m128 x,
+                 __m128 *sinval,
+                 __m128 *cosval)
 {
-    const __m128i lim  = _mm_set_epi32(0xC28C0000, 0xC28C0000, 0xC28C0000, 0xC28C0000);   /* -70 */
-    const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   /* 0.5e+0f */
-    const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   /* 127 */
-    const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   /* log2(e) */
-	
-    const __m128i D5   = _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905);   /* 1.8775767e-3f */
-    const __m128i D4   = _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806);   /* 8.9893397e-3f */
-    const __m128i D3   = _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23);   /* 5.5826318e-2f */
-    const __m128i D2   = _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4);   /* 2.4015361e-1f */
-    const __m128i D1   = _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B);   /* 6.9315308e-1f */
-    const __m128i D0   = _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF);   /* 9.9999994e-1f */
-	
-	__m128 xmm0,xmm1;
-	__m128i xmm2;
-	
-	xmm1 = _mm_max_ps(x,gmx_mm_castsi128_ps(lim)); /* x<-87 gives exp(-87) */
-	xmm0 = _mm_mul_ps(xmm1,gmx_mm_castsi128_ps(CC));
-	xmm1 = _mm_sub_ps(xmm0,gmx_mm_castsi128_ps(half));
-	xmm2 = _mm_cvtps_epi32(xmm1); 
-	xmm1 = _mm_cvtepi32_ps(xmm2); 
-	
-	xmm2 = _mm_add_epi32(xmm2,base);
-	xmm2 = _mm_slli_epi32(xmm2,23);
-	
-	xmm0 = _mm_sub_ps(xmm0,xmm1);
-	xmm1 = _mm_mul_ps(xmm0,gmx_mm_castsi128_ps(D5));
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D4));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D3));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D2));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D1));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D0));
-	xmm1 = _mm_mul_ps(xmm1,gmx_mm_castsi128_ps(xmm2));
-	
-	/* 19 instructions currently + pipeline latenct after max_ps */
-	return xmm1;
+    const __m128 _sincosf_two_over_pi = {2.0/M_PI,2.0/M_PI,2.0/M_PI,2.0/M_PI};                               
+    const __m128 _sincosf_half        = {0.5,0.5,0.5,0.5};                                                   
+    const __m128 _sincosf_one         = {1.0,1.0,1.0,1.0};                                                   
+    
+    const __m128i _sincosf_izero      = _mm_set1_epi32(0);                                                   
+    const __m128i _sincosf_ione       = _mm_set1_epi32(1);                                                   
+    const __m128i _sincosf_itwo       = _mm_set1_epi32(2);                                                   
+    const __m128i _sincosf_ithree     = _mm_set1_epi32(3);                                                   
+    
+    const __m128 _sincosf_kc1 = {1.57079625129,1.57079625129,1.57079625129,1.57079625129};                   
+    const __m128 _sincosf_kc2 = {7.54978995489e-8,7.54978995489e-8,7.54978995489e-8,7.54978995489e-8};       
+    const __m128 _sincosf_cc0 = {-0.0013602249,-0.0013602249,-0.0013602249,-0.0013602249};                   
+    const __m128 _sincosf_cc1 = {0.0416566950,0.0416566950,0.0416566950,0.0416566950};                       
+    const __m128 _sincosf_cc2 = {-0.4999990225,-0.4999990225,-0.4999990225,-0.4999990225};                   
+    const __m128 _sincosf_sc0 = {-0.0001950727,-0.0001950727,-0.0001950727,-0.0001950727};                   
+    const __m128 _sincosf_sc1 = {0.0083320758,0.0083320758,0.0083320758,0.0083320758};                       
+    const __m128 _sincosf_sc2 = {-0.1666665247,-0.1666665247,-0.1666665247,-0.1666665247};                   
+    
+    __m128 _sincosf_signbit           = gmx_mm_castsi128_ps( _mm_set1_epi32(0x80000000) );                   
+    __m128 _sincosf_tiny              = gmx_mm_castsi128_ps( _mm_set1_epi32(0x3e400000) );                   
+    
+    __m128 _sincosf_xl;                                                                                      
+    __m128 _sincosf_xl2;                                                                                     
+    __m128 _sincosf_xl3;                                                                                     
+    __m128 _sincosf_qf;                                                                                      
+    __m128 _sincosf_absxl;                                                                                   
+    __m128 _sincosf_p1;                                                                                      
+    __m128 _sincosf_cx;                                                                                      
+    __m128 _sincosf_sx;                                                                                      
+    __m128 _sincosf_ts;                                                                                      
+    __m128 _sincosf_tc;                                                                                      
+    __m128 _sincosf_tsn;                                                                                     
+    __m128 _sincosf_tcn;                                                                                     
+    __m128i _sincosf_q;                                                                                      
+    __m128i _sincosf_offsetSin;                                                                              
+    __m128i _sincosf_offsetCos;                                                                              
+    __m128 _sincosf_sinMask;                                                                                 
+    __m128 _sincosf_cosMask;                                                                                 
+    __m128 _sincosf_isTiny;                                                                                  
+    __m128 _sincosf_ct0;                                                                                     
+    __m128 _sincosf_ct1;                                                                                     
+    __m128 _sincosf_ct2;                                                                                     
+    __m128 _sincosf_st1;                                                                                     
+    __m128 _sincosf_st2;                                                                                     
+    
+    _sincosf_xl        = _mm_mul_ps(x,_sincosf_two_over_pi);                                                 
+    
+    _sincosf_xl        = _mm_add_ps(_sincosf_xl,_mm_or_ps(_mm_and_ps(_sincosf_xl,_sincosf_signbit),_sincosf_half)); 
+    
+    _sincosf_q         = _mm_cvttps_epi32(_sincosf_xl);                                                      
+    _sincosf_qf        = _mm_cvtepi32_ps(_sincosf_q);                                                        
+    
+    _sincosf_offsetSin   = _mm_and_si128(_sincosf_q,_sincosf_ithree);                                        
+    _sincosf_offsetCos   = _mm_add_epi32(_sincosf_offsetSin,_sincosf_ione);                                  
+    
+    _sincosf_p1 = _mm_mul_ps(_sincosf_qf,_sincosf_kc1);                                                      
+    _sincosf_xl = _mm_mul_ps(_sincosf_qf,_sincosf_kc2);                                                      
+    _sincosf_p1 = _mm_sub_ps(x,_sincosf_p1);                                                                 
+    _sincosf_xl = _mm_sub_ps(_sincosf_p1,_sincosf_xl);                                                       
+    
+    _sincosf_absxl  = _mm_andnot_ps(_sincosf_signbit,_sincosf_xl);                                           
+    _sincosf_isTiny = _mm_cmpgt_ps(_sincosf_tiny,_sincosf_absxl);                                            
+    
+    _sincosf_xl2    = _mm_mul_ps(_sincosf_xl,_sincosf_xl);                                                   
+    _sincosf_xl3    = _mm_mul_ps(_sincosf_xl2,_sincosf_xl);                                                  
+    
+    _sincosf_ct1    = _mm_mul_ps(_sincosf_cc0,_sincosf_xl2);                                                 
+    _sincosf_ct1    = _mm_add_ps(_sincosf_ct1,_sincosf_cc1);                                                 
+    _sincosf_st1    = _mm_mul_ps(_sincosf_sc0,_sincosf_xl2);                                                 
+    _sincosf_st1    = _mm_add_ps(_sincosf_st1,_sincosf_sc1);                                                 
+    _sincosf_ct2    = _mm_mul_ps(_sincosf_ct1,_sincosf_xl2);                                                 
+    _sincosf_ct2    = _mm_add_ps(_sincosf_ct2,_sincosf_cc2);                                                 
+    _sincosf_st2    = _mm_mul_ps(_sincosf_st1,_sincosf_xl2);                                                 
+    _sincosf_st2    = _mm_add_ps(_sincosf_st2,_sincosf_sc2);                                                 
+    
+    _sincosf_cx     = _mm_mul_ps(_sincosf_ct2,_sincosf_xl2);                                                 
+    _sincosf_cx     = _mm_add_ps(_sincosf_cx,_sincosf_one);                                                  
+    
+    _sincosf_sx     = _mm_mul_ps(_sincosf_st2,_sincosf_xl3);                                                 
+    _sincosf_sx     = _mm_add_ps(_sincosf_sx,_sincosf_xl);                                                   
+    
+    _sincosf_sinMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_ione), _sincosf_izero) ); 
+    _sincosf_cosMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_ione), _sincosf_izero) ); 
+    
+    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_cx) ); 
+    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_cx) ); 
+    
+    _sincosf_sinMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_itwo), _sincosf_izero) );
+    _sincosf_tsn    = _mm_xor_ps(_sincosf_signbit,_sincosf_ts);                                              
+    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_ts) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_tsn) ); 
+    
+    _sincosf_cosMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_itwo), _sincosf_izero) ); 
+    _sincosf_tcn    = _mm_xor_ps(_sincosf_signbit,_sincosf_tc);                                              
+    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_tc) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_tcn) ); 
+    
+    *sinval = _sincosf_ts;                                                                                    
+    *cosval = _sincosf_tc;      
+    
+    return 0;
+}
+
+static __m128
+gmx_mm_tan_ps(__m128 x)
+{
+    __m128 sinval,cosval;
+    __m128 tanval;
+    
+    gmx_mm_sincos_ps(x,&sinval,&cosval);
+    
+    tanval = _mm_mul_ps(sinval,gmx_mm_inv_ps(cosval));
+    
+    return tanval;
 }
 
 
-#define GMX_MM_SINCOS_PS(x,sinval,cosval)                                                                    \
-{                                                                                                            \
-	const __m128 _sincosf_two_over_pi = {2.0/M_PI,2.0/M_PI,2.0/M_PI,2.0/M_PI};                               \
-    const __m128 _sincosf_half        = {0.5,0.5,0.5,0.5};                                                   \
-    const __m128 _sincosf_one         = {1.0,1.0,1.0,1.0};                                                   \
-                                                                                                             \
-	const __m128i _sincosf_izero      = _mm_set1_epi32(0);                                                   \
-    const __m128i _sincosf_ione       = _mm_set1_epi32(1);                                                   \
-    const __m128i _sincosf_itwo       = _mm_set1_epi32(2);                                                   \
-    const __m128i _sincosf_ithree     = _mm_set1_epi32(3);                                                   \
-                                                                                                             \
-	const __m128 _sincosf_kc1 = {1.57079625129,1.57079625129,1.57079625129,1.57079625129};                   \
-    const __m128 _sincosf_kc2 = {7.54978995489e-8,7.54978995489e-8,7.54978995489e-8,7.54978995489e-8};       \
-	const __m128 _sincosf_cc0 = {-0.0013602249,-0.0013602249,-0.0013602249,-0.0013602249};                   \
-    const __m128 _sincosf_cc1 = {0.0416566950,0.0416566950,0.0416566950,0.0416566950};                       \
-    const __m128 _sincosf_cc2 = {-0.4999990225,-0.4999990225,-0.4999990225,-0.4999990225};                   \
-	const __m128 _sincosf_sc0 = {-0.0001950727,-0.0001950727,-0.0001950727,-0.0001950727};                   \
-    const __m128 _sincosf_sc1 = {0.0083320758,0.0083320758,0.0083320758,0.0083320758};                       \
-    const __m128 _sincosf_sc2 = {-0.1666665247,-0.1666665247,-0.1666665247,-0.1666665247};                   \
-                                                                                                             \
-	__m128 _sincosf_signbit           = gmx_mm_castsi128_ps( _mm_set1_epi32(0x80000000) );                   \
-    __m128 _sincosf_tiny              = gmx_mm_castsi128_ps( _mm_set1_epi32(0x3e400000) );                   \
-                                                                                                             \
-	__m128 _sincosf_xl;                                                                                      \
-    __m128 _sincosf_xl2;                                                                                     \
-    __m128 _sincosf_xl3;                                                                                     \
-    __m128 _sincosf_qf;                                                                                      \
-    __m128 _sincosf_absxl;                                                                                   \
-    __m128 _sincosf_p1;                                                                                      \
-    __m128 _sincosf_cx;                                                                                      \
-    __m128 _sincosf_sx;                                                                                      \
-    __m128 _sincosf_ts;                                                                                      \
-    __m128 _sincosf_tc;                                                                                      \
-    __m128 _sincosf_tsn;                                                                                     \
-    __m128 _sincosf_tcn;                                                                                     \
-	__m128i _sincosf_q;                                                                                      \
-    __m128i _sincosf_offsetSin;                                                                              \
-    __m128i _sincosf_offsetCos;                                                                              \
-    __m128 _sincosf_sinMask;                                                                                 \
-    __m128 _sincosf_cosMask;                                                                                 \
-    __m128 _sincosf_isTiny;                                                                                  \
-    __m128 _sincosf_ct0;                                                                                     \
-    __m128 _sincosf_ct1;                                                                                     \
-    __m128 _sincosf_ct2;                                                                                     \
-    __m128 _sincosf_st1;                                                                                     \
-    __m128 _sincosf_st2;                                                                                     \
-                                                                                                             \
-    _sincosf_xl        = _mm_mul_ps(x,_sincosf_two_over_pi);                                                 \
-                                                                                                             \
-    _sincosf_xl        = _mm_add_ps(_sincosf_xl,_mm_or_ps(_mm_and_ps(_sincosf_xl,_sincosf_signbit),_sincosf_half)); \
-	                                                                                                         \
-    _sincosf_q         = _mm_cvttps_epi32(_sincosf_xl);                                                      \
-    _sincosf_qf        = _mm_cvtepi32_ps(_sincosf_q);                                                        \
-  	                                                                                                         \
-    _sincosf_offsetSin   = _mm_and_si128(_sincosf_q,_sincosf_ithree);                                        \
-    _sincosf_offsetCos   = _mm_add_epi32(_sincosf_offsetSin,_sincosf_ione);                                  \
-                                                                                                             \
-    _sincosf_p1 = _mm_mul_ps(_sincosf_qf,_sincosf_kc1);                                                      \
-    _sincosf_xl = _mm_mul_ps(_sincosf_qf,_sincosf_kc2);                                                      \
-    _sincosf_p1 = _mm_sub_ps(x,_sincosf_p1);                                                                 \
-    _sincosf_xl = _mm_sub_ps(_sincosf_p1,_sincosf_xl);                                                       \
-                                                                                                             \
-    _sincosf_absxl  = _mm_andnot_ps(_sincosf_signbit,_sincosf_xl);                                           \
-    _sincosf_isTiny = _mm_cmpgt_ps(_sincosf_tiny,_sincosf_absxl);                                            \
-                                                                                                             \
-    _sincosf_xl2    = _mm_mul_ps(_sincosf_xl,_sincosf_xl);                                                   \
-    _sincosf_xl3    = _mm_mul_ps(_sincosf_xl2,_sincosf_xl);                                                  \
-	                                                                                                         \
-	_sincosf_ct1    = _mm_mul_ps(_sincosf_cc0,_sincosf_xl2);                                                 \
-	_sincosf_ct1    = _mm_add_ps(_sincosf_ct1,_sincosf_cc1);                                                 \
-	_sincosf_st1    = _mm_mul_ps(_sincosf_sc0,_sincosf_xl2);                                                 \
-	_sincosf_st1    = _mm_add_ps(_sincosf_st1,_sincosf_sc1);                                                 \
-	_sincosf_ct2    = _mm_mul_ps(_sincosf_ct1,_sincosf_xl2);                                                 \
-	_sincosf_ct2    = _mm_add_ps(_sincosf_ct2,_sincosf_cc2);                                                 \
-	_sincosf_st2    = _mm_mul_ps(_sincosf_st1,_sincosf_xl2);                                                 \
-	_sincosf_st2    = _mm_add_ps(_sincosf_st2,_sincosf_sc2);                                                 \
-	                                                                                                         \
-	_sincosf_cx     = _mm_mul_ps(_sincosf_ct2,_sincosf_xl2);                                                 \
-    _sincosf_cx     = _mm_add_ps(_sincosf_cx,_sincosf_one);                                                  \
-                                                                                                             \
-    _sincosf_sx     = _mm_mul_ps(_sincosf_st2,_sincosf_xl3);                                                 \
-    _sincosf_sx     = _mm_add_ps(_sincosf_sx,_sincosf_xl);                                                   \
-                                                                                                             \
-    _sincosf_sinMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_ione), _sincosf_izero) ); \
-    _sincosf_cosMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_ione), _sincosf_izero) ); \
-                                                                                                             \
-    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_cx) ); \
-    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_cx) ); \
-	                                                                                                         \
-    _sincosf_sinMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_itwo), _sincosf_izero) );\
-    _sincosf_tsn    = _mm_xor_ps(_sincosf_signbit,_sincosf_ts);                                              \
-    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_ts) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_tsn) ); \
-	                                                                                                         \
-    _sincosf_cosMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_itwo), _sincosf_izero) ); \
-    _sincosf_tcn    = _mm_xor_ps(_sincosf_signbit,_sincosf_tc);                                              \
-    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_tc) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_tcn) ); \
-	                                                                                                         \
-    sinval = _sincosf_ts;                                                                                    \
-    cosval = _sincosf_tc;                                                                                    \
-}         
+static __m128
+gmx_mm_asin_ps(__m128 x)
+{
+    /* Same algorithm as cephes library */
+    const __m128 signmask  = gmx_mm_castsi128_ps( _mm_set1_epi32(0x7FFFFFFF) );
+    const __m128 limitlow  = _mm_set1_ps(1e-4f);
+    const __m128 half      = _mm_set1_ps(0.5f);
+    const __m128 one       = _mm_set1_ps(1.0f);
+    const __m128 halfpi    = _mm_set1_ps(M_PI/2.0f);
+    
+    const __m128 CC5        = _mm_set1_ps(4.2163199048E-2f);
+    const __m128 CC4        = _mm_set1_ps(2.4181311049E-2f);
+    const __m128 CC3        = _mm_set1_ps(4.5470025998E-2f);
+    const __m128 CC2        = _mm_set1_ps(7.4953002686E-2f);
+    const __m128 CC1        = _mm_set1_ps(1.6666752422E-1f);
+    
+    __m128 sign;
+    __m128 mask;
+    __m128 xabs;
+    __m128 z,z1,z2,q,q1,q2;
+    __m128 pA,pB;
+    
+    sign  = _mm_andnot_ps(signmask,x);
+    xabs  = _mm_and_ps(x,signmask);
+    
+    mask  = _mm_cmpgt_ps(xabs,half);
+    
+    z1    = _mm_mul_ps(half, _mm_sub_ps(one,xabs));
+    q1    = _mm_mul_ps(z1,gmx_mm_invsqrt_ps(z1));
+    q1    = _mm_andnot_ps(_mm_cmpeq_ps(xabs,one),q1);
+    
+    q2    = xabs;
+    z2    = _mm_mul_ps(q2,q2);
+    
+    z     = _mm_or_ps( _mm_and_ps(mask,z1) , _mm_andnot_ps(mask,z2) );
+    q     = _mm_or_ps( _mm_and_ps(mask,q1) , _mm_andnot_ps(mask,q2) );
+    
+    z2    = _mm_mul_ps(z,z);
+    
+    pA    = _mm_mul_ps(CC5,z2);
+    pB    = _mm_mul_ps(CC4,z2);
+    
+    pA    = _mm_add_ps(pA,CC3);
+    pB    = _mm_add_ps(pB,CC2);
+    
+    pA    = _mm_mul_ps(pA,z2);
+    pB    = _mm_mul_ps(pB,z2);
+    
+    pA    = _mm_add_ps(pA,CC1);
+    pA    = _mm_mul_ps(pA,z);
+    
+    z     = _mm_add_ps(pA,pB);
+    z     = _mm_mul_ps(z,q);
+    z     = _mm_add_ps(z,q);
+    
+    q2    = _mm_sub_ps(halfpi,z);
+    q2    = _mm_sub_ps(q2,z);
+    
+    z     = _mm_or_ps( _mm_and_ps(mask,q2) , _mm_andnot_ps(mask,z) );
+    
+    mask  = _mm_cmpgt_ps(xabs,limitlow);
+    z     = _mm_or_ps( _mm_and_ps(mask,z) , _mm_andnot_ps(mask,xabs) );
+    
+    z = _mm_xor_ps(z,sign);
+    
+    return z;
+}
 
 
+static __m128
+gmx_mm_acos_ps(__m128 x)
+{
+    const __m128 signmask  = gmx_mm_castsi128_ps( _mm_set1_epi32(0x7FFFFFFF) );
+    const __m128 one_ps    = _mm_set1_ps(1.0f);
+    const __m128 half_ps   = _mm_set1_ps(0.5f);
+    const __m128 pi_ps     = _mm_set1_ps(M_PI);
+    const __m128 halfpi_ps = _mm_set1_ps(M_PI/2.0f);
+    
+    __m128 mask1;
+    __m128 mask2;
+    __m128 xabs;
+    __m128 z,z1,z2,z3;
+    
+    xabs  = _mm_and_ps(x,signmask);    
+    mask1 = _mm_cmpgt_ps(xabs,half_ps);
+    mask2 = _mm_cmpgt_ps(x,_mm_setzero_ps());
+    
+    z     = _mm_mul_ps(half_ps,_mm_sub_ps(one_ps,xabs));
+    z     = _mm_mul_ps(z,gmx_mm_invsqrt_ps(z));
+    z     = _mm_andnot_ps(_mm_cmpeq_ps(xabs,one_ps),z);
+    
+    z     = _mm_or_ps( _mm_and_ps(mask1,z) , _mm_andnot_ps(mask1,x) );
+    z     = gmx_mm_asin_ps(z);
+    
+    z2    = _mm_add_ps(z,z);
+    z1    = _mm_sub_ps(pi_ps,z2);
+    z3    = _mm_sub_ps(halfpi_ps,z);    
+    
+    z     = _mm_or_ps( _mm_and_ps(mask2,z2) , _mm_andnot_ps(mask2,z1) );
+    z     = _mm_or_ps( _mm_and_ps(mask1,z) , _mm_andnot_ps(mask1,z3) );
+    
+    return z;
+}
+
+
+static __m128
+gmx_mm_atan_ps(__m128 x)
+{
+    /* Same algorithm as cephes library */
+    const __m128 signmask  = gmx_mm_castsi128_ps( _mm_set1_epi32(0x7FFFFFFF) );
+    const __m128 limit1    = _mm_set1_ps(0.414213562373095f);
+    const __m128 limit2    = _mm_set1_ps(2.414213562373095f);
+    const __m128 quarterpi = _mm_set1_ps(0.785398163397448f);
+    const __m128 halfpi    = _mm_set1_ps(1.570796326794896f);
+    const __m128 mone      = _mm_set1_ps(-1.0f);
+    const __m128 CC3       = _mm_set1_ps(-3.33329491539E-1f);
+    const __m128 CC5       = _mm_set1_ps(1.99777106478E-1f);
+    const __m128 CC7       = _mm_set1_ps(-1.38776856032E-1);
+    const __m128 CC9       = _mm_set1_ps(8.05374449538e-2f);
+    
+    __m128 sign;
+    __m128 mask1,mask2;
+    __m128 y,z1,z2;
+    __m128 x2,x4;
+    __m128 sum1,sum2;
+    
+    sign  = _mm_andnot_ps(signmask,x);
+    x     = _mm_and_ps(x,signmask);
+    
+    mask1 = _mm_cmpgt_ps(x,limit1);
+    mask2 = _mm_cmpgt_ps(x,limit2);
+    
+    z1    = _mm_mul_ps(_mm_add_ps(x,mone),gmx_mm_inv_ps(_mm_sub_ps(x,mone)));
+    z2    = _mm_mul_ps(mone,gmx_mm_inv_ps(x));
+    
+    y     = _mm_and_ps(mask1,quarterpi);
+    y     = _mm_or_ps( _mm_and_ps(mask2,halfpi) , _mm_andnot_ps(mask2,y) );
+    
+    x     = _mm_or_ps( _mm_and_ps(mask1,z1) , _mm_andnot_ps(mask1,x) );
+    x     = _mm_or_ps( _mm_and_ps(mask2,z2) , _mm_andnot_ps(mask2,x) );
+    
+    x2    = _mm_mul_ps(x,x);
+    x4    = _mm_mul_ps(x2,x2);
+    
+    sum1  = _mm_mul_ps(CC9,x4);    
+    sum2  = _mm_mul_ps(CC7,x4);    
+    sum1  = _mm_add_ps(sum1,CC5);
+    sum2  = _mm_add_ps(sum2,CC3); 
+    sum1  = _mm_mul_ps(sum1,x4);
+    sum2  = _mm_mul_ps(sum2,x2);
+    
+    sum1  = _mm_add_ps(sum1,sum2);
+    sum1  = _mm_sub_ps(sum1,mone);
+    sum1  = _mm_mul_ps(sum1,x);
+    y     = _mm_add_ps(y,sum1);
+    
+    y     = _mm_xor_ps(y,sign);
+    
+    return y;
+}
+
+
+static __m128
+gmx_mm_atan2_ps(__m128 y, __m128 x)
+{
+    const __m128 pi          = _mm_set1_ps(M_PI);
+    const __m128 minuspi     = _mm_set1_ps(-M_PI);
+    const __m128 halfpi      = _mm_set1_ps(M_PI/2.0);
+    const __m128 minushalfpi = _mm_set1_ps(-M_PI/2.0);
+    
+    __m128 z,z1,z3,z4;
+    __m128 w;
+    __m128 maskx_lt,maskx_eq;
+    __m128 masky_lt,masky_eq;
+    __m128 mask1,mask2,mask3,mask4,maskall;
+    
+    maskx_lt  = _mm_cmplt_ps(x,_mm_setzero_ps());
+    masky_lt  = _mm_cmplt_ps(y,_mm_setzero_ps());
+    maskx_eq  = _mm_cmpeq_ps(x,_mm_setzero_ps());
+    masky_eq  = _mm_cmpeq_ps(y,_mm_setzero_ps());
+    
+    z         = _mm_mul_ps(y,gmx_mm_inv_ps(x));
+    z         = gmx_mm_atan_ps(z);
+    
+    mask1     = _mm_and_ps(maskx_eq,masky_lt);
+    mask2     = _mm_andnot_ps(maskx_lt,masky_eq);
+    mask3     = _mm_andnot_ps( _mm_or_ps(masky_lt,masky_eq) , maskx_eq);
+    mask4     = _mm_and_ps(masky_eq,maskx_lt);
+    
+    maskall   = _mm_or_ps( _mm_or_ps(mask1,mask2), _mm_or_ps(mask3,mask4) );
+    
+    z         = _mm_andnot_ps(maskall,z);
+    z1        = _mm_and_ps(mask1,minushalfpi);
+    z3        = _mm_and_ps(mask3,halfpi);
+    z4        = _mm_and_ps(mask4,pi);
+    
+    z         = _mm_or_ps( _mm_or_ps(z,z1), _mm_or_ps(z3,z4) );
+    
+    mask1     = _mm_andnot_ps(masky_lt,maskx_lt);
+    mask2     = _mm_and_ps(maskx_lt,masky_lt);
+    
+    w         = _mm_or_ps( _mm_and_ps(mask1,pi), _mm_and_ps(mask2,minuspi) );    
+    w         = _mm_andnot_ps(maskall,w);
+    
+    z         = _mm_add_ps(z,w);
+    
+    return z;
+}
 
 /* Load a single value from 1-4 places, merge into xmm register */
 
@@ -3181,4 +3443,6 @@ gmx_mm_update_4pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2, __m128
 	_mm_store_ss(ptr3,_mm_add_ss(pot3,_mm_load_ss(ptr3)));
 	_mm_store_ss(ptr4,_mm_add_ss(pot4,_mm_load_ss(ptr4)));
 }
+
+#endif
 
