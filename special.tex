@@ -915,11 +915,11 @@ What is needed as well is a transition state optimizer.
 
 \section{{\gromacs} on GPUs}
 
-This is an experimental release of {\gromacs} for accelerated
-Molecular Dynamics simulations on GPU accelerators. Support is provided
-by the \href{https://simtk.org/home/openmm}{OpenMM library}. This release is
-targeted at developers and advanced users and care should be taken before production use.
-The following should be noted before using the GPU accelerated program:
+This is an experimental release provides support for GPU--accelerated
+Molecular Dynamics simulations using he \href{https://simtk.org/home/openmm}{OpenMM library}. 
+The current release is targeted at developers and advanced users and care should 
+be taken before production use. The following should be noted before using 
+the GPU accelerated {\tt mdrun-gpu}:
 \begin{itemize}
 \item The current release runs only on modern NVIDIA GPU hardware with CUDA support.
 Make sure that the necessary CUDA drivers and libraries for your operating system
@@ -944,7 +944,7 @@ done on different GPU hardware. However, sufficiently long trajectories
 should produce comparable statistical averages.
 \item Frequent retrieval of system state information such as
 trajectory coordinates and energies can greatly influence the performance
-of the program due to slow CPU$<$--$>$GPU memory transfer speed.
+of the program due to slow CPU<-->GPU memory transfer speed.
 \item MD algorithms are complex, and although the {\gromacs} code is highly tuned for them,
 they often do not translate very well onto the streaming architectures.
 Realistic expectations about the achievable speed-up from tests with GTX280:
@@ -999,7 +999,7 @@ We provide pre-compiled binaries built for and tested on the most common Linux, 
 and Mac OS operating systems (for details see the {\gromacs}-GPU 
 \href{http://www.gromacs.org/gpu}{download page}). 
 Using the binary distribution is highly recommended and it should 
-work in most of the cases. Below we summarize how to get the GPU accelerated mdrun-gpu work.
+work in most of the cases. Below we summarize how to get the GPU accelerated {\tt mdrun-gpu} work.
 
 \subsubsection{Prerequisites}
 
@@ -1014,7 +1014,7 @@ Last but not least, to run GPU accelerated simulations, a CUDA-enabled
 graphics card is necessary. Molecular dynamics algorithms 
 are very demanding and unlike in other application areas, 
 only high-end graphics cards are capable of providing performance comparable 
-to or higher then modern CPUs. For this reason, mdrun-gpu is compatible with 
+to or higher then modern CPUs. For this reason, {\\tt mdrun-gpu} is compatible with 
 only a subset of CUDA-enabled GPUs (for detailed list see section 
 \ref{subsec-compatibility}) and by default it does not run if it detects
 non-compatible hardware. 
@@ -1045,7 +1045,7 @@ Summary of prerequisites:
     \item Add the \footnotesize{\tt openmm/lib} directory to your library path,  e.g. in bash:\\
     \footnotesize{\tt export LD\_LIBRARARY\_PATH=path\_to\_gromacs/openmm/lib:\$LD\_LIBRARY\_PATH}.\\
     If there are other OpenMM versions installed, make sure that the supplied libraries have preference  
-    when running mdrun-gpu. Also, make sure that the CUDA libraries installed match the version 
+    when running {\tt mdrun-gpu}. Also, make sure that the CUDA libraries installed match the version 
     of CUDA that was used for compilation of {\gromacs}-GPU.
 
     \item Set the \texttt{\footnotesize OPENMM\_PLUGIN\_DIR} environment variable to contain the path to 
@@ -1053,19 +1053,19 @@ Summary of prerequisites:
     \texttt{\footnotesize export OPENMM\_PLUGIN\_DIR=path\_to\_gromacs/openmm/lib/plugins}.\\
 
     \item At this point, running the command
-    \footnotesize{\tt path\_to\_gromacs/bin/mdrun-gpu -h} should display the standard mdrun help  
+    \footnotesize{\tt path\_to\_gromacs/bin/mdrun-gpu -h} should display the standard {\tt mdrun} help  
     which means that the binary runs and all the necessary libraries are accessible. 
 
 \end{enumerate}
 
-\subsubsection{Compiling mdrun-gpu}
+\subsubsection{Compiling {\tt mdrun-gpu}}
 
-The GPU accelerated mdrun can be compiled on Linux, Mac OS and Windows 
+The GPU accelerated {\tt mdrun} can be compiled on Linux, Mac OS and Windows 
 operating systems, both for 32 and 64 bit. Besides the prerequisites 
-discussed above, in order to compile mdrun-gpu the following additional 
+discussed above, in order to compile {\tt mdrun-gpu} the following additional 
 software is required: 
 \begin{itemize}
-    \item Cmake version $\leq$2.6.4
+    \item CMake version $\leq$2.6.4
     \item CUDA-compatible compiler: 
         \begin{itemize}
             \item MSVC 8 or 9 on Windows 
@@ -1080,9 +1080,9 @@ OpenMM binaries as well as source code can be obtained from the
 \href{https://simtk.org/project/xml/downloads.xml?group_id=161}{project's homepage}.
 
 Also note that it is essential that the same version of CUDA is used to compile both
-mdrun-gpu and the OpenMM libraries. 
+{\tt mdrun-gpu} and the OpenMM libraries. 
 
-To compile mdrun-gpu change to the top level directory of the source 
+To compile {\tt mdrun-gpu} change to the top level directory of the source 
 tree and execute the following commands: 
 \begin{itemize}
     \item \footnotesize{\tt export OPENMM\_ROOT\_DIR=path\_to\_custom\_openmm\_installpath}
@@ -1094,10 +1094,10 @@ tree and execute the following commands:
 
 \subsubsection{Testing and troubleshooting}
 
-\subsubsection{{\gromacs}-GPU specific mdrun features}
+\subsubsection{{\gromacs}-GPU specific {\tt mdrun} features}
 
 Besides the usual command line options, 
-mdrun-gpu also supports a set of ``device options'', that are meant to 
+{\tt mdrun-gpu} also supports a set of ``device options'', that are meant to 
 give control over acceleration related functionalities. 
 These options can be used in the following form:\\
 \footnotesize{\tt mdrun-gpu -device "ACCELERATION:[DEV\_OPTION=VALUE,]... [OPTION].."}.\\
@@ -1133,7 +1133,7 @@ on testing; the default value is \footnotesize{\tt memtest=15s}.
 It is possible to completely turn off memory testing by setting 
 \footnotesize{\tt memtest=off}, however this is not advisable.
 
-\paragraph{Force-device} Option that enables running mdrun-gpu 
+\paragraph{Force-device} Option that enables running {\tt mdrun-gpu}
 devices that are not supported but CUDA-capable. Using 
 this option might results in very low performance or even 
 crashes and therefor it is not encouraged.
