@@ -566,14 +566,24 @@ void berendsen_pscale(t_inputrec *ir,matrix mu,
   inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
 }
 
-void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt)
+void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt)
 {
-  int    i;
-  
-  real   T,reft=0,lll; 
+    t_grpopts *opts;
+    int    i;
+    real   T,reft=0,lll;
 
-  for(i=0; (i<opts->ngtc); i++) {
-    T = ekind->tcstat[i].Th;
+    opts = &ir->opts;
+
+    for(i=0; (i<opts->ngtc); i++)
+    {
+        if (ir->eI == eiVV)
+        {
+            T = ekind->tcstat[i].T;
+        }
+        else
+        {
+            T = ekind->tcstat[i].Th;
+        }
     
     if ((opts->tau_t[i] > 0) && (T > 0.0)) {
  
@@ -1162,38 +1172,57 @@ static real vrescale_resamplekin(real kk,real sigma, int ndeg, real taut,
     2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
 }
 
-void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
-		     double therm_integral[],gmx_rng_t rng)
+void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
+                     double therm_integral[],gmx_rng_t rng)
 {
-  int    i;
-  real   Ek,Ek_ref1,Ek_ref,Ek_new; 
-
-  for(i=0; (i<opts->ngtc); i++) {
-    Ek = trace(ekind->tcstat[i].ekinh);
+    t_grpopts *opts;
+    int    i;
+    real   Ek,Ek_ref1,Ek_ref,Ek_new; 
     
-    if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0) {
-      Ek_ref1   = 0.5*opts->ref_t[i]*BOLTZ;
-      Ek_ref    = Ek_ref1*opts->nrdf[i];
+    opts = &ir->opts;
 
-      Ek_new =
-	vrescale_resamplekin(Ek,Ek_ref,opts->nrdf[i],opts->tau_t[i]/dt,rng);
+    for(i=0; (i<opts->ngtc); i++)
+    {
+        if (ir->eI == eiVV)
+        {
+            Ek = trace(ekind->tcstat[i].ekinf);
+        }
+        else
+        {
+            Ek = trace(ekind->tcstat[i].ekinh);
+        }
+        
+        if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0)
+        {
+            Ek_ref1 = 0.5*opts->ref_t[i]*BOLTZ;
+            Ek_ref  = Ek_ref1*opts->nrdf[i];
 
-      /* Analytically Ek_new>=0, but we check for rounding errors */
-      if (Ek_new <= 0) {
-	ekind->tcstat[i].lambda = 0.0;
-      } else {
-	ekind->tcstat[i].lambda = sqrt(Ek_new/Ek);
-      }
-      therm_integral[i] -= Ek_new - Ek;
+            Ek_new  = vrescale_resamplekin(Ek,Ek_ref,opts->nrdf[i],
+                                           opts->tau_t[i]/dt,rng);
 
-      if (debug) {
-	fprintf(debug,"TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
-		i,Ek_ref,Ek,Ek_new,ekind->tcstat[i].lambda);
-      }
-    } else {
-       ekind->tcstat[i].lambda = 1.0;
+            /* Analytically Ek_new>=0, but we check for rounding errors */
+            if (Ek_new <= 0)
+            {
+                ekind->tcstat[i].lambda = 0.0;
+            }
+            else
+            {
+                ekind->tcstat[i].lambda = sqrt(Ek_new/Ek);
+            }
+
+            therm_integral[i] -= Ek_new - Ek;
+
+            if (debug)
+            {
+                fprintf(debug,"TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
+                        i,Ek_ref,Ek,Ek_new,ekind->tcstat[i].lambda);
+            }
+        }
+        else
+        {
+            ekind->tcstat[i].lambda = 1.0;
+        }
     }
-  }
 }
 
 real vrescale_energy(t_grpopts *opts,double therm_integral[])
