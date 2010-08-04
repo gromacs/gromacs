@@ -263,6 +263,8 @@ the coupling algorithm is <b>nstcalcenergy</b>*<b>dt</b>.
 Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.
 The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
 unless <b>nstlist</b> &le 0, then a value of 10 is used.
+If <b>nstenergy</b> is smaller than the automatically generated value,
+the lowest common denominator of <b>nstenergy</b> and <b>nstlist</b> is used.
 <dt><h4>comm_mode:</h4></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
