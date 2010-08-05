@@ -478,7 +478,12 @@ fi
 # Disable MASS support for now.
 #####
 
+#save current LIBS
+SAVED_LIBS="$LIBS"
 
+#set empty defaults
+PKG_FFT=""
+FFT_LIBS=""
 case "$with_fft" in
 fftw2)
   if test "$enable_float" = "yes"; then
@@ -488,6 +493,7 @@ fftw2)
   fi
   ACX_CHECK_FFTW2(fftw,$sizeof_real)
   ACX_CHECK_FFTW2(rfftw,$sizeof_real)
+  FFT_LIBS="-lfftw -lrfftw"
 
   case ${ac_fftw_savedprefix} in
    d) AC_DEFINE(FFTW2_NAME_DFFTW,,[Use the d prefix on fftw2 includes]) ;;
@@ -508,8 +514,12 @@ AC_TRY_COMPILE([#include<fftw3.h>],,[
 AC_MSG_RESULT(yes)
 if test "$enable_float" = "yes"; then
   AC_CHECK_LIB([fftw3f],main,,AC_MSG_ERROR([Cannot find fftw3f library]))
+  PKG_FFT="fftw3f"
+  FFT_LIBS="-lfftw3f"
 else
   AC_CHECK_LIB([fftw3],main,,AC_MSG_ERROR([Cannot find fftw3 library]))
+  PKG_FFT="fftw3"
+  FFT_LIBS="-lfftw3"
 fi
   MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_fftw3.lo"
 ],[
@@ -540,6 +550,7 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
 #  AC_CHECK_LIB([guide],main,,AC_MSG_ERROR([Cannot find libguide (Intel MKL)]))
   AC_CHECK_LIB([mkl],DftiComputeForward,,
     AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0]))
+  FFT_LIBS="-lmkl"
 
   MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_mkl.lo"
   ;;
@@ -553,7 +564,18 @@ Are you sure you don't want to use FFTW? It is free and much faster...])
   AC_MSG_ERROR([Unknown FFT library])
   ;;
 esac
+#restore LIBS from before fft check
+LIBS="$SAVED_LIBS"
 
+#only fftw3 has support for pkg-config
+AC_SUBST(PKG_FFT)
+if test -z "${PKG_FFT}"; then
+  AC_SUBST(PKG_FFT_LIBS,"$FFT_LIBS")
+else
+  AC_SUBST(PKG_FFT_LIBS,"")
+fi
+#flag for Makefile
+AC_SUBST(FFT_LIBS)
 
 if test "$enable_fftw_measure" != "yes"; then
    AC_DEFINE(GMX_DISABLE_FFTW_MEASURE,,[Do not optimize FFTW setups (not needed with SSE FFT kernels)])
@@ -647,8 +669,6 @@ esac
 # Look for X
 AC_PATH_XTRA
 if test "$no_x" != "yes"; then
-  LIBS="$X_LIBS $LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
-  INCLUDES="$INCLUDES $X_CFLAGS"
   AM_CONDITIONAL(USE_X11,true)
 else
   AM_CONDITIONAL(USE_X11,false)
@@ -659,17 +679,25 @@ AC_ARG_WITH(gsl,
  [  --with-gsl                    Link to the GNU scientific library, enables extra functions in analysis],,with_gsl=no)
 
 ######
+PKG_GSL=""
+GSL_LIBS=""
 if test "$with_gsl" = "yes"; then
-  ac_save_LDFLAGS="$LDFLAGS"
+  SAVED_LIBS="$LIBS"
   AC_CHECK_HEADERS([gsl/gsl_version.h],[
 # header found, check for libraries 
   AC_CHECK_LIB(gslcblas,main,[
-  LDFLAGS="$ac_save_LDFLAGS -lgslcblas"
 # gslcblas library found, check main lib
-  AC_CHECK_LIB(gsl,main)])])
+  AC_CHECK_LIB(gsl,main,[
+# everything need for gsl found
+  GSL_LIBS="-lgsl -lgslcblas"
+#gsl has pkg-config support
+  PKG_GSL="gsl"
+  ],[:],[-lgslcblas])])])
+  LIBS="$SAVED_LIBS"
 #
 fi
-
+AC_SUBST(PKG_GSL)
+AC_SUBST(GSL_LIBS)
 
 AC_ARG_WITH(xml,
  [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,with_xml=yes)
@@ -677,16 +705,24 @@ AC_ARG_WITH(xml,
 #########
 # Check for libxml2, but it is optional, so dont stop
 # if it isnt there.
+PKG_XML=""
+XML_LIBS=""
 if test "$with_xml" = "yes"; then
+   SAVED_LIBS="$LIBS"
    ac_save_CPPFLAGS="$CPPFLAGS"
    CPPFLAGS="$ac_save_CPPFLAGS -I/usr/include/libxml2"
    AC_CHECK_HEADERS([libxml/parser.h],AC_CHECK_LIB(xml2,main))
    if test "$ac_cv_lib_xml2_main" = "yes"; then
      INCLUDES="$INCLUDES -I/usr/include/libxml2"
+     PKG_XML="libxml-2.0"
+     XML_LIBS="-lxml2"
    fi
 # restore CPPFLAGS
    CPPFLAGS="$ac_save_CPPFLAGS"
+   LIBS="$SAVED_LIBS"
 fi
+AC_SUBST(PKG_XML)
+AC_SUBST(XML_LIBS)
 
 #### 
 # And collect the f77 libs to the linker - on Solaris, f77 stuff must go first,
@@ -1013,6 +1049,7 @@ AC_SUBST(CCASFLAGS)
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ src/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/libgmx${LIBSUFFIX}.pc:src/gmxlib/libgmx.pc.in ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_blas/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
@@ -1029,8 +1066,11 @@ AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_bluegene/Makefile ])
 AC_CONFIG_FILES([ include/Makefile ])
 AC_CONFIG_FILES([ include/types/Makefile ])
 AC_CONFIG_FILES([ src/mdlib/Makefile ])
+AC_CONFIG_FILES([ src/mdlib/libmd${LIBSUFFIX}.pc:src/mdlib/libmd.pc.in ])
 AC_CONFIG_FILES([ src/kernel/Makefile ])
+AC_CONFIG_FILES([ src/kernel/libgmxpreprocess${LIBSUFFIX}.pc:src/kernel/libgmxpreprocess.pc.in ])
 AC_CONFIG_FILES([ src/tools/Makefile ])
+AC_CONFIG_FILES([ src/tools/libgmxana${LIBSUFFIX}.pc:src/tools/libgmxana.pc.in ])
 AC_CONFIG_FILES([ src/ngmx/Makefile ])
 AC_CONFIG_FILES([ src/contrib/Makefile ])
 AC_CONFIG_FILES([ scripts/Makefile ])

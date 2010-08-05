@@ -6,9 +6,12 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 libmd@LIBSUFFIX@_la_LIBADD         = @MDLIB_LIBOBJS@ ../gmxlib/libgmx@LIBSUFFIX@.la	
 libmd@LIBSUFFIX@_la_DEPENDENCIES   = @MDLIB_LIBOBJS@ ../gmxlib/libgmx@LIBSUFFIX@.la	
-libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
+libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@ $(FFT_LIBS) $(XML_LIBS)
 
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
+
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = libmd@LIBSUFFIX@.pc
 
 libmd@LIBSUFFIX@_la_SOURCES = \
 	calcmu.c	calcvir.c	constr.c	\

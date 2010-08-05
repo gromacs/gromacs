@@ -11,7 +11,7 @@
 #
 
 # Variables set by the configuration script:
-LIBS         = @LIBS@
+LIBS         = @FFT_LIBS@ @XML_LIBS@ @GSL_LIBS@ 
 LDFLAGS      = @LDFLAGS@
 CFLAGS	     = @CFLAGS@	
 CC           = @CC@
