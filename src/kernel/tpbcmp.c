@@ -548,6 +548,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_real(fp,"inputrec->sc_alpha",-1,ir1->sc_alpha,ir2->sc_alpha,ftol,abstol);
   cmp_int(fp,"inputrec->sc_power",-1,ir1->sc_power,ir2->sc_power);
   cmp_real(fp,"inputrec->sc_sigma",-1,ir1->sc_sigma,ir2->sc_sigma,ftol,abstol);
+  cmp_real(fp,"inputrec->sc_sigma_min",-1,ir1->sc_sigma_min,ir2->sc_sigma_min,ftol,abstol);
   cmp_int(fp,"inputrec->nstdhdl",-1,ir1->nstdhdl,ir2->nstdhdl);
   cmp_int(fp,"inputrec->dh_table_size",-1,ir1->dh_table_size,ir2->dh_table_size);
   cmp_double(fp,"inputrec->dh_table_spacing",-1,ir1->dh_table_spacing,ir2->dh_table_spacing,ftol,abstol);
