@@ -165,7 +165,7 @@ static void print_data(FILE *fp,real time,rvec x[],real *mass,bool bCom,
 }
 
 static void write_trx_x(t_trxstatus *status,t_trxframe *fr,real *mass,bool bCom,
-			int ngrps,int isize[],atom_id **index)
+                        int ngrps,int isize[],atom_id **index)
 {
     static rvec *xav=NULL;
     static t_atoms *atoms=NULL;
@@ -626,13 +626,15 @@ int gmx_traj(int argc,char *argv[])
         "norm of the vector is plotted. In addition in the same graph",
         "the kinetic energy distribution is given."
     };
-    static bool bMol=FALSE,bCom=FALSE,bNoJump=FALSE;
+    static bool bMol=FALSE,bCom=FALSE,bPBC=TRUE,bNoJump=FALSE;
     static bool bX=TRUE,bY=TRUE,bZ=TRUE,bNorm=FALSE,bFP=FALSE;
     static int  ngroups=1;
     static real scale=0,binwidth=1;
     t_pargs pa[] = {
         { "-com", FALSE, etBOOL, {&bCom},
           "Plot data for the com of each group" },
+        { "-pbc", FALSE, etBOOL, {&bPBC},
+          "Make molecules whole for COM" },
         { "-mol", FALSE, etBOOL, {&bMol},
           "Index contains molecule numbers iso atom numbers" },
         { "-nojump", FALSE, etBOOL, {&bNoJump},
@@ -918,7 +920,10 @@ int gmx_traj(int argc,char *argv[])
     nr_vfr = 0;
     nr_ffr = 0;
 
-    gpbc = gmx_rmpbc_init(&top.idef,ePBC,fr.natoms,fr.box);
+    if (bCom && bPBC)
+    {
+        gpbc = gmx_rmpbc_init(&top.idef,ePBC,fr.natoms,fr.box);
+    }
   
     do
     {
@@ -940,7 +945,7 @@ int gmx_traj(int argc,char *argv[])
             }
         }
     
-        if (fr.bX && bCom)
+        if (fr.bX && bCom && bPBC)
         {
             gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
         }
