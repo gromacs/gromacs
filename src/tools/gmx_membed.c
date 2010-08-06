@@ -2875,17 +2875,9 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* Enforce writing positions and velocities at end of run */
             mdof_flags |= (MDOF_X | MDOF_V);
         }
-        {
-            int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
-            int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
-
-            /*Gromacs drives checkpointing; no ||
-              fcCheckPointPendingThreads(cr->nodeid,
-              nthreads*nnodes);*/
             /* sync bCPT and fc record-keeping */
 /*            if (bCPT && MASTER(cr))
                 fcRequestCheckPoint();*/
-        }
 #endif
 
         if (mdof_flags != 0)
