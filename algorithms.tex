@@ -825,27 +825,27 @@ still identical; it makes a difference in the way the simulations are
 The only difference is that the effective temperature will be
 interpreted slightly differently.  For NVT simulations, however, there
 {\em will} be a difference, as discussed in the section on temperature
-control, since we measure how to adjust the thermostat based on the
-estimated temperature kinetic energy.  Although the kinetic energy is
-more accurate with the averaged half step method (in that it it is
-also more noisy.  The noise in the half-step-averaged kinetic energy
-will be higher (about twice as high in most cases) than the full-step
-kinetic energy.  The drift will still be the same, however, as the
-trajectories are identical.
+control, since the kinetic energies of the simulations are adjusted
+through the temperature control algorithm to match the effective
+temperature.  Although the kinetic energy is more accurate with the
+averaged half step method, meaning that it changes less as the
+timestep gets larger, it is also more noisy.  The noise in the
+half-step-averaged kinetic energy will be higher (about twice as high
+in most cases) than the full-step kinetic energy.  The drift will
+still be the same, however, as the trajectories are identical.
 
 In general, the velocity Verlet integrator has been tuned with methods
 that give the highest degree of thermodynamic accuracy but has not yet
 been optimized for performance.  The integration itself takes
-negligibly more time than leapfrog, but currently twice as many
-communication calls are required.  In most cases, and especially for
-large systems where communication speed is important for
-parallelization and differences between thermodynamic ensembles vanish
-in the $1/N$ limit, leapfrog will be the best integrator.  For
-pressure control simulations where the fine details of the
-thermodynamics are important, only velocity Verlet allows the true
-ensemble to be calculated.  In either case, simulation with double
-precision may be required to get fine details of thermodynamics
-correct.
+negligibly more time than leapfrog, but twice as many communication
+calls are currently required.  In most cases, and especially for large
+systems where communication speed is important for parallelization and
+differences between thermodynamic ensembles vanish in the $1/N$ limit,
+leapfrog will likely be the preferred integrator.  For pressure
+control simulations where the fine details of the thermodynamics are
+important, only velocity Verlet allows the true ensemble to be
+calculated.  Simulation with double precision may be required to get
+fine details of thermodynamics correct.
 
 \subsection{\normindex{Twin-range cut-offs}}
 To save computation time, slowly varying forces can be calculated
