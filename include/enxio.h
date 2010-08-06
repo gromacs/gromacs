@@ -79,7 +79,11 @@ extern "C" {
     enxORI,    /* Instantaneous data for orientation restraints              */
     enxORT,    /* Order tensor(s) for orientation restraints                 */
     enxDISRE,  /* Distance restraint blocks                                  */
-    enxBARHIST,/* BAR histogram */
+
+    enxDHCOLL, /* Data about the free energy blocks in this frame.           */
+    enxDHHIST, /* BAR histogram                                              */
+    enxDH,     /* BAR raw delta H data                                       */
+
     enxNR      /* Total number of extra blocks in the current code,
                 * note that the enxio code can read files written by
 	        * future code which contain more blocks.

@@ -137,6 +137,10 @@ extern void xvgr_legend(FILE *out,int nsets,const char** setnames,
                         const output_env_t oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
+
+extern void xvgr_new_dataset(FILE *out, const output_env_t oenv);
+/* End the previous data set(s) and start new one(s). */
+
 extern void xvgr_line_props(FILE *out,int NrSet,int LineStyle,int LineColor,
                             const output_env_t oenv);
 /* Set xvgr line styles and colors */

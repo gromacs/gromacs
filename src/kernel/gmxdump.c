@@ -363,15 +363,18 @@ void list_ene(const char *fn)
             }
             for(b=0; b<fr->nblock; b++)
             {
+                const char *typestr="";
+
                 t_enxblock *eb=&(fr->block[b]);
                 printf("Block data %2d (%3d subblocks, id=%d)\n",
 		       b, eb->nsub, eb->id);
-                printf("  id='%s'\n", enx_block_id_name[eb->id]);
+
+                if (eb->id < enxNR)
+                    typestr=enx_block_id_name[eb->id];
+                printf("  id='%s'\n", typestr);
                 for(i=0;i<eb->nsub;i++)
                 {
                     t_enxsubblock *sb=&(eb->sub[i]);
-                    const char *typestr=NULL;
-
                     printf("  Sub block %3d (%5d elems, type=%s) values:\n", 
                            i, sb->nr, xdr_datatype_names[sb->type]);
 
@@ -383,7 +386,7 @@ void list_ene(const char *fn)
                             break;
                         case xdr_datatype_double:
                             for(j=0;j<sb->nr;j++)
-                                printf("%14d   %8.4f\n",j, sb->dval[j]);
+                                printf("%14d   %10.6f\n",j, sb->dval[j]);
                             break;
                         case xdr_datatype_int:
                             for(j=0;j<sb->nr;j++)
