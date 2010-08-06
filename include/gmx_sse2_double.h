@@ -46,6 +46,35 @@
 
 #include <stdio.h>
                                       
+/***************************************************
+ *                                                 *
+ * COMPILER RANT WARNING:                          *
+ *                                                 *
+ * Ideally, this header would be filled with       *
+ * simple static inline functions. Unfortunately,  *
+ * many vendors provide really braindead compilers *
+ * that either cannot handle more than 1-2 SSE     *
+ * function parameters, and some cannot handle     *
+ * pointers to SSE __m128 datatypes as parameters  *
+ * at all. Thus, for portability we have had to    *
+ * implement all but the simplest routines as      *
+ * macros instead...                               *
+ *                                                 *
+ ***************************************************/
+
+
+/***************************************************
+ *                                                 *
+ *   Wrappers/replacements for some instructions   *
+ *   not available in all SSE versions.            *
+ *                                                 *
+ ***************************************************/
+
+#ifdef GMX_SSE4
+#  define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32(x,imm)
+#else
+#  define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
+#endif
 
 /*
  * Some compilers require a cast to change the interpretation
@@ -376,7 +405,7 @@ gmx_mm_log_pd(__m128d x)
 }
 
 
-static inline 
+static int
 gmx_mm_sincos_pd(__m128d x,
                  __m128d *sinval,
                  __m128d *cosval)

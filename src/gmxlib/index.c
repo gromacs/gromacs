@@ -679,6 +679,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     const char ** p_typename;
     int     iwater,iion;
     int     nwater,nion;
+    int     found;
     
     if (bVerb)
     {
@@ -709,13 +710,24 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
             snew(p_typename,1);
             p_typename[ntypes++] = strdup(restype[i]);
         }
-        else if(strcmp(restype[i],restype[i-1]))
+        else
         {
-            srenew(p_typename,ntypes+1);
-            p_typename[ntypes++] = strdup(restype[i]);
+            /* Note that this does not lead to a N*N loop, but N*K, where
+             * K is the number of residue _types_, which is small and independent of N.
+             */
+            found = 0;
+            for(k=0;k<i && !found;k++)
+            {
+                found = !strcmp(restype[i],restype[k]);
+            }
+            if(!found)
+            {
+                srenew(p_typename,ntypes+1);
+                p_typename[ntypes++] = strdup(restype[i]);
+            }
         }
-    }
-
+    }    
+    
     p_status(restype,atoms->nres,p_typename,ntypes,bVerb);
 
     for(k=0;k<ntypes;k++)

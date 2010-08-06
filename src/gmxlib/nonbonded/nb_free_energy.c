@@ -73,7 +73,8 @@ gmx_nb_free_energy_kernel(int                  icoul,
                           real *               dvdlambda,
                           real                 alpha,
                           int                  lam_power,
-                          real                 def_sigma6,
+                          real                 sigma6_def,
+                          real                 sigma6_min,
                           bool                 bDoForces,
                           int *                outeriter,
                           int *                inneriter)
@@ -170,19 +171,29 @@ gmx_nb_free_energy_kernel(int                  icoul,
             
             if((c6A > 0) && (c12A > 0)) 
             {
-                sigma6a           = c12A/c6A;
+                sigma6a      = c12A/c6A;
+
+                if (sigma6a < sigma6_min)
+                {
+                    sigma6a  = sigma6_min;
+                }
             }
             else 
             {
-                sigma6a           = def_sigma6;
+                sigma6a      = sigma6_def;
             }
             if((c6B > 0) && (c12B > 0))
             {
-                sigma6b           = c12B/c6B;
+                sigma6b      = c12B/c6B;
+
+                if (sigma6b < sigma6_min)
+                {
+                    sigma6b  = sigma6_min;
+                }
             }
             else
             {
-                sigma6b           = def_sigma6;
+                sigma6b      = sigma6_def;
             }
                         
             r4               = rsq*rsq;

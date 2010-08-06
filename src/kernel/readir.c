@@ -125,6 +125,22 @@ static bool ir_NVE(const t_inputrec *ir)
     return ((ir->eI == eiMD || EI_VV(ir->eI)) && ir->etc == etcNO);
 }
 
+static int lcd(int n1,int n2)
+{
+    int d,i;
+    
+    d = 1;
+    for(i=2; (i<=n1 && i<=n2); i++)
+    {
+        if (n1 % i == 0 && n2 % i == 0)
+        {
+            d = i;
+        }
+    }
+    
+  return d;
+}
+
 void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi)
 /* Check internal consistency */
@@ -178,6 +194,20 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         if (ir->nstcalcenergy < 0)
         {
             ir->nstcalcenergy = ir_optimal_nstcalcenergy(ir);
+            if (ir->nstenergy != 0 && ir->nstenergy < ir->nstcalcenergy)
+            {
+                /* nstcalcenergy larger than nstener does not make sense.
+                 * We ideally want nstcalcenergy=nstener.
+                 */
+                if (ir->nstlist > 0)
+                {
+                    ir->nstcalcenergy = lcd(ir->nstenergy,ir->nstlist);
+                }
+                else
+                {
+                    ir->nstcalcenergy = ir->nstenergy;
+                }
+            }
         }
         if (ir->epc != epcNO)
         {
