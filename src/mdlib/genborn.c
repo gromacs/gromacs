@@ -1210,7 +1210,9 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     /* Switch for determining which algorithm to use for Born radii calculation */
 #ifdef GMX_DOUBLE
     
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )
+    /* Disabled while waiting for double prec. SSE2 transcendentals */
+#if 0
+ /* #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) ) */
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     switch(ir->gb_algorithm)
     {
@@ -1697,7 +1699,9 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
     
 #ifdef GMX_DOUBLE    
     
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )    
+    /* Disabled while waiting for double prec. SSE2 transcendentals */
+#if 0
+/* #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )    */
      calc_gb_chainrule_sse2_double(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
                                    x[0], f[0], fr->fshift[0],  fr->shift_vec[0],
                                    gb_algorithm, born); 

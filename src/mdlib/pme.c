@@ -1150,7 +1150,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
         for(kx=0; kx<end; kx+=4)                    \
         {                                           \
             tmp_sse = _mm_load_ps(r_aligned+kx);    \
-            tmp_sse = gmx_mm_exp_ps_lbc(tmp_sse);   \
+            tmp_sse = gmx_mm_exp_ps(tmp_sse);       \
             _mm_store_ps(r_aligned+kx,tmp_sse);     \
         }                                           \
     }

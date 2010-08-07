@@ -226,18 +226,25 @@ static void analyse_other(const char ** restype,t_atoms *atoms,
   atom_id *other_ndx,*aid,*aaid;
   int  i,j,k,l,resind,naid,naaid,natp,nrestp=0;
   
-  for(i=0; (i<atoms->nres); i++)
-  if (!gmx_strcasecmp(restype[i],"Other"))
-      break;
+    for(i=0; (i<atoms->nres); i++)
+    {
+        if (gmx_strcasecmp(restype[i],"Protein") && gmx_strcasecmp(restype[i],"DNA") && gmx_strcasecmp(restype[i],"RNA") && gmx_strcasecmp(restype[i],"Water"))
+        {
+            break;
+        }
+    }
   if (i < atoms->nres) {
     /* we have others */
     if (bVerb)
-      printf("Analysing Other...\n");
+      printf("Analysing residues not classified as Protein/DNA/RNA/Water and splitting into groups...\n");
     snew(other_ndx,atoms->nr);
     for(k=0; (k<atoms->nr); k++) {
       resind = atoms->atom[k].resind;
       rname = *atoms->resinfo[resind].name;
-        if (!gmx_strcasecmp(restype[atoms->atom[k].resind],"Other")) {
+        if (gmx_strcasecmp(restype[resind],"Protein") && gmx_strcasecmp(restype[resind],"DNA") && 
+            gmx_strcasecmp(restype[resind],"RNA") && gmx_strcasecmp(restype[resind],"Water")) 
+        {
+
 	for(l=0; (l<nrestp); l++)
 	  if (strcmp(restp[l].rname,rname) == 0)
 	    break;
@@ -672,6 +679,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     const char ** p_typename;
     int     iwater,iion;
     int     nwater,nion;
+    int     found;
     
     if (bVerb)
     {
@@ -690,17 +698,40 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
     gmx_residuetype_init(&rt);
 
     snew(restype,atoms->nres);
+    ntypes = 0;
+    p_typename = NULL;
     for(i=0;i<atoms->nres;i++)
     {
         resnm = *atoms->resinfo[i].name;
         gmx_residuetype_get_type(rt,resnm,&(restype[i]));
-    }
-    gmx_residuetype_get_alltypes(rt,&p_typename,&ntypes);
 
+        if(i==0)
+        {
+            snew(p_typename,1);
+            p_typename[ntypes++] = strdup(restype[i]);
+        }
+        else
+        {
+            /* Note that this does not lead to a N*N loop, but N*K, where
+             * K is the number of residue _types_, which is small and independent of N.
+             */
+            found = 0;
+            for(k=0;k<i && !found;k++)
+            {
+                found = !strcmp(restype[i],restype[k]);
+            }
+            if(!found)
+            {
+                srenew(p_typename,ntypes+1);
+                p_typename[ntypes++] = strdup(restype[i]);
+            }
+        }
+    }    
+    
     p_status(restype,atoms->nres,p_typename,ntypes,bVerb);
 
     for(k=0;k<ntypes;k++)
-    {        
+    {              
         aid=mk_aid(atoms,restype,p_typename[k],&nra,TRUE);
 
         /* Check for special types to do fancy stuff with */
@@ -737,7 +768,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
         }
         else if(nra>0)
         {
-            /* Other */
+            /* Other groups */
             add_grp(gb,gn,nra,aid,p_typename[k]); 
             sfree(aid);
             analyse_other(restype,atoms,gb,gn,bASK,bVerb);

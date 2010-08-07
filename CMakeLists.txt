@@ -37,8 +37,10 @@ set(GMX_EXTRA_LIBRARIES)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
+# --- REMOVED as bugzilla 431 turned out to be a bug in GB
+# and there is no confirmed case in which gcc causes a crash 
 # check for buggy GCC 4.1.x 
-include(gmxCheckGCCVersion)
+# include(gmxCheckGCCVersion)
 
 include(gmxCFlags)
 gmx_c_flags()
@@ -71,7 +73,9 @@ mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 option(USE_VERSION_H "Generate development version string/information" ON)
-option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
+# --- REMOVED as bugzilla 431 turned out to be a bug in GB
+# and there is no confirmed case in which gcc causes a crash 
+# option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
 
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
 
@@ -601,6 +605,20 @@ add_subdirectory(include)
 add_subdirectory(man)
 
 add_subdirectory(src)
+
+#######################
+## uninstall target
+#######################
+    CONFIGURE_FILE(
+                   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+                   IMMEDIATE @ONLY)
+###########################
+ADD_CUSTOM_TARGET(uninstall
+                  "${CMAKE_COMMAND}" -P 
+                  "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
+###########################
+
 
 ########################################################################
 # Tests                                                                #

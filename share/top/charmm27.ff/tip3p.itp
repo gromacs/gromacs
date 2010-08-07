@@ -5,9 +5,9 @@ SOL		2
 [ atoms ]
 ; id   at type	res nr	residu name	at name		cg nr	charge
 #ifdef _FF_CHARMM
-1       OT      1       SOL              OW             1       -0.834
-2       HT      1       SOL             HW1             1        0.417
-3       HT      1       SOL             HW2             1        0.417
+1       OWT3    1       SOL              OW             1       -0.834
+2       HWT3    1       SOL             HW1             1        0.417
+3       HWT3    1       SOL             HW2             1        0.417
 #endif
 
 

@@ -356,6 +356,18 @@ void xvgr_legend(FILE *out,int nsets,const char** setname,const output_env_t oen
     }
 }
 
+void xvgr_new_dataset(FILE *out, const output_env_t oenv)
+{
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(out,"@\n");
+    }
+    else
+    {
+        fprintf(out,"\n");
+    }
+}
+
 void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor,
                      const output_env_t oenv)
 {

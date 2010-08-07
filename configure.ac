@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.5-beta1, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5-beta2, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -273,7 +273,7 @@ fi
 
 
 AC_ARG_WITH(qmmm_orca,
-              [AC_HELP_STRING([--without-qmmm-mopac],
+              [AC_HELP_STRING([--without-qmmm-orca],
                               [Use ORCA for QM-MM])],,with_qmmm_orca=no)
 if test "$with_qmmm_orca"="yes"; then
   AC_DEFINE(GMX_QMMM_ORCA,,[Use ORCA for QM-MM calculations])
