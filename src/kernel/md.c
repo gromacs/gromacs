@@ -313,7 +313,6 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
-    /*bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir) && bPres) || bReadEkin);*/
     
     bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && bPres) || bReadEkin);
     
