@@ -433,7 +433,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
 		}
 		else
 		{
-			ir->gb_dielectric_offset = 0.09;
+			ir->gb_dielectric_offset = 0.009;
 			ir->sa_algorithm = esaAPPROX;
 		}
 		gmx_fio_do_real(fio,ir->sa_surface_tension);

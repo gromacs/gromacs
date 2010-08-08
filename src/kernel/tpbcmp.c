@@ -469,7 +469,6 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_gmx_large_int(fp,"inputrec->nsteps",ir1->nsteps,ir2->nsteps);
   cmp_gmx_large_int(fp,"inputrec->init_step",ir1->init_step,ir2->init_step);
   cmp_int(fp,"inputrec->simulation_part",-1,ir1->simulation_part,ir2->simulation_part);
-  cmp_int(fp,"inputrec->nstcalcenergy",-1,ir1->nstcalcenergy,ir2->nstcalcenergy);
   cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);
   cmp_int(fp,"inputrec->bPeriodicMols",-1,ir1->bPeriodicMols,ir2->bPeriodicMols);
   cmp_int(fp,"inputrec->ns_type",-1,ir1->ns_type,ir2->ns_type);
@@ -482,6 +481,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->nstxout",-1,ir1->nstxout,ir2->nstxout);
   cmp_int(fp,"inputrec->nstvout",-1,ir1->nstvout,ir2->nstvout);
   cmp_int(fp,"inputrec->nstfout",-1,ir1->nstfout,ir2->nstfout);
+  cmp_int(fp,"inputrec->nstcalcenergy",-1,ir1->nstcalcenergy,ir2->nstcalcenergy);
   cmp_int(fp,"inputrec->nstenergy",-1,ir1->nstenergy,ir2->nstenergy);
   cmp_int(fp,"inputrec->nstxtcout",-1,ir1->nstxtcout,ir2->nstxtcout);
   cmp_double(fp,"inputrec->init_t",-1,ir1->init_t,ir2->init_t,ftol,abstol);

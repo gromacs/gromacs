@@ -520,7 +520,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("integrator",EI(ir->eI));
     PSTEP("nsteps",ir->nsteps);
     PSTEP("init_step",ir->init_step);
-    PI("nstcalcenergy",ir->nstcalcenergy);
     PS("ns_type",ENS(ir->ns_type));
     PI("nstlist",ir->nstlist);
     PI("ndelta",ir->ndelta);
@@ -530,6 +529,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("nstxout",ir->nstxout);
     PI("nstvout",ir->nstvout);
     PI("nstfout",ir->nstfout);
+    PI("nstcalcenergy",ir->nstcalcenergy);
     PI("nstenergy",ir->nstenergy);
     PI("nstxtcout",ir->nstxtcout);
     PR("init_t",ir->init_t);

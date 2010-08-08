@@ -70,6 +70,11 @@ yyerror(yyscan_t, char const *s);
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
 };
+/* NOTE: The Intel compiler seems to report warnings for the above line about
+ * "definition at end of file not followed by a semicolon or a declarator".
+ * This is due to the compiler misinterpreting #line directives in the
+ * generated files parser.c/.h, and changing them would be more trouble than
+ * it's worth. */
 
 /* Invalid token to report lexer errors */
 %token INVALID
