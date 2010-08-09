@@ -742,6 +742,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
       break;
     case eelUSER:
     case eelPMEUSER:
+    case eelPMEUSERSWITCH:
       eltype = eelUSER;
       break;
     default:
@@ -774,6 +775,9 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
     break;
   case eelPMEUSER:
     tabsel[etiCOUL] = etabEwaldUser;
+    break;
+  case eelPMEUSERSWITCH:
+    tabsel[etiCOUL] = etabEwaldUserSwitch;
     break;
   case eelRF:
   case eelGRF:

@@ -516,7 +516,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (EEL_FULL(ir->coulombtype)) {
-    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER) {
+    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER ||
+        ir->coulombtype==eelPMEUSERSWITCH) {
       sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
@@ -2086,7 +2087,8 @@ void do_index(const char* mdparin, const char *ndx,
 
   bTable = do_egp_flag(ir,groups,"energygrp_table",egptable,EGP_TABLE);
   if (bTable && !(ir->vdwtype == evdwUSER) && 
-      !(ir->coulombtype == eelUSER) &&!(ir->coulombtype == eelPMEUSER))
+      !(ir->coulombtype == eelUSER) && !(ir->coulombtype == eelPMEUSER) &&
+      !(ir->coulombtype == eelPMEUSERSWITCH))
     gmx_fatal(FARGS,"Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
 
   decode_cos(efield_x,&(ir->ex[XX]),FALSE);
