@@ -296,7 +296,7 @@ static int count_neighbors(t_alexandria *spoel,int nbond,char *nbhybrid[])
 
 char *gmx_poldata_get_smatom(gmx_poldata_t pd,char *elem,
                              int nbond,char *neighbors[],
-                             char *geometry)
+                             const char *geometry)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     int i,nnb,pbest=-1,best=-1;

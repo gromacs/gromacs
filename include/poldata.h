@@ -65,8 +65,8 @@ extern char *gmx_poldata_get_alexandria_unit(gmx_poldata_t pd);
 extern char *gmx_poldata_get_length_unit(gmx_poldata_t pd);
 
 extern char *gmx_poldata_get_smatom(gmx_poldata_t pd,char *elem,
-				    int nbond,char *neighbors[],
-				    char *geometry);
+                                    int nbond,char *neighbors[],
+                                    const char *geometry);
 				    
 extern double gmx_poldata_get_alpha(gmx_poldata_t pd,char *smatom);
 
