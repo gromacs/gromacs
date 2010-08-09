@@ -1245,6 +1245,7 @@ void init_forcerec(FILE *fp,
     double  dbl;
     rvec    box_size;
     const t_block *cgs;
+    bool    bGenericKernelOnly;
     bool    bTab,bSep14tab,bNormalnblists;
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
@@ -1302,6 +1303,19 @@ void init_forcerec(FILE *fp,
         {
             fprintf(fp,"Setting the minimum soft core sigma to %g nm\n",dbl);
         }
+    }
+
+    bGenericKernelOnly = FALSE;
+    if (getenv("GMX_NB_GENERIC") != NULL)
+    {
+        if (fp != NULL)
+        {
+            fprintf(fp,
+                    "Found environment variable GMX_NB_GENERIC.\n"
+                    "Disabling interaction-specific nonbonded kernels.\n\n");
+        }
+        bGenericKernelOnly = TRUE;
+        bNoSolvOpt         = TRUE;
     }
     
     fr->UseOptimizedKernels = (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL);
@@ -1704,7 +1718,7 @@ void init_forcerec(FILE *fp,
     init_ns(fp,cr,&fr->ns,fr,mtop,box);
     
     if (cr->duty & DUTY_PP)
-        gmx_setup_kernels(fp);
+        gmx_setup_kernels(fp,bGenericKernelOnly);
 }
 
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)
