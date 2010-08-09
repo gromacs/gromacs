@@ -691,7 +691,8 @@ do_listed_vdw_q(int ftype,int nbonds,
     crf = fr->c_rf;
 
     /* Determine the values for icoul/ivdw. */
-    if (fr->bEwald) {
+    if (EEL_EWALD(fr->eeltype))
+    {
         icoul = 1;
     } 
     else if(fr->bcoultab)
@@ -707,7 +708,11 @@ do_listed_vdw_q(int ftype,int nbonds,
         icoul = 1;
     }
     
-    if(fr->bvdwtab)
+    if (EVDW_PME(fr->vdwtype))
+    {
+        ivdw = 1;
+    }
+    else if (fr->bvdwtab)
     {
         ivdw = 3;
     }

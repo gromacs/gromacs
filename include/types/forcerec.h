@@ -268,7 +268,6 @@ typedef struct {
   tensor    vir_lj_recip;
 
   /* PME/Ewald stuff */
-  bool bEwald;
   real ewaldcoeff;
   real ewaldljcoeff;
   ewald_tab_t ewald_table;

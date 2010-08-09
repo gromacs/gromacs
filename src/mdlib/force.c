@@ -401,7 +401,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     {
         clear_mat(fr->vir_el_recip);	
         
-        if (fr->bEwald)
+        if (EEL_EWALD(fr->eeltype))
         {
             if (fr->n_tpi == 0)
             {

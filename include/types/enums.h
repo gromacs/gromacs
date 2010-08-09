@@ -89,6 +89,7 @@ enum {
 #define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC || (e) == eelRF_ZERO )
 
 #define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH)
+#define EEL_EWALD(e)  (EEL_PME(e) || (e) == eelEWALD)
 #define EEL_FULL(e) (EEL_PME(e) || (e) == eelPPPM || (e) == eelPOISSON || (e) == eelEWALD)
 
 #define EEL_SWITCHED(e) ((e) == eelSWITCH || (e) == eelSHIFT || (e) == eelENCADSHIFT || (e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)

@@ -1293,7 +1293,6 @@ void init_forcerec(FILE *fp,
     fr->vdwtype    = ir->vdwtype;
     
     fr->bTwinRange = fr->rlistlong > fr->rlist; /* || EVDW_PME(fr->vdwtype); */
-    fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype==eelEWALD);
     
     fr->reppow     = mtop->ffparams.reppow;
     fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
@@ -1313,7 +1312,7 @@ void init_forcerec(FILE *fp,
     }
     
     /* Tables are used for direct ewald sum */
-    if(fr->bEwald)
+    if(EEL_EWALD(ir->coulombtype))
     {
         if (EEL_PME(ir->coulombtype))
         {
