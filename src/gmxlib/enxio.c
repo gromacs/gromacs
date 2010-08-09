@@ -57,7 +57,9 @@ const char *enx_block_id_name[] = {
     "Instantaneous orientation restraints",
     "Orientation restraint order tensor(s)",
     "Distance restraints",
-    "BAR histogram"
+    "Free energy data",
+    "BAR histogram",
+    "Delta H raw data"
 };
 
 

@@ -620,6 +620,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("sc_alpha",ir->sc_alpha);
     PI("sc_power",ir->sc_power);
     PR("sc_sigma",ir->sc_sigma);
+    PR("sc_sigma_min",ir->sc_sigma_min);
     PI("nstdhdl", ir->nstdhdl);
     PI("dh_table_size", ir->dh_table_size);
     PD("dh_table_spacing", ir->dh_table_spacing);

@@ -38,6 +38,7 @@
 #endif
 
 #include <string.h>
+#include <float.h>
 #include "typedefs.h"
 #include "string2.h"
 #include "mdebin.h"
@@ -54,6 +55,9 @@
 #include "mtop_util.h"
 #include "xvgr.h"
 #include "gmxfio.h"
+
+#include "mdebin_bar.h"
+
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
@@ -80,6 +84,10 @@ static const char *boxvel_nm[] = {
 
 static bool bTricl,bDynBox;
 static int  f_nre=0,epc,etc,nCrmsd;
+
+
+
+
 
 t_mdebin *init_mdebin(ener_file_t fp_ene,
                       const gmx_mtop_t *mtop,
@@ -505,7 +513,26 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
 
     md->print_grpnms=NULL;
-    
+
+    /* check whether we're going to write dh histograms */
+    md->dhc=NULL; 
+    if (ir->dh_table_size!=0)
+    {
+        int i;
+        size_t ndhmax=ir->nstenergy/ir->nstcalcenergy;
+
+        snew(md->dhc, 1);
+
+        mde_delta_h_coll_init(md->dhc, 
+                              ir->opts.ref_t[0], /* temperature */
+                              ir->init_lambda, /* native lambda */
+                              ir->dh_table_size, /* number of bins */
+                              ir->dh_table_spacing, /* dx */
+                              ndhmax,            /* max. buffer size */
+                              ir->n_flambda, /* number of foreign lambdas */
+                              ir->flambda /* foreign lambdas */
+                              );
+    }
     return md;
 }
 
@@ -788,7 +815,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     }
     
     ebin_increase_count(md->ebin,bSum);
-    
+   
+    /* BAR + thermodynamic integration values */
     if (fp_dhdl)
     {
         fprintf(fp_dhdl,"%.4f %g",
@@ -801,7 +829,13 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         }
         fprintf(fp_dhdl,"\n");
     }
+
+    /* and the BAR histograms */
+    if (md->dhc)
+    {
+        mde_delta_h_coll_add_dh( md->dhc, enerd->enerpart_lambda, time );
     }
+}
 
 void upd_mdebin_step(t_mdebin *md)
 {
@@ -862,6 +896,9 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
     int         id[enxNR];
     real        *block[enxNR];
 
+    /* temporary arrays for the lambda values to write out */
+    double      enxlambda_data[2]; 
+
     t_enxframe  fr;
 	
     switch (mode)
@@ -895,89 +932,70 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
             nr[enxORT]    = fcd->orires.nex*12;
             block[enxORT] = fcd->orires.eig;
             id[enxORT]    = enxORT;
-        }
-        /* the old-style blocks go first */
-        fr.nblock = 0;
-        for(i=0; i<enxNR; i++)
-        {
-            if (nr[i] > 0)
-            {
-                fr.nblock = i + 1;
-            }
-        }
-        add_blocks_enxframe(&fr, fr.nblock);
-        for(b=0;b<fr.nblock;b++)
-        {
-            add_subblocks_enxblock(&(fr.block[b]), 1);
-            fr.block[b].id=id[b]; 
-            fr.block[b].sub[0].nr = nr[b];
-#ifndef GMX_DOUBLE
-            fr.block[b].sub[0].type = xdr_datatype_float;
-            fr.block[b].sub[0].fval = block[b];
-#else
-            fr.block[b].sub[0].type = xdr_datatype_double;
-            fr.block[b].sub[0].dval = block[b];
-#endif
-        }
+        }        
 
-        /* check for disre block & fill it. */
-        if (ndisre>0)
-        {
-            int db = fr.nblock;
-            fr.nblock+=1;
-            add_blocks_enxframe(&fr, fr.nblock);
-
-            add_subblocks_enxblock(&(fr.block[db]), 2);
-            fr.block[db].id=enxDISRE;
-            fr.block[db].sub[0].nr=ndisre;
-            fr.block[db].sub[1].nr=ndisre;
-#ifndef GMX_DOUBLE
-            fr.block[db].sub[0].type=xdr_datatype_float;
-            fr.block[db].sub[1].type=xdr_datatype_float;
-            fr.block[db].sub[0].fval=disre_rt;
-            fr.block[db].sub[1].fval=disre_rm3tav;
-#else
-            fr.block[db].sub[0].type=xdr_datatype_double;
-            fr.block[db].sub[1].type=xdr_datatype_double;
-            fr.block[db].sub[0].dval=disre_rt;
-            fr.block[db].sub[1].dval=disre_rm3tav;
-#endif
-        }
-        /* here we can put new-style blocks */
-
-#if 0
-        /* example: (can be removed once BAR histograms are working) */
-        {
-            int b=fr.nblock;
-            float c[]={ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
-            int d[]={ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            int i;
-
-            for(i=0;i<10;i++)
-            {
-                c[i] += fr.t;
-                d[i] += fr.step;
-            }
-
-            fr.nblock+=1;
-            add_blocks_enxframe(&fr, fr.nblock);
-            
-            add_subblocks_enxblock(&(fr.block[b]), 2);
-            fr.block[b].id=enxBARHIST;
-            fr.block[b].sub[0].nr=10;
-            fr.block[b].sub[0].type=xdr_datatype_int;
-            fr.block[b].sub[0].ival=d;
-
-            fr.block[b].sub[1].nr=10;
-            fr.block[b].sub[1].type=xdr_datatype_float;
-            fr.block[b].sub[1].fval=c;
-        }
-#endif
-
-
-
+        /* whether we are going to wrte anything out: */
         if (fr.nre || ndisre || nr[enxOR] || nr[enxORI])
         {
+
+            /* the old-style blocks go first */
+            fr.nblock = 0;
+            for(i=0; i<enxNR; i++)
+            {
+                if (nr[i] > 0)
+                {
+                    fr.nblock = i + 1;
+                }
+            }
+            add_blocks_enxframe(&fr, fr.nblock);
+            for(b=0;b<fr.nblock;b++)
+            {
+                add_subblocks_enxblock(&(fr.block[b]), 1);
+                fr.block[b].id=id[b]; 
+                fr.block[b].sub[0].nr = nr[b];
+#ifndef GMX_DOUBLE
+                fr.block[b].sub[0].type = xdr_datatype_float;
+                fr.block[b].sub[0].fval = block[b];
+#else
+                fr.block[b].sub[0].type = xdr_datatype_double;
+                fr.block[b].sub[0].dval = block[b];
+#endif
+            }
+
+            /* check for disre block & fill it. */
+            if (ndisre>0)
+            {
+                int db = fr.nblock;
+                fr.nblock+=1;
+                add_blocks_enxframe(&fr, fr.nblock);
+
+                add_subblocks_enxblock(&(fr.block[db]), 2);
+                fr.block[db].id=enxDISRE;
+                fr.block[db].sub[0].nr=ndisre;
+                fr.block[db].sub[1].nr=ndisre;
+#ifndef GMX_DOUBLE
+                fr.block[db].sub[0].type=xdr_datatype_float;
+                fr.block[db].sub[1].type=xdr_datatype_float;
+                fr.block[db].sub[0].fval=disre_rt;
+                fr.block[db].sub[1].fval=disre_rm3tav;
+#else
+                fr.block[db].sub[0].type=xdr_datatype_double;
+                fr.block[db].sub[1].type=xdr_datatype_double;
+                fr.block[db].sub[0].dval=disre_rt;
+                fr.block[db].sub[1].dval=disre_rm3tav;
+#endif
+            }
+            /* here we can put new-style blocks */
+
+            /* BAR blocks */
+            
+            if (md->dhc)
+            {
+
+                mde_delta_h_coll_handle_block(md->dhc, &fr, fr.nblock);
+            }
+
+            /* do the actual I/O */
             do_enx(fp_ene,&fr);
             gmx_fio_check_file_position(enx_file_pointer(fp_ene));
             if (fr.nre)
@@ -985,6 +1003,10 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
                 /* We have stored the sums, so reset the sum history */
                 reset_ebin_sums(md->ebin);
             }
+
+            /* we can now free & reset the data in the blocks */
+            if (md->dhc)
+                mde_delta_h_coll_reset(md->dhc);
         }
         free_enxframe(&fr);
         break;
@@ -1105,6 +1127,7 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
             }
         }
     }
+
 }
 
 void 

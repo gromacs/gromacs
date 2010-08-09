@@ -230,7 +230,9 @@ static void do_update_vv_vel(int start,int nrend,double dt,
                              unsigned short ptype[],
                              unsigned short cFREEZE[],
                              unsigned short cACC[],unsigned short cTC[],
-                             rvec v[],rvec f[],bool bExtended, real veta, real alpha)
+                             rvec v[],rvec f[],
+                             bool bScaleV,
+                             bool bExtended, real veta, real alpha)
 {
     double imass,w_dt;
     int    gf=0,ga=0,gt=0;
@@ -244,6 +246,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
     mv1      = exp(-g);
     mv2      = series_sinhx(g);
     
+    lg = 1;
     for(n=start; n<nrend; n++) 
     {
         w_dt = invmass[n]*dt;
@@ -255,11 +258,14 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         {
             ga   = cACC[n];
         }
-        if (cTC)
+        if (bScaleV)
         {
-            gt   = cTC[n];
+            if (cTC)
+            {
+                gt   = cTC[n];
+            }
+            lg   = tcstat[gt].lambda;
         }
-        lg   = tcstat[gt].lambda;
         rvec_sub(v[n],gstat[ga].u,vrel);
         
         for(d=0; d<DIM; d++) 
@@ -1140,82 +1146,46 @@ static void combine_forces(int nstlist,
     }
 }
 
-void update_extended(FILE         *fplog,
-                     gmx_large_int_t   step,
-                     t_inputrec   *inputrec,   
-                     t_mdatoms    *md,
-                     t_state      *state,
-                     gmx_ekindata_t *ekind,
-                     matrix       pcoupl_mu,       /* pressure coupling */
-                     matrix       M,
-                     gmx_wallcycle_t wcycle,
-                     gmx_update_t upd,
-                     bool         bInitStep,
-                     bool         bFirstHalf,
-                     t_extmass    *MassQ)
+void update_tcouple(FILE         *fplog,
+                    gmx_large_int_t   step,
+                    t_inputrec   *inputrec,   
+                    t_state      *state,
+                    gmx_ekindata_t *ekind,
+                    gmx_wallcycle_t wcycle,
+                    gmx_update_t upd,
+                    t_extmass    *MassQ)
 {
-    bool   bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
-    bool   bTCouple=FALSE,bPCouple=FALSE;
-    double dt;
-    real   dt_1,dttc=0,dtpc=0;
-    int    start,homenr,nrend,i,n,m,g;
-    
-    start  = md->start;
-    homenr = md->homenr;
-    nrend = start+homenr;
+    bool   bTCouple=FALSE;
+    real   dttc;
+    int    i;
     
     /* if using vv, we do this elsewhere in the code */
-    if ((IR_NVT_TROTTER(inputrec)) || (IR_NPT_TROTTER(inputrec)))
+    if (inputrec->etc != etcNO &&
+        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
     {
-        return;
-    }
-    
-    /* We should only couple after a step where energies were determined */
-    
-    if (inputrec->etc != etcNO)
-    {
+        /* We should only couple after a step where energies were determined */
         bTCouple = (inputrec->nsttcouple == 1 ||
                     do_per_step(step+inputrec->nsttcouple-1,
                                 inputrec->nsttcouple));
+    }
+    
+    if (bTCouple)
+    {
         dttc = inputrec->nsttcouple*inputrec->delta_t;
-    }
-    if (inputrec->epc != epcNO)
-    {
-        bPCouple = (inputrec->nstpcouple == 1 ||
-                    do_per_step(step+inputrec->nstpcouple-1,
-                                inputrec->nstpcouple));
-        dtpc = inputrec->nstpcouple*inputrec->delta_t;
-    }
-    
-    bNH = (inputrec->etc == etcNOSEHOOVER);
-    bPR = (inputrec->epc == epcPARRINELLORAHMAN);
-    bExtended = (bNH || bPR);
-    
-    dt   = inputrec->delta_t;
-    dt_1 = 1.0/dt;
-    clear_mat(pcoupl_mu);
-    for(i=0; i<DIM; i++)
-    {
-        pcoupl_mu[i][i] = 1.0;
-    }
-    
-    clear_mat(M);
-    
-    if (bTCouple)  
-    {
+
         switch (inputrec->etc) 
         {
         case etcNO:
             break;
         case etcBERENDSEN:
-            berendsen_tcoupl(&(inputrec->opts),ekind,dttc);
+            berendsen_tcoupl(inputrec,ekind,dttc);
             break;
         case etcNOSEHOOVER:
             nosehoover_tcoupl(&(inputrec->opts),ekind,dttc,
                               state->nosehoover_xi,state->nosehoover_vxi,MassQ);
             break;
         case etcVRESCALE:
-            vrescale_tcoupl(&(inputrec->opts),ekind,dttc,
+            vrescale_tcoupl(inputrec,ekind,dttc,
                             state->therm_integral,upd->sd->gaussrand);
             break;
         }
@@ -1228,9 +1198,44 @@ void update_extended(FILE         *fplog,
             ekind->tcstat[i].lambda = 1.0;
         }
     }
+}
+
+void update_pcouple(FILE         *fplog,
+                    gmx_large_int_t   step,
+                    t_inputrec   *inputrec,   
+                    t_state      *state,
+                    matrix       pcoupl_mu,
+                    matrix       M,
+                    gmx_wallcycle_t wcycle,
+                    gmx_update_t upd,
+                    bool         bInitStep)
+{
+    bool   bPCouple=FALSE;
+    real   dtpc=0;
+    int    i;
+    
+    /* if using vv, we do this elsewhere in the code */
+    if (inputrec->epc != epcNO &&
+        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
+    {
+        /* We should only couple after a step where energies were determined */
+        bPCouple = (inputrec->nstpcouple == 1 ||
+                    do_per_step(step+inputrec->nstpcouple-1,
+                                inputrec->nstpcouple));
+    }
+    
+    clear_mat(pcoupl_mu);
+    for(i=0; i<DIM; i++)
+    {
+        pcoupl_mu[i][i] = 1.0;
+    }
+    
+    clear_mat(M);
      
     if (bPCouple)
     {
+        dtpc = inputrec->nstpcouple*inputrec->delta_t;
+
         switch (inputrec->epc) 
         {
             /* We can always pcoupl, even if we did not sum the energies
@@ -1584,9 +1589,10 @@ void update_coords(FILE         *fplog,
     
 
     /* Running the velocity half does nothing except for velocity verlet */
-    if (UpdatePart == etrtVELOCITY) 
+    if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
+        !EI_VV(inputrec->eI))
     {
-        if (!EI_VV(inputrec->eI)) {return;}   /*THIS IS FOR STARTING AT v(t=0)*/
+        gmx_incons("update_coords called for velocity without VV integrator");
     }
 
     start  = md->start;
@@ -1686,15 +1692,19 @@ void update_coords(FILE         *fplog,
     case (eiVVAK):
         alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
         switch (UpdatePart) {
-        case (etrtVELOCITY):
+        case etrtVELOCITY1:
+        case etrtVELOCITY2:
             do_update_vv_vel(start,nrend,dt,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
                              md->invmass,md->ptype,
                              md->cFREEZE,md->cACC,md->cTC,
-                             state->v,force,bExtended,state->veta,alpha);  
+                             state->v,force,
+                             ((inputrec->eI == eiVVAK && UpdatePart == etrtVELOCITY1) ||
+                              (inputrec->eI == eiVV   && UpdatePart == etrtVELOCITY2)),
+                             bExtended,state->veta,alpha);  
             break;
-        case (etrtPOSITION):
+        case etrtPOSITION:
             do_update_vv_pos(start,nrend,dt,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
