@@ -67,6 +67,8 @@ enum {
   etabEwaldUserSwitch,
   etabLJ6Ewald,
   etabLJ6EwaldSwitch,
+  etabLJ6EwaldUser,
+  etabLJ6EwaldUserSwitch,
   etabLJ6Switch, 
   etabLJ12Switch, 
   etabCOULSwitch, 
@@ -75,12 +77,14 @@ enum {
   etabCOULEncad,  
   etabEXPMIN, 
   etabUSER, 
+  etabUSERSwitch,
   etabNR 
 };
 
 /** Evaluates to true if the table type contains user data. */
-#define ETAB_USER(e)  ((e) == etabUSER || \
-                       (e) == etabEwaldUser || (e) == etabEwaldUserSwitch)
+#define ETAB_USER(e)  ((e) == etabUSER || (e) == etabUSERSwitch || \
+                       (e) == etabEwaldUser || (e) == etabEwaldUserSwitch || \
+                       (e) == etabLJ6EwaldUser || (e) == etabLJ6EwaldUserSwitch)
 
 typedef struct {
   const char *name;
@@ -104,6 +108,8 @@ static const t_tab_props tprops[etabNR] = {
   { "Ewald-User-Switch", TRUE },
   { "LJ6Ewald", FALSE },
   { "LJ6Ewald-Switch", FALSE },
+  { "LJ6Ewald-User", FALSE },
+  { "LJ6Ewald-User-Switch", FALSE },
   { "LJ6Switch", FALSE },
   { "LJ12Switch", FALSE },
   { "COULSwitch", TRUE },
@@ -111,7 +117,8 @@ static const t_tab_props tprops[etabNR] = {
   { "LJ12-Encad shift", FALSE },
   { "COUL-Encad shift",  TRUE },
   { "EXPMIN", FALSE },
-  { "USER", FALSE }
+  { "USER", FALSE },
+  { "USER-Switch", FALSE }
 };
 
 /* Index in the table that says which function to use */
@@ -525,9 +532,9 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   double isp= 0.564189583547756;
    
   bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) || 
-	     (tp == etabCOULSwitch) ||
+             (tp == etabCOULSwitch) || (tp == etabUSERSwitch) ||
 	     (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch) ||
-             (tp == etabLJ6EwaldSwitch));
+             (tp == etabLJ6EwaldSwitch) || (tp == etabLJ6EwaldUserSwitch));
   bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) || 
 	     (tp == etabShift));
 
@@ -680,6 +687,12 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + pow4(ewclj)*r2*r2/2);
       Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*pow5(ewclj)*ewclj*r2*r2*r;
       break;
+    case etabLJ6EwaldUser:
+    case etabLJ6EwaldUserSwitch:
+      /* Only calculate minus the reciprocal space contribution. */
+      Vtab  = r6 - r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + pow4(ewclj)*r2*r2/2);
+      Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*pow5(ewclj)*ewclj*r2*r2*r;
+      break;
     case etabRF:
     case etabRF_ZERO:
       Vtab  = 1.0/r      +   fr->k_rf*r2 - fr->c_rf;
@@ -762,9 +775,21 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
       break;
     default:
       eltype = eelCUT;
+      break;
+    }
+    switch (fr->vdwtype) {
+    case evdwUSER:
+    case evdwPMEUSER:
+    case evdwPMEUSERSWITCH:
+      vdwtype = evdwUSER;
+      break;
+    default:
+      vdwtype = evdwCUT;
+      break;
     }
   } else {
     eltype = fr->eeltype;
+    vdwtype = fr->vdwtype;
   }
   
   switch (eltype) {
@@ -820,11 +845,6 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
     tabsel[etiLJ6]  = etabLJ6;
     tabsel[etiLJ12] = etabEXPMIN;
   } else {
-    if (b14only && fr->vdwtype != evdwUSER)
-      vdwtype = evdwCUT;
-    else
-      vdwtype = fr->vdwtype;
-
     switch (vdwtype) {
     case evdwSWITCH:
       tabsel[etiLJ6]  = etabLJ6Switch;
@@ -854,9 +874,16 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
       tabsel[etiLJ6]  = etabLJ6EwaldSwitch;
       tabsel[etiLJ12] = etabLJ12Switch;
       break;
+    case evdwPMEUSER:
+      tabsel[etiLJ6]  = etabLJ6EwaldUser;
+      tabsel[etiLJ12] = etabUSER;
+      break;
+    case evdwPMEUSERSWITCH:
+      tabsel[etiLJ6]  = etabLJ6EwaldUserSwitch;
+      tabsel[etiLJ12] = etabUSERSwitch;
+      break;
     default:
-      gmx_fatal(FARGS,"Invalid vdwtype %d in %s line %d",vdwtype,
-		  __FILE__,__LINE__);
+      gmx_fatal(FARGS,"Invalid vdwtype %d",vdwtype);
     } 
   }
 }

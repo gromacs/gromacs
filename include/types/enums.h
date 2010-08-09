@@ -99,16 +99,17 @@ enum {
 #define EEL_MIGHT_BE_ZERO_AT_CUTOFF(e) (EEL_IS_ZERO_AT_CUTOFF(e) || (e) == eelUSER || (e) == eelPMEUSER)
 
 enum {
-  evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwPME, evdwPMESWITCH, evdwNR
+  evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT,
+  evdwPME, evdwPMESWITCH, evdwPMEUSER, evdwPMEUSERSWITCH, evdwNR
 };
 
-#define EVDW_PME(e) ((e) == evdwPME || (e) == evdwPMESWITCH)
+#define EVDW_PME(e) ((e) == evdwPME || (e) == evdwPMESWITCH || (e) == evdwPMEUSER || (e) == evdwPMEUSERSWITCH)
 
-#define EVDW_SWITCHED(e) ((e) == evdwSWITCH || (e) == evdwSHIFT || (e) == evdwENCADSHIFT || (e) == evdwPMESWITCH)
+#define EVDW_SWITCHED(e) ((e) == evdwSWITCH || (e) == evdwSHIFT || (e) == evdwENCADSHIFT || (e) == evdwPMESWITCH || (e) == evdwPMEUSERSWITCH)
 
 #define EVDW_IS_ZERO_AT_CUTOFF(e) EVDW_SWITCHED(e)
 
-#define EVDW_MIGHT_BE_ZERO_AT_CUTOFF(e) (EVDW_IS_ZERO_AT_CUTOFF(e) || (e) == evdwUSER)
+#define EVDW_MIGHT_BE_ZERO_AT_CUTOFF(e) (EVDW_IS_ZERO_AT_CUTOFF(e) || (e) == evdwUSER || (e) == evdwPMEUSER)
 
 enum { 
   ensGRID, ensSIMPLE, ensNR

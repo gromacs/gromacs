@@ -516,8 +516,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (EEL_FULL(ir->coulombtype)) {
-    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER ||
-        ir->coulombtype==eelPMEUSERSWITCH) {
+    if (EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype)) {
       sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
@@ -537,7 +536,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (EVDW_PME(ir->vdwtype)) {
-    if (ir->vdwtype==evdwPMESWITCH) {
+    if (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)) {
       sprintf(err_buf, "With vdwtype = %s, rvdw must be <= rlist",
 	      evdw_names[ir->vdwtype]);
       CHECK(ir->rvdw > ir->rlist);
