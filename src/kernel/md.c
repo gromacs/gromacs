@@ -1922,9 +1922,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fflush(fplog);
         }
         
-        /*  ############### START FIRST UPDATE HALF-STEP ############### */
-        
         if (bVV && !bStartingFromCpt && !bRerunMD)
+        /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
             if (ir->eI==eiVV && bInitStep) 
             {
@@ -1940,11 +1939,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
             }
 
-            if (ir->eI == eiVVAK)
-            {
-                update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
-            }
-
             update_coords(fplog,step,ir,mdatoms,state,
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
@@ -1956,6 +1950,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             /* for iterations, we save these vectors, as we will be self-consistently iterating
                the calculations */
+
             /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
             
             /* save the state */
@@ -2360,19 +2355,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         clear_mat(shake_vir);
                     }
                     trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
-                }
+                } 
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
                  * in global_state after update, we should only do it at
                  * step % nstlist = 1 with bGStatEveryStep=FALSE.
                  */
                 
-                if (ir->eI != eiVVAK)
-                {
-                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
-                }
+                update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
                 update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
-                                upd,bInitStep);
+                               upd,bInitStep);
 
                 if (bVV)
                 {
