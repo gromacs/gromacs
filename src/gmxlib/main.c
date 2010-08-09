@@ -118,24 +118,23 @@ static void set_parallel_env(bool val)
 
 
 static void par_fn(char *base,int ftp,const t_commrec *cr,
-		   bool bUnderScore,
+		   bool bAppendNodeId,
 		   char buf[],int bufsize)
 {
   int n;
   
-  if((size_t)bufsize<(strlen(base)+4))
+  if((size_t)bufsize<(strlen(base)+10))
      gmx_mem("Character buffer too small!");
 
   /* Copy to buf, and strip extension */
   strcpy(buf,base);
   buf[strlen(base) - strlen(ftp2ext(fn2ftp(base))) - 1] = '\0';
 
-  /* Add node info */
-  if (bUnderScore)
-    strcat(buf,"_");
-  if (MULTISIM(cr) && !bUnderScore) {
+  if (MULTISIM(cr)) {
     sprintf(buf+strlen(buf),"%d",cr->ms->sim);
-  } else if (PAR(cr)) {
+  }
+  if (bAppendNodeId) {
+    strcat(buf,"_node");
     sprintf(buf+strlen(buf),"%d",cr->nodeid);
   }
   strcat(buf,".");
@@ -191,7 +190,14 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
   debug_gmx();
   
   /* Communicate the filename for logfile */
-  if (cr->nnodes > 1 && !bMasterOnly) {
+  if (cr->nnodes > 1 && !bMasterOnly
+#ifdef GMX_THREADS
+      /* With thread MPI the non-master log files are opened later
+       * when the files names are already known on all nodes.
+       */
+      && FALSE
+#endif
+      ) {
       if (MASTER(cr))
           len = strlen(lognm)+1;
       gmx_bcast(sizeof(len),&len,cr);
@@ -211,9 +217,9 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
   /*for bAppend the log file is opened in checkpoint.c:read_checkpoint 
    * (for locking)
    */
-  if (PAR(cr) && !bMasterOnly && (!bAppend || !MASTER(cr))) {
+  if (MULTISIM(cr) || !bMasterOnly) {
     /* Since log always ends with '.log' let's use this info */
-    par_fn(tmpnm,efLOG,cr,cr->ms!=NULL,buf,255);
+    par_fn(tmpnm,efLOG,cr,!bMasterOnly,buf,255);
 	  fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
   } else if (!bAppend) {
 	  fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
@@ -379,7 +385,7 @@ void init_multisystem(t_commrec *cr,int nsim, int nfile,
       /* Because of possible multiple extensions per type we must look 
        * at the actual file name 
        */
-      if (is_output(&fnm[i]) ||
+      if ((is_output(&fnm[i]) && fnm[i].ftp != efLOG) ||
 	  fnm[i].ftp == efTPX || fnm[i].ftp == efCPT ||
 	  strcmp(fnm[i].opt,"-rerun") == 0) {
 	ftp = fn2ftp(fnm[i].fns[0]);

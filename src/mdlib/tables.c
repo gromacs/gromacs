@@ -78,6 +78,10 @@ enum {
   etabNR 
 };
 
+/** Evaluates to true if the table type contains user data. */
+#define ETAB_USER(e)  ((e) == etabUSER || \
+                       (e) == etabEwaldUser || (e) == etabEwaldUserSwitch)
+
 typedef struct {
   const char *name;
   bool bCoulomb;
@@ -717,7 +721,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       }
     }
 
-    if (tp == etabEwaldUser) {
+    if (ETAB_USER(tp)) {
       Vtab += td->v[i];
       Ftab += td->f[i];
     }
@@ -893,7 +897,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
   bReadTab = FALSE;
   bGenTab  = FALSE;
   for(i=0; (i<etiNR); i++) {
-    if (tabsel[i] == etabUSER || tabsel[i] == etabEwaldUser) 
+    if (ETAB_USER(tabsel[i]))
       bReadTab = TRUE;
     if (tabsel[i] != etabUSER)
       bGenTab  = TRUE;
@@ -945,7 +949,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
       if (out) 
 	fprintf(out,"%s table with %d data points for %s%s.\n"
 		"Tabscale = %g points/nm\n",
-		tabsel[k]==etabEwaldUser ? "Modified" : "Generated",
+		ETAB_USER(tabsel[k]) ? "Modified" : "Generated",
 		td[k].nx,b14only?"1-4 ":"",tprops[tabsel[k]].name,
 		td[k].tabscale);
     }
