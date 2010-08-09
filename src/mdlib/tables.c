@@ -66,6 +66,7 @@ enum {
   etabEwaldUser,
   etabEwaldUserSwitch,
   etabLJ6Ewald,
+  etabLJ6EwaldSwitch,
   etabLJ6Switch, 
   etabLJ12Switch, 
   etabCOULSwitch, 
@@ -98,6 +99,7 @@ static const t_tab_props tprops[etabNR] = {
   { "Ewald-User", TRUE },
   { "Ewald-User-Switch", TRUE },
   { "LJ6Ewald", FALSE },
+  { "LJ6Ewald-Switch", FALSE },
   { "LJ6Switch", FALSE },
   { "LJ12Switch", FALSE },
   { "COULSwitch", TRUE },
@@ -520,7 +522,8 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
    
   bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) || 
 	     (tp == etabCOULSwitch) ||
-	     (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch));
+	     (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch) ||
+             (tp == etabLJ6EwaldSwitch));
   bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) || 
 	     (tp == etabShift));
 
@@ -669,6 +672,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       Ftab  = -gmx_erf(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
       break;
     case etabLJ6Ewald:
+    case etabLJ6EwaldSwitch:
       Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + pow4(ewclj)*r2*r2/2);
       Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*pow5(ewclj)*ewclj*r2*r2*r;
       break;
@@ -837,6 +841,10 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
     case evdwPME:
       tabsel[etiLJ6]  = etabLJ6Ewald;
       tabsel[etiLJ12] = etabLJ12;
+      break;
+    case evdwPMESWITCH:
+      tabsel[etiLJ6]  = etabLJ6EwaldSwitch;
+      tabsel[etiLJ12] = etabLJ12Switch;
       break;
     default:
       gmx_fatal(FARGS,"Invalid vdwtype %d in %s line %d",vdwtype,

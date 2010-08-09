@@ -522,7 +522,21 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     }
   }
 
-  if (EEL_PME(ir->coulombtype)) {
+  if (EVDW_PME(ir->vdwtype)) {
+    if (ir->vdwtype==evdwPMESWITCH) {
+      sprintf(err_buf, "With vdwtype = %s, rvdw must be <= rlist",
+	      evdw_names[ir->vdwtype]);
+      CHECK(ir->rvdw > ir->rlist);
+    } else {
+      sprintf(err_buf,
+              "With vdwtype = %s, rvdw must be equal to rlist\n"
+              "If you want optimal energy conservation or exact integration use %s",
+              evdw_names[ir->vdwtype], evdw_names[evdwPMESWITCH]);
+      CHECK(ir->rvdw != ir->rlist);
+    }
+  }
+
+  if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype)) {
     if (ir->pme_order < 3) {
         warning_error(wi,"pme_order can not be smaller than 3");
     }
@@ -598,8 +612,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     {
         if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
         {
-            sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
-                    evdw_names[evdwSHIFT]);
+            sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s or %s (possibly with DispCorr)",
+                    evdw_names[evdwSHIFT], evdw_names[evdwPMESWITCH]);
             warning_note(wi,warn_buf);
         }
         if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0)

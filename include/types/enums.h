@@ -98,12 +98,12 @@ enum {
 #define EEL_MIGHT_BE_ZERO_AT_CUTOFF(e) (EEL_IS_ZERO_AT_CUTOFF(e) || (e) == eelUSER || (e) == eelPMEUSER)
 
 enum {
-  evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwPME, evdwNR
+  evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwPME, evdwPMESWITCH, evdwNR
 };
 
-#define EVDW_PME(e) ((e) == evdwPME)
+#define EVDW_PME(e) ((e) == evdwPME || (e) == evdwPMESWITCH)
 
-#define EVDW_SWITCHED(e) ((e) == evdwSWITCH || (e) == evdwSHIFT || (e) == evdwENCADSHIFT)
+#define EVDW_SWITCHED(e) ((e) == evdwSWITCH || (e) == evdwSHIFT || (e) == evdwENCADSHIFT || (e) == evdwPMESWITCH)
 
 #define EVDW_IS_ZERO_AT_CUTOFF(e) EVDW_SWITCHED(e)
 

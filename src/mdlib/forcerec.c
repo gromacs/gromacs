@@ -1318,7 +1318,7 @@ void init_forcerec(FILE *fp,
         if (EEL_PME(ir->coulombtype))
         {
             if (fp)
-                fprintf(fp,"Will do PME sum in reciprocal space.\n");
+                fprintf(fp,"Will do PME sum in reciprocal space for Coulomb interactions.\n");
             please_cite(fp,"Essman95a");
             
             if (ir->ewald_geometry == eewg3DC)
@@ -1334,19 +1334,19 @@ void init_forcerec(FILE *fp,
         init_ewald_tab(&(fr->ewald_table), cr, ir, fp);
         if (fp)
         {
-            fprintf(fp,"Using a Gaussian width (1/beta) of %g nm for Ewald\n",
+            fprintf(fp,"Using a Gaussian width (1/beta) of %g nm for Coulomb Ewald\n",
                     1/fr->ewaldcoeff);
         }
     }
     if(EVDW_PME(ir->vdwtype))
     {
         if (fp)
-            fprintf(fp,"Will do PME sum in reciprocal space for C6.\n");
+            fprintf(fp,"Will do PME sum in reciprocal space for LJ dispersion interactions.\n");
         please_cite(fp,"Essman95a");
         fr->ewaldljcoeff=calc_ewaldljcoeff(ir->rvdw, ir->ewald_rtol_lj);
         if (fp)
         {
-            fprintf(fp,"Using a Gaussian width (1/beta) of %g nm for Ewald\n",
+            fprintf(fp,"Using a Gaussian width (1/beta) of %g nm for LJ Ewald\n",
                     1/fr->ewaldljcoeff);
         }
     }
@@ -1426,16 +1426,18 @@ void init_forcerec(FILE *fp,
     /* Van der Waals stuff */
     fr->rvdw        = cutoff_inf(ir->rvdw);
     fr->rvdw_switch = ir->rvdw_switch;
-    if ((fr->vdwtype != evdwCUT) && (fr->vdwtype != evdwUSER) && !fr->bBHAM) {
+    if (EVDW_SWITCHED(fr->vdwtype) && !fr->bBHAM) {
         if (fr->rvdw_switch >= fr->rvdw)
             gmx_fatal(FARGS,"rvdw_switch (%f) must be < rvdw (%f)",
                       fr->rvdw_switch,fr->rvdw);
         if (fp)
             fprintf(fp,"Using %s Lennard-Jones, switch between %g and %g nm\n",
-                    (fr->eeltype==eelSWITCH) ? "switched":"shifted",
+                    (fr->vdwtype==evdwSWITCH || fr->vdwtype==evdwPMESWITCH) ? "switched" : "shifted",
                     fr->rvdw_switch,fr->rvdw);
     } 
     
+    if (fr->bBHAM && EVDW_PME(fr->vdwtype))
+        gmx_fatal(FARGS,"LJ PME not supported with Buckingham");
     if (fr->bBHAM && (fr->vdwtype == evdwSHIFT || fr->vdwtype == evdwSWITCH))
         gmx_fatal(FARGS,"Switch/shift interaction not supported with Buckingham");
     
