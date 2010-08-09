@@ -344,7 +344,8 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
   real err=0.0;
   real *xfit;
   real *yfit;
-
+  gmx_rmpbc_t  gpbc=NULL;
+ 
   /*
    * indices for EH
    */
@@ -377,7 +378,8 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
   clear_rvec(mjd_tmp);
   clear_rvec(mdvec);
   clear_rvec(tmp);
-  
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,fr.natoms,fr.box);
+
   do{
     
     refr=(real)(nfr+1);
@@ -426,8 +428,8 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
 
     }
     
-		rm_pbc(&top.idef,ePBC,fr.natoms,fr.box,fr.x,fr.x);
-
+		gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+		
 		calc_mj(top,ePBC,fr.box,bNoJump,nmols,indexm,fr.x,mtrans[nfr],mass2,qmol);
 
     for(i=0;i<isize;i++){
@@ -505,6 +507,8 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
     
   }while(read_next_frame(oenv,status,&fr));
   
+  gmx_rmpbc_done(gpbc);
+ 
   volume_av/=refr;
   
 	prefactor=1.0;

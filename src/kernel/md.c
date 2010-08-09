@@ -745,6 +745,39 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
     print_date_and_time(fplog,cr->nodeid,"Restarted time",runtime);
 }
 
+static void min_zero(int *n,int i)
+{
+    if (i > 0 && (*n == 0 || i < *n))
+    {
+        *n = i;
+    }
+}
+
+static int lcd4(int i1,int i2,int i3,int i4)
+{
+    int nst;
+
+    nst = 0;
+    min_zero(&nst,i1);
+    min_zero(&nst,i2);
+    min_zero(&nst,i3);
+    min_zero(&nst,i4);
+    if (nst == 0)
+    {
+        gmx_incons("All 4 inputs for determininig nstglobalcomm are <= 0");
+    }
+    
+    while (nst > 1 && ((i1 > 0 && i1 % nst != 0)  ||
+                       (i2 > 0 && i2 % nst != 0)  ||
+                       (i3 > 0 && i3 % nst != 0)  ||
+                       (i4 > 0 && i4 % nst != 0)))
+    {
+        nst--;
+    }
+
+    return nst;
+}
+
 static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
                                int nstglobalcomm,t_inputrec *ir)
 {
@@ -757,7 +790,10 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
 
     if (nstglobalcomm == -1)
     {
-        if (ir->nstcalcenergy == 0 && ir->nstlist == 0)
+        if (!(ir->nstcalcenergy > 0 ||
+              ir->nstlist > 0 ||
+              ir->etc != etcNO ||
+              ir->epc != epcNO))
         {
             nstglobalcomm = 10;
             if (ir->nstenergy > 0 && ir->nstenergy < nstglobalcomm)
@@ -767,18 +803,13 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
         }
         else
         {
-            /* We assume that if nstcalcenergy > nstlist,
-             * nstcalcenergy is a multiple of nstlist.
+            /* Ensure that we do timely global communication for
+             * (possibly) each of the four following options.
              */
-            if (ir->nstcalcenergy == 0 ||
-                (ir->nstlist > 0 && ir->nstlist < ir->nstcalcenergy))
-            {
-                nstglobalcomm = ir->nstlist;
-            }
-            else
-            {
-                nstglobalcomm = ir->nstcalcenergy;
-            }
+            nstglobalcomm = lcd4(ir->nstcalcenergy,
+                                 ir->nstlist,
+                                 ir->etc != etcNO ? ir->nsttcouple : 0,
+                                 ir->epc != epcNO ? ir->nstpcouple : 0);
         }
     }
     else
@@ -790,10 +821,20 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
             sprintf(buf,"WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n",nstglobalcomm);
             md_print_warning(cr,fplog,buf);
         }
-        if (nstglobalcomm > ir->nstcalcenergy)
+        if (ir->nstcalcenergy > 0)
         {
             check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
                             "nstcalcenergy",&ir->nstcalcenergy);
+        }
+        if (ir->etc != etcNO && ir->nsttcouple > 0)
+        {
+            check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
+                            "nsttcouple",&ir->nsttcouple);
+        }
+        if (ir->epc != epcNO && ir->nstpcouple > 0)
+        {
+            check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
+                            "nstpcouple",&ir->nstpcouple);
         }
 
         check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
@@ -835,6 +876,11 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
         }
         check_nst_param(fplog,cr,"nstlist",ir->nstlist,
                         "nstcalcenergy",&ir->nstcalcenergy);
+        if (ir->epc != epcNO)
+        {
+            check_nst_param(fplog,cr,"nstlist",ir->nstlist,
+                            "nstpcouple",&ir->nstpcouple);
+        }
         check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                         "nstenergy",&ir->nstenergy);
         check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
@@ -1372,6 +1418,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             copy_mat(ekind->tcstat[i].ekinh,ekind->tcstat[i].ekinh_old);
         } 
     }
+    if (ir->eI != eiVV) 
+    {
+        enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
+                                     and there is no previous step */
+    }
     temp0 = enerd->term[F_TEMP];
     
     /* if using an iterative algorithm, we need to create a working directory for the state. */
@@ -1399,11 +1450,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fprintf(fplog,
                     "RMS relative constraint deviation after constraining: %.2e\n",
                     constr_rmsd(constr,FALSE));
-        }
-        if (!bVV) 
-        {
-            enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
-                                         and there is no previous step */
         }
         fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
         if (bRerunMD)
@@ -1793,11 +1839,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
          */
-        bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
-        bCalcEnerPres = bNstEner;
+        bNstEner = do_per_step(step,ir->nstcalcenergy);
+        bCalcEnerPres =
+            (bNstEner ||
+             (ir->epc != epcNO && do_per_step(step,ir->nstpcouple)));
 
         /* Do we need global communication ? */
         bGStat = (bCalcEnerPres || bStopCM ||
+                  do_per_step(step,nstglobalcomm) ||
                   (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
 
         do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
@@ -1876,7 +1925,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /*  ############### START FIRST UPDATE HALF-STEP ############### */
         
-        if (!bStartingFromCpt && !bRerunMD)
+        if (bVV && !bStartingFromCpt && !bRerunMD)
         {
             if (ir->eI==eiVV && bInitStep) 
             {
@@ -1891,10 +1940,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
                 trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
             }
-            
+
+            if (ir->eI == eiVVAK)
+            {
+                update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+            }
+
             update_coords(fplog,step,ir,mdatoms,state,
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                          ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,
+                          ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
                           cr,nrnb,constr,&top->idef);
             
             if (bIterations)
@@ -1955,29 +2009,30 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
                 
                 
-                if (bVV) {
-                    /* if VV, compute the pressure and constraints */
-                    /* For VV2, we strictly only need this if using pressure control, but we really would 
-                       like to have accurate pressures printed out.  Think about ways around this in the future?
-                       For now, keep this choice in comments  */
-                    /*bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); */
+                /* if VV, compute the pressure and constraints */
+                /* For VV2, we strictly only need this if using pressure
+                 * control, but we really would like to have accurate pressures
+                 * printed out.
+                 * Think about ways around this in the future?
+                 * For now, keep this choice in comments.
+                 */
+                /*bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); */
                     /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
-                    bPres = TRUE;
-                    bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK));
-                    compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                                    wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,FALSE,state->box,
-                                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                                    cglo_flags 
-                                    | CGLO_ENERGY 
-                                    | (bTemp ? CGLO_TEMPERATURE:0) 
-                                    | (bPres ? CGLO_PRESSURE : 0) 
-                                    | (bPres ? CGLO_CONSTRAINT : 0)
-                                    | ((bIterations && iterate.bIterate) ? CGLO_ITERATE : 0)  
-                                    | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
-                                    | CGLO_SCALEEKIN 
-                        );
-                }
+                bPres = TRUE;
+                bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK));
+                compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
+                                wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                                constr,NULL,FALSE,state->box,
+                                top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                                cglo_flags 
+                                | CGLO_ENERGY 
+                                | (bTemp ? CGLO_TEMPERATURE:0) 
+                                | (bPres ? CGLO_PRESSURE : 0) 
+                                | (bPres ? CGLO_CONSTRAINT : 0)
+                                | ((bIterations && iterate.bIterate) ? CGLO_ITERATE : 0)  
+                                | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                                | CGLO_SCALEEKIN 
+                    );
                 /* explanation of above: 
                    a) We compute Ekin at the full time step
                    if 1) we are using the AveVel Ekin, and it's not the
@@ -1987,7 +2042,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                    EkinAveVel because it's needed for the pressure */
                 
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
-                if (bVV && !bInitStep) 
+                if (!bInitStep) 
                 {
                     trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
@@ -2022,7 +2077,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             enerd->term[F_DHDL_CON] += dvdl;
             
             GMX_MPE_LOG(ev_timestep1);
-            
         }
     
         /* MRS -- now done iterating -- compute the conserved quantity */
@@ -2061,26 +2115,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
         if (bCPT) { mdof_flags |= MDOF_CPT; };
 
-#ifdef GMX_FAHCORE
-        if (MASTER(cr))
-            fcReportProgress( ir->nsteps, step );
-
+#if defined(GMX_FAHCORE) || defined(GMX_WRITELASTSTEP)
         if (bLastStep)
         {
             /* Enforce writing positions and velocities at end of run */
             mdof_flags |= (MDOF_X | MDOF_V);
         }
-        {
-            int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
-            int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
-            
-            /*Gromacs drives checkpointing; no ||  
-              fcCheckPointPendingThreads(cr->nodeid,
-              nthreads*nnodes);*/
-            /* sync bCPT and fc record-keeping */
-            if (bCPT && MASTER(cr))
-                fcRequestCheckPoint();
-        }
+#endif
+#ifdef GMX_FAHCORE
+        if (MASTER(cr))
+            fcReportProgress( ir->nsteps, step );
+
+        /* sync bCPT and fc record-keeping */
+        if (bCPT && MASTER(cr))
+            fcRequestCheckPoint();
 #endif
         
         if (mdof_flags != 0)
@@ -2172,8 +2220,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */    
-        if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
-            MASTERTHREAD(cr))
+        if (((int)gmx_get_stop_condition() > handled_stop_condition)
+#ifdef GMX_THREADS
+            && MASTER(cr)
+#endif
+            )
         {
             /* this is just make gs.sig compatible with the hack 
                of sending signals around by MPI_Reduce with together with
@@ -2317,12 +2368,21 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * step % nstlist = 1 with bGStatEveryStep=FALSE.
                  */
                 
-                update_extended(fplog,step,ir,mdatoms,state,ekind,pcoupl_mu,M,wcycle,
-                                upd,bInitStep,FALSE,&MassQ);
+                if (ir->eI != eiVVAK)
+                {
+                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+                }
+                update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
+                                upd,bInitStep);
 
-                /* velocity (for VV) */
-                update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,FALSE,etrtVELOCITY,cr,nrnb,constr,&top->idef);
+                if (bVV)
+                {
+                    /* velocity half-step update */
+                    update_coords(fplog,step,ir,mdatoms,state,f,
+                                  fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                                  ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,
+                                  cr,nrnb,constr,&top->idef);
+                }
 
                 /* Above, initialize just copies ekinh into ekin,
                  * it doesn't copy position (for VV),

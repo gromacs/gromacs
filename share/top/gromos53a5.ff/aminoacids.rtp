@@ -10786,7 +10786,7 @@ AO3B   APG AO3G AH3G     gd_22
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ ZN2+ ]
+[ ZN ]
  [ atoms ]
    ZN  ZN2+     2.00000     0
  [ bonds ]
@@ -10797,7 +10797,7 @@ AO3B   APG AO3G AH3G     gd_22
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ NA+ ]
+[ NA ]
  [ atoms ]
    NA   NA+     1.00000     0
  [ bonds ]
@@ -10808,7 +10808,7 @@ AO3B   APG AO3G AH3G     gd_22
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ CL- ]
+[ CL ]
  [ atoms ]
    CL   CL-    -1.00000     0
  [ bonds ]
@@ -10819,7 +10819,7 @@ AO3B   APG AO3G AH3G     gd_22
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ CA2+ ]
+[ CA ]
  [ atoms ]
    CA  CA2+     2.00000     0
  [ bonds ]
@@ -10830,7 +10830,7 @@ AO3B   APG AO3G AH3G     gd_22
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ MG2+ ]
+[ MG ]
  [ atoms ]
    MG  MG2+     2.00000     0
  [ bonds ]
@@ -10841,7 +10841,7 @@ AO3B   APG AO3G AH3G     gd_22
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ CU1+ ]
+[ CU1 ]
  [ atoms ]
    CU  CU1+     1.00000     0
  [ bonds ]
@@ -10852,7 +10852,7 @@ AO3B   APG AO3G AH3G     gd_22
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ CU2+ ]
+[ CU ]
  [ atoms ]
    CU  CU2+     2.00000     0
  [ bonds ]

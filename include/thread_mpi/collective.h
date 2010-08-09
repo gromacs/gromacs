@@ -104,7 +104,7 @@ void* tMPI_Shmalloc(tMPI_Comm comm, size_t size);
 
 
 
-#include "thread_mpi/atomic.h" 
+#include "atomic.h" 
 
 typedef struct
 {

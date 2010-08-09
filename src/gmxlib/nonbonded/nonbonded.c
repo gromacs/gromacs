@@ -205,7 +205,7 @@ nb_kernel_list = NULL;
 
 
 void
-gmx_setup_kernels(FILE *fplog)
+gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
 {
     int i;
     
@@ -220,14 +220,8 @@ gmx_setup_kernels(FILE *fplog)
         nb_kernel_list[i] = NULL;
     }
     
-    if(getenv("GMX_NB_GENERIC") != NULL)
+    if (bGenericKernelOnly)
     {
-        if(fplog)
-        {
-            fprintf(fplog,
-                    "Found environment variable GMX_NB_GENERIC.\n"
-                    "Disabling interaction-specific nonbonded kernels.\n\n");
-        }
         return;
     }
 	
@@ -240,10 +234,6 @@ gmx_setup_kernels(FILE *fplog)
     
     if(getenv("GMX_NOOPTIMIZEDKERNELS") != NULL)
     {
-        if(fplog)
-            fprintf(fplog,
-                    "Found environment variable GMX_NOOPTIMIZEDKERNELS.\n"
-                    "Disabling SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
         return;
     }
     
@@ -331,7 +321,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
 	gmx_gbdata_t    gbdata;
-
+    
     bLR            = (flags & GMX_DONB_LR);
     bDoForces      = (flags & GMX_DONB_FORCES);
     bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA); 
@@ -346,37 +336,61 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
         {
 #if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
 # ifdef GMX_DOUBLE
-            /* double not done yet */
-            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
-/*
- nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                             &outeriter,&inneriter,&fr->AllvsAll_work);
- */
-#  else
-            nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                             &outeriter,&inneriter,&fr->AllvsAll_work);
-#  endif
-#else
+            if(fr->UseOptimizedKernels)
+            {
+                gmx_fatal(FARGS,"Cannot do double precision SSE2 all-vs-all kernels for now.");
+            }
+            else
+            {
+                nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                     &outeriter,&inneriter,&fr->AllvsAll_work);        
+            }
+#  else /* not double */
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                                 &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else
+            {
+                nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                     &outeriter,&inneriter,&fr->AllvsAll_work);        
+            }
+#  endif /* double/single alt. */
+#else /* no SSE support compiled in */
             nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                 &outeriter,&inneriter,&fr->AllvsAll_work);        
-#endif     
+                                 &outeriter,&inneriter,&fr->AllvsAll_work);                    
+#endif
             inc_nrnb(nrnb,eNR_NBKERNEL_ALLVSALLGB,inneriter);
         }
         else
         { 
 #if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
 # ifdef GMX_DOUBLE
-            /* double not done yet */
-            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
-/*
-            nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
-                                           &outeriter,&inneriter,&fr->AllvsAll_work);
- */
-#  else
-            nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
-                                           &outeriter,&inneriter,&fr->AllvsAll_work);
-#  endif
-#else
+            if(fr->UseOptimizedKernels)
+            {
+                gmx_fatal(FARGS,"Cannot do double precision SSE2 all-vs-all kernels for now.");
+            }
+            else 
+            {
+                nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                   &outeriter,&inneriter,&fr->AllvsAll_work);            
+            }
+            
+#  else /* not double */
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                               &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else 
+            {
+                nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                   &outeriter,&inneriter,&fr->AllvsAll_work);            
+            }
+
+#  endif /* double/single check */
+#else /* No SSE2 support compiled in */
             nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                &outeriter,&inneriter,&fr->AllvsAll_work);
 #endif            
@@ -514,7 +528,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  dvdlambda,
 											  fr->sc_alpha,
 											  fr->sc_power,
-											  fr->sc_sigma6,
+											  fr->sc_sigma6_def,
+                                              fr->sc_sigma6_min,
                                               bDoForces,
 											  &outeriter,
 											  &inneriter);
@@ -856,7 +871,8 @@ do_listed_vdw_q(int ftype,int nbonds,
                                       dvdlambda,
                                       fr->sc_alpha,
                                       fr->sc_power,
-                                      fr->sc_sigma6,
+                                      fr->sc_sigma6_def,
+                                      fr->sc_sigma6_min,
                                       TRUE,
                                       &outeriter,
                                       &inneriter);

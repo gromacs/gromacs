@@ -63,9 +63,7 @@ files.
 #include "thread_mpi/collective.h"
 #include "thread_mpi/barrier.h"
 #include "thread_mpi/hwinfo.h"
-#include "wait.h"
-#include "barrier.h"
-#include "event.h"
+#include "thread_mpi/lock.h"
 #ifdef TMPI_PROFILE
 #include "profile.h"
 #endif
@@ -449,8 +447,11 @@ struct tmpi_thread
     /* the per-thread profile structure that keeps call counts & wait times. */
     struct tmpi_profile profile;
 #endif
-    /* The start function (or NULL, if main() is to be called) */
+    /* The start function (or NULL, if a main()-style start function is to 
+       be called) */
     void (*start_fn)(void*); 
+    /* The main()-style start function */
+    int (*start_fn_main)(int, char**);
     /* the argument to the start function, if it's not main()*/
     void *start_arg; 
 
@@ -556,7 +557,7 @@ struct tmpi_comm_
     struct tmpi_group_ grp; /* the communicator group */
 
     /* the barrier for tMPI_Barrier() */
-    tMPI_Spinlock_barrier_t barrier;
+    tMPI_Barrier_t barrier;
 
 
     /* List of barriers for reduce operations.
@@ -565,7 +566,7 @@ struct tmpi_comm_
        reduce_barrier[2] contains a list of N/8 barriers for N/4 threads
        and so on. (until N/x reaches 1)
        This is to facilitate tree-based algorithms for tMPI_Reduce, etc.  */
-    tMPI_Spinlock_barrier_t **reduce_barrier;
+    tMPI_Barrier_t **reduce_barrier;
     int *N_reduce; /* the number of barriers in each iteration */
     int N_reduce_iter; /* the number of iterations */
 

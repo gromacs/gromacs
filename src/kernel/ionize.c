@@ -633,7 +633,7 @@ void ionize(FILE *fp,const output_env_t oenv,t_mdatoms *md,gmx_mtop_t *mtop,
     nkd_tot = 0;
 
     xvg   = xvgropen("ionize.xvg","Ionization Events","Time (ps)","()",oenv);
-    xvgr_legend(xvg,asize(leg),leg,oenv);
+    xvgr_legend(xvg,asize(leg),(const char**)leg,oenv);
     ion   = gmx_fio_fopen("ionize.log","w");
 
     fprintf(fp,PREFIX"Parameters for ionization events:\n");

@@ -157,6 +157,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
     
     GMX_MPE_LOG(ev_force_start);
+    set_pbc(&pbc,fr->ePBC,box);
     
     /* Reset box */
     for(i=0; (i<DIM); i++)
@@ -450,6 +451,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         case eelPME:
         case eelPMESWITCH:
         case eelPMEUSER:
+        case eelPMEUSERSWITCH:
             /* Energies and virial are calculated later or obtained from the
              * PME nodes, but values have to be zeroed out here. */
             Vlr=0.0;
@@ -574,8 +576,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                 md->chargeA, md->chargeB,
                                 md->c6A, md->c6B,
                                 bSB ? boxs : box, cr,
-                                DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
-                                DOMAINDECOMP(cr) ? dd_pme_maxshift1(cr->dd) : 0,
+                                DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
+                                DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
                                 nrnb, wcycle,
                                 fr->vir_el_recip, fr->ewaldcoeff,
                                 fr->vir_lj_recip, fr->ewaldljcoeff,

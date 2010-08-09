@@ -45,54 +45,56 @@
 #include "futil.h"
 #include "vec.h"	
 
-typedef struct {
-    int     natoms;
-    t_graph *gr;
-} multi_graph;
+typedef struct gmx_rmpbc {
+  int     natoms;
+  int     ePBC;
+  t_graph *gr;
+} koeiepoep;
 
-
-void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],rvec x_s[])
+gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
+			   matrix box)
 {
-  static int ngraph=0;
-  static multi_graph *mgraph=NULL;
-  static bool bFirst=TRUE;
-  rvec   sv[SHIFTS];
-  int    n,i;
-  bool   bNeedToCopy;
+  gmx_rmpbc_t gpbc;
+  
+  snew(gpbc,1);
+  
+  gpbc->natoms=natoms;
 
   if (ePBC == -1)
-    ePBC = guess_ePBC(box);
+    gpbc->ePBC = guess_ePBC(box);
+  else
+    gpbc->ePBC = ePBC;
+    
+  if (idef->ntypes <= 0)
+    fprintf(stderr,
+	    "\nWarning: if there are broken molecules in the trajectory file,\n"
+	    "         they can not be made whole without a run input file\n\n");
+  else if (ePBC == epbcNONE) 
+    fprintf(stderr,"\nNot treating periodicity since it is turned off in the input file\n");
+  else
+    gpbc->gr = mk_graph(NULL,idef,0,natoms,FALSE,FALSE);
 
-  bNeedToCopy = (x != x_s);
+  return gpbc;
+}
 
-  if (ePBC != epbcNONE) {
-    if (idef->ntypes!=-1) {
-      n=-1;
-      for(i=0; i<ngraph; i++)
-	if (mgraph[i].natoms==natoms)
-	  n=i;
-      if (n==-1) {
-	/* make a new graph if there isn't one with this number of atoms */
-	n=ngraph;
-	ngraph++;
-	srenew(mgraph,ngraph);
-	mgraph[n].natoms=natoms;
-	mgraph[n].gr=mk_graph(NULL,idef,0,natoms,FALSE,FALSE);
-      }
-      mk_mshift(stdout,mgraph[n].gr,ePBC,box,x);
-      calc_shifts(box,sv);
-      shift_x(mgraph[n].gr,box,x,x_s);
-      bNeedToCopy=FALSE;
-    } else if (bFirst) {
-      fprintf(stderr,
-	      "\nWarning: if there are broken molecules in the trajectory file,\n"
-	      "         they can not be made whole without a run input file\n\n");
-      bFirst=FALSE;
+void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
+{
+  if (NULL != gpbc->gr)
+    done_graph(gpbc->gr);
+}
+
+void gmx_rmpbc(gmx_rmpbc_t gpbc,matrix box,rvec x[],rvec x_s[])
+{
+  int    i;
+
+  if (NULL != gpbc->gr) {
+    mk_mshift(stdout,gpbc->gr,gpbc->ePBC,box,x);
+    shift_x(gpbc->gr,box,x,x_s);
+  } else if (x != x_s) {
+    for (i=0; i<gpbc->natoms; i++) {
+      copy_rvec(x[i],x_s[i]);
     }
   }
-  if (bNeedToCopy)
-    for (i=0; i<natoms; i++)
-      copy_rvec(x[i],x_s[i]);
 }
 
 void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)

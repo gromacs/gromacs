@@ -1,6 +1,6 @@
 # Generated automatically from Makefile.in by configure.
 #
-# This is a Gromacs 3.0 template makefile for your own utility programs.
+# This is a Gromacs 4.5 template makefile for your own utility programs.
 #
 # Copy this file to whatever directory you are using for your own
 # software and add more targets like the template one below.

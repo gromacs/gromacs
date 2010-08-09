@@ -67,7 +67,7 @@
 #include "eigensolver.h"
 #include "physics.h"
 #include "gmx_ana.h"
-
+#include "string2.h"
 
 int gmx_covar(int argc,char *argv[])
 {
@@ -135,9 +135,11 @@ int gmx_covar(int argc,char *argv[])
   atom_id    *index,*ifit;
   bool       bDiffMass1,bDiffMass2;
   time_t     now;
+  char       timebuf[STRLEN];
   t_rgb      rlo,rmi,rhi;
   real       *tmp;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
 
   t_filenm fnm[] = { 
     { efTRX, "-f",  NULL, ffREAD }, 
@@ -217,10 +219,12 @@ int gmx_covar(int argc,char *argv[])
 	w_rls[ifit[i]]=1.0;
     }
   }
-
+  
   /* Prepare reference frame */
-  if (bPBC)
-    rm_pbc(&(top.idef),ePBC,atoms->nr,box,xref,xref);
+  if (bPBC) {
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,atoms->nr,box);
+    gmx_rmpbc(gpbc,box,xref,xref);
+  }
   if (bFit)
     reset_x(nfit,ifit,atoms->nr,NULL,xref,w_rls);
 
@@ -241,7 +245,7 @@ int gmx_covar(int argc,char *argv[])
     nframes0++;
     /* calculate x: a fitted struture of the selected atoms */
     if (bPBC)
-      rm_pbc(&(top.idef),ePBC,nat,box,xread,xread);
+      gmx_rmpbc(gpbc,box,xread,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
@@ -270,7 +274,7 @@ int gmx_covar(int argc,char *argv[])
     tend = t;
     /* calculate x: a (fitted) structure of the selected atoms */
     if (bPBC)
-      rm_pbc(&(top.idef),ePBC,nat,box,xread,xread);
+      gmx_rmpbc(gpbc,box,xread,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
@@ -296,6 +300,7 @@ int gmx_covar(int argc,char *argv[])
   } while (read_next_x(oenv,status,&t,nat,xread,box) && 
 	   (bRef || nframes < nframes0));
   close_trj(status);
+  gmx_rmpbc_done(gpbc);
 
   fprintf(stderr,"Read %d frames\n",nframes);
   
@@ -460,9 +465,10 @@ int gmx_covar(int argc,char *argv[])
 
   out = ffopen(logfile,"w");
 
-  now = time(NULL);
-  fprintf(out,"Covariance analysis log, written %s\n",
-	  ctime(&now));
+  time(&now);
+  gmx_ctime_r(&now,timebuf,STRLEN);
+  fprintf(out,"Covariance analysis log, written %s\n",timebuf);
+    
   fprintf(out,"Program: %s\n",argv[0]);
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
   pcwd=_getcwd(str,STRLEN);

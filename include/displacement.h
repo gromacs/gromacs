@@ -41,7 +41,7 @@
 #ifndef DISPLACEMENT_H
 #define DISPLACEMENT_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C"

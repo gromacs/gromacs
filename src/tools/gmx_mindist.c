@@ -107,7 +107,7 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
                                   const output_env_t oenv)
 {
   FILE   *out;
-  char *leg[5] = { "min per.","max int.","box1","box2","box3" };
+  const char *leg[5] = { "min per.","max int.","box1","box2","box3" };
   t_trxstatus *status;
   real   t;
   rvec   *x;
@@ -115,7 +115,8 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   int    natoms,ind_min[2]={0,0},ind_mini=0,ind_minj=0;
   real   r,rmin,rmax,rmint,tmint;
   bool   bFirst;
-  
+  gmx_rmpbc_t  gpbc=NULL;
+
   natoms=read_first_x(oenv,&status,trxfn,&t,&x,box);
   
   check_index(NULL,n,index,NULL,natoms);
@@ -129,11 +130,14 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   rmint = box[XX][XX];
   tmint = 0;
   
+  if (NULL != top)
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+
   bFirst=TRUE;  
   do {
-    if (top) {
-      rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
-    }
+    if (NULL != top) 
+      gmx_rmpbc(gpbc,box,x,x);
+    
     periodic_dist(box,x,n,index,&rmin,&rmax,ind_min);
     if (rmin < rmint) {
       rmint = rmin;
@@ -147,6 +151,9 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 	    output_env_conv_time(oenv,t),rmin,rmax,norm(box[0]),norm(box[1]),norm(box[2]));
     bFirst=FALSE;
   } while(read_next_x(oenv,status,&t,natoms,x,box));
+
+  if (NULL != top)
+    gmx_rmpbc_done(gpbc);
     
   ffclose(out);
   
@@ -259,7 +266,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   int          nmin,nmax;
   t_trxstatus  *status;
   int          i=-1,j,k,natoms;
-  int	       min1,min2,max1,max2;
+  int	       min1,min2,max1,max2,min1r,min2r,max1r,max2r;
   atom_id      oindex[2];
   rvec         *x0;
   matrix       box;
@@ -282,8 +289,8 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
       snew(leg,1);
       sprintf(buf,"Internal in %s",grpn[0]);
       leg[0]=strdup(buf);
-      xvgr_legend(dist,0,leg,oenv);
-      if (num) xvgr_legend(num,0,leg,oenv);
+      xvgr_legend(dist,0,(const char**)leg,oenv);
+      if (num) xvgr_legend(num,0,(const char**)leg,oenv);
     } 
     else {
       snew(leg,(ng*(ng-1))/2);
@@ -293,8 +300,8 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	  leg[j]=strdup(buf);
 	}
       }
-      xvgr_legend(dist,j,leg,oenv);
-      if (num) xvgr_legend(num,j,leg,oenv);
+      xvgr_legend(dist,j,(const char**)leg,oenv);
+      if (num) xvgr_legend(num,j,(const char**)leg,oenv);
     }
   }
   else {  
@@ -303,15 +310,15 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
       sprintf(buf,"%s-%s",grpn[0],grpn[i+1]);
       leg[i]=strdup(buf);
     }
-    xvgr_legend(dist,ng-1,leg,oenv);
-    if (num) xvgr_legend(num,ng-1,leg,oenv);
+    xvgr_legend(dist,ng-1,(const char**)leg,oenv);
+    if (num) xvgr_legend(num,ng-1,(const char**)leg,oenv);
   }
   
   if (bEachResEachTime)
   {
     sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
     respertime=xvgropen(rfile,buf,output_env_get_time_label(oenv),"Distance (nm)",oenv);
-    xvgr_legend(respertime,ng-1,leg,oenv);
+    xvgr_legend(respertime,ng-1,(const char**)leg,oenv);
 	if (bPrintResName) 
 	  fprintf(respertime,"# ");
 	    for (j=0; j<nres; j++)
@@ -370,7 +377,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	  for(j=0; j<nres; j++) {
 	    calc_dist(rcut,bPBC,ePBC,box,x0,residue[j+1]-residue[j],gnx[i],
 		      &(index[0][residue[j]]),index[i],bGroup,
-		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+		      &dmin,&dmax,&nmin,&nmax,&min1r,&min2r,&max1r,&max2r);
 	    mindres[i-1][j] = min(mindres[i-1][j],dmin);
 	    maxdres[i-1][j] = max(maxdres[i-1][j],dmax);
 	  }
@@ -419,7 +426,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
     
     sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
     res=xvgropen(rfile,buf,"Residue (#)","Distance (nm)",oenv);
-    xvgr_legend(res,ng-1,leg,oenv);
+    xvgr_legend(res,ng-1,(const char**)leg,oenv);
     for(j=0; j<nres; j++) {
       fprintf(res, "%4d", j+1);
       for(i=1; i<ng; i++) {

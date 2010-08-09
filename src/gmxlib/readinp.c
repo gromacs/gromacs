@@ -46,12 +46,9 @@
 #include "macros.h"
 #include "statutil.h"
 #include "gmxfio.h"
-#include "gmxcpp.h"
 #include "names.h"
 #include "warninp.h"
 #include "gmx_fatal.h"
-
-static int inp_count = 1;
 
 /* find an entry; return index, or -1 if not found */
 static int search_einp(int ninp, const t_inpfile *inp, const char *name);
@@ -61,59 +58,25 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
 			char **cppopts,
 			warninp_t wi)
 {
-  /*FILE      *in;*/
-  gmx_cpp_t in;
+  FILE      *in;
   char      buf[STRLEN],lbuf[STRLEN],rbuf[STRLEN],warn_buf[STRLEN];
   char      *ptr,*cptr;
   t_inpfile *inp=NULL;
-  int       nin,lc,i,j,k,status;
+  int       nin,lc,i,j,k;
   /* setting cppopts from command-line options would be cooler */
-  char *cppopts_null[] = { NULL }; 
-  char **cppopts_given;
   bool allow_override=FALSE;
 
     
   if (debug)
     fprintf(debug,"Reading MDP file %s\n",fn);
-  inp_count = 1;
-  if (!cppopts)
-    cppopts_given=cppopts;
-  else
-    cppopts_given=cppopts_null;
-
-  status = cpp_open_file(fn, &in, cppopts_given);
     
-  if (status != eCPP_OK)
-  {
-    sprintf(warn_buf, "%s", cpp_error(&in, status));
-    warning_error(wi,warn_buf);
-    *ninp = 0;
-    return NULL;
-  }
+  in = ffopen(fn, "r");
+
   nin = lc  = 0;
   do {
-    status = cpp_read_line(&in, STRLEN-1, buf);
-    set_warning_line(wi,cpp_cur_file(&in),cpp_cur_linenr(&in));
-    
-    if (status !=eCPP_OK)
-    {
-      if (status != eCPP_EOF)
-      {
-	sprintf(warn_buf, "%s", cpp_error(&in, status));
-	warning_error(wi,warn_buf);
-	*ninp = nin;
-	return inp;
-      }
-      else
-	ptr=0;
-    }
-    else
-    {
-      ptr=buf;
-    }
-    
-    
+    ptr = fgets2(buf,STRLEN-1,in);
     lc++;
+    set_warning_line(wi,fn,lc);
     if (ptr) {
       /* Strip comment */
       if ((cptr=strchr(buf,COMMENTSIGN)) != NULL)
@@ -182,6 +145,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
 	      {
 		/* add a new item */
 		srenew(inp,++nin);
+                inp[nin-1].inp_count  = 1;
 		inp[nin-1].count      = 0;
 		inp[nin-1].bObsolete  = FALSE;
 		inp[nin-1].bSet       = FALSE;
@@ -214,7 +178,8 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
       }
     }
   } while (ptr);
-  cpp_close_file(&in);
+  
+  fclose(in);
 
   if (debug) {
     fprintf(debug,"Done reading MDP file, there were %d entries in there\n",
@@ -332,7 +297,7 @@ static int get_einp(int *ninp,t_inpfile **inp,const char *name)
     (*inp)[i].name=strdup(name);
     (*inp)[i].bSet=TRUE;
   }
-  (*inp)[i].count = inp_count++;
+  (*inp)[i].count = (*inp)[0].inp_count++;
   (*inp)[i].bSet  = TRUE;
   if (debug) 
     fprintf(debug,"Inp %d = %s\n",(*inp)[i].count,(*inp)[i].name);

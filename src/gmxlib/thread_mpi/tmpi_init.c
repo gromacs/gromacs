@@ -100,9 +100,10 @@ struct tmpi_global *tmpi_global=NULL;
 
 
 /* start N threads with argc, argv (used by tMPI_Init)*/
-static void tMPI_Start_threads(bool main_returns, int N, int *argc, 
-                               char ***argv, void (*start_fn)(void*), 
-                               void *start_arg);
+void tMPI_Start_threads(bool main_returns, int N, int *argc, char ***argv, 
+                        void (*start_fn)(void*), void *start_arg,
+                        int (*start_fn_main)(int, char**));
+
 /* starter function for threads; takes a void pointer to a
       struct tmpi_starter_, which calls main() if tmpi_start_.fn == NULL */
 static void* tMPI_Thread_starter(void *arg);
@@ -362,7 +363,7 @@ static void* tMPI_Thread_starter(void *arg)
     /* start_fn, start_arg, argc and argv were set by the calling function */ 
     if (! th->start_fn )
     {
-        main(th->argc, th->argv);
+        th->start_fn_main(th->argc, th->argv);
     }
     else
     {
@@ -376,7 +377,8 @@ static void* tMPI_Thread_starter(void *arg)
 
 
 void tMPI_Start_threads(bool main_returns, int N, int *argc, char ***argv, 
-                        void (*start_fn)(void*), void *start_arg)
+                        void (*start_fn)(void*), void *start_arg,
+                        int (*start_fn_main)(int, char**))
 {
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Start_threads(%d, %p, %p, %p, %p)", N, argc,
@@ -429,6 +431,7 @@ void tMPI_Start_threads(bool main_returns, int N, int *argc, char ***argv,
                 threads[i].argv=NULL;
             }
             threads[i].start_fn=start_fn;
+            threads[i].start_fn_main=start_fn_main;
             threads[i].start_arg=start_arg;
         }
         for(i=1;i<N;i++) /* zero is the main thread */
@@ -450,10 +453,10 @@ void tMPI_Start_threads(bool main_returns, int N, int *argc, char ***argv,
 }
 
 
-int tMPI_Init(int *argc, char ***argv)
+int tMPI_Init(int *argc, char ***argv, int (*start_function)(int, char**))
 {
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Init(%p, %p)", argc, argv);
+    tMPI_Trace_print("tMPI_Init(%p, %p, %p)", argc, argv, start_function);
 #endif
 
 
@@ -461,7 +464,7 @@ int tMPI_Init(int *argc, char ***argv)
     {
         int N=0;
         tMPI_Get_N(argc, argv, "-nt", &N);
-        tMPI_Start_threads(FALSE, N, argc, argv, NULL, NULL);
+        tMPI_Start_threads(FALSE, N, argc, argv, NULL, NULL, start_function);
     }
     else
     {
@@ -486,7 +489,8 @@ int tMPI_Init_fn(int main_thread_returns, int N,
 
     if (TMPI_COMM_WORLD==0 && N>=1) /* we're the main process */
     {
-        tMPI_Start_threads(main_thread_returns, N, 0, 0, start_function, arg);
+        tMPI_Start_threads(main_thread_returns, N, 0, 0, start_function, arg, 
+                           NULL);
     }
     return TMPI_SUCCESS;
 }

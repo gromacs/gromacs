@@ -14,66 +14,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-
-########################################################################
-# User input options                                                   #
-########################################################################
-option(GMX_DOUBLE "Use double precision" OFF)
-option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" ON)
-option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
-option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
-option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library" OFF)
-set(GMX_ACCELERATION "none" 
-    CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec")
-
-set(GMX_FFT_LIBRARY "fftw3" 
-    CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
-option(GMX_DISABLE_FFTW_MEASURE 
-       "Do not optimize FFTW setups (not needed with SSE)" OFF)
-set(GMX_QMMM_PROGRAM "none" 
-    CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
-option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" OFF)
-option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
-option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
-mark_as_advanced(GMX_MPI_IN_PLACE)
-
 enable_language(C)
-
-option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
-option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
-option(USE_VERSION_H "Generate development version string/information" ON)
-option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
-
-set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
-
-
-#######################################################################
-# Check for options incompatible with OpenMM build                    #
-#######################################################################
-if(GMX_OPENMM)
-    cmake_minimum_required(VERSION 2.6.4)
-    # we'll use the built-in fft to avoid unnecessary dependencies
-    set (GMX_FFT_LIBRARY "fftpack")
-    if(GMX_MPI)
-        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
-    endif(GMX_MPI)
-    if(GMX_THREADS)
-        message(STATUS "Threads not compatible with OpenMM build, disabled")
-        set(GMX_THREADS OFF)
-    endif(GMX_THREADS)
-    if(GMX_SOFTWARE_INVSQRT)
-        set(GMX_SOFTWARE_INVSQRT OFF)
-    endif(GMX_SOFTWARE_INVSQRT)
-    if(NOT GMX_ACCELERATION MATCHES "none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
-        message(WARNING "The OpenMM build does not support other acceleration modes!")
-        set(GMX_ACCELERATION "none")
-    endif()
-    if(GMX_FAHCORE)
-        message(FATAL_ERROR "The OpenMM build does not support FAH build!")
-    endif(GMX_FAHCORE)
-endif(GMX_OPENMM)
 
 
 ########################################################################
@@ -87,6 +28,58 @@ IF(CMAKE_GENERATOR MATCHES "Visual Studio")
 ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
 
 set(GMX_EXTRA_LIBRARIES)
+
+######################################################################
+# compiler tests
+# these need ot be done early (before further tests).
+#####################################################################
+
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+# --- REMOVED as bugzilla 431 turned out to be a bug in GB
+# and there is no confirmed case in which gcc causes a crash 
+# check for buggy GCC 4.1.x 
+# include(gmxCheckGCCVersion)
+
+include(gmxCFlags)
+gmx_c_flags()
+
+########################################################################
+# User input options                                                   #
+########################################################################
+option(GMX_DOUBLE "Use double precision" OFF)
+option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
+option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS)" ON)
+option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
+option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
+option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library" OFF)
+set(GMX_ACCELERATION "auto" 
+    CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec")
+
+set(GMX_FFT_LIBRARY "fftw3" 
+    CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
+option(GMX_DISABLE_FFTW_MEASURE 
+       "Do not optimize FFTW setups (not needed with SSE)" OFF)
+set(GMX_QMMM_PROGRAM "none" 
+    CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
+option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" OFF)
+option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
+option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
+mark_as_advanced(GMX_MPI_IN_PLACE)
+
+
+option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
+option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
+option(USE_VERSION_H "Generate development version string/information" ON)
+# --- REMOVED as bugzilla 431 turned out to be a bug in GB
+# and there is no confirmed case in which gcc causes a crash 
+# option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
+
+set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
+
+
 
 ########################################################################
 #Process MPI settings
@@ -120,6 +113,35 @@ if(GMX_MPI)
     endif(GMX_CRAY_XT3)
     set(GMX_LIB_MPI 1)
 endif(GMX_MPI)
+
+
+#######################################################################
+# Check for options incompatible with OpenMM build                    #
+#######################################################################
+if(GMX_OPENMM)
+    cmake_minimum_required(VERSION 2.6.4)
+    # we'll use the built-in fft to avoid unnecessary dependencies
+    set (GMX_FFT_LIBRARY "fftpack")
+    if(GMX_MPI)
+        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
+    endif(GMX_MPI)
+    if(GMX_THREADS)
+        message(STATUS "Threads not compatible with OpenMM build, disabled")
+        set(GMX_THREADS OFF)
+    endif(GMX_THREADS)
+    if(GMX_SOFTWARE_INVSQRT)
+        set(GMX_SOFTWARE_INVSQRT OFF)
+    endif(GMX_SOFTWARE_INVSQRT)
+    if(NOT GMX_ACCELERATION MATCHES "auto|none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
+        message(WARNING "The OpenMM build does not support other acceleration modes!")
+        set(GMX_ACCELERATION "none")
+    endif()
+    if(GMX_FAHCORE)
+        message(FATAL_ERROR "The OpenMM build does not support FAH build!")
+    endif(GMX_FAHCORE)
+endif(GMX_OPENMM)
+
+
 
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
@@ -230,11 +252,21 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 
 find_package(LibXml2)
+set(PKG_XML "")
 if(LIBXML2_FOUND)
     include_directories(${LIBXML2_INCLUDE_DIR})
-    list(APPEND GMX_EXTRA_LIBRARIES ${LIBXML2_LIBRARIES})
+    set(PKG_XML libxml-2.0)
+    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
     set(HAVE_LIBXML2 1)
 endif(LIBXML2_FOUND)
+
+find_package(gsl)
+set(PKG_GSL "")
+if(GSL_FOUND)
+    include_directories(${GSL_INCLUDE_DIR})
+    set(PKG_GSL gsl)
+    set(HAVE_LIBGSL 1)
+endif(GSL_FOUND)
 
 find_package(X11)
 # X11 includes/libraries are only set in the ngmx subdirectory!
@@ -254,7 +286,7 @@ endif(GMX_THREADS)
 
 if(GMX_OPENMM)
     set(CUDA_BUILD_EMULATION OFF)
-    find_package(CUDA 2.3 REQUIRED)
+    find_package(CUDA 3.1 REQUIRED)
     add_definitions(-DGMX_OPENMM)
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
         set(CUDA_VERBOSE_BUILD ON)
@@ -296,15 +328,6 @@ endif (GMX_DLOPEN)
 # Our own GROMACS tests
 ########################################################################
 
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-# check for buggy GCC 4.1.x 
-include(gmxCheckGCCVersion)
-
-include(gmxCFlags)
-gmx_c_flags()
-
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_BINARY_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -326,6 +349,9 @@ gmx_test_retsigtype(RETSIGTYPE)
 include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)
 
+include(gmxTestRestrict)
+gmx_test_inline(RESTRICT_KEYWORD)
+
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
@@ -333,10 +359,10 @@ include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 
-# reasonable defaults for fast binaries.
-if (NOT DEFINED GMX_SSE_SET)
+# turn on SSE if supported with reasonable defaults.
+if (${GMX_ACCELERATION} STREQUAL "auto")
     if (GMX_X86_GCC_INLINE_ASM)
-        set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec" FORCE)
+        set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
         if (GMX_64_BIT)
             set(GMX_X86_64_ASM ON CACHE BOOL 
                 "Add SSE assembly files for x86_64" FORCE)
@@ -345,8 +371,7 @@ if (NOT DEFINED GMX_SSE_SET)
                 "Add SSE assembly files for IA32" FORCE)
         endif (GMX_64_BIT)
     endif (GMX_X86_GCC_INLINE_ASM)
-    set (GMX_SSE_SET true CACHE INTERNAL "SSE is set" FORCE)
-endif (NOT DEFINED GMX_SSE_SET)
+endif (${GMX_ACCELERATION} STREQUAL "auto")
 
 
 
@@ -463,12 +488,16 @@ endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
 
 # Process FFT library settings - if not OpenMM build 
 string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
+set(PKG_FFT "")
+set(PKG_FFT_LIBS "")
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 #    MESSAGE(STATUS "Using external FFT library - fftw3")
     if(GMX_DOUBLE)
         find_package(FFTW3 REQUIRED)
+        set(PKG_FFT "fftw3")
     else(GMX_DOUBLE)
         find_package(FFTW3F REQUIRED)
+        set(PKG_FFT "fftw3f")
     endif(GMX_DOUBLE)
 
     if(NOT FFTW3_FOUND)
@@ -477,7 +506,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     set(GMX_FFT_FFTW3 1)
     include_directories(${FFTW3_INCLUDE_DIR})
-    list(APPEND	GMX_EXTRA_LIBRARIES ${FFTW3_LIBRARIES})
+    set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
 #    MESSAGE(STATUS "Using external FFT library - fftw2")
@@ -491,7 +520,8 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
       	   MESSAGE(FATAL_ERROR "Cannot find fftw2 (with correct precision). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
     endif(NOT FFTW2_FOUND)
     include_directories(${FFTW2_INCLUDE_DIR})
-    list(APPEND	GMX_EXTRA_LIBRARIES ${FFTW2_LIBRARIES})
+    set(FFT_LIBRARIES ${FFTW2_LIBRARIES})
+    set(PKG_FFT_LIBS ${FFTW2_LIBRARIES})
 
     if("${FFTW2_LIBRARIES}" MATCHES "dfftw")
         set(FFTW2_NAME_DFFTW 1)
@@ -506,7 +536,8 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIR})
-    list(APPEND	GMX_EXTRA_LIBRARIES ${MKL_LIBRARIES})
+    set(FFT_LIBRARIES ${MKL_LIBRARIES})
+    set(PKG_FFT_LIBS ${MKL_LIBRARIES})
 
     set(GMX_FFT_MKL 1)
     set(HAVE_MKL 1)
@@ -564,6 +595,7 @@ set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
 set(BIN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/bin)
 set(DATA_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/share/gromacs)
 set(MAN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/share/man)
+set(INCL_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
 
 set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 
@@ -573,6 +605,20 @@ add_subdirectory(include)
 add_subdirectory(man)
 
 add_subdirectory(src)
+
+#######################
+## uninstall target
+#######################
+    CONFIGURE_FILE(
+                   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+                   IMMEDIATE @ONLY)
+###########################
+ADD_CUSTOM_TARGET(uninstall
+                  "${CMAKE_COMMAND}" -P 
+                  "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
+###########################
+
 
 ########################################################################
 # Tests                                                                #

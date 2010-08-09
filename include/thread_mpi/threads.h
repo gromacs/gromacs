@@ -69,7 +69,7 @@ files.
 
 #include <stdio.h>
 
-#include "thread_mpi/atomic.h"
+#include "atomic.h"
 
 
 #ifdef __cplusplus

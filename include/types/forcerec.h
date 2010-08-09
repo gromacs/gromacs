@@ -39,6 +39,7 @@
 #include "ns.h"
 #include "genborn.h"
 #include "qmmmrec.h"
+#include "idef.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -140,6 +141,8 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
+  bool UseOptimizedKernels;
+
   /* Use special N*N kernels? */
   bool bAllvsAll;
   /* Private work data */
@@ -202,7 +205,8 @@ typedef struct {
   int  efep;
   real sc_alpha;
   int  sc_power;
-  real sc_sigma6;
+  real sc_sigma6_def;
+  real sc_sigma6_min;
   bool bSepDVDL;
 
   /* NS Stuff */
@@ -215,6 +219,7 @@ typedef struct {
   int  solvent_opt;
   int  nWatMol;
   bool bGrid;
+  bool bExcl_IntraCGAll_InterCGNone;
   cginfo_mb_t *cginfo_mb;
   int  *cginfo;
   rvec *cg_cm;
@@ -242,6 +247,8 @@ typedef struct {
   int ncg_force;
   /* The number of atoms participating in do_force_lowlevel */
   int natoms_force;
+  /* The number of atoms participating in force and constraints */
+  int natoms_force_constr;
   /* The allocation size of vectors of size natoms_force */
   int nalloc_force;
 

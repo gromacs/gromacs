@@ -245,6 +245,8 @@ int gmx_rms(int argc, char *argv[])
     char *gn_fit, **gn_rms;
     t_rgb rlo, rhi;
     output_env_t oenv;
+    gmx_rmpbc_t  gpbc=NULL;
+
     t_filenm fnm[] =
         {
             { efTPS, NULL, NULL, ffREAD },
@@ -429,8 +431,10 @@ int gmx_rms(int argc, char *argv[])
         }
     }
     /* Prepare reference frame */
-    if (bPBC)
-        rm_pbc(&(top.idef),ePBC,top.atoms.nr,box,xp,xp);
+    if (bPBC) {
+      gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,box);
+      gmx_rmpbc(gpbc,box,xp,xp);
+    }
     if (bReset)
         reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
     if (bMirror) {
@@ -529,7 +533,7 @@ int gmx_rms(int argc, char *argv[])
     teller = 0;
     do {
         if (bPBC) 
-            rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+	  gmx_rmpbc(gpbc,box,x,x);
 
         if (bReset)
             reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
@@ -611,7 +615,7 @@ int gmx_rms(int argc, char *argv[])
         teller2 = 0;
         do {
             if (bPBC) 
-                rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+	      gmx_rmpbc(gpbc,box,x,x);
 
             if (bReset)
                 reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
@@ -649,6 +653,7 @@ int gmx_rms(int argc, char *argv[])
         tel_mat2=tel_mat;
         freq2=freq;
     }
+    gmx_rmpbc_done(gpbc);
 
     if (bMat || bBond) {
         /* calculate RMS matrix */
@@ -868,7 +873,7 @@ int gmx_rms(int argc, char *argv[])
                 (nrms==1)?"":"of "    , gn_rms[0], fitgraphlabel[efit],
                     bFit     ?" to ":""   , bFit?gn_fit:"");
     if (nrms != 1)
-        xvgr_legend(fp,nrms,gn_rms,oenv);
+        xvgr_legend(fp,nrms,(const char**)gn_rms,oenv);
     for(i=0; (i<teller); i++) {
         if ( bSplit && i>0 && 
             abs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv))<1e-5 ) 
@@ -899,7 +904,7 @@ int gmx_rms(int argc, char *argv[])
         else {
             if (output_env_get_print_xvgr_codes(oenv))
                 fprintf(fp,"@ subtitle \"after lsq fit to mirror %s\"\n",gn_fit);
-            xvgr_legend(fp,nrms,gn_rms,oenv);
+            xvgr_legend(fp,nrms,(const char**)gn_rms,oenv);
         }
         for(i=0; (i<teller); i++) {
             if ( bSplit && i>0 && abs(time[i])<1e-5 ) 

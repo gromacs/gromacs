@@ -332,7 +332,7 @@ void visualize_images(const char *fn, int ePBC, matrix box)
         atoms.atom[i].resind = i;
         atoms.resinfo[i].name = &ala;
         atoms.resinfo[i].nr = i + 1;
-        atoms.resinfo[i].chain = 'A' + i / NCUCVERT;
+        atoms.resinfo[i].chainid = 'A' + i / NCUCVERT;
     }
     calc_triclinic_images(box, img + 1);
 
@@ -1043,7 +1043,7 @@ int gmx_editconf(int argc, char *argv[])
         else {
             if (outftp == efPDB) {
                 out=ffopen(outfile,"w");
-                write_pdbfile_indexed(out,title,&atoms,x,ePBC,box,' ',1,isize,index,conect);
+                write_pdbfile_indexed(out,title,&atoms,x,ePBC,box,' ',1,isize,index,conect,TRUE);
                 ffclose(out);
             }
             else
@@ -1075,9 +1075,9 @@ int gmx_editconf(int argc, char *argv[])
             }
             if (opt2parg_bSet("-label",NPA,pa)) {
                 for(i=0; (i<atoms.nr); i++) 
-                    atoms.resinfo[atoms.atom[i].resind].chain=label[0];
+                    atoms.resinfo[atoms.atom[i].resind].chainid=label[0];
             }
-            write_pdbfile(out,title,&atoms,x,ePBC,box,0,-1,conect);
+            write_pdbfile(out,title,&atoms,x,ePBC,box,' ',-1,conect,TRUE);
             if (bLegend)
                 pdb_legend(out,atoms.nr,atoms.nres,&atoms,x);
             if (visbox[0] > 0)

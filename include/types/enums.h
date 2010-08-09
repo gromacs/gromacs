@@ -58,7 +58,7 @@ enum {
 /* trotter decomposition extended variable parts */
 enum {
   etrtNONE, etrtNHC, etrtBAROV, etrtBARONHC, etrtNHC2, etrtBAROV2, etrtBARONHC2, 
-  etrtVELOCITY, etrtPOSITION, etrtSKIPALL, etrtNR
+  etrtVELOCITY1, etrtVELOCITY2, etrtPOSITION, etrtSKIPALL, etrtNR
 };
 
 enum {
@@ -198,7 +198,7 @@ enum {
 
 /* Wall types */
 enum {
-  ewt93, ewt104, ewtTABLE, ewtNR
+  ewt93, ewt104, ewtTABLE, ewt126, ewtNR
 };
 
 /* Pull stuff */

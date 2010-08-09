@@ -41,13 +41,13 @@
 #endif
 
 #include <stdio.h>
+#include <time.h>
 #include "typedefs.h"
 #include "network.h"
 #include "tgroup.h"
 #include "filenm.h"
 #include "mshift.h"
 #include "force.h"
-#include "time.h"
 #include "edsam.h"
 #include "mdebin.h"
 #include "vcm.h"
@@ -319,12 +319,12 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
                                t_inputrec *ir,gmx_mtop_t *mtop);
 
 /* Allocate and initialize node-local state entries. */
-void set_state_entries(t_state *state,t_inputrec *ir,int nnodes);
+void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes);
 
 /* Broadcast the data for a simulation, and allocate node-specific settings
    such as rng generators. */
 extern void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
-                          gmx_mtop_t *mtop, t_state *state);
+                          gmx_mtop_t *mtop);
 
 
 extern void do_constrain_first(FILE *log,gmx_constr_t constr,

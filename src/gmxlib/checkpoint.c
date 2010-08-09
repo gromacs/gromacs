@@ -65,10 +65,6 @@
  */
 static const int cpt_version = 12;
 
-enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
-
-const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
-
 const char *est_names[estNR]=
 {
     "FE-lambda",
@@ -90,13 +86,18 @@ const char *eeks_names[eeksNR]=
 
 enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
        eenhENERGY_SUM_SIM, eenhENERGY_NSUM_SIM,
-       eenhENERGY_NSTEPS, eenhENERGY_NSTEPS_SIM, eenhNR };
+       eenhENERGY_NSTEPS, eenhENERGY_NSTEPS_SIM, 
+       eenhENERGY_DELTA_H_NN, eenhENERGY_DELTA_H_N, 
+       eenhENERGY_DELTA_H_LIST, eenhENERGY_DELTA_H_STARTTIME, 
+       eenhNR };
 
 const char *eenh_names[eenhNR]=
 {
     "energy_n", "energy_aver", "energy_sum", "energy_nsum",
     "energy_sum_sim", "energy_nsum_sim",
-    "energy_nsteps", "energy_nsteps_sim" 
+    "energy_nsteps", "energy_nsteps_sim", 
+    "energy_delta_h_nn", "energy_delta_h_n", 
+    "energy_delta_h_list", "energy_delta_h_starttime"
 };
 
 
@@ -260,9 +261,9 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
 {
     bool_t res=0;
 #ifndef GMX_DOUBLE
-    int  dtc=ecpdtFLOAT;
+    int  dtc=xdr_datatype_float; 
 #else
-    int  dtc=ecpdtDOUBLE;
+    int  dtc=xdr_datatype_double;
 #endif
     real *vp,*va=NULL;
     float  *vf;
@@ -288,7 +289,8 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
     if (dt != dtc)
     {
         fprintf(stderr,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                st_names(cptp,ecpt),ecpdt_names[dtc],ecpdt_names[dt]);
+                st_names(cptp,ecpt),xdr_datatype_names[dtc],
+                xdr_datatype_names[dt]);
     }
     if (list || !(sflags & (1<<ecpt)))
     {
@@ -303,9 +305,9 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
         }
         vp = *v;
     }
-    if (dt == ecpdtFLOAT)
+    if (dt == xdr_datatype_float)
     {
-        if (dtc == ecpdtFLOAT)
+        if (dtc == xdr_datatype_float)
         {
             vf = (float *)vp;
         }
@@ -319,7 +321,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
         {
             return -1;
         }
-        if (dtc != ecpdtFLOAT)
+        if (dtc != xdr_datatype_float)
         {
             for(i=0; i<nf; i++)
             {
@@ -330,7 +332,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
     }
     else
     {
-        if (dtc == ecpdtDOUBLE)
+        if (dtc == xdr_datatype_double)
         {
             vd = (double *)vp;
         }
@@ -344,7 +346,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
         {
             return -1;
         }
-        if (dtc != ecpdtDOUBLE)
+        if (dtc != xdr_datatype_double)
         {
             for(i=0; i<nf; i++)
             {
@@ -394,7 +396,7 @@ static int do_cpte_ints(XDR *xd,int cptp,int ecpt,int sflags,
                         int n,int **v,FILE *list)
 {
     bool_t res=0;
-    int  dtc=ecpdtINT;
+    int  dtc=xdr_datatype_int;
     int *vp,*va=NULL;
     int  nf,dt,i;
     
@@ -417,7 +419,8 @@ static int do_cpte_ints(XDR *xd,int cptp,int ecpt,int sflags,
     if (dt != dtc)
     {
         gmx_fatal(FARGS,"Type mismatch for state entry %s, code type is %s, file type is %s\n",
-                  st_names(cptp,ecpt),ecpdt_names[dtc],ecpdt_names[dt]);
+                  st_names(cptp,ecpt),xdr_datatype_names[dtc],
+                  xdr_datatype_names[dt]);
     }
     if (list || !(sflags & (1<<ecpt)) || v == NULL)
     {
@@ -460,7 +463,7 @@ static int do_cpte_doubles(XDR *xd,int cptp,int ecpt,int sflags,
                            int n,double **v,FILE *list)
 {
     bool_t res=0;
-    int  dtc=ecpdtDOUBLE;
+    int  dtc=xdr_datatype_double;
     double *vp,*va=NULL;
     int  nf,dt,i;
     
@@ -483,7 +486,8 @@ static int do_cpte_doubles(XDR *xd,int cptp,int ecpt,int sflags,
     if (dt != dtc)
     {
         gmx_fatal(FARGS,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                  st_names(cptp,ecpt),ecpdt_names[dtc],ecpdt_names[dt]);
+                  st_names(cptp,ecpt),xdr_datatype_names[dtc],
+                  xdr_datatype_names[dt]);
     }
     if (list || !(sflags & (1<<ecpt)))
     {
@@ -864,11 +868,13 @@ static int do_cpt_ekinstate(XDR *xd,bool bRead,
     return ret;
 }
 
+
 static int do_cpt_enerhist(XDR *xd,bool bRead,
                            int fflags,energyhistory_t *enerhist,
                            FILE *list)
 {
     int  i;
+    int  j;
     int  ret;
 
     ret = 0;
@@ -879,6 +885,14 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
         enerhist->nsum       = 0;
         enerhist->nsteps_sim = 0;
         enerhist->nsum_sim   = 0;
+        enerhist->dht        = NULL;
+
+        if (fflags & (1<< eenhENERGY_DELTA_H_NN) )
+        {
+            snew(enerhist->dht,1);
+            enerhist->dht->ndh = NULL;
+            enerhist->dht->dh = NULL;
+        }
     }
 
     for(i=0; (i<eenhNR && ret == 0); i++)
@@ -887,17 +901,38 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
         {
             switch (i)
             {
-			case eenhENERGY_N:     ret = do_cpte_int(xd,2,i,fflags,&enerhist->nener,list); break;
-			case eenhENERGY_AVER:  ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_ave,list); break;
- 			case eenhENERGY_SUM:   ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum,list); break;
-            case eenhENERGY_NSUM:  do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum,list); break;
-            case eenhENERGY_SUM_SIM: ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum_sim,list); break;
-            case eenhENERGY_NSUM_SIM:   do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum_sim,list); break;
-            case eenhENERGY_NSTEPS:     do_cpt_step_err(xd,eenh_names[i],&enerhist->nsteps,list); break;
-            case eenhENERGY_NSTEPS_SIM: do_cpt_step_err(xd,eenh_names[i],&enerhist->nsteps_sim,list); break;
-            default:
-                gmx_fatal(FARGS,"Unknown energy history entry %d\n"
-                          "You are probably reading a new checkpoint file with old code",i);
+                case eenhENERGY_N:     ret = do_cpte_int(xd,2,i,fflags,&enerhist->nener,list); break;
+                case eenhENERGY_AVER:  ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_ave,list); break;
+                case eenhENERGY_SUM:   ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum,list); break;
+                case eenhENERGY_NSUM:  do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum,list); break;
+                case eenhENERGY_SUM_SIM: ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum_sim,list); break;
+                case eenhENERGY_NSUM_SIM:   do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum_sim,list); break;
+                case eenhENERGY_NSTEPS:     do_cpt_step_err(xd,eenh_names[i],&enerhist->nsteps,list); break;
+                case eenhENERGY_NSTEPS_SIM: do_cpt_step_err(xd,eenh_names[i],&enerhist->nsteps_sim,list); break;
+                case eenhENERGY_DELTA_H_NN: do_cpt_int_err(xd,eenh_names[i], &(enerhist->dht->nndh), list); 
+                    if (bRead) /* now allocate memory for it */
+                    {
+                        snew(enerhist->dht->dh, enerhist->dht->nndh);
+                        snew(enerhist->dht->ndh, enerhist->dht->nndh);
+                        for(j=0;j<enerhist->dht->nndh;j++)
+                        {
+                            enerhist->dht->ndh[j] = 0;
+                            enerhist->dht->dh[j] = NULL;
+                        }
+                    }
+                break;
+                case eenhENERGY_DELTA_H_N: ret=do_cpte_ints(xd, 2, i, fflags, enerhist->dht->nndh, &(enerhist->dht->ndh), list); break;
+                case eenhENERGY_DELTA_H_LIST: 
+                    for(j=0;j<enerhist->dht->nndh;j++)
+                    {
+                        ret=do_cpte_reals(xd, 2, i, fflags, enerhist->dht->ndh[j], &(enerhist->dht->dh[j]), list); 
+                    }
+                    break;
+                case eenhENERGY_DELTA_H_STARTTIME: 
+                    ret=do_cpte_real(xd, 2, i, fflags, &(enerhist->dht->starttime), list); break;
+                default:
+                    gmx_fatal(FARGS,"Unknown energy history entry %d\n"
+                              "You are probably reading a new checkpoint file with old code",i);
             }
         }
     }
@@ -936,8 +971,8 @@ static int do_cpt_files(XDR *xd, bool bRead,
                         FILE *list, int file_version)
 {
     int    i,j;
-    off_t  offset;
-    off_t  mask = 0xFFFFFFFFL;
+    gmx_off_t  offset;
+    gmx_off_t  mask = 0xFFFFFFFFL;
     int    offset_high,offset_low;
     char   *buf;
     gmx_file_position_t *outputfiles;
@@ -975,7 +1010,7 @@ static int do_cpt_files(XDR *xd, bool bRead,
                 return -1;
             }
 #if (SIZEOF_OFF_T > 4)
-            outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low & mask );
+            outputfiles[i].offset = ( ((gmx_off_t) offset_high) << 32 ) | ( (gmx_off_t) offset_low & mask );
 #else
             outputfiles[i].offset = offset_low;
 #endif
@@ -1043,14 +1078,16 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     char *buser;
     char *bmach;
     char *fprog;
-    char *ftime;
     char *fntemp; /* the temporary checkpoint file name */
     time_t now;
+    char timebuf[STRLEN];
     int  nppnodes,npmenodes,flag_64bit;
     char buf[1024],suffix[5+STEPSTRSIZE],sbuf[STEPSTRSIZE];
     gmx_file_position_t *outputfiles;
     int  noutputfiles;
+    char *ftime;
     int  flags_eks,flags_enh,i;
+    t_fileio *ret;
 		
     if (PAR(cr))
     {
@@ -1079,16 +1116,13 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     strcat(fntemp,suffix);
     strcat(fntemp,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
    
-    now = time(NULL);
-    ftime = strdup(ctime(&now));
-    ftime[strlen(ftime)-1] = '\0';
+    time(&now);
+    gmx_ctime_r(&now,timebuf,STRLEN);
 
-    /* No need to pollute stderr every time we write a checkpoint file */
-    /* fprintf(stderr,"\nWriting checkpoint, step %d at %s\n",step,ftime); */
     if (fplog)
     { 
         fprintf(fplog,"Writing checkpoint, step %s at %s\n\n",
-                gmx_step_str(step,buf),ftime);
+                gmx_step_str(step,buf),timebuf);
     }
     
     /* Get offsets for open files */
@@ -1122,6 +1156,13 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
             flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSTEPS_SIM) |
                           (1<<eenhENERGY_NSUM_SIM));
         }
+        if (state->enerhist.dht)
+        {
+            flags_enh |= ( (1<< eenhENERGY_DELTA_H_NN) |
+                           (1<< eenhENERGY_DELTA_H_N) |
+                           (1<< eenhENERGY_DELTA_H_LIST) | 
+                           (1<< eenhENERGY_DELTA_H_STARTTIME) );
+        }
     }
 
     
@@ -1131,6 +1172,8 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
     bmach   = strdup(BUILD_MACHINE);
     fprog   = strdup(Program());
 
+    ftime   = &(timebuf[0]);
+    
     do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
@@ -1158,14 +1201,32 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
 
     /* we really, REALLY, want the checkpoint file and all files it depends 
        on to be physically written out do disk: */
-    gmx_fio_all_output_fsync();
+    ret=gmx_fio_all_output_fsync();
+    if (ret)
+    {
+        char buf[STRLEN];
+        sprintf(buf,
+                "Cannot fsync '%s'; maybe you are out of disk space or quota?",
+                gmx_fio_getname(ret));
+
+        if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV)==NULL)
+        {
+            gmx_file(buf);
+        }
+        else
+        {
+            gmx_warning(buf);
+        }
+    }
 
     if( gmx_fio_close(fp) != 0)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
     }
 
-    if (!bNumberAndKeep)
+    /* we don't move the checkpoint if the user specified they didn't want it,
+       or if the fsyncs failed */
+    if (!bNumberAndKeep && !ret)
     {
         if (gmx_fexist(fn))
         {
@@ -1194,7 +1255,6 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
         }
     }
 
-    sfree(ftime);
     sfree(outputfiles);
     sfree(fntemp);
 
@@ -1404,7 +1464,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 			gmx_fatal(FARGS,
 					  "Output file appending requested, but input/checkpoint integrators do not match.\n"
 					  "Stopping the run to prevent you from ruining all your data...\n"
-					  "If you _really_ know what you are doing, try without the -append option.\n");
+					  "If you _really_ know what you are doing, try with the -noappend option.\n");
 		}
         if (fplog)
         {
@@ -1464,7 +1524,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 				gmx_fatal(FARGS,
 						  "Output file appending requested, but input and checkpoint states are not identical.\n"
 						  "Stopping the run to prevent you from ruining all your data...\n"
-						  "You can try without the -append option, and get more info in the log file.\n");
+						  "You can try with the -noappend option, and get more info in the log file.\n");
 			}
 			
             fprintf(stderr,
@@ -1554,12 +1614,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     sfree(buser);
     sfree(bmach);
 	
-	/* If the user wants to append to output files (danger), we use the file pointer
-	 * positions of the output files stored in the checkpoint file and truncate the
-	 * files such that any frames written after the checkpoint time are removed.
-	 *
-	 * You will get REALLY fun problems if you use the -append option by provide
-	 * mdrun with other input files (in-frame truncation in the wrong places). Suit yourself!
+	/* If the user wants to append to output files,
+     * we use the file pointer positions of the output files stored
+     * in the checkpoint file and truncate the files such that any frames
+     * written after the checkpoint time are removed.
+     * All files are md5sum checked such that we can be sure that
+     * we do not truncate other (maybe imprortant) files.
 	 */
     if (bAppendOutputFiles)
     {
@@ -1573,11 +1633,11 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         }
         for(i=0;i<nfiles;i++)
         {
-            if (outputfiles[i].filename,outputfiles[i].offset < 0)
+            if (outputfiles[i].offset < 0)
             {
                 gmx_fatal(FARGS,"The original run wrote a file called '%s' which "
                     "is larger than 2 GB, but mdrun did not support large file"
-                    " offsets. Can not append. Run mdrun without -append",
+                    " offsets. Can not append. Run mdrun with -noappend",
                     outputfiles[i].filename);
             }
 #ifdef GMX_FAHCORE
@@ -1881,10 +1941,28 @@ void list_checkpoint(const char *fn,FILE *out)
 }
 
 
+static bool exist_output_file(const char *fnm_cp,int nfile,const t_filenm fnm[])
+{
+    int i;
+
+    /* Check if the output file name stored in the checkpoint file
+     * is one of the output file names of mdrun.
+     */
+    i = 0;
+    while (i < nfile &&
+           !(is_output(&fnm[i]) && strcmp(fnm_cp,fnm[i].fns[0]) == 0))
+    {
+        i++;
+    }
+    
+    return (i < nfile && gmx_fexist(fnm_cp));
+}
+
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                                      gmx_large_int_t *cpt_step,t_commrec *cr,
                                      bool bAppendReq,
+                                     int nfile,const t_filenm fnm[],
                                      const char *part_suffix,bool *bAddPart)
 {
     t_fileio *fp;
@@ -1921,7 +1999,7 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                 nexist = 0;
                 for(f=0; f<nfiles; f++)
                 {
-                    if (gmx_fexist(outputfiles[f].filename))
+                    if (exist_output_file(outputfiles[f].filename,nfile,fnm))
                     {
                         nexist++;
                     }
@@ -1932,19 +2010,26 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                 }
                 else if (nexist > 0)
                 {
-                    fprintf(stderr,"Output files present:");
+                    fprintf(stderr,
+                            "Output file appending has been requested,\n"
+                            "but some output files listed in the checkpoint file %s\n"
+                            "are not present or are named differently by the current program:\n",
+                            filename);
+                    fprintf(stderr,"output files present:");
                     for(f=0; f<nfiles; f++)
                     {
-                        if (gmx_fexist(outputfiles[f].filename))
+                        if (exist_output_file(outputfiles[f].filename,
+                                              nfile,fnm))
                         {
                             fprintf(stderr," %s",outputfiles[f].filename);
                         }
                     }
                     fprintf(stderr,"\n");
-                    fprintf(stderr,"Output files not present:");
+                    fprintf(stderr,"output files not present or named differently:");
                     for(f=0; f<nfiles; f++)
                     {
-                        if (!gmx_fexist(outputfiles[f].filename))
+                        if (!exist_output_file(outputfiles[f].filename,
+                                               nfile,fnm))
                         {
                             fprintf(stderr," %s",outputfiles[f].filename);
                         }

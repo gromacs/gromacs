@@ -117,11 +117,14 @@ copied here from fftgrid, because:
 Only used for non-fftw case
 */
 static void *
-gmx_alloc_aligned(size_t size)
+gmx_calloc_aligned(size_t size)
 {
     void *p0,*p;
     
-    p0 = malloc(size+32);
+    /*We initialize by zero for Valgrind
+      For non-divisible case we communicate more than the data.
+      If we don't initialize the data we communicate uninitialized data*/
+    p0 = calloc(size+32,1);  
     
     if(p0 == NULL)
     {
@@ -361,17 +364,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     lsize = fft5d_fmax(N[0]*M[0]*K[0]*nP[0],fft5d_fmax(N[1]*M[1]*K[1]*nP[1],C[2]*M[2]*K[2])); 
     /* int lsize = fmax(C[0]*M[0]*K[0],fmax(C[1]*M[1]*K[1],C[2]*M[2]*K[2])); */
     if (!(flags&FFT5D_NOMALLOC)) { 
-        #ifdef GMX_FFT_FFTW3 
-        FFTW_LOCK;
-        /* local in    */
-        lin = (t_complex*)FFTW(malloc)(sizeof(t_complex) * lsize); 
-        /* local output */
-        lout = (t_complex*)FFTW(malloc)(sizeof(t_complex) * lsize); 
-        FFTW_UNLOCK;
-        #else 
-        lin = (t_complex*)gmx_alloc_aligned(sizeof(t_complex) * lsize);   
-        lout = (t_complex*)gmx_alloc_aligned(sizeof(t_complex) * lsize); 
-        #endif
+        lin = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);   
+        lout = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize); 
     } else {
         lin = *rlin;
         lout = *rlout;
@@ -877,14 +871,10 @@ void fft5d_destroy(fft5d_plan plan) {
     for (s=0;s<2;s++)    
         FFTW(destroy_plan)(plan->mpip[s]);
 #endif /* FFT5D_MPI_TRANSPOS */
-    if (!(plan->flags&FFT5D_NOMALLOC)) { 
-        FFTW(free)(plan->lin);
-        FFTW(free)(plan->lout);
-    }
-    FFTW_UNLOCK;
-#else /* GMX_FFT_FFTW3 */
-    /*We can't free lin/lout here - is allocated by gmx_alloc_aligned which can't be freed*/
 #endif /* GMX_FFT_FFTW3 */
+
+    /*We can't free lin/lout here - is allocated by gmx_calloc_aligned which can't be freed*/
+
     
 #ifdef FFT5D_THREADS
     FFTW(cleanup_threads)();

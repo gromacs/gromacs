@@ -1,4 +1,4 @@
-/*   -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * 
  *                This source code is part of
@@ -60,6 +60,7 @@
 #include "pbc.h"
 #include "mtop_util.h"
 #include "chargegroup.h"
+#include "inputrec.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -87,13 +88,6 @@ static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
 
 enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
-
-
-/* Minimum number of time steps required for accurate coupling integration
- * of first and second order thermo- and barostats:
- */
-int nstcmin1 = 10;
-int nstcmin2 = 20;
 
 
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
@@ -131,6 +125,22 @@ static bool ir_NVE(const t_inputrec *ir)
     return ((ir->eI == eiMD || EI_VV(ir->eI)) && ir->etc == etcNO);
 }
 
+static int lcd(int n1,int n2)
+{
+    int d,i;
+    
+    d = 1;
+    for(i=2; (i<=n1 && i<=n2); i++)
+    {
+        if (n1 % i == 0 && n2 % i == 0)
+        {
+            d = i;
+        }
+    }
+    
+  return d;
+}
+
 void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi)
 /* Check internal consistency */
@@ -142,8 +152,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 #define CHECK(b) _low_check(b,err_buf,wi)
     char err_buf[256],warn_buf[STRLEN];
     int  ns_type=0;
-    real dt_coupl=0;
-    int  nstcmin;
+    real dt_pcoupl;
 
   set_warning_line(wi,mdparin,-1);
 
@@ -184,42 +193,45 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     {
         if (ir->nstcalcenergy < 0)
         {
-            if (EI_VV(ir->eI))
+            ir->nstcalcenergy = ir_optimal_nstcalcenergy(ir);
+            if (ir->nstenergy != 0 && ir->nstenergy < ir->nstcalcenergy)
             {
-                /* VV coupling algorithms currently only support 1 */
-                ir->nstcalcenergy = 1;
-            }
-            else
-            {
+                /* nstcalcenergy larger than nstener does not make sense.
+                 * We ideally want nstcalcenergy=nstener.
+                 */
                 if (ir->nstlist > 0)
                 {
-                    ir->nstcalcenergy = ir->nstlist;
+                    ir->nstcalcenergy = lcd(ir->nstenergy,ir->nstlist);
                 }
                 else
                 {
-                    ir->nstcalcenergy = 10;
+                    ir->nstcalcenergy = ir->nstenergy;
                 }
             }
         }
-        if (ir->etc != etcNO || ir->epc != epcNO)
+        if (ir->epc != epcNO)
         {
-            if (ir->nstcalcenergy == 0)
-            {
-                gmx_fatal(FARGS,"Can not have nstcalcenergy=0 with global T/P-coupling");
-            }
             if (EI_VV(ir->eI))
             {
-                sprintf(err_buf,"T- and P-coupling with VV integrators currently only supports nstcalcenergy=1");
-                CHECK(ir->nstcalcenergy > 1);
+                /* This should be removed when VV supports nstpcouple */
+                ir->nstpcouple = 1;
+            }
+            if (ir->nstpcouple < 0)
+            {
+                ir->nstpcouple = ir_optimal_nstpcouple(ir);
             }
         }
         if (IR_TWINRANGE(*ir))
         {
             check_nst("nstlist",ir->nstlist,
                       "nstcalcenergy",&ir->nstcalcenergy,wi);
+            if (ir->epc != epcNO)
+            {
+                check_nst("nstlist",ir->nstlist,
+                          "nstpcouple",&ir->nstpcouple,wi); 
+            }
         }
-        dt_coupl = ir->nstcalcenergy*ir->delta_t;
-  
+
         if (ir->nstcalcenergy > 1)
         {
             /* for storing exact averages nstenergy should be
@@ -397,14 +409,15 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->epc != epcNO)
     {
+        dt_pcoupl = ir->nstpcouple*ir->delta_t;
+
         sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
         CHECK(ir->tau_p <= 0);
         
-        nstcmin = (ir->epc == epcBERENDSEN ? nstcmin1 : nstcmin2);
-        if (ir->tau_p < nstcmin*dt_coupl)
+        if (ir->tau_p/dt_pcoupl < pcouple_min_integration_steps(ir->epc))
         {
-            sprintf(warn_buf,"For proper integration of the %s barostat, tau_p (%g) should be at least %d times larger than nstcalcenergy*dt (%g)",
-                    EPCOUPLTYPE(ir->epc),ir->tau_p,nstcmin,dt_coupl);
+            sprintf(warn_buf,"For proper integration of the %s barostat, tau_p (%g) should be at least %d times larger than nstpcouple*dt (%g)",
+                    EPCOUPLTYPE(ir->epc),ir->tau_p,pcouple_min_integration_steps(ir->epc),dt_pcoupl);
             warning(wi,warn_buf);
         }	
         
@@ -503,7 +516,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (EEL_FULL(ir->coulombtype)) {
-    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER) {
+    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER ||
+        ir->coulombtype==eelPMEUSERSWITCH) {
       sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
@@ -702,42 +716,51 @@ static void parse_n_double(char *str,int *n,double **r)
 }
 
 static void do_wall_params(t_inputrec *ir,
-			   char *wall_atomtype, char *wall_density,
-			   t_gromppopts *opts)
+                           char *wall_atomtype, char *wall_density,
+                           t_gromppopts *opts)
 {
-  int  nstr,i;
-  char *names[MAXPTR];
-  double dbl;
+    int  nstr,i;
+    char *names[MAXPTR];
+    double dbl;
 
-  opts->wall_atomtype[0] = NULL;
-  opts->wall_atomtype[1] = NULL;
+    opts->wall_atomtype[0] = NULL;
+    opts->wall_atomtype[1] = NULL;
 
-  ir->wall_atomtype[0] = -1;
-  ir->wall_atomtype[1] = -1;
-  ir->wall_density[0] = 0;
-  ir->wall_density[1] = 0;
+    ir->wall_atomtype[0] = -1;
+    ir->wall_atomtype[1] = -1;
+    ir->wall_density[0] = 0;
+    ir->wall_density[1] = 0;
   
-  if (ir->nwall > 0) {
-    nstr = str_nelem(wall_atomtype,MAXPTR,names);
-    if (nstr != ir->nwall)
-      gmx_fatal(FARGS,"Expected %d elements for wall_atomtype, found %d",
-		ir->nwall,nstr);
-    for(i=0; i<ir->nwall; i++)
-      opts->wall_atomtype[i] = strdup(names[i]);
+    if (ir->nwall > 0)
+    {
+        nstr = str_nelem(wall_atomtype,MAXPTR,names);
+        if (nstr != ir->nwall)
+        {
+            gmx_fatal(FARGS,"Expected %d elements for wall_atomtype, found %d",
+                      ir->nwall,nstr);
+        }
+        for(i=0; i<ir->nwall; i++)
+        {
+            opts->wall_atomtype[i] = strdup(names[i]);
+        }
     
-    if (ir->wall_type != ewtTABLE) {
-      nstr = str_nelem(wall_density,MAXPTR,names);
-      if (nstr != ir->nwall)
-	gmx_fatal(FARGS,"Expected %d elements for wall_density, found %d",
-		  ir->nwall,nstr);
-      for(i=0; i<ir->nwall; i++) {
-	sscanf(names[i],"%lf",&dbl);
-	if (dbl <= 0)
-	  gmx_fatal(FARGS,"wall_density[%d] = %f\n",i,dbl);
-	ir->wall_density[i] = dbl;
-      }
+        if (ir->wall_type == ewt93 || ir->wall_type == ewt104) {
+            nstr = str_nelem(wall_density,MAXPTR,names);
+            if (nstr != ir->nwall)
+            {
+                gmx_fatal(FARGS,"Expected %d elements for wall_density, found %d",ir->nwall,nstr);
+            }
+            for(i=0; i<ir->nwall; i++)
+            {
+                sscanf(names[i],"%lf",&dbl);
+                if (dbl <= 0)
+                {
+                    gmx_fatal(FARGS,"wall_density[%d] = %f\n",i,dbl);
+                }
+                ir->wall_density[i] = dbl;
+            }
+        }
     }
-  }
 }
 
 static void add_wall_energrps(gmx_groups_t *groups,int nwall,t_symtab *symtab)
@@ -800,8 +823,6 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Part index is updated automatically on checkpointing (keeps files separate)");
   ITYPE ("simulation_part", ir->simulation_part, 1);
   CTYPE ("mode for center of mass motion removal");
-  CTYPE ("energy calculation and T/P-coupling frequency");
-  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
   EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
   CTYPE ("number of steps for center of mass motion removal");
   ITYPE ("nstcomm",	ir->nstcomm,	10);
@@ -838,6 +859,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   ir->nstcheckpoint = 1000;
   CTYPE ("Output frequency for energies to log file and energy file");
   ITYPE ("nstlog",	ir->nstlog,	100);
+  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
   ITYPE ("nstenergy",   ir->nstenergy,  100);
   CTYPE ("Output frequency and precision for xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
@@ -928,6 +950,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
   EETYPE("tcoupl",	ir->etc,        etcoupl_names);
+  ITYPE ("nsttcouple", ir->nsttcouple,  -1);
   ITYPE("nh-chain-length",     ir->opts.nhchainlength, NHCHAINLENGTH);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
@@ -937,6 +960,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Pressure coupling");
   EETYPE("Pcoupl",	ir->epc,        epcoupl_names);
   EETYPE("Pcoupltype",	ir->epct,       epcoupltype_names);
+  ITYPE ("nstpcouple", ir->nstpcouple,  -1);
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
   RTYPE ("tau-p",	ir->tau_p,	1.0);
   STYPE ("compressibility",	dumstr[0],	NULL);
@@ -1074,6 +1098,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("sc-power",ir->sc_power,0);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
   ITYPE ("nstdhdl",     ir->nstdhdl, 10);
+  ITYPE ("dh_table_size", ir->dh_table_size, 0);
+  RTYPE ("dh_table_spacing", ir->dh_table_spacing, 0.1);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
   EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
   EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
@@ -1687,6 +1713,7 @@ void do_index(const char* mdparin, const char *ndx,
   t_atoms atoms_all;
   char    warnbuf[STRLEN],**gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
+  real    tau_min;
   int     nstcmin;
   int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
@@ -1754,26 +1781,36 @@ void do_index(const char* mdparin, const char *ndx,
         {
             gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
         }
-        nstcmin = (ir->etc == etcBERENDSEN ? nstcmin1 : nstcmin2);
-        
+
+        tau_min = 1e20;
         for(i=0; (i<nr); i++)
         {
             ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
             if (ir->opts.tau_t[i] < 0)
             {
                 gmx_fatal(FARGS,"tau_t for group %d negative",i);
+            } else if (ir->opts.tau_t[i] > 0) {
+                tau_min = min(tau_min,ir->opts.tau_t[i]);
             }
-            /* We check the relative magnitude of the coupling time tau_t.
-             * V-rescale works correctly, even for tau_t=0.
-             */
-            if ((ir->etc == etcBERENDSEN || ir->etc == etcNOSEHOOVER) &&
-                ir->opts.tau_t[i] != 0 &&
-                ir->opts.tau_t[i] < nstcmin*ir->nstcalcenergy*ir->delta_t)
+        }
+        if (ir->etc != etcNO && EI_VV(ir->eI))
+        {
+            /* This should be removed when VV supports nsttcouple */
+            ir->nsttcouple = 1;
+        }
+        if (ir->etc != etcNO && ir->nsttcouple == -1)
+        {
+            ir->nsttcouple = ir_optimal_nsttcouple(ir);
+        }
+        nstcmin = tcouple_min_integration_steps(ir->etc);
+        if (nstcmin > 1)
+        {
+            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
             {
-                sprintf(warn_buf,"For proper integration of the %s thermostat, tau_t (%g) should be at least %d times larger than nstcalcenergy*dt (%g)",
+                sprintf(warn_buf,"For proper integration of the %s thermostat, tau_t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
                         ETCOUPLTYPE(ir->etc),
-                        ir->opts.tau_t[i],nstcmin,
-                        ir->nstcalcenergy*ir->delta_t);
+                        tau_min,nstcmin,
+                        ir->nsttcouple*ir->delta_t);
                 warning(wi,warn_buf);
             }
         }
@@ -2065,7 +2102,8 @@ void do_index(const char* mdparin, const char *ndx,
 
   bTable = do_egp_flag(ir,groups,"energygrp_table",egptable,EGP_TABLE);
   if (bTable && !(ir->vdwtype == evdwUSER) && 
-      !(ir->coulombtype == eelUSER) &&!(ir->coulombtype == eelPMEUSER))
+      !(ir->coulombtype == eelUSER) && !(ir->coulombtype == eelPMEUSER) &&
+      !(ir->coulombtype == eelPMEUSERSWITCH))
     gmx_fatal(FARGS,"Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
 
   decode_cos(efield_x,&(ir->ex[XX]),FALSE);

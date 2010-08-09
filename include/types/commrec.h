@@ -43,7 +43,7 @@
 #include <mpi.h>
 #else
 #ifdef GMX_THREADS
-#include "tmpi.h"
+#include "../tmpi.h"
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;
@@ -116,7 +116,7 @@ typedef struct {
 typedef struct {
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
-  float *ibuf; /* for ints */
+  int *ibuf; /* for ints */
   int ibuf_alloc;
 
   float *fbuf; /* for floats */
@@ -255,7 +255,7 @@ typedef struct {
   int sim_nodeid,nnodes,npmenodes;
 
   /* thread numbers: */
-  int threadid, nthreads;
+  /* Not used yet: int threadid, nthreads; */
   /* The nodeid in the PP/PME, PP or PME group */
   int nodeid;
   MPI_Comm mpi_comm_mysim;
@@ -284,12 +284,14 @@ typedef struct {
 } t_commrec;
 
 #define MASTERNODE(cr)     ((cr)->nodeid == 0)
-#define MASTERTHREAD(cr)   ((cr)->threadid == 0)
-#define MASTER(cr)         (MASTERNODE(cr) && MASTERTHREAD(cr))
+  /* #define MASTERTHREAD(cr)   ((cr)->threadid == 0) */
+  /* #define MASTER(cr)         (MASTERNODE(cr) && MASTERTHREAD(cr)) */
+#define MASTER(cr)         MASTERNODE(cr)
 #define SIMMASTER(cr)      (MASTER(cr) && ((cr)->duty & DUTY_PP))
 #define NODEPAR(cr)        ((cr)->nnodes > 1)
-#define THREADPAR(cr)      ((cr)->nthreads > 1)
-#define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr))
+  /* #define THREADPAR(cr)      ((cr)->nthreads > 1) */
+  /* #define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr)) */
+#define PAR(cr)            NODEPAR(cr)
 #define RANK(cr,nodeid)    (nodeid)
 #define MASTERRANK(cr)     (0)
 

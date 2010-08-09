@@ -38,8 +38,8 @@
 #ifndef SELECTION_H
 #define SELECTION_H
 
-#include <position.h>
-#include <indexutil.h>
+#include "position.h"
+#include "indexutil.h"
 
 #ifdef __cplusplus
 extern "C"

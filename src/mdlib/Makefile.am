@@ -6,12 +6,14 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 libmd@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la	
 libmd@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la	
-libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
+libmd@LIBSUFFIX@_la_LDFLAGS        = -no-undefined -version-info @SHARED_VERSION_INFO@ $(FFT_LIBS) $(XML_LIBS) $(PTHREAD_LIBS)
 
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 
 pkgconfigdir = ${libdir}/pkgconfig
 pkgconfig_DATA = libmd@LIBSUFFIX@.pc
+
+EXTRA_DIST = libmd.pc.cmakein
 
 libmd@LIBSUFFIX@_la_SOURCES = \
 	calcmu.c	calcvir.c	constr.c	\
@@ -35,7 +37,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	genborn_allvsall_sse2_single.h			\
 	gmx_qhop_parm.c	gmx_qhop_parm.h			\
 	gmx_qhop_xml.c	gmx_qhop_xml.h			\
-	groupcoord.c                                    \
+	groupcoord.c			groupcoord.h    \
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
@@ -49,7 +51,8 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	gmx_wallcycle.c	\
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
-	gmx_fft_mkl.c	qm_orca.c
+	gmx_fft_mkl.c	qm_orca.c	mdebin_bar.c		\
+	mdebin_bar.h
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
@@ -59,21 +62,3 @@ gmx_qhop_db_test_LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#*
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

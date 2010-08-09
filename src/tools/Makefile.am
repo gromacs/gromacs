@@ -9,9 +9,11 @@ lib_LTLIBRARIES = libgmxana@LIBSUFFIX@.la
 pkgconfigdir = ${libdir}/pkgconfig
 pkgconfig_DATA = libgmxana@LIBSUFFIX@.pc
 
+EXTRA_DIST = libgmxana.pc.cmakein
+
 libgmxana@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la	../mdlib/libmd@LIBSUFFIX@.la	
 libgmxana@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la	../mdlib/libmd@LIBSUFFIX@.la	
-libgmxana@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
+libgmxana@LIBSUFFIX@_la_LDFLAGS        = -no-undefined -version-info @SHARED_VERSION_INFO@ @GSL_LIBS@
 
 
 libgmxana@LIBSUFFIX@_la_SOURCES = \

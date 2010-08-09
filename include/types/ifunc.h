@@ -39,6 +39,8 @@
 #ifndef _ifunc_h
 #define _ifunc_h
 
+#include "../typedefs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

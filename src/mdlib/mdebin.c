@@ -38,6 +38,7 @@
 #endif
 
 #include <string.h>
+#include <float.h>
 #include "typedefs.h"
 #include "string2.h"
 #include "mdebin.h"
@@ -54,6 +55,9 @@
 #include "mtop_util.h"
 #include "xvgr.h"
 #include "gmxfio.h"
+
+#include "mdebin_bar.h"
+
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
@@ -80,6 +84,10 @@ static const char *boxvel_nm[] = {
 
 static bool bTricl,bDynBox;
 static int  f_nre=0,epc,etc,nCrmsd;
+
+
+
+
 
 t_mdebin *init_mdebin(ener_file_t fp_ene,
                       const gmx_mtop_t *mtop,
@@ -507,7 +515,26 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
 
     md->print_grpnms=NULL;
-    
+
+    /* check whether we're going to write dh histograms */
+    md->dhc=NULL; 
+    if (ir->dh_table_size!=0)
+    {
+        int i;
+        size_t ndhmax=ir->nstenergy/ir->nstcalcenergy;
+
+        snew(md->dhc, 1);
+
+        mde_delta_h_coll_init(md->dhc, 
+                              ir->opts.ref_t[0], /* temperature */
+                              ir->init_lambda, /* native lambda */
+                              ir->dh_table_size, /* number of bins */
+                              ir->dh_table_spacing, /* dx */
+                              ndhmax,            /* max. buffer size */
+                              ir->n_flambda, /* number of foreign lambdas */
+                              ir->flambda /* foreign lambdas */
+                              );
+    }
     return md;
 }
 
@@ -518,7 +545,8 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  nsets,s;
-    char **setname,buf[STRLEN];
+    char **setname;
+    char buf[STRLEN];
 
     sprintf(label_x,"%s (%s)","Time",unit_time);
     if (ir->n_flambda == 0)
@@ -561,7 +589,7 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
             sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s-1]);
             setname[s] = strdup(buf);
         }
-        xvgr_legend(fp,nsets,setname,oenv);
+        xvgr_legend(fp,nsets,(const char**)setname,oenv);
 
         for(s=0; s<nsets; s++)
         {
@@ -789,7 +817,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     }
     
     ebin_increase_count(md->ebin,bSum);
-    
+   
+    /* BAR + thermodynamic integration values */
     if (fp_dhdl)
     {
         fprintf(fp_dhdl,"%.4f %g",
@@ -802,7 +831,13 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         }
         fprintf(fp_dhdl,"\n");
     }
+
+    /* and the BAR histograms */
+    if (md->dhc)
+    {
+        mde_delta_h_coll_add_dh( md->dhc, enerd->enerpart_lambda, time );
     }
+}
 
 void upd_mdebin_step(t_mdebin *md)
 {
@@ -853,24 +888,35 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
 {
     /*static char **grpnms=NULL;*/
     char        buf[246];
-    int         i,j,n,ni,nj,ndr,nor;
+    int         i,j,n,ni,nj,ndr,nor,b;
+    int         ndisre=0;
+    real        *disre_rm3tav, *disre_rt;
+
+    /* these are for the old-style blocks (1 subblock, only reals), because
+       there can be only one per ID for these */
     int         nr[enxNR];
+    int         id[enxNR];
     real        *block[enxNR];
+
+    /* temporary arrays for the lambda values to write out */
+    double      enxlambda_data[2]; 
+
     t_enxframe  fr;
 	
     switch (mode)
     {
     case eprNORMAL:
+        init_enxframe(&fr);
         fr.t            = time;
         fr.step         = step;
         fr.nsteps       = md->ebin->nsteps;
         fr.nsum         = md->ebin->nsum;
         fr.nre          = (bEne) ? md->ebin->nener : 0;
         fr.ener         = md->ebin->e;
-        fr.ndisre       = bDR ? fcd->disres.npair : 0;
-        fr.disre_rm3tav = fcd->disres.rm3tav;
-        fr.disre_rt     = fcd->disres.rt;
-        /* Optional additional blocks */
+        ndisre          = bDR ? fcd->disres.npair : 0;
+        disre_rm3tav    = fcd->disres.rm3tav;
+        disre_rt        = fcd->disres.rt;
+        /* Optional additional old-style (real-only) blocks. */
         for(i=0; i<enxNR; i++)
         {
             nr[i] = 0;
@@ -880,24 +926,78 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
             diagonalize_orires_tensors(&(fcd->orires));
             nr[enxOR]     = fcd->orires.nr;
             block[enxOR]  = fcd->orires.otav;
+            id[enxOR]     = enxOR;
             nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ? 
-                fcd->orires.nr : 0;
+                             fcd->orires.nr : 0;
             block[enxORI] = fcd->orires.oinsl;
+            id[enxORI]    = enxORI;
             nr[enxORT]    = fcd->orires.nex*12;
             block[enxORT] = fcd->orires.eig;
-        }
-        fr.nblock = 0;
-        for(i=0; i<enxNR; i++)
+            id[enxORT]    = enxORT;
+        }        
+
+        /* whether we are going to wrte anything out: */
+        if (fr.nre || ndisre || nr[enxOR] || nr[enxORI])
         {
-            if (nr[i] > 0)
+
+            /* the old-style blocks go first */
+            fr.nblock = 0;
+            for(i=0; i<enxNR; i++)
             {
-                fr.nblock = i + 1;
+                if (nr[i] > 0)
+                {
+                    fr.nblock = i + 1;
+                }
             }
-        }
-        fr.nr         = nr;
-        fr.block      = block;
-        if (fr.nre || fr.ndisre || fr.nr[enxOR] || fr.nr[enxORI])
-        {
+            add_blocks_enxframe(&fr, fr.nblock);
+            for(b=0;b<fr.nblock;b++)
+            {
+                add_subblocks_enxblock(&(fr.block[b]), 1);
+                fr.block[b].id=id[b]; 
+                fr.block[b].sub[0].nr = nr[b];
+#ifndef GMX_DOUBLE
+                fr.block[b].sub[0].type = xdr_datatype_float;
+                fr.block[b].sub[0].fval = block[b];
+#else
+                fr.block[b].sub[0].type = xdr_datatype_double;
+                fr.block[b].sub[0].dval = block[b];
+#endif
+            }
+
+            /* check for disre block & fill it. */
+            if (ndisre>0)
+            {
+                int db = fr.nblock;
+                fr.nblock+=1;
+                add_blocks_enxframe(&fr, fr.nblock);
+
+                add_subblocks_enxblock(&(fr.block[db]), 2);
+                fr.block[db].id=enxDISRE;
+                fr.block[db].sub[0].nr=ndisre;
+                fr.block[db].sub[1].nr=ndisre;
+#ifndef GMX_DOUBLE
+                fr.block[db].sub[0].type=xdr_datatype_float;
+                fr.block[db].sub[1].type=xdr_datatype_float;
+                fr.block[db].sub[0].fval=disre_rt;
+                fr.block[db].sub[1].fval=disre_rm3tav;
+#else
+                fr.block[db].sub[0].type=xdr_datatype_double;
+                fr.block[db].sub[1].type=xdr_datatype_double;
+                fr.block[db].sub[0].dval=disre_rt;
+                fr.block[db].sub[1].dval=disre_rm3tav;
+#endif
+            }
+            /* here we can put new-style blocks */
+
+            /* BAR blocks */
+            
+            if (md->dhc)
+            {
+
+                mde_delta_h_coll_handle_block(md->dhc, &fr, fr.nblock);
+            }
+
+            /* do the actual I/O */
             do_enx(fp_ene,&fr);
             gmx_fio_check_file_position(enx_file_pointer(fp_ene));
             if (fr.nre)
@@ -905,7 +1005,12 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
                 /* We have stored the sums, so reset the sum history */
                 reset_ebin_sums(md->ebin);
             }
+
+            /* we can now free & reset the data in the blocks */
+            if (md->dhc)
+                mde_delta_h_coll_reset(md->dhc);
         }
+        free_enxframe(&fr);
         break;
     case eprAVER:
         if (log)
@@ -1023,8 +1128,8 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
                 fprintf(log,"\n");
             }
         }
-
     }
+
 }
 
 void 
@@ -1035,6 +1140,7 @@ init_energyhistory(energyhistory_t * enerhist)
     enerhist->ener_ave     = NULL;
     enerhist->ener_sum     = NULL;
     enerhist->ener_sum_sim = NULL;
+    enerhist->dht          = NULL;
 
     enerhist->nsteps     = 0;
     enerhist->nsum       = 0;
@@ -1046,7 +1152,7 @@ void
 update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
 {
     int i;
-    
+
     enerhist->nsteps     = mdebin->ebin->nsteps;
     enerhist->nsum       = mdebin->ebin->nsum;
     enerhist->nsteps_sim = mdebin->ebin->nsteps_sim;
@@ -1061,7 +1167,7 @@ update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
             snew(enerhist->ener_ave,enerhist->nener);
             snew(enerhist->ener_sum,enerhist->nener);
         }
-        
+
         for(i=0;i<enerhist->nener;i++)
         {
             enerhist->ener_ave[i] = mdebin->ebin->e[i].eav;
@@ -1076,11 +1182,15 @@ update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
         {
             snew(enerhist->ener_sum_sim,enerhist->nener);
         }
-        
+
         for(i=0;i<enerhist->nener;i++)
         {
             enerhist->ener_sum_sim[i] = mdebin->ebin->e_sim[i].esum;
         }
+    }
+    if (mdebin->dhc)
+    {
+        mde_delta_h_coll_update_energyhistory(mdebin->dhc, enerhist);
     }
 }
 
@@ -1094,20 +1204,24 @@ restore_energyhistory_from_state(t_mdebin * mdebin,energyhistory_t * enerhist)
     {
         gmx_fatal(FARGS,"Mismatch between number of energies in run input (%d) and checkpoint file (%d).",
                   mdebin->ebin->nener,enerhist->nener);
-	}
+    }
 
     mdebin->ebin->nsteps     = enerhist->nsteps;
     mdebin->ebin->nsum       = enerhist->nsum;
     mdebin->ebin->nsteps_sim = enerhist->nsteps_sim;
     mdebin->ebin->nsum_sim   = enerhist->nsum_sim;
 
-	for(i=0; i<mdebin->ebin->nener; i++)
-	{
-		mdebin->ebin->e[i].eav  =
-            (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
-		mdebin->ebin->e[i].esum =
-            (enerhist->nsum > 0 ? enerhist->ener_sum[i] : 0);
+    for(i=0; i<mdebin->ebin->nener; i++)
+    {
+        mdebin->ebin->e[i].eav  =
+                  (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
+        mdebin->ebin->e[i].esum =
+                  (enerhist->nsum > 0 ? enerhist->ener_sum[i] : 0);
         mdebin->ebin->e_sim[i].esum =
-            (enerhist->nsum_sim > 0 ? enerhist->ener_sum_sim[i] : 0);
-	}
+                  (enerhist->nsum_sim > 0 ? enerhist->ener_sum_sim[i] : 0);
+    }
+    if (mdebin->dhc)
+    {         
+        mde_delta_h_coll_restore_energyhistory(mdebin->dhc, enerhist);
+    }
 }

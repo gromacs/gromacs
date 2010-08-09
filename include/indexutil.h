@@ -54,7 +54,7 @@
 #ifndef INDEXUTIL_H
 #define INDEXUTIL_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C"

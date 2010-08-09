@@ -66,7 +66,20 @@ int xdropen(XDR *xdrs, const char *filename, const char *type);
 int xdrclose(XDR *xdrs);
 */
 
+/* the xdr data types; note that there is no data type 'real' because
+   here we deal with the types as they are actually written to disk.  */
+typedef enum
+{
+    xdr_datatype_int,
+    xdr_datatype_float,
+    xdr_datatype_double,
+    xdr_datatype_large_int,
+    xdr_datatype_char,
+    xdr_datatype_string
+} xdr_datatype;
 
+/* names corresponding to the xdr_datatype enum */
+extern const char *xdr_datatype_names[];
 
 /* Read or write reduced precision *float* coordinates */
 int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead);

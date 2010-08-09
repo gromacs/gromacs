@@ -359,7 +359,7 @@ static void estimate_error(const char *eefile,int nb_min,int resol,int n,
                 (n-1)*dt,n);
     }
     snew(leg,2*nset);
-    xvgr_legend(fp,2*nset,leg,oenv);
+    xvgr_legend(fp,2*nset,(const char**)leg,oenv);
     sfree(leg);
 
     spacing = pow(2,1.0/resol);
@@ -788,7 +788,7 @@ static void do_ballistic(const char *balFile, int nData,
       snew(td,  nData);
 
       fp = xvgropen(balFile, "Hydrogen Bond Autocorrelation","Time (ps)","C'(t)", oenv);
-      xvgr_legend(fp,asize(leg),leg,oenv);
+      xvgr_legend(fp,asize(leg),(const char**)leg,oenv);
       
       for (set=0; set<nSet; set++)
       {
@@ -832,7 +832,7 @@ static void do_geminate(const char *gemFile, int nData,
     double **ctd=NULL, **ctdGem=NULL, *td=NULL;
     t_gemParams *GP = init_gemParams(rcut, D, t, nData, nFitPoints,
                                      begFit, endFit, balTime, 1, FALSE);
-    static char *leg[] = {"Ac\\sgem\\N(t)"};
+    const char *leg[] = {"Ac\\sgem\\N(t)"};
     FILE *fp;
     int i, set;
     
@@ -934,15 +934,15 @@ int gmx_analyze(int argc,char *argv[])
     "The complete derivation is given in",
     "B. Hess, J. Chem. Phys. 116:209-217, 2002.[PAR]",
 
-    "Option [TT]-bal[TT] finds and subtracts the ultrafast \"ballistic\"",
+    "Option [TT]-bal[tt] finds and subtracts the ultrafast \"ballistic\"",
     "component from a hydrogen bond autocorrelation function by the fitting",
     "of a sum of exponentials, as described in e.g.",
     "O. Markovitch, J. Chem. Phys. 129:084505, 2008. The fastest term",
     "is the one with the most negative coefficient in the exponential,",
-    "or with [TT]-d[TT], the one with most negative time derivative at time 0.",
-    "[]TT-nbalexp[TT] sets the number of exponentials to fit.[PAR]",
+    "or with [TT]-d[tt], the one with most negative time derivative at time 0.",
+    "[TT]-nbalexp[tt] sets the number of exponentials to fit.[PAR]",
 
-    "Option [TT]-gem[TT] fits bimolecular rate constants ka and kb",
+    "Option [TT]-gem[tt] fits bimolecular rate constants ka and kb",
     "(and optionally kD) to the hydrogen bond autocorrelation function",
     "according to the reversible geminate recombination model. Removal of",
     "the ballistic component first is strongly adviced. The model is presented in",

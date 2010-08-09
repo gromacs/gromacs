@@ -250,23 +250,30 @@ static void do_pull(t_fileio *fio, t_pull *pull,bool bRead, int file_version)
 static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead, 
                         int file_version, real *fudgeQQ)
 {
-  int  i,j,k,*tmp,idum=0; 
-  bool bDum=TRUE;
-  real rdum,bd_temp;
-  rvec vdum;
-  bool bSimAnn;
-  real zerotemptime,finish_t,init_temp,finish_temp;
-  
-  if (file_version != tpx_version) {
-    /* Give a warning about features that are not accessible */
-    fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
-	    file_version,tpx_version);
-  }
+    int  i,j,k,*tmp,idum=0; 
+    bool bDum=TRUE;
+    real rdum,bd_temp;
+    rvec vdum;
+    bool bSimAnn;
+    real zerotemptime,finish_t,init_temp,finish_temp;
+    
+    if (file_version != tpx_version)
+    {
+        /* Give a warning about features that are not accessible */
+        fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
+                file_version,tpx_version);
+    }
 
-  if (bRead)
-    init_inputrec(ir);
+    if (bRead)
+    {
+        init_inputrec(ir);
+    }
 
-  if (file_version >= 1) {  
+    if (file_version == 0)
+    {
+        return;
+    }
+
     /* Basic inputrec stuff */  
     gmx_fio_do_int(fio,ir->eI); 
     if (file_version >= 62) {
@@ -426,7 +433,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
 		}
 		else
 		{
-			ir->gb_dielectric_offset = 0.09;
+			ir->gb_dielectric_offset = 0.009;
 			ir->sa_algorithm = esaAPPROX;
 		}
 		gmx_fio_do_real(fio,ir->sa_surface_tension);
@@ -473,27 +480,53 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
      * but the values 0 and 1 still mean no and
      * berendsen temperature coupling, respectively.
      */
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->nsttcouple);
+    }
+    else
+    {
+        ir->nsttcouple = ir->nstcalcenergy;
+    }
     if (file_version <= 15)
-      gmx_fio_do_int(fio,idum);
-    if (file_version <=17) {
-      gmx_fio_do_int(fio,ir->epct); 
-      if (file_version <= 15) {
-	if (ir->epct == 5)
-	  ir->epct = epctSURFACETENSION;
-	gmx_fio_do_int(fio,idum);
-      }
-      ir->epct -= 1;
-      /* we have removed the NO alternative at the beginning */
-      if(ir->epct==-1) {
-	ir->epc=epcNO;
-	ir->epct=epctISOTROPIC;
-      } 
-      else
-	ir->epc=epcBERENDSEN;
+    {
+        gmx_fio_do_int(fio,idum);
+    }
+    if (file_version <=17)
+    {
+        gmx_fio_do_int(fio,ir->epct); 
+        if (file_version <= 15)
+        {
+            if (ir->epct == 5)
+            {
+                ir->epct = epctSURFACETENSION;
+            }
+            gmx_fio_do_int(fio,idum);
+        }
+        ir->epct -= 1;
+        /* we have removed the NO alternative at the beginning */
+        if(ir->epct==-1)
+        {
+            ir->epc=epcNO;
+            ir->epct=epctISOTROPIC;
+        } 
+        else
+        {
+            ir->epc=epcBERENDSEN;
+        }
     } 
-    else {
-      gmx_fio_do_int(fio,ir->epc);
-      gmx_fio_do_int(fio,ir->epct);
+    else
+    {
+        gmx_fio_do_int(fio,ir->epc);
+        gmx_fio_do_int(fio,ir->epct);
+    }
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->nstpcouple);
+    }
+    else
+    {
+        ir->nstpcouple = ir->nstcalcenergy;
     }
     gmx_fio_do_real(fio,ir->tau_p); 
     if (file_version <= 15) {
@@ -576,10 +609,31 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       gmx_fio_do_real(fio,ir->sc_sigma);
     else
       ir->sc_sigma = 0.3;
+    if (bRead)
+    {
+        if (file_version >= 71)
+        {
+            ir->sc_sigma_min = ir->sc_sigma;
+        }
+        else
+        {
+            ir->sc_sigma_min = 0;
+        }
+    }
     if (file_version >= 64) {
       gmx_fio_do_int(fio,ir->nstdhdl);
     } else {
       ir->nstdhdl = 1;
+    }
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->dh_table_size);
+        gmx_fio_do_double(fio,ir->dh_table_spacing);
+    }
+    else
+    {
+        ir->dh_table_size    = 0;
+        ir->dh_table_spacing = 0.1;
     }
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 
@@ -836,7 +890,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       }
       /* end of QMMM stuff */
     }    
-  }
 }
 
 
@@ -1120,8 +1173,9 @@ static void do_ilist(t_fileio *fio, t_ilist *ilist,bool bRead,int file_version,
 static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
 			bool bRead, int file_version)
 {
-  int  idum,i,j,k;
+  int  idum,i,j;
   bool bDum=TRUE;
+  unsigned int k;
 
   gmx_fio_do_int(fio,ffparams->atnr);
   if (file_version < 57) {
@@ -1180,8 +1234,9 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
 static void do_ilists(t_fileio *fio, t_ilist *ilist,bool bRead, 
                       int file_version)
 {
-  int i,j,k,renum[F_NRE];
+  int i,j,renum[F_NRE];
   bool bDum=TRUE,bClear;
+  unsigned int k;
   
   for(j=0; (j<F_NRE); j++) {
     bClear = FALSE;
@@ -1550,28 +1605,46 @@ static void do_cmap(t_fileio *fio, gmx_cmap_t *cmap_grid, bool bRead)
 
 void tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols)
 {
-  int m,a,a0,a1,r;
-  unsigned char c,chain;
+    int m,a,a0,a1,r;
+    char c,chainid;
+    int  chainnum;
+    
+    /* We always assign a new chain number, but save the chain id characters 
+     * for larger molecules.
+     */
 #define CHAIN_MIN_ATOMS 15
-
-  chain='A';
-  for(m=0; m<mols->nr; m++) {
-    a0=mols->index[m];
-    a1=mols->index[m+1];
-    if ((a1-a0 >= CHAIN_MIN_ATOMS) && (chain <= 'Z')) {
-      c=chain;
-      chain++;
-    } else
-      c=' ';
-    for(a=a0; a<a1; a++) {
-      atoms->resinfo[atoms->atom[a].resind].chain = c;
+    
+    chainnum=0;
+    chainid='A';
+    for(m=0; m<mols->nr; m++) 
+    {
+        a0=mols->index[m];
+        a1=mols->index[m+1];
+        if ((a1-a0 >= CHAIN_MIN_ATOMS) && (chainid <= 'Z')) 
+        {
+            c=chainid;
+            chainid++;
+        } 
+        else
+        {
+            c=' ';
+        }
+        for(a=a0; a<a1; a++) 
+        {
+            atoms->resinfo[atoms->atom[a].resind].chainnum = chainnum;
+            atoms->resinfo[atoms->atom[a].resind].chainid  = c;
+        }
+        chainnum++;
     }
-  }
-  if (chain == 'B') {
-    for(r=0; r<atoms->nres; r++) {
-      atoms->resinfo[r].chain = ' ';
+    
+    /* Blank out the chain id if there was only one chain */
+    if (chainid == 'B') 
+    {
+        for(r=0; r<atoms->nres; r++) 
+        {
+            atoms->resinfo[r].chainid = ' ';
+        }
     }
-  }
 }
   
 static void do_moltype(t_fileio *fio, gmx_moltype_t *molt,bool bRead,

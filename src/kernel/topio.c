@@ -844,8 +844,8 @@ static char **read_topol(const char *infile,const char *outfile,
 	    nmolb++;
 	    
         bCouple = (opts->couple_moltype != NULL &&
-                   (strcmp("system"    ,opts->couple_moltype) == 0 ||
-                    strcmp(*(mi0->name),opts->couple_moltype) == 0));
+                   (strcasecmp("system"    ,opts->couple_moltype) == 0 ||
+                    strcasecmp(*(mi0->name),opts->couple_moltype) == 0));
         if (bCouple) {
             nmol_couple += nrcopies;
         }

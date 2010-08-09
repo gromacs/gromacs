@@ -191,7 +191,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   t_blocka   *excl;
   t_atom     *atom=NULL;
   t_pbc      pbc;
-
+  gmx_rmpbc_t  gpbc=NULL;
   int        *is=NULL,**coi=NULL,cur,mol,i1,res,a;
 
   excl=NULL;
@@ -353,12 +353,15 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   snew(x_i1,max_i);
   nframes = 0;
   invvol_sum = 0;
+  if (bPBC && (NULL != top))
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+
   do {
     /* Must init pbc every step because of pressure coupling */
     copy_mat(box,box_pbc);
     if (bPBC) {
       if (top != NULL)
-	rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+	gmx_rmpbc(gpbc,box,x,x);
       if (bXY) {
 	check_box_c(box);
 	clear_rvec(box_pbc[ZZ]);
@@ -465,6 +468,9 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   } while (read_next_x(oenv,status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   
+  if (bPBC && (NULL != top))
+    gmx_rmpbc_done(gpbc);
+
   close_trj(status);
   
   sfree(x);
@@ -539,7 +545,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   else {
     if (output_env_get_print_xvgr_codes(oenv))
         fprintf(fp,"@ subtitle \"reference %s%s\"\n",grpname[0],refgt);
-    xvgr_legend(fp,ng,grpname+1,oenv);
+    xvgr_legend(fp,ng,(const char**)(grpname+1),oenv);
   }
   for(i=0; (i<nrdf); i++) {
     fprintf(fp,"%10g",i*binwidth);
@@ -589,7 +595,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     else {
       if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
-      xvgr_legend(fp,ng,grpname+1,oenv);
+      xvgr_legend(fp,ng,(const char**)(grpname+1),oenv);
     }
     snew(sum,ng);
     for(i=0; (i<=nbin/2); i++) {
@@ -723,6 +729,9 @@ int gmx_rdf(int argc,char *argv[])
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
 
   bSQ   = opt2bSet("-sq",NFILE,fnm);
+  if (bSQ)
+    please_cite(stdout,"Cromer1968a");
+
   bRDF  = opt2bSet("-o",NFILE,fnm) || !bSQ;
   if (bSQ || bCM || closet[0][0]!='n' || rdft[0][0]=='m' || rdft[0][6]=='m') {
     fnTPS = ftp2fn(efTPS,NFILE,fnm);

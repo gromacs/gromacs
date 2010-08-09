@@ -3,29 +3,21 @@
 *                    Par Bjelkmar, bjelkmar@cbr.su.se, and                    *
 *                    Per Larsson. Port homepage                               *
 *                    www.dbb.su.se/user:bjelkmar/ffcharmm                     *
-*                    Alternative correspondance:                              *
+*                    Alternative correspondence:                              *
 *                    Erik Lindahl, lindahl@cbr.su.se                          *
 *******************************************************************************
 
 
 #define _FF_CHARMM
-; The user has the choice between:
-;     - Original TIP3P model [Jorgensen et al. J Chem Phys, 1983] , which uses
-;     the fast gromacs optimizations
-;     - CHARMM TIP3P [MacKerell et al. J Phys Chem B, 1998] with LJ interaction
-;     sites on the hydrogens, about 2 times slower
-; The original model is used by default, to use the CHARMM version include in
-; your mdp file :
-;     -DCHARMM_TIP3P
 
 [ defaults ]
 ; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
 1	2	yes	1.0	1.0
 
-#include "ffnb.itp"
-#include "ffbon.itp"
+#include "ffnonbonded.itp"
+#include "ffbonded.itp"
 #include "gb.itp"
 #include "cmap.itp"
 ; Nucleic acids nonbonded and bonded parameters"
-#include "ffnanb.itp"
-#include "ffnabon.itp"
+#include "ffnanonbonded.itp"
+#include "ffnabonded.itp"

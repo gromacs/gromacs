@@ -69,22 +69,24 @@ extern void set_pdb_wide_format(bool bSet);
 /* If bSet, use wider format for occupancy and bfactor */
 
 extern void pdb_use_ter(bool bSet);
-/* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE) */
+/* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE).
+   This function is fundamentally broken as far as thread-safety is concerned.*/
 
 extern void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
 /* write the box in the CRYST1 record,
  * with ePBC=-1 the pbc is guessed from the box
+ * This function is fundamentally broken as far as thread-safety is concerned.
  */
 
 extern void write_pdbfile_indexed(FILE *out,const char *title,t_atoms *atoms,
 				  rvec x[],int ePBC,matrix box,char chain,
 				  int model_nr,atom_id nindex,atom_id index[],
-				  gmx_conect conect);
+				  gmx_conect conect,bool bTerSepChains);
 /* REALLY low level */
 
 extern void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
 			  rvec x[],int ePBC,matrix box,char chain,
-			  int model_nr,gmx_conect conect);
+			  int model_nr,gmx_conect conect,bool bTerSepChains);
 /* Low level pdb file writing routine.
  * 
  *          ONLY FOR SPECIAL PURPOSES,

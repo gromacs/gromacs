@@ -174,25 +174,31 @@ static char *mydate(char buf[], int maxsize,bool bWiki)
   const char *day[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
   const char *num[] = { "01", "02", "03", "04", "05", "06","07", "08", "09" }; 
   time_t now;
-  struct tm *tm;
+  struct tm tm;
   
-  (void) time(&now);
-  tm = localtime(&now);
+  time(&now);
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+  /* Native windows */
+  localtime_s(&tm,&now);
+#else
+  localtime_r(&now,&tm);
+#endif
+
   /* subtract one from maxsize, so we have room for \0. */
   if (bWiki) {
     char dd[8],mm[8],ss[8],hh[8],mn[8];
     
-    mynum(dd,tm->tm_mday);
-    mynum(mm,tm->tm_mon);
-    mynum(ss,tm->tm_sec);
-    mynum(hh,tm->tm_hour);
-    mynum(mn,tm->tm_min);
+    mynum(dd,tm.tm_mday);
+    mynum(mm,tm.tm_mon);
+    mynum(ss,tm.tm_sec);
+    mynum(hh,tm.tm_hour);
+    mynum(mn,tm.tm_min);
     sprintf(buf,"%4d-%2s-%2sT%2s:%2s:%2sZ",
-	     tm->tm_year+1900,mm,dd,hh,mn,ss);
+	     tm.tm_year+1900,mm,dd,hh,mn,ss);
   }
   else
-    sprintf(buf,"%s %d %s %d",day[tm->tm_wday],tm->tm_mday,
-	     mon[tm->tm_mon],tm->tm_year+1900);
+    sprintf(buf,"%s %d %s %d",day[tm.tm_wday],tm.tm_mday,
+	     mon[tm.tm_mon],tm.tm_year+1900);
   
   return buf;
 }

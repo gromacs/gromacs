@@ -586,7 +586,7 @@ int tMPI_Barrier(tMPI_Comm comm)
         tMPI_Profile_wait_start(cur);
 #endif
 
-        tMPI_Spinlock_barrier_wait( &(comm->barrier) );
+        tMPI_Barrier_wait( &(comm->barrier) );
 #if defined(TMPI_PROFILE) 
         tMPI_Profile_wait_stop(cur, TMPIWAIT_Barrier);
 #endif
@@ -604,9 +604,9 @@ int tMPI_Barrier(tMPI_Comm comm)
 /* The actual collective functions are #included, so that the static
    functions above are available to them and can get inlined if the
    compiler deems it appropriate. */
-#include "bcast.c"
-#include "scatter.c"
-#include "gather.c"
-#include "alltoall.c"
-#include "reduce.c"
+#include "bcast.h"
+#include "scatter.h"
+#include "gather.h"
+#include "alltoall.h"
+#include "reduce.h"
 

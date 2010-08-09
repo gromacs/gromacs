@@ -77,7 +77,7 @@ typedef int t_EEst;
 #define max_hx 7
 typedef int t_hx[max_hx];
 #define NRHXTYPES max_hx
-char *hxtypenames[NRHXTYPES]=
+const char *hxtypenames[NRHXTYPES]=
 {"n-n","n-n+1","n-n+2","n-n+3","n-n+4","n-n+5","n-n>6"};
 #define MAXHH 4
 
@@ -1760,7 +1760,7 @@ static void do_hblife(const char *fn,t_hbdata *hb,bool bMerge,bool bContact,
                       const output_env_t oenv)
 {
     FILE *fp;
-    char *leg[] = { "p(t)", "t p(t)" };
+    const char *leg[] = { "p(t)", "t p(t)" };
     int  *histo;
     int  i,j,j0,k,m,nh,ihb,ohb,nhydro,ndump=0;
     int   nframes = hb->nframes;
@@ -2265,11 +2265,11 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 {
     FILE *fp;
     int  i,j,k,m,n,o,nd,ihb,idist,n2,nn,iter,nSets;
-    static char *legNN[]   = { "Ac(t)",
+    const char *legNN[]   = { "Ac(t)",
                                "Ac'(t)"};
     static char **legGem;
 			      
-    static char *legLuzar[] = { "Ac\\sfin sys\\v{}\\z{}(t)",
+    const char *legLuzar[] = { "Ac\\sfin sys\\v{}\\z{}(t)",
                                 "Ac(t)",
                                 "Cc\\scontact,hb\\v{}\\z{}(t)",
                                 "-dAc\\sfs\\v{}\\z{}/dt" };
@@ -2738,7 +2738,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
             fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)",oenv);
         else
             fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)",oenv);
-        xvgr_legend(fp,asize(legGem),legGem,oenv);
+        xvgr_legend(fp,asize(legGem),(const char**)legGem,oenv);
 
         for(j=0; (j<nn); j++)
         {
@@ -2930,7 +2930,7 @@ static void analyse_donor_props(const char *fn,t_hbdata *hb,int nframes,real t,
                                 const output_env_t oenv)
 {
     static FILE *fp = NULL;
-    char *leg[] = { "Nbound", "Nfree" };
+    const char *leg[] = { "Nbound", "Nfree" };
     int i,j,k,nbound,nb,nhtot;
   
     if (!fn)
@@ -3308,11 +3308,12 @@ int gmx_hbond(int argc,char *argv[])
 
     /* NN-loop? If so, what estimator to use ?*/
     NN = 1;
+    /* Outcommented for now DvdS 2010-07-13
     while (NN < NN_NR && strcasecmp(NNtype[0], NNtype[NN])!=0)
         NN++;
     if (NN == NN_NR)
         gmx_fatal(FARGS, "Invalid NN-loop type.");
-
+    */
     bNN = FALSE;
     for (i=2; bNN==FALSE && i<NN_NR; i++)
         bNN = bNN || NN == i;
@@ -3394,7 +3395,7 @@ int gmx_hbond(int argc,char *argv[])
     /*     gmx_fatal(FARGS, "Can't do reversible geminate recombination with -contact yet."); */
 
     if (opt2bSet("-nhbdist",NFILE,fnm)) {
-        char *leg[MAXHH+1] = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
+        const char *leg[MAXHH+1] = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
         fpnhb = xvgropen(opt2fn("-nhbdist",NFILE,fnm),
                          "Number of donor-H with N HBs","Time (ps)","N",oenv);
         xvgr_legend(fpnhb,asize(leg),leg,oenv);
@@ -4066,7 +4067,7 @@ int gmx_hbond(int argc,char *argv[])
     snew(leg[1],STRLEN);
     sprintf(leg[0],"%s",bContact?"Contacts":"Hydrogen bonds");
     sprintf(leg[1],"Pairs within %g nm",(r2cut>0)?r2cut:rcut);
-    xvgr_legend(fp,2,leg,oenv);
+    xvgr_legend(fp,2,(const char**)leg,oenv);
     sfree(leg[1]);
     sfree(leg[0]);
     sfree(leg);
@@ -4261,7 +4262,7 @@ int gmx_hbond(int argc,char *argv[])
             }
         if (i != nleg)
             gmx_incons("number of legend entries");
-        xvgr_legend(fp,nleg,legnames,oenv);
+        xvgr_legend(fp,nleg,(const char**)legnames,oenv);
         for(i=0; i<nframes; i++) {
             fprintf(fp,"%10g",hb->time[i]);
             for (j=0; (j<grNR); j++)

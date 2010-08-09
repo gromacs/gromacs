@@ -87,19 +87,12 @@ typedef struct
 {
     int  nr_inputfiles;         /* The number of tpr and mdp input files */
     gmx_large_int_t orig_sim_steps;  /* Number of steps to be done in the real simulation */
-    real *r_coulomb;            /* The coulomb radii [0...nr_inputfiles] */
-    real *r_vdw;                /* The vdW radii */
+    real *rcoulomb;             /* The coulomb radii [0...nr_inputfiles] */
+    real *rvdw;                 /* The vdW radii */
     real *rlist;                /* Neighbourlist cutoff radius */
     real *rlistlong;
-    int  *fourier_nx, *fourier_ny, *fourier_nz;
-    real *fourier_sp;           /* Fourierspacing */
-
-    /* Original values as in inputfile: */
-    real orig_rcoulomb;
-    real orig_rvdw;
-    real orig_rlist, orig_rlistlong;
-    int  orig_nk[DIM];
-    real orig_fs[DIM];
+    int  *nkx, *nky, *nkz;
+    real *fsx, *fsy, *fsz;      /* Fourierspacing in x,y,z dimension */
 } t_inputinfo;
 
 
@@ -139,7 +132,7 @@ static void cleandata(t_perf *perfdata, int test_nr)
 
 static bool is_equal(real a, real b)
 {
-    real diff, eps=1.0e-6;
+    real diff, eps=1.0e-7;
 
 
     diff = a - b;
@@ -467,28 +460,28 @@ static bool analyze_data(
 
     /* Only mention settings if they were modified: */
     bCanUseOrigTPR = TRUE;
-    if ( !is_equal(info->r_coulomb[k_win], info->orig_rcoulomb) )
+    if ( !is_equal(info->rcoulomb[k_win], info->rcoulomb[0]) )
     {
         fprintf(fp, "Optimized PME settings:\n"
                     "   New Coulomb radius: %f nm (was %f nm)\n",
-                    info->r_coulomb[k_win], info->orig_rcoulomb);
+                    info->rcoulomb[k_win], info->rcoulomb[0]);
         bCanUseOrigTPR = FALSE;
     }
 
-    if ( !is_equal(info->r_vdw[k_win], info->orig_rvdw) )
+    if ( !is_equal(info->rvdw[k_win], info->rvdw[0]) )
     {
         fprintf(fp, "   New Van der Waals radius: %f nm (was %f nm)\n",
-                info->r_vdw[k_win], info->orig_rvdw);
+                info->rvdw[k_win], info->rvdw[0]);
         bCanUseOrigTPR = FALSE;
     }
 
-    if ( ! (info->fourier_nx[k_win]==info->orig_nk[XX] &&
-            info->fourier_ny[k_win]==info->orig_nk[YY] &&
-            info->fourier_nz[k_win]==info->orig_nk[ZZ] ) )
+    if ( ! (info->nkx[k_win] == info->nkx[0] &&
+            info->nky[k_win] == info->nky[0] &&
+            info->nkz[k_win] == info->nkz[0] ) )
     {
         fprintf(fp, "   New Fourier grid xyz: %d %d %d (was %d %d %d)\n",
-                info->fourier_nx[k_win], info->fourier_ny[k_win], info->fourier_nz[k_win],
-                info->orig_nk[XX], info->orig_nk[YY], info->orig_nk[ZZ]);
+                info->nkx[k_win], info->nky[k_win], info->nkz[k_win],
+                info->nkx[0], info->nky[0], info->nkz[0]);
         bCanUseOrigTPR = FALSE;
     }
     if (bCanUseOrigTPR && ntprs > 1)
@@ -692,6 +685,219 @@ static void modify_PMEsettings(
 }
 
 
+typedef struct
+{
+    int  nkx, nky, nkz;      /* Fourier grid                                  */
+    real fac;                /* actual scaling factor                         */
+    real fs;                 /* Fourierspacing                                */
+} t_pmegrid;
+
+
+static void copy_grid(t_pmegrid *ingrid, t_pmegrid *outgrid)
+{
+    outgrid->nkx = ingrid->nkx;
+    outgrid->nky = ingrid->nky;
+    outgrid->nkz = ingrid->nkz;
+    outgrid->fac = ingrid->fac;
+    outgrid->fs  = ingrid->fs;
+}
+
+/* Removes entry 'index' from the t_pmegrid list */
+static void remove_from_list(
+        t_pmegrid gridlist[],
+        int *nlist,           /* Length of the list                           */
+        int index)            /* Index to remove from the list                */
+{
+    int j;
+
+
+    for (j = index; j < (*nlist - 1); j++)
+    {
+        copy_grid(&gridlist[j+1], &gridlist[j]);
+    }
+    *nlist = *nlist - 1;
+}
+
+
+/* Returns the index of the least necessary grid in the list.
+ *
+ * This is the one where the following conditions hold for the scaling factor:
+ * 1. this grid has the smallest distance to its neighboring grid (distance
+ *    measured by fac) -> this condition is true for two grids at the same time
+ * 2. this grid (of the two) has the smaller distance to the other neighboring
+ *    grid
+ *
+ * The extreme grids (the ones with the smallest and largest
+ * scaling factor) are never thrown away.
+ */
+static int get_throwaway_index(
+        t_pmegrid gridlist[],
+        int nlist)           /* Length of the list                           */
+{
+    int i,index = -1;
+    real dist,mindist,d_left,d_right;
+
+
+    /* Find the two factors with the smallest mutual distance */
+    mindist = GMX_FLOAT_MAX;
+    for (i = 1; i < nlist; i++)
+    {
+        dist = fabs(gridlist[i].fac - gridlist[i-1].fac);
+        if (dist < mindist)
+        {
+            index = i;
+            mindist = dist;
+        }
+    }
+    /* index and index-1 have the smallest mutual distance */
+    if (index == 1)
+    {
+        /* Never return the first index, i.e. index == 0 */
+        ;
+    }
+    else
+    {
+        d_left  = fabs(gridlist[index-1].fac - gridlist[index-2].fac);
+        d_right = fabs(gridlist[index+1].fac - gridlist[index  ].fac);
+
+        /* Return the left index if its distance to its left neighbor is shorter
+         * than the distance of the right index to its right neighbor */
+        if (d_left < d_right)
+            index--;
+    }
+    /* Never return the last index */
+    if (index == nlist-1)
+        index--;
+
+    return index;
+}
+
+
+static void make_grid_list(
+        real fmin,            /* minimum scaling factor (downscaling fac)     */
+        real fmax,            /* maximum scaling factor (upscaling fac)       */
+        int ntprs,            /* Number of tpr files to test                  */
+        matrix box,           /* The box                                      */
+        t_pmegrid *griduse[], /* List of grids that have to be tested         */
+        int *npmegrid,        /* Number of grids in the list                  */
+        real fs)              /* Requested fourierspacing at a scaling factor
+                                 of unity                                     */
+{
+    real req_fac,act_fac=0,act_fs,eps;
+    rvec box_size;
+    int i,jmin=0,d,ngridall=0;
+    int nkx=0,nky=0,nkz=0;
+    int nkx_old=0,nky_old=0,nkz_old=0;
+    t_pmegrid *gridall;
+    int gridalloc,excess;
+
+
+    /* Determine length of triclinic box vectors */
+    for(d=0; d<DIM; d++)
+    {
+        box_size[d] = 0;
+        for(i=0;i<DIM;i++)
+            box_size[d] += box[d][i]*box[d][i];
+        box_size[d] = sqrt(box_size[d]);
+    }
+
+    gridalloc = 25;
+    snew(gridall, gridalloc);
+
+    fprintf(stdout, "Possible PME grid settings (apart from input file settings):\n");
+    fprintf(stdout, "  nkx  nky  nkz  max spacing  scaling factor\n");
+
+    /* eps should provide a fine enough spacing not to miss any grid */
+    if (fmax != fmin)
+        eps = (fmax-fmin)/(100.0*(ntprs-1));
+    else
+        eps = 1.0/max( (*griduse)[0].nkz, max( (*griduse)[0].nkx, (*griduse)[0].nky ) );
+
+    for (req_fac = fmin; act_fac < fmax; req_fac += eps)
+    {
+        nkx=0;
+        nky=0;
+        nkz=0;
+        calc_grid(NULL,box,fs*req_fac,&nkx,&nky,&nkz);
+        act_fs = max(box_size[XX]/nkx,max(box_size[YY]/nky,box_size[ZZ]/nkz));
+        act_fac = act_fs/fs;
+        if (    ! ( nkx==nkx_old           && nky==nky_old           && nkz==nkz_old           )    /* Exclude if grid is already in list */
+             && ! ( nkx==(*griduse)[0].nkx && nky==(*griduse)[0].nky && nkz==(*griduse)[0].nkz ) )  /* Exclude input file grid */
+        {
+            /* We found a new grid that will do */
+            nkx_old = nkx;
+            nky_old = nky;
+            nkz_old = nkz;
+            gridall[ngridall].nkx = nkx;
+            gridall[ngridall].nky = nky;
+            gridall[ngridall].nkz = nkz;
+            gridall[ngridall].fac = act_fac;
+            gridall[ngridall].fs  = act_fs;
+            fprintf(stdout, "%5d%5d%5d %12f %12f\n",nkx,nky,nkz,act_fs,act_fac);
+            ngridall++;
+            if (ngridall >= gridalloc)
+            {
+                gridalloc += 25;
+                srenew(gridall, gridalloc);
+            }
+        }
+    }
+
+    /* Return the actual number of grids that can be tested. We cannot test more
+     * than the number of grids we found plus 1 (the input file) */
+    *npmegrid = min(ngridall+1,ntprs);
+
+    /* excess is the number of grids we have to get rid of */
+    excess = ngridall+1 - ntprs;
+
+    /* If we found less grids than tpr files were requested, simply test all
+     * the grid there are ... */
+    if (excess < 0)
+    {
+        fprintf(stdout, "NOTE: You requested %d tpr files, but apart from the input file grid only the\n"
+                        "      above listed %d suitable PME grids were found. Will test all suitable settings.\n",
+                        ntprs, ngridall);
+    }
+    else
+    {
+        if (2 == ntprs)
+        {
+            /* We can only keep the input tpr file plus one extra tpr file.
+             * We make that choice depending on the values of -upfac and -downfac */
+            if (fmin < 1.0)
+            {
+                /* Keep the one with the -downfac as scaling factor. This is already
+                 * stored in gridall[0] */
+                ;
+            }
+            else
+            {
+                /* Keep the one with -upfac as scaling factor */
+                copy_grid(&(gridall[ngridall-1]), &(gridall[0]));
+            }
+
+        }
+        else
+        {
+            /* From the grid list throw away the unnecessary ones (keep the extremes) */
+            for (i = 0; i < excess; i++)
+            {
+                /* Get the index of the least necessary grid from the list ... */
+                jmin = get_throwaway_index(gridall, ngridall);
+                /* ... and remove the grid from the list */
+                remove_from_list(gridall, &ngridall, jmin);
+            }
+        }
+    }
+
+    /* The remaining list contains the grids we want to test */
+    for (i=1; i < *npmegrid; i++)
+        copy_grid(&(gridall[i-1]), &((*griduse)[i]));
+
+    sfree(gridall);
+}
+
+
 #define EPME_SWITCHED(e) ((e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
 
 /* Make additional TPR files with more computational load for the
@@ -712,14 +918,17 @@ static void make_benchmark_tprs(
     t_inputrec   *ir;
     t_state      state;
     gmx_mtop_t   mtop;
-    real         fac;
     real         nlist_buffer; /* Thickness of the buffer regions for PME-switch potentials: */
     char         buf[200];
     rvec         box_size;
     bool         bNote = FALSE;
+    t_pmegrid    *pmegrid=NULL; /* Grid settings for the PME grids to test    */
+    int          npmegrid=1;    /* Number of grids that can be tested,
+                                 * normally = ntpr but could be less          */
     
 
-    sprintf(buf, "Making benchmark tpr file%s with %s time steps", ntprs>1? "s":"", gmx_large_int_pfmt);
+    sprintf(buf, "Making benchmark tpr file%s with %s time step%s",
+            ntprs>1? "s":"", gmx_large_int_pfmt, benchsteps>1?"s":"");
     fprintf(stdout, buf, benchsteps);
     if (statesteps > 0)
     {
@@ -755,6 +964,9 @@ static void make_benchmark_tprs(
     info->orig_sim_steps = ir->nsteps;
     ir->nsteps           = benchsteps;
     
+    /* For PME-switch potentials, keep the radial distance of the buffer region */
+    nlist_buffer   = ir->rlist - ir->rcoulomb;
+
     /* Determine length of triclinic box vectors */
     for(d=0; d<DIM; d++)
     {
@@ -763,137 +975,109 @@ static void make_benchmark_tprs(
             box_size[d] += state.box[d][i]*state.box[d][i];
         box_size[d] = sqrt(box_size[d]);
     }
-    
-    /* Remember the original values: */
-    info->orig_rvdw            = ir->rvdw;
-    info->orig_rcoulomb        = ir->rcoulomb;
-    info->orig_rlist           = ir->rlist;
-    info->orig_rlistlong       = ir->rlistlong;
-    info->orig_nk[XX]          = ir->nkx;
-    info->orig_nk[YY]          = ir->nky;
-    info->orig_nk[ZZ]          = ir->nkz;
-    info->orig_fs[XX]          = box_size[XX]/ir->nkx;  /* fourierspacing in x direction */
-    info->orig_fs[YY]          = box_size[YY]/ir->nky;
-    info->orig_fs[ZZ]          = box_size[ZZ]/ir->nkz;
 
-    /* For PME-switch potentials, keep the radial distance of the buffer region */
-    nlist_buffer   = info->orig_rlist    - info->orig_rcoulomb;
+    /* Reconstruct fourierspacing per dimension from the number of grid points and box size */
+    info->fsx[0] = box_size[XX]/ir->nkx;
+    info->fsy[0] = box_size[YY]/ir->nky;
+    info->fsz[0] = box_size[ZZ]/ir->nkz;
+
+    /* Put the input grid as first entry into the grid list */
+    snew(pmegrid, ntprs);
+    pmegrid[0].fac = 1.00;
+    pmegrid[0].nkx = ir->nkx;
+    pmegrid[0].nky = ir->nky;
+    pmegrid[0].nkz = ir->nkz;
+    pmegrid[0].fs  = max(box_size[ZZ]/ir->nkz, max(box_size[XX]/ir->nkx, box_size[YY]/ir->nky));
+
+    /* If no value for the fourierspacing was provided on the command line, we
+     * use the reconstruction from the tpr file */
+    if (fourierspacing <= 0)
+    {
+        fourierspacing = pmegrid[0].fs;
+    }
+
+    fprintf(stdout, "Calculating PME grid points on the basis of a fourierspacing of %f nm\n", fourierspacing);
 
     /* Print information about settings of which some are potentially modified: */
     fprintf(fp, "   Coulomb type         : %s\n", EELTYPE(ir->coulombtype));
-    fprintf(fp, "   Fourier nkx nky nkz  : %d %d %d\n",
-            info->orig_nk[XX], info->orig_nk[YY], info->orig_nk[ZZ]);
-    fprintf(fp, "   rcoulomb             : %f nm\n", info->orig_rcoulomb);
+    fprintf(fp, "   Grid spacing x y z   : %f %f %f\n",
+            box_size[XX]/ir->nkx, box_size[YY]/ir->nky, box_size[ZZ]/ir->nkz);
     fprintf(fp, "   Van der Waals type   : %s\n", EVDWTYPE(ir->vdwtype));
-    fprintf(fp, "   rvdw                 : %f nm\n", info->orig_rvdw);
     if (EVDW_SWITCHED(ir->vdwtype))
         fprintf(fp, "   rvdw_switch          : %f nm\n", ir->rvdw_switch);
     if (EPME_SWITCHED(ir->coulombtype))
-        fprintf(fp, "   rlist                : %f nm\n", info->orig_rlist);
-    if (info->orig_rlistlong != max_cutoff(ir->rvdw,ir->rcoulomb))
-        fprintf(fp, "   rlistlong            : %f nm\n", info->orig_rlistlong);
+        fprintf(fp, "   rlist                : %f nm\n", ir->rlist);
+    if (ir->rlistlong != max_cutoff(ir->rvdw,ir->rcoulomb))
+        fprintf(fp, "   rlistlong            : %f nm\n", ir->rlistlong);
 
     /* Print a descriptive line about the tpr settings tested */
     fprintf(fp, "\nWill try these real/reciprocal workload settings:\n");
     fprintf(fp, " No.   scaling  rcoulomb");
     fprintf(fp, "  nkx  nky  nkz");
-    if (fourierspacing > 0)
-        fprintf(fp, "   spacing");
+    fprintf(fp, "   spacing");
     if (evdwCUT == ir->vdwtype)
         fprintf(fp, "      rvdw");
     if (EPME_SWITCHED(ir->coulombtype))
         fprintf(fp, "     rlist");
-    if ( info->orig_rlistlong != max_cutoff(info->orig_rlist,max_cutoff(info->orig_rvdw,info->orig_rcoulomb)) )
+    if ( ir->rlistlong != max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb)) )
         fprintf(fp, " rlistlong");
     fprintf(fp, "  tpr file\n");
-    
+
+
+    /* Get useful PME grids if requested, the actual number of entries is
+     * returned in npmegrid */
     if (ntprs > 1)
-    {
-        fprintf(stdout, "Calculating PME grid points on the basis of ");
-        if (fourierspacing > 0)
-            fprintf(stdout, "a fourierspacing of %f nm\n", fourierspacing);
-        else
-            fprintf(stdout, "original nkx/nky/nkz settings from tpr file\n");
-    }
+        make_grid_list(downfac, upfac, ntprs, state.box, &pmegrid, &npmegrid, fourierspacing);
     
     /* Loop to create the requested number of tpr input files */
-    for (j = 0; j < ntprs; j++)
+    for (j = 0; j < npmegrid; j++)
     {
-        /* Rcoulomb scaling factor for this file: */
-        if (ntprs == 1)
-            fac = downfac;
-         else
-            fac = (upfac-downfac)/(ntprs-1) * j + downfac;
-        fprintf(stdout, "--- Scaling factor %f ---\n", fac);
-        
-        /* Scale the Coulomb radius */
-        ir->rcoulomb = info->orig_rcoulomb*fac;
+        /* The first one is the provided tpr file, just need to modify the number
+         * of steps, so skip the following block */
+        if (j > 0)
+        {
+            /* Scale the Coulomb radius */
+            ir->rcoulomb = info->rcoulomb[0]*pmegrid[j].fac;
 
-        /* Adjust other radii since various conditions neet to be fulfilled */
-        if (eelPME == ir->coulombtype)
-        {
-            /* plain PME, rcoulomb must be equal to rlist */
-            ir->rlist = ir->rcoulomb;
-        }
-        else
-        {
-            /* rlist must be >= rcoulomb, we keep the size of the buffer region */
-            ir->rlist = ir->rcoulomb + nlist_buffer;
-        }
-
-        if (evdwCUT == ir->vdwtype)
-        {
-            /* For vdw cutoff, rvdw >= rlist */
-            ir->rvdw = max(info->orig_rvdw, ir->rlist);
-        }
-
-        ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
-
-        /* Try to reduce the number of reciprocal grid points in a smart way */
-        /* Did the user supply a value for fourierspacing on the command line? */
-        if (fourierspacing > 0)
-        {
-            info->fourier_sp[j] = fourierspacing*fac;
-            /* Calculate the optimal grid dimensions */
-            ir->nkx = 0;
-            ir->nky = 0;
-            ir->nkz = 0;
-            calc_grid(stdout,state.box,info->fourier_sp[j],&(ir->nkx),&(ir->nky),&(ir->nkz),1);
-            /* Check consistency */
-            if (0 == j)
-                if ((ir->nkx != info->orig_nk[XX]) || (ir->nky != info->orig_nk[YY]) || (ir->nkz != info->orig_nk[ZZ]))
-                {
-                    fprintf(stderr, "WARNING: Original grid was %dx%dx%d. The fourierspacing of %f nm does not reproduce the grid\n"
-                                    "         found in the tpr input file! Will use the new settings.\n", 
-                                    info->orig_nk[XX],info->orig_nk[YY],info->orig_nk[ZZ],fourierspacing);
-                    bNote = TRUE;
-                }
-        }
-        else
-        {
-            if (0 == j)
+            /* Adjust other radii since various conditions neet to be fulfilled */
+            if (eelPME == ir->coulombtype)
             {
-                /* Print out fourierspacing from input tpr */
-                fprintf(stdout, "Input file fourier grid is %dx%dx%d\n",
-                        info->orig_nk[XX], info->orig_nk[YY], info->orig_nk[ZZ]);
+                /* plain PME, rcoulomb must be equal to rlist */
+                ir->rlist = ir->rcoulomb;
             }
-            /* Reconstruct fourierspacing for each dimension from the input file */
-            ir->nkx=0;
-            calc_grid(stdout,state.box,info->orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
-            ir->nky=0;
-            calc_grid(stdout,state.box,info->orig_fs[YY]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
-            ir->nkz=0;
-            calc_grid(stdout,state.box,info->orig_fs[ZZ]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
-        }
+            else
+            {
+                /* rlist must be >= rcoulomb, we keep the size of the buffer region */
+                ir->rlist = ir->rcoulomb + nlist_buffer;
+            }
 
-        /* Save modified radii and fourier grid components for later output: */
-        info->r_coulomb[j]        = ir->rcoulomb;
-        info->r_vdw[j]            = ir->rvdw;
-        info->fourier_nx[j]       = ir->nkx;
-        info->fourier_ny[j]       = ir->nky;
-        info->fourier_nz[j]       = ir->nkz;
-        info->rlist[j]            = ir->rlist;
-        info->rlistlong[j]        = ir->rlistlong;
+            if (evdwCUT == ir->vdwtype)
+            {
+                /* For vdw cutoff, rvdw >= rlist */
+                ir->rvdw = max(info->rvdw[0], ir->rlist);
+            }
+
+            ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
+
+            /* Copy the optimal grid dimensions to ir */
+            ir->nkx = pmegrid[j].nkx;
+            ir->nky = pmegrid[j].nky;
+            ir->nkz = pmegrid[j].nkz;
+
+        } /* end of "if (j != 0)" */
+
+        /* for j==0: Save the original settings
+         * for j >0: Save modified radii and fourier grids */
+        info->rcoulomb[j]  = ir->rcoulomb;
+        info->rvdw[j]      = ir->rvdw;
+        info->nkx[j]       = ir->nkx;
+        info->nky[j]       = ir->nky;
+        info->nkz[j]       = ir->nkz;
+        info->rlist[j]     = ir->rlist;
+        info->rlistlong[j] = ir->rlistlong;
+        info->fsx[j]       = pmegrid[j].fs;
+        info->fsy[j]       = pmegrid[j].fs;
+        info->fsz[j]       = pmegrid[j].fs;
 
         /* Write the benchmark tpr file */
         strncpy(fn_bench_tprs[j],fn_sim_tpr,strlen(fn_sim_tpr)-strlen(".tpr"));
@@ -901,25 +1085,31 @@ static void make_benchmark_tprs(
         strcat(fn_bench_tprs[j], buf);
         fprintf(stdout,"Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
         fprintf(stdout, gmx_large_int_pfmt, ir->nsteps);
-        fprintf(stdout,", scaling factor %f\n", fac);
+        if (j > 0)
+            fprintf(stdout,", scaling factor %f\n", pmegrid[j].fac);
+        else
+            fprintf(stdout,", unmodified settings\n");
+
         write_tpx_state(fn_bench_tprs[j],ir,&state,&mtop);
         
         /* Write information about modified tpr settings to log file */
-        fprintf(fp, "%4d%10f%10f", j, fac, ir->rcoulomb);
+        if (j==0)
+            fprintf(fp, "%4d%10s%10f", j, "-input-", ir->rcoulomb);
+        else
+            fprintf(fp, "%4d%10f%10f", j, pmegrid[j].fac, ir->rcoulomb);
         fprintf(fp, "%5d%5d%5d", ir->nkx, ir->nky, ir->nkz);
-        if (fourierspacing > 0)
-            fprintf(fp, "%9f ", info->fourier_sp[j]);
+        fprintf(fp, " %9f ", info->fsx[j]);
         if (evdwCUT == ir->vdwtype)
             fprintf(fp, "%10f", ir->rvdw);
         if (EPME_SWITCHED(ir->coulombtype))
             fprintf(fp, "%10f", ir->rlist);
-        if ( info->orig_rlistlong != max_cutoff(info->orig_rlist,max_cutoff(info->orig_rvdw,info->orig_rcoulomb)) )
+        if ( info->rlistlong[0] != max_cutoff(info->rlist[0],max_cutoff(info->rvdw[0],info->rcoulomb[0])) )
             fprintf(fp, "%10f", ir->rlistlong);
         fprintf(fp, "  %-14s\n",fn_bench_tprs[j]);
 
         /* Make it clear to the user that some additional settings were modified */
-        if (   !is_equal(ir->rvdw           , info->orig_rvdw)
-            || !is_equal(ir->rlistlong      , info->orig_rlistlong) )
+        if (   !is_equal(ir->rvdw     , info->rvdw[0])
+            || !is_equal(ir->rlistlong, info->rlistlong[0]) )
         {
             bNote = TRUE;
         }
@@ -1055,7 +1245,7 @@ static void make_npme_list(
                            * largest common factor (depends on npp)           */
     int nlistmax;         /* Max. list size                                   */
     int nlist;            /* Actual number of entries in list                 */
-    int eNPME;
+    int eNPME=0;
 
 
     /* Do we need to check all possible values for -npme or is a reduced list enough? */
@@ -1377,11 +1567,11 @@ static void check_input(
             fprintf(stderr, "Note: Choose ntpr>1 to shift PME load between real and reciprocal space.\n");
     }
     
-    if ( is_equal(*downfac,*upfac) && (*ntprs > 1) )
+    if ( is_equal(*downfac,*upfac) && (*ntprs > 2) && !(fourierspacing > 0.0))
     {
-        fprintf(stderr, "WARNING: Resetting -ntpr to 1 since both scaling factors are the same.\n"
+        fprintf(stderr, "WARNING: Resetting -ntpr to 2 since both scaling factors are the same.\n"
                         "Please choose upfac unequal to downfac to test various PME grid settings\n");
-        *ntprs = 1;
+        *ntprs = 2;
     }
 
     /* Check whether max and min fraction are within required values */
@@ -1413,29 +1603,28 @@ static void check_input(
                          "scaling limit (%f) must be larger than lower limit (%f).",
                          *upfac, *downfac);
 
-    if (*downfac < 0.75 || *upfac > 1.5)
+    if (*downfac < 0.75 || *upfac > 1.25)
         fprintf(stderr, "WARNING: Applying extreme scaling factor. I hope you know what you are doing.\n");
     
     if (fourierspacing < 0)
         gmx_fatal(FARGS, "Please choose a positive value for fourierspacing.");
 
     /* Make shure that the scaling factor options are compatible with the number of tprs */
-    if ( (1 == *ntprs) && ( opt2parg_bSet("-upfac",npargs,pa) || opt2parg_bSet("-downfac",npargs,pa) ) )
+    if ( (*ntprs < 3) && ( opt2parg_bSet("-upfac",npargs,pa) || opt2parg_bSet("-downfac",npargs,pa) ) )
     {
         if (opt2parg_bSet("-upfac",npargs,pa) && opt2parg_bSet("-downfac",npargs,pa) && !is_equal(*upfac,*downfac))
         {
-            gmx_fatal(FARGS, "Please specify -ntpr > 1 for both scaling factors to take effect.\n"
+            fprintf(stderr, "NOTE: Specify -ntpr > 2 for both scaling factors to take effect.\n"
                              "(upfac=%f, downfac=%f)\n", *upfac, *downfac);
         }
         if (opt2parg_bSet("-upfac",npargs,pa))
             *downfac = *upfac;
         if (opt2parg_bSet("-downfac",npargs,pa))
             *upfac = *downfac;
-        if (!is_equal(*upfac, 1.0))
-        {
-            fprintf(stderr, "WARNING: Using a scaling factor of %f with -ntpr 1, thus not testing the original tpr settings.\n",
-                    *upfac);
-        }
+    }
+    if ( (2 == *ntprs) && (opt2parg_bSet("-downfac",npargs,pa)) && !is_equal(*downfac, 1.0))
+    {
+        *upfac = 1.0;
     }
 }
 
@@ -2063,7 +2252,7 @@ int gmx_tune_pme(int argc,char *argv[])
         cr->duty=DUTY_PP; /* makes the following routine happy */
         read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm),
 					&sim_part,&cpt_steps,cr,
-					FALSE,NULL,NULL);
+					FALSE,NFILE,fnm,NULL,NULL);
         sfree(cr);
         sim_part++;
         /* sim_part will now be 1 if no checkpoint file was found */
@@ -2148,8 +2337,7 @@ int gmx_tune_pme(int argc,char *argv[])
     
     if (fs > 0.0)
     {
-        fprintf(fp, "Requested grid spacing  : %f (tpr file will be changed accordingly)\n", fs);
-        fprintf(fp, "                          This will be the grid spacing at a scaling factor of 1.0\n");
+        fprintf(fp, "Requested grid spacing  : %f (This will be the grid spacing at a scaling factor of 1.0)\n", fs);
     }
     
     fprintf(fp, "Input file              : %s\n", opt2fn("-s",NFILE,fnm));
@@ -2159,14 +2347,16 @@ int gmx_tune_pme(int argc,char *argv[])
     info->nr_inputfiles = ntprs;
     for (i=0; i<ntprs; i++)
     {
-        snew(info->r_coulomb , ntprs);
-        snew(info->r_vdw     , ntprs);
-        snew(info->rlist     , ntprs);
-        snew(info->rlistlong , ntprs);
-        snew(info->fourier_nx, ntprs);
-        snew(info->fourier_ny, ntprs);
-        snew(info->fourier_nz, ntprs);
-        snew(info->fourier_sp, ntprs);
+        snew(info->rcoulomb , ntprs);
+        snew(info->rvdw     , ntprs);
+        snew(info->rlist    , ntprs);
+        snew(info->rlistlong, ntprs);
+        snew(info->nkx      , ntprs);
+        snew(info->nky      , ntprs);
+        snew(info->nkz      , ntprs);
+        snew(info->fsx      , ntprs);
+        snew(info->fsy      , ntprs);
+        snew(info->fsz      , ntprs);
     }
     /* Make alternative tpr files to test: */
     snew(tpr_names, ntprs);

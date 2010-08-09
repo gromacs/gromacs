@@ -49,6 +49,12 @@
 #include <copyfile.h>
 #endif
 
+#ifdef HAVE_DIRENT_H
+/* POSIX */
+#include <dirent.h>
+#endif
+
+
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <direct.h>
 #include <io.h>
@@ -143,7 +149,7 @@ static int pclose(FILE *fp)
 
 int ffclose(FILE *fp)
 {
-#ifndef SKIP_FFOPS
+#ifdef SKIP_FFOPS
     return fclose(fp);
 #else
     t_pstack *ps,*tmp;
@@ -213,6 +219,33 @@ void frewind(FILE *fp)
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
 }
+
+int gmx_fseek(FILE *stream, gmx_off_t offset, int whence)
+{
+#ifdef HAVE_FSEEKO
+    return fseeko(stream, offset, whence);
+#else
+#ifdef HAVE__FSEEKI64
+    return _fseeki64(stream, offset, whence);
+#else
+    return fseek(stream, offset, whence);
+#endif
+#endif
+}
+
+gmx_off_t gmx_ftell(FILE *stream)
+{
+#ifdef HAVE_FSEEKO
+    return ftello(stream);
+#else
+#ifdef HAVE__FSEEKI64 
+    return _ftelli64(stream);
+#else
+    return ftell(stream);
+#endif
+#endif
+}
+
 
 bool is_pipe(FILE *fp)
 {
@@ -306,7 +339,7 @@ bool gmx_eof(FILE *fp)
         return feof(fp);
     else {
         if ((beof=fread(data,1,1,fp))==1)
-            fseek(fp,-1,SEEK_CUR);
+            gmx_fseek(fp,-1,SEEK_CUR);
         return !beof;
     }
 }
@@ -317,7 +350,7 @@ static char *backup_fn(const char *file,int count_max)
      * generate 4-5 files in each round, and we dont
      * want to hit directory limits of 1024 or 2048 files.
      */
-#define COUNTMAX 128
+#define COUNTMAX 99
     int         i,count=1;
     char        *directory,*fn;
     char        *buf;
@@ -460,6 +493,189 @@ FILE *ffopen(const char *file,const char *mode)
     return ff;
 #endif
 }
+
+/* Our own implementation of dirent-like functionality to scan directories. */
+struct gmx_directory
+{
+#ifdef HAVE_DIRENT_H
+    DIR  *               dirent_handle;
+#elif (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+    intptr_t             windows_handle;
+    struct _finddata_t   finddata;
+    int                  first;
+#else
+    int      dummy;
+#endif
+};
+
+
+int
+gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname)
+{
+    struct gmx_directory *  gmxdir;
+    int                     rc;
+    
+    snew(gmxdir,1);
+    
+    *p_gmxdir = gmxdir;
+    
+#ifdef HAVE_DIRENT_H
+    if( (gmxdir->dirent_handle = opendir(dirname)) != NULL)
+    {
+        rc = 0;
+    }
+    else 
+    {
+        sfree(gmxdir);
+        *p_gmxdir = NULL;
+        rc        = EINVAL;
+    }
+#elif (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+    
+    if(dirname!=NULL && strlen(dirname)>0)
+    {
+        char *     tmpname;
+        size_t     namelength;
+        int        len;
+        
+        len = strlen(dirname);
+        snew(tmpname,len+3);
+        
+        strncpy(tmpname,dirname,len+1);
+        
+        /* Remove possible trailing directory separator */
+        if(tmpname[len]=='/' || tmpname[len]=='\\')
+        {
+            tmpname[len]='\0';
+        }
+        
+        /* Add wildcard */
+        strcat(tmpname,"/*");
+        
+        gmxdir->first = 1;
+        if( (gmxdir->windows_handle=_findfirst(tmpname,&gmxdir->finddata))>0L)
+        {
+            rc = 0;
+        }
+        else
+        {
+            if(errno=EINVAL)
+            {
+                sfree(gmxdir);
+                *p_gmxdir = NULL;
+                rc        = EINVAL;                
+            }
+            else
+            {
+                rc        = 0;
+            }
+        }
+    }
+    else
+    {
+        rc = EINVAL;
+    }
+#else
+    gmx_fatal(FARGS,
+              "Source compiled without POSIX dirent or windows support - cannot scan directories.\n"
+              "In the very unlikely event this is not a compile-time mistake you could consider\n"
+              "implementing support for your platform in futil.c, but contact the developers\n"
+              "to make sure it's really necessary!\n");
+    rc = -1;
+#endif
+    return rc;
+}
+
+
+int
+gmx_directory_nextfile(gmx_directory_t gmxdir,char *name,int maxlength_name)
+{
+    int                     rc;
+    
+#ifdef HAVE_DIRENT_H
+    
+    struct dirent           tmp_dirent;
+    struct dirent *         p;
+    
+    
+    if(gmxdir!=NULL && gmxdir->dirent_handle!=NULL)
+    {
+        rc = readdir_r(gmxdir->dirent_handle,&tmp_dirent,&p);
+        if(p!=NULL && rc==0)
+        {
+            strncpy(name,tmp_dirent.d_name,maxlength_name);
+        }
+        else
+        {
+            name[0] = '\0';
+            rc      = ENOENT;
+        }
+    }
+    else 
+    {
+        name[0] = '\0';
+        rc      = EINVAL;
+    }
+    
+#elif (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+    
+    if(gmxdir!=NULL)
+    {
+        if(gmxdir->windows_handle<=0)
+        {
+            
+            name[0] = '\0';
+            rc      = ENOENT;
+        }
+        else if(gmxdir->first==1)
+        {
+            strncpy(name,gmxdir->finddata.name,maxlength_name);
+            rc            = 0;
+            gmxdir->first = 0;
+        }
+        else
+        {
+            if(_findnext(gmxdir->windows_handle,&gmxdir->finddata)==0)
+            {
+                strncpy(name,gmxdir->finddata.name,maxlength_name);
+                rc      = 0;
+            }
+            else
+            {
+                name[0] = '\0';
+                rc      = ENOENT;
+            }
+        }
+    }
+    
+#else
+    gmx_fatal(FARGS,
+              "Source compiled without POSIX dirent or windows support - cannot scan directories.\n");
+    rc = -1;
+#endif
+    return rc;
+}
+
+
+int 
+gmx_directory_close(gmx_directory_t gmxdir)
+{
+    int                     rc;
+#ifdef HAVE_DIRENT_H
+    rc = (gmxdir != NULL) ? closedir(gmxdir->dirent_handle) : EINVAL;
+#elif (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+    rc = (gmxdir != NULL) ? _findclose(gmxdir->windows_handle) : EINVAL;
+#else
+    gmx_fatal(FARGS,
+              "Source compiled without POSIX dirent or windows support - cannot scan directories.\n");
+    rc = -1;
+#endif
+    
+    sfree(gmxdir);
+    return rc;
+}
+
+
 
 
 bool search_subdirs(const char *parent, char *libdir)
@@ -680,6 +896,7 @@ char *low_gmxlibfn(const char *file, bool bFatal)
 
 
 
+
 FILE *low_libopen(const char *file,bool bFatal)
 {
     FILE *ff;
@@ -745,7 +962,7 @@ void gmx_tmpnam(char *buf)
     /* name in Buf should now be OK */
 }
 
-int gmx_truncatefile(char *path, off_t length)
+int gmx_truncatefile(char *path, gmx_off_t length)
 {
 #ifdef _MSC_VER
     /* Microsoft visual studio does not have "truncate" */

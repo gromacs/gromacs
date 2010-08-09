@@ -292,7 +292,7 @@ static void print_gkrbin(const char *fn,t_gkrbin *gb,
    * models into account. The RDF is calculated as well, almost for free!
    */
   FILE   *fp;
-  char *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy" };
+  const char *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy" };
   int    i,j,n,last;
   real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO,cosav,ener;
   double fac;
@@ -559,7 +559,7 @@ static void dump_slab_dipoles(const char *fn,int idim,int nslice,
   char buf[STRLEN];
   int  i;
   real mutot;
-  char *leg_dim[4] = { 
+  const char *leg_dim[4] = { 
     "\\f{12}m\\f{4}\\sX\\N",
     "\\f{12}m\\f{4}\\sY\\N",
     "\\f{12}m\\f{4}\\sZ\\N",
@@ -630,27 +630,27 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 		   const char *axtitle, const char *slabfn,
                    const output_env_t oenv)
 {
-  char *leg_mtot[] = { 
+  const char *leg_mtot[] = { 
     "M\\sx \\N", 
     "M\\sy \\N",
     "M\\sz \\N",
     "|M\\stot \\N|"
   };
 #define NLEGMTOT asize(leg_mtot)
-  char *leg_eps[] = { 
+  const char *leg_eps[] = { 
     "epsilon",
     "G\\sk",
     "g\\sk"
   };
 #define NLEGEPS asize(leg_eps)
-  char *leg_aver[] = { 
+  const char *leg_aver[] = { 
     "< |M|\\S2\\N >", 
     "< |M| >\\S2\\N",
     "< |M|\\S2\\N > - < |M| >\\S2\\N",
     "< |M| >\\S2\\N / < |M|\\S2\\N >"
   };
 #define NLEGAVER asize(leg_aver)
-  char *leg_cosaver[] = {
+  const char *leg_cosaver[] = {
     "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
     "RMSD cos",
     "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
@@ -658,7 +658,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>"
   };
 #define NLEGCOSAVER asize(leg_cosaver)
-  char *leg_adip[] = {
+  const char *leg_adip[] = {
     "<mu>",
     "Std. Dev.",
     "Error"
@@ -691,6 +691,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   rvec       *slab_dipoles=NULL;
   t_atom     *atom=NULL;
   t_block    *mols=NULL;
+  gmx_rmpbc_t gpbc=NULL;
 
   gnx_tot = gnx[0];
   if (ncos > 1) {
@@ -848,6 +849,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 
     gkrbin = mk_gkrbin(rcut,rcmax,bPhi,ndegrees); 
   }
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natom,box);
 
   /* Start while loop over frames */
   t1 = t0 = t;
@@ -876,7 +878,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 	M_av[m] = 0;
 	M_av2[m] = 0;
       }
-      rm_pbc(&(top->idef),ePBC,natom,box,x,x);
+      gmx_rmpbc(gpbc,box,x,x);
       
       muframelsq = gmx_stats_init();
       /* Begin loop of all molecules in frame */
@@ -1070,6 +1072,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       bCont = read_next_x(oenv,status,&t,natom,x,box);
   } while (bCont);
   
+  gmx_rmpbc_done(gpbc);
+
   if (!bMU)
     close_trj(status);
     

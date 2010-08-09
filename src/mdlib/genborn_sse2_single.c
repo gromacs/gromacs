@@ -233,7 +233,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             {
                 ratio       = _mm_min_ps(ratio,still_p5inv);
                 theta       = _mm_mul_ps(ratio,still_pip5);
-                GMX_MM_SINCOS_PS(theta,sinq,cosq);
+                gmx_mm_sincos_ps(theta,&sinq,&cosq);
                 term        = _mm_mul_ps(half,_mm_sub_ps(one,cosq));
                 ccf         = _mm_mul_ps(term,term);
                 dccf        = _mm_mul_ps(_mm_mul_ps(two,term),
@@ -249,7 +249,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             {
                 ratioB      = _mm_min_ps(ratioB,still_p5inv);
                 thetaB      = _mm_mul_ps(ratioB,still_pip5);
-                GMX_MM_SINCOS_PS(thetaB,sinqB,cosqB);
+                gmx_mm_sincos_ps(thetaB,&sinqB,&cosqB);
                 termB       = _mm_mul_ps(half,_mm_sub_ps(one,cosqB));
                 ccfB        = _mm_mul_ps(termB,termB);
                 dccfB       = _mm_mul_ps(_mm_mul_ps(two,termB),
@@ -321,7 +321,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             {
                 ratio       = _mm_min_ps(ratio,still_p5inv);
                 theta       = _mm_mul_ps(ratio,still_pip5);
-                GMX_MM_SINCOS_PS(theta,sinq,cosq);
+                gmx_mm_sincos_ps(theta,&sinq,&cosq);
                 term        = _mm_mul_ps(half,_mm_sub_ps(one,cosq));
                 ccf         = _mm_mul_ps(term,term);
                 dccf        = _mm_mul_ps(_mm_mul_ps(two,term),
@@ -405,7 +405,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             {
                 ratio       = _mm_min_ps(ratio,still_p5inv);
                 theta       = _mm_mul_ps(ratio,still_pip5);
-                GMX_MM_SINCOS_PS(theta,sinq,cosq);            
+                gmx_mm_sincos_ps(theta,&sinq,&cosq);            
                 term        = _mm_mul_ps(half,_mm_sub_ps(one,cosq));
                 ccf         = _mm_mul_ps(term,term);
                 dccf        = _mm_mul_ps(_mm_mul_ps(two,term),

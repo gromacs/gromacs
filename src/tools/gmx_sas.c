@@ -144,7 +144,7 @@ void connelly_plot(const char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
     srenew(atoms->atomname,atoms->nr+ndots);
     srenew(atoms->resinfo,r0+1);
     atoms->atom[i0].resind = r0;
-    t_atoms_set_resinfo(atoms,i0,symtab,resnm,r0+1,' ',' ');
+    t_atoms_set_resinfo(atoms,i0,symtab,resnm,r0+1,' ',0,' ');
     srenew(atoms->pdbinfo,atoms->nr+ndots);
     snew(xnew,atoms->nr+ndots);
     for(i=0; (i<atoms->nr); i++)
@@ -170,7 +170,7 @@ void connelly_plot(const char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
   else {
     init_t_atoms(&aaa,ndots,TRUE);
     aaa.atom[0].resind = 0;
-    t_atoms_set_resinfo(&aaa,0,symtab,resnm,1,' ',' ');
+    t_atoms_set_resinfo(&aaa,0,symtab,resnm,1,' ',0,' ');
     snew(xnew,ndots);
     for(i=k=0; (i<ndots); i++) {
       ii0 = i;
@@ -223,12 +223,13 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      real dgs_default,bool bFindex, const output_env_t oenv)
 {
   FILE         *fp,*fp2,*fp3=NULL,*vp;
-  char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
+  const char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
 			      "Total", "D Gsolv" };
-  char   *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
+  const char   *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
   const char   *vfile;
   real         t;
   gmx_atomprop_t aps=NULL;
+  gmx_rmpbc_t  gpbc=NULL;
   t_trxstatus  *status;
   int          ndefault;
   int          i,j,ii,nfr,natoms,flag,nsurfacedots,res;
@@ -396,10 +397,13 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     
   gmx_atomprop_destroy(aps);
 
+  if (bPBC)
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
+  
   nfr=0;
   do {
     if (bPBC)
-      rm_pbc(&top.idef,ePBC,natoms,box,x,x);
+      gmx_rmpbc(gpbc,box,x,x);
     
     bConnelly = (nfr==0 && opt2bSet("-q",nfile,fnm));
     if (bConnelly) {
@@ -474,7 +478,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     }
     nfr++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
-  
+
+  if (bPBC)  
+    gmx_rmpbc_done(gpbc);
+
   fprintf(stderr,"\n");
   close_trj(status);
   ffclose(fp);

@@ -153,7 +153,7 @@ void close_trx(t_trxstatus *status);
  */
 
 t_trxstatus *open_trx(const char *outfile,const char *filemode);
-/* Open a TRX file and return the status number */
+/* Open a TRX file and return an allocated status pointer */
 
 /* get a fileio from a trxstatus */
 t_fileio *trx_get_fileio(t_trxstatus *status);
@@ -235,8 +235,8 @@ extern int read_first_x(const output_env_t oenv,t_trxstatus **status,
  * The integer in status should be passed to calls of read_next_x
  */
 
-extern bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,int natoms,
-                        rvec x[],matrix box);
+extern bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
+                        int natoms, rvec x[],matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.
@@ -311,16 +311,6 @@ extern int nenum(const char *const enumc[]);
  * depends on enumc[0] pointing to one of the other elements
  * array must be terminated by a NULL pointer 
  */
-
-#ifdef HAVE_MOTIF
-extern void gmx_gui(int *argc,char *argv[],
-                    int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
-                    int ndesc,const char *desc[],
-                    int nbugs,const char *bugs[]);
-/* This function plops up a Motif dialog box in which the command-line options
- * can be changed.
- */
-#endif
 
 extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
                               int nfile,t_filenm fnm[],int npargs,t_pargs *pa,

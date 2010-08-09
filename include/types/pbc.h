@@ -32,9 +32,14 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _matrix_h
+#define _matrix_h
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include "simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,3 +71,4 @@ typedef struct {
 }
 #endif
 
+#endif

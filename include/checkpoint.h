@@ -47,6 +47,9 @@
 extern "C" {
 #endif
 
+/* the name of the environment variable to disable fsync failure checks with */
+#define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
+
 /* Write a checkpoint to <fn>.cpt
  * Appends the _step<step>.cpt with bNumberAndKeep,
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
@@ -96,6 +99,7 @@ extern void list_checkpoint(const char *fn,FILE *out);
 bool read_checkpoint_simulation_part(const char *filename,int *simulation_part,
                                      gmx_large_int_t *step,t_commrec *cr,
 				     bool bAppendReq,
+				     int nfile,const t_filenm fnm[],
 				     const char *part_suffix,bool *bAddPart);
 
 #ifdef __cplusplus

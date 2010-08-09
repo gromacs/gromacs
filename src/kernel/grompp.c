@@ -290,7 +290,7 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   int         nmolblock;
   gmx_molblock_t *molblock,*molbs;
   t_atoms     *confat;
-  int         mb,mbs,i,nrmols,nmismatch;
+  int         mb,i,nrmols,nmismatch;
   char        buf[STRLEN];
   bool        bGB=FALSE;
   char        warn_buf[STRLEN];
@@ -310,7 +310,7 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   
   sys->nmolblock = 0;
   snew(sys->molblock,nmolblock);
-  mbs;
+  
   sys->natoms = 0;
   for(mb=0; mb<nmolblock; mb++) {
     if (sys->nmolblock > 0 &&
@@ -987,7 +987,7 @@ int main (int argc, char *argv[])
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
   output_env_t oenv;
-  bool         bVerbose;
+  bool         bVerbose = FALSE;
   warninp_t    wi;
   char         warn_buf[STRLEN];
 
@@ -1262,7 +1262,7 @@ int main (int argc, char *argv[])
     if (ir->ePBC==epbcXY && ir->nwall==2)
       svmul(ir->wall_ewald_zfac,box[ZZ],box[ZZ]);
     max_spacing = calc_grid(stdout,box,opts->fourierspacing,
-			    &(ir->nkx),&(ir->nky),&(ir->nkz),1);
+                            &(ir->nkx),&(ir->nky),&(ir->nkz));
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
         set_warning_line(wi,mdparin,-1);
         warning_note(wi,"Grid spacing larger then 0.1 while using PPPM.");

@@ -41,7 +41,7 @@
 #ifndef HISTOGRAM_H
 #define HISTOGRAM_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C"

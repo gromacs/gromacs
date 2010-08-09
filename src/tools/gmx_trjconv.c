@@ -417,7 +417,7 @@ void do_trunc(const char *fn, real t0)
     FILE         *fp;
     bool         bStop,bOK;
     t_trnheader  sh;
-    off_t        fpos;
+    gmx_off_t    fpos;
     char         yesno[256];
     int          j;
     real         t=0;
@@ -439,14 +439,10 @@ void do_trunc(const char *fn, real t0)
         bStop= FALSE;
         while (!bStop && fread_trnheader(in,&sh,&bOK)) {
             fread_htrn(in,&sh,NULL,NULL,NULL,NULL);
-            fpos=ftell(fp);
+            fpos=gmx_ftell(fp);
             t=sh.t;
             if (t>=t0) {
-#ifdef HAVE_FSEEKO	
-                fseeko(fp,fpos,SEEK_SET);
-#else
-                fseek(fp,fpos,SEEK_SET);
-#endif	
+                gmx_fseek(fp, fpos, SEEK_SET);
                 bStop=TRUE;
             }
         }
@@ -634,7 +630,7 @@ int gmx_trjconv(int argc,char *argv[])
             "progressive", NULL };
 
     static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
-    static bool  bCenter=FALSE,bTer=FALSE;
+    static bool  bCenter=FALSE;
     static int   skip_nr=1,ndec=3,nzero=0;
     static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
     static rvec  newbox = {0,0,0}, shift = {0,0,0}, trans = {0,0,0};
@@ -715,10 +711,6 @@ int gmx_trjconv(int argc,char *argv[])
                         { &nzero },
                         "Prepend file number in case you use the -sep flag "
                         "with this number of zeroes" },
-                    { "-ter", FALSE, etBOOL,
-                        { &bTer },
-                        "Use 'TER' in pdb file as end of frame in stead of "
-                        "default 'ENDMDL'" },
                     { "-dropunder", FALSE, etREAL,
                         { &dropunder }, "Drop all frames below this value" },
                     { "-dropover", FALSE, etREAL,
@@ -763,6 +755,7 @@ int gmx_trjconv(int argc,char *argv[])
     real         tshift=0,t0=-1,dt=0.001,prec;
     bool         bFit,bFitXY,bPFit,bReset;
     int          nfitdim;
+    gmx_rmpbc_t  gpbc=NULL;
     bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
     bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
     bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
@@ -846,6 +839,7 @@ int gmx_trjconv(int argc,char *argv[])
         if (bFit || bReset)
             nfitdim = (fit_enum==efFitXY || fit_enum==efResetXY) ? 2 : 3;
         bRmPBC = bFit || bPBCWhole || bPBCcomRes || bPBCcomMol;
+	  
         if (bSetUR) {
             if (!(bPBCcomRes || bPBCcomMol ||  bPBCcomAtom)) {
                 fprintf(stderr,
@@ -863,8 +857,6 @@ int gmx_trjconv(int argc,char *argv[])
                       "First doing the rotational fit and then doing the PBC treatment gives incorrect\n"
 		      "results!");
 	}
-        /* set flag for pdbio to terminate frames at 'TER' (iso 'ENDMDL') */
-        pdb_use_ter(bTer);
 
         /* ndec is in nr of decimal places, prec is a multiplication factor: */
         prec = 1;
@@ -945,6 +937,8 @@ int gmx_trjconv(int argc,char *argv[])
 
             if (bCONECT)
                 gc = gmx_conect_generate(&top);
+	    if (bRmPBC)
+	      gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,top_box);
         }
 
         /* get frame number index */
@@ -1011,7 +1005,7 @@ int gmx_trjconv(int argc,char *argv[])
             /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
             if (bRmPBC)
-                rm_pbc(&(top.idef),ePBC,atoms->nr,top_box,xp,xp);
+	      gmx_rmpbc(gpbc,top_box,xp,xp);
             copy_rvec(xp[index[0]],x_shift);
             reset_x_ndim(nfitdim,ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
             rvec_dec(x_shift,xp[index[0]]);
@@ -1202,7 +1196,7 @@ int gmx_trjconv(int argc,char *argv[])
                     /* Now modify the coords according to the flags,
 	     for normal fit, this is only done for output frames */
                     if (bRmPBC)
-                        rm_pbc(&(top.idef),ePBC,natoms,fr.box,fr.x,fr.x);
+		      gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
 
                     reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
                     do_fit(natoms,w_rls,xp,fr.x);
@@ -1280,7 +1274,7 @@ int gmx_trjconv(int argc,char *argv[])
                                for PFit we did this already! */
 
                             if (bRmPBC)
-                                rm_pbc(&(top.idef),ePBC,natoms,fr.box,fr.x,fr.x);
+			      gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
 
                             if (bReset) {
                                 reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
@@ -1427,7 +1421,7 @@ int gmx_trjconv(int argc,char *argv[])
                                 else
                                     model_nr++;
                                 write_pdbfile(out,title,&useatoms,frout.x,
-                                              frout.ePBC,frout.box,0,model_nr,gc);
+                                              frout.ePBC,frout.box,' ',model_nr,gc,TRUE);
                                 break;
                             case efG96:
                                 frout.title = title;
@@ -1486,7 +1480,9 @@ int gmx_trjconv(int argc,char *argv[])
         fprintf(stderr,"\n");
 
         close_trj(status);
-
+	if (bRmPBC)
+	  gmx_rmpbc_done(gpbc);
+	
         if (trxout)
             close_trx(trxout);
         else if (out != NULL)

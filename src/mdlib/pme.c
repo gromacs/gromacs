@@ -1150,7 +1150,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
         for(kx=0; kx<end; kx+=4)                    \
         {                                           \
             tmp_sse = _mm_load_ps(r_aligned+kx);    \
-            tmp_sse = gmx_mm_exp_ps_lbc(tmp_sse);   \
+            tmp_sse = gmx_mm_exp_ps(tmp_sse);       \
             _mm_store_ps(r_aligned+kx,tmp_sse);     \
         }                                           \
     }
@@ -2253,15 +2253,19 @@ make_gridindex5_to_localindex(int n,int local_start,int local_end,
              * between zero and values close to the precision of a real,
              * which is anyhow the accuracy of the whole mesh calculation.
              */
-            if (gtl[i] == n-1)
+            /* With local_size=0 we should not change i=local_start */
+            if (i % n != local_start)
             {
-                gtl[i] = 0;
-                fsh[i] = -1; 
-            }
-            if (gtl[i] == local_size)
-            {
-                gtl[i] = local_size - 1;
-                fsh[i] = 1;
+                if (gtl[i] == n-1)
+                {
+                    gtl[i] = 0;
+                    fsh[i] = -1; 
+                }
+                else if (gtl[i] == local_size)
+                {
+                    gtl[i] = local_size - 1;
+                    fsh[i] = 1;
+                }
             }
         }
     }
@@ -2648,7 +2652,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     real *chargeA=NULL,*chargeB=NULL;
     real *c6A=NULL,*c6B=NULL;
     real lambda=0;
-    int  maxshift0=0,maxshift1=0;
+    int  maxshift_x=0,maxshift_y=0;
     real   energy_q, energy_lj, dvdlambda;
     matrix vir_q, vir_lj;
     float cycles;
@@ -2668,7 +2672,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         /* Domain decomposition */
         natoms = gmx_pme_recv_q_x(pme_pp,
                                   &chargeA,&chargeB,&c6A,&c6B,box,&x_pp,&f_pp,
-                                  &maxshift0,&maxshift1,
+                                  &maxshift_x,&maxshift_y,
                                   &pme->bFEP,&lambda,
                                   &pme_flags,
                                   &step);
@@ -2689,7 +2693,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         clear_mat(vir_q);
         clear_mat(vir_lj);
         gmx_pme_do(pme, 0, natoms, x_pp, f_pp, chargeA, chargeB, c6A, c6B, box,
-                   cr, maxshift0, maxshift1, nrnb, wcycle,
+                   cr, maxshift_x, maxshift_y, nrnb, wcycle,
                    vir_q, ewaldcoeff_q, vir_lj, ewaldcoeff_lj,
                    &energy_q, &energy_lj, lambda, &dvdlambda,
                    pme_flags);
@@ -2721,7 +2725,7 @@ int gmx_pme_do(gmx_pme_t pme,
                real *chargeA,   real *chargeB,
                real *c6A,       real *c6B,
                matrix box,	t_commrec *cr,
-               int  maxshift0,  int maxshift1,
+               int  maxshift_x, int maxshift_y,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
                matrix vir_q,    real ewaldcoeff_q,
                matrix vir_lj,   real ewaldcoeff_lj,
@@ -2753,7 +2757,7 @@ int gmx_pme_do(gmx_pme_t pme,
             atc->pd_nalloc = over_alloc_dd(atc->npd);
             srenew(atc->pd,atc->pd_nalloc);
         }
-        atc->maxshift = (atc->dimind==0 ? maxshift0 : maxshift1);
+        atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
     }
     
     bFirst = TRUE;
@@ -2846,7 +2850,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     atc->pd_nalloc = over_alloc_dd(atc->npd);
                     srenew(atc->pd,atc->pd_nalloc);
                 }
-                atc->maxshift = (atc->dimind==0 ? maxshift0 : maxshift1);
+                atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
                 pme_calc_pidx(n_d,pme->recipbox,x_d,atc);
                 where();
                 

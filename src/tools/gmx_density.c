@@ -157,6 +157,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
       slice;             /* current slice */
   t_electron *found;     /* found by bsearch */
   t_electron sought;     /* thingie thought by bsearch */
+  gmx_rmpbc_t  gpbc=NULL;
  
   real t, 
         z;
@@ -186,9 +187,10 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
   
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
+    gmx_rmpbc(gpbc,box,x0,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -224,7 +226,8 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
     }
       nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
-  
+  gmx_rmpbc_done(gpbc);
+
   /*********** done with status file **********/
   close_trj(status);
   
@@ -262,6 +265,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   real t, 
         z;
   char *buf;             /* for tmp. keeping atomname */
+  gmx_rmpbc_t  gpbc=NULL;
 
   switch(axis) {
   case 0:
@@ -289,9 +293,10 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
   
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
+    gmx_rmpbc(gpbc,box,x0,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -315,7 +320,8 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 
     nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
-  
+  gmx_rmpbc_done(gpbc);
+
   /*********** done with status file **********/
   close_trj(status);
   
@@ -355,7 +361,7 @@ void plot_density(real *slDensity[], const char *afile, int nslices,
   
   den = xvgropen(afile, "Partial densities", "Box (nm)", ylabel,oenv);
 
-  xvgr_legend(den,nr_grps,grpname,oenv);
+  xvgr_legend(den,nr_grps,(const char**)grpname,oenv);
 
   for (slice = 0; (slice < nslices); slice++) { 
     fprintf(den,"%12g  ", slice * slWidth);

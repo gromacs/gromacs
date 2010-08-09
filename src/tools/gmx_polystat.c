@@ -158,10 +158,11 @@ int gmx_polystat(int argc,char *argv[])
   double mmol,m;
   char   title[STRLEN];
   FILE   *out,*outv,*outp, *outi;
-  char *leg[8] = { "end to end", "<R\\sg\\N>",
+  const char *leg[8] = { "end to end", "<R\\sg\\N>",
 	 	         "<R\\sg\\N> eig1", "<R\\sg\\N> eig2", "<R\\sg\\N> eig3",
 		         "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>" };
   char   **legp,buf[STRLEN];
+  gmx_rmpbc_t  gpbc=NULL;
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,
@@ -213,7 +214,7 @@ int gmx_polystat(int argc,char *argv[])
 	legp[d*DIM+d2] = strdup(buf);
       }
     }
-    xvgr_legend(outv,DIM*DIM,legp,oenv);
+    xvgr_legend(outv,DIM*DIM,(const char**)legp,oenv);
   } else {
     outv = NULL;
   }
@@ -253,8 +254,11 @@ int gmx_polystat(int argc,char *argv[])
   sum_eed2_tot = 0;
   sum_gyro_tot = 0;
   sum_pers_tot = 0;
+  
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+  
   do {
-    rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,box,x,x);
     
     sum_eed2 = 0;
     for(d=0; d<DIM; d++)
@@ -379,6 +383,8 @@ int gmx_polystat(int argc,char *argv[])
 
     frame++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
+  
+  gmx_rmpbc_done(gpbc);
 
   close_trx(status);
 

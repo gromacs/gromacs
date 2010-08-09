@@ -77,11 +77,11 @@ extern void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
 			    int *nmy_ddnodes,int **my_ddnodes,int *node_peer);
 /* Returns the set of DD nodes that communicate with pme node cr->nodeid */
 
-extern int dd_pme_maxshift0(gmx_domdec_t *dd);
-/* Returns the maximum shift for coordinate communication in PME, dim 0 */
+extern int dd_pme_maxshift_x(gmx_domdec_t *dd);
+/* Returns the maximum shift for coordinate communication in PME, dim x */
 
-extern int dd_pme_maxshift1(gmx_domdec_t *dd);
-/* Returns the maximum shift for coordinate communication in PME, dim 1 */
+extern int dd_pme_maxshift_y(gmx_domdec_t *dd);
+/* Returns the maximum shift for coordinate communication in PME, dim y */
 
 extern void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order);
 
@@ -257,7 +257,7 @@ extern void write_dd_pdb(const char *fn,gmx_large_int_t step,const char *title,
 /* In domdec_setup.c */
 
 extern real comm_box_frac(ivec dd_nc,real cutoff,gmx_ddbox_t *ddbox);
-/* Returns the volume fraction of the system communicated by each node */
+/* Returns the volume fraction of the system that is communicated */
 
 extern real dd_choose_grid(FILE *fplog,
                            t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
