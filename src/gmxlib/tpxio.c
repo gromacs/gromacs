@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 71;
+static const int tpx_version = 72;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -454,7 +454,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     gmx_fio_do_int(fio,ir->nkz);
     gmx_fio_do_int(fio,ir->pme_order);
     gmx_fio_do_real(fio,ir->ewald_rtol);
-    if (file_version >= 71)
+    if (file_version >= 72)
       gmx_fio_do_real(fio,ir->ewald_rtol_lj);
     else
       ir->ewald_rtol_lj = ir->ewald_rtol;
