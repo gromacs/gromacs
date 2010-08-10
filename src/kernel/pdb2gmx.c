@@ -469,7 +469,6 @@ void process_chain(t_atoms *pdba, rvec *x,
 		   bool bTrpU,bool bPheU,bool bTyrU,
 		   bool bLysMan,bool bAspMan,bool bGluMan,
 		   bool bHisMan,bool bArgMan,bool bGlnMan,
-		   bool bRenameCys,
 		   real angle,real distance,t_symtab *symtab,
 		   int nrr,const rtprename_t *rr)
 {
@@ -494,14 +493,6 @@ void process_chain(t_atoms *pdba, rvec *x,
     rename_bbint(pdba,"GLU",get_glutp,FALSE,symtab,nrr,rr);
   else
     rename_bb(pdba,"GLUH","GLU",FALSE,symtab);
-
-  if (bRenameCys) {
-    /* Make sure we don't have things like CYS?
-     * And rename CYS to CYSH, since that is the Gromacs standard
-     * unbound cysteine rtp entry name.
-     */ 
-    rename_bb(pdba,"CYS","CYS",FALSE,symtab);
-  }
 
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
@@ -1062,7 +1053,6 @@ int main(int argc, char *argv[])
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bGlnMan=FALSE, bArgMan=FALSE;
-  static bool bRenameCys=TRUE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bSort=TRUE, bAllowMissing=FALSE, bRemoveH=FALSE;
   static bool bDeuterate=FALSE,bVerbose=FALSE,bChargeGroups=TRUE,bCmap=TRUE;
@@ -1109,8 +1099,6 @@ int main(int argc, char *argv[])
       "Interactive Glutamine selection, iso neutral" },
     { "-his",    FALSE, etBOOL, {&bHisMan},
       "Interactive Histidine selection, iso checking H-bonds" },
-    { "-cysh",    FALSE, etBOOL, {&bRenameCys},
-      "HIDDENUse rtp entry CYSH for cysteines" },
     { "-angle",  FALSE, etREAL, {&angle}, 
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
     { "-dist",   FALSE, etREAL, {&distance},
@@ -1500,7 +1488,7 @@ int main(int argc, char *argv[])
 	      chain+1,natom,nres);
       
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
-		  bHisMan,bArgMan,bGlnMan,bRenameCys,angle,distance,&symtab,
+		  bHisMan,bArgMan,bGlnMan,angle,distance,&symtab,
 		  nrtprename,rtprename);
       
     for(i=0; i<cc->nterpairs; i++) {
