@@ -2123,11 +2123,22 @@ void do_index(const char* mdparin, const char *ndx,
             printf ("AdResS: Energy group %s is treated as coarse-grained \n",
               (char*)(gnames[groups->grps[egcENER].nm_ind[k]]));
     }
+   // set energy group exclusions between all coarse-grained and explicit groups
+      for (j = 0; j < nr; j++) {
+            for (k = 0; k < nr; k++) {
+                if (ir->adress_group_explicit[k] && !ir->adress_group_explicit[j]){
+                    ir->opts.egp_flags[nr * j + k] |= EGP_EXCL;
+                    if (debug) fprintf(debug,"AdResS excl %s %s \n",
+                        (char*)(gnames[groups->grps[egcENER].nm_ind[j]]),
+                        (char*)(gnames[groups->grps[egcENER].nm_ind[k]]));
+                }
+            }
+      }
   }else if (ir->adress_type != eAdressOff){
       warning(wi,"For an AdResS simulation at least one coarse-grained energy group has to be specified in adress_cg_grp_names");
   }
 
-  
+
   /* AdResS multiple tf tables input */
   nadress_tf_grp_names = str_nelem(adress_tf_grp_names,MAXPTR,ptr1);
   ir->n_adress_tf_grps = nadress_tf_grp_names;
