@@ -1061,7 +1061,7 @@ int main(int argc, char *argv[])
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static const char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   static const char *watstr[] = { NULL, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
-  static const char *chainsep[] = { NULL, "id_or_ter", "id_and_ter", "ter", "id", "interactive" };
+  static const char *chainsep[] = { NULL, "id_or_ter", "id_and_ter", "ter", "id", "interactive", NULL };
   static const char *ff = "select";
 
   t_pargs pa[] = {
