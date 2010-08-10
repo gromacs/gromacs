@@ -32,7 +32,7 @@ add_library(gmxana
             gmx_membed.c    )
 
 
-target_link_libraries(gmxana gmx)
+target_link_libraries(gmxana md)
 set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_BINARY_SUFFIX}")
 
 # List of programs with single corresponding .c source file,
