@@ -266,7 +266,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   int          nmin,nmax;
   t_trxstatus  *status;
   int          i=-1,j,k,natoms;
-  int	       min1,min2,max1,max2;
+  int	       min1,min2,max1,max2,min1r,min2r,max1r,max2r;
   atom_id      oindex[2];
   rvec         *x0;
   matrix       box;
@@ -377,7 +377,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	  for(j=0; j<nres; j++) {
 	    calc_dist(rcut,bPBC,ePBC,box,x0,residue[j+1]-residue[j],gnx[i],
 		      &(index[0][residue[j]]),index[i],bGroup,
-		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+		      &dmin,&dmax,&nmin,&nmax,&min1r,&min2r,&max1r,&max2r);
 	    mindres[i-1][j] = min(mindres[i-1][j],dmin);
 	    maxdres[i-1][j] = max(maxdres[i-1][j],dmax);
 	  }

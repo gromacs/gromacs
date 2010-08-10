@@ -1259,6 +1259,8 @@ void init_forcerec(FILE *fp,
 {
     int     i,j,m,natoms,ngrp,negp_pp,negptable,egi,egj;
     real    rtab;
+    char    *env;
+    double  dbl;
     rvec    box_size;
     const t_block *cgs;
     bool    bTab,bSep14tab,bNormalnblists;
@@ -1335,10 +1337,22 @@ void init_forcerec(FILE *fp,
     fr->fc_stepsize = ir->fc_stepsize;
     
     /* Free energy */
-    fr->efep       = ir->efep;
-    fr->sc_alpha   = ir->sc_alpha;
-    fr->sc_power   = ir->sc_power;
-    fr->sc_sigma6  = pow(ir->sc_sigma,6);
+    fr->efep          = ir->efep;
+    fr->sc_alpha      = ir->sc_alpha;
+    fr->sc_power      = ir->sc_power;
+    fr->sc_sigma6_def = pow(ir->sc_sigma,6);
+    fr->sc_sigma6_min = pow(ir->sc_sigma_min,6);
+    env = getenv("GMX_SCSIGMA_MIN");
+    if (env != NULL)
+    {
+        dbl = 0;
+        sscanf(env,"%lf",&dbl);
+        fr->sc_sigma6_min = pow(dbl,6);
+        if (fp)
+        {
+            fprintf(fp,"Setting the minimum soft core sigma to %g nm\n",dbl);
+        }
+    }
     
     fr->UseOptimizedKernels = (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL);
     if(fp && fr->UseOptimizedKernels==FALSE)

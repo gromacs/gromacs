@@ -72,21 +72,24 @@ extern void set_stochd_state(gmx_update_t sd,t_state *state);
 extern void set_deform_reference_box(gmx_update_t upd,
 				     gmx_large_int_t step,matrix box);
 
-extern void update_extended(FILE         *fplog,
-		   gmx_large_int_t   step,
-		   t_inputrec   *inputrec,  
-		   t_mdatoms    *md,
-		   t_state      *state,
-		   gmx_ekindata_t *ekind,
-		   matrix       pcoupl_mu,		    
-		   matrix       M,	    
-		   gmx_wallcycle_t wcycle,
-		   gmx_update_t upd,
-		   bool         bInitStep,
-		   bool         bFirstHalf,
-		   t_extmass    *MassQ
-);
-/* Return TRUE if OK, FALSE in case of Shake Error */
+extern void update_tcouple(FILE         *fplog,
+			   gmx_large_int_t   step,
+			   t_inputrec   *inputrec,   
+			   t_state      *state,
+			   gmx_ekindata_t *ekind,
+			   gmx_wallcycle_t wcycle,
+			   gmx_update_t upd,
+			   t_extmass    *MassQ);
+
+extern void update_pcouple(FILE         *fplog,
+			   gmx_large_int_t   step,
+			   t_inputrec   *inputrec,   
+			   t_state      *state,
+			   matrix       pcoupl_mu,
+			   matrix       M,
+			   gmx_wallcycle_t wcycle,
+			   gmx_update_t upd,
+			   bool         bInitStep);
 
 extern void update_coords(FILE         *fplog,
 			  gmx_large_int_t   step,
@@ -178,7 +181,7 @@ extern void
 restore_ekinstate_from_state(t_commrec *cr,
 			     gmx_ekindata_t *ekind,ekinstate_t *ekinstate);
 
-extern void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt);
+extern void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt);
 
 extern void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			      double xi[],double vxi[],t_extmass *MassQ);
@@ -199,7 +202,7 @@ extern real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
 extern void NBaroT_trotter(t_grpopts *opts, real dt,
 			   double xi[],double vxi[],real *veta, t_extmass *MassQ);
 
-extern void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
+extern void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
 			    double therm_integral[],
 			    gmx_rng_t rng);
 /* Compute temperature scaling. For V-rescale it is done in update. */

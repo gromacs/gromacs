@@ -273,7 +273,7 @@ fi
 
 
 AC_ARG_WITH(qmmm_orca,
-              [AC_HELP_STRING([--without-qmmm-mopac],
+              [AC_HELP_STRING([--without-qmmm-orca],
                               [Use ORCA for QM-MM])],,with_qmmm_orca=no)
 if test "$with_qmmm_orca"="yes"; then
   AC_DEFINE(GMX_QMMM_ORCA,,[Use ORCA for QM-MM calculations])
