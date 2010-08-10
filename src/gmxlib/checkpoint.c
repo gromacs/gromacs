@@ -86,13 +86,18 @@ const char *eeks_names[eeksNR]=
 
 enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
        eenhENERGY_SUM_SIM, eenhENERGY_NSUM_SIM,
-       eenhENERGY_NSTEPS, eenhENERGY_NSTEPS_SIM, eenhNR };
+       eenhENERGY_NSTEPS, eenhENERGY_NSTEPS_SIM, 
+       eenhENERGY_DELTA_H_NN, eenhENERGY_DELTA_H_N, 
+       eenhENERGY_DELTA_H_LIST, eenhENERGY_DELTA_H_STARTTIME, 
+       eenhNR };
 
 const char *eenh_names[eenhNR]=
 {
     "energy_n", "energy_aver", "energy_sum", "energy_nsum",
     "energy_sum_sim", "energy_nsum_sim",
-    "energy_nsteps", "energy_nsteps_sim" 
+    "energy_nsteps", "energy_nsteps_sim", 
+    "energy_delta_h_nn", "energy_delta_h_n", 
+    "energy_delta_h_list", "energy_delta_h_starttime"
 };
 
 
@@ -863,11 +868,13 @@ static int do_cpt_ekinstate(XDR *xd,bool bRead,
     return ret;
 }
 
+
 static int do_cpt_enerhist(XDR *xd,bool bRead,
                            int fflags,energyhistory_t *enerhist,
                            FILE *list)
 {
     int  i;
+    int  j;
     int  ret;
 
     ret = 0;
@@ -878,6 +885,14 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
         enerhist->nsum       = 0;
         enerhist->nsteps_sim = 0;
         enerhist->nsum_sim   = 0;
+        enerhist->dht        = NULL;
+
+        if (fflags & (1<< eenhENERGY_DELTA_H_NN) )
+        {
+            snew(enerhist->dht,1);
+            enerhist->dht->ndh = NULL;
+            enerhist->dht->dh = NULL;
+        }
     }
 
     for(i=0; (i<eenhNR && ret == 0); i++)
@@ -886,17 +901,38 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
         {
             switch (i)
             {
-			case eenhENERGY_N:     ret = do_cpte_int(xd,2,i,fflags,&enerhist->nener,list); break;
-			case eenhENERGY_AVER:  ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_ave,list); break;
- 			case eenhENERGY_SUM:   ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum,list); break;
-            case eenhENERGY_NSUM:  do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum,list); break;
-            case eenhENERGY_SUM_SIM: ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum_sim,list); break;
-            case eenhENERGY_NSUM_SIM:   do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum_sim,list); break;
-            case eenhENERGY_NSTEPS:     do_cpt_step_err(xd,eenh_names[i],&enerhist->nsteps,list); break;
-            case eenhENERGY_NSTEPS_SIM: do_cpt_step_err(xd,eenh_names[i],&enerhist->nsteps_sim,list); break;
-            default:
-                gmx_fatal(FARGS,"Unknown energy history entry %d\n"
-                          "You are probably reading a new checkpoint file with old code",i);
+                case eenhENERGY_N:     ret = do_cpte_int(xd,2,i,fflags,&enerhist->nener,list); break;
+                case eenhENERGY_AVER:  ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_ave,list); break;
+                case eenhENERGY_SUM:   ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum,list); break;
+                case eenhENERGY_NSUM:  do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum,list); break;
+                case eenhENERGY_SUM_SIM: ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum_sim,list); break;
+                case eenhENERGY_NSUM_SIM:   do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum_sim,list); break;
+                case eenhENERGY_NSTEPS:     do_cpt_step_err(xd,eenh_names[i],&enerhist->nsteps,list); break;
+                case eenhENERGY_NSTEPS_SIM: do_cpt_step_err(xd,eenh_names[i],&enerhist->nsteps_sim,list); break;
+                case eenhENERGY_DELTA_H_NN: do_cpt_int_err(xd,eenh_names[i], &(enerhist->dht->nndh), list); 
+                    if (bRead) /* now allocate memory for it */
+                    {
+                        snew(enerhist->dht->dh, enerhist->dht->nndh);
+                        snew(enerhist->dht->ndh, enerhist->dht->nndh);
+                        for(j=0;j<enerhist->dht->nndh;j++)
+                        {
+                            enerhist->dht->ndh[j] = 0;
+                            enerhist->dht->dh[j] = NULL;
+                        }
+                    }
+                break;
+                case eenhENERGY_DELTA_H_N: ret=do_cpte_ints(xd, 2, i, fflags, enerhist->dht->nndh, &(enerhist->dht->ndh), list); break;
+                case eenhENERGY_DELTA_H_LIST: 
+                    for(j=0;j<enerhist->dht->nndh;j++)
+                    {
+                        ret=do_cpte_reals(xd, 2, i, fflags, enerhist->dht->ndh[j], &(enerhist->dht->dh[j]), list); 
+                    }
+                    break;
+                case eenhENERGY_DELTA_H_STARTTIME: 
+                    ret=do_cpte_real(xd, 2, i, fflags, &(enerhist->dht->starttime), list); break;
+                default:
+                    gmx_fatal(FARGS,"Unknown energy history entry %d\n"
+                              "You are probably reading a new checkpoint file with old code",i);
             }
         }
     }
@@ -1119,6 +1155,13 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
         {
             flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSTEPS_SIM) |
                           (1<<eenhENERGY_NSUM_SIM));
+        }
+        if (state->enerhist.dht)
+        {
+            flags_enh |= ( (1<< eenhENERGY_DELTA_H_NN) |
+                           (1<< eenhENERGY_DELTA_H_N) |
+                           (1<< eenhENERGY_DELTA_H_LIST) | 
+                           (1<< eenhENERGY_DELTA_H_STARTTIME) );
         }
     }
 

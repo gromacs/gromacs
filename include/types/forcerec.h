@@ -219,6 +219,7 @@ typedef struct {
   int  solvent_opt;
   int  nWatMol;
   bool bGrid;
+  bool bExcl_IntraCGAll_InterCGNone;
   cginfo_mb_t *cginfo_mb;
   int  *cginfo;
   rvec *cg_cm;

@@ -523,7 +523,14 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         }
     }
 
-    if ((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
+    if (((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
+#ifdef GMX_THREADS
+        /* With thread MPI only the master node/thread exists in mdrun.c,
+         * therefore non-master nodes need to open the "seppot" log file here.
+         */
+        || (!MASTER(cr) && (Flags & MD_SEPPOT))
+#endif
+        )
     {
         gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
                              Flags,&fplog);
