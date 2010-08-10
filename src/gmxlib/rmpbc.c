@@ -90,10 +90,11 @@ void gmx_rmpbc(gmx_rmpbc_t gpbc,matrix box,rvec x[],rvec x_s[])
   if (NULL != gpbc->gr) {
     mk_mshift(stdout,gpbc->gr,gpbc->ePBC,box,x);
     shift_x(gpbc->gr,box,x,x_s);
-  }
-  if (x != x_s)
-    for (i=0; i<gpbc->natoms; i++)
+  } else if (x != x_s) {
+    for (i=0; i<gpbc->natoms; i++) {
       copy_rvec(x[i],x_s[i]);
+    }
+  }
 }
 
 void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)

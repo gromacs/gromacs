@@ -433,7 +433,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
 		}
 		else
 		{
-			ir->gb_dielectric_offset = 0.09;
+			ir->gb_dielectric_offset = 0.009;
 			ir->sa_algorithm = esaAPPROX;
 		}
 		gmx_fio_do_real(fio,ir->sa_surface_tension);
@@ -605,6 +605,17 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       gmx_fio_do_real(fio,ir->sc_sigma);
     else
       ir->sc_sigma = 0.3;
+    if (bRead)
+    {
+        if (file_version >= 71)
+        {
+            ir->sc_sigma_min = ir->sc_sigma;
+        }
+        else
+        {
+            ir->sc_sigma_min = 0;
+        }
+    }
     if (file_version >= 64) {
       gmx_fio_do_int(fio,ir->nstdhdl);
     } else {

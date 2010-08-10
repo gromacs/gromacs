@@ -144,11 +144,7 @@ ELSE(WIN32)
           GSL_LIBRARIES
           GSL_LINK_DIRECTORIES
           )
-          
-      ELSE(GSL_INCLUDE_DIR)      
-        MESSAGE("FindGSL.cmake: gsl-config/pkg-config gsl not found. Please set it manually. GSL_CONFIG=${GSL_CONFIG}")
       ENDIF(GSL_INCLUDE_DIR)
-      
     ENDIF(GSL_CONFIG)
 
   ENDIF(UNIX)
@@ -171,7 +167,7 @@ IF(NOT GSL_FOUND)
     IF(GSL_FIND_REQUIRED)
       MESSAGE(FATAL_ERROR "GSL required, please specify it's location.")
     ELSE(GSL_FIND_REQUIRED)
-      MESSAGE(STATUS       "ERROR: GSL was not found.")
+      MESSAGE(STATUS       "GSL was not found.")
     ENDIF(GSL_FIND_REQUIRED)
   ENDIF(NOT GSL_FIND_QUIETLY)
 ENDIF(NOT GSL_FOUND)

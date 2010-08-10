@@ -67,7 +67,7 @@
 #include "eigensolver.h"
 #include "physics.h"
 #include "gmx_ana.h"
-
+#include "string2.h"
 
 int gmx_covar(int argc,char *argv[])
 {
@@ -135,6 +135,7 @@ int gmx_covar(int argc,char *argv[])
   atom_id    *index,*ifit;
   bool       bDiffMass1,bDiffMass2;
   time_t     now;
+  char       timebuf[STRLEN];
   t_rgb      rlo,rmi,rhi;
   real       *tmp;
   output_env_t oenv;
@@ -464,9 +465,10 @@ int gmx_covar(int argc,char *argv[])
 
   out = ffopen(logfile,"w");
 
-  now = time(NULL);
-  fprintf(out,"Covariance analysis log, written %s\n",
-	  ctime(&now));
+  time(&now);
+  gmx_ctime_r(&now,timebuf,STRLEN);
+  fprintf(out,"Covariance analysis log, written %s\n",timebuf);
+    
   fprintf(out,"Program: %s\n",argv[0]);
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
   pcwd=_getcwd(str,STRLEN);

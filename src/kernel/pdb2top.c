@@ -322,7 +322,7 @@ void choose_watermodel(const char *wmsel,const char *ffdir,
         }
     }
     fclose(fp);
-    fprintf(stderr,"%2d: %s\n",nwm,"None");
+    fprintf(stderr,"%2d: %s\n",nwm+1,"None");
 
     do
     {

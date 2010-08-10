@@ -50,6 +50,12 @@
 extern "C" {
 #endif
 
+/* The functions & data structures here determine the content for outputting  
+   the .edr file; the file format and actual writing is done with functions
+   defined in enxio.h */
+
+/* forward declaration */
+typedef struct t_mde_delta_h_coll t_mde_delta_h_coll;
 
 /* This is the collection of energy averages collected during mdrun, and to 
    be written out to the .edr file. */
@@ -78,18 +84,21 @@ typedef struct {
   bool   bEner[F_NRE];
   bool   bEInd[egNR];
   char   **print_grpnms;
+
+  t_mde_delta_h_coll *dhc; /* the BAR delta U (raw data + histogram) */
 } t_mdebin;
 
-extern t_mdebin
-*init_mdebin(ener_file_t fp_ene,
-	     const gmx_mtop_t *mtop,
-	     const t_inputrec *ir);
+extern t_mdebin *init_mdebin(ener_file_t fp_ene,
+                             const gmx_mtop_t *mtop,
+                             const t_inputrec *ir);
 /* Initiate MD energy bin and write header to energy file. */
 
 extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 		       const output_env_t oenv);
 /* Open the dhdl file for output */
 
+/* update the averaging structures. Called every time 
+   the energies are evaluated. */
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
 		       bool bSum,
 		       double time,
@@ -117,14 +126,22 @@ extern void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
 		       t_mdebin *md,t_fcdata *fcd,
 		       gmx_groups_t *groups,t_grpopts *opts);
 
-extern void 
-init_energyhistory(energyhistory_t * enerhist);
 
-extern void
-update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);
 
-extern void
-restore_energyhistory_from_state(t_mdebin * mdebin,energyhistory_t * enerhist);
+/* Between .edr writes, the averages are history dependent,
+   and that history needs to be retained in checkpoints. 
+   These functions set/read the energyhistory_t structure
+   that is written to checkpoints in checkpoint.c */
+
+/* initialize the energyhistory_t data structure */
+extern void init_energyhistory(energyhistory_t * enerhist);
+
+/* Set the energyhistory_t data structure from a mdebin structure */
+extern void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);
+
+/* Read the energyhistory_t data structure to a mdebin structure*/
+extern void restore_energyhistory_from_state(t_mdebin * mdebin,
+                                             energyhistory_t * enerhist);
 
 #ifdef __cplusplus
 }

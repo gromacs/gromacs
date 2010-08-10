@@ -230,6 +230,7 @@ typedef struct {
   real sc_alpha;        /* free energy soft-core parameter              */
   int  sc_power;        /* lambda power for soft-core interactions      */
   real sc_sigma;        /* free energy soft-core sigma when c6 or c12=0 */
+  real sc_sigma_min;    /* minimum FE sc sigma (default: =sg_sigma)     */
   int  nstdhdl;         /* The frequency for writing to dhdl.xvg        */
   int  dh_table_size;   /* The maximum table size for the dH table      */
   double dh_table_spacing; /* The spacing for the dH table              */

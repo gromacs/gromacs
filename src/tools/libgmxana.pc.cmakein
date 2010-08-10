@@ -6,7 +6,7 @@ Description: Gromacs analysis lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
 Requires: @PKG_GSL@ libgmx@LIBSUFFIX@ libmd@LIBSUFFIX@
-Libs.private: -lm @PTHREADS_LIBRARY@
+Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
 Libs: -L${libdir} -lgmxana@LIBSUFFIX@
 Cflags: -I${includedir} 
 

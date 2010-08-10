@@ -312,16 +312,6 @@ extern int nenum(const char *const enumc[]);
  * array must be terminated by a NULL pointer 
  */
 
-#ifdef HAVE_MOTIF
-extern void gmx_gui(int *argc,char *argv[],
-                    int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
-                    int ndesc,const char *desc[],
-                    int nbugs,const char *bugs[]);
-/* This function plops up a Motif dialog box in which the command-line options
- * can be changed.
- */
-#endif
-
 extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
                               int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
                               int ndesc,const char **desc,

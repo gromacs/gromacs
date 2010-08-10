@@ -231,6 +231,12 @@ void write_pdbfile_indexed(FILE *out,const char *title,
   bool bOccup;
   int  nlongname=0;
   int  chainnum,lastchainnum;
+  int  lastresind,lastchainresind;
+  gmx_residuetype_t rt;
+  const char *p_restype;
+  const char *p_lastrestype;
+    
+  gmx_residuetype_init(&rt);  
     
   bromacs(pukestring,99);
   fprintf(out,"TITLE     %s\n",(title && title[0])?title:pukestring);
@@ -255,18 +261,31 @@ void write_pdbfile_indexed(FILE *out,const char *title,
     bOccup = FALSE;
 
   fprintf(out,"MODEL %8d\n",model_nr>=0 ? model_nr : 1);
-    
-  lastchainnum = 0;
+
+  lastchainresind   = -1;
+  lastchainnum      = -1;
+  resind            = -1;
+  p_restype = NULL;
     
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
+    lastresind = resind;
     resind = atoms->atom[i].resind;
     chainnum = atoms->resinfo[resind].chainnum;
-    /* Add a TER record if we changed chain? */
-    if(bTerSepChains && ii>0 && chainnum != lastchainnum)
+    p_lastrestype = p_restype;
+    gmx_residuetype_get_type(rt,*atoms->resinfo[resind].name,&p_restype);        
+      
+    /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
+    if( bTerSepChains && ii>0 && chainnum != lastchainnum)
     {
-        fprintf(out,"TER\n");
-        lastchainnum = chainnum;
+        /* Only add TER if the previous chain contained protein/DNA/RNA, or if there was more than 1 residue in the chain. */
+        if(gmx_residuetype_is_protein(rt,p_lastrestype) || gmx_residuetype_is_dna(rt,p_lastrestype) || gmx_residuetype_is_rna(rt,p_lastrestype) ||
+	   (resind-lastchainresind)>1)
+        {
+            fprintf(out,"TER\n");
+        }
+        lastchainnum    = chainnum;
+	lastchainresind = lastresind;
     }
       
     strncpy(resnm,*atoms->resinfo[resind].name,sizeof(resnm)-1);
@@ -807,7 +826,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
                 break;
         }
     }
-  
+
     free_symtab(&symtab);
     return natom;
 }

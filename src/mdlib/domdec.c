@@ -8578,7 +8578,7 @@ void dd_partition_system(FILE            *fplog,
         /* Send the charges to our PME only node */
         gmx_pme_send_q(cr,mdatoms->nChargePerturbed,
                        mdatoms->chargeA,mdatoms->chargeB,
-                       comm->ddpme[0].maxshift,comm->ddpme[1].maxshift);
+                       dd_pme_maxshift_x(dd),dd_pme_maxshift_y(dd));
     }
     
     if (constr)

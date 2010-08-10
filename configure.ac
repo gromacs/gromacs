@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.5-beta1, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5-beta2, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -273,7 +273,7 @@ fi
 
 
 AC_ARG_WITH(qmmm_orca,
-              [AC_HELP_STRING([--without-qmmm-mopac],
+              [AC_HELP_STRING([--without-qmmm-orca],
                               [Use ORCA for QM-MM])],,with_qmmm_orca=no)
 if test "$with_qmmm_orca"="yes"; then
   AC_DEFINE(GMX_QMMM_ORCA,,[Use ORCA for QM-MM calculations])
@@ -667,16 +667,16 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
 #    AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0]))
   # first check for older MKLs
   AC_CHECK_LIB([mkl],DftiComputeForward,,[have_mkl="no"])
-  if test "$have_mkl" == "no"; then
+  if test "$have_mkl" = "no"; then
     # we assume it's a new MKL
     LIBS="$LIBS -liomp5 -lmkl_sequential -lmkl_core"
     LMKL=" -liomp5 -lmkl_sequential -lmkl_core"
     AC_CHECK_LIB([mkl_intel_lp64],DftiComputeForward,,[have_mkl10_64="no"])
     FFT_LIBS="$LMKL -lmkl_intel_lp64"
-    if test "$have_mkl10_64" == "no"; then
+    if test "$have_mkl10_64" = "no"; then
       AC_CHECK_LIB([mkl_intel],DftiComputeForward,,[have_mkl10_32="no"])
       FFT_LIBS="$LMKL -lmkl_intel"
-      if test "$have_mkl10_32" == "no"; then
+      if test "$have_mkl10_32" = "no"; then
         AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0])
       fi
     fi
@@ -865,6 +865,7 @@ if test "$with_gsl" = "yes"; then
   GSL_LIBS="-lgsl -lgslcblas"
 #gsl has pkg-config support
   PKG_GSL="gsl"
+  AC_DEFINE(HAVE_LIBGSL,1,[Do we have libgsl])
   ],[:],[-lgslcblas])])])
   LIBS="$SAVED_LIBS"
 #
@@ -1194,13 +1195,22 @@ AC_SUBST(INCLUDES)          # should be automatic, but doesnt seem to be?
 # However, the non-suffixed names are linked to the _mpi and/or _d suffixed
 # ones upon installation if that is the only version available.
 
-if test "$enable_mpi" = "yes"; then
-  LIBSUFFIX="_mpi"
+AC_ARG_VAR(
+  [LIBSUFFIX],
+  [To tell libraries apart, a suffix can be used. This is normally done
+   automatically during ./configure (_d|_mpi|_mpi_d). But with this
+   variable you can overwrite it
+  ]
+)
+if test -z ${LIBSUFFIX} ; then
+  if test "$enable_mpi" = "yes"; then
+    LIBSUFFIX="_mpi"
+  fi
+  if test "$enable_float" = "no"; then
+    LIBSUFFIX="${LIBSUFFIX}_d"
+  fi
 fi
-if test "$enable_float" = "no"; then
-  LIBSUFFIX="${LIBSUFFIX}_d"
-fi
-AC_SUBST(LIBSUFFIX) 
+AC_SUBST(LIBSUFFIX)
 
 # Unless the user has explicitly requested a prefix/suffix/transform, we
 # use _d on double precision files. Don't add anything for mpi, but at the

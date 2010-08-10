@@ -159,7 +159,7 @@ static int low_fflib_search_file_end(const char *ffdir,
     char *pdum;
     char *s,fn_dir[GMX_PATH_MAX];
     gmx_directory_t dirhandle;
-    const char *nextname;
+    char nextname[STRLEN];
     int  n,n_thisdir,rc;
 
     len_fe = strlen(file_end);
@@ -215,8 +215,9 @@ static int low_fflib_search_file_end(const char *ffdir,
             }
 
             n_thisdir = 0;
-            while (gmx_directory_nextfile(dirhandle,&nextname)==0)
+            while (gmx_directory_nextfile(dirhandle,nextname,STRLEN-1)==0)
             {
+                nextname[STRLEN-1]=0;
                 if (debug)
                 {
                     fprintf(debug,"dir '%s' file '%s'\n",dir,nextname);
@@ -303,7 +304,7 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
     int  n;
     char **dns;
     gmx_directory_t dirhandle;
-    const char *nextname;
+    char nextname[STRLEN];
     int  rc;
     
     /* Find all files (not only dir's) ending on dirend */
@@ -317,8 +318,9 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
 
         if (rc==0)
         {
-            while (gmx_directory_nextfile(dirhandle,&nextname)==0)
+            while (gmx_directory_nextfile(dirhandle,nextname,STRLEN-1)==0)
             {
+                nextname[STRLEN-1]=0;
                 if (strcmp(nextname,filename) == 0)
                 {
                     /* We have a match */

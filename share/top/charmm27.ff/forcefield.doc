@@ -9,5 +9,39 @@ CHARMM27 all-atom force field (with CMAP) - version 2.0beta
 ******************************************************************
 
 
+References:
+
+Proteins
+
+MacKerell, Jr., A. D., Feig, M., Brooks, C.L., III, Extending the
+treatment of backbone energetics in protein force fields: limitations
+of gas-phase quantum mechanics in reproducing protein conformational
+distributions in molecular dynamics simulations, Journal of
+Computational Chemistry, 25: 1400-1415, 2004.
+
+and 
+
+MacKerell, Jr., A. D.,  et al. All-atom
+empirical potential for molecular modeling and dynamics Studies of
+proteins.  Journal of Physical Chemistry B, 1998, 102, 3586-3616.
+
+Lipids
+
+Feller, S. and MacKerell, Jr., A.D. An Improved Empirical Potential
+Energy Function for  Molecular Simulations of Phospholipids, Journal
+of Physical Chemistry B, 2000, 104: 7510-7515.
+
+Nucleic Acids
+
+Foloppe, N. and MacKerell, Jr., A.D. "All-Atom Empirical Force Field for
+Nucleic Acids: 2) Parameter Optimization Based on Small Molecule and
+Condensed Phase Macromolecular Target Data. 2000, 21: 86-104.
+
+and 
+
+MacKerell, Jr., A.D. and Banavali, N. "All-Atom Empirical Force Field for
+Nucleic Acids: 2) Application to Molecular Dynamics Simulations of DNA
+and RNA in Solution.  2000, 21: 105-120.
+
 If using these parameters for research please site:
 Bjelkmar, Larsson, Cuendet, Hess, and Lindahl, JCTC 2010

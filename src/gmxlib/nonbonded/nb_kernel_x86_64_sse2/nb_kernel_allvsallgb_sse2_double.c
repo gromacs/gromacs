@@ -677,8 +677,8 @@ nb_kernel_allvsallgb_sse2_double(t_forcerec *           fr,
 		iq_SSE1          = _mm_set1_pd(facel*q_align[i+1]);
         
         isai_SSE         = _mm_load_pd(invsqrta_align+i);
-        isai_SSE0        = _mm_shuffle_pd(isai_SSE,isai_SSE,_MM_SHUFFLE(0,0,0,0));
-        isai_SSE1        = _mm_shuffle_pd(isai_SSE,isai_SSE,_MM_SHUFFLE(1,1,1,1));
+        isai_SSE0        = _mm_shuffle_pd(isai_SSE,isai_SSE,_MM_SHUFFLE2(0,0));
+        isai_SSE1        = _mm_shuffle_pd(isai_SSE,isai_SSE,_MM_SHUFFLE2(1,1));
         
         pvdw0            = ppvdw[i];
         pvdw1            = ppvdw[i+1];

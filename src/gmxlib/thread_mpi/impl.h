@@ -447,8 +447,11 @@ struct tmpi_thread
     /* the per-thread profile structure that keeps call counts & wait times. */
     struct tmpi_profile profile;
 #endif
-    /* The start function (or NULL, if main() is to be called) */
+    /* The start function (or NULL, if a main()-style start function is to 
+       be called) */
     void (*start_fn)(void*); 
+    /* The main()-style start function */
+    int (*start_fn_main)(int, char**);
     /* the argument to the start function, if it's not main()*/
     void *start_arg; 
 

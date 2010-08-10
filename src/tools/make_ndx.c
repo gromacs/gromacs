@@ -123,9 +123,14 @@ static int and_groups(atom_id nr1,atom_id *at1,atom_id nr2,atom_id *at2,
   return *nr;
 }
 
-static bool isalnum_star(char c)
+static bool is_name_char(char c)
 {
-  return (isalnum(c) || (c=='_') || (c=='*') || (c=='?'));
+  /* This string should contain all characters that can not be
+   * the first letter of a name due to the make_ndx syntax.
+   */
+  const char *spec=" !&|";
+
+  return (c != '\0' && strchr(spec,c) == NULL);
 }
 
 static int parse_names(char **string,int *n_names,char **names)
@@ -133,12 +138,12 @@ static int parse_names(char **string,int *n_names,char **names)
   int i;
   
   *n_names=0;
-  while ((isalnum_star((*string)[0]) || ((*string)[0]==' '))) {
-    if (isalnum_star((*string)[0])) {
+  while (is_name_char((*string)[0]) || (*string)[0] == ' ') {
+    if (is_name_char((*string)[0])) {
       if (*n_names >= MAXNAMES) 
 	gmx_fatal(FARGS,"To many names: %d\n",*n_names+1);
       i=0;
-      while (isalnum_star((*string)[i])) {
+      while (is_name_char((*string)[i])) {
 	names[*n_names][i]=(*string)[i];
 	i++;
 	if (i > NAME_LEN) {
@@ -214,9 +219,7 @@ static bool parse_int(char **string,int *nr)
 
 static bool isquote(char c)
 {
-  char quotes[] = "'\"";
-  
-  return strchr(quotes, c)!=NULL;
+  return (c == '\"');
 }
 
 static bool parse_string(char **string,int *nr, int ngrps, char **grpname)

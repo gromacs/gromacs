@@ -2182,6 +2182,11 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             copy_mat(ekind->tcstat[i].ekinh,ekind->tcstat[i].ekinh_old);
         }
     }
+    if (ir->eI != eiVV) 
+    {
+        enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
+                                     and there is no previous step */
+    }
     temp0 = enerd->term[F_TEMP];
 
     /* if using an iterative algorithm, we need to create a working directory for the state. */
@@ -2209,11 +2214,6 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fprintf(fplog,
                     "RMS relative constraint deviation after constraining: %.2e\n",
                     constr_rmsd(constr,FALSE));
-        }
-        if (bVV)
-        {
-            enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
-                                         and there is no previous step */
         }
         fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
         if (bRerunMD)
@@ -2674,7 +2674,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /*  ############### START FIRST UPDATE HALF-STEP ############### */
 
-        if (!bStartingFromCpt && !bRerunMD)
+        if (bVV && !bStartingFromCpt && !bRerunMD)
         {
             if (ir->eI == eiVV)
             {
@@ -2695,9 +2695,14 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
                 }
 
+		if (ir->eI == eiVVAK)
+		{
+		    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+		}
+
                 update_coords(fplog,step,ir,mdatoms,state,
                               f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,
+                              ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
                               cr,nrnb,constr,&top->idef);
 
                 if (bIterations)
@@ -2870,17 +2875,9 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* Enforce writing positions and velocities at end of run */
             mdof_flags |= (MDOF_X | MDOF_V);
         }
-        {
-            int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
-            int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
-
-            /*Gromacs drives checkpointing; no ||
-              fcCheckPointPendingThreads(cr->nodeid,
-              nthreads*nnodes);*/
             /* sync bCPT and fc record-keeping */
 /*            if (bCPT && MASTER(cr))
                 fcRequestCheckPoint();*/
-        }
 #endif
 
         if (mdof_flags != 0)
@@ -2972,8 +2969,11 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */
-        if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
-            MASTERTHREAD(cr))
+        if (((int)gmx_get_stop_condition() > handled_stop_condition)
+#ifdef GMX_THREADS
+	    && MASTER(cr)
+#endif
+	    )
         {
             /* this is just make gs.sig compatible with the hack
                of sending signals around by MPI_Reduce with together with
@@ -3116,12 +3116,16 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * step % nstlist = 1 with bGStatEveryStep=FALSE.
                  */
 
-                update_extended(fplog,step,ir,mdatoms,state,ekind,pcoupl_mu,M,wcycle,
-                                upd,bInitStep,FALSE,&MassQ);
+		if (ir->eI != eiVVAK)
+                {
+                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+                }
+                update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
+                                upd,bInitStep);
 
                 /* velocity (for VV) */
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,FALSE,etrtVELOCITY,cr,nrnb,constr,&top->idef);
+                              ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,cr,nrnb,constr,&top->idef);
 
                 /* Above, initialize just copies ekinh into ekin,
                  * it doesn't copy position (for VV),

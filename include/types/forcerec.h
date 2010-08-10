@@ -205,7 +205,8 @@ typedef struct {
   int  efep;
   real sc_alpha;
   int  sc_power;
-  real sc_sigma6;
+  real sc_sigma6_def;
+  real sc_sigma6_min;
   bool bSepDVDL;
 
   /* NS Stuff */
