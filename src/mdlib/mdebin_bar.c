@@ -103,6 +103,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh)
     double min_dh = FLT_MAX;
     double max_dh = -FLT_MAX;
     unsigned int i;
+    double max_dh_int;
 
     /* first find min and max */
     for(i=0;i<dh->ndh;i++)
@@ -127,18 +128,35 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh)
        as an integer.*/
     dh->start = (gmx_large_int_t)(min_dh/dh->spacing);
 
+    max_dh_int=dh->start + (dh->nbins*dh->spacing);
+
     /* and fill the histogram*/
     for(i=0;i<dh->ndh;i++)
     {
         unsigned int bin;
 
         /* Determine the bin number. If it doesn't fit into the histogram, 
-           add it to the last bin. */
-        bin = (unsigned int)( (dh->dh[i] - min_dh)/dh->spacing );
-        if (bin >= dh->nbins)
+           add it to the last bin. 
+           We check the max_dh_int range because converting to integers 
+           might lead to overflow with unpredictable results.*/
+        if (dh->dh[i] <= max_dh_int )
+        {
+            bin = (unsigned int)( (dh->dh[i] - min_dh)/dh->spacing );
+        }
+        else
+        {
+            bin = dh->nbins-1; 
+        }
+
+        /* double-check here because of possible round-off errors*/
+        if (bin >= dh->nbins) 
+        {
             bin = dh->nbins-1;
+        }
         if (bin > dh->maxbin)
+        {
             dh->maxbin = bin;
+        }
 
         dh->hist[bin]++;
     }
