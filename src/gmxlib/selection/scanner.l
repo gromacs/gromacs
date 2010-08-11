@@ -102,7 +102,6 @@ COMMENT    (#.*)
     else if (state->bCmdStart)
     {
         BEGIN(cmdstart);
-        state->bCmdStart = FALSE;
     }
     else if (YYSTATE != help)
     {
@@ -119,19 +118,20 @@ COMMENT    (#.*)
 ";"|\n          {
                     if (yytext[0] == ';' || state->bInteractive)
                     {
-                        state->bCmdStart = TRUE;
                         rtrim(state->pselstr);
                         return CMD_SEP;
                     }
+                    else
+                    {
+                        _gmx_sel_lexer_add_token(" ", 1, state);
+                    }
                 }
-<cmdstart><<EOF>> { yyterminate(); }
-<<EOF>>         { state->bCmdStart = TRUE; return CMD_SEP; }
 
 <cmdstart>help  { BEGIN(help); return HELP; }
 <help>{
 [[:blank:]]+
 {IDENTIFIER}    { yylval->str = strndup(yytext, yyleng); return HELP_TOPIC; }
-";"|\n          { state->bCmdStart = TRUE; return CMD_SEP; }
+";"|\n          { return CMD_SEP; }
 .               { return INVALID; }
 }
 
