@@ -150,9 +150,9 @@ extern int gmx_poldata_get_symcharges(gmx_poldata_t pd,char **central,
 extern int gmx_poldata_search_symcharges(gmx_poldata_t pd,char *central,
                                          char *attached,int numattach);
 
-extern int name2eemtype(char *name);
+extern int name2eemtype(const char *name);
 
-extern char *get_eemtype_name(int eem);
+extern const char *get_eemtype_name(int eem);
 
 extern char *gmx_poldata_get_eemref(gmx_poldata_t pd,int eqg_model);
 

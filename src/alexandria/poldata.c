@@ -1092,7 +1092,7 @@ void gmx_poldata_check_consistency(FILE *fp,gmx_poldata pd)
 }
 
 typedef struct {
-  char *name,*ref;
+  const char *name,*ref;
   bool bWeight;
 } t_eemtype_props;
 
@@ -1108,7 +1108,7 @@ static t_eemtype_props eemtype_props[eqgNR] = {
   { "RESP",     "Kollman1991a",  FALSE }
 };
 
-int name2eemtype(char *name)
+int name2eemtype(const char *name)
 {
   int i;
   
@@ -1119,12 +1119,12 @@ int name2eemtype(char *name)
   return -1;
 }
 
-char *get_eemtype_name(int eem)
+const char *get_eemtype_name(int eem)
 {
   int i;
   
   if ((eem >= 0) && (eem < eqgNR))
-    return eemtype_props[eem].name;
+      return eemtype_props[eem].name;
     
   return NULL;
 }

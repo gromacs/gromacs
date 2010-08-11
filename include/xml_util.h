@@ -49,7 +49,7 @@ extern void add_xml_int(xmlNodePtr ptr,const char *name,int val);
 
 extern void add_xml_double(xmlNodePtr ptr,const char *name,double val);
 
-extern void add_xml_char(xmlNodePtr ptr,const char *name,char *val);
+extern void add_xml_char(xmlNodePtr ptr,const char *name,const char *val);
 
 extern xmlNodePtr add_xml_child(xmlNodePtr parent,const char *type);
 

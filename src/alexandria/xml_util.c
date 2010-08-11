@@ -68,7 +68,7 @@ void add_xml_double(xmlNodePtr ptr,const char *name,double val)
     gmx_fatal(FARGS,"Setting",(char *)name);
 }
 
-void add_xml_char(xmlNodePtr ptr,const char *name,char *val)
+void add_xml_char(xmlNodePtr ptr,const char *name,const char *val)
 {
   if (xmlSetProp(ptr,(xmlChar *)name,(xmlChar *)val) == 0)
     gmx_fatal(FARGS,"Setting",(char *)name);
