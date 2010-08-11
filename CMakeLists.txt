@@ -68,12 +68,8 @@ option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
-# --- REMOVED as bugzilla 431 turned out to be a bug in GB
-# and there is no confirmed case in which gcc causes a crash 
-# option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
 
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
-
 
 
 ########################################################################
@@ -193,8 +189,8 @@ include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(m cbrt "" HAVE_CBRT)
 
+
 include(CheckTypeSize)
-set(CMAKE_REQUIRED_FLAGS ${CMAKE_C_FLAGS_RELEASE})
 
 check_type_size("bool"          SIZEOF_BOOL) # will also set HAVE_BOOL
 check_type_size("int"           SIZEOF_INT) 
@@ -203,11 +199,11 @@ check_type_size("long long int" SIZEOF_LONG_LONG_INT)
 check_type_size("off_t"         SIZEOF_OFF_T)
 check_type_size("void *"        SIZEOF_VOIDP)
 
-if (SIZEOF_VOIDP LESS 8)
-    set(GMX_64_BIT FALSE)
-else (SIZEOF_VOIDP LESS 8)
+if (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
     set(GMX_64_BIT TRUE)
-endif (SIZEOF_VOIDP LESS 8)
+else (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
+    set(GMX_64_BIT FALSE)
+endif (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
 
 # Check for some basic types that we *need*, so set these to int if they are not present 
 check_type_size(uid_t uid_t)
@@ -350,18 +346,20 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 
 # turn on SSE if supported with reasonable defaults.
 if (${GMX_ACCELERATION} STREQUAL "auto")
-    if (GMX_X86_GCC_INLINE_ASM)
-        set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
-        if (GMX_64_BIT)
-            set(GMX_X86_64_ASM ON CACHE BOOL 
-                "Add SSE assembly files for x86_64" FORCE)
-        else (GMX_64_BIT)
-            set(GMX_IA32_ASM ON CACHE BOOL 
-                "Add SSE assembly files for IA32" FORCE)
-        endif (GMX_64_BIT)
-    else(GMX_X86_GCC_INLINE_ASM)
-      set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
-    endif (GMX_X86_GCC_INLINE_ASM)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)")
+
+    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+    
+    if (GMX_64_BIT)
+      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
+    else (GMX_64_BIT)
+      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
+    endif (GMX_64_BIT)
+
+    # Determine the assembler/compiler to use
+  else()
+    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+  endif()
 endif (${GMX_ACCELERATION} STREQUAL "auto")
 
 
@@ -395,15 +393,14 @@ endif(GMX_FORTRAN OR GMX_POWER6)
 
 
 # Process nonbonded accelerated kernels settings
-option(GMX_ASM_USECCOMPILER "Use C compiler for assembly" ON)
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
     if(CMAKE_GENERATOR MATCHES "Visual Studio")
-      option(GMX_ASM_USEASM-NASM "Use the Nasm assembler (windows)" ON)
+      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
     else(CMAKE_GENERATOR MATCHES "Visual Studio")
-      option(GMX_ASM_USEASM-NASM "Use the Nasm assembler (windows)" OFF)
+      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
     endif(CMAKE_GENERATOR MATCHES "Visual Studio")
     if (NOT GMX_64_BIT)
         # for 32-bit compiles, we might need to turn on sse 
@@ -496,7 +493,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 #    MESSAGE(STATUS "Using external FFT library - fftw3")
     if(GMX_DOUBLE)
         find_package(FFTW3 REQUIRED)
-	include_directories(${FFTW3_INCLUDE_DIR})
+		include_directories(${FFTW3_INCLUDE_DIR})
         set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
         set(PKG_FFT "fftw3")
     else(GMX_DOUBLE)
@@ -511,9 +508,6 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     endif(NOT FFTW3_FOUND AND NOT FFTW3F_FOUND)
 
     set(GMX_FFT_FFTW3 1)
-
-    include_directories(${FFTW3_INCLUDE_DIR})
-    set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
 #    MESSAGE(STATUS "Using external FFT library - fftw2")
@@ -610,8 +604,8 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 add_subdirectory(share)
 add_subdirectory(include)
 add_subdirectory(man)
-
 add_subdirectory(src)
+add_subdirectory(scripts)
 
 #######################
 ## uninstall target

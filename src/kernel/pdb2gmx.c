@@ -924,15 +924,16 @@ int main(int argc, char *argv[])
     "[TT]-dist[tt] respectively.[PAR]",
       
     "The separation of chains is not entirely trivial since the markup",
-    "in user-generated PDB files frequently varies, and sometimes it",
+    "in user-generated PDB files frequently varies and sometimes it",
     "is desirable to merge entries across a TER record, for instance",
-    "if you have a HEME group bound to a protein. To handle this, pdb2gmx",
-    "now has a new option [TT]-chainsep[tt] so you can choose whether a new chain",
-    "should start when we find a TER record, when the chain id changes",
-    "or combinations of either or both of these. There is als an option",
-    "[TT]-merge[tt] to interactively ask if you want to merge consecutive",
-    "chains into one molecule - this can be useful for connecting chains",
-    "with a disulfide brigde or intermolecular distance restraints.[PAR]",
+    "if you want a disulfide bridge or distance restraints between",
+    "two protein chains or if you have a HEME group bound to a protein.",
+    "In such cases multiple chains should be contained in a single",
+    "[TT]molecule_type[tt] definition.",
+    "To handle this, pdb2gmx has an option [TT]-chainsep[tt] so you can",
+    "choose whether a new chain should start when we find a TER record,",
+    "when the chain id changes, combinations of either or both of these",
+    "or fully interactively.[PAR]",
     
     "pdb2gmx will also check the occupancy field of the pdb file.",
     "If any of the occupancies are not one, indicating that the atom is",
@@ -1078,7 +1079,7 @@ int main(int argc, char *argv[])
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
     { "-chainsep", FALSE, etENUM, {chainsep},
-      "Condition in PDB files when a new chain should be started" },
+      "Condition in PDB files when a new chain and molecule_type should be started" },
     { "-ff",     FALSE, etSTR,  {&ff},
       "Force field, interactive by default. Use -h for information." },
     { "-water",  FALSE, etENUM, {watstr},
@@ -1515,7 +1516,7 @@ int main(int argc, char *argv[])
       }
     }
 
-    /* Check for disulphides and other special bonds */
+    /* Check for disulfides and other special bonds */
     nssbonds = mk_specbonds(pdba,x,bCysMan,&ssbonds,bVerbose);
 
     if (nrtprename > 0) {        
