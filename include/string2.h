@@ -144,7 +144,7 @@ extern char *wrap_lines(const char *buf,int line_width, int indent,
  */
 
 
-extern char **split(char sep,char *str);
+extern char **split(char sep,const char *str);
 /* Implementation of the well-known Perl function split */
 
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
