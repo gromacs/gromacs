@@ -26,7 +26,10 @@ file(GLOB GMXLIB_SOURCES *.c
 
 # This source file is generated
 file(GLOB VERSION_SOURCE version.c)
-list(REMOVE_ITEM GMXLIB_SOURCES ${VERSION_SOURCE})
+
+if(VERSION_SOURCE)
+	list(REMOVE_ITEM GMXLIB_SOURCES ${VERSION_SOURCE})
+endif(VERSION_SOURCE)
 
 # add version.c to the list of sources and tell cmake that it is generated
 if(USE_VERSION_H)
