@@ -42,6 +42,7 @@
 ; .intel_syntax noprefix   # Line only read by gnu as
 
 
+.section text
 
 .globl nb_kernel334_ia32_sse
 .globl _nb_kernel334_ia32_sse

@@ -42,6 +42,8 @@
 ; .endif                   # End of NASM-specific block
 ; .intel_syntax noprefix   # Line only read by gnu as
 	
+.section text
+
 .globl nb_kernel312_x86_64_sse2
 .globl _nb_kernel312_x86_64_sse2
 nb_kernel312_x86_64_sse2:	

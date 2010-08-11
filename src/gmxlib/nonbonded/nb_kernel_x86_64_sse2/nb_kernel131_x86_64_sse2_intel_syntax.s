@@ -42,6 +42,7 @@
 ; .intel_syntax noprefix   # Line only read by gnu as
 
 
+.section text
 
 
 .globl nb_kernel131_x86_64_sse2

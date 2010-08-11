@@ -42,6 +42,7 @@
 ; .endif                   # End of NASM-specific block
 ; .intel_syntax noprefix   # Line only read by gnu as
 
+.section text
 
 ;# nb010 - forces are calculated
 .globl nb_kernel010_ia32_sse
