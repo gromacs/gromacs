@@ -610,8 +610,8 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 add_subdirectory(share)
 add_subdirectory(include)
 add_subdirectory(man)
-
 add_subdirectory(src)
+add_subdirectory(scripts)
 
 #######################
 ## uninstall target

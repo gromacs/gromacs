@@ -1,0 +1,14 @@
+configure_file(GMXRC.cmakein GMXRC @ONLY)
+configure_file(GMXRC.bash.cmakein GMXRC.bash @ONLY)
+configure_file(GMXRC.csh.cmakein GMXRC.csh @ONLY)
+configure_file(GMXRC.zsh.cmakein GMXRC.zsh @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/GMXRC DESTINATION ${BIN_INSTALL_DIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.bash DESTINATION ${BIN_INSTALL_DIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.zsh DESTINATION ${BIN_INSTALL_DIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.csh DESTINATION ${BIN_INSTALL_DIR})
+
+file(GLOB EXTRA_SCRIPTS completion.* demux.pl xplor2gmx.pl)
+install(FILES ${EXTRA_SCRIPTS} DESTINATION ${BIN_INSTALL_DIR})
+
+

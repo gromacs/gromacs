@@ -13,7 +13,7 @@ for i in `echo $LD_LIBRARY_PATH | sed "s/:/ /g"`; do
 done
 LD_LIBRARY_PATH=$tmppath
 
-# First remove gromacs part of PKG_CONFIG_PATH
+# remove gromacs part of PKG_CONFIG_PATH
 tmppath=""
 for i in `echo $PKG_CONFIG_PATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXLDLIB/pkgconfig"; then
@@ -45,21 +45,28 @@ MANPATH=$tmppath
 # things in separate vars, so we can remove them later.
 # If you move gromacs, change the next four line.
 ##########################################################
-export GMXBIN=@bindir@
-export GMXLDLIB=@libdir@
-export GMXMAN=@mandir@
-export GMXDATA=@datadir@
+GMXBIN=@BIN_INSTALL_DIR@
+GMXLDLIB=@LIB_INSTALL_DIR@
+GMXMAN=@MAN_INSTALL_DIR@
+GMXDATA=@DATA_INSTALL_DIR@
 	
 # NB: The variables already begin with ':' now, or are empty
-export LD_LIBRARY_PATH=${GMXLDLIB}${LD_LIBRARY_PATH}
-export PKG_CONFIG_PATH=${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH}
-export PATH=${GMXBIN}${PATH}
-export MANPATH=${GMXMAN}${MANPATH}
+LD_LIBRARY_PATH=${GMXLDLIB}${LD_LIBRARY_PATH}
+PKG_CONFIG_PATH=${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH}
+PATH=${GMXBIN}${PATH}
+MANPATH=${GMXMAN}${MANPATH}
 
-# read zsh completions if understand how to use them
-if compctl >& /dev/null; then
-  if [ -f $GMXBIN/completion.zsh ]; then
-    source $GMXBIN/completion.zsh; 
+# export should be separate, so /bin/sh understands it
+export GMXBIN GMXLDLIB GMXMAN GMXDATA LD_LIBRARY_PATH PATH MANPATH PKG_CONFIG_PATH
+
+# read bash completions if understand how to use them
+# and this shell supports extended globbing
+if (complete) > /dev/null 2>&1; then
+  if (shopt -s extglob) > /dev/null 2>&1; then
+    if [ -f $GMXBIN/completion.bash ]; then
+      source $GMXBIN/completion.bash; 
+    fi
   fi
 fi
+
 
