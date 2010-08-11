@@ -4,7 +4,7 @@ project(Gromacs)
 include(Dart)
 # PROJECT_VERSION should have the following structure: 
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-set(PROJECT_VERSION "4.0.99-dev-20100315"
+set(PROJECT_VERSION "4.5-beta3"
     CACHE STRING "Gromacs version string")
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -15,7 +15,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
-
 
 ########################################################################
 # Fix stupid flags on MSVC
@@ -36,11 +35,6 @@ set(GMX_EXTRA_LIBRARIES)
 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
-
-# --- REMOVED as bugzilla 431 turned out to be a bug in GB
-# and there is no confirmed case in which gcc causes a crash 
-# check for buggy GCC 4.1.x 
-# include(gmxCheckGCCVersion)
 
 include(gmxCFlags)
 gmx_c_flags()
@@ -72,6 +66,7 @@ mark_as_advanced(GMX_MPI_IN_PLACE)
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
+
 option(USE_VERSION_H "Generate development version string/information" ON)
 # --- REMOVED as bugzilla 431 turned out to be a bug in GB
 # and there is no confirmed case in which gcc causes a crash 
@@ -199,6 +194,8 @@ check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(m cbrt "" HAVE_CBRT)
 
 include(CheckTypeSize)
+set(CMAKE_REQUIRED_FLAGS ${CMAKE_C_FLAGS_RELEASE})
+
 check_type_size("bool"          SIZEOF_BOOL) # will also set HAVE_BOOL
 check_type_size("int"           SIZEOF_INT) 
 check_type_size("long int"      SIZEOF_LONG_INT) 
@@ -259,14 +256,6 @@ if(LIBXML2_FOUND)
     set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
     set(HAVE_LIBXML2 1)
 endif(LIBXML2_FOUND)
-
-find_package(gsl)
-set(PKG_GSL "")
-if(GSL_FOUND)
-    include_directories(${GSL_INCLUDE_DIR})
-    set(PKG_GSL gsl)
-    set(HAVE_LIBGSL 1)
-endif(GSL_FOUND)
 
 find_package(X11)
 # X11 includes/libraries are only set in the ngmx subdirectory!
@@ -370,6 +359,8 @@ if (${GMX_ACCELERATION} STREQUAL "auto")
             set(GMX_IA32_ASM ON CACHE BOOL 
                 "Add SSE assembly files for IA32" FORCE)
         endif (GMX_64_BIT)
+    else(GMX_X86_GCC_INLINE_ASM)
+      set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
     endif (GMX_X86_GCC_INLINE_ASM)
 endif (${GMX_ACCELERATION} STREQUAL "auto")
 
@@ -409,6 +400,11 @@ string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+    if(CMAKE_GENERATOR MATCHES "Visual Studio")
+      option(GMX_ASM_USEASM-NASM "Use the Nasm assembler (windows)" ON)
+    else(CMAKE_GENERATOR MATCHES "Visual Studio")
+      option(GMX_ASM_USEASM-NASM "Use the Nasm assembler (windows)" OFF)
+    endif(CMAKE_GENERATOR MATCHES "Visual Studio")
     if (NOT GMX_64_BIT)
         # for 32-bit compiles, we might need to turn on sse 
         CHECK_C_COMPILER_FLAG("-msse2" XFLAGS_SSE)
@@ -422,17 +418,23 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
     endif (NOT GMX_64_BIT)
     if(HAVE_XMMINTRIN_H)
         if(GMX_IA32_ASM)
-          option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
-          set(GMX_IA32_SSE 1)
-        else(GMX_IA32_ASM) #only use intrinsic if not using the ASM loops
+          if(GMX_DOUBLE)
+            set(GMX_IA32_SSE2 1)
+          else(GMX_DOUBLE)
+            set(GMX_IA32_SSE 1)
+          endif(GMX_DOUBLE)
+        else(GMX_IA32_ASM)
           set(GMX_SSE 1)
         endif(GMX_IA32_ASM)
     endif(HAVE_XMMINTRIN_H)
     if(HAVE_EMMINTRIN_H)
         if(GMX_X86_64_ASM)
-          option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
-          set(GMX_X86_64_SSE 1)
-        else(GMX_X86_64_ASM)  #only use intrinsic if not using the ASM loops
+      	  if(GMX_DOUBLE)
+      	    set(GMX_X86_64_SSE2 1)
+      	  else(GMX_DOUBLE)
+            set(GMX_X86_64_SSE 1)
+      	  endif(GMX_DOUBLE)
+        else(GMX_X86_64_ASM)
           if(NOT GMX_IA32_ASM)
             set(GMX_SSE2 1)
           endif(NOT GMX_IA32_ASM)
@@ -494,17 +496,22 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 #    MESSAGE(STATUS "Using external FFT library - fftw3")
     if(GMX_DOUBLE)
         find_package(FFTW3 REQUIRED)
+	include_directories(${FFTW3_INCLUDE_DIR})
+        set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
         set(PKG_FFT "fftw3")
     else(GMX_DOUBLE)
         find_package(FFTW3F REQUIRED)
+        include_directories(${FFTW3F_INCLUDE_DIR})
+        set(FFT_LIBRARIES ${FFTW3F_LIBRARIES})
         set(PKG_FFT "fftw3f")
     endif(GMX_DOUBLE)
 
-    if(NOT FFTW3_FOUND)
+    if(NOT FFTW3_FOUND AND NOT FFTW3F_FOUND)
         MESSAGE(FATAL_ERROR "Cannot find fftw3 (with correct precision). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT FFTW3_FOUND)
+    endif(NOT FFTW3_FOUND AND NOT FFTW3F_FOUND)
 
     set(GMX_FFT_FFTW3 1)
+
     include_directories(${FFTW3_INCLUDE_DIR})
     set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
 

@@ -134,26 +134,43 @@ typedef int             imatrix[DIM][DIM];
 
 /* For the step count type gmx_large_int_t we aim for 8 bytes (64bit),
  * but we might only be able to get 4 bytes (32bit).
+ *
+ * Avoid using "long int" if we can. This type is really dangerous,
+ * since the width frequently depends on compiler options, and they
+ * might not be set correctly when (buggy) Cmake is detecting things.
+ * Instead, start by looking for "long long", and just go down if we
+ * have to (rarely on new systems). /EL 20100810
  */
-#if (!(defined SIZEOF_LONG_LONG_INT) || SIZEOF_LONG_INT == 8)
-typedef long int gmx_large_int_t;
-#define gmx_large_int_fmt   "ld"
-#define gmx_large_int_pfmt "%ld"
-#define SIZEOF_LARGE_INT SIZEOF_LONG_INT
-#define LARGE_INT_MAX LONG_MAX
-#else
+#if (defined SIZEOF_LONG_LONG_INT && SIZEOF_LONG_LONG_INT==8)
+
 typedef long long int gmx_large_int_t;
 #define gmx_large_int_fmt   "lld"
 #define gmx_large_int_pfmt "%lld"
 #define SIZEOF_LARGE_INT SIZEOF_LONG_LONG_INT
 /* LLONG_MAX is not defined by the C-standard, so check for it */
-#if (!(defined LLONG_MAX) && SIZEOF_LONG_LONG_INT == 8)
-#define LARGE_INT_MAX 9223372036854775807LL
-#else
+#ifdef LLONG_MAX 
 #define LARGE_INT_MAX LLONG_MAX
-#endif
+#else
+#define LARGE_INT_MAX 9223372036854775807LL
 #endif
 
+#elif (defined SIZEOF_LONG_INT && SIZEOF_LONG_INT==8)
+
+typedef long int gmx_large_int_t;
+#define gmx_large_int_fmt   "ld"
+#define gmx_large_int_pfmt "%ld"
+#define SIZEOF_LARGE_INT SIZEOF_LONG_INT
+#define LARGE_INT_MAX LONG_MAX
+
+#else
+
+typedef int gmx_large_int_t;
+#define gmx_large_int_fmt   "d"
+#define gmx_large_int_pfmt "%d"
+#define SIZEOF_LARGE_INT SIZEOF_INT
+#define LARGE_INT_MAX INT_MAX
+
+#endif
 
 #ifdef __cplusplus
 }

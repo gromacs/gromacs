@@ -103,6 +103,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh)
     double min_dh = FLT_MAX;
     double max_dh = -FLT_MAX;
     unsigned int i;
+    double max_dh_int;
 
     /* first find min and max */
     for(i=0;i<dh->ndh;i++)
@@ -127,18 +128,35 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh)
        as an integer.*/
     dh->start = (gmx_large_int_t)(min_dh/dh->spacing);
 
+    max_dh_int=dh->start + (dh->nbins*dh->spacing);
+
     /* and fill the histogram*/
     for(i=0;i<dh->ndh;i++)
     {
         unsigned int bin;
 
         /* Determine the bin number. If it doesn't fit into the histogram, 
-           add it to the last bin. */
-        bin = (unsigned int)( (dh->dh[i] - min_dh)/dh->spacing );
-        if (bin >= dh->nbins)
+           add it to the last bin. 
+           We check the max_dh_int range because converting to integers 
+           might lead to overflow with unpredictable results.*/
+        if (dh->dh[i] <= max_dh_int )
+        {
+            bin = (unsigned int)( (dh->dh[i] - min_dh)/dh->spacing );
+        }
+        else
+        {
+            bin = dh->nbins-1; 
+        }
+
+        /* double-check here because of possible round-off errors*/
+        if (bin >= dh->nbins) 
+        {
             bin = dh->nbins-1;
+        }
         if (bin > dh->maxbin)
+        {
             dh->maxbin = bin;
+        }
 
         dh->hist[bin]++;
     }
@@ -330,6 +348,65 @@ void mde_delta_h_coll_reset(t_mde_delta_h_coll *dhc)
         }
     }
     dhc->starttime_set=FALSE;
+}
+
+/* set the energyhistory variables to save state */
+void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
+                                           energyhistory_t *enerhist)
+{
+    int i;
+    if (!enerhist->dht)
+    {
+        snew(enerhist->dht, 1);
+        snew(enerhist->dht->ndh, dhc->ndh);
+        snew(enerhist->dht->dh, dhc->ndh);
+        enerhist->dht->nndh=dhc->ndh;
+
+        /* these don't change during the simulation */
+        for(i=0;i<dhc->ndh;i++)
+        {
+            enerhist->dht->dh[i] = dhc->dh[i].dh;
+        }
+    }
+    else
+    {
+        if (enerhist->dht->nndh != dhc->ndh)
+            gmx_incons("energy history number of delta_h histograms != inputrec's number");
+    }
+    for(i=0;i<dhc->ndh;i++)
+    {
+        enerhist->dht->ndh[i] = dhc->dh[i].ndh;
+    }
+    enerhist->dht->starttime=dhc->starttime;
+}
+
+
+
+/* restore the variables from an energyhistory */
+void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
+                                            energyhistory_t *enerhist)
+{
+    int i;
+    unsigned int j;
+
+    if (dhc && !enerhist->dht)
+        gmx_incons("No delta_h histograms in energy history");
+    if (enerhist->dht->nndh != dhc->ndh)
+        gmx_incons("energy history number of delta_h histograms != inputrec's number");
+
+    for(i=0;i<enerhist->dht->nndh;i++)
+    {
+        dhc->dh[i].ndh=enerhist->dht->ndh[i];
+        for(j=0;j<dhc->dh[i].ndh;j++)
+        {
+            dhc->dh[i].dh[j] = enerhist->dht->dh[i][j];
+        }
+    }
+    dhc->starttime=enerhist->dht->starttime;
+    if (dhc->dh[0].ndh > 0)
+        dhc->starttime_set=TRUE;
+    else
+        dhc->starttime_set=FALSE;
 }
 
 

@@ -205,7 +205,7 @@ nb_kernel_list = NULL;
 
 
 void
-gmx_setup_kernels(FILE *fplog)
+gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
 {
     int i;
     
@@ -220,14 +220,8 @@ gmx_setup_kernels(FILE *fplog)
         nb_kernel_list[i] = NULL;
     }
     
-    if(getenv("GMX_NB_GENERIC") != NULL)
+    if (bGenericKernelOnly)
     {
-        if(fplog)
-        {
-            fprintf(fplog,
-                    "Found environment variable GMX_NB_GENERIC.\n"
-                    "Disabling interaction-specific nonbonded kernels.\n\n");
-        }
         return;
     }
 	

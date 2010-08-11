@@ -63,16 +63,6 @@
 #include "domdec.h"
 
 
-/* Uncomment the define below to use the generic charge group - charge group
- * inner loops (in src/gmxlib/nonbonded/nb_generic_cg.c).
- * All intra charge-group interaction should be excluded.
- * There should be no inter charge group exclusions.
- * There can be no perturbed LJ types or charges.
- * mdrun currently does NOT check for this.
- */
-/* #define GMX_CG_INNERLOOP */
-
-
 /* 
  *    E X C L U S I O N   H A N D L I N G
  */
@@ -326,6 +316,10 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        if (log != NULL)
        {
            fprintf(log,"\nUsing charge-group - charge-group neighbor lists and kernels\n\n");
+       }
+       if (!fr->bExcl_IntraCGAll_InterCGNone)
+       {
+           gmx_fatal(FARGS,"The charge-group - charge-group force loops only support systems with all intra-cg interactions excluded and no inter-cg exclusions, this is not the case for this system.");
        }
    }
    

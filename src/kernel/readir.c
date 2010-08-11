@@ -516,7 +516,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (EEL_FULL(ir->coulombtype)) {
-    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER) {
+    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER ||
+        ir->coulombtype==eelPMEUSERSWITCH) {
       sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
@@ -808,8 +809,6 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Part index is updated automatically on checkpointing (keeps files separate)");
   ITYPE ("simulation_part", ir->simulation_part, 1);
   CTYPE ("mode for center of mass motion removal");
-  CTYPE ("energy calculation and T/P-coupling frequency");
-  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
   EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
   CTYPE ("number of steps for center of mass motion removal");
   ITYPE ("nstcomm",	ir->nstcomm,	10);
@@ -846,6 +845,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   ir->nstcheckpoint = 1000;
   CTYPE ("Output frequency for energies to log file and energy file");
   ITYPE ("nstlog",	ir->nstlog,	100);
+  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
   ITYPE ("nstenergy",   ir->nstenergy,  100);
   CTYPE ("Output frequency and precision for xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
@@ -2087,7 +2087,8 @@ void do_index(const char* mdparin, const char *ndx,
 
   bTable = do_egp_flag(ir,groups,"energygrp_table",egptable,EGP_TABLE);
   if (bTable && !(ir->vdwtype == evdwUSER) && 
-      !(ir->coulombtype == eelUSER) &&!(ir->coulombtype == eelPMEUSER))
+      !(ir->coulombtype == eelUSER) && !(ir->coulombtype == eelPMEUSER) &&
+      !(ir->coulombtype == eelPMEUSERSWITCH))
     gmx_fatal(FARGS,"Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
 
   decode_cos(efield_x,&(ir->ex[XX]),FALSE);

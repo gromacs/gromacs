@@ -44,11 +44,11 @@ LI 		1
 
 [ moleculetype ]
 ; molname	nrexcl
-NA+		1
+NA		1
 
 [ atoms ]
 ; id	at type		res nr 	residu name	at name  cg nr	charge   mass
-1	opls_407	1	NA+		NA	 1	1	22.98977	 
+1	opls_407	1	NA		NA	 1	1	22.98977	 
 
 [ moleculetype ]
 ; molname	nrexcl
