@@ -1555,7 +1555,7 @@ static int ns_simple_core(t_forcerec *fr,
     {
         for(m=0; (m<DIM); m++)
         {
-            b_inv[m] = divide(1.0,box_size[m]);
+            b_inv[m] = divide_err(1.0,box_size[m]);
         }
         bTriclinic = TRICLINIC(box);
     }
