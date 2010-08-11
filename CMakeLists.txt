@@ -493,7 +493,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 #    MESSAGE(STATUS "Using external FFT library - fftw3")
     if(GMX_DOUBLE)
         find_package(FFTW3 REQUIRED)
-	include_directories(${FFTW3_INCLUDE_DIR})
+		include_directories(${FFTW3_INCLUDE_DIR})
         set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
         set(PKG_FFT "fftw3")
     else(GMX_DOUBLE)
@@ -604,8 +604,8 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 add_subdirectory(share)
 add_subdirectory(include)
 add_subdirectory(man)
-
 add_subdirectory(src)
+add_subdirectory(scripts)
 
 #######################
 ## uninstall target

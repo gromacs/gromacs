@@ -1,12 +1,16 @@
 
                     Welcome to GROMACS!
 
-Note: Detailed, step-by-step installation instructions
-are available on the website http://www.gromacs.org .
+*Note*: Detailed, step-by-step installation instructions
+are available on the website
+http://www.gromacs.org/Downloads/Installation_Instructions.
+
+*Note*: If you want to use CMake for building look at INSTALL.cmake.
+
+
 
 You will probably have to download and install FFTW the first
 time you install GROMACS - our configuration script will check it!
-
 
 
 * SHORT INSTRUCTIONS FOR THE IMPATIENT:
