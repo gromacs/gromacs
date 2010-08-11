@@ -472,7 +472,7 @@ char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)
   return b2;
 }
 
-char **split(char sep,char *str)
+char **split(char sep,const char *str)
 {
   char **ptr = NULL;
   int  n,nn,nptr = 0;
