@@ -438,7 +438,8 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 }
 
 void print_top_comment(FILE *out,const char *filename,
-                       const char *generator,bool bITP)
+                       const char *generator,bool bITP,
+                       const char *remark)
 {
   char tmp[256]; 
 
@@ -446,13 +447,17 @@ void print_top_comment(FILE *out,const char *filename,
   fprintf(out,";\tThis is your %stopology file\n",bITP ? "include " : "");
   fprintf(out,";\tit was generated using program:\n;\t%s\n",
           (NULL == generator) ? "unknown" : generator);
-  fprintf(out,";\twith command line:\n;\t%s\n;\n\n",command_line());
+  fprintf(out,";\twith command line:\n;\t%s\n;\n",command_line());
+  if ((NULL != remark) && (strlen(remark) > 0))
+      fprintf(out,"; %s\n",remark);
+  fprintf(out,"\n");
 }
 
 void print_top_header(FILE *out,const char *filename, 
-                      const char *title,bool bITP,const char *ffdir,real mHmult)
+                      const char *title,bool bITP,const char *ffdir,real mHmult,
+                      const char *remark)
 {
-    print_top_comment(out,filename,title,bITP);
+    print_top_comment(out,filename,title,bITP,remark);
     
     print_top_heavy_H(out, mHmult);
     fprintf(out,"; Include forcefield parameters\n");

@@ -1476,7 +1476,7 @@ int main(int argc, char *argv[])
 #else
   sprintf(generator,"%s - version %s",ShortProgram(), "unknown" );
 #endif
-  print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult);
+  print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult,NULL);
 
   nincl=0;
   nmol=0;
@@ -1745,7 +1745,7 @@ int main(int argc, char *argv[])
     nmol++;
 
     if (bITP)
-      print_top_comment(itp_file,itp_fn,generator,TRUE);
+      print_top_comment(itp_file,itp_fn,generator,TRUE,NULL);
 
     if (cc->bAllWat)
       top_file2=NULL;
