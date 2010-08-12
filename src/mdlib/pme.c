@@ -119,7 +119,6 @@ typedef struct {
     MPI_Comm mpi_comm;
 #endif
     int  nnodes,nodeid;
-    int  ndata;
     int  *s2g0;
     int  *s2g1;
     int  noverlap_nodes;
@@ -1862,8 +1861,6 @@ init_overlap_comm(pme_overlap_t *  ol,
     
     ol->nnodes = nnodes;
     ol->nodeid = nodeid;
-    
-    ol->ndata  = ndata;
 
     /* Linear translation of the PME grid wo'nt affect reciprocal space
      * calculations, so to optimize we only interpolate "upwards",
@@ -1928,8 +1925,8 @@ init_overlap_comm(pme_overlap_t *  ol,
         fft_end          = ol->s2g0[ol->send_id[b]+1];
         if (ol->send_id[b] < nodeid)
         {
-            fft_start += ol->ndata;
-            fft_end  += ol->ndata;
+            fft_start += ndata;
+            fft_end   += ndata;
         }
         send_index1      = ol->s2g1[nodeid];
         send_index1      = min(send_index1,fft_end);
@@ -1942,7 +1939,7 @@ init_overlap_comm(pme_overlap_t *  ol,
         recv_index1      = ol->s2g1[ol->recv_id[b]];
         if (ol->recv_id[b] > nodeid)
         {
-            recv_index1 -= ol->ndata;
+            recv_index1 -= ndata;
         }
         recv_index1      = min(recv_index1,fft_end);
         pgc->recv_index0 = fft_start;
@@ -2232,8 +2229,8 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     snew(pme->pmegridA,pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);
     
     /* For non-divisible grid we need pme_order iso pme_order-1 */
-    bufsizex = pme->pme_order*pme->pmegrid_ny*pme->pmegrid_nz;
-    bufsizey = pme->pmegrid_nx*pme->pme_order*pme->nkz;
+    bufsizex = pme->pme_order*pme->pmegrid_ny*pme->nkz;
+    bufsizey = pme->pme_order*pme->pmegrid_nx*pme->nkz;
     bufsize  = (bufsizex>bufsizey) ? bufsizex : bufsizey;
     
     snew(pme->pmegrid_sendbuf,bufsize);
