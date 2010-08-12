@@ -62,7 +62,6 @@ if(GMX_X86_64_ASM)
   endif()
 endif(GMX_X86_64_ASM)
 
-
 if(NOT GMX_EXTERNAL_BLAS)
   file(GLOB BLAS_SOURCES gmx_blas/*.c)
 endif(NOT GMX_EXTERNAL_BLAS)
