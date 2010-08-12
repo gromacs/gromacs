@@ -76,6 +76,10 @@ set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
 #Process MPI settings
 ########################################################################
 if(GMX_MPI)
+	MESSAGE(WARNING "
+            There are known problems with some MPI implementations:
+                     OpenMPI version < 1.4.1
+                     MVAPICH2 version <= 1.4.1                               *")
     if(GMX_THREADS)
         #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
         set(GMX_THREADS OFF CACHE BOOL 
