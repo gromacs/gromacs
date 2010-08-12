@@ -133,7 +133,6 @@ if(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 
-
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -363,8 +362,6 @@ if (${GMX_ACCELERATION} STREQUAL "auto")
 endif (${GMX_ACCELERATION} STREQUAL "auto")
 
 
-
-
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
@@ -397,6 +394,7 @@ string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+
     if(CMAKE_GENERATOR MATCHES "Visual Studio")
       option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
     else(CMAKE_GENERATOR MATCHES "Visual Studio")

@@ -439,7 +439,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
                 GMX_MM_INCREMENT_3VALUES_PS(work+jnrA,work+jnrB,work+jnrC,tmp);
             }
         }
-        gmx_mm_update_1pot_ps(gpi,work+ii);
+        GMX_MM_UPDATE_1POT_PS(gpi,work+ii);
 	}
 	
 	/* Sum up the polarization energy from other nodes */
@@ -1231,7 +1231,7 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
             }
             
         }
-        gmx_mm_update_1pot_ps(sum_ai,work+ii);
+        GMX_MM_UPDATE_1POT_PS(sum_ai,work+ii);
         
 	}
 	
@@ -1518,7 +1518,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
 		/* fix/fiy/fiz now contain four partial force terms, that all should be
          * added to the i particle forces and shift forces. 
          */
- 		gmx_mm_update_iforce_1atom_ps(fix,fiy,fiz,f+ii3,fshift+is3);
+ 		gmx_mm_update_iforce_1atom_ps(&fix,&fiy,&fiz,f+ii3,fshift+is3);
 	}	
     
 	return 0;	
