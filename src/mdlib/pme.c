@@ -2229,7 +2229,11 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     snew(pme->pmegridA,pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);
     
     /* For non-divisible grid we need pme_order iso pme_order-1 */
-    bufsizex = pme->pme_order*pme->pmegrid_ny*pme->nkz;
+    /* x overlap is copied in place: take padding into account.
+     * y is always copied through a buffer: we don't need padding in z,
+     * but we do need the overlap in x because of the communication order.
+     */
+    bufsizex = pme->pme_order*pme->pmegrid_ny*pme->pmegrid_nz;
     bufsizey = pme->pme_order*pme->pmegrid_nx*pme->nkz;
     bufsize  = (bufsizex>bufsizey) ? bufsizex : bufsizey;
     
