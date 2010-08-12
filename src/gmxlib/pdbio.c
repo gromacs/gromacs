@@ -278,9 +278,8 @@ void write_pdbfile_indexed(FILE *out,const char *title,
     /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
     if( bTerSepChains && ii>0 && chainnum != lastchainnum)
     {
-        /* Only add TER if the previous chain contained protein/DNA/RNA, or if there was more than 1 residue in the chain. */
-        if(gmx_residuetype_is_protein(rt,p_lastrestype) || gmx_residuetype_is_dna(rt,p_lastrestype) || gmx_residuetype_is_rna(rt,p_lastrestype) ||
-	   (resind-lastchainresind)>1)
+        /* Only add TER if the previous chain contained protein/DNA/RNA. */
+        if(gmx_residuetype_is_protein(rt,p_lastrestype) || gmx_residuetype_is_dna(rt,p_lastrestype) || gmx_residuetype_is_rna(rt,p_lastrestype))
         {
             fprintf(out,"TER\n");
         }
