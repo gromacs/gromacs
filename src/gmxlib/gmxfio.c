@@ -802,7 +802,7 @@ int gmx_fio_check_file_position(t_fileio *fio)
     /* If gmx_off_t is 4 bytes we can not store file offset > 2 GB.
      * If we do not have ftello, we will play it safe.
      */
-#if (SIZEOF_OFF_T == 4 || !defined HAVE_FSEEKO)
+#if (SIZEOF_GMX_OFF_T == 4 || !defined HAVE_FSEEKO)
     gmx_off_t offset;
 
     gmx_fio_lock(fio);
