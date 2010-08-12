@@ -981,7 +981,6 @@ void nb_kernel430_ia32_sse(int *           p_nri,
     *inneriter       = nj1;            
 }
 
-
 /*
  * Gromacs nonbonded kernel nb_kernel430nf
  * Coulomb interaction:     Generalized-Born
@@ -1081,7 +1080,7 @@ void nb_kernel430nf_ia32_sse(
             dy11             = iy1 - jy1;      
             dz11             = iz1 - jz1;      
             rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv11           = gmx_mm_invsqrt(rsq11);
+            rinv11           = gmx_invsqrt(rsq11);
             isaj             = invsqrta[jnr];  
             isaprod          = isai*isaj;      
             qq               = iq*charge[jnr]; 
@@ -1137,5 +1136,4 @@ void nb_kernel430nf_ia32_sse(
     *outeriter       = nri;            
     *inneriter       = nj1;            
 }
-
 
