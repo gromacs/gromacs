@@ -601,6 +601,7 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
             i == F_ANGLES   ||
             i == F_PDIHS    ||
             i == F_RBDIHS   ||
+            i == F_PIDIHS   ||
             i == F_LJ14     ||
             i == F_GB12     || /* The GB parameters are hardcoded both in */
             i == F_GB13     || /* Gromacs and OpenMM */
@@ -847,6 +848,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numUB = idef.il[F_UREY_BRADLEY].nr/4;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
+        const int numPeriodicImp = idef.il[F_PIDIHS].nr/5;
         const int numRB = idef.il[F_RBDIHS].nr/5;
         const int num14 = idef.il[F_LJ14].nr/3;
         System* sys = new System();
@@ -911,6 +913,22 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             periodicForce->addTorsion(atom1, atom2, atom3, atom4,
                                       idef.iparams[type].pdihs.mult,
                                       idef.iparams[type].pdihs.phiA*M_PI/180.0, 
+                                      idef.iparams[type].pdihs.cpA);
+        }
+        const int* periodicImpAtoms = (int*) idef.il[F_PIDIHS].iatoms;
+        PeriodicTorsionForce* periodicImpForce = new PeriodicTorsionForce();
+        sys->addForce(periodicImpForce);
+        offset = 0;
+        for (int i = 0; i < numPeriodicImp; ++i)
+        {
+            int type = periodicImpAtoms[offset++];
+            int atom1 = periodicImpAtoms[offset++];
+            int atom2 = periodicImpAtoms[offset++];
+            int atom3 = periodicImpAtoms[offset++];
+            int atom4 = periodicImpAtoms[offset++];
+            periodicImpForce->addTorsion(atom1, atom2, atom3, atom4,
+                                      idef.iparams[type].pdihs.mult,
+                                      idef.iparams[type].pdihs.phiA*M_PI/180.0,
                                       idef.iparams[type].pdihs.cpA);
         }
         const int* rbAtoms = (int*) idef.il[F_RBDIHS].iatoms;
