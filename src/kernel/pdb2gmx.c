@@ -381,9 +381,11 @@ static void check_occupancy(t_atoms *atoms,const char *filename,bool bVerbose)
       fprintf(stderr,"All occupancy fields zero. This is probably not an X-Ray structure\n");
     } else if ((nzero > 0) || (nnotone > 0)) {
       fprintf(stderr,
-	      "WARNING: there were %d atoms with zero occupancy and %d atoms"
-	      " with\n         occupancy unequal to one (out of %d atoms)."
-	      " Check your pdb file.\n",nzero,nnotone,atoms->nr);
+	      "\n"
+	      "WARNING: there were %d atoms with zero occupancy and %d atoms with\n"
+	      "         occupancy unequal to one (out of %d atoms). Check your pdb file.\n"
+	      "\n",
+	      nzero,nnotone,atoms->nr);
     } else {
       fprintf(stderr,"All occupancies are one\n");
     }
