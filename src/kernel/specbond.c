@@ -209,8 +209,15 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
     
     nspec = 0;
     for(i=0;(i<pdba->nr);i++) {
+      /* Check if this atom is special and if it is not a double atom
+       * in the input that still needs to be removed.
+       */
       if (is_special(nsb,sb,*pdba->resinfo[pdba->atom[i].resind].name,
-		     *pdba->atomname[i])) {
+		     *pdba->atomname[i]) &&
+	  !(nspec > 0 &&
+	    pdba->atom[sgp[nspec-1]].resind == pdba->atom[i].resind &&
+	    strcasecmp(*pdba->atomname[sgp[nspec-1]],
+		       *pdba->atomname[i]) == 0)) {
 	specp[nspec] = pdba->atom[i].resind;
 	sgp[nspec] = i;
 	nspec++;

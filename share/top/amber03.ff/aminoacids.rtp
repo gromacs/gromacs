@@ -1275,33 +1275,6 @@
     -C    CA     N     H
     CA    +N     C     O
 
-[ CYS2 ]
- [ atoms ]
-     N    N           -0.435921    1
-     H    H            0.290077    2
-    CA    CT          -0.030547    3
-    HA    H1           0.132146    4
-    CB    CT          -0.033006    5
-   HB1    H1           0.078951    6
-   HB2    H1           0.078951    7
-    SG    S           -0.132272    8
-     C    C            0.624788    9
-     O    O           -0.573167   10
- [ bonds ]
-     N     H
-     N    CA
-    CA    HA
-    CA    CB
-    CA     C
-    CB   HB1
-    CB   HB2
-    CB    SG
-     C     O
-    -C     N
- [ impropers ]
-    -C    CA     N     H
-    CA    +N     C     O
-                        
 [ MET ]
  [ atoms ]
      N    N           -0.394918    1

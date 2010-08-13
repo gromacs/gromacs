@@ -1009,7 +1009,7 @@ static int do_cpt_files(XDR *xd, bool bRead,
             {
                 return -1;
             }
-#if (SIZEOF_OFF_T > 4)
+#if (SIZEOF_GMX_OFF_T > 4)
             outputfiles[i].offset = ( ((gmx_off_t) offset_high) << 32 ) | ( (gmx_off_t) offset_low & mask );
 #else
             outputfiles[i].offset = offset_low;
@@ -1028,7 +1028,7 @@ static int do_cpt_files(XDR *xd, bool bRead,
             }
             else
             {
-#if (SIZEOF_OFF_T > 4)
+#if (SIZEOF_GMX_OFF_T > 4)
                 offset_low  = (int) (offset & mask);
                 offset_high = (int) ((offset >> 32) & mask);
 #else

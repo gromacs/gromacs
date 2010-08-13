@@ -87,6 +87,10 @@ read_stdin_line(gmx_sel_lexer_t *state)
     {
         fprintf(stderr, "> ");
     }
+    /* For some reason (at least on my Linux), fgets() doesn't return until
+     * the user presses Ctrl-D _twice_ at the end of a non-empty line.
+     * This can be a bit confusing for users, but there's not much we can
+     * do, and the chances of a normal user noticing this are not very big. */
     while (fgets(ptr, max_len, stdin))
     {
         int len = strlen(ptr);
@@ -126,7 +130,6 @@ read_stdin_line(gmx_sel_lexer_t *state)
     {
         gmx_input("selection reading failed");
     }
-    state->bCmdStart = totlen > 0;
     return totlen > 0;
 }
 
@@ -134,6 +137,7 @@ int
 _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(yyscanner);
+    bool bCmdStart;
     int token;
 
     if (!state->bBuffer && !state->inputstr)
@@ -143,12 +147,19 @@ _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
         read_stdin_line(state);
         _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
     }
+    bCmdStart = state->bCmdStart;
     token = _gmx_sel_yylex(yylval, yyscanner);
     while (state->inputstr && token == 0 && read_stdin_line(state))
     {
         _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
         token = _gmx_sel_yylex(yylval, yyscanner);
     }
+    if (token == 0 && !bCmdStart)
+    {
+        token = CMD_SEP;
+        rtrim(state->pselstr);
+    }
+    state->bCmdStart = (token == CMD_SEP);
     return token;
 }
 
@@ -404,9 +415,10 @@ void
 _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
 {
     /* Do nothing if the string is empty, or if it is a space and there is
-     * no other text yet. */
+     * no other text yet, or if there already is a space. */
     if (!str || len == 0 || strlen(str) == 0
-        || (str[0] == ' ' && str[1] == 0 && state->pslen == 0))
+        || (str[0] == ' ' && str[1] == 0
+            && (state->pslen == 0 || state->pselstr[state->pslen - 1] == ' ')))
     {
         return;
     }

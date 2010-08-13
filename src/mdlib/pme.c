@@ -119,7 +119,6 @@ typedef struct {
     MPI_Comm mpi_comm;
 #endif
     int  nnodes,nodeid;
-    int  ndata;
     int  *s2g0;
     int  *s2g1;
     int  noverlap_nodes;
@@ -2133,8 +2132,6 @@ init_overlap_comm(pme_overlap_t *  ol,
     
     ol->nnodes = nnodes;
     ol->nodeid = nodeid;
-    
-    ol->ndata  = ndata;
 
     /* Linear translation of the PME grid wo'nt affect reciprocal space
      * calculations, so to optimize we only interpolate "upwards",
@@ -2199,8 +2196,8 @@ init_overlap_comm(pme_overlap_t *  ol,
         fft_end          = ol->s2g0[ol->send_id[b]+1];
         if (ol->send_id[b] < nodeid)
         {
-            fft_start += ol->ndata;
-            fft_end  += ol->ndata;
+            fft_start += ndata;
+            fft_end   += ndata;
         }
         send_index1      = ol->s2g1[nodeid];
         send_index1      = min(send_index1,fft_end);
@@ -2213,7 +2210,7 @@ init_overlap_comm(pme_overlap_t *  ol,
         recv_index1      = ol->s2g1[ol->recv_id[b]];
         if (ol->recv_id[b] > nodeid)
         {
-            recv_index1 -= ol->ndata;
+            recv_index1 -= ndata;
         }
         recv_index1      = min(recv_index1,fft_end);
         pgc->recv_index0 = fft_start;
@@ -2222,26 +2219,25 @@ init_overlap_comm(pme_overlap_t *  ol,
 }
 
 static void
-make_gridindex5_to_localindex(int n,int local_start,int local_end,
+make_gridindex5_to_localindex(int n,int local_start,int local_range,
                               int **global_to_local,
                               real **fraction_shift)
 {
-    int local_size,i;
+    int i;
     int * gtl;
     real * fsh;
 
-    local_size = local_end - local_start;
-
     snew(gtl,5*n);
     snew(fsh,5*n);
-    for(i=0; (i<5*n); i++) {
+    for(i=0; (i<5*n); i++)
+    {
         /* Determine the global to local grid index */
         gtl[i] = (i - local_start + n) % n;
         /* For coordinates that fall within the local grid the fraction
          * is correct, we don't need to shift it.
          */
         fsh[i] = 0;
-        if (local_size < n)
+        if (local_range < n)
         {
             /* Due to rounding issues i could be 1 beyond the lower or
              * upper boundary of the local grid. Correct the index for this.
@@ -2253,7 +2249,7 @@ make_gridindex5_to_localindex(int n,int local_start,int local_end,
              * between zero and values close to the precision of a real,
              * which is anyhow the accuracy of the whole mesh calculation.
              */
-            /* With local_size=0 we should not change i=local_start */
+            /* With local_range=0 we should not change i=local_start */
             if (i % n != local_start)
             {
                 if (gtl[i] == n-1)
@@ -2261,9 +2257,9 @@ make_gridindex5_to_localindex(int n,int local_start,int local_end,
                     gtl[i] = 0;
                     fsh[i] = -1; 
                 }
-                else if (gtl[i] == local_size)
+                else if (gtl[i] == local_range)
                 {
-                    gtl[i] = local_size - 1;
+                    gtl[i] = local_range - 1;
                     fsh[i] = 1;
                 }
             }
@@ -2489,22 +2485,26 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     
     make_gridindex5_to_localindex(pme->nkx,
                                   pme->pmegrid_start_ix,
-                                  pme->overlap[0].s2g0[pme->nodeid_major+1],
+                                  pme->pmegrid_nx - (pme->pme_order-1),
                                   &pme->nnx,&pme->fshx);
     make_gridindex5_to_localindex(pme->nky,
                                   pme->pmegrid_start_iy,
-                                  pme->overlap[1].s2g0[pme->nodeid_minor+1],
+                                  pme->pmegrid_ny - (pme->pme_order-1),
                                   &pme->nny,&pme->fshy);
     make_gridindex5_to_localindex(pme->nkz,
                                   pme->pmegrid_start_iz,
-                                  pme->nkz,
+                                  pme->pmegrid_nz - (pme->pme_order-1),
                                   &pme->nnz,&pme->fshz);
     
     snew(pme->pmegridA,pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);
     
     /* For non-divisible grid we need pme_order iso pme_order-1 */
+    /* x overlap is copied in place: take padding into account.
+     * y is always copied through a buffer: we don't need padding in z,
+     * but we do need the overlap in x because of the communication order.
+     */
     bufsizex = pme->pme_order*pme->pmegrid_ny*pme->pmegrid_nz;
-    bufsizey = pme->pmegrid_nx*pme->pme_order*pme->nkz;
+    bufsizey = pme->pme_order*pme->pmegrid_nx*pme->nkz;
     bufsize  = (bufsizex>bufsizey) ? bufsizex : bufsizey;
     
     snew(pme->pmegrid_sendbuf,bufsize);
