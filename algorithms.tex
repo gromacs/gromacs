@@ -791,11 +791,11 @@ temperature will not necessarily be the same.  Standard velocity
 Verlet uses the velocities at the $t$ to calculate the kinetic energy
 and thus the temperature only at time $t$; the kinetic energy is then the sum over all particles of: 
 \bea
-KE_{\mathrm{full}}(t) &=& \sum_i \left(\frac{1}{2m_i}(\ve{v}_i(t)\right)^2 \nonumber\\ 
+KE_{\mathrm{full}}(t) &=& \sum_i \left(\frac{1}{2m_i}\ve{v}_i(t)\right)^2 \nonumber\\ 
       &=& \sum_i \frac{1}{2m_i}\left(\frac{1}{2}\ve{v}_i(t-\hDt)+\frac{1}{2}\ve{v}_i(t+\hDt)\right)^2
 \eea
 with the square on the {\em outside} of the average.  Standard
-Leapfrog calculates the kinetic energy at time $t$ based on the
+leapfrog calculates the kinetic energy at time $t$ based on the
 average kinetic energies at the timesteps $t+\hDt$ and $t-\hDt$, or
 the sum over all particles of
 \bea
