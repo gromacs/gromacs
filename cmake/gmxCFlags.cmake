@@ -108,7 +108,7 @@ MACRO(gmx_c_flags)
 
     # now actually set the flags:
     # C
-    if ( (NOT DEFINED GMXCFLAGS_SET) AND (NOT DEFINED ENV{CFLAGS}) )
+    if ( NOT DEFINED GMXCFLAGS_SET AND NOT DEFINED ENV{CFLAGS} )
         set(GMXCFLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" 
             FORCE)
         
@@ -124,7 +124,7 @@ MACRO(gmx_c_flags)
     endif()
 
     # C++
-    if ( (NOT DEFINED GMXCXXFLAGS_SET) AND (NOT DEFINED ENV{CXXFLAGS}) )
+    if ( NOT DEFINED GMXCXXFLAGS_SET AND NOT DEFINED ENV{CXXFLAGS} )
         set(GMXCXXFLAGS_SET true CACHE INTERNAL "Whether to reset the C++ flags" 
             FORCE)
         set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}" 

@@ -1349,6 +1349,11 @@ if test "$name_transform_provided" = "no" -a "$enable_mpi" = "yes"; then
   echo "  Set a suffix with e.g. --program-suffix=_mpi (or _mpi_d for double)."
   echo "  You only need MPI for mdrun, so if you already have non-MPI stuff"
   echo "  installed you can issue make mdrun; make install-mdrun."
+  echo ""
+  echo "  WARNING:"
+  echo "  There are known problems with some MPI implementations:"
+  echo "             OpenMPI version < 1.4.1" 
+  echo "             MVAPICH2 version <= 1.4.1"
 fi
 
 if test "$enable_shared" = "no"; then

@@ -184,14 +184,7 @@ gmx_mm_calc_rsq_ps(__m128 dx, __m128 dy, __m128 dz)
 }
 
 /* Normal sum of four xmm registers */
-static inline __m128
-gmx_mm_sum4_ps(__m128 t0, __m128 t1, __m128 t2, __m128 t3)
-{
-    t0 = _mm_add_ps(t0,t1);
-    t2 = _mm_add_ps(t2,t3);
-    return _mm_add_ps(t0,t2);
-}
-
+#define gmx_mm_sum4_ps(t0,t1,t2,t3)  _mm_add_ps(_mm_add_ps(t0,t1),_mm_add_ps(t2,t3))
 
 static __m128
 gmx_mm_log_ps(__m128 x)
@@ -2257,977 +2250,33 @@ gmx_mm_atan2_ps(__m128 y, __m128 x)
 }
 
 
-/* Returns fscaltmp, multiply with rinvsq to get fscal! */
-static inline __m128
-gmx_mm_interaction_coulomb_ps(__m128 rinv, __m128 qq,__m128 *vctot)
-{
-	__m128 vcoul = _mm_mul_ps(qq,rinv);
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	return vcoul;
-}
-
 
 static inline void
-gmx_mm_interaction_coulomb_noforce_ps(__m128 rinv, __m128 qq,__m128 *vctot)
-{
-	__m128 vcoul = _mm_mul_ps(qq,rinv);
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	return;
-}
-
-/* Returns fscaltmp, multiply with rinvsq to get fscal! */
-static inline __m128
-gmx_mm_interaction_coulombrf_ps(const __m128 rinv, const __m128 rsq, const __m128 krf, const __m128 crf, const __m128 qq,__m128 *vctot)
-{
-	const __m128 two  = {2.0,2.0,2.0,2.0};
-	__m128 vcoul,krsq;
-	
-	krsq   = _mm_mul_ps(krf,rsq);
-	vcoul  = _mm_mul_ps(qq, _mm_sub_ps(_mm_add_ps(rinv,krsq),crf));
-	*vctot = _mm_add_ps(*vctot,vcoul);
-	
-	return _mm_mul_ps(qq, _mm_sub_ps(rinv, _mm_mul_ps(two,krsq)));
-}
-
-
-static inline void
-gmx_mm_interaction_coulombrf_noforce_ps(__m128 rinv, __m128 rsq, __m128 krf, __m128 crf, __m128 qq,__m128 *vctot)
-{
-	__m128 vcoul,krsq;
-	
-	krsq   = _mm_mul_ps(krf,rsq);
-	vcoul  = _mm_mul_ps(qq, _mm_sub_ps(_mm_add_ps(rinv,krsq),crf));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	return;
-}
-
-
-/* GB */
-
-
-
-
-/* GB + RF */
-
-
-/* Returns fscaltmp, multiply with rinvsq to get fscal! */
-static inline __m128
-gmx_mm_int_lj_ps(__m128 rinvsq, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-	const __m128 six    = {6.0,6.0,6.0,6.0};
-	const __m128 twelve = {12.0,12.0,12.0,12.0};
-	
-	__m128 rinvsix,vvdw6,vvdw12;
-		
-	rinvsix  = _mm_mul_ps(_mm_mul_ps(rinvsq,rinvsq),rinvsq);
-	vvdw6    = _mm_mul_ps(c6,rinvsix);  
-	vvdw12   = _mm_mul_ps(c12, _mm_mul_ps(rinvsix,rinvsix));
-	*vvdwtot = _mm_add_ps(*vvdwtot , _mm_sub_ps(vvdw12,vvdw6));
-	
-	return _mm_sub_ps( _mm_mul_ps(twelve,vvdw12),_mm_mul_ps(six,vvdw6));
-}
-		   
-
-static inline void
-gmx_mm_int_lj_potonly_ps(__m128 rinvsq, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-	__m128 rinvsix,vvdw6,vvdw12;
-	
-	rinvsix  = _mm_mul_ps(_mm_mul_ps(rinvsq,rinvsq),rinvsq);
-	vvdw6    = _mm_mul_ps(c6,rinvsix);  
-	vvdw12   = _mm_mul_ps(c12, _mm_mul_ps(rinvsix,rinvsix));
-	*vvdwtot = _mm_add_ps(*vvdwtot , _mm_sub_ps(vvdw12,vvdw6));
-	
-	return;
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_4_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 *vctot)
-{
-    __m128  rt,eps,eps2,Y,F,G,H,vcoul;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	n_d      = gmx_mm_extract_epi32(n0,3);
-	Y        = _mm_load_ps(VFtab + 4* n_a);
-	F        = _mm_load_ps(VFtab + 4* n_b);
-	G        = _mm_load_ps(VFtab + 4* n_c);
-	H        = _mm_load_ps(VFtab + 4* n_d);
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	F        = _mm_add_ps(F, _mm_add_ps(G,H));  /* Fp    */
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Y, _mm_mul_ps(eps,F)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
-	
-	return _mm_mul_ps(F,tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_4_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	n_d      = gmx_mm_extract_epi32(n0,3);
-	
-	/* For a few cases, like TIP4p waters, there are particles with LJ-only interactions in a loop where
-	 * the table data might contain both coulomb and LJ. To handle this case, we use an offset value of 0
-	 * if the data is an LJ-only table, and 1 if it is actually a mixed coul+lj table.
-	 */
-	Yd       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + 4*offset);
-	Fd       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + 4*offset);
-	Gd       = _mm_load_ps(VFtab + 4*(offset+2)* n_c + 4*offset);
-	Hd       = _mm_load_ps(VFtab + 4*(offset+2)* n_d + 4*offset);
-	Yr       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + 4*offset + 4);
-	Fr       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + 4*offset + 4);
-	Gr       = _mm_load_ps(VFtab + 4*(offset+2)* n_c + 4*offset + 4);
-	Hr       = _mm_load_ps(VFtab + 4*(offset+2)* n_d + 4*offset + 4);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
-}
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_4_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 c6, __m128 c12, 
-								  __m128 *vctot, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,vcoul,Yc,Fc,Gc,Hc,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	n_d      = gmx_mm_extract_epi32(n0,3);
-	
-	
-	Yc       = _mm_load_ps(VFtab + 12* n_a);
-	Fc       = _mm_load_ps(VFtab + 12* n_b);
-	Gc       = _mm_load_ps(VFtab + 12* n_c);
-	Hc       = _mm_load_ps(VFtab + 12* n_d);
-	Yd       = _mm_load_ps(VFtab + 12* n_a + 4);
-	Fd       = _mm_load_ps(VFtab + 12* n_b + 4);
-	Gd       = _mm_load_ps(VFtab + 12* n_c + 4);
-	Hd       = _mm_load_ps(VFtab + 12* n_d + 4);
-	Yr       = _mm_load_ps(VFtab + 12* n_a + 8);
-	Fr       = _mm_load_ps(VFtab + 12* n_b + 8);
-	Gr       = _mm_load_ps(VFtab + 12* n_c + 8);
-	Hr       = _mm_load_ps(VFtab + 12* n_d + 8);
-	_MM_TRANSPOSE4_PS(Yc,Fc,Gc,Hc);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hc       = _mm_mul_ps(Hc,eps2);              /* Heps2 */
-	Gc       = _mm_mul_ps(Gc,eps);               /* Geps  */
-	Fc       = _mm_add_ps(Fc, _mm_add_ps(Gc,Hc));  /* Fp    */
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Yc, _mm_mul_ps(eps,Fc)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fc       = _mm_mul_ps(qq, _mm_add_ps(Fc, _mm_add_ps(Gc, _mm_add_ps(Hc,Hc))));
-	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_3_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 *vctot)
-{
-    __m128  rt,eps,eps2,Y,F,G,H,vcoul;
-	__m128i n0;
-	int     n_a,n_b,n_c;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	Y        = _mm_load_ps(VFtab + 4* n_a);
-	F        = _mm_load_ps(VFtab + 4* n_b);
-	G        = _mm_load_ps(VFtab + 4* n_c);
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	F        = _mm_add_ps(F, _mm_add_ps(G,H));  /* Fp    */
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Y, _mm_mul_ps(eps,F)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
-	
-	return _mm_mul_ps(F,tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_3_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b,n_c;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	
-	/* For a few cases, like TIP4p waters, there are particles with LJ-only interactions in a loop where
-	 * the table data might contain both coulomb and LJ. To handle this case, we use an offset value of 0
-	 * if the data is an LJ-only table, and 1 if it is actually a mixed coul+lj table.
-	 */
-	Yd       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset);
-	Fd       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + offset);
-	Gd       = _mm_load_ps(VFtab + 4*(offset+2)* n_c + offset);
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset + 4);
-	Fr       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + offset + 4);
-	Gr       = _mm_load_ps(VFtab + 4*(offset+2)* n_c + offset + 4);
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
-}
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_3_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 c6, __m128 c12, 
-								  __m128 *vctot, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,vcoul,Yc,Fc,Gc,Hc,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b,n_c;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	
-	
-	Yc       = _mm_load_ps(VFtab + 12* n_a);
-	Fc       = _mm_load_ps(VFtab + 12* n_b);
-	Gc       = _mm_load_ps(VFtab + 12* n_c);
-	Hc       = _mm_setzero_ps();
-	Yd       = _mm_load_ps(VFtab + 12* n_a + 4);
-	Fd       = _mm_load_ps(VFtab + 12* n_b + 4);
-	Gd       = _mm_load_ps(VFtab + 12* n_c + 4);
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 12* n_a + 8);
-	Fr       = _mm_load_ps(VFtab + 12* n_b + 8);
-	Gr       = _mm_load_ps(VFtab + 12* n_c + 8);
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yc,Fc,Gc,Hc);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hc       = _mm_mul_ps(Hc,eps2);              /* Heps2 */
-	Gc       = _mm_mul_ps(Gc,eps);               /* Geps  */
-	Fc       = _mm_add_ps(Fc, _mm_add_ps(Gc,Hc));  /* Fp    */
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Yc, _mm_mul_ps(eps,Fc)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fc       = _mm_mul_ps(qq, _mm_add_ps(Fc, _mm_add_ps(Gc, _mm_add_ps(Hc,Hc))));
-	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
-}
-
-
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_2_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 *vctot)
-{
-    __m128  rt,eps,eps2,Y,F,G,H,vcoul;
-	__m128i n0;
-	int     n_a,n_b;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	Y        = _mm_load_ps(VFtab + 4* n_a);
-	F        = _mm_load_ps(VFtab + 4* n_b);
-	G        = _mm_setzero_ps();
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	F        = _mm_add_ps(F, _mm_add_ps(G,H));  /* Fp    */
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Y, _mm_mul_ps(eps,F)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
-	
-	return _mm_mul_ps(F,tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_2_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	
-	/* For a few cases, like TIP4p waters, there are particles with LJ-only interactions in a loop where
-	 * the table data might contain both coulomb and LJ. To handle this case, we use an offset value of 0
-	 * if the data is an LJ-only table, and 1 if it is actually a mixed coul+lj table.
-	 */
-	Yd       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset);
-	Fd       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + offset);
-	Gd       = _mm_setzero_ps();
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset + 4);
-	Fr       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + offset + 4);
-	Gr       = _mm_setzero_ps();
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
-}
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_2_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 c6, __m128 c12, 
-								  __m128 *vctot, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,vcoul,Yc,Fc,Gc,Hc,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	
-	Yc       = _mm_load_ps(VFtab + 12* n_a);
-	Fc       = _mm_load_ps(VFtab + 12* n_b);
-	Gc       = _mm_setzero_ps();
-	Hc       = _mm_setzero_ps();
-	Yd       = _mm_load_ps(VFtab + 12* n_a + 4);
-	Fd       = _mm_load_ps(VFtab + 12* n_b + 4);
-	Gd       = _mm_setzero_ps();
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 12* n_a + 8);
-	Fr       = _mm_load_ps(VFtab + 12* n_b + 8);
-	Gr       = _mm_setzero_ps();
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yc,Fc,Gc,Hc);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hc       = _mm_mul_ps(Hc,eps2);              /* Heps2 */
-	Gc       = _mm_mul_ps(Gc,eps);               /* Geps  */
-	Fc       = _mm_add_ps(Fc, _mm_add_ps(Gc,Hc));  /* Fp    */
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Yc, _mm_mul_ps(eps,Fc)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fc       = _mm_mul_ps(qq, _mm_add_ps(Fc, _mm_add_ps(Gc, _mm_add_ps(Hc,Hc))));
-	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
-}
-
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_1_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 *vctot)
-{
-    __m128  rt,eps,eps2,Y,F,G,H,vcoul;
-	__m128i n0;
-	int     n_a;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	Y        = _mm_load_ps(VFtab + 4* n_a);
-	F        = _mm_setzero_ps();
-	G        = _mm_setzero_ps();
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	F        = _mm_add_ps(F, _mm_add_ps(G,H));  /* Fp    */
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Y, _mm_mul_ps(eps,F)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
-	
-	return _mm_mul_ps(F,tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_1_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	
-	/* For a few cases, like TIP4p waters, there are particles with LJ-only interactions in a loop where
-	 * the table data might contain both coulomb and LJ. To handle this case, we use an offset value of 0
-	 * if the data is an LJ-only table, and 1 if it is actually a mixed coul+lj table.
-	 */
-	Yd       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset);
-	Fd       = _mm_setzero_ps();
-	Gd       = _mm_setzero_ps();
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset + 4);
-	Fr       = _mm_setzero_ps();
-	Gr       = _mm_setzero_ps();
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
-}
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_1_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 c6, __m128 c12, 
-									 __m128 *vctot, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,vcoul,Yc,Fc,Gc,Hc,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	
-	Yc       = _mm_load_ps(VFtab + 12* n_a);
-	Fc       = _mm_setzero_ps();
-	Gc       = _mm_setzero_ps();
-	Hc       = _mm_setzero_ps();
-	Yd       = _mm_load_ps(VFtab + 12* n_a + 4);
-	Fd       = _mm_setzero_ps();
-	Gd       = _mm_setzero_ps();
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 12* n_a + 8);
-	Fr       = _mm_setzero_ps();
-	Gr       = _mm_setzero_ps();
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yc,Fc,Gc,Hc);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hc       = _mm_mul_ps(Hc,eps2);              /* Heps2 */
-	Gc       = _mm_mul_ps(Gc,eps);               /* Geps  */
-	Fc       = _mm_add_ps(Fc, _mm_add_ps(Gc,Hc));  /* Fp    */
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Yc, _mm_mul_ps(eps,Fc)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fc       = _mm_mul_ps(qq, _mm_add_ps(Fc, _mm_add_ps(Gc, _mm_add_ps(Hc,Hc))));
-	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
-}
-
-
-
-
-
-/* Return force should be multiplied by +rinv to get fscal */
-static inline __m128
-gmx_mm_int_4_genborn_ps(__m128 r, __m128 isai, 
-						float * isaj1, float *isaj2, float *isaj3, float *isaj4,
-						__m128 gbtabscale, float * GBtab, __m128 qq, __m128 *dvdasum, 
-						float *dvdaj1, float *dvdaj2, float *dvdaj3, float *dvdaj4, 
-						__m128 *vgbtot)
-{
-	const __m128 half  = {0.5,0.5,0.5,0.5};
-	
-    __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-	/* Assemble isaj */
-	isaj     = _mm_load_ss(isaj1);
-	t2       = _mm_load_ss(isaj2);
-	t3       = _mm_load_ss(isaj3);
-	t4       = _mm_load_ss(isaj4);
-	isaj     = _mm_unpacklo_ps(isaj,t2);  /* - - t2 t1 */
-	t3       = _mm_unpacklo_ps(t3,t4);  /* - - t4 t3 */
-	isaj     = _mm_movelh_ps(isaj,t3); /* t4 t3 t2 t1 */
-	
-	isaprod     = _mm_mul_ps(isai,isaj);
-	qq          = _mm_mul_ps(qq,isaprod);
-	gbtabscale  = _mm_mul_ps( isaprod, gbtabscale );
-	
-	rt       = _mm_mul_ps(r,gbtabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-		
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	n_d      = gmx_mm_extract_epi32(n0,3);
-	Y        = _mm_load_ps(GBtab + 4* n_a);
-	F        = _mm_load_ps(GBtab + 4* n_b);
-	G        = _mm_load_ps(GBtab + 4* n_c);
-	H        = _mm_load_ps(GBtab + 4* n_d);
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	F        = _mm_add_ps(_mm_add_ps(F,G),H);  /* Fp    */
-		
-	VV       = _mm_add_ps(Y, _mm_mul_ps(eps,F));
-	FF       = _mm_add_ps(_mm_add_ps(F,G), _mm_add_ps(H,H));
-
-	vgb      = _mm_mul_ps(qq, VV);
-	*vgbtot  = _mm_sub_ps(*vgbtot,vgb); /* Yes, the sign is correct */
-
-	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
-	
-	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
-	
-	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
-	
-	dvdatmp  = _mm_mul_ps(_mm_mul_ps(dvdatmp,isaj), isaj);
-
-	/* Update 4 dada[j] values */
-	Y        = _mm_load_ss(dvdaj1);
-	F        = _mm_load_ss(dvdaj2);
-	G        = _mm_load_ss(dvdaj3);
-	H        = _mm_load_ss(dvdaj4);
-	t3       = _mm_movehl_ps(_mm_setzero_ps(),dvdatmp);
-	t2       = _mm_shuffle_ps(dvdatmp,dvdatmp,_MM_SHUFFLE(0,0,0,1));
-	t4       = _mm_shuffle_ps(t3,t3,_MM_SHUFFLE(0,0,0,1));
-		
-	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
-	_mm_store_ss( dvdaj2 , _mm_add_ss( F, t2 ) );
-	_mm_store_ss( dvdaj3 , _mm_add_ss( G, t3 ) );
-	_mm_store_ss( dvdaj4 , _mm_add_ss( H, t4 ) );
-	
-	return ftmp;
-}
-
-
-
-/* Return force should be multiplied by +rinv to get fscal */
-static inline __m128
-gmx_mm_int_3_genborn_ps(__m128 r, __m128 isai, 
-						float * isaj1, float *isaj2, float *isaj3, 
-						__m128 gbtabscale, float * GBtab, __m128 qq, __m128 *dvdasum, 
-						float *dvdaj1, float *dvdaj2, float *dvdaj3,
-						__m128 *vgbtot)
-{
-	const __m128 half  = {0.5,0.5,0.5,0.5};
-	
-    __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-	/* Assemble isaj */
-	isaj     = _mm_load_ss(isaj1);
-	t2       = _mm_load_ss(isaj2);
-	t3       = _mm_load_ss(isaj3);
-	isaj     = _mm_unpacklo_ps(isaj,t2);  /* - - t2 t1 */
-	t3       = _mm_unpacklo_ps(t3,t3);  /* - - t3 t3 */
-	isaj     = _mm_movelh_ps(isaj,t3); /* t3 t3 t2 t1 */
-	
-	isaprod     = _mm_mul_ps(isai,isaj);
-	qq          = _mm_mul_ps(qq,isaprod);
-	gbtabscale  = _mm_mul_ps( isaprod, gbtabscale );
-	
-	rt       = _mm_mul_ps(r,gbtabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	Y        = _mm_load_ps(GBtab + 4* n_a);
-	F        = _mm_load_ps(GBtab + 4* n_b);
-	G        = _mm_load_ps(GBtab + 4* n_c);
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	F        = _mm_add_ps(_mm_add_ps(F,G),H);  /* Fp    */
-	
-	VV       = _mm_add_ps(Y, _mm_mul_ps(eps,F));
-	FF       = _mm_add_ps(_mm_add_ps(F,G), _mm_add_ps(H,H));
-	
-	vgb      = _mm_mul_ps(qq, VV);
-	*vgbtot  = _mm_sub_ps(*vgbtot,vgb); /* Yes, the sign is correct */
-	
-	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
-	
-	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
-	
-	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
-	
-	dvdatmp  = _mm_mul_ps(_mm_mul_ps(dvdatmp,isaj), isaj);
-	
-	/* Update 3 dada[j] values */
-	Y        = _mm_load_ss(dvdaj1);
-	F        = _mm_load_ss(dvdaj2);
-	G        = _mm_load_ss(dvdaj3);
-	t3       = _mm_movehl_ps(_mm_setzero_ps(),dvdatmp);
-	t2       = _mm_shuffle_ps(dvdatmp,dvdatmp,_MM_SHUFFLE(0,0,0,1));
-	
-	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
-	_mm_store_ss( dvdaj2 , _mm_add_ss( F, t2 ) );
-	_mm_store_ss( dvdaj3 , _mm_add_ss( G, t3 ) );
-	
-	return ftmp;
-}
-
-
-
-
-/* Return force should be multiplied by +rinv to get fscal */
-static inline __m128
-gmx_mm_int_2_genborn_ps(__m128 r, __m128 isai, 
-						float * isaj1, float *isaj2, 
-						__m128 gbtabscale, float * GBtab, __m128 qq, __m128 *dvdasum, 
-						float *dvdaj1, float *dvdaj2,
-						__m128 *vgbtot)
-{
-	const __m128 half  = {0.5,0.5,0.5,0.5};
-	
-    __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-	/* Assemble isaj */
-	isaj     = _mm_load_ss(isaj1);
-	t2       = _mm_load_ss(isaj2);
-	isaj     = _mm_unpacklo_ps(isaj,t2);  /* - - t2 t1 */
-	
-	isaprod     = _mm_mul_ps(isai,isaj);
-	qq          = _mm_mul_ps(qq,isaprod);
-	gbtabscale  = _mm_mul_ps( isaprod, gbtabscale );
-	
-	rt       = _mm_mul_ps(r,gbtabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	Y        = _mm_load_ps(GBtab + 4* n_a);
-	F        = _mm_load_ps(GBtab + 4* n_b);
-	G        = _mm_setzero_ps();
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	F        = _mm_add_ps(_mm_add_ps(F,G),H);  /* Fp    */
-	
-	VV       = _mm_add_ps(Y, _mm_mul_ps(eps,F));
-	FF       = _mm_add_ps(_mm_add_ps(F,G), _mm_add_ps(H,H));
-	
-	vgb      = _mm_mul_ps(qq, VV);
-	*vgbtot  = _mm_sub_ps(*vgbtot,vgb); /* Yes, the sign is correct */
-	
-	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
-	
-	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
-	
-	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
-	
-	dvdatmp  = _mm_mul_ps(_mm_mul_ps(dvdatmp,isaj), isaj);
-	
-	/* Update 2 dada[j] values */
-	Y        = _mm_load_ss(dvdaj1);
-	F        = _mm_load_ss(dvdaj2);
-	t2       = _mm_shuffle_ps(dvdatmp,dvdatmp,_MM_SHUFFLE(0,0,0,1));
-	
-	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
-	_mm_store_ss( dvdaj2 , _mm_add_ss( F, t2 ) );
-	
-	return ftmp;
-}
-
-/* Return force should be multiplied by +rinv to get fscal */
-static inline __m128
-gmx_mm_int_1_genborn_ps(__m128 r, __m128 isai, 
-						float * isaj1, 
-						__m128 gbtabscale, float * GBtab, __m128 qq, __m128 *dvdasum, 
-						float *dvdaj1, 
-						__m128 *vgbtot)
-{
-	const __m128 half  = {0.5,0.5,0.5,0.5};
-	
-    __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-	/* Assemble isaj */
-	isaj     = _mm_load_ss(isaj1);
-	
-	isaprod     = _mm_mul_ps(isai,isaj);
-	qq          = _mm_mul_ps(qq,isaprod);
-	gbtabscale  = _mm_mul_ps( isaprod, gbtabscale );
-	
-	rt       = _mm_mul_ps(r,gbtabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	Y        = _mm_load_ps(GBtab + 4* n_a);
-	F        = _mm_setzero_ps();
-	G        = _mm_setzero_ps();
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	F        = _mm_add_ps(_mm_add_ps(F,G),H);  /* Fp    */
-	
-	VV       = _mm_add_ps(Y, _mm_mul_ps(eps,F));
-	FF       = _mm_add_ps(_mm_add_ps(F,G), _mm_add_ps(H,H));
-	
-	vgb      = _mm_mul_ps(qq, VV);
-	*vgbtot  = _mm_sub_ps(*vgbtot,vgb); /* Yes, the sign is correct */
-	
-	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
-	
-	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
-	
-	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
-	
-	dvdatmp  = _mm_mul_ps(_mm_mul_ps(dvdatmp,isaj), isaj);
-	
-	/* Update 1 dada[j] values */
-	Y        = _mm_load_ss(dvdaj1);
-	
-	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
-	
-	return ftmp;
-}
-
-
-
-
-
-static inline void
-gmx_mm_update_iforce_1atom_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
+gmx_mm_update_iforce_1atom_ps(__m128 *fix1, __m128 *fiy1, __m128 *fiz1,
                               float *fptr,
                               float *fshiftptr)
 {
 	__m128 t1,t2,t3;
 	
 #ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fix1);   
-	fiy1 = _mm_hadd_ps(fiy1,fiz1);
+	*fix1 = _mm_hadd_ps(*fix1,*fix1);   
+	*fiy1 = _mm_hadd_ps(*fiy1,*fiz1);
 	
-	fix1 = _mm_hadd_ps(fix1,fiy1); /* fiz1 fiy1 fix1 fix1 */ 
+	*fix1 = _mm_hadd_ps(*fix1,*fiy1); /* fiz1 fiy1 fix1 fix1 */ 
 #else
 	/* SSE2 */
 	/* transpose data */
-	t1 = fix1;
-	_MM_TRANSPOSE4_PS(fix1,t1,fiy1,fiz1);  
-	fix1 = _mm_add_ps(_mm_add_ps(fix1,t1), _mm_add_ps(fiy1,fiz1));
+	t1 = *fix1;
+	_MM_TRANSPOSE4_PS(*fix1,t1,*fiy1,*fiz1);  
+	*fix1 = _mm_add_ps(_mm_add_ps(*fix1,t1), _mm_add_ps(*fiy1,*fiz1));
 #endif
 	t2 = _mm_load_ss(fptr);
 	t2 = _mm_loadh_pi(t2,(__m64 *)(fptr+1));
 	t3 = _mm_load_ss(fshiftptr);
 	t3 = _mm_loadh_pi(t3,(__m64 *)(fshiftptr+1));
 	
-	t2 = _mm_add_ps(t2,fix1);
-	t3 = _mm_add_ps(t3,fix1);
+	t2 = _mm_add_ps(t2,*fix1);
+	t3 = _mm_add_ps(t3,*fix1);
 	
 	_mm_store_ss(fptr,t2);
 	_mm_storeh_pi((__m64 *)(fptr+1),t2);
@@ -3236,42 +2285,42 @@ gmx_mm_update_iforce_1atom_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 }
 
 static inline void
-gmx_mm_update_iforce_2atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-                               __m128 fix2, __m128 fiy2, __m128 fiz2,
+gmx_mm_update_iforce_2atoms_ps(__m128 *fix1, __m128 *fiy1, __m128 *fiz1,
+                               __m128 *fix2, __m128 *fiy2, __m128 *fiz2,
                                float *fptr,
                                float *fshiftptr)
 {
 	__m128 t1,t2,t4;
 	
 #ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fiy1);   
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
+	*fix1 = _mm_hadd_ps(*fix1,*fiy1);   
+	*fiz1 = _mm_hadd_ps(*fiz1,*fix2);
+	*fiy2 = _mm_hadd_ps(*fiy2,*fiz2);
 	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */ 
-	fiy2 = _mm_hadd_ps(fiy2,fiy2); /*  -    -   fiz2 fiy2 */
+	*fix1 = _mm_hadd_ps(*fix1,*fiz1); /* fix2 fiz1 fiy1 fix1 */ 
+	*fiy2 = _mm_hadd_ps(*fiy2,*fiy2); /*  -    -   fiz2 fiy2 */
 #else
 	/* SSE2 */
 	/* transpose data */
-	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
-	t1 = _mm_unpacklo_ps(fiy2,fiz2);
-	t2 = _mm_unpackhi_ps(fiy2,fiz2);
+	_MM_TRANSPOSE4_PS(*fix1,*fiy1,*fiz1,*fix2);  
+	t1 = _mm_unpacklo_ps(*fiy2,*fiz2);
+	t2 = _mm_unpackhi_ps(*fiy2,*fiz2);
 		
-	fix1 = _mm_add_ps(_mm_add_ps(fix1,fiy1), _mm_add_ps(fiz1,fix2));
+	*fix1 = _mm_add_ps(_mm_add_ps(*fix1,*fiy1), _mm_add_ps(*fiz1,*fix2));
 	t1   = _mm_add_ps(t1,t2);
 	t2   = _mm_movehl_ps(t2,t1);
-	fiy2 = _mm_add_ps(t1,t2);
+	*fiy2 = _mm_add_ps(t1,t2);
 #endif
-	_mm_storeu_ps(fptr,   _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
+	_mm_storeu_ps(fptr,   _mm_add_ps(*fix1,_mm_loadu_ps(fptr)  ));
 	t1 = _mm_loadl_pi(t1,(__m64 *)(fptr+4));
-	_mm_storel_pi((__m64 *)(fptr+4), _mm_add_ps(fiy2,t1));
+	_mm_storel_pi((__m64 *)(fptr+4), _mm_add_ps(*fiy2,t1));
 	
 	t4 = _mm_load_ss(fshiftptr+2);
 	t4 = _mm_loadh_pi(t4,(__m64 *)(fshiftptr));
 	
-	t1 = _mm_shuffle_ps(fix1,fiy2,_MM_SHUFFLE(0,0,3,2));   /* fiy2  -   fix2 fiz1 */
+	t1 = _mm_shuffle_ps(*fix1,*fiy2,_MM_SHUFFLE(0,0,3,2));   /* fiy2  -   fix2 fiz1 */
 	t1 = _mm_shuffle_ps(t1,t1,_MM_SHUFFLE(3,1,0,0));       /* fiy2 fix2  -   fiz1 */
-	t2 = _mm_shuffle_ps(fiy2,fix1,_MM_SHUFFLE(1,0,0,1));   /* fiy1 fix1  -   fiz2 */
+	t2 = _mm_shuffle_ps(*fiy2,*fix1,_MM_SHUFFLE(1,0,0,1));   /* fiy1 fix1  -   fiz2 */
 
 	t1 = _mm_add_ps(t1,t2);
 	t1 = _mm_add_ps(t1,t4); /* y x - z */
@@ -3283,47 +2332,47 @@ gmx_mm_update_iforce_2atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 
 
 static inline void
-gmx_mm_update_iforce_3atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-                               __m128 fix2, __m128 fiy2, __m128 fiz2,
-                               __m128 fix3, __m128 fiy3, __m128 fiz3,
+gmx_mm_update_iforce_3atoms_ps(__m128 *fix1, __m128 *fiy1, __m128 *fiz1,
+                               __m128 *fix2, __m128 *fiy2, __m128 *fiz2,
+                               __m128 *fix3, __m128 *fiy3, __m128 *fiz3,
                                float *fptr,
                                float *fshiftptr)
 {
 	__m128 t1,t2,t3,t4;
 	
 #ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fiy1);   
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
-	fix3 = _mm_hadd_ps(fix3,fiy3);
-	fiz3 = _mm_hadd_ps(fiz3,fiz3);
+	*fix1 = _mm_hadd_ps(*fix1,*fiy1);   
+	*fiz1 = _mm_hadd_ps(*fiz1,*fix2);
+	*fiy2 = _mm_hadd_ps(*fiy2,*fiz2);
+	*fix3 = _mm_hadd_ps(*fix3,*fiy3);
+	*fiz3 = _mm_hadd_ps(*fiz3,*fiz3);
 	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */ 
-	fiy2 = _mm_hadd_ps(fiy2,fix3); /* fiy3 fix3 fiz2 fiy2 */
-	fiz3 = _mm_hadd_ps(fiz3,fiz3); /*  -    -    -   fiz3 */
+	*fix1 = _mm_hadd_ps(*fix1,*fiz1); /* fix2 fiz1 fiy1 fix1 */ 
+	*fiy2 = _mm_hadd_ps(*fiy2,*fix3); /* fiy3 fix3 fiz2 fiy2 */
+	*fiz3 = _mm_hadd_ps(*fiz3,*fiz3); /*  -    -    -   fiz3 */
 #else
 	/* SSE2 */
 	/* transpose data */
-	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
-	_MM_TRANSPOSE4_PS(fiy2,fiz2,fix3,fiy3);
-	t2   = _mm_movehl_ps(_mm_setzero_ps(),fiz3);
-	t1   = _mm_shuffle_ps(fiz3,fiz3,_MM_SHUFFLE(0,0,0,1));
+	_MM_TRANSPOSE4_PS(*fix1,*fiy1,*fiz1,*fix2);  
+	_MM_TRANSPOSE4_PS(*fiy2,*fiz2,*fix3,*fiy3);
+	t2   = _mm_movehl_ps(_mm_setzero_ps(),*fiz3);
+	t1   = _mm_shuffle_ps(*fiz3,*fiz3,_MM_SHUFFLE(0,0,0,1));
 	t3   = _mm_shuffle_ps(t2,t2,_MM_SHUFFLE(0,0,0,1));
 	
-	fix1 = _mm_add_ps(_mm_add_ps(fix1,fiy1), _mm_add_ps(fiz1,fix2));
-	fiy2 = _mm_add_ps(_mm_add_ps(fiy2,fiz2), _mm_add_ps(fix3,fiy3));
-	fiz3 = _mm_add_ss(_mm_add_ps(fiz3,t1)  , _mm_add_ps(t2,t3));
+	*fix1 = _mm_add_ps(_mm_add_ps(*fix1,*fiy1), _mm_add_ps(*fiz1,*fix2));
+	*fiy2 = _mm_add_ps(_mm_add_ps(*fiy2,*fiz2), _mm_add_ps(*fix3,*fiy3));
+	*fiz3 = _mm_add_ss(_mm_add_ps(*fiz3,t1)  , _mm_add_ps(t2,t3));
 #endif
-	_mm_storeu_ps(fptr,  _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
-	_mm_storeu_ps(fptr+4,_mm_add_ps(fiy2,_mm_loadu_ps(fptr+4)));
-	_mm_store_ss (fptr+8,_mm_add_ss(fiz3,_mm_load_ss(fptr+8) ));
+	_mm_storeu_ps(fptr,  _mm_add_ps(*fix1,_mm_loadu_ps(fptr)  ));
+	_mm_storeu_ps(fptr+4,_mm_add_ps(*fiy2,_mm_loadu_ps(fptr+4)));
+	_mm_store_ss (fptr+8,_mm_add_ss(*fiz3,_mm_load_ss(fptr+8) ));
 	
 	t4 = _mm_load_ss(fshiftptr+2);
 	t4 = _mm_loadh_pi(t4,(__m64 *)(fshiftptr));
 	
-	t1 = _mm_shuffle_ps(fiz3,fix1,_MM_SHUFFLE(1,0,0,0));   /* fiy1 fix1  -   fiz3 */
-	t2 = _mm_shuffle_ps(fix1,fiy2,_MM_SHUFFLE(3,2,2,2));   /* fiy3 fix3  -   fiz1 */
-	t3 = _mm_shuffle_ps(fiy2,fix1,_MM_SHUFFLE(3,3,0,1));   /* fix2 fix2 fiy2 fiz2 */
+	t1 = _mm_shuffle_ps(*fiz3,*fix1,_MM_SHUFFLE(1,0,0,0));   /* fiy1 fix1  -   fiz3 */
+	t2 = _mm_shuffle_ps(*fix1,*fiy2,_MM_SHUFFLE(3,2,2,2));   /* fiy3 fix3  -   fiz1 */
+	t3 = _mm_shuffle_ps(*fiy2,*fix1,_MM_SHUFFLE(3,3,0,1));   /* fix2 fix2 fiy2 fiz2 */
 	t3 = _mm_shuffle_ps(t3  ,t3  ,_MM_SHUFFLE(1,2,0,0));   /* fiy2 fix2  -   fiz2 */
 
 	t1 = _mm_add_ps(t1,t2);
@@ -3336,49 +2385,49 @@ gmx_mm_update_iforce_3atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 
 
 static inline void
-gmx_mm_update_iforce_4atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-                               __m128 fix2, __m128 fiy2, __m128 fiz2,
-                               __m128 fix3, __m128 fiy3, __m128 fiz3,
-                               __m128 fix4, __m128 fiy4, __m128 fiz4,
+gmx_mm_update_iforce_4atoms_ps(__m128 *fix1, __m128 *fiy1, __m128 *fiz1,
+                               __m128 *fix2, __m128 *fiy2, __m128 *fiz2,
+                               __m128 *fix3, __m128 *fiy3, __m128 *fiz3,
+                               __m128 *fix4, __m128 *fiy4, __m128 *fiz4,
                                float *fptr,
                                float *fshiftptr)
 {
 	__m128 t1,t2,t3,t4,t5;
 	
 #ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fiy1);   
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
-	fix3 = _mm_hadd_ps(fix3,fiy3);
-	fiz3 = _mm_hadd_ps(fiz3,fix4);
-	fiy4 = _mm_hadd_ps(fiy4,fiz4);
+	*fix1 = _mm_hadd_ps(*fix1,*fiy1);   
+	*fiz1 = _mm_hadd_ps(*fiz1,*fix2);
+	*fiy2 = _mm_hadd_ps(*fiy2,*fiz2);
+	*fix3 = _mm_hadd_ps(*fix3,*fiy3);
+	*fiz3 = _mm_hadd_ps(*fiz3,*fix4);
+	*fiy4 = _mm_hadd_ps(*fiy4,*fiz4);
 	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */ 
-	fiy2 = _mm_hadd_ps(fiy2,fix3); /* fiy3 fix3 fiz2 fiy2 */
-	fiz3 = _mm_hadd_ps(fiz3,fiy4); /* fiz4 fiy4 fix4 fiz3 */
+	*fix1 = _mm_hadd_ps(*fix1,*fiz1); /* fix2 fiz1 fiy1 fix1 */ 
+	*fiy2 = _mm_hadd_ps(*fiy2,*fix3); /* fiy3 fix3 fiz2 fiy2 */
+	*fiz3 = _mm_hadd_ps(*fiz3,*fiy4); /* fiz4 fiy4 fix4 fiz3 */
 #else
 	/* SSE2 */
 	/* transpose data */
-	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
-	_MM_TRANSPOSE4_PS(fiy2,fiz2,fix3,fiy3);
-	_MM_TRANSPOSE4_PS(fiz3,fix4,fiy4,fiz4);
+	_MM_TRANSPOSE4_PS(*fix1,*fiy1,*fiz1,*fix2);  
+	_MM_TRANSPOSE4_PS(*fiy2,*fiz2,*fix3,*fiy3);
+	_MM_TRANSPOSE4_PS(*fiz3,*fix4,*fiy4,*fiz4);
 	
-	fix1 = _mm_add_ps(_mm_add_ps(fix1,fiy1), _mm_add_ps(fiz1,fix2));
-	fiy2 = _mm_add_ps(_mm_add_ps(fiy2,fiz2), _mm_add_ps(fix3,fiy3));
-	fiz3 = _mm_add_ps(_mm_add_ps(fiz3,fix4), _mm_add_ps(fiy4,fiz4));
+	*fix1 = _mm_add_ps(_mm_add_ps(*fix1,*fiy1), _mm_add_ps(*fiz1,*fix2));
+	*fiy2 = _mm_add_ps(_mm_add_ps(*fiy2,*fiz2), _mm_add_ps(*fix3,*fiy3));
+	*fiz3 = _mm_add_ps(_mm_add_ps(*fiz3,*fix4), _mm_add_ps(*fiy4,*fiz4));
 #endif
-	_mm_storeu_ps(fptr,  _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
-	_mm_storeu_ps(fptr+4,_mm_add_ps(fiy2,_mm_loadu_ps(fptr+4)));
-	_mm_storeu_ps(fptr+8,_mm_add_ps(fiz3,_mm_loadu_ps(fptr+8)));
+	_mm_storeu_ps(fptr,  _mm_add_ps(*fix1,_mm_loadu_ps(fptr)  ));
+	_mm_storeu_ps(fptr+4,_mm_add_ps(*fiy2,_mm_loadu_ps(fptr+4)));
+	_mm_storeu_ps(fptr+8,_mm_add_ps(*fiz3,_mm_loadu_ps(fptr+8)));
 	
 	t5 = _mm_load_ss(fshiftptr+2);
 	t5 = _mm_loadh_pi(t5,(__m64 *)(fshiftptr));
 	
-	t1 = _mm_shuffle_ps(fix1,fix1,_MM_SHUFFLE(1,0,2,2));   /* fiy1 fix1  -   fiz1 */
-	t2 = _mm_shuffle_ps(fiy2,fiy2,_MM_SHUFFLE(3,2,1,1));   /* fiy3 fix3  -   fiz2 */
-	t3 = _mm_shuffle_ps(fiz3,fiz3,_MM_SHUFFLE(2,1,0,0));   /* fiy4 fix4  -   fiz3 */
-	t4 = _mm_shuffle_ps(fix1,fiy2,_MM_SHUFFLE(0,0,3,3));   /* fiy2 fiy2 fix2 fix2 */
-	t4 = _mm_shuffle_ps(fiz3,t4  ,_MM_SHUFFLE(2,0,3,3));   /* fiy2 fix2  -   fiz4 */
+	t1 = _mm_shuffle_ps(*fix1,*fix1,_MM_SHUFFLE(1,0,2,2));   /* fiy1 fix1  -   fiz1 */
+	t2 = _mm_shuffle_ps(*fiy2,*fiy2,_MM_SHUFFLE(3,2,1,1));   /* fiy3 fix3  -   fiz2 */
+	t3 = _mm_shuffle_ps(*fiz3,*fiz3,_MM_SHUFFLE(2,1,0,0));   /* fiy4 fix4  -   fiz3 */
+	t4 = _mm_shuffle_ps(*fix1,*fiy2,_MM_SHUFFLE(0,0,3,3));   /* fiy2 fiy2 fix2 fix2 */
+	t4 = _mm_shuffle_ps(*fiz3,t4  ,_MM_SHUFFLE(2,0,3,3));   /* fiy2 fix2  -   fiz4 */
 	
 	t1 = _mm_add_ps(t1,t2);
 	t3 = _mm_add_ps(t3,t4);
@@ -3390,59 +2439,61 @@ gmx_mm_update_iforce_4atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 }
 
 
-static inline void
-gmx_mm_update_1pot_ps(__m128 pot1, float *ptr1)
-{
 #ifdef GMX_SSE3
-	pot1 = _mm_hadd_ps(pot1,pot1);
-	pot1 = _mm_hadd_ps(pot1,pot1);
+
+#define GMX_MM_UPDATE_1POT_PS(pot1,ptr1)                                    \
+{                                                                           \
+    pot1 = _mm_hadd_ps(pot1,pot1);                                          \
+    pot1 = _mm_hadd_ps(pot1,pot1);                                          \
+    _mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
+}
+
+#define GMX_MM_UPDATE_2POT_PS(pot1,ptr1,pot2,ptr2)                          \
+{                                                                           \
+    pot1 = _mm_hadd_ps(pot1,pot2);                                          \
+    pot1 = _mm_hadd_ps(pot1,pot1);                                          \
+    pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1));                  \
+	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
+	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));                  \
+}
+
 #else
-	/* SSE2 */
-	pot1 = _mm_add_ps(pot1,_mm_movehl_ps(pot1,pot1));
-	pot1 = _mm_add_ps(pot1,_mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1)));
-#endif
-	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
+
+#define GMX_MM_UPDATE_1POT_PS(pot1,ptr1)                                    \
+{                                                                           \
+    pot1 = _mm_add_ps(pot1,_mm_movehl_ps(pot1,pot1));                       \
+    pot1 = _mm_add_ps(pot1,_mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1))); \
+    _mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
 }
 
-
-static inline void
-gmx_mm_update_2pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2)
-{
-#ifdef GMX_SSE3
-	pot1 = _mm_hadd_ps(pot1,pot2);
-	pot1 = _mm_hadd_ps(pot1,pot1);
-	pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1));
-#else
-	/* SSE2 */
-	__m128 t1,t2;
-	t1   = _mm_movehl_ps(pot2,pot1); /* 2d 2c 1d 1c */
-	t2   = _mm_movelh_ps(pot1,pot2); /* 2b 2a 1b 1a */
-	t1   = _mm_add_ps(t1,t2);       /* 2  2  1  1  */
-	t2   = _mm_shuffle_ps(t1,t1,_MM_SHUFFLE(3,3,1,1));
-	pot1 = _mm_add_ps(t1,t2);       /* -  2  -  1  */
-	pot2 = _mm_movehl_ps(t2,pot1);    /* -  -  -  2  */
-#endif
-    
-	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
-	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));
-}
-
-
-static inline void
-gmx_mm_update_4pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2, __m128 pot3, float *ptr3, __m128 pot4, float *ptr4)
-{
-    _MM_TRANSPOSE4_PS(pot1,pot2,pot3,pot4);
-    
-    pot1 = _mm_add_ps(_mm_add_ps(pot1,pot2),_mm_add_ps(pot3,pot4));
-    pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(1,1,1,1));
-    pot3 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(2,2,2,2));
-    pot4 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(3,3,3,3));
-    
-	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
-	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));
-	_mm_store_ss(ptr3,_mm_add_ss(pot3,_mm_load_ss(ptr3)));
-	_mm_store_ss(ptr4,_mm_add_ss(pot4,_mm_load_ss(ptr4)));
+#define GMX_MM_UPDATE_2POT_PS(pot1,ptr1,pot2,ptr2)                          \
+{                                                                           \
+	__m128 _updt1_,_updt2;                                                  \
+	_updt1 = _mm_movehl_ps(pot2,pot1); /* 2d 2c 1d 1c */                    \
+	_updt2 = _mm_movelh_ps(pot1,pot2); /* 2b 2a 1b 1a */                    \
+	_updt1 = _mm_add_ps(_updt1,_updt2);       /* 2  2  1  1  */             \
+	_updt2 = _mm_shuffle_ps(_updt1,_updt1,_MM_SHUFFLE(3,3,1,1));            \
+	pot1   = _mm_add_ps(_updt1,_updt2);       /* -  2  -  1  */             \
+	pot2   = _mm_movehl_ps(_updt2,pot1);    /* -  -  -  2  */               \
+	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
+	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));                  \
 }
 
 #endif
 
+
+#define GMX_MM_UPDATE_4POT_PS(pot1,ptr1,pot2,ptr2,pot3,ptr3,pot4,ptr4)      \
+{                                                                           \
+    _MM_TRANSPOSE4_PS(pot1,pot2,pot3,pot4);                                 \
+    pot1 = _mm_add_ps(_mm_add_ps(pot1,pot2),_mm_add_ps(pot3,pot4));         \
+    pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(1,1,1,1));                  \
+    pot3 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(2,2,2,2));                  \
+    pot4 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(3,3,3,3));                  \
+	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
+	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));                  \
+	_mm_store_ss(ptr3,_mm_add_ss(pot3,_mm_load_ss(ptr3)));                  \
+	_mm_store_ss(ptr4,_mm_add_ss(pot4,_mm_load_ss(ptr4)));                  \
+}
+
+
+#endif /* _gmx_sse2_single_h_ */

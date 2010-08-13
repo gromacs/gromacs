@@ -76,6 +76,10 @@ set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
 #Process MPI settings
 ########################################################################
 if(GMX_MPI)
+	MESSAGE(WARNING "
+            There are known problems with some MPI implementations:
+                     OpenMPI version < 1.4.1
+                     MVAPICH2 version <= 1.4.1                               *")
     if(GMX_THREADS)
         #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
         set(GMX_THREADS OFF CACHE BOOL 
@@ -133,7 +137,6 @@ if(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 
-
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -183,7 +186,6 @@ check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(copyfile          HAVE_COPYFILE)
 # check_function_exists(CopyFile          HAVE_WIN_COPYFILE)
-# After large files? check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -327,6 +329,7 @@ gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754
 
 include(gmxTestLargeFiles)
 gmx_test_large_files(GMX_LARGEFILES)
+check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(gmxTestSignal)
 gmx_test_retsigtype(RETSIGTYPE)
@@ -363,8 +366,6 @@ if (${GMX_ACCELERATION} STREQUAL "auto")
 endif (${GMX_ACCELERATION} STREQUAL "auto")
 
 
-
-
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
@@ -397,6 +398,7 @@ string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+
     if(CMAKE_GENERATOR MATCHES "Visual Studio")
       option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
     else(CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -413,30 +415,21 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
             set(GROMACS_CXX_FLAGS "-msse2 ${GROMACS_CXX_FLAGS}")
         endif (XXFLAGS_SSE)
     endif (NOT GMX_64_BIT)
-    if(HAVE_XMMINTRIN_H)
-        if(GMX_IA32_ASM)
-          if(GMX_DOUBLE)
-            set(GMX_IA32_SSE2 1)
-          else(GMX_DOUBLE)
-            set(GMX_IA32_SSE 1)
-          endif(GMX_DOUBLE)
-        else(GMX_IA32_ASM)
-          set(GMX_SSE 1)
-        endif(GMX_IA32_ASM)
-    endif(HAVE_XMMINTRIN_H)
-    if(HAVE_EMMINTRIN_H)
-        if(GMX_X86_64_ASM)
-      	  if(GMX_DOUBLE)
-      	    set(GMX_X86_64_SSE2 1)
-      	  else(GMX_DOUBLE)
-            set(GMX_X86_64_SSE 1)
-      	  endif(GMX_DOUBLE)
-        else(GMX_X86_64_ASM)
-          if(NOT GMX_IA32_ASM)
-            set(GMX_SSE2 1)
-          endif(NOT GMX_IA32_ASM)
-        endif(GMX_X86_64_ASM)
-    endif(HAVE_EMMINTRIN_H)
+
+    if(GMX_IA32_ASM)
+      if(GMX_DOUBLE)
+        set(GMX_IA32_SSE2 1)
+      else()
+	set(GMX_IA32_SSE 1)
+      endif()
+    elseif(GMX_X86_64_ASM)
+      if(GMX_DOUBLE)
+	set(GMX_X86_64_SSE2 1)
+      else()
+        set(GMX_X86_64_SSE 1)
+      endif()
+    endif()
+
 #    if(HAVE_PMMINTRIN_H)
 #        set(GMX_SSE3 1)
 #    endif(HAVE_PMMINTRIN_H)

@@ -75,11 +75,14 @@ extern "C" {
 
 #ifdef HAVE_FSEEKO
 typedef off_t gmx_off_t;
+#define SIZEOF_GMX_OFF_T SIZEOF_OFF_T
 #else
 #ifdef HAVE__FSEEKI64 
 typedef __int64 gmx_off_t;
+#define SIZEOF_GMX_OFF_T 8
 #else
 typedef long int gmx_off_t;
+#define SIZEOF_GMX_OFF_T SIZEOF_LONG_INT
 #endif
 #endif
 
