@@ -2038,9 +2038,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (!bInitStep) 
                 {
-                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                    if (bTrotter)
+                    {
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                    } 
+                    else 
+                    {
+                        update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+                    }
                 }
-                
+
                 if (bIterations &&
                     done_iterating(cr,fplog,step,&iterate,bFirstIterate,
                                    state->veta,&vetanew)) 
@@ -2355,16 +2362,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         clear_mat(shake_vir);
                     }
                     trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
-                } 
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
                  * in global_state after update, we should only do it at
                  * step % nstlist = 1 with bGStatEveryStep=FALSE.
                  */
-                
-                update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
-                update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
-                               upd,bInitStep);
+                }
+                else 
+                {
+                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+                    update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
+                                   upd,bInitStep);
+                }
 
                 if (bVV)
                 {
