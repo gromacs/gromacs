@@ -44,11 +44,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef HAVE_COPYFILE_H
-/* BSD specific */
-#include <copyfile.h>
-#endif
-
 #ifdef HAVE_DIRENT_H
 /* POSIX */
 #include <dirent.h>
@@ -1000,15 +995,7 @@ int gmx_file_rename(const char *oldname, const char *newname)
 
 int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
 {
-#if defined(HAVE_COPYFILE_H) && !defined(GMX_FAHCORE)
-    /* this is BSD specific, but convenient */
-    return copyfile(oldname, newname, NULL, COPYFILE_DATA);
-#elif defined(HAVE_WIN_COPYFILE) && !defined(GMX_FAHCORE)
-    if (CopyFile(oldname, newname, FALSE))
-        return 0;
-    else
-        return 1;
-#else
+/* the full copy buffer size: */
 #define FILECOPY_BUFSIZE (1<<16)
     /* POSIX doesn't support any of the above. */
     FILE *in=NULL; 
@@ -1065,7 +1052,6 @@ error:
         fclose(out);
     return 1;
 #undef FILECOPY_BUFSIZE
-#endif
 }
 
 
