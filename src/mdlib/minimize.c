@@ -2501,8 +2501,6 @@ double do_nm(FILE *fplog,t_commrec *cr,
             fflush(stderr);
         }
     }
-    t=t0+step*inputrec->delta_t;
-    lambda=lam0+step*inputrec->fepvals->delta_lambda;
     
     if (MASTER(cr)) 
     {

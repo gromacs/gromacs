@@ -103,7 +103,7 @@ void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
     int  nwall,w,lam,i;
     int  ntw[2],at,ntype,ngid,ggid,*egp_flags,*type;
     real *nbfp,lamfac,fac_d[2],fac_r[2],Cd,Cr,Vtot,Fwall[2];
-    real wall_z[2],r,mr,r1,r2,r4,Vd,Vr,V=0,Fd,Fr,F=0,dvdlambda;
+    real wall_z[2],r,mr,r1,r2,r4,Vd,Vr,V=0,Fd,Fr,F=0;
     dvec xf_z;
     int  n0,nnn;
     real tabscale,*VFtab,rt,eps,eps2,Yt,Ft,Geps,Heps,Heps2,Fp,VV,FF;
@@ -138,7 +138,7 @@ void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
     wall_z[1] = box[ZZ][ZZ];
 
     Vtot = 0;
-    dvdlambda = 0;
+    *dvdlambda = 0;
     clear_dvec(xf_z);
     for(lam=0; lam<(md->nPerturbed ? 2 : 1); lam++)
     {
@@ -307,7 +307,7 @@ void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
         }
         if (md->nPerturbed)
         {
-            dvdlambda += (lam==0 ? -1 : 1)*Vtot;
+            *dvdlambda += (lam==0 ? -1 : 1)*Vtot;
         }
         
         inc_nrnb(nrnb,eNR_WALLS,md->homenr);
@@ -317,5 +317,5 @@ void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
     {
         fr->vir_wall_z[i] = -0.5*xf_z[i];
     }
-    return dvdlambda;
+    return;
 }
