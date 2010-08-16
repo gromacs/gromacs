@@ -559,7 +559,9 @@ static void splitaxes(t_complex* lout,const t_complex* lin,
     for (i=0;i<P;i++) { /*index cube along long axis*/
         in_i  = i*maxN*maxM*maxK;
         out_i = oN[i];
+#ifdef FFT5D_THREADS
 #pragma omp parallel for private(in_z,out_z,y,in_y,out_y,x)
+#endif
         for (z=0;z<pK;z++) { /*3. z l*/ 
             in_z  = in_i  + z*maxN*maxM;
             out_z = out_i + z*NG*pM;
@@ -592,7 +594,9 @@ static void joinAxesTrans13(t_complex* lin,const t_complex* lout,
     for (i=0;i<P;i++) { /*index cube along long axis*/
         in_i  = oK[i];
         out_i = i*maxM*maxN*maxK;
+#ifdef FFT5D_THREADS
 #pragma omp parallel for private(in_x,out_x,z,in_z,out_z,y)
+#endif
         for (x=0;x<pN;x++) { /*1.j*/
             in_x  = in_i  + x*KG*pM;
             out_x = out_i + x;
@@ -621,7 +625,9 @@ static void joinAxesTrans12(t_complex* lin,const t_complex* lout,int maxN,int ma
     for (i=0;i<P;i++) { /*index cube along long axis*/
         in_i  = oM[i];
         out_i = i*maxM*maxN*maxK;
+#ifdef FFT5D_THREADS
 #pragma omp parallel for private(in_z,out_z,in_x,out_x,x,y)
+#endif
         for (z=0;z<pK;z++) { 
             in_z  = in_i  + z*MG*pN;
             out_z = out_i + z*maxM*maxN;
