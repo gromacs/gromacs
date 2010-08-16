@@ -1055,3 +1055,52 @@ error:
 }
 
 
+int gmx_fsync(FILE *fp)
+{
+    int rc=0;
+
+#ifdef GMX_FAHCORE
+    /* the fahcore defines its own os-independent fsync */
+    rc=gmx_fsync_lowlevel(fio->fp);
+#else /* GMX_FAHCORE */
+    {
+        int fn=-1;
+
+        /* get the file number */
+#if defined(HAVE_FILENO)
+        fn= fileno(fp);
+#elif defined(HAVE__FILENO)
+        fn= _fileno(fp);
+#endif
+
+        /* do the actual fsync */
+        if (fn >= 0)
+        {
+#if (defined(HAVE_FSYNC))
+            rc=fsync(fn);
+#elif (defined(HAVE__COMMIT)) 
+            rc=_commit(fno);
+#endif
+        }
+    }
+#endif /* GMX_FAHCORE */
+
+    /* We check for these error codes this way because POSIX requires them
+       to be defined, and using anything other than macros is unlikely: */
+#ifdef EINTR
+    /* we don't want to report an error just because fsync() caught a signal.
+       For our purposes, we can just ignore this. */
+    if (rc && errno==EINTR)
+        rc=0;
+#endif
+#ifdef EINVAL
+    /* we don't want to report an error just because we tried to fsync() 
+       stdout, a socket or a pipe. */
+    if (rc && errno==EINVAL)
+        rc=0;
+#endif
+    return rc;
+}
+
+
+
