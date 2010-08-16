@@ -199,7 +199,7 @@ int gmx_rmsf(int argc,char *argv[])
     { "-fit", FALSE, etBOOL, {&bFit},
       "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
   };
-  int          natom=0;
+  int          natom;
   int          step,nre,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms;
   
@@ -304,17 +304,20 @@ int gmx_rmsf(int argc,char *argv[])
   
   if (bFit) {
     sub_xcm(xref,isize,index,top.atoms.atom,xcm,FALSE);
-    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natom,box);
   }
     
   natom = read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+
+  if (bFit) {
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natom,box);
+  }
     
   /* Now read the trj again to compute fluctuations */
   teller = 0;
   do {
     if (bFit) {
       /* Remove periodic boundary */
-      gmx_rmpbc(gpbc,box,x,x);
+      gmx_rmpbc(gpbc,natom,box,x);
 
       /* Set center of mass to zero */
       sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);

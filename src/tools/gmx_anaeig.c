@@ -454,7 +454,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
     do {
       if (nfr % skip == 0) {
 	if (top)
-	  gmx_rmpbc(gpbc,box,xread,xread);
+	  gmx_rmpbc(gpbc,nat,box,xread);
 	if (nframes>=snew_size) {
 	  snew_size+=100;
 	  for(i=0; i<noutvec+1; i++)
@@ -1007,7 +1007,7 @@ int gmx_anaeig(int argc,char *argv[])
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
 		       title,&top,&ePBC,&xtop,NULL,topbox,bM);
     atoms=&top.atoms;
-    gmx_rmpbc(gpbc,topbox,xtop,xtop);
+    gmx_rmpbc(gpbc,atoms->nr,topbox,xtop);
     /* Fitting is only required for the projection */ 
     if (bProj && bFit1) {
       if (xref1 == NULL) {

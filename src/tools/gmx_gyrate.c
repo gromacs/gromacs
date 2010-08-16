@@ -265,7 +265,7 @@ int gmx_gyrate(int argc,char *argv[])
     gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   do {
     if (nz == 0)
-      gmx_rmpbc(gpbc,box,x,x_s);
+      gmx_rmpbc_copy(gpbc,natoms,box,x,x_s);
     gyro = 0;
     clear_rvec(gvec);
     clear_rvec(d);
