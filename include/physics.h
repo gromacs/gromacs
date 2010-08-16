@@ -151,9 +151,15 @@ extern "C" {
      which should be taken from the enum above. */
   extern double convert2gmx(double x,int unit);
   
-  /* Conert value x from GROMACS units to the desired one. 
+  /* Convert value x from GROMACS units to the desired one. 
      The type of return value is deduced from unit, see above */
-  double gmx2convert(double x,int unit);
+  extern double gmx2convert(double x,int unit);
+
+  /* Convert the string to one of the units supported. Returns -1 if not found. */
+  extern int string2unit(char *string);
+  
+  /* Convert the unit to a strong. Return NULL when unit is out of range. */
+  extern const char *unit2string(int unit);
 
 #ifdef __cplusplus
 }
