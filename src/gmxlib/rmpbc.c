@@ -53,17 +53,18 @@ typedef struct {
 
 typedef struct gmx_rmpbc {
     t_idef        *idef;
+    int           natoms_init;
     int           ePBC;
     int           ngraph;
     rmpbc_graph_t *graph;
 } koeiepoep;
 
-static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc,int natoms)
+static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc,int ePBC,int natoms)
 {
     int           i;
     rmpbc_graph_t *gr;
 
-    if (gpbc->ePBC == epbcNONE || gpbc->idef->ntypes <= 0)
+    if (ePBC == epbcNONE || gpbc->idef->ntypes <= 0)
     {
         return NULL;
     }
@@ -83,9 +84,9 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc,int natoms)
          * So we check against the number of atoms that gmx_rmpbc_init
          * was called with.
          */
-        if (gpbc->ngraph > 0 && natoms > gpbc->graph[0].natoms)
+        if (natoms > gpbc->natoms_init)
         {
-            gmx_fatal(FARGS,"Structure or trajectory file has more atoms (%d) than the topology (%d)",natoms,gpbc->graph[0].natoms);
+            gmx_fatal(FARGS,"Structure or trajectory file has more atoms (%d) than the topology (%d)",natoms,gpbc->natoms_init);
         }
         gpbc->ngraph++;
         srenew(gpbc->graph,gpbc->ngraph);
@@ -103,15 +104,13 @@ gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
     gmx_rmpbc_t gpbc;
   
     snew(gpbc,1);
+
+    gpbc->natoms_init = natoms;
   
-    if (ePBC == -1)
-    {
-        gpbc->ePBC = guess_ePBC(box);
-    }
-    else
-    {
-        gpbc->ePBC = ePBC;
-    }
+    /* This sets pbc when we now it,
+     * otherwise we guess it from the instantaneous box in the trajectory.
+     */
+    gpbc->ePBC = ePBC;
 
     gpbc->idef = idef;
     if (gpbc->idef->ntypes <= 0)
@@ -120,14 +119,6 @@ gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
                 "\n"
                 "WARNING: if there are broken molecules in the trajectory file,\n"
                 "         they can not be made whole without a run input file\n\n");
-    }
-    else if (ePBC == epbcNONE)
-    {
-        fprintf(stderr,"\nNot treating periodicity since it is turned off in the input file\n");
-    }
-    else
-    {
-        gmx_rmpbc_get_graph(gpbc,natoms);
     }
 
     return gpbc;
@@ -147,27 +138,43 @@ void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
     }
 }
 
+static int gmx_rmpbc_ePBC(gmx_rmpbc_t gpbc,matrix box)
+{
+    if (gpbc->ePBC >= 0)
+    {
+        return gpbc->ePBC;
+    }
+    else
+    {
+        return guess_ePBC(box);
+    }
+}
+
 void gmx_rmpbc(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[])
 {
+    int     ePBC;
     t_graph *gr;
-
-    gr = gmx_rmpbc_get_graph(gpbc,natoms);
+    
+    ePBC = gmx_rmpbc_ePBC(gpbc,box);
+    gr = gmx_rmpbc_get_graph(gpbc,ePBC,natoms);
     if (gr != NULL)
     {
-        mk_mshift(stdout,gr,gpbc->ePBC,box,x);
+        mk_mshift(stdout,gr,ePBC,box,x);
         shift_x(gr,box,x,x);
     }
 }
 
 void gmx_rmpbc_copy(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[],rvec x_s[])
 {
+    int     ePBC;
     t_graph *gr;
     int     i;
 
-    gr = gmx_rmpbc_get_graph(gpbc,natoms);
+    ePBC = gmx_rmpbc_ePBC(gpbc,box);
+    gr = gmx_rmpbc_get_graph(gpbc,ePBC,natoms);
     if (gr != NULL)
     {
-        mk_mshift(stdout,gr,gpbc->ePBC,box,x);
+        mk_mshift(stdout,gr,ePBC,box,x);
         shift_x(gr,box,x,x_s);
     }
     else
@@ -181,14 +188,16 @@ void gmx_rmpbc_copy(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[],rvec x_s[])
 
 void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc,t_trxframe *fr)
 {
+    int     ePBC;
     t_graph *gr;
 
     if (fr->bX && fr->bBox)
     {
-        gr = gmx_rmpbc_get_graph(gpbc,fr->natoms);
+        ePBC = gmx_rmpbc_ePBC(gpbc,fr->box);
+        gr = gmx_rmpbc_get_graph(gpbc,ePBC,fr->natoms);
         if (gr != NULL)
         {
-            mk_mshift(stdout,gr,gpbc->ePBC,fr->box,fr->x);
+            mk_mshift(stdout,gr,ePBC,fr->box,fr->x);
             shift_x(gr,fr->box,fr->x,fr->x);
         }
     }
