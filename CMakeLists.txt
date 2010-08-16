@@ -4,7 +4,7 @@ project(Gromacs)
 include(Dart)
 # PROJECT_VERSION should have the following structure: 
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-set(PROJECT_VERSION "4.0.99-dev-20100315"
+set(PROJECT_VERSION "4.5-beta3"
     CACHE STRING "Gromacs version string")
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -15,7 +15,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
-
 
 ########################################################################
 # Fix stupid flags on MSVC
@@ -36,11 +35,6 @@ set(GMX_EXTRA_LIBRARIES)
 
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
-
-# --- REMOVED as bugzilla 431 turned out to be a bug in GB
-# and there is no confirmed case in which gcc causes a crash 
-# check for buggy GCC 4.1.x 
-# include(gmxCheckGCCVersion)
 
 include(gmxCFlags)
 gmx_c_flags()
@@ -72,19 +66,20 @@ mark_as_advanced(GMX_MPI_IN_PLACE)
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
+
 option(USE_VERSION_H "Generate development version string/information" ON)
-# --- REMOVED as bugzilla 431 turned out to be a bug in GB
-# and there is no confirmed case in which gcc causes a crash 
-# option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
 
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
-
 
 
 ########################################################################
 #Process MPI settings
 ########################################################################
 if(GMX_MPI)
+	MESSAGE(WARNING "
+            There are known problems with some MPI implementations:
+                     OpenMPI version < 1.4.1
+                     MVAPICH2 version <= 1.4.1                               *")
     if(GMX_THREADS)
         #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
         set(GMX_THREADS OFF CACHE BOOL 
@@ -142,7 +137,6 @@ if(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 
-
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -192,13 +186,14 @@ check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
 check_function_exists(copyfile          HAVE_COPYFILE)
 # check_function_exists(CopyFile          HAVE_WIN_COPYFILE)
-# After large files? check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(m cbrt "" HAVE_CBRT)
 
+
 include(CheckTypeSize)
+
 check_type_size("bool"          SIZEOF_BOOL) # will also set HAVE_BOOL
 check_type_size("int"           SIZEOF_INT) 
 check_type_size("long int"      SIZEOF_LONG_INT) 
@@ -206,11 +201,11 @@ check_type_size("long long int" SIZEOF_LONG_LONG_INT)
 check_type_size("off_t"         SIZEOF_OFF_T)
 check_type_size("void *"        SIZEOF_VOIDP)
 
-if (SIZEOF_VOIDP LESS 8)
-    set(GMX_64_BIT FALSE)
-else (SIZEOF_VOIDP LESS 8)
+if (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
     set(GMX_64_BIT TRUE)
-endif (SIZEOF_VOIDP LESS 8)
+else (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
+    set(GMX_64_BIT FALSE)
+endif (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
 
 # Check for some basic types that we *need*, so set these to int if they are not present 
 check_type_size(uid_t uid_t)
@@ -259,14 +254,6 @@ if(LIBXML2_FOUND)
     set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
     set(HAVE_LIBXML2 1)
 endif(LIBXML2_FOUND)
-
-find_package(gsl)
-set(PKG_GSL "")
-if(GSL_FOUND)
-    include_directories(${GSL_INCLUDE_DIR})
-    set(PKG_GSL gsl)
-    set(HAVE_LIBGSL 1)
-endif(GSL_FOUND)
 
 find_package(X11)
 # X11 includes/libraries are only set in the ngmx subdirectory!
@@ -342,6 +329,7 @@ gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754
 
 include(gmxTestLargeFiles)
 gmx_test_large_files(GMX_LARGEFILES)
+check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(gmxTestSignal)
 gmx_test_retsigtype(RETSIGTYPE)
@@ -361,19 +349,21 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 
 # turn on SSE if supported with reasonable defaults.
 if (${GMX_ACCELERATION} STREQUAL "auto")
-    if (GMX_X86_GCC_INLINE_ASM)
-        set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
-        if (GMX_64_BIT)
-            set(GMX_X86_64_ASM ON CACHE BOOL 
-                "Add SSE assembly files for x86_64" FORCE)
-        else (GMX_64_BIT)
-            set(GMX_IA32_ASM ON CACHE BOOL 
-                "Add SSE assembly files for IA32" FORCE)
-        endif (GMX_64_BIT)
-    endif (GMX_X86_GCC_INLINE_ASM)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)")
+
+    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+    
+    if (GMX_64_BIT)
+      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
+    else (GMX_64_BIT)
+      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
+    endif (GMX_64_BIT)
+
+    # Determine the assembler/compiler to use
+  else()
+    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+  endif()
 endif (${GMX_ACCELERATION} STREQUAL "auto")
-
-
 
 
 include(gmxTestXDR)
@@ -404,11 +394,16 @@ endif(GMX_FORTRAN OR GMX_POWER6)
 
 
 # Process nonbonded accelerated kernels settings
-option(GMX_ASM_USECCOMPILER "Use C compiler for assembly" ON)
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+
+    if(CMAKE_GENERATOR MATCHES "Visual Studio")
+      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
+    else(CMAKE_GENERATOR MATCHES "Visual Studio")
+      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
+    endif(CMAKE_GENERATOR MATCHES "Visual Studio")
     if (NOT GMX_64_BIT)
         # for 32-bit compiles, we might need to turn on sse 
         CHECK_C_COMPILER_FLAG("-msse2" XFLAGS_SSE)
@@ -420,24 +415,21 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
             set(GROMACS_CXX_FLAGS "-msse2 ${GROMACS_CXX_FLAGS}")
         endif (XXFLAGS_SSE)
     endif (NOT GMX_64_BIT)
-    if(HAVE_XMMINTRIN_H)
-        if(GMX_IA32_ASM)
-          option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
-          set(GMX_IA32_SSE 1)
-        else(GMX_IA32_ASM) #only use intrinsic if not using the ASM loops
-          set(GMX_SSE 1)
-        endif(GMX_IA32_ASM)
-    endif(HAVE_XMMINTRIN_H)
-    if(HAVE_EMMINTRIN_H)
-        if(GMX_X86_64_ASM)
-          option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
-          set(GMX_X86_64_SSE 1)
-        else(GMX_X86_64_ASM)  #only use intrinsic if not using the ASM loops
-          if(NOT GMX_IA32_ASM)
-            set(GMX_SSE2 1)
-          endif(NOT GMX_IA32_ASM)
-        endif(GMX_X86_64_ASM)
-    endif(HAVE_EMMINTRIN_H)
+
+    if(GMX_IA32_ASM)
+      if(GMX_DOUBLE)
+        set(GMX_IA32_SSE2 1)
+      else()
+	set(GMX_IA32_SSE 1)
+      endif()
+    elseif(GMX_X86_64_ASM)
+      if(GMX_DOUBLE)
+	set(GMX_X86_64_SSE2 1)
+      else()
+        set(GMX_X86_64_SSE 1)
+      endif()
+    endif()
+
 #    if(HAVE_PMMINTRIN_H)
 #        set(GMX_SSE3 1)
 #    endif(HAVE_PMMINTRIN_H)
@@ -494,19 +486,21 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 #    MESSAGE(STATUS "Using external FFT library - fftw3")
     if(GMX_DOUBLE)
         find_package(FFTW3 REQUIRED)
+		include_directories(${FFTW3_INCLUDE_DIR})
+        set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
         set(PKG_FFT "fftw3")
     else(GMX_DOUBLE)
         find_package(FFTW3F REQUIRED)
+        include_directories(${FFTW3F_INCLUDE_DIR})
+        set(FFT_LIBRARIES ${FFTW3F_LIBRARIES})
         set(PKG_FFT "fftw3f")
     endif(GMX_DOUBLE)
 
-    if(NOT FFTW3_FOUND)
+    if(NOT FFTW3_FOUND AND NOT FFTW3F_FOUND)
         MESSAGE(FATAL_ERROR "Cannot find fftw3 (with correct precision). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT FFTW3_FOUND)
+    endif(NOT FFTW3_FOUND AND NOT FFTW3F_FOUND)
 
     set(GMX_FFT_FFTW3 1)
-    include_directories(${FFTW3_INCLUDE_DIR})
-    set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
 #    MESSAGE(STATUS "Using external FFT library - fftw2")
@@ -603,8 +597,8 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 add_subdirectory(share)
 add_subdirectory(include)
 add_subdirectory(man)
-
 add_subdirectory(src)
+add_subdirectory(scripts)
 
 #######################
 ## uninstall target

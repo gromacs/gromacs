@@ -32,16 +32,6 @@
 #define _mm_extract_epi32(x, imm) \
 _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
-static inline __m128
-my_invrsq_ps(__m128 x)
-{
-	const __m128 three = {3.0f, 3.0f, 3.0f, 3.0f};
-	const __m128 half  = {0.5f, 0.5f, 0.5f, 0.5f};
-	
-	__m128 t1 = _mm_rsqrt_ps(x);
-	
-	return gmx_mm_castps_ps128(_mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1))))));
-}
 
 void nb_kernel430_ia32_sse(int *           p_nri,
 						   int *           iinr,
@@ -227,7 +217,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			
 			rsq     = _mm_add_ps(t1,t2);
 			rsq     = _mm_add_ps(rsq,t3);
-			rinv    = my_invrsq_ps(rsq);
+			rinv    = gmx_mm_invsqrt_ps(rsq);
 			
 			xmm1    = _mm_load_ss(invsqrta+jnr); 
 			xmm2    = _mm_load_ss(invsqrta+jnr2);
@@ -645,7 +635,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			rsq     = _mm_add_ps(t1,t2);
 			rsq     = _mm_add_ps(rsq,t3);
 			
-			rinv    = my_invrsq_ps(rsq);
+			rinv    = gmx_mm_invsqrt_ps(rsq);
 			
 			isaprod = _mm_mul_ps(isai,isaj);
 			qq      = _mm_mul_ps(iq,q);
@@ -991,7 +981,6 @@ void nb_kernel430_ia32_sse(int *           p_nri,
     *inneriter       = nj1;            
 }
 
-
 /*
  * Gromacs nonbonded kernel nb_kernel430nf
  * Coulomb interaction:     Generalized-Born
@@ -1147,5 +1136,4 @@ void nb_kernel430nf_ia32_sse(
     *outeriter       = nri;            
     *inneriter       = nj1;            
 }
-
 

@@ -281,10 +281,10 @@ void nb_kernel110_sse2_single(
 			}
 		}
 		
-		gmx_mm_update_iforce_1atom_ps(fix1,fiy1,fiz1,faction+ii3,fshift+is3);
+		gmx_mm_update_iforce_1atom_ps(&fix1,&fiy1,&fiz1,faction+ii3,fshift+is3);
 		
         ggid             = gid[n];         
-		gmx_mm_update_2pot_ps(vctot,Vc+ggid,Vvdwtot,Vvdw+ggid);
+	GMX_MM_UPDATE_2POT_PS(vctot,Vc+ggid,Vvdwtot,Vvdw+ggid);
     }
     
     *outeriter       = nri;            

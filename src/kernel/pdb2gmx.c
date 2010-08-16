@@ -381,9 +381,11 @@ static void check_occupancy(t_atoms *atoms,const char *filename,bool bVerbose)
       fprintf(stderr,"All occupancy fields zero. This is probably not an X-Ray structure\n");
     } else if ((nzero > 0) || (nnotone > 0)) {
       fprintf(stderr,
-	      "WARNING: there were %d atoms with zero occupancy and %d atoms"
-	      " with\n         occupancy unequal to one (out of %d atoms)."
-	      " Check your pdb file.\n",nzero,nnotone,atoms->nr);
+	      "\n"
+	      "WARNING: there were %d atoms with zero occupancy and %d atoms with\n"
+	      "         occupancy unequal to one (out of %d atoms). Check your pdb file.\n"
+	      "\n",
+	      nzero,nnotone,atoms->nr);
     } else {
       fprintf(stderr,"All occupancies are one\n");
     }
@@ -469,7 +471,6 @@ void process_chain(t_atoms *pdba, rvec *x,
 		   bool bTrpU,bool bPheU,bool bTyrU,
 		   bool bLysMan,bool bAspMan,bool bGluMan,
 		   bool bHisMan,bool bArgMan,bool bGlnMan,
-		   bool bRenameCys,
 		   real angle,real distance,t_symtab *symtab,
 		   int nrr,const rtprename_t *rr)
 {
@@ -494,14 +495,6 @@ void process_chain(t_atoms *pdba, rvec *x,
     rename_bbint(pdba,"GLU",get_glutp,FALSE,symtab,nrr,rr);
   else
     rename_bb(pdba,"GLUH","GLU",FALSE,symtab);
-
-  if (bRenameCys) {
-    /* Make sure we don't have things like CYS?
-     * And rename CYS to CYSH, since that is the Gromacs standard
-     * unbound cysteine rtp entry name.
-     */ 
-    rename_bb(pdba,"CYS","CYS",FALSE,symtab);
-  }
 
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
@@ -933,15 +926,16 @@ int main(int argc, char *argv[])
     "[TT]-dist[tt] respectively.[PAR]",
       
     "The separation of chains is not entirely trivial since the markup",
-    "in user-generated PDB files frequently varies, and sometimes it",
+    "in user-generated PDB files frequently varies and sometimes it",
     "is desirable to merge entries across a TER record, for instance",
-    "if you have a HEME group bound to a protein. To handle this, pdb2gmx",
-    "now has a new option [TT]-chainsep[tt] so you can choose whether a new chain",
-    "should start when we find a TER record, when the chain id changes",
-    "or combinations of either or both of these. There is als an option",
-    "[TT]-merge[tt] to interactively ask if you want to merge consecutive",
-    "chains into one molecule - this can be useful for connecting chains",
-    "with a disulfide brigde or intermolecular distance restraints.[PAR]",
+    "if you want a disulfide bridge or distance restraints between",
+    "two protein chains or if you have a HEME group bound to a protein.",
+    "In such cases multiple chains should be contained in a single",
+    "[TT]molecule_type[tt] definition.",
+    "To handle this, pdb2gmx has an option [TT]-chainsep[tt] so you can",
+    "choose whether a new chain should start when we find a TER record,",
+    "when the chain id changes, combinations of either or both of these",
+    "or fully interactively.[PAR]",
     
     "pdb2gmx will also check the occupancy field of the pdb file.",
     "If any of the occupancies are not one, indicating that the atom is",
@@ -1030,19 +1024,21 @@ int main(int argc, char *argv[])
   output_env_t oenv;
   const char *p_restype;
   int        rc;
-  int           prev_chain_atomnum;
-  int           this_chain_atomnum;
-  const char *  prev_chain_atomname;
-  const char *  this_chain_atomname;
-  const char *  prev_chain_resname;
-  const char *  this_chain_resname;
-  int           prev_chain_resnum;
-  int           this_chain_resnum;
-  char          prev_chain_id;
-  char          this_chain_id;
-  int           prev_chain_number;
-  int           this_chain_number;
+  int           this_atomnum;
+  int           prev_atomnum;
+  const char *  prev_atomname;
+  const char *  this_atomname;
+  const char *  prev_resname;
+  const char *  this_resname;
+  int           prev_resnum;
+  int           this_resnum;
+  char          prev_chainid;
+  char          this_chainid;
+  int           prev_chainnumber;
+  int           this_chainnumber;
   int           nid_used;
+  int           this_chainstart;
+  int           prev_chainstart;
     
   gmx_atomprop_t aps;
   
@@ -1062,7 +1058,6 @@ int main(int argc, char *argv[])
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bGlnMan=FALSE, bArgMan=FALSE;
-  static bool bRenameCys=TRUE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bSort=TRUE, bAllowMissing=FALSE, bRemoveH=FALSE;
   static bool bDeuterate=FALSE,bVerbose=FALSE,bChargeGroups=TRUE,bCmap=TRUE;
@@ -1071,7 +1066,7 @@ int main(int argc, char *argv[])
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static const char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   static const char *watstr[] = { NULL, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
-  static const char *chainsep[] = { NULL, "id_or_ter", "id_and_ter", "ter", "id", "interactive" };
+  static const char *chainsep[] = { NULL, "id_or_ter", "id_and_ter", "ter", "id", "interactive", NULL };
   static const char *ff = "select";
 
   t_pargs pa[] = {
@@ -1086,7 +1081,7 @@ int main(int argc, char *argv[])
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
     { "-chainsep", FALSE, etENUM, {chainsep},
-      "Condition in PDB files when a new chain should be started" },
+      "Condition in PDB files when a new chain and molecule_type should be started" },
     { "-ff",     FALSE, etSTR,  {&ff},
       "Force field, interactive by default. Use -h for information." },
     { "-water",  FALSE, etENUM, {watstr},
@@ -1109,8 +1104,6 @@ int main(int argc, char *argv[])
       "Interactive Glutamine selection, iso neutral" },
     { "-his",    FALSE, etBOOL, {&bHisMan},
       "Interactive Histidine selection, iso checking H-bonds" },
-    { "-cysh",    FALSE, etBOOL, {&bRenameCys},
-      "HIDDENUse rtp entry CYSH for cysteines" },
     { "-angle",  FALSE, etREAL, {&angle}, 
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
     { "-dist",   FALSE, etREAL, {&distance},
@@ -1267,34 +1260,44 @@ int main(int argc, char *argv[])
     
   bMerge = !strncmp(chainsep[0],"int",3);
     
-  prev_chain_atomname = NULL;
-  prev_chain_atomnum   = -1;
-  prev_chain_resname   = NULL;
-  prev_chain_resnum    = -1;
-  prev_chain_id        = '?';
-  prev_chain_number    = -1;
+  this_atomname       = NULL;
+  this_atomnum        = -1;
+  this_resname        = NULL;
+  this_resnum         = -1;
+  this_chainid        = '?';
+  this_chainnumber    = -1;
+  this_chainstart     = 0;
     
   pdb_ch=NULL;
   for (i=0; (i<natom); i++) 
   {
       ri = &pdba_all.resinfo[pdba_all.atom[i].resind];
+
+      prev_atomname      = this_atomname;
+      prev_atomnum       = this_atomnum;
+      prev_resname       = this_resname;
+      prev_resnum        = this_resnum;
+      prev_chainid       = this_chainid;
+      prev_chainnumber   = this_chainnumber;
+      prev_chainstart    = this_chainstart;
       
-      this_chain_atomname = *pdba_all.atomname[i];
-      this_chain_atomnum  = (pdba_all.pdbinfo != NULL) ? pdba_all.pdbinfo[i].atomnr : i+1;
-      this_chain_resname  = *ri->name;
-      this_chain_resnum   = ri->nr;
-      this_chain_id       = ri->chainid;
-      this_chain_number   = ri->chainnum;
+      this_atomname      = *pdba_all.atomname[i];
+      this_atomnum       = (pdba_all.pdbinfo != NULL) ? pdba_all.pdbinfo[i].atomnr : i+1;
+      this_resname       = *ri->name;
+      this_resnum        = ri->nr;
+      this_chainid       = ri->chainid;
+      this_chainnumber   = ri->chainnum;
       
       bWat = strcasecmp(*ri->name,watres) == 0;
-      if ((i == 0) || (this_chain_number != prev_chain_number) || (bWat != bPrevWat)) 
+      if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat != bPrevWat)) 
       {
+          this_chainstart = pdba_all.atom[i].resind;
           if (bMerge && i>0 && !bWat) 
           {
               printf("Merge chain ending with residue %s%d (chain id '%c', atom %d %s) with\n"
                      "chain starting with residue %s%d (chain id '%c', atom %d %s)? [n/y]\n",
-                     prev_chain_resname,prev_chain_resnum,prev_chain_id,prev_chain_atomnum,prev_chain_atomname,
-                     this_chain_resname,this_chain_resnum,this_chain_id,this_chain_atomnum,this_chain_atomname);
+                     prev_resname,prev_resnum,prev_chainid,prev_atomnum,prev_atomname,
+                     this_resname,this_resnum,this_chainid,this_atomnum,this_atomname);
               
               if(NULL==fgets(select,STRLEN-1,stdin))
               {
@@ -1305,17 +1308,11 @@ int main(int argc, char *argv[])
           {
               select[0] = 'n';
           }
-          prev_chain_atomname = this_chain_atomname;
-          prev_chain_atomnum  = this_chain_atomnum;
-          prev_chain_resname  = this_chain_resname;
-          prev_chain_resnum   = this_chain_resnum;
-          prev_chain_id       = this_chain_id;
-          prev_chain_number   = this_chain_number;
           
           if (select[0] == 'y') 
           {
               pdb_ch[nch-1].chainstart[pdb_ch[nch-1].nterpairs] = 
-              pdba_all.atom[i].resind;
+              pdba_all.atom[i].resind - prev_chainstart;
               pdb_ch[nch-1].nterpairs++;
               srenew(pdb_ch[nch-1].chainstart,pdb_ch[nch-1].nterpairs+1);
           }
@@ -1500,11 +1497,13 @@ int main(int argc, char *argv[])
 	      chain+1,natom,nres);
       
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
-		  bHisMan,bArgMan,bGlnMan,bRenameCys,angle,distance,&symtab,
+		  bHisMan,bArgMan,bGlnMan,angle,distance,&symtab,
 		  nrtprename,rtprename);
       
     for(i=0; i<cc->nterpairs; i++) {
+        
       cc->chainstart[cc->nterpairs] = pdba->nres;
+                
       find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
 		  &(cc->r_start[i]),&(cc->r_end[i]),rt);    
       
@@ -1519,7 +1518,7 @@ int main(int argc, char *argv[])
       }
     }
 
-    /* Check for disulphides and other special bonds */
+    /* Check for disulfides and other special bonds */
     nssbonds = mk_specbonds(pdba,x,bCysMan,&ssbonds,bVerbose);
 
     if (nrtprename > 0) {        
@@ -1536,8 +1535,10 @@ int main(int argc, char *argv[])
       write_sto_conf(fn,title,pdba,x,NULL,ePBC,box);
     }
 
+      
     for(i=0; i<cc->nterpairs; i++) 
     {
+        
         /* Set termini.
          * We first apply a filter so we only have the
          * termini that can be applied to the residue in question
@@ -1676,12 +1677,12 @@ int main(int argc, char *argv[])
     } 
     else
     {
-        this_chain_id = cc->chainid;
+        this_chainid = cc->chainid;
         
         /* Add the chain id if we have one */
-        if(this_chain_id != ' ')
+        if(this_chainid != ' ')
         {
-            sprintf(buf,"_chain_%c",this_chain_id);
+            sprintf(buf,"_chain_%c",this_chainid);
             strcat(suffix,buf);
         }
 

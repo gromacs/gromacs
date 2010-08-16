@@ -31,7 +31,8 @@ add_library(gmxana
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
             gmx_membed.c    )
 
-target_link_libraries(gmxana md ${GMX_EXTRA_LIBRARIES} ${GSL_LIBRARIES})
+
+target_link_libraries(gmxana md gmx)
 set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_BINARY_SUFFIX}")
 
 # List of programs with single corresponding .c source file,

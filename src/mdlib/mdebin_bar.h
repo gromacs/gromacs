@@ -121,7 +121,13 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
 void mde_delta_h_coll_reset(t_mde_delta_h_coll *dhc);
 
 
+/* set the energyhistory variables to save state */
+void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc, 
+                                           energyhistory_t *enerhist);
 
+/* restore the variables from an energyhistory */
+void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc, 
+                                            energyhistory_t *enerhist);
 
 
 #ifdef __cplusplus

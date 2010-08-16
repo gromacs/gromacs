@@ -121,7 +121,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
-    unsigned long prev;
+    unsigned int prev;
     
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a"(prev)
@@ -135,7 +135,7 @@ static inline void* volatile* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                                                   void *oldval,
                                                   void *newval)
 {
-    void* prev;
+    void* volatile *prev;
 #ifndef __x86_64__ 
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a"(prev)
