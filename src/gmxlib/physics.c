@@ -34,6 +34,7 @@
  * Groningen Machine for Chemical Simulation
  */
 #include <stdio.h>
+#include "string2.h"
 #include "physics.h"
 	
 double convert2gmx(double x,int unit)
