@@ -86,6 +86,4 @@ EXTRA_DIST = \
 	nb_kernel313_ia32_sse_intel_syntax.s	nb_kernel314_ia32_sse_intel_syntax.s	\
 	nb_kernel330_ia32_sse_intel_syntax.s	nb_kernel331_ia32_sse_intel_syntax.s	\
 	nb_kernel332_ia32_sse_intel_syntax.s	nb_kernel333_ia32_sse_intel_syntax.s	\
-	nb_kernel334_ia32_sse_intel_syntax.s	nb_kernel400_ia32_sse_intel_syntax.s	\
-	nb_kernel410_ia32_sse_intel_syntax.s	nb_kernel430_ia32_sse_intel_syntax.s	\
-	nb_kernel_ia32_sse_test_asm_intel_syntax.s	
+	nb_kernel334_ia32_sse_intel_syntax.s	nb_kernel_ia32_sse_test_asm_intel_syntax.s	
