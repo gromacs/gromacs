@@ -181,24 +181,24 @@ typedef struct gmx_pme {
     int pme_order;
     real epsilon_r;           
     
-    real *  pmegridA;  /* Grids on which we do spreading/interpolation, includes overlap */
-    real *  pmegridB;
+    /* Number of separate grids that we maintain
+     * (for pmegrid, (c)fftgrid and pfft_setup). */
+    int     ngrids;
+    real  **pmegrid;  /* Grids on which we do spreading/interpolation, includes overlap */
     int     pmegrid_nx,pmegrid_ny,pmegrid_nz;
     int     pmegrid_start_ix,pmegrid_start_iy,pmegrid_start_iz;    
     
     real *  pmegrid_sendbuf;
     real *  pmegrid_recvbuf;
     
-    real *fftgridA;             /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
-    real *fftgridB;             /* inside the interpolation grid, but separate for 2D PME decomp. */
+    real **fftgrid;             /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
+                                /* inside the interpolation grid, but separate for 2D PME decomp. */
     int   fftgrid_nx,fftgrid_ny,fftgrid_nz;
     
-    t_complex *cfftgridA;             /* Grids for complex FFT data */
-    t_complex *cfftgridB;            
+    t_complex **cfftgrid;             /* Grids for complex FFT data */
     int   cfftgrid_nx,cfftgrid_ny,cfftgrid_nz;
     
-    gmx_parallel_3dfft_t  pfft_setupA;
-    gmx_parallel_3dfft_t  pfft_setupB;
+    gmx_parallel_3dfft_t *pfft_setup;
     
     int  *nnx,*nny,*nnz;
     real *fshx,*fshy,*fshz;
@@ -243,6 +243,8 @@ typedef struct gmx_pme {
     real *   sum_qgrid_dd_tmp;
 } t_gmx_pme;
 
+#define PME_GRID_QA   0
+#define PME_GRID_C6A  2
 
 static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
 {
@@ -840,18 +842,21 @@ gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
 
 
 static int
-copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid)
+copy_pmegrid_to_fftgrid(gmx_pme_t pme, int grid_index)
 {
     ivec    local_fft_ndata,local_fft_offset,local_fft_size;
     ivec    local_pme_size;
     int     i,ix,iy,iz;
     int     pmeidx,fftidx;
+    real   *pmegrid, *fftgrid;
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
-    gmx_parallel_3dfft_real_limits(pme->pfft_setupA,
+    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
                                    local_fft_ndata,
                                    local_fft_offset,
                                    local_fft_size);
+    pmegrid = pme->pmegrid[grid_index];
+    fftgrid = pme->fftgrid[grid_index];
     
     local_pme_size[0] = pme->pmegrid_nx;
     local_pme_size[1] = pme->pmegrid_ny;
@@ -906,18 +911,21 @@ copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid)
 
 
 static int
-copy_fftgrid_to_pmegrid(gmx_pme_t pme, real *fftgrid, real *pmegrid)
+copy_fftgrid_to_pmegrid(gmx_pme_t pme, int grid_index)
 {
     ivec    local_fft_ndata,local_fft_offset,local_fft_size;
     ivec    local_pme_size;
     int     i,ix,iy,iz;
     int     pmeidx,fftidx;
+    real   *pmegrid, *fftgrid;
     
     /* Dimensions should be identical for A/B grid, so we just use A here */
-    gmx_parallel_3dfft_real_limits(pme->pfft_setupA,
+    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
                                    local_fft_ndata,
                                    local_fft_offset,
                                    local_fft_size);
+    pmegrid = pme->pmegrid[grid_index];
+    fftgrid = pme->fftgrid[grid_index];
 
     local_pme_size[0] = pme->pmegrid_nx;
     local_pme_size[1] = pme->pmegrid_ny;
@@ -1189,7 +1197,7 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
     nz = pme->nkz;
     
     /* Dimensions should be identical for A/B grid, so we just use A here */
-    gmx_parallel_3dfft_complex_limits(pme->pfft_setupA,
+    gmx_parallel_3dfft_complex_limits(pme->pfft_setup[PME_GRID_QA],
                                       complex_order,
                                       local_ndata,
                                       local_offset,
@@ -1446,7 +1454,7 @@ static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex *grid,
     nz = pme->nkz;
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
-    gmx_parallel_3dfft_complex_limits(pme->pfft_setupA,
+    gmx_parallel_3dfft_complex_limits(pme->pfft_setup[PME_GRID_C6A],
                                       complex_order,
                                       local_ndata,
                                       local_offset,
@@ -2015,6 +2023,8 @@ static void setup_coordinate_communication(pme_atomcomm_t *atc)
 
 int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
 {
+    int i;
+
     if(NULL != log)
     {
         fprintf(log,"Destroying PME data structures.\n");
@@ -2023,19 +2033,22 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
     sfree((*pmedata)->nnx);
     sfree((*pmedata)->nny);
     sfree((*pmedata)->nnz);
-	
-    sfree((*pmedata)->pmegridA);
-    sfree((*pmedata)->fftgridA);
-    sfree((*pmedata)->cfftgridA);
-    gmx_parallel_3dfft_destroy((*pmedata)->pfft_setupA);
-    
-    if((*pmedata)->pmegridB)
+
+    for (i = 0; i < (*pmedata)->ngrids; ++i)
     {
-        sfree((*pmedata)->pmegridB);
-        sfree((*pmedata)->fftgridB);
-        sfree((*pmedata)->cfftgridB);
-        gmx_parallel_3dfft_destroy((*pmedata)->pfft_setupB);
+        if ((*pmedata)->pmegrid[i])
+        {
+            sfree((*pmedata)->pmegrid[i]);
+            sfree((*pmedata)->fftgrid[i]);
+            sfree((*pmedata)->cfftgrid[i]);
+            gmx_parallel_3dfft_destroy((*pmedata)->pfft_setup[i]);
+        }
     }
+    sfree((*pmedata)->pmegrid);
+    sfree((*pmedata)->fftgrid);
+    sfree((*pmedata)->cfftgrid);
+    sfree((*pmedata)->pfft_setup);
+
     sfree((*pmedata)->work_mhz);
     sfree((*pmedata)->work_m2);
     sfree((*pmedata)->work_denom);
@@ -2309,6 +2322,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme_atomcomm_t *atc;
     int bufsizex,bufsizey,bufsize;
     ivec ndata;
+    int  i;
     
     if (debug)
         fprintf(debug,"Creating PME data structures.\n");
@@ -2496,8 +2510,6 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                                   pme->pmegrid_nz - (pme->pme_order-1),
                                   &pme->nnz,&pme->fshz);
     
-    snew(pme->pmegridA,pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);
-    
     /* For non-divisible grid we need pme_order iso pme_order-1 */
     /* x overlap is copied in place: take padding into account.
      * y is always copied through a buffer: we don't need padding in z,
@@ -2514,26 +2526,23 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     ndata[1] = pme->nky;
     ndata[2] = pme->nkz;
     
-    /* This routine will allocate the grid data to fit the FFTs */
-    gmx_parallel_3dfft_init(&pme->pfft_setupA,ndata,
-                            &pme->fftgridA,&pme->cfftgridA,
-                            pme->mpi_comm_d,
-                            pme->overlap[0].s2g0,pme->overlap[1].s2g0,
-                            bReproducible);
-    
-    if (bFreeEnergy)
+    pme->ngrids = 4;
+    snew(pme->pmegrid, pme->ngrids);
+    snew(pme->fftgrid, pme->ngrids);
+    snew(pme->cfftgrid, pme->ngrids);
+    snew(pme->pfft_setup, pme->ngrids);
+    for (i = 0; i < 4; ++i)
     {
-        snew(pme->pmegridB,pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);    
-        gmx_parallel_3dfft_init(&pme->pfft_setupB,ndata,
-                                &pme->fftgridB,&pme->cfftgridB,
-                                pme->mpi_comm_d,
-                                pme->overlap[0].s2g0,pme->overlap[1].s2g0,
-                                bReproducible);
-    } else 
-    {
-        pme->pmegridB    = NULL;
-        pme->fftgridB    = NULL;
-        pme->cfftgridB   = NULL;
+        if (i % 2 == 0 || bFreeEnergy)
+        {
+            snew(pme->pmegrid[i], pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);
+            /* This routine will allocate the grid data to fit the FFTs */
+            gmx_parallel_3dfft_init(&pme->pfft_setup[i], ndata,
+                                    &pme->fftgrid[i], &pme->cfftgrid[i],
+                                    pme->mpi_comm_d,
+                                    pme->overlap[0].s2g0,pme->overlap[1].s2g0,
+                                    bReproducible);
+        }
     }
     
     make_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
@@ -2618,7 +2627,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V)
     atc->q         = q;
     
     /* We only use the A-charges grid */
-    grid = pme->pmegridA;
+    grid = pme->pmegrid[PME_GRID_QA];
 
     spread_on_grid(pme,atc,grid,TRUE,FALSE,FALSE);
 
@@ -2782,17 +2791,10 @@ int gmx_pme_do(gmx_pme_t pme,
             continue;
         }
         /* Unpack structure */
-        if (q % 2 == 0) {
-            grid = pme->pmegridA;
-            fftgrid = pme->fftgridA;
-            cfftgrid = pme->cfftgridA;
-            pfft_setup = pme->pfft_setupA;
-        } else {
-            grid = pme->pmegridB;
-            fftgrid = pme->fftgridB;
-            cfftgrid = pme->cfftgridB;
-            pfft_setup = pme->pfft_setupB;
-        }
+        grid = pme->pmegrid[q];
+        fftgrid = pme->fftgrid[q];
+        cfftgrid = pme->cfftgrid[q];
+        pfft_setup = pme->pfft_setup[q];
         switch (q)
         {
             case 0:
@@ -2899,7 +2901,7 @@ int gmx_pme_do(gmx_pme_t pme,
 #endif
             where();
 
-            copy_pmegrid_to_fftgrid(pme,grid,fftgrid);
+            copy_pmegrid_to_fftgrid(pme, q);
 
             wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
         }
@@ -2964,7 +2966,7 @@ int gmx_pme_do(gmx_pme_t pme,
 
             wallcycle_start(wcycle,ewcPME_SPREADGATHER);
 
-            copy_fftgrid_to_pmegrid(pme,fftgrid,grid);
+            copy_fftgrid_to_pmegrid(pme, q);
 
             /* distribute local grid to all nodes */
 #ifdef GMX_MPI
@@ -3057,11 +3059,11 @@ int gmx_pme_do(gmx_pme_t pme,
         }
         else
         {
-            *energy_lj = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
-            *dvdlambda += energy_AB[1] - energy_AB[0];
+            *energy_lj = (1.0-lambda)*energy_AB[2] + lambda*energy_AB[3];
+            *dvdlambda += energy_AB[3] - energy_AB[2];
             for(i=0; i<DIM; i++)
                 for(j=0; j<DIM; j++)
-                    vir_lj[i][j] += (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+                    vir_lj[i][j] += (1.0-lambda)*vir_AB[2][i][j] + lambda*vir_AB[3][i][j];
         }
         if (debug)
             fprintf(debug, "LJ PME mesh energy: %g\n", *energy_lj);
