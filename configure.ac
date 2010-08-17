@@ -18,7 +18,7 @@ SHARED_VERSION_INFO="5:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 AC_DISABLE_SHARED
-
+PKG_CFLAGS=""
 
 #######################################################################
 # Simple options and makefile variables
@@ -38,6 +38,7 @@ if test "$enable_double" = "yes"; then
 fi
 if test "$enable_float" = "no"; then
   AC_DEFINE(GMX_DOUBLE,,[Compile in double precision])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_DOUBLE"
 fi
 AM_CONDITIONAL([GMX_DOUBLE],[test "$enable_float" = "no"])
 
@@ -189,6 +190,7 @@ if test "$enable_ppc_sqrt" != "no"; then
      ppc_sqrt_niter=2;
    fi
 AC_DEFINE_UNQUOTED(GMX_POWERPC_SQRT,$ppc_sqrt_niter,[Use PowerPC 1/sqrt(x) table lookup (number of iterations)])
+PKG_CFLAGS="$PKG_CFLAGS -DGMX_POWERPC_SQRT=$ppc_sqrt_niter"
 # Turn off generic software sqrt
    enable_software_sqrt="no";
 fi
@@ -198,6 +200,7 @@ AM_CONDITIONAL([GMX_POWERPC_SQRT_SINGLE_ITERATION],[test "$ppc_sqrt_niter" = "1"
 
 if test "$enable_software_sqrt" = "yes"; then
   AC_DEFINE(GMX_SOFTWARE_SQRT,,[Use the GROMACS software 1/sqrt(x)])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_SOFTWARE_SQRT"
 fi
 AM_CONDITIONAL([GMX_SOFTWARE_SQRT],[test "$enable_software_sqrt" = "yes"])
 
@@ -350,6 +353,7 @@ if test "$enable_mpi" = "yes"; then
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
 AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_LIB_MPI"
 
 # on the cray xt3 we have to tell autoconf that we 
 # are actually cross-compiling even if the architecture
@@ -365,6 +369,7 @@ AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_MSG_RESULT([yes])
   cross_compiling=yes 
   AC_DEFINE(GMX_CRAY_XT3,[],[Enable special hacks for Cray XT3])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_CRAY_XT3"
   AC_DEFINE(GMX_NO_SYSTEM,[],[Ignore calls to system(3)])
   AC_DEFINE(GMX_NO_NICE,[],[Ignore calls to nice(3)])
   AC_DEFINE(GMX_BROKEN_CALLOC,[],[Don't use calloc(3)])
@@ -611,6 +616,7 @@ cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
   if test "$have_xdr" != "yes"; then
     AC_DEFINE(GMX_INTERNAL_XDR,,[Use our own instead of system XDR libraries])	
       GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} gmx_system_xdr.lo"
+      PKG_CFLAGS="$PKG_CFLAGS -DGMX_INTERNAL_XDR"
     AC_MSG_WARN([Couldn't find XDR headers and/or libraries - using our own])
   fi
   ;;
@@ -1045,6 +1051,7 @@ CCASFLAGS=$CFLAGS
  
 AC_SUBST(CCAS)
 AC_SUBST(CCASFLAGS)
+AC_SUBST(PKG_CFLAGS)
 
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ src/Makefile ])

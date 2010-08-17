@@ -10,4 +10,4 @@ Version: @VERSION@
 Requires: libgmx@LIBSUFFIX@ @PKG_FFT@ @PKG_XML@
 Libs.private: -lm
 Libs: -L${libdir} -lmd@LIBSUFFIX@ @PKG_FFT_LIBS@
-Cflags: -I${includedir}/gromacs
+Cflags: -I${includedir}/gromacs @PKG_CFLAGS@
