@@ -206,6 +206,9 @@ typedef struct gmx_pme {
     pme_atomcomm_t atc[2];  /* Indexed on decomposition index */
     matrix    recipbox;
     splinevec bsp_mod;
+    /* Buffer to temporarily store coefficients for L-B combination rule
+     * calculations. */
+    real     *lb_coeff;
     
     pme_overlap_t overlap[2]; /* Indexed on dimension, 0=x, 1=y */
 
@@ -245,6 +248,9 @@ typedef struct gmx_pme {
 
 #define PME_GRID_QA   0
 #define PME_GRID_C6A  2
+
+const real lb_scale_factor[] = { 1.0/64, 6.0/64, 15.0/64, 20.0/64,
+                                 15.0/64, 6.0/64, 1.0/64 };
 
 static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
 {
@@ -1697,6 +1703,284 @@ static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex *grid,
     return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
 }
 
+static int solve_pme_lj_lb_yzx(gmx_pme_t pme, t_complex **grid,
+                               real ewaldcoeff, real vol,
+                               bool bEnerVir, real *mesh_energy, matrix vir)
+{
+    /* do recip sum over local cells in grid */
+    /* y major, z middle, x minor or continuous */
+    t_complex *p0[7];
+    int     ig;
+    int     kx,ky,kz,maxkx,maxky,maxkz;
+    int     nx,ny,nz,iy,iz,kxstart,kxend;
+    real    mx,my,mz;
+    real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
+    real    ets2,struct2,ets2vf;
+    real    eterm,vterm,d1,d2,energy=0;
+    real    by,bz;
+    real    virxx=0,virxy=0,virxz=0,viryy=0,viryz=0,virzz=0;
+    real    rxx,ryx,ryy,rzx,rzy,rzz;
+    real    *mhx,*mhy,*mhz,*m2,*denom,*tmp1,*tmp2;
+    real    mhxk,mhyk,mhzk,m2k;
+    real    mk;
+    real    corner_fac;
+    ivec    complex_order;
+    ivec    local_ndata,local_offset,local_size;
+
+    nx = pme->nkx;
+    ny = pme->nky;
+    nz = pme->nkz;
+
+    /* Dimensions should be identical for A/B grid, so we just use A here */
+    gmx_parallel_3dfft_complex_limits(pme->pfft_setup[PME_GRID_C6A],
+                                      complex_order,
+                                      local_ndata,
+                                      local_offset,
+                                      local_size);
+
+    rxx = pme->recipbox[XX][XX];
+    ryx = pme->recipbox[YY][XX];
+    ryy = pme->recipbox[YY][YY];
+    rzx = pme->recipbox[ZZ][XX];
+    rzy = pme->recipbox[ZZ][YY];
+    rzz = pme->recipbox[ZZ][ZZ];
+
+    maxkx = (nx+1)/2;
+    maxky = (ny+1)/2;
+    maxkz = nz/2+1;
+
+    mhx   = pme->work_mhx;
+    mhy   = pme->work_mhy;
+    mhz   = pme->work_mhz;
+    m2    = pme->work_m2;
+    denom = pme->work_denom;
+    tmp1  = pme->work_tmp1;
+    tmp2  = pme->work_m2inv;
+
+    for(iy=0;iy<local_ndata[YY];iy++)
+    {
+        ky = iy + local_offset[YY];
+
+        if (ky < maxky)
+        {
+            my = ky;
+        }
+        else
+        {
+            my = (ky - ny);
+        }
+
+        by = 3.0*vol*pme->bsp_mod[YY][ky]
+             / (M_PI*sqrt(M_PI)*ewaldcoeff*ewaldcoeff*ewaldcoeff);
+
+        for(iz=0;iz<local_ndata[ZZ];iz++)
+        {
+            kz = iz + local_offset[ZZ];
+
+            mz = kz;
+
+            bz = pme->bsp_mod[ZZ][kz];
+
+            /* 0.5 correction for corner points */
+            corner_fac = 1;
+            if (kz == 0)
+                corner_fac = 0.5;
+            if (kz == (nz+1)/2)
+                corner_fac = 0.5;
+
+            for (ig = 0; ig <= 6; ++ig)
+            {
+                p0[ig] = grid[ig] + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
+            }
+
+            kxstart = local_offset[XX];
+            kxend = local_offset[XX] + local_ndata[XX];
+
+            if (bEnerVir)
+            {
+                /* More expensive inner loop, especially because of the storage
+                 * of the mh elements in array's.
+                 * Because x is the minor grid index, all mh elements
+                 * depend on kx for triclinic unit cells.
+                 */
+
+                /* Two explicit loops to avoid a conditional inside the loop */
+                for(kx=kxstart; kx<maxkx; kx++)
+                {
+                    mx = kx;
+
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    mhx[kx]   = mhxk;
+                    mhy[kx]   = mhyk;
+                    mhz[kx]   = mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                    tmp2[kx]  = sqrt(factor*m2k);
+                }
+
+                for(kx=maxkx; kx<kxend; kx++)
+                {
+                    mx = (kx - nx);
+
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    mhx[kx]   = mhxk;
+                    mhy[kx]   = mhyk;
+                    mhz[kx]   = mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                    tmp2[kx]  = sqrt(factor*m2k);
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    denom[kx] = 1.0/denom[kx];
+                }
+
+                CALC_EXPONENTIALS(kxstart,kxend,tmp1);
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    mk = tmp2[kx];
+                    tmp2[kx] = sqrt(M_PI)*mk*gmx_erfc(mk);
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    m2k = factor*m2[kx];
+                    eterm = -((1.0 - 2.0*m2k)*tmp1[kx]
+                              + 2.0*m2k*tmp2[kx]);
+                    vterm = 3.0*(-tmp1[kx] + tmp2[kx]);
+                    tmp1[kx] = eterm;
+                    tmp2[kx] = vterm;
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    eterm   = tmp1[kx]*denom[kx];
+                    vterm   = tmp2[kx]*denom[kx];
+
+                    struct2 = 0.0;
+                    for (ig = 0; ig <= 6; ++ig)
+                    {
+                        struct2 += 2.0*lb_scale_factor[ig]*
+                            (p0[ig]->re*p0[6-ig]->re + p0[ig]->im*p0[6-ig]->im);
+                    }
+                    for (ig = 0; ig <= 6; ++ig)
+                    {
+                        p0[ig]->re *= eterm;
+                        p0[ig]->im *= eterm;
+                        p0[ig]++;
+                    }
+                    tmp1[kx] = eterm*struct2;
+                    tmp2[kx] = vterm*struct2;
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    ets2     = corner_fac*tmp1[kx];
+                    vterm    = 2.0*factor*tmp2[kx];
+                    energy  += ets2;
+
+                    ets2vf   = corner_fac*vterm;
+                    virxx   += ets2vf*mhx[kx]*mhx[kx] - ets2;
+                    virxy   += ets2vf*mhx[kx]*mhy[kx];
+                    virxz   += ets2vf*mhx[kx]*mhz[kx];
+                    viryy   += ets2vf*mhy[kx]*mhy[kx] - ets2;
+                    viryz   += ets2vf*mhy[kx]*mhz[kx];
+                    virzz   += ets2vf*mhz[kx]*mhz[kx] - ets2;
+                }
+            }
+            else
+            {
+                /* We don't need to calculate the energy and the virial.
+                 * In this case the triclinic overhead is small.
+                 */
+
+                /* Two explicit loops to avoid a conditional inside the loop */
+
+                for(kx=kxstart; kx<maxkx; kx++)
+                {
+                    mx = kx;
+
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                }
+
+                for(kx=maxkx; kx<kxend; kx++)
+                {
+                    mx = (kx - nx);
+
+                    mhxk      = mx * rxx;
+                    mhyk      = mx * ryx + my * ryy;
+                    mhzk      = mx * rzx + my * rzy + mz * rzz;
+                    m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                    m2[kx]    = m2k;
+                    denom[kx] = bz*by*pme->bsp_mod[XX][kx];
+                    tmp1[kx]  = -factor*m2k;
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    denom[kx] = 1.0/denom[kx];
+                }
+
+                CALC_EXPONENTIALS(kxstart,kxend,tmp1);
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    mk = sqrt(factor*m2[kx]);
+                    tmp1[kx] = -((1.0 - 2.0*factor*m2[kx])*tmp1[kx]
+                                 + 2.0*sqrt(M_PI)*mk*factor*m2[kx]*gmx_erfc(mk));
+                }
+
+                for(kx=kxstart; kx<kxend; kx++)
+                {
+                    eterm   = tmp1[kx]*denom[kx];
+                    for (ig = 0; ig <= 6; ++ig)
+                    {
+                        p0[ig]->re *= eterm;
+                        p0[ig]->im *= eterm;
+                        p0[ig]++;
+                    }
+                }
+            }
+        }
+    }
+
+    if (bEnerVir)
+    {
+        /* Update virial with local values.
+         * The virial is symmetric by definition.
+         * this virial seems ok for isotropic scaling, but I'm
+         * experiencing problems on semiisotropic membranes.
+         * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
+         */
+        vir[XX][XX] = 0.25*virxx;
+        vir[YY][YY] = 0.25*viryy;
+        vir[ZZ][ZZ] = 0.25*virzz;
+        vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
+        vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
+        vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
+
+        *mesh_energy = 0.5*energy;
+    }
+
+    /* Return the loop count */
+    return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
+}
+
 
 #define DO_FSPLINE(order)                      \
 for(ithx=0; (ithx<order); ithx++)              \
@@ -2048,6 +2332,8 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
     sfree((*pmedata)->fftgrid);
     sfree((*pmedata)->cfftgrid);
     sfree((*pmedata)->pfft_setup);
+
+    sfree((*pmedata)->lb_coeff);
 
     sfree((*pmedata)->work_mhz);
     sfree((*pmedata)->work_m2);
@@ -2413,6 +2699,11 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->nkz         = ir->nkz;
     pme->pme_order   = ir->pme_order;
     pme->epsilon_r   = ir->epsilon_r;
+
+    if (pme->bFEP && ir->bLJPMELB)
+    {
+        gmx_fatal(FARGS,"Exact Lorentz-Bertholot combination rules not implemented for free energy calculations");
+    }
     
     /* Currently pme.c supports only the fft5d FFT code.
      * Therefore the grid always needs to be divisible by nnodes.
@@ -2526,14 +2817,14 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     ndata[1] = pme->nky;
     ndata[2] = pme->nkz;
     
-    pme->ngrids = 4;
+    pme->ngrids = (ir->bLJPMELB ? 9 : 4);
     snew(pme->pmegrid, pme->ngrids);
     snew(pme->fftgrid, pme->ngrids);
     snew(pme->cfftgrid, pme->ngrids);
     snew(pme->pfft_setup, pme->ngrids);
-    for (i = 0; i < 4; ++i)
+    for (i = 0; i < pme->ngrids; ++i)
     {
-        if (i % 2 == 0 || bFreeEnergy)
+        if ((ir->bLJPMELB && i >= 2) || i % 2 == 0 || bFreeEnergy)
         {
             snew(pme->pmegrid[i], pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);
             /* This routine will allocate the grid data to fit the FFTs */
@@ -2558,6 +2849,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pme->atc[0].n = homenr;
         pme_realloc_atomcomm_things(&pme->atc[0]);
     }
+    pme->lb_coeff = NULL;
     
     /* Use fft5d, order after FFT is y major, z, x minor */
     pme->work_nalloc = pme->nkx;
@@ -2701,7 +2993,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         dvdlambda = 0;
         clear_mat(vir_q);
         clear_mat(vir_lj);
-        gmx_pme_do(pme, 0, natoms, x_pp, f_pp, chargeA, chargeB, c6A, c6B, box,
+        gmx_pme_do(pme, 0, natoms, x_pp, f_pp, chargeA, chargeB, c6A, c6B, NULL, NULL, box,
                    cr, maxshift_x, maxshift_y, nrnb, wcycle,
                    vir_q, ewaldcoeff_q, vir_lj, ewaldcoeff_lj,
                    &energy_q, &energy_lj, lambda, &dvdlambda,
@@ -2733,6 +3025,7 @@ int gmx_pme_do(gmx_pme_t pme,
                rvec x[],        rvec f[],
                real *chargeA,   real *chargeB,
                real *c6A,       real *c6B,
+               real *sigmaA,    real *sigmaB,
                matrix box,	t_commrec *cr,
                int  maxshift_x, int maxshift_y,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
@@ -2754,6 +3047,7 @@ int gmx_pme_do(gmx_pme_t pme,
     real    *charge=NULL,*q_d,vol;
     real    energy_AB[4];
     matrix  vir_AB[4];
+    real    scale;
     bool    bClearF;
     gmx_parallel_3dfft_t pfft_setup;
     real *  fftgrid;
@@ -2769,6 +3063,11 @@ int gmx_pme_do(gmx_pme_t pme,
         atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
     }
     
+    /* For convenience, allow calling with just GMX_PME_DO_LJ_LB. */
+    if (flags & GMX_PME_DO_LJ_LB)
+    {
+        flags |= GMX_PME_DO_LJ;
+    }
     bFirst = TRUE;
     /* For simplicity, we construct the splines for all particles if more than
      * one PME calculations is needed. Some optimization could be done by
@@ -2781,8 +3080,11 @@ int gmx_pme_do(gmx_pme_t pme,
      *   q=1: Coulomb PME with charges from state B
      *   q=2: LJ PME with C6 from state A
      *   q=3: LJ PME with C6 from state B
+     * For Lorentz-Bertholot combination rules, a separate loop is used to
+     * calculate all the terms.  This way, the computation in solve_pme only
+     * needs to be done once.  It also simplifies the control flow a lot.
      */
-    for (q = 0; q < 4; ++q)
+    for (q = 0; q < ((flags & GMX_PME_DO_LJ_LB) ? 2 : 4); ++q)
     {
         if ((!pme->bFEP && q % 2 == 1)
             || (!(flags & GMX_PME_DO_COULOMB) && q < 2)
@@ -2990,8 +3292,8 @@ int gmx_pme_do(gmx_pme_t pme,
              * therefore we should not clear it.
              */
             bClearF = (bFirst && PAR(cr));
-            gather_f_bsplines(pme,grid,bClearF,&pme->atc[0],
-                              pme->bFEP ? (q % 2 == 0 ? 1.0-lambda : lambda) : 1.0);
+            scale = pme->bFEP ? (q % 2 == 0 ? 1.0-lambda : lambda) : 1.0;
+            gather_f_bsplines(pme, grid, bClearF, &pme->atc[0], scale);
             where();
             
             GMX_MPE_LOG(ev_gather_f_bsplines_finish);
@@ -3003,7 +3305,240 @@ int gmx_pme_do(gmx_pme_t pme,
 
         bFirst = FALSE;
     } /* of q-loop */
+
+    /* For Lorentz-Bertholot combination rules, we need to calculate seven
+     * terms. */
+    if (flags & GMX_PME_DO_LJ_LB)
+    {
+        real *local_c6 = NULL, *local_sigma = NULL;
+
+        if (pme->nnodes == 1) {
+            atc = &pme->atc[0];
+            if (DOMAINDECOMP(cr)) {
+                atc->n = homenr;
+                pme_realloc_atomcomm_things(atc);
+            }
+            if (pme->lb_coeff == NULL)
+            {
+                snew(pme->lb_coeff, atc->n);
+            }
+            atc->x = x;
+            atc->q = pme->lb_coeff;
+            atc->f = f;
+            local_c6 = c6A;
+            local_sigma = sigmaA;
+        } else {
+            gmx_fatal(FARGS, "L-B combination rules not implemented in parallel (yet)");
+            wallcycle_start(wcycle,ewcPME_REDISTXF);
+            for(d=pme->ndecompdim-1; d>=0; d--)
+            {
+                if (d == pme->ndecompdim-1)
+                {
+                    n_d = homenr;
+                    x_d = x + start;
+                    q_d = charge;
+                }
+                else
+                {
+                    n_d = pme->atc[d+1].n;
+                    x_d = atc->x;
+                    q_d = atc->q;
+                }
+                atc = &pme->atc[d];
+                atc->npd = n_d;
+                if (atc->npd > atc->pd_nalloc) {
+                    atc->pd_nalloc = over_alloc_dd(atc->npd);
+                    srenew(atc->pd,atc->pd_nalloc);
+                }
+                atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
+                pme_calc_pidx(n_d,pme->recipbox,x_d,atc);
+                where();
+
+                GMX_BARRIER(cr->mpi_comm_mygroup);
+                /* Redistribute coefficients */
+                if (DOMAINDECOMP(cr)) {
+                    dd_pmeredist_x_q(pme, n_d, bFirst, x_d, q_d, atc);
+                } else {
+                    pmeredist_pd(pme, TRUE, n_d, bFirst, x_d, q_d, atc);
+                }
+            }
+            where();
+            wallcycle_stop(wcycle,ewcPME_REDISTXF);
+        }
+
+        for (i = 0; i < atc->n; ++i)
+        {
+            real sigma4;
+
+            sigma4 = local_sigma[i];
+            sigma4 = sigma4*sigma4;
+            sigma4 = sigma4*sigma4;
+            atc->q[i] = local_c6[i] / sigma4;
+        }
+
+        for (q = 2; q < 9; ++q)
+        {
+            /* Unpack structure */
+            grid = pme->pmegrid[q];
+            fftgrid = pme->fftgrid[q];
+            cfftgrid = pme->cfftgrid[q];
+            pfft_setup = pme->pfft_setup[q];
+            for (i = 0; i < atc->n; ++i)
+            {
+                atc->q[i] *= local_sigma[i];
+            }
+            where();
+
+            m_inv_ur0(box,pme->recipbox);
+
+            if (flags & GMX_PME_SPREAD)
+            {
+                wallcycle_start(wcycle,ewcPME_SPREADGATHER);
+
+                /* Spread the charges on a grid */
+                GMX_MPE_LOG(ev_spread_on_grid_start);
+                spread_on_grid(pme, &pme->atc[0], grid, bFirst, TRUE, bDoAllSplines);
+                GMX_MPE_LOG(ev_spread_on_grid_finish);
+
+                if (bFirst)
+                {
+                    inc_nrnb(nrnb,eNR_WEIGHTS,DIM*atc->n);
+                }
+                inc_nrnb(nrnb,eNR_SPREADQBSP,
+                         pme->pme_order*pme->pme_order*pme->pme_order*atc->n);
+
+                wrap_periodic_pmegrid(pme,grid);
+
+                /* sum contributions to local grid from other nodes */
+#ifdef GMX_MPI
+                if (pme->nnodes > 1) {
+                    GMX_BARRIER(cr->mpi_comm_mygroup);
+                    gmx_sum_qgrid_dd(pme,grid,GMX_SUM_QGRID_FORWARD);
+                    where();
+                }
+#endif
+                where();
+
+                copy_pmegrid_to_fftgrid(pme, q);
+
+                wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
+            }
+
+            if (flags & GMX_PME_SOLVE)
+            {
+                /* do 3d-fft */
+                GMX_BARRIER(cr->mpi_comm_mygroup);
+                GMX_MPE_LOG(ev_gmxfft3d_start);
+                wallcycle_start(wcycle,ewcPME_FFT);
+                gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_REAL_TO_COMPLEX,fftgrid,cfftgrid);
+                wallcycle_stop(wcycle,ewcPME_FFT);
+                GMX_MPE_LOG(ev_gmxfft3d_finish);
+                where();
+            }
+
+            bFirst = FALSE;
+        }
+
+        if (flags & GMX_PME_SOLVE)
+        {
+            /* solve in k-space for our local cells */
+            vol = det(box);
+            GMX_BARRIER(cr->mpi_comm_mygroup);
+            GMX_MPE_LOG(ev_solve_pme_start);
+            wallcycle_start(wcycle,ewcPME_SOLVE);
+            loop_count =
+                solve_pme_lj_lb_yzx(pme, &pme->cfftgrid[2], ewaldcoeff_lj, vol,
+                                    flags & GMX_PME_CALC_ENER_VIR,
+                                    &energy_AB[2], vir_AB[2]);
+            wallcycle_stop(wcycle,ewcPME_SOLVE);
+            where();
+            GMX_MPE_LOG(ev_solve_pme_finish);
+            inc_nrnb(nrnb,eNR_SOLVEPME,loop_count);
+        }
+
+        if (flags & GMX_PME_CALC_F)
+        {
+            bFirst = !(flags & GMX_PME_DO_COULOMB);
+            for (i = 0; i < atc->n; ++i)
+            {
+                real sigma4;
+
+                sigma4 = local_sigma[i];
+                sigma4 = sigma4*sigma4;
+                sigma4 = sigma4*sigma4;
+                atc->q[i] = local_c6[i] / sigma4;
+            }
+
+            for (q = 8; q >= 2; --q)
+            {
+                /* Unpack structure */
+                grid = pme->pmegrid[q];
+                fftgrid = pme->fftgrid[q];
+                cfftgrid = pme->cfftgrid[q];
+                pfft_setup = pme->pfft_setup[q];
+                for (i = 0; i < atc->n; ++i)
+                {
+                    atc->q[i] *= local_sigma[i];
+                }
+                where();
+
+                /* do 3d-invfft */
+                GMX_BARRIER(cr->mpi_comm_mygroup);
+                GMX_MPE_LOG(ev_gmxfft3d_start);
+                where();
+                wallcycle_start(wcycle,ewcPME_FFT);
+                gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_COMPLEX_TO_REAL,cfftgrid,fftgrid);
+                wallcycle_stop(wcycle,ewcPME_FFT);
+
+                where();
+                GMX_MPE_LOG(ev_gmxfft3d_finish);
+
+                if (pme->nodeid == 0)
+                {
+                    ntot = pme->nkx*pme->nky*pme->nkz;
+                    npme  = ntot*log((real)ntot)/log(2.0);
+                    inc_nrnb(nrnb,eNR_FFT,2*npme);
+                }
+
+                wallcycle_start(wcycle,ewcPME_SPREADGATHER);
+
+                copy_fftgrid_to_pmegrid(pme, q);
+
+                /* distribute local grid to all nodes */
+#ifdef GMX_MPI
+                if (pme->nnodes > 1) {
+                    GMX_BARRIER(cr->mpi_comm_mygroup);
+                    gmx_sum_qgrid_dd(pme,grid,GMX_SUM_QGRID_BACKWARD);
+                }
+#endif
+                where();
+
+                unwrap_periodic_pmegrid(pme,grid);
+
+                /* interpolate forces for our local atoms */
+                GMX_BARRIER(cr->mpi_comm_mygroup);
+                GMX_MPE_LOG(ev_gather_f_bsplines_start);
+                where();
+
+                bClearF = (bFirst && PAR(cr));
+                scale = pme->bFEP ? (q < 9 ? 1.0-lambda : lambda) : 1.0;
+                scale *= lb_scale_factor[q-2];
+                gather_f_bsplines(pme, grid, bFirst, &pme->atc[0], scale);
+                where();
+
+                GMX_MPE_LOG(ev_gather_f_bsplines_finish);
+
+                inc_nrnb(nrnb,eNR_GATHERFBSP,
+                         pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+                wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
+
+                bFirst = FALSE;
+            }
+        }
+    }
     
+    /* After everything is done, redistribute the forces if running in
+     * parallel. */
     if ((flags & GMX_PME_CALC_F) && pme->nnodes > 1) {
         wallcycle_start(wcycle,ewcPME_REDISTXF);
         for(d=0; d<pme->ndecompdim; d++)

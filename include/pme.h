@@ -69,6 +69,7 @@ extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 #define GMX_PME_CALC_ENER_VIR (1<<3)
 #define GMX_PME_DO_COULOMB    (1<<4)
 #define GMX_PME_DO_LJ         (1<<5)
+#define GMX_PME_DO_LJ_LB      (1<<6)
 #define GMX_PME_DO_ALL_F      (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 extern int gmx_pme_do(gmx_pme_t pme,
@@ -76,6 +77,7 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      rvec x[],        rvec f[],
 		      real chargeA[],  real chargeB[],
 		      real c6A[],      real c6B[],
+		      real sigmaA[],   real sigmaB[],
 		      matrix box,      t_commrec *cr,
 		      int  maxshift_x, int maxshift_y,
 		      t_nrnb *nrnb,    gmx_wallcycle_t wcycle,

@@ -58,6 +58,7 @@ typedef struct {
   real          *massA,*massB,*massT,*invmass;
   real          *chargeA,*chargeB;
   real          *c6A,*c6B;
+  real          *sigmaA,*sigmaB;
   bool          *bPerturbed;
   int           *typeA,*typeB;
   unsigned short        *ptype;

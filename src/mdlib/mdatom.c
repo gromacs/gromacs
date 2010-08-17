@@ -100,6 +100,7 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
   t_atoms   *atoms_mol;
   int       i,g,ag,as,ae,molb;
   real      mA,mB,fac;
+  real      c6,c12;
   t_atom    *atom;
   t_grpopts *opts;
   gmx_groups_t *groups;
@@ -127,12 +128,12 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     srenew(md->massT,md->nalloc);
     srenew(md->invmass,md->nalloc);
     srenew(md->chargeA,md->nalloc);
+    srenew(md->c6A,md->nalloc);
+    srenew(md->sigmaA,md->nalloc);
     if (md->nPerturbed) {
       srenew(md->chargeB,md->nalloc);
-    }
-    srenew(md->c6A,md->nalloc);
-    if (md->nPerturbed) {
       srenew(md->c6B,md->nalloc);
+      srenew(md->sigmaB,md->nalloc);
     }
     srenew(md->typeA,md->nalloc);
     if (md->nPerturbed) {
@@ -232,11 +233,25 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     }
     md->chargeA[i]	= atom->q;
     md->typeA[i]	= atom->type;
-    md->c6A[i]          = sqrt(mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c6);
+    c6                  = mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c6;
+    c12                 = mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c12;
+    md->c6A[i]          = sqrt(c6);
+    if (c6 == 0.0 || c12 == 0.0) {
+      md->sigmaA[i]     = 1.0;
+    } else {
+      md->sigmaA[i]     = pow(c12/c6, 1.0/6.0);
+    }
     if (md->nPerturbed) {
       md->chargeB[i]	= atom->qB;
       md->typeB[i]	= atom->typeB;
-      md->c6B[i]        = sqrt(mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c6);
+      c6                = mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c6;
+      c12               = mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c12;
+      md->c6B[i]        = sqrt(c6);
+      if (c6 == 0.0 || c12 == 0.0) {
+        md->sigmaB[i]   = 1.0;
+      } else {
+        md->sigmaB[i]   = pow(c12/c6, 1.0/6.0);
+      }
       md->bPerturbed[i] = PERTURBED(*atom);
     }
     md->ptype[i]	= atom->ptype;

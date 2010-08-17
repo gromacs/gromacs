@@ -473,6 +473,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       gmx_fio_do_real(fio,ir->epsilon_surface);
     
     gmx_fio_do_bool(fio,ir->bOptFFT);
+    if (file_version >= 72)
+      gmx_fio_do_bool(fio,ir->bLJPMELB);
+    else
+      ir->bLJPMELB = FALSE;
 
     gmx_fio_do_bool(fio,ir->bContinuation); 
     gmx_fio_do_int(fio,ir->etc);

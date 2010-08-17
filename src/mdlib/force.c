@@ -559,6 +559,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             if (EVDW_PME(fr->vdwtype))
             {
                 pme_flags |= GMX_PME_DO_LJ;
+                if (ir->bLJPMELB)
+                {
+                    pme_flags |= GMX_PME_DO_LJ_LB;
+                }
             }
             pme_flags |= GMX_PME_SPREAD | GMX_PME_SOLVE;
             if (flags & GMX_FORCE_FORCES)
@@ -575,6 +579,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                 x, fr->f_novirsum,
                                 md->chargeA, md->chargeB,
                                 md->c6A, md->c6B,
+                                md->sigmaA, md->sigmaB,
                                 bSB ? boxs : box, cr,
                                 DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
                                 DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,

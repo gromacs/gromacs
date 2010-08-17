@@ -181,6 +181,7 @@ typedef struct {
   int  ewald_geometry;  /* normal/3d ewald, or pseudo-2d LR corrections */
   real epsilon_surface; /* Epsilon for PME dipole correction            */
   bool bOptFFT;         /* optimize the fft plan at start               */
+  bool bLJPMELB;        /* Do exact LJ-PME for L-B combination rule     */
   int  ePBC;		/* Type of periodic boundary conditions		*/
   int  bPeriodicMols;   /* Periodic molecules                           */
   bool bContinuation;   /* Continuation run: starting state is correct	*/

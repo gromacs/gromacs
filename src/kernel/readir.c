@@ -919,6 +919,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("ewald_geometry", ir->ewald_geometry, eewg_names);
   RTYPE ("epsilon_surface", ir->epsilon_surface, 0.0);
   EETYPE("optimize_fft",ir->bOptFFT,  yesno_names);
+  EETYPE("lj_pme_lb",   ir->bLJPMELB, yesno_names);
 
   CCTYPE("IMPLICIT SOLVENT ALGORITHM");
   EETYPE("implicit_solvent", ir->implicit_solvent, eis_names);
