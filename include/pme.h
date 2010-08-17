@@ -70,6 +70,9 @@ extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 #define GMX_PME_DO_COULOMB    (1<<4)
 #define GMX_PME_DO_LJ         (1<<5)
 #define GMX_PME_DO_LJ_LB      (1<<6)
+/* All bits higher than this (including this one) are used internally by the
+ * PME-PP communication routines. */
+#define GMX_PME_PP_FIRST      (1<<7)
 #define GMX_PME_DO_ALL_F      (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 extern int gmx_pme_do(gmx_pme_t pme,

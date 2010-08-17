@@ -61,19 +61,15 @@
 
 /* Some parts of the code assume that the six first flags are exactly
  * in this order. */
-#define PP_PME_CHARGE   (1<<0)
-#define PP_PME_CHARGEB  (1<<1)
-#define PP_PME_C6       (1<<2)
-#define PP_PME_C6B      (1<<3)
-#define PP_PME_SIGMA    (1<<4)
-#define PP_PME_SIGMAB   (1<<5)
-#define PP_PME_COORD    (1<<6)
-#define PP_PME_COULOMB  (1<<7)
-#define PP_PME_LJ       (1<<8)
-#define PP_PME_LJ_LB    (1<<9)
-#define PP_PME_FEP      (1<<10)
-#define PP_PME_ENER_VIR (1<<11)
-#define PP_PME_FINISH   (1<<12)
+#define PP_PME_CHARGE   (GMX_PME_PP_FIRST<<0)
+#define PP_PME_CHARGEB  (GMX_PME_PP_FIRST<<1)
+#define PP_PME_C6       (GMX_PME_PP_FIRST<<2)
+#define PP_PME_C6B      (GMX_PME_PP_FIRST<<3)
+#define PP_PME_SIGMA    (GMX_PME_PP_FIRST<<4)
+#define PP_PME_SIGMAB   (GMX_PME_PP_FIRST<<5)
+#define PP_PME_COORD    (GMX_PME_PP_FIRST<<6)
+#define PP_PME_FEP      (GMX_PME_PP_FIRST<<7)
+#define PP_PME_FINISH   (GMX_PME_PP_FIRST<<8)
 
 #define PME_PP_SIGSTOP     (1<<0)
 #define PME_PP_SIGSTOPNSS     (1<<1)
@@ -289,17 +285,9 @@ void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
 {
   int flags;
   
-  flags = PP_PME_COORD;
-  if (pme_flags & GMX_PME_DO_COULOMB)
-    flags |= PP_PME_COULOMB;
-  if (pme_flags & GMX_PME_DO_LJ)
-    flags |= PP_PME_LJ;
-  if (pme_flags & GMX_PME_DO_LJ_LB)
-    flags |= PP_PME_LJ_LB;
+  flags = pme_flags | GMX_PME_DO_ALL_F | PP_PME_COORD;
   if (bFreeEnergy)
     flags |= PP_PME_FEP;
-  if (pme_flags & GMX_PME_CALC_ENER_VIR)
-    flags |= PP_PME_ENER_VIR;
 
   gmx_pme_send_q_x(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL,
                    box, x, lambda, 0, 0, step);
@@ -332,7 +320,7 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
 
     /* avoid compiler warning about unused variable without MPI support */
     cnb.flags = 0;	
-    *pme_flags = GMX_PME_DO_ALL_F;
+    *pme_flags = 0;
 #ifdef GMX_MPI
     do {
         /* Receive the send count, box and time step from the peer PP node */
@@ -436,36 +424,30 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
             copy_mat(cnb.box,box);
             *bFreeEnergy = (cnb.flags & PP_PME_FEP);
             *lambda      = cnb.lambda;
-            if (cnb.flags & PP_PME_COULOMB)
+            *pme_flags   = cnb.flags;
+            if (cnb.flags & GMX_PME_DO_COULOMB)
             {
-                *pme_flags |= GMX_PME_DO_COULOMB;
                 if (!(pme_pp->flags_charge & PP_PME_CHARGE))
                     gmx_incons("PME-only node did not receive charges.");
                 if (*bFreeEnergy && !(pme_pp->flags_charge & PP_PME_CHARGEB))
                     gmx_incons("PME-only node received free energy request, "
                                "but did not receive B-state charges");
             }
-            if (cnb.flags & PP_PME_LJ)
+            if (cnb.flags & GMX_PME_DO_LJ)
             {
-                *pme_flags |= GMX_PME_DO_LJ;
                 if (!(pme_pp->flags_charge & PP_PME_C6))
                     gmx_incons("PME-only node did not receive C6 parameters.");
                 if (*bFreeEnergy && !(pme_pp->flags_charge & PP_PME_C6B))
                     gmx_incons("PME-only node received free energy request, "
                                "but did not receive B-state C6 parameters");
             }
-            if (cnb.flags & PP_PME_LJ_LB)
+            if (cnb.flags & GMX_PME_DO_LJ_LB)
             {
-                *pme_flags |= GMX_PME_DO_LJ_LB;
                 if (!(pme_pp->flags_charge & PP_PME_SIGMA))
                     gmx_incons("PME-only node did not receive sigma parameters.");
                 if (*bFreeEnergy && !(pme_pp->flags_charge & PP_PME_SIGMAB))
                     gmx_incons("PME-only node received free energy request, "
                                "but did not receive B-state sigma parameters");
-            }
-            if (cnb.flags & PP_PME_ENER_VIR)
-            {
-                *pme_flags |= GMX_PME_CALC_ENER_VIR;
             }
 
             /* Receive the coordinates in place */
