@@ -1079,7 +1079,7 @@ int gmx_fsync(FILE *fp)
 #if (defined(HAVE_FSYNC))
             rc=fsync(fn);
 #elif (defined(HAVE__COMMIT)) 
-            rc=_commit(fno);
+            rc=_commit(fn);
 #endif
         }
     }
