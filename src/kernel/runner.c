@@ -703,7 +703,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             }
         }
 
-        if (EEL_PME(fr->eeltype))
+        if (EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype))
         {
             ewaldcoeff_q = fr->ewaldcoeff;
             ewaldcoeff_lj = fr->ewaldljcoeff;
