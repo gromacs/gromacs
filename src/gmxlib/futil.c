@@ -301,9 +301,15 @@ bool gmx_fexist(const char *fname)
     if (fname == NULL)
         return FALSE;
     test=fopen(fname,"r");
-    if (test == NULL) 
-        return FALSE;
-    else {
+    if (test == NULL) {
+        /*Windows doesn't allow fopen of directory - so we need to check this seperately */
+        #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+            DWORD attr = GetFileAttributes(fname);
+            return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
+        #else 
+            return FALSE;
+        #endif
+    } else {
         fclose(test);
         return TRUE;
     }
@@ -357,7 +363,7 @@ static char *backup_fn(const char *file,int count_max)
 
     smalloc(buf, GMX_PATH_MAX);
 
-    for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--)
+    for(i=strlen(file)-1; ((i > 0) && (file[i] != DIR_SEPARATOR)); i--)
         ;
     /* Must check whether i > 0, i.e. whether there is a directory
      * in the file name. In that case we overwrite the / sign with
@@ -717,7 +723,7 @@ bool search_subdirs(const char *parent, char *libdir)
 static bool filename_is_absolute(char *name)
 {
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-    return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)));
+    return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)) == 0);
 #else
     return (name[0] == DIR_SEPARATOR);
 #endif
@@ -783,9 +789,7 @@ bool get_libdir(char *libdir)
 #else
             pdum=getcwd(buf,sizeof(buf)-1);
 #endif
-            strncpy(full_path,buf,GMX_PATH_MAX);
-            strcat(full_path,"/");
-            strcat(full_path,bin_name);
+            sprintf(full_path,"%s%c%s",buf,DIR_SEPARATOR,bin_name);
         } else {
             strncpy(full_path,bin_name,GMX_PATH_MAX);
         }
@@ -1079,7 +1083,7 @@ int gmx_fsync(FILE *fp)
 #if (defined(HAVE_FSYNC))
             rc=fsync(fn);
 #elif (defined(HAVE__COMMIT)) 
-            rc=_commit(fno);
+            rc=_commit(fn);
 #endif
         }
     }

@@ -1238,6 +1238,33 @@ real vrescale_energy(t_grpopts *opts,double therm_integral[])
   return ener;
 }
 
+void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
+                        int start,int end,rvec v[])
+{
+    t_grp_tcstat *tcstat;
+    unsigned short *cTC;
+    int  gt,n,d;
+    real lg;
+
+    tcstat = ekind->tcstat;
+    cTC    = mdatoms->cTC;
+
+    gt = 0;
+    for(n=start; n<end; n++) 
+    {
+        if (cTC)
+        {
+            gt   = cTC[n];
+        }
+        lg = tcstat[gt].lambda;
+        for(d=0; d<DIM; d++)
+        {
+            v[n][d] *= lg;
+        }
+    }
+}
+
+
 /* set target temperatures if we are annealing */
 void update_annealing_target_temp(t_grpopts *opts,real t)
 {

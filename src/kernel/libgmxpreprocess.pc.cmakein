@@ -8,5 +8,5 @@ Version: @PROJECT_VERSION@
 Requires: libgmx@LIBSUFFIX@ libmd@LIBSUFFIX@ 
 Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
 Libs: -L${libdir} -lgmxpreprocess@LIBSUFFIX@
-Cflags: -I${includedir}
+Cflags: -I${includedir} @PKG_CFLAGS@
 
