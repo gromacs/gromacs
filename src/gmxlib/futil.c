@@ -1001,7 +1001,6 @@ int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
 {
 /* the full copy buffer size: */
 #define FILECOPY_BUFSIZE (1<<16)
-    /* POSIX doesn't support any of the above. */
     FILE *in=NULL; 
     FILE *out=NULL;
     char *buf;
@@ -1031,6 +1030,8 @@ int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
             size_t ret;
             if (!out)
             {
+                /* so this is where we open when copy_if_empty is false:
+                   here we know we read something. */
                 out=fopen(newname, "wb");
                 if (!out)
                     goto error;
@@ -1065,7 +1066,7 @@ int gmx_fsync(FILE *fp)
 
 #ifdef GMX_FAHCORE
     /* the fahcore defines its own os-independent fsync */
-    rc=gmx_fsync_lowlevel(fio->fp);
+    rc=fah_fsync(fp);
 #else /* GMX_FAHCORE */
     {
         int fn=-1;
