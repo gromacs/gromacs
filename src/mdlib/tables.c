@@ -1127,7 +1127,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	snew(td,1);
 
         if (fr->badress_tf_full_box){
-            // take half box x direction as tab range
+            /* take half box x direction as tab range */
             table.r         = box[0][0]/2;
         }
         else
@@ -1154,7 +1154,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	    rtab      = td[0].x[td[0].nx-1];
             
             if (fr->badress_tf_full_box){
-                // TODO : should really check tf is defined everywhere (in box)
+                /* TODO : should really check tf is defined everywhere (in box) */
                if (fr->adress_type == eAdressXSplit && (rtab < box[0][0]/2)){
                    gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
                                 "\tshould extend to at least half the length of the longest box side"

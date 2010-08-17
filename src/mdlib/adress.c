@@ -571,7 +571,7 @@ adress_thermo_force(int                  cg0,
                     rinv             = gmx_invsqrt(dr[0]*dr[0]+dr[1]*dr[1]+dr[2]*dr[2]);
                     
 
-                   //calculate distace to adress center again
+                    /* calculate distace to adress center again */
                     sqr_dl =0.0;
                     switch(adresstype)
                     {
@@ -589,12 +589,12 @@ adress_thermo_force(int                  cg0,
 
                     dl=sqrt(sqr_dl);
                     if (badress_tf_full_box){
-                        // table origin is center of box
+                        /* table origin is center of box */
                         wt               = dl*tabscale;
                     }
                     else
                     {
-                        // table origin is begin of the hybrid zone
+                        /* table origin is begin of the hybrid zone */
                         wt               = (dl-adressr)*tabscale;
                     }
                     n0               = wt;

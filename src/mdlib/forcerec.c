@@ -1692,13 +1692,13 @@ void init_forcerec(FILE *fp,
     /* Read AdResS Thermo Force table if needed */
     if(fr->adress_icor == eAdressICThermoForce)
     {
-        // old todo replace 
+        /* old todo replace */ 
         
         if (ir->n_adress_tf_grps > 0){
             make_adress_tf_tables(fp,oenv,fr,ir,tabfn, mtop, box);
 
         }else{
-            //load the default table
+            /* load the default table */
             snew(fr->atf_tabs, 1);
             fr->atf_tabs[DEFAULT_TF_TABLE] = make_atf_table(fp,oenv,fr,tabafn, box);
         }

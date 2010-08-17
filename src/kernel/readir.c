@@ -2143,7 +2143,7 @@ void do_index(const char* mdparin, const char *ndx,
 
   if (nadress_cg_grp_names > 0){
         for (i=0; i <nadress_cg_grp_names; i++){
-        //search for the group name mathching the tf group name
+            /* search for the group name mathching the tf group name */
             k = 0;
             while ((k < nr) &&
                  strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
@@ -2153,7 +2153,7 @@ void do_index(const char* mdparin, const char *ndx,
             printf ("AdResS: Energy group %s is treated as coarse-grained \n",
               (char*)(gnames[groups->grps[egcENER].nm_ind[k]]));
     }
-   // set energy group exclusions between all coarse-grained and explicit groups
+        /* set energy group exclusions between all coarse-grained and explicit groups */
       for (j = 0; j < nr; j++) {
             for (k = 0; k < nr; k++) {
                 if (ir->adress_group_explicit[k] && !ir->adress_group_explicit[j]){
@@ -2178,7 +2178,7 @@ void do_index(const char* mdparin, const char *ndx,
 
   if (nadress_tf_grp_names > 0){
         for (i=0; i <nadress_tf_grp_names; i++){
-        //search for the group name mathching the tf group name
+            /* search for the group name mathching the tf group name */
             k = 0;
             while ((k < nr) &&
                  strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
