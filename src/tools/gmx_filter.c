@@ -138,7 +138,7 @@ int gmx_filter(int argc,char *argv[])
 			 &xtop,NULL,topbox,TRUE);
     if (bTop) {
       gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,topbox);
-      gmx_rmpbc(gpbc,topbox,xtop,xtop);
+      gmx_rmpbc(gpbc,top.atoms.nr,topbox,xtop);
     }
   }
 
@@ -214,7 +214,7 @@ int gmx_filter(int argc,char *argv[])
 	  }
     }
     if (bTop) {
-      gmx_rmpbc(gpbc,box[nffr - 1],xn,xn);
+      gmx_rmpbc(gpbc,nat,box[nffr - 1],xn);
     }
     if (bFit) {
       calc_xcm(xn,isize,index,top.atoms.atom,xcm,FALSE);

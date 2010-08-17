@@ -290,14 +290,14 @@ int gmx_helix(int argc,char *argv[])
     pr_bb(stdout,nres,bb);
   }
   
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
 
   snew(xav,natoms);
   teller=0;
   do {
     if ((teller++ % 10) == 0)
       fprintf(stderr,"\rt=%.2f",t);
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
 
     
     calc_hxprops(nres,bb,x,box);

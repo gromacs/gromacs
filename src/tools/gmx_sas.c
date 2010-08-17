@@ -403,7 +403,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   nfr=0;
   do {
     if (bPBC)
-      gmx_rmpbc(gpbc,box,x,x);
+      gmx_rmpbc(gpbc,natoms,box,x);
     
     bConnelly = (nfr==0 && opt2bSet("-q",nfile,fnm));
     if (bConnelly) {

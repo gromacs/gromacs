@@ -257,7 +257,7 @@ int gmx_helixorient(int argc,char *argv[])
       /* initialisation for correct distance calculations */
     set_pbc(&pbc,ePBC,box);
       /* make molecules whole again */
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
       
       /* copy coords to our smaller arrays */
       for(i=0;i<iCA;i++)

@@ -122,14 +122,14 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 
   teller = 0; 
 
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
   /*********** Start processing trajectory ***********/
   do 
   {
     *slWidth = box[axis][axis]/(*nslices);
     teller++;
     
-    gmx_rmpbc(gpbc,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
 
     if (bMicel)
       calc_xcm(x0, nmic, micel, top->atoms.atom, com, FALSE);

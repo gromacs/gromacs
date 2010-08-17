@@ -44,11 +44,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef HAVE_COPYFILE_H
-/* BSD specific */
-#include <copyfile.h>
-#endif
-
 #ifdef HAVE_DIRENT_H
 /* POSIX */
 #include <dirent.h>
@@ -1000,15 +995,7 @@ int gmx_file_rename(const char *oldname, const char *newname)
 
 int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
 {
-#if defined(HAVE_COPYFILE_H) && !defined(GMX_FAHCORE)
-    /* this is BSD specific, but convenient */
-    return copyfile(oldname, newname, NULL, COPYFILE_DATA);
-#elif defined(HAVE_WIN_COPYFILE) && !defined(GMX_FAHCORE)
-    if (CopyFile(oldname, newname, FALSE))
-        return 0;
-    else
-        return 1;
-#else
+/* the full copy buffer size: */
 #define FILECOPY_BUFSIZE (1<<16)
     /* POSIX doesn't support any of the above. */
     FILE *in=NULL; 
@@ -1065,7 +1052,55 @@ error:
         fclose(out);
     return 1;
 #undef FILECOPY_BUFSIZE
-#endif
 }
+
+
+int gmx_fsync(FILE *fp)
+{
+    int rc=0;
+
+#ifdef GMX_FAHCORE
+    /* the fahcore defines its own os-independent fsync */
+    rc=gmx_fsync_lowlevel(fio->fp);
+#else /* GMX_FAHCORE */
+    {
+        int fn=-1;
+
+        /* get the file number */
+#if defined(HAVE_FILENO)
+        fn= fileno(fp);
+#elif defined(HAVE__FILENO)
+        fn= _fileno(fp);
+#endif
+
+        /* do the actual fsync */
+        if (fn >= 0)
+        {
+#if (defined(HAVE_FSYNC))
+            rc=fsync(fn);
+#elif (defined(HAVE__COMMIT)) 
+            rc=_commit(fno);
+#endif
+        }
+    }
+#endif /* GMX_FAHCORE */
+
+    /* We check for these error codes this way because POSIX requires them
+       to be defined, and using anything other than macros is unlikely: */
+#ifdef EINTR
+    /* we don't want to report an error just because fsync() caught a signal.
+       For our purposes, we can just ignore this. */
+    if (rc && errno==EINTR)
+        rc=0;
+#endif
+#ifdef EINVAL
+    /* we don't want to report an error just because we tried to fsync() 
+       stdout, a socket or a pipe. */
+    if (rc && errno==EINVAL)
+        rc=0;
+#endif
+    return rc;
+}
+
 
 

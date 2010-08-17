@@ -136,7 +136,7 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   bFirst=TRUE;  
   do {
     if (NULL != top) 
-      gmx_rmpbc(gpbc,box,x,x);
+      gmx_rmpbc(gpbc,natoms,box,x);
     
     periodic_dist(box,x,n,index,&rmin,&rmax,ind_min);
     if (rmin < rmint) {

@@ -706,46 +706,54 @@ double do_tpi(FILE *fplog,t_commrec *cr,
         
         bNotLastFrame = read_next_frame(oenv, status,&rerun_fr);
     } /* End of the loop  */
-  runtime_end(runtime);
+    runtime_end(runtime);
 
-  close_trj(status);
+    close_trj(status);
 
-  if (fp_tpi)
-    gmx_fio_fclose(fp_tpi);
+    if (fp_tpi != NULL)
+    {
+        gmx_fio_fclose(fp_tpi);
+    }
 
-  if (fplog) {
-    fprintf(fplog,"\n");
-    fprintf(fplog,"  <V>  = %12.5e nm^3\n",V_all/frame);
-    fprintf(fplog,"  <mu> = %12.5e kJ/mol\n",-log(VembU_all/V_all)/beta);
-  }
+    if (fplog != NULL)
+    {
+        fprintf(fplog,"\n");
+        fprintf(fplog,"  <V>  = %12.5e nm^3\n",V_all/frame);
+        fprintf(fplog,"  <mu> = %12.5e kJ/mol\n",-log(VembU_all/V_all)/beta);
+    }
   
-  /* Write the Boltzmann factor histogram */
-  if (PAR(cr)) {
-    /* When running in parallel sum the bins over the processes */
-    i = nbin;
-    global_max(cr,&i);
-    realloc_bins(&bin,&nbin,i);
-    gmx_sumd(nbin,bin,cr);
-  }
-  fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
-		    "TPI energy distribution",
-		    "\\betaU - log(V/<V>)","count",oenv);
-  sprintf(str,"number \\betaU > %g: %9.3e",bU_bin_limit,bin[0]);
-  xvgr_subtitle(fp_tpi,str,oenv);
-  xvgr_legend(fp_tpi,2,(const char **)tpid_leg,oenv);
-  for(i=nbin-1; i>0; i--) {
-    bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
-    fprintf(fp_tpi,"%6.2f %10d %12.5e\n",
-	    bUlogV,
-	    (int)(bin[i]+0.5),
-	    bin[i]*exp(-bUlogV)*V_all/VembU_all);
-  }
-  gmx_fio_fclose(fp_tpi);
-  sfree(bin);
+    /* Write the Boltzmann factor histogram */
+    if (PAR(cr))
+    {
+        /* When running in parallel sum the bins over the processes */
+        i = nbin;
+        global_max(cr,&i);
+        realloc_bins(&bin,&nbin,i);
+        gmx_sumd(nbin,bin,cr);
+    }
+    if (MASTER(cr))
+    {
+        fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
+                          "TPI energy distribution",
+                          "\\betaU - log(V/<V>)","count",oenv);
+        sprintf(str,"number \\betaU > %g: %9.3e",bU_bin_limit,bin[0]);
+        xvgr_subtitle(fp_tpi,str,oenv);
+        xvgr_legend(fp_tpi,2,(const char **)tpid_leg,oenv);
+        for(i=nbin-1; i>0; i--)
+        {
+            bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
+            fprintf(fp_tpi,"%6.2f %10d %12.5e\n",
+                    bUlogV,
+                    (int)(bin[i]+0.5),
+                    bin[i]*exp(-bUlogV)*V_all/VembU_all);
+        }
+        gmx_fio_fclose(fp_tpi);
+    }
+    sfree(bin);
 
-  sfree(sum_UgembU);
+    sfree(sum_UgembU);
 
-  runtime->nsteps_done = frame*inputrec->nsteps;
-  
-  return 0;
+    runtime->nsteps_done = frame*inputrec->nsteps;
+
+    return 0;
 }

@@ -937,7 +937,7 @@ case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
 #line 117 "scanner.l"
-
+{ _gmx_sel_lexer_add_token(" ", 1, state); }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
@@ -1053,7 +1053,7 @@ YY_RULE_SETUP
 case 25:
 YY_RULE_SETUP
 #line 155 "scanner.l"
-{ _gmx_sel_lexer_add_token(yytext, 1, state); return yytext[0]; }
+{ ADD_TOKEN; return yytext[0]; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP

@@ -943,7 +943,7 @@ int gmx_traj(int argc,char *argv[])
     
         if (fr.bX && bCom && bPBC)
         {
-            gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+            gmx_rmpbc_trxfr(gpbc,&fr);
         }
 
         if (bVD && fr.bV)

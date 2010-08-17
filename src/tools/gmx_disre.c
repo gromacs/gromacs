@@ -723,7 +723,7 @@ int gmx_disre(int argc,char *argv[])
       if (ir.bPeriodicMols)
 	set_pbc(&pbc,ir.ePBC,box);
       else
-	gmx_rmpbc(gpbc,box,x,x);
+	gmx_rmpbc(gpbc,natoms,box,x);
     }
     
     if (clust) {

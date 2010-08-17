@@ -765,7 +765,6 @@ AC_CHECK_HEADERS(dirent.h,,[AC_MSG_WARN(
 * present on all UNIX-like systems, CygWin, and MinGW.             *
 ********************************************************************])])
 ## NOTE: On native windows we do not use configure.ac
-AC_CHECK_HEADERS(copyfile.h)
 AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
 [No regex.h found.
 Regular expression matching in selections will be disabled.
@@ -793,7 +792,6 @@ AC_CHECK_FUNCS(isfinite)
 AC_CHECK_FUNCS(_isfinite)
 AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(fileno)
-AC_CHECK_FUNCS(copyfile)
 
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])

@@ -283,7 +283,7 @@ int gmx_mdmat(int argc,char *argv[])
   if (bFrames)
     out=opt2FILE("-frames",NFILE,fnm,"w");
   do {
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,trxnat,box,x);
     nframes++;
     calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat,ePBC,box);
     for (i=0; (i<nres); i++)

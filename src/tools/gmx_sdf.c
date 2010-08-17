@@ -343,7 +343,7 @@ structure if needed */
   do {
     /* Must init pbc every step because of pressure coupling */
     set_pbc(&pbc,ePBC,box);
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
   
     /* Dynamically build the ref triples */
     if ( mode == 2 )

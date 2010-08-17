@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -45,76 +46,192 @@
 #include "futil.h"
 #include "vec.h"	
 
+typedef struct {
+    int     natoms;
+    t_graph *gr;
+} rmpbc_graph_t;
+
 typedef struct gmx_rmpbc {
-  int     natoms;
-  int     ePBC;
-  t_graph *gr;
+    t_idef        *idef;
+    int           natoms_init;
+    int           ePBC;
+    int           ngraph;
+    rmpbc_graph_t *graph;
 } koeiepoep;
 
-gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
-			   matrix box)
+static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc,int ePBC,int natoms)
 {
-  gmx_rmpbc_t gpbc;
-  
-  snew(gpbc,1);
-  
-  gpbc->natoms=natoms;
+    int           i;
+    rmpbc_graph_t *gr;
 
-  if (ePBC == -1)
-    gpbc->ePBC = guess_ePBC(box);
-  else
+    if (ePBC == epbcNONE || gpbc->idef->ntypes <= 0)
+    {
+        return NULL;
+    }
+
+    gr = NULL;
+    for(i=0; i<gpbc->ngraph; i++)
+    {
+        if (natoms == gpbc->graph[i].natoms)
+        {
+            gr = &gpbc->graph[i];
+        }
+    }
+    if (gr == NULL)
+    {
+        /* We'd like to check with the number of atoms in the topology,
+         * but we don't have that available.
+         * So we check against the number of atoms that gmx_rmpbc_init
+         * was called with.
+         */
+        if (natoms > gpbc->natoms_init)
+        {
+            gmx_fatal(FARGS,"Structure or trajectory file has more atoms (%d) than the topology (%d)",natoms,gpbc->natoms_init);
+        }
+        gpbc->ngraph++;
+        srenew(gpbc->graph,gpbc->ngraph);
+        gr = &gpbc->graph[gpbc->ngraph-1];
+        gr->natoms = natoms;
+        gr->gr     = mk_graph(NULL,gpbc->idef,0,natoms,FALSE,FALSE);
+    }
+
+    return gr->gr;
+}
+
+gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
+                           matrix box)
+{
+    gmx_rmpbc_t gpbc;
+  
+    snew(gpbc,1);
+
+    gpbc->natoms_init = natoms;
+  
+    /* This sets pbc when we now it,
+     * otherwise we guess it from the instantaneous box in the trajectory.
+     */
     gpbc->ePBC = ePBC;
-    
-  if (idef->ntypes <= 0)
-    fprintf(stderr,
-	    "\nWarning: if there are broken molecules in the trajectory file,\n"
-	    "         they can not be made whole without a run input file\n\n");
-  else if (ePBC == epbcNONE) 
-    fprintf(stderr,"\nNot treating periodicity since it is turned off in the input file\n");
-  else
-    gpbc->gr = mk_graph(NULL,idef,0,natoms,FALSE,FALSE);
 
-  return gpbc;
+    gpbc->idef = idef;
+    if (gpbc->idef->ntypes <= 0)
+    {
+        fprintf(stderr,
+                "\n"
+                "WARNING: if there are broken molecules in the trajectory file,\n"
+                "         they can not be made whole without a run input file\n\n");
+    }
+
+    return gpbc;
 }
 
 void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
 {
-  if (NULL != gpbc->gr)
-    done_graph(gpbc->gr);
+    int i;
+
+    for(i=0; i<gpbc->ngraph; i++)
+    {
+        done_graph(gpbc->graph[i].gr);
+    }
+    if (gpbc->graph != NULL)
+    {
+        sfree(gpbc->graph);
+    }
 }
 
-void gmx_rmpbc(gmx_rmpbc_t gpbc,matrix box,rvec x[],rvec x_s[])
+static int gmx_rmpbc_ePBC(gmx_rmpbc_t gpbc,matrix box)
 {
-  int    i;
-
-  if (NULL != gpbc->gr) {
-    mk_mshift(stdout,gpbc->gr,gpbc->ePBC,box,x);
-    shift_x(gpbc->gr,box,x,x_s);
-  } else if (x != x_s) {
-    for (i=0; i<gpbc->natoms; i++) {
-      copy_rvec(x[i],x_s[i]);
+    if (gpbc->ePBC >= 0)
+    {
+        return gpbc->ePBC;
     }
-  }
+    else
+    {
+        return guess_ePBC(box);
+    }
+}
+
+void gmx_rmpbc(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[])
+{
+    int     ePBC;
+    t_graph *gr;
+    
+    ePBC = gmx_rmpbc_ePBC(gpbc,box);
+    gr = gmx_rmpbc_get_graph(gpbc,ePBC,natoms);
+    if (gr != NULL)
+    {
+        mk_mshift(stdout,gr,ePBC,box,x);
+        shift_x(gr,box,x,x);
+    }
+}
+
+void gmx_rmpbc_copy(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[],rvec x_s[])
+{
+    int     ePBC;
+    t_graph *gr;
+    int     i;
+
+    ePBC = gmx_rmpbc_ePBC(gpbc,box);
+    gr = gmx_rmpbc_get_graph(gpbc,ePBC,natoms);
+    if (gr != NULL)
+    {
+        mk_mshift(stdout,gr,ePBC,box,x);
+        shift_x(gr,box,x,x_s);
+    }
+    else
+    {
+        for(i=0; i<natoms; i++)
+        {
+            copy_rvec(x[i],x_s[i]);
+        }
+    }
+}
+
+void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc,t_trxframe *fr)
+{
+    int     ePBC;
+    t_graph *gr;
+
+    if (fr->bX && fr->bBox)
+    {
+        ePBC = gmx_rmpbc_ePBC(gpbc,fr->box);
+        gr = gmx_rmpbc_get_graph(gpbc,ePBC,fr->natoms);
+        if (gr != NULL)
+        {
+            mk_mshift(stdout,gr,ePBC,fr->box,fr->x);
+            shift_x(gr,fr->box,fr->x,fr->x);
+        }
+    }
 }
 
 void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
 {
-  real dist;
-  int  n,m,d;
+    real dist;
+    int  n,m,d;
   
-  /* check periodic boundary */
-  for(n=1;(n<atoms->nr);n++) {
-    for(m=DIM-1; m>=0; m--) {
-      dist = x[n][m]-x[n-1][m];
-      if (fabs(dist) > 0.9*box[m][m]) { 
-	if ( dist >  0 )
-	  for(d=0; d<=m; d++)
-	    x[n][d] -= box[m][d];
-	else
-	  for(d=0; d<=m; d++)
-	    x[n][d] += box[m][d];
-      } 	
+    /* check periodic boundary */
+    for(n=1;(n<atoms->nr);n++)
+    {
+        for(m=DIM-1; m>=0; m--)
+        {
+            dist = x[n][m]-x[n-1][m];
+            if (fabs(dist) > 0.9*box[m][m])
+            {
+                if ( dist >  0 )
+                {
+                    for(d=0; d<=m; d++)
+                    {
+                        x[n][d] -= box[m][d];
+                    }
+                }
+                else
+                {
+                    for(d=0; d<=m; d++)
+                    {
+                        x[n][d] += box[m][d];
+                    }
+                }
+            } 	
+        }
     }
-  }
 }
 
