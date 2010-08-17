@@ -103,6 +103,7 @@ typedef double   	real;
 #define GMX_REAL_EPS    GMX_DOUBLE_EPS
 #define GMX_REAL_MIN    GMX_DOUBLE_MIN
 #define GMX_REAL_MAX    GMX_DOUBLE_MAX
+#define gmx_real_fullprecision_pfmt "%21.14e"
 #else
 #ifndef HAVE_REAL
 typedef float           real;
@@ -112,6 +113,7 @@ typedef float           real;
 #define GMX_REAL_EPS    GMX_FLOAT_EPS
 #define GMX_REAL_MIN    GMX_FLOAT_MIN
 #define GMX_REAL_MAX    GMX_FLOAT_MAX
+#define gmx_real_fullprecision_pfmt "%14.7e"
 #endif
 
 #ifndef VECTORIZATION_BUFLENGTH

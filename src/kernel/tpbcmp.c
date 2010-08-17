@@ -384,7 +384,7 @@ static void cmp_rvecs(FILE *fp,const char *title,int n,rvec x1[],rvec x2[],
 	ssd += d*d;
       }
     }
-    fprintf(fp,"%s RMSD %f\n",title,sqrt(ssd/n));
+    fprintf(fp,"%s RMSD %g\n",title,sqrt(ssd/n));
   } else {
     for(i=0; (i<n); i++) {
       cmp_rvec(fp,title,i,x1[i],x2[i],ftol,abstol);

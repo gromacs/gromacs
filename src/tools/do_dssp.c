@@ -505,7 +505,7 @@ int main(int argc,char *argv[])
       for(i=naccr-10; i<naccr; i++)
         snew(accr[i],2*atoms->nres-1);
     }
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
     tapein=ffopen(pdbfile,"w");
     write_pdbfile_indexed(tapein,NULL,atoms,x,ePBC,box,' ',-1,gnx,index,NULL,TRUE);
     ffclose(tapein);

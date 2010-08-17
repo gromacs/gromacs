@@ -76,7 +76,7 @@ static void calc_dihs(t_xrama *xr)
   gmx_rmpbc_t  gpbc=NULL;
   
   gpbc = gmx_rmpbc_init(xr->idef,xr->ePBC,xr->natoms,xr->box);
-  gmx_rmpbc(gpbc,xr->box,xr->x,xr->x);
+  gmx_rmpbc(gpbc,xr->natoms,xr->box,xr->x);
   gmx_rmpbc_done(gpbc);
 
   for(i=0; (i<xr->ndih); i++) {

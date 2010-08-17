@@ -1199,9 +1199,12 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
 
     do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
 
-    /* we really, REALLY, want the checkpoint file and all files it depends 
-       on to be physically written out do disk: */
+    /* we really, REALLY, want to make sure to physically write the checkpoint, 
+       and all the files it depends on, out to disk. Because we've
+       opened the checkpoint with gmx_fio_open(), it's in our list
+       of open files.  */
     ret=gmx_fio_all_output_fsync();
+
     if (ret)
     {
         char buf[STRLEN];

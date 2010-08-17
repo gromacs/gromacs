@@ -428,7 +428,7 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
 
     }
     
-		gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+		gmx_rmpbc_trxfr(gpbc,&fr);
 		
 		calc_mj(top,ePBC,fr.box,bNoJump,nmols,indexm,fr.x,mtrans[nfr],mass2,qmol);
 

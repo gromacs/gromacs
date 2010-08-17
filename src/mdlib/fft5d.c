@@ -25,6 +25,8 @@
 
 #ifdef FFT5D_THREADS
 #include <omp.h>
+/* requires fftw compiled with openmp */
+#define FFT5D_FFTW_THREADS
 #endif
 
 #include "fft5d.h"
@@ -374,7 +376,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     plan = (fft5d_plan)calloc(1,sizeof(struct fft5d_plan_t));
 
     
-#ifdef FFT5D_THREADS   /*requires fftw with openmp and openmp*/
+#ifdef FFT5D_THREADS
+#ifdef FFT5D_FFTW_THREADS
     FFTW(init_threads)();
     int nthreads;
     #pragma omp parallel
@@ -384,9 +387,12 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
             nthreads = omp_get_num_threads();
         }
     }
-    printf("Running on %d threads\n",nthreads);        
+    if (prank[0] == 0 && prank[1] == 0)
+    {
+        printf("Running fftw on %d threads\n",nthreads);        
+    }
     FFTW(plan_with_nthreads)(nthreads);
-
+#endif
 #endif    
 
 #ifdef GMX_FFT_FFTW3  /*if not FFTW - then we don't do a 3d plan but insead only 1D plans */
@@ -553,6 +559,9 @@ static void splitaxes(t_complex* lout,const t_complex* lin,
     for (i=0;i<P;i++) { /*index cube along long axis*/
         in_i  = i*maxN*maxM*maxK;
         out_i = oN[i];
+#ifdef FFT5D_THREADS
+#pragma omp parallel for private(in_z,out_z,y,in_y,out_y,x)
+#endif
         for (z=0;z<pK;z++) { /*3. z l*/ 
             in_z  = in_i  + z*maxN*maxM;
             out_z = out_i + z*NG*pM;
@@ -585,6 +594,9 @@ static void joinAxesTrans13(t_complex* lin,const t_complex* lout,
     for (i=0;i<P;i++) { /*index cube along long axis*/
         in_i  = oK[i];
         out_i = i*maxM*maxN*maxK;
+#ifdef FFT5D_THREADS
+#pragma omp parallel for private(in_x,out_x,z,in_z,out_z,y)
+#endif
         for (x=0;x<pN;x++) { /*1.j*/
             in_x  = in_i  + x*KG*pM;
             out_x = out_i + x;
@@ -613,6 +625,9 @@ static void joinAxesTrans12(t_complex* lin,const t_complex* lout,int maxN,int ma
     for (i=0;i<P;i++) { /*index cube along long axis*/
         in_i  = oM[i];
         out_i = i*maxM*maxN*maxK;
+#ifdef FFT5D_THREADS
+#pragma omp parallel for private(in_z,out_z,in_x,out_x,x,y)
+#endif
         for (z=0;z<pK;z++) { 
             in_z  = in_i  + z*MG*pN;
             out_z = out_i + z*maxM*maxN;
@@ -877,7 +892,9 @@ void fft5d_destroy(fft5d_plan plan) {
 
     
 #ifdef FFT5D_THREADS
+#ifdef FFT5D_FFTW_THREADS
     FFTW(cleanup_threads)();
+#endif
 #endif
 
     free(plan);

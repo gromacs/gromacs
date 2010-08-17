@@ -272,12 +272,6 @@
 /* Define to 1 if you have the _fileno() function. */
 #cmakedefine HAVE__FILENO
 
-/* Define to 1 if you have the copyfile() function. */
-#cmakedefine HAVE_COPYFILE
-
-/* Define to 1 if you have the Windows CopyFile() function. */
-#cmakedefine HAVE_WIN_COPYFILE
-
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H
 
@@ -313,9 +307,6 @@
 
 /* Define to 1 if yo have the <regex.h> header file. */
 #cmakedefine HAVE_REGEX_H
-
-/* Define to 1 if yo have the <copyfile.h> header file. */
-#cmakedefine HAVE_COPYFILE_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H
