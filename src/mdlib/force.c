@@ -445,6 +445,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         case eelPME:
         case eelPMESWITCH:
         case eelPMEUSER:
+        case eelPMEUSERSWITCH:
             if (cr->duty & DUTY_PME)
             {
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))

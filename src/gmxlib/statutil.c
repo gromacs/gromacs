@@ -106,7 +106,7 @@ const char *ShortProgram(void)
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
-    if ((pr=strrchr(ret,'/')) != NULL)
+    if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
         ret=pr+1;
     /* Strip away the libtool prefix if it's still there. */
     if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))

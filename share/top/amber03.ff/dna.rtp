@@ -308,7 +308,6 @@
    C2'  H2'1
    C2'  H2'2
    O3'   H3T
-  -O3'     P
  [ impropers ]
     C8    C4    N9   C1'
     C6   H61    N6   H62
@@ -612,7 +611,6 @@
    C2'  H2'1
    C2'  H2'2
    O3'   H3T
-  -O3'     P
  [ impropers ]
     C6    C2    N1   C1'
     C6    C4    C5    C7
@@ -929,7 +927,6 @@
    C2'  H2'1
    C2'  H2'2
    O3'   H3T
-  -O3'     P
  [ impropers ]
     C8    C4    N9   C1'
     C5    N1    C6    O6
@@ -1219,7 +1216,6 @@
    C2'  H2'1
    C2'  H2'2
    O3'   H3T
-  -O3'     P
  [ impropers ]
     C6    C2    N1   C1'
     N1    N3    C2    O2

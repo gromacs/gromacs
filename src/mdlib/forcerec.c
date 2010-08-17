@@ -510,7 +510,8 @@ check_solvent(FILE *                fp,
 }
 
 static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
-                                   t_forcerec *fr,bool bNoSolvOpt)
+                                   t_forcerec *fr,bool bNoSolvOpt,
+                                   bool *bExcl_IntraCGAll_InterCGNone)
 {
     const t_block *cgs;
     const t_blocka *excl;
@@ -524,7 +525,9 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb,mtop->nmolblock);
-    
+
+    *bExcl_IntraCGAll_InterCGNone = TRUE;
+
     excl_nalloc = 10;
     snew(bExcl,excl_nalloc);
     cg_offset = 0;
@@ -638,6 +641,11 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                     gmx_fatal(FARGS,"A charge group has size %d which is larger than the limit of %d atoms",a1-a0,MAX_CHARGEGROUP_SIZE);
                 }
                 SET_CGINFO_NATOMS(cginfo[cgm+cg],a1-a0);
+
+                if (!bExclIntraAll || bExclInter)
+                {
+                    *bExcl_IntraCGAll_InterCGNone = FALSE;
+                }
             }
         }
         cg_offset += molb->nmol*cgs->nr;
@@ -1237,6 +1245,7 @@ void init_forcerec(FILE *fp,
     double  dbl;
     rvec    box_size;
     const t_block *cgs;
+    bool    bGenericKernelOnly;
     bool    bTab,bSep14tab,bNormalnblists;
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
@@ -1294,6 +1303,19 @@ void init_forcerec(FILE *fp,
         {
             fprintf(fp,"Setting the minimum soft core sigma to %g nm\n",dbl);
         }
+    }
+
+    bGenericKernelOnly = FALSE;
+    if (getenv("GMX_NB_GENERIC") != NULL)
+    {
+        if (fp != NULL)
+        {
+            fprintf(fp,
+                    "Found environment variable GMX_NB_GENERIC.\n"
+                    "Disabling interaction-specific nonbonded kernels.\n\n");
+        }
+        bGenericKernelOnly = TRUE;
+        bNoSolvOpt         = TRUE;
     }
     
     fr->UseOptimizedKernels = (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL);
@@ -1667,7 +1689,8 @@ void init_forcerec(FILE *fp,
     fr->qr         = mk_QMMMrec();
     
     /* Set all the static charge group info */
-    fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt);
+    fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt,
+                                   &fr->bExcl_IntraCGAll_InterCGNone);
     if (DOMAINDECOMP(cr)) {
         fr->cginfo = NULL;
     } else {
@@ -1695,7 +1718,7 @@ void init_forcerec(FILE *fp,
     init_ns(fp,cr,&fr->ns,fr,mtop,box);
     
     if (cr->duty & DUTY_PP)
-        gmx_setup_kernels(fp);
+        gmx_setup_kernels(fp,bGenericKernelOnly);
 }
 
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)

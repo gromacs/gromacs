@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.5-beta2, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5-beta3, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -18,7 +18,7 @@ SHARED_VERSION_INFO="6:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 AC_DISABLE_SHARED
-
+PKG_CFLAGS=""
 
 #######################################################################
 # Simple options and makefile variables
@@ -37,6 +37,7 @@ if test "$enable_double" = "yes"; then
 fi
 if test "$enable_float" = "no"; then
   AC_DEFINE(GMX_DOUBLE,,[Compile in double precision])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_DOUBLE"
 fi
 AM_CONDITIONAL([GMX_DOUBLE],[test "$enable_float" = "no"])
 
@@ -177,7 +178,8 @@ AC_ARG_ENABLE(software-invsqrt,
   *) enable_software_invsqrt=yes ;;
 esac])
 if test "$enable_software_invsqrt" = "yes"; then
-  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS software 1/sqrt(x)])
+  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS sGMX_INTERNAL_XDRsqrt(x)])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_SOFTWARE_INVSQRT"
 fi
 AM_CONDITIONAL([GMX_SOFTWARE_INVSQRT],[test "$enable_software_invsqrt" = "yes"])
 
@@ -377,6 +379,7 @@ if test "$enable_mpi" = "yes"; then
 AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AC_DEFINE(GMX_LIB_MPI,,[Use a real MPI library])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_LIB_MPI"
 
   if test "$enable_mpi_in_place" = "yes"; then
     # not all MPIs support MPI_IN_PLACE:
@@ -410,6 +413,7 @@ void test(void)
   AC_MSG_RESULT([yes])
   cross_compiling=yes 
   AC_DEFINE(GMX_CRAY_XT3,[],[Enable special hacks for Cray XT3])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_CRAY_XT3"
   AC_DEFINE(GMX_NO_SYSTEM,[],[Ignore calls to system(3)])
   AC_DEFINE(GMX_NO_NICE,[],[Ignore calls to nice(3)])
   AC_DEFINE(GMX_BROKEN_CALLOC,[],[Don't use calloc(3)])
@@ -508,6 +512,7 @@ contact the developers.
   CXXFLAGS="$CXXFLAGS_RET"
 
   AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_THREADS"
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AM_CONDITIONAL(THREAD_PARALLEL,true)
 else
@@ -739,6 +744,7 @@ cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
 
   if test "$have_xdr" != "yes"; then
     AC_DEFINE(GMX_INTERNAL_XDR,,[Use our own instead of system XDR libraries])	
+    PKG_CFLAGS="$PKG_CFLAGS -DGMX_INTERNAL_XDR"
     AC_MSG_WARN([Couldn't find XDR headers and/or libraries - using our own])
   fi
   ;;
@@ -765,7 +771,6 @@ AC_CHECK_HEADERS(dirent.h,,[AC_MSG_WARN(
 * present on all UNIX-like systems, CygWin, and MinGW.             *
 ********************************************************************])])
 ## NOTE: On native windows we do not use configure.ac
-AC_CHECK_HEADERS(copyfile.h)
 AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
 [No regex.h found.
 Regular expression matching in selections will be disabled.
@@ -793,7 +798,6 @@ AC_CHECK_FUNCS(isfinite)
 AC_CHECK_FUNCS(_isfinite)
 AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(fileno)
-AC_CHECK_FUNCS(copyfile)
 
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
@@ -1249,6 +1253,7 @@ CCASFLAGS=$CFLAGS
  
 AC_SUBST(CCAS)
 AC_SUBST(CCASFLAGS)
+AC_SUBST(PKG_CFLAGS)
 
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ src/Makefile ])
@@ -1349,6 +1354,11 @@ if test "$name_transform_provided" = "no" -a "$enable_mpi" = "yes"; then
   echo "  Set a suffix with e.g. --program-suffix=_mpi (or _mpi_d for double)."
   echo "  You only need MPI for mdrun, so if you already have non-MPI stuff"
   echo "  installed you can issue make mdrun; make install-mdrun."
+  echo ""
+  echo "  WARNING:"
+  echo "  There are known problems with some MPI implementations:"
+  echo "             OpenMPI version < 1.4.1" 
+  echo "             MVAPICH2 version <= 1.4.1"
 fi
 
 if test "$enable_shared" = "no"; then

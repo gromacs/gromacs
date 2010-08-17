@@ -210,6 +210,10 @@ extern void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
 extern real vrescale_energy(t_grpopts *opts,double therm_integral[]);
 /* Returns the V-rescale contribution to the conserved energy */
 
+extern void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
+			       int start,int end,rvec v[]);
+/* Rescale the velocities with the scaling factor in ekind */
+
 extern void update_annealing_target_temp(t_grpopts *opts,real t); 
 /* Set reference temp for simulated annealing at time t*/
 

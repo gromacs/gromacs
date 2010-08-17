@@ -312,7 +312,7 @@ int gmx_bundle(int argc,char *argv[])
   gpbc = gmx_rmpbc_init(&top.idef,ePBC,fr.natoms,fr.box);
 
   do {
-    gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+    gmx_rmpbc_trxfr(gpbc,&fr);
     calc_axes(fr.x,top.atoms.atom,gnx,index,!bZ,&bun);
     t = output_env_conv_time(oenv,fr.time);
     fprintf(flen," %10g",t);

@@ -361,7 +361,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     copy_mat(box,box_pbc);
     if (bPBC) {
       if (top != NULL)
-	gmx_rmpbc(gpbc,box,x,x);
+	gmx_rmpbc(gpbc,natoms,box,x);
       if (bXY) {
 	check_box_c(box);
 	clear_rvec(box_pbc[ZZ]);

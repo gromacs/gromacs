@@ -190,7 +190,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
   gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    gmx_rmpbc(gpbc,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -296,7 +296,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    gmx_rmpbc(gpbc,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);

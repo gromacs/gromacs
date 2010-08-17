@@ -205,7 +205,7 @@ nb_kernel_list = NULL;
 
 
 void
-gmx_setup_kernels(FILE *fplog)
+gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
 {
     int i;
     
@@ -220,14 +220,8 @@ gmx_setup_kernels(FILE *fplog)
         nb_kernel_list[i] = NULL;
     }
     
-    if(getenv("GMX_NB_GENERIC") != NULL)
+    if (bGenericKernelOnly)
     {
-        if(fplog)
-        {
-            fprintf(fplog,
-                    "Found environment variable GMX_NB_GENERIC.\n"
-                    "Disabling interaction-specific nonbonded kernels.\n\n");
-        }
         return;
     }
 	
@@ -344,7 +338,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 # ifdef GMX_DOUBLE
             if(fr->UseOptimizedKernels)
             {
-                gmx_fatal(FARGS,"Cannot do double precision SSE2 all-vs-all kernels for now.");
+                nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                                 &outeriter,&inneriter,&fr->AllvsAll_work);
             }
             else
             {
@@ -375,7 +370,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 # ifdef GMX_DOUBLE
             if(fr->UseOptimizedKernels)
             {
-                gmx_fatal(FARGS,"Cannot do double precision SSE2 all-vs-all kernels for now.");
+                nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                               &outeriter,&inneriter,&fr->AllvsAll_work);
             }
             else 
             {
