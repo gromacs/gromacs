@@ -301,9 +301,15 @@ bool gmx_fexist(const char *fname)
     if (fname == NULL)
         return FALSE;
     test=fopen(fname,"r");
-    if (test == NULL) 
-        return FALSE;
-    else {
+    if (test == NULL) {
+        /*Windows doesn't allow fopen of directory - so we need to check this seperately */
+        #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+            DWORD attr = GetFileAttributes(fname);
+            return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
+        #else 
+            return FALSE;
+        #endif
+    } else {
         fclose(test);
         return TRUE;
     }
@@ -717,7 +723,7 @@ bool search_subdirs(const char *parent, char *libdir)
 static bool filename_is_absolute(char *name)
 {
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-    return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)));
+    return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)) == 0);
 #else
     return (name[0] == DIR_SEPARATOR);
 #endif
