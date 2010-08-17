@@ -133,8 +133,8 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr)
   MPI_Comm_rank(cr->mpi_comm_mygroup,&rank);
   get_pme_ddnodes(cr,rank,&pme_pp->nnode,&pme_pp->node,&pme_pp->node_peer);
   snew(pme_pp->nat,pme_pp->nnode);
-  snew(pme_pp->req, 4*pme_pp->nnode);
-  snew(pme_pp->stat, 4*pme_pp->nnode);
+  snew(pme_pp->req, 6*pme_pp->nnode);
+  snew(pme_pp->stat, 6*pme_pp->nnode);
   pme_pp->nalloc = 0;
   pme_pp->flags_charge = 0;
 #endif
