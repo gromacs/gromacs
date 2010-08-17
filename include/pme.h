@@ -117,14 +117,13 @@ extern gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 
 extern void gmx_pme_send_q(t_commrec *cr,
 			   bool bFreeEnergy, real *chargeA, real *chargeB,
-                           real *c6A, real *c6B, int maxshift_x, int maxshift_y);
+                           real *c6A, real *c6B, real *sigmaA, real *sigmaB,
+                           int maxshift_x, int maxshift_y);
 /* Send the charges and maxshift to out PME-only node. */
 
 extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
 			   bool bFreeEnergy, real lambda,
-                           bool bCoulomb, bool bLJ,
-			   bool bEnerVir,
-			   gmx_large_int_t step);
+                           int pme_flags, gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
 extern void gmx_pme_finish(t_commrec *cr);
@@ -139,6 +138,7 @@ extern void gmx_pme_receive_f(t_commrec *cr,
 extern int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
 			    real **chargeA, real **chargeB,
                             real **c6A, real **c6B,
+                            real **sigmaA, real **sigmaB,
 			    matrix box, rvec **x,rvec **f,
 			    int *maxshift_x,int *maxshift_y,
 			    bool *bFreeEnergy,real *lambda,

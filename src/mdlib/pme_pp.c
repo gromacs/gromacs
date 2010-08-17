@@ -59,18 +59,21 @@
 
 #include "mpelogging.h"
 
-/* Some parts of the code assume that the four first flags are exactly
+/* Some parts of the code assume that the six first flags are exactly
  * in this order. */
 #define PP_PME_CHARGE   (1<<0)
 #define PP_PME_CHARGEB  (1<<1)
 #define PP_PME_C6       (1<<2)
 #define PP_PME_C6B      (1<<3)
-#define PP_PME_COORD    (1<<4)
-#define PP_PME_COULOMB  (1<<5)
-#define PP_PME_LJ       (1<<6)
-#define PP_PME_FEP      (1<<7)
-#define PP_PME_ENER_VIR (1<<8)
-#define PP_PME_FINISH   (1<<9)
+#define PP_PME_SIGMA    (1<<4)
+#define PP_PME_SIGMAB   (1<<5)
+#define PP_PME_COORD    (1<<6)
+#define PP_PME_COULOMB  (1<<7)
+#define PP_PME_LJ       (1<<8)
+#define PP_PME_LJ_LB    (1<<9)
+#define PP_PME_FEP      (1<<10)
+#define PP_PME_ENER_VIR (1<<11)
+#define PP_PME_FINISH   (1<<12)
 
 #define PME_PP_SIGSTOP     (1<<0)
 #define PME_PP_SIGSTOPNSS     (1<<1)
@@ -88,6 +91,8 @@ typedef struct gmx_pme_pp {
   real *chargeB;
   real *c6A;
   real *c6B;
+  real *sigmaA;
+  real *sigmaB;
   rvec *x;
   rvec *f;
   int  nalloc;
@@ -157,6 +162,7 @@ static void gmx_pme_send_q_x_wait(gmx_domdec_t *dd)
 static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 			     real *chargeA, real *chargeB,
 			     real *c6A, real *c6B,
+			     real *sigmaA, real *sigmaB,
 			     matrix box, rvec *x,
 			     real lambda,
 			     int maxshift_x, int maxshift_y,
@@ -170,10 +176,11 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
   n = dd->nat_home;
 
   if (debug)
-    fprintf(debug,"PP node %d sending to PME node %d: %d%s%s%s\n",
+    fprintf(debug,"PP node %d sending to PME node %d: %d%s%s%s%s\n",
 	    cr->sim_nodeid,dd->pme_nodeid,n,
 	    flags & PP_PME_CHARGE ? " charges" : "",
 	    flags & PP_PME_C6     ? " C6s" : "",
+	    flags & PP_PME_SIGMA  ? " sigmas" : "",
 	    flags & PP_PME_COORD  ? " coordinates" : "");
 
 #ifdef GMX_PME_DELAYED_WAIT
@@ -200,7 +207,7 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 	      dd->pme_nodeid,0,cr->mpi_comm_mysim,
 	      &dd->req_pme[dd->nreq_pme++]);
 #endif
-  } else if (flags & (PP_PME_CHARGE | PP_PME_C6)) {
+  } else if (flags & (PP_PME_CHARGE | PP_PME_C6 | PP_PME_SIGMA)) {
 #ifdef GMX_MPI
     /* Communicate only the number of atoms */
     MPI_Isend(&n,sizeof(n),MPI_BYTE,
@@ -230,6 +237,16 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
               dd->pme_nodeid,4,cr->mpi_comm_mysim,
               &dd->req_pme[dd->nreq_pme++]);
   }
+  if (flags & PP_PME_SIGMA) {
+    MPI_Isend(sigmaA,n*sizeof(real),MPI_BYTE,
+              dd->pme_nodeid,3,cr->mpi_comm_mysim,
+              &dd->req_pme[dd->nreq_pme++]);
+  }
+  if (flags & PP_PME_SIGMAB) {
+    MPI_Isend(sigmaB,n*sizeof(real),MPI_BYTE,
+              dd->pme_nodeid,4,cr->mpi_comm_mysim,
+              &dd->req_pme[dd->nreq_pme++]);
+  }
   if (flags & PP_PME_COORD) {
     MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
 	      dd->pme_nodeid,5,cr->mpi_comm_mysim,
@@ -248,12 +265,13 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 
 void gmx_pme_send_q(t_commrec *cr,
 		    bool bFreeEnergy, real *chargeA, real *chargeB,
-                    real *c6A, real *c6B, int maxshift_x, int maxshift_y)
+                    real *c6A, real *c6B, real *sigmaA, real *sigmaB,
+                    int maxshift_x, int maxshift_y)
 {
     int flags;
 
-    /* TODO: Only send the charges/c6 parameters when needed. */
-    flags = PP_PME_CHARGE | PP_PME_C6;
+    /* TODO: Only send the parameters when needed. */
+    flags = PP_PME_CHARGE | PP_PME_C6 | PP_PME_SIGMA;
     if (bFreeEnergy)
     {
         /* Assumes that the B state flags are in the bits just above the ones
@@ -261,29 +279,30 @@ void gmx_pme_send_q(t_commrec *cr,
         flags |= (flags << 1);
     }
 
-    gmx_pme_send_q_x(cr, flags, chargeA, chargeB, c6A, c6B, NULL, NULL, 0,
-                     maxshift_x, maxshift_y, -1);
+    gmx_pme_send_q_x(cr, flags, chargeA, chargeB, c6A, c6B, sigmaA, sigmaB,
+                     NULL, NULL, 0, maxshift_x, maxshift_y, -1);
 }
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
 		    bool bFreeEnergy, real lambda,
-                    bool bCoulomb, bool bLJ, bool bEnerVir,
-		    gmx_large_int_t step)
+                    int pme_flags, gmx_large_int_t step)
 {
   int flags;
   
   flags = PP_PME_COORD;
-  if (bCoulomb)
+  if (pme_flags & GMX_PME_DO_COULOMB)
     flags |= PP_PME_COULOMB;
-  if (bLJ)
+  if (pme_flags & GMX_PME_DO_LJ)
     flags |= PP_PME_LJ;
+  if (pme_flags & GMX_PME_DO_LJ_LB)
+    flags |= PP_PME_LJ_LB;
   if (bFreeEnergy)
     flags |= PP_PME_FEP;
-  if (bEnerVir)
+  if (pme_flags & GMX_PME_CALC_ENER_VIR)
     flags |= PP_PME_ENER_VIR;
 
-  gmx_pme_send_q_x(cr, flags, NULL, NULL, NULL, NULL, box, x, lambda,
-                   0, 0, step);
+  gmx_pme_send_q_x(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL,
+                   box, x, lambda, 0, 0, step);
 }
 
 void gmx_pme_finish(t_commrec *cr)
@@ -292,12 +311,13 @@ void gmx_pme_finish(t_commrec *cr)
 
   flags = PP_PME_FINISH;
 
-  gmx_pme_send_q_x(cr,flags,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,-1);
+  gmx_pme_send_q_x(cr,flags,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,-1);
 }
 
 int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                      real **chargeA, real **chargeB,
                      real **c6A, real **c6B,
+                     real **sigmaA, real **sigmaB,
                      matrix box, rvec **x,rvec **f,
                      int *maxshift_x, int *maxshift_y,
                      bool *bFreeEnergy,real *lambda,
@@ -321,13 +341,14 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                  pme_pp->mpi_comm_mysim,MPI_STATUS_IGNORE);
 
         if (debug)
-            fprintf(debug,"PME only node receiving:%s%s%s%s\n",
+            fprintf(debug,"PME only node receiving:%s%s%s%s%s\n",
                     (cnb.flags & PP_PME_CHARGE) ? " charges" : "",
                     (cnb.flags & PP_PME_C6)     ? " C6s" : "",
+                    (cnb.flags & PP_PME_SIGMA)  ? " sigmas" : "",
                     (cnb.flags & PP_PME_COORD ) ? " coordinates" : "",
                     (cnb.flags & PP_PME_FINISH) ? " finish" : "");
 
-        if (cnb.flags & (PP_PME_CHARGE | PP_PME_C6)) {
+        if (cnb.flags & (PP_PME_CHARGE | PP_PME_C6 | PP_PME_SIGMA)) {
             /* Receive the send counts from the other PP nodes */
             for(sender=0; sender<pme_pp->nnode; sender++) {
                 if (pme_pp->node[sender] == pme_pp->node_peer) {
@@ -356,6 +377,10 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                     srenew(pme_pp->c6A,pme_pp->nalloc);
                 if (cnb.flags & PP_PME_C6B)
                     srenew(pme_pp->c6B,pme_pp->nalloc);
+                if (cnb.flags & PP_PME_SIGMA)
+                    srenew(pme_pp->sigmaA,pme_pp->nalloc);
+                if (cnb.flags & PP_PME_SIGMAB)
+                    srenew(pme_pp->sigmaB,pme_pp->nalloc);
                 srenew(pme_pp->x,pme_pp->nalloc);
                 srenew(pme_pp->f,pme_pp->nalloc);
             }
@@ -365,9 +390,9 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
             *maxshift_y = cnb.maxshift_y;
 
             /* Receive the charges in place */
-            for (q = 0; q < 4; q++)
+            for (q = 0; q < 6; q++)
             {
-                if (!(cnb.flags & (1<<q)))
+                if (!(cnb.flags & (PP_PME_CHARGE<<q)))
                 {
                     continue;
                 }
@@ -377,6 +402,8 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                     case 1: charge_pp = pme_pp->chargeB; break;
                     case 2: charge_pp = pme_pp->c6A;     break;
                     case 3: charge_pp = pme_pp->c6B;     break;
+                    case 4: charge_pp = pme_pp->sigmaA;  break;
+                    case 5: charge_pp = pme_pp->sigmaB;  break;
                 }
                 nat = 0;
                 for(sender=0; sender<pme_pp->nnode; sender++) {
@@ -427,6 +454,15 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                     gmx_incons("PME-only node received free energy request, "
                                "but did not receive B-state C6 parameters");
             }
+            if (cnb.flags & PP_PME_LJ_LB)
+            {
+                *pme_flags |= GMX_PME_DO_LJ_LB;
+                if (!(pme_pp->flags_charge & PP_PME_SIGMA))
+                    gmx_incons("PME-only node did not receive sigma parameters.");
+                if (*bFreeEnergy && !(pme_pp->flags_charge & PP_PME_SIGMAB))
+                    gmx_incons("PME-only node received free energy request, "
+                               "but did not receive B-state sigma parameters");
+            }
             if (cnb.flags & PP_PME_ENER_VIR)
             {
                 *pme_flags |= GMX_PME_CALC_ENER_VIR;
@@ -461,6 +497,8 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
     *chargeB = pme_pp->chargeB;
     *c6A     = pme_pp->c6A;
     *c6B     = pme_pp->c6B;
+    *sigmaA  = pme_pp->sigmaA;
+    *sigmaB  = pme_pp->sigmaB;
     *x       = pme_pp->x;
     *f       = pme_pp->f;
 

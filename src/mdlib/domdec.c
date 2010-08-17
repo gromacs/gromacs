@@ -8579,6 +8579,7 @@ void dd_partition_system(FILE            *fplog,
         gmx_pme_send_q(cr,mdatoms->nChargePerturbed,
                        mdatoms->chargeA,mdatoms->chargeB,
                        mdatoms->c6A, mdatoms->c6B,
+                       mdatoms->sigmaA, mdatoms->sigmaB,
                        dd_pme_maxshift_x(dd),dd_pme_maxshift_y(dd));
     }
     

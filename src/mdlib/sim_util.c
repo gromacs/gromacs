@@ -514,6 +514,7 @@ void do_force(FILE *fplog,t_commrec *cr,
      * and domain decomposition does not use the graph,
      * we do not need to worry about shifting.
      */    
+    int pme_flags;
 
     wallcycle_start(wcycle,ewcPP_PMESENDX);
     GMX_MPE_LOG(ev_send_coordinates_start);
@@ -524,10 +525,28 @@ void do_force(FILE *fplog,t_commrec *cr,
       svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
     }
 
+    /* The flags in DO_ALL_F is not actually used by gmx_pme_send_x(), but keep
+     * it for consistency. */
+    pme_flags = GMX_PME_DO_ALL_F;
+    if (EEL_PME(fr->eeltype))
+    {
+        pme_flags |= GMX_PME_DO_COULOMB;
+    }
+    if (EVDW_PME(fr->vdwtype))
+    {
+        pme_flags |= GMX_PME_DO_LJ;
+        if (inputrec->bLJPMELB)
+        {
+            pme_flags |= GMX_PME_DO_LJ_LB;
+        }
+    }
+    if (flags & GMX_FORCE_VIRIAL)
+    {
+        pme_flags |= GMX_PME_CALC_ENER_VIR;
+    }
     gmx_pme_send_x(cr,bBS ? boxs : box,x,
                    mdatoms->nChargePerturbed,lambda,
-                   EEL_PME(fr->eeltype), EVDW_PME(fr->vdwtype),
-                   (flags & GMX_FORCE_VIRIAL),step);
+                   pme_flags, step);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);

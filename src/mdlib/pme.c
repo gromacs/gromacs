@@ -2960,6 +2960,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     rvec *x_pp=NULL,*f_pp=NULL;
     real *chargeA=NULL,*chargeB=NULL;
     real *c6A=NULL,*c6B=NULL;
+    real *sigmaA=NULL,*sigmaB=NULL;
     real lambda=0;
     int  maxshift_x=0,maxshift_y=0;
     real   energy_q, energy_lj, dvdlambda;
@@ -2980,7 +2981,8 @@ int gmx_pmeonly(gmx_pme_t pme,
     {
         /* Domain decomposition */
         natoms = gmx_pme_recv_q_x(pme_pp,
-                                  &chargeA,&chargeB,&c6A,&c6B,box,&x_pp,&f_pp,
+                                  &chargeA,&chargeB,&c6A,&c6B,&sigmaA,&sigmaB,
+                                  box,&x_pp,&f_pp,
                                   &maxshift_x,&maxshift_y,
                                   &pme->bFEP,&lambda,
                                   &pme_flags,
@@ -3001,7 +3003,8 @@ int gmx_pmeonly(gmx_pme_t pme,
         dvdlambda = 0;
         clear_mat(vir_q);
         clear_mat(vir_lj);
-        gmx_pme_do(pme, 0, natoms, x_pp, f_pp, chargeA, chargeB, c6A, c6B, NULL, NULL, box,
+        gmx_pme_do(pme, 0, natoms, x_pp, f_pp,
+                   chargeA, chargeB, c6A, c6B, sigmaA, sigmaB, box,
                    cr, maxshift_x, maxshift_y, nrnb, wcycle,
                    vir_q, ewaldcoeff_q, vir_lj, ewaldcoeff_lj,
                    &energy_q, &energy_lj, lambda, &dvdlambda,
