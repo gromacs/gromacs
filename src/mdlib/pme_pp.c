@@ -235,17 +235,17 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
   }
   if (flags & PP_PME_SIGMA) {
     MPI_Isend(sigmaA,n*sizeof(real),MPI_BYTE,
-              dd->pme_nodeid,3,cr->mpi_comm_mysim,
+              dd->pme_nodeid,5,cr->mpi_comm_mysim,
               &dd->req_pme[dd->nreq_pme++]);
   }
   if (flags & PP_PME_SIGMAB) {
     MPI_Isend(sigmaB,n*sizeof(real),MPI_BYTE,
-              dd->pme_nodeid,4,cr->mpi_comm_mysim,
+              dd->pme_nodeid,6,cr->mpi_comm_mysim,
               &dd->req_pme[dd->nreq_pme++]);
   }
   if (flags & PP_PME_COORD) {
     MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
-	      dd->pme_nodeid,5,cr->mpi_comm_mysim,
+	      dd->pme_nodeid,7,cr->mpi_comm_mysim,
 	      &dd->req_pme[dd->nreq_pme++]);
   }
 
@@ -456,7 +456,7 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                 if (pme_pp->nat[sender] > 0) {
                     MPI_Irecv(pme_pp->x[nat],pme_pp->nat[sender]*sizeof(rvec),
                               MPI_BYTE,
-                              pme_pp->node[sender],5,
+                              pme_pp->node[sender],7,
                               pme_pp->mpi_comm_mysim,&pme_pp->req[messages++]);
                     nat += pme_pp->nat[sender];
                     if (debug)
