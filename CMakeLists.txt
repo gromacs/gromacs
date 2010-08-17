@@ -71,6 +71,13 @@ option(USE_VERSION_H "Generate development version string/information" ON)
 
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
 
+set(PKG_CFLAGS "")
+if(GMX_DOUBLE)
+  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
+endif(GMX_DOUBLE)
+if(GMX_SOFTWARE_INVSQRT)
+  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
+endif(GMX_SOFTWARE_INVSQRT)
 
 ########################################################################
 #Process MPI settings
@@ -103,10 +110,12 @@ if(GMX_MPI)
     include(gmxTestCatamount)
     gmx_test_catamount(GMX_CRAY_XT3)
     if(GMX_CRAY_XT3)
+        set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_CRAY_XT3")
         set(GMX_NO_SYSTEM 1)
         set(GMX_NO_NICE 1)
     endif(GMX_CRAY_XT3)
     set(GMX_LIB_MPI 1)
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
 endif(GMX_MPI)
 
 
@@ -259,6 +268,7 @@ if(X11_FOUND)
 endif(X11_FOUND)
 
 if(GMX_THREADS)
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREADS")
     include(ThreadMPI)
     set(THREAD_MPI_LIB thread_mpi)
     set(GMX_MPI 1)
@@ -367,6 +377,7 @@ include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
     set(GMX_INTERNAL_XDR 1)
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_INTERNAL_XDR")
 endif(NOT GMX_SYSTEM_XDR)
 
 if(GMX_FORTRAN OR GMX_POWER6)
