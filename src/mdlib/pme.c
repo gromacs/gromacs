@@ -206,9 +206,14 @@ typedef struct gmx_pme {
     pme_atomcomm_t atc[2];  /* Indexed on decomposition index */
     matrix    recipbox;
     splinevec bsp_mod;
-    /* Buffer to temporarily store coefficients for L-B combination rule
-     * calculations. */
-    real     *lb_coeff;
+    /* Buffers to store data for local atoms for L-B combination rule
+     * calculations.
+     * lb_buf1 stores either the coefficients for spreading/gathering
+     * (in serial), or the C6 parameters for local atoms (in parallel).
+     * lb_buf2 is only used in parallel, and stores the sigma values for
+     * local atoms. */
+    real     *lb_buf1, *lb_buf2;
+    int       lb_buf_nalloc;  /* Allocation size for the above buffers. */
     
     pme_overlap_t overlap[2]; /* Indexed on dimension, 0=x, 1=y */
 
@@ -2333,7 +2338,8 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
     sfree((*pmedata)->cfftgrid);
     sfree((*pmedata)->pfft_setup);
 
-    sfree((*pmedata)->lb_coeff);
+    sfree((*pmedata)->lb_buf1);
+    sfree((*pmedata)->lb_buf2);
 
     sfree((*pmedata)->work_mhz);
     sfree((*pmedata)->work_m2);
@@ -2849,7 +2855,9 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pme->atc[0].n = homenr;
         pme_realloc_atomcomm_things(&pme->atc[0]);
     }
-    pme->lb_coeff = NULL;
+    pme->lb_buf1 = NULL;
+    pme->lb_buf2 = NULL;
+    pme->lb_buf_nalloc = 0;
     
     /* Use fft5d, order after FFT is y major, z, x minor */
     pme->work_nalloc = pme->nkx;
@@ -3020,6 +3028,53 @@ int gmx_pmeonly(gmx_pme_t pme,
     return 0;
 }
 
+static void
+do_redist_x_q(gmx_pme_t pme, t_commrec *cr, int start, int homenr,
+              bool bX, rvec x[], real *data)
+{
+    int      d;
+
+    for (d = pme->ndecompdim - 1; d >= 0; --d)
+    {
+        int             n_d;
+        rvec           *x_d;
+        real           *q_d;
+        pme_atomcomm_t *atc;
+
+        if (d == pme->ndecompdim - 1)
+        {
+            n_d = homenr;
+            x_d = x + start;
+            q_d = data + start;
+        }
+        else
+        {
+            n_d = pme->atc[d + 1].n;
+            x_d = pme->atc[d + 1].x;
+            q_d = pme->atc[d + 1].q;
+        }
+        atc = &pme->atc[d];
+        atc->npd = n_d;
+        if (atc->npd > atc->pd_nalloc)
+        {
+            atc->pd_nalloc = over_alloc_dd(atc->npd);
+            srenew(atc->pd, atc->pd_nalloc);
+        }
+        pme_calc_pidx(n_d, pme->recipbox, x_d, atc);
+        where();
+
+        GMX_BARRIER(cr->mpi_comm_mygroup);
+        if (DOMAINDECOMP(cr))
+        {
+            dd_pmeredist_x_q(pme, n_d, bX, x_d, q_d, atc);
+        }
+        else
+        {
+            pmeredist_pd(pme, TRUE, n_d, bX, x_d, q_d, atc);
+        }
+    }
+}
+
 int gmx_pme_do(gmx_pme_t pme,
                int start,       int homenr,
                rvec x[],        rvec f[],
@@ -3060,7 +3115,11 @@ int gmx_pme_do(gmx_pme_t pme,
             atc->pd_nalloc = over_alloc_dd(atc->npd);
             srenew(atc->pd,atc->pd_nalloc);
         }
-        atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
+        for (d = 0; d < pme->ndecompdim; ++d)
+        {
+            atc = &pme->atc[d];
+            atc->maxshift = (atc->dimind == 0 ? maxshift_x : maxshift_y);
+        }
     }
     
     /* For convenience, allow calling with just GMX_PME_DO_LJ_LB. */
@@ -3099,18 +3158,10 @@ int gmx_pme_do(gmx_pme_t pme,
         pfft_setup = pme->pfft_setup[q];
         switch (q)
         {
-            case 0:
-                charge = chargeA + start;
-                break;
-            case 1:
-                charge = chargeB + start;
-                break;
-            case 2:
-                charge = c6A + start;
-                break;
-            case 3:
-                charge = c6B + start;
-                break;
+            case 0: charge = chargeA; break;
+            case 1: charge = chargeB; break;
+            case 2: charge = c6A; break;
+            case 3: charge = c6B; break;
         }
         if (debug) {
             fprintf(debug,"PME: nnodes = %d, nodeid = %d\n",
@@ -3123,51 +3174,20 @@ int gmx_pme_do(gmx_pme_t pme,
         
         m_inv_ur0(box,pme->recipbox); 
 
+        atc = &pme->atc[0];
         if (pme->nnodes == 1) {
-            atc = &pme->atc[0];
             if (DOMAINDECOMP(cr)) {
                 atc->n = homenr;
                 pme_realloc_atomcomm_things(atc);
             }
             atc->x = x;
-            atc->q = charge;
+            atc->q = charge + start;
             atc->f = f;
         } else {
             wallcycle_start(wcycle,ewcPME_REDISTXF);
-            for(d=pme->ndecompdim-1; d>=0; d--)
-            {
-                if (d == pme->ndecompdim-1)
-                {
-                    n_d = homenr;
-                    x_d = x + start;
-                    q_d = charge;
-                }
-                else
-                {
-                    n_d = pme->atc[d+1].n;
-                    x_d = atc->x;
-                    q_d = atc->q;
-                }
-                atc = &pme->atc[d];
-                atc->npd = n_d;
-                if (atc->npd > atc->pd_nalloc) {
-                    atc->pd_nalloc = over_alloc_dd(atc->npd);
-                    srenew(atc->pd,atc->pd_nalloc);
-                }
-                atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
-                pme_calc_pidx(n_d,pme->recipbox,x_d,atc);
-                where();
-                
-                GMX_BARRIER(cr->mpi_comm_mygroup);
-                /* Redistribute x (only once) and qA or qB */
-                if (DOMAINDECOMP(cr)) {
-                    dd_pmeredist_x_q(pme, n_d, bFirst, x_d, q_d, atc);
-                } else {
-                    pmeredist_pd(pme, TRUE, n_d, bFirst, x_d, q_d, atc);
-                }
-            }
+            /* Redistribute x (only once) and coefficients */
+            do_redist_x_q(pme, cr, start, homenr, bFirst, x, charge);
             where();
-
             wallcycle_stop(wcycle,ewcPME_REDISTXF);
         }
         
@@ -3312,57 +3332,47 @@ int gmx_pme_do(gmx_pme_t pme,
     {
         real *local_c6 = NULL, *local_sigma = NULL;
 
+        atc = &pme->atc[0];
         if (pme->nnodes == 1) {
-            atc = &pme->atc[0];
             if (DOMAINDECOMP(cr)) {
                 atc->n = homenr;
                 pme_realloc_atomcomm_things(atc);
             }
-            if (pme->lb_coeff == NULL)
+            if (pme->lb_buf1 == NULL)
             {
-                snew(pme->lb_coeff, atc->n);
+                snew(pme->lb_buf1, atc->n);
+                pme->lb_buf_nalloc = atc->n;
             }
             atc->x = x;
-            atc->q = pme->lb_coeff;
+            atc->q = pme->lb_buf1;
             atc->f = f;
             local_c6 = c6A;
             local_sigma = sigmaA;
         } else {
-            gmx_fatal(FARGS, "L-B combination rules not implemented in parallel (yet)");
             wallcycle_start(wcycle,ewcPME_REDISTXF);
-            for(d=pme->ndecompdim-1; d>=0; d--)
-            {
-                if (d == pme->ndecompdim-1)
-                {
-                    n_d = homenr;
-                    x_d = x + start;
-                    q_d = charge;
-                }
-                else
-                {
-                    n_d = pme->atc[d+1].n;
-                    x_d = atc->x;
-                    q_d = atc->q;
-                }
-                atc = &pme->atc[d];
-                atc->npd = n_d;
-                if (atc->npd > atc->pd_nalloc) {
-                    atc->pd_nalloc = over_alloc_dd(atc->npd);
-                    srenew(atc->pd,atc->pd_nalloc);
-                }
-                atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
-                pme_calc_pidx(n_d,pme->recipbox,x_d,atc);
-                where();
 
-                GMX_BARRIER(cr->mpi_comm_mygroup);
-                /* Redistribute coefficients */
-                if (DOMAINDECOMP(cr)) {
-                    dd_pmeredist_x_q(pme, n_d, bFirst, x_d, q_d, atc);
-                } else {
-                    pmeredist_pd(pme, TRUE, n_d, bFirst, x_d, q_d, atc);
-                }
+            do_redist_x_q(pme, cr, start, homenr, bFirst, x, c6A);
+            if (pme->lb_buf_nalloc < atc->n)
+            {
+                pme->lb_buf_nalloc = atc->nalloc;
+                srenew(pme->lb_buf1, pme->lb_buf_nalloc);
+                srenew(pme->lb_buf2, pme->lb_buf_nalloc);
+            }
+            local_c6 = pme->lb_buf1;
+            for (i = 0; i < atc->n; ++i)
+            {
+                local_c6[i] = atc->q[i];
             }
             where();
+
+            do_redist_x_q(pme, cr, start, homenr, FALSE, x, sigmaA);
+            local_sigma = pme->lb_buf2;
+            for (i = 0; i < atc->n; ++i)
+            {
+                local_sigma[i] = atc->q[i];
+            }
+            where();
+
             wallcycle_stop(wcycle,ewcPME_REDISTXF);
         }
 
