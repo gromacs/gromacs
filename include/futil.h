@@ -190,6 +190,10 @@ int gmx_file_rename(const char *oldname, const char *newname);
    the file won't be copied if it's empty.*/
 int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty);
 
+/* do an fsync() on an open file pointer. 
+   Only use this during checkpointing! */
+int gmx_fsync(FILE *fp);
+
 #ifdef __cplusplus
 }
 #endif

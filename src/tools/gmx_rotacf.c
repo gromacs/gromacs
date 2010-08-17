@@ -158,7 +158,7 @@ int gmx_rotacf(int argc,char *argv[])
     t1 = t;
     
     /* Remove periodicity */
-    gmx_rmpbc(gpbc,box,x,x_s);
+    gmx_rmpbc_copy(gpbc,natoms,box,x,x_s);
   
     /* Compute crossproducts for all vectors, if triplets.
      * else, just get the vectors in case of doublets.

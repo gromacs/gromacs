@@ -670,7 +670,7 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 
     /* make the molecules whole */
     if (bMol)
-      gmx_rmpbc(gpbc,box,x[cur],x[cur]);
+      gmx_rmpbc(gpbc,natoms,box,x[cur]);
 
     /* first remove the periodic boundary condition crossings */
     for(i=0;i<curr->ngrp;i++)

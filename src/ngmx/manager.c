@@ -338,7 +338,7 @@ static bool step_man(t_manager *man,int *nat)
       break;
     }
     if (man->bPbc) {
-      gmx_rmpbc(man->gpbc,man->box,man->x,man->x);
+      gmx_rmpbc(man->gpbc,man->natom,man->box,man->x);
       reset_mols(&(man->top.mols),man->box,man->x);
     }
     ncount=0;

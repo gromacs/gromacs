@@ -108,7 +108,7 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
   /* Must init pbc every step because of pressure coupling */
   set_pbc(&pbc,ePBC,box);
   
-  gmx_rmpbc(gpbc,box,x,x);
+  gmx_rmpbc(gpbc,natoms,box,x);
 
   nsgbin = 1 + 1/0.0005;
   snew(sgbin,nsgbin);
@@ -445,7 +445,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 
   teller = 0; 
 
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
   /*********** Start processing trajectory ***********/
   do {
     if (bSliced)
@@ -453,7 +453,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
     teller++;
     
     set_pbc(&pbc,ePBC,box);
-    gmx_rmpbc(gpbc,box,x0,x1);
+    gmx_rmpbc_copy(gpbc,natoms,box,x0,x1);
 
     /* Now loop over all groups. There are ngrps groups, the order parameter can
        be calculated for grp 1 to grp ngrps - 1. For each group, loop over all 

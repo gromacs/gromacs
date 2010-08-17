@@ -85,7 +85,7 @@ static void log_action(int bMal,const char *what,const char *file,int line,
   if (bytes >= 1024 || bytes <= -1024) {
     char *fname=NULL;
     if (file) {
-      fname = strrchr(file,'/');
+      fname = strrchr(file,DIR_SEPARATOR);
       if (fname) {
 	fname++;
       } else {
