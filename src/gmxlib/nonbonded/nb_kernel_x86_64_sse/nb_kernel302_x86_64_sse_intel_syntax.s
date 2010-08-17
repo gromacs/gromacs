@@ -265,7 +265,7 @@ _nb_kernel302_x86_64_sse:
         mov   ebx, eax                          ;# ebx=*count=nn0
         add   ebx, 1                           ;# ebx=nn1=nn0+10
         lock
-        cmpxchg [esi], ebx                      ;# write nn1 to *counter,
+        cmpxchg [rsi], ebx                      ;# write nn1 to *counter,
                                                 ;# if it hasnt changed.
                                                 ;# or reread *counter to eax.
         pause                                   ;# -> better p4 performance
@@ -2318,7 +2318,7 @@ _nb_kernel302nf_x86_64_sse:
         mov   ebx, eax                          ;# ebx=*count=nn0
         add   ebx, 1                           ;# ebx=nn1=nn0+10
         lock
-        cmpxchg [esi], ebx                      ;# write nn1 to *counter,
+        cmpxchg [rsi], ebx                      ;# write nn1 to *counter,
                                                 ;# if it hasnt changed.
                                                 ;# or reread *counter to eax.
         pause                                   ;# -> better p4 performance
