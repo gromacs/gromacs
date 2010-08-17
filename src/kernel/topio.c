@@ -299,7 +299,7 @@ static char ** cpp_opts(const char *define,const char *include,
       }
     }
   }
-  if ((rptr=strrchr(infile,'/')) != NULL) {
+  if ((rptr=strrchr(infile,DIR_SEPARATOR)) != NULL) {
     buf = strdup(infile);
     buf[(int)(rptr-infile)] = '\0';
     srenew(cppopts,++ncppopts);

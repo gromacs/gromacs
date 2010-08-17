@@ -363,7 +363,7 @@ static char *backup_fn(const char *file,int count_max)
 
     smalloc(buf, GMX_PATH_MAX);
 
-    for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--)
+    for(i=strlen(file)-1; ((i > 0) && (file[i] != DIR_SEPARATOR)); i--)
         ;
     /* Must check whether i > 0, i.e. whether there is a directory
      * in the file name. In that case we overwrite the / sign with
@@ -789,9 +789,7 @@ bool get_libdir(char *libdir)
 #else
             pdum=getcwd(buf,sizeof(buf)-1);
 #endif
-            strncpy(full_path,buf,GMX_PATH_MAX);
-            strcat(full_path,"/");
-            strcat(full_path,bin_name);
+            sprintf(full_path,"%s%c%s",buf,DIR_SEPARATOR,bin_name);
         } else {
             strncpy(full_path,bin_name,GMX_PATH_MAX);
         }
