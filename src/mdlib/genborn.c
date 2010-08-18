@@ -1215,7 +1215,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     switch(ir->gb_algorithm)
     {
         case egbSTILL:
-             calc_gb_rad_still_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
+             calc_gb_rad_still_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born); 
             break;
         case egbHCT:
         case egbOBC:
@@ -1686,7 +1686,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
      calc_gb_chainrule_sse2_double(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
                                    x[0], f[0], fr->fshift[0],  fr->shift_vec[0],
-                                   gb_algorithm, born); 
+                                   gb_algorithm, born, md); 
 #else
     calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
                       x, f, fr->fshift, fr->shift_vec, 

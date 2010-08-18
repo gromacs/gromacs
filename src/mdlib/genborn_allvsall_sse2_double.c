@@ -148,7 +148,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
     int imin,imax,iexcl;
     int max_offset;
     int max_excl_offset;
-    int firstinteraction[UNROLLI];
+    int firstinteraction;
     int ibase;
     int  *pi;
     
@@ -167,11 +167,12 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
     ni1 = ((end+UNROLLI-1)/UNROLLI)*UNROLLI;
     
     /* Set the interaction mask to only enable the i atoms we want to include */
-    snew(pi,natoms+UNROLLI+2*SIMD_WIDTH);
+    snew(pi,2*(natoms+UNROLLI+2*SIMD_WIDTH));
     aadata->imask = (int *) (((size_t) pi + 16) & (~((size_t) 15)));
     for(i=0;i<natoms+UNROLLI;i++)
     {
-        aadata->imask[i] = (i>=start && i<end) ? 0xFFFFFFFF : 0;
+        aadata->imask[2*i]   = (i>=start && i<end) ? 0xFFFFFFFF : 0;
+        aadata->imask[2*i+1] = (i>=start && i<end) ? 0xFFFFFFFF : 0;
     }
     
     /* Allocate memory for our modified jindex array */
@@ -193,47 +194,43 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
     /* Calculate the largest exclusion range we need for each UNROLLI-tuplet of i atoms. */
     for(ibase=ni0;ibase<ni1;ibase+=UNROLLI)
 	{
-        max_excl_offset = 0;
+        max_excl_offset = -1;
         
         /* First find maxoffset for the next 4 atoms (or fewer if we are close to end) */
         imax = ((ibase+UNROLLI) < end) ? (ibase+UNROLLI) : end;
         
+        /* Which atom is the first we (might) interact with? */
+        imin = natoms; /* Guaranteed to be overwritten by one of 'firstinteraction' */
         for(i=ibase;i<imax;i++)
         {
             /* Before exclusions, which atom is the first we (might) interact with? */
-            firstinteraction[i-ibase] = i+1;
+            firstinteraction = i+1;
             max_offset = calc_maxoffset(i,natoms);
-
+            
             if(!bInclude12)
             {
                 for(j=0;j<ilist[F_GB12].nr;j+=3)
                 {
                     a1 = ilist[F_GB12].iatoms[j+1];
                     a2 = ilist[F_GB12].iatoms[j+2];
-
+                    
                     if(a1==i)
                     {
-                        k = a2-ibase;
-                        iexcl = a2;
+                        k = a2;
                     }
                     else if(a2==i)
                     {
-                        k = a1+natoms-ibase;
-                        iexcl = a1;
+                        k = a1;
                     }
                     else 
                     {
                         continue;
                     }
-
-                    if(k>max_excl_offset)
+                    
+                    if(k==firstinteraction)
                     {
-                        max_excl_offset = k;
+                        firstinteraction++;
                     }
-                    if(iexcl == firstinteraction[i-ibase])
-                    {
-                        firstinteraction[i-ibase]++;
-                    }        
                 }
             }
             if(!bInclude13)
@@ -245,27 +242,133 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                     
                     if(a1==i)
                     {
-                        k = a2-ibase;
-                        iexcl = a2;
+                        k = a2;
                     }
                     else if(a2==i)
                     {
-                        k = a1+natoms-ibase;
-                        iexcl = a1;
+                        k = a1;
                     }
                     else 
                     {
                         continue;
                     }
                     
-                    if(k>max_excl_offset)
+                    if(k==firstinteraction)
                     {
-                        max_excl_offset = k;
+                        firstinteraction++;
                     }
-                    if(iexcl == firstinteraction[i-ibase])
+                }
+            }
+            if(!bInclude14)
+            {
+                for(j=0;j<ilist[F_GB14].nr;j+=3)
+                {
+                    a1 = ilist[F_GB14].iatoms[j+1];
+                    a2 = ilist[F_GB14].iatoms[j+2];
+                    if(a1==i)
                     {
-                        firstinteraction[i-ibase]++;
-                    }        
+                        k = a2;
+                    }
+                    else if(a2==i)
+                    {
+                        k = a1;
+                    }
+                    else 
+                    {
+                        continue;
+                    }
+                    
+                    if(k==firstinteraction)
+                    {
+                        firstinteraction++;
+                    }
+                }
+            }
+            imin = (firstinteraction < imin) ? firstinteraction : imin;
+        }
+        /* round down to j unrolling factor */
+        imin = (imin/UNROLLJ)*UNROLLJ;
+        
+        for(i=ibase;i<imax;i++)
+        {
+            max_offset = calc_maxoffset(i,natoms);
+            
+            if(!bInclude12)
+            {
+                for(j=0;j<ilist[F_GB12].nr;j+=3)
+                {
+                    a1 = ilist[F_GB12].iatoms[j+1];
+                    a2 = ilist[F_GB12].iatoms[j+2];
+                    
+                    if(a1==i)
+                    {
+                        k = a2;
+                    }
+                    else if(a2==i)
+                    {
+                        k = a1;
+                    }
+                    else 
+                    {
+                        continue;
+                    }
+                    
+                    if(k<imin)
+                    {
+                        k += natoms;
+                    }
+                    
+                    if(k>i+max_offset)
+                    {
+                        continue;
+                    }
+                    
+                    k = k - imin;
+                    
+                    if( k+natoms <= max_offset )
+                    {
+                        k+=natoms;
+                    }
+                    max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
+                }
+            }
+            if(!bInclude13)
+            {
+                for(j=0;j<ilist[F_GB13].nr;j+=3)
+                {
+                    a1 = ilist[F_GB13].iatoms[j+1];
+                    a2 = ilist[F_GB13].iatoms[j+2];
+                    
+                    if(a1==i)
+                    {
+                        k = a2;
+                    }
+                    else if(a2==i)
+                    {
+                        k = a1;
+                    }
+                    else 
+                    {
+                        continue;
+                    }
+                    
+                    if(k<imin)
+                    {
+                        k += natoms;
+                    }
+                    
+                    if(k>i+max_offset)
+                    {
+                        continue;
+                    }
+                    
+                    k = k - imin;
+                    
+                    if( k+natoms <= max_offset )
+                    {
+                        k+=natoms;
+                    }
+                    max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
                 }
             }
             if(!bInclude14)
@@ -277,50 +380,51 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                     
                     if(a1==i)
                     {
-                        k = a2-ibase;
-                        iexcl = a2;
+                        k = a2;
                     }
                     else if(a2==i)
                     {
-                        k = a1+natoms-ibase;
-                        iexcl = a1;
+                        k = a1;
                     }
                     else 
                     {
                         continue;
                     }
                     
-                    if(k>max_excl_offset)
+                    if(k<imin)
                     {
-                        max_excl_offset = k;
+                        k += natoms;
                     }
-                    if(iexcl == firstinteraction[i-ibase])
+                    
+                    if(k>i+max_offset)
                     {
-                        firstinteraction[i-ibase]++;
-                    }        
+                        continue;
+                    }
+                    
+                    k = k - imin;
+                    
+                    if( k+natoms <= max_offset )
+                    {
+                        k+=natoms;
+                    }
+                    max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
                 }
             }
-            max_excl_offset = (max_offset < max_excl_offset) ? max_offset : max_excl_offset;
         }
-
+        
+        /* The offset specifies the last atom to be excluded, so add one unit to get an upper loop limit */
+        max_excl_offset++;
         /* round up to j unrolling factor */
         max_excl_offset = (max_excl_offset/UNROLLJ+1)*UNROLLJ;
-        
-        imin = firstinteraction[0];
-        for(i=ibase;i<imax;i++)
-        {
-            imin = (imin < firstinteraction[i-ibase]) ? imin : firstinteraction[i-ibase];
-        }
-        imin = (imin/UNROLLJ)*UNROLLJ;
         
         /* Set all the prologue masks length to this value (even for i>end) */
         for(i=ibase;i<ibase+UNROLLI;i++)
         {
             aadata->jindex_gb[4*i]   = imin;
-            aadata->jindex_gb[4*i+1] = ibase+max_excl_offset;
+            aadata->jindex_gb[4*i+1] = imin+max_excl_offset;
         }        
     }
-     
+    
     /* Now the hard part, loop over it all again to calculate the actual contents of the prologue masks */
     for(ibase=ni0;ibase<ni1;ibase+=UNROLLI)
     {      
@@ -330,7 +434,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
             imin = aadata->jindex_gb[4*i];
             
             /* Allocate aligned memory */
-            snew(pi,nj+2*SIMD_WIDTH);
+            snew(pi,2*(nj+2*SIMD_WIDTH));
             aadata->prologue_mask_gb[i] = (int *) (((size_t) pi + 16) & (~((size_t) 15)));
             
             max_offset = calc_maxoffset(i,natoms);
@@ -342,11 +446,13 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                 
                 if( (j>i) && (j<=i+max_offset) )
                 {
-                    aadata->prologue_mask_gb[i][k] = 0xFFFFFFFF;
+                    aadata->prologue_mask_gb[i][2*k]   = 0xFFFFFFFF;
+                    aadata->prologue_mask_gb[i][2*k+1] = 0xFFFFFFFF;
                 }
                 else
                 {
-                    aadata->prologue_mask_gb[i][k] = 0;
+                    aadata->prologue_mask_gb[i][2*k]   = 0;
+                    aadata->prologue_mask_gb[i][2*k+1] = 0;
                 }
             }
             
@@ -362,20 +468,33 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                         
                         if(a1==i)
                         {
-                            k = a2-imin;
+                            k = a2;
                         }
                         else if(a2==i)
                         {
-                            k = a1+natoms-imin;
+                            k = a1;
                         }
                         else 
                         {
                             continue;
                         }
                         
-                        if(k>=0 && k<=max_excl_offset)
+                        if(k>i+max_offset)
                         {
-                            aadata->prologue_mask_gb[i][k] = 0;
+                            continue;
+                        }
+                        k = k-i;
+                        
+                        if( k+natoms <= max_offset )
+                        {
+                            k+=natoms;
+                        }
+                        
+                        k = k+i-imin;
+                        if(k>=0)
+                        {                        
+                            aadata->prologue_mask_gb[i][2*k]   = 0;
+                            aadata->prologue_mask_gb[i][2*k+1] = 0;
                         }
                     }
                 }
@@ -385,22 +504,34 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                     {
                         a1 = ilist[F_GB13].iatoms[j+1];
                         a2 = ilist[F_GB13].iatoms[j+2];
- 
+                        
                         if(a1==i)
                         {
-                            k = a2-imin;
+                            k = a2;
                         }
                         else if(a2==i)
                         {
-                            k = a1+natoms-imin;
+                            k = a1;
                         }
                         else 
                         {
                             continue;
                         }
                         
-                        if(k>=0 && k<=max_excl_offset)
+                        if(k>i+max_offset)
                         {
+                            continue;
+                        }
+                        k = k-i;
+                        
+                        if( k+natoms <= max_offset )
+                        {
+                            k+=natoms;
+                        }
+                        
+                        k = k+i-imin;
+                        if(k>=0)
+                        {                        
                             aadata->prologue_mask_gb[i][k] = 0;
                         }
                     }
@@ -411,21 +542,34 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                     {
                         a1 = ilist[F_GB14].iatoms[j+1];
                         a2 = ilist[F_GB14].iatoms[j+2];
+                        
                         if(a1==i)
                         {
-                            k = a2-imin;
+                            k = a2;
                         }
                         else if(a2==i)
                         {
-                            k = a1+natoms-imin;
+                            k = a1;
                         }
                         else 
                         {
                             continue;
                         }
                         
-                        if(k>=0 && k<=max_excl_offset)
+                        if(k>i+max_offset)
                         {
+                            continue;
+                        }
+                        k = k-i;
+                        
+                        if( k+natoms <= max_offset )
+                        {
+                            k+=natoms;
+                        }
+                        
+                        k = k+i-imin;
+                        if(k>=0)
+                        {                        
                             aadata->prologue_mask_gb[i][k] = 0;
                         }
                     }
@@ -450,7 +594,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
         /* Find the lowest index for which we need to use the epilogue */
         imin = ibase;
         max_offset = calc_maxoffset(imin,natoms);
-
+        
         imin = imin + 1 + max_offset;
         
         /* Find largest index for which we need to use the epilogue */
@@ -483,7 +627,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
             nj = aadata->jindex_gb[4*i+3] - aadata->jindex_gb[4*i+2];
             
             /* Allocate aligned memory */
-            snew(pi,nj+2*SIMD_WIDTH);
+            snew(pi,2*(nj+2*SIMD_WIDTH));
             aadata->epilogue_mask[i] = (int *) (((size_t) pi + 16) & (~((size_t) 15)));
             
             max_offset = calc_maxoffset(i,natoms);
@@ -491,7 +635,8 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
             for(k=0;k<nj;k++)
             {
                 j = aadata->jindex_gb[4*i+2] + k;
-                aadata->epilogue_mask[i][k] = (j <= i+max_offset) ? 0xFFFFFFFF : 0;
+                aadata->epilogue_mask[i][2*k]   = (j <= i+max_offset) ? 0xFFFFFFFF : 0;
+                aadata->epilogue_mask[i][2*k+1] = (j <= i+max_offset) ? 0xFFFFFFFF : 0;
             }
         }
     }
@@ -503,7 +648,7 @@ genborn_allvsall_setup(gmx_allvsallgb2_data_t **  p_aadata,
                        gmx_localtop_t *           top,
                        gmx_genborn_t *            born,
                        t_mdatoms *                mdatoms,
-                       double                       radius_offset,
+                       double                     radius_offset,
                        int                        gb_algorithm,
                        bool                       bInclude12,
                        bool                       bInclude13,
@@ -817,14 +962,14 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
             
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_pd(dadx,_mm_mul_pd(prod_SSE,icf6_SSE0));
-            dadx+=4;
+            dadx+=2;
             _mm_store_pd(dadx,_mm_mul_pd(prod_SSE,icf6_SSE1));
-            dadx+=4;
+            dadx+=2;
             
             _mm_store_pd(dadx,_mm_mul_pd(prod_ai_SSE0,icf6_SSE0));
-            dadx+=4;
+            dadx+=2;
             _mm_store_pd(dadx,_mm_mul_pd(prod_ai_SSE1,icf6_SSE1));
-            dadx+=4;
+            dadx+=2;
         }
                                  
         /* Main part, no exclusions */
@@ -901,14 +1046,14 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
             
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_pd(dadx,_mm_mul_pd(prod_SSE,icf6_SSE0));
-            dadx+=4;
+            dadx+=2;
             _mm_store_pd(dadx,_mm_mul_pd(prod_SSE,icf6_SSE1));
-            dadx+=4;
+            dadx+=2;
             
             _mm_store_pd(dadx,_mm_mul_pd(prod_ai_SSE0,icf6_SSE0));
-            dadx+=4;
+            dadx+=2;
             _mm_store_pd(dadx,_mm_mul_pd(prod_ai_SSE1,icf6_SSE1));
-            dadx+=4;
+            dadx+=2;
         }
         /* Epilogue part, including exclusion mask */
         for(j=nj2; j<nj3; j+=UNROLLJ)
@@ -993,14 +1138,14 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
             
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_pd(dadx,_mm_mul_pd(prod_SSE,icf6_SSE0));
-            dadx+=4;
+            dadx+=2;
             _mm_store_pd(dadx,_mm_mul_pd(prod_SSE,icf6_SSE1));
-            dadx+=4;
+            dadx+=2;
             
             _mm_store_pd(dadx,_mm_mul_pd(prod_ai_SSE0,icf6_SSE0));
-            dadx+=4;
+            dadx+=2;
             _mm_store_pd(dadx,_mm_mul_pd(prod_ai_SSE1,icf6_SSE1));
-            dadx+=4;
+            dadx+=2;
         }
         GMX_MM_TRANSPOSE2_PD(gpi_SSE0,gpi_SSE1);
         gpi_SSE0 = _mm_add_pd(gpi_SSE0,gpi_SSE1);
@@ -1370,9 +1515,9 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec *           fr,
                                                        _mm_add_pd(t2_SSE1,t3_SSE1)));
             
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE0,obc_mask1_SSE0));
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE1,obc_mask1_SSE1));
-            dadx += 4;
+            dadx += 2;
             
             /* Evaluate influence of atom ai -> aj */
             t1_SSE0            = _mm_add_pd(dr_SSE0,sk_ai_SSE0);
@@ -1491,9 +1636,9 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec *           fr,
                                                        _mm_add_pd(t2_SSE1,t3_SSE1)));
 
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE0,obc_mask1_SSE0));
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE1,obc_mask1_SSE1));
-            dadx += 4;            
+            dadx += 2;            
         }
         
         /* Main part, no exclusions */
@@ -1650,9 +1795,9 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec *           fr,
                                                        _mm_add_pd(t2_SSE1,t3_SSE1)));
             
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE0,obc_mask1_SSE0));
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE1,obc_mask1_SSE1));
-            dadx += 4;
+            dadx += 2;
             
             /* Evaluate influence of atom ai -> aj */
             t1_SSE0            = _mm_add_pd(dr_SSE0,sk_ai_SSE0);
@@ -1770,9 +1915,9 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec *           fr,
                                                        _mm_add_pd(t2_SSE1,t3_SSE1)));
             
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE0,obc_mask1_SSE0));
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE1,obc_mask1_SSE1));
-            dadx += 4;
+            dadx += 2;
         }
 
         /* Epilogue part, including exclusion mask */
@@ -1938,9 +2083,9 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec *           fr,
                                                        _mm_add_pd(t2_SSE1,t3_SSE1)));
             
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE0,obc_mask1_SSE0));
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE1,obc_mask1_SSE1));
-            dadx += 4;
+            dadx += 2;
             
             /* Evaluate influence of atom ai -> aj */
             t1_SSE0            = _mm_add_pd(dr_SSE0,sk_ai_SSE0);
@@ -2060,9 +2205,9 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec *           fr,
                                                        _mm_add_pd(t2_SSE1,t3_SSE1)));
             
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE0,obc_mask1_SSE0));
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE1,obc_mask1_SSE1));
-            dadx += 4;
+            dadx += 2;
         }
         tmpSSE = sum_ai_SSE0;
         sum_ai_SSE0 = _mm_unpacklo_pd(sum_ai_SSE0,sum_ai_SSE1);
@@ -2299,14 +2444,14 @@ genborn_allvsall_calc_chainrule_sse2_double(t_forcerec *           fr,
             rbaj_SSE         = _mm_load_pd(rb+j);
             
             fgb_SSE0         = _mm_mul_pd(rbai_SSE0,_mm_load_pd(dadx));            
-            dadx += 4;
+            dadx += 2;
             fgb_SSE1         = _mm_mul_pd(rbai_SSE1,_mm_load_pd(dadx));
-            dadx += 4;
+            dadx += 2;
             
             fgb_ai_SSE0      = _mm_mul_pd(rbaj_SSE,_mm_load_pd(dadx));
-            dadx +=4;
+            dadx +=2;
             fgb_ai_SSE1      = _mm_mul_pd(rbaj_SSE,_mm_load_pd(dadx));
-            dadx +=4;
+            dadx +=2;
             
             /* Total force between ai and aj is the sum of ai->aj and aj->ai */
             fgb_SSE0         = _mm_add_pd(fgb_SSE0,fgb_ai_SSE0);
