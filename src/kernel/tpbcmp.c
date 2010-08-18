@@ -370,6 +370,38 @@ static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2,real ftol, real absto
   }
 }
 
+static void cmp_groups(FILE *fp,gmx_groups_t *g0,gmx_groups_t *g1,
+		       int natoms0,int natoms1)
+{
+  int  i,j,ndiff;
+  char buf[32];
+
+  fprintf(fp,"comparing groups\n");
+
+  for(i=0; i<egcNR; i++) {
+    sprintf(buf,"grps[%d].nr",i);
+    cmp_int(fp,buf,-1,g0->grps[i].nr,g1->grps[i].nr);
+    if (g0->grps[i].nr == g1->grps[i].nr) {
+      sprintf(buf,"grps[%d].name[%d]",i,j);
+      for(j=0; j<g0->grps[i].nr; j++) {
+	cmp_str(fp,buf,-1,
+		*g0->grpname[g0->grps[i].nm_ind[j]],
+		*g1->grpname[g1->grps[i].nm_ind[j]]);
+      }
+    }
+    cmp_int(fp,"ngrpnr",i,g0->ngrpnr[i],g1->ngrpnr[i]);
+    if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1 && 
+	(g0->grpnr[i] != NULL || g1->grpnr[i] != NULL)) {
+      for(j=0; j<natoms0; j++) {
+	cmp_int(fp,gtypes[i],j,ggrpnr(g0,i,j),ggrpnr(g1,i,j));
+      }
+    }
+  }
+  /* We have compared the names in the groups lists,
+   * so we can skip the grpname list comparison.
+   */
+}
+
 static void cmp_rvecs(FILE *fp,const char *title,int n,rvec x1[],rvec x2[],
 		      bool bRMSD,real ftol,real abstol)
 {
@@ -699,6 +731,8 @@ void comp_tpx(const char *fn1,const char *fn2,
     top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
     top[1] = gmx_mtop_t_to_t_topology(&mtop[1]);
     cmp_top(stdout,&top[0],&top[1],ftol,abstol);
+    cmp_groups(stdout,&mtop[0].groups,&mtop[1].groups,
+	       mtop[0].natoms,mtop[1].natoms);
     comp_state(&state[0],&state[1],bRMSD,ftol,abstol);
   } else {
     if (ir[0].efep == efepNO) {
