@@ -240,18 +240,26 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
         
         for(i=ibase;i<imax;i++)
         {
+            
             max_offset = calc_maxoffset(i,natoms);
             
             nj0   = excl->index[i];
             nj1   = excl->index[i+1];
             for(j=nj0; j<nj1; j++)
             {                
-                if(excl->a[j]>i+max_offset)
+                k = excl->a[j];
+
+                if(k<imin)
+                {
+                    k += natoms;
+                }
+
+                if(k>i+max_offset)
                 {
                     continue;
                 }
-
-                k = excl->a[j] - imin;
+                
+                k = k - imin;
                 
                 if( k+natoms <= max_offset )
                 {
@@ -706,7 +714,7 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
         imask_SSE1        = _mm_load1_ps((real *)(imask+i+1));
         imask_SSE2        = _mm_load1_ps((real *)(imask+i+2));
         imask_SSE3        = _mm_load1_ps((real *)(imask+i+3));
-            
+                    
         for(j=nj0; j<nj1; j+=UNROLLJ)
         {                        
             jmask_SSE0 = _mm_load_ps((real *)pmask0);
@@ -767,7 +775,7 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             qq_SSE1            = _mm_mul_ps(iq_SSE1,jqSSE);
             qq_SSE2            = _mm_mul_ps(iq_SSE2,jqSSE);
             qq_SSE3            = _mm_mul_ps(iq_SSE3,jqSSE);
-
+            
             c6_SSE0            = _mm_load_ps(pvdw0+2*j);
             c6_SSE1            = _mm_load_ps(pvdw1+2*j);
             c6_SSE2            = _mm_load_ps(pvdw2+2*j);
@@ -910,7 +918,7 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
             qq_SSE1            = _mm_mul_ps(iq_SSE1,jqSSE);
             qq_SSE2            = _mm_mul_ps(iq_SSE2,jqSSE);
             qq_SSE3            = _mm_mul_ps(iq_SSE3,jqSSE);
-            
+                      
             c6_SSE0            = _mm_load_ps(pvdw0+2*j);
             c6_SSE1            = _mm_load_ps(pvdw1+2*j);
             c6_SSE2            = _mm_load_ps(pvdw2+2*j);
@@ -1185,7 +1193,7 @@ nb_kernel_allvsall_sse2_single(t_forcerec *           fr,
         
 		_mm_storeu_ps(tmpsum,vctotSSE);
 		Vc[ggid]         = Vc[ggid] + tmpsum[0]+tmpsum[1]+tmpsum[2]+tmpsum[3];
-		
+        
 		_mm_storeu_ps(tmpsum,VvdwtotSSE);
 		Vvdw[ggid]       = Vvdw[ggid] + tmpsum[0]+tmpsum[1]+tmpsum[2]+tmpsum[3];
 		
