@@ -69,8 +69,7 @@ extern real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind, real *dekindlambda,
  */
 
 extern void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
-			    t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda,
-			    bool bNEMD);
+			    t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda);
 /* Do the update of group velocities (if bNEMD) and
  * (partial) group ekin.
  */

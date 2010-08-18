@@ -87,7 +87,15 @@ static char QMmethod[STRLEN],QMbasis[STRLEN],QMcharge[STRLEN],QMmult[STRLEN],
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
 
-enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
+enum {
+    egrptpALL,         /* All particles have to be a member of a group.     */
+    egrptpALL_GENREST, /* A rest group with name is generated for particles *
+                        * that are not part of any group.                   */
+    egrptpPART,        /* As egrptpALL_GENREST, but no name is generated    *
+                        * for the rest group.                               */
+    egrptpONE          /* Merge all selected groups into one group,         *
+                        * make a rest group for the remaining particles.    */
+};
 
 
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
@@ -1288,104 +1296,140 @@ static bool do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
                          int grptp,bool bVerbose,
                          warninp_t wi)
 {
-  unsigned short *cbuf;
-  t_grps *grps=&(groups->grps[gtype]);
-  int    i,j,gid,aj,ognr,ntot=0;
-  const char *title;
-  bool   bRest;
-  char   warn_buf[STRLEN];
+    unsigned short *cbuf;
+    t_grps *grps=&(groups->grps[gtype]);
+    int    i,j,gid,aj,ognr,ntot=0;
+    const char *title;
+    bool   bRest;
+    char   warn_buf[STRLEN];
 
-  if (debug)
-    fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
+    if (debug)
+    {
+        fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
+    }
   
-  title = gtypes[gtype];
+    title = gtypes[gtype];
     
-  snew(cbuf,natoms);
-  for(i=0; (i<natoms); i++)
-    cbuf[i]=NOGID;
+    snew(cbuf,natoms);
+    /* Mark all id's as not set */
+    for(i=0; (i<natoms); i++)
+    {
+        cbuf[i] = NOGID;
+    }
   
-  snew(grps->nm_ind,ng+1); /* +1 for possible rest group */
-  for(i=0; (i<ng); i++) {
-    /* Lookup the group name in the block structure */
-    gid = search_string(ptrs[i],block->nr,gnames);
-    if ((grptp != egrptpONE) || (i == 0))
-      grps->nm_ind[grps->nr++]=gid;
-    if (debug) 
-      fprintf(debug,"Found gid %d for group %s\n",gid,ptrs[i]);
+    snew(grps->nm_ind,ng+1); /* +1 for possible rest group */
+    for(i=0; (i<ng); i++)
+    {
+        /* Lookup the group name in the block structure */
+        gid = search_string(ptrs[i],block->nr,gnames);
+        if ((grptp != egrptpONE) || (i == 0))
+        {
+            grps->nm_ind[grps->nr++]=gid;
+        }
+        if (debug) 
+        {
+            fprintf(debug,"Found gid %d for group %s\n",gid,ptrs[i]);
+        }
     
-    /* Now go over the atoms in the group */
-    for(j=block->index[gid]; (j<block->index[gid+1]); j++) {
-      aj=block->a[j];
-      
-      /* Range checking */
-      if ((aj < 0) || (aj >= natoms)) 
-	gmx_fatal(FARGS,"Invalid atom number %d in indexfile",aj);
-	
-      /* Lookup up the old group number */
-      ognr = cbuf[aj];
-      if (ognr != NOGID) 
-	gmx_fatal(FARGS,"Atom %d in multiple %s groups (%d and %d)",
-		    aj+1,title,ognr+1,i+1);
-      else {
-	/* Store the group number in buffer */
-	if (grptp == egrptpONE)
-	  cbuf[aj] = 0;
-	else
-	  cbuf[aj] = i;
-	ntot++;
-      }
-    }
-  }
-  
-  /* Now check whether we have done all atoms */
-  bRest = FALSE;
-  if (ntot != natoms) {
-    if (grptp == egrptpALL) {
-      gmx_fatal(FARGS,"%d atoms are not part of any of the %s groups",
-		natoms-ntot,title);
-    } else if (grptp == egrptpPART) {
-      sprintf(warn_buf,"%d atoms are not part of any of the %s groups",
-	      natoms-ntot,title);
-      warning_note(wi,warn_buf);
-    }
-    /* Assign all atoms currently unassigned to a rest group */
-    for(j=0; (j<natoms); j++) {
-      if (cbuf[j] == NOGID) {
-	cbuf[j] = grps->nr;
-	bRest = TRUE;
-      }
-    }
-    if (grptp != egrptpPART) {
-      if (bVerbose)
-	fprintf(stderr,
-		"Making dummy/rest group for %s containing %d elements\n",
-		title,natoms-ntot);
-      /* Add group name "rest" */ 
-      grps->nm_ind[grps->nr] = restnm;
-      
-      /* Assign the rest name to all atoms not currently assigned to a group */
-      for(j=0; (j<natoms); j++) {
-	if (cbuf[j] == NOGID)
-	  cbuf[j] = grps->nr;
-      }
-      grps->nr++;
-    }
-  }
+        /* Now go over the atoms in the group */
+        for(j=block->index[gid]; (j<block->index[gid+1]); j++)
+        {
 
-  if (grps->nr == 1) {
-    groups->ngrpnr[gtype] = 0;
-    groups->grpnr[gtype]  = NULL;
-  } else {
-    groups->ngrpnr[gtype] = natoms;
-    snew(groups->grpnr[gtype],natoms);
-    for(j=0; (j<natoms); j++) {
-      groups->grpnr[gtype][j] = cbuf[j];
+            aj=block->a[j];
+      
+            /* Range checking */
+            if ((aj < 0) || (aj >= natoms)) 
+            {
+                gmx_fatal(FARGS,"Invalid atom number %d in indexfile",aj);
+            }
+            /* Lookup up the old group number */
+            ognr = cbuf[aj];
+            if (ognr != NOGID)
+            {
+                gmx_fatal(FARGS,"Atom %d in multiple %s groups (%d and %d)",
+                          aj+1,title,ognr+1,i+1);
+            }
+            else
+            {
+                /* Store the group number in buffer */
+                if (grptp == egrptpONE)
+                {
+                    cbuf[aj] = 0;
+                }
+                else
+                {
+                    cbuf[aj] = i;
+                }
+                ntot++;
+            }
+        }
     }
-  }
-  
-  sfree(cbuf);
+    
+    /* Now check whether we have done all atoms */
+    bRest = FALSE;
+    if (ntot != natoms)
+    {
+        if (grptp == egrptpALL)
+        {
+            gmx_fatal(FARGS,"%d atoms are not part of any of the %s groups",
+                      natoms-ntot,title);
+        }
+        else if (grptp == egrptpPART)
+        {
+            sprintf(warn_buf,"%d atoms are not part of any of the %s groups",
+                    natoms-ntot,title);
+            warning_note(wi,warn_buf);
+        }
+        /* Assign all atoms currently unassigned to a rest group */
+        for(j=0; (j<natoms); j++)
+        {
+            if (cbuf[j] == NOGID)
+            {
+                cbuf[j] = grps->nr;
+                bRest = TRUE;
+            }
+        }
+        if (grptp != egrptpPART)
+        {
+            if (bVerbose)
+            {
+                fprintf(stderr,
+                        "Making dummy/rest group for %s containing %d elements\n",
+                        title,natoms-ntot);
+            }
+            /* Add group name "rest" */ 
+            grps->nm_ind[grps->nr] = restnm;
+            
+            /* Assign the rest name to all atoms not currently assigned to a group */
+            for(j=0; (j<natoms); j++)
+            {
+                if (cbuf[j] == NOGID)
+                {
+                    cbuf[j] = grps->nr;
+                }
+            }
+            grps->nr++;
+        }
+    }
+    
+    if (grps->nr == 1)
+    {
+        groups->ngrpnr[gtype] = 0;
+        groups->grpnr[gtype]  = NULL;
+    }
+    else
+    {
+        groups->ngrpnr[gtype] = natoms;
+        snew(groups->grpnr[gtype],natoms);
+        for(j=0; (j<natoms); j++)
+        {
+            groups->grpnr[gtype][j] = cbuf[j];
+        }
+    }
+    
+    sfree(cbuf);
 
-  return (bRest && grptp == egrptpPART);
+    return (bRest && grptp == egrptpPART);
 }
 
 static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)

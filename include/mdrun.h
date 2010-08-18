@@ -89,8 +89,6 @@ extern "C" {
 #define CGLO_STOPCM         (1<<3)
 /* bGStat is defined in do_md */
 #define CGLO_GSTAT          (1<<4)
-/* bNEMD is defined in do_md */
-#define CGLO_NEMD           (1<<5)
 /* Sum the energy terms in global computation */
 #define CGLO_ENERGY         (1<<6)
 /* Sum the kinetic energy terms in global computation */
@@ -365,7 +363,7 @@ extern void init_md(FILE *fplog,
 		    gmx_mdoutf_t **outf,t_mdebin **mdebin,
 		    tensor force_vir,tensor shake_vir,
 		    rvec mu_tot,
-		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm, 
+		    bool *bSimAnn,t_vcm **vcm, 
 		    t_state *state, unsigned long Flags);
   /* Routine in sim_util.c */
 

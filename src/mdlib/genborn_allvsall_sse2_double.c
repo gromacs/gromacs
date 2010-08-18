@@ -576,6 +576,17 @@ genborn_allvsall_setup(gmx_allvsallgb2_data_t **  p_aadata,
 }
 
 
+/*
+ * This routine apparently hits a compiler bug visual studio has had 'forever'.
+ * It is present both in VS2005 and VS2008, and the only way around it is to
+ * decrease optimization. We do that with at pragma, and only for MSVC, so it
+ * will not hurt any of the well-behaving and supported compilers out there.
+ * MS: Fix your compiler, it sucks like a black hole!
+ */
+#ifdef _MSC_VER
+#pragma optimize("t",off)
+#endif
+
 int
 genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
                                               t_mdatoms *            mdatoms,
@@ -1028,7 +1039,10 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
 	
 	return 0;
 }
-
+/* Reinstate MSVC optimization */
+#ifdef _MSC_VER
+#pragma optimize("",on)
+#endif
 
 
 int
