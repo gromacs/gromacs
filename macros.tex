@@ -85,15 +85,15 @@
 
 \newcommand{\captspace}{\vspace{2mm}}
 
-\newif\ifpdf
+\newif\ifpdfman
 \ifx\pdfoutput\undefined
-  \pdffalse % not using pdflatex  
+  \pdfmanfalse % not using pdflatex  
 \else
   \pdfoutput=1 % using pdflatex
-  \pdftrue
+  \pdfmantrue
 \fi
 
-\ifpdf
+\ifpdfman
   \usepackage[pdftex]{graphicx}
   \usepackage[pdftex,plainpages=false,pdfpagelabels,colorlinks=true,urlcolor=blue,citecolor=blue,pdfstartview=FitV]{hyperref}
 \else
