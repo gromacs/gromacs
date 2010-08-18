@@ -3,13 +3,13 @@
 \vspace{-2ex}\begin{tabbing}
 {\bf mk\_angndx} \= \kill
 {\bf pdb2gmx} \> converts pdb files to topology and coordinate files \\
-{\bf x2top} \> generates a primitive topology from coordinates  \\
+{\bf g\_x2top} \> generates a primitive topology from coordinates  \\
 {\bf editconf} \> edits the box and writes subgroups  \\
 {\bf genbox} \> solvates a system \\
 {\bf genion} \> generates mono atomic ions on energetically favorable positions \\
 {\bf genconf} \> multiplies a conformation in 'random' orientations \\
 {\bf genrestr} \> generates position restraints or distance restraints for index groups \\
-{\bf protonate} \> protonates structures \\
+{\bf g\_protonate} \> protonates structures \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Running a simulation}
@@ -24,7 +24,8 @@
 \vspace{-2ex}\begin{tabbing}
 {\bf mk\_angndx} \= \kill
 {\bf ngmx} \> displays a trajectory \\
-{\bf highway} \> X-windows gadget for highway simulations \\
+{\bf g\_highway} \> X Window System gadget for highway simulations \\
+{\bf g\_nmtraj} \> generate a virtual trajectory from an eigenvector \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Processing energies}
@@ -42,8 +43,8 @@
 {\bf trjconv} \> converts and manipulates trajectory files \\
 {\bf trjcat} \> concatenates trajectory files \\
 {\bf eneconv} \> converts energy files \\
-{\bf xmp2ps} \> converts XPM matrices to encapsulated postscript (or XPM) \\
-{\bf sigeps} \> convert c6/12 or c6/cn combinations to and from sigma/epsilon \\
+{\bf xpm2ps} \> converts XPM matrices to encapsulated postscript (or XPM) \\
+{\bf g\_sigeps} \> convert c6/12 or c6/cn combinations to and from sigma/epsilon \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Tools}
@@ -53,7 +54,6 @@
 {\bf mk\_angndx} \> generates index files for g\_angle \\
 {\bf gmxcheck} \> checks and compares files \\
 {\bf gmxdump} \> makes binary files human readable \\
-{\bf gen\_table} \> generate tables for use by mdrun \\
 {\bf g\_traj} \> plots x, v and f of selected atoms/groups (and more) from a trajectory \\
 {\bf g\_analyze} \> analyzes data sets \\
 {\bf trjorder} \> orders molecules according to their distance to a group \\
@@ -62,12 +62,12 @@
 {\bf g\_dyndom} \> interpolate and extrapolate structure rotations \\
 {\bf g\_morph} \> linear interpolation of conformations  \\
 {\bf g\_wham} \> weighted histogram analysis after umbrella sampling \\
-{\bf ffscan} \> scan and modify force field data for a single point energy calculation \\
 {\bf xpm2ps} \> convert XPM (XPixelMap) file to postscript \\
 {\bf g\_sham} \> read/write xmgr and xvgr data sets \\
 {\bf g\_spatial} \> calculates the spatial distribution function (more control than g\_sdf) \\
 {\bf g\_sdf} \> calculates the spatial distribution function (faster than g\_spatial) \\
 {\bf g\_select} \> selects groups of atoms based on flexible textual selections \\
+{\bf g\_tune\_pme} \> time mdrun as a function of PME nodes to optimize settings \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Distances between structures}
@@ -87,7 +87,7 @@
 {\bf g\_bond} \> calculates distances between atoms \\
 {\bf g\_mdmat} \> calculates residue contact maps \\
 {\bf g\_polystat} \> calculates static properties of polymers \\
-{\bf g\_rmsdist} \> calculates atom pair distances averaged with power 2, -3 or -6 \\
+{\bf g\_rmsdist} \> calculates atom pair distances averaged with power -2, -3 or -6 \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Mass distribution properties over time}
@@ -98,6 +98,7 @@
 {\bf g\_msd} \> calculates mean square displacements \\
 {\bf g\_polystat} \> calculates static properties of polymers \\
 {\bf g\_rotacf} \> calculates the rotational correlation function for molecules \\
+{\bf g\_rdf} \> calculates radial distribution functions \\
 {\bf g\_rotmat} \> plots the rotation matrix for fitting to a reference structure \\
 {\bf g\_vanhove} \> calculates Van Hove displacement functions \\
 \end{tabbing}\vspace{-2ex}
@@ -127,7 +128,7 @@
 {\bf g\_bundle} \> analyzes bundles of axes, {\eg} helices \\
 {\bf g\_disre} \> analyzes distance restraints \\
 {\bf g\_clustsize} \> calculate size distributions of atomic clusters \\
-{\bf anadock} \> cluster structures from Autodock runs \\
+{\bf g\_anadock} \> cluster structures from Autodock runs \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Kinetic properties}
@@ -136,7 +137,11 @@
 {\bf g\_traj} \> plots x, v, f, box, temperature and rotational energy \\
 {\bf g\_velacc} \> calculates velocity autocorrelation functions \\
 {\bf g\_tcaf} \> calculates viscosities of liquids \\
-{\bf g\_kinetics} \> derives information about kinetic processes from you trajectories \\
+{\bf g\_kinetics} \> derives information about kinetic processes from your trajectories \\
+{\bf g\_bar} \> calculates free energy difference estimates through Bennett's acceptance ratio \\
+{\bf g\_current} \> calculate current autocorrelation function of system \\
+{\bf g\_vanhove} \> compute Van Hove correlation function \\
+{\bf g\_principal} \> calculate principal axes of inertion for a group of atoms \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Electrostatic properties}
@@ -147,6 +152,7 @@
 {\bf g\_dipoles} \> computes the total dipole plus fluctuations \\
 {\bf g\_dielectric} \> calculates frequency dependent dielectric constants \\
 {\bf g\_current} \> calculates dielectric constants for charged systems \\
+{\bf g\_spol} \> analyze dipoles around a solute \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Protein specific analysis}
@@ -157,8 +163,8 @@
 {\bf g\_helix} \> calculates basic properties of alpha helices \\
 {\bf g\_helixorient} \> calculates local pitch/bending/rotation/orientation inside helices \\
 {\bf g\_rama} \> computes Ramachandran plots \\
-{\bf xrama} \> shows animated Ramachandran plots \\
-{\bf wheel} \> plots helical wheels \\
+{\bf g\_xrama} \> shows animated Ramachandran plots \\
+{\bf g\_wheel} \> plots helical wheels \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Interfaces}
