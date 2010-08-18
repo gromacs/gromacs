@@ -279,6 +279,27 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
     }
 }
 
+static real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass *MassQ)
+{
+    real quantity = 0;
+    switch (ir->etc) 
+    {
+    case etcNO:
+        break;
+    case etcBERENDSEN:
+        break;
+    case etcNOSEHOOVER:
+        quantity = NPT_energy(ir,state,MassQ);                
+        break;
+    case etcVRESCALE:
+        quantity = vrescale_energy(&(ir->opts),state->therm_integral);
+        break;
+    default:
+        break;
+    }
+    return quantity;
+}
+
 static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir, 
                             t_forcerec *fr, gmx_ekindata_t *ekind, 
                             t_state *state, t_state *state_global, t_mdatoms *mdatoms, 
@@ -1118,7 +1139,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
     double      cycles;
-	real        last_conserved = 0;
+	real        saved_conserved_quantity = 0;
     real        last_ekin = 0;
 	int         iter_i;
 	t_extmass   MassQ;
@@ -2047,7 +2068,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
                     }
                 }
-
+                
                 if (bIterations &&
                     done_iterating(cr,fplog,step,&iterate,bFirstIterate,
                                    state->veta,&vetanew)) 
@@ -2082,18 +2103,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
         /* MRS -- now done iterating -- compute the conserved quantity */
         if (bVV) {
-            last_conserved = 0;
-            if (IR_NVT_TROTTER(ir) || IR_NPT_TROTTER(ir))
+            saved_conserved_quantity = compute_conserved_from_auxiliary(ir,state,&MassQ);
+            if (ir->eI==eiVV) 
             {
-                last_conserved = 
-                    NPT_energy(ir,state,&MassQ); 
-                if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
-                {
-                    last_conserved -= enerd->term[F_DISPCORR];
-                }
-            }
-            if (ir->eI==eiVV) {
                 last_ekin = enerd->term[F_EKIN]; /* does this get preserved through checkpointing? */
+            }
+            if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
+            {
+                saved_conserved_quantity -= enerd->term[F_DISPCORR];
             }
         }
         
@@ -2563,7 +2580,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
         
+        /* sum up the foreign energy and dhdl terms */
         sum_dhdl(enerd,state->lambda,ir);
+
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 
         {
@@ -2571,29 +2590,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
         
-        switch (ir->etc) 
+        if (bVV)
         {
-        case etcNO:
-            break;
-        case etcBERENDSEN:
-            break;
-        case etcNOSEHOOVER:
-            if (IR_NVT_TROTTER(ir)) {
-                enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + last_conserved;
-            } else {
-                enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + 
-                    NPT_energy(ir,state,&MassQ);	
-            }
-            break;
-        case etcVRESCALE:
-            enerd->term[F_ECONSERVED] =
-                enerd->term[F_ETOT] + vrescale_energy(&(ir->opts),
-                                                      state->therm_integral);
-            break;
-        default:
-            break;
+            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + saved_conserved_quantity;
         }
-        
+        else 
+        {
+            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + compute_conserved_from_auxiliary(ir,state,&MassQ);
+        }
         /* Check for excessively large energies */
         if (bIonize) 
         {
