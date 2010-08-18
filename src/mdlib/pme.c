@@ -2861,6 +2861,33 @@ do_redist_x_q(gmx_pme_t pme, t_commrec *cr, int start, int homenr,
     }
 }
 
+static void
+calc_initial_lb_coeffs(gmx_pme_t pme, real *local_c6, real *local_sigma)
+{
+    int  i;
+
+    for (i = 0; i < pme->atc[0].n; ++i)
+    {
+        real sigma4;
+
+        sigma4 = local_sigma[i];
+        sigma4 = sigma4*sigma4;
+        sigma4 = sigma4*sigma4;
+        pme->atc[0].q[i] = local_c6[i] / sigma4;
+    }
+}
+
+static void
+calc_next_lb_coeffs(gmx_pme_t pme, real *local_sigma)
+{
+    int  i;
+
+    for (i = 0; i < pme->atc[0].n; ++i)
+    {
+        pme->atc[0].q[i] *= local_sigma[i];
+    }
+}
+
 int gmx_pme_do(gmx_pme_t pme,
                int start,       int homenr,
                rvec x[],        rvec f[],
@@ -2878,14 +2905,11 @@ int gmx_pme_do(gmx_pme_t pme,
 {
     int     q,d,i,j,ntot,npme;
     bool    bFirst, bDoAllSplines;
-    int     nx,ny,nz;
-    int     n_d,local_ny;
+    int     n_d,local_n;
     int     loop_count;
-    pme_atomcomm_t *atc=NULL;
     real *  grid=NULL;
-    real    *ptr;
-    rvec    *x_d,*f_d;
-    real    *charge=NULL,*q_d,vol;
+    rvec    *f_d;
+    real    *charge=NULL,vol;
     real    energy_AB[4];
     matrix  vir_AB[4];
     real    scale;
@@ -2894,8 +2918,18 @@ int gmx_pme_do(gmx_pme_t pme,
     real *  fftgrid;
     t_complex * cfftgrid;
 
-    if (pme->nnodes > 1) {
-        atc = &pme->atc[0];
+    if (pme->nnodes == 1) {
+        pme_atomcomm_t *atc = &pme->atc[0];
+
+        if (DOMAINDECOMP(cr)) {
+            atc->n = homenr;
+            pme_realloc_atomcomm_things(atc);
+        }
+        atc->x = x;
+        atc->f = f;
+    } else {
+        pme_atomcomm_t *atc = &pme->atc[0];
+
         atc->npd = homenr;
         if (atc->npd > atc->pd_nalloc) {
             atc->pd_nalloc = over_alloc_dd(atc->npd);
@@ -2961,15 +2995,8 @@ int gmx_pme_do(gmx_pme_t pme,
         }
         where();
 
-        atc = &pme->atc[0];
         if (pme->nnodes == 1) {
-            if (DOMAINDECOMP(cr)) {
-                atc->n = homenr;
-                pme_realloc_atomcomm_things(atc);
-            }
-            atc->x = x;
-            atc->q = charge + start;
-            atc->f = f;
+            pme->atc[0].q = charge + start;
         } else {
             wallcycle_start(wcycle,ewcPME_REDISTXF);
             /* Redistribute x (only once) and coefficients */
@@ -2977,10 +3004,11 @@ int gmx_pme_do(gmx_pme_t pme,
             where();
             wallcycle_stop(wcycle,ewcPME_REDISTXF);
         }
+        local_n = pme->atc[0].n;
         
         if (debug)
             fprintf(debug,"Node= %6d, pme local particles=%6d\n",
-                    cr->nodeid,atc->n);
+                    cr->nodeid, local_n);
 
         if (flags & GMX_PME_SPREAD)
         {
@@ -2993,10 +3021,10 @@ int gmx_pme_do(gmx_pme_t pme,
 
             if (bFirst)
             {
-                inc_nrnb(nrnb,eNR_WEIGHTS,DIM*atc->n);
+                inc_nrnb(nrnb,eNR_WEIGHTS,DIM*local_n);
             }
             inc_nrnb(nrnb,eNR_SPREADQBSP,
-                     pme->pme_order*pme->pme_order*pme->pme_order*atc->n);
+                     pme->pme_order*pme->pme_order*pme->pme_order*local_n);
 
             wrap_periodic_pmegrid(pme,grid);
 
@@ -3094,7 +3122,7 @@ int gmx_pme_do(gmx_pme_t pme,
             where();
             
             /* If we are running without parallelization,
-             * atc->f is the actual force array, not a buffer,
+             * pme->atc[0].f is the actual force array, not a buffer,
              * therefore we should not clear it.
              */
             bClearF = (bFirst && PAR(cr));
@@ -3105,7 +3133,7 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_MPE_LOG(ev_gather_f_bsplines_finish);
             
             inc_nrnb(nrnb,eNR_GATHERFBSP,
-                     pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+                     pme->pme_order*pme->pme_order*pme->pme_order*local_n);
             wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
         }
 
@@ -3118,23 +3146,18 @@ int gmx_pme_do(gmx_pme_t pme,
     {
         real *local_c6 = NULL, *local_sigma = NULL;
 
-        atc = &pme->atc[0];
         if (pme->nnodes == 1) {
-            if (DOMAINDECOMP(cr)) {
-                atc->n = homenr;
-                pme_realloc_atomcomm_things(atc);
-            }
             if (pme->lb_buf1 == NULL)
             {
-                snew(pme->lb_buf1, atc->n);
-                pme->lb_buf_nalloc = atc->n;
+                pme->lb_buf_nalloc = pme->atc[0].n;
+                snew(pme->lb_buf1, pme->lb_buf_nalloc);
             }
-            atc->x = x;
-            atc->q = pme->lb_buf1;
-            atc->f = f;
+            pme->atc[0].q = pme->lb_buf1;
             local_c6 = c6A;
             local_sigma = sigmaA;
         } else {
+            pme_atomcomm_t *atc = &pme->atc[0];
+
             wallcycle_start(wcycle,ewcPME_REDISTXF);
 
             do_redist_x_q(pme, cr, start, homenr, bFirst, x, c6A);
@@ -3161,16 +3184,9 @@ int gmx_pme_do(gmx_pme_t pme,
 
             wallcycle_stop(wcycle,ewcPME_REDISTXF);
         }
+        local_n = pme->atc[0].n;
 
-        for (i = 0; i < atc->n; ++i)
-        {
-            real sigma4;
-
-            sigma4 = local_sigma[i];
-            sigma4 = sigma4*sigma4;
-            sigma4 = sigma4*sigma4;
-            atc->q[i] = local_c6[i] / sigma4;
-        }
+        calc_initial_lb_coeffs(pme, local_c6, local_sigma);
 
         for (q = 2; q < 9; ++q)
         {
@@ -3179,10 +3195,7 @@ int gmx_pme_do(gmx_pme_t pme,
             fftgrid = pme->fftgrid[q];
             cfftgrid = pme->cfftgrid[q];
             pfft_setup = pme->pfft_setup[q];
-            for (i = 0; i < atc->n; ++i)
-            {
-                atc->q[i] *= local_sigma[i];
-            }
+            calc_next_lb_coeffs(pme, local_sigma);
             where();
 
             if (flags & GMX_PME_SPREAD)
@@ -3196,10 +3209,10 @@ int gmx_pme_do(gmx_pme_t pme,
 
                 if (bFirst)
                 {
-                    inc_nrnb(nrnb,eNR_WEIGHTS,DIM*atc->n);
+                    inc_nrnb(nrnb,eNR_WEIGHTS,DIM*local_n);
                 }
                 inc_nrnb(nrnb,eNR_SPREADQBSP,
-                         pme->pme_order*pme->pme_order*pme->pme_order*atc->n);
+                         pme->pme_order*pme->pme_order*pme->pme_order*local_n);
 
                 wrap_periodic_pmegrid(pme,grid);
 
@@ -3252,15 +3265,7 @@ int gmx_pme_do(gmx_pme_t pme,
         if (flags & GMX_PME_CALC_F)
         {
             bFirst = !(flags & GMX_PME_DO_COULOMB);
-            for (i = 0; i < atc->n; ++i)
-            {
-                real sigma4;
-
-                sigma4 = local_sigma[i];
-                sigma4 = sigma4*sigma4;
-                sigma4 = sigma4*sigma4;
-                atc->q[i] = local_c6[i] / sigma4;
-            }
+            calc_initial_lb_coeffs(pme, local_c6, local_sigma);
 
             for (q = 8; q >= 2; --q)
             {
@@ -3269,10 +3274,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 fftgrid = pme->fftgrid[q];
                 cfftgrid = pme->cfftgrid[q];
                 pfft_setup = pme->pfft_setup[q];
-                for (i = 0; i < atc->n; ++i)
-                {
-                    atc->q[i] *= local_sigma[i];
-                }
+                calc_next_lb_coeffs(pme, local_sigma);
                 where();
 
                 /* do 3d-invfft */
@@ -3322,7 +3324,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 GMX_MPE_LOG(ev_gather_f_bsplines_finish);
 
                 inc_nrnb(nrnb,eNR_GATHERFBSP,
-                         pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+                         pme->pme_order*pme->pme_order*pme->pme_order*local_n);
                 wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
 
                 bFirst = FALSE;
@@ -3336,7 +3338,6 @@ int gmx_pme_do(gmx_pme_t pme,
         wallcycle_start(wcycle,ewcPME_REDISTXF);
         for(d=0; d<pme->ndecompdim; d++)
         {
-            atc = &pme->atc[d];
             if (d == pme->ndecompdim - 1)
             {
                 n_d = homenr;
@@ -3349,10 +3350,10 @@ int gmx_pme_do(gmx_pme_t pme,
             }
             GMX_BARRIER(cr->mpi_comm_mygroup);
             if (DOMAINDECOMP(cr)) {
-                dd_pmeredist_f(pme,atc,n_d,f_d,
+                dd_pmeredist_f(pme,&pme->atc[d],n_d,f_d,
                                d==pme->ndecompdim-1 && pme->bPPnode);
             } else {
-                pmeredist_pd(pme, FALSE, n_d, TRUE, f_d, NULL, atc);
+                pmeredist_pd(pme, FALSE, n_d, TRUE, f_d, NULL, &pme->atc[d]);
             }
         }
 
