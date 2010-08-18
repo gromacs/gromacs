@@ -118,10 +118,10 @@ endif(GMX_ASM_USEASM-NASM)
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${THREAD_MPI_SRC})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})
 add_dependencies(gmx gmx_version) 
-set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}")
+set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}")
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmx.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig RENAME "libgmx${GMX_LIBS_SUFFIX}.pc")
 

@@ -39,8 +39,8 @@ set(MDRUN_SOURCES
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
-set_target_properties(gmxpreprocess PROPERTIES OUTPUT_NAME "gmxpreprocess${GMX_BINARY_SUFFIX}")
-set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_BINARY_SUFFIX}")
+set_target_properties(gmxpreprocess PROPERTIES OUTPUT_NAME "gmxpreprocess${GMX_LIBS_SUFFIX}")
+set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}")
 
 if(GMX_OPENMM) 
     add_subdirectory(gmx_gpu_utils)
@@ -139,4 +139,5 @@ add_custom_target(install-mdrun
 endif(GMX_FAHCORE)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmxpreprocess.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmxpreprocess.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxpreprocess.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxpreprocess.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig 
+  RENAME "libgmxpreprocess${GMX_LIBS_SUFFIX}.pc")
