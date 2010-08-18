@@ -723,7 +723,7 @@ point $\ve{x}(0)$ and $\ve{v}(0)$, leapfrog and velocity Verlet will
 velocities as corresponding to $t=-\hDt$, while velocity Verlet will
 interpret them as corresponding to the timepoint $t=0$.
 
-\subsection{Understanding integrators: The Trotter decomposition}
+\subsection{Understanding reversible integrators: The Trotter decomposition}
 To further understand the relationship between velocity Verlet and
 leapfrog integration, we introduce the reversible Trotter formulation
 of dynamics, which is also useful to understanding implementations of
@@ -755,7 +755,7 @@ iL_2 &=& \sum_{i=1}^{N} \vv_i \cdot \nabla_{\rv_i}
 Then a short time, symmetric, and thus reversible approximation of the true dynamics will be:
 \bea
 \exp(iL\Dt) = \exp(iL_2\hDt) \exp(iL_1\Dt) \exp(iL_2\hDt) + \mathcal{O}(\Dt^3) 
-\label{eq:NVE_trotter}
+\label{eq:NVE_Trotter}
 \eea
 Which corresponds to velocity Verlet integration.  The first
 exponential term over $\hDt$ corresponds to a velocity half-step, the
@@ -769,7 +769,7 @@ half step.  For future times $t = n\Dt$, this becomes:
 \eea
 This formalism allows us to easily see the difference between the
 different flavors of Verlet integrators.  The leapfrog integrator can
-be seen as starting with Eq.~\ref{eq:NVE_trotter} with the
+be seen as starting with Eq.~\ref{eq:NVE_Trotter} with the
 $\exp\left(iL_1 \dt\right)$ term, instead of the half-step velocity
 term, yielding:
 \bea 
@@ -814,38 +814,44 @@ leapfrog will be different, as will be discussed in the section in
 thermostats and barostats.
 
 The half-step-averaged kinetic energy temperature are slightly more
-accurate, in that for a given time step size, the difference in
-average kinetic energies using the half-step-averaged kinetic energies
-({\em md} and {\em md-vv-avek}) will be closer to the kinetic energy
-obtained in the limit of small step size than will the full-step
-kinetic energy (using {\em md-vv}).  For NVE simulations, this
-difference is usually not significant, since the trajectories are
-still identical; it makes a difference in the way the simulations are
-{\em interpreted}, not in the trajectories that are actually produced.
-The only difference is that the effective temperature will be
-interpreted slightly differently.  For NVT simulations, however, there
-{\em will} be a difference, as discussed in the section on temperature
-control, since the kinetic energies of the simulations are adjusted
-through the temperature control algorithm to match the effective
-temperature.  Although the kinetic energy is more accurate with the
-averaged half step method, meaning that it changes less as the
-timestep gets larger, it is also more noisy.  The noise in the
-half-step-averaged kinetic energy will be higher (about twice as high
-in most cases) than the full-step kinetic energy.  The drift will
-still be the same, however, as the trajectories are identical.
+accuratel for a given step size, the difference in average kinetic
+energies using the half-step-averaged kinetic energies ({\em md} and
+{\em md-vv-avek}) will be closer to the kinetic energy obtained in the
+limit of small step size than will the full-step kinetic energy (using
+{\em md-vv}).  For NVE simulations, this difference is usually not
+significant, since the positions and velocities of the particles are
+still identical; it makes a difference in the way the the temperature
+of the simulations are {\em interpreted}, but {\em not} in the
+trajectories that are produced.  Although the kinetic energy is more
+accurate with the half-step-averaged method, meaning that it changes
+less as the timestep gets large, it is also more noisy.  The rmsd
+variance of the total energy of the system (sum of kinetic plus
+potential) in the half-step-averaged kinetic energy case will be
+higher (about twice as high in most cases) than the full-step kinetic
+energy.  The drift will still be the same, however, as again, the
+trajectories are identical.
 
-In general, the velocity Verlet integrator has been tuned with methods
-that give the highest degree of thermodynamic accuracy but has not yet
-been optimized for performance.  The integration itself takes
+For NVT simulations, however, there {\em will} be a difference, as
+discussed in the section on temperature control, since the velocities
+of the particles are adjusted such that kinetic energies of the
+simulations, which can be calculated either way, reach the
+distribution corresponding to the set temperature.  In this case, the
+three methods will not give identical results.
+
+Because the velocity and position are both defined at the same time
+$t$ the velocity Verlet integrator can be used for some methods,
+especially rigorously correct pressure control methods, that are not
+actually possible with leapfrog.  The integration itself takes
 negligibly more time than leapfrog, but twice as many communication
 calls are currently required.  In most cases, and especially for large
 systems where communication speed is important for parallelization and
 differences between thermodynamic ensembles vanish in the $1/N$ limit,
-leapfrog will likely be the preferred integrator.  For pressure
-control simulations where the fine details of the thermodynamics are
-important, only velocity Verlet allows the true ensemble to be
-calculated.  Simulation with double precision may be required to get
-fine details of thermodynamics correct.
+and when only NVT ensembles are required.  leapfrog will likely be the
+preferred integrator.  For pressure control simulations where the fine
+details of the thermodynamics are important, only velocity Verlet
+allows the true ensemble to be calculated.  In either case, simulation
+with double precision may be required to get fine details of
+thermodynamics correct.
 
 \subsection{\normindex{Twin-range cut-offs}}
 To save computation time, slowly varying forces can be calculated
@@ -930,10 +936,12 @@ result of force truncation and integration errors, heating due to
 external or frictional forces), but this is not entirely correct to do
 from a thermodynamic standpoint, and in some cases only masks the
 symptoms (increase in temperature of the system) rather than the
-underlying problem (deviations from physicality in the dynamics).  For
-larger systems and small drifts, this error is usually negligible, but
-very few comprehensive comparisons have been carried out, and some
-caution must be taking in interpreting the results.
+underlying problem (deviations from correct physics in the dynamics).
+For larger systems, errors in ensemble averages and structural
+properties incurred by using temperature control to remove slow drifts
+in temperature appear to be negligible, but no completely
+comprehensive comparisons have been carried out, and some caution must
+be taking in interpreting the results.
 
 \subsubsection{\swapindex{Berendsen}{temperature coupling}}
 \index{weak coupling}
@@ -957,14 +965,14 @@ longer ({\eg} 0.5 ps) in which case it hardly influences the
 conservative dynamics. 
 
 The Berendsen thermostat suppresses the fluctuations of the kinetic
-energy.  This means that, strictly speaking, one does not generate a
-proper canonical ensemble, so rigorously, the sampling will indeed be
-incorrect.  This error scales with $1/N$, so for very large systems
-most ensemble averages properties will not be affected significantly,
-except for the distribution of the kinetic energy itself.  A similar
+energy.  This means that one does not generate a proper canonical
+ensemble, so rigorously, the sampling will indeed be incorrect.  This
+error scales with $1/N$, so for very large systems most ensemble
+averages will not be affected significantly, except for the
+distribution of the kinetic energy itself.  However, fluctution
+properties, such as the heat capacity, will be affected.  A similar
 thermostat which does produce a correct ensemble is the velocity
 rescaling thermostat\cite{Bussi2007a} described below.
-% is this true for heat capacity as well?
 
 The heat flow into or out of the system is effected by scaling the
 velocities of each particle every step with a time-dependent factor
@@ -1011,12 +1019,11 @@ is written to the energy and log file.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{\swapindex{Nos{\'e}-Hoover}{temperature coupling}}
-\index{extended ensemble}
-The Berendsen weak coupling algorithm is extremely efficient for relaxing
-a system to the target temperature, but once your system
-has reached equilibrium it might be more important to probe a
-correct canonical ensemble. This is unfortunately not the case for
-the weak coupling scheme, although the difference is usually negligible.
+\index{extended ensemble} The Berendsen weak coupling algorithm is
+extremely efficient for relaxing a system to the target temperature,
+but once your system has reached equilibrium it might be more
+important to probe a correct canonical ensemble. This is unfortunately
+not the case for the weak coupling scheme.
 
 To enable canonical ensemble simulations, {\gromacs} also supports the
 extended-ensemble approach first proposed by Nos{\'e}~\cite{Nose84}
@@ -1088,10 +1095,15 @@ were to run for infinitely long.  For this reason, the Nos{\'e}-Hoover
 chain approach was developed, where each of the Nos{\'e}-Hoover
 thermostats is has its own Nos{\'e}-Hoover thermostat controlling its
 temperature.  In the limit of an infinite chain of thermostats, the
-dynamics are guaranteed to be ergodic, but in practice, just a few are
-required.  The default is 10, but this can be controlled by user
+dynamics are guaranteed to be ergodic. Using just a few chains can
+greatly improve the ergodicity, but recent reseach has shown that the
+system will still be nonergodic, and it is still not entirely clear
+what the practical effect of this.~\cite{Cooke2008} Currently, the
+default number of chains is 10, but this can be controlled by user
 option.  In the case of chains, the equations are modified in the
-following way to include a chain of thermostatting particles~\cite{Martyna1992}:
+following way to include a chain of thermostatting
+particles~\cite{Martyna1992}:
+
 \bea
 \frac {\de^2\ve{r}_i}{\de t^2} &~=~& \frac{\ve{F}_i}{m_i} - \frac{p_{{\xi}_1}}{Q_1} \frac{\de \ve{r}_i}{\de t} \nonumber \\
 \frac {\de p_{{\xi}_1}}{\de t} &~=~& \left( T - T_0 \right) - p_{{\xi}_1} \frac{p_{{\xi}_2}}{Q_2} \nonumber \\
@@ -1109,14 +1121,16 @@ amount of space and are generally not important for analysis of
 simulations, but this can be overridden by defining the environment
 variable GMX\_NOSEHOOVER\_CHAINS, which will print the values of all
 the positions and velocities of all Nos{\'e}-Hoover particles in the
-chain.  Leapfrog simulations currently can only have Nos{\'e}-Hoover
-chain lengths of 1, but this will likely be updated in later version.
+chain to the .edr file.  Leapfrog simulations currently can only have 
+Nos{\'e}-Hoover chain lengths of 1, but this will likely be updated in 
+later version.
 
-For temperature coupling, the reference temperature is calculated
-differently in velocity Verlet and leapfrog dynamics; velocity Verlet
-({\em md-vv}) uses the full-step kinetic energy, while leapfrog and
-{\em md-vv-avek} use the half-step-averaged kinetic energy, discussed
-earlier in the integrator section.
+As described in the integrator section, for temperature coupling, the
+temperature that the algorithm attempts to match to the reference
+temperature is calculated differently in velocity Verlet and leapfrog
+dynamics.  Velocity Verlet ({\em md-vv}) uses the full-step kinetic
+energy, while leapfrog and {\em md-vv-avek} use the half-step-averaged
+kinetic energy.
 
 We can examine the Trotter decomposition again to better understand
 the differences between these constant-temperature integrators.  In
@@ -1137,13 +1151,14 @@ For standard velocity Verlet with Nos{\'e}-Hoover temperature control, this beco
 \exp(iL\dt) &=& \exp\left(iL_{\mathrm{NHC}}\dt/2\right) \exp\left(iL_2 \dt/2\right) \nonumber \\
 &&\exp\left(iL_1 \dt\right) \exp\left(iL_2 \dt/2\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right) + \mathcal{O}(\Dt^3)
 \eea
-For half-step-averaged temperature control, this decomposition will
-not work, since we do not have the full step temperature until after
-the second velocity step.  However, we can construct an alternate
-decomposition that is still reversible, by switching the place of the
-NHC and velocity portions of the decomposition.
+For half-step-averaged temperature control using {\em md-vv-avek},
+this decomposition will not work, since we do not have the full step
+temperature until after the second velocity step.  However, we can
+construct an alternate decomposition that is still reversible, by
+switching the place of the NHC and velocity portions of the
+decomposition.
 \bea  
-\exp(iL\dt) &=&  \exp\left(iL_2 \dt/2\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right)\exp\left(iL_1 \dt\right)\nonumber \\
+\exp(iL\dt) &=& \exp\left(iL_2 \dt/2\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right)\exp\left(iL_1 \dt\right)\nonumber \\
 &&\exp\left(iL_{\mathrm{NHC}}\dt/2\right) \exp\left(iL_2 \dt/2\right)+ \mathcal{O}(\Dt^3)
 \label{eq:half_step_NHC_integrator}
 \eea
@@ -1196,9 +1211,12 @@ timesteps.~\cite{Eastwood2010}
 In the same spirit as the temperature coupling, the system can also be
 coupled to a 'pressure bath'. {\gromacs} supports both the Berendsen
 algorithm~\cite{Berendsen84} that scales coordinates and box vectors
-every step, and the extended ensemble Parrinello-Rahman approach. Both
-of these can be combined with any of the temperature coupling methods
-above.
+every step, the extended ensemble Parrinello-Rahman approach, and for
+the velocity Verlet variants, the Martyna-Tuckerman-Tobias-Klein
+(MTTK) implementation of pressure
+control~\cite{Martyna1996}. Parrinello-Rahman and Berendsen can be
+combined with any of the temperature coupling methods above; MTTK can
+only be used with Nos{\'e}-Hoover temperature control.
 
 \subsubsection{Berendsen pressure coupling}
 \label{sec:berendsen_pressure_coupling}
@@ -1291,29 +1309,24 @@ Parrinello-Rahman barostat with the Nos{\'e}-Hoover
 thermostat, but to keep it simple we only show the Parrinello-Rahman 
 modification here:
 
-\bea
-\frac {\de^2\ve{r}_i}{\de t^2} & = & \frac{\ve{F}_i}{m_i} - 
-\ve{M} \frac{\de \ve{r}_i}{\de t} , \\
-\ve{M} & = & \ve{b}^{-1} \left[ \ve{b} \frac{\de \ve{b}'}{\de t} + \frac{\de \ve{b}}{\de t} \ve{b}' \right] \ve{b}'^{-1}.
-\eea
-The (inverse) mass parameter matrix $\ve{W}^{-1}$ determines the
-strength of the coupling, and how the box can be deformed.
-The box restriction (\ref{eqn:box_rot}) will be fulfilled automatically
-if the corresponding elements of $\ve{W}^{-1}$ are zero. Since the
-coupling strength also depends on the size of your box, we prefer
-to calculate it automatically in {\gromacs}. 
-You only have to provide the approximate
-isothermal compressibilities {\boldmath $\beta$} 
-and the pressure time constant $\tau_p$ in the input file
-($L$ is the largest box matrix element):
-\beq
-\left( \ve{W}^{-1} \right)_{ij} = \frac{4 \pi^2 \beta_{ij}}{3 \tau_p^2 L}.
-\eeq
-Just as for the Nos{\'e}-Hoover thermostat, you should realize that
-the Parrinello-Rahman time constant is {\em not} equivalent to the
-relaxation time used in the Berendsen pressure coupling algorithm.  In
-most cases you will need to use a 4--5 times larger time constant with
-Parrinello-Rahman coupling. If your pressure is very far from
+\bea \frac {\de^2\ve{r}_i}{\de t^2} & = & \frac{\ve{F}_i}{m_i} -
+\ve{M} \frac{\de \ve{r}_i}{\de t} , \\ \ve{M} & = & \ve{b}^{-1} \left[
+  \ve{b} \frac{\de \ve{b}'}{\de t} + \frac{\de \ve{b}}{\de t} \ve{b}'
+  \right] \ve{b}'^{-1}.  \eea The (inverse) mass parameter matrix
+$\ve{W}^{-1}$ determines the strength of the coupling, and how the box
+can be deformed.  The box restriction (\ref{eqn:box_rot}) will be
+fulfilled automatically if the corresponding elements of $\ve{W}^{-1}$
+are zero. Since the coupling strength also depends on the size of your
+box, we prefer to calculate it automatically in {\gromacs}.  You only
+have to provide the approximate isothermal compressibilities
+{\boldmath $\beta$} and the pressure time constant $\tau_p$ in the
+input file ($L$ is the largest box matrix element): \beq \left(
+\ve{W}^{-1} \right)_{ij} = \frac{4 \pi^2 \beta_{ij}}{3 \tau_p^2 L}.
+\eeq Just as for the Nos{\'e}-Hoover thermostat, you should realize
+that the Parrinello-Rahman time constant is {\em not} equivalent to
+the relaxation time used in the Berendsen pressure coupling algorithm.
+In most cases you will need to use a 4--5 times larger time constant
+with Parrinello-Rahman coupling. If your pressure is very far from
 equilibrium, the Parrinello-Rahman coupling may result in very large
 box oscillations that could even crash your run.  In that case you
 would have to increase the time constant, or (better) use the weak
@@ -1321,8 +1334,9 @@ coupling scheme to reach the target pressure, and then switch to
 Parrinello-Rahman coupling once the system is in equilibrium.
 Additionally, using the leapfrog algorithm, the pressure at time $t$
 is not available until after the time step has completed, and so the
-pressure from the previous step must be used. 
-
+pressure from the previous step must be used, which makes te algorithm
+not directly reversible, and may not be appropriate for high precision
+thermodynamic calculations.
 
 \subsubsection{\swapindex{Surface tension}{coupling}}
 When a periodic system consists of more than one phase, separated by
@@ -1476,13 +1490,13 @@ $\rv_i(0)$, evaluate at $t=\Delta t$.  This yields the evolution:
 \beq
 \rv_i(\dt) = \rv_i(0)e^{\veps \dt} + \Delta t \vv_i(0) e^{\veps \dt/2} \sinhx{\veps \dt/2}
 \eeq
-The action of $\exp(\left(iL_2 \dt/2\right)$ comes from the solution
+The action of $\exp\left(iL_2 \dt/2\right)$ comes from the solution
 of the differential equation $\dot{\vv}_i = \frac{\F_i}{m_i} -
 \alpha\veps\vv_i$, yielding:
 \beq
 \vv_i(\dt/2) = \vv_i(0)e^{-\alpha\veps \dt/2} + \frac{\Delta t}{2m_i}\F_i(0) e^{-\alpha\veps \dt/4}\sinhx{\alpha\veps \dt/4}
 \eeq
-The {\em md-vv-avek} uses the full step kinetic energies for determining the pressure with the pressure control,
+{\em md-vv-avek} uses the full step kinetic energies for determining the pressure with the pressure control,
 but the half-step-averaged kinetic energy for the temperatures, which can be written as a Trotter decomposition as:
 \bea  
 \exp(iL\dt) &=& \exp\left(iL_{\mathrm{NHC-baro}}\dt/2\right)\nonumber \exp\left(iL_{\epsilon,2}\dt/2\right) \exp\left(iL_2 \dt/2\right) \nonumber \\
@@ -1490,11 +1504,47 @@ but the half-step-averaged kinetic energy for the temperatures, which can be wri
 &&\exp\left(iL_2 \dt/2\right) \exp\left(iL_{\epsilon,2}\dt/2\right) \exp\left(iL_{\mathrm{NHC-baro}}\dt/2\right) + \mathcal{O}(\dt^3)
 \eea
 With constraints, the equations becomes significantly more
-complicated, in that each of these equations need to be solved
+complicated(!), in that each of these equations need to be solved
 iteratively for the constraint forces.  The discussion of the details of the iteration
 is beyond the scope of this manual; readers are encouraged to see the
 implementation described in Ref.~\cite{Yu2010}.
- } % Brace matches ifthenelse test for gmxlite
+
+} % Brace matches ifthenelse test for gmxlite
+
+
+\subsubsection{Infrequent evaluation of temperature and pressure coupling}
+
+Temperature and pressure control require global communication to
+compute the kinetic energy and virial, which can become costly if
+performed every step for large systems.  We can rearrange the Trotter
+decomposition to give alternate symplectic, reversible integrator with
+the coupling steps every $n$ steps instead of every steps.  These new
+integrators will diverge if the coupling time step is too large, as
+the auxiliary variable integrations will not converge.  However, in
+most cases, long coupling times are more appropriate, as they disturb
+the dynamics less.~\cite{Martyna1996}
+
+Standard velocity Verlet with Nos{\'e}-Hoover temperature control has a Trotter expansion:
+\bea  
+\exp(iL\dt) &\approx& \exp\left(iL_{\mathrm{NHC}}\dt/2\right) \exp\left(iL_2 \dt/2\right) \nonumber \\
+&&\exp\left(iL_1 \dt\right) \exp\left(iL_2 \dt/2\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right)
+\eea
+If the Nos{\'e}-Hoover chain is sufficiently slow with respect to the motions of the system, we can
+write an alternate integrator over $n$ steps for velocity Verlet as:
+\bea  
+\exp(iL\dt) &\approx& (\exp\left(iL_{\mathrm{NHC}}(n\dt/2)\right)\left[\exp\left(iL_2 \dt/2\right)\right. \nonumber \\
+&&\left.\exp\left(iL_1 \dt\right) \exp\left(iL_2 \dt/2\right)\right]^n \exp\left(iL_{\mathrm{NHC}}(n\dt/2)\right)
+\eea
+For pressure control, this becomes:
+\bea  
+\exp(iL\dt) &\approx& \exp\left(iL_{\mathrm{NHC-baro}}(n\dt/2)\right)\exp\left(iL_{\mathrm{NHC}}(n\dt/2)\right) \nonumber \nonumber \\
+&&\exp\left(iL_{\epsilon,2}(n\dt/2)\right) \left[\exp\left(iL_2 \dt/2\right)\right. \nonumber \nonumber \\
+&&\exp\left(iL_{\epsilon,1}\dt\right) \exp\left(iL_1 \dt\right) \nonumber \nonumber \\
+&&\left.\exp\left(iL_2 \dt/2\right)\right]^n \exp\left(iL_{\epsilon,2}(n\dt/2)\right) \nonumber \nonumber \\
+&&\exp\left(iL_{\mathrm{NHC}}(n\dt/2)\right)\exp\left(iL_{\mathrm{NHC-baro}}(n\dt/2)\right)
+\eea
+Where the box volume integration occurs every step, but the auxiliary variable 
+integrations happen every $n$ steps.
 
 \subsection{The complete update algorithm}
 \begin{figure}
@@ -1528,7 +1578,7 @@ $\Downarrow$ \\
 {\bf 6.} Scale coordinates and box: $\ve{r} = \mu \ve{r}''; \ve{b} =
 \mu  \ve{b}$ \\
 \end{shadowenv}
-\caption{The MD update algorithm with the leap frog integrator}
+\caption{The MD update algorithm with the leapfrog integrator}
 \label{fig:complete-update}
 \end{center}
 \end{figure}
@@ -1547,12 +1597,6 @@ account the update algorithm for the velocities becomes:
 \ve{v}(t+\hdt)~=~\ve{f}_g * \lambda * \left[ \ve{v}(t-\hdt) +\frac{\ve{F}(t)}{m}\Delta t + \ve{a}_h \Delta t \right]
 \eeq
 where $g$ and $h$ are group indices which differ per atom.
-
-%\ifthenelse{\equal{\gmxlite}{1}}{}{
-%\subsection{The \normindex{velocity Verlet integrator}}
-%\label{subsec:vverlet}
-
-%}
 
 \subsection{Output step}
 The important output of the MD run is the {\em
@@ -1664,6 +1708,13 @@ For the special case of rigid water molecules, that often make up more
 than 80\% of the simulation system we have implemented the 
 \normindex{SETTLE}
 algorithm~\cite{Miyamoto92} (\secref{constraints}).
+
+For velocity verlet, and additional round of constraining must be
+done, to constraint the velocities of the second velocity half step,
+removing any component of the velocity parallel to the bond vector.
+This step is called RATTLE, and is covered in more detail in the
+original Andersen paper.~\cite{Andersen1983a}
+
 } % Brace matches ifthenelse test for gmxlite
 
 
