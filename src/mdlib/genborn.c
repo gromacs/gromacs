@@ -1627,9 +1627,10 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 }
 
 
-real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype, 
-                    rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, t_nrnb *nrnb, bool bRad,
-					const t_pbc *pbc, const t_graph *graph)
+void
+calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype, 
+               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, t_nrnb *nrnb, bool bRad,
+               const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd)
 {
     real v=0;
     int  cnt;
@@ -1645,14 +1646,14 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
 	
 	
     /* Do a simple ACE type approximation for the non-polar solvation */
-    v += calc_gb_nonpolar(cr, fr,born->nr, born, top, atype, fr->dvda, gb_algorithm,md);
+    enerd->term[F_NPSOLVATION] += calc_gb_nonpolar(cr, fr,born->nr, born, top, atype, fr->dvda, gb_algorithm,md);
 	
     /* Calculate the bonded GB-interactions using either table or analytical formula */
-    v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
-                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+    enerd->term[F_GBPOL]       += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
+                                     fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
     
     /* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
-    v += calc_gb_selfcorrections(cr,born->nr,md->chargeA, born, fr->dvda, md, fr->epsfac);         
+    enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr,born->nr,md->chargeA, born, fr->dvda, md, fr->epsfac);         
 
     /* If parallel, sum the derivative of the potential w.r.t the born radii */
     if(PARTDECOMP(cr))
@@ -1677,7 +1678,7 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
         cnt = md->homenr*(md->nr/2+1);
         inc_nrnb(nrnb,eNR_BORN_AVA_CHAINRULE,cnt);
         inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,md->homenr);
-        return v;
+        return;
     }
     
 #ifdef GMX_DOUBLE    
@@ -1713,9 +1714,6 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
         inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,fr->gblist.nri);
 
     }
-
-    return v;
-
 }
 
 static void add_j_to_gblist(gbtmpnbl_t *list,int aj)
