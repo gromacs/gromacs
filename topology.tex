@@ -43,7 +43,9 @@ topology file. Certain non-bonded interactions must be excluded (first
 and second neighbors), as these are already treated in bonded
 interactions.  In addition there are {\em dynamic attributes} of
 atoms: their positions, velocities and forces, but these do not
-strictly belong to the molecular topology.
+strictly belong to the molecular topology, and they are stored in the
+coordinate file \verb'*.gro' (positions and velocities), or trajectory
+file \verb'*.trr' (positions, velocities, forces).
 
 This Chapter describes the set up of the topology file, the
 {\tt *.top} file and the database files: what the parameters
