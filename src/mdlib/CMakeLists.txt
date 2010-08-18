@@ -8,7 +8,7 @@ list(REMOVE_ITEM MDLIB_SOURCES ${NOT_MDLIB_SOURCES})
 
 add_library(md ${MDLIB_SOURCES})
 target_link_libraries(md gmx ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
-set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}")
+set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION})
 
 install(TARGETS md DESTINATION ${LIB_INSTALL_DIR})
 

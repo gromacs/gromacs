@@ -6,6 +6,7 @@ include(Dart)
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
 set(PROJECT_VERSION "4.5-beta3"
     CACHE STRING "Gromacs version string")
+set(SOVERSION 6)
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
