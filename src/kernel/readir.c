@@ -1801,21 +1801,6 @@ void do_index(const char* mdparin, const char *ndx,
 
   if (bSetTCpar)
   {
-      if (EI_VV(ir->eI)) 
-      {
-          if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
-          {
-              int mincouple;
-              mincouple = ir->nsttcouple;
-              if (ir->nstpcouple < mincouple)
-              {
-                  mincouple = ir->nstpcouple;
-              }
-              ir->nstpcouple = mincouple;
-              ir->nsttcouple = mincouple;
-              warning_note(wi,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple)");
-          }
-      }
       if (nr != nref_t)
       {
           gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
@@ -1835,6 +1820,21 @@ void do_index(const char* mdparin, const char *ndx,
       if (ir->etc != etcNO && ir->nsttcouple == -1)
       {
             ir->nsttcouple = ir_optimal_nsttcouple(ir);
+      }
+      if (EI_VV(ir->eI)) 
+      {
+          if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
+          {
+              int mincouple;
+              mincouple = ir->nsttcouple;
+              if (ir->nstpcouple < mincouple)
+              {
+                  mincouple = ir->nstpcouple;
+              }
+              ir->nstpcouple = mincouple;
+              ir->nsttcouple = mincouple;
+              warning_note(wi,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple)");
+          }
       }
       nstcmin = tcouple_min_integration_steps(ir->etc);
       if (nstcmin > 1)
