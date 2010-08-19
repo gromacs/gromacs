@@ -44,11 +44,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef HAVE_COPYFILE_H
-/* BSD specific */
-#include <copyfile.h>
-#endif
-
 #ifdef HAVE_DIRENT_H
 /* POSIX */
 #include <dirent.h>
@@ -306,9 +301,15 @@ bool gmx_fexist(const char *fname)
     if (fname == NULL)
         return FALSE;
     test=fopen(fname,"r");
-    if (test == NULL) 
-        return FALSE;
-    else {
+    if (test == NULL) {
+        /*Windows doesn't allow fopen of directory - so we need to check this seperately */
+        #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+            DWORD attr = GetFileAttributes(fname);
+            return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
+        #else 
+            return FALSE;
+        #endif
+    } else {
         fclose(test);
         return TRUE;
     }
@@ -362,7 +363,7 @@ static char *backup_fn(const char *file,int count_max)
 
     smalloc(buf, GMX_PATH_MAX);
 
-    for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--)
+    for(i=strlen(file)-1; ((i > 0) && (file[i] != DIR_SEPARATOR)); i--)
         ;
     /* Must check whether i > 0, i.e. whether there is a directory
      * in the file name. In that case we overwrite the / sign with
@@ -722,7 +723,7 @@ bool search_subdirs(const char *parent, char *libdir)
 static bool filename_is_absolute(char *name)
 {
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-    return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)));
+    return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)) == 0);
 #else
     return (name[0] == DIR_SEPARATOR);
 #endif
@@ -730,10 +731,10 @@ static bool filename_is_absolute(char *name)
 
 bool get_libdir(char *libdir)
 {
-    char bin_name[512];
-    char buf[512];
-    char full_path[GMX_PATH_MAX];
-    char test_file[GMX_PATH_MAX];
+#define GMX_BINNAME_MAX 512
+    char bin_name[GMX_BINNAME_MAX];
+    char buf[GMX_BINNAME_MAX];
+    char full_path[GMX_PATH_MAX+GMX_BINNAME_MAX];
     char system_path[GMX_PATH_MAX];
     char *dir,*ptr,*s,*pdum;
     bool found=FALSE;
@@ -743,7 +744,11 @@ bool get_libdir(char *libdir)
     {
 
     /* First - detect binary name */
-    strncpy(bin_name,Program(),512);
+    if (strlen(Program()) >= GMX_BINNAME_MAX)
+    {
+        gmx_fatal(FARGS,"The name of the binary is longer than the allowed buffer size (%d):\n'%s'",GMX_BINNAME_MAX,Program());
+    }
+    strncpy(bin_name,Program(),GMX_BINNAME_MAX-1);
 
     /* On windows & cygwin we need to add the .exe extension
      * too, or we wont be able to detect that the file exists
@@ -754,30 +759,30 @@ bool get_libdir(char *libdir)
 #endif
 
     /* Only do the smart search part if we got a real name */
-    if (NULL!=bin_name && strncmp(bin_name,"GROMACS",512)) {
+    if (NULL!=bin_name && strncmp(bin_name,"GROMACS",GMX_BINNAME_MAX)) {
 
         if (!strchr(bin_name,DIR_SEPARATOR)) {
             /* No slash or backslash in name means it must be in the path - search it! */
-            s=getenv("PATH");
-
             /* Add the local dir since it is not in the path on windows */
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
             pdum=_getcwd(system_path,sizeof(system_path)-1);
 #else
             pdum=getcwd(system_path,sizeof(system_path)-1);
 #endif
-            strcat(system_path,PATH_SEPARATOR);
-            if (s != NULL)
-                strcat(system_path,s);
-            s=system_path;
-            found=FALSE;
-            while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
+            sprintf(full_path,"%s%c%s",system_path,DIR_SEPARATOR,bin_name);
+            found = gmx_fexist(full_path);
+            if (!found && (s=getenv("PATH")) != NULL)
             {
-                sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
-                found=gmx_fexist(full_path);
+                while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
+                {
+                    sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
+                    found = gmx_fexist(full_path);
+                }
             }
             if (!found)
+            {
                 return FALSE;
+            }
         } else if (!filename_is_absolute(bin_name)) {
             /* name contains directory separators, but 
              * it does not start at the root, i.e.
@@ -788,9 +793,7 @@ bool get_libdir(char *libdir)
 #else
             pdum=getcwd(buf,sizeof(buf)-1);
 #endif
-            strncpy(full_path,buf,GMX_PATH_MAX);
-            strcat(full_path,"/");
-            strcat(full_path,bin_name);
+            sprintf(full_path,"%s%c%s",buf,DIR_SEPARATOR,bin_name);
         } else {
             strncpy(full_path,bin_name,GMX_PATH_MAX);
         }
@@ -1000,17 +1003,8 @@ int gmx_file_rename(const char *oldname, const char *newname)
 
 int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
 {
-#if defined(HAVE_COPYFILE_H) && !defined(GMX_FAHCORE)
-    /* this is BSD specific, but convenient */
-    return copyfile(oldname, newname, NULL, COPYFILE_DATA);
-#elif defined(HAVE_WIN_COPYFILE) && !defined(GMX_FAHCORE)
-    if (CopyFile(oldname, newname, FALSE))
-        return 0;
-    else
-        return 1;
-#else
+/* the full copy buffer size: */
 #define FILECOPY_BUFSIZE (1<<16)
-    /* POSIX doesn't support any of the above. */
     FILE *in=NULL; 
     FILE *out=NULL;
     char *buf;
@@ -1040,6 +1034,8 @@ int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
             size_t ret;
             if (!out)
             {
+                /* so this is where we open when copy_if_empty is false:
+                   here we know we read something. */
                 out=fopen(newname, "wb");
                 if (!out)
                     goto error;
@@ -1065,7 +1061,55 @@ error:
         fclose(out);
     return 1;
 #undef FILECOPY_BUFSIZE
-#endif
 }
+
+
+int gmx_fsync(FILE *fp)
+{
+    int rc=0;
+
+#ifdef GMX_FAHCORE
+    /* the fahcore defines its own os-independent fsync */
+    rc=fah_fsync(fp);
+#else /* GMX_FAHCORE */
+    {
+        int fn=-1;
+
+        /* get the file number */
+#if defined(HAVE_FILENO)
+        fn= fileno(fp);
+#elif defined(HAVE__FILENO)
+        fn= _fileno(fp);
+#endif
+
+        /* do the actual fsync */
+        if (fn >= 0)
+        {
+#if (defined(HAVE_FSYNC))
+            rc=fsync(fn);
+#elif (defined(HAVE__COMMIT)) 
+            rc=_commit(fn);
+#endif
+        }
+    }
+#endif /* GMX_FAHCORE */
+
+    /* We check for these error codes this way because POSIX requires them
+       to be defined, and using anything other than macros is unlikely: */
+#ifdef EINTR
+    /* we don't want to report an error just because fsync() caught a signal.
+       For our purposes, we can just ignore this. */
+    if (rc && errno==EINTR)
+        rc=0;
+#endif
+#ifdef EINVAL
+    /* we don't want to report an error just because we tried to fsync() 
+       stdout, a socket or a pipe. */
+    if (rc && errno==EINVAL)
+        rc=0;
+#endif
+    return rc;
+}
+
 
 

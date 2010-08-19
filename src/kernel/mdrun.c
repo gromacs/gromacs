@@ -620,6 +620,10 @@ int main(int argc,char *argv[])
       please_cite(fplog,"Lindahl2001a");
       please_cite(fplog,"Berendsen95a");
   }
+  else if (!MASTER(cr) && bSepPot)
+  {
+      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
+  }
   else
   {
       fplog = NULL;

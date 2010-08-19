@@ -223,7 +223,7 @@ int gmx_covar(int argc,char *argv[])
   /* Prepare reference frame */
   if (bPBC) {
     gpbc = gmx_rmpbc_init(&top.idef,ePBC,atoms->nr,box);
-    gmx_rmpbc(gpbc,box,xref,xref);
+    gmx_rmpbc(gpbc,atoms->nr,box,xref);
   }
   if (bFit)
     reset_x(nfit,ifit,atoms->nr,NULL,xref,w_rls);
@@ -245,7 +245,7 @@ int gmx_covar(int argc,char *argv[])
     nframes0++;
     /* calculate x: a fitted struture of the selected atoms */
     if (bPBC)
-      gmx_rmpbc(gpbc,box,xread,xread);
+      gmx_rmpbc(gpbc,nat,box,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
@@ -274,7 +274,7 @@ int gmx_covar(int argc,char *argv[])
     tend = t;
     /* calculate x: a (fitted) structure of the selected atoms */
     if (bPBC)
-      gmx_rmpbc(gpbc,box,xread,xread);
+      gmx_rmpbc(gpbc,nat,box,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);

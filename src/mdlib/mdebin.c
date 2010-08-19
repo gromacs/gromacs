@@ -202,6 +202,12 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
           md->bEner[i] = FALSE;
       else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i==F_EQM))
           md->bEner[i] = TRUE;
+      else if ((i == F_GBPOL) && ir->implicit_solvent==eisGBSA)
+          md->bEner[i] = TRUE;
+      else if ((i == F_NPSOLVATION) && (ir->sa_algorithm != esaNO))
+          md->bEner[i] = TRUE;
+      else if ((i == F_GB12) || (i == F_GB13) || (i == F_GB14))
+          md->bEner[i] = FALSE;
       else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
           md->bEner[i] = EI_DYNAMICS(ir->eI);
       else if (i==F_VTEMP) 
@@ -1138,6 +1144,7 @@ init_energyhistory(energyhistory_t * enerhist)
     enerhist->ener_ave     = NULL;
     enerhist->ener_sum     = NULL;
     enerhist->ener_sum_sim = NULL;
+    enerhist->dht          = NULL;
 
     enerhist->nsteps     = 0;
     enerhist->nsum       = 0;
@@ -1149,7 +1156,7 @@ void
 update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
 {
     int i;
-    
+
     enerhist->nsteps     = mdebin->ebin->nsteps;
     enerhist->nsum       = mdebin->ebin->nsum;
     enerhist->nsteps_sim = mdebin->ebin->nsteps_sim;
@@ -1164,7 +1171,7 @@ update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
             snew(enerhist->ener_ave,enerhist->nener);
             snew(enerhist->ener_sum,enerhist->nener);
         }
-        
+
         for(i=0;i<enerhist->nener;i++)
         {
             enerhist->ener_ave[i] = mdebin->ebin->e[i].eav;
@@ -1179,11 +1186,15 @@ update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
         {
             snew(enerhist->ener_sum_sim,enerhist->nener);
         }
-        
+
         for(i=0;i<enerhist->nener;i++)
         {
             enerhist->ener_sum_sim[i] = mdebin->ebin->e_sim[i].esum;
         }
+    }
+    if (mdebin->dhc)
+    {
+        mde_delta_h_coll_update_energyhistory(mdebin->dhc, enerhist);
     }
 }
 
@@ -1197,20 +1208,24 @@ restore_energyhistory_from_state(t_mdebin * mdebin,energyhistory_t * enerhist)
     {
         gmx_fatal(FARGS,"Mismatch between number of energies in run input (%d) and checkpoint file (%d).",
                   mdebin->ebin->nener,enerhist->nener);
-	}
+    }
 
     mdebin->ebin->nsteps     = enerhist->nsteps;
     mdebin->ebin->nsum       = enerhist->nsum;
     mdebin->ebin->nsteps_sim = enerhist->nsteps_sim;
     mdebin->ebin->nsum_sim   = enerhist->nsum_sim;
 
-	for(i=0; i<mdebin->ebin->nener; i++)
-	{
-		mdebin->ebin->e[i].eav  =
-            (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
-		mdebin->ebin->e[i].esum =
-            (enerhist->nsum > 0 ? enerhist->ener_sum[i] : 0);
+    for(i=0; i<mdebin->ebin->nener; i++)
+    {
+        mdebin->ebin->e[i].eav  =
+                  (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
+        mdebin->ebin->e[i].esum =
+                  (enerhist->nsum > 0 ? enerhist->ener_sum[i] : 0);
         mdebin->ebin->e_sim[i].esum =
-            (enerhist->nsum_sim > 0 ? enerhist->ener_sum_sim[i] : 0);
-	}
+                  (enerhist->nsum_sim > 0 ? enerhist->ener_sum_sim[i] : 0);
+    }
+    if (mdebin->dhc)
+    {         
+        mde_delta_h_coll_restore_energyhistory(mdebin->dhc, enerhist);
+    }
 }

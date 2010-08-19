@@ -211,7 +211,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
         }
         while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
-    return newval;
+    return (int)newval;
 }
 
 
@@ -242,7 +242,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
         }
         while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
-    return oldval;
+    return (int)oldval;
 }
 
 typedef struct tMPI_Spinlock

@@ -1636,7 +1636,7 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
     {
         if (d->bRmPBC)
         {
-  	    gmx_rmpbc(gpbc,d->fr->box,d->fr->x, d->fr->x);
+  	    gmx_rmpbc_trxfr(gpbc,d->fr);
         }
         if (ppbc)
         {

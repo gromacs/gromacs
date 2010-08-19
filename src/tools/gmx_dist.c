@@ -188,7 +188,7 @@ int gmx_dist(int argc,char *argv[])
     if (pbc) {
       set_pbc(pbc,ePBC,box);
       /* make molecules whole again */
-      gmx_rmpbc(gpbc,box,x,x);
+      gmx_rmpbc(gpbc,natoms,box,x);
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {

@@ -154,14 +154,14 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
   }
 
 
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
   
   /*********** Start processing trajectory ***********/
   do 
   {
     *slWidth = box[axis][axis]/(*nslices);
     teller++;
-    gmx_rmpbc(gpbc,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
 
     /* calculate position of center of mass based on group 1 */
     calc_xcm(x0, gnx[0], index[0], top->atoms.atom, xcm, FALSE);

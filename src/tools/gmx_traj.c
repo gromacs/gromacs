@@ -738,11 +738,7 @@ int gmx_traj(int argc,char *argv[])
 
     if (bFP)
     {
-#ifdef GMX_DOUBLE
-        sffmt = "\t%21.14e";
-#else
-        sffmt = "\t%14.7e";
-#endif
+        sffmt = "\t" gmx_real_fullprecision_pfmt;
     }
     else
     {
@@ -947,7 +943,7 @@ int gmx_traj(int argc,char *argv[])
     
         if (fr.bX && bCom && bPBC)
         {
-            gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+            gmx_rmpbc_trxfr(gpbc,&fr);
         }
 
         if (bVD && fr.bV)

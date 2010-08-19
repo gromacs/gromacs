@@ -45,7 +45,7 @@
 
 #if ( (defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2)) && !defined(GMX_DOUBLE) )
 
-#include "gmx_sse2_single.h"
+#include <gmx_sse2_single.h>
 
 
 #define SIMD_WIDTH 4

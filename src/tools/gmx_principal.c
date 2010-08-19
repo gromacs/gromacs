@@ -136,7 +136,7 @@ int gmx_principal(int argc,char *argv[])
 
   do
   {
-          gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
 
 	  calc_principal_axes(&top,x,index,gnx,axes,moi);
 

@@ -258,7 +258,7 @@ int gmx_polystat(int argc,char *argv[])
   gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
   
   do {
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
     
     sum_eed2 = 0;
     for(d=0; d<DIM; d++)

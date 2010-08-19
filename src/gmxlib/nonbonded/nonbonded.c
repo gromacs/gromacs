@@ -208,7 +208,7 @@ static nb_adress_kernel_t **
 nb_kernel_list_adress = NULL;
 
 void
-gmx_setup_kernels(FILE *fplog)
+gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
 {
     int i;
     
@@ -223,14 +223,8 @@ gmx_setup_kernels(FILE *fplog)
         nb_kernel_list[i] = NULL;
     }
     
-    if(getenv("GMX_NB_GENERIC") != NULL)
+    if (bGenericKernelOnly)
     {
-        if(fplog)
-        {
-            fprintf(fplog,
-                    "Found environment variable GMX_NB_GENERIC.\n"
-                    "Disabling interaction-specific nonbonded kernels.\n\n");
-        }
         return;
     }
 	
@@ -310,12 +304,20 @@ gmx_setup_kernels(FILE *fplog)
 }
 
 void
-gmx_setup_adress_kernels(FILE *fplog) {
+gmx_setup_adress_kernels(FILE *fplog,bool bGenericKernelOnly) {
     int i;
+
     snew(nb_kernel_list_adress, eNR_NBKERNEL_NR);
+
     for (i = 0; i < eNR_NBKERNEL_NR; i++) {
         nb_kernel_list_adress[i] = NULL;
     }
+
+    if (bGenericKernelOnly)
+    {
+        return;
+    }
+
     nb_kernel_setup_adress(fplog, nb_kernel_list_adress);
 }
 
@@ -366,7 +368,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 # ifdef GMX_DOUBLE
             if(fr->UseOptimizedKernels)
             {
-                gmx_fatal(FARGS,"Cannot do double precision SSE2 all-vs-all kernels for now.");
+                nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                                 &outeriter,&inneriter,&fr->AllvsAll_work);
             }
             else
             {
@@ -397,7 +400,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 # ifdef GMX_DOUBLE
             if(fr->UseOptimizedKernels)
             {
-                gmx_fatal(FARGS,"Cannot do double precision SSE2 all-vs-all kernels for now.");
+                nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                               &outeriter,&inneriter,&fr->AllvsAll_work);
             }
             else 
             {

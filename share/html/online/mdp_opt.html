@@ -29,12 +29,12 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#general"><b>General remarks</b></A>
 <p> </p>
 <li><A HREF="#pp"><b>preprocessing</b></A> (include, define)
-<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init_step, nstcalcenergy, comm_mode, nstcomm, comm_grps)
+<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init_step, comm_mode, nstcomm, comm_grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
-<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
+<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, periodic_molecules, rlist, rlistlong)
 <li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb_switch, rcoulomb, epsilon_r, epsilon_rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, rvdw_switch, rvdw, DispCorr)
@@ -250,21 +250,6 @@ Thus for exact restarts or redoing part of a run it might be necessary to
 set <tt>init_step</tt> to the step number of the restart frame.
 <tt>tpbconv</tt> does this automatically.
 </dd>
-<dt><h4>nstcalcenergy: (-1)</h4></dt>
-<dd>The frequency for calculating the energies, 0 is never.
-This option is only relevant with dynamics.
-With a twin-range cut-off setup <b>nstcalcenergy</b> should be equal to
-or a multiple of <b>nstlist</b>.
-This option affects the performance in parallel simulations,
-because calculating energies requires global communication between all
-processes which can become a bottleneck at high parallelization.
-With global temperature and/or pressure coupling the time step for
-the coupling algorithm is <b>nstcalcenergy</b>*<b>dt</b>.
-Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.
-The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
-unless <b>nstlist</b> &le 0, then a value of 10 is used.
-If <b>nstenergy</b> is smaller than the automatically generated value,
-the lowest common denominator of <b>nstenergy</b> and <b>nstlist</b> is used.
 <dt><h4>comm_mode:</h4></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
@@ -366,6 +351,19 @@ the last velocities are always written</dd>
 <dt><h4>nstlog: (100) [steps]</h4></dt>
 <dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
 the last energies are always written</dd>
+<dt><h4>nstcalcenergy: (-1)</h4></dt>
+<dd>The frequency for calculating the energies, 0 is never.
+This option is only relevant with dynamics.
+With a twin-range cut-off setup <b>nstcalcenergy</b> should be equal to
+or a multiple of <b>nstlist</b>.
+This option affects the performance in parallel simulations,
+because calculating energies requires global communication between all
+processes which can become a bottleneck at high parallelization.
+The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
+unless <b>nstlist</b> &le 0, then a value of 10 is used.
+If <b>nstenergy</b> is smaller than the automatically generated value,
+the lowest common denominator of <b>nstenergy</b> and <b>nstlist</b> is used.
+</dd>
 <dt><h4>nstenergy: (100) [steps]</h4></dt>
 <dd>frequency to write energies to energy file,
 the last energies are always written,
@@ -1738,7 +1736,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#xmdrun">niter</A><br>
 <A HREF="#tc">nh-chain-length</A><br>
 <A HREF="#em">nstcgsteep</A><br>
-<A HREF="#run">nstcalcenergy</A><br>
+<A HREF="#out">nstcalcenergy</A><br>
 <A HREF="#run">nstcomm</A><br>
 <A HREF="#nmr">nstdisreout</A><br>
 <A HREF="#out">nstenergy</A><br>

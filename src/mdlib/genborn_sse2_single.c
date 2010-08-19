@@ -72,10 +72,10 @@
 
 
 int 
-calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
-		      int natoms, gmx_localtop_t *top,
-		      const t_atomtypes *atype, float *x, t_nblist *nl,
-		      gmx_genborn_t *born)
+calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,
+                              int natoms, gmx_localtop_t *top,
+                              const t_atomtypes *atype, float *x, t_nblist *nl,
+                              gmx_genborn_t *born)
 {
 	int i,k,n,ii,is3,ii3,nj0,nj1,offset;
 	int jnrA,jnrB,jnrC,jnrD,j3A,j3B,j3C,j3D;
@@ -113,16 +113,16 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
 	__m128   mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
 	__m128   mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
     
-	const __m128 half   = {0.5f , 0.5f , 0.5f , 0.5f };
-	const __m128 three  = {3.0f , 3.0f , 3.0f , 3.0f };
-	const __m128 one    = {1.0f,  1.0f , 1.0f , 1.0f };
-	const __m128 two    = {2.0f , 2.0f , 2.0f,  2.0f };
-	const __m128 zero   = {0.0f , 0.0f , 0.0f , 0.0f };
-	const __m128 four   = {4.0f , 4.0f , 4.0f , 4.0f };
+	const __m128 half   = _mm_set1_ps(0.5f);
+	const __m128 three  = _mm_set1_ps(3.0f);
+	const __m128 one    = _mm_set1_ps(1.0f);
+	const __m128 two    = _mm_set1_ps(2.0f);
+	const __m128 zero   = _mm_set1_ps(0.0f);
+	const __m128 four   = _mm_set1_ps(4.0f);
 	
-	const __m128 still_p5inv  = {STILL_P5INV, STILL_P5INV, STILL_P5INV, STILL_P5INV};
-	const __m128 still_pip5   = {STILL_PIP5,  STILL_PIP5,  STILL_PIP5,  STILL_PIP5};
-	const __m128 still_p4     = {STILL_P4,    STILL_P4,    STILL_P4,    STILL_P4};
+	const __m128 still_p5inv  = _mm_set1_ps(STILL_P5INV);
+	const __m128 still_pip5   = _mm_set1_ps(STILL_PIP5);
+	const __m128 still_p4     = _mm_set1_ps(STILL_P4);
 		
 	factor  = 0.5 * ONE_4PI_EPS0;
 		
@@ -439,7 +439,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
                 GMX_MM_INCREMENT_3VALUES_PS(work+jnrA,work+jnrB,work+jnrC,tmp);
             }
         }
-        gmx_mm_update_1pot_ps(gpi,work+ii);
+        GMX_MM_UPDATE_1POT_PS(gpi,work+ii);
 	}
 	
 	/* Sum up the polarization energy from other nodes */
@@ -476,8 +476,8 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
 
 
 int 
-calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
-                        const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md,int gb_algorithm)
+calc_gb_rad_hct_obc_sse2_single(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
+                                const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md,int gb_algorithm)
 {
 	int i,ai,k,n,ii,ii3,is3,nj0,nj1,at0,at1,offset;
     int jnrA,jnrB,jnrC,jnrD;
@@ -523,12 +523,12 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
     __m128 oneeighth   = _mm_set1_ps(0.125);
     __m128 onefourth   = _mm_set1_ps(0.25);
 
-	const __m128 neg   = {-1.0f , -1.0f , -1.0f , -1.0f };
-	const __m128 zero  = {0.0f , 0.0f , 0.0f , 0.0f };
-	const __m128 half  = {0.5f , 0.5f , 0.5f , 0.5f };
-	const __m128 one   = {1.0f , 1.0f , 1.0f , 1.0f };
-	const __m128 two   = {2.0f , 2.0f , 2.0f , 2.0f };
-	const __m128 three = {3.0f , 3.0f , 3.0f , 3.0f };
+	const __m128 half  = _mm_set1_ps(0.5f);
+	const __m128 three = _mm_set1_ps(3.0f);
+	const __m128 one   = _mm_set1_ps(1.0f);
+	const __m128 two   = _mm_set1_ps(2.0f);
+	const __m128 zero  = _mm_set1_ps(0.0f);
+	const __m128 neg   = _mm_set1_ps(-1.0f);
 	
 	/* Set the dielectric offset */
 	doffset   = born->gb_doffset;
@@ -1231,7 +1231,7 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
             }
             
         }
-        gmx_mm_update_1pot_ps(sum_ai,work+ii);
+        GMX_MM_UPDATE_1POT_PS(sum_ai,work+ii);
         
 	}
 	
@@ -1310,9 +1310,9 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
 
 
 
-float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
-							float *x, float *f, float *fshift, float *shiftvec,
-							int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md)						
+float calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float *dvda, 
+                                    float *x, float *f, float *fshift, float *shiftvec,
+                                    int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md)						
 {
 	int    i,k,n,ii,jnr,ii3,is3,nj0,nj1,offset,n0,n1;
 	int	   jnrA,jnrB,jnrC,jnrD;
@@ -1336,7 +1336,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
 	__m128 rbai,rbaj,rbajB, f_gb, f_gb_ai,f_gbB,f_gb_aiB;
 	__m128 xmm1,xmm2,xmm3;
 	
-	const __m128 two = {2.0f , 2.0f , 2.0f , 2.0f };
+	const __m128 two = _mm_set1_ps(2.0f);
     
 	rb     = born->work; 
 			
@@ -1518,12 +1518,13 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
 		/* fix/fiy/fiz now contain four partial force terms, that all should be
          * added to the i particle forces and shift forces. 
          */
- 		gmx_mm_update_iforce_1atom_ps(fix,fiy,fiz,f+ii3,fshift+is3);
+ 		gmx_mm_update_iforce_1atom_ps(&fix,&fiy,&fiz,f+ii3,fshift+is3);
 	}	
     
 	return 0;	
 }
 
+#if 0
 
 float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda, 
 					   t_idef *idef, real epsilon_r, real gb_epsilon_solvent, real facel)
@@ -1545,11 +1546,11 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 	__m128 xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
 	__m128 mask;
 	
-	const __m128 neg   = {-1.0f , -1.0f , -1.0f , -1.0f };
-	const __m128 qrtr  = {0.25f , 0.25f , 0.25f , 0.25f };
-	const __m128 eigth = {0.125f , 0.125f , 0.125f , 0.125f };
-	const __m128 half  = {0.5f , 0.5f , 0.5f , 0.5f };
-	const __m128 three = {3.0f , 3.0f , 3.0f , 3.0f };
+	const __m128 neg   = _mm_set1_ps(-1.0f);
+	const __m128 qrtr  = _mm_set1_ps(0.25f);
+	const __m128 eigth = _mm_set1_ps(0.125f);
+	const __m128 half  = _mm_set1_ps(0.5f);
+	const __m128 three = _mm_set1_ps(3.0f);
 	
 	t_iatom *forceatoms;
 	
@@ -2401,6 +2402,7 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 	return vctot;
 }
 
+#endif
 
 
 

@@ -84,6 +84,8 @@ enum {
   F_GB12,
   F_GB13,
   F_GB14,
+  F_GBPOL,
+  F_NPSOLVATION,
   F_LJ14,
   F_COUL14,
   F_LJC14_Q,

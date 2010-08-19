@@ -75,11 +75,14 @@ extern "C" {
 
 #ifdef HAVE_FSEEKO
 typedef off_t gmx_off_t;
+#define SIZEOF_GMX_OFF_T SIZEOF_OFF_T
 #else
 #ifdef HAVE__FSEEKI64 
 typedef __int64 gmx_off_t;
+#define SIZEOF_GMX_OFF_T 8
 #else
 typedef long int gmx_off_t;
+#define SIZEOF_GMX_OFF_T SIZEOF_LONG_INT
 #endif
 #endif
 
@@ -186,6 +189,10 @@ int gmx_file_rename(const char *oldname, const char *newname);
 /* copy the file (data only) oldname to newname. if copy_if_empty==FALSE,
    the file won't be copied if it's empty.*/
 int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty);
+
+/* do an fsync() on an open file pointer. 
+   Only use this during checkpointing! */
+int gmx_fsync(FILE *fp);
 
 #ifdef __cplusplus
 }

@@ -8,5 +8,5 @@ Version: @PROJECT_VERSION@
 Requires:
 Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
 Libs: -L${libdir} -lgmx@LIBSUFFIX@
-Cflags: -I${includedir}
+Cflags: -I${includedir} @PKG_CFLAGS@
 

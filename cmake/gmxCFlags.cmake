@@ -107,10 +107,11 @@ MACRO(gmx_c_flags)
 
 
     # now actually set the flags:
-    if (NOT DEFINED GMXCFLAGS_SET)
+    # C
+    if ( NOT DEFINED GMXCFLAGS_SET AND NOT DEFINED ENV{CFLAGS} )
         set(GMXCFLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" 
             FORCE)
-        # C
+        
         set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}" 
             CACHE STRING "Flags used by the compiler during all build types." 
             FORCE)
@@ -120,7 +121,12 @@ MACRO(gmx_c_flags)
         set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}" 
             CACHE STRING "Flags used by the compiler during debug builds." 
             FORCE)
-        # C++
+    endif()
+
+    # C++
+    if ( NOT DEFINED GMXCXXFLAGS_SET AND NOT DEFINED ENV{CXXFLAGS} )
+        set(GMXCXXFLAGS_SET true CACHE INTERNAL "Whether to reset the C++ flags" 
+            FORCE)
         set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}" 
             CACHE STRING "Flags used by the compiler during all build types." 
             FORCE)

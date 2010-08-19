@@ -67,9 +67,7 @@
 #ifdef GMX_DOUBLE
 #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )
 #include "genborn_sse2_double.h"
-#if 0
 #include "genborn_allvsall_sse2_double.h"
-#endif
 #endif
 #else
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
@@ -1174,15 +1172,16 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         }
     }
 
-#ifndef GMX_DOUBLE
     if(fr->bAllvsAll)
     {
         cnt = md->homenr*(md->nr/2+1);
         
         if(ir->gb_algorithm==egbSTILL)
         {
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) ) 
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
             genborn_allvsall_calc_still_radii_sse2_single(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
+#elif ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
+            genborn_allvsall_calc_still_radii_sse2_double(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
 #else
             genborn_allvsall_calc_still_radii(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
 #endif
@@ -1190,8 +1189,10 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         }
         else if(ir->gb_algorithm==egbHCT || ir->gb_algorithm==egbOBC)
         {
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) ) 
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
             genborn_allvsall_calc_hct_obc_radii_sse2_single(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
+#elif ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
+            genborn_allvsall_calc_hct_obc_radii_sse2_double(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
 #else
             genborn_allvsall_calc_hct_obc_radii(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
 #endif
@@ -1205,14 +1206,11 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 
         return 0;
     }
-#endif
     
     /* Switch for determining which algorithm to use for Born radii calculation */
 #ifdef GMX_DOUBLE
     
-    /* Disabled while waiting for double prec. SSE2 transcendentals */
-#if 0
- /* #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) ) */
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) ) 
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     switch(ir->gb_algorithm)
     {
@@ -1220,10 +1218,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
              calc_gb_rad_still_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
             break;
         case egbHCT:
-             calc_gb_rad_hct_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
-            break;
         case egbOBC:
-            calc_gb_rad_obc_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
+            calc_gb_rad_hct_obc_sse2_double(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
             break;
             
         default:
@@ -1255,11 +1251,11 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     switch(ir->gb_algorithm)
     {
         case egbSTILL:
-            calc_gb_rad_still_sse(cr,fr,born->nr,top, atype, x[0], nl, born);
+            calc_gb_rad_still_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born);
             break;
         case egbHCT:
         case egbOBC:
-            calc_gb_rad_hct_obc_sse(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
+            calc_gb_rad_hct_obc_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
             break;
             
         default:
@@ -1631,9 +1627,10 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 }
 
 
-real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype, 
-                    rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, t_nrnb *nrnb, bool bRad,
-					const t_pbc *pbc, const t_graph *graph)
+void
+calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype, 
+               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, t_nrnb *nrnb, bool bRad,
+               const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd)
 {
     real v=0;
     int  cnt;
@@ -1649,27 +1646,14 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
 	
 	
     /* Do a simple ACE type approximation for the non-polar solvation */
-    v += calc_gb_nonpolar(cr, fr,born->nr, born, top, atype, fr->dvda, gb_algorithm,md);
+    enerd->term[F_NPSOLVATION] += calc_gb_nonpolar(cr, fr,born->nr, born, top, atype, fr->dvda, gb_algorithm,md);
 	
     /* Calculate the bonded GB-interactions using either table or analytical formula */
-#ifdef GMX_DOUBLE    
-    v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
-                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
-#else    
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )   /* 
-    v += gb_bonds_analytic(x[0],f[0],md->chargeA,born->bRad,fr->dvda,idef,born->epsilon_r,born->gb_epsilon_solvent,fr->epsfac);
-                                                                                  */
-    v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
-                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
-    
-#else
-    v += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
-                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
-#endif
-#endif
+    enerd->term[F_GBPOL]       += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
+                                     fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
     
     /* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
-    v += calc_gb_selfcorrections(cr,born->nr,md->chargeA, born, fr->dvda, md, fr->epsfac);         
+    enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr,born->nr,md->chargeA, born, fr->dvda, md, fr->epsfac);         
 
     /* If parallel, sum the derivative of the potential w.r.t the born radii */
     if(PARTDECOMP(cr))
@@ -1682,26 +1666,24 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
         dd_atom_spread_real(cr->dd,fr->dvda);
     }
 
-#ifndef GMX_DOUBLE
     if(fr->bAllvsAll)
     {
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
         genborn_allvsall_calc_chainrule_sse2_single(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
+#elif ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
+        genborn_allvsall_calc_chainrule_sse2_double(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
 #else
         genborn_allvsall_calc_chainrule(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
 #endif
         cnt = md->homenr*(md->nr/2+1);
         inc_nrnb(nrnb,eNR_BORN_AVA_CHAINRULE,cnt);
         inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,md->homenr);
-        return v;
+        return;
     }
-#endif
     
 #ifdef GMX_DOUBLE    
     
-    /* Disabled while waiting for double prec. SSE2 transcendentals */
-#if 0
-/* #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )    */
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
      calc_gb_chainrule_sse2_double(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
                                    x[0], f[0], fr->fshift[0],  fr->shift_vec[0],
                                    gb_algorithm, born); 
@@ -1713,9 +1695,9 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
     
 #else
     
-#if (!defined DISABLE_SSE && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) ))
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
-    calc_gb_chainrule_sse(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+    calc_gb_chainrule_sse2_single(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
                           x[0], f[0], fr->fshift[0], fr->shift_vec[0], 
                           gb_algorithm, born, md);
 #else
@@ -1732,9 +1714,6 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
         inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,fr->gblist.nri);
 
     }
-
-    return v;
-
 }
 
 static void add_j_to_gblist(gbtmpnbl_t *list,int aj)

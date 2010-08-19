@@ -396,24 +396,30 @@ static void copy_rvecs(rvec *s,rvec *d,int n)
 {
     int i;
 
-    for(i=0; i<n; i++)
+    if (d != NULL)
     {
-        copy_rvec(s[i],d[i]);
+        for(i=0; i<n; i++)
+        {
+            copy_rvec(s[i],d[i]);
+        }
     }
 }
 
-static void copy_doubles(double *s,double *d,int n)
+static void copy_doubles(const double *s,double *d,int n)
 {
     int i;
 
-    for(i=0; i<n; i++)
+    if (d != NULL)
     {
-        d[i] = s[i];
+        for(i=0; i<n; i++)
+        {
+            d[i] = s[i];
+        }
     }
 }
 
-#define scopy_rvecs(v,n)   copy_rvecs(state->v,state_local->v,n)
-#define scopy_doubles(v,n) copy_doubles(state->v,state_local->v,n)
+#define scopy_rvecs(v,n)   copy_rvecs(state->v,state_local->v,n);
+#define scopy_doubles(v,n) copy_doubles(state->v,state_local->v,n);
 
 static void copy_state_nonatomdata(t_state *state,t_state *state_local)
 {
