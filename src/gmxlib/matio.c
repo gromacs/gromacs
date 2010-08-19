@@ -36,6 +36,7 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
 #include <ctype.h>
 #include "sysstuff.h"
 #include "futil.h"
