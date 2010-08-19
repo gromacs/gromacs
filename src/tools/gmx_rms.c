@@ -433,7 +433,7 @@ int gmx_rms(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC) {
       gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,box);
-      gmx_rmpbc(gpbc,box,xp,xp);
+      gmx_rmpbc(gpbc,top.atoms.nr,box,xp);
     }
     if (bReset)
         reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
@@ -533,7 +533,7 @@ int gmx_rms(int argc, char *argv[])
     teller = 0;
     do {
         if (bPBC) 
-	  gmx_rmpbc(gpbc,box,x,x);
+	  gmx_rmpbc(gpbc,natoms,box,x);
 
         if (bReset)
             reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
@@ -615,7 +615,7 @@ int gmx_rms(int argc, char *argv[])
         teller2 = 0;
         do {
             if (bPBC) 
-	      gmx_rmpbc(gpbc,box,x,x);
+	      gmx_rmpbc(gpbc,natoms,box,x);
 
             if (bReset)
                 reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);

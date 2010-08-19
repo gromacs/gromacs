@@ -878,7 +878,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 	M_av[m] = 0;
 	M_av2[m] = 0;
       }
-      gmx_rmpbc(gpbc,box,x,x);
+      gmx_rmpbc(gpbc,natom,box,x);
       
       muframelsq = gmx_stats_init();
       /* Begin loop of all molecules in frame */

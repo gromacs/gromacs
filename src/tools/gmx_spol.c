@@ -244,7 +244,7 @@ int gmx_spol(int argc,char *argv[])
   /* start analysis of trajectory */
   do {
     /* make molecules whole again */
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
 
     set_pbc(&pbc,ir->ePBC,box);
     if (bCom)

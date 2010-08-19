@@ -248,12 +248,19 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
             nj1   = excl->index[i+1];
             for(j=nj0; j<nj1; j++)
             {                
-                if(excl->a[j]>i+max_offset)
+                k = excl->a[j];
+                
+                if(k<imin)
+                {
+                    k += natoms;
+                }
+                
+                if(k>i+max_offset)
                 {
                     continue;
                 }
                 
-                k = excl->a[j] - imin;
+                k = k - imin;
                 
                 if( k+natoms <= max_offset )
                 {

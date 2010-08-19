@@ -602,6 +602,7 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
             i == F_PDIHS    ||
             i == F_RBDIHS   ||
             i == F_PIDIHS   ||
+            i == F_IDIHS    ||
             i == F_LJ14     ||
             i == F_GB12     || /* The GB parameters are hardcoded both in */
             i == F_GB13     || /* Gromacs and OpenMM */
@@ -719,7 +720,7 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     {
         fprintf(debug, ">> The combination rule of the used force matches the one used by OpenMM.\n");
     }
-    fprintf(fplog, "The combination rule of the force used field matches the one used by OpenMM.\n");   
+    fprintf(fplog, "The combination rule of the used force field matches the one used by OpenMM.\n");   
 
     } /* if (are we checking the combination rules) ... */
 }
@@ -848,8 +849,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numUB = idef.il[F_UREY_BRADLEY].nr/4;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
-        const int numPeriodicImp = idef.il[F_PIDIHS].nr/5;
+        const int numPeriodicImproper = idef.il[F_PIDIHS].nr/5;
         const int numRB = idef.il[F_RBDIHS].nr/5;
+        const int numImproperDih = idef.il[F_IDIHS].nr/5;
         const int num14 = idef.il[F_LJ14].nr/3;
         System* sys = new System();
         if (ir->nstcomm > 0)
@@ -915,18 +917,18 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                       idef.iparams[type].pdihs.phiA*M_PI/180.0, 
                                       idef.iparams[type].pdihs.cpA);
         }
-        const int* periodicImpAtoms = (int*) idef.il[F_PIDIHS].iatoms;
-        PeriodicTorsionForce* periodicImpForce = new PeriodicTorsionForce();
-        sys->addForce(periodicImpForce);
+        const int* periodicImproperAtoms = (int*) idef.il[F_PIDIHS].iatoms;
+        PeriodicTorsionForce* periodicImproperForce = new PeriodicTorsionForce();
+        sys->addForce(periodicImproperForce);
         offset = 0;
-        for (int i = 0; i < numPeriodicImp; ++i)
+        for (int i = 0; i < numPeriodicImproper; ++i)
         {
-            int type = periodicImpAtoms[offset++];
-            int atom1 = periodicImpAtoms[offset++];
-            int atom2 = periodicImpAtoms[offset++];
-            int atom3 = periodicImpAtoms[offset++];
-            int atom4 = periodicImpAtoms[offset++];
-            periodicImpForce->addTorsion(atom1, atom2, atom3, atom4,
+            int type = periodicImproperAtoms[offset++];
+            int atom1 = periodicImproperAtoms[offset++];
+            int atom2 = periodicImproperAtoms[offset++];
+            int atom3 = periodicImproperAtoms[offset++];
+            int atom4 = periodicImproperAtoms[offset++];
+            periodicImproperForce->addTorsion(atom1, atom2, atom3, atom4,
                                       idef.iparams[type].pdihs.mult,
                                       idef.iparams[type].pdihs.phiA*M_PI/180.0,
                                       idef.iparams[type].pdihs.cpA);
@@ -946,6 +948,26 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                 idef.iparams[type].rbdihs.rbcA[0], idef.iparams[type].rbdihs.rbcA[1],
                                 idef.iparams[type].rbdihs.rbcA[2], idef.iparams[type].rbdihs.rbcA[3],
                                 idef.iparams[type].rbdihs.rbcA[4], idef.iparams[type].rbdihs.rbcA[5]);
+        }
+
+        const int* improperDihAtoms = (int*) idef.il[F_IDIHS].iatoms;
+		CustomTorsionForce* improperDihForce = new CustomTorsionForce("2.0*k*asin(sin((theta-theta0)/2))^2");
+        sys->addForce(improperDihForce);
+		improperDihForce->addPerTorsionParameter("k");
+		improperDihForce->addPerTorsionParameter("theta0");
+		vector<double> improperDihParameters(2);
+        offset = 0;
+        for (int i = 0; i < numImproperDih; ++i)
+        {
+            int type = improperDihAtoms[offset++];
+            int atom1 = improperDihAtoms[offset++];
+            int atom2 = improperDihAtoms[offset++];
+            int atom3 = improperDihAtoms[offset++];
+            int atom4 = improperDihAtoms[offset++];
+			improperDihParameters[0] = idef.iparams[type].harmonic.krA;
+			improperDihParameters[1] = idef.iparams[type].harmonic.rA*M_PI/180.0;
+            improperDihForce->addTorsion(atom1, atom2, atom3, atom4,
+                                improperDihParameters);
         }
 
         // Set nonbonded parameters and masses.

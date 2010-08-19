@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 71;
+static const int tpx_version = 72;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -138,6 +138,8 @@ static const t_ftupd ftupd[] = {
   { 60, F_GB12              },
   { 61, F_GB13              },
   { 61, F_GB14              },	
+  { 72, F_GBPOL             },
+  { 72, F_NPSOLVATION       },
   { 41, F_LJC14_Q           },
   { 41, F_LJC_PAIRS_NB      },
   { 32, F_BHAM_LR           },

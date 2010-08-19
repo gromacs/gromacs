@@ -237,7 +237,7 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
 {
     const char *pr,*ret;
     pr=ret=oenv->program_name; 
-    if ((pr=strrchr(ret,'/')) != NULL)
+    if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
         ret=pr+1;
     /* Strip away the libtool prefix if it's still there. */
     if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))

@@ -1048,7 +1048,7 @@ void write_man(FILE *out,const char *mantp,
       }
   }
   
-  if ((pr=strrchr(program,'/')) == NULL)
+  if ((pr=strrchr(program,DIR_SEPARATOR)) == NULL)
     pr=program;
   else
     pr+=1;

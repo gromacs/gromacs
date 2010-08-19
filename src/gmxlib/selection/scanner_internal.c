@@ -415,9 +415,10 @@ void
 _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
 {
     /* Do nothing if the string is empty, or if it is a space and there is
-     * no other text yet. */
+     * no other text yet, or if there already is a space. */
     if (!str || len == 0 || strlen(str) == 0
-        || (str[0] == ' ' && str[1] == 0 && state->pslen == 0))
+        || (str[0] == ' ' && str[1] == 0
+            && (state->pslen == 0 || state->pselstr[state->pslen - 1] == ' ')))
     {
         return;
     }

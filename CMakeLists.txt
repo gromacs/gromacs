@@ -6,6 +6,7 @@ include(Dart)
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
 set(PROJECT_VERSION "4.5-beta3"
     CACHE STRING "Gromacs version string")
+set(SOVERSION 6)
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -69,8 +70,27 @@ option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 
-set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
+option(GMX_DEFAULT_SUFFIX "Use default GROMACS suffixes" ON)
+set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for doubule).")
+set(GMX_LIBS_SUFFIX "" 
+  CACHE STRING "Suffix for GROMACS libs (default: _d for double, _mpi for mpi, _mpi_d for mpi and double).")
+if (GMX_DEFAULT_SUFFIX)
+  if (GMX_MPI)
+    set(GMX_LIBS_SUFFIX "_mpi")
+  endif(GMX_MPI)
+  if (GMX_DOUBLE)
+    set (GMX_BINARY_SUFFIX "_d")
+    set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
+  endif(GMX_DOUBLE)
+endif(GMX_DEFAULT_SUFFIX)
 
+set(PKG_CFLAGS "")
+if(GMX_DOUBLE)
+  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
+endif(GMX_DOUBLE)
+if(GMX_SOFTWARE_INVSQRT)
+  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
+endif(GMX_SOFTWARE_INVSQRT)
 
 ########################################################################
 #Process MPI settings
@@ -103,10 +123,12 @@ if(GMX_MPI)
     include(gmxTestCatamount)
     gmx_test_catamount(GMX_CRAY_XT3)
     if(GMX_CRAY_XT3)
+        set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_CRAY_XT3")
         set(GMX_NO_SYSTEM 1)
         set(GMX_NO_NICE 1)
     endif(GMX_CRAY_XT3)
     set(GMX_LIB_MPI 1)
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
 endif(GMX_MPI)
 
 
@@ -153,7 +175,6 @@ check_include_files(pthread.h    HAVE_PTHREAD_H)
 check_include_files(dirent.h     HAVE_DIRENT_H)
 check_include_files(inttypes.h   HAVE_INTTYPES_H)
 check_include_files(regex.h      HAVE_REGEX_H)
-check_include_files(copyfile.h   HAVE_COPYFILE_H)
 check_include_files(sys/types.h  HAVE_SYS_TYPES_H)
 check_include_files(sys/stat.h   HAVE_SYS_STAT_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
@@ -184,8 +205,6 @@ check_function_exists(fsync             HAVE_FSYNC)
 check_function_exists(_fileno           HAVE__FILENO)
 check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
-check_function_exists(copyfile          HAVE_COPYFILE)
-# check_function_exists(CopyFile          HAVE_WIN_COPYFILE)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -262,6 +281,7 @@ if(X11_FOUND)
 endif(X11_FOUND)
 
 if(GMX_THREADS)
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREADS")
     include(ThreadMPI)
     set(THREAD_MPI_LIB thread_mpi)
     set(GMX_MPI 1)
@@ -370,6 +390,7 @@ include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
     set(GMX_INTERNAL_XDR 1)
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_INTERNAL_XDR")
 endif(NOT GMX_SYSTEM_XDR)
 
 if(GMX_FORTRAN OR GMX_POWER6)
