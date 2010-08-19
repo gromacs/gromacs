@@ -219,11 +219,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         }
         if (ir->epc != epcNO)
         {
-            if (EI_VV(ir->eI))
-            {
-                /* This should be removed when VV supports nstpcouple */
-                ir->nstpcouple = 1;
-            }
             if (ir->nstpcouple < 0)
             {
                 ir->nstpcouple = ir_optimal_nstpcouple(ir);
@@ -1821,11 +1816,6 @@ void do_index(const char* mdparin, const char *ndx,
             } else if (ir->opts.tau_t[i] > 0) {
                 tau_min = min(tau_min,ir->opts.tau_t[i]);
             }
-        }
-        if (ir->etc != etcNO && EI_VV(ir->eI))
-        {
-            /* This should be removed when VV supports nsttcouple */
-            ir->nsttcouple = 1;
         }
         if (ir->etc != etcNO && ir->nsttcouple == -1)
         {

@@ -79,7 +79,9 @@ extern void update_tcouple(FILE         *fplog,
 			   gmx_ekindata_t *ekind,
 			   gmx_wallcycle_t wcycle,
 			   gmx_update_t upd,
-			   t_extmass    *MassQ);
+			   t_extmass    *MassQ,
+			   t_mdatoms    *md
+);
 
 extern void update_pcouple(FILE         *fplog,
 			   gmx_large_int_t   step,
