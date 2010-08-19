@@ -160,7 +160,7 @@ static string toUpper(const string &s)
   GmxOpenMMPlatformOptions#memtests, GmxOpenMMPlatformOptions#deviceid, 
   GmxOpenMMPlatformOptions#force_dev.  */
 /* {@ */
-#define SIZEOF_PLATFORMS    1  // 2
+#define SIZEOF_PLATFORMS    2  // 2
 #define SIZEOF_MEMTESTS     3 
 #define SIZEOF_DEVICEIDS    1 
 #define SIZEOF_FORCE_DEV    2 
@@ -209,7 +209,7 @@ private:
 };
 
 const char * const GmxOpenMMPlatformOptions::platforms[SIZEOF_PLATFORMS]
-                    = {"CUDA"};
+                    = {"CUDA", "Reference"};
                     //= { "Reference", "CUDA" /*,"OpenCL"*/ };
 const char * const GmxOpenMMPlatformOptions::memtests[SIZEOF_MEMTESTS]
                     = { "15", "full", "off" };
