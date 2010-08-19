@@ -1799,49 +1799,64 @@ void do_index(const char* mdparin, const char *ndx,
     fprintf(stderr,"bd_fric=0, so tau_t will be used as the inverse friction constant(s)\n"); 
   }
 
-    if (bSetTCpar)
-    {
-        if (nr != nref_t)
-        {
-            gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
-        }
-
-        tau_min = 1e20;
-        for(i=0; (i<nr); i++)
-        {
-            ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
-            if (ir->opts.tau_t[i] < 0)
-            {
-                gmx_fatal(FARGS,"tau_t for group %d negative",i);
-            } else if (ir->opts.tau_t[i] > 0) {
-                tau_min = min(tau_min,ir->opts.tau_t[i]);
-            }
-        }
-        if (ir->etc != etcNO && ir->nsttcouple == -1)
-        {
+  if (bSetTCpar)
+  {
+      if (EI_VV(ir->eI)) 
+      {
+          if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
+          {
+              int mincouple;
+              mincouple = ir->nsttcouple;
+              if (ir->nstpcouple < mincouple)
+              {
+                  mincouple = ir->nstpcouple;
+              }
+              ir->nstpcouple = mincouple;
+              ir->nsttcouple = mincouple;
+              warning_note(wi,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple)");
+          }
+      }
+      if (nr != nref_t)
+      {
+          gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
+      }
+      
+      tau_min = 1e20;
+      for(i=0; (i<nr); i++)
+      {
+          ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
+          if (ir->opts.tau_t[i] < 0)
+          {
+              gmx_fatal(FARGS,"tau_t for group %d negative",i);
+          } else if (ir->opts.tau_t[i] > 0) {
+              tau_min = min(tau_min,ir->opts.tau_t[i]);
+          }
+      }
+      if (ir->etc != etcNO && ir->nsttcouple == -1)
+      {
             ir->nsttcouple = ir_optimal_nsttcouple(ir);
-        }
-        nstcmin = tcouple_min_integration_steps(ir->etc);
-        if (nstcmin > 1)
-        {
-            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
-            {
-                sprintf(warn_buf,"For proper integration of the %s thermostat, tau_t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
-                        ETCOUPLTYPE(ir->etc),
-                        tau_min,nstcmin,
-                        ir->nsttcouple*ir->delta_t);
-                warning(wi,warn_buf);
-            }
-        }
-        for(i=0; (i<nr); i++)
-        {
-            ir->opts.ref_t[i] = strtod(ptr2[i],NULL);
-            if (ir->opts.ref_t[i] < 0)
-            {
-                gmx_fatal(FARGS,"ref_t for group %d negative",i);
-            }
-        }
-    }
+      }
+      nstcmin = tcouple_min_integration_steps(ir->etc);
+      if (nstcmin > 1)
+      {
+          if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
+          {
+              sprintf(warn_buf,"For proper integration of the %s thermostat, tau_t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
+                      ETCOUPLTYPE(ir->etc),
+                      tau_min,nstcmin,
+                      ir->nsttcouple*ir->delta_t);
+              warning(wi,warn_buf);
+          }
+      }
+      for(i=0; (i<nr); i++)
+      {
+          ir->opts.ref_t[i] = strtod(ptr2[i],NULL);
+          if (ir->opts.ref_t[i] < 0)
+          {
+              gmx_fatal(FARGS,"ref_t for group %d negative",i);
+          }
+      }
+  }
     
   /* Simulated annealing for each group. There are nr groups */
   nSA = str_nelem(anneal,MAXPTR,ptr1);
