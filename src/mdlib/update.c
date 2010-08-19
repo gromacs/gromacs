@@ -266,7 +266,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         {
             if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
             {
-                v[n][d]             = mv1*(mv1*vrel[d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
+                v[n][d]             = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
             } 
             else 
             {
