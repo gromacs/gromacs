@@ -258,28 +258,41 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 
 /* initialize the collection*/
 void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, 
-                           double temp,  
-                           double native_lambda, 
-                           int table_size, 
-                           double table_spacing,
-                           unsigned int ndhmax, 
-                           int n_dh,
-                           double *flambda)
+                           const t_inputrec *ir)
 {
     int i; 
+    int n_dh = ir->n_flambda;
+    int ndhmax=ir->nstenergy/ir->nstcalcenergy;
 
-    dhc->temp=temp;
-    dhc->lambda=native_lambda;
+    dhc->temp=ir->opts.ref_t[0]; 
+    dhc->lambda=ir->init_lambda; 
+    dhc->delta_lambda=ir->delta_lambda;
     dhc->starttime=dhc->endtime=0.;
     dhc->starttime_set=FALSE;
 
+#if 0
+    if (ir->dhdl_derivatives == dhdlderivativesYES)
+    {
+        n_dh++;
+    }
+#endif
+
     snew(dhc->dh, n_dh);
     dhc->ndh=n_dh;
+#if 0
+    if (ir->dhdl_derivatives == dhdlderivativesYES)
+    {
+        mde_delta_h_init(dhc->dh + i, ir->dh_hist_size, 
+                         ir->dh_hist_spacing, ndhmax, 
+                         ir->flambda[i] );
+    }
+#endif
 
     for(i=0;i<n_dh;i++)
     {
-        mde_delta_h_init(dhc->dh + i, table_size, table_spacing, ndhmax, 
-                         flambda[i] );
+        mde_delta_h_init(dhc->dh + i, ir->dh_hist_size, 
+                         ir->dh_hist_spacing, ndhmax, 
+                         ir->flambda[i] );
     }
 }
 

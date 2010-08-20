@@ -2627,7 +2627,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 if (bNstEner)
                 {
-                    upd_mdebin(mdebin,bDoDHDL ? outf->fp_dhdl : NULL,TRUE,
+                    upd_mdebin(mdebin,bDoDHDL, TRUE,
                                t,mdatoms->tmass,enerd,state,lastbox,
                                shake_vir,force_vir,total_vir,pres,
                                ekind,mu_tot,constr);

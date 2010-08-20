@@ -86,12 +86,14 @@ typedef struct {
   bool   bEInd[egNR];
   char   **print_grpnms;
 
+  FILE   *fp_dhdl; /* the dhdl.xvg output file */
   t_mde_delta_h_coll *dhc; /* the BAR delta U (raw data + histogram) */
 } t_mdebin;
 
 extern t_mdebin *init_mdebin(ener_file_t fp_ene,
                              const gmx_mtop_t *mtop,
-                             const t_inputrec *ir);
+                             const t_inputrec *ir,
+                             FILE *fp_dhdl);
 /* Initiate MD energy bin and write header to energy file. */
 
 extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
@@ -100,7 +102,8 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 
 /* update the averaging structures. Called every time 
    the energies are evaluated. */
-extern void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
+extern void upd_mdebin(t_mdebin *md, 
+                       bool write_dhdl,
 		       bool bSum,
 		       double time,
 		       real tmass,
