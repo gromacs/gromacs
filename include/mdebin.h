@@ -60,6 +60,7 @@ typedef struct t_mde_delta_h_coll t_mde_delta_h_coll;
 /* This is the collection of energy averages collected during mdrun, and to 
    be written out to the .edr file. */
 typedef struct {
+  double delta_t;
   t_ebin *ebin;
   int    ie,iconrmsd,ib,ivol,idens,ipv,ienthalpy;
   int    isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,itcb,iu,imu;

@@ -141,6 +141,15 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
 
   snew(md,1);
 
+    if (EI_DYNAMICS(ir->eI))
+    {
+        md->delta_t = ir->delta_t;
+    }
+    else
+    {
+        md->delta_t = 0;
+    }
+
   groups = &mtop->groups;
 
   bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
@@ -914,6 +923,7 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
         fr.t            = time;
         fr.step         = step;
         fr.nsteps       = md->ebin->nsteps;
+        fr.dt           = md->delta_t;
         fr.nsum         = md->ebin->nsum;
         fr.nre          = (bEne) ? md->ebin->nener : 0;
         fr.ener         = md->ebin->e;

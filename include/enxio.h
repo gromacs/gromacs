@@ -135,6 +135,7 @@ extern "C" {
     double   t;	            /* Timestamp of this frame	                     */
     gmx_large_int_t step;   /* MD step	   		                     */
     gmx_large_int_t nsteps; /* The number of steps between frames            */
+    double   dt;            /* The MD time step                              */
     int      nsum;          /* The number of terms for the sums in ener      */
     int      nre;           /* Number of energies			     */
     int      e_size;        /* Size (in bytes) of energies		     */
