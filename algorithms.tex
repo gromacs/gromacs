@@ -1510,8 +1510,6 @@ iteratively for the constraint forces.  The discussion of the details of the ite
 is beyond the scope of this manual; readers are encouraged to see the
 implementation described in Ref.~\cite{Yu2010}.
 
-} % Brace matches ifthenelse test for gmxlite
-
 
 \subsubsection{Infrequent evaluation of temperature and pressure coupling}
 
@@ -1546,6 +1544,9 @@ For pressure control, this becomes:
 \eea
 Where the box volume integration occurs every step, but the auxiliary variable 
 integrations happen every $n$ steps.
+
+} % Brace matches ifthenelse test for gmxlite
+
 
 \subsection{The complete update algorithm}
 \begin{figure}
