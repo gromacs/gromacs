@@ -975,10 +975,10 @@ thermostat which does produce a correct ensemble is the velocity
 rescaling thermostat\cite{Bussi2007a} described below.
 
 The heat flow into or out of the system is effected by scaling the
-velocities of each particle every step with a time-dependent factor
-$\lambda$, given by
+velocities of each particle every step, or every $n_\mathrm{TC}$ steps,
+with a time-dependent factor $\lambda$, given by
 \beq 
-\lambda = \left[ 1 + \frac{\Delta t}{\tau_T}
+\lambda = \left[ 1 + \frac{n_\mathrm{TC} \Delta t}{\tau_T}
 \left\{\frac{T_0}{T(t -  \hDt)} - 1 \right\} \right]^{1/2}
 \label{eqn:lambda}
 \eeq
@@ -1222,7 +1222,8 @@ only be used with Nos{\'e}-Hoover temperature control.
 \label{sec:berendsen_pressure_coupling}
 \index{weak coupling}
 The Berendsen algorithm rescales the 
-coordinates and box vectors every step with a matrix {\boldmath $\mu$},
+coordinates and box vectors every step, or every $n_\mathrm{PC}$ steps,
+ with a matrix {\boldmath $\mu$},
 which has the effect of a first-order kinetic relaxation of the pressure
 towards a given reference pressure ${\bf P}_0$:
 \beq
@@ -1231,7 +1232,7 @@ towards a given reference pressure ${\bf P}_0$:
 The scaling matrix {\boldmath $\mu$} is given by
 \beq
 \mu_{ij}
-= \delta_{ij} - \frac{\Delta t}{3\, \tau_p} \beta_{ij} \{P_{0ij} - P_{ij}(t) \}
+= \delta_{ij} - \frac{n_\mathrm{PC}\Delta t}{3\, \tau_p} \beta_{ij} \{P_{0ij} - P_{ij}(t) \}
 \label{eqn:mu}
 \eeq
 \index{isothermal compressibility}
