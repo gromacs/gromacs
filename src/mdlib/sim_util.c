@@ -535,7 +535,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (EVDW_PME(fr->vdwtype))
     {
         pme_flags |= GMX_PME_DO_LJ;
-        if (inputrec->bLJPMELB)
+        if (fr->bLJPMELB)
         {
             pme_flags |= GMX_PME_DO_LJ_LB;
         }
@@ -1057,12 +1057,65 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     sfree(savex);
 }
 
+static void
+integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
+                double *enerout, double *virout)
+{
+    double enersum, virsum;
+    double invscale, invscale2, invscale3;
+    double r, ea, eb, ec, pa, pb, pc, pd;
+    double y0, f, g, h;
+    int    ri, offset;
+
+    invscale = 1.0/scale;
+    invscale2 = invscale*invscale;
+    invscale3 = invscale*invscale2;
+
+    /* Following summation derived from cubic spline definition,
+     * Numerical Recipies in C, second edition, p. 113-116.  Exact
+     * for the cubic spline.  We first calculate the negative of
+     * the energy from rvdw to rvdw_switch, assuming that g(r)=1,
+     * and then add the more standard, abrupt cutoff correction to
+     * that result, yielding the long-range correction for a
+     * switched function.  We perform both the pressure and energy
+     * loops at the same time for simplicity, as the computational
+     * cost is low. */
+    enersum = 0.0;
+    virsum = 0.0;
+    for (ri = rstart; ri < rend; ++ri) {
+      r = ri*invscale;
+      ea = invscale3;
+      eb = 2.0*invscale2*r;
+      ec = invscale*r*r;
+
+      pa = invscale3;
+      pb = 3.0*invscale2*r;
+      pc = 3.0*invscale*r*r;
+      pd = r*r*r;
+
+      /* this "8" is from the packing in the vdwtab array - perhaps
+        should be #define'ed? */
+      offset = 8*ri + offstart;
+      y0 = vdwtab[offset];
+      f = vdwtab[offset+1];
+      g = vdwtab[offset+2];
+      h = vdwtab[offset+3];
+
+      enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2)+
+        g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);
+      virsum  +=  f*(pa/4 + pb/3 + pc/2 + pd) +
+        2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
+    }
+    *enerout = 4.0*M_PI*enersum;
+    *virout  = 4.0*M_PI*virsum;
+}
+
+
 void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 {
-  double eners[2],virs[2],enersum,virsum,y0,f,g,h;
-  double r0,r1,r,rc3,rc9,ea,eb,ec,pa,pb,pc,pd;
-  double invscale,invscale2,invscale3;
-  int    ri0,ri1,ri,i,offstart,offset;
+  double eners[2], virs[2], enersum, virsum;
+  double r0, r1, rc3, rc9;
+  int    ri0, ri1, ri, i;
   real   scale,*vdwtab; 
 
   fr->enershiftsix = 0;
@@ -1106,54 +1159,10 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
        */
       eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
       eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
-      
-      invscale = 1.0/(scale);  
-      invscale2 = invscale*invscale;
-      invscale3 = invscale*invscale2;
 
-      /* following summation derived from cubic spline definition,
-	Numerical Recipies in C, second edition, p. 113-116.  Exact
-	for the cubic spline.  We first calculate the negative of
-	the energy from rvdw to rvdw_switch, assuming that g(r)=1,
-	and then add the more standard, abrupt cutoff correction to
-	that result, yielding the long-range correction for a
-	switched function.  We perform both the pressure and energy
-	loops at the same time for simplicity, as the computational
-	cost is low. */
-      
       for (i=0;i<2;i++) {
-        enersum = 0.0; virsum = 0.0;
-        if (i==0)
-	  offstart = 0;
-	else
-	  offstart = 4;
-	for (ri=ri0; ri<ri1; ri++) {
-          r = ri*invscale;
-          ea = invscale3;
-          eb = 2.0*invscale2*r;
-          ec = invscale*r*r;
-          
-          pa = invscale3;
-          pb = 3.0*invscale2*r;
-          pc = 3.0*invscale*r*r;
-          pd = r*r*r;
-          
-          /* this "8" is from the packing in the vdwtab array - perhaps
-	    should be #define'ed? */
-          offset = 8*ri + offstart;
-          y0 = vdwtab[offset];
-          f = vdwtab[offset+1];
-          g = vdwtab[offset+2];
-          h = vdwtab[offset+3];
-	  
-          enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2)+
-            g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);  
-          virsum  +=  f*(pa/4 + pb/3 + pc/2 + pd) + 
-            2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
-	  
-        }
-        enersum *= 4.0*M_PI;
-        virsum  *= 4.0*M_PI; 
+        integrate_table(vdwtab, scale, (i == 0 ? 0 : 4), ri0, ri1,
+                        &enersum, &virsum);
         eners[i] -= enersum;
         virs[i]  -= virsum;
       }
@@ -1163,7 +1172,40 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
       eners[1] +=  4.0*M_PI/(9.0*rc9);
       virs[0]  +=  8.0*M_PI/rc3;
       virs[1]  += -16.0*M_PI/(3.0*rc9);
-    } 
+    } else if (EVDW_PME(fr->vdwtype)) {
+      if (EVDW_SWITCHED(fr->vdwtype) && fr->rvdw_switch == 0)
+        gmx_fatal(FARGS,
+                  "With dispersion correction rvdw-switch can not be zero "
+                  "for vdw-type = %s", evdw_names[fr->vdwtype]);
+
+      scale  = fr->nblists[0].tab.scale;
+      vdwtab = fr->nblists[0].vdwtab;
+
+      ri0 = floor(fr->rvdw_switch*scale);
+      ri1 = ceil(fr->rvdw*scale);
+      r0  = ri0/scale;
+      r1  = ri1/scale;
+      rc3 = r0*r0*r0;
+      rc9  = rc3*rc3*rc3;
+
+      /* Calculate self-interaction coefficient (assuming that the
+       * reciprical-space contribution is constant in the region that
+       * contributes to the self-interaction). */
+      fr->enershiftsix = pow(fr->ewaldljcoeff, 6) / 6.0;
+
+      /* Calculate C12 values as without PME. */
+      if (EVDW_SWITCHED(fr->vdwtype)) {
+        integrate_table(vdwtab, scale, 4, ri0, ri1, &enersum, &virsum);
+        eners[1] -= enersum;
+        virs[1]  -= virsum;
+      }
+      /* Add analytical corrections, C6 for the whole range,
+       * C12 from rvdw_switch to infinity. */
+      eners[0] += -pow(sqrt(M_PI)*fr->ewaldljcoeff, 3)/3.0;
+      eners[1] +=  4.0*M_PI/(9.0*rc9);
+      virs[0]  +=  pow(sqrt(M_PI)*fr->ewaldljcoeff, 3);
+      virs[1]  += -16.0*M_PI/(3.0*rc9);
+    }
     else if ((fr->vdwtype == evdwCUT) || (fr->vdwtype == evdwUSER)) {
       if (fr->vdwtype == evdwUSER && fplog)
 	fprintf(fplog,

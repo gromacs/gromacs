@@ -118,6 +118,42 @@ static real *mk_nbfp(const gmx_ffparams_t *idef,bool bBHAM)
   return nbfp;
 }
 
+static real *mk_nbfp_comb(const gmx_ffparams_t *idef, int comb_rule)
+{
+    real *nbfp;
+    int   i,j,k,atnr;
+    real  c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
+    real  c6, c12;
+
+    atnr = idef->atnr;
+    snew(nbfp, 2*atnr*atnr);
+    for (i = k = 0; i < atnr; ++i)
+    {
+        for (j = 0; j < atnr; ++j)
+        {
+            c6i  = idef->iparams[i*(atnr+1)].lj.c6;
+            c12i = idef->iparams[i*(atnr+1)].lj.c12;
+            c6j  = idef->iparams[j*(atnr+1)].lj.c6;
+            c12j = idef->iparams[j*(atnr+1)].lj.c12;
+            c6  = sqrt(c6i  * c6j);
+            c12 = sqrt(c12i * c12j);
+            if (comb_rule == eCOMB_ARITHMETIC
+                && !gmx_numzero(c6) && !gmx_numzero(c12))
+            {
+                sigmai = pow(c12i / c6i, 1.0/6.0);
+                sigmaj = pow(c12j / c6j, 1.0/6.0);
+                epsi   = c6i * c6i / c12i;
+                epsj   = c6j * c6j / c12j;
+                c6  = epsi * epsj * pow(0.5*(sigmai+sigmaj), 6);
+                c12 = epsi * epsj * pow(0.5*(sigmai+sigmaj), 12);
+            }
+            C6(nbfp,atnr,i,j)   = c6;
+            C12(nbfp,atnr,i,j)  = c12;
+        }
+    }
+    return nbfp;
+}
+
 /* This routine sets fr->solvent_opt to the most common solvent in the 
  * system, e.g. esolSPC or esolTIP4P. It will also mark each charge group in 
  * the fr->solvent_type array with the correct type (or esolNO).
@@ -776,10 +812,30 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
     int    ntp,*typecount;
     bool   bBHAM;
     real   *nbfp;
+    real   *nbfp_comb = NULL;
 
     ntp = fr->ntype;
     bBHAM = fr->bBHAM;
     nbfp = fr->nbfp;
+
+    /* For LJ PME, we want to correct for the difference between the actual
+     * C6 values and the C6 values used by the LJ-PME based on combination
+     * rules. */
+    if (EVDW_PME(fr->vdwtype))
+    {
+        nbfp_comb = mk_nbfp_comb(&mtop->ffparams,
+                fr->bLJPMELB ? eCOMB_ARITHMETIC : eCOMB_GEOMETRIC);
+        for (tpi = 0; tpi < ntp; ++tpi)
+        {
+            for (tpj = 0; tpj < ntp; ++tpj)
+            {
+                C6(nbfp_comb,ntp,tpi,tpj) =
+                    C6(nbfp,ntp,tpi,tpj) - C6(nbfp_comb,ntp,tpi,tpj);
+                C12(nbfp_comb,ntp,tpi,tpj) = C12(nbfp,ntp,tpi,tpj);
+            }
+        }
+        nbfp = nbfp_comb;
+    }
     
     for(q=0; q<(fr->efep==efepNO ? 1 : 2); q++) {
         csix = 0;
@@ -932,6 +988,10 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
         }
         fr->avcsix[q]    = csix;
         fr->avctwelve[q] = ctwelve;
+    }
+    if (EVDW_PME(fr->vdwtype))
+    {
+        sfree(nbfp_comb);
     }
     if (fplog != NULL)
     {
@@ -1344,6 +1404,7 @@ void init_forcerec(FILE *fp,
     fr->rlistlong  = cutoff_inf(ir->rlistlong);
     fr->eeltype    = ir->coulombtype;
     fr->vdwtype    = ir->vdwtype;
+    fr->bLJPMELB   = ir->bLJPMELB;
     
     fr->bTwinRange = fr->rlistlong > fr->rlist; /* || EVDW_PME(fr->vdwtype); */
     

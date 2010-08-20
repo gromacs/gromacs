@@ -271,6 +271,7 @@ typedef struct {
 
   /* Long-range forces and virial for PPPM/PME/Ewald */
   gmx_pme_t pmedata;
+  bool      bLJPMELB;
   tensor    vir_el_recip;
   tensor    vir_lj_recip;
 

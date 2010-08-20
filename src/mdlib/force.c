@@ -559,7 +559,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             if (EVDW_PME(fr->vdwtype))
             {
                 pme_flags |= GMX_PME_DO_LJ;
-                if (ir->bLJPMELB)
+                if (fr->bLJPMELB)
                 {
                     pme_flags |= GMX_PME_DO_LJ_LB;
                 }
