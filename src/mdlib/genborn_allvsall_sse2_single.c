@@ -1032,7 +1032,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             gpi_SSE1           = _mm_add_ps(gpi_SSE1, _mm_mul_ps(prod_SSE,icf4_SSE1));
             gpi_SSE2           = _mm_add_ps(gpi_SSE2, _mm_mul_ps(prod_SSE,icf4_SSE2));
             gpi_SSE3           = _mm_add_ps(gpi_SSE3, _mm_mul_ps(prod_SSE,icf4_SSE3));
-            
+
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE0));
             dadx+=4;
@@ -1055,7 +1055,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
                                  
         /* Main part, no exclusions */
         for(j=nj1; j<nj2; j+=UNROLLJ)
-        {                     
+        {               
             /* load j atom coordinates */
             jx_SSE            = _mm_load_ps(x_align+j);
             jy_SSE            = _mm_load_ps(y_align+j);
@@ -1318,7 +1318,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
             gpi_SSE1           = _mm_add_ps(gpi_SSE1, _mm_mul_ps(prod_SSE,icf4_SSE1));
             gpi_SSE2           = _mm_add_ps(gpi_SSE2, _mm_mul_ps(prod_SSE,icf4_SSE2));
             gpi_SSE3           = _mm_add_ps(gpi_SSE3, _mm_mul_ps(prod_SSE,icf4_SSE3));
-            
+              
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_ps(dadx,_mm_mul_ps(prod_SSE,icf6_SSE0));
             dadx+=4;
@@ -3304,7 +3304,7 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
 
     n = 0;
     rb = aadata->work;
-        
+    
 	/* Loop to get the proper form for the Born radius term */
 	if(gb_algorithm==egbSTILL) 
 	{
@@ -3383,7 +3383,7 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
 		/* Load limits for loop over neighbors */
 		nj0              = jindex[4*i];
 		nj3              = jindex[4*i+3];
-        
+
         /* No masks necessary, since the stored chain rule derivatives will be zero in those cases! */
         for(j=nj0; j<nj3; j+=UNROLLJ)
         {          
@@ -3431,7 +3431,7 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
             fgb_SSE1         = _mm_add_ps(fgb_SSE1,fgb_ai_SSE1);
             fgb_SSE2         = _mm_add_ps(fgb_SSE2,fgb_ai_SSE2);
             fgb_SSE3         = _mm_add_ps(fgb_SSE3,fgb_ai_SSE3);
-                
+                            
             /* Calculate temporary vectorial force */
             tx_SSE0            = _mm_mul_ps(fgb_SSE0,dx_SSE0);
             ty_SSE0            = _mm_mul_ps(fgb_SSE0,dy_SSE0);

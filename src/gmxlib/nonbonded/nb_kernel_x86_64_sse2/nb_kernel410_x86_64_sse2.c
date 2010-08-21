@@ -100,7 +100,7 @@ void nb_kernel410_x86_64_sse2(int *           p_nri,
 	nri        = *p_nri;
 	ntype      = *p_ntype;
     
-    gbfactor   = _mm_set1_pd(((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent)));
+    gbfactor   = _mm_set1_pd( - ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent)));     
     gbtabscale = _mm_load1_pd(p_gbtabscale);  
     facel      = _mm_load1_pd(p_facel);
 

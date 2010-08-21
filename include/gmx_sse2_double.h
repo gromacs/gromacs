@@ -509,8 +509,8 @@ gmx_mm_sincos_pd(__m128d x,
     tabidx    = _mm_or_si128( _mm_and_si128(imask,corridx), _mm_andnot_si128(imask,tabidx) );
     
     /* tabidx is now in range [0..16] */
-    sswapsign = _mm_shuffle_epi32(sswapsign,_MM_SHUFFLE(2,2,0,0));
-    cswapsign = _mm_shuffle_epi32(cswapsign,_MM_SHUFFLE(2,2,0,0));
+    sswapsign = _mm_shuffle_epi32(sswapsign,_MM_SHUFFLE(1,1,0,0));
+    cswapsign = _mm_shuffle_epi32(cswapsign,_MM_SHUFFLE(1,1,0,0));
     minusone  = _mm_sub_pd(_mm_setzero_pd(),one);
     
     ssign     = _mm_or_pd(_mm_and_pd( _mm_castsi128_pd(sswapsign),minusone ),
