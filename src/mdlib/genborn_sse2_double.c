@@ -345,9 +345,7 @@ calc_gb_rad_hct_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_
         ix     = _mm_set1_pd(shX+x[ii3+0]);
 		iy     = _mm_set1_pd(shY+x[ii3+1]);
 		iz     = _mm_set1_pd(shZ+x[ii3+2]);
-		
-		offset = (nj1-nj0)%4;
-        
+		        
 		rai    = _mm_load1_pd(gb_radius+ii);
 		rai_inv= gmx_mm_inv_pd(rai);
         
@@ -502,9 +500,9 @@ calc_gb_rad_hct_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_
             dadx2         = _mm_and_pd(t1,obc_mask1);
             
             _mm_store_pd(dadx,dadx1);
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,dadx2);
-            dadx += 4;
+            dadx += 2;
         } /* end normal inner loop */
         
 		if(k<nj1)
@@ -651,9 +649,9 @@ calc_gb_rad_hct_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_
             dadx2         = _mm_and_pd(t1,obc_mask1);
             
             _mm_store_pd(dadx,dadx1);
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,dadx2);
-            dadx += 4;
+            dadx += 2;
         } 
         gmx_mm_update_1pot_pd(sum_ai,work+ii);
         
