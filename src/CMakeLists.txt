@@ -4,6 +4,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmakein ${CMAKE_CURRENT_BINA
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(kernel)
+add_subdirectory(alexandria)
 
 if(NOT GMX_FAHCORE)
   add_subdirectory(tools)
