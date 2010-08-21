@@ -264,14 +264,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	/* If we are doing GB, calculate bonded forces and apply corrections 
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
-		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
-							   ir->gb_algorithm,nrnb,bBornRadii,&pbc,graph);
-		
-		enerd->term[F_GB12]+=dvdgb;	
-	
-		/* Also add the nonbonded GB potential energy (only from one energy group currently) */
-		enerd->term[F_GB12]+=enerd->grpp.ener[egGB][0];
-	}
+		calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
+                       ir->gb_algorithm,nrnb,bBornRadii,&pbc,graph,enerd);
+    }
 
 #ifdef GMX_MPI
     if (TAKETIME)
@@ -298,7 +293,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 (fr->bBHAM ?
                  enerd->grpp.ener[egBHAMSR][i] :
                  enerd->grpp.ener[egLJSR][i])
-                + enerd->grpp.ener[egCOULSR][i];
+                + enerd->grpp.ener[egCOULSR][i] + enerd->grpp.ener[egGB][i];
         }
     }
     PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlambda);
@@ -656,6 +651,9 @@ void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
   epot[F_COUL14]   = sum_v(grpp->nener,grpp->ener[egCOUL14]);
   epot[F_COUL_LR]  = sum_v(grpp->nener,grpp->ener[egCOULLR]);
   epot[F_LJ_LR]    = sum_v(grpp->nener,grpp->ener[egLJLR]);
+  /* We have already added 1-2,1-3, and 1-4 terms to F_GBPOL */
+  epot[F_GBPOL]   += sum_v(grpp->nener,grpp->ener[egGB]);
+    
 /* lattice part of LR doesnt belong to any group
  * and has been added earlier
  */

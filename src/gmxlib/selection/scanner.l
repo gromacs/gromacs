@@ -114,7 +114,7 @@ COMMENT    (#.*)
 {REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 {STRING}        { yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
-\\\n
+\\\n            { _gmx_sel_lexer_add_token(" ", 1, state); }
 ";"|\n          {
                     if (yytext[0] == ';' || state->bInteractive)
                     {
@@ -152,4 +152,4 @@ not|"!"         { ADD_TOKEN; return NOT; }
 
 [[:blank:]]+    { _gmx_sel_lexer_add_token(" ", 1, state); }
 [_[:alnum:]]+   { yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return STR; }
-.               { _gmx_sel_lexer_add_token(yytext, 1, state); return yytext[0]; }
+.               { ADD_TOKEN; return yytext[0]; }

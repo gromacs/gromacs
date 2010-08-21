@@ -1005,7 +1005,7 @@ int gmx_trjconv(int argc,char *argv[])
             /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
             if (bRmPBC)
-	      gmx_rmpbc(gpbc,top_box,xp,xp);
+	      gmx_rmpbc(gpbc,top.atoms.nr,top_box,xp);
             copy_rvec(xp[index[0]],x_shift);
             reset_x_ndim(nfitdim,ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
             rvec_dec(x_shift,xp[index[0]]);
@@ -1196,7 +1196,7 @@ int gmx_trjconv(int argc,char *argv[])
                     /* Now modify the coords according to the flags,
 	     for normal fit, this is only done for output frames */
                     if (bRmPBC)
-		      gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+		      gmx_rmpbc_trxfr(gpbc,&fr);
 
                     reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
                     do_fit(natoms,w_rls,xp,fr.x);
@@ -1274,7 +1274,7 @@ int gmx_trjconv(int argc,char *argv[])
                                for PFit we did this already! */
 
                             if (bRmPBC)
-			      gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+			      gmx_rmpbc_trxfr(gpbc,&fr);
 
                             if (bReset) {
                                 reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);

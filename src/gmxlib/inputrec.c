@@ -47,8 +47,9 @@
 /* The minimum number of integration steps required for reasonably accurate
  * integration of first and second order coupling algorithms.
  */
-const int nst1 = 10;
-const int nst2 = 20;
+const int nstmin_berendsen_tcouple =  5;
+const int nstmin_berendsen_pcouple = 10;
+const int nstmin_harmonic          = 20;
 
 static int nst_wanted(const t_inputrec *ir)
 {
@@ -78,13 +79,14 @@ int tcouple_min_integration_steps(int etc)
         break;
     case etcBERENDSEN:
     case etcYES:
-        n = nst1;
+        n = nstmin_berendsen_tcouple;
         break;
     case etcVRESCALE:
+        /* V-rescale supports instantaneous rescaling */
         n = 0;
         break;
     case etcNOSEHOOVER:
-        n = nst2;
+        n = nstmin_harmonic;
         break;
     case etcANDERSEN:
     case etcANDERSENINTERVAL:
@@ -151,11 +153,11 @@ int pcouple_min_integration_steps(int epc)
         break;
     case etcBERENDSEN:
     case epcISOTROPIC:
-        n = nst1;
+        n = nstmin_berendsen_pcouple;
         break;
     case epcPARRINELLORAHMAN:
     case epcMTTK:
-        n = nst2;
+        n = nstmin_harmonic;
         break;
     default:
         gmx_incons("Unknown epc value");

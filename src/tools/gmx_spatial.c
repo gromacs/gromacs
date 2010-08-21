@@ -216,7 +216,7 @@ int gmx_spatial(int argc,char *argv[])
 
     copy_mat(box,box_pbc);
     if (bPBC) {
-      gmx_rmpbc(gpbc,box,fr.x,fr.x);
+      gmx_rmpbc_trxfr(gpbc,&fr);
       set_pbc(&pbc,ePBC,box_pbc);
     }
 

@@ -293,7 +293,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     real gs_buf[eglsNR];
     tensor corr_vir,corr_pres,shakeall_vir;
     bool bEner,bPres,bTemp, bVV;
-    bool bRerunMD, bStopCM, bGStat, bNEMD, bIterate, 
+    bool bRerunMD, bStopCM, bGStat, bIterate, 
         bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
     real ekin,temp,prescorr,enercorr,dvdlcorr;
     
@@ -301,7 +301,6 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bRerunMD = flags & CGLO_RERUNMD;
     bStopCM = flags & CGLO_STOPCM;
     bGStat = flags & CGLO_GSTAT;
-    bNEMD = flags & CGLO_NEMD;
     bReadEkin = flags & CGLO_READEKIN;
     bScaleEkin = flags & CGLO_SCALEEKIN;
     bEner = flags & CGLO_ENERGY;
@@ -328,7 +327,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
          * when there really is NEMD.
          */
         
-        if (PAR(cr) && (bNEMD)) 
+        if (PAR(cr) && (ekind->bNEMD)) 
         {
             accumulate_u(cr,&(ir->opts),ekind);
         }
@@ -419,7 +418,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         }
     }
     
-    if (!bNEMD && debug && bTemp && (vcm->nr > 0))
+    if (!ekind->bNEMD && debug && bTemp && (vcm->nr > 0))
     {
         correct_ekin(debug,
                      mdatoms->start,mdatoms->start+mdatoms->homenr,
@@ -1066,7 +1065,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
     bool       bDoDHDL=FALSE;
-    bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
+    bool       do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
                bForceUpdate=FALSE,bCPT;
     int        mdof_flags;
     bool       bMasterState;
@@ -1198,7 +1197,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
-            force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,state_global,Flags);
+            force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -1860,8 +1859,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* these CGLO_ options remain the same throughout the iteration */
         cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
                       (bStopCM ? CGLO_STOPCM : 0) |
-                      (bGStat ? CGLO_GSTAT : 0) |
-                      (bNEMD ? CGLO_NEMD : 0)
+                      (bGStat ? CGLO_GSTAT : 0)
             );
         
         force_flags = (GMX_FORCE_STATECHANGED |

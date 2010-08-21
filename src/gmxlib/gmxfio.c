@@ -997,59 +997,16 @@ static int gmx_fio_int_fsync(t_fileio *fio)
     int rc = 0;
     int filen=-1;
 
-#if ( ( (defined(HAVE_FILENO) || (defined(HAVE__FILENO) ) ) && \
-	(defined(HAVE_FSYNC))  || defined(HAVE__COMMIT)  ) || \
-	 defined(FAHCORE) )
+
     if (fio->fp)
     {
-#ifdef GMX_FAHCORE
-	/* the fahcore defines its own os-independent fsync */
-	rc=fah_fsync(fio->fp); 
-#elif defined(HAVE_FILENO)
-        filen=fileno(fio->fp);
-#elif defined(HAVE__FILENO)
-        filen=_fileno(fio->fp);
-#endif
+        rc=gmx_fsync(fio->fp);
     }
-    else if (fio->xdr)
+    else if (fio->xdr) /* this should normally not happen */
     {
-#ifdef GMX_FAHCORE
-	/* the fahcore defines its own os-independent fsync */
-        rc=fah_fsync((FILE *) fio->xdr->x_private);
-#elif defined(HAVE_FILENO)
-        filen=fileno((FILE *) fio->xdr->x_private);
-#elif defined(HAVE__FILENO)
-        filen=_fileno((FILE *) fio->xdr->x_private);
-#endif
+        rc=gmx_fsync((FILE*) fio->xdr->x_private);
+                                    /* ^ is this actually OK? */
     }
-
-#ifndef GMX_FAHCORE
-    if (filen>0)
-    {
-#if (defined(HAVE_FSYNC))
-        /* fahcore also defines HAVE_FSYNC */
-        rc=fsync(filen);
-#elif (defined(HAVE__COMMIT)) 
-        rc=_commit(filen);
-#endif
-    }
-#endif
-
-    /* We check for these error codes this way because POSIX requires them
-       to be defined, and using anything other than macros is unlikely: */
-#ifdef EINTR
-    /* we don't want to report an error just because fsync() caught a signal.
-       For our purposes, we can just ignore this. */
-    if (rc && errno==EINTR)
-        rc=0;
-#endif
-#ifdef EINVAL
-    /* we don't want to report an error just because we tried to fsync() 
-       stdout, a socket or a pipe. */
-    if (rc && errno==EINVAL)
-        rc=0;
-#endif
-#endif
 
     return rc;
 }
