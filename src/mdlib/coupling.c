@@ -50,7 +50,6 @@
 #include "update.h"
 #include "mdrun.h"
 
-#define NTROTTERCALLS 5
 #define NTROTTERPARTS 3
 
 /* these integration routines are only referenced inside this file */
@@ -646,22 +645,36 @@ void destroy_bufstate(t_state *state)
 void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind, 
                     gmx_enerdata_t *enerd, t_state *state, 
                     tensor vir, t_mdatoms *md, 
-                    t_extmass *MassQ, int *trotter_seq) 
+                    t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno) 
 {
     
     int n,i,j,d,ntgrp,ngtc,gc=0;
     t_grp_tcstat *tcstat;
     t_grpopts *opts;
+    gmx_large_int_t step_eff;
     real ecorr,pcorr,dvdlcorr;
     real bmass,qmass,reft,kT,dt,nd;
     tensor dumpres,dumvir;
     double *scalefac,dtc;
+    int *trotter_seq;
     rvec sumv,consk;
     bool bCouple;
 
+    if (trotter_seqno <= ettTSEQ2)
+    {
+        step_eff = step-1;  /* the velocity verlet calls are actually out of order -- the first half step
+                               is actually the last half step from the previous step.  Thus the first half step
+                               actually corresponds to the n-1 step*/
+                               
+    } else {
+        step_eff = step;
+    }
+
     bCouple = (ir->nsttcouple == 1 ||
-               do_per_step(step+ir->nsttcouple,ir->nsttcouple));
-    
+               do_per_step(step_eff+ir->nsttcouple,ir->nsttcouple));
+
+    trotter_seq = trotter_seqlist[trotter_seqno];
+
     /* signal we are returning if nothing is going to be done in this routine */
     if ((trotter_seq[0] == etrtSKIPALL)  || !(bCouple))
     {
@@ -849,8 +862,8 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
     }
     
     /* first, initialize clear all the trotter calls */
-    snew(trotter_seq,NTROTTERCALLS);
-    for (i=0;i<NTROTTERCALLS;i++) 
+    snew(trotter_seq,ettTSEQMAX);
+    for (i=0;i<ettTSEQMAX;i++) 
     {
         snew(trotter_seq[i],NTROTTERPARTS);
         for (j=0;j<NTROTTERPARTS;j++) {

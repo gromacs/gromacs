@@ -61,6 +61,11 @@ enum {
   etrtVELOCITY1, etrtVELOCITY2, etrtPOSITION, etrtSKIPALL, etrtNR
 };
 
+/* sequenced parts of the trotter decomposition */
+enum {
+  ettTSEQ0,  ettTSEQ1,  ettTSEQ2,  ettTSEQ3,  ettTSEQ4, ettTSEQMAX
+};
+
 enum {
   epctISOTROPIC, epctSEMIISOTROPIC, epctANISOTROPIC,
   epctSURFACETENSION, epctNR
@@ -152,6 +157,20 @@ enum {
 /* FEP selection */
 enum {
   efepNO, efepYES, efepNR
+};
+
+/* separate_dhdl_file selection */
+enum
+{
+    /* NOTE: YES is the first one. Do NOT interpret this one as a bool */
+    sepdhdlfileYES, sepdhdlfileNO, sepdhdlfileNR
+};
+
+/* dhdl_derivatives selection */
+enum
+{
+    /* NOTE: YES is the first one. Do NOT interpret this one as a bool */
+    dhdlderivativesYES, dhdlderivativesNO, dhdlderivativesNR
 };
 
 /* Solvent model */

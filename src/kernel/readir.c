@@ -219,11 +219,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         }
         if (ir->epc != epcNO)
         {
-            if (EI_VV(ir->eI))
-            {
-                /* This should be removed when VV supports nstpcouple */
-                ir->nstpcouple = 1;
-            }
             if (ir->nstpcouple < 0)
             {
                 ir->nstpcouple = ir_optimal_nstpcouple(ir);
@@ -1091,8 +1086,11 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("sc-power",ir->sc_power,0);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
   ITYPE ("nstdhdl",     ir->nstdhdl, 10);
-  ITYPE ("dh_table_size", ir->dh_table_size, 0);
-  RTYPE ("dh_table_spacing", ir->dh_table_spacing, 0.1);
+  EETYPE("separate-dhdl-file", ir->separate_dhdl_file, 
+                               separate_dhdl_file_names);
+  EETYPE("dhdl-derivatives", ir->dhdl_derivatives, dhdl_derivatives_names);
+  ITYPE ("dh_hist_size", ir->dh_hist_size, 0);
+  RTYPE ("dh_hist_spacing", ir->dh_hist_spacing, 0.1);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
   EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
   EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
@@ -1804,54 +1802,64 @@ void do_index(const char* mdparin, const char *ndx,
     fprintf(stderr,"bd_fric=0, so tau_t will be used as the inverse friction constant(s)\n"); 
   }
 
-    if (bSetTCpar)
-    {
-        if (nr != nref_t)
-        {
-            gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
-        }
-
-        tau_min = 1e20;
-        for(i=0; (i<nr); i++)
-        {
-            ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
-            if (ir->opts.tau_t[i] < 0)
-            {
-                gmx_fatal(FARGS,"tau_t for group %d negative",i);
-            } else if (ir->opts.tau_t[i] > 0) {
-                tau_min = min(tau_min,ir->opts.tau_t[i]);
-            }
-        }
-        if (ir->etc != etcNO && EI_VV(ir->eI))
-        {
-            /* This should be removed when VV supports nsttcouple */
-            ir->nsttcouple = 1;
-        }
-        if (ir->etc != etcNO && ir->nsttcouple == -1)
-        {
+  if (bSetTCpar)
+  {
+      if (nr != nref_t)
+      {
+          gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
+      }
+      
+      tau_min = 1e20;
+      for(i=0; (i<nr); i++)
+      {
+          ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
+          if (ir->opts.tau_t[i] < 0)
+          {
+              gmx_fatal(FARGS,"tau_t for group %d negative",i);
+          } else if (ir->opts.tau_t[i] > 0) {
+              tau_min = min(tau_min,ir->opts.tau_t[i]);
+          }
+      }
+      if (ir->etc != etcNO && ir->nsttcouple == -1)
+      {
             ir->nsttcouple = ir_optimal_nsttcouple(ir);
-        }
-        nstcmin = tcouple_min_integration_steps(ir->etc);
-        if (nstcmin > 1)
-        {
-            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
-            {
-                sprintf(warn_buf,"For proper integration of the %s thermostat, tau_t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
-                        ETCOUPLTYPE(ir->etc),
-                        tau_min,nstcmin,
-                        ir->nsttcouple*ir->delta_t);
-                warning(wi,warn_buf);
-            }
-        }
-        for(i=0; (i<nr); i++)
-        {
-            ir->opts.ref_t[i] = strtod(ptr2[i],NULL);
-            if (ir->opts.ref_t[i] < 0)
-            {
-                gmx_fatal(FARGS,"ref_t for group %d negative",i);
-            }
-        }
-    }
+      }
+      if (EI_VV(ir->eI)) 
+      {
+          if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
+          {
+              int mincouple;
+              mincouple = ir->nsttcouple;
+              if (ir->nstpcouple < mincouple)
+              {
+                  mincouple = ir->nstpcouple;
+              }
+              ir->nstpcouple = mincouple;
+              ir->nsttcouple = mincouple;
+              warning_note(wi,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple)");
+          }
+      }
+      nstcmin = tcouple_min_integration_steps(ir->etc);
+      if (nstcmin > 1)
+      {
+          if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
+          {
+              sprintf(warn_buf,"For proper integration of the %s thermostat, tau_t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
+                      ETCOUPLTYPE(ir->etc),
+                      tau_min,nstcmin,
+                      ir->nsttcouple*ir->delta_t);
+              warning(wi,warn_buf);
+          }
+      }
+      for(i=0; (i<nr); i++)
+      {
+          ir->opts.ref_t[i] = strtod(ptr2[i],NULL);
+          if (ir->opts.ref_t[i] < 0)
+          {
+              gmx_fatal(FARGS,"ref_t for group %d negative",i);
+          }
+      }
+  }
     
   /* Simulated annealing for each group. There are nr groups */
   nSA = str_nelem(anneal,MAXPTR,ptr1);

@@ -480,6 +480,7 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
         of->fn_cpt = opt2fn("-cpo",nfile,fnm);
         
         if (ir->efep != efepNO && ir->nstdhdl > 0 &&
+            (ir->separate_dhdl_file == sepdhdlfileYES ) && 
             !EI_ENERGY_MINIMIZATION(ir->eI))
         {
             if (bAppendFiles)
