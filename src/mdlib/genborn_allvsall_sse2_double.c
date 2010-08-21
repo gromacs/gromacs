@@ -2211,10 +2211,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec *           fr,
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE1,obc_mask1_SSE1));
             dadx += 2;
         }
-        tmpSSE = sum_ai_SSE0;
-        sum_ai_SSE0 = _mm_unpacklo_pd(sum_ai_SSE0,sum_ai_SSE1);
-        sum_ai_SSE1 = _mm_unpackhi_pd(tmpSSE,sum_ai_SSE1);
-        
+        GMX_MM_TRANSPOSE2_PD(sum_ai_SSE0,sum_ai_SSE1);
         sum_ai_SSE0 = _mm_add_pd(sum_ai_SSE0,sum_ai_SSE1);
         _mm_store_pd(work+i, _mm_add_pd(sum_ai_SSE0, _mm_load_pd(work+i)));
 	}    
