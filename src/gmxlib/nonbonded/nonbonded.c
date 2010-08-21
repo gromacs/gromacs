@@ -100,8 +100,12 @@
 #  endif
 #endif
 
-#if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
-#include "nb_kernel_f77_double/nb_kernel_f77_double.h"
+#if defined(GMX_FORTRAN)
+#  ifdef GMX_DOUBLE
+#    include "nb_kernel_f77_double/nb_kernel_f77_double.h"
+#  else
+#    include "nb_kernel_f77_single/nb_kernel_f77_single.h"
+#  endif
 #endif
 
 #if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
