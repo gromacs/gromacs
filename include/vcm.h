@@ -36,10 +36,6 @@
 #ifndef _vcm_h
 #define _vcm_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "sysstuff.h"
 #include "typedefs.h"
 
@@ -66,14 +62,14 @@ typedef struct {
 t_vcm *init_vcm(FILE *fp,gmx_groups_t *groups,t_inputrec *ir);
 
 /* Do a per group center of mass things */
-extern void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
+void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
 			 rvec x[],rvec v[],t_vcm *vcm);
 
-extern void do_stopcm_grp(FILE *fp,int start,int homenr,
+void do_stopcm_grp(FILE *fp,int start,int homenr,
 			  unsigned short *group_id,
 			  rvec x[],rvec v[],t_vcm *vcm);
 
-extern void check_cm_grp(FILE *fp,t_vcm *vcm,t_inputrec *ir,real Temp_Max);
+void check_cm_grp(FILE *fp,t_vcm *vcm,t_inputrec *ir,real Temp_Max);
 
 
 #ifdef __cplusplus

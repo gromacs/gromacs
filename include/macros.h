@@ -36,10 +36,6 @@
 #ifndef _macros_h
 #define _macros_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h" /* for real definition only */
 
 #ifdef __cplusplus

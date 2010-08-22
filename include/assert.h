@@ -36,10 +36,6 @@
 #ifndef _assert_h
 #define _assert_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <ctype.h>
 #include "sysstuff.h"
 

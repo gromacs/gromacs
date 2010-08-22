@@ -39,6 +39,12 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 #include "sysstuff.h"
 #include "string2.h"
 #include "futil.h"
@@ -49,6 +55,11 @@
 #include "viewit.h"
 #include "vec.h"
 #include "gmxfio.h"
+
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
 
 bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {

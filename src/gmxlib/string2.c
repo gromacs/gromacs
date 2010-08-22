@@ -46,6 +46,12 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>

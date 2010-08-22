@@ -16,12 +16,21 @@
  * Gnomes, ROck Monsters And Chili Sauce
  */
 
+/* The source code in this file should be thread-safe. 
+ Please keep it that way. */
+
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <string.h>
 #include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 /* _chsize_s */
@@ -51,11 +60,14 @@
 #include "corewrap.h"
 #endif
 
+
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
+
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
-
-/* The source code in this file should be thread-safe. 
-   Please keep it that way. */
 
 /* cpt_version should normally only be changed
  * when the header of footer format changes.
@@ -64,6 +76,7 @@
  * (but can read a new format when new entries are not present).
  */
 static const int cpt_version = 12;
+
 
 const char *est_names[estNR]=
 {
