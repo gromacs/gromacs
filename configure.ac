@@ -920,8 +920,8 @@ fi
 AC_SUBST(PKG_XML)
 AC_SUBST(XML_LIBS)
 
-AC_LANG_PUSH([C++])
-AC_PROG_CXX
+AC_LANG_PUSH(C++)
+AC_LANG_ASSERT(C++)
 AC_CHECK_HEADERS([cln/cln.h],,AC_MSG_ERROR([Can not find CLN headers]))
 # header found, check for libraries 
 AC_CHECK_LIB([cln],main,,AC_MSG_ERROR([Can not find CLN library]))
