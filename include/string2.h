@@ -109,19 +109,6 @@ extern char *gmx_strndup(const char *src, int n);
 /* Portable version of ctime_r */
 char *gmx_ctime_r(const time_t *clock,char *buf, int n);
     
-
-
-#ifndef HAVE_STRCASECMP
-#define strcasecmp gmx_strcasecmp
-#define strncasecmp gmx_strncasecmp
-#endif
-
-#ifndef HAVE_STRDUP
-#define strdup gmx_strdup
-#endif
-
-#define strndup gmx_strndup
-
 /** Pattern matcing with wildcards. */
 extern int gmx_wcmatch(const char *pattern, const char *src);
 
