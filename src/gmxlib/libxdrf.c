@@ -800,9 +800,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
     int *ip = NULL;
     int *buf = NULL;
     bool bRead;
-    
-    bRead = (xdrs->x_op == XDR_DECODE);
-    
+        
     /* preallocate a small buffer and ip on the stack - if we need more
        we can always malloc(). This is faster for small values of size: */
     int prealloc_size=3*16;
@@ -825,6 +823,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
     int errval = 1;
     int rc;
 	
+    bRead = (xdrs->x_op == XDR_DECODE);
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
     prevcoord[0]  = prevcoord[1]  = prevcoord[2]  = 0;
    
