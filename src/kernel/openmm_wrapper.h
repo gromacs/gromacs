@@ -49,6 +49,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
 void openmm_take_one_step(void* data);
 
+void openmm_take_steps(void* data, int nsteps);
+
 void openmm_copy_state(void *data,
                         t_state *state, double *time,
                         rvec f[], gmx_enerdata_t *enerd,
@@ -64,6 +66,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                     t_mdatoms *mdatoms, t_forcerec *fr, t_state *state){return NULL;}
 
 void openmm_take_one_step(void* data){}
+
+void openmm_take_steps(void* data, int nsteps){}
 
 void openmm_copy_state(void *data,
                         t_state *state, double *time,

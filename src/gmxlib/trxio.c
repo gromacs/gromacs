@@ -920,6 +920,11 @@ bool read_next_x(const output_env_t oenv, t_trxstatus *status,real *t,
 void close_trj(t_trxstatus *status)
 {
     gmx_fio_close(status->fio);
+    /* The memory in status->xframe is lost here,
+     * but the read_first_x/read_next_x functions are deprecated anyhow.
+     * read_first_frame/read_next_frame and close_trx should be used.
+     */
+    sfree(status);
 }
 
 void rewind_trj(t_trxstatus *status)

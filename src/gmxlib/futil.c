@@ -773,11 +773,16 @@ bool get_libdir(char *libdir)
             found = gmx_fexist(full_path);
             if (!found && (s=getenv("PATH")) != NULL)
             {
+                char *dupped;
+                
+                dupped=gmx_strdup(s);
+                s=dupped;
                 while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
                 {
                     sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
                     found = gmx_fexist(full_path);
                 }
+                sfree(dupped);
             }
             if (!found)
             {

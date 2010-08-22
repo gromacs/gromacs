@@ -353,6 +353,7 @@ check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(gmxTestSignal)
 gmx_test_retsigtype(RETSIGTYPE)
+gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)

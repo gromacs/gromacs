@@ -1179,9 +1179,23 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         if(ir->gb_algorithm==egbSTILL)
         {
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-            genborn_allvsall_calc_still_radii_sse2_single(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
+            if(fr->UseOptimizedKernels)
+            {
+                genborn_allvsall_calc_still_radii_sse2_single(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
+            }
+            else
+            {
+                genborn_allvsall_calc_still_radii(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
+            }
 #elif ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-            genborn_allvsall_calc_still_radii_sse2_double(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
+            if(fr->UseOptimizedKernels)
+            {
+                genborn_allvsall_calc_still_radii_sse2_double(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
+            }
+            else
+            {
+                genborn_allvsall_calc_still_radii(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
+            }
 #else
             genborn_allvsall_calc_still_radii(fr,md,born,top,x[0],cr,&fr->AllvsAll_workgb);
 #endif
@@ -1190,9 +1204,23 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         else if(ir->gb_algorithm==egbHCT || ir->gb_algorithm==egbOBC)
         {
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-            genborn_allvsall_calc_hct_obc_radii_sse2_single(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
+            if(fr->UseOptimizedKernels)
+            {
+                genborn_allvsall_calc_hct_obc_radii_sse2_single(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
+            }
+            else
+            {
+                genborn_allvsall_calc_hct_obc_radii(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
+            }
 #elif ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-            genborn_allvsall_calc_hct_obc_radii_sse2_double(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
+            if(fr->UseOptimizedKernels)
+            {
+                genborn_allvsall_calc_hct_obc_radii_sse2_double(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
+            }
+            else
+            {
+                genborn_allvsall_calc_hct_obc_radii(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
+            }
 #else
             genborn_allvsall_calc_hct_obc_radii(fr,md,born,ir->gb_algorithm,top,x[0],cr,&fr->AllvsAll_workgb);
 #endif
@@ -1215,11 +1243,34 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     switch(ir->gb_algorithm)
     {
         case egbSTILL:
-             calc_gb_rad_still_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
+            if(fr->UseOptimizedKernels)
+            {            
+                calc_gb_rad_still_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born); 
+            }
+            else
+            {
+                calc_gb_rad_still(cr,fr,born->nr,top,atype,x,nl,born,md); 
+            }   
             break;
         case egbHCT:
+            if(fr->UseOptimizedKernels)
+            {
+                calc_gb_rad_hct_obc_sse2_double(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
+            }
+            else
+            {
+                calc_gb_rad_hct(cr,fr,born->nr,top,atype,x,nl,born,md); 
+            }
+            break;
         case egbOBC:
-            calc_gb_rad_hct_obc_sse2_double(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
+            if(fr->UseOptimizedKernels)
+            {
+                calc_gb_rad_hct_obc_sse2_double(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
+            }
+            else
+            {
+                calc_gb_rad_obc(cr,fr,born->nr,top,atype,x,nl,born,md); 
+            }
             break;
             
         default:
@@ -1251,11 +1302,35 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     switch(ir->gb_algorithm)
     {
         case egbSTILL:
+            if(fr->UseOptimizedKernels)
+            {
             calc_gb_rad_still_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born);
+            }
+            else
+            {
+                calc_gb_rad_still(cr,fr,born->nr,top,atype,x,nl,born,md); 
+            }
             break;
         case egbHCT:
+                if(fr->UseOptimizedKernels)
+                {
+                    calc_gb_rad_hct_obc_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
+                }
+                else
+                {
+                    calc_gb_rad_hct(cr,fr,born->nr,top,atype,x,nl,born,md); 
+                }
+            break;
+            
         case egbOBC:
-            calc_gb_rad_hct_obc_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
+            if(fr->UseOptimizedKernels)
+            {
+                calc_gb_rad_hct_obc_sse2_single(cr,fr,born->nr,top, atype, x[0], nl, born, md, ir->gb_algorithm);
+            }
+            else
+            {
+                calc_gb_rad_obc(cr,fr,born->nr,top,atype,x,nl,born,md); 
+            }
             break;
             
         default:
@@ -1491,7 +1566,7 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr,int natoms,gmx_genborn_t *bo
         
         if(born->use[ai]==1)
         {
-            rai          = top->atomtypes.gb_radius[md->typeA[ai]];
+            rai       = top->atomtypes.gb_radius[md->typeA[ai]];
             rbi_inv   = fr->invsqrta[ai];
             rbi_inv2  = rbi_inv * rbi_inv;
             tmp       = (rai*rbi_inv2)*(rai*rbi_inv2);
@@ -1518,7 +1593,7 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
     real rinv11,tx,ty,tz,rbai,rbaj,fgb_ai;
     real *rb;
     volatile int idx;
-    
+        
     n  = 0;    
     rb = born->work;
         
@@ -1634,6 +1709,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 {
     real v=0;
     int  cnt;
+    int i;
     
 	/* PBC or not? */
 	const t_pbc *pbc_null;
@@ -1642,9 +1718,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 		pbc_null = pbc;
 	else
 		pbc_null = NULL;
-	
-	
-	
+    
     /* Do a simple ACE type approximation for the non-polar solvation */
     enerd->term[F_NPSOLVATION] += calc_gb_nonpolar(cr, fr,born->nr, born, top, atype, fr->dvda, gb_algorithm,md);
 	
@@ -1669,9 +1743,23 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     if(fr->bAllvsAll)
     {
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-        genborn_allvsall_calc_chainrule_sse2_single(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
+        if(fr->UseOptimizedKernels)
+        {
+            genborn_allvsall_calc_chainrule_sse2_single(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
+        }
+        else
+        {
+            genborn_allvsall_calc_chainrule(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
+        }
 #elif ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-        genborn_allvsall_calc_chainrule_sse2_double(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
+        if(fr->UseOptimizedKernels)
+        {
+            genborn_allvsall_calc_chainrule_sse2_double(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
+        }
+        else
+        {
+            genborn_allvsall_calc_chainrule(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
+        }
 #else
         genborn_allvsall_calc_chainrule(fr,md,born,x[0],f[0],gb_algorithm,fr->AllvsAll_workgb);
 #endif
@@ -1684,27 +1772,42 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 #ifdef GMX_DOUBLE    
     
 #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
-     calc_gb_chainrule_sse2_double(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
-                                   x[0], f[0], fr->fshift[0],  fr->shift_vec[0],
-                                   gb_algorithm, born); 
+    if(fr->UseOptimizedKernels)
+    {
+        calc_gb_chainrule_sse2_double(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+                                      x[0], f[0], fr->fshift[0],  fr->shift_vec[0],
+                                      gb_algorithm, born, md); 
+    }
+    else
+    {
+        calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+                          x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md); 
+    }
 #else
     calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
-                      x, f, fr->fshift, fr->shift_vec, 
-                      gb_algorithm, born, md);
+                      x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);
 #endif
     
 #else
     
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || (!defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
-    calc_gb_chainrule_sse2_single(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
-                          x[0], f[0], fr->fshift[0], fr->shift_vec[0], 
-                          gb_algorithm, born, md);
+    if(fr->UseOptimizedKernels)
+    {
+        calc_gb_chainrule_sse2_single(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+                                      x[0], f[0], fr->fshift[0], fr->shift_vec[0], 
+                                      gb_algorithm, born, md);
+    }
+    else
+    {
+        calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+                          x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);    
+    }
+    
 #else
     /* Calculate the forces due to chain rule terms with non sse code */
     calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
-                      x, f, fr->fshift, fr->shift_vec, 
-                      gb_algorithm, born, md);    
+                      x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);    
 #endif    
 #endif
     

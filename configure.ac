@@ -51,9 +51,6 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
-if test "$enable_fortran" = "yes" -a "$enable_power6" = "no"; then
-  AC_DEFINE(GMX_FORTRAN,,[Enable Fortran support])
-fi
 # Generic fortran kernels will be turned off below if you enable power6-specific optimization!
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
@@ -1130,6 +1127,10 @@ fi
 
 if test "$enable_bluegene" = "yes"; then
   AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
+fi
+
+if test "$enable_fortran" = "yes"; then
+  AC_DEFINE(GMX_FORTRAN,,[Enable Fortran support])
 fi
 
 ##
