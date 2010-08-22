@@ -62,27 +62,24 @@ extern "C" {
 
 /* Now get the maximum path size. */
 #ifdef PATH_MAX
-#define GMX_PATH_MAX PATH_MAX
+#  define GMX_PATH_MAX PATH_MAX
+#elif defined MAX_PATH
+#  define GMX_PATH_MAX MAX_PATH
 #else
-#ifdef MAX_PATH
-#define GMX_PATH_MAX MAX_PATH
-#else
-#define GMX_PATH_MAX 4096
-#endif
+#  define GMX_PATH_MAX 4096
 #endif
 
 
 #ifdef HAVE_FSEEKO
-typedef off_t              gmx_off_t;
-#define SIZEOF_GMX_OFF_T   SIZEOF_OFF_T
+   typedef off_t              gmx_off_t;
+#  define SIZEOF_GMX_OFF_T   SIZEOF_OFF_T
+#elif defined HAVE__FSEEKI64 
+   typedef __int64            gmx_off_t;
+#  define SIZEOF_GMX_OFF_T   8
 #else
-#ifdef HAVE__FSEEKI64 
-typedef __int64            gmx_off_t;
-#define SIZEOF_GMX_OFF_T   8
-#else
-/* Almost certainly 64 bits, and guaranteed to be available */
-typedef gmx_large_int_t    gmx_off_t
-#define SIZEOF_GMX_OFF_T   SIZEOF_GMX_LARGE_INT
+   /* Almost certainly 64 bits, and guaranteed to be available */
+   typedef gmx_large_int_t    gmx_off_t
+#  define SIZEOF_GMX_OFF_T   SIZEOF_GMX_LARGE_INT
 #endif    
 
 
