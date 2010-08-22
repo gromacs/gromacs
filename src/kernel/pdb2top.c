@@ -84,7 +84,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
         bFound=FALSE;
         for (k=i0; k<i; k++) 
         {
-            bFound = (bFound || !strcasecmp(*(at->atomname[k]),name));
+            bFound = (bFound || !gmx_strcasecmp(*(at->atomname[k]),name));
         }
         if (!bFound)
         {
@@ -209,7 +209,7 @@ choose_ff(const char *ffsel,
             {
                 if ((desc[i][0] == '[' && desc[j][0] != '[') ||
                     ((desc[i][0] == '[' || desc[j][0] != '[') &&
-                     strcasecmp(desc[i],desc[j]) > 0))
+                     gmx_strcasecmp(desc[i],desc[j]) > 0))
                 {
                     swap_strings(ffdirs,i,j);
                     swap_strings(ffs   ,i,j);
@@ -980,7 +980,7 @@ static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
     {
         *nr = 0;
         
-        return (strcasecmp(anm,hack->nname) == 0);
+        return (gmx_strcasecmp(anm,hack->nname) == 0);
     }
     else
     {
@@ -999,7 +999,7 @@ static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
         else
         {
             return (strlen(anm) == strlen(hack->nname) + 1 &&
-                    strncasecmp(anm,hack->nname,strlen(hack->nname)) == 0);
+                    gmx_strncasecmp(anm,hack->nname,strlen(hack->nname)) == 0);
         }
     }
 }
@@ -1024,7 +1024,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
     for(j=0; j<hbr->nhack; j++)
     {
         if (hbr->hack[j].oname != NULL && hbr->hack[j].nname != NULL &&
-            strcasecmp(oldnm,hbr->hack[j].oname) == 0)
+            gmx_strcasecmp(oldnm,hbr->hack[j].oname) == 0)
         {
             /* This is a replace entry. */
             /* Check if we are not replacing a replaced atom. */
@@ -1032,7 +1032,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
             for(k=0; k<hbr->nhack; k++) {
                 if (k != j &&
                     hbr->hack[k].oname != NULL && hbr->hack[k].nname != NULL &&
-                    strcasecmp(hbr->hack[k].nname,hbr->hack[j].oname) == 0)
+                    gmx_strcasecmp(hbr->hack[k].nname,hbr->hack[j].oname) == 0)
                 {
                     /* The replace in hack[j] replaces an atom that
                      * was already replaced in hack[k], we do not want
@@ -1051,7 +1051,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
             newnm = hbr->hack[j].nname;
             for(k=0; k<rptr->natom; k++)
             {
-                if (strcasecmp(newnm,*rptr->atomname[k]) == 0)
+                if (gmx_strcasecmp(newnm,*rptr->atomname[k]) == 0)
                 {
                     break;
                 }
@@ -1083,7 +1083,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
                         }
                         for(start_nr=0; start_nr<rptr->natom; start_nr++)
                         {
-                            if (strcasecmp(start_at,(*rptr->atomname[start_nr])) == 0)
+                            if (gmx_strcasecmp(start_at,(*rptr->atomname[start_nr])) == 0)
                             {
                                 break;
                             }
@@ -1120,14 +1120,14 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
             *pdba->atomname[atind] = strdup(newnm);
         }
         else if (hbr->hack[j].oname != NULL && hbr->hack[j].nname == NULL &&
-                 strcasecmp(oldnm,hbr->hack[j].oname) == 0)
+                 gmx_strcasecmp(oldnm,hbr->hack[j].oname) == 0)
         {
             /* This is a delete entry, check if this atom is present
              * in the rtp entry of this residue.
              */
             for(k=0; k<rptr->natom; k++)
             {
-                if (strcasecmp(oldnm,*rptr->atomname[k]) == 0)
+                if (gmx_strcasecmp(oldnm,*rptr->atomname[k]) == 0)
                 {
                     break;
                 }
@@ -1182,7 +1182,7 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
         rptr  = &restp[pdba->atom[i].resind];
         for(j=0; (j<rptr->natom); j++)
         {
-            if (strcasecmp(oldnm,*(rptr->atomname[j])) == 0)
+            if (gmx_strcasecmp(oldnm,*(rptr->atomname[j])) == 0)
             {
                 break;
             }

@@ -198,15 +198,15 @@ void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
         for(i=0; (i<nxlate) && !bRenamed; i++) {
             /* Check if the base file name of the rtp and arn entry match */
             if (restp == NULL ||
-                strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
+                gmx_strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
-                          (strcasecmp("protein",xlatom[i].res) == 0 &&
+                          (gmx_strcasecmp("protein",xlatom[i].res) == 0 &&
                            gmx_residuetype_is_protein(rt,rnm)) ||
-                          (strcasecmp("DNA",xlatom[i].res) == 0 &&
+                          (gmx_strcasecmp("DNA",xlatom[i].res) == 0 &&
                            gmx_residuetype_is_dna(rt,rnm)) ||
-                          (strcasecmp("RNA",xlatom[i].res) == 0 &&
+                          (gmx_strcasecmp("RNA",xlatom[i].res) == 0 &&
                            gmx_residuetype_is_rna(rt,rnm)));
                 if (!bMatch)
                 {

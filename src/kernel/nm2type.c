@@ -160,7 +160,7 @@ static int match_str(const char *atom,const char *template_string)
 {
   if (!atom || !template_string)
     return ematchNone;
-  else if (strcasecmp(atom,template_string) == 0) 
+  else if (gmx_strcasecmp(atom,template_string) == 0) 
     return ematchExact;
   else if (atom[0] == template_string[0])
     return ematchElem;

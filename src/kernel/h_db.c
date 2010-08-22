@@ -63,7 +63,7 @@ int compaddh(const void *a,const void *b)
 
   ah=(t_hackblock *)a;
   bh=(t_hackblock *)b;
-  return strcasecmp(ah->name,bh->name);
+  return gmx_strcasecmp(ah->name,bh->name);
 }
 
 void print_ab(FILE *out,t_hack *hack,char *nname)

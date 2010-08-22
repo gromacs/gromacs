@@ -2106,7 +2106,7 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                 }
                 fn = outputfiles[0].filename;
                 if (strlen(fn) < 4 ||
-                    strcasecmp(fn+strlen(fn)-4,ftp2ext(efLOG)) == 0)
+                    gmx_strcasecmp(fn+strlen(fn)-4,ftp2ext(efLOG)) == 0)
                 {
                     gmx_fatal(FARGS,"File appending requested, but the log file is not the first file listed in the checkpoint file");
                 }

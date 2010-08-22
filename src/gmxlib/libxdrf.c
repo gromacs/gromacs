@@ -409,7 +409,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
         strcpy(newtype, "ab+");
         lmode = XDR_ENCODE;
     }
-    else if (strncasecmp(type, "r+", 2) == 0)
+    else if (gmx_strncasecmp(type, "r+", 2) == 0)
     {
         xdrmodes[xdrid] = 'a';
         strcpy(newtype, "rb+");

@@ -102,10 +102,10 @@ static bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen)
     
   for(i=0; (i<nnm); i++) {
     for(j=0; (j<nmt[i].nbonds); j++) {
-      if ((((strncasecmp(ai,nmt[i].elem,1) == 0) && 
-	   (strncasecmp(aj,nmt[i].bond[j],1) == 0)) ||
-	  ((strncasecmp(ai,nmt[i].bond[j],1) == 0) && 
-	   (strncasecmp(aj,nmt[i].elem,1) == 0))) &&
+      if ((((gmx_strncasecmp(ai,nmt[i].elem,1) == 0) && 
+	   (gmx_strncasecmp(aj,nmt[i].bond[j],1) == 0)) ||
+	  ((gmx_strncasecmp(ai,nmt[i].bond[j],1) == 0) && 
+	   (gmx_strncasecmp(aj,nmt[i].elem,1) == 0))) &&
 	  (fabs(blen-nmt[i].blen[j]) <= 0.1*nmt[i].blen[j]))
 	return TRUE;
     }

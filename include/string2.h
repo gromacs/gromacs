@@ -84,8 +84,8 @@ void trim (char *str);
 
 void nice_header (FILE *out,const char *fn);
 
-int strcasecmp_min(const char *str1, const char *str2);
-int strncasecmp_min(const char *str1, const char *str2, int n);
+int gmx_strcasecmp_min(const char *str1, const char *str2);
+int gmx_strncasecmp_min(const char *str1, const char *str2, int n);
 /* This funny version of strcasecmp, is not only case-insensitive,
  * but also ignores '-' and '_'.
  */

@@ -182,7 +182,7 @@ static char *xvgrstr(const char *gmx,const output_env_t oenv,
                 /* Check for special symbol */
                 i = 0;
                 while (sym[i] != NULL &&
-                       strncasecmp(sym[i],gmx+g,strlen(sym[i])) != 0)
+                       gmx_strncasecmp(sym[i],gmx+g,strlen(sym[i])) != 0)
                 {
                     i++;
                 }

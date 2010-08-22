@@ -90,7 +90,7 @@ static const char *res2bb_notermini(const char *name,
   int i;
 
   i = 0;
-  while (i < nrr && strcasecmp(name,rr[i].gmx) != 0) {
+  while (i < nrr && gmx_strcasecmp(name,rr[i].gmx) != 0) {
     i++;
   }
 
@@ -311,7 +311,7 @@ static void rename_pdbres(t_atoms *pdba,const char *oldnm,const char *newnm,
   
   for(i=0; (i<pdba->nres); i++) {
     resnm = *pdba->resinfo[i].name;
-    if ((bFullCompare && (strcasecmp(resnm,oldnm) == 0)) ||
+    if ((bFullCompare && (gmx_strcasecmp(resnm,oldnm) == 0)) ||
 	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
       pdba->resinfo[i].name = put_symtab(symtab,newnm);
     }
@@ -326,7 +326,7 @@ static void rename_bb(t_atoms *pdba,const char *oldnm,const char *newnm,
   
   for(i=0; (i<pdba->nres); i++) {
     bbnm = *pdba->resinfo[i].rtp;
-    if ((bFullCompare && (strcasecmp(bbnm,oldnm) == 0)) ||
+    if ((bFullCompare && (gmx_strcasecmp(bbnm,oldnm) == 0)) ||
 	(!bFullCompare && strstr(bbnm,oldnm) != NULL)) {
       pdba->resinfo[i].rtp = put_symtab(symtab,newnm);
     }
@@ -559,7 +559,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
     }
     rptr = &restp[pdba->atom[i].resind];
     for(j=0; (j<rptr->natom); j++) {
-      if (strcasecmp(atomnm,*(rptr->atomname[j])) == 0) {
+      if (gmx_strcasecmp(atomnm,*(rptr->atomname[j])) == 0) {
 	break;
       }
     }
@@ -1288,7 +1288,7 @@ int main(int argc, char *argv[])
       this_chainid       = ri->chainid;
       this_chainnumber   = ri->chainnum;
       
-      bWat = strcasecmp(*ri->name,watres) == 0;
+      bWat = gmx_strcasecmp(*ri->name,watres) == 0;
       if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat != bPrevWat)) 
       {
           this_chainstart = pdba_all.atom[i].resind;
