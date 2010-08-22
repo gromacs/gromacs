@@ -813,7 +813,7 @@ gmx_mm_atan2_ps(__m128 y, __m128 x)
 
 
 /* Routines to load pairs from 1-4 places, put in two separate xmm registers. Useful to load LJ parameters! */
-#define GMX_MM_LOAD_4PAIRS_PS(ptr1,ptr2,ptr3,ptr4,c6,c12)    \
+#define GMX_MM_LOAD_4PAIRS_PS(ptr1,ptr2,ptr3,ptr4,c6,c12)     \
 {                                                             \
     __m128 _tmp1,_tmp2,_tmp3,_tmp4;                           \
     _tmp1  = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1));  \

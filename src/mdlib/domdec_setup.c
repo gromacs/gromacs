@@ -330,17 +330,25 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     {
         for(j=i+1; j<DIM; j++)
         {
-            /* Check if dimension i and j are equivalent,
-             * both for PME and for the box size.
-             * The XX/YY check is a bit compact. If nc[YY]==npme[YY]
-             * this means the swapped nc has nc[XX]=npme[XX],
+            /* Check if the box size is nearly identical,
+             * in that case we prefer nx > ny  and ny > nz.
+             */
+            if (fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
+            {
+                /* The XX/YY check is a bit compact. If nc[YY]==npme[YY]
+             * this means the swapped nc has nc[XX]==npme[XX],
              * and we can also swap X and Y for PME.
              */
-            if (!((i == XX && j == YY && npme[YY] > 1 && nc[YY] != npme[YY]) ||
-                  (i == YY && j == ZZ && npme[YY] > 1)) &&
-                fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
-            {
-                return -1;
+                /* Check if dimension i and j are equivalent for PME.
+                 * For x/y: if nc[YY]!=npme[YY], we can not swap x/y
+                 * For y/z: we can not have PME decomposition in z
+                 */
+                if (npme_tot <= 1 ||
+                    !((i == XX && j == YY && nc[YY] != npme[YY]) ||
+                      (i == YY && j == ZZ && npme[YY] > 1)))
+                {
+                    return -1;
+                }
             }
         }
     }

@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 72;
+static const int tpx_version = 73;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -75,7 +75,7 @@ static const int tpx_version = 72;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 22;
+static const int tpx_generation = 23;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -623,15 +623,27 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     } else {
       ir->nstdhdl = 1;
     }
-    if (file_version >= 71)
+
+    if (file_version >= 73)
     {
-        gmx_fio_do_int(fio,ir->dh_table_size);
-        gmx_fio_do_double(fio,ir->dh_table_spacing);
+        gmx_fio_do_int(fio, ir->separate_dhdl_file);
+        gmx_fio_do_int(fio, ir->dhdl_derivatives);
     }
     else
     {
-        ir->dh_table_size    = 0;
-        ir->dh_table_spacing = 0.1;
+        ir->separate_dhdl_file = sepdhdlfileYES;
+        ir->dhdl_derivatives = dhdlderivativesYES;
+    }
+
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->dh_hist_size);
+        gmx_fio_do_double(fio,ir->dh_hist_spacing);
+    }
+    else
+    {
+        ir->dh_hist_size    = 0;
+        ir->dh_hist_spacing = 0.1;
     }
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 

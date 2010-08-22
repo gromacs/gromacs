@@ -82,7 +82,7 @@ typedef enum
 extern const char *xdr_datatype_names[];
 
 /* Read or write reduced precision *float* coordinates */
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead);
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
 
 
 /* Read or write a *real* value (stored as float) */
@@ -90,7 +90,7 @@ int xdr_real(XDR *xdrs,real *r);
 
 
 /* Read or write reduced precision *real* coordinates */
-int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision, bool bRead);
+int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 
 
 extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);

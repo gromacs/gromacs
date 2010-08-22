@@ -345,8 +345,8 @@ void list_ene(const char *fn)
                    fr->t,"step:",gmx_step_str(fr->step,buf));
             printf("%24s  %12s  %12s  %12s\n",
                    "","","nsteps:",gmx_step_str(fr->nsteps,buf));
-            printf("%24s  %12s  %12s  %12s\n",
-                   "","","sum steps:",gmx_step_str(fr->nsum,buf));
+            printf("%24s  %12.5e  %12s  %12s\n",
+                   "delta_t:",fr->dt,"sum steps:",gmx_step_str(fr->nsum,buf));
             if (fr->nre == nre) {
                 printf("%24s  %12s  %12s  %12s\n",
                        "Component","Energy","Av. Energy","Sum Energy");

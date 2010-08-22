@@ -36,6 +36,8 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include "string2.h"
 #include "copyrite.h"
@@ -310,7 +312,7 @@ static bool box_do_all_x_min_ticks(t_psrec *psr)
 static void draw_boxes(t_psdata ps,real x0,real y0,real w,
 		       int nmat,t_matrix mat[],t_psrec *psr)
 {
-  char   buf[12];
+  char   buf[128];
   char   *mylab;
   real   xxx;
   char   **xtick,**ytick;

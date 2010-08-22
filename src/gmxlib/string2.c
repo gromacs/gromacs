@@ -129,25 +129,27 @@ void upstring (char *str)
 void ltrim (char *str)
 {
   char *tr;
-  int c;
+  int i,c;
 
-  if (!str)
+  if (NULL == str)
     return;
 
-  tr = strdup (str);
-  c  = 0;
-  while ((tr[c] == ' ') || (tr[c] == '\t'))
+  c = 0;
+  while (('\0' != str[c]) && isspace(str[c]))
     c++;
-
-  strcpy (str,tr+c);
-  free (tr);
+  if (c > 0) 
+    {
+      for(i=c; ('\0' != str[i]); i++)
+	str[i-c] = str[i];
+      str[i-c] = '\0';
+    }
 }
 
 void rtrim (char *str)
 {
   int nul;
 
-  if (!str)
+  if (NULL == str)
     return;
 
   nul = strlen(str)-1;

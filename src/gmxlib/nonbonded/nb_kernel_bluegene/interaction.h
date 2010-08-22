@@ -312,8 +312,11 @@
 
 */
 
-
-#if (defined __IBMC__ || defined __IBMCPP__)
+/* The optimized version of converts2ints is disabled
+ * because of issues on BG/P reported in bugzilla 429
+ */
+/* #if (defined __IBMC__ || defined __IBMCPP__) */
+#if (0)
 
 #define convert2ints(x,xi,conv,i1,i2)                      \
     xi      = __fpctiwz(x);                                \

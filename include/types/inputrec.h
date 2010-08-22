@@ -232,8 +232,12 @@ typedef struct {
   real sc_sigma;        /* free energy soft-core sigma when c6 or c12=0 */
   real sc_sigma_min;    /* minimum FE sc sigma (default: =sg_sigma)     */
   int  nstdhdl;         /* The frequency for writing to dhdl.xvg        */
-  int  dh_table_size;   /* The maximum table size for the dH table      */
-  double dh_table_spacing; /* The spacing for the dH table              */
+  int  separate_dhdl_file; /* whether to write a separate dhdl.xvg file 
+                              note: NOT a bool, but an enum */
+  int  dhdl_derivatives;/* whether to calculate+write dhdl derivatives 
+                              note: NOT a bool, but an enum */
+  int  dh_hist_size;    /* The maximum size for the dH histogram        */
+  double dh_hist_spacing; /* The spacing for the dH histogram           */
   int  eDisre;          /* Type of distance restraining                 */
   real dr_fc;		    /* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
