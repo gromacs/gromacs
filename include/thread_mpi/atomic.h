@@ -76,8 +76,6 @@ files.
 
 #include <stdio.h>
 
-
-
 #ifdef __cplusplus
 extern "C" 
 {  
@@ -91,7 +89,6 @@ extern "C"
                           + __GNUC_MINOR__ * 100 \
                           + __GNUC_PATCHLEVEL__)
 #endif
-
 
 
 /* first check for gcc/icc platforms. icc on linux+mac will take this path, 

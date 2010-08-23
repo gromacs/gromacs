@@ -93,7 +93,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
     
 	nri        = *p_nri;
     
-    gbfactor   = _mm_set1_pd(((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent)));
+    gbfactor   = _mm_set1_pd( - ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent)));     
     gbtabscale = _mm_load1_pd(p_gbtabscale);  
     facel      = _mm_load1_pd(p_facel);
     
@@ -130,7 +130,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 		fix              = _mm_setzero_pd();
 		fiy              = _mm_setzero_pd();
 		fiz              = _mm_setzero_pd();
-        
+                
 		for(k=nj0;k<nj1-1; k+=2)
 		{
 			jnrA    = jjnr[k];
@@ -191,7 +191,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
             fijGB   = _mm_mul_pd(F, _mm_mul_pd(qq,gbscale));
             
             dvdatmp = _mm_mul_pd(_mm_add_pd(vgb, _mm_mul_pd(fijGB,r)) , minushalf);
-            
+
             vgbtot  = _mm_add_pd(vgbtot, vgb);
             
             dvdasum = _mm_add_pd(dvdasum, dvdatmp);
@@ -255,7 +255,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
  			/* Calculate GB table index */
 			r            = _mm_mul_sd(rsq,rinv);
 			rtab         = _mm_mul_sd(r,gbscale);
-			
+
 			n0		     = _mm_cvttpd_epi32(rtab);
 			eps	     	 = _mm_sub_sd(rtab,_mm_cvtepi32_pd(n0));
 			nnn		     = _mm_slli_epi32(n0,2);
@@ -275,7 +275,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
             F       = _mm_add_sd(F, _mm_add_sd(G , _mm_mul_sd(H,two)));
             vgb     = _mm_mul_sd(Y, qq);           
             fijGB   = _mm_mul_sd(F, _mm_mul_sd(qq,gbscale));
-            
+
             dvdatmp = _mm_mul_sd(_mm_add_sd(vgb, _mm_mul_sd(fijGB,r)) , minushalf);
             
             vgbtot  = _mm_add_sd(vgbtot, vgb);

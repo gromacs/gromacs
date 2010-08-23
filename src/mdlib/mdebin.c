@@ -214,7 +214,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
           md->bEner[i] = TRUE;
       else if ((i == F_GBPOL) && ir->implicit_solvent==eisGBSA)
           md->bEner[i] = TRUE;
-      else if ((i == F_NPSOLVATION) && (ir->sa_algorithm != esaNO))
+      else if ((i == F_NPSOLVATION) && ir->implicit_solvent==eisGBSA && (ir->sa_algorithm != esaNO))
           md->bEner[i] = TRUE;
       else if ((i == F_GB12) || (i == F_GB13) || (i == F_GB14))
           md->bEner[i] = FALSE;

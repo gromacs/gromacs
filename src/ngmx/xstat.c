@@ -68,7 +68,7 @@ static void ApplCallback(t_x11 *x11,int dlg_mess,int item_id,
   dlg=data->appl;
 
   fprintf(stderr,"item_id: %d (%s)\n",item_id,set);
-  if (strcasecmp(set,"OK") == 0) {
+  if (gmx_strcasecmp(set,"OK") == 0) {
     /* Doit */
     sprintf(doit,
 	    "xterm -geometry +100+100 -n %s"
@@ -112,7 +112,7 @@ static void ApplCallback(t_x11 *x11,int dlg_mess,int item_id,
 
     HideDlg(data->appl);
   }
-  else if (strcasecmp(set,"Cancel") == 0) {
+  else if (gmx_strcasecmp(set,"Cancel") == 0) {
     data->nAppl = -1;
     HideDlg(data->appl);
   }

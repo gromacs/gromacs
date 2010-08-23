@@ -262,7 +262,7 @@ calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,
             icf4B       = _mm_mul_ps(ccfB,rinv4B);
             icf6        = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four,ccf),dccf), rinv6);
             icf6B       = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four,ccfB),dccfB), rinv6B);
-            
+
             GMX_MM_INCREMENT_4VALUES_PS(work+jnrA,work+jnrB,work+jnrC,work+jnrD,_mm_mul_ps(prod_ai,icf4));
             GMX_MM_INCREMENT_4VALUES_PS(work+jnrE,work+jnrF,work+jnrG,work+jnrH,_mm_mul_ps(prod_ai,icf4B));
             
@@ -309,7 +309,7 @@ calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,
             ratio       = _mm_mul_ps(rsq, gmx_mm_inv_ps( _mm_mul_ps(rvdw,rvdw)));
             
             mask_cmp    = _mm_cmple_ps(ratio,still_p5inv);
-            
+
             /* gmx_mm_sincos_ps() is quite expensive, so avoid calculating it if we can! */
             if(0 == _mm_movemask_ps(mask_cmp))
             {
@@ -331,8 +331,7 @@ calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,
             prod        = _mm_mul_ps(still_p4,vaj);
             icf4        = _mm_mul_ps(ccf,rinv4);
             icf6        = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four,ccf),dccf), rinv6);
-            
-            
+
             GMX_MM_INCREMENT_4VALUES_PS(work+jnrA,work+jnrB,work+jnrC,work+jnrD,_mm_mul_ps(prod_ai,icf4));
             
             gpi           = _mm_add_ps(gpi, _mm_mul_ps(prod,icf4));
@@ -424,7 +423,7 @@ calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,
             dadx+=4;
             
             tmp = _mm_mul_ps(prod_ai,icf4);
-            
+
             if(offset==1)
             {
                 GMX_MM_INCREMENT_1VALUE_PS(work+jnrA,tmp);
@@ -441,7 +440,7 @@ calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,
         }
         GMX_MM_UPDATE_1POT_PS(gpi,work+ii);
 	}
-	
+
 	/* Sum up the polarization energy from other nodes */
 	if(PARTDECOMP(cr))
 	{

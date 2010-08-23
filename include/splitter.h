@@ -43,7 +43,7 @@
 extern "C" {
 #endif
 
-extern void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,
+void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,
 		      t_inputrec *ir,t_block *mols,
 		      real *capacity,int *mulitnr_cgs,int **multinr_nre,
 		      int *left_range, int *right_range);
@@ -55,7 +55,7 @@ extern void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,
  * Info is written to the file pointer fp.
  */
 
-extern void gen_sblocks(FILE *fp,int at_start,int at_end,
+void gen_sblocks(FILE *fp,int at_start,int at_end,
 			t_idef *idef,t_blocka *sblock,
 			bool bSettle);
 /* Generate shake blocks from the constraint list. Set bSettle to yes for shake

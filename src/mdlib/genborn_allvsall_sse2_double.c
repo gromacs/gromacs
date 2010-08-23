@@ -532,7 +532,8 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                         k = k+i-imin;
                         if(k>=0)
                         {                        
-                            aadata->prologue_mask_gb[i][k] = 0;
+                            aadata->prologue_mask_gb[i][2*k]   = 0;
+                            aadata->prologue_mask_gb[i][2*k+1] = 0;
                         }
                     }
                 }
@@ -570,7 +571,8 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                         k = k+i-imin;
                         if(k>=0)
                         {                        
-                            aadata->prologue_mask_gb[i][k] = 0;
+                            aadata->prologue_mask_gb[i][2*k]   = 0;
+                            aadata->prologue_mask_gb[i][2*k+1] = 0;
                         }
                     }
                 }
@@ -841,13 +843,11 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
 		y_align[i]  = x[3*k+1];
 		z_align[i]  = x[3*k+2];
         work[i]     = 0;
-    }        
-    
-    
+    }
+        
 	for(i=ni0; i<ni1; i+=UNROLLI)
 	{
 		/* We assume shifts are NOT used for all-vs-all interactions */
-
 		/* Load i atom data */
 		ix_SSE0          = _mm_load1_pd(x_align+i);
 		iy_SSE0          = _mm_load1_pd(y_align+i);
@@ -876,22 +876,22 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
         emask0           = aadata->epilogue_mask[i]; 
         emask1           = aadata->epilogue_mask[i+1]; 
 
-        imask_SSE0        = _mm_load1_pd((double *)(aadata->imask+i));
-        imask_SSE1        = _mm_load1_pd((double *)(aadata->imask+i+1));
+        imask_SSE0        = _mm_load1_pd((double *)(aadata->imask+2*i));
+        imask_SSE1        = _mm_load1_pd((double *)(aadata->imask+2*i+2));
         
         /* Prologue part, including exclusion mask */
         for(j=nj0; j<nj1; j+=UNROLLJ)
         {          
             jmask_SSE0 = _mm_load_pd((double *)pmask0);
             jmask_SSE1 = _mm_load_pd((double *)pmask1);
-            pmask0 += UNROLLJ;
-            pmask1 += UNROLLJ;
+            pmask0 += 2*UNROLLJ;
+            pmask1 += 2*UNROLLJ;
             
             /* load j atom coordinates */
             jx_SSE            = _mm_load_pd(x_align+j);
             jy_SSE            = _mm_load_pd(y_align+j);
             jz_SSE            = _mm_load_pd(z_align+j);
-            
+
             /* Calculate distance */
             dx_SSE0            = _mm_sub_pd(ix_SSE0,jx_SSE);
             dy_SSE0            = _mm_sub_pd(iy_SSE0,jy_SSE);
@@ -925,7 +925,7 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
             
             raj_SSE            = _mm_load_pd(gb_radius+j);
             vaj_SSE            = _mm_load_pd(vsolv+j);
-            
+
             rvdw_SSE0          = _mm_add_pd(rai_SSE0,raj_SSE);
             rvdw_SSE1          = _mm_add_pd(rai_SSE1,raj_SSE);
             
@@ -956,10 +956,11 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
             _mm_store_pd(work+j , _mm_add_pd(_mm_load_pd(work+j),
                                              _mm_add_pd(_mm_mul_pd(prod_ai_SSE0,icf4_SSE0),
                                                             _mm_mul_pd(prod_ai_SSE1,icf4_SSE1))));
+
             
             gpi_SSE0           = _mm_add_pd(gpi_SSE0, _mm_mul_pd(prod_SSE,icf4_SSE0));
             gpi_SSE1           = _mm_add_pd(gpi_SSE1, _mm_mul_pd(prod_SSE,icf4_SSE1));
-            
+             
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_pd(dadx,_mm_mul_pd(prod_SSE,icf6_SSE0));
             dadx+=2;
@@ -974,7 +975,8 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
                                  
         /* Main part, no exclusions */
         for(j=nj1; j<nj2; j+=UNROLLJ)
-        {                     
+        {              
+
             /* load j atom coordinates */
             jx_SSE            = _mm_load_pd(x_align+j);
             jy_SSE            = _mm_load_pd(y_align+j);
@@ -1043,7 +1045,7 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
             
             gpi_SSE0           = _mm_add_pd(gpi_SSE0, _mm_mul_pd(prod_SSE,icf4_SSE0));
             gpi_SSE1           = _mm_add_pd(gpi_SSE1, _mm_mul_pd(prod_SSE,icf4_SSE1));
-            
+
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_pd(dadx,_mm_mul_pd(prod_SSE,icf6_SSE0));
             dadx+=2;
@@ -1057,11 +1059,11 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
         }
         /* Epilogue part, including exclusion mask */
         for(j=nj2; j<nj3; j+=UNROLLJ)
-        {                     
+        {                 
             jmask_SSE0 = _mm_load_pd((double *)emask0);
             jmask_SSE1 = _mm_load_pd((double *)emask1);
-            emask0 += UNROLLJ;
-            emask1 += UNROLLJ;
+            emask0 += 2*UNROLLJ;
+            emask1 += 2*UNROLLJ;
             
             /* load j atom coordinates */
             jx_SSE            = _mm_load_pd(x_align+j);
@@ -1135,7 +1137,7 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec *           fr,
             
             gpi_SSE0           = _mm_add_pd(gpi_SSE0, _mm_mul_pd(prod_SSE,icf4_SSE0));
             gpi_SSE1           = _mm_add_pd(gpi_SSE1, _mm_mul_pd(prod_SSE,icf4_SSE1));
-            
+ 
             /* Save ai->aj and aj->ai chain rule terms */
             _mm_store_pd(dadx,_mm_mul_pd(prod_SSE,icf6_SSE0));
             dadx+=2;
@@ -2209,10 +2211,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec *           fr,
             _mm_store_pd(dadx,_mm_and_pd(t1_SSE1,obc_mask1_SSE1));
             dadx += 2;
         }
-        tmpSSE = sum_ai_SSE0;
-        sum_ai_SSE0 = _mm_unpacklo_pd(sum_ai_SSE0,sum_ai_SSE1);
-        sum_ai_SSE1 = _mm_unpackhi_pd(tmpSSE,sum_ai_SSE1);
-        
+        GMX_MM_TRANSPOSE2_PD(sum_ai_SSE0,sum_ai_SSE1);
         sum_ai_SSE0 = _mm_add_pd(sum_ai_SSE0,sum_ai_SSE1);
         _mm_store_pd(work+i, _mm_add_pd(sum_ai_SSE0, _mm_load_pd(work+i)));
 	}    
@@ -2343,7 +2342,6 @@ genborn_allvsall_calc_chainrule_sse2_double(t_forcerec *           fr,
     natoms              = mdatoms->nr;
 	ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
 	ni1                 = mdatoms->start+mdatoms->homenr;
-    dadx                = fr->dadx;
     
     aadata = (gmx_allvsallgb2_data_t *)paadata;
 
@@ -2359,7 +2357,7 @@ genborn_allvsall_calc_chainrule_sse2_double(t_forcerec *           fr,
 
     n = 0;
     rb = aadata->work;
-        
+
 	/* Loop to get the proper form for the Born radius term */
 	if(gb_algorithm==egbSTILL) 
 	{
@@ -2456,7 +2454,7 @@ genborn_allvsall_calc_chainrule_sse2_double(t_forcerec *           fr,
             /* Total force between ai and aj is the sum of ai->aj and aj->ai */
             fgb_SSE0         = _mm_add_pd(fgb_SSE0,fgb_ai_SSE0);
             fgb_SSE1         = _mm_add_pd(fgb_SSE1,fgb_ai_SSE1);
-                
+            
             /* Calculate temporary vectorial force */
             tx_SSE0            = _mm_mul_pd(fgb_SSE0,dx_SSE0);
             ty_SSE0            = _mm_mul_pd(fgb_SSE0,dy_SSE0);
@@ -2481,24 +2479,19 @@ genborn_allvsall_calc_chainrule_sse2_double(t_forcerec *           fr,
             _mm_store_pd(fz_align+j,
                          _mm_sub_pd( _mm_load_pd(fz_align+j) , _mm_add_pd(tz_SSE0,tz_SSE1) ));
         }
+        
 		/* Add i forces to mem */
-        tmpSSE   = fix_SSE0;
-        fix_SSE0 = _mm_unpacklo_pd(fix_SSE0,fix_SSE1);
-        fix_SSE1 = _mm_unpackhi_pd(tmpSSE,fix_SSE1);
+        GMX_MM_TRANSPOSE2_PD(fix_SSE0,fix_SSE1);
         fix_SSE0 = _mm_add_pd(fix_SSE0,fix_SSE1);
         _mm_store_pd(fx_align+i, _mm_add_pd(fix_SSE0, _mm_load_pd(fx_align+i)));
         
-        tmpSSE   = fiy_SSE0;
-        fiy_SSE0 = _mm_unpacklo_pd(fiy_SSE0,fiy_SSE1);
-        fiy_SSE1 = _mm_unpackhi_pd(tmpSSE,fiy_SSE1);
+        GMX_MM_TRANSPOSE2_PD(fiy_SSE0,fiy_SSE1);
         fiy_SSE0 = _mm_add_pd(fiy_SSE0,fiy_SSE1);
         _mm_store_pd(fy_align+i, _mm_add_pd(fiy_SSE0, _mm_load_pd(fy_align+i)));
         
-        tmpSSE   = fiy_SSE0;
-        fiz_SSE0 = _mm_unpacklo_pd(fiz_SSE0,fiz_SSE1);
-        fiz_SSE1 = _mm_unpackhi_pd(tmpSSE,fiz_SSE1);
+        GMX_MM_TRANSPOSE2_PD(fiz_SSE0,fiz_SSE1);
         fiz_SSE0 = _mm_add_pd(fiz_SSE0,fiz_SSE1);
-        _mm_store_pd(fz_align+i, _mm_add_pd(fiz_SSE0, _mm_load_pd(fz_align+i)));
+        _mm_store_pd(fz_align+i, _mm_add_pd(fiz_SSE0, _mm_load_pd(fz_align+i)));		
 	}    
 	
     for(i=0;i<natoms;i++)

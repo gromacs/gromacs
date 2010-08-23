@@ -117,7 +117,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,
 		
         rai     = _mm_load1_pd(gb_radius+ii);
         prod_ai = _mm_set1_pd(STILL_P4*vsolv[ii]);
-        
+
 		for(k=nj0;k<nj1-1;k+=2)
 		{
 			jnrA        = jjnr[k];   
@@ -145,7 +145,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,
             ratio       = _mm_mul_pd(rsq, gmx_mm_inv_pd( _mm_mul_pd(rvdw,rvdw)));
             
             mask_cmp    = _mm_cmple_pd(ratio,still_p5inv);
-            
+
             /* gmx_mm_sincos_pd() is quite expensive, so avoid calculating it if we can! */
             if( 0 == _mm_movemask_pd(mask_cmp) )
             {
@@ -163,11 +163,11 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,
                 dccf        = _mm_mul_pd(_mm_mul_pd(two,term),
                                          _mm_mul_pd(sinq,theta));
             }
-            
+
             prod        = _mm_mul_pd(still_p4,vaj);
             icf4        = _mm_mul_pd(ccf,rinv4);
             icf6        = _mm_mul_pd( _mm_sub_pd( _mm_mul_pd(four,ccf),dccf), rinv6);
-            
+                        
             GMX_MM_INCREMENT_2VALUES_PD(work+jnrA,work+jnrB,_mm_mul_pd(prod_ai,icf4));
             
             gpi           = _mm_add_pd(gpi, _mm_mul_pd(prod,icf4) );
@@ -225,7 +225,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,
             prod        = _mm_mul_sd(still_p4,vaj);
             icf4        = _mm_mul_sd(ccf,rinv4);
             icf6        = _mm_mul_sd( _mm_sub_sd( _mm_mul_sd(four,ccf),dccf), rinv6);
-            
+
             GMX_MM_INCREMENT_1VALUE_PD(work+jnrA,_mm_mul_sd(prod_ai,icf4));
             
             gpi           = _mm_add_sd(gpi, _mm_mul_sd(prod,icf4) );
@@ -237,7 +237,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,
 		} 
         gmx_mm_update_1pot_pd(gpi,work+ii);
 	}
-	
+    
 	/* Sum up the polarization energy from other nodes */
 	if(PARTDECOMP(cr))
 	{
@@ -345,9 +345,7 @@ calc_gb_rad_hct_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_
         ix     = _mm_set1_pd(shX+x[ii3+0]);
 		iy     = _mm_set1_pd(shY+x[ii3+1]);
 		iz     = _mm_set1_pd(shZ+x[ii3+2]);
-		
-		offset = (nj1-nj0)%4;
-        
+		        
 		rai    = _mm_load1_pd(gb_radius+ii);
 		rai_inv= gmx_mm_inv_pd(rai);
         
@@ -502,9 +500,9 @@ calc_gb_rad_hct_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_
             dadx2         = _mm_and_pd(t1,obc_mask1);
             
             _mm_store_pd(dadx,dadx1);
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,dadx2);
-            dadx += 4;
+            dadx += 2;
         } /* end normal inner loop */
         
 		if(k<nj1)
@@ -651,9 +649,9 @@ calc_gb_rad_hct_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_
             dadx2         = _mm_and_pd(t1,obc_mask1);
             
             _mm_store_pd(dadx,dadx1);
-            dadx += 4;
+            dadx += 2;
             _mm_store_pd(dadx,dadx2);
-            dadx += 4;
+            dadx += 2;
         } 
         gmx_mm_update_1pot_pd(sum_ai,work+ii);
         
@@ -738,7 +736,7 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
                               double *x, double *f, double *fshift, double *shiftvec,
                               int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md)						
 {
-	int    i,k,n,ii,jnr,ii3,is3,nj0,nj1,offset,n0,n1;
+	int    i,k,n,ii,jnr,ii3,is3,nj0,nj1,n0,n1;
 	int	   jnrA,jnrB;
     int    j3A,j3B;
 	int *  jjnr;
@@ -761,9 +759,7 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
     
     jjnr   = nl->jjnr;
     
-	/* Loop to get the proper form for the Born radius term, sse style */
-	offset=natoms%4;
-	
+	/* Loop to get the proper form for the Born radius term, sse style */	
     n0 = md->start;
     n1 = md->start+md->homenr+1+natoms/2;
     
@@ -813,9 +809,7 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
         ix     = _mm_set1_pd(shX+x[ii3+0]);
 		iy     = _mm_set1_pd(shY+x[ii3+1]);
 		iz     = _mm_set1_pd(shZ+x[ii3+2]);
-		
-		offset = (nj1-nj0)%4;
-		
+				
 		rbai   = _mm_load1_pd(rb+ii);			
 		fix    = _mm_setzero_pd();
 		fiy    = _mm_setzero_pd();
@@ -840,9 +834,9 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
             
 			/* load chain rule terms for j1-4 */
 			f_gb        = _mm_load_pd(dadx);
-			dadx += 4;
+			dadx += 2;
 			f_gb_ai     = _mm_load_pd(dadx);
-			dadx += 4;
+			dadx += 2;
 			
             /* calculate scalar force */
             f_gb    = _mm_mul_pd(f_gb,rbai); 
@@ -876,9 +870,9 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
             
 			/* load chain rule terms */
 			f_gb        = _mm_load_pd(dadx);
-			dadx += 4;
+			dadx += 2;
 			f_gb_ai     = _mm_load_pd(dadx);
-			dadx += 4;
+			dadx += 2;
 			
             /* calculate scalar force */
             f_gb    = _mm_mul_sd(f_gb,rbai); 

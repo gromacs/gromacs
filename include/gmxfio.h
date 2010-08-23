@@ -36,10 +36,6 @@
 #ifndef _gmxfio_h
 #define _gmxfio_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -114,36 +110,36 @@ int gmx_fio_fclose(FILE *fp);
  * Change properties of the open file
  ********************************************************/
 
-extern void gmx_fio_setprecision(t_fileio *fio,bool bDouble);
+void gmx_fio_setprecision(t_fileio *fio,bool bDouble);
 /* Select the floating point precision for reading and writing files */
 
-extern char *gmx_fio_getname(t_fileio *fio);
+char *gmx_fio_getname(t_fileio *fio);
 /* Return the filename corresponding to the fio index */
 
-extern int gmx_fio_getftp(t_fileio *fio);
+int gmx_fio_getftp(t_fileio *fio);
 /* Return the filetype corresponding to the fio index. 
     There is as of now no corresponding setftp function because the file
     was opened as a specific file type and changing that midway is most 
     likely an evil hack. */
 
-extern void gmx_fio_setdebug(t_fileio *fio,bool bDebug);
+void gmx_fio_setdebug(t_fileio *fio,bool bDebug);
 /* Set the debug mode */
 
-extern bool gmx_fio_getdebug(t_fileio *fio);
+bool gmx_fio_getdebug(t_fileio *fio);
 /* Return  whether debug mode is on in fio  */
 
-extern bool gmx_fio_getread(t_fileio *fio);
+bool gmx_fio_getread(t_fileio *fio);
 /* Return  whether read mode is on in fio  */
 
 
-extern void gmx_fio_checktype(t_fileio *fio);
+void gmx_fio_checktype(t_fileio *fio);
 /* Check whether the fio is of a sane type */
 
 /***************************************************
  * FILE Operations
  ***************************************************/
 
-extern void gmx_fio_rewind(t_fileio *fio);
+void gmx_fio_rewind(t_fileio *fio);
 /* Rewind the tpa file in fio */
 
 int gmx_fio_flush(t_fileio *fio);
@@ -156,16 +152,16 @@ int gmx_fio_fsync(t_fileio *fio);
    can cause dramatically slowed down IO performance. Some OSes (Linux, 
    for example), may implement fsync as a full sync() point. */
 
-extern gmx_off_t gmx_fio_ftell(t_fileio *fio);
+gmx_off_t gmx_fio_ftell(t_fileio *fio);
 /* Return file position if possible */
 
-extern int gmx_fio_seek(t_fileio *fio,gmx_off_t fpos);
+int gmx_fio_seek(t_fileio *fio,gmx_off_t fpos);
 /* Set file position if possible, quit otherwise */
 
-extern FILE *gmx_fio_getfp(t_fileio *fio);
+FILE *gmx_fio_getfp(t_fileio *fio);
 /* Return the file pointer itself */
 
-extern XDR *gmx_fio_getxdr(t_fileio *fio);
+XDR *gmx_fio_getxdr(t_fileio *fio);
 /* Return the file pointer itself */
 
 
@@ -220,16 +216,16 @@ int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
                          unsigned char digest[]);
 
 
-extern int xtc_seek_frame(t_fileio *fio, int frame, int natoms);
+int xtc_seek_frame(t_fileio *fio, int frame, int natoms);
 
-extern int xtc_seek_time(t_fileio *fio, real time, int natoms);
+int xtc_seek_time(t_fileio *fio, real time, int natoms);
 
 	
 /* Add this to the comment string for debugging */
-extern void gmx_fio_set_comment(t_fileio *fio, const char *comment);
+void gmx_fio_set_comment(t_fileio *fio, const char *comment);
 
 /* Remove previously set comment */
-extern void gmx_fio_unset_comment(t_fileio *fio);
+void gmx_fio_unset_comment(t_fileio *fio);
 
 
 

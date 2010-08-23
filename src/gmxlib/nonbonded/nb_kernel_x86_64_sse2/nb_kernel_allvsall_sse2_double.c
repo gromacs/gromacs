@@ -981,7 +981,7 @@ nb_kernel_allvsall_sse2_double(t_forcerec *           fr,
         fiy_SSE0 = _mm_add_pd(fiy_SSE0,fiy_SSE1);
         _mm_store_pd(fy_align+i, _mm_add_pd(fiy_SSE0, _mm_load_pd(fy_align+i)));
         
-        tmpSSE   = fiy_SSE0;
+        tmpSSE   = fiz_SSE0;
         fiz_SSE0 = _mm_unpacklo_pd(fiz_SSE0,fiz_SSE1);
         fiz_SSE1 = _mm_unpackhi_pd(tmpSSE,fiz_SSE1);
         fiz_SSE0 = _mm_add_pd(fiz_SSE0,fiz_SSE1);

@@ -149,19 +149,19 @@ typedef struct {
   real length;
 } t_specbond;
 
-extern t_specbond *get_specbonds(int *nspecbond);
-extern void done_specbonds(int nsb,t_specbond sb[]);
+t_specbond *get_specbonds(int *nspecbond);
+void done_specbonds(int nsb,t_specbond sb[]);
 
-extern void free_t_restp(int nrtp, t_restp **rtp);
-extern void free_t_hack(int nh, t_hack **h);
-extern void free_t_hackblock(int nhb, t_hackblock **hb);
+void free_t_restp(int nrtp, t_restp **rtp);
+void free_t_hack(int nh, t_hack **h);
+void free_t_hackblock(int nhb, t_hackblock **hb);
 /* free the whole datastructure */
 
-extern void clear_t_hackblock(t_hackblock *hb);
-extern void clear_t_hack(t_hack *hack);
+void clear_t_hackblock(t_hackblock *hb);
+void clear_t_hack(t_hack *hack);
 /* reset struct */
 
-extern bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], 
+bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], 
 			    bool bMin, bool bPlus);
 /* add s[].b[] to d[].b[]
  * If bMin==TRUE, don't copy bondeds with atoms starting with '-'
@@ -169,24 +169,24 @@ extern bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],
  * Returns if bonds were removed at the termini.
  */
      
-extern void copy_t_restp(t_restp *s, t_restp *d);
-extern void copy_t_hack(t_hack *s, t_hack *d);
-extern void copy_t_hackblock(t_hackblock *s, t_hackblock *d);
+void copy_t_restp(t_restp *s, t_restp *d);
+void copy_t_hack(t_hack *s, t_hack *d);
+void copy_t_hackblock(t_hackblock *s, t_hackblock *d);
 /* make copy of whole datastructure */
 
-extern void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d);
+void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d);
 /* add s[] to *d[] */
 
-extern void merge_hacks(t_hackblock *s, t_hackblock *d);
+void merge_hacks(t_hackblock *s, t_hackblock *d);
 /* add s->hacks[] to d->hacks[] */
 
-extern void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
+void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
 /* add s->hacks[] and s->rb[] to d*/
 
-extern void dump_hb(FILE *out, int nres, t_hackblock hb[]);
+void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 /* print out whole datastructure */
 
-extern void init_t_protonate(t_protonate *protonate);
+void init_t_protonate(t_protonate *protonate);
 /* initialize t_protein struct */
 
 #ifdef __cplusplus

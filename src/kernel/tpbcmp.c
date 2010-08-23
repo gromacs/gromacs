@@ -382,11 +382,11 @@ static void cmp_groups(FILE *fp,gmx_groups_t *g0,gmx_groups_t *g1,
     sprintf(buf,"grps[%d].nr",i);
     cmp_int(fp,buf,-1,g0->grps[i].nr,g1->grps[i].nr);
     if (g0->grps[i].nr == g1->grps[i].nr) {
-      sprintf(buf,"grps[%d].name[%d]",i,j);
       for(j=0; j<g0->grps[i].nr; j++) {
-	cmp_str(fp,buf,-1,
-		*g0->grpname[g0->grps[i].nm_ind[j]],
-		*g1->grpname[g1->grps[i].nm_ind[j]]);
+          sprintf(buf,"grps[%d].name[%d]",i,j);
+          cmp_str(fp,buf,-1,
+                  *g0->grpname[g0->grps[i].nm_ind[j]],
+                  *g1->grpname[g1->grps[i].nm_ind[j]]);
       }
     }
     cmp_int(fp,"ngrpnr",i,g0->ngrpnr[i],g1->ngrpnr[i]);

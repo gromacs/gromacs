@@ -36,15 +36,14 @@
 #ifndef _futil_h
 #define _futil_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+#if 0
+}
 #endif
 
 /* Native windows uses backslash path separators.
@@ -63,61 +62,59 @@ extern "C" {
 
 /* Now get the maximum path size. */
 #ifdef PATH_MAX
-#define GMX_PATH_MAX PATH_MAX
+#  define GMX_PATH_MAX PATH_MAX
+#elif defined MAX_PATH
+#  define GMX_PATH_MAX MAX_PATH
 #else
-#ifdef MAX_PATH
-#define GMX_PATH_MAX MAX_PATH
-#else
-#define GMX_PATH_MAX 4096
-#endif
+#  define GMX_PATH_MAX 4096
 #endif
 
 
 #ifdef HAVE_FSEEKO
-typedef off_t gmx_off_t;
-#define SIZEOF_GMX_OFF_T SIZEOF_OFF_T
+   typedef off_t              gmx_off_t;
+#  define SIZEOF_GMX_OFF_T   SIZEOF_OFF_T
+#elif defined HAVE__FSEEKI64 
+   typedef __int64            gmx_off_t;
+#  define SIZEOF_GMX_OFF_T   8
 #else
-#ifdef HAVE__FSEEKI64 
-typedef __int64 gmx_off_t;
-#define SIZEOF_GMX_OFF_T 8
-#else
-typedef long int gmx_off_t;
-#define SIZEOF_GMX_OFF_T SIZEOF_LONG_INT
-#endif
-#endif
+   /* Almost certainly 64 bits, and guaranteed to be available */
+   typedef gmx_large_int_t    gmx_off_t
+#  define SIZEOF_GMX_OFF_T   SIZEOF_GMX_LARGE_INT
+#endif    
+
 
   
-extern void no_buffers(void);
+void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
 
-extern bool gmx_fexist(const char *fname);
+bool gmx_fexist(const char *fname);
 /* Return TRUE when fname exists, FALSE otherwise */
 
 bool gmx_fexist_master(const char *fname, t_commrec *cr);
 /* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
 
-extern bool gmx_eof(FILE *fp);
+bool gmx_eof(FILE *fp);
 /* Return TRUE on end-of-file, FALSE otherwise */
 
-extern bool is_pipe(FILE *fp);
+bool is_pipe(FILE *fp);
 /* Check whether the file (opened by ffopen) is a pipe */
 
 /*  Make a backup of file if necessary.  
     Return false if there was a problem.
 */
-extern bool make_backup(const char * file);
+bool make_backup(const char * file);
 
-extern FILE *ffopen(const char *file, const char *mode);
+FILE *ffopen(const char *file, const char *mode);
 /* Return a valid file pointer when successful, exits otherwise 
  * If the file is in compressed format, open a pipe which uncompresses
  * the file! Therefore, files must be closed with ffclose (see below)
  */
 
-extern int ffclose(FILE *fp);
+int ffclose(FILE *fp);
 /* Close files or pipes */
 
 
-extern void frewind(FILE *fp);
+void frewind(FILE *fp);
 /* Does not rewind pipes, but does so for normal files */
 
 #define rewind frewind
@@ -132,10 +129,10 @@ gmx_off_t gmx_ftell(FILE *stream);
 
 bool is_pipe(FILE *fp);
 
-extern char *gmxlibfn(const char *file);
+char *gmxlibfn(const char *file);
 /* allocates and returns a string with the full file name for a library file */
 
-extern FILE *libopen(const char *file);
+FILE *libopen(const char *file);
 /* Open a library file for reading. This looks in the current directory
  * first, and then in the library directory. If the file is not found,
  * it terminates with a fatal_error
@@ -167,17 +164,17 @@ gmx_directory_close(gmx_directory_t gmxdir);
     
 
     
-extern bool get_libdir(char *libdir);
+bool get_libdir(char *libdir);
 
-extern char *low_gmxlibfn(const char *file,bool bFatal);
+char *low_gmxlibfn(const char *file,bool bAddCWD,bool bFatal);
 
-extern FILE *low_libopen(const char *file,bool bFatal);
+FILE *low_libopen(const char *file,bool bFatal);
 /* The same as the above, but does not terminate if (!bFatal) */
 
 /* Create unique name for temp file (wrapper around mkstemp). 
  * Buf should be at least 7 bytes long 
  */
-extern void gmx_tmpnam(char *buf);
+void gmx_tmpnam(char *buf);
 
 /* truncte the file to the specified length */
 int gmx_truncatefile(char *path, gmx_off_t length);

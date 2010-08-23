@@ -50,7 +50,7 @@
 #include "pgutil.h"
 #include "fflibutil.h"
 
-gpp_atomtype_t read_atype(const char *ffdir,bool bAddCWD,t_symtab *tab)
+gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab)
 {
     int        nfile,f;
     char       **file;
@@ -62,7 +62,7 @@ gpp_atomtype_t read_atype(const char *ffdir,bool bAddCWD,t_symtab *tab)
     t_atom     *a;
     t_param    *nb;
     
-    nfile = fflib_search_file_end(ffdir,bAddCWD,".atp",TRUE,&file);
+    nfile = fflib_search_file_end(ffdir,".atp",TRUE,&file);
     at = init_atomtype();
     snew(a,1);
     snew(nb,1);
@@ -217,7 +217,7 @@ static void check_rtp(int nrtp,t_restp rtp[],char *libfn)
 
   /* check for double entries, assuming list is already sorted */
   for(i=1; (i<nrtp); i++) {
-    if (strcasecmp(rtp[i-1].resname,rtp[i].resname) == 0)
+    if (gmx_strcasecmp(rtp[i-1].resname,rtp[i].resname) == 0)
       fprintf(stderr,"WARNING double entry %s in file %s\n",
 	      rtp[i].resname,libfn);
   }
@@ -230,7 +230,7 @@ static int comprtp(const void *a,const void *b)
   ra=(t_restp *)a;
   rb=(t_restp *)b;
 
-  return strcasecmp(ra->resname,rb->resname);
+  return gmx_strcasecmp(ra->resname,rb->resname);
 }
 
 int get_bt(char* header)
@@ -238,7 +238,7 @@ int get_bt(char* header)
   int i;
 
   for(i=0; i<ebtsNR; i++)
-    if ( strcasecmp(btsNames[i],header)==0 )
+    if ( gmx_strcasecmp(btsNames[i],header)==0 )
       return i;
   return NOTSET;
 }
@@ -301,7 +301,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
   get_a_line(in,line,STRLEN);
   if (!get_header(line,header))
     gmx_fatal(FARGS,"in .rtp file at line:\n%s\n",line);
-  if (strncasecmp("bondedtypes",header,5)==0) {
+  if (gmx_strncasecmp("bondedtypes",header,5)==0) {
     get_a_line(in,line,STRLEN);
     if ((nparam=sscanf(line,"%d %d %d %d %d %d %d %d",
 		       &bts[ebtsBONDS],&bts[ebtsANGLES],
@@ -377,7 +377,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
 	if (bt != NOTSET) {
 	  /* header is an bonded directive */
 	  bError = !read_bondeds(bt,in,line,&rrtp[nrtp]);
-	} else if (strncasecmp("atoms",header,5) == 0) {
+	} else if (gmx_strncasecmp("atoms",header,5) == 0) {
 	  /* header is the atoms directive */
 	  bError = !read_atoms(in,line,&(rrtp[nrtp]),tab,atype);
 	} else {
@@ -403,7 +403,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
     
     firstrtp = -1;
     for(i=0; i<nrtp; i++) {
-        if (strcasecmp(rrtp[i].resname,rrtp[nrtp].resname) == 0) {
+        if (gmx_strcasecmp(rrtp[i].resname,rrtp[nrtp].resname) == 0) {
             firstrtp = i;
         }
     }

@@ -36,10 +36,6 @@
 #ifndef _warninp_h
 #define _warninp_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus

@@ -346,7 +346,7 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
     fprintf(dlg->x11->console,"buffer: '%s'\n",buf);
     dlg->x11->Flush(dlg->x11);
 #endif
-    if (strcasecmp(buf,"nok")==0) {
+    if (gmx_strcasecmp(buf,"nok")==0) {
       /* An error occurred */
       for(i=0; (i<nlines); i++)
 	sfree(lines[i]);
@@ -355,7 +355,7 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
       return;
     }
     else {
-      bCont=(strcasecmp(buf,"ok") != 0);
+      bCont=(gmx_strcasecmp(buf,"ok") != 0);
       if (bCont) {
 	srenew(lines,++nlines);
 	lines[nlines-1]=strdup(buf);
