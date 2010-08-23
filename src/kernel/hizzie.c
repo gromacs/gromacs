@@ -221,7 +221,7 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   /* Now do the HIS stuff */
   hisind=-1;
   for(i=0; (i<natom); ) {
-    if (strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name,"HIS") != 0) 
+    if (gmx_strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name,"HIS") != 0) 
       i++;
     else {
       if (pdba->atom[i].resind != hisind) {

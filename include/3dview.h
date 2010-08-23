@@ -36,10 +36,6 @@
 #ifndef _3dview_h
 #define _3dview_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus

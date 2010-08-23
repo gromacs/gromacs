@@ -791,7 +791,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             }
 
             /* macro set at build time  */
-#ifdef OPENMM_PLUGIN_DIR
+#ifdef OpenMM_PLUGIN_DIR
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(OPENMM_PLUGIN_DIR);
@@ -1020,7 +1020,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 break;
 
             default:
-                gmx_fatal(FARGS,"Internal error: you should not see this message, it that the"
+                gmx_fatal(FARGS,"Internal error: you should not see this message, it means that the"
                           "electrosatics option check failed. Please report this error!");
             }        
             sys->setDefaultPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),

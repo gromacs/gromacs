@@ -36,11 +36,6 @@
 #define _inputrec_h_
 
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include "simple.h"
 #include "../sysstuff.h"
 

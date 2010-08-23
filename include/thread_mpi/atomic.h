@@ -76,8 +76,6 @@ files.
 
 #include <stdio.h>
 
-
-
 #ifdef __cplusplus
 extern "C" 
 {  
@@ -91,7 +89,6 @@ extern "C"
                           + __GNUC_MINOR__ * 100 \
                           + __GNUC_PATCHLEVEL__)
 #endif
-
 
 
 /* first check for gcc/icc platforms. icc on linux+mac will take this path, 
@@ -110,7 +107,11 @@ extern "C"
 
 #elif (defined(__powerpc__) || (defined(__ppc__)) )
 /* and powerpc: */
-#include "atomic/gcc_ppc.h"
+/*#include "atomic/gcc_ppc.h"*/
+
+/* for now we use gcc intrinsics on gcc: */
+#include "atomic/gcc.h"
+
 
 #else
 /* otherwise, there's a generic gcc intrinsics version: */

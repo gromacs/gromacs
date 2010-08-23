@@ -455,7 +455,7 @@ static bool comp_name(char *name,char *search)
     default:
       /* Compare a single character */
       if (( bCase && strncmp(name,search,1)) ||
-	  (!bCase && strncasecmp(name,search,1))) {
+	  (!bCase && gmx_strncasecmp(name,search,1))) {
 	return FALSE;
       }
     }

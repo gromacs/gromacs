@@ -93,7 +93,7 @@ int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn)
   int imaj,imin;
   int ret;
 
-#if ((defined SIZEOF_LARGE_INT) && SIZEOF_LARGE_INT == 8)
+#if ((defined SIZEOF_GMX_LARGE_INT) && SIZEOF_GMX_LARGE_INT == 8)
   static const gmx_large_int_t two_p32_m1 = 0xFFFFFFFF;
   gmx_large_int_t imaj64,imin64;
 
@@ -115,7 +115,7 @@ int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn)
   ret = xdr_int(xdrs,&imaj);
   ret = xdr_int(xdrs,&imin);
 
-#if ((defined SIZEOF_LARGE_INT) && SIZEOF_LARGE_INT == 8)
+#if ((defined SIZEOF_GMX_LARGE_INT) && SIZEOF_GMX_LARGE_INT == 8)
   *i = (((gmx_large_int_t)imaj << 32) | ((gmx_large_int_t)imin & two_p32_m1));
 #else
   *i = imin;

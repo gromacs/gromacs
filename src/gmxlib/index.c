@@ -341,8 +341,8 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
   };
   const int  wholename[NCH]  = { -1, 0,-1,-1,-1,-1,-1,-1, 11,-1 };
   /* the index in wholename gives the first item in the arrays of 
-   * atomtypes that should be tested with 'strncasecmp' in stead of
-   * strcasecmp, or -1 if all items should be tested with strcasecmp
+   * atomtypes that should be tested with 'gmx_strncasecmp' in stead of
+   * gmx_strcasecmp, or -1 if all items should be tested with strcasecmp
    * This is comparable to using a '*' wildcard at the end of specific
    * atom names, but that is more involved to implement...
    */
@@ -383,10 +383,10 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
 	  while (isdigit(atnm[0]))
 	    atnm++;
 	  if ( (wholename[i]==-1) || (j<wholename[i]) ) {
-	    if (strcasecmp(chains[i][j],atnm) == 0)
+	    if (gmx_strcasecmp(chains[i][j],atnm) == 0)
 	      match=TRUE;
 	  } else {
-	    if (strncasecmp(chains[i][j],atnm,strlen(chains[i][j])) == 0)
+	    if (gmx_strncasecmp(chains[i][j],atnm,strlen(chains[i][j])) == 0)
 	      match=TRUE;
 	  }
 	}
@@ -411,7 +411,7 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
 	  for(;((atoms->atom[n].resind==resind) && (n<atoms->nr));n++) {
 	    match=FALSE;
 	    for(j=0;(j<sizes[i]); j++) 
-	      if (strcasecmp(chains[i][j],*atoms->atomname[n]) == 0)
+	      if (gmx_strcasecmp(chains[i][j],*atoms->atomname[n]) == 0)
 		match=TRUE;
 	    if (match != complement[i])
 	      aid[nra++]=n;
@@ -936,7 +936,7 @@ int find_group(char s[], int ngrps, char **grpname)
   /* first look for whole name match */
   if (aa==NOTSET)
     for(i=0; i<ngrps; i++)
-      if (strcasecmp_min(s,grpname[i])==0) {
+      if (gmx_strcasecmp_min(s,grpname[i])==0) {
 	if(aa!=NOTSET)
 	  bMultiple = TRUE;
 	aa=i;
@@ -944,7 +944,7 @@ int find_group(char s[], int ngrps, char **grpname)
   /* second look for first string match */
   if (aa==NOTSET)
     for(i=0; i<ngrps; i++)
-      if (strncasecmp_min(s,grpname[i],n)==0) {
+      if (gmx_strncasecmp_min(s,grpname[i],n)==0) {
 	if(aa!=NOTSET)
 	  bMultiple = TRUE;
 	aa=i;

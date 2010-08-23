@@ -36,10 +36,6 @@
 #ifndef _rbin_h
 #define _rbin_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "network.h"
@@ -54,24 +50,24 @@ typedef struct {
   double *rbuf;
 } t_bin;
 
-extern t_bin *mk_bin(void);
+t_bin *mk_bin(void);
 /* Create a real bin */
 
-extern void destroy_bin(t_bin *b);
+void destroy_bin(t_bin *b);
 /* Destroy the bin structure */
 
-extern void reset_bin(t_bin *b);
+void reset_bin(t_bin *b);
 /* Reset number of entries to zero */
 
-extern int add_binr(t_bin *b,int nr,real r[]);
-extern int add_bind(t_bin *b,int nr,double r[]);
+int add_binr(t_bin *b,int nr,real r[]);
+int add_bind(t_bin *b,int nr,double r[]);
 /* Add reals to the bin. Returns index */
 
-extern void sum_bin(t_bin *b,t_commrec *cr);
+void sum_bin(t_bin *b,t_commrec *cr);
 /* Globally sum the reals in the bin */
 
-extern void extract_binr(t_bin *b,int index,int nr,real r[]);
-extern void extract_bind(t_bin *b,int index,int nr,double r[]);
+void extract_binr(t_bin *b,int index,int nr,real r[]);
+void extract_bind(t_bin *b,int index,int nr,double r[]);
 /* Extract values from the bin, starting from index (see add_bin) */
 
 #ifdef __cplusplus

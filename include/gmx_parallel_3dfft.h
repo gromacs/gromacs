@@ -19,10 +19,6 @@
 #ifndef _gmx_parallel_3dfft_h_
 #define _gmx_parallel_3dfft_h_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 
 #include "types/simple.h"
 #include "types/commrec.h"

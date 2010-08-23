@@ -36,10 +36,6 @@
 #ifndef _viewit_h
 #define _viewit_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -47,13 +43,13 @@ extern "C" {
 #endif
 
 
-extern void do_view(const output_env_t oenv,const char *fn, const char *opts);
+void do_view(const output_env_t oenv,const char *fn, const char *opts);
 /* forks off appropriate command to view file.
  * currently eps, xpm, xvg and pdb are supported 
  * defaults are provided, can be overriden with environment vars 
  */
 
-extern void view_all(const output_env_t oenv,int nf, t_filenm fnm[]);
+void view_all(const output_env_t oenv,int nf, t_filenm fnm[]);
 /* calls do_view for all viewable output files in fnm[] */
  
 #ifdef __cplusplus
