@@ -35,10 +35,6 @@
 #ifndef _nblist_h
 #define _nblist_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -36,11 +36,6 @@
 #define _GMX_LAPACK_H_
 
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 /** @file
  *
  *  @brief Header definitions for the standard LAPACK library.
@@ -75,11 +70,13 @@ extern "C" {
 }
 #endif
 
+#include "types/simple.h"
+
+
 #ifndef F77_FUNC
 #define F77_FUNC(name,NAME) name ## _
 #endif
 
-#include "types/simple.h"
 
 
 /* Double precision */

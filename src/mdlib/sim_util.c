@@ -102,6 +102,10 @@ typedef struct gmx_timeprint {
 } t_gmx_timeprint;
 #endif
 
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
 
 double
 gmx_gettime()
@@ -1529,7 +1533,7 @@ void init_md(FILE *fplog,
              int nfile,const t_filenm fnm[],
              gmx_mdoutf_t **outf,t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
-             bool *bNEMD,bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
+             bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
 {
     int  i,j,n;
     real tmpt,mod;
@@ -1560,8 +1564,6 @@ void init_md(FILE *fplog,
         update_annealing_target_temp(&(ir->opts),ir->init_t);
     }
     
-    *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
-    
     if (upd)
     {
         *upd = init_update(fplog,ir);
@@ -1591,7 +1593,7 @@ void init_md(FILE *fplog,
         *outf = init_mdoutf(nfile,fnm,Flags,cr,ir,oenv);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
-                              mtop,ir);
+                              mtop,ir, (*outf)->fp_dhdl);
     }
     
     /* Initiate variables */  

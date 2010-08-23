@@ -35,10 +35,6 @@
 #ifndef _commrec_h
 #define _commrec_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #else

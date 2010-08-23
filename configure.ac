@@ -18,7 +18,7 @@ SHARED_VERSION_INFO="6:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 AC_DISABLE_SHARED
-
+PKG_CFLAGS=""
 
 #######################################################################
 # Simple options and makefile variables
@@ -37,6 +37,7 @@ if test "$enable_double" = "yes"; then
 fi
 if test "$enable_float" = "no"; then
   AC_DEFINE(GMX_DOUBLE,,[Compile in double precision])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_DOUBLE"
 fi
 AM_CONDITIONAL([GMX_DOUBLE],[test "$enable_float" = "no"])
 
@@ -50,9 +51,6 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
-if test "$enable_fortran" = "yes" -a "$enable_power6" = "no"; then
-  AC_DEFINE(GMX_FORTRAN,,[Enable Fortran support])
-fi
 # Generic fortran kernels will be turned off below if you enable power6-specific optimization!
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
@@ -177,7 +175,8 @@ AC_ARG_ENABLE(software-invsqrt,
   *) enable_software_invsqrt=yes ;;
 esac])
 if test "$enable_software_invsqrt" = "yes"; then
-  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS software 1/sqrt(x)])
+  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS sGMX_INTERNAL_XDRsqrt(x)])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_SOFTWARE_INVSQRT"
 fi
 AM_CONDITIONAL([GMX_SOFTWARE_INVSQRT],[test "$enable_software_invsqrt" = "yes"])
 
@@ -302,13 +301,13 @@ generate_version=no
 if test -d $srcdir/.git ; then
     AC_CHECK_PROG(have_git, git, yes, no)
     if test "$have_git" = "yes" ; then
-        AC_MSG_CHECKING(for git >= 1.5.1)
-        if test "`git --version`" \< "git version 1.5.1" ; then
-            AC_MSG_RESULT(no)
-        else
-            AC_MSG_RESULT(yes)
+        AC_MSG_CHECKING(for a recent enough git)
+	if git --git-dir=$srcdir/.git rev-list -n1 --pretty=format:%cd HEAD | grep "Mon\|Tue\|Wed\|Thu\|Fri\|Sat\|Sun" >/dev/null 2>&1; then
+	    AC_MSG_RESULT(yes)
             generate_version=yes
             AC_DEFINE(USE_VERSION_H,,[Use generated version info])
+        else
+            AC_MSG_RESULT(no)
         fi
     fi
     if test "$generate_version" = "no" ; then
@@ -377,6 +376,7 @@ if test "$enable_mpi" = "yes"; then
 AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AC_DEFINE(GMX_LIB_MPI,,[Use a real MPI library])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_LIB_MPI"
 
   if test "$enable_mpi_in_place" = "yes"; then
     # not all MPIs support MPI_IN_PLACE:
@@ -410,6 +410,7 @@ void test(void)
   AC_MSG_RESULT([yes])
   cross_compiling=yes 
   AC_DEFINE(GMX_CRAY_XT3,[],[Enable special hacks for Cray XT3])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_CRAY_XT3"
   AC_DEFINE(GMX_NO_SYSTEM,[],[Ignore calls to system(3)])
   AC_DEFINE(GMX_NO_NICE,[],[Ignore calls to nice(3)])
   AC_DEFINE(GMX_BROKEN_CALLOC,[],[Don't use calloc(3)])
@@ -508,6 +509,7 @@ contact the developers.
   CXXFLAGS="$CXXFLAGS_RET"
 
   AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_THREADS"
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AM_CONDITIONAL(THREAD_PARALLEL,true)
 else
@@ -739,6 +741,7 @@ cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
 
   if test "$have_xdr" != "yes"; then
     AC_DEFINE(GMX_INTERNAL_XDR,,[Use our own instead of system XDR libraries])	
+    PKG_CFLAGS="$PKG_CFLAGS -DGMX_INTERNAL_XDR"
     AC_MSG_WARN([Couldn't find XDR headers and/or libraries - using our own])
   fi
   ;;
@@ -1118,6 +1121,10 @@ if test "$enable_bluegene" = "yes"; then
   AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
 fi
 
+if test "$enable_fortran" = "yes"; then
+  AC_DEFINE(GMX_FORTRAN,,[Enable Fortran support])
+fi
+
 ##
 # Add the appropriate assembly loops 
 #
@@ -1247,6 +1254,7 @@ CCASFLAGS=$CFLAGS
  
 AC_SUBST(CCAS)
 AC_SUBST(CCASFLAGS)
+AC_SUBST(PKG_CFLAGS)
 
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ src/Makefile ])

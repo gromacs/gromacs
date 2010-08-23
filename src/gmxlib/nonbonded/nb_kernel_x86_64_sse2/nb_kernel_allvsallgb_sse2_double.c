@@ -124,7 +124,7 @@ calc_maxoffset(int i,int natoms)
 
 
 static void
-setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
+setup_exclusions_and_indices_double(gmx_allvsall_data_t *   aadata,
                                    t_blocka *              excl,  
                                    int                     start,
                                    int                     end,
@@ -249,12 +249,19 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
             nj1   = excl->index[i+1];
             for(j=nj0; j<nj1; j++)
             {                
-                if(excl->a[j]>i+max_offset)
+                k = excl->a[j];
+                
+                if(k<imin)
+                {
+                    k += natoms;
+                }
+                
+                if(k>i+max_offset)
                 {
                     continue;
                 }
                 
-                k = excl->a[j] - imin;
+                k = k - imin;
                 
                 if( k+natoms <= max_offset )
                 {
@@ -510,7 +517,7 @@ setup_aadata(gmx_allvsall_data_t **  p_aadata,
         aadata->ppvdw[i] = aadata->pvdwaram_align[0];
     }
     
-    setup_exclusions_and_indices_float(aadata,excl,start,end,natoms);
+    setup_exclusions_and_indices_double(aadata,excl,start,end,natoms);
 }
 
 
@@ -708,10 +715,10 @@ nb_kernel_allvsallgb_sse2_double(t_forcerec *           fr,
         pmask1           = prologue_mask[i+1];
         emask0           = epilogue_mask[i];
         emask1           = epilogue_mask[i+1];
-        imask_SSE0        = _mm_load1_pd((double *)(imask+i));
-        imask_SSE1        = _mm_load1_pd((double *)(imask+2*i+2));
+        imask_SSE0       = _mm_load1_pd((double *)(imask+i));
+        imask_SSE1       = _mm_load1_pd((double *)(imask+2*i+2));
         
-         for(j=nj0; j<nj1; j+=UNROLLJ)
+        for(j=nj0; j<nj1; j+=UNROLLJ)
         {            
             jmask_SSE0 = _mm_load_pd((double *)pmask0);
             jmask_SSE1 = _mm_load_pd((double *)pmask1);
@@ -847,7 +854,7 @@ nb_kernel_allvsallgb_sse2_double(t_forcerec *           fr,
             
             fijGB_SSE0         = _mm_mul_pd(F_SSE0, _mm_mul_pd(qq_SSE0,gbscale_SSE0));
             fijGB_SSE1         = _mm_mul_pd(F_SSE1, _mm_mul_pd(qq_SSE1,gbscale_SSE1));
-            
+
             /* Note: this dvdatmp has different sign from the usual c code, saves 1 instruction */
             dvdatmp_SSE0       = _mm_mul_pd(_mm_add_pd(vgb_SSE0, _mm_mul_pd(fijGB_SSE0,r_SSE0)) , half_SSE);
             dvdatmp_SSE1       = _mm_mul_pd(_mm_add_pd(vgb_SSE1, _mm_mul_pd(fijGB_SSE1,r_SSE1)) , half_SSE);
@@ -1046,7 +1053,7 @@ nb_kernel_allvsallgb_sse2_double(t_forcerec *           fr,
             dvdatmp_SSE0       = _mm_mul_pd(_mm_add_pd(vgb_SSE0, _mm_mul_pd(fijGB_SSE0,r_SSE0)) , half_SSE);
             dvdatmp_SSE1       = _mm_mul_pd(_mm_add_pd(vgb_SSE1, _mm_mul_pd(fijGB_SSE1,r_SSE1)) , half_SSE);
 
-            vgbtot_SSE         = _mm_add_pd(vgbtot_SSE, _mm_add_pd(vgb_SSE0,vgb_SSE1));
+             vgbtot_SSE         = _mm_add_pd(vgbtot_SSE, _mm_add_pd(vgb_SSE0,vgb_SSE1));
             
             dvdasum_SSE0       = _mm_sub_pd(dvdasum_SSE0, dvdatmp_SSE0);
             dvdasum_SSE1       = _mm_sub_pd(dvdasum_SSE1, dvdatmp_SSE1);
@@ -1241,6 +1248,7 @@ nb_kernel_allvsallgb_sse2_double(t_forcerec *           fr,
             
             fijGB_SSE0         = _mm_mul_pd(F_SSE0, _mm_mul_pd(qq_SSE0,gbscale_SSE0));
             fijGB_SSE1         = _mm_mul_pd(F_SSE1, _mm_mul_pd(qq_SSE1,gbscale_SSE1));
+           
             
             /* Note: this dvdatmp has different sign from the usual c code, saves 1 instruction */
             dvdatmp_SSE0       = _mm_mul_pd(_mm_add_pd(vgb_SSE0, _mm_mul_pd(fijGB_SSE0,r_SSE0)) , half_SSE);
@@ -1319,11 +1327,17 @@ nb_kernel_allvsallgb_sse2_double(t_forcerec *           fr,
         fiy_SSE0 = _mm_add_pd(fiy_SSE0,fiy_SSE1);
         _mm_store_pd(fy_align+i, _mm_add_pd(fiy_SSE0, _mm_load_pd(fy_align+i)));
         
-        tmpSSE   = fiy_SSE0;
+        tmpSSE   = fiz_SSE0;
         fiz_SSE0 = _mm_unpacklo_pd(fiz_SSE0,fiz_SSE1);
         fiz_SSE1 = _mm_unpackhi_pd(tmpSSE,fiz_SSE1);
         fiz_SSE0 = _mm_add_pd(fiz_SSE0,fiz_SSE1);
         _mm_store_pd(fz_align+i, _mm_add_pd(fiz_SSE0, _mm_load_pd(fz_align+i)));
+        
+        GMX_MM_TRANSPOSE2_PD(dvdasum_SSE0,dvdasum_SSE1);
+        dvdasum_SSE0 = _mm_add_pd(dvdasum_SSE0,dvdasum_SSE1);
+        dvdasum_SSE0 = _mm_mul_pd(dvdasum_SSE0, _mm_mul_pd(isai_SSE,isai_SSE));
+        _mm_store_pd(dvda_align+i, _mm_add_pd(dvdasum_SSE0, _mm_load_pd(dvda_align+i)));
+
         
 		/* Add potential energies to the group for this list */
 		ggid             = 0;         

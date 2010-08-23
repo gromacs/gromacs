@@ -45,10 +45,10 @@
 extern "C" {
 #endif
 
-extern void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
-extern void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
+void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
+void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
-extern void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14, 
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14, 
 		    t_params plist[], t_excls excls[], t_hackblock hb[], 
 		    bool bAlldih, bool bRemoveDih, bool bAllowMissing);
 

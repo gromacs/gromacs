@@ -32,10 +32,6 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,6 +55,11 @@ enum {
 enum {
   etrtNONE, etrtNHC, etrtBAROV, etrtBARONHC, etrtNHC2, etrtBAROV2, etrtBARONHC2, 
   etrtVELOCITY1, etrtVELOCITY2, etrtPOSITION, etrtSKIPALL, etrtNR
+};
+
+/* sequenced parts of the trotter decomposition */
+enum {
+  ettTSEQ0,  ettTSEQ1,  ettTSEQ2,  ettTSEQ3,  ettTSEQ4, ettTSEQMAX
 };
 
 enum {
@@ -156,6 +157,20 @@ enum {
 /* FEP selection */
 enum {
   efepNO, efepYES, efepNR
+};
+
+/* separate_dhdl_file selection */
+enum
+{
+    /* NOTE: YES is the first one. Do NOT interpret this one as a bool */
+    sepdhdlfileYES, sepdhdlfileNO, sepdhdlfileNR
+};
+
+/* dhdl_derivatives selection */
+enum
+{
+    /* NOTE: YES is the first one. Do NOT interpret this one as a bool */
+    dhdlderivativesYES, dhdlderivativesNO, dhdlderivativesNR
 };
 
 /* Solvent model */

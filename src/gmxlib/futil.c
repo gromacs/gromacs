@@ -731,10 +731,10 @@ static bool filename_is_absolute(char *name)
 
 bool get_libdir(char *libdir)
 {
-    char bin_name[512];
-    char buf[512];
-    char full_path[GMX_PATH_MAX];
-    char test_file[GMX_PATH_MAX];
+#define GMX_BINNAME_MAX 512
+    char bin_name[GMX_BINNAME_MAX];
+    char buf[GMX_BINNAME_MAX];
+    char full_path[GMX_PATH_MAX+GMX_BINNAME_MAX];
     char system_path[GMX_PATH_MAX];
     char *dir,*ptr,*s,*pdum;
     bool found=FALSE;
@@ -744,41 +744,50 @@ bool get_libdir(char *libdir)
     {
 
     /* First - detect binary name */
-    strncpy(bin_name,Program(),512);
+    if (strlen(Program()) >= GMX_BINNAME_MAX)
+    {
+        gmx_fatal(FARGS,"The name of the binary is longer than the allowed buffer size (%d):\n'%s'",GMX_BINNAME_MAX,Program());
+    }
+    strncpy(bin_name,Program(),GMX_BINNAME_MAX-1);
 
     /* On windows & cygwin we need to add the .exe extension
      * too, or we wont be able to detect that the file exists
      */
 #if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64 || defined __CYGWIN__ || defined __CYGWIN32__)
-    if(strlen(bin_name)<3 || strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
+    if(strlen(bin_name)<3 || gmx_strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
         strcat(bin_name,".exe");
 #endif
 
     /* Only do the smart search part if we got a real name */
-    if (NULL!=bin_name && strncmp(bin_name,"GROMACS",512)) {
+    if (NULL!=bin_name && strncmp(bin_name,"GROMACS",GMX_BINNAME_MAX)) {
 
         if (!strchr(bin_name,DIR_SEPARATOR)) {
             /* No slash or backslash in name means it must be in the path - search it! */
-            s=getenv("PATH");
-
             /* Add the local dir since it is not in the path on windows */
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
             pdum=_getcwd(system_path,sizeof(system_path)-1);
 #else
             pdum=getcwd(system_path,sizeof(system_path)-1);
 #endif
-            strcat(system_path,PATH_SEPARATOR);
-            if (s != NULL)
-                strcat(system_path,s);
-            s=system_path;
-            found=FALSE;
-            while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
+            sprintf(full_path,"%s%c%s",system_path,DIR_SEPARATOR,bin_name);
+            found = gmx_fexist(full_path);
+            if (!found && (s=getenv("PATH")) != NULL)
             {
-                sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
-                found=gmx_fexist(full_path);
+                char *dupped;
+                
+                dupped=gmx_strdup(s);
+                s=dupped;
+                while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
+                {
+                    sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
+                    found = gmx_fexist(full_path);
+                }
+                sfree(dupped);
             }
             if (!found)
+            {
                 return FALSE;
+            }
         } else if (!filename_is_absolute(bin_name)) {
             /* name contains directory separators, but 
              * it does not start at the root, i.e.
@@ -1001,7 +1010,6 @@ int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
 {
 /* the full copy buffer size: */
 #define FILECOPY_BUFSIZE (1<<16)
-    /* POSIX doesn't support any of the above. */
     FILE *in=NULL; 
     FILE *out=NULL;
     char *buf;
@@ -1031,6 +1039,8 @@ int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
             size_t ret;
             if (!out)
             {
+                /* so this is where we open when copy_if_empty is false:
+                   here we know we read something. */
                 out=fopen(newname, "wb");
                 if (!out)
                     goto error;
@@ -1065,7 +1075,7 @@ int gmx_fsync(FILE *fp)
 
 #ifdef GMX_FAHCORE
     /* the fahcore defines its own os-independent fsync */
-    rc=gmx_fsync_lowlevel(fio->fp);
+    rc=fah_fsync(fp);
 #else /* GMX_FAHCORE */
     {
         int fn=-1;

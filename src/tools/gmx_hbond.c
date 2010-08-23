@@ -333,7 +333,7 @@ static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool oneHB, bool bGem, int gem
     return hb;
 }
 
-static void mk_hbmap(t_hbdata *hb,bool bTwo,bool bInsert)
+static void mk_hbmap(t_hbdata *hb,bool bTwo)
 {
     int  i,j;
 
@@ -791,7 +791,7 @@ static bool isInterchangable(t_hbdata *hb, int d, int a, int grpa, int grpd)
 
 
 static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
-                      int frame,bool bInsert,bool bMerge,int ihb,bool bContact, PSTYPE p)
+                      int frame,bool bMerge,int ihb,bool bContact, PSTYPE p)
 { 
     int k,id,ia,hh;
     bool daSwap = FALSE;
@@ -2257,7 +2257,7 @@ static void normalizeACF(real *ct, real *gt, int len)
 /* Changed contact code and added argument R2 
  * - Erik Marklund, June 29, 2006
  */
-static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
+static void do_hbac(const char *fn,t_hbdata *hb,
                     int nDump,bool bMerge,bool bContact, real fit_start,
                     real temp,bool R2,real smooth_tail_start, const output_env_t oenv,
                     t_gemParams *params, const char *gemType, int nThreads,
@@ -2808,7 +2808,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                             else {
                                 ihb = idist = 0;
                             }
-                            rhbex[j] = ihb-aver_nhb;
+                            rhbex[j] = ihb;
                             /* For contacts: if a second cut-off is provided, use it,
                              * otherwise use g(t) = 1-h(t) */
                             if (!R2 && bContact)
@@ -2957,7 +2957,7 @@ static void analyse_donor_props(const char *fn,t_hbdata *hb,int nframes,real t,
 }
 
 static void dump_hbmap(t_hbdata *hb,
-                       int nfile,t_filenm fnm[],bool bTwo,bool bInsert,
+                       int nfile,t_filenm fnm[],bool bTwo,
                        bool bContact, int isize[],int *index[],char *grpnames[],
                        t_atoms *atoms)
 {
@@ -3038,23 +3038,6 @@ static void dump_hbmap(t_hbdata *hb,
             }
         }
     }
-    if (bInsert) {
-        if (bTwo)
-            fprintf(fp,"[ insert_%s->%s-%s ]",
-                    grpnames[2],grpnames[0],grpnames[1]);
-        else
-            fprintf(fp,"[ insert_%s->%s ]",grpnames[2],grpnames[0]);
-        j=0;
-    
-        /*	for(i=0; (i<hb->nrhb); i++) {
-            if (hb->hb[i].bInsert) {
-            fprintf(fp,(j%15)?" ":"\n");
-            fprintf(fp,"%4d",i+1);
-            j++;
-            }
-            }*/
-        fprintf(fp,"\n");
-    }
     ffclose(fp);
     if (fplog)
         ffclose(fplog);
@@ -3128,11 +3111,7 @@ int gmx_hbond(int argc,char *argv[])
         "Note that the triplets need not be on separate lines.",
         "Each atom triplet specifies a hydrogen bond to be analyzed,",
         "note also that no check is made for the types of atoms.[PAR]",
-    
-        "[TT]-ins[tt] turns on computing solvent insertion into hydrogen bonds.",
-        "In this case an additional group must be selected, specifying the",
-        "solvent molecules.[PAR]",
-    
+     
         "[BB]Output:[bb][BR]",
         "[TT]-num[tt]:  number of hydrogen bonds as a function of time.[BR]",
         "[TT]-ac[tt]:   average over all autocorrelations of the existence",
@@ -3162,7 +3141,7 @@ int gmx_hbond(int argc,char *argv[])
   
     static real acut=30, abin=1, rcut=0.35, r2cut=0, rbin=0.005, rshell=-1;
     static real maxnhb=0,fit_start=1,fit_end=60,temp=298.15,smooth_tail_start=-1, D=-1;
-    static bool bNitAcc=TRUE,bInsert=FALSE,bDA=TRUE,bMerge=TRUE;
+    static bool bNitAcc=TRUE,bDA=TRUE,bMerge=TRUE;
     static int  nDump=0, nFitPoints=100;
     static int nThreads = 0, nBalExp=4;
 
@@ -3172,8 +3151,6 @@ int gmx_hbond(int argc,char *argv[])
 
     /* options */
     t_pargs pa [] = {
-        { "-ins",  FALSE,  etBOOL, {&bInsert},
-          "Analyze solvent insertion" },
         { "-a",    FALSE,  etREAL, {&acut},
           "Cutoff angle (degrees, Acceptor - Donor - Hydrogen)" },
         { "-r",    FALSE,  etREAL, {&rcut},
@@ -3309,7 +3286,7 @@ int gmx_hbond(int argc,char *argv[])
     /* NN-loop? If so, what estimator to use ?*/
     NN = 1;
     /* Outcommented for now DvdS 2010-07-13
-    while (NN < NN_NR && strcasecmp(NNtype[0], NNtype[NN])!=0)
+    while (NN < NN_NR && gmx_strcasecmp(NNtype[0], NNtype[NN])!=0)
         NN++;
     if (NN == NN_NR)
         gmx_fatal(FARGS, "Invalid NN-loop type.");
@@ -3323,7 +3300,7 @@ int gmx_hbond(int argc,char *argv[])
 
     /* geminate recombination? If so, which flavor? */
     gemmode = 1;
-    while (gemmode < gemNR && strcasecmp(gemType[0], gemType[gemmode])!=0)
+    while (gemmode < gemNR && gmx_strcasecmp(gemType[0], gemType[gemmode])!=0)
         gemmode++;
     if (gemmode == gemNR)
         gmx_fatal(FARGS, "Invalid recombination type.");
@@ -3369,8 +3346,6 @@ int gmx_hbond(int argc,char *argv[])
     if (bContact) {
         if (bSelected)
             gmx_fatal(FARGS,"Can not analyze selected contacts: turn off -sel");
-        if (bInsert)
-            gmx_fatal(FARGS,"Can not analyze inserted contacts: turn off -ins");
         if (!bDA) {
             gmx_fatal(FARGS,"Can not analyze contact between H and A: turn off -noda");
         }
@@ -3433,7 +3408,7 @@ int gmx_hbond(int argc,char *argv[])
             /* Should this be here ? */
             snew(hb->d.dptr,top.atoms.nr);
             snew(hb->a.aptr,top.atoms.nr);
-            add_hbond(hb,dd,aa,hh,gr0,gr0,0,FALSE,bMerge,0,bContact,peri);
+            add_hbond(hb,dd,aa,hh,gr0,gr0,0,bMerge,0,bContact,peri);
         }
         printf("Analyzing %d selected hydrogen bonds from '%s'\n",
                isize[0],grpnames[0]);
@@ -3475,28 +3450,12 @@ int gmx_hbond(int argc,char *argv[])
                     bContact?"contacts":"hydrogen bonds",grpnames[0],isize[0]);
     }
     sfree(datable);
-    if (bInsert) {
-        printf("Specify group for insertion analysis:\n");
-        get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
-                  1,&(isize[grI]),&(index[grI]),&(grpnames[grI]));
-        printf("Checking for overlap...\n");
-        for (i=0; i<isize[grI]; i++)
-            for (grp=0; grp<(bTwo?2:1); grp++)
-                for (j=0; j<isize[grp]; j++)
-                    if (index[grI][i] == index[grp][j]) 
-                        gmx_fatal(FARGS,"Partial overlap between groups '%s' and '%s'",
-                                  grpnames[grp],grpnames[grI]);
-        fpins=ffopen("insert.dat","w");
-        fprintf(fpins,"%4s: %15s -> %15s (%7s) - %15s (%7s)\n",
-                "time","insert","donor","distang","acceptor","distang");
-    }
   
     /* search donors and acceptors in groups */
     snew(datable, top.atoms.nr);
     for (i=0; (i<grNR); i++)
         if ( ((i==gr0) && !bSelected ) ||
-             ((i==gr1) && bTwo ) ||
-             ((i==grI) && bInsert ) ) {
+             ((i==gr1) && bTwo )) {
             gen_datable(index[i],isize[i],datable,top.atoms.nr);
             if (bContact) {
                 search_acceptors(&top,isize[i],index[i],&hb->a,i,
@@ -3519,7 +3478,7 @@ int gmx_hbond(int argc,char *argv[])
     if (bHBmap) {
         printf("Making hbmap structure...");
         /* Generate hbond data structure */
-        mk_hbmap(hb,bTwo,bInsert);
+        mk_hbmap(hb,bTwo);
         printf("done.\n");
     }
 
@@ -3603,7 +3562,7 @@ int gmx_hbond(int argc,char *argv[])
 #define __RDIST p_rdist[threadNr]
 #define __HBDATA p_hb[threadNr]
 
-    bParallel = !bSelected && !bInsert;
+    bParallel = !bSelected;
 
     if (bParallel)
     {
@@ -3676,7 +3635,7 @@ int gmx_hbond(int argc,char *argv[])
            shatom, ngrid, grid, nframes, t,             \
            bParallel, bNN, index, bMerge, bContact,     \
            bTwo, bDA,ccut, abin, rbin, top,             \
-           bInsert, bSelected, bDebug, stderr, nsel,    \
+           bSelected, bDebug, stderr, nsel,             \
            bGem, oenv, fnm, fpnhb, trrStatus, natoms,   \
            status, nabin, nrbin, adist, rdist, debug)
     {    /* Start of parallel region */
@@ -3767,7 +3726,7 @@ int gmx_hbond(int argc,char *argv[])
                             if (ihb) {
                                 /* add to index if not already there */
                                 /* Add a hbond */
-                                add_hbond(hb,dd,aa,hh,ii,ii,nframes,FALSE,bMerge,ihb,bContact,peri);
+                                add_hbond(hb,dd,aa,hh,ii,ii,nframes,bMerge,ihb,bContact,peri);
                             }
                         }
                     } /* omp single */
@@ -3825,7 +3784,7 @@ int gmx_hbond(int argc,char *argv[])
                                                 if (ihb) {
                                                     /* add to index if not already there */
                                                     /* Add a hbond */
-                                                    add_hbond(__HBDATA,i,j,h,grp,ogrp,nframes,FALSE,bMerge,ihb,bContact,peri);
+                                                    add_hbond(__HBDATA,i,j,h,grp,ogrp,nframes,bMerge,ihb,bContact,peri);
 		      
                                                     /* make angle and distance distributions */
                                                     if (ihb == hbHB && !bContact) {
@@ -3848,89 +3807,6 @@ int gmx_hbond(int argc,char *argv[])
                                                         }
                                                     }
 
-                                                    if (bInsert && bSelected && MASTER_THREAD_ONLY(threadNr)) {
-                                                        /* this has been a h-bond, or we are analyzing 
-                                                           selected bonds: check for inserted */
-                                                        bool ins_d, ins_a;
-                                                        real ins_d_dist, ins_d_ang, ins_a_dist, ins_a_ang;
-                                                        int  ins_d_k=0,ins_a_k=0;
-			
-                                                        ins_d=ins_a=FALSE;
-                                                        ins_d_dist=ins_d_ang=ins_a_dist=ins_a_ang=1e6;
-			
-                                                        /* loop over gridcells adjacent to i (xk,yk,zk) */
-                                                        LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xi,yi,zi,ngrid,bTric){
-                                                            kcell=&(grid[zk][yk][xk].a[grI]);
-                                                            /* loop over acceptor atoms from ins group 
-                                                               in this adjacent gridcell (kcell) */
-                                                            for (ak=0; (ak<kcell->nr); ak++) {
-                                                                k=kcell->atoms[ak];
-                                                                ihb = is_hbond(hb,grp,grI,i,k,rcut,r2cut,ccut,x,
-                                                                               bBox,box,hbox,&dist,&ang,bDA,&h,
-                                                                               bContact,bMerge,&peri);
-                                                                if (ihb == hbHB) {
-                                                                    if (dist < ins_d_dist) {
-                                                                        ins_d=TRUE;
-                                                                        ins_d_dist=dist;
-                                                                        ins_d_ang =ang ;
-                                                                        ins_d_k   =k   ;
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                        ENDLOOPGRIDINNER;
-                                                        /* loop over gridcells adjacent to j (xk,yk,zk) */
-                                                        LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid,bTric){
-                                                            kcell=&grid[zk][yk][xk].d[grI];
-                                                            /* loop over hydrogen atoms from ins group 
-                                                               in this adjacent gridcell (kcell) */
-                                                            for (ak=0; ak<kcell->nr; ak++) {
-                                                                k   = kcell->atoms[ak];
-                                                                ihb = is_hbond(hb,grI,ogrp,k,j,rcut,r2cut,ccut,x,
-                                                                               bBox,box,hbox,&dist,&ang,bDA,&h,
-                                                                               bContact,bMerge,&peri);
-                                                                if (ihb == hbHB) {
-                                                                    if (dist<ins_a_dist) {
-                                                                        ins_a=TRUE;
-                                                                        ins_a_dist=dist;
-                                                                        ins_a_ang =ang ;
-                                                                        ins_a_k   =k   ;
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                        ENDLOOPGRIDINNER;
-			
-                                                        {
-                                                            ihb = is_hbond(hb,grI,grI,ins_d_k,ins_a_k,rcut,r2cut,ccut,x,
-                                                                           bBox,box,hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
-                                                            if (ins_d && ins_a && ihb) {
-                                                                /* add to hbond index if not already there */
-                                                                add_hbond(hb,ins_d_k,ins_a_k,h,grI,ogrp,
-                                                                          nframes,TRUE,bMerge,ihb,bContact,peri);
-			    
-                                                                /* print insertion info to file */
-                                                                /*fprintf(fpins,
-                                                                  "%4g: %4u:%3.3s%4d%3.3s -> "
-                                                                  "%4u:%3.3s%4d%3.3s (%4.2f,%2.0f) - "
-                                                                  "%4u:%3.3s%4d%3.3s (%4.2f,%2.0f)\n",t,
-                                                                  a[grIA][ins_d_k]+1,
-                                                                  *top.atoms.resname[top.atoms.atom[a[grIA][ins_d_k]].resnr],
-                                                                  top.atoms.atom[a[grIA][ins_d_k]].resnr+1,
-                                                                  *top.atoms.atomname[a[grIA][ins_d_k]],
-                                                                  a[grp+grD][i]+1,
-                                                                  *top.atoms.resname[top.atoms.atom[a[grp+grD][i]].resnr],
-                                                                  top.atoms.atom[a[grp+grD][i]].resnr+1,
-                                                                  *top.atoms.atomname[a[grp+grD][i]],
-                                                                  ins_d_dist,ins_d_ang*RAD2DEG,
-                                                                  a[ogrp+grA][j]+1,
-                                                                  *top.atoms.resname[top.atoms.atom[a[ogrp+grA][j]].resnr],
-                                                                  top.atoms.atom[a[ogrp+grA][j]].resnr+1,
-                                                                  *top.atoms.atomname[a[ogrp+grA][j]],
-                                                                  ins_a_dist,ins_a_ang*RAD2DEG);*/
-                                                            }
-                                                        }
-                                                    } /* if (bInsert && bSelected), omp single */
                                                 }
                                             } /* for aj  */
                                         }
@@ -4020,8 +3896,6 @@ int gmx_hbond(int argc,char *argv[])
     free_grid(ngrid,&grid);
   
     close_trj(status);
-    if (bInsert)
-        ffclose(fpins);
     if (fpnhb)
         ffclose(fpnhb);
     
@@ -4050,7 +3924,7 @@ int gmx_hbond(int argc,char *argv[])
                 merge_hb(hb,bTwo,bContact);
 
             if (opt2bSet("-hbn",NFILE,fnm)) 
-                dump_hbmap(hb,NFILE,fnm,bTwo,bInsert,bContact,isize,index,grpnames,&top.atoms);
+                dump_hbmap(hb,NFILE,fnm,bTwo,bContact,isize,index,grpnames,&top.atoms);
 
             /* Moved the call to merge_hb() to a line BEFORE dump_hbmap
              * to make the -hbn and -hmb output match eachother. 
@@ -4149,7 +4023,7 @@ int gmx_hbond(int argc,char *argv[])
                     gmx_fatal(FARGS, "Could not initiate t_gemParams params.");
             }
             gemstring = strdup(gemType[hb->per->gemtype]);
-            do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
+            do_hbac(opt2fn("-ac",NFILE,fnm),hb,nDump,
                     bMerge,bContact,fit_start,temp,r2cut>0,smooth_tail_start,oenv,
                     params, gemstring, nThreads, NN, bBallistic, bGemFit);
         }
@@ -4198,10 +4072,7 @@ int gmx_hbond(int argc,char *argv[])
             sprintf(mat.label_x,"Time (ps)");
             sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
             mat.bDiscrete=TRUE;
-            if (bInsert)
-                mat.nmap=HB_NR;
-            else
-                mat.nmap=2;
+            mat.nmap=2;
             snew(mat.map,mat.nmap);
             for(i=0; i<mat.nmap; i++) {
                 mat.map[i].code.c1=hbmap[i];
@@ -4246,11 +4117,11 @@ int gmx_hbond(int argc,char *argv[])
         char **legnames;
         char buf[STRLEN];
     
-#define USE_THIS_GROUP(j) ( (j == gr0) || (bTwo && (j == gr1)) || (bInsert && (j == grI)) )
+#define USE_THIS_GROUP(j) ( (j == gr0) || (bTwo && (j == gr1)) )
     
         fp = xvgropen(opt2fn("-dan",NFILE,fnm),
                       "Donors and Acceptors","Time(ps)","Count",oenv);
-        nleg = (bTwo?2:1)*2 + (bInsert?2:0);
+        nleg = (bTwo?2:1)*2;
         snew(legnames,nleg);
         i=0;
         for(j=0; j<grNR; j++)

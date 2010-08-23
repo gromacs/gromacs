@@ -220,7 +220,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool       bSimAnn,
     bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
     bool       bInitStep=TRUE;
-    bool       bNEMD,do_ene,do_log, do_verbose,
+    bool       do_ene,do_log, do_verbose,
     bX,bV,bF,bCPT;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m;
@@ -262,7 +262,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
-            force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,state_global,Flags);
+            force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -515,27 +515,16 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         };
         do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
 
-        if (mdof_flags != 0)
-        {
-            bX = (mdof_flags & (MDOF_X | MDOF_XTC | MDOF_CPT));
-            bV = (mdof_flags & (MDOF_V | MDOF_CPT));
-
-            wallcycle_start(wcycle,ewcTRAJ);
-            openmm_copy_state(openmmData, state, &t, f, enerd, bX, bV, 0, 0);
-            wallcycle_stop(wcycle,ewcTRAJ);
-        }
-
-        openmm_take_one_step(openmmData);
-
         if (mdof_flags != 0 || do_ene || do_log)
         {
             wallcycle_start(wcycle,ewcTRAJ);
             bF = (mdof_flags & MDOF_F);
-            if (bF || do_ene || do_log)
-            {
-                openmm_copy_state(openmmData, state, &t, f, enerd, 0, 0, bF, do_ene);
-            }
-            upd_mdebin(mdebin, NULL,TRUE,
+            bX = (mdof_flags & (MDOF_X | MDOF_XTC | MDOF_CPT));
+            bV = (mdof_flags & (MDOF_V | MDOF_CPT));
+
+            openmm_copy_state(openmmData, state, &t, f, enerd, bX, bV, bF, do_ene);
+
+            upd_mdebin(mdebin, FALSE,TRUE,
                        t,mdatoms->tmass,enerd,state,lastbox,
                        shake_vir,force_vir,total_vir,pres,
                        ekind,mu_tot,constr);
@@ -656,6 +645,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bStartingFromCpt = FALSE;
         step++;
         step_rel++;
+
+        openmm_take_one_step(openmmData);
     }
     /* End of main MD loop */
     debug_gmx();

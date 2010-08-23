@@ -71,7 +71,8 @@ struct t_mde_delta_h_coll
     int ndh; /* the number of delta_h structures */
 
     double lambda; /* the native lambda associated with the free energy 
-                      calculations */
+                      calculations (at the time of the last sample) */
+    double delta_lambda; /* the change in lambda per time step */
     double temp; /* the temperature */
 
     double starttime; /* start time of the current dh collection */
@@ -85,14 +86,10 @@ struct t_mde_delta_h_coll
 
 /* initialize a collection of delta h histograms/sets 
     dhc = the collection
-    temp = temperature
-    native_lambda = the native lambda (we're assuminng this doesn't change)
-    dh_table_size = the histogram size as given by the .mdp option
-    table_spacing = the histogram spacing (dx) as given by the .mdp option
-    ndhmax = the maximum size of the du buffer
-    n_dh = the number of foreign lambdas (.mdp option)
-    flambda = the array of foreign lambdas (.mdp option) */
+    ir = the input record */
 void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc,
+                           const t_inputrec *ir);
+#if 0
                            double temp,
                            double native_lambda,
                            int dh_table_size,
@@ -100,6 +97,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc,
                            unsigned int ndhmax,
                            int n_dh,
                            double *flambda);
+#endif
 
 /* add a bunch of samples to the delta_h collection
     dhc = the collection

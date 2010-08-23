@@ -200,7 +200,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
         ptr = strchr(cppopts[i], '=');
         if (ptr)
         {
-          buf = strndup(cppopts[i] + 2, ptr - cppopts[i] - 2);
+          buf = gmx_strndup(cppopts[i] + 2, ptr - cppopts[i] - 2);
           add_define(buf, ptr + 1);
           sfree(buf);
         }
@@ -401,7 +401,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     ptr = dval;
     while ((*ptr != '\0') && !isspace(*ptr))
       ptr++;
-    name = strndup(dval, ptr - dval);
+    name = gmx_strndup(dval, ptr - dval);
 
     while ((*ptr != '\0') && isspace(*ptr))
       ptr++;

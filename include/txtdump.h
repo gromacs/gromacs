@@ -36,9 +36,6 @@
 #ifndef _txtdump_h
 #define _txtdump_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include <stdio.h>
 #include "typedefs.h"

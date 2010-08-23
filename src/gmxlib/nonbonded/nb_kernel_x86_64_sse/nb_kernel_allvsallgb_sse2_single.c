@@ -248,12 +248,19 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
             nj1   = excl->index[i+1];
             for(j=nj0; j<nj1; j++)
             {                
-                if(excl->a[j]>i+max_offset)
+                k = excl->a[j];
+                
+                if(k<imin)
+                {
+                    k += natoms;
+                }
+                
+                if(k>i+max_offset)
                 {
                     continue;
                 }
                 
-                k = excl->a[j] - imin;
+                k = k - imin;
                 
                 if( k+natoms <= max_offset )
                 {
@@ -752,8 +759,8 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
         imask_SSE1        = _mm_load1_ps((real *)(imask+i+1));
         imask_SSE2        = _mm_load1_ps((real *)(imask+i+2));
         imask_SSE3        = _mm_load1_ps((real *)(imask+i+3));
-        
-         for(j=nj0; j<nj1; j+=UNROLLJ)
+         
+        for(j=nj0; j<nj1; j+=UNROLLJ)
         {            
             jmask_SSE0 = _mm_load_ps((real *)pmask0);
             jmask_SSE1 = _mm_load_ps((real *)pmask1);
@@ -969,7 +976,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
 
             dvdatmp_SSE0       = gmx_mm_sum4_ps(dvdatmp_SSE0,dvdatmp_SSE1,dvdatmp_SSE2,dvdatmp_SSE3);
             dvdatmp_SSE0       = _mm_mul_ps(dvdatmp_SSE0, _mm_mul_ps(isaj_SSE,isaj_SSE));
-            
+
             /* update derivative wrt j atom born radius */
             _mm_store_ps(dvda_align+j,
                          _mm_sub_ps( _mm_load_ps(dvda_align+j) , dvdatmp_SSE0 ));
@@ -1113,6 +1120,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             c12_SSE3           = _mm_load_ps(pvdw3+2*j+UNROLLJ);
             
             isaj_SSE           = _mm_load_ps(invsqrta_align+j);
+
             isaprod_SSE0       = _mm_mul_ps(isai_SSE0,isaj_SSE);
             isaprod_SSE1       = _mm_mul_ps(isai_SSE1,isaj_SSE);
             isaprod_SSE2       = _mm_mul_ps(isai_SSE2,isaj_SSE);
@@ -1238,6 +1246,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             fijGB_SSE1         = _mm_mul_ps(F_SSE1, _mm_mul_ps(qq_SSE1,gbscale_SSE1));
             fijGB_SSE2         = _mm_mul_ps(F_SSE2, _mm_mul_ps(qq_SSE2,gbscale_SSE2));
             fijGB_SSE3         = _mm_mul_ps(F_SSE3, _mm_mul_ps(qq_SSE3,gbscale_SSE3));
+        
             
             /* Note: this dvdatmp has different sign from the usual c code, saves 1 instruction */
             dvdatmp_SSE0       = _mm_mul_ps(_mm_add_ps(vgb_SSE0, _mm_mul_ps(fijGB_SSE0,r_SSE0)) , half_SSE);
@@ -1411,6 +1420,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             c12_SSE3           = _mm_load_ps(pvdw3+2*j+UNROLLJ);
             
             isaj_SSE           = _mm_load_ps(invsqrta_align+j);
+
             isaprod_SSE0       = _mm_mul_ps(isai_SSE0,isaj_SSE);
             isaprod_SSE1       = _mm_mul_ps(isai_SSE1,isaj_SSE);
             isaprod_SSE2       = _mm_mul_ps(isai_SSE2,isaj_SSE);
@@ -1553,7 +1563,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             dvdatmp_SSE0       = gmx_mm_sum4_ps(dvdatmp_SSE0,dvdatmp_SSE1,dvdatmp_SSE2,dvdatmp_SSE3);
             dvdatmp_SSE0       = _mm_mul_ps(dvdatmp_SSE0, _mm_mul_ps(isaj_SSE,isaj_SSE));
             
-            /* update derivative wrt j atom born radius */
+           /* update derivative wrt j atom born radius */
             _mm_store_ps(dvda_align+j,
                          _mm_sub_ps( _mm_load_ps(dvda_align+j) , dvdatmp_SSE0 ));
             

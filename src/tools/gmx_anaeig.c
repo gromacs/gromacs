@@ -495,7 +495,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
       }
       nfr++;
     } while (read_next_x(oenv,status,&t,nat,xread,box));
-    close_trj(out);
+    close_trx(status);
      sfree(x);
      if (filterfile)
        close_trx(out);
@@ -876,7 +876,7 @@ int gmx_anaeig(int argc,char *argv[])
   int        neig1,neig2;
   double     **xvgdata;
   output_env_t oenv;
-  gmx_rmpbc_t  gpbc=NULL;
+  gmx_rmpbc_t  gpbc;
 
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
@@ -999,14 +999,14 @@ int gmx_anaeig(int argc,char *argv[])
   nfit=0;
   ifit=NULL;
   w_rls=NULL;
-  gpbc = gmx_rmpbc_init(&top.idef,ePBC,atoms->nr,topbox);
 
-  if (!bTPS)
+  if (!bTPS) {
     bTop=FALSE;
-  else {
+  } else {
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
 		       title,&top,&ePBC,&xtop,NULL,topbox,bM);
     atoms=&top.atoms;
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,atoms->nr,topbox);
     gmx_rmpbc(gpbc,atoms->nr,topbox,xtop);
     /* Fitting is only required for the projection */ 
     if (bProj && bFit1) {
@@ -1039,8 +1039,8 @@ int gmx_anaeig(int argc,char *argv[])
 	reset_x(nfit,ifit,atoms->nr,NULL,xrefp,w_rls);
       }
     }
+    gmx_rmpbc_done(gpbc);
   }
-  gmx_rmpbc_done(gpbc);
 
   if (bIndex) {
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);

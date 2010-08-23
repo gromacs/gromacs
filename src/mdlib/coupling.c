@@ -50,7 +50,6 @@
 #include "update.h"
 #include "mdrun.h"
 
-#define NTROTTERCALLS 5
 #define NTROTTERPARTS 3
 
 /* these integration routines are only referenced inside this file */
@@ -646,22 +645,36 @@ void destroy_bufstate(t_state *state)
 void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind, 
                     gmx_enerdata_t *enerd, t_state *state, 
                     tensor vir, t_mdatoms *md, 
-                    t_extmass *MassQ, int *trotter_seq) 
+                    t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno) 
 {
     
     int n,i,j,d,ntgrp,ngtc,gc=0;
     t_grp_tcstat *tcstat;
     t_grpopts *opts;
+    gmx_large_int_t step_eff;
     real ecorr,pcorr,dvdlcorr;
     real bmass,qmass,reft,kT,dt,nd;
     tensor dumpres,dumvir;
     double *scalefac,dtc;
+    int *trotter_seq;
     rvec sumv,consk;
     bool bCouple;
 
+    if (trotter_seqno <= ettTSEQ2)
+    {
+        step_eff = step-1;  /* the velocity verlet calls are actually out of order -- the first half step
+                               is actually the last half step from the previous step.  Thus the first half step
+                               actually corresponds to the n-1 step*/
+                               
+    } else {
+        step_eff = step;
+    }
+
     bCouple = (ir->nsttcouple == 1 ||
-               do_per_step(step+ir->nsttcouple,ir->nsttcouple));
-    
+               do_per_step(step_eff+ir->nsttcouple,ir->nsttcouple));
+
+    trotter_seq = trotter_seqlist[trotter_seqno];
+
     /* signal we are returning if nothing is going to be done in this routine */
     if ((trotter_seq[0] == etrtSKIPALL)  || !(bCouple))
     {
@@ -849,8 +862,8 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
     }
     
     /* first, initialize clear all the trotter calls */
-    snew(trotter_seq,NTROTTERCALLS);
-    for (i=0;i<NTROTTERCALLS;i++) 
+    snew(trotter_seq,ettTSEQMAX);
+    for (i=0;i<ettTSEQMAX;i++) 
     {
         snew(trotter_seq[i],NTROTTERPARTS);
         for (j=0;j<NTROTTERPARTS;j++) {
@@ -1237,6 +1250,64 @@ real vrescale_energy(t_grpopts *opts,double therm_integral[])
   
   return ener;
 }
+
+void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
+                        int start,int end,rvec v[])
+{
+    t_grp_acc      *gstat;
+    t_grp_tcstat   *tcstat;
+    unsigned short *cACC,*cTC;
+    int  ga,gt,n,d;
+    real lg;
+    rvec vrel;
+
+    tcstat = ekind->tcstat;
+    cTC    = mdatoms->cTC;
+
+    if (ekind->bNEMD)
+    {
+        gstat  = ekind->grpstat;
+        cACC   = mdatoms->cACC;
+
+        ga = 0;
+        gt = 0;
+        for(n=start; n<end; n++) 
+        {
+            if (cACC) 
+            {
+                ga   = cACC[n];
+            }
+            if (cTC)
+            {
+                gt   = cTC[n];
+            }
+            /* Only scale the velocity component relative to the COM velocity */
+            rvec_sub(v[n],gstat[ga].u,vrel);
+            lg = tcstat[gt].lambda;
+            for(d=0; d<DIM; d++)
+            {
+                v[n][d] = gstat[ga].u[d] + lg*vrel[d];
+            }
+        }
+    }
+    else
+    {
+        gt = 0;
+        for(n=start; n<end; n++) 
+        {
+            if (cTC)
+            {
+                gt   = cTC[n];
+            }
+            lg = tcstat[gt].lambda;
+            for(d=0; d<DIM; d++)
+            {
+                v[n][d] *= lg;
+            }
+        }
+    }
+}
+
 
 /* set target temperatures if we are annealing */
 void update_annealing_target_temp(t_grpopts *opts,real t)

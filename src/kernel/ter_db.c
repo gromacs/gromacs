@@ -66,10 +66,10 @@ int find_kw(char *keyw)
   int i;
   
   for(i=0; i<ebtsNR; i++)
-    if (strcasecmp(btsNames[i],keyw) == 0)
+    if (gmx_strcasecmp(btsNames[i],keyw) == 0)
       return i;
   for(i=0; i<ekwNR; i++)
-    if (strcasecmp(kw_names[i],keyw) == 0)
+    if (gmx_strcasecmp(kw_names[i],keyw) == 0)
       return ebtsNR + 1 + i;
   
   return NOTSET;
@@ -391,8 +391,8 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
              * This makes termini selection for different molecule types
              * much cleaner.
              */
-            if (strcasecmp(restp->filebase,tb[i].filebase) == 0 &&
-                strncasecmp(resname,s,3) == 0) 
+            if (gmx_strcasecmp(restp->filebase,tb[i].filebase) == 0 &&
+                gmx_strncasecmp(resname,s,3) == 0) 
             {
                 found=TRUE;
                 srenew(list,n+1);
@@ -427,9 +427,9 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
          * This makes termini selection for different molecule types
          * much cleaner.
          */
-        if(strcasecmp(restp->filebase,tb[i].filebase) == 0)
+        if(gmx_strcasecmp(restp->filebase,tb[i].filebase) == 0)
         {
-            if(!strcasecmp("None",s)) 
+            if(!gmx_strcasecmp("None",s)) 
             {
                 none_idx=i;
             }

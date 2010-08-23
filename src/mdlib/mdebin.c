@@ -91,7 +91,8 @@ static int  f_nre=0,epc,etc,nCrmsd;
 
 t_mdebin *init_mdebin(ener_file_t fp_ene,
                       const gmx_mtop_t *mtop,
-                      const t_inputrec *ir)
+                      const t_inputrec *ir,
+                      FILE *fp_dhdl)
 {
   const char *ener_nm[F_NRE];
   static const char *vir_nm[] = {
@@ -140,6 +141,15 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   bool     bBHAM,bNoseHoover,b14;
 
   snew(md,1);
+
+    if (EI_DYNAMICS(ir->eI))
+    {
+        md->delta_t = ir->delta_t;
+    }
+    else
+    {
+        md->delta_t = 0;
+    }
 
   groups = &mtop->groups;
 
@@ -204,6 +214,12 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
           md->bEner[i] = FALSE;
       else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i==F_EQM))
           md->bEner[i] = TRUE;
+      else if ((i == F_GBPOL) && ir->implicit_solvent==eisGBSA)
+          md->bEner[i] = TRUE;
+      else if ((i == F_NPSOLVATION) && ir->implicit_solvent==eisGBSA && (ir->sa_algorithm != esaNO))
+          md->bEner[i] = TRUE;
+      else if ((i == F_GB12) || (i == F_GB13) || (i == F_GB14))
+          md->bEner[i] = FALSE;
       else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
           md->bEner[i] = EI_DYNAMICS(ir->eI);
       else if (i==F_VTEMP) 
@@ -518,22 +534,17 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
 
     /* check whether we're going to write dh histograms */
     md->dhc=NULL; 
-    if (ir->dh_table_size!=0)
+    if (ir->separate_dhdl_file == sepdhdlfileNO )
     {
         int i;
-        size_t ndhmax=ir->nstenergy/ir->nstcalcenergy;
-
         snew(md->dhc, 1);
 
-        mde_delta_h_coll_init(md->dhc, 
-                              ir->opts.ref_t[0], /* temperature */
-                              ir->init_lambda, /* native lambda */
-                              ir->dh_table_size, /* number of bins */
-                              ir->dh_table_spacing, /* dx */
-                              ndhmax,            /* max. buffer size */
-                              ir->n_flambda, /* number of foreign lambdas */
-                              ir->flambda /* foreign lambdas */
-                              );
+        mde_delta_h_coll_init(md->dhc, ir);
+        md->fp_dhdl = NULL;
+    }
+    else
+    {
+        md->fp_dhdl = fp_dhdl;
     }
     return md;
 }
@@ -612,7 +623,7 @@ static void copy_energy(t_mdebin *md, real e[],real ecpy[])
     gmx_incons("Number of energy terms wrong");
 }
 
-void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
+void upd_mdebin(t_mdebin *md, bool write_dhdl,
                 bool bSum,
                 double time,
                 real tmass,
@@ -819,24 +830,29 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     ebin_increase_count(md->ebin,bSum);
    
     /* BAR + thermodynamic integration values */
-    if (fp_dhdl)
+    if (write_dhdl)
     {
-        fprintf(fp_dhdl,"%.4f %g",
-                time,
-                enerd->term[F_DVDL]+enerd->term[F_DKDL]+enerd->term[F_DHDL_CON]);
-        for(i=1; i<enerd->n_lambda; i++)
+        if (md->fp_dhdl)
         {
-            fprintf(fp_dhdl," %g",
-                    enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
+            fprintf(md->fp_dhdl,"%.4f %g",
+                    time,
+                    enerd->term[F_DVDL]+ enerd->term[F_DKDL]+
+                    enerd->term[F_DHDL_CON]);
+            for(i=1; i<enerd->n_lambda; i++)
+            {
+                fprintf(md->fp_dhdl," %g",
+                        enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
+            }
+            fprintf(md->fp_dhdl,"\n");
         }
-        fprintf(fp_dhdl,"\n");
+        /* and the binary BAR output */
+        if (md->dhc)
+        {
+            mde_delta_h_coll_add_dh( md->dhc, enerd->enerpart_lambda, time );
+        }
+
     }
 
-    /* and the BAR histograms */
-    if (md->dhc)
-    {
-        mde_delta_h_coll_add_dh( md->dhc, enerd->enerpart_lambda, time );
-    }
 }
 
 void upd_mdebin_step(t_mdebin *md)
@@ -910,6 +926,7 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
         fr.t            = time;
         fr.step         = step;
         fr.nsteps       = md->ebin->nsteps;
+        fr.dt           = md->delta_t;
         fr.nsum         = md->ebin->nsum;
         fr.nre          = (bEne) ? md->ebin->nener : 0;
         fr.ener         = md->ebin->e;

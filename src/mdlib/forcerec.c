@@ -1237,9 +1237,6 @@ bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
 {
     bool bAllvsAll;
 
-#ifdef GMX_DOUBLE
-    bAllvsAll = FALSE;
-#else
     bAllvsAll =
         (
          ir->rlist==0            &&
@@ -1255,7 +1252,6 @@ bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
                                              ir->gb_algorithm==egbOBC))) &&
          getenv("GMX_NO_ALLVSALL") == NULL
             );
-#endif
     
     if (bAllvsAll && ir->opts.ngener > 1)
     {

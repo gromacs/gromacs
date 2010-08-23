@@ -623,8 +623,10 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("sc_sigma",ir->sc_sigma);
     PR("sc_sigma_min",ir->sc_sigma_min);
     PI("nstdhdl", ir->nstdhdl);
-    PI("dh_table_size", ir->dh_table_size);
-    PD("dh_table_spacing", ir->dh_table_spacing);
+    PS("separate_dhdl_file", SEPDHDLFILETYPE(ir->separate_dhdl_file));
+    PS("dhdl_derivatives", DHDLDERIVATIVESTYPE(ir->dhdl_derivatives));
+    PI("dh_hist_size", ir->dh_hist_size);
+    PD("dh_hist_spacing", ir->dh_hist_spacing);
 
     PI("nwall",ir->nwall);
     PS("wall_type",EWALLTYPE(ir->wall_type));
@@ -1236,17 +1238,20 @@ static void pr_atom(FILE *fp,int indent,const char *title,t_atom *atom,int n)
   }
 }
 
-static void pr_grps(FILE *fp,int indent,const char *title,t_grps grps[],int ngrp,
+static void pr_grps(FILE *fp,int indent,const char *title,t_grps grps[],
 		    char **grpname[], bool bShowNumbers)
 {
     int i,j;
 
-  for(i=0; (i<ngrp); i++) {
-    fprintf(fp,"%s[%d] nr=%d, name=[",title,bShowNumbers?i:-1,grps[i].nr);
-    for(j=0; (j<grps[i].nr); j++)
-      fprintf(fp," %s",*(grpname[grps[i].nm_ind[j]]));
-    fprintf(fp,"]\n");
-  }
+    for(i=0; (i<egcNR); i++)
+    {
+        fprintf(fp,"%s[%-12s] nr=%d, name=[",title,gtypes[i],grps[i].nr);
+        for(j=0; (j<grps[i].nr); j++)
+        {
+            fprintf(fp," %s",*(grpname[grps[i].nm_ind[j]]));
+        }
+        fprintf(fp,"]\n");
+    }
 }
 
 static void pr_groups(FILE *fp,int indent,const char *title,
@@ -1256,7 +1261,7 @@ static void pr_groups(FILE *fp,int indent,const char *title,
     int grpnr[egcNR];
     int nat_max,i,g;
 
-    pr_grps(fp,indent,"grp",groups->grps,egcNR,groups->grpname,bShowNumbers);
+    pr_grps(fp,indent,"grp",groups->grps,groups->grpname,bShowNumbers);
     pr_strings(fp,indent,"grpname",groups->grpname,groups->ngrpname,bShowNumbers);
 
     (void) pr_indent(fp,indent);

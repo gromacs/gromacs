@@ -279,6 +279,27 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
     }
 }
 
+static real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass *MassQ)
+{
+    real quantity = 0;
+    switch (ir->etc) 
+    {
+    case etcNO:
+        break;
+    case etcBERENDSEN:
+        break;
+    case etcNOSEHOOVER:
+        quantity = NPT_energy(ir,state,MassQ);                
+        break;
+    case etcVRESCALE:
+        quantity = vrescale_energy(&(ir->opts),state->therm_integral);
+        break;
+    default:
+        break;
+    }
+    return quantity;
+}
+
 static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir, 
                             t_forcerec *fr, gmx_ekindata_t *ekind, 
                             t_state *state, t_state *state_global, t_mdatoms *mdatoms, 
@@ -293,7 +314,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     real gs_buf[eglsNR];
     tensor corr_vir,corr_pres,shakeall_vir;
     bool bEner,bPres,bTemp, bVV;
-    bool bRerunMD, bStopCM, bGStat, bNEMD, bIterate, 
+    bool bRerunMD, bStopCM, bGStat, bIterate, 
         bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
     real ekin,temp,prescorr,enercorr,dvdlcorr;
     
@@ -301,7 +322,6 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bRerunMD = flags & CGLO_RERUNMD;
     bStopCM = flags & CGLO_STOPCM;
     bGStat = flags & CGLO_GSTAT;
-    bNEMD = flags & CGLO_NEMD;
     bReadEkin = flags & CGLO_READEKIN;
     bScaleEkin = flags & CGLO_SCALEEKIN;
     bEner = flags & CGLO_ENERGY;
@@ -313,7 +333,6 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
-    /*bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir) && bPres) || bReadEkin);*/
     
     bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && bPres) || bReadEkin);
     
@@ -328,7 +347,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
          * when there really is NEMD.
          */
         
-        if (PAR(cr) && (bNEMD)) 
+        if (PAR(cr) && (ekind->bNEMD)) 
         {
             accumulate_u(cr,&(ir->opts),ekind);
         }
@@ -419,7 +438,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         }
     }
     
-    if (!bNEMD && debug && bTemp && (vcm->nr > 0))
+    if (!ekind->bNEMD && debug && bTemp && (vcm->nr > 0))
     {
         correct_ekin(debug,
                      mdatoms->start,mdatoms->start+mdatoms->homenr,
@@ -1066,7 +1085,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
     bool       bDoDHDL=FALSE;
-    bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
+    bool       do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
                bForceUpdate=FALSE,bCPT;
     int        mdof_flags;
     bool       bMasterState;
@@ -1119,7 +1138,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
     double      cycles;
-	real        last_conserved = 0;
+	real        saved_conserved_quantity = 0;
     real        last_ekin = 0;
 	int         iter_i;
 	t_extmass   MassQ;
@@ -1198,7 +1217,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
-            force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,state_global,Flags);
+            force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -1860,8 +1879,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* these CGLO_ options remain the same throughout the iteration */
         cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
                       (bStopCM ? CGLO_STOPCM : 0) |
-                      (bGStat ? CGLO_GSTAT : 0) |
-                      (bNEMD ? CGLO_NEMD : 0)
+                      (bGStat ? CGLO_GSTAT : 0)
             );
         
         force_flags = (GMX_FORCE_STATECHANGED |
@@ -1923,9 +1941,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fflush(fplog);
         }
         
-        /*  ############### START FIRST UPDATE HALF-STEP ############### */
-        
         if (bVV && !bStartingFromCpt && !bRerunMD)
+        /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
             if (ir->eI==eiVV && bInitStep) 
             {
@@ -1938,12 +1955,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
             } else {
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
-                trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
-            }
-
-            if (ir->eI == eiVVAK)
-            {
-                update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+                trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ1);            
             }
 
             update_coords(fplog,step,ir,mdatoms,state,
@@ -1957,6 +1969,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             /* for iterations, we save these vectors, as we will be self-consistently iterating
                the calculations */
+
             /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
             
             /* save the state */
@@ -1981,7 +1994,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                            of veta.  */
                         
                         veta_save = state->veta;
-                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ0);
                         vetanew = state->veta;
                         state->veta = veta_save;
                     } 
@@ -2044,7 +2057,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (!bInitStep) 
                 {
-                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                    if (bTrotter)
+                    {
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ2);
+                    } 
+                    else 
+                    {
+                        update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
+                    }
                 }
                 
                 if (bIterations &&
@@ -2081,18 +2101,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
         /* MRS -- now done iterating -- compute the conserved quantity */
         if (bVV) {
-            last_conserved = 0;
-            if (IR_NVT_TROTTER(ir) || IR_NPT_TROTTER(ir))
+            saved_conserved_quantity = compute_conserved_from_auxiliary(ir,state,&MassQ);
+            if (ir->eI==eiVV) 
             {
-                last_conserved = 
-                    NPT_energy(ir,state,&MassQ); 
-                if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
-                {
-                    last_conserved -= enerd->term[F_DISPCORR];
-                }
-            }
-            if (ir->eI==eiVV) {
                 last_ekin = enerd->term[F_EKIN]; /* does this get preserved through checkpointing? */
+            }
+            if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
+            {
+                saved_conserved_quantity -= enerd->term[F_DISPCORR];
             }
         }
         
@@ -2360,20 +2376,19 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         m_add(force_vir,shake_vir,total_vir);
                         clear_mat(shake_vir);
                     }
-                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
-                }
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ3);
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
                  * in global_state after update, we should only do it at
                  * step % nstlist = 1 with bGStatEveryStep=FALSE.
                  */
-                
-                if (ir->eI != eiVVAK)
-                {
-                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
                 }
-                update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
-                                upd,bInitStep);
+                else 
+                {
+                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
+                    update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
+                                   upd,bInitStep);
+                }
 
                 if (bVV)
                 {
@@ -2414,7 +2429,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     cglo_flags | CGLO_TEMPERATURE    
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
-                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);            
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ4);            
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
@@ -2563,7 +2578,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
         
+        /* sum up the foreign energy and dhdl terms */
         sum_dhdl(enerd,state->lambda,ir);
+
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 
         {
@@ -2571,29 +2588,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
         
-        switch (ir->etc) 
+        if (bVV)
         {
-        case etcNO:
-            break;
-        case etcBERENDSEN:
-            break;
-        case etcNOSEHOOVER:
-            if (IR_NVT_TROTTER(ir)) {
-                enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + last_conserved;
-            } else {
-                enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + 
-                    NPT_energy(ir,state,&MassQ);	
-            }
-            break;
-        case etcVRESCALE:
-            enerd->term[F_ECONSERVED] =
-                enerd->term[F_ETOT] + vrescale_energy(&(ir->opts),
-                                                      state->therm_integral);
-            break;
-        default:
-            break;
+            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + saved_conserved_quantity;
         }
-        
+        else 
+        {
+            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + compute_conserved_from_auxiliary(ir,state,&MassQ);
+        }
         /* Check for excessively large energies */
         if (bIonize) 
         {
@@ -2625,7 +2627,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 if (bNstEner)
                 {
-                    upd_mdebin(mdebin,bDoDHDL ? outf->fp_dhdl : NULL,TRUE,
+                    upd_mdebin(mdebin,bDoDHDL, TRUE,
                                t,mdatoms->tmass,enerd,state,lastbox,
                                shake_vir,force_vir,total_vir,pres,
                                ekind,mu_tot,constr);
