@@ -96,7 +96,6 @@ F77_FUNC(f77kernelsync,F77KERNELSYNC)
 #ifdef HAVE_PTHREADS_H
   pthread_mutex_unlock((pthread_mutex_t *)mtx);
 #endif
-  n0              = *count;
   *nn0            = n0;
   *nn1            = n1;
 }

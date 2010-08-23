@@ -2257,7 +2257,7 @@ static void normalizeACF(real *ct, real *gt, int len)
 /* Changed contact code and added argument R2 
  * - Erik Marklund, June 29, 2006
  */
-static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
+static void do_hbac(const char *fn,t_hbdata *hb,
                     int nDump,bool bMerge,bool bContact, real fit_start,
                     real temp,bool R2,real smooth_tail_start, const output_env_t oenv,
                     t_gemParams *params, const char *gemType, int nThreads,
@@ -2808,7 +2808,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                             else {
                                 ihb = idist = 0;
                             }
-                            rhbex[j] = ihb-aver_nhb;
+                            rhbex[j] = ihb;
                             /* For contacts: if a second cut-off is provided, use it,
                              * otherwise use g(t) = 1-h(t) */
                             if (!R2 && bContact)
@@ -4023,7 +4023,7 @@ int gmx_hbond(int argc,char *argv[])
                     gmx_fatal(FARGS, "Could not initiate t_gemParams params.");
             }
             gemstring = strdup(gemType[hb->per->gemtype]);
-            do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
+            do_hbac(opt2fn("-ac",NFILE,fnm),hb,nDump,
                     bMerge,bContact,fit_start,temp,r2cut>0,smooth_tail_start,oenv,
                     params, gemstring, nThreads, NN, bBallistic, bGemFit);
         }

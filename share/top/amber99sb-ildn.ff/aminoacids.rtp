@@ -760,7 +760,7 @@
    CH2   CE3   CZ3   HZ3
    CZ3   CD2   CE3   HE3
     CG   NE1   CD1   HD1
-   CD1   CD2    CG    CB
+   CD1    CG    CB   CD2
                         
 [ PHE ]
  [ atoms ]
@@ -2053,7 +2053,7 @@
    CH2   CE3   CZ3   HZ3    
    CZ3   CD2   CE3   HE3    
     CG   NE1   CD1   HD1    
-   CD1   CD2    CG    CB    
+   CD1    CG    CB   CD2
                         
 [ CPHE ]
  [ atoms ]
@@ -3103,7 +3103,7 @@
    CH2   CE3   CZ3   HZ3
    CZ3   CD2   CE3   HE3
     CG   NE1   CD1   HD1
-   CD1   CD2    CG    CB
+   CD1    CG    CB   CD2
                         
 [ NPHE ]
  [ atoms ]

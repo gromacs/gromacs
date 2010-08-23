@@ -1559,7 +1559,7 @@ void init_md(FILE *fplog,
         *outf = init_mdoutf(nfile,fnm,Flags,cr,ir,oenv);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
-                              mtop,ir);
+                              mtop,ir, (*outf)->fp_dhdl);
     }
     
     if (ir->adress_type != eAdressOff)

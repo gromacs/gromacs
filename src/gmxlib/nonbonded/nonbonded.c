@@ -102,8 +102,12 @@
 #  endif
 #endif
 
-#if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
-#include "nb_kernel_f77_double/nb_kernel_f77_double.h"
+#if defined(GMX_FORTRAN)
+#  ifdef GMX_DOUBLE
+#    include "nb_kernel_f77_double/nb_kernel_f77_double.h"
+#  else
+#    include "nb_kernel_f77_single/nb_kernel_f77_single.h"
+#  endif
 #endif
 
 #if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
@@ -211,7 +215,7 @@ void
 gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
 {
     int i;
-    
+        
     snew(nb_kernel_list,eNR_NBKERNEL_NR);
     
     /* Note that later calls overwrite earlier, so the preferred (fastest)
@@ -239,10 +243,28 @@ gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
     {
         return;
     }
-    
-	/* Setup kernels. The last called setup routine will overwrite earlier assignments,
-	 * so we should e.g. test SSE3 support _after_ SSE2 support.
+
+    /* Setup kernels. The last called setup routine will overwrite earlier assignments,
+	 * so we should e.g. test SSE3 support _after_ SSE2 support,
+     * and call e.g. Fortran setup before SSE.
 	 */
+    
+#if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
+    nb_kernel_setup_f77_double(fplog,nb_kernel_list);
+#endif
+	
+#if defined(GMX_FORTRAN) && !defined(GMX_DOUBLE)   
+    nb_kernel_setup_f77_single(fplog,nb_kernel_list);
+#endif
+	
+#ifdef GMX_BLUEGENE
+    nb_kernel_setup_bluegene(fplog,nb_kernel_list);
+#endif
+	
+#ifdef GMX_POWER6
+    nb_kernel_setup_power6(fplog,nb_kernel_list);
+#endif
+    
 #ifdef GMX_PPC_ALTIVEC   
     nb_kernel_setup_ppc_altivec(fplog,nb_kernel_list);
 #endif
@@ -271,14 +293,6 @@ gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
 #  endif
 #endif
  
-#if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
-    nb_kernel_setup_f77_double(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_FORTRAN) && !defined(GMX_DOUBLE)   
-    nb_kernel_setup_f77_single(fplog,nb_kernel_list);
-#endif
-	
 #if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
     nb_kernel_setup_ia64_double(fplog,nb_kernel_list);
 #endif
@@ -286,16 +300,6 @@ gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
 #if (defined GMX_IA64_ASM && !defined GMX_DOUBLE)
     nb_kernel_setup_ia64_single(fplog,nb_kernel_list);
 #endif
-	
-#ifdef GMX_BLUEGENE
-    nb_kernel_setup_bluegene(fplog,nb_kernel_list);
-#endif
-	
-#ifdef GMX_POWER6
-    nb_kernel_setup_power6(fplog,nb_kernel_list);
-#endif
-	
-	
 	
 	if(fplog)
     {

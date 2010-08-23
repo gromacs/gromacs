@@ -45,7 +45,7 @@
 #include "xdrf.h"
 #include "string2.h"
 #include "futil.h"
-
+#include "gmx_fatal.h"
 
 
 #if 0
@@ -193,6 +193,7 @@ F77_FUNC(xdrfint,XDRFINT)(int *xdrid, int *ip, int *ret)
         xdr_fortran_unlock();
 }
 
+void
 F77_FUNC(xdrfshort,XDRFSHORT)(int *xdrid, short *sp, int *ret)
 {
         xdr_fortran_lock();
@@ -376,8 +377,11 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 
 
 #ifdef GMX_THREADS
-    if (!tMPI_Thread_mutex_islocked( &xdr_fortran_mutex ))  
-        gmx_incons("xdropen called without locked mutex. NEVER call this function");
+    if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
+    {
+        tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );
+        gmx_incons("xdropen called without locked mutex. NEVER call this function.");
+    }
 #endif 
 
     if (init_done == 0) {
@@ -458,8 +462,11 @@ int xdrclose(XDR *xdrs) {
     int rc = 0;
 
 #ifdef GMX_THREADS
-    if (!tMPI_Thread_mutex_islocked( &xdr_fortran_mutex ))  
+    if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
+    {
+        tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );
         gmx_incons("xdropen called without locked mutex. NEVER call this function");
+    }
 #endif
 
     if (xdrs == NULL) {
@@ -788,11 +795,14 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
  |
  */
  
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead) 
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) 
 {
     int *ip = NULL;
     int *buf = NULL;
-
+    bool bRead;
+    
+    bRead = (xdrs->x_op == XDR_DECODE);
+    
     /* preallocate a small buffer and ip on the stack - if we need more
        we can always malloc(). This is faster for small values of size: */
     int prealloc_size=3*16;

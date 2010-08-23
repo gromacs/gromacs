@@ -87,7 +87,7 @@ const char *eeks_names[eeksNR]=
 enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
        eenhENERGY_SUM_SIM, eenhENERGY_NSUM_SIM,
        eenhENERGY_NSTEPS, eenhENERGY_NSTEPS_SIM, 
-       eenhENERGY_DELTA_H_NN, eenhENERGY_DELTA_H_N, 
+       eenhENERGY_DELTA_H_NN,
        eenhENERGY_DELTA_H_LIST, eenhENERGY_DELTA_H_STARTTIME, 
        eenhNR };
 
@@ -96,7 +96,7 @@ const char *eenh_names[eenhNR]=
     "energy_n", "energy_aver", "energy_sum", "energy_nsum",
     "energy_sum_sim", "energy_nsum_sim",
     "energy_nsteps", "energy_nsteps_sim", 
-    "energy_delta_h_nn", "energy_delta_h_n", 
+    "energy_delta_h_nn",
     "energy_delta_h_list", "energy_delta_h_starttime"
 };
 
@@ -254,9 +254,11 @@ static void do_cpt_double_err(XDR *xd,const char *desc,double *f,FILE *list)
     }
 }
 
-
+/* If nval >= 0, nval is used; on read this should match the passed value.
+ * If nval n<0, *nptr is used; on read the value is stored in nptr
+ */
 static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
-                             int n,real **v,
+                             int nval,int *nptr,real **v,
                              FILE *list,int erealtype)
 {
     bool_t res=0;
@@ -270,15 +272,39 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
     double *vd;
     int  nf,dt,i;
     
-    nf = n;
+    if (list != NULL)
+    {
+        if (nval >= 0)
+        {
+            nf = nval;
+        }
+        else
+        {
+        if (nptr == NULL)
+        {
+            gmx_incons("*ntpr=NULL in do_cpte_reals_low");
+        }
+        nf = *nptr;
+        }
+    }
     res = xdr_int(xd,&nf);
     if (res == 0)
     {
         return -1;
     }
-    if (list == NULL && nf != n)
+    if (list != NULL)
     {
-        gmx_fatal(FARGS,"Count mismatch for state entry %s, code count is %d, file count is %d\n",st_names(cptp,ecpt),n,nf);
+        if (nval >= 0)
+        {
+            if (nf != nval)
+            {
+                gmx_fatal(FARGS,"Count mismatch for state entry %s, code count is %d, file count is %d\n",st_names(cptp,ecpt),nval,nf);
+            }
+        }
+        else
+        {
+            *nptr = nf;
+        }
     }
     dt = dtc;
     res = xdr_int(xd,&dt);
@@ -379,17 +405,32 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
 }
 
 
-
+/* This function stores n along with the reals for reading,
+ * but on reading it assumes that n matches the value in the checkpoint file,
+ * a fatal error is generated when this is not the case.
+ */
 static int do_cpte_reals(XDR *xd,int cptp,int ecpt,int sflags,
                          int n,real **v,FILE *list)
 {
-    return do_cpte_reals_low(xd,cptp,ecpt,sflags,n,v,list,ecprREAL);
+    return do_cpte_reals_low(xd,cptp,ecpt,sflags,n,NULL,v,list,ecprREAL);
+}
+
+/* This function does the same as do_cpte_reals,
+ * except that on reading it ignores the passed value of *n
+ * and stored the value read from the checkpoint file in *n.
+ */
+static int do_cpte_n_reals(XDR *xd,int cptp,int ecpt,int sflags,
+                           int *n,real **v,FILE *list)
+{
+    return do_cpte_reals_low(xd,cptp,ecpt,sflags,-1,n,v,list,ecprREAL);
 }
 
 static int do_cpte_real(XDR *xd,int cptp,int ecpt,int sflags,
                         real *r,FILE *list)
 {
-    return do_cpte_reals_low(xd,cptp,ecpt,sflags,1,&r,list,ecprREAL);
+    int n;
+
+    return do_cpte_reals_low(xd,cptp,ecpt,sflags,1,NULL,&r,list,ecprREAL);
 }
 
 static int do_cpte_ints(XDR *xd,int cptp,int ecpt,int sflags,
@@ -524,8 +565,10 @@ static int do_cpte_doubles(XDR *xd,int cptp,int ecpt,int sflags,
 static int do_cpte_rvecs(XDR *xd,int cptp,int ecpt,int sflags,
                          int n,rvec **v,FILE *list)
 {
-   return do_cpte_reals_low(xd,cptp,ecpt,sflags,
-                            n*DIM,(real **)v,list,ecprRVEC);
+    int n3;
+
+    return do_cpte_reals_low(xd,cptp,ecpt,sflags,
+                             n*DIM,NULL,(real **)v,list,ecprRVEC);
 }
 
 static int do_cpte_matrix(XDR *xd,int cptp,int ecpt,int sflags,
@@ -535,7 +578,8 @@ static int do_cpte_matrix(XDR *xd,int cptp,int ecpt,int sflags,
     real ret;
 
     vr = (real *)&(v[0][0]);
-    ret = do_cpte_reals_low(xd,cptp,ecpt,sflags,DIM*DIM,&vr,NULL,ecprMATRIX);
+    ret = do_cpte_reals_low(xd,cptp,ecpt,sflags,
+                            DIM*DIM,NULL,&vr,NULL,ecprMATRIX);
     
     if (list && ret == 0)
     {
@@ -589,7 +633,7 @@ static int do_cpte_matrices(XDR *xd,int cptp,int ecpt,int sflags,
         }
     }
     ret = do_cpte_reals_low(xd,cptp,ecpt,sflags,
-                            nf*DIM*DIM,&vr,NULL,ecprMATRIX);
+                            nf*DIM*DIM,NULL,&vr,NULL,ecprMATRIX);
     for(i=0; i<nf; i++)
     {
         for(j=0; j<DIM; j++)
@@ -819,9 +863,9 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estLD_RNG:  ret = do_cpte_ints(xd,0,i,sflags,state->nrng,rng_p,list); break;
             case estLD_RNGI: ret = do_cpte_ints(xd,0,i,sflags,state->nrngi,rngi_p,list); break;
             case estDISRE_INITF:  ret = do_cpte_real (xd,0,i,sflags,&state->hist.disre_initf,list); break;
-            case estDISRE_RM3TAV: ret = do_cpte_reals(xd,0,i,sflags,state->hist.ndisrepairs,&state->hist.disre_rm3tav,list); break;
+            case estDISRE_RM3TAV: ret = do_cpte_n_reals(xd,0,i,sflags,&state->hist.ndisrepairs,&state->hist.disre_rm3tav,list); break;
             case estORIRE_INITF:  ret = do_cpte_real (xd,0,i,sflags,&state->hist.orire_initf,list); break;
-            case estORIRE_DTAV:   ret = do_cpte_reals(xd,0,i,sflags,state->hist.norire_Dtav,&state->hist.orire_Dtav,list); break;
+            case estORIRE_DTAV:   ret = do_cpte_n_reals(xd,0,i,sflags,&state->hist.norire_Dtav,&state->hist.orire_Dtav,list); break;
             default:
                 gmx_fatal(FARGS,"Unknown state entry %d\n"
                           "You are probably reading a new checkpoint file with old code",i);
@@ -921,11 +965,10 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
                         }
                     }
                 break;
-                case eenhENERGY_DELTA_H_N: ret=do_cpte_ints(xd, 2, i, fflags, enerhist->dht->nndh, &(enerhist->dht->ndh), list); break;
                 case eenhENERGY_DELTA_H_LIST: 
                     for(j=0;j<enerhist->dht->nndh;j++)
                     {
-                        ret=do_cpte_reals(xd, 2, i, fflags, enerhist->dht->ndh[j], &(enerhist->dht->dh[j]), list); 
+                        ret=do_cpte_n_reals(xd, 2, i, fflags, &enerhist->dht->ndh[j], &(enerhist->dht->dh[j]), list); 
                     }
                     break;
                 case eenhENERGY_DELTA_H_STARTTIME: 
@@ -1159,7 +1202,6 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
         if (state->enerhist.dht)
         {
             flags_enh |= ( (1<< eenhENERGY_DELTA_H_NN) |
-                           (1<< eenhENERGY_DELTA_H_N) |
                            (1<< eenhENERGY_DELTA_H_LIST) | 
                            (1<< eenhENERGY_DELTA_H_STARTTIME) );
         }
