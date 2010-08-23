@@ -78,7 +78,7 @@ extern "C" {
 #  define SIZEOF_GMX_OFF_T   8
 #else
    /* Almost certainly 64 bits, and guaranteed to be available */
-   typedef gmx_large_int_t    gmx_off_t
+   typedef gmx_large_int_t    gmx_off_t;
 #  define SIZEOF_GMX_OFF_T   SIZEOF_GMX_LARGE_INT
 #endif    
 

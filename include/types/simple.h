@@ -236,6 +236,8 @@ typedef int gmx_large_int_t;
 #  define gmx_inline
 #endif
 
+#else
+#  define gmx_inline inline
 #endif
 
 
