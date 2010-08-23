@@ -288,12 +288,12 @@ static int low_fflib_search_file_end(const char *ffdir,
     return n;
 }
 
-int fflib_search_file_end(const char *ffdir,bool bAddCWD,
+int fflib_search_file_end(const char *ffdir,
                           const char *file_end,
                           bool bFatalError,
                           char ***filenames)
 {
-    return low_fflib_search_file_end(ffdir,bAddCWD,file_end,bFatalError,
+    return low_fflib_search_file_end(ffdir,FALSE,file_end,bFatalError,
                                      filenames,NULL);
 }
 

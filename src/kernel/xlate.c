@@ -133,7 +133,7 @@ static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
     sfree(xlatom);
 }
 
-void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
+void rename_atoms(const char *xlfile,const char *ffdir,
                   t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
                   bool bResname,gmx_residuetype_t rt,bool bReorderNum,
                   bool bVerbose)
@@ -156,7 +156,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
     }
     else
     {
-        nf = fflib_search_file_end(ffdir,bAddCWD,".arn",FALSE,&f);
+        nf = fflib_search_file_end(ffdir,".arn",FALSE,&f);
         for(i=0; i<nf; i++)
         {
             fp = fflib_open(f[i]);
