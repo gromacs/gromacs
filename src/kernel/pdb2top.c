@@ -94,7 +94,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
                     name,*(at->resinfo[resind].name),at->resinfo[resind].nr);
             if (name[0]=='H' || name[0]=='h')
             {
-                fprintf(stderr,"         You might need to add atom %s to the hydrogen database of buidling block %s\n"
+                fprintf(stderr,"         You might need to add atom %s to the hydrogen database of building block %s\n"
                         "         in the file %s.hdb (see the manual)\n",
                         name,*(at->resinfo[resind].rtp),rp->filebase);
             }

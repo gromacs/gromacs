@@ -255,7 +255,7 @@ static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
       i++;
     }
 
-    /* If found in the database, rename this residue's rtp buidling block,
+    /* If found in the database, rename this residue's rtp building block,
      * otherwise keep the old name.
      */
     if (i < nrr) {
