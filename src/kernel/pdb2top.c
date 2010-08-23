@@ -132,9 +132,9 @@ choose_ff(const char *ffsel,
           char *ffdir, int ffdir_maxlen)
 {
     int  nff;
-    char **ffdirs,**ffs,*ptr;
+    char **ffdirs,**ffs,**ffs_dir,*ptr;
     int  i,j,sel;
-    char buf[STRLEN],**desc,*doc_dir;
+    char buf[STRLEN],**desc;
     FILE *fp;
     char *pret;
 
@@ -150,18 +150,26 @@ choose_ff(const char *ffsel,
 
     /* Store the force field names in ffs */
     snew(ffs,nff);
+    snew(ffs_dir,nff);
     for(i=0; i<nff; i++)
     {
         /* Remove the path from the ffdir name */
         ptr = strrchr(ffdirs[i],DIR_SEPARATOR);
-        if (ptr == 0)
+        if (ptr == NULL)
         {
             ffs[i] = strdup(ffdirs[i]);
+            ffs_dir[i] = low_gmxlibfn(ffdirs[i],FALSE,FALSE);
+            if (ffs_dir[i] == NULL)
+            {
+                gmx_fatal(FARGS,"Can no longer find file '%s'",ffdirs[i]);
+            }
         }
         else
         {
             ffs[i] = strdup(ptr+1);
+            ffs_dir[i] = strdup(ffdirs[i]);
         }
+        ffs_dir[i][strlen(ffs_dir[i])-strlen(ffs[i])-1] = '\0';
         /* Remove the extension from the ffdir name */
         ffs[i][strlen(ffs[i])-strlen(fflib_forcefield_dir_ext())] = '\0';
     }
@@ -173,6 +181,10 @@ choose_ff(const char *ffsel,
         {
             if (strcmp(ffs[i],ffsel) == 0)
             {
+                if (sel >= 0)
+                {
+                    gmx_fatal(FARGS,"There are multiple force field directories in your path with the name '%s'. Run without the -ff switch and select the force field interactively.",ffsel);
+                }
                 sel = i;
             }
         }
@@ -186,23 +198,24 @@ choose_ff(const char *ffsel,
         snew(desc,nff);
         for(i=0; (i<nff); i++)
         {
-            sprintf(buf,"%s%c%s",
-                    ffdirs[i],DIR_SEPARATOR,fflib_forcefield_doc());
-            doc_dir = low_gmxlibfn(buf,FALSE);
-            if (doc_dir != NULL)
+            sprintf(buf,"%s%c%s%s%c%s",
+                    ffs_dir[i],DIR_SEPARATOR,
+                    ffs[i],fflib_forcefield_dir_ext(),DIR_SEPARATOR,
+                    fflib_forcefield_doc());
+            if (gmx_fexist(buf))
             {
                 /* We don't use fflib_open, because we don't want printf's */
-                fp = ffopen(doc_dir,"r");
+                fp = ffopen(buf,"r");
                 snew(desc[i],STRLEN);
                 get_a_line(fp,desc[i],STRLEN);
                 ffclose(fp);
-                sfree(doc_dir);
             }
             else
             {
                 desc[i] = strdup(ffs[i]);
             }
         }
+        /*
         for(i=0; (i<nff); i++)
         {
             for(j=i+1; (j<nff); j++)
@@ -217,10 +230,15 @@ choose_ff(const char *ffsel,
                 }
             }
         }
+        */
 
         printf("\nSelect the Force Field:\n");
         for(i=0; (i<nff); i++)
         {
+            if (i == 0 || strcmp(ffs_dir[i-1],ffs_dir[i]) != 0)
+            {
+                printf("From '%s':\n",ffs_dir[i]);
+            }
             printf("%2d: %s\n",i+1,desc[i]);
             sfree(desc[i]);
         }
@@ -261,9 +279,11 @@ choose_ff(const char *ffsel,
     {
         sfree(ffdirs[i]);
         sfree(ffs[i]);
+        sfree(ffs_dir[i]);
     }
     sfree(ffdirs);
     sfree(ffs);
+    sfree(ffs_dir);
 }
 
 void choose_watermodel(const char *wmsel,const char *ffdir,
