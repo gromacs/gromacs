@@ -50,7 +50,7 @@ files.
 #endif
 
 
-#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t eieio\n"\
+#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t lwsync\n"\
                                                              : : :"memory" ); }
 
 
