@@ -1571,7 +1571,7 @@ int main(int argc, char *argv[])
         if (nCtdb > 0)
         {
             tdblist = filter_ter(nrtp,restp,nCtdb,ctdb,
-                                 *pdba->resinfo[cc->r_start[i]].name,
+                                 *pdba->resinfo[cc->r_end[i]].name,
                                  *pdba->resinfo[cc->r_end[i]].rtp,
                                  &ntdblist);
             if(ntdblist==0)
