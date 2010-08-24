@@ -215,14 +215,17 @@ choose_ff(const char *ffsel,
                 desc[i] = strdup(ffs[i]);
             }
         }
-        /*
+        /* Order force fields from the same dir alphabetically
+         * and put deprecated force fields at the end.
+         */
         for(i=0; (i<nff); i++)
         {
             for(j=i+1; (j<nff); j++)
             {
-                if ((desc[i][0] == '[' && desc[j][0] != '[') ||
-                    ((desc[i][0] == '[' || desc[j][0] != '[') &&
-                     gmx_strcasecmp(desc[i],desc[j]) > 0))
+                if (strcmp(ffs_dir[i],ffs_dir[j]) == 0 &&
+                    ((desc[i][0] == '[' && desc[j][0] != '[') ||
+                     ((desc[i][0] == '[' || desc[j][0] != '[') &&
+                      gmx_strcasecmp(desc[i],desc[j]) > 0)))
                 {
                     swap_strings(ffdirs,i,j);
                     swap_strings(ffs   ,i,j);
@@ -230,7 +233,6 @@ choose_ff(const char *ffsel,
                 }
             }
         }
-        */
 
         printf("\nSelect the Force Field:\n");
         for(i=0; (i<nff); i++)
