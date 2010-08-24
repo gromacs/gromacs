@@ -536,9 +536,9 @@ char *search_rtp(const char *key,int nrtp,t_restp rtp[])
                 else
                 {
                     nbest = 0;
-                    besti = i;
-                    best  = n;
                 }
+                besti = i;
+                best  = n;
                 nbest++;
             }
         }
