@@ -703,7 +703,7 @@
    ND1   NE2   CE1   HE1    improper_Z_CA_X_Y 
 
 
-[ HIS1 ]   ; Identical to HISA
+[ HIS1 ]   ; Identical to HISD
  [ atoms ]
      N    opls_238   -0.500     1
      H    opls_241    0.300     1
