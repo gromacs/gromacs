@@ -32,9 +32,6 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 /* The bools indicate whether a field was read from the trajectory.
  * Do not try to use a pointer when its bool is FALSE, as memory might

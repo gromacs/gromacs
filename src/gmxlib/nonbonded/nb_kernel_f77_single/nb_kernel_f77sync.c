@@ -37,6 +37,7 @@
 #include <pthread.h>
 #endif
 
+#include <stdio.h>
 
 /*! \brief Lock innerloop mutex and read lists indices
  *
@@ -86,6 +87,8 @@ F77_FUNC(f77kernelsync,F77KERNELSYNC)
       int *       nn1)
 {
   int n0,n1;
+        
+    
 #ifdef HAVE_PTHREADS_H  
   pthread_mutex_lock((pthread_mutex_t *)mtx);
 #endif
@@ -96,7 +99,6 @@ F77_FUNC(f77kernelsync,F77KERNELSYNC)
 #ifdef HAVE_PTHREADS_H
   pthread_mutex_unlock((pthread_mutex_t *)mtx);
 #endif
-  n0              = *count;
   *nn0            = n0;
   *nn1            = n1;
 }

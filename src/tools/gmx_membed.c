@@ -161,7 +161,7 @@ int search_string(char *s,int ng,char ***gn)
 	int i;
 
 	for(i=0; (i<ng); i++)
-		if (strcasecmp(s,*gn[i]) == 0)
+		if (gmx_strcasecmp(s,*gn[i]) == 0)
 			return i;
 
 	gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default groups in your mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
@@ -911,7 +911,7 @@ void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 					buf2[strlen(buf2)-1]='\0';
 					ltrim(buf2);
 					rtrim(buf2);
-					if (strcasecmp(buf2,"molecules")==0)
+					if (gmx_strcasecmp(buf2,"molecules")==0)
 						bMolecules=1;
 				}
 				fprintf(fpout,"%s",buf);
@@ -2690,12 +2690,12 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
                 if (!bInitStep)
                 {
-                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
+		  trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ2);
                 }
 
 		if (ir->eI == eiVVAK)
 		{
-		    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
 		}
 
                 update_coords(fplog,step,ir,mdatoms,state,
@@ -2734,7 +2734,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                            of veta.  */
 
                         veta_save = state->veta;
-                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
+                        trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ0);
                         vetanew = state->veta;
                         state->veta = veta_save;
                     }
@@ -2792,7 +2792,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (bVV && !bInitStep)
                 {
-                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+		  trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ, trotter_seq,ettTSEQ2);
                 }
 
                 if (bIterations &&
@@ -3106,7 +3106,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         m_add(force_vir,shake_vir,total_vir);
                         clear_mat(shake_vir);
                     }
-                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ, trotter_seq,ettTSEQ3);
                 }
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
@@ -3116,7 +3116,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 		if (ir->eI != eiVVAK)
                 {
-                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ);
+		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
                 }
                 update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
                                 upd,bInitStep);
@@ -3155,7 +3155,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
-                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
+                    trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ, trotter_seq,ettTSEQ4);
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
@@ -3365,7 +3365,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 if (bNstEner)
                 {
-                    upd_mdebin(mdebin,bDoDHDL ? outf->fp_dhdl : NULL,TRUE,
+                    upd_mdebin(mdebin,bDoDHDL,TRUE,
                                t,mdatoms->tmass,enerd,state,lastbox,
                                shake_vir,force_vir,total_vir,pres,
                                ekind,mu_tot,constr);

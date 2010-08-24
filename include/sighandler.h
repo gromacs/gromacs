@@ -36,10 +36,6 @@
 #ifndef _sighandler_h
 #define _sighandler_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <signal.h>
 
 #ifdef __cplusplus

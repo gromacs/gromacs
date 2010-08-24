@@ -155,7 +155,7 @@ static void QuitCB(t_x11 *x11,int dlg_mess,int item_id,
 
   hide_mb(gmx);
   if (dlg_mess==DLG_EXIT) {
-    if (strcasecmp("yes",set)==0) 
+    if (gmx_strcasecmp("yes",set)==0) 
       write_gmx(x11,gmx,IDTERM);
   }
 }
@@ -225,7 +225,7 @@ static void ExportCB(t_x11 *x11,int dlg_mess,int item_id,
 #endif
     break;
   case DLG_EXIT:
-    if ((bOk=(strcasecmp("ok",set))==0)) 
+    if ((bOk=(gmx_strcasecmp("ok",set))==0)) 
       strcpy(gmx->confout,EditText(dlg,eExConf));
     HideDlg(dlg);
     if (bOk)
@@ -321,7 +321,7 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
     }
     break;
   case DLG_EXIT:
-    bOk=(strcasecmp("ok",set)==0);
+    bOk=(gmx_strcasecmp("ok",set)==0);
     HideDlg(gmx->dlgs[edBonds]);
     if (bOk) {
       if (bBond) {

@@ -51,7 +51,7 @@ typedef struct {
   char *a1,*a2;
 } t_ssbond;
 
-extern void choose_ff(const char *ffsel,
+void choose_ff(const char *ffsel,
 		      char *forcefield, int ff_maxlen,
 		      char *ffdir, int ffdir_maxlen);
 /* Find force fields in the current and libdirs and choose an ff.
@@ -59,14 +59,14 @@ extern void choose_ff(const char *ffsel,
  * If ffsel==NULL: interactive selection.
  */
 
-extern void choose_watermodel(const char *wmsel,const char *ffdir,
+void choose_watermodel(const char *wmsel,const char *ffdir,
 			      char **watermodel);
 /* Choose, possibly interactively, which water model to include,
  * based on the wmsel command line option choice and watermodels.dat
  * in ffdir.
  */
 
-extern void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp, 
+void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp, 
 			       int nrtp, t_restp rtp[],
 			       int nres, t_resinfo *resinfo, 
 			       int nterpairs,
@@ -76,7 +76,7 @@ extern void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
  * and store them in restp and hb.
  */
 
-extern void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
+void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
 				     t_atoms *pdba,rvec *x,
 				     bool bVerbose);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
@@ -84,24 +84,24 @@ extern void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
  * add these atoms to restp.
  */
 
-extern void print_top_comment(FILE *out,const char *filename,const char *generator,bool bITP);
+void print_top_comment(FILE *out,const char *filename,const char *generator,bool bITP);
 
-extern void print_top_header(FILE *out,const char *filename,const char *title,bool bITP, 
+void print_top_header(FILE *out,const char *filename,const char *title,bool bITP, 
                              const char *ffdir,real mHmult);
 
-extern void print_top_mols(FILE *out,
+void print_top_mols(FILE *out,
                            const char *title, const char *ffdir, const char *water,
                            int nincl, char **incls,
                            int nmol, t_mols *mols);
 
-extern void write_top(FILE *out, char *pr,char *molname,
+void write_top(FILE *out, char *pr,char *molname,
                       t_atoms *at,bool bRTPresname,
                       int bts[],t_params plist[],t_excls excls[],
                       gpp_atomtype_t atype,int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
 
-extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
+void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    t_atoms *atoms,rvec **x,
 		    gpp_atomtype_t atype,t_symtab *tab,
 		    int nrtp, t_restp rtp[],
@@ -109,7 +109,7 @@ extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
 		    int *rn, int *rc, bool bAllowMissing,
 		    bool bVsites, bool bVsiteAromatics,
-		    const char *ff, const char *ffdir, bool bAddCWD,
+		    const char *ff, const char *ffdir,
 		    real mHmult,
 		    int nssbonds, t_ssbond ssbonds[],
 		    real long_bond_dist, real short_bond_dist,
@@ -117,7 +117,7 @@ extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    bool bRenumRes,bool bRTPresname);
 /* Create a topology ! */
 
-extern void print_sums(t_atoms *atoms, bool bSystem);
+void print_sums(t_atoms *atoms, bool bSystem);
 
 
 #endif	/* _pdb2top_h */

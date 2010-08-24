@@ -754,7 +754,7 @@ bool get_libdir(char *libdir)
      * too, or we wont be able to detect that the file exists
      */
 #if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64 || defined __CYGWIN__ || defined __CYGWIN32__)
-    if(strlen(bin_name)<3 || strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
+    if(strlen(bin_name)<3 || gmx_strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
         strcat(bin_name,".exe");
 #endif
 
@@ -773,11 +773,16 @@ bool get_libdir(char *libdir)
             found = gmx_fexist(full_path);
             if (!found && (s=getenv("PATH")) != NULL)
             {
+                char *dupped;
+                
+                dupped=gmx_strdup(s);
+                s=dupped;
                 while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
                 {
                     sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
                     found = gmx_fexist(full_path);
                 }
+                sfree(dupped);
             }
             if (!found)
             {
@@ -841,7 +846,7 @@ bool get_libdir(char *libdir)
 }
 
 
-char *low_gmxlibfn(const char *file, bool bFatal)
+char *low_gmxlibfn(const char *file, bool bAddCWD, bool bFatal)
 {
     char *ret;
     char *lib,*dir;
@@ -863,7 +868,7 @@ char *low_gmxlibfn(const char *file, bool bFatal)
     }
 
     ret = NULL;
-    if (gmx_fexist(file))
+    if (bAddCWD && gmx_fexist(file))
     {
         ret = strdup(file);
     }
@@ -883,12 +888,16 @@ char *low_gmxlibfn(const char *file, bool bFatal)
         {
             if (env_is_set) 
             {
-                gmx_fatal(FARGS,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
+                gmx_fatal(FARGS,
+                          "Library file %s not found %sin your GMXLIB path.",
+                          bAddCWD ? "in current dir nor " : "",file);
             }
             else
             {
-                gmx_fatal(FARGS,"Library file %s not found in current dir nor in default directories.\n"
-                        "(You can set the directories to search with the GMXLIB path variable)",file);
+                gmx_fatal(FARGS,
+                          "Library file %s not found %sin default directories.\n"
+                        "(You can set the directories to search with the GMXLIB path variable)",
+                          bAddCWD ? "in current dir nor " : "",file);
             }
         }
     }
@@ -905,7 +914,7 @@ FILE *low_libopen(const char *file,bool bFatal)
     FILE *ff;
     char *fn;
 
-    fn=low_gmxlibfn(file,bFatal);
+    fn=low_gmxlibfn(file,TRUE,bFatal);
 
     if (fn==NULL) {
         ff=NULL;
@@ -921,7 +930,7 @@ FILE *low_libopen(const char *file,bool bFatal)
 
 char *gmxlibfn(const char *file)
 {
-    return low_gmxlibfn(file,TRUE);
+    return low_gmxlibfn(file,TRUE,TRUE);
 }
 
 FILE *libopen(const char *file)

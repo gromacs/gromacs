@@ -160,7 +160,7 @@ static string toUpper(const string &s)
   GmxOpenMMPlatformOptions#memtests, GmxOpenMMPlatformOptions#deviceid, 
   GmxOpenMMPlatformOptions#force_dev.  */
 /* {@ */
-#define SIZEOF_PLATFORMS    1  // 2
+#define SIZEOF_PLATFORMS    2  // 2
 #define SIZEOF_MEMTESTS     3 
 #define SIZEOF_DEVICEIDS    1 
 #define SIZEOF_FORCE_DEV    2 
@@ -209,7 +209,7 @@ private:
 };
 
 const char * const GmxOpenMMPlatformOptions::platforms[SIZEOF_PLATFORMS]
-                    = {"CUDA"};
+                    = {"CUDA", "Reference"};
                     //= { "Reference", "CUDA" /*,"OpenCL"*/ };
 const char * const GmxOpenMMPlatformOptions::memtests[SIZEOF_MEMTESTS]
                     = { "15", "full", "off" };
@@ -791,7 +791,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             }
 
             /* macro set at build time  */
-#ifdef OPENMM_PLUGIN_DIR
+#ifdef OpenMM_PLUGIN_DIR
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(OPENMM_PLUGIN_DIR);
@@ -857,7 +857,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         if (ir->nstcomm > 0)
             sys->addForce(new CMMotionRemover(ir->nstcomm));
 
-        // Set bonded force field terms.
+        /* Set bonded force field terms. */
         const int* bondAtoms = (int*) idef.il[F_BONDS].iatoms;
         HarmonicBondForce* bondForce = new HarmonicBondForce();
         sys->addForce(bondForce);
@@ -870,7 +870,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             bondForce->addBond(atom1, atom2,
                                idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
         }
-        // Urey-Bradley includes both the angle and bond potential for 1-3 interactions
+
+        /* Urey-Bradley includes both the angle and bond potential for 1-3 interactions */
         const int* ubAtoms = (int*) idef.il[F_UREY_BRADLEY].iatoms;
         HarmonicBondForce* ubBondForce = new HarmonicBondForce();
         HarmonicAngleForce* ubAngleForce = new HarmonicAngleForce();
@@ -888,6 +889,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             ubAngleForce->addAngle(atom1, atom2, atom3, 
                     idef.iparams[type].u_b.theta*M_PI/180.0, idef.iparams[type].u_b.ktheta);
         }
+
+		/* Set the angle force field terms */
         const int* angleAtoms = (int*) idef.il[F_ANGLES].iatoms;
         HarmonicAngleForce* angleForce = new HarmonicAngleForce();
         sys->addForce(angleForce);
@@ -901,6 +904,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             angleForce->addAngle(atom1, atom2, atom3, 
                     idef.iparams[type].harmonic.rA*M_PI/180.0, idef.iparams[type].harmonic.krA);
         }
+
+		/* Set proper dihedral terms */
         const int* periodicAtoms = (int*) idef.il[F_PDIHS].iatoms;
         PeriodicTorsionForce* periodicForce = new PeriodicTorsionForce();
         sys->addForce(periodicForce);
@@ -917,6 +922,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                       idef.iparams[type].pdihs.phiA*M_PI/180.0, 
                                       idef.iparams[type].pdihs.cpA);
         }
+
+		/* Set improper dihedral terms that are represented by a periodic function (as in AMBER FF) */
         const int* periodicImproperAtoms = (int*) idef.il[F_PIDIHS].iatoms;
         PeriodicTorsionForce* periodicImproperForce = new PeriodicTorsionForce();
         sys->addForce(periodicImproperForce);
@@ -933,6 +940,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                       idef.iparams[type].pdihs.phiA*M_PI/180.0,
                                       idef.iparams[type].pdihs.cpA);
         }
+
+        /* Ryckaert-Bellemans dihedrals */
         const int* rbAtoms = (int*) idef.il[F_RBDIHS].iatoms;
         RBTorsionForce* rbForce = new RBTorsionForce();
         sys->addForce(rbForce);
@@ -950,6 +959,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                 idef.iparams[type].rbdihs.rbcA[4], idef.iparams[type].rbdihs.rbcA[5]);
         }
 
+		/* Set improper dihedral terms (as in CHARMM FF) */
         const int* improperDihAtoms = (int*) idef.il[F_IDIHS].iatoms;
 		CustomTorsionForce* improperDihForce = new CustomTorsionForce("2.0*k*asin(sin((theta-theta0)/2))^2");
         sys->addForce(improperDihForce);
@@ -970,7 +980,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                 improperDihParameters);
         }
 
-        // Set nonbonded parameters and masses.
+        /* Set nonbonded parameters and masses. */
         int ntypes = fr->ntype;
         int* types = mdatoms->typeA;
         real* nbfp = fr->nbfp;
@@ -1010,7 +1020,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 break;
 
             default:
-                gmx_fatal(FARGS,"Internal error: you should not see this message, it that the"
+                gmx_fatal(FARGS,"Internal error: you should not see this message, it means that the"
                           "electrosatics option check failed. Please report this error!");
             }        
             sys->setDefaultPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),

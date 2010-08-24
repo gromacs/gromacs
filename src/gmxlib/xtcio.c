@@ -153,7 +153,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
       }
       fprec = *prec;
   }
-  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,&fprec,bRead));
+  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,&fprec));
   
   /* Copy from temp. array if reading */
   if(bRead)
@@ -168,7 +168,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
   }  
   sfree(ftmp);
 #else
-    result=XTC_CHECK("x",xdr3dfcoord(xd,x[0],natoms,prec,bRead)); 
+    result=XTC_CHECK("x",xdr3dfcoord(xd,x[0],natoms,prec)); 
 #endif 
     
   return result;

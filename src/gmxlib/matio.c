@@ -36,6 +36,7 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
 #include <ctype.h>
 #include "sysstuff.h"
 #include "futil.h"
@@ -202,11 +203,21 @@ static char *fgetline(char **line,int llmax,int *llalloc,FILE *in)
   return fg;
 }
 
-void skipstr(char **line)
+void skipstr(char *line)
 {
-  ltrim(*line);
-  while((*line[0] != ' ') && (*line[0] != '\0'))
-    (*line)++;
+  int i,c;
+  
+  ltrim(line);
+  c=0;
+  while((line[c] != ' ') && (line[c] != '\0'))
+    c++;
+  i=c; 
+  while(line[c] != '\0')
+    {
+      line[c-i] = line[c];
+      c++;
+    }
+  line[i-c] = '\0';
 }
 
 char *line2string(char **line)
@@ -275,7 +286,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     parsestring(line,"y-label",(mm->label_y));
     parsestring(line,"type",buf);
   }
-  if (buf[0] && (strcasecmp(buf,"Discrete")==0))
+  if (buf[0] && (gmx_strcasecmp(buf,"Discrete")==0))
     mm->bDiscrete=TRUE;
    
   if (debug)
@@ -364,7 +375,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   do {
     if (strstr(line,"x-axis")) {
       line=strstr(line,"x-axis");
-      skipstr(&line);
+      skipstr(line);
       if (mm->axis_x==NULL)
 	snew(mm->axis_x,mm->nx + 1);
       while (sscanf(line,"%lf",&u)==1) {
@@ -375,12 +386,12 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	}
 	mm->axis_x[n_axis_x] = u;
 	n_axis_x++;
-	skipstr(&line);
+	skipstr(line);
       }
     }
     else if (strstr(line,"y-axis")) {
       line=strstr(line,"y-axis");
-      skipstr(&line);
+      skipstr(line);
       if (mm->axis_y==NULL)
 	snew(mm->axis_y,mm->ny + 1);
       while (sscanf(line,"%lf",&u)==1) {
@@ -391,7 +402,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	}
 	mm->axis_y[n_axis_y] = u;
 	n_axis_y++;
-	skipstr(&line);
+	skipstr(line);
       }
     }
   } while ((line[0] != '\"') && (NULL != fgetline(&line,llmax,&llalloc,in)));

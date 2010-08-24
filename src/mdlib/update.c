@@ -228,25 +228,28 @@ static void do_update_vv_vel(int start,int nrend,double dt,
                              t_grp_tcstat *tcstat,t_grp_acc *gstat,
                              rvec accel[],ivec nFreeze[],real invmass[],
                              unsigned short ptype[],
-                             unsigned short cFREEZE[],
-                             unsigned short cACC[],unsigned short cTC[],
+                             unsigned short cFREEZE[],unsigned short cACC[],
                              rvec v[],rvec f[],
-                             bool bScaleV,
                              bool bExtended, real veta, real alpha)
 {
     double imass,w_dt;
     int    gf=0,ga=0,gt=0;
-    rvec   vrel,sumf;
-    real   vn,vv,va,vb,vnrel;
-    real   lg,u;
+    rvec   vrel;
+    real   u,vn,vv,va,vb,vnrel;
     int    n,d;
     double g,mv1,mv2;
     
-    g        = 0.25*dt*veta*alpha;
-    mv1      = exp(-g);
-    mv2      = series_sinhx(g);
-    
-    lg = 1;
+    if (bExtended)
+    {
+        g        = 0.25*dt*veta*alpha;
+        mv1      = exp(-g);
+        mv2      = series_sinhx(g);
+    }
+    else 
+    {
+        mv1      = 1.0;
+        mv2      = 1.0;
+    }
     for(n=start; n<nrend; n++) 
     {
         w_dt = invmass[n]*dt;
@@ -258,36 +261,12 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         {
             ga   = cACC[n];
         }
-        if (bScaleV)
-        {
-            if (cTC)
-            {
-                gt   = cTC[n];
-            }
-            lg   = tcstat[gt].lambda;
-        }
-        rvec_sub(v[n],gstat[ga].u,vrel);
         
         for(d=0; d<DIM; d++) 
         {
             if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
             {
-                if (bExtended) 
-                {
-                    vnrel             = mv1*(mv1*vrel[d] + 0.5*w_dt*mv2*f[n][d]);
-                    /* do not scale the mean velocities u: MRS: may not be done correctly currently? */
-                    vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel; 
-                    v[n][d]        = vn;
-                } 
-                else 
-                {
-                    vv             = lg*v[n][d] + 0.5*f[n][d]*w_dt;
-                    /* do not scale the mean velocities u MRS: may not be done correctly currently? */
-                    u              = gstat[ga].u[d];
-                    va             = vv + 0.5*accel[ga][d]*dt;
-                    vb             = va + (1.0-lg)*u;
-                    v[n][d]        = vb;
-                }
+                v[n][d]             = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
             } 
             else 
             {
@@ -298,21 +277,17 @@ static void do_update_vv_vel(int start,int nrend,double dt,
 } /* do_update_vv_vel */
 
 static void do_update_vv_pos(int start,int nrend,double dt,
-                               t_grp_tcstat *tcstat,t_grp_acc *gstat,
-                               rvec accel[],ivec nFreeze[],real invmass[],
-                               unsigned short ptype[],
-                               unsigned short cFREEZE[],
-                               unsigned short cACC[],unsigned short cTC[],
-                               rvec x[],rvec xprime[],rvec v[],
-                               rvec f[],bool bExtended, real veta, real alpha)
+                             t_grp_tcstat *tcstat,t_grp_acc *gstat,
+                             rvec accel[],ivec nFreeze[],real invmass[],
+                             unsigned short ptype[],
+                             unsigned short cFREEZE[],
+                             rvec x[],rvec xprime[],rvec v[],
+                             rvec f[],bool bExtended, real veta, real alpha)
 {
   double imass,w_dt;
-  int    gf=0,ga=0,gt=0;
-  rvec   vrel;
-  real   vn,vv,va,vb,vnrel;
-  real   lg,u,scale;
+  int    gf=0;
   int    n,d;
-  double g,mr1,mr2,mv1,mv2;
+  double g,mr1,mr2;
 
   if (bExtended) {
       g        = 0.5*dt*veta;
@@ -1153,11 +1128,13 @@ void update_tcouple(FILE         *fplog,
                     gmx_ekindata_t *ekind,
                     gmx_wallcycle_t wcycle,
                     gmx_update_t upd,
-                    t_extmass    *MassQ)
+                    t_extmass    *MassQ,
+                    t_mdatoms  *md)
+    
 {
     bool   bTCouple=FALSE;
     real   dttc;
-    int    i;
+    int    i,start,end,homenr;
     
     /* if using vv, we do this elsewhere in the code */
     if (inputrec->etc != etcNO &&
@@ -1188,6 +1165,11 @@ void update_tcouple(FILE         *fplog,
             vrescale_tcoupl(inputrec,ekind,dttc,
                             state->therm_integral,upd->sd->gaussrand);
             break;
+        }
+        /* rescale in place here */
+        if (EI_VV(inputrec->eI))
+        {
+            rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v);
         }
     }
     else 
@@ -1698,18 +1680,15 @@ void update_coords(FILE         *fplog,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
                              md->invmass,md->ptype,
-                             md->cFREEZE,md->cACC,md->cTC,
+                             md->cFREEZE,md->cACC,
                              state->v,force,
-                             ((inputrec->eI == eiVVAK && UpdatePart == etrtVELOCITY1) ||
-                              (inputrec->eI == eiVV   && UpdatePart == etrtVELOCITY2)),
                              bExtended,state->veta,alpha);  
             break;
         case etrtPOSITION:
             do_update_vv_pos(start,nrend,dt,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
-                             md->invmass,md->ptype,
-                             md->cFREEZE,md->cACC,md->cTC,
+                             md->invmass,md->ptype,md->cFREEZE,
                              state->x,xprime,state->v,force,
                              bExtended,state->veta,alpha);
             break;

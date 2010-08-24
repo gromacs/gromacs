@@ -239,7 +239,7 @@
  [ cmap ]
 	-C	N	CA	C	+N
 
-[ CYS2 ]  ; disulfide cystine residue provided by Michel Cuendet
+[ CYS2 ]  ; disulfide cystine
  [ atoms ]
         N       NH1     -0.47   0
         HN      H       0.31    0

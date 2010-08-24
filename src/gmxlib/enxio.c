@@ -50,7 +50,7 @@
          Please keep it that way. */
 
 /* This number should be increased whenever the file format changes! */
-static const int enx_version = 4;
+static const int enx_version = 5;
 
 const char *enx_block_id_name[] = {
     "Averaged orientation restraints",
@@ -495,11 +495,19 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         }
         if (*file_version >= 3)
         {
-            gmx_fio_do_gmx_large_int(ef->fio, fr->nsteps);
+            if (!gmx_fio_do_gmx_large_int(ef->fio, fr->nsteps)) *bOK = FALSE;
         }
         else
         {
             fr->nsteps = max(1,fr->nsum);
+        }
+        if (*file_version >= 5)
+        {
+            if (!gmx_fio_do_double(ef->fio, fr->dt)) *bOK = FALSE;
+        }
+        else
+        {
+            fr->dt = 0;
         }
     }
     if (!gmx_fio_do_int(ef->fio, fr->nre))     *bOK = FALSE;
@@ -633,6 +641,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         
         fr->nsum   = fr->step - ef->eo.first_step + 1;
         fr->nsteps = fr->step - ef->eo.step_prev;
+        fr->dt     = 0;
     }
 	
     return *bOK;

@@ -35,9 +35,6 @@
 #ifndef _matrix_h
 #define _matrix_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "simple.h"
 

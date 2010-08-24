@@ -259,7 +259,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 	buf2[strlen(buf2)-1]='\0';
 	ltrim(buf2);
 	rtrim(buf2);
-	bMolecules=(strcasecmp(buf2,"molecules")==0);
+	bMolecules=(gmx_strcasecmp(buf2,"molecules")==0);
       }
       fprintf(fpout,"%s",buf);
     } else if (!bMolecules) {
@@ -267,7 +267,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
     } else {
       /* Check if this is a line with solvent molecules */
       sscanf(buf,"%s",buf2);
-      if (strcasecmp(buf2,grpname) == 0) {
+      if (gmx_strcasecmp(buf2,grpname) == 0) {
 	sol_line = nmol_line;
 	sscanf(buf,"%*s %d",&nsol_last);
       }

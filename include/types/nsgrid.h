@@ -35,9 +35,6 @@
 #ifndef _nsgrid_h
 #define _nsgrid_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "simple.h"
 

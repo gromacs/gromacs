@@ -11,7 +11,7 @@
 [ impropers ]
  C	CA	OT2	OT1      
 
-; Created by Cuendet and Bjelkmar.
+
 [ COOH ]
 [ replace ]
  C	C	CD		12.011	0.72
@@ -27,7 +27,7 @@
 [ impropers ]
  C	CA	OT2	OT1
 
-; Created by Michel Cuendet.
+
 [ CT2 ]
 [ replace ]
  C		CC		12.011	0.55
@@ -45,3 +45,33 @@
  C	CA	NT	O
  NT	C	HT1	HT2
  NT	C	HT2	HT1
+[ CT3 ]
+; N-Methylamide C-terminus
+;
+;      |
+;      C=O
+;      |
+;      NT-HNT
+;      |
+; HT1-CAT-HT3
+;      |
+;     HT2
+;
+[ delete ]
+OXT
+[ add ]
+1      8       NT       C      CA      N
+        NH1    14.0027  -0.47
+1      2       HNT      NT     C       O
+        H       1.008   0.31
+1      8       CAT      NT     C       O
+        CT3   12.011  -0.11
+3      4       HT       CAT    NT      C
+        HA      1.008   0.09
+[ bonds ]
+NT    CAT              ; otherwise CAT does not get bonded to other atoms...
+[ impropers ]
+NT     C       CAT      HNT
+C      CA      NT       O
+[ cmap ]
+-C     N       CA      C        NT

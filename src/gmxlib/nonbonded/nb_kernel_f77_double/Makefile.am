@@ -38,7 +38,7 @@ libnb_kernel_f77_double_la_SOURCES = \
 	nb_kernel323_f77_double.h nb_kernel324_f77_double.h nb_kernel330_f77_double.h nb_kernel331_f77_double.h \
 	nb_kernel332_f77_double.h nb_kernel333_f77_double.h nb_kernel334_f77_double.h nb_kernel400_f77_double.h \
 	nb_kernel410_f77_double.h nb_kernel420_f77_double.h nb_kernel430_f77_double.h                     \
-	nb_kernel_f77_double.c    nb_kernel_f77_double.h	                                        \
+	nb_kernel_f77_double.c    nb_kernel_f77_double.h    nb_kernel_f77sync.c        \
 	f77dkernel010.f     f77dkernel020.f     f77dkernel030.f     f77dkernel100.f     \
 	f77dkernel101.f     f77dkernel102.f     f77dkernel103.f     f77dkernel104.f     \
 	f77dkernel110.f     f77dkernel111.f     f77dkernel112.f     f77dkernel113.f     \

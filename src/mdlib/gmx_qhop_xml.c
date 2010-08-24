@@ -149,7 +149,7 @@ static void qhop_process_attr(FILE *fp,xmlAttrPtr attr,int parent,
     attrname = (char *)attr->name;
     attrval  = (char *)attr->children->content;
     
-#define atest(s) ((strcasecmp(attrname,s) == 0) && (attrval != NULL))
+#define atest(s) ((gmx_strcasecmp(attrname,s) == 0) && (attrval != NULL))
     kkk = find_elem(attrname,exmlNR,exml_names);
     if (attrval != NULL)
       xbuf[kkk] = strdup(attrval);

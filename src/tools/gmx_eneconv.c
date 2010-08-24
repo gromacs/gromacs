@@ -657,6 +657,7 @@ int gmx_eneconv(int argc,char *argv[])
 	}
 
 	fro->nsteps = ee_sum_nsteps;
+	fro->dt     = fr->dt;
 
 	if (ee_sum_nsum <= 1) {
 	  fro->nsum = 0;

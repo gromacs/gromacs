@@ -36,22 +36,18 @@
 #ifndef _invblock_h
 #define _invblock_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern atom_id *make_invblock(const t_block *block,int nr);
+atom_id *make_invblock(const t_block *block,int nr);
 /* Inverse the block structure. nr is the maximum entry in the inversed
  * array, and therefore the dimension of the returned array
  */
 
-extern atom_id *make_invblocka(const t_blocka *block,int nr);
+atom_id *make_invblocka(const t_blocka *block,int nr);
 /* Inverse the block structure. nr is the maximum entry in the inversed
  * array, and therefore the dimension of the returned array
  */

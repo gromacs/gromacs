@@ -111,7 +111,7 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
                         for(k=1; (pa[j].u.c[k] != NULL); k++)
                             /* only check ptr against beginning of 
                                pa[j].u.c[k] */
-                            if (strncasecmp(ptr,pa[j].u.c[k],strlen(ptr)) == 0)
+                            if (gmx_strncasecmp(ptr,pa[j].u.c[k],strlen(ptr)) == 0)
                                 if ( ( match == NOTSET ) || 
                                         ( strlen(pa[j].u.c[k]) < 
                                           strlen(pa[j].u.c[match]) ) )
