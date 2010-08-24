@@ -3121,9 +3121,12 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
                                 upd,bInitStep);
 
-                /* velocity (for VV) */
-                update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,cr,nrnb,constr,&top->idef);
+		if (bVV)
+		{
+		    /* velocity half-step update */
+		    update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+				  ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,cr,nrnb,constr,&top->idef);
+		}
 
                 /* Above, initialize just copies ekinh into ekin,
                  * it doesn't copy position (for VV),
