@@ -519,7 +519,7 @@ t_restp *search_rtp(const char *key,int nrtp,t_restp rtp[])
   }
   if (besti == -1)
     gmx_fatal(FARGS,"Residue '%s' not found in residue topology database\n",key);
-  if (strlen(rtp[besti].resname) != strlen(key))
+  if (gmx_strcasecmp(rtp[besti].resname,key) != 0)
     fprintf(stderr,"Warning: '%s' not found in residue topology database, "
 	    "trying to use '%s'\n", key, rtp[besti].resname);
   
