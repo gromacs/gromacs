@@ -241,57 +241,107 @@ static void read_rtprename(const char *fname,FILE *fp,
   *rtprename  = rr;
 }
 
-static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
-			  int nrr,rtprename_t *rr,t_symtab *symtab,
-			  bool bVerbose)
+static char *search_resrename(int nrr,rtprename_t *rr,
+                              const char *name,
+                              bool bStart,bool bEnd,
+                              bool bCompareFFRTPname)
 {
-  int  r,i,j;
-  bool bStart,bEnd;
-  char *nn;
+    char *nn;
+    int i;
 
-  for(r=0; r<pdba->nres; r++) {
+    nn = NULL;
+
     i = 0;
-    while(i<nrr && strcmp(*pdba->resinfo[r].rtp,rr[i].gmx) != 0) {
-      i++;
+    while (i<nrr && ((!bCompareFFRTPname && strcmp(name,rr[i].gmx)  != 0) ||
+                     ( bCompareFFRTPname && strcmp(name,rr[i].main) != 0)))
+    {
+        i++;
     }
 
     /* If found in the database, rename this residue's rtp building block,
      * otherwise keep the old name.
      */
-    if (i < nrr) {
-      bStart = FALSE;
-      bEnd   = FALSE;
-      for(j=0; j<nterpairs; j++) {
-	if (r == r_start[j]) {
-	  bStart = TRUE;
-	}
-      }
-      for(j=0; j<nterpairs; j++) {
-	if (r == r_end[j]) {
-	  bEnd = TRUE;
-	}
-      }
-      if (bStart && bEnd) {
-	nn = rr[i].bter;
-      } else if (bStart) {
-	nn = rr[i].nter;
-      } else if (bEnd) {
-	nn = rr[i].cter;
-      } else {
-	nn = rr[i].main;
-      }
-      if (nn[0] == '-') {
-	gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",pdba->resinfo[r].rtp,bStart ? " as a starting terminus" : (bEnd ? " as an ending terminus" : ""));
-      }
-      if (strcmp(*pdba->resinfo[r].rtp,nn) != 0) {
-	if (bVerbose) {
-	  printf("Changing rtp entry of residue %d %s to '%s'\n",
-		 pdba->resinfo[r].nr,*pdba->resinfo[r].name,nn);
-	}
-	pdba->resinfo[r].rtp = put_symtab(symtab,nn);
-      }
+    if (i < nrr)
+    {
+        if (bStart && bEnd)
+        {
+            nn = rr[i].bter;
+        }
+        else if (bStart)
+        {
+            nn = rr[i].nter;
+        }
+        else if (bEnd)
+        {
+            nn = rr[i].cter;
+        }
+        else
+        {
+            nn = rr[i].main;
+        }
+        if (nn[0] == '-')
+        {
+            gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",name,bStart ? " as a starting terminus" : (bEnd ? " as an ending terminus" : ""));
+        }
     }
-  }
+
+    return nn;
+}
+      
+
+static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
+			  int nrr,rtprename_t *rr,t_symtab *symtab,
+			  bool bVerbose)
+{
+    int  r,i,j;
+    bool bStart,bEnd;
+    char *nn;
+    bool bFFRTPTERRNM;
+
+    bFFRTPTERRNM = (getenv("GMX_FFRTP_TER_RENAME") != NULL);
+
+    for(r=0; r<pdba->nres; r++)
+    {
+        bStart = FALSE;
+        bEnd   = FALSE;
+        for(j=0; j<nterpairs; j++)
+	{
+            if (r == r_start[j])
+	    {
+	        bStart = TRUE;
+	    }
+        }
+        for(j=0; j<nterpairs; j++)
+        {
+            if (r == r_end[j])
+            {
+                bEnd = TRUE;
+	    }
+        }
+
+	nn = search_resrename(nrr,rr,*pdba->resinfo[r].rtp,bStart,bEnd,FALSE);
+
+        if (nn == NULL && (bStart || bEnd))
+	{
+	    /* This is a terminal residue, but the residue name,
+             * currently stored in .rtp, is not a standard residue name,
+             * but probably a force field specific rtp name.
+             * Check if we need to rename it because it is terminal.
+             */
+            nn = search_resrename(nrr,rr,
+                                  *pdba->resinfo[r].rtp,bStart,bEnd,TRUE);
+        }
+
+        if (bFFRTPTERRNM && nn != NULL && strcmp(*pdba->resinfo[r].rtp,nn) != 0)
+        {
+	    if (bVerbose)
+            {
+                printf("Changing rtp entry of residue %d %s to '%s'\n",
+                       pdba->resinfo[r].nr,*pdba->resinfo[r].name,nn);
+	    }
+	    pdba->resinfo[r].rtp = put_symtab(symtab,nn);
+        }
+    }
 }
 
 static void pdbres_to_gmxrtp(t_atoms *pdba)
@@ -543,7 +593,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   t_hackblock *hbr;
   t_pdbindex *pdbi;
   atom_id *a;
-  char *atomnm,*bbnm;
+  char *atomnm;
   
   pdba=*pdbaptr;
   natoms=pdba->nr;
@@ -553,10 +603,6 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   
   for(i=0; i<natoms; i++) {
     atomnm = *pdba->atomname[i];
-    bbnm = *pdba->resinfo[pdba->atom[i].resind].rtp;
-    if ((rptr=search_rtp(bbnm,nrtp,restp)) == NULL) {
-      gmx_fatal(FARGS,"rtp entry %s not found",bbnm);
-    }
     rptr = &restp[pdba->atom[i].resind];
     for(j=0; (j<rptr->natom); j++) {
       if (gmx_strcasecmp(atomnm,*(rptr->atomname[j])) == 0) {
@@ -1503,9 +1549,9 @@ int main(int argc, char *argv[])
       
         
       if ( (cc->r_start[i]<0) || (cc->r_end[i]<0) ) {
-	printf("Problem with chain definition, or missing terminus residues.\n"
-	       "This chain does not appears to contain a recognized chain molecule.\n"
-           "If this is incorrect, you can edit residuetypes.dat to modify the behavior!\n");
+	printf("Problem with chain definition, or missing terminal residues.\n"
+	       "This chain does not appear to contain a recognized chain molecule.\n"
+           "If this is incorrect, you can edit residuetypes.dat to modify the behavior.\n");
            
 	cc->nterpairs = i;
 	break;
@@ -1575,7 +1621,7 @@ int main(int argc, char *argv[])
         if (nCtdb > 0)
         {
             tdblist = filter_ter(nrtp,restp,nCtdb,ctdb,
-                                 *pdba->resinfo[cc->r_start[i]].name,
+                                 *pdba->resinfo[cc->r_end[i]].name,
                                  *pdba->resinfo[cc->r_end[i]].rtp,
                                  &ntdblist);
             if(ntdblist==0)

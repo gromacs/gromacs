@@ -372,10 +372,11 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
     t_restp *   restp;
     int         i,j,n,len,none_idx;
     bool        found;
-    char *s,*s2,*c;
+    char        *rtpname_match,*s,*s2,*c;
     t_hackblock **list;
     
-    restp = search_rtp(rtpname,nrtp,rtp);
+    rtpname_match = search_rtp(rtpname,nrtp,rtp);
+    restp = get_restp(rtpname_match,nrtp,rtp);
     
     n=0;
     list=NULL;

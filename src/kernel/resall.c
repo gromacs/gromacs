@@ -492,36 +492,91 @@ int neq_str(const char *a1,const char *a2)
     {
         j++;
     }
-    if (j == l1 && j == l2)
-    {
-        /* Exact match */
-        return 1000;
-    }
-    else
-    {
-        /* Partial match */
-        return j;
-    }
+
+    return j;
 }
 
-t_restp *search_rtp(const char *key,int nrtp,t_restp rtp[])
+char *search_rtp(const char *key,int nrtp,t_restp rtp[])
 {
-  int i,n,best,besti;
+    int  i,n,nbest,best,besti;
+    char bestbuf[STRLEN];
 
-  besti=-1;
-  best=1;
-  for(i=0; (i<nrtp); i++) {
-    n=neq_str(key,rtp[i].resname);
-    if (n > best) {
-      besti=i;
-      best=n;
+    nbest =  0;
+    besti = -1;
+    /* We want to match at least one character */
+    best  =  1;
+    for(i=0; (i<nrtp); i++)
+    {
+        if (gmx_strcasecmp(key,rtp[i].resname) == 0)
+        {
+             besti = i;
+             nbest = 1;
+             break;
+        }
+        else
+        {
+            /* Allow a mismatch of at most one character (with warning) */
+            n = neq_str(key,rtp[i].resname);
+            if (n >= best &&
+                n+1 >= strlen(key) &&
+                n+1 >= strlen(rtp[i].resname))
+            {
+                if (n == best)
+                {
+                    if (nbest == 1)
+                    {
+                        strcpy(bestbuf,rtp[besti].resname);
+                    }
+                    if (nbest >= 1)
+                    {
+                        strcat(bestbuf," or ");
+                        strcat(bestbuf,rtp[i].resname);
+                    }
+                }
+                else
+                {
+                    nbest = 0;
+                }
+                besti = i;
+                best  = n;
+                nbest++;
+            }
+        }
     }
-  }
-  if (besti == -1)
-    gmx_fatal(FARGS,"Residue '%s' not found in residue topology database\n",key);
-  if (strlen(rtp[besti].resname) != strlen(key))
-    fprintf(stderr,"Warning: '%s' not found in residue topology database, "
-	    "trying to use '%s'\n", key, rtp[besti].resname);
+    if (nbest > 1)
+    {
+        gmx_fatal(FARGS,"Residue '%s' not found in residue topology database, looks a bit like %s",key,bestbuf);
+    }
+    else if (besti == -1)
+    {
+        gmx_fatal(FARGS,"Residue '%s' not found in residue topology database",key);
+    }
+    if (gmx_strcasecmp(rtp[besti].resname,key) != 0)
+    {
+        fprintf(stderr,
+                "\nWARNING: '%s' not found in residue topology database, "
+                "trying to use '%s'\n\n", key, rtp[besti].resname);
+    }
   
-  return &rtp[besti];
+    return rtp[besti].resname;
+}
+
+t_restp *get_restp(const char *rtpname,int nrtp,t_restp rtp[])
+{
+    int  i;
+
+    i = 0;
+    while (i < nrtp && gmx_strcasecmp(rtpname,rtp[i].resname) != 0)
+    {
+        i++;
+    }
+    if (i >= nrtp)
+    {
+        /* This should never happen, since search_rtp should have been called
+         * before calling get_restp.
+         */
+        gmx_fatal(FARGS,"Residue type '%s' not found in residue topology database",rtpname);
+    }
+  
+    return &rtp[i];
 }

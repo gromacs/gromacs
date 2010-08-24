@@ -427,7 +427,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     type=at->atom[atom].type;
   else {
     /* get type from rtp */
-    rtpp = search_rtp(*(at->resinfo[at->atom[atom].resind].name),nrtp,rtp);
+    rtpp = get_restp(*(at->resinfo[at->atom[atom].resind].name),nrtp,rtp);
     bNterm = gmx_residuetype_is_protein(rt,*(at->resinfo[at->atom[atom].resind].name)) && 
       (at->atom[atom].resind == 0);
     j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
@@ -460,7 +460,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     mass=at->atom[atom].m;
   else {
     /* get mass from rtp */
-    rtpp = search_rtp(*(at->resinfo[at->atom[atom].resind].name),nrtp,rtp);
+    rtpp = get_restp(*(at->resinfo[at->atom[atom].resind].name),nrtp,rtp);
     bNterm = gmx_residuetype_is_protein(rt,*(at->resinfo[at->atom[atom].resind].name)) && 
       (at->atom[atom].resind == 0);
     j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
