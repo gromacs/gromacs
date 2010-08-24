@@ -543,7 +543,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   t_hackblock *hbr;
   t_pdbindex *pdbi;
   atom_id *a;
-  char *atomnm,*bbnm;
+  char *atomnm;
   
   pdba=*pdbaptr;
   natoms=pdba->nr;
@@ -553,10 +553,6 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   
   for(i=0; i<natoms; i++) {
     atomnm = *pdba->atomname[i];
-    bbnm = *pdba->resinfo[pdba->atom[i].resind].rtp;
-    if ((rptr=search_rtp(bbnm,nrtp,restp)) == NULL) {
-      gmx_fatal(FARGS,"rtp entry %s not found",bbnm);
-    }
     rptr = &restp[pdba->atom[i].resind];
     for(j=0; (j<rptr->natom); j++) {
       if (gmx_strcasecmp(atomnm,*(rptr->atomname[j])) == 0) {
@@ -1503,9 +1499,9 @@ int main(int argc, char *argv[])
       
         
       if ( (cc->r_start[i]<0) || (cc->r_end[i]<0) ) {
-	printf("Problem with chain definition, or missing terminus residues.\n"
-	       "This chain does not appears to contain a recognized chain molecule.\n"
-           "If this is incorrect, you can edit residuetypes.dat to modify the behavior!\n");
+	printf("Problem with chain definition, or missing terminal residues.\n"
+	       "This chain does not appear to contain a recognized chain molecule.\n"
+           "If this is incorrect, you can edit residuetypes.dat to modify the behavior.\n");
            
 	cc->nterpairs = i;
 	break;

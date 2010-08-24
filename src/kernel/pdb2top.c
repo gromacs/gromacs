@@ -860,6 +860,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 			       int *rn, int *rc)
 {
   int i, j, k, l;
+  char *key;
   t_restp *res;
   char buf[STRLEN];
   const char *Hnum="123456";
@@ -880,7 +881,17 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
   /* then the whole rtp */
   for(i=0; i < nres; i++) {
-    res = search_rtp(*resinfo[i].rtp,nrtp,rtp);
+    /* Here we allow a mismatch of one character when looking for the rtp entry.
+     * For such a mismatch there should be only one mismatching name.
+     * This is mainly useful for small molecules such as ions.
+     * Note that this will usually not work for protein, DNA and RNA,
+     * since there the residue names should be listed in residuetypes.dat
+     * and an error will have been generated earlier in the process.
+     */
+    key = *resinfo[i].rtp;
+    snew(resinfo[i].rtp,1);
+    *resinfo[i].rtp = search_rtp(key,nrtp,rtp);
+    res = get_restp(*resinfo[i].rtp,nrtp,rtp);
     copy_t_restp(res, &(*restp)[i]);
 
     /* Check that we do not have different bonded types in one molecule */
