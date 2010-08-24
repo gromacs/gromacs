@@ -2201,7 +2201,7 @@ void do_index(const char* mdparin, const char *ndx,
         /* set energy group exclusions between all coarse-grained and explicit groups */
       for (j = 0; j < nr; j++) {
             for (k = 0; k < nr; k++) {
-                if (ir->adress_group_explicit[k] && !ir->adress_group_explicit[j]){
+                if (!(ir->adress_group_explicit[k] == ir->adress_group_explicit[j])){
                     ir->opts.egp_flags[nr * j + k] |= EGP_EXCL;
                     if (debug) fprintf(debug,"AdResS excl %s %s \n",
                         (char*)(gnames[groups->grps[egcENER].nm_ind[j]]),
