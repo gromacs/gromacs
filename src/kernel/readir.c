@@ -1286,7 +1286,7 @@ static int search_QMstring(char *s,int ng,const char *gn[])
   int i;
 
   for(i=0; (i<ng); i++)
-    if (strcasecmp(s,gn[i]) == 0)
+    if (gmx_strcasecmp(s,gn[i]) == 0)
       return i;
 
   gmx_fatal(FARGS,"this QM method or basisset (%s) is not implemented\n!",s);
@@ -1301,7 +1301,7 @@ int search_string(char *s,int ng,char *gn[])
   int i;
   
   for(i=0; (i<ng); i++)
-    if (strcasecmp(s,gn[i]) == 0)
+    if (gmx_strcasecmp(s,gn[i]) == 0)
       return i;
       
   gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default goups in your mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
@@ -1726,14 +1726,14 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
   for(i=0; i<nelem/2; i++) {
     j = 0;
     while ((j < nr) &&
-	   strcasecmp(names[2*i],*(gnames[groups->grps[egcENER].nm_ind[j]])))
+	   gmx_strcasecmp(names[2*i],*(gnames[groups->grps[egcENER].nm_ind[j]])))
       j++;
     if (j == nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
 		  names[2*i],option);
     k = 0;
     while ((k < nr) &&
-	   strcasecmp(names[2*i+1],*(gnames[groups->grps[egcENER].nm_ind[k]])))
+	   gmx_strcasecmp(names[2*i+1],*(gnames[groups->grps[egcENER].nm_ind[k]])))
       k++;
     if (k==nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
@@ -2015,9 +2015,9 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.nFreeze,nr);
   for(i=k=0; (i<nfreeze); i++)
     for(j=0; (j<DIM); j++,k++) {
-      ir->opts.nFreeze[i][j]=(strncasecmp(ptr1[k],"Y",1)==0);
+      ir->opts.nFreeze[i][j]=(gmx_strncasecmp(ptr1[k],"Y",1)==0);
       if (!ir->opts.nFreeze[i][j]) {
-	if (strncasecmp(ptr1[k],"N",1) != 0) {
+	if (gmx_strncasecmp(ptr1[k],"N",1) != 0) {
 	  sprintf(warnbuf,"Please use Y(ES) or N(O) for freezedim only "
 		  "(not %s)", ptr1[k]);
 	  warning(wi,warn_buf);
@@ -2110,7 +2110,7 @@ void do_index(const char* mdparin, const char *ndx,
   for(i=0;i<nr;i++){
     ir->opts.QMmult[i]   = strtol(ptr1[i],NULL,10);
     ir->opts.QMcharge[i] = strtol(ptr2[i],NULL,10);
-    ir->opts.bSH[i]      = (strncasecmp(ptr3[i],"Y",1)==0);
+    ir->opts.bSH[i]      = (gmx_strncasecmp(ptr3[i],"Y",1)==0);
   }
 
   nCASelec  = str_nelem(CASelectrons,MAXPTR,ptr1);
@@ -2128,8 +2128,8 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.bOPT,nr);
   snew(ir->opts.bTS,nr);
   for(i=0;i<nr;i++){
-    ir->opts.bOPT[i] = (strncasecmp(ptr1[i],"Y",1)==0);
-    ir->opts.bTS[i]  = (strncasecmp(ptr2[i],"Y",1)==0);
+    ir->opts.bOPT[i] = (gmx_strncasecmp(ptr1[i],"Y",1)==0);
+    ir->opts.bTS[i]  = (gmx_strncasecmp(ptr2[i],"Y",1)==0);
   }
   nSAon     = str_nelem(SAon,MAXPTR,ptr1);
   nSAoff    = str_nelem(SAoff,MAXPTR,ptr2);

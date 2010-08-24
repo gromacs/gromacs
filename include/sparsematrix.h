@@ -32,10 +32,6 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifndef _SPARSEMATRIX_H_
 #define _SPARSEMATRIX_H_
 

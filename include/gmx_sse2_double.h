@@ -27,10 +27,6 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /* We require SSE2 now! */
 
 #include <math.h>
@@ -45,6 +41,8 @@
 
 
 #include <stdio.h>
+
+#include "types/simple.h"
                                       
 /***************************************************
  *                                                 *

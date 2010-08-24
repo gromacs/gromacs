@@ -32,10 +32,6 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

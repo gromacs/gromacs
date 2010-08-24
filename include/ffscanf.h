@@ -32,17 +32,13 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void ffscanf(FILE *in,char *fmt, ...);
+void ffscanf(FILE *in,char *fmt, ...);
 
 #ifdef __cplusplus
 }

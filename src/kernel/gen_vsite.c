@@ -120,7 +120,7 @@ static int ddb_name2dir(char *name)
   index=-1;
 
   for(i=0;i<DDB_DIR_NR && index<0;i++)
-    if(!strcasecmp(name,ddb_dirnames[i]))
+    if(!gmx_strcasecmp(name,ddb_dirnames[i]))
       index=i;
   
   return index;
@@ -175,11 +175,11 @@ static void read_vsite_database(const char *ddbname,
 	  (*ch) = 0;
 	trim (dirstr);
 
-	if(!strcasecmp(dirstr,"HID"))
+	if(!gmx_strcasecmp(dirstr,"HID"))
 	  sprintf(dirstr,"HISA");
-	else if(!strcasecmp(dirstr,"HIE"))
+	else if(!gmx_strcasecmp(dirstr,"HIE"))
 	  sprintf(dirstr,"HISB");
-	else if(!strcasecmp(dirstr,"HIP"))
+	else if(!gmx_strcasecmp(dirstr,"HIP"))
 	  sprintf(dirstr,"HISH");
 
 	curdir=ddb_name2dir(dirstr);
@@ -196,7 +196,7 @@ static void read_vsite_database(const char *ddbname,
 	case DDB_NH3:
 	case DDB_NH2:
 	  n = sscanf(pline,"%s%s%s",s1,s2,s3);
-	  if(n<3 && !strcasecmp(s2,"planar")) {
+	  if(n<3 && !gmx_strcasecmp(s2,"planar")) {
 	    srenew(vsiteconflist,nvsite+1);
 	    strncpy(vsiteconflist[nvsite].atomtype,s1,MAXNAME-1);
 	    vsiteconflist[nvsite].isplanar=TRUE;
@@ -226,7 +226,7 @@ static void read_vsite_database(const char *ddbname,
 	case DDB_HISB:
 	case DDB_HISH:
 	  i=0;
-	  while((i<ntop) && strcasecmp(dirstr,vsitetoplist[i].resname))
+	  while((i<ntop) && gmx_strcasecmp(dirstr,vsitetoplist[i].resname))
 	    i++;
 	  /* Allocate a new topology entry if this is a new residue */
 	  if(i==ntop) {
@@ -280,7 +280,7 @@ static int nitrogen_is_planar(t_vsiteconf vsiteconflist[],int nvsiteconf,char at
   int i,res;
   bool found=FALSE;
   for(i=0;i<nvsiteconf && !found;i++) {
-    found=(!strcasecmp(vsiteconflist[i].atomtype,atomtype) && (vsiteconflist[i].nhydrogens==2));
+    found=(!gmx_strcasecmp(vsiteconflist[i].atomtype,atomtype) && (vsiteconflist[i].nhydrogens==2));
   }
   if(found)
     res=(vsiteconflist[i-1].isplanar==TRUE);
@@ -296,8 +296,8 @@ static char *get_dummymass_name(t_vsiteconf vsiteconflist[],int nvsiteconf,char 
   int i;
   bool found=FALSE;
   for(i=0;i<nvsiteconf && !found;i++) {
-    found=(!strcasecmp(vsiteconflist[i].atomtype,atom) &&
-	   !strcasecmp(vsiteconflist[i].nextheavytype,nextheavy));
+    found=(!gmx_strcasecmp(vsiteconflist[i].atomtype,atom) &&
+	   !gmx_strcasecmp(vsiteconflist[i].nextheavytype,nextheavy));
   }
   if(found)
     return vsiteconflist[i-1].dummymass;
@@ -314,7 +314,7 @@ static real get_ddb_bond(t_vsitetop *vsitetop, int nvsitetop,
   int i,j;
   
   i=0;
-  while(i<nvsitetop && strcasecmp(res,vsitetop[i].resname))
+  while(i<nvsitetop && gmx_strcasecmp(res,vsitetop[i].resname))
     i++;
   if(i==nvsitetop)
     gmx_fatal(FARGS,"No vsite information for residue %s found in vsite database.\n",res);
@@ -337,7 +337,7 @@ static real get_ddb_angle(t_vsitetop *vsitetop, int nvsitetop,
   int i,j;
   
   i=0;
-  while(i<nvsitetop && strcasecmp(res,vsitetop[i].resname))
+  while(i<nvsitetop && gmx_strcasecmp(res,vsitetop[i].resname))
     i++;
   if(i==nvsitetop)
     gmx_fatal(FARGS,"No vsite information for residue %s found in vsite database.\n",res);
@@ -1332,7 +1332,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	       t_atoms *at, t_symtab *symtab, rvec *x[], 
 	       t_params plist[], int *vsite_type[], int *cgnr[], 
 	       real mHmult, bool bVsiteAromatics,
-	       const char *ffdir,bool bAddCWD)
+	       const char *ffdir)
 {
 #define MAXATOMSPERRESIDUE 16
   int  i,j,k,m,i0,ni0,whatres,resind,add_shift,ftype,nvsite,nadd;
@@ -1409,7 +1409,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     fprintf(debug,"# # # VSITES # # #\n");
   }
 
-  ndb = fflib_search_file_end(ffdir,bAddCWD,".vsd",FALSE,&db);
+  ndb = fflib_search_file_end(ffdir,".vsd",FALSE,&db);
   nvsiteconf    = 0;
   vsiteconflist = NULL;
   nvsitetop     = 0;
@@ -1466,9 +1466,9 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 		  
 	cmplength = bPartial[j] ? strlen(resnm)-1 : strlen(resnm);
 	
-	bFound = ((strncasecmp(resnm,resnms[j], cmplength)==0) ||
-		  (strncasecmp(resnm,resnmsN[j],cmplength)==0) ||
-		  (strncasecmp(resnm,resnmsC[j],cmplength)==0));
+	bFound = ((gmx_strncasecmp(resnm,resnms[j], cmplength)==0) ||
+		  (gmx_strncasecmp(resnm,resnmsN[j],cmplength)==0) ||
+		  (gmx_strncasecmp(resnm,resnmsC[j],cmplength)==0));
 	
 	if ( bFound ) {
 	  whatres=j;
@@ -1479,7 +1479,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	    ats[k]=NOTSET;
           for(m=i; m<at->nr && at->atom[m].resind==resind && ats[k]==NOTSET;m++) 
         {
-	      if (strcasecmp(*(at->atomname[m]),atnms[j][k])==0) 
+	      if (gmx_strcasecmp(*(at->atomname[m]),atnms[j][k])==0) 
           {
               ats[k]=m;
               nrfound++;
@@ -1592,7 +1592,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	
       } else if ( /*(nrHatoms == 2) && (nrbonds == 2) && REMOVED this test
 		   DvdS 19-01-04 */
-		  (strncasecmp(*at->atomname[Heavy],"OW",2)==0) ) {
+		  (gmx_strncasecmp(*at->atomname[Heavy],"OW",2)==0) ) {
 	bAddVsiteParam=FALSE; /* this is water: skip these hydrogens */
 	if (bFirstWater) {
 	  bFirstWater=FALSE;

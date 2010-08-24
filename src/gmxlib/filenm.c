@@ -545,7 +545,7 @@ int fn2ftp(const char *fn)
 
     for (i = 0; (i < efNR); i++)
         if ((eptr = deffile[i].ext) != NULL)
-            if (strcasecmp(feptr, eptr) == 0)
+            if (gmx_strcasecmp(feptr, eptr) == 0)
                 break;
 
     return i;
@@ -560,7 +560,7 @@ static void set_extension(char *buf, int ftp)
     df = &(deffile[ftp]);
     len = strlen(buf);
     extlen = strlen(df->ext);
-    if ((len <= extlen) || (strcasecmp(&(buf[len - extlen]), df->ext) != 0))
+    if ((len <= extlen) || (gmx_strcasecmp(&(buf[len - extlen]), df->ext) != 0))
         strcat(buf, df->ext);
 }
 
@@ -661,7 +661,7 @@ static void set_filenm(t_filenm *fnm, const char *name, bool bCanNotOverride,
             extlen = strlen(z_ext[i]);
             if (len > extlen)
             {
-                if (strcasecmp(name+len-extlen,z_ext[i]) == 0)
+                if (gmx_strcasecmp(name+len-extlen,z_ext[i]) == 0)
                 {
                     buf[len-extlen]='\0';
                     break;

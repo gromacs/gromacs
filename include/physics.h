@@ -36,10 +36,6 @@
 #ifndef _physics_h
 #define _physics_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /*
  * Physical constants to be used in Gromacs.
  * No constants (apart from 0, 1 or 2) should

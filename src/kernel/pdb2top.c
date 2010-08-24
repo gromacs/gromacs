@@ -84,7 +84,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
         bFound=FALSE;
         for (k=i0; k<i; k++) 
         {
-            bFound = (bFound || !strcasecmp(*(at->atomname[k]),name));
+            bFound = (bFound || !gmx_strcasecmp(*(at->atomname[k]),name));
         }
         if (!bFound)
         {
@@ -94,7 +94,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
                     name,*(at->resinfo[resind].name),at->resinfo[resind].nr);
             if (name[0]=='H' || name[0]=='h')
             {
-                fprintf(stderr,"         You might need to add atom %s to the hydrogen database of buidling block %s\n"
+                fprintf(stderr,"         You might need to add atom %s to the hydrogen database of building block %s\n"
                         "         in the file %s.hdb (see the manual)\n",
                         name,*(at->resinfo[resind].rtp),rp->filebase);
             }
@@ -132,9 +132,9 @@ choose_ff(const char *ffsel,
           char *ffdir, int ffdir_maxlen)
 {
     int  nff;
-    char **ffdirs,**ffs,*ptr;
+    char **ffdirs,**ffs,**ffs_dir,*ptr;
     int  i,j,sel;
-    char buf[STRLEN],**desc,*doc_dir;
+    char buf[STRLEN],**desc;
     FILE *fp;
     char *pret;
 
@@ -150,18 +150,26 @@ choose_ff(const char *ffsel,
 
     /* Store the force field names in ffs */
     snew(ffs,nff);
+    snew(ffs_dir,nff);
     for(i=0; i<nff; i++)
     {
         /* Remove the path from the ffdir name */
         ptr = strrchr(ffdirs[i],DIR_SEPARATOR);
-        if (ptr == 0)
+        if (ptr == NULL)
         {
             ffs[i] = strdup(ffdirs[i]);
+            ffs_dir[i] = low_gmxlibfn(ffdirs[i],FALSE,FALSE);
+            if (ffs_dir[i] == NULL)
+            {
+                gmx_fatal(FARGS,"Can no longer find file '%s'",ffdirs[i]);
+            }
         }
         else
         {
             ffs[i] = strdup(ptr+1);
+            ffs_dir[i] = strdup(ffdirs[i]);
         }
+        ffs_dir[i][strlen(ffs_dir[i])-strlen(ffs[i])-1] = '\0';
         /* Remove the extension from the ffdir name */
         ffs[i][strlen(ffs[i])-strlen(fflib_forcefield_dir_ext())] = '\0';
     }
@@ -173,6 +181,10 @@ choose_ff(const char *ffsel,
         {
             if (strcmp(ffs[i],ffsel) == 0)
             {
+                if (sel >= 0)
+                {
+                    gmx_fatal(FARGS,"There are multiple force field directories in your path with the name '%s'. Run without the -ff switch and select the force field interactively.",ffsel);
+                }
                 sel = i;
             }
         }
@@ -186,30 +198,31 @@ choose_ff(const char *ffsel,
         snew(desc,nff);
         for(i=0; (i<nff); i++)
         {
-            sprintf(buf,"%s%c%s",
-                    ffdirs[i],DIR_SEPARATOR,fflib_forcefield_doc());
-            doc_dir = low_gmxlibfn(buf,FALSE);
-            if (doc_dir != NULL)
+            sprintf(buf,"%s%c%s%s%c%s",
+                    ffs_dir[i],DIR_SEPARATOR,
+                    ffs[i],fflib_forcefield_dir_ext(),DIR_SEPARATOR,
+                    fflib_forcefield_doc());
+            if (gmx_fexist(buf))
             {
                 /* We don't use fflib_open, because we don't want printf's */
-                fp = ffopen(doc_dir,"r");
+                fp = ffopen(buf,"r");
                 snew(desc[i],STRLEN);
                 get_a_line(fp,desc[i],STRLEN);
                 ffclose(fp);
-                sfree(doc_dir);
             }
             else
             {
                 desc[i] = strdup(ffs[i]);
             }
         }
+        /*
         for(i=0; (i<nff); i++)
         {
             for(j=i+1; (j<nff); j++)
             {
                 if ((desc[i][0] == '[' && desc[j][0] != '[') ||
                     ((desc[i][0] == '[' || desc[j][0] != '[') &&
-                     strcasecmp(desc[i],desc[j]) > 0))
+                     gmx_strcasecmp(desc[i],desc[j]) > 0))
                 {
                     swap_strings(ffdirs,i,j);
                     swap_strings(ffs   ,i,j);
@@ -217,10 +230,15 @@ choose_ff(const char *ffsel,
                 }
             }
         }
+        */
 
         printf("\nSelect the Force Field:\n");
         for(i=0; (i<nff); i++)
         {
+            if (i == 0 || strcmp(ffs_dir[i-1],ffs_dir[i]) != 0)
+            {
+                printf("From '%s':\n",ffs_dir[i]);
+            }
             printf("%2d: %s\n",i+1,desc[i]);
             sfree(desc[i]);
         }
@@ -261,9 +279,11 @@ choose_ff(const char *ffsel,
     {
         sfree(ffdirs[i]);
         sfree(ffs[i]);
+        sfree(ffs_dir[i]);
     }
     sfree(ffdirs);
     sfree(ffs);
+    sfree(ffs_dir);
 }
 
 void choose_watermodel(const char *wmsel,const char *ffdir,
@@ -980,7 +1000,7 @@ static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
     {
         *nr = 0;
         
-        return (strcasecmp(anm,hack->nname) == 0);
+        return (gmx_strcasecmp(anm,hack->nname) == 0);
     }
     else
     {
@@ -999,7 +1019,7 @@ static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
         else
         {
             return (strlen(anm) == strlen(hack->nname) + 1 &&
-                    strncasecmp(anm,hack->nname,strlen(hack->nname)) == 0);
+                    gmx_strncasecmp(anm,hack->nname,strlen(hack->nname)) == 0);
         }
     }
 }
@@ -1024,7 +1044,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
     for(j=0; j<hbr->nhack; j++)
     {
         if (hbr->hack[j].oname != NULL && hbr->hack[j].nname != NULL &&
-            strcasecmp(oldnm,hbr->hack[j].oname) == 0)
+            gmx_strcasecmp(oldnm,hbr->hack[j].oname) == 0)
         {
             /* This is a replace entry. */
             /* Check if we are not replacing a replaced atom. */
@@ -1032,7 +1052,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
             for(k=0; k<hbr->nhack; k++) {
                 if (k != j &&
                     hbr->hack[k].oname != NULL && hbr->hack[k].nname != NULL &&
-                    strcasecmp(hbr->hack[k].nname,hbr->hack[j].oname) == 0)
+                    gmx_strcasecmp(hbr->hack[k].nname,hbr->hack[j].oname) == 0)
                 {
                     /* The replace in hack[j] replaces an atom that
                      * was already replaced in hack[k], we do not want
@@ -1051,7 +1071,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
             newnm = hbr->hack[j].nname;
             for(k=0; k<rptr->natom; k++)
             {
-                if (strcasecmp(newnm,*rptr->atomname[k]) == 0)
+                if (gmx_strcasecmp(newnm,*rptr->atomname[k]) == 0)
                 {
                     break;
                 }
@@ -1083,7 +1103,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
                         }
                         for(start_nr=0; start_nr<rptr->natom; start_nr++)
                         {
-                            if (strcasecmp(start_at,(*rptr->atomname[start_nr])) == 0)
+                            if (gmx_strcasecmp(start_at,(*rptr->atomname[start_nr])) == 0)
                             {
                                 break;
                             }
@@ -1120,14 +1140,14 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
             *pdba->atomname[atind] = strdup(newnm);
         }
         else if (hbr->hack[j].oname != NULL && hbr->hack[j].nname == NULL &&
-                 strcasecmp(oldnm,hbr->hack[j].oname) == 0)
+                 gmx_strcasecmp(oldnm,hbr->hack[j].oname) == 0)
         {
             /* This is a delete entry, check if this atom is present
              * in the rtp entry of this residue.
              */
             for(k=0; k<rptr->natom; k++)
             {
-                if (strcasecmp(oldnm,*rptr->atomname[k]) == 0)
+                if (gmx_strcasecmp(oldnm,*rptr->atomname[k]) == 0)
                 {
                     break;
                 }
@@ -1182,7 +1202,7 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
         rptr  = &restp[pdba->atom[i].resind];
         for(j=0; (j<rptr->natom); j++)
         {
-            if (strcasecmp(oldnm,*(rptr->atomname[j])) == 0)
+            if (gmx_strcasecmp(oldnm,*(rptr->atomname[j])) == 0)
             {
                 break;
             }
@@ -1270,7 +1290,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
              int *rn, int *rc, bool bAllowMissing,
              bool bVsites, bool bVsiteAromatics,
-             const char *ff, const char *ffdir, bool bAddCWD,
+             const char *ff, const char *ffdir,
              real mHmult,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
@@ -1326,7 +1346,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* determine which atoms will be vsites and add dummy masses 
        also renumber atom numbers in plist[0..F_NRE]! */
     do_vsites(nrtp, rtp, atype, atoms, tab, x, plist, 
-              &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir, bAddCWD);
+              &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir);
   }
   
   /* Make Angles and Dihedrals */

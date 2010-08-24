@@ -35,9 +35,6 @@
 #ifndef _state_h_
 #define _state_h_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "simple.h"
 

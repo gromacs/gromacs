@@ -122,9 +122,9 @@ static bool is_special(int nsb,t_specbond sb[],char *res,char *atom)
   
   for(i=0; (i<nsb); i++) {
     if (((strncmp(sb[i].res1,res,3) == 0) && 
-	 (strcasecmp(sb[i].atom1,atom) == 0)) ||
+	 (gmx_strcasecmp(sb[i].atom1,atom) == 0)) ||
 	((strncmp(sb[i].res2,res,3) == 0) && 
-	 (strcasecmp(sb[i].atom2,atom) == 0)))
+	 (gmx_strcasecmp(sb[i].atom2,atom) == 0)))
       return TRUE;
   }
   return FALSE;
@@ -149,9 +149,9 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
   for(i=0; (i<nsb); i++) {
     *index_sb = i;
     if (((strncmp(sb[i].res1,res1,3) == 0)  && 
-	 (strcasecmp(sb[i].atom1,at1) == 0) &&
+	 (gmx_strcasecmp(sb[i].atom1,at1) == 0) &&
 	 (strncmp(sb[i].res2,res2,3) == 0)  && 
-	 (strcasecmp(sb[i].atom2,at2) == 0))) {
+	 (gmx_strcasecmp(sb[i].atom2,at2) == 0))) {
       *bSwap = FALSE;
       if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d)) {
 	if (debug) fprintf(stderr,"%g\n", sb[i].length);
@@ -159,9 +159,9 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
       }
     }
     if (((strncmp(sb[i].res1,res2,3) == 0)  && 
-	 (strcasecmp(sb[i].atom1,at2) == 0) &&
+	 (gmx_strcasecmp(sb[i].atom1,at2) == 0) &&
 	 (strncmp(sb[i].res2,res1,3) == 0)  && 
-	 (strcasecmp(sb[i].atom2,at1) == 0))) {
+	 (gmx_strcasecmp(sb[i].atom2,at1) == 0))) {
       *bSwap = TRUE;
       if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d)) {
 	if (debug) fprintf(stderr,"%g\n", sb[i].length);
@@ -216,7 +216,7 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 		     *pdba->atomname[i]) &&
 	  !(nspec > 0 &&
 	    pdba->atom[sgp[nspec-1]].resind == pdba->atom[i].resind &&
-	    strcasecmp(*pdba->atomname[sgp[nspec-1]],
+	    gmx_strcasecmp(*pdba->atomname[sgp[nspec-1]],
 		       *pdba->atomname[i]) == 0)) {
 	specp[nspec] = pdba->atom[i].resind;
 	sgp[nspec] = i;
