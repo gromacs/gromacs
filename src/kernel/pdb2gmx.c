@@ -1,5 +1,5 @@
-/*
- * $id$ 
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  *
  *                This source code is part of
  * 
@@ -290,8 +290,8 @@ static char *search_resrename(int nrr,rtprename_t *rr,
       
 
 static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
-			  int nrr,rtprename_t *rr,t_symtab *symtab,
-			  bool bVerbose)
+                          int nrr,rtprename_t *rr,t_symtab *symtab,
+                          bool bVerbose)
 {
     int  r,i,j;
     bool bStart,bEnd;
@@ -305,25 +305,25 @@ static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
         bStart = FALSE;
         bEnd   = FALSE;
         for(j=0; j<nterpairs; j++)
-	{
+        {
             if (r == r_start[j])
-	    {
-	        bStart = TRUE;
-	    }
+            {
+                bStart = TRUE;
+            }
         }
         for(j=0; j<nterpairs; j++)
         {
             if (r == r_end[j])
             {
                 bEnd = TRUE;
-	    }
+            }
         }
 
-	nn = search_resrename(nrr,rr,*pdba->resinfo[r].rtp,bStart,bEnd,FALSE);
+        nn = search_resrename(nrr,rr,*pdba->resinfo[r].rtp,bStart,bEnd,FALSE);
 
-        if (nn == NULL && (bStart || bEnd))
-	{
-	    /* This is a terminal residue, but the residue name,
+        if (bFFRTPTERRNM && nn == NULL && (bStart || bEnd))
+        {
+            /* This is a terminal residue, but the residue name,
              * currently stored in .rtp, is not a standard residue name,
              * but probably a force field specific rtp name.
              * Check if we need to rename it because it is terminal.
@@ -332,75 +332,89 @@ static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
                                   *pdba->resinfo[r].rtp,bStart,bEnd,TRUE);
         }
 
-        if (bFFRTPTERRNM && nn != NULL && strcmp(*pdba->resinfo[r].rtp,nn) != 0)
+        if (nn != NULL && strcmp(*pdba->resinfo[r].rtp,nn) != 0)
         {
-	    if (bVerbose)
+            if (bVerbose)
             {
                 printf("Changing rtp entry of residue %d %s to '%s'\n",
                        pdba->resinfo[r].nr,*pdba->resinfo[r].name,nn);
-	    }
-	    pdba->resinfo[r].rtp = put_symtab(symtab,nn);
+            }
+            pdba->resinfo[r].rtp = put_symtab(symtab,nn);
         }
     }
 }
 
 static void pdbres_to_gmxrtp(t_atoms *pdba)
 {
-  int i;
+    int i;
   
-  for(i=0; (i<pdba->nres); i++) {
-    pdba->resinfo[i].rtp = pdba->resinfo[i].name;
-  }
+    for(i=0; (i<pdba->nres); i++)
+    {
+        if (pdba->resinfo[i].rtp == NULL)
+        {
+            pdba->resinfo[i].rtp = pdba->resinfo[i].name;
+        }
+    }
 }
 
 static void rename_pdbres(t_atoms *pdba,const char *oldnm,const char *newnm,
-			  bool bFullCompare,t_symtab *symtab)
+                          bool bFullCompare,t_symtab *symtab)
 {
-  char *resnm;
-  int i;
+    char *resnm;
+    int i;
   
-  for(i=0; (i<pdba->nres); i++) {
-    resnm = *pdba->resinfo[i].name;
-    if ((bFullCompare && (gmx_strcasecmp(resnm,oldnm) == 0)) ||
-	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
-      pdba->resinfo[i].name = put_symtab(symtab,newnm);
+    for(i=0; (i<pdba->nres); i++)
+    {
+        resnm = *pdba->resinfo[i].name;
+        if ((bFullCompare && (gmx_strcasecmp(resnm,oldnm) == 0)) ||
+            (!bFullCompare && strstr(resnm,oldnm) != NULL))
+        {
+            /* Rename the residue name (not the rtp name) */
+            pdba->resinfo[i].name = put_symtab(symtab,newnm);
+        }
     }
-  }
 }
 
 static void rename_bb(t_atoms *pdba,const char *oldnm,const char *newnm,
-		      bool bFullCompare,t_symtab *symtab)
+                      bool bFullCompare,t_symtab *symtab)
 {
-  char *bbnm;
-  int i;
+    char *bbnm;
+    int i;
   
-  for(i=0; (i<pdba->nres); i++) {
-    bbnm = *pdba->resinfo[i].rtp;
-    if ((bFullCompare && (gmx_strcasecmp(bbnm,oldnm) == 0)) ||
-	(!bFullCompare && strstr(bbnm,oldnm) != NULL)) {
-      pdba->resinfo[i].rtp = put_symtab(symtab,newnm);
+    for(i=0; (i<pdba->nres); i++)
+    {
+        /* We have not set the rtp name yes, use the residue name */
+        bbnm = *pdba->resinfo[i].name;
+        if ((bFullCompare && (gmx_strcasecmp(bbnm,oldnm) == 0)) ||
+            (!bFullCompare && strstr(bbnm,oldnm) != NULL))
+        {
+            /* Change the rtp builing block name */
+            pdba->resinfo[i].rtp = put_symtab(symtab,newnm);
+        }
     }
-  }
 }
 
 static void rename_bbint(t_atoms *pdba,const char *oldnm,
-			 const char *gettp(int,int,const rtprename_t *),
-			 bool bFullCompare,
-			 t_symtab *symtab,
-			 int nrr,const rtprename_t *rr)
+                         const char *gettp(int,int,const rtprename_t *),
+                         bool bFullCompare,
+                         t_symtab *symtab,
+                         int nrr,const rtprename_t *rr)
 {
-  int  i;
-  const char *ptr;
-  char *bbnm;
+    int  i;
+    const char *ptr;
+    char *bbnm;
   
-  for(i=0; i<pdba->nres; i++) {
-    bbnm = *pdba->resinfo[i].rtp;
-    if ((bFullCompare && (strcmp(bbnm,oldnm) == 0)) ||
-	(!bFullCompare && strstr(bbnm,oldnm) != NULL)) {
-      ptr = gettp(i,nrr,rr);
-      pdba->resinfo[i].rtp = put_symtab(symtab,ptr);
+    for(i=0; i<pdba->nres; i++)
+    {
+        /* We have not set the rtp name yes, use the residue name */
+        bbnm = *pdba->resinfo[i].name;
+        if ((bFullCompare && (strcmp(bbnm,oldnm) == 0)) ||
+            (!bFullCompare && strstr(bbnm,oldnm) != NULL))
+        {
+            ptr = gettp(i,nrr,rr);
+            pdba->resinfo[i].rtp = put_symtab(symtab,ptr);
+        }
     }
-  }
 }
 
 static void check_occupancy(t_atoms *atoms,const char *filename,bool bVerbose)
@@ -524,9 +538,6 @@ void process_chain(t_atoms *pdba, rvec *x,
 		   real angle,real distance,t_symtab *symtab,
 		   int nrr,const rtprename_t *rr)
 {
-  /* Initialize the rtp builing block names with the residue names */
-  pdbres_to_gmxrtp(pdba);
-
   /* Rename aromatics, lys, asp and histidine */
   if (bTyrU) rename_bb(pdba,"TYR","TYRU",FALSE,symtab);
   if (bTrpU) rename_bb(pdba,"TRP","TRPU",FALSE,symtab);
@@ -550,6 +561,17 @@ void process_chain(t_atoms *pdba, rvec *x,
     set_histp(pdba,x,angle,distance);
   else
     rename_bbint(pdba,"HIS",get_histp,TRUE,symtab,nrr,rr);
+
+  /* Initialize the rtp builing block names with the residue names
+   * for the residues that have not been processed above.
+   */
+  pdbres_to_gmxrtp(pdba);
+
+  /* Now we have all rtp names set.
+   * The rtp names will conform to Gromacs naming,
+   * unless the input pdb file contained one or more force field specific
+   * rtp names as residue names.
+   */
 }
 
 /* struct for sorting the atoms from the pdb file */
