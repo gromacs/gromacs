@@ -215,27 +215,17 @@ choose_ff(const char *ffsel,
                 desc[i] = strdup(ffs[i]);
             }
         }
-<<<<<<< HEAD
-        /*
-=======
         /* Order force fields from the same dir alphabetically
          * and put deprecated force fields at the end.
          */
->>>>>>> release-4-5-patches
         for(i=0; (i<nff); i++)
         {
             for(j=i+1; (j<nff); j++)
             {
-<<<<<<< HEAD
-                if ((desc[i][0] == '[' && desc[j][0] != '[') ||
-                    ((desc[i][0] == '[' || desc[j][0] != '[') &&
-                     gmx_strcasecmp(desc[i],desc[j]) > 0))
-=======
                 if (strcmp(ffs_dir[i],ffs_dir[j]) == 0 &&
                     ((desc[i][0] == '[' && desc[j][0] != '[') ||
                      ((desc[i][0] == '[' || desc[j][0] != '[') &&
                       gmx_strcasecmp(desc[i],desc[j]) > 0)))
->>>>>>> release-4-5-patches
                 {
                     swap_strings(ffdirs,i,j);
                     swap_strings(ffs   ,i,j);
