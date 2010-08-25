@@ -35,6 +35,10 @@
  * finished FD 09/07/08
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 #include "statutil.h"
 #include "typedefs.h"
