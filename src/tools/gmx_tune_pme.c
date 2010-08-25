@@ -31,6 +31,10 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "statutil.h"
 #include "typedefs.h"
 #include "smalloc.h"

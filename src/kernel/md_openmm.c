@@ -336,6 +336,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
     openmmData = openmm_init(fplog, ommOptions, ir, top_global, top, mdatoms, fr, state);
+    please_cite(fplog,"Friedrichs2009");
 
     if (MASTER(cr))
     {

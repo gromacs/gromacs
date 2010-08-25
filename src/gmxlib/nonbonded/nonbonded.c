@@ -285,14 +285,6 @@ gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
     nb_kernel_setup_x86_64_sse2(fplog,nb_kernel_list);
 #endif
 
-#if defined(GMX_SSE2) 
-#  ifdef GMX_DOUBLE
-	nb_kernel_setup_sse2_double(fplog,nb_kernel_list);
-#  else
-	nb_kernel_setup_sse2_single(fplog,nb_kernel_list);
-#  endif
-#endif
- 
 #if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
     nb_kernel_setup_ia64_double(fplog,nb_kernel_list);
 #endif
