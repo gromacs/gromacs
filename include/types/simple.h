@@ -82,7 +82,7 @@ extern "C" {
    * so we cannot use the name 'bool' in our C code anymore.
    */
 
-typedef unsigned char gmx_bool;
+typedef char gmx_bool;
 
 #ifndef FALSE
 #  define FALSE   0
