@@ -142,9 +142,9 @@ static void sort_filenames(int n,char **name,char **name2)
 }
 
 static int low_fflib_search_file_end(const char *ffdir,
-                                     bool bAddCWD,
+                                     gmx_bool bAddCWD,
                                      const char *file_end,
-                                     bool bFatalError,
+                                     gmx_bool bFatalError,
                                      char ***filenames,
                                      char ***filenames_short)
 {
@@ -152,7 +152,7 @@ static int low_fflib_search_file_end(const char *ffdir,
     char *lib,*dir;
     char buf[1024];
     char *libpath;
-    bool env_is_set;
+    gmx_bool env_is_set;
     int  len_fe,len_name;
     char **fns,**fns_short;
     char dir_print[GMX_PATH_MAX];
@@ -291,7 +291,7 @@ static int low_fflib_search_file_end(const char *ffdir,
 
 int fflib_search_file_end(const char *ffdir,
                           const char *file_end,
-                          bool bFatalError,
+                          gmx_bool bFatalError,
                           char ***filenames)
 {
     return low_fflib_search_file_end(ffdir,FALSE,file_end,bFatalError,
@@ -344,7 +344,7 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
     return n;
 }
 
-bool fflib_fexist(const char *file)
+gmx_bool fflib_fexist(const char *file)
 {
     char *file_fullpath;
 

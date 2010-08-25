@@ -148,7 +148,7 @@ int gmx_lie(int argc,char *argv[])
   FILE      *out;
   int       nre,nframes=0,ct=0;
   ener_file_t fp;
-  bool      bCont;
+  gmx_bool      bCont;
   t_liedata *ld;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;

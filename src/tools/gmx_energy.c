@@ -70,7 +70,7 @@ typedef struct {
 typedef struct {
     real   *ener;
     exactsum_t *es;
-    bool   bExactStat;
+    gmx_bool   bExactStat;
     double av;
     double rmsd;
     double ee;
@@ -97,10 +97,10 @@ static double mypow(double x,double y)
 
 static int *select_it(int nre,char *nm[],int *nset)
 {
-  bool *bE;
+  gmx_bool *bE;
   int  n,k,j,i;
   int  *set;
-  bool bVerbose = TRUE;
+  gmx_bool bVerbose = TRUE;
   
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
@@ -156,10 +156,10 @@ static void chomp(char *buf)
 
 static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
 {
-  bool *bE;
+  gmx_bool *bE;
   int  n,k,kk,j,i,nmatch,nind,nss;
   int  *set;
-  bool bEOF,bVerbose = TRUE,bLong=FALSE;
+  gmx_bool bEOF,bVerbose = TRUE,bLong=FALSE;
   char *ptr,buf[STRLEN];
   const char *fm4="%3d  %-14s";
   const char *fm2="%3d  %-34s";
@@ -600,7 +600,7 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
     gmx_large_int_t steps,np,p,bound_nb;
     enerdat_t *ed;
     exactsum_t *es;
-    bool bAllZero;
+    gmx_bool bAllZero;
     double x,sx,sy,sxx,sxy;
     ener_ee_t *eee;
 
@@ -840,15 +840,15 @@ static char *ee_pr(double ee,char *buf)
     return buf;
 }
 
-static void analyse_ener(bool bCorr,const char *corrfn,
-                         bool bFee,bool bSum,bool bFluct,bool bTempFluct,
-                         bool bVisco,const char *visfn,int nmol,
+static void analyse_ener(gmx_bool bCorr,const char *corrfn,
+                         gmx_bool bFee,gmx_bool bSum,gmx_bool bFluct,gmx_bool bTempFluct,
+                         gmx_bool bVisco,const char *visfn,int nmol,
                          int nconstr,
                          gmx_large_int_t start_step,double start_t,
                          gmx_large_int_t step,double t,
                          double time[], real reftemp,
                          enerdata_t *edat,
-                         int nset,int set[],bool *bIsEner,
+                         int nset,int set[],gmx_bool *bIsEner,
                          char **leg,gmx_enxnm_t *enm,
                          real Vaver,real ezero,
                          int nbmin,int nbmax,
@@ -1131,7 +1131,7 @@ static void print_time(FILE *fp,double t)
   fprintf(fp,"%12.6f",t);
 }
 
-static void print1(FILE *fp,bool bDp,real e)
+static void print1(FILE *fp,gmx_bool bDp,real e)
 {
   if (bDp)
     fprintf(fp,"  %16.12f",e);
@@ -1150,7 +1150,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
   ener_file_t enx;
   int  nre,timecheck,step,nenergy,nenergy2,maxenergy;
   int  i,j;
-  bool bCont;
+  gmx_bool bCont;
   real aver, beta;
   real **eneset2;
   double dE, sum;
@@ -1322,8 +1322,8 @@ int gmx_energy(int argc,char *argv[])
     "the energies must both be calculated from the same trajectory."
     
   };
-  static bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
-  static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
+  static gmx_bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
+  static gmx_bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
   static int  skip=0,nmol=1,nconstr=0,nbmin=5,nbmax=5;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
@@ -1388,13 +1388,13 @@ int gmx_energy(int argc,char *argv[])
   real       *bounds=NULL,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
   int        *index=NULL,*pair=NULL,norsel=0,*orsel=NULL,*or_label=NULL;
   int        nbounds=0,npairs;
-  bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE,bOTEN;
-  bool       bFoundStart,bCont,bEDR,bVisco;
+  gmx_bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE,bOTEN;
+  gmx_bool       bFoundStart,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt,ener,dbl;
   double     *time=NULL;
   real       Vaver;
   int        *set=NULL,i,j,k,nset,sss;
-  bool       *bIsEner=NULL;
+  gmx_bool       *bIsEner=NULL;
   char       **pairleg,**odtleg,**otenleg;
   char       **leg=NULL;
   char       **nms;

@@ -126,7 +126,7 @@ typedef struct {
   int  xtc_prec;
   ener_file_t fp_ene;
   const char *fn_cpt;
-  bool bKeepAndNumCPT;
+  gmx_bool bKeepAndNumCPT;
   int  eIntegrator;
   int  simulation_part;
   FILE *fp_dhdl;
@@ -151,8 +151,8 @@ extern tMPI_Thread_mutex_t deform_init_box_mutex;
 
 typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				int nfile,const t_filenm fnm[],
-				const output_env_t oenv, bool bVerbose,
-                                bool bCompact, int nstglobalcomm,
+				const output_env_t oenv, gmx_bool bVerbose,
+                                gmx_bool bCompact, int nstglobalcomm,
 				gmx_vsite_t *vsite,gmx_constr_t constr,
 				int stepout,
 				t_inputrec *inputrec,
@@ -220,7 +220,7 @@ void global_stat(FILE *log,gmx_global_stat_t gs,
 			gmx_constr_t constr,t_vcm *vcm,
 			int nsig,real *sig,
 			gmx_mtop_t *top_global, t_state *state_local, 
-			bool bSumEkinhOld, int flags);
+			gmx_bool bSumEkinhOld, int flags);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
 gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],
@@ -284,7 +284,7 @@ void finish_run(FILE *log,t_commrec *cr,const char *confout,
 		       t_inputrec *inputrec,
 		       t_nrnb nrnb[],gmx_wallcycle_t wcycle,
 		       gmx_runtime_t *runtime,
-		       bool bWriteStat);
+		       gmx_bool bWriteStat);
 
 void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 
@@ -327,7 +327,7 @@ void do_constrain_first(FILE *log,gmx_constr_t constr,
 			       t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 			       t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir); 
 			  
-void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
+void dynamic_load_balancing(gmx_bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,
 				   rvec x[],rvec v[],matrix box);
 /* Perform load balancing, i.e. split the particles over processors
@@ -335,8 +335,8 @@ void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
  */
 				   
 int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
-             const t_filenm fnm[], const output_env_t oenv, bool bVerbose,
-             bool bCompact, int nstglobalcomm, ivec ddxyz,int dd_node_order,
+             const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
+             gmx_bool bCompact, int nstglobalcomm, ivec ddxyz,int dd_node_order,
              real rdd, real rconstr, const char *dddlb_opt,real dlb_scale,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
 	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,
@@ -359,7 +359,7 @@ void init_md(FILE *fplog,
 		    gmx_mdoutf_t **outf,t_mdebin **mdebin,
 		    tensor force_vir,tensor shake_vir,
 		    rvec mu_tot,
-		    bool *bSimAnn,t_vcm **vcm, 
+		    gmx_bool *bSimAnn,t_vcm **vcm, 
 		    t_state *state, unsigned long Flags);
   /* Routine in sim_util.c */
 

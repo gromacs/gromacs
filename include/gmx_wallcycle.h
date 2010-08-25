@@ -45,7 +45,7 @@ extern "C" {
 
   enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD, ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_SOLVE, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcTEST, ewcNR };
 
-bool wallcycle_have_counter(void);
+gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
 gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr);

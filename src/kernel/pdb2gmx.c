@@ -243,8 +243,8 @@ static void read_rtprename(const char *fname,FILE *fp,
 
 static char *search_resrename(int nrr,rtprename_t *rr,
                               const char *name,
-                              bool bStart,bool bEnd,
-                              bool bCompareFFRTPname)
+                              gmx_bool bStart,gmx_bool bEnd,
+                              gmx_bool bCompareFFRTPname)
 {
     char *nn;
     int i;
@@ -291,12 +291,12 @@ static char *search_resrename(int nrr,rtprename_t *rr,
 
 static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
                           int nrr,rtprename_t *rr,t_symtab *symtab,
-                          bool bVerbose)
+                          gmx_bool bVerbose)
 {
     int  r,i,j;
-    bool bStart,bEnd;
+    gmx_bool bStart,bEnd;
     char *nn;
-    bool bFFRTPTERRNM;
+    gmx_bool bFFRTPTERRNM;
 
     bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == NULL);
 
@@ -358,7 +358,7 @@ static void pdbres_to_gmxrtp(t_atoms *pdba)
 }
 
 static void rename_pdbres(t_atoms *pdba,const char *oldnm,const char *newnm,
-                          bool bFullCompare,t_symtab *symtab)
+                          gmx_bool bFullCompare,t_symtab *symtab)
 {
     char *resnm;
     int i;
@@ -376,7 +376,7 @@ static void rename_pdbres(t_atoms *pdba,const char *oldnm,const char *newnm,
 }
 
 static void rename_bb(t_atoms *pdba,const char *oldnm,const char *newnm,
-                      bool bFullCompare,t_symtab *symtab)
+                      gmx_bool bFullCompare,t_symtab *symtab)
 {
     char *bbnm;
     int i;
@@ -396,7 +396,7 @@ static void rename_bb(t_atoms *pdba,const char *oldnm,const char *newnm,
 
 static void rename_bbint(t_atoms *pdba,const char *oldnm,
                          const char *gettp(int,int,const rtprename_t *),
-                         bool bFullCompare,
+                         gmx_bool bFullCompare,
                          t_symtab *symtab,
                          int nrr,const rtprename_t *rr)
 {
@@ -417,7 +417,7 @@ static void rename_bbint(t_atoms *pdba,const char *oldnm,
     }
 }
 
-static void check_occupancy(t_atoms *atoms,const char *filename,bool bVerbose)
+static void check_occupancy(t_atoms *atoms,const char *filename,gmx_bool bVerbose)
 {
   int i,ftp;
   int nzero=0;
@@ -480,9 +480,9 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
 
 static int read_pdball(const char *inf, const char *outf,char *title,
 		       t_atoms *atoms, rvec **x,
-		       int *ePBC,matrix box, bool bRemoveH,
+		       int *ePBC,matrix box, gmx_bool bRemoveH,
 		       t_symtab *symtab,gmx_residuetype_t rt,const char *watres,
-		       gmx_atomprop_t aps,bool bVerbose)
+		       gmx_atomprop_t aps,gmx_bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
   int  natom,new_natom,i;
@@ -532,9 +532,9 @@ static int read_pdball(const char *inf, const char *outf,char *title,
 }
 
 void process_chain(t_atoms *pdba, rvec *x, 
-		   bool bTrpU,bool bPheU,bool bTyrU,
-		   bool bLysMan,bool bAspMan,bool bGluMan,
-		   bool bHisMan,bool bArgMan,bool bGlnMan,
+		   gmx_bool bTrpU,gmx_bool bPheU,gmx_bool bTyrU,
+		   gmx_bool bLysMan,gmx_bool bAspMan,gmx_bool bGluMan,
+		   gmx_bool bHisMan,gmx_bool bArgMan,gmx_bool bGlnMan,
 		   real angle,real distance,t_symtab *symtab,
 		   int nrr,const rtprename_t *rr)
 {
@@ -694,7 +694,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   sfree(pdbi);
 }
 
-static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],bool bVerbose)
+static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],gmx_bool bVerbose)
 {
   int     i,j,oldnatoms,ndel;
   t_resinfo *ri;
@@ -923,7 +923,7 @@ typedef struct {
   char chainnum;
   int  start;
   int  natom;
-  bool bAllWat;
+  gmx_bool bAllWat;
   int  nterpairs;
   int  *chainstart;
 } t_pdbchain;
@@ -931,7 +931,7 @@ typedef struct {
 typedef struct {
   char chainid;
   int  chainnum;
-  bool bAllWat;
+  gmx_bool bAllWat;
   int nterpairs;
   int *chainstart;
   t_hackblock **ntdb;
@@ -1083,7 +1083,7 @@ int main(int argc, char *argv[])
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
-  bool       bVsites=FALSE,bWat,bPrevWat=FALSE,bITP,bVsiteAromatics=FALSE,bMerge;
+  gmx_bool       bVsites=FALSE,bWat,bPrevWat=FALSE,bITP,bVsiteAromatics=FALSE,bMerge;
   real       mHmult=0;
   t_hackblock *hb_chain;
   t_restp    *restp_chain;
@@ -1120,14 +1120,14 @@ int main(int argc, char *argv[])
  
 
   /* Command line arguments must be static */
-  static bool bNewRTP=FALSE;
-  static bool bInter=FALSE, bCysMan=FALSE; 
-  static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
-  static bool bGlnMan=FALSE, bArgMan=FALSE;
-  static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
-  static bool bSort=TRUE, bAllowMissing=FALSE, bRemoveH=FALSE;
-  static bool bDeuterate=FALSE,bVerbose=FALSE,bChargeGroups=TRUE,bCmap=TRUE;
-  static bool bRenumRes=FALSE,bRTPresname=FALSE;
+  static gmx_bool bNewRTP=FALSE;
+  static gmx_bool bInter=FALSE, bCysMan=FALSE; 
+  static gmx_bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
+  static gmx_bool bGlnMan=FALSE, bArgMan=FALSE;
+  static gmx_bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
+  static gmx_bool bSort=TRUE, bAllowMissing=FALSE, bRemoveH=FALSE;
+  static gmx_bool bDeuterate=FALSE,bVerbose=FALSE,bChargeGroups=TRUE,bCmap=TRUE;
+  static gmx_bool bRenumRes=FALSE,bRTPresname=FALSE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static const char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };

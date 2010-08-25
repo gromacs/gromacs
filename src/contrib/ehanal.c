@@ -131,7 +131,7 @@ void dump_histo(t_histo *h,char *fn,char *title,char *xaxis,char *yaxis,
  *
  *******************************************************************/	
 
-void add_scatter_event(t_ana_scat *scatter,rvec pos,bool bInel,
+void add_scatter_event(t_ana_scat *scatter,rvec pos,gmx_bool bInel,
 		       real t,real ekin)
 {
   int np = scatter->np;

@@ -59,7 +59,7 @@ int main(int argc,char *argv[])
   static char *bugs[] = {
     "If the configuration script found Motif or Lesstif on your system, "
     "you can use the graphical interface (if not, you will get an error):[BR]"
-    "[TT]-X[tt] bool [TT]no[tt] Use dialog box GUI to edit command line options",
+    "[TT]-X[tt] gmx_bool [TT]no[tt] Use dialog box GUI to edit command line options",
     
     "When compiled on an SGI-IRIX system, all GROMACS programs have an "
     "additional option:[BR]"

@@ -198,7 +198,7 @@ void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
 }
 
 real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,
-              bool bEkinAveVel, bool bSaveEkinOld, bool bScaleEkin)
+              gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld, gmx_bool bScaleEkin)
 {
     int          i,j,m,ngtc;
     real         T,ek;

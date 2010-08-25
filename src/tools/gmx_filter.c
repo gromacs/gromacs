@@ -81,7 +81,7 @@ int gmx_filter(int argc,char *argv[])
   };
   
   static int nf=10;
-  static bool bNoJump = TRUE,bFit = FALSE,bLowAll = FALSE;
+  static gmx_bool bNoJump = TRUE,bFit = FALSE,bLowAll = FALSE;
   t_pargs pa[] = {
     { "-nf", FALSE, etINT, {&nf},
       "Sets the filter length as well as the output interval for low-pass filtering" },
@@ -93,7 +93,7 @@ int gmx_filter(int argc,char *argv[])
       "Fit all frames to a reference structure" }
   };
   const char *topfile,*lowfile,*highfile;
-  bool       bTop=FALSE;
+  gmx_bool       bTop=FALSE;
   t_topology top;
   int        ePBC=-1;
   rvec       *xtop;

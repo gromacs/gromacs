@@ -615,7 +615,7 @@ static double getLogIndex(const int i, const t_gemParams *params)
 extern t_gemParams *init_gemParams(const double sigma, const double D,
 				   const real *t, const int len, const int nFitPoints,
 				   const real begFit, const real endFit,
-				   const real ballistic, const int nBalExp, const bool bDt)
+				   const real ballistic, const int nBalExp, const gmx_bool bDt)
 {
   double tDelta;
   t_gemParams *p;
@@ -986,7 +986,7 @@ static int balFunc_fdf(const gsl_vector *params, void *data,
 /* Removes the ballistic term from the beginning of the ACF,
  * just like in Omer's paper.
  */
-extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nexp, bool bDerivative)
+extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nexp, gmx_bool bDerivative)
 {
 
   /* Use nonlinear regression with GSL instead.
@@ -999,7 +999,7 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
     *A,                       /* The fitted parameters. (A1, B1, A2, B2,... C) */
     a[2],
     ddt[2];
-  bool sorted;
+  gmx_bool sorted;
   size_t n;
   size_t p;
 

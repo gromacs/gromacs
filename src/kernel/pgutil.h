@@ -41,7 +41,7 @@
 extern atom_id search_atom(const char *type,int start,
 			   int natoms,t_atom at[],
 			   char ** const * anm,
-			   const char *bondtype,bool bDontQuit);
+			   const char *bondtype,gmx_bool bDontQuit);
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
  * bondtype is only used for printing the error/warning string,

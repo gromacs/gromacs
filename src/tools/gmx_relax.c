@@ -66,7 +66,7 @@ typedef struct {
 typedef struct {
   real    rij_3;
   real    rij_6;
-  bool    bNOE;
+  gmx_bool    bNOE;
   real    tauc,dtauc,S2,dS2;
   complex y2;
   complex Ylm[5];
@@ -111,7 +111,7 @@ complex c_add(complex c,complex d)
 
 complex calc_ylm(int m,rvec rij,real r2,real r_3,real r_6)
 {
-  static  bool bFirst=TRUE;
+  static  gmx_bool bFirst=TRUE;
   static  real y0,y1,y2;
   real    x,y,z,xsq,ysq,rxy,r1,cphi,sphi,cth,sth,fac;
   complex cs;
@@ -183,7 +183,7 @@ void myfunc(real x,real a[],real *y,real dyda[],int na)
   dyda[2] = x*tau1*tau1*(1-a[1])*eee;
 }
 
-void fit_one(bool bVerbose,
+void fit_one(gmx_bool bVerbose,
 	     int nframes,real x[],real y[],real dy[],real ftol,
 	     real *S2,real *dS2,real *tauc,real *dtauc)
 {
@@ -195,7 +195,7 @@ void fit_one(bool bVerbose,
 	      
   real *a,**covar,**alpha;
   real chisq,ochisq,alamda;
-  bool bCont;
+  gmx_bool bCont;
   int  i,j,ma,mfit,*lista;
   
   ma=mfit=2;
@@ -248,7 +248,7 @@ void fit_one(bool bVerbose,
   sfree(lista);
 }
 
-void calc_tauc(bool bVerbose,int npair,t_pair pair[],real dt,
+void calc_tauc(gmx_bool bVerbose,int npair,t_pair pair[],real dt,
 	       int nframes,t_sij spec[],real **corr)
 {
   FILE *fp;
@@ -372,10 +372,10 @@ void plot_spectrum(char *noefn,int npair,t_pair pair[],t_sij *spec,real taum)
   do_view(noefn,NULL);
 }
 
-void spectrum(bool bVerbose,
-	      char *trj,char *shifts,bool bAbInitio,
+void spectrum(gmx_bool bVerbose,
+	      char *trj,char *shifts,gmx_bool bAbInitio,
 	      char *corrfn,char *noefn,
-	      int maxframes,bool bFour,bool bFit,int nrestart,
+	      int maxframes,gmx_bool bFour,gmx_bool bFit,int nrestart,
 	      int npair,t_pair pair[],int nat,real chem_shifts[],
 	      real taum,real maxdist,
 	      real w_rls[],rvec xp[],t_idef *idef)
@@ -500,7 +500,7 @@ int gmx_relax(int argc,char *argv[])
   static int  nlevels   = 15;
   static int  nrestart  = 1;
   static int  maxframes = 100;
-  static bool bFFT      = TRUE,bFit = TRUE, bVerbose = TRUE;
+  static gmx_bool bFFT      = TRUE,bFit = TRUE, bVerbose = TRUE;
   t_pargs pa[] = {
     { "-taum",     FALSE, etREAL, &taum, 
       "Rotational correlation time for your molecule. It is obligatory to pass this option" },

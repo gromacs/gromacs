@@ -121,7 +121,7 @@ int get_ebin_space(t_ebin *eb,int nener,const char *enm[],const char *unit)
     return index;
 }
 
-void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum)
+void add_ebin(t_ebin *eb,int index,int nener,real ener[],gmx_bool bSum)
 {
     int      i,m;
     double   e,sum,sigma,invmm,diff;
@@ -174,7 +174,7 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum)
     }
 }
 
-void ebin_increase_count(t_ebin *eb,bool bSum)
+void ebin_increase_count(t_ebin *eb,gmx_bool bSum)
 {
     eb->nsteps++;
     eb->nsteps_sim++;
@@ -194,7 +194,7 @@ void reset_ebin_sums(t_ebin *eb)
 }
 
 void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
-             int prmode,bool bPrHead)
+             int prmode,gmx_bool bPrHead)
 {
     int  i,j,i0;
     real ee=0;

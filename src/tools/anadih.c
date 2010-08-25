@@ -113,7 +113,7 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
 
 void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 		   real **dih,int nframes,int nangles,
-		   const char *grpname,real t0,real dt,bool bRb,
+		   const char *grpname,real t0,real dt,gmx_bool bRb,
                    const output_env_t oenv)
 {
   /* just a wrapper; declare extra args, then chuck away at end. */ 
@@ -137,11 +137,11 @@ void ana_dih_trans(const char *fn_trans,const char *fn_histo,
   
 }
 
-void low_ana_dih_trans(bool bTrans, const char *fn_trans,
-		       bool bHisto, const char *fn_histo, int maxchi, 
+void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
+		       gmx_bool bHisto, const char *fn_histo, int maxchi, 
 		       real **dih, int nlist, t_dlist dlist[], int nframes,
 		       int nangles, const char *grpname, int xity[], 
-		       real t0, real dt, bool bRb, real core_frac,
+		       real t0, real dt, gmx_bool bRb, real core_frac,
                        const output_env_t oenv)
 {
   FILE *fp;
@@ -369,12 +369,12 @@ void mk_chi_lookup (int **lookup, int maxchi, real **dih,
 
 void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
 			   int maxchi, t_dlist dlist[], real time[], 
-			   int **lookup, int *xity,bool bRb, bool bNormalize,
-			   real core_frac, bool bAll, const char *fnall,
+			   int **lookup, int *xity,gmx_bool bRb, gmx_bool bNormalize,
+			   real core_frac, gmx_bool bAll, const char *fnall,
                            const output_env_t oenv) 
 {
 
-  bool bRotZero, bHaveChi=FALSE; 
+  gmx_bool bRotZero, bHaveChi=FALSE; 
   int  accum=0, index, i,j,k,Xi,n,b ; 
   real *chi_prtrj; 
   int  *chi_prhist; 
@@ -652,7 +652,7 @@ void normalize_histo(int npoints,int histo[],real dx,real normhisto[])
 }
 
 void read_ang_dih(const char *trj_fn,
-		  bool bAngles,bool bSaveAll,bool bRb,bool bPBC,
+		  gmx_bool bAngles,gmx_bool bSaveAll,gmx_bool bRb,gmx_bool bPBC,
 		  int maxangstat,int angstat[],
 		  int *nframes,real **time,
 		  int isize,atom_id index[],

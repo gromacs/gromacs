@@ -78,8 +78,8 @@ int gmx_genpr(int argc,char *argv[])
   static real    disre_dist = 0.1;
   static real    disre_frac = 0.0;
   static real    disre_up2  = 1.0;
-  static bool    bDisre=FALSE;
-  static bool    bConstr=FALSE;
+  static gmx_bool    bDisre=FALSE;
+  static gmx_bool    bConstr=FALSE;
   static real    cutoff = -1.0;
 	
   t_pargs pa[] = {
@@ -113,7 +113,7 @@ int gmx_genpr(int argc,char *argv[])
   char         *gn_grp;
   char         title[STRLEN];
   matrix       box;
-  bool         bFreeze;
+  gmx_bool         bFreeze;
   rvec         dx,*x=NULL,*v=NULL;
   
   t_filenm fnm[] = {

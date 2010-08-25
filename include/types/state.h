@@ -86,7 +86,7 @@ typedef struct
  */
 typedef struct
 {
-  bool     bUpToDate;
+  gmx_bool     bUpToDate;
   int      ekin_n;
   tensor  *ekinh;
   tensor  *ekinf;

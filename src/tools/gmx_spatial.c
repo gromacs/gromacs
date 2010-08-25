@@ -102,12 +102,12 @@ int gmx_spatial(int argc,char *argv[])
     "(Number of Additional Bins) option value. \n"
   };
   
-  static bool bPBC=FALSE;
-  static bool bSHIFT=FALSE;
+  static gmx_bool bPBC=FALSE;
+  static gmx_bool bSHIFT=FALSE;
   static int iIGNOREOUTER=-1; /*Positive values may help if the surface is spikey */
-  static bool bCUTDOWN=TRUE;
+  static gmx_bool bCUTDOWN=TRUE;
   static real rBINWIDTH=0.05; /* nm */
-  static bool bCALCDIV=TRUE;
+  static gmx_bool bCALCDIV=TRUE;
   static int iNAB=4;
 
   t_pargs pa[] = {

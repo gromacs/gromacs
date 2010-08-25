@@ -43,9 +43,9 @@
 #include "smalloc.h"
 #include "gmx_fatal.h"
 
-static bool ip_pert(int ftype,const t_iparams *ip)
+static gmx_bool ip_pert(int ftype,const t_iparams *ip)
 {
-    bool bPert;
+    gmx_bool bPert;
     int  i;
 
     if (NRFPB(ftype) == 0)
@@ -116,7 +116,7 @@ static bool ip_pert(int ftype,const t_iparams *ip)
     return bPert;
 }
 
-static bool ip_q_pert(int ftype,const t_iatom *ia,
+static gmx_bool ip_q_pert(int ftype,const t_iatom *ia,
                       const t_iparams *ip,const real *qA,const real *qB)
 {
     /* 1-4 interactions do not have the charges stored in the iparams list,
@@ -127,7 +127,7 @@ static bool ip_q_pert(int ftype,const t_iatom *ia,
                                  qA[ia[2]] != qB[ia[2]])));
 }
 
-bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
+gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
 {
     const gmx_ffparams_t *ffparams;
     int  i,ftype;
@@ -135,7 +135,7 @@ bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
     t_atom  *atom;
     t_ilist *il;
     t_iatom *ia;
-    bool bPert;
+    gmx_bool bPert;
 
     ffparams = &mtop->ffparams;
     
@@ -178,7 +178,7 @@ void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
     t_iparams *iparams;
     t_ilist *ilist;
     t_iatom *iatoms;
-    bool bPert;
+    gmx_bool bPert;
     t_iatom *iabuf;
     int  iabuf_nalloc;
 

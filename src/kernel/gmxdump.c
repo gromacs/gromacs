@@ -92,8 +92,8 @@ static void dump_top(FILE *fp,t_topology *top,char *tpr)
   sfree(types);
 }
 
-static void list_tpx(const char *fn, bool bShowNumbers,const char *mdpfn,
-                     bool bSysTop)
+static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,
+                     gmx_bool bSysTop)
 {
   FILE *gp;
   int         fp,indent,i,j,**gcount,atot;
@@ -213,7 +213,7 @@ static void list_trn(const char *fn)
   rvec        *x,*v,*f;
   matrix      box;
   t_trnheader trn;
-  bool        bOK;
+  gmx_bool        bOK;
 
   fpread  = open_trn(fn,"r"); 
   fpwrite = open_tpx(NULL,"w");
@@ -260,7 +260,7 @@ static void list_trn(const char *fn)
   close_trn(fpread);
 }
 
-void list_xtc(const char *fn, bool bXVG)
+void list_xtc(const char *fn, gmx_bool bXVG)
 {
   t_fileio *xd;
   int    indent;
@@ -269,7 +269,7 @@ void list_xtc(const char *fn, bool bXVG)
   matrix box;
   int    nframe,natoms,step;
   real   prec,time;
-  bool   bOK;
+  gmx_bool   bOK;
   
   xd = open_xtc(fn,"r");
   read_first_xtc(xd,&natoms,&step,&time,box,&x,&prec,&bOK);
@@ -301,7 +301,7 @@ void list_xtc(const char *fn, bool bXVG)
   close_xtc(xd);
 }
 
-void list_trx(const char *fn,bool bXVG)
+void list_trx(const char *fn,gmx_bool bXVG)
 {
   int ftp;
   
@@ -319,7 +319,7 @@ void list_ene(const char *fn)
 {
     int        ndr;
     ener_file_t in;
-    bool       bCont;
+    gmx_bool       bCont;
     gmx_enxnm_t *enm=NULL;
     t_enxframe *fr;
     int        i,j,nre,b;
@@ -482,9 +482,9 @@ int main(int argc,char *argv[])
 
   output_env_t oenv;
   /* Command line options */
-  static bool bXVG=FALSE;
-  static bool bShowNumbers=TRUE;
-  static bool bSysTop=FALSE;
+  static gmx_bool bXVG=FALSE;
+  static gmx_bool bShowNumbers=TRUE;
+  static gmx_bool bSysTop=FALSE;
   t_pargs pa[] = {
     { "-xvg", FALSE, etBOOL, {&bXVG}, "HIDDENXVG layout for xtc" },
     { "-nr",FALSE, etBOOL, {&bShowNumbers},"Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },

@@ -80,7 +80,7 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
     t_trxstatus *status;
     real t;
     t_trxframe fr;
-    bool ok;
+    gmx_bool ok;
 
     for (i = 0; i < nfiles; i++)
     {
@@ -163,11 +163,11 @@ static void sort_files(char **fnms, real *settime, int nfile)
 }
 
 static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
-                       real *settime, int *cont_type, bool bSetTime,
-                       bool bSort, const output_env_t oenv)
+                       real *settime, int *cont_type, gmx_bool bSetTime,
+                       gmx_bool bSort, const output_env_t oenv)
 {
     int i;
-    bool ok;
+    gmx_bool ok;
     char inputstring[STRLEN], *chptr;
 
     if (bSetTime)
@@ -293,7 +293,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
 {
     int i, j, k, natoms, nnn;
     t_trxstatus **fp_in, **fp_out;
-    bool bCont, *bSet;
+    gmx_bool bCont, *bSet;
     real t, first_time = 0;
     t_trxframe *trx;
 
@@ -415,15 +415,15 @@ int gmx_trjcat(int argc, char *argv[])
             "are collected into the output trajectory. If the number of frames in",
             "the trajectory does not match that in the xvg file then the program",
             "tries to be smart. Beware." };
-    static bool bVels = TRUE;
+    static gmx_bool bVels = TRUE;
     static int prec = 3;
-    static bool bCat = FALSE;
-    static bool bSort = TRUE;
-    static bool bKeepLast = FALSE;
-    static bool bKeepLastAppend = FALSE;
-    static bool bOverwrite = FALSE;
-    static bool bSetTime = FALSE;
-    static bool bDeMux;
+    static gmx_bool bCat = FALSE;
+    static gmx_bool bSort = TRUE;
+    static gmx_bool bKeepLast = FALSE;
+    static gmx_bool bKeepLastAppend = FALSE;
+    static gmx_bool bOverwrite = FALSE;
+    static gmx_bool bSetTime = FALSE;
+    static gmx_bool bDeMux;
     static real begin = -1;
     static real end = -1;
     static real dt = 0;
@@ -460,7 +460,7 @@ int gmx_trjcat(int argc, char *argv[])
     char **fnms, **fnms_out, *in_file, *out_file;
     int n_append;
     t_trxstatus *trxout = NULL;
-    bool bNewFile, bIndex, bWrite;
+    gmx_bool bNewFile, bIndex, bWrite;
     int earliersteps, nfile_in, nfile_out, *cont_type, last_ok_step;
     real *readtime, *timest, *settime;
     real first_time = 0, lasttime = NOTSET, last_ok_t = -1, timestep;
@@ -470,7 +470,7 @@ int gmx_trjcat(int argc, char *argv[])
     char *grpname;
     real **val = NULL, *t = NULL, dt_remd;
     int n, nset;
-    bool bOK;
+    gmx_bool bOK;
     gmx_off_t fpos;
     output_env_t oenv;
     t_filenm fnm[] =

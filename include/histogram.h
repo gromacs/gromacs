@@ -91,7 +91,7 @@ gmx_histogram_create(gmx_histogram_t **h, e_histogram_t type, int nbins);
 /** Initialize calculation of a histogram for a range. */
 int
 gmx_histogram_create_range(gmx_histogram_t **h, e_histogram_t type,
-                           real start, real end, real binw, bool bIntegerBins);
+                           real start, real end, real binw, gmx_bool bIntegerBins);
 /** Clears the bins in the histogram. */
 void
 gmx_histogram_clear(gmx_histogram_t *h);
@@ -106,10 +106,10 @@ int
 gmx_histogram_set_range(gmx_histogram_t *h, real start, real end);
 /** Sets histogram bins to center at integer values. */
 void
-gmx_histogram_set_integerbins(gmx_histogram_t *h, bool bIntegerBins);
+gmx_histogram_set_integerbins(gmx_histogram_t *h, gmx_bool bIntegerBins);
 /** Sets histogram to include outlying values in the bins at the edges. */
 void
-gmx_histogram_set_all(gmx_histogram_t *h, bool bAll);
+gmx_histogram_set_all(gmx_histogram_t *h, gmx_bool bAll);
 /** Sets block size for histogram averaging. */
 int
 gmx_histogram_set_blocksize(gmx_histogram_t *h, int bsize);
@@ -183,7 +183,7 @@ gmx_histogram_finish(gmx_histogram_t *h);
 /** Creates a new histogram with double the binwidth. */
 void
 gmx_histogram_resample_dblbw(gmx_histogram_t **dest, gmx_histogram_t *src,
-                             bool bIntegerBins);
+                             gmx_bool bIntegerBins);
 /** Makes a clone of a histogram. */
 void
 gmx_histogram_clone(gmx_histogram_t **dest, gmx_histogram_t *src);
@@ -198,15 +198,15 @@ void
 gmx_histogram_scale_vec(gmx_histogram_t *h, real norm[]);
 /** Writes a single histogram to a file. */
 void
-gmx_histogram_write(FILE *fp, gmx_histogram_t *h, bool bErrors);
+gmx_histogram_write(FILE *fp, gmx_histogram_t *h, gmx_bool bErrors);
 /** Writes a set of histograms to a file. */
 void
 gmx_histogram_write_array(FILE *fp, int n, gmx_histogram_t *h[],
-                              bool bValue, bool bErrors);
+                              gmx_bool bValue, gmx_bool bErrors);
 /** Writes a set of cumulative histograms to a file. */
 void
 gmx_histogram_write_cum_array(FILE *fp, int n, gmx_histogram_t *h[],
-                              bool bValue, bool bErrors);
+                              gmx_bool bValue, gmx_bool bErrors);
 /*@}*/
 
 #ifdef __cplusplus

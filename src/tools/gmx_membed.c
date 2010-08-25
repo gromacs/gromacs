@@ -213,7 +213,7 @@ int get_block(int mol_id,int nmblock,gmx_molblock_t *mblock)
 int get_tpr_version(const char *infile)
 {
 	char  	buf[STRLEN];
-	bool  	bDouble;
+	gmx_bool  	bDouble;
 	int 	precision,fver;
         t_fileio *fio;
 
@@ -266,7 +266,7 @@ int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 {
 	int i,j,nr,mol_id;
         int type=0,block=0;
-	bool bNEW;
+	gmx_bool bNEW;
 
 	nr=0;
 	snew(tlist->index,at->nr);
@@ -438,7 +438,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	int i,j,at,mol,nmol,nmolbox,count;
 	t_block *mem_a;
 	real z,zmin,zmax,mem_area;
-	bool bNew;
+	gmx_bool bNew;
 	atom_id *mol_id;
 	int type=0,block=0;
 
@@ -504,7 +504,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	return mem_p->mem_at.nr;
 }
 
-void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *mem_p,rvec *r, bool bALLOW_ASYMMETRY)
+void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *mem_p,rvec *r, gmx_bool bALLOW_ASYMMETRY)
 {
 	int i,j,at,c,outsidesum,gctr=0;
     int idxsum=0;
@@ -562,13 +562,13 @@ void resize(t_block *ins_at, rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
 }
 
 int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop_t *mtop,
-		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, bool bALLOW_ASYMMETRY)
+		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, gmx_bool bALLOW_ASYMMETRY)
 {
 	int i,j,k,l,at,at2,mol_id;
         int type=0,block=0;
 	int nrm,nupper,nlower;
 	real r_min_rad,z_lip,min_norm;
-	bool bRM;
+	gmx_bool bRM;
 	rvec dr,dr_tmp;
 	real *dist;
 	int *order;
@@ -704,7 +704,7 @@ void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p
 	rvec *x_tmp,*v_tmp;
 	atom_id *list,*new_mols;
 	unsigned char  *new_egrp[egcNR];
-	bool bRM;
+	gmx_bool bRM;
 
 	snew(list,state->natoms);
 	n=0;
@@ -812,7 +812,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 {
 	int i,j,m;
 	int type,natom,nmol,at,atom1=0,rm_at=0;
-	bool *bRM,bINS;
+	gmx_bool *bRM,bINS;
 	/*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
 	/*this routine does not live as dangerously as it seems. There is namely a check in mdrunner_membed to make
          *sure that g_membed exits with a warning when there are molecules of the same type not in the 
@@ -964,7 +964,7 @@ void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
     negative or zero. */
 enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 /* Is the signal in one simulation independent of other simulations? */
-bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
+gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
 
 typedef struct {
     int nstms;       /* The frequency for intersimulation communication */
@@ -976,7 +976,7 @@ typedef struct {
 static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
 {
     int  *buf;
-    bool bPos,bEqual;
+    gmx_bool bPos,bEqual;
     int  s,d;
 
     snew(buf,ms->nsim);
@@ -1140,30 +1140,33 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                             t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                             gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir,
                             tensor pres, rvec mu_tot, gmx_constr_t constr,
-                            globsig_t *gs,bool bInterSimGS,
+                            globsig_t *gs,gmx_bool bInterSimGS,
                             matrix box, gmx_mtop_t *top_global, real *pcurr,
-                            int natoms, bool *bSumEkinhOld, int flags)
+                            int natoms, gmx_bool *bSumEkinhOld, int flags)
 {
     int  i,gsi;
     real gs_buf[eglsNR];
     tensor corr_vir,corr_pres;
-    bool bEner,bPres,bTemp;
-    bool bRerunMD, bStopCM, bGStat, bIterate,
+    gmx_bool bEner,bPres,bTemp;
+    gmx_bool bRerunMD, bStopCM, bGStat, bIterate,
         bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
     real prescorr,enercorr,dvdlcorr;
 
-    /* translate CGLO flags to booleans */
+    /* translate CGLO flags to gmx_booleans */
     bRerunMD = flags & CGLO_RERUNMD;
     bStopCM = flags & CGLO_STOPCM;
     bGStat = flags & CGLO_GSTAT;
-    bReadEkin = flags & CGLO_READEKIN;
-    bScaleEkin = flags & CGLO_SCALEEKIN;
+/* FIX ME after 4.5 */
+/* temporary hack because we are using gmx_bool (unsigned char) */
+
+    bReadEkin = (flags & CGLO_READEKIN) != 0;
+    bScaleEkin = (flags & CGLO_SCALEEKIN) != 0;
     bEner = flags & CGLO_ENERGY;
     bTemp = flags & CGLO_TEMPERATURE;
-    bPres  = flags & CGLO_PRESSURE;
-    bConstrain = flags & CGLO_CONSTRAINT;
-    bIterate = flags & CGLO_ITERATE;
-    bFirstIterate = flags & CGLO_FIRSTITERATE;
+    bPres  = (flags & CGLO_PRESSURE) != 0;
+    bConstrain = (flags & CGLO_CONSTRAINT) != 0;
+    bIterate = (flags & CGLO_ITERATE) != 0;
+    bFirstIterate = (flags & CGLO_FIRSTITERATE) != 0;
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -1365,7 +1368,7 @@ typedef struct
 {
     real f,fprev,x,xprev;
     int iter_i;
-    bool bIterate;
+    gmx_bool bIterate;
     real allrelerr[MAXITERCONST+2];
     int num_close; /* number of "close" violations, caused by limited precision. */
 } gmx_iterate_t;
@@ -1387,7 +1390,7 @@ typedef struct
 /* maximum length of cyclic traps to check, emerging from limited numerical precision  */
 #define CYCLEMAX            20
 
-static void gmx_iterate_init(gmx_iterate_t *iterate,bool bIterate)
+static void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bIterate)
 {
     int i;
 
@@ -1400,7 +1403,7 @@ static void gmx_iterate_init(gmx_iterate_t *iterate,bool bIterate)
     }
 }
 
-static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, bool bFirstIterate, real fom, real *newf)
+static gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, gmx_bool bFirstIterate, real fom, real *newf)
 {
     /* monitor convergence, and use a secant search to propose new
        values.
@@ -1427,7 +1430,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
     real relerr,err;
     char buf[256];
     int i;
-    bool incycle;
+    gmx_bool incycle;
 
     if (bFirstIterate)
     {
@@ -1700,7 +1703,7 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
 }
 
 typedef struct {
-    bool       bGStatEveryStep;
+    gmx_bool       bGStatEveryStep;
     gmx_large_int_t step_ns;
     gmx_large_int_t step_nscheck;
     gmx_large_int_t nns;
@@ -1721,7 +1724,7 @@ static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step)
 }
 
 static void init_nlistheuristics(gmx_nlheur_t *nlh,
-                                 bool bGStatEveryStep,gmx_large_int_t step)
+                                 gmx_bool bGStatEveryStep,gmx_large_int_t step)
 {
     nlh->bGStatEveryStep = bGStatEveryStep;
     nlh->nns       = 0;
@@ -1783,7 +1786,7 @@ static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step)
     }
 }
 
-static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t step)
+static void set_nlistheuristics(gmx_nlheur_t *nlh,gmx_bool bReset,gmx_large_int_t step)
 {
     int d;
 
@@ -1806,7 +1809,7 @@ static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t st
 }
 
 double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,t_inputrec *ir,
@@ -1828,15 +1831,15 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0;
-    bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
-    bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
+    gmx_bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
+    gmx_bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
-    bool       bDoDHDL=FALSE;
-    bool       do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
+    gmx_bool       bDoDHDL=FALSE;
+    gmx_bool       do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
                bForceUpdate=FALSE,bCPT;
     int        mdof_flags;
-    bool       bMasterState;
+    gmx_bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
     int        i,m;
@@ -1863,18 +1866,18 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     t_graph    *graph=NULL;
     globsig_t   gs;
 
-    bool        bFFscan;
+    gmx_bool        bFFscan;
     gmx_groups_t *groups;
     gmx_ekindata_t *ekind, *ekind_save;
     gmx_shellfc_t shellfc;
     int         count,nconverged=0;
     real        timestep=0;
     double      tcount=0;
-    bool        bIonize=FALSE;
-    bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
-    bool        bAppend;
-    bool        bResetCountersHalfMaxH=FALSE;
-    bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
+    gmx_bool        bIonize=FALSE;
+    gmx_bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
+    gmx_bool        bAppend;
+    gmx_bool        bResetCountersHalfMaxH=FALSE;
+    gmx_bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
     real        temp0,dvdl;
     int         a0,a1,ii;
     rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
@@ -3362,7 +3365,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Output stuff */
         if (MASTER(cr))
         {
-            bool do_dr,do_or;
+            gmx_bool do_dr,do_or;
 
             if (!(bStartingFromCpt && (EI_VV(ir->eI))))
             {
@@ -3565,7 +3568,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 
 int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
@@ -3576,7 +3579,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              unsigned long Flags,
              real xy_fac, real xy_max, real z_fac, real z_max,
              int it_xy, int it_z, real probe_rad, int low_up_rm,
-             int pieces, bool bALLOW_ASYMMETRY, int maxwarn)
+             int pieces, gmx_bool bALLOW_ASYMMETRY, int maxwarn)
 {
     double     nodetime=0,realtime;
     t_inputrec *inputrec;
@@ -3597,7 +3600,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        i,m,nChargePerturbed=-1,status,nalloc;
     char       *gro;
     gmx_wallcycle_t wcycle;
-    bool       bReadRNG,bReadEkin;
+    gmx_bool       bReadRNG,bReadEkin;
     int        list;
     gmx_runtime_t runtime;
     int        rc;
@@ -3618,7 +3621,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	mem_t			*mem_p;
 	rm_t			*rm_p;
 	gmx_groups_t 		*groups;
-	bool		 	bExcl=FALSE;
+	gmx_bool		 	bExcl=FALSE;
 	t_atoms			atoms;
 	t_pbc			*pbc;
 	char		        **piecename=NULL;
@@ -4363,18 +4366,18 @@ int gmx_membed(int argc,char *argv[])
 #define NFILE asize(fnm)
 
 	/* Command line options ! */
-	bool bCart        = FALSE;
-	bool bPPPME       = FALSE;
-	bool bPartDec     = FALSE;
-	bool bDDBondCheck = TRUE;
-	bool bDDBondComm  = TRUE;
-	bool bVerbose     = FALSE;
-	bool bCompact     = TRUE;
-	bool bSepPot      = FALSE;
-	bool bRerunVSite  = FALSE;
-	bool bIonize      = FALSE;
-	bool bConfout     = TRUE;
-	bool bReproducible = FALSE;
+	gmx_bool bCart        = FALSE;
+	gmx_bool bPPPME       = FALSE;
+	gmx_bool bPartDec     = FALSE;
+	gmx_bool bDDBondCheck = TRUE;
+	gmx_bool bDDBondComm  = TRUE;
+	gmx_bool bVerbose     = FALSE;
+	gmx_bool bCompact     = TRUE;
+	gmx_bool bSepPot      = FALSE;
+	gmx_bool bRerunVSite  = FALSE;
+	gmx_bool bIonize      = FALSE;
+	gmx_bool bConfout     = TRUE;
+	gmx_bool bReproducible = FALSE;
 
 	int  npme=-1;
 	int  nmultisim=0;
@@ -4393,8 +4396,8 @@ int gmx_membed(int argc,char *argv[])
 	real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
 	char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
 	real cpt_period=15.0,max_hours=-1;
-	bool bAppendFiles=TRUE,bAddPart=TRUE;
-	bool bResetCountersHalfWay=FALSE;
+	gmx_bool bAppendFiles=TRUE,bAddPart=TRUE;
+	gmx_bool bResetCountersHalfWay=FALSE;
 	output_env_t oenv=NULL;
 	const char *deviceOptions = "";
 
@@ -4408,7 +4411,7 @@ int gmx_membed(int argc,char *argv[])
 	int low_up_rm = 0;
 	int maxwarn=0;
 	int pieces=1;
-    bool bALLOW_ASYMMETRY=FALSE;
+    gmx_bool bALLOW_ASYMMETRY=FALSE;
 
 
 /* arguments relevant to OPENMM only*/
@@ -4499,7 +4502,7 @@ int gmx_membed(int argc,char *argv[])
 	unsigned long Flags, PCA_Flags;
 	ivec     ddxyz;
 	int      dd_node_order;
-	bool     HaveCheckpoint;
+	gmx_bool     HaveCheckpoint;
 	FILE     *fplog,*fptest;
 	int      sim_part,sim_part_fn;
 	const char *part_suffix=".part";

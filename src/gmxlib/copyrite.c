@@ -66,7 +66,7 @@ static void pr_two(FILE *out,int c,int i)
 void pr_difftime(FILE *out,double dt)
 {
   int    ndays,nhours,nmins,nsecs;
-  bool   bPrint,bPrinted;
+  gmx_bool   bPrint,bPrinted;
 
   ndays = dt/(24*3600);
   dt    = dt-24*3600*ndays;
@@ -103,7 +103,7 @@ void pr_difftime(FILE *out,double dt)
 }
 
 
-bool be_cool(void)
+gmx_bool be_cool(void)
 {
   /* Yes, it is bad to check the environment variable every call,
    * but we dont call this routine often, and it avoids using 

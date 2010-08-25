@@ -52,7 +52,7 @@ enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 			int nnodes_major,int nnodes_minor,
 			t_inputrec *ir,int homenr,
-			bool bFreeEnergy, bool bReproducible);
+			gmx_bool bFreeEnergy, gmx_bool bReproducible);
 			
 int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 /* Initialize and destroy the pme data structures resepectively.
@@ -83,7 +83,7 @@ int gmx_pme_do(gmx_pme_t pme,
 int gmx_pmeonly(gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
 		       gmx_wallcycle_t wcycle,
-		       real ewaldcoeff,   bool bGatherOnly,
+		       real ewaldcoeff,   gmx_bool bGatherOnly,
 		       t_inputrec *ir);
 /* Called on the nodes that do PME exclusively (as slaves) 
  */
@@ -105,13 +105,13 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 /* Initialize the PME-only side of the PME <-> PP communication */
 
 void gmx_pme_send_q(t_commrec *cr,
-			   bool bFreeEnergy, real *chargeA, real *chargeB,
+			   gmx_bool bFreeEnergy, real *chargeA, real *chargeB,
 			   int maxshift_x, int maxshift_y);
 /* Send the charges and maxshift to out PME-only node. */
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-			   bool bFreeEnergy, real lambda,
-			   bool bEnerVir,
+			   gmx_bool bFreeEnergy, real lambda,
+			   gmx_bool bEnerVir,
 			   gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
@@ -128,8 +128,8 @@ int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
 			    real **chargeA, real **chargeB,
 			    matrix box, rvec **x,rvec **f,
 			    int *maxshift_x,int *maxshift_y,
-			    bool *bFreeEnergy,real *lambda,
-			    bool *bEnerVir,
+			    gmx_bool *bFreeEnergy,real *lambda,
+			    gmx_bool *bEnerVir,
 			    gmx_large_int_t *step);
 /* Receive charges and/or coordinates from the PP-only nodes.
  * Returns the number of atoms, or -1 when the run is finished.

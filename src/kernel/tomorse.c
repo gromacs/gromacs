@@ -179,7 +179,7 @@ void convert_harmonics(int nrmols,t_molinfo mols[],gpp_atomtype_t atype)
   int  i,j,k,last,ni,nj;
   int  nrharm,nrmorse,bb;
   real edis,kb,b0,beta;
-  bool *bRemoveHarm;
+  gmx_bool *bRemoveHarm;
 
   /* First get the data */
   t2m = read_dissociation_energies(&n2m);

@@ -268,7 +268,7 @@ void PopMouse(Display *disp)
   sfree(old);
 }
 
-bool HelpPressed(XEvent *event)
+gmx_bool HelpPressed(XEvent *event)
 {
 #define BUFSIZE 24
   char           buf[BUFSIZE+1];
@@ -280,7 +280,7 @@ bool HelpPressed(XEvent *event)
   return (keysym == XK_F1);
 }
 
-bool GrabOK(FILE *out, int err)
+gmx_bool GrabOK(FILE *out, int err)
 {
   switch (err) {
   case GrabSuccess:

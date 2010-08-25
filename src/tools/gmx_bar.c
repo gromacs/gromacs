@@ -214,7 +214,7 @@ static void barres_init(barres_t *br)
 }
 
 
-static bool lambda_same(double lambda1, double lambda2)
+static gmx_bool lambda_same(double lambda1, double lambda2)
 {
     return gmx_within_tol(lambda1, lambda2, 10*GMX_REAL_EPS);
 }
@@ -392,7 +392,7 @@ barlambda_t *barlambdas_list_create(barsim_t *ba, int nfile,
     for(i=0; i<nfile; i++)
     {
         barlambda_t *bl=bl_head->next;
-        bool inserted=FALSE;
+        gmx_bool inserted=FALSE;
 
         while(bl != bl_head)
         {
@@ -435,11 +435,11 @@ void barsamples_make_hist(barsamples_t *bs, int **bin,
                           double *dx, double *xmin, int nbin_default)
 {
     int i,j;
-    bool dx_set=FALSE;
-    bool xmin_set=FALSE;
+    gmx_bool dx_set=FALSE;
+    gmx_bool xmin_set=FALSE;
 
-    bool xmax_set=FALSE;
-    bool xmax_set_hard=FALSE; /* whether the xmax is bounded by the limits of 
+    gmx_bool xmax_set=FALSE;
+    gmx_bool xmax_set_hard=FALSE; /* whether the xmax is bounded by the limits of 
                                   a histogram */
     double xmax=-1;
 
@@ -574,7 +574,7 @@ void barlambdas_histogram(barlambda_t *bl_head, const char *filename,
     barlambda_t *bl;
     int nsets=0;
     char **setnames=NULL;
-    bool first_set=FALSE;
+    gmx_bool first_set=FALSE;
     /* histogram data: */
     int *hist=NULL;
     int nbin=0;
@@ -666,8 +666,8 @@ static barres_t *barres_list_create(barlambda_t *bl_head, int *nres)
     int nlambda=0;
     barres_t *res;
     int i;
-    bool dhdl=FALSE;
-    bool first=TRUE;
+    gmx_bool dhdl=FALSE;
+    gmx_bool first=TRUE;
 
     /* first count the barlambdas */
     bl=bl_head->next;
@@ -1132,7 +1132,7 @@ static void calc_dg_stddev(barsamples_t *ba, barsamples_t *bb,
 
 
 static void calc_bar(barres_t *br, double tol, 
-                     int npee_min, int npee_max, bool *bEE, 
+                     int npee_min, int npee_max, gmx_bool *bEE, 
                      double *partsum)
 {
     int npee,p;
@@ -1305,7 +1305,7 @@ static double bar_err(int nbmin, int nbmax, const double *partsum)
 }
 
 
-static double legend2lambda(char *fn,const char *legend,bool bdhdl)
+static double legend2lambda(char *fn,const char *legend,gmx_bool bdhdl)
 {
     double lambda=0;
     const char   *ptr;
@@ -1330,9 +1330,9 @@ static double legend2lambda(char *fn,const char *legend,bool bdhdl)
     return lambda;
 }
 
-static bool subtitle2lambda(const char *subtitle,double *lambda)
+static gmx_bool subtitle2lambda(const char *subtitle,double *lambda)
 {
-    bool bFound;
+    gmx_bool bFound;
     char *ptr;
 
     bFound = FALSE;
@@ -1504,11 +1504,11 @@ static void read_barsim_xvg(char *fn,double begin,double end,real temp,
 }
 
 static void read_edr_rawdh(barsim_t *ba, t_enxblock *blk, int id, 
-                           bool lambda_set, double starttime, 
+                           gmx_bool lambda_set, double starttime, 
                            double endtime)
 {
     int j;
-    bool allocated;
+    gmx_bool allocated;
 
     if (starttime < 0 || endtime < 0)
     {
@@ -1571,7 +1571,7 @@ static void read_edr_rawdh(barsim_t *ba, t_enxblock *blk, int id,
 }
 
 static void read_edr_hist(barsim_t *ba, t_enxblock *blk, int id,
-                          bool lambda_set, 
+                          gmx_bool lambda_set, 
                           double starttime, double endtime)
 {
     int j;
@@ -1653,7 +1653,7 @@ static void read_barsim_edr(char *fn,double begin,double end,real temp,
     ener_file_t fp;
     t_enxframe *fr; 
     int nblocks=0;
-    bool lambda_set=FALSE;
+    gmx_bool lambda_set=FALSE;
     int nre;
     gmx_enxnm_t *enm=NULL;
 
@@ -1826,7 +1826,7 @@ int gmx_bar(int argc,char *argv[])
     static real begin=0,end=-1,temp=-1;
     int nd=2,nbmin=5,nbmax=5;
     int nbin=100;
-    bool calc_s,calc_v;
+    gmx_bool calc_s,calc_v;
     t_pargs pa[] = {
         { "-b",    FALSE, etREAL, {&begin},  "Begin time for BAR" },
         { "-e",    FALSE, etREAL, {&end},    "End time for BAR" },
@@ -1868,11 +1868,11 @@ int gmx_bar(int argc,char *argv[])
     char     kteformat[STRLEN], skteformat[STRLEN];
     output_env_t oenv;
     double   kT, beta;
-    bool     result_OK=TRUE,bEE=TRUE;
+    gmx_bool     result_OK=TRUE,bEE=TRUE;
 
-    bool     disc_err=FALSE;
+    gmx_bool     disc_err=FALSE;
     double   sum_disc_err=0.; /* discretization error */
-    bool     histrange_err=FALSE;
+    gmx_bool     histrange_err=FALSE;
     double   sum_histrange_err=0.; /* histogram range error */
     double   stat_err=0.; /* statistical error */
     

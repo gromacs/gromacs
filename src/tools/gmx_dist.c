@@ -100,7 +100,7 @@ int gmx_dist(int argc,char *argv[])
   rvec    *com;
   real    *mass;
   FILE    *fp=NULL,*fplt=NULL;
-  bool    bCutoff,bPrintDist,bLifeTime;
+  gmx_bool    bCutoff,bPrintDist,bLifeTime;
   t_pbc   *pbc;
   int     *contact_time=NULL,*ccount=NULL,ccount_nalloc=0,sum;
   char    buf[STRLEN];

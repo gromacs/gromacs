@@ -105,7 +105,7 @@ void ps_ctext(t_psdata ps,real x1,real y1,const char *str,int expos);
 
 void ps_close(t_psdata ps);
 
-void ps_flip(t_psdata ps,bool bPlus);
+void ps_flip(t_psdata ps,gmx_bool bPlus);
 /* Rotate over 90 (bPlus) or -90 (!bPlus) degrees */
 
 void ps_rotate(t_psdata ps,real angle);

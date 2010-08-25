@@ -83,7 +83,7 @@ typedef struct gmx_cpp {
   struct   gmx_cpp *child,*parent;
 } gmx_cpp;
 
-static bool is_word_end(char c)
+static gmx_bool is_word_end(char c)
 {
   return !(isalnum(c) || c == '_');
 }
@@ -104,7 +104,7 @@ static const char *strstrw(const char *buf,const char *word)
   return NULL;
 }
 
-static bool find_directive(char *buf, char **name, char **val)
+static gmx_bool find_directive(char *buf, char **name, char **val)
 {
   /* Skip initial whitespace */
   while (isspace(*buf)) ++buf;
@@ -129,7 +129,7 @@ static bool find_directive(char *buf, char **name, char **val)
   return TRUE;
 }
 
-static bool is_ifdeffed_out(gmx_cpp_t handle)
+static gmx_bool is_ifdeffed_out(gmx_cpp_t handle)
 {
   return ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE));
 }
@@ -448,7 +448,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   const char *ptr, *ptr2;
   char *name;
   char *dname, *dval;
-  bool bEOF;
+  gmx_bool bEOF;
 
   if (!handle)
     return eCPP_INVALID_HANDLE;

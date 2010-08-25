@@ -124,7 +124,7 @@ static int blockcomp(const void *a,const void *b)
 }
 
 static void lo_sortwater(int astart,int nwater,int nwatom,rvec x[],rvec v[],
-			 bool bBlock)
+			 gmx_bool bBlock)
 {
   int  i,j,i0,rvi;
   int  *rvindex;

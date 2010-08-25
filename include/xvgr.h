@@ -88,7 +88,7 @@ enum {
  * \4 : (deprecated) end symbol font
  */
 
-bool output_env_get_print_xvgr_codes(const output_env_t oenv);
+gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv);
 /* Returns if we should print xmgrace or xmgr codes */
 
 enum {
@@ -174,9 +174,9 @@ void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
  * two dimensional array which is returned.
  */
 real **read_xvg_time(const char *fn,
-			    bool bHaveT,
-			    bool bTB,real tb,
-			    bool bTE,real te,
+			    gmx_bool bHaveT,
+			    gmx_bool bTB,real tb,
+			    gmx_bool bTE,real te,
 			    int nsets_in,int *nset,int *nval,
 			    real *dt,real **t);
 #ifdef __cplusplus

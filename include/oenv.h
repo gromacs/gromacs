@@ -67,7 +67,7 @@ typedef enum { exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE } xvg_format_t;
 struct output_env
 {
     time_unit_t time_unit; /* the time unit, enum defined in statuti.h */
-    bool view;  /* view of file requested */
+    gmx_bool view;  /* view of file requested */
     xvg_format_t xvg_format; /* xvg output format, enum defined in statutil.h */
     int  verbosity; /* The level of verbosity for this program */
     int debug_level; /* the debug level */
@@ -78,10 +78,10 @@ struct output_env
 
 
 void output_env_init(output_env_t oenv,  int argc, char *argv[],
-                     time_unit_t tmu, bool view, xvg_format_t xvg_format,
+                     time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level);
 /* initialize an output_env structure, setting the command line, 
-   the default time value a boolean view that is set to TRUE when the 
+   the default time value a gmx_boolean view that is set to TRUE when the 
    user requests direct viewing of graphs, 
    the graph formatting type, the verbosity, and debug level */
 
@@ -120,7 +120,7 @@ real output_env_conv_time(const output_env_t oenv, real time);
 void output_env_conv_times(const output_env_t oenv, int n, real *time);
 /* convert array of times */
 
-bool output_env_get_view(const output_env_t oenv);
+gmx_bool output_env_get_view(const output_env_t oenv);
 /* Return TRUE when user requested viewing of the file */
 
 

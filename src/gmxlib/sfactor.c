@@ -307,7 +307,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn) {
 
 
 extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, atom_id * index,
-		      int isize, t_topology * top, bool flag,gmx_structurefactors_t *gsf)
+		      int isize, t_topology * top, gmx_bool flag,gmx_structurefactors_t *gsf)
 /* given the group's index, return the (continuous) array of atoms */
 {
   int i;

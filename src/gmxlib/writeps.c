@@ -286,7 +286,7 @@ void ps_text(t_psdata ps,real x1,real y1,const char *str)
   fprintf(ps->fp,"(%s) show\n",str);
 }
 
-void ps_flip(t_psdata ps,bool bPlus)
+void ps_flip(t_psdata ps,gmx_bool bPlus)
 {
   if (bPlus) 
     fprintf(ps->fp,"612.5 0 translate 90 rotate\n");

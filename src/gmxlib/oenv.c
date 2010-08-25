@@ -86,7 +86,7 @@ static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns",
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
 void output_env_init(output_env_t oenv,  int argc, char *argv[],
-                     time_unit_t tmu, bool view, xvg_format_t xvg_format,
+                     time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level)
 {
     int i;
@@ -218,7 +218,7 @@ void output_env_conv_times(const output_env_t oenv, int n, real *time)
             time[i] *= fact;
 }
 
-bool output_env_get_view(const output_env_t oenv)
+gmx_bool output_env_get_view(const output_env_t oenv)
 {
     return oenv->view;
 }

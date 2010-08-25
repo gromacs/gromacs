@@ -159,7 +159,7 @@ static void ReadQuoteStringOrAccClose(FILE *in, char *buf)
   buf[i]='\0';
 }
 
-static bool bNotAccClose(const char *buf)
+static gmx_bool bNotAccClose(const char *buf)
 {
   return (strcmp(buf,"}")!=0);
 }

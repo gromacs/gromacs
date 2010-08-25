@@ -40,9 +40,9 @@
 
 enum { eWXR_NO, eWXR_YES, eWXR_NOFIT };
 
-extern void read_eigenvectors(const char *file,int *natoms,bool *bFit,
-			      rvec **xref,bool *bDMR,
-			      rvec **xav,bool *bDMA,
+extern void read_eigenvectors(const char *file,int *natoms,gmx_bool *bFit,
+			      rvec **xref,gmx_bool *bDMR,
+			      rvec **xav,gmx_bool *bDMA,
 			      int *nvec, int **eignr, rvec ***eigvec, real **eigval);
 /* Read eigenvectors from file into eigvec, the eigenvector numbers   */
 /* are stored in eignr.                                               */
@@ -53,9 +53,9 @@ extern void read_eigenvectors(const char *file,int *natoms,bool *bFit,
 /* bDMA indicates mass weighted analysis/eigenvectors.                */ 
 
 extern void write_eigenvectors(const char *trnname,int natoms,real mat[],
-			       bool bReverse,int begin,int end,
-			       int WriteXref,rvec *xref,bool bDMR,
-			       rvec xav[],bool bDMA, real *eigval);
+			       gmx_bool bReverse,int begin,int end,
+			       int WriteXref,rvec *xref,gmx_bool bDMR,
+			       rvec xav[],gmx_bool bDMA, real *eigval);
 /* Write eigenvectors in mat to a TRN file.                           */
 /* The reference structure is written (t=-1) when WriteXref=eWXR_YES. */
 /* When WriteXref==eWXR_NOFIT a zero frame is written (t=-1),         */

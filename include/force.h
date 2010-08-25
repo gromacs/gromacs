@@ -51,7 +51,7 @@ extern "C" {
 static const char *sepdvdlformat="  %-30s V %12.5e  dVdl %12.5e\n";
 
 void calc_vir(FILE *fplog,int nxf,rvec x[],rvec f[],tensor vir,
-		     bool bScrewPBC,matrix box);
+		     gmx_bool bScrewPBC,matrix box);
 /* Calculate virial for nxf atoms, and add it to vir */
 
 void f_calc_vir(FILE *fplog,int i0,int i1,rvec x[],rvec f[],tensor vir,
@@ -97,7 +97,7 @@ t_forcerec *mk_forcerec(void);
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
 t_forcetable make_tables(FILE *fp,const output_env_t oenv,
-                                const t_forcerec *fr, bool bVerbose,
+                                const t_forcerec *fr, gmx_bool bVerbose,
                                 const char *fn, real rtab,int flags);
 /* Return tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
@@ -123,8 +123,8 @@ forcerec_set_ranges(t_forcerec *fr,
 		    int natoms_force_constr,int natoms_f_novirsum);
 /* Set the number of cg's and atoms for the force calculation */
 
-bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
-                             bool bPrintNote,t_commrec *cr,FILE *fp);
+gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
+                             gmx_bool bPrintNote,t_commrec *cr,FILE *fp);
 /* Returns if we can use all-vs-all loops.
  * If bPrintNote==TRUE, prints a note, if necessary, to stderr
  * and fp (if !=NULL) on the master node.
@@ -138,14 +138,14 @@ void init_forcerec(FILE       *fplog,
 			  const gmx_mtop_t *mtop,
 			  const t_commrec  *cr,
 			  matrix     box,
-			  bool       bMolEpot,
+			  gmx_bool       bMolEpot,
 			  const char *tabfn,
 			  const char *tabpfn,
 			  const char *tabbfn,
-			  bool       bNoSolvOpt,
+			  gmx_bool       bNoSolvOpt,
 			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 
- * The booleans have the following meaning:
+ * The gmx_booleans have the following meaning:
  * bSetQ:    Copy the charges [ only necessary when they change ]
  * bMolEpot: Use the free energy stuff per molecule
  * print_force >= 0: print forces for atoms with force >= print_force
@@ -158,9 +158,9 @@ void destroy_enerdata(gmx_enerdata_t *enerd);
 /* Free all memory associated with enerd */
 
 void reset_enerdata(t_grpopts *opts,
-			   t_forcerec *fr,bool bNS,
+			   t_forcerec *fr,gmx_bool bNS,
 			   gmx_enerdata_t *enerd,
-			   bool bMaster);
+			   gmx_bool bMaster);
 /* Resets the energy data, if bNS=TRUE also zeros the long-range part */
 
 void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
@@ -213,7 +213,7 @@ void do_force(FILE *log,t_commrec *cr,
 		     real lambda,t_graph *graph,
 		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 		     double t,FILE *field,gmx_edsam_t ed,
-		     bool bBornRadii,
+		     gmx_bool bBornRadii,
 		     int flags);
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
@@ -237,9 +237,9 @@ void ns(FILE       *fplog,
 	       real       lambda,
 	       real       *dvdlambda,
 	       gmx_grppairener_t *grppener,
-	       bool       bFillGrid,
-	       bool       bDoLongRange,
-	       bool       bDoForces,
+	       gmx_bool       bFillGrid,
+	       gmx_bool       bDoLongRange,
+	       gmx_bool       bDoForces,
 	       rvec       *f);
 /* Call the neighborsearcher */
 
@@ -262,7 +262,7 @@ void do_force_lowlevel(FILE         *fplog,
 			      gmx_localtop_t *top,
 			      gmx_genborn_t *born,
 			      t_atomtypes  *atype,
-			      bool         bBornRadii,
+			      gmx_bool         bBornRadii,
 			      matrix       box,
 			      real         lambda,
 			      t_graph      *graph,

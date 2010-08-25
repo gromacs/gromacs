@@ -129,7 +129,7 @@ int gmx_saltbr(int argc,char *argv[])
     "option is selected. In this case files are named as [TT]sb-ResnameResnr-Atomnr[tt].",
     "There may be many such files."
   };
-  static bool bSep=FALSE;
+  static gmx_bool bSep=FALSE;
   static real truncate=1000.0;
   t_pargs pa[] = {
     { "-t",   FALSE, etREAL, {&truncate},
