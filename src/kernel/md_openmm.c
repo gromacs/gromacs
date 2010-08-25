@@ -89,6 +89,7 @@
 #include "sighandler.h"
 #include "genborn.h"
 #include "string2.h"
+#include "copyrite.h"
 
 #ifdef GMX_THREADS
 #include "tmpi.h"
