@@ -33,12 +33,12 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-#include <stdio.h>
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+
+#include <stdio.h>
 
 #include "statutil.h"
 #include "typedefs.h"

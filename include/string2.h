@@ -64,6 +64,7 @@ extern "C" {
 #define CONTINUE    '\\'
 #define COMMENTSIGN ';'
 
+<<<<<<< HEAD
   int continuing(char *s);
 
   char *fgets2(char *s, int n, FILE *stream);
@@ -119,6 +120,63 @@ extern "C" {
 
 
 extern char **split(char sep,const char *str);
+=======
+int continuing(char *s);
+
+char *fgets2(char *s, int n, FILE *stream);
+
+void strip_comment (char *line);
+
+int break_line (char *line,
+		       char *variable,
+		       char *value);
+
+void upstring (char *str);
+
+void ltrim (char *str);
+
+void rtrim (char *str);
+
+void trim (char *str);
+
+void nice_header (FILE *out,const char *fn);
+
+int gmx_strcasecmp_min(const char *str1, const char *str2);
+int gmx_strncasecmp_min(const char *str1, const char *str2, int n);
+/* This funny version of strcasecmp, is not only case-insensitive,
+ * but also ignores '-' and '_'.
+ */
+
+int gmx_strcasecmp(const char *str1, const char *str2);
+int gmx_strncasecmp(const char *str1, const char *str2, int n);
+
+char *gmx_strdup(const char *src);
+char *gmx_strndup(const char *src, int n);
+    
+/** Pattern matcing with wildcards. */
+int gmx_wcmatch(const char *pattern, const char *src);
+
+/** Return value for gmx_wcmatch() when there is no match. */
+#define GMX_NO_WCMATCH 1
+
+
+/* this is our implementation of strsep, the thread-safe replacement for
+   strtok */
+char *gmx_strsep(char **stringp, const char *delim);
+
+
+char *wrap_lines(const char *buf,int line_width, int indent,
+			bool bIndentFirst);
+/* wraps lines at 'linewidth', indenting all following
+ * lines by 'indent' spaces. A temp buffer is allocated and returned,
+ * which can be disposed of if no longer needed.
+ * If !bIndentFirst, then the first line will not be indented, only 
+ * the lines that are created due to wapping.
+ */
+
+
+char **split(char sep,char *str);
+>>>>>>> release-4-5-patches
 /* Implementation of the well-known Perl function split */
 
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);

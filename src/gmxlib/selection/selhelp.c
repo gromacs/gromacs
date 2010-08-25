@@ -31,6 +31,10 @@
 /*! \internal \file
  * \brief Implementation of functions in selhelp.c.
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <macros.h>
 #include <string2.h>
 #include <wman.h>

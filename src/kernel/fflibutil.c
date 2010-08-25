@@ -258,6 +258,7 @@ static int low_fflib_search_file_end(const char *ffdir,
                     n_thisdir++;
                 }
             }
+            gmx_directory_close(dirhandle);
 
             sort_filenames(n_thisdir,
                            fns+n-n_thisdir,
@@ -330,6 +331,7 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
                     n++;
                 }
             }
+            gmx_directory_close(dirhandle);
         }
         sfree(f[i]);
         sfree(f_short[i]);

@@ -15,6 +15,11 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 
 /* Derived from PluginMgr.C and catdcd.c */
 

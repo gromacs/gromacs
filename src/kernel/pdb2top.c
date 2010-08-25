@@ -215,14 +215,27 @@ choose_ff(const char *ffsel,
                 desc[i] = strdup(ffs[i]);
             }
         }
+<<<<<<< HEAD
         /*
+=======
+        /* Order force fields from the same dir alphabetically
+         * and put deprecated force fields at the end.
+         */
+>>>>>>> release-4-5-patches
         for(i=0; (i<nff); i++)
         {
             for(j=i+1; (j<nff); j++)
             {
+<<<<<<< HEAD
                 if ((desc[i][0] == '[' && desc[j][0] != '[') ||
                     ((desc[i][0] == '[' || desc[j][0] != '[') &&
                      gmx_strcasecmp(desc[i],desc[j]) > 0))
+=======
+                if (strcmp(ffs_dir[i],ffs_dir[j]) == 0 &&
+                    ((desc[i][0] == '[' && desc[j][0] != '[') ||
+                     ((desc[i][0] == '[' || desc[j][0] != '[') &&
+                      gmx_strcasecmp(desc[i],desc[j]) > 0)))
+>>>>>>> release-4-5-patches
                 {
                     swap_strings(ffdirs,i,j);
                     swap_strings(ffs   ,i,j);
@@ -855,9 +868,10 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 			       int nres, t_resinfo *resinfo, 
 			       int nterpairs,
 			       t_hackblock **ntdb, t_hackblock **ctdb,
-			       int *rn, int *rc)
+			       int *rn, int *rc, char *ffname)
 {
   int i, j, k, l;
+  char *key;
   t_restp *res;
   char buf[STRLEN];
   const char *Hnum="123456";
@@ -878,7 +892,17 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
   /* then the whole rtp */
   for(i=0; i < nres; i++) {
-    res = search_rtp(*resinfo[i].rtp,nrtp,rtp);
+    /* Here we allow a mismatch of one character when looking for the rtp entry.
+     * For such a mismatch there should be only one mismatching name.
+     * This is mainly useful for small molecules such as ions.
+     * Note that this will usually not work for protein, DNA and RNA,
+     * since there the residue names should be listed in residuetypes.dat
+     * and an error will have been generated earlier in the process.
+     */
+    key = *resinfo[i].rtp;
+    snew(resinfo[i].rtp,1);
+    *resinfo[i].rtp = search_rtp(key,nrtp,rtp);
+    res = get_restp(*resinfo[i].rtp,nrtp,rtp);
     copy_t_restp(res, &(*restp)[i]);
 
     /* Check that we do not have different bonded types in one molecule */
@@ -900,11 +924,13 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
     if (bRM && ((tern >= 0 && ntdb[tern] == NULL) ||
                 (terc >= 0 && ctdb[terc] == NULL))) {
-        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Edit a .n.tdb and/or .c.tdb file.");
+        gmx_fatal(FARGS,"At least one terminus has a dangling bond, and the force field does\nnot provide suitable terminal entries or files. %s",
+                  0 == gmx_strncasecmp("AMBER", ffname, 5) ? "With AMBER force fields,\nuse the terminus-specific residue names, eg. NALA, CVAL."
+                  : "Edit a .n.tdb and/or .c.tdb file.");
     }
     if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
                 (terc >= 0 && ctdb[terc]->nhack == 0))) {
-        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends. Select a proper terminal entry.");
+        gmx_fatal(FARGS,"At least one terminus has a dangling bond. Select a proper terminal entry.");
     }
   }
   
