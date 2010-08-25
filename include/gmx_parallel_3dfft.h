@@ -63,7 +63,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            MPI_Comm                  comm[2],
                            int *                     slab2index_major,
                            int *                     slab2index_minor,
-                           bool                      bReproducible);
+                           gmx_bool                      bReproducible);
 
 
 

@@ -107,7 +107,7 @@ int gmx_covar(int argc,char *argv[])
     "i.e. for each atom pair the sum of the xx, yy and zz covariances is",
     "written."
   };
-  static bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE;
+  static gmx_bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE;
   static int  end=-1;
   t_pargs pa[] = {
     { "-fit",  FALSE, etBOOL, {&bFit},
@@ -143,7 +143,7 @@ int gmx_covar(int argc,char *argv[])
   char       str[STRLEN],*fitname,*ananame,*pcwd;
   int        d,dj,nfit;
   atom_id    *index,*ifit;
-  bool       bDiffMass1,bDiffMass2;
+  gmx_bool       bDiffMass1,bDiffMass2;
   time_t     now;
   char       timebuf[STRLEN];
   t_rgb      rlo,rmi,rhi;

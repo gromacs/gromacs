@@ -64,7 +64,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
   t_inpfile *inp=NULL;
   int       nin,lc,i,j,k;
   /* setting cppopts from command-line options would be cooler */
-  bool allow_override=FALSE;
+  gmx_bool allow_override=FALSE;
 
     
   if (debug)
@@ -213,7 +213,7 @@ static void sort_inp(int ninp,t_inpfile inp[])
   qsort(inp,ninp,(size_t)sizeof(inp[0]),inp_comp);
 }
 
-void write_inpfile(const char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown,
+void write_inpfile(const char *fn,int ninp,t_inpfile inp[],gmx_bool bHaltOnUnknown,
 		   warninp_t wi)
 {
   FILE *out;

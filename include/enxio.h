@@ -180,7 +180,7 @@ extern "C" {
   void free_enxnms(int n,gmx_enxnm_t *nms);
   /* Frees nms and all strings in it */
 
-  bool do_enx(ener_file_t ef,t_enxframe *fr);
+  gmx_bool do_enx(ener_file_t ef,t_enxframe *fr);
   /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
   void get_enx_state(const char *fn, real t,

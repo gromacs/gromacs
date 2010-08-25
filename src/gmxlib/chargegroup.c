@@ -178,7 +178,7 @@ void put_charge_groups_in_box(FILE *fplog,int cg0,int cg1,
     rvec cg;
     real nrcg,inv_ncg;
     atom_id *cgindex;
-    bool bTric;
+    gmx_bool bTric;
 
     if (ePBC == epbcNONE) 
         gmx_incons("Calling put_charge_groups_in_box for a system without PBC");

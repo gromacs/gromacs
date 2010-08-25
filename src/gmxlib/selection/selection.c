@@ -162,7 +162,7 @@ gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc,
  */
 void
 gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
-                                     const char *type, bool bMaskOnly)
+                                     const char *type, gmx_bool bMaskOnly)
 {
     if (type)
     {
@@ -178,7 +178,7 @@ gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
  */
 void
 gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
-                                    bool bVelOut)
+                                    gmx_bool bVelOut)
 {
     sc->bVelocities = bVelOut;
 }
@@ -190,7 +190,7 @@ gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
  */
 void
 gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
-                                      bool bForceOut)
+                                      gmx_bool bForceOut)
 {
     sc->bForces = bForceOut;
 }
@@ -277,7 +277,7 @@ gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i)
  * After gmx_ana_selcollection_parse_*(), the return value also takes into account the
  * selection keywords used.
  */
-bool
+gmx_bool
 gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc)
 {
     t_selelem   *sel;
@@ -323,7 +323,7 @@ gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc)
  *   are printed as well.
  */
 void
-gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, bool bValues)
+gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, gmx_bool bValues)
 {
     t_selelem *sel;
 
@@ -390,7 +390,7 @@ gmx_ana_selection_print_info(gmx_ana_selection_t *sel)
  * \returns   TRUE if the covered fraction can be calculated for the selection,
  *   FALSE otherwise.    
  */
-bool
+gmx_bool
 gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type)
 {
     sel->cfractype = type;

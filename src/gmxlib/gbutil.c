@@ -239,7 +239,7 @@ void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box)
 
 /*gen_box() generates a box around a configuration*/
 void gen_box(int NTB,int natoms,rvec *x, matrix box,rvec box_space,
-	     bool bCenter)
+	     gmx_bool bCenter)
 {
   int i,m;
   rvec xmin, xmax;

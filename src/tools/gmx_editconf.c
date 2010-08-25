@@ -82,7 +82,7 @@ typedef struct
 static const char *pdbtp[epdbNR] =
     { "ATOM  ", "HETATM" };
 
-real calc_mass(t_atoms *atoms, bool bGetMass, gmx_atomprop_t aps)
+real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
 {
     real tmass;
     int i;
@@ -103,7 +103,7 @@ real calc_mass(t_atoms *atoms, bool bGetMass, gmx_atomprop_t aps)
 }
 
 real calc_geom(int isize, atom_id *index, rvec *x, rvec geom_center, rvec min,
-               rvec max, bool bDiam)
+               rvec max, gmx_bool bDiam)
 {
     real diam2, d;
     char *grpnames;
@@ -207,12 +207,12 @@ void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 }
 
 void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
-                       double *bfac, int *bfac_nr, bool peratom)
+                       double *bfac, int *bfac_nr, gmx_bool peratom)
 {
     FILE *out;
     real bfac_min, bfac_max;
     int i, n;
-    bool found;
+    gmx_bool found;
 
     bfac_max = -1e10;
     bfac_min = 1e10;
@@ -540,9 +540,9 @@ int gmx_editconf(int argc, char *argv[])
             "For complex molecules, the periodicity removal routine may break down, ",
                 "in that case you can use trjconv." };
     static real dist = 0.0, rbox = 0.0, to_diam = 0.0;
-    static bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
+    static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
         FALSE, bCONECT = FALSE;
-    static bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead =
+    static gmx_bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead =
         FALSE, bGrasp = FALSE, bSig56 = FALSE;
     static rvec scale =
         { 1, 1, 1 }, newbox =
@@ -643,8 +643,8 @@ int gmx_editconf(int argc, char *argv[])
     int ePBC;
     matrix box,rotmatrix,trans;
 	rvec princd,tmpvec;
-    bool bIndex, bSetSize, bSetAng, bCubic, bDist, bSetCenter, bAlign;
-    bool bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
+    gmx_bool bIndex, bSetSize, bSetAng, bCubic, bDist, bSetCenter, bAlign;
+    gmx_bool bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
     real xs, ys, zs, xcent, ycent, zcent, diam = 0, mass = 0, d, vdw;
     gmx_atomprop_t aps;
     gmx_conect conect;

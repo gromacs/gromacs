@@ -66,7 +66,7 @@ int main(int argc,char *argv[])
   double    *rt,*ct;
   t_fftgrid *g;
   t_commrec *cr;
-  static bool bReproducible = FALSE;
+  static gmx_bool bReproducible = FALSE;
   static int  nnode    = 1;
   static int  nitfac  = 1;
   t_pargs pa[] = {

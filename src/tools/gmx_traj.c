@@ -61,7 +61,7 @@
 
 
 static void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
-                           bool bDim[],const char *sffmt)
+                           gmx_bool bDim[],const char *sffmt)
 {
     int i,ii,d;
   
@@ -143,8 +143,8 @@ static void average_data(rvec x[],rvec xav[],real *mass,
     }
 }
   
-static void print_data(FILE *fp,real time,rvec x[],real *mass,bool bCom,
-                       int ngrps,int isize[],atom_id **index,bool bDim[],
+static void print_data(FILE *fp,real time,rvec x[],real *mass,gmx_bool bCom,
+                       int ngrps,int isize[],atom_id **index,gmx_bool bDim[],
                        const char *sffmt)
 {
     static rvec *xav=NULL;
@@ -164,7 +164,7 @@ static void print_data(FILE *fp,real time,rvec x[],real *mass,bool bCom,
     }
 }
 
-static void write_trx_x(t_trxstatus *status,t_trxframe *fr,real *mass,bool bCom,
+static void write_trx_x(t_trxstatus *status,t_trxframe *fr,real *mass,gmx_bool bCom,
                         int ngrps,int isize[],atom_id **index)
 {
     static rvec *xav=NULL;
@@ -206,7 +206,7 @@ static void write_trx_x(t_trxstatus *status,t_trxframe *fr,real *mass,bool bCom,
 }
 
 static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
-                        char **name,bool bCom,bool bMol,bool bDim[],
+                        char **name,gmx_bool bCom,gmx_bool bMol,gmx_bool bDim[],
                         const output_env_t oenv)
 {
     char **leg;
@@ -419,14 +419,14 @@ static void write_pdb_bfac(const char *fname,const char *xname,
                            const char *title,t_atoms *atoms,int ePBC,matrix box,
                            int isize,atom_id *index,int nfr_x,rvec *x,
                            int nfr_v,rvec *sum,
-                           bool bDim[],real scale_factor, 
+                           gmx_bool bDim[],real scale_factor, 
                            const output_env_t oenv)
 {
     FILE    *fp;
     real    max,len2,scale;
     atom_id maxi; 
     int     i,m,onedim;
-    bool    bOne;
+    gmx_bool    bOne;
 
     if ((nfr_x == 0) || (nfr_v == 0))
     {
@@ -626,8 +626,8 @@ int gmx_traj(int argc,char *argv[])
         "norm of the vector is plotted. In addition in the same graph",
         "the kinetic energy distribution is given."
     };
-    static bool bMol=FALSE,bCom=FALSE,bPBC=TRUE,bNoJump=FALSE;
-    static bool bX=TRUE,bY=TRUE,bZ=TRUE,bNorm=FALSE,bFP=FALSE;
+    static gmx_bool bMol=FALSE,bCom=FALSE,bPBC=TRUE,bNoJump=FALSE;
+    static gmx_bool bX=TRUE,bY=TRUE,bZ=TRUE,bNorm=FALSE,bFP=FALSE;
     static int  ngroups=1;
     static real scale=0,binwidth=1;
     t_pargs pa[] = {
@@ -678,8 +678,8 @@ int gmx_traj(int argc,char *argv[])
     atom_id    **index0,**index;
     atom_id    *atndx;
     t_block    *mols;
-    bool       bTop,bOX,bOXT,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF;
-    bool       bDim[4],bDum[4],bVD;
+    gmx_bool       bTop,bOX,bOXT,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF;
+    gmx_bool       bDim[4],bDum[4],bVD;
     char       *sffmt,sffmt6[1024];
     const char *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
     output_env_t oenv;

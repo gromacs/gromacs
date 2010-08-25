@@ -183,7 +183,7 @@ static void tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
     tMPI_Atomic_set(&(met->n_remaining), 0);
     met->buf=(void**)tMPI_Malloc(sizeof(void*)*N);
     met->bufsize=(size_t*)tMPI_Malloc(sizeof(size_t)*N);
-    met->read_data=(bool*)tMPI_Malloc(sizeof(bool)*N);
+    met->read_data=(gmx_bool*)tMPI_Malloc(sizeof(gmx_bool)*N);
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     met->cpbuf=(tMPI_Atomic_ptr_t*)tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*N);
     met->cb=NULL;
@@ -322,7 +322,7 @@ static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
     {
         void *srcbuf;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-        bool decrease_ctr=FALSE;
+        gmx_bool decrease_ctr=FALSE;
 #endif
 
         if ( sendsize > recvsize ) 
@@ -442,7 +442,7 @@ static void tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
     int i;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* decide based on the number of waiting threads */
-    bool using_cb=(bufsize < (size_t)(n_remaining*COPY_BUFFER_SIZE));
+    gmx_bool using_cb=(bufsize < (size_t)(n_remaining*COPY_BUFFER_SIZE));
 
     cev->met[myrank].using_cb=using_cb;
     if (using_cb)

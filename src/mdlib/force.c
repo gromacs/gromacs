@@ -78,9 +78,9 @@ void ns(FILE *fp,
         real       lambda,
         real       *dvdlambda,
         gmx_grppairener_t *grppener,
-        bool       bFillGrid,
-        bool       bDoLongRange,
-        bool       bDoForces,
+        gmx_bool       bFillGrid,
+        gmx_bool       bDoLongRange,
+        gmx_bool       bDoForces,
         rvec       *f)
 {
   char   *ptr;
@@ -127,7 +127,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        gmx_localtop_t *top,
                        gmx_genborn_t *born,
                        t_atomtypes *atype,
-                       bool       bBornRadii,
+                       gmx_bool       bBornRadii,
                        matrix     box,
                        real       lambda,  
                        t_graph    *graph,
@@ -138,7 +138,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 {
     int     i,status;
     int     donb_flags;
-    bool    bDoEpot,bSepDVDL,bSB;
+    gmx_bool    bDoEpot,bSepDVDL,bSB;
     int     pme_flags;
     matrix  boxs;
     rvec    box_size;
@@ -705,11 +705,11 @@ void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir)
 }
 
 void reset_enerdata(t_grpopts *opts,
-                    t_forcerec *fr,bool bNS,
+                    t_forcerec *fr,gmx_bool bNS,
                     gmx_enerdata_t *enerd,
-                    bool bMaster)
+                    gmx_bool bMaster)
 {
-  bool bKeepLR;
+  gmx_bool bKeepLR;
   int  i,j;
   
   /* First reset all energy components, except for the long range terms

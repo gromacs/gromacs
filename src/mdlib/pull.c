@@ -61,7 +61,7 @@
 #include "gmx_ga2la.h"
 #include "copyrite.h"
 
-static void pull_print_x_grp(FILE *out,bool bRef,ivec dim,t_pullgrp *pgrp) 
+static void pull_print_x_grp(FILE *out,gmx_bool bRef,ivec dim,t_pullgrp *pgrp) 
 {
     int m;
     
@@ -141,7 +141,7 @@ void pull_print_output(t_pull *pull, gmx_large_int_t step, double time)
 }
 
 static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv, 
-                           bool bCoord, unsigned long Flags)
+                           gmx_bool bCoord, unsigned long Flags)
 {
     FILE *fp;
     int  nsets,g,m;
@@ -359,7 +359,7 @@ static void get_pullgrp_dr(const t_pull *pull,const t_pbc *pbc,int g,double t,
 void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
                           dvec dr,dvec dev)
 {
-    static bool bWarned=FALSE; /* TODO: this should be fixed for thread-safety, 
+    static gmx_bool bWarned=FALSE; /* TODO: this should be fixed for thread-safety, 
                                   but is fairly benign */
     t_pullgrp *pgrp;
     int       m;
@@ -444,7 +444,7 @@ void clear_pull_forces(t_pull *pull)
 /* Apply constraint using SHAKE */
 static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
                           rvec *x, rvec *v,
-                          bool bMaster, tensor vir,
+                          gmx_bool bMaster, tensor vir,
                           double dt, double t) 
 {
 
@@ -456,7 +456,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     dvec  ref,vec;
     double d0,inpr;
     double lambda, rm, mass, invdt=0;
-    bool bConverged = FALSE;
+    gmx_bool bConverged = FALSE;
     int niter=0,g,ii,j,m,max_iter=100;
     double q,a,b,c;  /* for solving the quadratic equation, 
                         see Num. Recipes in C ed 2 p. 184 */
@@ -1067,7 +1067,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
   int i,ii,d,nfrozen,ndim;
   real m,w,mbd;
   double tmass,wmass,wwmass;
-  bool bDomDec;
+  gmx_bool bDomDec;
   gmx_ga2la_t ga2la=NULL;
   gmx_groups_t *groups;
   t_atom *atom;
@@ -1190,12 +1190,12 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 
 void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
 	       gmx_mtop_t *mtop,t_commrec *cr,const output_env_t oenv,
-               bool bOutFile, unsigned long Flags)
+               gmx_bool bOutFile, unsigned long Flags)
 {
     t_pull    *pull;
     t_pullgrp *pgrp;
     int       g,start=0,end=0,m;
-    bool      bCite;
+    gmx_bool      bCite;
     
     pull = ir->pull;
     

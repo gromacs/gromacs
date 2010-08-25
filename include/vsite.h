@@ -62,7 +62,7 @@ typedef struct {
   int  ***vsite_pbc_molt;     /* The pbc atoms for intercg vsites        */
   int  **vsite_pbc_loc;       /* The local pbc atoms                     */
   int  *vsite_pbc_loc_nalloc;
-  bool bPDvsitecomm;          /* Do we need vsite communication with PD? */
+  gmx_bool bPDvsitecomm;          /* Do we need vsite communication with PD? */
   t_comm_vsites *vsitecomm;   /* The PD vsite communication struct       */
 } gmx_vsite_t;
 
@@ -70,7 +70,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 			     rvec x[],t_nrnb *nrnb,
 			     real dt,rvec v[],
 			     t_iparams ip[],t_ilist ilist[],
-			     int ePBC,bool bMolPBC,t_graph *graph,
+			     int ePBC,gmx_bool bMolPBC,t_graph *graph,
 			     t_commrec *cr,matrix box);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the local system.
@@ -92,7 +92,7 @@ void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
 void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 			   rvec x[],rvec f[],rvec *fshift,
 			   t_nrnb *nrnb,t_idef *idef,
-			   int ePBC,bool bMolPBC,t_graph *g,matrix box,
+			   int ePBC,gmx_bool bMolPBC,t_graph *g,matrix box,
 			   t_commrec *cr);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.

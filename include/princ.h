@@ -56,14 +56,14 @@ void orient_princ(t_atoms *atoms, int isize, atom_id *index,
 /* rotates molecule to align principal axes with coordinate axes */
 
 real calc_xcm(rvec x[],int gnx,atom_id *index,t_atom *atom,rvec xcm,
-		     bool bQ);
+		     gmx_bool bQ);
 /* Calculate the center of mass of the atoms in index. if bQ then the atoms
  * will be charge weighted rather than mass weighted.
  * Returns the total mass/charge.
  */
 
 real sub_xcm(rvec x[],int gnx,atom_id *index,t_atom atom[],rvec xcm,
-		    bool bQ);
+		    gmx_bool bQ);
 /* Calc. the center of mass and subtract it from all coordinates.
  * Returns the original center of mass in xcm
  * Returns the total mass

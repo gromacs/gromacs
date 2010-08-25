@@ -147,7 +147,7 @@ static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdpl
 }
 
 /*return: 1: success, 0: last frame, -1: error*/
-bool read_next_vmd_frame(int status,t_trxframe *fr)
+gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
 {
     int rc,i;
     rvec vec, angle;

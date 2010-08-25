@@ -172,7 +172,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("DH/DL_CON","dH/dl constr."    )
 };
 
-bool have_interaction(t_idef *idef,int ftype)
+gmx_bool have_interaction(t_idef *idef,int ftype)
 {
   int i;
   

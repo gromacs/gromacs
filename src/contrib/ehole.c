@@ -63,9 +63,9 @@ typedef struct {
   int  nana;
   int  seed;
   int  nevent;
-  bool bForce;
-  bool bScatter;
-  bool bHole;
+  gmx_bool bForce;
+  gmx_bool bScatter;
+  gmx_bool bHole;
   real dt;
   real deltax;
   real epsr;
@@ -390,8 +390,8 @@ static void print_header(FILE *fp,t_eh_params *ehp)
   fprintf(fp,"seed = %d maxstep = %d dt = %g\n",
 	  ehp->seed,ehp->maxstep,ehp->dt);
   fprintf(fp,"nsave = %d nana = %d Force = %s Scatter = %s Hole = %s\n",
-	  ehp->nsave,ehp->nana,bool_names[ehp->bForce],
-	  bool_names[ehp->bScatter],bool_names[ehp->bHole]);
+	  ehp->nsave,ehp->nana,gmx_bool_names[ehp->bForce],
+	  gmx_bool_names[ehp->bScatter],gmx_bool_names[ehp->bHole]);
   if (ehp->bForce)
     fprintf(fp,"Force constant for repulsion Alj = %g\n",ehp->Alj);
 }
@@ -609,7 +609,7 @@ int main(int argc,char *argv[])
     10000.0,/* Distance between events */
     0.0     /* Size of the system */
   };
-  static bool bTest    = FALSE;
+  static gmx_bool bTest    = FALSE;
   t_pargs pa[] = {
     { "-maxparticle", FALSE, etINT,  {&ehp.maxparticle},
       "Maximum number of particles" },

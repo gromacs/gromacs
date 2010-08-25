@@ -86,7 +86,7 @@ void update_pcouple(FILE         *fplog,
 			   matrix       M,
 			   gmx_wallcycle_t wcycle,
 			   gmx_update_t upd,
-			   bool         bInitStep);
+			   gmx_bool         bInitStep);
 
 void update_coords(FILE         *fplog,
 			  gmx_large_int_t   step,
@@ -94,14 +94,14 @@ void update_coords(FILE         *fplog,
 			  t_mdatoms    *md,
 			  t_state      *state,
 			  rvec         *f,    /* forces on home particles */
-			  bool         bDoLR,
+			  gmx_bool         bDoLR,
 			  rvec         *f_lr,
 			  t_fcdata     *fcd,
 			  gmx_ekindata_t *ekind,
 			  matrix       M,
 			  gmx_wallcycle_t wcycle,
 			  gmx_update_t upd,
-			  bool         bInitStep,
+			  gmx_bool         bInitStep,
 			  int          bUpdatePart,
 			  t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
 			  t_nrnb       *nrnb,
@@ -127,9 +127,9 @@ void update_constraints(FILE         *fplog,
 			       gmx_wallcycle_t wcycle,
 			       gmx_update_t upd,
 			       gmx_constr_t constr,
-			       bool         bInitStep,
-			       bool         bFirstHalf,
-			       bool         bCalcVir,
+			       gmx_bool         bInitStep,
+			       gmx_bool         bFirstHalf,
+			       gmx_bool         bCalcVir,
 			       real         vetanew);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
@@ -146,12 +146,12 @@ void update_box(FILE         *fplog,
 		       t_nrnb       *nrnb,
 		       gmx_wallcycle_t wcycle,
 		       gmx_update_t upd,
-		       bool         bInitStep,
-		       bool         bFirstHalf);
+		       gmx_bool         bInitStep,
+		       gmx_bool         bFirstHalf);
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
-			 gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel, bool bSaveOld);
+			 gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, gmx_bool bSaveOld);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
@@ -191,7 +191,7 @@ void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
 			   gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md, 
 			   t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, bool bTrotter); 
+int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter); 
 
 real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
@@ -228,7 +228,7 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
 				    t_inputrec *ir,real dt,tensor pres,
 				    tensor box,tensor box_rel,tensor boxv,
 				    tensor M,matrix mu,
-				    bool bFirstStep);
+				    gmx_bool bFirstStep);
   
 void berendsen_pcoupl(FILE *fplog,gmx_large_int_t step,
 			     t_inputrec *ir,real dt,tensor pres,matrix box,

@@ -209,7 +209,7 @@ nb_kernel_list = NULL;
 
 
 void
-gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
+gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
 {
     int i;
         
@@ -303,12 +303,12 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
                   int nls,int eNL,int flags)
 {
-    bool            bLR,bDoForces,bForeignLambda;
+    gmx_bool            bLR,bDoForces,bForeignLambda;
 	t_nblist *      nlist;
 	real *          fshift;
 	int             n,n0,n1,i,i0,i1,nrnb_ind,sz;
 	t_nblists       *nblists;
-	bool            bWater;
+	gmx_bool            bWater;
 	nb_kernel_t *   kernelptr;
 	FILE *          fp;
 	int             fac=0;
@@ -644,7 +644,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                 const t_forcerec *fr,gmx_grppairener_t *grppener,
                 int *global_atom_index)
 {
-    static    bool bWarn=FALSE;
+    static    gmx_bool bWarn=FALSE;
     real      eps,r2,*tab,rtab2=0;
     rvec      dx,x14[2],f14[2];
     int       i,ai,aj,itype;
@@ -663,7 +663,7 @@ do_listed_vdw_q(int ftype,int nbonds,
     real      *egnb=NULL,*egcoul=NULL;
     t_nblist  tmplist;
     int       icoul,ivdw;
-    bool      bMolPBC,bFreeEnergy;
+    gmx_bool      bMolPBC,bFreeEnergy;
     
 #if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_t mtx;

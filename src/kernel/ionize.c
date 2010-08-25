@@ -432,7 +432,7 @@ real rand_theta_incoh(int Eindex,int *seed)
 {
 #define NINTP 450
 #define prev (1-cur)
-  static bool bFirst = TRUE;
+  static gmx_bool bFirst = TRUE;
   static real **intp;
   static int  i,j,cur=1;
   real   rrr,dx;
@@ -524,7 +524,7 @@ real electron_cross_section(FILE *fp,rvec v,real mass,int nelec)
   return sigma;
 }
 
-bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
+gmx_bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
 		 int *seed,real dt)
 {
   rvec dv;
@@ -561,7 +561,7 @@ void ionize(FILE *fp,const output_env_t oenv,t_mdatoms *md,gmx_mtop_t *mtop,
 {
   static FILE  *xvg,*ion;
   static const char  *const_leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
-  static bool  bFirst = TRUE;
+  static gmx_bool  bFirst = TRUE;
   static real  t0,imax,width,rho,nphot;
   static real  interval;
   static int   dq_tot,nkd_tot,mode,ephot;
@@ -573,7 +573,7 @@ void ionize(FILE *fp,const output_env_t oenv,t_mdatoms *md,gmx_mtop_t *mtop,
   real pt,ptot,pphot,pcoll[ecollNR],tmax;
   real hboxx,hboxy,rho2;
   rvec dv,ddv;
-  bool bIonize=FALSE,bKHole,bL,bDOIT;
+  gmx_bool bIonize=FALSE,bKHole,bL,bDOIT;
   int  i,k,kk,m,nK,nL,dq,nkh,nkdecay;
   int  *nionize,*nkhole,*ndecay,nbuf[2];
   char **leg;

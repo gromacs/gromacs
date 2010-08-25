@@ -72,7 +72,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         size_t sendsize=sendtype->size*sendcount;
         size_t total_send_size=0;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-        bool using_cb;
+        gmx_bool using_cb;
 #endif
 
         if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
@@ -207,7 +207,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         int i;
         size_t total_send_size=0;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-        bool using_cb;
+        gmx_bool using_cb;
 #endif
 
         if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */

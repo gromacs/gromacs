@@ -120,7 +120,7 @@ static void print_resatoms(FILE *out,gpp_atomtype_t atype,t_restp *rtp)
   }
 }
 
-static bool read_atoms(FILE *in,char *line,
+static gmx_bool read_atoms(FILE *in,char *line,
 		       t_restp *r0,t_symtab *tab,gpp_atomtype_t atype)
 {
   int    i,j,cg,maxentries;
@@ -161,7 +161,7 @@ static bool read_atoms(FILE *in,char *line,
   return TRUE;
 }
 
-bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
+gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
 {
   char str[STRLEN];
   int  j,n,ni,maxrb;
@@ -250,19 +250,19 @@ void clear_t_restp(t_restp *rrtp)
 
 void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp, 
                  gpp_atomtype_t atype, t_symtab *tab,
-                 bool bAllowOverrideRTP)
+                 gmx_bool bAllowOverrideRTP)
 {
   FILE      *in;
   char      filebase[STRLEN],*ptr,line[STRLEN],header[STRLEN];
   int       i,nrtp,maxrtp,bt,nparam;
   int       dum1,dum2,dum3;
   t_restp   *rrtp;
-  bool      bNextResidue,bError;
+  gmx_bool      bNextResidue,bError;
   int       bts[ebtsNR];
-  bool      bAlldih;
+  gmx_bool      bAlldih;
   int       nrexcl;
-  bool      HH14;
-  bool      bRemoveDih;
+  gmx_bool      HH14;
+  gmx_bool      bRemoveDih;
   int       firstrtp;
 
   fflib_filename_base(rrdb,filebase,STRLEN);

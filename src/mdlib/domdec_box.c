@@ -209,7 +209,7 @@ static void set_tric_dir(ivec *dd_nc,gmx_ddbox_t *ddbox,matrix box)
 }
 
 static void low_set_ddbox(t_inputrec *ir,ivec *dd_nc,matrix box,
-                          bool bCalcUnboundedSize,int ncg,t_block *cgs,rvec *x,
+                          gmx_bool bCalcUnboundedSize,int ncg,t_block *cgs,rvec *x,
                           t_commrec *cr_sum,
                           gmx_ddbox_t *ddbox)
 {
@@ -251,9 +251,9 @@ static void low_set_ddbox(t_inputrec *ir,ivec *dd_nc,matrix box,
     set_tric_dir(dd_nc,ddbox,box);
 }
 
-void set_ddbox(gmx_domdec_t *dd,bool bMasterState,t_commrec *cr_sum,
+void set_ddbox(gmx_domdec_t *dd,gmx_bool bMasterState,t_commrec *cr_sum,
                t_inputrec *ir,matrix box,
-               bool bCalcUnboundedSize,t_block *cgs,rvec *x,
+               gmx_bool bCalcUnboundedSize,t_block *cgs,rvec *x,
                gmx_ddbox_t *ddbox)
 {
     if (!bMasterState || DDMASTER(dd))

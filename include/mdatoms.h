@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,bool bFreeEnergy);
+t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,gmx_bool bFreeEnergy);
 
 void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,		     
 		     int nindex,int *index,

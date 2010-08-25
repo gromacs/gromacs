@@ -57,7 +57,7 @@ typedef struct gmx_repl_ex {
   real temp;
   int  type;
   real *q;
-  bool bNPT;
+  gmx_bool bNPT;
   real *pres;
   int  *ind;
   int  nst;
@@ -74,7 +74,7 @@ static void repl_quantity(FILE *fplog,const gmx_multisim_t *ms,
 			  struct gmx_repl_ex *re,int ere,real q)
 {
   real *qall;
-  bool bDiff;
+  gmx_bool bDiff;
   int  s;
 
   snew(qall,ms->nsim);
@@ -468,7 +468,7 @@ shift = cr->nnodes - cr->npmenodes - 1;
     move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->sd_X,NULL,shift,NULL);
 }
 
-static void print_ind(FILE *fplog,const char *leg,int n,int *ind,bool *bEx)
+static void print_ind(FILE *fplog,const char *leg,int n,int *ind,gmx_bool *bEx)
 {
   int i;
 
@@ -514,7 +514,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
   int  m,i,a,b;
   real *Epot=NULL,*Vol=NULL,*dvdl=NULL,*prob;
   real ediff=0,delta=0,dpV=0,betaA=0,betaB=0;
-  bool *bEx,bPrint;
+  gmx_bool *bEx,bPrint;
   int  exchange;
 
   fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
@@ -625,14 +625,14 @@ static void write_debug_x(t_state *state)
   }
 }
 
-bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
+gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
                       t_state *state,real *ener,
                       t_state *state_local,
                       int step,real time)
 {
     gmx_multisim_t *ms;
     int  exchange=-1,shift;
-    bool bExchanged=FALSE;
+    gmx_bool bExchanged=FALSE;
     
     ms = cr->ms;
   
@@ -646,7 +646,7 @@ bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
     if (PAR(cr))
     {
 #ifdef GMX_MPI
-        MPI_Bcast(&bExchanged,sizeof(bool),MPI_BYTE,MASTERRANK(cr),
+        MPI_Bcast(&bExchanged,sizeof(gmx_bool),MPI_BYTE,MASTERRANK(cr),
                   cr->mpi_comm_mygroup);
 #endif
     }

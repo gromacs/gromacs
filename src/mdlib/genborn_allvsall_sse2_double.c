@@ -138,9 +138,9 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                                 int                        start,
                                 int                        end,
                                 int                        natoms,
-                                bool                       bInclude12,
-                                bool                       bInclude13,
-                                bool                       bInclude14)
+                                gmx_bool                       bInclude12,
+                                gmx_bool                       bInclude13,
+                                gmx_bool                       bInclude14)
 {
     int i,j,k,tp;
     int a1,a2;
@@ -652,9 +652,9 @@ genborn_allvsall_setup(gmx_allvsallgb2_data_t **  p_aadata,
                        t_mdatoms *                mdatoms,
                        double                     radius_offset,
                        int                        gb_algorithm,
-                       bool                       bInclude12,
-                       bool                       bInclude13,
-                       bool                       bInclude14)
+                       gmx_bool                       bInclude12,
+                       gmx_bool                       bInclude13,
+                       gmx_bool                       bInclude14)
 {
 	int i,j,idx;
     int natoms;

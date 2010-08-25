@@ -40,7 +40,7 @@
 extern "C" {
 #endif
 
-int n_bonded_dx(gmx_mtop_t *mtop,bool bExcl);
+int n_bonded_dx(gmx_mtop_t *mtop,gmx_bool bExcl);
 /* Returns the number of pbc_rvec_sub calls required for bonded interactions.
  * This number is also roughly proportional to the computational cost.
  */

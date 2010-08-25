@@ -195,7 +195,7 @@ static jmp_buf
 nb_kernel_bluegene_testprog;
 
 /*! Result of bluegene test */
-static bool      
+static gmx_bool      
 nb_kernel_bluegene_present;
 
 

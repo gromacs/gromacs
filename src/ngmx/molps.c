@@ -77,7 +77,7 @@ static void init_pbc(matrix box)
   }
 }
 
-static bool local_pbc_dx(rvec x1, rvec x2)
+static gmx_bool local_pbc_dx(rvec x1, rvec x2)
 {
   int  i;
   real dx;
@@ -94,7 +94,7 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 
 static void ps_draw_bond(t_psdata ps,
 			 atom_id ai,atom_id aj,iv2 vec2[],
-			 rvec x[],char **atomnm[],int size[],bool bBalls)
+			 rvec x[],char **atomnm[],int size[],gmx_bool bBalls)
 {
   char    *ic,*jc;
   int     xi,yi,xj,yj;
@@ -131,10 +131,10 @@ static void ps_draw_bond(t_psdata ps,
 }
 
 void ps_draw_objects(t_psdata ps,int nobj,t_object objs[],iv2 vec2[],rvec x[],
-		     char **atomnm[],int size[],bool bShowHydro,int bond_type,
-		     bool bPlus)
+		     char **atomnm[],int size[],gmx_bool bShowHydro,int bond_type,
+		     gmx_bool bPlus)
 {
-  bool     bBalls;
+  gmx_bool     bBalls;
   int      i;
   t_object *obj;
 

@@ -57,7 +57,7 @@
 #include "mdatoms.h"
 
 static real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,
-                   rvec box, real phi[],t_block *excl,rvec f_sr[],bool bOld)
+                   rvec box, real phi[],t_block *excl,rvec f_sr[],gmx_bool bOld)
 {
   int  i,j,k,m,ni,i1,i2;
   real pp,r2,R,R_1,R_2,rc2;
@@ -108,7 +108,7 @@ static real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,
   return vsr;
 }
 
-void calc_ener(FILE *fp,char *title,bool bHeader,int nmol,
+void calc_ener(FILE *fp,char *title,gmx_bool bHeader,int nmol,
 	       int natoms,real phi[],real charge[],t_block *excl)
 {
   int  i,i1,i2,j,k;
@@ -278,14 +278,14 @@ void pr_f(char *fn,int natoms,rvec f[])
   gmx_fio_fclose(fp);
 }
 
-void test_pppm(FILE *log,       bool bVerbose,
-	       bool bGenerGhat, char *ghatfn,
+void test_pppm(FILE *log,       gmx_bool bVerbose,
+	       gmx_bool bGenerGhat, char *ghatfn,
 	       t_atoms *atoms,  t_inputrec *ir,
 	       rvec x[],        rvec f[],
 	       real charge[],   rvec box,
 	       real phi[],      real phi_s[],
 	       int nmol,        t_commrec *cr,
-	       bool bOld,       t_block *cgs)
+	       gmx_bool bOld,       t_block *cgs)
 {
   char       buf[256];
   real       ener;
@@ -317,14 +317,14 @@ void test_pppm(FILE *log,       bool bVerbose,
   write_pqr(buf,atoms,x,phi,0);
 }
 
-void test_poisson(FILE *log,       bool bVerbose,
+void test_poisson(FILE *log,       gmx_bool bVerbose,
 		  t_atoms *atoms,  t_inputrec *ir,
 		  rvec x[],        rvec f[],
 		  real charge[],   rvec box,
 		  real phi[],      real phi_s[],
 		  int nmol,        t_commrec *cr,
-		  bool bFour,      rvec f_four[],
-		  real phi_f[],    bool bOld)
+		  gmx_bool bFour,      rvec f_four[],
+		  real phi_f[],    gmx_bool bOld)
 {
   char buf[256];
   real ener;
@@ -369,7 +369,7 @@ void test_poisson(FILE *log,       bool bVerbose,
 void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
 	       t_inputrec *ir,rvec x[],rvec f[],rvec box,real charge[],
 	       real phi_f[],real phi_s[],int nmol,t_commrec *cr,
-	       bool bOld,bool bOldEwald)
+	       gmx_bool bOld,gmx_bool bOldEwald)
 {
   int  i;
   real energy;
@@ -399,9 +399,9 @@ void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
   calc_ener(log,"Fourier+SR",FALSE,nmol,atoms->nr,phi_f,charge,&atoms->excl);
 }
 
-static void print_opts(FILE *fp,t_inputrec *ir,bool bFour)
+static void print_opts(FILE *fp,t_inputrec *ir,gmx_bool bFour)
 {
-  fprintf(fp,"Ewald solution: %s\n",bool_names[bFour]);
+  fprintf(fp,"Ewald solution: %s\n",gmx_bool_names[bFour]);
   fprintf(fp,"r1:       %10.3e\n",ir->rcoulomb_switch);
   fprintf(fp,"rc:       %10.3e\n",ir->rcoulomb);
   if (bFour)
@@ -459,7 +459,7 @@ int main(int argc,char *argv[])
   real         t,lambda,vsr,*charge,*phi_f,*phi_pois,*phi_s,*phi_p3m,*rho;
   output_env_t oenv;
   
-  static bool bFour=FALSE,bVerbose=FALSE,bGGhat=FALSE,bPPPM=TRUE,
+  static gmx_bool bFour=FALSE,bVerbose=FALSE,bGGhat=FALSE,bPPPM=TRUE,
     bPoisson=FALSE,bOld=FALSE,bOldEwald=TRUE;
   static int nprocs = 1;
   static t_pargs pa[] = {

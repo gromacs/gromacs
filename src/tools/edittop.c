@@ -70,7 +70,7 @@ static void delete_from_interactions(t_idef *idef,int inr)
 {
   int  i,j,k,nra,nnr;
   t_iatom *niatoms;
-  bool bDel;
+  gmx_bool bDel;
   
   /* Delete interactions including atom inr from lists */
   for(i=0; (i<F_NRE); i++) {

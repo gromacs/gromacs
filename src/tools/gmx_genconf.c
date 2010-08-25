@@ -139,7 +139,7 @@ int gmx_genconf(int argc, char *argv[])
   int     nres;         /* number of molecules? */
   int     i,j,k,l,m,ndx,nrdx,nx,ny,nz;
   t_trxstatus *status;
-  bool    bTRX;
+  gmx_bool    bTRX;
   output_env_t oenv;
   
   t_filenm fnm[] = {
@@ -152,10 +152,10 @@ int gmx_genconf(int argc, char *argv[])
   static int  seed     = 0;          /* seed for random number generator */
   static int  nmolat   = 3;
   static int  nblock   = 1;
-  static bool bShuffle = FALSE;
-  static bool bSort    = FALSE;
-  static bool bRandom  = FALSE;      /* False: no random rotations */
-  static bool bRenum   = TRUE;       /* renumber residues */
+  static gmx_bool bShuffle = FALSE;
+  static gmx_bool bSort    = FALSE;
+  static gmx_bool bRandom  = FALSE;      /* False: no random rotations */
+  static gmx_bool bRenum   = TRUE;       /* renumber residues */
   static rvec dist     = {0,0,0};    /* space added between molecules ? */
   static rvec max_rot  = {180,180,180}; /* maximum rotation */
   t_pargs pa[] = {

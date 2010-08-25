@@ -68,7 +68,7 @@ typedef struct {
 } t_cos_acc;
 
 typedef struct {
-  bool         bNEMD;
+  gmx_bool         bNEMD;
   int          ngtc;            /* The number of T-coupling groups      */
   t_grp_tcstat *tcstat;         /* T-coupling data 			*/
   int          ngacc;           /* The number of acceleration groups    */

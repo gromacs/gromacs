@@ -114,13 +114,13 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
                              const char ***       p_typenames,
                              int *                ntypes);
 
-bool 
+gmx_bool 
 gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm);
 
-bool 
+gmx_bool 
 gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm);
 
-bool 
+gmx_bool 
 gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm);
 
 
@@ -138,7 +138,7 @@ void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name);
 /* Ads group a with name name to block b and namelist gnames */ 
 
 void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
-                    bool bASK,bool bVerb);
+                    gmx_bool bASK,gmx_bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.
  */
