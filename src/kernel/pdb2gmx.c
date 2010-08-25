@@ -298,7 +298,7 @@ static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
     char *nn;
     bool bFFRTPTERRNM;
 
-    bFFRTPTERRNM = (getenv("GMX_FFRTP_TER_RENAME") != NULL);
+    bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == NULL);
 
     for(r=0; r<pdba->nres; r++)
     {
