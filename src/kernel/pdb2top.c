@@ -233,7 +233,6 @@ choose_ff(const char *ffsel,
                 }
             }
         }
-        */
 
         printf("\nSelect the Force Field:\n");
         for(i=0; (i<nff); i++)
