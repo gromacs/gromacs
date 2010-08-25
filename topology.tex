@@ -819,43 +819,43 @@ of additions. After that follows one line for each addition, on which
 we see:
 \begin{itemize}
 \item The number of H atoms added
-\item The way of adding H atoms, can be any of
+\item The way of adding H atoms, can be any of:
 \begin{enumerate}
 \item[1]{\em one planar hydrogen, {\eg} rings or peptide bond}\\
 one hydrogen atom (n) is generated, lying in the plane of atoms
 (i,j,k) on the plane bisecting angle (j-i-k) at a distance of 0.1 nm
-from atom i, such that the angles (n-i-j) and (n-i-k) are $>$ 90$^{\rm o}$
+from atom i, such that the angles (n-i-j) and (n-i-k) are $>$ 90$^{\rm o}$.
 
 \item[2]{\em one single hydrogen, {\eg} hydroxyl}\\
 one hydrogen atom (n) is generated at a distance of 0.1 nm from atom
-i, such that angle (n-i-j)=109.5 degrees and dihedral (n-i-j-k)=trans
+i, such that angle (n-i-j)=109.5 degrees and dihedral (n-i-j-k)=trans.
 
 \item[3]{\em two planar hydrogens, {\eg} -NH{$_2$}}\\
 two hydrogens (n1,n2) are generated at a distance of 0.1 nm from atom
 i, such that angle (n1-i-j)=(n2-i-j)=120 degrees and dihedral
 (n1-i-j-k)=cis and (n2-i-j-k)=trans, such that names are according to
-IUPAC standards~\cite{iupac70}
+IUPAC standards~\cite{iupac70}.
 
 \item[4]{\em two or three tetrahedral hydrogens, {\eg} -CH{$_3$}}\\
 three (n1,n2,n3) or two (n1,n2) hydrogens are generated at a distance
 of 0.1 nm from atom i, such that angle
 (n1-i-j)=(n2-i-j)=(n3-i-j)=109.47$^{\rm o}$, dihedral (n1-i-j-k)=trans,
-(n2-i-j-k)=trans+120 and (n3-i-j-k)=trans+240 degrees
+(n2-i-j-k)=trans+120 and (n3-i-j-k)=trans+240$^{\rm o}$.
 
 \item[5]{\em one tetrahedral hydrogen, {\eg} C{$_3$}CH}\\
 one hydrogen atom (n$\prime$) is generated at a distance of 0.1 nm from atom
 i in tetrahedral conformation such that angle
-(n$\prime$-i-j)=(n$\prime$-i-k)=(n$\prime$-i-l)=109.47$^{\rm o}$
+(n$\prime$-i-j)=(n$\prime$-i-k)=(n$\prime$-i-l)=109.47$^{\rm o}$.
 
 \item[6]{\em two tetrahedral hydrogens, {\eg} C-CH{$_2$}-C}\\
 two hydrogen atoms (n1,n2) are generated at a distance of 0.1 nm from
-atom i in tetrahedral conformation on the plane bisecting angle i-j-k
-with angle (n-i-n2)=(n1-i-j)=(n1-i-k)=109.5
+atom i in tetrahedral conformation on the plane bisecting angle j-i-k
+with angle (n1-i-n2)=(n1-i-j)=(n1-i-k)=109.47$^{\rm o}$.
 
 \item[7]{\em two water hydrogens}\\
 two hydrogens are generated around atom i according to
 SPC~\cite{Berendsen81} water geometry. The symmetry axis will
-alternate between three coordinate axes in both directions
+alternate between three coordinate axes in both directions.
 
 \item[10]{\em three water ``hydrogens''}\\
 two hydrogens are generated around atom i according to
@@ -863,17 +863,17 @@ SPC~\cite{Berendsen81} water geometry. The symmetry axis will
 alternate between three coordinate axes in both directions. In addition
 an extra particle is generated on the position of the oxygen with
 the first letter of the name replaced by 'M'. This is for
-use with four-atom water models such as TIP4P~\cite{Jorgensen83}
+use with four-atom water models such as TIP4P~\cite{Jorgensen83}.
 
 \item[11]{\em four water ``hydrogens''}\\
 Same as above, except that two  additional
 particles are generated on the position of the oxygen, with names
 `LP1' and 'LP2'. This is for
-use with five-atom water models such as TIP5P~\cite{Mahoney2000a}
+use with five-atom water models such as TIP5P~\cite{Mahoney2000a}.
 \end{enumerate}
 
 \item
-The name of the new H atom
+The name of the new H atom.
 
 \item
 Three or four control atoms (i,j,k,l), where the first always is the
