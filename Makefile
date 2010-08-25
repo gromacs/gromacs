@@ -120,7 +120,7 @@ files.tex:
 		  if $(PRFN) >/dev/null 2>&1; then :; \
 		  else \
 		    echo "Error: Can't find the executable '$(PRFN)' in the current"; \
-		    echo "ddirectory or in your path (I need it to create latex files)."; \
+		    echo "directory or in your path (I need it to create latex files)."; \
 		    echo "(Compile and copy it from the GROMACS contrib directory)"; \
 		    exit 1 ; \
 		  fi; \
