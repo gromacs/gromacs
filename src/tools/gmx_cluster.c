@@ -1245,7 +1245,7 @@ int gmx_cluster(int argc,char *argv[])
     /* Loop over first coordinate file */
     fn = opt2fn("-f",NFILE,fnm);
 
-    xx = read_whole_trj(fn,isize,index,skip,&nf,&time,oenv,&bPBC,&gpbc);
+    xx = read_whole_trj(fn,isize,index,skip,&nf,&time,oenv,bPBC,gpbc);
     output_env_conv_times(oenv, nf, time);
     if (!bRMSdist || bAnalyze) {
       /* Center all frames on zero */
