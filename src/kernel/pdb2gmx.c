@@ -623,45 +623,46 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   snew(xnew,1);
   snew(pdbi, natoms);
   
-  for(i=0; i<natoms; i++) {
-    atomnm = *pdba->atomname[i];
-    rptr = &restp[pdba->atom[i].resind];
-    for(j=0; (j<rptr->natom); j++) {
-      if (gmx_strcasecmp(atomnm,*(rptr->atomname[j])) == 0) {
-	break;
+  for(i=0; i<natoms; i++)
+  {
+      atomnm = *pdba->atomname[i];
+      rptr = &restp[pdba->atom[i].resind];
+      for(j=0; (j<rptr->natom); j++) 
+      {
+          if (gmx_strcasecmp(atomnm,*(rptr->atomname[j])) == 0) 
+          {
+              break;
+          }
       }
-    }
-    if (j==rptr->natom) {
-      if ( ( ( pdba->atom[i].resind == 0) && (atomnm[0] == 'H') &&
-	     ( (atomnm[1] == '1') || (atomnm[1] == '2') || 
-	       (atomnm[1] == '3') ) ) )
-	j=1;
-      else {
-	char buf[STRLEN];
-	
-	sprintf(buf,"Atom %s in residue %s %d not found in rtp entry %s with %d atoms\n"
-		"while sorting atoms%s",atomnm,
-		*pdba->resinfo[pdba->atom[i].resind].name,
-		pdba->resinfo[pdba->atom[i].resind].nr,
-		rptr->resname,
-		rptr->natom,
-		is_hydrogen(atomnm) ? ". Maybe different protonation state.\n"
-		"             Remove this hydrogen or choose a different "
-		"protonation state.\n"
-		"             Option -ignh will ignore all hydrogens "
-		"in the input." : "");
-	gmx_fatal(FARGS,buf);
+      if (j==rptr->natom) 
+      {
+          char buf[STRLEN];
+          
+          sprintf(buf,
+                  "Atom %s in residue %s %d was not found in rtp entry %s with %d atoms\n"
+                  "while sorting atoms.\n%s",atomnm,
+                  *pdba->resinfo[pdba->atom[i].resind].name,
+                  pdba->resinfo[pdba->atom[i].resind].nr,
+                  rptr->resname,
+                  rptr->natom,
+                  is_hydrogen(atomnm) ? 
+                  "\nFor a hydrogen, this can be a different protonation state, or it\n"
+                  "might have had a different number in the PDB file and was rebuilt\n"
+                  "(it might for instance have been H3, and we only expected H1 & H2).\n"
+                  "Note that hydrogens might have been added to the entry for the N-terminus.\n"
+                  "Remove this hydrogen or choose a different protonation state to solve it.\n"
+                  "Option -ignh will ignore all hydrogens in the input." : ".");
+          gmx_fatal(FARGS,buf);
       }
-    }
-    /* make shadow array to be sorted into indexgroup */
-    pdbi[i].resnr  = pdba->atom[i].resind;
-    pdbi[i].j      = j;
-    pdbi[i].index  = i;
-    pdbi[i].anm1   = atomnm[1];
-    pdbi[i].altloc = pdba->pdbinfo[i].altloc;
+      /* make shadow array to be sorted into indexgroup */
+      pdbi[i].resnr  = pdba->atom[i].resind;
+      pdbi[i].j      = j;
+      pdbi[i].index  = i;
+      pdbi[i].anm1   = atomnm[1];
+      pdbi[i].altloc = pdba->pdbinfo[i].altloc;
   }
   qsort(pdbi,natoms,(size_t)sizeof(pdbi[0]),pdbicomp);
-  
+    
   /* pdba is sorted in pdbnew using the pdbi index */ 
   snew(a,natoms);
   snew(pdbnew,1);
