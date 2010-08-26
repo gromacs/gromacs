@@ -80,14 +80,18 @@ typedef struct xvg_t
 
 
 
-typedef struct
+typedef struct hist_t
 {
-    unsigned int *bin;          /* the histogram values */
-    double dx;                  /* the histogram spacing */
-    gmx_large_int_t x0;         /* the histogram start point as int */
+    unsigned int *bin[2];       /* the (forward + reverse) histogram values */
+    double dx;                  /* the histogram spacing. The reverse
+                                   dx is the negative of the forward dx.*/
+    gmx_large_int_t x0[2];      /* the (forward + reverse) histogram start 
+                                   point(s) as int */
 
-    int nbin;                   /* the number of bins */
-    gmx_large_int_t sum;        /* the total number of counts */
+    int nbin[2];                /* the (forward+reverse) number of bins */
+    gmx_large_int_t sum;        /* the total number of counts. Must be
+                                   the same for forward + reverse.  */
+    int nhist;                  /* number of hist datas (forward or reverse) */
 
     double start_time, delta_time;  /* start time, end time of histogram */
 } hist_t;
@@ -185,15 +189,23 @@ typedef struct {
 
 
 
-static void hist_init(hist_t *h, int nbin)
+static void hist_init(hist_t *h, int nhist, int *nbin)
 {
-    snew(h->bin, nbin);
+    int i;
+    if (nhist>2)
+    {
+        gmx_fatal(FARGS, "histogram with more than two sets of data!");
+    }
+    for(i=0;i<nhist;i++)
+    {
+        snew(h->bin[i], nbin[i]);
+        h->x0[i]=0;
+        h->nbin[i]=nbin[i];
+        h->start_time=h->delta_time=0;
+    }
     h->dx=0;
-    h->x0=0;
-
-    h->nbin=nbin;
     h->sum=0;
-    h->start_time=h->delta_time=0;
+    h->nhist=nhist;
 }
 
 static void hist_destroy(hist_t *h)
@@ -481,7 +493,7 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
                                   int *nbin_alloc, int *nbin, 
                                   double *dx, double *xmin, int nbin_default)
 {
-    int i,j;
+    int i,j,k;
     gmx_bool dx_set=FALSE;
     gmx_bool xmin_set=FALSE;
 
@@ -496,31 +508,37 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
         if (sc->s[i]->hist)
         {
             hist_t *hist=sc->s[i]->hist;
-            double xmax_now=(hist->x0+hist->nbin)*hist->dx;
+            for(k=0;k<hist->nhist;k++)
+            {
+                double hdx=hist->dx;
+                if (k==1)
+                    hdx=-hdx;
+                double xmax_now=(hist->x0[k]+hist->nbin[k])*hdx;
 
-            /* we use the biggest dx*/
-            if ( (!dx_set) || hist->dx > *dx)
-            {
-                dx_set=TRUE;
-                *dx = hist->dx;
-            }
-            if ( (!xmin_set) || (hist->x0*hist->dx) < *xmin)
-            {
-                xmin_set=TRUE;
-                *xmin = (hist->x0*hist->dx);
-            }
+                /* we use the biggest dx*/
+                if ( (!dx_set) || hist->dx > *dx)
+                {
+                    dx_set=TRUE;
+                    *dx = hist->dx;
+                }
+                if ( (!xmin_set) || (hist->x0[k]*hdx) < *xmin)
+                {
+                    xmin_set=TRUE;
+                    *xmin = (hist->x0[k]*hdx);
+                }
 
-            if ( (!xmax_set) || (xmax_now>xmax && !xmax_set_hard) )
-            {
-                xmax_set=TRUE;
-                xmax = xmax_now;
-                if (hist->bin[hist->nbin-1] != 0)
+                if ( (!xmax_set) || (xmax_now>xmax && !xmax_set_hard) )
+                {
+                    xmax_set=TRUE;
+                    xmax = xmax_now;
+                    if (hist->bin[k][hist->nbin[k]-1] != 0)
+                        xmax_set_hard=TRUE;
+                }
+                if ( hist->bin[k][hist->nbin[k]-1]!=0 && (xmax_now < xmax) )
+                {
                     xmax_set_hard=TRUE;
-            }
-            if ( hist->bin[hist->nbin-1]!=0 && (xmax_now < xmax) )
-            {
-                xmax_set_hard=TRUE;
-                xmax = xmax_now;
+                    xmax = xmax_now;
+                }
             }
         }
     }
@@ -592,18 +610,22 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
         if (sc->s[i]->hist)
         {
             hist_t *hist=sc->s[i]->hist;
-            double xmin_hist=hist->x0*hist->dx;
-            for(j=0;j<hist->nbin;j++)
+            for(k=0;k<hist->nhist;k++)
             {
-                /* calculate the bin corresponding to the middle of the original
-                   bin */
-                double x=hist->dx*(j+0.5) + xmin_hist;
-                int binnr=(int)((x-(*xmin))/(*dx));
+                double hdx = (k==0) ? hist->dx : -hist->dx;
+                double xmin_hist=hist->x0[k]*hdx;
+                for(j=0;j<hist->nbin[k];j++)
+                {
+                    /* calculate the bin corresponding to the middle of the 
+                       original bin */
+                    double x=hdx*(j+0.5) + xmin_hist;
+                    int binnr=(int)((x-(*xmin))/(*dx));
 
-                if (binnr >= *nbin || binnr<0)
-                    binnr = (*nbin)-1;
+                    if (binnr >= *nbin || binnr<0)
+                        binnr = (*nbin)-1;
 
-                (*bin)[binnr] += hist->bin[j]; 
+                    (*bin)[binnr] += hist->bin[k][j]; 
+                }
             }
         }
         else
@@ -640,7 +662,7 @@ void lambdas_histogram(lambda_t *bl_head, const char *filename,
     int nbin=0;
     int nbin_alloc=0;
     double dx=0;
-    double min;
+    double min=0;
     int i;
 
     printf("\nWriting histogram to %s\n", filename);
@@ -1104,21 +1126,21 @@ static double calc_bar_sum_hist(const hist_t *hist, double Wfac, double sbMmDG,
 {
     double sum=0.;
     int i;
-    int max=hist->nbin-1;
+    int max=hist->nbin[0]-1;
     /* normalization factor multiplied with bin width and
        number of samples (we normalize through M): */
     double normdx = 1.;
 
     if (type==1) 
     {
-        max=hist->nbin; /* we also add whatever was out of range */
+        max=hist->nbin[0]; /* we also add whatever was out of range */
     }
 
     for(i=0;i<max;i++)
     {
-        double x=Wfac*((i+hist->x0)+0.5)*hist->dx; /* bin middle */
-        double pxdx=hist->bin[i]*normdx; /* p(x)dx */
-    
+        double x=Wfac*((i+hist->x0[0])+0.5)*hist->dx; /* bin middle */
+        double pxdx=hist->bin[0][i]*normdx; /* p(x)dx */
+   
         sum += pxdx/(1. + exp(x + sbMmDG));
     }
 
@@ -1191,15 +1213,15 @@ static double calc_bar_lowlevel(sample_coll_t *ca, sample_coll_t *cb,
             }
             else
             {
-                for(j=s->hist->nbin-1;j>=0;j--)
+                for(j=s->hist->nbin[0]-1;j>=0;j--)
                 {
-                    Wmin=min(Wmin,Wfac1*(s->hist->x0)*s->hist->dx);
-                    Wmax=max(Wmax,Wfac1*(s->hist->x0)*s->hist->dx);
+                    Wmin=min(Wmin,Wfac1*(s->hist->x0[0])*s->hist->dx);
+                    Wmax=max(Wmax,Wfac1*(s->hist->x0[0])*s->hist->dx);
                     /* look for the highest value bin with values */
-                    if (s->hist->bin[j]>0)
+                    if (s->hist->bin[0][j]>0)
                     {
-                        Wmin=min(Wmin,Wfac1*(j+s->hist->x0+1)*s->hist->dx);
-                        Wmax=max(Wmax,Wfac1*(j+s->hist->x0+1)*s->hist->dx);
+                        Wmin=min(Wmin,Wfac1*(j+s->hist->x0[0]+1)*s->hist->dx);
+                        Wmax=max(Wmax,Wfac1*(j+s->hist->x0[0]+1)*s->hist->dx);
                         break;
                     }
                 }
@@ -1223,15 +1245,15 @@ static double calc_bar_lowlevel(sample_coll_t *ca, sample_coll_t *cb,
             }
             else
             {
-                for(j=s->hist->nbin-1;j>=0;j--)
+                for(j=s->hist->nbin[0]-1;j>=0;j--)
                 {
-                    Wmin=min(Wmin,Wfac2*(s->hist->x0)*s->hist->dx);
-                    Wmax=max(Wmax,Wfac2*(s->hist->x0)*s->hist->dx);
+                    Wmin=min(Wmin,Wfac2*(s->hist->x0[0])*s->hist->dx);
+                    Wmax=max(Wmax,Wfac2*(s->hist->x0[0])*s->hist->dx);
                     /* look for the highest value bin with values */
-                    if (s->hist->bin[j]>0)
+                    if (s->hist->bin[0][j]>0)
                     {
-                        Wmin=min(Wmin,Wfac2*(j+s->hist->x0+1)*s->hist->dx);
-                        Wmax=max(Wmax,Wfac2*(j+s->hist->x0+1)*s->hist->dx);
+                        Wmin=min(Wmin,Wfac2*(j+s->hist->x0[0]+1)*s->hist->dx);
+                        Wmax=max(Wmax,Wfac2*(j+s->hist->x0[0]+1)*s->hist->dx);
                         break;
                     }
                 }
@@ -1364,10 +1386,10 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
                 /* normalization factor multiplied with bin width and
                    number of samples (we normalize through M): */
                 double normdx = 1.;
-                for(j=0;j<s->hist->nbin;j++)
+                for(j=0;j<s->hist->nbin[0];j++)
                 {
-                    double x=Wfac1*((j+s->hist->x0)+0.5)*s->hist->dx;/*bin ctr*/
-                    double pxdx=s->hist->bin[j]*normdx; /* p(x)dx */
+                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*s->hist->dx;/*bin ctr*/
+                    double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
                     W_ab += pxdx*x;
                 }
             }
@@ -1391,10 +1413,10 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
                 /* normalization factor multiplied with bin width and
                    number of samples (we normalize through M): */
                 double normdx = 1.;
-                for(j=0;j<s->hist->nbin;j++)
+                for(j=0;j<s->hist->nbin[0];j++)
                 {
-                    double x=Wfac1*((j+s->hist->x0)+0.5)*s->hist->dx;/*bin ctr*/
-                    double pxdx=s->hist->bin[j]*normdx; /* p(x)dx */
+                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*s->hist->dx;/*bin ctr*/
+                    double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
                     W_ba += pxdx*x;
                 }
             }
@@ -1464,10 +1486,10 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
                    number of samples (we normalize through M): */
                 double normdx = 1.;
 
-                for(j=0;j<s->hist->nbin;j++)
+                for(j=0;j<s->hist->nbin[0];j++)
                 {
-                    double x=Wfac1*((j+s->hist->x0)+0.5)*s->hist->dx;/*bin ctr*/
-                    double pxdx=s->hist->bin[j]*normdx; /* p(x)dx */
+                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*s->hist->dx;/*bin ctr*/
+                    double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
 
                     sigmafact += pxdx/(2. + 2.*cosh((M + x - dg)));
                 }
@@ -1493,10 +1515,10 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
                    number of samples (we normalize through M): */
                 double normdx = 1.;
 
-                for(j=0;j<s->hist->nbin;j++)
+                for(j=0;j<s->hist->nbin[0];j++)
                 {
-                    double x=Wfac2*((j+s->hist->x0)+0.5)*s->hist->dx;/*bin ctr*/
-                    double pxdx=s->hist->bin[j]*normdx; /* p(x)dx */
+                    double x=Wfac2*((j+s->hist->x0[0])+0.5)*s->hist->dx;/*bin ctr*/
+                    double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
 
                     sigmafact += pxdx/(2. + 2.*cosh((M - x - dg)));
                 }
@@ -2047,6 +2069,10 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
 {
     int i,j;
     samples_t *s;
+    int nhist;
+    double foreign_lambda;
+    int derivative;
+    int nbins[2];
 
     /* check the block types etc. */
     if ( (blk->nsub < 2) ||
@@ -2058,46 +2084,73 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
         gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
     }
 
-    *nsamples=blk->nsub-2;
-    if (*nsamples == 0)
+    nhist=blk->nsub-2;
+    if (nhist == 0)
     {
         return NULL;
     }
-
-    snew(s, *nsamples);
-
-    for(i=0;i<*nsamples;i++)
+    if (nhist > 2)
     {
-        double foreign_lambda;
-        int derivative;
-
-        foreign_lambda=blk->sub[0].dval[0];
-        derivative=(int)(blk->sub[1].lval[1]);
-        if (derivative)
-            foreign_lambda=native_lambda;
-
-        samples_init(s+i, native_lambda, foreign_lambda, temp,
-                     derivative!=0, filename);
-
-        snew(s[i].hist, 1);
-
-        hist_init(s[i].hist, blk->sub[i+2].nr); 
-        s[i].hist->x0=blk->sub[1].lval[2+i];
-        s[i].hist->dx=blk->sub[0].dval[1];
-
-        s[i].hist->start_time = start_time;
-        s[i].hist->delta_time = delta_time;
-        s[i].start_time = start_time;
-        s[i].delta_time = delta_time;
-
-        for(j=0;j<s[i].hist->nbin;j++)
-        { 
-            s[i].hist->bin[j] = (int)(blk->sub[i+2].ival[j]);
-            s[i].hist->sum += s[i].hist->bin[j];
-        }
-        s[i].ntot = s[i].hist->sum;
+        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
     }
-   
+
+    snew(s, 1);
+    *nsamples=1;
+
+    foreign_lambda=blk->sub[0].dval[0];
+    derivative=(int)(blk->sub[1].lval[1]);
+    if (derivative)
+        foreign_lambda=native_lambda;
+
+    samples_init(s, native_lambda, foreign_lambda, temp,
+                 derivative!=0, filename);
+    snew(s->hist, 1);
+
+    for(i=0;i<nhist;i++)
+    {
+        nbins[i] = blk->sub[i+2].nr;
+    }
+
+    hist_init(s->hist, nhist, nbins);
+
+    for(i=0;i<nhist;i++)
+        s->hist->x0[i]=blk->sub[1].lval[2+i];
+
+    s->hist->dx = blk->sub[0].dval[1];
+
+    s->hist->start_time = start_time;
+    s->hist->delta_time = delta_time;
+    s->start_time = start_time;
+    s->delta_time = delta_time;
+
+    for(i=0;i<nhist;i++)
+    {
+        int nbin;
+        gmx_large_int_t sum=0;
+
+        for(j=0;j<s->hist->nbin[i];j++)
+        { 
+            int binv=(int)(blk->sub[i+2].ival[j]);
+
+            s->hist->bin[i][j] = binv;
+            sum += binv;
+
+        }
+        if (i==0)
+        {
+            s->ntot = sum;
+            s->hist->sum = sum;
+        }
+        else
+        {
+            if (s->ntot != sum)
+            {
+                gmx_fatal(FARGS, "Histogram counts don't match in %s", 
+                          filename);
+            }
+        }
+    }
+
     return s;
 }
 
@@ -2611,7 +2664,7 @@ int gmx_bar(int argc,char *argv[])
         
         if (fpi != NULL)
         {
-            fprintf(fpi, xvg2format, results[i].a->native_lambda, dg_tot);
+            fprintf(fpi, xvg2format, results[f].a->native_lambda, dg_tot);
         }
 
 
