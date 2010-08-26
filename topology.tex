@@ -399,28 +399,28 @@ computed according to the \normindex{combination rule}:
 \end{eqnarray}
 
 \subsection{\normindex{Implicit Solvent parameters}}
-From {\gromacs} 4.5 implicit solvent is supported. A section in the
+Starting with {\gromacs} 4.5, implicit solvent is supported. A section in the
 topology has been introduced to list those parameters:
 
-\begin{verbatim}
-[implicit\_genborn\_params]
+\begin{tt}
+[~implicit\_genborn\_params~]
 ; Atomtype  sar  st   pi      gbr      hct
 NH1       0.155  1   1.028   0.17063  0.79 ; N
 N         0.155  1   1       0.155    0.79 ; Proline backbone N
 H         0.1    1   1       0.115    0.85 ; H
 CT1       0.180  1   1.276   0.190    0.72 ; C
-\end{verbatim}
+\end{tt}
 
 In this example the atomtype is listed first, followed by five
 numbers, and a comment (following a semicolon).
 
 Values in columns 1-3 are not currently used. They pertain to more
-elaborate surface area algorithms, the one from Still et al in
-particular.  Column 4 is the Vdw-radii for atom types that are used
+elaborate surface area algorithms, the one from Still et al~\cite{Still1997} in
+particular.  Column 4 contains the van der Waals radii for atom types that are used
 for computing the Born radii. The dielectric offset is specified in
-the mdp-file, and gets added to the input radii for the different
-radii methods.  Column 5 is the scale factor for the HCT/OBC
-models. The values are taken from the original HCT reference, as well
+the {\tt *.mdp} file, and gets added to the input radii for the different
+radii methods.  Column 5 is the scale factor for the HCT and OBC
+models. The values are taken from the original HCT reference~\cite{Truhlar96}, as well
 as the corresponding implementation in Tinker.
 
 
