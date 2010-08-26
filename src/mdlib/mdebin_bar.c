@@ -267,6 +267,8 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
                        last bin is 0, it does */
                     if (dh->bin[i][dh->nbins-1] == 0)
                         prev_complete=TRUE;
+                    if (!dh->derivative)
+                        prev_complete=TRUE;
                 }
             }
             dh->written=TRUE;
