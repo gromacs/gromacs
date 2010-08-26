@@ -10,7 +10,7 @@ if USE_X11
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\" $(X_CFLAGS)
 AM_LDFLAGS = $(X_LIBS) $(X_PRE_LIBS) -lX11 $(X_EXTRA_LIBS)
-bin_PROGRAMS     = ngmx g_xrama g_highway g_logo 
+bin_PROGRAMS     = ngmx g_xrama 
 EXTRA_PROGRAMS   = test_ngmx_dialog  g_showcol
 
 endif
