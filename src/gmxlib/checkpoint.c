@@ -287,7 +287,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
     double *vd;
     int  nf,dt,i;
     
-    if (list != NULL)
+    if (list == NULL)
     {
         if (nval >= 0)
         {
@@ -307,7 +307,7 @@ static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
     {
         return -1;
     }
-    if (list != NULL)
+    if (list == NULL)
     {
         if (nval >= 0)
         {

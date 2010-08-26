@@ -81,7 +81,10 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
     {
         int i;
         /* pre-allocate the histogram */
-        dh->nhist=1;
+        if (derivative)
+            dh->nhist=2;
+        else
+            dh->nhist=1;
         dh->dx=dx;
         dh->nbins=nbins;
         for(i=0;i<dh->nhist;i++)
@@ -114,20 +117,28 @@ static void mde_delta_h_add_dh(t_mde_delta_h *dh, double delta_h, double time)
 }
 
 /* construct histogram with index hi */
-static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi)
+static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
 { 
     double min_dh = FLT_MAX;
     double max_dh = -FLT_MAX;
     unsigned int i;
     double max_dh_hist; /* maximum binnable dh value */
+    double min_dh_hist; /* minimum binnable dh value */
+    double dx=dh->dx;
+    double f; /* energy mult. factor */
+
+    /* by applying a -1 scaling factor on the energies we get the same as 
+       having a negative dx, but we don't need to fix the min/max values
+       beyond inverting x0 */
+    f=invert ? -1 : 1;
 
     /* first find min and max */
     for(i=0;i<dh->ndh;i++)
     {
-        if (dh->dh[i] < min_dh)
-            min_dh=dh->dh[i];
-        if (dh->dh[i] > max_dh)
-            max_dh=dh->dh[i];
+        if (f*dh->dh[i] < min_dh)
+            min_dh=f*dh->dh[i];
+        if (f*dh->dh[i] > max_dh)
+            max_dh=f*dh->dh[i];
     }
     
     /* reset the histogram */
@@ -142,9 +153,10 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi)
 
        Get this start value in number of histogram dxs from zero, 
        as an integer.*/
-    dh->x0[hi] = (gmx_large_int_t)(min_dh/dh->dx);
+    dh->x0[hi] = (gmx_large_int_t)floor(min_dh/dx);
 
-    max_dh_hist=(dh->x0[hi] + dh->nbins)*dh->dx;
+    min_dh_hist=(dh->x0[hi])*dx;
+    max_dh_hist=(dh->x0[hi] + dh->nbins + 1)*dx;
 
     /* and fill the histogram*/
     for(i=0;i<dh->ndh;i++)
@@ -155,9 +167,9 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi)
            add it to the last bin. 
            We check the max_dh_int range because converting to integers 
            might lead to overflow with unpredictable results.*/
-        if (dh->dh[i] <= max_dh_hist )
+        if ( (f*dh->dh[i] >= min_dh_hist) && (f*dh->dh[i] <= max_dh_hist ) )
         {
-            bin = (unsigned int)( (dh->dh[i] - min_dh)/dh->dx );
+            bin = (unsigned int)( (f*dh->dh[i] - min_dh_hist)/dx );
         }
         else
         {
@@ -175,6 +187,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi)
 
         dh->bin[hi][bin]++;
     }
+
     /* make sure we include a bin with 0 if we didn't use the full 
        histogram width. This can then be used as an indication that
        all the data was binned. */
@@ -240,11 +253,21 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
         /* check if there's actual data to be written. */
         if (dh->ndh > 1)
         {
+            gmx_bool prev_complete=FALSE;
             /* Make the histogram(s) */
             for(i=0;i<dh->nhist;i++)
             {
-                mde_delta_h_make_hist(dh, i);
-                nhist_written++;
+                if (!prev_complete)
+                {
+                    /* the first histogram is always normal, and the 
+                       second one is always reverse */
+                    mde_delta_h_make_hist(dh, i, i==1);
+                    nhist_written++;
+                    /* check whether this histogram contains all data: if the
+                       last bin is 0, it does */
+                    if (dh->bin[i][dh->nbins-1] == 0)
+                        prev_complete=TRUE;
+                }
             }
             dh->written=TRUE;
         }

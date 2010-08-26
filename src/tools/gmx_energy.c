@@ -1364,6 +1364,11 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                         fprintf(*fp_dhdl,"%g %d\n%g %d\n", xmin, hist, 
                                 xmax, hist);
                     }
+                    /* multiple histogram data blocks in one histogram
+                       mean that the second one is the reverse of the first one:
+                       for dhdl derivatives, it's important to know both the
+                       maximum and minimum values */
+                    dx=-dx;
                 }
             }
         }
