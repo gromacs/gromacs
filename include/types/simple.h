@@ -36,25 +36,33 @@
 #ifndef _simple_h
 #define _simple_h
 
+/* Dont remove this instance of HAVE_CONFIG_H!!!
+ *
+ * We dont _require_ config.h here, but IF one is
+ * available it might contain valuable information about simple types 
+ * that helps us automate things better and avoid bailing out.
+ *
+ * Note that this does not have to be the gromacs config.h - several
+ * package setups define these simple types. 
+ */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif
+
+/* Information about integer data type sizes */
+#include <limits.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifndef FALSE
-#define FALSE   0
+#if 0
+}
 #endif
-#ifndef TRUE
-#define TRUE    1
-#endif
-#define BOOL_NR 2
 
-#define XX	0			/* Defines for indexing in	*/
-#define	YY	1			/* vectors			*/
-#define ZZ	2
+
+#define XX	    0			/* Defines for indexing in	*/
+#define	YY	    1			/* vectors			*/
+#define ZZ   	2
 #define DIM   	3			/* Dimension of vectors		*/
 #define XXXX    0                       /* defines to index matrices */
 #define XXYY    1
@@ -65,10 +73,24 @@ extern "C" {
 #define ZZXX    6
 #define ZZYY    7
 #define ZZZZ    8
-#ifndef HAVE_BOOL
-#define bool int
-  /* typedef int         	bool; */
+
+  /* Attempt to define a boolean type, unless one already is defined,
+   * and do it without relying completely on config.h.
+   * First, if we are using c++ bool must be present, so don't touch it.
+   * Second, if HAVE_BOOL is defined, we trust that.
+   * Otherwise, define it to an int.
+   */
+#if !(defined __cplusplus) && !(defined HAVE_BOOL)
+#  define bool int
 #endif
+    
+#ifndef FALSE
+#  define FALSE   0
+#endif
+#ifndef TRUE
+#  define TRUE    1
+#endif
+#define BOOL_NR 2
 
 
 typedef int     	atom_id;	/* To indicate an atoms id         */
@@ -95,20 +117,24 @@ typedef int     	atom_id;	/* To indicate an atoms id         */
 
   /* Check whether we already have a real type! */
 #ifdef GMX_DOUBLE
+
 #ifndef HAVE_REAL
 typedef double   	real;
 #define HAVE_REAL
 #endif
+
 #define GMX_MPI_REAL    MPI_DOUBLE
 #define GMX_REAL_EPS    GMX_DOUBLE_EPS
 #define GMX_REAL_MIN    GMX_DOUBLE_MIN
 #define GMX_REAL_MAX    GMX_DOUBLE_MAX
 #define gmx_real_fullprecision_pfmt "%21.14e"
 #else
+
 #ifndef HAVE_REAL
 typedef float           real;
 #define HAVE_REAL
 #endif
+
 #define GMX_MPI_REAL    MPI_FLOAT
 #define GMX_REAL_EPS    GMX_FLOAT_EPS
 #define GMX_REAL_MIN    GMX_FLOAT_MIN
@@ -116,12 +142,6 @@ typedef float           real;
 #define gmx_real_fullprecision_pfmt "%14.7e"
 #endif
 
-#ifndef VECTORIZATION_BUFLENGTH
-#define VECTORIZATION_BUFLENGTH 1000
-  /* The total memory size of the vectorization buffers will
-   * be 5*sizeof(real)*VECTORIZATION_BUFLENGTH
-   */
-#endif  
 typedef real        	rvec[DIM];
 
 typedef double       	dvec[DIM];
@@ -134,8 +154,11 @@ typedef int             ivec[DIM];
 
 typedef int             imatrix[DIM][DIM];
 
+
 /* For the step count type gmx_large_int_t we aim for 8 bytes (64bit),
  * but we might only be able to get 4 bytes (32bit).
+ *
+ * We first try to find a type without reyling on any SIZEOF_XXX defines.
  *
  * Avoid using "long int" if we can. This type is really dangerous,
  * since the width frequently depends on compiler options, and they
@@ -143,36 +166,105 @@ typedef int             imatrix[DIM][DIM];
  * Instead, start by looking for "long long", and just go down if we
  * have to (rarely on new systems). /EL 20100810
  */
-#if (defined SIZEOF_LONG_LONG_INT && SIZEOF_LONG_LONG_INT==8)
+#if ( (defined LLONG_MAX && LLONG_MAX==9223372036854775807LL) || (defined SIZEOF_LONG_LONG_INT && SIZEOF_LONG_LONG_INT==8) )
 
+/* Long long int is 64 bit */
 typedef long long int gmx_large_int_t;
 #define gmx_large_int_fmt   "lld"
 #define gmx_large_int_pfmt "%lld"
-#define SIZEOF_LARGE_INT SIZEOF_LONG_LONG_INT
-/* LLONG_MAX is not defined by the C-standard, so check for it */
-#ifdef LLONG_MAX 
-#define LARGE_INT_MAX LLONG_MAX
-#else
-#define LARGE_INT_MAX 9223372036854775807LL
-#endif
+#define SIZEOF_GMX_LARGE_INT  8
+#define GMX_LARGE_INT_MAX     9223372036854775807LL
 
-#elif (defined SIZEOF_LONG_INT && SIZEOF_LONG_INT==8)
+#elif ( (defined LONG_MAX && LONG_MAX==9223372036854775807L) || (defined SIZEOF_LONG_INT && SIZEOF_LONG_INT==8) )
 
+/* Long int is 64 bit */
 typedef long int gmx_large_int_t;
 #define gmx_large_int_fmt   "ld"
 #define gmx_large_int_pfmt "%ld"
-#define SIZEOF_LARGE_INT SIZEOF_LONG_INT
-#define LARGE_INT_MAX LONG_MAX
+#define SIZEOF_GMX_LARGE_INT  8
+#define GMX_LARGE_INT_MAX     9223372036854775807LL
 
-#else
+#elif ( (defined INT_MAX && INT_MAX==9223372036854775807L) || (defined SIZEOF_INT && SIZEOF_INT==8) )
 
+/* int is 64 bit */
+typedef int gmx_large_int_t;
+#define gmx_large_int_fmt   "d"
+#define gmx_large_int_pfmt  "%d"
+#define SIZEOF_GMX_LARGE_INT  8
+#define GMX_LARGE_INT_MAX     9223372036854775807LL
+
+#elif ( (defined INT_MAX && INT_MAX==2147483647) || (defined SIZEOF_INT && SIZEOF_INT==4) )
+
+/* None of the above worked, try a 32 bit integer */
 typedef int gmx_large_int_t;
 #define gmx_large_int_fmt   "d"
 #define gmx_large_int_pfmt "%d"
-#define SIZEOF_LARGE_INT SIZEOF_INT
-#define LARGE_INT_MAX INT_MAX
+#define SIZEOF_GMX_LARGE_INT  4
+#define GMX_LARGE_INT_MAX     2147483647
+
+#else
+
+#error "Cannot find any 32 or 64 bit integer data type. Please extend the gromacs simple.h file!"
 
 #endif
+    
+    
+/* Try to define suitable inline keyword for gmx_inline.
+ * Set it to empty if we cannot find one (and dont complain to the user)
+ */
+#ifndef __cplusplus
+
+#ifdef __GNUC__
+   /* GCC */
+#  define gmx_inline   __inline__
+#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
+   /* ICC */
+#  define gmx_inline __inline__
+#elif defined(__PATHSCALE__)
+   /* Pathscale */
+#  define gmx_inline __inline__
+#elif defined(__PGIC__)
+   /* Portland */
+#  define gmx_inline __inline
+#elif defined _MSC_VER
+   /* MSVC */
+#  define gmx_inline __inline
+#elif defined(__xlC__)
+   /* IBM */
+#  define gmx_inline __inline
+#else
+#  define gmx_inline
+#endif
+
+#else
+#  define gmx_inline inline
+#endif
+
+
+/* Restrict keywords. Note that this has to be done for C++ too. */
+#ifdef __GNUC__
+/* GCC */
+#  define gmx_restrict   __restrict__
+#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
+/* ICC */
+#  define gmx_restrict __restrict__
+#elif defined(__PATHSCALE__)
+/* Pathscale */
+#  define gmx_restrict __restrict
+#elif defined(__PGIC__)
+/* Portland */
+#  define gmx_restrict __restrict
+#elif defined _MSC_VER
+/* MSVC */
+#  define gmx_restrict __restrict
+#elif defined(__xlC__)
+/* IBM */
+#  define gmx_restrict __restrict
+#else
+#  define gmx_restrict
+#endif
+
+
 
 #ifdef __cplusplus
 }

@@ -27,10 +27,6 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifndef _gmx_sse2_single_h_
 #define _gmx_sse2_single_h_
 
@@ -50,6 +46,9 @@
 #endif
 
 #include <stdio.h>
+
+#include "types/simple.h"
+
 
 /***************************************************
  *                                                 *

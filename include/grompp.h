@@ -36,10 +36,6 @@
 #ifndef _grompp_h
 #define _grompp_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "typedefs.h"
 #include "macros.h"
@@ -105,7 +101,7 @@ typedef struct {
   int  nr;
 } t_mols;
 
-extern bool is_int(double x);
+bool is_int(double x);
 /* Returns TRUE when x is integer */
 
 typedef enum {

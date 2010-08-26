@@ -340,10 +340,10 @@ static bool calc_vsite3_param(gpp_atomtype_t atype,
     fprintf(debug,"\n");
   }
   bXH3 = 
-    ( (strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MNH",3)==0) &&
-      (strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
-    ( (strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
-      (strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MCH3",4)==0) );
+    ( (gmx_strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MNH",3)==0) &&
+      (gmx_strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
+    ( (gmx_strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
+      (gmx_strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MCH3",4)==0) );
   
   bjk = get_bond_length(nrbond, bonds, param->AJ, param->AK);
   bjl = get_bond_length(nrbond, bonds, param->AJ, param->AL);
@@ -488,10 +488,10 @@ static bool calc_vsite3out_param(gpp_atomtype_t atype,
     fprintf(debug,"\n");
   }
   bXH3 = 
-    ( (strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MNH",3)==0) &&
-      (strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
-    ( (strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
-      (strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MCH3",4)==0) );
+    ( (gmx_strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MNH",3)==0) &&
+      (gmx_strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
+    ( (gmx_strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
+      (gmx_strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MCH3",4)==0) );
   
   /* check if construction parity must be swapped */  
   bSwapParity = ( param->C1 == -1 );

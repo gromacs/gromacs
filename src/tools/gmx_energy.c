@@ -248,7 +248,7 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
 	    i = strlen(ptr);
 	    nmatch = 0;
 	    for(nind=0; nind<nre; nind++) {
-	      if (strcasecmp(newnm[nind],ptr) == 0) {
+	      if (gmx_strcasecmp(newnm[nind],ptr) == 0) {
 		bE[nind] = TRUE;
 		nmatch++;
 	      }
@@ -257,7 +257,7 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
 	      i = strlen(ptr);
 	      nmatch = 0;
 	      for(nind=0; nind<nre; nind++) {
-		if (strncasecmp(newnm[nind],ptr,i) == 0) {
+		if (gmx_strncasecmp(newnm[nind],ptr,i) == 0) {
 		  bE[nind] = TRUE;
 		  nmatch++;
 		}
@@ -1217,7 +1217,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
   sum=0;
   beta = 1.0/(BOLTZ*reftemp);
   for(i=0; i<nset; i++) {
-    if (strcasecmp(leg[i],enm[set[i]].name)!=0)
+    if (gmx_strcasecmp(leg[i],enm[set[i]].name)!=0)
       fprintf(stderr,"\nWARNING energy set name mismatch %s!=%s\n",
 	      leg[i],enm[set[i]].name);
     for(j=0; j<nenergy; j++) {
@@ -1468,7 +1468,7 @@ int gmx_energy(int argc,char *argv[])
 	  }
 	}
         if (i == nre) {
-	  if (strcasecmp(setnm[j],"Volume")==0) {
+	  if (gmx_strcasecmp(setnm[j],"Volume")==0) {
 	    printf("Enter the box volume (" unit_volume "): ");
 	    if(1 != scanf("%lf",&dbl))
 	    {
@@ -1516,7 +1516,7 @@ int gmx_energy(int argc,char *argv[])
       bIsEner[i] = FALSE;
       for (j=0; (j <= F_ETOT); j++)
 	bIsEner[i] = bIsEner[i] ||
-	  (strcasecmp(interaction_function[j].longname,leg[i]) == 0);
+	  (gmx_strcasecmp(interaction_function[j].longname,leg[i]) == 0);
     }
     
     if (bPrAll && nset > 1) {

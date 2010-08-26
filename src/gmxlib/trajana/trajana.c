@@ -1090,7 +1090,7 @@ init_default_selections(gmx_ana_traj_t *d, gmx_ana_indexgrps_t **grps)
     }
 
     /* Find the default selection file, return if none found. */
-    fnm = low_gmxlibfn("defselection.dat", FALSE);
+    fnm = low_gmxlibfn("defselection.dat", TRUE, FALSE);
     if (fnm == NULL)
     {
         return 0;
