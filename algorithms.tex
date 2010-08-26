@@ -288,7 +288,7 @@ constant volume simulation, and afterward use position restraints in
 conjunction with constant pressure.
 
 \item[Accelerate group]
-On each atom in an '\swapindex{accelerate}{group}' an acceleration
+On each atom in an ``\swapindex{accelerate}{group}" an acceleration
 $\ve{a}^g$ is imposed. This is equivalent to an external
 force. This feature makes it possible to drive the system into a
 non-equilibrium state and enables the performance of 
@@ -317,7 +317,7 @@ In \gromacs\ the center of mass (COM) motion can be removed, for
 either the complete system or for groups of atoms. The latter is
 useful, {\eg} for systems where there is limited friction ({\eg} gas
 systems) to prevent center of mass motion to occur. It makes sense to
-use the same groups for Temperature coupling and center of mass motion
+use the same groups for temperature coupling and center of mass motion
 removal.
 
 \item[XTC output group]
@@ -439,7 +439,7 @@ can develop in long runs, and the temperature will be
 significantly misinterpreted. Something similar may happen due to overall
 rotational motion, but only when an isolated cluster is simulated. In
 periodic systems with filled boxes, the overall rotational motion is
-coupled to other degrees of freedom and does cause give such problems.
+coupled to other degrees of freedom and does not cause such problems.
 
 
 \subsection{\swapindex{Neighbor}{searching}}
@@ -458,7 +458,7 @@ in a rectangular box by first shifting them with
 box vector ${\bf c}$, then with ${\bf b}$ and finally with ${\bf a}$.
 Equations \ref{eqn:box_shift2}, \ref{eqn:physicalrc} and \ref{eqn:gridrc}
 ensure that we can find the 14 nearest triclinic images within
-a linear combination which does not involve multiples of box vectors.
+a linear combination that does not involve multiples of box vectors.
 
 \subsubsection{Pair lists generation}
 The non-bonded pair forces need to be calculated only for those pairs
@@ -478,7 +478,7 @@ list cut-off, {\ie} at a distance between \verb'rshort' and
 \verb'rlong'.  This force is calculated during the pair list update
 and  retained during \verb'nstlist' steps.
 
-To make the \normindex{neighbor list} all particles that are close
+To make the \normindex{neighbor list}, all particles that are close
 ({\ie} within the neighbor list cut-off) to a given particle must be found.
 This searching, usually called neighbor searching (NS),
 involves periodic boundary conditions and determining the {\em image}
@@ -498,7 +498,7 @@ the neighbor list when required. That is when one or more particles
 have moved more than half the buffer size from the center of geometry
 of the charge group they belong to (see \secref{chargegroup})
 as determined at the previous neighbor search.
-This option guarantees that their are no cut-off artifacts.
+This option guarantees that there are no cut-off artifacts.
 Note that for larger systems this comes at a high computational cost,
 since the neighbor list update frequency will be determined
 by just one or two particles moving slightly beyond the half buffer length
@@ -665,8 +665,8 @@ in \secref{virial}.
 \label{subsec:update}
 \begin{figure}
 \centerline{\includegraphics[width=8cm]{plots/leapfrog}}
-\caption[The Leap-Frog integration method.]{The Leap-Frog integration method. The algorithm is called Leap-Frog because r and v are leaping
-like  frogs over each others back.}
+\caption[The Leap-Frog integration method.]{The Leap-Frog integration method. The algorithm is called Leap-Frog because $\ve{r}$ and $\ve{v}$ are leaping
+like  frogs over each other's backs.}
 \label{fig:leapfrog}
 \end{figure}
 
@@ -715,7 +715,7 @@ or equivalently:
 \ve{v}(t+\Dt)   &~=~&   \ve{v}(t)+ \frac{\Dt}{2m}\left[\ve{F}(t) + \ve{F}(t+\Dt)\right]
 \eea
 With no temperature or pressure coupling, and with corresponding
-starting points, leapfrog and velocity Verlet will generate identical
+starting points, leap-frog and velocity Verlet will generate identical
 trajectories, as can easily be verified by hand from the equations
 above.  Given a single starting file with the {\em same} starting
 point $\ve{x}(0)$ and $\ve{v}(0)$, leapfrog and velocity Verlet will
@@ -725,7 +725,7 @@ interpret them as corresponding to the timepoint $t=0$.
 
 \subsection{Understanding reversible integrators: The Trotter decomposition}
 To further understand the relationship between velocity Verlet and
-leapfrog integration, we introduce the reversible Trotter formulation
+leap-frog integration, we introduce the reversible Trotter formulation
 of dynamics, which is also useful to understanding implementations of
 thermostats and barostats in Gromacs.
 
@@ -768,7 +768,7 @@ half step.  For future times $t = n\Dt$, this becomes:
              &       &  \;\;\;\; \exp(iL_1\Dt) \exp(iL_2\hDt) 
 \eea
 This formalism allows us to easily see the difference between the
-different flavors of Verlet integrators.  The leapfrog integrator can
+different flavors of Verlet integrators.  The leap-frog integrator can
 be seen as starting with Eq.~\ref{eq:NVE_Trotter} with the
 $\exp\left(iL_1 \dt\right)$ term, instead of the half-step velocity
 term, yielding:
@@ -786,7 +786,7 @@ step is between $t-\hDt$ and $t+\hDt$, then it is simply a way of
 starting velocity Verlet at a different place in the cycle.
 
 Even though the trajectory and thus potential energies are identical
-between leapfrog and velocity Verlet, the kinetic energy and
+between leap-frog and velocity Verlet, the kinetic energy and
 temperature will not necessarily be the same.  Standard velocity
 Verlet uses the velocities at the $t$ to calculate the kinetic energy
 and thus the temperature only at time $t$; the kinetic energy is then the sum over all particles of: 
@@ -795,7 +795,7 @@ KE_{\mathrm{full}}(t) &=& \sum_i \left(\frac{1}{2m_i}\ve{v}_i(t)\right)^2 \nonum
       &=& \sum_i \frac{1}{2m_i}\left(\frac{1}{2}\ve{v}_i(t-\hDt)+\frac{1}{2}\ve{v}_i(t+\hDt)\right)^2
 \eea
 with the square on the {\em outside} of the average.  Standard
-leapfrog calculates the kinetic energy at time $t$ based on the
+leap-frog calculates the kinetic energy at time $t$ based on the
 average kinetic energies at the timesteps $t+\hDt$ and $t-\hDt$, or
 the sum over all particles of
 \bea
@@ -804,13 +804,13 @@ KE_{\mathrm{average}}(t) &=& \sum_i \frac{1}{2m_i}\left(\frac{1}{2}\ve{v}_i(t-\h
 With the square inside the average.
 
 A nonstandard variant of velocity Verlet which averages the kinetic
-energies $KE(t+\hDt)$ and $KE(t-\hDt)$, exactly like leapfrog, is also
+energies $KE(t+\hDt)$ and $KE(t-\hDt)$, exactly like leap-frog, is also
 now implemented in Gromacs (as mdp option {\em md-vv-avek}).  Without
 temperature and pressure coupling, velocity Verlet with
 half-step-averaged kinetic energies and leapfrog will be identical up
 to numerical precision.  For temperature and pressure control schemes,
 however, velocity Verlet with half-step-averaged kinetic energies and
-leapfrog will be different, as will be discussed in the section in
+leap-frog will be different, as will be discussed in the section in
 thermostats and barostats.
 
 The half-step-averaged kinetic energy temperature are slightly more
@@ -841,12 +841,12 @@ three methods will not give identical results.
 Because the velocity and position are both defined at the same time
 $t$ the velocity Verlet integrator can be used for some methods,
 especially rigorously correct pressure control methods, that are not
-actually possible with leapfrog.  The integration itself takes
-negligibly more time than leapfrog, but twice as many communication
+actually possible with leap-frog.  The integration itself takes
+negligibly more time than leap-frog, but twice as many communication
 calls are currently required.  In most cases, and especially for large
 systems where communication speed is important for parallelization and
 differences between thermodynamic ensembles vanish in the $1/N$ limit,
-and when only NVT ensembles are required.  leapfrog will likely be the
+and when only NVT ensembles are required, leap-frog will likely be the
 preferred integrator.  For pressure control simulations where the fine
 details of the thermodynamics are important, only velocity Verlet
 allows the true ensemble to be calculated.  In either case, simulation
@@ -858,13 +858,13 @@ To save computation time, slowly varying forces can be calculated
 less often than rapidly varying forces. In {\gromacs}
 such a \normindex{multiple time step} splitting is possible between
 short and long range non-bonded interactions.
-In {\gromacs} versions up to 4.0 an irreversible integration scheme
+In {\gromacs} versions up to 4.0, an irreversible integration scheme
 was used which is also used by the {\gromos} simulation package:
 every $n$ steps the long range forces are determined and these are
 then also used (without modification) for the next $n-1$ integration steps
 in \eqnref{leapfrogv}. Such an irreversible scheme can result in bad energy
 conservation and, possibly, bad sampling.
-Since version 4.5, a leap-frog version of the reversible Trotter decomposition scheme\cite{Tuckerman1992a} is used.
+Since version 4.5, a leap-frog version of the reversible Trotter decomposition scheme~\cite{Tuckerman1992a} is used.
 In this integrator the long-range forces are determined every $n$ steps
 and are then integrated into the velocity in \eqnref{leapfrogv} using
 a time step of $\Dt_\mathrm{LR} = n \Dt$:
@@ -972,9 +972,9 @@ averages will not be affected significantly, except for the
 distribution of the kinetic energy itself.  However, fluctution
 properties, such as the heat capacity, will be affected.  A similar
 thermostat which does produce a correct ensemble is the velocity
-rescaling thermostat\cite{Bussi2007a} described below.
+rescaling thermostat~\cite{Bussi2007a} described below.
 
-The heat flow into or out of the system is effected by scaling the
+The heat flow into or out of the system is affected by scaling the
 velocities of each particle every step, or every $n_\mathrm{TC}$ steps,
 with a time-dependent factor $\lambda$, given by
 \beq 
@@ -982,7 +982,7 @@ with a time-dependent factor $\lambda$, given by
 \left\{\frac{T_0}{T(t -  \hDt)} - 1 \right\} \right]^{1/2}
 \label{eqn:lambda}
 \eeq
-The parameter $\tau_T$ is close to, but not exactly equal to the time constant
+The parameter $\tau_T$ is close, but not exactly equal, to the time constant
 $\tau$ of the temperature coupling (\eqnref{Tcoupling}):
 \beq
 \tau = 2 C_V \tau_T / N_{df} k
@@ -994,7 +994,7 @@ caused by scaling the velocities is partly redistributed between
 kinetic and potential energy and hence the change in temperature is
 less than the scaling energy.  In practice, the ratio $\tau / \tau_T$
 ranges from 1 (gas) to 2 (harmonic solid) to 3 (water). When we use
-the term 'temperature coupling time constant', we mean the parameter
+the term ``temperature coupling time constant," we mean the parameter
 \normindex{$\tau_T$}.  
 {\bf Note} that in practice the scaling factor $\lambda$ is limited to 
 the range of 0.8 $<= \lambda <=$ 1.25, to avoid scaling by very large
@@ -1002,8 +1002,8 @@ numbers which may crash the simulation. In normal use,
 $\lambda$ will always be much closer to 1.0.
 
 \subsubsection{\normindex{Velocity rescaling thermostat}}
-The velocity rescaling thermostat\cite{Bussi2007a} is essentially a Berendsen
-thermostat (see above) with an additional stochastic term which ensures
+The velocity rescaling thermostat\cite~{Bussi2007a} is essentially a Berendsen
+thermostat (see above) with an additional stochastic term that ensures
 a correct kinetic energy distribution:
 \beq
 \de K = (K_0 - K) \frac{\de t}{\tau_T} + 2 \sqrt{\frac{K K_0}{N_f}} \frac{\de W}{\sqrt{\tau_T}}
@@ -1027,12 +1027,12 @@ not the case for the weak coupling scheme.
 
 To enable canonical ensemble simulations, {\gromacs} also supports the
 extended-ensemble approach first proposed by Nos{\'e}~\cite{Nose84}
-and later modified by Hoover\cite{Hoover85}. The system Hamiltonian is
+and later modified by Hoover~\cite{Hoover85}. The system Hamiltonian is
 extended by introducing a thermal reservoir and a friction term in the
 equations of motion.  The friction force is proportional to the
-product of each particle's velocity and a friction parameter $\xi$
-This friction parameter (or 'heat bath' variable) is a fully
-dynamic quantity with its own momentum $p_{\xi}$ and equation of
+product of each particle's velocity and a friction parameter, $\xi$.
+This friction parameter (or ``heat bath" variable) is a fully
+dynamic quantity with its own momentum ($p_{\xi}$) and equation of
 motion; the time derivative is calculated from the difference between
 the current kinetic energy and the reference temperature.  
 
@@ -1046,12 +1046,12 @@ In this formulation, the particles' equations of motion in
 \beq \frac {\de p_{\xi}}{\de t} = \left( T - T_0 \right).  \eeq The
 reference temperature is denoted $T_0$, while $T$ is the current
 instantaneous temperature of the system. The strength of the coupling
-is determined by the constant $Q$ (usually called the 'mass parameter'
+is determined by the constant $Q$ (usually called the ``mass parameter"
 of the reservoir) in combination with the reference
 temperature.~\footnote{Note that some derivations, an alternative
   notation $\xi_{\mathrm{alt}} = v_{\xi} = p_{\xi}/Q$ is used.}
 
-The conserved quantity for the Nos\`{e}-Hoover equations of motion is not the total energy, but rather
+The conserved quantity for the Nos\{'e}-Hoover equations of motion is not the total energy, but rather
 \bea
 H = \sum_{i=1}^{N} \frac{\pb_i}{2m_i} + U\left(\rv_1,\rv_2,\ldots,\rv_N\right) +\frac{p_{\xi}^2}{2Q} + N_fkT\xi 
 \eea
@@ -1111,7 +1111,7 @@ particles~\cite{Martyna1992}:
 \frac {\de p_{\xi_N}}{\de t} &~=~& \left(\frac{p_{\xi_{N-1}}^2}{Q_{N-1}}-kT\right)
 \label{eqn:NH-chain-eqn-of-motion}
 \eea
-The conserved quantity for Nos\`{e}-Hoover chains is:
+The conserved quantity for Nos\{'e}-Hoover chains is:
 \bea
 H = \sum_{i=1}^{N} \frac{\pb_i}{2m_i} + U\left(\rv_1,\rv_2,\ldots,\rv_N\right) +\sum_{k=1}^M\frac{p^2_{\xi_k}}{2Q^{\prime}_k} + N_fkT\xi_1 + kT\sum_{k=2}^M \xi_k 
 \eea
@@ -1121,7 +1121,7 @@ amount of space and are generally not important for analysis of
 simulations, but this can be overridden by defining the environment
 variable GMX\_NOSEHOOVER\_CHAINS, which will print the values of all
 the positions and velocities of all Nos{\'e}-Hoover particles in the
-chain to the .edr file.  Leapfrog simulations currently can only have 
+chain to the .edr file.  Leap-frog simulations currently can only have 
 Nos{\'e}-Hoover chain lengths of 1, but this will likely be updated in 
 later version.
 
@@ -1172,7 +1172,7 @@ Eq.~\ref{eq:half_step_NHC_integrator} just before the $\exp\left(iL_1
 &&\exp\left(iL_2 \dt\right) \exp\left(iL_{\mathrm{NHC}}\dt/2\right) + \mathcal{O}(\Dt^3)
 \eea
 and then using some algebra tricks to solve for some quantities are
-required before they are actually calculated.~\cite{Holian95}
+required before they are actually calculated~\cite{Holian95}.
 
 }
 
@@ -1192,7 +1192,7 @@ between protein and water may actually be an artifact of the way
 temperature is calculated when there are finite timesteps, and very
 large differences in temperature are likely a sign of something else
 seriously going wrong with the system, and should be investigated
-carefully.~\cite{Eastwood2010}
+carefully~\cite{Eastwood2010}.
 
 One special case should be mentioned: it is possible to T-couple only
 part of the system, leaving other parts without temperature
@@ -1205,13 +1205,13 @@ constraints on the water are used, then only the water degrees of
 freedom should be thermostatted, not protein degrees of freedom, as
 the higher frequency modes in the protein can cause larger deviations
 from the ``true'' temperature, the temperature obtained with small
-timesteps.~\cite{Eastwood2010}
+timesteps~\cite{Eastwood2010}.
 
 \subsection{\swapindex{Pressure}{coupling}}
 In the same spirit as the temperature coupling, the system can also be
-coupled to a 'pressure bath'. {\gromacs} supports both the Berendsen
+coupled to a ``pressure bath." {\gromacs} supports both the Berendsen
 algorithm~\cite{Berendsen84} that scales coordinates and box vectors
-every step, the extended ensemble Parrinello-Rahman approach, and for
+every step, the extended ensemble Parrinello-Rahman approach~\cite{Parrinello81,Nose83}, and for
 the velocity Verlet variants, the Martyna-Tuckerman-Tobias-Klein
 (MTTK) implementation of pressure
 control~\cite{Martyna1996}. Parrinello-Rahman and Berendsen can be
@@ -1244,7 +1244,7 @@ It suffices to take a rough estimate because the value of {\boldmath $\beta$}
 only influences the non-critical time constant of the
 pressure relaxation without affecting the average pressure itself.
 For water at 1 atm and 300 K 
-$\beta = 4.6 \times 10^{-10}$ Pa$^{-1} = 4.6 \times 10^{-5}$ Bar$^{-1}$,
+$\beta = 4.6 \times 10^{-10}$ Pa$^{-1} = 4.6 \times 10^{-5}$ bar$^{-1}$,
 which is $7.6 \times 10^{-4}$ MD units (see \chref{defunits}).
 Most other liquids have similar values.
 When scaling completely anisotropically, the system has to be rotated in
@@ -1274,7 +1274,7 @@ might have to scale more slowly or decrease your timestep to avoid
 errors from the constraint algorithms.  It is important to note that
 although the Berendsen pressure control algorithm yields a simulation
 with the correct average pressure, it does not yield the exact NPT
-ensemble, and it is not yet clear exactly errors this approximation
+ensemble, and it is not yet clear exactly what errors this approximation
 may yield.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
@@ -1287,7 +1287,7 @@ well-defined for the weak coupling scheme, and that it does not
 simulate the true NPT ensemble.
 
 {\gromacs} also supports constant-pressure simulations using the
-Parrinello-Rahman approach\cite{Parrinello81,Nose83}, which is similar
+Parrinello-Rahman approach~\cite{Parrinello81,Nose83}, which is similar
 to the Nos{\'e}-Hoover temperature coupling, and in theory gives the
 true NPT ensemble.  With the Parrinello-Rahman barostat, the box
 vectors as represented by the matrix \ve{b} obey the matrix equation
@@ -1333,7 +1333,7 @@ box oscillations that could even crash your run.  In that case you
 would have to increase the time constant, or (better) use the weak
 coupling scheme to reach the target pressure, and then switch to
 Parrinello-Rahman coupling once the system is in equilibrium.
-Additionally, using the leapfrog algorithm, the pressure at time $t$
+Additionally, using the leap-frog algorithm, the pressure at time $t$
 is not available until after the time step has completed, and so the
 pressure from the previous step must be used, which makes te algorithm
 not directly reversible, and may not be appropriate for high precision
@@ -1364,7 +1364,7 @@ the box with $\mu_z$:
 \mu_{zz} = 1 + \beta_{zz} \Delta P_{zz}
 \eeq
 This is similar to normal pressure coupling, except that the power
-of one third is missing. 
+of $1/3$ is missing. 
 The pressure correction in the z-direction is then used to get the
 correct convergence for the surface tension to the reference value $\gamma_0$.
 The correction factor for the box-length in the x/y-direction is:
@@ -1383,10 +1383,10 @@ to zero, which is necessary for obtaining the correct surface tension.
 
 \subsubsection{MTTK pressure control algorithms}
 
-As mentioned in the previous section, one weakness of leapfrog
+As mentioned in the previous section, one weakness of leap-frog
 integration is in constant pressure simulations, since the pressure
 requires a calculation of both the virial and the kinetic energy at
-the full time step; for leapfrog, this information is not available
+the full time step; for leap-frog, this information is not available
 until {\em after} the full timestep.  Velocity Verlet does allow the
 calculation, at the cost of an extra round of global communication,
 and can compute, mod any integration errors, the true NPT ensemble.
@@ -1521,7 +1521,7 @@ the coupling steps every $n$ steps instead of every steps.  These new
 integrators will diverge if the coupling time step is too large, as
 the auxiliary variable integrations will not converge.  However, in
 most cases, long coupling times are more appropriate, as they disturb
-the dynamics less.~\cite{Martyna1996}
+the dynamics less~\cite{Martyna1996}.
 
 Standard velocity Verlet with Nos{\'e}-Hoover temperature control has a Trotter expansion:
 \bea  
@@ -1588,8 +1588,8 @@ The complete algorithm for the update of velocities and coordinates is
 given using leapfrog in \figref{complete-update}. The SHAKE algorithm of step
 4 is explained below. 
 
-{\gromacs} has a provision to ''freeze''  (prevent motion of) selected
-particles, which must be defined as a 'freeze group'. This is implemented
+{\gromacs} has a provision to ``freeze"  (prevent motion of) selected
+particles, which must be defined as a ``freeze group." This is implemented
 using a {\em freeze factor $\ve{f}_g$}, which is a vector, and differs for each
 {\em freezegroup} (see \secref{group}). This vector contains only
 zero (freeze) or one (don't freeze).
@@ -1603,7 +1603,7 @@ where $g$ and $h$ are group indices which differ per atom.
 \subsection{Output step}
 The important output of the MD run is the {\em
 \swapindex{trajectory}{file}} \verb'name.trj' which contains particle coordinates
-and -optionally- velocities at regular intervals. Since the trajectory
+and (optionally) velocities at regular intervals. Since the trajectory
 files are lengthy, one should not save every step! To retain all
 information it suffices to write a frame every 15 steps, since at
 least 30 steps are made per period of the highest frequency in the
@@ -1642,7 +1642,7 @@ shell S connected to atom A we have
 \ve{F}_{bond} ~=~ k_b \left( \ve{x}_S - \ve{x}_A\right)
 \end{equation}
 In an iterative solver, we have positions \ve{x}$_S(n)$ where $n$ is
-the iteration count. We now have it iteration $n$:
+the iteration count. We now have at iteration $n$:
 \begin{equation}
 \ve{F}_{nb} ~=~ \ve{F}_S - k_b \left( \ve{x}_S(n) - \ve{x}_A\right)
 \end{equation}
@@ -1711,11 +1711,11 @@ than 80\% of the simulation system we have implemented the
 \normindex{SETTLE}
 algorithm~\cite{Miyamoto92} (\secref{constraints}).
 
-For velocity verlet, and additional round of constraining must be
-done, to constraint the velocities of the second velocity half step,
+For velocity Verlet, an additional round of constraining must be
+done, to constrain the velocities of the second velocity half step,
 removing any component of the velocity parallel to the bond vector.
 This step is called RATTLE, and is covered in more detail in the
-original Andersen paper.~\cite{Andersen1983a}
+original Andersen paper~\cite{Andersen1983a}.
 
 } % Brace matches ifthenelse test for gmxlite
 
@@ -1746,7 +1746,7 @@ Although LINCS is based on matrices, no matrix-matrix multiplications are
 needed. The method is more stable and faster than SHAKE, 
 but it can only be used with bond constraints and 
 isolated angle constraints, such as the proton angle in OH. 
-Because of its stability LINCS is especially useful for Brownian dynamics. 
+Because of its stability, LINCS is especially useful for Brownian dynamics. 
 LINCS has two parameters, which are explained in the subsection parameters.
 The parallel version of LINCS, P-LINCS, is described
 in subsection \ssecref{plincs}.
@@ -1754,7 +1754,7 @@ in subsection \ssecref{plincs}.
 \subsubsection{The LINCS formulas}
 We consider a system of $N$ particles, with positions given by a
 $3N$ vector $\ve{r}(t)$.
-For molecular dynamics the equations of motion are given by Newton's law
+For molecular dynamics the equations of motion are given by Newton's Law:
 \fs{c1}
 {\de^2 \ve{r} \over \de t^2} = \iM \ve{F}
 \fe
@@ -1859,10 +1859,10 @@ Thus a simple trick can be used to calculate the inverse
 
 This inversion method is only valid if the absolute values of all the
 eigenvalues of $\ve{A}_n$ are smaller than one.
-In molecules with only bond constraints the connectivity is so low
+In molecules with only bond constraints, the connectivity is so low
 that this will always be true, even if ring structures are present.
 Problems can arise in angle-constrained molecules.
-By constraining angles with additional distance constraints
+By constraining angles with additional distance constraints,
 multiple small ring structures are introduced.
 This gives a high connectivity, leading to large eigenvalues.
 Therefore LINCS should NOT be used with coupled angle-constraints.
@@ -1898,14 +1898,14 @@ The accuracy of LINCS depends on the number of matrices used
 in the expansion \eqnref{m3}. For MD calculations a fourth order
 expansion is enough. For Brownian dynamics with
 large time steps an eighth order expansion may be necessary.
-The order is a parameter in the input file for {\tt mdrun}.
+The order is a parameter in the {\tt *.mdp} file.
 The implementation of LINCS is done in such a way that the 
 algorithm will never crash. Even when it is impossible to
 to reset the constraints LINCS will generate a conformation
 which fulfills the constraints as well as possible.
 However, LINCS will generate a warning when in one step a bond 
 rotates over more than a predefined angle.
-This angle is set by the user in the input file for {\tt mdrun}.
+This angle is set by the user in the {\tt *.mdp} file.
 
 } % Brace matches ifthenelse test for gmxlite
 
@@ -1961,14 +1961,14 @@ When $1/\xi_i$ is small compared to the time scales present in the system,
 the dynamics will be completely different from MD, but the sampling is
 still correct.
 
-In {\gromacs} there are two algorithm to integrate equation (\ref{SDeq}).
-An efficient one, where the relative error in the temperature
-is $\frac{1}{2}\Delta t\, \xi$.
-And a more complex leap frog algorithm~\cite{Gunsteren88},
+In {\gromacs} there are two algorithms to integrate equation (\ref{SDeq}):
+an efficient one, where the relative error in the temperature
+is $\frac{1}{2}\Delta t\, \xi$,
+and a more complex leap-frog algorithm~\cite{Gunsteren88},
 which has third-order accuracy for any value of $\Delta t\, \xi$.
 In this complex algorithm four Gaussian random number are required
-per integration step per degree of freedom and with constraints the
-coordinates needs to be constrained twice per integration step.
+per integration step per degree of freedom, and with constraints the
+coordinates need to be constrained twice per integration step.
 Depending on the computational cost of the force calculation,
 this can take a significant part of the simulation time.
 Exact continuation of a stochastic dynamics simulation is not possible,
@@ -1982,7 +1982,7 @@ enough.
 
 \section{\swapindex{Brownian}{Dynamics}}
 \label{sec:BD}
-In the limit of high friction stochastic dynamics reduces to 
+In the limit of high friction, stochastic dynamics reduces to 
 Brownian dynamics, also called position Langevin dynamics.
 This applies to over-damped systems, 
 {\ie} systems in which the inertia effects are negligible.
@@ -2004,7 +2004,7 @@ where $\ruis_i$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
 The friction coefficients $\gamma_i$ can be chosen the same for all
 particles or as $\gamma_i = m_i/\xi_i$, where the friction constants
 $\xi_i$ can be different for different groups of atoms. 
-Because the system is assumed to be over damped, large time-steps
+Because the system is assumed to be over-damped, large timesteps
 can be used. LINCS should be used for the constraints since SHAKE
 will not converge for large atomic displacements.
 BD is an option of the {\tt mdrun} program.
@@ -2038,7 +2038,7 @@ If ($V_{n+1} < V_n$) the new positions are accepted and $h_{n+1} = 1.2
 h_n$. \\
 If ($V_{n+1} \geq V_n$) the new positions are rejected and $h_n = 0.2 h_n$.
 
-The algorithm stops when either a user specified number of force 
+The algorithm stops when either a user-specified number of force 
 evaluations has been performed ({\eg} 100), or when the maximum of the absolute
 values of the force (gradient) components is smaller than a specified
 value $\epsilon$.
@@ -2069,7 +2069,7 @@ present it must be of a flexible model, which can be specified in the
 {\tt define = -DFLEXIBLE}\\
 This is not really a restriction, since the accuracy of conjugate
 gradient is only required for minimization prior to a normal mode
-analysis, which can not be performed with constraints.  For most other
+analysis, which cannot be performed with constraints.  For most other
 purposes steepest descent is efficient enough.
 } % Brace matches ifthenelse test for gmxlite
 
@@ -2088,7 +2088,7 @@ proportional to the number of particles multiplied with the correction
 steps. In practice we have found it to converge faster than conjugate
 gradients, but due to the correction steps it is not yet parallelized.
 It is also noteworthy that switched or shifted interactions usually
-improve the convergence, since sharp cut-offs means the potential
+improve the convergence, since sharp cut-offs mean the potential
 function at the current coordinates is slightly different from the
 previous steps used to build the inverse Hessian approximation.
 } % Brace matches ifthenelse test for gmxlite
