@@ -278,8 +278,7 @@ particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>.</dd>
 <dt><h4>ld_seed: (1993) [integer]</h4></dt>
 <dd>used to initialize random generator for thermal noise
 for stochastic and Brownian dynamics.
-When <b>ld_seed</b> is set to -1, the seed is calculated as
-<tt>(time() + getpid()) % 1000000</tt>.
+When <b>ld_seed</b> is set to -1, the seed is calculated from the process ID.
 When running BD or SD on multiple processors, each processor uses a seed equal
 to <b>ld_seed</b> plus the processor number.</dd>
 </dl>
@@ -996,8 +995,8 @@ This is only meaningful with integrator <b><A HREF="#run">md</A></b>.</dd>
 <dd>temperature for Maxwell distribution</dd>
 <dt><h4>gen_seed: (173529) [integer]</h4></dt>
 <dd>used to initialize random generator for random velocities,
-when <b>gen_seed</b> is set to -1, the seed is calculated as
-<tt>(time() + getpid()) % 1000000</tt></dd>
+when <b>gen_seed</b> is set to -1, the seed is calculated from
+the process ID number.
 </dl>
 
 <A NAME="bond"><br>
