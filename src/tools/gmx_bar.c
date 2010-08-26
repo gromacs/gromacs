@@ -67,12 +67,13 @@ typedef struct xvg_t
     int *np;        /* number of data points (du or hists) per lambda */
     int  np_alloc;  /* number of points (du or hists) allocated */
     double temp;    /* temperature */
-    double *lambda; /* the lambdas (of first index for y). The first one
-                       is just the 'native' lambda */
+    double *lambda; /* the lambdas (of first index for y). */
     double *t;      /* the times (of second index for y) */
     double **y;     /* the dU values. y[0] holds the derivative, while
                        further ones contain the energy differences between
                        the native lambda and the 'foreign' lambdas. */
+
+    double native_lambda; /* the native lambda */
 
     struct xvg_t *next, *prev; /*location in the global linked list of xvg_ts*/
 } xvg_t;
@@ -1689,22 +1690,51 @@ static double bar_err(int nbmin, int nbmax, const double *partsum)
     return sqrt(svar/(nbmax + 1 - nbmin));
 }
 
-
-static double legend2lambda(char *fn,const char *legend,gmx_bool bdhdl)
+/* deduce lambda value from legend. 
+input:
+    bdhdl = if true, value may be a derivative. 
+output:
+    bdhdl = whether the legend was for a derivative.
+    */
+static double legend2lambda(char *fn,const char *legend,gmx_bool *bdhdl)
 {
     double lambda=0;
     const char   *ptr;
+    gmx_bool ok=FALSE;
 
     if (legend == NULL)
     {
         gmx_fatal(FARGS,"There is no legend in file '%s', can not deduce lambda",fn);
     }
     ptr = strrchr(legend,' ');
-    if (( bdhdl &&  strstr(legend,"dH") == NULL) ||
-        (!bdhdl && (strchr(legend,'D') == NULL ||
-                    strchr(legend,'H') == NULL)) ||
-        ptr == NULL)
+
+    if (strstr(legend,"dH"))
     {
+        if (! (*bdhdl))
+        {
+            ok=FALSE;
+        }
+        else
+        {
+            ok=TRUE;
+        }
+    }
+    else
+    {
+        if (strchr(legend,'D') != NULL && strchr(legend,'H') != NULL)
+        {
+            ok=TRUE;
+            *bdhdl=FALSE;
+        }
+    }
+    if (!ptr)
+    {
+        ok=FALSE;
+    }
+
+    if (!ok)
+    {
+        printf("%s\n", legend);
         gmx_fatal(FARGS,"There is no proper lambda legend in file '%s', can not deduce lambda",fn);
     }
     if (sscanf(ptr,"%lf",&lambda) != 1)
@@ -1800,6 +1830,7 @@ static void read_bar_xvg_lowlevel(char *fn, real *temp, xvg_t *ba)
     int  i;
     char *subtitle,**legend,*ptr;
     int np;
+    gmx_bool native_lambda_read=FALSE;
 
     xvg_init(ba);
 
@@ -1843,19 +1874,27 @@ static void read_bar_xvg_lowlevel(char *fn, real *temp, xvg_t *ba)
         ba->temp = *temp;
     }
 
+    /* Try to deduce lambda from the subtitle */
+    if (subtitle)
+    {
+        if (subtitle2lambda(subtitle,&(ba->native_lambda)))
+        {
+            native_lambda_read=TRUE;
+        }
+    }
     snew(ba->lambda,ba->nset-1);
     if (legend == NULL)
     {
-        /* Check if we have a single set, nset=2 means t and dH/dl */
+        /* Check if we have a single set, no legend, nset=2 means t and dH/dl */
         if (ba->nset == 2)
         {
-            /* Try to deduce lambda from the subtitle */
-            if (subtitle != NULL &&
-                !subtitle2lambda(subtitle,&ba->lambda[0]))
+            if (!native_lambda_read)
             {
                 /* Deduce lambda from the file name */
-                ba->lambda[0] = filename2lambda(fn);
+                ba->native_lambda = filename2lambda(fn);
+                native_lambda_read=TRUE;
             }
+            ba->lambda[0] = ba->native_lambda;
         }
         else
         {
@@ -1866,9 +1905,21 @@ static void read_bar_xvg_lowlevel(char *fn, real *temp, xvg_t *ba)
     {
         for(i=0; i<ba->nset-1; i++)
         {
+            gmx_bool is_dhdl=(i==0);
             /* Read lambda from the legend */
-            ba->lambda[i] = legend2lambda(fn,legend[i],i==0);
+            ba->lambda[i] = legend2lambda(fn,legend[i], &is_dhdl);
+
+            if (is_dhdl && native_lambda_read)
+            {
+                ba->native_lambda = ba->lambda[i];
+                native_lambda_read=TRUE;
+            }
         }
+    }
+
+    if (!native_lambda_read)
+    {
+        gmx_fatal(FARGS,"File %s contains multiple sets but no indication of the native lambda",fn);
     }
     
     /* Reorder the data */
@@ -1913,8 +1964,10 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
     snew(s, barsim->nset);
     for(i=0;i<barsim->nset;i++)
     {
-        samples_init(s+i, barsim->lambda[0], barsim->lambda[i], barsim->temp, 
-                     i==0, fn);
+        samples_init(s+i, barsim->native_lambda, barsim->lambda[i], 
+                     barsim->temp, lambda_same(barsim->native_lambda,
+                                               barsim->lambda[i]), 
+                     fn);
         s[i].du=barsim->y[i];
         s[i].ndu=barsim->np[i];
         s[i].t=barsim->t;
