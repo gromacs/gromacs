@@ -530,9 +530,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     gmx_pme_send_x(cr,bBS ? boxs : box,x,
                    mdatoms->nChargePerturbed,lambda,
-/* FIX ME after 4.5 */
-/* we are using gmx_bool of type char */
-                   ( flags & GMX_FORCE_VIRIAL) != 0,step);
+                   ( flags & GMX_FORCE_VIRIAL),step);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);
