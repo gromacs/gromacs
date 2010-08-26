@@ -1674,7 +1674,7 @@ int main(int argc, char *argv[])
     /* lookup hackblocks and rtp for all residues */
     get_hackblocks_rtp(&hb_chain, &restp_chain,
 		       nrtp, restp, pdba->nres, pdba->resinfo, 
-		       cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, ffname);
+		       cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end);
     /* ideally, now we would not need the rtp itself anymore, but do 
      everything using the hb and restp arrays. Unfortunately, that 
      requires some re-thinking of code in gen_vsite.c, which I won't 

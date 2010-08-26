@@ -857,7 +857,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 			       int nres, t_resinfo *resinfo, 
 			       int nterpairs,
 			       t_hackblock **ntdb, t_hackblock **ctdb,
-			       int *rn, int *rc, char *ffname)
+			       int *rn, int *rc)
 {
   int i, j, k, l;
   char *key;
@@ -913,13 +913,11 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
     if (bRM && ((tern >= 0 && ntdb[tern] == NULL) ||
                 (terc >= 0 && ctdb[terc] == NULL))) {
-        gmx_fatal(FARGS,"At least one terminus has a dangling bond, and the force field does\nnot provide suitable terminal entries or files. %s",
-                  0 == gmx_strncasecmp("AMBER", ffname, 5) ? "With AMBER force fields,\nuse the terminus-specific residue names, eg. NALA, CVAL."
-                  : "Edit a .n.tdb and/or .c.tdb file.");
+        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Edit a .n.tdb and/or .c.tdb file.");
     }
     if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
                 (terc >= 0 && ctdb[terc]->nhack == 0))) {
-        gmx_fatal(FARGS,"At least one terminus has a dangling bond. Select a proper terminal entry.");
+        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends. Select a proper terminal entry.");
     }
   }
   
