@@ -65,7 +65,7 @@ int gmx_node_rank(void);
 void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
-bool gmx_mpi_initialized(void);
+gmx_bool gmx_mpi_initialized(void);
 /* return TRUE when MPI_Init has been called.
  * return FALSE when MPI_Init has not been called OR
  * when GROMACS was compiled without MPI support.

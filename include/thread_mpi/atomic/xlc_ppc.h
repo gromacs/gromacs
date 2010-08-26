@@ -44,15 +44,13 @@ files.
  *
  * For now, we just disable the inline keyword if we're compiling C code:
  */
-#if 0
 #if (!defined(__cplusplus)) && (!defined(inline))
 #define inline_defined_in_atomic 1
 #define inline
 #endif
-#endif
 
 
-#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t eieio\n"\
+#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t isync\n"\
                                                              : : :"memory" ); }
 
 

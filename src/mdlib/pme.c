@@ -151,7 +151,7 @@ typedef struct {
     rvec *x;
     real *q;
     rvec *f;
-    bool bSpread;           /* These coordinates are used for spreading */
+    gmx_bool bSpread;           /* These coordinates are used for spreading */
     int  pme_order;
     splinevec theta,dtheta;
     ivec *idx;
@@ -175,8 +175,8 @@ typedef struct gmx_pme {
     MPI_Datatype  rvec_mpi;  /* the pme vector's MPI type */
 #endif
 
-    bool bPPnode;            /* Node also does particle-particle forces */
-    bool bFEP;               /* Compute Free energy contribution */
+    gmx_bool bPPnode;            /* Node also does particle-particle forces */
+    gmx_bool bFEP;               /* Compute Free energy contribution */
     int nkx,nky,nkz;         /* Grid dimensions */
     int pme_order;
     real epsilon_r;           
@@ -236,7 +236,7 @@ typedef struct gmx_pme {
     real *   work_m2inv;
 
     /* Work data for PME_redist */
-    bool     redist_init;
+    gmx_bool     redist_init;
     int *    scounts; 
     int *    rcounts;
     int *    sdispls;
@@ -400,8 +400,8 @@ static void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
     }
 }
 
-static void pmeredist_pd(gmx_pme_t pme, bool forw,
-                         int n, bool bXF, rvec *x_f, real *charge,
+static void pmeredist_pd(gmx_pme_t pme, gmx_bool forw,
+                         int n, gmx_bool bXF, rvec *x_f, real *charge,
                          pme_atomcomm_t *atc)
 /* Redistribute particle data for PME calculation */
 /* domain decomposition by x coordinate           */
@@ -492,7 +492,7 @@ static void pmeredist_pd(gmx_pme_t pme, bool forw,
 }
 
 static void pme_dd_sendrecv(pme_atomcomm_t *atc,
-                            bool bBackward,int shift,
+                            gmx_bool bBackward,int shift,
                             void *buf_s,int nbyte_s,
                             void *buf_r,int nbyte_r)
 {
@@ -527,7 +527,7 @@ static void pme_dd_sendrecv(pme_atomcomm_t *atc,
 }
 
 static void dd_pmeredist_x_q(gmx_pme_t pme, 
-                             int n, bool bX, rvec *x, real *charge,
+                             int n, gmx_bool bX, rvec *x, real *charge,
                              pme_atomcomm_t *atc)
 {
     int *commnode,*buf_index;
@@ -615,7 +615,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
 
 static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
                            int n, rvec *f,
-                           bool bAddF)
+                           gmx_bool bAddF)
 {
   int *commnode,*buf_index;
   int nnodes_comm,local_pos,buf_pos,i,scount,rcount,node;
@@ -1184,7 +1184,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
 
 static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                          real ewaldcoeff,real vol,
-                         bool bEnerVir,real *mesh_energy,matrix vir)
+                         gmx_bool bEnerVir,real *mesh_energy,matrix vir)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
@@ -1438,9 +1438,9 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
     return local_ndata[YY]*local_ndata[ZZ]*local_ndata[XX];
 }
 
-static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, bool bLB,
+static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, gmx_bool bLB,
                             real ewaldcoeff, real vol,
-                            bool bEnerVir, real *mesh_energy, matrix vir)
+                            gmx_bool bEnerVir, real *mesh_energy, matrix vir)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
@@ -1798,7 +1798,7 @@ for(ithx=0; (ithx<order); ithx++)              \
 
 
 void gather_f_bsplines(gmx_pme_t pme,real *grid,
-                       bool bClearF,pme_atomcomm_t *atc,real scale)
+                       gmx_bool bClearF,pme_atomcomm_t *atc,real scale)
 {
     /* sum forces for local particles */  
     int     nn,n,ithx,ithy,ithz,i0,j0,k0;
@@ -1950,7 +1950,7 @@ static real gather_energy_bsplines(gmx_pme_t pme,real *grid,
 
 static void make_bsplines(splinevec theta, splinevec dtheta, int order,
                           rvec fractx[], int nr, real charge[],
-                          bool bDoAll)
+                          gmx_bool bDoAll)
 {
     /* construct splines for local atoms */
     int  i,j,k,l;
@@ -2160,7 +2160,7 @@ static double pme_load_imbalance(gmx_pme_t pme)
 }
 
 static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
-                          int dimind,bool bSpread)
+                          int dimind,gmx_bool bSpread)
 {
     int nk,k,s;
 
@@ -2211,7 +2211,7 @@ init_overlap_comm(pme_overlap_t *  ol,
     int exten;
     int nn,nk;
     pme_grid_comm_t *pgc;
-    bool bCont;
+    gmx_bool bCont;
     int fft_start,fft_end,send_index1,recv_index1;
     
 #ifdef GMX_MPI
@@ -2389,8 +2389,8 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                  int                 nnodes_minor,
                  t_inputrec *        ir,
                  int                 homenr,
-                 bool                bFreeEnergy,
-                 bool                bReproducible)
+                 gmx_bool                bFreeEnergy,
+                 gmx_bool                bReproducible)
 {
     gmx_pme_t pme=NULL;
     
@@ -2663,8 +2663,8 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 
 static void spread_on_grid(gmx_pme_t pme,
                            pme_atomcomm_t *atc,real *grid,
-                           bool bCalcSplines,bool bSpread,
-                           bool bAllSplines)
+                           gmx_bool bCalcSplines,gmx_bool bSpread,
+                           gmx_bool bAllSplines)
 {    
     if (bCalcSplines)
     {
@@ -2816,7 +2816,7 @@ int gmx_pmeonly(gmx_pme_t pme,
 
 static void
 do_redist_x_q(gmx_pme_t pme, t_commrec *cr, int start, int homenr,
-              bool bX, rvec x[], real *data)
+              gmx_bool bX, rvec x[], real *data)
 {
     int      d;
 
@@ -2904,7 +2904,7 @@ int gmx_pme_do(gmx_pme_t pme,
                int flags)
 {
     int     q,d,i,j,ntot,npme;
-    bool    bFirst, bDoAllSplines;
+    gmx_bool  bFirst, bDoAllSplines;
     int     n_d,local_n;
     int     loop_count;
     real *  grid=NULL;
@@ -2913,7 +2913,7 @@ int gmx_pme_do(gmx_pme_t pme,
     real    energy_AB[4];
     matrix  vir_AB[4];
     real    scale;
-    bool    bClearF;
+    gmx_bool    bClearF;
     gmx_parallel_3dfft_t pfft_setup;
     real *  fftgrid;
     t_complex * cfftgrid;

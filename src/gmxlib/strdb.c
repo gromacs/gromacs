@@ -44,7 +44,7 @@
 #include "gmx_fatal.h"
 #include "strdb.h"
 
-bool get_a_line(FILE *fp,char line[],int n)
+gmx_bool get_a_line(FILE *fp,char line[],int n)
 {
   char *line0;
   char *dum;
@@ -77,7 +77,7 @@ bool get_a_line(FILE *fp,char line[],int n)
   return TRUE;
 }
 
-bool get_header(char line[],char *header)
+gmx_bool get_header(char line[],char *header)
 {
   char temp[STRLEN],*dum;
 

@@ -88,15 +88,15 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 			     t_nrnb *nrnb,t_mdatoms *md,
 			     real lambda,real *dvdlambda,
 			     gmx_grppairener_t *grppener,
-			     bool bFillGrid,
-			     bool bDoLongRange,
-			     bool bDoForces,rvec *f);
+			     gmx_bool bFillGrid,
+			     gmx_bool bDoLongRange,
+			     gmx_bool bDoForces,rvec *f);
  
 
 /* Debugging routines from wnblist.c */
 void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL);
 
-int read_nblist(FILE *in,FILE *out,int **mat,int natoms,bool bSymm);
+int read_nblist(FILE *in,FILE *out,int **mat,int natoms,gmx_bool bSymm);
 /* Returns total number of neighbors. If bSymm the matrix is symmetrized. */
 
 int natoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,

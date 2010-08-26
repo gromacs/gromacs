@@ -74,16 +74,16 @@ extern "C" {
 #define ZZYY    7
 #define ZZZZ    8
 
-  /* Attempt to define a boolean type, unless one already is defined,
-   * and do it without relying completely on config.h.
-   * First, if we are using c++ bool must be present, so don't touch it.
-   * Second, if HAVE_BOOL is defined, we trust that.
-   * Otherwise, define it to an int.
+  /* There is no standard size for 'bool' in C++, so when
+   * we previously defined it to int for C code the data types
+   * (and structs) would have different size depending on your compiler,
+   * both at gromacs build time and when you use the library.
+   * The only way around this is to NOT assume anything about the C++ type,
+   * so we cannot use the name 'bool' in our C code anymore.
    */
-#if !(defined __cplusplus) && !(defined HAVE_BOOL)
-#  define bool int
-#endif
-    
+
+typedef int gmx_bool;
+
 #ifndef FALSE
 #  define FALSE   0
 #endif
@@ -236,6 +236,8 @@ typedef int gmx_large_int_t;
 #  define gmx_inline
 #endif
 
+#else
+#  define gmx_inline inline
 #endif
 
 

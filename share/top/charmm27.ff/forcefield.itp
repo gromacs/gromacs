@@ -1,15 +1,13 @@
 *******************************************************************************
-*                    Charmm to Gromacs port writted by                        *
-*                    Par Bjelkmar, bjelkmar@cbr.su.se, and                    *
-*                    Per Larsson. Port homepage                               *
-*                    www.dbb.su.se/user:bjelkmar/ffcharmm                     *
-*                    Alternative correspondence:                              *
-*                    Erik Lindahl, lindahl@cbr.su.se                          *
+*                    CHARMM port writted by                                   *
+*                    Par Bjelkmar, Per Larsson, Michel Cuendet,               *
+*                    Berk Hess and Erik Lindahl.                              *
+*                    Correspondance:                                          *
+*                    bjelkmar@cbr.su.se or lindahl@cbr.su.se                  *
 *******************************************************************************
 
 
 #define _FF_CHARMM
-
 [ defaults ]
 ; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
 1	2	yes	1.0	1.0

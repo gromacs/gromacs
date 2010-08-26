@@ -72,7 +72,7 @@ t_forcerec *mk_forcerec(void)
 }
 
 #ifdef DEBUG
-static void pr_nbfp(FILE *fp,real *nbfp,bool bBHAM,int atnr)
+static void pr_nbfp(FILE *fp,real *nbfp,gmx_bool bBHAM,int atnr)
 {
   int i,j;
   
@@ -90,7 +90,7 @@ static void pr_nbfp(FILE *fp,real *nbfp,bool bBHAM,int atnr)
 }
 #endif
 
-static real *mk_nbfp(const gmx_ffparams_t *idef,bool bBHAM)
+static real *mk_nbfp(const gmx_ffparams_t *idef,gmx_bool bBHAM)
 {
   real *nbfp;
   int  i,j,k,atnr;
@@ -193,13 +193,13 @@ check_solvent_cg(const gmx_moltype_t   *molt,
     t_atom            *atom;
     int               j,k;
     int               j0,j1,nj;
-    bool              perturbed;
-    bool              has_vdw[4];
-    bool              match;
+    gmx_bool              perturbed;
+    gmx_bool              has_vdw[4];
+    gmx_bool              match;
     real              tmp_charge[4];
     int               tmp_vdwtype[4];
     int               tjA;
-    bool              qm;
+    gmx_bool              qm;
     solvent_parameters_t *solvent_parameters;
 
     /* We use a list with parameters for each solvent type. 
@@ -546,8 +546,8 @@ check_solvent(FILE *                fp,
 }
 
 static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
-                                   t_forcerec *fr,bool bNoSolvOpt,
-                                   bool *bExcl_IntraCGAll_InterCGNone)
+                                   t_forcerec *fr,gmx_bool bNoSolvOpt,
+                                   gmx_bool *bExcl_IntraCGAll_InterCGNone)
 {
     const t_block *cgs;
     const t_blocka *excl;
@@ -557,7 +557,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
     int  *cginfo;
     int  cg_offset,a_offset,cgm,am;
     int  mb,m,ncg_tot,cg,a0,a1,gid,ai,j,aj,excl_nalloc;
-    bool bId,*bExcl,bExclIntraAll,bExclInter;
+    gmx_bool bId,*bExcl,bExclIntraAll,bExclInter;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb,mtop->nmolblock);
@@ -810,7 +810,7 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
 #endif
     double csix,ctwelve;
     int    ntp,*typecount;
-    bool   bBHAM;
+    gmx_bool   bBHAM;
     real   *nbfp;
     real   *nbfp_comb = NULL;
 
@@ -1232,10 +1232,10 @@ static real cutoff_inf(real cutoff)
     return cutoff;
 }
 
-bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
-                      bool bPrintNote,t_commrec *cr,FILE *fp)
+gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
+                      gmx_bool bPrintNote,t_commrec *cr,FILE *fp)
 {
-    bool bAllvsAll;
+    gmx_bool bAllvsAll;
 
     bAllvsAll =
         (
@@ -1288,11 +1288,11 @@ void init_forcerec(FILE *fp,
                    const gmx_mtop_t *mtop,
                    const t_commrec  *cr,
                    matrix     box,
-                   bool       bMolEpot,
+                   gmx_bool       bMolEpot,
                    const char *tabfn,
                    const char *tabpfn,
                    const char *tabbfn,
-                   bool       bNoSolvOpt,
+                   gmx_bool       bNoSolvOpt,
                    real       print_force)
 {
     int     i,j,m,natoms,ngrp,negp_pp,negptable,egi,egj;
@@ -1301,8 +1301,8 @@ void init_forcerec(FILE *fp,
     double  dbl;
     rvec    box_size;
     const t_block *cgs;
-    bool    bGenericKernelOnly;
-    bool    bTab,bSep14tab,bNormalnblists;
+    gmx_bool    bGenericKernelOnly;
+    gmx_bool    bTab,bSep14tab,bNormalnblists;
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
     

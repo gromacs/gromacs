@@ -250,7 +250,7 @@ int gmx_tcaf(int argc,char *argv[])
     "is very important for obtaining a good fit."
   };
   
-  static bool bMol=FALSE,bK34=FALSE;
+  static gmx_bool bMol=FALSE,bK34=FALSE;
   static real wt=5;
   t_pargs pa[] = {
     { "-mol", FALSE, etBOOL, {&bMol},
@@ -265,7 +265,7 @@ int gmx_tcaf(int argc,char *argv[])
   int        ePBC;
   t_trxframe fr;
   matrix     box;
-  bool       bTPS,bTop; /* ,bCubic; */
+  gmx_bool       bTPS,bTop; /* ,bCubic; */
   int        gnx;
   atom_id    *index,*atndx=NULL,at;
   char       *grpname;

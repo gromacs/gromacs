@@ -1,3 +1,37 @@
+/*
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 4.5
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+ 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
+ * And Hey:
+ * Green Red Orange Magenta Azure Cyan Skyblue
+ */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -30,7 +64,7 @@
  * http://folding.bmc.uu.se) from code written by Omer Markovitch (email, url).
  * This is also the case with the function eq10v2().
  * 
- * The parts menetioned in the previous paragraph were contributed under a BSD license.
+ * The parts menetioned in the previous paragraph were contributed under the BSD license.
  */
 
 
@@ -581,7 +615,7 @@ static double getLogIndex(const int i, const t_gemParams *params)
 extern t_gemParams *init_gemParams(const double sigma, const double D,
 				   const real *t, const int len, const int nFitPoints,
 				   const real begFit, const real endFit,
-				   const real ballistic, const int nBalExp, const bool bDt)
+				   const real ballistic, const int nBalExp, const gmx_bool bDt)
 {
   double tDelta;
   t_gemParams *p;
@@ -952,7 +986,7 @@ static int balFunc_fdf(const gsl_vector *params, void *data,
 /* Removes the ballistic term from the beginning of the ACF,
  * just like in Omer's paper.
  */
-extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nexp, bool bDerivative)
+extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nexp, gmx_bool bDerivative)
 {
 
   /* Use nonlinear regression with GSL instead.
@@ -965,7 +999,7 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
     *A,                       /* The fitted parameters. (A1, B1, A2, B2,... C) */
     a[2],
     ddt[2];
-  bool sorted;
+  gmx_bool sorted;
   size_t n;
   size_t p;
 

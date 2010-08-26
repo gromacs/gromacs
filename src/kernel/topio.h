@@ -44,11 +44,11 @@
 extern double check_mol(gmx_mtop_t *mtop,warninp_t wi);
 /* Check mass and charge */
 
-extern char **do_top(bool         bVerbose,
+extern char **do_top(gmx_bool         bVerbose,
 		     const char   *topfile,
 		     const char   *topppfile,
 		     t_gromppopts *opts,
-		     bool         bZero,
+		     gmx_bool         bZero,
 		     t_symtab     *symtab,
 		     t_params     plist[],
 		     int          *combination_rule,
@@ -60,7 +60,7 @@ extern char **do_top(bool         bVerbose,
 		     t_inputrec   *ir,
 		     int          *nmolblock,
 		     gmx_molblock_t **molblock,
-		     bool         bGB,
+		     gmx_bool         bGB,
 		     warninp_t    wi);
 
 

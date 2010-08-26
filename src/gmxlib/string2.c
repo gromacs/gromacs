@@ -397,11 +397,11 @@ gmx_wcmatch(const char *pattern, const char *str)
     return (*str == 0) ? 0 : GMX_NO_WCMATCH;
 }
 
-char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)
+char *wrap_lines(const char *buf,int line_width, int indent,gmx_bool bIndentFirst)
 {
   char *b2;
   int i,i0,i2,j,b2len,lspace=0,l2space=0;
-  bool bFirst,bFitsOnLine;
+  gmx_bool bFirst,bFitsOnLine;
 
   /* characters are copied from buf to b2 with possible spaces changed
    * into newlines and extra space added for indentation.

@@ -44,7 +44,7 @@
 
 static void atom_not_found(int fatal_errno,const char *file,int line,
 			   const char *atomname,int resind,
-			   const char *bondtype,bool bDontQuit)
+			   const char *bondtype,gmx_bool bDontQuit)
 {
   if (strcmp(bondtype,"check") != 0) {
     if (bDontQuit) {
@@ -61,10 +61,10 @@ static void atom_not_found(int fatal_errno,const char *file,int line,
 	
 atom_id search_atom(const char *type,int start,int natoms,t_atom at[],
 		    char ** const * anm,
-		    const char *bondtype,bool bDontQuit)
+		    const char *bondtype,gmx_bool bDontQuit)
 {
   int     i,resind=-1;
-  bool    bPrevious,bNext;
+  gmx_bool    bPrevious,bNext;
 
   bPrevious = (strchr(type,'-') != NULL);
   bNext     = (strchr(type,'+') != NULL);

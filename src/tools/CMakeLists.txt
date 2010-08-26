@@ -50,7 +50,7 @@ set(GMX_TOOLS_PROGRAMS
     g_nmens g_order g_polystat g_potential g_rama g_rdf g_rms
     g_rmsf g_rotacf g_saltbr g_sas g_select g_sgangle g_sham g_sorient
     g_spol g_sdf g_spatial g_tcaf g_traj g_tune_pme g_vanhove
-    g_velacc g_clustsize g_mdmat g_wham g_kinetics g_sigeps g_bar
+    g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
     g_membed
     )
 

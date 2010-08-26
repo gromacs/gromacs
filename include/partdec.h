@@ -115,7 +115,7 @@ gmx_localtop_t *split_system(FILE *log,
 				    t_commrec *cr);
 /* Split the system over N processors. */
 
-bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
+gmx_bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
 				  t_comm_vsites *vsitecomm);
 
 t_state *partdec_init_local_state(t_commrec *cr,t_state *state_global);

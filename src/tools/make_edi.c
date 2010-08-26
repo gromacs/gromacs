@@ -68,7 +68,7 @@
 typedef struct
 { 
     real        deltaF0;
-    bool        bHarmonic;
+    gmx_bool        bHarmonic;
     real        tau;
     real        deltaF;
     real        kT; 
@@ -91,8 +91,8 @@ typedef struct edix
 typedef struct edipar
 {
     int         nini;           /* total Nr of atoms                    */
-    bool        fitmas;         /* true if trans fit with cm            */
-    bool        pcamas;         /* true if mass-weighted PCA            */
+    gmx_bool        fitmas;         /* true if trans fit with cm            */
+    gmx_bool        pcamas;         /* true if mass-weighted PCA            */
     int         presteps;       /* number of steps to run without any   
                                  *    perturbations ... just monitoring */
     int         outfrq;         /* freq (in steps) of writing to edo    */
@@ -347,7 +347,7 @@ int read_conffile(const char *confin,char *title,rvec *x[])
 
 
 void read_eigenvalues(int vecs[],const char *eigfile, real values[], 
-                      bool bHesse, real kT) 
+                      gmx_bool bHesse, real kT) 
 {
   int  neig,nrow,i;
   double **eigval;
@@ -565,9 +565,9 @@ int main(int argc,char *argv[])
     static int* listen[evEND];
     static real T=300.0;
     const real kB = 2.5 / 300.0; /* k_boltzmann in MD units */
-    static bool bRestrain = FALSE;
-    static bool bHesse=FALSE;
-    static bool bHarmonic=FALSE;
+    static gmx_bool bRestrain = FALSE;
+    static gmx_bool bHesse=FALSE;
+    static gmx_bool bHarmonic=FALSE;
     t_pargs pa[] = {
     { "-mon", FALSE, etSTR, {&evSelections[evMON]},
         "Indices of eigenvectors for projections of x (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 31 ... 91" },
@@ -645,7 +645,7 @@ int main(int argc,char *argv[])
     char       title[STRLEN];
     matrix     topbox;
     rvec       *xtop;
-    bool bTop, bFit1;
+    gmx_bool bTop, bFit1;
     
     t_filenm fnm[] = {
     { efTRN, "-f",    "eigenvec",    ffREAD  },

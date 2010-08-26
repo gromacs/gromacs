@@ -50,7 +50,7 @@
 #include "pgutil.h"
 #include "fflibutil.h"
 
-gpp_atomtype_t read_atype(const char *ffdir,bool bAddCWD,t_symtab *tab)
+gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab)
 {
     int        nfile,f;
     char       **file;
@@ -62,7 +62,7 @@ gpp_atomtype_t read_atype(const char *ffdir,bool bAddCWD,t_symtab *tab)
     t_atom     *a;
     t_param    *nb;
     
-    nfile = fflib_search_file_end(ffdir,bAddCWD,".atp",TRUE,&file);
+    nfile = fflib_search_file_end(ffdir,".atp",TRUE,&file);
     at = init_atomtype();
     snew(a,1);
     snew(nb,1);
@@ -120,7 +120,7 @@ static void print_resatoms(FILE *out,gpp_atomtype_t atype,t_restp *rtp)
   }
 }
 
-static bool read_atoms(FILE *in,char *line,
+static gmx_bool read_atoms(FILE *in,char *line,
 		       t_restp *r0,t_symtab *tab,gpp_atomtype_t atype)
 {
   int    i,j,cg,maxentries;
@@ -161,7 +161,7 @@ static bool read_atoms(FILE *in,char *line,
   return TRUE;
 }
 
-bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
+gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
 {
   char str[STRLEN];
   int  j,n,ni,maxrb;
@@ -250,19 +250,19 @@ void clear_t_restp(t_restp *rrtp)
 
 void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp, 
                  gpp_atomtype_t atype, t_symtab *tab,
-                 bool bAllowOverrideRTP)
+                 gmx_bool bAllowOverrideRTP)
 {
   FILE      *in;
   char      filebase[STRLEN],*ptr,line[STRLEN],header[STRLEN];
   int       i,nrtp,maxrtp,bt,nparam;
   int       dum1,dum2,dum3;
   t_restp   *rrtp;
-  bool      bNextResidue,bError;
+  gmx_bool      bNextResidue,bError;
   int       bts[ebtsNR];
-  bool      bAlldih;
+  gmx_bool      bAlldih;
   int       nrexcl;
-  bool      HH14;
-  bool      bRemoveDih;
+  gmx_bool      HH14;
+  gmx_bool      bRemoveDih;
   int       firstrtp;
 
   fflib_filename_base(rrdb,filebase,STRLEN);
@@ -492,36 +492,91 @@ int neq_str(const char *a1,const char *a2)
     {
         j++;
     }
-    if (j == l1 && j == l2)
-    {
-        /* Exact match */
-        return 1000;
-    }
-    else
-    {
-        /* Partial match */
-        return j;
-    }
+
+    return j;
 }
 
-t_restp *search_rtp(const char *key,int nrtp,t_restp rtp[])
+char *search_rtp(const char *key,int nrtp,t_restp rtp[])
 {
-  int i,n,best,besti;
+    int  i,n,nbest,best,besti;
+    char bestbuf[STRLEN];
 
-  besti=-1;
-  best=1;
-  for(i=0; (i<nrtp); i++) {
-    n=neq_str(key,rtp[i].resname);
-    if (n > best) {
-      besti=i;
-      best=n;
+    nbest =  0;
+    besti = -1;
+    /* We want to match at least one character */
+    best  =  1;
+    for(i=0; (i<nrtp); i++)
+    {
+        if (gmx_strcasecmp(key,rtp[i].resname) == 0)
+        {
+             besti = i;
+             nbest = 1;
+             break;
+        }
+        else
+        {
+            /* Allow a mismatch of at most one character (with warning) */
+            n = neq_str(key,rtp[i].resname);
+            if (n >= best &&
+                n+1 >= strlen(key) &&
+                n+1 >= strlen(rtp[i].resname))
+            {
+                if (n == best)
+                {
+                    if (nbest == 1)
+                    {
+                        strcpy(bestbuf,rtp[besti].resname);
+                    }
+                    if (nbest >= 1)
+                    {
+                        strcat(bestbuf," or ");
+                        strcat(bestbuf,rtp[i].resname);
+                    }
+                }
+                else
+                {
+                    nbest = 0;
+                }
+                besti = i;
+                best  = n;
+                nbest++;
+            }
+        }
     }
-  }
-  if (besti == -1)
-    gmx_fatal(FARGS,"Residue '%s' not found in residue topology database\n",key);
-  if (strlen(rtp[besti].resname) != strlen(key))
-    fprintf(stderr,"Warning: '%s' not found in residue topology database, "
-	    "trying to use '%s'\n", key, rtp[besti].resname);
+    if (nbest > 1)
+    {
+        gmx_fatal(FARGS,"Residue '%s' not found in residue topology database, looks a bit like %s",key,bestbuf);
+    }
+    else if (besti == -1)
+    {
+        gmx_fatal(FARGS,"Residue '%s' not found in residue topology database",key);
+    }
+    if (gmx_strcasecmp(rtp[besti].resname,key) != 0)
+    {
+        fprintf(stderr,
+                "\nWARNING: '%s' not found in residue topology database, "
+                "trying to use '%s'\n\n", key, rtp[besti].resname);
+    }
   
-  return &rtp[besti];
+    return rtp[besti].resname;
+}
+
+t_restp *get_restp(const char *rtpname,int nrtp,t_restp rtp[])
+{
+    int  i;
+
+    i = 0;
+    while (i < nrtp && gmx_strcasecmp(rtpname,rtp[i].resname) != 0)
+    {
+        i++;
+    }
+    if (i >= nrtp)
+    {
+        /* This should never happen, since search_rtp should have been called
+         * before calling get_restp.
+         */
+        gmx_fatal(FARGS,"Residue type '%s' not found in residue topology database",rtpname);
+    }
+  
+    return &rtp[i];
 }

@@ -124,7 +124,7 @@ static void do_update_md(int start,int nrend,double dt,
                          unsigned short cACC[],unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],
                          rvec f[],matrix M,
-                         bool bNH,bool bPR)
+                         gmx_bool bNH,gmx_bool bPR)
 {
   double imass,w_dt;
   int    gf=0,ga=0,gt=0;
@@ -230,7 +230,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
                              unsigned short ptype[],
                              unsigned short cFREEZE[],unsigned short cACC[],
                              rvec v[],rvec f[],
-                             bool bExtended, real veta, real alpha)
+                             gmx_bool bExtended, real veta, real alpha)
 {
     double imass,w_dt;
     int    gf=0,ga=0,gt=0;
@@ -282,7 +282,7 @@ static void do_update_vv_pos(int start,int nrend,double dt,
                              unsigned short ptype[],
                              unsigned short cFREEZE[],
                              rvec x[],rvec xprime[],rvec v[],
-                             rvec f[],bool bExtended, real veta, real alpha)
+                             rvec f[],gmx_bool bExtended, real veta, real alpha)
 {
   double imass,w_dt;
   int    gf=0;
@@ -326,7 +326,7 @@ static void do_update_visc(int start,int nrend,double dt,
                            rvec x[],rvec xprime[],rvec v[],
                            rvec f[],matrix M,matrix box,real
                            cos_accel,real vcos,
-                           bool bNH,bool bPR)
+                           gmx_bool bNH,gmx_bool bPR)
 {
     double imass,w_dt;
     int    gt=0;
@@ -572,7 +572,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
   }
 }
 
-static void do_update_sd2(gmx_stochd_t *sd,bool bInitStep,
+static void do_update_sd2(gmx_stochd_t *sd,gmx_bool bInitStep,
                           int start,int homenr,
                           rvec accel[],ivec nFreeze[],
                           real invmass[],unsigned short ptype[],
@@ -581,7 +581,7 @@ static void do_update_sd2(gmx_stochd_t *sd,bool bInitStep,
                           rvec x[],rvec xprime[],rvec v[],rvec f[],
                           rvec sd_X[],
                           int ngtc,real tau_t[],real ref_t[],
-                          bool bFirstHalf)
+                          gmx_bool bFirstHalf)
 {
   gmx_sd_const_t *sdc;
   gmx_sd_sigma_t *sig;
@@ -771,8 +771,8 @@ static void dump_it_all(FILE *fp,const char *title,
 }
 
 static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
-                                gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel, 
-                                bool bSaveEkinOld)
+                                gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, 
+                                gmx_bool bSaveEkinOld)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,m,ga=0,gt=0;
@@ -854,7 +854,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
 static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
                               t_grpopts *opts,t_mdatoms *md,
                               gmx_ekindata_t *ekind,
-                              t_nrnb *nrnb, bool bEkinAveVel, bool bSaveEkinOld)
+                              t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,m,gt=0;
@@ -920,7 +920,7 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
 }
 
 void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
-                  gmx_ekindata_t *ekind,t_nrnb *nrnb, bool bEkinAveVel, bool bSaveEkinOld)
+                  gmx_ekindata_t *ekind,t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
@@ -1132,7 +1132,7 @@ void update_tcouple(FILE         *fplog,
                     t_mdatoms  *md)
     
 {
-    bool   bTCouple=FALSE;
+    gmx_bool   bTCouple=FALSE;
     real   dttc;
     int    i,start,end,homenr;
     
@@ -1190,9 +1190,9 @@ void update_pcouple(FILE         *fplog,
                     matrix       M,
                     gmx_wallcycle_t wcycle,
                     gmx_update_t upd,
-                    bool         bInitStep)
+                    gmx_bool         bInitStep)
 {
-    bool   bPCouple=FALSE;
+    gmx_bool   bPCouple=FALSE;
     real   dtpc=0;
     int    i;
     
@@ -1272,12 +1272,12 @@ void update_constraints(FILE         *fplog,
                         gmx_wallcycle_t wcycle,
                         gmx_update_t upd,
                         gmx_constr_t constr,
-                        bool         bInitStep,
-                        bool         bFirstHalf,
-                        bool         bCalcVir,
+                        gmx_bool         bInitStep,
+                        gmx_bool         bFirstHalf,
+                        gmx_bool         bCalcVir,
                         real         vetanew)
 {
-    bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
+    gmx_bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
     double           dt;
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g,d;
@@ -1442,10 +1442,10 @@ void update_box(FILE         *fplog,
                 t_nrnb       *nrnb,
                 gmx_wallcycle_t wcycle,
                 gmx_update_t upd,
-                bool         bInitStep,
-                bool         bFirstHalf)
+                gmx_bool         bInitStep,
+                gmx_bool         bFirstHalf)
 {
-    bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    gmx_bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt;
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g;
@@ -1544,21 +1544,21 @@ void update_coords(FILE         *fplog,
                    t_mdatoms    *md,
                    t_state      *state,
                    rvec         *f,        /* forces on home particles */
-                   bool         bDoLR,
+                   gmx_bool         bDoLR,
                    rvec         *f_lr,
                    t_fcdata     *fcd,
                    gmx_ekindata_t *ekind,
                    matrix       M,
                    gmx_wallcycle_t wcycle,
                    gmx_update_t upd,
-                   bool         bInitStep,
+                   gmx_bool         bInitStep,
                    int          UpdatePart,
                    t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
                    t_nrnb       *nrnb,
                    gmx_constr_t constr,
                    t_idef       *idef)
 {
-    bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    gmx_bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
     real             *imass,*imassin;
     rvec             *force;

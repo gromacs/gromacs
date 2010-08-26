@@ -135,8 +135,8 @@ real ewald_LRcorrection(FILE *fplog,
   double  isp=0.564189583547756;
 #endif
   int     niat;
-  bool    bFreeEnergy = (chargeB != NULL);
-  bool    bMolPBC = fr->bMolPBC;
+  gmx_bool    bFreeEnergy = (chargeB != NULL);
+  gmx_bool    bMolPBC = fr->bMolPBC;
 
   one_4pi_eps = ONE_4PI_EPS0/fr->epsilon_r;
   vr0 = ewc*2/sqrt(M_PI);
@@ -441,8 +441,8 @@ real ewaldlj_LRcorrection(FILE *fplog,
   real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
   real    L1,dipole_coeff,qqA,qqB,qqL,vr0;
   int     niat;
-  bool    bFreeEnergy = (chargeB != NULL);
-  bool    bMolPBC = fr->bMolPBC;
+  gmx_bool bFreeEnergy = (chargeB != NULL);
+  gmx_bool bMolPBC = fr->bMolPBC;
 
   vr0 = -ewc*ewc*ewc*ewc*ewc*ewc/6.0;
 

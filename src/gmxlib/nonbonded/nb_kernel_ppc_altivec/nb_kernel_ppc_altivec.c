@@ -161,7 +161,7 @@ nb_kernel_ppc_altivec_testprog;
 
 
 /*! Result of Altivec test */
-static bool
+static gmx_bool
 nb_kernel_ppc_altivec_present;
 
 

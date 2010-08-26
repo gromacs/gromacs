@@ -52,8 +52,8 @@
 
 typedef struct
 {
-    bool                bDump;
-    bool                bFracNorm;
+    gmx_bool                bDump;
+    gmx_bool                bFracNorm;
     const char         *routt;
     int                *size;
     FILE               *sfp;
@@ -220,9 +220,9 @@ gmx_select(int argc, char *argv[])
         "With [TT]-dump[tt], the frame time is omitted from the output.",
     };
 
-    bool                bDump     = FALSE;
-    bool                bFracNorm = FALSE;
-    bool                bTotNorm  = FALSE;
+    gmx_bool                bDump     = FALSE;
+    gmx_bool                bFracNorm = FALSE;
+    gmx_bool                bTotNorm  = FALSE;
     const char         *routt[] = {NULL, "number", "index", NULL};
     t_pargs             pa[] = {
         {"-dump",   FALSE, etBOOL, {&bDump},

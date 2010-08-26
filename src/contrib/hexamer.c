@@ -70,7 +70,7 @@ void copy_atom(t_symtab *tab,t_atoms *a1,int i1,t_atoms *a2,int i2,
 }
 
 static void rotate_x(int natom,rvec xin[],real angle,rvec xout[],
-		     bool bZ,bool bUpsideDown,real dz)
+		     gmx_bool bZ,gmx_bool bUpsideDown,real dz)
 {
   int i;
   matrix mat;
@@ -154,9 +154,9 @@ int main(int argc, char *argv[])
     { efPDB, "-o", NULL, ffWRITE }
   };
 #define NFILE asize(fnm)
-  bool bCenter    = FALSE;
-  bool bTrimer    = FALSE;
-  bool bAlternate = FALSE;
+  gmx_bool bCenter    = FALSE;
+  gmx_bool bTrimer    = FALSE;
+  gmx_bool bAlternate = FALSE;
   real rDist = 0,rAngleZ = 0,rAngleX = 0, alterz = 0;
   t_pargs pa[] = {
     { "-center",   FALSE, etBOOL,  {&bCenter}, 

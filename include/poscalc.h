@@ -134,7 +134,7 @@ int
 gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags);
 /** Creates a list of strings for position enum parameter handling. */
 const char **
-gmx_ana_poscalc_create_type_enum(bool bAtom);
+gmx_ana_poscalc_create_type_enum(gmx_bool bAtom);
 
 /** Creates a new position calculation collection object. */
 int
@@ -170,7 +170,7 @@ gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, struct gmx_ana_pos_t *p);
 void
 gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc);
 /** Returns TRUE if the position calculation requires topology information. */
-bool
+gmx_bool
 gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc);
 
 /** Initializes evaluation for a position calculation collection. */

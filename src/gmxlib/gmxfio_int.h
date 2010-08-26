@@ -58,9 +58,9 @@
 
 
 /* the reader/writer functions  for t_iotype */
-typedef bool read_func(t_fileio *fio, void *item, int nitem, int eio,
+typedef gmx_bool read_func(t_fileio *fio, void *item, int nitem, int eio,
                        const char *desc,const char *srcfile,int line);
-typedef bool write_func(t_fileio *fio, const void *item, int nitem, int eio,
+typedef gmx_bool write_func(t_fileio *fio, const void *item, int nitem, int eio,
                         const char *desc,const char *srcfile,int line);
 
 
@@ -77,7 +77,7 @@ struct t_fileio
 {
     FILE *fp; /* the file pointer */
     const t_iotype *iotp;  /* file type */
-    bool bOpen,  /* the file is open */
+    gmx_bool bOpen,  /* the file is open */
          bRead,  /* the file is open for reading */
          bDouble, /* write doubles instead of floats */
          bDebug, /* the file ops should come with debug info */

@@ -50,7 +50,7 @@ void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box);
 void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box);
 /*genconf() generates a new configuration by adding boxes*/
 void gen_box(int NTB,int natoms,rvec *x, matrix box,rvec box_space,
-		    bool bCenter);
+		    gmx_bool bCenter);
 /* gen_box() generates a box around a configuration, box_space is optional 
  * extra space around it. If NTB = 1 then a truncated octahedon will be 
  * generated (don't!) if bCenter then coordinates will be centered in the 

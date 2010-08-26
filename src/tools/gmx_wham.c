@@ -33,12 +33,12 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-#include <stdio.h>
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+
+#include <stdio.h>
 
 #include "statutil.h"
 #include "typedefs.h"
@@ -85,7 +85,7 @@ typedef struct
     char PullName[4][256];
     double UmbPos[4][3];
     double UmbCons[4][3];
-    bool Flipped[4];
+    gmx_bool Flipped[4];
 } t_UmbrellaHeader;
 
 typedef struct
@@ -97,31 +97,31 @@ typedef struct
     double *pos;
     double *z;
     double * N, *Ntot;
-    bool * Flipped;
+    gmx_bool * Flipped;
     double dt;
-    bool **bContrib;
+    gmx_bool **bContrib;
 } t_UmbrellaWindow;
 
 typedef struct
 {
     const char *fnTpr,*fnPullf,*fnPdo,*fnPullx;
-    bool bTpr,bPullf,bPdo,bPullx;
+    gmx_bool bTpr,bPullf,bPdo,bPullx;
     int bins,cycl;
-    bool verbose,bShift,bAuto,bBoundsOnly;
-    bool bFlipProf;
+    gmx_bool verbose,bShift,bAuto,bBoundsOnly;
+    gmx_bool bFlipProf;
     real tmin, tmax, dt;
     real Temperature,Tolerance;
     int nBootStrap,histBootStrapBlockLength;
     real dtBootStrap,zProfZero,alpha;
     int bsSeed,stepchange;
-    bool bHistBootStrap,bWeightedCycl,bHistOutOnly;
-    bool bAutobounds,bNoprof;
+    gmx_bool bHistBootStrap,bWeightedCycl,bHistOutOnly;
+    gmx_bool bAutobounds,bNoprof;
     real min,max,dz;
-    bool bLog;
+    gmx_bool bLog;
     int unit;
     real zProf0;
-    bool bProf0Set,bs_verbose;
-    bool bHistEq, bTab;
+    gmx_bool bProf0Set,bs_verbose;
+    gmx_bool bHistEq, bTab;
     double *tabX,*tabY,tabMin,tabMax,tabDz;
     int tabNbins;
 } t_UmbrellaOptions;
@@ -309,14 +309,14 @@ static char *fgets3(FILE *fp,char ptr[],int *len)
 void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
         int fileno, t_UmbrellaWindow * win,
         t_UmbrellaOptions *opt,
-        bool bGetMinMax,real *mintmp,real *maxtmp)
+        gmx_bool bGetMinMax,real *mintmp,real *maxtmp)
 {
     int i,inttemp,bins,count;
     real min,max,minfound,maxfound;
     double temp,time,time0=0,dt;
     char *ptr;
     t_UmbrellaWindow * window=0;
-    bool timeok,dt_ok=1;
+    gmx_bool timeok,dt_ok=1;
     char  *tmpbuf,fmt[256],fmtign[256];
     int    len=STRLEN,dstep=1;
 
@@ -514,7 +514,7 @@ void setup_acc_wham(t_UmbrellaWindow * window,int nWindows, t_UmbrellaOptions *o
 {
     int i,j,k;
     double U,min=opt->min,dz=opt->dz,temp,ztot_half,distance,ztot,contrib;
-    bool bAnyContrib;
+    gmx_bool bAnyContrib;
 
 
     ztot=opt->max-opt->min;
@@ -560,7 +560,7 @@ void setup_acc_wham(t_UmbrellaWindow * window,int nWindows, t_UmbrellaOptions *o
 
 
 void calc_profile(double *profile,t_UmbrellaWindow * window, int nWindows, t_UmbrellaOptions *opt,
-        bool bExact)
+        gmx_bool bExact)
 {
     int i,k,j;
     double num,ztot_half,ztot,distance,min=opt->min,dz=opt->dz;
@@ -604,7 +604,7 @@ void calc_profile(double *profile,t_UmbrellaWindow * window, int nWindows, t_Umb
 
 
 double calc_z(double * profile,t_UmbrellaWindow * window, int nWindows, t_UmbrellaOptions *opt,
-        bool bExact)
+        gmx_bool bExact)
 {
     int i,j,k;
     double U=0,min=opt->min,dz=opt->dz,temp,ztot_half,distance,ztot;
@@ -655,7 +655,7 @@ double calc_z(double * profile,t_UmbrellaWindow * window, int nWindows, t_Umbrel
 
 void cyclicProfByWeightedCorr(double *profile,t_UmbrellaWindow *window,
                               int nWindows, t_UmbrellaOptions * opt,
-                              bool bAppendCorr2File, const char *fn, 
+                              gmx_bool bAppendCorr2File, const char *fn, 
                               const output_env_t oenv)
 {
     int i,j,k,bins=opt->bins;
@@ -896,7 +896,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow,
 {
     int nsynth,N,i,nbins,r_index;
     double r;
-    static bool bWarnout=0;
+    static gmx_bool bWarnout=0;
 
 
     N=thisWindow->N[pullid];
@@ -997,7 +997,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof,
     int i,j,*randomArray=0,winid,pullid,ib;
     int iAllPull,nAllPull,*allPull_winId,*allPull_pullId;
     FILE *fp;
-    bool bExact=FALSE;
+    gmx_bool bExact=FALSE;
 
 
     /* init random */
@@ -1398,13 +1398,13 @@ double dist_ndim(double **dx,int ndim,int line)
 
 void read_pull_xf(const char *fn, const char *fntpr, 
                   t_UmbrellaHeader * header, t_UmbrellaWindow * window,
-                  t_UmbrellaOptions *opt, bool bGetMinMax,real *mintmp,
+                  t_UmbrellaOptions *opt, gmx_bool bGetMinMax,real *mintmp,
                   real *maxtmp)
 {
     double **y,pos=0.,t,force,time0=0.,dt;
     int ny,nt,bins,ibin,i,g,dstep=1,nColPerGrp,nColRef,nColExpect;
     real min,max,minfound,maxfound;
-    bool dt_ok,timeok,bHaveForce;
+    gmx_bool dt_ok,timeok,bHaveForce;
     const char *quantity;
 
 	minfound=1e20;
@@ -1718,7 +1718,7 @@ int gmx_wham(int argc,char *argv[])
     };
 
     static t_UmbrellaOptions opt;
-    static bool bHistOnly=FALSE;
+    static gmx_bool bHistOnly=FALSE;
 
     const char *en_unit[]={NULL,"kJ","kCal","kT",NULL};
     const char *en_unit_label[]={"","E (kJ mol\\S-1\\N)","E (kcal mol\\S-1\\N)","E (kT)",};
@@ -1795,7 +1795,7 @@ int gmx_wham(int argc,char *argv[])
     t_UmbrellaHeader header;
     t_UmbrellaWindow * window=NULL;
     double *profile,maxchange=1e20;
-    bool bMinSet,bMaxSet,bAutoSet,bExact=FALSE;
+    gmx_bool bMinSet,bMaxSet,bAutoSet,bExact=FALSE;
     char **fninTpr,**fninPull,**fninPdo;
     const char *fnPull;
     FILE *histout,*profout;

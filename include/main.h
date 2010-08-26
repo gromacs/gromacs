@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-bool gmx_parallel_env_initialized(void); 
+gmx_bool gmx_parallel_env_initialized(void); 
 /* 1 when running in a parallel environment, so could also be 1 if
    mdrun was started with: mpirun -np 1.
   
@@ -55,7 +55,7 @@ bool gmx_parallel_env_initialized(void);
 
 
 void gmx_log_open(const char *fn,const t_commrec *cr,
-                          bool bMasterOnly, unsigned long Flags, FILE**);
+                          gmx_bool bMasterOnly, unsigned long Flags, FILE**);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
@@ -71,7 +71,7 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,
  */
 
 void init_multisystem(t_commrec *cr,int nsim,int nfile,
-                             const t_filenm fnm[], bool bParFn);
+                             const t_filenm fnm[], gmx_bool bParFn);
 /* Splits the communication into nsim separate simulations
  * and creates a communication structure between the master
  * these simulations.

@@ -86,7 +86,7 @@ typedef struct gmx_ana_displpos_t
     /** Stored position vector. */
     rvec                 x;
     /** TRUE if there is something stored. */
-    bool                 bPres;
+    gmx_bool                 bPres;
 } gmx_ana_displpos_t;
 
 /*! \internal \brief
@@ -103,7 +103,7 @@ struct gmx_ana_displ_t
     real                 tmax;
 
     /** TRUE if no frames have been read. */
-    bool                 bFirst;
+    gmx_bool                 bFirst;
     /** Stores the time of the first frame. */
     real                 t0;
     /** Stores the time interval between frames. */
@@ -262,7 +262,7 @@ gmx_ana_displ_time_to_steps(gmx_ana_displ_t *d, real time, int *steps)
  * \returns       0 on success.
  */
 int
-gmx_ana_displ_store(gmx_ana_displ_t *d, atom_id id, rvec x, bool bPres)
+gmx_ana_displ_store(gmx_ana_displ_t *d, atom_id id, rvec x, gmx_bool bPres)
 {
     copy_rvec(x, d->p[d->ci][id].x);
     d->p[d->ci][id].bPres = bPres;
@@ -386,7 +386,7 @@ find_store_index(gmx_ana_displ_t *d, int step)
  */
 int
 gmx_ana_displ_vector(gmx_ana_displ_t *d, int step, t_pbc *pbc,
-                     atom_id id, rvec x, rvec xout, bool *pout)
+                     atom_id id, rvec x, rvec xout, gmx_bool *pout)
 {
     int si;
 
@@ -433,7 +433,7 @@ gmx_ana_displ_vector(gmx_ana_displ_t *d, int step, t_pbc *pbc,
  */
 int
 gmx_ana_displ_vectors(gmx_ana_displ_t *d, int step, t_pbc *pbc,
-                      int n, atom_id id[], rvec x[], rvec xout[], bool *pout)
+                      int n, atom_id id[], rvec x[], rvec xout[], gmx_bool *pout)
 {
     int si, i;
 
@@ -484,7 +484,7 @@ gmx_ana_displ_vectors(gmx_ana_displ_t *d, int step, t_pbc *pbc,
  */
 int
 gmx_ana_displ_vectors_all(gmx_ana_displ_t *d, int step, t_pbc *pbc,
-                          rvec x[], rvec xout[], bool *pout)
+                          rvec x[], rvec xout[], gmx_bool *pout)
 {
     int si, i;
 

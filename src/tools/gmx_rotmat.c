@@ -61,7 +61,7 @@
 
 static void get_refx(output_env_t oenv,const char *trxfn,int nfitdim,int skip,
                      int gnx,int *index,
-                     bool bMW,t_topology *top,int ePBC,rvec *x_ref)
+                     gmx_bool bMW,t_topology *top,int ePBC,rvec *x_ref)
 {
     int    natoms,nfr_all,nfr,i,j,a,r,c,min_fr;
     t_trxstatus *status;
@@ -209,7 +209,7 @@ int gmx_rotmat(int argc,char *argv[])
     const char *reffit[] = 
         { NULL, "none", "xyz", "xy", NULL }; 
     static int  skip=1;
-    static bool bFitXY=FALSE,bMW=TRUE;
+    static gmx_bool bFitXY=FALSE,bMW=TRUE;
     t_pargs pa[] = {
         { "-ref", FALSE, etENUM, {reffit},
           "Determine the optimal reference structure" },

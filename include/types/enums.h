@@ -162,14 +162,14 @@ enum {
 /* separate_dhdl_file selection */
 enum
 {
-    /* NOTE: YES is the first one. Do NOT interpret this one as a bool */
+    /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
     sepdhdlfileYES, sepdhdlfileNO, sepdhdlfileNR
 };
 
 /* dhdl_derivatives selection */
 enum
 {
-    /* NOTE: YES is the first one. Do NOT interpret this one as a bool */
+    /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
     dhdlderivativesYES, dhdlderivativesNO, dhdlderivativesNR
 };
 

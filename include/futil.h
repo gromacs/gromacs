@@ -78,7 +78,7 @@ extern "C" {
 #  define SIZEOF_GMX_OFF_T   8
 #else
    /* Almost certainly 64 bits, and guaranteed to be available */
-   typedef gmx_large_int_t    gmx_off_t
+   typedef gmx_large_int_t    gmx_off_t;
 #  define SIZEOF_GMX_OFF_T   SIZEOF_GMX_LARGE_INT
 #endif    
 
@@ -87,22 +87,22 @@ extern "C" {
 void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
 
-bool gmx_fexist(const char *fname);
+gmx_bool gmx_fexist(const char *fname);
 /* Return TRUE when fname exists, FALSE otherwise */
 
-bool gmx_fexist_master(const char *fname, t_commrec *cr);
+gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr);
 /* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
 
-bool gmx_eof(FILE *fp);
+gmx_bool gmx_eof(FILE *fp);
 /* Return TRUE on end-of-file, FALSE otherwise */
 
-bool is_pipe(FILE *fp);
+gmx_bool is_pipe(FILE *fp);
 /* Check whether the file (opened by ffopen) is a pipe */
 
 /*  Make a backup of file if necessary.  
     Return false if there was a problem.
 */
-bool make_backup(const char * file);
+gmx_bool make_backup(const char * file);
 
 FILE *ffopen(const char *file, const char *mode);
 /* Return a valid file pointer when successful, exits otherwise 
@@ -127,7 +127,7 @@ gmx_off_t gmx_ftell(FILE *stream);
 /* OS-independent fseek. 64-bit when available. */
 
 
-bool is_pipe(FILE *fp);
+gmx_bool is_pipe(FILE *fp);
 
 char *gmxlibfn(const char *file);
 /* allocates and returns a string with the full file name for a library file */
@@ -164,11 +164,11 @@ gmx_directory_close(gmx_directory_t gmxdir);
     
 
     
-bool get_libdir(char *libdir);
+gmx_bool get_libdir(char *libdir);
 
-char *low_gmxlibfn(const char *file,bool bFatal);
+char *low_gmxlibfn(const char *file,gmx_bool bAddCWD,gmx_bool bFatal);
 
-FILE *low_libopen(const char *file,bool bFatal);
+FILE *low_libopen(const char *file,gmx_bool bFatal);
 /* The same as the above, but does not terminate if (!bFatal) */
 
 /* Create unique name for temp file (wrapper around mkstemp). 
@@ -185,7 +185,7 @@ int gmx_file_rename(const char *oldname, const char *newname);
 
 /* copy the file (data only) oldname to newname. if copy_if_empty==FALSE,
    the file won't be copied if it's empty.*/
-int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty);
+int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty);
 
 /* do an fsync() on an open file pointer. 
    Only use this during checkpointing! */

@@ -82,7 +82,7 @@ static const char *boxvel_nm[] = {
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
-static bool bTricl,bDynBox;
+static gmx_bool bTricl,bDynBox;
 static int  f_nre=0,epc,etc,nCrmsd;
 
 
@@ -138,7 +138,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   const char     *bufi;
   t_mdebin *md;
   int      i,j,ni,nj,n,nh,k,kk,ncon,nset;
-  bool     bBHAM,bNoseHoover,b14;
+  gmx_bool     bBHAM,bNoseHoover,b14;
 
   snew(md,1);
 
@@ -623,8 +623,8 @@ static void copy_energy(t_mdebin *md, real e[],real ecpy[])
     gmx_incons("Number of energy terms wrong");
 }
 
-void upd_mdebin(t_mdebin *md, bool write_dhdl,
-                bool bSum,
+void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
+                gmx_bool bSum,
                 double time,
                 real tmass,
                 gmx_enerdata_t *enerd,
@@ -644,7 +644,7 @@ void upd_mdebin(t_mdebin *md, bool write_dhdl,
     real   eee[egNR];
     real   ecopy[F_NRE];
     real   tmp;
-    bool   bNoseHoover;
+    gmx_bool   bNoseHoover;
 
     /* Do NOT use the box in the state variable, but the separate box provided
      * as an argument. This is because we sometimes need to write the box from
@@ -895,10 +895,10 @@ void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb)
             "Step","Time","Lambda",gmx_step_str(steps,buf),time,lamb);
 }
 
-void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
+void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
                 FILE *log,
                 gmx_large_int_t step,double time,
-                int mode,bool bCompact,
+                int mode,gmx_bool bCompact,
                 t_mdebin *md,t_fcdata *fcd,
                 gmx_groups_t *groups,t_grpopts *opts)
 {

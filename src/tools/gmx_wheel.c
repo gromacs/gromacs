@@ -60,11 +60,11 @@
 #include "strdb.h"
 #include "gmx_ana.h"
 
-bool *bPhobics(int nres,char *resnm[])
+gmx_bool *bPhobics(int nres,char *resnm[])
 {
   int  i,nb;
   char **cb;
-  bool *bb;
+  gmx_bool *bb;
   
   nb=get_strings("phbres.dat",&cb);
   snew(bb,nres);
@@ -87,7 +87,7 @@ void wheel(const char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   int  i,sl,slen;
   real ring,inner,outer;
   real xc,yc,box;
-  bool *bPh;
+  gmx_bool *bPh;
   char **rnms;
   char sign;
   
@@ -210,7 +210,7 @@ int gmx_wheel(int argc,char *argv[])
   };
   output_env_t oenv;
   static real rot0=0;
-  static bool bNum=TRUE;
+  static gmx_bool bNum=TRUE;
   static char *title=NULL;
   static int  r0=1;
   t_pargs pa [] = {

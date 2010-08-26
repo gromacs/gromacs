@@ -409,7 +409,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 		      rvec x[],t_nrnb *nrnb,
 		      real dt,rvec *v,
 		      t_iparams ip[],t_ilist ilist[],
-		      int ePBC,bool bMolPBC,t_graph *graph,
+		      int ePBC,gmx_bool bMolPBC,t_graph *graph,
 		      t_commrec *cr,matrix box)
 {
   rvec      xpbc,xv,vv,dx;
@@ -418,7 +418,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
   t_iatom   avsite,ai,aj,ak,al,pbc_atom;
   t_iatom   *ia;
   t_pbc     pbc,*pbc_null,*pbc_null2;
-  bool      bDomDec;
+  gmx_bool      bDomDec;
   int       *vsite_pbc,ishift;
   rvec      reftmp,vtmp,rtmp;
 	
@@ -1181,7 +1181,7 @@ static int spread_vsiten(t_iatom ia[],t_iparams ip[],
 void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 		    rvec x[],rvec f[],rvec *fshift,
 		    t_nrnb *nrnb,t_idef *idef,
-		    int ePBC,bool bMolPBC,t_graph *g,matrix box,
+		    int ePBC,gmx_bool bMolPBC,t_graph *g,matrix box,
 		    t_commrec *cr)
 {
   real      a1,b1,c1;
@@ -1385,7 +1385,7 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
   t_iatom *ia;
   int  **vsite_pbc,*vsite_pbc_f;
   char *pbc_set;
-  bool bViteOnlyCG_and_FirstAtom;
+  gmx_bool bViteOnlyCG_and_FirstAtom;
 
   /* Make an array that tells if the pbc of an atom is set */
   snew(pbc_set,cgs->index[cgs->nr]);

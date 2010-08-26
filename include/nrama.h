@@ -45,7 +45,7 @@ extern "C" {
 #endif
 
 typedef struct {
-  bool bShow;
+  gmx_bool bShow;
   char *label;
   int  iphi,ipsi; /* point in the dih array of xr... */
 } t_phipsi;
@@ -76,7 +76,7 @@ typedef struct {
 t_topology *init_rama(const output_env_t oenv, const char *infile,
                              const char *topfile, t_xrama *xr,int mult);
 
-bool new_data(t_xrama *xr);
+gmx_bool new_data(t_xrama *xr);
 
 #ifdef __cplusplus
 }

@@ -53,7 +53,7 @@ void bcast_state_setup(const t_commrec *cr,t_state *state);
  * The arrays are not broadcasted.
  */
 
-void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc);
+void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
  * The arrays in state are allocated when bAlloc is TRUE.
  */
@@ -63,11 +63,11 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc);
 
 void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[]);
 		     
-void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
+void move_rvecs(const t_commrec *cr,gmx_bool bForward,gmx_bool bSum,
 		       int left,int right,rvec vecs[],rvec buf[],
 		       int shift,t_nrnb *nrnb);
 
-void move_reals(const t_commrec *cr,bool bForward,bool bSum,
+void move_reals(const t_commrec *cr,gmx_bool bForward,gmx_bool bSum,
                        int left,int right,real reals[],real buf[],
                        int shift,t_nrnb *nrnb);
 

@@ -66,7 +66,7 @@ static void list_trn(char *fn)
   real        mmm,len;
   matrix      box;
   t_trnheader trn;
-  bool        bOK;
+  gmx_bool        bOK;
 
   printf("Going to open %s\n",fn);
   fpread  = open_trn(fn,"r"); 

@@ -78,8 +78,8 @@ int gmx_genpr(int argc,char *argv[])
   static real    disre_dist = 0.1;
   static real    disre_frac = 0.0;
   static real    disre_up2  = 1.0;
-  static bool    bDisre=FALSE;
-  static bool    bConstr=FALSE;
+  static gmx_bool    bDisre=FALSE;
+  static gmx_bool    bConstr=FALSE;
   static real    cutoff = -1.0;
 	
   t_pargs pa[] = {
@@ -98,7 +98,7 @@ int gmx_genpr(int argc,char *argv[])
     { "-cutoff", FALSE, etREAL, {&cutoff},
       "Only generate distance restraints for atoms pairs within cutoff (nm)" },
     { "-constr", FALSE, etBOOL, {&bConstr},
-      "Generate a constraint matrix rather than distance restraints" }
+      "Generate a constraint matrix rather than distance restraints. Constraints of type 2 will be generated that do generate exclusions." }
   };
 #define npargs asize(pa)
 
@@ -113,7 +113,7 @@ int gmx_genpr(int argc,char *argv[])
   char         *gn_grp;
   char         title[STRLEN];
   matrix       box;
-  bool         bFreeze;
+  gmx_bool         bFreeze;
   rvec         dx,*x=NULL,*v=NULL;
   
   t_filenm fnm[] = {
@@ -173,7 +173,7 @@ int gmx_genpr(int argc,char *argv[])
     if (bConstr) {
       fprintf(out,"; constraints for %s of %s\n\n",gn_grp,title);
       fprintf(out,"[ constraints ]\n");
-      fprintf(out,";%4s %5s %1s %10s\n","i","j","1","dist");
+      fprintf(out,";%4s %5s %1s %10s\n","i","j","tp","dist");
     }
     else {
       fprintf(out,"; distance restraints for %s of %s\n\n",gn_grp,title);
@@ -186,7 +186,7 @@ int gmx_genpr(int argc,char *argv[])
 	rvec_sub(x[ind_grp[i]],x[ind_grp[j]],dx);
 	d = norm(dx);
 	if (bConstr) 
-	  fprintf(out,"%5d %5d %1d %10g\n",ind_grp[i]+1,ind_grp[j]+1,1,d);
+	  fprintf(out,"%5d %5d %1d %10g\n",ind_grp[i]+1,ind_grp[j]+1,2,d);
 	else {
 	  if (cutoff < 0 || d < cutoff)
 	  {

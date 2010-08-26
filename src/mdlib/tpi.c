@@ -107,7 +107,7 @@ static void realloc_bins(double **bin,int *nbin,int nbin_new)
 
 double do_tpi(FILE *fplog,t_commrec *cr,
               int nfile, const t_filenm fnm[],
-              const output_env_t oenv, bool bVerbose,bool bCompact,
+              const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
               int nstglobalcomm,
               gmx_vsite_t *vsite,gmx_constr_t constr,
               int stepout,
@@ -133,7 +133,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   double embU,sum_embU,*sum_UgembU,V,V_all,VembU_all;
   t_trxstatus   *status;
   t_trxframe rerun_fr;
-  bool   bDispCorr,bCharge,bRFExcl,bNotLastFrame,bStateChanged,bNS,bOurStep;
+  gmx_bool   bDispCorr,bCharge,bRFExcl,bNotLastFrame,bStateChanged,bNS,bOurStep;
   tensor force_vir,shake_vir,vir,pres;
   int    cg_tp,a_tp0,a_tp1,ngid,gid_tp,nener,e;
   rvec   *x_mol;
@@ -144,7 +144,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   FILE   *fp_tpi=NULL;
   char   *ptr,*dump_pdb,**leg,str[STRLEN],str2[STRLEN];
   double dbl,dump_ener;
-  bool   bCavity;
+  gmx_bool   bCavity;
   int    nat_cavity=0,d;
   real   *mass_cavity=NULL,mass_tot;
   int    nbin;

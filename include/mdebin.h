@@ -67,19 +67,19 @@ typedef struct {
   int    mde_n,mdeb_n;
   real   *tmp_r;
   rvec   *tmp_v;
-  bool	 bConstr;
-  bool   bConstrVir;
-  bool   bTricl;
-  bool   bDynBox;
-  bool   bNHC_trotter;
-  bool   bMTTK;
+  gmx_bool	 bConstr;
+  gmx_bool   bConstrVir;
+  gmx_bool   bTricl;
+  gmx_bool   bDynBox;
+  gmx_bool   bNHC_trotter;
+  gmx_bool   bMTTK;
   int    f_nre;
   int    epc;
   tensor ref_p;
   int	 etc;
   int    nCrmsd;
-  bool   bEner[F_NRE];
-  bool   bEInd[egNR];
+  gmx_bool   bEner[F_NRE];
+  gmx_bool   bEInd[egNR];
   char   **print_grpnms;
 
   FILE   *fp_dhdl; /* the dhdl.xvg output file */
@@ -99,8 +99,8 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 /* update the averaging structures. Called every time 
    the energies are evaluated. */
 void upd_mdebin(t_mdebin *md, 
-                       bool write_dhdl,
-		       bool bSum,
+                       gmx_bool write_dhdl,
+		       gmx_bool bSum,
 		       double time,
 		       real tmass,
 		       gmx_enerdata_t *enerd,
@@ -119,10 +119,10 @@ void upd_mdebin_step(t_mdebin *md);
   
 void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb);
 
-void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
+void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
 		       FILE *log,
 		       gmx_large_int_t step,double time,
-		       int mode,bool bCompact,
+		       int mode,gmx_bool bCompact,
 		       t_mdebin *md,t_fcdata *fcd,
 		       gmx_groups_t *groups,t_grpopts *opts);
 

@@ -82,7 +82,7 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, bool bPscal) 
+static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, gmx_bool bPscal) 
 {
     t_vetavars *vars;
     double g;
@@ -274,7 +274,7 @@ static void pr_sortblock(FILE *fp,const char *title,int nsb,t_sortblock sb[])
 	    sb[i].blocknr);
 }
 
-bool constrain(FILE *fplog,bool bLog,bool bEner,
+gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                struct gmx_constr *constr,
                t_idef *idef,t_inputrec *ir,gmx_ekindata_t *ekind,
                t_commrec *cr,
@@ -283,9 +283,9 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
                rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                real lambda,real *dvdlambda,
                rvec *v,tensor *vir,
-               t_nrnb *nrnb,int econq,bool bPscal,real veta, real vetanew)
+               t_nrnb *nrnb,int econq,gmx_bool bPscal,real veta, real vetanew)
 {
-    bool    bOK,bDump;
+    gmx_bool    bOK,bDump;
     int     start,homenr,nrend;
     int     i,j,d;
     int     ncons,error;
@@ -519,7 +519,7 @@ real *constr_rmsd_data(struct gmx_constr *constr)
     return NULL;
 }
 
-real constr_rmsd(struct gmx_constr *constr,bool bSD2)
+real constr_rmsd(struct gmx_constr *constr,gmx_bool bSD2)
 {
   if (constr->lincsd)
     return lincs_rmsd(constr->lincsd,bSD2);
@@ -651,12 +651,12 @@ static void make_shake_sblock_dd(struct gmx_constr *constr,
 
 t_blocka make_at2con(int start,int natoms,
 		     t_ilist *ilist,t_iparams *iparams,
-		     bool bDynamics,int *nflexiblecons)
+		     gmx_bool bDynamics,int *nflexiblecons)
 {
   int *count,ncon,con,con_tot,nflexcon,ftype,i,a;
   t_iatom  *ia;
   t_blocka at2con;
-  bool bFlexCon;
+  gmx_bool bFlexCon;
   
   snew(count,natoms);
   nflexcon = 0;
@@ -782,7 +782,7 @@ void set_constraints(struct gmx_constr *constr,
 }
 
 static void constr_recur(t_blocka *at2con,
-			 t_ilist *ilist,t_iparams *iparams,bool bTopB,
+			 t_ilist *ilist,t_iparams *iparams,gmx_bool bTopB,
 			 int at,int depth,int nc,int *path,
 			 real r0,real r1,real *r2max,
 			 int *count)
@@ -790,7 +790,7 @@ static void constr_recur(t_blocka *at2con,
   int  ncon1;
   t_iatom *ia1,*ia2;
   int  c,con,a1;
-  bool bUse;
+  gmx_bool bUse;
   t_iatom *ia;
   real len,rn0,rn1;
 
@@ -1090,14 +1090,14 @@ t_blocka *atom2constraints_moltype(gmx_constr_t constr)
 }
 
 
-bool inter_charge_group_constraints(gmx_mtop_t *mtop)
+gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop)
 {
   const gmx_moltype_t *molt;
   const t_block *cgs;
   const t_ilist *il;
   int  mb;
   int  nat,*at2cg,cg,a,ftype,i;
-  bool bInterCG;
+  gmx_bool bInterCG;
 
   bInterCG = FALSE;
   for(mb=0; mb<mtop->nmolblock && !bInterCG; mb++) {

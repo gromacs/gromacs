@@ -48,7 +48,7 @@
 
 #define EPS 1.0e-09
 
-real calc_similar_ind(bool bRho,int nind,atom_id *index,real mass[],
+real calc_similar_ind(gmx_bool bRho,int nind,atom_id *index,real mass[],
 		      rvec x[],rvec xp[])
 {
   int i, j, d;

@@ -84,7 +84,7 @@ static void rotate_ends(t_bundle *bun,rvec axis,int c0,int c1)
 }
 
 static void calc_axes(rvec x[],t_atom atom[],int gnx[],atom_id *index[],
-		      bool bRot,t_bundle *bun)
+		      gmx_bool bRot,t_bundle *bun)
 {
   int  end,i,div,d;
   real *mtot,m;
@@ -190,7 +190,7 @@ int gmx_bundle(int argc,char *argv[])
     "display the reference axis."
   };
   static int  n=0;
-  static bool bZ=FALSE;
+  static gmx_bool bZ=FALSE;
   t_pargs pa[] = {
     { "-na", FALSE, etINT, {&n},
 	"Number of axes" },
@@ -215,7 +215,7 @@ int gmx_bundle(int argc,char *argv[])
   int        i,j,gnx[MAX_ENDS];
   atom_id    *index[MAX_ENDS];
   t_bundle   bun;
-  bool       bKink;
+  gmx_bool       bKink;
   rvec       va,vb,vc,vr,vl;
   output_env_t oenv;
   gmx_rmpbc_t  gpbc=NULL;

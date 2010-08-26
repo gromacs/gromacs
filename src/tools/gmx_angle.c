@@ -110,7 +110,7 @@ int gmx_g_angle(int argc,char *argv[])
     "input for a PCA analysis using [TT]g_covar[tt]."
   };
   static const char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
-  static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=TRUE;
+  static gmx_bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=TRUE;
   static real binwidth=1;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, {opt},
@@ -139,7 +139,7 @@ int gmx_g_angle(int argc,char *argv[])
   unsigned long mode;
   int        nframes,maxangstat,mult,*angstat;
   int        i,j,total,nangles,natoms,nat2,first,last,angind;
-  bool       bAver,bRb,bPeriodic,
+  gmx_bool       bAver,bRb,bPeriodic,
     bFrac,          /* calculate fraction too?  */
     bTrans,         /* worry about transtions too? */
     bCorr;          /* correlation function ? */    
@@ -295,7 +295,7 @@ int gmx_g_angle(int argc,char *argv[])
       
       if (bChandler) {
 	real dval,sixty=DEG2RAD*60;
-	bool bTest;
+	gmx_bool bTest;
 
 	for(i=0; (i<nangles); i++)
 	  for(j=0; (j<nframes); j++) {
