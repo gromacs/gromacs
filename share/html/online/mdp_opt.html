@@ -1384,10 +1384,12 @@ potentials are used for the LJ and Coulomb interactions.</dd>
 <dt><h4>delta_lambda: (0)</h4></dt>
 <dd>increment per time step for lambda</dd>
 <dt><h4>foreign_lambda: ()</h4></dt>
-<dd>Zero, one or more lambda values for which Delta G values will
+<dd>Zero, one or more lambda values for which Delta H values will
 be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
 Free energy differences between different lambda values can then
 be determined with <tt>g_bar</tt>.</dd>
+<dt><h4>dhdl_derivatives: (yes)</h4></dt>
+<dd>If yes (the default), the derivatives of the Hamiltonian w.r.t. lambda at each <b>nstdhdl</b> step are written out. These values are needed for interpolation of linear energy differences with <tt>g_bar</tt> (although the same can also be achieved with the right <b>foreign lambda</b> setting, that may not be as flexible), or with thermodynamic integration</dd>
 <dt><h4>sc_alpha: (0)</h4></dt>
 <dd>the soft-core parameter, a value of 0 results in linear interpolation of
 the LJ and Coulomb interactions</dd>
@@ -1432,6 +1434,17 @@ the molecule definition in the topology.</dd>
 <dt><h4>nstdhdl: (10)</h4></dt>
 <dd>the frequency for writing dH/dlambda and possibly Delta H to dhdl.xvg,
 0 means no ouput, should be a multiple of <b>nstcalcenergy</b></dd>
+<dt><h4>separate_dhdl_file (yes)</h4></dt>
+<dd><dl compact>
+<dt><b>yes</b></dt>
+<dd>the free energy values that are calculated (as specified with the <b>foreign-lambda</b> and <b>dhdl_derivatives</b> settings) are written out to a separate file, with the default name <tt>dhdl.xvg</tt>. This file can be used directly with <tt>g_bar</tt>.</dd>
+<dt><b>no</b></dt>
+<dd>The free energy values are written out to the energy output file (<tt>ener.edr</tt>, in accumulated blocks at every <b>nstenergy</b> steps), where they can be extracted with <tt>g_energy</tt> or used directly with <tt>g_bar</tt>.</dd>
+</dl>
+<dt><h4>dh_hist_size (0)</h4></dt>
+<dd>If nonzero, specifies the size of the histogram into which the Delta H values (specified with <b>foreign_lambda</b>) and the derivative dH/dl values are binned, and written to ener.edr. This can be used to save disk space while calculating free energy differences. One histogram gets written for each <b>foreign lambda</b> and two for the dH/dl, at every <b>nstenergy</b> step. Be aware that incorrect histogram settings (too small size or too wide bins) can introduce errors. Do not use histograms unless you're certain you need it.</dd>
+<dt><h4>dh_hist_spacing (0.1)</h4></dt>
+<dd>Specifies the bin width of the histograms, in energy units. Used in conjunction with <b>dh_hist_size</b>. This size limits the accuracy with which free energies can be calculated.  Do not use histograms unless you're certain you need it.</dd>
 </dl>
 
 

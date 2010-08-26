@@ -102,6 +102,7 @@ enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
        eenhENERGY_NSTEPS, eenhENERGY_NSTEPS_SIM, 
        eenhENERGY_DELTA_H_NN,
        eenhENERGY_DELTA_H_LIST, eenhENERGY_DELTA_H_STARTTIME, 
+       eenhENERGY_DELTA_H_STARTLAMBDA, 
        eenhNR };
 
 const char *eenh_names[eenhNR]=
@@ -110,7 +111,8 @@ const char *eenh_names[eenhNR]=
     "energy_sum_sim", "energy_nsum_sim",
     "energy_nsteps", "energy_nsteps_sim", 
     "energy_delta_h_nn",
-    "energy_delta_h_list", "energy_delta_h_starttime"
+    "energy_delta_h_list", "energy_delta_h_start_time", 
+    "energy_delta_h_start_lambda"
 };
 
 
@@ -574,6 +576,12 @@ static int do_cpte_doubles(XDR *xd,int cptp,int ecpt,int sflags,
     return 0;
 }
 
+static int do_cpte_double(XDR *xd,int cptp,int ecpt,int sflags,
+                          double *r,FILE *list)
+{
+    return do_cpte_doubles(xd,cptp,ecpt,sflags,1,&r,list);
+}
+
 
 static int do_cpte_rvecs(XDR *xd,int cptp,int ecpt,int sflags,
                          int n,rvec **v,FILE *list)
@@ -985,7 +993,9 @@ static int do_cpt_enerhist(XDR *xd,gmx_bool bRead,
                     }
                     break;
                 case eenhENERGY_DELTA_H_STARTTIME: 
-                    ret=do_cpte_real(xd, 2, i, fflags, &(enerhist->dht->starttime), list); break;
+                    ret=do_cpte_double(xd, 2, i, fflags, &(enerhist->dht->start_time), list); break;
+                case eenhENERGY_DELTA_H_STARTLAMBDA: 
+                    ret=do_cpte_double(xd, 2, i, fflags, &(enerhist->dht->start_lambda), list); break;
                 default:
                     gmx_fatal(FARGS,"Unknown energy history entry %d\n"
                               "You are probably reading a new checkpoint file with old code",i);

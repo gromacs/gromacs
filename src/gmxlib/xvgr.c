@@ -336,7 +336,8 @@ void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
     }
 }
 
-void xvgr_legend(FILE *out,int nsets,const char** setname,const output_env_t oenv)
+void xvgr_legend(FILE *out,int nsets,const char** setname,
+                 const output_env_t oenv)
 {
     int  i;
     char buf[STRLEN];
@@ -367,11 +368,31 @@ void xvgr_legend(FILE *out,int nsets,const char** setname,const output_env_t oen
     }
 }
 
-void xvgr_new_dataset(FILE *out, const output_env_t oenv)
+void xvgr_new_dataset(FILE *out, int nr_first, int nsets, 
+                      const char **setname, 
+                      const output_env_t oenv)
 {
+    int i;
+    char buf[STRLEN];
+
     if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(out,"@\n");
+        for(i=0; (i<nsets); i++)
+        {
+            if (setname[i]) {
+                if (output_env_get_xvg_format(oenv) == exvgXMGR)
+                {
+                    fprintf(out,"@ legend string %d \"%s\"\n",
+                            i+nr_first,xvgrstr(setname[i],oenv,buf,STRLEN));
+                }
+                else
+                {
+                    fprintf(out,"@ s%d legend \"%s\"\n",
+                            i+nr_first,xvgrstr(setname[i],oenv,buf,STRLEN));
+                }
+            }
+        }
     }
     else
     {
