@@ -83,7 +83,7 @@ typedef struct xvg_t
 typedef struct hist_t
 {
     unsigned int *bin[2];       /* the (forward + reverse) histogram values */
-    double dx;                  /* the histogram spacing. The reverse
+    double dx[2];               /* the histogram spacing. The reverse
                                    dx is the negative of the forward dx.*/
     gmx_large_int_t x0[2];      /* the (forward + reverse) histogram start 
                                    point(s) as int */
@@ -202,8 +202,8 @@ static void hist_init(hist_t *h, int nhist, int *nbin)
         h->x0[i]=0;
         h->nbin[i]=nbin[i];
         h->start_time=h->delta_time=0;
+        h->dx[i]=0;
     }
-    h->dx=0;
     h->sum=0;
     h->nhist=nhist;
 }
@@ -269,6 +269,7 @@ static void sample_range_init(sample_range_t *r, samples_t *s)
     r->start=0;
     r->end=s->ndu;
     r->use=TRUE;
+    r->s=NULL;
 }
 
 static void sample_coll_init(sample_coll_t *sc, double native_lambda,
@@ -510,16 +511,14 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
             hist_t *hist=sc->s[i]->hist;
             for(k=0;k<hist->nhist;k++)
             {
-                double hdx=hist->dx;
-                if (k==1)
-                    hdx=-hdx;
+                double hdx=hist->dx[k];
                 double xmax_now=(hist->x0[k]+hist->nbin[k])*hdx;
 
                 /* we use the biggest dx*/
-                if ( (!dx_set) || hist->dx > *dx)
+                if ( (!dx_set) || hist->dx[0] > *dx)
                 {
                     dx_set=TRUE;
-                    *dx = hist->dx;
+                    *dx = hist->dx[0];
                 }
                 if ( (!xmin_set) || (hist->x0[k]*hdx) < *xmin)
                 {
@@ -612,7 +611,7 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
             hist_t *hist=sc->s[i]->hist;
             for(k=0;k<hist->nhist;k++)
             {
-                double hdx = (k==0) ? hist->dx : -hist->dx;
+                double hdx = hist->dx[k];
                 double xmin_hist=hist->x0[k]*hdx;
                 for(j=0;j<hist->nbin[k];j++)
                 {
@@ -817,23 +816,33 @@ static double barres_list_max_disc_err(barres_t *res, int nres)
 {
     int i,j;
     double disc_err=0.;
+    double delta_lambda;
 
     for(i=0;i<nres;i++)
     {
         barres_t *br=&(res[i]);
 
+        delta_lambda=fabs(br->b->native_lambda-br->a->native_lambda);
+
         for(j=0;j<br->a->nsamples;j++)
         {
             if (br->a->s[j]->hist)
             {
-                disc_err=max(disc_err, br->a->s[j]->hist->dx);
+                double Wfac=1.;
+                if (br->a->s[j]->derivative)
+                    Wfac =  delta_lambda;
+
+                disc_err=max(disc_err, Wfac*br->a->s[j]->hist->dx[0]);
             }
         }
         for(j=0;j<br->b->nsamples;j++)
         {
             if (br->b->s[j]->hist)
             {
-                disc_err=max(disc_err, br->b->s[j]->hist->dx);
+                double Wfac=1.;
+                if (br->b->s[j]->derivative)
+                    Wfac =  delta_lambda;
+                disc_err=max(disc_err, Wfac*br->b->s[j]->hist->dx[0]);
             }
         }
     } 
@@ -1100,6 +1109,56 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
     return TRUE;
 }
 
+/* calculate minimum and maximum work values in sample collection */
+static void sample_coll_min_max(sample_coll_t *sc, double Wfac,
+                                double *Wmin, double *Wmax)
+{
+    int i,j;
+
+    *Wmin=FLT_MAX;
+    *Wmax=-FLT_MAX;
+
+    for(i=0;i<sc->nsamples;i++)
+    {
+        samples_t *s=sc->s[i];
+        sample_range_t *r=&(sc->r[i]);
+        if (r->use)
+        {
+            if (!s->hist)
+            {
+                for(j=r->start; j<r->end; j++)
+                {
+                    *Wmin = min(*Wmin,s->du[j]*Wfac);
+                    *Wmax = max(*Wmax,s->du[j]*Wfac);
+                }
+            }
+            else
+            {
+                int hd=0; /* determine the histogram direction: */
+                double dx;
+                if ( (s->hist->nhist>1) && (Wfac<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
+
+                for(j=s->hist->nbin[hd]-1;j>=0;j--)
+                {
+                    *Wmin=min(*Wmin,Wfac*(s->hist->x0[hd])*dx);
+                    *Wmax=max(*Wmax,Wfac*(s->hist->x0[hd])*dx);
+                    /* look for the highest value bin with values */
+                    if (s->hist->bin[hd][j]>0)
+                    {
+                        *Wmin=min(*Wmin,Wfac*(j+s->hist->x0[hd]+1)*dx);
+                        *Wmax=max(*Wmax,Wfac*(j+s->hist->x0[hd]+1)*dx);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 static double calc_bar_sum(int n,const double *W,double Wfac,double sbMmDG)
 {
@@ -1126,19 +1185,27 @@ static double calc_bar_sum_hist(const hist_t *hist, double Wfac, double sbMmDG,
 {
     double sum=0.;
     int i;
-    int max=hist->nbin[0]-1;
+    int max; 
     /* normalization factor multiplied with bin width and
        number of samples (we normalize through M): */
     double normdx = 1.;
+    int hd=0; /* determine the histogram direction: */
+    double dx;
 
+    if ( (hist->nhist>1) && (Wfac<0) )
+    {
+        hd=1;
+    }
+    dx=hist->dx[hd];
+    max=hist->nbin[hd]-1;
     if (type==1) 
     {
-        max=hist->nbin[0]; /* we also add whatever was out of range */
+        max=hist->nbin[hd]; /* we also add whatever was out of range */
     }
 
     for(i=0;i<max;i++)
     {
-        double x=Wfac*((i+hist->x0[0])+0.5)*hist->dx; /* bin middle */
+        double x=Wfac*((i+hist->x0[hd])+0.5)*dx; /* bin middle */
         double pxdx=hist->bin[0][i]*normdx; /* p(x)dx */
    
         sum += pxdx/(1. + exp(x + sbMmDG));
@@ -1195,70 +1262,13 @@ static double calc_bar_lowlevel(sample_coll_t *ca, sample_coll_t *cb,
     /* Calculate minimum and maximum work to give an initial estimate of 
      * delta G  as their average.
      */
-    Wmin=FLT_MAX;
-    Wmax=-FLT_MAX;
-    for(i=0;i<ca->nsamples;i++)
     {
-        samples_t *s=ca->s[i];
-        sample_range_t *r=&(ca->r[i]);
-        if (r->use)
-        {
-            if (!s->hist)
-            {
-                for(j=r->start; j<r->end; j++)
-                {
-                    Wmin = min(Wmin,s->du[j]*Wfac1);
-                    Wmax = max(Wmax,s->du[j]*Wfac1);
-                }
-            }
-            else
-            {
-                for(j=s->hist->nbin[0]-1;j>=0;j--)
-                {
-                    Wmin=min(Wmin,Wfac1*(s->hist->x0[0])*s->hist->dx);
-                    Wmax=max(Wmax,Wfac1*(s->hist->x0[0])*s->hist->dx);
-                    /* look for the highest value bin with values */
-                    if (s->hist->bin[0][j]>0)
-                    {
-                        Wmin=min(Wmin,Wfac1*(j+s->hist->x0[0]+1)*s->hist->dx);
-                        Wmax=max(Wmax,Wfac1*(j+s->hist->x0[0]+1)*s->hist->dx);
-                        break;
-                    }
-                }
-            }
-        }
-    }
+        double Wmin1, Wmin2, Wmax1, Wmax2;
+        sample_coll_min_max(ca, Wfac1, &Wmin1, &Wmax1);
+        sample_coll_min_max(cb, Wfac2, &Wmin2, &Wmax2);
 
-    for(i=0;i<cb->nsamples;i++)
-    {
-        samples_t *s=cb->s[i];
-        sample_range_t *r=&(cb->r[i]);
-        if (r->use)
-        {
-            if (!s->hist)
-            {
-                for(j=r->start; j<r->end; j++)
-                {
-                    Wmin = min(Wmin,s->du[j]*Wfac2);
-                    Wmax = max(Wmax,s->du[j]*Wfac2);
-                }
-            }
-            else
-            {
-                for(j=s->hist->nbin[0]-1;j>=0;j--)
-                {
-                    Wmin=min(Wmin,Wfac2*(s->hist->x0[0])*s->hist->dx);
-                    Wmax=max(Wmax,Wfac2*(s->hist->x0[0])*s->hist->dx);
-                    /* look for the highest value bin with values */
-                    if (s->hist->bin[0][j]>0)
-                    {
-                        Wmin=min(Wmin,Wfac2*(j+s->hist->x0[0]+1)*s->hist->dx);
-                        Wmax=max(Wmax,Wfac2*(j+s->hist->x0[0]+1)*s->hist->dx);
-                        break;
-                    }
-                }
-            }
-        }
+        Wmin=min(Wmin1, Wmin2);
+        Wmax=max(Wmax1, Wmax2);
     }
 
     DG0 = Wmin;
@@ -1386,9 +1396,17 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
                 /* normalization factor multiplied with bin width and
                    number of samples (we normalize through M): */
                 double normdx = 1.;
+                double dx;
+                int hd=0; /* histogram direction */
+                if ( (s->hist->nhist>1) && (Wfac1<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
+
                 for(j=0;j<s->hist->nbin[0];j++)
                 {
-                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*s->hist->dx;/*bin ctr*/
+                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*dx; /*bin ctr*/
                     double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
                     W_ab += pxdx*x;
                 }
@@ -1413,9 +1431,17 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
                 /* normalization factor multiplied with bin width and
                    number of samples (we normalize through M): */
                 double normdx = 1.;
+                double dx;
+                int hd=0; /* histogram direction */
+                if ( (s->hist->nhist>1) && (Wfac2<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
+
                 for(j=0;j<s->hist->nbin[0];j++)
                 {
-                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*s->hist->dx;/*bin ctr*/
+                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*dx;/*bin ctr*/
                     double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
                     W_ba += pxdx*x;
                 }
@@ -1485,10 +1511,17 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
                 /* normalization factor multiplied with bin width and
                    number of samples (we normalize through M): */
                 double normdx = 1.;
+                double dx;
+                int hd=0; /* histogram direction */
+                if ( (s->hist->nhist>1) && (Wfac1<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
 
                 for(j=0;j<s->hist->nbin[0];j++)
                 {
-                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*s->hist->dx;/*bin ctr*/
+                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*dx; /*bin ctr*/
                     double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
 
                     sigmafact += pxdx/(2. + 2.*cosh((M + x - dg)));
@@ -1514,10 +1547,17 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
                 /* normalization factor multiplied with bin width and
                    number of samples (we normalize through M): */
                 double normdx = 1.;
+                double dx;
+                int hd=0; /* histogram direction */
+                if ( (s->hist->nhist>1) && (Wfac2<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
 
                 for(j=0;j<s->hist->nbin[0];j++)
                 {
-                    double x=Wfac2*((j+s->hist->x0[0])+0.5)*s->hist->dx;/*bin ctr*/
+                    double x=Wfac2*((j+s->hist->x0[0])+0.5)*dx;/*bin ctr*/
                     double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
 
                     sigmafact += pxdx/(2. + 2.*cosh((M - x - dg)));
@@ -1591,12 +1631,12 @@ static void calc_bar(barres_t *br, double tol,
         for(i=0;i<br->a->nsamples;i++)
         {
             if (br->a->s[i]->hist)
-                br->dg_disc_err=max(br->dg_disc_err, br->a->s[i]->hist->dx);
+                br->dg_disc_err=max(br->dg_disc_err, br->a->s[i]->hist->dx[0]);
         }
         for(i=0;i<br->b->nsamples;i++)
         {
             if (br->b->s[i]->hist)
-                br->dg_disc_err=max(br->dg_disc_err, br->b->s[i]->hist->dx);
+                br->dg_disc_err=max(br->dg_disc_err, br->b->s[i]->hist->dx[0]);
         }
     }
     calc_rel_entropy(br->a, br->b, temp, br->dg, &(br->sa), &(br->sb));
@@ -2114,9 +2154,12 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     hist_init(s->hist, nhist, nbins);
 
     for(i=0;i<nhist;i++)
+    {
         s->hist->x0[i]=blk->sub[1].lval[2+i];
-
-    s->hist->dx = blk->sub[0].dval[1];
+        s->hist->dx[i] = blk->sub[0].dval[1];
+        if (i==1)
+            s->hist->dx[i] = - s->hist->dx[i];
+    }
 
     s->hist->start_time = start_time;
     s->hist->delta_time = delta_time;
@@ -2167,7 +2210,7 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
     int *nhists=NULL;
     int *npts=NULL;
     double *lambdas=NULL;
-    double native_lambda;
+    double native_lambda=-1;
 
     int nsamples=0;
 
@@ -2183,8 +2226,8 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
         int nlam=0;
         int k;
         /* DHCOLL block information: */
-        double start_time, delta_time, start_lambda, delta_lambda;
-        double rtemp;
+        double start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
+        double rtemp=0;
 
         /* count the blocks and handle collection information: */
         for(i=0;i<fr->nblock;i++)
@@ -2509,12 +2552,14 @@ int gmx_bar(int argc,char *argv[])
         return 0;
     }
 
+#if 1
     if (sum_disc_err > prec)
     {
         prec=sum_disc_err;
         nd = ceil(-log10(prec));
         printf("WARNING: setting the precision to %g because that is the minimum\n         reasonable number, given the expected discretization error.\n", prec);
     }
+#endif
 
     sprintf(lamformat,"%%6.3f");
     sprintf( dgformat,"%%%d.%df",3+nd,nd);

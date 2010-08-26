@@ -1245,7 +1245,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     int nblock_hist=0, nblock_dh=0, nblock_dhcoll;
     int i,j,k;
     /* coll data */
-    double temp, start_time, delta_time, start_lambda, delta_lambda;
+    double temp=0, start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
     static int setnr=0;
 
     /* now count the blocks & handle the global dh data */
@@ -1377,7 +1377,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     {
         /* raw dh */
         int len=0;
-        char **setnames;
+        char **setnames=NULL;
         int nnames=nblock_dh;
 
         if (fabs(delta_lambda) > 1e-9)
