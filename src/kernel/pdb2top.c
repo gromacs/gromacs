@@ -40,6 +40,13 @@
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include <direct.h>
+#include <io.h>
+#endif
+
+
 #include "vec.h"
 #include "copyrite.h"
 #include "smalloc.h"
@@ -133,11 +140,18 @@ choose_ff(const char *ffsel,
 {
     int  nff;
     char **ffdirs,**ffs,**ffs_dir,*ptr;
-    int  i,j,sel;
+    int  i,j,sel,cwdsel,nfound;
     char buf[STRLEN],**desc;
     FILE *fp;
     char *pret;
-
+    char thisdir[STRLEN];
+    
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    ptr = _getcwd(thisdir,sizeof(thisdir)-1);
+#else
+    ptr =  getcwd(thisdir,sizeof(thisdir)-1);
+#endif
+    
     nff = fflib_search_file_in_dirend(fflib_forcefield_itp(),
                                       fflib_forcefield_dir_ext(),
                                       &ffdirs);
@@ -176,21 +190,48 @@ choose_ff(const char *ffsel,
 
     if (ffsel != NULL)
     {
-        sel = -1;
+        sel     = -1;
+        cwdsel  = -1;
+        nfound  = 0;
         for(i=0; i<nff; i++)
         {
-            if (strcmp(ffs[i],ffsel) == 0)
+            if ( strcmp(ffs[i],ffsel)==0 )
             {
-                if (sel >= 0)
-                {
-                    gmx_fatal(FARGS,"There are multiple force field directories in your path with the name '%s'. Run without the -ff switch and select the force field interactively.",ffsel);
-                }
+                /* Matching ff name */
                 sel = i;
+                nfound++;
+                
+                if( strcmp(ffs_dir[i],thisdir)==0 )
+                {
+                    cwdsel = i;
+                }
             }
         }
-        if (sel == -1)
+        
+        if(cwdsel != -1)
         {
-            gmx_fatal(FARGS,"Could not find force field '%s'",ffsel);
+            sel = cwdsel;
+        }
+        
+        if(nfound>1)
+        {
+            if(cwdsel!=-1)
+            {
+                fprintf(stderr,
+                        "Note: Force field '%s' occurs in %d places, using version from current directory.\n"
+                        "Use interactive selection (not the -ff option) if you prefer a different one.\n",
+                        ffsel,nfound);
+            }
+            else
+            {
+                gmx_fatal(FARGS,
+                          "Force field '%s' occurs in %d places, but not in the current directory.\n"
+                          "Run without the -ff switch and select the force field interactively.",ffsel,nfound);
+            }
+        }
+        else if (nfound==0)
+        {
+            gmx_fatal(FARGS,"Could not find force field '%s' in current directory, install tree or GMXDATA path.",ffsel);
         }
     }
     else if (nff > 1)
@@ -459,27 +500,54 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 	    "in pdb2top\n",mHmult);
 }
 
-void print_top_comment(FILE *out,const char *filename,
-                       const char *generator,gmx_bool bITP)
+void print_top_comment(FILE *out,
+                       const char *filename,
+                       const char *generator,
+                       const char *ffdir,
+                       gmx_bool bITP)
 {
   char tmp[256]; 
-
+  char ffdir_parent[STRLEN];
+  char *p;
+        
   nice_header(out,filename);
-  fprintf(out,";\tThis is your %stopology file\n",bITP ? "include " : "");
-  fprintf(out,";\tit was generated using program:\n;\t%s\n",
+  fprintf(out,";\tThis is a %s topology file\n;\n",bITP ? "include" : "standalone");
+  fprintf(out,";\tIt was generated using program:\n;\t%s\n;\n",
           (NULL == generator) ? "unknown" : generator);
-  fprintf(out,";\twith command line:\n;\t%s\n;\n\n",command_line());
+  fprintf(out,";\tCommand line was:\n;\t%s\n;\n",command_line());
+    
+  strncpy(ffdir_parent,ffdir,STRLEN-1);
+  p=strrchr(ffdir_parent,DIR_SEPARATOR);
+
+  if(p==NULL)
+  {
+      fprintf(out,";\tForce field data was read from the standard Gromacs share directory.\n;\n\n");
+  }
+  else 
+  {
+      *p='\0';
+      
+      fprintf(out,
+              ";\tForce field data was read from:\n"
+              ";\t%s\n"
+              ";\n"
+              ";\tNote:\n"
+              ";\tThis might be a non-standard force field location. When you use this topology, the\n"
+              ";\tforce field must either be present in the current directory, or the location\n"
+              ";\tspecified in the GMXLIB path variable or with the 'include' mdp file option.\n;\n\n",
+              ffdir_parent);
+  }
 }
 
 void print_top_header(FILE *out,const char *filename, 
                       const char *title,gmx_bool bITP,const char *ffdir,real mHmult)
 {
-    print_top_comment(out,filename,title,bITP);
+    print_top_comment(out,filename,title,ffdir,bITP);
     
     print_top_heavy_H(out, mHmult);
     fprintf(out,"; Include forcefield parameters\n");
-    fprintf(out,"#include \"%s%c%s\"\n\n",
-            ffdir,DIR_SEPARATOR,fflib_forcefield_itp());
+    fprintf(out,"#include \"%s\"\n\n",
+            fflib_forcefield_itp());
 }
 
 static void print_top_posre(FILE *out,const char *pr)
@@ -495,7 +563,7 @@ static void print_top_water(FILE *out,const char *ffdir,const char *water)
     char buf[STRLEN];
 
   fprintf(out,"; Include water topology\n");
-  fprintf(out,"#include \"%s%c%s.itp\"\n",ffdir,DIR_SEPARATOR,water);
+  fprintf(out,"#include \"%s.itp\"\n",water);
   fprintf(out,"\n");
   fprintf(out,"#ifdef POSRES_WATER\n");
   fprintf(out,"; Position restraint for each water oxygen\n");
@@ -505,11 +573,11 @@ static void print_top_water(FILE *out,const char *ffdir,const char *water)
   fprintf(out,"#endif\n");
   fprintf(out,"\n");
 
-    sprintf(buf,"%s%c%s",ffdir,DIR_SEPARATOR,"ions.itp");
+    sprintf(buf,"ions.itp");
     if (fflib_fexist(buf))
     {
         fprintf(out,"; Include topology for ions\n");
-        fprintf(out,"#include \"%s%cions.itp\"\n",ffdir,DIR_SEPARATOR);
+        fprintf(out,"#include \"ions.itp\"\n");
         fprintf(out,"\n");
     }
 }

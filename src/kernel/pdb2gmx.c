@@ -1531,11 +1531,8 @@ int main(int argc, char *argv[])
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=gmx_fio_fopen(top_fn,"w");
 
-#ifdef PACKAGE_VERSION
-  sprintf(generator,"%s - version %s",ShortProgram(), PACKAGE_VERSION );
-#else
-  sprintf(generator,"%s - version %s",ShortProgram(), "unknown" );
-#endif
+  sprintf(generator,"%s - %s",ShortProgram(), GromacsVersion() );
+
   print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult);
 
   nincl=0;
@@ -1809,7 +1806,7 @@ int main(int argc, char *argv[])
     nmol++;
 
     if (bITP)
-      print_top_comment(itp_file,itp_fn,generator,TRUE);
+      print_top_comment(itp_file,itp_fn,generator,ffdir,TRUE);
 
     if (cc->bAllWat)
       top_file2=NULL;
