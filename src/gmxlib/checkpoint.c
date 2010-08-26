@@ -1922,9 +1922,7 @@ void read_checkpoint_trxframe(t_fileio *fp,t_trxframe *fr)
         fr->x     = state.x;
         state.x   = NULL;
     }
-/* FIX ME after 4.5 */
-/* temporary hack because we are using gmx_bool (unsigned char) */
-    fr->bV      = (state.flags & (1<<estV)) != 0;
+    fr->bV      = (state.flags & (1<<estV));
     if (fr->bV)
     {
         fr->v     = state.v;
