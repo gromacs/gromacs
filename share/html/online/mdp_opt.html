@@ -481,7 +481,7 @@ is automatically set to the longest cut-off distance.</dd>
 <dt><b>Cut-off</b></dt>
 <dd>Twin range cut-off's with neighborlist cut-off <b>rlist</b> and 
 Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> &gt= <b>rlist</b>.
+where <b>rcoulomb</b> &ge <b>rlist</b>.
 
 <dt><b>Ewald</b></dt>
 <dd>Classical <!--Idx-->Ewald sum<!--EIdx--> electrostatics.
@@ -519,13 +519,13 @@ PPPM through a small modification of the PME code.</dd>
 
 <dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> &gt= <b>rlist</b>.
+where <b>rcoulomb</b> &ge <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_rf</b>.
 The dielectric constant can be set to infinity by setting <b>epsilon_rf</b>=0.</dd>
 
 <dt><b>Generalized-Reaction-Field</b></dt>
 <dd>Generalized reaction field with Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> &gt= <b>rlist</b>.
+where <b>rcoulomb</b> &ge <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_rf</b>.
 The ionic strength is computed from the number of charged 
 (i.e. with non zero charge) <!--Idx-->charge group<!--EIdx-->s.
@@ -651,7 +651,7 @@ A value of 0 means infinity.</dd>
 <dt><b>Cut-off</b></dt>
 <dd>Twin range cut-off's with neighbor list cut-off <b>rlist</b> and 
 VdW cut-off <b>rvdw</b>,
-where <b>rvdw</b> <tt>&gt=</tt> <b>rlist</b>.</dd>
+where <b>rvdw</b> <tt>&ge</tt> <b>rlist</b>.</dd>
 <dt><b>Shift</b></dt>
 <dd>The LJ (not Buckingham) potential is decreased over the whole
 range and the forces decay smoothly to zero between <b>rvdw_switch</b>
@@ -1142,7 +1142,7 @@ only the dispersion and repulsion columns are used</dd>
 linearly and thus the force is constant. Setting this option to
 a postive value is especially useful for equilibration when some atoms
 are beyond a wall.
-When the value is &lt= 0 (&lt 0 for <b>wall_type=table</b>),
+When the value is &le 0 (&lt 0 for <b>wall_type=table</b>),
 a fatal error is generated when atoms are beyond a wall.
 </dd>
 <dt><h4>wall_atomtype:</h4></dt>
