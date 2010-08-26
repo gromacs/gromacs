@@ -73,7 +73,7 @@ bin_PROGRAMS = \
 	g_sdf		g_spatial	\
 	g_tcaf      	g_traj      	g_tune_pme   \
 	g_vanhove	g_velacc    	g_membed      \
-	g_clustsize 	g_mdmat     	g_wham		g_kinetics	\
+	g_clustsize 	g_mdmat     	g_wham		\
 	g_sigeps
 
 
