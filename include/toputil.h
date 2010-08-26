@@ -45,47 +45,47 @@ extern "C" {
 
 /* UTILITIES */
 
-int name2index(char *str, char ***typenames, int ntypes);
+extern int name2index(char *str, char ***typenames, int ntypes);
 
-void pr_alloc (int extra, t_params *pr);
+extern void pr_alloc (int extra, t_params *pr);
 
-void set_p_string(t_param *p,const char *s);
+extern void set_p_string(t_param *p,const char *s);
 
-void cp_param(t_param *dest,t_param *src);
+extern void cp_param(t_param *dest,t_param *src);
 
-void add_param_to_list(t_params *list, t_param *b);
+extern void add_param_to_list(t_params *list, t_param *b);
 
 /* INITIATE */
 
-void init_plist(t_params plist[]);
+extern void init_plist(t_params plist[]);
 
-void init_molinfo(t_molinfo *mol);
+extern void init_molinfo(t_molinfo *mol);
 
-void init_top  (t_topology *top);
+extern void init_top  (t_topology *top);
 
-void done_top(t_topology *top);
+extern void done_top(t_topology *top);
 
 /* FREE */
-void done_block(t_block *block);
+extern void done_block(t_block *block);
 
-void done_top(t_topology *top);
+extern void done_top(t_topology *top);
 
-void done_atom (t_atoms *at);
+extern void done_atom (t_atoms *at);
 
-void done_mi(t_molinfo *mi);
+extern void done_mi(t_molinfo *mi);
 
 /* PRINTING */
 
-void print_blocka(FILE *out,const char *szName,const char *szIndex, 
+extern void print_blocka(FILE *out,const char *szName,const char *szIndex, 
 			 const char *szA,t_blocka *block);
 
-void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr,
+extern void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr,
 			bool bRTPresname);
 
-void print_bondeds(FILE *out,int natoms,directive d,
+extern void print_bondeds(FILE *out,int natoms,directive d,
 			  int ftype,int fsubtype,t_params plist[]);
 
-void print_excl(FILE *out, int natoms, t_excls excls[]);
+extern void print_excl(FILE *out, int natoms, t_excls excls[]);
 
 #ifdef __cplusplus
 }

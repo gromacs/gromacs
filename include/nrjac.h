@@ -36,13 +36,17 @@
 #ifndef _nrjac_h
 #define _nrjac_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void jacobi(double **a,int n,double d[],double **v,int *nrot);
+extern void jacobi(double **a,int n,double d[],double **v,int *nrot);
 /* 
  * real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
  * int     natoms = number of rows and columns

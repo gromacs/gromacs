@@ -36,6 +36,10 @@
 #ifndef _trnio_h
 #define _trnio_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /**************************************************************
  *
  * These routines handle trj (trajectory) I/O, they read and
@@ -80,52 +84,52 @@ typedef struct		/* This struct describes the order and the	*/
   real	lambda;		/* Current value of lambda			*/
 } t_trnheader;
 
-t_fileio *open_trn(const char *fn,const char *mode);
+extern t_fileio *open_trn(const char *fn,const char *mode);
 /* Open a trj / trr file */
 
-void close_trn(t_fileio *fio);
+extern void close_trn(t_fileio *fio);
 /* Close it */
 
-bool fread_trnheader(t_fileio *fio,t_trnheader *trn,bool *bOK);
+extern bool fread_trnheader(t_fileio *fio,t_trnheader *trn,bool *bOK);
 /* Read the header of a trn file. Return FALSE if there is no frame.
  * bOK will be FALSE when the header is incomplete.
  */
 
-void read_trnheader(const char *fn,t_trnheader *header);
+extern void read_trnheader(const char *fn,t_trnheader *header);
 /* Read the header of a trn file from fn, and close the file afterwards. 
  */
 
-void pr_trnheader(FILE *fp,int indent,char *title,t_trnheader *sh);
+extern void pr_trnheader(FILE *fp,int indent,char *title,t_trnheader *sh);
 /* Print the header of a trn file to fp */
 
-bool is_trn(FILE *fp);
+extern bool is_trn(FILE *fp);
 /* Return true when the file is a trn file. File will be rewound
  * afterwards.
  */
 
-void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
+extern void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
 		       rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
-bool fread_htrn(t_fileio *fio,t_trnheader *sh,
+extern bool fread_htrn(t_fileio *fio,t_trnheader *sh,
 		       rvec *box,rvec *x,rvec *v,rvec *f);
 /* Extern read a frame except the header (that should be pre-read,
  * using routine read_trnheader, see above) from a trn file.
  * Return FALSE on error
  */
  
-bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
+extern bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
 		      rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
 /* Read a trn frame, including the header from fp. box, x, v, f may
  * be NULL, in which case the data will be skipped over.
  * return FALSE on error
  */
  
-void write_trn(const char *fn,int step,real t,real lambda,
+extern void write_trn(const char *fn,int step,real t,real lambda,
 		      rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
 /* Write a single trn frame to file fn, which is closed afterwards */
 
-void read_trn(const char *fn,int *step,real *t,real *lambda,
+extern void read_trn(const char *fn,int *step,real *t,real *lambda,
 		     rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
 /* Read a single trn frame from file fn, which is closed afterwards 
  */

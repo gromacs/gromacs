@@ -81,7 +81,7 @@ atom_id search_atom(const char *type,int start,int natoms,t_atom at[],
     }
     
     for(i=start; (i<natoms) && (bNext || (at[i].resind == resind)); i++) {
-      if (anm[i] && gmx_strcasecmp(type,*(anm[i]))==0)
+      if (anm[i] && strcasecmp(type,*(anm[i]))==0)
 	return (atom_id) i;
     }
     if (!(bNext && at[start].resind==at[natoms-1].resind))
@@ -93,7 +93,7 @@ atom_id search_atom(const char *type,int start,int natoms,t_atom at[],
     if (start > 0)
       resind = at[start-1].resind;
     for(i=start-1; (i>=0) /*&& (at[i].resind == resind)*/; i--)
-      if (gmx_strcasecmp(type,*(anm[i]))==0)
+      if (strcasecmp(type,*(anm[i]))==0)
 	return (atom_id) i;
     if (start > 0)
       atom_not_found(FARGS,type,at[start].resind,bondtype,bDontQuit);

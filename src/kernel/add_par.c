@@ -223,7 +223,7 @@ int search_jtype(t_restp *rtp,char *name,bool bNterm)
     }
     for(j=0; (j<rtp->natom); j++) {
       rtpname=*(rtp->atomname[j]);
-      if (gmx_strcasecmp(searchname,rtpname) == 0) {
+      if (strcasecmp(searchname,rtpname) == 0) {
 	jmax=j;
 	kmax=strlen(searchname);
 	break;

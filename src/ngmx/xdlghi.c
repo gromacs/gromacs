@@ -1,3 +1,4 @@
+
 /*
  * 
  *                This source code is part of
@@ -259,7 +260,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
 
       strcpy(buf2,fitem->name[i]);
       buf2[strlen(buf)]='\0'; /* truncate itemname */
-      if (gmx_strcasecmp(buf2,buf)==0)
+      if (strcasecmp(buf2,buf)==0)
 	iSel=i;
     }
 
@@ -276,7 +277,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
   case edlgCB: {
     bool bCheck;
 
-    bCheck=gmx_strcasecmp(fitem->def,"TRUE")==0;
+    bCheck=strcasecmp(fitem->def,"TRUE")==0;
     AddListItem(list,CreateCheckBox(x11,fitem->name[0],bCheck,
 				    (*ID)++,GroupID,x,(*y),0,0,0));
     break;

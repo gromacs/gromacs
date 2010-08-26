@@ -16,6 +16,10 @@
  * Gnomes, ROck Monsters And Chili Sauce
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifndef _domdec_network_h
 #define _domdec_network_h
 
@@ -40,7 +44,7 @@ enum {
  * in the dimension indexed by ddimind
  * forward (direction=dddirFoward) or backward (direction=dddirBackward).
  */
-void
+extern void
 dd_sendrecv_int(const gmx_domdec_t *dd,
                 int ddimind,int direction,
                 int *buf_s,int n_s,
@@ -50,7 +54,7 @@ dd_sendrecv_int(const gmx_domdec_t *dd,
  * in the dimension indexed by ddimind
  * forward (direction=dddirFoward) or backward (direction=dddirBackward).
  */
-void
+extern void
 dd_sendrecv_real(const gmx_domdec_t *dd,
                  int ddimind,int direction,
                  real *buf_s,int n_s,
@@ -60,7 +64,7 @@ dd_sendrecv_real(const gmx_domdec_t *dd,
  * in dimension indexed by ddimind
  * forward (direction=dddirFoward) or backward (direction=dddirBackward).
  */
-void
+extern void
 dd_sendrecv_rvec(const gmx_domdec_t *dd,
                  int ddimind,int direction,
                  rvec *buf_s,int n_s,
@@ -71,7 +75,7 @@ dd_sendrecv_rvec(const gmx_domdec_t *dd,
  * in dimension indexed by ddimind
  * simultaneously in the forward and backward directions.
  */
-void
+extern void
 dd_sendrecv2_rvec(const gmx_domdec_t *dd,
 		  int ddimind,
 		  rvec *buf_s_fw,int n_s_fw,
@@ -86,27 +90,27 @@ dd_sendrecv2_rvec(const gmx_domdec_t *dd,
  * The DD master node is the master for these operations.
  */
 
-void
+extern void
 dd_bcast(gmx_domdec_t *dd,int nbytes,void *data);
 
 /* Copies src to dest on the master node and then broadcasts */
-void
+extern void
 dd_bcastc(gmx_domdec_t *dd,int nbytes,void *src,void *dest);
 
-void
+extern void
 dd_scatter(gmx_domdec_t *dd,int nbytes,void *src,void *dest);
 
-void
+extern void
 dd_gather(gmx_domdec_t *dd,int nbytes,void *src,void *dest);
 
 /* If rcount==0, rbuf is allowed to be NULL */
-void
+extern void
 dd_scatterv(gmx_domdec_t *dd,
             int *scounts,int *disps,void *sbuf,
             int rcount,void *rbuf);
 
 /* If scount==0, sbuf is allowed to be NULL */
-void
+extern void
 dd_gatherv(gmx_domdec_t *dd,
            int scount,void *sbuf,
            int *rcounts,int *disps,void *rbuf);

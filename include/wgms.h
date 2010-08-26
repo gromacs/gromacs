@@ -36,6 +36,10 @@
 #ifndef _wgms_h
 #define _wgms_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include "typedefs.h"
 
@@ -43,12 +47,12 @@
 extern "C" {
 #endif
 
-void write_gms(FILE *fp,int natoms,rvec x[],matrix box);
+extern void write_gms(FILE *fp,int natoms,rvec x[],matrix box);
 /* Write a gromos-87 trajectory frame (10f8.3) + box size 
  * If box == NULL it is not written
  */
 
-void write_gms_ndx(FILE *fp,int isize,atom_id index[],
+extern void write_gms_ndx(FILE *fp,int isize,atom_id index[],
 			  rvec x[],matrix box);
 /* Write a gromos-87 trajectory frame (10f8.3) + box size for
  * a subset of the atoms.

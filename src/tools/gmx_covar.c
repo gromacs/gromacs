@@ -39,11 +39,6 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <direct.h>
 #include <io.h>
@@ -73,11 +68,6 @@
 #include "physics.h"
 #include "gmx_ana.h"
 #include "string2.h"
-
-/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
-char *
-gmx_ctime_r(const time_t *clock,char *buf, int n);
-
 
 int gmx_covar(int argc,char *argv[])
 {
@@ -241,7 +231,7 @@ int gmx_covar(int argc,char *argv[])
   snew(x,natoms);
   snew(xav,natoms);
   ndim=natoms*DIM;
-  if (sqrt(GMX_LARGE_INT_MAX)<ndim) {
+  if (sqrt(LARGE_INT_MAX)<ndim) {
     gmx_fatal(FARGS,"Number of degrees of freedoms to large for matrix.\n");
   }
   snew(mat,ndim*ndim);

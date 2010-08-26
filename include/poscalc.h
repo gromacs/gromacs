@@ -130,57 +130,57 @@ struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
 
 /** Converts a string to parameters for gmx_ana_poscalc_create(). */
-int
+extern int
 gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags);
 /** Creates a list of strings for position enum parameter handling. */
-const char **
+extern const char **
 gmx_ana_poscalc_create_type_enum(bool bAtom);
 
 /** Creates a new position calculation collection object. */
-int
+extern int
 gmx_ana_poscalc_coll_create(gmx_ana_poscalc_coll_t **pccp);
 /** Sets the topology for a position calculation collection. */
-void
+extern void
 gmx_ana_poscalc_coll_set_topology(gmx_ana_poscalc_coll_t *pcc, t_topology *top);
 /** Frees memory allocated for a position calculation collection. */
-void
+extern void
 gmx_ana_poscalc_coll_free(gmx_ana_poscalc_coll_t *pcc);
 /** Prints information about calculations in a position calculation collection. */
-void
+extern void
 gmx_ana_poscalc_coll_print_tree(FILE *fp, gmx_ana_poscalc_coll_t *pcc);
 
 /** Creates a new position calculation. */
-int
+extern int
 gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
                        e_poscalc_t type, int flags);
 /** Creates a new position calculation based on an enum value. */
-int
+extern int
 gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
                             const char *post, int flags);
 /** Sets the flags for position calculation. */
-void
+extern void
 gmx_ana_poscalc_set_flags(gmx_ana_poscalc_t *pc, int flags);
 /** Sets the maximum possible input index group for position calculation. */
-void
+extern void
 gmx_ana_poscalc_set_maxindex(gmx_ana_poscalc_t *pc, struct gmx_ana_index_t *g);
 /** Initializes positions for position calculation output. */
-void
+extern void
 gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, struct gmx_ana_pos_t *p);
 /** Frees the memory allocated for position calculation. */
-void
+extern void
 gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc);
 /** Returns TRUE if the position calculation requires topology information. */
-bool
+extern bool
 gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc);
 
 /** Initializes evaluation for a position calculation collection. */
-void
+extern void
 gmx_ana_poscalc_init_eval(gmx_ana_poscalc_coll_t *pcc);
 /** Initializes a position calculation collection for a new frame. */
-void
+extern void
 gmx_ana_poscalc_init_frame(gmx_ana_poscalc_coll_t *pcc);
 /** Updates a single COM/COG structure for a frame. */
-void
+extern void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
                        struct gmx_ana_pos_t *p, struct gmx_ana_index_t *g,
                        t_trxframe *fr, t_pbc *pbc);

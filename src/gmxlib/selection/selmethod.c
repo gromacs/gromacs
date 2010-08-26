@@ -249,7 +249,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             {
                 continue;
             }
-            if (!gmx_strcasecmp(param[i].name, param[j].name))
+            if (!strcasecmp(param[i].name, param[j].name))
             {
                 report_error(fp, name, "error: duplicate parameter name '%s'", param[i].name);
                 bOk = FALSE;

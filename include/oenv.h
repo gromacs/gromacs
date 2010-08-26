@@ -36,6 +36,10 @@
 #ifndef _oenv_h
 #define _oenv_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -89,51 +93,51 @@ void output_env_init_default(output_env_t oenv);
 /* initialize an output_env structure, with reasonable default settings.
     (the time unit is set to time_ps, which means no conversion).  */
 
-void output_env_done(output_env_t oenv);
+extern void output_env_done(output_env_t oenv);
 /* free memory allocated for an output_env structure. */
 
 
-int output_env_get_verbosity(const output_env_t oenv);
+extern int output_env_get_verbosity(const output_env_t oenv);
 /* return the verbosity */
 
-int output_env_get_debug_level(const output_env_t oenv);
+extern int output_env_get_debug_level(const output_env_t oenv);
 /* return the debug level */
 
-const char *output_env_get_time_unit(const output_env_t oenv);
+extern const char *output_env_get_time_unit(const output_env_t oenv);
 /* return time unit (e.g. ps or ns) */
 
-const char *output_env_get_time_label(const output_env_t oenv);
+extern const char *output_env_get_time_label(const output_env_t oenv);
 /* return time unit label (e.g. "Time (ps)") */
 
-const char *output_env_get_xvgr_tlabel(const output_env_t oenv);
+extern const char *output_env_get_xvgr_tlabel(const output_env_t oenv);
 /* retrun x-axis time label for xmgr */
 
-real output_env_get_time_factor(const output_env_t oenv);
+extern real output_env_get_time_factor(const output_env_t oenv);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
-real output_env_get_time_invfactor(const output_env_t oenv);
+extern real output_env_get_time_invfactor(const output_env_t oenv);
 /* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
 
-real output_env_conv_time(const output_env_t oenv, real time);
+extern real output_env_conv_time(const output_env_t oenv, real time);
 /* return converted time */
 
-void output_env_conv_times(const output_env_t oenv, int n, real *time);
+extern void output_env_conv_times(const output_env_t oenv, int n, real *time);
 /* convert array of times */
 
-bool output_env_get_view(const output_env_t oenv);
+extern bool output_env_get_view(const output_env_t oenv);
 /* Return TRUE when user requested viewing of the file */
 
 
-xvg_format_t output_env_get_xvg_format(const output_env_t oenv);
+extern xvg_format_t output_env_get_xvg_format(const output_env_t oenv);
 /* Returns enum (see above) for xvg output formatting */
 
-const char *output_env_get_program_name(const output_env_t oenv);
+extern const char *output_env_get_program_name(const output_env_t oenv);
 /* return the program name */
 
-const char *output_env_get_cmd_line(const output_env_t oenv);
+extern const char *output_env_get_cmd_line(const output_env_t oenv);
 /* return the command line */
 
-const char *output_env_get_short_program_name(const output_env_t oenv);
+extern const char *output_env_get_short_program_name(const output_env_t oenv);
 /* get the short version (without path component) of the program name */
 
 

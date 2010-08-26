@@ -65,7 +65,7 @@ static int search_str2(int nstr,char **str,char *key)
   while( (n<keylen) && ((key[n]<'0') || (key[n]>'9')) )
     n++;
   for(i=0; (i<nstr); i++) 
-    if (gmx_strncasecmp(str[i],key,n)==0)
+    if (strncasecmp(str[i],key,n)==0)
       return i;
 
   return -1;

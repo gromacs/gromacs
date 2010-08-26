@@ -220,8 +220,7 @@ static int low_fflib_search_file_end(const char *ffdir,
                 nextname[STRLEN-1]=0;
                 if (debug)
                 {
-                    fprintf(debug,"dir '%s' %d file '%s'\n",
-                            dir,n_thisdir,nextname);
+                    fprintf(debug,"dir '%s' file '%s'\n",dir,nextname);
                 }
                 len_name = strlen(nextname);
                 /* What about case sensitivity? */
@@ -288,12 +287,12 @@ static int low_fflib_search_file_end(const char *ffdir,
     return n;
 }
 
-int fflib_search_file_end(const char *ffdir,
+int fflib_search_file_end(const char *ffdir,bool bAddCWD,
                           const char *file_end,
                           bool bFatalError,
                           char ***filenames)
 {
-    return low_fflib_search_file_end(ffdir,FALSE,file_end,bFatalError,
+    return low_fflib_search_file_end(ffdir,bAddCWD,file_end,bFatalError,
                                      filenames,NULL);
 }
 
@@ -346,7 +345,7 @@ bool fflib_fexist(const char *file)
 {
     char *file_fullpath;
 
-    file_fullpath = low_gmxlibfn(file,TRUE,FALSE);
+    file_fullpath = low_gmxlibfn(file,FALSE);
     
     if (file_fullpath == NULL)
     {

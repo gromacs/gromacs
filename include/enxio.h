@@ -36,6 +36,10 @@
 #ifndef _enxio_h
 #define _enxio_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "pbc.h"
@@ -164,26 +168,26 @@ extern "C" {
 
 
   /* initialize a pre-allocated frame */
-  void init_enxframe(t_enxframe *ef);
+  extern void init_enxframe(t_enxframe *ef);
   /* delete a frame's memory (except the ef itself) */
-  void free_enxframe(t_enxframe *ef);
+  extern void free_enxframe(t_enxframe *ef);
 
 
-  ener_file_t open_enx(const char *fn,const char *mode);
+  extern ener_file_t open_enx(const char *fn,const char *mode);
 
-  t_fileio *enx_file_pointer(const ener_file_t ef);
+  extern t_fileio *enx_file_pointer(const ener_file_t ef);
 
-  void close_enx(ener_file_t ef);
+  extern void close_enx(ener_file_t ef);
   
-  void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);
+  extern void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);
   
-  void free_enxnms(int n,gmx_enxnm_t *nms);
+  extern void free_enxnms(int n,gmx_enxnm_t *nms);
   /* Frees nms and all strings in it */
 
-  bool do_enx(ener_file_t ef,t_enxframe *fr);
+  extern bool do_enx(ener_file_t ef,t_enxframe *fr);
   /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
-  void get_enx_state(const char *fn, real t,
+  extern void get_enx_state(const char *fn, real t,
 			    gmx_groups_t *groups, t_inputrec *ir,
 			    t_state *state);
   /*

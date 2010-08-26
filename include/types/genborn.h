@@ -33,6 +33,9 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

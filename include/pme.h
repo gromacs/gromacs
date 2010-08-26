@@ -36,6 +36,10 @@
 #ifndef _pme_h
 #define _pme_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include "typedefs.h"
 #include "gmxcomplex.h"
@@ -49,12 +53,12 @@ typedef real *splinevec[DIM];
 
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
-int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
+extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 			int nnodes_major,int nnodes_minor,
 			t_inputrec *ir,int homenr,
 			bool bFreeEnergy, bool bReproducible);
 			
-int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
+extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 /* Initialize and destroy the pme data structures resepectively.
  * Return value 0 indicates all well, non zero is an error code.
  */
@@ -65,7 +69,7 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 #define GMX_PME_CALC_ENER_VIR (1<<3)
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
-int gmx_pme_do(gmx_pme_t pme,
+extern int gmx_pme_do(gmx_pme_t pme,
 		      int start,       int homenr,
 		      rvec x[],        rvec f[],
 		      real chargeA[],  real chargeB[],
@@ -80,7 +84,7 @@ int gmx_pme_do(gmx_pme_t pme,
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-int gmx_pmeonly(gmx_pme_t pme,
+extern int gmx_pmeonly(gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
 		       gmx_wallcycle_t wcycle,
 		       real ewaldcoeff,   bool bGatherOnly,
@@ -88,7 +92,7 @@ int gmx_pmeonly(gmx_pme_t pme,
 /* Called on the nodes that do PME exclusively (as slaves) 
  */
 
-void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V);
+extern void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V);
 /* Calculate the PME grid energy V for n charges with a potential
  * in the pme struct determined before with a call to gmx_pme_do
  * with at least GMX_PME_SPREAD_Q and GMX_PME_SOLVE specified.
@@ -101,30 +105,30 @@ void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V);
 /* Abstract type for PME <-> PP communication */
 typedef struct gmx_pme_pp *gmx_pme_pp_t;
 
-gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
+extern gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 /* Initialize the PME-only side of the PME <-> PP communication */
 
-void gmx_pme_send_q(t_commrec *cr,
+extern void gmx_pme_send_q(t_commrec *cr,
 			   bool bFreeEnergy, real *chargeA, real *chargeB,
 			   int maxshift_x, int maxshift_y);
 /* Send the charges and maxshift to out PME-only node. */
 
-void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
+extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
 			   bool bFreeEnergy, real lambda,
 			   bool bEnerVir,
 			   gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
-void gmx_pme_finish(t_commrec *cr);
+extern void gmx_pme_finish(t_commrec *cr);
 /* Tell our PME-only node to finish */
 
-void gmx_pme_receive_f(t_commrec *cr,
+extern void gmx_pme_receive_f(t_commrec *cr,
 			      rvec f[], matrix vir, 
 			      real *energy, real *dvdlambda,
 			      float *pme_cycles);
 /* PP nodes receive the long range forces from the PME nodes */
 
-int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
+extern int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
 			    real **chargeA, real **chargeB,
 			    matrix box, rvec **x,rvec **f,
 			    int *maxshift_x,int *maxshift_y,
@@ -135,7 +139,7 @@ int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
  * Returns the number of atoms, or -1 when the run is finished.
  */
 
-void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
+extern void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
 					rvec *f, matrix vir,
 					real energy, real dvdlambda,
 					float cycles);

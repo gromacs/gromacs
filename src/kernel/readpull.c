@@ -203,9 +203,9 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
       gmx_fatal(FARGS,"Less than 3 pull dimensions given in pull_dim: '%s'",
 		pulldim);
     
-    if (gmx_strncasecmp(pulldim1,"N",1) == 0) {
+    if (strncasecmp(pulldim1,"N",1) == 0) {
       pull->dim[d] = 0;
-    } else if (gmx_strncasecmp(pulldim1,"Y",1) == 0) {
+    } else if (strncasecmp(pulldim1,"Y",1) == 0) {
       pull->dim[d] = 1;
       i++;
     } else {

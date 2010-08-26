@@ -290,8 +290,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
 {
   FILE *fp;
   t_mapping *map;
-  int f,r,*count,ss_count;
-  size_t s;
+  int s,f,r,*count,ss_count;
   const char** leg;
   
   map=mat->map;

@@ -36,6 +36,10 @@
 #ifndef _mdebin_h
 #define _mdebin_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "ebin.h"
@@ -86,19 +90,19 @@ typedef struct {
   t_mde_delta_h_coll *dhc; /* the BAR delta U (raw data + histogram) */
 } t_mdebin;
 
-t_mdebin *init_mdebin(ener_file_t fp_ene,
+extern t_mdebin *init_mdebin(ener_file_t fp_ene,
                              const gmx_mtop_t *mtop,
                              const t_inputrec *ir,
                              FILE *fp_dhdl);
 /* Initiate MD energy bin and write header to energy file. */
 
-FILE *open_dhdl(const char *filename,const t_inputrec *ir,
+extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 		       const output_env_t oenv);
 /* Open the dhdl file for output */
 
 /* update the averaging structures. Called every time 
    the energies are evaluated. */
-void upd_mdebin(t_mdebin *md, 
+extern void upd_mdebin(t_mdebin *md, 
                        bool write_dhdl,
 		       bool bSum,
 		       double time,
@@ -114,12 +118,12 @@ void upd_mdebin(t_mdebin *md,
 		       rvec mu_tot,
 		       gmx_constr_t constr);
 
-void upd_mdebin_step(t_mdebin *md);
+extern void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
   
-void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb);
+extern void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb);
 
-void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
+extern void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
 		       FILE *log,
 		       gmx_large_int_t step,double time,
 		       int mode,bool bCompact,
@@ -134,13 +138,13 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
    that is written to checkpoints in checkpoint.c */
 
 /* initialize the energyhistory_t data structure */
-void init_energyhistory(energyhistory_t * enerhist);
+extern void init_energyhistory(energyhistory_t * enerhist);
 
 /* Set the energyhistory_t data structure from a mdebin structure */
-void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);
+extern void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);
 
 /* Read the energyhistory_t data structure to a mdebin structure*/
-void restore_energyhistory_from_state(t_mdebin * mdebin,
+extern void restore_energyhistory_from_state(t_mdebin * mdebin,
                                              energyhistory_t * enerhist);
 
 #ifdef __cplusplus

@@ -36,6 +36,11 @@
 #ifndef _update_h
 #define _update_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 #include "typedefs.h"
 #include "mshift.h"
 #include "tgroup.h"
@@ -53,21 +58,21 @@ extern "C" {
 typedef struct gmx_update *gmx_update_t;
 
 /* Initialize the stochastic dynamics struct */
-gmx_update_t init_update(FILE *fplog,t_inputrec *ir);
+extern gmx_update_t init_update(FILE *fplog,t_inputrec *ir);
 
 /* Store the random state from sd in state */
-void get_stochd_state(gmx_update_t sd,t_state *state);
+extern void get_stochd_state(gmx_update_t sd,t_state *state);
 
 /* Set the random in sd from state */
-void set_stochd_state(gmx_update_t sd,t_state *state);
+extern void set_stochd_state(gmx_update_t sd,t_state *state);
 
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
  */
-void set_deform_reference_box(gmx_update_t upd,
+extern void set_deform_reference_box(gmx_update_t upd,
 				     gmx_large_int_t step,matrix box);
 
-void update_tcouple(FILE         *fplog,
+extern void update_tcouple(FILE         *fplog,
 			   gmx_large_int_t   step,
 			   t_inputrec   *inputrec,   
 			   t_state      *state,
@@ -78,7 +83,7 @@ void update_tcouple(FILE         *fplog,
 			   t_mdatoms    *md
 );
 
-void update_pcouple(FILE         *fplog,
+extern void update_pcouple(FILE         *fplog,
 			   gmx_large_int_t   step,
 			   t_inputrec   *inputrec,   
 			   t_state      *state,
@@ -88,7 +93,7 @@ void update_pcouple(FILE         *fplog,
 			   gmx_update_t upd,
 			   bool         bInitStep);
 
-void update_coords(FILE         *fplog,
+extern void update_coords(FILE         *fplog,
 			  gmx_large_int_t   step,
 			  t_inputrec   *inputrec,  /* input record and box stuff	*/
 			  t_mdatoms    *md,
@@ -110,7 +115,7 @@ void update_coords(FILE         *fplog,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void update_constraints(FILE         *fplog,
+extern void update_constraints(FILE         *fplog,
 			       gmx_large_int_t   step,
 			       real         *dvdlambda, /* FEP stuff */
 			       t_inputrec   *inputrec,  /* input record and box stuff	*/
@@ -134,7 +139,7 @@ void update_constraints(FILE         *fplog,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void update_box(FILE         *fplog,
+extern void update_box(FILE         *fplog,
 		       gmx_large_int_t   step,
 		       t_inputrec   *inputrec,  /* input record and box stuff	*/
 		       t_mdatoms    *md,
@@ -150,7 +155,7 @@ void update_box(FILE         *fplog,
 		       bool         bFirstHalf);
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
+extern void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
 			 gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel, bool bSaveOld);
 /*
  * Compute the partial kinetic energy for home particles;
@@ -168,80 +173,80 @@ void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
  *
  */
 
-void
+extern void
 init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir);
 
-void
+extern void
 update_ekinstate(ekinstate_t *ekinstate,gmx_ekindata_t *ekind);
 
-void
+extern void
 restore_ekinstate_from_state(t_commrec *cr,
 			     gmx_ekindata_t *ekind,ekinstate_t *ekinstate);
 
-void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt);
+extern void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt);
 
-void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
+extern void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			      double xi[],double vxi[],t_extmass *MassQ);
 
-t_state *init_bufstate(const t_state *template_state);
+extern t_state *init_bufstate(const t_state *template_state);
 
-void destroy_bufstate(t_state *state);
+extern void destroy_bufstate(t_state *state);
 
-void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind, 
+extern void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind, 
 			   gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md, 
 			   t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, bool bTrotter); 
+extern int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, bool bTrotter); 
 
-real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
+extern real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
-void NBaroT_trotter(t_grpopts *opts, real dt,
+extern void NBaroT_trotter(t_grpopts *opts, real dt,
 			   double xi[],double vxi[],real *veta, t_extmass *MassQ);
 
-void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
+extern void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
 			    double therm_integral[],
 			    gmx_rng_t rng);
 /* Compute temperature scaling. For V-rescale it is done in update. */
 
-real vrescale_energy(t_grpopts *opts,double therm_integral[]);
+extern real vrescale_energy(t_grpopts *opts,double therm_integral[]);
 /* Returns the V-rescale contribution to the conserved energy */
 
-void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
+extern void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
 			       int start,int end,rvec v[]);
 /* Rescale the velocities with the scaling factor in ekind */
 
-void update_annealing_target_temp(t_grpopts *opts,real t); 
+extern void update_annealing_target_temp(t_grpopts *opts,real t); 
 /* Set reference temp for simulated annealing at time t*/
 
-real calc_temp(real ekin,real nrdf);
+extern real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */
 
-real calc_pres(int ePBC,int nwall,matrix box,
+extern real calc_pres(int ePBC,int nwall,matrix box,
 		      tensor ekin,tensor vir,tensor pres,real Elr);
 /* Calculate the pressure tensor, returns the scalar pressure.
  * The unit of pressure is bar, If Elr != 0
  * a long range correction based on Ewald/PPPM is made (see c-code)
  */
 
-void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
+extern void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
 				    t_inputrec *ir,real dt,tensor pres,
 				    tensor box,tensor box_rel,tensor boxv,
 				    tensor M,matrix mu,
 				    bool bFirstStep);
   
-void berendsen_pcoupl(FILE *fplog,gmx_large_int_t step,
+extern void berendsen_pcoupl(FILE *fplog,gmx_large_int_t step,
 			     t_inputrec *ir,real dt,tensor pres,matrix box,
 			     matrix mu);
 
 
-void berendsen_pscale(t_inputrec *ir,matrix mu,
+extern void berendsen_pscale(t_inputrec *ir,matrix mu,
 			     matrix box,matrix box_rel,
 			     int start,int nr_atoms,
 			     rvec x[],unsigned short cFREEZE[],
 			     t_nrnb *nrnb);
 
-void correct_ekin(FILE *log,int start,int end,rvec v[],
+extern void correct_ekin(FILE *log,int start,int end,rvec v[],
 			 rvec vcm,real mass[],real tmass,tensor ekin);
 /* Correct ekin for vcm */
 

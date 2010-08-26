@@ -121,8 +121,8 @@ static real search_e_diss(int n2m,t_2morse t2m[],char *ai,char *aj)
   /* Do a best match search for dissociation energies */
   for(i=0; (i<n2m); i++) {
     /* Check for a perfect match */
-    if (((gmx_strcasecmp(t2m[i].ai,ai) == 0) && (gmx_strcasecmp(t2m[i].aj,aj) == 0)) ||
-	((gmx_strcasecmp(t2m[i].aj,ai) == 0) && (gmx_strcasecmp(t2m[i].ai,aj) == 0))) {
+    if (((strcasecmp(t2m[i].ai,ai) == 0) && (strcasecmp(t2m[i].aj,aj) == 0)) ||
+	((strcasecmp(t2m[i].aj,ai) == 0) && (strcasecmp(t2m[i].ai,aj) == 0))) {
       ibest = i;
       break;
     }

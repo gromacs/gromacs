@@ -8,6 +8,7 @@ Description: Gromacs default lib
 URL: http://www.gromacs.org
 Version: @VERSION@
 Requires:
-Libs: -L${libdir} -lgmx@LIBSUFFIX@ @PTHREAD_CFLAGS@ @PTHREAD_LIBS@ -lm
+Libs.private: -lm @PTHREAD_LIBS@
+Libs: -L${libdir} -lgmx@LIBSUFFIX@
 Cflags: -I${includedir} @PTHREAD_CFLAGS@ @PKG_CFLAGS@ 
 

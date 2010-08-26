@@ -36,6 +36,10 @@
 #ifndef _orires_h
 #define _orires_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "sysstuff.h"
 #include "typedefs.h"
 
@@ -43,14 +47,14 @@
     extern "C" {
 #endif
 
-void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
+extern void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
 			rvec x[],
 			const t_inputrec *ir,
 			const gmx_multisim_t *ms,t_oriresdata *od,
 			t_state *state);
 /* Initializes all the orientation restraint stuff in *od */
 
-real calc_orires_dev(const gmx_multisim_t *ms,
+extern real calc_orires_dev(const gmx_multisim_t *ms,
 			    int nfa,const t_iatom fa[],const t_iparams ip[],
 			    const t_mdatoms *md,const rvec x[],
 			    const t_pbc *pbc,t_fcdata *fcd,history_t *hist);
@@ -59,20 +63,20 @@ real calc_orires_dev(const gmx_multisim_t *ms,
  * Returns the weighted RMS deviation of the orientation restraints.
  */
 
-void diagonalize_orires_tensors(t_oriresdata *od);
+extern void diagonalize_orires_tensors(t_oriresdata *od);
 /*
  * Diagonalizes the order tensor(s) of the orienation restraints.
  * For each experiment eig containts first 3 eigenvalues and then
  * the 3 eigenvectors. The eigenvalues are ordered on magnitude.
  */
 
-void print_orires_log(FILE *log,t_oriresdata *od);
+extern void print_orires_log(FILE *log,t_oriresdata *od);
 /* Print order parameter, eigenvalues and eigenvectors to the log file */
 
-t_ifunc orires;
+extern t_ifunc orires;
 /* Does only the orientation restraint force calculation */
 
-void update_orires_history(t_fcdata *fcd,history_t *hist);
+extern void update_orires_history(t_fcdata *fcd,history_t *hist);
 /* Copy the new time averages that have been calculated in calc_orires_dev */
 
 #ifdef __cplusplus

@@ -35,6 +35,10 @@
 #ifndef _QMMM_h
 #define _QMMM_h
 
+
+#ifdef HAVE_IDENT
+#ident	"@(#) QMMM.h 1 28/2/01"
+#endif /* HAVE_IDENT */
 #include "typedefs.h"
 #include "pbc.h"
 #include "network.h"
@@ -46,10 +50,10 @@ extern "C" {
 
 void atomic_number(int nr, char ***atomtype, int *nucnum);
 
-t_QMMMrec *mk_QMMMrec(void);
+extern t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
 
-void init_QMMMrec(t_commrec *cr,
+extern void init_QMMMrec(t_commrec *cr,
 			 matrix box,
 			 gmx_mtop_t *mtop,
 			 t_inputrec *ir,
@@ -62,7 +66,7 @@ void init_QMMMrec(t_commrec *cr,
  * and md->cQMMM gives numbers of the MM and QM atoms 
  */
 
-void update_QMMMrec(t_commrec *cr,
+extern void update_QMMMrec(t_commrec *cr,
 			   t_forcerec *fr,
 			   rvec x[],
 			   t_mdatoms *md,
@@ -75,7 +79,7 @@ void update_QMMMrec(t_commrec *cr,
  * elements of the t_QMMMrec struct.  
  */
 
-real calculate_QMMM(t_commrec *cr,
+extern real calculate_QMMM(t_commrec *cr,
 			   rvec x[], rvec f[],
 			   t_forcerec *fr,
 			   t_mdatoms *md);

@@ -36,6 +36,10 @@
 #ifndef _readinp_h
 #define _readinp_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 #include "warninp.h"
 
@@ -59,7 +63,7 @@ typedef struct {
 
 
 
-t_inpfile *read_inpfile(const char *fn,int *ninp,
+extern t_inpfile *read_inpfile(const char *fn,int *ninp,
 			       char **cppopts,
 			       warninp_t wi);
 /* Create & populate a t_inpfile struct from values in file fn. 
@@ -67,30 +71,30 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
    ninp = the number of read parameters
    cppopts = the cpp-style options for #include paths and #defines */
 
-void write_inpfile(const char *fn,int ninp,t_inpfile inp[],
+extern void write_inpfile(const char *fn,int ninp,t_inpfile inp[],
 			  bool bHaltOnUnknown,
 			  warninp_t wi);
 
-void replace_inp_entry(int ninp,t_inpfile *inp,
+extern void replace_inp_entry(int ninp,t_inpfile *inp,
 			      const char *old_entry,const char *new_entry);
 
-int get_eint(int *ninp,t_inpfile **inp,const char *name,int def,
+extern int get_eint(int *ninp,t_inpfile **inp,const char *name,int def,
 		      warninp_t wi);
 
-gmx_large_int_t get_egmx_large_int(int *ninp,t_inpfile **inp,
+extern gmx_large_int_t get_egmx_large_int(int *ninp,t_inpfile **inp,
 					  const char *name,gmx_large_int_t def,
 					  warninp_t);
   
-double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def,
+extern double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def,
 			warninp_t wi);
 
-const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def);
+extern const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def);
 
-int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
+extern int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
 		      warninp_t wi);
 /* defs must be NULL terminated */
 
-int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **defs);
+extern int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **defs);
 /* defs must be NULL terminated */
 
 /* Here are some dirty macros to extract data from the inp structures.
@@ -137,7 +141,7 @@ typedef struct {
   const char *desc;
 } t_pargs;
 
-void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],
+extern void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],
 		      bool bKeepArgs);
 /* Read a number of arguments from the command line. 
  * For etINT, etREAL and etCHAR an extra argument is read (when present)
@@ -145,31 +149,31 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],
  * If !bKeepArgs, the command line arguments are removed from the command line
  */
 
-bool is_hidden(t_pargs *pa);
+extern bool is_hidden(t_pargs *pa);
 /* Return TRUE when the option is a secret one */
 
-char *pa_val(t_pargs *pa,char *buf, int sz);
+extern char *pa_val(t_pargs *pa,char *buf, int sz);
 /* Return the value of pa in the provided buffer buf, of size sz.
  * The return value is also a pointer to buf.
  */
 
-int opt2parg_int(const char *option,int nparg,t_pargs pa[]);
+extern int opt2parg_int(const char *option,int nparg,t_pargs pa[]);
 
-bool opt2parg_bool(const char *option,int nparg,t_pargs pa[]);
+extern bool opt2parg_bool(const char *option,int nparg,t_pargs pa[]);
 
-real opt2parg_real(const char *option,int nparg,t_pargs pa[]);
+extern real opt2parg_real(const char *option,int nparg,t_pargs pa[]);
 
-const char *opt2parg_str(const char *option,int nparg,t_pargs pa[]);
+extern const char *opt2parg_str(const char *option,int nparg,t_pargs pa[]);
 
-const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[]);
+extern const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[]);
 
-bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[]);
+extern bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[]);
 
-void print_pargs(FILE *fp, int npargs,t_pargs pa[],bool bLeadingSpace);
+extern void print_pargs(FILE *fp, int npargs,t_pargs pa[],bool bLeadingSpace);
 
-char *pargs_print_line(t_pargs *pa,bool bLeadingSpace);
+extern char *pargs_print_line(t_pargs *pa,bool bLeadingSpace);
 
-void pr_enums(FILE *fp, int npargs,t_pargs pa[],int shell);
+extern void pr_enums(FILE *fp, int npargs,t_pargs pa[],int shell);
 
 #ifdef __cplusplus
 }

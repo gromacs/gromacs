@@ -36,6 +36,10 @@
 #ifndef _dihre_h
 #define _dihre_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "sysstuff.h"
 #include "typedefs.h"
 
@@ -46,7 +50,7 @@ extern "C" {
   void init_dihres(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,t_fcdata *fcd);
 
 
-t_ifunc ta_dihres;
+extern t_ifunc ta_dihres;
 /* Calculate the distance restraint forces, return the potential */
 
 #ifdef __cplusplus

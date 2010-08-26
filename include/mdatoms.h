@@ -36,15 +36,19 @@
 #ifndef _mdatoms_h
 #define _mdatoms_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,bool bFreeEnergy);
+extern t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,bool bFreeEnergy);
 
-void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,		     
+extern void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,		     
 		     int nindex,int *index,
 		     int start,int homenr,
 		     t_mdatoms *md);
@@ -52,7 +56,7 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
  * If index!=NULL only the indexed atoms are copied.
  */
 
-void update_mdatoms(t_mdatoms *md,real lambda);
+extern void update_mdatoms(t_mdatoms *md,real lambda);
 /* (Re)set all the mass parameters */
 
 #ifdef __cplusplus

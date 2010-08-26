@@ -35,6 +35,9 @@
 #ifndef _block_h
 #define _block_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include "idef.h"
 

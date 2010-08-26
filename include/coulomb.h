@@ -36,6 +36,10 @@
 #ifndef _coulomb_h
 #define _coulomb_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include "typedefs.h"
 
@@ -45,30 +49,26 @@ extern "C" {
 
 /* Ewald related stuff */
 
-void 
-init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
-                   FILE *fp);
+void init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
+                    FILE *fp);
 /* initialize the ewald table (as found in the t_forcerec) */
 
-real 
-calc_ewaldcoeff(real rc,real dtol);
+extern real calc_ewaldcoeff(real rc,real dtol);
 /* Determines the Ewald parameter, both for Ewald and PME */
 
 
-real
-do_ewald(FILE *log,       bool bVerbose,
-         t_inputrec *ir,
-         rvec x[],        rvec f[],
-         real chargeA[],  real chargeB[],
-         rvec box,
-         t_commrec *cr,  int natoms,
-         matrix lrvir,   real ewaldcoeff,
-         real lambda,    real *dvdlambda,
-         ewald_tab_t et);
+extern real do_ewald(FILE *log,       bool bVerbose,
+		     t_inputrec *ir,
+		     rvec x[],        rvec f[],
+		     real chargeA[],  real chargeB[],
+                     rvec box,
+		     t_commrec *cr,  int natoms,
+		     matrix lrvir,   real ewaldcoeff,
+		     real lambda,    real *dvdlambda,
+                     ewald_tab_t et);
 /* Do an Ewald calculation for the long range electrostatics. */
  
-real
-ewald_LRcorrection(FILE *fp,
+extern real ewald_LRcorrection(FILE *fp,
 			       int start,int end,
 			       t_commrec *cr,t_forcerec *fr,
 			       real *chargeA,real *chargeB,
@@ -84,12 +84,10 @@ ewald_LRcorrection(FILE *fp,
 /* Routines to set global constants for speeding up the calculation
  * of potentials and forces.
  */
-void 
-set_shift_consts(FILE *log,real r1,real rc,rvec box,
+extern void set_shift_consts(FILE *log,real r1,real rc,rvec box,
 			     t_forcerec *fr);
 
-real
-shift_LRcorrection(FILE *fp,int start,int natoms,
+extern real shift_LRcorrection(FILE *fp,int start,int natoms,
 			       t_commrec *cr,t_forcerec *fr,
 			       real charge[],t_blocka *excl,rvec x[],
 			       bool bOld,matrix box,matrix lrvir);

@@ -188,9 +188,9 @@ static void _do_section(t_fileio *fio,int key,bool bRead,const char *src,
       
       do {
 	gmx_fio_do_string(fio,buf);
-      } while ((gmx_strcasecmp(buf,itemstr[key]) != 0));
+      } while ((strcasecmp(buf,itemstr[key]) != 0));
       
-      if (gmx_strcasecmp(buf,itemstr[key]) != 0) 
+      if (strcasecmp(buf,itemstr[key]) != 0) 
 	gmx_fatal(FARGS,"\nCould not find section heading %s",itemstr[key]);
       else if (gmx_fio_getdebug(fio))
 	fprintf(stderr," and found it\n");

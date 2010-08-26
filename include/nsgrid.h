@@ -33,6 +33,10 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -50,11 +54,11 @@ extern "C" {
  * to account for less dense regions at the edges of the system.
  */
 
-t_grid *init_grid(FILE *fplog,t_forcerec *fr);
+extern t_grid *init_grid(FILE *fplog,t_forcerec *fr);
 
-void done_grid(t_grid *grid);
+extern void done_grid(t_grid *grid);
 
-void get_nsgrid_boundaries(t_grid *grid,
+extern void get_nsgrid_boundaries(t_grid *grid,
 				  gmx_domdec_t *dd,
 				  matrix box,gmx_ddbox_t *ddbox,
 				  rvec *gr0,rvec *gr1,
@@ -71,12 +75,12 @@ void get_nsgrid_boundaries(t_grid *grid,
  * on the edges are determined from cgcm.
  */
 
-void grid_first(FILE *log,t_grid *grid,
+extern void grid_first(FILE *log,t_grid *grid,
 		       gmx_domdec_t *dd,const gmx_ddbox_t *ddbox,
 		       int ePBC,matrix box,rvec izones_x0,rvec izones_x1,
 		       real rlong,real grid_density);
 
-void fill_grid(FILE *log,
+extern void fill_grid(FILE *log,
 		      gmx_domdec_zones_t *dd_zones,
 		      t_grid *grid,int ncg_tot,
 		      int cg0,int cg1,rvec cg_cm[]);
@@ -85,23 +89,23 @@ void fill_grid(FILE *log,
  * When cg0 is -1, contiues filling from grid->nr to cg1.
  */
 
-void calc_elemnr(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
+extern void calc_elemnr(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
 
-void calc_ptrs(t_grid *grid);
+extern void calc_ptrs(t_grid *grid);
 
-void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
+extern void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
 
-int xyz2ci_(int nry,int nrz,int x,int y,int z);
+extern int xyz2ci_(int nry,int nrz,int x,int y,int z);
 #define xyz2ci(nry,nrz,x,y,z) ((nry)*(nrz)*(x)+(nrz)*(y)+(z))
 /* Return the cell index */
 
-void ci2xyz(t_grid *grid,int i,int *x,int *y,int *z);
+extern void ci2xyz(t_grid *grid,int i,int *x,int *y,int *z);
 
-void check_grid(FILE *log,t_grid *grid);
+extern void check_grid(FILE *log,t_grid *grid);
 
-void print_grid(FILE *log,t_grid *grid);
+extern void print_grid(FILE *log,t_grid *grid);
 
-void mv_grid(t_commrec *cr,t_grid *grid);
+extern void mv_grid(t_commrec *cr,t_grid *grid);
 /* Move the grid over processors */
 
 #ifdef __cplusplus

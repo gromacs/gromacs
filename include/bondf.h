@@ -36,6 +36,9 @@
 #ifndef _bondf_h
 #define _bondf_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdio.h>
 #include "typedefs.h"
@@ -47,23 +50,23 @@
 extern "C" {
 #endif
 
-int glatnr(int *global_atom_index,int i);
+extern int glatnr(int *global_atom_index,int i);
 /* Returns the global topology atom number belonging to local atom index i.
  * This function is intended for writing ascii output
  * and returns atom numbers starting at 1.
  * When global_atom_index=NULL returns i+1.
  */
 
-void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
-                const t_idef *idef,
-                rvec x[],history_t *hist,
-                rvec f[],t_forcerec *fr,
-                const t_pbc *pbc,const t_graph *g,
-                gmx_enerdata_t *enerd,t_nrnb *nrnb,real lambda,
-                const t_mdatoms *md,
-                t_fcdata *fcd,int *ddgatindex,
-                t_atomtypes *atype, gmx_genborn_t *born,
-                bool bPrintSepPot,gmx_large_int_t step);
+extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
+		       const t_idef *idef,
+                       rvec x[],history_t *hist,
+		       rvec f[],t_forcerec *fr,
+		       const t_pbc *pbc,const t_graph *g,
+                       gmx_enerdata_t *enerd,t_nrnb *nrnb,real lambda,
+		       const t_mdatoms *md,
+		       t_fcdata *fcd,int *ddgatindex,
+		       t_atomtypes *atype, gmx_genborn_t *born,
+		       bool bPrintSepPot,gmx_large_int_t step);
 /* 
  * The function calc_bonds() calculates all bonded force interactions.
  * The "bonds" are specified as follows:
@@ -90,7 +93,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
  *	    the total potential energy (sum over epot).
  */
 
-void calc_bonds_lambda(FILE *fplog,
+extern void calc_bonds_lambda(FILE *fplog,
 			      const t_idef *idef,
 			      rvec x[],
 			      t_forcerec *fr,
@@ -104,7 +107,7 @@ void calc_bonds_lambda(FILE *fplog,
  * The shift forces in fr are not affected.
  */
 
-real posres(int nbonds,
+extern real posres(int nbonds,
 		   const t_iatom forceatoms[],const t_iparams forceparams[],
 		   const rvec x[],rvec f[],rvec vir_diag,
 		   t_pbc *pbc,
@@ -112,20 +115,20 @@ real posres(int nbonds,
 		   int refcoord_scaling,int ePBC,rvec comA,rvec comB);
 /* Position restraints require a different pbc treatment from other bondeds */
 
-real bond_angle(const rvec xi,const rvec xj,const rvec xk,
+extern real bond_angle(const rvec xi,const rvec xj,const rvec xk,
 		       const t_pbc *pbc,
 		       rvec r_ij,rvec r_kj,real *costh,
 		       int *t1,int *t2);	/* out */
 /* Calculate bond-angle. No PBC is taken into account (use mol-shift) */
 
-real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
+extern real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 		      const t_pbc *pbc,
 		      rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n, /* out */
 		      real *sign,
 		      int *t1,int *t2,int *t3);
 /* Calculate dihedral-angle. No PBC is taken into account (use mol-shift) */
 
-void do_dih_fup(int i,int j,int k,int l,real ddphi,
+extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		       rvec r_ij,rvec r_kj,rvec r_kl,
 		       rvec m,rvec n,rvec f[],rvec fshift[],
 		       const t_pbc *pbc,const t_graph *g,
@@ -137,11 +140,11 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
  *  Bonded force functions
  *
  *************************************************************************/
-  t_ifunc bonds,g96bonds,morse_bonds,cubic_bonds,FENE_bonds,restraint_bonds;
-  t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley,quartic_angles;
-  t_ifunc pdihs,idihs,rbdihs;
-  t_ifunc tab_bonds,tab_angles,tab_dihs;
-  t_ifunc polarize,water_pol,thole_pol,angres,angresz,unimplemented;
+  extern t_ifunc bonds,g96bonds,morse_bonds,cubic_bonds,FENE_bonds,restraint_bonds;
+  extern t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley,quartic_angles;
+  extern t_ifunc pdihs,idihs,rbdihs;
+  extern t_ifunc tab_bonds,tab_angles,tab_dihs;
+  extern t_ifunc polarize,water_pol,thole_pol,angres,angresz,unimplemented;
 
 #ifdef __cplusplus
 }

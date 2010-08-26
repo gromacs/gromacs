@@ -345,7 +345,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     /* If there is no match, return the token as a string */
     if (!symbol)
     {
-        yylval->str = gmx_strndup(yytext, yyleng);
+        yylval->str = strndup(yytext, yyleng);
         _gmx_sel_lexer_add_token(yytext, yyleng, state);
         return IDENTIFIER;
     }

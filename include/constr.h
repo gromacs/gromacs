@@ -33,6 +33,9 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
+#ifdef HAVE_CONFIG_H
+#include<config.h>
+#endif
 
 #include "typedefs.h"
 
@@ -52,16 +55,16 @@ enum
     econqForceDispl     /* Constrain forces (mass-weighted 1/0 for freeze) */
 };
 
-int n_flexible_constraints(struct gmx_constr *constr);
+extern int n_flexible_constraints(struct gmx_constr *constr);
 /* Returns the total number of flexible constraints in the system */
 
-void too_many_constraint_warnings(int eConstrAlg,int warncount);
+extern void too_many_constraint_warnings(int eConstrAlg,int warncount);
 /* Generate a fatal error because of too many LINCS/SETTLE warnings */
 
-gmx_shakedata_t shake_init();
+extern gmx_shakedata_t shake_init();
 /* Initializes and return the SHAKE data structure */
 
-bool bshakef(FILE *log,		/* Log file			*/
+extern bool bshakef(FILE *log,		/* Log file			*/
                     gmx_shakedata_t shaked, /* SHAKE data */
                     int natoms,		/* Total number of atoms	*/
                     real invmass[],	/* Atomic masses		*/
@@ -92,11 +95,11 @@ bool bshakef(FILE *log,		/* Log file			*/
  * Return TRUE when OK, FALSE when shake-error
  */
 
-gmx_settledata_t settle_init(real mO,real mH,real invmO,real invmH,
+extern gmx_settledata_t settle_init(real mO,real mH,real invmO,real invmH,
 				    real dOH,real dHH);
 /* Initializes and returns a structure with SETTLE parameters */
 
-void csettle(gmx_settledata_t settled,
+extern void csettle(gmx_settledata_t settled,
                     int nsettle,	/* Number of settles  	        */
                     t_iatom iatoms[],	/* The settle iatom list        */
                     real b4[],		/* Old coordinates		*/
@@ -109,7 +112,7 @@ void csettle(gmx_settledata_t settled,
                     t_vetavars *vetavar     /* variables for pressure control */   
     );
 
-void settle_proj(FILE *fp,
+extern void settle_proj(FILE *fp,
                         gmx_settledata_t settled,int econq,
                         int nsettle, t_iatom iatoms[],rvec x[],
                         rvec *der,rvec *derp,
@@ -118,16 +121,16 @@ void settle_proj(FILE *fp,
  * of coordinates working on settle type constraint.
  */
 
-void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
+extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
                    real dist2[],real xp[],real rij[],real m2[],real omega,
                    real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
-void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
+extern void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
                     real dist2[],real vp[],real rij[],real m2[],real omega,
                     real invmass[],real tt[],real lagr[],int *nerror,real invdt,t_vetavars *vetavar);
 
-bool constrain(FILE *log,bool bLog,bool bEner,
+extern bool constrain(FILE *log,bool bLog,bool bEner,
                       gmx_constr_t constr,
                       t_idef *idef,
                       t_inputrec *ir,
@@ -168,13 +171,13 @@ bool constrain(FILE *log,bool bLog,bool bEner,
  *
  */
 
-gmx_constr_t init_constraints(FILE *log,
+extern gmx_constr_t init_constraints(FILE *log,
 				     gmx_mtop_t *mtop,t_inputrec *ir, 
 				     gmx_edsam_t ed,t_state *state,
 				     t_commrec *cr);
 /* Initialize constraints stuff */
 
-void set_constraints(gmx_constr_t constr,
+extern void set_constraints(gmx_constr_t constr,
 							gmx_localtop_t *top,
 							t_inputrec *ir,
 							t_mdatoms *md,
@@ -187,12 +190,12 @@ void set_constraints(gmx_constr_t constr,
  * after the F_CONSTR constraints.
  */
 
-t_blocka make_at2con(int start,int natoms,
+extern t_blocka make_at2con(int start,int natoms,
 			    t_ilist *ilist,t_iparams *iparams,
 			    bool bDynamics,int *nflexiblecons);
 /* Returns a block struct to go from atoms to constraints */
 
-t_blocka *atom2constraints_moltype(gmx_constr_t constr);
+extern t_blocka *atom2constraints_moltype(gmx_constr_t constr);
 /* Returns the an arry of atom to constraints lists for the moltypes */
 
 #define constr_iatomptr(nconstr,iatom_constr,iatom_constrnc,con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
@@ -201,21 +204,21 @@ t_blocka *atom2constraints_moltype(gmx_constr_t constr);
  * are concatenated.
  */
 
-bool inter_charge_group_constraints(gmx_mtop_t *mtop);
+extern bool inter_charge_group_constraints(gmx_mtop_t *mtop);
 /* Returns if there are inter charge group constraints */
 
-real *constr_rmsd_data(gmx_constr_t constr);
+extern real *constr_rmsd_data(gmx_constr_t constr);
 /* Return the data for determining constraint RMS relative deviations.
  * Returns NULL when LINCS is not used.
  */
 
-real constr_rmsd(gmx_constr_t constr,bool bSD2);
+extern real constr_rmsd(gmx_constr_t constr,bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
-real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
+extern real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
 /* Return the data for determining constraint RMS relative deviations */
 
-real lincs_rmsd(gmx_lincsdata_t lincsd,bool bSD2);
+extern real lincs_rmsd(gmx_lincsdata_t lincsd,bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
 gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
@@ -223,20 +226,20 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
 			   bool bPLINCS,int nIter,int nProjOrder);
 /* Initializes and returns the lincs data struct */
 
-void set_lincs(t_idef *idef,t_mdatoms *md,
+extern void set_lincs(t_idef *idef,t_mdatoms *md,
 		      bool bDynamics,t_commrec *cr,
 		      gmx_lincsdata_t li);
 /* Initialize lincs stuff */
 
-void set_lincs_matrix(gmx_lincsdata_t li,real *invmass,real lambda);
+extern void set_lincs_matrix(gmx_lincsdata_t li,real *invmass,real lambda);
 /* Sets the elements of the LINCS constraint coupling matrix */
 
-real constr_r_max(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir);
+extern real constr_r_max(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir);
 /* Returns an estimate of the maximum distance between atoms
  * required for LINCS.
  */
 
-bool constrain_lincs(FILE *log,bool bLog,bool bEner,
+extern bool constrain_lincs(FILE *log,bool bLog,bool bEner,
 			    t_inputrec *ir,
 			    gmx_large_int_t step,
 			    gmx_lincsdata_t lincsd,t_mdatoms *md,

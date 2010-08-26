@@ -40,7 +40,7 @@
 #include "hackblock.h"
 #include "grompp.h"
 
-extern int read_ter_db(const char *ffdir,char ter,
+extern int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
 		       t_hackblock **tbptr,gpp_atomtype_t atype);
 /* Read database for N&C terminal hacking */
 

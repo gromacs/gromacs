@@ -399,7 +399,7 @@ add_symbol(gmx_sel_symtab_t *tab, const char *name, e_symbol_t *ctype)
     sym  = tab->first;
     while (sym)
     {
-        if (!gmx_strcasecmp(sym->name, name))
+        if (!strcasecmp(sym->name, name))
         {
             *ctype = sym->type;
             return NULL;

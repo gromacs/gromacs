@@ -32,6 +32,9 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include "typedefs.h"
 
@@ -39,7 +42,7 @@
 extern "C" {
 #endif
 
-real calc_grid(FILE *fp,
+extern real calc_grid(FILE *fp,
 		      matrix box,real gr_sp,
 		      int *nx,int *ny,int *nz);
 /* Sets the number of grid points for each zero n* to the first reasonable

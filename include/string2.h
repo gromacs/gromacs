@@ -38,6 +38,10 @@
 #ifndef _string2_h
 #define _string2_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /*
  *
  * string2.h
@@ -52,6 +56,12 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 
 /*#include "typedefs.h"*/
 #include "types/simple.h"
@@ -64,58 +74,74 @@ extern "C" {
 #define CONTINUE    '\\'
 #define COMMENTSIGN ';'
 
-  int continuing(char *s);
+extern int continuing(char *s);
 
-  char *fgets2(char *s, int n, FILE *stream);
+extern char *fgets2(char *s, int n, FILE *stream);
 
-  void strip_comment (char *line);
+extern void strip_comment (char *line);
 
-  int break_line (char *line,
-      char *variable,
-      char *value);
+extern int break_line (char *line,
+		       char *variable,
+		       char *value);
 
-  void upstring (char *str);
+extern void upstring (char *str);
 
-  void ltrim (char *str);
+extern void ltrim (char *str);
 
-  void rtrim (char *str);
+extern void rtrim (char *str);
 
-  void trim (char *str);
+extern void trim (char *str);
 
-  void nice_header (FILE *out,const char *fn);
+extern void nice_header (FILE *out,const char *fn);
 
-  int gmx_strcasecmp_min(const char *str1, const char *str2);
-  int gmx_strncasecmp_min(const char *str1, const char *str2, int n);
-  /* This funny version of strcasecmp, is not only case-insensitive,
-   * but also ignores '-' and '_'.
-   */
+extern int strcasecmp_min(const char *str1, const char *str2);
+extern int strncasecmp_min(const char *str1, const char *str2, int n);
+/* This funny version of strcasecmp, is not only case-insensitive,
+ * but also ignores '-' and '_'.
+ */
 
-  int gmx_strcasecmp(const char *str1, const char *str2);
-  int gmx_strncasecmp(const char *str1, const char *str2, int n);
+extern int gmx_strcasecmp(const char *str1, const char *str2);
+extern int gmx_strncasecmp(const char *str1, const char *str2, int n);
 
-  char *gmx_strdup(const char *src);
-  char *gmx_strndup(const char *src, int n);
+extern char *gmx_strdup(const char *src);
+extern char *gmx_strndup(const char *src, int n);
+    
+/* Portable version of ctime_r */
+char *gmx_ctime_r(const time_t *clock,char *buf, int n);
+    
 
-  /** Pattern matcing with wildcards. */
-  int gmx_wcmatch(const char *pattern, const char *src);
 
-  /** Return value for gmx_wcmatch() when there is no match. */
+#ifndef HAVE_STRCASECMP
+#define strcasecmp gmx_strcasecmp
+#define strncasecmp gmx_strncasecmp
+#endif
+
+#ifndef HAVE_STRDUP
+#define strdup gmx_strdup
+#endif
+
+#define strndup gmx_strndup
+
+/** Pattern matcing with wildcards. */
+extern int gmx_wcmatch(const char *pattern, const char *src);
+
+/** Return value for gmx_wcmatch() when there is no match. */
 #define GMX_NO_WCMATCH 1
 
 
-  /* this is our implementation of strsep, the thread-safe replacement for
-     strtok */
-  char *gmx_strsep(char **stringp, const char *delim);
+/* this is our implementation of strsep, the thread-safe replacement for
+   strtok */
+extern char *gmx_strsep(char **stringp, const char *delim);
 
 
-  char *wrap_lines(const char *buf,int line_width, int indent,
-      bool bIndentFirst);
-  /* wraps lines at 'linewidth', indenting all following
-   * lines by 'indent' spaces. A temp buffer is allocated and returned,
-   * which can be disposed of if no longer needed.
-   * If !bIndentFirst, then the first line will not be indented, only 
-   * the lines that are created due to wapping.
-   */
+extern char *wrap_lines(const char *buf,int line_width, int indent,
+			bool bIndentFirst);
+/* wraps lines at 'linewidth', indenting all following
+ * lines by 'indent' spaces. A temp buffer is allocated and returned,
+ * which can be disposed of if no longer needed.
+ * If !bIndentFirst, then the first line will not be indented, only 
+ * the lines that are created due to wapping.
+ */
 
 
 extern char **split(char sep,const char *str);

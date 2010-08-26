@@ -533,8 +533,8 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
 	  buf2[strlen(buf2)-1]='\0';
 	  ltrim(buf2);
 	  rtrim(buf2);
-	  bSystem=(gmx_strcasecmp(buf2,"system")==0);
-	  bMolecules=(gmx_strcasecmp(buf2,"molecules")==0);
+	  bSystem=(strcasecmp(buf2,"system")==0);
+	  bMolecules=(strcasecmp(buf2,"molecules")==0);
 	}
       } else if (bSystem && nsol && (buf[0]!=';') ) {
 	/* if sol present, append "in water" to system name */

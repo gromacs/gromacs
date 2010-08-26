@@ -284,7 +284,7 @@ static char *html_xref(char *s,const char *program, t_linkdata *links,bool bWiki
     links->nsr=n;
     snew(links->sr,n);
     for(i=0,j=0; (i<n); i++) {
-      if (!program || (gmx_strcasecmp(program,filestr[i])  != 0)) {
+      if (!program || (strcasecmp(program,filestr[i])  != 0)) {
 	links->sr[j].search=strdup(filestr[i]);
 	if (bWiki)
 	  sprintf(buf,"[[%s]]",filestr[i]);

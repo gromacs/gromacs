@@ -32,6 +32,10 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {

@@ -36,6 +36,10 @@
 #ifndef _pdbio_h
 #define _pdbio_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "symtab.h"
@@ -61,26 +65,26 @@ enum { epdbATOM,   epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND,
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum { U11, U22, U33, U12, U13, U23 };
        
-void set_pdb_wide_format(bool bSet);
+extern void set_pdb_wide_format(bool bSet);
 /* If bSet, use wider format for occupancy and bfactor */
 
-void pdb_use_ter(bool bSet);
+extern void pdb_use_ter(bool bSet);
 /* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE).
    This function is fundamentally broken as far as thread-safety is concerned.*/
 
-void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
+extern void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
 /* write the box in the CRYST1 record,
  * with ePBC=-1 the pbc is guessed from the box
  * This function is fundamentally broken as far as thread-safety is concerned.
  */
 
-void write_pdbfile_indexed(FILE *out,const char *title,t_atoms *atoms,
+extern void write_pdbfile_indexed(FILE *out,const char *title,t_atoms *atoms,
 				  rvec x[],int ePBC,matrix box,char chain,
 				  int model_nr,atom_id nindex,atom_id index[],
 				  gmx_conect conect,bool bTerSepChains);
 /* REALLY low level */
 
-void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
+extern void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
 			  rvec x[],int ePBC,matrix box,char chain,
 			  int model_nr,gmx_conect conect,bool bTerSepChains);
 /* Low level pdb file writing routine.
@@ -96,17 +100,17 @@ void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
  * which may be useful for visualization purposes.
  */
   
-void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps);
+extern void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps);
 /* Routine to extract atomic numbers from the atom names */
 
-int read_pdbfile(FILE *in,char *title,int *model_nr,
+extern int read_pdbfile(FILE *in,char *title,int *model_nr,
 			t_atoms *atoms,rvec x[],int *ePBC,matrix box,
 			bool bChange,gmx_conect conect);
 /* Function returns number of atoms found.
  * ePBC and gmx_conect structure may be NULL.
  */
 
-void read_pdb_conf(const char *infile,char *title, 
+extern void read_pdb_conf(const char *infile,char *title, 
 			  t_atoms *atoms,rvec x[],int *ePBC,matrix box,
 			  bool bChange,gmx_conect conect);
 /* Read a pdb file and extract ATOM and HETATM fields.
@@ -115,31 +119,31 @@ void read_pdb_conf(const char *infile,char *title,
  * ePBC and gmx_conect structure may be NULL.
  */
 
-void get_pdb_coordnum(FILE *in,int *natoms);
+extern void get_pdb_coordnum(FILE *in,int *natoms);
 /* Read a pdb file and count the ATOM and HETATM fields. */
 
-bool is_hydrogen(const char *nm);
+extern bool is_hydrogen(const char *nm);
 /* Return whether atom nm is a hydrogen */
 
-bool is_dummymass(const char *nm);
+extern bool is_dummymass(const char *nm);
 /* Return whether atom nm is a dummy mass */
 
 /* Routines to handle CONECT records if they have been read in */
-void gmx_conect_dump(FILE *fp,gmx_conect conect);
+extern void gmx_conect_dump(FILE *fp,gmx_conect conect);
 
-bool gmx_conect_exist(gmx_conect conect,int ai,int aj);
+extern bool gmx_conect_exist(gmx_conect conect,int ai,int aj);
 /* Return TRUE if there is a conection between the atoms */
 
-void gmx_conect_add(gmx_conect conect,int ai,int aj);
+extern void gmx_conect_add(gmx_conect conect,int ai,int aj);
 /* Add a connection between ai and aj (numbered from 0 to natom-1) */ 
 
-gmx_conect gmx_conect_generate(t_topology *top);
+extern gmx_conect gmx_conect_generate(t_topology *top);
 /* Generate a conect structure from a topology */
 
-gmx_conect gmx_conect_init();
+extern gmx_conect gmx_conect_init();
 /* Initiate data structure */
 
-void gmx_conect_done(gmx_conect gc);
+extern void gmx_conect_done(gmx_conect gc);
 /* Free memory */
 
 #ifdef __cplusplus

@@ -133,7 +133,7 @@ static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
     sfree(xlatom);
 }
 
-void rename_atoms(const char *xlfile,const char *ffdir,
+void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
                   t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
                   bool bResname,gmx_residuetype_t rt,bool bReorderNum,
                   bool bVerbose)
@@ -156,7 +156,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,
     }
     else
     {
-        nf = fflib_search_file_end(ffdir,".arn",FALSE,&f);
+        nf = fflib_search_file_end(ffdir,bAddCWD,".arn",FALSE,&f);
         for(i=0; i<nf; i++)
         {
             fp = fflib_open(f[i]);
@@ -198,15 +198,15 @@ void rename_atoms(const char *xlfile,const char *ffdir,
         for(i=0; (i<nxlate) && !bRenamed; i++) {
             /* Check if the base file name of the rtp and arn entry match */
             if (restp == NULL ||
-                gmx_strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
+                strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
-                          (gmx_strcasecmp("protein",xlatom[i].res) == 0 &&
+                          (strcasecmp("protein",xlatom[i].res) == 0 &&
                            gmx_residuetype_is_protein(rt,rnm)) ||
-                          (gmx_strcasecmp("DNA",xlatom[i].res) == 0 &&
+                          (strcasecmp("DNA",xlatom[i].res) == 0 &&
                            gmx_residuetype_is_dna(rt,rnm)) ||
-                          (gmx_strcasecmp("RNA",xlatom[i].res) == 0 &&
+                          (strcasecmp("RNA",xlatom[i].res) == 0 &&
                            gmx_residuetype_is_rna(rt,rnm)));
                 if (!bMatch)
                 {

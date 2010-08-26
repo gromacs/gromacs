@@ -36,6 +36,11 @@
 #ifndef _statutil_h
 #define _statutil_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 #include <stdio.h>
 #include "typedefs.h"
 #include "filenm.h"
@@ -60,11 +65,11 @@ extern "C" {
  */
 enum { TBEGIN, TEND, TDELTA, TNR };
 
-bool bTimeSet(int tcontrol);
+extern bool bTimeSet(int tcontrol);
 
-real rTimeValue(int tcontrol); 
+extern real rTimeValue(int tcontrol); 
 
-void setTimeValue(int tcontrol,real value);
+extern void setTimeValue(int tcontrol,real value);
 
 /* End trajectory time control */
 
@@ -89,35 +94,35 @@ typedef bool t_next_x(t_trxstatus *status,real *t,int natoms,rvec x[],
    a real problem. */
     
 /* Return the name of the program */
-const char *command_line(void);
-void set_command_line(int argc, char *argv[]);
+extern const char *command_line(void);
+extern void set_command_line(int argc, char *argv[]);
 
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
  */    
-const char *Program(void);
-void set_program_name(const char *argvzero);
+extern const char *Program(void);
+extern void set_program_name(const char *argvzero);
 /* Id. without leading directory */
-const char *ShortProgram(void);
+extern const char *ShortProgram(void);
 
 /************************************************
  *             Trajectory functions
  ************************************************/
 
-int prec2ndec(real prec);
+extern int prec2ndec(real prec);
 /* Convert precision in 1/(nm) to number of decimal places */
 
-void clear_trxframe(t_trxframe *fr,bool bFirst);
+extern void clear_trxframe(t_trxframe *fr,bool bFirst);
 /* Set all content booleans to FALSE.
  * When bFirst = TRUE, set natoms=-1, all pointers to NULL
  *                     and all data to zero.
  */
 
-void set_trxframe_ePBC(t_trxframe *fr,int ePBC);
+extern void set_trxframe_ePBC(t_trxframe *fr,int ePBC);
 /* Set the type of periodic boundary conditions, ePBC=-1 is not set */
 
-int nframes_read(t_trxstatus *status);
+extern int nframes_read(t_trxstatus *status);
 /* Returns the number of frames read from the trajectory */
 
 int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
@@ -154,7 +159,7 @@ t_trxstatus *open_trx(const char *outfile,const char *filemode);
 t_fileio *trx_get_fileio(t_trxstatus *status);
 
 
-bool bRmod_fd(double a, double b, double c,bool bDouble);
+extern bool bRmod_fd(double a, double b, double c,bool bDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
  * larger than the float/double precision.
  */
@@ -165,7 +170,7 @@ bool bRmod_fd(double a, double b, double c,bool bDouble);
 #define bRmod(a,b,c) bRmod_fd(a,b,c,FALSE)
 #endif
 
-int check_times2(real t,real t0,real tp,real tpp,bool bDouble);
+extern int check_times2(real t,real t0,real tp,real tpp,bool bDouble);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin or t MOD dt = t0,
  *          0 if tbegin <= t <=tend+margin,
@@ -176,7 +181,7 @@ int check_times2(real t,real t0,real tp,real tpp,bool bDouble);
  * on the value of bDouble.
  */
 
-int check_times(real t);
+extern int check_times(real t);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin,
  *          0 if tbegin <= t <=tend,
@@ -206,7 +211,7 @@ int check_times(real t);
 #define DATA_NOT_OK   (1<<1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
-int read_first_frame(const output_env_t oenv,t_trxstatus **status,
+extern int read_first_frame(const output_env_t oenv,t_trxstatus **status,
                             const char *fn, t_trxframe *fr,int flags);
   /* Read the first frame which is in accordance with flags, which are
    * defined further up in this file. 
@@ -216,13 +221,13 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
-bool read_next_frame(const output_env_t oenv,t_trxstatus *status,
+extern bool read_next_frame(const output_env_t oenv,t_trxstatus *status,
                             t_trxframe *fr);
   /* Reads the next frame which is in accordance with fr->flags.
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
-int read_first_x(const output_env_t oenv,t_trxstatus **status,
+extern int read_first_x(const output_env_t oenv,t_trxstatus **status,
                         const char *fn, real *t,rvec **x,matrix box);
 /* These routines read first coordinates and box, and allocates 
  * memory for the coordinates, for a trajectory file.
@@ -230,22 +235,22 @@ int read_first_x(const output_env_t oenv,t_trxstatus **status,
  * The integer in status should be passed to calls of read_next_x
  */
 
-bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
+extern bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
                         int natoms, rvec x[],matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.
  */
 
-void close_trj(t_trxstatus *status);
+extern void close_trj(t_trxstatus *status);
 /* Close trj file as opened with read_first_x, read_frist_frame
  * or open_trx. Identical to close_trx.
  */
 
-void rewind_trj(t_trxstatus *status);
+extern void rewind_trj(t_trxstatus *status);
 /* Rewind trj file as opened with read_first_x */
 
-t_topology *read_top(const char *fn,int *ePBC);
+extern t_topology *read_top(const char *fn,int *ePBC);
 /* Extract a topology data structure from a topology file.
  * If ePBC!=NULL *ePBC gives the pbc type.
  */
@@ -278,7 +283,7 @@ t_topology *read_top(const char *fn,int *ePBC);
 #define PCA_NOT_READ_NODE  (1<<16)
 /* Is this node not reading: for parallel all nodes but the master */
 
-int iscan(int argc,char *argv[],int *i);
+extern int iscan(int argc,char *argv[],int *i);
 /* Scan an int from the argument at *i. If the argument length
  * is > 2, the int is assumed to be in the remainder of the arg,
  * eg: -p32, else the int is assumed to be in the next argument
@@ -287,27 +292,27 @@ int iscan(int argc,char *argv[],int *i);
  * argument *i is incremented. You typically would want to pass
  * a loop variable to this routine.
  */
-gmx_large_int_t istepscan(int argc,char *argv[],int *i);
+extern gmx_large_int_t istepscan(int argc,char *argv[],int *i);
 /* Same as above, but for large integer values */
 
-double dscan(int argc,char *argv[],int *i);
+extern double dscan(int argc,char *argv[],int *i);
 /* Routine similar to the above, but working on doubles. */
 
-char *sscan(int argc,char *argv[],int *i);
+extern char *sscan(int argc,char *argv[],int *i);
 /* Routine similar to the above, but working on strings. The pointer
  * returned is a pointer to the argv field.
  */
 
-void vscan(int argc,char *argv[],int *i,rvec *vec);
+extern void vscan(int argc,char *argv[],int *i,rvec *vec);
 /* Routine similar to the above, but working on rvecs. */
 
-int nenum(const char *const enumc[]);
+extern int nenum(const char *const enumc[]);
 /* returns ordinal number of selected enum from args 
  * depends on enumc[0] pointing to one of the other elements
  * array must be terminated by a NULL pointer 
  */
 
-void parse_common_args(int *argc,char *argv[],unsigned long Flags,
+extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
                               int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
                               int ndesc,const char **desc,
                               int nbugs,const char **bugs, 

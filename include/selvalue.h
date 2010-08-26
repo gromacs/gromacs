@@ -102,16 +102,16 @@ typedef struct gmx_ana_selvalue_t
 } gmx_ana_selvalue_t;
 
 /** Initializes an empty selection value structure. */
-void
+extern void
 _gmx_selvalue_clear(gmx_ana_selvalue_t *val);
 /** Reserve memory for storing selection values. */
-int
+extern int
 _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n);
 /** Sets the memory for storing selection values. */
-int
+extern int
 _gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr);
 /** Sets the memory for storing selection values and marks it for automatic freeing. */
-int
+extern int
 _gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc);
 
 #ifdef __cplusplus

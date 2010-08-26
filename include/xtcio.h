@@ -36,6 +36,11 @@
 #ifndef _xtcio_h
 #define _xtcio_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 #include "typedefs.h"
 #include "gmxfio.h"
 #include "xdrf.h"
@@ -48,31 +53,31 @@ extern "C" {
  * bOK tells if a frame is not corrupted 
  */  
 
-t_fileio *open_xtc(const char *filename,const char *mode);
+extern t_fileio *open_xtc(const char *filename,const char *mode);
 /* Open a file for xdr I/O */
   
-void close_xtc(t_fileio *fio);
+extern void close_xtc(t_fileio *fio);
 /* Close the file for xdr I/O */
   
-int read_first_xtc(t_fileio *fio,
+extern int read_first_xtc(t_fileio *fio,
 			  int *natoms,int *step,real *time,
 			  matrix box,rvec **x,real *prec,bool *bOK);
 /* Open xtc file, read xtc file first time, allocate memory for x */
 
-int read_next_xtc(t_fileio *fio,
+extern int read_next_xtc(t_fileio *fio,
 			 int natoms,int *step,real *time,
 			 matrix box,rvec *x,real *prec,bool *bOK);
 /* Read subsequent frames */
 
-int write_xtc(t_fileio *fio,
+extern int write_xtc(t_fileio *fio,
 		     int natoms,int step,real time,
 		     matrix box,rvec *x,real prec);
 /* Write a frame to xtc file */
 
-int xtc_check(const char *str,bool bResult,const char *file,int line);
+extern int xtc_check(const char *str,bool bResult,const char *file,int line);
 #define XTC_CHECK(s,b) xtc_check(s,b,__FILE__,__LINE__)
 
-void xtc_check_fat_err(const char *str,bool bResult,const char *file,int line);
+extern void xtc_check_fat_err(const char *str,bool bResult,const char *file,int line);
 #define XTC_CHECK_FAT_ERR(s,b) xtc_check_fat_err(s,b,__FILE__,__LINE__)
 
 #ifdef __cplusplus

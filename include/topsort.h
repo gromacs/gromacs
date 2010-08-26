@@ -1,6 +1,9 @@
 #ifndef _topsort_h
 #define _topsort_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include "typedefs.h"
 

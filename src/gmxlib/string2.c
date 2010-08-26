@@ -46,12 +46,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <time.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -225,7 +219,7 @@ void nice_header (FILE *out,const char *fn)
   fprintf (out,"%c\n",COMMENTSIGN);
 }
 
-int gmx_strcasecmp_min(const char *str1, const char *str2)
+int strcasecmp_min(const char *str1, const char *str2)
 {
   char ch1,ch2;
   
@@ -243,7 +237,7 @@ int gmx_strcasecmp_min(const char *str1, const char *str2)
   return 0; 
 }
 
-int gmx_strncasecmp_min(const char *str1, const char *str2, int n)
+int strncasecmp_min(const char *str1, const char *str2, int n)
 {
   char ch1,ch2;
   char *stri1, *stri2;

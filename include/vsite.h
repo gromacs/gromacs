@@ -36,6 +36,10 @@
 #ifndef _vsite_h
 #define _vsite_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include "typedefs.h"
 
@@ -66,7 +70,7 @@ typedef struct {
   t_comm_vsites *vsitecomm;   /* The PD vsite communication struct       */
 } gmx_vsite_t;
 
-void construct_vsites(FILE *log,gmx_vsite_t *vsite,
+extern void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 			     rvec x[],t_nrnb *nrnb,
 			     real dt,rvec v[],
 			     t_iparams ip[],t_ilist ilist[],
@@ -89,7 +93,7 @@ void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
  * This function assumes that all molecules are whole.
  */
 
-void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
+extern void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 			   rvec x[],rvec f[],rvec *fshift,
 			   t_nrnb *nrnb,t_idef *idef,
 			   int ePBC,bool bMolPBC,t_graph *g,matrix box,
@@ -98,12 +102,12 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
  * If fshift!=NULL also update the shift forces.
  */
 
-gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr);
+extern gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr);
 /* Initialize the virtual site struct,
  * returns NULL when there are no virtual sites.
  */
 
-void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
+extern void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
 			  t_commrec *cr);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.

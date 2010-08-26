@@ -36,6 +36,9 @@
 #ifndef _checkpoint_h
 #define _checkpoint_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include "typedefs.h"
 #include "gmxfio.h"
@@ -51,7 +54,7 @@ extern "C" {
  * Appends the _step<step>.cpt with bNumberAndKeep,
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
  */
-void write_checkpoint(const char *fn,bool bNumberAndKeep,
+extern void write_checkpoint(const char *fn,bool bNumberAndKeep,
 			     FILE *fplog,t_commrec *cr,
 			     int eIntegrator,int simulation_part,
 			     gmx_large_int_t step,double t,
@@ -63,7 +66,7 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
  * and communicates all the modified number of steps and the parallel setup,
  * but not the state itself.
  */
-void load_checkpoint(const char *fn,FILE **fplog,
+extern void load_checkpoint(const char *fn,FILE **fplog,
 			    t_commrec *cr,bool bPartDecomp,ivec dd_nc,
 			    t_inputrec *ir,t_state *state,bool *bReadRNG, 
 			    bool *bReadEkin,
@@ -74,14 +77,14 @@ void load_checkpoint(const char *fn,FILE **fplog,
  * If bReadRNG=TRUE a RNG state compatible with the current
  * number of nodes was read.
  */
-void read_checkpoint_state(const char *fn,int *simulation_part,
+extern void read_checkpoint_state(const char *fn,int *simulation_part,
 				  gmx_large_int_t *step,double *t,t_state *state);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
-void read_checkpoint_trxframe(t_fileio *fp,t_trxframe *fr);
+extern void read_checkpoint_trxframe(t_fileio *fp,t_trxframe *fr);
 
 /* Print the complete contents of checkpoint file fn to out */
-void list_checkpoint(const char *fn,FILE *out);
+extern void list_checkpoint(const char *fn,FILE *out);
 
 /* Read just the simulation 'generation' and with bAppendReq check files.
  * This is necessary already at the beginning of mdrun,
@@ -95,9 +98,9 @@ void list_checkpoint(const char *fn,FILE *out);
  */
 bool read_checkpoint_simulation_part(const char *filename,int *simulation_part,
                                      gmx_large_int_t *step,t_commrec *cr,
-                                     bool bAppendReq,
-                                     int nfile,const t_filenm fnm[],
-                                     const char *part_suffix,bool *bAddPart);
+				     bool bAppendReq,
+				     int nfile,const t_filenm fnm[],
+				     const char *part_suffix,bool *bAddPart);
 
 #ifdef __cplusplus
 }

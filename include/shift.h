@@ -36,13 +36,17 @@
 #ifndef _shift_h
 #define _shift_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-real *mk_shift_tab(int n,real r1,real rc,real dr,real *sfac);
+extern real *mk_shift_tab(int n,real r1,real rc,real dr,real *sfac);
 /* Return a table of length n, containing the parabolic
  * shift function from HJC Berendsen
  */

@@ -168,7 +168,7 @@ t_dlist *mk_dlist(FILE *log,
       if ((atm.minC != -1) && (atm.minO != -1))
 	nc[6]++;
       for(k=0; (k<naa); k++) {
-	if (gmx_strcasecmp(aa[k],thisres) == 0)
+	if (strcasecmp(aa[k],thisres) == 0)
 	  break;
       }
       dl[nl].index=k;

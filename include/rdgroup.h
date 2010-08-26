@@ -36,13 +36,17 @@
 #ifndef _rdgroup_h
 #define _rdgroup_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" { 
 #endif
 
-void check_index(char *gname,int n,atom_id index[],
+extern void check_index(char *gname,int n,atom_id index[],
 			char *traj,int natoms);
 /* Checks if any index is smaller than zero or larger than natoms,
  * if so a fatal_error is given with the gname (if gname=NULL, "Index" is used)

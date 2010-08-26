@@ -161,7 +161,7 @@ int search_string(char *s,int ng,char ***gn)
 	int i;
 
 	for(i=0; (i<ng); i++)
-		if (gmx_strcasecmp(s,*gn[i]) == 0)
+		if (strcasecmp(s,*gn[i]) == 0)
 			return i;
 
 	gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default groups in your mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
@@ -911,7 +911,7 @@ void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 					buf2[strlen(buf2)-1]='\0';
 					ltrim(buf2);
 					rtrim(buf2);
-					if (gmx_strcasecmp(buf2,"molecules")==0)
+					if (strcasecmp(buf2,"molecules")==0)
 						bMolecules=1;
 				}
 				fprintf(fpout,"%s",buf);

@@ -3286,7 +3286,7 @@ int gmx_hbond(int argc,char *argv[])
     /* NN-loop? If so, what estimator to use ?*/
     NN = 1;
     /* Outcommented for now DvdS 2010-07-13
-    while (NN < NN_NR && gmx_strcasecmp(NNtype[0], NNtype[NN])!=0)
+    while (NN < NN_NR && strcasecmp(NNtype[0], NNtype[NN])!=0)
         NN++;
     if (NN == NN_NR)
         gmx_fatal(FARGS, "Invalid NN-loop type.");
@@ -3300,7 +3300,7 @@ int gmx_hbond(int argc,char *argv[])
 
     /* geminate recombination? If so, which flavor? */
     gemmode = 1;
-    while (gemmode < gemNR && gmx_strcasecmp(gemType[0], gemType[gemmode])!=0)
+    while (gemmode < gemNR && strcasecmp(gemType[0], gemType[gemmode])!=0)
         gemmode++;
     if (gemmode == gemNR)
         gmx_fatal(FARGS, "Invalid recombination type.");

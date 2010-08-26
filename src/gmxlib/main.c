@@ -42,12 +42,6 @@
 #include <string.h>
 #include <limits.h>
 #include <time.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "network.h"
@@ -74,11 +68,6 @@
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <process.h>
 #endif
-
-
-/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
-char *
-gmx_ctime_r(const time_t *clock,char *buf, int n);
 
 
 #define BUFSIZE	1024

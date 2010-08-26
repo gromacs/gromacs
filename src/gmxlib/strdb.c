@@ -136,7 +136,7 @@ int search_str(int nstr,char **str,char *key)
 
   /* Linear search */
   for(i=0; (i<nstr); i++)
-    if (gmx_strcasecmp(str[i],key)==0)
+    if (strcasecmp(str[i],key)==0)
       return i;
 
   return -1;

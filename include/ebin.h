@@ -36,6 +36,11 @@
 #ifndef _ebin_h
 #define _ebin_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "enxio.h"	
@@ -59,10 +64,10 @@ typedef struct {
 
 enum { eprNORMAL, eprAVER, eprRMS, eprNR };
 
-t_ebin *mk_ebin(void);
+extern t_ebin *mk_ebin(void);
 /* Create an energy bin */
 
-int get_ebin_space(t_ebin *eb,int nener,const char *enm[],const char *unit);
+extern int get_ebin_space(t_ebin *eb,int nener,const char *enm[],const char *unit);
 
 /* Create space in the energy bin and register names.
  * The enm array must be static, because the contents are not copied,
@@ -71,22 +76,22 @@ int get_ebin_space(t_ebin *eb,int nener,const char *enm[],const char *unit);
  * calls to add_ebin.
  */
 
-void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum);
+extern void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum);
 /* Add nener reals (eg. energies, box-lengths, pressures) to the
  * energy bin at position index. 
  * If bSum is TRUE then the reals are also added to the sum
  * and sum of squares.
  */
 
-void ebin_increase_count(t_ebin *eb,bool bSum);
+extern void ebin_increase_count(t_ebin *eb,bool bSum);
 /* Increase the counters for the sums.
  * This routine should be called AFTER all add_ebin calls for this step.
  */
 
-void reset_ebin_sums(t_ebin *eb);
+extern void reset_ebin_sums(t_ebin *eb);
 /* Reset the average and fluctuation sums */
 
-void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
+extern void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
 		    int prmode,bool bPrHead);
 /* Print the contents of the energy bin. If nener = -1 ALL energies from
  * index to the end will be printed. We will print nperline entries on a text

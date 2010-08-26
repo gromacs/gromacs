@@ -425,10 +425,10 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
      gmx_fatal(FARGS,"Bond atom type names can't be single digits.");
 
   /* Hack to read old topologies */
-  if (gmx_strcasecmp(ptype,"D") == 0)
+  if (strcasecmp(ptype,"D") == 0)
     sprintf(ptype,"V");
   for(j=0; (j<eptNR); j++)
-    if (gmx_strcasecmp(ptype,xl[j].entry) == 0)
+    if (strcasecmp(ptype,xl[j].entry) == 0)
       break;
   if (j == eptNR)
     gmx_fatal(FARGS,"Invalid particle type %s on line %s",
@@ -1224,7 +1224,7 @@ void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line,
   /* Test if this atomtype overwrites another */
   i = 0;
   while (i < *nmol) {
-    if (gmx_strcasecmp(*((*mol)[i].name),type) == 0)
+    if (strcasecmp(*((*mol)[i].name),type) == 0)
       gmx_fatal(FARGS,"moleculetype %s is redefined",type);
     i++;
   }
@@ -1977,7 +1977,7 @@ void push_mol(int nrmols,t_molinfo mols[],char *pline,int *whichmol,
   }
   
   /* search moleculename */
-  for (i=0; ((i<nrmols) && gmx_strcasecmp(type,*(mols[i].name))); i++)
+  for (i=0; ((i<nrmols) && strcasecmp(type,*(mols[i].name))); i++)
     ;
 
   if (i<nrmols) {

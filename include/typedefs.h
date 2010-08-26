@@ -36,6 +36,9 @@
 #ifndef _typedefs_h
 #define _typedefs_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #define STRLEN 4096
 #define NOTSET -12345
@@ -87,12 +90,12 @@ extern "C" {
 /* This factor leads to 4 realloc calls to double the array size */
 #define OVER_ALLOC_FAC 1.19
 
-void set_over_alloc_dd(bool set);
+extern void set_over_alloc_dd(bool set);
   /* Turns over allocation for variable size atoms/cg/top arrays on or off,
    * default is off.
    */
   
-int over_alloc_dd(int n);
+extern int over_alloc_dd(int n);
   /* Returns n when domain decomposition over allocation is off.
    * Returns OVER_ALLOC_FAC*n + 100 when over allocation in on.
    * This is to avoid frequent reallocation
@@ -105,7 +108,7 @@ int over_alloc_dd(int n);
 /* Over allocation for large data types: complex structs */
 #define over_alloc_large(n) (OVER_ALLOC_FAC*(n) + 1000)
 
-int gmx_large_int_to_int(gmx_large_int_t step,const char *warn);
+extern int gmx_large_int_to_int(gmx_large_int_t step,const char *warn);
 /* Convert a gmx_large_int_t value to int.
  * If warn!=NULL a warning message will be written
  * to stderr when step does not fit in an int,
@@ -115,7 +118,7 @@ int gmx_large_int_to_int(gmx_large_int_t step,const char *warn);
 
 #define STEPSTRSIZE 22
 
-char *gmx_step_str(gmx_large_int_t i,char *buf);
+extern char *gmx_step_str(gmx_large_int_t i,char *buf);
 /* Prints a gmx_large_int_t value in buf and returns the pointer to buf.
  * buf should be large enough to contain i: STEPSTRSIZE (22) chars.
  * When multiple gmx_large_int_t values are printed in the same printf call,
@@ -165,17 +168,17 @@ void stupid_fill_blocka(t_blocka *grp, int natom);
  * There is one atom per index entry
  */
 
-void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
+extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
 
-t_atoms *copy_t_atoms(t_atoms *src);
+extern t_atoms *copy_t_atoms(t_atoms *src);
 /* copy an atoms struct from src to a new one */
   
-void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra);
+extern void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra);
 /* allocate extra space for more atoms and or residues */
  
-void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
+extern void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
 				const char *resname,int resnr,unsigned char ic,
 				int chainnum, char chainid);
 /* Set the residue name, number, insertion code and chain identifier

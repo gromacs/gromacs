@@ -230,7 +230,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb,
   
   *nb   = -1;
   for(i=1; (i<eNBF_NR); i++)
-    if (gmx_strcasecmp(nb_str,enbf_names[i]) == 0)
+    if (strcasecmp(nb_str,enbf_names[i]) == 0)
       *nb = i;
   if (*nb == -1)
     *nb = strtol(nb_str,NULL,10);
@@ -242,7 +242,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb,
   }
   *comb = -1;
   for(i=1; (i<eCOMB_NR); i++)
-    if (gmx_strcasecmp(comb_str,ecomb_names[i]) == 0)
+    if (strcasecmp(comb_str,ecomb_names[i]) == 0)
       *comb = i;
   if (*comb == -1)
     *comb = strtol(comb_str,NULL,10);
@@ -681,7 +681,7 @@ static char **read_topol(const char *infile,const char *outfile,
 	      get_nbparm(nb_str,comb_str,&nb_funct,&comb,wi);
 	      *combination_rule = comb;
 	      if (nscan >= 3) {
-		bGenPairs = (gmx_strncasecmp(genpairs,"Y",1) == 0);
+		bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
 		if (nb_funct != eNBF_LJ && bGenPairs) {
 		  gmx_fatal(FARGS,"Generating pair parameters is only supported with LJ non-bonded interactions");
 		}
@@ -844,8 +844,8 @@ static char **read_topol(const char *infile,const char *outfile,
 	    nmolb++;
 	    
         bCouple = (opts->couple_moltype != NULL &&
-                   (gmx_strcasecmp("system"    ,opts->couple_moltype) == 0 ||
-                    gmx_strcasecmp(*(mi0->name),opts->couple_moltype) == 0));
+                   (strcasecmp("system"    ,opts->couple_moltype) == 0 ||
+                    strcasecmp(*(mi0->name),opts->couple_moltype) == 0));
         if (bCouple) {
             nmol_couple += nrcopies;
         }

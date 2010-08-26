@@ -323,7 +323,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,
 	     "%-6s%5u %-4.4s %3.3s %c%4d%c   %10.5f%10.5f%10.5f%8.4f%8.4f    %2s\n");
     else {
       /* Check whether atomname is an element name */
-      if ((strlen(nm)<4) && (gmx_strcasecmp(nm,atoms->atom[i].elem) != 0))
+      if ((strlen(nm)<4) && (strcasecmp(nm,atoms->atom[i].elem) != 0))
 	strcpy(pdbform,pdbformat);
       else {
 	strcpy(pdbform,pdbformat4);

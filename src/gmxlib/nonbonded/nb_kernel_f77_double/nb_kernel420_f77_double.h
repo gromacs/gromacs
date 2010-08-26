@@ -27,10 +27,10 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
-#ifndef _NBKERNEL420_F77D_H_
-#define _NBKERNEL420_F77D_H_
+#ifndef _NBKERNEL420_F77S_H_
+#define _NBKERNEL420_F77S_H_
 
-/*! \file  nb_kernel420_f77_double.h
+/*! \file  nbkernel420.h
  *  \brief Nonbonded kernel 420 (GB Coul + Bham)
  *
  *  \internal
@@ -54,10 +54,10 @@ extern "C" {
  *  <b>Forces calculated:</b> Yes <br>
  *
  *  \note All level1 and level2 nonbonded kernels use the same
- *        call sequence. Parameters are documented in nb_kernel_f77_double.h
+ *        call sequence. Parameters are documented in nbkernel.h
  */
 void
-nb_kernel420_f77_double
+F77_FUNC(nbkernel420f77s,NBKERNEL420F77S)
                 (int *         nri,        int           iinr[],     
                  int           jindex[],   int           jjnr[],   
                  int           shift[],    real          shiftvec[],
@@ -83,10 +83,10 @@ nb_kernel420_f77_double
  *  <b>Forces calculated:</b> No <br>
  *
  *  \note All level1 and level2 nonbonded kernels use the same
- *        call sequence. Parameters are documented in nb_kernel_f77_double.h
+ *        call sequence. Parameters are documented in nbkernel.h
  */
 void
-nb_kernel420nf_f77_double
+F77_FUNC(nbkernel420nff77s,NBKERNEL420NFF77S)
                 (int *         nri,        int           iinr[],     
                  int           jindex[],   int           jjnr[],   
                  int           shift[],    real          shiftvec[],
@@ -108,4 +108,4 @@ nb_kernel420nf_f77_double
 }
 #endif
 
-#endif /* _NBKERNEL420_F77D_H_ */
+#endif /* _NBKERNEL420_F77S_H_ */

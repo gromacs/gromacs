@@ -286,7 +286,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     parsestring(line,"y-label",(mm->label_y));
     parsestring(line,"type",buf);
   }
-  if (buf[0] && (gmx_strcasecmp(buf,"Discrete")==0))
+  if (buf[0] && (strcasecmp(buf,"Discrete")==0))
     mm->bDiscrete=TRUE;
    
   if (debug)

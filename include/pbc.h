@@ -36,6 +36,10 @@
 #ifndef _pbc_h
 #define _pbc_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "sysstuff.h"
 #include "typedefs.h"
 
@@ -56,24 +60,24 @@ extern "C" {
     ecenterDEF = ecenterTRIC
   };
 
-  int ePBC2npbcdim(int ePBC);
+  extern int ePBC2npbcdim(int ePBC);
   /* Returns the number of dimensions that use pbc, starting at X */
 
-  int inputrec2nboundeddim(t_inputrec *ir);
+  extern int inputrec2nboundeddim(t_inputrec *ir);
   /* Returns the number of dimensions in which
    * the coordinates of the particles are bounded, starting at X.
    */
 
-  void dump_pbc(FILE *fp,t_pbc *pbc);
+  extern void dump_pbc(FILE *fp,t_pbc *pbc);
   /* Dump the contents of the pbc structure to the file */
   
-  const char *check_box(int ePBC,matrix box);
+  extern const char *check_box(int ePBC,matrix box);
   /* Returns NULL if the box is supported by Gromacs.
    * Otherwise is returns a string with the problem.
    * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
 
-  real max_cutoff2(int ePBC,matrix box);
+  extern real max_cutoff2(int ePBC,matrix box);
   /* Returns the square of the maximum cut-off allowed for the box,
    * taking into account that the grid neighborsearch code and pbc_dx
    * only check combinations of single box-vector shifts.
@@ -82,23 +86,23 @@ extern "C" {
   int guess_ePBC(matrix box);
   /* Guesses the type of periodic boundary conditions using the box */
 
-  bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph);
+  extern bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph);
   /* Checks for un-allowed box angles and corrects the box
    * and the integer shift vectors in the graph (if graph!=NULL) if necessary.
    * Returns TRUE when the box was corrected.
    */
 
-  int ndof_com(t_inputrec *ir);
+  extern int ndof_com(t_inputrec *ir);
   /* Returns the number of degrees of freedom of the center of mass */
 
-  void set_pbc(t_pbc *pbc,int ePBC,matrix box);
+  extern void set_pbc(t_pbc *pbc,int ePBC,matrix box);
   /* Initiate the periodic boundary conditions.
    * pbc_dx will not use pbc and return the normal difference vector
    * when one or more of the diagonal elements of box are zero.
    * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
 
-  t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
+  extern t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
 			   gmx_domdec_t *dd,bool bSingleDir,matrix box);
   /* As set_pbc, but additionally sets that correct distances can
    * be obtained using (combinations of) single box-vector shifts.
@@ -109,7 +113,7 @@ extern "C" {
    * Returns pbc when pbc operations are required, NULL otherwise.
    */
 
-  void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx);
+  extern void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx);
   /* Calculate the correct distance vector from x2 to x1 and put it in dx.
    * set_pbc must be called before ever calling this routine.
    *
@@ -122,7 +126,7 @@ extern "C" {
    * pbc->bLimitDistance=FALSE and thus all distances are correct.
    */
 
-  int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1,const rvec x2,rvec dx);
+  extern int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1,const rvec x2,rvec dx);
   /* Calculate the correct distance vector from x2 to x1 and put it in dx,
    * This function can only be used when all atoms are in the rectangular
    * or triclinic unit-cell.
@@ -131,12 +135,12 @@ extern "C" {
    * (see calc_shifts below on how to obtain shift_vec)
    * set_pbc_dd or set_pbc must be called before ever calling this routine.
    */
-  void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx);
+  extern void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx);
   /* As pbc_dx, but for double precision vectors.
    * set_pbc must be called before ever calling this routine.
    */
 
-  bool image_rect(ivec xi,ivec xj,ivec box_size,
+  extern bool image_rect(ivec xi,ivec xj,ivec box_size,
 			 real rlong2,int *shift,real *r2);
   /* Calculate the distance between xi and xj for a rectangular box.
    * When the distance is SMALLER than rlong2 return TRUE, return
@@ -145,7 +149,7 @@ extern "C" {
    * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
    */
 
-  bool image_tri(ivec xi,ivec xj,imatrix box,
+  extern bool image_tri(ivec xi,ivec xj,imatrix box,
 			real rlong2,int *shift,real *r2);
   /* Calculate the distance between xi and xj for a triclinic box.
    * When the distance is SMALLER than rlong2 return TRUE, return
@@ -154,7 +158,7 @@ extern "C" {
    * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
    */
   
-  bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
+  extern bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
 			      int *shift,real *r2);
   /* Calculate the distance between xi and xj for a rectangular box
    * using a cylindric cutoff for long-range only.
@@ -165,44 +169,44 @@ extern "C" {
    * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
    */
 
-  void calc_shifts(matrix box,rvec shift_vec[]);
+  extern void calc_shifts(matrix box,rvec shift_vec[]);
   /* This routine calculates ths shift vectors necessary to use the
    * ns routine.
    */
 
-  void calc_box_center(int ecenter,matrix box,rvec box_center);
+  extern void calc_box_center(int ecenter,matrix box,rvec box_center);
   /* Calculates the center of the box.
    * See the description for the enum ecenter above.
    */
 
-  void calc_triclinic_images(matrix box,rvec img[]);
+  extern void calc_triclinic_images(matrix box,rvec img[]);
   /* Calculates the NTRICIMG box images */
 
-  void calc_compact_unitcell_vertices(int ecenter,matrix box,
+  extern void calc_compact_unitcell_vertices(int ecenter,matrix box,
 					     rvec vert[]);
   /* Calculates the NCUCVERT vertices of a compact unitcell */
   
-  int *compact_unitcell_edges(void);
+  extern int *compact_unitcell_edges(void);
   /* Return an array of unitcell edges of length NCUCEDGE*2,
    * this is an index in vert[], which is calculated by calc_unitcell_vertices.
    * The index consists of NCUCEDGE pairs of vertex indices.
    * The index does not change, so it needs to be retrieved only once.
    */
-  void put_atom_in_box(matrix box,rvec x);
+  extern void put_atom_in_box(matrix box,rvec x);
 
-  void put_atoms_in_box(matrix box,int natoms,rvec x[]);
+  extern void put_atoms_in_box(matrix box,int natoms,rvec x[]);
   /* These routines puts ONE or ALL atoms in the box, not caring 
    * about charge groups!
    * Also works for triclinic cells.
    */
   
-  void put_atoms_in_triclinic_unitcell(int ecenter,matrix box,
+  extern void put_atoms_in_triclinic_unitcell(int ecenter,matrix box,
 					      int natoms,rvec x[]);
   /* This puts ALL atoms in the triclinic unit cell, centered around the
    * box center as calculated by calc_box_center.
    */
 
-  const char *put_atoms_in_compact_unitcell(int ePBC,int ecenter,
+  extern const char *put_atoms_in_compact_unitcell(int ePBC,int ecenter,
                                                    matrix box,
 					           int natoms,rvec x[]);
   /* This puts ALL atoms at the closest distance for the center of the box

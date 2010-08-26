@@ -198,22 +198,20 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
   }
 
 #ifdef GMX_MPI
-  if (n > 0) {
-    if (flags & PP_PME_CHARGE) {
-      MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
-		dd->pme_nodeid,1,cr->mpi_comm_mysim,
-		&dd->req_pme[dd->nreq_pme++]);
-    }
-    if (flags & PP_PME_CHARGEB) {
-      MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
-		dd->pme_nodeid,2,cr->mpi_comm_mysim,
-		&dd->req_pme[dd->nreq_pme++]);
-    }
-    if (flags & PP_PME_COORD) {
-      MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
-		dd->pme_nodeid,3,cr->mpi_comm_mysim,
-		&dd->req_pme[dd->nreq_pme++]);
-    }
+  if (flags & PP_PME_CHARGE) {
+    MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
+	      dd->pme_nodeid,1,cr->mpi_comm_mysim,
+	      &dd->req_pme[dd->nreq_pme++]);
+  }
+  if (flags & PP_PME_CHARGEB) {
+    MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
+	      dd->pme_nodeid,2,cr->mpi_comm_mysim,
+	      &dd->req_pme[dd->nreq_pme++]);
+  }
+  if (flags & PP_PME_COORD) {
+    MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
+	      dd->pme_nodeid,3,cr->mpi_comm_mysim,
+	      &dd->req_pme[dd->nreq_pme++]);
   }
 
 #ifndef GMX_PME_DELAYED_WAIT

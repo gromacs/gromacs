@@ -640,13 +640,13 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
     /* set forcefield to use: */
     strcpy(protdata->FF,"ffgmx2");
     /* get the databases: */
-    protdata->nah = read_h_db(protdata->FF,&protdata->ah);
+    protdata->nah=read_h_db(protdata->FF,FALSE,&protdata->ah);
     open_symtab(&protdata->tab); 
-    protdata->atype = read_atype(protdata->FF,&protdata->tab);
-    nntdb = read_ter_db(protdata->FF,'n',&protdata->ntdb,protdata->atype);
+    protdata->atype=read_atype(protdata->FF,FALSE,&protdata->tab);
+    nntdb = read_ter_db(protdata->FF,FALSE,'n',&protdata->ntdb,protdata->atype);
     if (nntdb < 1)
       gmx_fatal(FARGS,"no n-terminus db");
-    nctdb = read_ter_db(protdata->FF,'c',&protdata->ctdb,protdata->atype);
+    nctdb = read_ter_db(protdata->FF,FALSE,'c',&protdata->ctdb,protdata->atype);
     if (nctdb < 1)
       gmx_fatal(FARGS,"no c-terminus db");
     

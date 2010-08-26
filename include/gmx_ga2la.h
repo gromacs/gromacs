@@ -36,6 +36,10 @@
 #ifndef _gmx_ga2la_h
 #define _gmx_ga2la_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 #include "smalloc.h"
 

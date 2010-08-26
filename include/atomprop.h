@@ -36,6 +36,11 @@
 #ifndef _atomprop_h
 #define _atomprop_h
 
+ 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,19 +53,19 @@ typedef struct gmx_atomprop *gmx_atomprop_t;
 enum { epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement, 
        epropNR };
 
-gmx_atomprop_t gmx_atomprop_init(void);
+extern gmx_atomprop_t gmx_atomprop_init(void);
 /* Initializes and returns the atom properties struct */
 
-void gmx_atomprop_destroy(gmx_atomprop_t aps);
+extern void gmx_atomprop_destroy(gmx_atomprop_t aps);
 /* Get rid of memory after use */
 
-char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber);
+extern char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber);
 
-int gmx_atomprop_atomnumber(gmx_atomprop_t aps,const char *element);
+extern int gmx_atomprop_atomnumber(gmx_atomprop_t aps,const char *element);
 
-bool gmx_atomprop_query(gmx_atomprop_t aps,
-                        int eprop,const char *resnm,const char *atomnm,
-                        real *value);
+extern bool gmx_atomprop_query(gmx_atomprop_t aps,
+			       int eprop,const char *resnm,const char *atomnm,
+			       real *value);
 /* Extract a value from the database. Returns TRUE on succes,
  * FALSE otherwise. In the latter case, value is a deafult value.
  * The first time this function is called for this property

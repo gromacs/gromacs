@@ -101,91 +101,91 @@ typedef struct gmx_ana_selection_t
 } gmx_ana_selection_t;
 
 /** Frees the memory allocated for a selection. */
-void
+extern void
 gmx_ana_selection_free(gmx_ana_selection_t *sel);
 /** Returns the name of a selection. */
-char *
+extern char *
 gmx_ana_selection_name(gmx_ana_selection_t *sel);
 /** Prints out the selection information. */
-void
+extern void
 gmx_ana_selection_print_info(gmx_ana_selection_t *sel);
 /** Initializes the information for covered fraction. */
-bool
+extern bool
 gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type);
 
 /** Creates a new empty selection collection. */
-int
+extern int
 gmx_ana_selcollection_create(gmx_ana_selcollection_t **sc,
                              struct gmx_ana_poscalc_coll_t *pcc);
 /** Frees the memory allocated for a selection collection. */
-void
+extern void
 gmx_ana_selcollection_free(gmx_ana_selcollection_t *sc);
 /** Sets the default reference position handling for a selection collection. */
-void
+extern void
 gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, const char *type);
 /** Sets the default output position handling for a selection collection. */
-void
+extern void
 gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
                                      const char *type, bool bMaskOnly);
 /** Request evaluation of velocities for selections. */
-void
+extern void
 gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
                                     bool bVelOut);
 /** Request evaluation of forces for selections. */
-void
+extern void
 gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
                                       bool bForceOut);
 /** Sets the topology for a selection collection. */
-int
+extern int
 gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,
                                    int natoms);
 /** Returns the number of selections specified by a selection collection. */
-int
+extern int
 gmx_ana_selcollection_get_count(gmx_ana_selcollection_t *sc);
 /** Returns a selection by index. */
-gmx_ana_selection_t *
+extern gmx_ana_selection_t *
 gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i);
 /** Returns TRUE if the collection requires topology information for evaluation. */
-bool
+extern bool
 gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc);
 /** Prints a human-readable version of the internal selection element tree. */
-void
+extern void
 gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, bool bValues);
 /** Prints the selection strings into an XVGR file as comments. */
-void
+extern void
 xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc, 
                    const output_env_t oenv);
 
 /* In parsetree.c */
 /** Parses selection(s) from standard input. */
-int
+extern int
 gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
                                   gmx_ana_indexgrps_t *grps,
                                   bool bInteractive);
 /** Parses selection(s) from a file. */
-int
+extern int
 gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
                                   gmx_ana_indexgrps_t *grps);
 /** Parses selection(s) from a string. */
-int
+extern int
 gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
                                 gmx_ana_indexgrps_t *grps);
 
 /* In compiler.c */
 /** Set debugging flag for selection compilation. */
-void
+extern void
 gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, bool bDebug);
 /** Prepares the selections for evaluation and performs some optimizations. */
-int
+extern int
 gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc);
 
 /* In evaluate.c */
 /** Evaluates the selection. */
-int
+extern int
 gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
                                t_trxframe *fr, t_pbc *pbc);
 /** Evaluates the largest possible index groups from dynamic selections. */
-int
+extern int
 gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes);
 
 #ifdef __cplusplus

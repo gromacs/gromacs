@@ -1134,7 +1134,7 @@ int gmx_cluster(int argc,char *argv[])
 	    "         ignoring option -cl %s\n", trx_out_fn);
 
   method=1;
-  while ( method < m_nr && gmx_strcasecmp(methodname[0], methodname[method])!=0 )
+  while ( method < m_nr && strcasecmp(methodname[0], methodname[method])!=0 )
     method++;
   if (method == m_nr)
     gmx_fatal(FARGS,"Invalid method");

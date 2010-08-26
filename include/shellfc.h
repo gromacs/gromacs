@@ -32,6 +32,10 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
+#ifdef HAVE_CONFIG_H
+#include<config.h>
+#endif
+
 #include "typedefs.h"
 #include "vsite.h"
 
@@ -42,16 +46,16 @@ extern "C" {
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
-gmx_shellfc_t init_shell_flexcon(FILE *log,
+extern gmx_shellfc_t init_shell_flexcon(FILE *log,
 					gmx_mtop_t *mtop,int nflexcon,
 					rvec *x);
 
 /* Get the local shell with domain decomposition */
-void make_local_shells(t_commrec *cr,t_mdatoms *md,
+extern void make_local_shells(t_commrec *cr,t_mdatoms *md,
 			      gmx_shellfc_t shfc);
 
 /* Optimize shell positions */
-int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
+extern int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
 			       gmx_large_int_t mdstep,t_inputrec *inputrec,
 			       bool bDoNS,int force_flags,
 			       bool bStopCM,
