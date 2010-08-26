@@ -117,7 +117,7 @@ For long-range electrostatic interactions this is not always accurate
 enough, and {\gromacs} therefore also incorporates lattice sum methods
 such as Ewald Sum, PME and PPPM.
 
-Gromacs supports triclinic boxes of any shape.
+{\gromacs} supports triclinic boxes of any shape.
 The simulation box (unit cell) is defined by the 3 box vectors 
 ${\bf a}$,${\bf b}$ and ${\bf c}$.
 The box vectors must satisfy the following conditions:
@@ -699,7 +699,7 @@ conservation of constraints, all of which are described below.
 \subsection{The velocity Verlet integrator}
 \label{subsec:vverlet}
 The velocity Verlet algorithm~\cite{Swope82} is also implemented in
-Gromacs, though it is not yet fully integrated with all sets of
+{\gromacs}, though it is not yet fully integrated with all sets of
 options.  In velocity Verlet positions $\ve{r}$ and velocities
 $\ve{v}$ at time $t$ are used to integrate the equations of motion;
 velocities at the previous half step are not required.  \bea
@@ -727,7 +727,7 @@ interpret them as corresponding to the timepoint $t=0$.
 To further understand the relationship between velocity Verlet and
 leap-frog integration, we introduce the reversible Trotter formulation
 of dynamics, which is also useful to understanding implementations of
-thermostats and barostats in Gromacs.
+thermostats and barostats in {\gromacs}.
 
 A system of coupled, first order differential equations can be evolved
 from time $t = 0$ to time $t$ by applying the evolution operator
@@ -805,7 +805,7 @@ With the square inside the average.
 
 A nonstandard variant of velocity Verlet which averages the kinetic
 energies $KE(t+\hDt)$ and $KE(t-\hDt)$, exactly like leap-frog, is also
-now implemented in Gromacs (as mdp option {\em md-vv-avek}).  Without
+now implemented in {\gromacs} (as mdp option {\em md-vv-avek}).  Without
 temperature and pressure coupling, velocity Verlet with
 half-step-averaged kinetic energies and leapfrog will be identical up
 to numerical precision.  For temperature and pressure control schemes,
