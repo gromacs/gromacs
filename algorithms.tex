@@ -288,7 +288,7 @@ constant volume simulation, and afterward use position restraints in
 conjunction with constant pressure.
 
 \item[Accelerate group]
-On each atom in an ``\swapindex{accelerate}{group}" an acceleration
+On each atom in an ``\swapindex{accelerate}{group}'' an acceleration
 $\ve{a}^g$ is imposed. This is equivalent to an external
 force. This feature makes it possible to drive the system into a
 non-equilibrium state and enables the performance of 
@@ -994,7 +994,7 @@ caused by scaling the velocities is partly redistributed between
 kinetic and potential energy and hence the change in temperature is
 less than the scaling energy.  In practice, the ratio $\tau / \tau_T$
 ranges from 1 (gas) to 2 (harmonic solid) to 3 (water). When we use
-the term ``temperature coupling time constant," we mean the parameter
+the term ``temperature coupling time constant,'' we mean the parameter
 \normindex{$\tau_T$}.  
 {\bf Note} that in practice the scaling factor $\lambda$ is limited to 
 the range of 0.8 $<= \lambda <=$ 1.25, to avoid scaling by very large
@@ -1002,7 +1002,7 @@ numbers which may crash the simulation. In normal use,
 $\lambda$ will always be much closer to 1.0.
 
 \subsubsection{\normindex{Velocity rescaling thermostat}}
-The velocity rescaling thermostat\cite~{Bussi2007a} is essentially a Berendsen
+The velocity rescaling thermostat~\cite{Bussi2007a} is essentially a Berendsen
 thermostat (see above) with an additional stochastic term that ensures
 a correct kinetic energy distribution:
 \beq
@@ -1031,7 +1031,7 @@ and later modified by Hoover~\cite{Hoover85}. The system Hamiltonian is
 extended by introducing a thermal reservoir and a friction term in the
 equations of motion.  The friction force is proportional to the
 product of each particle's velocity and a friction parameter, $\xi$.
-This friction parameter (or ``heat bath" variable) is a fully
+This friction parameter (or ``heat bath'' variable) is a fully
 dynamic quantity with its own momentum ($p_{\xi}$) and equation of
 motion; the time derivative is calculated from the difference between
 the current kinetic energy and the reference temperature.  
@@ -1046,7 +1046,7 @@ In this formulation, the particles' equations of motion in
 \beq \frac {\de p_{\xi}}{\de t} = \left( T - T_0 \right).  \eeq The
 reference temperature is denoted $T_0$, while $T$ is the current
 instantaneous temperature of the system. The strength of the coupling
-is determined by the constant $Q$ (usually called the ``mass parameter"
+is determined by the constant $Q$ (usually called the ``mass parameter''
 of the reservoir) in combination with the reference
 temperature.~\footnote{Note that some derivations, an alternative
   notation $\xi_{\mathrm{alt}} = v_{\xi} = p_{\xi}/Q$ is used.}
@@ -1098,7 +1098,7 @@ temperature.  In the limit of an infinite chain of thermostats, the
 dynamics are guaranteed to be ergodic. Using just a few chains can
 greatly improve the ergodicity, but recent reseach has shown that the
 system will still be nonergodic, and it is still not entirely clear
-what the practical effect of this.~\cite{Cooke2008} Currently, the
+what the practical effect of this~\cite{Cooke2008}. Currently, the
 default number of chains is 10, but this can be controlled by user
 option.  In the case of chains, the equations are modified in the
 following way to include a chain of thermostatting
@@ -1111,7 +1111,7 @@ particles~\cite{Martyna1992}:
 \frac {\de p_{\xi_N}}{\de t} &~=~& \left(\frac{p_{\xi_{N-1}}^2}{Q_{N-1}}-kT\right)
 \label{eqn:NH-chain-eqn-of-motion}
 \eea
-The conserved quantity for Nos\{'e}-Hoover chains is:
+The conserved quantity for Nos{\'e}-Hoover chains is:
 \bea
 H = \sum_{i=1}^{N} \frac{\pb_i}{2m_i} + U\left(\rv_1,\rv_2,\ldots,\rv_N\right) +\sum_{k=1}^M\frac{p^2_{\xi_k}}{2Q^{\prime}_k} + N_fkT\xi_1 + kT\sum_{k=2}^M \xi_k 
 \eea
@@ -1174,7 +1174,7 @@ Eq.~\ref{eq:half_step_NHC_integrator} just before the $\exp\left(iL_1
 and then using some algebra tricks to solve for some quantities are
 required before they are actually calculated~\cite{Holian95}.
 
-}
+% }
 
 \subsubsection{\swapindex{Group}{temperature coupling}}
 In {\gromacs} temperature coupling can be performed on groups of
@@ -1209,7 +1209,7 @@ timesteps~\cite{Eastwood2010}.
 
 \subsection{\swapindex{Pressure}{coupling}}
 In the same spirit as the temperature coupling, the system can also be
-coupled to a ``pressure bath." {\gromacs} supports both the Berendsen
+coupled to a ``pressure bath.'' {\gromacs} supports both the Berendsen
 algorithm~\cite{Berendsen84} that scales coordinates and box vectors
 every step, the extended ensemble Parrinello-Rahman approach~\cite{Parrinello81,Nose83}, and for
 the velocity Verlet variants, the Martyna-Tuckerman-Tobias-Klein
@@ -1588,8 +1588,8 @@ The complete algorithm for the update of velocities and coordinates is
 given using leapfrog in \figref{complete-update}. The SHAKE algorithm of step
 4 is explained below. 
 
-{\gromacs} has a provision to ``freeze"  (prevent motion of) selected
-particles, which must be defined as a ``freeze group." This is implemented
+{\gromacs} has a provision to ``freeze''  (prevent motion of) selected
+particles, which must be defined as a ``freeze group.'' This is implemented
 using a {\em freeze factor $\ve{f}_g$}, which is a vector, and differs for each
 {\em freezegroup} (see \secref{group}). This vector contains only
 zero (freeze) or one (don't freeze).
@@ -2130,9 +2130,9 @@ but a rough indication is 0.001 kJ mol$^{-1}$.
 This should be done with conjugate gradients or l-bfgs in double precision.
 
 A number of {\gromacs} programs are involved in these
-calculations. First the energy should be minimized using {\tt mdrun}.
-Then {\tt mdrun} computes the Hessian, note that for generating
-the run input file one should use the minimized conformation from
+calculations. First, the energy should be minimized using {\tt mdrun}.
+Then, {\tt mdrun} computes the Hessian.  {\bf Note} that for generating
+the run input file, one should use the minimized conformation from
 the full precision trajectory file, as the structure file is not
 accurate enough.
 {\tt \normindex{g\_nmeig}} does the diagonalization and
@@ -2153,7 +2153,7 @@ analysis (see \secref{covanal}) can be found in~\cite{Hayward95b}.
 Free energy calculations can be performed
 in {\gromacs} using slow-growth methods. An example problem might be:
 calculate the difference in free energy of binding of an inhibitor {\bf I}
-to an enzyme {\bf E} and to a mutated enzyme {\bf E'}.%$\prime$}.
+to an enzyme {\bf E} and to a mutated enzyme {\bf E'}.%$\prime$}. 
 It is not feasible with computer simulations to perform a docking
 calculation for such a large complex, or even releasing the inhibitor from
 the enzyme in a reasonable amount of computer time with reasonable accuracy.
@@ -2276,7 +2276,7 @@ B. However, if the change is large and insufficient sampling can be
 expected, the user may prefer to determine the value of $\langle
 dG/d\lambda \rangle$ accurately at a number of well-chosen
 intermediate values of $\lambda$. This can easily be done by setting
-the stepsize \textbf{delta\_lambda} to zero. Each simulation can be
+the stepsize {\tt delta\_lambda} to zero. Each simulation can be
 equilibrated first, and a proper error estimate can be made for each
 value of $dG/d\lambda$ from the fluctuation of $\partial H/\partial
 \lambda$. The total free energy change is then determined afterward
@@ -2289,7 +2289,7 @@ described in detail in section \secref{feia}.
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{\normindex{Replica exchange}}
 Replica exchange molecular dynamics (\normindex{REMD})
-is a method which can be used to speed up
+is a method that can be used to speed up
 the sampling of any type of simulation, especially if
 conformations are separated by relatively high energy barriers.
 It involves simulating multiple replicas of the same system
@@ -2313,8 +2313,8 @@ One should not attempt exchanges for all possible pairs in one step.
 If, for instance, replicas 1 and 2 would exchange, the chance of
 exchange for replicas 2 and 3 not only depends on the energies of
 replicas 2 and 3, but also on the energy of replica 1.
-In {\gromacs} this is solved by attempting exchange for all 'odd'
-pairs on 'odd' attempts and for all 'even' pairs on 'even' attempts.
+In {\gromacs} this is solved by attempting exchange for all ``odd''
+pairs on ``odd'' attempts and for all ``even'' pairs on ``even'' attempts.
 If we have four replicas: 0, 1, 2 and 3, ordered in temperature
 and we attempt exchange every 1000 steps, pairs 0-1 and 2-3
 will be tried at steps 1000, 3000 etc. and pair 1-2 at steps 2000, 4000 etc.
@@ -2337,8 +2337,8 @@ one obtains $\epsilon \approx 2/\sqrt{c\,N_{df}}$.
 With all bonds constrained one has $N_{df} \approx 2\, N_{atoms}$
 and thus for $c$ = 2 one should choose $\epsilon$ as $1/\sqrt{N_{atoms}}$.
 However there is one problem when using pressure coupling. The density at
-higher temperatures will decrease, leading to higher energy\cite{Seibert2005a}
-and this should be taken into account. The {\gromacs} website features a so-called ``REMD'' - calculator, that lets you type in the temperature range and
+higher temperatures will decrease, leading to higher energy~\cite{Seibert2005a},
+which should be taken into account. The {\gromacs} website features a so-called ``REMD calculator,'' that lets you type in the temperature range and
 the number of atoms, and based on that proposes a set of temperatures.
 
 An extension to the REMD for the isobaric-isothermal ensemble was
@@ -2385,10 +2385,10 @@ Here a flooding potential is added to certain
 of a region of phase space \cite{Lange2006a}.
 
 The procedure for essential dynamics sampling or flooding is as follows.
-First the eigenvectors and eigenvalues need to be determined
+First, the eigenvectors and eigenvalues need to be determined
 using covariance analysis ({\tt g\_covar})
 or normal modes analysis ({\tt g\_nmeig}).
-This information is fed into {\tt make\_edi}
+Then, this information is fed into {\tt make\_edi},
 which has many options for selecting vectors and setting parameters,
 see \appref{progman} for the manual page of {\tt make\_edi}.
 The generated {\tt edi} input file is then passed to {\tt mdrun}.
@@ -2406,7 +2406,7 @@ in parallel over more than one processor or processor core.
 Ideally one would want to have linear scaling: running on $N$ processors/cores
 makes the simulation $N$ times faster. In practice this can only be
 achieved for a small number of processors. The scaling will depend
-a lot on the algorithms used. Also different algorithms can have different
+a lot on the algorithms used. Also, different algorithms can have different
 restrictions on the interaction ranges between atoms.
 In {\gromacs} we have two types of parallelization: particle decomposition
 and domain decomposition. Particle decomposition is only useful for
@@ -2415,10 +2415,10 @@ will always be faster and scale better.
 
 \section{\swapindex{Particle}{decomposition}}
 Particle decomposition, also called \swapindex{force}{decomposition},
-is the simplest type of decomposition. Here at the start of the simulation
+is the simplest type of decomposition. At the start of the simulation,
 particles are assigned to processors. Then forces between particles
 need to be assigned to processors such that the force load is evenly balanced.
-This decomposition requires that each processor knows the coordinates
+This decomposition requires that each processor know the coordinates
 of at least half of the particles in the system.
 Thus for a high number of processors $N$, about $N \times N/2$ coordinates
 need to be communicated. Because of this quadratic relation
@@ -2426,42 +2426,42 @@ particle decomposition does not scale well.
 
 Particle decomposition was the only method available before version 4
 of {\gromacs}. Now it is only useful in cases where domain decomposition
-does not work. This is for systems with long-range bonded interactions,
+does not work, such as systems with long-range bonded interactions,
 especially NMR distance or orientation restraints.
 With particle decomposition only whole molecules can be assigned to a processor.
 
 \section{\swapindex{Domain}{decomposition}}
 Since most interactions in molecular simulations are local,
 domain decomposition is a natural way to decompose the system.
-In domain decomposition a spatial domain is assigned to each processor.
-Each processor will integrate the equations of motion for the particles
-that currently reside in its local domain. With domain decomposition
+In domain decomposition, a spatial domain is assigned to each processor,
+which will then integrate the equations of motion for the particles
+that currently reside in its local domain. With domain decomposition,
 there are two choices that have to be made: the division of the unit cell
 into domains and the assignment of the forces to processors.
 Most molecular simulation packages use the half-shell method for assigning
-the forces. But there are two methods which always require less communication:
-the eighth shell\cite{Liem1991} and the midpoint\cite{Shaw2006} method.
+the forces. But there are two methods that always require less communication:
+the eighth shell~\cite{Liem1991} and the midpoint~\cite{Shaw2006} method.
 {\gromacs} currently uses the eighth shell method, but for certain systems
 or hardware architectures it might be advantageous to use the midpoint
-method. Therefore we might implement the midpoint method in the future.
+method. Therefore, we might implement the midpoint method in the future.
 Most of the details of the domain decomposition can be found
-in the {\gromacs} 4 paper\cite{Hess2008b}.
+in the {\gromacs} 4 paper~\cite{Hess2008b}.
 
 \subsection{Coordinate and force communication}
 In the most general case of a triclinic unit cell,
-the space in divided with a 1, 2 or 3-D grid in parallelepipeds
-which we call domain decomposition cells.
+the space in divided with a 1-, 2-, or 3-D grid in parallelepipeds
+that we call domain decomposition cells.
 Each cell is assigned to a processor.
 The system is partitioned over the processors at the beginning
-of each MD step where neighbor searching is performed.
+of each MD step in which neighbor searching is performed.
 Since the neighbor searching is based on charge groups, charge groups
 are also the units for the domain decomposition.
 Charge groups are assigned to the cell where their center of geometry resides.
 Before the forces can be calculated, the coordinates from some
-neighboring cells need to be communicated
-and after the forces are calculated the forces need to be communicated
+neighboring cells need to be communicated,
+and after the forces are calculated, the forces need to be communicated
 in the other direction.
-The communication and force assignment is based on zones which
+The communication and force assignment is based on zones that 
 can cover one or multiple cells.
 An example of a zone setup is shown in \figref{ddcells}.
 
@@ -2480,7 +2480,7 @@ The coordinates are communicated by moving data along the ``negative''
 direction in $x$, $y$ or $z$ to the next neighbor. This can be done in one
 or multiple pulses. In \figref{ddcells} two pulses in $x$ are required,
 then one in $y$ and then one in $z$. The forces are communicated by
-reversing this procedure. See the {\gromacs} 4 paper\cite{Hess2008b}
+reversing this procedure. See the {\gromacs} 4 paper~\cite{Hess2008b}
 for details on determining which non-bonded and bonded forces
 should be calculated on which node.
 
@@ -2498,9 +2498,9 @@ Load imbalance can occur due to three reasons:
 So we need a dynamic load balancing algorithm
 where the volume of each domain decomposition cell
 can be adjusted {\em independently}.
-To achieve this the 2 or 3-D domain decomposition grids need to be
+To achieve this, the 2- or 3-D domain decomposition grids need to be
 staggered. \figref{ddtric} shows the most general case in 2-D.
-Due to the staggering one might require two distance checks
+Due to the staggering, one might require two distance checks
 for deciding if a charge group needs to be communicated:
 a non-bonded distance and a bonded distance check.
 
@@ -2515,7 +2515,7 @@ of a distance between following, staggered boundaries of cells.
 }
 \end{figure}
 
-By default {\tt mdrun} automatically turns on the dynamic load
+By default, {\tt mdrun} automatically turns on the dynamic load
 balancing during a simulation when the total performance loss
 due to the force calculation imbalance is 5\% or more.
 Note that the reported force load imbalance numbers might be higher,
@@ -2526,8 +2526,8 @@ and when the {\tt -v} option is used also on screen.
 The average load imbalance and the total performance loss
 due to load imbalance are reported at the end of the log file.
 
-There is one important parameter for the dynamic load balancing
-which is the minimum allowed scaling. By default each dimension
+There is one important parameter for the dynamic load balancing,
+which is the minimum allowed scaling. By default, each dimension
 of the domain decomposition cell can scale down by at least
 a factor of 0.8. For 3-D domain decomposition this allows cells
 to change their volume by about a factor of 0.5, which should allow
@@ -2539,16 +2539,16 @@ The required scaling can be changed with the {\tt -dds} option of {\tt mdrun}.
 Since with domain decomposition parts of molecules can reside
 on different processors, bond constraints can cross cell boundaries.
 Therefore a parallel constraint algorithm is required.
-{\gromacs} uses the \normindex{P-LINCS} algorithm\cite{Hess2008a},
-which is the parallel version of the \normindex{LINCS} algorithm\cite{Hess97}
+{\gromacs} uses the \normindex{P-LINCS} algorithm~\cite{Hess2008a},
+which is the parallel version of the \normindex{LINCS} algorithm~\cite{Hess97}
 \ifthenelse{\equal{\gmxlite}{1}}
 {.}
 {(see \ssecref{lincs}).}
 The P-LINCS procedure is illustrated in \figref{plincs}.
 When molecules cross the cell boundaries, atoms in such molecules
-up to LINCS order plus one bonds away are communicated over the cell boundaries.
-Then the normal LINCS algorithm can be applied to the local bonds
-plus the communicated ones. After this procedure the local bonds
+up to $LINCS order + 1$ bonds away are communicated over the cell boundaries.
+Then, the normal LINCS algorithm can be applied to the local bonds
+plus the communicated ones. After this procedure, the local bonds
 are correctly constrained, even though the extra communicated ones are not.
 One coordinate communication step is required for the initial LINCS step
 and one for each iteration. Forces do not need to be communicated.
@@ -2569,7 +2569,7 @@ and the non-local constraints (dashed) for each of the three cells.
 \subsection{Interaction ranges}
 Domain decomposition takes advantage of the locality of interactions.
 This means that there will be limitations on the range of interactions.
-By default {\tt mdrun} tries to find the optimal balance between
+By default, {\tt mdrun} tries to find the optimal balance between
 interaction range and efficiency. But it can happen that a simulation
 stops with an error message about missing interactions,
 or that a simulation might run slightly faster with shorter
@@ -2598,8 +2598,8 @@ In most cases the defaults of {\tt mdrun} should not cause the simulation
 to stop with an error message of missing interactions.
 The range for the bonded interactions is determined from the distance
 between bonded charge-groups in the starting configuration, 10\% is added
-for headroom. For the constraints the $r_{con}$ is determined by
-taking the maximum distance that LINCS order plus one bonds can cover
+for headroom. For the constraints, the value of $r_{con}$ is determined by
+taking the maximum distance that $LINCS order + 1$ bonds can cover
 when they all connect at angles of 120 degrees.
 The actual constraint communication is not limited by $r_{con}$,
 but by the minimum cell size $L_C$, which has the following lower limit:
@@ -2608,9 +2608,9 @@ L_C \geq \max(r_{mb},r_{con})
 \eeq
 Without dynamic load balancing the system is actually allowed to scale
 beyond this limit when pressure scaling is used.
-Note that for triclinic boxes $L_C$ is not simply the box diagonal
+{\bf Note} that for triclinic boxes, $L_C$ is not simply the box diagonal
 component divided by the number of cells in that direction,
-but it is the shortest distance between the triclinic cells borders.
+rather it is the shortest distance between the triclinic cells borders.
 For rhombic dodecahedra this is a factor of $\sqrt{3/2}$ shorter
 along $x$ and $y$.
 
@@ -2621,23 +2621,23 @@ Therefore only charge-groups that are connected by bonded interactions
 to charge groups which are not locally present are communicated.
 This leads to little extra communication, but also to a slightly
 increased cost for the domain decomposition setup.
-In some cases, e.g. coarse-grained simulations with a very short cut-off,
+In some cases, {\eg} coarse-grained simulations with a very short cut-off,
 one might want to set $r_{mb}$ by hand to reduce this cost.
 
 \subsection{Multiple-Program, Multiple-Data PME parallelization}
 \label{subsec:mpmd_pme}
-Electrostatics interactions are long range, therefore special
+Electrostatics interactions are long-range, therefore special
 algorithms are used to avoid summation over many atom pairs.
 In {\gromacs} this is usually
 \ifthenelse{\equal{\gmxlite}{1}}
 {.}
 {PME (\secref{pme}).}
 Since with PME all particles interact with each other, global communication
-is required. This will usually be the limiting factor on
-the scaling with domain decomposition.
+is required. This will usually be the limiting factor for 
+scaling with domain decomposition.
 To reduce the effect of this problem, we have come up with
-a Multiple-Program, Multiple-Data approach\cite{Hess2008b}.
-Here some processors are selected to do only the PME mesh calculation,
+a Multiple-Program, Multiple-Data approach~\cite{Hess2008b}.
+Here, some processors are selected to do only the PME mesh calculation,
 while the other processors, called particle-particle (PP) nodes,
 do all the rest of the work.
 For rectangular boxes the optimal PP to PME node ratio is usually 3:1,
@@ -2645,7 +2645,7 @@ for rhombic dodecahedra usually 2:1.
 When the number of PME nodes is reduced by a factor of 4, the number
 of communication calls is reduced by about a factor of 16.
 Or put differently, we can now scale to 4 times more nodes.
-In addition, for modern 4 or 8 core machines in a network
+In addition, for modern 4 or 8 core machines in a network,
 the effective network bandwidth for PME is quadrupled,
 since only a quarter of the cores will be using the network connection
 on each machine during the PME calculations.
@@ -2674,7 +2674,7 @@ and the PME grid such that the PME load is 25 to 33\% of the total
 calculation load. {\tt grompp} will print an estimate for this load
 at the end and also {\tt mdrun} calculates the same estimate
 to determine the optimal number of PME nodes to use.
-For high parallelization it might be worth to optimize
+For high parallelization it might be worthwhile to optimize
 the PME load with the {\tt mdp} settings and/or the number
 of PME nodes with the {\tt -npme} option of {\tt mdrun}.
 For changing the electrostatics settings it is useful to know
@@ -2689,16 +2689,16 @@ Currently the PME domain decomposition is 1-D along the $x$ axis.
 To avoid superfluous communication of coordinates and forces
 between the PP and PME nodes, the number of DD cells in the $x$
 direction should ideally be the same or a multiple of the number
-of PME nodes. By default {\tt mdrun} takes care of this issue.
+of PME nodes. By default, {\tt mdrun} takes care of this issue.
 In the future we will support better parallelizable electrostatics
 implementations.
 
 \subsection{Domain decomposition flow chart}
 In \figref{dd_flow} a flow chart is shown for domain decomposition
 with all possible communication for different algorithms.
-For simpler simulations the same flow chart applies,
-but simply without the algorithms and communication for
-the algorithms which are not used.
+For simpler simulations, the same flow chart applies,
+without the algorithms and communication for
+the algorithms that are not used.
 
 \begin{figure}
 \centerline{\includegraphics[width=12cm]{plots/flowchart}}
@@ -2733,7 +2733,7 @@ polarization term ($G_{pol}$).
 
 The sum of $G_{cav}$ and $G_{vdw}$ corresponds to the (non-polar) 
 free energy of solvation for a molecule from which all charges 
-have been removed, and is commonly called $G_{np}$, and
+have been removed, and is commonly called $G_{np}$,
 calculated from the total solvent accessible surface area 
 multiplied with a surface tension. 
 The total expression for the solvation free energy then becomes:
