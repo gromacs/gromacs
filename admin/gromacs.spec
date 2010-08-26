@@ -1,5 +1,5 @@
 Name:		gromacs
-Version:	4.0.3
+Version:	4.5
 Release:	7%{?dist}
 Summary:	GROMACS binaries
 Group:		Applications/Engineering
