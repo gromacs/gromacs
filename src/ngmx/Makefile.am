@@ -35,8 +35,6 @@ EXTRA_DIST = 	alert.bm 	gromacs.bm 	play.bm 	\
 
 ngmx_SOURCES    = ngmx.c $(XSRC)
 g_xrama_SOURCES   = g_xrama.c $(XSRC)
-g_highway_SOURCES = g_highway.c $(XSRC) 
-g_logo_SOURCES = g_logo.c $(XSRC)
 g_showcol_SOURCES = g_showcol.c $(XSRC)
 test_ngmx_dialog_SOURCES     = test_ngmx_dialog.c $(XSRC)
 
