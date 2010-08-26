@@ -65,7 +65,7 @@ static int search_str2(int nstr,char **str,char *key)
   while( (n<keylen) && ((key[n]<'0') || (key[n]>'9')) )
     n++;
   for(i=0; (i<nstr); i++) 
-    if (strncasecmp(str[i],key,n)==0)
+    if (gmx_strncasecmp(str[i],key,n)==0)
       return i;
 
   return -1;
@@ -104,12 +104,12 @@ int gmx_enemat(int argc,char *argv[])
     "(e.g. residue number) in the [TT]-groups[tt] will be ignored",
     "in the comparison."
   };
-  static bool bSum=FALSE;
-  static bool bMeanEmtx=TRUE;
+  static gmx_bool bSum=FALSE;
+  static gmx_bool bMeanEmtx=TRUE;
   static int  skip=0,nlevels=20;
   static real cutmax=1e20,cutmin=-1e20,reftemp=300.0;
-  static bool bCoulSR=TRUE,bCoulLR=FALSE,bCoul14=FALSE;
-  static bool bLJSR=TRUE,bLJLR=FALSE,bLJ14=FALSE,bBhamSR=FALSE,bBhamLR=FALSE,
+  static gmx_bool bCoulSR=TRUE,bCoulLR=FALSE,bCoul14=FALSE;
+  static gmx_bool bLJSR=TRUE,bLJLR=FALSE,bLJ14=FALSE,bBhamSR=FALSE,bBhamLR=FALSE,
     bFree=TRUE;
   t_pargs pa[] = {
     { "-sum",  FALSE, etBOOL, {&bSum},
@@ -138,7 +138,7 @@ int gmx_enemat(int argc,char *argv[])
      egTotal (total energy) */
 #define egTotal egNR
 #define egSP 1
-  bool       egrp_use[egNR+egSP];
+  gmx_bool       egrp_use[egNR+egSP];
   ener_file_t in;
   FILE       *out;
   int        timecheck=0;
@@ -146,8 +146,8 @@ int gmx_enemat(int argc,char *argv[])
   t_enxframe *fr;
   int        teller=0;
   real       sum;
-  bool       bCont,bRef;
-  bool       bCutmax,bCutmin;
+  gmx_bool       bCont,bRef;
+  gmx_bool       bCutmax,bCutmin;
   real       **eneset,*time=NULL;
   int        *set,i,j,k,prevk,m=0,n,nre,nset,nenergy;
   char       **groups = NULL;

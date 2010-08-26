@@ -96,7 +96,7 @@ int gmx_nmtraj(int argc,char *argv[])
     
 #define NPA asize(pa)
   
-  int        out;
+  t_trxstatus *out;
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;
@@ -107,7 +107,7 @@ int gmx_nmtraj(int argc,char *argv[])
   matrix     box;
   int        natoms;
   int        i,j,k,kmode,d,s,v;
-  bool       bDMR,bDMA,bFit;
+  gmx_bool       bDMR,bDMA,bFit;
   char *     indexfile;
   
   char *     grpname;
@@ -121,7 +121,7 @@ int gmx_nmtraj(int argc,char *argv[])
   real       *out_eigval;
   rvec *     this_eigvec;
   real       omega,Ekin,sum,m,vel;
-  bool       found;
+  gmx_bool       found;
   int        nmodes,nphases;
   int        *imodes;
   real       *amplitude;

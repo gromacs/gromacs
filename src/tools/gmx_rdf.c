@@ -53,7 +53,6 @@
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
-#include "fftgrid.h"
 #include "calcgrid.h"
 #include "nrnb.h"
 #include "coulomb.h"
@@ -73,7 +72,7 @@ static void check_box_c(matrix box)
 	      box[ZZ][XX],box[ZZ][YY],box[ZZ][ZZ]);
 }
 
-static void calc_comg(int is,int *coi,int *index,bool bMass,t_atom *atom,
+static void calc_comg(int is,int *coi,int *index,gmx_bool bMass,t_atom *atom,
 		      rvec *x,rvec *x_comg)
 {
   int  c,i,d;
@@ -159,13 +158,13 @@ static void split_group(int isize,int *index,char *grpname,
 
 static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
 		   const char *fnRDF,const char *fnCNRDF, const char *fnHQ,
-		   bool bCM,const char *close,
-		   const char **rdft,bool bXY,bool bPBC,bool bNormalize,
+		   gmx_bool bCM,const char *close,
+		   const char **rdft,gmx_bool bXY,gmx_bool bPBC,gmx_bool bNormalize,
 		   real cutoff,real binwidth,real fade,int ng,
                    const output_env_t oenv)
 {
   FILE       *fp;
-  int        status;
+  t_trxstatus *status;
   char       outf1[STRLEN],outf2[STRLEN];
   char       title[STRLEN],gtitle[STRLEN],refgt[30];
   int        g,natoms,i,ii,j,k,nbin,j0,j1,n,nframes;
@@ -182,7 +181,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   real       segvol,spherevol,prev_spherevol,**rdf;
   rvec       *x,dx,*x0=NULL,*x_i1,xi;
   real       *inv_segvol,invvol,invvol_sum,rho;
-  bool       bClose,*bExcl,bTop,bNonSelfExcl;
+  gmx_bool       bClose,*bExcl,bTop,bNonSelfExcl;
   matrix     box,box_pbc;
   int        **npairs;
   atom_id    ix,jx,***pairs;
@@ -192,7 +191,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   t_blocka   *excl;
   t_atom     *atom=NULL;
   t_pbc      pbc;
-
+  gmx_rmpbc_t  gpbc=NULL;
   int        *is=NULL,**coi=NULL,cur,mol,i1,res,a;
 
   excl=NULL;
@@ -354,12 +353,15 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   snew(x_i1,max_i);
   nframes = 0;
   invvol_sum = 0;
+  if (bPBC && (NULL != top))
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+
   do {
     /* Must init pbc every step because of pressure coupling */
     copy_mat(box,box_pbc);
     if (bPBC) {
       if (top != NULL)
-	rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+	gmx_rmpbc(gpbc,natoms,box,x);
       if (bXY) {
 	check_box_c(box);
 	clear_rvec(box_pbc[ZZ]);
@@ -466,6 +468,9 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   } while (read_next_x(oenv,status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   
+  if (bPBC && (NULL != top))
+    gmx_rmpbc_done(gpbc);
+
   close_trj(status);
   
   sfree(x);
@@ -540,7 +545,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   else {
     if (output_env_get_print_xvgr_codes(oenv))
         fprintf(fp,"@ subtitle \"reference %s%s\"\n",grpname[0],refgt);
-    xvgr_legend(fp,ng,grpname+1,oenv);
+    xvgr_legend(fp,ng,(const char**)(grpname+1),oenv);
   }
   for(i=0; (i<nrdf); i++) {
     fprintf(fp,"%10g",i*binwidth);
@@ -590,7 +595,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     else {
       if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
-      xvgr_legend(fp,ng,grpname+1,oenv);
+      xvgr_legend(fp,ng,(const char**)(grpname+1),oenv);
     }
     snew(sum,ng);
     for(i=0; (i<=nbin/2); i++) {
@@ -654,7 +659,7 @@ int gmx_rdf(int argc,char *argv[])
     "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid",
     "spacing of which is determined by option [TT]-grid[tt]."
   };
-  static bool bCM=FALSE,bXY=FALSE,bPBC=TRUE,bNormalize=TRUE;
+  static gmx_bool bCM=FALSE,bXY=FALSE,bPBC=TRUE,bNormalize=TRUE;
   static real cutoff=0,binwidth=0.002,grid=0.05,fade=0.0,lambda=0.1,distance=10;
   static int  npixel=256,nlevel=20,ngroups=1;
   static real start_q=0.0, end_q=60.0, energy=12.0;
@@ -703,7 +708,7 @@ int gmx_rdf(int argc,char *argv[])
   };
 #define NPA asize(pa)
   const char *fnTPS,*fnNDX,*fnDAT=NULL;
-  bool       bSQ,bRDF;
+  gmx_bool       bSQ,bRDF;
   output_env_t oenv;
   
   t_filenm   fnm[] = {
@@ -724,6 +729,9 @@ int gmx_rdf(int argc,char *argv[])
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
 
   bSQ   = opt2bSet("-sq",NFILE,fnm);
+  if (bSQ)
+    please_cite(stdout,"Cromer1968a");
+
   bRDF  = opt2bSet("-o",NFILE,fnm) || !bSQ;
   if (bSQ || bCM || closet[0][0]!='n' || rdft[0][0]=='m' || rdft[0][6]=='m') {
     fnTPS = ftp2fn(efTPS,NFILE,fnm);

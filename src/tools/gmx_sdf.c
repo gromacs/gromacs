@@ -14,6 +14,10 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 
 #include <math.h>
@@ -66,12 +70,12 @@ static void f_write(FILE *output,float value)
 
 
 static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX, 
-                   const char *fnSDF, const char *fnREF, bool bRef, 
+                   const char *fnSDF, const char *fnREF, gmx_bool bRef, 
                    rvec cutoff, real binwidth, int mode, rvec triangle, 
                    rvec dtri, const output_env_t oenv)
 {
   FILE       *fp;
-  int        status;
+  t_trxstatus *status;
   int        ng,natoms,i,j,k,l,X,Y,Z,lc,dest;
   ivec       nbin;
   int        ***count;
@@ -96,9 +100,10 @@ static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   real       delta;
   atom_id    ix,jx;
   t_topology top;
+  gmx_rmpbc_t  gpbc=NULL;
   int        ePBC=-1;
   t_pbc      pbc;
-  bool       bTop=FALSE,bRefDone=FALSE,bInGroup=FALSE;
+  gmx_bool       bTop=FALSE,bRefDone=FALSE,bInGroup=FALSE;
   char       title[STRLEN];
 
 
@@ -337,13 +342,13 @@ structure if needed */
 
   normfac = 0;
 
-
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
+  
   do {
     /* Must init pbc every step because of pressure coupling */
     set_pbc(&pbc,ePBC,box);
-    rm_pbc(&top.idef,ePBC,natoms,box,x,x);
-
-
+    gmx_rmpbc(gpbc,natoms,box,x);
+  
     /* Dynamically build the ref triples */
     if ( mode == 2 )
       {
@@ -537,6 +542,9 @@ structure if needed */
   } while (read_next_x(oenv,status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   
+  gmx_rmpbc_done(gpbc);
+
+
   close_trj(status);
   
   sfree(x);
@@ -688,7 +696,7 @@ int gmx_sdf(int argc,char *argv[])
     "2001, 1702 and the references cited within."
   };
   output_env_t oenv;
-  static bool bRef=FALSE;
+  static gmx_bool bRef=FALSE;
   static int mode=1;
   static rvec triangle={0.0,0.0,0.0};
   static rvec dtri={0.03,0.03,0.03};

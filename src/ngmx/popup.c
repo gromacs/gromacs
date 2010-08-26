@@ -44,7 +44,7 @@
 #include <xutil.h>
 #include "popup.h"
 
-bool ChildCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+gmx_bool ChildCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_child   *child;
   t_mentry  *m;
@@ -87,7 +87,7 @@ bool ChildCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-bool MenuCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+gmx_bool MenuCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_menu *m;
 
@@ -184,7 +184,7 @@ t_menu *init_menu(t_x11 *x11,Window Parent,unsigned long fg,unsigned long bg,
   return m;
 }
 
-void show_menu(t_x11 *x11,t_menu *m,int x,int y,bool bGrab)
+void show_menu(t_x11 *x11,t_menu *m,int x,int y,gmx_bool bGrab)
 {
   XMoveWindow(x11->disp,m->wd.self,x,y);
   m->bGrabbed=bGrab;
@@ -199,7 +199,7 @@ void hide_menu(t_x11 *x11,t_menu *m)
   XUnmapWindow(x11->disp,m->wd.self);
 }
 
-void check_menu_item(t_menu *m,int nreturn,bool bStatus)
+void check_menu_item(t_menu *m,int nreturn,gmx_bool bStatus)
 {
   int i;
 

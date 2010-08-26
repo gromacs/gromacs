@@ -124,7 +124,7 @@ static void do_update_md(int start,int nrend,double dt,
                          unsigned short cACC[],unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],
                          rvec f[],matrix M,
-                         bool bNH,bool bPR)
+                         gmx_bool bNH,gmx_bool bPR)
 {
   double imass,w_dt;
   int    gf=0,ga=0,gt=0;
@@ -228,22 +228,28 @@ static void do_update_vv_vel(int start,int nrend,double dt,
                              t_grp_tcstat *tcstat,t_grp_acc *gstat,
                              rvec accel[],ivec nFreeze[],real invmass[],
                              unsigned short ptype[],
-                             unsigned short cFREEZE[],
-                             unsigned short cACC[],unsigned short cTC[],
-                             rvec v[],rvec f[],bool bExtended, real veta, real alpha)
+                             unsigned short cFREEZE[],unsigned short cACC[],
+                             rvec v[],rvec f[],
+                             gmx_bool bExtended, real veta, real alpha)
 {
     double imass,w_dt;
     int    gf=0,ga=0,gt=0;
-    rvec   vrel,sumf;
-    real   vn,vv,va,vb,vnrel;
-    real   lg,u;
+    rvec   vrel;
+    real   u,vn,vv,va,vb,vnrel;
     int    n,d;
     double g,mv1,mv2;
     
-    g        = 0.25*dt*veta*alpha;
-    mv1      = exp(-g);
-    mv2      = series_sinhx(g);
-    
+    if (bExtended)
+    {
+        g        = 0.25*dt*veta*alpha;
+        mv1      = exp(-g);
+        mv2      = series_sinhx(g);
+    }
+    else 
+    {
+        mv1      = 1.0;
+        mv2      = 1.0;
+    }
     for(n=start; n<nrend; n++) 
     {
         w_dt = invmass[n]*dt;
@@ -255,33 +261,12 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         {
             ga   = cACC[n];
         }
-        if (cTC)
-        {
-            gt   = cTC[n];
-        }
-        lg   = tcstat[gt].lambda;
-        rvec_sub(v[n],gstat[ga].u,vrel);
         
         for(d=0; d<DIM; d++) 
         {
             if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
             {
-                if (bExtended) 
-                {
-                    vnrel             = mv1*(mv1*vrel[d] + 0.5*w_dt*mv2*f[n][d]);
-                    /* do not scale the mean velocities u: MRS: may not be done correctly currently? */
-                    vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel; 
-                    v[n][d]        = vn;
-                } 
-                else 
-                {
-                    vv             = lg*v[n][d] + 0.5*f[n][d]*w_dt;
-                    /* do not scale the mean velocities u MRS: may not be done correctly currently? */
-                    u              = gstat[ga].u[d];
-                    va             = vv + 0.5*accel[ga][d]*dt;
-                    vb             = va + (1.0-lg)*u;
-                    v[n][d]        = vb;
-                }
+                v[n][d]             = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
             } 
             else 
             {
@@ -292,21 +277,17 @@ static void do_update_vv_vel(int start,int nrend,double dt,
 } /* do_update_vv_vel */
 
 static void do_update_vv_pos(int start,int nrend,double dt,
-                               t_grp_tcstat *tcstat,t_grp_acc *gstat,
-                               rvec accel[],ivec nFreeze[],real invmass[],
-                               unsigned short ptype[],
-                               unsigned short cFREEZE[],
-                               unsigned short cACC[],unsigned short cTC[],
-                               rvec x[],rvec xprime[],rvec v[],
-                               rvec f[],bool bExtended, real veta, real alpha)
+                             t_grp_tcstat *tcstat,t_grp_acc *gstat,
+                             rvec accel[],ivec nFreeze[],real invmass[],
+                             unsigned short ptype[],
+                             unsigned short cFREEZE[],
+                             rvec x[],rvec xprime[],rvec v[],
+                             rvec f[],gmx_bool bExtended, real veta, real alpha)
 {
   double imass,w_dt;
-  int    gf=0,ga=0,gt=0;
-  rvec   vrel;
-  real   vn,vv,va,vb,vnrel;
-  real   lg,u,scale;
+  int    gf=0;
   int    n,d;
-  double g,mr1,mr2,mv1,mv2;
+  double g,mr1,mr2;
 
   if (bExtended) {
       g        = 0.5*dt*veta;
@@ -345,7 +326,7 @@ static void do_update_visc(int start,int nrend,double dt,
                            rvec x[],rvec xprime[],rvec v[],
                            rvec f[],matrix M,matrix box,real
                            cos_accel,real vcos,
-                           bool bNH,bool bPR)
+                           gmx_bool bNH,gmx_bool bPR)
 {
     double imass,w_dt;
     int    gt=0;
@@ -591,7 +572,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
   }
 }
 
-static void do_update_sd2(gmx_stochd_t *sd,bool bInitStep,
+static void do_update_sd2(gmx_stochd_t *sd,gmx_bool bInitStep,
                           int start,int homenr,
                           rvec accel[],ivec nFreeze[],
                           real invmass[],unsigned short ptype[],
@@ -600,7 +581,7 @@ static void do_update_sd2(gmx_stochd_t *sd,bool bInitStep,
                           rvec x[],rvec xprime[],rvec v[],rvec f[],
                           rvec sd_X[],
                           int ngtc,real tau_t[],real ref_t[],
-                          bool bFirstHalf)
+                          gmx_bool bFirstHalf)
 {
   gmx_sd_const_t *sdc;
   gmx_sd_sigma_t *sig;
@@ -790,8 +771,8 @@ static void dump_it_all(FILE *fp,const char *title,
 }
 
 static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
-                                gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel, 
-                                bool bSaveEkinOld)
+                                gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, 
+                                gmx_bool bSaveEkinOld)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,m,ga=0,gt=0;
@@ -873,7 +854,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
 static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
                               t_grpopts *opts,t_mdatoms *md,
                               gmx_ekindata_t *ekind,
-                              t_nrnb *nrnb, bool bEkinAveVel, bool bSaveEkinOld)
+                              t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,m,gt=0;
@@ -939,7 +920,7 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
 }
 
 void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
-                  gmx_ekindata_t *ekind,t_nrnb *nrnb, bool bEkinAveVel, bool bSaveEkinOld)
+                  gmx_ekindata_t *ekind,t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
@@ -951,7 +932,7 @@ void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
     }
 }
 
-void init_ekinstate(ekinstate_t *ekinstate,t_inputrec *ir)
+void init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir)
 {
     ekinstate->ekin_n = ir->opts.ngtc;
     snew(ekinstate->ekinh,ekinstate->ekin_n);
@@ -1140,48 +1121,91 @@ static void combine_forces(int nstlist,
     }
 }
 
-void update_extended(FILE         *fplog,
-                     gmx_large_int_t   step,
-                     t_inputrec   *inputrec,   
-                     t_mdatoms    *md,
-                     t_state      *state,
-                     gmx_ekindata_t *ekind,
-                     matrix       pcoupl_mu,       /* pressure coupling */
-                     matrix       M,
-                     gmx_wallcycle_t wcycle,
-                     gmx_update_t upd,
-                     bool         bInitStep,
-                     bool         bFirstHalf,
-                     t_extmass    *MassQ)
-{
-    bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bCouple;
-    double           dt;
-    real             dt_1,dtc;
-    int              start,homenr,nrend,i,n,m,g;
+void update_tcouple(FILE         *fplog,
+                    gmx_large_int_t   step,
+                    t_inputrec   *inputrec,   
+                    t_state      *state,
+                    gmx_ekindata_t *ekind,
+                    gmx_wallcycle_t wcycle,
+                    gmx_update_t upd,
+                    t_extmass    *MassQ,
+                    t_mdatoms  *md)
     
-    start  = md->start;
-    homenr = md->homenr;
-    nrend = start+homenr;
+{
+    gmx_bool   bTCouple=FALSE;
+    real   dttc;
+    int    i,start,end,homenr;
     
     /* if using vv, we do this elsewhere in the code */
-    if ((IR_NVT_TROTTER(inputrec)) || (IR_NPT_TROTTER(inputrec)))
+    if (inputrec->etc != etcNO &&
+        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
     {
-        return;
+        /* We should only couple after a step where energies were determined */
+        bTCouple = (inputrec->nsttcouple == 1 ||
+                    do_per_step(step+inputrec->nsttcouple-1,
+                                inputrec->nsttcouple));
     }
     
-    /* We should only couple after a step where energies were determined */
+    if (bTCouple)
+    {
+        dttc = inputrec->nsttcouple*inputrec->delta_t;
+
+        switch (inputrec->etc) 
+        {
+        case etcNO:
+            break;
+        case etcBERENDSEN:
+            berendsen_tcoupl(inputrec,ekind,dttc);
+            break;
+        case etcNOSEHOOVER:
+            nosehoover_tcoupl(&(inputrec->opts),ekind,dttc,
+                              state->nosehoover_xi,state->nosehoover_vxi,MassQ);
+            break;
+        case etcVRESCALE:
+            vrescale_tcoupl(inputrec,ekind,dttc,
+                            state->therm_integral,upd->sd->gaussrand);
+            break;
+        }
+        /* rescale in place here */
+        if (EI_VV(inputrec->eI))
+        {
+            rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v);
+        }
+    }
+    else 
+    {
+        /* Set the T scaling lambda to 1 to have no scaling */
+        for(i=0; (i<inputrec->opts.ngtc); i++)
+        {
+            ekind->tcstat[i].lambda = 1.0;
+        }
+    }
+}
+
+void update_pcouple(FILE         *fplog,
+                    gmx_large_int_t   step,
+                    t_inputrec   *inputrec,   
+                    t_state      *state,
+                    matrix       pcoupl_mu,
+                    matrix       M,
+                    gmx_wallcycle_t wcycle,
+                    gmx_update_t upd,
+                    gmx_bool         bInitStep)
+{
+    gmx_bool   bPCouple=FALSE;
+    real   dtpc=0;
+    int    i;
     
-    bCouple = (inputrec->nstcalcenergy == 1 ||
-               do_per_step(step+inputrec->nstcalcenergy-1,
-                           inputrec->nstcalcenergy));
-    dtc = inputrec->nstcalcenergy*inputrec->delta_t;
+    /* if using vv, we do this elsewhere in the code */
+    if (inputrec->epc != epcNO &&
+        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
+    {
+        /* We should only couple after a step where energies were determined */
+        bPCouple = (inputrec->nstpcouple == 1 ||
+                    do_per_step(step+inputrec->nstpcouple-1,
+                                inputrec->nstpcouple));
+    }
     
-    bNH = (inputrec->etc == etcNOSEHOOVER);
-    bPR = (inputrec->epc == epcPARRINELLORAHMAN);
-    bExtended = (bNH || bPR);
-    
-    dt   = inputrec->delta_t;
-    dt_1 = 1.0/dt;
     clear_mat(pcoupl_mu);
     for(i=0; i<DIM; i++)
     {
@@ -1189,26 +1213,11 @@ void update_extended(FILE         *fplog,
     }
     
     clear_mat(M);
-    
-    if (bCouple)  
+     
+    if (bPCouple)
     {
-        switch (inputrec->etc) 
-        {
-        case etcNO:
-            break;
-        case etcBERENDSEN:
-            berendsen_tcoupl(&(inputrec->opts),ekind,dtc);
-            break;
-        case etcNOSEHOOVER:
-            nosehoover_tcoupl(&(inputrec->opts),ekind,dtc,
-                              state->nosehoover_xi,state->nosehoover_vxi,MassQ);
-            break;
-        case etcVRESCALE:
-            vrescale_tcoupl(&(inputrec->opts),ekind,dtc,
-                            state->therm_integral,upd->sd->gaussrand);
-            break;
-        }
-        
+        dtpc = inputrec->nstpcouple*inputrec->delta_t;
+
         switch (inputrec->epc) 
         {
             /* We can always pcoupl, even if we did not sum the energies
@@ -1220,12 +1229,12 @@ void update_extended(FILE         *fplog,
         case (epcBERENDSEN):
             if (!bInitStep) 
             {
-                berendsen_pcoupl(fplog,step,inputrec,dtc,state->pres_prev,state->box,
+                berendsen_pcoupl(fplog,step,inputrec,dtpc,state->pres_prev,state->box,
                                  pcoupl_mu);
             }
             break;
         case (epcPARRINELLORAHMAN):
-            parrinellorahman_pcoupl(fplog,step,inputrec,dtc,state->pres_prev,
+            parrinellorahman_pcoupl(fplog,step,inputrec,dtpc,state->pres_prev,
                                     state->box,state->box_rel,state->boxv,
                                     M,pcoupl_mu,bInitStep);
             break;
@@ -1233,14 +1242,6 @@ void update_extended(FILE         *fplog,
             break;
         }  
     } 
-    else 
-    {
-        /* Set the T scaling lambda to 1 to have no scaling */
-        for(i=0; (i<inputrec->opts.ngtc); i++)
-        {
-            ekind->tcstat[i].lambda = 1.0;
-        }
-    }
 }
 
 static rvec *get_xprime(const t_state *state,gmx_update_t upd)
@@ -1271,12 +1272,12 @@ void update_constraints(FILE         *fplog,
                         gmx_wallcycle_t wcycle,
                         gmx_update_t upd,
                         gmx_constr_t constr,
-                        bool         bInitStep,
-                        bool         bFirstHalf,
-                        bool         bCalcVir,
+                        gmx_bool         bInitStep,
+                        gmx_bool         bFirstHalf,
+                        gmx_bool         bCalcVir,
                         real         vetanew)
 {
-    bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
+    gmx_bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
     double           dt;
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g,d;
@@ -1441,10 +1442,10 @@ void update_box(FILE         *fplog,
                 t_nrnb       *nrnb,
                 gmx_wallcycle_t wcycle,
                 gmx_update_t upd,
-                bool         bInitStep,
-                bool         bFirstHalf)
+                gmx_bool         bInitStep,
+                gmx_bool         bFirstHalf)
 {
-    bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    gmx_bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt;
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g;
@@ -1543,21 +1544,21 @@ void update_coords(FILE         *fplog,
                    t_mdatoms    *md,
                    t_state      *state,
                    rvec         *f,        /* forces on home particles */
-                   bool         bDoLR,
+                   gmx_bool         bDoLR,
                    rvec         *f_lr,
                    t_fcdata     *fcd,
                    gmx_ekindata_t *ekind,
                    matrix       M,
                    gmx_wallcycle_t wcycle,
                    gmx_update_t upd,
-                   bool         bInitStep,
+                   gmx_bool         bInitStep,
                    int          UpdatePart,
                    t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
                    t_nrnb       *nrnb,
                    gmx_constr_t constr,
                    t_idef       *idef)
 {
-    bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    gmx_bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
     real             *imass,*imassin;
     rvec             *force;
@@ -1570,9 +1571,10 @@ void update_coords(FILE         *fplog,
     
 
     /* Running the velocity half does nothing except for velocity verlet */
-    if (UpdatePart == etrtVELOCITY) 
+    if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
+        !EI_VV(inputrec->eI))
     {
-        if (!EI_VV(inputrec->eI)) {return;}   /*THIS IS FOR STARTING AT v(t=0)*/
+        gmx_incons("update_coords called for velocity without VV integrator");
     }
 
     start  = md->start;
@@ -1672,20 +1674,21 @@ void update_coords(FILE         *fplog,
     case (eiVVAK):
         alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
         switch (UpdatePart) {
-        case (etrtVELOCITY):
+        case etrtVELOCITY1:
+        case etrtVELOCITY2:
             do_update_vv_vel(start,nrend,dt,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
                              md->invmass,md->ptype,
-                             md->cFREEZE,md->cACC,md->cTC,
-                             state->v,force,bExtended,state->veta,alpha);  
+                             md->cFREEZE,md->cACC,
+                             state->v,force,
+                             bExtended,state->veta,alpha);  
             break;
-        case (etrtPOSITION):
+        case etrtPOSITION:
             do_update_vv_pos(start,nrend,dt,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
-                             md->invmass,md->ptype,
-                             md->cFREEZE,md->cACC,md->cTC,
+                             md->invmass,md->ptype,md->cFREEZE,
                              state->x,xprime,state->v,force,
                              bExtended,state->veta,alpha);
             break;

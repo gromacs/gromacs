@@ -31,7 +31,7 @@ t_idef* qhop_build_interaction_lib(char *ff, qhop_db *qdb, gpp_atomtype_t atype)
   int nfiles = qdb->rb.nf;
 /*   char **files = qdb->rb.files; */
   qhop_res *qres;
-  bool match;
+  gmx_bool match;
   int rr, bt, bi, i, m, rb, r,
     *a[5], ft,  ni, np, read, nbparams=0;
   size_t lineLen=0;
@@ -329,7 +329,7 @@ extern void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, qhop_res
   rb->nrestypes++;
 }
 
-static void set_H_exist(const qhop_H_exist *H_map, const atom_id H, const bool bON)
+static void set_H_exist(const qhop_H_exist *H_map, const atom_id H, const gmx_bool bON)
 {
   H_map->H[H_map->atomid2H[H]] = (char) bON ? 1:0;
 }
@@ -345,8 +345,8 @@ static void qhop_change_interactions(t_ilist *ilist, qhop_db *db, t_qhop_residue
 extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
 				 const atom_id H)
 {
-  const bool bON = db->H_map.H[db->H_map.atomid2H[H]] == 0; /* if it's zero, then the proton will appear */
-  bool bNotFound = TRUE;
+  const gmx_bool bON = db->H_map.H[db->H_map.atomid2H[H]] == 0; /* if it's zero, then the proton will appear */
+  gmx_bool bNotFound = TRUE;
   int rt, Hloc, i, j, reactant;
   char *Hname;
   qhop_res *res, *product;

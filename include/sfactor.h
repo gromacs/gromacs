@@ -37,10 +37,6 @@
 #define _sfactor_h
 
  
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "index.h"
 #include "types/simple.h"
 #include "gmxcomplex.h"
@@ -59,40 +55,40 @@ typedef struct structure_factor structure_factor_t;
 
 typedef struct reduced_atom reduced_atom_t;
 
-extern int * create_indexed_atom_type (reduced_atom_t * atm, int size);
+int * create_indexed_atom_type (reduced_atom_t * atm, int size);
 
-extern void compute_structure_factor (structure_factor_t * sft, matrix box,
+void compute_structure_factor (structure_factor_t * sft, matrix box,
 			       reduced_atom_t * red, int isize, real start_q,
 			       real end_q, int group,real **sf_table);
 
-extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn);
+gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn);
 
-extern void gmx_structurefactors_done(gmx_structurefactors_t *gsf);
+void gmx_structurefactors_done(gmx_structurefactors_t *gsf);
 
-extern int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, real a[4], real b[4], real *c);
+int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, real a[4], real b[4], real *c);
 
-extern real **gmx_structurefactors_table(gmx_structurefactors_t *gsf,real momentum, real ref_k,
+real **gmx_structurefactors_table(gmx_structurefactors_t *gsf,real momentum, real ref_k,
         real lambda, int n_angles);
 
-extern void save_data (structure_factor_t * sft, const char *file, int ngrps,
+void save_data (structure_factor_t * sft, const char *file, int ngrps,
                 real start_q, real end_q, const output_env_t oenv);
 
-extern double CMSF (gmx_structurefactors_t *gsf,int type,int nh,double lambda, double sin_theta);
+double CMSF (gmx_structurefactors_t *gsf,int type,int nh,double lambda, double sin_theta);
 
-extern int return_atom_type (const char *name,gmx_structurefactors_t *gsf);
+int return_atom_type (const char *name,gmx_structurefactors_t *gsf);
 
-extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, atom_id * index,
-		      int isize, t_topology * top, bool flag,gmx_structurefactors_t *gsf);
+void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, atom_id * index,
+		      int isize, t_topology * top, gmx_bool flag,gmx_structurefactors_t *gsf);
 
-extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
+int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
                              const char* fnXVG, const char *fnTRX,
                              const char* fnDAT,
                              real start_q,real end_q,
                              real energy,int ng,const output_env_t oenv);
 
-extern t_complex *** rc_tensor_allocation(int x, int y, int z);
+t_complex *** rc_tensor_allocation(int x, int y, int z);
 
-extern real **compute_scattering_factor_table (gmx_structurefactors_t *gsf,structure_factor_t * sft,int *nsftable);
+real **compute_scattering_factor_table (gmx_structurefactors_t *gsf,structure_factor_t * sft,int *nsftable);
 
 #ifdef __cplusplus
 }

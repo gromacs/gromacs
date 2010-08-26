@@ -284,11 +284,11 @@
 #ifndef SELMETHOD_H
 #define SELMETHOD_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
-#include <indexutil.h>
-#include <selparam.h>
-#include <selvalue.h>
+#include "indexutil.h"
+#include "selparam.h"
+#include "selvalue.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -647,15 +647,15 @@ typedef struct gmx_ana_selmethod_t
 } gmx_ana_selmethod_t;
 
 /** Registers a selection method. */
-extern int
+int
 gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
                            const char *name, gmx_ana_selmethod_t *method);
 /** Registers all selection methods in the library. */
-extern int
+int
 gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc);
 
 /** Finds a parameter from a selection method by name. */
-extern gmx_ana_selparam_t *
+gmx_ana_selparam_t *
 gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method);
 
 #ifdef __cplusplus

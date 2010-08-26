@@ -32,14 +32,12 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include "simple.h"
 
 typedef struct {
   real r,g,b;
@@ -76,7 +74,7 @@ typedef struct {
   char legend[256];
   char label_x[256];
   char label_y[256];
-  bool bDiscrete;
+  gmx_bool bDiscrete;
   real *axis_x;
   real *axis_y;
   t_matelmt **matrix;

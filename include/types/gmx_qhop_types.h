@@ -133,7 +133,7 @@ typedef struct qhop_db {
   /*qhop_resinfo_t    *resinfo; */
   int                     bts[4];
   int                     nrexcl;
-  bool                    bAllDih,bHH14,bRemoveDih;
+  gmx_bool                bAllDih,bHH14,bRemoveDih;
   t_atomtype              atype;
   t_symtab                tab;
   int                     ngqh;

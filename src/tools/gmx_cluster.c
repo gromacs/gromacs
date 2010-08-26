@@ -239,7 +239,7 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
   t_clustid *c;
   t_dist    *d;
   int       i,j,k,nn,cid,n1,diff;
-  bool      bChange;
+  gmx_bool      bChange;
   
   /* First we sort the entries in the RMSD matrix */
   n1 = m->nn;
@@ -300,9 +300,9 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
   sfree(d);
 }
 
-bool jp_same(int **nnb,int i,int j,int P)
+gmx_bool jp_same(int **nnb,int i,int j,int P)
 {
-  bool bIn;
+  gmx_bool bIn;
   int  k,ii,jj,pp;
 
   bIn = FALSE;
@@ -333,7 +333,7 @@ static void jarvis_patrick(int n1,real **mat,int M,int P,
   t_clustid *c;
   int       **nnb;
   int       i,j,k,cid,diff,max;
-  bool      bChange;
+  gmx_bool      bChange;
   real      **mcpy=NULL;
 
   if (rmsdcut < 0)
@@ -390,7 +390,7 @@ static void jarvis_patrick(int n1,real **mat,int M,int P,
 
   c = new_clustid(n1);
   fprintf(stderr,"Linking structures ");
-  /* Use mcpy for temporary storage of booleans */
+  /* Use mcpy for temporary storage of gmx_booleans */
   mcpy = mk_matrix(n1,n1,FALSE);
   for(i=0; i<n1; i++)
     for(j=i+1; j<n1; j++)
@@ -555,7 +555,9 @@ rvec **read_whole_trj(const char *fn,int isize,atom_id index[],int skip,
   matrix box;
   real   t;
   int    i,i0,j,max_nf;
-  int    status,natom;
+  int    natom;
+  t_trxstatus *status;
+
   
   max_nf = 0;
   xx     = NULL;
@@ -728,16 +730,17 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 			     int iosize, atom_id *outidx,
 			     const char *trxfn, const char *sizefn, 
                              const char *transfn, const char *ntransfn, 
-                             const char *clustidfn, bool bAverage, 
+                             const char *clustidfn, gmx_bool bAverage, 
 			     int write_ncl, int write_nst, real rmsmin,
-                             bool bFit, FILE *log,t_rgb rlo,t_rgb rhi,
+                             gmx_bool bFit, FILE *log,t_rgb rlo,t_rgb rhi,
                              const output_env_t oenv)
 {
   FILE *fp=NULL;
   char buf[STRLEN],buf1[40],buf2[40],buf3[40],*trxsfn;
-  int  trxout=0,trxsout=0;
+  t_trxstatus *trxout=NULL;
+  t_trxstatus *trxsout=NULL;
   int  i,i1,cl,nstr,*structure,first=0,midstr;
-  bool *bWrite=NULL;
+  gmx_bool *bWrite=NULL;
   real r,clrmsd,midrmsd;
   rvec *xav=NULL;
   matrix zerobox;
@@ -776,7 +779,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
   
     /* Prepare a reference structure for the orientation of the clusters  */
     if (bFit)
-    reset_x(ifsize,fitidx,natom,NULL,xtps,mass);
+        reset_x(ifsize,fitidx,natom,NULL,xtps,mass);
     trxout = open_trx(trxfn,"w");
     /* Calculate the average structure in each cluster,               *
      * all structures are fitted to the first struture of the cluster */
@@ -1024,7 +1027,7 @@ int gmx_cluster(int argc,char *argv[])
   char     *grpname;
   real     rmsd,**d1,**d2,*time=NULL,time_invfac,*mass=NULL;
   char     buf[STRLEN],buf1[80],title[STRLEN];
-  bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj;
+  gmx_bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj;
 
   int method,ncluster=0;  
   static const char *methodname[] = { 
@@ -1040,7 +1043,7 @@ int gmx_cluster(int argc,char *argv[])
   static t_rgb rhi_bot = { 0.0, 0.0, 1.0 };
   static int  nlevels=40,skip=1;
   static real scalemax=-1.0,rmsdcut=0.1,rmsmin=0.0;
-  static bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE,bFit=TRUE;
+  static gmx_bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE,bFit=TRUE;
   static int  niter=10000,seed=1993,write_ncl=0,write_nst=1,minstruct=1;
   static real kT=1e-3;
   static int  M=10,P=3;
@@ -1131,7 +1134,7 @@ int gmx_cluster(int argc,char *argv[])
 	    "         ignoring option -cl %s\n", trx_out_fn);
 
   method=1;
-  while ( method < m_nr && strcasecmp(methodname[0], methodname[method])!=0 )
+  while ( method < m_nr && gmx_strcasecmp(methodname[0], methodname[method])!=0 )
     method++;
   if (method == m_nr)
     gmx_fatal(FARGS,"Invalid method");

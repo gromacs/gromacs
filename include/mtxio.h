@@ -32,9 +32,6 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 /* This module provides routines to read/write sparse or full storage
  * matrices from/to files. It is normally used for the Hessian matrix

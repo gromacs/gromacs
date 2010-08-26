@@ -60,10 +60,10 @@
 
 static int *select_it(int nre,gmx_enxnm_t *nm,int *nset)
 {
-  bool *bE;
+  gmx_bool *bE;
   int  n,k,j,i;
   int  *set;
-  bool bVerbose = TRUE;
+  gmx_bool bVerbose = TRUE;
   
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
@@ -99,7 +99,7 @@ static int *select_it(int nre,gmx_enxnm_t *nm,int *nset)
   return set;
 }
 
-static bool same_time(real t1,real t2)
+static gmx_bool same_time(real t1,real t2)
 {
   const real tol=1e-5;
 
@@ -107,7 +107,7 @@ static bool same_time(real t1,real t2)
 }
 
 
-bool bRgt(double a,double b)
+gmx_bool bRgt(double a,double b)
 {
   double tol = 1e-6;
   
@@ -206,10 +206,10 @@ static int scan_ene_files(char **fnms, int nfiles,
 
 
 static void edit_files(char **fnms,int nfiles,real *readtime, 
-		       real *settime,int *cont_type,bool bSetTime,bool bSort)
+		       real *settime,int *cont_type,gmx_bool bSetTime,gmx_bool bSort)
 {
   int i;
-  bool ok;
+  gmx_bool ok;
   char inputstring[STRLEN],*chptr;
   
   if(bSetTime) {
@@ -425,7 +425,7 @@ static void update_ee_sum(int nre,
     }
     nsteps = fr->nsteps;
     nsum   = fr_nsum;
-  } else if (out_step - *ee_sum_step == nsteps + fr->nsteps) {
+  } else if (out_step + *ee_sum_nsum - *ee_sum_step == nsteps + fr->nsteps) {
     if (fr_nsum == 1) {
       for(i=0;i<nre;i++) {
 	ee_sum[i].eav  +=
@@ -496,9 +496,9 @@ int gmx_eneconv(int argc,char *argv[])
   char       **fnms;
   real       *readtime,*settime,timestep,t1,tadjust;
   char       inputstring[STRLEN],*chptr,buf[22],buf2[22],buf3[22];
-  bool       ok;
+  gmx_bool       ok;
   int        *cont_type;
-  bool       bNewFile,bFirst,bNewOutput;
+  gmx_bool       bNewFile,bFirst,bNewOutput;
   output_env_t oenv;
   
   t_filenm fnm[] = {
@@ -507,10 +507,10 @@ int gmx_eneconv(int argc,char *argv[])
   };
 
 #define NFILE asize(fnm)  
-  bool   bWrite;
+  gmx_bool   bWrite;
   static real  delta_t=0.0, toffset=0,scalefac=1;
-  static bool  bSetTime=FALSE;
-  static bool  bSort=TRUE,bError=TRUE;
+  static gmx_bool  bSetTime=FALSE;
+  static gmx_bool  bSort=TRUE,bError=TRUE;
   static real  begin=-1;
   static real  end=-1;
   
@@ -657,11 +657,13 @@ int gmx_eneconv(int argc,char *argv[])
 	}
 
 	fro->nsteps = ee_sum_nsteps;
+	fro->dt     = fr->dt;
 
 	if (ee_sum_nsum <= 1) {
 	  fro->nsum = 0;
 	} else {
-	  fro->nsum = ee_sum_nsum;
+	  fro->nsum = gmx_large_int_to_int(ee_sum_nsum,
+					   "energy average summation");
 	  /* Copy the energy sums */
 	  for(i=0; i<nre; i++) {
 	    fro->ener[i].esum = ee_sum[i].esum;
@@ -682,11 +684,11 @@ int gmx_eneconv(int argc,char *argv[])
 	  }
 	}
 	/* Copy restraint stuff */
-	fro->ndisre       = fr->ndisre;
+	/*fro->ndisre       = fr->ndisre;
 	fro->disre_rm3tav = fr->disre_rm3tav;
-	fro->disre_rt     = fr->disre_rt;
+	fro->disre_rt     = fr->disre_rt;*/
 	fro->nblock       = fr->nblock;
-	fro->nr           = fr->nr;
+	/*fro->nr           = fr->nr;*/
 	fro->block        = fr->block;
 	
 	do_enx(out,fro);

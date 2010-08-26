@@ -102,6 +102,10 @@ typedef struct gmx_timeprint {
 } t_gmx_timeprint;
 #endif
 
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
 
 double
 gmx_gettime()
@@ -132,7 +136,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
                 t_inputrec *ir, t_commrec *cr)
 {
     time_t finish;
-    
+    char   timebuf[STRLEN];
     double dt;
     char buf[48];
     
@@ -159,7 +163,8 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
             if (dt >= 300)
             {    
                 finish = (time_t) (runtime->last + dt);
-                sprintf(buf,"%s",ctime(&finish));
+                gmx_ctime_r(&finish,timebuf,STRLEN);
+                sprintf(buf,"%s",timebuf);
                 buf[strlen(buf)-1]='\0';
                 fprintf(out,", will finish %s",buf);
             }
@@ -244,26 +249,28 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
                          const gmx_runtime_t *runtime)
 {
     int i;
-    char *ts,time_string[STRLEN];
+    char timebuf[STRLEN];
+    char time_string[STRLEN];
     time_t tmptime;
 
-    if (runtime != NULL)
-    {
-		tmptime = (time_t) runtime->real;
-        ts = ctime(&tmptime);
-    }
-    else
-    {
-        tmptime = (time_t) gmx_gettime();
-        ts = ctime(&tmptime);
-    }
-    for(i=0; ts[i]>=' '; i++)
-    {
-        time_string[i]=ts[i];
-    }
-    time_string[i]='\0';
     if (fplog)
     {
+        if (runtime != NULL)
+        {
+            tmptime = (time_t) runtime->real;
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
+        }
+        else
+        {
+            tmptime = (time_t) gmx_gettime();
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
+        }
+        for(i=0; timebuf[i]>=' '; i++)
+        {
+            time_string[i]=timebuf[i];
+        }
+        time_string[i]='\0';
+
         fprintf(fplog,"%s on node %d %s\n",title,nodeid,time_string);
     }
 }
@@ -413,14 +420,14 @@ void do_force(FILE *fplog,t_commrec *cr,
               real lambda,t_graph *graph,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
-              bool bBornRadii,
+              gmx_bool bBornRadii,
               int flags)
 {
     int    cg0,cg1,i,j;
     int    start,homenr;
     double mu[2*DIM]; 
-    bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
-    bool   bDoLongRange,bDoForces,bSepLRF;
+    gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
+    gmx_bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
     real   e,v,dvdl;
     t_pbc  pbc;
@@ -523,7 +530,9 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     gmx_pme_send_x(cr,bBS ? boxs : box,x,
                    mdatoms->nChargePerturbed,lambda,
-                   ( flags & GMX_FORCE_VIRIAL),step);
+/* FIX ME after 4.5 */
+/* we are using gmx_bool of type char */
+                   ( flags & GMX_FORCE_VIRIAL) != 0,step);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);
@@ -590,7 +599,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (fr->bTwinRange)
         {
             /* Reset the (long-range) forces if necessary */
-            clear_rvecs(fr->natoms_force,bSepLRF ? fr->f_twin : f);
+            clear_rvecs(fr->natoms_force_constr,bSepLRF ? fr->f_twin : f);
         }
 
         /* Do the actual neighbour searching and if twin range electrostatics
@@ -665,7 +674,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (bSepLRF)
         {
             /* Add the long range forces to the short range forces */
-            for(i=0; i<fr->natoms_force; i++)
+            for(i=0; i<fr->natoms_force_constr; i++)
             {
                 copy_rvec(fr->f_twin[i],f[i]);
             }
@@ -673,7 +682,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         else if (!(fr->bTwinRange && bNS))
         {
             /* Clear the short-range forces */
-            clear_rvecs(fr->natoms_force,f);
+            clear_rvecs(fr->natoms_force_constr,f);
         }
 
         clear_rvec(fr->vir_diag_posres);
@@ -1160,7 +1169,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                    matrix box,real lambda,tensor pres,tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
-    bool bCorrAll,bCorrPres;
+    gmx_bool bCorrAll,bCorrPres;
     real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
     int  m;
     
@@ -1292,7 +1301,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 
 static void low_do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 			    gmx_mtop_t *mtop,rvec x[],
-			    bool bFirst)
+			    gmx_bool bFirst)
 {
   t_graph *graph;
   int mb,as,mol;
@@ -1347,7 +1356,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[],gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
-                bool bWriteStat)
+                gmx_bool bWriteStat)
 {
   int    i,j;
   t_nrnb *nrnb_tot=NULL;
@@ -1455,7 +1464,7 @@ void init_md(FILE *fplog,
              int nfile,const t_filenm fnm[],
              gmx_mdoutf_t **outf,t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
-             bool *bNEMD,bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
+             gmx_bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
 {
     int  i,j,n;
     real tmpt,mod;
@@ -1486,8 +1495,6 @@ void init_md(FILE *fplog,
         update_annealing_target_temp(&(ir->opts),ir->init_t);
     }
     
-    *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
-    
     if (upd)
     {
         *upd = init_update(fplog,ir);
@@ -1514,10 +1521,10 @@ void init_md(FILE *fplog,
     
     if (nfile != -1)
     {
-        *outf = init_mdoutf(nfile,fnm,(Flags & MD_APPENDFILES),cr,ir,oenv);
+        *outf = init_mdoutf(nfile,fnm,Flags,cr,ir,oenv);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
-                              mtop,ir);
+                              mtop,ir, (*outf)->fp_dhdl);
     }
     
     /* Initiate variables */  

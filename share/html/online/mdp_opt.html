@@ -29,19 +29,20 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#general"><b>General remarks</b></A>
 <p> </p>
 <li><A HREF="#pp"><b>preprocessing</b></A> (include, define)
-<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init_step, nstcalcenergy, comm_mode, nstcomm, comm_grps)
+<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init_step, comm_mode, nstcomm, comm_grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
-<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
+<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, periodic_molecules, rlist, rlistlong)
 <li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb_switch, rcoulomb, epsilon_r, epsilon_rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, rvdw_switch, rvdw, DispCorr)
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp_table)
 <li><A HREF="#ewald"><b>Ewald</b></A> (fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, epsilon_surface, optimize_fft)
-<li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
-<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p, refcoord_scaling)
+<li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, nsttcouple, tc_grps, tau_t, ref_t)
+<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype,
+  nstpcouple, tau_p, compressibility, ref_p, refcoord_scaling)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, annealing_npoints, annealing_time, annealing_temp)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
@@ -110,10 +111,10 @@ topology, this can be useful for normal mode analysis.</dd>
 equations of motion.</dd>
 <dt><b>md-vv</b></dt>
 <dd>A velocity Verlet algorithm for integrating Newton's equations of motion.
-For constant NVE simulations the results are analytically, but not binary,
-identical to the <b>md</b> leap-frog integrator, except for the kinetic
+For constant NVE simulations started from corresponding points in the same trajectory, the trajectories 
+are analytically, but not binary, identical to the <b>md</b> leap-frog integrator.  The the kinetic
 energy, which is determined from the whole step velocities and is therefore
-slightly too small. The advantage of this integrator is more accurate,
+slightly too high. The advantage of this integrator is more accurate,
 reversible Nose-Hoover and Parrinello-Rahman coupling integration
 based on Trotter expansion, as well as (slightly too small) full step velocity
 output. This all comes at the cost off extra computation, especially with
@@ -122,8 +123,8 @@ production simulations the <b>md</b> integrator is accurate enough.
 </dd>
 <dt><b>md-vv-avek</b></dt>
 <dd>A velocity Verlet algorithm identical to <b>md-vv</b>, except that
-the kinetic energy is determined more accurately as the average of
-the two half step kinetic energies as in the <b>md</b> integrator.
+the kinetic energy is determined as the average of
+the two half step kinetic energies as in the <b>md</b> integrator, and this thus more accurate.
 With Nose-Hoover and/or Parrinello-Rahman coupling this comes with
 a slight increase in computational cost.
 </dd>
@@ -249,21 +250,6 @@ Thus for exact restarts or redoing part of a run it might be necessary to
 set <tt>init_step</tt> to the step number of the restart frame.
 <tt>tpbconv</tt> does this automatically.
 </dd>
-<dt><h4>nstcalcenergy: (-1)</h4></dt>
-<dd>The frequency for calculating the energies, including the temperature
-and the pressure, 0 is never.
-This option is only relevant with dynamics.
-With a twin-range cut-off setup <b>nstcalcenergy</b> should be equal to
-or a multiple of <b>nstlist</b>.
-This option affects the performance in parallel simulations,
-because calculating energies requires global communication between all
-processes which can become a bottleneck at high parallelization.
-With global temperature and/or pressure coupling the time step for
-the coupling algorithm is <b>nstcalcenergy</b>*<b>dt</b>.
-Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.
-The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
-unless <b>nstlist</b> &le 0, then a value of 10 is used;
-for velocity Verlet integrators <b>nstcalcenergy</b> is set to 1.</dd>
 <dt><h4>comm_mode:</h4></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
@@ -365,6 +351,19 @@ the last velocities are always written</dd>
 <dt><h4>nstlog: (100) [steps]</h4></dt>
 <dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
 the last energies are always written</dd>
+<dt><h4>nstcalcenergy: (-1)</h4></dt>
+<dd>The frequency for calculating the energies, 0 is never.
+This option is only relevant with dynamics.
+With a twin-range cut-off setup <b>nstcalcenergy</b> should be equal to
+or a multiple of <b>nstlist</b>.
+This option affects the performance in parallel simulations,
+because calculating energies requires global communication between all
+processes which can become a bottleneck at high parallelization.
+The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
+unless <b>nstlist</b> &le 0, then a value of 10 is used.
+If <b>nstenergy</b> is smaller than the automatically generated value,
+the lowest common denominator of <b>nstenergy</b> and <b>nstlist</b> is used.
+</dd>
 <dt><h4>nstenergy: (100) [steps]</h4></dt>
 <dd>frequency to write energies to energy file,
 the last energies are always written,
@@ -515,7 +514,8 @@ The grid dimensions are controlled by <b>fourierspacing</b>.
 Reasonable grid spacing for PPPM is 0.05-0.1 nm.
 See <tt>Shift</tt> for the details of the particle-particle potential.
 <br>
-NOTE: the pressure in incorrect when using PPPM.</dd>
+NOTE: PPPM is not functional in the current version, we plan to implement
+PPPM through a small modification of the PME code.</dd>
 
 <dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
@@ -811,7 +811,7 @@ temperature <b>ref_t</b> [K], with time constant <b>tau_t</b> [ps].
 Several groups can be coupled separately, these are specified in the
 <b>tc_grps</b> field separated by spaces.</dd>
 <dt><b>nose-hoover</b></dt>
-<dd>Temperature coupling with a by using a Nose-Hoover extended
+<dd>Temperature coupling using a Nose-Hoover extended
 ensemble. The reference temperature and coupling groups are selected
 as above, but in this case <b>tau_t</b> [ps] controls the period
 of the temperature fluctuations at equilibrium, which is slightly
@@ -829,8 +829,14 @@ This thermostat works correctly even for <b>tau_t</b>=0.
 For NVT simulations the conserved energy quantity is written
 to the energy and log file.</dd>
 </dl>
-<dt><h4>nh-chain-length (5)</h4></dt>
-<dd>the number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog <b>md</b> integrator only supports 1</dd>
+<dt><h4>nsttcouple: (-1)</h4></dt>
+<dd>The frequency for coupling the temperature.
+The default value of -1 sets <b>nsttcouple</b> equal to <b>nstlist</b>,
+unless <b>nstlist</b> &le 0, then a value of 10 is used.
+For velocity Verlet integrators <b>nsttcouple</b> is set to 1.</dd>
+</dd>
+<dt><h4>nh-chain-length (10)</h4></dt>
+<dd>the number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog <b>md</b> integrator only supports 1.  Data for the NH chain variables is not printed to the .edr, but can be using the GMX_NOSEHOOVER_CHAINS environment variable</dd>
 <dt><h4>tc_grps:</h4></dt>
 <dd>groups to couple separately to temperature bath</dd>
 <dt><h4>tau_t: [ps]</h4></dt>
@@ -856,16 +862,28 @@ argued that this does not yield a correct thermodynamic ensemble,
 but it is the most efficient way to scale a box at the beginning
 of a run.</dd>
 <dt><b>Parrinello-Rahman</b></dt>
-<dd>Extended-ensemble pressure coupling where the box vectors
-are subject to an equation of motion. The equation of motion for
-the atoms is coupled to this. No instantaneous scaling takes place.
+<dd>Extended-ensemble pressure coupling where the box vectors are
+subject to an equation of motion. The equation of motion for the atoms
+is coupled to this. No instantaneous scaling takes place.  As for
+Nose-Hoover temperature coupling the time constant <b>tau_p</b> [ps]
+is the period of pressure fluctuations at equilibrium. This is
+probably a better method when you want to apply pressure scaling
+during data collection, but beware that you can get very large
+oscillations if you are starting from a different pressure. For
+simulations where the exact fluctation of the NPT ensemble are
+important, or if the pressure coupling time is very short,it may not
+be appropriate, as the previous time step pressure is used in some
+steps of the gromacs implementation for the current time step pressure.</dd>
+</dl></dd>
+<dt><b>MTTK</b></dt>
+<dd>Martyna-Tuckerman-Tobias-Klein implementation, only useable with <b>md-vv</b>
+or <b>md-vv-avek</b>, very similar to Parinello-Raphman.  
 As for Nose-Hoover temperature coupling the time constant <b>tau_p</b>
 [ps] is the period of pressure fluctuations at equilibrium. This is
 probably a better method when you want to apply pressure scaling
 during data collection, but beware that you can get very large
-oscillations if you are starting from a different pressure.</dd>
+oscillations if you are starting from a different pressure. Currently only supports isotropic scaling.</dd>
 </dl></dd>
-</dl>
 
 <dl>
 <dt><h4>pcoupltype:</h4></dt>
@@ -900,6 +918,13 @@ The value for the z-compressibility should be reasonably accurate since it
 influences the convergence of the surface-tension, it can also be set to zero
 to have a box with constant height.</dd>
 </dl></dd>
+
+<dt><h4>nstpcouple: (-1)</h4></dt>
+<dd>The frequency for coupling the pressure.
+The default value of -1 sets <b>nstpcouple</b> equal to <b>nstlist</b>,
+unless <b>nstlist</b> &le 0, then a value of 10 is used.
+For velocity Verlet integrators <b>nstpcouple</b> is set to 1.</dd>
+</dd>
 
 <dt><h4>tau_p: (1) [ps]</h4></dt>
 <dd>time constant for coupling</dd>
@@ -1104,6 +1129,8 @@ off in the z-direction.</dd>
 <dd>LJ integrated over the volume behind the wall: 9-3 potential</dd>
 <dt><b>10-4</b></dt>
 <dd>LJ integrated over the wall surface: 10-4 potential</dd>
+<dt><b>12-6</b></dt>
+<dd>direct LJ potential with the z distance from the wall</dd>
 <dt><b>table</b></dt><dd>user defined potentials indexed with the z distance from the wall, the tables are read analogously to
 the <b><A HREF="#table">energygrp_table</A></b> option,
 where the first name is for a "normal" energy group and the second name
@@ -1240,7 +1267,10 @@ is larger than half the shortest box vector.
 For determining the COM, all atoms in the group are put at their periodic image
 which is closest to <b>pull_pbcatom1</b>.
 A value of 0 means that the middle atom (number wise) is used.
-This parameter is not used with geometry <b>cylinder</b>.</dd>
+This parameter is not used with geometry <b>cylinder</b>.
+A value of -1 turns on cosine weighting, which is useful for a group
+of molecules in a periodic system, e.g. a water slab (see Engin et al.
+J. Chem. Phys. B 2010).</dd>
 <dt><h4>pull_vec1: (0.0 0.0 0.0)</h4></dt>
 <dd>The pull direction. <tt>grompp</tt> normalizes the vector.</dd>
 <dt><h4>pull_init1: (0.0) / (0.0 0.0 0.0) [nm]</h4></dt>
@@ -1367,7 +1397,7 @@ the LJ and Coulomb interactions</dd>
 only the values 1 and 2 are supported</dd>
 <dt><h4>sc_sigma: (0.3) [nm]</h4></dt>
 <dd>the soft-core sigma for particles which have a C6 or C12 parameter equal
-to zero</dd>
+to zero or a sigma smaller than <b>sc_sigma</b></dd>
 <dt><h4>couple-moltype:</h4></dt>
 <dd>Here one can supply a molecule type (as defined in the topology)
 for calculating solvation or coupling free energies.
@@ -1706,7 +1736,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#xmdrun">niter</A><br>
 <A HREF="#tc">nh-chain-length</A><br>
 <A HREF="#em">nstcgsteep</A><br>
-<A HREF="#run">nstcalcenergy</A><br>
+<A HREF="#out">nstcalcenergy</A><br>
 <A HREF="#run">nstcomm</A><br>
 <A HREF="#nmr">nstdisreout</A><br>
 <A HREF="#out">nstenergy</A><br>
@@ -1714,6 +1744,8 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstfout</A><br>
 <A HREF="#nl">nstlist</A><br>
 <A HREF="#out">nstlog</A><br>
+<A HREF="#pc">nstpcouple</A><br>
+<A HREF="#tc">nsttcouple</A><br>
 <A HREF="#out">nstvout</A><br>
 <A HREF="#out">nstxout</A><br>
 <A HREF="#out">nstxtcout</A><br>

@@ -61,16 +61,16 @@
 #include "gmx_ana.h"
 
 static void insert_ion(int nsa,int *nwater,
-		       bool bSet[],int repl[],atom_id index[],
+		       gmx_bool bSet[],int repl[],atom_id index[],
 		       real pot[],rvec x[],t_pbc *pbc,
 		       int sign,int q,const char *ionname,
 		       t_mdatoms *mdatoms,
-		       real rmin,bool bRandom,int *seed)
+		       real rmin,gmx_bool bRandom,int *seed)
 {
   int  i,ii,ei,owater,wlast,m,nw;
   real extr_e,poti,rmin2;
   rvec xei,dx;
-  bool bSub=FALSE;
+  gmx_bool bSub=FALSE;
   int  maxrand;
   
   ei=-1;
@@ -233,7 +233,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
   FILE *fpin,*fpout;
   char  buf[STRLEN],buf2[STRLEN],*temp,**mol_line=NULL;
   int  line,i,nsol,nmol_line,sol_line,nsol_last;
-  bool bMolecules;
+  gmx_bool bMolecules;
   
   printf("\nProcessing topology\n");
   fpin = ffopen(topinout,"r");
@@ -259,7 +259,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 	buf2[strlen(buf2)-1]='\0';
 	ltrim(buf2);
 	rtrim(buf2);
-	bMolecules=(strcasecmp(buf2,"molecules")==0);
+	bMolecules=(gmx_strcasecmp(buf2,"molecules")==0);
       }
       fprintf(fpout,"%s",buf);
     } else if (!bMolecules) {
@@ -267,7 +267,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
     } else {
       /* Check if this is a line with solvent molecules */
       sscanf(buf,"%s",buf2);
-      if (strcasecmp(buf2,grpname) == 0) {
+      if (gmx_strcasecmp(buf2,grpname) == 0) {
 	sol_line = nmol_line;
 	sscanf(buf,"%*s %d",&nsol_last);
       }
@@ -330,9 +330,12 @@ int gmx_genion(int argc, char *argv[])
     "can be specified with the option [TT]-table[tt].",
     "The group of solvent molecules should be continuous and all molecules",
     "should have the same number of atoms.",
-    "The user should add the ion molecules to the topology file and include",
-    "the file [TT]ions.itp[tt].",
-    "Ion names for Gromos96 should include the charge.[PAR]",
+    "The user should add the ion molecules to the topology file or use",
+    "the [TT]-p[tt] option to automatically modify the topology.[PAR]",
+    "The ion molecule type, residue and atom names in all force fields",
+    "are the capitalized element names without sign. Ions which can have",
+    "multiple charge states get the multiplicilty added, without sign,",
+    "for the uncommon states only.[PAR]",
     "With the option [TT]-pot[tt] the potential can be written as B-factors",
     "in a pdb file (for visualisation using e.g. rasmol).",
     "The unit of the potential is 1000 kJ/(mol e), the scaling be changed",
@@ -344,10 +347,10 @@ int gmx_genion(int argc, char *argv[])
     "If you specify a salt concentration existing ions are not taken into account. In effect you therefore specify the amount of salt to be added."
   };
   static int  p_num=0,n_num=0,p_q=1,n_q=-1;
-  static const char *p_name="Na",*n_name="Cl";
+  static const char *p_name="NA",*n_name="CL";
   static real rmin=0.6,scale=0.001,conc=0;
   static int  seed=1993;
-  static bool bRandom=TRUE,bNeutral=FALSE;
+  static gmx_bool bRandom=TRUE,bNeutral=FALSE;
   static t_pargs pa[] = {
     { "-np",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
     { "-pname", FALSE, etSTR,  {&p_name},"Name of the positive ion"      },
@@ -380,7 +383,7 @@ int gmx_genion(int argc, char *argv[])
   int         *repl;
   atom_id     *index;
   char        *grpname;
-  bool        *bSet,bPDB;
+  gmx_bool        *bSet,bPDB;
   int         i,nw,nwa,nsa,nsalt,iqtot;
   FILE        *fplog;
   output_env_t oenv;

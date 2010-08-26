@@ -209,7 +209,7 @@ static void print_nbt (FILE *out,char *title,gpp_atomtype_t at,
 
 void print_bt(FILE *out, directive d, gpp_atomtype_t at,
 	      int ftype,int fsubtype,t_params plist[],
-	      bool bFullDih)
+	      gmx_bool bFullDih)
 {
   /* This dihp is a DIRTY patch because the dih-types do not use
    * all four atoms to determine the type.
@@ -217,7 +217,7 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
   const int dihp[2][2] = { { 1,2 }, { 0,3 } };
   t_params *bt;
   int      i,j,f,nral,nrfp;
-  bool     bDih=FALSE,bSwapParity;
+  gmx_bool     bDih=FALSE,bSwapParity;
   
   bt=&(plist[ftype]);
   
@@ -354,7 +354,7 @@ void print_blocka(FILE *out, const char *szName,
 void print_excl(FILE *out, int natoms, t_excls excls[])
 {
   atom_id i;
-  bool    have_excl;
+  gmx_bool    have_excl;
   int     j;
   
   have_excl=FALSE;
@@ -392,7 +392,7 @@ static double get_residue_charge(const t_atoms *atoms,int at)
 }
 
 void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr,
-		 bool bRTPresname)
+		 gmx_bool bRTPresname)
 {
   int  i,ri;
   int  tpA,tpB;

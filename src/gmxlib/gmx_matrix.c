@@ -33,6 +33,10 @@
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdlib.h>
 #include "typedefs.h"
 #include "smalloc.h"
@@ -91,7 +95,7 @@ void matrix_multiply(FILE *fp,int n,int m,double **x,double **y,double **z)
     }
 }
 
-static void dump_matrix(FILE *fp,char *title,int n,double **a)
+static void dump_matrix(FILE *fp,const char *title,int n,double **a)
 {
     double d=1;
     int i,j;

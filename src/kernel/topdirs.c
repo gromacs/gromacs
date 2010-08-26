@@ -91,7 +91,7 @@ int ifunc_index(directive d,int type)
       return F_UREY_BRADLEY;
     case 6:
       return F_QUARTIC_ANGLES;
-    case 7:
+    case 8:
       return F_TABANGLES;
     default:
       gmx_fatal(FARGS,"Invalid angle type %d",type);
@@ -221,7 +221,7 @@ directive str2dir (char *dstr)
   char buf[STRLEN],*ptr;
   
   /* Hack to be able to read old topologies */
-  if (strncasecmp_min(dstr,"dummies",7) == 0) {
+  if (gmx_strncasecmp_min(dstr,"dummies",7) == 0) {
     sprintf(buf,"virtual_sites%s",dstr+7);
     ptr = buf;
   } else {
@@ -229,7 +229,7 @@ directive str2dir (char *dstr)
   }
   
   for (d=0; (d<d_maxdir); d++)
-    if (strcasecmp_min(ptr,dir2str((directive)d)) == 0)
+    if (gmx_strcasecmp_min(ptr,dir2str((directive)d)) == 0)
       return (directive)d;
 
   return d_invalid;

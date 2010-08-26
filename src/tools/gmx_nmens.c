@@ -86,13 +86,13 @@ int gmx_nmens(int argc,char *argv[])
   };
 #define NPA asize(pa)
   
-  int        out;
+  t_trxstatus *out;
   int        status,trjout;
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;
   rvec       *xtop,*xref,*xav,*xout1,*xout2;
-  bool       bDMR,bDMA,bFit;
+  gmx_bool       bDMR,bDMA,bFit;
   int        nvec,*eignr=NULL;
   rvec       **eigvec=NULL;
   matrix     box;

@@ -199,7 +199,7 @@ static void check_vel(gmx_mtop_t *mtop,rvec v[])
   }
 }
 
-static bool nint_ftype(gmx_mtop_t *mtop,t_molinfo *mi,int ftype)
+static gmx_bool nint_ftype(gmx_mtop_t *mtop,t_molinfo *mi,int ftype)
 {
   int nint,mb;
 
@@ -278,26 +278,26 @@ static void molinfo2mtop(int nmi,t_molinfo *mi,gmx_mtop_t *mtop)
 
 static void
 new_status(const char *topfile,const char *topppfile,const char *confin,
-           t_gromppopts *opts,t_inputrec *ir,bool bZero,
-           bool bGenVel,bool bVerbose,t_state *state,
+           t_gromppopts *opts,t_inputrec *ir,gmx_bool bZero,
+           gmx_bool bGenVel,gmx_bool bVerbose,t_state *state,
            gpp_atomtype_t atype,gmx_mtop_t *sys,
            int *nmi,t_molinfo **mi,t_params plist[],
            int *comb,double *reppow,real *fudgeQQ,
-           bool bMorse,
+           gmx_bool bMorse,
            warninp_t wi)
 {
   t_molinfo   *molinfo=NULL;
   int         nmolblock;
   gmx_molblock_t *molblock,*molbs;
   t_atoms     *confat;
-  int         mb,mbs,i,nrmols,nmismatch;
+  int         mb,i,nrmols,nmismatch;
   char        buf[STRLEN];
-  bool        bGB=FALSE;
+  gmx_bool        bGB=FALSE;
   char        warn_buf[STRLEN];
 
   init_mtop(sys);
 
-  /* Set boolean for GB */
+  /* Set gmx_boolean for GB */
   if(ir->implicit_solvent)
     bGB=TRUE;
   
@@ -310,7 +310,7 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   
   sys->nmolblock = 0;
   snew(sys->molblock,nmolblock);
-  mbs;
+  
   sys->natoms = 0;
   for(mb=0; mb<nmolblock; mb++) {
     if (sys->nmolblock > 0 &&
@@ -429,14 +429,14 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
 }
 
 static void cont_status(const char *slog,const char *ener,
-			bool bNeedVel,bool bGenVel, real fr_time,
+			gmx_bool bNeedVel,gmx_bool bGenVel, real fr_time,
 			t_inputrec *ir,t_state *state,
 			gmx_mtop_t *sys,
                         const output_env_t oenv)
      /* If fr_time == -1 read the last frame available which is complete */
 {
   t_trxframe  fr;
-  int         fp;
+  t_trxstatus *fp;
 
   fprintf(stderr,
 	  "Reading Coordinates%s and Box size from old trajectory\n",
@@ -486,13 +486,13 @@ static void cont_status(const char *slog,const char *ener,
   }
 }
 
-static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,bool bTopB,
+static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
                         char *fn,
                         int rc_scaling, int ePBC, 
                         rvec com,
                         warninp_t wi)
 {
-  bool   bFirst = TRUE;
+  gmx_bool   bFirst = TRUE;
   rvec   *x,*v,*xp;
   dvec   sum;
   double totmass;
@@ -981,13 +981,13 @@ int main (int argc, char *argv[])
   char         fn[STRLEN],fnB[STRLEN];
   const char   *mdparin;
   int          ntype;
-  bool         bNeedVel,bGenVel;
-  bool         have_atomnumber;
+  gmx_bool         bNeedVel,bGenVel;
+  gmx_bool         have_atomnumber;
   int		   n12,n13,n14;
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
   output_env_t oenv;
-  bool         bVerbose;
+  gmx_bool         bVerbose = FALSE;
   warninp_t    wi;
   char         warn_buf[STRLEN];
 
@@ -1007,8 +1007,8 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bRenum=TRUE;
-  static bool bRmVSBds=TRUE,bZero=FALSE;
+  static gmx_bool bRenum=TRUE;
+  static gmx_bool bRmVSBds=TRUE,bZero=FALSE;
   static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
@@ -1262,7 +1262,7 @@ int main (int argc, char *argv[])
     if (ir->ePBC==epbcXY && ir->nwall==2)
       svmul(ir->wall_ewald_zfac,box[ZZ],box[ZZ]);
     max_spacing = calc_grid(stdout,box,opts->fourierspacing,
-			    &(ir->nkx),&(ir->nky),&(ir->nkz),1);
+                            &(ir->nkx),&(ir->nky),&(ir->nkz));
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
         set_warning_line(wi,mdparin,-1);
         warning_note(wi,"Grid spacing larger then 0.1 while using PPPM.");

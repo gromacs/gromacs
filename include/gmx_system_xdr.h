@@ -235,23 +235,23 @@ typedef bool_t (*xdrproc_t) (XDR *, void *,...);
 	} while (0)
 
 
-extern bool_t xdr_int (XDR *__xdrs, int *__ip);
-extern bool_t xdr_u_int (XDR *__xdrs, unsigned int *__ip);
-extern bool_t xdr_short (XDR *__xdrs, short *__ip);
-extern bool_t xdr_u_short (XDR *__xdrs, unsigned short *__ip);
-extern bool_t xdr_bool (XDR *__xdrs, int *__bp);
-extern bool_t xdr_opaque (XDR *__xdrs, char *__cp, unsigned int __cnt);
-extern bool_t xdr_string (XDR *__xdrs, char **__cpp, unsigned int __maxsize);
-extern bool_t xdr_char (XDR *__xdrs, char *__cp);
-extern bool_t xdr_u_char (XDR *__xdrs, unsigned char *__cp);
-extern bool_t xdr_vector (XDR *__xdrs, char *__basep, unsigned int __nelem,
+bool_t xdr_int (XDR *__xdrs, int *__ip);
+bool_t xdr_u_int (XDR *__xdrs, unsigned int *__ip);
+bool_t xdr_short (XDR *__xdrs, short *__ip);
+bool_t xdr_u_short (XDR *__xdrs, unsigned short *__ip);
+bool_t xdr_bool (XDR *__xdrs, int *__bp);
+bool_t xdr_opaque (XDR *__xdrs, char *__cp, unsigned int __cnt);
+bool_t xdr_string (XDR *__xdrs, char **__cpp, unsigned int __maxsize);
+bool_t xdr_char (XDR *__xdrs, char *__cp);
+bool_t xdr_u_char (XDR *__xdrs, unsigned char *__cp);
+bool_t xdr_vector (XDR *__xdrs, char *__basep, unsigned int __nelem,
 			  unsigned int __elemsize, xdrproc_t __xdr_elem);
-extern bool_t xdr_float (XDR *__xdrs, float *__fp);
-extern bool_t xdr_double (XDR *__xdrs, double *__dp);
-extern void xdrstdio_create (XDR *__xdrs, FILE *__file, enum xdr_op __xop);
+bool_t xdr_float (XDR *__xdrs, float *__fp);
+bool_t xdr_double (XDR *__xdrs, double *__dp);
+void xdrstdio_create (XDR *__xdrs, FILE *__file, enum xdr_op __xop);
 
 /* free memory buffers for xdr */
-extern void xdr_free (xdrproc_t __proc, char *__objp);
+void xdr_free (xdrproc_t __proc, char *__objp);
 
 #ifdef __cplusplus
 }

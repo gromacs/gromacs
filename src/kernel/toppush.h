@@ -90,13 +90,13 @@ extern void push_atom(t_symtab   *symtab,
 
 extern void push_bond(directive d,t_params bondtype[],t_params bond[],
 		      t_atoms *at,gpp_atomtype_t atype,char *line,
-		      bool bBonded,bool bGenPairs,real fudgeQQ,
-		      bool bZero,bool *bWarn_copy_A_B,
+		      gmx_bool bBonded,gmx_bool bGenPairs,real fudgeQQ,
+		      gmx_bool bZero,gmx_bool *bWarn_copy_A_B,
 		      warninp_t wi);
 
 extern void push_cmap(directive d, t_params bondtype[], t_params bond[],
 		      t_atoms *at, gpp_atomtype_t atype, char *line,
-		      bool *bWarn_copy_A_B,
+		      gmx_bool *bWarn_copy_A_B,
 		      warninp_t wi);
 
 extern void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
@@ -131,7 +131,7 @@ extern int add_atomtype_decoupled(t_symtab *symtab,gpp_atomtype_t at,
 extern void convert_moltype_couple(t_molinfo *mol,int atomtype_decouple,
 				   real fudgeQQ,
 				   int couple_lam0,int couple_lam1,
-				   bool bCoupleIntra,
+				   gmx_bool bCoupleIntra,
 				   int nb_funct,t_params *nbp);
 /* Setup mol such that the B-state has no interaction with the rest
  * of the system, but full interaction with itself.

@@ -59,7 +59,7 @@ typedef struct
     /** Position evaluation data structure. */
     gmx_ana_poscalc_t *pc;
     /** TRUE if periodic boundary conditions should be used. */
-    bool               bPBC;
+    gmx_bool               bPBC;
     /** Type of positions to calculate. */
     char              *type;
     /** Flags for the position calculation. */

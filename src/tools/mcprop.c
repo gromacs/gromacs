@@ -58,7 +58,7 @@ void normalise_vec(int nx,real x[])
     x[j]*=fac;
 }
 
-static real do_step(int nx,real x[],int i,int *ig,real step,bool bPlus)
+static real do_step(int nx,real x[],int i,int *ig,real step,gmx_bool bPlus)
 {
   static real   r=0;
   
@@ -120,7 +120,7 @@ void do_mc(FILE *fp,int nx,real x[],real step,real v0,real tol,
   FILE   *ffp[2];
   FILE   *ftrj;
   int    i,j,k,m,f,n,ig,cur=0;
-  bool   bConv,bUp;
+  gmx_bool   bConv,bUp;
   real   vtol,r,bmf,*rx[2],valmin,vplusmin[2],stepsize;
   double dv,val[2];
 #define next (1-cur)

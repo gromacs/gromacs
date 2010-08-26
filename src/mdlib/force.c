@@ -77,9 +77,9 @@ void ns(FILE *fp,
         real       lambda,
         real       *dvdlambda,
         gmx_grppairener_t *grppener,
-        bool       bFillGrid,
-        bool       bDoLongRange,
-        bool       bDoForces,
+        gmx_bool       bFillGrid,
+        gmx_bool       bDoLongRange,
+        gmx_bool       bDoForces,
         rvec       *f)
 {
   char   *ptr;
@@ -126,7 +126,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        gmx_localtop_t *top,
                        gmx_genborn_t *born,
                        t_atomtypes *atype,
-                       bool       bBornRadii,
+                       gmx_bool       bBornRadii,
                        matrix     box,
                        real       lambda,  
                        t_graph    *graph,
@@ -137,7 +137,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 {
     int     i,status;
     int     donb_flags;
-    bool    bDoEpot,bSepDVDL,bSB;
+    gmx_bool    bDoEpot,bSepDVDL,bSB;
     int     pme_flags;
     matrix  boxs;
     rvec    box_size;
@@ -156,6 +156,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
     
     GMX_MPE_LOG(ev_force_start);
+    set_pbc(&pbc,fr->ePBC,box);
     
     /* Reset box */
     for(i=0; (i<DIM); i++)
@@ -262,14 +263,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	/* If we are doing GB, calculate bonded forces and apply corrections 
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
-		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
-							   ir->gb_algorithm,nrnb,bBornRadii,&pbc,graph);
-		
-		enerd->term[F_GB12]+=dvdgb;	
-	
-		/* Also add the nonbonded GB potential energy (only from one energy group currently) */
-		enerd->term[F_GB12]+=enerd->grpp.ener[egGB][0];
-	}
+		calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
+                       ir->gb_algorithm,nrnb,bBornRadii,&pbc,graph,enerd);
+    }
 
 #ifdef GMX_MPI
     if (TAKETIME)
@@ -296,7 +292,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 (fr->bBHAM ?
                  enerd->grpp.ener[egBHAMSR][i] :
                  enerd->grpp.ener[egLJSR][i])
-                + enerd->grpp.ener[egCOULSR][i];
+                + enerd->grpp.ener[egCOULSR][i] + enerd->grpp.ener[egGB][i];
         }
     }
     PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlambda);
@@ -443,6 +439,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         case eelPME:
         case eelPMESWITCH:
         case eelPMEUSER:
+        case eelPMEUSERSWITCH:
             if (cr->duty & DUTY_PME)
             {
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
@@ -462,8 +459,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                         x,fr->f_novirsum,
                                         md->chargeA,md->chargeB,
                                         bSB ? boxs : box,cr,
-                                        DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
-                                        DOMAINDECOMP(cr) ? dd_pme_maxshift1(cr->dd) : 0,
+                                        DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
+                                        DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
                                         nrnb,wcycle,
                                         fr->vir_el_recip,fr->ewaldcoeff,
                                         &Vlr,lambda,&dvdlambda,
@@ -653,6 +650,9 @@ void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
   epot[F_COUL14]   = sum_v(grpp->nener,grpp->ener[egCOUL14]);
   epot[F_COUL_LR]  = sum_v(grpp->nener,grpp->ener[egCOULLR]);
   epot[F_LJ_LR]    = sum_v(grpp->nener,grpp->ener[egLJLR]);
+  /* We have already added 1-2,1-3, and 1-4 terms to F_GBPOL */
+  epot[F_GBPOL]   += sum_v(grpp->nener,grpp->ener[egGB]);
+    
 /* lattice part of LR doesnt belong to any group
  * and has been added earlier
  */
@@ -704,11 +704,11 @@ void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir)
 }
 
 void reset_enerdata(t_grpopts *opts,
-                    t_forcerec *fr,bool bNS,
+                    t_forcerec *fr,gmx_bool bNS,
                     gmx_enerdata_t *enerd,
-                    bool bMaster)
+                    gmx_bool bMaster)
 {
-  bool bKeepLR;
+  gmx_bool bKeepLR;
   int  i,j;
   
   /* First reset all energy components, except for the long range terms

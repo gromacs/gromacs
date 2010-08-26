@@ -32,12 +32,11 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #ifndef _mdatom_h
 #define _mdatom_h
+
+#include "simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,22 +47,22 @@ typedef struct {
   int           nr;
   int           nalloc;
   int           nenergrp;
-  bool          bVCMgrps;
+  gmx_bool          bVCMgrps;
   int           nPerturbed;
   int           nMassPerturbed;
   int           nChargePerturbed;
-  bool          bOrires;
+  gmx_bool          bOrires;
   real          *massA,*massB,*massT,*invmass;
   real          *chargeA,*chargeB;
-  bool          *bPerturbed;
+  gmx_bool          *bPerturbed;
   int           *typeA,*typeB;
   unsigned short        *ptype;
   unsigned short        *cTC,*cENER,*cACC,*cFREEZE,*cVCM;
   unsigned short        *cU1,*cU2,*cORF;
   /* for QMMM, atomnumber contains atomic number of the atoms */
-  bool          *bQM;
+  gmx_bool          *bQM;
   /* for qhop simulations */
-  bool          *bqhopdonor,*bqhopacceptor;
+  gmx_bool          *bqhopdonor,*bqhopacceptor;
   /* The range of home atoms */
   int           start;
   int           homenr;

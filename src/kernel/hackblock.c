@@ -156,10 +156,10 @@ static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
   d->s = safe_strdup(s->s);
 }
 
-static bool contains_char(t_rbonded *s,char c)
+static gmx_bool contains_char(t_rbonded *s,char c)
 {
   int i;
-  bool bRet;
+  gmx_bool bRet;
   
   bRet = FALSE;
   for(i=0; i<MAXATOMLIST; i++)
@@ -169,10 +169,10 @@ static bool contains_char(t_rbonded *s,char c)
   return bRet;
 }
 
-bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],bool bMin,bool bPlus)
+gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],gmx_bool bMin,gmx_bool bPlus)
 {
   int i, j;
-  bool bBondsRemoved;
+  gmx_bool bBondsRemoved;
   
   bBondsRemoved = FALSE;
   for(i=0; i < ebtsNR; i++) {

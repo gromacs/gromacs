@@ -58,7 +58,7 @@ static void upd_vir(rvec vir,real dvx,real dvy,real dvz)
 }
 
 void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
-	      bool bScrewPBC,matrix box)
+	      gmx_bool bScrewPBC,matrix box)
 {
   int      i,isx;
   double   dvxx=0,dvxy=0,dvxz=0,dvyx=0,dvyy=0,dvyz=0,dvzx=0,dvzy=0,dvzz=0;
@@ -97,7 +97,7 @@ void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
 
 static void lo_fcv(int i0,int i1,int g0,
 		   real x[],real f[],tensor vir,
-		   int is[],real box[], bool bTriclinic)
+		   int is[],real box[], gmx_bool bTriclinic)
 {
   int      i,i3,gg,g3,tx,ty,tz;
   real     xx,yy,zz;
@@ -158,7 +158,7 @@ static void lo_fcv(int i0,int i1,int g0,
 
 static void lo_fcv2(int i0,int i1,
 		    rvec x[],rvec f[],tensor vir,
-		    ivec is[],matrix box, bool bTriclinic)
+		    ivec is[],matrix box, gmx_bool bTriclinic)
 {
   int      i,gg,tx,ty,tz;
   real     xx,yy,zz;

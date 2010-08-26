@@ -52,16 +52,16 @@
 /* The source code in this file should be thread-safe. 
       Please keep it that way. */
 
-bool is_hidden(t_pargs *pa)
+gmx_bool is_hidden(t_pargs *pa)
 {
   return ((strstr(pa->desc,"HIDDEN") != NULL) || 
 	  (strstr(pa->desc,"[hidden]") != NULL));
 }
 
-void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
+void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],gmx_bool bKeepArgs)
 {
     int  i,j,k,match;
-    bool *bKeep;
+    gmx_bool *bKeep;
     char buf[32];
     char *ptr;
 
@@ -111,7 +111,7 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
                         for(k=1; (pa[j].u.c[k] != NULL); k++)
                             /* only check ptr against beginning of 
                                pa[j].u.c[k] */
-                            if (strncasecmp(ptr,pa[j].u.c[k],strlen(ptr)) == 0)
+                            if (gmx_strncasecmp(ptr,pa[j].u.c[k],strlen(ptr)) == 0)
                                 if ( ( match == NOTSET ) || 
                                         ( strlen(pa[j].u.c[k]) < 
                                           strlen(pa[j].u.c[match]) ) )
@@ -175,7 +175,7 @@ int opt2parg_int(const char *option,int nparg,t_pargs pa[])
   return 0;
 }
 
-bool opt2parg_bool(const char *option,int nparg,t_pargs pa[])
+gmx_bool opt2parg_gmx_bool(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   
@@ -183,7 +183,7 @@ bool opt2parg_bool(const char *option,int nparg,t_pargs pa[])
     if (strcmp(pa[i].option,option) == 0)
       return *pa[i].u.b;
   
-  gmx_fatal(FARGS,"No boolean option %s in pargs",option);
+  gmx_fatal(FARGS,"No gmx_boolean option %s in pargs",option);
   
   return FALSE;
 }
@@ -214,7 +214,7 @@ const char *opt2parg_str(const char *option,int nparg,t_pargs pa[])
   return NULL;
 }
 
-bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[])
+gmx_bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   
@@ -289,7 +289,7 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
 #define OPTLEN 12
 #define TYPELEN 6
 #define LONGSTR 1024
-char *pargs_print_line(t_pargs *pa,bool bLeadingSpace)
+char *pargs_print_line(t_pargs *pa,gmx_bool bLeadingSpace)
 {
   char buf[LONGSTR],*buf2,*tmp,*desc;
 
@@ -324,9 +324,9 @@ char *pargs_print_line(t_pargs *pa,bool bLeadingSpace)
   return tmp;
 }
 
-void print_pargs(FILE *fp, int npargs,t_pargs pa[],bool bLeadingSpace)
+void print_pargs(FILE *fp, int npargs,t_pargs pa[],gmx_bool bLeadingSpace)
 {
-  bool bShowHidden;
+  gmx_bool bShowHidden;
   char buf[32],buf2[256],tmp[256];
   char *wdesc;
   int  i;

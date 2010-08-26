@@ -32,12 +32,12 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+
 
 #ifndef _ifunc_h
 #define _ifunc_h
+
+#include "../typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -126,7 +126,7 @@ int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result)
     {
         if (comm1->grp.peers[i] != comm2->grp.peers[i])
         {
-            bool found=FALSE;
+            gmx_bool found=FALSE;
 
             *result=TMPI_SIMILAR;
             for(j=0;j<comm2->grp.N;j++)
@@ -170,7 +170,7 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 
 
     /* initialize the main barrier */
-    tMPI_Spinlock_barrier_init(&(ret->barrier), N);
+    tMPI_Barrier_init(&(ret->barrier), N);
 
 #if 0
     {
@@ -183,13 +183,13 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
         } 
 
         ret->Nreduce_barriers=Nbarriers;
-        ret->reduce_barrier=(tMPI_Spinlock_barrier_t*)
-                  tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
+        ret->reduce_barrier=(tMPI_Barrier_t*)
+                  tMPI_Malloc(sizeof(tMPI_Barrier_t)*(Nbarriers+1));
         ret->N_reduce_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
         Nred=N;
         for(i=0;i<Nbarriers;i++)
         {
-            tMPI_Spinlock_barrier_init( &(ret->reduce_barrier[i]), Nred);
+            tMPI_Barrier_init( &(ret->reduce_barrier[i]), Nred);
             ret->N_reduce_barrier[i]=Nred;
             /* Nred is now Nred/2 + a rest term because solitary 
                process at the end of the list must still be accounter for */
@@ -212,8 +212,8 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 
         ret->N_reduce_iter=Niter;
         /* allocate the list */
-        ret->reduce_barrier=(tMPI_Spinlock_barrier_t**)
-                  tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t*)*(Niter+1));
+        ret->reduce_barrier=(tMPI_Barrier_t**)
+                  tMPI_Malloc(sizeof(tMPI_Barrier_t*)*(Niter+1));
         ret->N_reduce=(int*)tMPI_Malloc(sizeof(int)*(Niter+1));
 
         /* we re-set Nred to N */
@@ -225,11 +225,11 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
             Nred = Nred/2 + Nred%2;
             ret->N_reduce[i] = Nred;
             /* allocate the sub-list */
-            ret->reduce_barrier[i]=(tMPI_Spinlock_barrier_t*)
-                      tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nred));
+            ret->reduce_barrier[i]=(tMPI_Barrier_t*)
+                      tMPI_Malloc(sizeof(tMPI_Barrier_t)*(Nred));
             for(j=0;j<Nred;j++)
             {
-                tMPI_Spinlock_barrier_init(&(ret->reduce_barrier[i][j]),2);
+                tMPI_Barrier_init(&(ret->reduce_barrier[i][j]),2);
             }
         }
     }
@@ -397,7 +397,7 @@ static void tMPI_Split_colors(int N, const int *color, const int *key,
                               int *group)
 {
     int i,j;
-    bool found;
+    gmx_bool found;
 
     /* reset groups */
     for(i=0;i<N;i++)
@@ -450,7 +450,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
                                                 the threads actually suplies 
                                                 these arrays to the comm 
                                                 structure) */
-    bool i_am_first=FALSE;
+    gmx_bool i_am_first=FALSE;
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     struct tmpi_split *spl;
 

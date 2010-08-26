@@ -32,9 +32,9 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#ifndef _types_symtab_h
+#define _types_symtab_h
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,3 +56,4 @@ typedef struct
 }
 #endif
 
+#endif

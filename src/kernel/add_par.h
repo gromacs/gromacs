@@ -53,7 +53,7 @@ extern void add_cmap_param(t_params *ps,int ai,int aj,int ak,int al,int am,
 extern void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak);
 
 extern void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, 
-			   bool bSwapParity);
+			   gmx_bool bSwapParity);
 
 extern void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0);
 
@@ -63,6 +63,6 @@ extern void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
 extern void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, 
 			   int am);
 
-extern int search_jtype(t_restp *rp,char *name,bool bFirstRes);
+extern int search_jtype(t_restp *rp,char *name,gmx_bool bFirstRes);
 
 #endif	/* _add_par_h */

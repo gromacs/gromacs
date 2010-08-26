@@ -77,7 +77,7 @@ t_dlgitem *FindWin(t_dlg *dlg, Window win)
  * Routines to manipulate items on a dialog box
  *
  ****************************/
-bool QueryDlgItemSize(t_dlg *dlg,t_id id,int *w,int *h)
+gmx_bool QueryDlgItemSize(t_dlg *dlg,t_id id,int *w,int *h)
 {
   t_dlgitem *dlgitem;
   
@@ -89,7 +89,7 @@ bool QueryDlgItemSize(t_dlg *dlg,t_id id,int *w,int *h)
   return FALSE;
 }
 
-bool QueryDlgItemPos(t_dlg *dlg,t_id id,int *x0,int *y0)
+gmx_bool QueryDlgItemPos(t_dlg *dlg,t_id id,int *x0,int *y0)
 {
   t_dlgitem *dlgitem;
   
@@ -137,7 +137,7 @@ int QueryDlgItemH(t_dlg *dlg, t_id id)
   return 0;
 }
 
-bool SetDlgItemSize(t_dlg *dlg,t_id id,int w,int h)
+gmx_bool SetDlgItemSize(t_dlg *dlg,t_id id,int w,int h)
 {
   t_dlgitem *dlgitem;
 #ifdef DEBUG
@@ -177,7 +177,7 @@ bool SetDlgItemSize(t_dlg *dlg,t_id id,int w,int h)
   return FALSE;
 }
 
-bool SetDlgItemPos(t_dlg *dlg,t_id id,int x0,int y0)
+gmx_bool SetDlgItemPos(t_dlg *dlg,t_id id,int x0,int y0)
 {
   t_dlgitem *dlgitem;
   int old_x,old_y;
@@ -217,7 +217,7 @@ bool SetDlgItemPos(t_dlg *dlg,t_id id,int x0,int y0)
  * after dlg is exec'ed
  *
  ****************************/
-bool IsCBChecked(t_dlg *dlg,t_id id)
+gmx_bool IsCBChecked(t_dlg *dlg,t_id id)
 {
   t_dlgitem *dlgitem;
   
@@ -330,7 +330,7 @@ void HelpDlg(t_dlg *dlg)
 void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
 {
   char buf[80];
-  bool bCont=TRUE;
+  gmx_bool bCont=TRUE;
   int  i,nlines=0;
   char **lines=NULL;
 
@@ -346,7 +346,7 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
     fprintf(dlg->x11->console,"buffer: '%s'\n",buf);
     dlg->x11->Flush(dlg->x11);
 #endif
-    if (strcasecmp(buf,"nok")==0) {
+    if (gmx_strcasecmp(buf,"nok")==0) {
       /* An error occurred */
       for(i=0; (i<nlines); i++)
 	sfree(lines[i]);
@@ -355,7 +355,7 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
       return;
     }
     else {
-      bCont=(strcasecmp(buf,"ok") != 0);
+      bCont=(gmx_strcasecmp(buf,"ok") != 0);
       if (bCont) {
 	srenew(lines,++nlines);
 	lines[nlines-1]=strdup(buf);
@@ -390,7 +390,7 @@ static void ExitDlg(t_dlg *dlg)
     FreeDlg(dlg);
 }
 
-static bool DlgCB(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool DlgCB(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_dlg     *dlg=(t_dlg *)data;
   int	    i,nWndProc;
@@ -689,7 +689,7 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
   return dlg;
 }
 
-void SetDlgSize(t_dlg *dlg,int w,int h, bool bAutoPosition)
+void SetDlgSize(t_dlg *dlg,int w,int h, gmx_bool bAutoPosition)
 {
   if (bAutoPosition) {
     int x,y;

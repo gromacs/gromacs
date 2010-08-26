@@ -71,12 +71,12 @@ typedef struct {
   real spacing,radius;
   real *elem;
   int  *count;
-  bool bPhi;
+  gmx_bool bPhi;
   int  nx,ny;
   real **cmap;
 } t_gkrbin;
 
-static t_gkrbin *mk_gkrbin(real radius,real rcmax,bool bPhi,int ndegrees)
+static t_gkrbin *mk_gkrbin(real radius,real rcmax,gmx_bool bPhi,int ndegrees)
 {
   t_gkrbin *gb;
   char *ptr;
@@ -292,7 +292,7 @@ static void print_gkrbin(const char *fn,t_gkrbin *gb,
    * models into account. The RDF is calculated as well, almost for free!
    */
   FILE   *fp;
-  char *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy" };
+  const char *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy" };
   int    i,j,n,last;
   real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO,cosav,ener;
   double fac;
@@ -350,11 +350,11 @@ static void print_gkrbin(const char *fn,t_gkrbin *gb,
   ffclose(fp);
 }
 
-bool read_mu_from_enx(ener_file_t fmu,int Vol,ivec iMu,rvec mu,real *vol,
+gmx_bool read_mu_from_enx(ener_file_t fmu,int Vol,ivec iMu,rvec mu,real *vol,
                       real *t, int nre,t_enxframe *fr)
 {
   int      i;
-  bool     bCont;
+  gmx_bool     bCont;
   char     buf[22];
 
   bCont = do_enx(fmu,fr);
@@ -559,7 +559,7 @@ static void dump_slab_dipoles(const char *fn,int idim,int nslice,
   char buf[STRLEN];
   int  i;
   real mutot;
-  char *leg_dim[4] = { 
+  const char *leg_dim[4] = { 
     "\\f{12}m\\f{4}\\sX\\N",
     "\\f{12}m\\f{4}\\sY\\N",
     "\\f{12}m\\f{4}\\sZ\\N",
@@ -583,7 +583,7 @@ static void dump_slab_dipoles(const char *fn,int idim,int nslice,
   do_view(oenv,fn,"-autoscale xy -nxy");
 }
 			    
-static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,bool bPairs)
+static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,gmx_bool bPairs)
 {
   int    i,j,k;
   double dc,dc1,d,n5,ddc1,ddc2,ddc3;
@@ -614,43 +614,43 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 		   const char *out_mtot,const char *out_eps,
                    const char *out_aver, const char *dipdist,
 		   const char *cosaver, const char *fndip3d,
-		   const char *fnadip,  bool bPairs,
+		   const char *fnadip,  gmx_bool bPairs,
 		   const char *corrtype,const char *corf,
-		   bool bGkr,     const char *gkrfn,
-		   bool bPhi,     int  *nlevels,  int ndegrees,
+		   gmx_bool bGkr,     const char *gkrfn,
+		   gmx_bool bPhi,     int  *nlevels,  int ndegrees,
 		   int  ncos,
 		   const char *cmap,    real rcmax,
-		   bool bQuad,    const char *quadfn,
-		   bool bMU,      const char *mufn,
+		   gmx_bool bQuad,    const char *quadfn,
+		   gmx_bool bMU,      const char *mufn,
 		   int  *gnx,     int  *molindex[],
 		   real mu_max,   real mu_aver,
 		   real epsilonRF,real temp,
 		   int  *gkatom,  int skip,
-		   bool bSlab,    int nslices,
+		   gmx_bool bSlab,    int nslices,
 		   const char *axtitle, const char *slabfn,
                    const output_env_t oenv)
 {
-  char *leg_mtot[] = { 
+  const char *leg_mtot[] = { 
     "M\\sx \\N", 
     "M\\sy \\N",
     "M\\sz \\N",
     "|M\\stot \\N|"
   };
 #define NLEGMTOT asize(leg_mtot)
-  char *leg_eps[] = { 
+  const char *leg_eps[] = { 
     "epsilon",
     "G\\sk",
     "g\\sk"
   };
 #define NLEGEPS asize(leg_eps)
-  char *leg_aver[] = { 
+  const char *leg_aver[] = { 
     "< |M|\\S2\\N >", 
     "< |M| >\\S2\\N",
     "< |M|\\S2\\N > - < |M| >\\S2\\N",
     "< |M| >\\S2\\N / < |M|\\S2\\N >"
   };
 #define NLEGAVER asize(leg_aver)
-  char *leg_cosaver[] = {
+  const char *leg_cosaver[] = {
     "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
     "RMSD cos",
     "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
@@ -658,7 +658,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>"
   };
 #define NLEGCOSAVER asize(leg_cosaver)
-  char *leg_adip[] = {
+  const char *leg_adip[] = {
     "<mu>",
     "Std. Dev.",
     "Error"
@@ -673,14 +673,15 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   t_enxframe *fr;
   int        nframes=1000,nre,timecheck=0,ncolour=0;
   ener_file_t fmu=NULL;
-  int        i,j,k,n,m,natom=0,nmol,status,gnx_tot,teller,tel3;
+  int        i,j,k,n,m,natom=0,nmol,gnx_tot,teller,tel3;
+  t_trxstatus *status;
   int        *dipole_bin,ndipbin,ibin,iVol,step,idim=-1;
   unsigned long mode;
   char       buf[STRLEN];
   real       rcut=0,t,t0,t1,dt,lambda,dd,rms_cos;
   rvec       dipaxis;
   matrix     box;
-  bool       bCorr,bTotal,bCont;
+  gmx_bool       bCorr,bTotal,bCont;
   double     M_diff=0,epsilon,invtel,vol_aver;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
   double     M[3],M2[3],M4[3],Gk=0,g_k=0;
@@ -690,6 +691,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   rvec       *slab_dipoles=NULL;
   t_atom     *atom=NULL;
   t_block    *mols=NULL;
+  gmx_rmpbc_t gpbc=NULL;
 
   gnx_tot = gnx[0];
   if (ncos > 1) {
@@ -847,6 +849,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 
     gkrbin = mk_gkrbin(rcut,rcmax,bPhi,ndegrees); 
   }
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natom,box);
 
   /* Start while loop over frames */
   t1 = t0 = t;
@@ -875,7 +878,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 	M_av[m] = 0;
 	M_av2[m] = 0;
       }
-      rm_pbc(&(top->idef),ePBC,natom,box,x,x);
+      gmx_rmpbc(gpbc,natom,box,x);
       
       muframelsq = gmx_stats_init();
       /* Begin loop of all molecules in frame */
@@ -1069,6 +1072,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       bCont = read_next_x(oenv,status,&t,natom,x,box);
   } while (bCont);
   
+  gmx_rmpbc_done(gpbc);
+
   if (!bMU)
     close_trj(status);
     
@@ -1243,7 +1248,7 @@ int gmx_dipoles(int argc,char *argv[])
   };
   real mu_max=5, mu_aver=-1,rcmax=0;
   real epsilonRF=0.0, temp=300;
-  bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE,bPhi=FALSE;
+  gmx_bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE,bPhi=FALSE;
   const char *corrtype[]={NULL, "none", "mol", "molsep", "total", NULL};
   const char *axtitle="Z";
   int  nslices = 10;      /* nr of slices defined       */
@@ -1288,7 +1293,7 @@ int gmx_dipoles(int argc,char *argv[])
   int          nFF[2];
   atom_id      **grpindex;
   char         **grpname=NULL;
-  bool         bCorr,bQuad,bGkr,bMU,bSlab;  
+  gmx_bool         bCorr,bQuad,bGkr,bMU,bSlab;  
   t_filenm fnm[] = {
     { efEDR, "-en", NULL,         ffOPTRD },
     { efTRX, "-f", NULL,           ffREAD },

@@ -1,3 +1,6 @@
+; CHARMM TIP3P [MacKerell et al. J Phys Chem B, 1998] with LJ interaction
+; sites on the hydrogens, about 2 times slower than the original TIP3P model
+
 [ moleculetype ]
 ; molname      nrexcl
 SOL		2

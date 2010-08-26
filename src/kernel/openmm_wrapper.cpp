@@ -39,6 +39,11 @@
  * https://simtk.org/project/xml/downloads.xml?group_id=161#package_id600
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <types/simple.h>
 #include <cmath>
 #include <set>
 #include <iostream>
@@ -84,7 +89,7 @@ using namespace OpenMM;
  * \param[out] t    Destination variable to convert to.
  */
 template <class T>
-static bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
+static gmx_bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
 {
     istringstream iss(s);
     return !(iss >> f >> t).fail();
@@ -137,7 +142,7 @@ static void splitOptionValue(const string &s, string &opt, string &val)
                  integer less than, equal to, or greater than 0 if \p s1 less than, 
                  identical to, or greater than \p s2.
  */
-static bool isStringEqNCase(const string s1, const string s2)
+static gmx_bool isStringEqNCase(const string s1, const string s2)
 {
     return (gmx_strncasecmp(s1.c_str(), s2.c_str(), max(s1.length(), s2.length())) == 0);
 }
@@ -160,7 +165,7 @@ static string toUpper(const string &s)
   GmxOpenMMPlatformOptions#memtests, GmxOpenMMPlatformOptions#deviceid, 
   GmxOpenMMPlatformOptions#force_dev.  */
 /* {@ */
-#define SIZEOF_PLATFORMS    1  // 2
+#define SIZEOF_PLATFORMS    2  // 2
 #define SIZEOF_MEMTESTS     3 
 #define SIZEOF_DEVICEIDS    1 
 #define SIZEOF_FORCE_DEV    2 
@@ -209,7 +214,7 @@ private:
 };
 
 const char * const GmxOpenMMPlatformOptions::platforms[SIZEOF_PLATFORMS]
-                    = {"CUDA"};
+                    = {"CUDA", "Reference"};
                     //= { "Reference", "CUDA" /*,"OpenCL"*/ };
 const char * const GmxOpenMMPlatformOptions::memtests[SIZEOF_MEMTESTS]
                     = { "15", "full", "off" };
@@ -378,7 +383,7 @@ public:
     System* system;      /*! The system to simulate. */
     Context* context;   /*! The OpenMM context in which the simulation is carried out. */
     Integrator* integrator; /*! The integrator used in the simulation. */
-    bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
+    gmx_bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
     GmxOpenMMPlatformOptions *platformOpt; /*! Platform options. */
 };
 
@@ -538,14 +543,23 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     }
 
     /* Electroctstics */
-    if (    (ir->coulombtype != eelPME) &&
-            (ir->coulombtype != eelRF) &&
-            (ir->coulombtype != eelEWALD) &&
-            // no-cutoff
-            ( !(ir->coulombtype == eelCUT && ir->rcoulomb == 0 &&  ir->rvdw == 0)) )
+    if (   !(ir->coulombtype == eelPME   ||
+             EEL_RF(ir->coulombtype)     ||
+             ir->coulombtype == eelRF    ||
+             ir->coulombtype == eelEWALD ||
+             // no-cutoff
+             (ir->coulombtype == eelCUT && ir->rcoulomb == 0 &&  ir->rvdw == 0) ||
+             // we could have cut-off combined with GBSA (openmm will use RF)
+             ir->implicit_solvent == eisGBSA)   )
     {
         gmx_fatal(FARGS,"OpenMM supports only the following methods for electrostatics: "
                 "NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.");
+    }
+
+    if (EEL_RF(ir->coulombtype) && ir->epsilon_rf != 0)
+    {
+        // openmm has epsilon_rf=inf hard-coded
+        gmx_warning("OpenMM will use a Reaction-Field epsilon of infinity instead of %g.",ir->epsilon_rf);
     }
 
     if (ir->etc != etcNO &&
@@ -565,8 +579,8 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     if (ir->opts.ngtc > 1)
         gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.");
 
-    if (ir->epc != etcNO)
-        gmx_fatal(FARGS,"OpenMM does not support pressure coupling.");
+    if (ir->epc != epcNO)
+        gmx_warning("OpenMM supports only Monte Carlo barostat for pressure coupling.");
 
     if (ir->opts.annealing[0])
         gmx_fatal(FARGS,"OpenMM does not support simulated annealing.");
@@ -592,6 +606,8 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
             i == F_ANGLES   ||
             i == F_PDIHS    ||
             i == F_RBDIHS   ||
+            i == F_PIDIHS   ||
+            i == F_IDIHS    ||
             i == F_LJ14     ||
             i == F_GB12     || /* The GB parameters are hardcoded both in */
             i == F_GB13     || /* Gromacs and OpenMM */
@@ -709,7 +725,7 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     {
         fprintf(debug, ">> The combination rule of the used force matches the one used by OpenMM.\n");
     }
-    fprintf(fplog, "The combination rule of the force used field matches the one used by OpenMM.\n");   
+    fprintf(fplog, "The combination rule of the used force field matches the one used by OpenMM.\n");   
 
     } /* if (are we checking the combination rules) ... */
 }
@@ -745,7 +761,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 {
 
     char warn_buf[STRLEN];
-    static bool hasLoadedPlugins = false;
+    static gmx_bool hasLoadedPlugins = false;
     string usedPluginDir;
     int devId;
 
@@ -780,7 +796,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             }
 
             /* macro set at build time  */
-#ifdef OPENMM_PLUGIN_DIR
+#ifdef OpenMM_PLUGIN_DIR
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(OPENMM_PLUGIN_DIR);
@@ -838,13 +854,15 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numUB = idef.il[F_UREY_BRADLEY].nr/4;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
+        const int numPeriodicImproper = idef.il[F_PIDIHS].nr/5;
         const int numRB = idef.il[F_RBDIHS].nr/5;
+        const int numImproperDih = idef.il[F_IDIHS].nr/5;
         const int num14 = idef.il[F_LJ14].nr/3;
         System* sys = new System();
         if (ir->nstcomm > 0)
             sys->addForce(new CMMotionRemover(ir->nstcomm));
 
-        // Set bonded force field terms.
+        /* Set bonded force field terms. */
         const int* bondAtoms = (int*) idef.il[F_BONDS].iatoms;
         HarmonicBondForce* bondForce = new HarmonicBondForce();
         sys->addForce(bondForce);
@@ -857,7 +875,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             bondForce->addBond(atom1, atom2,
                                idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
         }
-        // Urey-Bradley includes both the angle and bond potential for 1-3 interactions
+
+        /* Urey-Bradley includes both the angle and bond potential for 1-3 interactions */
         const int* ubAtoms = (int*) idef.il[F_UREY_BRADLEY].iatoms;
         HarmonicBondForce* ubBondForce = new HarmonicBondForce();
         HarmonicAngleForce* ubAngleForce = new HarmonicAngleForce();
@@ -875,6 +894,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             ubAngleForce->addAngle(atom1, atom2, atom3, 
                     idef.iparams[type].u_b.theta*M_PI/180.0, idef.iparams[type].u_b.ktheta);
         }
+
+		/* Set the angle force field terms */
         const int* angleAtoms = (int*) idef.il[F_ANGLES].iatoms;
         HarmonicAngleForce* angleForce = new HarmonicAngleForce();
         sys->addForce(angleForce);
@@ -888,6 +909,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             angleForce->addAngle(atom1, atom2, atom3, 
                     idef.iparams[type].harmonic.rA*M_PI/180.0, idef.iparams[type].harmonic.krA);
         }
+
+		/* Set proper dihedral terms */
         const int* periodicAtoms = (int*) idef.il[F_PDIHS].iatoms;
         PeriodicTorsionForce* periodicForce = new PeriodicTorsionForce();
         sys->addForce(periodicForce);
@@ -904,6 +927,26 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                       idef.iparams[type].pdihs.phiA*M_PI/180.0, 
                                       idef.iparams[type].pdihs.cpA);
         }
+
+		/* Set improper dihedral terms that are represented by a periodic function (as in AMBER FF) */
+        const int* periodicImproperAtoms = (int*) idef.il[F_PIDIHS].iatoms;
+        PeriodicTorsionForce* periodicImproperForce = new PeriodicTorsionForce();
+        sys->addForce(periodicImproperForce);
+        offset = 0;
+        for (int i = 0; i < numPeriodicImproper; ++i)
+        {
+            int type = periodicImproperAtoms[offset++];
+            int atom1 = periodicImproperAtoms[offset++];
+            int atom2 = periodicImproperAtoms[offset++];
+            int atom3 = periodicImproperAtoms[offset++];
+            int atom4 = periodicImproperAtoms[offset++];
+            periodicImproperForce->addTorsion(atom1, atom2, atom3, atom4,
+                                      idef.iparams[type].pdihs.mult,
+                                      idef.iparams[type].pdihs.phiA*M_PI/180.0,
+                                      idef.iparams[type].pdihs.cpA);
+        }
+
+        /* Ryckaert-Bellemans dihedrals */
         const int* rbAtoms = (int*) idef.il[F_RBDIHS].iatoms;
         RBTorsionForce* rbForce = new RBTorsionForce();
         sys->addForce(rbForce);
@@ -921,7 +964,28 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                 idef.iparams[type].rbdihs.rbcA[4], idef.iparams[type].rbdihs.rbcA[5]);
         }
 
-        // Set nonbonded parameters and masses.
+		/* Set improper dihedral terms (as in CHARMM FF) */
+        const int* improperDihAtoms = (int*) idef.il[F_IDIHS].iatoms;
+		CustomTorsionForce* improperDihForce = new CustomTorsionForce("2.0*k*asin(sin((theta-theta0)/2))^2");
+        sys->addForce(improperDihForce);
+		improperDihForce->addPerTorsionParameter("k");
+		improperDihForce->addPerTorsionParameter("theta0");
+		vector<double> improperDihParameters(2);
+        offset = 0;
+        for (int i = 0; i < numImproperDih; ++i)
+        {
+            int type = improperDihAtoms[offset++];
+            int atom1 = improperDihAtoms[offset++];
+            int atom2 = improperDihAtoms[offset++];
+            int atom3 = improperDihAtoms[offset++];
+            int atom4 = improperDihAtoms[offset++];
+			improperDihParameters[0] = idef.iparams[type].harmonic.krA;
+			improperDihParameters[1] = idef.iparams[type].harmonic.rA*M_PI/180.0;
+            improperDihForce->addTorsion(atom1, atom2, atom3, atom4,
+                                improperDihParameters);
+        }
+
+        /* Set nonbonded parameters and masses. */
         int ntypes = fr->ntype;
         int* types = mdatoms->typeA;
         real* nbfp = fr->nbfp;
@@ -946,6 +1010,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             switch (ir->coulombtype)
             {
             case eelRF:
+            case eelGRF:
+            case eelRF_NEC:
+            case eelRF_ZERO:
                 nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffPeriodic);
                 break;
 
@@ -958,10 +1025,10 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 break;
 
             default:
-                gmx_fatal(FARGS,"Internal error: you should not see this message, it that the"
+                gmx_fatal(FARGS,"Internal error: you should not see this message, it means that the"
                           "electrosatics option check failed. Please report this error!");
             }        
-            sys->setPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
+            sys->setDefaultPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
                                        Vec3(0, state->box[1][1], 0), Vec3(0, 0, state->box[2][2]));                    
             nonbondedForce->setCutoffDistance(ir->rcoulomb);
            
@@ -974,20 +1041,19 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
         /* Fix for PME and Ewald error tolerance 
          *
-	 *  OpenMM uses approximate formulas to calculate the Ewald parameter:
-	 *  alpha = (1.0/cutoff)*sqrt(-log(2.0*tolerlance));
-	 *  and the grid spacing for PME:
-	 *  gridX = ceil(alpha*box[0][0]/pow(0.5*tol, 0.2));
-	 *  gridY = ceil(alpha*box[1][1]/pow(0.5*tol, 0.2));
-	 *  gridZ = ceil(alpha*box[2][2]/pow(0.5*tol, 0.2));
-         *
-	 *  It overestimates the precision and setting it to 
-	 *  (500 x ewald_rtol) seems to give a reasonable match to the GROMACS settings
-         *  
-         *  If the default ewald_rtol=1e-5 is used we silently adjust the value,
-         * otherwise a warning is issued about the action taken. 
-	 */
-        double corr_ewald_rtol = 500.0 * ir->ewald_rtol;
+		 *  OpenMM uses approximate formulas to calculate the Ewald parameter:
+		 *  alpha = (1.0/cutoff)*sqrt(-log(2.0*tolerlance));
+		 *  and the grid spacing for PME:
+		 *  gridX = ceil(2*alpha*box[0][0]/3*(pow(tol, 0.2)))
+		 *  gridY = ceil(2*alpha*box[1][1]/3*(pow(tol, 0.2)));
+		 *  gridZ = ceil(2*alpha*box[2][2]/3*(pow(tol, 0.2)));
+		 *
+		 *  
+		 *  If the default ewald_rtol=1e-5 is used we silently adjust the value to the 
+		 *  OpenMM default of 5e-4 otherwise a warning is issued about the action taken. 
+		 *
+		*/
+        double corr_ewald_rtol = 50.0 * ir->ewald_rtol;
         if ((ir->ePBC == epbcXYZ) && 
             (ir->coulombtype == eelEWALD || ir->coulombtype == eelPME))
         {
@@ -1133,11 +1199,22 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             integ = new VerletIntegrator(ir->delta_t);
             if ( ir->etc != etcNO)
             {
-                real collisionFreq = ir->opts.tau_t[0] / 1000; /* tau_t (ps) / 1000 = collisionFreq (fs^-1) */
                 AndersenThermostat* thermostat = new AndersenThermostat(ir->opts.ref_t[0], friction); 
                 sys->addForce(thermostat);
             }           
         }
+
+		// Add pressure coupling
+        if (ir->epc != epcNO)
+		{
+          // convert gromacs pressure tensor to a scalar
+          double pressure = (ir->ref_p[0][0] + ir->ref_p[1][1] + ir->ref_p[2][2]) / 3.0;
+          int frequency = int(ir->tau_p / ir->delta_t); // update frequency in time steps
+          if (frequency < 1) frequency = 1;
+          double temperature = ir->opts.ref_t[0]; // in kelvin
+          sys->addForce(new MonteCarloBarostat(pressure, temperature, frequency));
+		}
+
         integ->setConstraintTolerance(ir->shake_tol);
 
         // Create a context and initialize it.
@@ -1344,7 +1421,7 @@ void openmm_cleanup(FILE* fplog, void* data)
 void openmm_copy_state(void *data,
                        t_state *state, double *time,
                        rvec f[], gmx_enerdata_t *enerd,
-                       bool includePos, bool includeVel, bool includeForce, bool includeEnergy)
+                       gmx_bool includePos, gmx_bool includeVel, gmx_bool includeForce, gmx_bool includeEnergy)
 {
     int types = 0;
     if (includePos)

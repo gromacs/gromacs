@@ -45,7 +45,7 @@
 
 typedef struct
 {
-    bool                     bFrameTree;
+    gmx_bool                     bFrameTree;
     int                      nmaxind;
     gmx_ana_selcollection_t *sc;
 } t_dumpdata;
@@ -159,9 +159,9 @@ gmx_test_selection(int argc, char *argv[])
         "This is a test program for selections.",
     };
 
-    bool                bMaskOnly  = FALSE;
-    bool                bFrameTree = FALSE;
-    bool                bDebugCompile = FALSE;
+    gmx_bool                bMaskOnly  = FALSE;
+    gmx_bool                bFrameTree = FALSE;
+    gmx_bool                bDebugCompile = FALSE;
     int                 nref       = 0;
     int                 nmaxind    = 20;
     t_pargs             pa[] = {

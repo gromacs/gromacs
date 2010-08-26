@@ -147,7 +147,7 @@ static void qhop_check_validity(int nqhopatoms, unsigned int protonation_state)
 
 
 /* Translates a protonation state into an integer number */
-static unsigned int qhop_get_protonation_state(int nqhopatoms, bool *bHyd)
+static unsigned int qhop_get_protonation_state(int nqhopatoms, gmx_bool *bHyd)
 {
     int i;
     unsigned int protonation_state=0;
@@ -167,7 +167,7 @@ static unsigned int qhop_get_protonation_state(int nqhopatoms, bool *bHyd)
  * Reuse the name for similar purpose later. */
 
 /* Translates an integer number into a protonation state */
-/* static int qhop_set_protonation_state(int nqhopatoms, unsigned int protonation_state, bool *bHyd) */
+/* static int qhop_set_protonation_state(int nqhopatoms, unsigned int protonation_state, gmx_bool *bHyd) */
 /* { */
 /*     int i, nchanges=0; */
 /*     unsigned int new_state; */
@@ -186,13 +186,13 @@ static unsigned int qhop_get_protonation_state(int nqhopatoms, bool *bHyd)
 /*     return nchanges; */
 /* } */
 
-static void set_proton_presence(qhop_H_exist *Hext, int atomid, bool present)
+static void set_proton_presence(qhop_H_exist *Hext, int atomid, gmx_bool present)
 {
   Hext->H[Hext->atomid2H[atomid]] == present ? (char)1: (char)0;
 }
 
 
-static bool get_proton_presence(qhop_H_exist *Hext, int atomid)
+static gmx_bool get_proton_presence(qhop_H_exist *Hext, int atomid)
 {
   return Hext->H[Hext->atomid2H[atomid]] == (char)1;
 }
@@ -215,7 +215,7 @@ static int get_qhop_atoms(t_commrec *cr,
   int rb, r, a, reac,
     **H, nH, Ha, *nHref, nHext;
   char *Hname;
-  bool matchRB, match, same, exists;
+  gmx_bool matchRB, match, same, exists;
 
   qhop_reactant *qreac[2];
   int nreac[2], react;
@@ -508,7 +508,7 @@ static int H_exist_2_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
   t_atom atom;
   t_qhop_residue *qres = &(qr->qhop_residues[resnr]);
  /*  qhop_res *res = db->rb.res[qres->rtype]; */
-  bool bNewH, bSameRes;
+  gmx_bool bNewH, bSameRes;
 
   nres = db->rb.nres[qres->rtype];
 
@@ -647,7 +647,7 @@ static int qhop_atom_comp(const void *a, const void *b){
 /* { */
 /*   int a, r=0, nres=0, i=0, nH, nHref; */
 /*   int *H; */
-/*   bool match; */
+/*   gmx_bool match; */
 /*   t_qhop_residue *res=NULL; */
 /*   qhop_res *qres; */
 /*   gmx_mtop_atomloop_all_t aloop; */
@@ -858,7 +858,7 @@ static void get_protonation_state(t_commrec *cr, t_qhoprec *qhoprec){
     i,j,k,states;
   int
     nr_protons;
-  bool
+  gmx_bool
     *protonated;
   
   /* now we need to decide the protonation state of the residue and
@@ -997,7 +997,7 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
     dx,veca,vecb,vecc;
   int
     nr_hops=0,max_hops=10;
-  bool 
+  gmx_bool 
     found_proton;
   real 
     ang;
@@ -1123,9 +1123,9 @@ static void invert_hydronium(){
    */
 }
 
-static bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec, 
+static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec, 
 			       t_mdatoms *md, t_hop *hop, rvec *x,
-			       bool bUndo,gmx_mtop_t *mtop){
+			       gmx_bool bUndo,gmx_mtop_t *mtop){
   /* alters the topology in order to evaluate the new energy. In case
      of hydronium donating a proton, we might have to change the
      position of the resulting HW1, and HW2 in order to create a
@@ -1143,7 +1143,7 @@ static bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
     *donor,*acceptor;
   t_qhop_atom
     *donor_atom,*acceptor_atom;
-  bool
+  gmx_bool
     b;
   double
     ang;
@@ -1229,7 +1229,7 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			    t_graph *graph,
 			    t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 			    /*gmx_genborn_t *born,*/
-			    bool bBornRadii,int step){
+			    gmx_bool bBornRadii,int step){
   real 
     t,etot;
   real 
@@ -1455,7 +1455,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			 t_mdatoms *md,t_fcdata *fcd,
 			 t_graph *graph,
 			 t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-			 /*gmx_genborn_t *born,*/ bool bBornRadii,
+			 /*gmx_genborn_t *born,*/ gmx_bool bBornRadii,
 			 t_hop *hop, real T,real *E_12,
 			 t_qhoprec *qhoprec,t_pbc pbc,int step,
 			 qhop_db_t db){
@@ -1531,7 +1531,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   return(Eafter_tot-Ebefore_tot);
 }
 
-static bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec, 
+static gmx_bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec, 
 			t_mdatoms *md, t_hop *hop, rvec *x,
 			gmx_mtop_t *mtop){
   int
@@ -1576,7 +1576,7 @@ static bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec,
   }
 }
 	    
-static bool do_hop(t_commrec *cr, t_qhoprec *qhoprec, 
+static gmx_bool do_hop(t_commrec *cr, t_qhoprec *qhoprec, 
 		   t_mdatoms *md, t_hop *hop, rvec *x,
 		   gmx_mtop_t *mtop){
   /* change the state of the system, such that it corresponds to the
@@ -1585,7 +1585,7 @@ static bool do_hop(t_commrec *cr, t_qhoprec *qhoprec,
      and acceptor. All other hops are carried out by changes in the
      charges in mdatoms.
   */
-  bool
+  gmx_bool
     bOk,b;
   /* No special treatment for water! */
 
@@ -1719,20 +1719,20 @@ static void scale_v(rvec *x, rvec *v, t_mdatoms *md,
   free(f);
 } /* scale_v */
 
-static bool scale_velocities(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
+static gmx_bool scale_velocities(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			     gmx_wallcycle_t wcycle,  gmx_localtop_t *top,
 			     gmx_mtop_t *mtop, gmx_groups_t *groups,
 			     t_state *state,  t_mdatoms *md, 
 			     t_qhoprec *qhoprec,int step,
 			     gmx_constr_t constr,real DE,t_pbc pbc,  
 			     t_hop *hop,gmx_ekindata_t *ekindata,
-			     bool bPscal,real veta,real vetanew)
+			     gmx_bool bPscal,real veta,real vetanew)
 {
   /* takes as input the total MM potential energy change for the hop
      and alters the kinetic energy so that the total energy remains
      constant.
   */
-  bool
+  gmx_bool
     bConverged=FALSE,bConstrain = FALSE;
   int
     donor_atom,acceptor_atom,iter=0;
@@ -1798,7 +1798,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	     t_state *state,
 	     t_mdatoms *md, t_fcdata *fcd,t_graph *graph, t_forcerec *fr,
 	     gmx_vsite_t *vsite,rvec mu_tot,/*gmx_genborn_t *born, */
-	     bool bBornRadii,real T, int step,
+	     gmx_bool bBornRadii,real T, int step,
 	     tensor force_vir, qhop_db_t db){
   t_hop
     *hop;
@@ -1806,9 +1806,9 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     nr_hops,i;
   t_pbc
     pbc;
-  static bool 
+  static gmx_bool 
     bFirst=TRUE;
-  bool
+  gmx_bool
     bAgain,bHop;
   real 
     *DE_MM,*E12,rnr;
@@ -2065,9 +2065,9 @@ extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop)
 /* Goes through the t_ilist and finds the bonded interactions
  * that can be changed */
 extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
-			       t_qhoprec *qr, bool bGlobal)
+			       t_qhoprec *qr, gmx_bool bGlobal)
 {
-  bool bQhop, bInAtomList;
+  gmx_bool bQhop, bInAtomList;
   int i, j, k, qres, res, rt, bt, bi, ftype, btype, niatoms,
     iatoms[MAXATOMLIST]; /* The atoms involved in an interaction */
   

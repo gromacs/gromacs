@@ -294,6 +294,8 @@ int main(int argc,char *argv[])
     "The previous checkpoint is backed up to [TT]state_prev.cpt[tt] to",
     "make sure that a recent state of the system is always available,",
     "even when the simulation is terminated while writing a checkpoint.",
+    "With [TT]-cpnum[tt] all checkpoint files are kept and appended",
+    "with the step number.",
     "A simulation can be continued by reading the full state from file",
     "with option [TT]-cpi[tt]. This option is intelligent in the way that",
     "if no checkpoint file is found, Gromacs just assumes a normal run and",
@@ -374,18 +376,18 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options ! */
-  bool bCart        = FALSE;
-  bool bPPPME       = FALSE;
-  bool bPartDec     = FALSE;
-  bool bDDBondCheck = TRUE;
-  bool bDDBondComm  = TRUE;
-  bool bVerbose     = FALSE;
-  bool bCompact     = TRUE;
-  bool bSepPot      = FALSE;
-  bool bRerunVSite  = FALSE;
-  bool bIonize      = FALSE;
-  bool bConfout     = TRUE;
-  bool bReproducible = FALSE;
+  gmx_bool bCart        = FALSE;
+  gmx_bool bPPPME       = FALSE;
+  gmx_bool bPartDec     = FALSE;
+  gmx_bool bDDBondCheck = TRUE;
+  gmx_bool bDDBondComm  = TRUE;
+  gmx_bool bVerbose     = FALSE;
+  gmx_bool bCompact     = TRUE;
+  gmx_bool bSepPot      = FALSE;
+  gmx_bool bRerunVSite  = FALSE;
+  gmx_bool bIonize      = FALSE;
+  gmx_bool bConfout     = TRUE;
+  gmx_bool bReproducible = FALSE;
     
   int  npme=-1;
   int  nmultisim=0;
@@ -404,8 +406,9 @@ int main(int argc,char *argv[])
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
-  bool bAppendFiles=TRUE;
-  bool bResetCountersHalfWay=FALSE;
+  gmx_bool bAppendFiles=TRUE;
+  gmx_bool bKeepAndNumCPT=FALSE;
+  gmx_bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
 
@@ -455,6 +458,8 @@ int main(int argc,char *argv[])
       "Try to avoid optimizations that affect binary reproducibility" },
     { "-cpt",     FALSE, etREAL, {&cpt_period},
       "Checkpoint interval (minutes)" },
+    { "-cpnum",   FALSE, etBOOL, {&bKeepAndNumCPT},
+      "Keep and number checkpoint files" },
     { "-append",  FALSE, etBOOL, {&bAppendFiles},
       "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
@@ -487,7 +492,7 @@ int main(int argc,char *argv[])
   unsigned long Flags, PCA_Flags;
   ivec     ddxyz;
   int      dd_node_order;
-  bool     bAddPart;
+  gmx_bool     bAddPart;
   FILE     *fplog,*fptest;
   int      sim_part,sim_part_fn;
   const char *part_suffix=".part";
@@ -496,7 +501,10 @@ int main(int argc,char *argv[])
 
 
   cr = init_par(&argc,&argv);
-   
+
+  if (MASTER(cr))
+    CopyRight(stderr, argv[0]);
+
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
   
@@ -550,7 +558,7 @@ int main(int argc,char *argv[])
                 read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
                                                               fnm,cr),
                                                 &sim_part_fn,NULL,cr,
-                                                bAppendFiles,
+                                                bAppendFiles,NFILE,fnm,
                                                 part_suffix,&bAddPart);
       if (sim_part_fn==0 && MASTER(cr))
       {
@@ -594,6 +602,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
+  Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
   Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
 
@@ -609,6 +618,10 @@ int main(int argc,char *argv[])
       please_cite(fplog,"Spoel2005a");
       please_cite(fplog,"Lindahl2001a");
       please_cite(fplog,"Berendsen95a");
+  }
+  else if (!MASTER(cr) && bSepPot)
+  {
+      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
   }
   else
   {

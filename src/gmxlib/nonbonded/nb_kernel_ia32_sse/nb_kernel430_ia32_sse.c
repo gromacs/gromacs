@@ -21,6 +21,7 @@
 
 #include <xmmintrin.h>
 #include <emmintrin.h>
+
 #include <gmx_sse2_single.h>
 
 /* get gmx_gbdata_t */
@@ -28,20 +29,7 @@
 
 #include "nb_kernel430_ia32_sse.h"
 
-/* to extract single integers from a __m128i datatype */
-#define _mm_extract_epi32(x, imm) \
-_mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
-static inline __m128
-my_invrsq_ps(__m128 x)
-{
-	const __m128 three = {3.0f, 3.0f, 3.0f, 3.0f};
-	const __m128 half  = {0.5f, 0.5f, 0.5f, 0.5f};
-	
-	__m128 t1 = _mm_rsqrt_ps(x);
-	
-	return gmx_mm_castps_ps128(_mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1))))));
-}
 
 void nb_kernel430_ia32_sse(int *           p_nri,
 						   int *           iinr,
@@ -76,7 +64,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 						   float *         work)
 {
     int           nri,ntype,nthreads;
-    float         facel,krf,crf,tabscale,gbtabscale,scl_gb;
+    float         facel,krf,crf,tabscale,gbtabscale;
     int           n,ii,is3,ii3,k,nj0,nj1,ggid;
     float         shX,shY,shZ;
 	int			  offset,nti;
@@ -99,18 +87,18 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 	__m128   eps,eps2,Y,F,G,H,Geps,Heps2;
 	__m128   Fp,VV,FF,vgb,fijC,fijD,fijR,dvdatmp;
 	__m128   rinvsix,Vvdw6,Vvdw12,Vvdwtmp,vgbtot,n0f;
-	__m128   fac_sse,tabscale_sse,gbtabscale_sse,scale_gb;
+	__m128   fac_sse,tabscale_sse,gbtabscale_sse;
 	
 	__m128i  n0, nnn;
-	const __m128 neg    = {-1.0f,-1.0f,-1.0f,-1.0f};
-	const __m128 zero   = {0.0f,0.0f,0.0f,0.0f};
-	const __m128 half   = {0.5f,0.5f,0.5f,0.5f};
-	const __m128 two    = {2.0f,2.0f,2.0f,2.0f};
-	const __m128 three  = {3.0f,3.0f,3.0f,3.0f};
-	const __m128 six    = {6.0f,6.0f,6.0f,6.0f};
-	const __m128 twelwe = {12.0f,12.0f,12.0f,12.0f};
+	const __m128 neg    = _mm_set1_ps(-1.0f);
+	const __m128 zero   = _mm_set1_ps(0.0f);
+    const __m128 half   = _mm_set1_ps(0.5f);
+	const __m128 two    = _mm_set1_ps(2.0f);
+	const __m128 three  = _mm_set1_ps(3.0f);
+	const __m128 six    = _mm_set1_ps(6.0f);
+    const __m128 twelwe = _mm_set1_ps(12.0f);
 	
-	__m128i four        = _mm_set_epi32(4,4,4,4); 
+	__m128i four        = _mm_set1_epi32(4);
 	__m128i maski       = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);     
 	__m128i mask        = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);   
 	
@@ -118,23 +106,21 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 	
 	gbdata          = (gmx_gbdata_t *)work;
 	gpol            = gbdata->gpol;
-	
+		
 	nri              = *p_nri;         
-  ntype            = *p_ntype;       
-  nthreads         = *p_nthreads;    
-  facel            = *p_facel; 
-	scl_gb           = (1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent);
-  krf              = *p_krf;         
-  crf              = *p_crf;         
-  tabscale         = *p_tabscale;    
-  gbtabscale       = *p_gbtabscale;  
-  nj1              = 0;
+    ntype            = *p_ntype;       
+    nthreads         = *p_nthreads;    
+    facel            = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));       
+    krf              = *p_krf;         
+    crf              = *p_crf;         
+    tabscale         = *p_tabscale;    
+    gbtabscale       = *p_gbtabscale;  
+    nj1              = 0;
 
 	/* Splat variables */
 	fac_sse        = _mm_load1_ps(&facel);
 	tabscale_sse   = _mm_load1_ps(&tabscale);
 	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
-	scale_gb       = _mm_load1_ps(&scl_gb);
 	
 	
 	/* Keep the compiler happy */
@@ -227,7 +213,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			
 			rsq     = _mm_add_ps(t1,t2);
 			rsq     = _mm_add_ps(rsq,t3);
-			rinv    = my_invrsq_ps(rsq);
+			rinv    = gmx_mm_invsqrt_ps(rsq);
 			
 			xmm1    = _mm_load_ss(invsqrta+jnr); 
 			xmm2    = _mm_load_ss(invsqrta+jnr2);
@@ -253,7 +239,6 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			vcoul   = _mm_mul_ps(qq,rinv);
 			fscal   = _mm_mul_ps(vcoul,rinv);
 			qq      = _mm_mul_ps(qq,neg);
-			qq      = _mm_mul_ps(qq,scale_gb);
 			qq      = _mm_mul_ps(isaprod,qq);
 			gbscale = _mm_mul_ps(isaprod,gbtabscale_sse);
 			
@@ -296,10 +281,10 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			nnn     = _mm_slli_epi32(n0,2);
 		
 			/* the tables are 16-byte aligned, so we can use _mm_load_ps */			
-			xmm1    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -359,10 +344,10 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			nnn     = _mm_slli_epi32(n0,3);
 
 			/* Tabulated VdW interaction - disperion */			
-			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -391,10 +376,10 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			/* Tabulated VdW interaction - repulsion */
 			nnn     = _mm_add_epi32(nnn,four);
 			
-			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -645,7 +630,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			rsq     = _mm_add_ps(t1,t2);
 			rsq     = _mm_add_ps(rsq,t3);
 			
-			rinv    = my_invrsq_ps(rsq);
+			rinv    = gmx_mm_invsqrt_ps(rsq);
 			
 			isaprod = _mm_mul_ps(isai,isaj);
 			qq      = _mm_mul_ps(iq,q);
@@ -653,7 +638,6 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			fscal   = _mm_mul_ps(vcoul,rinv);
 			
 			qq      = _mm_mul_ps(qq,neg);
-			qq      = _mm_mul_ps(qq,scale_gb);
 			qq      = _mm_mul_ps(isaprod,qq);
 			
 			gbscale = _mm_mul_ps(isaprod,gbtabscale_sse);
@@ -669,10 +653,10 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			nnn     = _mm_slli_epi32(n0,2);
 			
 			/* the tables are 16-byte aligned, so we can use _mm_load_ps */			
-			xmm1    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -725,10 +709,10 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			nnn     = _mm_slli_epi32(n0,3);
 			
 			/* Tabulated VdW interaction - disperion */	
-			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 		
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -757,10 +741,10 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			/* Tabulated VdW interaction - repulsion */
 			nnn     = _mm_add_epi32(nnn,four);
 					
-			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -926,29 +910,31 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 		xmm2    = _mm_movelh_ps(xmm2,fiz); 
 		xmm2    = _mm_and_ps( gmx_mm_castsi128_ps(maski), xmm2);
 		
-		/* load, add and store i forces */
+		/* load i force from memory */
 		xmm4    = _mm_loadl_pi(xmm4, (__m64 *) (faction+ii3));
 		xmm5    = _mm_load1_ps(faction+ii3+2);
 		xmm4    = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
 		
+		/* add to i force */
 		xmm4    = _mm_add_ps(xmm4,xmm2);
 		
+		/* store i force to memory */
 		_mm_storel_pi( (__m64 *) (faction+ii3),xmm4);
 		xmm4    = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
 		_mm_store_ss(faction+ii3+2,xmm4);
 		
-		/* Load, add and store i shift forces */
-		xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (fshift+is3));
-		xmm5 = _mm_load1_ps(fshift+is3+2);
-		xmm4 = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
-		
-		xmm4 = _mm_add_ps(xmm4,xmm2);
-		
-		_mm_storel_pi( (__m64 *) (fshift+is3),xmm4);
-		xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
-		_mm_store_ss(fshift+is3+2,xmm4);
-		
-		/* Coulomb potential */
+    /* Load, add and store i shift forces */
+    xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (fshift+is3));
+    xmm5 = _mm_load1_ps(fshift+is3+2);
+    xmm4 = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
+      
+    xmm4 = _mm_add_ps(xmm4,xmm2);
+      
+    _mm_storel_pi( (__m64 *) (fshift+is3),xmm4);
+    xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
+    _mm_store_ss(fshift+is3+2,xmm4);
+      
+    /* Coulomb potential */
     ggid             = gid[n];         
 		
 		vcoul   = _mm_movehl_ps(vcoul,vctot);
@@ -959,7 +945,6 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 		_mm_store_ss(&vct,vctot);
 		Vc[ggid] = Vc[ggid] + vct;
 		
-		/* LJ potential */
 		Vvdwtmp  = _mm_movehl_ps(Vvdwtmp,Vvdwtot);
 		Vvdwtot  = _mm_add_ps(Vvdwtot,Vvdwtmp);
 		Vvdwtmp  = _mm_shuffle_ps(Vvdwtot,Vvdwtot,_MM_SHUFFLE(1,1,1,1));
@@ -999,7 +984,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
  * water optimization:      No
  * Calculate forces:        no
  */
-void nb_kernel430nf_ia32_sse(
+void nb_kernel430nf_x86_64_sse(
                     int *           p_nri,
                     int *           iinr,
                     int *           jindex,

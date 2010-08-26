@@ -106,7 +106,7 @@ char **get_exp(int NEXP,t_expansion expansion[],char **ai,int *nexp)
 int find_atom(char *ai,char *ri,
 	      int resi,int r0,
 	      int natoms,char ***aname,t_atom atom[],
-	      int linec,bool bVerbose)
+	      int linec,gmx_bool bVerbose)
 {
   int i;
 
@@ -129,12 +129,12 @@ int find_atom(char *ai,char *ri,
   return -1;
 }
 
-void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0,bool bXplor,
-	     bool bVerbose)
+void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0,gmx_bool bXplor,
+	     gmx_bool bVerbose)
 {
   static char *format="%s%d%s%s%d%s%lf%lf";
   static char *xplorformat="%d%s%d%s";
-  bool   bOK;
+  gmx_bool   bOK;
   int    i,j,nc,nindex,ni,nj,nunres;
   int    atomi,atomj,resi,resj;
   char   **aiexp,**ajexp;
@@ -267,8 +267,8 @@ int main (int argc,char *argv[])
   };
   
   static int  r0       = 1;
-  static bool bXplor   = FALSE;
-  static bool bVerbose = FALSE;
+  static gmx_bool bXplor   = FALSE;
+  static gmx_bool bVerbose = FALSE;
   t_pargs pa[] = {
     { "-r",     FALSE, etINT,  {&r0},       "starting residue number" },
     { "-xplor", FALSE, etBOOL, {&bXplor},   "Use xplor format for input" },

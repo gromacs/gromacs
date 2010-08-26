@@ -35,11 +35,6 @@
 #ifndef _GMX_BLAS_H_
 #define _GMX_BLAS_H_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include "types/simple.h"
 
 

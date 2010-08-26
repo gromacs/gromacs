@@ -98,7 +98,7 @@ static t_pdbfile **read_em_all(const char *fn,int *npdbf)
   t_pdbfile **pdbf=0;
   int  i,maxpdbf;
   char buf[256],name[256];
-  bool bExist;
+  gmx_bool bExist;
   
   strcpy(buf,fn);
   buf[strlen(buf)-4] = '\0';
@@ -125,7 +125,7 @@ static t_pdbfile **read_em_all(const char *fn,int *npdbf)
   return pdbf;
 }
 
-static bool bFreeSort=FALSE;
+static gmx_bool bFreeSort=FALSE;
 
 static int pdbf_comp(const void *a,const void *b)
 {
@@ -193,7 +193,7 @@ static void clust_stat(FILE *fp,int start,int end,t_pdbfile *pdbf[])
   sfree(ef);
 }
 
-static real rmsd_dist(t_pdbfile *pa,t_pdbfile *pb,bool bRMSD)
+static real rmsd_dist(t_pdbfile *pa,t_pdbfile *pb,gmx_bool bRMSD)
 {
   int  i;
   real rmsd,dist;
@@ -229,7 +229,7 @@ static void line(FILE *fp)
 }
 
 static void cluster_em_all(FILE *fp,int npdb,t_pdbfile *pdbf[],
-			   const char *pdbout,bool bFree,bool bRMSD,real cutoff)
+			   const char *pdbout,gmx_bool bFree,gmx_bool bRMSD,real cutoff)
 {
   int  i,j,k;
   int  *cndx,ncluster;
@@ -313,7 +313,7 @@ int main(int argc,char *argv[])
   };
   output_env_t oenv;
 #define NFILE asize(fnm)
-  static bool bFree=FALSE,bRMS=TRUE;
+  static gmx_bool bFree=FALSE,bRMS=TRUE;
   static real cutoff = 0.2;
   t_pargs pa[] = {
     { "-free",   FALSE, etBOOL, {&bFree}, 

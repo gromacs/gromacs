@@ -28,21 +28,17 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <gromacs/copyrite.h>
+#include <gromacs/filenm.h>
+#include <gromacs/macros.h>
+#include <gromacs/pbc.h>
+#include <gromacs/smalloc.h>
+#include <gromacs/statutil.h>
+#include <gromacs/vec.h>
+#include <gromacs/xvgr.h>
 
-#include <copyrite.h>
-#include <filenm.h>
-#include <macros.h>
-#include <pbc.h>
-#include <smalloc.h>
-#include <statutil.h>
-#include <vec.h>
-#include <xvgr.h>
-
-#include <nbsearch.h>
-#include <trajana.h>
+#include <gromacs/nbsearch.h>
+#include <gromacs/trajana.h>
 
 /*! \brief
  * Template analysis data structure.
@@ -130,7 +126,7 @@ gmx_template(int argc, char *argv[])
 
     /* Command-line arguments */
     real                cutoff = 0;
-    bool                bArg   = FALSE;
+    gmx_bool                bArg   = FALSE;
     t_pargs             pa[] = {
         {"-cutoff", FALSE, etREAL, {&cutoff},
          "Cutoff for distance calculation (0 = no cutoff)"},

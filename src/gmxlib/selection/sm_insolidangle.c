@@ -218,7 +218,7 @@ free_data_insolidangle(void *data);
 static int
 init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Internal helper function for evaluate_insolidangle(). */
-static bool
+static gmx_bool
 accept_insolidangle(rvec x, t_pbc *pbc, void *data);
 /** Evaluates the \p insolidangle selection method. */
 static int
@@ -261,7 +261,7 @@ optimize_surface_points(t_methoddata_insolidangle *surf);
 static real
 estimate_covered_fraction(t_methoddata_insolidangle *surf);
 /** Checks whether a point lies within a solid angle. */
-static bool
+static gmx_bool
 is_surface_covered(t_methoddata_insolidangle *surf, rvec x);
 
 /** Parameters for the \p insolidangle selection method. */
@@ -443,7 +443,7 @@ init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
  * \param[in] data Pointer to a \c t_methoddata_insolidangle data structure.
  * \returns   TRUE if \p x is within the solid angle, FALSE otherwise.
  */
-static bool
+static gmx_bool
 accept_insolidangle(rvec x, t_pbc *pbc, void *data)
 {
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
@@ -492,12 +492,12 @@ evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * \returns   TRUE if the covered fraction can be estimated for \p sel with
  *   _gmx_selelem_estimate_coverfrac(), FALSE otherwise.
  */
-bool
+gmx_bool
 _gmx_selelem_can_estimate_cover(t_selelem *sel)
 {
     t_selelem   *child;
-    bool         bFound;
-    bool         bDynFound;
+    gmx_bool         bFound;
+    gmx_bool         bDynFound;
 
     if (sel->type == SEL_BOOLEAN && sel->u.boolt == BOOL_OR)
     {
@@ -940,7 +940,7 @@ estimate_covered_fraction(t_methoddata_insolidangle *surf)
  * \param[in] x     Unit vector to check.
  * \returns   TRUE if \p x is within the solid angle, FALSE otherwise.
  */
-static bool
+static gmx_bool
 is_surface_covered(t_methoddata_insolidangle *surf, rvec x)
 {
     int  bin, i;

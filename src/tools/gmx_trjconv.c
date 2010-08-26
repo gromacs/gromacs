@@ -85,13 +85,13 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
                              rvec clust_com,matrix box)
 {
     const   real tol=1e-3;
-    bool    bChanged;
+    gmx_bool    bChanged;
     int     m,i,j,j0,j1,jj,ai,iter,is;
     real    fac,Isq,min_dist2;
     rvec    dx,ddx,xtest,xrm,box_center;
     int     nmol,nmol_cl,imol_center;
     atom_id *molind;
-    bool    *bMol,*bTmp;
+    gmx_bool    *bMol,*bTmp;
     rvec    *m_com,*m_shift,m0;
     t_pbc   pbc;
 
@@ -413,11 +413,11 @@ void check_trn(const char *fn)
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
 void do_trunc(const char *fn, real t0)
 {
-    int          in;
+    t_fileio     *in;
     FILE         *fp;
-    bool         bStop,bOK;
+    gmx_bool         bStop,bOK;
     t_trnheader  sh;
-    off_t        fpos;
+    gmx_off_t    fpos;
     char         yesno[256];
     int          j;
     real         t=0;
@@ -439,14 +439,10 @@ void do_trunc(const char *fn, real t0)
         bStop= FALSE;
         while (!bStop && fread_trnheader(in,&sh,&bOK)) {
             fread_htrn(in,&sh,NULL,NULL,NULL,NULL);
-            fpos=ftell(fp);
+            fpos=gmx_ftell(fp);
             t=sh.t;
             if (t>=t0) {
-#ifdef HAVE_FSEEKO	
-                fseeko(fp,fpos,SEEK_SET);
-#else
-                fseek(fp,fpos,SEEK_SET);
-#endif	
+                gmx_fseek(fp, fpos, SEEK_SET);
                 bStop=TRUE;
             }
         }
@@ -633,14 +629,14 @@ int gmx_trjconv(int argc,char *argv[])
         { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "transxy",
             "progressive", NULL };
 
-    static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
-    static bool  bCenter=FALSE,bTer=FALSE;
+    static gmx_bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
+    static gmx_bool  bCenter=FALSE;
     static int   skip_nr=1,ndec=3,nzero=0;
     static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
     static rvec  newbox = {0,0,0}, shift = {0,0,0}, trans = {0,0,0};
     static char  *exec_command=NULL;
     static real  dropunder=0,dropover=0;
-    static bool  bRound=FALSE;
+    static gmx_bool  bRound=FALSE;
 
     t_pargs
         pa[] =
@@ -715,10 +711,6 @@ int gmx_trjconv(int argc,char *argv[])
                         { &nzero },
                         "Prepend file number in case you use the -sep flag "
                         "with this number of zeroes" },
-                    { "-ter", FALSE, etBOOL,
-                        { &bTer },
-                        "Use 'TER' in pdb file as end of frame in stead of "
-                        "default 'ENDMDL'" },
                     { "-dropunder", FALSE, etREAL,
                         { &dropunder }, "Drop all frames below this value" },
                     { "-dropover", FALSE, etREAL,
@@ -731,8 +723,9 @@ int gmx_trjconv(int argc,char *argv[])
 #define NPA asize(pa)
 
     FILE         *out=NULL;
-    int          trxout=NOTSET;
-    int          status,ftp,ftpin=0,file_nr;
+    t_trxstatus *trxout=NULL;
+    t_trxstatus *status;
+    int          ftp,ftpin=0,file_nr;
     t_trxframe   fr,frout;
     int          flags;
     rvec         *xmem=NULL,*vmem=NULL,*fmem=NULL;
@@ -753,27 +746,29 @@ int gmx_trjconv(int argc,char *argv[])
     atom_id      *ind_fit,*ind_rms;
     char         *gn_fit,*gn_rms;
     t_cluster_ndx *clust=NULL;
-    int          *clust_status=NULL;
+    t_trxstatus  **clust_status=NULL;
+    int          *clust_status_id=NULL;
     int          ntrxopen=0;
     int          *nfwritten=NULL;
     int          ndrop=0,ncol,drop0=0,drop1=0,dropuse=0;
     double       **dropval;
     real         tshift=0,t0=-1,dt=0.001,prec;
-    bool         bFit,bFitXY,bPFit,bReset;
+    gmx_bool         bFit,bFitXY,bPFit,bReset;
     int          nfitdim;
-    bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
-    bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
-    bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
-    bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
-    bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
-    bool         bWriteFrame,bSplitHere;
+    gmx_rmpbc_t  gpbc=NULL;
+    gmx_bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
+    gmx_bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
+    gmx_bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
+    gmx_bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
+    gmx_bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
+    gmx_bool         bWriteFrame,bSplitHere;
     const char   *top_file,*in_file,*out_file=NULL;
     char         out_file2[256],*charpt;
     char         *outf_base=NULL;
     const char   *outf_ext=NULL;
     char         top_title[256],title[256],command[256],filemode[5];
     int          xdr=0;
-    bool         bWarnCompact=FALSE;
+    gmx_bool         bWarnCompact=FALSE;
     const char  *warn;
     output_env_t oenv;
 
@@ -844,6 +839,7 @@ int gmx_trjconv(int argc,char *argv[])
         if (bFit || bReset)
             nfitdim = (fit_enum==efFitXY || fit_enum==efResetXY) ? 2 : 3;
         bRmPBC = bFit || bPBCWhole || bPBCcomRes || bPBCcomMol;
+	  
         if (bSetUR) {
             if (!(bPBCcomRes || bPBCcomMol ||  bPBCcomAtom)) {
                 fprintf(stderr,
@@ -861,8 +857,6 @@ int gmx_trjconv(int argc,char *argv[])
                       "First doing the rotational fit and then doing the PBC treatment gives incorrect\n"
 		      "results!");
 	}
-        /* set flag for pdbio to terminate frames at 'TER' (iso 'ENDMDL') */
-        pdb_use_ter(bTer);
 
         /* ndec is in nr of decimal places, prec is a multiplication factor: */
         prec = 1;
@@ -909,9 +903,13 @@ int gmx_trjconv(int argc,char *argv[])
                           clust->clust->nr,1+clust->clust->nr/FOPEN_MAX,FOPEN_MAX);
 
             snew(clust_status,clust->clust->nr);
+            snew(clust_status_id,clust->clust->nr);
             snew(nfwritten,clust->clust->nr);
             for(i=0; (i<clust->clust->nr); i++)
-                clust_status[i] = -1;
+            {
+                clust_status[i] = NULL;
+                clust_status_id[i] = -1;
+            }
             bSeparate = bSplit = FALSE;
         }
         /* skipping */  
@@ -939,6 +937,8 @@ int gmx_trjconv(int argc,char *argv[])
 
             if (bCONECT)
                 gc = gmx_conect_generate(&top);
+	    if (bRmPBC)
+	      gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,top_box);
         }
 
         /* get frame number index */
@@ -1005,7 +1005,7 @@ int gmx_trjconv(int argc,char *argv[])
             /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
             if (bRmPBC)
-                rm_pbc(&(top.idef),ePBC,atoms->nr,top_box,xp,xp);
+	      gmx_rmpbc(gpbc,top.atoms.nr,top_box,xp);
             copy_rvec(xp[index[0]],x_shift);
             reset_x_ndim(nfitdim,ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
             rvec_dec(x_shift,xp[index[0]]);
@@ -1110,7 +1110,8 @@ int gmx_trjconv(int argc,char *argv[])
             }
 
             if (ftp == efG87)
-                fprintf(gmx_fio_getfp(trxout),"Generated by %s. #atoms=%d, a BOX is"
+                fprintf(gmx_fio_getfp(trx_get_fileio(trxout)),
+                        "Generated by %s. #atoms=%d, a BOX is"
                         " stored in this file.\n",Program(),nout);
 
             /* Start the big loop over frames */
@@ -1195,7 +1196,7 @@ int gmx_trjconv(int argc,char *argv[])
                     /* Now modify the coords according to the flags,
 	     for normal fit, this is only done for output frames */
                     if (bRmPBC)
-                        rm_pbc(&(top.idef),ePBC,natoms,fr.box,fr.x,fr.x);
+		      gmx_rmpbc_trxfr(gpbc,&fr);
 
                     reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
                     do_fit(natoms,w_rls,xp,fr.x);
@@ -1273,7 +1274,7 @@ int gmx_trjconv(int argc,char *argv[])
                                for PFit we did this already! */
 
                             if (bRmPBC)
-                                rm_pbc(&(top.idef),ePBC,natoms,fr.box,fr.x,fr.x);
+			      gmx_rmpbc_trxfr(gpbc,&fr);
 
                             if (bReset) {
                                 reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
@@ -1364,19 +1365,20 @@ int gmx_trjconv(int argc,char *argv[])
                         case efG87:
                         case efXTC:
                             if ( bSplitHere ) {
-                                if ( trxout >= 0 )
+                                if ( trxout )
                                     close_trx(trxout);
                                 trxout = open_trx(out_file2,filemode);
                             }
                             if (bSubTraj) {
                                 if (my_clust != -1) {
                                     char buf[STRLEN];
-                                    if (clust_status[my_clust] == -1) {
+                                    if (clust_status_id[my_clust] == -1) {
                                         sprintf(buf,"%s.%s",clust->grpname[my_clust],ftp2ext(ftp));
                                         clust_status[my_clust] = open_trx(buf,"w");
+                                        clust_status_id[my_clust] = 1;
                                         ntrxopen++;
                                     }
-                                    else if (clust_status[my_clust] == -2)
+                                    else if (clust_status_id[my_clust] == -2)
                                         gmx_fatal(FARGS,"File %s.xtc should still be open (%d open xtc files)\n""in order to write frame %d. my_clust = %d",
                                                   clust->grpname[my_clust],ntrxopen,frame,
                                                   my_clust);
@@ -1386,7 +1388,7 @@ int gmx_trjconv(int argc,char *argv[])
                                         (clust->clust->index[my_clust+1]-
                                             clust->clust->index[my_clust])) {
                                         close_trx(clust_status[my_clust]);
-                                        clust_status[my_clust] = -2;
+                                        clust_status_id[my_clust] = -2;
                                         ntrxopen--;
                                         if (ntrxopen < 0)
                                             gmx_fatal(FARGS,"Less than zero open xtc files!");
@@ -1419,7 +1421,7 @@ int gmx_trjconv(int argc,char *argv[])
                                 else
                                     model_nr++;
                                 write_pdbfile(out,title,&useatoms,frout.x,
-                                              frout.ePBC,frout.box,0,model_nr,gc);
+                                              frout.ePBC,frout.box,' ',model_nr,gc,TRUE);
                                 break;
                             case efG96:
                                 frout.title = title;
@@ -1478,14 +1480,16 @@ int gmx_trjconv(int argc,char *argv[])
         fprintf(stderr,"\n");
 
         close_trj(status);
-
-        if (trxout >= 0)
+	if (bRmPBC)
+	  gmx_rmpbc_done(gpbc);
+	
+        if (trxout)
             close_trx(trxout);
         else if (out != NULL)
             ffclose(out);
         if (bSubTraj) {
             for(i=0; (i<clust->clust->nr); i++)
-                if (clust_status[i] >= 0)
+                if (clust_status[i] )
                     close_trx(clust_status[i]);
         }
     }

@@ -1,7 +1,4 @@
-
-#ifdef _FF_CHARMM
-
-[ moleculetype ] 
+[ moleculetype ] ; added by Bjelkmar Jan 2010, from c32b1/toppar/stream/toppar_water_ions.str
 ; molname	nrexcl
 OH		1
 
@@ -16,19 +13,19 @@ OH		1
 
 [ moleculetype ]
 ; molname	nrexcl
-Na		1
+NA		1
 
 [ atoms ]
 ; id	at type		res nr 	residu name	at name  cg nr	charge   
-1	SOD		1	Na		Na	 1	1		 
+1	SOD		1	NA		NA	 1	1		 
 
 [ moleculetype ]
 ; molname	nrexcl
-Mg		1
+MG		1
 
 [ atoms ]
 ; id	at type		res nr 	residu name	at name  cg nr	charge
-1	MG		1	Mg		Mg	 1	2		 
+1	MG		1	MG		MG	 1	2		 
 
 [ moleculetype ]
 ; molname	nrexcl
@@ -56,18 +53,16 @@ Cal		1
 
 [ moleculetype ]
 ; molname	nrexcl
-Cl		1
+CL		1
 
 [ atoms ]
 ; id	at type		res nr 	residu name	at name  cg nr	charge   
-1	CLA		1	Cl		Cl	 1	-1	 
+1	CLA		1	CL		CL	 1	-1	 
 
 [ moleculetype ]
 ; molname	nrexcl
-Zn		1
+ZN		1
 
 [ atoms ]
 ; id	at type		res nr 	residu name	at name  cg nr	charge   
-1	ZN		1	Zn		Zn	 1	-2	 
-
-#endif
+1	ZN		1	ZN		ZN	 1	-2	 

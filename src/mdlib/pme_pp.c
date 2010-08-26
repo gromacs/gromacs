@@ -92,8 +92,8 @@ typedef struct gmx_pme_pp {
 typedef struct gmx_pme_comm_n_box {
   int    natoms;
   matrix box;
-  int    maxshift0;
-  int    maxshift1;
+  int    maxshift_x;
+  int    maxshift_y;
   real   lambda;
   int    flags;
   gmx_large_int_t step;
@@ -148,7 +148,7 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 			     real *chargeA, real *chargeB,
 			     matrix box, rvec *x,
 			     real lambda,
-			     int maxshift0, int maxshift1,
+			     int maxshift_x, int maxshift_y,
 			     gmx_large_int_t step)
 {
   gmx_domdec_t *dd;
@@ -175,12 +175,12 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
       snew(dd->cnb,1);
     cnb = dd->cnb;
 
-    cnb->flags     = flags;
-    cnb->natoms    = n;
-    cnb->maxshift0 = maxshift0;
-    cnb->maxshift1 = maxshift1;
-    cnb->lambda    = lambda;
-    cnb->step      = step;
+    cnb->flags      = flags;
+    cnb->natoms     = n;
+    cnb->maxshift_x = maxshift_x;
+    cnb->maxshift_y = maxshift_y;
+    cnb->lambda     = lambda;
+    cnb->step       = step;
     if (flags & PP_PME_COORD)
       copy_mat(box,cnb->box);
 #ifdef GMX_MPI
@@ -198,20 +198,22 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
   }
 
 #ifdef GMX_MPI
-  if (flags & PP_PME_CHARGE) {
-    MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
-	      dd->pme_nodeid,1,cr->mpi_comm_mysim,
-	      &dd->req_pme[dd->nreq_pme++]);
-  }
-  if (flags & PP_PME_CHARGEB) {
-    MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
-	      dd->pme_nodeid,2,cr->mpi_comm_mysim,
-	      &dd->req_pme[dd->nreq_pme++]);
-  }
-  if (flags & PP_PME_COORD) {
-    MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
-	      dd->pme_nodeid,3,cr->mpi_comm_mysim,
-	      &dd->req_pme[dd->nreq_pme++]);
+  if (n > 0) {
+    if (flags & PP_PME_CHARGE) {
+      MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
+		dd->pme_nodeid,1,cr->mpi_comm_mysim,
+		&dd->req_pme[dd->nreq_pme++]);
+    }
+    if (flags & PP_PME_CHARGEB) {
+      MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
+		dd->pme_nodeid,2,cr->mpi_comm_mysim,
+		&dd->req_pme[dd->nreq_pme++]);
+    }
+    if (flags & PP_PME_COORD) {
+      MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
+		dd->pme_nodeid,3,cr->mpi_comm_mysim,
+		&dd->req_pme[dd->nreq_pme++]);
+    }
   }
 
 #ifndef GMX_PME_DELAYED_WAIT
@@ -225,8 +227,8 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 }
 
 void gmx_pme_send_q(t_commrec *cr,
-		    bool bFreeEnergy, real *chargeA, real *chargeB,
-		    int maxshift0, int maxshift1)
+		    gmx_bool bFreeEnergy, real *chargeA, real *chargeB,
+		    int maxshift_x, int maxshift_y)
 {
   int flags;
 
@@ -234,12 +236,13 @@ void gmx_pme_send_q(t_commrec *cr,
   if (bFreeEnergy)
     flags |= PP_PME_CHARGEB;
 
-  gmx_pme_send_q_x(cr,flags,chargeA,chargeB,NULL,NULL,0,maxshift0,maxshift1,-1);
+  gmx_pme_send_q_x(cr,flags,
+		   chargeA,chargeB,NULL,NULL,0,maxshift_x,maxshift_y,-1);
 }
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-		    bool bFreeEnergy, real lambda,
-		    bool bEnerVir,
+		    gmx_bool bFreeEnergy, real lambda,
+		    gmx_bool bEnerVir,
 		    gmx_large_int_t step)
 {
   int flags;
@@ -265,9 +268,9 @@ void gmx_pme_finish(t_commrec *cr)
 int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                      real **chargeA, real **chargeB,
                      matrix box, rvec **x,rvec **f,
-                     int *maxshift0, int *maxshift1,
-                     bool *bFreeEnergy,real *lambda,
-		     bool *bEnerVir,
+                     int *maxshift_x, int *maxshift_y,
+                     gmx_bool *bFreeEnergy,real *lambda,
+		     gmx_bool *bEnerVir,
                      gmx_large_int_t *step)
 {
     gmx_pme_comm_n_box_t cnb;
@@ -320,8 +323,8 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
             }
 
             /* maxshift is sent when the charges are sent */
-            *maxshift0 = cnb.maxshift0;
-            *maxshift1 = cnb.maxshift1;
+            *maxshift_x = cnb.maxshift_x;
+            *maxshift_y = cnb.maxshift_y;
 
             /* Receive the charges in place */
             for(q=0; q<((cnb.flags & PP_PME_CHARGEB) ? 2 : 1); q++) {

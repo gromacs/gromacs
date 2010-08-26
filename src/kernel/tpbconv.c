@@ -58,9 +58,9 @@
 
 #define RANGECHK(i,n) if ((i)>=(n)) gmx_fatal(FARGS,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
 
-static bool *bKeepIt(int gnx,int natoms,atom_id index[])
+static gmx_bool *bKeepIt(int gnx,int natoms,atom_id index[])
 {
-  bool *b;
+  gmx_bool *b;
   int  i;
   
   snew(b,natoms);
@@ -86,7 +86,7 @@ static atom_id *invind(int gnx,int natoms,atom_id index[])
   return inv;
 }
 
-static void reduce_block(bool bKeep[],t_block *block,
+static void reduce_block(gmx_bool bKeep[],t_block *block,
 			 const char *name)
 {
   atom_id *index;
@@ -113,7 +113,7 @@ static void reduce_block(bool bKeep[],t_block *block,
   block->nr    = newi;
 }
 
-static void reduce_blocka(atom_id invindex[],bool bKeep[],t_blocka *block,
+static void reduce_blocka(atom_id invindex[],gmx_bool bKeep[],t_blocka *block,
 			  const char *name)
 {
   atom_id *index,*a;
@@ -194,12 +194,12 @@ static void reduce_atom(int gnx,atom_id index[],t_atom atom[],char ***atomname,
   sfree(rinfo);
 }
 
-static void reduce_ilist(atom_id invindex[],bool bKeep[],
+static void reduce_ilist(atom_id invindex[],gmx_bool bKeep[],
 			 t_ilist *il,int nratoms,const char *name)
 {
   t_iatom *ia;
   int i,j,newnr;
-  bool bB;
+  gmx_bool bB;
 
   if (il->nr) {  
     snew(ia,il->nr);
@@ -231,7 +231,7 @@ static void reduce_topology_x(int gnx,atom_id index[],
 			      gmx_mtop_t *mtop,rvec x[],rvec v[])
 {
   t_topology top;
-  bool    *bKeep;
+  gmx_bool    *bKeep;
   atom_id *invindex;
   int     i;
   
@@ -294,7 +294,8 @@ int main (int argc, char *argv[])
   const char *desc[] = {
     "tpbconv can edit run input files in four ways.[PAR]",
     "[BB]1st.[bb] by modifying the number of steps in a run input file",
-    "with option [TT]-nsteps[tt] or option [TT]-runtime[tt].[PAR]",
+    "with options [TT]-extend[tt], [TT]-until[tt] or [TT]-nsteps[tt]",
+    "(nsteps=-1 means unlimited number of steps)[PAR]",
     "[BB]2nd.[bb] (OBSOLETE) by creating a run input file",
     "for a continuation run when your simulation has crashed due to e.g.",
     "a full disk, or by making a continuation run input file.",
@@ -314,14 +315,14 @@ int main (int argc, char *argv[])
   };
 
   const char   *top_fn,*frame_fn;
-  int          fp;
+  t_fileio     *fp;
   ener_file_t  fp_ener=NULL;
   t_trnheader head;
   int          i;
   gmx_large_int_t   nsteps_req,run_step,frame;
   double       run_t,state_t;
-  bool         bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
-  bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
+  gmx_bool         bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
+  gmx_bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
   gmx_mtop_t   mtop;
   t_atoms      atoms;
   t_inputrec   *ir,*irnew=NULL;
@@ -347,21 +348,18 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static int  nsteps_req_int = -1;
-  static real runtime_req = -1;
+  static int  nsteps_req_int = 0;
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
-  static bool bContinuation = TRUE,bZeroQ = FALSE,bVel=TRUE;
+  static gmx_bool bContinuation = TRUE,bZeroQ = FALSE,bVel=TRUE;
   static t_pargs pa[] = {
-    { "-nsteps",        FALSE, etINT,  {&nsteps_req_int},
-      "Change the number of steps" },
-    { "-runtime",       FALSE, etREAL, {&runtime_req},
-      "Set the run time (ps)" },
-    { "-time",          FALSE, etREAL, {&start_t}, 
-      "Continue from frame at this time (ps) instead of the last frame" },
     { "-extend",        FALSE, etREAL, {&extend_t}, 
       "Extend runtime by this amount (ps)" },
     { "-until",         FALSE, etREAL, {&until_t}, 
       "Extend runtime until this ending time (ps)" },
+    { "-nsteps",        FALSE, etINT,  {&nsteps_req_int},
+      "Change the number of steps" },
+    { "-time",          FALSE, etREAL, {&start_t}, 
+      "Continue from frame at this time (ps) instead of the last frame" },
     { "-zeroq",         FALSE, etBOOL, {&bZeroQ},
       "Set the charges of a group (from the index) to zero" },
     { "-vel",           FALSE, etBOOL, {&bVel},
@@ -379,7 +377,7 @@ int main (int argc, char *argv[])
 
   /* Convert int to gmx_large_int_t */
   nsteps_req = nsteps_req_int;
-  bNsteps = (nsteps_req >= 0 || runtime_req >= 0);
+  bNsteps = opt2parg_bSet("-nsteps",asize(pa),pa);
   bExtend = opt2parg_bSet("-extend",asize(pa),pa);
   bUntil  = opt2parg_bSet("-until",asize(pa),pa);
   bTime   = opt2parg_bSet("-time",asize(pa),pa);
@@ -523,13 +521,6 @@ int main (int argc, char *argv[])
   }
 
   if (bNsteps) {
-    if (nsteps_req < 0) {
-      if (!EI_DYNAMICS(ir->eI)) {
-	gmx_fatal(FARGS,"Can not set the run time with integrator '%s'",
-		  EI(ir->eI));
-      }
-      nsteps_req = (int)(runtime_req/ir->delta_t + 0.5);
-    }
     fprintf(stderr,"Setting nsteps to %s\n",gmx_step_str(nsteps_req,buf));
     ir->nsteps = nsteps_req;
   } else {

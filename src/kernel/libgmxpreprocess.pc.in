@@ -7,10 +7,7 @@ Name: libgmxpreprocess
 Description: Gromacs preprocess lib
 URL: http://www.gromacs.org
 Version: @VERSION@
-Requires: @PKG_XML2@ libgmx@LIBSUFFIX@ libmd@LIBSUFFIX@ 
-Libs.private: @LIBS@
-# Once deps have been split change to this
-# Libs.private: -lm -lpthread
-Libs: -L${libdir} -lgmxpreprocess@LIBSUFFIX@
-Cflags: -I${includedir}/gromacs
+Requires: libgmx@LIBSUFFIX@ libmd@LIBSUFFIX@ 
+Libs: -L${libdir} -lgmxpreprocess@LIBSUFFIX@ @PTHREAD_CFLAGS@ @PTHREAD_LIBS@ -lm
+Cflags: -I${includedir} @PTHREAD_CFLAGS@ @PKG_CFLAGS@
 

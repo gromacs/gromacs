@@ -133,7 +133,7 @@ void DrawLegend(t_x11 *x11,t_windata *Win)
   XSetForeground(x11->disp,x11->gc,x11->fg);
 }
 
-static bool LegWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool LegWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_legendwin *lw;
 
