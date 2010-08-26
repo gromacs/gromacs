@@ -741,7 +741,9 @@ static void clean_bonds(t_params *ps)
     for(i=1; (i<ps->nr); i++) {
       if ((ps->param[i].AI != ps->param[j-1].AI) ||
 	  (ps->param[i].AJ != ps->param[j-1].AJ) ) {
-	cp_param(&(ps->param[j]),&(ps->param[i]));
+        if (j != i) {
+          cp_param(&(ps->param[j]),&(ps->param[i]));
+        }
 	j++;
       } 
     }

@@ -311,7 +311,7 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
     /* put digit after atomname */
     for (i=1; (i<min(MAXQ-1,strlen(atomnm))); i++)
       atomname[i-1] = atomnm[i];
-    atomname[i++] = atomnm[0];
+    atomname[i-1] = atomnm[0];
     atomname[i]   = '\0';
   } 
   else { 
