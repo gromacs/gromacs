@@ -93,7 +93,7 @@ int gmx_morph(int argc,char *argv[])
   static  int  ninterm = 11;
   static  real first   = 0.0;
   static  real last    = 1.0;
-  static  bool bFit    = TRUE;
+  static  gmx_bool bFit    = TRUE;
   t_pargs pa [] = {
     { "-ninterm", FALSE, etINT,  {&ninterm},
       "Number of intermediates" },
@@ -114,7 +114,7 @@ int gmx_morph(int argc,char *argv[])
   matrix   box;
   real     rms1,rms2,fac,*mass;
   char     title[STRLEN],*grpname;
-  bool     bRMS;
+  gmx_bool     bRMS;
   output_env_t oenv;
   
   CopyRight(stderr,argv[0]);

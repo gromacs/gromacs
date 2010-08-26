@@ -79,6 +79,9 @@ NVAL    Protein
 NASN    Protein
 NGLN    Protein
 NARG    Protein
+NHID    Protein
+NHIE    Protein
+NHIP    Protein
 NHISD   Protein
 NHISE   Protein
 NHISH   Protein
@@ -108,6 +111,9 @@ CVAL    Protein
 CASN    Protein
 CGLN    Protein
 CARG    Protein
+CHID    Protein
+CHIE    Protein
+CHIP    Protein
 CHISD   Protein
 CHISE   Protein
 CHISH   Protein

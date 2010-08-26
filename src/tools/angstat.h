@@ -41,11 +41,11 @@
 
 extern void do_angav(FILE *status, char *title,
 		     atom_id index[], int nind, 
-		     char *outfile, bool bAT);
+		     char *outfile, gmx_bool bAT);
 
 extern void do_dihav(FILE *status, char *title,
 		     atom_id index[], int nind, 
-		     char *outfile, bool bAT);
+		     char *outfile, gmx_bool bAT);
 
 extern void ramachandran(FILE *status,atom_id index[],int nind,char *outfile);
 

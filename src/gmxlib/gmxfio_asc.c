@@ -68,13 +68,13 @@
 
 
 /* file type functions */
-static bool do_ascread(t_fileio *fio, void *item, int nitem, int eio, 
+static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio, 
                        const char *desc, const char *srcfile, int line);
-static bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio, 
+static gmx_bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio, 
                         const char *desc, const char *srcfile, int line);
-static bool do_dummyread(t_fileio *fio, void *item, int nitem, int eio,
+static gmx_bool do_dummyread(t_fileio *fio, void *item, int nitem, int eio,
                          const char *desc, const char *srcfile, int line);
-static bool do_dummywrite(t_fileio *fio, const void *item, int nitem, int eio,
+static gmx_bool do_dummywrite(t_fileio *fio, const void *item, int nitem, int eio,
                           const char *desc, const char *srcfile, int line);
 
 
@@ -86,14 +86,14 @@ const t_iotype dummy_iotype={do_dummyread, do_dummywrite};
 
 
 
-static bool do_dummyread(t_fileio *fio, void *item, int nitem, int eio,
+static gmx_bool do_dummyread(t_fileio *fio, void *item, int nitem, int eio,
                          const char *desc, const char *srcfile, int line)
 {
     gmx_fatal(FARGS, "File type not set!");
     return FALSE;
 }
 
-static bool do_dummywrite(t_fileio *fio, const void *item, int nitem, int eio,
+static gmx_bool do_dummywrite(t_fileio *fio, const void *item, int nitem, int eio,
                           const char *desc, const char *srcfile, int line)
 {
     gmx_fatal(FARGS, "File type not set!");
@@ -140,7 +140,7 @@ static void decode_string(int maxlen, char dst[], const char src[])
     }
 }
 
-static bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio, 
+static gmx_bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio, 
                         const char *desc, const char *srcfile, int line)
 {
     int i;
@@ -221,8 +221,8 @@ static bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio,
 static char *next_item(FILE *fp, char *buf, int buflen)
 {
     int rd;
-    bool in_comment = FALSE;
-    bool in_token = FALSE;
+    gmx_bool in_comment = FALSE;
+    gmx_bool in_token = FALSE;
     int i = 0;
     /* This routine reads strings from the file fp, strips comment
      * and buffers. For thread-safety reasons, It reads through getc()  */
@@ -267,7 +267,7 @@ static char *next_item(FILE *fp, char *buf, int buflen)
     return buf;
 }
 
-static bool do_ascread(t_fileio *fio, void *item, int nitem, int eio, 
+static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio, 
                        const char *desc, const char *srcfile, int line)
 {
     FILE *fp = fio->fp;

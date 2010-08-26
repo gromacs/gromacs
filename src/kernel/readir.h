@@ -59,19 +59,19 @@ typedef struct {
   real fourierspacing;
   char *include;
   char *define;
-  bool bGenVel;
-  bool bGenPairs;
+  gmx_bool bGenVel;
+  gmx_bool bGenPairs;
   real tempi;
   int  seed;
-  bool bOrire;
-  bool bDihre;
-  bool bMorse;
+  gmx_bool bOrire;
+  gmx_bool bDihre;
+  gmx_bool bMorse;
   char *wall_atomtype[2];
-  bool pull_start;
+  gmx_bool pull_start;
   char *couple_moltype;
   int  couple_lam0;
   int  couple_lam1;
-  bool bCoupleIntra;
+  gmx_bool bCoupleIntra;
 } t_gromppopts;
 
 
@@ -86,7 +86,7 @@ extern void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 extern int search_string(char *s,int ng,char *gn[]);
 /* Returns the index of string s in the index groups */
 
-extern void double_check(t_inputrec *ir,matrix box,bool bConstr,
+extern void double_check(t_inputrec *ir,matrix box,gmx_bool bConstr,
 			 warninp_t wi);
 /* Do more checks */
 
@@ -110,7 +110,7 @@ extern void get_ir(const char *mdparin,const char *mdparout,
 extern void do_index(const char* mdparin, 
 		     const char *ndx,
 		     gmx_mtop_t *mtop,
-		     bool bVerbose,
+		     gmx_bool bVerbose,
 		     t_inputrec *ir,
 		     rvec *v,
 		     warninp_t wi);
@@ -122,7 +122,7 @@ extern void do_index(const char* mdparin,
 /* Routines In readpull.c */
 
 extern char **read_pullparams(int *ninp_p,t_inpfile **inp,
-			      t_pull *pull,bool *bStart,
+			      t_pull *pull,gmx_bool *bStart,
 			      warninp_t wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
@@ -131,7 +131,7 @@ extern void make_pull_groups(t_pull *pull,char **pgnames,
 /* Process the pull parameters after reading the index groups */
 
 extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
-			  const output_env_t oenv, bool bStart);
+			  const output_env_t oenv, gmx_bool bStart);
 /* Prints the initial pull group distances in x.
  * If bStart adds the distance to the initial reference location.
  */

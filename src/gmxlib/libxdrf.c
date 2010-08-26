@@ -152,7 +152,7 @@ void
 F77_FUNC(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret) 
 {
         xdr_fortran_lock();
-	*ret = xdr_bool(xdridptr[*xdrid], pb);
+	*ret = xdr_gmx_bool(xdridptr[*xdrid], pb);
 	cnt += XDR_INT_SIZE;
         xdr_fortran_unlock();
 }
@@ -799,7 +799,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 {
     int *ip = NULL;
     int *buf = NULL;
-    bool bRead;
+    gmx_bool bRead;
         
     /* preallocate a small buffer and ip on the stack - if we need more
        we can always malloc(). This is faster for small values of size: */
@@ -1412,7 +1412,7 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
 
 
 static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
-                                     bool * bOK)
+                                     gmx_bool * bOK)
 {
     gmx_off_t off;
     float time;
@@ -1453,7 +1453,7 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
 
 
 static float 
-xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     gmx_off_t off;
     int step;  
@@ -1501,7 +1501,7 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 
 /* Currently not used, just for completeness */
 static int 
-xtc_get_current_frame_number(FILE *fp,XDR *xdrs,int natoms, bool * bOK)
+xtc_get_current_frame_number(FILE *fp,XDR *xdrs,int natoms, gmx_bool * bOK)
 {
     gmx_off_t off;
     int ret;  
@@ -1569,7 +1569,7 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
 
 
 float 
-xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
   float  res;
   float  tinit;
@@ -1687,7 +1687,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
 {
     float t;
     float dt;
-    bool bOK;
+    gmx_bool bOK;
     gmx_off_t low = 0;
     gmx_off_t high, offset, pos;
     int res;
@@ -1844,7 +1844,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
 }
 
 float 
-xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     float  time;
     gmx_off_t  off;
@@ -1875,7 +1875,7 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 
 
 int
-xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     int    frame;
     gmx_off_t  off;

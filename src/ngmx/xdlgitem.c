@@ -290,7 +290,7 @@ static int WndProcST(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
   return ITEMOK;
 }
 
-static bool insert(char *s, char c, int *pos)
+static gmx_bool insert(char *s, char c, int *pos)
 {
   int i,sl;
 
@@ -306,7 +306,7 @@ static bool insert(char *s, char c, int *pos)
   return FALSE;
 }
 
-static bool my_backspace(char *s, int *pos)
+static gmx_bool my_backspace(char *s, int *pos)
 {
   int i,sl;
 
@@ -320,7 +320,7 @@ static bool my_backspace(char *s, int *pos)
   return FALSE;
 }
 
-static bool my_delete(char *s, int *pos)
+static gmx_bool my_delete(char *s, int *pos)
 {
   int i,sl;
 
@@ -475,7 +475,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
  *
  ****************************/
 t_dlgitem *CreateButton(t_x11 *x11,
-			const char *szLab,bool bDef,t_id id,t_id groupid,
+			const char *szLab,gmx_bool bDef,t_id id,t_id groupid,
 			int x0,int y0,int w,int h,int bw)
 {
   t_dlgitem *dlgitem;
@@ -502,7 +502,7 @@ t_dlgitem *CreateButton(t_x11 *x11,
 }
 
 t_dlgitem *CreateRadioButton(t_x11 *x11,
-			     const char *szLab,bool bSet,t_id id,
+			     const char *szLab,gmx_bool bSet,t_id id,
 			     t_id groupid,
 			     int x0,int y0,int w,int h,int bw)
 {
@@ -545,7 +545,7 @@ t_dlgitem *CreateGroupBox(t_x11 *x11,
 }
 
 t_dlgitem *CreateCheckBox(t_x11 *x11,
-			  const char *szLab,bool bCheckedInitial,t_id id,
+			  const char *szLab,gmx_bool bCheckedInitial,t_id id,
 			  t_id groupid,
 			  int x0,int y0,int w,int h,int bw)
 {
@@ -645,7 +645,7 @@ t_dlgitem *CreateEditText(t_x11 *x11,
 
 #define SC(src) (strlen(src)?strdup(src):NULL)
 
-void SetDlgitemOpts(t_dlgitem *dlgitem,bool bUseMon,
+void SetDlgitemOpts(t_dlgitem *dlgitem,gmx_bool bUseMon,
 		    char *set,char *get,char *help)
 {
   dlgitem->bUseMon=bUseMon;

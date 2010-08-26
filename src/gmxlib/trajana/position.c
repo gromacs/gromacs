@@ -187,7 +187,7 @@ gmx_ana_pos_free(gmx_ana_pos_t *pos)
  * \p dest should have been initialized somehow (calloc() is enough).
  */
 void
-gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
+gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, gmx_bool bFirst)
 {
     if (bFirst)
     {

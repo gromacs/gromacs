@@ -83,7 +83,7 @@ static real yaw_lj[5][10] = {
   { 0, COS, 0, CHS, 0, CHS, 0, 0, 2.6e-3, 0   }
 };
 
-void unitcell(rvec x[],rvec box,bool bYaw,real odist,real hdist)
+void unitcell(rvec x[],rvec box,gmx_bool bYaw,real odist,real hdist)
 {
 #define cx  0.81649658
 #define cy  0.47140452
@@ -152,7 +152,7 @@ void unitcell(rvec x[],rvec box,bool bYaw,real odist,real hdist)
 }
 
 void random_h_coords(int natmol,int nmol,rvec x[],rvec box,
-		     bool bYaw,real odist,real hdist)
+		     gmx_bool bYaw,real odist,real hdist)
 {
 #define cx  0.81649658
 #define cy  0.47140452
@@ -250,7 +250,7 @@ void unitcell_d(rvec x[],rvec box,real odist)
 }
 
 static t_bbb *mk_bonds(int natoms,rvec x[],real odist,
-		       bool bPBC,matrix box)
+		       gmx_bool bPBC,matrix box)
 {
   real  od2 = odist*odist+1e-5;
   t_pbc pbc;
@@ -283,12 +283,12 @@ static t_bbb *mk_bonds(int natoms,rvec x[],real odist,
 }
 
 static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab,
-		       bool bPBC,matrix box)
+		       gmx_bool bPBC,matrix box)
 {
   
   int   i,ib,j,k,l,m,nrm=0;
   t_bbb *bbb;
-  bool  *bRemove;
+  gmx_bool  *bRemove;
   rvec  dx;
   
   do {
@@ -378,8 +378,8 @@ static int read_rel_coords(char *fn,rvec **xx,int natmol)
   return natmol*nline;
 }
 
-void virial(FILE *fp,bool bFull,int nmol,rvec x[],matrix box,real rcut,
-	    bool bYaw,real q[],bool bLJ)
+void virial(FILE *fp,gmx_bool bFull,int nmol,rvec x[],matrix box,real rcut,
+	    gmx_bool bYaw,real q[],gmx_bool bLJ)
 {
   int  i,j,im,jm,natmol,ik,jk,m,ninter;
   rvec dx,f,ftot,dvir,vir,pres,xcmi,xcmj,*force;
@@ -498,8 +498,8 @@ int main(int argc,char *argv[])
     "build water clusters based on oxygen coordinates only."
   };
   static int nx=1,ny=1,nz=1;
-  static bool bYaw=FALSE,bLJ=TRUE,bFull=TRUE,bSeries=FALSE;
-  static bool bOrdered=TRUE,bDiamond=FALSE,bPBC=TRUE;
+  static gmx_bool bYaw=FALSE,bLJ=TRUE,bFull=TRUE,bSeries=FALSE;
+  static gmx_bool bOrdered=TRUE,bDiamond=FALSE,bPBC=TRUE;
   static real rcut=0.3,odist=0.274,hdist=0.09572;
   t_pargs pa[] = {
     { "-nx",    FALSE, etINT,  {&nx}, "nx" },

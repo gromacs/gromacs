@@ -103,7 +103,7 @@ typedef struct
 typedef struct
 { 
     real deltaF0;
-    bool bHarmonic;       /* Use flooding for harmonic restraint on eigenvector */
+    gmx_bool bHarmonic;       /* Use flooding for harmonic restraint on eigenvector */
     real tau;
     real deltaF;
     real Efl;
@@ -145,8 +145,8 @@ typedef struct gmx_edx
 typedef struct edpar
 {
     int            nini;           /* total Nr of atoms                    */
-    bool           fitmas;         /* true if trans fit with cm            */
-    bool           pcamas;         /* true if mass-weighted PCA            */
+    gmx_bool           fitmas;         /* true if trans fit with cm            */
+    gmx_bool           pcamas;         /* true if mass-weighted PCA            */
     int            presteps;       /* number of steps to run without any   
                                     *    perturbations ... just monitoring */
     int            outfrq;         /* freq (in steps) of writing to edo    */
@@ -155,7 +155,7 @@ typedef struct edpar
     /* all gmx_edx datasets are copied to all nodes in the parallel case   */
     struct gmx_edx sref;           /* reference positions, to these fitting
                                     * will be done                         */
-    bool           bRefEqAv;       /* If true, reference & average indices
+    gmx_bool           bRefEqAv;       /* If true, reference & average indices
                                     * are the same. Used for optimization  */
     struct gmx_edx sav;            /* average positions                    */
     struct gmx_edx star;           /* target positions                     */
@@ -164,7 +164,7 @@ typedef struct edpar
     t_edvecs       vecs;           /* eigenvectors                         */
     real           slope;          /* minimal slope in acceptance radexp   */
 
-    bool           bNeedDoEdsam;   /* if any of the options mon, linfix, ...
+    gmx_bool           bNeedDoEdsam;   /* if any of the options mon, linfix, ...
                                     * is used (i.e. apart from flooding)   */
     t_edflood      flood;          /* parameters especially for flooding   */
     struct t_ed_buffer *buf;       /* handle to local buffers              */
@@ -179,8 +179,8 @@ typedef struct gmx_edsam
     const char    *edonam;        /*                     output           */
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
-    bool          bFirst;
-    bool          bStartFromCpt;
+    gmx_bool          bFirst;
+    gmx_bool          bStartFromCpt;
 } t_gmx_edsam;
 
 
@@ -198,7 +198,7 @@ struct t_do_edsam
     ivec *extra_shifts_xcoll;  /* xcoll shift changes since last NS step */
     ivec *shifts_xc_ref;       /* Shifts for xc_ref */
     ivec *extra_shifts_xc_ref; /* xc_ref shift changes since last NS step */
-    bool bUpdateShifts;        /* TRUE in NS steps to indicate that the 
+    gmx_bool bUpdateShifts;        /* TRUE in NS steps to indicate that the 
                                   ED shifts for this ED dataset need to 
                                   be updated */
 };
@@ -487,7 +487,7 @@ static void do_edfit(int natoms,rvec *xp,rvec *x,matrix R,t_edpar *edi)
     real   max_d;
 
     struct t_do_edfit *loc;
-    bool bFirst;
+    gmx_bool bFirst;
 
     if(edi->buf->do_edfit != NULL)
         bFirst = FALSE;
@@ -674,7 +674,7 @@ static void write_edo_flood(t_edpar *edi, FILE *fp, gmx_large_int_t step)
 {
     int i;
     char buf[22];
-    bool bOutputRef=FALSE;
+    gmx_bool bOutputRef=FALSE;
 
     
     fprintf(fp,"%d.th FL: %s %12.5e %12.5e %12.5e\n",
@@ -1075,7 +1075,7 @@ static void bc_ed_positions(t_commrec *cr, struct gmx_edx *s, int stype)
 
 
 /* Broadcasts the eigenvector data */
-static void bc_ed_vecs(t_commrec *cr, t_eigvec *ev, int length, bool bHarmonic)
+static void bc_ed_vecs(t_commrec *cr, t_eigvec *ev, int length, gmx_bool bHarmonic)
 {
     int i;
 
@@ -1242,7 +1242,7 @@ static int read_checked_edint(FILE *file,const char *label)
 } 
 
 
-static int read_edint(FILE *file,bool *bEOF)
+static int read_edint(FILE *file,gmx_bool *bEOF)
 {
     char line[STRLEN+1];
     int idum;
@@ -1317,7 +1317,7 @@ static void scan_edvec(FILE *in,int nr,rvec *vec)
 }
 
 
-static void read_edvec(FILE *in,int nr,t_eigvec *tvec,bool bReadRefproj)
+static void read_edvec(FILE *in,int nr,t_eigvec *tvec,gmx_bool bReadRefproj)
 {
     int i,idum,nscan;
     double rdum,refproj_dum=0.0,refprojslope_dum=0.0;
@@ -1397,7 +1397,7 @@ static void read_edvecs(FILE *in,int nr,t_edvecs *vecs)
 
 
 /* Check if the same atom indices are used for reference and average positions */
-static bool check_if_same(struct gmx_edx sref, struct gmx_edx sav)
+static gmx_bool check_if_same(struct gmx_edx sref, struct gmx_edx sav)
 {
     int i;
 
@@ -1424,7 +1424,7 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
 {
     int readmagic;
     const int magic=669;
-    bool bEOF;
+    gmx_bool bEOF;
 
     
     /* the edi file is not free format, so expect problems if the input is corrupt. */
@@ -1872,7 +1872,7 @@ static void do_radcon(rvec *xcoll, t_edpar *edi, t_commrec *cr)
     int  i,j;
     real rad=0.0, ratio=0.0;
     struct t_do_radcon *loc;
-    bool bFirst;
+    gmx_bool bFirst;
     rvec vec_dum;
 
 
@@ -2039,7 +2039,7 @@ static void write_edo(int nr_edi, t_edpar *edi, gmx_edsam_t ed, gmx_large_int_t 
 }
 
 /* Returns if any constraints are switched on */
-static int ed_constraints(bool edtype, t_edpar *edi)
+static int ed_constraints(gmx_bool edtype, t_edpar *edi)
 { 
     if (edtype == eEDedsam || edtype == eEDflood) 
     {
@@ -2330,7 +2330,7 @@ void do_edsam(t_inputrec  *ir,
     struct t_do_edsam *buf;
     t_edpar *edi;
     real    rmsdev=-1;      /* RMSD from reference structure prior to applying the constraints */
-    bool    bSuppress=FALSE; /* Write .edo file on master? */
+    gmx_bool    bSuppress=FALSE; /* Write .edo file on master? */
 
 
     /* Check if ED sampling has to be performed */

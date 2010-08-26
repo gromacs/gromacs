@@ -109,7 +109,7 @@ char *gmx_strsep(char **stringp, const char *delim);
 
 
 char *wrap_lines(const char *buf,int line_width, int indent,
-			bool bIndentFirst);
+			gmx_bool bIndentFirst);
 /* wraps lines at 'linewidth', indenting all following
  * lines by 'indent' spaces. A temp buffer is allocated and returned,
  * which can be disposed of if no longer needed.

@@ -43,13 +43,13 @@
 extern "C" {
 #endif
 
-bool get_a_line(FILE *fp,char line[],int n);
+gmx_bool get_a_line(FILE *fp,char line[],int n);
 /* Read a line of at most n characters form *fp to line. 
  * Comment ';...' and leading spaces are removed, empty lines are skipped.
  * Return FALSE when eof. 
  */
 
-bool get_header(char line[],char header[]);
+gmx_bool get_header(char line[],char header[]);
 /* Read a header between '[' and ']' from line to header.
  * Returns FALSE no header is found.
  */

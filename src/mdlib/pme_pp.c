@@ -227,7 +227,7 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 }
 
 void gmx_pme_send_q(t_commrec *cr,
-		    bool bFreeEnergy, real *chargeA, real *chargeB,
+		    gmx_bool bFreeEnergy, real *chargeA, real *chargeB,
 		    int maxshift_x, int maxshift_y)
 {
   int flags;
@@ -241,8 +241,8 @@ void gmx_pme_send_q(t_commrec *cr,
 }
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-		    bool bFreeEnergy, real lambda,
-		    bool bEnerVir,
+		    gmx_bool bFreeEnergy, real lambda,
+		    gmx_bool bEnerVir,
 		    gmx_large_int_t step)
 {
   int flags;
@@ -269,8 +269,8 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                      real **chargeA, real **chargeB,
                      matrix box, rvec **x,rvec **f,
                      int *maxshift_x, int *maxshift_y,
-                     bool *bFreeEnergy,real *lambda,
-		     bool *bEnerVir,
+                     gmx_bool *bFreeEnergy,real *lambda,
+		     gmx_bool *bEnerVir,
                      gmx_large_int_t *step)
 {
     gmx_pme_comm_n_box_t cnb;

@@ -31,6 +31,10 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "statutil.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -114,7 +118,7 @@ static int gmx_system_call(char *command)
  
 
 /* Check if string starts with substring */
-static bool str_starts(const char *string, const char *substring)
+static gmx_bool str_starts(const char *string, const char *substring)
 {
     return ( strncmp(string, substring, strlen(substring)) == 0);
 }
@@ -130,7 +134,7 @@ static void cleandata(t_perf *perfdata, int test_nr)
 }
 
 
-static bool is_equal(real a, real b)
+static gmx_bool is_equal(real a, real b)
 {
     real diff, eps=1.0e-7;
 
@@ -183,8 +187,8 @@ static int parse_logfile(const char *logfile, const char *errfile,
     float  dum1,dum2,dum3;
     int   npme;
     gmx_large_int_t resetsteps=-1;
-    bool  bFoundResetStr = FALSE;
-    bool  bResetChecked  = FALSE;
+    gmx_bool  bFoundResetStr = FALSE;
+    gmx_bool  bResetChecked  = FALSE;
 
 
     if (!gmx_fexist(logfile))
@@ -332,7 +336,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
 }
 
 
-static bool analyze_data(
+static gmx_bool analyze_data(
         FILE        *fp,
         const char  *fn,
         t_perf      **perfdata,
@@ -351,7 +355,7 @@ static bool analyze_data(
     t_perf *pd;
     char strbuf[STRLEN];
     char str_PME_f_load[13];
-    bool bCanUseOrigTPR;
+    gmx_bool bCanUseOrigTPR;
 
 
     if (nrepeats > 1)
@@ -499,7 +503,7 @@ static bool analyze_data(
 
 
 /* Get the commands we need to set up the runs from environment variables */
-static void get_program_paths(bool bThreads, char *cmd_mpirun[], char cmd_np[],
+static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np[],
                               char *cmd_mdrun[], int repeats)
 {
     char *command=NULL;
@@ -513,8 +517,8 @@ static void get_program_paths(bool bThreads, char *cmd_mpirun[], char cmd_np[],
     const char match_mpi[]  = "NNODES=";
     const char match_mdrun[]= "Program: ";
     const char empty_mpirun[] = "";
-    bool  bMdrun = FALSE;
-    bool  bMPI   = FALSE;
+    gmx_bool  bMdrun = FALSE;
+    gmx_bool  bMPI   = FALSE;
     
 
     /* Get the commands we need to set up the runs from environment variables */
@@ -612,9 +616,9 @@ static void get_program_paths(bool bThreads, char *cmd_mpirun[], char cmd_np[],
 
 
 static void launch_simulation(
-        bool bLaunch,           /* Should the simulation be launched? */
+        gmx_bool bLaunch,           /* Should the simulation be launched? */
         FILE *fp,               /* General log file */
-        bool bThreads,          /* whether to use threads */
+        gmx_bool bThreads,          /* whether to use threads */
         char *cmd_mpirun,       /* Command for mpirun */
         char *cmd_np,           /* Switch for -np or -nt or empty */
         char *cmd_mdrun,        /* Command for mdrun */
@@ -921,7 +925,7 @@ static void make_benchmark_tprs(
     real         nlist_buffer; /* Thickness of the buffer regions for PME-switch potentials: */
     char         buf[200];
     rvec         box_size;
-    bool         bNote = FALSE;
+    gmx_bool         bNote = FALSE;
     t_pmegrid    *pmegrid=NULL; /* Grid settings for the PME grids to test    */
     int          npmegrid=1;    /* Number of grids that can be tested,
                                  * normally = ntpr but could be less          */
@@ -1126,7 +1130,7 @@ static void make_benchmark_tprs(
 
 /* Whether these files are written depends on tpr (or mdp) settings,
  * not on mdrun command line options! */
-static bool tpr_triggers_file(const char *opt)
+static gmx_bool tpr_triggers_file(const char *opt)
 {
     if ( (0 == strcmp(opt, "-pf"))
       || (0 == strcmp(opt, "-px")) )
@@ -1139,7 +1143,7 @@ static bool tpr_triggers_file(const char *opt)
 /* Rename the files we want to keep to some meaningful filename and
  * delete the rest */
 static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes, 
-                    int nPMEnodes, int nr, bool bKeepStderr)
+                    int nPMEnodes, int nr, gmx_bool bKeepStderr)
 {
     char numstring[STRLEN];
     char newfilename[STRLEN];
@@ -1356,7 +1360,7 @@ static void do_the_tests(
         int repeats,                /* Repeat each test this often            */
         int nnodes,                 /* Total number of nodes = nPP + nPME     */
         int nr_tprs,                /* Total number of tpr files to test      */
-        bool bThreads,              /* Threads or MPI?                        */
+        gmx_bool bThreads,              /* Threads or MPI?                        */
         char *cmd_mpirun,           /* mpirun command string                  */
         char *cmd_np,               /* "-np", "-n", whatever mpirun needs     */
         char *cmd_mdrun,            /* mdrun command string                   */
@@ -1373,7 +1377,7 @@ static void do_the_tests(
     int     cmdline_length;
     char    *command, *cmd_stub;
     char    buf[STRLEN];
-    bool    bResetProblem=FALSE;
+    gmx_bool    bResetProblem=FALSE;
 
 
     /* This string array corresponds to the eParselog enum type at the start
@@ -1630,7 +1634,7 @@ static void check_input(
 
 
 /* Returns TRUE when "opt" is a switch for g_tune_pme itself */
-static bool is_main_switch(char *opt)
+static gmx_bool is_main_switch(char *opt)
 {
     if ( (0 == strcmp(opt,"-s"        ))
       || (0 == strcmp(opt,"-p"        ))
@@ -1656,7 +1660,7 @@ static bool is_main_switch(char *opt)
 
 
 /* Returns TRUE when "opt" is needed at launch time */
-static bool is_launch_option(char *opt, bool bSet)
+static gmx_bool is_launch_option(char *opt, gmx_bool bSet)
 {
     if (bSet)
         return TRUE;
@@ -1666,7 +1670,7 @@ static bool is_launch_option(char *opt, bool bSet)
 
 
 /* Returns TRUE when "opt" is needed at launch time */
-static bool is_launch_file(char *opt, bool bSet)
+static gmx_bool is_launch_file(char *opt, gmx_bool bSet)
 {
     /* We need all options that were set on the command line 
      * and that do not start with -b */
@@ -1681,7 +1685,7 @@ static bool is_launch_file(char *opt, bool bSet)
 
 
 /* Returns TRUE when "opt" gives an option needed for the benchmarks runs */
-static bool is_bench_option(char *opt, bool bSet)
+static gmx_bool is_bench_option(char *opt, gmx_bool bSet)
 {
     /* If option is set, we might need it for the benchmarks.
      * This includes -cpi */
@@ -1702,7 +1706,7 @@ static bool is_bench_option(char *opt, bool bSet)
 
 
 /* Returns TRUE when "opt" defines a file which is needed for the benchmarks runs */
-static bool is_bench_file(char *opt, bool bSet, bool bOptional, bool bIsOutput)
+static gmx_bool is_bench_file(char *opt, gmx_bool bSet, gmx_bool bOptional, gmx_bool bIsOutput)
 {
     /* All options starting with "-b" are for _b_enchmark files exclusively */
     if (0 == strncmp(opt,"-b", 2))
@@ -1739,7 +1743,7 @@ static void add_to_string(char **str, char *buf)
 
 /* Create the command line for the benchmark as well as for the real run */
 static void create_command_line_snippets(
-        bool     bThreads,
+        gmx_bool     bThreads,
         int      presteps,
         int      nfile,
         t_filenm fnm[],
@@ -1870,7 +1874,7 @@ static void setopt(const char *opt,int nfile,t_filenm fnm[])
 static void couple_files_options(int nfile, t_filenm fnm[])
 {
     int i;
-    bool bSet,bBench;
+    gmx_bool bSet,bBench;
     char *opt;
     char buf[20];
     
@@ -1981,9 +1985,9 @@ int gmx_tune_pme(int argc,char *argv[])
     gmx_large_int_t new_sim_nsteps=-1;   /* -1 indicates: not set by the user */
     gmx_large_int_t cpt_steps=0;         /* Step counter in .cpt input file   */
     int        presteps=100;    /* Do a full cycle reset after presteps steps */
-    bool       bOverwrite=FALSE, bKeepTPR;
-    bool       bLaunch=FALSE;
-    bool       bPassAll=FALSE;
+    gmx_bool       bOverwrite=FALSE, bKeepTPR;
+    gmx_bool       bLaunch=FALSE;
+    gmx_bool       bPassAll=FALSE;
     char       *ExtraArgs=NULL;
     char       **tpr_names=NULL;
     const char *simulation_tpr=NULL;
@@ -2060,16 +2064,16 @@ int gmx_tune_pme(int argc,char *argv[])
     };
 
     /* Command line options of mdrun */
-    bool bDDBondCheck = TRUE;
-    bool bDDBondComm  = TRUE;
-    bool bVerbose     = FALSE;
-    bool bCompact     = TRUE;
-    bool bSepPot      = FALSE;
-    bool bRerunVSite  = FALSE;
-    bool bIonize      = FALSE;
-    bool bConfout     = TRUE;
-    bool bReproducible = FALSE;
-    bool bThreads     = FALSE;
+    gmx_bool bDDBondCheck = TRUE;
+    gmx_bool bDDBondComm  = TRUE;
+    gmx_bool bVerbose     = FALSE;
+    gmx_bool bCompact     = TRUE;
+    gmx_bool bSepPot      = FALSE;
+    gmx_bool bRerunVSite  = FALSE;
+    gmx_bool bIonize      = FALSE;
+    gmx_bool bConfout     = TRUE;
+    gmx_bool bReproducible = FALSE;
+    gmx_bool bThreads     = FALSE;
 
     int  nmultisim=0;
     int  nstglobalcomm=-1;
@@ -2091,9 +2095,9 @@ int gmx_tune_pme(int argc,char *argv[])
     char *deffnm=NULL;
 #define STD_CPT_PERIOD (15.0)
     real cpt_period=STD_CPT_PERIOD,max_hours=-1;
-    bool bAppendFiles=TRUE;
-    bool bKeepAndNumCPT=FALSE;
-    bool bResetCountersHalfWay=FALSE;
+    gmx_bool bAppendFiles=TRUE;
+    gmx_bool bKeepAndNumCPT=FALSE;
+    gmx_bool bResetCountersHalfWay=FALSE;
     output_env_t oenv=NULL;
 
     t_pargs pa[] = {

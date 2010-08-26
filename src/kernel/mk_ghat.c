@@ -350,11 +350,11 @@ real sym(int indx,int maxind)
     return 2.0;
 }
 
-void calc(bool bSym,bool bVerbose,
+void calc(gmx_bool bSym,gmx_bool bVerbose,
 	  const int n1max,const int n2max,const int n3max,
 	  const real h1,const real h2,const real h3,
 	  int nalias,int porder,real acut,real r1,const real alpha,
-	  const bool bSearch,
+	  const gmx_bool bSearch,
 	  real ***ghat,real *ppval,real *zzval,real *eeref,real *qqopt)
 {     
   real box1,box2,box3;
@@ -465,11 +465,11 @@ void calc(bool bSym,bool bVerbose,
   *qqopt = qopt/(EPSILON0*box1*box2*box3);
 }
 
-void calc1D(bool bSym,bool bVerbose,
+void calc1D(gmx_bool bSym,gmx_bool bVerbose,
 	    const int n1max,const int n2max,const int n3max,
 	    const real h1,const real h2,const real h3,
 	    int nalias,int porder,real acut,real r1,const real alpha,
-	    const bool bSearch,
+	    const gmx_bool bSearch,
 	    real ***ghat,real *ppval,real *zzval,real *eeref,real *qqopt)
 {     
   real box1,box2,box3;
@@ -563,8 +563,8 @@ int main(int argc,char *argv[])
   int    nalias,porder;
   real   acut,alpha,r1;
   rvec   beta;
-  bool   bSearch,bConv;
-  /* bool   bNL=FALSE; */
+  gmx_bool   bSearch,bConv;
+  /* gmx_bool   bNL=FALSE; */
   real   ***ghat;
   real   pval,zval,eref,qopt,norm;
   real   alpha0,alpha1,alpha2,alpha3,alptol;
@@ -577,7 +577,7 @@ int main(int argc,char *argv[])
     { efHAT, "-o", "ghat", ffWRITE }
   };
 #define NFILE asize(fnm)
-  static bool bVerbose=FALSE,bCubic=TRUE,bSym=TRUE;
+  static gmx_bool bVerbose=FALSE,bCubic=TRUE,bSym=TRUE;
   static t_pargs pa[] = {
     { "-v",     FALSE, etBOOL, &bVerbose, "Verbose on"},
     { "-cubic", FALSE, etBOOL, &bCubic,   "Force beta to be the same in all directions" },

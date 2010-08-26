@@ -53,13 +53,13 @@
 
 
 
-static bool bOverAllocDD=FALSE;
+static gmx_bool bOverAllocDD=FALSE;
 #ifdef GMX_THREADS
 static tMPI_Thread_mutex_t over_alloc_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
-void set_over_alloc_dd(bool set)
+void set_over_alloc_dd(gmx_bool set)
 {
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&over_alloc_mutex);
@@ -196,7 +196,7 @@ void init_inputrec(t_inputrec *ir)
   memset(ir,0,(size_t)sizeof(*ir));
 }
 
-void stupid_fill_block(t_block *grp,int natom,bool bOneIndexGroup)
+void stupid_fill_block(t_block *grp,int natom,gmx_bool bOneIndexGroup)
 {
   int i;
 
@@ -318,7 +318,7 @@ void done_molblock(gmx_molblock_t *molb)
   }
 }
 
-void done_mtop(gmx_mtop_t *mtop,bool bDoneSymtab)
+void done_mtop(gmx_mtop_t *mtop,gmx_bool bDoneSymtab)
 {
   int i;
 
@@ -543,7 +543,7 @@ void done_state(t_state *state)
   state->cg_gl_nalloc = 0;
 }
 
-static void do_box_rel(t_inputrec *ir,matrix box_rel,matrix b,bool bInit)
+static void do_box_rel(t_inputrec *ir,matrix box_rel,matrix b,gmx_bool bInit)
 {
   int d,d2;
 
@@ -619,7 +619,7 @@ void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra)
     }
 }
 
-void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
+void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo)
 {
   atoms->nr=natoms;
   atoms->nres=0;
@@ -681,7 +681,7 @@ void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
   ri->chainid = chainid;
 }
 
-void free_t_atoms(t_atoms *atoms,bool bFreeNames)
+void free_t_atoms(t_atoms *atoms,gmx_bool bFreeNames)
 {
   int i;
 

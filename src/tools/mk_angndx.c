@@ -119,10 +119,10 @@ static void fill_ft_ind(int nft,int *ft,t_idef *idef,
 
 static void fill_ang(int nft,int *ft,int fac,
 		     int nr[],int *index[],int ft_ind[],t_topology *top,
-		     bool bNoH,real hq)
+		     gmx_bool bNoH,real hq)
 {
   int     f,ftype,i,j,indg,nr_fac;
-  bool    bUse;
+  gmx_bool    bUse;
   t_idef  *idef;
   t_atom  *atom;
   t_iatom *ia;
@@ -210,7 +210,7 @@ int main(int argc,char *argv[])
     "definitions of the angles, dihedrals etc."
   };
   static const char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
-  static bool bH=TRUE;
+  static gmx_bool bH=TRUE;
   static real hq=-1;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, {opt},

@@ -89,7 +89,7 @@ bromacs(char *retstring, int retsize);
 void
 cool_quote(char *retstring, int retsize, int *cqnum);
 
-bool
+gmx_bool
 be_cool(void);
 /* Return TRUE when the user is COOL, FALSE otherwise */
 

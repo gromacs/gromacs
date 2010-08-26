@@ -58,7 +58,7 @@ int main(int argc,char *argv[])
     "dt is the time step, t0 is the starting time, nlevels is the number",
     "of levels for coloring. By default a greyscale colormap is generated."
   };
-  static bool   bCol=FALSE;
+  static gmx_bool   bCol=FALSE;
   static char   *title="Area (nm^2)";
   static real   ssmin=-1,ssmax=-1,t0=0,dt=1;
   static int    nres=1,nframes=1,r0=0,nlevels=20,nskip=0;
@@ -92,7 +92,7 @@ int main(int argc,char *argv[])
   double s;
   real   **ss,lo,hi,s1min,s1max;
   real   *resnr,*t;
-  bool   bCheck=TRUE;
+  gmx_bool   bCheck=TRUE;
   t_rgb  rlo,rhi;
   t_filenm fnm[] = {
     { efOUT, "-f", "area", ffREAD },

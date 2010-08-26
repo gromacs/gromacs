@@ -48,7 +48,7 @@ typedef struct warninp *warninp_t;
 
 
 warninp_t
-init_warning(bool bAllowWarnings,int maxwarning);
+init_warning(gmx_bool bAllowWarnings,int maxwarning);
 /* Initialize the warning data structure.
  * If bAllowWarnings=FALSE, all warnings (calls to warning()) will be
  * transformed into errors, calls to warning_note still produce notes.

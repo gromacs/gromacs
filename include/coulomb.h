@@ -56,7 +56,7 @@ calc_ewaldcoeff(real rc,real dtol);
 
 
 real
-do_ewald(FILE *log,       bool bVerbose,
+do_ewald(FILE *log,       gmx_bool bVerbose,
          t_inputrec *ir,
          rvec x[],        rvec f[],
          real chargeA[],  real chargeB[],
@@ -92,7 +92,7 @@ real
 shift_LRcorrection(FILE *fp,int start,int natoms,
 			       t_commrec *cr,t_forcerec *fr,
 			       real charge[],t_blocka *excl,rvec x[],
-			       bool bOld,matrix box,matrix lrvir);
+			       gmx_bool bOld,matrix box,matrix lrvir);
 /* Calculate the self energy and forces
  * when using long range electrostatics methods.
  * Part of this is a constant, it is computed only once and stored in

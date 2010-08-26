@@ -88,7 +88,7 @@ static void calc_dihs(t_xrama *xr)
   }
 }
 
-bool new_data(t_xrama *xr)
+gmx_bool new_data(t_xrama *xr)
 {
   if (!read_next_x(xr->oenv,xr->traj,&xr->t,xr->natoms,xr->x,xr->box))
     return FALSE;
@@ -154,7 +154,7 @@ static void get_dih(t_xrama *xr,t_atoms *atoms)
 static int search_ff(int thisff[NPP],int ndih,int **ff)
 {
   int  j,k;
-  bool bFound=FALSE;
+  gmx_bool bFound=FALSE;
   
   for(j=0; (j<ndih); j++) {
     bFound=TRUE;

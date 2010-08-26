@@ -47,7 +47,7 @@ extern "C"
 /** Defines the value type of a different selection objects. */
 typedef enum
 {
-    NO_VALUE,           /**< No value; either an error condition or an boolean 
+    NO_VALUE,           /**< No value; either an error condition or an gmx_boolean 
                              parameter. */
     INT_VALUE,          /**< One or more integer values. */
     REAL_VALUE,         /**< One or more real values. */
@@ -93,7 +93,7 @@ typedef struct gmx_ana_selvalue_t
         /** Group value (type \ref GROUP_VALUE). */
         struct gmx_ana_index_t *g;
         /** Boolean value (only parameters of type \ref NO_VALUE); */
-        bool                   *b;
+        gmx_bool                   *b;
     }                           u;
     /*! \brief
      * Number of elements allocated for the value array.

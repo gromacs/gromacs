@@ -44,7 +44,7 @@ int ddglatnr(gmx_domdec_t *dd,int i);
 t_block *dd_charge_groups_global(gmx_domdec_t *dd);
 /* Return a block struct for the charge groups of the whole system */
 
-bool dd_filled_nsgrid_home(gmx_domdec_t *dd);
+gmx_bool dd_filled_nsgrid_home(gmx_domdec_t *dd);
 /* Is the ns grid already filled with the home particles? */
 
 void dd_store_state(gmx_domdec_t *dd,t_state *state);
@@ -66,7 +66,7 @@ real dd_cutoff_mbody(gmx_domdec_t *dd);
 
 real dd_cutoff_twobody(gmx_domdec_t *dd);
 
-bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
+gmx_bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
 /* Return if nodeid in cr->mpi_comm_mysim is a PME-only node */
 
 void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
@@ -97,7 +97,7 @@ init_domain_decomposition(FILE *fplog,
 void dd_init_bondeds(FILE *fplog,
                             gmx_domdec_t *dd,gmx_mtop_t *mtop,
                             gmx_vsite_t *vsite,gmx_constr_t constr,
-                            t_inputrec *ir,bool bBCheck,cginfo_mb_t *cginfo_mb);
+                            t_inputrec *ir,gmx_bool bBCheck,cginfo_mb_t *cginfo_mb);
 /* Initialize data structures for bonded interactions */
 
 void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
@@ -144,7 +144,7 @@ void dd_atom_sum_real(gmx_domdec_t *dd,real v[]);
 void dd_partition_system(FILE            *fplog,
                                 gmx_large_int_t      step,
                                 t_commrec       *cr,
-                                bool            bMasterState,
+                                gmx_bool            bMasterState,
                                 int             nstglobalcomm,
                                 t_state         *state_global,
                                 gmx_mtop_t      *top_global,
@@ -159,7 +159,7 @@ void dd_partition_system(FILE            *fplog,
                                 gmx_constr_t    constr,
                                 t_nrnb          *nrnb,
                                 gmx_wallcycle_t wcycle,
-                                bool            bVerbose);
+                                gmx_bool            bVerbose);
 /* Partition the system over the nodes.
  * step is only used for printing error messages.
  * If bMasterState==TRUE then state_global from the master node is used,
@@ -212,7 +212,7 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
 void dd_make_reverse_top(FILE *fplog,
                                 gmx_domdec_t *dd,gmx_mtop_t *mtop,
                                 gmx_vsite_t *vsite,gmx_constr_t constr,
-                                t_inputrec *ir,bool bBCheck);
+                                t_inputrec *ir,gmx_bool bBCheck);
 
 void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
@@ -238,7 +238,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
 void dd_bonded_cg_distance(FILE *fplog,
                                   gmx_domdec_t *dd,gmx_mtop_t *mtop,
                                   t_inputrec *ir,rvec *x,matrix box,
-                                  bool bBCheck,
+                                  gmx_bool bBCheck,
                                   real *r_2b,real *r_mb);
 
 void write_dd_pdb(const char *fn,gmx_large_int_t step,const char *title,
@@ -258,9 +258,9 @@ real comm_box_frac(ivec dd_nc,real cutoff,gmx_ddbox_t *ddbox);
 real dd_choose_grid(FILE *fplog,
                            t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
                            gmx_mtop_t *mtop,matrix box,gmx_ddbox_t *ddbox,
-                           bool bDynLoadBal,real dlb_scale,
+                           gmx_bool bDynLoadBal,real dlb_scale,
                            real cellsize_limit,real cutoff_dd,
-                           bool bInterCGBondeds,bool bInterCGMultiBody);
+                           gmx_bool bInterCGBondeds,gmx_bool bInterCGMultiBody);
 /* Determines the optimal DD cell setup dd->nc and possibly npmenodes
  * for the system.
  * On the master node returns the actual cellsize limit used.
@@ -269,9 +269,9 @@ real dd_choose_grid(FILE *fplog,
 
 /* In domdec_box.c */
 
-void set_ddbox(gmx_domdec_t *dd,bool bMasterState,t_commrec *cr_sum,
+void set_ddbox(gmx_domdec_t *dd,gmx_bool bMasterState,t_commrec *cr_sum,
                       t_inputrec *ir,matrix box,
-                      bool bCalcUnboundedSize,t_block *cgs,rvec *x,
+                      gmx_bool bCalcUnboundedSize,t_block *cgs,rvec *x,
                       gmx_ddbox_t *ddbox);
 
 void set_ddbox_cr(t_commrec *cr,ivec *dd_nc,
