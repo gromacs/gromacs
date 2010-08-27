@@ -2546,7 +2546,7 @@ which is the parallel version of the \normindex{LINCS} algorithm~\cite{Hess97}
 {(see \ssecref{lincs}).}
 The P-LINCS procedure is illustrated in \figref{plincs}.
 When molecules cross the cell boundaries, atoms in such molecules
-up to $LINCS order + 1$ bonds away are communicated over the cell boundaries.
+up to $LINCS~order + 1$ bonds away are communicated over the cell boundaries.
 Then, the normal LINCS algorithm can be applied to the local bonds
 plus the communicated ones. After this procedure, the local bonds
 are correctly constrained, even though the extra communicated ones are not.
@@ -2599,7 +2599,7 @@ to stop with an error message of missing interactions.
 The range for the bonded interactions is determined from the distance
 between bonded charge-groups in the starting configuration, 10\% is added
 for headroom. For the constraints, the value of $r_{con}$ is determined by
-taking the maximum distance that $LINCS order + 1$ bonds can cover
+taking the maximum distance that $LINCS~order + 1$ bonds can cover
 when they all connect at angles of 120 degrees.
 The actual constraint communication is not limited by $r_{con}$,
 but by the minimum cell size $L_C$, which has the following lower limit:
