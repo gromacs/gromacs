@@ -80,7 +80,7 @@ int gmx_principal(int argc,char *argv[])
     "g_principal calculates the three principal axes of inertia for a group",
     "of atoms.",
   };
-  static bool foo = FALSE;
+  static gmx_bool foo = FALSE;
 
   t_pargs pa[] = {
 	  { "-foo",      FALSE, etBOOL, {&foo}, "Dummy option to avoid empty array" }
@@ -136,7 +136,7 @@ int gmx_principal(int argc,char *argv[])
 
   do
   {
-          gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
 
 	  calc_principal_axes(&top,x,index,gnx,axes,moi);
 

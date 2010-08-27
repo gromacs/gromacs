@@ -37,10 +37,6 @@
 #ifndef _fatal_h
 #define _fatal_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
@@ -85,7 +81,7 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
  * gmx_fatal(FARGS,fmt,...)
  */
 
-extern void
+void
 gmx_fatal_collective(int f_errno,const char *file,int line,
 		     t_commrec *cr,gmx_domdec_t *dd,
 		     const char *fmt,...);
@@ -107,7 +103,7 @@ _invalid_case(const char *fn,int line);
 #define invalid_case() _invalid_case(__FILE__,__LINE__)
 /* Issue a warning stating 'Invalid case in switch' */
   
-extern void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline);
+void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline);
 #define unexpected_eof(fn,line) _unexpected_eof(fn,line,__FILE__,__LINE__)
 
 /* 
@@ -117,21 +113,21 @@ extern void _unexpected_eof(const char *fn,int line,const char *srcfn,int srclin
  * if (debug) fprintf(debug,"%s","Hallo");
  */
 extern FILE *debug;
-extern bool gmx_debug_at;
+extern gmx_bool gmx_debug_at;
 
 void init_debug (const int dbglevel,const char *dbgfile);
   
-extern bool bDebugMode(void);
+gmx_bool bDebugMode(void);
 /* Return TRUE when the program was started in debug mode */
   
 #if (defined __sgi && defined USE_SGI_FPE)
-extern void doexceptions(void);
+void doexceptions(void);
 /* Set exception handlers for debugging */
 #endif
 
   /* warn_str is allowed to be NULL.
    */
-  extern void _range_check(int n,int n_min,int n_max,const char *warn_str,
+  void _range_check(int n,int n_min,int n_max,const char *warn_str,
 			   const char *var,
 			   const char *file,int line);
 
@@ -147,13 +143,13 @@ extern void doexceptions(void);
    * That is n_min is inclusive but not n_max.
    */
 
-  extern char *gmx_strerror(const char *key);
+  char *gmx_strerror(const char *key);
   /* Return error message corresponding to the key.
    * Maybe a multi-line message.
    * The messages are stored in src/gmxlib/fatal.c
    */
   
-  extern void _gmx_error(const char *key,const char *msg,const char *file,int line);
+  void _gmx_error(const char *key,const char *msg,const char *file,int line);
 #define gmx_error(key,msg) _gmx_error(key,msg,__FILE__,__LINE__)
   /* Error msg of type key is generated and the program is 
    * terminated unless and error handle is set (see below)
@@ -181,7 +177,7 @@ set_gmx_error_handler(void (*func)(const char *msg));
    * The string may be a multi-line string.
    */
 
-extern void gmx_warning(const char *fmt,...);
+void gmx_warning(const char *fmt,...);
 /* Print a warning message to stderr.
  * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
  * are allowed as format specifiers.

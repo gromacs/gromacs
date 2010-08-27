@@ -135,7 +135,7 @@ static void plot_coscont(const char *ccfile,int n,int nset,real **val,
   ffclose(fp);
 }
 
-static void regression_analysis(int n,bool bXYdy,
+static void regression_analysis(int n,gmx_bool bXYdy,
                                 real *x,int nset,real **val)
 {
   real S,chi2,a,b,da,db,r=0;
@@ -330,7 +330,7 @@ static real anal_ee(real *parm,real T,real t)
 
 static void estimate_error(const char *eefile,int nb_min,int resol,int n,
                            int nset, double *av,double *sig,real **val,real dt,
-                           bool bFitAc,bool bSingleExpFit,bool bAllowNegLTCorr,
+                           gmx_bool bFitAc,gmx_bool bSingleExpFit,gmx_bool bAllowNegLTCorr,
                            const output_env_t oenv)
 {
     FILE   *fp;
@@ -614,7 +614,7 @@ static void estimate_error(const char *eefile,int nb_min,int resol,int n,
 }
 
 static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
-			 bool bError,real fit_start,real smooth_tail_start,
+			 gmx_bool bError,real fit_start,real smooth_tail_start,
                          const output_env_t oenv)
 {
   const real tol = 1e-8;
@@ -687,7 +687,7 @@ static void filter(real flen,int n,int nset,real **val,real dt,
   sfree(filt);
 }
 
-static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val,
+static void do_fit(FILE *out,int n,gmx_bool bYdy,int ny,real *x0,real **val,
 		   int npargs,t_pargs *ppa,const output_env_t oenv)
 {
   real *c1=NULL,*sig=NULL,*fitparm;
@@ -773,7 +773,7 @@ static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val,
 static void do_ballistic(const char *balFile, int nData,
                          real *t, real **val, int nSet,
                          real balTime, int nBalExp,
-                         bool bDerivative,
+                         gmx_bool bDerivative,
                          const output_env_t oenv)
 {
   double **ctd=NULL, *td=NULL;
@@ -934,15 +934,15 @@ int gmx_analyze(int argc,char *argv[])
     "The complete derivation is given in",
     "B. Hess, J. Chem. Phys. 116:209-217, 2002.[PAR]",
 
-    "Option [TT]-bal[TT] finds and subtracts the ultrafast \"ballistic\"",
+    "Option [TT]-bal[tt] finds and subtracts the ultrafast \"ballistic\"",
     "component from a hydrogen bond autocorrelation function by the fitting",
     "of a sum of exponentials, as described in e.g.",
     "O. Markovitch, J. Chem. Phys. 129:084505, 2008. The fastest term",
     "is the one with the most negative coefficient in the exponential,",
-    "or with [TT]-d[TT], the one with most negative time derivative at time 0.",
-    "[]TT-nbalexp[TT] sets the number of exponentials to fit.[PAR]",
+    "or with [TT]-d[tt], the one with most negative time derivative at time 0.",
+    "[TT]-nbalexp[tt] sets the number of exponentials to fit.[PAR]",
 
-    "Option [TT]-gem[TT] fits bimolecular rate constants ka and kb",
+    "Option [TT]-gem[tt] fits bimolecular rate constants ka and kb",
     "(and optionally kD) to the hydrogen bond autocorrelation function",
     "according to the reversible geminate recombination model. Removal of",
     "the ballistic component first is strongly adviced. The model is presented in",
@@ -967,9 +967,9 @@ int gmx_analyze(int argc,char *argv[])
     "from [TT]g_hbond -ac[tt], and then the same result should be produced."
   };
   static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1,aver_start=0;
-  static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
-  static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
-  static bool bIntegrate=FALSE,bRegression=FALSE,bLuzar=FALSE,bLuzarError=FALSE; 
+  static gmx_bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
+  static gmx_bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
+  static gmx_bool bIntegrate=FALSE,bRegression=FALSE,bLuzar=FALSE,bLuzarError=FALSE; 
   static int  nsets_in=1,d=1,nb_min=4,resol=10, nBalExp=4, nFitPoints=100;
   static real temp=298.15,fit_start=1, fit_end=60, smooth_tail_start=-1, balTime=0.2, diffusion=5e-5,rcut=0.35;
   

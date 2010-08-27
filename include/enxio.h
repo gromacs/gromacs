@@ -36,10 +36,6 @@
 #ifndef _enxio_h
 #define _enxio_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "pbc.h"
@@ -79,7 +75,11 @@ extern "C" {
     enxORI,    /* Instantaneous data for orientation restraints              */
     enxORT,    /* Order tensor(s) for orientation restraints                 */
     enxDISRE,  /* Distance restraint blocks                                  */
-    enxBARHIST,/* BAR histogram */
+
+    enxDHCOLL, /* Data about the free energy blocks in this frame.           */
+    enxDHHIST, /* BAR histogram                                              */
+    enxDH,     /* BAR raw delta H data                                       */
+
     enxNR      /* Total number of extra blocks in the current code,
                 * note that the enxio code can read files written by
 	        * future code which contain more blocks.
@@ -94,7 +94,7 @@ extern "C" {
      has a number of values of a single data type in a .edr file. */
   typedef struct
   {
-      size_t nr;            /* number of items in subblock */
+      int nr;               /* number of items in subblock */
       xdr_datatype type;    /* the block type */
 
       /* the values: pointers for each type */
@@ -107,22 +107,22 @@ extern "C" {
 
       /* the allocated sizes, defined separately. 
          (nonzero sizes can be free()d later): */
-      size_t fval_alloc;
-      size_t dval_alloc;
-      size_t ival_alloc;
-      size_t lval_alloc;
-      size_t cval_alloc;
-      size_t sval_alloc; 
+      int fval_alloc;
+      int dval_alloc;
+      int ival_alloc;
+      int lval_alloc;
+      int cval_alloc;
+      int sval_alloc; 
   } t_enxsubblock;
 
 
   /* the energy file blocks. Each block contains a number of sub-blocks
      of a single type that contain the actual data. */
   typedef struct t_enxblock{
-      int id;                   /* block id, from the enx enums above */
-      size_t nsub;              /* number of subblocks */
-      t_enxsubblock *sub;       /* the subblocks */
-      size_t nsub_alloc;        /* number of allocated subblocks */
+      int id;               /* block id, from the enx enums above */
+      int nsub;             /* number of subblocks */
+      t_enxsubblock *sub;   /* the subblocks */
+      int nsub_alloc;       /* number of allocated subblocks */
   } t_enxblock;
  
 
@@ -131,14 +131,15 @@ extern "C" {
     double   t;	            /* Timestamp of this frame	                     */
     gmx_large_int_t step;   /* MD step	   		                     */
     gmx_large_int_t nsteps; /* The number of steps between frames            */
+    double   dt;            /* The MD time step                              */
     int      nsum;          /* The number of terms for the sums in ener      */
     int      nre;           /* Number of energies			     */
     int      e_size;        /* Size (in bytes) of energies		     */
     int      e_alloc;       /* Allocated size (in elements) of ener          */
     t_energy *ener;         /* The energies                                  */
-    int   nblock;           /* Number of following energy blocks             */
+    int      nblock;        /* Number of following energy blocks             */
     t_enxblock *block;      /* The blocks                                    */
-    size_t   nblock_alloc;  /* The number of blocks allocated                */
+    int      nblock_alloc;  /* The number of blocks allocated                */
   } t_enxframe;
 
   /* file handle */
@@ -163,26 +164,26 @@ extern "C" {
 
 
   /* initialize a pre-allocated frame */
-  extern void init_enxframe(t_enxframe *ef);
+  void init_enxframe(t_enxframe *ef);
   /* delete a frame's memory (except the ef itself) */
-  extern void free_enxframe(t_enxframe *ef);
+  void free_enxframe(t_enxframe *ef);
 
 
-  extern ener_file_t open_enx(const char *fn,const char *mode);
+  ener_file_t open_enx(const char *fn,const char *mode);
 
-  extern t_fileio *enx_file_pointer(const ener_file_t ef);
+  t_fileio *enx_file_pointer(const ener_file_t ef);
 
-  extern void close_enx(ener_file_t ef);
+  void close_enx(ener_file_t ef);
   
-  extern void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);
+  void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);
   
-  extern void free_enxnms(int n,gmx_enxnm_t *nms);
+  void free_enxnms(int n,gmx_enxnm_t *nms);
   /* Frees nms and all strings in it */
 
-  extern bool do_enx(ener_file_t ef,t_enxframe *fr);
+  gmx_bool do_enx(ener_file_t ef,t_enxframe *fr);
   /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
-  extern void get_enx_state(const char *fn, real t,
+  void get_enx_state(const char *fn, real t,
 			    gmx_groups_t *groups, t_inputrec *ir,
 			    t_state *state);
   /*
@@ -195,7 +196,7 @@ extern "C" {
   /* block funtions */
 
   /* allocate n blocks to a frame (if neccesary). Don't touch existing blocks */
-  void add_blocks_enxframe(t_enxframe *ef, size_t n);
+  void add_blocks_enxframe(t_enxframe *ef, int n);
 
   /* find a block by id number; if prev!=NULL, it searches from 
      that block's next block. 
@@ -205,7 +206,7 @@ extern "C" {
 
    /* allocate n subblocks to a block (if neccesary). Don't touch existing 
       subbblocks. */
-  void add_subblocks_enxblock(t_enxblock *eb, size_t n);
+  void add_subblocks_enxblock(t_enxblock *eb, int n);
 
 
   

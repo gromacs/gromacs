@@ -81,13 +81,13 @@ struct gmx_ana_selcollection_t
     /** Default output position type for selections. */
     const char                 *spost;
     /** TRUE if \ref POS_MASKONLY should be used for output position evaluation. */
-    bool                        bMaskOnly;
+    gmx_bool                        bMaskOnly;
     /** TRUE if velocities should be evaluated for output positions. */
-    bool                        bVelocities;
+    gmx_bool                        bVelocities;
     /** TRUE if forces should be evaluated for output positions. */
-    bool                        bForces;
+    gmx_bool                        bForces;
     /** TRUE if debugging output should be printed during compilation. */
-    bool                        bDebugCompile;
+    gmx_bool                        bDebugCompile;
 
     /** Root of the selection element tree. */
     struct t_selelem           *root;

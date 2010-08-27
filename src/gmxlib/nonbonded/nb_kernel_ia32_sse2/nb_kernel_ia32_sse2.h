@@ -30,6 +30,9 @@
 
 #include "../nb_kerneltype.h"
 
+#include "nb_kernel_allvsall_sse2_double.h"
+#include "nb_kernel_allvsallgb_sse2_double.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

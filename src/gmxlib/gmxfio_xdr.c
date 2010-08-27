@@ -63,9 +63,9 @@
 
 
 /* file type functions */
-static bool do_xdrread(t_fileio *fio, void *item, int nitem, int eio, 
+static gmx_bool do_xdrread(t_fileio *fio, void *item, int nitem, int eio, 
                        const char *desc, const char *srcfile, int line);
-static bool do_xdrwrite(t_fileio *fio, const void *item, int nitem, int eio, 
+static gmx_bool do_xdrwrite(t_fileio *fio, const void *item, int nitem, int eio, 
                         const char *desc, const char *srcfile, int line);
 
 
@@ -74,7 +74,7 @@ const t_iotype xdr_iotype={do_xdrread, do_xdrwrite};
 
 #ifdef USE_XDR
 
-static bool do_xdr(t_fileio *fio, void *item, int nitem, int eio, 
+static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio, 
                    const char *desc, const char *srcfile, int line)
 {
     unsigned char ucdum, *ucptr;
@@ -251,14 +251,14 @@ static bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
 }
 
 
-static bool do_xdrread(t_fileio *fio, void *item, int nitem, int eio, 
+static gmx_bool do_xdrread(t_fileio *fio, void *item, int nitem, int eio, 
                        const char *desc, const char *srcfile, int line)
 {
     return do_xdr(fio, item, nitem, eio, desc, srcfile, line);
 }
 
 
-static bool do_xdrwrite(t_fileio *fio, const void *item, int nitem, int eio, 
+static gmx_bool do_xdrwrite(t_fileio *fio, const void *item, int nitem, int eio, 
                         const char *desc, const char *srcfile, int line)
 {
     void *it=(void*)item; /* ugh.. */

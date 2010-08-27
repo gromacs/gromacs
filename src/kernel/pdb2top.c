@@ -75,7 +75,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
 {
     int  j,k,nmiss;
     char *name;
-    bool bFound, bRet;
+    gmx_bool bFound, bRet;
     
     nmiss = 0;
     for (j=0; j<rp->natom; j++)
@@ -84,7 +84,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
         bFound=FALSE;
         for (k=i0; k<i; k++) 
         {
-            bFound = (bFound || !strcasecmp(*(at->atomname[k]),name));
+            bFound = (bFound || !gmx_strcasecmp(*(at->atomname[k]),name));
         }
         if (!bFound)
         {
@@ -94,7 +94,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
                     name,*(at->resinfo[resind].name),at->resinfo[resind].nr);
             if (name[0]=='H' || name[0]=='h')
             {
-                fprintf(stderr,"         You might need to add atom %s to the hydrogen database of buidling block %s\n"
+                fprintf(stderr,"         You might need to add atom %s to the hydrogen database of building block %s\n"
                         "         in the file %s.hdb (see the manual)\n",
                         name,*(at->resinfo[resind].rtp),rp->filebase);
             }
@@ -105,7 +105,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
     return nmiss;
 }
 
-bool is_int(double x)
+gmx_bool is_int(double x)
 {
   const double tol = 1e-4;
   int   ix;
@@ -132,9 +132,9 @@ choose_ff(const char *ffsel,
           char *ffdir, int ffdir_maxlen)
 {
     int  nff;
-    char **ffdirs,**ffs,*ptr;
+    char **ffdirs,**ffs,**ffs_dir,*ptr;
     int  i,j,sel;
-    char buf[STRLEN],**desc,*doc_dir;
+    char buf[STRLEN],**desc;
     FILE *fp;
     char *pret;
 
@@ -150,18 +150,26 @@ choose_ff(const char *ffsel,
 
     /* Store the force field names in ffs */
     snew(ffs,nff);
+    snew(ffs_dir,nff);
     for(i=0; i<nff; i++)
     {
         /* Remove the path from the ffdir name */
         ptr = strrchr(ffdirs[i],DIR_SEPARATOR);
-        if (ptr == 0)
+        if (ptr == NULL)
         {
             ffs[i] = strdup(ffdirs[i]);
+            ffs_dir[i] = low_gmxlibfn(ffdirs[i],FALSE,FALSE);
+            if (ffs_dir[i] == NULL)
+            {
+                gmx_fatal(FARGS,"Can no longer find file '%s'",ffdirs[i]);
+            }
         }
         else
         {
             ffs[i] = strdup(ptr+1);
+            ffs_dir[i] = strdup(ffdirs[i]);
         }
+        ffs_dir[i][strlen(ffs_dir[i])-strlen(ffs[i])-1] = '\0';
         /* Remove the extension from the ffdir name */
         ffs[i][strlen(ffs[i])-strlen(fflib_forcefield_dir_ext())] = '\0';
     }
@@ -173,6 +181,10 @@ choose_ff(const char *ffsel,
         {
             if (strcmp(ffs[i],ffsel) == 0)
             {
+                if (sel >= 0)
+                {
+                    gmx_fatal(FARGS,"There are multiple force field directories in your path with the name '%s'. Run without the -ff switch and select the force field interactively.",ffsel);
+                }
                 sel = i;
             }
         }
@@ -186,30 +198,34 @@ choose_ff(const char *ffsel,
         snew(desc,nff);
         for(i=0; (i<nff); i++)
         {
-            sprintf(buf,"%s%c%s",
-                    ffdirs[i],DIR_SEPARATOR,fflib_forcefield_doc());
-            doc_dir = low_gmxlibfn(buf,FALSE);
-            if (doc_dir != NULL)
+            sprintf(buf,"%s%c%s%s%c%s",
+                    ffs_dir[i],DIR_SEPARATOR,
+                    ffs[i],fflib_forcefield_dir_ext(),DIR_SEPARATOR,
+                    fflib_forcefield_doc());
+            if (gmx_fexist(buf))
             {
                 /* We don't use fflib_open, because we don't want printf's */
-                fp = ffopen(doc_dir,"r");
+                fp = ffopen(buf,"r");
                 snew(desc[i],STRLEN);
                 get_a_line(fp,desc[i],STRLEN);
                 ffclose(fp);
-                sfree(doc_dir);
             }
             else
             {
                 desc[i] = strdup(ffs[i]);
             }
         }
+        /* Order force fields from the same dir alphabetically
+         * and put deprecated force fields at the end.
+         */
         for(i=0; (i<nff); i++)
         {
             for(j=i+1; (j<nff); j++)
             {
-                if ((desc[i][0] == '[' && desc[j][0] != '[') ||
-                    ((desc[i][0] == '[' || desc[j][0] != '[') &&
-                     strcasecmp(desc[i],desc[j]) > 0))
+                if (strcmp(ffs_dir[i],ffs_dir[j]) == 0 &&
+                    ((desc[i][0] == '[' && desc[j][0] != '[') ||
+                     ((desc[i][0] == '[' || desc[j][0] != '[') &&
+                      gmx_strcasecmp(desc[i],desc[j]) > 0)))
                 {
                     swap_strings(ffdirs,i,j);
                     swap_strings(ffs   ,i,j);
@@ -221,6 +237,10 @@ choose_ff(const char *ffsel,
         printf("\nSelect the Force Field:\n");
         for(i=0; (i<nff); i++)
         {
+            if (i == 0 || strcmp(ffs_dir[i-1],ffs_dir[i]) != 0)
+            {
+                printf("From '%s':\n",ffs_dir[i]);
+            }
             printf("%2d: %s\n",i+1,desc[i]);
             sfree(desc[i]);
         }
@@ -261,9 +281,11 @@ choose_ff(const char *ffsel,
     {
         sfree(ffdirs[i]);
         sfree(ffs[i]);
+        sfree(ffs_dir[i]);
     }
     sfree(ffdirs);
     sfree(ffs);
+    sfree(ffs_dir);
 }
 
 void choose_watermodel(const char *wmsel,const char *ffdir,
@@ -322,7 +344,7 @@ void choose_watermodel(const char *wmsel,const char *ffdir,
         }
     }
     fclose(fp);
-    fprintf(stderr,"%2d: %s\n",nwm,"None");
+    fprintf(stderr,"%2d: %s\n",nwm+1,"None");
 
     do
     {
@@ -357,7 +379,7 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
 {
   int     i,j,prevresind,resind,i0,prevcg,cg,curcg;
   char    *name;
-  bool    bProt, bNterm;
+  gmx_bool    bProt, bNterm;
   double  qt;
   int     nmissat;
   gmx_residuetype_t rt;
@@ -438,7 +460,7 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 }
 
 void print_top_comment(FILE *out,const char *filename,
-                       const char *generator,bool bITP)
+                       const char *generator,gmx_bool bITP)
 {
   char tmp[256]; 
 
@@ -450,7 +472,7 @@ void print_top_comment(FILE *out,const char *filename,
 }
 
 void print_top_header(FILE *out,const char *filename, 
-                      const char *title,bool bITP,const char *ffdir,real mHmult)
+                      const char *title,gmx_bool bITP,const char *ffdir,real mHmult)
 {
     print_top_comment(out,filename,title,bITP);
     
@@ -536,7 +558,7 @@ void print_top_mols(FILE *out,
 }
 
 void write_top(FILE *out, char *pr,char *molname,
-               t_atoms *at,bool bRTPresname,
+               t_atoms *at,gmx_bool bRTPresname,
                int bts[],t_params plist[],t_excls excls[],
                gpp_atomtype_t atype,int *cgnr, int nrexcl)
      /* NOTE: nrexcl is not the size of *excl! */
@@ -574,7 +596,7 @@ void write_top(FILE *out, char *pr,char *molname,
 static atom_id search_res_atom(const char *type,int resind,
 			       int natom,t_atom at[],
 			       char ** const *aname,
-			       const char *bondtype,bool bAllowMissing)
+			       const char *bondtype,gmx_bool bAllowMissing)
 {
   int i;
 
@@ -586,7 +608,7 @@ static atom_id search_res_atom(const char *type,int resind,
 }
 
 static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
-		       int nssbonds,t_ssbond *ssbonds,bool bAllowMissing)
+		       int nssbonds,t_ssbond *ssbonds,gmx_bool bAllowMissing)
 {
   int     i,ri,rj;
   atom_id ai,aj;
@@ -605,7 +627,7 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
   }
 }
 
-static bool inter_res_bond(const t_rbonded *b)
+static gmx_bool inter_res_bond(const t_rbonded *b)
 {
     return (b->AI[0] == '-' || b->AI[0] == '+' ||
             b->AJ[0] == '-' || b->AJ[0] == '+');
@@ -615,7 +637,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                      int natoms, t_atom atom[], char **aname[], 
                      int nres, rvec x[], 
                      real long_bond_dist, real short_bond_dist,
-                     bool bAllowMissing)
+                     gmx_bool bAllowMissing)
 {
   int     resind,i,j,k;
   atom_id ai,aj;
@@ -730,7 +752,7 @@ static void clean_bonds(t_params *ps)
     fprintf(stderr,"No bonds\n");
 }
 
-void print_sums(t_atoms *atoms, bool bSystem)
+void print_sums(t_atoms *atoms, gmx_bool bSystem)
 {
   double m,qtot;
   int    i;
@@ -835,14 +857,15 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 			       int nres, t_resinfo *resinfo, 
 			       int nterpairs,
 			       t_hackblock **ntdb, t_hackblock **ctdb,
-			       int *rn, int *rc)
+			       int *rn, int *rc, char *ffname)
 {
   int i, j, k, l;
+  char *key;
   t_restp *res;
   char buf[STRLEN];
   const char *Hnum="123456";
   int tern,terc;
-  bool bN,bC,bRM;
+  gmx_bool bN,bC,bRM;
 
   snew(*hb,nres);
   snew(*restp,nres);
@@ -858,7 +881,17 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
   /* then the whole rtp */
   for(i=0; i < nres; i++) {
-    res = search_rtp(*resinfo[i].rtp,nrtp,rtp);
+    /* Here we allow a mismatch of one character when looking for the rtp entry.
+     * For such a mismatch there should be only one mismatching name.
+     * This is mainly useful for small molecules such as ions.
+     * Note that this will usually not work for protein, DNA and RNA,
+     * since there the residue names should be listed in residuetypes.dat
+     * and an error will have been generated earlier in the process.
+     */
+    key = *resinfo[i].rtp;
+    snew(resinfo[i].rtp,1);
+    *resinfo[i].rtp = search_rtp(key,nrtp,rtp);
+    res = get_restp(*resinfo[i].rtp,nrtp,rtp);
     copy_t_restp(res, &(*restp)[i]);
 
     /* Check that we do not have different bonded types in one molecule */
@@ -880,11 +913,13 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
     if (bRM && ((tern >= 0 && ntdb[tern] == NULL) ||
                 (terc >= 0 && ctdb[terc] == NULL))) {
-        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Edit a .n.tdb and/or .c.tdb file.");
+        gmx_fatal(FARGS,"At least one terminus has a dangling bond, and the force field does\nnot provide suitable terminal entries or files. %s",
+                  0 == gmx_strncasecmp("AMBER", ffname, 5) ? "With AMBER force fields,\nuse the terminus-specific residue names, eg. NALA, CVAL."
+                  : "Edit a .n.tdb and/or .c.tdb file.");
     }
     if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
                 (terc >= 0 && ctdb[terc]->nhack == 0))) {
-        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends. Select a proper terminal entry.");
+        gmx_fatal(FARGS,"At least one terminus has a dangling bond. Select a proper terminal entry.");
     }
   }
   
@@ -973,14 +1008,14 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
     }
 }
 
-static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
+static gmx_bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
 {
 
     if (hack->nr == 1)
     {
         *nr = 0;
         
-        return (strcasecmp(anm,hack->nname) == 0);
+        return (gmx_strcasecmp(anm,hack->nname) == 0);
     }
     else
     {
@@ -999,14 +1034,14 @@ static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
         else
         {
             return (strlen(anm) == strlen(hack->nname) + 1 &&
-                    strncasecmp(anm,hack->nname,strlen(hack->nname)) == 0);
+                    gmx_strncasecmp(anm,hack->nname,strlen(hack->nname)) == 0);
         }
     }
 }
 
-static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
+static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
                                           t_restp *rptr,t_hackblock *hbr,
-                                          bool bVerbose)
+                                          gmx_bool bVerbose)
 {
     int  resnr;
     int  i,j,k;
@@ -1014,8 +1049,8 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
     int  anmnr;
     char *start_at,buf[STRLEN];
     int  start_nr;
-    bool bReplaceReplace,bFoundInAdd;
-    bool bDeleted;
+    gmx_bool bReplaceReplace,bFoundInAdd;
+    gmx_bool bDeleted;
 
     oldnm = *pdba->atomname[atind];
     resnr = pdba->resinfo[pdba->atom[atind].resind].nr;
@@ -1024,7 +1059,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
     for(j=0; j<hbr->nhack; j++)
     {
         if (hbr->hack[j].oname != NULL && hbr->hack[j].nname != NULL &&
-            strcasecmp(oldnm,hbr->hack[j].oname) == 0)
+            gmx_strcasecmp(oldnm,hbr->hack[j].oname) == 0)
         {
             /* This is a replace entry. */
             /* Check if we are not replacing a replaced atom. */
@@ -1032,7 +1067,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
             for(k=0; k<hbr->nhack; k++) {
                 if (k != j &&
                     hbr->hack[k].oname != NULL && hbr->hack[k].nname != NULL &&
-                    strcasecmp(hbr->hack[k].nname,hbr->hack[j].oname) == 0)
+                    gmx_strcasecmp(hbr->hack[k].nname,hbr->hack[j].oname) == 0)
                 {
                     /* The replace in hack[j] replaces an atom that
                      * was already replaced in hack[k], we do not want
@@ -1051,7 +1086,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
             newnm = hbr->hack[j].nname;
             for(k=0; k<rptr->natom; k++)
             {
-                if (strcasecmp(newnm,*rptr->atomname[k]) == 0)
+                if (gmx_strcasecmp(newnm,*rptr->atomname[k]) == 0)
                 {
                     break;
                 }
@@ -1083,7 +1118,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
                         }
                         for(start_nr=0; start_nr<rptr->natom; start_nr++)
                         {
-                            if (strcasecmp(start_at,(*rptr->atomname[start_nr])) == 0)
+                            if (gmx_strcasecmp(start_at,(*rptr->atomname[start_nr])) == 0)
                             {
                                 break;
                             }
@@ -1120,14 +1155,14 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
             *pdba->atomname[atind] = strdup(newnm);
         }
         else if (hbr->hack[j].oname != NULL && hbr->hack[j].nname == NULL &&
-                 strcasecmp(oldnm,hbr->hack[j].oname) == 0)
+                 gmx_strcasecmp(oldnm,hbr->hack[j].oname) == 0)
         {
             /* This is a delete entry, check if this atom is present
              * in the rtp entry of this residue.
              */
             for(k=0; k<rptr->natom; k++)
             {
-                if (strcasecmp(oldnm,*rptr->atomname[k]) == 0)
+                if (gmx_strcasecmp(oldnm,*rptr->atomname[k]) == 0)
                 {
                     break;
                 }
@@ -1163,7 +1198,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
     
 void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
                               t_atoms *pdba,rvec *x,
-                              bool bVerbose)
+                              gmx_bool bVerbose)
 {
     int  i,j,k;
     char *oldnm,*newnm;
@@ -1173,7 +1208,7 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
     int  anmnr;
     char *start_at,buf[STRLEN];
     int  start_nr;
-    bool bFoundInAdd;
+    gmx_bool bFoundInAdd;
     
     for(i=0; i<pdba->nr; i++)
     {
@@ -1182,7 +1217,7 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
         rptr  = &restp[pdba->atom[i].resind];
         for(j=0; (j<rptr->natom); j++)
         {
-            if (strcasecmp(oldnm,*(rptr->atomname[j])) == 0)
+            if (gmx_strcasecmp(oldnm,*(rptr->atomname[j])) == 0)
             {
                 break;
             }
@@ -1268,14 +1303,14 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
              int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
-             int *rn, int *rc, bool bAllowMissing,
-             bool bVsites, bool bVsiteAromatics,
-             const char *ff, const char *ffdir, bool bAddCWD,
+             int *rn, int *rc, gmx_bool bAllowMissing,
+             gmx_bool bVsites, gmx_bool bVsiteAromatics,
+             const char *ff, const char *ffdir,
              real mHmult,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
-             bool bDeuterate, bool bChargeGroups, bool bCmap,
-             bool bRenumRes,bool bRTPresname)
+             gmx_bool bDeuterate, gmx_bool bChargeGroups, gmx_bool bCmap,
+             gmx_bool bRenumRes,gmx_bool bRTPresname)
 {
     /*
   t_hackblock *hb;
@@ -1326,7 +1361,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* determine which atoms will be vsites and add dummy masses 
        also renumber atom numbers in plist[0..F_NRE]! */
     do_vsites(nrtp, rtp, atype, atoms, tab, x, plist, 
-              &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir, bAddCWD);
+              &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir);
   }
   
   /* Make Angles and Dihedrals */

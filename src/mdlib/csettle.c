@@ -172,7 +172,7 @@ void settle_proj(FILE *fp,
                  gmx_settledata_t settled,int econq,
                  int nsettle, t_iatom iatoms[],rvec x[],
                  rvec *der,rvec *derp,
-                 bool bCalcVir,tensor rmdder,t_vetavars *vetavar)
+                 gmx_bool bCalcVir,tensor rmdder,t_vetavars *vetavar)
 {
     /* Settle for projection out constraint components
      * of derivatives of the coordinates.
@@ -376,7 +376,7 @@ static int xshake(real b4[], real after[], real dOH, real dHH, real mO, real mH)
 
 void csettle(gmx_settledata_t settled,
              int nsettle, t_iatom iatoms[],real b4[], real after[],
-             real invdt,real *v,bool bCalcVir,tensor rmdr,int *error,t_vetavars *vetavar)
+             real invdt,real *v,gmx_bool bCalcVir,tensor rmdr,int *error,t_vetavars *vetavar)
 {
     /* ***************************************************************** */
     /*                                                               ** */

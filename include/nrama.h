@@ -36,10 +36,6 @@
 #ifndef _nrama_h
 #define _nrama_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 #include "statutil.h"
 #include "mshift.h"
@@ -49,7 +45,7 @@ extern "C" {
 #endif
 
 typedef struct {
-  bool bShow;
+  gmx_bool bShow;
   char *label;
   int  iphi,ipsi; /* point in the dih array of xr... */
 } t_phipsi;
@@ -77,10 +73,10 @@ typedef struct {
   output_env_t oenv;
 } t_xrama;
 
-extern t_topology *init_rama(const output_env_t oenv, const char *infile,
+t_topology *init_rama(const output_env_t oenv, const char *infile,
                              const char *topfile, t_xrama *xr,int mult);
 
-extern bool new_data(t_xrama *xr);
+gmx_bool new_data(t_xrama *xr);
 
 #ifdef __cplusplus
 }

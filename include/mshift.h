@@ -36,51 +36,47 @@
 #ifndef _mshift_h
 #define _mshift_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern t_graph *mk_graph(FILE *fplog,
+t_graph *mk_graph(FILE *fplog,
 			 t_idef *idef,int at_start,int at_end,
-			 bool bShakeOnly,bool bSettle);
+			 gmx_bool bShakeOnly,gmx_bool bSettle);
 /* Build a graph from an idef description. The graph can be used
  * to generate mol-shift indices.
  * If bShakeOnly, only the connections in the shake list are used.
  * If bSettle && bShakeOnly the settles are used too.
  */
 
-extern void mk_graph_ilist(FILE *fplog,
+void mk_graph_ilist(FILE *fplog,
 			   t_ilist *ilist,int at_start,int at_end,
-			   bool bShakeOnly,bool bSettle,
+			   gmx_bool bShakeOnly,gmx_bool bSettle,
 			   t_graph *g);
 /* As mk_graph, but takes t_ilist iso t_idef and does not allocate g */
 
 
-extern void done_graph(t_graph *g);
+void done_graph(t_graph *g);
 /* Free the memory in g */
  
-extern void p_graph(FILE *log,const char *title,t_graph *g);
+void p_graph(FILE *log,const char *title,t_graph *g);
 /* Print a graph to log */
 
-extern void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[]);
+void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[]);
 /* Calculate the mshift codes, based on the connection graph in g. */
 
-extern void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
+void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
 /* Add the shift vector to x, and store in x_s (may be same array as x) */
 
-extern void shift_self(t_graph *g,matrix box,rvec x[]);
+void shift_self(t_graph *g,matrix box,rvec x[]);
 /* Id. but in place */
 
-extern void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
+void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
 /* Subtract the shift vector from x_s, and store in x (may be same array) */
 
-extern void unshift_self(t_graph *g,matrix box,rvec x[]);
+void unshift_self(t_graph *g,matrix box,rvec x[]);
 /* Id, but in place */
 
 #ifdef __cplusplus

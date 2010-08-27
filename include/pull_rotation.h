@@ -99,7 +99,7 @@ extern void dd_make_local_rotation_groups(gmx_domdec_t *dd,t_rot *rot,t_mdatoms 
  *                          local arrays have to be updated (masses, shifts)
  */
 extern void do_rotation(t_commrec *cr,t_inputrec *ir,matrix box,rvec x[],real t,
-        int step,gmx_wallcycle_t wcycle,bool bNS);
+        int step,gmx_wallcycle_t wcycle,gmx_bool bNS);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.

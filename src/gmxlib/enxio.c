@@ -50,21 +50,23 @@
          Please keep it that way. */
 
 /* This number should be increased whenever the file format changes! */
-static const int enx_version = 4;
+static const int enx_version = 5;
 
 const char *enx_block_id_name[] = {
     "Averaged orientation restraints",
     "Instantaneous orientation restraints",
     "Orientation restraint order tensor(s)",
     "Distance restraints",
-    "BAR histogram"
+    "Free energy data",
+    "BAR histogram",
+    "Delta H raw data"
 };
 
 
 /* Stuff for reading pre 4.1 energy files */
 typedef struct {
-    bool     bOldFileOpen;   /* Is this an open old file? */
-    bool     bReadFirstStep; /* Did we read the first step? */
+    gmx_bool     bOldFileOpen;   /* Is this an open old file? */
+    gmx_bool     bReadFirstStep; /* Did we read the first step? */
     int      first_step;     /* First step in the energy file */
     int      step_prev;      /* Previous step */
     int      nsum_prev;      /* Previous step sum length */
@@ -135,12 +137,14 @@ static void enxsubblock_free(t_enxsubblock *sb)
     }
     if (sb->sval_alloc)
     {
-        size_t i;
+        int i;
 
         for(i=0;i<sb->sval_alloc;i++)
         {
             if (sb->sval[i])
+            {
                 free(sb->sval[i]);
+            }
         }
         free(sb->sval);
         sb->sval_alloc=0;
@@ -192,11 +196,13 @@ static void enxsubblock_alloc(t_enxsubblock *sb)
         case xdr_datatype_string:
             if (sb->nr > sb->sval_alloc)
             {
-                size_t i;
+                int i;
 
                 srenew(sb->sval, sb->nr);
                 for(i=sb->sval_alloc;i<sb->nr;i++)
+                {
                     sb->sval[i]=NULL;
+                }
                 sb->sval_alloc=sb->nr;
             }
             break;
@@ -217,7 +223,7 @@ static void enxblock_free(t_enxblock *eb)
 {
     if (eb->nsub_alloc>0)
     {
-        size_t i;
+        int i;
         for(i=0;i<eb->nsub_alloc;i++)
         {
             enxsubblock_free(&(eb->sub[i]));
@@ -246,24 +252,28 @@ void init_enxframe(t_enxframe *fr)
 
 void free_enxframe(t_enxframe *fr)
 {
-  size_t b;
+  int b;
 
   if (fr->e_alloc)
+  {
     sfree(fr->ener);
+  }
   for(b=0; b<fr->nblock_alloc; b++)
+  {
       enxblock_free(&(fr->block[b]));
+  }
   free(fr->block);
 }
 
-void add_blocks_enxframe(t_enxframe *fr, size_t n)
+void add_blocks_enxframe(t_enxframe *fr, int n)
 {
     fr->nblock=n;
     if (n > fr->nblock_alloc)
     {
-        size_t b;
+        int b;
 
         srenew(fr->block, n);
-        for(b=fr->nblock_alloc;b<(size_t)fr->nblock;b++)
+        for(b=fr->nblock_alloc;b<fr->nblock;b++)
         {
             enxblock_init(&(fr->block[b]));
         }
@@ -288,12 +298,12 @@ t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev)
     return NULL;
 }
 
-void add_subblocks_enxblock(t_enxblock *eb, size_t n)
+void add_subblocks_enxblock(t_enxblock *eb, int n)
 {
     eb->nsub=n;
     if (eb->nsub > eb->nsub_alloc)
     {
-        size_t b;
+        int b;
 
         srenew(eb->sub, n);
         for(b=eb->nsub_alloc; b<n; b++)
@@ -305,7 +315,7 @@ void add_subblocks_enxblock(t_enxblock *eb, size_t n)
 }
 
 
-static void edr_strings(XDR *xdr,bool bRead,int file_version,
+static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
                         int n,gmx_enxnm_t **nms)
 {
     int  i;
@@ -364,7 +374,7 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
 {
     int  magic=-55555;
     XDR  *xdr;
-    bool bRead = gmx_fio_getread(ef->fio);
+    gmx_bool bRead = gmx_fio_getread(ef->fio);
     int  file_version;
     int  i;
    
@@ -415,13 +425,13 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
     edr_strings(xdr,bRead,file_version,*nre,nms);
 }
 
-static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
-                       int nre_test,bool *bWrongPrecision,bool *bOK)
+static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
+                       int nre_test,gmx_bool *bWrongPrecision,gmx_bool *bOK)
 {
     int  magic=-7777777;
     real r;
     int  b,i,zero=0,dum=0;
-    bool bRead = gmx_fio_getread(ef->fio);
+    gmx_bool bRead = gmx_fio_getread(ef->fio);
     int  tempfix_nr=0;
     int  ndisre=0;
     int  startb=0;
@@ -485,11 +495,19 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         }
         if (*file_version >= 3)
         {
-            gmx_fio_do_gmx_large_int(ef->fio, fr->nsteps);
+            if (!gmx_fio_do_gmx_large_int(ef->fio, fr->nsteps)) *bOK = FALSE;
         }
         else
         {
             fr->nsteps = max(1,fr->nsum);
+        }
+        if (*file_version >= 5)
+        {
+            if (!gmx_fio_do_double(ef->fio, fr->dt)) *bOK = FALSE;
+        }
+        else
+        {
+            fr->dt = 0;
         }
     }
     if (!gmx_fio_do_int(ef->fio, fr->nre))     *bOK = FALSE;
@@ -560,22 +578,22 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
                     gmx_incons("Writing an old version .edr file the wrong subblock type");
                 }
             }
-            nrint=(int)(fr->block[b].sub[0].nr);
+            nrint = fr->block[b].sub[0].nr;
             
             if (!gmx_fio_do_int(ef->fio, nrint))
             {
                 *bOK = FALSE;
             }
-            fr->block[b].id=(int)(b-startb);
-            fr->block[b].sub[0].nr=nrint;
-            fr->block[b].sub[0].type=dtreal;
+            fr->block[b].id          = b - startb;
+            fr->block[b].sub[0].nr   = nrint;
+            fr->block[b].sub[0].type = dtreal;
         }
         else
         {
             int i;
             /* in the new version files, the block header only contains
                the ID and the number of subblocks */
-            int nsub=(gmx_large_int_t)fr->block[b].nsub;
+            int nsub=fr->block[b].nsub;
             *bOK = *bOK && gmx_fio_do_int(ef->fio, fr->block[b].id);
             *bOK = *bOK && gmx_fio_do_int(ef->fio, nsub);
 
@@ -587,14 +605,12 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             for(i=0;i<nsub;i++)
             {
                 t_enxsubblock *sub=&(fr->block[b].sub[i]); /* shortcut */
-                gmx_large_int_t nr=(gmx_large_int_t)sub->nr;
                 int typenr=sub->type;
 
                 *bOK=*bOK && gmx_fio_do_int(ef->fio, typenr);
-                *bOK=*bOK && gmx_fio_do_gmx_large_int(ef->fio, nr);
+                *bOK=*bOK && gmx_fio_do_int(ef->fio, sub->nr);
 
-                sub->nr=(size_t)nr;
-                sub->type=(xdr_datatype)typenr;
+                sub->type = (xdr_datatype)typenr;
             }
         }
     }
@@ -625,6 +641,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         
         fr->nsum   = fr->step - ef->eo.first_step + 1;
         fr->nsteps = fr->step - ef->eo.step_prev;
+        fr->dt     = 0;
     }
 	
     return *bOK;
@@ -651,12 +668,12 @@ void close_enx(ener_file_t ef)
     }
 }
 
-static bool empty_file(const char *fn)
+static gmx_bool empty_file(const char *fn)
 {
     FILE *fp;
     char dum;
     int  ret;
-    bool bEmpty;
+    gmx_bool bEmpty;
     
     fp = gmx_fio_fopen(fn,"r");
     ret = fread(&dum,sizeof(dum),1,fp);
@@ -673,7 +690,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
     gmx_enxnm_t *nms=NULL;
     int        file_version=-1;
     t_enxframe *fr;
-    bool       bWrongPrecision,bDum=TRUE;
+    gmx_bool       bWrongPrecision,bDum=TRUE;
     struct ener_file *ef;
 
     snew(ef,1);
@@ -804,11 +821,11 @@ static void convert_full_sums(ener_old_t *ener_old,t_enxframe *fr)
     ener_old->step_prev = fr->step;
 }
 
-bool do_enx(ener_file_t ef,t_enxframe *fr)
+gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
 {
     int       file_version=-1;
     int       i,b;
-    bool      bRead,bOK,bOK1,bSane;
+    gmx_bool      bRead,bOK,bOK1,bSane;
     real      tmp1,tmp2,rdum;
     char      buf[22];
     /*int       d_size;*/
@@ -921,8 +938,8 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
     for(b=0; b<fr->nblock; b++)
     {
         /* now read the subblocks. */
-        size_t nsub=fr->block[b].nsub; /* shortcut */
-        size_t i;
+        int nsub=fr->block[b].nsub; /* shortcut */
+        int i;
 
         for(i=0;i<nsub;i++)
         {

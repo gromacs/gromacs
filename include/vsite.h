@@ -36,10 +36,6 @@
 #ifndef _vsite_h
 #define _vsite_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "typedefs.h"
 
@@ -66,15 +62,15 @@ typedef struct {
   int  ***vsite_pbc_molt;     /* The pbc atoms for intercg vsites        */
   int  **vsite_pbc_loc;       /* The local pbc atoms                     */
   int  *vsite_pbc_loc_nalloc;
-  bool bPDvsitecomm;          /* Do we need vsite communication with PD? */
+  gmx_bool bPDvsitecomm;          /* Do we need vsite communication with PD? */
   t_comm_vsites *vsitecomm;   /* The PD vsite communication struct       */
 } gmx_vsite_t;
 
-extern void construct_vsites(FILE *log,gmx_vsite_t *vsite,
+void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 			     rvec x[],t_nrnb *nrnb,
 			     real dt,rvec v[],
 			     t_iparams ip[],t_ilist ilist[],
-			     int ePBC,bool bMolPBC,t_graph *graph,
+			     int ePBC,gmx_bool bMolPBC,t_graph *graph,
 			     t_commrec *cr,matrix box);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the local system.
@@ -93,21 +89,21 @@ void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
  * This function assumes that all molecules are whole.
  */
 
-extern void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
+void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 			   rvec x[],rvec f[],rvec *fshift,
 			   t_nrnb *nrnb,t_idef *idef,
-			   int ePBC,bool bMolPBC,t_graph *g,matrix box,
+			   int ePBC,gmx_bool bMolPBC,t_graph *g,matrix box,
 			   t_commrec *cr);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.
  */
 
-extern gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr);
+gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr);
 /* Initialize the virtual site struct,
  * returns NULL when there are no virtual sites.
  */
 
-extern void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
+void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
 			  t_commrec *cr);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.

@@ -67,7 +67,7 @@ static void copy_atom(t_atoms *atoms1,int a1,t_atoms *atoms2,int a2)
 }
 
 static atom_id pdbasearch_atom(const char *name,int resind,t_atoms *pdba,
-			       const char *searchtype,bool bAllowMissing)
+			       const char *searchtype,gmx_bool bAllowMissing)
 {
   int  i;
   
@@ -101,7 +101,7 @@ static void hacksearch_atom(int *ii, int *jj, char *name,
   return;
 }
 
-void dump_ab(FILE *out,int natom,int nab[], t_hack *ab[], bool bHeader)
+void dump_ab(FILE *out,int natom,int nab[], t_hack *ab[], gmx_bool bHeader)
 {
   int i,j;
   
@@ -155,10 +155,10 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
 }
 
 static void expand_hackblocks_one(t_hackblock *hbr, char *atomname, 
-				  int *nabi, t_hack **abi, bool bN, bool bC)
+				  int *nabi, t_hack **abi, gmx_bool bN, gmx_bool bC)
 {
   int j, k, l, d;
-  bool bIgnore;
+  gmx_bool bIgnore;
   
   /* we'll recursively add atoms to atoms */
   for(j=0; j < hbr->nhack; j++) {
@@ -243,7 +243,7 @@ static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[],
 			      int nterpairs, int *rN, int *rC)
 {
   int i,j;
-  bool bN,bC;
+  gmx_bool bN,bC;
   
   for(i=0; i < pdba->nr; i++) {
     bN = FALSE;
@@ -298,13 +298,13 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
 }
 
 static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
-			 bool bCheckMissing)
+			 gmx_bool bCheckMissing)
 {
   int i, j, ii, jj, m, ia, d, rnr,l=0;
 #define MAXH 4
   rvec xa[4];     /* control atoms for calc_h_pos */
   rvec xh[MAXH]; /* hydrogen positions from calc_h_pos */
-  bool bFoundAll;
+  gmx_bool bFoundAll;
 
   jj = 0;
   
@@ -370,9 +370,9 @@ static void free_ab(int natoms,int *nab,t_hack **ab)
 static int add_h_low(t_atoms **pdbaptr, rvec *xptr[], 
 		     int nah, t_hackblock ah[],
 		     int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb, 
-		     int *rN, int *rC, bool bCheckMissing,
+		     int *rN, int *rC, gmx_bool bCheckMissing,
 		     int **nabptr, t_hack ***abptr,
-		     bool bUpdate_pdba, bool bKeep_old_pdba)
+		     gmx_bool bUpdate_pdba, gmx_bool bKeep_old_pdba)
 {
   t_atoms     *newpdba=NULL,*pdba=NULL;
   int         nadd;
@@ -381,7 +381,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
   t_hack      **ab=NULL;
   t_hackblock *hb;
   rvec        *xn;
-  bool        bKeep_ab;
+  gmx_bool        bKeep_ab;
   
   /* set flags for adding hydrogens (according to hdb) */
   pdba=*pdbaptr;
@@ -596,9 +596,9 @@ void deprotonate(t_atoms *atoms,rvec *x)
 int add_h(t_atoms **pdbaptr, rvec *xptr[], 
 	  int nah, t_hackblock ah[],
 	  int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb, 
-	  int *rN, int *rC, bool bAllowMissing,
+	  int *rN, int *rC, gmx_bool bAllowMissing,
 	  int **nabptr, t_hack ***abptr,
-	  bool bUpdate_pdba, bool bKeep_old_pdba)
+	  gmx_bool bUpdate_pdba, gmx_bool bKeep_old_pdba)
 {
   int nold,nnew,niter;
 
@@ -630,7 +630,7 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
 {
 #define NTERPAIRS 1
   t_atoms *atoms;
-  bool    bUpdate_pdba,bKeep_old_pdba;
+  gmx_bool    bUpdate_pdba,bKeep_old_pdba;
   int     nntdb,nctdb,nt,ct;
   int     nadd;
   
@@ -640,13 +640,13 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
     /* set forcefield to use: */
     strcpy(protdata->FF,"ffgmx2");
     /* get the databases: */
-    protdata->nah=read_h_db(protdata->FF,FALSE,&protdata->ah);
+    protdata->nah = read_h_db(protdata->FF,&protdata->ah);
     open_symtab(&protdata->tab); 
-    protdata->atype=read_atype(protdata->FF,FALSE,&protdata->tab);
-    nntdb = read_ter_db(protdata->FF,FALSE,'n',&protdata->ntdb,protdata->atype);
+    protdata->atype = read_atype(protdata->FF,&protdata->tab);
+    nntdb = read_ter_db(protdata->FF,'n',&protdata->ntdb,protdata->atype);
     if (nntdb < 1)
       gmx_fatal(FARGS,"no n-terminus db");
-    nctdb = read_ter_db(protdata->FF,FALSE,'c',&protdata->ctdb,protdata->atype);
+    nctdb = read_ter_db(protdata->FF,'c',&protdata->ctdb,protdata->atype);
     if (nctdb < 1)
       gmx_fatal(FARGS,"no c-terminus db");
     

@@ -36,10 +36,6 @@
 #ifndef _force_h
 #define _force_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 
 #include "typedefs.h"
 #include "pbc.h"
@@ -54,15 +50,15 @@ extern "C" {
 
 static const char *sepdvdlformat="  %-30s V %12.5e  dVdl %12.5e\n";
 
-extern void calc_vir(FILE *fplog,int nxf,rvec x[],rvec f[],tensor vir,
-		     bool bScrewPBC,matrix box);
+void calc_vir(FILE *fplog,int nxf,rvec x[],rvec f[],tensor vir,
+		     gmx_bool bScrewPBC,matrix box);
 /* Calculate virial for nxf atoms, and add it to vir */
 
-extern void f_calc_vir(FILE *fplog,int i0,int i1,rvec x[],rvec f[],tensor vir,
+void f_calc_vir(FILE *fplog,int i0,int i1,rvec x[],rvec f[],tensor vir,
 		       t_graph *g,rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
-extern real RF_excl_correction(FILE *fplog,
+real RF_excl_correction(FILE *fplog,
 			       const t_forcerec *fr,t_graph *g,
 			       const t_mdatoms *mdatoms,const t_blocka *excl,
 			       rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
@@ -72,69 +68,69 @@ extern real RF_excl_correction(FILE *fplog,
  * and force correction for all excluded pairs, including self pairs.
  */
 
-extern void calc_rffac(FILE *fplog,int eel,real eps_r,real eps_rf,
+void calc_rffac(FILE *fplog,int eel,real eps_r,real eps_rf,
 		       real Rc,real Temp,
 		       real zsq,matrix box,
 		       real *kappa,real *krf,real *crf);
 /* Determine the reaction-field constants */
 
-extern void init_generalized_rf(FILE *fplog,
+void init_generalized_rf(FILE *fplog,
 				const gmx_mtop_t *mtop,const t_inputrec *ir,
 				t_forcerec *fr);
 /* Initialize the generalized reaction field parameters */
 
 
 /* In wall.c */
-extern void make_wall_tables(FILE *fplog,const output_env_t oenv,
+void make_wall_tables(FILE *fplog,const output_env_t oenv,
 			     const t_inputrec *ir,const char *tabfn,
 			     const gmx_groups_t *groups,
 			     t_forcerec *fr);
 
-extern real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
+real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
 		     rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb);
 
 
 
-extern t_forcerec *mk_forcerec(void);
+t_forcerec *mk_forcerec(void);
 
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
-extern t_forcetable make_tables(FILE *fp,const output_env_t oenv,
-                                const t_forcerec *fr, bool bVerbose,
+t_forcetable make_tables(FILE *fp,const output_env_t oenv,
+                                const t_forcerec *fr, gmx_bool bVerbose,
                                 const char *fn, real rtab,int flags);
 /* Return tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */
  
-extern bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle);
+bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle);
 /* Return a table for bonded interactions,
  * angle should be: bonds 0, angles 1, dihedrals 2
  */
 
 /* Return a table for GB calculations */
-extern t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
+t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
                                   const t_forcerec *fr,
                                   const char *fn,
                                   real rtab);
 
-extern void pr_forcerec(FILE *fplog,t_forcerec *fr,t_commrec *cr);
+void pr_forcerec(FILE *fplog,t_forcerec *fr,t_commrec *cr);
 
-extern void
+void
 forcerec_set_ranges(t_forcerec *fr,
 		    int ncg_home,int ncg_force,
 		    int natoms_force,
 		    int natoms_force_constr,int natoms_f_novirsum);
 /* Set the number of cg's and atoms for the force calculation */
 
-extern bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
-                             bool bPrintNote,t_commrec *cr,FILE *fp);
+gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
+                             gmx_bool bPrintNote,t_commrec *cr,FILE *fp);
 /* Returns if we can use all-vs-all loops.
  * If bPrintNote==TRUE, prints a note, if necessary, to stderr
  * and fp (if !=NULL) on the master node.
  */
 
-extern void init_forcerec(FILE       *fplog,     
+void init_forcerec(FILE       *fplog,     
                           const output_env_t oenv,
 			  t_forcerec *fr,   
 			  t_fcdata   *fcd,
@@ -142,42 +138,42 @@ extern void init_forcerec(FILE       *fplog,
 			  const gmx_mtop_t *mtop,
 			  const t_commrec  *cr,
 			  matrix     box,
-			  bool       bMolEpot,
+			  gmx_bool       bMolEpot,
 			  const char *tabfn,
 			  const char *tabpfn,
 			  const char *tabbfn,
-			  bool       bNoSolvOpt,
+			  gmx_bool       bNoSolvOpt,
 			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 
- * The booleans have the following meaning:
+ * The gmx_booleans have the following meaning:
  * bSetQ:    Copy the charges [ only necessary when they change ]
  * bMolEpot: Use the free energy stuff per molecule
  * print_force >= 0: print forces for atoms with force >= print_force
  */
 
-extern void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd);
+void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
 
-extern void destroy_enerdata(gmx_enerdata_t *enerd);
+void destroy_enerdata(gmx_enerdata_t *enerd);
 /* Free all memory associated with enerd */
 
-extern void reset_enerdata(t_grpopts *opts,
-			   t_forcerec *fr,bool bNS,
+void reset_enerdata(t_grpopts *opts,
+			   t_forcerec *fr,gmx_bool bNS,
 			   gmx_enerdata_t *enerd,
-			   bool bMaster);
+			   gmx_bool bMaster);
 /* Resets the energy data, if bNS=TRUE also zeros the long-range part */
 
-extern void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
+void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
 /* Locally sum the non-bonded potential energy terms */
 
-extern void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir);
+void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir);
 /* Sum the free energy contributions */
 
-extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
+void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 /* Updates parameters in the forcerec that are time dependent */
 
 /* Compute the average C6 and C12 params for LJ corrections */
-extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
+void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 			     const gmx_mtop_t *mtop);
 
 /* The state has changed */
@@ -203,7 +199,7 @@ extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 
-extern void do_force(FILE *log,t_commrec *cr,
+void do_force(FILE *log,t_commrec *cr,
 		     t_inputrec *inputrec,
 		     gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		     gmx_localtop_t *top,
@@ -217,7 +213,7 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     real lambda,t_graph *graph,
 		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 		     double t,FILE *field,gmx_edsam_t ed,
-		     bool bBornRadii,
+		     gmx_bool bBornRadii,
 		     int flags);
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
@@ -228,7 +224,7 @@ extern void do_force(FILE *log,t_commrec *cr,
  * f is always required.
  */
 
-extern void ns(FILE       *fplog,
+void ns(FILE       *fplog,
 	       t_forcerec *fr,
 	       rvec       x[],
 	       matrix     box,
@@ -241,13 +237,13 @@ extern void ns(FILE       *fplog,
 	       real       lambda,
 	       real       *dvdlambda,
 	       gmx_grppairener_t *grppener,
-	       bool       bFillGrid,
-	       bool       bDoLongRange,
-	       bool       bDoForces,
+	       gmx_bool       bFillGrid,
+	       gmx_bool       bDoLongRange,
+	       gmx_bool       bDoForces,
 	       rvec       *f);
 /* Call the neighborsearcher */
 
-extern void do_force_lowlevel(FILE         *fplog,  
+void do_force_lowlevel(FILE         *fplog,  
 			      gmx_large_int_t   step,
 			      t_forcerec   *fr,
 			      t_inputrec   *ir,
@@ -266,7 +262,7 @@ extern void do_force_lowlevel(FILE         *fplog,
 			      gmx_localtop_t *top,
 			      gmx_genborn_t *born,
 			      t_atomtypes  *atype,
-			      bool         bBornRadii,
+			      gmx_bool         bBornRadii,
 			      matrix       box,
 			      real         lambda,
 			      t_graph      *graph,

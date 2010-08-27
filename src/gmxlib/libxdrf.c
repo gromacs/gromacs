@@ -45,7 +45,7 @@
 #include "xdrf.h"
 #include "string2.h"
 #include "futil.h"
-
+#include "gmx_fatal.h"
 
 
 #if 0
@@ -152,7 +152,7 @@ void
 F77_FUNC(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret) 
 {
         xdr_fortran_lock();
-	*ret = xdr_bool(xdridptr[*xdrid], pb);
+	*ret = xdr_gmx_bool(xdridptr[*xdrid], pb);
 	cnt += XDR_INT_SIZE;
         xdr_fortran_unlock();
 }
@@ -193,6 +193,7 @@ F77_FUNC(xdrfint,XDRFINT)(int *xdrid, int *ip, int *ret)
         xdr_fortran_unlock();
 }
 
+void
 F77_FUNC(xdrfshort,XDRFSHORT)(int *xdrid, short *sp, int *ret)
 {
         xdr_fortran_lock();
@@ -376,8 +377,11 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 
 
 #ifdef GMX_THREADS
-    if (!tMPI_Thread_mutex_islocked( &xdr_fortran_mutex ))  
-        gmx_incons("xdropen called without locked mutex. NEVER call this function");
+    if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
+    {
+        tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );
+        gmx_incons("xdropen called without locked mutex. NEVER call this function.");
+    }
 #endif 
 
     if (init_done == 0) {
@@ -405,7 +409,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
         strcpy(newtype, "ab+");
         lmode = XDR_ENCODE;
     }
-    else if (strncasecmp(type, "r+", 2) == 0)
+    else if (gmx_strncasecmp(type, "r+", 2) == 0)
     {
         xdrmodes[xdrid] = 'a';
         strcpy(newtype, "rb+");
@@ -458,8 +462,11 @@ int xdrclose(XDR *xdrs) {
     int rc = 0;
 
 #ifdef GMX_THREADS
-    if (!tMPI_Thread_mutex_islocked( &xdr_fortran_mutex ))  
+    if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
+    {
+        tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );
         gmx_incons("xdropen called without locked mutex. NEVER call this function");
+    }
 #endif
 
     if (xdrs == NULL) {
@@ -788,12 +795,18 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
  |
  */
  
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead) 
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) 
 {
-    static int *ip = NULL;
-    static int oldsize;
-    static int *buf;
- 
+    int *ip = NULL;
+    int *buf = NULL;
+    gmx_bool bRead;
+        
+    /* preallocate a small buffer and ip on the stack - if we need more
+       we can always malloc(). This is faster for small values of size: */
+    int prealloc_size=3*16;
+    int prealloc_ip[3*16], prealloc_buf[3*20];
+    int we_should_free=0;
+
     int minint[3], maxint[3], mindiff, *lip, diff;
     int lint1, lint2, lint3, oldlint1, oldlint2, oldlint3, smallidx;
     int minidx, maxidx;
@@ -810,6 +823,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
     int errval = 1;
     int rc;
 	
+    bRead = (xdrs->x_op == XDR_DECODE);
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
     prevcoord[0]  = prevcoord[1]  = prevcoord[2]  = 0;
    
@@ -829,35 +843,25 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
 	}
 	
 	if(xdr_float(xdrs, precision) == 0)
-		return 0;
-		
-	if (ip == NULL) {
+            return 0;
+
+        if (size3 <= prealloc_size)
+        {
+            ip=prealloc_ip;
+            buf=prealloc_buf;
+        }
+        else
+        {
+            we_should_free=1;
+	    bufsize = size3 * 1.2;
 	    ip = (int *)malloc((size_t)(size3 * sizeof(*ip)));
-	    if (ip == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    bufsize = size3 * 1.2;
 	    buf = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
-	    if (buf == NULL) {
+	    if (ip == NULL || buf==NULL) 
+            {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
-	    oldsize = *size;
-	} else if (*size > oldsize) {
-	    ip = (int *)realloc(ip, (size_t)(size3 * sizeof(*ip)));
-	    if (ip == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    bufsize = size3 * 1.2;
-	    buf = (int *)realloc(buf, (size_t)(bufsize * sizeof(*buf)));
-	    if (buf == NULL) {
-		fprintf(stderr,"realloc failed\n");
-		exit(1);
-	    }
-	    oldsize = *size;
-	}
+        }
 	/* buf[0-2] are special and do not contain actual data */
 	buf[0] = buf[1] = buf[2] = 0;
 	minint[0] = minint[1] = minint[2] = INT_MAX;
@@ -922,7 +926,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
 		 (xdr_int(xdrs, &(maxint[1])) == 0) ||
 		 (xdr_int(xdrs, &(maxint[2])) == 0))
 	{
-		return 0;
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
 	}
 	
 	if ((float)maxint[0] - (float)minint[0] >= MAXABS ||
@@ -953,7 +962,14 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
 	    smallidx++;
 	}
 	if(xdr_int(xdrs, &smallidx) == 0)
-		return 0;
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
 		
 	maxidx = MIN(LASTIDX, smallidx + 8) ;
 	minidx = maxidx - 8; /* often this equal smallidx */
@@ -1062,9 +1078,24 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
 	if (buf[1] != 0) buf[0]++;
 		/* buf[0] holds the length in bytes */
 	if(xdr_int(xdrs, &(buf[0])) == 0)
-		return 0;
-		
-        return errval * (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]));
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
+
+	
+        rc=errval * (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]));
+        if (we_should_free)
+        {
+            free(ip);
+            free(buf);
+        }
+        return rc;
+	
     } else {
 	
 	/* xdrs is open for reading */
@@ -1084,34 +1115,25 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
 	}
 	if(xdr_float(xdrs, precision) == 0)
 		return 0;
-		
-	if (ip == NULL) {
+
+        if (size3 <= prealloc_size)
+        {
+            ip=prealloc_ip;
+            buf=prealloc_buf;
+        }
+        else
+        {
+            we_should_free=1;
+	    bufsize = size3 * 1.2;
 	    ip = (int *)malloc((size_t)(size3 * sizeof(*ip)));
-	    if (ip == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    bufsize = size3 * 1.2;
 	    buf = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
-	    if (buf == NULL) {
+	    if (ip == NULL || buf==NULL) 
+            {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
-	    oldsize = *size;
-	} else if (*size > oldsize) {
-	    ip = (int *)realloc(ip, (size_t)(size3 * sizeof(*ip)));
-	    if (ip == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    bufsize = size3 * 1.2;
-	    buf = (int *)realloc(buf, (size_t)(bufsize * sizeof(*buf)));
-	    if (buf == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    oldsize = *size;
-	}
+        }
+
 	buf[0] = buf[1] = buf[2] = 0;
 	
 	if ( (xdr_int(xdrs, &(minint[0])) == 0) ||
@@ -1121,7 +1143,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
 		 (xdr_int(xdrs, &(maxint[1])) == 0) ||
 		 (xdr_int(xdrs, &(maxint[2])) == 0))
 	{
-		return 0;
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
 	}
 			
 	sizeint[0] = maxint[0] - minint[0]+1;
@@ -1139,7 +1166,15 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
 	}
 	
 	if (xdr_int(xdrs, &smallidx) == 0)	
-	    return 0;
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
+
 	maxidx = MIN(LASTIDX, smallidx + 8) ;
 	minidx = maxidx - 8; /* often this equal smallidx */
 	smaller = magicints[MAX(FIRSTIDX, smallidx-1)] / 2;
@@ -1150,9 +1185,28 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
     	/* buf[0] holds the length in bytes */
 
 	if (xdr_int(xdrs, &(buf[0])) == 0)
-	    return 0;
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
+
+
 	if (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]) == 0)
-	    return 0;
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
+
+
+
 	buf[0] = buf[1] = buf[2] = 0;
 	
 	lfp = fp;
@@ -1238,6 +1292,11 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead)
 	    }
 	    sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx] ;
 	}
+    }
+    if (we_should_free)
+    {
+        free(ip);
+        free(buf);
     }
     return 1;
 }
@@ -1353,7 +1412,7 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
 
 
 static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
-                                     bool * bOK)
+                                     gmx_bool * bOK)
 {
     gmx_off_t off;
     float time;
@@ -1394,7 +1453,7 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
 
 
 static float 
-xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     gmx_off_t off;
     int step;  
@@ -1442,7 +1501,7 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 
 /* Currently not used, just for completeness */
 static int 
-xtc_get_current_frame_number(FILE *fp,XDR *xdrs,int natoms, bool * bOK)
+xtc_get_current_frame_number(FILE *fp,XDR *xdrs,int natoms, gmx_bool * bOK)
 {
     gmx_off_t off;
     int ret;  
@@ -1510,7 +1569,7 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
 
 
 float 
-xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
   float  res;
   float  tinit;
@@ -1628,7 +1687,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
 {
     float t;
     float dt;
-    bool bOK;
+    gmx_bool bOK;
     gmx_off_t low = 0;
     gmx_off_t high, offset, pos;
     int res;
@@ -1785,7 +1844,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
 }
 
 float 
-xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     float  time;
     gmx_off_t  off;
@@ -1816,7 +1875,7 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 
 
 int
-xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     int    frame;
     gmx_off_t  off;

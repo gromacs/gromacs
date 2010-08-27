@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 71;
+static const int tpx_version = 73;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -75,7 +75,7 @@ static const int tpx_version = 71;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 22;
+static const int tpx_generation = 23;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -138,6 +138,8 @@ static const t_ftupd ftupd[] = {
   { 60, F_GB12              },
   { 61, F_GB13              },
   { 61, F_GB14              },	
+  { 72, F_GBPOL             },
+  { 72, F_NPSOLVATION       },
   { 41, F_LJC14_Q           },
   { 41, F_LJC_PAIRS_NB      },
   { 32, F_BHAM_LR           },
@@ -165,11 +167,11 @@ static const t_ftupd ftupd[] = {
 /* Needed for backward compatibility */
 #define MAXNODES 256
 
-static void _do_section(t_fileio *fio,int key,bool bRead,const char *src,
+static void _do_section(t_fileio *fio,int key,gmx_bool bRead,const char *src,
                         int line)
 {
   char buf[STRLEN];
-  bool bDbg;
+  gmx_bool bDbg;
 
   if (gmx_fio_getftp(fio) == efTPA) {
     if (!bRead) {
@@ -186,9 +188,9 @@ static void _do_section(t_fileio *fio,int key,bool bRead,const char *src,
       
       do {
 	gmx_fio_do_string(fio,buf);
-      } while ((strcasecmp(buf,itemstr[key]) != 0));
+      } while ((gmx_strcasecmp(buf,itemstr[key]) != 0));
       
-      if (strcasecmp(buf,itemstr[key]) != 0) 
+      if (gmx_strcasecmp(buf,itemstr[key]) != 0) 
 	gmx_fatal(FARGS,"\nCould not find section heading %s",itemstr[key]);
       else if (gmx_fio_getdebug(fio))
 	fprintf(stderr," and found it\n");
@@ -203,10 +205,10 @@ static void _do_section(t_fileio *fio,int key,bool bRead,const char *src,
  * Now the higer level routines that do io of the structures and arrays
  *
  **************************************************************/
-static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, bool bRead, 
+static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, gmx_bool bRead, 
                        int file_version)
 {
-  bool bDum=TRUE;
+  gmx_bool bDum=TRUE;
   int  i;
 
   gmx_fio_do_int(fio,pgrp->nat);
@@ -229,7 +231,7 @@ static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, bool bRead,
   }
 }
 
-static void do_pull(t_fileio *fio, t_pull *pull,bool bRead, int file_version)
+static void do_pull(t_fileio *fio, t_pull *pull,gmx_bool bRead, int file_version)
 {
   int g;
 
@@ -248,9 +250,9 @@ static void do_pull(t_fileio *fio, t_pull *pull,bool bRead, int file_version)
 }
 
 
-static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg,bool bRead, int file_version)
+static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg,gmx_bool bRead, int file_version)
 {
-  bool bDum=TRUE;
+  gmx_bool bDum=TRUE;
   int  i;
 
   gmx_fio_do_int(fio,rotg->eType);
@@ -272,7 +274,7 @@ static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg,bool bRead, int file_version
   gmx_fio_do_int(fio,rotg->eFittype);
 }
 
-static void do_rot(t_fileio *fio, t_rot *rot,bool bRead, int file_version)
+static void do_rot(t_fileio *fio, t_rot *rot,gmx_bool bRead, int file_version)
 {
   int g;
 
@@ -286,14 +288,14 @@ static void do_rot(t_fileio *fio, t_rot *rot,bool bRead, int file_version)
 }
 
 
-static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead, 
+static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead, 
                         int file_version, real *fudgeQQ)
 {
     int  i,j,k,*tmp,idum=0; 
-    bool bDum=TRUE;
+    gmx_bool bDum=TRUE;
     real rdum,bd_temp;
     rvec vdum;
-    bool bSimAnn;
+    gmx_bool bSimAnn;
     real zerotemptime,finish_t,init_temp,finish_temp;
     
     if (file_version != tpx_version)
@@ -472,7 +474,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
 		}
 		else
 		{
-			ir->gb_dielectric_offset = 0.09;
+			ir->gb_dielectric_offset = 0.009;
 			ir->sa_algorithm = esaAPPROX;
 		}
 		gmx_fio_do_real(fio,ir->sa_surface_tension);
@@ -507,11 +509,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     else
       gmx_fio_do_real(fio,ir->epsilon_surface);
     
-    gmx_fio_do_bool(fio,ir->bOptFFT);
+    gmx_fio_do_gmx_bool(fio,ir->bOptFFT);
 
-    gmx_fio_do_bool(fio,ir->bContinuation); 
+    gmx_fio_do_gmx_bool(fio,ir->bContinuation); 
     gmx_fio_do_int(fio,ir->etc);
-    /* before version 18, ir->etc was a bool (ir->btc),
+    /* before version 18, ir->etc was a gmx_bool (ir->btc),
      * but the values 0 and 1 still mean no and
      * berendsen temperature coupling, respectively.
      */
@@ -600,7 +602,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       ir->andersen_seed=0;
     
     if(file_version < 26) {
-      gmx_fio_do_bool(fio,bSimAnn); 
+      gmx_fio_do_gmx_bool(fio,bSimAnn); 
       gmx_fio_do_real(fio,zerotemptime);
     }
     
@@ -644,20 +646,43 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       gmx_fio_do_real(fio,ir->sc_sigma);
     else
       ir->sc_sigma = 0.3;
+    if (bRead)
+    {
+        if (file_version >= 71)
+        {
+            ir->sc_sigma_min = ir->sc_sigma;
+        }
+        else
+        {
+            ir->sc_sigma_min = 0;
+        }
+    }
     if (file_version >= 64) {
       gmx_fio_do_int(fio,ir->nstdhdl);
     } else {
       ir->nstdhdl = 1;
     }
-    if (file_version >= 71)
+
+    if (file_version >= 73)
     {
-        gmx_fio_do_int(fio,ir->dh_table_size);
-        gmx_fio_do_double(fio,ir->dh_table_spacing);
+        gmx_fio_do_int(fio, ir->separate_dhdl_file);
+        gmx_fio_do_int(fio, ir->dhdl_derivatives);
     }
     else
     {
-        ir->dh_table_size    = 0;
-        ir->dh_table_spacing = 0.1;
+        ir->separate_dhdl_file = sepdhdlfileYES;
+        ir->dhdl_derivatives = dhdlderivativesYES;
+    }
+
+    if (file_version >= 71)
+    {
+        gmx_fio_do_int(fio,ir->dh_hist_size);
+        gmx_fio_do_double(fio,ir->dh_hist_spacing);
+    }
+    else
+    {
+        ir->dh_hist_size    = 0;
+        ir->dh_hist_spacing = 0.1;
     }
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 
@@ -669,7 +694,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       else
 	ir->eDisreWeighting = edrwConservative;
     }
-    gmx_fio_do_bool(fio,ir->bDisreMixed); 
+    gmx_fio_do_gmx_bool(fio,ir->bDisreMixed); 
     gmx_fio_do_real(fio,ir->dr_fc); 
     gmx_fio_do_real(fio,ir->dr_tau); 
     gmx_fio_do_int(fio,ir->nstdisreout);
@@ -695,7 +720,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     gmx_fio_do_real(fio,ir->em_stepsize); 
     gmx_fio_do_real(fio,ir->em_tol); 
     if (file_version >= 22) 
-      gmx_fio_do_bool(fio,ir->bShakeSOR);
+      gmx_fio_do_gmx_bool(fio,ir->bShakeSOR);
     else if (bRead)
       ir->bShakeSOR = TRUE;
     if (file_version >= 11)
@@ -892,7 +917,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
     
     /* QMMM stuff */
     if(file_version>=39){
-      gmx_fio_do_bool(fio,ir->bQMMM);
+      gmx_fio_do_gmx_bool(fio,ir->bQMMM);
       gmx_fio_do_int(fio,ir->QMMMscheme);
       gmx_fio_do_real(fio,ir->scalefactor);
       gmx_fio_do_int(fio,ir->opts.ngQM);
@@ -915,21 +940,21 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
         bDum=gmx_fio_ndo_int(fio,ir->opts.QMbasis,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.QMcharge,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.QMmult,ir->opts.ngQM);
-        bDum=gmx_fio_ndo_bool(fio,ir->opts.bSH,ir->opts.ngQM);
+        bDum=gmx_fio_ndo_gmx_bool(fio,ir->opts.bSH,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.CASorbitals,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.CASelectrons,ir->opts.ngQM);
         bDum=gmx_fio_ndo_real(fio,ir->opts.SAon,ir->opts.ngQM);
         bDum=gmx_fio_ndo_real(fio,ir->opts.SAoff,ir->opts.ngQM);
         bDum=gmx_fio_ndo_int(fio,ir->opts.SAsteps,ir->opts.ngQM);
-        bDum=gmx_fio_ndo_bool(fio,ir->opts.bOPT,ir->opts.ngQM);
-        bDum=gmx_fio_ndo_bool(fio,ir->opts.bTS,ir->opts.ngQM);
+        bDum=gmx_fio_ndo_gmx_bool(fio,ir->opts.bOPT,ir->opts.ngQM);
+        bDum=gmx_fio_ndo_gmx_bool(fio,ir->opts.bTS,ir->opts.ngQM);
       }
       /* end of QMMM stuff */
     }    
 }
 
 
-static void do_harm(t_fileio *fio, t_iparams *iparams,bool bRead)
+static void do_harm(t_fileio *fio, t_iparams *iparams,gmx_bool bRead)
 {
   gmx_fio_do_real(fio,iparams->harmonic.rA);
   gmx_fio_do_real(fio,iparams->harmonic.krA);
@@ -938,10 +963,10 @@ static void do_harm(t_fileio *fio, t_iparams *iparams,bool bRead)
 }
 
 void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
-                bool bRead, int file_version)
+                gmx_bool bRead, int file_version)
 {
   int i;
-  bool bDum;
+  gmx_bool bDum;
   real rdum;
   
   if (!bRead)
@@ -1185,11 +1210,11 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     gmx_fio_unset_comment(fio);
 }
 
-static void do_ilist(t_fileio *fio, t_ilist *ilist,bool bRead,int file_version,
+static void do_ilist(t_fileio *fio, t_ilist *ilist,gmx_bool bRead,int file_version,
 		     int ftype)
 {
   int  i,k,idum;
-  bool bDum=TRUE;
+  gmx_bool bDum=TRUE;
   
   if (!bRead) {
     gmx_fio_set_comment(fio, interaction_function[ftype].name);
@@ -1207,10 +1232,10 @@ static void do_ilist(t_fileio *fio, t_ilist *ilist,bool bRead,int file_version,
 }
 
 static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
-			bool bRead, int file_version)
+			gmx_bool bRead, int file_version)
 {
   int  idum,i,j;
-  bool bDum=TRUE;
+  gmx_bool bDum=TRUE;
   unsigned int k;
 
   gmx_fio_do_int(fio,ffparams->atnr);
@@ -1267,11 +1292,11 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
   }
 }
 
-static void do_ilists(t_fileio *fio, t_ilist *ilist,bool bRead, 
+static void do_ilists(t_fileio *fio, t_ilist *ilist,gmx_bool bRead, 
                       int file_version)
 {
   int i,j,renum[F_NRE];
-  bool bDum=TRUE,bClear;
+  gmx_bool bDum=TRUE,bClear;
   unsigned int k;
   
   for(j=0; (j<F_NRE); j++) {
@@ -1295,7 +1320,7 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist,bool bRead,
 }
 
 static void do_idef(t_fileio *fio, gmx_ffparams_t *ffparams,gmx_moltype_t *molt,
-		    bool bRead, int file_version)
+		    gmx_bool bRead, int file_version)
 {
   do_ffparams(fio, ffparams,bRead,file_version);
     
@@ -1306,10 +1331,10 @@ static void do_idef(t_fileio *fio, gmx_ffparams_t *ffparams,gmx_moltype_t *molt,
   do_ilists(fio, molt->ilist,bRead,file_version);
 }
 
-static void do_block(t_fileio *fio, t_block *block,bool bRead,int file_version)
+static void do_block(t_fileio *fio, t_block *block,gmx_bool bRead,int file_version)
 {
   int  i,idum,dum_nra,*dum_a;
-  bool bDum=TRUE;
+  gmx_bool bDum=TRUE;
 
   if (file_version < 44)
     for(i=0; i<MAXNODES; i++)
@@ -1330,11 +1355,11 @@ static void do_block(t_fileio *fio, t_block *block,bool bRead,int file_version)
   }
 }
 
-static void do_blocka(t_fileio *fio, t_blocka *block,bool bRead,
+static void do_blocka(t_fileio *fio, t_blocka *block,gmx_bool bRead,
                       int file_version)
 {
   int  i,idum;
-  bool bDum=TRUE;
+  gmx_bool bDum=TRUE;
 
   if (file_version < 44)
     for(i=0; i<MAXNODES; i++)
@@ -1351,7 +1376,7 @@ static void do_blocka(t_fileio *fio, t_blocka *block,bool bRead,
   bDum=gmx_fio_ndo_int(fio,block->a,block->nra);
 }
 
-static void do_atom(t_fileio *fio, t_atom *atom,int ngrp,bool bRead, 
+static void do_atom(t_fileio *fio, t_atom *atom,int ngrp,gmx_bool bRead, 
                     int file_version, gmx_groups_t *groups,int atnr)
 { 
   int i,myngrp;
@@ -1388,11 +1413,11 @@ static void do_atom(t_fileio *fio, t_atom *atom,int ngrp,bool bRead,
   }
 }
 
-static void do_grps(t_fileio *fio, int ngrp,t_grps grps[],bool bRead, 
+static void do_grps(t_fileio *fio, int ngrp,t_grps grps[],gmx_bool bRead, 
                     int file_version)
 {
   int i,j,myngrp;
-  bool bDum=TRUE;
+  gmx_bool bDum=TRUE;
   
   if (file_version < 23) 
     myngrp = 8;
@@ -1415,7 +1440,7 @@ static void do_grps(t_fileio *fio, int ngrp,t_grps grps[],bool bRead,
   }
 }
 
-static void do_symstr(t_fileio *fio, char ***nm,bool bRead,t_symtab *symtab)
+static void do_symstr(t_fileio *fio, char ***nm,gmx_bool bRead,t_symtab *symtab)
 {
   int ls;
   
@@ -1429,7 +1454,7 @@ static void do_symstr(t_fileio *fio, char ***nm,bool bRead,t_symtab *symtab)
   }
 }
 
-static void do_strstr(t_fileio *fio, int nstr,char ***nm,bool bRead,
+static void do_strstr(t_fileio *fio, int nstr,char ***nm,gmx_bool bRead,
                       t_symtab *symtab)
 {
   int  j;
@@ -1438,7 +1463,7 @@ static void do_strstr(t_fileio *fio, int nstr,char ***nm,bool bRead,
     do_symstr(fio, &(nm[j]),bRead,symtab);
 }
 
-static void do_resinfo(t_fileio *fio, int n,t_resinfo *ri,bool bRead,
+static void do_resinfo(t_fileio *fio, int n,t_resinfo *ri,gmx_bool bRead,
                        t_symtab *symtab, int file_version)
 {
   int  j;
@@ -1455,7 +1480,7 @@ static void do_resinfo(t_fileio *fio, int n,t_resinfo *ri,bool bRead,
   }
 }
 
-static void do_atoms(t_fileio *fio, t_atoms *atoms,bool bRead,t_symtab *symtab,
+static void do_atoms(t_fileio *fio, t_atoms *atoms,gmx_bool bRead,t_symtab *symtab,
 		     int file_version,
 		     gmx_groups_t *groups)
 {
@@ -1504,11 +1529,11 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms,bool bRead,t_symtab *symtab,
 }
 
 static void do_groups(t_fileio *fio, gmx_groups_t *groups,
-		      bool bRead,t_symtab *symtab,
+		      gmx_bool bRead,t_symtab *symtab,
 		      int file_version)
 {
   int  g,n,i;
-  bool bDum=TRUE;
+  gmx_bool bDum=TRUE;
 
   do_grps(fio, egcNR,groups->grps,bRead,file_version);
   gmx_fio_do_int(fio,groups->ngrpname);
@@ -1531,11 +1556,11 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
   }
 }
 
-static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes,bool bRead,
+static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes,gmx_bool bRead,
 			 t_symtab *symtab,int file_version)
 {
   int i,j;
-  bool bDum = TRUE;
+  gmx_bool bDum = TRUE;
   
   if (file_version > 25) {
     gmx_fio_do_int(fio,atomtypes->nr);
@@ -1574,7 +1599,7 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes,bool bRead,
   }  
 }
 
-static void do_symtab(t_fileio *fio, t_symtab *symtab,bool bRead)
+static void do_symtab(t_fileio *fio, t_symtab *symtab,gmx_bool bRead)
 {
   int i,nr;
   t_symbuf *symbuf;
@@ -1605,7 +1630,7 @@ static void do_symtab(t_fileio *fio, t_symtab *symtab,bool bRead)
   }
 }
 
-static void do_cmap(t_fileio *fio, gmx_cmap_t *cmap_grid, bool bRead)
+static void do_cmap(t_fileio *fio, gmx_cmap_t *cmap_grid, gmx_bool bRead)
 {
 	int i,j,ngrid,gs,nelem;
 	
@@ -1683,7 +1708,7 @@ void tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols)
     }
 }
   
-static void do_moltype(t_fileio *fio, gmx_moltype_t *molt,bool bRead,
+static void do_moltype(t_fileio *fio, gmx_moltype_t *molt,gmx_bool bRead,
                        t_symtab *symtab, int file_version,
 		       gmx_groups_t *groups)
 {
@@ -1712,7 +1737,7 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt,bool bRead,
   do_blocka(fio, &molt->excls, bRead, file_version);
 }
 
-static void do_molblock(t_fileio *fio, gmx_molblock_t *molb,bool bRead,
+static void do_molblock(t_fileio *fio, gmx_molblock_t *molb,gmx_bool bRead,
                         int file_version)
 {
   int i;
@@ -1768,7 +1793,7 @@ static void add_posres_molblock(gmx_mtop_t *mtop)
 {
   t_ilist *il;
   int am,i,mol,a;
-  bool bFE;
+  gmx_bool bFE;
   gmx_molblock_t *molb;
   t_iparams *ip;
 
@@ -1840,7 +1865,7 @@ static void set_disres_npair(gmx_mtop_t *mtop)
   }
 }
 
-static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop,bool bRead, 
+static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop,gmx_bool bRead, 
                     int file_version)
 {
   int  mt,mb,i;
@@ -1960,12 +1985,12 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop,bool bRead,
  * 
  * If possible, we will read the inputrec even when TopOnlyOK is TRUE.
  */
-static void do_tpxheader(t_fileio *fio,bool bRead,t_tpxheader *tpx, 
-                         bool TopOnlyOK, int *file_version, 
+static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx, 
+                         gmx_bool TopOnlyOK, int *file_version, 
                          int *file_generation)
 {
   char  buf[STRLEN];
-  bool  bDouble;
+  gmx_bool  bDouble;
   int   precision;
   int   fver,fgen;
   int   idum=0;
@@ -2046,19 +2071,19 @@ static void do_tpxheader(t_fileio *fio,bool bRead,t_tpxheader *tpx,
   }
 }
 
-static int do_tpx(t_fileio *fio, bool bRead,
+static int do_tpx(t_fileio *fio, gmx_bool bRead,
 		  t_inputrec *ir,t_state *state,rvec *f,gmx_mtop_t *mtop,
-		  bool bXVallocated)
+		  gmx_bool bXVallocated)
 {
   t_tpxheader tpx;
   t_inputrec  dum_ir;
   gmx_mtop_t  dum_top;
-  bool        TopOnlyOK,bDum=TRUE;
+  gmx_bool        TopOnlyOK,bDum=TRUE;
   int         file_version,file_generation;
   int         i;
   rvec        *xptr,*vptr;
   int         ePBC;
-  bool        bPeriodicMols;
+  gmx_bool        bPeriodicMols;
 
   if (!bRead) {
     tpx.natoms = state->natoms;
@@ -2205,7 +2230,7 @@ static int do_tpx(t_fileio *fio, bool bRead,
 	  bPeriodicMols = ir->bPeriodicMols;
 	}
 	gmx_fio_do_int(fio,ePBC);
-	gmx_fio_do_bool(fio,bPeriodicMols);
+	gmx_fio_do_gmx_bool(fio,bPeriodicMols);
       }
       if (file_generation <= tpx_generation && ir) {
 	do_inputrec(fio, ir,bRead,file_version,mtop ? &mtop->ffparams.fudgeQQ : NULL);
@@ -2298,7 +2323,7 @@ void close_tpx(t_fileio *fio)
   gmx_fio_close(fio);
 }
 
-void read_tpxheader(const char *fn, t_tpxheader *tpx, bool TopOnlyOK,
+void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
                     int *file_version, int *file_generation)
 {
   t_fileio *fio;
@@ -2366,7 +2391,7 @@ int read_tpx_top(const char *fn,
   return ePBC;
 }
 
-bool fn2bTPX(const char *file)
+gmx_bool fn2bTPX(const char *file)
 {
   switch (fn2ftp(file)) {
   case efTPR:
@@ -2378,12 +2403,12 @@ bool fn2bTPX(const char *file)
   }
 }
 
-bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
-		   rvec **x,rvec **v,matrix box,bool bMass)
+gmx_bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
+		   rvec **x,rvec **v,matrix box,gmx_bool bMass)
 {
   t_tpxheader  header;
   int          natoms,i,version,generation;
-  bool         bTop,bXNULL;
+  gmx_bool         bTop,bXNULL;
   gmx_mtop_t   *mtop;
   t_topology   *topconv;
   gmx_atomprop_t aps;

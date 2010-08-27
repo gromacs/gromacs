@@ -32,10 +32,6 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifndef _SPARSEMATRIX_H_
 #define _SPARSEMATRIX_H_
 
@@ -107,7 +103,7 @@ gmx_sparsematrix_entry
 typedef struct 
 gmx_sparsematrix 
 {
-    bool                         compressed_symmetric; /*!< Store half elements and assume symmetry. */
+    gmx_bool                         compressed_symmetric; /*!< Store half elements and assume symmetry. */
     int                          nrow;                 /*!< Number of rows in matrix                 */
     int *                        ndata;                /*!< Number of entries on each row (list)     */
     int *                        nalloc;               /*!< Allocated entry list length for each row */

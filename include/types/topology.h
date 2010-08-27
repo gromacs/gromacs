@@ -32,9 +32,6 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "atoms.h"
 #include "idef.h"
@@ -85,7 +82,8 @@ typedef struct {
  */
 #define ggrpnr(groups,egc,i) ((groups)->grpnr[egc] ? (groups)->grpnr[egc][i] : 0)
 
-/* The global, complete system topology struct, based on molecule types */
+/* The global, complete system topology struct, based on molecule types.
+   This structure should contain no data that is O(natoms) in memory. */
 typedef struct {
   char           **name;	/* Name of the topology	       	        */
   gmx_ffparams_t ffparams;

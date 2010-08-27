@@ -8,7 +8,6 @@ Description: Gromacs preprocess lib
 URL: http://www.gromacs.org
 Version: @VERSION@
 Requires: libgmx@LIBSUFFIX@ libmd@LIBSUFFIX@ 
-Libs.private: -lm @PTHREAD_LIBS@
-Libs: -L${libdir} -lgmxpreprocess@LIBSUFFIX@
-Cflags: -I${includedir} @PTHREAD_CFLAGS@
+Libs: -L${libdir} -lgmxpreprocess@LIBSUFFIX@ @PTHREAD_CFLAGS@ @PTHREAD_LIBS@ -lm
+Cflags: -I${includedir} @PTHREAD_CFLAGS@ @PKG_CFLAGS@
 

@@ -60,7 +60,7 @@
 #include "tmpi.h"
 #endif
 
-static bool bDebug = FALSE;
+static gmx_bool bDebug = FALSE;
 static char *fatal_tmp_file = NULL;
 static FILE *log_file = NULL;
 
@@ -71,9 +71,9 @@ static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
-bool bDebugMode(void)
+gmx_bool bDebugMode(void)
 {
-    bool ret;
+    gmx_bool ret;
 /*#ifdef GMX_THREADS*/
 #if 0
     tMPI_Thread_mutex_lock(&debug_mutex);
@@ -93,7 +93,7 @@ void gmx_fatal_set_log_file(FILE *fp)
 
 void _where(const char *file,int line)
 {
-  static bool bFirst = TRUE;
+  static gmx_bool bFirst = TRUE;
   static int  nskip  = -1;
   static int  nwhere =  0;
   FILE *fp;
@@ -147,7 +147,7 @@ static void bputd(char *msg,int *len,int d)
   if (d<10) bputc(msg,len,d+'0'); else bputc(msg,len,d-10+'a');
 }
 
-static void bputi(char *msg,int *len,int val,int radix,int fld,bool bNeg)
+static void bputi(char *msg,int *len,int val,int radix,int fld,gmx_bool bNeg)
 {
   int fmax=0;
   
@@ -444,7 +444,7 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
                           t_commrec *cr,gmx_domdec_t *dd,
                           const char *fmt,...)
 {
-    bool    bFinalize;
+    gmx_bool    bFinalize;
     va_list ap;
     char    msg[STRLEN];
 #ifdef GMX_MPI
@@ -549,7 +549,7 @@ void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline)
  *
  */
 FILE *debug=NULL;
-bool gmx_debug_at=FALSE;
+gmx_bool gmx_debug_at=FALSE;
 
 void init_debug (const int dbglevel,const char *dbgfile)
 {

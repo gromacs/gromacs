@@ -198,20 +198,22 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
   }
 
 #ifdef GMX_MPI
-  if (flags & PP_PME_CHARGE) {
-    MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
-	      dd->pme_nodeid,1,cr->mpi_comm_mysim,
-	      &dd->req_pme[dd->nreq_pme++]);
-  }
-  if (flags & PP_PME_CHARGEB) {
-    MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
-	      dd->pme_nodeid,2,cr->mpi_comm_mysim,
-	      &dd->req_pme[dd->nreq_pme++]);
-  }
-  if (flags & PP_PME_COORD) {
-    MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
-	      dd->pme_nodeid,3,cr->mpi_comm_mysim,
-	      &dd->req_pme[dd->nreq_pme++]);
+  if (n > 0) {
+    if (flags & PP_PME_CHARGE) {
+      MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
+		dd->pme_nodeid,1,cr->mpi_comm_mysim,
+		&dd->req_pme[dd->nreq_pme++]);
+    }
+    if (flags & PP_PME_CHARGEB) {
+      MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
+		dd->pme_nodeid,2,cr->mpi_comm_mysim,
+		&dd->req_pme[dd->nreq_pme++]);
+    }
+    if (flags & PP_PME_COORD) {
+      MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
+		dd->pme_nodeid,3,cr->mpi_comm_mysim,
+		&dd->req_pme[dd->nreq_pme++]);
+    }
   }
 
 #ifndef GMX_PME_DELAYED_WAIT
@@ -225,7 +227,7 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 }
 
 void gmx_pme_send_q(t_commrec *cr,
-		    bool bFreeEnergy, real *chargeA, real *chargeB,
+		    gmx_bool bFreeEnergy, real *chargeA, real *chargeB,
 		    int maxshift_x, int maxshift_y)
 {
   int flags;
@@ -239,8 +241,8 @@ void gmx_pme_send_q(t_commrec *cr,
 }
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-		    bool bFreeEnergy, real lambda,
-		    bool bEnerVir,
+		    gmx_bool bFreeEnergy, real lambda,
+		    gmx_bool bEnerVir,
 		    gmx_large_int_t step)
 {
   int flags;
@@ -267,8 +269,8 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                      real **chargeA, real **chargeB,
                      matrix box, rvec **x,rvec **f,
                      int *maxshift_x, int *maxshift_y,
-                     bool *bFreeEnergy,real *lambda,
-		     bool *bEnerVir,
+                     gmx_bool *bFreeEnergy,real *lambda,
+		     gmx_bool *bEnerVir,
                      gmx_large_int_t *step)
 {
     gmx_pme_comm_n_box_t cnb;

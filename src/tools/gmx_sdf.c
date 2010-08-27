@@ -14,6 +14,10 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 
 #include <math.h>
@@ -66,7 +70,7 @@ static void f_write(FILE *output,float value)
 
 
 static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX, 
-                   const char *fnSDF, const char *fnREF, bool bRef, 
+                   const char *fnSDF, const char *fnREF, gmx_bool bRef, 
                    rvec cutoff, real binwidth, int mode, rvec triangle, 
                    rvec dtri, const output_env_t oenv)
 {
@@ -99,7 +103,7 @@ static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   gmx_rmpbc_t  gpbc=NULL;
   int        ePBC=-1;
   t_pbc      pbc;
-  bool       bTop=FALSE,bRefDone=FALSE,bInGroup=FALSE;
+  gmx_bool       bTop=FALSE,bRefDone=FALSE,bInGroup=FALSE;
   char       title[STRLEN];
 
 
@@ -343,7 +347,7 @@ structure if needed */
   do {
     /* Must init pbc every step because of pressure coupling */
     set_pbc(&pbc,ePBC,box);
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
   
     /* Dynamically build the ref triples */
     if ( mode == 2 )
@@ -692,7 +696,7 @@ int gmx_sdf(int argc,char *argv[])
     "2001, 1702 and the references cited within."
   };
   output_env_t oenv;
-  static bool bRef=FALSE;
+  static gmx_bool bRef=FALSE;
   static int mode=1;
   static rvec triangle={0.0,0.0,0.0};
   static rvec dtri={0.03,0.03,0.03};

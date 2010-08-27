@@ -36,10 +36,6 @@
 #ifndef _gstat_h
 #define _gstat_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 #include "statutil.h"
 #include "mshift.h"
@@ -55,7 +51,7 @@ extern "C" {
  *
  ***********************************************/
 
-extern real LegendreP(real x,unsigned long m);
+real LegendreP(real x,unsigned long m);
 
 #define eacNormal (1<<0)
 #define eacCos    (1<<1)
@@ -109,30 +105,30 @@ extern const char *longs_ffn[effnNR];
 int sffn2effn(const char **sffn);
 /* Returns the ffn enum corresponding to the selected enum option in sffn */
 
-extern t_pargs *add_acf_pargs(int *npargs,t_pargs *pa);
+t_pargs *add_acf_pargs(int *npargs,t_pargs *pa);
 /* Add options for autocorr to the current set of options.
  * *npargs must be initialised to the number of elements in pa,
  * it will be incremented appropriately.
  */
 
-extern void cross_corr(int n,real f[],real g[],real corr[]);
+void cross_corr(int n,real f[],real g[],real corr[]);
 /* Simple minded cross correlation algorithm */
   
-extern real fit_acf(int ncorr,int fitfn,const output_env_t oenv,bool bVerbose,
+real fit_acf(int ncorr,int fitfn,const output_env_t oenv,gmx_bool bVerbose,
 		    real tbeginfit,real tendfit,real dt,real c1[],real *fit);
   /* Fit an ACF to a given function */
   
-extern void do_autocorr(const char *fn,const output_env_t oenv,
+void do_autocorr(const char *fn,const output_env_t oenv,
                         const char *title,
 			int nframes,int nitem,real **c1,
-			real dt,unsigned long mode,bool bAver);
+			real dt,unsigned long mode,gmx_bool bAver);
 /* Calls low_do_autocorr (see below). After calling add_acf_pargs */
 
-extern void low_do_autocorr(const char *fn,const output_env_t oenv,
+void low_do_autocorr(const char *fn,const output_env_t oenv,
                             const char *title, int  nframes,int nitem,
                             int nout,real **c1, real dt,unsigned long mode,
-                            int nrestart, bool bAver,bool bNormalize,
-			    bool bVerbose,real tbeginfit,real tendfit,
+                            int nrestart, gmx_bool bAver,gmx_bool bNormalize,
+			    gmx_bool bVerbose,real tbeginfit,real tendfit,
 			    int nfitparm,int nskip);
 /* 
  * do_autocorr calculates autocorrelation functions for many things.
@@ -197,7 +193,7 @@ typedef struct {
   real Jcsig;   /* Standard deviation in Jc */
 } t_karplus;
 
-extern void calc_distribution_props(int nh,int histo[],
+void calc_distribution_props(int nh,int histo[],
 				    real start,int  nkkk, t_karplus kkk[],
 				    real *S2);
 /* This routine takes a dihedral distribution and calculates
@@ -229,10 +225,10 @@ extern void calc_distribution_props(int nh,int histo[],
  *     F I T   R O U T I N E S
  *
  ***********************************************/
-extern void do_expfit(int ndata,real c1[],real dt,
+void do_expfit(int ndata,real c1[],real dt,
 		      real begintimefit,real endtimefit);
 
-extern void expfit(int n, real x[], real y[], real Dy[], 
+void expfit(int n, real x[], real y[], real Dy[], 
 		   real *a, real *sa, 
 		   real *b, real *sb);
 /* This procedure fits y=exp(a+bx) for n (x,y) pairs to determine a and b.
@@ -242,9 +238,9 @@ extern void expfit(int n, real x[], real y[], real Dy[],
  * Routine from Computers in physics, 7(3) (1993), p. 280-285.
  */
 
-extern void ana_dih_trans(const char *fn_trans,const char *fn_histo,
+void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 			  real **dih,int nframes,int nangles,
-			  const char *grpname,real t0,real dt,bool bRb,
+			  const char *grpname,real t0,real dt,gmx_bool bRb,
                           const output_env_t oenv);
 /*
  * Analyse dihedral transitions, by counting transitions per dihedral
@@ -269,11 +265,11 @@ extern void ana_dih_trans(const char *fn_trans,const char *fn_histo,
  *           (trans = 0)
  */
 
-extern void low_ana_dih_trans(bool bTrans, const char *fn_trans,
-			      bool bHisto, const char *fn_histo, int maxchi, 
+void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
+			      gmx_bool bHisto, const char *fn_histo, int maxchi, 
 			      real **dih, int nlist, t_dlist dlist[], 
                               int nframes, int nangles, const char *grpname, 
-                              int xity[], real t0, real dt, bool bRb, 
+                              int xity[], real t0, real dt, gmx_bool bRb, 
                               real core_frac, const output_env_t oenv); 
   /* as above but passes dlist so can copy occupancies into it, and xity[] 
    *  (1..nangles, corresp to dih[this][], so can have non-3 multiplicity of
@@ -284,8 +280,8 @@ extern void low_ana_dih_trans(bool bTrans, const char *fn_trans,
 
 
 
-extern void read_ang_dih(const char *trj_fn,
-			 bool bAngles,bool bSaveAll,bool bRb,bool bPBC,
+void read_ang_dih(const char *trj_fn,
+			 gmx_bool bAngles,gmx_bool bSaveAll,gmx_bool bRb,gmx_bool bPBC,
 			 int maxangstat,int angstat[],
 			 int *nframes,real **time,
 			 int isize,atom_id index[],
@@ -315,7 +311,7 @@ extern void read_ang_dih(const char *trj_fn,
  * dih         all angles at each time frame
  */
  
-extern void make_histo(FILE *log,
+void make_histo(FILE *log,
 		       int ndata,real data[],int npoints,int histo[],
 		       real minx,real maxx);
 /* 
@@ -335,7 +331,7 @@ extern void make_histo(FILE *log,
  *           if both are 0, these values are computed by the routine itself
  */
 
-extern void normalize_histo(int npoints,int histo[],real dx,real normhisto[]);
+void normalize_histo(int npoints,int histo[],real dx,real normhisto[]);
 /* 
  * Normalize a histogram so that the integral over the histo is 1 
  *
@@ -345,29 +341,29 @@ extern void normalize_histo(int npoints,int histo[],real dx,real normhisto[]);
  * normhisto  normalized output histogram
  */
 
-extern real fit_function(int eFitFn,real *parm,real x);
+real fit_function(int eFitFn,real *parm,real x);
 /* Returns the value of fit function eFitFn at x */
 
 /* Use Levenberg-Marquardt method to fit to a nfitparm parameter exponential */
 /* or to a transverse current autocorrelation function */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
-extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
+real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
 		     real begintimefit,real endtimefit,const output_env_t oenv,
-                     bool bVerbose, int eFitFn,real fitparms[],int fix);
+                     gmx_bool bVerbose, int eFitFn,real fitparms[],int fix);
 /* Returns integral.
  * If x == NULL, the timestep dt will be used to create a time axis.
  * fix fixes fit parameter i at it's starting value, when the i'th bit
  * of fix is set. 
  */
 
-extern real evaluate_integral(int n,real x[],real y[],real dy[],
+real evaluate_integral(int n,real x[],real y[],real dy[],
 			      real aver_start,real *stddev);
 /* Integrate data in y, and, if given, use dy as weighting 
  * aver_start should be set to a value where the function has 
  * converged to 0.
  */
 
-extern real print_and_integrate(FILE *fp,int n,real dt,
+real print_and_integrate(FILE *fp,int n,real dt,
 				real c[],real *fit,int nskip);
 /* Integrate the data in c[] from 0 to n using trapezium rule.
  * If fp != NULL output is written to it
@@ -376,58 +372,58 @@ extern real print_and_integrate(FILE *fp,int n,real dt,
  * If fit != NULL the fit is also written.
  */
  
-extern int get_acfnout(void);
+int get_acfnout(void);
 /* Return the output length for the correlation function 
  * Works only AFTER do_auto_corr has been called!
  */
 
-extern int get_acffitfn(void);
+int get_acffitfn(void);
 /* Return the fit function type.
  * Works only AFTER do_auto_corr has been called!
  */
  
   /* Routines from pp2shift (anadih.c etc.) */
 
-extern void do_pp2shifts(FILE *fp,int nframes,
+void do_pp2shifts(FILE *fp,int nframes,
 			 int nlist,t_dlist dlist[],real **dih);
 
-extern bool has_dihedral(int Dih,t_dlist *dl);
+gmx_bool has_dihedral(int Dih,t_dlist *dl);
 
-extern t_dlist *mk_dlist(FILE *log, 
+t_dlist *mk_dlist(FILE *log, 
 			 t_atoms *atoms, int *nlist,
-			 bool bPhi, bool bPsi, bool bChi, bool bHChi,
+			 gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
 			 int maxchi,int r0,int naa,char **aa);
 			 
-extern void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt,  int printtype,
-		     bool bPhi, bool bPsi,bool bChi,bool bOmega, int maxchi);
+void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt,  int printtype,
+		     gmx_bool bPhi, gmx_bool bPsi,gmx_bool bChi,gmx_bool bOmega, int maxchi);
 
-extern int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi);
+int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi);
 
-extern void mk_chi_lookup (int **lookup, int maxchi, real **dih, 
+void mk_chi_lookup (int **lookup, int maxchi, real **dih, 
 			   int nlist, t_dlist dlist[]) ; 
 
-extern void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
+void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
 				    int nlist, t_dlist dlist[],int nangle) ; 
 
-extern void get_chi_product_traj (real **dih,int nframes,int nangles, 
+void get_chi_product_traj (real **dih,int nframes,int nangles, 
 				  int nlist,int maxchi, t_dlist dlist[], 
                                   real time[], int **lookup,int *xity,
-                                  bool bRb,bool bNormalize,
-				  real core_frac,bool bAll,const char *fnall,
+                                  gmx_bool bRb,gmx_bool bNormalize,
+				  real core_frac,gmx_bool bAll,const char *fnall,
                                   const output_env_t oenv); 
 
-extern void print_one (const output_env_t oenv, const char *base,
+void print_one (const output_env_t oenv, const char *base,
                        const char *name,
                        const char *title, const char *ylabel,int nf,
                        real time[],real data[]); 
 		      
 /* Routines from g_hbond */
-extern void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
+void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
                          real sigma_ct[],real sigma_nt[],real sigma_kt[],
                          real fit_start,real temp,real smooth_tail_start,
                          const output_env_t oenv);
 
-extern void compute_derivative(int nn,real x[],real y[],real dydx[]);
+void compute_derivative(int nn,real x[],real y[],real dydx[]);
 
 #ifdef __cplusplus
 	     }

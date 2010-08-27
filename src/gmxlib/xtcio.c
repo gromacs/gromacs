@@ -49,7 +49,7 @@
 #define XTC_MAGIC 1995
 
 
-static int xdr_r2f(XDR *xdrs,real *r,bool bRead)
+static int xdr_r2f(XDR *xdrs,real *r,gmx_bool bRead)
 {
 #ifdef GMX_DOUBLE
     float f;
@@ -85,7 +85,7 @@ static void check_xtc_magic(int magic)
 		magic,XTC_MAGIC);
 }
 
-int xtc_check(const char *str,bool bResult,const char *file,int line)
+int xtc_check(const char *str,gmx_bool bResult,const char *file,int line)
 {
   if (!bResult) {
     if (debug)
@@ -96,7 +96,7 @@ int xtc_check(const char *str,bool bResult,const char *file,int line)
   return 1;
 }
 
-void xtc_check_fat_err(const char *str,bool bResult,const char *file,int line)
+void xtc_check_fat_err(const char *str,gmx_bool bResult,const char *file,int line)
 {
   if (!bResult) {
     gmx_fatal(FARGS,"XTC read/write of %s failed, "
@@ -105,7 +105,7 @@ void xtc_check_fat_err(const char *str,bool bResult,const char *file,int line)
 }
 
 static int xtc_header(XDR *xd,int *magic,int *natoms,int *step,real *time,
-		      bool bRead,bool *bOK)
+		      gmx_bool bRead,gmx_bool *bOK)
 {
   int result;
 
@@ -121,7 +121,7 @@ static int xtc_header(XDR *xd,int *magic,int *natoms,int *step,real *time,
   return result;
 }
 
-static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRead)
+static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, gmx_bool bRead)
 {
   int i,j,result;
 #ifdef GMX_DOUBLE
@@ -153,7 +153,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
       }
       fprec = *prec;
   }
-  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,&fprec,bRead));
+  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,&fprec));
   
   /* Copy from temp. array if reading */
   if(bRead)
@@ -168,7 +168,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
   }  
   sfree(ftmp);
 #else
-    result=XTC_CHECK("x",xdr3dfcoord(xd,x[0],natoms,prec,bRead)); 
+    result=XTC_CHECK("x",xdr3dfcoord(xd,x[0],natoms,prec)); 
 #endif 
     
   return result;
@@ -182,7 +182,7 @@ int write_xtc(t_fileio *fio,
 {
   int magic_number = XTC_MAGIC;
   XDR *xd;
-  bool bDum;
+  gmx_bool bDum;
   int bOK;
 	
   xd = gmx_fio_getxdr(fio);
@@ -206,7 +206,7 @@ int write_xtc(t_fileio *fio,
 }
 
 int read_first_xtc(t_fileio *fio,int *natoms,int *step,real *time,
-		   matrix box,rvec **x,real *prec,bool *bOK)
+		   matrix box,rvec **x,real *prec,gmx_bool *bOK)
 {
   int magic;
   XDR *xd;
@@ -230,7 +230,7 @@ int read_first_xtc(t_fileio *fio,int *natoms,int *step,real *time,
 
 int read_next_xtc(t_fileio* fio,
 		  int natoms,int *step,real *time,
-		  matrix box,rvec *x,real *prec,bool *bOK)
+		  matrix box,rvec *x,real *prec,gmx_bool *bOK)
 {
   int magic;
   int n;

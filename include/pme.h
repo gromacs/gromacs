@@ -36,10 +36,6 @@
 #ifndef _pme_h
 #define _pme_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "typedefs.h"
 #include "gmxcomplex.h"
@@ -53,12 +49,12 @@ typedef real *splinevec[DIM];
 
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
-extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
+int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 			int nnodes_major,int nnodes_minor,
 			t_inputrec *ir,int homenr,
-			bool bFreeEnergy, bool bReproducible);
+			gmx_bool bFreeEnergy, gmx_bool bReproducible);
 			
-extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
+int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 /* Initialize and destroy the pme data structures resepectively.
  * Return value 0 indicates all well, non zero is an error code.
  */
@@ -69,7 +65,7 @@ extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 #define GMX_PME_CALC_ENER_VIR (1<<3)
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
-extern int gmx_pme_do(gmx_pme_t pme,
+int gmx_pme_do(gmx_pme_t pme,
 		      int start,       int homenr,
 		      rvec x[],        rvec f[],
 		      real chargeA[],  real chargeB[],
@@ -84,15 +80,15 @@ extern int gmx_pme_do(gmx_pme_t pme,
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-extern int gmx_pmeonly(gmx_pme_t pme,
+int gmx_pmeonly(gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
 		       gmx_wallcycle_t wcycle,
-		       real ewaldcoeff,   bool bGatherOnly,
+		       real ewaldcoeff,   gmx_bool bGatherOnly,
 		       t_inputrec *ir);
 /* Called on the nodes that do PME exclusively (as slaves) 
  */
 
-extern void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V);
+void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V);
 /* Calculate the PME grid energy V for n charges with a potential
  * in the pme struct determined before with a call to gmx_pme_do
  * with at least GMX_PME_SPREAD_Q and GMX_PME_SOLVE specified.
@@ -105,41 +101,41 @@ extern void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V);
 /* Abstract type for PME <-> PP communication */
 typedef struct gmx_pme_pp *gmx_pme_pp_t;
 
-extern gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
+gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 /* Initialize the PME-only side of the PME <-> PP communication */
 
-extern void gmx_pme_send_q(t_commrec *cr,
-			   bool bFreeEnergy, real *chargeA, real *chargeB,
+void gmx_pme_send_q(t_commrec *cr,
+			   gmx_bool bFreeEnergy, real *chargeA, real *chargeB,
 			   int maxshift_x, int maxshift_y);
 /* Send the charges and maxshift to out PME-only node. */
 
-extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-			   bool bFreeEnergy, real lambda,
-			   bool bEnerVir,
+void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
+			   gmx_bool bFreeEnergy, real lambda,
+			   gmx_bool bEnerVir,
 			   gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
-extern void gmx_pme_finish(t_commrec *cr);
+void gmx_pme_finish(t_commrec *cr);
 /* Tell our PME-only node to finish */
 
-extern void gmx_pme_receive_f(t_commrec *cr,
+void gmx_pme_receive_f(t_commrec *cr,
 			      rvec f[], matrix vir, 
 			      real *energy, real *dvdlambda,
 			      float *pme_cycles);
 /* PP nodes receive the long range forces from the PME nodes */
 
-extern int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
+int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
 			    real **chargeA, real **chargeB,
 			    matrix box, rvec **x,rvec **f,
 			    int *maxshift_x,int *maxshift_y,
-			    bool *bFreeEnergy,real *lambda,
-			    bool *bEnerVir,
+			    gmx_bool *bFreeEnergy,real *lambda,
+			    gmx_bool *bEnerVir,
 			    gmx_large_int_t *step);
 /* Receive charges and/or coordinates from the PP-only nodes.
  * Returns the number of atoms, or -1 when the run is finished.
  */
 
-extern void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
+void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
 					rvec *f, matrix vir,
 					real energy, real dvdlambda,
 					float cycles);

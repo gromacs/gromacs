@@ -1,9 +1,6 @@
 #ifndef _topsort_h
 #define _topsort_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "typedefs.h"
 
@@ -13,7 +10,7 @@ extern "C" {
 
 
 /* Returns if the are bonded interactions for free energy calculations */
-bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop);
+gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop);
 
 /* Sort all the bonded ilists in idef to have the perturbed ones at the end
 * and set nr_nr_nonperturbed in ilist.

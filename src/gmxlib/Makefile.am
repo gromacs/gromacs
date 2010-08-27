@@ -54,12 +54,13 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	enxio.c		ewald_util.c	ffscanf.c	\
 	filenm.c	futil.c		gbutil.c	gmx_fatal.c	\
 	gmx_sort.c	gmxcpp.c \
-	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
+	gmxfio.c	ifunc.c		index.c		inputrec.c	\
+	cinvsqrtdata.c	\
 	invblock.c	macros.c	orires.c	sparsematrix.c  \
 	main.c		maths.c		matio.c		mshift.c	\
 	mtop_util.c	mtxio.c		mvdata.c	names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\
-	pargs.c		pbc.c		pdbio.c		princ.c		\
+	pargs.c		pbc.c		pdbio.c		physics.c	princ.c		\
 	rando.c		random.c	gmx_random.c	rbin.c		\
 	readinp.c	replace.c	rmpbc.c		shift_util.c	\
 	sortwater.c	smalloc.c	statutil.c	sfactor.c	\
@@ -94,6 +95,7 @@ version.c: FORCE
 FORCE:
 endif
 
+LDADD = ../gmxlib/libgmx@LIBSUFFIX@.la 
 
-
-
+EXTRA_PROGRAMS = physics_test
+EXTRA_DIST = version.h libgmx.pc.cmakein

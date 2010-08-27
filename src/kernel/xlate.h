@@ -41,9 +41,9 @@
 /* If bResname is true renames atoms based on residue names,
  * otherwise renames atoms based on rtp entry names.
  */
-extern void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
+extern void rename_atoms(const char *xlfile,const char *ffdir,
 			 t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
-			 bool bResname,gmx_residuetype_t rt,bool bReorderNum,
-			 bool bVerbose);
+			 gmx_bool bResname,gmx_residuetype_t rt,gmx_bool bReorderNum,
+			 gmx_bool bVerbose);
 
 #endif

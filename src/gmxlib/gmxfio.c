@@ -74,7 +74,10 @@ static t_fileio *open_files = NULL;
 
    For now, we use this as a coarse grained lock on all file 
    insertion/deletion operations because it makes avoiding deadlocks 
-   easier, and adds almost no overhead . */
+   easier, and adds almost no overhead: the only overhead is during
+   opening and closing of files, or during global operations like
+   iterating along all open files. All these cases should be rare
+   during the simulation. */
 static tMPI_Thread_mutex_t open_file_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -146,10 +149,10 @@ static int gmx_fio_int_flush(t_fileio* fio)
 }
 
 /* returns TRUE if the file type ftp is in the set set */
-static bool in_ftpset(int ftp, int nset, const int set[])
+static gmx_bool in_ftpset(int ftp, int nset, const int set[])
 {
     int i;
-    bool bResult;
+    gmx_bool bResult;
 
     bResult = FALSE;
     for (i = 0; (i < nset); i++)
@@ -335,29 +338,20 @@ static void gmx_fio_insert(t_fileio *fio)
 
 /* remove a t_fileio into the list. We assume the fio is locked, and we leave 
    it locked. */
-static void gmx_fio_remove(t_fileio *fio)
+static void gmx_fio_remove(t_fileio *fio, gmx_bool global_lock)
 {    
     t_fileio *prev;
 
-    /* this looks a bit complicated because we're trying to avoid a 
-       deadlock with threads that are walking through the structure
-       with gmx_fio_get_next(): if they're trying to lock our current structure
-       while we are trying to lock the previous structure, we get a deadlock.
-       */
-    do
-    {
-        /* we remember the prev */
-        prev=fio->prev;
-        /* and unlock it to prevent deadlocks */
-        gmx_fio_unlock(fio);
-        /* lock the prev nbr */
-        gmx_fio_lock(prev);
-        /* now that that one is locked, we can safely lock original one again */
-        gmx_fio_lock(fio);
+#ifdef GMX_THREADS
+    /* first lock the big open_files mutex. */
+    /* We don't want two processes operating on this list at the same time */
+    if (global_lock)
+        tMPI_Thread_mutex_lock(&open_file_mutex);
+#endif
+   
+    /* lock prev, because we're changing it */ 
+    gmx_fio_lock(fio->prev);
 
-        /* and normally, we should be able to get out of this loop, but maybe
-           things have changed when we unlocked our original fio */
-    } while((prev->next != fio) || (fio->prev != prev)); 
     /* now set the prev's pointer */
     fio->prev->next=fio->next;
     gmx_fio_unlock(fio->prev);
@@ -369,6 +363,13 @@ static void gmx_fio_remove(t_fileio *fio)
 
     /* and make sure we point nowhere in particular */
     fio->next=fio->prev=fio;
+
+#ifdef GMX_THREADS
+    /* now unlock the big open_files mutex.  */
+    if (global_lock)
+        tMPI_Thread_mutex_unlock(&open_file_mutex);
+#endif
+
 }
 
 
@@ -379,18 +380,15 @@ static t_fileio *gmx_fio_get_first(void)
     t_fileio *ret;
     /* first lock the big open_files mutex and the dummy's mutex */
 
-    gmx_fio_make_dummy();
 #ifdef GMX_THREADS
     /* first lock the big open_files mutex. */
     tMPI_Thread_mutex_lock(&open_file_mutex);
 #endif
+    gmx_fio_make_dummy();
 
     gmx_fio_lock(open_files);
     ret=open_files->next;
 
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&open_file_mutex);
-#endif
 
     /* check whether there were any to begin with */
     if (ret==open_files)
@@ -419,6 +417,9 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
     if (fio->next==open_files)
     {
         ret=NULL;
+#ifdef GMX_THREADS
+        tMPI_Thread_mutex_unlock(&open_file_mutex);
+#endif
     }
     else
     {
@@ -427,6 +428,15 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
     gmx_fio_unlock(fio);
 
     return ret;
+}
+
+/* Stop looping through the open_files.  Unlocks the global lock. */
+static void gmx_fio_stop_getting_next(t_fileio *fio)
+{
+    gmx_fio_unlock(fio);
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&open_file_mutex);
+#endif
 }
 
 
@@ -442,7 +452,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     t_fileio *fio = NULL;
     int i;
     char newmode[5];
-    bool bRead, bReadWrite;
+    gmx_bool bRead, bReadWrite;
     int xdrid;
 
     if (fn2ftp(fn) == efTPA)
@@ -572,13 +582,14 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     return fio;
 }
 
-int gmx_fio_close(t_fileio *fio)
+static int gmx_fio_close_locked(t_fileio *fio)
 {
     int rc = 0;
 
-    gmx_fio_lock(fio);
-    /* first remove it from the list */
-    gmx_fio_remove(fio);
+    if (!fio->bOpen)
+    {
+        gmx_fatal(FARGS,"File %s closed twice!\n", fio->fn);
+    }
 
     if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
     {
@@ -592,6 +603,17 @@ int gmx_fio_close(t_fileio *fio)
 
     fio->bOpen = FALSE;
 
+    return rc;
+}
+
+int gmx_fio_close(t_fileio *fio)
+{
+    int rc = 0;
+
+    gmx_fio_lock(fio);
+    /* first remove it from the list */
+    gmx_fio_remove(fio, TRUE);
+    rc=gmx_fio_close_locked(fio);
     gmx_fio_unlock(fio);
 
     sfree(fio);
@@ -631,22 +653,22 @@ int gmx_fio_fclose(FILE *fp)
 {
     t_fileio *cur;
     t_fileio *found=NULL;
+    int rc=-1;
 
     cur=gmx_fio_get_first();
     while(cur)
     {
         if (cur->fp == fp)
         {
-            gmx_fio_unlock(cur);
-            found=cur;
-            /* we let it loop until  the end */
+            rc=gmx_fio_close_locked(cur);
+            gmx_fio_remove(cur,FALSE);
+            gmx_fio_stop_getting_next(cur);
+            break;
         }
         cur=gmx_fio_get_next(cur);
     }
 
-    if (!found)
-        return -1;
-    return gmx_fio_close(found);
+    return rc;
 }
 
 /* internal variant of get_file_md5 that operates on a locked file */
@@ -780,7 +802,7 @@ int gmx_fio_check_file_position(t_fileio *fio)
     /* If gmx_off_t is 4 bytes we can not store file offset > 2 GB.
      * If we do not have ftello, we will play it safe.
      */
-#if (SIZEOF_OFF_T == 4 || !defined HAVE_FSEEKO)
+#if (SIZEOF_GMX_OFF_T == 4 || !defined HAVE_FSEEKO)
     gmx_off_t offset;
 
     gmx_fio_lock(fio);
@@ -893,16 +915,16 @@ void gmx_fio_checktype(t_fileio *fio)
 }
 
 
-void gmx_fio_setprecision(t_fileio *fio, bool bDouble)
+void gmx_fio_setprecision(t_fileio *fio, gmx_bool bDouble)
 {
     gmx_fio_lock(fio);
     fio->bDouble = bDouble;
     gmx_fio_unlock(fio);
 }
 
-bool gmx_fio_getdebug(t_fileio *fio)
+gmx_bool gmx_fio_getdebug(t_fileio *fio)
 {
-    bool ret;
+    gmx_bool ret;
 
     gmx_fio_lock(fio);
     ret = fio->bDebug;
@@ -911,7 +933,7 @@ bool gmx_fio_getdebug(t_fileio *fio)
     return ret;
 }
 
-void gmx_fio_setdebug(t_fileio *fio, bool bDebug)
+void gmx_fio_setdebug(t_fileio *fio, gmx_bool bDebug)
 {
     gmx_fio_lock(fio);
     fio->bDebug = bDebug;
@@ -975,59 +997,16 @@ static int gmx_fio_int_fsync(t_fileio *fio)
     int rc = 0;
     int filen=-1;
 
-#if ( ( (defined(HAVE_FILENO) || (defined(HAVE__FILENO) ) ) && \
-	(defined(HAVE_FSYNC))  || defined(HAVE__COMMIT)  ) || \
-	 defined(FAHCORE) )
+
     if (fio->fp)
     {
-#ifdef GMX_FAHCORE
-	/* the fahcore defines its own os-independent fsync */
-	rc=fah_fsync(fio->fp); 
-#elif defined(HAVE_FILENO)
-        filen=fileno(fio->fp);
-#elif defined(HAVE__FILENO)
-        filen=_fileno(fio->fp);
-#endif
+        rc=gmx_fsync(fio->fp);
     }
-    else if (fio->xdr)
+    else if (fio->xdr) /* this should normally not happen */
     {
-#ifdef GMX_FAHCORE
-	/* the fahcore defines its own os-independent fsync */
-        rc=fah_fsync((FILE *) fio->xdr->x_private);
-#elif defined(HAVE_FILENO)
-        filen=fileno((FILE *) fio->xdr->x_private);
-#elif defined(HAVE__FILENO)
-        filen=_fileno((FILE *) fio->xdr->x_private);
-#endif
+        rc=gmx_fsync((FILE*) fio->xdr->x_private);
+                                    /* ^ is this actually OK? */
     }
-
-#ifndef GMX_FAHCORE
-    if (filen>0)
-    {
-#if (defined(HAVE_FSYNC))
-        /* fahcore also defines HAVE_FSYNC */
-        rc=fsync(filen);
-#elif (defined(HAVE__COMMIT)) 
-        rc=_commit(filen);
-#endif
-    }
-#endif
-
-    /* We check for these error codes this way because POSIX requires them
-       to be defined, and using anything other than macros is unlikely: */
-#ifdef EINTR
-    /* we don't want to report an error just because fsync() caught a signal.
-       For our purposes, we can just ignore this. */
-    if (rc && errno==EINTR)
-        rc=0;
-#endif
-#ifdef EINVAL
-    /* we don't want to report an error just because we tried to fsync() 
-       stdout, a socket or a pipe. */
-    if (rc && errno==EINVAL)
-        rc=0;
-#endif
-#endif
 
     return rc;
 }
@@ -1137,9 +1116,9 @@ XDR *gmx_fio_getxdr(t_fileio* fio)
     return ret;
 }
 
-bool gmx_fio_getread(t_fileio* fio)
+gmx_bool gmx_fio_getread(t_fileio* fio)
 {
-    bool ret;
+    gmx_bool ret;
 
     gmx_fio_lock(fio);
     ret = fio->bRead;

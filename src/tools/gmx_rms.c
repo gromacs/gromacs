@@ -139,8 +139,8 @@ int gmx_rms(int argc, char *argv[])
                 "Option [TT]-bm[tt] produces a matrix of average bond angle deviations",
                 "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
                 "comparison group are considered." };
-    static bool bPBC = TRUE, bFitAll = TRUE, bSplit = FALSE;
-    static bool bDeltaLog = FALSE;
+    static gmx_bool bPBC = TRUE, bFitAll = TRUE, bSplit = FALSE;
+    static gmx_bool bDeltaLog = FALSE;
     static int prev = 0, freq = 1, freq2 = 1, nlevels = 80, avl = 0;
     static real rmsd_user_max = -1, rmsd_user_min = -1, bond_user_max = -1,
         bond_user_min = -1, delta_maxy = 0.0;
@@ -171,7 +171,7 @@ int gmx_rms(int argc, char *argv[])
     const char *fitgraphlabel[efNR + 1] =
         { NULL, "lsq fit", "translational fit", "no fit" };
     static int nrms = 1;
-    static bool bMassWeighted = TRUE;
+    static gmx_bool bMassWeighted = TRUE;
     t_pargs pa[] =
         {
             { "-what", FALSE, etENUM,
@@ -217,8 +217,8 @@ int gmx_rms(int argc, char *argv[])
 #define NFRAME 5000
     int maxframe = NFRAME, maxframe2 = NFRAME;
     real t, *w_rls, *w_rms, *w_rls_m = NULL, *w_rms_m = NULL;
-    bool bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
-    bool bFit, bReset;
+    gmx_bool bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
+    gmx_bool bFit, bReset;
     t_topology top;
     int ePBC;
     t_iatom *iatom = NULL;
@@ -237,7 +237,7 @@ int gmx_rms(int argc, char *argv[])
     real **delta = NULL, delta_max, delta_scalex = 0, delta_scaley = 0,
         *delta_tot;
     int delta_xsize = 0, del_lev = 100, mx, my, abs_my;
-    bool bA1, bA2, bPrev, bTop, *bInMat = NULL;
+    gmx_bool bA1, bA2, bPrev, bTop, *bInMat = NULL;
     int ifit, *irms, ibond = 0, *ind_bond1 = NULL, *ind_bond2 = NULL, n_ind_m =
         0;
     atom_id *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
@@ -433,7 +433,7 @@ int gmx_rms(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC) {
       gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,box);
-      gmx_rmpbc(gpbc,box,xp,xp);
+      gmx_rmpbc(gpbc,top.atoms.nr,box,xp);
     }
     if (bReset)
         reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
@@ -533,7 +533,7 @@ int gmx_rms(int argc, char *argv[])
     teller = 0;
     do {
         if (bPBC) 
-	  gmx_rmpbc(gpbc,box,x,x);
+	  gmx_rmpbc(gpbc,natoms,box,x);
 
         if (bReset)
             reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
@@ -615,7 +615,7 @@ int gmx_rms(int argc, char *argv[])
         teller2 = 0;
         do {
             if (bPBC) 
-	      gmx_rmpbc(gpbc,box,x,x);
+	      gmx_rmpbc(gpbc,natoms,box,x);
 
             if (bReset)
                 reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);

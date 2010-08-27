@@ -36,9 +36,6 @@
 #ifndef _xdrf_h
 #define _xdrf_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include <stdio.h>
 #include "typedefs.h"
@@ -82,7 +79,7 @@ typedef enum
 extern const char *xdr_datatype_names[];
 
 /* Read or write reduced precision *float* coordinates */
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision, bool bRead);
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
 
 
 /* Read or write a *real* value (stored as float) */
@@ -90,10 +87,10 @@ int xdr_real(XDR *xdrs,real *r);
 
 
 /* Read or write reduced precision *real* coordinates */
-int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision, bool bRead);
+int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 
 
-extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
+int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
 /* Read or write a gmx_large_int_t value.
  * 32bit code reading a 64bit gmx_large_int_t value from xdrs could
  * lead to values out of int range.
@@ -103,7 +100,7 @@ extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
  * "WARNING during %s:", where warn is printed in %s.
  */
 
-float xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+float xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
 
@@ -111,10 +108,10 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
 int xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms);
 
 
-float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 
-int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 #ifdef __cplusplus
 }

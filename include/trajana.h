@@ -179,31 +179,31 @@ typedef struct gmx_ana_traj_t gmx_ana_traj_t;
 /*@{*/
 
 /** Allocates and initializes data structure for trajectory analysis. */
-extern int
+int
 gmx_ana_traj_create(gmx_ana_traj_t **data, unsigned long flags);
 /** Frees the memory allocated for trajectory analysis data. */
-extern void
+void
 gmx_ana_traj_free(gmx_ana_traj_t *d);
 /** Sets additional flags after gmx_ana_traj_create() has been called. */
-extern int
+int
 gmx_ana_add_flags(gmx_ana_traj_t *d, unsigned long flags);
 /** Sets the number of reference groups required. */
-extern int
+int
 gmx_ana_set_nrefgrps(gmx_ana_traj_t *d, int nrefgrps);
 /** Sets the number of analysis groups required. */
-extern int
+int
 gmx_ana_set_nanagrps(gmx_ana_traj_t *d, int nanagrps);
 /** Sets whether PBC are used. */
-extern int
-gmx_ana_set_pbc(gmx_ana_traj_t *d, bool bPBC);
+int
+gmx_ana_set_pbc(gmx_ana_traj_t *d, gmx_bool bPBC);
 /** Sets whether molecules are made whole. */
-extern int
-gmx_ana_set_rmpbc(gmx_ana_traj_t *d, bool bRmPBC);
+int
+gmx_ana_set_rmpbc(gmx_ana_traj_t *d, gmx_bool bRmPBC);
 /** Sets flags that determine what to read from the trajectory. */
-extern int
+int
 gmx_ana_set_frflags(gmx_ana_traj_t *d, int frflags);
 /** Parses command-line arguments and performs some initialization. */
-extern int
+int
 parse_trjana_args(gmx_ana_traj_t *d, int *argc, char *argv[],
                   unsigned long pca_flags, int nfile, t_filenm fnm[],
                   int npargs, t_pargs *pa,
@@ -211,45 +211,45 @@ parse_trjana_args(gmx_ana_traj_t *d, int *argc, char *argv[],
                   int nbugs, const char **bugs,
                   output_env_t *oenv);
 /** Initializes selection information. */
-extern int
+int
 gmx_ana_init_selections(gmx_ana_traj_t *d);
 /** Initializes calculation of covered fractions for selections. */
-extern int
+int
 gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type);
 
 /** Returns whether PBC should be used. */
-extern bool
+gmx_bool
 gmx_ana_has_pbc(gmx_ana_traj_t *d);
 /** Gets the topology information. */
-extern int
-gmx_ana_get_topology(gmx_ana_traj_t *d, bool bReq, t_topology **top, bool *bTop);
+int
+gmx_ana_get_topology(gmx_ana_traj_t *d, gmx_bool bReq, t_topology **top, gmx_bool *bTop);
 /** Gets the configuration from the topology. */
-extern int
+int
 gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC);
 /** Gets the first frame to be analyzed. */
-extern int
+int
 gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr);
 
 /** Gets the total number of selections provided by the user. */
-extern int
+int
 gmx_ana_get_ngrps(gmx_ana_traj_t *d, int *ngrps);
 /** Gets the number of analysis groups provided by the user. */
-extern int
+int
 gmx_ana_get_nanagrps(gmx_ana_traj_t *d, int *nanagrps);
 /** Gets the selection object for a reference selection. */
-extern int
+int
 gmx_ana_get_refsel(gmx_ana_traj_t *d, int i, gmx_ana_selection_t **sel);
 /** Gets the selection object for a reference selection. */
-extern int
+int
 gmx_ana_get_anagrps(gmx_ana_traj_t *d, gmx_ana_selection_t ***sel);
 /** Gets an array of names for the selections. */
-extern int
+int
 gmx_ana_get_grpnames(gmx_ana_traj_t *d, char ***grpnames);
 /** Gets the selection collection object that contains all the selections. */
-extern int
+int
 gmx_ana_get_selcollection(gmx_ana_traj_t *d, gmx_ana_selcollection_t **sc);
 /** Prints the selection strings into an XVGR file as comments. */
-extern int
+int
 xvgr_selections(FILE *out, gmx_ana_traj_t *d);
 
 /*@}*/
@@ -282,10 +282,10 @@ typedef int (*gmx_analysisfunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 	                        int nr, gmx_ana_selection_t *sel[], void *data);
 
 /** Loops through all frames in the trajectory. */
-extern int
+int
 gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *data);
 /** Gets the total number of frames analyzed. */
-extern int
+int
 gmx_ana_get_nframes(gmx_ana_traj_t *d, int *nframes);
 
 /*@}*/

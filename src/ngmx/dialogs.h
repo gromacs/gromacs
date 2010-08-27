@@ -42,7 +42,7 @@
 #include "logo.h"
 
 typedef struct {
-  bool  bMapped;
+  gmx_bool  bMapped;
   t_dlg *dlg;
 } t_dialogs;
 

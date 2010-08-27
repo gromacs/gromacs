@@ -137,8 +137,8 @@ int gmx_helixorient(int argc,char *argv[])
     output_env_t oenv;
     gmx_rmpbc_t  gpbc=NULL;
 
-    static  bool bSC=FALSE;
-    static bool bIncremental = FALSE;
+    static  gmx_bool bSC=FALSE;
+    static gmx_bool bIncremental = FALSE;
     
     static t_pargs pa[] = {
         { "-sidechain",      FALSE, etBOOL, {&bSC},
@@ -257,7 +257,7 @@ int gmx_helixorient(int argc,char *argv[])
       /* initialisation for correct distance calculations */
     set_pbc(&pbc,ePBC,box);
       /* make molecules whole again */
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
       
       /* copy coords to our smaller arrays */
       for(i=0;i<iCA;i++)

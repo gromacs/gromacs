@@ -108,7 +108,7 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
   /* Must init pbc every step because of pressure coupling */
   set_pbc(&pbc,ePBC,box);
   
-  gmx_rmpbc(gpbc,box,x,x);
+  gmx_rmpbc(gpbc,natoms,box,x);
 
   nsgbin = 1 + 1/0.0005;
   snew(sgbin,nsgbin);
@@ -340,9 +340,9 @@ static void check_length(real length, int a, int b)
 }
 
 void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
-		real ***slOrder, real *slWidth, int nslices, bool bSliced, 
-		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis, 
-		bool permolecule, bool radial, bool distcalc, const char *radfn,
+		real ***slOrder, real *slWidth, int nslices, gmx_bool bSliced, 
+		gmx_bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis, 
+		gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
 		real ***distvals,
                 const output_env_t oenv)
 { 
@@ -370,7 +370,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
     *slCount;        /* nr. of atoms in one slice                      */
    real dbangle = 0, /* angle between double bond and  axis            */ 
         sdbangle = 0;/* sum of these angles                            */
-   bool use_unitvector = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
+   gmx_bool use_unitvector = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
    rvec direction, com,dref,dvec;
    int comsize, distsize;
    atom_id *comidx=NULL, *distidx=NULL;
@@ -445,7 +445,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 
   teller = 0; 
 
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
   /*********** Start processing trajectory ***********/
   do {
     if (bSliced)
@@ -453,7 +453,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
     teller++;
     
     set_pbc(&pbc,ePBC,box);
-    gmx_rmpbc(gpbc,box,x0,x1);
+    gmx_rmpbc_copy(gpbc,natoms,box,x0,x1);
 
     /* Now loop over all groups. There are ngrps groups, the order parameter can
        be calculated for grp 1 to grp ngrps - 1. For each group, loop over all 
@@ -646,8 +646,8 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 
 
 void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bfile, 
-		const char *cfile, int ngrps, int nslices, real slWidth, bool bSzonly,
-		bool permolecule, real **distvals, const output_env_t oenv)
+		const char *cfile, int ngrps, int nslices, real slWidth, gmx_bool bSzonly,
+		gmx_bool permolecule, real **distvals, const output_env_t oenv)
 {
   FILE       *ord, *slOrd;        /* xvgr files with order parameters  */
   int        atom, slice;         /* atom corresponding to order para.*/
@@ -791,12 +791,12 @@ int gmx_order(int argc,char *argv[])
   };
 
   static int  nslices = 1;                    /* nr of slices defined       */
-  static bool bSzonly = FALSE;                /* True if only Sz is wanted  */
-  static bool bUnsat = FALSE;                 /* True if carbons are unsat. */
+  static gmx_bool bSzonly = FALSE;                /* True if only Sz is wanted  */
+  static gmx_bool bUnsat = FALSE;                 /* True if carbons are unsat. */
   static const char *normal_axis[] = { NULL, "z", "x", "y", NULL };
-  static bool permolecule = FALSE;  /*compute on a per-molecule basis */
-  static bool radial = FALSE; /*compute a radial membrane normal */
-  static bool distcalc = FALSE; /*calculate distance from a reference group */
+  static gmx_bool permolecule = FALSE;  /*compute on a per-molecule basis */
+  static gmx_bool radial = FALSE; /*compute a radial membrane normal */
+  static gmx_bool distcalc = FALSE; /*calculate distance from a reference group */
   t_pargs pa[] = {
     { "-d",      FALSE, etENUM, {normal_axis}, 
       "Direction of the normal on the membrane" },
@@ -842,7 +842,7 @@ int gmx_order(int argc,char *argv[])
     { efXVG,"-Sgsl","sg-ang-slice", ffOPTWR },      /* xvgr output file           */
     { efXVG,"-Sksl","sk-dist-slice", ffOPTWR },     /* xvgr output file           */
   };
-  bool      bSliced = FALSE;                /* True if box is sliced      */
+  gmx_bool      bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
   real **distvals=NULL;
   const char *sgfnm,*skfnm,*ndxfnm,*tpsfnm,*trxfnm;

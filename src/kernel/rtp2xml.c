@@ -204,14 +204,14 @@ int main(int argc, char *argv[])
     char chain;
     int  start;
     int  natom;
-    bool bAllWat;
+    gmx_bool bAllWat;
     int  nterpairs;
     int  *chainstart;
   } t_pdbchain;
 
   typedef struct {
     char chain;
-    bool bAllWat;
+    gmx_bool bAllWat;
     int nterpairs;
     int *chainstart;
     t_hackblock **ntdb;
@@ -248,10 +248,10 @@ int main(int argc, char *argv[])
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
-  bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
+  gmx_bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
   real       mHmult=0;
   int        nrexcl;
-  bool       bAlldih,bH14,bRemoveDih;
+  gmx_bool       bAlldih,bH14,bRemoveDih;
 
   CopyRight(stderr,argv[0]);
 	

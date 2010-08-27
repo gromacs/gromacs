@@ -177,9 +177,9 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
                int natoms,real invmass[],int ncon,
                t_iparams ip[],t_iatom *iatom,
                real tol,rvec x[],rvec prime[],real omega,
-               bool bFEP,real lambda,real lagr[],
+               gmx_bool bFEP,real lambda,real lagr[],
                real invdt,rvec *v,
-               bool bCalcVir,tensor rmdr,int econq, 
+               gmx_bool bCalcVir,tensor rmdr,int econq, 
                t_vetavars *vetavar)
 {
     rvec *rij;
@@ -357,11 +357,11 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec prime[], rvec v[],
   }
 }
 
-bool bshakef(FILE *log,gmx_shakedata_t shaked,
+gmx_bool bshakef(FILE *log,gmx_shakedata_t shaked,
              int natoms,real invmass[],int nblocks,int sblock[],
              t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec prime[],
              t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
-             real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError,int econq,t_vetavars *vetavar)
+             real invdt,rvec *v,gmx_bool bCalcVir,tensor rmdr,gmx_bool bDumpOnError,int econq,t_vetavars *vetavar)
 {
   t_iatom *iatoms;
   real    *lam,dt_2,dvdl;

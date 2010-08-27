@@ -61,7 +61,7 @@
 #include "matio.h"
 #include "gmx_ana.h"
 
-static bool bAllowed(real phi,real psi)
+static gmx_bool bAllowed(real phi,real psi)
 {
   static const char *map[] = {
     "1100000000000000001111111000000000001111111111111111111111111",
@@ -133,7 +133,7 @@ static bool bAllowed(real phi,real psi)
   x = INDEX(phi);
   y = INDEX(psi);
 #undef INDEX
-  return (bool) map[x][y];
+  return (gmx_bool) map[x][y];
 }
 
 atom_id *make_chi_ind(int nl,t_dlist dl[],int *ndih)
@@ -211,7 +211,7 @@ int bin(real chi,int mult)
 
 static void do_dihcorr(const char *fn,int nf,int ndih,real **dih,real dt,
 		       int nlist,t_dlist dlist[],real time[],int maxchi,
-		       bool bPhi,bool bPsi,bool bChi,bool bOmega,
+		       gmx_bool bPhi,gmx_bool bPsi,gmx_bool bChi,gmx_bool bOmega,
                        const output_env_t oenv)
 {
   char name1[256],name2[256];
@@ -255,7 +255,7 @@ static void do_dihcorr(const char *fn,int nf,int ndih,real **dih,real dt,
   fprintf(stderr,"\n");
 }
 
-static void copy_dih_data(real in[], real out[], int nf, bool bLEAVE)
+static void copy_dih_data(real in[], real out[], int nf, gmx_bool bLEAVE)
 {
   /* if bLEAVE, do nothing to data in copying to out
    * otherwise multiply by 180/pi to convert rad to deg */ 
@@ -272,7 +272,7 @@ static void copy_dih_data(real in[], real out[], int nf, bool bLEAVE)
 
 static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
 			real **dih,int maxchi,
-			bool bPhi,bool bPsi,bool bChi,bool bOmega, bool bRAD,
+			gmx_bool bPhi,gmx_bool bPsi,gmx_bool bChi,gmx_bool bOmega, gmx_bool bRAD,
                         const output_env_t oenv)
 {
   char name[256], titlestr[256], ystr[256]; 
@@ -389,10 +389,10 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 			  int nf,int maxchi,real **dih,
 			  int nlist,t_dlist dlist[],
 			  atom_id index[],
-			  bool bPhi,bool bPsi,bool bOmega,bool bChi,
-			  bool bNormalize,bool bSSHisto,const char *ssdump,
+			  gmx_bool bPhi,gmx_bool bPsi,gmx_bool bOmega,gmx_bool bChi,
+			  gmx_bool bNormalize,gmx_bool bSSHisto,const char *ssdump,
 			  real bfac_max,t_atoms *atoms, 
-			  bool bDo_jc, const char *fn,
+			  gmx_bool bDo_jc, const char *fn,
                           const output_env_t oenv)
 {
   /* also gets 3J couplings and order parameters S2 */ 
@@ -423,7 +423,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   int     ****his_aa_ss=NULL;
   int     ***his_aa,**his_aa1,*histmp;
   int     i,j,k,m,n,nn,Dih,nres,hindex,angle;
-  bool    bBfac,bOccup;
+  gmx_bool    bBfac,bOccup;
   char    hisfile[256],hhisfile[256],sshisfile[256],title[256],*ss_str=NULL;
   char **leg; 
   
@@ -735,10 +735,10 @@ static FILE *rama_file(const char *fn,const char *title,const char *xaxis,
 }
 
 static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
-		    bool bViol,bool bRamOmega,const output_env_t oenv)
+		    gmx_bool bViol,gmx_bool bRamOmega,const output_env_t oenv)
 {
   FILE *fp,*gp=NULL;
-  bool bOm;
+  gmx_bool bOm;
   char fn[256];
   int  i,j,k,Xi1,Xi2,Phi,Psi,Om=0,nlevels;
 #define NMAT 120
@@ -832,7 +832,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 
 static void print_transitions(const char *fn,int maxchi,int nlist,
                               t_dlist dlist[], t_atoms *atoms,rvec x[],
-                              matrix box, bool bPhi,bool bPsi,bool bChi,real dt,
+                              matrix box, gmx_bool bPhi,gmx_bool bPsi,gmx_bool bChi,real dt,
                               const output_env_t oenv)
 {
   /* based on order_params below */ 
@@ -882,7 +882,7 @@ static void order_params(FILE *log,
 			 const char *fn,int maxchi,int nlist,t_dlist dlist[],
 			 const char *pdbfn,real bfac_init,
 			 t_atoms *atoms,rvec x[],int ePBC,matrix box,
-			 bool bPhi,bool bPsi,bool bChi,const output_env_t oenv)
+			 gmx_bool bPhi,gmx_bool bPsi,gmx_bool bChi,const output_env_t oenv)
 {
   FILE *fp;
   int  nh[edMax];
@@ -1064,12 +1064,12 @@ int gmx_chi(int argc,char *argv[])
 
   /* defaults */ 
   static int  r0=1,ndeg=1,maxchi=2;
-  static bool bAll=FALSE;
-  static bool bPhi=FALSE,bPsi=FALSE,bOmega=FALSE;
+  static gmx_bool bAll=FALSE;
+  static gmx_bool bPhi=FALSE,bPsi=FALSE,bOmega=FALSE;
   static real bfac_init=-1.0,bfac_max=0;
   static const char *maxchistr[] = { NULL, "0", "1", "2", "3",  "4", "5", "6", NULL };
-  static bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
-  static bool bNormHisto=TRUE,bChiProduct=FALSE,bHChi=FALSE,bRAD=FALSE,bPBC=TRUE;
+  static gmx_bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
+  static gmx_bool bNormHisto=TRUE,bChiProduct=FALSE,bHChi=FALSE,bRAD=FALSE,bPBC=TRUE;
   static real core_frac=0.5 ;  
   t_pargs pa[] = {
     { "-r0",  FALSE, etINT, {&r0},
@@ -1121,8 +1121,8 @@ int gmx_chi(int argc,char *argv[])
   char       title[256],grpname[256]; 
   t_dlist    *dlist;
   char       **aa;
-  bool       bChi,bCorr,bSSHisto;
-  bool       bDo_rt, bDo_oh, bDo_ot, bDo_jc ; 
+  gmx_bool       bChi,bCorr,bSSHisto;
+  gmx_bool       bDo_rt, bDo_oh, bDo_ot, bDo_jc ; 
   real       dt=0, traj_t_ns;
   output_env_t oenv;
   

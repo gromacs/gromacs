@@ -36,10 +36,6 @@
 #ifndef _gmx_ga2la_h
 #define _gmx_ga2la_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 #include "smalloc.h"
 
@@ -60,7 +56,7 @@ typedef struct {
 } gmx_lal_t;
 
 typedef struct gmx_ga2la {
-    bool      bAll;
+    gmx_bool      bAll;
     int       mod;
     int       nalloc;
     gmx_laa_t *laa;
@@ -260,7 +256,7 @@ static void ga2la_change_la(gmx_ga2la_t ga2la,int a_gl,int a_loc)
  * in which case it indicates that it is more than one cell away
  * in zone cell - #zones.
  */
-static bool ga2la_get(const gmx_ga2la_t ga2la,int a_gl,int *a_loc,int *cell)
+static gmx_bool ga2la_get(const gmx_ga2la_t ga2la,int a_gl,int *a_loc,int *cell)
 {
     int ind;
 
@@ -292,7 +288,7 @@ static bool ga2la_get(const gmx_ga2la_t ga2la,int a_gl,int *a_loc,int *cell)
 /* Returns if the global atom a_gl is a home atom.
  * Sets the local atom.
  */
-static bool ga2la_get_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
+static gmx_bool ga2la_get_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
 {
     int ind;
 
@@ -328,7 +324,7 @@ static bool ga2la_get_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
 
 /* Returns if the global atom a_gl is a home atom.
  */
-static bool ga2la_is_home(const gmx_ga2la_t ga2la,int a_gl)
+static gmx_bool ga2la_is_home(const gmx_ga2la_t ga2la,int a_gl)
 {
     int ind;
 

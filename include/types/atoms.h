@@ -35,9 +35,6 @@
 #ifndef _atoms_h
 #define _atoms_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "simple.h"
 
@@ -77,7 +74,7 @@ typedef struct {
   char atomnm[6];               /* True atom name including spaces      */
   real occup;                   /* Occupancy                            */
   real bfac;                    /* B-factor                             */
-  bool bAnisotropic;            /* (an)isotropic switch                 */
+  gmx_bool bAnisotropic;            /* (an)isotropic switch                 */
   int  uij[6];                  /* Anisotropic B-factor                 */
 } t_pdbinfo;
 

@@ -89,6 +89,7 @@
 #include "sighandler.h"
 #include "genborn.h"
 #include "string2.h"
+#include "copyrite.h"
 
 #ifdef GMX_THREADS
 #include "tmpi.h"
@@ -111,7 +112,7 @@ typedef struct
 static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
 {
     int  *buf;
-    bool bPos,bEqual;
+    gmx_bool bPos,bEqual;
     int  s,d;
 
     snew(buf,ms->nsim);
@@ -197,7 +198,7 @@ static void init_global_signals(globsig_t *gs,const t_commrec *cr,
 
 
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-                    const output_env_t oenv, bool bVerbose,bool bCompact,
+                    const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
                     int nstglobalcomm,
                     gmx_vsite_t *vsite,gmx_constr_t constr,
                     int stepout,t_inputrec *ir,
@@ -217,10 +218,10 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0;
-    bool       bSimAnn,
+    gmx_bool       bSimAnn,
     bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
-    bool       bInitStep=TRUE;
-    bool       bNEMD,do_ene,do_log, do_verbose,
+    gmx_bool       bInitStep=TRUE;
+    gmx_bool       do_ene,do_log, do_verbose,
     bX,bV,bF,bCPT;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m;
@@ -243,7 +244,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     gmx_groups_t *groups;
     gmx_ekindata_t *ekind, *ekind_save;
-    bool        bAppend;
+    gmx_bool        bAppend;
     int         a0,a1;
     matrix      lastbox;
     real        reset_counters=0,reset_counters_now=0;
@@ -262,7 +263,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
-            force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,state_global,Flags);
+            force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -336,6 +337,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
     openmmData = openmm_init(fplog, ommOptions, ir, top_global, top, mdatoms, fr, state);
+    please_cite(fplog,"Friedrichs2009");
 
     if (MASTER(cr))
     {
@@ -515,27 +517,16 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         };
         do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
 
-        if (mdof_flags != 0)
-        {
-            bX = (mdof_flags & (MDOF_X | MDOF_XTC | MDOF_CPT));
-            bV = (mdof_flags & (MDOF_V | MDOF_CPT));
-
-            wallcycle_start(wcycle,ewcTRAJ);
-            openmm_copy_state(openmmData, state, &t, f, enerd, bX, bV, 0, 0);
-            wallcycle_stop(wcycle,ewcTRAJ);
-        }
-
-        openmm_take_one_step(openmmData);
-
         if (mdof_flags != 0 || do_ene || do_log)
         {
             wallcycle_start(wcycle,ewcTRAJ);
             bF = (mdof_flags & MDOF_F);
-            if (bF || do_ene || do_log)
-            {
-                openmm_copy_state(openmmData, state, &t, f, enerd, 0, 0, bF, do_ene);
-            }
-            upd_mdebin(mdebin, NULL,TRUE,
+            bX = (mdof_flags & (MDOF_X | MDOF_XTC | MDOF_CPT));
+            bV = (mdof_flags & (MDOF_V | MDOF_CPT));
+
+            openmm_copy_state(openmmData, state, &t, f, enerd, bX, bV, bF, do_ene);
+
+            upd_mdebin(mdebin, FALSE,TRUE,
                        t,mdatoms->tmass,enerd,state,lastbox,
                        shake_vir,force_vir,total_vir,pres,
                        ekind,mu_tot,constr);
@@ -578,8 +569,11 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */
-        if (((int)gmx_get_stop_condition() > handled_stop_condition) &&
-            MASTERTHREAD(cr))
+        if (((int)gmx_get_stop_condition() > handled_stop_condition)
+#ifdef GMX_THREADS
+            && MASTER(cr)
+#endif
+            )
         {
            /* this is just make gs.sig compatible with the hack 
                of sending signals around by MPI_Reduce with together with
@@ -653,6 +647,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bStartingFromCpt = FALSE;
         step++;
         step_rel++;
+
+        openmm_take_one_step(openmmData);
     }
     /* End of main MD loop */
     debug_gmx();

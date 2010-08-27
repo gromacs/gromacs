@@ -100,7 +100,7 @@ int gmx_densmap(int argc,char *argv[])
   };
   static int n1=0,n2=0;
   static real xmin=-1,xmax=-1,bin=0.02,dmin=0,dmax=0,amax=0,rmax=0;
-  static bool bMirror=FALSE, bSums=FALSE;
+  static gmx_bool bMirror=FALSE, bSums=FALSE;
   static const char *eaver[]={ NULL, "z", "y", "x", NULL };
   static const char *eunit[]={ NULL, "nm-3", "nm-2", "count", NULL };
 
@@ -132,7 +132,7 @@ int gmx_densmap(int argc,char *argv[])
     { "-dmax", FALSE, etREAL, {&dmax},
       "Maximum density in output (0 means calculate it)"},
   };
-  bool       bXmin,bXmax,bRadial;
+  gmx_bool       bXmin,bXmax,bRadial;
   FILE       *fp;
   t_trxstatus *status;
   t_topology top;
