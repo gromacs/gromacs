@@ -36,10 +36,6 @@
 #ifndef _grompp_h
 #define _grompp_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "typedefs.h"
 #include "macros.h"
@@ -51,7 +47,7 @@ extern "C" {
 #define MAXSLEN 32
 
 typedef struct {
-  bool bSet;                    /* Has this combination been set        */
+  gmx_bool bSet;                    /* Has this combination been set        */
   real c[4];                    /* The non-bonded parameters            */
 } t_nbparam;
 /* The t_nbparam struct is used to temporary store the explicit
@@ -91,8 +87,8 @@ typedef struct {
 typedef struct {
   char          **name;
   int		nrexcl;		/* Number of exclusions per atom	*/
-  bool		excl_set;	/* Have exclusions been generated?	*/
-  bool          bProcessed;     /* Has the mol been processed           */
+  gmx_bool		excl_set;	/* Have exclusions been generated?	*/
+  gmx_bool          bProcessed;     /* Has the mol been processed           */
   t_atoms       atoms;          /* Atoms                                */
   t_block       cgs;            /* Charge groups                        */
   t_block       mols;           /* Molecules                            */
@@ -105,7 +101,7 @@ typedef struct {
   int  nr;
 } t_mols;
 
-extern bool is_int(double x);
+gmx_bool is_int(double x);
 /* Returns TRUE when x is integer */
 
 typedef enum {

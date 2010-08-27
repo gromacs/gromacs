@@ -64,7 +64,7 @@ typedef struct gmx_sel_lexer_t
     struct gmx_ana_indexgrps_t      *grps;
     int                              nexpsel;
 
-    bool                             bInteractive;
+    gmx_bool                             bInteractive;
     char                            *inputstr;
     int                              nalloc_input;
 
@@ -78,15 +78,15 @@ typedef struct gmx_sel_lexer_t
 
     int                              neom;
     struct gmx_ana_selparam_t       *nextparam;
-    bool                             bBoolNo;
+    gmx_bool                             bBoolNo;
     struct gmx_ana_selmethod_t      *nextmethod;
     int                              prev_pos_kw;
 
-    bool                             bMatchOf;
-    bool                             bMatchBool;
-    bool                             bCmdStart;
+    gmx_bool                             bMatchOf;
+    gmx_bool                             bMatchBool;
+    gmx_bool                             bCmdStart;
 
-    bool                             bBuffer;
+    gmx_bool                             bBuffer;
     YY_BUFFER_STATE                  buffer;
 } gmx_sel_lexer_t;
 

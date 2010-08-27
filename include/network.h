@@ -36,10 +36,6 @@
 #ifndef _network_h
 #define _network_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 
 /*
  * This module defines the interface of the actual communication routines.
@@ -57,61 +53,61 @@
 extern "C" {
 #endif
 
-extern int gmx_setup(int *argc,char **argv,int *nnodes);
+int gmx_setup(int *argc,char **argv,int *nnodes);
 /* Initializes the parallel communication, return the ID of the node */
 
-extern int gmx_node_num(void);
+int gmx_node_num(void);
 /* return the number of nodes in the ring */
 
-extern int gmx_node_rank(void);
+int gmx_node_rank(void);
 /* return the rank of the node */
 
-extern void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr);
+void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
-extern bool gmx_mpi_initialized(void);
+gmx_bool gmx_mpi_initialized(void);
 /* return TRUE when MPI_Init has been called.
  * return FALSE when MPI_Init has not been called OR
  * when GROMACS was compiled without MPI support.
  */
 
-extern void gmx_barrier(const t_commrec *cr);
+void gmx_barrier(const t_commrec *cr);
 /* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
 
-extern void gmx_bcast(int nbytes,void *b,const t_commrec *cr);
+void gmx_bcast(int nbytes,void *b,const t_commrec *cr);
 /* Broadcast nbytes bytes from the master to cr->mpi_comm_mygroup */
 
-extern void gmx_bcast_sim(int nbytes,void *b,const t_commrec *cr);
+void gmx_bcast_sim(int nbytes,void *b,const t_commrec *cr);
 /* Broadcast nbytes bytes from the sim master to cr->mpi_comm_mysim */
 
-extern void gmx_sumi(int nr,int r[],const t_commrec *cr);
+void gmx_sumi(int nr,int r[],const t_commrec *cr);
 /* Calculate the global sum of an array of ints */
 
-extern void gmx_sumf(int nr,float r[],const t_commrec *cr);
+void gmx_sumf(int nr,float r[],const t_commrec *cr);
 /* Calculate the global sum of an array of floats */
 
-extern void gmx_sumd(int nr,double r[],const t_commrec *cr);
+void gmx_sumd(int nr,double r[],const t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
-extern void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm);
+void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm);
 /* Calculate the global sum of an array of floats */
 
-extern void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm);
+void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm);
 /* Calculate the global sum of an array of doubles */
 
-extern void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms);
+void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of ints */
 
-extern void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms);
+void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of floats */
 
-extern void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms);
+void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of doubles */
 
-extern void gmx_abort(int nodeid,int nnodes,int errorno);
+void gmx_abort(int nodeid,int nnodes,int errorno);
 /* Abort the parallel run */
 
-extern void gmx_finalize(void);
+void gmx_finalize(void);
 
 /* Finish the parallel run in an ordered manner */
 

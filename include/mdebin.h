@@ -36,10 +36,6 @@
 #ifndef _mdebin_h
 #define _mdebin_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "ebin.h"
@@ -71,40 +67,40 @@ typedef struct {
   int    mde_n,mdeb_n;
   real   *tmp_r;
   rvec   *tmp_v;
-  bool	 bConstr;
-  bool   bConstrVir;
-  bool   bTricl;
-  bool   bDynBox;
-  bool   bNHC_trotter;
-  bool   bMTTK;
+  gmx_bool	 bConstr;
+  gmx_bool   bConstrVir;
+  gmx_bool   bTricl;
+  gmx_bool   bDynBox;
+  gmx_bool   bNHC_trotter;
+  gmx_bool   bMTTK;
   int    f_nre;
   int    epc;
   tensor ref_p;
   int	 etc;
   int    nCrmsd;
-  bool   bEner[F_NRE];
-  bool   bEInd[egNR];
+  gmx_bool   bEner[F_NRE];
+  gmx_bool   bEInd[egNR];
   char   **print_grpnms;
 
   FILE   *fp_dhdl; /* the dhdl.xvg output file */
   t_mde_delta_h_coll *dhc; /* the BAR delta U (raw data + histogram) */
 } t_mdebin;
 
-extern t_mdebin *init_mdebin(ener_file_t fp_ene,
+t_mdebin *init_mdebin(ener_file_t fp_ene,
                              const gmx_mtop_t *mtop,
                              const t_inputrec *ir,
                              FILE *fp_dhdl);
 /* Initiate MD energy bin and write header to energy file. */
 
-extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
+FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 		       const output_env_t oenv);
 /* Open the dhdl file for output */
 
 /* update the averaging structures. Called every time 
    the energies are evaluated. */
-extern void upd_mdebin(t_mdebin *md, 
-                       bool write_dhdl,
-		       bool bSum,
+void upd_mdebin(t_mdebin *md, 
+                       gmx_bool write_dhdl,
+		       gmx_bool bSum,
 		       double time,
 		       real tmass,
 		       gmx_enerdata_t *enerd,
@@ -118,15 +114,15 @@ extern void upd_mdebin(t_mdebin *md,
 		       rvec mu_tot,
 		       gmx_constr_t constr);
 
-extern void upd_mdebin_step(t_mdebin *md);
+void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
   
-extern void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb);
+void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb);
 
-extern void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
+void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
 		       FILE *log,
 		       gmx_large_int_t step,double time,
-		       int mode,bool bCompact,
+		       int mode,gmx_bool bCompact,
 		       t_mdebin *md,t_fcdata *fcd,
 		       gmx_groups_t *groups,t_grpopts *opts);
 
@@ -138,13 +134,13 @@ extern void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
    that is written to checkpoints in checkpoint.c */
 
 /* initialize the energyhistory_t data structure */
-extern void init_energyhistory(energyhistory_t * enerhist);
+void init_energyhistory(energyhistory_t * enerhist);
 
 /* Set the energyhistory_t data structure from a mdebin structure */
-extern void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);
+void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);
 
 /* Read the energyhistory_t data structure to a mdebin structure*/
-extern void restore_energyhistory_from_state(t_mdebin * mdebin,
+void restore_energyhistory_from_state(t_mdebin * mdebin,
                                              energyhistory_t * enerhist);
 
 #ifdef __cplusplus

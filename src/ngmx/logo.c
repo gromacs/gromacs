@@ -66,10 +66,10 @@ void hide_logo(t_x11 *x11,t_logo *logo)
   XUnmapWindow(x11->disp,logo->wd.self);
 }
 
-static bool LogoCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool LogoCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   /* Assume window is 100x110 */
-  static bool bFirst=TRUE;
+  static gmx_bool bFirst=TRUE;
 #define CSIZE 9
 #define NSIZE 8
 #define OSIZE 9
@@ -163,7 +163,7 @@ static bool LogoCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-t_logo *init_logo(t_x11 *x11,Window parent,bool bQuitOnClick)
+t_logo *init_logo(t_x11 *x11,Window parent,gmx_bool bQuitOnClick)
 {
   static const char *bfname[]= {
     "-b&h-lucida-bold-i-normal-sans-34-240-100-100-p-215-iso8859-1",

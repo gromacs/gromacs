@@ -36,10 +36,6 @@
 #ifndef _filenm_h
 #define _filenm_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "futil.h"
 
 #ifdef __cplusplus
@@ -49,50 +45,50 @@ extern "C" {
 void set_default_file_name(const char *name);
 /* Set the default file name for all file types to name */
 
-extern const char *ftp2ext(int ftp);
+const char *ftp2ext(int ftp);
 /* Return extension for filetype */
 
-extern const char *ftp2ext_generic(int ftp);
+const char *ftp2ext_generic(int ftp);
 /* Return extension for filetype, and a generic name for generic types 
    (e.g. trx)*/
 
-extern const char *ftp2desc(int ftp);
+const char *ftp2desc(int ftp);
 /* Return description for file type */
 
-extern const char *ftp2defnm(int ftp);
+const char *ftp2defnm(int ftp);
 /* Return default file name for file type */
 
-extern const char *ftp2ftype(int ftp);
+const char *ftp2ftype(int ftp);
 /* Return Binary or ASCII depending on file type */
 
-extern void pr_def(FILE *fp,int ftp);
+void pr_def(FILE *fp,int ftp);
 /* Print definitions for filename ftp */
 
-extern void pr_defs(FILE *fp);
+void pr_defs(FILE *fp);
 /* Print definitions for all filename */
 
-extern void pr_fns(FILE *fp,int nf,const t_filenm tfn[]);
+void pr_fns(FILE *fp,int nf,const t_filenm tfn[]);
 /* Print nf file names and types */
 
-extern void pr_fopts(FILE *fp,int nf,const t_filenm tfn[], int shell);
+void pr_fopts(FILE *fp,int nf,const t_filenm tfn[], int shell);
 /* prints file options in tcsh 'complete' format */
 
-extern void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
-			    bool bKeep, bool bReadNode);
+void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
+			    gmx_bool bKeep, gmx_bool bReadNode);
 /* Parse command line for file names. When bKeep is set args are 
  * not removed from argv. */
 
-extern const char *opt2fn(const char *opt,int nfile, const t_filenm fnm[]);
+const char *opt2fn(const char *opt,int nfile, const t_filenm fnm[]);
 /* Return the filename belonging to cmd-line option opt, or NULL when 
  * no such option. */
 
-extern const char *opt2fn_master(const char *opt, int nfile, 
+const char *opt2fn_master(const char *opt, int nfile, 
                                 const t_filenm fnm[], t_commrec *cr);
 /* Return the filename belonging to cmd-line option opt, or NULL when 
  * no such option or not running on master */
 
 
-extern int opt2fns(char **fns[], const char *opt,int nfile,
+int opt2fns(char **fns[], const char *opt,int nfile,
                    const t_filenm fnm[]);
 /* Return the filenames belonging to cmd-line option opt, or NULL when 
  * no such option. */
@@ -100,49 +96,49 @@ extern int opt2fns(char **fns[], const char *opt,int nfile,
 #define opt2FILE(opt,nfile,fnm,mode) ffopen(opt2fn(opt,nfile,fnm),mode)
 /* Return a file pointer from the filename (see above) */
 
-extern int fn2ftp(const char *fn);
+int fn2ftp(const char *fn);
 /* Return the filetype corrsponding to filename */
 
-extern const char *ftp2fn(int ftp,int nfile,const t_filenm fnm[]);
+const char *ftp2fn(int ftp,int nfile,const t_filenm fnm[]);
 /* Return the first file name with type ftp, or NULL when none found. */
 
-extern int ftp2fns(char **fns[], int ftp,int nfile,const t_filenm fnm[]);
+int ftp2fns(char **fns[], int ftp,int nfile,const t_filenm fnm[]);
 /* Return the number of files for the first option with type ftp
    and the files in **fns[] (will be allocated), or NULL when none found. */
  
 #if 0
 /* This function is not thread-safe and used nowhere: */
-extern char *ftp2filter(int ftp);
+char *ftp2filter(int ftp);
 /* Return a file extension filter for file type */
 #endif
 
 #define ftp2FILE(ftp,nfile,fnm,mode) ffopen(ftp2fn(ftp,nfile,fnm),mode)
 /* Return a file pointer from the filename (see above) */
 
-extern bool ftp2bSet(int ftp,int nfile,const t_filenm fnm[]);
+gmx_bool ftp2bSet(int ftp,int nfile,const t_filenm fnm[]);
 /* Return TRUE when this file type has been found on the cmd-line */
 
-extern bool opt2bSet(const char *opt,int nfile,const t_filenm fnm[]);
+gmx_bool opt2bSet(const char *opt,int nfile,const t_filenm fnm[]);
 /* Return TRUE when this option has been found on the cmd-line */
 
-extern const char *opt2fn_null(const char *opt,int nfile,const t_filenm fnm[]);
+const char *opt2fn_null(const char *opt,int nfile,const t_filenm fnm[]);
 /* Return the filenm belonging top cmd-line option opt, or NULL when 
  * no such option. 
  * Also return NULL when opt is optional and option is not set. 
  */
 
-extern const char *ftp2fn_null(int ftp,int nfile,const t_filenm fnm[]);
+const char *ftp2fn_null(int ftp,int nfile,const t_filenm fnm[]);
 /* Return the first file name with type ftp, or NULL when none found.
  * Also return NULL when ftp is optional and option is not set.
  */
 
-extern bool is_optional(const t_filenm *fnm);
+gmx_bool is_optional(const t_filenm *fnm);
 /* Return whether or not this filenm is optional */
 
-extern bool is_output(const t_filenm *fnm);
+gmx_bool is_output(const t_filenm *fnm);
 /* Return whether or not this filenm is output */
 
-extern bool is_set(const t_filenm *fnm);
+gmx_bool is_set(const t_filenm *fnm);
 /* Return whether or not this filenm is set */
 
 /* When we do checkpointing, this routine is called to check for previous

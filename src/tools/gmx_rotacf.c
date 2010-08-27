@@ -78,7 +78,7 @@ int gmx_rotacf(int argc,char *argv[])
 
     ""
   };
-  static bool bVec    = FALSE,bAver=TRUE;
+  static gmx_bool bVec    = FALSE,bAver=TRUE;
 
   t_pargs pa[] = {
     { "-d",   FALSE, etBOOL, {&bVec},

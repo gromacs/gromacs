@@ -39,6 +39,11 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <direct.h>
 #include <io.h>
@@ -69,6 +74,11 @@
 #include "gmx_ana.h"
 #include "string2.h"
 
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
+
 int gmx_covar(int argc,char *argv[])
 {
   const char *desc[] = {
@@ -97,7 +107,7 @@ int gmx_covar(int argc,char *argv[])
     "i.e. for each atom pair the sum of the xx, yy and zz covariances is",
     "written."
   };
-  static bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE;
+  static gmx_bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE;
   static int  end=-1;
   t_pargs pa[] = {
     { "-fit",  FALSE, etBOOL, {&bFit},
@@ -133,7 +143,7 @@ int gmx_covar(int argc,char *argv[])
   char       str[STRLEN],*fitname,*ananame,*pcwd;
   int        d,dj,nfit;
   atom_id    *index,*ifit;
-  bool       bDiffMass1,bDiffMass2;
+  gmx_bool       bDiffMass1,bDiffMass2;
   time_t     now;
   char       timebuf[STRLEN];
   t_rgb      rlo,rmi,rhi;
@@ -231,7 +241,7 @@ int gmx_covar(int argc,char *argv[])
   snew(x,natoms);
   snew(xav,natoms);
   ndim=natoms*DIM;
-  if (sqrt(LARGE_INT_MAX)<ndim) {
+  if (sqrt(GMX_LARGE_INT_MAX)<ndim) {
     gmx_fatal(FARGS,"Number of degrees of freedoms to large for matrix.\n");
   }
   snew(mat,ndim*ndim);

@@ -71,20 +71,20 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
   XFontStruct *font;
   int count;
   char **fontlist;
-  bool bFont = FALSE;
+  gmx_bool bFont = FALSE;
 
   if (name)
-    bFont=(bool) ((font=XLQF(err,disp,name))!=NULL);
+    bFont=(gmx_bool) ((font=XLQF(err,disp,name))!=NULL);
   else
     font=NULL;
     
   for (i=0; (!bFont && (i<MAXNAMES)); i++) 
-    bFont=(bool) ((font=XLQF(err,disp,fontnames[i]))!=NULL);
+    bFont=(gmx_bool) ((font=XLQF(err,disp,fontnames[i]))!=NULL);
 
   if (!bFont) {
     fontlist=XListFonts(disp,"?",1,&count);
     if (count!=0) 
-      bFont=(bool) ((font=XLQF(err,disp,fontlist[0]))!=NULL);
+      bFont=(gmx_bool) ((font=XLQF(err,disp,fontlist[0]))!=NULL);
   }
   if (!bFont) 
     fprintf (err, "Cannot load any suitable font\n");
@@ -125,7 +125,7 @@ static t_wlist *GetWList(t_x11 *x11, Window w)
 
 typedef struct {
   Window w;
-  bool   b;
+  gmx_bool   b;
 } t_peek;
 
 static Bool TestEvent(Display *disp,XEvent *event,char *arg)
@@ -143,7 +143,7 @@ static Bool TestEvent(Display *disp,XEvent *event,char *arg)
 
 static void MainLoop(t_x11 *x11)
 {
-  bool    bReturn;
+  gmx_bool    bReturn;
   XEvent  event;
   t_wlist *curs;
   Window  w;
@@ -332,7 +332,7 @@ t_x11 *GetX11(int *argc, char *argv[])
   char        *display;
   char        *fontname;
   char        *title,*FG=NULL,*BG=NULL;
-  bool        bVerbose=FALSE;
+  gmx_bool        bVerbose=FALSE;
   int         i;
 
   title=strdup(argv[0]);

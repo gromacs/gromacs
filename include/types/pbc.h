@@ -35,9 +35,6 @@
 #ifndef _matrix_h
 #define _matrix_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "simple.h"
 
@@ -60,7 +57,7 @@ typedef struct {
   rvec   hbox_diag;
   rvec   mhbox_diag;
   real   max_cutoff2;
-  bool   bLimitDistance;
+  gmx_bool   bLimitDistance;
   real   limit_distance2;
   int    ntric_vec;
   ivec   tric_shift[MAX_NTRICVEC];

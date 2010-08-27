@@ -64,7 +64,7 @@
 static void rd_nm2type_file(const char *fn,int *nnm,t_nm2type **nmp)
 {
   FILE      *fp;
-  bool      bCont;
+  gmx_bool      bCont;
   char      libfilename[128];
   char      format[128],f1[128];
   char      buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
@@ -121,13 +121,13 @@ static void rd_nm2type_file(const char *fn,int *nnm,t_nm2type **nmp)
   *nmp = nm2t;
 }
 
-t_nm2type *rd_nm2type(const char *ffdir,bool bAddCWD,int *nnm)
+t_nm2type *rd_nm2type(const char *ffdir,int *nnm)
 {
   int  nff,f;
   char **ff;
   t_nm2type *nm;
 
-  nff = fflib_search_file_end(ffdir,bAddCWD,".n2t",FALSE,&ff);
+  nff = fflib_search_file_end(ffdir,".n2t",FALSE,&ff);
   *nnm = 0;
   nm   = NULL;
   for(f=0; f<nff; f++) {
@@ -160,7 +160,7 @@ static int match_str(const char *atom,const char *template_string)
 {
   if (!atom || !template_string)
     return ematchNone;
-  else if (strcasecmp(atom,template_string) == 0) 
+  else if (gmx_strcasecmp(atom,template_string) == 0) 
     return ematchExact;
   else if (atom[0] == template_string[0])
     return ematchElem;

@@ -126,7 +126,7 @@ gmx_template(int argc, char *argv[])
 
     /* Command-line arguments */
     real                cutoff = 0;
-    bool                bArg   = FALSE;
+    gmx_bool                bArg   = FALSE;
     t_pargs             pa[] = {
         {"-cutoff", FALSE, etREAL, {&cutoff},
          "Cutoff for distance calculation (0 = no cutoff)"},

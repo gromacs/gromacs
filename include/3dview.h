@@ -36,10 +36,6 @@
 #ifndef _3dview_h
 #define _3dview_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -96,7 +92,7 @@ extern t_3dview *init_view(matrix box);
  * reset the view
  */
 
-extern bool zoom_3d(t_3dview *view,real fac);
+extern gmx_bool zoom_3d(t_3dview *view,real fac);
 /* Zoom in or out with factor fac, returns TRUE when zoom successful,
  * FALSE otherwise.
  */
@@ -104,10 +100,10 @@ extern bool zoom_3d(t_3dview *view,real fac);
 extern void init_rotate_3d(t_3dview *view);
 /* Initiates the state of 3d rotation matrices in the structure */
 
-extern void rotate_3d(t_3dview *view,int axis,bool bPositive);
+extern void rotate_3d(t_3dview *view,int axis,gmx_bool bPositive);
 /* Rotate the eye around the center of the box, around axis */
 
-extern void translate_view(t_3dview *view,int axis,bool bPositive);
+extern void translate_view(t_3dview *view,int axis,gmx_bool bPositive);
 /* Translate the origin at which one is looking */
 
 extern void reset_view(t_3dview *view);

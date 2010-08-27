@@ -55,7 +55,7 @@ int get_bond_atomtype_type(char *str,t_bond_atomtype at)
   int i;
 
   for (i=0; (i<ga->nr); i++)
-    if (strcasecmp(str,*(ga->atomname[i])) == 0)
+    if (gmx_strcasecmp(str,*(ga->atomname[i])) == 0)
       return i;
   
   return NOTSET;

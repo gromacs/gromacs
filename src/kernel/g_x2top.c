@@ -96,16 +96,16 @@ static real set_x_blen(real scale)
   return maxlen*MARGIN_FAC;
 }
 
-static bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen)
+static gmx_bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen)
 {
   int i,j;
     
   for(i=0; (i<nnm); i++) {
     for(j=0; (j<nmt[i].nbonds); j++) {
-      if ((((strncasecmp(ai,nmt[i].elem,1) == 0) && 
-	   (strncasecmp(aj,nmt[i].bond[j],1) == 0)) ||
-	  ((strncasecmp(ai,nmt[i].bond[j],1) == 0) && 
-	   (strncasecmp(aj,nmt[i].elem,1) == 0))) &&
+      if ((((gmx_strncasecmp(ai,nmt[i].elem,1) == 0) && 
+	   (gmx_strncasecmp(aj,nmt[i].bond[j],1) == 0)) ||
+	  ((gmx_strncasecmp(ai,nmt[i].bond[j],1) == 0) && 
+	   (gmx_strncasecmp(aj,nmt[i].elem,1) == 0))) &&
 	  (fabs(blen-nmt[i].blen[j]) <= 0.1*nmt[i].blen[j]))
 	return TRUE;
     }
@@ -128,7 +128,7 @@ static int get_atype(char *nm)
 
 void mk_bonds(int nnm,t_nm2type nmt[],
 	      t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
-	      bool bPBC,matrix box,gmx_atomprop_t aps)
+	      gmx_bool bPBC,matrix box,gmx_atomprop_t aps)
 {
   t_param b;
   int     i,j;
@@ -170,7 +170,7 @@ void mk_bonds(int nnm,t_nm2type nmt[],
   fprintf(stderr,"\ratom %d\n",i);
 }
 
-int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge,real *qtot,real *mtot)
+int *set_cgnr(t_atoms *atoms,gmx_bool bUsePDBcharge,real *qtot,real *mtot)
 {
   int    i,n=1;
   int    *cgnr;
@@ -212,8 +212,8 @@ gpp_atomtype_t set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
   return atype;
 }
 
-void lo_set_force_const(t_params *plist,real c[],int nrfp,bool bRound,
-			bool bDih,bool bParam)
+void lo_set_force_const(t_params *plist,real c[],int nrfp,gmx_bool bRound,
+			gmx_bool bDih,gmx_bool bParam)
 {
   int    i,j;
   double cc;
@@ -248,8 +248,8 @@ void lo_set_force_const(t_params *plist,real c[],int nrfp,bool bRound,
   }
 }
 
-void set_force_const(t_params plist[],real kb,real kt,real kp,bool bRound,
-		     bool bParam)
+void set_force_const(t_params plist[],real kb,real kt,real kp,gmx_bool bRound,
+		     gmx_bool bParam)
 {
   int i;
   real c[MAXFORCEPARAM];
@@ -264,7 +264,7 @@ void set_force_const(t_params plist[],real kb,real kt,real kp,bool bRound,
   lo_set_force_const(&plist[F_PDIHS],c,3,bRound,TRUE,bParam);
 }
 
-void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
+void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],gmx_bool bPBC,
 		      matrix box)
 {
   int    i,ai,aj,ak,al,t1,t2,t3;
@@ -410,7 +410,7 @@ int main(int argc, char *argv[])
   int        nres;         /* number of molecules? */
   int        i,j,k,l,m,ndih;
   int        epbc;
-  bool       bRTP,bTOP,bOPLS;
+  gmx_bool       bRTP,bTOP,bOPLS;
   t_symtab   symtab;
   real       cutoff,qtot,mtot;
   char       n2t[STRLEN];
@@ -422,20 +422,17 @@ int main(int argc, char *argv[])
     { efRTP, "-r", "out",  ffOPTWR }
   };
 #define NFILE asize(fnm)
-  static bool bAddCWD = FALSE;
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
   static int  nexcl = 3;
-  static bool bRemoveDih = FALSE;
-  static bool bParam = TRUE, bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
-  static bool bPairs = TRUE, bPBC = TRUE;
-  static bool bUsePDBcharge = FALSE,bVerbose=FALSE;
+  static gmx_bool bRemoveDih = FALSE;
+  static gmx_bool bParam = TRUE, bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
+  static gmx_bool bPairs = TRUE, bPBC = TRUE;
+  static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE;
   static const char *molnm = "ICE";
   static const char *ff = "oplsaa";
   t_pargs pa[] = {
     { "-ff",     FALSE, etSTR, {&ff},
       "Force field for your simulation. Type \"select\" for interactive selection." },
-    { "-cwd",    FALSE, etBOOL, {&bAddCWD},
-      "Also read force field files from the current working directory" },
     { "-v",      FALSE, etBOOL, {&bVerbose},
       "Generate verbose output in the top file." },
     { "-nexcl", FALSE, etINT,  {&nexcl},
@@ -503,7 +500,7 @@ int main(int argc, char *argv[])
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,&epbc,box);
 
   sprintf(n2t,"%s",ffdir);
-  nm2t = rd_nm2type(n2t,bAddCWD,&nnm);
+  nm2t = rd_nm2type(n2t,&nnm);
   if (nnm == 0)
     gmx_fatal(FARGS,"No or incorrect atomname2type.n2t file found (looking for %s)",
 	      n2t);

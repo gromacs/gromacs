@@ -16,12 +16,21 @@
  * Gnomes, ROck Monsters And Chili Sauce
  */
 
+/* The source code in this file should be thread-safe. 
+ Please keep it that way. */
+
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <string.h>
 #include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 /* _chsize_s */
@@ -51,11 +60,14 @@
 #include "corewrap.h"
 #endif
 
+
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
+
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
-
-/* The source code in this file should be thread-safe. 
-   Please keep it that way. */
 
 /* cpt_version should normally only be changed
  * when the header of footer format changes.
@@ -64,6 +76,7 @@
  * (but can read a new format when new entries are not present).
  */
 static const int cpt_version = 12;
+
 
 const char *est_names[estNR]=
 {
@@ -150,7 +163,7 @@ static void cp_error()
     gmx_fatal(FARGS,"Checkpoint file corrupted/truncated, or maybe you are out of quota?");
 }
 
-static void do_cpt_string_err(XDR *xd,bool bRead,const char *desc,char **s,FILE *list)
+static void do_cpt_string_err(XDR *xd,gmx_bool bRead,const char *desc,char **s,FILE *list)
 {
 #define CPTSTRLEN 1024
     bool_t res=0;
@@ -661,7 +674,7 @@ static int do_cpte_matrices(XDR *xd,int cptp,int ecpt,int sflags,
     return ret;
 }
 
-static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
+static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
                           char **version,char **btime,char **buser,char **bmach,
                           char **fprog,char **ftime,
                           int *eIntegrator,int *simulation_part,
@@ -787,7 +800,7 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     }
 }
 
-static int do_cpt_footer(XDR *xd,bool bRead,int file_version)
+static int do_cpt_footer(XDR *xd,gmx_bool bRead,int file_version)
 {
     bool_t res=0;
     int  magic;
@@ -809,9 +822,9 @@ static int do_cpt_footer(XDR *xd,bool bRead,int file_version)
     return 0;
 }
 
-static int do_cpt_state(XDR *xd,bool bRead,
+static int do_cpt_state(XDR *xd,gmx_bool bRead,
                         int fflags,t_state *state,
-                        bool bReadRNG,FILE *list)
+                        gmx_bool bReadRNG,FILE *list)
 {
     int  sflags;
     int  **rng_p,**rngi_p;
@@ -876,7 +889,7 @@ static int do_cpt_state(XDR *xd,bool bRead,
     return ret;
 }
 
-static int do_cpt_ekinstate(XDR *xd,bool bRead,
+static int do_cpt_ekinstate(XDR *xd,gmx_bool bRead,
                             int fflags,ekinstate_t *ekins,
                             FILE *list)
 {
@@ -913,7 +926,7 @@ static int do_cpt_ekinstate(XDR *xd,bool bRead,
 }
 
 
-static int do_cpt_enerhist(XDR *xd,bool bRead,
+static int do_cpt_enerhist(XDR *xd,gmx_bool bRead,
                            int fflags,energyhistory_t *enerhist,
                            FILE *list)
 {
@@ -1009,7 +1022,7 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
     return ret;
 }
 
-static int do_cpt_files(XDR *xd, bool bRead, 
+static int do_cpt_files(XDR *xd, gmx_bool bRead, 
                         gmx_file_position_t **p_outputfiles, int *nfiles, 
                         FILE *list, int file_version)
 {
@@ -1109,7 +1122,7 @@ static int do_cpt_files(XDR *xd, bool bRead,
 }
 
 
-void write_checkpoint(const char *fn,bool bNumberAndKeep,
+void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
                       FILE *fplog,t_commrec *cr,
                       int eIntegrator,int simulation_part,
                       gmx_large_int_t step,double t,t_state *state)
@@ -1332,7 +1345,7 @@ static void print_flag_mismatch(FILE *fplog,int sflags,int fflags)
     }
 }
 
-static void check_int(FILE *fplog,const char *type,int p,int f,bool *mm)
+static void check_int(FILE *fplog,const char *type,int p,int f,gmx_bool *mm)
 {
 	FILE *fp = fplog ? fplog : stderr;
 
@@ -1347,7 +1360,7 @@ static void check_int(FILE *fplog,const char *type,int p,int f,bool *mm)
 }
 
 static void check_string(FILE *fplog,const char *type,const char *p,
-                         const char *f,bool *mm)
+                         const char *f,gmx_bool *mm)
 {
 	FILE *fp = fplog ? fplog : stderr;
 	
@@ -1364,11 +1377,11 @@ static void check_string(FILE *fplog,const char *type,const char *p,
 static void check_match(FILE *fplog,
                         char *version,
                         char *btime,char *buser,char *bmach,char *fprog,
-                        t_commrec *cr,bool bPartDecomp,int npp_f,int npme_f,
+                        t_commrec *cr,gmx_bool bPartDecomp,int npp_f,int npme_f,
                         ivec dd_nc,ivec dd_nc_f)
 {
     int  npp;
-    bool mm;
+    gmx_bool mm;
     
     mm = FALSE;
     
@@ -1414,10 +1427,10 @@ static void check_match(FILE *fplog,
 }
 
 static void read_checkpoint(const char *fn,FILE **pfplog,
-                            t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+                            t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                             int eIntegrator,gmx_large_int_t *step,double *t,
-                            t_state *state,bool *bReadRNG,bool *bReadEkin,
-                            int *simulation_part,bool bAppendOutputFiles)
+                            t_state *state,gmx_bool *bReadRNG,gmx_bool *bReadEkin,
+                            int *simulation_part,gmx_bool bAppendOutputFiles)
 {
     t_fileio *fp;
     int  i,j,rc;
@@ -1772,9 +1785,9 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 
 
 void load_checkpoint(const char *fn,FILE **fplog,
-                     t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+                     t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                      t_inputrec *ir,t_state *state,
-                     bool *bReadRNG,bool *bReadEkin,bool bAppend)
+                     gmx_bool *bReadRNG,gmx_bool *bReadEkin,gmx_bool bAppend)
 {
     gmx_large_int_t step;
     double t;
@@ -1804,7 +1817,7 @@ void load_checkpoint(const char *fn,FILE **fplog,
 
 static void read_checkpoint_data(t_fileio *fp,int *simulation_part,
                                  gmx_large_int_t *step,double *t,t_state *state,
-                                 bool bReadRNG,
+                                 gmx_bool bReadRNG,
                                  int *nfiles,gmx_file_position_t **outputfiles)
 {
     int  file_version;
@@ -1909,7 +1922,9 @@ void read_checkpoint_trxframe(t_fileio *fp,t_trxframe *fr)
         fr->x     = state.x;
         state.x   = NULL;
     }
-    fr->bV      = (state.flags & (1<<estV));
+/* FIX ME after 4.5 */
+/* temporary hack because we are using gmx_bool (unsigned char) */
+    fr->bV      = (state.flags & (1<<estV)) != 0;
     if (fr->bV)
     {
         fr->v     = state.v;
@@ -1986,7 +2001,7 @@ void list_checkpoint(const char *fn,FILE *out)
 }
 
 
-static bool exist_output_file(const char *fnm_cp,int nfile,const t_filenm fnm[])
+static gmx_bool exist_output_file(const char *fnm_cp,int nfile,const t_filenm fnm[])
 {
     int i;
 
@@ -2004,11 +2019,11 @@ static bool exist_output_file(const char *fnm_cp,int nfile,const t_filenm fnm[])
 }
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
+gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                                      gmx_large_int_t *cpt_step,t_commrec *cr,
-                                     bool bAppendReq,
+                                     gmx_bool bAppendReq,
                                      int nfile,const t_filenm fnm[],
-                                     const char *part_suffix,bool *bAddPart)
+                                     const char *part_suffix,gmx_bool *bAddPart)
 {
     t_fileio *fp;
     gmx_large_int_t step=0;
@@ -2017,7 +2032,7 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
     int  nfiles;
     gmx_file_position_t *outputfiles;
     int  nexist,f;
-    bool bAppend;
+    gmx_bool bAppend;
     char *fn,suf_up[STRLEN];
 
     bAppend = FALSE;
@@ -2093,7 +2108,7 @@ bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                 }
                 fn = outputfiles[0].filename;
                 if (strlen(fn) < 4 ||
-                    strcasecmp(fn+strlen(fn)-4,ftp2ext(efLOG)) == 0)
+                    gmx_strcasecmp(fn+strlen(fn)-4,ftp2ext(efLOG)) == 0)
                 {
                     gmx_fatal(FARGS,"File appending requested, but the log file is not the first file listed in the checkpoint file");
                 }

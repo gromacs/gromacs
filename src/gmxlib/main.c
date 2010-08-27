@@ -42,6 +42,12 @@
 #include <string.h>
 #include <limits.h>
 #include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "network.h"
@@ -70,12 +76,17 @@
 #endif
 
 
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
+
 #define BUFSIZE	1024
 
 /* this is not strictly thread-safe, but it's only written to at the beginning
    of the simulation, once by each thread with the same value. We assume
    that writing to an int is atomic.*/
-static bool parallel_env_val;
+static gmx_bool parallel_env_val;
 #ifdef GMX_THREADS
 tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
@@ -88,9 +99,9 @@ tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
    been initialized, for example when checking whether gmx_finalize()   
    needs to be called. Use PAR(cr) to check whether the simulation actually
    has more than one node/thread.  */
-bool gmx_parallel_env_initialized(void)
+gmx_bool gmx_parallel_env_initialized(void)
 {
-    bool ret;
+    gmx_bool ret;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&parallel_env_mutex);
 #endif
@@ -101,7 +112,7 @@ bool gmx_parallel_env_initialized(void)
     return ret;
 }
 
-static void set_parallel_env(bool val)
+static void set_parallel_env(gmx_bool val)
 {
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&parallel_env_mutex);
@@ -118,7 +129,7 @@ static void set_parallel_env(bool val)
 
 
 static void par_fn(char *base,int ftp,const t_commrec *cr,
-		   bool bAppendSimId,bool bAppendNodeId,
+		   gmx_bool bAppendSimId,gmx_bool bAppendNodeId,
 		   char buf[],int bufsize)
 {
   int n;
@@ -153,7 +164,7 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
                      const char *name)
 {
   int  *ibuf,p;
-  bool bCompatible;
+  gmx_bool bCompatible;
 
   fprintf(log,"Multi-checking %s ... ",name);
   
@@ -181,7 +192,7 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   sfree(ibuf);
 }
 
-void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly, 
+void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly, 
                    unsigned long Flags, FILE** fplog)
 {
     int  len,testlen,pid;
@@ -191,7 +202,7 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
     FILE *fp=*fplog;
     char *tmpnm;
 
-    bool bAppend = Flags & MD_APPENDFILES;	
+    gmx_bool bAppend = Flags & MD_APPENDFILES;	
   
     debug_gmx();
   
@@ -325,7 +336,7 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
 }
 
 void init_multisystem(t_commrec *cr,int nsim, int nfile,
-                      const t_filenm fnm[],bool bParFn)
+                      const t_filenm fnm[],gmx_bool bParFn)
 {
     gmx_multisim_t *ms;
     int  nnodes,nnodpersim,sim,i,ftp;
@@ -432,7 +443,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     t_commrec *cr;
     char      **argv;
     int       i;
-    bool      pe=FALSE;
+    gmx_bool      pe=FALSE;
 
     snew(cr,1);
 

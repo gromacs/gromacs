@@ -113,19 +113,51 @@ _nb_kernel110_x86_64_sse:
 .equiv          nb110_nouter,           380
 .equiv          nb110_ninner,           384
 
-
-
 	push rbp
 	mov  rbp, rsp
+    
+    ;# Push integer registers on stack
 	push rbx
+    push rsi
+    push rdi
+    push r12
+    push r13
+    push r14
+    push r15
 
-	push r12
-	push r13
-	push r14
-	push r15
-		
+    ;# Make room for registers xmm6-xmm15 (10 registers=160 bytes)
+    sub rsp, 168
+    
+    ;# Save xmm registers to stack
+    movaps [rsp      ], xmm6
+    movaps [rsp + 16 ], xmm7
+    movaps [rsp + 32 ], xmm8
+    movaps [rsp + 48 ], xmm9
+    movaps [rsp + 64 ], xmm10
+    movaps [rsp + 80 ], xmm11
+    movaps [rsp + 96 ], xmm12
+    movaps [rsp + 112], xmm13
+    movaps [rsp + 128], xmm14
+    movaps [rsp + 144], xmm15
+    
 	emms
-	sub rsp, 408
+	sub rsp, 400
+; .if 0    # block below only read by NASM - special calling convention on win64
+%ifidn __OUTPUT_FORMAT__, win64
+    ;# Adjust rbp to account for shadow space (32) & two extra args (2*8) on stack
+    add rbp, 48
+    ;# Adjust stack pointer for different alignment
+    ;# Move around arguments to fit AMD64 convention below
+    ;# AMD64 passes args in: rdi,rsi,rdx,rcx,r8,r9 + stack
+    ;# win64 passes args in: rcx,rdx,r8,r9         + stack
+    mov rdi, rcx
+    mov rsi, rdx
+    mov rdx, r8
+    mov rcx, r9
+    mov r8,  [rbp]
+    mov r9,  [rbp + 8]
+%endif
+; .endif   # end NASM- and win64-specific block
 	
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -835,15 +867,32 @@ _nb_kernel110_x86_64_sse:
 	mov rdx, [rbp + nb110_inneriter]
 	mov [rcx], eax
 	mov [rdx], ebx
-	add rsp, 408
+	add rsp, 400
 	emms
-	
-	pop r15
-	pop r14
-	pop r13
-	pop r12
 
-	pop rbx
+    ;# Save xmm registers to stack
+    movaps xmm6,  [rsp      ]
+    movaps xmm7,  [rsp + 16 ]
+    movaps xmm8,  [rsp + 32 ]
+    movaps xmm9,  [rsp + 48 ]
+    movaps xmm10, [rsp + 64 ]
+    movaps xmm11, [rsp + 80 ]
+    movaps xmm12, [rsp + 96 ]
+    movaps xmm13, [rsp + 112]
+    movaps xmm14, [rsp + 128]
+    movaps xmm15, [rsp + 144]
+
+    ;# Reset pointers after restoring xmm6-15
+    add rsp, 168
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rdi
+    pop rsi
+    pop rbx
+    
 	pop	rbp
 	ret
 
@@ -910,11 +959,50 @@ _nb_kernel110nf_x86_64_sse:
 
 	push rbp
 	mov  rbp, rsp
+    
+    ;# Push integer registers on stack
 	push rbx
+    push rsi
+    push rdi
+    push r12
+    push r13
+    push r14
+    push r15
 
-	
+    ;# Make room for registers xmm6-xmm15 (10 registers=160 bytes)
+    sub rsp, 168
+    
+    ;# Save xmm registers to stack
+    movaps [rsp      ], xmm6
+    movaps [rsp + 16 ], xmm7
+    movaps [rsp + 32 ], xmm8
+    movaps [rsp + 48 ], xmm9
+    movaps [rsp + 64 ], xmm10
+    movaps [rsp + 80 ], xmm11
+    movaps [rsp + 96 ], xmm12
+    movaps [rsp + 112], xmm13
+    movaps [rsp + 128], xmm14
+    movaps [rsp + 144], xmm15
+    
 	emms
-	sub rsp, 280
+	sub rsp, 272
+; .if 0    # block below only read by NASM - special calling convention on win64
+%ifidn __OUTPUT_FORMAT__, win64
+    ;# Adjust rbp to account for shadow space (32) & two extra args (2*8) on stack
+    add rbp, 48
+    ;# Adjust stack pointer for different alignment
+    ;# Move around arguments to fit AMD64 convention below
+    ;# AMD64 passes args in: rdi,rsi,rdx,rcx,r8,r9 + stack
+    ;# win64 passes args in: rcx,rdx,r8,r9         + stack
+    mov rdi, rcx
+    mov rsi, rdx
+    mov rdx, r8
+    mov rcx, r9
+    mov r8,  [rbp]
+    mov r9,  [rbp + 8]
+%endif
+; .endif   # end NASM- and win64-specific block
+
 	;# zero 32-bit iteration counters
 	mov eax, 0
 	mov [rsp + nb110nf_nouter], eax
@@ -1453,11 +1541,31 @@ _nb_kernel110nf_x86_64_sse:
 	mov [rcx], eax
 	mov [rdx], ebx
 
-	add rsp, 280
+	add rsp, 272
 	emms
-	
-	pop rbx
+
+    ;# Save xmm registers to stack
+    movaps xmm6,  [rsp      ]
+    movaps xmm7,  [rsp + 16 ]
+    movaps xmm8,  [rsp + 32 ]
+    movaps xmm9,  [rsp + 48 ]
+    movaps xmm10, [rsp + 64 ]
+    movaps xmm11, [rsp + 80 ]
+    movaps xmm12, [rsp + 96 ]
+    movaps xmm13, [rsp + 112]
+    movaps xmm14, [rsp + 128]
+    movaps xmm15, [rsp + 144]
+
+    ;# Reset pointers after restoring xmm6-15
+    add rsp, 168
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rdi
+    pop rsi
+    pop rbx
+    
 	pop	rbp
 	ret
-
-

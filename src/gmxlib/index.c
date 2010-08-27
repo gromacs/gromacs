@@ -69,7 +69,7 @@ struct gmx_residuetype
 };
 
 
-static bool gmx_ask_yesno(bool bASK)
+static gmx_bool gmx_ask_yesno(gmx_bool bASK)
 {
   char c;
 
@@ -130,7 +130,7 @@ void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name)
 
 /* compare index in `a' with group in `b' at `index', 
    when `index'<0 it is relative to end of `b' */
-static bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
+static gmx_bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
 {
   int i;
   
@@ -148,7 +148,7 @@ static bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
 }
 
 static void 
-p_status(const char **restype, int nres, const char **typenames, int ntypes, bool bVerb)
+p_status(const char **restype, int nres, const char **typenames, int ntypes, gmx_bool bVerb)
 {
     int i,j;
     int found;
@@ -186,7 +186,7 @@ p_status(const char **restype, int nres, const char **typenames, int ntypes, boo
 
 
 atom_id *
-mk_aid(t_atoms *atoms,const char ** restype,const char * typestring,int *nra,bool bMatch)
+mk_aid(t_atoms *atoms,const char ** restype,const char * typestring,int *nra,gmx_bool bMatch)
 /* Make an array of atom_ids for all atoms with residuetypes matching typestring, or the opposite if bMatch is false */
 {
     atom_id *a;
@@ -213,12 +213,12 @@ mk_aid(t_atoms *atoms,const char ** restype,const char * typestring,int *nra,boo
 
 typedef struct {
   char *rname;
-  bool bNeg;
+  gmx_bool bNeg;
   char *gname;
 } restp_t;
 
 static void analyse_other(const char ** restype,t_atoms *atoms,
-			  t_blocka *gb,char ***gn,bool bASK,bool bVerb)
+			  t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
 {
   restp_t *restp=NULL;
   char **attp=NULL;
@@ -308,7 +308,7 @@ static void analyse_other(const char ** restype,t_atoms *atoms,
 }
 
 static void analyse_prot(const char ** restype,t_atoms *atoms,
-			 t_blocka *gb,char ***gn,bool bASK,bool bVerb)
+			 t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
 {
   /* atomnames to be used in constructing index groups: */
   static const char *pnoh[]    = { "H" };
@@ -336,13 +336,13 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
   };
   /* construct index group containing (TRUE) or excluding (FALSE)
      given atom names */
-  const bool complement[NCH] = { 
+  const gmx_bool complement[NCH] = { 
     TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE
   };
   const int  wholename[NCH]  = { -1, 0,-1,-1,-1,-1,-1,-1, 11,-1 };
   /* the index in wholename gives the first item in the arrays of 
-   * atomtypes that should be tested with 'strncasecmp' in stead of
-   * strcasecmp, or -1 if all items should be tested with strcasecmp
+   * atomtypes that should be tested with 'gmx_strncasecmp' in stead of
+   * gmx_strcasecmp, or -1 if all items should be tested with strcasecmp
    * This is comparable to using a '*' wildcard at the end of specific
    * atom names, but that is more involved to implement...
    */
@@ -353,7 +353,7 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
   int     n,j;
   atom_id *aid;
   int     nra,nnpres,npres;
-  bool    match;
+  gmx_bool    match;
   char    ndx_name[STRLEN],*atnm;
   int i;
 
@@ -383,10 +383,10 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
 	  while (isdigit(atnm[0]))
 	    atnm++;
 	  if ( (wholename[i]==-1) || (j<wholename[i]) ) {
-	    if (strcasecmp(chains[i][j],atnm) == 0)
+	    if (gmx_strcasecmp(chains[i][j],atnm) == 0)
 	      match=TRUE;
 	  } else {
-	    if (strncasecmp(chains[i][j],atnm,strlen(chains[i][j])) == 0)
+	    if (gmx_strncasecmp(chains[i][j],atnm,strlen(chains[i][j])) == 0)
 	      match=TRUE;
 	  }
 	}
@@ -411,7 +411,7 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
 	  for(;((atoms->atom[n].resind==resind) && (n<atoms->nr));n++) {
 	    match=FALSE;
 	    for(j=0;(j<sizes[i]); j++) 
-	      if (strcasecmp(chains[i][j],*atoms->atomname[n]) == 0)
+	      if (gmx_strcasecmp(chains[i][j],*atoms->atomname[n]) == 0)
 		match=TRUE;
 	    if (match != complement[i])
 	      aid[nra++]=n;
@@ -608,10 +608,10 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
     
 
 
-bool 
+gmx_bool 
 gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm)
 {
-    bool rc;
+    gmx_bool rc;
     const char *p_type;
     
     if(gmx_residuetype_get_type(rt,resnm,&p_type)==0 &&
@@ -626,10 +626,10 @@ gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm)
     return rc;
 }
 
-bool 
+gmx_bool 
 gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm)
 {
-    bool rc;
+    gmx_bool rc;
     const char *p_type;
 
     if(gmx_residuetype_get_type(rt,resnm,&p_type)==0 &&
@@ -644,10 +644,10 @@ gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm)
     return rc;
 }
 
-bool 
+gmx_bool 
 gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm)
 {
-    bool rc;
+    gmx_bool rc;
     const char *p_type;
 
     if(gmx_residuetype_get_type(rt,resnm,&p_type)==0 &&
@@ -665,7 +665,7 @@ gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm)
 
 
 
-void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
+void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
 {
     gmx_residuetype_t rt;
     char    *resnm;
@@ -928,7 +928,7 @@ int find_group(char s[], int ngrps, char **grpname)
 {
   int aa, i, n;
   char string[STRLEN];
-  bool bMultiple;
+  gmx_bool bMultiple;
   
   bMultiple = FALSE;
   n = strlen(s);
@@ -936,7 +936,7 @@ int find_group(char s[], int ngrps, char **grpname)
   /* first look for whole name match */
   if (aa==NOTSET)
     for(i=0; i<ngrps; i++)
-      if (strcasecmp_min(s,grpname[i])==0) {
+      if (gmx_strcasecmp_min(s,grpname[i])==0) {
 	if(aa!=NOTSET)
 	  bMultiple = TRUE;
 	aa=i;
@@ -944,7 +944,7 @@ int find_group(char s[], int ngrps, char **grpname)
   /* second look for first string match */
   if (aa==NOTSET)
     for(i=0; i<ngrps; i++)
-      if (strncasecmp_min(s,grpname[i],n)==0) {
+      if (gmx_strncasecmp_min(s,grpname[i],n)==0) {
 	if(aa!=NOTSET)
 	  bMultiple = TRUE;
 	aa=i;
@@ -975,7 +975,7 @@ static int qgroup(int *a, int ngrps, char **grpname)
 {
     char s[STRLEN];
     int  aa;
-    bool bInRange;
+    gmx_bool bInRange;
     char *end;
 
     do {

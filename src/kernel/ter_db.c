@@ -66,10 +66,10 @@ int find_kw(char *keyw)
   int i;
   
   for(i=0; i<ebtsNR; i++)
-    if (strcasecmp(btsNames[i],keyw) == 0)
+    if (gmx_strcasecmp(btsNames[i],keyw) == 0)
       return i;
   for(i=0; i<ekwNR; i++)
-    if (strcasecmp(kw_names[i],keyw) == 0)
+    if (gmx_strcasecmp(kw_names[i],keyw) == 0)
       return ebtsNR + 1 + i;
   
   return NOTSET;
@@ -77,7 +77,7 @@ int find_kw(char *keyw)
 
 #define FATAL() gmx_fatal(FARGS,"Reading Termini Database: not enough items on line\n%s",line)
 
-static void read_atom(char *line, bool bAdd,
+static void read_atom(char *line, gmx_bool bAdd,
 		      char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr)
 {
   int    nr, i;
@@ -313,7 +313,7 @@ static void read_ter_db_file(char *fn,
   *tbptr  = tb;
 }
 
-int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
+int read_ter_db(const char *ffdir,char ter,
 		t_hackblock **tbptr,gpp_atomtype_t atype)
 {
   char ext[STRLEN];
@@ -326,7 +326,7 @@ int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
   /* Search for termini database files.
    * Do not generate an error when none are found.
    */
-  ntdbf = fflib_search_file_end(ffdir,bAddCWD,ext,FALSE,&tdbf);
+  ntdbf = fflib_search_file_end(ffdir,ext,FALSE,&tdbf);
   ntb    = 0;
   *tbptr = NULL;
   for(f=0; f<ntdbf; f++) {
@@ -371,11 +371,12 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
 
     t_restp *   restp;
     int         i,j,n,len,none_idx;
-    bool        found;
-    char *s,*s2,*c;
+    gmx_bool        found;
+    char        *rtpname_match,*s,*s2,*c;
     t_hackblock **list;
     
-    restp = search_rtp(rtpname,nrtp,rtp);
+    rtpname_match = search_rtp(rtpname,nrtp,rtp);
+    restp = get_restp(rtpname_match,nrtp,rtp);
     
     n=0;
     list=NULL;
@@ -391,8 +392,8 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
              * This makes termini selection for different molecule types
              * much cleaner.
              */
-            if (strcasecmp(restp->filebase,tb[i].filebase) == 0 &&
-                strncasecmp(resname,s,3) == 0) 
+            if (gmx_strcasecmp(restp->filebase,tb[i].filebase) == 0 &&
+                gmx_strncasecmp(resname,s,3) == 0) 
             {
                 found=TRUE;
                 srenew(list,n+1);
@@ -427,9 +428,9 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
          * This makes termini selection for different molecule types
          * much cleaner.
          */
-        if(strcasecmp(restp->filebase,tb[i].filebase) == 0)
+        if(gmx_strcasecmp(restp->filebase,tb[i].filebase) == 0)
         {
-            if(!strcasecmp("None",s)) 
+            if(!gmx_strcasecmp("None",s)) 
             {
                 none_idx=i;
             }

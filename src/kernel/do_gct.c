@@ -407,8 +407,8 @@ static real calc_deviation(real xav,real xt,real x0)
 
 static real calc_dist(FILE *log,rvec x[])
 {
-  static bool bFirst=TRUE;
-  static bool bDist;
+  static gmx_bool bFirst=TRUE;
+  static gmx_bool bDist;
   static int i1,i2;
   char *buf;
   rvec   dx;
@@ -473,24 +473,24 @@ static void dump_fm(FILE *fp,int n,real f[],char *s)
 void do_coupling(FILE *log,const output_env_t oenv,int nfile,
                  const t_filenm fnm[], t_coupl_rec *tcr,real t,
                  int step,real ener[], t_forcerec *fr,t_inputrec *ir,
-                 bool bMaster, t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
+                 gmx_bool bMaster, t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
 		 t_commrec *cr,matrix box,tensor virial,
 		 tensor pres,rvec mu_tot,
-		 rvec x[],rvec f[],bool bDoIt)
+		 rvec x[],rvec f[],gmx_bool bDoIt)
 {
 #define enm2Debye 48.0321
 #define d2e(x) (x)/enm2Debye
 #define enm2kjmol(x) (x)*0.0143952 /* = 2.0*4.0*M_PI*EPSILON0 */
 
   static real *f6,*f12,*fa,*fb,*fc,*fq;
-  static bool bFirst = TRUE;
+  static gmx_bool bFirst = TRUE;
   
   int         i,j,ati,atj,atnr2,type,ftype;
   real        deviation[eoObsNR],prdev[eoObsNR],epot0,dist,rmsf;
   real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind;
   real        Epol,Eintern,Virial,muabs,xiH=-1,xiS=-1,xi6,xi12;
   rvec        fmol[2];
-  bool        bTest,bPrint;
+  gmx_bool        bTest,bPrint;
   t_coupl_LJ  *tclj;
   t_coupl_BU  *tcbu;
   t_coupl_Q   *tcq;

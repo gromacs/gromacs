@@ -96,7 +96,7 @@ enum {NN_NULL, NN_NONE, NN_BINARY, NN_1_over_r3, NN_dipole, NN_NR};
   
 static const char *grpnames[grNR] = {"0","1","I" };
 
-static bool bDebug = FALSE;
+static gmx_bool bDebug = FALSE;
 
 #define HB_NO 0
 #define HB_YES 1<<0
@@ -194,7 +194,7 @@ typedef struct {
 } t_hbEmap;
 
 typedef struct {
-    bool        bHBmap,bDAnr,bGem;
+    gmx_bool        bHBmap,bDAnr,bGem;
     int         wordlen;
     /* The following arrays are nframes long */
     int         nframes,max_frames,maxhydro;
@@ -267,7 +267,7 @@ static void calcBoxDistance(matrix P, rvec d, ivec ibd){
  * - Erik Marklund May 29, 2006
  */
 
-static PSTYPE periodicIndex(ivec r, t_gemPeriod *per, bool daSwap) {
+static PSTYPE periodicIndex(ivec r, t_gemPeriod *per, gmx_bool daSwap) {
     /* Try to merge hbonds on the fly. That means that if the
      * acceptor and donor are mergable, then:
      * 1) store the hb-info so that acceptor id > donor id,
@@ -314,7 +314,7 @@ static PSTYPE periodicIndex(ivec r, t_gemPeriod *per, bool daSwap) {
     return per->nper - 1 - (daSwap ? 0:1);
 }
 
-static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool oneHB, bool bGem, int gemmode)
+static t_hbdata *mk_hbdata(gmx_bool bHBmap,gmx_bool bDAnr,gmx_bool oneHB, gmx_bool bGem, int gemmode)
 {
     t_hbdata *hb;
   
@@ -333,7 +333,7 @@ static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool oneHB, bool bGem, int gem
     return hb;
 }
 
-static void mk_hbmap(t_hbdata *hb,bool bTwo)
+static void mk_hbmap(t_hbdata *hb,gmx_bool bTwo)
 {
     int  i,j;
 
@@ -616,7 +616,7 @@ static void add_frames(t_hbdata *hb,int nframes)
 #define OFFSET(frame) (frame / 32)
 #define MASK(frame)   (1 << (frame % 32))
 
-static void _set_hb(unsigned int hbexist[],unsigned int frame,bool bValue)
+static void _set_hb(unsigned int hbexist[],unsigned int frame,gmx_bool bValue)
 {
     if (bValue)
         hbexist[OFFSET(frame)] |= MASK(frame);
@@ -624,7 +624,7 @@ static void _set_hb(unsigned int hbexist[],unsigned int frame,bool bValue)
         hbexist[OFFSET(frame)] &= ~MASK(frame);
 }
 
-static bool is_hb(unsigned int hbexist[],int frame)
+static gmx_bool is_hb(unsigned int hbexist[],int frame)
 {
     return ((hbexist[OFFSET(frame)] & MASK(frame)) != 0) ? 1 : 0;
 }
@@ -691,7 +691,7 @@ static void add_ff(t_hbdata *hbd,int id,int h,int ia,int frame,int ihb, PSTYPE p
     int     maxhydro = min(hbd->maxhydro,hbd->d.nhydro[id]);
     int     wlen     = hbd->wordlen;
     int     delta    = 32*wlen;
-    bool    bGem     = hbd->bGem;
+    gmx_bool    bGem     = hbd->bGem;
 
     if (!hb->h[0]) {
         hb->n0        = frame;
@@ -779,7 +779,7 @@ static int _donor_index(t_donors *d,int grp,atom_id i,const char *file,int line)
 }
 #define donor_index(d,grp,i) _donor_index(d,grp,i,__FILE__,__LINE__)
 
-static bool isInterchangable(t_hbdata *hb, int d, int a, int grpa, int grpd)
+static gmx_bool isInterchangable(t_hbdata *hb, int d, int a, int grpa, int grpd)
 {
     /* g_hbond doesn't allow overlapping groups */
     if (grpa!=grpd)
@@ -791,10 +791,10 @@ static bool isInterchangable(t_hbdata *hb, int d, int a, int grpa, int grpd)
 
 
 static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
-                      int frame,bool bMerge,int ihb,bool bContact, PSTYPE p)
+                      int frame,gmx_bool bMerge,int ihb,gmx_bool bContact, PSTYPE p)
 { 
     int k,id,ia,hh;
-    bool daSwap = FALSE;
+    gmx_bool daSwap = FALSE;
 
     if ((id = hb->d.dptr[d]) == NOTSET)
         gmx_fatal(FARGS,"No donor atom %d",d+1);
@@ -896,10 +896,10 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
 }
 
 /* Now a redundant function. It might find use at some point though. */
-static bool in_list(atom_id selection,int isize,atom_id *index)
+static gmx_bool in_list(atom_id selection,int isize,atom_id *index)
 {
     int i;
-    bool bFound;
+    gmx_bool bFound;
   
     bFound=FALSE;
     for(i=0; (i<isize) && !bFound; i++)
@@ -954,8 +954,8 @@ static void add_acc(t_acceptors *a,int ia,int grp)
 
 static void search_acceptors(t_topology *top,int isize, 
                              atom_id *index,t_acceptors *a,int grp,
-                             bool bNitAcc,
-                             bool bContact,bool bDoIt, unsigned char *datable)
+                             gmx_bool bNitAcc,
+                             gmx_bool bContact,gmx_bool bDoIt, unsigned char *datable)
 {
     int i,n;
   
@@ -1030,14 +1030,14 @@ static void add_dh(t_donors *ddd,int id,int ih,int grp, unsigned char *datable)
 }
 
 static void search_donors(t_topology *top, int isize, atom_id *index,
-                          t_donors *ddd,int grp,bool bContact,bool bDoIt,
+                          t_donors *ddd,int grp,gmx_bool bContact,gmx_bool bDoIt,
                           unsigned char *datable)
 {
     int        i,j,nra,n;
     t_functype func_type;
     t_ilist    *interaction;
     atom_id    nr1,nr2;
-    bool       stop;
+    gmx_bool       stop;
 
     if (!ddd->dptr) {
         snew(ddd->dptr,top->atoms.nr);
@@ -1132,7 +1132,7 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
     }
 }
 
-static t_gridcell ***init_grid(bool bBox,rvec box[],real rcut,ivec ngrid)
+static t_gridcell ***init_grid(gmx_bool bBox,rvec box[],real rcut,ivec ngrid)
 {
     t_gridcell ***grid;
     int i,y,z;
@@ -1183,7 +1183,7 @@ static void reset_nhbonds(t_donors *ddd)
 void pbc_correct_gem(rvec dx,matrix box,rvec hbox);
 
 static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
-                       bool bBox, matrix box, rvec hbox,
+                       gmx_bool bBox, matrix box, rvec hbox,
                        real rcut, real rshell,
                        ivec ngrid, t_gridcell ***grid)
 {
@@ -1192,7 +1192,7 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
     ivec    grididx;
     rvec    invdelta,dshell,xtemp={0,0,0};
     t_ncell *newgrid;
-    bool    bDoRshell,bInShell,bAcc;
+    gmx_bool    bDoRshell,bInShell,bAcc;
     real    rshell2=0;
     int     gx,gy,gz;
     int     dum = -1;
@@ -1258,7 +1258,7 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
                                     bInShell=FALSE;
                             }
                         } else {
-                            bool bDone = FALSE;
+                            gmx_bool bDone = FALSE;
                             while (!bDone)
                             {
                                 bDone = TRUE;
@@ -1442,7 +1442,7 @@ static void pbc_correct(rvec dx,matrix box,rvec hbox)
 void pbc_correct_gem(rvec dx,matrix box,rvec hbox)
 {
     int m;
-    bool bDone = FALSE;
+    gmx_bool bDone = FALSE;
     while (!bDone) {
         bDone = TRUE;
         for(m=DIM-1; m>=0; m--) {
@@ -1464,16 +1464,16 @@ void pbc_correct_gem(rvec dx,matrix box,rvec hbox)
  */
 static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
                     real rcut, real r2cut, real ccut, 
-                    rvec x[], bool bBox, matrix box,rvec hbox,
-                    real *d_ha, real *ang,bool bDA,int *hhh,
-                    bool bContact, bool bMerge, PSTYPE *p)
+                    rvec x[], gmx_bool bBox, matrix box,rvec hbox,
+                    real *d_ha, real *ang,gmx_bool bDA,int *hhh,
+                    gmx_bool bContact, gmx_bool bMerge, PSTYPE *p)
 {
     int  h,hh,id,ja,ihb;
     rvec r_da,r_ha,r_dh, r={0, 0, 0};
     ivec ri;
     real rc2,r2c2,rda2,rha2,ca;
-    bool HAinrange = FALSE; /* If !bDA. Needed for returning hbDist in a correct way. */
-    bool daSwap = FALSE;
+    gmx_bool HAinrange = FALSE; /* If !bDA. Needed for returning hbDist in a correct way. */
+    gmx_bool daSwap = FALSE;
 
     if (d == a)
         return hbNo;
@@ -1667,7 +1667,7 @@ static void do_merge(t_hbdata *hb,int ntmp,
 /* Added argument bContact for nicer output.
  * Erik Marklund, June 29, 2006
  */
-static void merge_hb(t_hbdata *hb,bool bTwo, bool bContact){
+static void merge_hb(t_hbdata *hb,gmx_bool bTwo, gmx_bool bContact){
     int  i,inrnew,indnew,j,ii,jj,m,id,ia,grp,ogrp,ntmp;
     unsigned int *htmp,*gtmp;
     PSTYPE *ptmp;
@@ -1756,7 +1756,7 @@ static void do_nhb_dist(FILE *fp,t_hbdata *hb,real t)
 /* Changed the contact code slightly.
  * - Erik Marklund, June 29, 2006
  */
-static void do_hblife(const char *fn,t_hbdata *hb,bool bMerge,bool bContact,
+static void do_hblife(const char *fn,t_hbdata *hb,gmx_bool bMerge,gmx_bool bContact,
                       const output_env_t oenv)
 {
     FILE *fp;
@@ -1854,12 +1854,12 @@ static void do_hblife(const char *fn,t_hbdata *hb,bool bMerge,bool bContact,
 /* Changed argument bMerge into oneHB to handle contacts properly.
  * - Erik Marklund, June 29, 2006
  */
-static void dump_ac(t_hbdata *hb,bool oneHB,int nDump)
+static void dump_ac(t_hbdata *hb,gmx_bool oneHB,int nDump)
 {
     FILE  *fp;
     int   i,j,k,m,nd,ihb,idist;
     int   nframes = hb->nframes;
-    bool  bPrint;
+    gmx_bool  bPrint;
     t_hbond *hbh;
 
     if (nDump <= 0)
@@ -2121,7 +2121,7 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
     real   k=1,kp=1,kow=1;
     real   Q=0,chi22,chi2,dg,dgp,tau_hb,dtau,tau_rlx,e_1,dt,sigma_k,sigma_kp,ddg;
     double tmp,sn2=0,sc2=0,sk2=0,scn=0,sck=0,snk=0;
-    bool   bError = (sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL);
+    gmx_bool   bError = (sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL);
   
     if (smooth_tail_start >= 0) {
         smooth_tail(n,t,ct,sigma_ct,smooth_tail_start,oenv);
@@ -2258,10 +2258,10 @@ static void normalizeACF(real *ct, real *gt, int len)
  * - Erik Marklund, June 29, 2006
  */
 static void do_hbac(const char *fn,t_hbdata *hb,
-                    int nDump,bool bMerge,bool bContact, real fit_start,
-                    real temp,bool R2,real smooth_tail_start, const output_env_t oenv,
+                    int nDump,gmx_bool bMerge,gmx_bool bContact, real fit_start,
+                    real temp,gmx_bool R2,real smooth_tail_start, const output_env_t oenv,
                     t_gemParams *params, const char *gemType, int nThreads,
-                    const int NN, const bool bBallistic, const bool bGemFit)
+                    const int NN, const gmx_bool bBallistic, const gmx_bool bGemFit)
 {
     FILE *fp;
     int  i,j,k,m,n,o,nd,ihb,idist,n2,nn,iter,nSets;
@@ -2273,7 +2273,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                                 "Ac(t)",
                                 "Cc\\scontact,hb\\v{}\\z{}(t)",
                                 "-dAc\\sfs\\v{}\\z{}/dt" };
-    bool bNorm=FALSE;
+    gmx_bool bNorm=FALSE;
     double nhb = 0;
     int nhbi=0;
     real *rhbex=NULL,*ht,*gt,*ght,*dght,*kt;
@@ -2287,7 +2287,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
     t_pShift *pHist;
     int *ptimes=NULL, *poff=NULL, anhb, n0, mMax=INT_MIN;
     real **rHbExGem = NULL;
-    bool c;
+    gmx_bool c;
     int acType;
     t_E *E;
     double *ctdouble, *timedouble, *fittedct;
@@ -2957,14 +2957,14 @@ static void analyse_donor_props(const char *fn,t_hbdata *hb,int nframes,real t,
 }
 
 static void dump_hbmap(t_hbdata *hb,
-                       int nfile,t_filenm fnm[],bool bTwo,
-                       bool bContact, int isize[],int *index[],char *grpnames[],
+                       int nfile,t_filenm fnm[],gmx_bool bTwo,
+                       gmx_bool bContact, int isize[],int *index[],char *grpnames[],
                        t_atoms *atoms)
 {
     FILE *fp,*fplog;
     int  ddd,hhh,aaa,i,j,k,m,grp;
     char ds[32],hs[32],as[32];
-    bool first;
+    gmx_bool first;
   
     fp = opt2FILE("-hbn",nfile,fnm,"w");
     if (opt2bSet("-g",nfile,fnm)) {
@@ -3141,11 +3141,11 @@ int gmx_hbond(int argc,char *argv[])
   
     static real acut=30, abin=1, rcut=0.35, r2cut=0, rbin=0.005, rshell=-1;
     static real maxnhb=0,fit_start=1,fit_end=60,temp=298.15,smooth_tail_start=-1, D=-1;
-    static bool bNitAcc=TRUE,bDA=TRUE,bMerge=TRUE;
+    static gmx_bool bNitAcc=TRUE,bDA=TRUE,bMerge=TRUE;
     static int  nDump=0, nFitPoints=100;
     static int nThreads = 0, nBalExp=4;
 
-    static bool bContact=FALSE, bBallistic=FALSE, bBallisticDt=FALSE, bGemFit=FALSE;
+    static gmx_bool bContact=FALSE, bBallistic=FALSE, bBallisticDt=FALSE, bGemFit=FALSE;
     static real logAfterTime = 10, gemBallistic = 0.2; /* ps */
     static const char *NNtype[] = {NULL, "none", "binary", "oneOverR3", "dipole", NULL};
 
@@ -3256,7 +3256,7 @@ int gmx_hbond(int argc,char *argv[])
     int     xi,yi,zi,ai;
     int     xj,yj,zj,aj,xjj,yjj,zjj;
     int     xk,yk,zk,ak,xkk,ykk,zkk;
-    bool    bSelected,bHBmap,bStop,bTwo,was,bBox,bTric;
+    gmx_bool    bSelected,bHBmap,bStop,bTwo,was,bBox,bTric;
     int     *adist,*rdist;
     int        grp,nabin,nrbin,bin,resdist,ihb;
     char       **leg;
@@ -3272,7 +3272,7 @@ int gmx_hbond(int argc,char *argv[])
     t_E     E;
     int     ii, jj, hh, actual_nThreads;
     int     threadNr=0;
-    bool    bGem, bNN, bParallel;
+    gmx_bool    bGem, bNN, bParallel;
     t_gemParams *params=NULL;
     
     CopyRight(stdout,argv[0]);
@@ -3286,7 +3286,7 @@ int gmx_hbond(int argc,char *argv[])
     /* NN-loop? If so, what estimator to use ?*/
     NN = 1;
     /* Outcommented for now DvdS 2010-07-13
-    while (NN < NN_NR && strcasecmp(NNtype[0], NNtype[NN])!=0)
+    while (NN < NN_NR && gmx_strcasecmp(NNtype[0], NNtype[NN])!=0)
         NN++;
     if (NN == NN_NR)
         gmx_fatal(FARGS, "Invalid NN-loop type.");
@@ -3300,7 +3300,7 @@ int gmx_hbond(int argc,char *argv[])
 
     /* geminate recombination? If so, which flavor? */
     gemmode = 1;
-    while (gemmode < gemNR && strcasecmp(gemType[0], gemType[gemmode])!=0)
+    while (gemmode < gemNR && gmx_strcasecmp(gemType[0], gemType[gemmode])!=0)
         gemmode++;
     if (gemmode == gemNR)
         gmx_fatal(FARGS, "Invalid recombination type.");

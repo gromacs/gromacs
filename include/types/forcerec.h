@@ -32,9 +32,6 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "ns.h"
 #include "genborn.h"
@@ -132,19 +129,19 @@ typedef struct ewald_tab *ewald_tab_t;
 
 typedef struct {
   /* Domain Decomposition */
-  bool bDomDec;
+  gmx_bool bDomDec;
 
   /* PBC stuff */
   int  ePBC;
-  bool bMolPBC;
+  gmx_bool bMolPBC;
   int  rc_scaling;
   rvec posres_com;
   rvec posres_comB;
 
-  bool UseOptimizedKernels;
+  gmx_bool UseOptimizedKernels;
 
   /* Use special N*N kernels? */
-  bool bAllvsAll;
+  gmx_bool bAllvsAll;
   /* Private work data */
   void *AllvsAll_work;
   void *AllvsAll_workgb;
@@ -187,8 +184,8 @@ typedef struct {
   real fudgeQQ;
 
   /* Table stuff */
-  bool bcoultab;
-  bool bvdwtab;
+  gmx_bool bcoultab;
+  gmx_bool bvdwtab;
   /* The normal tables are in the nblists struct(s) below */
   t_forcetable tab14; /* for 1-4 interactions only */
 
@@ -207,7 +204,7 @@ typedef struct {
   int  sc_power;
   real sc_sigma6_def;
   real sc_sigma6_min;
-  bool bSepDVDL;
+  gmx_bool bSepDVDL;
 
   /* NS Stuff */
   int  eeltype;
@@ -218,8 +215,8 @@ typedef struct {
    * It can be set to esolNO to disable all water optimization */
   int  solvent_opt;
   int  nWatMol;
-  bool bGrid;
-  bool bExcl_IntraCGAll_InterCGNone;
+  gmx_bool bGrid;
+  gmx_bool bExcl_IntraCGAll_InterCGNone;
   cginfo_mb_t *cginfo_mb;
   int  *cginfo;
   rvec *cg_cm;
@@ -241,7 +238,7 @@ typedef struct {
    * include shells are done, then after minimsation is converged the remaining
    * forces are computed.
    */
-  /* bool *bMask; */
+  /* gmx_bool *bMask; */
 
   /* The number of charge groups participating in do_force_lowlevel */
   int ncg_force;
@@ -253,14 +250,14 @@ typedef struct {
   int nalloc_force;
 
   /* Twin Range stuff, f_twin has size natoms_force */
-  bool bTwinRange;
+  gmx_bool bTwinRange;
   int  nlr;
   rvec *f_twin;
 
   /* Forces that should not enter into the virial summation:
    * PPPM/PME/Ewald/posres
    */
-  bool bF_NoVirSum;
+  gmx_bool bF_NoVirSum;
   int  f_novirsum_n;
   int  f_novirsum_nalloc;
   rvec *f_novirsum_alloc;
@@ -274,7 +271,7 @@ typedef struct {
   tensor    vir_el_recip;
 
   /* PME/Ewald stuff */
-  bool bEwald;
+  gmx_bool bEwald;
   real ewaldcoeff;
   ewald_tab_t ewald_table;
 
@@ -285,7 +282,7 @@ typedef struct {
 
   /* Non bonded Parameter lists */
   int  ntype; /* Number of atom types */
-  bool bBHAM;
+  gmx_bool bBHAM;
   real *nbfp;
 
   /* Energy group pair flags */
@@ -295,7 +292,7 @@ typedef struct {
   real fc_stepsize;
 
   /* Generalized born implicit solvent */
-  bool bGB;
+  gmx_bool bGB;
   /* Generalized born stuff */
   real gb_epsilon_solvent;
   /* Table data for GB */
@@ -339,13 +336,13 @@ typedef struct {
    * Only the energy difference due to the addition of the last molecule
    * should be calculated.
    */
-  bool n_tpi;
+  gmx_bool n_tpi;
 
   /* Neighbor searching stuff */
   gmx_ns_t ns;
 
   /* QMMM stuff */
-  bool         bQMMM;
+  gmx_bool         bQMMM;
   t_QMMMrec    *qr;
 
   /* QM-MM neighborlists */

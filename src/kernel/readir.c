@@ -104,7 +104,7 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
   snew(opts->define,STRLEN);
 }
 
-static void _low_check(bool b,char *s,warninp_t wi)
+static void _low_check(gmx_bool b,char *s,warninp_t wi)
 {
     if (b)
     {
@@ -128,7 +128,7 @@ static void check_nst(const char *desc_nst,int nst,
     }
 }
 
-static bool ir_NVE(const t_inputrec *ir)
+static gmx_bool ir_NVE(const t_inputrec *ir)
 {
     return ((ir->eI == eiMD || EI_VV(ir->eI)) && ir->etc == etcNO);
 }
@@ -1265,7 +1265,7 @@ static int search_QMstring(char *s,int ng,const char *gn[])
   int i;
 
   for(i=0; (i<ng); i++)
-    if (strcasecmp(s,gn[i]) == 0)
+    if (gmx_strcasecmp(s,gn[i]) == 0)
       return i;
 
   gmx_fatal(FARGS,"this QM method or basisset (%s) is not implemented\n!",s);
@@ -1280,7 +1280,7 @@ int search_string(char *s,int ng,char *gn[])
   int i;
   
   for(i=0; (i<ng); i++)
-    if (strcasecmp(s,gn[i]) == 0)
+    if (gmx_strcasecmp(s,gn[i]) == 0)
       return i;
       
   gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default goups in your mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
@@ -1288,17 +1288,17 @@ int search_string(char *s,int ng,char *gn[])
   return -1;
 }
 
-static bool do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
+static gmx_bool do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
                          t_blocka *block,char *gnames[],
                          int gtype,int restnm,
-                         int grptp,bool bVerbose,
+                         int grptp,gmx_bool bVerbose,
                          warninp_t wi)
 {
     unsigned short *cbuf;
     t_grps *grps=&(groups->grps[gtype]);
     int    i,j,gid,aj,ognr,ntot=0;
     const char *title;
-    bool   bRest;
+    gmx_bool   bRest;
     char   warn_buf[STRLEN];
 
     if (debug)
@@ -1646,7 +1646,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   sfree(na_vcm);
 }
 
-static void decode_cos(char *s,t_cosines *cosine,bool bTime)
+static void decode_cos(char *s,t_cosines *cosine,gmx_bool bTime)
 {
   char   *t;
   char   format[STRLEN],f1[STRLEN];
@@ -1682,7 +1682,7 @@ static void decode_cos(char *s,t_cosines *cosine,bool bTime)
   sfree(t);
 }
 
-static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
+static gmx_bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
 			const char *option,const char *val,int flag)
 {
   /* The maximum number of energy group pairs would be MAXPTR*(MAXPTR+1)/2.
@@ -1693,7 +1693,7 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
   int  nelem,i,j,k,nr;
   char *names[EGP_MAX];
   char ***gnames;
-  bool bSet;
+  gmx_bool bSet;
 
   gnames = groups->grpname;
 
@@ -1705,14 +1705,14 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
   for(i=0; i<nelem/2; i++) {
     j = 0;
     while ((j < nr) &&
-	   strcasecmp(names[2*i],*(gnames[groups->grps[egcENER].nm_ind[j]])))
+	   gmx_strcasecmp(names[2*i],*(gnames[groups->grps[egcENER].nm_ind[j]])))
       j++;
     if (j == nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
 		  names[2*i],option);
     k = 0;
     while ((k < nr) &&
-	   strcasecmp(names[2*i+1],*(gnames[groups->grps[egcENER].nm_ind[k]])))
+	   gmx_strcasecmp(names[2*i+1],*(gnames[groups->grps[egcENER].nm_ind[k]])))
       k++;
     if (k==nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
@@ -1729,7 +1729,7 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
 
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
-              bool bVerbose,
+              gmx_bool bVerbose,
               t_inputrec *ir,rvec *v,
               warninp_t wi)
 {
@@ -1746,7 +1746,7 @@ void do_index(const char* mdparin, const char *ndx,
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   real    SAtime;
-  bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
+  gmx_bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
     nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;
   char    warn_buf[STRLEN];
@@ -1992,9 +1992,9 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.nFreeze,nr);
   for(i=k=0; (i<nfreeze); i++)
     for(j=0; (j<DIM); j++,k++) {
-      ir->opts.nFreeze[i][j]=(strncasecmp(ptr1[k],"Y",1)==0);
+      ir->opts.nFreeze[i][j]=(gmx_strncasecmp(ptr1[k],"Y",1)==0);
       if (!ir->opts.nFreeze[i][j]) {
-	if (strncasecmp(ptr1[k],"N",1) != 0) {
+	if (gmx_strncasecmp(ptr1[k],"N",1) != 0) {
 	  sprintf(warnbuf,"Please use Y(ES) or N(O) for freezedim only "
 		  "(not %s)", ptr1[k]);
 	  warning(wi,warn_buf);
@@ -2087,7 +2087,7 @@ void do_index(const char* mdparin, const char *ndx,
   for(i=0;i<nr;i++){
     ir->opts.QMmult[i]   = strtol(ptr1[i],NULL,10);
     ir->opts.QMcharge[i] = strtol(ptr2[i],NULL,10);
-    ir->opts.bSH[i]      = (strncasecmp(ptr3[i],"Y",1)==0);
+    ir->opts.bSH[i]      = (gmx_strncasecmp(ptr3[i],"Y",1)==0);
   }
 
   nCASelec  = str_nelem(CASelectrons,MAXPTR,ptr1);
@@ -2105,8 +2105,8 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.bOPT,nr);
   snew(ir->opts.bTS,nr);
   for(i=0;i<nr;i++){
-    ir->opts.bOPT[i] = (strncasecmp(ptr1[i],"Y",1)==0);
-    ir->opts.bTS[i]  = (strncasecmp(ptr2[i],"Y",1)==0);
+    ir->opts.bOPT[i] = (gmx_strncasecmp(ptr1[i],"Y",1)==0);
+    ir->opts.bTS[i]  = (gmx_strncasecmp(ptr2[i],"Y",1)==0);
   }
   nSAon     = str_nelem(SAon,MAXPTR,ptr1);
   nSAoff    = str_nelem(SAoff,MAXPTR,ptr2);
@@ -2192,7 +2192,7 @@ static void check_disre(gmx_mtop_t *mtop)
   }
 }
 
-static bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
+static gmx_bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
 {
   int d,g,i;
   gmx_mtop_ilistloop_t iloop;
@@ -2235,7 +2235,7 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 {
   char err_buf[256];
   int  i,m,g,nmol,npct;
-  bool bCharge,bAcc;
+  gmx_bool bCharge,bAcc;
   real gdt_max,*mgrp,mt;
   rvec acc;
   gmx_mtop_atomloop_block_t aloopb;
@@ -2374,10 +2374,10 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
   check_disre(sys);
 }
 
-void double_check(t_inputrec *ir,matrix box,bool bConstr,warninp_t wi)
+void double_check(t_inputrec *ir,matrix box,gmx_bool bConstr,warninp_t wi)
 {
   real min_size;
-  bool bTWIN;
+  gmx_bool bTWIN;
   char warn_buf[STRLEN];
   const char *ptr;
   

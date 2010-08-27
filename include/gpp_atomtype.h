@@ -36,10 +36,6 @@
 #ifndef _gpp_atomtype_h
 #define _gpp_atomtype_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "typedefs.h"
 #include "macros.h"
@@ -51,41 +47,41 @@ extern "C" {
 
 typedef struct gpp_atomtype *gpp_atomtype_t;
 
-extern int get_atomtype_type(const char *str,gpp_atomtype_t at);
+int get_atomtype_type(const char *str,gpp_atomtype_t at);
 /* Return atomtype corresponding to case-insensitive str
    or NOTSET if not found */
 
-extern int get_atomtype_ntypes(gpp_atomtype_t at);
+int get_atomtype_ntypes(gpp_atomtype_t at);
 /* Return number of atomtypes */
 
-extern char *get_atomtype_name(int nt,gpp_atomtype_t at);
+char *get_atomtype_name(int nt,gpp_atomtype_t at);
 /* Return name corresponding to atomtype nt, or NULL if not found */
 
-extern real get_atomtype_massA(int nt,gpp_atomtype_t at);
-extern real get_atomtype_massB(int nt,gpp_atomtype_t at);
-extern real get_atomtype_qA(int nt,gpp_atomtype_t at);
-extern real get_atomtype_qB(int nt,gpp_atomtype_t at);
-extern real get_atomtype_radius(int nt,gpp_atomtype_t at);
-extern real get_atomtype_vol(int nt,gpp_atomtype_t at);
-extern real get_atomtype_surftens(int nt,gpp_atomtype_t at);
-extern real get_atomtype_gb_radius(int nt,gpp_atomtype_t at);
-extern real get_atomtype_S_hct(int nt,gpp_atomtype_t at);
-extern int get_atomtype_ptype(int nt,gpp_atomtype_t at);
-extern int get_atomtype_batype(int nt,gpp_atomtype_t at);
-extern int get_atomtype_atomnumber(int nt,gpp_atomtype_t at);
+real get_atomtype_massA(int nt,gpp_atomtype_t at);
+real get_atomtype_massB(int nt,gpp_atomtype_t at);
+real get_atomtype_qA(int nt,gpp_atomtype_t at);
+real get_atomtype_qB(int nt,gpp_atomtype_t at);
+real get_atomtype_radius(int nt,gpp_atomtype_t at);
+real get_atomtype_vol(int nt,gpp_atomtype_t at);
+real get_atomtype_surftens(int nt,gpp_atomtype_t at);
+real get_atomtype_gb_radius(int nt,gpp_atomtype_t at);
+real get_atomtype_S_hct(int nt,gpp_atomtype_t at);
+int get_atomtype_ptype(int nt,gpp_atomtype_t at);
+int get_atomtype_batype(int nt,gpp_atomtype_t at);
+int get_atomtype_atomnumber(int nt,gpp_atomtype_t at);
 
 /* Return the above variable for atomtype nt, or NOTSET if not found */
 
-extern real get_atomtype_nbparam(int nt,int param,gpp_atomtype_t at);
+real get_atomtype_nbparam(int nt,int param,gpp_atomtype_t at);
 /* Similar to the previous but returns the paramth parameter or NOTSET */
 
-extern gpp_atomtype_t init_atomtype(void);
+gpp_atomtype_t init_atomtype(void);
 /* Return a new atomtype structure */
 
-extern void done_atomtype(gpp_atomtype_t at);
+void done_atomtype(gpp_atomtype_t at);
 /* Free the memory in the structure */
 
-extern int set_atomtype(int nt,gpp_atomtype_t at,t_symtab *tab,
+int set_atomtype(int nt,gpp_atomtype_t at,t_symtab *tab,
 			t_atom *a,const char *name,t_param *nb,
 			int bondatomtype,
 			real radius,real vol,real surftens,int atomnumber,
@@ -98,7 +94,7 @@ set_atomtype_gbparam(gpp_atomtype_t at, int i,
 		     real radius,real vol,real surftens,
 		     real gb_radius, real S_hct);
 
-extern int add_atomtype(gpp_atomtype_t at,t_symtab *tab,
+int add_atomtype(gpp_atomtype_t at,t_symtab *tab,
 			t_atom *a,const char *name,t_param *nb,
 			int bondatomtype,
 			real radius,real vol,real surftens,real atomnumber,
@@ -106,14 +102,14 @@ extern int add_atomtype(gpp_atomtype_t at,t_symtab *tab,
 /* Add a complete new atom type to an existing atomtype structure. Returns
    the number of the atom type. */
 
-extern void print_at (FILE * out, gpp_atomtype_t at);
+void print_at (FILE * out, gpp_atomtype_t at);
 /* Print an atomtype record to a text file */
 
-extern void renum_atype(t_params plist[],gmx_mtop_t *mtop,
+void renum_atype(t_params plist[],gmx_mtop_t *mtop,
 			int *wall_atomtype,
-			gpp_atomtype_t at,bool bVerbose);
+			gpp_atomtype_t at,gmx_bool bVerbose);
 			
-extern void copy_atomtype_atomtypes(gpp_atomtype_t atype,t_atomtypes *atypes);
+void copy_atomtype_atomtypes(gpp_atomtype_t atype,t_atomtypes *atypes);
 /* Copy from one structure to another */
 
 #ifdef __cplusplus

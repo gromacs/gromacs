@@ -84,10 +84,10 @@ static int comp_xptr(const void *a,const void *b)
     return 0;
 }
 
-static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
+static void do_my_pme(FILE *fp,real tm,gmx_bool bVerbose,t_inputrec *ir,
 		      rvec x[],rvec xbuf[],rvec f[],
 		      real charge[],real qbuf[],real qqbuf[],
-		      matrix box,bool bSort,
+		      matrix box,gmx_bool bSort,
 		      t_commrec *cr,t_nsborder *nsb,t_nrnb *nrnb,
 		      t_block *excl,real qtot,
 		      t_forcerec *fr,int index[],FILE *fp_xvg,
@@ -220,9 +220,9 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options ! */
-  static bool bVerbose=FALSE;
-  static bool bOptFFT=FALSE;
-  static bool bSort=FALSE;
+  static gmx_bool bVerbose=FALSE;
+  static gmx_bool bOptFFT=FALSE;
+  static gmx_bool bSort=FALSE;
   static int  ewald_geometry=eewg3D;
   static int  nnodes=1;
   static int  nthreads=1;
@@ -230,7 +230,7 @@ int main(int argc,char *argv[])
   static rvec grid = { -1, -1, -1 };
   static real rc   = 0.0;
   static real dtol = 0.0;
-  static bool bGroups = FALSE;
+  static gmx_bool bGroups = FALSE;
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, {&nnodes},
       "Number of nodes, must be the same as used for grompp" },
@@ -264,7 +264,7 @@ int main(int argc,char *argv[])
   real        t,lambda,ewaldcoeff,qtot;
   rvec        *x,*f,*xbuf;
   int         *index;
-  bool        bCont;
+  gmx_bool        bCont;
   real        *charge,*qbuf,*qqbuf;
   matrix      box;
   

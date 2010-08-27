@@ -81,7 +81,7 @@ int main (int argc,char *argv[])
   int         nidx,natoms,natoms_out;
   matrix      box;
   int         i,frame,resind;
-  bool        bReadMultiple;
+  gmx_bool        bReadMultiple;
   output_env_t oenv;
   
   t_filenm fnm[] = {

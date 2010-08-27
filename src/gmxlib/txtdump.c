@@ -91,7 +91,7 @@ int pr_title_nxn(FILE *fp,int indent,const char *title,int n1,int n2)
   return (indent+INDENT);
 }
 
-void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNumbers)
+void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, gmx_bool bShowNumbers)
 {
   int i;
 
@@ -106,7 +106,7 @@ void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNu
     }
 }
 
-void pr_ivec_block(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNumbers)
+void pr_ivec_block(FILE *fp,int indent,const char *title,int vec[],int n, gmx_bool bShowNumbers)
 {
     int i,j;
     
@@ -146,7 +146,7 @@ void pr_ivec_block(FILE *fp,int indent,const char *title,int vec[],int n, bool b
     }
 }
 
-void pr_bvec(FILE *fp,int indent,const char *title,bool vec[],int n, bool bShowNumbers)
+void pr_bvec(FILE *fp,int indent,const char *title,gmx_bool vec[],int n, gmx_bool bShowNumbers)
 {
   int i;
 
@@ -162,7 +162,7 @@ void pr_bvec(FILE *fp,int indent,const char *title,bool vec[],int n, bool bShowN
     }
 }
 
-void pr_ivecs(FILE *fp,int indent,const char *title,ivec vec[],int n, bool bShowNumbers)
+void pr_ivecs(FILE *fp,int indent,const char *title,ivec vec[],int n, gmx_bool bShowNumbers)
 {
   int i,j;
 
@@ -183,7 +183,7 @@ void pr_ivecs(FILE *fp,int indent,const char *title,ivec vec[],int n, bool bShow
     }
 }
 
-void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, bool bShowNumbers)
+void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, gmx_bool bShowNumbers)
 {
   int i;
 
@@ -198,7 +198,7 @@ void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, bool bShowN
     }
 }
 
-void pr_dvec(FILE *fp,int indent,const char *title,double vec[],int n, bool bShowNumbers)
+void pr_dvec(FILE *fp,int indent,const char *title,double vec[],int n, gmx_bool bShowNumbers)
 {
 	int i;
 	
@@ -359,7 +359,7 @@ void pr_qm_opts(FILE *fp,int indent,const char *title,t_grpopts *opts)
 }
 
 static void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts,
-			bool bMDPformat)
+			gmx_bool bMDPformat)
 {
   int i,m,j;
 
@@ -435,7 +435,7 @@ static void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts,
 }
 
 static void pr_matrix(FILE *fp,int indent,const char *title,rvec *m,
-		      bool bMDPformat)
+		      gmx_bool bMDPformat)
 {
   if (bMDPformat)
     fprintf(fp,"%-10s    = %g %g %g %g %g %g\n",title,
@@ -445,7 +445,7 @@ static void pr_matrix(FILE *fp,int indent,const char *title,rvec *m,
 }
 
 static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos,
-		      bool bMDPformat)
+		      gmx_bool bMDPformat)
 {
   int j;
   
@@ -509,7 +509,7 @@ static void pr_pull(FILE *fp,int indent,t_pull *pull)
 }
 
 void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
-                 bool bMDPformat)
+                 gmx_bool bMDPformat)
 {
   const char *infbuf="inf";
   int  i;
@@ -909,7 +909,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 }
 
 void pr_ilist(FILE *fp,int indent,const char *title,
-              t_functype *functype,t_ilist *ilist, bool bShowNumbers)
+              t_functype *functype,t_ilist *ilist, gmx_bool bShowNumbers)
 {
     int i,j,k,type,ftype;
     t_iatom *iatoms;
@@ -946,7 +946,7 @@ void pr_ilist(FILE *fp,int indent,const char *title,
 }
 
 static void pr_cmap(FILE *fp, int indent, const char *title,
-                    gmx_cmap_t *cmap_grid, bool bShowNumbers)
+                    gmx_cmap_t *cmap_grid, gmx_bool bShowNumbers)
 {
     int i,j,nelem;
     real dx,idx;
@@ -986,7 +986,7 @@ static void pr_cmap(FILE *fp, int indent, const char *title,
 
 void pr_ffparams(FILE *fp,int indent,const char *title,
                  gmx_ffparams_t *ffparams,
-                 bool bShowNumbers)
+                 gmx_bool bShowNumbers)
 {
   int i,j;
   
@@ -1007,7 +1007,7 @@ void pr_ffparams(FILE *fp,int indent,const char *title,
   pr_cmap(fp,indent,"cmap",&ffparams->cmap_grid,bShowNumbers);
 }
 
-void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbers)
+void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, gmx_bool bShowNumbers)
 {
   int i,j;
   
@@ -1060,7 +1060,7 @@ static int pr_blocka_title(FILE *fp,int indent,const char *title,t_blocka *block
   return indent;
 }
 
-static void low_pr_block(FILE *fp,int indent,const char *title,t_block *block, bool bShowNumbers)
+static void low_pr_block(FILE *fp,int indent,const char *title,t_block *block, gmx_bool bShowNumbers)
 {
   int i;
   
@@ -1076,7 +1076,7 @@ static void low_pr_block(FILE *fp,int indent,const char *title,t_block *block, b
     }
 }
 
-static void low_pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block, bool bShowNumbers)
+static void low_pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block, gmx_bool bShowNumbers)
 {
   int i;
   
@@ -1098,7 +1098,7 @@ static void low_pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,
     }
 }
 
-void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNumbers)
+void pr_block(FILE *fp,int indent,const char *title,t_block *block,gmx_bool bShowNumbers)
 {
   int i,j,ok,size,start,end;
   
@@ -1125,7 +1125,7 @@ void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNum
     }
 }
 
-void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,bool bShowNumbers)
+void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,gmx_bool bShowNumbers)
 {
   int i,j,ok,size,start,end;
   
@@ -1169,7 +1169,7 @@ void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,bool bShowN
     }
 }
 
-static void pr_strings(FILE *fp,int indent,const char *title,char ***nm,int n, bool bShowNumbers)
+static void pr_strings(FILE *fp,int indent,const char *title,char ***nm,int n, gmx_bool bShowNumbers)
 {
   int i;
 
@@ -1186,7 +1186,7 @@ static void pr_strings(FILE *fp,int indent,const char *title,char ***nm,int n, b
 }
 
 static void pr_strings2(FILE *fp,int indent,const char *title,
-			char ***nm,char ***nmB,int n, bool bShowNumbers)
+			char ***nm,char ***nmB,int n, gmx_bool bShowNumbers)
 {
   int i;
 
@@ -1202,7 +1202,7 @@ static void pr_strings2(FILE *fp,int indent,const char *title,
     }
 }
 
-static void pr_resinfo(FILE *fp,int indent,const char *title,t_resinfo *resinfo,int n, bool bShowNumbers)
+static void pr_resinfo(FILE *fp,int indent,const char *title,t_resinfo *resinfo,int n, gmx_bool bShowNumbers)
 {
     int i;
     
@@ -1238,7 +1238,7 @@ static void pr_atom(FILE *fp,int indent,const char *title,t_atom *atom,int n)
 }
 
 static void pr_grps(FILE *fp,int indent,const char *title,t_grps grps[],
-		    char **grpname[], bool bShowNumbers)
+		    char **grpname[], gmx_bool bShowNumbers)
 {
     int i,j;
 
@@ -1255,7 +1255,7 @@ static void pr_grps(FILE *fp,int indent,const char *title,t_grps grps[],
 
 static void pr_groups(FILE *fp,int indent,const char *title,
                       gmx_groups_t *groups,
-                      bool bShowNumbers)
+                      gmx_bool bShowNumbers)
 {
     int grpnr[egcNR];
     int nat_max,i,g;
@@ -1308,7 +1308,7 @@ static void pr_groups(FILE *fp,int indent,const char *title,
 }
 
 void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms, 
-	      bool bShownumbers)
+	      gmx_bool bShownumbers)
 {
   if (available(fp,atoms,indent,title))
     {
@@ -1322,7 +1322,7 @@ void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms,
 
 
 void pr_atomtypes(FILE *fp,int indent,const char *title,t_atomtypes *atomtypes, 
-		  bool bShowNumbers)
+		  gmx_bool bShowNumbers)
 {
   int i;
   if (available(fp,atomtypes,indent,title)) 
@@ -1342,7 +1342,7 @@ void pr_atomtypes(FILE *fp,int indent,const char *title,t_atomtypes *atomtypes,
 static void pr_moltype(FILE *fp,int indent,const char *title,
                        gmx_moltype_t *molt,int n,
                        gmx_ffparams_t *ffparams,
-                       bool bShowNumbers)
+                       gmx_bool bShowNumbers)
 {
     int j;
 
@@ -1361,7 +1361,7 @@ static void pr_moltype(FILE *fp,int indent,const char *title,
 static void pr_molblock(FILE *fp,int indent,const char *title,
                         gmx_molblock_t *molb,int n,
                         gmx_moltype_t *molt,
-                        bool bShowNumbers)
+                        gmx_bool bShowNumbers)
 {
     indent = pr_title_n(fp,indent,title,n);
     (void) pr_indent(fp,indent);
@@ -1380,7 +1380,7 @@ static void pr_molblock(FILE *fp,int indent,const char *title,
 }
 
 void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
-             bool bShowNumbers)
+             gmx_bool bShowNumbers)
 {
     int mt,mb;
 
@@ -1403,7 +1403,7 @@ void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
     }
 }
 
-void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNumbers)
+void pr_top(FILE *fp,int indent,const char *title,t_topology *top, gmx_bool bShowNumbers)
 {
   if (available(fp,top,indent,title)) {
     indent=pr_title(fp,indent,title);

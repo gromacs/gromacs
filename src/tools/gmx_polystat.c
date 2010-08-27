@@ -120,7 +120,7 @@ int gmx_polystat(int argc,char *argv[])
     "the average cos reaches a value of 1/e. This point is determined",
     "by a linear interpolation of log(<cos>)."
   };
-  static bool bMW = TRUE, bPC = FALSE;
+  static gmx_bool bMW = TRUE, bPC = FALSE;
   t_pargs pa[] = {
     { "-mw", FALSE, etBOOL, {&bMW},
       "Use the mass weighting for radii of gyration" },

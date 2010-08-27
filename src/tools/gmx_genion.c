@@ -61,16 +61,16 @@
 #include "gmx_ana.h"
 
 static void insert_ion(int nsa,int *nwater,
-		       bool bSet[],int repl[],atom_id index[],
+		       gmx_bool bSet[],int repl[],atom_id index[],
 		       real pot[],rvec x[],t_pbc *pbc,
 		       int sign,int q,const char *ionname,
 		       t_mdatoms *mdatoms,
-		       real rmin,bool bRandom,int *seed)
+		       real rmin,gmx_bool bRandom,int *seed)
 {
   int  i,ii,ei,owater,wlast,m,nw;
   real extr_e,poti,rmin2;
   rvec xei,dx;
-  bool bSub=FALSE;
+  gmx_bool bSub=FALSE;
   int  maxrand;
   
   ei=-1;
@@ -233,7 +233,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
   FILE *fpin,*fpout;
   char  buf[STRLEN],buf2[STRLEN],*temp,**mol_line=NULL;
   int  line,i,nsol,nmol_line,sol_line,nsol_last;
-  bool bMolecules;
+  gmx_bool bMolecules;
   
   printf("\nProcessing topology\n");
   fpin = ffopen(topinout,"r");
@@ -259,7 +259,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 	buf2[strlen(buf2)-1]='\0';
 	ltrim(buf2);
 	rtrim(buf2);
-	bMolecules=(strcasecmp(buf2,"molecules")==0);
+	bMolecules=(gmx_strcasecmp(buf2,"molecules")==0);
       }
       fprintf(fpout,"%s",buf);
     } else if (!bMolecules) {
@@ -267,7 +267,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
     } else {
       /* Check if this is a line with solvent molecules */
       sscanf(buf,"%s",buf2);
-      if (strcasecmp(buf2,grpname) == 0) {
+      if (gmx_strcasecmp(buf2,grpname) == 0) {
 	sol_line = nmol_line;
 	sscanf(buf,"%*s %d",&nsol_last);
       }
@@ -350,7 +350,7 @@ int gmx_genion(int argc, char *argv[])
   static const char *p_name="NA",*n_name="CL";
   static real rmin=0.6,scale=0.001,conc=0;
   static int  seed=1993;
-  static bool bRandom=TRUE,bNeutral=FALSE;
+  static gmx_bool bRandom=TRUE,bNeutral=FALSE;
   static t_pargs pa[] = {
     { "-np",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
     { "-pname", FALSE, etSTR,  {&p_name},"Name of the positive ion"      },
@@ -383,7 +383,7 @@ int gmx_genion(int argc, char *argv[])
   int         *repl;
   atom_id     *index;
   char        *grpname;
-  bool        *bSet,bPDB;
+  gmx_bool        *bSet,bPDB;
   int         i,nw,nwa,nsa,nsalt,iqtot;
   FILE        *fplog;
   output_env_t oenv;

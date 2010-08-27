@@ -36,9 +36,6 @@
 #ifndef _strdb_h
 #define _strdb_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "typedefs.h"
 
@@ -46,38 +43,38 @@
 extern "C" {
 #endif
 
-extern bool get_a_line(FILE *fp,char line[],int n);
+gmx_bool get_a_line(FILE *fp,char line[],int n);
 /* Read a line of at most n characters form *fp to line. 
  * Comment ';...' and leading spaces are removed, empty lines are skipped.
  * Return FALSE when eof. 
  */
 
-extern bool get_header(char line[],char header[]);
+gmx_bool get_header(char line[],char header[]);
 /* Read a header between '[' and ']' from line to header.
  * Returns FALSE no header is found.
  */
 
-extern int fget_lines(FILE *in,char ***strings);
+int fget_lines(FILE *in,char ***strings);
 /* Read an array of lines from file in. strings should be
  * the address of an array of strings (to be malloced by this routine)
  * return the number of strings.
  */
-extern int get_lines(const char *db,char ***strings);
+int get_lines(const char *db,char ***strings);
 /* Open file db, or if non-existant file $GMXLIB/db and read strings 
  * return the number of strings.
  */
 
-extern int search_str(int nstr,char **str,char *key);
+int search_str(int nstr,char **str,char *key);
 /* Search an array of strings for key, return the index if found
  * -1 if not found.
  */
 
-extern int get_strings(const char *db,char ***strings);
+int get_strings(const char *db,char ***strings);
 /* Read an array of strings from file db or $GMXLIB/db. strings should be
  * the address of an array of strings (to be malloced by this routine)
  * return the number of strings.
  */
-extern int get_file(const char *db,char ***strings);
+int get_file(const char *db,char ***strings);
 /* Read an array of strings from file db or $GMXLIB/db. strings should be
  * the address of an array of strings (to be malloced by this routine)
  * Does not need number of lines as first line in the file. 

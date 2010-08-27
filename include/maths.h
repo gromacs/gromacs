@@ -37,10 +37,6 @@
 #ifndef _maths_h
 #define _maths_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <math.h>
 #include "types/simple.h"
 #include "typedefs.h"
@@ -96,14 +92,14 @@ static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1]
     {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
 };*/
 
-extern	int		gmx_nint(real a);
-extern  real    sign(real x,real y);
+int		gmx_nint(real a);
+real    sign(real x,real y);
 
-extern	int		gmx_nint(real a);
-extern  real    sign(real x,real y);
-extern  real    cuberoot (real a);
-extern  real    gmx_erf(real x);
-extern  real    gmx_erfc(real x);
+int		gmx_nint(real a);
+real    sign(real x,real y);
+real    cuberoot (real a);
+real    gmx_erf(real x);
+real    gmx_erfc(real x);
 
 /*! \brief Check if two numbers are within a tolerance
  *

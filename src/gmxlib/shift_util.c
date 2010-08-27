@@ -256,9 +256,9 @@ real potential(real r1,real rc,real R)
 real shift_LRcorrection(FILE *fp,int start,int natoms,
 			t_commrec *cr,t_forcerec *fr,
 			real charge[],t_blocka *excl,rvec x[],
-			bool bOld,matrix box,matrix lr_vir)
+			gmx_bool bOld,matrix box,matrix lr_vir)
 {
-  static bool bFirst=TRUE;
+  static gmx_bool bFirst=TRUE;
   static real Vself;
   int    i,i1,i2,j,k,m,iv,jv;
   int *AA;
@@ -366,7 +366,7 @@ real phi_aver(int natoms,real phi[])
   return (phitot/natoms);
 }
 
-real symmetrize_phi(FILE *log,int natoms,real phi[],bool bVerbose)
+real symmetrize_phi(FILE *log,int natoms,real phi[],gmx_bool bVerbose)
 {
   real phitot;
   int  i;

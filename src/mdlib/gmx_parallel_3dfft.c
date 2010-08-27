@@ -75,7 +75,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            MPI_Comm                  comm[2],
                            int *                     slab2index_major,
                            int *                     slab2index_minor,
-                           bool                      bReproducible)
+                           gmx_bool                      bReproducible)
 {
     int rN=ndata[2],M=ndata[1],K=ndata[0];
     int flags = FFT5D_REALCOMPLEX | FFT5D_ORDER_YZ; /* FFT5D_DEBUG */

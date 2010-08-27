@@ -62,7 +62,7 @@ typedef struct t_selexpr_value
     /** Type of the value. */
     e_selvalue_t            type;
     /** TRUE if the value is the result of an expression. */
-    bool                    bExpr;
+    gmx_bool                    bExpr;
     union {
         /** The integer value/range (\p type INT_VALUE); */
         struct {
@@ -187,7 +187,7 @@ struct t_selelem *
 _gmx_sel_append_selection(struct t_selelem *sel, struct t_selelem *last,
                           void *scanner);
 /** Check whether the parser should finish. */
-bool
+gmx_bool
 _gmx_sel_parser_should_finish(void *scanner);
 
 /** Handle empty commands. */
@@ -199,7 +199,7 @@ _gmx_sel_handle_help_cmd(char *topic, void *scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */
-bool
+gmx_bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam,
                       struct gmx_ana_selparam_t *param, struct t_selelem *root,
                       void *scanner);

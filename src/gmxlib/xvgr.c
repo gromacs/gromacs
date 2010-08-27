@@ -39,6 +39,12 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 #include "sysstuff.h"
 #include "string2.h"
 #include "futil.h"
@@ -50,7 +56,12 @@
 #include "vec.h"
 #include "gmxfio.h"
 
-bool output_env_get_print_xvgr_codes(const output_env_t oenv)
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
+
+gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {
     int xvg_format;
 
@@ -66,7 +77,7 @@ static char *xvgrstr(const char *gmx,const output_env_t oenv,
     const char *sym[]={ "beta", "chi", "delta", "eta", "lambda", "mu", "omega", "phi", "psi", "rho", "theta", NULL };
     const char symc[]={ 'b',    'c',   'd',     'h',   'l',      'm',  'w',     'f',   'y',   'r',   'q',     '\0' };
     int  xvgf;
-    bool bXVGR;
+    gmx_bool bXVGR;
     int  g,b,i;
     char c;
 
@@ -171,7 +182,7 @@ static char *xvgrstr(const char *gmx,const output_env_t oenv,
                 /* Check for special symbol */
                 i = 0;
                 while (sym[i] != NULL &&
-                       strncasecmp(sym[i],gmx+g,strlen(sym[i])) != 0)
+                       gmx_strncasecmp(sym[i],gmx+g,strlen(sym[i])) != 0)
                 {
                     i++;
                 }
@@ -632,7 +643,7 @@ void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
 }
 
 real **read_xvg_time(const char *fn,
-		     bool bHaveT,bool bTB,real tb,bool bTE,real te,
+		     gmx_bool bHaveT,gmx_bool bTB,real tb,gmx_bool bTE,real te,
 		     int nsets_in,int *nset,int *nval,real *dt,real **t)
 {
   FILE   *fp;
@@ -641,7 +652,7 @@ real **read_xvg_time(const char *fn,
   char   *line;
   int    t_nalloc,*val_nalloc,a,narg,n,sin,set,nchar;
   double dbl,tend=0;
-  bool   bEndOfSet,bTimeInRange,bFirstLine=TRUE;
+  gmx_bool   bEndOfSet,bTimeInRange,bFirstLine=TRUE;
   real   **val;
   
   t_nalloc = 0;

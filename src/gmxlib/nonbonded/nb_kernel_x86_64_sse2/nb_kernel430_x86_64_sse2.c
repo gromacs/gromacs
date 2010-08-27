@@ -84,7 +84,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 	__m128d  vgb,fijGB,dvdatmp;
 	__m128d  rinvsix,vvdw6,vvdw12,vvdwtmp;
 	__m128d  facel,gbtabscale,dvdaj;
-    __m128d  fijD,fijR,fijC;
+    __m128d  fijD,fijR;
     __m128d  xmm1,tabscale,eps2;
 	__m128i  n0, nnn;
     
@@ -272,7 +272,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
             
 			xmm1    = _mm_add_pd(fijD,fijR);
 			xmm1    = _mm_mul_pd(xmm1,tabscale);
-			xmm1    = _mm_add_pd(xmm1,fijC);
+			xmm1    = _mm_add_pd(xmm1,fijGB);
 			xmm1    = _mm_sub_pd(xmm1,fscal);
 			fscal   = _mm_mul_pd(xmm1,neg);
 			fscal   = _mm_mul_pd(fscal,rinv);
@@ -420,7 +420,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
             
 			xmm1    = _mm_add_sd(fijD,fijR);
 			xmm1    = _mm_mul_sd(xmm1,tabscale);
-			xmm1    = _mm_add_sd(xmm1,fijC);
+			xmm1    = _mm_add_sd(xmm1,fijGB);
 			xmm1    = _mm_sub_sd(xmm1,fscal);
 			fscal   = _mm_mul_sd(xmm1,neg);
 			fscal   = _mm_mul_sd(fscal,rinv);

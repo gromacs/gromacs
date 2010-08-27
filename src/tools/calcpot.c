@@ -218,7 +218,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   gmx_localtop_t *ltop;
   double   t,t0,lam0;
   real     lam;
-  bool     bSA;
+  gmx_bool     bSA;
   int      traj=0,xtc_traj=0;
   t_state  *state;
   rvec     mutot;

@@ -36,10 +36,6 @@
 #ifndef _main_h
 #define _main_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 
 #include <stdio.h>
 #include "network.h"
@@ -48,7 +44,7 @@
 extern "C" {
 #endif
 
-extern bool gmx_parallel_env_initialized(void); 
+gmx_bool gmx_parallel_env_initialized(void); 
 /* 1 when running in a parallel environment, so could also be 1 if
    mdrun was started with: mpirun -np 1.
   
@@ -58,31 +54,31 @@ extern bool gmx_parallel_env_initialized(void);
    has more than one node/thread. */
 
 
-extern void gmx_log_open(const char *fn,const t_commrec *cr,
-                          bool bMasterOnly, unsigned long Flags, FILE**);
+void gmx_log_open(const char *fn,const t_commrec *cr,
+                          gmx_bool bMasterOnly, unsigned long Flags, FILE**);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
 
-extern void gmx_log_close(FILE *fp);
+void gmx_log_close(FILE *fp);
 /* Close the log file */
 
-extern void check_multi_int(FILE *log,const gmx_multisim_t *ms,
+void check_multi_int(FILE *log,const gmx_multisim_t *ms,
 			    int val,const char *name);
 /* Check if val is the same on all processors for a mdrun -multi run
  * The string name is used to print to the log file and in a fatal error
  * if the val's don't match.
  */
 
-extern void init_multisystem(t_commrec *cr,int nsim,int nfile,
-                             const t_filenm fnm[], bool bParFn);
+void init_multisystem(t_commrec *cr,int nsim,int nfile,
+                             const t_filenm fnm[], gmx_bool bParFn);
 /* Splits the communication into nsim separate simulations
  * and creates a communication structure between the master
  * these simulations.
  * If bParFn is set, the nodeid is appended to the tpx and each output file.
  */
 
-extern t_commrec *init_par(int *argc,char ***argv_ptr);
+t_commrec *init_par(int *argc,char ***argv_ptr);
 /* Initiate the parallel computer. Return the communication record
  * (see network.h). The command line arguments are communicated so that they can be
  * parsed on each processor.
@@ -90,14 +86,14 @@ extern t_commrec *init_par(int *argc,char ***argv_ptr);
  * array of argument strings.
  */
 
-extern t_commrec *init_par_threads(const t_commrec *cro);
+t_commrec *init_par_threads(const t_commrec *cro);
 /* Initialize communication records for thread-parallel simulations. 
    Must be called on all threads before any communication takes place by 
    the individual threads. Copies the original commrec to 
    thread-local versions (a small memory leak results because we don't 
    deallocate the old shared version).  */
 
-extern t_commrec *init_cr_nopar(void);
+t_commrec *init_cr_nopar(void);
 /* Returns t_commrec for non-parallel functionality */
 
 #ifdef __cplusplus

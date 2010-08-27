@@ -32,9 +32,6 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "commrec.h"
 
@@ -47,7 +44,7 @@ typedef real rvec5[5];
 /* Distance restraining stuff */
 typedef struct {
   int  dr_weighting;  /* Weighting of pairs in one restraint              */
-  bool dr_bMixed;     /* Use sqrt of the instantaneous times              *
+  gmx_bool dr_bMixed;     /* Use sqrt of the instantaneous times              *
 		       * the time averaged violation                      */
   real dr_fc;	      /* Force constant for disres,                       *
 		       * which is multiplied by a (possibly)              *

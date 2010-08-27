@@ -32,10 +32,6 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifdef HAVE_CONFIG_H
-#include<config.h>
-#endif
-
 #include "typedefs.h"
 #include "vsite.h"
 
@@ -46,19 +42,19 @@ extern "C" {
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
-extern gmx_shellfc_t init_shell_flexcon(FILE *log,
+gmx_shellfc_t init_shell_flexcon(FILE *log,
 					gmx_mtop_t *mtop,int nflexcon,
 					rvec *x);
 
 /* Get the local shell with domain decomposition */
-extern void make_local_shells(t_commrec *cr,t_mdatoms *md,
+void make_local_shells(t_commrec *cr,t_mdatoms *md,
 			      gmx_shellfc_t shfc);
 
 /* Optimize shell positions */
-extern int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
+int relax_shell_flexcon(FILE *log,t_commrec *cr,gmx_bool bVerbose,
 			       gmx_large_int_t mdstep,t_inputrec *inputrec,
-			       bool bDoNS,int force_flags,
-			       bool bStopCM,
+			       gmx_bool bDoNS,int force_flags,
+			       gmx_bool bStopCM,
 			       gmx_localtop_t *top,
 			       gmx_mtop_t *mtop,
 			       gmx_constr_t constr,
@@ -71,9 +67,9 @@ extern int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
 			       gmx_groups_t *groups,
 			       gmx_shellfc_t shfc,
 			       t_forcerec *fr,
-			       bool bBornRadii,
+			       gmx_bool bBornRadii,
 			       double t,rvec mu_tot,
-			       int natoms,bool *bConverged,
+			       int natoms,gmx_bool *bConverged,
 			       gmx_vsite_t *vsite,
 			       FILE *fp_field);
 

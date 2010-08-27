@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct gmx_conect_t {
   int  nconect;
-  bool bSorted;
+  gmx_bool bSorted;
   gmx_conection_t *conect;
 } gmx_conect_t;
 
@@ -72,10 +72,10 @@ static const char *pdbtp[epdbNR]={
 
 /* this is not very good, 
    but these are only used in gmx_trjconv and gmx_editconv */
-static bool bWideFormat=FALSE;
+static gmx_bool bWideFormat=FALSE;
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
 
-void set_pdb_wide_format(bool bSet)
+void set_pdb_wide_format(gmx_bool bSet)
 {
   bWideFormat = bSet;
 }
@@ -220,7 +220,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,
 			   t_atoms *atoms,rvec x[],
 			   int ePBC,matrix box,char chainid,
 			   int model_nr, atom_id nindex, atom_id index[],
-			   gmx_conect conect, bool bTerSepChains)
+			   gmx_conect conect, gmx_bool bTerSepChains)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
   char resnm[6],nm[6],pdbform[128],pukestring[100];
@@ -228,7 +228,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,
   int  resind,resnr,type;
   unsigned char resic,ch;
   real occup,bfac;
-  bool bOccup;
+  gmx_bool bOccup;
   int  nlongname=0;
   int  chainnum,lastchainnum;
   int  lastresind,lastchainresind;
@@ -323,7 +323,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,
 	     "%-6s%5u %-4.4s %3.3s %c%4d%c   %10.5f%10.5f%10.5f%8.4f%8.4f    %2s\n");
     else {
       /* Check whether atomname is an element name */
-      if ((strlen(nm)<4) && (strcasecmp(nm,atoms->atom[i].elem) != 0))
+      if ((strlen(nm)<4) && (gmx_strcasecmp(nm,atoms->atom[i].elem) != 0))
 	strcpy(pdbform,pdbformat);
       else {
 	strcpy(pdbform,pdbformat4);
@@ -364,7 +364,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,
 }
 
 void write_pdbfile(FILE *out,const char *title, t_atoms *atoms,rvec x[],
-		   int ePBC,matrix box,char chainid,int model_nr,gmx_conect conect,bool bTerSepChains)
+		   int ePBC,matrix box,char chainid,int model_nr,gmx_conect conect,gmx_bool bTerSepChains)
 {
   atom_id i,*index;
 
@@ -477,7 +477,7 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 
 static int read_atom(t_symtab *symtab,
 		     char line[],int type,int natom,
-		     t_atoms *atoms,rvec x[],int chainnum,bool bChange)
+		     t_atoms *atoms,rvec x[],int chainnum,gmx_bool bChange)
 {
   t_atom *atomn;
   int  j,k;
@@ -582,7 +582,7 @@ static int read_atom(t_symtab *symtab,
   return natom;
 }
 
-bool is_hydrogen(const char *nm)
+gmx_bool is_hydrogen(const char *nm)
 {
   char buf[30];
   
@@ -596,7 +596,7 @@ bool is_hydrogen(const char *nm)
   return FALSE;
 }
 
-bool is_dummymass(const char *nm)
+gmx_bool is_dummymass(const char *nm)
 {
   char buf[30];
   
@@ -656,7 +656,7 @@ void gmx_conect_done(gmx_conect conect)
   sfree(gc->conect);
 }
 
-bool gmx_conect_exist(gmx_conect conect,int ai,int aj)
+gmx_bool gmx_conect_exist(gmx_conect conect,int ai,int aj)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
   int i;
@@ -689,19 +689,19 @@ void gmx_conect_add(gmx_conect conect,int ai,int aj)
 }
 
 int read_pdbfile(FILE *in,char *title,int *model_nr,
-		 t_atoms *atoms,rvec x[],int *ePBC,matrix box,bool bChange,
+		 t_atoms *atoms,rvec x[],int *ePBC,matrix box,gmx_bool bChange,
 		 gmx_conect conect)
 {
     gmx_conect_t *gc = (gmx_conect_t *)conect;
     t_symtab symtab;
-    bool bCOMPND;
-    bool bConnWarn = FALSE;
+    gmx_bool bCOMPND;
+    gmx_bool bConnWarn = FALSE;
     char line[STRLEN+1];
     int  line_type;
     char *c,*d;
     int  natom,chainnum,nres_ter_prev=0;
     char chidmax=' ';
-    bool bStop=FALSE;
+    gmx_bool bStop=FALSE;
 
     if (ePBC) 
     {
@@ -849,7 +849,7 @@ void get_pdb_coordnum(FILE *in,int *natoms)
 }
 
 void read_pdb_conf(const char *infile,char *title, 
-		   t_atoms *atoms,rvec x[],int *ePBC,matrix box,bool bChange,
+		   t_atoms *atoms,rvec x[],int *ePBC,matrix box,gmx_bool bChange,
 		   gmx_conect conect)
 {
   FILE *in;

@@ -36,11 +36,6 @@
 #define _inputrec_h_
 
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include "simple.h"
 #include "../sysstuff.h"
 
@@ -89,14 +84,14 @@ typedef struct {
   int     *QMbasis;     /* Basisset in the QM calculation               */
   int     *QMcharge;    /* Total charge in the QM region                */
   int     *QMmult;      /* Spin multiplicicty in the QM region          */
-  bool    *bSH;         /* surface hopping (diabatic hop only)          */
+  gmx_bool    *bSH;         /* surface hopping (diabatic hop only)          */
   int     *CASorbitals; /* number of orbiatls in the active space       */
   int     *CASelectrons;/* number of electrons in the active space      */
   real    *SAon;        /* at which gap (A.U.) the SA is switched on    */
   real    *SAoff;
   int     *SAsteps;     /* in how many steps SA goes from 1-1 to 0.5-0.5*/
-  bool    *bOPT;
-  bool    *bTS;
+  gmx_bool    *bOPT;
+  gmx_bool    *bTS;
 } t_grpopts;
 
 enum { epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS };
@@ -137,9 +132,9 @@ typedef struct {
   int        nstfout;     /* Output frequency for pull f */
   int        ePBC;        /* the boundary conditions */
   int        npbcdim;     /* do pbc in dims 0 <= dim < npbcdim */
-  bool       bRefAt;      /* do we need reference atoms for a group COM ? */
+  gmx_bool       bRefAt;      /* do we need reference atoms for a group COM ? */
   int        cosdim;      /* dimension for cosine weighting, -1 if none */
-  bool       bVirial;     /* do we need to add the pull virial? */
+  gmx_bool       bVirial;     /* do we need to add the pull virial? */
   t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
   t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
   rvec       *rbuf;       /* COM calculation buffer */
@@ -179,10 +174,10 @@ typedef struct {
                         /* the real/reciprocal space relative weight    */
   int  ewald_geometry;  /* normal/3d ewald, or pseudo-2d LR corrections */
   real epsilon_surface; /* Epsilon for PME dipole correction            */
-  bool bOptFFT;         /* optimize the fft plan at start               */
+  gmx_bool bOptFFT;         /* optimize the fft plan at start               */
   int  ePBC;		/* Type of periodic boundary conditions		*/
   int  bPeriodicMols;   /* Periodic molecules                           */
-  bool bContinuation;   /* Continuation run: starting state is correct	*/
+  gmx_bool bContinuation;   /* Continuation run: starting state is correct	*/
   int  etc;		/* temperature coupling         		*/
   int  nsttcouple;      /* interval in steps for temperature coupling   */
   int  epc;		/* pressure coupling                            */
@@ -233,15 +228,15 @@ typedef struct {
   real sc_sigma_min;    /* minimum FE sc sigma (default: =sg_sigma)     */
   int  nstdhdl;         /* The frequency for writing to dhdl.xvg        */
   int  separate_dhdl_file; /* whether to write a separate dhdl.xvg file 
-                              note: NOT a bool, but an enum */
+                              note: NOT a gmx_bool, but an enum */
   int  dhdl_derivatives;/* whether to calculate+write dhdl derivatives 
-                              note: NOT a bool, but an enum */
+                              note: NOT a gmx_bool, but an enum */
   int  dh_hist_size;    /* The maximum size for the dH histogram        */
   double dh_hist_spacing; /* The spacing for the dH histogram           */
   int  eDisre;          /* Type of distance restraining                 */
   real dr_fc;		    /* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
-  bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
+  gmx_bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
   int  nstdisreout;     /* frequency of writing pair distances to enx   */ 
   real dr_tau;		    /* time constant for memory function in disres 	*/
   real orires_fc;	    /* force constant for orientational restraints  */
@@ -261,7 +256,7 @@ typedef struct {
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
   int  nLincsIter;      /* Number of iterations in the final Lincs step */
-  bool bShakeSOR;       /* Use successive overrelaxation for shake      */
+  gmx_bool bShakeSOR;       /* Use successive overrelaxation for shake      */
   real bd_fric;         /* Friction coefficient for BD (amu/ps)         */
   int  ld_seed;         /* Random seed for SD and BD                    */
   int  nwall;           /* The number of walls                          */
@@ -285,7 +280,7 @@ typedef struct {
   t_grpopts opts;	/* Group options				*/
   t_cosines ex[DIM];	/* Electric field stuff	(spatial part)		*/
   t_cosines et[DIM];	/* Electric field stuff	(time part)		*/
-  bool bQMMM;           /* QM/MM calculation                            */ 
+  gmx_bool bQMMM;           /* QM/MM calculation                            */ 
   int  QMconstraints;   /* constraints on QM bonds                      */
   int  QMMMscheme;      /* Scheme: ONIOM or normal                      */
   real scalefactor;     /* factor for scaling the MM charges in QM calc.*/

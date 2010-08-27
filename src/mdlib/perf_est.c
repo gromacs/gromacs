@@ -42,7 +42,7 @@
 #include "vec.h"
 #include "mtop_util.h"
 
-int n_bonded_dx(gmx_mtop_t *mtop,bool bExcl)
+int n_bonded_dx(gmx_mtop_t *mtop,gmx_bool bExcl)
 {
   int mb,nmol,ftype,ndxb,ndx_excl;
   int ndx;
@@ -85,7 +85,7 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
 {
   t_atom *atom;
   int  mb,nmol,atnr,cg,a,a0,ncqlj,ncq,nclj;
-  bool bBHAM,bLJcut,bChargePerturbed,bWater,bQ,bLJ;
+  gmx_bool bBHAM,bLJcut,bChargePerturbed,bWater,bQ,bLJ;
   double nw,nqlj,nq,nlj;
   double cost_bond,cost_pp,cost_spread,cost_fft,cost_solve,cost_pme;
   float fq,fqlj,flj,fljtab,fqljw,fqw,fqspread,ffft,fsolve,fbond;

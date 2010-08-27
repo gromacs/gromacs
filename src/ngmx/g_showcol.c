@@ -56,7 +56,7 @@ typedef struct {
   t_col     *col;
 } t_sc;
 
-static bool ColCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool ColCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_col     *col;
   XColor    *xc;
@@ -77,7 +77,7 @@ static bool ColCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-static bool BCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool BCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_sc  *sc;
   
@@ -105,7 +105,7 @@ static bool BCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-static bool scCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool scCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_sc  *sc;
   int   i;

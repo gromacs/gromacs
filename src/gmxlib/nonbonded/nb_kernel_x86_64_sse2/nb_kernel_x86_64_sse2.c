@@ -176,7 +176,7 @@ static jmp_buf
 nb_kernel_x86_64_sse2_testprog;
 
 /*! Result of x86_64 SSE2 test */
-static bool
+static gmx_bool
 nb_kernel_x86_64_sse2_present;
 
 

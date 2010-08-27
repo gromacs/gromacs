@@ -86,35 +86,35 @@ typedef struct gmx_histogram_t gmx_histogram_t;
  */
 /*@{*/
 /** Initialize calculation of a histogram. */
-extern int
+int
 gmx_histogram_create(gmx_histogram_t **h, e_histogram_t type, int nbins);
 /** Initialize calculation of a histogram for a range. */
-extern int
+int
 gmx_histogram_create_range(gmx_histogram_t **h, e_histogram_t type,
-                           real start, real end, real binw, bool bIntegerBins);
+                           real start, real end, real binw, gmx_bool bIntegerBins);
 /** Clears the bins in the histogram. */
-extern void
+void
 gmx_histogram_clear(gmx_histogram_t *h);
 /** Frees the memory allocated for a histogram. */
-extern void
+void
 gmx_histogram_free(gmx_histogram_t *h);
 /** Sets histogram range using a starting point and a bin width. */
-extern int
+int
 gmx_histogram_set_binwidth(gmx_histogram_t *h, real start, real binw);
 /** Sets histogram range using endpoint values. */
-extern int
+int
 gmx_histogram_set_range(gmx_histogram_t *h, real start, real end);
 /** Sets histogram bins to center at integer values. */
-extern void
-gmx_histogram_set_integerbins(gmx_histogram_t *h, bool bIntegerBins);
+void
+gmx_histogram_set_integerbins(gmx_histogram_t *h, gmx_bool bIntegerBins);
 /** Sets histogram to include outlying values in the bins at the edges. */
-extern void
-gmx_histogram_set_all(gmx_histogram_t *h, bool bAll);
+void
+gmx_histogram_set_all(gmx_histogram_t *h, gmx_bool bAll);
 /** Sets block size for histogram averaging. */
-extern int
+int
 gmx_histogram_set_blocksize(gmx_histogram_t *h, int bsize);
 /** Sets output file for block histograms. */
-extern int
+int
 gmx_histogram_set_block_output(gmx_histogram_t *h, FILE *fp);
 /*@}*/
 
@@ -122,25 +122,25 @@ gmx_histogram_set_block_output(gmx_histogram_t *h, FILE *fp);
  */
 /*@{*/
 /** Finds the histogram bin corresponding to a value. */
-extern int
+int
 gmx_histogram_find_bin(gmx_histogram_t *h, real pos);
 /** Returns the number of bins in a histogram. */
-extern int
+int
 gmx_histogram_get_nbins(gmx_histogram_t *h);
 /** Returns the bin width of a histogram. */
-extern real
+real
 gmx_histogram_get_binwidth(gmx_histogram_t *h);
 /** Returns the value of the histogram at a certain position. */
-extern void
+void
 gmx_histogram_get_value(gmx_histogram_t *h, real pos, double *val, double *err);
 /** Returns the value of the histogram in a certain bin. */
-extern void
+void
 gmx_histogram_get_bin_value(gmx_histogram_t *h, int bin, double *val, double *err);
 /** Returns an array of values for the histogram. */
-extern double *
+double *
 gmx_histogram_get_values(gmx_histogram_t *h);
 /** Returns an array of error values for the histogram. */
-extern double *
+double *
 gmx_histogram_get_errors(gmx_histogram_t *h);
 /*@}*/
 
@@ -148,31 +148,31 @@ gmx_histogram_get_errors(gmx_histogram_t *h);
  */
 /*@{*/
 /** Increments the count in a histogram bin corresponding to \p pos. */
-extern void
+void
 gmx_histogram_increment(gmx_histogram_t *h, real pos);
 /** Increments the count in a histogram bin. */
-extern void
+void
 gmx_histogram_increment_bin(gmx_histogram_t *h, int bin);
 
 /** Adds a value to a histogram bin corresponding to \p pos. */
-extern void
+void
 gmx_histogram_add(gmx_histogram_t *h, real pos, double value);
 /** Adds a value to a histogram bin. */
-extern void
+void
 gmx_histogram_add_to_bin(gmx_histogram_t *h, int bin, double value);
 
 /** Adds a value to a histogram bin corresponding to \p pos. */
-extern void
+void
 gmx_histogram_add_item(gmx_histogram_t *h, real pos, double value);
 /** Adds a value to a histogram bin. */
-extern void
+void
 gmx_histogram_add_item_to_bin(gmx_histogram_t *h, int bin, double value);
 
 /** Finishes histogram sampling for a frame. */
-extern void
+void
 gmx_histogram_finish_frame(gmx_histogram_t *h);
 /** Normalizes a histogram. */
-extern void
+void
 gmx_histogram_finish(gmx_histogram_t *h);
 /*@}*/
 
@@ -181,32 +181,32 @@ gmx_histogram_finish(gmx_histogram_t *h);
  */
 /*@{*/
 /** Creates a new histogram with double the binwidth. */
-extern void
+void
 gmx_histogram_resample_dblbw(gmx_histogram_t **dest, gmx_histogram_t *src,
-                             bool bIntegerBins);
+                             gmx_bool bIntegerBins);
 /** Makes a clone of a histogram. */
-extern void
+void
 gmx_histogram_clone(gmx_histogram_t **dest, gmx_histogram_t *src);
 /** Normalizes a histogram to a probability distribution. */
-extern void
+void
 gmx_histogram_normalize_prob(gmx_histogram_t *h);
 /** Scales a histogram with a custom normalization factor. */
-extern void
+void
 gmx_histogram_scale(gmx_histogram_t *h, real norm);
 /** Scales a histogram with a custom non-uniform normalization factor. */
-extern void
+void
 gmx_histogram_scale_vec(gmx_histogram_t *h, real norm[]);
 /** Writes a single histogram to a file. */
-extern void
-gmx_histogram_write(FILE *fp, gmx_histogram_t *h, bool bErrors);
+void
+gmx_histogram_write(FILE *fp, gmx_histogram_t *h, gmx_bool bErrors);
 /** Writes a set of histograms to a file. */
-extern void
+void
 gmx_histogram_write_array(FILE *fp, int n, gmx_histogram_t *h[],
-                              bool bValue, bool bErrors);
+                              gmx_bool bValue, gmx_bool bErrors);
 /** Writes a set of cumulative histograms to a file. */
-extern void
+void
 gmx_histogram_write_cum_array(FILE *fp, int n, gmx_histogram_t *h[],
-                              bool bValue, bool bErrors);
+                              gmx_bool bValue, gmx_bool bErrors);
 /*@}*/
 
 #ifdef __cplusplus

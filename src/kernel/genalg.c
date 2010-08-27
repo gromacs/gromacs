@@ -398,11 +398,11 @@ void update_ga(FILE *fpout_ptr,t_range range[],t_genalg *ga)
   }     
 }
 
-bool print_ga(FILE *fp,t_genalg *ga,real msf,tensor pres,rvec scale,
+gmx_bool print_ga(FILE *fp,t_genalg *ga,real msf,tensor pres,rvec scale,
 	      real energy,t_range range[],real tol)
 {
   static int nfeval=0;          /* number of function evaluations     */
-  static bool bImproved;
+  static gmx_bool bImproved;
   real trial_cost;
   real cvar;            /* computes the cost variance         */
   real cmean;           /* mean cost                          */

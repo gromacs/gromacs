@@ -35,11 +35,6 @@
 #ifndef _GMX_RANDOM_H_
 #define _GMX_RANDOM_H_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include <stdio.h>
 #include "types/simple.h"
 

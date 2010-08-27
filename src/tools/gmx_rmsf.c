@@ -190,7 +190,7 @@ int gmx_rmsf(int argc,char *argv[])
     "This shows the directions in which the atoms fluctuate the most and",
     "the least."
   };
-  static bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE,bFit=TRUE;
+  static gmx_bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE,bFit=TRUE;
   t_pargs pargs[] = { 
     { "-res", FALSE, etBOOL, {&bRes},
       "Calculate averages for each residue" },
@@ -208,7 +208,7 @@ int gmx_rmsf(int argc,char *argv[])
   t_topology   top;
   int          ePBC;
   t_atoms      *pdbatoms,*refatoms;
-  bool         bCont;
+  gmx_bool         bCont;
 
   matrix       box,pdbbox;
   rvec         *x,*pdbx,*xref;
@@ -222,7 +222,7 @@ int gmx_rmsf(int argc,char *argv[])
   const char   *devfn,*dirfn;
   int          resind;
 
-  bool         bReadPDB;  
+  gmx_bool         bReadPDB;  
   atom_id      *index;
   int          isize;
   char         *grpnames;

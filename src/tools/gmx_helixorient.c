@@ -137,8 +137,8 @@ int gmx_helixorient(int argc,char *argv[])
     output_env_t oenv;
     gmx_rmpbc_t  gpbc=NULL;
 
-    static  bool bSC=FALSE;
-    static bool bIncremental = FALSE;
+    static  gmx_bool bSC=FALSE;
+    static gmx_bool bIncremental = FALSE;
     
     static t_pargs pa[] = {
         { "-sidechain",      FALSE, etBOOL, {&bSC},

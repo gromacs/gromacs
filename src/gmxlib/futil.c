@@ -83,7 +83,7 @@ typedef struct t_pstack {
 } t_pstack;
 
 static t_pstack *pstack=NULL;
-static bool     bUnbuffered=FALSE;
+static gmx_bool     bUnbuffered=FALSE;
 
 #ifdef GMX_THREADS
 /* this linked list is an intrinsically globally shared object, so we have
@@ -242,7 +242,7 @@ gmx_off_t gmx_ftell(FILE *stream)
 }
 
 
-bool is_pipe(FILE *fp)
+gmx_bool is_pipe(FILE *fp)
 {
     t_pstack *ps;
 #ifdef GMX_THREADS
@@ -294,7 +294,7 @@ static FILE *gunzip(const char *fn,const char *mode)
     return fp;
 }
 
-bool gmx_fexist(const char *fname)
+gmx_bool gmx_fexist(const char *fname)
 {
     FILE *test;
 
@@ -316,9 +316,9 @@ bool gmx_fexist(const char *fname)
 }
 
 
-bool gmx_fexist_master(const char *fname, t_commrec *cr)
+gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr)
 {
-  bool bExist;
+  gmx_bool bExist;
   
   if (SIMMASTER(cr)) 
   {
@@ -331,10 +331,10 @@ bool gmx_fexist_master(const char *fname, t_commrec *cr)
   return bExist;
 }
 
-bool gmx_eof(FILE *fp)
+gmx_bool gmx_eof(FILE *fp)
 {
     char data[4];
-    bool beof;
+    gmx_bool beof;
 
     if (is_pipe(fp))
         return feof(fp);
@@ -395,7 +395,7 @@ static char *backup_fn(const char *file,int count_max)
     return buf;
 }
 
-bool make_backup(const char * name)
+gmx_bool make_backup(const char * name)
 {
     char * env;
     int  count_max;
@@ -444,7 +444,7 @@ FILE *ffopen(const char *file,const char *mode)
 #else
     FILE *ff=NULL;
     char buf[256],*bf,*bufsize=0,*ptr;
-    bool bRead;
+    gmx_bool bRead;
     int  bs;
 
     if (mode[0]=='w') {
@@ -679,10 +679,10 @@ gmx_directory_close(gmx_directory_t gmxdir)
 
 
 
-bool search_subdirs(const char *parent, char *libdir)
+gmx_bool search_subdirs(const char *parent, char *libdir)
 {
     char *ptr;
-    bool found;
+    gmx_bool found;
 
     /* Search a few common subdirectory names for the gromacs library dir */
     sprintf(libdir,"%s%cshare%ctop%cgurgle.dat",parent,
@@ -720,7 +720,7 @@ bool search_subdirs(const char *parent, char *libdir)
  * with "\" or "X:\" on windows. If not, the program name
  * is relative to the current directory.
  */
-static bool filename_is_absolute(char *name)
+static gmx_bool filename_is_absolute(char *name)
 {
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
     return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)) == 0);
@@ -729,7 +729,7 @@ static bool filename_is_absolute(char *name)
 #endif
 }
 
-bool get_libdir(char *libdir)
+gmx_bool get_libdir(char *libdir)
 {
 #define GMX_BINNAME_MAX 512
     char bin_name[GMX_BINNAME_MAX];
@@ -737,7 +737,7 @@ bool get_libdir(char *libdir)
     char full_path[GMX_PATH_MAX+GMX_BINNAME_MAX];
     char system_path[GMX_PATH_MAX];
     char *dir,*ptr,*s,*pdum;
-    bool found=FALSE;
+    gmx_bool found=FALSE;
     int i;
 
     if (Program() != NULL)
@@ -754,7 +754,7 @@ bool get_libdir(char *libdir)
      * too, or we wont be able to detect that the file exists
      */
 #if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64 || defined __CYGWIN__ || defined __CYGWIN32__)
-    if(strlen(bin_name)<3 || strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
+    if(strlen(bin_name)<3 || gmx_strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
         strcat(bin_name,".exe");
 #endif
 
@@ -846,13 +846,13 @@ bool get_libdir(char *libdir)
 }
 
 
-char *low_gmxlibfn(const char *file, bool bFatal)
+char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
 {
     char *ret;
     char *lib,*dir;
     char buf[1024];
     char libpath[GMX_PATH_MAX];
-    bool env_is_set=FALSE;
+    gmx_bool env_is_set=FALSE;
     char   *s,tmppath[GMX_PATH_MAX];
 
     /* GMXLIB can be a path now */
@@ -868,7 +868,7 @@ char *low_gmxlibfn(const char *file, bool bFatal)
     }
 
     ret = NULL;
-    if (gmx_fexist(file))
+    if (bAddCWD && gmx_fexist(file))
     {
         ret = strdup(file);
     }
@@ -888,12 +888,16 @@ char *low_gmxlibfn(const char *file, bool bFatal)
         {
             if (env_is_set) 
             {
-                gmx_fatal(FARGS,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
+                gmx_fatal(FARGS,
+                          "Library file %s not found %sin your GMXLIB path.",
+                          bAddCWD ? "in current dir nor " : "",file);
             }
             else
             {
-                gmx_fatal(FARGS,"Library file %s not found in current dir nor in default directories.\n"
-                        "(You can set the directories to search with the GMXLIB path variable)",file);
+                gmx_fatal(FARGS,
+                          "Library file %s not found %sin default directories.\n"
+                        "(You can set the directories to search with the GMXLIB path variable)",
+                          bAddCWD ? "in current dir nor " : "",file);
             }
         }
     }
@@ -905,12 +909,12 @@ char *low_gmxlibfn(const char *file, bool bFatal)
 
 
 
-FILE *low_libopen(const char *file,bool bFatal)
+FILE *low_libopen(const char *file,gmx_bool bFatal)
 {
     FILE *ff;
     char *fn;
 
-    fn=low_gmxlibfn(file,bFatal);
+    fn=low_gmxlibfn(file,TRUE,bFatal);
 
     if (fn==NULL) {
         ff=NULL;
@@ -926,7 +930,7 @@ FILE *low_libopen(const char *file,bool bFatal)
 
 char *gmxlibfn(const char *file)
 {
-    return low_gmxlibfn(file,TRUE);
+    return low_gmxlibfn(file,TRUE,TRUE);
 }
 
 FILE *libopen(const char *file)
@@ -1006,7 +1010,7 @@ int gmx_file_rename(const char *oldname, const char *newname)
 #endif
 }
 
-int gmx_file_copy(const char *oldname, const char *newname, bool copy_if_empty)
+int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty)
 {
 /* the full copy buffer size: */
 #define FILECOPY_BUFSIZE (1<<16)
