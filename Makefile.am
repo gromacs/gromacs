@@ -7,6 +7,7 @@
 # automake. Presently, this means automake version 1.4f. In Groningen, you
 # can find that under ~lindahl/gnu/bin , or download a copy from www.gromacs.org
 
+ACLOCAL_AMFLAGS = -I config
 
 AUTOMAKE_OPTIONS = foreign 
 
@@ -16,7 +17,29 @@ SUBDIRS = include src admin scripts share man
 # Most files in the config subdir is included automatically when
 # we issue "make dist", but not depcomp
 
-EXTRA_DIST = config/depcomp 	                               
+EXTRA_DIST = config/depcomp \
+			 CMakeLists.txt cmake \
+			 include/thread_mpi/atomic/CMakeLists.txt \
+			 include/thread_mpi/CMakeLists.txt \
+			 include/CMakeLists.txt \
+			 man/CMakeLists.txt \
+			 tests/CMakeLists.txt \
+			 share/CMakeLists.txt \
+			 src/kernel/gmx_gpu_utils \
+			 src/kernel/CMakeLists.txt \
+			 src/kernel/openmm_wrapper.cpp \
+			 src/kernel/openmm_wrapper.h \
+			 src/ngmx/CMakeLists.txt \
+			 src/mdlib/CMakeLists.txt \
+			 src/config.h.cmakein \
+			 src/gmxlib/version.c.cmakein \
+			 src/gmxlib/thread_mpi/CMakeLists.txt \
+			 src/gmxlib/CMakeLists.txt \
+			 src/CMakeLists.txt \
+			 src/tools/CMakeLists.txt \
+			 COPYING-GPU \
+			 INSTALL-GPU
+
 
 install-exec-hook:
 	@echo ""

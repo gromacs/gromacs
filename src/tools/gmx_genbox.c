@@ -82,7 +82,7 @@ void print_stat(rvec *x,int natoms,matrix box)
 }
 #endif
 
-static bool in_box(t_pbc *pbc,rvec x)
+static gmx_bool in_box(t_pbc *pbc,rvec x)
 {
   rvec box_center,dx;
   int  shift;
@@ -482,7 +482,7 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
   char   buf[STRLEN],buf2[STRLEN],*temp;
   const char *topinout;
   int    line;
-  bool   bSystem,bMolecules,bSkip;
+  gmx_bool   bSystem,bMolecules,bSkip;
   int    i,nsol=0;
   double mtot;
   real   vol,mm;
@@ -533,8 +533,8 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
 	  buf2[strlen(buf2)-1]='\0';
 	  ltrim(buf2);
 	  rtrim(buf2);
-	  bSystem=(strcasecmp(buf2,"system")==0);
-	  bMolecules=(strcasecmp(buf2,"molecules")==0);
+	  bSystem=(gmx_strcasecmp(buf2,"system")==0);
+	  bMolecules=(gmx_strcasecmp(buf2,"molecules")==0);
 	}
       } else if (bSystem && nsol && (buf[0]!=';') ) {
 	/* if sol present, append "in water" to system name */
@@ -654,7 +654,7 @@ int gmx_genbox(int argc,char *argv[])
   };
   
   /* parameter data */
-  bool bSol,bProt,bBox;
+  gmx_bool bSol,bProt,bBox;
   const char *conf_prot,*confout;
   int  bInsert;
   real *r;
@@ -684,7 +684,7 @@ int gmx_genbox(int argc,char *argv[])
   static int nmol_ins=0,nmol_try=10,seed=1997;
   static real r_distance=0.105,r_shell=0;
   static rvec new_box={0.0,0.0,0.0};
-  static bool bReadV=FALSE;
+  static gmx_bool bReadV=FALSE;
   static int  max_sol = 0;
   output_env_t oenv;
   t_pargs pa[] = {

@@ -32,12 +32,9 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
-/* The bools indicate whether a field was read from the trajectory.
- * Do not try to use a pointer when its bool is FALSE, as memory might
+/* The gmx_bools indicate whether a field was read from the trajectory.
+ * Do not try to use a pointer when its gmx_bool is FALSE, as memory might
  * not be allocated.
  */ 
 
@@ -53,7 +50,7 @@ typedef struct trxframe
 {
   int  flags;     /* flags for read_first/next_frame  */
   int  not_ok;    /* integrity flags (see statutil.h  */
-  bool bDouble;   /* Double precision?                */
+  gmx_bool bDouble;   /* Double precision?                */
   int  natoms;    /* number of atoms (atoms, x, v, f) */
   real t0;        /* time of the first frame, needed  *
 		   * for skipping frames with -dt     */
@@ -62,27 +59,27 @@ typedef struct trxframe
   real tppf;      /* time of two frames ago           */
                   /* tpf and tppf are needed to       */
                   /* correct rounding errors for -e   */
-  bool bTitle;
+  gmx_bool bTitle;
   const char *title; /* title of the frame            */
-  bool bStep;
+  gmx_bool bStep;
   int  step;      /* MD step number                   */
-  bool bTime;
+  gmx_bool bTime;
   real time;      /* time of the frame                */
-  bool bLambda;
+  gmx_bool bLambda;
   real lambda;    /* free energy perturbation lambda  */
-  bool bAtoms;
+  gmx_bool bAtoms;
   t_atoms *atoms; /* atoms struct (natoms)            */
-  bool bPrec;
+  gmx_bool bPrec;
   real prec;      /* precision of x, fraction of 1 nm */
-  bool bX;
+  gmx_bool bX;
   rvec *x;        /* coordinates (natoms)             */
-  bool bV;
+  gmx_bool bV;
   rvec *v;        /* velocities (natoms)              */
-  bool bF;
+  gmx_bool bF;
   rvec *f;        /* forces (natoms)                  */
-  bool bBox;
+  gmx_bool bBox;
   matrix box;     /* the 3 box vectors                */
-  bool bPBC;
+  gmx_bool bPBC;
   int  ePBC;      /* the type of pbc                  */
   t_gmxvmdplugin vmdplugin;
 } t_trxframe;

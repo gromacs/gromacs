@@ -66,7 +66,7 @@ static void pr_two(FILE *out,int c,int i)
 void pr_difftime(FILE *out,double dt)
 {
   int    ndays,nhours,nmins,nsecs;
-  bool   bPrint,bPrinted;
+  gmx_bool   bPrint,bPrinted;
 
   ndays = dt/(24*3600);
   dt    = dt-24*3600*ndays;
@@ -103,7 +103,7 @@ void pr_difftime(FILE *out,double dt)
 }
 
 
-bool be_cool(void)
+gmx_bool be_cool(void)
 {
   /* Yes, it is bad to check the environment variable every call,
    * but we dont call this routine often, and it avoids using 
@@ -498,11 +498,22 @@ void please_cite(FILE *fp,const char *key)
       "Mechanism of selectivity in aquaporins and aquaglyceroporins",
       "PNAS",
       105, 2008, "1198-1203" },
+    { "Friedrich2009",
+      "M. S. Friedrichs, P. Eastman, V. Vaidyanathan, M. Houston, S. LeGrand, A. L. Beberg, D. L. Ensign, C. M. Bruns, and V. S. Pande",
+      "Accelerating Molecular Dynamic Simulation on Graphics Processing Units",
+      "J. Comp. Chem.",
+      30, 2009, "864-872" },
     { "Engin2010",
       "O. Engin, A. Villa, M. Sayar and B. Hess",
       "Driving Forces for Adsorption of Amphiphilic Peptides to Air-Water Interface",
       "J. Phys. Chem. B",
-      0, 2010, "???" }
+      0, 2010, "???" },
+    { "Wang2010",
+      "H. Wang, F. Dommert, C.Holm",
+      "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
+      "J. Chem. Phys. B",
+      133, 2010, "034117"
+    }
   };
 #define NSTR (int)asize(citedb)
   

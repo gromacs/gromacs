@@ -50,7 +50,7 @@ typedef struct {
 typedef struct {
   int  n1,nn;
   int  *m_ind;
-  bool b1D;
+  gmx_bool b1D;
   real emat,minrms,maxrms,sumrms;
   real *erow;
   real **mat;
@@ -59,7 +59,7 @@ typedef struct {
 /* The matrix is indexed using the matrix index */
 #define EROW(m,i)  m->erow[i]
 
-extern t_mat *init_mat(int n1,bool b1D);
+extern t_mat *init_mat(int n1,gmx_bool b1D);
 
 extern void enlarge_mat(t_mat *m,int deltan);
 

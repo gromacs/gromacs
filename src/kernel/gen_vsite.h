@@ -46,10 +46,10 @@
 extern void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype, 
 		      t_atoms *at, t_symtab *symtab, rvec *x[], 
 		      t_params plist[], int *dummy_type[], int *cgnr[], 
-		      real mHmult, bool bVSiteAromatics,
-		      const char *ffdir,bool bAddCWD);
+		      real mHmult, gmx_bool bVSiteAromatics,
+		      const char *ffdir);
 
 extern void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
-		      bool bDeuterate);
+		      gmx_bool bDeuterate);
 
 #endif	/* _gen_vsite_h */

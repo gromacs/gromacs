@@ -107,7 +107,7 @@ static void realloc_bins(double **bin,int *nbin,int nbin_new)
 
 double do_tpi(FILE *fplog,t_commrec *cr,
               int nfile, const t_filenm fnm[],
-              const output_env_t oenv, bool bVerbose,bool bCompact,
+              const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
               int nstglobalcomm,
               gmx_vsite_t *vsite,gmx_constr_t constr,
               int stepout,
@@ -133,7 +133,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   double embU,sum_embU,*sum_UgembU,V,V_all,VembU_all;
   t_trxstatus   *status;
   t_trxframe rerun_fr;
-  bool   bDispCorr,bCharge,bRFExcl,bNotLastFrame,bStateChanged,bNS,bOurStep;
+  gmx_bool   bDispCorr,bCharge,bRFExcl,bNotLastFrame,bStateChanged,bNS,bOurStep;
   tensor force_vir,shake_vir,vir,pres;
   int    cg_tp,a_tp0,a_tp1,ngid,gid_tp,nener,e;
   rvec   *x_mol;
@@ -144,7 +144,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   FILE   *fp_tpi=NULL;
   char   *ptr,*dump_pdb,**leg,str[STRLEN],str2[STRLEN];
   double dbl,dump_ener;
-  bool   bCavity;
+  gmx_bool   bCavity;
   int    nat_cavity=0,d;
   real   *mass_cavity=NULL,mass_tot;
   int    nbin;
@@ -706,46 +706,54 @@ double do_tpi(FILE *fplog,t_commrec *cr,
         
         bNotLastFrame = read_next_frame(oenv, status,&rerun_fr);
     } /* End of the loop  */
-  runtime_end(runtime);
+    runtime_end(runtime);
 
-  close_trj(status);
+    close_trj(status);
 
-  if (fp_tpi)
-    gmx_fio_fclose(fp_tpi);
+    if (fp_tpi != NULL)
+    {
+        gmx_fio_fclose(fp_tpi);
+    }
 
-  if (fplog) {
-    fprintf(fplog,"\n");
-    fprintf(fplog,"  <V>  = %12.5e nm^3\n",V_all/frame);
-    fprintf(fplog,"  <mu> = %12.5e kJ/mol\n",-log(VembU_all/V_all)/beta);
-  }
+    if (fplog != NULL)
+    {
+        fprintf(fplog,"\n");
+        fprintf(fplog,"  <V>  = %12.5e nm^3\n",V_all/frame);
+        fprintf(fplog,"  <mu> = %12.5e kJ/mol\n",-log(VembU_all/V_all)/beta);
+    }
   
-  /* Write the Boltzmann factor histogram */
-  if (PAR(cr)) {
-    /* When running in parallel sum the bins over the processes */
-    i = nbin;
-    global_max(cr,&i);
-    realloc_bins(&bin,&nbin,i);
-    gmx_sumd(nbin,bin,cr);
-  }
-  fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
-		    "TPI energy distribution",
-		    "\\betaU - log(V/<V>)","count",oenv);
-  sprintf(str,"number \\betaU > %g: %9.3e",bU_bin_limit,bin[0]);
-  xvgr_subtitle(fp_tpi,str,oenv);
-  xvgr_legend(fp_tpi,2,(const char **)tpid_leg,oenv);
-  for(i=nbin-1; i>0; i--) {
-    bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
-    fprintf(fp_tpi,"%6.2f %10d %12.5e\n",
-	    bUlogV,
-	    (int)(bin[i]+0.5),
-	    bin[i]*exp(-bUlogV)*V_all/VembU_all);
-  }
-  gmx_fio_fclose(fp_tpi);
-  sfree(bin);
+    /* Write the Boltzmann factor histogram */
+    if (PAR(cr))
+    {
+        /* When running in parallel sum the bins over the processes */
+        i = nbin;
+        global_max(cr,&i);
+        realloc_bins(&bin,&nbin,i);
+        gmx_sumd(nbin,bin,cr);
+    }
+    if (MASTER(cr))
+    {
+        fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
+                          "TPI energy distribution",
+                          "\\betaU - log(V/<V>)","count",oenv);
+        sprintf(str,"number \\betaU > %g: %9.3e",bU_bin_limit,bin[0]);
+        xvgr_subtitle(fp_tpi,str,oenv);
+        xvgr_legend(fp_tpi,2,(const char **)tpid_leg,oenv);
+        for(i=nbin-1; i>0; i--)
+        {
+            bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
+            fprintf(fp_tpi,"%6.2f %10d %12.5e\n",
+                    bUlogV,
+                    (int)(bin[i]+0.5),
+                    bin[i]*exp(-bUlogV)*V_all/VembU_all);
+        }
+        gmx_fio_fclose(fp_tpi);
+    }
+    sfree(bin);
 
-  sfree(sum_UgembU);
+    sfree(sum_UgembU);
 
-  runtime->nsteps_done = frame*inputrec->nsteps;
-  
-  return 0;
+    runtime->nsteps_done = frame*inputrec->nsteps;
+
+    return 0;
 }

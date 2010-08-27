@@ -166,14 +166,14 @@ struct gmx_ana_traj_t
      */
     int                       frflags;
     /** TRUE if molecules should be made whole for each frame. */
-    bool                      bRmPBC;
+    gmx_bool                      bRmPBC;
     /*! \brief
      * TRUE if periodic boundary conditions should be used.
      *
      * If the flag is FALSE, the \p pbc pointer passed to gmx_analysisfunc()
      * is NULL.
      */
-    bool                      bPBC;
+    gmx_bool                      bPBC;
 
     /** Name of the trajectory file (NULL if not provided). */
     char                     *trjfile;
@@ -191,7 +191,7 @@ struct gmx_ana_traj_t
     /** The topology structure, or \p NULL if no topology loaded. */
     t_topology               *top;
     /** TRUE if full tpx file was loaded, FALSE otherwise. */
-    bool                      bTop;
+    gmx_bool                      bTop;
     /** Coordinates from the topology (see \p bTopX). */
     rvec                     *xtop;
     /** The box loaded from the topology file. */
@@ -235,7 +235,7 @@ struct gmx_ana_traj_t
 };
 
 /** Loads the topology. */
-static int load_topology(gmx_ana_traj_t *d, bool bReq);
+static int load_topology(gmx_ana_traj_t *d, gmx_bool bReq);
 /** Loads the first frame and does some checks. */
 static int init_first_frame(gmx_ana_traj_t *d);
 
@@ -382,7 +382,7 @@ gmx_ana_add_flags(gmx_ana_traj_t *d, unsigned long flags)
  * \see \ref ANA_NOUSER_PBC
  */
 int
-gmx_ana_set_pbc(gmx_ana_traj_t *d, bool bPBC)
+gmx_ana_set_pbc(gmx_ana_traj_t *d, gmx_bool bPBC)
 {
     d->bPBC = bPBC;
     return 0;
@@ -392,7 +392,7 @@ gmx_ana_set_pbc(gmx_ana_traj_t *d, bool bPBC)
  * \param[in] d      Trajectory analysis data structure.
  * \returns   TRUE if periodic boundary conditions are set to be used.
  */
-bool
+gmx_bool
 gmx_ana_has_pbc(gmx_ana_traj_t *d)
 {
     return d->bPBC;
@@ -422,7 +422,7 @@ gmx_ana_has_pbc(gmx_ana_traj_t *d)
  * \see \ref ANA_NOUSER_RMPBC
  */
 int
-gmx_ana_set_rmpbc(gmx_ana_traj_t *d, bool bRmPBC)
+gmx_ana_set_rmpbc(gmx_ana_traj_t *d, gmx_bool bRmPBC)
 {
     d->bRmPBC = bRmPBC;
     return 0;
@@ -696,19 +696,19 @@ parse_trjana_args(gmx_ana_traj_t *d,
         {efDAT, "-sf", "selection", ffOPTRD},
         {efNDX, NULL,  NULL,        ffOPTRD},
     };
-    bool                bPBC = TRUE;
+    gmx_bool                bPBC = TRUE;
     t_pargs             pbc_pa[] = {
         {"-pbc",      FALSE, etBOOL, {&bPBC},
          "Use periodic boundary conditions for distance calculation"},
     };
-    bool                bRmPBC = TRUE;
+    gmx_bool                bRmPBC = TRUE;
     t_pargs             rmpbc_pa[] = {
         {"-rmpbc",    FALSE, etBOOL, {&bRmPBC},
          "Make molecules whole for each frame"},
     };
     char               *selection = NULL;
     const char        **rpost     = NULL;
-    bool                bSelDump  = FALSE;
+    gmx_bool                bSelDump  = FALSE;
     t_pargs             sel_pa[] = {
         {"-select",   FALSE, etSTR,  {&selection},
          "Selection string (use 'help' for help)"},
@@ -964,7 +964,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
  * The function can be called multiple times safely; extra calls are
  * ignored.
  */
-static int load_topology(gmx_ana_traj_t *d, bool bReq)
+static int load_topology(gmx_ana_traj_t *d, gmx_bool bReq)
 {
     char                title[STRLEN];
 
@@ -1003,7 +1003,7 @@ static int load_topology(gmx_ana_traj_t *d, bool bReq)
  * The pointer returned in \p *top should not be freed.
  */
 int
-gmx_ana_get_topology(gmx_ana_traj_t *d, bool bReq, t_topology **top, bool *bTop)
+gmx_ana_get_topology(gmx_ana_traj_t *d, gmx_bool bReq, t_topology **top, gmx_bool *bTop)
 {
     int rc;
 
@@ -1090,7 +1090,7 @@ init_default_selections(gmx_ana_traj_t *d, gmx_ana_indexgrps_t **grps)
     }
 
     /* Find the default selection file, return if none found. */
-    fnm = low_gmxlibfn("defselection.dat", FALSE);
+    fnm = low_gmxlibfn("defselection.dat", TRUE, FALSE);
     if (fnm == NULL)
     {
         return 0;
@@ -1195,9 +1195,9 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     int                  nr;
     gmx_ana_indexgrps_t *grps;
     int                  natoms;
-    bool                 bStdIn;
-    bool                 bInteractive;
-    bool                 bOk;
+    gmx_bool                 bStdIn;
+    gmx_bool                 bInteractive;
+    gmx_bool                 bOk;
 
     if (d->sel)
     {
@@ -1636,7 +1636,7 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
     {
         if (d->bRmPBC)
         {
-  	    gmx_rmpbc(gpbc,d->fr->box,d->fr->x, d->fr->x);
+  	    gmx_rmpbc_trxfr(gpbc,d->fr);
         }
         if (ppbc)
         {

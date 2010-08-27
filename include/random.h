@@ -36,35 +36,31 @@
 #ifndef _random_h
 #define _random_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern int make_seed(void);
+int make_seed(void);
 /* Make a random seed: (time+getpid) % 1000000 */
 
-extern real rando(int *seed);
+real rando(int *seed);
 /* Generate a random number 0 <= r < 1. seed is the (address of) the
  * random seed variable.
  */
 
-extern void maxwell_speed(real tempi,int seed, 
+void maxwell_speed(real tempi,int seed, 
 			  gmx_mtop_t *mtop, rvec v[]);
 /* Generate velocites according to a maxwellian distribution */
 
-extern real calc_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[],
+real calc_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[],
 		    rvec xcm,rvec vcm,rvec acm,matrix L);
 /* Calculate the c.o.m. position, velocity, acceleration and the
  * moment of Inertia. Returns the total mass.
  */
 
-extern void stop_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[]);
+void stop_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[]);
 
 #ifdef __cplusplus
 }

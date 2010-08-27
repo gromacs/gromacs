@@ -41,7 +41,7 @@
 
 typedef struct {
   edlgitem edlg;
-  bool bDef;
+  gmx_bool bDef;
   int  nname;
   char **name;
   char *set,*get,*def,*help;

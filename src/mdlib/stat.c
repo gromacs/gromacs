@@ -96,8 +96,8 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
-static int filter_enerdterm(real *afrom, bool bToBuffer, real *ato,
-                            bool bTemp, bool bPres, bool bEner) {
+static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
+                            gmx_bool bTemp, gmx_bool bPres, gmx_bool bEner) {
     int i,to,from;
 
     from = 0;
@@ -149,8 +149,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  t_vcm *vcm,
                  int nsig,real *sig,
                  gmx_mtop_t *top_global, t_state *state_local, 
-                 bool bSumEkinhOld, int flags)
-/* instead of current system, booleans for summing virial, kinetic energy, and other terms */
+                 gmx_bool bSumEkinhOld, int flags)
+/* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
   t_bin  *rb;
   int    *itc0,*itc1;
@@ -163,16 +163,16 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    nener,j;
   real   *rmsd_data=NULL;
   double nb;
-  bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate,bReadEkin;
+  gmx_bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate,bReadEkin;
 
   bVV           = EI_VV(inputrec->eI);
   bTemp         = flags & CGLO_TEMPERATURE;
   bEner         = flags & CGLO_ENERGY;
-  bPres         = flags & CGLO_PRESSURE; 
-  bConstrVir    = flags & CGLO_CONSTRAINT;
-  bFirstIterate = flags & CGLO_FIRSTITERATE;
+  bPres         = (flags & CGLO_PRESSURE); 
+  bConstrVir    = (flags & CGLO_CONSTRAINT);
+  bFirstIterate = (flags & CGLO_FIRSTITERATE);
   bEkinAveVel   = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && bPres));
-  bReadEkin     = flags & CGLO_READEKIN;
+  bReadEkin     = (flags & CGLO_READEKIN);
 
   rb   = gs->rb;
   itc0 = gs->itc0;
@@ -437,7 +437,7 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
 {
     gmx_mdoutf_t *of;
     char filemode[3];
-    bool bAppendFiles;
+    gmx_bool bAppendFiles;
 
     snew(of,1);
 
@@ -480,6 +480,7 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
         of->fn_cpt = opt2fn("-cpo",nfile,fnm);
         
         if (ir->efep != efepNO && ir->nstdhdl > 0 &&
+            (ir->separate_dhdl_file == sepdhdlfileYES ) && 
             !EI_ENERGY_MINIMIZATION(ir->eI))
         {
             if (bAppendFiles)

@@ -62,8 +62,8 @@ enum { esStop, esGo, esNR };
 
 typedef struct {
   int       status;
-  bool      bShowGly;
-  bool      *bIsGly;
+  gmx_bool      bShowGly;
+  gmx_bool      *bIsGly;
   t_windata wd;
   t_windata xrwd;
   t_xrama   *xr;
@@ -83,7 +83,7 @@ static void plot_pp(t_x11 *x11,Window w,t_phipsi *pp,t_dih dih[])
     TextInRect(x11,w,pp->label,x0+6,y0-th,30,2*th,eXLeft,eYCenter);
 }
 
-static bool label_pp(t_x11 *x11,Window w,int npp,t_phipsi pp[],
+static gmx_bool label_pp(t_x11 *x11,Window w,int npp,t_phipsi pp[],
 		     t_dih dih[],int mx,int my)
 {
   int d,md,x0,y0;
@@ -107,7 +107,7 @@ static bool label_pp(t_x11 *x11,Window w,int npp,t_phipsi pp[],
   return FALSE;
 }
 
-static bool xrCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool xrCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_app   *app;
   t_xrama *xr;
@@ -156,7 +156,7 @@ static bool xrCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-static bool appCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool appCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_app  *app;
   int    win;
@@ -214,7 +214,7 @@ static void size_app(t_x11 *x11,t_app *app)
 		    app->wd.width-6,app->wd.height-th-10-4);
 }
 
-static bool mainCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool mainCallBack(struct t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_app *app;
   int   wt,ht;

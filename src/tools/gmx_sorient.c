@@ -50,10 +50,10 @@
 
 
 static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
-			 atom_id index[],rvec xref,bool bPBC,matrix box)
+			 atom_id index[],rvec xref,gmx_bool bPBC,matrix box)
 {
   const real tol=1e-4;
-  bool  bChanged;
+  gmx_bool  bChanged;
   int   m,j,ai,iter;
   real  mass,mtot;
   rvec  dx,xtest;
@@ -115,7 +115,7 @@ int gmx_sorient(int argc,char *argv[])
   real    inp,outp,two_pi,nav,normfac,rmin2,rmax2,rcut,rcut2,r2,r,mass,mtot;
   real    c1,c2;
   char    str[STRLEN];
-  bool    bTPS;
+  gmx_bool    bTPS;
   rvec    xref,dx,dxh1,dxh2,outer;
   gmx_rmpbc_t gpbc=NULL;
   t_pbc   pbc;
@@ -148,7 +148,7 @@ int gmx_sorient(int argc,char *argv[])
   };
  
   output_env_t oenv;
-  static bool bCom = FALSE,bVec23=FALSE,bPBC = FALSE;
+  static gmx_bool bCom = FALSE,bVec23=FALSE,bPBC = FALSE;
   static real rmin=0.0,rmax=0.5,binwidth=0.02,rbinw=0.02;
   t_pargs pa[] = {
     { "-com",  FALSE, etBOOL,  {&bCom},
@@ -247,7 +247,7 @@ int gmx_sorient(int argc,char *argv[])
   do {
     if (bTPS) {
       /* make molecules whole again */
-      gmx_rmpbc(gpbc,box,x,x);
+      gmx_rmpbc(gpbc,natoms,box,x);
     }
     
     set_pbc(&pbc,ePBC,box);

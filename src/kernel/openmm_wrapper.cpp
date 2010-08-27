@@ -39,6 +39,11 @@
  * https://simtk.org/project/xml/downloads.xml?group_id=161#package_id600
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <types/simple.h>
 #include <cmath>
 #include <set>
 #include <iostream>
@@ -84,7 +89,7 @@ using namespace OpenMM;
  * \param[out] t    Destination variable to convert to.
  */
 template <class T>
-static bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
+static gmx_bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
 {
     istringstream iss(s);
     return !(iss >> f >> t).fail();
@@ -137,7 +142,7 @@ static void splitOptionValue(const string &s, string &opt, string &val)
                  integer less than, equal to, or greater than 0 if \p s1 less than, 
                  identical to, or greater than \p s2.
  */
-static bool isStringEqNCase(const string s1, const string s2)
+static gmx_bool isStringEqNCase(const string s1, const string s2)
 {
     return (gmx_strncasecmp(s1.c_str(), s2.c_str(), max(s1.length(), s2.length())) == 0);
 }
@@ -160,7 +165,7 @@ static string toUpper(const string &s)
   GmxOpenMMPlatformOptions#memtests, GmxOpenMMPlatformOptions#deviceid, 
   GmxOpenMMPlatformOptions#force_dev.  */
 /* {@ */
-#define SIZEOF_PLATFORMS    1  // 2
+#define SIZEOF_PLATFORMS    2  // 2
 #define SIZEOF_MEMTESTS     3 
 #define SIZEOF_DEVICEIDS    1 
 #define SIZEOF_FORCE_DEV    2 
@@ -209,7 +214,7 @@ private:
 };
 
 const char * const GmxOpenMMPlatformOptions::platforms[SIZEOF_PLATFORMS]
-                    = {"CUDA"};
+                    = {"CUDA", "Reference"};
                     //= { "Reference", "CUDA" /*,"OpenCL"*/ };
 const char * const GmxOpenMMPlatformOptions::memtests[SIZEOF_MEMTESTS]
                     = { "15", "full", "off" };
@@ -378,7 +383,7 @@ public:
     System* system;      /*! The system to simulate. */
     Context* context;   /*! The OpenMM context in which the simulation is carried out. */
     Integrator* integrator; /*! The integrator used in the simulation. */
-    bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
+    gmx_bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
     GmxOpenMMPlatformOptions *platformOpt; /*! Platform options. */
 };
 
@@ -601,6 +606,8 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
             i == F_ANGLES   ||
             i == F_PDIHS    ||
             i == F_RBDIHS   ||
+            i == F_PIDIHS   ||
+            i == F_IDIHS    ||
             i == F_LJ14     ||
             i == F_GB12     || /* The GB parameters are hardcoded both in */
             i == F_GB13     || /* Gromacs and OpenMM */
@@ -718,7 +725,7 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
     {
         fprintf(debug, ">> The combination rule of the used force matches the one used by OpenMM.\n");
     }
-    fprintf(fplog, "The combination rule of the force used field matches the one used by OpenMM.\n");   
+    fprintf(fplog, "The combination rule of the used force field matches the one used by OpenMM.\n");   
 
     } /* if (are we checking the combination rules) ... */
 }
@@ -754,7 +761,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 {
 
     char warn_buf[STRLEN];
-    static bool hasLoadedPlugins = false;
+    static gmx_bool hasLoadedPlugins = false;
     string usedPluginDir;
     int devId;
 
@@ -789,7 +796,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             }
 
             /* macro set at build time  */
-#ifdef OPENMM_PLUGIN_DIR
+#ifdef OpenMM_PLUGIN_DIR
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(OPENMM_PLUGIN_DIR);
@@ -838,7 +845,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         /* check wheter Gromacs options compatibility with OpenMM */
         checkGmxOptions(fplog, opt, ir, top, fr, state);
 
-        // Create the system.
+        /* Create the system. */
         const t_idef& idef = top->idef;
         const int numAtoms = top_global->natoms;
         const int numConstraints = idef.il[F_CONSTR].nr/3;
@@ -847,13 +854,22 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numUB = idef.il[F_UREY_BRADLEY].nr/4;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
+        const int numPeriodicImproper = idef.il[F_PIDIHS].nr/5;
         const int numRB = idef.il[F_RBDIHS].nr/5;
+        const int numImproperDih = idef.il[F_IDIHS].nr/5;
         const int num14 = idef.il[F_LJ14].nr/3;
         System* sys = new System();
         if (ir->nstcomm > 0)
             sys->addForce(new CMMotionRemover(ir->nstcomm));
 
-        // Set bonded force field terms.
+        /* Set bonded force field terms. */
+
+		/* 
+		 * CUDA platform currently doesn't support more than one
+		 * instance of a force object, so we pack all forces that
+		 * use the same form into one.
+		*/
+
         const int* bondAtoms = (int*) idef.il[F_BONDS].iatoms;
         HarmonicBondForce* bondForce = new HarmonicBondForce();
         sys->addForce(bondForce);
@@ -866,24 +882,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             bondForce->addBond(atom1, atom2,
                                idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
         }
-        // Urey-Bradley includes both the angle and bond potential for 1-3 interactions
-        const int* ubAtoms = (int*) idef.il[F_UREY_BRADLEY].iatoms;
-        HarmonicBondForce* ubBondForce = new HarmonicBondForce();
-        HarmonicAngleForce* ubAngleForce = new HarmonicAngleForce();
-        sys->addForce(ubBondForce);
-        sys->addForce(ubAngleForce);
-        offset = 0;
-        for (int i = 0; i < numUB; ++i)
-        {
-            int type = ubAtoms[offset++];
-            int atom1 = ubAtoms[offset++];
-            int atom2 = ubAtoms[offset++];
-            int atom3 = ubAtoms[offset++];
-            ubBondForce->addBond(atom1, atom3,
-                               idef.iparams[type].u_b.r13, idef.iparams[type].u_b.kUB);
-            ubAngleForce->addAngle(atom1, atom2, atom3, 
-                    idef.iparams[type].u_b.theta*M_PI/180.0, idef.iparams[type].u_b.ktheta);
-        }
+
+		/* Set the angle force field terms */
         const int* angleAtoms = (int*) idef.il[F_ANGLES].iatoms;
         HarmonicAngleForce* angleForce = new HarmonicAngleForce();
         sys->addForce(angleForce);
@@ -897,6 +897,29 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             angleForce->addAngle(atom1, atom2, atom3, 
                     idef.iparams[type].harmonic.rA*M_PI/180.0, idef.iparams[type].harmonic.krA);
         }
+
+        /* Urey-Bradley includes both the angle and bond potential for 1-3 interactions */
+        const int* ubAtoms = (int*) idef.il[F_UREY_BRADLEY].iatoms;
+		/* HarmonicBondForce* ubBondForce = new HarmonicBondForce(); */
+		/*  HarmonicAngleForce* ubAngleForce = new HarmonicAngleForce(); */
+        /* sys->addForce(ubBondForce); */
+        /* sys->addForce(ubAngleForce); */
+        offset = 0;
+        for (int i = 0; i < numUB; ++i)
+        {
+            int type = ubAtoms[offset++];
+            int atom1 = ubAtoms[offset++];
+            int atom2 = ubAtoms[offset++];
+            int atom3 = ubAtoms[offset++];
+            /* ubBondForce->addBond(atom1, atom3, */
+            bondForce->addBond(atom1, atom3,
+                               idef.iparams[type].u_b.r13, idef.iparams[type].u_b.kUB);
+            /* ubAngleForce->addAngle(atom1, atom2, atom3, */ 
+            angleForce->addAngle(atom1, atom2, atom3, 
+                    idef.iparams[type].u_b.theta*M_PI/180.0, idef.iparams[type].u_b.ktheta);
+        }
+
+		/* Set proper dihedral terms */
         const int* periodicAtoms = (int*) idef.il[F_PDIHS].iatoms;
         PeriodicTorsionForce* periodicForce = new PeriodicTorsionForce();
         sys->addForce(periodicForce);
@@ -913,6 +936,27 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                       idef.iparams[type].pdihs.phiA*M_PI/180.0, 
                                       idef.iparams[type].pdihs.cpA);
         }
+
+		/* Set improper dihedral terms that are represented by a periodic function (as in AMBER FF) */
+        const int* periodicImproperAtoms = (int*) idef.il[F_PIDIHS].iatoms;
+        /* PeriodicTorsionForce* periodicImproperForce = new PeriodicTorsionForce(); */
+        /* sys->addForce(periodicImproperForce); */
+        offset = 0;
+        for (int i = 0; i < numPeriodicImproper; ++i)
+        {
+            int type = periodicImproperAtoms[offset++];
+            int atom1 = periodicImproperAtoms[offset++];
+            int atom2 = periodicImproperAtoms[offset++];
+            int atom3 = periodicImproperAtoms[offset++];
+            int atom4 = periodicImproperAtoms[offset++];
+            /* periodicImproperForce->addTorsion(atom1, atom2, atom3, atom4, */
+            periodicForce->addTorsion(atom1, atom2, atom3, atom4,
+                                      idef.iparams[type].pdihs.mult,
+                                      idef.iparams[type].pdihs.phiA*M_PI/180.0,
+                                      idef.iparams[type].pdihs.cpA);
+        }
+
+        /* Ryckaert-Bellemans dihedrals */
         const int* rbAtoms = (int*) idef.il[F_RBDIHS].iatoms;
         RBTorsionForce* rbForce = new RBTorsionForce();
         sys->addForce(rbForce);
@@ -930,7 +974,28 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                                 idef.iparams[type].rbdihs.rbcA[4], idef.iparams[type].rbdihs.rbcA[5]);
         }
 
-        // Set nonbonded parameters and masses.
+		/* Set improper dihedral terms (as in CHARMM FF) */
+        const int* improperDihAtoms = (int*) idef.il[F_IDIHS].iatoms;
+		CustomTorsionForce* improperDihForce = new CustomTorsionForce("2.0*k*asin(sin((theta-theta0)/2))^2");
+        sys->addForce(improperDihForce);
+		improperDihForce->addPerTorsionParameter("k");
+		improperDihForce->addPerTorsionParameter("theta0");
+		vector<double> improperDihParameters(2);
+        offset = 0;
+        for (int i = 0; i < numImproperDih; ++i)
+        {
+            int type = improperDihAtoms[offset++];
+            int atom1 = improperDihAtoms[offset++];
+            int atom2 = improperDihAtoms[offset++];
+            int atom3 = improperDihAtoms[offset++];
+            int atom4 = improperDihAtoms[offset++];
+			improperDihParameters[0] = idef.iparams[type].harmonic.krA;
+			improperDihParameters[1] = idef.iparams[type].harmonic.rA*M_PI/180.0;
+            improperDihForce->addTorsion(atom1, atom2, atom3, atom4,
+                                improperDihParameters);
+        }
+
+        /* Set nonbonded parameters and masses. */
         int ntypes = fr->ntype;
         int* types = mdatoms->typeA;
         real* nbfp = fr->nbfp;
@@ -970,7 +1035,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                 break;
 
             default:
-                gmx_fatal(FARGS,"Internal error: you should not see this message, it that the"
+                gmx_fatal(FARGS,"Internal error: you should not see this message, it means that the"
                           "electrosatics option check failed. Please report this error!");
             }        
             sys->setDefaultPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0),
@@ -1366,7 +1431,7 @@ void openmm_cleanup(FILE* fplog, void* data)
 void openmm_copy_state(void *data,
                        t_state *state, double *time,
                        rvec f[], gmx_enerdata_t *enerd,
-                       bool includePos, bool includeVel, bool includeForce, bool includeEnergy)
+                       gmx_bool includePos, gmx_bool includeVel, gmx_bool includeForce, gmx_bool includeEnergy)
 {
     int types = 0;
     if (includePos)

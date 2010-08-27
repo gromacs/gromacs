@@ -182,7 +182,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
 static void check_box(matrix f_box, matrix box, char fn[],warninp_t wi)
 {
     int i,ii;
-    bool bSame=TRUE;
+    gmx_bool bSame=TRUE;
     char warn_buf[STRLEN];
     
     

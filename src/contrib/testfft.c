@@ -42,7 +42,7 @@
 #include "fftgrid.h"
 #include "mdrun.h"
 
-void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,bool bFirst)
+void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,gmx_bool bFirst)
 {
 #ifdef USE_SGI_FFT
 #ifdef GMX_DOUBLE
@@ -98,7 +98,7 @@ void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,bool bFirst)
 #endif
 }
 
-void testrft(FILE *fp,real ***grid,int nx,int ny,int nz,bool bFirst)
+void testrft(FILE *fp,real ***grid,int nx,int ny,int nz,gmx_bool bFirst)
 {
 #ifdef USE_SGI_FFT
 #ifdef GMX_DOUBLE

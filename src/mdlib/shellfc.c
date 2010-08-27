@@ -61,7 +61,7 @@ typedef struct {
   int     nnucl;
   atom_id shell;	        /* The shell id				*/
   atom_id nucl1,nucl2,nucl3;	/* The nuclei connected to the shell	*/
-  /* bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
+  /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
   real    k;		        /* force constant		        */
   real    k_1;		        /* 1 over force constant		*/
   rvec    xold;
@@ -73,12 +73,12 @@ typedef struct gmx_shellfc {
   int     nshell_gl;       /* The number of shells in the system       */
   t_shell *shell_gl;       /* All the shells (for DD only)             */
   int     *shell_index_gl; /* Global shell index (for DD only)         */
-  bool    bInterCG;        /* Are there inter charge-group shells?     */
+  gmx_bool    bInterCG;        /* Are there inter charge-group shells?     */
   int     nshell;          /* The number of local shells               */
   t_shell *shell;          /* The local shells                         */
   int     shell_nalloc;    /* The allocation size of shell             */
-  bool    bPredict;        /* Predict shell positions                  */
-  bool    bForceInit;      /* Force initialization of shell positions  */
+  gmx_bool    bPredict;        /* Predict shell positions                  */
+  gmx_bool    bForceInit;      /* Force initialization of shell positions  */
   int     nflexcon;        /* The number of flexible constraints       */
   rvec    *x[2];           /* Array for iterative minimization         */
   rvec    *f[2];           /* Array for iterative minimization         */
@@ -112,7 +112,7 @@ static void pr_shell(FILE *fplog,int ns,t_shell s[])
 
 static void predict_shells(FILE *fplog,rvec x[],rvec v[],real dt,
 			   int ns,t_shell s[],
-			   real mass[],gmx_mtop_t *mtop,bool bInit)
+			   real mass[],gmx_mtop_t *mtop,gmx_bool bInit)
 {
   int  i,m,s1,n1,n2,n3;
   real dt_1,dt_2,dt_3,fudge,tm,m1,m2,m3;
@@ -749,10 +749,10 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
 }
 
-int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
+int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
 			gmx_large_int_t mdstep,t_inputrec *inputrec,
-			bool bDoNS,int force_flags,
-			bool bStopCM,
+			gmx_bool bDoNS,int force_flags,
+			gmx_bool bStopCM,
 			gmx_localtop_t *top,
 			gmx_mtop_t* mtop,
 			gmx_constr_t constr,
@@ -765,9 +765,9 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			gmx_groups_t *groups,
 			struct gmx_shellfc *shfc,
 			t_forcerec *fr,
-			bool bBornRadii,
+			gmx_bool bBornRadii,
 			double t,rvec mu_tot,
-			int natoms,bool *bConverged,
+			int natoms,gmx_bool *bConverged,
 			gmx_vsite_t *vsite,
 			FILE *fp_field)
 {
@@ -780,7 +780,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   real   sf_dir,invdt;
   real   ftol,xiH,xiS,dum=0;
   char   sbuf[22];
-  bool   bCont,bInit;
+  gmx_bool   bCont,bInit;
   int    nat,dd_ac0,dd_ac1=0,i;
   int    start=md->start,homenr=md->homenr,end=start+homenr,cg0,cg1;
   int    nflexcon,g,number_steps,d,Min=0,count=0;

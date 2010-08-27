@@ -112,7 +112,7 @@ extern void dd_make_local_group_indices(gmx_ga2la_t ga2la,
  *                           the group becomes whole.
  */
 extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts,
-                                        ivec *extra_shifts, const bool bNS,
+                                        ivec *extra_shifts, const gmx_bool bNS,
                                         rvec *x_loc, const int nr, const int nr_loc,
                                         int *anrs_loc, int *coll_ind, rvec *xcoll_old,
                                         matrix box);

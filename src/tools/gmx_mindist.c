@@ -103,7 +103,7 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 
 static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 				  t_topology *top,int ePBC,
-				  int n,atom_id index[],bool bSplit,
+				  int n,atom_id index[],gmx_bool bSplit,
                                   const output_env_t oenv)
 {
   FILE   *out;
@@ -114,7 +114,7 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   matrix box;
   int    natoms,ind_min[2]={0,0},ind_mini=0,ind_minj=0;
   real   r,rmin,rmax,rmint,tmint;
-  bool   bFirst;
+  gmx_bool   bFirst;
   gmx_rmpbc_t  gpbc=NULL;
 
   natoms=read_first_x(oenv,&status,trxfn,&t,&x,box);
@@ -136,7 +136,7 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   bFirst=TRUE;  
   do {
     if (NULL != top) 
-      gmx_rmpbc(gpbc,box,x,x);
+      gmx_rmpbc(gpbc,natoms,box,x);
     
     periodic_dist(box,x,n,index,&rmin,&rmax,ind_min);
     if (rmin < rmint) {
@@ -164,9 +164,9 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 	  index[ind_mini]+1,index[ind_minj]+1);
 }
 
-static void calc_dist(real rcut, bool bPBC, int ePBC, matrix box, rvec x[], 
+static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[], 
 		      int nx1,int nx2, atom_id index1[], atom_id index2[],
-		      bool bGroup,
+		      gmx_bool bGroup,
 		      real *rmin, real *rmax, int *nmin, int *nmax,
 		      int *ixmin, int *jxmin, int *ixmax, int *jxmax)
 {
@@ -252,10 +252,10 @@ static void calc_dist(real rcut, bool bPBC, int ePBC, matrix box, rvec x[],
 
 void dist_plot(const char *fn,const char *afile,const char *dfile,
 	       const char *nfile,const char *rfile,const char *xfile,
-	       real rcut,bool bMat,t_atoms *atoms,
-	       int ng,atom_id *index[],int gnx[],char *grpn[],bool bSplit,
-	       bool bMin, int nres, atom_id *residue,bool bPBC,int ePBC,
-	       bool bGroup,bool bEachResEachTime, bool bPrintResName,
+	       real rcut,gmx_bool bMat,t_atoms *atoms,
+	       int ng,atom_id *index[],int gnx[],char *grpn[],gmx_bool bSplit,
+	       gmx_bool bMin, int nres, atom_id *residue,gmx_bool bPBC,int ePBC,
+	       gmx_bool bGroup,gmx_bool bEachResEachTime, gmx_bool bPrintResName,
                const output_env_t oenv)
 {
   FILE         *atm,*dist,*num;
@@ -266,12 +266,12 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   int          nmin,nmax;
   t_trxstatus  *status;
   int          i=-1,j,k,natoms;
-  int	       min1,min2,max1,max2;
+  int	       min1,min2,max1,max2,min1r,min2r,max1r,max2r;
   atom_id      oindex[2];
   rvec         *x0;
   matrix       box;
   t_trxframe   frout;
-  bool         bFirst;
+  gmx_bool         bFirst;
   FILE *respertime=NULL;
   
   if ((natoms=read_first_x(oenv,&status,fn,&t,&x0,box))==0)
@@ -377,7 +377,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	  for(j=0; j<nres; j++) {
 	    calc_dist(rcut,bPBC,ePBC,box,x0,residue[j+1]-residue[j],gnx[i],
 		      &(index[0][residue[j]]),index[i],bGroup,
-		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+		      &dmin,&dmax,&nmin,&nmax,&min1r,&min2r,&max1r,&max2r);
 	    mindres[i-1][j] = min(mindres[i-1][j],dmin);
 	    maxdres[i-1][j] = max(maxdres[i-1][j],dmax);
 	  }
@@ -503,11 +503,11 @@ int gmx_mindist(int argc,char *argv[])
     "The [TT]-pi[tt] option is very slow."
   };
   
-  static bool bMat=FALSE,bPI=FALSE,bSplit=FALSE,bMax=FALSE,bPBC=TRUE;
-  static bool bGroup=FALSE;
+  static gmx_bool bMat=FALSE,bPI=FALSE,bSplit=FALSE,bMax=FALSE,bPBC=TRUE;
+  static gmx_bool bGroup=FALSE;
   static real rcutoff=0.6;
   static int  ng=1;
-  static bool bEachResEachTime=FALSE,bPrintResName=FALSE;
+  static gmx_bool bEachResEachTime=FALSE,bPrintResName=FALSE;
   t_pargs pa[] = {
     { "-matrix", FALSE, etBOOL, {&bMat},
       "Calculate half a matrix of group-group distances" },
@@ -537,7 +537,7 @@ int gmx_mindist(int argc,char *argv[])
   real       t;
   rvec       *x;
   matrix     box;
-  bool       bTop=FALSE;
+  gmx_bool       bTop=FALSE;
   
   FILE      *atm;
   int       i,j,nres=0;

@@ -36,10 +36,6 @@
 #ifndef _ns_h
 #define _ns_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -58,7 +54,7 @@ extern "C" {
  *
  ****************************************************/
 
-extern void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
+void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
 /* 
  * nn is the number of energy terms in the energy matrix
  * (ngener*(ngener-1))/2
@@ -66,7 +62,7 @@ extern void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
  * homenr is the number of atoms on this processor
  */
  
-extern int calc_naaj(int icg,int cgtot);
+int calc_naaj(int icg,int cgtot);
 /* Calculate the number of charge groups to interact with for icg */
 
 /****************************************************
@@ -79,12 +75,12 @@ extern int calc_naaj(int icg,int cgtot);
  *    Return total number of pairs searched 
  *
  ****************************************************/
-extern void init_ns(FILE *fplog,const t_commrec *cr,
+void init_ns(FILE *fplog,const t_commrec *cr,
 		    gmx_ns_t *ns,t_forcerec *fr,
 		    const gmx_mtop_t *mtop,
 		    matrix box);
 
-extern int search_neighbours(FILE *log,t_forcerec *fr,
+int search_neighbours(FILE *log,t_forcerec *fr,
 			     rvec x[],matrix box,
 			     gmx_localtop_t *top,
 			     gmx_groups_t *groups,
@@ -92,18 +88,18 @@ extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     t_nrnb *nrnb,t_mdatoms *md,
 			     real lambda,real *dvdlambda,
 			     gmx_grppairener_t *grppener,
-			     bool bFillGrid,
-			     bool bDoLongRange,
-			     bool bDoForces,rvec *f);
+			     gmx_bool bFillGrid,
+			     gmx_bool bDoLongRange,
+			     gmx_bool bDoForces,rvec *f);
  
 
 /* Debugging routines from wnblist.c */
-extern void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL);
+void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL);
 
-extern int read_nblist(FILE *in,FILE *out,int **mat,int natoms,bool bSymm);
+int read_nblist(FILE *in,FILE *out,int **mat,int natoms,gmx_bool bSymm);
 /* Returns total number of neighbors. If bSymm the matrix is symmetrized. */
 
-extern int natoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
+int natoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
 				   matrix scale_tot,rvec *x);
 /* Returns the number of atoms that moved beyond the ns buffer */
 

@@ -79,11 +79,11 @@
    C2'  H2'1
    C2'  H2'2
  [ impropers ]
-    C8    C4    N9   C1'
+    C4    C8    N9   C1'
     C6   H61    N6   H62
     N9    N7    C8    H8
     N1    N3    C2    H2
-    C5    N1    C6    N6
+    C5    N6    C6    N1
                         
 [ DA ]
  [ atoms ]
@@ -308,13 +308,12 @@
    C2'  H2'1
    C2'  H2'2
    O3'   H3T
-  -O3'     P
  [ impropers ]
-    C8    C4    N9   C1'
+    C4    C8    N9   C1'
     C6   H61    N6   H62
     N9    N7    C8    H8
     N1    N3    C2    H2
-    C5    N1    C6    N6
+    C5    N6    C6    N1
 
 
                  
@@ -383,8 +382,8 @@
    C2'  H2'1
    C2'  H2'2
  [ impropers ]
-    C6    C2    N1   C1'
-    C6    C4    C5    C7
+    C2    C6    N1   C1'
+    C4    C6    C5    C7
     N1    N3    C2    O2
     C5    N3    C4    O4
     C4    C2    N3    H3  
@@ -612,10 +611,9 @@
    C2'  H2'1
    C2'  H2'2
    O3'   H3T
-  -O3'     P
  [ impropers ]
-    C6    C2    N1   C1'
-    C6    C4    C5    C7
+    C2    C6    N1   C1'
+    C4    C6    C5    C7
     N1    N3    C2    O2
     C5    N3    C4    O4
     C4    C2    N3    H3  
@@ -691,12 +689,12 @@
    C2'  H2'1
    C2'  H2'2
  [ impropers ]
-    C8    C4    N9   C1'
+    C4    C8    N9   C1'
     C5    N1    C6    O6
     C6    C2    N1    H1
     C2   H21    N2   H22
     N9    N7    C8    H8
-    N1    N3    C2    N2
+    N2    N1    C2    N3
                         
 [ DG ]
  [ atoms ]
@@ -929,18 +927,14 @@
    C2'  H2'1
    C2'  H2'2
    O3'   H3T
-  -O3'     P
  [ impropers ]
-    C8    C4    N9   C1'
+    C4    C8    N9   C1'
     C5    N1    C6    O6
     C6    C2    N1    H1
     C2   H21    N2   H22
     N9    N7    C8    H8
-    N1    N3    C2    N2
-          
-
-                   
-                        
+    N2    N1    C2    N3
+                      
 [ DC5 ]
  [ atoms ]
    H5T    HO            0.44220     1
@@ -1002,12 +996,12 @@
    C2'  H2'1
    C2'  H2'2
  [ impropers ]
-    C6    C2    N1   C1'
+   C1'    N1    C6    C2
     N1    N3    C2    O2 
     C4   H41    N4   H42
     N1    C5    C6    H6
     C6    C4    C5    H5
-    N3    C5    C4    N4
+    C5    N4    C4    N3
                         
 [ DC ]
  [ atoms ]
@@ -1219,12 +1213,11 @@
    C2'  H2'1
    C2'  H2'2
    O3'   H3T
-  -O3'     P
  [ impropers ]
-    C6    C2    N1   C1'
+    C2    C6    N1   C1'
     N1    N3    C2    O2
     C4   H41    N4   H42
     N1    C5    C6    H6
     C6    C4    C5    H5
-    N3    C5    C4    N4
-     
+    N3    C4    N4    C5
+

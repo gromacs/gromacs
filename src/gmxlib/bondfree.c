@@ -1342,7 +1342,7 @@ static real low_angres(int nbonds,
 		       const rvec x[],rvec f[],rvec fshift[],
 		       const t_pbc *pbc,const t_graph *g,
 		       real lambda,real *dvdlambda,
-		       bool bZAxis)
+		       gmx_bool bZAxis)
 {
   int  i,m,type,ai,aj,ak,al;
   int  t1,t2;
@@ -2552,7 +2552,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
 		t_atomtypes *atype, gmx_genborn_t *born,
-		bool bPrintSepPot,gmx_large_int_t step)
+		gmx_bool bPrintSepPot,gmx_large_int_t step)
 {
   int    ftype,nbonds,ind,nat1;
   real   *epot,v,dvdl;

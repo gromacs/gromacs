@@ -97,9 +97,9 @@ static inline volatile void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a,
     /* the intel compilers need integer type arguments for compare_and_swap.
         on the platforms supported by icc, size_t is always the size of
         a pointer. */
-    return (void*)__sync_val_compare_and_swap( (size_t*)&(a->value), 
-                                               (size_t)oldval, 
-                                               (size_t)newval);
+    return (volatile void*)__sync_val_compare_and_swap( (size_t*)&(a->value), 
+                                                        (size_t)oldval, 
+                                                        (size_t)newval);
 #endif
 }
 

@@ -73,7 +73,7 @@ static void ana_dih(FILE *out,char *index,int nframes,real dih[],t_dih *dd)
 {
   int i;
   real mind,maxd,sum,av,var,prev,width;
-  bool bTrans;
+  gmx_bool bTrans;
   
   mind=5400,maxd=-5400,sum=0,av=0,var=0;
 
@@ -305,7 +305,7 @@ int gmx_dih(int argc,char *argv[])
     "conformations sorted according to occupancy."
   };
   static int  mult = -1;
-  static bool bSA  = FALSE;
+  static gmx_bool bSA  = FALSE;
   t_pargs pa[] = {
     { "-sa", FALSE, etBOOL, {&bSA},
       "Perform cluster analysis in dihedral space instead of analysing dihedral transitions." },

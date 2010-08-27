@@ -22,30 +22,11 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+#include <gmx_sse2_double.h>
+
 /* get gmx_gbdata_t */
 #include "../nb_kerneltype.h"
 
-
-
-static inline __m128d
-my_invrsq_pd(__m128d x)
-{
-	const __m128d three = {3.0, 3.0};
-	const __m128d half  = {0.5, 0.5};
-	
-	__m128  t  = _mm_rsqrt_ps(_mm_cvtpd_ps(x)); /* Convert to single precision and do _mm_rsqrt_ps() */
-	__m128d t1 = _mm_cvtps_pd(t); /* Convert back to double precision */
-	
-	/* First Newton-Rapson step, accuracy is now 24 bits */
-	__m128d t2 = _mm_mul_pd(half,_mm_mul_pd(t1,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t1,t1)))));
-	
-	/* Return second Newton-Rapson step, accuracy 48 bits */
-	return _mm_mul_pd(half,_mm_mul_pd(t2,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t2,t2)))));
-}
-
-/* to extract single integers from a __m128i datatype */
-#define _mm_extract_epi64(x, imm) \
-_mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
 
 void nb_kernel430_sse2_double(int *           p_nri,
@@ -202,7 +183,7 @@ void nb_kernel430_sse2_double(int *           p_nri,
 			dz		= _mm_sub_pd(iz,jz);
 			
 			rsq11   = _mm_add_pd( _mm_add_pd( _mm_mul_pd(dx,dx) , _mm_mul_pd(dy,dy) ) , _mm_mul_pd(dz,dz) );
-			rinv    = my_invrsq_pd(rsq11);
+			rinv    = gmx_mm_invsqrt_pd(rsq11);
 			
 			/* Load invsqrta */
 			isaj	= _mm_loadl_pd(isaj,invsqrta+jnr1);
@@ -243,10 +224,10 @@ void nb_kernel430_sse2_double(int *           p_nri,
 			
 			nnn		= _mm_slli_epi64(n0,2);
 			
-			xmm1	= _mm_load_pd(GBtab+(_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
-			xmm2	= _mm_load_pd(GBtab+(_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
-			xmm3	= _mm_load_pd(GBtab+(_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
-			xmm4	= _mm_load_pd(GBtab+(_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
+			xmm1	= _mm_load_pd(GBtab+(gmx_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
+			xmm2	= _mm_load_pd(GBtab+(gmx_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
+			xmm3	= _mm_load_pd(GBtab+(gmx_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
+			xmm4	= _mm_load_pd(GBtab+(gmx_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
 			
 			Y		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0)); /* Y1 Y2 */
 			F		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(1,1)); /* F1 F2 */
@@ -292,10 +273,10 @@ void nb_kernel430_sse2_double(int *           p_nri,
 			nnn     = _mm_slli_epi32(n0,3);
 			
 			/* Tabulated VdW interaction - dispersion */
-			xmm1	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
-			xmm2	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
-			xmm3	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
-			xmm4	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
+			xmm1	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
+			xmm2	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
+			xmm3	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
+			xmm4	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
 			
 			Y		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0)); /* Y1 Y2 */
 			F		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(1,1)); /* F1 F2 */
@@ -318,10 +299,10 @@ void nb_kernel430_sse2_double(int *           p_nri,
 			/* Tabulated VdW interaction - repulsion */
 			nnn     = _mm_add_epi32(nnn,four);
 			
-			xmm1	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
-			xmm2	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
-			xmm3	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
-			xmm4	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
+			xmm1	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
+			xmm2	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
+			xmm3	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
+			xmm4	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
 			
 			Y		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0)); /* Y1 Y2 */
 			F		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(1,1)); /* F1 F2 */
@@ -411,7 +392,7 @@ void nb_kernel430_sse2_double(int *           p_nri,
 			dz		= _mm_sub_sd(iz,jz);
 			
 			rsq11   = _mm_add_pd( _mm_add_pd( _mm_mul_pd(dx,dx) , _mm_mul_pd(dy,dy) ) , _mm_mul_pd(dz,dz) );
-			rinv    = my_invrsq_pd(rsq11);
+			rinv    = gmx_mm_invsqrt_pd(rsq11);
 			
 			vcoul	= _mm_mul_sd(qq,rinv);
 			fscal	= _mm_mul_sd(vcoul,rinv);
@@ -435,10 +416,10 @@ void nb_kernel430_sse2_double(int *           p_nri,
 			
 			nnn		= _mm_slli_epi64(n0,2);
 			
-			xmm1	= _mm_load_pd(GBtab+(_mm_extract_epi64(nnn,0))); 
-			xmm2	= _mm_load_pd(GBtab+(_mm_extract_epi64(nnn,1))); 
-			xmm3	= _mm_load_pd(GBtab+(_mm_extract_epi64(nnn,0))+2); 
-			xmm4	= _mm_load_pd(GBtab+(_mm_extract_epi64(nnn,1))+2); 
+			xmm1	= _mm_load_pd(GBtab+(gmx_mm_extract_epi64(nnn,0))); 
+			xmm2	= _mm_load_pd(GBtab+(gmx_mm_extract_epi64(nnn,1))); 
+			xmm3	= _mm_load_pd(GBtab+(gmx_mm_extract_epi64(nnn,0))+2); 
+			xmm4	= _mm_load_pd(GBtab+(gmx_mm_extract_epi64(nnn,1))+2); 
 			
 			Y		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0)); 
 			F		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(1,1)); 
@@ -483,10 +464,10 @@ void nb_kernel430_sse2_double(int *           p_nri,
 			nnn     = _mm_slli_epi32(n0,3);
 			
 			/* Tabulated VdW interaction - dispersion */
-			xmm1	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
-			xmm2	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
-			xmm3	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
-			xmm4	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
+			xmm1	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
+			xmm2	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
+			xmm3	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
+			xmm4	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
 			
 			Y		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0)); /* Y1 Y2 */
 			F		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(1,1)); /* F1 F2 */
@@ -509,10 +490,10 @@ void nb_kernel430_sse2_double(int *           p_nri,
 			/* Tabulated VdW interaction - repulsion */
 			nnn     = _mm_add_epi32(nnn,four);
 			
-			xmm1	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
-			xmm2	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
-			xmm3	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
-			xmm4	= _mm_load_pd(VFtab+(_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
+			xmm1	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,0)));   /* Y1 F1 */
+			xmm2	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,1)));   /* Y2 F2 */
+			xmm3	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,0))+2); /* G1 H1 */
+			xmm4	= _mm_load_pd(VFtab+(gmx_mm_extract_epi64(nnn,1))+2); /* G2 H2 */
 			
 			Y		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0)); /* Y1 Y2 */
 			F		= _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(1,1)); /* F1 F2 */

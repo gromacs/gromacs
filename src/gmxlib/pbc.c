@@ -160,7 +160,7 @@ real max_cutoff2(int ePBC,matrix box)
 }
 
 /* this one is mostly harmless... */
-static bool bWarnedGuess=FALSE;
+static gmx_bool bWarnedGuess=FALSE;
 
 int guess_ePBC(matrix box)
 {
@@ -229,10 +229,10 @@ static int correct_box_elem(FILE *fplog,int step,tensor box,int v,int d)
     return shift;
 }
 
-bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph)
+gmx_bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph)
 {
     int  zy,zx,yx,i;
-    bool bCorrected;
+    gmx_bool bCorrected;
 
     /* check if the box still obeys the restrictions, if not, correct it */
     zy = correct_box_elem(fplog,step,box,ZZ,YY);
@@ -282,7 +282,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
     ivec bPBC;
     real d2old,d2new,d2new_c;
     rvec trial,pos;
-    bool bXY,bUse;
+    gmx_bool bXY,bUse;
     const char *ptr;
 
     pbc->ndim_ePBC = ePBC2npbcdim(ePBC);
@@ -491,7 +491,7 @@ void set_pbc(t_pbc *pbc,int ePBC,matrix box)
 }
 
 t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
-                  gmx_domdec_t *dd,bool bSingleDir,matrix box)
+                  gmx_domdec_t *dd,gmx_bool bSingleDir,matrix box)
 {
     ivec nc2;
     int  npbcdim,i;
@@ -526,7 +526,7 @@ void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
     int  i,j;
     rvec dx_start,trial;
     real d2min,d2trial;
-    bool bRot;
+    gmx_bool bRot;
 
     rvec_sub(x1,x2,dx);
 
@@ -875,7 +875,7 @@ void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx)
     int  i,j;
     dvec dx_start,trial;
     double d2min,d2trial;
-    bool bRot;
+    gmx_bool bRot;
 
     dvec_sub(x1,x2,dx);
 
@@ -968,7 +968,7 @@ void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx)
     }
 }
 
-bool image_rect(ivec xi,ivec xj,ivec box_size,real rlong2,int *shift,real *r2)
+gmx_bool image_rect(ivec xi,ivec xj,ivec box_size,real rlong2,int *shift,real *r2)
 {
     int 	m,t;
     int 	dx,b,b_2;
@@ -1000,7 +1000,7 @@ bool image_rect(ivec xi,ivec xj,ivec box_size,real rlong2,int *shift,real *r2)
     return TRUE;
 }
 
-bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
+gmx_bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
                      int *shift,real *r2)
 {
     int 	m,t;
@@ -1170,7 +1170,7 @@ int *compact_unitcell_edges()
         4,17, 5,11, 6,23, 7,13,
         8,20, 10,18, 12,16, 14,22 };
     int e,i,j;
-    bool bFirst = TRUE;
+    gmx_bool bFirst = TRUE;
 
     snew(edge,NCUCEDGE*2);
 

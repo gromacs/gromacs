@@ -29,10 +29,11 @@ add_library(gmxana
             gmx_editconf.c  gmx_genbox.c    gmx_genion.c    gmx_genconf.c   
             gmx_genpr.c     gmx_eneconv.c   gmx_vanhove.c   gmx_wheel.c     
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
-            gmx_membed.c    )
+            gmx_membed.c	gmx_pme_error.c	)
 
-target_link_libraries(gmxana md ${GMX_EXTRA_LIBRARIES})
-set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_BINARY_SUFFIX}")
+
+target_link_libraries(gmxana md gmx)
+set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION})
 
 # List of programs with single corresponding .c source file,
 # used to create build rules automatically.
@@ -49,9 +50,8 @@ set(GMX_TOOLS_PROGRAMS
     g_nmens g_order g_polystat g_potential g_rama g_rdf g_rms
     g_rmsf g_rotacf g_saltbr g_sas g_select g_sgangle g_sham g_sorient
     g_spol g_sdf g_spatial g_tcaf g_traj g_tune_pme g_vanhove
-    g_velacc g_clustsize g_mdmat g_wham g_kinetics g_sigeps g_bar
-    g_membed
-    )
+    g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
+    g_membed g_pme_error)
 
 
 
@@ -66,3 +66,5 @@ install(TARGETS ${GMX_TOOLS_PROGRAMS}
 	gmxana DESTINATION ${LIB_INSTALL_DIR}	
       	RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmxana.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig RENAME "libgmxana${GMX_LIBS_SUFFIX}.pc")

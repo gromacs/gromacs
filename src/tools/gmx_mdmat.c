@@ -163,7 +163,7 @@ int gmx_mdmat(int argc,char *argv[])
     "The output can be processed with xpm2ps to make a PostScript (tm) plot."
   };
   static real truncate=1.5;
-  static bool bAtom=FALSE;
+  static gmx_bool bAtom=FALSE;
   static int  nlevels=40;
   t_pargs pa[] = { 
     { "-t",   FALSE, etREAL, {&truncate},
@@ -193,7 +193,7 @@ int gmx_mdmat(int argc,char *argv[])
   int        i,j,nres,natoms,nframes,it,trxnat;
   t_trxstatus *status;
   int        nr0;
-  bool       bCalcN,bFrames;
+  gmx_bool       bCalcN,bFrames;
   real       t,ratio;
   char       title[256],label[234];
   t_rgb      rlo,rhi;
@@ -283,7 +283,7 @@ int gmx_mdmat(int argc,char *argv[])
   if (bFrames)
     out=opt2FILE("-frames",NFILE,fnm,"w");
   do {
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,trxnat,box,x);
     nframes++;
     calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat,ePBC,box);
     for (i=0; (i<nres); i++)

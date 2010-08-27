@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "statutil.h"
 #include "gmxfio.h"
-#include "gmxcpp.h"
 #include "names.h"
 #include "warninp.h"
 #include "gmx_fatal.h"
@@ -59,59 +58,25 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
 			char **cppopts,
 			warninp_t wi)
 {
-  /*FILE      *in;*/
-  gmx_cpp_t in;
+  FILE      *in;
   char      buf[STRLEN],lbuf[STRLEN],rbuf[STRLEN],warn_buf[STRLEN];
   char      *ptr,*cptr;
   t_inpfile *inp=NULL;
-  int       nin,lc,i,j,k,status;
+  int       nin,lc,i,j,k;
   /* setting cppopts from command-line options would be cooler */
-  char *cppopts_null[] = { NULL }; 
-  char **cppopts_given;
-  bool allow_override=FALSE;
+  gmx_bool allow_override=FALSE;
 
     
   if (debug)
     fprintf(debug,"Reading MDP file %s\n",fn);
-
-  if (!cppopts)
-    cppopts_given=cppopts;
-  else
-    cppopts_given=cppopts_null;
-
-  status = cpp_open_file(fn, &in, cppopts_given);
     
-  if (status != eCPP_OK)
-  {
-    sprintf(warn_buf, "%s", cpp_error(&in, status));
-    warning_error(wi,warn_buf);
-    *ninp = 0;
-    return NULL;
-  }
+  in = ffopen(fn, "r");
+
   nin = lc  = 0;
   do {
-    status = cpp_read_line(&in, STRLEN-1, buf);
-    set_warning_line(wi,cpp_cur_file(&in),cpp_cur_linenr(&in));
-    
-    if (status !=eCPP_OK)
-    {
-      if (status != eCPP_EOF)
-      {
-	sprintf(warn_buf, "%s", cpp_error(&in, status));
-	warning_error(wi,warn_buf);
-	*ninp = nin;
-	return inp;
-      }
-      else
-	ptr=0;
-    }
-    else
-    {
-      ptr=buf;
-    }
-    
-    
+    ptr = fgets2(buf,STRLEN-1,in);
     lc++;
+    set_warning_line(wi,fn,lc);
     if (ptr) {
       /* Strip comment */
       if ((cptr=strchr(buf,COMMENTSIGN)) != NULL)
@@ -150,14 +115,14 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
 	    int found_index;
 	    
 	    /* first check whether we hit the 'multiple_entries' option */
-	    if (strcasecmp_min(eMultentOpt_names[eMultentOptName], lbuf)==0) 
+	    if (gmx_strcasecmp_min(eMultentOpt_names[eMultentOptName], lbuf)==0) 
 	    {
 	      /* we now check whether to allow overrides from here or not */
-	      if (strcasecmp_min(eMultentOpt_names[eMultentOptNo], rbuf)==0)
+	      if (gmx_strcasecmp_min(eMultentOpt_names[eMultentOptNo], rbuf)==0)
 	      {
 		allow_override=FALSE;
 	      }
-	      else if (strcasecmp_min(eMultentOpt_names[eMultentOptLast], rbuf)==0)
+	      else if (gmx_strcasecmp_min(eMultentOpt_names[eMultentOptLast], rbuf)==0)
 	      {
 		allow_override=TRUE;
 	      }
@@ -213,7 +178,8 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
       }
     }
   } while (ptr);
-  cpp_close_file(&in);
+  
+  fclose(in);
 
   if (debug) {
     fprintf(debug,"Done reading MDP file, there were %d entries in there\n",
@@ -247,7 +213,7 @@ static void sort_inp(int ninp,t_inpfile inp[])
   qsort(inp,ninp,(size_t)sizeof(inp[0]),inp_comp);
 }
 
-void write_inpfile(const char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown,
+void write_inpfile(const char *fn,int ninp,t_inpfile inp[],gmx_bool bHaltOnUnknown,
 		   warninp_t wi)
 {
   FILE *out;
@@ -283,7 +249,7 @@ void replace_inp_entry(int ninp,t_inpfile *inp,const char *old_entry,const char 
   int  i;
   
   for(i=0; (i<ninp); i++) {
-    if (strcasecmp_min(old_entry,inp[i].name) == 0) {
+    if (gmx_strcasecmp_min(old_entry,inp[i].name) == 0) {
       if (new_entry) {
 	fprintf(stderr,"Replacing old mdp entry '%s' by '%s'\n",
 		inp[i].name,new_entry);
@@ -305,7 +271,7 @@ static int search_einp(int ninp, const t_inpfile *inp, const char *name)
   if (inp==NULL)
     return -1;
   for(i=0; i<ninp; i++)
-    if (strcasecmp_min(name,inp[i].name) == 0)
+    if (gmx_strcasecmp_min(name,inp[i].name) == 0)
       return i;
   return -1;
 }
@@ -319,7 +285,7 @@ static int get_einp(int *ninp,t_inpfile **inp,const char *name)
 /*  if (inp==NULL)
     return -1;
   for(i=0; (i<(*ninp)); i++)
-    if (strcasecmp_min(name,(*inp)[i].name) == 0)
+    if (gmx_strcasecmp_min(name,(*inp)[i].name) == 0)
       break;
   if (i == (*ninp)) {*/
   i=search_einp(*ninp, *inp, name);
@@ -459,7 +425,7 @@ int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
   }
   
   for(i=0; (defs[i] != NULL); i++)
-    if (strcasecmp_min(defs[i],(*inp)[ii].value) == 0)
+    if (gmx_strcasecmp_min(defs[i],(*inp)[ii].value) == 0)
       break;
   
   if (defs[i] == NULL) {

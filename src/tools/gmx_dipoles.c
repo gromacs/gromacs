@@ -71,12 +71,12 @@ typedef struct {
   real spacing,radius;
   real *elem;
   int  *count;
-  bool bPhi;
+  gmx_bool bPhi;
   int  nx,ny;
   real **cmap;
 } t_gkrbin;
 
-static t_gkrbin *mk_gkrbin(real radius,real rcmax,bool bPhi,int ndegrees)
+static t_gkrbin *mk_gkrbin(real radius,real rcmax,gmx_bool bPhi,int ndegrees)
 {
   t_gkrbin *gb;
   char *ptr;
@@ -350,11 +350,11 @@ static void print_gkrbin(const char *fn,t_gkrbin *gb,
   ffclose(fp);
 }
 
-bool read_mu_from_enx(ener_file_t fmu,int Vol,ivec iMu,rvec mu,real *vol,
+gmx_bool read_mu_from_enx(ener_file_t fmu,int Vol,ivec iMu,rvec mu,real *vol,
                       real *t, int nre,t_enxframe *fr)
 {
   int      i;
-  bool     bCont;
+  gmx_bool     bCont;
   char     buf[22];
 
   bCont = do_enx(fmu,fr);
@@ -583,7 +583,7 @@ static void dump_slab_dipoles(const char *fn,int idim,int nslice,
   do_view(oenv,fn,"-autoscale xy -nxy");
 }
 			    
-static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,bool bPairs)
+static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,gmx_bool bPairs)
 {
   int    i,j,k;
   double dc,dc1,d,n5,ddc1,ddc2,ddc3;
@@ -614,19 +614,19 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 		   const char *out_mtot,const char *out_eps,
                    const char *out_aver, const char *dipdist,
 		   const char *cosaver, const char *fndip3d,
-		   const char *fnadip,  bool bPairs,
+		   const char *fnadip,  gmx_bool bPairs,
 		   const char *corrtype,const char *corf,
-		   bool bGkr,     const char *gkrfn,
-		   bool bPhi,     int  *nlevels,  int ndegrees,
+		   gmx_bool bGkr,     const char *gkrfn,
+		   gmx_bool bPhi,     int  *nlevels,  int ndegrees,
 		   int  ncos,
 		   const char *cmap,    real rcmax,
-		   bool bQuad,    const char *quadfn,
-		   bool bMU,      const char *mufn,
+		   gmx_bool bQuad,    const char *quadfn,
+		   gmx_bool bMU,      const char *mufn,
 		   int  *gnx,     int  *molindex[],
 		   real mu_max,   real mu_aver,
 		   real epsilonRF,real temp,
 		   int  *gkatom,  int skip,
-		   bool bSlab,    int nslices,
+		   gmx_bool bSlab,    int nslices,
 		   const char *axtitle, const char *slabfn,
                    const output_env_t oenv)
 {
@@ -681,7 +681,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   real       rcut=0,t,t0,t1,dt,lambda,dd,rms_cos;
   rvec       dipaxis;
   matrix     box;
-  bool       bCorr,bTotal,bCont;
+  gmx_bool       bCorr,bTotal,bCont;
   double     M_diff=0,epsilon,invtel,vol_aver;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
   double     M[3],M2[3],M4[3],Gk=0,g_k=0;
@@ -878,7 +878,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 	M_av[m] = 0;
 	M_av2[m] = 0;
       }
-      gmx_rmpbc(gpbc,box,x,x);
+      gmx_rmpbc(gpbc,natom,box,x);
       
       muframelsq = gmx_stats_init();
       /* Begin loop of all molecules in frame */
@@ -1248,7 +1248,7 @@ int gmx_dipoles(int argc,char *argv[])
   };
   real mu_max=5, mu_aver=-1,rcmax=0;
   real epsilonRF=0.0, temp=300;
-  bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE,bPhi=FALSE;
+  gmx_bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE,bPhi=FALSE;
   const char *corrtype[]={NULL, "none", "mol", "molsep", "total", NULL};
   const char *axtitle="Z";
   int  nslices = 10;      /* nr of slices defined       */
@@ -1293,7 +1293,7 @@ int gmx_dipoles(int argc,char *argv[])
   int          nFF[2];
   atom_id      **grpindex;
   char         **grpname=NULL;
-  bool         bCorr,bQuad,bGkr,bMU,bSlab;  
+  gmx_bool         bCorr,bQuad,bGkr,bMU,bSlab;  
   t_filenm fnm[] = {
     { efEDR, "-en", NULL,         ffOPTRD },
     { efTRX, "-f", NULL,           ffREAD },

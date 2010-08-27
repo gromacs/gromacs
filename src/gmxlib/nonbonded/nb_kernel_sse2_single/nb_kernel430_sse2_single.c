@@ -32,17 +32,6 @@
 #define _mm_extract_epi32(x, imm) \
 _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
-static inline __m128
-my_invrsq_ps(__m128 x)
-{
-	const __m128 three = {3.0f, 3.0f, 3.0f, 3.0f};
-	const __m128 half  = {0.5f, 0.5f, 0.5f, 0.5f};
-	
-	__m128 t1 = _mm_rsqrt_ps(x);
-	
-	return gmx_mm_castps_ps128(_mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1))))));
-}
-
 void nb_kernel430_sse2_single(int *           p_nri,
 						   int *           iinr,
 						   int *           jindex,
@@ -225,7 +214,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			
 			rsq     = _mm_add_ps(t1,t2);
 			rsq     = _mm_add_ps(rsq,t3);
-			rinv    = my_invrsq_ps(rsq);
+			rinv    = gmx_mm_invsqrt_ps(rsq);
 			
 			xmm1    = _mm_load_ss(invsqrta+jnr); 
 			xmm2    = _mm_load_ss(invsqrta+jnr2);
@@ -642,7 +631,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			rsq     = _mm_add_ps(t1,t2);
 			rsq     = _mm_add_ps(rsq,t3);
 			
-			rinv    = my_invrsq_ps(rsq);
+			rinv    = gmx_mm_invsqrt_ps(rsq);
 			
 			isaprod = _mm_mul_ps(isai,isaj);
 			qq      = _mm_mul_ps(iq,q);
@@ -1088,7 +1077,7 @@ void nb_kernel430nf_sse2_single(
             dy11             = iy1 - jy1;      
             dz11             = iz1 - jz1;      
             rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv11           = gmx_invsqrt(rsq11);
+            rinv11           = gmx_mm_invsqrt(rsq11);
             isaj             = invsqrta[jnr];  
             isaprod          = isai*isaj;      
             qq               = iq*charge[jnr]; 

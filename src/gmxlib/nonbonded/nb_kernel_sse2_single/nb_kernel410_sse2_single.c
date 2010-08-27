@@ -601,10 +601,10 @@ void nb_kernel410_sse2_single(int *           p_nri,
         }
         
         dvdasum = _mm_mul_ps(dvdasum, _mm_mul_ps(isai,isai));
-		gmx_mm_update_iforce_1atom_ps(fix,fiy,fiz,faction+ii3,fshift+is3);
+		gmx_mm_update_iforce_1atom_ps(&fix,&fiy,&fiz,faction+ii3,fshift+is3);
 		
         ggid             = gid[n];         
-		gmx_mm_update_4pot_ps(vctot,vc+ggid,vvdwtot,vvdw+ggid,vgbtot,gpol+ggid,dvdasum,dvda+ii);
+	GMX_MM_UPDATE_4POT_PS(vctot,vc+ggid,vvdwtot,vvdw+ggid,vgbtot,gpol+ggid,dvdasum,dvda+ii);
     }
 	
 	*outeriter       = nri;            

@@ -85,13 +85,13 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
                              rvec clust_com,matrix box)
 {
     const   real tol=1e-3;
-    bool    bChanged;
+    gmx_bool    bChanged;
     int     m,i,j,j0,j1,jj,ai,iter,is;
     real    fac,Isq,min_dist2;
     rvec    dx,ddx,xtest,xrm,box_center;
     int     nmol,nmol_cl,imol_center;
     atom_id *molind;
-    bool    *bMol,*bTmp;
+    gmx_bool    *bMol,*bTmp;
     rvec    *m_com,*m_shift,m0;
     t_pbc   pbc;
 
@@ -415,7 +415,7 @@ void do_trunc(const char *fn, real t0)
 {
     t_fileio     *in;
     FILE         *fp;
-    bool         bStop,bOK;
+    gmx_bool         bStop,bOK;
     t_trnheader  sh;
     gmx_off_t    fpos;
     char         yesno[256];
@@ -629,14 +629,14 @@ int gmx_trjconv(int argc,char *argv[])
         { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "transxy",
             "progressive", NULL };
 
-    static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
-    static bool  bCenter=FALSE;
+    static gmx_bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
+    static gmx_bool  bCenter=FALSE;
     static int   skip_nr=1,ndec=3,nzero=0;
     static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
     static rvec  newbox = {0,0,0}, shift = {0,0,0}, trans = {0,0,0};
     static char  *exec_command=NULL;
     static real  dropunder=0,dropover=0;
-    static bool  bRound=FALSE;
+    static gmx_bool  bRound=FALSE;
 
     t_pargs
         pa[] =
@@ -753,22 +753,22 @@ int gmx_trjconv(int argc,char *argv[])
     int          ndrop=0,ncol,drop0=0,drop1=0,dropuse=0;
     double       **dropval;
     real         tshift=0,t0=-1,dt=0.001,prec;
-    bool         bFit,bFitXY,bPFit,bReset;
+    gmx_bool         bFit,bFitXY,bPFit,bReset;
     int          nfitdim;
     gmx_rmpbc_t  gpbc=NULL;
-    bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
-    bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
-    bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
-    bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
-    bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
-    bool         bWriteFrame,bSplitHere;
+    gmx_bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
+    gmx_bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
+    gmx_bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
+    gmx_bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
+    gmx_bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
+    gmx_bool         bWriteFrame,bSplitHere;
     const char   *top_file,*in_file,*out_file=NULL;
     char         out_file2[256],*charpt;
     char         *outf_base=NULL;
     const char   *outf_ext=NULL;
     char         top_title[256],title[256],command[256],filemode[5];
     int          xdr=0;
-    bool         bWarnCompact=FALSE;
+    gmx_bool         bWarnCompact=FALSE;
     const char  *warn;
     output_env_t oenv;
 
@@ -1005,7 +1005,7 @@ int gmx_trjconv(int argc,char *argv[])
             /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
             if (bRmPBC)
-	      gmx_rmpbc(gpbc,top_box,xp,xp);
+	      gmx_rmpbc(gpbc,top.atoms.nr,top_box,xp);
             copy_rvec(xp[index[0]],x_shift);
             reset_x_ndim(nfitdim,ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
             rvec_dec(x_shift,xp[index[0]]);
@@ -1196,7 +1196,7 @@ int gmx_trjconv(int argc,char *argv[])
                     /* Now modify the coords according to the flags,
 	     for normal fit, this is only done for output frames */
                     if (bRmPBC)
-		      gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+		      gmx_rmpbc_trxfr(gpbc,&fr);
 
                     reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
                     do_fit(natoms,w_rls,xp,fr.x);
@@ -1274,7 +1274,7 @@ int gmx_trjconv(int argc,char *argv[])
                                for PFit we did this already! */
 
                             if (bRmPBC)
-			      gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+			      gmx_rmpbc_trxfr(gpbc,&fr);
 
                             if (bReset) {
                                 reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);

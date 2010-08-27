@@ -106,7 +106,7 @@ int gmx_trjorder(int argc,char *argv[])
   };
   static int na=3,ref_a=1;
   static real rcut=0;
-  static bool bCOM=FALSE,bZ=FALSE;
+  static gmx_bool bCOM=FALSE,bZ=FALSE;
   t_pargs pa[] = {
     { "-na", FALSE, etINT,  {&na},
       "Number of atoms in a molecule" },
@@ -122,7 +122,7 @@ int gmx_trjorder(int argc,char *argv[])
   FILE       *fp;
   t_trxstatus *out;
   t_trxstatus *status;
-  bool       bNShell,bPDBout;
+  gmx_bool       bNShell,bPDBout;
   t_topology top;
   int        ePBC;
   rvec       *x,*xsol,xcom,dx;
@@ -214,7 +214,7 @@ int gmx_trjorder(int argc,char *argv[])
   }
   gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   do {
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
     set_pbc(&pbc,ePBC,box);
 
     if (ref_a == -1) {

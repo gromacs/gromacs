@@ -31,6 +31,10 @@
 /*! \internal \file
  * \brief Implementation of functions in selhelp.c.
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <macros.h>
 #include <string2.h>
 #include <wman.h>
@@ -109,7 +113,7 @@ static const char *help_eval[] = {
     "remaining expressions are not evaluated at all.",
     "This can be used to optimize the selections: you should write the",
     "most restrictive and/or the most inexpensive expressions first in",
-    "boolean expressions.",
+    "gmx_boolean expressions.",
     "The relative ordering between dynamic and static expressions does not",
     "matter: all static expressions are evaluated only once, before the first",
     "frame, and the result becomes the leftmost expression.[PAR]",
@@ -261,7 +265,7 @@ static const char *help_syntax[] = {
     "1. An expression like [TT]NUM_EXPR1 < NUM_EXPR2[tt] evaluates to an",
     "[TT]ATOM_EXPR[tt] that selects all the atoms for which the comparison",
     "is true.[BR]",
-    "2. Atom expressions can be combined with boolean operations such as",
+    "2. Atom expressions can be combined with gmx_boolean operations such as",
     "[TT]not ATOM_EXPR[tt], [TT]ATOM_EXPR and ATOM_EXPR[tt], or",
     "[TT]ATOM_EXPR or ATOM_EXPR[tt]. Parentheses can be used to alter the",
     "evaluation order.[BR]",
@@ -312,7 +316,7 @@ static const t_selection_help_item helpitems[] = {
  */
 static void
 print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
-                   bool bMod)
+                   gmx_bool bMod)
 {
     gmx_sel_symrec_t *symbol;
 
@@ -320,7 +324,7 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
     while (symbol)
     {
         gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
-        bool                 bShow;
+        gmx_bool                 bShow;
         bShow = (method->type == type)
             && ((bMod && (method->flags & SMETH_MODIFIER))
                 || (!bMod && !(method->flags & SMETH_MODIFIER)));

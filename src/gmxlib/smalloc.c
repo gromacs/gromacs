@@ -85,7 +85,7 @@ static void log_action(int bMal,const char *what,const char *file,int line,
   if (bytes >= 1024 || bytes <= -1024) {
     char *fname=NULL;
     if (file) {
-      fname = strrchr(file,'/');
+      fname = strrchr(file,DIR_SEPARATOR);
       if (fname) {
 	fname++;
       } else {
@@ -102,6 +102,13 @@ static void log_action(int bMal,const char *what,const char *file,int line,
 }
 #endif
 
+static char *gmx_large_int_str(gmx_large_int_t i,char *buf)
+{
+  sprintf(buf,gmx_large_int_pfmt,i);
+
+  return buf;
+}
+
 void *save_malloc(const char *name,const char *file,int line,size_t size)
 {
   void *p;
@@ -111,10 +118,14 @@ void *save_malloc(const char *name,const char *file,int line,size_t size)
     p=NULL;
   else
     {
-      if ((p=malloc(size))==NULL) 
+      if ((p=malloc(size))==NULL) {
+	char cbuf[22];
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "Not enough memory. Failed to malloc %s bytes for %" gmx_large_int_fmt "\n(called from file %s, line %d)",
-		  name,(gmx_large_int_t)size,file,line);
+		  "Not enough memory. Failed to malloc %s bytes for %s\n"
+		  "(called from file %s, line %d)",
+		  gmx_large_int_str((gmx_large_int_t)size,cbuf),
+		  name,file,line);
+      }
       (void) memset(p,0,size);
     }
 #ifdef DEBUG
@@ -198,11 +209,14 @@ void *save_realloc(const char *name,const char *file,int line,void *ptr,
 	p=malloc((size_t)size); 
       else 
 	p=realloc(ptr,(size_t)size);
-      if (p == NULL) 
+      if (p == NULL) {
+	char cbuf[22];
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "Not enough memory. Failed to realloc %"gmx_large_int_fmt
-		  " bytes for %s, %s=%x\n(called from file %s, line %d)",
-		  (gmx_large_int_t)size,name,name,ptr,file,line);
+		  "Not enough memory. Failed to realloc %s bytes for %s, %s=%x\n"
+		  "(called from file %s, line %d)",
+		  gmx_large_int_str((gmx_large_int_t)size,cbuf),
+		  name,name,ptr,file,line);
+      }
 #ifdef DEBUG
       log_action(1,name,file,line,1,size,p);
 #endif
@@ -275,7 +289,7 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
 {
     void **aligned=NULL;
     void *malloced=NULL;
-    bool allocate_fail;
+    gmx_bool allocate_fail;
 
     if (alignment == 0)
     {

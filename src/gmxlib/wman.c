@@ -167,32 +167,38 @@ static void mynum(char *buf,int n)
     sprintf(buf,"0%1d",n);
 }
 
-static char *mydate(char buf[], int maxsize,bool bWiki)
+static char *mydate(char buf[], int maxsize,gmx_bool bWiki)
 {
   const char *mon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
 			 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
   const char *day[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
   const char *num[] = { "01", "02", "03", "04", "05", "06","07", "08", "09" }; 
   time_t now;
-  struct tm *tm;
+  struct tm tm;
   
-  (void) time(&now);
-  tm = localtime(&now);
+  time(&now);
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+  /* Native windows */
+  localtime_s(&tm,&now);
+#else
+  localtime_r(&now,&tm);
+#endif
+
   /* subtract one from maxsize, so we have room for \0. */
   if (bWiki) {
     char dd[8],mm[8],ss[8],hh[8],mn[8];
     
-    mynum(dd,tm->tm_mday);
-    mynum(mm,tm->tm_mon);
-    mynum(ss,tm->tm_sec);
-    mynum(hh,tm->tm_hour);
-    mynum(mn,tm->tm_min);
+    mynum(dd,tm.tm_mday);
+    mynum(mm,tm.tm_mon);
+    mynum(ss,tm.tm_sec);
+    mynum(hh,tm.tm_hour);
+    mynum(mn,tm.tm_min);
     sprintf(buf,"%4d-%2s-%2sT%2s:%2s:%2sZ",
-	     tm->tm_year+1900,mm,dd,hh,mn,ss);
+	     tm.tm_year+1900,mm,dd,hh,mn,ss);
   }
   else
-    sprintf(buf,"%s %d %s %d",day[tm->tm_wday],tm->tm_mday,
-	     mon[tm->tm_mon],tm->tm_year+1900);
+    sprintf(buf,"%s %d %s %d",day[tm.tm_wday],tm.tm_mday,
+	     mon[tm.tm_mon],tm.tm_year+1900);
   
   return buf;
 }
@@ -268,7 +274,7 @@ static char *repallww(const char *s,int nsr,const t_sandr sa[])
   return buf1;
 }
 
-static char *html_xref(char *s,const char *program, t_linkdata *links,bool bWiki)
+static char *html_xref(char *s,const char *program, t_linkdata *links,gmx_bool bWiki)
 {
   char   buf[256],**filestr;
   int    i,j,n;
@@ -278,7 +284,7 @@ static char *html_xref(char *s,const char *program, t_linkdata *links,bool bWiki
     links->nsr=n;
     snew(links->sr,n);
     for(i=0,j=0; (i<n); i++) {
-      if (!program || (strcasecmp(program,filestr[i])  != 0)) {
+      if (!program || (gmx_strcasecmp(program,filestr[i])  != 0)) {
 	links->sr[j].search=strdup(filestr[i]);
 	if (bWiki)
 	  sprintf(buf,"[[%s]]",filestr[i]);
@@ -511,7 +517,7 @@ char *check_tty(const char *s)
 
 void
 print_tty_formatted(FILE *out, int nldesc, const char **desc,int indent,
-                    t_linkdata *links,const char *program,bool bWiki)
+                    t_linkdata *links,const char *program,gmx_bool bWiki)
 {
   char *buf;
   char *temp;
@@ -546,7 +552,7 @@ static void write_ttyman(FILE *out,
 			 int nldesc,const char **desc,
 			 int nfile,t_filenm *fnm,
 			 int npargs,t_pargs *pa,
-			 int nbug,const char **bugs,bool bHeader,
+			 int nbug,const char **bugs,gmx_bool bHeader,
 			 t_linkdata *links)
 {
   int i;
@@ -582,7 +588,7 @@ static void write_ttyman(FILE *out,
 }
 
 static void pr_html_files(FILE *out,int nfile,t_filenm fnm[],
-			  const char *program,t_linkdata *links,bool bWiki)
+			  const char *program,t_linkdata *links,gmx_bool bWiki)
 { 
   int  i;
   char link[10],tmp[255];
@@ -631,7 +637,7 @@ static void write_wikiman(FILE *out,
 			  int nldesc,const char **desc,
 			  int nfile,t_filenm *fnm,
 			  int npargs,t_pargs *pa,
-			  int nbug,const char **bugs,bool bHeader,
+			  int nbug,const char **bugs,gmx_bool bHeader,
 			  t_linkdata *links)
 {
   int i;
@@ -930,7 +936,7 @@ static void write_py(FILE *out,const char *program,
 		     int nbug,const char **bugs,
 		     t_linkdata *links)
 {
-  bool bHidden;
+  gmx_bool bHidden;
   const char *cls = program;
   char *tmp;
   int  i,j;
@@ -979,7 +985,7 @@ static void write_py(FILE *out,const char *program,
       break;
     case etSTR:
     case etBOOL:
-      fprintf(out,"        flags.append(pca_bool(\"%s\",\"%s\",%d,%d))\n",
+      fprintf(out,"        flags.append(pca_gmx_bool(\"%s\",\"%s\",%d,%d))\n",
 	      pa[i].option,pa[i].desc,*pa[i].u.b,is_hidden(&(pa[i])));
       break;
     case etRVEC:
@@ -1014,7 +1020,7 @@ void write_man(FILE *out,const char *mantp,
 	       int nfile,t_filenm *fnm,
 	       int npargs,t_pargs *pa,
 	       int nbug,const char **bugs,
-	       bool bHidden)
+	       gmx_bool bHidden)
 {
   const char *pr;
   int     i,npar;
@@ -1042,7 +1048,7 @@ void write_man(FILE *out,const char *mantp,
       }
   }
   
-  if ((pr=strrchr(program,'/')) == NULL)
+  if ((pr=strrchr(program,DIR_SEPARATOR)) == NULL)
     pr=program;
   else
     pr+=1;

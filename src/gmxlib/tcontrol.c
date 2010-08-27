@@ -50,7 +50,7 @@
 /* Globals for trajectory input */
 typedef struct {
   real t;
-  bool bSet;
+  gmx_bool bSet;
 } t_timecontrol;
 
 static t_timecontrol timecontrol[TNR] = {
@@ -81,9 +81,9 @@ static const t_timeconvert timeconvert[] = {
     { 0,		   NULL,  NULL       }
 };
 
-bool bTimeSet(int tcontrol)
+gmx_bool bTimeSet(int tcontrol)
 {
-    bool ret;
+    gmx_bool ret;
 
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&tc_mutex);

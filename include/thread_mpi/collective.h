@@ -44,7 +44,6 @@ files.
  * 
 */
 
-#include "tmpi.h"
 
 #ifdef __cplusplus
 extern "C" 

@@ -36,17 +36,13 @@
 #ifndef _index_h
 #define _index_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" { 
 #endif
 
-extern void check_index(char *gname,int n,atom_id index[],
+void check_index(char *gname,int n,atom_id index[],
 			char *traj,int natoms);
 /* Checks if any index is smaller than zero or larger than natoms,
  * if so a fatal_error is given with the gname (if gname=NULL, "Index" is used)
@@ -91,7 +87,7 @@ typedef struct {
   atom_id  *inv_clust;
 } t_cluster_ndx;
 
-extern t_cluster_ndx *cluster_index(FILE *fplog,const char *ndx);
+t_cluster_ndx *cluster_index(FILE *fplog,const char *ndx);
   
 typedef struct {
   int n;
@@ -118,13 +114,13 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
                              const char ***       p_typenames,
                              int *                ntypes);
 
-bool 
+gmx_bool 
 gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm);
 
-bool 
+gmx_bool 
 gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm);
 
-bool 
+gmx_bool 
 gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm);
 
 
@@ -132,22 +128,22 @@ gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm);
 
 
 
-extern t_blocka *new_blocka(void);
+t_blocka *new_blocka(void);
 /* allocate new block */
 
-extern void write_index(const char *outf, t_blocka *b,char **gnames);
+void write_index(const char *outf, t_blocka *b,char **gnames);
 /* Writes index blocks to outf (writes an indexfile) */
 
 void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name);
 /* Ads group a with name name to block b and namelist gnames */ 
 
-extern void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
-                    bool bASK,bool bVerb);
+void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
+                    gmx_bool bASK,gmx_bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.
  */
 
-extern int find_group(char s[], int ngrps, char **grpname);
+int find_group(char s[], int ngrps, char **grpname);
 
 
 #ifdef __cplusplus

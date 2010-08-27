@@ -32,9 +32,6 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "simple.h"
 
@@ -54,14 +51,14 @@ typedef struct {
  int           QMmethod;       /* see enums.h for all methods       */
  int           QMbasis;        /* see enums.h for all bases         */
  int           nelectrons;     /* total number of elecs in QM region*/
- bool          bTS;            /* Optimize a TS, only steep, no md  */
- bool          bOPT;          /* Optimize QM subsys, only steep, no md  */
- bool          *frontatoms;   /* qm atoms on the QM side of a QM-MM bond */
+ gmx_bool          bTS;            /* Optimize a TS, only steep, no md  */
+ gmx_bool          bOPT;          /* Optimize QM subsys, only steep, no md  */
+ gmx_bool          *frontatoms;   /* qm atoms on the QM side of a QM-MM bond */
  /* Gaussian specific stuff */
  int           nQMcpus;        /* no. of CPUs used for the QM calc. */
  int           QMmem;          /* memory for the gaussian calc.     */
  int           accuracy;       /* convergence criterium (E(-x))     */
- bool          cpmcscf;        /* using cpmcscf(l1003)*/
+ gmx_bool          cpmcscf;        /* using cpmcscf(l1003)*/
  char          *gauss_dir;
  char          *gauss_exe;
  char          *devel_dir;
@@ -69,7 +66,7 @@ typedef struct {
  real          *c6;
  real          *c12;
  /* Surface hopping stuff */
- bool          bSH;            /* surface hopping (diabatic only)   */
+ gmx_bool          bSH;            /* surface hopping (diabatic only)   */
  real          SAon;           /* at which energy gap the SA starts */
  real          SAoff;          /* at which energy gap the SA stops  */
  int           SAsteps;        /* stepwise switchinng on the SA     */

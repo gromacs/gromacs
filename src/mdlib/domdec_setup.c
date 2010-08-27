@@ -60,12 +60,12 @@ static int factorize(int n,int **fac,int **mfac)
 	return ndiv;
 }
 
-static bool fits_pme_ratio(int nnodes,int npme,float ratio)
+static gmx_bool fits_pme_ratio(int nnodes,int npme,float ratio)
 {
     return ((double)npme/(double)nnodes > 0.95*ratio); 
 }
 
-static bool fits_pp_pme_perf(FILE *fplog,
+static gmx_bool fits_pp_pme_perf(FILE *fplog,
                              t_inputrec *ir,matrix box,gmx_mtop_t *mtop,
                              int nnodes,int npme,float ratio)
 {
@@ -236,7 +236,7 @@ real comm_box_frac(ivec dd_nc,real cutoff,gmx_ddbox_t *ddbox)
     return comm_vol;
 }
 
-static bool inhomogeneous_z(const t_inputrec *ir)
+static gmx_bool inhomogeneous_z(const t_inputrec *ir)
 {
     return ((EEL_PME(ir->coulombtype) || ir->coulombtype==eelEWALD) &&
             ir->ePBC==epbcXYZ && ir->ewald_geometry==eewg3DC);
@@ -330,17 +330,25 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     {
         for(j=i+1; j<DIM; j++)
         {
-            /* Check if dimension i and j are equivalent,
-             * both for PME and for the box size.
-             * The XX/YY check is a bit compact. If nc[YY]==npme[YY]
-             * this means the swapped nc has nc[XX]=npme[XX],
+            /* Check if the box size is nearly identical,
+             * in that case we prefer nx > ny  and ny > nz.
+             */
+            if (fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
+            {
+                /* The XX/YY check is a bit compact. If nc[YY]==npme[YY]
+             * this means the swapped nc has nc[XX]==npme[XX],
              * and we can also swap X and Y for PME.
              */
-            if (!((i == XX && j == YY && npme[YY] > 1 && nc[YY] != npme[YY]) ||
-                  (i == YY && j == ZZ && npme[YY] > 1)) &&
-                fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
-            {
-                return -1;
+                /* Check if dimension i and j are equivalent for PME.
+                 * For x/y: if nc[YY]!=npme[YY], we can not swap x/y
+                 * For y/z: we can not have PME decomposition in z
+                 */
+                if (npme_tot <= 1 ||
+                    !((i == XX && j == YY && nc[YY] != npme[YY]) ||
+                      (i == YY && j == ZZ && npme[YY] > 1)))
+                {
+                    return -1;
+                }
             }
         }
     }
@@ -478,16 +486,16 @@ static void assign_factors(gmx_domdec_t *dd,
 
 static real optimize_ncells(FILE *fplog,
                             int nnodes_tot,int npme_only,
-                            bool bDynLoadBal,real dlb_scale,
+                            gmx_bool bDynLoadBal,real dlb_scale,
                             gmx_mtop_t *mtop,matrix box,gmx_ddbox_t *ddbox,
                             t_inputrec *ir,
                             gmx_domdec_t *dd,
                             real cellsize_limit,real cutoff,
-                            bool bInterCGBondeds,bool bInterCGMultiBody,
+                            gmx_bool bInterCGBondeds,gmx_bool bInterCGMultiBody,
                             ivec nc)
 {
     int npp,npme,ndiv,*div,*mdiv,d,nmax;
-    bool bExcl_pbcdx;
+    gmx_bool bExcl_pbcdx;
     float pbcdxr;
     real limit;
     ivec itry;
@@ -595,9 +603,9 @@ static real optimize_ncells(FILE *fplog,
 real dd_choose_grid(FILE *fplog,
                     t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
                     gmx_mtop_t *mtop,matrix box,gmx_ddbox_t *ddbox,
-                    bool bDynLoadBal,real dlb_scale,
+                    gmx_bool bDynLoadBal,real dlb_scale,
                     real cellsize_limit,real cutoff_dd,
-                    bool bInterCGBondeds,bool bInterCGMultiBody)
+                    gmx_bool bInterCGBondeds,gmx_bool bInterCGMultiBody)
 {
     int  npme,nkx,nky;
     real limit;

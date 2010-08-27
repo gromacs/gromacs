@@ -56,11 +56,11 @@
 typedef struct {
   unsigned long mode;
   int  nrestart,nout,P,fitfn,nskip;
-  bool bFour,bNormalize;
+  gmx_bool bFour,bNormalize;
   real tbeginfit,tendfit;
 } t_acf;
 
-static bool  bACFinit = FALSE;
+static gmx_bool  bACFinit = FALSE;
 static t_acf acf;
 
 enum { enNorm, enCos, enSin };
@@ -78,7 +78,7 @@ int sffn2effn(const char **sffn)
 }
 
 static void low_do_four_core(int nfour,int nframes,real c1[],real cfour[],
-			     int nCos,bool bPadding)
+			     int nCos,gmx_bool bPadding)
 {
   int  i=0;
   real aver,*ans;
@@ -239,7 +239,7 @@ void normalize_acf(int nout,real corr[])
   }
 }
 
-void average_acf(bool bVerbose,int n,int nitem,real **c1)
+void average_acf(gmx_bool bVerbose,int n,int nitem,real **c1)
 {
   real c0;
   int  i,j;
@@ -505,13 +505,13 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     c1[j] = csum[j]/(real)(nframes-j);
 }
 
-real fit_acf(int ncorr,int fitfn,const output_env_t oenv,bool bVerbose,
+real fit_acf(int ncorr,int fitfn,const output_env_t oenv,gmx_bool bVerbose,
 	     real tbeginfit,real tendfit,real dt,real c1[],real *fit)
 {
   real    fitparm[3];
   real    tStart,tail_corr,sum,sumtot=0,ct_estimate,*sig;
   int     i,j,jmax,nf_int;
-  bool    bPrint;
+  gmx_bool    bPrint;
 
   bPrint = bVerbose || bDebugMode();
 
@@ -588,8 +588,8 @@ real fit_acf(int ncorr,int fitfn,const output_env_t oenv,bool bVerbose,
 void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
 		     int nframes,int nitem,int nout,real **c1,
 		     real dt,unsigned long mode,int nrestart,
-		     bool bAver,bool bNormalize,
-		     bool bVerbose,real tbeginfit,real tendfit,
+		     gmx_bool bAver,gmx_bool bNormalize,
+		     gmx_bool bVerbose,real tbeginfit,real tendfit,
 		     int eFitFn,int nskip)
 {
   FILE    *fp,*gp=NULL;
@@ -597,7 +597,7 @@ void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
   real    *csum;
   real    *ctmp,*fit;
   real    c0,sum,Ct2av,Ctav;
-  bool    bFour = acf.bFour;
+  gmx_bool    bFour = acf.bFour;
  
   /* Check flags and parameters */ 
   nout = get_acfnout();
@@ -775,7 +775,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 
 void do_autocorr(const char *fn,const output_env_t oenv,const char *title,
 		 int nframes,int nitem,real **c1,
-		 real dt,unsigned long mode,bool bAver)
+		 real dt,unsigned long mode,gmx_bool bAver)
 {
   if (!bACFinit) {
     printf("ACF data structures have not been initialised. Call add_acf_pargs\n");

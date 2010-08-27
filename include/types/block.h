@@ -35,9 +35,6 @@
 #ifndef _block_h
 #define _block_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "idef.h"
 
@@ -45,7 +42,14 @@
 extern "C" {
 #endif
 
+/* the block structure points into an array (usually of atom_ids).
+   It is a list of starting indices for objects of consecutive ids, such
+   as molecules. 
+   For example, if this block denotes molecules, then the first molecule
+   ranges from index[0] to index[1]-1 in the atom list.
 
+   This makes the mapping from atoms to molecules O(Nmolecules) instead
+   of O(Natoms) in size.  */
 typedef struct {
   int nr;			/* The number of blocks			*/
   atom_id *index;		/* Array of indices (dim: nr+1) 	*/

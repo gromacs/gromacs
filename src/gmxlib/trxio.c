@@ -73,7 +73,7 @@ struct t_trxstatus
     eFileFormat eFF;
     int         NATOMS;
     double      DT,BOX[3];
-    bool        bReadBox;
+    gmx_bool        bReadBox;
 };
 
 static void initcount(t_trxstatus *status)
@@ -106,7 +106,7 @@ static void printcount_(t_trxstatus *status, const output_env_t oenv,
 }
 
 static void printcount(t_trxstatus *status, const output_env_t oenv,real t,
-                       bool bSkip)
+                       gmx_bool bSkip)
 {
   status->__frame++;
   printcount_(status, oenv,bSkip ? "Skipping frame" : "Reading frame",t);
@@ -144,7 +144,7 @@ t_fileio *trx_get_fileio(t_trxstatus *status)
 
 
 
-void clear_trxframe(t_trxframe *fr,bool bFirst)
+void clear_trxframe(t_trxframe *fr,gmx_bool bFirst)
 {
   fr->not_ok  = 0;
   fr->bTitle  = FALSE;
@@ -391,10 +391,10 @@ t_trxstatus *open_trx(const char *outfile,const char *filemode)
     return stat;
 }
 
-static bool gmx_next_frame(t_trxstatus *status,t_trxframe *fr)
+static gmx_bool gmx_next_frame(t_trxstatus *status,t_trxframe *fr)
 {
   t_trnheader sh;
-  bool bOK,bRet;
+  gmx_bool bOK,bRet;
   
   bRet = FALSE;
 
@@ -515,7 +515,7 @@ static void choose_ff(FILE *fp)
   }
 }
 
-static bool do_read_xyz(t_trxstatus *status, FILE *fp,int natoms,
+static gmx_bool do_read_xyz(t_trxstatus *status, FILE *fp,int natoms,
                         rvec x[],matrix box)
 {
   int    i,m;
@@ -542,7 +542,7 @@ static bool do_read_xyz(t_trxstatus *status, FILE *fp,int natoms,
   return TRUE;
 }
 
-static bool xyz_next_x(t_trxstatus *status, FILE *fp, const output_env_t oenv,
+static gmx_bool xyz_next_x(t_trxstatus *status, FILE *fp, const output_env_t oenv,
                        real *t, int natoms, rvec x[], matrix box)
      /* Reads until a new x can be found (return TRUE)
       * or eof (return FALSE)
@@ -597,7 +597,7 @@ static int xyz_first_x(t_trxstatus *status, FILE *fp, const output_env_t oenv,
   return status->NATOMS;
 }
 
-static bool pdb_next_x(t_trxstatus *status, FILE *fp,t_trxframe *fr)
+static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp,t_trxframe *fr)
 {
   t_atoms   atoms;
   matrix    boxpdb;
@@ -666,11 +666,11 @@ static int pdb_first_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
   return fr->natoms;
 }
 
-bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe *fr)
+gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe *fr)
 {
   real pt;
   int  ct;
-  bool bOK,bRet,bMissingData=FALSE,bSkip=FALSE;
+  gmx_bool bOK,bRet,bMissingData=FALSE,bSkip=FALSE;
   int dummy=0;
 
   bRet = FALSE;
@@ -776,7 +776,7 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
                      const char *fn,t_trxframe *fr,int flags)
 {
   t_fileio *fio;
-  bool bFirst,bOK;
+  gmx_bool bFirst,bOK;
   int dummy=0;
 
   clear_trxframe(fr,TRUE);
@@ -903,10 +903,10 @@ int read_first_x(const output_env_t oenv,t_trxstatus **status,const char *fn,
   return (*status)->xframe->natoms;
 }
 
-bool read_next_x(const output_env_t oenv, t_trxstatus *status,real *t, 
+gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status,real *t, 
                  int natoms, rvec x[], matrix box)
 {
-  bool bRet;
+  gmx_bool bRet;
  
   status->xframe->x= x;
   /*xframe[status].x = x;*/
@@ -920,6 +920,11 @@ bool read_next_x(const output_env_t oenv, t_trxstatus *status,real *t,
 void close_trj(t_trxstatus *status)
 {
     gmx_fio_close(status->fio);
+    /* The memory in status->xframe is lost here,
+     * but the read_first_x/read_next_x functions are deprecated anyhow.
+     * read_first_frame/read_next_frame and close_trx should be used.
+     */
+    sfree(status);
 }
 
 void rewind_trj(t_trxstatus *status)
@@ -954,11 +959,11 @@ int read_first_v(const output_env_t oenv, t_trxstatus **status,const char *fn,
   return fr.natoms;
 }
 
-bool read_next_v(const output_env_t oenv,t_trxstatus *status,real *t,
+gmx_bool read_next_v(const output_env_t oenv,t_trxstatus *status,real *t,
                  int natoms,rvec v[], matrix box)
 {
   t_trxframe fr;
-  bool bRet;
+  gmx_bool bRet;
 
   clear_trxframe(&fr,TRUE);
   fr.flags = TRX_NEED_V;

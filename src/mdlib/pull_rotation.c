@@ -206,7 +206,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
     t_rotgrp *rotg;
     gmx_enfrot_t er;     /* Pointer to the enforced rotation buffer variables */
     gmx_enfrotgrp_t erg; /* Pointer to enforced rotation group data           */
-    bool     bFlex;
+    gmx_bool bFlex;
 
     
     er=rot->enfrot;
@@ -466,8 +466,8 @@ static void get_slab_centers(
         int       g,          /* The number of the rotation group             */
         real      time,       /* Used for output only                         */
         FILE      *out_slabs, /* For outputting center per slab information   */
-        bool      bOutStep,   /* Is this an output step?                      */
-        bool      bReference) /* If this routine is called from
+        gmx_bool  bOutStep,   /* Is this an output step?                      */
+        gmx_bool  bReference) /* If this routine is called from
                                  init_rot_group we need to store
                                  the reference slab centers                   */
 {
@@ -1517,7 +1517,7 @@ static real do_flex2_lowlevel(
         t_rotgrp  *rotg,
         real      sigma,    /* The Gaussian width sigma */
         rvec      x[],
-        bool      bCalcTorque,
+        gmx_bool  bCalcTorque,
         matrix    box,
         t_commrec *cr)
 {
@@ -1740,7 +1740,7 @@ static real do_flex_lowlevel(
         t_rotgrp *rotg,
         real      sigma,     /* The Gaussian width sigma                      */
         rvec      x[],
-        bool      bCalcTorque,
+        gmx_bool  bCalcTorque,
         matrix    box,
         t_commrec *cr)
 {
@@ -1910,7 +1910,7 @@ static void print_coordinates(t_commrec *cr, t_rotgrp *rotg, rvec x[], matrix bo
     int i;
     static FILE *fp;
     static char buf[STRLEN];
-    static bool bFirst=1;
+    static gmx_bool bFirst=1;
 
 
     if (bFirst)
@@ -2104,7 +2104,7 @@ static void do_flexible(
         matrix    box,
         double    t,          /* Time in picoseconds            */
         int       step,       /* The time step                  */
-        bool      bOutstep)
+        gmx_bool  bOutstep)
 {
     int          l,nslabs;
     real         sigma;       /* The Gaussian width sigma */
@@ -2212,7 +2212,7 @@ static void do_fixed(
         matrix    box,          /* The simulation box          */
         double    t,            /* Time in picoseconds         */
         int       step,         /* The time step               */
-        bool      bTorque)
+        gmx_bool  bTorque)
 {
     int       i,m;
     rvec      dr;
@@ -2227,7 +2227,7 @@ static void do_fixed(
     real      N_M;             /* N/M */
     real      k_wi;            /* k times wi */
 
-    bool      bProject;
+    gmx_bool  bProject;
 
     
     erg=rotg->enfrotgrp;
@@ -2302,7 +2302,7 @@ static void do_radial_motion(
         matrix    box,          /* The simulation box          */
         double    t,            /* Time in picoseconds         */
         int       step,         /* The time step               */
-        bool      bTorque)
+        gmx_bool  bTorque)
 {
     int       j;
     rvec      tmp_f;           /* Force */
@@ -2381,7 +2381,7 @@ static void do_radial_motion_pf(
         matrix    box,          /* The simulation box          */
         double    t,            /* Time in picoseconds         */
         int       step,         /* The time step               */
-        bool      bTorque)
+        gmx_bool  bTorque)
 {
     int       i,ii,iigrp,j;
     rvec      xj;              /* Current position */
@@ -2574,7 +2574,7 @@ static void do_radial_motion2(
         matrix    box,          /* The simulation box          */
         double    t,            /* Time in picoseconds         */
         int       step,         /* The time step               */
-        bool      bTorque)
+        gmx_bool  bTorque)
 {
     int       ii,iigrp,j;
     rvec      xj;              /* Position */
@@ -2590,7 +2590,7 @@ static void do_radial_motion2(
     real      psij,psijstar;
     real      mj,wj;           /* For mass-weighting of the positions */
     real      N_M;             /* N/M */
-    bool      bPF;
+    gmx_bool  bPF;
     rvec      innersumvec;
 
 
@@ -2829,7 +2829,7 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
 {
     int i,ii;
     rvec        coord,*xdum;
-    bool        bFlex,bColl;
+    gmx_bool    bFlex,bColl;
     t_atom      *atom;
     gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
     int         ref_firstindex, ref_lastindex;
@@ -3197,13 +3197,13 @@ extern void do_rotation(
         real t,
         int step,
         gmx_wallcycle_t wcycle,
-        bool bNS)
+        gmx_bool bNS)
 {
     int      g,i,ii;
     t_rot    *rot;
     t_rotgrp *rotg;
-    bool     outstep_torque;
-    bool     bFlex,bColl;
+    gmx_bool outstep_torque;
+    gmx_bool bFlex,bColl;
     float    cycles_rot;
     gmx_enfrot_t er;     /* Pointer to the enforced rotation buffer variables */
     gmx_enfrotgrp_t erg; /* Pointer to enforced rotation group data           */

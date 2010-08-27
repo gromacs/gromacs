@@ -37,41 +37,41 @@
  [ atoms ]
    IB     IB           1.00000     1
 
-[ Ca+ ]
+[ CA ]
  [ atoms ]
-   Ca     C0           2.00000     1
+   CA     C0           2.00000     1
 
-[ Cl- ]
+[ CL ]
  [ atoms ]
-   Cl     Cl          -1.00000     1
+   CL     Cl          -1.00000     1
 
-[ Na+ ]
+[ NA ]
  [ atoms ]
-   Na     Na           1.00000     1
+   NA     Na           1.00000     1
 
-[ Mg+ ]
+[ MG ]
  [ atoms ]
-   Mg     MG           2.00000     1
+   MG     MG           2.00000     1
 
-[ K+ ]
+[ K ]
  [ atoms ]
    K      K            1.00000     1
 
-[ Rb+ ]
+[ RB ]
  [ atoms ]
-   Rb     Rb           1.00000     1
+   RB     Rb           1.00000     1
 
-[ Cs+ ]
+[ CS ]
  [ atoms ]
    CS     Cs           1.00000     1
 
-[ Li+ ]
+[ LI ]
  [ atoms ]
-   Li     Li           1.00000     1 
+   LI     Li           1.00000     1 
 
-[ Zn+ ]
+[ ZN ]
  [ atoms ]
-   Zn     Zn           2.00000     1
+   ZN     Zn           2.00000     1
 
 [ URE ] ; urea added in by EJS, resp charges by Jim Caldwell
  [ atoms ]
@@ -760,7 +760,7 @@
    CH2   CE3   CZ3   HZ3
    CZ3   CD2   CE3   HE3
     CG   NE1   CD1   HD1
-   CD1   CD2    CG    CB
+   CD1    CG    CB   CD2
                         
 [ PHE ]
  [ atoms ]
@@ -1219,7 +1219,7 @@
     CA    +N     C     O
     -C   CD2     N    CA
                         
-[ CYN ]
+[ CYS ]
  [ atoms ]
      N    N           -0.41570     1
      H    H            0.27190     2
@@ -1302,33 +1302,6 @@
     -C    CA     N     H
     CA    +N     C     O
 
-[ CYS2 ]
- [ atoms ]
-     N    N           -0.41570     1
-     H    H            0.27190     2
-    CA    CT           0.04290     3
-    HA    H1           0.07660     4
-    CB    CT          -0.07900     5
-   HB1    H1           0.09100     6
-   HB2    H1           0.09100     7
-    SG    S           -0.10810     8
-     C    C            0.59730     9
-     O    O           -0.56790    10
- [ bonds ]
-     N     H
-     N    CA
-    CA    HA
-    CA    CB
-    CA     C
-    CB   HB1
-    CB   HB2
-    CB    SG
-     C     O
-    -C     N
- [ impropers ]
-    -C    CA     N     H
-    CA    +N     C     O
-                        
 [ MET ]
  [ atoms ]
      N    N           -0.41570     1
@@ -2080,7 +2053,7 @@
    CH2   CE3   CZ3   HZ3    
    CZ3   CD2   CE3   HE3    
     CG   NE1   CD1   HD1    
-   CD1   CD2    CG    CB    
+   CD1    CG    CB   CD2
                         
 [ CPHE ]
  [ atoms ]
@@ -2380,7 +2353,7 @@
     CA   OC1     C   OC2    
     -C    CD     N    CA    
                         
-[ CCYN ]
+[ CCYS ]
  [ atoms ]
      N    N           -0.38210     1
      H    H            0.26810     2
@@ -3130,7 +3103,7 @@
    CH2   CE3   CZ3   HZ3
    CZ3   CD2   CE3   HE3
     CG   NE1   CD1   HD1
-   CD1   CD2    CG    CB
+   CD1    CG    CB   CD2
                         
 [ NPHE ]
  [ atoms ]
@@ -3437,7 +3410,7 @@
  [ impropers ]
     CA    +N     C     O
                         
-[ NCYN ]
+[ NCYS ]
  [ atoms ]
      N    N3           0.13250     1
     H1    H            0.20230     2

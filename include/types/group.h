@@ -32,9 +32,7 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+
 
 #include "simple.h"
 
@@ -70,7 +68,10 @@ typedef struct {
 } t_cos_acc;
 
 typedef struct {
+  gmx_bool         bNEMD;
+  int          ngtc;            /* The number of T-coupling groups      */
   t_grp_tcstat *tcstat;         /* T-coupling data 			*/
+  int          ngacc;           /* The number of acceleration groups    */
   t_grp_acc    *grpstat;	/* Acceleration data			*/
   tensor       ekin;            /* overall kinetic energy               */
   tensor       ekinh;           /* overall 1/2 step kinetic energy      */

@@ -19,10 +19,6 @@
 #ifndef _gmx_parallel_3dfft_h_
 #define _gmx_parallel_3dfft_h_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 
 #include "types/simple.h"
 #include "types/commrec.h"
@@ -67,7 +63,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            MPI_Comm                  comm[2],
                            int *                     slab2index_major,
                            int *                     slab2index_minor,
-                           bool                      bReproducible);
+                           gmx_bool                      bReproducible);
 
 
 

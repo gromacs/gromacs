@@ -35,6 +35,10 @@
  * finished FD 09/07/08
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 #include "statutil.h"
 #include "typedefs.h"
@@ -82,14 +86,14 @@ static void index_atom2mol(int *n,int *index,t_block *mols)
   *n = nmol;
 }
 
-static bool precalc(t_topology top,real mass2[],real qmol[]){
+static gmx_bool precalc(t_topology top,real mass2[],real qmol[]){
 
   real mtot;
   real qtot;
   real qall;
   int i,j,k,l;
   int ai,ci;
-  bool bNEU;
+  gmx_bool bNEU;
   ai=0;
   ci=0;
   qall=0.0;
@@ -150,7 +154,7 @@ static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[]){
     }
 }
 
-static void calc_mj(t_topology top,int ePBC,matrix box,bool bNoJump,int isize,int index0[],\
+static void calc_mj(t_topology top,int ePBC,matrix box,gmx_bool bNoJump,int isize,int index0[],\
 		rvec fr[],rvec mj,real mass2[],real qmol[]){
 
   int   i,j,k,l;
@@ -192,7 +196,7 @@ static void calc_mj(t_topology top,int ePBC,matrix box,bool bNoJump,int isize,in
 }
 
 
-static real calceps(real prefactor,real md2,real mj2,real cor,real eps_rf,bool bCOR){
+static real calceps(real prefactor,real md2,real mj2,real cor,real eps_rf,gmx_bool bCOR){
 
 	/* bCOR determines if the correlation is computed via
 	 * static properties (FALSE) or the correlation integral (TRUE)
@@ -285,7 +289,7 @@ static void calc_mjdsp(FILE *fmjdsp,real vol,real temp,real prefactor,rvec mjdsp
 
 
 static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
-                       FILE *fmjdsp, bool bNoJump,bool bACF,bool bINT,
+                       FILE *fmjdsp, gmx_bool bNoJump,gmx_bool bACF,gmx_bool bINT,
                        int ePBC,t_topology top, t_trxframe fr,real temp,
                        real trust,real bfit,real efit,real bvit,real evit,
 		       t_trxstatus *status,int isize,int nmols, int nshift,
@@ -428,7 +432,7 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
 
     }
     
-		gmx_rmpbc(gpbc,fr.box,fr.x,fr.x);
+		gmx_rmpbc_trxfr(gpbc,&fr);
 		
 		calc_mj(top,ePBC,fr.box,bNoJump,nmols,indexm,fr.x,mtrans[nfr],mass2,qmol);
 
@@ -670,7 +674,7 @@ int gmx_current(int argc,char *argv[])
   static real temp=300.0;
   static real trust=0.25;
   static real eps_rf=0.0;
-  static bool bNoJump=TRUE;
+  static gmx_bool bNoJump=TRUE;
   static real bfit=100.0;
   static real bvit=0.5;
   static real efit=400.0;
@@ -711,10 +715,10 @@ int gmx_current(int argc,char *argv[])
   int        isize;
   t_trxstatus *status;
   int        flags = 0;
-  bool	     bTop;
-  bool		 bNEU;
-  bool		 bACF;
-  bool		 bINT;
+  gmx_bool	     bTop;
+  gmx_bool		 bNEU;
+  gmx_bool		 bACF;
+  gmx_bool		 bINT;
   int	     ePBC=-1;
   int	     natoms;
   int 			nmols;

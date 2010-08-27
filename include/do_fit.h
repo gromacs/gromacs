@@ -36,38 +36,34 @@
 #ifndef _do_fit_h
 #define _do_fit_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern real calc_similar_ind(bool bRho,int nind,atom_id *index,real mass[],
+real calc_similar_ind(gmx_bool bRho,int nind,atom_id *index,real mass[],
 			     rvec x[],rvec xp[]);
 /* Returns RMSD or Rho (depending on bRho) over all atoms in index */
 
-extern real rmsdev_ind(int nind,atom_id index[],real mass[],
+real rmsdev_ind(int nind,atom_id index[],real mass[],
 		       rvec x[],rvec xp[]);
 /* Returns the RMS Deviation betweem x and xp over all atoms in index */
 
-extern real rmsdev(int natoms,real mass[],rvec x[],rvec xp[]);
+real rmsdev(int natoms,real mass[],rvec x[],rvec xp[]);
 /* Returns the RMS Deviation betweem x and xp over all atoms */
 
-extern real rhodev_ind(int nind,atom_id index[],real mass[],rvec x[],rvec xp[]);
+real rhodev_ind(int nind,atom_id index[],real mass[],rvec x[],rvec xp[]);
 /* Returns size-independent Rho similarity parameter over all atoms in index
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
  
-extern real rhodev(int natoms,real mass[],rvec x[],rvec xp[]);
+real rhodev(int natoms,real mass[],rvec x[],rvec xp[]);
 /* Returns size-independent Rho similarity parameter over all atoms
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
 
-extern void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,
+void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,
 		       matrix R);
 /* Calculates the rotation matrix R for which
  * sum_i w_rls_i (xp_i - R x_i).(xp_i - R x_i)
@@ -76,7 +72,7 @@ extern void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,
  * x_rotated[i] = sum R[i][j]*x[j]
  */
 
-extern void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x);
+void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x);
 /* Do a least squares fit of x to xp. Atoms which have zero mass
  * (w_rls[i]) are not taken into account in fitting.
  * This makes is possible to fit eg. on Calpha atoms and orient
@@ -84,10 +80,10 @@ extern void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x);
  * therefore both xp and x should be centered round the origin.
  */
 
-extern void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
+void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
 /* Calls do_fit with ndim=3, thus fitting in 3D */
 
-extern void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
+void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
 			 int nreset,const atom_id *ind_reset,
 			 rvec x[],const real mass[]);
 /* Put the center of mass of atoms in the origin for dimensions 0 to ndim.
@@ -98,7 +94,7 @@ extern void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
  * When ind_reset==NULL the coordinates up to nreset are reset.
  */
 
-extern void reset_x(int ncm,const atom_id *ind_cm,
+void reset_x(int ncm,const atom_id *ind_cm,
 		    int nreset,const atom_id *ind_reset,
 		    rvec x[],const real mass[]);
 /* Calls reset_x with ndim=3, thus resetting all dimesions */

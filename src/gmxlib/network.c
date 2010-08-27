@@ -59,7 +59,7 @@
 /* The source code in this file should be thread-safe. 
       Please keep it that way. */
 
-bool gmx_mpi_initialized(void)
+gmx_bool gmx_mpi_initialized(void)
 {
   int n;
 #ifndef GMX_MPI

@@ -44,13 +44,13 @@ files.
  *
  * For now, we just disable the inline keyword if we're compiling C code:
  */
-#ifndef __cplusplus
+#if (!defined(__cplusplus)) && (!defined(inline))
 #define inline_defined_in_atomic 1
 #define inline
 #endif
 
 
-#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t eieio\n"\
+#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t isync\n"\
                                                              : : :"memory" ); }
 
 
@@ -87,7 +87,7 @@ tMPI_Spinlock_t;
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
-static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *    a, 
+static int tMPI_Atomic_add_return(tMPI_Atomic_t *    a, 
                                         int               i)
 {
     int t;
@@ -104,7 +104,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *    a,
 
 
 
-static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
+static int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
                                        int                i)
 {
     int t;
@@ -122,7 +122,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
 }
 
 
-static inline int tMPI_Atomic_cas(tMPI_Atomic_t *       a,
+static int tMPI_Atomic_cas(tMPI_Atomic_t *       a,
                                      int                  oldval,
                                      int                  newval)
 {
@@ -142,7 +142,7 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *       a,
     return prev;
 }
 
-static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *   a,
+static void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *   a,
                                            void*                oldval,
                                            void*                newval)
 {
@@ -177,14 +177,14 @@ static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *   a,
 }
 
 
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
+static void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 {
     x->lock = 0;
 }
 
 
 
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
+static void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
 {
     unsigned int tmp;
     
@@ -203,7 +203,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
 }
 
 
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
+static int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
 {
     unsigned int old, t;
     unsigned int mask = 1;
@@ -222,20 +222,20 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
 }
 
 
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
+static void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
 {
     __asm__ __volatile__("\t eieio \n");
     x->lock = 0;
 }
 
 
-static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *   x)
+static int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *   x)
 {
     return ( x->lock != 0);
 }
 
 
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
+static void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     
     do 
