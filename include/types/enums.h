@@ -234,10 +234,6 @@ enum {
 };
 
 enum {
-  erotgOriginBox, erotgOriginCOG, erotgOriginCOM, erotgOriginNR
-};
-
-enum {
     erotgFitRMSD, erotgFitNORM, erotgFitNR
 };
 
