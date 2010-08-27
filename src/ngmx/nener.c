@@ -90,7 +90,7 @@ static void DrawEGraph(t_x11 *x11,t_enerwin *ew)
   }
 }
 
-static bool EWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool EWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_enerwin *ew;
   int       i,x,y,width;

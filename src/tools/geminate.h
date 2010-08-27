@@ -98,7 +98,7 @@ typedef struct {
   int len;                  /* Length of time and ct arrays */
   int nExpFit;              /* Number of exponentials to fit */       
   real ballistic;           /* Time before which the ballistic term should be fitted */
-  bool bDt;                 /* TRUE =>  use time derivative at time 0
+  gmx_bool bDt;                 /* TRUE =>  use time derivative at time 0
 			     *          to find fastest component.
 			     * FALSE => use coefficient in exponenetial
 			     *          to find fastest component. */
@@ -122,13 +122,13 @@ typedef struct{
 
 extern void takeAwayBallistic(double *ct, double *t,
 			      int len, real tMax,
-			      int nexp, bool bDerivative);
+			      int nexp, gmx_bool bDerivative);
 
 
 extern t_gemParams *init_gemParams(const double sigma, const double D,
 				   const real *t, const int len, const int nFitPoints,
 				   const real begFit, const real endFit,
-				   const real ballistic, const int nBalExp, const bool bDt);
+				   const real ballistic, const int nBalExp, const gmx_bool bDt);
 
 /* Fit to geminate recombination model.
    Returns root mean square error of fit. */

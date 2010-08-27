@@ -146,7 +146,7 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status)
    blocking = whether to block until all reqs are completed */
 static void tMPI_Test_multi_req(struct tmpi_thread *cur, 
                                 int count, tMPI_Request *array_of_requests,
-                                bool wait, bool blocking)
+                                gmx_bool wait, gmx_bool blocking)
 {
     int i;
     struct tmpi_req_ *first=NULL, *last=NULL;

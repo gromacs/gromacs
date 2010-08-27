@@ -289,7 +289,7 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
 {
     void **aligned=NULL;
     void *malloced=NULL;
-    bool allocate_fail;
+    gmx_bool allocate_fail;
 
     if (alignment == 0)
     {

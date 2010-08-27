@@ -57,8 +57,8 @@ typedef struct
     unsigned int maxbin; /* highest bin with data */
 
     double lambda; /* the 'foreign' lambda value associated with this delta H */
-    bool write_hist; /* whether to write histograms or raw data */
-    bool written; /* whether this data has already been written out */
+    gmx_bool write_hist; /* whether to write histograms or raw data */
+    gmx_bool written; /* whether this data has already been written out */
 
     double subblock_d[4]; /* data for an mdebin subblock for I/O. */
     gmx_large_int_t subblock_l[2]; /* data for an mdebin subblock for I/O.  */
@@ -77,7 +77,7 @@ struct t_mde_delta_h_coll
 
     double starttime; /* start time of the current dh collection */
     double endtime; /* end time of the current dh collection */
-    bool starttime_set; /* whether the start time has been set */
+    gmx_bool starttime_set; /* whether the start time has been set */
 
     double subblock_d[4]; /* data for writing an mdebin subblock for I/O */
 };

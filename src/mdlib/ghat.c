@@ -95,7 +95,7 @@ void symmetrize_ghat(int nx,int ny,int nz,real ***ghat)
 }
 
 void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
-	     rvec box,real r1,real rc,bool bSym,bool bOld)
+	     rvec box,real r1,real rc,gmx_bool bSym,gmx_bool bOld)
 {
   int  ix,iy,iz;
   int  ixmax,iymax,izmax;
@@ -138,12 +138,12 @@ void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
 
 void wr_ghat(const char *fn,const output_env_t oenv,  
 	     int n1max,int n2max,int n3max,real h1,real h2,real h3,
-	     real ***ghat,int nalias,int porder,int niter,bool bSym,rvec beta,
+	     real ***ghat,int nalias,int porder,int niter,gmx_bool bSym,rvec beta,
 	     real r1,real rc,real pval,real zval,real eref,real qopt)
 {
   FILE *fp;
   int  N1MAX,N2MAX,N3MAX;
-  bool bNL=FALSE;
+  gmx_bool bNL=FALSE;
   real rx,ry,rz;
   int  ii,jj,kk,nn;
   

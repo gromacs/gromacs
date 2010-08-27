@@ -107,7 +107,7 @@ void print_at (FILE * out, gpp_atomtype_t at);
 
 void renum_atype(t_params plist[],gmx_mtop_t *mtop,
 			int *wall_atomtype,
-			gpp_atomtype_t at,bool bVerbose);
+			gpp_atomtype_t at,gmx_bool bVerbose);
 			
 void copy_atomtype_atomtypes(gpp_atomtype_t atype,t_atomtypes *atypes);
 /* Copy from one structure to another */

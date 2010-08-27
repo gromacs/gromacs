@@ -208,7 +208,7 @@ void calculate_view(t_3dview *view)
 #endif
 }
 
-bool zoom_3d(t_3dview *view,real fac)
+gmx_bool zoom_3d(t_3dview *view,real fac)
 {
   real dr;
   real bm,dr1,dr2;
@@ -248,7 +248,7 @@ void init_rotate_3d(t_3dview *view)
 }
 
  
-void rotate_3d(t_3dview *view,int axis,bool bPositive)
+void rotate_3d(t_3dview *view,int axis,gmx_bool bPositive)
 {
   int  i,j;
   mat4 m4;
@@ -264,7 +264,7 @@ void rotate_3d(t_3dview *view,int axis,bool bPositive)
   calculate_view(view);
 }
 
-void translate_view(t_3dview *view,int axis,bool bPositive)
+void translate_view(t_3dview *view,int axis,gmx_bool bPositive)
 {
 #ifdef DEBUG
   printf("Translate called\n");

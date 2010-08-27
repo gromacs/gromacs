@@ -63,7 +63,7 @@ typedef struct gmx_wallcycle
 {
     wallcc_t     *wcc;
     /* variables for testing/debugging */
-    bool         wc_barrier;
+    gmx_bool         wc_barrier;
     wallcc_t     *wcc_all;
     int          wc_depth;
     int          ewc_prev;
@@ -78,7 +78,7 @@ typedef struct gmx_wallcycle
 static const char *wcn[ewcNR] =
 { "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load", "DD comm. bounds", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Born radii", "Force", "Wait + Comm. F", "PME mesh", "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME solve", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test" };
 
-bool wallcycle_have_counter(void)
+gmx_bool wallcycle_have_counter(void)
 {
   return gmx_cycles_have_counter();
 }
@@ -344,7 +344,7 @@ static void print_cycles(FILE *fplog, double c2t, const char *name, int nnodes,
   }
 }
 
-static bool subdivision(int ewc)
+static gmx_bool subdivision(int ewc)
 {
     return (ewc >= ewcPME_REDISTXF && ewc <= ewcPME_SOLVE);
 }

@@ -43,9 +43,9 @@ extern int add_h(t_atoms **pdbaptr, rvec *xptr[],
 		 int nah, t_hackblock ah[],
 		 int nterpairs,
 		 t_hackblock **ntdb, t_hackblock **ctdb, 
-		 int *rN, int *rC, bool bMissing,
+		 int *rN, int *rC, gmx_bool bMissing,
 		 int **nabptr, t_hack ***abptr,
-		 bool bUpdate_pdba, bool bKeep_old_pdba);
+		 gmx_bool bUpdate_pdba, gmx_bool bKeep_old_pdba);
 /* Generate hydrogen atoms and N and C terminal patches.
  * int nterpairs is the number of termini pairs in the molecule
  * ntdb[i] and ctdb[i] may be NULL, no replacement will be done then.

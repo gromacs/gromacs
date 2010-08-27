@@ -178,7 +178,7 @@ static jmp_buf
 nb_kernel_ia32_sse_testprog;
 
 /*! Result of ia32 SSE test */
-static bool
+static gmx_bool
 nb_kernel_ia32_sse_present;
 
 

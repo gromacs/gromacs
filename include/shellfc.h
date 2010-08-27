@@ -51,10 +51,10 @@ void make_local_shells(t_commrec *cr,t_mdatoms *md,
 			      gmx_shellfc_t shfc);
 
 /* Optimize shell positions */
-int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
+int relax_shell_flexcon(FILE *log,t_commrec *cr,gmx_bool bVerbose,
 			       gmx_large_int_t mdstep,t_inputrec *inputrec,
-			       bool bDoNS,int force_flags,
-			       bool bStopCM,
+			       gmx_bool bDoNS,int force_flags,
+			       gmx_bool bStopCM,
 			       gmx_localtop_t *top,
 			       gmx_mtop_t *mtop,
 			       gmx_constr_t constr,
@@ -67,9 +67,9 @@ int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
 			       gmx_groups_t *groups,
 			       gmx_shellfc_t shfc,
 			       t_forcerec *fr,
-			       bool bBornRadii,
+			       gmx_bool bBornRadii,
 			       double t,rvec mu_tot,
-			       int natoms,bool *bConverged,
+			       int natoms,gmx_bool *bConverged,
 			       gmx_vsite_t *vsite,
 			       FILE *fp_field);
 

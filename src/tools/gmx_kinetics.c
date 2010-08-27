@@ -68,9 +68,9 @@ typedef struct {
   int nframe;     /* Number of time frames                                   */
   int nstate;     /* Number of states the system can be in, e.g. F,I,U       */
   int nparams;    /* Is 2, 4 or 8                                            */
-  bool *bMask;    /* Determine whether this replica is part of the d2 comp.  */
-  bool bSum;
-  bool bDiscrete; /* Use either discrete folding (0/1) or a continuous       */
+  gmx_bool *bMask;    /* Determine whether this replica is part of the d2 comp.  */
+  gmx_bool bSum;
+  gmx_bool bDiscrete; /* Use either discrete folding (0/1) or a continuous       */
                   /* criterion */
   int nmask;      /* Number of replicas taken into account                   */
   real dt;        /* Timestep between frames                                 */
@@ -107,7 +107,7 @@ static char *epnm(int nparams,int index)
   return NULL;
 }
 
-static bool bBack(t_remd_data *d) 
+static gmx_bool bBack(t_remd_data *d) 
 {
   return (d->nparams > 2);
 }
@@ -368,8 +368,8 @@ static void optimize_remd_parameters(FILE *fp,t_remd_data *d,int maxiter,
 }
 
 static void preprocess_remd(FILE *fp,t_remd_data *d,real cutoff,real tref,
-			    real ucut,bool bBack,real Euf,real Efu,
-			    real Ei,real t0,real t1,bool bSum,bool bDiscrete,
+			    real ucut,gmx_bool bBack,real Euf,real Efu,
+			    real Ei,real t0,real t1,gmx_bool bSum,gmx_bool bDiscrete,
 			    int nmult)
 {
   int i,j,ninter;
@@ -698,7 +698,7 @@ int gmx_kinetics(int argc,char *argv[])
   static real Euf       = 10;
   static real Efu       = 30;
   static real Ei        = 10;
-  static bool bHaveT    = TRUE;
+  static gmx_bool bHaveT    = TRUE;
   static real t0        = -1;
   static real t1        = -1;
   static real tb        = 0;
@@ -707,10 +707,10 @@ int gmx_kinetics(int argc,char *argv[])
   static int  maxiter   = 100;
   static int  skip      = 0;
   static int  nmult     = 1;
-  static bool bBack     = TRUE;
-  static bool bSplit    = TRUE;
-  static bool bSum      = TRUE;
-  static bool bDiscrete = TRUE;
+  static gmx_bool bBack     = TRUE;
+  static gmx_bool bSplit    = TRUE;
+  static gmx_bool bSum      = TRUE;
+  static gmx_bool bDiscrete = TRUE;
   t_pargs pa[] = {
     { "-time",    FALSE, etBOOL, {&bHaveT},
       "Expect a time in the input" },

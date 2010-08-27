@@ -1704,7 +1704,7 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 
 void
 calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype, 
-               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, t_nrnb *nrnb, bool bRad,
+               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, t_nrnb *nrnb, gmx_bool bRad,
                const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd)
 {
     real v=0;
@@ -1863,7 +1863,7 @@ static gbtmpnbl_t *find_gbtmplist(struct gbtmpnbls *lists,int shift)
 }
 
 static void add_bondeds_to_gblist(t_ilist *il,
-                                  bool bMolPBC,t_pbc *pbc,t_graph *g,rvec *x,
+                                  gmx_bool bMolPBC,t_pbc *pbc,t_graph *g,rvec *x,
                                   struct gbtmpnbls *nls)
 {
     int  ind,j,ai,aj,shift,found;

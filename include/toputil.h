@@ -80,7 +80,7 @@ void print_blocka(FILE *out,const char *szName,const char *szIndex,
 			 const char *szA,t_blocka *block);
 
 void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr,
-			bool bRTPresname);
+			gmx_bool bRTPresname);
 
 void print_bondeds(FILE *out,int natoms,directive d,
 			  int ftype,int fsubtype,t_params plist[]);

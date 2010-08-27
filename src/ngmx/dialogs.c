@@ -202,7 +202,7 @@ enum { eExE, eExGrom, eExPdb, eExConf, eExNR };
 static void ExportCB(t_x11 *x11,int dlg_mess,int item_id,
 		     char *set,void *data)
 {
-  bool   bOk;
+  gmx_bool   bOk;
   t_gmx  *gmx;
   t_dlg  *dlg;
 
@@ -252,7 +252,7 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
 {
   static int ebond=-1;
   static int ebox=-1;
-  bool   bOk,bBond=FALSE;
+  gmx_bool   bOk,bBond=FALSE;
   int    nskip,nwait;
   t_gmx  *gmx;
 
@@ -282,7 +282,7 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
       case ebDPlus:
 	DO_NOT(gmx->man->bPlus);
 #ifdef DEBUG
-	fprintf(stderr,"gmx->man->bPlus=%s\n",bool_names[gmx->man->bPlus]);
+	fprintf(stderr,"gmx->man->bPlus=%s\n",gmx_bool_names[gmx->man->bPlus]);
 #endif
 	break;
 	/*case ebSBox:
@@ -294,7 +294,7 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
       case ebCue:
 	DO_NOT(gmx->man->bSort);
 #ifdef DEBUG
-	fprintf(stderr,"gmx->man->bSort=%s\n",bool_names[gmx->man->bSort]);
+	fprintf(stderr,"gmx->man->bSort=%s\n",gmx_bool_names[gmx->man->bSort]);
 #endif
 	break;
       case ebSkip:
@@ -369,7 +369,7 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
 
 enum { esFUNCT=1, esBSHOW, esINFIL, esINDEXFIL, esLSQ, esSHOW, esPLOTFIL };
 
-static bool in_set(int i,int n,int set[])
+static gmx_bool in_set(int i,int n,int set[])
 {
   int j;
   for(j=0; (j<n); j++)

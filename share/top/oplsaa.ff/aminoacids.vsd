@@ -155,7 +155,7 @@
   CZ2   CH2   HH2	120.0
   HH2   CH2   CZ3	120.0	
 
-[ HISA ] ; angles from MD sim, corrected to be perfectly planar
+[ HISD ] ; angles from MD sim, corrected to be perfectly planar
   CG    ND1		0.1381
   ND1   CE1		0.1343
   CE1   NE2		0.1335
@@ -176,7 +176,7 @@
   CG    CD2   HD2	129.0
   HD2   CD2   NE2  	121.7
 
-[ HISB ] ; angles from MD sim, corrected to be perfectly planar
+[ HISE ] ; angles from MD sim, corrected to be perfectly planar
   CG    ND1		0.1394
   ND1   CE1		0.1335
   CE1   NE2		0.1343

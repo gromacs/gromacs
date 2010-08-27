@@ -82,7 +82,7 @@ enum {
 
 typedef struct {
   const char *name;
-  bool bCoulomb;
+  gmx_bool bCoulomb;
 } t_tab_props;
 
 /* This structure holds name and a flag that tells whether 
@@ -225,7 +225,7 @@ static void copy2table(int n,int offset,int stride,
 }
 
 static void init_table(FILE *fp,int n,int nx0,
-		       double tabscale,t_tabledata *td,bool bAlloc)
+		       double tabscale,t_tabledata *td,gmx_bool bAlloc)
 {
   int i;
   
@@ -241,7 +241,7 @@ static void init_table(FILE *fp,int n,int nx0,
     td->x[i] = i/tabscale;
 }
 
-static void spline_forces(int nx,double h,double v[],bool bS3,bool bE3,
+static void spline_forces(int nx,double h,double v[],gmx_bool bS3,gmx_bool bE3,
 			  double f[])
 {
   int    start,end,i;
@@ -356,7 +356,7 @@ static void read_tables(FILE *fp,const char *fn,
   char buf[STRLEN];
   double **yy=NULL,start,end,dx0,dx1,ssd,vm,vp,f,numf;
   int  k,i,nx,nx0=0,ny,nny,ns;
-  bool bAllZero,bZeroV,bZeroF;
+  gmx_bool bAllZero,bZeroV,bZeroF;
   double tabscale;
 
   nny = 2*ntab+1;  
@@ -515,7 +515,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   /* Parameters for the switching function */
   double ksw,swi,swi1;
   /* Temporary parameters */
-  bool bSwitch,bShift;
+  gmx_bool bSwitch,bShift;
   double ewc=fr->ewaldcoeff;
   double isp= 0.564189583547756;
    
@@ -730,7 +730,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 #endif
 }
 
-static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
+static void set_table_type(int tabsel[],const t_forcerec *fr,gmx_bool b14only)
 {
   int eltype,vdwtype;
 
@@ -844,14 +844,14 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
 
 t_forcetable make_tables(FILE *out,const output_env_t oenv,
                          const t_forcerec *fr,
-			 bool bVerbose,const char *fn,
+			 gmx_bool bVerbose,const char *fn,
 			 real rtab,int flags)
 {
   const char *fns[3] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   const char *fns14[3] = { "ctab14.xvg", "dtab14.xvg", "rtab14.xvg" };
   FILE        *fp;
   t_tabledata *td;
-  bool        b14only,bReadTab,bGenTab;
+  gmx_bool        b14only,bReadTab,bGenTab;
   real        x0,y0,yp;
   int         i,j,k,nx,nx0,tabsel[etiNR];
   
@@ -965,7 +965,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	const char *fns14[3] = { "gbctab14.xvg", "gbdtab14.xvg", "gbrtab14.xvg" };
 	FILE        *fp;
 	t_tabledata *td;
-	bool        bReadTab,bGenTab;
+	gmx_bool        bReadTab,bGenTab;
 	real        x0,y0,yp;
 	int         i,j,k,nx,nx0,tabsel[etiNR];
 	void *      p_tmp;

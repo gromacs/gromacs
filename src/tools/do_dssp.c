@@ -55,12 +55,12 @@
 #include "viewit.h"
 
 static int strip_dssp(char *dsspfile,int nres,
-		       bool bPhobres[],real t,
+		       gmx_bool bPhobres[],real t,
 		       real *acc,FILE *fTArea,
 		       t_matrix *mat,int average_area[],
                        const output_env_t oenv)
 {
-  static bool bFirst=TRUE;
+  static gmx_bool bFirst=TRUE;
   static char *ssbuf;
   FILE *tapeout;
   static int xsize,frame;
@@ -167,11 +167,11 @@ static int strip_dssp(char *dsspfile,int nres,
   return nr;
 }
 
-bool *bPhobics(t_atoms *atoms)
+gmx_bool *bPhobics(t_atoms *atoms)
 {
   int  i,nb;
   char **cb;
-  bool *bb;
+  gmx_bool *bb;
   
   nb=get_strings("phbres.dat",&cb);
   snew(bb,atoms->nres);
@@ -230,7 +230,7 @@ static void norm_acc(t_atoms *atoms, int nres,
 
 void prune_ss_legend(t_matrix *mat)
 {
-  bool *present;
+  gmx_bool *present;
   int  *newnum;
   int i,r,f,newnmap;
   t_mapping *newmap;
@@ -367,7 +367,7 @@ int main(int argc,char *argv[])
     "these two programs can be used to analyze dihedral properties as a",
     "function of secondary structure type."
   };
-  static bool bVerbose;
+  static gmx_bool bVerbose;
   static const char *ss_string="HEBT"; 
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, {&bVerbose},
@@ -386,7 +386,7 @@ int main(int argc,char *argv[])
   t_atoms    *atoms;
   t_matrix   mat;
   int        nres,nr0,naccr,nres_plus_separators;
-  bool       *bPhbres,bDoAccSurf;
+  gmx_bool       *bPhbres,bDoAccSurf;
   real       t;
   int        i,natoms,nframe=0;
   matrix     box;

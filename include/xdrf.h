@@ -100,7 +100,7 @@ int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
  * "WARNING during %s:", where warn is printed in %s.
  */
 
-float xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+float xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
 
@@ -108,10 +108,10 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
 int xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms);
 
 
-float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 
-int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 #ifdef __cplusplus
 }
