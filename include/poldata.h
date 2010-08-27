@@ -161,7 +161,7 @@ extern int gmx_poldata_get_numprops(gmx_poldata_t pd,int eqg_model);
 extern int gmx_poldata_have_pol_support(gmx_poldata_t pd,char *smtype);
 
 extern int gmx_poldata_have_eem_support(gmx_poldata_t pd,int eqg_model,char *name,
-                                        bool bAllowZeroParameters);
+                                        gmx_bool bAllowZeroParameters);
 
 extern double gmx_poldata_get_j00(gmx_poldata_t pd,int eqg_model,char *name);
 
