@@ -81,6 +81,7 @@
 #include "mtop_util.h"
 #include "sighandler.h"
 #include "string2.h"
+#include "membed.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -105,7 +106,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
+             int repl_ex_nst,int repl_ex_seed,gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -1780,7 +1781,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */
-        
+
+        if ( (membed!=NULL) && (!bLastStep) )
+        {
+            rescale_membed(step_rel,membed,state_global->x);
+        }
+
         if (bRerunMD) 
         {
             if (MASTER(cr))
