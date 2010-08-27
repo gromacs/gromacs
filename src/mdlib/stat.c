@@ -168,13 +168,11 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   bVV           = EI_VV(inputrec->eI);
   bTemp         = flags & CGLO_TEMPERATURE;
   bEner         = flags & CGLO_ENERGY;
-/* FIX ME after 4.5 */
-/* temporary hack because we are using gmx_bool (unsigned char) */
-  bPres         = (flags & CGLO_PRESSURE) != 0; 
-  bConstrVir    = (flags & CGLO_CONSTRAINT) != 0;
-  bFirstIterate = (flags & CGLO_FIRSTITERATE) != 0;
+  bPres         = (flags & CGLO_PRESSURE); 
+  bConstrVir    = (flags & CGLO_CONSTRAINT);
+  bFirstIterate = (flags & CGLO_FIRSTITERATE);
   bEkinAveVel   = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && bPres));
-  bReadEkin     = (flags & CGLO_READEKIN) != 0;
+  bReadEkin     = (flags & CGLO_READEKIN);
 
   rb   = gs->rb;
   itc0 = gs->itc0;
@@ -454,9 +452,9 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
 
     if (MASTER(cr))
     {
-        bAppendFiles = (mdrun_flags & MD_APPENDFILES) != 0;
+        bAppendFiles = (mdrun_flags & MD_APPENDFILES);
 
-        of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT) != 0;
+        of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
 
         sprintf(filemode, bAppendFiles ? "a+" : "w+");  
         

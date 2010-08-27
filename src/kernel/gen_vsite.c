@@ -487,6 +487,13 @@ static void add_vsites(t_params plist[], int vsite_type[],
   
   for(i=0; i<nrHatoms; i++) {
     ftype=vsite_type[Hatoms[i]];
+    /* Errors in setting the vsite_type should really be caugth earlier,
+     * because here it's not possible to print any useful error message.
+     * But it's still better to print a message than to segfault.
+     */
+    if (ftype == NOTSET) {
+      gmx_incons("Undetected error in setting up virtual sites");
+    }
     bSwapParity = (ftype<0);
     vsite_type[Hatoms[i]] = ftype = abs(ftype);
     if (ftype == F_BONDS) {

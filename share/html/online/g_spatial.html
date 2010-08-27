@@ -1,0 +1,100 @@
+<HTML>
+<HEAD>
+<TITLE>g_spatial</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_spatial</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
+Thu 26 Aug 2010</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+<p>
+g_spatial calculates the spatial distribution function and 
+outputs it in a form that can be read by VMD as Gaussian98 cube format. 
+This was developed from template.c (gromacs-3.3). 
+For a system of 32K atoms and a 50ns trajectory, the SDF can be generated 
+in about 30 minutes, with most of the time dedicated to the two runs through 
+<a href="trjconv.html">trjconv</a> that are required to center everything properly. 
+This also takes a whole bunch of space (3 copies of the <a href="xtc.html">xtc</a> file). 
+Still, the pictures are pretty and very informative when the fitted selection is properly made. 
+3-4 atoms in a widely mobile group like a free amino acid in solution works 
+well, or select the protein backbone in a stable folded structure to get the SDF 
+of solvent and look at the time-averaged solvation shell. 
+It is also possible using this program to generate the SDF based on some arbitrarty 
+Cartesian coordinate. To do that, simply omit the preliminary <a href="trjconv.html">trjconv</a> steps. 
+
+USAGE: 
+
+1. Use <a href="make_<a href="ndx.html">ndx</a>.html">make_<a href="ndx.html">ndx</a></a> to create a group containing the atoms around which you want the SDF 
+
+2. <a href="trjconv.html">trjconv</a> -s a.<a href="tpr.html">tpr</a> -f a.<a href="xtc.html">xtc</a> -o b.<a href="xtc.html">xtc</a> -center tric -ur compact -pbc none 
+
+3. <a href="trjconv.html">trjconv</a> -s a.<a href="tpr.html">tpr</a> -f b.<a href="xtc.html">xtc</a> -o c.<a href="xtc.html">xtc</a> -fit rot+trans 
+
+4. run g_spatial on the <a href="xtc.html">xtc</a> output of step #3. 
+
+5. Load grid.cube into VMD and view as an isosurface. 
+
+*** Systems such as micelles will require <a href="trjconv.html">trjconv</a> -pbc cluster between steps 1 and 2
+
+WARNINGS: 
+
+The SDF will be generated for a cube that contains all bins that have some non-zero occupancy. 
+However, the preparatory -fit rot+trans option to <a href="trjconv.html">trjconv</a> implies that your system will be rotating 
+and translating in space (in order that the selected group does not). Therefore the values that are 
+returned will only be valid for some region around your central group/coordinate that has full overlap 
+with system volume throughout the entire translated/rotated system over the course of the trajectory. 
+It is up to the user to ensure that this is the case. 
+
+BUGS: 
+
+When the allocated memory is not large enough, a segmentation fault may occur. This is usually detected 
+and the program is halted prior to the fault while displaying a warning message suggesting the use of the -nab 
+option. However, the program does not detect all such events. If you encounter a segmentation fault, run it again 
+with an increased -nab value. 
+
+RISKY OPTIONS: 
+
+To reduce the amount of space and time required, you can output only the coords 
+that are going to be used in the first and subsequent run through <a href="trjconv.html">trjconv</a>. 
+However, be sure to set the -nab option to a sufficiently high value since 
+memory is allocated for cube bins based on the initial coords and the -nab 
+(Number of Additional Bins) option value. 
+
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use periodic boundary conditions for computing distances </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]div</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Calculate and apply the divisor for bin occupancies based on atoms/minimal cube size. Set as TRUE for visualization and as FALSE (-nodiv) to get accurate counts per frame </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ign</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Do not display this number of outer cubes (positive values may reduce boundary speckles; -1 ensures outer surface is visible) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.05  </tt> </TD><TD> Width of the bins in nm </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nab</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>4</tt> </TD><TD> Number of additional bins to ensure proper memory allocation </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>
