@@ -4,7 +4,7 @@ project(Gromacs)
 include(Dart)
 # PROJECT_VERSION should have the following structure: 
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-set(PROJECT_VERSION "4.5-beta3"
+set(PROJECT_VERSION "4.5-beta4"
     CACHE STRING "Gromacs version string")
 set(SOVERSION 6)
 
