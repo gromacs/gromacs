@@ -111,9 +111,9 @@ int gmx_membed(int argc,char *argv[])
 	int low_up_rm = 0;
 	int maxwarn=0;
 	int pieces=1;
-        bool bALLOW_ASYMMETRY=FALSE;
+        gmx_bool bALLOW_ASYMMETRY=FALSE;
         int nstepout=100;
-        bool bVerbose=FALSE;
+        gmx_bool bVerbose=FALSE;
         char *mdrun_path=NULL;
 
 /* arguments relevant to OPENMM only*/
