@@ -2372,7 +2372,22 @@ int gmx_bar(int argc,char *argv[])
 {
     static const char *desc[] = {
         "g_bar calculates free energy difference estimates through ",
-        "Bennett's acceptance ratio method.[PAR]",
+        "Bennett's acceptance ratio method (BAR). It also automatically",
+        "adds series of individual free energies obtained with BAR into",
+        "a combined free energy estimate.[PAR]",
+
+        "Every individual BAR free energy difference relies on two ",
+        "simulations at different states: say state A and state B, as",
+        "controlled by a parameter 'lambda' (see the mdp parameter",
+        "'init_lambda'). The BAR method calculates a ratio of weighted",
+        "average of the Hamiltonian difference of state B given state A and",
+        "vice versa. If the Hamiltonian does not linearly depend on lambda",
+        "(in which case we can extrapolate the derivative of the Hamiltonian",
+        "w.r.t. lambda, as is the default when 'free_energy' is on), the",
+        "energy differences to the other state need to be calculated",
+        "explicitly during the simulation. This can be controlled with",
+        "the mdp option 'foreign_lambda'.[PAR]",
+
         "Input option [TT]-f[tt] expects multiple dhdl files. ",
         "Two types of input files are supported:[BR]",
         "* Files with only one y-value, for such files it is assumed ",
@@ -2381,8 +2396,7 @@ int gmx_bar(int argc,char *argv[])
         "from the subtitle if present, otherwise from a number in the",
         "subdirectory in the file name.",
         "[BR]",
-        "* Files with more than one y-value (see the mdp option ",
-        "'foreign_lambda)'. The files should have columns ",
+        "* Files with more than one y-value. The files should have columns ",
         "with dH/dlambda and Delta lambda. The lambda values are inferred ",
         "from the legends: ",
         "lambda of the simulation from the legend of dH/dlambda ",
@@ -2443,6 +2457,9 @@ int gmx_bar(int argc,char *argv[])
         "of the quality of sampling (not directly of the actual statistical ", 
         "error, because it assumes independent samples).[PAR]",
 
+        "To get a visual estimate of the phase space overlap, use the ",
+        "-oh option to write series of histograms, together with the ",
+        "-nbin option.[PAR]"
     };
     static real begin=0,end=-1,temp=-1;
     int nd=2,nbmin=5,nbmax=5;
