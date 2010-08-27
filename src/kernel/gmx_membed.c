@@ -142,7 +142,7 @@ int get_block(int mol_id,int nmblock,gmx_molblock_t *mblock)
 int get_tpr_version(const char *infile)
 {
 	char  	buf[STRLEN];
-	bool  	bDouble;
+	gmx_bool  	bDouble;
 	int 	precision,fver;
         t_fileio *fio;
 
@@ -178,7 +178,7 @@ int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 {
 	int i,j,nr,mol_id;
         int type=0,block=0;
-	bool bNEW;
+	gmx_bool bNEW;
 
 	nr=0;
 	snew(tlist->index,at->nr);
@@ -237,7 +237,7 @@ void check_types(t_block *ins_at,t_block *rest_at,gmx_mtop_t *mtop)
 
 void get_input(const char *membed_input, real *xy_fac, real *xy_max, real *z_fac, real *z_max,
 		int *it_xy, int *it_z, real *probe_rad, int *low_up_rm, int *maxwarn, 
-		int *pieces, bool *bALLOW_ASYMMETRY)
+		int *pieces, gmx_bool *bALLOW_ASYMMETRY)
 {
     warninp_t wi;
     t_inpfile *inp;
@@ -379,7 +379,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	int i,j,at,mol,nmol,nmolbox,count;
 	t_block *mem_a;
 	real z,zmin,zmax,mem_area;
-	bool bNew;
+	gmx_bool bNew;
 	atom_id *mol_id;
 	int type=0,block=0;
 
@@ -445,7 +445,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	return mem_p->mem_at.nr;
 }
 
-void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *mem_p,rvec *r, bool bALLOW_ASYMMETRY)
+void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *mem_p,rvec *r, gmx_bool bALLOW_ASYMMETRY)
 {
 	int i,j,at,c,outsidesum,gctr=0;
     int idxsum=0;
@@ -503,13 +503,13 @@ void resize(rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
 }
 
 int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop_t *mtop,
-		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, bool bALLOW_ASYMMETRY)
+		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, gmx_bool bALLOW_ASYMMETRY)
 {
 	int i,j,k,l,at,at2,mol_id;
         int type=0,block=0;
 	int nrm,nupper,nlower;
 	real r_min_rad,z_lip,min_norm;
-	bool bRM;
+	gmx_bool bRM;
 	rvec dr,dr_tmp;
 	real *dist;
 	int *order;
@@ -645,7 +645,7 @@ void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p
 	rvec *x_tmp,*v_tmp;
 	atom_id *list,*new_mols;
 	unsigned char  *new_egrp[egcNR];
-	bool bRM;
+	gmx_bool bRM;
 
 	snew(list,state->natoms);
 	n=0;
@@ -753,7 +753,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 {
 	int i,j,m;
 	int type,natom,nmol,at,atom1=0,rm_at=0;
-	bool *bRM,bINS;
+	gmx_bool *bRM,bINS;
 	/*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
 	/*this routine does not live as dangerously as it seems. There is namely a check in mdrunner_membed to make
          *sure that g_membed exits with a warning when there are molecules of the same type not in the 
@@ -912,7 +912,7 @@ void init_membed(FILE *fplog, gmx_membed_t *membed, int nfile, const t_filenm fn
         mem_t                   *mem_p;
         rm_t                    *rm_p;
         gmx_groups_t            *groups;
-        bool                    bExcl=FALSE;
+        gmx_bool                    bExcl=FALSE;
         t_atoms                 atoms;
         t_pbc                   *pbc;
         char                    **piecename=NULL;
@@ -929,7 +929,7 @@ void init_membed(FILE *fplog, gmx_membed_t *membed, int nfile, const t_filenm fn
         int low_up_rm = 0;
         int maxwarn=0;
         int pieces=1;
-        bool bALLOW_ASYMMETRY=FALSE;
+        gmx_bool bALLOW_ASYMMETRY=FALSE;
 
 	snew(ins_at,1);
 	snew(pos_ins,1);
