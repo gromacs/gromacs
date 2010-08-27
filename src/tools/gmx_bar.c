@@ -888,17 +888,21 @@ static void sample_coll_impose_times(sample_coll_t *sc, double begin_t,
                 int j;
                 for(j=0;j<s->ndu;j++)
                 {
-                    if (s->start_time <begin_t)
+                    if (s->t[j] <begin_t)
                     {
                         r->start = j;
                     }
 
-                    if (s->start_time >= end_t)
+                    if (s->t[j] >= end_t)
                     {
                         r->end = j;
                         break;
                     }
                 }
+            }
+            if (r->start > r->end)
+            {
+                r->use=FALSE;
             }
         }
     }
@@ -938,7 +942,14 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
                 }
                 else
                 {
-                    end_t += sc->s[j]->delta_time*sc->s[j]->ndu;
+                    if (sc->s[j]->t)
+                    {
+                        end_t = sc->s[j]->t[sc->s[j]->ndu-1];
+                    }
+                    else
+                    {
+                        end_t += sc->s[j]->delta_time*sc->s[j]->ndu;
+                    }
                 }
 
                 if (start_t < first_t || first_t<0)
@@ -958,7 +969,7 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
     /* calculate the actual times */
     if (begin > 0)
     {
-        begin_t = (first_t - last_t)*begin + first_t;
+        begin_t = (last_t - first_t)*begin + first_t;
     }
     else
     {
@@ -967,14 +978,14 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
 
     if (end >0 )
     {
-        end_t = (first_t - last_t)*end + first_t;
+        end_t = (last_t - first_t)*end + first_t;
     }
     else
     {
         end_t = last_t;
     }
-
-    printf("Samples run from time %.3f - %.3f; Removing samples outside of %.3f - %.3f\n", first_t, last_t, begin_t, end_t);
+    printf("\n   Samples in time interval: %.3f - %.3f\n", first_t, last_t);
+    printf("Removing samples outside of: %.3f - %.3f\n", begin_t, end_t);
 
     /* then impose them */
     lc=head->next;
@@ -984,10 +995,10 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
         while(sc != lc->sc)
         {
             sample_coll_impose_times(sc, begin_t, end_t);
+            sc=sc->next;
         }
-        sc=sc->next;
+        lc=lc->next;
     }
-    lc=lc->next;
 }
 
 
@@ -1026,18 +1037,22 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
         gmx_large_int_t ntot_add;
         gmx_large_int_t new_start, new_end;
 
-        if (sc->s[j]->hist)
+        if (sc->r[j].use)
         {
-            if (sc->r[j].use)
+            if (sc->s[j]->hist)
+            {
                 ntot_add = sc->s[j]->hist->sum;
-            else
-                ntot_add = 0;
+            }
+            else 
+            {
+                ntot_add = sc->r[j].end - sc->r[j].start;
+            }
         }
-        else 
+        else
         {
-            ntot_add = sc->r[j].end - sc->r[j].start;
+            ntot_add = 0;
         }
-       
+
         if (!sc->s[j]->hist)
         { 
             if (ntot_so_far < ntot_start)
@@ -1675,14 +1690,19 @@ static void calc_bar(barres_t *br, double tol,
                 double dgp;
                 double stddevc;
                 double sac, sbc;
+                gmx_bool cac, cbc;
 
-                if (!sample_coll_create_subsample(&ca, br->a, p, npee) ||
-                    !sample_coll_create_subsample(&cb, br->b, p, npee) )
+                cac=sample_coll_create_subsample(&ca, br->a, p, npee);
+                cbc=sample_coll_create_subsample(&cb, br->b, p, npee);
+
+                if (!cac || !cbc)
                 {
                     printf("WARNING: histogram number incompatible with block number for averaging: can't do error estimate\n");
                     *bEE=FALSE;
-                    sample_coll_destroy(&ca);
-                    sample_coll_destroy(&cb);
+                    if (cac)
+                        sample_coll_destroy(&ca);
+                    if (cbc)
+                        sample_coll_destroy(&cb);
                     return;
                 }
 
