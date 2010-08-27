@@ -243,7 +243,7 @@ void CopyRight(FILE *out,const char *szProgram)
   fprintf(out,"\n");
 
   ster_print(out,GromacsVersion());
-  fprintf(out,"\n\n");
+  fprintf(out,"\n");
 
   /* fprintf(out,"\n");*/
 
