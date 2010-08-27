@@ -1551,7 +1551,7 @@ int gmx_energy(int argc,char *argv[])
     "tensor for each orientation restraint experiment. With option",
     "[TT]-ovec[tt] also the eigenvectors are plotted.[PAR]",
 
-    "Option [TT]-odhdl[tt] extracts and plots the free energy data",
+    "Option [TT]-odh[tt] extracts and plots the free energy data",
     "(Hamiltoian differences and/or the Hamiltonian derivative dhdl)",
     "from the ener.edr file.[PAR]",
 
@@ -1678,7 +1678,7 @@ int gmx_energy(int argc,char *argv[])
     { efXVG, "-corr", "enecorr", ffOPTWR },
     { efXVG, "-vis",  "visco",   ffOPTWR },
     { efXVG, "-ravg", "runavgdf",ffOPTWR },
-    { efXVG, "-odhdl","dhdl"    ,ffOPTWR }
+    { efXVG, "-odh",  "dhdl"    ,ffOPTWR }
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -1700,7 +1700,7 @@ int gmx_energy(int argc,char *argv[])
   bODT   = opt2bSet("-odt",NFILE,fnm);
   bORIRE = bORA || bORT || bODA || bODR || bODT;
   bOTEN  = opt2bSet("-oten",NFILE,fnm);
-  bDHDL  = opt2bSet("-odhdl",NFILE,fnm);
+  bDHDL  = opt2bSet("-odh",NFILE,fnm);
 
   nset = 0;
 
@@ -2230,7 +2230,7 @@ int gmx_energy(int argc,char *argv[])
 	  }
           if (bDHDL)
           {
-              do_dhdl(fr, &fp_dhdl, opt2fn("-odhdl",NFILE,fnm), oenv);
+              do_dhdl(fr, &fp_dhdl, opt2fn("-odh",NFILE,fnm), oenv);
           }
 	}
       }
@@ -2312,7 +2312,7 @@ int gmx_energy(int argc,char *argv[])
     do_view(oenv,opt2fn_null("-odr",NFILE,fnm),nxy);
     do_view(oenv,opt2fn_null("-odt",NFILE,fnm),nxy);
     do_view(oenv,opt2fn_null("-oten",NFILE,fnm),nxy);
-    do_view(oenv,opt2fn_null("-odhdl",NFILE,fnm),nxy);
+    do_view(oenv,opt2fn_null("-odh",NFILE,fnm),nxy);
   }
   thanx(stderr);
   
