@@ -2372,7 +2372,7 @@ int gmx_bar(int argc,char *argv[])
 {
     static const char *desc[] = {
         "g_bar calculates free energy difference estimates through ",
-        "Bennett's acceptance ratio method. ",
+        "Bennett's acceptance ratio method.[PAR]",
         "Input option [TT]-f[tt] expects multiple dhdl files. ",
         "Two types of input files are supported:[BR]",
         "* Files with only one y-value, for such files it is assumed ",
@@ -2381,16 +2381,23 @@ int gmx_bar(int argc,char *argv[])
         "from the subtitle if present, otherwise from a number in the",
         "subdirectory in the file name.",
         "[BR]",
-        "* Files with more than one y-value. The files should have columns ",
+        "* Files with more than one y-value (see the mdp option ",
+        "'foreign_lambda)'. The files should have columns ",
         "with dH/dlambda and Delta lambda. The lambda values are inferred ",
         "from the legends: ",
         "lambda of the simulation from the legend of dH/dlambda ",
-        "and the foreign lambda's from the legends of Delta H.[PAR]",
-
+        "and the foreign lambda's from the legends of Delta H.[BR]",
         "The lambda of the simulation is parsed from dhdl.xvg file's legend ",
         "containing the string 'dH', the foreign lambda's from the legend ",
         "containing the capitalized letters 'D' and 'H'. The temperature ",
         "is parsed from the legend line containing 'T ='.[PAR]",
+
+        "The input option [TT]-g[tt] expects multiple .edr files. ",
+        "These can contain either lists of energy differences (see the",
+        "mdp option separate_dhdl_file), or a series of histograms",
+        "(see the mdp options dh_hist_size and dh_hist_spacing).",
+        "The temperature and lambda values are automatically deduced from",
+        "the ener.edr file.[PAR]"
 
         "The free energy estimates are determined using BAR with bisection, ",
         "the precision of the output is set with [TT]-prec[tt]. ",
@@ -2401,6 +2408,13 @@ int gmx_bar(int argc,char *argv[])
         "The final error estimate is determined from the average variance ",
         "over 5 blocks. A range of blocks numbers for error estimation can ",
         "be provided with the options [TT]-nbmin[tt] and [TT]-nbmax[tt].[PAR]",
+
+        "g_bar tries to aggregate samples with the same 'native' and 'foreign'",
+        "lambda values, but always assumes independent samples: note that",
+        "when aggregating energy differences/derivatives with different",
+        "sampling intervals, this is almost certainly not correct: usually",
+        "subsequent energies are correlated and different time intervals mean",
+        "different degrees of correlation between samples.[PAR]",
 
         "The results are split in two parts: the last part contains the final ",
         "results in kJ/mol, together with the error estimate for each part ",
@@ -2446,10 +2460,10 @@ int gmx_bar(int argc,char *argv[])
     
     t_filenm   fnm[] = {
         { efXVG, "-f",  "dhdl",   ffOPTRDMULT },
+        { efEDR, "-g",  "ener",   ffOPTRDMULT },
         { efXVG, "-o",  "bar",    ffOPTWR },
         { efXVG, "-oi", "barint", ffOPTWR }, 
-        { efXVG, "-oh", "histogram", ffOPTWR }, 
-        { efEDR, "-g",  "energy", ffOPTRDMULT }
+        { efXVG, "-oh", "histogram", ffOPTWR }
     };
 #define NFILE asize(fnm)
     
