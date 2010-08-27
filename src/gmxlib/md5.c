@@ -36,7 +36,9 @@
 #endif
 
 #ifdef GMX_INTEGER_BIG_ENDIAN
-#  define ARCH_IS_BIG_ENDIAN
+#define ARCH_IS_BIG_ENDIAN 1
+#else
+#define ARCH_IS_BIG_ENDIAN 0
 #endif
 
 /*
@@ -176,7 +178,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
 	a = pms->abcd[0], b = pms->abcd[1],
 	c = pms->abcd[2], d = pms->abcd[3];
     md5_word_t t;
-#if ( BYTE_ORDER > 0 )
+#if BYTE_ORDER > 0
     /* Define storage only for big-endian CPUs. */
     md5_word_t X[16];
 #else
@@ -186,7 +188,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
 #endif
 
     {
-#if ( BYTE_ORDER == 0 )
+#if BYTE_ORDER == 0
 	/*
 	 * Determine dynamically whether this is a big-endian or
 	 * little-endian machine, since we can use a more efficient
@@ -196,7 +198,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
 
 	if (*((const md5_byte_t *)&w)) /* dynamic little-endian */
 #endif
-#if ( BYTE_ORDER < 1 )		/* little-endian */
+#if BYTE_ORDER <= 0		/* little-endian */
 	{
 	    /*
 	     * On little-endian machines, we can process properly aligned
@@ -212,10 +214,10 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
 	    }
 	}
 #endif
-#if ( BYTE_ORDER == 0 )
+#if BYTE_ORDER == 0
 	else			/* dynamic big-endian */
 #endif
-#if ( BYTE_ORDER > -1 )		/* big-endian */
+#if BYTE_ORDER >= 0		/* big-endian */
 	{
 	    /*
 	     * On big-endian machines, we must arrange the bytes in the
