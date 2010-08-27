@@ -289,6 +289,11 @@ int main(int argc,char *argv[])
     "appropriate options have been given. Currently under",
     "investigation are: polarizability and X-ray bombardments.",
     "[PAR]",
+    "The option [TT]-membed[dd] does what used to be g_membed, i.e. embed",
+    "a protein into a membrane. The data file should contain the options",
+    "that where passed to g_membed before. The [TT]-mn[tt] and [TT]-mp[tt]",
+    "both apply to this as well.",
+    "[PAR]",
     "The option [TT]-pforce[tt] is useful when you suspect a simulation",
     "crashes due to too large forces. With this option coordinates and",
     "forces of atoms with a force larger than a certain value will",
@@ -383,7 +388,10 @@ int main(int argc,char *argv[])
     { efLOG, "-rt",     "rottorque",ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
     { efNDX, "-dn",     "dipole",   ffOPTWR },
-    { efRND, "-multidir",NULL,      ffOPTRDMULT}
+    { efRND, "-multidir",NULL,      ffOPTRDMULT},
+    { efDAT, "-membed", "membed",   ffOPTRD },
+    { efTOP, "-mp",     "membed",   ffOPTRD },
+    { efNDX, "-mn",     "membed",   ffOPTRD }
   };
 #define NFILE asize(fnm)
 
