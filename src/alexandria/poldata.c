@@ -897,7 +897,7 @@ int gmx_poldata_have_pol_support(gmx_poldata_t pd,char *smtype)
 }
 
 int gmx_poldata_have_eem_support(gmx_poldata_t pd,int eqg_model,char *name,
-                                 bool bAllowZeroParameters)
+                                 gmx_bool bAllowZeroParameters)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_eemprops *eep = get_eep(pold,eqg_model,name);
@@ -1093,7 +1093,7 @@ void gmx_poldata_check_consistency(FILE *fp,gmx_poldata pd)
 
 typedef struct {
   const char *name,*ref;
-  bool bWeight;
+  gmx_bool bWeight;
 } t_eemtype_props;
 
 static t_eemtype_props eemtype_props[eqgNR] = { 
