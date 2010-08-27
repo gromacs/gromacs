@@ -85,7 +85,7 @@ The force derived from this potential is:
                                  6~\frac{C_{ij}^{(6)}}{\rij^7} \right) \rnorm 
 \eeq
 
-The LJ potential may also be written in the following form :
+The LJ potential may also be written in the following form:
 \beq
 V_{LJ}(\rvij) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {\rij}\right)^{12}
                 - \left(\frac{\sigma_{ij}}{\rij}\right)^{6} \right)
@@ -2553,7 +2553,12 @@ types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}. Whenever
 using this force field, please cite the above references, and {\bf do not}
 call it the ``{\gromacs} force field,'' instead name it
 \gromosv{87}~\cite{biomos} with corrections as detailed
-in~\cite{Buuren93b,Mark94}.
+in~\cite{Buuren93b,Mark94}.  As noted by {\tt pdb2gmx}, this force field is
+``deprecated,'' indicating that newer, perhaps more reliable, versions of this
+parameter set are available.  For backwards compatibility, it is maintained 
+in the current release.  Should you have a justifiable reason to use this
+force field, all necessary files are provided in the {\tt gmx.ff} subdirectory
+of the {\gromacs} library.  See also the note in~\ssecref{atomtype}.
 
 \subsubsection{\swapindex{All-hydrogen}{force-field}}
 The \gromosv{87}-based all-hydrogen force-field is almost identical to the
