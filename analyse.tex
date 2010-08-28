@@ -44,7 +44,7 @@ Then, the different analysis tools are presented.
 {\tt make\_ndx, mk\_angndx}\\
 In \chref{algorithms}, it was explained how {\em groups of
 atoms} can be used in {\tt mdrun}.  In most analysis programs, groups
-of atoms must be chosen. Most programs can generate several default
+of atoms must also be chosen. Most programs can generate several default
 index groups, but groups can always be read from an index file. Let's
 consider a simulation of a binary mixture of components A and B. When
 we want to calculate the radial distribution function (RDF)
@@ -57,7 +57,7 @@ at distance $r$ from an A atom.
 
 By having the user define the {\em atom numbers} for groups A and B in
 a simple file, we can calculate this $g_{AB}$ in the most general way, without
-having to make any assumptions in the rdf-program about the type of 
+having to make any assumptions in the RDF program about the type of 
 particles. 
 
 Groups can therefore consist of a series of {\em atom numbers}, but in
@@ -70,7 +70,7 @@ analysis programs.  To help creating such \swapindex{index}{file}s ({\tt
 index.ndx}), there are a couple of programs to generate them, using
 either your input configuration or the topology.  To generate an
 index file consisting of a series of {\em atom numbers} (as in the
-example of $g_{AB}$) use {\tt \normindex{make\_ndx}}. To generate an index file
+example of $g_{AB}$), use {\tt \normindex{make\_ndx}}. To generate an index file
 with angles or dihedrals, use {\tt \normindex{mk\_angndx}}. Of course you can also
 make them by hand. The general format is presented here:
 
@@ -84,7 +84,7 @@ make them by hand. The general format is presented here:
    8       9\\
 \end{tt}
 
-First the group name is written between square brackets. The following
+First, the group name is written between square brackets. The following
 atom numbers may be spread out over as many lines as you like. The
 atom numbering starts at 1.
 
@@ -109,11 +109,11 @@ a number of default groups are generated to choose from:
 \item[{\tt MainChain+Cb}]\mbox{}\\
         protein main chain atoms including C$_{\beta}$
 \item[{\tt MainChain+H}]\mbox{}\\
-        protein main chain atoms including backbone amide hydrogen and
+        protein main chain atoms including backbone amide hydrogens and
         hydrogens on the N-terminus
 \item[{\tt SideChain}]\mbox{}\\
         protein side chain atoms; that is all atoms except N,
-        C$_{\alpha}$, C, O, backbone amide hydrogen, oxygens in
+        C$_{\alpha}$, C, O, backbone amide hydrogens, oxygens in
         C-terminus and hydrogens on the N-terminus
 \item[{\tt SideChain-H}]\mbox{}\\
         protein side chain atoms excluding all hydrogens
@@ -122,7 +122,7 @@ a number of default groups are generated to choose from:
         protein atoms excluding dummy masses (as used in virtual site
         constructions of NH$_3$ groups and tryptophan side-chains),
         see also \secref{vsitetop}; this group is only included when
-        it differs from the '{\tt Protein}' group
+        it differs from the ``{\tt Protein}'' group
 } % Brace matches ifthenelse test for gmxlite
 \item[{\tt Non-Protein}]\mbox{}\\
         all non-protein atoms
@@ -137,18 +137,19 @@ a number of default groups are generated to choose from:
 Empty groups will not be generated.
 Most of the groups only contain protein atoms.
 An atom is considered a protein atom if its residue name is listed
-in the {\tt \normindex{aminoacids.dat}} file.
+in the {\tt \normindex{residuetypes.dat}} file and is listed as a
+``Protein'' entry.
 
 \subsection{Selections}
 \label{subsec:selections}
-{\tt g\_select}\\
+{\tt \normindex{g\_select}}\\
 {\gromacs} also includes a {\tt g\_select} tool that can be used to
 select atoms based on more flexible criteria than in {\tt make\_ndx},
 including selecting atoms based on their coordinates.  Currently, the
 tool is experimental and only supports some basic operations, but in the
 future the functionality is planned to be included in other analysis
-tools as well.  Description of possible ways of selecting atoms can be
-read by running {\tt g\_select} and typing {\tt help} in the selection
+tools as well.  A description of possible ways to select atoms can be
+read by running {\tt g\_select} and typing {\tt help} at the selection
 prompt that appears.  It is also possible to write your own analysis
 tools to take advantage of the flexibility of these selections: see the
 {\tt template.c} file in the {\tt share/gromacs/template} directory of
@@ -169,13 +170,13 @@ your installation for an example.
 Before analyzing your trajectory it is often informative to look at
 your trajectory first. {\gromacs} comes with a simple trajectory
 viewer {\tt \normindex{ngmx}}; the advantage with this one is that it does not
-require OpenGL, which usually isn't present e.g. on supercomputers.
+require OpenGL, which usually isn't present on {\eg} supercomputers.
 It is also possible to generate a
 hard-copy in Encapsulated Postscript format, see
 \figref{ngmxdump}. If you want a faster and more fancy viewer
  there are several programs
 that can read the {\gromacs} trajectory formats -- have a look at our
-homepage {\wwwpage} for updated links. 
+homepage ({\wwwpage}) for updated links. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% General properties
 
@@ -203,7 +204,7 @@ recommended to remove the center-of-mass velocity every step (see
 \section{Radial distribution functions}
 \label{sec:rdf}
 {\tt g\_rdf}\\
-The {\em radial distribution function} (rdf) or pair correlation
+The {\em radial distribution function} (RDF) or pair correlation
 function $g_{AB}(r)$ between particles of type $A$ and $B$ is defined
 in the following way:
 \newcommand{\dfrac}[2]{\displaystyle \frac{#1}{#2}}
@@ -234,8 +235,8 @@ Usually the value of $r_{max}$ is half of the box length.  The
 averaging is also performed in time.  In practice the analysis program
 {\tt \normindex{g\_rdf}} divides the system into spherical slices (from $r$ to
 $r+dr$, see \figref{rdfex}A) and makes a histogram in stead of
-the $\delta$-function. An example of the rdf of Oxygen-Oxygen in
-SPC-water~\cite{Berendsen81} is given in \figref{rdf}.
+the $\delta$-function. An example of the RDF of oxygen-oxygen in
+SPC water~\cite{Berendsen81} is given in \figref{rdf}.
 
 \begin{figure}
 \centerline{
@@ -252,7 +253,7 @@ g_{AB}(r,\theta) &=& {1 \over \langle\rho_B\rangle_{local,\:\theta }} {1 \over N
 cos(\theta_{ij}) &=& {{\bf r}_{ij} \cdot {\bf e} \over \|r_{ij}\| \;\| e\| }
 \eea
 This $g_{AB}(r,\theta)$ is useful for analyzing anisotropic systems. 
-Note that in this case the normalization $\langle\rho_B\rangle_{local,\:\theta}$ is 
+{\bf Note} that in this case the normalization $\langle\rho_B\rangle_{local,\:\theta}$ is 
 the average density in all angle slices from $\theta$ to $\theta + d\theta$ 
 up to $r_{max}$, so angle dependent, see \figref{rdfex}D.
 
@@ -264,15 +265,15 @@ up to $r_{max}$, so angle dependent, see \figref{rdfex}D.
 
 \subsection{Theory of correlation functions}
 The theory of correlation functions is well established~\cite{Allen87}.
-However we want to describe here the implementation of the various 
+We describe here the implementation of the various 
 \normindex{correlation} function flavors in the {\gromacs} code.
 The definition of the \swapindex{autocorrelation}{function} (ACF)
-$C_f(t)$ for a property $f(t)$ is
+$C_f(t)$ for a property $f(t)$ is:
 \beq
 C_f(t)  ~=~     \left\langle f(\xi) f(\xi+t)\right\rangle_{\xi}
 \label{eqn:corr}
 \eeq
-where the notation on the right hand side means averaging over $\xi$, {\ie} over
+where the notation on the right hand side indicates averaging over $\xi$, {\ie} over
 time origins.
 It is also possible to compute cross-correlation function from two properties
 $f(t)$ and $g(t)$:
@@ -288,7 +289,7 @@ correlation time $\tau_f$:
 \label{eqn:corrtime}
 \eeq
 
-In practice correlation functions are calculated based on data points with
+In practice, correlation functions are calculated based on data points with
 discrete time intervals {$\Delta$t}, so that the ACF from an MD simulation is:
 \beq
 C_f(j\Delta t)  ~=~     \frac{1}{N-j}\sum_{i=0}^{N-1-j} f(i\Delta t) f((i+j)\Delta t)
@@ -297,7 +298,7 @@ C_f(j\Delta t)  ~=~     \frac{1}{N-j}\sum_{i=0}^{N-1-j} f(i\Delta t) f((i+j)\Del
 where $N$ is the number of available time frames for the calculation.
 The resulting ACF is
 obviously only available at time points with the same interval {$\Delta$t}.
-Since for many applications it is necessary to know  the short time behavior
+Since, for many applications, it is necessary to know the short time behavior
 of the ACF ({\eg} the first 10 ps) this often means that we have to save the
 atomic coordinates with short intervals.
 Another implication of \eqnref{corrmd} is that in principle we can not compute
@@ -308,13 +309,13 @@ all points with the same statistical accuracy:
 \beq
 C_f(j\Delta t)  ~=~ \frac{1}{M}\sum_{i=0}^{N-1-M} f(i\Delta t)f((i+j)\Delta t)
 \eeq
-here of course $j < M$.
+Here of course $j < M$.
 $M$ is sometimes referred to as the \normindex{time lag} of the correlation function. 
 When we decide to do this, we intentionally do not use all the available points
 for very short time intervals ($j << M$), but it makes it easier to interpret
 the results.
 Another aspect that may not be neglected when computing
-ACFs from simulation, is that usually the time origins $\xi$ (\eqnref{corr})
+ACFs from simulation is that usually the time origins $\xi$ (\eqnref{corr})
 are not statistically independent, which may introduce a bias in the results.
 This can be tested using a block-averaging procedure, where only time origins
 with a spacing at least the length of the time lag are included, {\eg} using 
@@ -342,11 +343,11 @@ where $P_n(x)$ is the $n^{th}$ order Legendre polynomial
 Such correlation times 
 can actually be obtained experimentally using {\eg} NMR or other relaxation 
 experiments. {\gromacs} can compute correlations using 
-the 1${st}$ and 2$^{nd}$ order Legendre polynomial (\eqnref{corrleg}).
-This can a.o. be used for rotational autocorrelation ({\tt \normindex{g\_rotacf}}), 
-dipole autocorrelation ({\tt \normindex{g\_dipoles}}).
+the 1$^{st}$ and 2$^{nd}$ order Legendre polynomial (\eqnref{corrleg}).
+This can also be used for rotational autocorrelation ({\tt \normindex{g\_rotacf}}) 
+and dipole autocorrelation ({\tt \normindex{g\_dipoles}}).
 
-In order to study torsion angle dynamics we define a dihedral 
+In order to study torsion angle dynamics, we define a dihedral 
 autocorrelation function as~\cite{Spoel97a}:
 \beq
 C(t)    ~=~     \left\langle \cos(\theta(\tau)-\theta(\tau+t))\right\rangle_{\tau}
@@ -361,25 +362,25 @@ C(t)    ~=~     \left\langle\cos(\theta(\tau))\cos(\theta(\tau+t))\,+\,\sin(\the
 \eeq
 
 \subsection{Some Applications}
-The program {\tt \normindex{g\_velacc}} calculates this {\em Velocity Auto Correlation 
-Function}.
+The program {\tt \normindex{g\_velacc}} calculates th3 {\em velocity autocorrelation 
+function}.
 \beq
 C_{\ve{v}} (\tau) ~=~ \langle {\ve{v}}_i(\tau) \cdot {\ve{v}}_i(0) \rangle_{i \in A}
 \eeq
 The self diffusion coefficient can be calculated using the Green-Kubo 
-relation~\cite{Allen87}
+relation~\cite{Allen87}:
 \beq
 D_A ~=~ {1\over 3} \int_0^{\infty} \langle {\bf v}_i(t) \cdot {\bf v}_i(0) \rangle_{i \in A} \; dt
 \eeq
 which is just the integral of the velocity autocorrelation function.
-There is a widely held belief that the velocity ACF converges faster than the mean
+There is a widely-held belief that the velocity ACF converges faster than the mean
 square displacement (\secref{msd}), which can also be used for the computation of 
 diffusion constants. However, Allen \& Tildesley~\cite{Allen87} 
-warn us that the long time 
+warn us that the long-time 
 contribution to the velocity ACF can not be ignored, so care must be taken.
 
 Another important quantity is the dipole correlation time. The {\em dipole 
-correlation function} for particles $A$ is calculated as follows by 
+correlation function} for particles of type $A$ is calculated as follows by 
 {\tt \normindex{g\_dipoles}}:
 \beq
 C_{\mu} (\tau) ~=~
@@ -392,32 +393,32 @@ For some applications see~\cite{Spoel98a}.
 The \normindex{viscosity} of a liquid can be related to the correlation 
 time of the Pressure tensor $\ve{P}$~\cite{PSmith93c,Balasubramanian96}.
 {\tt \normindex{g\_energy}} can compute the viscosity,
-but this is not very accurate~\cite{Hess2002a}
-(actually the values do not converge...).
+but this is not very accurate~\cite{Hess2002a}, and 
+actually the values do not converge.
 } % Brace matches ifthenelse test for gmxlite
 
 \section{Mean Square Displacement}
 \label{sec:msd}
 {\tt g\_msd}\\
 To determine the self \swapindex{diffusion}{coefficient} $D_A$ of
-particles $A$ one can use the \normindex{Einstein
-relation}~\cite{Allen87} \
+particles of type $A$, one can use the \normindex{Einstein
+relation}~\cite{Allen87}:
 \beq 
 \lim_{t \rightarrow \infty} \langle
 \|{\bf r}_i(t) - {\bf r}_i(0)\|^2 \rangle_{i \in A} ~=~ 6 D_A t 
 \eeq
-This {\em Mean Square Displacement} and $D_A$ are calculated by the
+This {\em mean square displacement} and $D_A$ are calculated by the
 program {\tt \normindex{g\_msd}}. Normally an index file containing
-atom numbers is used and the MSD is averaged over atoms.  For
+atom numbers is used and the MSD is averaged over these atoms.  For
 molecules consisting of more than one atom, ${\bf r}_i$ can be taken
-as the center of mass positions of the molecules. In that case you
+as the center of mass positions of the molecules. In that case, you
 should use an index file with molecule numbers. The results will be
 nearly identical to averaging over atoms, however. The {\tt g\_msd}
 program can
 also be used for calculating diffusion in one or two dimensions. This
 is useful for studying lateral diffusion on interfaces.
 
-An example of the mean square displacement of SPC-water is given in
+An example of the mean square displacement of SPC water is given in
 \figref{msdwater}.
 
 \begin{figure}
@@ -478,7 +479,7 @@ convention''. B. ``Polymer convention''.}
 \end{figure}
 
 To follow specific {\em angles} in time between two vectors, a vector
-and a plane or two planes (defined by 2, resp. 3 atoms inside your
+and a plane or two planes (defined by 2 or 3 atoms, respectively, inside your
 molecule, see \figref{sgangle}A, B, C), use the program {\tt
 \normindex{g\_sgangle}}.
 
@@ -489,7 +490,7 @@ molecule, see \figref{sgangle}A, B, C), use the program {\tt
 \label{fig:sgangle}
 \end{figure}
 
-For planes it uses the normal vector perpendicular to the plane.  It
+For planes, {\tt \normindex{g\_sgangle}} uses the normal vector perpendicular to the plane.  It
 can also calculate the {\em distance} $d$ between the geometrical
 center of two planes (see \figref{sgangle}D), and the distances
 $d_1$ and $d_2$ between 2 atoms (of a vector) and the center of a
@@ -542,7 +543,7 @@ can be calculated with the program {\tt \normindex{g\_mindist}}. It also calcula
 {\em number of contacts} between these groups 
 within a certain radius $r_{max}$.
 \item[$\bullet$] 
-To monitor the {\em minimum distances between amino-acid residues} 
+To monitor the {\em minimum distances between amino acid residues} 
 within a (protein) molecule, you can use 
 the program {\tt \normindex{g\_mdmat}}. This minimum distance between two residues
 A$_i$ and A$_j$ is defined as the smallest distance between any pair of 
@@ -578,7 +579,7 @@ RMSD(t_1,t_2) ~=~ \left[\frac{1}{M} \sum_{i=1}^N m_i \|{\bf r}_i(t_1)-{\bf r}_i(
 \label{eqn:rmsd}
 \eeq
 where $M = \sum_{i=1}^N m_i$ and ${\bf r}_i(t)$ is the position of atom $i$ at time $t$.
-{\bf NOTE} that fitting does not have to use the same atoms as the calculation
+{\bf Note} that fitting does not have to use the same atoms as the calculation
 of the $RMSD$; {\eg}: a protein is usually fitted on the backbone atoms
 (N,C$_{\alpha}$,C), but the $RMSD$ can be computed of the backbone
 or of the whole protein.
@@ -587,8 +588,8 @@ Instead of comparing the structures to the initial structure at time $t=0$
 (so for example a crystal structure), one can also calculate \eqnref{rmsd} 
 with a structure at time $t_2=t_1-\tau$.
 This gives some insight in the mobility as a function of $\tau$.
-Also a matrix can be made with the $RMSD$ as a function of $t_1$ and $t_2$,
-this gives a nice graphical impression of a trajectory.
+A matrix can also be made with the $RMSD$ as a function of $t_1$ and $t_2$,
+which gives a nice graphical interpretation of a trajectory.
 If there are transitions in a trajectory, they will clearly show up in
 such a matrix.
 
@@ -691,7 +692,7 @@ s(A,B) = 1 - \frac{d(A,B)}{\sqrt{\mbox{tr}A + \mbox{tr} B}}
 The overlap is 1 if and only if matrices $A$ and $B$ are identical.
 It is 0 when the sampled subspaces are completely orthogonal.
 
-A commonly used measure is the subspace overlap of the first few
+A commonly-used measure is the subspace overlap of the first few
 eigenvectors of covariance matrices.
 The overlap of the subspace spanned by $m$ orthonormal vectors 
 ${\bf w}_1,\ldots,{\bf w}_m$ with a reference subspace spanned by 
@@ -704,13 +705,13 @@ can be quantified as follows:
 The overlap will increase with increasing $m$ and will be 1 when
 set ${\bf v}$ is a subspace of set ${\bf w}$.
 The disadvantage of this method is that it does not take the eigenvalues
-into account. All eigenvectors are weighted equally and when
-degenerate subspaces are present (equal eigenvalues) the calculated overlap
+into account. All eigenvectors are weighted equally, and when
+degenerate subspaces are present (equal eigenvalues), the calculated overlap
 will be too low.
 
-Another useful check is the cosine content. It has been proved that the
+Another useful check is the cosine content. It has been proven that the
 the principal components of random diffusion are cosines with the number of
-periods equal to half the principal component index\cite{Hess2000,Hess2002b}.
+periods equal to half the principal component index~\cite{Hess2000,Hess2002b}.
 The eigenvalues are proportional to the index to the power $-2$.
 The cosine content is defined as:
 \beq
@@ -734,22 +735,24 @@ The cosine content can be calculated with {\tt \normindex{g\_analyze}}.
 {\tt g\_angle, g\_covar, g\_anaeig}\\
 Principal component analysis can be performed in dihedral
 space~\cite{Mu2005a} using {\gromacs}. You start by defining the
-dihedral angles of your interest in an index file, either using {\tt
+dihedral angles of interest in an index file, either using {\tt
   mk\_angndx} or otherwise. Then you use the {\tt g\_angle} program
-with the -or flag to produce a new trr file containing the cosine and
-sine of each dihedral angle in two coordinates respectively. That is,
-in the trr file you will have a series of numbers corresponding to:
+with the {\tt -or} flag to produce a new {\tt .trr} file containing the cosine and
+sine of each dihedral angle in two coordinates, respectively. That is,
+in the {\tt .trr} file you will have a series of numbers corresponding to:
 cos($\phi_1$), sin($\phi_1$), cos($\phi_2$), sin($\phi_2$), ...,
-cos($\phi_n$), sin($\phi_n$), the array is padded with zeros if
-necessary.  Then you can use this trr file as input for the {\tt
+cos($\phi_n$), sin($\phi_n$), and the array is padded with zeros, if
+necessary.  Then you can use this {\tt .trr} file as input for the {\tt
   g\_covar} program and perform principal component analysis as usual.
-For this to work you will need to generate a reference file (tpr, gro,
-pdb etc.) containing the same number of ``atoms'' as the new trr file,
-that is for $n$ dihedrals you need 2$n$/3 atoms (rounded up if not an
-integer number). You should use the {\tt -nofit} option for {\tt
+For this to work you will need to generate a reference file ({\tt .tpr}, 
+{\tt .gro}, {\tt .pdb} etc.) containing the same number of ``atoms'' 
+as the new {\tt .trr} file, that is for $n$ dihedrals you need 2$n$/3 atoms 
+(rounded up if not an integer number). 
+You should use the {\tt -nofit} option for {\tt
   g\_covar} since the coordinates in the dummy reference file do not
-correspond in any way to the information in the trr file. Analysis of
-the results is done using {\tt g\_anaeig}.  }
+correspond in any way to the information in the {\tt .trr} file. Analysis of
+the results is done using {\tt g\_anaeig}.  
+} % Brace matches ifthenelse test for gmxlite
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Hydrogen bonds
 
@@ -761,7 +764,7 @@ H-bond exists, a geometrical criterion is used, see also
 \figref{hbond}:
 \beq
 \begin{array}{rclcl}
-r       & \leq  & r_{HB}        & = & 0.35 \mbox{nm}    \\
+r       & \leq  & r_{HB}        & = & 0.35~\mbox{nm}    \\
 \alpha  & \leq  & \alpha_{HB}   & = & 30^o              \\
 \end{array}
 \eeq
@@ -772,12 +775,12 @@ r       & \leq  & r_{HB}        & = & 0.35 \mbox{nm}    \\
 \label{fig:hbond}
 \end{figure}
 
-The value of $r_{HB} = 0.35$~nm corresponds to the first minimum of the rdf of 
-SPC-water (see also \figref{rdf}).
+The value of $r_{HB} = 0.35$~nm corresponds to the first minimum of the RDF of 
+SPC water (see also \figref{rdf}).
 
 The program {\tt g\_hbond} analyses all hydrogen bonds existing
 between two groups of atoms (which must be either identical or
-non-overlapping) or in specified Donor Hydrogen Acceptor triplets, in
+non-overlapping) or in specified donor-hydrogen-acceptor triplets, in
 the following ways:
 
 \begin{figure}
@@ -801,7 +804,7 @@ The total number of H-bonds in each time frame
 The number of H-bonds in time between residues, divided into groups
 \nn{i} where $n$ and $n$+$i$ stand for residue numbers and $i$ goes
 from 0 to 6. The group for $i=6$ also includes all H-bonds for
-$i>6$. These groups include the \nn{3}, \nn{4} and \nn{5} H-bonds
+$i>6$. These groups include the \nn{3}, \nn{4} and \nn{5} H-bonds,
 which provide a measure for the formation of $\alpha$-helices or
 $\beta$-turns or strands.
 \item
@@ -819,10 +822,10 @@ $\tau_{HB}$:
 \tau_{HB} ~=~ \int_{0}^{\infty} C(\tau) d\tau
 \label{eqn:hblife}
 \eeq
-Both the integral and the complete auto correlation function $C(\tau)$
+Both the integral and the complete autocorrelation function $C(\tau)$
 will be output, so that more sophisticated analysis ({\eg}\@ using
 multi-exponential fits) can be used to get better estimates for
-$\tau_{HB}$. A more complicate analysis is given in ref.~\cite{Spoel2006b},
+$\tau_{HB}$. A more complicate analysis is given in ref.~\cite{Spoel2006b};
 one of the more fancy option is the Luzar and Chandler analysis
 of hydrogen bond kinetics~\cite{Luzar96b,Luzar2000a}. 
 \item
@@ -848,16 +851,16 @@ indicated as such in the existence map.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Protein related items 
 
-\section{Protein related items}
-{\tt do\_dssp, g\_rama, xrama, wheel}\\
+\section{Protein-related items}
+{\tt do\_dssp, g\_rama, g\_xrama, g\_wheel}\\
 To analyze structural changes of a protein, you can calculate the radius of 
-gyration or the minimum residue distances during time 
+gyration or the minimum residue distances over time 
 (see \secref{rg}), or calculate the RMSD (\secref{rmsd}).
 
 You can also look at the changing of {\em secondary structure elements} 
-during your run. For this you can use the program {\tt \normindex{do\_dssp}}, which is 
-an interface for the commercial program {\tt dssp}~\cite{Kabsch83}. For 
-further information, see the {\tt dssp}-manual. A typical output plot of 
+during your run. For this, you can use the program {\tt \normindex{do\_dssp}}, which is 
+an interface for the commercial program {\tt DSSP}~\cite{Kabsch83}. For 
+further information, see the {\tt DSSP} manual. A typical output plot of 
 {\tt do\_dssp} is given in \figref{dssp}.
 
 \begin{figure}
@@ -867,7 +870,7 @@ further information, see the {\tt dssp}-manual. A typical output plot of
 \label{fig:dssp}
 \end{figure}
 
-One other important analysis of proteins is the so called 
+One other important analysis of proteins is the so-called 
 {\em Ramachandran plot}. 
 This is the projection of the structure on the two dihedral angles $\phi$ and 
 $\psi$ of the protein backbone, see \figref{phipsi}.
@@ -890,13 +893,13 @@ A typical output is given in \figref{rama}.
 \end{figure}
 
 It is also possible to generate an animation of the Ramachandran plot
-in time. This can be of help for analyzing certain dihedral transitions 
+in time. This can be useful for analyzing certain dihedral transitions 
 in your protein. You can use the program {\tt \normindex{xrama}} for this.
 
 When studying $\alpha$-helices 
 it is useful to have a {\em helical wheel} projection
 of your peptide, to see whether a peptide is amphipathic. This can be done
-using the {\tt \normindex{wheel}} program. Two examples are 
+using the {\tt \normindex{g\_wheel}} program. Two examples are 
 plotted in \figref{wheel}.
 
 \begin{figure}
@@ -907,12 +910,12 @@ plotted in \figref{wheel}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Membrane Related Items
 
-\section{Interface related items}
+\section{Interface-related items}
 {\tt g\_order, g\_density, g\_potential, g\_traj}\\
 When simulating molecules with long carbon tails, it can be
 interesting to calculate their average orientation. There are several
 flavors of order parameters, most of which are related. The program
-{\tt \normindex{g\_order}} can calculate order parameters using the equation
+{\tt \normindex{g\_order}} can calculate order parameters using the equation:
 
 \begin{equation}
 S_{z} = \frac{3}{2}\langle {\cos^2{\theta_z}} \rangle - \frac{1}{2}
@@ -940,28 +943,32 @@ charge density ($\rho(z)$):
 \psi(z) - \psi(-\infty) = - \int_{-\infty}^z dz' \int_{-\infty}^{z'} \rho(z'')dz''/ \epsilon_0 
 \label{eqn:elpotgr}
 \eeq
-where the position $z=-\infty$ is far enough in the bulk phase that
+where the position $z=-\infty$ is far enough in the bulk phase such that
 the field is zero.  With this method, it is possible to ``split'' the
 total potential into separate contributions from lipid and water
 molecules. The program {\tt \normindex{g\_potential}} divides the box in slices and
 sums all charges of the atoms in each slice. It then integrates this
-charge density, giving the electric field, and the electric field,
-giving the potential. Charge density, field and potential are written
-to {\tt xvgr-}input files.
+charge density to give the electric field, which is in turn integrated to
+give the potential. Charge density, electric field, and potential are written
+to {\tt xvgr} input files.
 
 The program {\tt \normindex{g\_traj}} is a very simple analysis program. All it
-does is print the coordinates, velocities or forces of selected atoms.
+does is print the coordinates, velocities, or forces of selected atoms.
 It can also calculate the center of mass of one or more
 molecules and print the coordinates of the center of mass to three
 files. By itself, this is probably not a very useful analysis, but
 having the coordinates of selected molecules or atoms can be very
-handy for further analysis, not only in interface systems.
+handy for further analysis, not only in interfacial systems.
 
-The program {\tt \normindex{g\_pvd}} calculates a lot of properties, among which
-the density of a group in particles per unit of volume, but not a
-density that takes the mass of the atoms into account. The program
-{\tt \normindex{g\_density}} also calculates the density of a group, but takes the
-masses into account and gives a plot of the density against a box
+%
+% Non-existent program
+% The program {\tt \normindex{g\_pvd}} calculates a lot of properties, among which
+% the density of a group in particles per unit of volume, but not a
+% density that takes the mass of the atoms into account. The program
+%
+
+The program {\tt \normindex{g\_density}} also calculates the density of groups, 
+but takes the masses into account and gives a plot of the density against a box
 axis. This is useful for looking at the distribution of groups or
 atoms across the interface.
 
@@ -973,8 +980,8 @@ You can compute the NMR chemical shifts of protons with the program
 {\tt \normindex{do\_shift}}. This is just an {\gromacs} interface to
 the public domain program {\tt total}~\cite{Williamson93a}. For
 further information, read the article. Although there is limited
-support for this in {\gromacs} users are encouraged to use the
-software provided by the David Case group at Scripps because it seems
+support for this in {\gromacs}, users are encouraged to use the
+software provided by David Case's group at Scripps because it seems
 to be more up-to-date.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -987,4 +994,4 @@ to be more up-to-date.
 % LocalWords:  mindist mdmat rms rmsdist rmsd jj diag eigenvectors covar anaeig
 % LocalWords:  macromolecule trr tpr gro pdb nofit hbond rclcl HB multi Luzar
 % LocalWords:  dssp rama xrama rg Ramachandran phipsi amphipathic HPr xvgr pvd
-% LocalWords:  Scripps
+% LocalWords:  Scripps RDF

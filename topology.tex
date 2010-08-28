@@ -1957,10 +1957,10 @@ all atom types and non-bonded parameters. The included file {\tt ffbonded.itp}
 contains all bonded parameters.
 
 For each force field, there several files which are only used by {\tt pdb2gmx}.
-These are: residue databases ({\tt .rtp}, see \ssecref{rtp})
-the hydrogen database ({\tt .hdb}, see \ssecref{hdb}), two termini databases
-({\tt .n.tdb} and {\tt .c.tdb}, see \ssecref{tdb}) and
-the atom type database ({\tt .atp}), which contains only the masses.  Other optional
+These are: residue databases ({\tt .rtp}, see~\ssecref{rtp})
+the hydrogen database ({\tt .hdb}, see~\ssecref{hdb}), two termini databases
+({\tt .n.tdb} and {\tt .c.tdb}, see~\ssecref{tdb}) and
+the atom type database ({\tt .atp}, see~\ssecref{atomtype}), which contains only the masses.  Other optional
 files are described in~\secref{pdb2gmxfiles}.
 
 
@@ -1980,9 +1980,9 @@ generated when parameters are redefined with a different value.
 Changing the Lennard-Jones parameters of an atom type is not
 recommended, because in the {\gromos} force fields
 the Lennard-Jones parameters for several combinations of atom types
-are not genereated according to the standard combination rules.
-Such combinations (and possibly also combinations that do follow the
-combination rules) are defined in the {\tt [ nonbonded\_params ]}
+are not generated according to the standard combination rules.
+Such combinations (and possibly others that do follow the
+combination rules) are defined in the {\tt [ nonbond\_params ]}
 section, and changing the Lennard-Jones parameters of an atom type
 has no effect on these combinations.
 
@@ -2016,4 +2016,4 @@ section would be overwritten using the standard combination rules.
 % LocalWords:  propanols pentanes ffG PropPent typeB chargeB massB ga gd mols
 % LocalWords:  Propanol Pentane methanes aug natoms residuenr residuename vx vy
 % LocalWords:  atomname atomnr vz Fortran confin ntx GROMOS nbfunc
-% LocalWords:  fudgeLJ fudgeQQ ffgmxnb ffgmxbon tdb
+% LocalWords:  fudgeLJ fudgeQQ ffgmxnb ffgmxbon tdb ffbonded ffnonbonded nonbond
