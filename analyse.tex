@@ -30,33 +30,33 @@
 \label{ch:analysis}
 In this chapter different ways of analyzing your trajectory are described. 
 The names of the corresponding analysis programs are given. 
-Specific info on the in- and output of these programs can be found 
-in the on-line manual at {\wwwpage}.
+Specific information on the in- and output of these programs can be found 
+in the online manual at {\wwwpage}.
 The output files are often produced as finished Grace/Xmgr graphs.
 
-First in \secref{groups} the group concept in analysis is explained. 
-Then the different analysis tools are presented.
+First in \secref{groups}, the group concept in analysis is explained. 
+Then, the different analysis tools are presented.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Groups in Analysis
 
 \section{Groups in Analysis.}
 \label{sec:groups}
 {\tt make\_ndx, mk\_angndx}\\
-In \chref{algorithms} it was explained how {\em groups of
-atoms} can be used in the MD-program.  In most analysis programs groups
-of atoms are needed to work on. Most programs can generate several default
+In \chref{algorithms}, it was explained how {\em groups of
+atoms} can be used in {\tt mdrun}.  In most analysis programs, groups
+of atoms must be chosen. Most programs can generate several default
 index groups, but groups can always be read from an index file. Let's
 consider a simulation of a binary mixture of components A and B. When
-we want to calculate the radial distribution function (rdf)
-$g_{AB}(r)$ of A with respect to B, we have to calculate
+we want to calculate the radial distribution function (RDF)
+$g_{AB}(r)$ of A with respect to B, we have to calculate:
 \beq
 4\pi r^2 g_{AB}(r)      ~=~     V~\sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} P(r)
 \eeq
-where $V$ is the volume and $P(r)$ is the probability to find a B atom
-at a distance $r$ from an A atom.
+where $V$ is the volume and $P(r)$ is the probability of finding a B atom
+at distance $r$ from an A atom.
 
 By having the user define the {\em atom numbers} for groups A and B in
-a simple file we can calculate this $g_{AB}$ in the most general way, without
+a simple file, we can calculate this $g_{AB}$ in the most general way, without
 having to make any assumptions in the rdf-program about the type of 
 particles. 
 
