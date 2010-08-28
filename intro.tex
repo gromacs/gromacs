@@ -36,20 +36,20 @@
 energy minimization. These are two of the many techniques that belong 
 to the realm of \swapindex{computational}{chemistry} and 
 \swapindex{molecular}{modeling}. 
-{\em Computational Chemistry} is just a name to indicate the use of 
+{\em Computational chemistry} is just a name to indicate the use of 
 computational techniques in chemistry, ranging from quantum mechanics 
 of molecules to dynamics of large complex molecular aggregates. {\em 
 Molecular modeling} indicates the general process of describing 
 complex chemical systems in terms of a realistic atomic model, with the 
-aim to understand and predict macroscopic properties based on detailed 
-knowledge on an atomic scale. Often molecular modeling is used to 
+goal being to understand and predict macroscopic properties based on detailed 
+knowledge on an atomic scale. Often, molecular modeling is used to 
 design new materials, for which the accurate prediction of physical 
 properties of realistic systems is required. 
 
-Macroscopic physical properties can be distinguished in ($a$) {\em static 
+Macroscopic physical properties can be distinguished by ($a$) {\em static 
 equilibrium properties}, such as the binding constant  of an inhibitor to an 
 enzyme, the average potential energy of a system, or the radial distribution  
-function in a liquid, and ($b$) {\em
+function of a liquid, and ($b$) {\em
 dynamic or non-equilibrium properties}, such as the viscosity of a 
 liquid, diffusion processes in membranes, the dynamics of phase 
 changes, reaction kinetics, or the dynamics of defects in crystals.  
@@ -60,14 +60,14 @@ state of the art. Ideally, the (relativistic) time-dependent
 describes the properties of molecular systems 
 with high accuracy, but anything more complex than the equilibrium 
 state of a few atoms cannot be handled at this {\em ab initio} level. 
-Thus approximations are necessary; the higher the complexity of a 
+Thus, approximations are necessary; the higher the complexity of a 
 system and the longer the time span of the processes of interest is, 
 the more severe the required approximations are. At a certain point 
-(reached very much earlier than one would wish) the {\em ab initio} 
+(reached very much earlier than one would wish), the {\em ab initio} 
 approach must be augmented or replaced by {\em empirical} 
 parameterization of the model used. Where simulations based on physical 
-principles of atomic interactions still fail  due to the complexity of the 
-system 
+principles of atomic interactions still fail due to the complexity of the 
+system, 
 molecular modeling is based entirely on a similarity analysis of known 
 structural and chemical data. The \normindex{QSAR} methods (Quantitative 
 Structure-Activity Relations) and many homology-based protein structure  
@@ -75,7 +75,7 @@ predictions belong to the latter category.
 
 Macroscopic properties are always \swapindex{ensemble}{average}s over a 
 representative statistical ensemble (either equilibrium or 
-non-equilibrium) of molecular systems. For molecular modeling this has 
+non-equilibrium) of molecular systems. For molecular modeling, this has 
 two important consequences:
 \begin{itemize}
 \item   The knowledge of a single structure, even if it is the structure 
@@ -87,7 +87,7 @@ two important consequences:
         stability of molecular conformations, etc. The computation of free 
         energies and thermodynamic potentials requires special extensions of 
         molecular simulation techniques.
-\item   While molecular simulations in principle provide atomic details 
+\item   While molecular simulations, in principle, provide atomic details 
         of the structures and motions, such details are often not relevant for 
         the macroscopic properties of interest. This opens the way to simplify 
         the description of interactions and average over irrelevant details. 
@@ -113,14 +113,14 @@ and for the analysis of dynamic events, only the second method is
 appropriate. While Monte Carlo simulations are more simple than MD (they 
 do not require the computation of forces), they do not yield 
 significantly better statistics than MD in a given amount of computer time. 
-Therefore MD is the more universal technique. If a starting 
+Therefore, MD is the more universal technique. If a starting 
 configuration is very far from equilibrium, the forces may be 
-excessively large and the MD simulation may fail. In those cases a 
+excessively large and the MD simulation may fail. In those cases, a 
 robust {\em energy minimization} is required. Another reason to perform 
 an energy minimization is the removal of all kinetic energy from the 
-system: if several 'snapshots' from dynamic simulations must be compared, 
+system: if several ``snapshots'' from dynamic simulations must be compared, 
 energy minimization reduces the thermal noise in the structures and  
-potential energies,  so that they can be compared better.
+potential energies so that they can be compared better.
 
 \section{Molecular Dynamics Simulations}
 \label{sec:MDsimulations}
@@ -140,7 +140,7 @@ pressure remain at the required values, and the coordinates are
 written to an output file at regular intervals. The coordinates as a
 function of time represent a {\em trajectory} of the system. After
 initial changes, the system will usually reach an {\em equilibrium
-state}. By averaging over an equilibrium trajectory many macroscopic
+state}. By averaging over an equilibrium trajectory, many macroscopic
 properties can be extracted from the output file.
 
 It is useful at this point to consider the \normindex{limitations} of MD
@@ -162,10 +162,10 @@ another example where classical mechanics breaks down. While helium
 may not deeply concern us, the high frequency vibrations of covalent
 bonds should make us worry! The statistical mechanics of a classical
 harmonic oscillator differs appreciably from that of a real quantum
-oscillator, when the resonance frequency $\nu$ approximates or exceeds
+oscillator when the resonance frequency $\nu$ approximates or exceeds
 $k_BT/h$. Now at room temperature the wavenumber $\sigma = 1/\lambda =
 \nu/c$ at which $h
-\nu = k_BT$ is approximately 200 cm$^{-1}$. Thus all frequencies
+\nu = k_BT$ is approximately 200 cm$^{-1}$. Thus, all frequencies
 higher than, say, 100 cm$^{-1}$ may misbehave in
 classical simulations. This means that practically all bond and
 bond-angle vibrations are suspect, and even hydrogen-bonded motions as
@@ -180,7 +180,7 @@ classical limit (see \tabref{vibrations}). What can we do?
 type of bond    & \mcc{1}{vibration} & \mcc{3}{(cm$^{-1}$)} \\
 \hline
 C-H, O-H, N-H   & stretch       & 3000  & 3500  & \\
-C=C, C=O,       & stretch       & 1700  & 2000  & \\
+C=C, C=O        & stretch       & 1700  & 2000  & \\
 HOH             & bending       & \mcl{2}{1600} & \\
 C-C             & stretch       & 1400  & 1600  & \\
 H$_2$CX         & sciss, rock   & 1000  & 1500  & \\ 
@@ -214,7 +214,7 @@ where $x=h\nu /kT$. The classical oscillator absorbs too much energy
 ($kT$), while the high-frequency quantum oscillator is in its ground
 state at the zero-point energy level of $\frac{1}{2} h\nu$. \\ (b) We
 can treat the bonds (and bond angles) as {\em \normindex{constraint}s}
-in the equation of motion. The rational behind this is that a quantum
+in the equations of motion. The rationale behind this is that a quantum
 oscillator in its ground state resembles a constrained bond more
 closely than a classical oscillator. A good practical reason for this
 choice is that the algorithm can use larger time steps when the
@@ -245,11 +245,11 @@ need arises or knowledge improves. But the form of the forces that can
 be used in a particular program is subject to limitations. The force
 field that is incorporated in {\gromacs} is described in Chapter 4. In
 the present version the force field is pair-additive (apart from
-long-range coulomb forces), it cannot incorporate
+long-range Coulomb forces), it cannot incorporate
 polarizabilities, and it does not contain fine-tuning of bonded
 interactions. This urges the inclusion of some limitations in this
 list below.  For the rest it is quite useful and fairly reliable for
-bio macro-molecules in aqueous solution!
+biologically-relevant macromolecules in aqueous solution!
 
 \item[{\bf The force field is pair-additive}]\mbox{}\\
 This means that all {\em non-bonded} forces result from the sum of
@@ -265,34 +265,34 @@ in practice. But the omission of polarizability also means that
 electrons in atoms do not provide a dielectric constant as they
 should. For example, real liquid alkanes have a dielectric constant of
 slightly more than 2, which reduce the long-range electrostatic
-interaction between (partial) charges. Thus the simulations will
+interaction between (partial) charges. Thus, the simulations will
 exaggerate the long-range Coulomb terms. Luckily, the next item
 compensates this effect a bit.
 
 \item[{\bf Long-range interactions are cut off}]\mbox{}\\
-In this version {\gromacs} always uses a cut-off radius for the
+In this version, {\gromacs} always uses a cut-off radius for the
 Lennard-Jones interactions and sometimes for the Coulomb interactions
-as well.  Due to the minimum-image convention (only one image of each
+as well.  Due to the minimum-image convention, which states that only one image of each
 particle in the periodic boundary conditions is considered for a pair
-interaction), the cut-off range can not exceed half the box size. That
+interaction, the cut-off range cannot exceed half the box size. That
 is still pretty big for large systems, and trouble is only expected
 for systems containing charged particles. But then truly bad things can
 happen, like accumulation of charges at the cut-off boundary or very
-wrong energies! For such systems you should consider using one of the
+wrong energies! For such systems, you should consider using one of the
 implemented long-range electrostatic algorithms, such as 
 particle-mesh Ewald~\cite{Darden93,Essmann95}.
 
 \item[{\bf Boundary conditions are unnatural}]\mbox{}\\
 Since system size is small (even 10,000 particles is small), a cluster
 of particles will have a lot of unwanted boundary with its environment
-(vacuum). This we must avoid if we wish to simulate a bulk system. So
-we use periodic boundary conditions, to avoid real phase
-boundaries. But liquids are not crystals, so something unnatural
+(vacuum). We must avoid this condition if we wish to simulate a bulk system.
+As such, we use periodic boundary conditions to avoid real phase
+boundaries. Since liquids are not crystals, something unnatural
 remains. This item is mentioned last because it is the
-least of the evils. For large systems the errors are small, but for
+least of the evils. For large systems, the errors are small, but for
 small systems with a lot of internal spatial correlation, the periodic
-boundaries may enhance internal correlation. In that case, beware and
-test the influence of system size. This is especially important when
+boundaries may enhance internal correlation. In that case, beware of, and
+test, the influence of system size. This is especially important when
 using lattice sums for long-range electrostatics, since these are known
 to sometimes introduce extra ordering.
 \end{description}
@@ -304,7 +304,7 @@ is required. {\gromacs} provides a number of methods for local energy
 minimization, as detailed in \secref{EM}.
 
 The potential energy function of a (macro)molecular system is a very
-complex landscape (or {\em hyper surface}) in a large number of
+complex landscape (or {\em hypersurface}) in a large number of
 dimensions. It has one deepest point, the {\em global minimum} and a
 very large number of {\em local minima}, where all derivatives of the
 potential energy function with respect to the coordinates are zero and
@@ -325,10 +325,10 @@ configurational space and the number of local minima is so high that
 it is impossible to sample the space at a sufficient number of points
 to obtain a complete survey. In particular, no minimization method
 exists that guarantees the determination of the global minimum in any
-practical amount of time [Impractical methods exist, some much faster
-than others~\cite{Geman84}].  However, given a starting configuration,
-it is possible to find the {\em nearest local minimum}. Nearest in
-this context does not always imply nearest in a geometrical sense
+practical amount of time. Impractical methods exist, some much faster
+than others~\cite{Geman84}.  However, given a starting configuration,
+it is possible to find the {\em nearest local minimum}. ``Nearest'' in
+this context does not always imply ``nearest'' in a geometrical sense
 ({\ie}, the least sum of square coordinate differences), but means the
 minimum that can be reached by systematically moving down the steepest
 local gradient. Finding this nearest local minimum is all that
@@ -344,10 +344,10 @@ physical truth is required, you can use your imagination to speed up this
 process. One trick that often works is to make hydrogen atoms heavier
 (mass 10 or so): although that will slow down the otherwise very rapid
 motions of hydrogen atoms, it will hardly influence the slower motions
-in the system while enabling you to increase the time step by a factor
+in the system, while enabling you to increase the time step by a factor
 of 3 or 4. You can also modify the potential energy function during
 the search procedure, {\eg} by removing barriers (remove dihedral
-angle functions or replace repulsive potentials by {\em soft core}
+angle functions or replace repulsive potentials by {\em soft-core}
 potentials~\cite{Nilges88}), but always take care to restore the
 correct functions slowly. The best search method that allows rather
 drastic structural changes is to allow excursions into
@@ -370,9 +370,9 @@ Three possible energy minimization methods are:
         are superior in their convergence properties near the minimum: a 
         quadratic potential function is minimized in one step! The problem 
         is that for $N$ particles a $3N\times 3N$ matrix must be computed, 
-        stored and inverted. Apart from the extra programming to obtain 
+        stored, and inverted. Apart from the extra programming to obtain 
         second derivatives, for most systems of interest this is beyond the 
-        available capacity. There are intermediate methods building up the 
+        available capacity. There are intermediate methods that build up the 
         Hessian matrix on the fly, but they also suffer from excessive 
         storage requirements. So {\gromacs} will shy away from this class 
         of methods.
@@ -383,10 +383,10 @@ The {\em steepest descent} method, available in {\gromacs}, is of the
 second class. It simply takes a step in the direction of the negative
 gradient (hence in the direction of the force), without any
 consideration of the history built up in previous steps. The step size
-is adjusted such that the search is fast but the motion is always
+is adjusted such that the search is fast, but the motion is always
 downhill. This is a simple and sturdy, but somewhat stupid, method:
 its convergence can be quite slow, especially in the vicinity of the
-local minimum! The faster converging {\em conjugate gradient method}
+local minimum! The faster-converging {\em conjugate gradient method}
 (see {\eg} \cite{Zimmerman91}) uses gradient information from previous
 steps. In general, steepest descents will bring you close to the
 nearest local minimum very quickly, while conjugate gradients brings

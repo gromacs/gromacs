@@ -123,31 +123,31 @@ Electric potentials $\Phi$ and electric fields $\ve{E}$ are
 intermediate quantities in the calculation of energies and
 forces. They do not occur inside {\gromacs}. If they are used in
 evaluations, there is a choice of equations and related units. We
-recommend strongly to follow the usual practice to include the factor
+strongly recommend following the usual practice of including the factor
 $f$ in expressions that evaluate $\Phi$ and $\ve{E}$:
 \bea
 \Phi(\ve{r}) = f \sum_j \frac{q_j}{|\ve{r}-\ve{r}_j|} 	\\
 \ve{E}(\ve{r}) = f \sum_j q_j \frac{(\ve{r}-\ve{r}_j)}{|\ve{r}-\ve{r}_j|^3}
 \eea
-With these definitions $q\Phi$ is an energy and $q\ve{E}$ is a
+With these definitions, $q\Phi$ is an energy and $q\ve{E}$ is a
 force. The units are those given in \tabref{derivedunits}:
-about 10 mV for potential. Thus the potential of an electronic charge
+about 10 mV for potential. Thus, the potential of an electronic charge
 at a distance of 1 nm equals $f \approx 140$ units $\approx
 1.4$~V. (exact value: 1.439965 V)
 
-Note that these units are mutually consistent; changing any of the
+{\bf Note} that these units are mutually consistent; changing any of the
 units is likely to produce inconsistencies and is therefore {\em
 strongly discouraged\/}! In particular: if \AA \ are used instead of
-nm, the unit of time changes to 0.1 ps. If the kcal/mol (= 4.184
-kJ/mol) is used instead of kJ/mol for energy, the unit of time becomes
+nm, the unit of time changes to 0.1 ps. If the kcal mol$^{-1}$ (= 4.184
+kJ mol$^{-1}$) is used instead of kJ mol$^{-1}$ for energy, the unit of time becomes
 0.488882 ps and the unit of temperature changes to 4.184 K. But in
 both cases all electrical energies go wrong, because they will still
-be computed in kJ/mol, expecting nm as the unit of length. Although
+be computed in kJ mol$^{-1}$, expecting nm as the unit of length. Although
 careful rescaling of charges may still yield consistency, it is clear
 that such confusions must be rigidly avoided.
   
-In terms of the MD units the usual physical constants take on
-different values, see \tabref{consts}. All quantities are per mol rather than per
+In terms of the MD units, the usual physical constants take on
+different values (see \tabref{consts}). All quantities are per mol rather than per
 molecule. There is no distinction between Boltzmann's constant $k$ and
 the gas constant $R$: their value is
 $0.008\,314\,51$~kJ~mol$^{-1}$~K$^{-1}$.
@@ -171,16 +171,16 @@ $c$	& velocity of light	& $299\,792.458$~nm/ps \\
 \end{table}
 
 \section{Reduced units}
-When simulating Lennard-Jones (LJ) systems it might be advantageous to
-use reduced units ({\em {\ie}}, setting
+When simulating Lennard-Jones (LJ) systems, it might be advantageous to
+use reduced units ({\ie}, setting
 $\epsilon_{ii}=\sigma_{ii}=m_i=k_B=1$ for one type of atoms). This is
 possible. When specifying the input in reduced units, the output will
-also be in reduced units. There is one exception: the {\em
+also be in reduced units. The one exception is the {\em
 temperature}, which is expressed in $0.008\,314\,51$ reduced
-units. This is a consequence of the use of Boltzmann's constant in the
-evaluation of temperature in the code. Thus not $T$, but $k_BT$ is the
+units. This is a consequence of using Boltzmann's constant in the
+evaluation of temperature in the code. Thus not $T$, but $k_BT$, is the
 reduced temperature. A {\gromacs} temperature $T=1$ means a reduced
-temperature of 0.008\ldots units; if a reduced temperature of 1 is
+temperature of $0.008\ldots$ units; if a reduced temperature of 1 is
 required, the {\gromacs} temperature should be 120.2717.
 
 In \tabref{reduced} quantities are given for LJ potentials:
