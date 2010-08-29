@@ -547,6 +547,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     {
         md->fp_dhdl = fp_dhdl;
     }
+    md->dhdl_derivatives = (ir->dhdl_derivatives==dhdlderivativesYES);
     return md;
 }
 
@@ -556,7 +557,6 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     FILE *fp;
     const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
-    int  nsets,s;
     char **setname;
     char buf[STRLEN];
 
@@ -589,17 +589,21 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 
     if (ir->n_flambda > 0)
     {
+        int nsets,s,nsi=0;
         /* g_bar has to determine the lambda values used in this simulation
-         * from this xvg legend.
-         */
-        nsets = 1 + ir->n_flambda;
+         * from this xvg legend.  */
+        nsets = ( (ir->dhdl_derivatives==dhdlderivativesYES) ? 1 : 0) + 
+                  ir->n_flambda;
         snew(setname,nsets);
-        sprintf(buf,"%s %s %g",dhdl,lambda,ir->init_lambda);
-        setname[0] = strdup(buf);
-        for(s=1; s<nsets; s++)
+        if (ir->dhdl_derivatives == dhdlderivativesYES)
         {
-            sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s-1]);
-            setname[s] = strdup(buf);
+            sprintf(buf,"%s %s %g",dhdl,lambda,ir->init_lambda);
+            setname[nsi++] = strdup(buf);
+        }
+        for(s=0; s<ir->n_flambda; s++)
+        {
+            sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s]);
+            setname[nsi++] = strdup(buf);
         }
         xvgr_legend(fp,nsets,(const char**)setname,oenv);
 
@@ -837,10 +841,14 @@ void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
     {
         if (md->fp_dhdl)
         {
-            fprintf(md->fp_dhdl,"%.4f %g",
-                    time,
-                    enerd->term[F_DVDL]+ enerd->term[F_DKDL]+
-                    enerd->term[F_DHDL_CON]);
+            fprintf(md->fp_dhdl,"%.4f", time);
+
+            if (md->dhdl_derivatives)
+            {
+                fprintf(md->fp_dhdl," %g", enerd->term[F_DVDL]+ 
+                                           enerd->term[F_DKDL]+
+                                           enerd->term[F_DHDL_CON]);
+            }
             for(i=1; i<enerd->n_lambda; i++)
             {
                 fprintf(md->fp_dhdl," %g",
