@@ -272,9 +272,9 @@ compensates this effect a bit.
 \item[{\bf Long-range interactions are cut off}]\mbox{}\\
 In this version, {\gromacs} always uses a cut-off radius for the
 Lennard-Jones interactions and sometimes for the Coulomb interactions
-as well.  Due to the minimum-image convention, which states that only one image of each
+as well. The ''minimum-image convention'' used by GROMACS requires that only one image of each
 particle in the periodic boundary conditions is considered for a pair
-interaction, the cut-off range cannot exceed half the box size. That
+interaction, so the cut-off radius cannot exceed half the box size. That
 is still pretty big for large systems, and trouble is only expected
 for systems containing charged particles. But then truly bad things can
 happen, like accumulation of charges at the cut-off boundary or very
