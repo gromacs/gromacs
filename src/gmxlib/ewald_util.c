@@ -74,32 +74,34 @@ real calc_ewaldcoeff(real rc,real dtol)
   return x;
 }
 
-real calc_ewaldljcoeff(real rc,real dtol)
+real calc_ewaldljcoeff(real rc, real dtol)
 {
-  real x=5,low,high;
-  int n,i=0;
-  
-  
-  if (dtol < 0)
-  {
-      return -1.0/dtol;
-  }
-  do {
-    i++;
-    x*=2;
-  } while (exp(-x*x*rc*rc)*(1+x*x*rc*rc+x*x*x*x*rc*rc*rc*rc/2) > dtol);
+    real x=5, low, high;
+    int  n, i=0;
 
-  n=i+60; /* search tolerance is 2^-60 */
-  low=0;
-  high=x;
-  for(i=0;i<n;i++) {
-    x=(low+high)/2;
-    if (exp(-x*x*rc*rc)*(1+x*x*rc*rc+x*x*x*x*rc*rc*rc*rc/2) > dtol)
-      low=x;
-    else 
-      high=x;
-  }
-  return x;
+    if (dtol < 0)
+    {
+        return -1.0/dtol;
+    }
+    do
+    {
+        i++;
+        x*=2;
+    }
+    while (exp(-x*x*rc*rc)*(1 + x*x*rc*rc + x*x*x*x*rc*rc*rc*rc/2) > dtol);
+
+    n = i + 60; /* search tolerance is 2^-60 */
+    low = 0;
+    high = x;
+    for (i = 0; i < n; ++i)
+    {
+        x = (low + high) / 2;
+        if (exp(-x*x*rc*rc)*(1 + x*x*rc*rc + x*x*x*x*rc*rc*rc*rc/2) > dtol)
+            low=x;
+        else
+            high=x;
+    }
+    return x;
 }
 
 
@@ -435,11 +437,10 @@ real ewaldlj_LRcorrection(FILE *fplog,
   double  q2sumA,q2sumB,Vexcl,dvdl_excl; /* Necessary for precision */
   real    v,vc,qiA,qiB,dr,dr2,rinv,fscal,enercorr;
   real    VselfA,VselfB=0,rinv2,rinv6,ewc=fr->ewaldljcoeff,ewcdr;
-  rvec    df,dx,dipcorrA,dipcorrB;
+  rvec    df, dx;
   rvec    *f=fr->f_novirsum;
   tensor  dxdf;
-  real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-  real    L1,dipole_coeff,qqA,qqB,qqL,vr0;
+  real    L1,qqA,qqB,qqL,vr0;
   int     niat;
   gmx_bool bFreeEnergy = (chargeB != NULL);
   gmx_bool bMolPBC = fr->bMolPBC;
@@ -456,8 +457,8 @@ real ewaldlj_LRcorrection(FILE *fplog,
   if (DOMAINDECOMP(cr))
     niat = excl->nr;
   else
-    niat = end; 
-      
+    niat = end;
+
   clear_mat(dxdf);
   if (!bFreeEnergy) {
     for(i=start; (i<niat); i++) {
@@ -466,7 +467,7 @@ real ewaldlj_LRcorrection(FILE *fplog,
       i1  = excl->index[i];
       i2  = excl->index[i+1];
       if (i < end)
-	q2sumA += chargeA[i]*chargeA[i];
+        q2sumA += chargeA[i]*chargeA[i];
 
       /* Loop over excluded neighbours */
       for(j=i1; (j<i2); j++) {
@@ -530,8 +531,8 @@ real ewaldlj_LRcorrection(FILE *fplog,
       i1  = excl->index[i];
       i2  = excl->index[i+1];
       if (i < end) {
-	q2sumA += chargeA[i]*chargeA[i];
-	q2sumB += chargeB[i]*chargeB[i];
+        q2sumA += chargeA[i]*chargeA[i];
+        q2sumB += chargeB[i]*chargeB[i];
       }
 
       /* Loop over excluded neighbours */
@@ -599,10 +600,10 @@ real ewaldlj_LRcorrection(FILE *fplog,
     fprintf(debug,"Long Range corrections for Ewald interactions:\n");
     fprintf(debug,"start=%d,natoms=%d\n",start,end-start);
     fprintf(debug,"q2sum = %g, Vself=%g\n",
-	    L1*q2sumA+lambda*q2sumB,L1*VselfA+lambda*VselfB);
+            L1*q2sumA+lambda*q2sumB,L1*VselfA+lambda*VselfB);
     fprintf(debug,"Long Range correction: Vexcl=%g\n",Vexcl);
   }
-    
+
   /* Return the correction to the energy */
   return enercorr;
 }
