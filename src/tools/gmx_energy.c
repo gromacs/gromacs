@@ -1279,11 +1279,16 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         }
     }
 
+    if (nblock_hist == 0 && nblock_dh == 0)
+    {
+        /* don't do anything */
+        return;
+    }
     if (nblock_hist>0 && nblock_dh>0)
     {
         gmx_fatal(FARGS, "This energy file contains both histogram dhdl data and non-histogram dhdl data. Don't know what to do.");
     }
-    if (! *fp_dhdl)
+    if (! *fp_dhdl )
     {
         if (nblock_dh>0)
         {
@@ -2309,19 +2314,24 @@ int gmx_energy(int argc,char *argv[])
       if (fp_dhdl)
       {
           ffclose(fp_dhdl);
+          printf("\n\nWrote %d lambda values with %d samples as ", 
+                 dh_lambdas, dh_samples);
+          if (dh_hists > 0)
+          {
+              printf("%d dH histograms ", dh_hists);
+          }
+          if (dh_blocks> 0)
+          {
+              printf("%d dH data blocks ", dh_blocks);
+          }
+          printf("to %s\n", opt2fn("-odh",NFILE,fnm));
+
+      }
+      else
+      {
+          gmx_fatal(FARGS, "No dH data in %s\n", opt2fn("-f",NFILE,fnm));
       }
 
-      printf("\nWritten %d lambda values with %d samples as ", 
-             dh_lambdas, dh_samples);
-      if (dh_hists > 0)
-      {
-          printf("%d dH histograms ", dh_hists);
-      }
-      if (dh_blocks> 0)
-      {
-          printf("%d dH data blocks ", dh_blocks);
-      }
-      printf("to %s\n", opt2fn("-odh",NFILE,fnm));
   }
   else
   {
