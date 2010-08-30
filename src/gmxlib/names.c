@@ -189,7 +189,7 @@ const char *epullg_names[epullgNR+1] = {
 };
 
 const char *erotg_names[erotgNR+1] = { 
-  "iso", "iso-pf", "pm", "pm-pf", "rm", "rm-pf", "rm2", "rm2-pf", "flex", "flex2", NULL
+  "iso", "iso-pf", "pm", "pm-pf", "rm", "rm-pf", "rm2", "rm2-pf", "flex", "flex-t", "flex2", "flex2-t", NULL
 };
 
 const char *erotg_fitnames[erotgFitNR+1] = { 
