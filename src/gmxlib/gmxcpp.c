@@ -186,7 +186,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   char *ptr;
   int i;
   unsigned int i1;
-  
+    
   /* First process options, they might be necessary for opening files
      (especially include statements). */  
   i  = 0;
@@ -232,7 +232,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
       sprintf(buf, "%s%c%s", incl[i], DIR_SEPARATOR, filenm);
       if (gmx_fexist(buf))
       {
-        cpp->fn = buf;
+          cpp->fn = buf;
         break;
       }
       sfree(buf);
@@ -248,8 +248,10 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm);
   }
   /* If the file name has a path component, we need to change to that
-   * directory. */
-  ptr = strrchr(cpp->fn, DIR_SEPARATOR);
+   * directory. Note that we - just as C - always use UNIX path separators
+   * internally in include file names.
+   */
+  ptr = strrchr(cpp->fn, '/');
   if (!ptr)
   {
     cpp->path = NULL;
@@ -261,7 +263,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     *ptr      = '\0';
     cpp->fn   = strdup(ptr+1);
     snew(cpp->cwd,STRLEN);
-
+      
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
       pdum=_getcwd(cpp->cwd,STRLEN);
       _chdir(cpp->path);
