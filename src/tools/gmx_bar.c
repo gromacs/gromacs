@@ -2031,7 +2031,7 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
 
     read_bar_xvg_lowlevel(fn, temp, barsim);
 
-    if (barsim->nset <2 )
+    if (barsim->nset <1 )
     {
         gmx_fatal(FARGS,"File '%s' contains fewer than two columns", fn);
     }
@@ -2062,7 +2062,7 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
     {
         printf(" %.3f (%d pts)", s[i].foreign_lambda, s[i].ndu);
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 static samples_t *read_edr_rawdh_block(int *nsamples, t_enxblock *blk, 
@@ -2381,7 +2381,7 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
             printf(" %.3f (%d pts)", lambdas[i], npts[i]);
         }
     }
-    printf("\n");
+    printf("\n\n");
     sfree(npts);
     sfree(nhists);
     sfree(lambdas);

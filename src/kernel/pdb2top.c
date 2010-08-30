@@ -223,9 +223,9 @@ choose_ff(const char *ffsel,
             if(cwdsel!=-1)
             {
                 fprintf(stderr,
-                        "Force field '%s' occurs in %d places, reading from current directory.\n"
-                        "Use interactive selection (not the -ff option) if you prefer a different one.\n",
-                        ffsel,nfound);
+                        "Force field '%s' occurs in %d places. pdb2gmx is using the one in the\n"
+                        "current directory. Use interactive selection (not the -ff option) if\n"
+                        "you would prefer a different one.\n",ffsel,nfound);
             }
             else
             {
