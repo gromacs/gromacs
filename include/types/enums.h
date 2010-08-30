@@ -226,11 +226,13 @@ enum {
 
 /* Enforced rotation groups */
 enum {
-  erotgISO, erotgISOPF,
-  erotgPM , erotgPMPF ,
-  erotgRM , erotgRMPF ,
-  erotgRM2, erotgRM2PF,
-  erotgFLEX, erotgFLEX2, erotgNR
+  erotgISO  , erotgISOPF ,
+  erotgPM   , erotgPMPF  ,
+  erotgRM   , erotgRMPF  ,
+  erotgRM2  , erotgRM2PF ,
+  erotgFLEX , erotgFLEXT ,
+  erotgFLEX2, erotgFLEX2T,
+  erotgNR
 };
 
 enum {

@@ -91,7 +91,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
         sprintf(buf,"rot_group%d",g);
         STYPE(buf, grpbuf[g], "");
         
-        CTYPE("Rotation potential. Can be iso, iso-pf, pm, pm-pf, rm, rm-pf, rm2, rm2-pf, flex or flex2");
+        CTYPE("Rotation potential. Can be iso, iso-pf, pm, pm-pf, rm, rm-pf, rm2, rm2-pf, flex, flex-t, flex2, flex2-t");
         sprintf(buf,"rot_type%d",g);
         ETYPE(buf, rotg->eType, erotg_names);
 

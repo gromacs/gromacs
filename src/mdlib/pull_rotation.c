@@ -236,7 +236,9 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
                     er->mpi_inbuf[count++] = erg->fix_weight_v;
                     break;
                 case erotgFLEX:
+                case erotgFLEXT:
                 case erotgFLEX2:
+                case erotgFLEX2T:
                     /* (Re-)allocate memory for MPI buffer: */
                     if (er->mpi_bufsize < count+nslabs)
                     {
@@ -279,7 +281,9 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
                         erg->fix_weight_v = er->mpi_outbuf[count++];
                         break;
                     case erotgFLEX:
+                    case erotgFLEXT:
                     case erotgFLEX2:
+                    case erotgFLEX2T:
                         for (i=0; i<nslabs; i++)
                             erg->slab_torque_v[i] = er->mpi_outbuf[count++];
                         break;
@@ -297,7 +301,8 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
         for (g=0; g < rot->ngrp; g++)
         {
             rotg=&rot->grp[g];
-            bFlex = (rotg->eType==erotgFLEX) || (rotg->eType==erotgFLEX2);
+            bFlex = (    (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+                      || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) );
 
             erg=rotg->enfrotgrp;
             
@@ -635,7 +640,8 @@ static FILE *open_slab_out(t_rot *rot, const char *fn)
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
+        if (   (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+            || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) )
         {
             if (NULL == fp)
                 fp = open_output_file(fn, rot->nsttout);
@@ -677,8 +683,9 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
     const char **setname;
     char       buf[50];
     gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
+    gmx_bool   bFlex;
 
-    
+
     if (Flags & MD_APPENDFILES)
     {
         fp = gmx_fio_fopen(fn,"a");
@@ -693,6 +700,9 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
         {
             rotg = &rot->grp[g];
             erg=rotg->enfrotgrp;
+            bFlex = (   (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+                     || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) );
+
 
             fprintf(fp, "# Rotation group %d, potential type '%s':\n"      , g, erotg_names[rotg->eType]);
             fprintf(fp, "# rot_massw%d          %s\n"                      , g, yesno_names[rotg->bMassW]);
@@ -702,7 +712,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
             if ( rotg->eType==erotgISO || rotg->eType==erotgPM || rotg->eType==erotgRM || rotg->eType==erotgRM2)
                 fprintf(fp, "# rot_pivot%d          %12.5e %12.5e %12.5e  nm\n", g, rotg->pivot[XX], rotg->pivot[YY], rotg->pivot[ZZ]);
 
-            if ( (rotg->eType==erotgFLEX) || (rotg->eType==erotgFLEX2) )
+            if (bFlex)
             {
                 fprintf(fp, "# rot_slab_distance%d   %f nm\n", g, rotg->slab_dist);
                 fprintf(fp, "# rot_min_gaussian%d   %12.5e\n", g, rotg->min_gaussian);
@@ -710,7 +720,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
 
             /* Output the centers of the rotation groups for the pivot-free potentials */
             if ((rotg->eType==erotgISOPF) || (rotg->eType==erotgPMPF) || (rotg->eType==erotgRMPF) || (rotg->eType==erotgRM2PF
-                || (rotg->eType==erotgFLEX) || (rotg->eType==erotgFLEX2)) )
+                || (rotg->eType==erotgFLEXT) || (rotg->eType==erotgFLEX2T)) )
             {
                 fprintf(fp, "# %s of ref. grp. %d  %12.5e %12.5e %12.5e\n",
                         rotg->bMassW? "COM":"COG", g,
@@ -721,7 +731,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
                                 erg->xc_center[XX], erg->xc_center[YY], erg->xc_center[ZZ]);
             }
 
-            if ( (rotg->eType == erotgRM2) || (rotg->eType==erotgFLEX2) )
+            if ( (rotg->eType == erotgRM2) || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) )
             {
                 fprintf(fp, "# rot_eps%d            %12.5e nm^2\n", g, rotg->eps);
             }
@@ -744,9 +754,12 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
         for (g=0; g<rot->ngrp; g++)
         {
             rotg = &rot->grp[g];
+            bFlex = (   (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+                     || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) );
+
             /* For flexible axis rotation we use RMSD fitting to determine the
              * actual angle of the rotation group */
-            if ( (rotg->eType!=erotgFLEX) && (rotg->eType!=erotgFLEX2) )
+            if (!bFlex)
             {
                 sprintf(buf, "theta-av%d [degree]", g);
                 print_aligned_group(fp, "theta_av", g);
@@ -789,9 +802,12 @@ static FILE *open_angles_out(t_rot *rot, const char *fn)
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
+        if (   (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+            || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) )
+        {
             fprintf(fp, "# Rotation group %d (%s), slab distance %f nm, fit type %s\n", 
                     g, erotg_names[rotg->eType], rotg->slab_dist, erotg_fitnames[rotg->eFittype]);
+        }
     }
     fprintf(fp, "# The following columns will have the syntax:\n");
     fprintf(fp, "#     ");
@@ -825,7 +841,8 @@ static FILE *open_torque_out(t_rot *rot, const char *fn)
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
+        if (   (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+            || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) )
         {
             fprintf(fp, "# Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
             fprintf(fp, "# The scalar tau is the torque [kJ/mol] in the direction of the rotation vector.\n");
@@ -2084,7 +2101,7 @@ static void get_firstlast_slab_check(
 
     /* Check whether we have reference data to compare against */
     if (erg->slab_first < erg->slab_first_ref)
-        gmx_fatal(FARGS, "Enforced rotation: No reference data for first slab (n=%d), unable to proceed.", 
+        gmx_fatal(FARGS, "Enforced rotation: No reference data for first slab (n=%d), unable to proceed.",
                   erg->slab_first);
     
     /* Check whether we have reference data to compare against */
@@ -2139,9 +2156,9 @@ static void do_flexible(
     
     /* Call the rotational forces kernel */
     GMX_MPE_LOG(ev_flexll_start);
-    if (rotg->eType == erotgFLEX)
+    if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEXT)
         erg->V = do_flex_lowlevel(rotg, sigma, x, bOutstep, box, cr);
-    else if (rotg->eType == erotgFLEX2)
+    else if (rotg->eType == erotgFLEX2 || rotg->eType == erotgFLEX2T)
         erg->V = do_flex2_lowlevel(rotg, sigma, x, bOutstep, box, cr);
     else
         gmx_fatal(FARGS, "Unknown flexible rotation type");
@@ -2837,7 +2854,9 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
     
 
     /* Do we have a flexible axis? */
-    bFlex = (rotg->eType==erotgFLEX) || (rotg->eType==erotgFLEX2);
+    bFlex = (    (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+              || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) );
+
     /* Do we use a global set of coordinates? */
     bColl = bFlex || (rotg->eType==erotgRMPF) || (rotg->eType==erotgRM2PF);
 
@@ -2941,7 +2960,7 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
 #endif
     }
 
-    if (!bFlex)
+    if ( (rotg->eType != erotgFLEX) && (rotg->eType != erotgFLEX2) )
     {
         /* Put the reference positions into origin: */
         for (i=0; i<rotg->nat; i++)
@@ -3083,7 +3102,8 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     if (MASTER(cr))
     {
         er->out_rot = open_rot_out(opt2fn("-ro",nfile,fnm), rot, oenv, Flags);
-        if ( (rotg->eType == erotgFLEX) || (rotg->eType == erotgFLEX2) )
+        if (   (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+            || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) )
         {
             if (rot->nstrout > 0)
                 er->out_angles  = open_angles_out(rot, opt2fn("-ra",nfile,fnm));
@@ -3207,6 +3227,7 @@ extern void do_rotation(
     float    cycles_rot;
     gmx_enfrot_t er;     /* Pointer to the enforced rotation buffer variables */
     gmx_enfrotgrp_t erg; /* Pointer to enforced rotation group data           */
+    rvec     transvec;
 #ifdef TAKETIME
     double t0;
 #endif
@@ -3230,7 +3251,9 @@ extern void do_rotation(
         erg=rotg->enfrotgrp;
 
         /* Do we have a flexible axis? */
-        bFlex = (rotg->eType==erotgFLEX) || (rotg->eType==erotgFLEX2);
+        bFlex = (    (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+                  || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) );
+
         /* Do we use a collective (global) set of coordinates? */
         bColl = bFlex || (rotg->eType==erotgRMPF) || (rotg->eType==erotgRM2PF);
 
@@ -3288,7 +3311,9 @@ extern void do_rotation(
         rotg = &rot->grp[g];
         erg=rotg->enfrotgrp;
 
-        bFlex = (rotg->eType==erotgFLEX) || (rotg->eType==erotgFLEX2);
+        bFlex = (    (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
+                  || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) );
+
         bColl = bFlex || (rotg->eType==erotgRMPF) || (rotg->eType==erotgRM2PF);
 
         if (outstep_torque && MASTER(cr))
@@ -3312,12 +3337,17 @@ extern void do_rotation(
             case erotgRM2PF:
                 do_radial_motion2(cr,rotg,x,box,t,step,outstep_torque);
                 break;
+            case erotgFLEXT:
+            case erotgFLEX2T:
+                /* Subtract the center of the rotation group */
+                /* TODO: checkme! */
+                get_center(erg->xc, erg->mc, rotg->nat, erg->xc_center);
+                svmul(-1.0, erg->xc_center, transvec);
+                translate_x(erg->xc, rotg->nat, transvec);
+                gmx_fatal(FARGS, "Sorry - FLEX-T and FLEX2-T are not yet implemented in this version!");
+                break;
             case erotgFLEX:
             case erotgFLEX2:
-                /* Subtract the center of the rotation group */
-                /* get_center(erg->xc, erg->mc, rotg->nat, center); */
-                /* svmul(-1.0, center, transvec); */
-                /* translate_x(erg->xc, rotg->nat, transvec); */
                 do_flexible(cr,er,rotg,g,x,box,t,step,outstep_torque);
                 break;
             default:
