@@ -888,17 +888,21 @@ static void sample_coll_impose_times(sample_coll_t *sc, double begin_t,
                 int j;
                 for(j=0;j<s->ndu;j++)
                 {
-                    if (s->start_time <begin_t)
+                    if (s->t[j] <begin_t)
                     {
                         r->start = j;
                     }
 
-                    if (s->start_time >= end_t)
+                    if (s->t[j] >= end_t)
                     {
                         r->end = j;
                         break;
                     }
                 }
+            }
+            if (r->start > r->end)
+            {
+                r->use=FALSE;
             }
         }
     }
@@ -938,7 +942,14 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
                 }
                 else
                 {
-                    end_t += sc->s[j]->delta_time*sc->s[j]->ndu;
+                    if (sc->s[j]->t)
+                    {
+                        end_t = sc->s[j]->t[sc->s[j]->ndu-1];
+                    }
+                    else
+                    {
+                        end_t += sc->s[j]->delta_time*sc->s[j]->ndu;
+                    }
                 }
 
                 if (start_t < first_t || first_t<0)
@@ -958,7 +969,7 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
     /* calculate the actual times */
     if (begin > 0)
     {
-        begin_t = (first_t - last_t)*begin + first_t;
+        begin_t = (last_t - first_t)*begin + first_t;
     }
     else
     {
@@ -967,14 +978,14 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
 
     if (end >0 )
     {
-        end_t = (first_t - last_t)*end + first_t;
+        end_t = (last_t - first_t)*end + first_t;
     }
     else
     {
         end_t = last_t;
     }
-
-    printf("Samples run from time %.3f - %.3f; Removing samples outside of %.3f - %.3f\n", first_t, last_t, begin_t, end_t);
+    printf("\n   Samples in time interval: %.3f - %.3f\n", first_t, last_t);
+    printf("Removing samples outside of: %.3f - %.3f\n", begin_t, end_t);
 
     /* then impose them */
     lc=head->next;
@@ -984,10 +995,10 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
         while(sc != lc->sc)
         {
             sample_coll_impose_times(sc, begin_t, end_t);
+            sc=sc->next;
         }
-        sc=sc->next;
+        lc=lc->next;
     }
-    lc=lc->next;
 }
 
 
@@ -1026,18 +1037,22 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
         gmx_large_int_t ntot_add;
         gmx_large_int_t new_start, new_end;
 
-        if (sc->s[j]->hist)
+        if (sc->r[j].use)
         {
-            if (sc->r[j].use)
+            if (sc->s[j]->hist)
+            {
                 ntot_add = sc->s[j]->hist->sum;
-            else
-                ntot_add = 0;
+            }
+            else 
+            {
+                ntot_add = sc->r[j].end - sc->r[j].start;
+            }
         }
-        else 
+        else
         {
-            ntot_add = sc->r[j].end - sc->r[j].start;
+            ntot_add = 0;
         }
-       
+
         if (!sc->s[j]->hist)
         { 
             if (ntot_so_far < ntot_start)
@@ -1675,14 +1690,19 @@ static void calc_bar(barres_t *br, double tol,
                 double dgp;
                 double stddevc;
                 double sac, sbc;
+                gmx_bool cac, cbc;
 
-                if (!sample_coll_create_subsample(&ca, br->a, p, npee) ||
-                    !sample_coll_create_subsample(&cb, br->b, p, npee) )
+                cac=sample_coll_create_subsample(&ca, br->a, p, npee);
+                cbc=sample_coll_create_subsample(&cb, br->b, p, npee);
+
+                if (!cac || !cbc)
                 {
                     printf("WARNING: histogram number incompatible with block number for averaging: can't do error estimate\n");
                     *bEE=FALSE;
-                    sample_coll_destroy(&ca);
-                    sample_coll_destroy(&cb);
+                    if (cac)
+                        sample_coll_destroy(&ca);
+                    if (cbc)
+                        sample_coll_destroy(&cb);
                     return;
                 }
 
@@ -2011,7 +2031,7 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
 
     read_bar_xvg_lowlevel(fn, temp, barsim);
 
-    if (barsim->nset <2 )
+    if (barsim->nset <1 )
     {
         gmx_fatal(FARGS,"File '%s' contains fewer than two columns", fn);
     }
@@ -2042,7 +2062,7 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
     {
         printf(" %.3f (%d pts)", s[i].foreign_lambda, s[i].ndu);
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 static samples_t *read_edr_rawdh_block(int *nsamples, t_enxblock *blk, 
@@ -2361,7 +2381,7 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
             printf(" %.3f (%d pts)", lambdas[i], npts[i]);
         }
     }
-    printf("\n");
+    printf("\n\n");
     sfree(npts);
     sfree(nhists);
     sfree(lambdas);
@@ -2372,7 +2392,22 @@ int gmx_bar(int argc,char *argv[])
 {
     static const char *desc[] = {
         "g_bar calculates free energy difference estimates through ",
-        "Bennett's acceptance ratio method. ",
+        "Bennett's acceptance ratio method (BAR). It also automatically",
+        "adds series of individual free energies obtained with BAR into",
+        "a combined free energy estimate.[PAR]",
+
+        "Every individual BAR free energy difference relies on two ",
+        "simulations at different states: say state A and state B, as",
+        "controlled by a parameter 'lambda' (see the mdp parameter",
+        "'init_lambda'). The BAR method calculates a ratio of weighted",
+        "average of the Hamiltonian difference of state B given state A and",
+        "vice versa. If the Hamiltonian does not linearly depend on lambda",
+        "(in which case we can extrapolate the derivative of the Hamiltonian",
+        "w.r.t. lambda, as is the default when 'free_energy' is on), the",
+        "energy differences to the other state need to be calculated",
+        "explicitly during the simulation. This can be controlled with",
+        "the mdp option 'foreign_lambda'.[PAR]",
+
         "Input option [TT]-f[tt] expects multiple dhdl files. ",
         "Two types of input files are supported:[BR]",
         "* Files with only one y-value, for such files it is assumed ",
@@ -2385,12 +2420,18 @@ int gmx_bar(int argc,char *argv[])
         "with dH/dlambda and Delta lambda. The lambda values are inferred ",
         "from the legends: ",
         "lambda of the simulation from the legend of dH/dlambda ",
-        "and the foreign lambda's from the legends of Delta H.[PAR]",
-
+        "and the foreign lambda's from the legends of Delta H.[BR]",
         "The lambda of the simulation is parsed from dhdl.xvg file's legend ",
         "containing the string 'dH', the foreign lambda's from the legend ",
         "containing the capitalized letters 'D' and 'H'. The temperature ",
         "is parsed from the legend line containing 'T ='.[PAR]",
+
+        "The input option [TT]-g[tt] expects multiple .edr files. ",
+        "These can contain either lists of energy differences (see the",
+        "mdp option separate_dhdl_file), or a series of histograms",
+        "(see the mdp options dh_hist_size and dh_hist_spacing).",
+        "The temperature and lambda values are automatically deduced from",
+        "the ener.edr file.[PAR]"
 
         "The free energy estimates are determined using BAR with bisection, ",
         "the precision of the output is set with [TT]-prec[tt]. ",
@@ -2401,6 +2442,13 @@ int gmx_bar(int argc,char *argv[])
         "The final error estimate is determined from the average variance ",
         "over 5 blocks. A range of blocks numbers for error estimation can ",
         "be provided with the options [TT]-nbmin[tt] and [TT]-nbmax[tt].[PAR]",
+
+        "g_bar tries to aggregate samples with the same 'native' and 'foreign'",
+        "lambda values, but always assumes independent samples: note that",
+        "when aggregating energy differences/derivatives with different",
+        "sampling intervals, this is almost certainly not correct: usually",
+        "subsequent energies are correlated and different time intervals mean",
+        "different degrees of correlation between samples.[PAR]",
 
         "The results are split in two parts: the last part contains the final ",
         "results in kJ/mol, together with the error estimate for each part ",
@@ -2429,6 +2477,9 @@ int gmx_bar(int argc,char *argv[])
         "of the quality of sampling (not directly of the actual statistical ", 
         "error, because it assumes independent samples).[PAR]",
 
+        "To get a visual estimate of the phase space overlap, use the ",
+        "-oh option to write series of histograms, together with the ",
+        "-nbin option.[PAR]"
     };
     static real begin=0,end=-1,temp=-1;
     int nd=2,nbmin=5,nbmax=5;
@@ -2446,10 +2497,10 @@ int gmx_bar(int argc,char *argv[])
     
     t_filenm   fnm[] = {
         { efXVG, "-f",  "dhdl",   ffOPTRDMULT },
+        { efEDR, "-g",  "ener",   ffOPTRDMULT },
         { efXVG, "-o",  "bar",    ffOPTWR },
         { efXVG, "-oi", "barint", ffOPTWR }, 
-        { efXVG, "-oh", "histogram", ffOPTWR }, 
-        { efEDR, "-g",  "energy", ffOPTRDMULT }
+        { efXVG, "-oh", "histogram", ffOPTWR }
     };
 #define NFILE asize(fnm)
     

@@ -476,7 +476,6 @@ static real estimate_reciprocal(
     
     gmx_rng_t rng=NULL;
     /*rng=gmx_rng_init(gmx_rng_make_seed());  */
-    rng=gmx_rng_init(cr->nodeid);
 
     /* Index variables for parallel work distribution */
     int startglobal,stopglobal;
@@ -491,7 +490,9 @@ static real estimate_reciprocal(
     double t1=0.0;
     double t2=0.0;
 #endif
-    
+
+    rng=gmx_rng_init(cr->nodeid);
+
     clear_rvec(gridpx);
     clear_rvec(gridpxy);
     clear_rvec(gridp);

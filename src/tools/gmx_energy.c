@@ -1242,7 +1242,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN], legend[STRLEN];
     char buf[STRLEN];
     gmx_bool first=FALSE;
-    int nblock_hist=0, nblock_dh=0, nblock_dhcoll;
+    int nblock_hist=0, nblock_dh=0, nblock_dhcoll=0;
     int i,j,k;
     /* coll data */
     double temp=0, start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;

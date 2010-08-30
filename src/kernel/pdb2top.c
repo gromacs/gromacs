@@ -144,13 +144,6 @@ choose_ff(const char *ffsel,
     char buf[STRLEN],**desc;
     FILE *fp;
     char *pret;
-    char thisdir[STRLEN];
-    
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-    ptr = _getcwd(thisdir,sizeof(thisdir)-1);
-#else
-    ptr =  getcwd(thisdir,sizeof(thisdir)-1);
-#endif
     
     nff = fflib_search_file_in_dirend(fflib_forcefield_itp(),
                                       fflib_forcefield_dir_ext(),
@@ -162,13 +155,25 @@ choose_ff(const char *ffsel,
                   fflib_forcefield_itp(),fflib_forcefield_dir_ext());
     }
 
+    /* Replace with unix path separators */
+    if(DIR_SEPARATOR!='/')
+    {
+        for(i=0;i<nff;i++)
+        {
+            while( (ptr=strchr(ffdirs[i],DIR_SEPARATOR))!=NULL )
+            {
+                *ptr='/';
+            }
+        }
+    }
+    
     /* Store the force field names in ffs */
     snew(ffs,nff);
     snew(ffs_dir,nff);
     for(i=0; i<nff; i++)
     {
-        /* Remove the path from the ffdir name */
-        ptr = strrchr(ffdirs[i],DIR_SEPARATOR);
+        /* Remove the path from the ffdir name - use our unix standard here! */
+        ptr = strrchr(ffdirs[i],'/');
         if (ptr == NULL)
         {
             ffs[i] = strdup(ffdirs[i]);
@@ -201,7 +206,7 @@ choose_ff(const char *ffsel,
                 sel = i;
                 nfound++;
                 
-                if( strcmp(ffs_dir[i],thisdir)==0 )
+                if( strncmp(ffs_dir[i],".",1)==0 )
                 {
                     cwdsel = i;
                 }
@@ -218,9 +223,9 @@ choose_ff(const char *ffsel,
             if(cwdsel!=-1)
             {
                 fprintf(stderr,
-                        "Note: Force field '%s' occurs in %d places, using version from current directory.\n"
-                        "Use interactive selection (not the -ff option) if you prefer a different one.\n",
-                        ffsel,nfound);
+                        "Force field '%s' occurs in %d places. pdb2gmx is using the one in the\n"
+                        "current directory. Use interactive selection (not the -ff option) if\n"
+                        "you would prefer a different one.\n",ffsel,nfound);
             }
             else
             {
@@ -280,7 +285,14 @@ choose_ff(const char *ffsel,
         {
             if (i == 0 || strcmp(ffs_dir[i-1],ffs_dir[i]) != 0)
             {
-                printf("From '%s':\n",ffs_dir[i]);
+                if( strcmp(ffs_dir[i],".")==0 )
+                {
+                    printf("From current directory:\n");
+                }
+                else
+                {
+                    printf("From '%s':\n",ffs_dir[i]);
+                }
             }
             printf("%2d: %s\n",i+1,desc[i]);
             sfree(desc[i]);
@@ -515,16 +527,20 @@ void print_top_comment(FILE *out,
   fprintf(out,";\tIt was generated using program:\n;\t%s\n;\n",
           (NULL == generator) ? "unknown" : generator);
   fprintf(out,";\tCommand line was:\n;\t%s\n;\n",command_line());
-    
-  strncpy(ffdir_parent,ffdir,STRLEN-1);
-  p=strrchr(ffdir_parent,DIR_SEPARATOR);
 
-  if(p==NULL)
+  if(strchr(ffdir,'/')==NULL)
   {
-      fprintf(out,";\tForce field data was read from the standard Gromacs share directory.\n;\n\n");
+      fprintf(out,";\tForce field was read from the standard Gromacs share directory.\n;\n\n");
   }
-  else 
+  else if(ffdir[0]=='.')
   {
+      fprintf(out,";\tForce field was read from current directory or a relative path - path added.\n;\n\n");
+  }
+  else
+  {
+      strncpy(ffdir_parent,ffdir,STRLEN-1);
+      p=strrchr(ffdir_parent,'/');
+
       *p='\0';
       
       fprintf(out,
@@ -542,12 +558,17 @@ void print_top_comment(FILE *out,
 void print_top_header(FILE *out,const char *filename, 
                       const char *title,gmx_bool bITP,const char *ffdir,real mHmult)
 {
+    const char *p;
+    
     print_top_comment(out,filename,title,ffdir,bITP);
     
     print_top_heavy_H(out, mHmult);
     fprintf(out,"; Include forcefield parameters\n");
-    fprintf(out,"#include \"%s\"\n\n",
-            fflib_forcefield_itp());
+
+    p=strrchr(ffdir,'/');        
+    p = (ffdir[0]=='.' || p==NULL) ? ffdir : p+1;
+
+    fprintf(out,"#include \"%s/%s\"\n\n",p,fflib_forcefield_itp());
 }
 
 static void print_top_posre(FILE *out,const char *pr)
@@ -560,10 +581,15 @@ static void print_top_posre(FILE *out,const char *pr)
   
 static void print_top_water(FILE *out,const char *ffdir,const char *water)
 {
-    char buf[STRLEN];
-
+  const char *p;
+  char  buf[STRLEN];
+    
   fprintf(out,"; Include water topology\n");
-  fprintf(out,"#include \"%s.itp\"\n",water);
+
+  p=strrchr(ffdir,'/');        
+  p = (ffdir[0]=='.' || p==NULL) ? ffdir : p+1;
+  fprintf(out,"#include \"%s/%s.itp\"\n",p,water);
+  
   fprintf(out,"\n");
   fprintf(out,"#ifdef POSRES_WATER\n");
   fprintf(out,"; Position restraint for each water oxygen\n");
@@ -573,13 +599,14 @@ static void print_top_water(FILE *out,const char *ffdir,const char *water)
   fprintf(out,"#endif\n");
   fprintf(out,"\n");
 
-    sprintf(buf,"ions.itp");
-    if (fflib_fexist(buf))
-    {
-        fprintf(out,"; Include topology for ions\n");
-        fprintf(out,"#include \"ions.itp\"\n");
-        fprintf(out,"\n");
-    }
+  sprintf(buf,"%s/ions.itp",p);
+
+  if (fflib_fexist(buf))
+  {
+    fprintf(out,"; Include topology for ions\n");
+    fprintf(out,"#include \"%s\"\n",buf);
+    fprintf(out,"\n");
+  }
 }
 
 static void print_top_system(FILE *out, const char *title)
