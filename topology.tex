@@ -165,62 +165,44 @@ in~\secref{virtual_sites}.
 Parameters for type 2 should look like this:\\
 {\small\begin{tt}
 [ virtual\_sites2 ] \\
-\begin{tabular}{rrrrr}
-; Site  & from  &       & funct  & a \\
-5       & 1     & 2     & 1      & 0.7439756\\
-\end{tabular}
+; Site  from        funct  a \\
+5       1     2     1      0.7439756\\
 \end{tt}}
-\\
 
 for type 3 like this:\\
 {\small\begin{tt}
 [ virtual\_sites3 ]\\
-\begin{tabular}{rrrrrrr}
-; Site  & from  &       &        & funct   & a          & b\\
-5       & 1     & 2     & 3      & 1       & 0.7439756  & 0.128012\\
-\end{tabular}
+; Site  from               funct   a          b\\
+5       1     2     3      1       0.7439756  0.128012\\
 \end{tt}}
-\\
 
 for type 3fd like this:\\
 {\small\begin{tt}
 [ virtual\_sites3 ]\\
-\begin{tabular}{rrrrrrr}
-; Site  & from  &       &        & funct   & a          & d\\
-5       & 1     & 2     & 3      & 2       & 0.5        & -0.105\\
-\end{tabular}
+; Site  from               funct   a          d\\
+5       1     2     3      2       0.5        -0.105\\
 \end{tt}}
-\\
 
 for type 3fad like this:\\
 {\small\begin{tt}
 [ virtual\_sites3 ]\\
-\begin{tabular}{rrrrrrr}
-; Site  & from  &       &        & funct   & theta      & d\\
-5       & 1     & 2     & 3      & 3       & 120        & 0.5\\
-\end{tabular}
+; Site  from               funct   theta      d\\
+5       1     2     3      3       120        0.5\\
 \end{tt}}
-\\
 
 for type 3out like this:\\
 {\small\begin{tt}
 [ virtual\_sites3 ]\\
-\begin{tabular}{rrrrrrrr}
-; Site  & from  &       &        & funct   & a          & b          & c\\
-5       & 1     & 2     & 3      & 4       & -0.4       & -0.4       & 6.9281\\
-\end{tabular}
+; Site  from               funct   a          b          c\\
+5       1     2     3      4       -0.4       -0.4       6.9281\\
 \end{tt}}
-\\
 
 for type 4fd like this:\\
 {\small\begin{tt}
 [ virtual\_sites4 ]\\
-\begin{tabular}{rrrrrrrrr}
-; Site  & from  &       &       &         & funct   & a          & b          & d\\
-5       & 1     & 2     & 3     & 4       & 1       & 0.33333    & 0.33333    & -0.105\\
-\end{tabular}
+; Site  from                      funct   a          b          d\\
+5       1     2     3     4       1       0.33333    0.33333    -0.105\\
 \end{tt}}
-\\
 
 This will result in the construction of a virtual site, number 5
 (first column `{\tt Site}'), based on the positions of 1 and 2 or 1,
@@ -286,45 +268,33 @@ For the dihedral, this is explained after this listing.
 {\small 
 \begin{tt}
 [ bondtypes ]\\
-\begin{tabular}{rrrrr}
-  ; i  &   j  & func   &      b0     &      kb\\
-    C  &   O  &    1   & 0.12300     & 502080.\\
-    C  &  OM  &    1   & 0.12500     & 418400.\\
-\end{tabular}
-
+  ; i    j func        b0          kb\\
+    C    O    1   0.12300     502080.\\
+    C   OM    1   0.12500     418400.\\
     ......\\
 \end{tt}
 
 \begin{tt}
 [ angletypes ] \\
-\begin{tabular}{rrrrrr}
-  ; i  &   j  &   k  & func   &     th0     &     cth\\
-   HO  &  OA  &   C  &    1   & 109.500     & 397.480\\
-   HO  &  OA  & CH1  &    1   & 109.500     & 397.480\\
-\end{tabular}
-
+  ; i    j    k func       th0         cth\\
+   HO   OA    C    1   109.500     397.480\\
+   HO   OA  CH1    1   109.500     397.480\\
    ......\\
 \end{tt}
 
 \begin{tt}
 [ dihedraltypes ] \\
-\begin{tabular}{rrrrr}
-  ; i &    l  & func     &    q0     &      cq\\
- NR5* &  NR5  &    2     & 0.000     & 167.360\\
- NR5* & NR5*  &    2     & 0.000     & 167.360\\
-\end{tabular}
-
+  ; i    l func        q0          cq\\
+ NR5*  NR5    2     0.000     167.360\\
+ NR5* NR5*    2     0.000     167.360\\
  ......\\
 \end{tt}
 
 \begin{tt}
 [ dihedraltypes ] \\
-\begin{tabular}{rrrrrr}
-  ; j  &   k  & func   &    phi0      &     cp   & mult\\
-    C  &  OA  &    1   & 180.000      & 16.736   &    2\\
-    C  &   N  &    1   & 180.000      & 33.472   &    2\\
-\end{tabular}
-
+  ; j    k func      phi0          cp   mult\\
+    C   OA    1   180.000      16.736      2\\
+    C    N    1   180.000      33.472      2\\
     ......\\
 \end{tt}
 
@@ -333,10 +303,8 @@ For the dihedral, this is explained after this listing.
 ;\\
 ; Ryckaert-Bellemans Dihedrals\\
 ;\\
-\begin{tabular}{rrrrrrrrr}
-; aj    & ak      & funct   &         &         &           &         &         & \\
-CP2     & CP2     & 3       & 9.2789  & 12.156  & -13.120   & -3.0597 & 26.240  & -31.495\\
-\end{tabular}
+; aj    ak      funct\\
+CP2     CP2     3       9.2789  12.156  -13.120 -3.0597 26.240  -31.495\\
 \end{tt}}
 
 Also in this file are the
@@ -375,34 +343,25 @@ where {\tt ptype} is the particle type (see \tabref{ptype}):
 
 {\small \begin{tt}
 [ atomtypes ]\\
-\begin{tabular}{rrrrrr}
-; name   &     mass     & charge   & ptype   &          c6   &         c12\\
-     O   & 15.99940     &  0.000   &     A   & 0.22617E-02   & 0.74158E-06\\
-    OM   & 15.99940     &  0.000   &     A   & 0.22617E-02   & 0.74158E-06\\
-\end{tabular}
-
+;name        mass      charge   ptype            c6           c12\\
+    O    15.99940       0.000       A   0.22617E-02   0.74158E-06\\
+   OM    15.99940       0.000       A   0.22617E-02   0.74158E-06\\
    .....\\
 \end{tt}
 
 \begin{tt}
 [ nonbond\_params ]\\
-\begin{tabular}{rrrrr}
-  ; i  &  j  & func  &          c6   &         c12\\
-    O  &  O  &    1  & 0.22617E-02   & 0.74158E-06\\
-    O  & OA  &    1  & 0.22617E-02   & 0.13807E-05\\
-\end{tabular}
-
+  ; i    j func          c6           c12\\
+    O    O    1 0.22617E-02   0.74158E-06\\
+    O   OA    1 0.22617E-02   0.13807E-05\\
     .....\\
 \end{tt}
 
 \begin{tt}
 [ pairtypes ]\\
-\begin{tabular}{rrrrrr}
-  ; i  &  j  & func  &         cs6   &        cs12  & ; THESE ARE 1-4 INTERACTIONS\\
-    O  &  O  &    1  & 0.22617E-02   & 0.74158E-06  & \\
-    O  & OM  &    1  & 0.22617E-02   & 0.74158E-06  & \\
-\end{tabular}
-
+  ; i    j func         cs6          cs12 ; THESE ARE 1-4 INTERACTIONS\\
+    O    O    1 0.22617E-02   0.74158E-06\\
+    O   OM    1 0.22617E-02   0.74158E-06\\
     .....\\
 \end{tt}}
 
@@ -447,14 +406,12 @@ Starting with {\gromacs} 4.5, implicit solvent is supported. A section in the
 topology has been introduced to list those parameters:
 
 {\small \begin{tt}
-[ implicit\_genborn\_params ] \\
-\begin{tabular}{rrrrrrl}
-; Atomtype  & sar    & st   &    pi   &     gbr  &     hct  &  \\
-       NH1  & 0.155  &  1   & 1.028   & 0.17063  &    0.79  & ; N \\
-         N  & 0.155  &  1   & 1       & 0.155    &    0.79  & ; Proline backbone N \\
-         H  & 0.1    &  1   & 1       & 0.115    &    0.85  & ; H \\
-       CT1  & 0.180  &  1   & 1.276   & 0.190    &    0.72  & ; C \\
-\end{tabular}
+[~implicit\_genborn\_params~] \\
+; Atomtype  sar  st   pi      gbr      hct \\
+NH1       0.155  1   1.028   0.17063  0.79 ; N \\
+N         0.155  1   1       0.155    0.79 ; Proline backbone N \\
+H         0.1    1   1       0.115    0.85 ; H \\
+CT1       0.180  1   1.276   0.190    0.72 ; C \\
 \end{tt}}
 
 In this example the atomtype is listed first, followed by five
@@ -570,34 +527,26 @@ SPC molecule definition:\\
 
 {\small \begin{tt}
 [ moleculetype ]\\
-\begin{tabular}{ll}
-; molname      &  nrexcl\\
-SOL            &  1\\
-\end{tabular}
+; molname       nrexcl\\
+SOL             1\\
 \end{tt}\\
 \begin{tt}
 [ atoms ]\\
-\begin{tabular}{rrrrrrr}
-; nr    & at type & res nr  & ren nm  & at nm   & cg nr   & charge\\
-1       & OW      & 1       & SOL     & OW1     & 1       & -0.82\\
-2       & HW      & 1       & SOL     & HW2     & 1       &  0.41\\
-3       & HW      & 1       & SOL     & HW3     & 1       &  0.41\\
-\end{tabular}
+; nr    at type res nr  ren nm  at nm   cg nr   charge\\
+1       OW      1       SOL     OW1     1       -0.82\\
+2       HW      1       SOL     HW2     1        0.41\\
+3       HW      1       SOL     HW3     1        0.41\\
 \end{tt}\\
 \begin{tt}
 [ settles ]\\
-\begin{tabular}{rrrr}
-; OW    & funct   & doh     & dhh\\
-1       & 1       & 0.1     & 0.16333\\
-\end{tabular}
+; OW    funct   doh     dhh\\
+1       1       0.1     0.16333\\
 \end{tt}\\
 \begin{tt}
 [ exclusions ]\\
-\begin{tabular}{rrr}
-1       & 2       & 3\\
-2       & 1       & 3\\
-3       & 1       & 2\\
-\end{tabular}
+1       2       3\\
+2       1       3\\
+3       1       2\\
 \end{tt}}
 
 The {\tt [ settles ]} directive defines the first atom of the water molecule.
@@ -682,73 +631,51 @@ The residue database is constructed in the following way:\\
 ; bonds  angles  dihedrals  impropers\\
      1       1          1          2  ; mandatory\\
 \end{tt}\\
-
 \begin{tt}
 [ GLY ]  ; mandatory\\
 \end{tt}\\
-
 \begin{tt}
  [ atoms ]  ; mandatory \\
-\begin{tabular}{rrrr}
-; name  & type   & charge  & chargegroup \\
-     N  &    N   & -0.280  &    0\\
-     H  &    H   &  0.280  &    0\\
-    CA  &  CH2   &  0.000  &    1\\
-     C  &    C   &  0.380  &    2\\
-     O  &    O   & -0.380  &    2\\
-\end{tabular}
+; name  type  charge  chargegroup \\
+     N     N  -0.280     0\\
+     H     H   0.280     0\\
+    CA   CH2   0.000     1\\
+     C     C   0.380     2\\
+     O     O  -0.380     2\\
 \end{tt}\\
-
 \begin{tt}
  [ bonds ]  ; optional\\
-\begin{tabular}{rrrr}
-; atom1 & atom2     &  b0   &   kb\\
-     N  &     H     &       & \\
-     N  &    CA     &       & \\
-    CA  &     C     &       & \\
-     C  &     O     &       & \\
-    -C  &     N     &       & \\
-\end{tabular}
+;atom1 atom2      b0      kb\\
+     N     H\\
+     N    CA\\
+    CA     C\\
+     C     O\\
+    -C     N\\
 \end{tt}\\
-
 \begin{tt}
  [ exclusions ]  ; optional\\
-\begin{tabular}{rr}
-; atom1 & atom2\\
-\end{tabular}
+;atom1 atom2\\
 \end{tt}\\
-
 \begin{tt}
  [ angles ]  ; optional\\
-\begin{tabular}{rrrrr}
-; atom1 & atom2 & atom3    & th0    & cth\\
-\end{tabular}
+;atom1 atom2 atom3    th0    cth\\
 \end{tt}\\
-
 \begin{tt}
  [ dihedrals ]  ; optional\\
-\begin{tabular}{rrrrrrr}
-; atom1 & atom2 & atom3 & atom4   & phi0     & cp   & mult\\
-\end{tabular}
+;atom1 atom2 atom3 atom4   phi0     cp   mult\\
 \end{tt}\\
-
 \begin{tt}
  [ impropers ]  ; optional\\
-\begin{tabular}{rrrrrr}
-; atom1 & atom2  & atom3  & atom4   &  q0   &  cq\\
-      N &    -C  &    CA  &     H   &       & \\
-     -C &   -CA  &     N  &    -O   &       & \\
-\end{tabular}
+;atom1 atom2 atom3 atom4     q0     cq\\
+     N    -C    CA     H\\
+    -C   -CA     N    -O\\
 \end{tt}\\
-
 \begin{tt}
 [ ZN ]\\
 \end{tt}\\
 \begin{tt}
  [ atoms ]\\
-\begin{tabular}{rrrr}
-    ZN    & ZN   & 2.000     & 0\\
-\end{tabular}
+    ZN    ZN   2.000     0\\
 \end{tt}}
 
 The file is free format; the only restriction is that there can be at
@@ -879,23 +806,15 @@ important since atom naming in the {\tt .rtp} file (see~\ssecref{rtp})
 must be the same. The format of the hydrogen database is as follows:\\
 
 {\small \begin{tt}
-\begin{tabular}{ll}
-; res   & \# additions \\
-ALA     & 1 \\
-\end{tabular}\\
-\begin{tabular}{llllll}
-; \# H & add type       & H name    &   i      &  j    &   k\\
-     1 &        1       & H         &   N      & -C    &  CA\\
-\end{tabular}\\
-\begin{tabular}{ll}
-ARG    & 4\\
-\end{tabular}\\
-\begin{tabular}{rrllll}
-     1 &      2 &      H   &    N    &   CA  &    C\\
-     1 &      1 &      HE  &    NE   &   CD  &    CZ\\
-     2 &      3 &      HH1 &    NH1  &   CZ  &    NE\\
-     2 &      3 &      HH2 &    NH2  &   CZ  &    NE\\
-\end{tabular}\\
+; res   \# additions\\
+        \# H add type    H       i       j       k\\
+ALA     1\\
+        1       1       H       N       -C      CA\\
+ARG     4\\
+        1       2       H       N       CA      C\\
+        1       1       HE      NE      CD      CZ\\
+        2       3       HH1     NH1     CZ      NE\\
+        2       3       HH2     NH2     CZ      NE\\
 \end{tt}}
 
 On the first line we see the residue name (ALA or ARG) and the number
@@ -982,16 +901,12 @@ bonded interactions should be added. The format of the is as follows
 \end{tt}\\
 \begin{tt}
 [ replace ]\\
-\begin{tabular}{lllll}
-C      &  C    &   C    &   12.011 &  0.27\\
-\end{tabular}
+C       C       C       12.011  0.27\\
 \end{tt}\\
 \begin{tt}
 [ add ]\\
-\begin{tabular}{llllll}
-2      & 8     &  O     &  C     &  CA      &  N\\
-                        & OM     &  15.9994 & -0.635\\
-\end{tabular}
+2       8       O       C       CA      N\\
+        OM      15.9994 -0.635\\
 \end{tt}\\
 \begin{tt}
 [ delete ]\\
@@ -999,9 +914,7 @@ O\\
 \end{tt}\\
 \begin{tt}
 [ impropers ]\\
-\begin{tabular}{llll}
-C      & O1     & O2     & CA\\
-\end{tabular}
+C       O1      O2      CA\\
 \end{tt}}
 
 The file is organized in blocks, each with a header specifying the
@@ -1319,100 +1232,85 @@ Here is an example of a topology file, {\tt urea.top}:
 \end{tt}\\
 \begin{tt}
 [ moleculetype ]\\
-\begin{tabular}{ll}
-; name  & nrexcl\\
-Urea    &      3\\
-\end{tabular}
+; name  nrexcl\\
+Urea         3\\
 \end{tt}\\
 \begin{tt}
 [ atoms ]\\
-\begin{tabular}{rrrrrrr}
-;   nr    & type   & resnr  & residu   & atom   & cgnr  & charge\\
-     1    &    C   &     1  &   UREA   &   C1   &    1  &  0.683\\
-     2    &    O   &     1  &   UREA   &   O2   &    1  & -0.683\\
-     3    &   NT   &     1  &   UREA   &   N3   &    2  & -0.622\\
-     4    &    H   &     1  &   UREA   &   H4   &    2  &  0.346\\
-     5    &    H   &     1  &   UREA   &   H5   &    2  &  0.276\\
-     6    &   NT   &     1  &   UREA   &   N6   &    3  & -0.622\\
-     7    &    H   &     1  &   UREA   &   H7   &    3  &  0.346\\
-     8    &    H   &     1  &   UREA   &   H8   &    3  &  0.276\\
-\end{tabular} \\
+;   nr    type   resnr  residu    atom    cgnr  charge\\
+     1       C       1    UREA      C1       1   0.683\\
+     2       O       1    UREA      O2       1  -0.683\\
+     3      NT       1    UREA      N3       2  -0.622\\
+     4       H       1    UREA      H4       2   0.346\\
+     5       H       1    UREA      H5       2   0.276\\
+     6      NT       1    UREA      N6       3  -0.622\\
+     7       H       1    UREA      H7       3   0.346\\
+     8       H       1    UREA      H8       3   0.276\\
 \end{tt}\\
 \begin{tt}
 [ bonds ]\\
-\begin{tabular}{rrrrr}
-;  ai    & aj  & funct  &           b0  &           kb\\
-    3    &  4  &     1  & 1.000000e-01  & 3.744680e+05 \\
-    3    &  5  &     1  & 1.000000e-01  & 3.744680e+05 \\
-    6    &  7  &     1  & 1.000000e-01  & 3.744680e+05 \\
-    6    &  8  &     1  & 1.000000e-01  & 3.744680e+05 \\
-    1    &  2  &     1  & 1.230000e-01  & 5.020800e+05 \\
-    1    &  3  &     1  & 1.330000e-01  & 3.765600e+05 \\
-    1    &  6  &     1  & 1.330000e-01  & 3.765600e+05 \\
-\end{tabular} \\
+;  ai    aj funct           b0           kb\\
+    3     4     1 1.000000e-01 3.744680e+05 \\
+    3     5     1 1.000000e-01 3.744680e+05 \\
+    6     7     1 1.000000e-01 3.744680e+05 \\
+    6     8     1 1.000000e-01 3.744680e+05 \\
+    1     2     1 1.230000e-01 5.020800e+05 \\
+    1     3     1 1.330000e-01 3.765600e+05 \\
+    1     6     1 1.330000e-01 3.765600e+05 \\
 \end{tt}\\
 \begin{tt}
 [ pairs ]\\
-\begin{tabular}{rrrrr}
-;  ai    & aj  & funct  &           c6  &          c12\\
-    2    &  4  &     1  & 0.000000e+00  & 0.000000e+00 \\
-    2    &  5  &     1  & 0.000000e+00  & 0.000000e+00 \\
-    2    &  7  &     1  & 0.000000e+00  & 0.000000e+00 \\
-    2    &  8  &     1  & 0.000000e+00  & 0.000000e+00 \\
-    3    &  7  &     1  & 0.000000e+00  & 0.000000e+00 \\
-    3    &  8  &     1  & 0.000000e+00  & 0.000000e+00 \\
-    4    &  6  &     1  & 0.000000e+00  & 0.000000e+00 \\
-    5    &  6  &     1  & 0.000000e+00  & 0.000000e+00 \\
-\end{tabular} \\
+;  ai    aj funct           c6          c12\\
+    2     4     1 0.000000e+00 0.000000e+00 \\
+    2     5     1 0.000000e+00 0.000000e+00 \\
+    2     7     1 0.000000e+00 0.000000e+00 \\
+    2     8     1 0.000000e+00 0.000000e+00 \\
+    3     7     1 0.000000e+00 0.000000e+00 \\
+    3     8     1 0.000000e+00 0.000000e+00 \\
+    4     6     1 0.000000e+00 0.000000e+00 \\
+    5     6     1 0.000000e+00 0.000000e+00 \\
 \end{tt}\\
 \begin{tt}
 [ angles ]\\
-\begin{tabular}{rrrrrr}
-;  ai    & aj   & ak  & funct &          th0  &          cth\\
-    1    &  3   &  4  &    1  & 1.200000e+02  & 2.928800e+02 \\
-    1    &  3   &  5  &    1  & 1.200000e+02  & 2.928800e+02 \\
-    4    &  3   &  5  &    1  & 1.200000e+02  & 3.347200e+02 \\
-    1    &  6   &  7  &    1  & 1.200000e+02  & 2.928800e+02 \\
-    1    &  6   &  8  &    1  & 1.200000e+02  & 2.928800e+02 \\
-    7    &  6   &  8  &    1  & 1.200000e+02  & 3.347200e+02 \\
-    2    &  1   &  3  &    1  & 1.215000e+02  & 5.020800e+02 \\
-    2    &  1   &  6  &    1  & 1.215000e+02  & 5.020800e+02 \\
-    3    &  1   &  6  &    1  & 1.170000e+02  & 5.020800e+02 \\
-\end{tabular} \\
+;  ai    aj    ak funct          th0          cth\\
+    1     3     4     1 1.200000e+02 2.928800e+02 \\
+    1     3     5     1 1.200000e+02 2.928800e+02 \\
+    4     3     5     1 1.200000e+02 3.347200e+02 \\
+    1     6     7     1 1.200000e+02 2.928800e+02 \\
+    1     6     8     1 1.200000e+02 2.928800e+02 \\
+    7     6     8     1 1.200000e+02 3.347200e+02 \\
+    2     1     3     1 1.215000e+02 5.020800e+02 \\
+    2     1     6     1 1.215000e+02 5.020800e+02 \\
+    3     1     6     1 1.170000e+02 5.020800e+02 \\
 \end{tt}\\
 \begin{tt}
 [ dihedrals ]\\
-\begin{tabular}{rrrrrrrr}
-;  ai   & aj  & ak   & al  & funct  &          phi  &           cp  &         mult\\
-    2   &  1  &  3   &  4  &     1  & 1.800000e+02  & 3.347200e+01  & 2.000000e+00 \\
-    6   &  1  &  3   &  4  &     1  & 1.800000e+02  & 3.347200e+01  & 2.000000e+00 \\
-    2   &  1  &  3   &  5  &     1  & 1.800000e+02  & 3.347200e+01  & 2.000000e+00 \\
-    6   &  1  &  3   &  5  &     1  & 1.800000e+02  & 3.347200e+01  & 2.000000e+00 \\
-    2   &  1  &  6   &  7  &     1  & 1.800000e+02  & 3.347200e+01  & 2.000000e+00 \\
-    3   &  1  &  6   &  7  &     1  & 1.800000e+02  & 3.347200e+01  & 2.000000e+00 \\
-    2   &  1  &  6   &  8  &     1  & 1.800000e+02  & 3.347200e+01  & 2.000000e+00 \\
-    3   &  1  &  6   &  8  &     1  & 1.800000e+02  & 3.347200e+01  & 2.000000e+00 \\
-\end{tabular} \\
+;  ai    aj    ak    al funct          phi           cp         mult\\
+    2     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
+    6     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
+    2     1     3     5     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
+    6     1     3     5     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
+    2     1     6     7     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
+    3     1     6     7     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
+    2     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
+    3     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
 \end{tt}\\
 \begin{tt}
 [ dihedrals ]\\
-\begin{tabular}{rrrrrrr}
-;  ai    & aj   & ak   & al  & funct  &           q0  &           cq\\
-    3    &  4   &  5   &  1  &     2  & 0.000000e+00  & 1.673600e+02 \\
-    6    &  7   &  8   &  1  &     2  & 0.000000e+00  & 1.673600e+02 \\
-    1    &  3   &  6   &  2  &     2  & 0.000000e+00  & 1.673600e+02 \\
-\end{tabular} \\
+;  ai    aj    ak    al funct           q0           cq\\
+    3     4     5     1     2 0.000000e+00 1.673600e+02 \\
+    6     7     8     1     2 0.000000e+00 1.673600e+02 \\
+    1     3     6     2     2 0.000000e+00 1.673600e+02 \\
 \end{tt}\\
 \begin{tt}
 [ position\_restraints ]\\
 ; you wouldn't normally use this for a molecule like Urea,\\
 ; but we include it here for didactic purposes\\
-\begin{tabular}{rrrrrl}
-; ai   & funct   &   fcx   &  fcy   &  fcz  & \\
-   1   &     1   &  1000   & 1000   & 1000  & ; Restrain to a point\\
-   2   &     1   &  1000   &    0   & 1000  & ; Restrain to a line (Y-axis)\\
-   3   &     1   &  1000   &    0   &    0  & ; Restrain to a plane (Y-Z-plane)\\
-\end{tabular} \\
+; ai   funct    fc\\
+   1     1     1000    1000    1000 ; Restrain to a point\\
+   2     1     1000       0    1000 ; Restrain to a line (Y-axis)\\
+   3     1     1000       0       0 ; Restrain to a plane (Y-Z-plane)\\
+\\
 ; Include SPC water topology\\
 \#include "spc.itp"\\
 \end{tt}\\
@@ -1422,11 +1320,9 @@ Urea in Water\\
 \end{tt}\\
 \begin{tt}
 [ molecules ]\\
-\begin{tabular}{ll}
-;molecule name  & nr.\\
-Urea            & 1\\
-SOL             & 1000\\
-\end{tabular} \\
+;molecule name   nr.\\
+Urea             1\\
+SOL              1000\\
 \end{tt}}
 
 Here follows the explanatory text.
@@ -1527,69 +1423,55 @@ file, which only lists the information of one particular molecule:
 
 {\small \begin{tt}
 [ moleculetype ]\\
-\begin{tabular}{ll}
-; name  & nrexcl\\
-Urea    &      3\\
-\end{tabular}\\
+; name  nrexcl\\
+Urea       3\\
 \end{tt}\\
 \begin{tt}
 [ atoms ]\\
-\begin{tabular}{rrrrrrr}
-;   nr    & type   & resnr  & residu    & atom    & cgnr  & charge\\
-     1    &    C   &     1  &   UREA    &   C1    &    1  &  0.683  \\
-\end{tabular}
-
+;   nr    type   resnr  residu    atom    cgnr  charge\\
+     1       C       1    UREA      C1       1   0.683  \\
      .................\\
-\end{tt}
-
+     .................\\
+     8       H       1    UREA      H8       3   0.276\\
+\end{tt}\\
 \begin{tt}
 [ bonds ]\\
-\begin{tabular}{rrrrr}
-;  ai   & aj  & funct &           c0  &           c1\\
-    3   &  4  &    1  & 1.000000e-01  & 3.744680e+05 \\
-\end{tabular}
-
+;  ai    aj funct           c0           c1\\
+    3     4     1 1.000000e-01 3.744680e+05 \\
      .................\\
-\end{tt}
-
+     .................\\
+    1     6     1 1.330000e-01 3.765600e+05 \\
+\end{tt}\\
 \begin{tt}
 [ pairs ]\\
-\begin{tabular}{rrrrr}
-;  ai    & aj  & funct  &           c0  &           c1\\
-    2    &  4  &     1  & 0.000000e+00  & 0.000000e+00 \\
-\end{tabular}
-
+;  ai    aj funct           c0           c1\\
+    2     4     1 0.000000e+00 0.000000e+00 \\
      .................\\
-\end{tt}
-
+     .................\\
+    5     6     1 0.000000e+00 0.000000e+00 \\
+\end{tt}\\
 \begin{tt}
 [ angles ]\\
-\begin{tabular}{rrrrrr}
-;  ai   & aj   & ak  & funct  &           c0  &           c1\\
-    1   &  3   &  4  &     1  & 1.200000e+02  & 2.928800e+02 \\
-\end{tabular}
-
+;  ai    aj    ak funct           c0           c1\\
+    1     3     4     1 1.200000e+02 2.928800e+02 \\
      .................\\
-\end{tt}
-
+     .................\\
+    3     1     6     1 1.170000e+02 5.020800e+02 \\
+\end{tt}\\
 \begin{tt}
 [ dihedrals ]\\
-\begin{tabular}{rrrrrrrr}
-;  ai   & aj   & ak   & al  & funct  &           c0  &           c1  &           c2\\
-    2   &  1   &  3   &  4  &     1  & 1.800000e+02  & 3.347200e+01  & 2.000000e+00 \\
-\end{tabular}
-
+;  ai    aj    ak    al funct           c0           c1           c2\\
+    2     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
      .................\\
-\end{tt}
-
+     .................\\
+    3     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
+\end{tt}\\
 \begin{tt}
 [ dihedrals ]\\
-\begin{tabular}{rrrrrrrr}
-;  ai   & aj   & ak   & al  & funct  &           c0  &           c1\\
-    3   &  4   &  5   &  1  &     2  & 0.000000e+00  & 1.673600e+02 \\
-    6   &  7   &  8   &  1  &     2  & 0.000000e+00  & 1.673600e+02 \\
-    1   &  3   &  6   &  2  &     2  & 0.000000e+00  & 1.673600e+02 \\
-\end{tabular}\\
+;  ai    aj    ak    al funct           c0           c1\\
+    3     4     5     1     2 0.000000e+00 1.673600e+02 \\
+    6     7     8     1     2 0.000000e+00 1.673600e+02 \\
+    1     3     6     2     2 0.000000e+00 1.673600e+02 \\
 \end{tt}}
 
 Using {\tt *.itp} files results in a very short {\tt *.top} file:
