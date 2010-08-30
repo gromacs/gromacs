@@ -515,6 +515,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                          cr,fr,
                                          md->c6A,
                                          NULL,
+                                         md->sigmaA,
+                                         NULL,
                                          excl,x,bSB ? boxs : box,
                                          lambda,&dvdlambda);
             PRINT_SEPDVDL("Ewald excl. corr.",Vcorr,dvdlambda);

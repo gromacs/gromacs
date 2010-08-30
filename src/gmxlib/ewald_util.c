@@ -428,6 +428,7 @@ real ewaldlj_LRcorrection(FILE *fplog,
                           int start,int end,
                           t_commrec *cr,t_forcerec *fr,
                           real *chargeA,real *chargeB,
+                          real *sigmaA,real *sigmaB,
                           t_blocka *excl,rvec x[],
                           matrix box,
                           real lambda,real *dvdlambda)
@@ -444,6 +445,7 @@ real ewaldlj_LRcorrection(FILE *fplog,
   int     niat;
   gmx_bool bFreeEnergy = (chargeB != NULL);
   gmx_bool bMolPBC = fr->bMolPBC;
+  gmx_bool bLBRule = fr->bLJPMELB;
 
   vr0 = -ewc*ewc*ewc*ewc*ewc*ewc/6.0;
 
@@ -468,6 +470,8 @@ real ewaldlj_LRcorrection(FILE *fplog,
       i2  = excl->index[i+1];
       if (i < end)
         q2sumA += chargeA[i]*chargeA[i];
+      if (bLBRule)
+        qiA /= sigmaA[i]*sigmaA[i]*sigmaA[i];
 
       /* Loop over excluded neighbours */
       for(j=i1; (j<i2); j++) {
@@ -481,6 +485,8 @@ real ewaldlj_LRcorrection(FILE *fplog,
          */
         if (k > i) {
           qqA = qiA*chargeA[k];
+          if (bLBRule)
+            qqA *= pow(0.5*(sigmaA[i]+sigmaA[k]), 6)/(sigmaA[k]*sigmaA[k]*sigmaA[k]);
           if (qqA != 0.0) {
             rvec_sub(x[i],x[k],dx);
             if (bMolPBC) {
@@ -534,6 +540,10 @@ real ewaldlj_LRcorrection(FILE *fplog,
         q2sumA += chargeA[i]*chargeA[i];
         q2sumB += chargeB[i]*chargeB[i];
       }
+      if (bLBRule) {
+        qiA /= sigmaA[i]*sigmaA[i]*sigmaA[i];
+        qiB /= sigmaB[i]*sigmaB[i]*sigmaB[i];
+      }
 
       /* Loop over excluded neighbours */
       for(j=i1; (j<i2); j++) {
@@ -541,6 +551,10 @@ real ewaldlj_LRcorrection(FILE *fplog,
         if (k > i) {
           qqA = qiA*chargeA[k];
           qqB = qiB*chargeB[k];
+          if (bLBRule) {
+            qqA *= pow(0.5*(sigmaA[i]+sigmaA[k]), 6)/(sigmaA[k]*sigmaA[k]*sigmaA[k]);
+            qqB *= pow(0.5*(sigmaB[i]+sigmaB[k]), 6)/(sigmaB[k]*sigmaB[k]*sigmaB[k]);
+          }
           if (qqA != 0.0 || qqB != 0.0) {
             qqL = L1*qqA + lambda*qqB;
             rvec_sub(x[i],x[k],dx);

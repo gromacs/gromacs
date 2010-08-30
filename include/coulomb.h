@@ -86,6 +86,7 @@ extern real ewaldlj_LRcorrection(FILE *fplog,
                                  int start,int end,
                                  t_commrec *cr,t_forcerec *fr,
                                  real *chargeA,real *chargeB,
+                                 real *sigmaA,real *sigmaB,
                                  t_blocka *excl,rvec x[],
                                  matrix box,
                                  real lambda,real *dvdlambda);
