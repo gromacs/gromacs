@@ -298,6 +298,7 @@ typedef struct {
   int  adress_site;     /* AdResS CG site location                      */
   rvec adress_refs;     /* Coordinates for AdResS reference             */
   real adress_ex_forcecap; /* in the hybrid zone, cap forces large then this to adress_ex_forcecap */
+  bool adress_do_hybridpairs; /* If true pair interaction forces are also scaled in an adress way*/
 
   int * adress_tf_table_index; /* contains mapping of energy group index -> i-th adress tf table*/
   int n_adress_tf_grps;

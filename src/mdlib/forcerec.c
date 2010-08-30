@@ -1305,6 +1305,7 @@ void init_forcerec(FILE *fp,
     fr->adress_icor     = ir->adress_icor;
     fr->adress_site     = ir->adress_site;
     fr->adress_ex_forcecap = ir->adress_ex_forcecap;
+    fr->adress_do_hybridpairs = ir->adress_do_hybridpairs;
 
 
     snew(fr->adress_group_explicit , ir->n_energy_grps);

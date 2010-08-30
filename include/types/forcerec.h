@@ -371,6 +371,7 @@ typedef struct {
   int *adress_group_explicit;
   t_forcetable *  atf_tabs;
   real adress_ex_forcecap;
+  bool adress_do_hybridpairs;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

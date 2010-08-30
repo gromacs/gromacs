@@ -72,7 +72,8 @@
 
 
 /* 1,4 interactions uses kernel 330 directly */
-#include "nb_kernel_c/nb_kernel330.h" 
+#include "nb_kernel_c/nb_kernel330.h"
+#include "nb_kernel_adress_c/nb_kernel330_adress.h"
 
 #ifdef GMX_PPC_ALTIVEC   
 #include "nb_kernel_ppc_altivec/nb_kernel_ppc_altivec.h"
@@ -802,6 +803,7 @@ do_listed_vdw_q(int ftype,int nbonds,
     t_nblist  tmplist;
     int       icoul,ivdw;
     bool      bMolPBC,bFreeEnergy;
+    bool      bCG; /* AdResS*/
     
 #if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_t mtx;
@@ -875,7 +877,7 @@ do_listed_vdw_q(int ftype,int nbonds,
     /* We don't do SSE or altivec here, due to large overhead for 4-fold 
      * unrolling on short lists 
      */
-    
+
     bFreeEnergy = FALSE;
     for(i=0; (i<nbonds); ) 
     {
@@ -883,7 +885,15 @@ do_listed_vdw_q(int ftype,int nbonds,
         ai    = iatoms[i++];
         aj    = iatoms[i++];
         gid   = GID(md->cENER[ai],md->cENER[aj],md->nenergrp);
-        
+
+        if (!fr->adress_type == eAdressOff) {
+            if (fr->adress_group_explicit[ai] != fr->adress_group_explicit[aj]){
+                //exclude cg-ex interaction
+                continue;
+            }
+            bCG = FALSE;
+            bCG = !fr->adress_group_explicit[ai];
+        }
         switch (ftype) {
         case F_LJ14:
             bFreeEnergy =
@@ -1009,7 +1019,8 @@ do_listed_vdw_q(int ftype,int nbonds,
                                       &inneriter);
         }
         else 
-        { 
+        {
+          if (fr->adress_type==eAdressOff || !fr->adress_do_hybridpairs){
             /* Not perturbed - call kernel 330 */
             nb_kernel330
                 ( &i1,
@@ -1042,8 +1053,80 @@ do_listed_vdw_q(int ftype,int nbonds,
                   (void *)&mtx,
                   &outeriter,
                   &inneriter,
-                  NULL);                
-        }
+                  NULL);
+                } else {
+                    if (bCG) {
+                        nb_kernel330_adress_cg
+                                (&i1,
+                                &i0,
+                                j_index,
+                                &i1,
+                                &shift_f,
+                                fr->shift_vec[0],
+                                fshift[0],
+                                &gid,
+                                x14[0],
+                                f14[0],
+                                chargeA,
+                                &eps,
+                                &krf,
+                                &crf,
+                                egcoul,
+                                typeA,
+                                &ntype,
+                                nbfp,
+                                egnb,
+                                &tabscale,
+                                tab,
+                                NULL,
+                                NULL,
+                                NULL,
+                                NULL,
+                                &nthreads,
+                                &count,
+                                (void *) &mtx,
+                                &outeriter,
+                                &inneriter,
+                                fr->adress_ex_forcecap,
+                                md->wf);
+                    } else {
+                        nb_kernel330_adress_ex
+                                (&i1,
+                                &i0,
+                                j_index,
+                                &i1,
+                                &shift_f,
+                                fr->shift_vec[0],
+                                fshift[0],
+                                &gid,
+                                x14[0],
+                                f14[0],
+                                chargeA,
+                                &eps,
+                                &krf,
+                                &crf,
+                                egcoul,
+                                typeA,
+                                &ntype,
+                                nbfp,
+                                egnb,
+                                &tabscale,
+                                tab,
+                                NULL,
+                                NULL,
+                                NULL,
+                                NULL,
+                                &nthreads,
+                                &count,
+                                (void *) &mtx,
+                                &outeriter,
+                                &inneriter,
+                                fr->adress_ex_forcecap,
+                                md->wf);
+                    }
+
+                }
+            }
         
         /* Add the forces */
         rvec_inc(f[ai],f14[0]);

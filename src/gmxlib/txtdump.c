@@ -677,6 +677,8 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("adress_tf_full_box",BOOL(ir->badress_tf_full_box));
     PS("adress_site",EADRESSSITETYPE(ir->adress_site));
     PR("adress_ex_force_cap",ir->adress_ex_forcecap);
+    PS("adress_do_hybridpairs", BOOL(ir->adress_do_hybridpairs));
+
     pr_rvecs(fp,indent,"adress_reference_coords",&(ir->adress_refs),bMDPformat);
 
     PI("userint1",ir->userint1);

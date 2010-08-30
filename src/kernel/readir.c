@@ -1136,6 +1136,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("adress_reference_coords",    adress_refs,             NULL);
   STYPE ("adress_tf_grp_names",        adress_tf_grp_names,     NULL);
   STYPE ("adress_cg_grp_names",        adress_cg_grp_names,     NULL);
+  EETYPE("adress_do_hybridpairs",      ir->adress_do_hybridpairs, yesno_names);
 
   /* User defined thingies */
   CCTYPE ("User defined thingies");
@@ -2152,7 +2153,7 @@ void do_index(const char* mdparin, const char *ndx,
     ir->adress_refs[i]=strtod(ptr1[i],NULL);
   for( ;(i<DIM); i++)
     ir->adress_refs[i]=0;
-
+  
  /* End AdResS input */
 
   if (bVerbose)

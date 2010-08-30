@@ -746,6 +746,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,bool bRead,
       gmx_fio_do_int(fio,ir->n_adress_tf_grps);
       gmx_fio_do_real(fio, ir->adress_ex_forcecap);
       gmx_fio_do_int(fio, ir->n_energy_grps);
+      gmx_fio_do_int(fio,ir->adress_do_hybridpairs);
              
       if (bRead)snew(ir->adress_tf_table_index,ir->n_adress_tf_grps);
       if (ir->n_adress_tf_grps > 0) {
