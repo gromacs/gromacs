@@ -71,7 +71,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 			       int nres, t_resinfo *resinfo, 
 			       int nterpairs,
 			       t_hackblock **ntdb, t_hackblock **ctdb,
-			       int *rn, int *rc, char *ffname);
+			       int *rn, int *rc);
 /* Get the database entries for the nres residues in resinfo
  * and store them in restp and hb.
  */
@@ -84,7 +84,7 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
  * add these atoms to restp.
  */
 
-void print_top_comment(FILE *out,const char *filename,const char *generator,gmx_bool bITP);
+void print_top_comment(FILE *out,const char *filename,const char *generator,const char *ffdir,gmx_bool bITP);
 
 void print_top_header(FILE *out,const char *filename,const char *title,gmx_bool bITP, 
                              const char *ffdir,real mHmult);

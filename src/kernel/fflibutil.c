@@ -199,20 +199,7 @@ static int low_fflib_search_file_end(const char *ffdir,
         rc = gmx_directory_open(&dirhandle,dir);
         if (rc==0)
         {
-            if (strcmp(dir,".") == 0)
-            {
-                /* Print the absolute path to the current working dir. */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-                pdum = _getcwd(dir_print,sizeof(dir_print)-1);
-#else
-                pdum =  getcwd(dir_print,sizeof(dir_print)-1);
-#endif
-            }
-            else
-            {
-                /* Print the directory dir, can be relative or absolute. */
-                strcpy(dir_print,dir);
-            }
+            strcpy(dir_print,dir);
 
             n_thisdir = 0;
             while (gmx_directory_nextfile(dirhandle,nextname,STRLEN-1)==0)

@@ -19,8 +19,8 @@
 #ifndef VMDIO_H_
 #define VMDIO_H_
 
-#include <molfile_plugin.h>
-#include <types/simple.h>
+#include "molfile_plugin.h"
+#include "types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

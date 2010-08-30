@@ -858,6 +858,11 @@ int gmx_trjconv(int argc,char *argv[])
 		      "results!");
 	}
 
+    if (0 == top.mols.nr && (bCluster || bPBCcomMol))
+    {
+        gmx_fatal(FARGS,"Option -pbc %s requires a .tpr file for the -s option", bCluster ? "cluster" : "mol");
+    }
+        
         /* ndec is in nr of decimal places, prec is a multiplication factor: */
         prec = 1;
         for (i=0; i<ndec; i++)

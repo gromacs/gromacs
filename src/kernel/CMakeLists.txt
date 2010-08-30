@@ -57,7 +57,7 @@ if(GMX_OPENMM)
     endif()
     add_library(openmm_api_wrapper openmm_wrapper.cpp)
 #    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
-    set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils OpenMM)   
+    set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})   
 endif(GMX_OPENMM)
 
 if(GMX_FAHCORE)

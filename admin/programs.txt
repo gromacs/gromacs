@@ -112,7 +112,6 @@ HEAD|Kinetic properties
 g_traj|plots x, v, f, box, temperature and rotational energy
 g_velacc|calculates velocity autocorrelation functions
 g_tcaf|calculates viscosities of liquids
-g_kinetics|derives information about kinetic processes from your trajectories
 g_bar|calculates free energy difference estimates through Bennett's acceptance ratio
 g_current|calculate current autocorrelation function of system
 g_vanhove|compute Van Hove correlation function

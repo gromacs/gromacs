@@ -623,45 +623,46 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   snew(xnew,1);
   snew(pdbi, natoms);
   
-  for(i=0; i<natoms; i++) {
-    atomnm = *pdba->atomname[i];
-    rptr = &restp[pdba->atom[i].resind];
-    for(j=0; (j<rptr->natom); j++) {
-      if (gmx_strcasecmp(atomnm,*(rptr->atomname[j])) == 0) {
-	break;
+  for(i=0; i<natoms; i++)
+  {
+      atomnm = *pdba->atomname[i];
+      rptr = &restp[pdba->atom[i].resind];
+      for(j=0; (j<rptr->natom); j++) 
+      {
+          if (gmx_strcasecmp(atomnm,*(rptr->atomname[j])) == 0) 
+          {
+              break;
+          }
       }
-    }
-    if (j==rptr->natom) {
-      if ( ( ( pdba->atom[i].resind == 0) && (atomnm[0] == 'H') &&
-	     ( (atomnm[1] == '1') || (atomnm[1] == '2') || 
-	       (atomnm[1] == '3') ) ) )
-	j=1;
-      else {
-	char buf[STRLEN];
-	
-	sprintf(buf,"Atom %s in residue %s %d not found in rtp entry %s with %d atoms\n"
-		"while sorting atoms%s",atomnm,
-		*pdba->resinfo[pdba->atom[i].resind].name,
-		pdba->resinfo[pdba->atom[i].resind].nr,
-		rptr->resname,
-		rptr->natom,
-		is_hydrogen(atomnm) ? ". Maybe different protonation state.\n"
-		"             Remove this hydrogen or choose a different "
-		"protonation state.\n"
-		"             Option -ignh will ignore all hydrogens "
-		"in the input." : "");
-	gmx_fatal(FARGS,buf);
+      if (j==rptr->natom) 
+      {
+          char buf[STRLEN];
+          
+          sprintf(buf,
+                  "Atom %s in residue %s %d was not found in rtp entry %s with %d atoms\n"
+                  "while sorting atoms.\n%s",atomnm,
+                  *pdba->resinfo[pdba->atom[i].resind].name,
+                  pdba->resinfo[pdba->atom[i].resind].nr,
+                  rptr->resname,
+                  rptr->natom,
+                  is_hydrogen(atomnm) ? 
+                  "\nFor a hydrogen, this can be a different protonation state, or it\n"
+                  "might have had a different number in the PDB file and was rebuilt\n"
+                  "(it might for instance have been H3, and we only expected H1 & H2).\n"
+                  "Note that hydrogens might have been added to the entry for the N-terminus.\n"
+                  "Remove this hydrogen or choose a different protonation state to solve it.\n"
+                  "Option -ignh will ignore all hydrogens in the input." : ".");
+          gmx_fatal(FARGS,buf);
       }
-    }
-    /* make shadow array to be sorted into indexgroup */
-    pdbi[i].resnr  = pdba->atom[i].resind;
-    pdbi[i].j      = j;
-    pdbi[i].index  = i;
-    pdbi[i].anm1   = atomnm[1];
-    pdbi[i].altloc = pdba->pdbinfo[i].altloc;
+      /* make shadow array to be sorted into indexgroup */
+      pdbi[i].resnr  = pdba->atom[i].resind;
+      pdbi[i].j      = j;
+      pdbi[i].index  = i;
+      pdbi[i].anm1   = atomnm[1];
+      pdbi[i].altloc = pdba->pdbinfo[i].altloc;
   }
   qsort(pdbi,natoms,(size_t)sizeof(pdbi[0]),pdbicomp);
-  
+    
   /* pdba is sorted in pdbnew using the pdbi index */ 
   snew(a,natoms);
   snew(pdbnew,1);
@@ -953,7 +954,7 @@ int main(int argc, char *argv[])
     "[PAR]",
     "pdb2gmx will search for force fields by looking for",
     "a [TT]forcefield.itp[tt] file in subdirectories [TT]<forcefield>.ff[tt]",
-    "of the current working directory and of the Gomracs library directory",
+    "of the current working directory and of the Gromacs library directory",
     "as inferred from the path of the binary or the [TT]GMXLIB[tt] environment",
     "variable.",
     "By default the forcefield selection is interactive,",
@@ -966,7 +967,7 @@ int main(int argc, char *argv[])
     "If you want to modify or add a residue types, you can copy the force",
     "field directory from the Gromacs library directory to your current",
     "working directory. If you want to add new protein residue types,",
-    "you will need to modify residuetypes.dat in the libary directory",
+    "you will need to modify residuetypes.dat in the library directory",
     "or copy the whole library directory to a local directory and set",
     "the environment variable [TT]GMXLIB[tt] to the name of that directory.",
     "Check chapter 5 of the manual for more information about file formats.",
@@ -987,7 +988,7 @@ int main(int argc, char *argv[])
     "on NE2 or on both. By default these selections are done automatically.",
     "For His, this is based on an optimal hydrogen bonding",
     "conformation. Hydrogen bonds are defined based on a simple geometric",
-    "criterium, specified by the maximum hydrogen-donor-acceptor angle",
+    "criterion, specified by the maximum hydrogen-donor-acceptor angle",
     "and donor-acceptor distance, which are set by [TT]-angle[tt] and",
     "[TT]-dist[tt] respectively.[PAR]",
       
@@ -1020,7 +1021,7 @@ int main(int argc, char *argv[])
 
     "The [TT].gro[tt] and [TT].g96[tt] file formats do not support chain",
     "identifiers. Therefore it is useful to enter a pdb file name at",
-    "the [TT]-o[tt] option when you want to convert a multichain pdb file.",
+    "the [TT]-o[tt] option when you want to convert a multi-chain pdb file.",
     "[PAR]",
     
     "The option [TT]-vsite[tt] removes hydrogen and fast improper dihedral",
@@ -1028,7 +1029,7 @@ int main(int argc, char *argv[])
     "hydrogens into virtual sites and fixing angles, which fixes their",
     "position relative to neighboring atoms. Additionally, all atoms in the",
     "aromatic rings of the standard amino acids (i.e. PHE, TRP, TYR and HIS)",
-    "can be converted into virtual sites, elminating the fast improper dihedral",
+    "can be converted into virtual sites, eliminating the fast improper dihedral",
     "fluctuations in these rings. Note that in this case all other hydrogen",
     "atoms are also converted to virtual sites. The mass of all atoms that are",
     "converted into virtual sites, is added to the heavy atoms.[PAR]",
@@ -1530,11 +1531,8 @@ int main(int argc, char *argv[])
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=gmx_fio_fopen(top_fn,"w");
 
-#ifdef PACKAGE_VERSION
-  sprintf(generator,"%s - version %s",ShortProgram(), PACKAGE_VERSION );
-#else
-  sprintf(generator,"%s - version %s",ShortProgram(), "unknown" );
-#endif
+  sprintf(generator,"%s - %s",ShortProgram(), GromacsVersion() );
+
   print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult);
 
   nincl=0;
@@ -1674,7 +1672,7 @@ int main(int argc, char *argv[])
     /* lookup hackblocks and rtp for all residues */
     get_hackblocks_rtp(&hb_chain, &restp_chain,
 		       nrtp, restp, pdba->nres, pdba->resinfo, 
-		       cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, ffname);
+		       cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end);
     /* ideally, now we would not need the rtp itself anymore, but do 
      everything using the hb and restp arrays. Unfortunately, that 
      requires some re-thinking of code in gen_vsite.c, which I won't 
@@ -1808,7 +1806,7 @@ int main(int argc, char *argv[])
     nmol++;
 
     if (bITP)
-      print_top_comment(itp_file,itp_fn,generator,TRUE);
+      print_top_comment(itp_file,itp_fn,generator,ffdir,TRUE);
 
     if (cc->bAllWat)
       top_file2=NULL;
