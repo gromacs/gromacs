@@ -477,8 +477,10 @@ static inline void close_i_nblist(t_nblist *nlist)
 
 static inline void close_nblist(t_nblist *nlist)
 {
-    /* Only close this nblist when it has been initialized */
-    if (nlist->jindex)
+    /* Only close this nblist when it has been initialized.
+     * Avoid the creation of i-lists with no j-particles.
+     */
+    if (nlist->jindex && !(nlist->nrj == 0 && nlist->nri == 0))
     {
         nlist->nri++;
     }
