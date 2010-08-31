@@ -33,7 +33,7 @@ add_library(gmxana
 
 
 target_link_libraries(gmxana md gmx)
-set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION})
+set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
 # List of programs with single corresponding .c source file,
 # used to create build rules automatically.
