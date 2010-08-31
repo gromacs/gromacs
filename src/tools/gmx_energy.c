@@ -1677,7 +1677,7 @@ int gmx_energy(int argc,char *argv[])
   t_enxblock *blk=NULL;
   t_enxblock *blk_disre=NULL;
   int        ndisre=0;
-  int        dh_blocks=0, dh_hists=0, dh_samples=0, dh_lambdas;
+  int        dh_blocks=0, dh_hists=0, dh_samples=0, dh_lambdas=0;
 
   t_filenm   fnm[] = {
     { efEDR, "-f",    NULL,      ffREAD  },
