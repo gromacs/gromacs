@@ -21,7 +21,7 @@ EXTRA_PROGRAMS 	=  	copyrgt 	\
 compnl_SOURCES = compnl.c
 compnl_LDADD   = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
-g_sdg_SOURCES  = gmx_sdf.c g_sdf.c
+g_sdf_SOURCES  = gmx_sdf.c g_sdf.c
 
 ehole_SOURCES = ehdata.c ehdata.h ehanal.c ehole.c
 
