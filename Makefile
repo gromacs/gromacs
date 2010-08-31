@@ -171,7 +171,7 @@ copyrgt:
 		fi;
 
 clean:
-		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ #*# *.idx *.ilg *.ind *.out
+		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ \#*\# *.idx *.ilg *.ind *.out
 		$(RM) progman.tex
 		$(RMDIR) progman
 
