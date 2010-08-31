@@ -2105,29 +2105,41 @@ constructed from ``particles'' that are simpler virtual sites.
 \end{array}
 \eeq
 
-\item[{\bf\sf 4fd.}]From four atoms, with a fixed distance
-        (\figref{vsites} 4fd):
-\beq
-        \vvis ~=~ \ve{r}_i + c \frac{  \rvij + a \rvjk + b \rvjl }
-                                    {| \rvij + a \rvjk + b \rvjl|}     
-\eeq
-        In this case the virtual site is at a distance of $|c|$ from $i$.
+\item[{\bf\sf 4fdn.}]From four atoms, with a fixed distance, see separate Fig.\ \ref{fig:vsite_4fdn}.
+This construction is a bit
+complex, in particular since the previous type (4fd) could be unstable which forced us
+to introduce a more elaborate construction:
+
+\begin{figure}
+\centerline{\includegraphics[width=5cm]{plots/vsite_4fdn}}
+\caption {The new 4fdn virtual site construction which is stable even when all constructing
+atoms are in the same plane.}
+\label{fig:vsite_4fdn}
+\end{figure}
+         
+\begin{eqnarray}
+\mathbf{r}_{ja} &=& a\, \mathbf{r}_{ik} - \mathbf{r}_{ij} = a\, (\mathbf{x}_k - \mathbf{x}_i) - (\mathbf{x}_j - \mathbf{x}_i) \nonumber \\
+\mathbf{r}_{jb} &=& b\, \mathbf{r}_{il} - \mathbf{r}_{ij} = b\, (\mathbf{x}_l - \mathbf{x}_i) - (\mathbf{x}_j - \mathbf{x}_i) \nonumber \\
+\mathbf{r}_m &=& \mathbf{r}_{ja} \times \mathbf{r}_{jb} \nonumber \\
+\mathbf{x}_s &=& \mathbf{x}_i + c \frac{\mathbf{r}_m}{|\mathbf{r}_m|}
+\label{eq:vsite}
+\end{eqnarray}
+
+        In this case the virtual site is at a distance of $|c|$ from $i$, while $a$ and $b$ are 
+        parameters. Note that the vectors $\mathbf{r}_{ik}$ and $\mathbf{r}_{ij}$ are not normalized
+        to save floating-point operations.
         The force on particles $i$, $j$, $k$ and $l$ due to the force 
-        on the virtual site can be computed as:
-\beq
-        \begin{array}{lcr}
-        \Fi &=& \displaystyle \Fvis - \gamma ( \Fvis - \ve{p} ) \\[1ex]
-        \Fj &=& \displaystyle (1-a-b)\gamma (\Fvis - \ve{p})    \\[1ex]
-        \Fk &=& \displaystyle a \gamma (\Fvis - \ve{p})         \\[1ex]
-        \Fl &=& \displaystyle b \gamma (\Fvis - \ve{p})         \\
-        \end{array}
-        ~\mbox{~ where~ }~
-        \begin{array}{c}
-\displaystyle \gamma = \frac{c}{| \rvij + a \rvjk + b \rvjl |} \\[2ex]
-\displaystyle \ve{p} = \frac{ \rvis \cdot \Fvis }
-                      { \rvis \cdot \rvis } \rvis
-        \end{array}
-\eeq
+        on the virtual site are computed through chain rule derivatives
+        of the construction expression. This is exact and conserves energy,
+        but it does lead to relatively lengthy expressions that we do not
+        include here (over 200 floating-point operations). The interested reader can 
+        look at the source code in \verb+vsite.c+. Fortunately, this vsite type is normally
+        only used for chiral centers such as $C_{\alpha}$ atoms in proteins.
+      
+The new 4fdn construct is identified with a 'type' value of 2 in the topology. The earlier 4fd
+type is still supported internally ('type' value 1), but it should not be used for
+new simulations. All current Gromacs tools will automatically generate type 4fdn instead.
+
 
 \item[{\bf\sf N.}] A linear combination of $N$ atoms with relative
 weights $a_i$. The weight for atom $i$ is:
