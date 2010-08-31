@@ -7,12 +7,17 @@ include(Dart)
 set(PROJECT_VERSION "4.5-beta4"
     CACHE STRING "Gromacs version string")
 set(SOVERSION 6)
+# It is a bit irritating, but this has to be set separately for now!
+SET(CPACK_PACKAGE_VERSION_MAJOR "4")
+SET(CPACK_PACKAGE_VERSION_MINOR "5")
+SET(CPACK_PACKAGE_VERSION_PATCH "0")
+
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-if(NOT CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "" FORCE)
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "" FORCE)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -20,6 +25,19 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
+
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_VENDOR "gromacs.org")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Gromacs - a toolkit for high-performance molecular simulation")
+set(CPACK_SET_DESTDIR "ON")
+set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
+set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
+# Its GPL/LGPL, so they do not have to agree to a license for mere usage, but some installers require this...
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/admin/InstallLicense.txt")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
+
+#must come after all cpack settings!
+include(CPack)
 
 ########################################################################
 # Fix stupid flags on MSVC
@@ -32,6 +50,8 @@ IF(CMAKE_GENERATOR MATCHES "Visual Studio")
 ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
 
 set(GMX_EXTRA_LIBRARIES)
+
+
 
 ######################################################################
 # compiler tests
@@ -63,7 +83,7 @@ option(GMX_DISABLE_FFTW_MEASURE
 set(GMX_QMMM_PROGRAM "none" 
     CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" OFF)
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" ON)
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
@@ -624,6 +644,15 @@ set(INCL_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
 
 set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 
+##################################################################
+# Shared library settings - Darwin uses INSTALL_NAME_DIR instead!
+##################################################################
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(CMAKE_SKIP_BUILD_RPATH  FALSE)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "${LIB_INSTALL_DIR}")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
 
 add_subdirectory(share)
 add_subdirectory(include)
