@@ -38,9 +38,9 @@
 
 #include "pdb2top.h"
 
-extern int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
-			t_ssbond **specbonds,bool bVerbose);
+extern int mk_specbonds(t_atoms *pdba,rvec x[],gmx_bool bInteractive,
+			t_ssbond **specbonds,gmx_bool bVerbose);
 
-extern bool yesno(void);
+extern gmx_bool yesno(void);
 
 #endif

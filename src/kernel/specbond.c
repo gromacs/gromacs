@@ -47,7 +47,7 @@
 #include "pdb2top.h"
 #include "vec.h"
 
-bool yesno(void)
+gmx_bool yesno(void)
 {
   char c;
 
@@ -116,7 +116,7 @@ void done_specbonds(int nsb,t_specbond sb[])
   }
 }
 
-static bool is_special(int nsb,t_specbond sb[],char *res,char *atom)
+static gmx_bool is_special(int nsb,t_specbond sb[],char *res,char *atom)
 {
   int i;
   
@@ -130,8 +130,8 @@ static bool is_special(int nsb,t_specbond sb[],char *res,char *atom)
   return FALSE;
 }
 
-static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
-		    real d,int *index_sb,bool *bSwap)
+static gmx_bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
+		    real d,int *index_sb,gmx_bool *bSwap)
 {
   int i;
   char *at1,*at2,*res1,*res2;
@@ -173,7 +173,7 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
   return FALSE;
 }
 
-static void rename_1res(t_atoms *pdba,int resind,char *newres,bool bVerbose)
+static void rename_1res(t_atoms *pdba,int resind,char *newres,gmx_bool bVerbose)
 {
   if (bVerbose) {
     printf("Using rtp entry %s for %s %d\n",
@@ -186,15 +186,15 @@ static void rename_1res(t_atoms *pdba,int resind,char *newres,bool bVerbose)
   *pdba->resinfo[resind].rtp = strdup(newres);
 }
 
-int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
-		 t_ssbond **specbonds,bool bVerbose)
+int mk_specbonds(t_atoms *pdba,rvec x[],gmx_bool bInteractive,
+		 t_ssbond **specbonds,gmx_bool bVerbose)
 {
   t_specbond *sb=NULL;
   t_ssbond   *bonds=NULL;
   int  nsb;
   int  nspec,nbonds;
   int  *specp,*sgp;
-  bool bDoit,bSwap;
+  gmx_bool bDoit,bSwap;
   int  i,j,b,e,e2;
   int  ai,aj,index_sb;
   real **d;

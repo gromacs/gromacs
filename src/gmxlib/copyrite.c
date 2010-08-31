@@ -66,7 +66,7 @@ static void pr_two(FILE *out,int c,int i)
 void pr_difftime(FILE *out,double dt)
 {
   int    ndays,nhours,nmins,nsecs;
-  bool   bPrint,bPrinted;
+  gmx_bool   bPrint,bPrinted;
 
   ndays = dt/(24*3600);
   dt    = dt-24*3600*ndays;
@@ -103,7 +103,7 @@ void pr_difftime(FILE *out,double dt)
 }
 
 
-bool be_cool(void)
+gmx_bool be_cool(void)
 {
   /* Yes, it is bad to check the environment variable every call,
    * but we dont call this routine often, and it avoids using 
@@ -243,7 +243,7 @@ void CopyRight(FILE *out,const char *szProgram)
   fprintf(out,"\n");
 
   ster_print(out,GromacsVersion());
-  fprintf(out,"\n\n");
+  fprintf(out,"\n");
 
   /* fprintf(out,"\n");*/
 
@@ -517,7 +517,13 @@ void please_cite(FILE *fp,const char *key)
       "C. Junghans and S. Poblete",
       "A reference implementation of the adaptive resolution scheme in ESPResSo",
       "Comp. Phys. Comm.",
-      181, 2010, "1449" }
+      181, 2010, "1449" },
+    { "Wang2010",
+      "H. Wang, F. Dommert, C.Holm",
+      "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
+      "J. Chem. Phys. B",
+      133, 2010, "034117"
+    }
   };
 #define NSTR (int)asize(citedb)
   

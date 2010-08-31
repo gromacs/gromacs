@@ -280,7 +280,7 @@ gmx_qhops_read(char *fn,int *nqhop)
   int           i,npd;
   t_xmlrec      *xml;
   const char *db="qhops.dat";
-  bool fna=FALSE;
+  gmx_bool fna=FALSE;
   
   xmlDoValidityCheckingDefaultValue = 0;
   if (NULL == fn) 

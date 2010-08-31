@@ -61,7 +61,7 @@ gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab);
 
 void read_resall(char *resdb, int *nrtp,t_restp **rtp, 
 		 gpp_atomtype_t atype, t_symtab *tab,
-		 bool bAllowOverrideRTP);
+		 gmx_bool bAllowOverrideRTP);
 /* read rtp database, append to the existing database */
 
 void print_resall(FILE *out, int nrtp, t_restp rtp[], 

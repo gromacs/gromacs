@@ -76,11 +76,11 @@ typedef struct gmx_ana_selection_t
     /** Pointer to the index group that holds the selected atoms. */
     struct gmx_ana_index_t *g;
     /** TRUE if the value can change as a function of time. */
-    bool                    bDynamic;
+    gmx_bool                    bDynamic;
     /** Type of the covered fraction. */
     e_coverfrac_t           cfractype;
     /** TRUE if the covered fraction depends on the frame. */
-    bool                    bCFracDyn;
+    gmx_bool                    bCFracDyn;
     /** Covered fraction of the selection for the current frame. */
     real                    cfrac;
     /** The average covered fraction (over the trajectory). */
@@ -110,7 +110,7 @@ gmx_ana_selection_name(gmx_ana_selection_t *sel);
 void
 gmx_ana_selection_print_info(gmx_ana_selection_t *sel);
 /** Initializes the information for covered fraction. */
-bool
+gmx_bool
 gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type);
 
 /** Creates a new empty selection collection. */
@@ -126,15 +126,15 @@ gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, const char *ty
 /** Sets the default output position handling for a selection collection. */
 void
 gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
-                                     const char *type, bool bMaskOnly);
+                                     const char *type, gmx_bool bMaskOnly);
 /** Request evaluation of velocities for selections. */
 void
 gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
-                                    bool bVelOut);
+                                    gmx_bool bVelOut);
 /** Request evaluation of forces for selections. */
 void
 gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
-                                      bool bForceOut);
+                                      gmx_bool bForceOut);
 /** Sets the topology for a selection collection. */
 int
 gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,
@@ -146,11 +146,11 @@ gmx_ana_selcollection_get_count(gmx_ana_selcollection_t *sc);
 gmx_ana_selection_t *
 gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i);
 /** Returns TRUE if the collection requires topology information for evaluation. */
-bool
+gmx_bool
 gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc);
 /** Prints a human-readable version of the internal selection element tree. */
 void
-gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, bool bValues);
+gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, gmx_bool bValues);
 /** Prints the selection strings into an XVGR file as comments. */
 void
 xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc, 
@@ -161,7 +161,7 @@ xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc,
 int
 gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
                                   gmx_ana_indexgrps_t *grps,
-                                  bool bInteractive);
+                                  gmx_bool bInteractive);
 /** Parses selection(s) from a file. */
 int
 gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
@@ -174,7 +174,7 @@ gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
 /* In compiler.c */
 /** Set debugging flag for selection compilation. */
 void
-gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, bool bDebug);
+gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, gmx_bool bDebug);
 /** Prepares the selections for evaluation and performs some optimizations. */
 int
 gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc);

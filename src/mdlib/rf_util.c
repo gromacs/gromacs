@@ -65,7 +65,7 @@ real RF_excl_correction(FILE *log,
   int    start = mdatoms->start;
   int    end   = mdatoms->homenr+start;
   int    niat;
-  bool   bMolPBC = fr->bMolPBC;
+  gmx_bool   bMolPBC = fr->bMolPBC;
 
   if (fr->n_tpi)
     /* For test particle insertion we only correct for the test molecule */

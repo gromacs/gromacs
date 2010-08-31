@@ -39,6 +39,11 @@
  * https://simtk.org/project/xml/downloads.xml?group_id=161#package_id600
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <types/simple.h>
 #include <cmath>
 #include <set>
 #include <iostream>
@@ -84,7 +89,7 @@ using namespace OpenMM;
  * \param[out] t    Destination variable to convert to.
  */
 template <class T>
-static bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
+static gmx_bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
 {
     istringstream iss(s);
     return !(iss >> f >> t).fail();
@@ -137,7 +142,7 @@ static void splitOptionValue(const string &s, string &opt, string &val)
                  integer less than, equal to, or greater than 0 if \p s1 less than, 
                  identical to, or greater than \p s2.
  */
-static bool isStringEqNCase(const string s1, const string s2)
+static gmx_bool isStringEqNCase(const string s1, const string s2)
 {
     return (gmx_strncasecmp(s1.c_str(), s2.c_str(), max(s1.length(), s2.length())) == 0);
 }
@@ -378,7 +383,7 @@ public:
     System* system;      /*! The system to simulate. */
     Context* context;   /*! The OpenMM context in which the simulation is carried out. */
     Integrator* integrator; /*! The integrator used in the simulation. */
-    bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
+    gmx_bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
     GmxOpenMMPlatformOptions *platformOpt; /*! Platform options. */
 };
 
@@ -756,7 +761,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 {
 
     char warn_buf[STRLEN];
-    static bool hasLoadedPlugins = false;
+    static gmx_bool hasLoadedPlugins = false;
     string usedPluginDir;
     int devId;
 
@@ -840,7 +845,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         /* check wheter Gromacs options compatibility with OpenMM */
         checkGmxOptions(fplog, opt, ir, top, fr, state);
 
-        // Create the system.
+        /* Create the system. */
         const t_idef& idef = top->idef;
         const int numAtoms = top_global->natoms;
         const int numConstraints = idef.il[F_CONSTR].nr/3;
@@ -858,6 +863,13 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             sys->addForce(new CMMotionRemover(ir->nstcomm));
 
         /* Set bonded force field terms. */
+
+		/* 
+		 * CUDA platform currently doesn't support more than one
+		 * instance of a force object, so we pack all forces that
+		 * use the same form into one.
+		*/
+
         const int* bondAtoms = (int*) idef.il[F_BONDS].iatoms;
         HarmonicBondForce* bondForce = new HarmonicBondForce();
         sys->addForce(bondForce);
@@ -869,25 +881,6 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int atom2 = bondAtoms[offset++];
             bondForce->addBond(atom1, atom2,
                                idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
-        }
-
-        /* Urey-Bradley includes both the angle and bond potential for 1-3 interactions */
-        const int* ubAtoms = (int*) idef.il[F_UREY_BRADLEY].iatoms;
-        HarmonicBondForce* ubBondForce = new HarmonicBondForce();
-        HarmonicAngleForce* ubAngleForce = new HarmonicAngleForce();
-        sys->addForce(ubBondForce);
-        sys->addForce(ubAngleForce);
-        offset = 0;
-        for (int i = 0; i < numUB; ++i)
-        {
-            int type = ubAtoms[offset++];
-            int atom1 = ubAtoms[offset++];
-            int atom2 = ubAtoms[offset++];
-            int atom3 = ubAtoms[offset++];
-            ubBondForce->addBond(atom1, atom3,
-                               idef.iparams[type].u_b.r13, idef.iparams[type].u_b.kUB);
-            ubAngleForce->addAngle(atom1, atom2, atom3, 
-                    idef.iparams[type].u_b.theta*M_PI/180.0, idef.iparams[type].u_b.ktheta);
         }
 
 		/* Set the angle force field terms */
@@ -903,6 +896,27 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int atom3 = angleAtoms[offset++];
             angleForce->addAngle(atom1, atom2, atom3, 
                     idef.iparams[type].harmonic.rA*M_PI/180.0, idef.iparams[type].harmonic.krA);
+        }
+
+        /* Urey-Bradley includes both the angle and bond potential for 1-3 interactions */
+        const int* ubAtoms = (int*) idef.il[F_UREY_BRADLEY].iatoms;
+		/* HarmonicBondForce* ubBondForce = new HarmonicBondForce(); */
+		/*  HarmonicAngleForce* ubAngleForce = new HarmonicAngleForce(); */
+        /* sys->addForce(ubBondForce); */
+        /* sys->addForce(ubAngleForce); */
+        offset = 0;
+        for (int i = 0; i < numUB; ++i)
+        {
+            int type = ubAtoms[offset++];
+            int atom1 = ubAtoms[offset++];
+            int atom2 = ubAtoms[offset++];
+            int atom3 = ubAtoms[offset++];
+            /* ubBondForce->addBond(atom1, atom3, */
+            bondForce->addBond(atom1, atom3,
+                               idef.iparams[type].u_b.r13, idef.iparams[type].u_b.kUB);
+            /* ubAngleForce->addAngle(atom1, atom2, atom3, */ 
+            angleForce->addAngle(atom1, atom2, atom3, 
+                    idef.iparams[type].u_b.theta*M_PI/180.0, idef.iparams[type].u_b.ktheta);
         }
 
 		/* Set proper dihedral terms */
@@ -925,8 +939,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
 		/* Set improper dihedral terms that are represented by a periodic function (as in AMBER FF) */
         const int* periodicImproperAtoms = (int*) idef.il[F_PIDIHS].iatoms;
-        PeriodicTorsionForce* periodicImproperForce = new PeriodicTorsionForce();
-        sys->addForce(periodicImproperForce);
+        /* PeriodicTorsionForce* periodicImproperForce = new PeriodicTorsionForce(); */
+        /* sys->addForce(periodicImproperForce); */
         offset = 0;
         for (int i = 0; i < numPeriodicImproper; ++i)
         {
@@ -935,7 +949,8 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int atom2 = periodicImproperAtoms[offset++];
             int atom3 = periodicImproperAtoms[offset++];
             int atom4 = periodicImproperAtoms[offset++];
-            periodicImproperForce->addTorsion(atom1, atom2, atom3, atom4,
+            /* periodicImproperForce->addTorsion(atom1, atom2, atom3, atom4, */
+            periodicForce->addTorsion(atom1, atom2, atom3, atom4,
                                       idef.iparams[type].pdihs.mult,
                                       idef.iparams[type].pdihs.phiA*M_PI/180.0,
                                       idef.iparams[type].pdihs.cpA);
@@ -1416,7 +1431,7 @@ void openmm_cleanup(FILE* fplog, void* data)
 void openmm_copy_state(void *data,
                        t_state *state, double *time,
                        rvec f[], gmx_enerdata_t *enerd,
-                       bool includePos, bool includeVel, bool includeForce, bool includeEnergy)
+                       gmx_bool includePos, gmx_bool includeVel, gmx_bool includeForce, gmx_bool includeEnergy)
 {
     int types = 0;
     if (includePos)

@@ -79,7 +79,7 @@ static void calc_dist(int nind,atom_id index[],rvec x[],int ePBC,matrix box,
 static void calc_dist_tot(int nind,atom_id index[],rvec x[],
 			  int ePBC,matrix box,
 			  real **d, real **dtot, real **dtot2,
-			  bool bNMR, real **dtot1_3, real **dtot1_6)
+			  gmx_bool bNMR, real **dtot1_3, real **dtot1_6)
 {
   int     i,j;
   real    *xi;
@@ -212,12 +212,12 @@ static void dump_equiv(FILE *out, int neq, t_equiv **equiv)
   }
 }
     
-static bool is_equiv(int neq, t_equiv **equiv, char **nname,
+static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
 		     int rnr1, char *rname1, char *aname1,
 		     int rnr2, char *rname2, char *aname2)
 {
   int i,j;
-  bool bFound;
+  gmx_bool bFound;
   
   bFound=FALSE;
   /* we can terminate each loop when bFound is true! */
@@ -244,13 +244,13 @@ static bool is_equiv(int neq, t_equiv **equiv, char **nname,
 
 static int analyze_noe_equivalent(const char *eq_fn,
 				  t_atoms *atoms, int isize, atom_id *index, 
-				  bool bSumH, 
+				  gmx_bool bSumH, 
 				  atom_id *noe_index, t_noe_gr *noe_gr)
 {
   FILE   *fp;
   int i, j, anmil, anmjl, rnri, rnrj, gi, groupnr, neq;
   char *anmi, *anmj, **nnm;
-  bool bMatch,bEquiv;
+  gmx_bool bMatch,bEquiv;
   t_equiv **equiv;
   
   snew(nnm,isize);
@@ -554,12 +554,12 @@ int gmx_rmsdist (int argc,char *argv[])
   t_noe    **noe=NULL;
   t_rgb    rlo,rhi;
   char     buf[255];
-  bool bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
+  gmx_bool bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
   
   static int  nlevels=40;
   static real scalemax=-1.0;
-  static bool bSumH=TRUE;
-  static bool bPBC=TRUE;
+  static gmx_bool bSumH=TRUE;
+  static gmx_bool bPBC=TRUE;
   output_env_t oenv;
 
   t_pargs pa[] = {

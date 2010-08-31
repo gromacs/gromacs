@@ -54,7 +54,7 @@ void write_man(FILE *out,const char *mantp,const char *program,
 		      int nfile,t_filenm *fnm,
 		      int npargs,t_pargs *pa,
 		      int nbug,const char **bugs,
-		      bool bHidden);
+		      gmx_bool bHidden);
 
 char *fileopt(unsigned long flag,char buf[],int maxsize);
 /* Return a string describing the file type in flag.
@@ -73,7 +73,7 @@ struct t_linkdata;
 
 void
 print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
-                    struct t_linkdata *links, const char *program, bool bWiki);
+                    struct t_linkdata *links, const char *program, gmx_bool bWiki);
 
 #ifdef __cplusplus
 }

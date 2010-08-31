@@ -70,7 +70,7 @@ typedef struct {
 typedef struct {
     real   *ener;
     exactsum_t *es;
-    bool   bExactStat;
+    gmx_bool   bExactStat;
     double av;
     double rmsd;
     double ee;
@@ -97,10 +97,10 @@ static double mypow(double x,double y)
 
 static int *select_it(int nre,char *nm[],int *nset)
 {
-  bool *bE;
+  gmx_bool *bE;
   int  n,k,j,i;
   int  *set;
-  bool bVerbose = TRUE;
+  gmx_bool bVerbose = TRUE;
   
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
@@ -156,10 +156,10 @@ static void chomp(char *buf)
 
 static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
 {
-  bool *bE;
+  gmx_bool *bE;
   int  n,k,kk,j,i,nmatch,nind,nss;
   int  *set;
-  bool bEOF,bVerbose = TRUE,bLong=FALSE;
+  gmx_bool bEOF,bVerbose = TRUE,bLong=FALSE;
   char *ptr,buf[STRLEN];
   const char *fm4="%3d  %-14s";
   const char *fm2="%3d  %-34s";
@@ -167,7 +167,7 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
   
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
-  
+ 
   fprintf(stderr,"\n");
   fprintf(stderr,"Select the terms you want from the following list by\n");
   fprintf(stderr,"selecting either (part of) the name or the number or a combination.\n");
@@ -600,7 +600,7 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
     gmx_large_int_t steps,np,p,bound_nb;
     enerdat_t *ed;
     exactsum_t *es;
-    bool bAllZero;
+    gmx_bool bAllZero;
     double x,sx,sy,sxx,sxy;
     ener_ee_t *eee;
 
@@ -840,15 +840,15 @@ static char *ee_pr(double ee,char *buf)
     return buf;
 }
 
-static void analyse_ener(bool bCorr,const char *corrfn,
-                         bool bFee,bool bSum,bool bFluct,bool bTempFluct,
-                         bool bVisco,const char *visfn,int nmol,
+static void analyse_ener(gmx_bool bCorr,const char *corrfn,
+                         gmx_bool bFee,gmx_bool bSum,gmx_bool bFluct,gmx_bool bTempFluct,
+                         gmx_bool bVisco,const char *visfn,int nmol,
                          int nconstr,
                          gmx_large_int_t start_step,double start_t,
                          gmx_large_int_t step,double t,
                          double time[], real reftemp,
                          enerdata_t *edat,
-                         int nset,int set[],bool *bIsEner,
+                         int nset,int set[],gmx_bool *bIsEner,
                          char **leg,gmx_enxnm_t *enm,
                          real Vaver,real ezero,
                          int nbmin,int nbmax,
@@ -1131,7 +1131,7 @@ static void print_time(FILE *fp,double t)
   fprintf(fp,"%12.6f",t);
 }
 
-static void print1(FILE *fp,bool bDp,real e)
+static void print1(FILE *fp,gmx_bool bDp,real e)
 {
   if (bDp)
     fprintf(fp,"  %16.12f",e);
@@ -1150,7 +1150,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
   ener_file_t enx;
   int  nre,timecheck,step,nenergy,nenergy2,maxenergy;
   int  i,j;
-  bool bCont;
+  gmx_bool bCont;
   real aver, beta;
   real **eneset2;
   double dE, sum;
@@ -1234,6 +1234,272 @@ static void fec(const char *ene2fn, const char *runavgfn,
   sfree(fr);
 }
 
+
+static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
+                    int *blocks, int *hists, int *samples, int *nlambdas,
+                    const output_env_t oenv)
+{
+    const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
+    char title[STRLEN],label_x[STRLEN],label_y[STRLEN], legend[STRLEN];
+    char buf[STRLEN];
+    gmx_bool first=FALSE;
+    int nblock_hist=0, nblock_dh=0, nblock_dhcoll=0;
+    int i,j,k;
+    /* coll data */
+    double temp=0, start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
+    static int setnr=0;
+
+    /* now count the blocks & handle the global dh data */
+    for(i=0;i<fr->nblock;i++)
+    {
+        if (fr->block[i].id == enxDHHIST)
+        {
+            nblock_hist++;
+        }
+        else if (fr->block[i].id == enxDH)
+        {
+            nblock_dh++;
+        }
+        else if (fr->block[i].id == enxDHCOLL)
+        {
+            nblock_dhcoll++;
+            if ( (fr->block[i].nsub < 1) ||
+                 (fr->block[i].sub[0].type != xdr_datatype_double) ||
+                 (fr->block[i].sub[0].nr < 5))
+            {
+                gmx_fatal(FARGS, "Unexpected block data");
+            }
+
+            /* read the data from the DHCOLL block */
+            temp =         fr->block[i].sub[0].dval[0];
+            start_time =   fr->block[i].sub[0].dval[1];
+            delta_time =   fr->block[i].sub[0].dval[2];
+            start_lambda = fr->block[i].sub[0].dval[3];
+            delta_lambda = fr->block[i].sub[0].dval[4];
+        }
+    }
+
+    if (nblock_hist == 0 && nblock_dh == 0)
+    {
+        /* don't do anything */
+        return;
+    }
+    if (nblock_hist>0 && nblock_dh>0)
+    {
+        gmx_fatal(FARGS, "This energy file contains both histogram dhdl data and non-histogram dhdl data. Don't know what to do.");
+    }
+    if (! *fp_dhdl )
+    {
+        if (nblock_dh>0)
+        {
+            sprintf(title,"%s, %s",dhdl,deltag);
+            sprintf(label_x,"%s (%s)","Time",unit_time);
+            sprintf(label_y,"(%s)",unit_energy);
+        }
+        else
+        {
+            sprintf(title,"N(%s)",deltag);
+            sprintf(label_x,"%s (%s)",deltag,unit_energy);
+            sprintf(label_y,"Samples");
+        }
+        *fp_dhdl=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, 
+                               oenv);
+        sprintf(buf,"T = %g (K), %s = %g", temp, lambda, start_lambda);
+        xvgr_subtitle(*fp_dhdl,buf,oenv);
+        first=TRUE;
+    }
+
+
+
+    (*hists)+=nblock_hist;
+    (*blocks)+=nblock_dh;
+    (*nlambdas) = nblock_hist+nblock_dh;
+
+
+    /* write the data */
+    if (nblock_hist > 0)
+    {
+        gmx_large_int_t sum=0;
+        /* histograms */
+        for(i=0;i<fr->nblock;i++)
+        {
+            t_enxblock *blk=&(fr->block[i]);
+            if (blk->id==enxDHHIST)
+            {
+                double foreign_lambda, dx;
+                gmx_large_int_t x0;
+                int nhist, derivative;
+
+                /* check the block types etc. */
+                if ( (blk->nsub < 2) ||
+                     (blk->sub[0].type != xdr_datatype_double) ||
+                     (blk->sub[1].type != xdr_datatype_large_int) ||
+                     (blk->sub[0].nr < 2)  ||
+                     (blk->sub[1].nr < 2) )
+                {
+                    gmx_fatal(FARGS, "Unexpected block data in file");
+                }
+                foreign_lambda=blk->sub[0].dval[0];
+                dx=blk->sub[0].dval[1];
+                nhist=blk->sub[1].lval[0];
+                derivative=blk->sub[1].lval[1];
+                for(j=0;j<nhist;j++)
+                {
+                    const char *lg[1];
+                    x0=blk->sub[1].lval[2+j];
+
+                    if (!derivative)
+                    {
+                        sprintf(legend,
+                                "N(%s(%s=%g) | %s=%g)",
+                                deltag, lambda, foreign_lambda, 
+                                lambda, start_lambda);
+                    }
+                    else
+                    {
+                        sprintf(legend, "N(%s | %s=%g)", 
+                                dhdl, lambda, start_lambda);
+                    }
+                                       
+                    lg[0]=legend;
+                    xvgr_new_dataset(*fp_dhdl, setnr, 1, lg, oenv); 
+                    setnr++;
+                    for(k=0;k<blk->sub[j+2].nr;k++)
+                    {
+                        int hist;
+                        double xmin, xmax;
+                    
+                        hist=blk->sub[j+2].ival[k];
+                        xmin=(x0+k)*dx;
+                        xmax=(x0+k+1)*dx;
+                        fprintf(*fp_dhdl,"%g %d\n%g %d\n", xmin, hist, 
+                                xmax, hist);
+                        sum+=hist;
+                    }
+                    /* multiple histogram data blocks in one histogram
+                       mean that the second one is the reverse of the first one:
+                       for dhdl derivatives, it's important to know both the
+                       maximum and minimum values */
+                    dx=-dx;
+                }
+            }
+        }
+
+        (*samples) += (int)(sum/nblock_hist);
+    }
+    else
+    {
+        /* raw dh */
+        int len=0;
+        char **setnames=NULL;
+        int nnames=nblock_dh;
+
+        if (fabs(delta_lambda) > 1e-9)
+        {
+            nnames++;
+        }
+        if (first)
+        {
+            snew(setnames, nnames);
+        }
+        j=0;
+
+        if (fabs(delta_lambda) > 1e-9)
+        {
+            /* lambda is a plotted value */
+            setnames[j]=gmx_strdup(lambda);
+            j++;
+        }
+
+
+        for(i=0;i<fr->nblock;i++)
+        {
+            t_enxblock *blk=&(fr->block[i]);
+            if (blk->id == enxDH)
+            {
+                if (first)
+                {
+                    /* do the legends */
+                    int derivative;
+                    double foreign_lambda;
+
+                    derivative=blk->sub[0].ival[0];
+                    foreign_lambda=blk->sub[1].dval[0];
+
+                    if (derivative)
+                    {
+                        sprintf(buf, "%s %s %g",dhdl,lambda,start_lambda);
+                    }
+                    else
+                    {
+                        sprintf(buf, "%s %s %g",deltag,lambda,
+                                foreign_lambda);
+                    }
+                    setnames[j] = gmx_strdup(buf);
+                    j++;
+                }
+
+                if (len == 0)
+                {   
+                    len=blk->sub[2].nr;
+                }
+                else
+                {
+                    if (len!=blk->sub[2].nr)
+                    {
+                        gmx_fatal(FARGS, 
+                                  "Length inconsistency in dhdl data");
+                    }
+                }
+            }
+        }
+
+
+        if (first)
+        {
+            xvgr_legend(*fp_dhdl, nblock_dh, (const char**)setnames, oenv);
+            setnr += nblock_dh;
+            for(i=0;i<nblock_dh;i++)
+            {
+                sfree(setnames[i]);
+            }
+            sfree(setnames);
+        }
+
+        (*samples) += len;
+        for(i=0;i<len;i++)
+        {
+            double time=start_time + delta_time*i;
+
+            fprintf(*fp_dhdl,"%.4f", time);
+            if (fabs(delta_lambda) > 1e-9)
+            {
+                double lambda_now=i*delta_lambda + start_lambda;
+                fprintf(*fp_dhdl,"  %.4f", lambda_now);
+            }
+            for(j=0;j<fr->nblock;j++)
+            {
+                t_enxblock *blk=&(fr->block[j]);
+                if (blk->id == enxDH)
+                {
+                    double value;
+                    if (blk->sub[2].type == xdr_datatype_float)
+                    {
+                        value=blk->sub[2].fval[i];
+                    }
+                    else
+                    {
+                        value=blk->sub[2].dval[i];
+                    }
+                    fprintf(*fp_dhdl,"  %g", value);
+                }
+            }
+            fprintf(*fp_dhdl, "\n");
+        }
+    }
+}
+
+
 int gmx_energy(int argc,char *argv[])
 {
   const char *desc[] = {
@@ -1301,6 +1567,10 @@ int gmx_energy(int argc,char *argv[])
     "tensor for each orientation restraint experiment. With option",
     "[TT]-ovec[tt] also the eigenvectors are plotted.[PAR]",
 
+    "Option [TT]-odh[tt] extracts and plots the free energy data",
+    "(Hamiltoian differences and/or the Hamiltonian derivative dhdl)",
+    "from the ener.edr file.[PAR]",
+
     "With [TT]-fee[tt] an estimate is calculated for the free-energy",
     "difference with an ideal gas state: [BR]",
     "  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
@@ -1322,8 +1592,8 @@ int gmx_energy(int argc,char *argv[])
     "the energies must both be calculated from the same trajectory."
     
   };
-  static bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
-  static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
+  static gmx_bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
+  static gmx_bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
   static int  skip=0,nmol=1,nconstr=0,nbmin=5,nbmax=5;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
@@ -1368,7 +1638,8 @@ int gmx_energy(int argc,char *argv[])
     "Volume",  "Pressure"
   };
   
-  FILE       *out,*fp_pairs=NULL,*fort=NULL,*fodt=NULL,*foten=NULL;
+  FILE       *out=NULL,*fp_pairs=NULL,*fort=NULL,*fodt=NULL,*foten=NULL;
+  FILE       *fp_dhdl=NULL;
   FILE       **drout;
   ener_file_t fp;
   int        timecheck=0;
@@ -1388,13 +1659,13 @@ int gmx_energy(int argc,char *argv[])
   real       *bounds=NULL,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
   int        *index=NULL,*pair=NULL,norsel=0,*orsel=NULL,*or_label=NULL;
   int        nbounds=0,npairs;
-  bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE,bOTEN;
-  bool       bFoundStart,bCont,bEDR,bVisco;
+  gmx_bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE,bOTEN,bDHDL;
+  gmx_bool       bFoundStart,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt,ener,dbl;
   double     *time=NULL;
   real       Vaver;
   int        *set=NULL,i,j,k,nset,sss;
-  bool       *bIsEner=NULL;
+  gmx_bool       *bIsEner=NULL;
   char       **pairleg,**odtleg,**otenleg;
   char       **leg=NULL;
   char       **nms;
@@ -1406,6 +1677,7 @@ int gmx_energy(int argc,char *argv[])
   t_enxblock *blk=NULL;
   t_enxblock *blk_disre=NULL;
   int        ndisre=0;
+  int        dh_blocks=0, dh_hists=0, dh_samples=0, dh_lambdas;
 
   t_filenm   fnm[] = {
     { efEDR, "-f",    NULL,      ffREAD  },
@@ -1422,7 +1694,8 @@ int gmx_energy(int argc,char *argv[])
     { efXVG, "-oten", "oriten",  ffOPTWR },
     { efXVG, "-corr", "enecorr", ffOPTWR },
     { efXVG, "-vis",  "visco",   ffOPTWR },
-    { efXVG, "-ravg", "runavgdf",ffOPTWR }
+    { efXVG, "-ravg", "runavgdf",ffOPTWR },
+    { efXVG, "-odh",  "dhdl"    ,ffOPTWR }
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -1444,6 +1717,7 @@ int gmx_energy(int argc,char *argv[])
   bODT   = opt2bSet("-odt",NFILE,fnm);
   bORIRE = bORA || bORT || bODA || bODR || bODT;
   bOTEN  = opt2bSet("-oten",NFILE,fnm);
+  bDHDL  = opt2bSet("-odh",NFILE,fnm);
 
   nset = 0;
 
@@ -1455,179 +1729,183 @@ int gmx_energy(int argc,char *argv[])
   
   bVisco = opt2bSet("-vis",NFILE,fnm);
   
-  if (!bDisRe) {
-    if (bVisco) {
-      nset=asize(setnm);
-      snew(set,nset);
-      /* This is nasty code... To extract Pres tensor, Volume and Temperature */
-      for(j=0; j<nset; j++) {
-	for(i=0; i<nre; i++) {
-	  if (strstr(enm[i].name,setnm[j])) {
-	    set[j]=i;
-	    break;
-	  }
-	}
-        if (i == nre) {
-	  if (gmx_strcasecmp(setnm[j],"Volume")==0) {
-	    printf("Enter the box volume (" unit_volume "): ");
-	    if(1 != scanf("%lf",&dbl))
-	    {
-	      gmx_fatal(FARGS,"Error reading user input");
-            }
-	    Vaver = dbl;
-	  } else
-	    gmx_fatal(FARGS,"Could not find term %s for viscosity calculation",
-			setnm[j]);
-        }
+  if (!bDisRe && !bDHDL) 
+  {
+      if (bVisco) {
+          nset=asize(setnm);
+          snew(set,nset);
+          /* This is nasty code... To extract Pres tensor, Volume and Temperature */
+          for(j=0; j<nset; j++) {
+              for(i=0; i<nre; i++) {
+                  if (strstr(enm[i].name,setnm[j])) {
+                      set[j]=i;
+                      break;
+                  }
+              }
+              if (i == nre) {
+                  if (gmx_strcasecmp(setnm[j],"Volume")==0) {
+                      printf("Enter the box volume (" unit_volume "): ");
+                      if(1 != scanf("%lf",&dbl))
+                      {
+                          gmx_fatal(FARGS,"Error reading user input");
+                      }
+                      Vaver = dbl;
+                  } else
+                      gmx_fatal(FARGS,"Could not find term %s for viscosity calculation",
+                                setnm[j]);
+              }
+          }
       }
-    }
-    else {
-      set=select_by_name(nre,enm,&nset);
-    }
-    /* Print all the different units once */
-    sprintf(buf,"(%s)",enm[set[0]].unit);
-    for(i=1; i<nset; i++) {
-      for(j=0; j<i; j++) {
-	if (strcmp(enm[set[i]].unit,enm[set[j]].unit) == 0) {
-	  break;
-	}
+      else 
+      {
+          set=select_by_name(nre,enm,&nset);
       }
-      if (j == i) {
-	strcat(buf,", (");
-	strcat(buf,enm[set[i]].unit);
-	strcat(buf,")");
+      /* Print all the different units once */
+      sprintf(buf,"(%s)",enm[set[0]].unit);
+      for(i=1; i<nset; i++) {
+          for(j=0; j<i; j++) {
+              if (strcmp(enm[set[i]].unit,enm[set[j]].unit) == 0) {
+                  break;
+              }
+          }
+          if (j == i) {
+              strcat(buf,", (");
+              strcat(buf,enm[set[i]].unit);
+              strcat(buf,")");
+          }
       }
-    }
-    out=xvgropen(opt2fn("-o",NFILE,fnm),"Gromacs Energies","Time (ps)",buf,
-                 oenv);
-    
-    snew(leg,nset+1);
-    for(i=0; (i<nset); i++)
-      leg[i] = enm[set[i]].name;
-    if (bSum) {
-      leg[nset]=strdup("Sum");
-      xvgr_legend(out,nset+1,(const char**)leg,oenv);
-    }
-    else
-      xvgr_legend(out,nset,(const char**)leg,oenv);
+      out=xvgropen(opt2fn("-o",NFILE,fnm),"Gromacs Energies","Time (ps)",buf,
+                   oenv);
 
-    snew(bIsEner,nset);
-    for(i=0; (i<nset); i++) {
-      bIsEner[i] = FALSE;
-      for (j=0; (j <= F_ETOT); j++)
-	bIsEner[i] = bIsEner[i] ||
-	  (gmx_strcasecmp(interaction_function[j].longname,leg[i]) == 0);
-    }
-    
-    if (bPrAll && nset > 1) {
-        gmx_fatal(FARGS,"Printing averages can only be done when a single set is selected");
-    }
-
-    time = NULL;
-
-    if (bORIRE || bOTEN)
-      get_orires_parms(ftp2fn(efTPX,NFILE,fnm),&nor,&nex,&or_label,&oobs);
-    
-    if (bORIRE) {
-      if (bOrinst)
-	enx_i = enxORI;
+      snew(leg,nset+1);
+      for(i=0; (i<nset); i++)
+          leg[i] = enm[set[i]].name;
+      if (bSum) {
+          leg[nset]=strdup("Sum");
+          xvgr_legend(out,nset+1,(const char**)leg,oenv);
+      }
       else
-	enx_i = enxOR;
+          xvgr_legend(out,nset,(const char**)leg,oenv);
 
-      if (bORA || bODA)
-	snew(orient,nor);
-      if (bODR)
-	snew(odrms,nor);
-      if (bORT || bODT) {
-	fprintf(stderr,"Select the orientation restraint labels you want (-1 is all)\n");
-	fprintf(stderr,"End your selection with 0\n");
-	j = -1;
-	orsel = NULL;
-	do {
-	  j++;
-	  srenew(orsel,j+1);
-	  if(1 != scanf("%d",&(orsel[j])))
-	  {
-	    gmx_fatal(FARGS,"Error reading user input");
-	  }
-	} while (orsel[j] > 0);
-	if (orsel[0] == -1) {
-	  fprintf(stderr,"Selecting all %d orientation restraints\n",nor);
-	  norsel = nor;
-	  srenew(orsel,nor);
-	  for(i=0; i<nor; i++)
-	    orsel[i] = i;
-	} else {
-	  /* Build the selection */
-	  norsel=0;
-	  for(i=0; i<j; i++) {
-	    for(k=0; k<nor; k++)
-	      if (or_label[k] == orsel[i]) {
-		orsel[norsel] = k;
-		norsel++;
-		break;
-	      }
-	    if (k == nor)
-	      fprintf(stderr,"Orientation restraint label %d not found\n",
-		      orsel[i]);
-	  }
-	}
-	snew(odtleg,norsel);
-	for(i=0; i<norsel; i++) {
-	  snew(odtleg[i],256);
-	  sprintf(odtleg[i],"%d",or_label[orsel[i]]);
-	}
-	if (bORT) {
-	  fort=xvgropen(opt2fn("-ort",NFILE,fnm), "Calculated orientations",
-			"Time (ps)","",oenv);
-	  if (bOrinst)
-	    fprintf(fort,"%s",orinst_sub);
-	  xvgr_legend(fort,norsel,(const char**)odtleg,oenv);
-	}
-	if (bODT) {
-	  fodt=xvgropen(opt2fn("-odt",NFILE,fnm),
-			"Orientation restraint deviation",
-			"Time (ps)","",oenv);
-	  if (bOrinst)
-	    fprintf(fodt,"%s",orinst_sub);
-	  xvgr_legend(fodt,norsel,(const char**)odtleg,oenv);
-	}
+      snew(bIsEner,nset);
+      for(i=0; (i<nset); i++) {
+          bIsEner[i] = FALSE;
+          for (j=0; (j <= F_ETOT); j++)
+              bIsEner[i] = bIsEner[i] ||
+                        (gmx_strcasecmp(interaction_function[j].longname,leg[i]) == 0);
       }
-    }
-    if (bOTEN) {
-      foten=xvgropen(opt2fn("-oten",NFILE,fnm),
-		     "Order tensor","Time (ps)","",oenv);
-      snew(otenleg,bOvec ? nex*12 : nex*3);
-      for(i=0; i<nex; i++) {
-	for(j=0; j<3; j++) {
-	  sprintf(buf,"eig%d",j+1);
-	  otenleg[(bOvec ? 12 : 3)*i+j] = strdup(buf);
-	}
-	if (bOvec) {
-	  for(j=0; j<9; j++) {
-	    sprintf(buf,"vec%d%s",j/3+1,j%3==0 ? "x" : (j%3==1 ? "y" : "z"));
-	    otenleg[12*i+3+j] = strdup(buf);
-	  }
-	}
+
+      if (bPrAll && nset > 1) {
+          gmx_fatal(FARGS,"Printing averages can only be done when a single set is selected");
       }
-      xvgr_legend(foten,bOvec ? nex*12 : nex*3,(const char**)otenleg,oenv);
-    }
+
+      time = NULL;
+
+      if (bORIRE || bOTEN)
+          get_orires_parms(ftp2fn(efTPX,NFILE,fnm),&nor,&nex,&or_label,&oobs);
+
+      if (bORIRE) {
+          if (bOrinst)
+              enx_i = enxORI;
+          else
+              enx_i = enxOR;
+
+          if (bORA || bODA)
+              snew(orient,nor);
+          if (bODR)
+              snew(odrms,nor);
+          if (bORT || bODT) {
+              fprintf(stderr,"Select the orientation restraint labels you want (-1 is all)\n");
+              fprintf(stderr,"End your selection with 0\n");
+              j = -1;
+              orsel = NULL;
+              do {
+                  j++;
+                  srenew(orsel,j+1);
+                  if(1 != scanf("%d",&(orsel[j])))
+                  {
+                      gmx_fatal(FARGS,"Error reading user input");
+                  }
+              } while (orsel[j] > 0);
+              if (orsel[0] == -1) {
+                  fprintf(stderr,"Selecting all %d orientation restraints\n",nor);
+                  norsel = nor;
+                  srenew(orsel,nor);
+                  for(i=0; i<nor; i++)
+                      orsel[i] = i;
+              } else {
+                  /* Build the selection */
+                  norsel=0;
+                  for(i=0; i<j; i++) {
+                      for(k=0; k<nor; k++)
+                          if (or_label[k] == orsel[i]) {
+                              orsel[norsel] = k;
+                              norsel++;
+                              break;
+                          }
+                      if (k == nor)
+                          fprintf(stderr,"Orientation restraint label %d not found\n",
+                                  orsel[i]);
+                  }
+              }
+              snew(odtleg,norsel);
+              for(i=0; i<norsel; i++) {
+                  snew(odtleg[i],256);
+                  sprintf(odtleg[i],"%d",or_label[orsel[i]]);
+              }
+              if (bORT) {
+                  fort=xvgropen(opt2fn("-ort",NFILE,fnm), "Calculated orientations",
+                                "Time (ps)","",oenv);
+                  if (bOrinst)
+                      fprintf(fort,"%s",orinst_sub);
+                  xvgr_legend(fort,norsel,(const char**)odtleg,oenv);
+              }
+              if (bODT) {
+                  fodt=xvgropen(opt2fn("-odt",NFILE,fnm),
+                                "Orientation restraint deviation",
+                                "Time (ps)","",oenv);
+                  if (bOrinst)
+                      fprintf(fodt,"%s",orinst_sub);
+                  xvgr_legend(fodt,norsel,(const char**)odtleg,oenv);
+              }
+          }
+      }
+      if (bOTEN) {
+          foten=xvgropen(opt2fn("-oten",NFILE,fnm),
+                         "Order tensor","Time (ps)","",oenv);
+          snew(otenleg,bOvec ? nex*12 : nex*3);
+          for(i=0; i<nex; i++) {
+              for(j=0; j<3; j++) {
+                  sprintf(buf,"eig%d",j+1);
+                  otenleg[(bOvec ? 12 : 3)*i+j] = strdup(buf);
+              }
+              if (bOvec) {
+                  for(j=0; j<9; j++) {
+                      sprintf(buf,"vec%d%s",j/3+1,j%3==0 ? "x" : (j%3==1 ? "y" : "z"));
+                      otenleg[12*i+3+j] = strdup(buf);
+                  }
+              }
+          }
+          xvgr_legend(foten,bOvec ? nex*12 : nex*3,(const char**)otenleg,oenv);
+      }
   }
-  else {
-    nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&pair,&npairs,
-		       &mtop,&top,&ir);
-    snew(violaver,npairs);
-    out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations",
-		 "Time (ps)","nm",oenv);
-    xvgr_legend(out,2,drleg,oenv);  
-    if (bDRAll) { 
-      fp_pairs=xvgropen(opt2fn("-pairs",NFILE,fnm),"Pair Distances",
-			"Time (ps)","Distance (nm)",oenv);
-      if (output_env_get_print_xvgr_codes(oenv))
-	fprintf(fp_pairs,"@ subtitle \"averaged (tau=%g) and instantaneous\"\n",
-		ir.dr_tau);
-    }
+  else if (bDisRe)
+  {
+      nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&pair,&npairs,
+                         &mtop,&top,&ir);
+      snew(violaver,npairs);
+      out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations",
+                   "Time (ps)","nm",oenv);
+      xvgr_legend(out,2,drleg,oenv);  
+      if (bDRAll) { 
+          fp_pairs=xvgropen(opt2fn("-pairs",NFILE,fnm),"Pair Distances",
+                            "Time (ps)","Distance (nm)",oenv);
+          if (output_env_get_print_xvgr_codes(oenv))
+              fprintf(fp_pairs,"@ subtitle \"averaged (tau=%g) and instantaneous\"\n",
+                      ir.dr_tau);
+      }
   }
+
 
   /* Initiate energies and set them to zero */
   edat.nsteps  = 0;
@@ -1792,7 +2070,7 @@ int gmx_energy(int argc,char *argv[])
       /* 
        * Store energies for analysis afterwards... 
        */
-      if (!bDisRe && (fr->nre > 0)) {
+      if (!bDisRe && !bDHDL && (fr->nre > 0)) {
 	if (edat.nframes % 1000 == 0) {
 	  srenew(time,edat.nframes+1000);
 	}
@@ -1838,6 +2116,12 @@ int gmx_energy(int argc,char *argv[])
 	    teller_disre++;
 	  }
 	}
+        else if (bDHDL)
+        {
+            do_dhdl(fr, &fp_dhdl, opt2fn("-odh",NFILE,fnm), 
+                    &dh_blocks, &dh_hists, &dh_samples, &dh_lambdas,
+                    oenv);
+        }
 	/*******************************************
 	 * E N E R G I E S
 	 *******************************************/
@@ -1976,79 +2260,108 @@ int gmx_energy(int argc,char *argv[])
   
   fprintf(stderr,"\n");
   close_enx(fp);
-  
-  ffclose(out);
+  if (out) 
+      ffclose(out);
 
   if (bDRAll)
-    ffclose(fp_pairs);
+      ffclose(fp_pairs);
 
   if (bORT)
-    ffclose(fort);
+      ffclose(fort);
   if (bODT)
-    ffclose(fodt);
-  if (bORA) {
-    out = xvgropen(opt2fn("-ora",NFILE,fnm),
-		   "Average calculated orientations",
-		   "Restraint label","",oenv);
-    if (bOrinst)
-      fprintf(out,"%s",orinst_sub);
-    for(i=0; i<nor; i++)
-      fprintf(out,"%5d  %g\n",or_label[i],orient[i]/norfr);
-    ffclose(out);
+      ffclose(fodt);
+  if (bORA) 
+  {
+      out = xvgropen(opt2fn("-ora",NFILE,fnm),
+                     "Average calculated orientations",
+                     "Restraint label","",oenv);
+      if (bOrinst)
+          fprintf(out,"%s",orinst_sub);
+      for(i=0; i<nor; i++)
+          fprintf(out,"%5d  %g\n",or_label[i],orient[i]/norfr);
+      ffclose(out);
   }
   if (bODA) {
-    out = xvgropen(opt2fn("-oda",NFILE,fnm),
-		   "Average restraint deviation",
-		   "Restraint label","",oenv);
-    if (bOrinst)
-      fprintf(out,"%s",orinst_sub);
-    for(i=0; i<nor; i++)
-      fprintf(out,"%5d  %g\n",or_label[i],orient[i]/norfr-oobs[i]);
-    ffclose(out);
+      out = xvgropen(opt2fn("-oda",NFILE,fnm),
+                     "Average restraint deviation",
+                     "Restraint label","",oenv);
+      if (bOrinst)
+          fprintf(out,"%s",orinst_sub);
+      for(i=0; i<nor; i++)
+          fprintf(out,"%5d  %g\n",or_label[i],orient[i]/norfr-oobs[i]);
+      ffclose(out);
   }
   if (bODR) {
-    out = xvgropen(opt2fn("-odr",NFILE,fnm),
-		   "RMS orientation restraint deviations",
-		   "Restraint label","",oenv);
-    if (bOrinst)
-      fprintf(out,"%s",orinst_sub);
-    for(i=0; i<nor; i++)
-      fprintf(out,"%5d  %g\n",or_label[i],sqrt(odrms[i]/norfr));
-    ffclose(out);
+      out = xvgropen(opt2fn("-odr",NFILE,fnm),
+                     "RMS orientation restraint deviations",
+                     "Restraint label","",oenv);
+      if (bOrinst)
+          fprintf(out,"%s",orinst_sub);
+      for(i=0; i<nor; i++)
+          fprintf(out,"%5d  %g\n",or_label[i],sqrt(odrms[i]/norfr));
+      ffclose(out);
   }
   if (bOTEN)
-    ffclose(foten);
+      ffclose(foten);
 
-  if (bDisRe) {
-    analyse_disre(opt2fn("-viol",NFILE,fnm),
-		  teller_disre,violaver,bounds,index,pair,nbounds,oenv);
-  } else {
-    analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
-                 bFee,bSum,bFluct,opt2parg_bSet("-nmol",npargs,ppa),
-                 bVisco,opt2fn("-vis",NFILE,fnm),
-                 nmol,nconstr,start_step,start_t,frame[cur].step,frame[cur].t,
-                 time,reftemp,&edat,
-                 nset,set,bIsEner,leg,enm,Vaver,ezero,nbmin,nbmax,
-                 oenv);
+  if (bDisRe) 
+  {
+      analyse_disre(opt2fn("-viol",NFILE,fnm),
+                    teller_disre,violaver,bounds,index,pair,nbounds,oenv);
+  } 
+  else if (bDHDL)
+  {
+      if (fp_dhdl)
+      {
+          ffclose(fp_dhdl);
+          printf("\n\nWrote %d lambda values with %d samples as ", 
+                 dh_lambdas, dh_samples);
+          if (dh_hists > 0)
+          {
+              printf("%d dH histograms ", dh_hists);
+          }
+          if (dh_blocks> 0)
+          {
+              printf("%d dH data blocks ", dh_blocks);
+          }
+          printf("to %s\n", opt2fn("-odh",NFILE,fnm));
+
+      }
+      else
+      {
+          gmx_fatal(FARGS, "No dH data in %s\n", opt2fn("-f",NFILE,fnm));
+      }
+
+  }
+  else
+  {
+      analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
+                   bFee,bSum,bFluct,opt2parg_bSet("-nmol",npargs,ppa),
+                   bVisco,opt2fn("-vis",NFILE,fnm),
+                   nmol,nconstr,start_step,start_t,frame[cur].step,frame[cur].t,
+                   time,reftemp,&edat,
+                   nset,set,bIsEner,leg,enm,Vaver,ezero,nbmin,nbmax,
+                   oenv);
   }
   if (opt2bSet("-f2",NFILE,fnm)) {
-    fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
-	reftemp, nset, set, leg, &edat, time ,oenv);
+      fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
+          reftemp, nset, set, leg, &edat, time ,oenv);
   }
-  
+
   {
-    const char *nxy = "-nxy";
-    
-    do_view(oenv,opt2fn("-o",NFILE,fnm),nxy);
-    do_view(oenv,opt2fn_null("-ravg",NFILE,fnm),nxy);
-    do_view(oenv,opt2fn_null("-ora",NFILE,fnm),nxy);
-    do_view(oenv,opt2fn_null("-ort",NFILE,fnm),nxy);
-    do_view(oenv,opt2fn_null("-oda",NFILE,fnm),nxy);
-    do_view(oenv,opt2fn_null("-odr",NFILE,fnm),nxy);
-    do_view(oenv,opt2fn_null("-odt",NFILE,fnm),nxy);
-    do_view(oenv,opt2fn_null("-oten",NFILE,fnm),nxy);
+      const char *nxy = "-nxy";
+
+      do_view(oenv,opt2fn("-o",NFILE,fnm),nxy);
+      do_view(oenv,opt2fn_null("-ravg",NFILE,fnm),nxy);
+      do_view(oenv,opt2fn_null("-ora",NFILE,fnm),nxy);
+      do_view(oenv,opt2fn_null("-ort",NFILE,fnm),nxy);
+      do_view(oenv,opt2fn_null("-oda",NFILE,fnm),nxy);
+      do_view(oenv,opt2fn_null("-odr",NFILE,fnm),nxy);
+      do_view(oenv,opt2fn_null("-odt",NFILE,fnm),nxy);
+      do_view(oenv,opt2fn_null("-oten",NFILE,fnm),nxy);
+      do_view(oenv,opt2fn_null("-odh",NFILE,fnm),nxy);
   }
   thanx(stderr);
-  
+
   return 0;
 }

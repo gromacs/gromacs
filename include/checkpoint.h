@@ -51,7 +51,7 @@ extern "C" {
  * Appends the _step<step>.cpt with bNumberAndKeep,
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
  */
-void write_checkpoint(const char *fn,bool bNumberAndKeep,
+void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
 			     FILE *fplog,t_commrec *cr,
 			     int eIntegrator,int simulation_part,
 			     gmx_large_int_t step,double t,
@@ -64,10 +64,10 @@ void write_checkpoint(const char *fn,bool bNumberAndKeep,
  * but not the state itself.
  */
 void load_checkpoint(const char *fn,FILE **fplog,
-			    t_commrec *cr,bool bPartDecomp,ivec dd_nc,
-			    t_inputrec *ir,t_state *state,bool *bReadRNG, 
-			    bool *bReadEkin,
-			    bool bTruncateOutputFiles);
+			    t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
+			    t_inputrec *ir,t_state *state,gmx_bool *bReadRNG, 
+			    gmx_bool *bReadEkin,
+			    gmx_bool bTruncateOutputFiles);
 
 /* Read the state from checkpoint file.
  * Arrays in state that are NULL are allocated.
@@ -93,11 +93,11 @@ void list_checkpoint(const char *fn,FILE *out);
  * When TRUE is returned, bAddPart will tell whether the simulation part
  * needs to be added to the output file name.
  */
-bool read_checkpoint_simulation_part(const char *filename,int *simulation_part,
+gmx_bool read_checkpoint_simulation_part(const char *filename,int *simulation_part,
                                      gmx_large_int_t *step,t_commrec *cr,
-                                     bool bAppendReq,
+                                     gmx_bool bAppendReq,
                                      int nfile,const t_filenm fnm[],
-                                     const char *part_suffix,bool *bAddPart);
+                                     const char *part_suffix,gmx_bool *bAddPart);
 
 #ifdef __cplusplus
 }

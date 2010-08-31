@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-real calc_similar_ind(bool bRho,int nind,atom_id *index,real mass[],
+real calc_similar_ind(gmx_bool bRho,int nind,atom_id *index,real mass[],
 			     rvec x[],rvec xp[]);
 /* Returns RMSD or Rho (depending on bRho) over all atoms in index */
 

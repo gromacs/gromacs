@@ -184,9 +184,9 @@
  *    from a variable, otherwise the child type is not \ref SEL_SUBEXPR.
  *
  *
- * \subsection selparser_tree_bool Boolean elements
+ * \subsection selparser_tree_gmx_bool Boolean elements
  *
- * One \ref SEL_BOOLEAN element is created for each boolean keyword in the
+ * One \ref SEL_BOOLEAN element is created for each gmx_boolean keyword in the
  * input, and the tree structure represents the evaluation order.
  * The \c t_selelem::boolt type gives the type of the operation.
  * Each element has exactly two children (one for \ref BOOL_NOT elements),
@@ -369,8 +369,8 @@ _gmx_selelem_update_flags(t_selelem *sel)
 {
     t_selelem          *child;
     int                 rc;
-    bool                bUseChildType=FALSE;
-    bool                bOnlySingleChildren;
+    gmx_bool                bUseChildType=FALSE;
+    gmx_bool                bOnlySingleChildren;
 
     /* Return if the flags have already been set */
     if (sel->flags & SEL_FLAGSSET)
@@ -1020,7 +1020,7 @@ _gmx_sel_init_variable_ref(t_selelem *sel)
  *   selection.
  */
 static void
-init_pos_keyword_defaults(t_selelem *root, gmx_ana_selcollection_t *sc, bool bSelection)
+init_pos_keyword_defaults(t_selelem *root, gmx_ana_selcollection_t *sc, gmx_bool bSelection)
 {
     t_selelem               *child;
     int                      flags;
@@ -1336,7 +1336,7 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
  * This is used to terminate interactive parsers when the correct number of
  * selections has been provided.
  */
-bool
+gmx_bool
 _gmx_sel_parser_should_finish(yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1406,7 +1406,7 @@ static int
 run_parser(int maxnr, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    bool bOk;
+    gmx_bool bOk;
     int  nr;
 
     nr  = sc->nr;
@@ -1434,7 +1434,7 @@ run_parser(int maxnr, yyscan_t scanner)
  */
 int
 gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
-                                  gmx_ana_indexgrps_t *grps, bool bInteractive)
+                                  gmx_ana_indexgrps_t *grps, gmx_bool bInteractive)
 {
     yyscan_t scanner;
     int      rc;

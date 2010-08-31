@@ -61,7 +61,7 @@ extern "C" {
 typedef struct		/* This struct describes the order and the	*/
   /* sizes of the structs in a trjfile, sizes are given in bytes.	*/
 {
-  bool  bDouble;        /* Double precision?                            */
+  gmx_bool  bDouble;        /* Double precision?                            */
   int	ir_size;	/* Backward compatibility		        */
   int	e_size;		/* Backward compatibility		        */
   int	box_size;	/* Non zero if a box is present			*/
@@ -86,7 +86,7 @@ t_fileio *open_trn(const char *fn,const char *mode);
 void close_trn(t_fileio *fio);
 /* Close it */
 
-bool fread_trnheader(t_fileio *fio,t_trnheader *trn,bool *bOK);
+gmx_bool fread_trnheader(t_fileio *fio,t_trnheader *trn,gmx_bool *bOK);
 /* Read the header of a trn file. Return FALSE if there is no frame.
  * bOK will be FALSE when the header is incomplete.
  */
@@ -98,7 +98,7 @@ void read_trnheader(const char *fn,t_trnheader *header);
 void pr_trnheader(FILE *fp,int indent,char *title,t_trnheader *sh);
 /* Print the header of a trn file to fp */
 
-bool is_trn(FILE *fp);
+gmx_bool is_trn(FILE *fp);
 /* Return true when the file is a trn file. File will be rewound
  * afterwards.
  */
@@ -107,14 +107,14 @@ void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
 		       rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
-bool fread_htrn(t_fileio *fio,t_trnheader *sh,
+gmx_bool fread_htrn(t_fileio *fio,t_trnheader *sh,
 		       rvec *box,rvec *x,rvec *v,rvec *f);
 /* Extern read a frame except the header (that should be pre-read,
  * using routine read_trnheader, see above) from a trn file.
  * Return FALSE on error
  */
  
-bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
+gmx_bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
 		      rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
 /* Read a trn frame, including the header from fp. box, x, v, f may
  * be NULL, in which case the data will be skipped over.

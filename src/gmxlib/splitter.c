@@ -333,7 +333,7 @@ void set_bor(t_border *b,int atom,int ic,int is)
   b->is   = is;
 }
 
-static bool is_bor(atom_id ai[],int i)
+static gmx_bool is_bor(atom_id ai[],int i)
 {
   return ((ai[i] != ai[i-1]) || ((ai[i] == NO_ATID) && (ai[i-1] == NO_ATID)));
 }
@@ -421,7 +421,7 @@ static void split_blocks(FILE *fp,t_inputrec *ir, int nnodes,
   t_border *border;
   double   tload,tcap;
   
-  bool    bSHK;
+  gmx_bool    bSHK;
   atom_id *shknum,*cgsnum;
   
   natoms = cgs->index[cgs->nr];
@@ -752,7 +752,7 @@ static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
 
 void gen_sblocks(FILE *fp,int at_start,int at_end,
 				 t_idef *idef,t_blocka *sblock,
-				 bool bSettle)
+				 gmx_bool bSettle)
 {
   t_graph *g;
   int     i,i0,j,k,istart,n;

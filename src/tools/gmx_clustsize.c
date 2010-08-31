@@ -68,7 +68,7 @@
 static void clust_size(const char *ndx,const char *trx,const char *xpm,
 		       const char *xpmw,const char *ncl,const char *acl, 
 		       const char *mcl,const char *histo,const char *tempf,
-		       const char *mcn,bool bMol,bool bPBC,const char *tpr,
+		       const char *mcn,gmx_bool bMol,gmx_bool bPBC,const char *tpr,
 		       real cut,int nskip,int nlevels,
 		       t_rgb rmid,t_rgb rhi,int ndf,
                        const output_env_t oenv)
@@ -81,7 +81,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   t_pbc   pbc;
   char    *gname;
   char    timebuf[32];
-  bool    bSame,bTPRwarn=TRUE;
+  gmx_bool    bSame,bTPRwarn=TRUE;
   /* Topology stuff */
   t_trxframe  fr;
   t_tpxheader tpxh;
@@ -377,8 +377,8 @@ int gmx_clustsize(int argc,char *argv[])
   static int  nskip    = 0;
   static int  nlevels  = 20;
   static int  ndf      = -1;
-  static bool bMol     = FALSE;
-  static bool bPBC     = TRUE;
+  static gmx_bool bMol     = FALSE;
+  static gmx_bool bPBC     = TRUE;
   static rvec rlo      = { 1.0, 1.0, 0.0 };
   static rvec rhi      = { 0.0, 0.0, 1.0 };
 
@@ -404,7 +404,7 @@ int gmx_clustsize(int argc,char *argv[])
   };
 #define NPA asize(pa)
   const char *fnNDX,*fnTPR;
-  bool       bSQ,bRDF;
+  gmx_bool       bSQ,bRDF;
   t_rgb      rgblo,rgbhi;
   
   t_filenm   fnm[] = {

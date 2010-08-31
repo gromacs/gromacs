@@ -9,14 +9,15 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>trjconv</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0<br>
-Sun 18 Jan 2009</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
+Thu 26 Aug 2010</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 trjconv can convert trajectory files in many ways:<br>
 <b>1.</b> from one format to another<br>
-<b>2.</b> select a subset of atoms<br><b>3.</b> change the periodicity representation<br>
+<b>2.</b> select a subset of atoms<br>
+<b>3.</b> change the periodicity representation<br>
 <b>4.</b> keep multimeric molecules together<br>
 <b>5.</b> center atoms in the box<br>
 <b>6.</b> fit atoms to reference structure<br>
@@ -50,7 +51,7 @@ Option <tt>-app</tt> can be used to
 append output to an existing trajectory file.
 No checks are performed to ensure integrity
 of the resulting combined trajectory file.<p>
-Option <tt>-sep</tt> can be used to write every frame to a seperate
+Option <tt>-sep</tt> can be used to write every frame to a separate
 .<a href="gro.html">gro</a>, .<a href="g96.html">g96</a> or .<a href="pdb.html">pdb</a> file, default all frames all written to one file.
 <tt>.<a href="pdb.html">pdb</a></tt> files with all frames concatenated can be viewed with
 <tt>rasmol -nmrpdb</tt>.<p>
@@ -91,7 +92,7 @@ are broken this will not work either.<br>
 * <tt>whole</tt> only makes broken molecules whole.<p>
 Option <tt>-ur</tt> sets the unit cell representation for options
 <tt>mol</tt>, <tt>res</tt> and <tt>atom</tt> of <tt>-pbc</tt>.
-All three options give different results for triclinc boxes and
+All three options give different results for triclinic boxes and
 identical results for rectangular boxes.
 <tt>rect</tt> is the ordinary brick shape.
 <tt>tric</tt> is the triclinic unit cell.
@@ -143,38 +144,40 @@ will not be written.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>fs</tt>, <tt>ps</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only write every nr-th frame </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only write frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]round</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Round measurements to nearest picosecond </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dump</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Dump frame nearest specified time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-t0</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Starting time (ps) (default: don't change) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-timestep</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Change time step between input frames (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-pbc</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> PBC treatment (see help text for full description): <tt>none</tt>, <tt>mol</tt>, <tt>res</tt>, <tt>atom</tt>, <tt>nojump</tt>, <tt>cluster</tt> or <tt>whole</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ur</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>rect</tt> </TD><TD> Unit-cell representation: <tt>rect</tt>, <tt>tric</tt> or <tt>compact</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]center</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Center atoms in box </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]center</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Center atoms in box </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-boxcenter</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>tric</tt> </TD><TD> Center for -pbc and -center: <tt>tric</tt>, <tt>rect</tt> or <tt>zero</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-box</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Size for new cubic box (default: read from input) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-trans</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> All coordinates will be translated by trans. This can advantageously be combined with -pbc mol -ur compact. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-shift</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> All coordinates will be shifted by framenr*shift </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-fit</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit molecule to ref structure in the structure file: <tt>none</tt>, <tt>rot+trans</tt>, <tt>rotxy+transxy</tt>, <tt>translation</tt> or <tt>progressive</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fit</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit molecule to ref structure in the structure file: <tt>none</tt>, <tt>rot+trans</tt>, <tt>rotxy+transxy</tt>, <tt>translation</tt>, <tt>transxy</tt> or <tt>progressive</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ndec</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Precision for .<a href="xtc.html">xtc</a> and .<a href="gro.html">gro</a> writing in number of decimal places </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Read and write velocities if possible </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]force</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Read and write forces if possible </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Read and write velocities if possible </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]force</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Read and write forces if possible </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-trunc</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Truncate input <a href="trj.html">trj</a> file after this time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-exec</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Execute command for every output frame with the frame number as argument </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]app</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Append output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]app</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Append output </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-split</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Start writing new file when t MOD split = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sep</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Write each frame to a separate .<a href="gro.html">gro</a>, .<a href="g96.html">g96</a> or .<a href="pdb.html">pdb</a> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sep</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Write each frame to a separate .<a href="gro.html">gro</a>, .<a href="g96.html">g96</a> or .<a href="pdb.html">pdb</a> file </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nzero</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Prepend file number in case you use the -sep flag with this number of zeroes </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use 'TER' in <a href="pdb.html">pdb</a> file as end of frame in stead of default 'ENDMDL' </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dropunder</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Drop all frames below this value </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dropover</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Drop all frames above this value </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]conect</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Add conect records when writing <a href="pdb.html">pdb</a> files. Useful for visualization of non-standard molecules, e.g. coarse grained ones </TD></TD>
 </TABLE>
 <P>
 <hr>

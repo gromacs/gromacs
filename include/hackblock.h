@@ -80,10 +80,10 @@ typedef struct {
   char   ***atomname;
   int    *cgnr;
   /* Bonded interaction setup */
-  bool      bAlldih;
+  gmx_bool      bAlldih;
   int       nrexcl;
-  bool      HH14;
-  bool      bRemoveDih;
+  gmx_bool      HH14;
+  gmx_bool      bRemoveDih;
   /* list of bonded interactions to add */
   t_rbondeds rb[ebtsNR];
 } t_restp;
@@ -103,8 +103,8 @@ typedef struct {
   int     tp;       /* Type of attachment (1..11) */
   int     nctl;     /* How many control atoms there are */
   char 	  *a[4];    /* Control atoms i,j,k,l	  */
-  bool    bAlreadyPresent;
-  bool    bXSet;
+  gmx_bool    bAlreadyPresent;
+  gmx_bool    bXSet;
   rvec    newx;     /* calculated new position    */
   atom_id newi;     /* new atom index number (after additions) */
 } t_hack;
@@ -121,7 +121,7 @@ typedef struct {
 
 /* all libraries and other data to protonate a structure or trajectory */
 typedef struct {
-  bool        bInit; /* true after init; set false by init_t_protonate */
+  gmx_bool        bInit; /* true after init; set false by init_t_protonate */
   /* force field name: */
   char        FF[10];
   /* libarary data: */
@@ -161,8 +161,8 @@ void clear_t_hackblock(t_hackblock *hb);
 void clear_t_hack(t_hack *hack);
 /* reset struct */
 
-bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], 
-			    bool bMin, bool bPlus);
+gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], 
+			    gmx_bool bMin, gmx_bool bPlus);
 /* add s[].b[] to d[].b[]
  * If bMin==TRUE, don't copy bondeds with atoms starting with '-'
  * If bPlus==TRUE, don't copy bondeds with atoms starting with '+'

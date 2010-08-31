@@ -1,0 +1,73 @@
+<HTML>
+<HEAD>
+<TITLE>g_rotmat</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_rotmat</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5-beta4-2010-08-26 09:43:57 +0200-33da7ba-dirty<br>
+Thu 26 Aug 2010</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+<p>
+g_rotmat plots the rotation matrix required for least squares fitting
+a conformation onto the reference conformation provided with
+<tt>-s</tt>. Translation is removed before fitting.
+The output are the three vectors that give the new directions
+of the x, y and z directions of the reference conformation,
+for example: (zx,zy,zz) is the orientation of the reference
+z-axis in the trajectory frame.
+<p>
+This tool is useful for, for instance,
+determining the orientation of a molecule
+at an interface, possibly on a trajectory produced with
+<tt><a href="trjconv.html">trjconv</a> -fit rotxy+transxy</tt> to remove the rotation
+in the xy-plane.
+<p>
+Option <tt>-ref</tt> determines a reference structure for fitting,
+instead of using the structure from <tt>-s</tt>. The structure with
+the lowest sum of RMSD's to all other structures is used.
+Since the computational cost of this procedure grows with
+the square of the number of frames, the <tt>-skip</tt> option
+can be useful. A full fit or only a fit in the x/y plane can
+be performed.
+<p>
+Option <tt>-fitxy</tt> fits in the x/y plane before determining
+the rotation matrix.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  rotmat.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ref</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Determine the optimal reference structure: <tt>none</tt>, <tt>xyz</tt> or <tt>xy</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Use every nr-th frame for -ref </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fitxy</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Fit the x/y rotation before determining the rotation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]mw</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use mass weighted fitting </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

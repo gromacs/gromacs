@@ -58,7 +58,7 @@ char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber);
 
 int gmx_atomprop_atomnumber(gmx_atomprop_t aps,const char *element);
 
-bool gmx_atomprop_query(gmx_atomprop_t aps,
+gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
                         int eprop,const char *resnm,const char *atomnm,
                         real *value);
 /* Extract a value from the database. Returns TRUE on succes,

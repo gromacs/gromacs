@@ -40,6 +40,13 @@
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include <direct.h>
+#include <io.h>
+#endif
+
+
 #include "vec.h"
 #include "copyrite.h"
 #include "smalloc.h"
@@ -75,7 +82,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
 {
     int  j,k,nmiss;
     char *name;
-    bool bFound, bRet;
+    gmx_bool bFound, bRet;
     
     nmiss = 0;
     for (j=0; j<rp->natom; j++)
@@ -105,7 +112,7 @@ static int missing_atoms(t_restp *rp, int resind,t_atoms *at, int i0, int i)
     return nmiss;
 }
 
-bool is_int(double x)
+gmx_bool is_int(double x)
 {
   const double tol = 1e-4;
   int   ix;
@@ -133,11 +140,11 @@ choose_ff(const char *ffsel,
 {
     int  nff;
     char **ffdirs,**ffs,**ffs_dir,*ptr;
-    int  i,j,sel;
+    int  i,j,sel,cwdsel,nfound;
     char buf[STRLEN],**desc;
     FILE *fp;
     char *pret;
-
+    
     nff = fflib_search_file_in_dirend(fflib_forcefield_itp(),
                                       fflib_forcefield_dir_ext(),
                                       &ffdirs);
@@ -148,13 +155,25 @@ choose_ff(const char *ffsel,
                   fflib_forcefield_itp(),fflib_forcefield_dir_ext());
     }
 
+    /* Replace with unix path separators */
+    if(DIR_SEPARATOR!='/')
+    {
+        for(i=0;i<nff;i++)
+        {
+            while( (ptr=strchr(ffdirs[i],DIR_SEPARATOR))!=NULL )
+            {
+                *ptr='/';
+            }
+        }
+    }
+    
     /* Store the force field names in ffs */
     snew(ffs,nff);
     snew(ffs_dir,nff);
     for(i=0; i<nff; i++)
     {
-        /* Remove the path from the ffdir name */
-        ptr = strrchr(ffdirs[i],DIR_SEPARATOR);
+        /* Remove the path from the ffdir name - use our unix standard here! */
+        ptr = strrchr(ffdirs[i],'/');
         if (ptr == NULL)
         {
             ffs[i] = strdup(ffdirs[i]);
@@ -176,21 +195,48 @@ choose_ff(const char *ffsel,
 
     if (ffsel != NULL)
     {
-        sel = -1;
+        sel     = -1;
+        cwdsel  = -1;
+        nfound  = 0;
         for(i=0; i<nff; i++)
         {
-            if (strcmp(ffs[i],ffsel) == 0)
+            if ( strcmp(ffs[i],ffsel)==0 )
             {
-                if (sel >= 0)
-                {
-                    gmx_fatal(FARGS,"There are multiple force field directories in your path with the name '%s'. Run without the -ff switch and select the force field interactively.",ffsel);
-                }
+                /* Matching ff name */
                 sel = i;
+                nfound++;
+                
+                if( strncmp(ffs_dir[i],".",1)==0 )
+                {
+                    cwdsel = i;
+                }
             }
         }
-        if (sel == -1)
+        
+        if(cwdsel != -1)
         {
-            gmx_fatal(FARGS,"Could not find force field '%s'",ffsel);
+            sel = cwdsel;
+        }
+        
+        if(nfound>1)
+        {
+            if(cwdsel!=-1)
+            {
+                fprintf(stderr,
+                        "Force field '%s' occurs in %d places. pdb2gmx is using the one in the\n"
+                        "current directory. Use interactive selection (not the -ff option) if\n"
+                        "you would prefer a different one.\n",ffsel,nfound);
+            }
+            else
+            {
+                gmx_fatal(FARGS,
+                          "Force field '%s' occurs in %d places, but not in the current directory.\n"
+                          "Run without the -ff switch and select the force field interactively.",ffsel,nfound);
+            }
+        }
+        else if (nfound==0)
+        {
+            gmx_fatal(FARGS,"Could not find force field '%s' in current directory, install tree or GMXDATA path.",ffsel);
         }
     }
     else if (nff > 1)
@@ -239,7 +285,14 @@ choose_ff(const char *ffsel,
         {
             if (i == 0 || strcmp(ffs_dir[i-1],ffs_dir[i]) != 0)
             {
-                printf("From '%s':\n",ffs_dir[i]);
+                if( strcmp(ffs_dir[i],".")==0 )
+                {
+                    printf("From current directory:\n");
+                }
+                else
+                {
+                    printf("From '%s':\n",ffs_dir[i]);
+                }
             }
             printf("%2d: %s\n",i+1,desc[i]);
             sfree(desc[i]);
@@ -379,7 +432,7 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
 {
   int     i,j,prevresind,resind,i0,prevcg,cg,curcg;
   char    *name;
-  bool    bProt, bNterm;
+  gmx_bool    bProt, bNterm;
   double  qt;
   int     nmissat;
   gmx_residuetype_t rt;
@@ -459,27 +512,63 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 	    "in pdb2top\n",mHmult);
 }
 
-void print_top_comment(FILE *out,const char *filename,
-                       const char *generator,bool bITP)
+void print_top_comment(FILE *out,
+                       const char *filename,
+                       const char *generator,
+                       const char *ffdir,
+                       gmx_bool bITP)
 {
   char tmp[256]; 
-
+  char ffdir_parent[STRLEN];
+  char *p;
+        
   nice_header(out,filename);
-  fprintf(out,";\tThis is your %stopology file\n",bITP ? "include " : "");
-  fprintf(out,";\tit was generated using program:\n;\t%s\n",
+  fprintf(out,";\tThis is a %s topology file\n;\n",bITP ? "include" : "standalone");
+  fprintf(out,";\tIt was generated using program:\n;\t%s\n;\n",
           (NULL == generator) ? "unknown" : generator);
-  fprintf(out,";\twith command line:\n;\t%s\n;\n\n",command_line());
+  fprintf(out,";\tCommand line was:\n;\t%s\n;\n",command_line());
+
+  if(strchr(ffdir,'/')==NULL)
+  {
+      fprintf(out,";\tForce field was read from the standard Gromacs share directory.\n;\n\n");
+  }
+  else if(ffdir[0]=='.')
+  {
+      fprintf(out,";\tForce field was read from current directory or a relative path - path added.\n;\n\n");
+  }
+  else
+  {
+      strncpy(ffdir_parent,ffdir,STRLEN-1);
+      p=strrchr(ffdir_parent,'/');
+
+      *p='\0';
+      
+      fprintf(out,
+              ";\tForce field data was read from:\n"
+              ";\t%s\n"
+              ";\n"
+              ";\tNote:\n"
+              ";\tThis might be a non-standard force field location. When you use this topology, the\n"
+              ";\tforce field must either be present in the current directory, or the location\n"
+              ";\tspecified in the GMXLIB path variable or with the 'include' mdp file option.\n;\n\n",
+              ffdir_parent);
+  }
 }
 
 void print_top_header(FILE *out,const char *filename, 
-                      const char *title,bool bITP,const char *ffdir,real mHmult)
+                      const char *title,gmx_bool bITP,const char *ffdir,real mHmult)
 {
-    print_top_comment(out,filename,title,bITP);
+    const char *p;
+    
+    print_top_comment(out,filename,title,ffdir,bITP);
     
     print_top_heavy_H(out, mHmult);
     fprintf(out,"; Include forcefield parameters\n");
-    fprintf(out,"#include \"%s%c%s\"\n\n",
-            ffdir,DIR_SEPARATOR,fflib_forcefield_itp());
+
+    p=strrchr(ffdir,'/');        
+    p = (ffdir[0]=='.' || p==NULL) ? ffdir : p+1;
+
+    fprintf(out,"#include \"%s/%s\"\n\n",p,fflib_forcefield_itp());
 }
 
 static void print_top_posre(FILE *out,const char *pr)
@@ -492,10 +581,15 @@ static void print_top_posre(FILE *out,const char *pr)
   
 static void print_top_water(FILE *out,const char *ffdir,const char *water)
 {
-    char buf[STRLEN];
-
+  const char *p;
+  char  buf[STRLEN];
+    
   fprintf(out,"; Include water topology\n");
-  fprintf(out,"#include \"%s%c%s.itp\"\n",ffdir,DIR_SEPARATOR,water);
+
+  p=strrchr(ffdir,'/');        
+  p = (ffdir[0]=='.' || p==NULL) ? ffdir : p+1;
+  fprintf(out,"#include \"%s/%s.itp\"\n",p,water);
+  
   fprintf(out,"\n");
   fprintf(out,"#ifdef POSRES_WATER\n");
   fprintf(out,"; Position restraint for each water oxygen\n");
@@ -505,13 +599,14 @@ static void print_top_water(FILE *out,const char *ffdir,const char *water)
   fprintf(out,"#endif\n");
   fprintf(out,"\n");
 
-    sprintf(buf,"%s%c%s",ffdir,DIR_SEPARATOR,"ions.itp");
-    if (fflib_fexist(buf))
-    {
-        fprintf(out,"; Include topology for ions\n");
-        fprintf(out,"#include \"%s%cions.itp\"\n",ffdir,DIR_SEPARATOR);
-        fprintf(out,"\n");
-    }
+  sprintf(buf,"%s/ions.itp",p);
+
+  if (fflib_fexist(buf))
+  {
+    fprintf(out,"; Include topology for ions\n");
+    fprintf(out,"#include \"%s\"\n",buf);
+    fprintf(out,"\n");
+  }
 }
 
 static void print_top_system(FILE *out, const char *title)
@@ -558,7 +653,7 @@ void print_top_mols(FILE *out,
 }
 
 void write_top(FILE *out, char *pr,char *molname,
-               t_atoms *at,bool bRTPresname,
+               t_atoms *at,gmx_bool bRTPresname,
                int bts[],t_params plist[],t_excls excls[],
                gpp_atomtype_t atype,int *cgnr, int nrexcl)
      /* NOTE: nrexcl is not the size of *excl! */
@@ -596,7 +691,7 @@ void write_top(FILE *out, char *pr,char *molname,
 static atom_id search_res_atom(const char *type,int resind,
 			       int natom,t_atom at[],
 			       char ** const *aname,
-			       const char *bondtype,bool bAllowMissing)
+			       const char *bondtype,gmx_bool bAllowMissing)
 {
   int i;
 
@@ -608,7 +703,7 @@ static atom_id search_res_atom(const char *type,int resind,
 }
 
 static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
-		       int nssbonds,t_ssbond *ssbonds,bool bAllowMissing)
+		       int nssbonds,t_ssbond *ssbonds,gmx_bool bAllowMissing)
 {
   int     i,ri,rj;
   atom_id ai,aj;
@@ -627,7 +722,7 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
   }
 }
 
-static bool inter_res_bond(const t_rbonded *b)
+static gmx_bool inter_res_bond(const t_rbonded *b)
 {
     return (b->AI[0] == '-' || b->AI[0] == '+' ||
             b->AJ[0] == '-' || b->AJ[0] == '+');
@@ -637,7 +732,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                      int natoms, t_atom atom[], char **aname[], 
                      int nres, rvec x[], 
                      real long_bond_dist, real short_bond_dist,
-                     bool bAllowMissing)
+                     gmx_bool bAllowMissing)
 {
   int     resind,i,j,k;
   atom_id ai,aj;
@@ -741,7 +836,9 @@ static void clean_bonds(t_params *ps)
     for(i=1; (i<ps->nr); i++) {
       if ((ps->param[i].AI != ps->param[j-1].AI) ||
 	  (ps->param[i].AJ != ps->param[j-1].AJ) ) {
-	cp_param(&(ps->param[j]),&(ps->param[i]));
+        if (j != i) {
+          cp_param(&(ps->param[j]),&(ps->param[i]));
+        }
 	j++;
       } 
     }
@@ -752,7 +849,7 @@ static void clean_bonds(t_params *ps)
     fprintf(stderr,"No bonds\n");
 }
 
-void print_sums(t_atoms *atoms, bool bSystem)
+void print_sums(t_atoms *atoms, gmx_bool bSystem)
 {
   double m,qtot;
   int    i;
@@ -857,7 +954,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 			       int nres, t_resinfo *resinfo, 
 			       int nterpairs,
 			       t_hackblock **ntdb, t_hackblock **ctdb,
-			       int *rn, int *rc, char *ffname)
+			       int *rn, int *rc)
 {
   int i, j, k, l;
   char *key;
@@ -865,7 +962,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
   char buf[STRLEN];
   const char *Hnum="123456";
   int tern,terc;
-  bool bN,bC,bRM;
+  gmx_bool bN,bC,bRM;
 
   snew(*hb,nres);
   snew(*restp,nres);
@@ -913,13 +1010,11 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
     if (bRM && ((tern >= 0 && ntdb[tern] == NULL) ||
                 (terc >= 0 && ctdb[terc] == NULL))) {
-        gmx_fatal(FARGS,"At least one terminus has a dangling bond, and the force field does\nnot provide suitable terminal entries or files. %s",
-                  0 == gmx_strncasecmp("AMBER", ffname, 5) ? "With AMBER force fields,\nuse the terminus-specific residue names, eg. NALA, CVAL."
-                  : "Edit a .n.tdb and/or .c.tdb file.");
+        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Edit a .n.tdb and/or .c.tdb file.");
     }
     if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
                 (terc >= 0 && ctdb[terc]->nhack == 0))) {
-        gmx_fatal(FARGS,"At least one terminus has a dangling bond. Select a proper terminal entry.");
+        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends. Select a proper terminal entry.");
     }
   }
   
@@ -1008,7 +1103,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
     }
 }
 
-static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
+static gmx_bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
 {
 
     if (hack->nr == 1)
@@ -1039,9 +1134,9 @@ static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
     }
 }
 
-static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
+static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
                                           t_restp *rptr,t_hackblock *hbr,
-                                          bool bVerbose)
+                                          gmx_bool bVerbose)
 {
     int  resnr;
     int  i,j,k;
@@ -1049,8 +1144,8 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
     int  anmnr;
     char *start_at,buf[STRLEN];
     int  start_nr;
-    bool bReplaceReplace,bFoundInAdd;
-    bool bDeleted;
+    gmx_bool bReplaceReplace,bFoundInAdd;
+    gmx_bool bDeleted;
 
     oldnm = *pdba->atomname[atind];
     resnr = pdba->resinfo[pdba->atom[atind].resind].nr;
@@ -1198,7 +1293,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,rvec *x,int atind,
     
 void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
                               t_atoms *pdba,rvec *x,
-                              bool bVerbose)
+                              gmx_bool bVerbose)
 {
     int  i,j,k;
     char *oldnm,*newnm;
@@ -1208,7 +1303,7 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
     int  anmnr;
     char *start_at,buf[STRLEN];
     int  start_nr;
-    bool bFoundInAdd;
+    gmx_bool bFoundInAdd;
     
     for(i=0; i<pdba->nr; i++)
     {
@@ -1303,14 +1398,14 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
              int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
-             int *rn, int *rc, bool bAllowMissing,
-             bool bVsites, bool bVsiteAromatics,
+             int *rn, int *rc, gmx_bool bAllowMissing,
+             gmx_bool bVsites, gmx_bool bVsiteAromatics,
              const char *ff, const char *ffdir,
              real mHmult,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
-             bool bDeuterate, bool bChargeGroups, bool bCmap,
-             bool bRenumRes,bool bRTPresname)
+             gmx_bool bDeuterate, gmx_bool bChargeGroups, gmx_bool bCmap,
+             gmx_bool bRenumRes,gmx_bool bRTPresname)
 {
     /*
   t_hackblock *hb;

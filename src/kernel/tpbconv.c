@@ -58,9 +58,9 @@
 
 #define RANGECHK(i,n) if ((i)>=(n)) gmx_fatal(FARGS,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
 
-static bool *bKeepIt(int gnx,int natoms,atom_id index[])
+static gmx_bool *bKeepIt(int gnx,int natoms,atom_id index[])
 {
-  bool *b;
+  gmx_bool *b;
   int  i;
   
   snew(b,natoms);
@@ -86,7 +86,7 @@ static atom_id *invind(int gnx,int natoms,atom_id index[])
   return inv;
 }
 
-static void reduce_block(bool bKeep[],t_block *block,
+static void reduce_block(gmx_bool bKeep[],t_block *block,
 			 const char *name)
 {
   atom_id *index;
@@ -113,7 +113,7 @@ static void reduce_block(bool bKeep[],t_block *block,
   block->nr    = newi;
 }
 
-static void reduce_blocka(atom_id invindex[],bool bKeep[],t_blocka *block,
+static void reduce_blocka(atom_id invindex[],gmx_bool bKeep[],t_blocka *block,
 			  const char *name)
 {
   atom_id *index,*a;
@@ -194,12 +194,12 @@ static void reduce_atom(int gnx,atom_id index[],t_atom atom[],char ***atomname,
   sfree(rinfo);
 }
 
-static void reduce_ilist(atom_id invindex[],bool bKeep[],
+static void reduce_ilist(atom_id invindex[],gmx_bool bKeep[],
 			 t_ilist *il,int nratoms,const char *name)
 {
   t_iatom *ia;
   int i,j,newnr;
-  bool bB;
+  gmx_bool bB;
 
   if (il->nr) {  
     snew(ia,il->nr);
@@ -231,7 +231,7 @@ static void reduce_topology_x(int gnx,atom_id index[],
 			      gmx_mtop_t *mtop,rvec x[],rvec v[])
 {
   t_topology top;
-  bool    *bKeep;
+  gmx_bool    *bKeep;
   atom_id *invindex;
   int     i;
   
@@ -321,8 +321,8 @@ int main (int argc, char *argv[])
   int          i;
   gmx_large_int_t   nsteps_req,run_step,frame;
   double       run_t,state_t;
-  bool         bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
-  bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
+  gmx_bool         bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
+  gmx_bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
   gmx_mtop_t   mtop;
   t_atoms      atoms;
   t_inputrec   *ir,*irnew=NULL;
@@ -350,7 +350,7 @@ int main (int argc, char *argv[])
   /* Command line options */
   static int  nsteps_req_int = 0;
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
-  static bool bContinuation = TRUE,bZeroQ = FALSE,bVel=TRUE;
+  static gmx_bool bContinuation = TRUE,bZeroQ = FALSE,bVel=TRUE;
   static t_pargs pa[] = {
     { "-extend",        FALSE, etREAL, {&extend_t}, 
       "Extend runtime by this amount (ps)" },

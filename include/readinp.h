@@ -46,8 +46,8 @@ extern "C" {
 
 typedef struct {
   int  count; /* sort order for output  */
-  bool bObsolete; /* whether it is an obsolete param value */
-  bool bSet; /* whether it it has been read out */
+  gmx_bool bObsolete; /* whether it is an obsolete param value */
+  gmx_bool bSet; /* whether it it has been read out */
   char *name; /* name of the parameter */
   char *value; /* parameter value string */
   int inp_count; /* number of einps read. Only valid for the first item
@@ -68,7 +68,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
    cppopts = the cpp-style options for #include paths and #defines */
 
 void write_inpfile(const char *fn,int ninp,t_inpfile inp[],
-			  bool bHaltOnUnknown,
+			  gmx_bool bHaltOnUnknown,
 			  warninp_t wi);
 
 void replace_inp_entry(int ninp,t_inpfile *inp,
@@ -122,7 +122,7 @@ static const char *argtp[etNR] = {
 
 typedef struct {
   const char *option;
-  bool bSet;
+  gmx_bool bSet;
   int  type;
   union {
     void *v;   /* This is a nasty workaround, to be able to use initialized */
@@ -131,21 +131,21 @@ typedef struct {
     real *r;
     const char **c; /* Must be pointer to string (when type == etSTR)         */
                /* or null terminated list of enums (when type == etENUM) */
-    bool *b;
+    gmx_bool *b;
     rvec *rv;
   } u;
   const char *desc;
 } t_pargs;
 
 void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],
-		      bool bKeepArgs);
+		      gmx_bool bKeepArgs);
 /* Read a number of arguments from the command line. 
  * For etINT, etREAL and etCHAR an extra argument is read (when present)
- * for etBOOL the boolean option is changed to the negate value
+ * for etBOOL the gmx_boolean option is changed to the negate value
  * If !bKeepArgs, the command line arguments are removed from the command line
  */
 
-bool is_hidden(t_pargs *pa);
+gmx_bool is_hidden(t_pargs *pa);
 /* Return TRUE when the option is a secret one */
 
 char *pa_val(t_pargs *pa,char *buf, int sz);
@@ -155,7 +155,7 @@ char *pa_val(t_pargs *pa,char *buf, int sz);
 
 int opt2parg_int(const char *option,int nparg,t_pargs pa[]);
 
-bool opt2parg_bool(const char *option,int nparg,t_pargs pa[]);
+gmx_bool opt2parg_gmx_bool(const char *option,int nparg,t_pargs pa[]);
 
 real opt2parg_real(const char *option,int nparg,t_pargs pa[]);
 
@@ -163,11 +163,11 @@ const char *opt2parg_str(const char *option,int nparg,t_pargs pa[]);
 
 const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[]);
 
-bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[]);
+gmx_bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[]);
 
-void print_pargs(FILE *fp, int npargs,t_pargs pa[],bool bLeadingSpace);
+void print_pargs(FILE *fp, int npargs,t_pargs pa[],gmx_bool bLeadingSpace);
 
-char *pargs_print_line(t_pargs *pa,bool bLeadingSpace);
+char *pargs_print_line(t_pargs *pa,gmx_bool bLeadingSpace);
 
 void pr_enums(FILE *fp, int npargs,t_pargs pa[],int shell);
 

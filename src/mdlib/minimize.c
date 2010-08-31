@@ -75,6 +75,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+#include "gmx_membed.h"
 
 typedef struct {
   t_state s;
@@ -123,7 +124,7 @@ static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
     fprintf(out,"   Number of steps    = %12d\n",nsteps);
 }
 
-static void warn_step(FILE *fp,real ftol,bool bLastStep,bool bConstrain)
+static void warn_step(FILE *fp,real ftol,gmx_bool bLastStep,gmx_bool bConstrain)
 {
     if (bLastStep)
     {
@@ -150,7 +151,7 @@ static void warn_step(FILE *fp,real ftol,bool bLastStep,bool bConstrain)
 
 
 static void print_converged(FILE *fp,const char *alg,real ftol,
-			    gmx_large_int_t count,bool bDone,gmx_large_int_t nsteps,
+			    gmx_large_int_t count,gmx_bool bDone,gmx_large_int_t nsteps,
 			    real epot,real fmax, int nfmax, real fnorm)
 {
   char buf[STEPSTRSIZE];
@@ -447,7 +448,7 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state,rvec *f)
 
 static void write_em_traj(FILE *fplog,t_commrec *cr,
                           gmx_mdoutf_t *outf,
-                          bool bX,bool bF,const char *confout,
+                          gmx_bool bX,gmx_bool bF,const char *confout,
                           gmx_mtop_t *top_global,
                           t_inputrec *ir,gmx_large_int_t step,
                           em_state_t *state,
@@ -625,7 +626,7 @@ static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
     wallcycle_stop(wcycle,ewcDOMDEC);
 }
     
-static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
+static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
                             t_state *state_global,gmx_mtop_t *top_global,
                             em_state_t *ems,gmx_localtop_t *top,
                             t_inputrec *inputrec,
@@ -636,10 +637,10 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
                             t_graph *graph,t_mdatoms *mdatoms,
                             t_forcerec *fr,rvec mu_tot,
                             gmx_enerdata_t *enerd,tensor vir,tensor pres,
-                            gmx_large_int_t count,bool bFirst)
+                            gmx_large_int_t count,gmx_bool bFirst)
 {
   real t;
-  bool bNS;
+  gmx_bool bNS;
   int  nabnsb;
   tensor force_vir,shake_vir,ekin;
   real dvdl,prescorr,enercorr,dvdlcorr;
@@ -863,7 +864,7 @@ static real pr_beta(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
 
 double do_cg(FILE *fplog,t_commrec *cr,
              int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,
@@ -875,6 +876,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
              gmx_edsam_t ed,
              t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
+             gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -896,9 +898,9 @@ double do_cg(FILE *fplog,t_commrec *cr,
   real   epot_repl=0;
   real   pnorm;
   t_mdebin   *mdebin;
-  bool   converged,foundlower;
+  gmx_bool   converged,foundlower;
   rvec   mu_tot;
-  bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
+  gmx_bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
   tensor vir,pres;
   int    number_steps,neval=0,nstcg=inputrec->nstcgsteep;
   gmx_mdoutf_t *outf;
@@ -1383,7 +1385,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
 
 double do_lbfgs(FILE *fplog,t_commrec *cr,
                 int nfile,const t_filenm fnm[],
-                const output_env_t oenv, bool bVerbose,bool bCompact,
+                const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
                 int nstglobalcomm,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
                 int stepout,
@@ -1395,6 +1397,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
                 gmx_edsam_t ed,
                 t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
+                gmx_membed_t *membed,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
                 unsigned long Flags,
@@ -1416,10 +1419,10 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   real   diag,Epot0,Epot,EpotA,EpotB,EpotC;
   real   dgdx,dgdg,sq,yr,beta;
   t_mdebin   *mdebin;
-  bool   converged,first;
+  gmx_bool   converged,first;
   rvec   mu_tot;
   real   fnorm,fmax;
-  bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
+  gmx_bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
   tensor vir,pres;
   int    start,end,number_steps;
   gmx_mdoutf_t *outf;
@@ -2017,7 +2020,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 
 double do_steep(FILE *fplog,t_commrec *cr,
                 int nfile, const t_filenm fnm[],
-                const output_env_t oenv, bool bVerbose,bool bCompact,
+                const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
                 int nstglobalcomm,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
                 int stepout,
@@ -2029,6 +2032,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
                 gmx_edsam_t ed,
                 t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
+                gmx_membed_t *membed,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
                 unsigned long Flags,
@@ -2046,7 +2050,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
   real   ustep,dvdlambda,fnormn;
   gmx_mdoutf_t *outf;
   t_mdebin   *mdebin; 
-  bool   bDone,bAbort,do_x,do_f; 
+  gmx_bool   bDone,bAbort,do_x,do_f; 
   tensor vir,pres; 
   rvec   mu_tot;
   int    nsteps;
@@ -2221,7 +2225,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
 
 double do_nm(FILE *fplog,t_commrec *cr,
              int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,
@@ -2233,6 +2237,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
              gmx_edsam_t ed,
              t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
+             gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -2250,11 +2255,11 @@ double do_nm(FILE *fplog,t_commrec *cr,
     gmx_global_stat_t gstat;
     t_graph    *graph;
     real       t,lambda;
-    bool       bNS;
+    gmx_bool       bNS;
     tensor     vir,pres;
     rvec       mu_tot;
     rvec       *fneg,*dfdx;
-    bool       bSparse; /* use sparse matrix storage format */
+    gmx_bool       bSparse; /* use sparse matrix storage format */
     size_t     sz;
     gmx_sparsematrix_t * sparse_matrix = NULL;
     real *     full_matrix             = NULL;

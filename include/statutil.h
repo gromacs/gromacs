@@ -60,7 +60,7 @@ extern "C" {
  */
 enum { TBEGIN, TEND, TDELTA, TNR };
 
-bool bTimeSet(int tcontrol);
+gmx_bool bTimeSet(int tcontrol);
 
 real rTimeValue(int tcontrol); 
 
@@ -74,7 +74,7 @@ typedef struct t_trxstatus t_trxstatus;
 typedef int t_first_x(t_trxstatus **status,const char *fn,real *t,rvec **x,
                       matrix box);
 
-typedef bool t_next_x(t_trxstatus *status,real *t,int natoms,rvec x[],
+typedef gmx_bool t_next_x(t_trxstatus *status,real *t,int natoms,rvec x[],
                       matrix box);
 
 /* I/O function types */
@@ -108,8 +108,8 @@ const char *ShortProgram(void);
 int prec2ndec(real prec);
 /* Convert precision in 1/(nm) to number of decimal places */
 
-void clear_trxframe(t_trxframe *fr,bool bFirst);
-/* Set all content booleans to FALSE.
+void clear_trxframe(t_trxframe *fr,gmx_bool bFirst);
+/* Set all content gmx_booleans to FALSE.
  * When bFirst = TRUE, set natoms=-1, all pointers to NULL
  *                     and all data to zero.
  */
@@ -126,7 +126,7 @@ int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
 
 int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
 /* Write a frame to a TRX file. 
- * Only entries for which the boolean is TRUE will be written,
+ * Only entries for which the gmx_boolean is TRUE will be written,
  * except for step, time, lambda and/or box, which may not be
  * omitted for certain trajectory formats.
  * The precision for .xtc and .gro is fr->prec, when fr->bPrec=FALSE,
@@ -154,7 +154,7 @@ t_trxstatus *open_trx(const char *outfile,const char *filemode);
 t_fileio *trx_get_fileio(t_trxstatus *status);
 
 
-bool bRmod_fd(double a, double b, double c,bool bDouble);
+gmx_bool bRmod_fd(double a, double b, double c,gmx_bool bDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
  * larger than the float/double precision.
  */
@@ -165,7 +165,7 @@ bool bRmod_fd(double a, double b, double c,bool bDouble);
 #define bRmod(a,b,c) bRmod_fd(a,b,c,FALSE)
 #endif
 
-int check_times2(real t,real t0,real tp,real tpp,bool bDouble);
+int check_times2(real t,real t0,real tp,real tpp,gmx_bool bDouble);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin or t MOD dt = t0,
  *          0 if tbegin <= t <=tend+margin,
@@ -216,7 +216,7 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
-bool read_next_frame(const output_env_t oenv,t_trxstatus *status,
+gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,
                             t_trxframe *fr);
   /* Reads the next frame which is in accordance with fr->flags.
    * Returns TRUE when succeeded, FALSE otherwise.
@@ -230,7 +230,7 @@ int read_first_x(const output_env_t oenv,t_trxstatus **status,
  * The integer in status should be passed to calls of read_next_x
  */
 
-bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
+gmx_bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
                         int natoms, rvec x[],matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).

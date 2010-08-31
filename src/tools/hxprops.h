@@ -48,7 +48,7 @@ typedef struct {
   real phi,psi,pprms2;
   real jcaha;
   real d3,d4,d5,rmsa;
-  bool bHelix;
+  gmx_bool bHelix;
   int  nhx;
   int  nrms,resno;
   int  Cprev,N,H,CA,C,O,Nnext;
@@ -102,7 +102,7 @@ extern t_bb *mkbbind(const char *fn,int *nres,int *nbb,int res0,
 		     
 extern void do_start_end(int nres,t_bb bb[],rvec x[],int *nbb,
 			 atom_id bbindex[],int *nca,atom_id caindex[],
-			 bool bRange,int rStart,int rEnd);
+			 gmx_bool bRange,int rStart,int rEnd);
 		     
 extern void calc_hxprops(int nres,t_bb bb[],rvec x[],matrix box);
 

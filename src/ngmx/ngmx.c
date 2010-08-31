@@ -96,7 +96,7 @@ static void done_gmx(t_x11 *x11,t_gmx *gmx)
 }
 
 static void move_gmx(t_x11 *x11,t_gmx *gmx,int width,int height,
-		     bool bSizePD)
+		     gmx_bool bSizePD)
 {
   int y0,wl,hl;
 #ifdef DEBUG
@@ -115,7 +115,7 @@ static void move_gmx(t_x11 *x11,t_gmx *gmx,int width,int height,
   XMoveWindow(x11->disp,gmx->logo->wd.self,(width-wl)/2,(height-y0-hl)/2);
 }
 
-static bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
+static gmx_bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
 {
   t_pulldown *pd;
   
@@ -235,11 +235,11 @@ static bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
   return FALSE;
 }
 
-static bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_gmx *gmx;
   int   nsel,width,height;
-  bool  result;
+  gmx_bool  result;
 
   result = FALSE;
   gmx=(t_gmx *)data;

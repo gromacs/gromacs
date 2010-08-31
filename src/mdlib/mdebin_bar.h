@@ -43,25 +43,35 @@ extern "C" {
 /* The functions & data structures here describe writing 
    energy differences (or their histogram )for use with g_bar */
 
+/* Data for one foreign lambda, or derivative. */
 typedef struct 
 {
     real *dh; /* the raw energy differences */
     unsigned int ndh; /* number of data points */
     unsigned int ndhmax; /* the maximum number of points */
 
-    int *hist; /* the histogram values */
-    unsigned int nbins; /* the number of bins for the histogram to create */
-    gmx_large_int_t start; /* the starting point in units of spacing of the 
-                              histogram */
-    double spacing; /* the histogram spacing in kJ/mol */
-    unsigned int maxbin; /* highest bin with data */
+    int nhist; /* the number of histograms. There can either be
+                  0 (for no histograms)
+                  1 (for 'foreign lambda' histograms)
+                  2 (for derivative histograms: there's
+                     a 'forward' and 'backward' histogram
+                     containing the minimum and maximum
+                     values, respectively). */
+    int *bin[2]; /* the histogram(s) */
+    double dx; /* the histogram spacing in kJ/mol. This is the
+                  same for the two histograms */
+    unsigned int nbins; /* the number of bins */
+    gmx_large_int_t x0[2]; /* the starting point in units of spacing 
+                              of the histogram */
+    unsigned int maxbin[2]; /* highest bin number with data */
 
+    gmx_bool derivative; /* whether this delta_h contains derivatives */
     double lambda; /* the 'foreign' lambda value associated with this delta H */
-    bool write_hist; /* whether to write histograms or raw data */
-    bool written; /* whether this data has already been written out */
+    gmx_bool written; /* whether this data has already been written out */
 
     double subblock_d[4]; /* data for an mdebin subblock for I/O. */
-    gmx_large_int_t subblock_l[2]; /* data for an mdebin subblock for I/O.  */
+    gmx_large_int_t subblock_l[4]; /* data for an mdebin subblock for I/O.  */
+    int subblock_i[4]; /* data for an mdebin subblock for I/O.  */
 } t_mde_delta_h;
 
 /* the type definition is in mdebin.h */
@@ -69,17 +79,18 @@ struct t_mde_delta_h_coll
 {
     t_mde_delta_h *dh; /* the delta hs */
     int ndh; /* the number of delta_h structures */
+    int ndhdl; /* number of derivative delta_hs */
 
-    double lambda; /* the native lambda associated with the free energy 
-                      calculations (at the time of the last sample) */
-    double delta_lambda; /* the change in lambda per time step */
+    double start_time; /* start time of the current dh collection */
+    double delta_time; /* time difference between samples */
+    gmx_bool start_time_set; /* whether the start time has been set */
+
+    double start_lambda; /* the native lambda associated with the free energy 
+                           calculations (at the time of the first sample) */
+    double delta_lambda; /* lambda difference between samples */
+
     double temp; /* the temperature */
-
-    double starttime; /* start time of the current dh collection */
-    double endtime; /* end time of the current dh collection */
-    bool starttime_set; /* whether the start time has been set */
-
-    double subblock_d[4]; /* data for writing an mdebin subblock for I/O */
+    double subblock_d[5]; /* data for writing an mdebin subblock for I/O */
 };
 
 
@@ -89,21 +100,16 @@ struct t_mde_delta_h_coll
     ir = the input record */
 void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc,
                            const t_inputrec *ir);
-#if 0
-                           double temp,
-                           double native_lambda,
-                           int dh_table_size,
-                           double table_spacing,
-                           unsigned int ndhmax,
-                           int n_dh,
-                           double *flambda);
-#endif
 
 /* add a bunch of samples to the delta_h collection
     dhc = the collection
+    dhdl = the hamiltonian derivative
     U = the array with energies: from enerd->enerpart_lambda.
     time = the current simulation time. */
-void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc, double *U, double time);
+void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc, 
+                             double dhdl,
+                             double *U, double time,
+                             double native_lambda);
 
 /* write the data associated with the du blocks collection as a collection
     of mdebin blocks.

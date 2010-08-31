@@ -126,7 +126,7 @@ int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result)
     {
         if (comm1->grp.peers[i] != comm2->grp.peers[i])
         {
-            bool found=FALSE;
+            gmx_bool found=FALSE;
 
             *result=TMPI_SIMILAR;
             for(j=0;j<comm2->grp.N;j++)
@@ -397,7 +397,7 @@ static void tMPI_Split_colors(int N, const int *color, const int *key,
                               int *group)
 {
     int i,j;
-    bool found;
+    gmx_bool found;
 
     /* reset groups */
     for(i=0;i<N;i++)
@@ -450,7 +450,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
                                                 the threads actually suplies 
                                                 these arrays to the comm 
                                                 structure) */
-    bool i_am_first=FALSE;
+    gmx_bool i_am_first=FALSE;
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     struct tmpi_split *spl;
 
