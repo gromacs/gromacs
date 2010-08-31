@@ -871,7 +871,7 @@ a time step of $\Dt_\mathrm{LR} = n \Dt$:
 \beq
 \ve{v}(t+\hDt) =
 \left\{ \begin{array}{lll} \displaystyle
-  \ve{v}(t-\hDt) + \frac{1}{m}\left[\ve{v}_\mathrm{SR}(t) + n \ve{F}_\mathrm{LR}(t)\right] \Dt &,& \mathrm{step} ~\%~ n = 0  \\ \noalign{\medskip} \displaystyle
+  \ve{v}(t-\hDt) + \frac{1}{m}\left[\ve{F}_\mathrm{SR}(t) + n \ve{F}_\mathrm{LR}(t)\right] \Dt &,& \mathrm{step} ~\%~ n = 0  \\ \noalign{\medskip} \displaystyle
   \ve{v}(t-\hDt) + \frac{1}{m}\ve{F}_\mathrm{SR}(t)\Dt &,& \mathrm{step} ~\%~ n \neq 0  \\
 \end{array} \right.
 \eeq
@@ -882,7 +882,7 @@ fully implemented.
 
 Several other simulation packages uses multiple time stepping for
 bonds and/or the PME mesh forces. In {\gromacs} we have not implemented
-this, since we use a different philosophy. Bonds can be constrained
+this (yet), since we use a different philosophy. Bonds can be constrained
 (which is also a physically more sound approximation of a quantum
 oscillator), which allows the smallest time step to be increased
 to the larger one. This not only halves the number of force calculations,
