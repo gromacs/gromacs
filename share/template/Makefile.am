@@ -41,7 +41,7 @@ Makefile.@host@ Makefile.@host@_double: Template.mak Makefile
 CLEANFILES = Makefile.@host@ Makefile.@host@_double *~ \\\#*
 
 template_SOURCES = template.c
-#noinst_PROGRAMS = template
+noinst_PROGRAMS = template
 LDADD = ../../src/mdlib/libmd@LIBSUFFIX@.la ../../src/gmxlib/libgmx@LIBSUFFIX@.la
 #template.$(OBJEXT): gromacs
 
