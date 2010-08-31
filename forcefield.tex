@@ -119,7 +119,7 @@ finally an geometric average for both parameters can be used (type 3):
 This last rule is used by the OPLS force field.
 
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{Buckingham potential}
 The \normindex{Buckingham} 
 potential has a more flexible and realistic repulsion term
@@ -150,7 +150,7 @@ B_{ij}   &=& \frac{1}{ 2}(B_{ii} + B_{jj})        \\
 C_{ij}   &=& \left(C_{ii} \, C_{jj}\right)^{1/2}
 \end{array}
 \eeq
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 \subsection{Coulomb interaction}
 \label{sec:coul}
@@ -183,7 +183,7 @@ In {\gromacs} the  relative \swapindex{dielectric}{constant}
 \normindex{$\epsr$}
 may be set in the in the input for {\tt grompp}. 
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{Coulomb interaction with \normindex{reaction field}}
 \label{sec:coulrf}
 The Coulomb interaction can be modified for homogeneous systems by
@@ -369,7 +369,7 @@ where $\beta$ is a parameter that determines the relative weight
 between the direct space sum and the reciprocal space sum and erfc$(x)$ is
 the complementary error function. For further 
 details on long-range electrostatics, see \secref{lr_elstat}.
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 
 \section{Bonded interactions}
@@ -402,7 +402,7 @@ See also \figref{bstretch1}, with the force given by:
 \ve{F}_i(\rvij) = k^b_{ij}(\rij-b_{ij}) \rnorm
 \eeq
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Fourth power potential}
 In the \gromosv{96} force field~\cite{gromos96}, the covalent bond potential
 is, for reasons of computational efficiency, written as:
@@ -520,7 +520,7 @@ F_{\mbox{\small FENE}}(\rvij) =
 \eeq
 At short distances the potential asymptotically goes to a harmonic
 potential with force constant $k^b$, while it diverges at distance $b$.
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 \subsection{Harmonic angle potential}
 \label{sec:anglepot}
@@ -556,7 +556,7 @@ $j$ is in the middle; atoms $i$  and $k$ are at the ends (see \figref{angle}).
 {\bf Note} that in the input in topology files, angles are given in degrees and
 force constants in kJ/mol/rad$^2$.
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{Cosine based angle potential}
 \label{sec:cosangle}
 In the \gromosv{96} force field a simplified function is used to represent angle
@@ -635,7 +635,7 @@ that uses a fourth order polynomial:
 \beq
 V_q(\tijk) ~=~ \sum_{n=0}^5 C_n (\tijk-\tijk^0)^n
 \eeq
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 %% new commands %%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\rvkj}{{\bf r}_{kj}}
@@ -719,7 +719,7 @@ in the {\tt [ dihedraltypes ]} section.
 V_d(\phi_{ijkl}) = k_{\phi}(1 + \cos(n \phi - \phi_s))
 \eeq
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Proper dihedrals: Ryckaert-Bellemans function}
 For alkanes, the following proper dihedral potential is often used
 (see \figref{rbdih}):
@@ -783,7 +783,7 @@ polymer convention (this yields a minus sign for the odd powers of
 cos$(\phi)$).\\
 \noindent{\bf Note:} Mind the conversion from {\em kcal mol$^{-1}$} for 
 literature OPLS and RB parameters to {\em kJ mol$^{-1}$} in {\gromacs}.\\
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 \subsubsection{Proper dihedrals: Fourier function}
 The OPLS potential function is given as the first three
@@ -793,13 +793,14 @@ In {\gromacs} the four term function is implemented:
 V_{F} (\phi_{ijkl}) ~=~ \frac{1}{2} \left[C_1(1+\cos(\phi)) + C_2(
 1-\cos(2\phi)) + C_3(1+\cos(3\phi) + C_4(1+\cos(4\phi))\right],
 \eeq
-\ifthenelse{\equal{\gmxlite}{1}}{}{Internally, {\gromacs}
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
+Internally, {\gromacs}
 uses the Ryckaert-Bellemans code
-to compute Fourier dihedrals (see above), because this is more efficient.}\\
+to compute Fourier dihedrals (see above), because this is more efficient.\\
 \noindent{\bf Note:} Mind the conversion from {\em kcal mol$^{-1}$} for 
 literature OPLS parameters to {\em kJ mol$^{-1}$} in {\gromacs}.\\
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\normindex{Tabulated interaction function}s}
 For full flexibility, any functional shape can be used for
 bonds, angles and dihedrals through user-supplied tabulated functions.
@@ -835,7 +836,7 @@ $x$ is the dihedral angle in degrees, the table should go from
 -180 up to and including 180 degrees,
 the IUPAC/IUB convention is used, i.e. zero is cis,
 the derivative is taken in degrees
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 \section{Restraints}
 Special potentials are used for imposing restraints on the motion of
@@ -895,7 +896,7 @@ restrained to a plane or a line.
 Position restraints are applied to a special fixed list of atoms. Such a
 list is usually generated by the {\tt \normindex{pdb2gmx}} program.
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\swapindex{Angle}{restraint}s}
 \label{sec:angres}
 These are used to restrain the angle between two pairs of particles
@@ -946,7 +947,7 @@ where $\Delta\phi$ is a user defined angle and $k_{dihr}$ is the force
 constant.
 {\bf Note} that in the input in topology files, angles are given in degrees and
 force constants in kJ/mol/rad$^2$.
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 \subsection{\swapindex{Distance}{restraint}s}
 \label{sec:disre}
@@ -960,7 +961,7 @@ refinement}\index{refinement,nmr}.
 In {\gromacs} there are three ways to impose restraints on pairs of atoms:
 \begin{itemize}
 \item Simple harmonic restraints: use {\tt [ bonds ]} type 6
-\ifthenelse{\equal{\gmxlite}{1}}
+%\ifthenelse{\equal{\gmxlite}{1}}
 {.}
 {(see \secref{excl}).}
 \item Piecewise linear/harmonic restraints: {\tt [ bonds ]} type 10.
@@ -1009,14 +1010,14 @@ The forces are
 For restraints not derived from NMR data, this functionality
 will usually suffice and a section of {\tt [ bonds ]} type 10
 can be used to apply individual restraints between pairs of atoms,
-\ifthenelse{\equal{\gmxlite}{1}}
+%\ifthenelse{\equal{\gmxlite}{1}}
 {atoms.}
 {atoms, see \ssecref{topfile}.}
 For applying restraints derived from NMR measurements, more complex
 functionality might be required, which is provided through
 the {\tt [~distance\us{}restraints~]} section and is described below.
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Time averaging}
 Distance restraints based on instantaneous distances can potentially reduce
 the fluctuations in a molecule significantly. This problem can be overcome by restraining
@@ -1221,13 +1222,13 @@ Some parameters for NMR refinement can be specified in the
         instantaneous distances of all atom pairs involved in
         distance restraints are written to the energy file.
 \end{description}
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 \newcommand{\SSS}{{\mathbf S}}
 \newcommand{\DD}{{\mathbf D}}
 \newcommand{\RR}{{\mathbf R}}
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\swapindex{Orientation}{restraint}s}
 \label{sec:orire}
 This section describes how orientations between vectors,
@@ -1490,9 +1491,9 @@ force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
 	averaged orientations are written to the energy file.
 	These can be analyzed using {\tt g\us{}energy}.
 \end{description}
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Polarization}
 Polarization can be treated by {\gromacs} by attaching
 \normindex{shell} (\normindex{drude}) particles to atoms and/or
@@ -1525,9 +1526,9 @@ where $a$ is a magic (dimensionless) constant, usually chosen to be
 2.6~\cite{Noskov2005a}; $\alpha_i$ and $\alpha_j$ are the polarizabilities
 of the respective shell particles.
 
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Free energy interactions}
 \label{sec:feia}
 \index{free energy interactions}
@@ -1749,9 +1750,9 @@ produce peaks in $\partial H/\partial\LAM$ at $\LAM$ is 0 and/or 1 for $p=1$
 and close to 0 and/or 1 with $p=2$. Lowering {\tt sc\us{}sigma} will decrease
 this effect, but it will also increase the interactions with hydrogens
 relative to the other interactions in the soft-core state.
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Methods}
 \subsection{Exclusions and 1-4 Interactions.}
 Atoms within a molecule that are close by in the chain, 
@@ -1885,7 +1886,7 @@ non-bonded interactions.]{Parameters for the different functional
 forms of the non-bonded interactions.}
 \label{tab:funcparm}
 \end{table}
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 
 \newcommand{\vvis}{\ve{r}_s}
@@ -1899,7 +1900,7 @@ forms of the non-bonded interactions.}
 \newcommand{\rvjk}{\ve{r}_{jk}}
 \newcommand{\rvjl}{\ve{r}_{jl}}
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Virtual interaction-sites}
 \label{sec:virtual_sites}
 \index{virtual interaction-sites}
@@ -2143,12 +2144,12 @@ only the mass of the A-state is used for the weight
 \end{itemize}
 
 \end{itemize}
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 \newcommand{\dr}{{\rm d}r}
 \newcommand{\avcsix}{\left< C_6 \right>}
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Dispersion correction}
 \index{dispersion correction}
 In this section, we derive long-range corrections due to the use of a
@@ -2273,9 +2274,9 @@ P_{lr}	~=~	-\frac{4}{3} \pi \avcsix \rho^2 r_c^{-3}
 \eeq
 For inhomogeneous systems, \eqnref{pcorr} can be applied under the same
 restriction as holds for the energy (see \secref{ecorr}).
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Long Range Electrostatics}
 \label{sec:lr_elstat}
 \subsection{\normindex{Ewald sum}mation}
@@ -2504,7 +2505,7 @@ improve the scaling in most cases.
 %$\hat{G}(k)$ function, if you pass the {\tt -ghat} option to {\tt
 %testlr}. Try it if you think the {\tt mk\us{}ghat} procedure is a waste
 %of time.
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
