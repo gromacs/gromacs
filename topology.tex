@@ -114,28 +114,13 @@ and/or add an atom type. A sample from the deprecated
   CH3  15.03500 ;     aliphatic CH3-group
 \end{verbatim}}
 
-Atomic detail is used except for hydrogen atoms bound to (aliphatic)
-carbon atoms, which are treated as {\em \swapindex{united}{atom}s}. No
-special \normindex{hydrogen-bond} term is included. Note that other force field
-like OPLS/AA, CHARMM, and AMBER use all atoms.
-
-For backward compatibility we retain here some reference to parameters
-present in the {\tt gmx.ff} force field. The last 10 atom types were
-not part of the original \gromosv{87} force field~\cite{biomos}, so
-if you use them you should refer to one or more of the following
-papers:
-\begin{itemize}
-\item F was taken from ref.~\cite{Buuren93a}, 
-\item CP2 and CP3 from ref.~\cite{Buuren93b} and references cited therein, 
-\item CR5, CR6 and HCR from ref.~\cite{Spoel96c}
-\item OWT3 from ref.~\cite{Jorgensen83}
-\item SD, OD and CD from ref.~\cite{Liu95}
-\end{itemize}
-{\bf Note that we recommend against using these parameters in new projects
-since they are not well-tested.}
-
 {\bf Note:} {\gromacs} makes use of the atom types as a name, {\em
 not} as a number (as {\eg} in {\gromos}).
+
+%Atomic detail is used except for hydrogen atoms bound to (aliphatic)
+%carbon atoms, which are treated as {\em \swapindex{united}{atom}s}. No
+%special \normindex{hydrogen-bond} term is included. Note that other force field
+%like OPLS/AA, CHARMM, and AMBER use all atoms.
 
 %\subsection{Nucleus}
 %{\em Necessary for \normindex{polarisability}, not implemented yet.}
@@ -311,30 +296,31 @@ excepts from such files follow:
 CP2     CP2     3       9.2789  12.156  -13.120 -3.0597 26.240  -31.495
 \end{verbatim}}
 
-Also in this file are the
-\normindex{Ryckaert-Bellemans}~\cite{Ryckaert78} parameters for the
-CP2-CP2 dihedrals in alkanes or alkane tails with the following
-constants:
+%Also in this file are the
+%\normindex{Ryckaert-Bellemans}~\cite{Ryckaert78} parameters for the
+%CP2-CP2 dihedrals in alkanes or alkane tails with the following
+%constants:
 
-\begin{center}
-(kJ/mol)\\
-\begin{tabular}{llrllrllr}
-$C_0$ & $=$ & $~ 9.28$ & $C_2$ & $=$ & $-13.12$ & $C_4$ & $=$ & $ 26.24$ \\
-$C_1$ & $=$ & $ 12.16$ & $C_3$ & $=$ & $~-3.06$ & $C_5$ & $=$ & $-31.5 $ \\
-\end{tabular}
-\end{center}
+%\begin{center}
+%(kJ/mol)\\
+%\begin{tabular}{llrllrllr}
+%$C_0$ & $=$ & $~ 9.28$ & $C_2$ & $=$ & $-13.12$ & $C_4$ & $=$ & $ 26.24$ \\
+%$C_1$ & $=$ & $ 12.16$ & $C_3$ & $=$ & $~-3.06$ & $C_5$ & $=$ & $-31.5 $ \\
+%\end{tabular}
+%\end{center}
 
-({\bf Note:} The use of this potential implies the exclusion of LJ interactions
-between the first and the last atom of the dihedral, and $\psi$ is defined
-according to the ``\swapindex{polymer}{convention}'' ($\psi_{trans}=0$)).
+%({\bf Note:} The use of this potential implies the exclusion of LJ interactions
+%between the first and the last atom of the dihedral, and $\psi$ is defined
+%according to the ``\swapindex{polymer}{convention}'' ($\psi_{trans}=0$)).
 
-So there are three types of dihedrals in the {\gromacs} force field:
-\begin{itemize}
-\item \swapindex{proper}{dihedral} : funct = 1, with mult = multiplicity, so the
-                                   number of possible angles
-\item \swapindex{improper}{dihedral} : funct = 2
-\item Ryckaert-Bellemans dihedral : funct = 3
-\end{itemize}
+%So there are three types of dihedrals in the {\gromacs} force field:
+%\begin{itemize}
+%\item \swapindex{proper}{dihedral} : funct = 1, with mult = multiplicity, so the
+%                                   number of possible angles
+%\item \swapindex{improper}{dihedral} : funct = 2
+%\item Ryckaert-Bellemans dihedral : funct = 3
+%\end{itemize}
+
 In the {\tt ffbonded.itp} file, you can add bonded parameters. If you
 want to include parameters for new atom types, make sure you define
 them in {\tt atomtypes.atp} as well.
@@ -1878,6 +1864,22 @@ In pre-3.1.3 versions of {\gromacs}, the new atom types needed to be
 added in the {\tt [~atomtypes~]} section of the force field files,
 because all non-bonded parameters above the last {\tt [~atomtypes~]}
 section would be overwritten using the standard combination rules.
+
+\section{{\tt gmx.ff} documentation}
+For backward compatibility we retain here some reference to parameters
+present in the {\tt gmx.ff} force field. The last 10 atom types were
+not part of the original \gromosv{87} force field~\cite{biomos}, so
+if you use them you should refer to one or more of the following
+papers:
+\begin{itemize}
+\item F was taken from ref.~\cite{Buuren93a}, 
+\item CP2 and CP3 from ref.~\cite{Buuren93b} and references cited therein, 
+\item CR5, CR6 and HCR from ref.~\cite{Spoel96c}
+\item OWT3 from ref.~\cite{Jorgensen83}
+\item SD, OD and CD from ref.~\cite{Liu95}
+\end{itemize}
+{\bf Note that we recommend against using these parameters in new projects
+since they are not well-tested.}
 
 % LocalWords:  parameterized fffiles ptype polarizable gromacs atp ype arameter
 % LocalWords:  lll carboxyl OA hydroxyl NL porphyrin OPLS CP HCR OWT fd funct
