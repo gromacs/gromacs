@@ -459,6 +459,7 @@ static void tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
     cev->met[myrank].buf[index]=buf;
     cev->met[myrank].bufsize[index]=bufsize;
     tMPI_Atomic_set(&(cev->met[myrank].n_remaining), n_remaining);
+    tMPI_Atomic_memory_barrier();
     tMPI_Atomic_set(&(cev->met[myrank].current_sync), synct);
 
     /* publish availability. */
