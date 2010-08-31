@@ -19,7 +19,7 @@ add_library(gmxana
             gmx_nmens.c     gmx_order.c     gmx_principal.c 
             gmx_polystat.c  gmx_potential.c gmx_rama.c      
             gmx_rdf.c       gmx_rms.c       gmx_rmsdist.c   gmx_rmsf.c      
-            gmx_rotacf.c    gmx_saltbr.c    gmx_sas.c       gmx_sdf.c       
+            gmx_rotacf.c    gmx_saltbr.c    gmx_sas.c              
             gmx_select.c
             gmx_sgangle.c   gmx_sorient.c   gmx_spol.c      gmx_tcaf.c      
             gmx_traj.c      gmx_velacc.c    gmx_helixorient.c 
@@ -29,7 +29,7 @@ add_library(gmxana
             gmx_editconf.c  gmx_genbox.c    gmx_genion.c    gmx_genconf.c   
             gmx_genpr.c     gmx_eneconv.c   gmx_vanhove.c   gmx_wheel.c     
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
-            gmx_membed.c    )
+            gmx_membed.c	gmx_pme_error.c	)
 
 
 target_link_libraries(gmxana md gmx)
@@ -49,10 +49,9 @@ set(GMX_TOOLS_PROGRAMS
     g_h2order g_hbond g_helix g_mindist g_msd g_morph g_nmeig
     g_nmens g_order g_polystat g_potential g_rama g_rdf g_rms
     g_rmsf g_rotacf g_saltbr g_sas g_select g_sgangle g_sham g_sorient
-    g_spol g_sdf g_spatial g_tcaf g_traj g_tune_pme g_vanhove
-    g_velacc g_clustsize g_mdmat g_wham g_kinetics g_sigeps g_bar
-    g_membed
-    )
+    g_spol g_spatial g_tcaf g_traj g_tune_pme g_vanhove
+    g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
+    g_membed g_pme_error)
 
 
 

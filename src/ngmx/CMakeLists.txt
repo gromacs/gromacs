@@ -16,7 +16,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # used to create build rules automatically.
 #
 set(NGMX_PROGRAMS 
-    ngmx g_xrama g_highway g_logo)
+    ngmx g_xrama)
 
 foreach(PROG ${NGMX_PROGRAMS})
         add_executable(${PROG} ${PROG}.c ${NGMX_COMMON_SOURCE})

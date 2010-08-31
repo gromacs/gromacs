@@ -717,7 +717,15 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         }
         else if (feof(fio->fp))
         {
-            fprintf(stderr, "\nTrying to get md5sum: EOF: %s\n", fio->fn);
+            /*
+             * For long runs that checkpoint frequently but write e.g. logs
+             * infrequently we don't want to issue lots of warnings before we
+             * have written anything to the log.
+             */
+            if(0)
+            {
+                fprintf(stderr, "\nTrying to get md5sum: EOF: %s\n", fio->fn);
+            }
         }
         else
         {

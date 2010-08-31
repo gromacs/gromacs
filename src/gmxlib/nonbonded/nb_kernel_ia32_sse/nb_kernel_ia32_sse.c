@@ -209,7 +209,7 @@ nb_kernel_ia32_sse_test(FILE *                log)
 #endif
     
     if(log)
-        fprintf(log,"Testing ia32 SSE support...");
+        fprintf(log,"Testing ia32 SSE2 support...");
 
 	nb_kernel_ia32_sse_present = TRUE;
 	signal(SIGILL,nb_kernel_ia32_sse_sigill_handler);

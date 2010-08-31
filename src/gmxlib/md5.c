@@ -36,7 +36,9 @@
 #endif
 
 #ifdef GMX_INTEGER_BIG_ENDIAN
-#  define ARCH_IS_BIG_ENDIAN
+#define ARCH_IS_BIG_ENDIAN 1
+#else
+#define ARCH_IS_BIG_ENDIAN 0
 #endif
 
 /*
