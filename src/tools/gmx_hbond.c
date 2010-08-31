@@ -3892,6 +3892,10 @@ int gmx_hbond(int argc,char *argv[])
     sfree(p_rdist);
 #endif
   
+    if(nframes <2 && (opt2bSet("-ac",NFILE,fnm) || opt2bSet("-life",NFILE,fnm)))
+    {
+        gmx_fatal(FARGS,"Cannot calculate autocorrelation of life times with less than two frames");
+    }
   
     free_grid(ngrid,&grid);
   
