@@ -26,6 +26,30 @@
 % Gnomes, ROck Monsters And Chili Sauce
 %
 
+% The following definition allows for a way to write
+% '{\tt [ nonbond_params ]}' such that the underscore
+% renders in the right font, and the text search string
+% 'nonbond_params' in the resulting PDF finds this
+% instance.
+
+\chardef\us=`\_
+
+% Correct usage is '{\tt [ nonbond\us{}params ]}'.
+%
+% LaTeX will complain if you try '{\tt [ nonbond_params ]}',
+% for which the obvious work-around will be
+% '\tt [ nonbond\_params]}'. This renders the underscore
+% in the wrong font, and confounds text searches. Short
+% of writing a pre-processor, there's no way to enforce
+% the use of \us.
+%
+% An alternative might be to use \verb'[ nonbond_params ]',
+% which works well until you go to embed it in a
+% multicolumn table entry, index entry, or other such command
+% environment. Verbatim text really does not play nicely
+% in those contexts. It would also enforce non-breaking
+% spaces without needing to revert to '[~nonbond_params~]'.
+
 \setlength {\parindent}{0.0cm}
 \setlength {\parskip}{1ex}
 \newcommand{\ve}[1]{\mbox{\boldmath ${#1}$}} 
@@ -69,6 +93,7 @@
 \newcommand{\swapindex}[2]{#1 #2{\index{#1 #2}}{\index{#2, #1|see{#1 #2}}}}
 \newcommand{\pawsindex}[2]{#1 #2{\index{#1 #2|see{#2, #1}}}{\index{#2, #1}}}
 \newcommand{\boldindex}[1]{#1\index{#1@\textbf{#1}}}
+\newcommand{\ttusindex}[2]{{\tt #1\us{}#2}{\index{#1\_#2}}}
 \newcommand{\seeindex}[2]{#1{\index{#1|see{#2}}}}
 \newcommand{\eg}{\em e.g.\@}
 \newcommand{\ie}{\em i.e.\@}

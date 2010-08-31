@@ -1119,7 +1119,7 @@ The values and velocities of the Nos{\'e}-Hoover thermostat variables
 are generally not included in the output, as they take up a fair
 amount of space and are generally not important for analysis of
 simulations, but this can be overridden by defining the environment
-variable GMX\_NOSEHOOVER\_CHAINS, which will print the values of all
+variable {\tt GMX\us{}NOSEHOOVER\us{}CHAINS}, which will print the values of all
 the positions and velocities of all Nos{\'e}-Hoover particles in the
 chain to the .edr file.  Leap-frog simulations currently can only have 
 Nos{\'e}-Hoover chain lengths of 1, but this will likely be updated in 
@@ -2135,12 +2135,12 @@ Then, {\tt mdrun} computes the Hessian.  {\bf Note} that for generating
 the run input file, one should use the minimized conformation from
 the full precision trajectory file, as the structure file is not
 accurate enough.
-{\tt \normindex{g\_nmeig}} does the diagonalization and
+\ttusindex{g}{nmeig} does the diagonalization and
 the sorting of the normal modes according to their frequencies.
-Both {\tt mdrun} and {\tt g\_nmeig} should be run in double precision.
-The normal modes can be analyzed with the program {\tt g\_anaeig}.
+Both {\tt mdrun} and {\tt g\us{}nmeig} should be run in double precision.
+The normal modes can be analyzed with the program {\tt g\us{}anaeig}.
 Ensembles of structures at any temperature and for any subset of
-normal modes can be generated with {\tt \normindex{g\_nmens}}.
+normal modes can be generated with \ttusindex{g}{nmens}.
 An overview of normal mode analysis and the related principal component
 analysis (see \secref{covanal}) can be found in~\cite{Hayward95b}.
 } % Brace matches ifthenelse test for gmxlite
@@ -2276,7 +2276,7 @@ B. However, if the change is large and insufficient sampling can be
 expected, the user may prefer to determine the value of $\langle
 dG/d\lambda \rangle$ accurately at a number of well-chosen
 intermediate values of $\lambda$. This can easily be done by setting
-the stepsize {\tt delta\_lambda} to zero. Each simulation can be
+the stepsize {\tt delta\us{}lambda} to zero. Each simulation can be
 equilibrated first, and a proper error estimate can be made for each
 value of $dG/d\lambda$ from the fluctuation of $\partial H/\partial
 \lambda$. The total free energy change is then determined afterward
@@ -2386,11 +2386,11 @@ of a region of phase space \cite{Lange2006a}.
 
 The procedure for essential dynamics sampling or flooding is as follows.
 First, the eigenvectors and eigenvalues need to be determined
-using covariance analysis ({\tt g\_covar})
-or normal modes analysis ({\tt g\_nmeig}).
-Then, this information is fed into {\tt make\_edi},
+using covariance analysis ({\tt g\us{}covar})
+or normal modes analysis ({\tt g\us{}nmeig}).
+Then, this information is fed into {\tt make\us{}edi},
 which has many options for selecting vectors and setting parameters,
-see \appref{progman} for the manual page of {\tt make\_edi}.
+see \appref{progman} for the manual page of {\tt make\us{}edi}.
 The generated {\tt edi} input file is then passed to {\tt mdrun}.
 
 } % Brace matches ifthenelse test for gmxlite
@@ -2664,7 +2664,7 @@ but the total communication complexity is lower.
 
 {\tt mdrun} will by default interleave the PP and PME nodes.
 If the processors are not number consecutively inside the machines,
-one might want to use {\tt mdrun -ddorder pp\_pme}.
+one might want to use {\tt mdrun -ddorder pp\us{}pme}.
 For machines with a real 3-D torus and proper communication software
 that assigns the processors accordingly one should use
 {\tt mdrun -ddorder cartesian}.

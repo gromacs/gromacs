@@ -135,35 +135,35 @@ rest of the {\gromacs} system is described in the file {\tt
 different routines below.
 
 \begin{description}
-\item[{\bf extern void gmx\_tx(int pid,void *buf,int bufsize);}]\mbox{}\\ 
+\item[{\bf extern void gmx\us{}tx(int pid,void *buf,int bufsize);}]\mbox{}\\ 
 This routine, when called with the destination processor number, a
 pointer to a (byte oriented) transfer buffer, and the size of the
 buffer will send the buffer to the indicated processor (in our case
 always the neighboring processor). The routine does {\bf not} wait
 until the transfer is finished.
 
-\item[{\bf extern void gmx\_tx\_wait(int pid);}]\mbox{}\\
+\item[{\bf extern void gmx\us{}tx\us{}wait(int pid);}]\mbox{}\\
 This routine waits until the previous, or the ongoing transmission is
 finished.
 
-\item[{\bf extern void gmx\_txs(int pid,void *buf,int bufsize);}]\mbox{}\\
+\item[{\bf extern void gmx\us{}txs(int pid,void *buf,int bufsize);}]\mbox{}\\
 This routine implements a synchronous send by calling the
 a-synchronous routine and then the wait. It might come in handy to
 code this differently.
 
-\item[{\bf extern void gmx\_rx(int pid,void *buf,int bufsize);}]
-\item[{\bf extern void gmx\_rx\_wait(int pid);}]\vspace{-\itemsep}
-\item[{\bf extern void gmx\_rxs(int pid,void *buf,int bufsize);}]\vspace{-\itemsep}\mbox{}\\
+\item[{\bf extern void gmx\us{}rx(int pid,void *buf,int bufsize);}]
+\item[{\bf extern void gmx\us{}rx\us{}wait(int pid);}]\vspace{-\itemsep}
+\item[{\bf extern void gmx\us{}rxs(int pid,void *buf,int bufsize);}]\vspace{-\itemsep}\mbox{}\\
 The very same routines for receiving a buffer and waiting until the
 reception is finished.
 
-\item[{\bf extern void gmx\_init(int pid,int nprocs);}]\mbox{}\\
+\item[{\bf extern void gmx\us{}init(int pid,int nprocs);}]\mbox{}\\
 This routine initializes the different devices needed to do the
 communication. In general it sets up the communication hardware (if it
 is accessible) or does an initialize call to the lower level
 communication subsystem.
 
-\item[{\bf extern void gmx\_stat(FILE *fp,char *msg);}]\mbox{}\\
+\item[{\bf extern void gmx\us{}stat(FILE *fp,char *msg);}]\mbox{}\\
 With this routine we can diagnose the ongoing communication. In the
 current implementation it prints the various contents of the hardware
 communication registers of the (\intel) multiprocessor boards to a
@@ -181,20 +181,20 @@ are essential for running and compiling {\gromacs}. Other variables are:
         neighbor list is printed in the log file (may be many megabytes).
         Mainly for debugging purposes, but may also be handy for
         porting to other platforms.
-\item   {\tt GMX\_NO\_QUOTES}, if this is explicitly set, no cool quotes
+\item   {\tt GMX\us{}NO\us{}QUOTES}, if this is explicitly set, no cool quotes
         will be printed at the end of a program
 \item   {\tt WHERE}, when set print debugging info on line numbers.
-\item   {\tt LOG\_BUFS}, the size of the buffer for file I/O. When set
+\item   {\tt LOG\us{}BUFS}, the size of the buffer for file I/O. When set
         to 0, all file I/O will be unbuffered and therefore very slow.
         This can be handy for debugging purposes, because it ensures
         that all files are always totally up-to-date.
 \item   {\tt GMXNPRI}, for SGI systems only. When set, gives the
         default non-degrading priority (npri) for {\tt
-        mdrun}, {\tt nmrun}, {\tt g\_covar} and {\tt g\_nmeig},
+        mdrun}, {\tt nmrun}, {\tt g\us{}covar} and {\tt g\us{}nmeig},
         {\eg}\@ setting \verb'setenv GMXNPRI 250' causes all
         runs to be performed at near-lowest priority by default.
-\item   {\tt GMX\_VIEW\_XPM}, {\tt GMX\_VIEW\_XVG}, {\tt
-        GMX\_VIEW\_EPS} and {\tt GMX\_VIEW\_PDB}, commands used to
+\item   {\tt GMX\us{}VIEW\us{}XPM}, {\tt GMX\us{}VIEW\us{}XVG}, {\tt
+        GMX\us{}VIEW\us{}EPS} and {\tt GMX\us{}VIEW\us{}PDB}, commands used to
         automatically view resp.\@ {\tt .xvg}, {\tt .xpm}, {\tt .eps}
         and {\tt .pdb} file types; they default to {\tt xv}, {\tt xmgrace},
         {\tt ghostview} and {\tt rasmol}. Set to empty to disable
@@ -208,8 +208,8 @@ are essential for running and compiling {\gromacs}. Other variables are:
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as
-TOTAL for the {\tt \normindex{do\_shift}} program, and DSSP for the
-{\tt \normindex{do\_dssp}} program.
+TOTAL for the \ttusindex{do}{shift} program, and DSSP for the
+\ttusindex{do}{dssp} program.
 
 \section{Running {\gromacs} in parallel}
 If you have installed the MPI (Message Passing Interface) on your computer(s)
