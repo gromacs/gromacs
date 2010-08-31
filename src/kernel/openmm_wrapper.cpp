@@ -1019,6 +1019,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         case epbcXYZ:
             switch (ir->coulombtype)
             {
+            case eelCUT:
             case eelRF:
             case eelGRF:
             case eelRF_NEC:
