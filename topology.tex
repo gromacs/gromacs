@@ -119,7 +119,7 @@ not} as a number (as {\eg} in {\gromos}).
 
 %Atomic detail is used except for hydrogen atoms bound to (aliphatic)
 %carbon atoms, which are treated as {\em \swapindex{united}{atom}s}. No
-%special \normindex{hydrogen-bond} term is included. Note that other force field
+%special \normindex{hydrogen-bond} term is included. {\bf Note} that other force field
 %like OPLS/AA, CHARMM, and AMBER use all atoms.
 
 %\subsection{Nucleus}
@@ -145,7 +145,7 @@ To make virtual sites in your system, you should include a section
 where the `{\tt ?}' stands
 for the number constructing particles for the virtual site. This will be
 `{\tt 2}' for type 2, `{\tt 3}' for types 3, 3fd, 3fad and 3out and
-`{\tt 4}' for type 4fdn. The last of these replace an older 4fd type (with the 'type' value 1) 
+`{\tt 4}' for type 4fdn. The last of these replace an older 4fd type (with the `type' value 1) 
 that could occasionally be unstable; while it is still supported internally
 in the code, the old 4fd type should not be used in new input files.
  The different types are explained
@@ -457,7 +457,7 @@ parameters. For searching the parameters in the {\tt [~pairtypes~]} section,
 no distinction is made between function type 1 and 2.
 Function type 3 is intended to replace the non-bonded interaction.
 It uses the unscaled charges and the non-bonded LJ parameters.
-Type 3 also only uses the A-state parameters. Note that
+Type 3 also only uses the A-state parameters. {\bf Note} that
 one should add exclusions for all atom pairs participating in pair
 interactions type 3, otherwise such pairs will also end
 up in the normal neighbor lists.
@@ -573,7 +573,7 @@ water, and ions.
 {\tt pdb2gmx} can read one or multiple databases with topological information
 for different types of molecules. A set of files belonging to one database
 should have the same basename, preferably telling something about the type
-of molecules (e.g. aminoacids, rna, dna). The possible files are:
+of molecules ({\eg} aminoacids, rna, dna). The possible files are:
 \begin{itemize}
 \item {\tt <basename>.rtp}
 \item {\tt <basename>.r2b} (optional)
@@ -966,7 +966,7 @@ the added atom(s), in the same way as for replacing atoms, {\ie}:
 \end{itemize}
 Like in the hydrogen database (see~\ssecref{rtp}), when more than
 one atom is connected to an existing one, a number will be appended to
-the end of the atom name. Note that, like in the hydrogen database, the
+the end of the atom name. {\bf Note} that, like in the hydrogen database, the
 atom name is now on the same line as the control atoms, whereas it was
 at the beginning of the second line prior to {\gromacs} version 3.3.
 When the charge group field is left out, the added atom will have
@@ -981,7 +981,7 @@ in the {\tt *.rtp} file, see~\ssecref{rtp}.
 \subsection{Virtual site database}
 Since we cannot rely on the positions of hydrogens in input files, we need a special
 input file to decide the geometries and parameters with which to add virtual site
-hydrogens. For more complex virtual site constructs (e.g. when entire aromatic side chains
+hydrogens. For more complex virtual site constructs ({\eg} when entire aromatic side chains
 are made rigid) we also need information about the equilibrium bond lengths and angles
 for all atoms in the side chain. This information is specified in the \verb+.vsd+ file for each force 
 field. Just as for the termini, there is one such file for each class of residues in 
@@ -991,7 +991,7 @@ The virtual site database is not really a very simple list of information. The f
 specify which mass centers (typically called MCH$_3$/MNH$_3$) to use for CH$_3$, NH$_3$, 
 and NH$_2$ groups. Depending on the 
 equilibrium bond lengths and angles between the hydrogens and heavy atoms we need to apply
-slightly different constraint distances between these mass centers. Note that we do {\em not} have to
+slightly different constraint distances between these mass centers. {\bf Note} that we do {\em not} have to
 specify the actual parameters (that is automatic), just the type of mass center to use. To accomplish this,
 there are three sections names \verb+[ CH3 ]+, \verb+[ NH3 ]+, and \verb+[ NH2 ]+. For each of these we
 expect three columns. The first column is the atom type bound to the 2/3 hydrogens, the second column
@@ -1003,11 +1003,11 @@ default equilibrium parameters of the force field.
 
 The second part of the virtual site database contains explicit equilibrium bond lengths and angles
 for pairs/triplets of atoms in aromatic side chains. These entries are currently read by specific routines
-in the virtual site generation code, so if you would like to extent it e.g.\ to nucleic acids you would also
+in the virtual site generation code, so if you would like to extend it {\eg} to nucleic acids you would also
 need to write new code there. These sections are named after the short amino acid names
 (\verb+[ PHE ]+, \verb+[ TYR ]+, \verb+[ TRP ]+, \verb+[ HID ]+, \verb+[ HIE ]+, \verb+[ HIP ]+), and simply
-contain 2 or 3 columns with atom names, followed by a number specifying the bond (in nm) or angle
-(in degrees). Note that these are approximations of the equilibrated geometry for the entire molecule, 
+contain 2 or 3 columns with atom names, followed by a number specifying the bond length (in nm) or angle
+(in degrees). {\bf Note} that these are approximations of the equilibrated geometry for the entire molecule, 
 which might not be identical to the equilibrium value for a single bond/angle if the molecule is strained.
 
 
@@ -1345,7 +1345,7 @@ Here follows the explanatory text.
 \item non-bond type = 1 (Lennard-Jones) or 2 (Buckingham)
 \item \normindex{combination rule} = 
 \begin{enumerate}
-\item For Lennard Jones: supply $C^{(6)}$ and $C^{(N)}$,
+\item For Lennard-Jones: supply $C^{(6)}$ and $C^{(N)}$,
 $C^{M}_{ij}=\sqrt{C^M_i\,C^M_j}$ ($M$ = 6,$N$).
 Default value for $N$ = 12, but it can be
 overridden using the last parameter on this line.
@@ -1366,7 +1366,7 @@ from normal Lennard-Jones parameters using FudgeLJ)
 \item FudgeLJ = factor by which to multiply Lennard-Jones 1-4 interactions, default 1
 \item FudgeQQ = factor by which to multiply electrostatic 1-4 interactions, default 1
 \item $N$ = power for the repulsion term in a 6-$N$ potential (with 
-nonbonded-type Lennard Jones only), starting with {\gromacs} version 4.5,
+nonbonded-type Lennard-Jones only), starting with {\gromacs} version 4.5,
 {\tt mdrun} also reads and applies $N$, for values not equal to 12 tabulated
 interaction functions are used
 (in older version you would have to use user tabulated interactions).
@@ -1694,7 +1694,7 @@ This means that when, for instance, only the charge of a particle is
 perturbed, its Lennard-Jones interactions will also be affected when
 lambda is not equal to zero or one.
 
-Note that this topology uses the \gromosv{96} force field, in which the bonded
+{\bf Note} that this topology uses the \gromosv{96} force field, in which the bonded
 interactions are not determined by the atom types. The bonded interaction
 strings are converted by the C-preprocessor. The force field parameter
 files contain lines like:
