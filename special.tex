@@ -793,22 +793,24 @@ and as a virtual site in the force field calculation. The link atoms, if
 any, are part of the system, but have no interaction with any other
 atom, except that the QM force working on it is distributed over the
 two atoms of the bond. In the topology, the link atom (LA), therefore,
-is defined as a virtual site atom:\\
+is defined as a virtual site atom:
 
-{\small \begin{tt}
-[ virtual\_sites2 ]\\
-LA QMatom MMatom 1 0.65\\
-\end{tt}}
+{\small
+\begin{verbatim}
+[ virtual_sites2 ]
+LA QMatom MMatom 1 0.65
+\end{verbatim}}
 
 See~\secref{vsitetop} for more details on how virtual sites are
 treated. The link atom is replaced at every step of the simulation.
 
 In addition, the bond itself is replaced by a constraint:
 
-{\small \begin{tt}
-[ constraints ] \\
-QMatom MMatom 2 0.153\\
-\end{tt}}
+{\small
+\begin{verbatim}
+[ constraints ]
+QMatom MMatom 2 0.153
+\end{verbatim}}
 
 Note that, because in our system the QM/MM bond is a carbon-carbon
 bond (0.153 nm), we use a constraint length of 0.153 nm, and dummy
@@ -826,11 +828,12 @@ link atoms, are added to the index file. In addition, the chemical
 bonds between the atoms in the QM region are to be defined as
 connect bonds (bond type 5) in the topology file:
 
-{\small \begin{tt}
-[ bonds ]\\
-QMatom1 QMatom2 5\\
-QMatom2 QMatom3 5\\
-\end{tt}}
+{\small
+\begin{verbatim}
+[ bonds ]
+QMatom1 QMatom2 5
+QMatom2 QMatom3 5
+\end{verbatim}}
 
 \subsubsection{Specifying the QM/MM simulation parameters}
 
@@ -1088,12 +1091,13 @@ Also note that it is essential that the same version of CUDA be used to compile 
 To compile {\tt mdrun-gpu} change to the top level directory of the source 
 tree and execute the following commands: 
 
-{\small \begin{tt}
-    export OPENMM\_ROOT\_DIR=path\_to\_custom\_openmm\_installpath \\
-    cmake  -DGMX\_OPENMM=ON [-DCMAKE\_INSTALL\_PREFIX=desired\_install\_path] \\
-    make mdrun \\
+{\small
+\begin{verbatim}
+    export OPENMM\us{}ROOT\us{}DIR=path\us{}to\us{}custom\us{}openmm\us{}installpath
+    cmake  -DGMX\us{}OPENMM=ON [-DCMAKE\us{}INSTALL\us{}PREFIX=desired\us{}install\us{}path]
+    make mdrun
     make install-mdrun
-\end{tt}}
+\end{verbatim}}
 
 
 \subsubsection{Testing and troubleshooting}

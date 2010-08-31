@@ -94,24 +94,23 @@ a.m.u.). This is the type of listing found in the {\tt atomtypes.atp} file (.atp
 = {\bf a}tom {\bf t}ype {\bf p}arameter file).  Therefore, it is in this file
 that you can change and/or add an atom type.
 
-{\small \begin{tt}
-\begin{tabular}{lll}
-    O  &15.99940 &;     carbonyl oxygen (C=O)\\
-   OM  &15.99940 &;     carboxyl oxygen (CO-)\\
-   OA  &15.99940 &;     hydroxyl oxygen (OH)\\
-   OW  &15.99940 &;     water oxygen\\
-    N  &14.00670 &;     peptide nitrogen (N or NH)\\
-   NT  &14.00670 &;     terminal nitrogen (NH2)\\
-   NL  &14.00670 &;     terminal nitrogen (NH3)\\
-  NR5  &14.00670 &;     aromatic N (5-ring,2 bonds)\\
- NR5*  &14.00670 &;     aromatic N (5-ring,3 bonds)\\
-   NP  &14.00670 &;     porphyrin nitrogen\\
-    C  &12.01100 &;     bare carbon (peptide,C=O,C-N)\\
-  CH1  &13.01900 &;     aliphatic CH-group\\
-  CH2  &14.02700 &;     aliphatic CH2-group\\
-  CH3  &15.03500 &;     aliphatic CH3-group\\
-\end{tabular}
-\end{tt}}
+{\small
+\begin{verbatim}
+    O  15.99940 ;     carbonyl oxygen (C=O)
+   OM  15.99940 ;     carboxyl oxygen (CO-)
+   OA  15.99940 ;     hydroxyl oxygen (OH)
+   OW  15.99940 ;     water oxygen
+    N  14.00670 ;     peptide nitrogen (N or NH)
+   NT  14.00670 ;     terminal nitrogen (NH2)
+   NL  14.00670 ;     terminal nitrogen (NH3)
+  NR5  14.00670 ;     aromatic N (5-ring,2 bonds)
+ NR5*  14.00670 ;     aromatic N (5-ring,3 bonds)
+   NP  14.00670 ;     porphyrin nitrogen
+    C  12.01100 ;     bare carbon (peptide,C=O,C-N)
+  CH1  13.01900 ;     aliphatic CH-group
+  CH2  14.02700 ;     aliphatic CH2-group
+  CH3  15.03500 ;     aliphatic CH3-group
+\end{verbatim}}
 
 Atomic detail is used except for hydrogen atoms bound to (aliphatic)
 carbon atoms, which are treated as {\em \swapindex{united}{atom}s}. No
@@ -162,47 +161,53 @@ for the number constructing particles for the virtual site. This will be
 `{\tt 4}' for type 4fd.  The different types are explained
 in~\secref{virtual_sites}.
 
-Parameters for type 2 should look like this:\\
-{\small\begin{tt}
-[ virtual\_sites2 ] \\
-; Site  from        funct  a \\
-5       1     2     1      0.7439756\\
-\end{tt}}
+Parameters for type 2 should look like this:
+{\small
+\begin{verbatim}
+[ virtual_sites2 ]
+; Site  from        funct  a
+5       1     2     1      0.7439756
+\end{verbatim}}
 
-for type 3 like this:\\
-{\small\begin{tt}
-[ virtual\_sites3 ]\\
-; Site  from               funct   a          b\\
-5       1     2     3      1       0.7439756  0.128012\\
-\end{tt}}
+for type 3 like this:
+{\small
+\begin{verbatim}
+[ virtual_sites3 ]
+; Site  from               funct   a          b
+5       1     2     3      1       0.7439756  0.128012
+\end{verbatim}}
 
-for type 3fd like this:\\
-{\small\begin{tt}
-[ virtual\_sites3 ]\\
-; Site  from               funct   a          d\\
-5       1     2     3      2       0.5        -0.105\\
-\end{tt}}
+for type 3fd like this:
+{\small
+\begin{verbatim}
+[ virtual_sites3 ]
+; Site  from               funct   a          d
+5       1     2     3      2       0.5        -0.105
+\end{verbatim}}
 
-for type 3fad like this:\\
-{\small\begin{tt}
-[ virtual\_sites3 ]\\
-; Site  from               funct   theta      d\\
-5       1     2     3      3       120        0.5\\
-\end{tt}}
+for type 3fad like this:
+{\small
+\begin{verbatim}
+[ virtual_sites3 ]
+; Site  from               funct   theta      d
+5       1     2     3      3       120        0.5
+\end{verbatim}}
 
-for type 3out like this:\\
-{\small\begin{tt}
-[ virtual\_sites3 ]\\
-; Site  from               funct   a          b          c\\
-5       1     2     3      4       -0.4       -0.4       6.9281\\
-\end{tt}}
+for type 3out like this:
+{\small
+\begin{verbatim}
+[ virtual_sites3 ]
+; Site  from               funct   a          b          c
+5       1     2     3      4       -0.4       -0.4       6.9281
+\end{verbatim}}
 
-for type 4fd like this:\\
-{\small\begin{tt}
-[ virtual\_sites4 ]\\
-; Site  from                      funct   a          b          d\\
-5       1     2     3     4       1       0.33333    0.33333    -0.105\\
-\end{tt}}
+for type 4fd like this:
+{\small
+\begin{verbatim}
+[ virtual_sites4 ]
+; Site  from                      funct   a          b          d
+5       1     2     3     4       1       0.33333    0.33333    -0.105
+\end{verbatim}}
 
 This will result in the construction of a virtual site, number 5
 (first column `{\tt Site}'), based on the positions of 1 and 2 or 1,
@@ -266,46 +271,38 @@ harmonic and 2 for \gromosv{96} bond and angle potentials.
 For the dihedral, this is explained after this listing.
 
 {\small 
-\begin{tt}
-[ bondtypes ]\\
-  ; i    j func        b0          kb\\
-    C    O    1   0.12300     502080.\\
-    C   OM    1   0.12500     418400.\\
-    ......\\
-\end{tt}
+\begin{verbatim}
+[ bondtypes ]
+  ; i    j func        b0          kb
+    C    O    1   0.12300     502080.
+    C   OM    1   0.12500     418400.
+    ......
 
-\begin{tt}
-[ angletypes ] \\
-  ; i    j    k func       th0         cth\\
-   HO   OA    C    1   109.500     397.480\\
-   HO   OA  CH1    1   109.500     397.480\\
-   ......\\
-\end{tt}
+[ angletypes ]
+  ; i    j    k func       th0         cth
+   HO   OA    C    1   109.500     397.480
+   HO   OA  CH1    1   109.500     397.480
+   ......
 
-\begin{tt}
-[ dihedraltypes ] \\
-  ; i    l func        q0          cq\\
- NR5*  NR5    2     0.000     167.360\\
- NR5* NR5*    2     0.000     167.360\\
- ......\\
-\end{tt}
+[ dihedraltypes ]
+  ; i    l func        q0          cq
+ NR5*  NR5    2     0.000     167.360
+ NR5* NR5*    2     0.000     167.360
+ ......
 
-\begin{tt}
-[ dihedraltypes ] \\
-  ; j    k func      phi0          cp   mult\\
-    C   OA    1   180.000      16.736      2\\
-    C    N    1   180.000      33.472      2\\
-    ......\\
-\end{tt}
+[ dihedraltypes ]
+  ; j    k func      phi0          cp   mult
+    C   OA    1   180.000      16.736      2
+    C    N    1   180.000      33.472      2
+    ......
 
-\begin{tt}
-[ dihedraltypes ] \\
-;\\
-; Ryckaert-Bellemans Dihedrals\\
-;\\
-; aj    ak      funct\\
-CP2     CP2     3       9.2789  12.156  -13.120 -3.0597 26.240  -31.495\\
-\end{tt}}
+[ dihedraltypes ]
+;
+; Ryckaert-Bellemans Dihedrals
+;
+; aj    ak      funct
+CP2     CP2     3       9.2789  12.156  -13.120 -3.0597 26.240  -31.495
+\end{verbatim}}
 
 Also in this file are the
 \normindex{Ryckaert-Bellemans}~\cite{Ryckaert78} parameters for the
@@ -341,29 +338,26 @@ The \swapindex{non-bonded}{parameter}s consist of the van der Waals parameters
 V ({\tt c6}) and W ({\tt c12}), as listed in the file {\tt ffnonbonded.itp},
 where {\tt ptype} is the particle type (see \tabref{ptype}):
 
-{\small \begin{tt}
-[ atomtypes ]\\
-;name        mass      charge   ptype            c6           c12\\
-    O    15.99940       0.000       A   0.22617E-02   0.74158E-06\\
-   OM    15.99940       0.000       A   0.22617E-02   0.74158E-06\\
-   .....\\
-\end{tt}
+{\small
+\begin{verbatim}
+[ atomtypes ]
+;name        mass      charge   ptype            c6           c12
+    O    15.99940       0.000       A   0.22617E-02   0.74158E-06
+   OM    15.99940       0.000       A   0.22617E-02   0.74158E-06
+   .....
 
-\begin{tt}
-[ nonbond\_params ]\\
-  ; i    j func          c6           c12\\
-    O    O    1 0.22617E-02   0.74158E-06\\
-    O   OA    1 0.22617E-02   0.13807E-05\\
-    .....\\
-\end{tt}
+[ nonbond_params ]
+  ; i    j func          c6           c12
+    O    O    1 0.22617E-02   0.74158E-06
+    O   OA    1 0.22617E-02   0.13807E-05
+    .....
 
-\begin{tt}
-[ pairtypes ]\\
-  ; i    j func         cs6          cs12 ; THESE ARE 1-4 INTERACTIONS\\
-    O    O    1 0.22617E-02   0.74158E-06\\
-    O   OM    1 0.22617E-02   0.74158E-06\\
-    .....\\
-\end{tt}}
+[ pairtypes ]
+  ; i    j func         cs6          cs12 ; THESE ARE 1-4 INTERACTIONS
+    O    O    1 0.22617E-02   0.74158E-06
+    O   OM    1 0.22617E-02   0.74158E-06
+    .....
+\end{verbatim}}
 
 The parameters V and W can be defined in two different ways, depending on
 the combination rule that was chosen in the {\tt [~defaults~]} section
@@ -405,14 +399,15 @@ computed according to the \normindex{combination rule}:
 Starting with {\gromacs} 4.5, implicit solvent is supported. A section in the
 topology has been introduced to list those parameters:
 
-{\small \begin{tt}
-[~implicit\_genborn\_params~] \\
-; Atomtype  sar  st   pi      gbr      hct \\
-NH1       0.155  1   1.028   0.17063  0.79 ; N \\
-N         0.155  1   1       0.155    0.79 ; Proline backbone N \\
-H         0.1    1   1       0.115    0.85 ; H \\
-CT1       0.180  1   1.276   0.190    0.72 ; C \\
-\end{tt}}
+{\small
+\begin{verbatim}
+[ implicit_genborn_params ]
+; Atomtype  sar  st   pi      gbr      hct
+NH1       0.155  1   1.028   0.17063  0.79 ; N
+N         0.155  1   1       0.155    0.79 ; Proline backbone N
+H         0.1    1   1       0.115    0.85 ; H
+CT1       0.180  1   1.276   0.190    0.72 ; C
+\end{verbatim}}
 
 In this example the atomtype is listed first, followed by five
 numbers, and a comment (following a semicolon).
@@ -523,31 +518,29 @@ There are several options for this in the {\tt *.mdp} file.
 We have also implemented the \normindex{SETTLE} algorithm~\cite{Miyamoto92},
 which is an analytical solution of SHAKE, specifically for water. 
 SETTLE can be selected in the topology file. See, for instance, the
-SPC molecule definition:\\
+SPC molecule definition:
 
-{\small \begin{tt}
-[ moleculetype ]\\
-; molname       nrexcl\\
-SOL             1\\
-\end{tt}\\
-\begin{tt}
-[ atoms ]\\
-; nr    at type res nr  ren nm  at nm   cg nr   charge\\
-1       OW      1       SOL     OW1     1       -0.82\\
-2       HW      1       SOL     HW2     1        0.41\\
-3       HW      1       SOL     HW3     1        0.41\\
-\end{tt}\\
-\begin{tt}
-[ settles ]\\
-; OW    funct   doh     dhh\\
-1       1       0.1     0.16333\\
-\end{tt}\\
-\begin{tt}
-[ exclusions ]\\
-1       2       3\\
-2       1       3\\
-3       1       2\\
-\end{tt}}
+{\small
+\begin{verbatim}
+[ moleculetype ]
+; molname       nrexcl
+SOL             1
+
+[ atoms ]
+; nr    at type res nr  ren nm  at nm   cg nr   charge
+1       OW      1       SOL     OW1     1       -0.82
+2       HW      1       SOL     HW2     1        0.41
+3       HW      1       SOL     HW3     1        0.41
+
+[ settles ]
+; OW    funct   doh     dhh
+1       1       0.1     0.16333
+
+[ exclusions ]
+1       2       3
+2       1       3
+3       1       2
+\end{verbatim}}
 
 The {\tt [~settles~]} directive defines the first atom of the water molecule.
 The settle funct is always 1, and the distance between O-H and H-H distances
@@ -624,59 +617,51 @@ listed in the coordinate file. You have to construct a building block
 for this ``strange'' residue, otherwise you will not obtain a
 {\tt *.top} file. This also holds for molecules in the
 coordinate file such as ligands, polyatomic ions, crystallization co-solvents, etc.
-The residue database is constructed in the following way:\\
+The residue database is constructed in the following way:
 
-{\small \begin{tt}
-[ bondedtypes ]  ; mandatory\\
-; bonds  angles  dihedrals  impropers\\
-     1       1          1          2  ; mandatory\\
-\end{tt}\\
-\begin{tt}
-[ GLY ]  ; mandatory\\
-\end{tt}\\
-\begin{tt}
- [ atoms ]  ; mandatory \\
-; name  type  charge  chargegroup \\
-     N     N  -0.280     0\\
-     H     H   0.280     0\\
-    CA   CH2   0.000     1\\
-     C     C   0.380     2\\
-     O     O  -0.380     2\\
-\end{tt}\\
-\begin{tt}
- [ bonds ]  ; optional\\
-;atom1 atom2      b0      kb\\
-     N     H\\
-     N    CA\\
-    CA     C\\
-     C     O\\
-    -C     N\\
-\end{tt}\\
-\begin{tt}
- [ exclusions ]  ; optional\\
-;atom1 atom2\\
-\end{tt}\\
-\begin{tt}
- [ angles ]  ; optional\\
-;atom1 atom2 atom3    th0    cth\\
-\end{tt}\\
-\begin{tt}
- [ dihedrals ]  ; optional\\
-;atom1 atom2 atom3 atom4   phi0     cp   mult\\
-\end{tt}\\
-\begin{tt}
- [ impropers ]  ; optional\\
-;atom1 atom2 atom3 atom4     q0     cq\\
-     N    -C    CA     H\\
-    -C   -CA     N    -O\\
-\end{tt}\\
-\begin{tt}
-[ ZN ]\\
-\end{tt}\\
-\begin{tt}
- [ atoms ]\\
-    ZN    ZN   2.000     0\\
-\end{tt}}
+{\small
+\begin{verbatim}
+[ bondedtypes ]  ; mandatory
+; bonds  angles  dihedrals  impropers
+     1       1          1          2  ; mandatory
+
+[ GLY ]  ; mandatory
+
+ [ atoms ]  ; mandatory 
+; name  type  charge  chargegroup 
+     N     N  -0.280     0
+     H     H   0.280     0
+    CA   CH2   0.000     1
+     C     C   0.380     2
+     O     O  -0.380     2
+
+ [ bonds ]  ; optional
+;atom1 atom2      b0      kb
+     N     H
+     N    CA
+    CA     C
+     C     O
+    -C     N
+
+ [ exclusions ]  ; optional
+;atom1 atom2
+
+ [ angles ]  ; optional
+;atom1 atom2 atom3    th0    cth
+
+ [ dihedrals ]  ; optional
+;atom1 atom2 atom3 atom4   phi0     cp   mult
+
+ [ impropers ]  ; optional
+;atom1 atom2 atom3 atom4     q0     cq
+     N    -C    CA     H
+    -C   -CA     N    -O
+
+[ ZN ]
+
+ [ atoms ]
+    ZN    ZN   2.000     0
+\end{verbatim}}
 
 The file is free format; the only restriction is that there can be at
 most one entry on a line.  The first field in the file is the
@@ -805,17 +790,18 @@ hydrogen atoms will be named \texttt{HD21} and \texttt{HD22}. This is
 important since atom naming in the \texttt{.rtp} file (see~\ssecref{rtp})
 must be the same. The format of the hydrogen database is as follows:
 
-{\small \begin{tt}
-; res   \# additions\\
-        \# H add type    H       i       j       k\\
-ALA     1\\
-        1       1       H       N       -C      CA\\
-ARG     4\\
-        1       2       H       N       CA      C\\
-        1       1       HE      NE      CD      CZ\\
-        2       3       HH1     NH1     CZ      NE\\
-        2       3       HH2     NH2     CZ      NE\\
-\end{tt}}
+{\small
+\begin{verbatim}
+; res   # additions
+        # H add type    H       i       j       k
+ALA     1
+        1       1       H       N       -C      CA
+ARG     4
+        1       2       H       N       CA      C
+        1       1       HE      NE      CD      CZ
+        2       3       HH1     NH1     CZ      NE
+        2       3       HH2     NH2     CZ      NE
+\end{verbatim}}
 
 On the first line we see the residue name (ALA or ARG) and the number
 of additions. After that follows one line for each addition, on which
@@ -893,29 +879,25 @@ to existing ones, which atoms should be removed or changed, and which
 bonded interactions should be added. The format of the is as follows
 (from {\tt gmx.ff/aminoacids.c.tdb}):
 
-{\small \begin{tt}
-[ None ]\\
-\end{tt}\\
-\begin{tt}
-[ COO- ]\\
-\end{tt}\\
-\begin{tt}
-[ replace ]\\
-C       C       C       12.011  0.27\\
-\end{tt}\\
-\begin{tt}
-[ add ]\\
-2       8       O       C       CA      N\\
-        OM      15.9994 -0.635\\
-\end{tt}\\
-\begin{tt}
-[ delete ]\\
-O\\
-\end{tt}\\
-\begin{tt}
-[ impropers ]\\
-C       O1      O2      CA\\
-\end{tt}}
+{\small
+\begin{verbatim}
+[ None ]
+
+[ COO- ]
+
+[ replace ]
+C       C       C       12.011  0.27
+
+[ add ]
+2       8       O       C       CA      N
+        OM      15.9994 -0.635
+
+[ delete ]
+O
+
+[ impropers ]
+C       O1      O2      CA
+\end{verbatim}}
 
 The file is organized in blocks, each with a header specifying the
 name of the block. These blocks correspond to different types of
@@ -1224,107 +1206,98 @@ Description of the file layout:
 
 Here is an example of a topology file, {\tt urea.top}:
 
-{\small \begin{tt}
-;\\
-;       Example topology file\\
-;\\
-; The force field files to be included\\
-\#include "gmx.ff/forcefield.itp"\\
-\end{tt}\\
-\begin{tt}
-[ moleculetype ]\\
-; name  nrexcl\\
-Urea         3\\
-\end{tt}\\
-\begin{tt}
-[ atoms ]\\
-;   nr    type   resnr  residu    atom    cgnr  charge\\
-     1       C       1    UREA      C1       1   0.683\\
-     2       O       1    UREA      O2       1  -0.683\\
-     3      NT       1    UREA      N3       2  -0.622\\
-     4       H       1    UREA      H4       2   0.346\\
-     5       H       1    UREA      H5       2   0.276\\
-     6      NT       1    UREA      N6       3  -0.622\\
-     7       H       1    UREA      H7       3   0.346\\
-     8       H       1    UREA      H8       3   0.276\\
-\end{tt}\\
-\begin{tt}
-[ bonds ]\\
-;  ai    aj funct           b0           kb\\
-    3     4     1 1.000000e-01 3.744680e+05 \\
-    3     5     1 1.000000e-01 3.744680e+05 \\
-    6     7     1 1.000000e-01 3.744680e+05 \\
-    6     8     1 1.000000e-01 3.744680e+05 \\
-    1     2     1 1.230000e-01 5.020800e+05 \\
-    1     3     1 1.330000e-01 3.765600e+05 \\
-    1     6     1 1.330000e-01 3.765600e+05 \\
-\end{tt}\\
-\begin{tt}
-[ pairs ]\\
-;  ai    aj funct           c6          c12\\
-    2     4     1 0.000000e+00 0.000000e+00 \\
-    2     5     1 0.000000e+00 0.000000e+00 \\
-    2     7     1 0.000000e+00 0.000000e+00 \\
-    2     8     1 0.000000e+00 0.000000e+00 \\
-    3     7     1 0.000000e+00 0.000000e+00 \\
-    3     8     1 0.000000e+00 0.000000e+00 \\
-    4     6     1 0.000000e+00 0.000000e+00 \\
-    5     6     1 0.000000e+00 0.000000e+00 \\
-\end{tt}\\
-\begin{tt}
-[ angles ]\\
-;  ai    aj    ak funct          th0          cth\\
-    1     3     4     1 1.200000e+02 2.928800e+02 \\
-    1     3     5     1 1.200000e+02 2.928800e+02 \\
-    4     3     5     1 1.200000e+02 3.347200e+02 \\
-    1     6     7     1 1.200000e+02 2.928800e+02 \\
-    1     6     8     1 1.200000e+02 2.928800e+02 \\
-    7     6     8     1 1.200000e+02 3.347200e+02 \\
-    2     1     3     1 1.215000e+02 5.020800e+02 \\
-    2     1     6     1 1.215000e+02 5.020800e+02 \\
-    3     1     6     1 1.170000e+02 5.020800e+02 \\
-\end{tt}\\
-\begin{tt}
-[ dihedrals ]\\
-;  ai    aj    ak    al funct          phi           cp         mult\\
-    2     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-    6     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-    2     1     3     5     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-    6     1     3     5     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-    2     1     6     7     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-    3     1     6     7     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-    2     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-    3     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-\end{tt}\\
-\begin{tt}
-[ dihedrals ]\\
-;  ai    aj    ak    al funct           q0           cq\\
-    3     4     5     1     2 0.000000e+00 1.673600e+02 \\
-    6     7     8     1     2 0.000000e+00 1.673600e+02 \\
-    1     3     6     2     2 0.000000e+00 1.673600e+02 \\
-\end{tt}\\
-\begin{tt}
-[ position\_restraints ]\\
-; you wouldn't normally use this for a molecule like Urea,\\
-; but we include it here for didactic purposes\\
-; ai   funct    fc\\
-   1     1     1000    1000    1000 ; Restrain to a point\\
-   2     1     1000       0    1000 ; Restrain to a line (Y-axis)\\
-   3     1     1000       0       0 ; Restrain to a plane (Y-Z-plane)\\
-\\
-; Include SPC water topology\\
-\#include "spc.itp"\\
-\end{tt}\\
-\begin{tt}
-[ system ]\\
-Urea in Water\\
-\end{tt}\\
-\begin{tt}
-[ molecules ]\\
-;molecule name   nr.\\
-Urea             1\\
-SOL              1000\\
-\end{tt}}
+{\small
+\begin{verbatim}
+;
+;       Example topology file
+;
+; The force field files to be included
+#include "gmx.ff/forcefield.itp"
+
+[ moleculetype ]
+; name  nrexcl
+Urea         3
+
+[ atoms ]
+;   nr    type   resnr  residu    atom    cgnr  charge
+     1       C       1    UREA      C1       1   0.683
+     2       O       1    UREA      O2       1  -0.683
+     3      NT       1    UREA      N3       2  -0.622
+     4       H       1    UREA      H4       2   0.346
+     5       H       1    UREA      H5       2   0.276
+     6      NT       1    UREA      N6       3  -0.622
+     7       H       1    UREA      H7       3   0.346
+     8       H       1    UREA      H8       3   0.276
+
+[ bonds ]
+;  ai    aj funct           b0           kb
+    3     4     1 1.000000e-01 3.744680e+05 
+    3     5     1 1.000000e-01 3.744680e+05 
+    6     7     1 1.000000e-01 3.744680e+05 
+    6     8     1 1.000000e-01 3.744680e+05 
+    1     2     1 1.230000e-01 5.020800e+05 
+    1     3     1 1.330000e-01 3.765600e+05 
+    1     6     1 1.330000e-01 3.765600e+05 
+
+[ pairs ]
+;  ai    aj funct           c6          c12
+    2     4     1 0.000000e+00 0.000000e+00 
+    2     5     1 0.000000e+00 0.000000e+00 
+    2     7     1 0.000000e+00 0.000000e+00 
+    2     8     1 0.000000e+00 0.000000e+00 
+    3     7     1 0.000000e+00 0.000000e+00 
+    3     8     1 0.000000e+00 0.000000e+00 
+    4     6     1 0.000000e+00 0.000000e+00 
+    5     6     1 0.000000e+00 0.000000e+00 
+
+[ angles ]
+;  ai    aj    ak funct          th0          cth
+    1     3     4     1 1.200000e+02 2.928800e+02 
+    1     3     5     1 1.200000e+02 2.928800e+02 
+    4     3     5     1 1.200000e+02 3.347200e+02 
+    1     6     7     1 1.200000e+02 2.928800e+02 
+    1     6     8     1 1.200000e+02 2.928800e+02 
+    7     6     8     1 1.200000e+02 3.347200e+02 
+    2     1     3     1 1.215000e+02 5.020800e+02 
+    2     1     6     1 1.215000e+02 5.020800e+02 
+    3     1     6     1 1.170000e+02 5.020800e+02 
+
+[ dihedrals ]
+;  ai    aj    ak    al funct          phi           cp         mult
+    2     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 
+    6     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 
+    2     1     3     5     1 1.800000e+02 3.347200e+01 2.000000e+00 
+    6     1     3     5     1 1.800000e+02 3.347200e+01 2.000000e+00 
+    2     1     6     7     1 1.800000e+02 3.347200e+01 2.000000e+00 
+    3     1     6     7     1 1.800000e+02 3.347200e+01 2.000000e+00 
+    2     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 
+    3     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 
+
+[ dihedrals ]
+;  ai    aj    ak    al funct           q0           cq
+    3     4     5     1     2 0.000000e+00 1.673600e+02 
+    6     7     8     1     2 0.000000e+00 1.673600e+02 
+    1     3     6     2     2 0.000000e+00 1.673600e+02 
+
+[ position_restraints ]
+; you wouldn't normally use this for a molecule like Urea,
+; but we include it here for didactic purposes
+; ai   funct    fc
+   1     1     1000    1000    1000 ; Restrain to a point
+   2     1     1000       0    1000 ; Restrain to a line (Y-axis)
+   3     1     1000       0       0 ; Restrain to a plane (Y-Z-plane)
+
+; Include SPC water topology
+#include "spc.itp"
+
+[ system ]
+Urea in Water
+
+[ molecules ]
+;molecule name   nr.
+Urea             1
+SOL              1000
+\end{verbatim}}
 
 Here follows the explanatory text.
 
@@ -1391,13 +1364,13 @@ here too.
 {\bf {\tt [~dihedrals~]} :} in this case there are 9 proper dihedrals
 (funct = 1), 3 improper (funct = 2) and no Ryckaert-Bellemans type
 dihedrals. If you want to include Ryckaert-Bellemans type dihedrals
-in a topology, do the following (in case of {\eg} decane):\\
-\begin{tt}
-[ dihedrals ]\\
-;  ai    aj    ak    al funct       c0       c1       c2\\
-    1    2     3     4     3 \\
-    2    3     4     5     3\\
-\end{tt}
+in a topology, do the following (in case of {\eg} decane):
+\begin{verbatim}
+[ dihedrals ]
+;  ai    aj    ak    al funct       c0       c1       c2
+    1    2     3     4     3 
+    2    3     4     5     3
+\end{verbatim}
 and do not forget to {\em erase the 1-4 interaction} 
 in {\tt [~pairs~]}!
 
@@ -1422,81 +1395,75 @@ If you construct a topology file you will use frequently (like a water
 molecule, {\tt spc.itp}) it is better to make a {\tt molecule.itp}
 file, which only lists the information of one particular molecule: 
 
-{\small \begin{tt}
-[ moleculetype ]\\
-; name  nrexcl\\
-Urea       3\\
-\end{tt}\\
-\begin{tt}
-[ atoms ]\\
-;   nr    type   resnr  residu    atom    cgnr  charge\\
-     1       C       1    UREA      C1       1   0.683  \\
-     .................\\
-     .................\\
-     8       H       1    UREA      H8       3   0.276\\
-\end{tt}\\
-\begin{tt}
-[ bonds ]\\
-;  ai    aj funct           c0           c1\\
-    3     4     1 1.000000e-01 3.744680e+05 \\
-     .................\\
-     .................\\
-    1     6     1 1.330000e-01 3.765600e+05 \\
-\end{tt}\\
-\begin{tt}
-[ pairs ]\\
-;  ai    aj funct           c0           c1\\
-    2     4     1 0.000000e+00 0.000000e+00 \\
-     .................\\
-     .................\\
-    5     6     1 0.000000e+00 0.000000e+00 \\
-\end{tt}\\
-\begin{tt}
-[ angles ]\\
-;  ai    aj    ak funct           c0           c1\\
-    1     3     4     1 1.200000e+02 2.928800e+02 \\
-     .................\\
-     .................\\
-    3     1     6     1 1.170000e+02 5.020800e+02 \\
-\end{tt}\\
-\begin{tt}
-[ dihedrals ]\\
-;  ai    aj    ak    al funct           c0           c1           c2\\
-    2     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-     .................\\
-     .................\\
-    3     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 \\
-\end{tt}\\
-\begin{tt}
-[ dihedrals ]\\
-;  ai    aj    ak    al funct           c0           c1\\
-    3     4     5     1     2 0.000000e+00 1.673600e+02 \\
-    6     7     8     1     2 0.000000e+00 1.673600e+02 \\
-    1     3     6     2     2 0.000000e+00 1.673600e+02 \\
-\end{tt}}
+{\small
+\begin{verbatim}
+[ moleculetype ]
+; name  nrexcl
+Urea       3
+
+[ atoms ]
+;   nr    type   resnr  residu    atom    cgnr  charge
+     1       C       1    UREA      C1       1   0.683  
+     .................
+     .................
+     8       H       1    UREA      H8       3   0.276
+
+[ bonds ]
+;  ai    aj funct           c0           c1
+    3     4     1 1.000000e-01 3.744680e+05 
+     .................
+     .................
+    1     6     1 1.330000e-01 3.765600e+05 
+
+[ pairs ]
+;  ai    aj funct           c0           c1
+    2     4     1 0.000000e+00 0.000000e+00 
+     .................
+     .................
+    5     6     1 0.000000e+00 0.000000e+00 
+
+[ angles ]
+;  ai    aj    ak funct           c0           c1
+    1     3     4     1 1.200000e+02 2.928800e+02 
+     .................
+     .................
+    3     1     6     1 1.170000e+02 5.020800e+02 
+
+[ dihedrals ]
+;  ai    aj    ak    al funct           c0           c1           c2
+    2     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 
+     .................
+     .................
+    3     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 
+
+[ dihedrals ]
+;  ai    aj    ak    al funct           c0           c1
+    3     4     5     1     2 0.000000e+00 1.673600e+02 
+    6     7     8     1     2 0.000000e+00 1.673600e+02 
+    1     3     6     2     2 0.000000e+00 1.673600e+02 
+\end{verbatim}}
 
 Using {\tt *.itp} files results in a very short {\tt *.top} file:
 
-{\small \begin{tt}
-; The force field files to be included\\
-\#include "gmx.ff/forcefield.itp"\\
-  \\      
-; Include urea topology\\
-\#include "urea.itp"\\
-\\
-; Include SPC water topology\\
-\#include "spc.itp"\\
-\end{tt}\\
-\begin{tt}
-[ system ]\\
-Urea in Water\\
-\end{tt}\\
-\begin{tt}
-[ molecules ]\\
-;molecule name  number\\
-Urea              1\\
-SOL               1000\\
-\end{tt}}
+{\small
+\begin{verbatim}
+; The force field files to be included
+#include "gmx.ff/forcefield.itp"
+        
+; Include urea topology
+#include "urea.itp"
+
+; Include SPC water topology
+#include "spc.itp"
+
+[ system ]
+Urea in Water
+
+[ molecules ]
+;molecule name  number
+Urea              1
+SOL               1000
+\end{verbatim}}
 
 \subsection{Ifdef option}
 \label{subsec:ifdef}
@@ -1518,7 +1485,8 @@ way to make use of the {\tt \#ifdef} option is as follows:
       shown below: 
 \end{itemize}
 
-{\small \begin{verbatim}
+{\small
+\begin{verbatim}
 ...
 
 
@@ -1614,7 +1582,8 @@ the presence has no influence.}
 Below is an example of a topology which changes from 200 propanols to
 200 pentanes using the \gromosv{96} force field.\\
 
-{\small \begin{verbatim}
+{\small
+\begin{verbatim}
  
 ; Include force field parameters
 #include "gromos43a1.ff/forcefield.itp"
@@ -1682,11 +1651,12 @@ interactions are not determined by the atom types. The bonded interaction
 strings are converted by the C-preprocessor. The force field parameter
 files contain lines like:
 
-{\small \begin{tt}
-\#define gb\_26       0.1530  7.1500e+06\\
-\\
-\#define gd\_17     0.000       5.86          3\\
-\end{tt}}
+{\small
+\begin{verbatim}
+#define gb_26       0.1530  7.1500e+06
+
+#define gd_17     0.000       5.86          3
+\end{verbatim}}
 
 \subsection{\swapindex{Constraint}{force}}
 \label{subsec:constraintforce}
@@ -1705,7 +1675,8 @@ can be defined as any group of atoms that one wishes to consider simultaneously.
 The added constraint is of function type 2, which means that it is not
 used for generating exclusions (see~\secref{excl}).\\
 
-{\small \begin{verbatim}
+{\small
+\begin{verbatim}
 ; Include force field parameters
 #include "gromos43a1.ff/forcefield.itp"
 
@@ -1738,7 +1709,8 @@ SOL                2002
 Files with the {\tt .gro} file extension contain a molecular structure in 
 \gromosv{87} format. A sample piece is included below:
 
-{\small \begin{verbatim}
+{\small
+\begin{verbatim}
 MD of 2 waters, reformat step, PA aug-91
     6
     1WATER  OW1    1   0.126   1.624   1.679  0.1227 -0.0580  0.0434
@@ -1758,17 +1730,17 @@ want to read such a file in your own program without using the
 
 Or to be more precise, with title {\em etc.} it looks like this:
 
-\begin{tt}
-  "%s\n", Title\\
-  "%5d\n", natoms\\
-  for (i=0; (i<natoms); i++) {\\
-    "%5d%5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f\n",\\
-      residuenr,residuename,atomname,atomnr,x,y,z,vx,vy,vz\\
-  }\\
-  "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n",\\
-    box[X][X],box[Y][Y],box[Z][Z],\\
-    box[X][Y],box[X][Z],box[Y][X],box[Y][Z],box[Z][X],box[Z][Y]\\
-\end{tt}
+\begin{verbatim}
+  "%s\n", Title
+  "%5d\n", natoms
+  for (i=0; (i<natoms); i++) {
+    "%5d%5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f\n",
+      residuenr,residuename,atomname,atomnr,x,y,z,vx,vy,vz
+  }
+  "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n",
+    box[X][X],box[Y][Y],box[Z][Z],
+    box[X][Y],box[X][Z],box[Y][X],box[Y][Z],box[Z][X],box[Z][Y]
+\end{verbatim}
 
 {\bf Fortran format:} {\tt (i5,2a5,i5,3f8.3,3f8.4)}
 
@@ -1790,7 +1762,8 @@ by {\tt pdb2gmx} so you can easily keep track of which version of a force field
 is being called, in case you have made modifications in one location or another.
 The force fields included with {\gromacs} are:
 
-{\small \begin{verbatim}
+{\small
+\begin{verbatim}
 Select the Force Field:
 From '/usr/local/gromacs/share/gromacs/top': 
  1: AMBER03 force field (Duan et al., J. Comp. Chem. 24, 1999-2012, 2003) 
@@ -1820,7 +1793,8 @@ which, in turn, may include other force field files. All the force fields
 are organized in the same way. As an example, we show the {\tt gmx.ff/forcefield.itp}
 file:
 
-{\small \begin{verbatim}
+{\small
+\begin{verbatim}
 #define _FF_GROMACS
 #define _FF_GROMACS1
 
