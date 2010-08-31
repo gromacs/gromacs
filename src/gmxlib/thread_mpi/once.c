@@ -84,7 +84,7 @@ int tMPI_Once(tMPI_Comm comm, void (*function)(void*), void *param,
     if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
                                          If it is a later number, we can't 
                                          have been the first to arrive here. */
-        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs)==syncs)
+        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs))
     {
         /* we're the first! */
         function(param);
@@ -124,7 +124,7 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
                                          Calculating the difference instead
                                          of comparing directly avoids ABA 
                                          problems. */
-        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs)==syncs)
+        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs))
     {
         /* we're the first! */
         ret=function(param);

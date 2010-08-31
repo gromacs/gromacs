@@ -43,6 +43,7 @@ files.
  */
 
 
+/* this file is not used any more. gcc intrinsics take care of it */
 
 typedef struct tMPI_Atomic
 {
@@ -142,11 +143,11 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
                             "m" (a->value)
                           : "cc", "memory");
     
-    return prev;
+    return prev==oldval;
 }
 
 
-static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
                                         void *newval)
 {
     void *prev;
@@ -176,7 +177,7 @@ static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
                             "m" (a->value)
                           : "cc", "memory");
 #endif
-    return prev;
+    return prev==oldval;
 }
 
 static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)

@@ -54,7 +54,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, volatile int i)
 
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
-    return __sync_val_compare_and_swap( &(a->value), oldval, newval);
+    return __sync_bool_compare_and_swap( &(a->value), oldval, newval);
 }
 
 
@@ -87,19 +87,18 @@ static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 
 
 
-static inline volatile void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, 
-                                                     void *oldval, 
-                                                     void *newval)
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval, 
+                                      void *newval)
 {
 #if !defined(__INTEL_COMPILER)
-    return __sync_val_compare_and_swap( &(a->value), oldval, newval);
+    return __sync_bool_compare_and_swap( &(a->value), oldval, newval);
 #else
     /* the intel compilers need integer type arguments for compare_and_swap.
         on the platforms supported by icc, size_t is always the size of
         a pointer. */
-    return (volatile void*)__sync_val_compare_and_swap( (size_t*)&(a->value), 
-                                                        (size_t)oldval, 
-                                                        (size_t)newval);
+    return (__sync_bool_compare_and_swap( (size_t*)&(a->value), 
+                                          (size_t)oldval, 
+                                          (size_t)newval) );
 #endif
 }
 
