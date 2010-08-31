@@ -149,14 +149,14 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
                     /* for the first iteration, the inputs are in the 
                        sendbuf*/
                     a=sendbuf;
-                    b=tMPI_Atomic_ptr_get(&(comm->reduce_sendbuf[nbr]));
+                    b=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_sendbuf[nbr]));
                 }
                 else
                 {
                     /* after the first operation, they're already in 
                        the recvbuf */
                     a=recvbuf;
-                    b=tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[nbr]));
+                    b=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[nbr]));
                 }
                 /* here we check for overlapping buffers */
                 if (a==b)
@@ -304,7 +304,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
 #endif
     /* distribute rootbuf */
-    rootbuf=tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[0]));
+    rootbuf=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[0]));
 
     /* and now we just copy things back. We know that the root thread 
        arrives last, so there's no point in using tMPI_Scatter with 
