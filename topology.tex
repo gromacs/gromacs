@@ -978,6 +978,39 @@ Add additional bonded parameters. The format is identical to that used
 in the {\tt *.rtp} file, see~\ssecref{rtp}.
 \end{itemize}
 
+\subsection{Virtual site database}
+Since we cannot rely on the positions of hydrogens in input files, we need a special
+input file to decide the geometries and parameters with which to add virtual site
+hydrogens. For more complex virtual site constructs (e.g. when entire aromatic side chains
+are made rigid) we also need information about the equilibrium bond lengths and angles
+for all atoms in the side chain. This information is specified in the \verb+.vsd+ file for each force 
+field. Just as for the termini, there is one such file for each class of residues in 
+the \verb+.rtp+ file. 
+
+The virtual site database is not really a very simple list of information. The first couple of sections
+specify which mass centers (typically called MCH$_3$/MNH$_3$) to use for CH$_3$, NH$_3$, 
+and NH$_2$ groups. Depending on the 
+equilibrium bond lengths and angles between the hydrogens and heavy atoms we need to apply
+slightly different constraint distances between these mass centers. Note that we do {\em not} have to
+specify the actual parameters (that is automatic), just the type of mass center to use. To accomplish this,
+there are three sections names \verb+[ CH3 ]+, \verb+[ NH3 ]+, and \verb+[ NH2 ]+. For each of these we
+expect three columns. The first column is the atom type bound to the 2/3 hydrogens, the second column
+is the next heavy atom type which this is bound, and the third column the type of mass center to use.
+As a special case, in the  \verb+[ NH2 ]+ section it is also possible to specify \verb+planar+ in the second
+column, which will use a different construction without mass center. There are currently different opinions
+in some force fields whether an NH$_2$ group should be planar or not, but we try hard to stick to the
+default equilibrium parameters of the force field.
+
+The second part of the virtual site database contains explicit equilibrium bond lengths and angles
+for pairs/triplets of atoms in aromatic side chains. These entries are currently read by specific routines
+in the virtual site generation code, so if you would like to extent it e.g.\ to nucleic acids you would also
+need to write new code there. These sections are named after the short amino acid names
+(\verb+[ PHE ]+, \verb+[ TYR ]+, \verb+[ TRP ]+, \verb+[ HID ]+, \verb+[ HIE ]+, \verb+[ HIP ]+), and simply
+contain 2 or 3 columns with atom names, followed by a number specifying the bond (in nm) or angle
+(in degrees). Note that these are approximations of the equilibrated geometry for the entire molecule, 
+which might not be identical to the equilibrium value for a single bond/angle if the molecule is strained.
+
+
 \section{File formats}
 \subsection{\swapindex{Topology}{file}}
 \label{subsec:topfile}
@@ -1764,6 +1797,8 @@ the same as the \gromosv{87} file (for {\gromos} users: when used with
 {\tt ntx=7}).  The only difference is the box for which {\gromacs} uses a
 tensor, not a vector.
 
+
+
 \section{Force-field organization \index{force-field organization}}
 \label{sec:fforganization}
 
@@ -1778,29 +1813,26 @@ is being called, in case you have made modifications in one location or another.
 The force fields included with {\gromacs} are:
 
 {\small
-\begin{verbatim}
-Select the Force Field:
-From '/usr/local/gromacs/share/gromacs/top': 
- 1: AMBER03 force field (Duan et al., J. Comp. Chem. 24, 1999-2012, 2003) 
- 2: AMBER94 force field (Cornell et al., JACS 117, 5179-5197, 1995) 
- 3: AMBER96 force field (Kollman et al., Acc. Chem. Res. 29, 461-469, 1996) 
- 4: AMBER99 force field (Wang et al., J. Comp. Chem. 21, 1049-1074, 2000) 
- 5: AMBER99SB force field (Hornak et al., Proteins 65, 712-725, 2006) 
- 6: AMBER99SB-ILDN force field (Lindorff-Larsen et al., Proteins 78, 1950-58, 2010) 
- 7: AMBERGS force field (Garcia & Sanbonmatsu, PNAS 99, 2782-2787, 2002) 
- 8: CHARMM27 all-atom force field (with CMAP) - version 2.0beta 
- 9: GROMOS96 43a1 force field 
-10: GROMOS96 43a2 force field (improved alkane dihedrals) 
-11: GROMOS96 45a3 force field (Schuler JCC 2001 22 1205) 
-12: GROMOS96 53a5 force field (JCC 2004 vol 25 pag 1656) 
-13: GROMOS96 53a6 force field (JCC 2004 vol 25 pag 1656) 
-14: OPLS-AA/L all-atom force field (2001 aminoacid dihedrals) 
-15: [DEPRECATED] Encad all-atom force field, using full solvent charges 
-16: [DEPRECATED] Encad all-atom force field, using scaled-down vacuum charges 
-17: [DEPRECATED] Gromacs force field (see manual) 
-18: [DEPRECATED] Gromacs force field with hydrogens for NMR 
-\end{verbatim}}
-
+\begin{itemize}
+ \item AMBER03 force field (Duan et al., J. Comp. Chem. 24, 1999-2012, 2003) 
+ \item AMBER94 force field (Cornell et al., JACS 117, 5179-5197, 1995) 
+ \item AMBER96 force field (Kollman et al., Acc. Chem. Res. 29, 461-469, 1996) 
+ \item AMBER99 force field (Wang et al., J. Comp. Chem. 21, 1049-1074, 2000) 
+ \item AMBER99SB force field (Hornak et al., Proteins 65, 712-725, 2006) 
+ \item AMBER99SB-ILDN force field (Lindorff-Larsen et al., Proteins 78, 1950-58, 2010) 
+ \item AMBERGS force field (Garcia \& Sanbonmatsu, PNAS 99, 2782-2787, 2002) 
+ \item CHARMM27 all-atom force field (with CMAP) 
+ \item GROMOS96 43a1 force field 
+ \item GROMOS96 43a2 force field (improved alkane dihedrals) 
+ \item GROMOS96 45a3 force field (Schuler JCC 2001 22 1205) 
+ \item GROMOS96 53a5 force field (JCC 2004 vol 25 pag 1656) 
+ \item GROMOS96 53a6 force field (JCC 2004 vol 25 pag 1656) 
+ \item OPLS-AA/L all-atom force field (2001 aminoacid dihedrals) 
+\end{itemize}} 
+ 
+ There are also some additional deprecated force fields listed in the selection from
+ pdb2gmx, but we do not currently recommend that you use those for new simulations.
+ 
 A force field is included at the beginning of a topology file with an
 {\tt \#include} statement followed by {\tt <name>.ff/forcefield.itp}.
 This statement includes the force field file,
