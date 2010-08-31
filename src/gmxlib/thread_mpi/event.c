@@ -67,6 +67,7 @@ int tMPI_Event_wait(tMPI_Event *ev)
     /* for most OSes yielding waits result in much better performance 
        (by an order of magnitude) than using the OS-provided wait functions 
        such as pthread_cond_wait(). That's why we do a busy-wait loop here.*/
+    tMPI_Atomic_memory_barrier(); 
     while( (tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync)) <= 0 )
     { 
         tMPI_Atomic_memory_barrier(); 
