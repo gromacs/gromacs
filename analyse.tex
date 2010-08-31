@@ -352,7 +352,7 @@ autocorrelation function as~\cite{Spoel97a}:
 C(t)    ~=~     \left\langle \cos(\theta(\tau)-\theta(\tau+t))\right\rangle_{\tau}
 \label{eqn:coenk}
 \eeq
-Note that this is not a  product of two functions 
+{\bf Note} that this is not a  product of two functions 
 as is generally used for correlation
 functions, but it may be rewritten as the sum of two products:
 \beq
@@ -650,7 +650,7 @@ the second resembles a full cosine, you might be filtering noise (see below).
 A good way to check the relevance of the first few principal
 modes is to calculate the overlap of the sampling between
 the first and second half of the simulation.
-Note that this can only be done when the same reference structure is
+{\bf Note} that this can only be done when the same reference structure is
 used for the two halves.
 
 A good measure for the overlap has been defined in~\cite{Hess2002b}.
@@ -833,13 +833,16 @@ Index groups are output containing the analyzed groups, all
 donor-hydrogen atom pairs and acceptor atoms in these groups,
 donor-hydrogen-acceptor triplets involved in hydrogen bonds between
 the analyzed groups and all solvent atoms involved in insertion.
-\item
-Solvent insertion into H-bonds can be analyzed, see
-\figref{insert}. In this case an additional group identifying
-the solvent must be selected. The occurrence of insertion will be
-indicated in the existence map. Note that insertion into and existence
-of a specific H-bond can occur simultaneously and will also be
-indicated as such in the existence map.
+
+% The -ins option appears to have been removed during the course of version 4.5 development
+% \item
+% Solvent insertion into H-bonds can be analyzed, see
+% \figref{insert}. In this case an additional group identifying
+% the solvent must be selected. The occurrence of insertion will be
+% indicated in the existence map. {\bf Note} that insertion into and existence
+% of a specific H-bond can occur simultaneously and will also be
+% indicated as such in the existence map.
+
 \end{itemize}
 
 %\ifthenelse{\equal{\gmxlite}{1}}{}{

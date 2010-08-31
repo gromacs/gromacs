@@ -64,7 +64,7 @@ into a protein, this entropic term indeed contributes to the work to
 get the substrate into the protein. But when calculating a PMF
 between two solutes in a solvent, for the purpose of simulating
 without solvent, the entropic contribution should be removed.
-Note that this term can be significant; when at 300K the distance is halved,
+{\bf Note} that this term can be significant; when at 300K the distance is halved,
 the contribution is 3.5 kJ~mol$^{-1}$.
 
 \section{Non-equilibrium pulling}
@@ -321,7 +321,7 @@ somewhat elaborate virtual site constructions.
 All modifications described in this section can be performed using the
 {\gromacs} topology building tool {\tt \normindex{pdb2gmx}}. Separate
 options exist to increase hydrogen masses, virtualize all hydrogen atoms,
-or also virtualize all aromatic residues. Note that when all hydrogen
+or also virtualize all aromatic residues. {\bf Note} that when all hydrogen
 atoms are virtualized, those inside the aromatic residues will be
 virtualized as well, {\ie} hydrogens in the aromatic residues are treated
 differently depending on the treatment of the aromatic residues.
@@ -621,7 +621,7 @@ be smaller than the single precision accuracy.
 {\gromacs} stores $A_0$, $A_1$, $A_2$ and $A_3$.
 The force routines get a table with these four parameters and
 a scaling factor $s$ that is equal to the number of points per nm.
-(Note that $h$ is $s^{-1}$).
+({\bf Note} that $h$ is $s^{-1}$).
 The algorithm goes a little something like this:
 \begin{enumerate}
 \item	Calculate distance vector (\ve{r}$_{ij}$) and distance r$_{ij}$
@@ -633,7 +633,7 @@ The algorithm goes a little something like this:
 \item	Calculate the vector force \ve{F} by multiplying $f$ with \ve{r}$_{ij}$
 \end{enumerate}
 
-Note that table look-up is significantly {\em
+{\bf Note} that table look-up is significantly {\em
 slower} than computation of the most simple Lennard-Jones and Coulomb
 interaction. However, it is much faster than the shifted Coulomb
 function used in conjunction with the PPPM method. Finally, it is much
@@ -648,7 +648,7 @@ The potential function should be according to the following equation
 \beq
 V(r_{ij}) ~=~ \frac{q_i q_j}{4 \pi\epsilon_0} f(r_{ij}) + C_6 \,g(r_{ij}) + C_{12} \,h(r_{ij})
 \eeq
-where $f$, $g$, and $h$ are user defined functions. Note that if $g(r)$ represents a
+where $f$, $g$, and $h$ are user defined functions. {\bf Note} that if $g(r)$ represents a
 normal dispersion interaction, $g(r)$ should be $<$ 0. C$_6$, C$_{12}$
 and the charges are read from the topology. Also note that combination
 rules are only supported for Lennard-Jones and Buckingham, and that
@@ -812,7 +812,7 @@ In addition, the bond itself is replaced by a constraint:
 QMatom MMatom 2 0.153
 \end{verbatim}}
 
-Note that, because in our system the QM/MM bond is a carbon-carbon
+{\bf Note} that, because in our system the QM/MM bond is a carbon-carbon
 bond (0.153 nm), we use a constraint length of 0.153 nm, and dummy
 position of 0.65. The latter is the ratio between the ideal C-H
 bond length and the ideal C-C bond length. With this ratio, the link
@@ -1043,7 +1043,7 @@ Summary of prerequisites:
     \item Download and unpack the binary package for the respective OS and architecture. 
     Copy the content of the package to your normal {\gromacs} installation directory (or to a custom location).
     
-    Note that the distributed {\gromacs}-GPU packages do not contain the entire set of 
+    {\bf Note} that the distributed {\gromacs}-GPU packages do not contain the entire set of 
     tools and utilities included in a full {\gromacs} installation. Therefore, it is recommended to  
     have a $\geq$v4.5 standard {\gromacs} installation along the GPU accelerated one.
 
@@ -1079,7 +1079,7 @@ software is required:
     \item CUDA toolkit 3.1
     \item OpenMM-2.0 header files
 \end{itemize}
-Note, that the current {\gromacs}-GPU release is compatible with OpenMM  
+{\bf Note} that the current {\gromacs}-GPU release is compatible with OpenMM  
 version 2.0. While future versions might be compatible, using the officially-supported 
 and tested OpenMM version is strongly encouraged.
 OpenMM binaries as well as source code can be obtained from the 

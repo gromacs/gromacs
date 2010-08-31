@@ -499,7 +499,7 @@ have moved more than half the buffer size from the center of geometry
 of the charge group they belong to (see \secref{chargegroup})
 as determined at the previous neighbor search.
 This option guarantees that there are no cut-off artifacts.
-Note that for larger systems this comes at a high computational cost,
+{\bf Note} that for larger systems this comes at a high computational cost,
 since the neighbor list update frequency will be determined
 by just one or two particles moving slightly beyond the half buffer length
 (which not even necessarily implies that the neighbor list is invalid),
@@ -912,7 +912,7 @@ they are mainly affected by translation of water molecules, not rotation.
 \centerline{\includegraphics[width=12cm]{plots/drift_all}}
 \caption{Energy drift per degree of freedom in SPC/E water
 with twin-range cut-offs
-for reaction field (left) and Lennard Jones interaction (right)
+for reaction field (left) and Lennard-Jones interaction (right)
 as a function of the long-range time step length for the irreversible
 ``\gromos'' scheme and a reversible Trotter scheme.}
 \label{fig:twinrangeener}
@@ -2268,7 +2268,7 @@ depends only on the momenta, and can be separately integrated and in
 fact removed from the equations. When masses do not change, there is
 no contribution from the kinetic energy at all; otherwise the
 integrated contribution to the free energy is $-\frac{3}{2} k_BT \ln
-(m\sB/m\sA)$. Note that this is only true in the absence of constraints.
+(m\sB/m\sA)$. {\bf Note} that this is only true in the absence of constraints.
   
 {\gromacs} offers the possibility to integrate eq.~\ref{eq:delA} or
 eq. \ref{eq:delG} in one simulation over the full range from A to
@@ -2518,7 +2518,7 @@ of a distance between following, staggered boundaries of cells.
 By default, {\tt mdrun} automatically turns on the dynamic load
 balancing during a simulation when the total performance loss
 due to the force calculation imbalance is 5\% or more.
-Note that the reported force load imbalance numbers might be higher,
+{\bf Note} that the reported force load imbalance numbers might be higher,
 since the force calculation is only part of work that needs to be done
 during an integration step.
 The load imbalance is reported in the log file at log output steps
@@ -2681,7 +2681,7 @@ For changing the electrostatics settings it is useful to know
 the accuracy of the electrostatics remains nearly constant
 when the Coulomb cut-off and the PME grid spacing are scaled
 by the same factor.
-Note that it is usually better to overestimate than to underestimate
+{\bf Note} that it is usually better to overestimate than to underestimate
 the number of PME nodes, since the number of PME nodes is smaller
 than the number of PP nodes, which leads to less total waiting time.
 

@@ -1322,7 +1322,7 @@ MSD(t) = \left(\sum_{i=1}^N w_i\right)^{-1} \sum_{i=1}^N w_i (\delta_i^c (t) -\d
 To properly combine different types of measurements, the unit of $w_i$ should
 be such that all terms are dimensionless. This means the unit of $w_i$
 is the unit of $\delta_i$ to the power $-2$.
-Note that scaling all $w_i$ with a constant factor does not influence
+{\bf Note} that scaling all $w_i$ with a constant factor does not influence
 the order tensor.
 
 \subsubsection{Time averaging}
@@ -1469,7 +1469,7 @@ force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
 	coordinates and/or velocities.
 \item[{\tt orire\us{}fc}: force constant $k$ for orientation restraints.] 
 	The unit of $k$ is kJ mol$^{-1}$.
-	Note that the force constant for a restraint is this force constant
+	{\bf Note} that the force constant for a restraint is this force constant
 	times the weight of the restraint.
 	When set to zero one obtain the calculated orientation without
 	affecting the simulation.
@@ -1518,7 +1518,7 @@ be too strong. The potential between two shell particles $i$ and $j$ is:
 \beq
 V_{thole} ~=~ \frac{q_i q_j}{r_{ij}}\left[1-\left(1+\frac{\rbij}{2}\right){\rm exp}^{-\rbij}\right]
 \eeq
-Note that there is a sign error in Equation~1 of Noskov {\em et al.}~\cite{Noskov2005a}:
+{\bf Note} that there is a sign error in Equation~1 of Noskov {\em et al.}~\cite{Noskov2005a}:
 \beq
 \rbij ~=~ a\frac{r_{ij}}{(\alpha_i \alpha_j)^{1/6}}
 \eeq
@@ -1962,7 +1962,7 @@ shown as black circles, the virtual sites in gray.}
 
 There are six ways to construct virtual sites from surrounding atoms in
 {\gromacs}, which we classify by the number of constructing
-atoms. Note that all site types mentioned can be constructed from
+atoms. {\bf Note} that all site types mentioned can be constructed from
 types 3fd (normalized, in-plane) and 3out (non-normalized, out of
 plane). However, the amount of computation involved increases sharply
 along this list, so we strongly recommended using the first adequate
@@ -2038,7 +2038,7 @@ constructed from ``particles'' that are simpler virtual sites.
         In this case the virtual site is in the plane of the other three
         particles at a distance of $|d|$ from $i$ at an angle of
         $\alpha$ with $\rvij$. Atom $k$ defines the plane and the
-        direction of the angle. Note that in this case $b$ and
+        direction of the angle. {\bf Note} that in this case $b$ and
         $\alpha$ must be specified, instead of $a$ and $b$ (see also
         \secref{vsitetop}). The force on particles $i$, $j$ and $k$
         due to the force on the virtual site can be computed as (with
@@ -2112,7 +2112,7 @@ to introduce a more elaborate construction:
 
 \begin{figure}
 \centerline{\includegraphics[width=5cm]{plots/vsite_4fdn}}
-\caption {The new 4fdn virtual site construction which is stable even when all constructing
+\caption {The new 4fdn virtual site construction, which is stable even when all constructing
 atoms are in the same plane.}
 \label{fig:vsite_4fdn}
 \end{figure}
@@ -2126,7 +2126,7 @@ atoms are in the same plane.}
 \end{eqnarray}
 
         In this case the virtual site is at a distance of $|c|$ from $i$, while $a$ and $b$ are 
-        parameters. Note that the vectors $\mathbf{r}_{ik}$ and $\mathbf{r}_{ij}$ are not normalized
+        parameters. {\bf Note} that the vectors $\mathbf{r}_{ik}$ and $\mathbf{r}_{ij}$ are not normalized
         to save floating-point operations.
         The force on particles $i$, $j$, $k$ and $l$ due to the force 
         on the virtual site are computed through chain rule derivatives
@@ -2136,8 +2136,8 @@ atoms are in the same plane.}
         look at the source code in \verb+vsite.c+. Fortunately, this vsite type is normally
         only used for chiral centers such as $C_{\alpha}$ atoms in proteins.
       
-The new 4fdn construct is identified with a 'type' value of 2 in the topology. The earlier 4fd
-type is still supported internally ('type' value 1), but it should not be used for
+The new 4fdn construct is identified with a `type' value of 2 in the topology. The earlier 4fd
+type is still supported internally (`type' value 1), but it should not be used for
 new simulations. All current Gromacs tools will automatically generate type 4fdn instead.
 
 
@@ -2165,7 +2165,7 @@ only the mass of the A-state is used for the weight
 \section{Dispersion correction}
 \index{dispersion correction}
 In this section, we derive long-range corrections due to the use of a
-cut-off for Lennard Jones or Buckingham interactions.
+cut-off for Lennard-Jones or Buckingham interactions.
 We assume that the cut-off is
 so long that the repulsion term can safely be neglected, and therefore
 only the dispersion term is taken into account. Due to the nature of
@@ -2637,7 +2637,7 @@ BOX (optional)
 
 \end{itemize}
 See the \gromosv{96} manual~\cite{gromos96} for a complete description
-of the blocks. Note that all {\gromacs} programs can read compressed
+of the blocks. {\bf Note} that all {\gromacs} programs can read compressed
 (.Z) or gzipped (.gz) files.
 
 \subsection{OPLS/AA\index{OPLS/AA force field}}
