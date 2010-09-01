@@ -804,6 +804,7 @@ do_listed_vdw_q(int ftype,int nbonds,
     int       icoul,ivdw;
     bool      bMolPBC,bFreeEnergy;
     bool      bCG; /* AdResS*/
+    real      wf14[2]={0,0}; /* AdResS*/
     
 #if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_t mtx;
@@ -873,7 +874,7 @@ do_listed_vdw_q(int ftype,int nbonds,
         ivdw = 1;
     }
     
-    
+    bCG = FALSE; /*Adres*/
     /* We don't do SSE or altivec here, due to large overhead for 4-fold 
      * unrolling on short lists 
      */
@@ -887,12 +888,13 @@ do_listed_vdw_q(int ftype,int nbonds,
         gid   = GID(md->cENER[ai],md->cENER[aj],md->nenergrp);
 
         if (!fr->adress_type == eAdressOff) {
-            if (fr->adress_group_explicit[ai] != fr->adress_group_explicit[aj]){
+            if (fr->adress_group_explicit[md->cENER[ai]] != fr->adress_group_explicit[md->cENER[aj]]){
                 //exclude cg-ex interaction
                 continue;
-            }
-            bCG = FALSE;
-            bCG = !fr->adress_group_explicit[ai];
+            }           
+            bCG = !fr->adress_group_explicit[md->cENER[ai]];
+            wf14[0] = md->wf[ai];
+            wf14[1] = md->wf[aj];
         }
         switch (ftype) {
         case F_LJ14:
@@ -1056,8 +1058,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                   NULL);
                 } else {
                     if (bCG) {
-                        nb_kernel330_adress_cg
-                                (&i1,
+                        nb_kernel330_adress_cg(&i1,
                                 &i0,
                                 j_index,
                                 &i1,
@@ -1088,10 +1089,9 @@ do_listed_vdw_q(int ftype,int nbonds,
                                 &outeriter,
                                 &inneriter,
                                 fr->adress_ex_forcecap,
-                                md->wf);
+                                wf14);
                     } else {
-                        nb_kernel330_adress_ex
-                                (&i1,
+                        nb_kernel330_adress_ex(&i1,
                                 &i0,
                                 j_index,
                                 &i1,
@@ -1122,7 +1122,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                                 &outeriter,
                                 &inneriter,
                                 fr->adress_ex_forcecap,
-                                md->wf);
+                                wf14);
                     }
 
                 }
