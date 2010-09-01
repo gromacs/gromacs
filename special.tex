@@ -956,7 +956,7 @@ they often do not translate very well onto the streaming architectures.
 Realistic expectations about the achievable speed-up from tests with GTX280:
 for small protein systems in implicit solvent using all-vs-all kernels the acceleration
 can be as high as 20 times, but in most other setups involving cutoffs and PME the
-acceleration is usually only about 5 times relative to a 3GHz CPU.
+acceleration is usually only about 4 times relative to a 3GHz CPU.
 \end{itemize}
 
 \subsection{Supported features}
@@ -967,18 +967,23 @@ OpenMM implements only the velocity-Verlet algorithm for MD simulations.
 The option {\tt md} is accepted, but keep in mind that the actual algorithm is not leap-frog.
 Thus all three options {\tt md}, {\tt md-vv}, and {\tt md-vv-avek} are equivalent.
 Similarly, options {\tt sd} and {\tt sd1} are also equivalent.
-\item \textbf{Long-range interactions:} {\tt Reaction-Field}, {\tt Ewald}, {\tt PME}.
-No-cutoff, {\ie} {\tt rcoulomb=0} and {\tt rvdw=0}, is also supported.\\
-For Ewald summation only 3D geometry is supported, and dipole correction is not.
+\item \textbf{Long-range interactions:} {\tt Reaction-Field}, {\tt Ewald}, {\tt PME}, {\tt No-cutoff}
+{\tt Cut-off}.
+\begin{itemize}
+\item for No-cutoff, set {\tt rcoulomb=0} and {\tt rvdw=0}.
+\item for Ewald summation only 3D geometry is supported, and dipole correction is not.
+\item the cut-off method is supported only for implicit solvent simulations.
+\end{itemize}
 \item \textbf{Temperature control:} Supported only with the {\tt sd/sd1}, {\tt bd},
 {\tt md/md-vv/md-vv-avek} integrators.
 OpenMM implements only the Andersen thermostat. All values for {\tt tcoupl} are
 thus accepted and equivalent to {\tt andersen}. Multiple temperature coupling groups
-are not supported, only {\tt tc-grps=System} will work. Remember that for heterogeneous
-systems such as membrane proteins, coupling of the whole system will likely lead to
-different temperatures in the different phases - hot solvent and cold solute.
-\item \textbf{Force fields:} Supported FF are Amber, CHARMM, OPLS-AA. {\gromos} is not supported.
-\item \textbf{Implicit solvent:} Supported only with {\tt reaction-field} electrostatics.
+are not supported, only {\tt tc-grps=System} will work.
+\item \textbf{Force fields:} Supported FF are Amber, CHARMM. {\gromos} and OPLS-AA are not supported.
+\begin{itemize}
+\item CMAP dihedrals in CHARMM are not supported, so use the {\tt -nocmap} option with pdb2gmx.
+\end{itemize}
+\item \textbf{Implicit solvent:} Supported only with {\tt Reaction-Field} electrostatics.
 The only supported algorithm for GB is OBC, and the default {\gromacs} values for the scale factors
 are hard coded in OpenMM, {\ie} {\tt obc\us{}alpha=1}, {\tt obc\us{}beta=0.8} and {\tt obc\us{}gamma=4.85}.
 \item \textbf{Constraints:} Constraints in OpenMM are done by a combination of SHAKE,
