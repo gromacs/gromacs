@@ -10,17 +10,17 @@ AM_CPPFLAGS= -I$(top_srcdir)/include
 noinst_LTLIBRARIES = libthread_mpi.la
 
 # again, we assume that we're using pthreads if we're using autotools.
-libthread_mpi_la_SOURCES = alltoall.h      lock.c          reduce_fast.c \
-			   barrier.c       scatter.h 	   bcast.h \
+libthread_mpi_la_SOURCES = alltoall.c      lock.c          reduce_fast.c \
+			   barrier.c       scatter.c 	   bcast.c \
 		   	   once.c          settings.h  	   collective.c \
-			   p2p.c           \
-			   comm.c          p2p_protocol.h  tmpi_init.c \
-			   errhandler.c    p2p_send_recv.h tmpi_ops.h \
-			   event.c         p2p_wait.h      topology.c \
-			   gather.h        profile.c       type.c \
+			   p2p.h	   collective.h \
+			   comm.c          p2p_protocol.c  tmpi_init.c \
+			   errhandler.c    p2p_send_recv.c tmpi_ops.h \
+			   event.c         p2p_wait.c      topology.c \
+			   gather.c        profile.c       type.c \
 			   group.c         profile.h       hwinfo.c \
-			   pthreads.c      impl.h          pthreads.h\
-			   list.c          reduce.h
+			   pthreads.c      impl.h          pthreads.h \
+			   list.c          reduce.c
 
 CLEANFILES     = *.la *~ \\\#*
 

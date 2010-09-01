@@ -55,51 +55,8 @@ files.
 #include <string.h>
 
 #include "impl.h"
+#include "collective.h"
 
-
-/* get a pointer the next coll_env once it's ready */
-static struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *synct);
-
-/* post the availability of data in a cev. 
-    cev         = the collective comm environment
-    myrank      = my rank
-    index       = the buffer index
-    tag         = the tag
-    datatype    = the datatype
-    busize      = the buffer size
-    buf         = the buffer to xfer
-    n_remaining = the number of remaining threads that need to transfer
-    synct       = the multicast sync number 
-    dest        = -1 for all theads, or a specific rank number.
-*/
-static void tMPI_Post_multi(struct coll_env *cev, int myrank, int index, 
-                            int tag, tMPI_Datatype datatype, 
-                            size_t bufsize, void *buf, int n_remaining, 
-                            int synct, int dest);
-
-/* transfer data from cev->met[rank] to recvbuf */
-static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
-                           int index, int expected_tag, tMPI_Datatype recvtype,
-                           size_t recvsize, void *recvbuf, int *ret);
-
-/* do a root transfer (from root send buffer to root recv buffer) */
-static void tMPI_Coll_root_xfer(tMPI_Comm comm, 
-                                tMPI_Datatype sendtype, tMPI_Datatype recvtype, 
-                                size_t sendsize, size_t recvsize, 
-                                void* sendbuf, void* recvbuf, int *ret);
-
-/* wait for other processes to copy data from my cev */
-static void tMPI_Wait_for_others(struct coll_env *cev, int myrank);
-/* wait for data to become available from a specific rank */
-static void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
-                               int myrank);
-                               /*int rank, int myrank, int synct);*/
-
-/* run a single binary reduce operation on src_a and src_b, producing dest. 
-      dest and src_a may be identical */
-static int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
-                              tMPI_Datatype datatype, int count, tMPI_Op op,
-                              tMPI_Comm comm);
 
 
 
@@ -177,7 +134,7 @@ void tMPI_Copy_buffer_list_return(struct copy_buffer_list *cbl,
 
 
 
-static void tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
+void tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
 {
     tMPI_Atomic_set(&(met->current_sync), 0);
     tMPI_Atomic_set(&(met->n_remaining), 0);
@@ -194,7 +151,7 @@ static void tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
 }
 
 
-static void tMPI_Coll_envt_destroy(struct coll_env_thread *met)
+void tMPI_Coll_envt_destroy(struct coll_env_thread *met)
 {
     free( (void*)met->buf );
     free( (void*)met->bufsize );
@@ -266,7 +223,7 @@ void tMPI_Coll_sync_destroy(struct coll_sync *csync)
 
 
 /* get a pointer the next coll_env once it's ready. */
-static struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *counter)
+struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *counter)
 {
     struct coll_sync *csync=&(comm->csync[myrank]);
     struct coll_env *cev;
@@ -305,9 +262,9 @@ static struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *counter)
 
 
 
-static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
-                           int index, int expected_tag, tMPI_Datatype recvtype, 
-                           size_t recvsize, void *recvbuf, int *ret)
+void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
+                    int index, int expected_tag, tMPI_Datatype recvtype, 
+                    size_t recvsize, void *recvbuf, int *ret)
 {
     size_t sendsize=cev->met[rank].bufsize[index];
 
@@ -410,10 +367,10 @@ static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
     }
 }
 
-static void tMPI_Coll_root_xfer(tMPI_Comm comm, tMPI_Datatype sendtype, 
-                                tMPI_Datatype recvtype, 
-                                size_t sendsize, size_t recvsize, 
-                                void* sendbuf, void* recvbuf, int *ret)
+void tMPI_Coll_root_xfer(tMPI_Comm comm, tMPI_Datatype sendtype, 
+                         tMPI_Datatype recvtype, 
+                         size_t sendsize, size_t recvsize, 
+                         void* sendbuf, void* recvbuf, int *ret)
 {
     /* do root transfer */
     if (recvsize < sendsize)
@@ -435,9 +392,9 @@ static void tMPI_Coll_root_xfer(tMPI_Comm comm, tMPI_Datatype sendtype,
     memcpy(recvbuf, sendbuf, sendsize);
 }
 
-static void tMPI_Post_multi(struct coll_env *cev, int myrank, int index, 
-                            int tag, tMPI_Datatype datatype, size_t bufsize, 
-                            void *buf, int n_remaining, int synct, int dest)
+void tMPI_Post_multi(struct coll_env *cev, int myrank, int index, 
+                     int tag, tMPI_Datatype datatype, size_t bufsize, 
+                     void *buf, int n_remaining, int synct, int dest)
 {
     int i;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
@@ -502,7 +459,7 @@ static void tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
 }
 
 
-static void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
+void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
 {
 #if defined(TMPI_PROFILE) 
     struct tmpi_thread *cur=tMPI_Get_current();
@@ -546,9 +503,8 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
 #endif
 }
 
-static void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
-                               int myrank)
-                               /*int rank, int myrank, int synct)*/
+void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
+                        int myrank)
 {
 #if defined(TMPI_PROFILE) 
     tMPI_Profile_wait_start(cur);
@@ -601,13 +557,4 @@ int tMPI_Barrier(tMPI_Comm comm)
 
 
 
-
-/* The actual collective functions are #included, so that the static
-   functions above are available to them and can get inlined if the
-   compiler deems it appropriate. */
-#include "bcast.h"
-#include "scatter.h"
-#include "gather.h"
-#include "alltoall.h"
-#include "reduce.h"
 
