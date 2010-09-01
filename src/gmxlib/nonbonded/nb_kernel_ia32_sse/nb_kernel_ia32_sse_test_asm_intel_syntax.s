@@ -48,10 +48,11 @@
 .globl _nb_kernel_ia32_sse_test_asm
 nb_kernel_ia32_sse_test_asm:
 _nb_kernel_ia32_sse_test_asm:
-	emms
-	xorps xmm0, xmm0
-	emms
-	ret
+        emms
+        xorpd xmm0, xmm0
+        emms
+        ret
+
 
 	
 	

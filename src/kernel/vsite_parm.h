@@ -40,14 +40,14 @@
 #include "grompp.h"
 #include "gpp_atomtype.h"
 
-extern int set_vsites(bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
+extern int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
 		      t_params plist[]);
 /* set parameters for vritual sites, return number of virtual sites */
 
-extern void set_vsites_ptype(bool bVerbose,  gmx_moltype_t *molt);
+extern void set_vsites_ptype(gmx_bool bVerbose,  gmx_moltype_t *molt);
 /* set ptype to VSite for virtual sites */
 
-extern void clean_vsite_bondeds(t_params *ps, int natoms, bool bRmVSiteBds);
+extern void clean_vsite_bondeds(t_params *ps, int natoms, gmx_bool bRmVSiteBds);
 /* remove all bonded interaction (bonds, angles and diherals) that
    have become obsolete due to virtual site constructions */
 

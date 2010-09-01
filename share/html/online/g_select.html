@@ -1,0 +1,101 @@
+<HTML>
+<HEAD>
+<TITLE>g_select</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_select</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
+Thu 26 Aug 2010</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+<p>
+g_select writes out basic data about dynamic selections.
+It can be used for some simple analyses, or the output can
+be combined with output from other programs and/or external
+analysis programs to calculate more complex things.
+Any combination of the output options is possible, but note
+that <tt>-om</tt> only operates on the first selection.<p>
+With <tt>-os</tt>, calculates the number of positions in each
+selection for each frame. With <tt>-norm</tt>, the output is
+between 0 and 1 and describes the fraction from the maximum
+number of positions (e.g., for selection 'resname RA and x &lt; 5'
+the maximum number of positions is the number of atoms in
+RA residues). With <tt>-cfnorm</tt>, the output is divided
+by the fraction covered by the selection.
+<tt>-norm</tt> and <tt>-cfnorm</tt> can be specified independently
+of one another.<p>
+With <tt>-oc</tt>, the fraction covered by each selection is
+written out as a function of time.<p>
+With <tt>-oi</tt>, the selected atoms/residues/molecules are
+written out as a function of time. In the output, the first
+column contains the frame time, the second contains the number
+of positions, followed by the atom/residue/molecule numbers.
+If more than one selection is specified, the size of the second
+group immediately follows the last number of the first group
+and so on. With <tt>-dump</tt>, the frame time and the number
+of positions is omitted from the output. In this case, only one
+selection can be given.<p>
+With <tt>-on</tt>, the selected atoms are written as a index file
+compatible with <a href="make_<a href="ndx.html">ndx</a>.html">make_<a href="ndx.html">ndx</a></a> and the analyzing tools. Each selection
+is written as a selection group and for dynamic selections a
+group is written for each frame.<p>
+For residue numbers, the output of <tt>-oi</tt> can be controlled
+with <tt>-resnr</tt>: <tt>number</tt> (default) prints the residue
+numbers as they appear in the input file, while <tt>index</tt> prints
+unique numbers assigned to the residues in the order they appear
+in the input file, starting with 1. The former is more intuitive,
+but if the input contains multiple residues with the same number,
+the output can be less useful.<p>
+With <tt>-om</tt>, a mask is printed for the first selection
+as a function of time. Each line in the output corresponds to
+one frame, and contains either 0/1 for each atom/residue/molecule
+possibly selected. 1 stands for the atom/residue/molecule being
+selected for the current frame, 0 for not selected.
+With <tt>-dump</tt>, the frame time is omitted from the output.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-sf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="dat.html">selection.dat</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic data file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-os</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    size.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-oc</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   cfrac.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-oi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="dat.html">   index.dat</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic data file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-om</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="dat.html">    mask.dat</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic data file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-on</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmpbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Make molecules whole for each frame </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use periodic boundary conditions for distance calculation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-select</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Selection string (use 'help' for help) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-selrpos</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>atom</tt> </TD><TD> Selection reference position: <tt>atom</tt>, <tt>res_com</tt>, <tt>res_cog</tt>, <tt>mol_com</tt>, <tt>mol_cog</tt>, <tt>whole_res_com</tt>, <tt>whole_res_cog</tt>, <tt>whole_mol_com</tt>, <tt>whole_mol_cog</tt>, <tt>part_res_com</tt>, <tt>part_res_cog</tt>, <tt>part_mol_com</tt>, <tt>part_mol_cog</tt>, <tt>dyn_res_com</tt>, <tt>dyn_res_cog</tt>, <tt>dyn_mol_com</tt> or <tt>dyn_mol_cog</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-seltype</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>atom</tt> </TD><TD> Default analysis positions: <tt>atom</tt>, <tt>res_com</tt>, <tt>res_cog</tt>, <tt>mol_com</tt>, <tt>mol_cog</tt>, <tt>whole_res_com</tt>, <tt>whole_res_cog</tt>, <tt>whole_mol_com</tt>, <tt>whole_mol_cog</tt>, <tt>part_res_com</tt>, <tt>part_res_cog</tt>, <tt>part_mol_com</tt>, <tt>part_mol_cog</tt>, <tt>dyn_res_com</tt>, <tt>dyn_res_cog</tt>, <tt>dyn_mol_com</tt> or <tt>dyn_mol_cog</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]dump</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do not print the frame time (-om, -oi) or the index size (-oi) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]norm</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Normalize by total number of positions with -os </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]cfnorm</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Normalize by covered fraction with -os </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-resnr</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>number</tt> </TD><TD> Residue number output type: <tt>number</tt> or <tt>index</tt> </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

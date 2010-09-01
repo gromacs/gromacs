@@ -89,6 +89,8 @@
 #include "sighandler.h"
 #include "genborn.h"
 #include "string2.h"
+#include "copyrite.h"
+#include "gmx_membed.h"
 
 #ifdef GMX_THREADS
 #include "tmpi.h"
@@ -111,7 +113,7 @@ typedef struct
 static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
 {
     int  *buf;
-    bool bPos,bEqual;
+    gmx_bool bPos,bEqual;
     int  s,d;
 
     snew(buf,ms->nsim);
@@ -197,7 +199,7 @@ static void init_global_signals(globsig_t *gs,const t_commrec *cr,
 
 
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-                    const output_env_t oenv, bool bVerbose,bool bCompact,
+                    const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
                     int nstglobalcomm,
                     gmx_vsite_t *vsite,gmx_constr_t constr,
                     int stepout,t_inputrec *ir,
@@ -208,6 +210,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
                     gmx_edsam_t ed,t_forcerec *fr,
                     int repl_ex_nst,int repl_ex_seed,
+                    gmx_membed_t *membed,
                     real cpt_period,real max_hours,
                     const char *deviceOptions,
                     unsigned long Flags,
@@ -217,10 +220,10 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0;
-    bool       bSimAnn,
+    gmx_bool       bSimAnn,
     bFirstStep,bStateFromTPX,bLastStep,bStartingFromCpt;
-    bool       bInitStep=TRUE;
-    bool       do_ene,do_log, do_verbose,
+    gmx_bool       bInitStep=TRUE;
+    gmx_bool       do_ene,do_log, do_verbose,
     bX,bV,bF,bCPT;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m;
@@ -243,7 +246,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     gmx_groups_t *groups;
     gmx_ekindata_t *ekind, *ekind_save;
-    bool        bAppend;
+    gmx_bool        bAppend;
     int         a0,a1;
     matrix      lastbox;
     real        reset_counters=0,reset_counters_now=0;

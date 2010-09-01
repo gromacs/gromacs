@@ -88,21 +88,21 @@ static void set_margin(t_atoms *atoms, rvec *x, real *r)
   fprintf(stderr,"box_margin = %g\n",box_margin);
 }
 
-static bool outside_box_minus_margin2(rvec x,matrix box)
+static gmx_bool outside_box_minus_margin2(rvec x,matrix box)
 {
   return ( (x[XX]<2*box_margin) || (x[XX]>box[XX][XX]-2*box_margin) ||
 	   (x[YY]<2*box_margin) || (x[YY]>box[YY][YY]-2*box_margin) ||
 	   (x[ZZ]<2*box_margin) || (x[ZZ]>box[ZZ][ZZ]-2*box_margin) );
 }
 
-static bool outside_box_plus_margin(rvec x,matrix box)
+static gmx_bool outside_box_plus_margin(rvec x,matrix box)
 {
   return ( (x[XX]<-box_margin) || (x[XX]>box[XX][XX]+box_margin) ||
 	   (x[YY]<-box_margin) || (x[YY]>box[YY][YY]+box_margin) ||
 	   (x[ZZ]<-box_margin) || (x[ZZ]>box[ZZ][ZZ]+box_margin) );
 }
 
-static int mark_res(int at, bool *mark, int natoms, t_atom *atom,int *nmark)
+static int mark_res(int at, gmx_bool *mark, int natoms, t_atom *atom,int *nmark)
 {
   int resind;
   
@@ -187,7 +187,7 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,
 
 static t_forcerec *fr=NULL;
 
-void do_nsgrid(FILE *fp,bool bVerbose,
+void do_nsgrid(FILE *fp,gmx_bool bVerbose,
 	       matrix box,rvec x[],t_atoms *atoms,real rlong,
                const output_env_t oenv)
 {
@@ -310,15 +310,15 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     fprintf(stderr,"Successfully made neighbourlist\n");
 }
 
-bool bXor(bool b1,bool b2)
+gmx_bool bXor(gmx_bool b1,gmx_bool b2)
 {
   return (b1 && !b2) || (b2 && !b1);
 }
 
-void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
-	      int ePBC, matrix box, bool bInsert,
+void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
+	      int ePBC, matrix box, gmx_bool bInsert,
 	      t_atoms *atoms_solvt,rvec *x_solvt,rvec *v_solvt,real *r_solvt,
-	      bool bVerbose,real rshell,int max_sol, const output_env_t oenv)
+	      gmx_bool bVerbose,real rshell,int max_sol, const output_env_t oenv)
 {
   t_nblist   *nlist;
   t_atoms    *atoms_all;
@@ -329,7 +329,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
   int        dx0,dx1,dy0,dy1,dz0,dz1;
   int        ntest,nremove,nkeep;
   rvec       dx,xi,xj,xpp,*x_all,*v_all;
-  bool       *remove,*keep;
+  gmx_bool       *remove,*keep;
   int        bSolSol;
 
   natoms_prot  = atoms->nr;

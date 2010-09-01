@@ -103,13 +103,13 @@ struct gmx_ana_nbsearch_t
     int           *excl;
 
     /** Whether to try grid searching. */
-    bool           bTryGrid;
+    gmx_bool           bTryGrid;
     /** Whether grid searching is actually used for the current positions. */
-    bool           bGrid;
+    gmx_bool           bGrid;
     /** Array allocated for storing in-unit-cell reference positions. */
     rvec          *xref_alloc;
     /** FALSE if the box is rectangular. */
-    bool           bTric;
+    gmx_bool           bTric;
     /** Box vectors of a single grid cell. */
     matrix         cellbox;
     /** The reciprocal cell vectors as columns; the inverse of \p cellbox. */
@@ -268,7 +268,7 @@ grid_init_cell_nblist(gmx_ana_nbsearch_t *d, t_pbc *pbc)
  * \param[in]     pbc  Information about the box.
  * \returns  FALSE if grid search is not suitable.
  */
-static bool
+static gmx_bool
 grid_setup_cells(gmx_ana_nbsearch_t *d, t_pbc *pbc)
 {
     real targetsize;
@@ -317,7 +317,7 @@ grid_setup_cells(gmx_ana_nbsearch_t *d, t_pbc *pbc)
  * \param[in]     pbc  Information about the box.
  * \returns  FALSE if grid search is not suitable.
  */
-static bool
+static gmx_bool
 grid_set_box(gmx_ana_nbsearch_t *d, t_pbc *pbc)
 {
     int dd;
@@ -531,7 +531,7 @@ gmx_ana_nbsearch_set_excl(gmx_ana_nbsearch_t *d, int nexcl, int excl[])
 /*! \brief
  * Helper function to check whether a reference point should be excluded.
  */
-static bool
+static gmx_bool
 is_excluded(gmx_ana_nbsearch_t *d, int j)
 {
     if (d->exclind < d->nexcl)
@@ -588,9 +588,9 @@ grid_search_start(gmx_ana_nbsearch_t *d, rvec x)
 /*! \brief
  * Does a grid search.
  */
-static bool
+static gmx_bool
 grid_search(gmx_ana_nbsearch_t *d,
-            bool (*action)(gmx_ana_nbsearch_t *d, int i, real r2))
+            gmx_bool (*action)(gmx_ana_nbsearch_t *d, int i, real r2))
 {
     int  i;
     rvec dx;
@@ -674,7 +674,7 @@ grid_search(gmx_ana_nbsearch_t *d,
  *
  * Simply breaks the loop on the first found neighbor.
  */
-static bool
+static gmx_bool
 within_action(gmx_ana_nbsearch_t *d, int i, real r2)
 {
     return TRUE;
@@ -683,7 +683,7 @@ within_action(gmx_ana_nbsearch_t *d, int i, real r2)
 /*! \brief
  * Helper function to use with grid_search() to find the minimum distance.
  */
-static bool
+static gmx_bool
 mindist_action(gmx_ana_nbsearch_t *d, int i, real r2)
 {
     d->cutoff2 = r2;
@@ -696,7 +696,7 @@ mindist_action(gmx_ana_nbsearch_t *d, int i, real r2)
  * \returns   TRUE if \p x is within the cutoff of any reference position,
  *   FALSE otherwise.
  */
-bool
+gmx_bool
 gmx_ana_nbsearch_is_within(gmx_ana_nbsearch_t *d, rvec x)
 {
     grid_search_start(d, x);
@@ -710,7 +710,7 @@ gmx_ana_nbsearch_is_within(gmx_ana_nbsearch_t *d, rvec x)
  * \returns   TRUE if the test position is within the cutoff of any reference
  *   position, FALSE otherwise.
  */
-bool
+gmx_bool
 gmx_ana_nbsearch_pos_is_within(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p, int i)
 {
     return gmx_ana_nbsearch_is_within(d, p->x[i]);
@@ -754,7 +754,7 @@ gmx_ana_nbsearch_pos_mindist(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p, int i)
  * \param[out] jp  Index of the reference position in the first pair.
  * \returns    TRUE if there are positions within the cutoff.
  */
-bool
+gmx_bool
 gmx_ana_nbsearch_first_within(gmx_ana_nbsearch_t *d, rvec x, int *jp)
 {
     grid_search_start(d, x);
@@ -768,7 +768,7 @@ gmx_ana_nbsearch_first_within(gmx_ana_nbsearch_t *d, rvec x, int *jp)
  * \param[out] jp  Index of the reference position in the first pair.
  * \returns    TRUE if there are positions within the cutoff.
  */
-bool
+gmx_bool
 gmx_ana_nbsearch_pos_first_within(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p,
                                   int i, int *jp)
 {
@@ -780,7 +780,7 @@ gmx_ana_nbsearch_pos_first_within(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p,
  * \param[out] jp  Index of the test position in the next pair.
  * \returns    TRUE if there are positions within the cutoff.
  */
-bool
+gmx_bool
 gmx_ana_nbsearch_next_within(gmx_ana_nbsearch_t *d, int *jp)
 {
     if (grid_search(d, &within_action))

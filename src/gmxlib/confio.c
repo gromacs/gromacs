@@ -67,7 +67,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 			t_trxframe *fr)
 {
   t_atoms *atoms;
-  bool   bEnd;
+  gmx_bool   bEnd;
   int    nwanted,natoms,atnr,resnr,oldres,newres,shift;
   char   anm[STRLEN],resnm[STRLEN];
   char   c1,c2;
@@ -147,7 +147,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 static int read_g96_vel(char line[],FILE *fp,const char *infile,
 			t_trxframe *fr)
 {
-  bool   bEnd;
+  gmx_bool   bEnd;
   int    nwanted,natoms=-1,shift;
   double db1,db2,db3;
 
@@ -190,7 +190,7 @@ int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr)
 {
   t_symtab *symtab=NULL;
   char line[STRLEN+1]; 
-  bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
+  gmx_bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
   int    natoms,nbp;
   double db1,db2,db3,db4,db5,db6,db7,db8,db9;
 
@@ -451,7 +451,7 @@ static void read_espresso_conf(const char *infile,
   int  natoms,level,npar,r,nprop,p,i,m,molnr;
   int  prop[32];
   double d;
-  bool bFoundParticles,bFoundProp,bFoundVariable,bMol;
+  gmx_bool bFoundParticles,bFoundProp,bFoundVariable,bMol;
 
   if (!symtab) {
     snew(symtab,1);
@@ -613,7 +613,7 @@ static int get_espresso_coordnum(const char *infile)
   FILE *fp;
   char word[STRLEN];
   int  natoms,level,r;
-  bool bFoundParticles;
+  gmx_bool bFoundParticles;
 
   natoms = 0;
   
@@ -699,7 +699,7 @@ static void get_coordnum (const char *infile,int *natoms)
   gmx_fio_fclose (in);
 }
 
-static bool get_w_conf(FILE *in,const char *infile,char *title,
+static gmx_bool get_w_conf(FILE *in,const char *infile,char *title,
 		       t_atoms *atoms, int *ndec, rvec x[],rvec *v, matrix box)
 {
   t_symtab *symtab=NULL;
@@ -709,7 +709,7 @@ static bool get_w_conf(FILE *in,const char *infile,char *title,
   double x1,y1,z1,x2,y2,z2;
   rvec   xmin,xmax;
   int    natoms,i,m,resnr,newres,oldres,ddist,c;
-  bool   bFirst,bVel;
+  gmx_bool   bFirst,bVel;
   char   *p1,*p2,*p3;
   
   newres  = -1;
@@ -896,7 +896,7 @@ static void get_conf(FILE *in,char *title,int *natoms,
   sfree(atoms.atomname);
 }
 
-bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
+gmx_bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
 {
   t_atoms atoms;
   char    title[STRLEN],*p;
@@ -965,7 +965,7 @@ int gro_first_x_or_v(FILE *status,t_trxframe *fr)
   return fr->natoms;
 }
 
-static void make_hconf_format(int pr,bool bVel,char format[])
+static void make_hconf_format(int pr,gmx_bool bVel,char format[])
 {
   int l,vpr;
 

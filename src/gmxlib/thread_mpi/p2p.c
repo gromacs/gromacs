@@ -131,14 +131,14 @@ static void tMPI_Xfer(struct tmpi_thread *cur, struct envelope *sev,
 
 
 /* check for the completion of a single request */
-static bool tMPI_Test_single(struct tmpi_thread *cur, struct tmpi_req_ *rq);
+static gmx_bool tMPI_Test_single(struct tmpi_thread *cur, struct tmpi_req_ *rq);
 /* check and wait for the completion of a single request */
 static void tMPI_Wait_single(struct tmpi_thread *cur, struct tmpi_req_ *rq);
 
 /* check for the completion of a NULL-delimited doubly linked list of 
    requests */
-static bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
-                            bool *any_done);
+static gmx_bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
+                            gmx_bool *any_done);
 
 
 

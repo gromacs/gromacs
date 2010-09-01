@@ -195,10 +195,10 @@ int
 gmx_ana_set_nanagrps(gmx_ana_traj_t *d, int nanagrps);
 /** Sets whether PBC are used. */
 int
-gmx_ana_set_pbc(gmx_ana_traj_t *d, bool bPBC);
+gmx_ana_set_pbc(gmx_ana_traj_t *d, gmx_bool bPBC);
 /** Sets whether molecules are made whole. */
 int
-gmx_ana_set_rmpbc(gmx_ana_traj_t *d, bool bRmPBC);
+gmx_ana_set_rmpbc(gmx_ana_traj_t *d, gmx_bool bRmPBC);
 /** Sets flags that determine what to read from the trajectory. */
 int
 gmx_ana_set_frflags(gmx_ana_traj_t *d, int frflags);
@@ -218,11 +218,11 @@ int
 gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type);
 
 /** Returns whether PBC should be used. */
-bool
+gmx_bool
 gmx_ana_has_pbc(gmx_ana_traj_t *d);
 /** Gets the topology information. */
 int
-gmx_ana_get_topology(gmx_ana_traj_t *d, bool bReq, t_topology **top, bool *bTop);
+gmx_ana_get_topology(gmx_ana_traj_t *d, gmx_bool bReq, t_topology **top, gmx_bool *bTop);
 /** Gets the configuration from the topology. */
 int
 gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC);

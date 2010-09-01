@@ -44,7 +44,7 @@ extern "C" {
 
 t_graph *mk_graph(FILE *fplog,
 			 t_idef *idef,int at_start,int at_end,
-			 bool bShakeOnly,bool bSettle);
+			 gmx_bool bShakeOnly,gmx_bool bSettle);
 /* Build a graph from an idef description. The graph can be used
  * to generate mol-shift indices.
  * If bShakeOnly, only the connections in the shake list are used.
@@ -53,7 +53,7 @@ t_graph *mk_graph(FILE *fplog,
 
 void mk_graph_ilist(FILE *fplog,
 			   t_ilist *ilist,int at_start,int at_end,
-			   bool bShakeOnly,bool bSettle,
+			   gmx_bool bShakeOnly,gmx_bool bSettle,
 			   t_graph *g);
 /* As mk_graph, but takes t_ilist iso t_idef and does not allocate g */
 

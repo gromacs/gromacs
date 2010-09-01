@@ -56,12 +56,12 @@ void close_xtc(t_fileio *fio);
   
 int read_first_xtc(t_fileio *fio,
 			  int *natoms,int *step,real *time,
-			  matrix box,rvec **x,real *prec,bool *bOK);
+			  matrix box,rvec **x,real *prec,gmx_bool *bOK);
 /* Open xtc file, read xtc file first time, allocate memory for x */
 
 int read_next_xtc(t_fileio *fio,
 			 int natoms,int *step,real *time,
-			 matrix box,rvec *x,real *prec,bool *bOK);
+			 matrix box,rvec *x,real *prec,gmx_bool *bOK);
 /* Read subsequent frames */
 
 int write_xtc(t_fileio *fio,
@@ -69,10 +69,10 @@ int write_xtc(t_fileio *fio,
 		     matrix box,rvec *x,real prec);
 /* Write a frame to xtc file */
 
-int xtc_check(const char *str,bool bResult,const char *file,int line);
+int xtc_check(const char *str,gmx_bool bResult,const char *file,int line);
 #define XTC_CHECK(s,b) xtc_check(s,b,__FILE__,__LINE__)
 
-void xtc_check_fat_err(const char *str,bool bResult,const char *file,int line);
+void xtc_check_fat_err(const char *str,gmx_bool bResult,const char *file,int line);
 #define XTC_CHECK_FAT_ERR(s,b) xtc_check_fat_err(s,b,__FILE__,__LINE__)
 
 #ifdef __cplusplus

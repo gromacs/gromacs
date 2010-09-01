@@ -61,7 +61,7 @@ void too_many_constraint_warnings(int eConstrAlg,int warncount);
 gmx_shakedata_t shake_init();
 /* Initializes and return the SHAKE data structure */
 
-bool bshakef(FILE *log,		/* Log file			*/
+gmx_bool bshakef(FILE *log,		/* Log file			*/
                     gmx_shakedata_t shaked, /* SHAKE data */
                     int natoms,		/* Total number of atoms	*/
                     real invmass[],	/* Atomic masses		*/
@@ -78,9 +78,9 @@ bool bshakef(FILE *log,		/* Log file			*/
                     real *dvdlambda,    /* FEP force                    */
                     real invdt,         /* 1/delta_t                    */
                     rvec *v,            /* Also constrain v if v!=NULL  */
-                    bool bCalcVir,      /* Calculate r x m delta_r      */
+                    gmx_bool bCalcVir,      /* Calculate r x m delta_r      */
                     tensor rmdr,        /* sum r x m delta_r            */
-                    bool bDumpOnError,  /* Dump debugging stuff on error*/
+                    gmx_bool bDumpOnError,  /* Dump debugging stuff on error*/
                     int econq,         /* which type of constrainint is occurring */
                     t_vetavars *vetavar);           /* veta for pressure control */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
@@ -103,7 +103,7 @@ void csettle(gmx_settledata_t settled,
                     real after[],	/* New coords, to be settled	*/
                     real invdt,         /* 1/delta_t                    */
                     real *v,            /* Also constrain v if v!=NULL  */
-                    bool bCalcVir,      /* Calculate r x m delta_r      */
+                    gmx_bool bCalcVir,      /* Calculate r x m delta_r      */
                     tensor rmdr,        /* sum r x m delta_r            */
                     int *xerror,
                     t_vetavars *vetavar     /* variables for pressure control */   
@@ -113,7 +113,7 @@ void settle_proj(FILE *fp,
                         gmx_settledata_t settled,int econq,
                         int nsettle, t_iatom iatoms[],rvec x[],
                         rvec *der,rvec *derp,
-                        bool bCalcVir,tensor rmdder, t_vetavars *vetavar);
+                        gmx_bool bCalcVir,tensor rmdder, t_vetavars *vetavar);
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
@@ -127,7 +127,7 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
                     real dist2[],real vp[],real rij[],real m2[],real omega,
                     real invmass[],real tt[],real lagr[],int *nerror,real invdt,t_vetavars *vetavar);
 
-bool constrain(FILE *log,bool bLog,bool bEner,
+gmx_bool constrain(FILE *log,gmx_bool bLog,gmx_bool bEner,
                       gmx_constr_t constr,
                       t_idef *idef,
                       t_inputrec *ir,
@@ -138,7 +138,7 @@ bool constrain(FILE *log,bool bLog,bool bEner,
                       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                       real lambda,real *dvdlambda,
                       rvec *v,tensor *vir,
-                      t_nrnb *nrnb,int econq, bool bPscal, real veta, real vetanew);
+                      t_nrnb *nrnb,int econq, gmx_bool bPscal, real veta, real vetanew);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -189,7 +189,7 @@ void set_constraints(gmx_constr_t constr,
 
 t_blocka make_at2con(int start,int natoms,
 			    t_ilist *ilist,t_iparams *iparams,
-			    bool bDynamics,int *nflexiblecons);
+			    gmx_bool bDynamics,int *nflexiblecons);
 /* Returns a block struct to go from atoms to constraints */
 
 t_blocka *atom2constraints_moltype(gmx_constr_t constr);
@@ -201,7 +201,7 @@ t_blocka *atom2constraints_moltype(gmx_constr_t constr);
  * are concatenated.
  */
 
-bool inter_charge_group_constraints(gmx_mtop_t *mtop);
+gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop);
 /* Returns if there are inter charge group constraints */
 
 real *constr_rmsd_data(gmx_constr_t constr);
@@ -209,22 +209,22 @@ real *constr_rmsd_data(gmx_constr_t constr);
  * Returns NULL when LINCS is not used.
  */
 
-real constr_rmsd(gmx_constr_t constr,bool bSD2);
+real constr_rmsd(gmx_constr_t constr,gmx_bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
 real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
 /* Return the data for determining constraint RMS relative deviations */
 
-real lincs_rmsd(gmx_lincsdata_t lincsd,bool bSD2);
+real lincs_rmsd(gmx_lincsdata_t lincsd,gmx_bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
 gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
 			   int nflexcon_global,t_blocka *at2con,
-			   bool bPLINCS,int nIter,int nProjOrder);
+			   gmx_bool bPLINCS,int nIter,int nProjOrder);
 /* Initializes and returns the lincs data struct */
 
 void set_lincs(t_idef *idef,t_mdatoms *md,
-		      bool bDynamics,t_commrec *cr,
+		      gmx_bool bDynamics,t_commrec *cr,
 		      gmx_lincsdata_t li);
 /* Initialize lincs stuff */
 
@@ -236,7 +236,7 @@ real constr_r_max(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir);
  * required for LINCS.
  */
 
-bool constrain_lincs(FILE *log,bool bLog,bool bEner,
+gmx_bool constrain_lincs(FILE *log,gmx_bool bLog,gmx_bool bEner,
 			    t_inputrec *ir,
 			    gmx_large_int_t step,
 			    gmx_lincsdata_t lincsd,t_mdatoms *md,
@@ -244,7 +244,7 @@ bool constrain_lincs(FILE *log,bool bLog,bool bEner,
 			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 			    real lambda,real *dvdlambda,
 			    real invdt,rvec *v,
-			    bool bCalcVir,tensor rmdr,
+			    gmx_bool bCalcVir,tensor rmdr,
 			    int econ,
 			    t_nrnb *nrnb,
 			    int maxwarn,int *warncount);

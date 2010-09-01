@@ -53,7 +53,7 @@
 
 #define MSIZE 4
 
-static bool MWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool MWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_molwin *mw;
   Window   To;
@@ -130,7 +130,7 @@ void map_mw(t_x11 *x11,t_molwin *mw)
   XMapWindow(x11->disp,mw->wd.self);
 }
 
-bool toggle_hydrogen(t_x11 *x11,t_molwin *mw)
+gmx_bool toggle_hydrogen(t_x11 *x11,t_molwin *mw)
 {
   mw->bShowHydrogen=!mw->bShowHydrogen;
   ExposeWin(x11->disp,mw->wd.self);
@@ -168,7 +168,7 @@ void done_mw(t_x11 *x11,t_molwin *mw)
 
 static void draw_atom(Display *disp,Window w,GC gc,
 		      atom_id ai,iv2 vec2[],unsigned long col[],int size[],
-		      bool bBall,bool bPlus)
+		      gmx_bool bBall,gmx_bool bPlus)
 {
   int xi,yi;
   
@@ -205,7 +205,7 @@ static void my_init_pbc(matrix box)
   }
 }
 
-static bool local_pbc_dx(rvec x1, rvec x2)
+static gmx_bool local_pbc_dx(rvec x1, rvec x2)
 {
   int  i;
   real dx;
@@ -222,7 +222,7 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 
 static void draw_bond(Display *disp,Window w,GC gc,
 		      atom_id ai,atom_id aj,iv2 vec2[],
-		      rvec x[],unsigned long col[],int size[],bool bBalls)
+		      rvec x[],unsigned long col[],int size[],gmx_bool bBalls)
 {
   unsigned long   ic,jc;
   int     xi,yi,xj,yj;
@@ -318,7 +318,7 @@ int filter_vis(t_manager *man)
 {
   int      i,nobj,nvis,nhide;
   atom_id  ai;
-  bool     bAdd,*bVis;
+  gmx_bool     bAdd,*bVis;
   t_object *obj;
   t_object *newobj;
 
@@ -347,10 +347,10 @@ int filter_vis(t_manager *man)
 
 void draw_objects(Display *disp,Window w,GC gc,int nobj,
 		  t_object objs[],iv2 vec2[],rvec x[],
-		  unsigned long col[],int size[],bool bShowHydro,int bond_type,
-		  bool bPlus)
+		  unsigned long col[],int size[],gmx_bool bShowHydro,int bond_type,
+		  gmx_bool bPlus)
 {
-  bool     bBalls;
+  gmx_bool     bBalls;
   int      i;
   t_object *obj;
 

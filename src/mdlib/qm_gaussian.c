@@ -223,12 +223,12 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 
 
 
-void write_gaussian_SH_input(int step,bool swap,
+void write_gaussian_SH_input(int step,gmx_bool swap,
 			     t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
   int
     i;
-  bool
+  gmx_bool
     bSA;
   FILE
     *out;
@@ -710,7 +710,7 @@ real read_gaussian_output(rvec QMgrad[],rvec MMgrad[],int step,
 }
 
 real read_gaussian_SH_output(rvec QMgrad[],rvec MMgrad[],int step,
-			     bool swapped,t_QMrec *qm, t_MMrec *mm)
+			     gmx_bool swapped,t_QMrec *qm, t_MMrec *mm)
 {
   int
     i;
@@ -971,9 +971,9 @@ real call_gaussian_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     state,i,j;
   real
     QMener=0.0;
-  static  bool
+  static  gmx_bool
     swapped=FALSE; /* handle for identifying the current PES */
-  bool
+  gmx_bool
     swap=FALSE; /* the actual swap */
   rvec
     *QMgrad,*MMgrad;

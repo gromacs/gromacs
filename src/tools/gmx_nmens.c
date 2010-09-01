@@ -92,7 +92,7 @@ int gmx_nmens(int argc,char *argv[])
   int        ePBC;
   t_atoms    *atoms;
   rvec       *xtop,*xref,*xav,*xout1,*xout2;
-  bool       bDMR,bDMA,bFit;
+  gmx_bool       bDMR,bDMA,bFit;
   int        nvec,*eignr=NULL;
   rvec       **eigvec=NULL;
   matrix     box;

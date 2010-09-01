@@ -117,7 +117,7 @@ int find_next_match_atoms_in_res(int *i1,int isize1,atom_id index1[],
 				 int m2,char **atnms2[])
 {
   int dx, dy, dmax, cmp;
-  bool bFW=FALSE;
+  gmx_bool bFW=FALSE;
   
   dx=dy=0;
   cmp=NOTSET;
@@ -164,7 +164,7 @@ static int find_next_match_res(int *rnr1, int isize1,
 			       int index2[], t_resinfo *resinfo2)
 {
   int dx, dy, dmax, cmp, rr1, rr2;
-  bool bFW=FALSE,bFF=FALSE;
+  gmx_bool bFW=FALSE,bFF=FALSE;
   
   dx=dy=0;
   rr1 = 0;
@@ -371,7 +371,7 @@ int gmx_confrms(int argc,char *argv[])
     "(use [TT]rasmol -nmrpdb[tt]). Also in a [TT].pdb[tt] file, B-factors",
     "calculated from the atomic MSD values can be written with [TT]-bfac[tt].",
   };
-  static bool bOne=FALSE,bRmpbc=FALSE,bMW=TRUE,bName=FALSE,
+  static gmx_bool bOne=FALSE,bRmpbc=FALSE,bMW=TRUE,bName=FALSE,
     bBfac=FALSE,bFit=TRUE,bLabel=FALSE;
   
   t_pargs pa[] = {

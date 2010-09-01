@@ -102,7 +102,7 @@ void
 gmx_ana_pos_free(gmx_ana_pos_t *pos);
 /** Copies the evaluated positions to a preallocated data structure. */
 void
-gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst);
+gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, gmx_bool bFirst);
 
 /** Sets the number of positions in a position structure. */
 void

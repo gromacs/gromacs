@@ -85,13 +85,13 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
                              rvec clust_com,matrix box)
 {
     const   real tol=1e-3;
-    bool    bChanged;
+    gmx_bool    bChanged;
     int     m,i,j,j0,j1,jj,ai,iter,is;
     real    fac,Isq,min_dist2;
     rvec    dx,ddx,xtest,xrm,box_center;
     int     nmol,nmol_cl,imol_center;
     atom_id *molind;
-    bool    *bMol,*bTmp;
+    gmx_bool    *bMol,*bTmp;
     rvec    *m_com,*m_shift,m0;
     t_pbc   pbc;
 
@@ -415,7 +415,7 @@ void do_trunc(const char *fn, real t0)
 {
     t_fileio     *in;
     FILE         *fp;
-    bool         bStop,bOK;
+    gmx_bool         bStop,bOK;
     t_trnheader  sh;
     gmx_off_t    fpos;
     char         yesno[256];
@@ -629,14 +629,14 @@ int gmx_trjconv(int argc,char *argv[])
         { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "transxy",
             "progressive", NULL };
 
-    static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
-    static bool  bCenter=FALSE;
+    static gmx_bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
+    static gmx_bool  bCenter=FALSE;
     static int   skip_nr=1,ndec=3,nzero=0;
     static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
     static rvec  newbox = {0,0,0}, shift = {0,0,0}, trans = {0,0,0};
     static char  *exec_command=NULL;
     static real  dropunder=0,dropover=0;
-    static bool  bRound=FALSE;
+    static gmx_bool  bRound=FALSE;
 
     t_pargs
         pa[] =
@@ -753,22 +753,22 @@ int gmx_trjconv(int argc,char *argv[])
     int          ndrop=0,ncol,drop0=0,drop1=0,dropuse=0;
     double       **dropval;
     real         tshift=0,t0=-1,dt=0.001,prec;
-    bool         bFit,bFitXY,bPFit,bReset;
+    gmx_bool         bFit,bFitXY,bPFit,bReset;
     int          nfitdim;
     gmx_rmpbc_t  gpbc=NULL;
-    bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
-    bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
-    bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
-    bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
-    bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
-    bool         bWriteFrame,bSplitHere;
+    gmx_bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bPBC,bNoJump,bCluster;
+    gmx_bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
+    gmx_bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
+    gmx_bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
+    gmx_bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
+    gmx_bool         bWriteFrame,bSplitHere;
     const char   *top_file,*in_file,*out_file=NULL;
     char         out_file2[256],*charpt;
     char         *outf_base=NULL;
     const char   *outf_ext=NULL;
     char         top_title[256],title[256],command[256],filemode[5];
     int          xdr=0;
-    bool         bWarnCompact=FALSE;
+    gmx_bool         bWarnCompact=FALSE;
     const char  *warn;
     output_env_t oenv;
 
@@ -918,7 +918,7 @@ int gmx_trjconv(int argc,char *argv[])
 
         /* Determine whether to read a topology */
         bTPS = (ftp2bSet(efTPS,NFILE,fnm) ||
-            bRmPBC || bReset || bPBCcomMol ||
+            bRmPBC || bReset || bPBCcomMol || bCluster ||
             (ftp == efGRO) || (ftp == efPDB) || bCONECT);
 
         /* Determine if when can read index groups */
@@ -928,6 +928,12 @@ int gmx_trjconv(int argc,char *argv[])
             read_tps_conf(top_file,top_title,&top,&ePBC,&xp,NULL,top_box,
                           bReset || bPBCcomRes);
             atoms=&top.atoms;
+
+            if (0 == top.mols.nr && (bCluster || bPBCcomMol))
+            {
+                gmx_fatal(FARGS,"Option -pbc %s requires a .tpr file for the -s option",pbc_opt[pbc_enum]);
+            }
+
             /* top_title is only used for gro and pdb,
              * the header in such a file is top_title t= ...
              * to prevent a double t=, remove it from top_title
@@ -1186,7 +1192,7 @@ int gmx_trjconv(int argc,char *argv[])
                             }
                     }
                 }
-                else if (bCluster && bTPS) {
+                else if (bCluster) {
                     rvec com;
 
                     calc_pbc_cluster(ecenter,ifit,&top,ePBC,fr.x,ind_fit,com,fr.box);

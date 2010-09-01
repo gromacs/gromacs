@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
+gmx_bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
 
 t_matelmt searchcmap(int n,t_mapping map[],t_xpmelmt c);
 /* Seach in the map for code 'c' and return entry number. 
@@ -90,7 +90,7 @@ void write_xpm_split(FILE *out,unsigned int flags,
 			    real lo_top,real hi_top,int *nlevel_top,
 			    t_rgb rlo_top,t_rgb rhi_top,
 			    real lo_bot,real hi_bot,int *nlevel_bot,
-			    bool bDiscreteColor,
+			    gmx_bool bDiscreteColor,
 			    t_rgb rlo_bot,t_rgb rhi_bot);
 /* See write_xpm.
  * Writes a colormap with separate above and below diagonal colormaps.
@@ -126,7 +126,7 @@ void write_xpm(FILE *out,unsigned int flags,
  * nlevels    number of color levels for the output
  */
 
-real **mk_matrix(int nx, int ny, bool b1D);
+real **mk_matrix(int nx, int ny, gmx_bool b1D);
 
 void done_matrix(int nx, real ***m);
 

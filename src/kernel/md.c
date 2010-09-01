@@ -89,6 +89,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
+#include "gmx_membed.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -109,7 +110,7 @@
    negative or zero. */
 enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 /* Is the signal in one simulation independent of other simulations? */
-bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
+gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
 
 typedef struct {
     int nstms;       /* The frequency for intersimulation communication */
@@ -121,7 +122,7 @@ typedef struct {
 static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
 {
     int  *buf;
-    bool bPos,bEqual;
+    gmx_bool bPos,bEqual;
     int  s,d;
 
     snew(buf,ms->nsim);
@@ -306,30 +307,31 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                             t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                             gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
                             tensor pres, rvec mu_tot, gmx_constr_t constr, 
-                            globsig_t *gs,bool bInterSimGS,
+                            globsig_t *gs,gmx_bool bInterSimGS,
                             matrix box, gmx_mtop_t *top_global, real *pcurr, 
-                            int natoms, bool *bSumEkinhOld, int flags)
+                            int natoms, gmx_bool *bSumEkinhOld, int flags)
 {
     int  i,gsi;
     real gs_buf[eglsNR];
     tensor corr_vir,corr_pres,shakeall_vir;
-    bool bEner,bPres,bTemp, bVV;
-    bool bRerunMD, bStopCM, bGStat, bIterate, 
+    gmx_bool bEner,bPres,bTemp, bVV;
+    gmx_bool bRerunMD, bStopCM, bGStat, bIterate, 
         bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
     real ekin,temp,prescorr,enercorr,dvdlcorr;
     
-    /* translate CGLO flags to booleans */
+    /* translate CGLO flags to gmx_booleans */
     bRerunMD = flags & CGLO_RERUNMD;
     bStopCM = flags & CGLO_STOPCM;
     bGStat = flags & CGLO_GSTAT;
-    bReadEkin = flags & CGLO_READEKIN;
-    bScaleEkin = flags & CGLO_SCALEEKIN;
+
+    bReadEkin = (flags & CGLO_READEKIN);
+    bScaleEkin = (flags & CGLO_SCALEEKIN);
     bEner = flags & CGLO_ENERGY;
     bTemp = flags & CGLO_TEMPERATURE;
-    bPres  = flags & CGLO_PRESSURE;
-    bConstrain = flags & CGLO_CONSTRAINT;
-    bIterate = flags & CGLO_ITERATE;
-    bFirstIterate = flags & CGLO_FIRSTITERATE;
+    bPres  = (flags & CGLO_PRESSURE);
+    bConstrain = (flags & CGLO_CONSTRAINT);
+    bIterate = (flags & CGLO_ITERATE);
+    bFirstIterate = (flags & CGLO_FIRSTITERATE);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -532,7 +534,7 @@ typedef struct
 {
     real f,fprev,x,xprev;  
     int iter_i;
-    bool bIterate;
+    gmx_bool bIterate;
     real allrelerr[MAXITERCONST+2];
     int num_close; /* number of "close" violations, caused by limited precision. */
 } gmx_iterate_t;
@@ -554,7 +556,7 @@ typedef struct
 /* maximum length of cyclic traps to check, emerging from limited numerical precision  */
 #define CYCLEMAX            20
 
-static void gmx_iterate_init(gmx_iterate_t *iterate,bool bIterate)
+static void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bIterate)
 {
     int i;
 
@@ -567,7 +569,7 @@ static void gmx_iterate_init(gmx_iterate_t *iterate,bool bIterate)
     }
 }
 
-static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, bool bFirstIterate, real fom, real *newf) 
+static gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, gmx_bool bFirstIterate, real fom, real *newf) 
 {    
     /* monitor convergence, and use a secant search to propose new
        values.  
@@ -594,7 +596,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
     real relerr,err,xmin;
     char buf[256];
     int i;
-    bool incycle;
+    gmx_bool incycle;
     
     if (bFirstIterate) 
     {
@@ -913,7 +915,7 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
 }
 
 typedef struct {
-    bool       bGStatEveryStep;
+    gmx_bool       bGStatEveryStep;
     gmx_large_int_t step_ns;
     gmx_large_int_t step_nscheck;
     gmx_large_int_t nns;
@@ -934,7 +936,7 @@ static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step)
 }
 
 static void init_nlistheuristics(gmx_nlheur_t *nlh,
-                                 bool bGStatEveryStep,gmx_large_int_t step)
+                                 gmx_bool bGStatEveryStep,gmx_large_int_t step)
 {
     nlh->bGStatEveryStep = bGStatEveryStep;
     nlh->nns       = 0;
@@ -996,7 +998,7 @@ static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step)
     }
 }
 
-static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t step)
+static void set_nlistheuristics(gmx_nlheur_t *nlh,gmx_bool bReset,gmx_large_int_t step)
 {
     int d;
 
@@ -1019,9 +1021,9 @@ static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t st
 }
 
 static void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
-                                bool *bNotLastFrame)
+                                gmx_bool *bNotLastFrame)
 {
-    bool bAlloc;
+    gmx_bool bAlloc;
     rvec *xp,*vp;
 
     bAlloc = (fr->natoms == 0);
@@ -1060,7 +1062,7 @@ static void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
 }
 
 double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,t_inputrec *ir,
@@ -1070,7 +1072,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
+             int repl_ex_nst,int repl_ex_seed,gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -1080,15 +1082,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0;
-    bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
-    bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
+    gmx_bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
+    gmx_bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
-    bool       bDoDHDL=FALSE;
-    bool       do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
+    gmx_bool       bDoDHDL=FALSE;
+    gmx_bool       do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
                bForceUpdate=FALSE,bCPT;
     int        mdof_flags;
-    bool       bMasterState;
+    gmx_bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
     int        i,m;
@@ -1115,18 +1117,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     t_graph    *graph=NULL;
     globsig_t   gs;
 
-    bool        bFFscan;
+    gmx_bool        bFFscan;
     gmx_groups_t *groups;
     gmx_ekindata_t *ekind, *ekind_save;
     gmx_shellfc_t shellfc;
     int         count,nconverged=0;
     real        timestep=0;
     double      tcount=0;
-    bool        bIonize=FALSE;
-    bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
-    bool        bAppend;
-    bool        bResetCountersHalfMaxH=FALSE;
-    bool        bVV,bIterations,bFirstIterate,bTemp,bPres,bTrotter;
+    gmx_bool        bIonize=FALSE;
+    gmx_bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
+    gmx_bool        bAppend;
+    gmx_bool        bResetCountersHalfMaxH=FALSE;
+    gmx_bool        bVV,bIterations,bFirstIterate,bTemp,bPres,bTrotter;
     real        temp0,mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
     atom_id     *grpindex=NULL;
@@ -2621,7 +2623,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Output stuff */
         if (MASTER(cr))
         {
-            bool do_dr,do_or;
+            gmx_bool do_dr,do_or;
             
             if (!(bStartingFromCpt && (EI_VV(ir->eI)))) 
             {
@@ -2715,6 +2717,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */
+
+        if ( (membed!=NULL) && (!bLastStep) )
+            rescale_membed(step_rel,membed,state_global->x);
         
         if (bRerunMD) 
         {

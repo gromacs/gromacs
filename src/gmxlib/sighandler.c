@@ -150,10 +150,10 @@ const char *gmx_get_signal_name(void)
     return gmx_signal_name[last_signal_name];
 }
 
-bool gmx_got_usr_signal(void)
+gmx_bool gmx_got_usr_signal(void)
 {
 #ifdef HAVE_SIGUSR1
-    bool ret=(bool)usr_condition;
+    gmx_bool ret=(gmx_bool)usr_condition;
     usr_condition=0;
     return ret;
 #else

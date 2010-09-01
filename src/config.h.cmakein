@@ -197,7 +197,7 @@
 /* Define to 1 if you have the <altivec.h> header file. */
 #cmakedefine HAVE_ALTIVEC_H
 
-/* Define to 1 if the system has the type bool. */
+/* Define to 1 if the system has the type gmx_bool. */
 #cmakedefine HAVE_BOOL
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */

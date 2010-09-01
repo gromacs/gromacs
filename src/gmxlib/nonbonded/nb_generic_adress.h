@@ -52,7 +52,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 			 real *               VFtab,
 			 int *                outeriter,
 			 int *                inneriter,
-                         bool                 bCG);
+                         gmx_bool                 bCG);
 
 #endif
 

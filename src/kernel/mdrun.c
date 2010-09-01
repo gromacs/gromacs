@@ -283,6 +283,11 @@ int main(int argc,char *argv[])
     "appropriate options have been given. Currently under",
     "investigation are: polarizability, and X-Ray bombardments.",
     "[PAR]",
+    "The option [TT]-membed[dd] does what used to be g_membed, i.e. embed",
+    "a protein into a membrane. The data file should contain the options",
+    "that where passed to g_membed before. The [TT]-mn[tt] and [TT]-mp[tt]",
+    "both apply to this as well.",
+    "[PAR]",
     "The option [TT]-pforce[tt] is useful when you suspect a simulation",
     "crashes due to too large forces. With this option coordinates and",
     "forces of atoms with a force larger than a certain value will",
@@ -372,23 +377,26 @@ int main(int argc,char *argv[])
     { efXVG, "-px",     "pullx",    ffOPTWR },
     { efXVG, "-pf",     "pullf",    ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
-    { efNDX, "-dn",     "dipole",   ffOPTWR }
+    { efNDX, "-dn",     "dipole",   ffOPTWR },
+    { efDAT, "-membed", "membed",   ffOPTRD },
+    { efTOP, "-mp",     "membed",   ffOPTRD },
+    { efNDX, "-mn",     "membed",   ffOPTRD }
   };
 #define NFILE asize(fnm)
 
   /* Command line options ! */
-  bool bCart        = FALSE;
-  bool bPPPME       = FALSE;
-  bool bPartDec     = FALSE;
-  bool bDDBondCheck = TRUE;
-  bool bDDBondComm  = TRUE;
-  bool bVerbose     = FALSE;
-  bool bCompact     = TRUE;
-  bool bSepPot      = FALSE;
-  bool bRerunVSite  = FALSE;
-  bool bIonize      = FALSE;
-  bool bConfout     = TRUE;
-  bool bReproducible = FALSE;
+  gmx_bool bCart        = FALSE;
+  gmx_bool bPPPME       = FALSE;
+  gmx_bool bPartDec     = FALSE;
+  gmx_bool bDDBondCheck = TRUE;
+  gmx_bool bDDBondComm  = TRUE;
+  gmx_bool bVerbose     = FALSE;
+  gmx_bool bCompact     = TRUE;
+  gmx_bool bSepPot      = FALSE;
+  gmx_bool bRerunVSite  = FALSE;
+  gmx_bool bIonize      = FALSE;
+  gmx_bool bConfout     = TRUE;
+  gmx_bool bReproducible = FALSE;
     
   int  npme=-1;
   int  nmultisim=0;
@@ -407,9 +415,9 @@ int main(int argc,char *argv[])
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
-  bool bAppendFiles=TRUE;
-  bool bKeepAndNumCPT=FALSE;
-  bool bResetCountersHalfWay=FALSE;
+  gmx_bool bAppendFiles=TRUE;
+  gmx_bool bKeepAndNumCPT=FALSE;
+  gmx_bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
 
@@ -493,7 +501,7 @@ int main(int argc,char *argv[])
   unsigned long Flags, PCA_Flags;
   ivec     ddxyz;
   int      dd_node_order;
-  bool     bAddPart;
+  gmx_bool     bAddPart;
   FILE     *fplog,*fptest;
   int      sim_part,sim_part_fn;
   const char *part_suffix=".part";

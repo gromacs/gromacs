@@ -278,8 +278,7 @@ particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>.</dd>
 <dt><h4>ld_seed: (1993) [integer]</h4></dt>
 <dd>used to initialize random generator for thermal noise
 for stochastic and Brownian dynamics.
-When <b>ld_seed</b> is set to -1, the seed is calculated as
-<tt>(time() + getpid()) % 1000000</tt>.
+When <b>ld_seed</b> is set to -1, the seed is calculated from the process ID.
 When running BD or SD on multiple processors, each processor uses a seed equal
 to <b>ld_seed</b> plus the processor number.</dd>
 </dl>
@@ -481,7 +480,7 @@ is automatically set to the longest cut-off distance.</dd>
 <dt><b>Cut-off</b></dt>
 <dd>Twin range cut-off's with neighborlist cut-off <b>rlist</b> and 
 Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> &gt= <b>rlist</b>.
+where <b>rcoulomb</b> &ge <b>rlist</b>.
 
 <dt><b>Ewald</b></dt>
 <dd>Classical <!--Idx-->Ewald sum<!--EIdx--> electrostatics.
@@ -519,13 +518,13 @@ PPPM through a small modification of the PME code.</dd>
 
 <dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> &gt= <b>rlist</b>.
+where <b>rcoulomb</b> &ge <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_rf</b>.
 The dielectric constant can be set to infinity by setting <b>epsilon_rf</b>=0.</dd>
 
 <dt><b>Generalized-Reaction-Field</b></dt>
 <dd>Generalized reaction field with Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> &gt= <b>rlist</b>.
+where <b>rcoulomb</b> &ge <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_rf</b>.
 The ionic strength is computed from the number of charged 
 (i.e. with non zero charge) <!--Idx-->charge group<!--EIdx-->s.
@@ -651,7 +650,7 @@ A value of 0 means infinity.</dd>
 <dt><b>Cut-off</b></dt>
 <dd>Twin range cut-off's with neighbor list cut-off <b>rlist</b> and 
 VdW cut-off <b>rvdw</b>,
-where <b>rvdw</b> <tt>&gt=</tt> <b>rlist</b>.</dd>
+where <b>rvdw</b> <tt>&ge</tt> <b>rlist</b>.</dd>
 <dt><b>Shift</b></dt>
 <dd>The LJ (not Buckingham) potential is decreased over the whole
 range and the forces decay smoothly to zero between <b>rvdw_switch</b>
@@ -985,10 +984,10 @@ The first group will be coupled to 298K at 0ps, but the reference temperature wi
 <dt><h4>gen_vel:</h4></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd> Do not generate velocities at startup. The velocities are set to zero
+<dd> Do not generate velocities. The velocities are set to zero
 when there are no velocities in the input structure file.</dd>
 <dt><b>yes</b></dt>
-<dd>Generate velocities according to a Maxwell distribution at
+<dd>Generate velocities in grompp according to a Maxwell distribution at
 temperature <b>gen_temp</b> [K], with random seed <b>gen_seed</b>. 
 This is only meaningful with integrator <b><A HREF="#run">md</A></b>.</dd>
 </dl></dd>
@@ -996,8 +995,8 @@ This is only meaningful with integrator <b><A HREF="#run">md</A></b>.</dd>
 <dd>temperature for Maxwell distribution</dd>
 <dt><h4>gen_seed: (173529) [integer]</h4></dt>
 <dd>used to initialize random generator for random velocities,
-when <b>gen_seed</b> is set to -1, the seed is calculated as
-<tt>(time() + getpid()) % 1000000</tt></dd>
+when <b>gen_seed</b> is set to -1, the seed is calculated from
+the process ID number.
 </dl>
 
 <A NAME="bond"><br>
@@ -1142,7 +1141,7 @@ only the dispersion and repulsion columns are used</dd>
 linearly and thus the force is constant. Setting this option to
 a postive value is especially useful for equilibration when some atoms
 are beyond a wall.
-When the value is &lt= 0 (&lt 0 for <b>wall_type=table</b>),
+When the value is &le 0 (&lt 0 for <b>wall_type=table</b>),
 a fatal error is generated when atoms are beyond a wall.
 </dd>
 <dt><h4>wall_atomtype:</h4></dt>
@@ -1374,8 +1373,8 @@ for all restraints and the molecular order tensor to the energy file
 <dd>Only use topology A.</dd>
 <dt><b>yes</b></dt>
 <dd>Interpolate between topology A (lambda=0) to topology B (lambda=1)
-and write the derivative of the Hamiltonian with respect to lambda to
-the energy file and to <tt>dhdl.xvg</tt>.
+and write the derivative of the Hamiltonian with respect to lambda (as specified with <b>dhdl_derivatives</b>), or the Hamiltonian differences w.r.t. other lambda valies (as specified with <b>foreign_lambda</b>) to
+the energy file and/or to <tt>dhdl.xvg</tt>, where they can be processed by, for example <tt>g_bar</tt>.
 The potentials, bond-lengths and angles are interpolated linearly as
 described in the manual. When <b>sc_alpha</b> is larger than zero, soft-core
 potentials are used for the LJ and Coulomb interactions.</dd>
@@ -1385,10 +1384,12 @@ potentials are used for the LJ and Coulomb interactions.</dd>
 <dt><h4>delta_lambda: (0)</h4></dt>
 <dd>increment per time step for lambda</dd>
 <dt><h4>foreign_lambda: ()</h4></dt>
-<dd>Zero, one or more lambda values for which Delta G values will
+<dd>Zero, one or more lambda values for which Delta H values will
 be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
 Free energy differences between different lambda values can then
 be determined with <tt>g_bar</tt>.</dd>
+<dt><h4>dhdl_derivatives: (yes)</h4></dt>
+<dd>If yes (the default), the derivatives of the Hamiltonian w.r.t. lambda at each <b>nstdhdl</b> step are written out. These values are needed for interpolation of linear energy differences with <tt>g_bar</tt> (although the same can also be achieved with the right <b>foreign lambda</b> setting, that may not be as flexible), or with thermodynamic integration</dd>
 <dt><h4>sc_alpha: (0)</h4></dt>
 <dd>the soft-core parameter, a value of 0 results in linear interpolation of
 the LJ and Coulomb interactions</dd>
@@ -1433,6 +1434,17 @@ the molecule definition in the topology.</dd>
 <dt><h4>nstdhdl: (10)</h4></dt>
 <dd>the frequency for writing dH/dlambda and possibly Delta H to dhdl.xvg,
 0 means no ouput, should be a multiple of <b>nstcalcenergy</b></dd>
+<dt><h4>separate_dhdl_file (yes)</h4></dt>
+<dd><dl compact>
+<dt><b>yes</b></dt>
+<dd>the free energy values that are calculated (as specified with the <b>foreign-lambda</b> and <b>dhdl_derivatives</b> settings) are written out to a separate file, with the default name <tt>dhdl.xvg</tt>. This file can be used directly with <tt>g_bar</tt>.</dd>
+<dt><b>no</b></dt>
+<dd>The free energy values are written out to the energy output file (<tt>ener.edr</tt>, in accumulated blocks at every <b>nstenergy</b> steps), where they can be extracted with <tt>g_energy</tt> or used directly with <tt>g_bar</tt>.</dd>
+</dl>
+<dt><h4>dh_hist_size (0)</h4></dt>
+<dd>If nonzero, specifies the size of the histogram into which the Delta H values (specified with <b>foreign_lambda</b>) and the derivative dH/dl values are binned, and written to ener.edr. This can be used to save disk space while calculating free energy differences. One histogram gets written for each <b>foreign lambda</b> and two for the dH/dl, at every <b>nstenergy</b> step. Be aware that incorrect histogram settings (too small size or too wide bins) can introduce errors. Do not use histograms unless you're certain you need it.</dd>
+<dt><h4>dh_hist_spacing (0.1)</h4></dt>
+<dd>Specifies the bin width of the histograms, in energy units. Used in conjunction with <b>dh_hist_size</b>. This size limits the accuracy with which free energies can be calculated.  Do not use histograms unless you're certain you need it.</dd>
 </dl>
 
 

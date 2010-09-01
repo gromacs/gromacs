@@ -57,78 +57,119 @@
 #include "maths.h"
 
 
-typedef struct
+/* the dhdl.xvg data from a simulation (actually obsolete, but still
+    here for reading the dhdl.xvg file*/
+typedef struct xvg_t
 {
-    unsigned int *bin;          /* the histogram values */
-    double dx;                  /* the histogram spacing */
-    gmx_large_int_t x0;         /* the histogram start point as int */
-
-    int nbin;                   /* the number of bins */
-    gmx_large_int_t sum;        /* the total number of counts */
-
-    double starttime, endtime;  /* start time, end time of histogram */
-} barhist_t;
-
-
-/* the raw data from a simulation */
-typedef struct {
     char   *filename;
     int    ftp;     /* file type */
     int    nset;    /* number of lambdas, including dhdl */
     int *np;        /* number of data points (du or hists) per lambda */
     int  np_alloc;  /* number of points (du or hists) allocated */
     double temp;    /* temperature */
-    double *lambda; /* the lambdas (of first index for y). The first one
-                       is just the 'native' lambda */
+    double *lambda; /* the lambdas (of first index for y). */
     double *t;      /* the times (of second index for y) */
     double **y;     /* the dU values. y[0] holds the derivative, while
                        further ones contain the energy differences between
                        the native lambda and the 'foreign' lambdas. */
-    barhist_t **hists; /* histograms. */
-} barsim_t;
+
+    double native_lambda; /* the native lambda */
+
+    struct xvg_t *next, *prev; /*location in the global linked list of xvg_ts*/
+} xvg_t;
+
+
+
+typedef struct hist_t
+{
+    unsigned int *bin[2];       /* the (forward + reverse) histogram values */
+    double dx[2];               /* the histogram spacing. The reverse
+                                   dx is the negative of the forward dx.*/
+    gmx_large_int_t x0[2];      /* the (forward + reverse) histogram start 
+                                   point(s) as int */
+
+    int nbin[2];                /* the (forward+reverse) number of bins */
+    gmx_large_int_t sum;        /* the total number of counts. Must be
+                                   the same for forward + reverse.  */
+    int nhist;                  /* number of hist datas (forward or reverse) */
+
+    double start_time, delta_time;  /* start time, end time of histogram */
+} hist_t;
+
 
 /* an aggregate of samples for partial free energy calculation */
-typedef struct barsamples_t 
-{
-    double native_lambda;
+typedef struct samples_t 
+{    
+    double native_lambda; 
     double foreign_lambda;
-    double temp;
+    double temp; /* the temperature */
+    gmx_bool derivative; /* whether this sample is a derivative */
 
-    int nndu; /* number of delta u sample collections */
-    int *ndu; /* the number of delta U samples */
-    double **du; /* the delta u's */
-    double **t; /* the times associated with those samples */
+    /* The samples come either as either delta U lists: */
+    int ndu; /* the number of delta U samples */
+    double *du; /* the delta u's */
+    double *t; /* the times associated with those samples, or: */
+    double start_time,delta_time;/*start time and delta time for linear time*/
 
-    int nhist; /* the number of histograms */ 
-    barhist_t *hists; /* the histograms */
+    /* or as histograms: */
+    hist_t *hist; /* a histogram */
+
+    /* allocation data: (not NULL for data 'owned' by this struct) */
+    double *du_alloc, *t_alloc; /* allocated delta u arrays  */
+    hist_t *hist_alloc; /* allocated hist */
 
     gmx_large_int_t ntot; /* total number of samples */
+    const char *filename; /* the file name this sample comes from */
+} samples_t;
 
-    struct barsamples_t  *next, *prev; /* the next and prev in the list */
-} barsamples_t;
+/* a sample range (start to end for du-style data, or boolean 
+    for both du-style data and histograms */
+typedef struct sample_range_t
+{
+    int start, end; /* start and end index for du style data */
+    gmx_bool use; /* whether to use this sample */
+
+    samples_t *s; /* the samples this range belongs to */
+} sample_range_t;
+
+
+/* a collection of samples for a partial free energy calculation 
+    (i.e. the collection of samples from one native lambda to one 
+    foreign lambda) */
+typedef struct sample_coll_t
+{
+    double native_lambda;  /* these should be the same for all samples in the */
+    double foreign_lambda; /* collection */
+    double temp; /* the temperature */
+
+    int nsamples; /* the number of samples */
+    samples_t **s; /* the samples themselves */
+    sample_range_t *r; /* the sample ranges */
+    int nsamples_alloc; /* number of allocated samples */ 
+
+    gmx_large_int_t ntot; /* total number of samples in the ranges of 
+                             this collection */
+
+    struct sample_coll_t *next, *prev; /* next and previous in the list */
+} sample_coll_t;
 
 /* all the samples associated with a lambda point */
-typedef struct barlambda_t
+typedef struct lambda_t
 {
-    double lambda; /* the native lambda */
+    double lambda; /* the native lambda (at start time if dynamic) */
     double temp; /* temperature */
 
-    int nbs; /* number of barsamples_ts with their own lambda */
-    barsamples_t *bs; /* the samples */
+    sample_coll_t *sc; /* the samples */
 
-    barsamples_t bs_head; /* the pre-allocated list head for the linked list. 
-                             Also used to contain the dhdl data. */
+    sample_coll_t sc_head; /*the pre-allocated list head for the linked list.*/
 
-    struct barlambda_t  *next, *prev; /* the next and prev in the list */
-} barlambda_t;
+    struct lambda_t *next, *prev; /* the next and prev in the list */
+} lambda_t;
 
 
 /* calculated values. */
 typedef struct {
-    /*barsim_t *a, *b; *//* the simulation data */
-    barsamples_t *a, *b;
-
-    /*double lambda_a, lambda_b; *//* the lambda values at a and b */
+    sample_coll_t *a, *b; /* the simulation data */
 
     double dg; /* the free energy difference */
     double dg_err; /* the free energy difference */
@@ -147,55 +188,127 @@ typedef struct {
 
 
 
-static void barsim_init(barsim_t *ba)
+
+static void hist_init(hist_t *h, int nhist, int *nbin)
+{
+    int i;
+    if (nhist>2)
+    {
+        gmx_fatal(FARGS, "histogram with more than two sets of data!");
+    }
+    for(i=0;i<nhist;i++)
+    {
+        snew(h->bin[i], nbin[i]);
+        h->x0[i]=0;
+        h->nbin[i]=nbin[i];
+        h->start_time=h->delta_time=0;
+        h->dx[i]=0;
+    }
+    h->sum=0;
+    h->nhist=nhist;
+}
+
+static void hist_destroy(hist_t *h)
+{
+    sfree(h->bin);
+}
+
+
+static void xvg_init(xvg_t *ba)
 {
     ba->filename=NULL;
     ba->nset=0;
     ba->np_alloc=0;
     ba->np=NULL;
     ba->y=NULL;
-    ba->hists=NULL;
 }
 
-static void barsamples_init(barsamples_t *bs, double native_lambda,
-                            double foreign_lambda, double temp)
+static void samples_init(samples_t *s, double native_lambda,
+                         double foreign_lambda, double temp,
+                         gmx_bool derivative, const char *filename)
 {
-    bs->native_lambda=native_lambda;
-    bs->foreign_lambda=foreign_lambda;
-    bs->temp=temp;
-    bs->nndu=0;
-    bs->nhist=0;
-    bs->ntot=0;
-    bs->ndu=NULL;
-    bs->du=NULL;
-    bs->t=NULL;
-    bs->hists=NULL;
+    s->native_lambda=native_lambda;
+    s->foreign_lambda=foreign_lambda;
+    s->temp=temp;
+    s->derivative=derivative;
 
-    bs->next=NULL;
-    bs->prev=NULL;
+    s->ndu=0;
+    s->du=NULL;
+    s->t=NULL;
+    s->start_time = s->delta_time = 0;
+    s->hist=NULL;
+    s->du_alloc=NULL;
+    s->t_alloc=NULL;
+    s->hist_alloc=NULL;
+
+    s->ntot=0;
+    s->filename=filename;
 }
 
 /* destroy the data structures directly associated with the structure, not
    the data it points to */
-static void barsamples_destroy(barsamples_t *bs)
+static void samples_destroy(samples_t *s)
 {
-    sfree(bs->ndu);
-    sfree(bs->du);
-    sfree(bs->t);
-    sfree(bs->hists);
+    if (s->du_alloc)
+    {
+        sfree(s->du_alloc);
+    }
+    if (s->t_alloc)
+    {
+        sfree(s->t_alloc);
+    }
+    if (s->hist_alloc)
+    {
+        hist_destroy(s->hist_alloc);
+        sfree(s->hist_alloc);
+    }
 }
 
-static void barlambda_init(barlambda_t *bl, double native_lambda, double temp)
+static void sample_range_init(sample_range_t *r, samples_t *s)
 {
-    bl->lambda=native_lambda;
-    bl->temp=temp;
-    bl->nbs=0;
-    bl->next=NULL;
-    bl->prev=NULL;
-    bl->bs=&(bl->bs_head);
-    barsamples_init(bl->bs, native_lambda, 0., 0.);
-    bl->bs->next=bl->bs;
-    bl->bs->prev=bl->bs;
+    r->start=0;
+    r->end=s->ndu;
+    r->use=TRUE;
+    r->s=NULL;
+}
+
+static void sample_coll_init(sample_coll_t *sc, double native_lambda,
+                             double foreign_lambda, double temp)
+{
+    sc->native_lambda = native_lambda;
+    sc->foreign_lambda = foreign_lambda;
+    sc->temp = temp;
+
+    sc->nsamples=0;
+    sc->s=NULL;
+    sc->r=NULL;
+    sc->nsamples_alloc=0;
+
+    sc->ntot=0;
+    sc->next=sc->prev=NULL;
+}
+
+static void sample_coll_destroy(sample_coll_t *sc)
+{
+    /* don't free the samples themselves */
+    sfree(sc->r);
+    sfree(sc->s);
+}
+
+
+static void lambda_init(lambda_t *l, double native_lambda, double temp)
+{
+    l->lambda=native_lambda;
+    l->temp=temp;
+
+    l->next=NULL;
+    l->prev=NULL;
+
+    l->sc=&(l->sc_head);
+
+    sample_coll_init(l->sc, native_lambda, 0., 0.);
+    l->sc->next=l->sc;
+    l->sc->prev=l->sc;
 }
 
 static void barres_init(barres_t *br)
@@ -214,279 +327,236 @@ static void barres_init(barres_t *br)
 }
 
 
-static bool lambda_same(double lambda1, double lambda2)
+
+
+static gmx_bool lambda_same(double lambda1, double lambda2)
 {
     return gmx_within_tol(lambda1, lambda2, 10*GMX_REAL_EPS);
 }
 
-/* find the barsamples_t associated with a barlambda that corresponds to
-   a specific foreign lambda */
-barsamples_t *barlambda_find_barsample(barlambda_t *bl, double foreign_lambda)
+/* calculate the total number of samples in a sample collection */
+static void sample_coll_calc_ntot(sample_coll_t *sc)
 {
-    barsamples_t *bs=bl->bs->next;
+    int i;
 
-    while(bs != bl->bs)
+    sc->ntot=0;
+    for(i=0;i<sc->nsamples;i++)
     {
-        if (lambda_same(bs->foreign_lambda,foreign_lambda))
+        if (sc->r[i].use)
         {
-            return bs;
+            if (sc->s[i]->hist)
+            {
+                sc->ntot += sc->s[i]->ntot;
+            }
+            else
+            {
+                sc->ntot += sc->r[i].end - sc->r[i].start;
+            }
         }
-        bs=bs->next;
+    }
+}
+
+
+/* find the barsamples_t associated with a lambda that corresponds to
+   a specific foreign lambda */
+static sample_coll_t *lambda_find_sample_coll(lambda_t *l, 
+                                              double foreign_lambda)
+{
+    sample_coll_t *sc=l->sc->next;
+
+    while(sc != l->sc)
+    {
+        if (lambda_same(sc->foreign_lambda,foreign_lambda))
+        {
+            return sc;
+        }
+        sc=sc->next;
     }
 
     return NULL;
 }
 
-/* create subsample i out of ni from an existing barsample_t */
-void barsamples_create_subsample(barsamples_t *bs, barsamples_t *bs_orig, 
-                                int i, int ni)
+/* insert li into an ordered list of lambda_colls */
+static void lambda_insert_sample_coll(lambda_t *l, sample_coll_t *sc)
 {
-    int j;
-    int hist_start, hist_end;
-
-    *bs = *bs_orig; /* just copy all fields */
-
-    /* allocate proprietary memory */
-    snew(bs->ndu, bs_orig->nndu);
-    snew(bs->du, bs_orig->nndu);
-    snew(bs->t, bs_orig->nndu);
-    snew(bs->hists, bs_orig->nhist);
-
-    /* fix all the du fields */
-    for(j=0;j<bs_orig->nndu;j++)
+    sample_coll_t *scn=l->sc->next;
+    while ( (scn!=l->sc) )
     {
-        /* these ugly casts avoid a nasty overflow if ndu is very big. */
-        int start=(int)(bs_orig->ndu[j]*((double)(i)/ni));
-        int end=(int)(bs_orig->ndu[j]*((double)(i+1.)/ni))-1;
-
-        bs->ndu[j]=end-start+1;
-        bs->du[j]=&(bs_orig->du[j][start]);
-        bs->t[j]=&(bs_orig->t[j][start]);
+        if (scn->foreign_lambda > sc->foreign_lambda)
+            break;
+        scn=scn->next;
     }
-    /* and all histograms */
-    hist_start = (int)(bs_orig->nhist*((double)(i)/ni));
-    hist_end = (int)(bs_orig->nhist*((double)(i+1)/ni))-1;
-    bs->nhist=(hist_end-hist_start)+1;
-    for(j=0;j<bs->nhist;j++)
-        bs->hists[j] = bs_orig->hists[j+hist_start];
- 
-    /* and count ntot */
-    bs->ntot = 0;
-    for(i=0;i<bs->nndu;i++)
-        bs->ntot += bs->ndu[i];
-    for(i=0;i<bs->nhist;i++)
-        bs->ntot += bs->hists[i].sum;
+    /* now insert it before the found scn */
+    sc->next=scn;
+    sc->prev=scn->prev;
+    scn->prev->next=sc;
+    scn->prev=sc;
 }
 
-
-/* add simulation data to a barlambda structure */
-void barlambda_add_sim(barlambda_t *bl, barsim_t *ba, double begin, double end)
+/* insert li into an ordered list of lambdas */
+static void lambda_insert_lambda(lambda_t *head, lambda_t *li)
 {
-    int i,j;
-
-    if (!lambda_same(bl->lambda, ba->lambda[0]))
-        gmx_fatal(FARGS, "barlambda_add_sim lambdas inconsistent!");
-
-    for(i=0;i<ba->nset;i++)
+    lambda_t *lc=head->next;
+    while (lc!=head) 
     {
-        if (ba->np[i] > 0)
-        {
-            barsamples_t *bs=NULL;
-
-            if (i>0) 
-            {
-                bs=barlambda_find_barsample(bl, ba->lambda[i]);
-            }
-
-            if (!bs)
-            {
-                /* we make a new barsamples_t */
-                snew(bs, 1);
-                barsamples_init(bs, bl->lambda, ba->lambda[i], bl->temp);
-                /* insert it */
-                bs->next=bl->bs;
-                bs->prev=bl->bs->prev;
-                bs->next->prev=bs;
-                bs->prev->next=bs;
-            }
-            /* else 
-               there already exists a barsamples_t with this foreign lambda 
-               and we don't need to do anything */
-
-            /* and add our samples */
-            if (ba->y && ba->y[i])
-            {
-                int ndu=ba->np[i];
-                double *y=ba->y[i];
-                double *t=ba->t;
-
-                /* get the right time */
-                while( ndu>0 && *t < begin )
-                {
-                    ndu--;
-                    y++;
-                    t++;
-                }
-                if (end > begin)
-                {
-                    while(t[ndu-1] > end)
-                    {
-                        ndu--;
-                    }
-                }
-
-                bs->nndu++;
-                srenew(bs->ndu, bs->nndu);
-                srenew(bs->du, bs->nndu);
-                srenew(bs->t, bs->nndu);
-                bs->ndu[bs->nndu-1]=ndu;
-                bs->du[bs->nndu-1]=y;
-                bs->t[bs->nndu-1]=t;
-                bs->ntot += ndu;
-            }
-            if (ba->hists && ba->hists[i])
-            {
-                int nhist_prev = bs->nhist;
-                int starti=0;
-                int endi=ba->np[i];
-
-                while( starti<endi && ba->hists[i][starti].endtime<begin)
-                {
-                    starti++;
-                }
-                if (end > begin)
-                {
-                    while((endi>starti) && (ba->hists[i][endi].starttime>end))
-                    {
-                        endi--;
-                    }
-                }
-                bs->nhist += endi-starti;
-                srenew(bs->hists, bs->nhist);
-                for(j=starti;j<endi;j++)
-                {
-                    int hi=nhist_prev+(j-starti);
-                    bs->hists[hi] = ba->hists[i][j];
-                    bs->ntot += bs->hists[hi].sum;
-                }
-            }
-        }
+        if (lc->lambda > li->lambda)
+            break;
+        lc=lc->next;
     }
+    /* now insert ourselves before the found lc */
+    li->next=lc;
+    li->prev=lc->prev;
+    lc->prev->next=li;
+    lc->prev=li;
 }
 
-
-/* assemble an ordered list of barlambda_ts */
-barlambda_t *barlambdas_list_create(barsim_t *ba, int nfile, 
-                                    int *nbl, double begin, double end)
+/* insert a sample and a sample_range into a sample_coll. The
+    samples are stored as a pointer, the range is copied. */
+static void sample_coll_insert_sample(sample_coll_t *sc, samples_t *s,
+                                      sample_range_t *r)
 {
-    barsim_t ba_tmp;
-    barlambda_t *bl_head; /* the head of the list */
-    int i;
-
-    snew(bl_head, 1); /* the first element is a dummy element */
-    barlambda_init(bl_head, 0, 0);
-    bl_head->next=bl_head;
-    bl_head->prev=bl_head;
-    *nbl=0;
-
-    for(i=0; i<nfile; i++)
+    /* first check if it belongs here */
+    if (sc->temp != s->temp)
     {
-        barlambda_t *bl=bl_head->next;
-        bool inserted=FALSE;
-
-        while(bl != bl_head)
-        {
-            if (lambda_same(ba[i].lambda[0], bl->lambda))
-            {
-                /* this lambda is the same as a previous lambda; add 
-                   our samples */
-                barlambda_add_sim(bl, &(ba[i]), begin, end);
-                inserted=TRUE;
-                break;
-            }
-            if ( bl->lambda > ba[i].lambda[0] )
-            {
-                break;
-            }
-            bl=bl->next;
-        }
-
-        if (!inserted)
-        {
-            barlambda_t *bl_new;
-            
-            snew(bl_new, 1); 
-            (*nbl)++;
-            barlambda_init(bl_new,ba[i].lambda[0], ba[i].temp);
-            /* update linked list */
-            bl_new->next=bl;
-            bl_new->prev=bl->prev;
-            bl_new->prev->next=bl_new;
-            bl_new->next->prev=bl_new;
-            barlambda_add_sim(bl_new, &(ba[i]), begin, end);
-        }
+        gmx_fatal(FARGS, "Temperatures in files %s and %s are not the same!",
+                   s->filename, sc->next->s[0]->filename);
     }
-    return bl_head;
+    if (sc->native_lambda != s->native_lambda)
+    {
+        gmx_fatal(FARGS, "Native lambda in files %s and %s are not the same (and they should be)!",
+                   s->filename, sc->next->s[0]->filename);
+    }
+    if (sc->foreign_lambda != s->foreign_lambda)
+    {
+        gmx_fatal(FARGS, "Foreign lambda in files %s and %s are not the same (and they should be)!",
+                   s->filename, sc->next->s[0]->filename);
+    }
+
+    /* check if there's room */
+    if ( (sc->nsamples + 1) > sc->nsamples_alloc)
+    {
+        sc->nsamples_alloc = max(2*sc->nsamples_alloc, 2);
+        srenew(sc->s, sc->nsamples_alloc);
+        srenew(sc->r, sc->nsamples_alloc);
+    }
+    sc->s[sc->nsamples]=s;
+    sc->r[sc->nsamples]=*r;
+    sc->nsamples++;
+
+    sample_coll_calc_ntot(sc);
 }
+
+/* insert a sample into a lambda_list, creating the right sample_coll if 
+   neccesary */
+static void lambda_list_insert_sample(lambda_t *head, samples_t *s)
+{
+    gmx_bool found=FALSE;
+    sample_coll_t *sc;
+    sample_range_t r;
+
+    lambda_t *l=head->next;
+
+    /* first search for the right lambda_t */
+    while(l != head)
+    {
+        if (lambda_same(l->lambda, s->native_lambda) )
+        {
+            found=TRUE;
+            break;
+        }
+        l=l->next;
+    }
+
+    if (!found)
+    {
+        snew(l, 1); /* allocate a new one */
+        lambda_init(l, s->native_lambda, s->temp); /* initialize it */
+        lambda_insert_lambda(head, l); /* add it to the list */
+    }
+
+    /* now look for a sample collection */
+    sc=lambda_find_sample_coll(l, s->foreign_lambda);
+    if (!sc)
+    {
+        snew(sc, 1); /* allocate a new one */
+        sample_coll_init(sc, s->native_lambda, s->foreign_lambda, s->temp);
+        lambda_insert_sample_coll(l, sc);
+    }
+
+    /* now insert the samples into the sample coll */
+    sample_range_init(&r, s);
+    sample_coll_insert_sample(sc, s, &r);
+}
+
 
 /* make a histogram out of a sample collection */
-void barsamples_make_hist(barsamples_t *bs, int **bin, 
-                          int *nbin_alloc, int *nbin, 
-                          double *dx, double *xmin, int nbin_default)
+static void sample_coll_make_hist(sample_coll_t *sc, int **bin, 
+                                  int *nbin_alloc, int *nbin, 
+                                  double *dx, double *xmin, int nbin_default)
 {
-    int i,j;
-    bool dx_set=FALSE;
-    bool xmin_set=FALSE;
+    int i,j,k;
+    gmx_bool dx_set=FALSE;
+    gmx_bool xmin_set=FALSE;
 
-    bool xmax_set=FALSE;
-    bool xmax_set_hard=FALSE; /* whether the xmax is bounded by the limits of 
-                                  a histogram */
+    gmx_bool xmax_set=FALSE;
+    gmx_bool xmax_set_hard=FALSE; /* whether the xmax is bounded by the 
+                                     limits of a histogram */
     double xmax=-1;
 
     /* first determine dx and xmin; try the histograms */
-    for(i=0;i<bs->nhist;i++)
+    for(i=0;i<sc->nsamples;i++)
     {
-        double xmax_now=(bs->hists[i].x0+bs->hists[i].nbin)*bs->hists[i].dx;
+        if (sc->s[i]->hist)
+        {
+            hist_t *hist=sc->s[i]->hist;
+            for(k=0;k<hist->nhist;k++)
+            {
+                double hdx=hist->dx[k];
+                double xmax_now=(hist->x0[k]+hist->nbin[k])*hdx;
 
-        /* we use the biggest dx*/
-        if ( (!dx_set) || bs->hists[i].dx > *dx)
-        {
-            dx_set=TRUE;
-            *dx = bs->hists[i].dx;
-        }
-        if ( (!xmin_set) || (bs->hists[i].x0*bs->hists[i].dx) < *xmin)
-        {
-            xmin_set=TRUE;
-            *xmin = (bs->hists[i].x0*bs->hists[i].dx);
-        }
-        
-        if ( (!xmax_set) || (xmax_now>xmax && !xmax_set_hard) )
-        {
-            xmax_set=TRUE;
-            xmax = xmax_now;
-            if (bs->hists[i].bin[bs->hists[i].nbin-1] != 0)
-                xmax_set_hard=TRUE;
-        }
-        if ( bs->hists[i].bin[bs->hists[i].nbin-1]!=0 && (xmax_now < xmax) )
-        {
-            xmax_set_hard=TRUE;
-            xmax = xmax_now;
+                /* we use the biggest dx*/
+                if ( (!dx_set) || hist->dx[0] > *dx)
+                {
+                    dx_set=TRUE;
+                    *dx = hist->dx[0];
+                }
+                if ( (!xmin_set) || (hist->x0[k]*hdx) < *xmin)
+                {
+                    xmin_set=TRUE;
+                    *xmin = (hist->x0[k]*hdx);
+                }
+
+                if ( (!xmax_set) || (xmax_now>xmax && !xmax_set_hard) )
+                {
+                    xmax_set=TRUE;
+                    xmax = xmax_now;
+                    if (hist->bin[k][hist->nbin[k]-1] != 0)
+                        xmax_set_hard=TRUE;
+                }
+                if ( hist->bin[k][hist->nbin[k]-1]!=0 && (xmax_now < xmax) )
+                {
+                    xmax_set_hard=TRUE;
+                    xmax = xmax_now;
+                }
+            }
         }
     }
     /* and the delta us */
-    for(i=0;i<bs->nndu;i++)
+    for(i=0;i<sc->nsamples;i++)
     {
-        if (bs->ndu[i]>0)
+        if (sc->s[i]->ndu > 0)
         {
             /* determine min and max */
-            double du_xmin=bs->du[i][0]; 
-            double du_xmax=bs->du[i][0];
-            for(j=1;j<bs->ndu[i];j++)
+            int starti=sc->r[i].start;
+            int endi=sc->r[i].end;
+            double du_xmin=sc->s[i]->du[starti]; 
+            double du_xmax=sc->s[i]->du[starti];
+            for(j=starti+1;j<endi;j++)
             {
-                if (bs->du[i][j] < du_xmin)
-                    du_xmin = bs->du[i][j];
-                if (bs->du[i][j] > du_xmax)
-                    du_xmax = bs->du[i][j];
+                if (sc->s[i]->du[j] < du_xmin)
+                    du_xmin = sc->s[i]->du[j];
+                if (sc->s[i]->du[j] > du_xmax)
+                    du_xmax = sc->s[i]->du[j];
             }
 
             /* and now change the limits */
@@ -533,57 +603,69 @@ void barsamples_make_hist(barsamples_t *bs, int **bin,
         (*bin)[i] = 0;
     }
 
-    /* now add the acutal data */   
-    for(i=0;i<bs->nhist;i++)
+    /* now add the actual data */   
+    for(i=0;i<sc->nsamples;i++)
     {
-        double xmin_hist=bs->hists[i].x0*bs->hists[i].dx;
-        for(j=0;j<bs->hists[i].nbin;j++)
+        if (sc->s[i]->hist)
         {
-            /* calculate the bin corresponding to the middle of the original
-               bin */
-            double x=bs->hists[i].dx*(j+0.5) + xmin_hist;
-            int binnr=(int)((x-(*xmin))/(*dx));
+            hist_t *hist=sc->s[i]->hist;
+            for(k=0;k<hist->nhist;k++)
+            {
+                double hdx = hist->dx[k];
+                double xmin_hist=hist->x0[k]*hdx;
+                for(j=0;j<hist->nbin[k];j++)
+                {
+                    /* calculate the bin corresponding to the middle of the 
+                       original bin */
+                    double x=hdx*(j+0.5) + xmin_hist;
+                    int binnr=(int)((x-(*xmin))/(*dx));
 
-            if (binnr >= *nbin || binnr<0)
-                binnr = (*nbin)-1;
+                    if (binnr >= *nbin || binnr<0)
+                        binnr = (*nbin)-1;
 
-            (*bin)[binnr] += bs->hists[i].bin[j]; 
+                    (*bin)[binnr] += hist->bin[k][j]; 
+                }
+            }
         }
-    }
-    for(i=0;i<bs->nndu;i++)
-    {
-        for(j=0;j<bs->ndu[i];j++)
+        else
         {
-            int binnr=(int)((bs->du[i][j]-(*xmin))/(*dx));
-            if (binnr >= *nbin || binnr<0)
-                binnr = (*nbin)-1;
+            int starti=sc->r[i].start;
+            int endi=sc->r[i].end;
+            for(j=starti;j<endi;j++)
+            {
+                int binnr=(int)((sc->s[i]->du[j]-(*xmin))/(*dx));
+                if (binnr >= *nbin || binnr<0)
+                    binnr = (*nbin)-1;
 
-            (*bin)[binnr] ++;
+                (*bin)[binnr] ++;
+            }
         }
     }
 }
 
 /* write a collection of histograms to a file */
-void barlambdas_histogram(barlambda_t *bl_head, const char *filename, 
-                          int nbin_default, const output_env_t oenv)
+void lambdas_histogram(lambda_t *bl_head, const char *filename, 
+                       int nbin_default, const output_env_t oenv)
 {
     char label_x[STRLEN];
-    const char *title="N(\\Delta H)";
+    const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
+    const char *title="N(\\DeltaH)";
     const char *label_y="Samples";
     FILE *fp;
-    barlambda_t *bl;
+    lambda_t *bl;
     int nsets=0;
     char **setnames=NULL;
-    bool first_set=FALSE;
+    gmx_bool first_set=FALSE;
     /* histogram data: */
     int *hist=NULL;
     int nbin=0;
     int nbin_alloc=0;
     double dx=0;
-    double min;
+    double min=0;
     int i;
 
-    sprintf(label_x, "\\Delta H (%s)", unit_energy);
+    printf("\nWriting histogram to %s\n", filename);
+    sprintf(label_x, "[\\Delta]H (%s)", unit_energy);
 
     fp=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, oenv);
 
@@ -592,28 +674,26 @@ void barlambdas_histogram(barlambda_t *bl_head, const char *filename,
     /* iterate over all lambdas */
     while(bl!=bl_head)
     {
-        barsamples_t *bs=bl->bs->next;
+        sample_coll_t *sc=bl->sc->next;
 
         /* iterate over all samples */
-        while(bs!=bl->bs)
+        while(sc!=bl->sc)
         {
             nsets++;
             srenew(setnames, nsets); 
             snew(setnames[nsets-1], STRLEN);
-            if (!lambda_same(bs->foreign_lambda, bs->native_lambda))
+            if (!lambda_same(sc->foreign_lambda, sc->native_lambda))
             {
-                sprintf(setnames[nsets-1], 
-                        "N(H(\\lambda=%g) - H(\\lambda=%g) | \\lambda=%g)", 
-                        bs->foreign_lambda, bs->native_lambda, 
-                        bs->native_lambda);
+                sprintf(setnames[nsets-1], "N(%s(%s=%g) | %s=%g)",
+                        deltag, lambda, sc->foreign_lambda, lambda,
+                        sc->native_lambda);
             }
             else
             {
-                sprintf(setnames[nsets-1], 
-                        "N(dH/d\\lambda | \\lambda=%g)", 
-                        bs->native_lambda);
+                sprintf(setnames[nsets-1], "N(%s | %s=%g)",
+                        dhdl, lambda, sc->native_lambda);
             }
-            bs=bs->next;
+            sc=sc->next;
         }
 
         bl=bl->next;
@@ -626,27 +706,29 @@ void barlambdas_histogram(barlambda_t *bl_head, const char *filename,
     /* iterate over all lambdas */
     while(bl!=bl_head)
     {
-        barsamples_t *bs=bl->bs->next;
+        sample_coll_t *sc=bl->sc->next;
 
         /* iterate over all samples */
-        while(bs!=bl->bs)
+        while(sc!=bl->sc)
         {
             if (!first_set)
-                xvgr_new_dataset(fp, oenv);
+            {
+                xvgr_new_dataset(fp, 0, 0, NULL, oenv);
+            }
     
-            barsamples_make_hist(bs, &hist, &nbin_alloc, &nbin, &dx, &min,
-                                 nbin_default);
+            sample_coll_make_hist(sc, &hist, &nbin_alloc, &nbin, &dx, &min,
+                                  nbin_default);
 
             for(i=0;i<nbin;i++)
             {
-                double xmin=i*dx;
-                double xmax=(i+1)*dx;
+                double xmin=i*dx + min;
+                double xmax=(i+1)*dx + min;
 
                 fprintf(fp, "%g %d\n%g %d\n", xmin, hist[i], xmax, hist[i]);
             }
 
             first_set=FALSE;
-            bs=bs->next;
+            sc=sc->next;
         }
 
         bl=bl->next;
@@ -660,16 +742,16 @@ void barlambdas_histogram(barlambda_t *bl_head, const char *filename,
 
 /* create a collection (array) of barres_t object given a ordered linked list 
    of barlamda_t sample collections */
-static barres_t *barres_list_create(barlambda_t *bl_head, int *nres)
+static barres_t *barres_list_create(lambda_t *bl_head, int *nres)
 {
-    barlambda_t *bl;
+    lambda_t *bl;
     int nlambda=0;
     barres_t *res;
     int i;
-    bool dhdl=FALSE;
-    bool first=TRUE;
+    gmx_bool dhdl=FALSE;
+    gmx_bool first=TRUE;
 
-    /* first count the barlambdas */
+    /* first count the lambdas */
     bl=bl_head->next;
     while(bl!=bl_head)
     {
@@ -683,21 +765,21 @@ static barres_t *barres_list_create(barlambda_t *bl_head, int *nres)
     bl=bl_head->next->next; /* we start with the second one. */
     while(bl!=bl_head)
     {
-        barsamples_t *bs,*bsprev;
+        sample_coll_t *sc, *scprev;
         barres_t *br=&(res[*nres]);
         /* there is always a previous one. we search for that as a foreign 
            lambda: */
-        bsprev=barlambda_find_barsample(bl->prev, bl->lambda);
-        bs=barlambda_find_barsample(bl, bl->prev->lambda);
+        scprev=lambda_find_sample_coll(bl->prev, bl->lambda);
+        sc=lambda_find_sample_coll(bl, bl->prev->lambda);
 
         barres_init(br);
 
-        if (!bsprev && !bs)
+        if (!scprev && !sc)
         {
             /* we use dhdl */
 
-            bsprev=barlambda_find_barsample(bl->prev, bl->prev->lambda);
-            bs=barlambda_find_barsample(bl, bl->lambda);
+            scprev=lambda_find_sample_coll(bl->prev, bl->prev->lambda);
+            sc=lambda_find_sample_coll(bl, bl->lambda);
 
             if (first)
             {
@@ -711,16 +793,16 @@ static barres_t *barres_list_create(barlambda_t *bl_head, int *nres)
         }
         
         /* normal delta H */
-        if (!bsprev)
+        if (!scprev)
         {
             gmx_fatal(FARGS,"Could not find a set for lambda = %g in the files for lambda = %g",bl->lambda,bl->prev->lambda);
         }
-        if (!bs)
+        if (!sc)
         {
             gmx_fatal(FARGS,"Could not find a set for lambda = %g in the files for lambda = %g",bl->prev->lambda,bl->lambda);
         }
-        br->a = bsprev;
-        br->b = bs;
+        br->a = scprev;
+        br->b = sc;
 
         first=FALSE;
         (*nres)++;
@@ -734,24 +816,366 @@ static double barres_list_max_disc_err(barres_t *res, int nres)
 {
     int i,j;
     double disc_err=0.;
+    double delta_lambda;
 
     for(i=0;i<nres;i++)
     {
         barres_t *br=&(res[i]);
 
-        for(j=0;j<br->a->nhist;j++)
+        delta_lambda=fabs(br->b->native_lambda-br->a->native_lambda);
+
+        for(j=0;j<br->a->nsamples;j++)
         {
-            disc_err=max(disc_err, br->a->hists[j].dx);
+            if (br->a->s[j]->hist)
+            {
+                double Wfac=1.;
+                if (br->a->s[j]->derivative)
+                    Wfac =  delta_lambda;
+
+                disc_err=max(disc_err, Wfac*br->a->s[j]->hist->dx[0]);
+            }
         }
-        for(j=0;j<br->b->nhist;j++)
+        for(j=0;j<br->b->nsamples;j++)
         {
-            disc_err=max(disc_err, br->b->hists[j].dx);
+            if (br->b->s[j]->hist)
+            {
+                double Wfac=1.;
+                if (br->b->s[j]->derivative)
+                    Wfac =  delta_lambda;
+                disc_err=max(disc_err, Wfac*br->b->s[j]->hist->dx[0]);
+            }
         }
     } 
     return disc_err;
 }
 
-static double calc_bar_sum(int n,double *W,double Wfac,double sbMmDG)
+
+/* impose start and end times on a sample collection, updating sample_ranges */
+static void sample_coll_impose_times(sample_coll_t *sc, double begin_t, 
+                                     double end_t)
+{
+    int i;
+    for(i=0;i<sc->nsamples;i++)
+    {
+        samples_t *s=sc->s[i];
+        sample_range_t *r=&(sc->r[i]);
+        if (s->hist)
+        {
+            double end_time=s->hist->delta_time*s->hist->sum + 
+                            s->hist->start_time;
+            if (s->hist->start_time < begin_t || end_time > end_t)
+            {
+                r->use=FALSE;
+            }
+        }
+        else
+        {
+            if (!s->t)
+            {
+                double end_time;
+                if (s->start_time < begin_t)
+                {
+                    r->start=(int)((begin_t - s->start_time)/s->delta_time);
+                }
+                end_time=s->delta_time*s->ndu + s->start_time;
+                if (end_time > end_t)
+                {
+                    r->end=(int)((end_t - s->start_time)/s->delta_time);
+                }
+            }
+            else
+            {
+                int j;
+                for(j=0;j<s->ndu;j++)
+                {
+                    if (s->t[j] <begin_t)
+                    {
+                        r->start = j;
+                    }
+
+                    if (s->t[j] >= end_t)
+                    {
+                        r->end = j;
+                        break;
+                    }
+                }
+            }
+            if (r->start > r->end)
+            {
+                r->use=FALSE;
+            }
+        }
+    }
+    sample_coll_calc_ntot(sc);
+}
+
+static void lambdas_impose_times(lambda_t *head, double begin, double end)
+{
+    double first_t, last_t;
+    double begin_t, end_t;
+    lambda_t *lc;
+    int j;
+
+    if (begin<=0 && end<0)
+    {
+        return;
+    }
+
+    /* first determine the global start and end times */
+    first_t = -1;
+    last_t = -1;
+    lc=head->next;
+    while(lc!=head)
+    {
+        sample_coll_t *sc=lc->sc->next;
+        while(sc != lc->sc)
+        {
+            for(j=0;j<sc->nsamples;j++)
+            {
+                double start_t,end_t;
+
+                start_t = sc->s[j]->start_time;
+                end_t =   sc->s[j]->start_time;
+                if (sc->s[j]->hist)
+                {
+                    end_t += sc->s[j]->delta_time*sc->s[j]->hist->sum;
+                }
+                else
+                {
+                    if (sc->s[j]->t)
+                    {
+                        end_t = sc->s[j]->t[sc->s[j]->ndu-1];
+                    }
+                    else
+                    {
+                        end_t += sc->s[j]->delta_time*sc->s[j]->ndu;
+                    }
+                }
+
+                if (start_t < first_t || first_t<0)
+                {
+                    first_t=start_t;
+                }
+                if (end_t > last_t)
+                {
+                    last_t=end_t;
+                }
+            }
+            sc=sc->next;
+        }
+        lc=lc->next;
+    }
+
+    /* calculate the actual times */
+    if (begin > 0)
+    {
+        begin_t = (last_t - first_t)*begin + first_t;
+    }
+    else
+    {
+        begin_t = first_t;
+    }
+
+    if (end >0 )
+    {
+        end_t = (last_t - first_t)*end + first_t;
+    }
+    else
+    {
+        end_t = last_t;
+    }
+    printf("\n   Samples in time interval: %.3f - %.3f\n", first_t, last_t);
+    printf("Removing samples outside of: %.3f - %.3f\n", begin_t, end_t);
+
+    /* then impose them */
+    lc=head->next;
+    while(lc!=head)
+    {
+        sample_coll_t *sc=lc->sc->next;
+        while(sc != lc->sc)
+        {
+            sample_coll_impose_times(sc, begin_t, end_t);
+            sc=sc->next;
+        }
+        lc=lc->next;
+    }
+}
+
+
+/* create subsample i out of ni from an existing sample_coll */
+static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc, 
+                                             sample_coll_t *sc_orig, 
+                                             int i, int ni)
+{
+    int j;
+    int hist_start, hist_end;
+
+    gmx_large_int_t ntot_start;
+    gmx_large_int_t ntot_end;
+    gmx_large_int_t ntot_so_far;
+
+    *sc = *sc_orig; /* just copy all fields */
+
+    /* allocate proprietary memory */
+    snew(sc->s, sc_orig->nsamples);
+    snew(sc->r, sc_orig->nsamples);
+
+    /* copy the samples */
+    for(j=0;j<sc_orig->nsamples;j++)
+    {
+        sc->s[j] = sc_orig->s[j];
+        sc->r[j] = sc_orig->r[j]; /* copy the ranges too */
+    }
+    
+    /* now fix start and end fields */
+    /* the casts avoid possible overflows */
+    ntot_start=(gmx_large_int_t)(sc_orig->ntot*(double)i/(double)ni);
+    ntot_end  =(gmx_large_int_t)(sc_orig->ntot*(double)(i+1)/(double)ni);
+    ntot_so_far = 0;
+    for(j=0;j<sc->nsamples;j++)
+    {
+        gmx_large_int_t ntot_add;
+        gmx_large_int_t new_start, new_end;
+
+        if (sc->r[j].use)
+        {
+            if (sc->s[j]->hist)
+            {
+                ntot_add = sc->s[j]->hist->sum;
+            }
+            else 
+            {
+                ntot_add = sc->r[j].end - sc->r[j].start;
+            }
+        }
+        else
+        {
+            ntot_add = 0;
+        }
+
+        if (!sc->s[j]->hist)
+        { 
+            if (ntot_so_far < ntot_start)
+            {
+                /* adjust starting point */
+                new_start = sc->r[j].start + (ntot_start - ntot_so_far);
+            }
+            else
+            {
+                new_start = sc->r[j].start;
+            }
+            /* adjust end point */
+            new_end = sc->r[j].start + (ntot_end - ntot_so_far);
+            if (new_end > sc->r[j].end)
+            {
+                new_end=sc->r[j].end;
+            }
+
+            /* check if we're in range at all */
+            if ( (new_end < new_start) || (new_start > sc->r[j].end) )
+            {
+                new_start=0;
+                new_end=0;
+            }
+            /* and write the new range */
+            sc->r[j].start=(int)new_start;
+            sc->r[j].end=(int)new_end;
+        }
+        else
+        {
+            if (sc->r[j].use)
+            {
+                double overlap;
+                double ntot_start_norm, ntot_end_norm;
+                /* calculate the amount of overlap of the 
+                   desired range (ntot_start -- ntot_end) onto
+                   the histogram range (ntot_so_far -- ntot_so_far+ntot_add)*/
+
+                /* first calculate normalized bounds 
+                   (where 0 is the start of the hist range, and 1 the end) */
+                ntot_start_norm = (ntot_start-ntot_so_far)/(double)ntot_add;
+                ntot_end_norm = (ntot_end-ntot_so_far)/(double)ntot_add;
+
+                /* now fix the boundaries */
+                ntot_start_norm = min(1, max(0., ntot_start_norm));
+                ntot_end_norm = max(0, min(1., ntot_end_norm));
+
+                /* and calculate the overlap */
+                overlap = ntot_end_norm - ntot_start_norm;
+
+                if (overlap > 0.95) /* we allow for 5% slack */
+                {
+                    sc->r[j].use = TRUE;
+                }
+                else if (overlap < 0.05)
+                {
+                    sc->r[j].use = FALSE;
+                }
+                else
+                {
+                    return FALSE;
+                }
+            }
+        }
+        ntot_so_far += ntot_add;
+    }
+    sample_coll_calc_ntot(sc);
+
+    return TRUE;
+}
+
+/* calculate minimum and maximum work values in sample collection */
+static void sample_coll_min_max(sample_coll_t *sc, double Wfac,
+                                double *Wmin, double *Wmax)
+{
+    int i,j;
+
+    *Wmin=FLT_MAX;
+    *Wmax=-FLT_MAX;
+
+    for(i=0;i<sc->nsamples;i++)
+    {
+        samples_t *s=sc->s[i];
+        sample_range_t *r=&(sc->r[i]);
+        if (r->use)
+        {
+            if (!s->hist)
+            {
+                for(j=r->start; j<r->end; j++)
+                {
+                    *Wmin = min(*Wmin,s->du[j]*Wfac);
+                    *Wmax = max(*Wmax,s->du[j]*Wfac);
+                }
+            }
+            else
+            {
+                int hd=0; /* determine the histogram direction: */
+                double dx;
+                if ( (s->hist->nhist>1) && (Wfac<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
+
+                for(j=s->hist->nbin[hd]-1;j>=0;j--)
+                {
+                    *Wmin=min(*Wmin,Wfac*(s->hist->x0[hd])*dx);
+                    *Wmax=max(*Wmax,Wfac*(s->hist->x0[hd])*dx);
+                    /* look for the highest value bin with values */
+                    if (s->hist->bin[hd][j]>0)
+                    {
+                        *Wmin=min(*Wmin,Wfac*(j+s->hist->x0[hd]+1)*dx);
+                        *Wmax=max(*Wmax,Wfac*(j+s->hist->x0[hd]+1)*dx);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+static double calc_bar_sum(int n,const double *W,double Wfac,double sbMmDG)
 {
     int    i;
     double sum;
@@ -771,33 +1195,41 @@ static double calc_bar_sum(int n,double *W,double Wfac,double sbMmDG)
     if type== 0, calculate the best estimate for the average,
     if type==-1, calculate the minimum possible value given the histogram 
     if type== 1, calculate the maximum possible value given the histogram */
-static double calc_bar_sum_hist(barhist_t *hist, double Wfac, double sbMmDG,
+static double calc_bar_sum_hist(const hist_t *hist, double Wfac, double sbMmDG,
                                 int type)
 {
     double sum=0.;
     int i;
-    int max=hist->nbin-1;
+    int max; 
     /* normalization factor multiplied with bin width and
        number of samples (we normalize through M): */
     double normdx = 1.;
+    int hd=0; /* determine the histogram direction: */
+    double dx;
 
+    if ( (hist->nhist>1) && (Wfac<0) )
+    {
+        hd=1;
+    }
+    dx=hist->dx[hd];
+    max=hist->nbin[hd]-1;
     if (type==1) 
     {
-        max=hist->nbin; /* we also add whatever was out of range */
+        max=hist->nbin[hd]; /* we also add whatever was out of range */
     }
 
     for(i=0;i<max;i++)
     {
-        double x=Wfac*((i+hist->x0)+0.5)*hist->dx; /* bin middle */
-        double pxdx=hist->bin[i]*normdx; /* p(x)dx */
-    
+        double x=Wfac*((i+hist->x0[hd])+0.5)*dx; /* bin middle */
+        double pxdx=hist->bin[0][i]*normdx; /* p(x)dx */
+   
         sum += pxdx/(1. + exp(x + sbMmDG));
     }
 
     return sum;
 }
 
-static double calc_bar_lowlevel(barsamples_t *ba, barsamples_t *bb,
+static double calc_bar_lowlevel(sample_coll_t *ca, sample_coll_t *cb,
                                 double temp, double tol, int type)
 {
     double kT,beta,M;
@@ -812,12 +1244,12 @@ static double calc_bar_lowlevel(barsamples_t *ba, barsamples_t *bb,
     beta = 1/kT;
   
     /* count the numbers of samples */ 
-    n1 = ba->ntot;
-    n2 = bb->ntot;
+    n1 = ca->ntot;
+    n2 = cb->ntot;
 
     M = log(n1/n2);
 
-    if (!lambda_same(ba->native_lambda, ba->foreign_lambda))
+    if (!lambda_same(ca->native_lambda, ca->foreign_lambda))
     {
         /* this is the case when the delta U were calculated directly
            (i.e. we're not scaling dhdl) */
@@ -828,7 +1260,7 @@ static double calc_bar_lowlevel(barsamples_t *ba, barsamples_t *bb,
     {
         /* we're using dhdl, so delta_lambda needs to be a 
            multiplication factor.  */
-        double delta_lambda=bb->native_lambda-ba->native_lambda;
+        double delta_lambda=cb->native_lambda-ca->native_lambda;
         Wfac1 =  beta*delta_lambda;
         Wfac2 = -beta*delta_lambda;
     }
@@ -845,49 +1277,13 @@ static double calc_bar_lowlevel(barsamples_t *ba, barsamples_t *bb,
     /* Calculate minimum and maximum work to give an initial estimate of 
      * delta G  as their average.
      */
-    Wmin=FLT_MAX;
-    Wmax=-FLT_MAX;
-    for(i=0;i<ba->nndu;i++)
     {
-        for(j=1; j<ba->ndu[i]; j++)
-        {
-            Wmin = min(Wmin,ba->du[i][j]*Wfac1);
-            Wmax = max(Wmax,ba->du[i][j]*Wfac1);
-        }
-    }
-    for(i=0;i<ba->nhist;i++)
-    {
-        Wmin = min(Wmin,ba->hists[i].x0*ba->hists[i].dx);
-        for(j=ba->hists[i].nbin-1;j>=0;j--)
-        {
-            /* look for the highest value bin with values */
-            if (ba->hists[i].bin[j]>0)
-            {
-                Wmax=max(Wmax,(j+ba->hists[i].x0+1)*ba->hists[i].dx);
-                break;
-            }
-        }
-    }
-    for(i=0;i<bb->nndu;i++)
-    {
-        for(j=1; j<bb->ndu[i]; j++)
-        {
-            Wmin = min(Wmin,bb->du[i][j]*Wfac1);
-            Wmax = max(Wmax,bb->du[i][j]*Wfac1);
-        }
-    }
-    for(i=0;i<bb->nhist;i++)
-    {
-        Wmin = min(Wmin,bb->hists[i].x0*bb->hists[i].dx);
-        for(j=bb->hists[i].nbin-1;j>=0;j--)
-        {
-            /* look for the highest value bin with values */
-            if (bb->hists[i].bin[j]>0)
-            {
-                Wmax=max(Wmax,(j+bb->hists[i].x0+1)*bb->hists[i].dx);
-                break;
-            }
-        }
+        double Wmin1, Wmin2, Wmax1, Wmax2;
+        sample_coll_min_max(ca, Wfac1, &Wmin1, &Wmax1);
+        sample_coll_min_max(cb, Wfac2, &Wmin2, &Wmax2);
+
+        Wmin=min(Wmin1, Wmin2);
+        Wmax=max(Wmax1, Wmax2);
     }
 
     DG0 = Wmin;
@@ -911,26 +1307,42 @@ static double calc_bar_lowlevel(barsamples_t *ba, barsamples_t *bb,
 
         /* calculate the BAR averages */
         dDG1=0.;
-        for(i=0;i<ba->nndu;i++)
-        { 
-            /* first the du lists */
-            dDG1 += calc_bar_sum(ba->ndu[i], ba->du[i], Wfac1, (M-DG1));
-        }
-        for(i=0;i<ba->nhist;i++)
-        {
-            /* then the histograms */
-            dDG1 += calc_bar_sum_hist(&(ba->hists[i]), Wfac1, (M-DG1), type);
-        }
 
-        for(i=0;i<bb->nndu;i++)
+        for(i=0;i<ca->nsamples;i++)
         {
-            dDG1 -= calc_bar_sum(bb->ndu[i], bb->du[i], Wfac2, -(M-DG1));
+            samples_t *s=ca->s[i];
+            sample_range_t *r=&(ca->r[i]);
+            if (r->use)
+            {
+                if (s->hist)
+                {
+                    dDG1 += calc_bar_sum_hist(s->hist, Wfac1, (M-DG1), type);
+                }
+                else
+                {
+                    dDG1 += calc_bar_sum(r->end - r->start, s->du + r->start,
+                                         Wfac1, (M-DG1));
+                }
+            }
         }
-        for(i=0;i<bb->nhist;i++)
+        for(i=0;i<cb->nsamples;i++)
         {
-            dDG1 -= calc_bar_sum_hist(&(bb->hists[i]), Wfac2, -(M-DG1), type);
+            samples_t *s=cb->s[i];
+            sample_range_t *r=&(cb->r[i]);
+            if (r->use)
+            {
+                if (s->hist)
+                {
+                    dDG1 -= calc_bar_sum_hist(s->hist, Wfac2, -(M-DG1), type);
+                }
+                else
+                {
+                    dDG1 -= calc_bar_sum(r->end - r->start, s->du + r->start,
+                                         Wfac2, -(M-DG1));
+                }
+            }
         }
-        
+       
         if (dDG1 < 0)
         {
             DG0 = DG1;
@@ -948,7 +1360,7 @@ static double calc_bar_lowlevel(barsamples_t *ba, barsamples_t *bb,
     return 0.5*(DG0 + DG2);
 }
 
-static void calc_rel_entropy(barsamples_t *ba, barsamples_t *bb,
+static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
                              double temp, double dg, double *sa, double *sb)
 {
     int i,j;
@@ -961,13 +1373,12 @@ static void calc_rel_entropy(barsamples_t *ba, barsamples_t *bb,
     kT   = BOLTZ*temp;
     beta = 1/kT;
 
-
     /* count the numbers of samples */ 
-    n1 = ba->ntot;
-    n2 = bb->ntot;
+    n1 = ca->ntot;
+    n2 = cb->ntot;
 
     /* to ensure the work values are the same as during the delta_G */
-    if (!lambda_same(ba->native_lambda, ba->foreign_lambda))
+    if (!lambda_same(ca->native_lambda, ca->foreign_lambda))
     {
         /* this is the case when the delta U were calculated directly
            (i.e. we're not scaling dhdl) */
@@ -978,57 +1389,78 @@ static void calc_rel_entropy(barsamples_t *ba, barsamples_t *bb,
     {
         /* we're using dhdl, so delta_lambda needs to be a 
            multiplication factor.  */
-        double delta_lambda=bb->native_lambda-ba->native_lambda;
+        double delta_lambda=cb->native_lambda-ca->native_lambda;
         Wfac1 =  beta*delta_lambda;
         Wfac2 = -beta*delta_lambda;
     }
 
     /* first calculate the average work in both directions */
-    for(i=0;i<ba->nndu;i++)
-    { 
-        for(j=0;j<ba->ndu[i];j++)
-        {
-            W_ab += Wfac1*ba->du[i][j];
-        }
-    }
-    for(i=0;i<ba->nhist;i++)
+    for(i=0;i<ca->nsamples;i++)
     {
-        /* then the histograms */
-        /* normalization factor multiplied with bin width and
-           number of samples (we normalize through M): */
-        double normdx = 1.;
-        barhist_t *hist=&(ba->hists[i]);
-
-        for(j=0;j<hist->nbin;j++)
+        samples_t *s=ca->s[i];
+        sample_range_t *r=&(ca->r[i]);
+        if (r->use)
         {
-            double x=Wfac1*((j+hist->x0)+0.5)*hist->dx; /* bin middle */
-            double pxdx=hist->bin[j]*normdx; /* p(x)dx */
+            if (!s->hist)
+            {
+                for(j=r->start;j<r->end;j++)
+                    W_ab += Wfac1*s->du[j];
+            }
+            else
+            {
+                /* normalization factor multiplied with bin width and
+                   number of samples (we normalize through M): */
+                double normdx = 1.;
+                double dx;
+                int hd=0; /* histogram direction */
+                if ( (s->hist->nhist>1) && (Wfac1<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
 
-            W_ab += pxdx*x;
+                for(j=0;j<s->hist->nbin[0];j++)
+                {
+                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*dx; /*bin ctr*/
+                    double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
+                    W_ab += pxdx*x;
+                }
+            }
         }
     }
     W_ab/=n1;
-    for(i=0;i<bb->nndu;i++)
-    { 
-        for(j=0;j<bb->ndu[i];j++)
-        {
-            W_ba += Wfac2*bb->du[i][j];
-        }
-    }
-    for(i=0;i<bb->nhist;i++)
+
+    for(i=0;i<cb->nsamples;i++)
     {
-        /* then the histograms */
-        /* normalization factor multiplied with bin width and
-           number of samples (we normalize through M): */
-        double normdx = 1.;
-        barhist_t *hist=&(bb->hists[i]);
-
-        for(j=0;j<hist->nbin;j++)
+        samples_t *s=cb->s[i];
+        sample_range_t *r=&(cb->r[i]);
+        if (r->use)
         {
-            double x=Wfac2*((j+hist->x0)+0.5)*hist->dx; /* bin middle */
-            double pxdx=hist->bin[j]*normdx; /* p(x)dx */
+            if (!s->hist)
+            {
+                for(j=r->start;j<r->end;j++)
+                    W_ba += Wfac1*s->du[j];
+            }
+            else
+            {
+                /* normalization factor multiplied with bin width and
+                   number of samples (we normalize through M): */
+                double normdx = 1.;
+                double dx;
+                int hd=0; /* histogram direction */
+                if ( (s->hist->nhist>1) && (Wfac2<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
 
-            W_ba += pxdx*x;
+                for(j=0;j<s->hist->nbin[0];j++)
+                {
+                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*dx;/*bin ctr*/
+                    double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
+                    W_ba += pxdx*x;
+                }
+            }
         }
     }
     W_ba/=n2;
@@ -1038,7 +1470,7 @@ static void calc_rel_entropy(barsamples_t *ba, barsamples_t *bb,
     *sb = (W_ba + dg);
 }
 
-static void calc_dg_stddev(barsamples_t *ba, barsamples_t *bb,
+static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
                            double temp, double dg, double *stddev)
 {
     int i,j;
@@ -1052,11 +1484,11 @@ static void calc_dg_stddev(barsamples_t *ba, barsamples_t *bb,
     beta = 1/kT;
 
     /* count the numbers of samples */ 
-    n1 = ba->ntot;
-    n2 = bb->ntot;
+    n1 = ca->ntot;
+    n2 = cb->ntot;
 
     /* to ensure the work values are the same as during the delta_G */
-    if (!lambda_same(ba->native_lambda, ba->foreign_lambda))
+    if (!lambda_same(ca->native_lambda, ca->foreign_lambda))
     {
         /* this is the case when the delta U were calculated directly
            (i.e. we're not scaling dhdl) */
@@ -1067,60 +1499,88 @@ static void calc_dg_stddev(barsamples_t *ba, barsamples_t *bb,
     {
         /* we're using dhdl, so delta_lambda needs to be a 
            multiplication factor.  */
-        double delta_lambda=bb->native_lambda-ba->native_lambda;
+        double delta_lambda=cb->native_lambda-ca->native_lambda;
         Wfac1 =  beta*delta_lambda;
         Wfac2 = -beta*delta_lambda;
     }
 
     M = log(n1/n2);
 
+
     /* calculate average in both directions */
-    for(i=0;i<ba->nndu;i++)
-    { 
-        for(j=0;j<ba->ndu[i];j++)
-        {
-            sigmafact += 1./(2. + 2.*cosh((M + Wfac1*ba->du[i][j] - dg)));
-        }
-    }
-    for(i=0;i<ba->nhist;i++)
+    for(i=0;i<ca->nsamples;i++)
     {
-        /* then the histograms */
-        /* normalization factor multiplied with bin width and
-           number of samples (we normalize through M): */
-        double normdx = 1.;
-        barhist_t *hist=&(ba->hists[i]);
+        samples_t *s=ca->s[i];
+        sample_range_t *r=&(ca->r[i]);
+        if (r->use)
+        {
+            if (!s->hist)
+            {
+                for(j=r->start;j<r->end;j++)
+                {
+                    sigmafact += 1./(2. + 2.*cosh((M + Wfac1*s->du[j] - dg)));
+                }
+            }
+            else
+            {
+                /* normalization factor multiplied with bin width and
+                   number of samples (we normalize through M): */
+                double normdx = 1.;
+                double dx;
+                int hd=0; /* histogram direction */
+                if ( (s->hist->nhist>1) && (Wfac1<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
 
-        for(j=0;j<hist->nbin;j++)
-        {
-            double x=Wfac1*((j+hist->x0)+0.5)*hist->dx; /* bin middle */
-            double pxdx=hist->bin[j]*normdx; /* p(x)dx */
-            
-            sigmafact += pxdx/(2. + 2.*cosh((M + x - dg)));
+                for(j=0;j<s->hist->nbin[0];j++)
+                {
+                    double x=Wfac1*((j+s->hist->x0[0])+0.5)*dx; /*bin ctr*/
+                    double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
+
+                    sigmafact += pxdx/(2. + 2.*cosh((M + x - dg)));
+                }
+            }
         }
     }
-    for(i=0;i<bb->nndu;i++)
-    { 
-        for(j=0;j<bb->ndu[i];j++)
-        {
-            sigmafact += 1./(2. + 2.*cosh((M - Wfac2*bb->du[i][j] - dg)));
-        }
-    }
-    for(i=0;i<bb->nhist;i++)
+    for(i=0;i<cb->nsamples;i++)
     {
-        /* then the histograms */
-        /* normalization factor multiplied with bin width and
-           number of samples (we normalize through M): */
-        double normdx = 1.;
-        barhist_t *hist=&(bb->hists[i]);
-
-        for(j=0;j<hist->nbin;j++)
+        samples_t *s=cb->s[i];
+        sample_range_t *r=&(ca->r[i]);
+        if (r->use)
         {
-            double x=Wfac2*((j+hist->x0)+0.5)*hist->dx; /* bin middle */
-            double pxdx=hist->bin[j]*normdx; /* p(x)dx */
+            if (!s->hist)
+            {
+                for(j=r->start;j<r->end;j++)
+                {
+                    sigmafact += 1./(2. + 2.*cosh((M - Wfac2*s->du[j] - dg)));
+                }
+            }
+            else
+            {
+                /* normalization factor multiplied with bin width and
+                   number of samples (we normalize through M): */
+                double normdx = 1.;
+                double dx;
+                int hd=0; /* histogram direction */
+                if ( (s->hist->nhist>1) && (Wfac2<0) )
+                {
+                    hd=1;
+                }
+                dx=s->hist->dx[hd];
 
-            sigmafact += pxdx/(2. + 2.*cosh((M - x - dg)));
+                for(j=0;j<s->hist->nbin[0];j++)
+                {
+                    double x=Wfac2*((j+s->hist->x0[0])+0.5)*dx;/*bin ctr*/
+                    double pxdx=s->hist->bin[0][j]*normdx; /* p(x)dx */
+
+                    sigmafact += pxdx/(2. + 2.*cosh((M - x - dg)));
+                }
+            }
         }
     }
+
     sigmafact /= (n1 + n2);
  
   
@@ -1132,7 +1592,7 @@ static void calc_dg_stddev(barsamples_t *ba, barsamples_t *bb,
 
 
 static void calc_bar(barres_t *br, double tol, 
-                     int npee_min, int npee_max, bool *bEE, 
+                     int npee_min, int npee_max, gmx_bool *bEE, 
                      double *partsum)
 {
     int npee,p;
@@ -1142,12 +1602,36 @@ static void calc_bar(barres_t *br, double tol,
     double temp=br->a->temp;
     int i,j;
     double dg_min, dg_max;
+    gmx_bool have_hist=FALSE;
 
     br->dg=calc_bar_lowlevel(br->a, br->b, temp, tol, 0);
 
     br->dg_disc_err = 0.;
     br->dg_histrange_err = 0.;
-    if ((br->a->nhist > 0) || (br->b->nhist > 0) )
+
+    /* check if there are histograms */
+    for(i=0;i<br->a->nsamples;i++)
+    {
+        if (br->a->r[i].use && br->a->s[i]->hist)
+        {
+            have_hist=TRUE;
+            break;
+        }
+    }
+    if (!have_hist)
+    {
+        for(i=0;i<br->b->nsamples;i++)
+        {
+            if (br->b->r[i].use && br->b->s[i]->hist)
+            {
+                have_hist=TRUE;
+                break;
+            }
+        }
+    }
+
+    /* calculate histogram-specific errors */
+    if (have_hist)
     {
         dg_min=calc_bar_lowlevel(br->a, br->b, temp, tol, -1);
         dg_max=calc_bar_lowlevel(br->a, br->b, temp, tol, 1);
@@ -1159,16 +1643,17 @@ static void calc_bar(barres_t *br, double tol,
             br->dg_histrange_err = fabs(dg_max - dg_min);
         }
         br->dg_disc_err = 0.;
-        for(i=0;i<br->a->nhist;i++)
+        for(i=0;i<br->a->nsamples;i++)
         {
-            br->dg_disc_err=max(br->dg_disc_err, br->a->hists[i].dx);
+            if (br->a->s[i]->hist)
+                br->dg_disc_err=max(br->dg_disc_err, br->a->s[i]->hist->dx[0]);
         }
-        for(i=0;i<br->b->nhist;i++)
+        for(i=0;i<br->b->nsamples;i++)
         {
-            br->dg_disc_err=max(br->dg_disc_err, br->b->hists[i].dx);
+            if (br->b->s[i]->hist)
+                br->dg_disc_err=max(br->dg_disc_err, br->b->s[i]->hist->dx[0]);
         }
     }
-
     calc_rel_entropy(br->a, br->b, temp, br->dg, &(br->sa), &(br->sb));
                      
     calc_dg_stddev(br->a, br->b, temp, br->dg, &(br->dg_stddev) );
@@ -1178,39 +1663,14 @@ static void calc_bar(barres_t *br, double tol,
     sb_sig2 = 0;
     stddev_sig2 = 0;
 
-    /* we look for the smallest sample size */
-    nsample1=INT_MAX;
-    for(i=0;i<br->a->nndu;i++)
-        nsample1 = min( nsample1, br->a->ndu[i] );
-    if (br->a->nhist > 0)
-        nsample1 = min( nsample1, br->a->nhist );
-
-    nsample2=INT_MAX;
-    for(i=0;i<br->b->nndu;i++)
-        nsample2 = min( nsample2, br->b->ndu[i] );
-    if (br->b->nhist > 0)
-        nsample2 = min( nsample2, br->b->nhist );
-
-
-    printf("nsample1=%d, nsample2=%d\n", nsample1, nsample2);
-    if (nsample1 >= npee_max && nsample2 >= npee_max)
+    *bEE=TRUE;
     {
-        barsamples_t ba, bb;
-        if ( (2*npee_max > nsample1) || (2*npee_max > nsample2) )
-        {
-            if (npee_min != min(nsample1, nsample2) && 
-                npee_max != min(nsample1, nsample2) )
-            {
+        sample_coll_t ca, cb;
 
-                npee_min = npee_max = min(nsample1, nsample2);
-                printf("NOTE: redefining nbin and nbmax to %d at lambda=%g-%g\n     because of the small number of blocks available\n", 
-                       npee_min, br->a->native_lambda, br->b->native_lambda);
-            }
-        }
-
-        barsamples_init(&ba, br->a->native_lambda, br->a->foreign_lambda, 
+        /* initialize the samples */
+        sample_coll_init(&ca, br->a->native_lambda, br->a->foreign_lambda, 
                         br->a->temp);
-        barsamples_init(&bb, br->b->native_lambda, br->b->foreign_lambda, 
+        sample_coll_init(&cb, br->b->native_lambda, br->b->foreign_lambda, 
                         br->b->temp);
 
         for(npee=npee_min; npee<=npee_max; npee++)
@@ -1230,28 +1690,40 @@ static void calc_bar(barres_t *br, double tol,
                 double dgp;
                 double stddevc;
                 double sac, sbc;
+                gmx_bool cac, cbc;
 
-                barsamples_create_subsample(&ba, br->a, p, npee);
-                barsamples_create_subsample(&bb, br->b, p, npee);
+                cac=sample_coll_create_subsample(&ca, br->a, p, npee);
+                cbc=sample_coll_create_subsample(&cb, br->b, p, npee);
 
-                dgp=calc_bar_lowlevel(&ba, &bb, temp, tol, 0);
+                if (!cac || !cbc)
+                {
+                    printf("WARNING: histogram number incompatible with block number for averaging: can't do error estimate\n");
+                    *bEE=FALSE;
+                    if (cac)
+                        sample_coll_destroy(&ca);
+                    if (cbc)
+                        sample_coll_destroy(&cb);
+                    return;
+                }
+
+                dgp=calc_bar_lowlevel(&ca, &cb, temp, tol, 0);
                 dgs  += dgp;
                 dgs2 += dgp*dgp;
 
                 partsum[npee*(npee_max+1)+p] += dgp;
 
-                calc_rel_entropy(&ba, &bb, temp, dgp, &sac, &sbc); 
+                calc_rel_entropy(&ca, &cb, temp, dgp, &sac, &sbc); 
                 dsa  += sac;
                 dsa2 += sac*sac;
                 dsb  += sbc;
                 dsb2 += sbc*sbc;
-                calc_dg_stddev(&ba, &bb, temp, dgp, &stddevc );
+                calc_dg_stddev(&ca, &cb, temp, dgp, &stddevc );
 
                 dstddev  += stddevc;
                 dstddev2 += stddevc*stddevc;
 
-                barsamples_destroy(&ba);
-                barsamples_destroy(&bb);
+                sample_coll_destroy(&ca);
+                sample_coll_destroy(&cb);
             }
             dgs  /= npee;
             dgs2 /= npee;
@@ -1272,10 +1744,6 @@ static void calc_bar(barres_t *br, double tol,
         br->sa_err = sqrt(sa_sig2/(npee_max - npee_min + 1));
         br->sb_err = sqrt(sb_sig2/(npee_max - npee_min + 1));
         br->dg_stddev_err = sqrt(stddev_sig2/(npee_max - npee_min + 1));
-    }
-    else
-    {
-        *bEE = FALSE;
     }
 }
 
@@ -1304,22 +1772,51 @@ static double bar_err(int nbmin, int nbmax, const double *partsum)
     return sqrt(svar/(nbmax + 1 - nbmin));
 }
 
-
-static double legend2lambda(char *fn,const char *legend,bool bdhdl)
+/* deduce lambda value from legend. 
+input:
+    bdhdl = if true, value may be a derivative. 
+output:
+    bdhdl = whether the legend was for a derivative.
+    */
+static double legend2lambda(char *fn,const char *legend,gmx_bool *bdhdl)
 {
     double lambda=0;
     const char   *ptr;
+    gmx_bool ok=FALSE;
 
     if (legend == NULL)
     {
         gmx_fatal(FARGS,"There is no legend in file '%s', can not deduce lambda",fn);
     }
     ptr = strrchr(legend,' ');
-    if (( bdhdl &&  strstr(legend,"dH") == NULL) ||
-        (!bdhdl && (strchr(legend,'D') == NULL ||
-                    strchr(legend,'H') == NULL)) ||
-        ptr == NULL)
+
+    if (strstr(legend,"dH"))
     {
+        if (! (*bdhdl))
+        {
+            ok=FALSE;
+        }
+        else
+        {
+            ok=TRUE;
+        }
+    }
+    else
+    {
+        if (strchr(legend,'D') != NULL && strchr(legend,'H') != NULL)
+        {
+            ok=TRUE;
+            *bdhdl=FALSE;
+        }
+    }
+    if (!ptr)
+    {
+        ok=FALSE;
+    }
+
+    if (!ok)
+    {
+        printf("%s\n", legend);
         gmx_fatal(FARGS,"There is no proper lambda legend in file '%s', can not deduce lambda",fn);
     }
     if (sscanf(ptr,"%lf",&lambda) != 1)
@@ -1330,9 +1827,9 @@ static double legend2lambda(char *fn,const char *legend,bool bdhdl)
     return lambda;
 }
 
-static bool subtitle2lambda(const char *subtitle,double *lambda)
+static gmx_bool subtitle2lambda(const char *subtitle,double *lambda)
 {
-    bool bFound;
+    gmx_bool bFound;
     char *ptr;
 
     bFound = FALSE;
@@ -1410,14 +1907,14 @@ static double filename2lambda(char *fn)
     return lambda;
 }
 
-static void read_barsim_xvg(char *fn,double begin,double end,real temp,
-                            barsim_t *ba)
+static void read_bar_xvg_lowlevel(char *fn, real *temp, xvg_t *ba)
 {
     int  i;
     char *subtitle,**legend,*ptr;
     int np;
+    gmx_bool native_lambda_read=FALSE;
 
-    barsim_init(ba);
+    xvg_init(ba);
 
     ba->filename = fn;
 
@@ -1452,26 +1949,34 @@ static void read_barsim_xvg(char *fn,double begin,double end,real temp,
     }
     if (ba->temp < 0)
     {
-        if (temp <= 0)
+        if (*temp <= 0)
         {
             gmx_fatal(FARGS,"Did not find a temperature in the subtitle in file '%s', use the -temp option of g_bar",fn);
         }
-        ba->temp = temp;
+        ba->temp = *temp;
     }
 
+    /* Try to deduce lambda from the subtitle */
+    if (subtitle)
+    {
+        if (subtitle2lambda(subtitle,&(ba->native_lambda)))
+        {
+            native_lambda_read=TRUE;
+        }
+    }
     snew(ba->lambda,ba->nset-1);
     if (legend == NULL)
     {
-        /* Check if we have a single set, nset=2 means t and dH/dl */
+        /* Check if we have a single set, no legend, nset=2 means t and dH/dl */
         if (ba->nset == 2)
         {
-            /* Try to deduce lambda from the subtitle */
-            if (subtitle != NULL &&
-                !subtitle2lambda(subtitle,&ba->lambda[0]))
+            if (!native_lambda_read)
             {
                 /* Deduce lambda from the file name */
-                ba->lambda[0] = filename2lambda(fn);
+                ba->native_lambda = filename2lambda(fn);
+                native_lambda_read=TRUE;
             }
+            ba->lambda[0] = ba->native_lambda;
         }
         else
         {
@@ -1482,9 +1987,21 @@ static void read_barsim_xvg(char *fn,double begin,double end,real temp,
     {
         for(i=0; i<ba->nset-1; i++)
         {
+            gmx_bool is_dhdl=(i==0);
             /* Read lambda from the legend */
-            ba->lambda[i] = legend2lambda(fn,legend[i],i==0);
+            ba->lambda[i] = legend2lambda(fn,legend[i], &is_dhdl);
+
+            if (is_dhdl && native_lambda_read)
+            {
+                ba->native_lambda = ba->lambda[i];
+                native_lambda_read=TRUE;
+            }
         }
+    }
+
+    if (!native_lambda_read)
+    {
+        gmx_fatal(FARGS,"File %s contains multiple sets but no indication of the native lambda",fn);
     }
     
     /* Reorder the data */
@@ -1503,168 +2020,223 @@ static void read_barsim_xvg(char *fn,double begin,double end,real temp,
     ba->nset--;
 }
 
-static void read_edr_rawdh(barsim_t *ba, t_enxblock *blk, int id, 
-                           bool lambda_set, double starttime, 
-                           double endtime)
+static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
 {
-    int j;
-    bool allocated;
+    xvg_t *barsim;
+    samples_t *s;
+    int i;
+    double *lambda;
 
-    if (starttime < 0 || endtime < 0)
+    snew(barsim,1);
+
+    read_bar_xvg_lowlevel(fn, temp, barsim);
+
+    if (barsim->nset <1 )
     {
-        gmx_file("start time or end time <0. Probably due to wrong block order\n");
+        gmx_fatal(FARGS,"File '%s' contains fewer than two columns", fn);
     }
 
+    if ( ( *temp != barsim->temp) && (*temp > 0) )
+    {
+        gmx_fatal(FARGS,"Temperature in file %s different from earlier files or setting\n", fn);
+    }
+    *temp=barsim->temp;
+
+    /* now create a series of samples_t */
+    snew(s, barsim->nset);
+    for(i=0;i<barsim->nset;i++)
+    {
+        samples_init(s+i, barsim->native_lambda, barsim->lambda[i], 
+                     barsim->temp, lambda_same(barsim->native_lambda,
+                                               barsim->lambda[i]), 
+                     fn);
+        s[i].du=barsim->y[i];
+        s[i].ndu=barsim->np[i];
+        s[i].t=barsim->t;
+
+        lambda_list_insert_sample(lambda_head, s+i);
+    }
+    printf("%s: %.1f - %.1f; lambda = %.3f\n    foreign lambdas:", 
+           fn, s[0].t[0], s[0].t[s[0].ndu-1], s[0].native_lambda);
+    for(i=0;i<barsim->nset;i++)
+    {
+        printf(" %.3f (%d pts)", s[i].foreign_lambda, s[i].ndu);
+    }
+    printf("\n\n");
+}
+
+static samples_t *read_edr_rawdh_block(int *nsamples, t_enxblock *blk, 
+                                       double start_time, double delta_time,
+                                       double native_lambda, double temp,
+                                       const char *filename)
+{
+    int j;
+    gmx_bool allocated;
+    double foreign_lambda;
+    int derivative;
+    samples_t *s;
+
+    /* check the block types etc. */
+    if ( (blk->nsub < 3) ||
+         (blk->sub[0].type != xdr_datatype_int) ||
+         (blk->sub[1].type != xdr_datatype_double) ||
+         (
+          (blk->sub[2].type != xdr_datatype_float) &&
+          (blk->sub[2].type != xdr_datatype_double) 
+         ) ||
+         (blk->sub[0].nr < 1) ||
+         (blk->sub[1].nr < 1) )
+    {
+        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+    }
+   
+    derivative = blk->sub[0].ival[0]; 
+    foreign_lambda = blk->sub[1].dval[0];
+
+    /* initialize the samples structure */
+    snew(s, 1);
+    *nsamples=1;
+    samples_init(s, native_lambda, foreign_lambda, temp,
+                 derivative!=0, filename);
+
+    s->start_time=start_time;
+    s->delta_time=delta_time;
+
+    /* make room for the data */
+    snew(s->du, blk->sub[2].nr);
+    s->ndu = blk->sub[2].nr;
+    s->ntot = s->ndu;
+
+    /* and copy the data*/
+    for(j=0;j<blk->sub[2].nr;j++)
+    {
+        if (blk->sub[2].type == xdr_datatype_float)
+        {
+            s->du[j] = blk->sub[2].fval[j];
+        }
+        else
+        {
+            s->du[j] = blk->sub[2].dval[j];
+        }
+    }
+    return s;
+}
+
+static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
+                                      double start_time, double delta_time,
+                                      double native_lambda, double temp,
+                                      const char *filename)
+{
+    int i,j;
+    samples_t *s;
+    int nhist;
+    double foreign_lambda;
+    int derivative;
+    int nbins[2];
 
     /* check the block types etc. */
     if ( (blk->nsub < 2) ||
          (blk->sub[0].type != xdr_datatype_double) ||
-         (
-          (blk->sub[1].type != xdr_datatype_float) &&
-          (blk->sub[1].type != xdr_datatype_double) 
-         ) ||
-         (blk->sub[0].nr < 1) )
+         (blk->sub[1].type != xdr_datatype_large_int) ||
+         (blk->sub[0].nr < 2)  ||
+         (blk->sub[1].nr < 2) )
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", ba->filename);
+        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
     }
 
-    /* we assume the blocks come in the same order */
-    if (!lambda_set)
+    nhist=blk->nsub-2;
+    if (nhist == 0)
     {
-        ba->lambda[id] = blk->sub[0].dval[0];
+        return NULL;
     }
-    else
+    if (nhist > 2)
     {
-        if (fabs(ba->lambda[id] - blk->sub[0].dval[0])>1e-12)
-        {
-            gmx_fatal(FARGS, "lambdas change in %s", ba->filename);
-        }
+        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
     }
 
-    /* now make room for the data */
-    if (ba->np[id] + blk->sub[1].nr > ba->np_alloc )
+    snew(s, 1);
+    *nsamples=1;
+
+    foreign_lambda=blk->sub[0].dval[0];
+    derivative=(int)(blk->sub[1].lval[1]);
+    if (derivative)
+        foreign_lambda=native_lambda;
+
+    samples_init(s, native_lambda, foreign_lambda, temp,
+                 derivative!=0, filename);
+    snew(s->hist, 1);
+
+    for(i=0;i<nhist;i++)
     {
-        ba->np_alloc = ba->np[id] + blk->sub[1].nr + 2;
-        srenew(ba->t, ba->np_alloc);
-        for(j=0;j<ba->nset;j++)
-        {
-            srenew(ba->y[j], ba->np_alloc);
-        }
-        allocated=TRUE;
+        nbins[i] = blk->sub[i+2].nr;
     }
-    /* and copy the data */
-    for(j=0;j<blk->sub[1].nr;j++)
+
+    hist_init(s->hist, nhist, nbins);
+
+    for(i=0;i<nhist;i++)
     {
-        unsigned int index=ba->np[id];
-        ba->np[id]++;
-        if (allocated)
-            ba->t[index] = ((endtime-starttime)*j)/blk->sub[1].nr;
-        if (blk->sub[1].type == xdr_datatype_float)
+        s->hist->x0[i]=blk->sub[1].lval[2+i];
+        s->hist->dx[i] = blk->sub[0].dval[1];
+        if (i==1)
+            s->hist->dx[i] = - s->hist->dx[i];
+    }
+
+    s->hist->start_time = start_time;
+    s->hist->delta_time = delta_time;
+    s->start_time = start_time;
+    s->delta_time = delta_time;
+
+    for(i=0;i<nhist;i++)
+    {
+        int nbin;
+        gmx_large_int_t sum=0;
+
+        for(j=0;j<s->hist->nbin[i];j++)
+        { 
+            int binv=(int)(blk->sub[i+2].ival[j]);
+
+            s->hist->bin[i][j] = binv;
+            sum += binv;
+
+        }
+        if (i==0)
         {
-            ba->y[id][index] = blk->sub[1].fval[j];
+            s->ntot = sum;
+            s->hist->sum = sum;
         }
         else
         {
-            ba->y[id][index] = blk->sub[1].dval[j];
-        }
-    }
-}
-
-static void read_edr_hist(barsim_t *ba, t_enxblock *blk, int id,
-                          bool lambda_set, 
-                          double starttime, double endtime)
-{
-    int j;
-    barhist_t *bh;
-
-    if (starttime < 0 || endtime < 0)
-    {
-        gmx_file("start time or end time <0. Probably due to wrong block order\n");
-    }
-
-    /* check the block types etc. */
-    if ( (blk->nsub < 3) ||
-         (blk->sub[0].type != xdr_datatype_double) ||
-         (blk->sub[1].type != xdr_datatype_large_int) ||
-         (blk->sub[2].type != xdr_datatype_int) ||
-         (blk->sub[0].nr < 2)  ||
-         (blk->sub[1].nr < 1) )
-    {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", ba->filename);
-    }
-
-    if (ba->y != NULL)
-    {
-        gmx_fatal(FARGS, "Can't have both histograms and raw delta U data in one file %s", ba->filename);
-    }
-
-    if (!lambda_set)
-    {
-        ba->lambda[id] = blk->sub[0].dval[0];
-    }
-    else
-    {
-        if (fabs(ba->lambda[id] - blk->sub[0].dval[0])>1e-12)
-        {
-            gmx_fatal(FARGS, "lambdas change in %s: %g, %g", ba->filename,
-                      ba->lambda[id], blk->sub[0].dval[0]);
-        }
-    }
-    if (blk->sub[2].nr > 0)
-    {
-        /* make room for the data */
-        if (ba->np[id] + 1 > ba->np_alloc)
-        {
-            ba->np_alloc = ba->np[id] + 2;
-            /*srenew(ba->t, ba->np_alloc);*/
-            for(j=0;j<ba->nset;j++)
+            if (s->ntot != sum)
             {
-                srenew(ba->hists[j], ba->np_alloc);
+                gmx_fatal(FARGS, "Histogram counts don't match in %s", 
+                          filename);
             }
         }
-
-        bh=&(ba->hists[id][ba->np[id]]);
-
-        bh->dx = blk->sub[0].dval[1];
-        bh->starttime = starttime;
-        bh->endtime = endtime;
-        bh->x0 = blk->sub[1].lval[0];
-
-        bh->nbin = blk->sub[2].nr;
-        bh->sum = 0;
-        snew(bh->bin, bh->nbin);
-
-        for(j=0;j<bh->nbin;j++)
-        {
-            bh->bin[j] = (int)blk->sub[2].ival[j];
-            bh->sum += bh->bin[j];
-        }
-
-        ba->np[id]++;
     }
+
+    return s;
 }
 
 
-
-static void read_barsim_edr(char *fn,double begin,double end,real temp,
-                            barsim_t *ba)
+static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
 {
     int i;
     ener_file_t fp;
     t_enxframe *fr; 
-    int nblocks=0;
-    bool lambda_set=FALSE;
     int nre;
     gmx_enxnm_t *enm=NULL;
+    double first_t=-1;
+    double last_t=-1;
+    int *nhists=NULL;
+    int *npts=NULL;
+    double *lambdas=NULL;
+    double native_lambda=-1;
 
-
-    barsim_init(ba);
+    int nsamples=0;
 
     fp = open_enx(fn,"r");
     do_enxnms(fp,&nre,&enm);
     snew(fr, 1);
-
-    ba->filename = fn;
 
     while(do_enx(fp, fr))
     {
@@ -1672,10 +2244,12 @@ static void read_barsim_edr(char *fn,double begin,double end,real temp,
         int nblocks_raw=0;
         int nblocks_hist=0;
         int nlam=0;
-        int nb=0;
-        double starttime=-1;
-        double endtime=-1;
+        int k;
+        /* DHCOLL block information: */
+        double start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
+        double rtemp=0;
 
+        /* count the blocks and handle collection information: */
         for(i=0;i<fr->nblock;i++)
         {
             if (fr->block[i].id == enxDHHIST )
@@ -1683,81 +2257,134 @@ static void read_barsim_edr(char *fn,double begin,double end,real temp,
             if ( fr->block[i].id == enxDH )
                 nblocks_raw++;
             if (fr->block[i].id == enxDHCOLL )
-                nlam++;
-        }
-
-        if (nblocks_raw > 0 && nblocks_hist > 0 )
-        {
-            gmx_fatal(FARGS, "Can't handle both raw delta U data and histograms in the same file %s", fn);
-        }
-        if ((nblocks > 0 && (nblocks_raw+nblocks_hist)!=nblocks) || (nlam!=1 ))
-        {
-            gmx_fatal(FARGS, "Unexpected block count in %s: was %d, now %d\n",
-                      fn, nblocks, nblocks_raw+nblocks_hist);
-        }
-
-        nblocks=nblocks_raw + nblocks_hist;
-        ba->nset=nblocks+1;
-
-        if (!ba->lambda) 
-            snew(ba->lambda, ba->nset);
-        if (!ba->np) 
-        {
-            snew(ba->np, ba->nset);
-            for(i=0;i<ba->nset;i++)
-                ba->np[i]=0.;
-        }
-        if (!ba->y && nblocks_raw>0) 
-        {
-            snew(ba->y, ba->nset);
-            for(i=0;i<ba->nset;i++)
-                ba->y[i]=NULL;
-        }
-        if (!ba->hists && nblocks_hist>0) 
-        {
-            snew(ba->hists, ba->nset);
-            for(i=0;i<ba->nset;i++)
-                ba->hists[i]=NULL;
-        }
- 
-        
-        for(i=0;i<fr->nblock;i++)
-        {
-            /* try to find the enxDHCOLL block */
-            if (fr->block[i].id == enxDHCOLL)
             {
+                nlam++;
                 if ( (fr->block[i].nsub < 1) || 
                      (fr->block[i].sub[0].type != xdr_datatype_double) ||
-                     (fr->block[i].sub[0].nr < 4))
+                     (fr->block[i].sub[0].nr < 5))
                 {
                     gmx_fatal(FARGS, "Unexpected block data in file %s", fn);
                 }
 
-                ba->temp =      fr->block[i].sub[0].dval[0];
-                ba->lambda[0] = fr->block[i].sub[0].dval[1];
-                starttime =     fr->block[i].sub[0].dval[2];
-                endtime =       fr->block[i].sub[0].dval[3];
+                /* read the data from the DHCOLL block */
+                rtemp =        fr->block[i].sub[0].dval[0];
+                start_time =   fr->block[i].sub[0].dval[1];
+                delta_time =   fr->block[i].sub[0].dval[2];
+                start_lambda = fr->block[i].sub[0].dval[3];
+                delta_lambda = fr->block[i].sub[0].dval[4];
+
+                if (delta_lambda>0)
+                {
+                    gmx_fatal(FARGS, "Lambda values change in %s: can't apply BAR method", fn);
+                }
+                if ( ( *temp != rtemp) && (*temp > 0) )
+                {
+                    gmx_fatal(FARGS,"Temperature in file %s different from earlier files or setting\n", fn);
+                }
+                *temp=rtemp;
+                native_lambda=start_lambda;
+
+                if (first_t < 0)
+                    first_t=start_time;
             }
+        }
+
+        if (nlam != 1)
+        {
+            gmx_fatal(FARGS, "Did not find a delta h information in file %s" , fn);
+        }
+        if (nblocks_raw > 0 && nblocks_hist > 0 )
+        {
+            gmx_fatal(FARGS, "Can't handle both raw delta U data and histograms in the same file %s", fn);
+        }
+
+        if (nsamples > 0)
+        {
+            /* check the number of samples against the previous number */
+            if ( ((nblocks_raw+nblocks_hist)!=nsamples) || (nlam!=1 ) )
+            {
+                gmx_fatal(FARGS, "Unexpected block count in %s: was %d, now %d\n",
+                          fn, nsamples+1, nblocks_raw+nblocks_hist+nlam);
+            }
+        }
+        else
+        {
+            nsamples=nblocks_raw+nblocks_hist;
+            snew(nhists, nsamples);
+            snew(npts, nsamples);
+            snew(lambdas, nsamples);
+            for(i=0;i<nsamples;i++)
+            {
+                nhists[i]=0;
+                npts[i]=0;
+                lambdas[i]=-1;
+            }
+        }
+
+        /* and read them */
+        k=0;
+        for(i=0;i<fr->nblock;i++)
+        {
+            int j;
+            int nb=0;
+            samples_t *s=NULL; /* this is where the data will go */
 
             if (fr->block[i].id == enxDH)
             {
-
-                read_edr_rawdh(ba, &(fr->block[i]), nb+1, lambda_set, 
-                               starttime, endtime);
-                nb++;
+                s=read_edr_rawdh_block(&nb, &(fr->block[i]), 
+                                       start_time, delta_time, 
+                                       start_lambda, rtemp, fn);
+                npts[k] += s->ndu;
+                lambdas[k]=s->foreign_lambda;
+                k++;
             }
-
-            if (fr->block[i].id == enxDHHIST)
+            else if (fr->block[i].id == enxDHHIST)
             {
-                read_edr_hist(ba, &(fr->block[i]), nb+1, lambda_set, 
-                              starttime, endtime);
-                nb++;
-               
+                s=read_edr_hist_block(&nb, &(fr->block[i]), 
+                                      start_time, delta_time, 
+                                      start_lambda, rtemp, fn);
+                nhists[k] += nb;
+                if (nb>0)
+                {
+                    lambdas[k]= s->foreign_lambda;
+                }
+                k++;
+            }
+            for(j=0;j<nb;j++)
+            {
+                double endt;
+                lambda_list_insert_sample(lambda_head, s+j);
+                if (s[j].hist)
+                {
+                    endt=s[j].hist->sum*delta_time + start_time;
+                }
+                else
+                {
+                    endt=s[j].ndu*delta_time + start_time;
+                }
+                if (endt > last_t)
+                    last_t = endt;
             }
         }
-        lambda_set=TRUE;
     }
     fprintf(stderr, "\n");
+    printf("%s: %.1f - %.1f; lambda = %.3f\n    foreign lambdas:", 
+           fn, first_t, last_t, native_lambda);
+    for(i=0;i<nsamples;i++)
+    {
+        if (nhists[i] > 0)
+        {
+            printf(" %.3f (%d hists)", lambdas[i], nhists[i]);
+        }
+        else
+        {
+            printf(" %.3f (%d pts)", lambdas[i], npts[i]);
+        }
+    }
+    printf("\n\n");
+    sfree(npts);
+    sfree(nhists);
+    sfree(lambdas);
 }
 
 
@@ -1765,7 +2392,22 @@ int gmx_bar(int argc,char *argv[])
 {
     static const char *desc[] = {
         "g_bar calculates free energy difference estimates through ",
-        "Bennett's acceptance ratio method. ",
+        "Bennett's acceptance ratio method (BAR). It also automatically",
+        "adds series of individual free energies obtained with BAR into",
+        "a combined free energy estimate.[PAR]",
+
+        "Every individual BAR free energy difference relies on two ",
+        "simulations at different states: say state A and state B, as",
+        "controlled by a parameter 'lambda' (see the mdp parameter",
+        "'init_lambda'). The BAR method calculates a ratio of weighted",
+        "average of the Hamiltonian difference of state B given state A and",
+        "vice versa. If the Hamiltonian does not linearly depend on lambda",
+        "(in which case we can extrapolate the derivative of the Hamiltonian",
+        "w.r.t. lambda, as is the default when 'free_energy' is on), the",
+        "energy differences to the other state need to be calculated",
+        "explicitly during the simulation. This can be controlled with",
+        "the mdp option 'foreign_lambda'.[PAR]",
+
         "Input option [TT]-f[tt] expects multiple dhdl files. ",
         "Two types of input files are supported:[BR]",
         "* Files with only one y-value, for such files it is assumed ",
@@ -1778,12 +2420,18 @@ int gmx_bar(int argc,char *argv[])
         "with dH/dlambda and Delta lambda. The lambda values are inferred ",
         "from the legends: ",
         "lambda of the simulation from the legend of dH/dlambda ",
-        "and the foreign lambda's from the legends of Delta H.[PAR]",
-
+        "and the foreign lambda's from the legends of Delta H.[BR]",
         "The lambda of the simulation is parsed from dhdl.xvg file's legend ",
         "containing the string 'dH', the foreign lambda's from the legend ",
         "containing the capitalized letters 'D' and 'H'. The temperature ",
         "is parsed from the legend line containing 'T ='.[PAR]",
+
+        "The input option [TT]-g[tt] expects multiple .edr files. ",
+        "These can contain either lists of energy differences (see the",
+        "mdp option separate_dhdl_file), or a series of histograms",
+        "(see the mdp options dh_hist_size and dh_hist_spacing).",
+        "The temperature and lambda values are automatically deduced from",
+        "the ener.edr file.[PAR]"
 
         "The free energy estimates are determined using BAR with bisection, ",
         "the precision of the output is set with [TT]-prec[tt]. ",
@@ -1794,6 +2442,13 @@ int gmx_bar(int argc,char *argv[])
         "The final error estimate is determined from the average variance ",
         "over 5 blocks. A range of blocks numbers for error estimation can ",
         "be provided with the options [TT]-nbmin[tt] and [TT]-nbmax[tt].[PAR]",
+
+        "g_bar tries to aggregate samples with the same 'native' and 'foreign'",
+        "lambda values, but always assumes independent samples: note that",
+        "when aggregating energy differences/derivatives with different",
+        "sampling intervals, this is almost certainly not correct: usually",
+        "subsequent energies are correlated and different time intervals mean",
+        "different degrees of correlation between samples.[PAR]",
 
         "The results are split in two parts: the last part contains the final ",
         "results in kJ/mol, together with the error estimate for each part ",
@@ -1822,11 +2477,14 @@ int gmx_bar(int argc,char *argv[])
         "of the quality of sampling (not directly of the actual statistical ", 
         "error, because it assumes independent samples).[PAR]",
 
+        "To get a visual estimate of the phase space overlap, use the ",
+        "-oh option to write series of histograms, together with the ",
+        "-nbin option.[PAR]"
     };
     static real begin=0,end=-1,temp=-1;
     int nd=2,nbmin=5,nbmax=5;
     int nbin=100;
-    bool calc_s,calc_v;
+    gmx_bool calc_s,calc_v;
     t_pargs pa[] = {
         { "-b",    FALSE, etREAL, {&begin},  "Begin time for BAR" },
         { "-e",    FALSE, etREAL, {&end},    "End time for BAR" },
@@ -1839,10 +2497,10 @@ int gmx_bar(int argc,char *argv[])
     
     t_filenm   fnm[] = {
         { efXVG, "-f",  "dhdl",   ffOPTRDMULT },
+        { efEDR, "-g",  "ener",   ffOPTRDMULT },
         { efXVG, "-o",  "bar",    ffOPTWR },
         { efXVG, "-oi", "barint", ffOPTWR }, 
-        { efXVG, "-oh", "histogram", ffOPTWR }, 
-        { efEDR, "-g",  "energy", ffOPTRDMULT }
+        { efXVG, "-oh", "histogram", ffOPTWR }
     };
 #define NFILE asize(fnm)
     
@@ -1854,8 +2512,8 @@ int gmx_bar(int argc,char *argv[])
     int      nedrfile=0;
     char     **fxvgnms;
     char     **fedrnms;
-    barsim_t *ba;       /* the raw input data */
-    barlambda_t *bl;    /* the pre-processed lambda data (linked list head) */
+    lambda_t *lb;    /* the pre-processed lambda data (linked list head) */
+    lambda_t lambda_head; /* the head element */
     barres_t *results;  /* the results */
     int    nresults;  /* number of results in results array */
 
@@ -1868,11 +2526,11 @@ int gmx_bar(int argc,char *argv[])
     char     kteformat[STRLEN], skteformat[STRLEN];
     output_env_t oenv;
     double   kT, beta;
-    bool     result_OK=TRUE,bEE=TRUE;
+    gmx_bool     result_OK=TRUE,bEE=TRUE;
 
-    bool     disc_err=FALSE;
+    gmx_bool     disc_err=FALSE;
     double   sum_disc_err=0.; /* discretization error */
-    bool     histrange_err=FALSE;
+    gmx_bool     histrange_err=FALSE;
     double   sum_histrange_err=0.; /* histogram range error */
     double   stat_err=0.; /* statistical error */
     
@@ -1890,6 +2548,13 @@ int gmx_bar(int argc,char *argv[])
         nedrfile = opt2fns(&fedrnms,"-g",NFILE,fnm);
     }
 
+    /* make linked list */
+    lb=&lambda_head;
+    lambda_init(lb, 0, 0);
+    lb->next=lb;
+    lb->prev=lb;
+
+
     nfile_tot = nxvgfile + nedrfile;
 
     if (nfile_tot == 0)
@@ -1903,99 +2568,50 @@ int gmx_bar(int argc,char *argv[])
     }
     prec = pow(10,-nd);
 
-    snew(ba,nfile_tot);
-    snew(results,nfile_tot-1);
     snew(partsum,(nbmax+1)*(nbmax+1));
     nf = 0;
 
     /* read in all files. First xvg files */
     for(f=0; f<nxvgfile; f++)
     {
-        read_barsim_xvg(fxvgnms[f],begin,end,temp,&ba[nf]);
-        if (f > 0 && ba[nf].temp != ba[0].temp)
-        {
-            printf("\nWARNING: temperature for file '%s' (%g) is not equal to that of file '%s' (%g)\n\n",fxvgnms[nf],ba[nf].temp,fxvgnms[0],ba[0].temp);
-        }
-
-        if (ba[nf].nset == 0)
-        {
-            gmx_fatal(FARGS,"File '%s' contains fewer than two columns",
-                      fxvgnms[nf]);
-        }
+        read_bar_xvg(fxvgnms[f],&temp,lb);
         nf++;
     }
     /* then .edr files */
     for(f=0; f<nedrfile; f++)
     {
-        read_barsim_edr(fedrnms[f],begin,end,temp,&ba[nf]);
-        if (nf > 0 && ba[nf].temp != ba[0].temp)
-        {
-            printf("\nWARNING: temperature for file '%s' (%g) is not equal to that of file '%s' (%g)\n\n",fedrnms[nf],ba[nf].temp,fedrnms[0],ba[0].temp);
-        }
-
-        if (ba[nf].nset == 0)
-        {
-            gmx_fatal(FARGS,"File '%s' contains fewer than two columns",
-                      fedrnms[nf]);
-        }
+        read_barsim_edr(fedrnms[f],&temp,lb);;
         nf++;
     }
 
-    /* print input file data summary */
-    for(i=0;i<nf;i++)
-    {
-        int np;
-        double begint, endt;
-        if (ba[i].y)
-        {
-            if (ba[i].nset>0)
-                np=ba[i].np[1];
-            else
-                np=ba[i].np[0];
-
-            begint=ba[i].t[0];
-            endt=ba[i].t[np-1];
-        }
-        else
-        {
-            np=ba[i].np[1];
-            begint=ba[i].hists[1][0].starttime;
-            endt=ba[i].hists[1][np-1].endtime;
-        }
-        printf("\n%s: %.1f - %.1f; lambdas:",ba[i].filename, begint, endt);
-
-        for(j=0;j<ba[i].nset;j++)
-        {
-            printf(" %.3f", ba[i].lambda[j]);
-            if (ba[i].np[j]>0)
-            {
-                if (ba[i].y)
-                    printf(" (%d pts)",  ba[i].np[j]);
-                if (ba[i].hists) 
-                    printf(" (%d hists)", ba[i].np[j]);
-            }
-        }
-    }
-    printf("\n");
-
-    /* Sort the data sets on lambda */
-    bl=barlambdas_list_create(ba, nfile_tot, &nbs, begin, end);
+    /* fix the times to allow for equilibration */
+    lambdas_impose_times(lb, begin, end);
 
     if (opt2bSet("-oh",NFILE,fnm))
     {
-        barlambdas_histogram(bl, opt2fn("-oh",NFILE,fnm), nbin, oenv);
+        lambdas_histogram(lb, opt2fn("-oh",NFILE,fnm), nbin, oenv);
     }
    
-    /* assemble the output structures from the barlambdas */
-    results=barres_list_create(bl, &nresults);
+    /* assemble the output structures from the lambdas */
+    results=barres_list_create(lb, &nresults);
 
     sum_disc_err=barres_list_max_disc_err(results, nresults);
+
+    if (nresults == 0)
+    {
+        printf("\nNo results to calculate.\n");
+        return 0;
+    }
+
+#if 1
     if (sum_disc_err > prec)
     {
         prec=sum_disc_err;
         nd = ceil(-log10(prec));
         printf("WARNING: setting the precision to %g because that is the minimum\n         reasonable number, given the expected discretization error.\n", prec);
     }
+#endif
+
     sprintf(lamformat,"%%6.3f");
     sprintf( dgformat,"%%%d.%df",3+nd,nd);
     /* the format strings of the results in kT */
@@ -2048,10 +2664,10 @@ int gmx_bar(int argc,char *argv[])
     }
 
     /* print results in kT */
-    kT   = BOLTZ*ba[0].temp;
+    kT   = BOLTZ*temp;
     beta = 1/kT;
 
-    printf("\nTemperature: %g K\n", ba[0].temp);
+    printf("\nTemperature: %g K\n", temp);
 
     printf("\nDetailed results in kT (see help for explanation):\n\n");
     printf("%6s ", " lam_A");
@@ -2144,14 +2760,15 @@ int gmx_bar(int argc,char *argv[])
         
         if (fpi != NULL)
         {
-            fprintf(fpi, xvg2format, ba[f].lambda[0], dg_tot);
+            fprintf(fpi, xvg2format, results[f].a->native_lambda, dg_tot);
         }
 
 
         if (fpb != NULL)
         {
             fprintf(fpb, xvg3format,
-                    0.5*(ba[f].lambda[0] + ba[f+1].lambda[0]),
+                    0.5*(results[f].a->native_lambda + 
+                         results[f].b->native_lambda),
                     results[f].dg,results[f].dg_err);
         }
 
@@ -2182,9 +2799,9 @@ int gmx_bar(int argc,char *argv[])
     }
     printf("\n");
     printf("total  ");
-    printf(lamformat, ba[0].lambda[0]);
+    printf(lamformat, results[0].a->native_lambda);
     printf(" - ");
-    printf(lamformat, ba[nfile_tot-1].lambda[0]);
+    printf(lamformat, results[nresults-1].b->native_lambda);
     printf(",   DG ");
 
     printf(dgformat,dg_tot*kT);
@@ -2220,7 +2837,7 @@ int gmx_bar(int argc,char *argv[])
     if (fpi != NULL)
     {
         fprintf(fpi, xvg2format,
-                ba[nfile_tot-1].lambda[0], dg_tot);
+                results[nresults-1].b->native_lambda, dg_tot);
         ffclose(fpi);
     }
 

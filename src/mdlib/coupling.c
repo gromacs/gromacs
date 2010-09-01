@@ -54,7 +54,7 @@
 
 /* these integration routines are only referenced inside this file */
 static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtfull,
-                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ, bool bEkinAveVel)
+                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
@@ -66,7 +66,7 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
     double *ivxi,*ixi;
     double *iQinv;
     double *GQ;
-    bool bBarostat;
+    gmx_bool bBarostat;
     int mstepsi, mstepsj;
     int ns = SUZUKI_YOSHIDA_NUM;  /* set the degree of integration in the types/state.h file */
     int nh = opts->nhchainlength;
@@ -282,7 +282,7 @@ real calc_temp(real ekin,real nrdf)
 void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
 			     t_inputrec *ir,real dt,tensor pres,
 			     tensor box,tensor box_rel,tensor boxv,
-			     tensor M,matrix mu,bool bFirstStep)
+			     tensor M,matrix mu,gmx_bool bFirstStep)
 {
   /* This doesn't do any coordinate updating. It just
    * integrates the box vector equations from the calculated
@@ -658,7 +658,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
     double *scalefac,dtc;
     int *trotter_seq;
     rvec sumv,consk;
-    bool bCouple;
+    gmx_bool bCouple;
 
     if (trotter_seqno <= ettTSEQ2)
     {
@@ -774,7 +774,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
     sfree(scalefac);
 }
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrotter) 
+int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter) 
 {
     int n,i,j,d,ntgrp,ngtc,nnhpres,nh,gc=0;
     t_grp_tcstat *tcstat;

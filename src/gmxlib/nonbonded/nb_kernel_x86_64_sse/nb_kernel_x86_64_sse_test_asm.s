@@ -21,7 +21,7 @@ nb_kernel_x86_64_sse_test_asm:
 _nb_kernel_x86_64_sse_test_asm: 
         push %rbx              ## test 64-bit register
         emms
-        xorps %xmm0,%xmm0       ## test SSE
+        xorpd %xmm0,%xmm0       ## test SSE2
         emms
         pop  %rbx              ## test 64-bit register
         ret

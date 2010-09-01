@@ -68,7 +68,7 @@ extern const char *eoNames[eoNR];
 typedef struct {
   int  at_i,at_j;   	/* Atom type # for i and j                   	*/
   int  eObs;		/* Observable to couple to              	*/
-  bool bPrint;		/* Does this struct have to be printed		*/
+  gmx_bool bPrint;		/* Does this struct have to be printed		*/
   real c6,c12;		/* Actual value of params			*/
   real xi_6,xi_12;	/* Constants for coupling C6 and C12 		*/
 } t_coupl_LJ;
@@ -76,7 +76,7 @@ typedef struct {
 typedef struct {
   int  at_i,at_j;   	/* Atom type # for i and j                   	*/
   int  eObs;		/* Observable to couple to              	*/
-  bool bPrint;		/* Does this struct have to be printed		*/
+  gmx_bool bPrint;		/* Does this struct have to be printed		*/
   real a,b,c;		/* Actual value of params			*/
   real xi_a,xi_b,xi_c;	/* Constants for coupling A, B and C 		*/
 } t_coupl_BU;
@@ -84,7 +84,7 @@ typedef struct {
 typedef struct {
   int  at_i;		/* Atom type					*/
   int  eObs;		/* Observable to couple to              	*/
-  bool bPrint;		/* Does this struct have to be printed		*/
+  gmx_bool bPrint;		/* Does this struct have to be printed		*/
   real Q;		/* Actual value of charge			*/
   real xi_Q;		/* Constant for coupling Q			*/
 } t_coupl_Q;
@@ -100,15 +100,15 @@ typedef struct {
   real       act_value[eoObsNR];
   real       av_value [eoObsNR];
   real       ref_value[eoObsNR];
-  bool       bObsUsed[eoObsNR];
+  gmx_bool       bObsUsed[eoObsNR];
   int        nLJ,nBU,nQ,nIP;
   t_coupl_LJ *tcLJ;
   t_coupl_BU *tcBU;
   t_coupl_Q  *tcQ;
   t_coupl_iparams *tIP;
   int        nmemory;
-  bool       bInter;
-  bool       bVirial;
+  gmx_bool       bInter;
+  gmx_bool       bVirial;
   int        combrule;
 } t_coupl_rec;
 
@@ -133,11 +133,11 @@ extern void calc_f_dev(int natoms,real charge[],rvec x[],rvec f[],
 extern void do_coupling(FILE *log,const output_env_t oenv,int nfile,
                         const t_filenm fnm[],
 			t_coupl_rec *tcr,real t,int step,real ener[],
-			t_forcerec *fr,t_inputrec *ir,bool bMaster,
+			t_forcerec *fr,t_inputrec *ir,gmx_bool bMaster,
 			t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
 			t_commrec *cr,matrix box,tensor virial,
 			tensor pres,rvec mu_tot,
-			rvec x[],rvec f[],bool bDoIt);
+			rvec x[],rvec f[],gmx_bool bDoIt);
 
 /* CODE TO ADD SPECIAL 2-DIMENSIONAL LENNARD-JONES CORRECTION TO FORCES AND ENERGY */
 extern void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
@@ -156,16 +156,16 @@ extern real calc_mu_aver(t_commrec *cr,rvec x[],real q[],rvec mu,
 typedef struct {
   real tol,f_max,npow,epot,fac_epot,fac_pres,fac_msf,pres;
   int  molsize,nmol;
-  bool bComb,bVerbose,bLogEps;
+  gmx_bool bComb,bVerbose,bLogEps;
 } t_ffscan;
 
 
-extern bool update_forcefield(FILE *fplog,
+extern gmx_bool update_forcefield(FILE *fplog,
 			      int nfile,const t_filenm fnm[],t_forcerec *fr,
 			      int natoms,rvec x[],matrix box);
 /* Modify the parameters. Return TRUE when the scan is finished. */
 
-extern bool print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],
+extern gmx_bool print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],
 			     rvec fshake[],rvec x[],t_block *mols,real mass[],
 			     tensor pres);
 /* Print results. Return TRUE when the scan is finished. */

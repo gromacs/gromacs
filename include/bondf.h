@@ -63,7 +63,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 const t_mdatoms *md,
                 t_fcdata *fcd,int *ddgatindex,
                 t_atomtypes *atype, gmx_genborn_t *born,
-                bool bPrintSepPot,gmx_large_int_t step);
+                gmx_bool bPrintSepPot,gmx_large_int_t step);
 /* 
  * The function calc_bonds() calculates all bonded force interactions.
  * The "bonds" are specified as follows:
@@ -82,7 +82,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
  *     total potential energy split up over the function types.
  *   int *ddgatindex
  *     global atom number indices, should be NULL when not using DD.
- *   bool bPrintSepPot
+ *   gmx_bool bPrintSepPot
  *     if TRUE print local potential and dVdlambda for each bonded type.
  *   int step
  *     used with bPrintSepPot

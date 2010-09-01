@@ -513,7 +513,7 @@ adress_thermo_force(int                  cg0,
     int              icg,k0,k1,n0,nnn,nrcg, i;
     int              adresstype;
     real             adressw, adressr;
-    bool	     badress_tf_full_box;
+    gmx_bool	     badress_tf_full_box;
     atom_id *        cgindex;
     unsigned short * ptype;
     rvec *           ref;
@@ -621,11 +621,13 @@ adress_thermo_force(int                  cg0,
         }
     }
 }
-bool egp_explicit(t_forcerec *   fr, int egp_nr)
+
+gmx_bool egp_explicit(t_forcerec *   fr, int egp_nr)
 {
     return fr->adress_group_explicit[egp_nr];
 }
-bool egp_coarsegrained(t_forcerec *   fr, int egp_nr)
+
+gmx_bool egp_coarsegrained(t_forcerec *   fr, int egp_nr)
 {
    return !fr->adress_group_explicit[egp_nr];
 }

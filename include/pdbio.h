@@ -61,10 +61,10 @@ enum { epdbATOM,   epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND,
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum { U11, U22, U33, U12, U13, U23 };
        
-void set_pdb_wide_format(bool bSet);
+void set_pdb_wide_format(gmx_bool bSet);
 /* If bSet, use wider format for occupancy and bfactor */
 
-void pdb_use_ter(bool bSet);
+void pdb_use_ter(gmx_bool bSet);
 /* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE).
    This function is fundamentally broken as far as thread-safety is concerned.*/
 
@@ -77,12 +77,12 @@ void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
 void write_pdbfile_indexed(FILE *out,const char *title,t_atoms *atoms,
 				  rvec x[],int ePBC,matrix box,char chain,
 				  int model_nr,atom_id nindex,atom_id index[],
-				  gmx_conect conect,bool bTerSepChains);
+				  gmx_conect conect,gmx_bool bTerSepChains);
 /* REALLY low level */
 
 void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
 			  rvec x[],int ePBC,matrix box,char chain,
-			  int model_nr,gmx_conect conect,bool bTerSepChains);
+			  int model_nr,gmx_conect conect,gmx_bool bTerSepChains);
 /* Low level pdb file writing routine.
  * 
  *          ONLY FOR SPECIAL PURPOSES,
@@ -101,14 +101,14 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps);
 
 int read_pdbfile(FILE *in,char *title,int *model_nr,
 			t_atoms *atoms,rvec x[],int *ePBC,matrix box,
-			bool bChange,gmx_conect conect);
+			gmx_bool bChange,gmx_conect conect);
 /* Function returns number of atoms found.
  * ePBC and gmx_conect structure may be NULL.
  */
 
 void read_pdb_conf(const char *infile,char *title, 
 			  t_atoms *atoms,rvec x[],int *ePBC,matrix box,
-			  bool bChange,gmx_conect conect);
+			  gmx_bool bChange,gmx_conect conect);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.
  * Change atom names according to protein conventions if wanted.
@@ -118,16 +118,16 @@ void read_pdb_conf(const char *infile,char *title,
 void get_pdb_coordnum(FILE *in,int *natoms);
 /* Read a pdb file and count the ATOM and HETATM fields. */
 
-bool is_hydrogen(const char *nm);
+gmx_bool is_hydrogen(const char *nm);
 /* Return whether atom nm is a hydrogen */
 
-bool is_dummymass(const char *nm);
+gmx_bool is_dummymass(const char *nm);
 /* Return whether atom nm is a dummy mass */
 
 /* Routines to handle CONECT records if they have been read in */
 void gmx_conect_dump(FILE *fp,gmx_conect conect);
 
-bool gmx_conect_exist(gmx_conect conect,int ai,int aj);
+gmx_bool gmx_conect_exist(gmx_conect conect,int ai,int aj);
 /* Return TRUE if there is a conection between the atoms */
 
 void gmx_conect_add(gmx_conect conect,int ai,int aj);

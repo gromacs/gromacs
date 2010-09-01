@@ -120,7 +120,7 @@ static void print_resatoms(FILE *out,gpp_atomtype_t atype,t_restp *rtp)
   }
 }
 
-static bool read_atoms(FILE *in,char *line,
+static gmx_bool read_atoms(FILE *in,char *line,
 		       t_restp *r0,t_symtab *tab,gpp_atomtype_t atype)
 {
   int    i,j,cg,maxentries;
@@ -161,7 +161,7 @@ static bool read_atoms(FILE *in,char *line,
   return TRUE;
 }
 
-bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
+gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
 {
   char str[STRLEN];
   int  j,n,ni,maxrb;
@@ -250,19 +250,19 @@ void clear_t_restp(t_restp *rrtp)
 
 void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp, 
                  gpp_atomtype_t atype, t_symtab *tab,
-                 bool bAllowOverrideRTP)
+                 gmx_bool bAllowOverrideRTP)
 {
   FILE      *in;
   char      filebase[STRLEN],*ptr,line[STRLEN],header[STRLEN];
   int       i,nrtp,maxrtp,bt,nparam;
   int       dum1,dum2,dum3;
   t_restp   *rrtp;
-  bool      bNextResidue,bError;
+  gmx_bool      bNextResidue,bError;
   int       bts[ebtsNR];
-  bool      bAlldih;
+  gmx_bool      bAlldih;
   int       nrexcl;
-  bool      HH14;
-  bool      bRemoveDih;
+  gmx_bool      HH14;
+  gmx_bool      bRemoveDih;
   int       firstrtp;
 
   fflib_filename_base(rrdb,filebase,STRLEN);
@@ -479,7 +479,7 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
  *                  SEARCH   ROUTINES
  * 
  ***********************************************************/
-int neq_str(const char *a1,const char *a2)
+static int neq_str(const char *a1,const char *a2)
 {
     int j,l,l1,l2;;
   
@@ -494,6 +494,35 @@ int neq_str(const char *a1,const char *a2)
     }
 
     return j;
+}
+
+static gmx_bool is_sign(char c)
+{
+    return (c == '+' || c == '-');
+}
+
+/* Compares if the strins match except for a sign at the end
+ * of (only) one of the two.
+ */
+static int neq_str_sign(const char *a1,const char *a2)
+{
+    int l1,l2,lm;
+  
+    l1 = (int)strlen(a1);
+    l2 = (int)strlen(a2);
+    lm = min(l1,l2);
+
+    if (lm >= 1 &&
+        ((l1 == l2+1 && is_sign(a1[l1-1])) ||
+         (l2 == l1+1 && is_sign(a2[l2-1]))) &&
+        gmx_strncasecmp(a1,a2,lm) == 0)
+    {
+        return lm;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 char *search_rtp(const char *key,int nrtp,t_restp rtp[])
@@ -515,8 +544,8 @@ char *search_rtp(const char *key,int nrtp,t_restp rtp[])
         }
         else
         {
-            /* Allow a mismatch of at most one character (with warning) */
-            n = neq_str(key,rtp[i].resname);
+            /* Allow a mismatch of at most a sign character (with warning) */
+            n = neq_str_sign(key,rtp[i].resname);
             if (n >= best &&
                 n+1 >= strlen(key) &&
                 n+1 >= strlen(rtp[i].resname))

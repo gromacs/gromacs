@@ -79,7 +79,7 @@ static char *head2[]= {
 #define NH2 asize(head2)
 #define MAXS 10240
 
-void head(FILE *out, char *fn_, bool bH,
+void head(FILE *out, char *fn_, gmx_bool bH,
 	  char *cstart, char *ccont, char *cend)
 {
   char buf[STRLEN];
@@ -111,7 +111,7 @@ void cr_c(char *fn)
   FILE *in,*out;
   char ofn[1024],line[MAXS+1],cwd[1024];
   char *p,*fn_;
-  bool bH;
+  gmx_bool bH;
   
   sprintf(ofn,"%s.bak",fn);
   
@@ -167,7 +167,7 @@ void cr_other(char *fn)
   /*  FILE *in,*out;
   char ofn[1024],line[MAXS+1],line2[MAXS+1],cwd[1024];
   char *p,*fn_,*ptr;
-  bool bH;
+  gmx_bool bH;
   
   sprintf(ofn,"%s.bak",fn);
   

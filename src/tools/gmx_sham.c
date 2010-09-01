@@ -201,7 +201,7 @@ static void pick_minima(const char *logfile,int *ibox,int ndim,int len,real W[])
 {
   FILE *fp;
   int  i,j,k,ijk,nmin;
-  bool bMin;
+  gmx_bool bMin;
   t_minimum *mm;
   
   snew(mm,len);
@@ -268,13 +268,13 @@ static void do_sham(const char *fn,const char *ndx,
 		    const char *xpm3,const char *xpm4,const char *pdb,
                     const char *logf,
 		    int n,int neig,real **eig,
-		    bool bGE,int nenerT,real **enerT,
+		    gmx_bool bGE,int nenerT,real **enerT,
 		    int nmap,real *mapindex,real **map,
 		    real Tref,
 		    real pmax,real gmax,
 		    real *emin,real *emax,int nlevels,real pmin,
-		    const char *mname,bool bSham,int *idim,int *ibox,
-		    bool bXmin,real *xmin,bool bXmax,real *xmax)
+		    const char *mname,gmx_bool bSham,int *idim,int *ibox,
+		    gmx_bool bXmin,real *xmin,gmx_bool bXmax,real *xmax)
 {
   FILE    *fp;
   real    *min_eig,*max_eig;
@@ -288,7 +288,7 @@ static void do_sham(const char *fn,const char *ndx,
   int     i,j,k,imin,len,index,d,*nbin,*bindex,bi;
   int     *nxyz,maxbox;
   t_blocka *b;
-  bool    bOutside;
+  gmx_bool    bOutside;
   unsigned int flags;
   t_rgb   rlo  = { 0, 0, 0 };
   t_rgb   rhi  = { 1, 1, 1 };
@@ -718,9 +718,9 @@ int gmx_sham(int argc,char *argv[])
     "volume."
   };
   static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1;
-  static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
-  static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
-  static bool bShamEner=TRUE,bSham=TRUE; 
+  static gmx_bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
+  static gmx_bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
+  static gmx_bool bShamEner=TRUE,bSham=TRUE; 
   static real Tref=298.15,pmin=0,ttol=0,pmax=0,gmax=0,emin=0,emax=0;
   static rvec nrdim = {1,1,1};
   static rvec nrbox = {32,32,32};

@@ -493,7 +493,7 @@ evaluate_resindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static int
 check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
-    bool bOk;
+    gmx_bool bOk;
 
     bOk = (top != NULL && top->mols.nr > 0);
     if (!bOk)
@@ -557,7 +557,7 @@ evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static int
 check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
-    bool bOk;
+    gmx_bool bOk;
 
     bOk = (top != NULL && top->atoms.atomtype != NULL);
     if (!bOk)
@@ -707,7 +707,7 @@ evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static int
 check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
-    bool bOk;
+    gmx_bool bOk;
 
     bOk = (top != NULL && top->atoms.pdbinfo != NULL);
     if (!bOk)

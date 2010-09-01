@@ -109,7 +109,7 @@ gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop);
  *     ...
  * }
  */
-bool
+gmx_bool
 gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
 			   int *at_global,t_atom **atom);
 
@@ -149,7 +149,7 @@ gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop);
  *     ...
  * }
  */
-bool
+gmx_bool
 gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
 			     t_atom **atom,int *nmol);
 
@@ -168,7 +168,7 @@ gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop);
  *   writes the number of molecules for this ilist in *nmol.
  * When at the end, destroys iloop and returns FALSE.
  */
-bool
+gmx_bool
 gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
 			t_ilist **ilist_mol,int *nmol);
 
@@ -190,7 +190,7 @@ gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop);
  *   writes the atom offset which should be added to iatoms in atnr_offset.
  * When at the end, destroys iloop and returns FALSE.
  */
-bool
+gmx_bool
 gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
 			    t_ilist **ilist_mol,int *atnr_offset);
 
@@ -215,7 +215,7 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
  * that consist of a single charge group.
  */
 void
-gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,bool bKeepSingleMolCG);
+gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,gmx_bool bKeepSingleMolCG);
 
 
 /* Generate a 'local' topology for the whole system.

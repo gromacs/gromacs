@@ -74,7 +74,7 @@ void pr_fopts(FILE *fp,int nf,const t_filenm tfn[], int shell);
 /* prints file options in tcsh 'complete' format */
 
 void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
-			    bool bKeep, bool bReadNode);
+			    gmx_bool bKeep, gmx_bool bReadNode);
 /* Parse command line for file names. When bKeep is set args are 
  * not removed from argv. */
 
@@ -115,10 +115,10 @@ char *ftp2filter(int ftp);
 #define ftp2FILE(ftp,nfile,fnm,mode) ffopen(ftp2fn(ftp,nfile,fnm),mode)
 /* Return a file pointer from the filename (see above) */
 
-bool ftp2bSet(int ftp,int nfile,const t_filenm fnm[]);
+gmx_bool ftp2bSet(int ftp,int nfile,const t_filenm fnm[]);
 /* Return TRUE when this file type has been found on the cmd-line */
 
-bool opt2bSet(const char *opt,int nfile,const t_filenm fnm[]);
+gmx_bool opt2bSet(const char *opt,int nfile,const t_filenm fnm[]);
 /* Return TRUE when this option has been found on the cmd-line */
 
 const char *opt2fn_null(const char *opt,int nfile,const t_filenm fnm[]);
@@ -132,13 +132,13 @@ const char *ftp2fn_null(int ftp,int nfile,const t_filenm fnm[]);
  * Also return NULL when ftp is optional and option is not set.
  */
 
-bool is_optional(const t_filenm *fnm);
+gmx_bool is_optional(const t_filenm *fnm);
 /* Return whether or not this filenm is optional */
 
-bool is_output(const t_filenm *fnm);
+gmx_bool is_output(const t_filenm *fnm);
 /* Return whether or not this filenm is output */
 
-bool is_set(const t_filenm *fnm);
+gmx_bool is_set(const t_filenm *fnm);
 /* Return whether or not this filenm is set */
 
 /* When we do checkpointing, this routine is called to check for previous

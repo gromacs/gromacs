@@ -114,21 +114,21 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa);
 void cross_corr(int n,real f[],real g[],real corr[]);
 /* Simple minded cross correlation algorithm */
   
-real fit_acf(int ncorr,int fitfn,const output_env_t oenv,bool bVerbose,
+real fit_acf(int ncorr,int fitfn,const output_env_t oenv,gmx_bool bVerbose,
 		    real tbeginfit,real tendfit,real dt,real c1[],real *fit);
   /* Fit an ACF to a given function */
   
 void do_autocorr(const char *fn,const output_env_t oenv,
                         const char *title,
 			int nframes,int nitem,real **c1,
-			real dt,unsigned long mode,bool bAver);
+			real dt,unsigned long mode,gmx_bool bAver);
 /* Calls low_do_autocorr (see below). After calling add_acf_pargs */
 
 void low_do_autocorr(const char *fn,const output_env_t oenv,
                             const char *title, int  nframes,int nitem,
                             int nout,real **c1, real dt,unsigned long mode,
-                            int nrestart, bool bAver,bool bNormalize,
-			    bool bVerbose,real tbeginfit,real tendfit,
+                            int nrestart, gmx_bool bAver,gmx_bool bNormalize,
+			    gmx_bool bVerbose,real tbeginfit,real tendfit,
 			    int nfitparm,int nskip);
 /* 
  * do_autocorr calculates autocorrelation functions for many things.
@@ -240,7 +240,7 @@ void expfit(int n, real x[], real y[], real Dy[],
 
 void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 			  real **dih,int nframes,int nangles,
-			  const char *grpname,real t0,real dt,bool bRb,
+			  const char *grpname,real t0,real dt,gmx_bool bRb,
                           const output_env_t oenv);
 /*
  * Analyse dihedral transitions, by counting transitions per dihedral
@@ -265,11 +265,11 @@ void ana_dih_trans(const char *fn_trans,const char *fn_histo,
  *           (trans = 0)
  */
 
-void low_ana_dih_trans(bool bTrans, const char *fn_trans,
-			      bool bHisto, const char *fn_histo, int maxchi, 
+void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
+			      gmx_bool bHisto, const char *fn_histo, int maxchi, 
 			      real **dih, int nlist, t_dlist dlist[], 
                               int nframes, int nangles, const char *grpname, 
-                              int xity[], real t0, real dt, bool bRb, 
+                              int xity[], real t0, real dt, gmx_bool bRb, 
                               real core_frac, const output_env_t oenv); 
   /* as above but passes dlist so can copy occupancies into it, and xity[] 
    *  (1..nangles, corresp to dih[this][], so can have non-3 multiplicity of
@@ -281,7 +281,7 @@ void low_ana_dih_trans(bool bTrans, const char *fn_trans,
 
 
 void read_ang_dih(const char *trj_fn,
-			 bool bAngles,bool bSaveAll,bool bRb,bool bPBC,
+			 gmx_bool bAngles,gmx_bool bSaveAll,gmx_bool bRb,gmx_bool bPBC,
 			 int maxangstat,int angstat[],
 			 int *nframes,real **time,
 			 int isize,atom_id index[],
@@ -349,7 +349,7 @@ real fit_function(int eFitFn,real *parm,real x);
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
 real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
 		     real begintimefit,real endtimefit,const output_env_t oenv,
-                     bool bVerbose, int eFitFn,real fitparms[],int fix);
+                     gmx_bool bVerbose, int eFitFn,real fitparms[],int fix);
 /* Returns integral.
  * If x == NULL, the timestep dt will be used to create a time axis.
  * fix fixes fit parameter i at it's starting value, when the i'th bit
@@ -387,15 +387,15 @@ int get_acffitfn(void);
 void do_pp2shifts(FILE *fp,int nframes,
 			 int nlist,t_dlist dlist[],real **dih);
 
-bool has_dihedral(int Dih,t_dlist *dl);
+gmx_bool has_dihedral(int Dih,t_dlist *dl);
 
 t_dlist *mk_dlist(FILE *log, 
 			 t_atoms *atoms, int *nlist,
-			 bool bPhi, bool bPsi, bool bChi, bool bHChi,
+			 gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
 			 int maxchi,int r0,int naa,char **aa);
 			 
 void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt,  int printtype,
-		     bool bPhi, bool bPsi,bool bChi,bool bOmega, int maxchi);
+		     gmx_bool bPhi, gmx_bool bPsi,gmx_bool bChi,gmx_bool bOmega, int maxchi);
 
 int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi);
 
@@ -408,8 +408,8 @@ void mk_multiplicity_lookup (int *xity, int maxchi, real **dih,
 void get_chi_product_traj (real **dih,int nframes,int nangles, 
 				  int nlist,int maxchi, t_dlist dlist[], 
                                   real time[], int **lookup,int *xity,
-                                  bool bRb,bool bNormalize,
-				  real core_frac,bool bAll,const char *fnall,
+                                  gmx_bool bRb,gmx_bool bNormalize,
+				  real core_frac,gmx_bool bAll,const char *fnall,
                                   const output_env_t oenv); 
 
 void print_one (const output_env_t oenv, const char *base,

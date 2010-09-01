@@ -58,7 +58,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
 					  real *               VFtab,
 					  int *                outeriter,
 					  int *                inneriter,
-                                          bool                bCG)
+                                          gmx_bool                bCG)
 {
     int           nri,ntype,table_nelements,icoul,ivdw;
     real          facel,gbtabscale;
@@ -89,7 +89,7 @@ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
     real       weight_cg2;
     real       weight_product;
     real       hybscal; /* the multiplicator to the force for hybrid interactions*/
-    bool       bHybrid; /*Are we in the hybrid zone ?*/
+    gmx_bool   bHybrid; /*Are we in the hybrid zone ?*/
     real       force_cap;
 
     wf                  = mdatoms->wf;

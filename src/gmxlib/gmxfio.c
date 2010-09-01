@@ -149,10 +149,10 @@ static int gmx_fio_int_flush(t_fileio* fio)
 }
 
 /* returns TRUE if the file type ftp is in the set set */
-static bool in_ftpset(int ftp, int nset, const int set[])
+static gmx_bool in_ftpset(int ftp, int nset, const int set[])
 {
     int i;
-    bool bResult;
+    gmx_bool bResult;
 
     bResult = FALSE;
     for (i = 0; (i < nset); i++)
@@ -338,7 +338,7 @@ static void gmx_fio_insert(t_fileio *fio)
 
 /* remove a t_fileio into the list. We assume the fio is locked, and we leave 
    it locked. */
-static void gmx_fio_remove(t_fileio *fio, bool global_lock)
+static void gmx_fio_remove(t_fileio *fio, gmx_bool global_lock)
 {    
     t_fileio *prev;
 
@@ -452,7 +452,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     t_fileio *fio = NULL;
     int i;
     char newmode[5];
-    bool bRead, bReadWrite;
+    gmx_bool bRead, bReadWrite;
     int xdrid;
 
     if (fn2ftp(fn) == efTPA)
@@ -717,7 +717,15 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         }
         else if (feof(fio->fp))
         {
-            fprintf(stderr, "\nTrying to get md5sum: EOF: %s\n", fio->fn);
+            /*
+             * For long runs that checkpoint frequently but write e.g. logs
+             * infrequently we don't want to issue lots of warnings before we
+             * have written anything to the log.
+             */
+            if(0)
+            {
+                fprintf(stderr, "\nTrying to get md5sum: EOF: %s\n", fio->fn);
+            }
         }
         else
         {
@@ -915,16 +923,16 @@ void gmx_fio_checktype(t_fileio *fio)
 }
 
 
-void gmx_fio_setprecision(t_fileio *fio, bool bDouble)
+void gmx_fio_setprecision(t_fileio *fio, gmx_bool bDouble)
 {
     gmx_fio_lock(fio);
     fio->bDouble = bDouble;
     gmx_fio_unlock(fio);
 }
 
-bool gmx_fio_getdebug(t_fileio *fio)
+gmx_bool gmx_fio_getdebug(t_fileio *fio)
 {
-    bool ret;
+    gmx_bool ret;
 
     gmx_fio_lock(fio);
     ret = fio->bDebug;
@@ -933,7 +941,7 @@ bool gmx_fio_getdebug(t_fileio *fio)
     return ret;
 }
 
-void gmx_fio_setdebug(t_fileio *fio, bool bDebug)
+void gmx_fio_setdebug(t_fileio *fio, gmx_bool bDebug)
 {
     gmx_fio_lock(fio);
     fio->bDebug = bDebug;
@@ -1116,9 +1124,9 @@ XDR *gmx_fio_getxdr(t_fileio* fio)
     return ret;
 }
 
-bool gmx_fio_getread(t_fileio* fio)
+gmx_bool gmx_fio_getread(t_fileio* fio)
 {
-    bool ret;
+    gmx_bool ret;
 
     gmx_fio_lock(fio);
     ret = fio->bRead;

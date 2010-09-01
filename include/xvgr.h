@@ -88,7 +88,7 @@ enum {
  * \4 : (deprecated) end symbol font
  */
 
-bool output_env_get_print_xvgr_codes(const output_env_t oenv);
+gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv);
 /* Returns if we should print xmgrace or xmgr codes */
 
 enum {
@@ -130,12 +130,18 @@ void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
 /* Set the world in xvgr */
 
 void xvgr_legend(FILE *out,int nsets,const char** setnames,
-                        const output_env_t oenv);
+                 const output_env_t oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
 
-void xvgr_new_dataset(FILE *out, const output_env_t oenv);
-/* End the previous data set(s) and start new one(s). */
+void xvgr_new_dataset(FILE *out, 
+                      int nr_first, int nsets, const char **setnames, 
+                      const output_env_t oenv);
+/* End the previous data set(s) and start new one(s). 
+    nr_first = the global set number of the first new set (or 0 if no legend)
+    nsets = the number of sets (or 0 if no legends)
+    setnames = the set names (or NULL if no legends)
+*/
 
 void xvgr_line_props(FILE *out,int NrSet,int LineStyle,int LineColor,
                             const output_env_t oenv);
@@ -174,9 +180,9 @@ void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
  * two dimensional array which is returned.
  */
 real **read_xvg_time(const char *fn,
-			    bool bHaveT,
-			    bool bTB,real tb,
-			    bool bTE,real te,
+			    gmx_bool bHaveT,
+			    gmx_bool bTB,real tb,
+			    gmx_bool bTE,real te,
 			    int nsets_in,int *nset,int *nval,
 			    real *dt,real **t);
 #ifdef __cplusplus

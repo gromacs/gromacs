@@ -246,7 +246,7 @@ void chk_trj(const output_env_t oenv,const char *fn,const char *tpr,real tol)
   int          j=-1,new_natoms,natoms;
   gmx_off_t    fpos;
   real         rdum,tt,old_t1,old_t2,prec;
-  bool         bShowTimestep=TRUE,bOK,newline=FALSE;
+  gmx_bool         bShowTimestep=TRUE,bOK,newline=FALSE;
   t_trxstatus *status;
   gmx_mtop_t   mtop;
   gmx_localtop_t *top;
@@ -371,7 +371,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
   rvec      dx;
   matrix    box;
   t_pbc     pbc;
-  bool      bV,bX,bB,bFirst,bOut;
+  gmx_bool      bV,bX,bB,bFirst,bOut;
   real      r2,ekin,temp1,temp2,dist2,vdwfac2,bonlo2,bonhi2;
   real      *atom_vdw;
   gmx_atomprop_t aps;
@@ -548,7 +548,7 @@ void chk_enx(const char *fn)
   ener_file_t in;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
-  bool       bShowTStep;
+  gmx_bool       bShowTStep;
   real       t0,old_t1,old_t2;
   char       buf[22];
   
@@ -639,10 +639,10 @@ int main(int argc,char *argv[])
   static real vdw_fac=0.8;
   static real bon_lo=0.4;
   static real bon_hi=0.7;
-  static bool bRMSD=FALSE;
+  static gmx_bool bRMSD=FALSE;
   static real ftol=0.001;
   static real abstol=0.001;
-  static bool bCompAB=FALSE;
+  static gmx_bool bCompAB=FALSE;
   static char *lastener=NULL;
   static t_pargs pa[] = {
     { "-vdwfac", FALSE, etREAL, {&vdw_fac},

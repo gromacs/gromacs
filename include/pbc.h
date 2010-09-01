@@ -82,7 +82,7 @@ extern "C" {
   int guess_ePBC(matrix box);
   /* Guesses the type of periodic boundary conditions using the box */
 
-  bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph);
+  gmx_bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph);
   /* Checks for un-allowed box angles and corrects the box
    * and the integer shift vectors in the graph (if graph!=NULL) if necessary.
    * Returns TRUE when the box was corrected.
@@ -99,7 +99,7 @@ extern "C" {
    */
 
   t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
-			   gmx_domdec_t *dd,bool bSingleDir,matrix box);
+			   gmx_domdec_t *dd,gmx_bool bSingleDir,matrix box);
   /* As set_pbc, but additionally sets that correct distances can
    * be obtained using (combinations of) single box-vector shifts.
    * Should be used with pbc_dx_aiuc.
@@ -136,7 +136,7 @@ extern "C" {
    * set_pbc must be called before ever calling this routine.
    */
 
-  bool image_rect(ivec xi,ivec xj,ivec box_size,
+  gmx_bool image_rect(ivec xi,ivec xj,ivec box_size,
 			 real rlong2,int *shift,real *r2);
   /* Calculate the distance between xi and xj for a rectangular box.
    * When the distance is SMALLER than rlong2 return TRUE, return
@@ -145,7 +145,7 @@ extern "C" {
    * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
    */
 
-  bool image_tri(ivec xi,ivec xj,imatrix box,
+  gmx_bool image_tri(ivec xi,ivec xj,imatrix box,
 			real rlong2,int *shift,real *r2);
   /* Calculate the distance between xi and xj for a triclinic box.
    * When the distance is SMALLER than rlong2 return TRUE, return
@@ -154,7 +154,7 @@ extern "C" {
    * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
    */
   
-  bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
+  gmx_bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
 			      int *shift,real *r2);
   /* Calculate the distance between xi and xj for a rectangular box
    * using a cylindric cutoff for long-range only.

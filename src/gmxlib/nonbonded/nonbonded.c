@@ -213,7 +213,7 @@ static nb_adress_kernel_t **
 nb_kernel_list_adress = NULL;
 
 void
-gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
+gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
 {
     int i;
         
@@ -301,7 +301,7 @@ gmx_setup_kernels(FILE *fplog,bool bGenericKernelOnly)
 }
 
 void
-gmx_setup_adress_kernels(FILE *fplog,bool bGenericKernelOnly) {
+gmx_setup_adress_kernels(FILE *fplog,gmx_bool bGenericKernelOnly) {
     int i;
 
     snew(nb_kernel_list_adress, eNR_NBKERNEL_NR);
@@ -324,12 +324,12 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
                   int nls,int eNL,int flags)
 {
-    bool            bLR,bDoForces,bForeignLambda;
+    gmx_bool            bLR,bDoForces,bForeignLambda;
 	t_nblist *      nlist;
 	real *          fshift;
 	int             n,n0,n1,i,i0,i1,nrnb_ind,sz;
 	t_nblists       *nblists;
-	bool            bWater;
+	gmx_bool            bWater;
 	nb_kernel_t *   kernelptr;
         nb_adress_kernel_t * adresskernelptr;
 	FILE *          fp;
@@ -339,7 +339,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
 	gmx_gbdata_t    gbdata;
-        bool            bCG; /* for AdresS */
+        gmx_bool        bCG; /* for AdresS */
         int             k;/* for AdresS */
 
     bLR            = (flags & GMX_DONB_LR);
@@ -783,7 +783,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                 const t_forcerec *fr,gmx_grppairener_t *grppener,
                 int *global_atom_index)
 {
-    static    bool bWarn=FALSE;
+    static    gmx_bool bWarn=FALSE;
     real      eps,r2,*tab,rtab2=0;
     rvec      dx,x14[2],f14[2];
     int       i,ai,aj,itype;
@@ -802,10 +802,10 @@ do_listed_vdw_q(int ftype,int nbonds,
     real      *egnb=NULL,*egcoul=NULL;
     t_nblist  tmplist;
     int       icoul,ivdw;
-    bool      bMolPBC,bFreeEnergy;
-    bool      bCG; /* AdResS*/
+    gmx_bool      bMolPBC,bFreeEnergy;
+    gmx_bool      bCG; /* AdResS*/
     real      wf14[2]={0,0}; /* AdResS*/
-    
+   
 #if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_t mtx;
 #else
