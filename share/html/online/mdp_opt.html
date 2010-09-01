@@ -234,7 +234,7 @@ Parallel tpic gives identical results to single node tpic.
 <dt><b>tinit: (0) [ps]</b></dt>
 <dd>starting time for your run (only makes sense for integrators <tt>md</tt>,
 <tt>sd</tt> and <tt>bd</tt>)</dd>
-<dt><b>dt: (0.001) [ps]</b></dd>
+<dt><b>dt: (0.001) [ps]</b></dt></dd>
 <dd>time step for integration (only makes sense for integrators <tt>md</tt>,
 <tt>sd</tt> and <tt>bd</tt>)</dd>
 <dt><b>nsteps: (0)</b></dt>
@@ -478,7 +478,7 @@ is automatically set to the longest cut-off distance.</dd>
 <dt><b>Cut-off</b></dt>
 <dd>Twin range cut-off's with neighborlist cut-off <b>rlist</b> and 
 Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> &ge <b>rlist</b>.
+where <b>rcoulomb</b>&ge;<b>rlist</b>.
 
 <dt><b>Ewald</b></dt>
 <dd>Classical <!--Idx-->Ewald sum<!--EIdx--> electrostatics.
@@ -498,7 +498,7 @@ to the Ewald sum, while the reciprocal part is performed with
 FFTs. Grid dimensions are controlled with <b>fourierspacing</b> and the
 interpolation order with <b>pme_order</b>. With a grid spacing of 0.1
 nm and cubic interpolation the electrostatic forces have an accuracy
-of 2-3e-4. Since the error from the vdw-cutoff is larger than this you
+of 2-3*10<sup>-4</sup>. Since the error from the vdw-cutoff is larger than this you
 might try 0.15 nm. When running in parallel the interpolation
 parallelizes better than the FFT, so try decreasing grid dimensions
 while increasing interpolation.</dd>
@@ -1077,7 +1077,7 @@ when (1+<b>lincs_iter</b>)*<b>lincs_order</b> remains constant.</dd>
 For normal runs a single step is sufficient, but for NVE
 runs where you want to conserve energy accurately or for accurate
 energy minimization you might want to increase it to 2.
-<dt><b>lincs_warnangle: </b>(30) [degrees]</b></dt>
+<dt><b>lincs_warnangle: </b>(30) [degrees]</dt>
 <dd>maximum angle that a bond can rotate before LINCS will complain</dd>
 
 <dt><b>morse:</b></dt>
@@ -1244,13 +1244,12 @@ by the group number.</dd>
 of (0,0,0) is used. With an absolute reference the system is no longer
 translation invariant and one should think about what to do with
 the <A HREF="#run">center of mass motion</A>.</dd>
-</b>
 <dt><b>pull_weights0: </b></dt>
 <dd>see <b>pull_weights1</b></dd>
 <dt><b>pull_pbcatom0: (0)</b></dt>
 <dd>see <b>pull_pbcatom1</b></dd>
 <dt><b>pull_group1: </b></dt>
-<dd>The name of the pull group.</b>
+<dd>The name of the pull group.</dd>
 <dt><b>pull_weights1: </b></dt>
 <dd>Optional relative weights which are multiplied with the masses of the atoms
 to give the total weight for the COM. The number should be 0, meaning all 1,
