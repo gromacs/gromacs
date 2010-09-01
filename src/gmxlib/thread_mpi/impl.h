@@ -746,22 +746,6 @@ tMPI_Group tMPI_Group_alloc(void);
 void tMPI_Cart_destroy(struct cart_topol *top);
 
 
-#ifdef USE_COLLECTIVE_COPY_BUFFER
-/* initialize a copy_buffer_list */
-void tMPI_Copy_buffer_list_init(struct copy_buffer_list *cbl, int Nbufs, 
-                                size_t size);
-/* initialize a copy_buffer_list */
-void tMPI_Copy_buffer_list_destroy(struct copy_buffer_list *cbl);
-/* get a copy buffer from a list */
-struct copy_buffer *tMPI_Copy_buffer_list_get(struct copy_buffer_list *cbl);
-/* return a copy buffer to a list */
-void tMPI_Copy_buffer_list_return(struct copy_buffer_list *cbl, 
-                                  struct copy_buffer *cb);
-/* initialize a copy buffer */
-void tMPI_Copy_buffer_init(struct copy_buffer *cb, size_t size);
-void tMPI_Copy_buffer_destroy(struct copy_buffer *cb);
-#endif
-
 
 
 
@@ -797,8 +781,9 @@ void tMPI_Req_list_destroy(struct req_list *rl);
 
 
 
+/* collective data structure ops */
 
-/* multicast functions */
+
 /* initialize a coll env structure */
 void tMPI_Coll_env_init(struct coll_env *mev, int N);
 /* destroy a coll env structure */
@@ -808,6 +793,22 @@ void tMPI_Coll_env_destroy(struct coll_env *mev);
 void tMPI_Coll_sync_init(struct coll_sync *msc, int N);
 /* destroy a coll sync structure */
 void tMPI_Coll_sync_destroy(struct coll_sync *msc);
+
+#ifdef USE_COLLECTIVE_COPY_BUFFER
+/* initialize a copy_buffer_list */
+void tMPI_Copy_buffer_list_init(struct copy_buffer_list *cbl, int Nbufs,
+                                size_t size);
+/* initialize a copy_buffer_list */
+void tMPI_Copy_buffer_list_destroy(struct copy_buffer_list *cbl);
+/* get a copy buffer from a list */
+struct copy_buffer *tMPI_Copy_buffer_list_get(struct copy_buffer_list *cbl);
+/* return a copy buffer to a list */
+void tMPI_Copy_buffer_list_return(struct copy_buffer_list *cbl,
+                                  struct copy_buffer *cb);
+/* initialize a copy buffer */
+void tMPI_Copy_buffer_init(struct copy_buffer *cb, size_t size);
+void tMPI_Copy_buffer_destroy(struct copy_buffer *cb);
+#endif
 
 
 
