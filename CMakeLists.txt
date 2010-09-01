@@ -39,14 +39,17 @@ set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
 #must come after all cpack settings!
 include(CPack)
 
+
 ########################################################################
 # Fix stupid flags on MSVC
 ########################################################################
+SET(SHARED_LIBS_DEFAULT ON) 
 IF(CMAKE_GENERATOR MATCHES "Visual Studio")
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)   
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
+    SET(SHARED_LIBS_DEFAULT OFF)	
 ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
 
 set(GMX_EXTRA_LIBRARIES)
@@ -83,7 +86,7 @@ option(GMX_DISABLE_FFTW_MEASURE
 set(GMX_QMMM_PROGRAM "none" 
     CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" ON)
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
