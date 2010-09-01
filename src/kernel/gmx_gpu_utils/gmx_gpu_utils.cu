@@ -101,11 +101,18 @@ static const char * const SupportedGPUs[] = {
     /* GT400 */
     "Geforce GTX 480",
     "Geforce GTX 470",
+    "Geforce GTX 465",
+    "Geforce GTX 460",
 
     "Tesla C2070",
     "Tesla C2050",
     "Tesla S2070",
     "Tesla S2050",
+    "Tesla M2070",
+    "Tesla M2050",
+
+    "Quadro 5000",
+    "Quadro 6000",
 
     /* GT200 */
     "Geforce GTX 295",
