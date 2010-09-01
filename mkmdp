@@ -69,10 +69,11 @@ sed \
 -e 's/<[uU][lL]>/\\begin{itemize}/g' \
 -e 's/<\/[uU][lL]>/\\end{itemize}/g' \
 -e 's/<[lL][iI]>/\\item /g' \
--e 's/<[dD][lL] [cC][oO][^>]*>/\\vspace{-2ex}\\begin{description}/g' \
--e 's/<[dD][lL][^>]*>/\\begin{description}/g' \
+-e 's/<[dD][lL] [cC][oO][^>]*>/\\vspace{-2ex}\\begin{description}[font=\\ttfamily]/g' \
+-e 's/<[dD][lL][^>]*>/\\begin{description}[font=\\ttfamily]/g' \
 -e 's/<\/[dD][lL]>/\\end{description}/g' \
--e 's/<[dD][tT]>\(.*\)/\\item[\1]\\mbox{}\\\\/g' \
+-e 's/<[dD][tT]><[bB]>\(.*\)<\/[bB]>\(.*\)<\/[dD][tT]>/\\item[\1] \2\\hfill\\\\/g' \
+-e 's/<[dD][tT]>\([^<]*\)<\/[dD][tT]>/\\item[\1]\\hfill\\\\/g' \
 -e 's/<[dD][dD]>//g' \
 -e 's/<\/[dD][dD]>//g' \
 -e 's/<\/[dD][tT]>//g' \
