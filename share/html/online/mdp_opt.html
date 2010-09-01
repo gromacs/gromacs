@@ -16,7 +16,7 @@ Sun 18 Jan 2009</B></td></tr></TABLE>
 <!-- 
 
 PLEASE BE VERY CAREFUL WHEN EDITING THIS FILE: IT MUST BE
-AUTOMATICALLY PARSED BY A SIMPLE SCRIPT (doc/mkmdp) TO PRODUCE A
+AUTOMATICALLY PARSED BY A SIMPLE SCRIPT (mkmdp in the GROMACS manual repository) TO PRODUCE A
 CORRESPONDING LATEX FILE.
 
 IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
@@ -84,7 +84,7 @@ simulation. Edit it to suit your specific needs and desires. </P>
 <dl>
 <dt><h4>include:</h4></dt>
 <dd>directories to include in your topology. Format: 
-<PRE>-I/home/john/my_lib -I../more_lib</PRE></dd>
+<PRE>-I/home/john/mylib -I../otherlib</PRE></dd>
 <dt><h4>define:</h4></dt>
 <dd>defines to pass to the preprocessor, default is no defines. You can use
 any defines to control options in your customized topology files. Options
@@ -104,7 +104,7 @@ topology, this can be useful for normal mode analysis.</dd>
 <h3>Run control</h3>
 
 <dl>
-<dt><h4>integrator:</h4></dt>
+<dt><h4>integrator:</h4> (Despite the name, this list includes algorithms that are not actually integrators. <tt>steep</tt> and all entries following it are in this category)</dt>
 <dd><dl compact></dd>
 <dt><b>md</b></dt>
 <dd>A <!--Idx-->leap-frog<!--EIdx--> algorithm for integrating Newton's
@@ -146,7 +146,7 @@ When used as a thermostat, an appropriate value for <b>tau_t</b> is 2 ps,
 since this results in a friction that is lower than the internal friction
 of water, while it is high enough to remove excess heat
 (unless <b>cut-off</b> or <b>reaction-field</b> electrostatics is used).
-<b>NOTE:</b> temperature deviations decay twice as fast as with
+NOTE: temperature deviations decay twice as fast as with
 a Berendsen thermostat with the same <b>tau_t</b>.</dd>
 <dt><b>sd1</b></dt>
 <dd> An efficient leap-frog stochastic dynamics integrator.
@@ -161,13 +161,11 @@ Use with care and check the temperature.</dd>
 velocity is the force divided by a friction coefficient 
 (<b><A HREF="#ld">bd_fric</A></b> [amu ps<sup>-1</sup>])
 plus random thermal noise (<b><A HREF="#tc">ref_t</A></b>).
-When <b><A HREF="#ld">bd_fric</A></b>=0, the friction coefficient for each
+When <b><A HREF="#ld">bd_fric</A></b><tt>=0</tt>, the friction coefficient for each
 particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>, as for the
 integrator <tt>sd</tt>.
 The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>.</dd>
 
-<dt>The following algorithms are not integrators, but selected using 
-the integrator tag anyway</dt>
 <dt><b>steep</b></dt>
 <dd>A <!--Idx-->steepest descent<!--EIdx--> algorithm for energy
 minimization. The maximum step size is <b><A HREF="#em">emstep</A></b>
@@ -201,8 +199,8 @@ and with random orientiations of the molecule. When <b>nstlist</b>
 is larger than one, <b>nstlist</b> insertions are performed
 in a sphere with radius <b><A HREF="#tpi">rtpi</A></b>
 around a the same random location using the same neighborlist
-(and the same long-range energy when <b>rvdw</b> or <b>rcoulomb</b>
-&gt <b>rlist</b>, which is only allowed for single-atom molecules).
+(and the same long-range energy when <b>rvdw</b> or <b>rcoulomb</b>&gt;<b>rlist</b>,
+which is only allowed for single-atom molecules).
 Since neighborlist construction is expensive, one can perform several
 extra insertions with the same list almost for free.
 The random seed is set with <b><A HREF="#ld">ld_seed</A></b>.
@@ -359,7 +357,7 @@ This option affects the performance in parallel simulations,
 because calculating energies requires global communication between all
 processes which can become a bottleneck at high parallelization.
 The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
-unless <b>nstlist</b> &le 0, then a value of 10 is used.
+unless <b>nstlist</b> &le;0, then a value of 10 is used.
 If <b>nstenergy</b> is smaller than the automatically generated value,
 the lowest common denominator of <b>nstenergy</b> and <b>nstlist</b> is used.
 </dd>
@@ -370,7 +368,7 @@ should be a multiple of <b>nstcalcenergy</b></dd>,
 note that the exact sums and fluctuations over all MD steps
 modulo <b>nstcalcenergy</b> are stored in the energy file,
 so <tt>g_energy</tt> can report exact
-energy averages and fluctuations also when <b>nstenergy</b> &gt 1</dd>
+energy averages and fluctuations also when <b>nstenergy</b><tt>&gt;1</tt></dd>
 <dt><h4>nstxtcout: (0) [steps]</h4></dt>
 <dd>frequency to write coordinates to xtc trajectory</dd>
 <dt><h4>xtc_precision: (1000) [real]</h4></dt>
@@ -388,12 +386,12 @@ energy averages and fluctuations also when <b>nstenergy</b> &gt 1</dd>
 <dl>
 <dt><h4>nstlist: (10) [steps]</h4></dt>
 <dd><dl compact>
-<dt><b>&gt 0</b></dt>
+<dt><b>&gt;0</b></dt>
 <dd>Frequency to update the <!--Idx-->neighbor list<!--EIdx--> (and
 the long-range forces, when using twin-range cut-off's). When this is 0,
 the neighbor list is made only once.
 With energy minimization the neighborlist will be updated for every
-energy evaluation when <b>nstlist</b> &gt 0</dd>.
+energy evaluation when <b>nstlist</b><tt>&gt;0</tt></dd>.
 <dt><b>0</b></dt>
 <dd>The neighbor list is only constructed once and never updated.
 This is mainly useful for vacuum simulations in which all particles
@@ -434,13 +432,13 @@ every <b>nstlist</b> steps.</dd>
 <dd>Use periodic boundary conditions in all directions.</dd>
 <dt><b>no</b></dt>
 <dd>Use no periodic boundary conditions, ignore the box.
-To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.
-For best performance without cut-offs, use <b>nstlist</b>=0,
-<b>ns_type</b>=simple
+To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b><tt>=0</tt>.
+For best performance without cut-offs, use <b>nstlist</b><tt>=0</tt>,
+<b>ns_type</b><tt>=simple</tt>
 and particle decomposition instead of domain decomposition.</dd>
 <dt><b>xy</b></dt>
 <dd>Use periodic boundary conditions in x and y directions only.
-This works only with <b>ns_type=grid</b> and can be used
+This works only with <b>ns_type</b><tt>=grid</tt> and can be used
 in combination with <b><a href="#walls">walls</a></b>.
 Without walls or with only one wall the system size is infinite
 in the z direction. Therefore pressure coupling or Ewald summation
@@ -485,7 +483,7 @@ where <b>rcoulomb</b> &ge <b>rlist</b>.
 <dt><b>Ewald</b></dt>
 <dd>Classical <!--Idx-->Ewald sum<!--EIdx--> electrostatics.
 The real-space cut-off <b>rcoulomb</b> should be equal to <b>rlist</b>.
-Use e.g. <b>rlist</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
+Use e.g. <b>rlist</b><tt>=0.9</tt>, <b>rcoulomb</b><tt>=0.9</tt>. The highest magnitude of
 wave vectors used in reciprocal space is controlled by <b>fourierspacing</b>.
 The relative accuracy of direct/reciprocal space
 is controlled by <b>ewald_rtol</b>.
@@ -520,7 +518,7 @@ PPPM through a small modification of the PME code.</dd>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
 where <b>rcoulomb</b> &ge <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_rf</b>.
-The dielectric constant can be set to infinity by setting <b>epsilon_rf</b>=0.</dd>
+The dielectric constant can be set to infinity by setting <b>epsilon_rf</b><tt>=0</tt>.</dd>
 
 <dt><b>Generalized-Reaction-Field</b></dt>
 <dd>Generalized reaction field with Coulomb cut-off <b>rcoulomb</b>,
@@ -824,14 +822,14 @@ This thermostat is similar to Berendsen coupling, with the same scaling
 using <b>tau_t</b>, but the stochastic term ensures that a proper
 canonical ensemble is generated. The random seed is set with
 <b><A HREF="#ld">ld_seed</A></b>.
-This thermostat works correctly even for <b>tau_t</b>=0.
+This thermostat works correctly even for <b>tau_t</b><tt>=0</tt>.
 For NVT simulations the conserved energy quantity is written
 to the energy and log file.</dd>
 </dl>
 <dt><h4>nsttcouple: (-1)</h4></dt>
 <dd>The frequency for coupling the temperature.
 The default value of -1 sets <b>nsttcouple</b> equal to <b>nstlist</b>,
-unless <b>nstlist</b> &le 0, then a value of 10 is used.
+unless <b>nstlist</b> &le;0, then a value of 10 is used.
 For velocity Verlet integrators <b>nsttcouple</b> is set to 1.</dd>
 </dd>
 <dt><h4>nh-chain-length (10)</h4></dt>
@@ -921,7 +919,7 @@ to have a box with constant height.</dd>
 <dt><h4>nstpcouple: (-1)</h4></dt>
 <dd>The frequency for coupling the pressure.
 The default value of -1 sets <b>nstpcouple</b> equal to <b>nstlist</b>,
-unless <b>nstlist</b> &le 0, then a value of 10 is used.
+unless <b>nstlist</b> &le;0, then a value of 10 is used.
 For velocity Verlet integrators <b>nstpcouple</b> is set to 1.</dd>
 </dd>
 
@@ -1043,7 +1041,7 @@ LINCS should not be used with coupled angle constraints.
 <dd>SHAKE is slightly slower and less stable than LINCS, but does work with 
 angle constraints.
 The relative tolerance is set with <b>shake_tol</b>, 0.0001 is a good value
-for "normal" MD. SHAKE does not support constraints between atoms
+for ``normal'' MD. SHAKE does not support constraints between atoms
 on different nodes, thus it can not be used with domain decompositon
 when inter charge-group constraints are present.
 SHAKE can not be used with energy minimization.
@@ -1066,7 +1064,7 @@ and do not reset shells, useful for exact coninuation and reruns</dd>
 When constraints form triangles, an additional expansion of the same
 order is applied on top of the normal expansion only for the couplings
 within such triangles.
-For "normal" MD simulations an order of 4 usually suffices, 6 is
+For ``normal'' MD simulations an order of 4 usually suffices, 6 is
 needed for large time-steps with virtual sites or BD.
 For accurate energy minimization an order of 8 or more might be required.
 With domain decomposition, the cell size is limited by the distance
@@ -1132,7 +1130,7 @@ off in the z-direction.</dd>
 <dd>direct LJ potential with the z distance from the wall</dd>
 <dt><b>table</b></dt><dd>user defined potentials indexed with the z distance from the wall, the tables are read analogously to
 the <b><A HREF="#table">energygrp_table</A></b> option,
-where the first name is for a "normal" energy group and the second name
+where the first name is for a ``normal'' energy group and the second name
 is <tt>wall0</tt> or <tt>wall1</tt>,
 only the dispersion and repulsion columns are used</dd>
 </dl>
@@ -1141,7 +1139,7 @@ only the dispersion and repulsion columns are used</dd>
 linearly and thus the force is constant. Setting this option to
 a postive value is especially useful for equilibration when some atoms
 are beyond a wall.
-When the value is &le 0 (&lt 0 for <b>wall_type=table</b>),
+When the value is &le;0 (&lt;0 for <b>wall_type=table</b>),
 a fatal error is generated when atoms are beyond a wall.
 </dd>
 <dt><h4>wall_atomtype:</h4></dt>
@@ -1154,7 +1152,7 @@ for independent tuning of the interaction of each atomtype with the walls</dd>
 <dd>The scaling factor for the third box vector for Ewald summation only,
 the minimum is 2.
 Ewald summation can only be used with <b>nwall=2</b>, where one
-should use <b><A HREF="#ewald">ewald_geometry</A>=3dc</b>.
+should use <b><A HREF="#ewald">ewald_geometry</A><tt>=3dc</tt></b>.
 The empty layer in the box serves to decrease the unphysical Coulomb
 interaction between periodic images.
 </dl>
