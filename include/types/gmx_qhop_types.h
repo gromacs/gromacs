@@ -92,7 +92,7 @@ typedef struct qhop_resblocks {
   /* The following is for the interaction library *
    * It stores the interaction parameters for a residue.
    * They are needed to switch between protonation states. */
-  int ****iatoms;     /* atoms involved in the interactions. iatoms[restype][bt][bi][...]*/
+  int ****iatoms;   /* atoms involved in the interactions. iatoms[restype][bt][bi][...]*/
   int ***ft;        /* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp */
   int ***mtop_ft;   /* index in the mtop->ffparams.functype and ...iparams */
 
