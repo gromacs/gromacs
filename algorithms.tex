@@ -2546,7 +2546,7 @@ which is the parallel version of the \normindex{LINCS} algorithm~\cite{Hess97}
 {(see \ssecref{lincs}).}
 The P-LINCS procedure is illustrated in \figref{plincs}.
 When molecules cross the cell boundaries, atoms in such molecules
-up to $LINCS~order + 1$ bonds away are communicated over the cell boundaries.
+up to {\tt lincs_order + 1} bonds away are communicated over the cell boundaries.
 Then, the normal LINCS algorithm can be applied to the local bonds
 plus the communicated ones. After this procedure, the local bonds
 are correctly constrained, even though the extra communicated ones are not.
