@@ -168,9 +168,36 @@ extern "C"
  it in the code should be visible to all memory operations after it - the
  CPU cannot propagate load/stores across it.
 
+ This barrier is a full barrier: all load and store operations of
+ instructions before it are completed, while all load and store operations
+ that are in instructions after it won't be done before this barrier.
+
  \hideinitializer
  */
 #define tMPI_Atomic_memory_barrier()
+
+/** Memory barrier operation with acquire semantics
+
+ This barrier is a barrier with acquire semantics: the terminology comes
+ from its common use after acquiring a lock: all load/store instructions 
+ after this barrier may not be re-ordered to happen before this barrier.
+
+ \hideinitializer
+ */
+#define tMPI_Atomic_memory_barrier_acq()
+
+/** Memory barrier operation with release semantics
+
+ This barrier is a barrier with release semantics: the terminology comes
+ from its common use before releasing a lock: all load/store instructions 
+ before this barrier may not be re-ordered to happen after this barrier.
+
+ \hideinitializer
+ */
+#define tMPI_Atomic_memory_barrier_rel()
+
+
+
 
 /* System mutex used for locking to guarantee atomicity */
 static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -644,6 +671,14 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
     } while(!tMPI_Atomic_ptr_cas(a, oldval, b));
     return oldval;
 }
+#endif
+
+/* only define this if there were no separate acquire and release barriers */
+#ifndef TMPI_HAVE_ACQ_REL_BARRIERS
+
+/* if they're not defined explicitly, we just make full barriers out of both */
+#define tMPI_Atomic_memory_barrier_acq tMPI_Atomic_memory_barrier
+#define tMPI_Atomic_memory_barrier_rel tMPI_Atomic_memory_barrier
 
 #endif
 

@@ -66,7 +66,11 @@ files.
 /*#define tMPI_Atomic_memory_barrier() __lwsync();*/
 
 /* for normal memory, this should be enough: */
-#define tMPI_Atomic_memory_barrier() { __fence(); __eieio(); }
+#define tMPI_Atomic_memory_barrier() { __fence(); __eieio(); __fence(); }
+#define tMPI_Atomic_memory_barrier_acq() { __eieio(); __fence(); }
+#define tMPI_Atomic_memory_barrier_rel() { __fence(); __eieio(); }
+#define TMPI_HAVE_ACQ_REL_BARRIERS
+
 /*#define tMPI_Atomic_memory_barrier() __eieio();*/
 
 

@@ -107,6 +107,7 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         cev->met[myrank].buf[i]=(char*)sendbuf+sendsize*i;
         cev->met[myrank].read_data[i]=FALSE;
     }
+    tMPI_Atomic_memory_barrier_rel();
     tMPI_Atomic_set(&(cev->met[myrank].current_sync), synct);
 
     /* post availability */
@@ -214,6 +215,7 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
         cev->met[myrank].buf[i]=(char*)sendbuf+sendtype->size*sdispls[i];
         cev->met[myrank].read_data[i]=FALSE;
     }
+    tMPI_Atomic_memory_barrier_rel();
     tMPI_Atomic_set(&(cev->met[myrank].current_sync), synct);
 
     /* post availability */

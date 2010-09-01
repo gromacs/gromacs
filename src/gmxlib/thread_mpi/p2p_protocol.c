@@ -679,6 +679,7 @@ struct envelope* tMPI_Recv_env_list_search_new(struct recv_envelope_list *evl,
 #ifdef USE_SEND_RECV_COPY_BUFFER
 void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
 {
+    int state;
     /* Fill copy buffer, after having anounced its possible use */
 
     /* in the special case of a zero buffer size, we don't do anything and
@@ -687,12 +688,14 @@ void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
         return;
 
     /* first check whether the other side hasn't started yet */
-    tMPI_Atomic_memory_barrier();
-    if ((tMPI_Atomic_get( &(sev->state) ) == env_unmatched )) 
+    state=tMPI_Atomic_get( &(sev->state) );
+    tMPI_Atomic_memory_barrier_acq();
+    if (state == env_unmatched )
     {
         /* first copy */
         memcpy(sev->cb, sev->buf, sev->bufsize);
         /* now set state, if other side hasn't started copying yet. */
+        tMPI_Atomic_memory_barrier_rel();
         if (tMPI_Atomic_cas( &(sev->state), env_unmatched, env_cb_available))
         {
             /* if it was originally unmatched, the receiver wasn't 
@@ -716,8 +719,8 @@ void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
        buffered in the first place), so we just spin-wait.  */
     while(tMPI_Atomic_get( &(sev->state) ) < env_cb_available)
     {
-        tMPI_Atomic_memory_barrier();
     }
+    tMPI_Atomic_memory_barrier_acq();
 #ifdef TMPI_DEBUG
     printf("%5d: tMPI_Send_copy_buffer(%d->%d, tag=%d) waiting-completed\n", 
            tMPI_This_threadnr(), 

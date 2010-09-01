@@ -303,8 +303,8 @@ void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
 #ifdef USE_COLLECTIVE_COPY_BUFFER
         else
         {
-            tMPI_Atomic_memory_barrier();
             srcbuf=tMPI_Atomic_ptr_get(&(cev->met[rank].cpbuf[index]));
+            tMPI_Atomic_memory_barrier_acq();
 
             if(!srcbuf)
             { /* there was (as of yet) no copied buffer */
@@ -313,8 +313,8 @@ void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
                    the read counter, signaling that one more thread
                    is reading. */
                 tMPI_Atomic_add_return(&(cev->met[rank].buf_readcount), 1);
+                /* a full memory barrier */
                 tMPI_Atomic_memory_barrier();
-                /*try_again_srcbuf=(char*) (cev->met[rank].cpbuf[index]);*/
                 try_again_srcbuf=tMPI_Atomic_ptr_get(
                                          &(cev->met[rank].cpbuf[index]));
                 if (!try_again_srcbuf)
@@ -332,6 +332,7 @@ void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
                        We use that, and indicate that we're not reading from the
                        regular buf. This case should be pretty rare.  */
                     tMPI_Atomic_fetch_add(&(cev->met[rank].buf_readcount),-1);
+                    tMPI_Atomic_memory_barrier_acq();
                     srcbuf=try_again_srcbuf;
                 }
             }
@@ -352,6 +353,7 @@ void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
         if (decrease_ctr)
         {
             /* we decrement the read count; potentially releasing the buffer. */
+            tMPI_Atomic_memory_barrier_rel();
             tMPI_Atomic_fetch_add( &(cev->met[rank].buf_readcount), -1);
         }
 #endif
@@ -359,6 +361,7 @@ void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
     /* signal one thread ready */
    {
         int reta;
+        tMPI_Atomic_memory_barrier_rel();
         reta=tMPI_Atomic_add_return( &(cev->met[rank].n_remaining), -1);
         if (reta <= 0)
         {
@@ -416,7 +419,7 @@ void tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
     cev->met[myrank].buf[index]=buf;
     cev->met[myrank].bufsize[index]=bufsize;
     tMPI_Atomic_set(&(cev->met[myrank].n_remaining), n_remaining);
-    tMPI_Atomic_memory_barrier();
+    tMPI_Atomic_memory_barrier_rel();
     tMPI_Atomic_set(&(cev->met[myrank].current_sync), synct);
 
     /* publish availability. */
@@ -450,7 +453,7 @@ void tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
         memcpy(cev->met[myrank].cb->buf, buf, bufsize);
 
         /* post the new buf */
-        tMPI_Atomic_memory_barrier();
+        tMPI_Atomic_memory_barrier_rel();
         /*cev->met[myrank].cpbuf[index]=cev->met[myrank].cb->buf;*/
         tMPI_Atomic_ptr_set(&(cev->met[myrank].cpbuf[index]), 
                             cev->met[myrank].cb->buf);
@@ -481,21 +484,21 @@ void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
            We use fetch_add because we want to be sure of coherency.
            This wait is bound to be very short (otherwise it wouldn't 
            be double-buffering) so we always spin here. */
-        tMPI_Atomic_memory_barrier();
+        /*tMPI_Atomic_memory_barrier_rel();*/
 #if 0
         while (!tMPI_Atomic_cas( &(cev->met[rank].buf_readcount), 0,
                                     -100000))
 #endif
-#if 1
+#if 0
         while (tMPI_Atomic_fetch_add( &(cev->met[myrank].buf_readcount), 0) 
                != 0)
 #endif
-#if 0
+#if 1
         while (tMPI_Atomic_get( &(cev->met[rank].buf_readcount) )>0)
 #endif
         {
-            tMPI_Atomic_memory_barrier();
         }
+        tMPI_Atomic_memory_barrier_acq();
     }
 #endif
 #if defined(TMPI_PROFILE) 
