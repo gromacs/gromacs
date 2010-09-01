@@ -42,9 +42,9 @@ awk '{\
   
 echo -n "."
 sed \
--e 's/&gt;=\|&ge;/$\\geq$/g' \
+-e 's/&gt;=/$\\geq$/g;s/&ge;/$\\geq$/g' \
 -e 's/&gt;/$\>$/g' \
--e 's/&lt;=\|&le;/$\\leq$/g' \
+-e 's/&lt;=/$\\leq$/g;s/&le;/$\\leq$/g' \
 -e 's/&lt;/$\<$/g' \
 -e 's/_/_/g' \
 -e 's/%/\\%/g' \
