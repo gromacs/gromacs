@@ -147,14 +147,14 @@ to calculate the PMF of a lipid as function of its distance
 from the whole bilayer. The whole bilayer can be taken as reference
 group in that case, but it might also be of interest to define the
 reaction coordinate for the PMF more locally. The {\tt .mdp} option
-{\tt pull\us{}geometry = cylinder} does not
+{\tt pull_geometry = cylinder} does not
 use all the atoms of the reference group, but instead dynamically only those
-within a cylinder with radius {\tt r\us{}1} around the pull vector going
+within a cylinder with radius {\tt r_1} around the pull vector going
 through the pull group. This only
 works for distances defined in one dimension, and the cylinder is
 oriented with its long axis along this one dimension. A second cylinder
-can be defined with {\tt r\us{}0}, with a linear switch function that weighs
-the contribution of atoms between {\tt r\us{}0} and {\tt r\us{}1} with
+can be defined with {\tt r_0}, with a linear switch function that weighs
+the contribution of atoms between {\tt r_0} and {\tt r_1} with
 distance. This smooths the effects of atoms moving in and out of the
 cylinder (which causes jumps in the pull forces).
 
@@ -486,7 +486,7 @@ an Einstein relation:
 \left( \int_{t_0}^{{t_0}+t} P_{xz}(t') \mbox{d} t' \right)^2
 \right\rangle_{t_0}
 \eeq
-This can be done with {\tt g\us{}energy}.
+This can be done with {\tt g_energy}.
 This method converges very slowly~\cite{Hess2002a}, and as such
 a nanosecond simulation might not
 be long enough for an accurate determination of the viscosity.
@@ -666,11 +666,11 @@ rvdw            = 1.0
 \end{verbatim}}
 
 {\tt mdrun} will read a single non-bonded table file,
-or multiple when {\tt energygrp\us{}table} is set (see below).
+or multiple when {\tt energygrp_table} is set (see below).
 The name of the file(s) can be set with the {\tt mdrun} option {\tt -table}.
 The table file should contain seven columns of table look-up data in the
 order: $x$, $f(x)$, $-f'(x)$, $g(x)$, $-g'(x)$, $h(x)$, $-h'(x)$.
-The $x$ should run from 0 to $r_c+1$ (the value of {\tt table\us{}extension} can be
+The $x$ should run from 0 to $r_c+1$ (the value of {\tt table_extension} can be
 changed in the {\tt .mdp} file).
 You can choose the spacing you like; for the standard tables {\gromacs}
 uses a spacing of 0.002 and 0.0005 nm when you run in single
@@ -692,11 +692,11 @@ Lennard-Jones potentials combined with a normal Coulomb.
 If you want to have different functional forms between different
 groups of atoms, this can be set through energy groups.
 Different tables can be used for non-bonded interactions between
-different energy groups pairs through the {\tt .mdp} option {\tt energygrp\us{}table}
+different energy groups pairs through the {\tt .mdp} option {\tt energygrp_table}
 (see \secref{mdpopt}).
 Atoms that should interact with a different potential should
 be put into different energy groups.
-Between group pairs which are not listed in {\tt energygrp\us{}table},
+Between group pairs which are not listed in {\tt energygrp_table},
 the normal user tables will be used. This makes it easy to use
 a different functional form between a few types of atoms.
 
@@ -980,9 +980,9 @@ different temperatures in the different phases - hot solvent and cold solute.
 \item \textbf{Force fields:} Supported FF are Amber, CHARMM, OPLS-AA. {\gromos} is not supported.
 \item \textbf{Implicit solvent:} Supported only with {\tt reaction-field} electrostatics.
 The only supported algorithm for GB is OBC, and the default {\gromacs} values for the scale factors
-are hard coded in OpenMM, {\ie} {\tt obc\us{}alpha=1}, {\tt obc\us{}beta=0.8} and {\tt obc\us{}gamma=4.85}.
+are hard coded in OpenMM, {\ie} {\tt obc_alpha=1}, {\tt obc_beta=0.8} and {\tt obc_gamma=4.85}.
 \item \textbf{Constraints:} Constraints in OpenMM are done by a combination of SHAKE,
-SETTLE and CCMA. Accuracy is based on the SHAKE tolerance as set by the {\tt shake\us{}tol} option.
+SETTLE and CCMA. Accuracy is based on the SHAKE tolerance as set by the {\tt shake_tol} option.
 \item \textbf{Periodic Boundary Conditions:} Only {\tt pbc=xyz} and {\tt pbc=no} in rectangular cells (boxes) are supported.
 \item \textbf{Pressure control:} OpenMM implements the Monte Carlo barostat. All values for {\tt pcoupl} are thus accepted.
 \item \textbf{Simulated annealing:} Not supported.
@@ -991,7 +991,7 @@ SETTLE and CCMA. Accuracy is based on the SHAKE tolerance as set by the {\tt sha
 in the current implementation.
 \item \textbf{Free energy calculations:} Not supported in the current implementation.
 \item \textbf{Walls:} Not supported.
-\item \textbf{Non-equilibrium MD:} Option {\tt acc\us{}grps} is not supported.
+\item \textbf{Non-equilibrium MD:} Option {\tt acc_grps} is not supported.
 \item \textbf{Electric Fields:} Not supported.
 \item \textbf{QMMM:} Not supported.
 \end{itemize}
@@ -1048,17 +1048,17 @@ Summary of prerequisites:
     have a $\geq$v4.5 standard {\gromacs} installation along the GPU accelerated one.
 
     \item Add the {\tt openmm/lib} directory to your library path,  {\eg} in bash:\\
-    {\small{\tt export LD\us{}LIBRARARY\us{}PATH=path\us{}to\us{}gromacs/openmm/lib:\$LD\us{}LIBRARY\us{}PATH}}\\
+    {\small{\tt export LD_LIBRARARY_PATH=path_to_gromacs/openmm/lib:\$LD_LIBRARY_PATH}}\\
     If there are other OpenMM versions installed, make sure that the supplied libraries have preference  
     when running {\tt mdrun-gpu}. Also, make sure that the CUDA libraries installed match the version 
     of CUDA that was used for compilation of {\gromacs}-GPU.
 
-    \item Set the {\tt OPENMM\us{}PLUGIN\us{}DIR} environment variable to contain the path to the \\ 
+    \item Set the {\tt OPENMM_PLUGIN_DIR} environment variable to contain the path to the \\ 
     {\tt openmm/lib/plugins} directory, {\eg} in bash:\\ 
-    {\small{\tt export OPENMM\us{}PLUGIN\us{}DIR=path\us{}to\us{}gromacs/openmm/lib/plugins}}
+    {\small{\tt export OPENMM_PLUGIN_DIR=path_to_gromacs/openmm/lib/plugins}}
 
     \item At this point, running the command
-    {\tt path\us{}to\us{}gromacs/bin/mdrun-gpu -h} should display the standard {\tt mdrun} help  
+    {\tt path_to_gromacs/bin/mdrun-gpu -h} should display the standard {\tt mdrun} help  
     which means that the binary runs and all the necessary libraries are accessible. 
 
 \end{enumerate}
@@ -1093,8 +1093,8 @@ tree and execute the following commands:
 
 {\small
 \begin{verbatim}
-    export OPENMM\us{}ROOT\us{}DIR=path\us{}to\us{}custom\us{}openmm\us{}installpath
-    cmake  -DGMX\us{}OPENMM=ON [-DCMAKE\us{}INSTALL\us{}PREFIX=desired\us{}install\us{}path]
+    export OPENMM_ROOT_DIR=path_to_custom_openmm_installpath
+    cmake  -DGMX_OPENMM=ON [-DCMAKE_INSTALL_PREFIX=desired_install_path]
     make mdrun
     make install-mdrun
 \end{verbatim}}
@@ -1108,12 +1108,12 @@ Besides the usual command line options,
 {\tt mdrun-gpu} also supports a set of ``device options'', that are meant to 
 give control over acceleration related functionalities. 
 These options can be used in the following form:\\
-{\small {\tt mdrun-gpu -device "ACCELERATION:[DEV\us{}OPTION=VALUE,]... [OPTION].."}} \\
+{\small {\tt mdrun-gpu -device "ACCELERATION:[DEV_OPTION=VALUE,]... [OPTION].."}} \\
 
 The option-list prefix {\tt ACCELERATION} specifies which 
 acceleration library should be used. At the moment, the only supported value 
 is {\tt OpenMM}. This is followed by the list of comma-separated
-{\tt DEV\us{}OPTION=VALUE} option-value pairs which define 
+{\tt DEV_OPTION=VALUE} option-value pairs which define 
 parameters for the selected acceleration platform. The entire device option 
 string is case insensitive.
 

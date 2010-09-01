@@ -1,20 +1,20 @@
 \begin{description}
 \item {\large\bf Generating topologies and coordinates}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
+{\bf g_helixorient} \= \kill
 {\bf pdb2gmx} \> converts pdb files to topology and coordinate files \\
-{\bf g\us{}x2top} \> generates a primitive topology from coordinates  \\
+{\bf g_x2top} \> generates a primitive topology from coordinates  \\
 {\bf editconf} \> edits the box and writes subgroups  \\
 {\bf genbox} \> solvates a system \\
 {\bf genion} \> generates mono atomic ions on energetically favorable positions \\
 {\bf genconf} \> multiplies a conformation in 'random' orientations \\
 {\bf genrestr} \> generates position restraints or distance restraints for index groups \\
-{\bf g\us{}protonate} \> protonates structures \\
+{\bf g_protonate} \> protonates structures \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Running a simulation}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
+{\bf g_helixorient} \= \kill
 {\bf grompp} \> makes a run input file \\
 {\bf tpbconv} \> makes a run input file for restarting a crashed run \\
 {\bf mdrun} \> performs a simulation, do a normal mode analysis or an energy minimization \\
@@ -22,180 +22,180 @@
 
 \item {\large\bf Viewing trajectories}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
+{\bf g_helixorient} \= \kill
 {\bf ngmx} \> displays a trajectory \\
-{\bf g\us{}highway} \> X Window System gadget for highway simulations \\
-{\bf g\us{}nmtraj} \> generate a virtual trajectory from an eigenvector \\
+{\bf g_highway} \> X Window System gadget for highway simulations \\
+{\bf g_nmtraj} \> generate a virtual trajectory from an eigenvector \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Processing energies}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf g\us{}energy} \> writes energies to xvg files and displays averages \\
-{\bf g\us{}enemat} \> extracts an energy matrix from an energy file \\
+{\bf g_helixorient} \= \kill
+{\bf g_energy} \> writes energies to xvg files and displays averages \\
+{\bf g_enemat} \> extracts an energy matrix from an energy file \\
 {\bf mdrun} \> with -rerun (re)calculates energies for trajectory frames \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Converting files}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
+{\bf g_helixorient} \= \kill
 {\bf editconf} \> converts and manipulates structure files \\
 {\bf trjconv} \> converts and manipulates trajectory files \\
 {\bf trjcat} \> concatenates trajectory files \\
 {\bf eneconv} \> converts energy files \\
 {\bf xpm2ps} \> converts XPM matrices to encapsulated postscript (or XPM) \\
-{\bf g\us{}sigeps} \> convert c6/12 or c6/cn combinations to and from sigma/epsilon \\
+{\bf g_sigeps} \> convert c6/12 or c6/cn combinations to and from sigma/epsilon \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Tools}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf make\us{}ndx} \> makes index files \\
-{\bf mk\us{}angndx} \> generates index files for g\us{}angle \\
+{\bf g_helixorient} \= \kill
+{\bf make_ndx} \> makes index files \\
+{\bf mk_angndx} \> generates index files for g_angle \\
 {\bf gmxcheck} \> checks and compares files \\
 {\bf gmxdump} \> makes binary files human readable \\
-{\bf g\us{}traj} \> plots x, v and f of selected atoms/groups (and more) from a trajectory \\
-{\bf g\us{}analyze} \> analyzes data sets \\
+{\bf g_traj} \> plots x, v and f of selected atoms/groups (and more) from a trajectory \\
+{\bf g_analyze} \> analyzes data sets \\
 {\bf trjorder} \> orders molecules according to their distance to a group \\
-{\bf g\us{}filter} \> frequency filters trajectories, useful for making smooth movies \\
-{\bf g\us{}lie} \> free energy estimate from linear combinations \\
-{\bf g\us{}dyndom} \> interpolate and extrapolate structure rotations \\
-{\bf g\us{}morph} \> linear interpolation of conformations  \\
-{\bf g\us{}wham} \> weighted histogram analysis after umbrella sampling \\
+{\bf g_filter} \> frequency filters trajectories, useful for making smooth movies \\
+{\bf g_lie} \> free energy estimate from linear combinations \\
+{\bf g_dyndom} \> interpolate and extrapolate structure rotations \\
+{\bf g_morph} \> linear interpolation of conformations  \\
+{\bf g_wham} \> weighted histogram analysis after umbrella sampling \\
 {\bf xpm2ps} \> convert XPM (XPixelMap) file to postscript \\
-{\bf g\us{}sham} \> read/write xmgr and xvgr data sets \\
-{\bf g\us{}spatial} \> calculates the spatial distribution function (more control than g\us{}sdf) \\
-{\bf g\us{}sdf} \> calculates the spatial distribution function (faster than g\us{}spatial) \\
-{\bf g\us{}select} \> selects groups of atoms based on flexible textual selections \\
-{\bf g\us{}tune\us{}pme} \> time mdrun as a function of PME nodes to optimize settings \\
+{\bf g_sham} \> read/write xmgr and xvgr data sets \\
+{\bf g_spatial} \> calculates the spatial distribution function (more control than g_sdf) \\
+{\bf g_sdf} \> calculates the spatial distribution function (faster than g_spatial) \\
+{\bf g_select} \> selects groups of atoms based on flexible textual selections \\
+{\bf g_tune_pme} \> time mdrun as a function of PME nodes to optimize settings \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Distances between structures}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf g\us{}rms} \> calculates rmsd's with a reference structure and rmsd matrices \\
-{\bf g\us{}confrms} \> fits two structures and calculates the rmsd  \\
-{\bf g\us{}cluster} \> clusters structures \\
-{\bf g\us{}rmsf} \> calculates atomic fluctuations \\
+{\bf g_helixorient} \= \kill
+{\bf g_rms} \> calculates rmsd's with a reference structure and rmsd matrices \\
+{\bf g_confrms} \> fits two structures and calculates the rmsd  \\
+{\bf g_cluster} \> clusters structures \\
+{\bf g_rmsf} \> calculates atomic fluctuations \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Distances in structures over time}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf g\us{}mindist} \> calculates the minimum distance between two groups \\
-{\bf g\us{}dist} \> calculates the distances between the centers of mass of two groups \\
-{\bf g\us{}bond} \> calculates distances between atoms \\
-{\bf g\us{}mdmat} \> calculates residue contact maps \\
-{\bf g\us{}polystat} \> calculates static properties of polymers \\
-{\bf g\us{}rmsdist} \> calculates atom pair distances averaged with power -2, -3 or -6 \\
+{\bf g_helixorient} \= \kill
+{\bf g_mindist} \> calculates the minimum distance between two groups \\
+{\bf g_dist} \> calculates the distances between the centers of mass of two groups \\
+{\bf g_bond} \> calculates distances between atoms \\
+{\bf g_mdmat} \> calculates residue contact maps \\
+{\bf g_polystat} \> calculates static properties of polymers \\
+{\bf g_rmsdist} \> calculates atom pair distances averaged with power -2, -3 or -6 \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Mass distribution properties over time}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf g\us{}traj} \> plots x, v, f, box, temperature and rotational energy \\
-{\bf g\us{}gyrate} \> calculates the radius of gyration \\
-{\bf g\us{}msd} \> calculates mean square displacements \\
-{\bf g\us{}polystat} \> calculates static properties of polymers \\
-{\bf g\us{}rotacf} \> calculates the rotational correlation function for molecules \\
-{\bf g\us{}rdf} \> calculates radial distribution functions \\
-{\bf g\us{}rotmat} \> plots the rotation matrix for fitting to a reference structure \\
-{\bf g\us{}vanhove} \> calculates Van Hove displacement functions \\
+{\bf g_helixorient} \= \kill
+{\bf g_traj} \> plots x, v, f, box, temperature and rotational energy \\
+{\bf g_gyrate} \> calculates the radius of gyration \\
+{\bf g_msd} \> calculates mean square displacements \\
+{\bf g_polystat} \> calculates static properties of polymers \\
+{\bf g_rotacf} \> calculates the rotational correlation function for molecules \\
+{\bf g_rdf} \> calculates radial distribution functions \\
+{\bf g_rotmat} \> plots the rotation matrix for fitting to a reference structure \\
+{\bf g_vanhove} \> calculates Van Hove displacement functions \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Analyzing bonded interactions}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf g\us{}bond} \> calculates bond length distributions \\
-{\bf mk\us{}angndx} \> generates index files for g\us{}angle \\
-{\bf g\us{}angle} \> calculates distributions and correlations for angles and dihedrals \\
-{\bf g\us{}dih} \> analyzes dihedral transitions \\
+{\bf g_helixorient} \= \kill
+{\bf g_bond} \> calculates bond length distributions \\
+{\bf mk_angndx} \> generates index files for g_angle \\
+{\bf g_angle} \> calculates distributions and correlations for angles and dihedrals \\
+{\bf g_dih} \> analyzes dihedral transitions \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Structural properties}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf g\us{}hbond} \> computes and analyzes hydrogen bonds \\
-{\bf g\us{}saltbr} \> computes salt bridges \\
-{\bf g\us{}sas} \> computes solvent accessible surface area \\
-{\bf g\us{}order} \> computes the order parameter per atom for carbon tails \\
-{\bf g\us{}principal} \> calculates axes of inertia for a group of atoms \\
-{\bf g\us{}rdf} \> calculates radial distribution functions \\
-{\bf g\us{}sdf} \> calculates solvent distribution functions \\
-{\bf g\us{}sgangle} \> computes the angle and distance between two groups \\
-{\bf g\us{}sorient} \> analyzes solvent orientation around solutes \\
-{\bf g\us{}spol} \> analyzes solvent dipole orientation and polarization around solutes \\
-{\bf g\us{}bundle} \> analyzes bundles of axes, {\eg} helices \\
-{\bf g\us{}disre} \> analyzes distance restraints \\
-{\bf g\us{}clustsize} \> calculate size distributions of atomic clusters \\
-{\bf g\us{}anadock} \> cluster structures from Autodock runs \\
+{\bf g_helixorient} \= \kill
+{\bf g_hbond} \> computes and analyzes hydrogen bonds \\
+{\bf g_saltbr} \> computes salt bridges \\
+{\bf g_sas} \> computes solvent accessible surface area \\
+{\bf g_order} \> computes the order parameter per atom for carbon tails \\
+{\bf g_principal} \> calculates axes of inertia for a group of atoms \\
+{\bf g_rdf} \> calculates radial distribution functions \\
+{\bf g_sdf} \> calculates solvent distribution functions \\
+{\bf g_sgangle} \> computes the angle and distance between two groups \\
+{\bf g_sorient} \> analyzes solvent orientation around solutes \\
+{\bf g_spol} \> analyzes solvent dipole orientation and polarization around solutes \\
+{\bf g_bundle} \> analyzes bundles of axes, {\eg} helices \\
+{\bf g_disre} \> analyzes distance restraints \\
+{\bf g_clustsize} \> calculate size distributions of atomic clusters \\
+{\bf g_anadock} \> cluster structures from Autodock runs \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Kinetic properties}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf g\us{}traj} \> plots x, v, f, box, temperature and rotational energy \\
-{\bf g\us{}velacc} \> calculates velocity autocorrelation functions \\
-{\bf g\us{}tcaf} \> calculates viscosities of liquids \\
-{\bf g\us{}bar} \> calculates free energy difference estimates through Bennett's acceptance ratio \\
-{\bf g\us{}current} \> calculate current autocorrelation function of system \\
-{\bf g\us{}vanhove} \> compute Van Hove correlation function \\
-{\bf g\us{}principal} \> calculate principal axes of inertion for a group of atoms \\
+{\bf g_helixorient} \= \kill
+{\bf g_traj} \> plots x, v, f, box, temperature and rotational energy \\
+{\bf g_velacc} \> calculates velocity autocorrelation functions \\
+{\bf g_tcaf} \> calculates viscosities of liquids \\
+{\bf g_bar} \> calculates free energy difference estimates through Bennett's acceptance ratio \\
+{\bf g_current} \> calculate current autocorrelation function of system \\
+{\bf g_vanhove} \> compute Van Hove correlation function \\
+{\bf g_principal} \> calculate principal axes of inertion for a group of atoms \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Electrostatic properties}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
+{\bf g_helixorient} \= \kill
 {\bf genion} \> generates mono atomic ions on energetically favorable positions \\
-{\bf g\us{}potential} \> calculates the electrostatic potential across the box \\
-{\bf g\us{}dipoles} \> computes the total dipole plus fluctuations \\
-{\bf g\us{}dielectric} \> calculates frequency dependent dielectric constants \\
-{\bf g\us{}current} \> calculates dielectric constants for charged systems \\
-{\bf g\us{}spol} \> analyze dipoles around a solute \\
+{\bf g_potential} \> calculates the electrostatic potential across the box \\
+{\bf g_dipoles} \> computes the total dipole plus fluctuations \\
+{\bf g_dielectric} \> calculates frequency dependent dielectric constants \\
+{\bf g_current} \> calculates dielectric constants for charged systems \\
+{\bf g_spol} \> analyze dipoles around a solute \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Protein specific analysis}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf do\us{}dssp} \> assigns secondary structure and calculates solvent accessible surface area \\
-{\bf g\us{}chi} \> calculates everything you want to know about chi and other dihedrals \\
-{\bf g\us{}helix} \> calculates basic properties of alpha helices \\
-{\bf g\us{}helixorient} \> calculates local pitch/bending/rotation/orientation inside helices \\
-{\bf g\us{}rama} \> computes Ramachandran plots \\
-{\bf g\us{}xrama} \> shows animated Ramachandran plots \\
-{\bf g\us{}wheel} \> plots helical wheels \\
+{\bf g_helixorient} \= \kill
+{\bf do_dssp} \> assigns secondary structure and calculates solvent accessible surface area \\
+{\bf g_chi} \> calculates everything you want to know about chi and other dihedrals \\
+{\bf g_helix} \> calculates basic properties of alpha helices \\
+{\bf g_helixorient} \> calculates local pitch/bending/rotation/orientation inside helices \\
+{\bf g_rama} \> computes Ramachandran plots \\
+{\bf g_xrama} \> shows animated Ramachandran plots \\
+{\bf g_wheel} \> plots helical wheels \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Interfaces}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf g\us{}potential} \> calculates the electrostatic potential across the box \\
-{\bf g\us{}density} \> calculates the density of the system \\
-{\bf g\us{}densmap} \> calculates 2D planar or axial-radial density maps \\
-{\bf g\us{}order} \> computes the order parameter per atom for carbon tails \\
-{\bf g\us{}h2order} \> computes the orientation of water molecules \\
-{\bf g\us{}bundle} \> analyzes bundles of axes, {\eg} transmembrane helices \\
-{\bf g\us{}membed} \> embeds a protein into a lipid bilayer \\
+{\bf g_helixorient} \= \kill
+{\bf g_potential} \> calculates the electrostatic potential across the box \\
+{\bf g_density} \> calculates the density of the system \\
+{\bf g_densmap} \> calculates 2D planar or axial-radial density maps \\
+{\bf g_order} \> computes the order parameter per atom for carbon tails \\
+{\bf g_h2order} \> computes the orientation of water molecules \\
+{\bf g_bundle} \> analyzes bundles of axes, {\eg} transmembrane helices \\
+{\bf g_membed} \> embeds a protein into a lipid bilayer \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Covariance analysis}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
-{\bf g\us{}covar} \> calculates and diagonalizes the covariance matrix \\
-{\bf g\us{}anaeig} \> analyzes the eigenvectors \\
-{\bf make\us{}edi} \> generate input files for essential dynamics sampling \\
+{\bf g_helixorient} \= \kill
+{\bf g_covar} \> calculates and diagonalizes the covariance matrix \\
+{\bf g_anaeig} \> analyzes the eigenvectors \\
+{\bf make_edi} \> generate input files for essential dynamics sampling \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Normal modes}
 \vspace{-2ex}\begin{tabbing}
-{\bf g\us{}helixorient} \= \kill
+{\bf g_helixorient} \= \kill
 {\bf grompp} \> makes a run input file \\
 {\bf mdrun} \> finds a potential energy minimum \\
 {\bf mdrun} \> calculates the Hessian \\
-{\bf g\us{}nmeig} \> diagonalizes the Hessian  \\
-{\bf g\us{}nmtraj} \> generate oscillating trajectory of an eigenmode \\
-{\bf g\us{}anaeig} \> analyzes the normal modes \\
-{\bf g\us{}nmens} \> generates an ensemble of structures from the normal modes \\
+{\bf g_nmeig} \> diagonalizes the Hessian  \\
+{\bf g_nmtraj} \> generate oscillating trajectory of an eigenmode \\
+{\bf g_anaeig} \> analyzes the normal modes \\
+{\bf g_nmens} \> generates an ensemble of structures from the normal modes \\
 \end{tabbing}\vspace{-2ex}
 
 \end{description}

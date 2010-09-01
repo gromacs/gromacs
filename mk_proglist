@@ -26,7 +26,7 @@ touch $TEXIDX
 
 echo "\begin{description}" >> $TEXIDX
 awk -F '|' -v longest="g\\us{}helixorient" '{\
-  gsub("_","\\us{}",$0);\
+  gsub("_","_",$0);\
   gsub("%","\\%",$0);\
   if (NF) {\
     if ( $1 == "LONGEST" ) {\

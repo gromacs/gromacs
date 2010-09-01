@@ -140,7 +140,7 @@ on which certain interactions are located
 \normindex{quadrupole}). This is described in~\secref{virtual_sites}.
 
 To make virtual sites in your system, you should include a section
-{\tt [~virtual\us{}sites?~]} (for backward compatibility the old name
+{\tt [~virtual_sites?~]} (for backward compatibility the old name
 {\tt [~dummies?~]} can also be used) in your topology file,
 where the `{\tt ?}' stands
 for the number constructing particles for the virtual site. This will be
@@ -374,7 +374,7 @@ of the topology file (see~\ssecref{topfile}):
 \end{array}
 \end{eqnarray}
 Some or all combinations for different atom types can be given in
-the {\tt [~nonbond\us{}params~]} section. Any combination that is
+the {\tt [~nonbond_params~]} section. Any combination that is
 not given will be computed from the parameters for the
 corresponding atom types, according to the \normindex{combination rule}:
 \begin{eqnarray}
@@ -608,7 +608,7 @@ by writing an include topology file {\tt *.itp} directly.
 This will be discussed in section~\ssecref{molitp}.
 When adding a new protein residue to the database, don't forget to
 add the residue name to the {\tt \normindex{residuetypes.dat}} file,
-so that {\tt grompp}, {\tt make\us{}ndx} and analysis tools can recognize
+so that {\tt grompp}, {\tt make_ndx} and analysis tools can recognize
 the residue as a protein residue (see \ssecref{defaultgroups}).
 
 The {\tt .rtp} files are only used by {\tt pdb2gmx}.
@@ -1057,8 +1057,8 @@ type	&		      	      & at. & tp &					& 	\\
 		& {\tts angletypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts angles})}		& \\
 		& {\tts dihedraltypes}$^{(*)}$ & \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts dihedrals})}& \\
 		& {\tts constrainttypes}& \multicolumn{3}{l}{(see \tabref{topfile3}, directive {\tts constraints})}	& \\
-LJ 		& {\tts nonbond\us{}params}	& 2 & 1	& $V^{(cr)}$; $W^{(cr)}$ & \\
-Buckingham    	& {\tts nonbond\us{}params}	& 2 & 2	& $a$ (\kJmol); $b$ (nm$^{-1})$;  & \\
+LJ 		& {\tts nonbond_params}	& 2 & 1	& $V^{(cr)}$; $W^{(cr)}$ & \\
+Buckingham    	& {\tts nonbond_params}	& 2 & 2	& $a$ (\kJmol); $b$ (nm$^{-1})$;  & \\
  & & & & $c_6$ (\kJmolnm{6}) & \\
 \dline
 \multicolumn{6}{c}{~} \\
@@ -1117,7 +1117,7 @@ restraint pot.  & {\tts bonds}		      & 2 & 10	& low, up$_1$, up$_2$ (nm);      
                	&                   	      &   &  	& $k_{dr}$ (\kJmolnm{-2})               & 	\\
 LJ/Coul. 1-4	& {\tts pairs}		      & 2 & 1	& $V^{(cr)}$; $W^{(cr)}$ & all \\
 LJ/Coul. 1-4	& {\tts pairs}		      & 2 & 2	& fudge QQ (); $q_i$, $q_j$ (e), $V^{(cr)}$; $W^{(cr)}$ &     \\
-LJ/C. pair NB	& {\tts pairs\us{}nb}	      & 2 & 1	& $q_i$, $q_j$ (e); $V^{(cr)}$; $W^{(cr)}$ &    \\
+LJ/C. pair NB	& {\tts pairs_nb}	      & 2 & 1	& $q_i$, $q_j$ (e); $V^{(cr)}$; $W^{(cr)}$ &    \\
 angle		& {\tts angles}$^{(con)}$     & 3 & 1	& $\theta_0$ (deg); $k_\theta$ (\kJmolrad{-2}) & all	\\
 G96 angle	& {\tts angles}$^{(con)}$     & 3 & 2	& $\theta_0$ (deg); $k_\theta$ (\kJmol) & all	\\
 cross bond-bond	& {\tts angles}               & 3 & 3	& $r_{1e}$, $r_{2e}$ (nm); $k_{rr'}$ (\kJmolnm{-2}) & 	\\
@@ -1160,27 +1160,27 @@ type	&		      	      & at. & tp &					& 	\\
 constraint	& {\tts constraints}$^{(excl)}$& 2 & 1	& $b_0$ (nm) 				& all	\\
 constr. n.c.    & {\tts constraints}	& 2 & 2	& $b_0$ (nm) 				& all	\\
 settle		& {\tts settles}		& 1 & 1	& $d_{\mbox{\sc oh}}$, $d_{\mbox{\sc hh}}$ (nm) 		& 	\\
-vsite2		& {\tts virtual\us{}sites2}	& 3 & 1	& $a$ ()					& 	\\
-vsite3		& {\tts virtual\us{}sites3}	& 4 & 1	& $a$, $b$ ()				& 	\\
-vsite3fd	& {\tts virtual\us{}sites3}	& 4 & 2	& $a$ (); $d$ (nm)				& 	\\
-vsite3fad	& {\tts virtual\us{}sites3}	& 4 & 3	& $\theta$ (deg); $d$ (nm) 		& 	\\
-vsite3out	& {\tts virtual\us{}sites3}	& 4 & 4	& $a$, $b$ (); $c$ (nm$^{-1}$) 		& 	\\
-vsite4fdn	& {\tts virtual\us{}sites4}	& 5 & 2	& $a$, $b$ (); $c$ (nm);	   		& 	\\
-vsite COG 	& {\tts virtual\us{}sitesn}	& 1 & 1	& one or more construc. atom ind.   		& 	\\
-vsite COM	& {\tts virtual\us{}sitesn}	& 1 & 2	& one or more construc. atom ind.   		& 	\\
-vsite COW  	& {\tts virtual\us{}sitesn}	& 1 & 3	& one or more pairs consisting of	& 	\\
+vsite2		& {\tts virtual_sites2}	& 3 & 1	& $a$ ()					& 	\\
+vsite3		& {\tts virtual_sites3}	& 4 & 1	& $a$, $b$ ()				& 	\\
+vsite3fd	& {\tts virtual_sites3}	& 4 & 2	& $a$ (); $d$ (nm)				& 	\\
+vsite3fad	& {\tts virtual_sites3}	& 4 & 3	& $\theta$ (deg); $d$ (nm) 		& 	\\
+vsite3out	& {\tts virtual_sites3}	& 4 & 4	& $a$, $b$ (); $c$ (nm$^{-1}$) 		& 	\\
+vsite4fdn	& {\tts virtual_sites4}	& 5 & 2	& $a$, $b$ (); $c$ (nm);	   		& 	\\
+vsite COG 	& {\tts virtual_sitesn}	& 1 & 1	& one or more construc. atom ind.   		& 	\\
+vsite COM	& {\tts virtual_sitesn}	& 1 & 2	& one or more construc. atom ind.   		& 	\\
+vsite COW  	& {\tts virtual_sitesn}	& 1 & 3	& one or more pairs consisting of	& 	\\
                 &                               &   &   & a construc. atom ind. and weight           &       \\
-position res.	& {\tts position\us{}restraints}   & 1 & 1	& $k_{x}$, $k_{y}$, $k_{z}$ (\kJmolnm{-2}) & all	\\
+position res.	& {\tts position_restraints}   & 1 & 1	& $k_{x}$, $k_{y}$, $k_{z}$ (\kJmolnm{-2}) & all	\\
 restr. pot.	& {\tts bonds}		        & 2 & 10	& low, up$_1$, up$_2$ (nm);             & all	\\
                	&                   	        &   &  	& $k_{dr}$ (\kJmolnm{-2})               & 	\\
-distance res.	& {\tts distance\us{}restraints}   & 2 & 1	& type; label; low, up$_1$, up$_2$ (nm); & \\
+distance res.	& {\tts distance_restraints}   & 2 & 1	& type; label; low, up$_1$, up$_2$ (nm); & \\
                 &                               &   &   & weight () & \\
-orient. res.    & \multicolumn{3}{l}{\tts orientation\us{}restraints} & &\\
+orient. res.    & \multicolumn{3}{l}{\tts orientation_restraints} & &\\
                 &	                        & 2 & 1	& exp.; label; $\alpha$; $c$ (U nm$^\alpha$); & \\
                 &                               &   &   &  obs. (U); weight (U$^{-1}$) &\\
-angle res.	& {\tts angle\us{}restraints}      & 4 & 1	& $\theta_0$ (deg); $k_c$ (\kJmol); & $\theta,k$	\\
+angle res.	& {\tts angle_restraints}      & 4 & 1	& $\theta_0$ (deg); $k_c$ (\kJmol); & $\theta,k$	\\
                 &                               &   &   & multiplicity & \\
-angle res. z & {\tts angle\us{}restraints\us{}z}      & 2 & 1	& $\theta_0$ (deg); $k_c$ (\kJmol); & $\theta,k$	\\
+angle res. z & {\tts angle_restraints_z}      & 2 & 1	& $\theta_0$ (deg); $k_c$ (\kJmol); & $\theta,k$	\\
                 &                               &   &   & multiplicity & \\
 \dline
 \multicolumn{6}{c}{~} \\
@@ -1413,7 +1413,7 @@ in a topology, do the following (in case of {\eg} decane):
 and do not forget to {\em erase the 1-4 interaction} 
 in {\tt [~pairs~]}!
 
-{\bf {\tt [~position\us{}restraints~]} :} harmonically restrain the selected particles
+{\bf {\tt [~position_restraints~]} :} harmonically restrain the selected particles
 to reference positions (\secref{posre}). 
 The reference positions are read from a 
 separate coordinate file by \normindex{grompp}.
@@ -1886,7 +1886,7 @@ recommended, because in the {\gromos} force fields
 the Lennard-Jones parameters for several combinations of atom types
 are not generated according to the standard combination rules.
 Such combinations (and possibly others that do follow the
-combination rules) are defined in the {\tt [~nonbond\us{}params~]}
+combination rules) are defined in the {\tt [~nonbond_params~]}
 section, and changing the Lennard-Jones parameters of an atom type
 has no effect on these combinations.
 

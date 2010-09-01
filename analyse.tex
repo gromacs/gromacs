@@ -41,7 +41,7 @@ Then, the different analysis tools are presented.
 
 \section{Groups in Analysis.}
 \label{sec:groups}
-{\tt make\us{}ndx, mk\us{}angndx}\\
+{\tt make_ndx, mk_angndx}\\
 In \chref{algorithms}, it was explained how {\em groups of
 atoms} can be used in {\tt mdrun}.  In most analysis programs, groups
 of atoms must also be chosen. Most programs can generate several default
@@ -70,8 +70,8 @@ analysis programs.  To help creating such \swapindex{index}{file}s ({\tt
 index.ndx}), there are a couple of programs to generate them, using
 either your input configuration or the topology.  To generate an
 index file consisting of a series of {\em atom numbers} (as in the
-example of $g_{AB}$), use \ttusindex{make}{ndx}. To generate an index file
-with angles or dihedrals, use \ttusindex{mk}{angndx}. Of course you can also
+example of $g_{AB}$), use {\tt \normindex{make_ndx}}. To generate an index file
+with angles or dihedrals, use {\tt \normindex{mk_angndx}}. Of course you can also
 make them by hand. The general format is presented here:
 
 \begin{verbatim}
@@ -127,7 +127,7 @@ a number of default groups are generated to choose from:
         all non-protein atoms
 \item[{\tt DNA}]\mbox{}\\
         all DNA atoms
-\item[{\tt molecule\us{}name}]\mbox{}\\
+\item[{\tt molecule_name}]\mbox{}\\
         for all residues/molecules which are not recognized as protein
         or DNA, one group per residue/molecule name is generated
 \item[{\tt Other}]\mbox{}\\
@@ -141,14 +141,14 @@ in the {\tt \normindex{residuetypes.dat}} file and is listed as a
 
 \subsection{Selections}
 \label{subsec:selections}
-\ttusindex{g}{select}\\
-{\gromacs} also includes a {\tt g\us{}select} tool that can be used to
-select atoms based on more flexible criteria than in {\tt make\us{}ndx},
+{\tt \normindex{g_select}}\\
+{\gromacs} also includes a {\tt g_select} tool that can be used to
+select atoms based on more flexible criteria than in {\tt make_ndx},
 including selecting atoms based on their coordinates.  Currently, the
 tool is experimental and only supports some basic operations, but in the
 future the functionality is planned to be included in other analysis
 tools as well.  A description of possible ways to select atoms can be
-read by running {\tt g\us{}select} and typing {\tt help} at the selection
+read by running {\tt g_select} and typing {\tt help} at the selection
 prompt that appears.  It is also possible to write your own analysis
 tools to take advantage of the flexibility of these selections: see the
 {\tt template.c} file in the {\tt share/gromacs/template} directory of
@@ -181,10 +181,10 @@ homepage ({\wwwpage}) for updated links.
 
 \section{General properties}
 \label{sec:genprop}
-{\tt g\us{}energy, g\us{}traj}\\
+{\tt g_energy, g_traj}\\
 To analyze some or all {\em energies} and other properties, such as
 {\em total pressure}, {\em pressure tensor}, {\em density}, {\em
-box-volume} and {\em box-sizes}, use the program \ttusindex{g}{energy}.  A
+box-volume} and {\em box-sizes}, use the program {\tt \normindex{g_energy}}.  A
 choice can be made from a list a set of energies, like potential,
 kinetic or total energy, or individual contributions, like
 Lennard-Jones or dihedral energies.
@@ -194,7 +194,7 @@ The {\em center-of-mass velocity}, defined as
 {\bf v}_{com} = {1 \over M} \sum_{i=1}^N m_i {\bf v}_i
 \eeq
 with $M = \sum_{i=1}^N m_i$ the total mass of the system, can be
-monitored in time by the program \ttusindex{g}{com}. It is however
+monitored in time by the program {\tt \normindex{g_com}}. It is however
 recommended to remove the center-of-mass velocity every step (see
 \chref{algorithms})!
 
@@ -202,7 +202,7 @@ recommended to remove the center-of-mass velocity every step (see
 
 \section{Radial distribution functions}
 \label{sec:rdf}
-{\tt g\us{}rdf}\\
+{\tt g_rdf}\\
 The {\em radial distribution function} (RDF) or pair correlation
 function $g_{AB}(r)$ between particles of type $A$ and $B$ is defined
 in the following way:
@@ -223,8 +223,8 @@ $r_{max}$ (see \figref{rdfex}C).
 \begin{figure}
 \centerline{
 {\includegraphics[width=7cm,angle=270]{plots/rdf}}}
-\caption[Definition of slices in {\tt g\us{}rdf}.]{Definition of slices
-in {\tt g\us{}rdf}: A. $g_{AB}(r)$. B. $g_{AB}(r,\theta)$. The slices are
+\caption[Definition of slices in {\tt g_rdf}.]{Definition of slices
+in {\tt g_rdf}: A. $g_{AB}(r)$. B. $g_{AB}(r,\theta)$. The slices are
 colored gray. C. Normalization $\langle\rho_B\rangle_{local}$. D. Normalization
 $\langle\rho_B\rangle_{local,\:\theta }$. Normalization volumes are colored gray.}
 \label{fig:rdfex}
@@ -232,7 +232,7 @@ $\langle\rho_B\rangle_{local,\:\theta }$. Normalization volumes are colored gray
 
 Usually the value of $r_{max}$ is half of the box length.  The
 averaging is also performed in time.  In practice the analysis program
-\ttusindex{g}{rdf} divides the system into spherical slices (from $r$ to
+{\tt \normindex{g_rdf}} divides the system into spherical slices (from $r$ to
 $r+dr$, see \figref{rdfex}A) and makes a histogram in stead of
 the $\delta$-function. An example of the RDF of oxygen-oxygen in
 SPC water~\cite{Berendsen81} is given in \figref{rdf}.
@@ -244,7 +244,7 @@ SPC water~\cite{Berendsen81} is given in \figref{rdf}.
 \label{fig:rdf}
 \end{figure}
 
-With {\tt g\us{}rdf} it is also possible to calculate an angle dependent rdf 
+With {\tt g_rdf} it is also possible to calculate an angle dependent rdf 
 $g_{AB}(r,\theta)$, where the angle $\theta$ is defined with respect to a 
 certain laboratory axis ${\bf e}$, see \figref{rdfex}B.
 \bea 
@@ -343,8 +343,8 @@ Such correlation times
 can actually be obtained experimentally using {\eg} NMR or other relaxation 
 experiments. {\gromacs} can compute correlations using 
 the 1$^{st}$ and 2$^{nd}$ order Legendre polynomial (\eqnref{corrleg}).
-This can also be used for rotational autocorrelation (\ttusindex{g}{rotacf}) 
-and dipole autocorrelation (\ttusindex{g}{dipoles}).
+This can also be used for rotational autocorrelation ({\tt \normindex{g_rotacf}}) 
+and dipole autocorrelation ({\tt \normindex{g_dipoles}}).
 
 In order to study torsion angle dynamics, we define a dihedral 
 autocorrelation function as~\cite{Spoel97a}:
@@ -361,7 +361,7 @@ C(t)    ~=~     \left\langle\cos(\theta(\tau))\cos(\theta(\tau+t))\,+\,\sin(\the
 \eeq
 
 \subsection{Some Applications}
-The program \ttusindex{g}{velacc} calculates th3 {\em velocity autocorrelation 
+The program {\tt \normindex{g_velacc}} calculates th3 {\em velocity autocorrelation 
 function}.
 \beq
 C_{\ve{v}} (\tau) ~=~ \langle {\ve{v}}_i(\tau) \cdot {\ve{v}}_i(0) \rangle_{i \in A}
@@ -380,7 +380,7 @@ contribution to the velocity ACF can not be ignored, so care must be taken.
 
 Another important quantity is the dipole correlation time. The {\em dipole 
 correlation function} for particles of type $A$ is calculated as follows by 
-\ttusindex{g}{dipoles}:
+{\tt \normindex{g_dipoles}}:
 \beq
 C_{\mu} (\tau) ~=~
 \langle {\bf \mu}_i(\tau) \cdot {\bf \mu}_i(0) \rangle_{i \in A}
@@ -391,14 +391,14 @@ For some applications see~\cite{Spoel98a}.
 
 The \normindex{viscosity} of a liquid can be related to the correlation 
 time of the Pressure tensor $\ve{P}$~\cite{PSmith93c,Balasubramanian96}.
-\ttusindex{g}{energy} can compute the viscosity,
+{\tt \normindex{g_energy}} can compute the viscosity,
 but this is not very accurate~\cite{Hess2002a}, and 
 actually the values do not converge.
 %} % Brace matches ifthenelse test for gmxlite
 
 \section{Mean Square Displacement}
 \label{sec:msd}
-{\tt g\us{}msd}\\
+{\tt g_msd}\\
 To determine the self \swapindex{diffusion}{coefficient} $D_A$ of
 particles of type $A$, one can use the \normindex{Einstein
 relation}~\cite{Allen87}:
@@ -407,12 +407,12 @@ relation}~\cite{Allen87}:
 \|{\bf r}_i(t) - {\bf r}_i(0)\|^2 \rangle_{i \in A} ~=~ 6 D_A t 
 \eeq
 This {\em mean square displacement} and $D_A$ are calculated by the
-program \ttusindex{g}{msd}. Normally an index file containing
+program {\tt \normindex{g_msd}}. Normally an index file containing
 atom numbers is used and the MSD is averaged over these atoms.  For
 molecules consisting of more than one atom, ${\bf r}_i$ can be taken
 as the center of mass positions of the molecules. In that case, you
 should use an index file with molecule numbers. The results will be
-nearly identical to averaging over atoms, however. The {\tt g\us{}msd}
+nearly identical to averaging over atoms, however. The {\tt g_msd}
 program can
 also be used for calculating diffusion in one or two dimensions. This
 is useful for studying lateral diffusion on interfaces.
@@ -433,9 +433,9 @@ An example of the mean square displacement of SPC water is given in
 % 
 \section{Bonds, angles and dihedrals}
 \label{sec:bad}
-{\tt g\us{}bond, g\us{}angle, g\us{}sgangle}\\
+{\tt g_bond, g_angle, g_sgangle}\\
 To monitor specific {\em bonds} in your molecules during time, the program 
-\ttusindex{g}{bond} calculates the distribution of the bond length in time. 
+{\tt \normindex{g_bond}} calculates the distribution of the bond length in time. 
 The index file consists of pairs of atom numbers, for example\\
 
 \begin{verbatim}
@@ -448,7 +448,7 @@ The index file consists of pairs of atom numbers, for example\\
 12    13
 \end{verbatim}
 
-The program \ttusindex{g}{angle} calculates the distribution of {\em angles} and 
+The program {\tt \normindex{g_angle}} calculates the distribution of {\em angles} and 
 {\em dihedrals} in time. It also gives the average angle or dihedral. 
 The index file consists of triplets or quadruples of atom numbers:
 
@@ -477,16 +477,16 @@ convention''. B. ``Polymer convention''.}
 
 To follow specific {\em angles} in time between two vectors, a vector
 and a plane or two planes (defined by 2 or 3 atoms, respectively, inside your
-molecule, see \figref{sgangle}A, B, C), use the program \ttusindex{g}{sgangle}.
+molecule, see \figref{sgangle}A, B, C), use the program {\tt \normindex{g_sgangle}}.
 
 \begin{figure}
 \centerline{
 {\includegraphics[width=6.5cm,angle=270]{plots/sgangle}}}
-\caption[Options of {\tt g\us{}sgangle}.]{Options of {\tt g\us{}sgangle}: A. Angle between 2 vectors. B. Angle between a vector and the normal of a plane. C. Angle between two planes. D. Distance between the geometrical centers of 2 planes. E. Distances between a vector and the center of a plane.}
+\caption[Options of {\tt g_sgangle}.]{Options of {\tt g_sgangle}: A. Angle between 2 vectors. B. Angle between a vector and the normal of a plane. C. Angle between two planes. D. Distance between the geometrical centers of 2 planes. E. Distances between a vector and the center of a plane.}
 \label{fig:sgangle}
 \end{figure}
 
-For planes, \ttusindex{g}{sgangle} uses the normal vector perpendicular to the plane.  It
+For planes, {\tt \normindex{g_sgangle}} uses the normal vector perpendicular to the plane.  It
 can also calculate the {\em distance} $d$ between the geometrical
 center of two planes (see \figref{sgangle}D), and the distances
 $d_1$ and $d_2$ between 2 atoms (of a vector) and the center of a
@@ -509,9 +509,9 @@ calculate. For example, the index-file could look like this:
 
 \section{Radius of gyration and distances}
 \label{sec:rg}
-{\tt g\us{}gyrate, g\us{}sgangle, g\us{}mindist, g\us{}mdmat, xpm2ps}\\
+{\tt g_gyrate, g_sgangle, g_mindist, g_mdmat, xpm2ps}\\
 To have a rough measure for the compactness of a structure, you can calculate 
-the {\em radius of gyration} with the program \ttusindex{g}{gyrate} as follows:
+the {\em radius of gyration} with the program {\tt \normindex{g_gyrate}} as follows:
 \beq
 R_g ~=~ \left({\frac{\sum_i \|{\bf r}_i\|^2 m_i}{\sum_i m_i}}\right)^{\half}
 \label{eqn:rg}
@@ -530,17 +530,17 @@ possibilities:
 The {\em distance between the geometrical centers} of two groups can be 
 calculated with the program
 %\ifthenelse{\equal{\gmxlite}{1}}{
-%\ttusindex{g}{sgangle}.}
-{\ttusindex{g}{sgangle}, as explained in \secref{bad}.}
+%{\tt \normindex{g_sgangle}}.}
+{{\tt \normindex{g_sgangle}}, as explained in \secref{bad}.}
 \item[$\bullet$] 
 The {\em minimum distance} between two groups of atoms during time 
-can be calculated with the program \ttusindex{g}{mindist}. It also calculates the 
+can be calculated with the program {\tt \normindex{g_mindist}}. It also calculates the 
 {\em number of contacts} between these groups 
 within a certain radius $r_{max}$.
 \item[$\bullet$] 
 To monitor the {\em minimum distances between amino acid residues} 
 within a (protein) molecule, you can use 
-the program \ttusindex{g}{mdmat}. This minimum distance between two residues
+the program {\tt \normindex{g_mdmat}}. This minimum distance between two residues
 A$_i$ and A$_j$ is defined as the smallest distance between any pair of 
 atoms (i $\in$ A$_i$, j $\in$ A$_j$).
 The output is a symmetrical matrix of smallest distances 
@@ -564,10 +564,10 @@ in the structure, and {\eg} forming of salt bridges.
 
 \section{Root mean square deviations in structure}
 \label{sec:rmsd}
-{\tt g\us{}rms, g\us{}rmsdist}\\
+{\tt g_rms, g_rmsdist}\\
 The {\em root mean square deviation} ($RMSD$) of certain atoms in a molecule
 with respect to a reference structure can be calculated with the program 
-\ttusindex{g}{rms} by least-square fitting the structure to the reference structure
+{\tt \normindex{g_rms}} by least-square fitting the structure to the reference structure
 ($t_2 = 0$) and subsequently calculating the $RMSD$ (\eqnref{rmsd}).
 \beq
 RMSD(t_1,t_2) ~=~ \left[\frac{1}{M} \sum_{i=1}^N m_i \|{\bf r}_i(t_1)-{\bf r}_i(t_2)\|^2 \right]^{\frac{1}{2}}
@@ -589,7 +589,7 @@ If there are transitions in a trajectory, they will clearly show up in
 such a matrix.
 
 Alternatively the $RMSD$ can be computed using a fit-free method with the 
-program \ttusindex{g}{rmsdist}:
+program {\tt \normindex{g_rmsdist}}:
 \beq
 RMSD(t) ~=~     \left[\frac{1}{N^2}\sum_{i=1}^N \sum_{j=1}^N    \|{\bf r}_{ij}(t)-{\bf r}_{ij}(0)\|^2\right]^{\frac{1}{2}}
 \label{eqn:rmsdff}
@@ -719,41 +719,41 @@ is close to 1, the largest fluctuations are not connected with
 the potential, but with random diffusion.
 
 The covariance matrix is built and diagonalized by
-\ttusindex{g}{covar}.
+{\tt \normindex{g_covar}}.
 The principal components and overlap (any many more things) 
-can be plotted and analyzed with \ttusindex{g}{anaeig}.
-The cosine content can be calculated with \ttusindex{g}{analyze}.
+can be plotted and analyzed with {\tt \normindex{g_anaeig}}.
+The cosine content can be calculated with {\tt \normindex{g_analyze}}.
 %} % Brace matches ifthenelse test for gmxlite
 
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Dihedral principal component analysis}
-{\tt g\us{}angle, g\us{}covar, g\us{}anaeig}\\
+{\tt g_angle, g_covar, g_anaeig}\\
 Principal component analysis can be performed in dihedral
 space~\cite{Mu2005a} using {\gromacs}. You start by defining the
 dihedral angles of interest in an index file, either using {\tt
-  mk\us{}angndx} or otherwise. Then you use the {\tt g\us{}angle} program
+  mk_angndx} or otherwise. Then you use the {\tt g_angle} program
 with the {\tt -or} flag to produce a new {\tt .trr} file containing the cosine and
 sine of each dihedral angle in two coordinates, respectively. That is,
 in the {\tt .trr} file you will have a series of numbers corresponding to:
 cos($\phi_1$), sin($\phi_1$), cos($\phi_2$), sin($\phi_2$), ...,
 cos($\phi_n$), sin($\phi_n$), and the array is padded with zeros, if
 necessary.  Then you can use this {\tt .trr} file as input for the {\tt
-  g\us{}covar} program and perform principal component analysis as usual.
+  g_covar} program and perform principal component analysis as usual.
 For this to work you will need to generate a reference file ({\tt .tpr}, 
 {\tt .gro}, {\tt .pdb} etc.) containing the same number of ``atoms'' 
 as the new {\tt .trr} file, that is for $n$ dihedrals you need 2$n$/3 atoms 
 (rounded up if not an integer number). 
 You should use the {\tt -nofit} option for {\tt
-  g\us{}covar} since the coordinates in the dummy reference file do not
+  g_covar} since the coordinates in the dummy reference file do not
 correspond in any way to the information in the {\tt .trr} file. Analysis of
-the results is done using {\tt g\us{}anaeig}.  
+the results is done using {\tt g_anaeig}.  
 %} % Brace matches ifthenelse test for gmxlite
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Hydrogen bonds
 
 \section{Hydrogen bonds}
-{\tt g\us{}hbond}\\
-The program \ttusindex{g}{hbond} analyses the {\em hydrogen bonds} (H-bonds)
+{\tt g_hbond}\\
+The program {\tt \normindex{g_hbond}} analyses the {\em hydrogen bonds} (H-bonds)
 between all possible donors D and acceptors A. To determine if an
 H-bond exists, a geometrical criterion is used, see also
 \figref{hbond}:
@@ -773,7 +773,7 @@ r       & \leq  & r_{HB}        & = & 0.35~\mbox{nm}    \\
 The value of $r_{HB} = 0.35$~nm corresponds to the first minimum of the RDF of 
 SPC water (see also \figref{rdf}).
 
-The program {\tt g\us{}hbond} analyses all hydrogen bonds existing
+The program {\tt g_hbond} analyses all hydrogen bonds existing
 between two groups of atoms (which must be either identical or
 non-overlapping) or in specified donor-hydrogen-acceptor triplets, in
 the following ways:
@@ -850,16 +850,16 @@ the analyzed groups and all solvent atoms involved in insertion.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Protein related items 
 
 \section{Protein-related items}
-{\tt do\us{}dssp, g\us{}rama, g\us{}xrama, g\us{}wheel}\\
+{\tt do_dssp, g_rama, g_xrama, g_wheel}\\
 To analyze structural changes of a protein, you can calculate the radius of 
 gyration or the minimum residue distances over time 
 (see \secref{rg}), or calculate the RMSD (\secref{rmsd}).
 
 You can also look at the changing of {\em secondary structure elements} 
-during your run. For this, you can use the program \ttusindex{do}{dssp}, which is 
+during your run. For this, you can use the program {\tt \normindex{do_dssp}}, which is 
 an interface for the commercial program {\tt DSSP}~\cite{Kabsch83}. For 
 further information, see the {\tt DSSP} manual. A typical output plot of 
-{\tt do\us{}dssp} is given in \figref{dssp}.
+{\tt do_dssp} is given in \figref{dssp}.
 
 \begin{figure}
 \centerline{
@@ -880,7 +880,7 @@ $\psi$ of the protein backbone, see \figref{phipsi}.
 \label{fig:phipsi}
 \end{figure}
 
-To evaluate this Ramachandran plot you can use the program \ttusindex{g}{rama}. 
+To evaluate this Ramachandran plot you can use the program {\tt \normindex{g_rama}}. 
 A typical output is given in \figref{rama}.
 
 \begin{figure}
@@ -897,7 +897,7 @@ in your protein. You can use the program {\tt \normindex{xrama}} for this.
 When studying $\alpha$-helices 
 it is useful to have a {\em helical wheel} projection
 of your peptide, to see whether a peptide is amphipathic. This can be done
-using the \ttusindex{g}{wheel} program. Two examples are 
+using the {\tt \normindex{g_wheel}} program. Two examples are 
 plotted in \figref{wheel}.
 
 \begin{figure}
@@ -909,11 +909,11 @@ plotted in \figref{wheel}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Membrane Related Items
 
 \section{Interface-related items}
-{\tt g\us{}order, g\us{}density, g\us{}potential, g\us{}traj}\\
+{\tt g_order, g_density, g_potential, g_traj}\\
 When simulating molecules with long carbon tails, it can be
 interesting to calculate their average orientation. There are several
 flavors of order parameters, most of which are related. The program
-\ttusindex{g}{order} can calculate order parameters using the equation:
+{\tt \normindex{g_order}} can calculate order parameters using the equation:
 
 \begin{equation}
 S_{z} = \frac{3}{2}\langle {\cos^2{\theta_z}} \rangle - \frac{1}{2}
@@ -944,13 +944,13 @@ charge density ($\rho(z)$):
 where the position $z=-\infty$ is far enough in the bulk phase such that
 the field is zero.  With this method, it is possible to ``split'' the
 total potential into separate contributions from lipid and water
-molecules. The program \ttusindex{g}{potential} divides the box in slices and
+molecules. The program {\tt \normindex{g_potential}} divides the box in slices and
 sums all charges of the atoms in each slice. It then integrates this
 charge density to give the electric field, which is in turn integrated to
 give the potential. Charge density, electric field, and potential are written
 to {\tt xvgr} input files.
 
-The program \ttusindex{g}{traj} is a very simple analysis program. All it
+The program {\tt \normindex{g_traj}} is a very simple analysis program. All it
 does is print the coordinates, velocities, or forces of selected atoms.
 It can also calculate the center of mass of one or more
 molecules and print the coordinates of the center of mass to three
@@ -960,12 +960,12 @@ handy for further analysis, not only in interfacial systems.
 
 %
 % Non-existent program
-% The program \ttusindex{g}{pvd} calculates a lot of properties, among which
+% The program {\tt \normindex{g_pvd}} calculates a lot of properties, among which
 % the density of a group in particles per unit of volume, but not a
 % density that takes the mass of the atoms into account. The program
 %
 
-The program \ttusindex{g}{density} also calculates the density of groups, 
+The program {\tt \normindex{g_density}} also calculates the density of groups, 
 but takes the masses into account and gives a plot of the density against a box
 axis. This is useful for looking at the distribution of groups or
 atoms across the interface.
@@ -973,9 +973,9 @@ atoms across the interface.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Chemical shifts
 
 \section{Chemical shifts}
-{\tt total, do\us{}shift}\\
+{\tt total, do_shift}\\
 You can compute the NMR chemical shifts of protons with the program
-\ttusindex{do}{shift}. This is just an {\gromacs} interface to
+{\tt \normindex{do_shift}}. This is just an {\gromacs} interface to
 the public domain program {\tt total}~\cite{Williamson93a}. For
 further information, read the article. Although there is limited
 support for this in {\gromacs}, users are encouraged to use the
