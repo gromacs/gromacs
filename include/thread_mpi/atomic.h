@@ -93,7 +93,7 @@ extern "C"
 
 /* first check for gcc/icc platforms. icc on linux+mac will take this path, 
    too */
-#if ( (defined(__GNUC__) || defined(__PATHSCALE__)) && (!defined(__xlc__)) )
+#if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
 
 /* now check specifically for several architectures: */
 #if (defined(i386) || defined(__x86_64__)) 
