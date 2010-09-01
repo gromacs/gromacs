@@ -1,9 +1,29 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#include <idef.h>
 #endif
 
 enum {eQNONE, eQACC, eQDON, eQACCDON, eQNR};
- 
+enum {eQIDEF, eQBONLIB}; /* use the first to get the pointer to the idef,
+			   the other for the bonded stuff stored for a
+			   certain residue. */
+
+/* relates position in idef to a position in a bondeds library for a residue. */
+typedef struct {
+  t_iatom*  ilib;
+  t_iatom** reslib; /* points to entry in resblocks.
+		       Use it to find bonded interaction
+		       for a specific protonation state. */
+} qhop_bonswap;
+
+/* Keeps track of where bonded interactions are in an ilist.
+   We use it to quickly change bonded interactions for a residue
+   upon (de)protonation. */
+typedef struct {
+  int     nb;
+  qhop_bonswap *bondeds; /* nb elements long. */
+} qhop_bonded_index;
+
 typedef struct {
   int atom_id; /* global atom index */
   int res_id; /* global residue index */
@@ -75,9 +95,10 @@ typedef struct {
   int    **ilistPosL; /* Where in the local topology are the
 		       * bonded interactions found?
 		       * Indexes a t_ilist[F_*][interaction] */
+  qhop_bonded_index bindex; /* Makes ilistPosG and ilistPosL redundant. For now anyway. */
 } t_qhop_residue;
 
-/* This enum can probably go, because thins are now explicit in the xml input. */
+/* This enum can probably go, because thigns are now explicit in the xml input. */
 /* enum {OO,ON,NN}; /\* parameters, we'll probably have to expand for */
 /* 		    specific resisues */
 /* 		 *\/ */
