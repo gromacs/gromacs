@@ -1,9 +1,42 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ * $Id: gmx_matrix.c,v 1.4 2008/12/02 18:27:57 spoel Exp $
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 4.5
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2008, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+ 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
+ * And Hey:
+ * Groningen Machine for Chemical Simulation
  */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +58,8 @@
 
 #ifdef FFT5D_THREADS
 #include <omp.h>
+/* requires fftw compiled with openmp */
+#define FFT5D_FFTW_THREADS
 #endif
 
 #include "fft5d.h"
@@ -117,11 +152,14 @@ copied here from fftgrid, because:
 Only used for non-fftw case
 */
 static void *
-gmx_alloc_aligned(size_t size)
+gmx_calloc_aligned(size_t size)
 {
     void *p0,*p;
     
-    p0 = malloc(size+32);
+    /*We initialize by zero for Valgrind
+      For non-divisible case we communicate more than the data.
+      If we don't initialize the data we communicate uninitialized data*/
+    p0 = calloc(size+32,1);  
     
     if(p0 == NULL)
     {
@@ -361,17 +399,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     lsize = fft5d_fmax(N[0]*M[0]*K[0]*nP[0],fft5d_fmax(N[1]*M[1]*K[1]*nP[1],C[2]*M[2]*K[2])); 
     /* int lsize = fmax(C[0]*M[0]*K[0],fmax(C[1]*M[1]*K[1],C[2]*M[2]*K[2])); */
     if (!(flags&FFT5D_NOMALLOC)) { 
-        #ifdef GMX_FFT_FFTW3 
-        FFTW_LOCK;
-        /* local in    */
-        lin = (t_complex*)FFTW(malloc)(sizeof(t_complex) * lsize); 
-        /* local output */
-        lout = (t_complex*)FFTW(malloc)(sizeof(t_complex) * lsize); 
-        FFTW_UNLOCK;
-        #else 
-        lin = (t_complex*)gmx_alloc_aligned(sizeof(t_complex) * lsize);   
-        lout = (t_complex*)gmx_alloc_aligned(sizeof(t_complex) * lsize); 
-        #endif
+        lin = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);   
+        lout = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize); 
     } else {
         lin = *rlin;
         lout = *rlout;
@@ -380,7 +409,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     plan = (fft5d_plan)calloc(1,sizeof(struct fft5d_plan_t));
 
     
-#ifdef FFT5D_THREADS   /*requires fftw with openmp and openmp*/
+#ifdef FFT5D_THREADS
+#ifdef FFT5D_FFTW_THREADS
     FFTW(init_threads)();
     int nthreads;
     #pragma omp parallel
@@ -390,9 +420,12 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
             nthreads = omp_get_num_threads();
         }
     }
-    printf("Running on %d threads\n",nthreads);        
+    if (prank[0] == 0 && prank[1] == 0)
+    {
+        printf("Running fftw on %d threads\n",nthreads);        
+    }
     FFTW(plan_with_nthreads)(nthreads);
-
+#endif
 #endif    
 
 #ifdef GMX_FFT_FFTW3  /*if not FFTW - then we don't do a 3d plan but insead only 1D plans */
@@ -559,6 +592,9 @@ static void splitaxes(t_complex* lout,const t_complex* lin,
     for (i=0;i<P;i++) { /*index cube along long axis*/
         in_i  = i*maxN*maxM*maxK;
         out_i = oN[i];
+#ifdef FFT5D_THREADS
+#pragma omp parallel for private(in_z,out_z,y,in_y,out_y,x)
+#endif
         for (z=0;z<pK;z++) { /*3. z l*/ 
             in_z  = in_i  + z*maxN*maxM;
             out_z = out_i + z*NG*pM;
@@ -591,6 +627,9 @@ static void joinAxesTrans13(t_complex* lin,const t_complex* lout,
     for (i=0;i<P;i++) { /*index cube along long axis*/
         in_i  = oK[i];
         out_i = i*maxM*maxN*maxK;
+#ifdef FFT5D_THREADS
+#pragma omp parallel for private(in_x,out_x,z,in_z,out_z,y)
+#endif
         for (x=0;x<pN;x++) { /*1.j*/
             in_x  = in_i  + x*KG*pM;
             out_x = out_i + x;
@@ -619,6 +658,9 @@ static void joinAxesTrans12(t_complex* lin,const t_complex* lout,int maxN,int ma
     for (i=0;i<P;i++) { /*index cube along long axis*/
         in_i  = oM[i];
         out_i = i*maxM*maxN*maxK;
+#ifdef FFT5D_THREADS
+#pragma omp parallel for private(in_z,out_z,in_x,out_x,x,y)
+#endif
         for (z=0;z<pK;z++) { 
             in_z  = in_i  + z*MG*pN;
             out_z = out_i + z*maxM*maxN;
@@ -877,17 +919,15 @@ void fft5d_destroy(fft5d_plan plan) {
     for (s=0;s<2;s++)    
         FFTW(destroy_plan)(plan->mpip[s]);
 #endif /* FFT5D_MPI_TRANSPOS */
-    if (!(plan->flags&FFT5D_NOMALLOC)) { 
-        FFTW(free)(plan->lin);
-        FFTW(free)(plan->lout);
-    }
-    FFTW_UNLOCK;
-#else /* GMX_FFT_FFTW3 */
-    /*We can't free lin/lout here - is allocated by gmx_alloc_aligned which can't be freed*/
 #endif /* GMX_FFT_FFTW3 */
+
+    /*We can't free lin/lout here - is allocated by gmx_calloc_aligned which can't be freed*/
+
     
 #ifdef FFT5D_THREADS
+#ifdef FFT5D_FFTW_THREADS
     FFTW(cleanup_threads)();
+#endif
 #endif
 
     free(plan);

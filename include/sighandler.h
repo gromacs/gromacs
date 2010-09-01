@@ -36,11 +36,9 @@
 #ifndef _sighandler_h
 #define _sighandler_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <signal.h>
+
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,7 +80,7 @@ const char *gmx_get_signal_name(void);
 /* check whether we received a USR1 signal. 
    The condition is reset once a TRUE value is returned, so this function
    only returns TRUE once for a single signal. */
-bool gmx_got_usr_signal(void);
+gmx_bool gmx_got_usr_signal(void);
 
 
 #ifdef __cplusplus

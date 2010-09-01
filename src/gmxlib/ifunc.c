@@ -112,9 +112,11 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded  ("PIDIHS",   "Improper Dih.",   4, 3, 3,  eNR_PROPER, pdihs         ),
   def_bondedt ("TABDIHS", "Tab. Dih.",        4, 2, 2,  eNR_TABDIHS, tab_dihs     ),
   def_bonded  ("CMAP",  "CMAP Dih.",          5, -1, -1,  eNR_CMAP,   unimplemented ),
-  def_bonded  ("GB12",     "GB 1-2",          2, 2, 2,  eNR_GB,     unimplemented ),
-  def_bonded  ("GB13",     "GB 1-3",          2, 2, 2,  eNR_GB,     unimplemented ),
-  def_bonded  ("GB14",     "GB 1-4",          2, 2, 2,  eNR_GB,     unimplemented ),
+  def_bonded  ("GB12",     "GB 1-2 Pol.",     2, 2, 2,  eNR_GB,     unimplemented ),
+  def_bonded  ("GB13",     "GB 1-3 Pol.",     2, 2, 2,  eNR_GB,     unimplemented ),
+  def_bonded  ("GB14",     "GB 1-4 Pol.",     2, 2, 2,  eNR_GB,     unimplemented ),
+  def_nofc    ("GBPOL",    "GB Polarization" ),
+  def_nofc    ("NPSOLVATION", "Nonpolar sol." ),
   def_bondedz ("LJ14",     "LJ-14",           2, 2, 2,  eNR_NB14,   unimplemented ),
   def_nofc    ("COUL14",   "Coulomb-14"                                           ),
   def_bondedz ("LJC14_Q",  "LJC-14 q",        2, 5, 0,  eNR_NB14,   unimplemented ),
@@ -170,7 +172,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("DH/DL_CON","dH/dl constr."    )
 };
 
-bool have_interaction(t_idef *idef,int ftype)
+gmx_bool have_interaction(t_idef *idef,int ftype)
 {
   int i;
   

@@ -195,7 +195,7 @@ void rotate_atoms(int gnx,atom_id *index,rvec x[],matrix trans)
 }
 
 real calc_xcm(rvec x[],int gnx,atom_id *index,t_atom *atom,rvec xcm,
-	      bool bQ)
+	      gmx_bool bQ)
 {
   int  i,ii,m;
   real m0,tm;
@@ -223,7 +223,7 @@ real calc_xcm(rvec x[],int gnx,atom_id *index,t_atom *atom,rvec xcm,
 }
 
 real sub_xcm(rvec x[],int gnx,atom_id *index,t_atom atom[],rvec xcm,
-	     bool bQ)
+	     gmx_bool bQ)
 {
   int  i,ii;
   real tm;

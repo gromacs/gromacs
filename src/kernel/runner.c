@@ -117,8 +117,8 @@ struct mdrunner_arglist
     int nfile;
     const t_filenm *fnm;
     output_env_t oenv;
-    bool bVerbose;
-    bool bCompact;
+    gmx_bool bVerbose;
+    gmx_bool bCompact;
     int nstglobalcomm;
     ivec ddxyz;
     int dd_node_order;
@@ -166,7 +166,7 @@ static void mdrunner_start_fn(void *arg)
         fplog=mc.fplog;
     }
 
-    mda->ret=mdrunner(cr->nthreads, fplog, cr, mc.nfile, fnm, mc.oenv, 
+    mda->ret=mdrunner(cr->nnodes, fplog, cr, mc.nfile, fnm, mc.oenv, 
                       mc.bVerbose, mc.bCompact, mc.nstglobalcomm, 
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
@@ -181,8 +181,8 @@ static void mdrunner_start_fn(void *arg)
    All options besides nthreads are the same as for mdrunner(). */
 static t_commrec *mdrunner_start_threads(int nthreads, 
               FILE *fplog,t_commrec *cr,int nfile, 
-              const t_filenm fnm[], const output_env_t oenv, bool bVerbose,
-              bool bCompact, int nstglobalcomm,
+              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
+              gmx_bool bCompact, int nstglobalcomm,
               ivec ddxyz,int dd_node_order,real rdd,real rconstr,
               const char *dddlb_opt,real dlb_scale,
               const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -254,6 +254,7 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
                         gmx_mtop_t *mtop)
 {
     int nthreads,nthreads_new;
+    int min_atoms_per_thread;
 
     nthreads = nthreads_requested;
 
@@ -262,21 +263,31 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
     {
         nthreads = tMPI_Get_recommended_nthreads();
     }
+
+    if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
+    {
+        /* Steps are divided over the nodes iso splitting the atoms */
+        min_atoms_per_thread = 0;
+    }
+    else
+    {
+        min_atoms_per_thread = MIN_ATOMS_PER_THREAD;
+    }
+
     /* Check if an algorithm does not support parallel simulation.  */
     if (nthreads != 1 && 
         ( inputrec->eI == eiLBFGS ||
-          inputrec->eI == eiNM ||
-          inputrec->coulombtype == eelEWALD) )
+          inputrec->coulombtype == eelEWALD ) )
     {
         fprintf(stderr,"\nThe integration or electrostatics algorithm doesn't support parallel runs. Not starting any threads.\n");
         nthreads = 1;
     }
-    else if ((nthreads_requested < 1) &&
-             (mtop->natoms/nthreads < MIN_ATOMS_PER_THREAD) )
+    else if (nthreads_requested < 1 &&
+             mtop->natoms/nthreads < min_atoms_per_thread)
     {
         /* the thread number was chosen automatically, but there are too many
            threads (too few atoms per thread) */
-        nthreads_new = max(1,mtop->natoms/MIN_ATOMS_PER_THREAD);
+        nthreads_new = max(1,mtop->natoms/min_atoms_per_thread);
 
         if (nthreads_new > 8 || (nthreads == 8 && nthreads_new > 4))
         {
@@ -305,8 +316,8 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
 
 
 int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
-             const t_filenm fnm[], const output_env_t oenv, bool bVerbose,
-             bool bCompact, int nstglobalcomm,
+             const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
+             gmx_bool bCompact, int nstglobalcomm,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -318,7 +329,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     t_inputrec *inputrec;
     t_state    *state=NULL;
     matrix     box;
-    gmx_ddbox_t ddbox;
+    gmx_ddbox_t ddbox={0};
     int        npme_major,npme_minor;
     real       tmpr1,tmpr2;
     t_nrnb     *nrnb;
@@ -333,7 +344,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     int        i,m,nChargePerturbed=-1,status,nalloc;
     char       *gro;
     gmx_wallcycle_t wcycle;
-    bool       bReadRNG,bReadEkin;
+    gmx_bool       bReadRNG,bReadEkin;
     int        list;
     gmx_runtime_t runtime;
     int        rc;
@@ -389,18 +400,18 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     }
     /* END OF CAUTION: cr is now reliable */
 
-    /* now make sure the state is initialized and propagated */
-    set_state_entries(state,inputrec,cr->nnodes);
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(fplog, cr, inputrec, mtop, state);
+        init_parallel(fplog, cr, inputrec, mtop);
     }
-
-    if (fplog)
+    if (fplog != NULL)
     {
         pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
     }
+
+    /* now make sure the state is initialized and propagated */
+    set_state_entries(state,inputrec,cr->nnodes);
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
@@ -421,7 +432,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             );
     }
 
-    if (can_use_allvsall(inputrec,TRUE,cr,fplog))
+    if (can_use_allvsall(inputrec,mtop,TRUE,cr,fplog))
     {
         /* All-vs-all loops do not work with domain decomposition */
         Flags |= MD_PARTDEC;
@@ -512,7 +523,14 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         }
     }
 
-    if ((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
+    if (((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
+#ifdef GMX_THREADS
+        /* With thread MPI only the master node/thread exists in mdrun.c,
+         * therefore non-master nodes need to open the "seppot" log file here.
+         */
+        || (!MASTER(cr) && (Flags & MD_SEPPOT))
+#endif
+        )
     {
         gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
                              Flags,&fplog);
@@ -795,7 +813,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
     {
         /* Some timing stats */  
-        if (MASTER(cr))
+        if (SIMMASTER(cr))
         {
             if (runtime.proc == 0)
             {
@@ -832,7 +850,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* we need to join all threads. The sub-threads join when they
        exit this function, but the master thread needs to be told to 
        wait for that. */
-    if (nthreads>1 && MASTERTHREAD(cr) )
+    if (PAR(cr) && MASTER(cr))
     {
         tMPI_Finalize();
     }

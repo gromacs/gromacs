@@ -107,9 +107,9 @@ static void
 setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *   aadata,
                                 t_ilist *                  ilist,
                                 int                        natoms,
-                                bool                       bInclude12,
-                                bool                       bInclude13,
-                                bool                       bInclude14)
+                                gmx_bool                       bInclude12,
+                                gmx_bool                       bInclude13,
+                                gmx_bool                       bInclude14)
 {
     int i,j,k,tp;
     int a1,a2;
@@ -321,9 +321,9 @@ static void
 genborn_allvsall_setup(gmx_allvsallgb2_data_t **  p_aadata,
                        t_ilist *                  ilist,
                        int                        natoms,
-                       bool                       bInclude12,
-                       bool                       bInclude13,
-                       bool                       bInclude14)
+                       gmx_bool                       bInclude12,
+                       gmx_bool                       bInclude13,
+                       gmx_bool                       bInclude14)
 {
 	int i,j,idx;
 	gmx_allvsallgb2_data_t *aadata;

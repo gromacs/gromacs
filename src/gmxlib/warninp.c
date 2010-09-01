@@ -46,7 +46,7 @@
 #include "warninp.h"
 
 typedef struct warninp {
-    bool bAllowWarnings;
+    gmx_bool bAllowWarnings;
     int  nwarn_note;
     int  nwarn_warn;
     int  nwarn_error;
@@ -55,7 +55,7 @@ typedef struct warninp {
     char filenm[256];
 } t_warninp;
 
-warninp_t init_warning(bool bAllowWarnings,int maxwarning)
+warninp_t init_warning(gmx_bool bAllowWarnings,int maxwarning)
 {
     warninp_t wi;
 

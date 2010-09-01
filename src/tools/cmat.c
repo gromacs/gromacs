@@ -43,7 +43,7 @@
 #include "matio.h"
 #include "futil.h"
 
-t_mat *init_mat(int n1,bool b1D)
+t_mat *init_mat(int n1,gmx_bool b1D)
 {
   t_mat *m;
   

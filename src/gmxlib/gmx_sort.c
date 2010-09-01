@@ -40,8 +40,8 @@ qsort_swapfunc(void *        a,
     
     if (swaptype <= 1) 
     {
-        ia = a;
-        ib = b;
+        ia = (int *)a;
+        ib = (int *)b;
         for( ; n > 0; ia += 1, ib += 1, n -= sizeof(int))
         {
             itmp      = *ia;
@@ -51,8 +51,8 @@ qsort_swapfunc(void *        a,
     } 
     else 
     {
-        ca = a;
-        cb = b;
+        ca = (char *)a;
+        cb = (char *)b;
         for( ; n > 0; ca += 1, cb += 1, n -= 1)
         {
             ctmp       = *ca;
@@ -67,7 +67,7 @@ static void *
 qsort_med3(void *        a,
            void *        b, 
            void *        c, 
-           int          (*compar) ())
+           int          (*compar) (const void *a, const void *b))
 {   
     if(compar(a,b) < 0)
     {
@@ -105,7 +105,7 @@ gmx_qsort(void *           base,
     int t, v;
     size_t s, st;
         
-    cbase = base;
+    cbase = (char *)base;
     
     swaptype = (size_t)(cbase - (char *)0) % sizeof(int) || size % sizeof(int) ? 2 : size == sizeof(int)? 0 : 1;
     
@@ -114,7 +114,7 @@ gmx_qsort(void *           base,
         /* Insertion sort on smallest arrays */
         for (pm = cbase + size; pm < cbase + nmemb*size; pm += size)
         {
-            for (pl = pm; pl > cbase && compar(pl-size, pl) > 0; pl -= size)
+            for (pl = pm; (pl > cbase) && compar((void *)(pl-size),(void *) pl) > 0; pl -= size)
             {
                 QSORT_SWAP(pl, pl-size);
             }
@@ -133,12 +133,12 @@ gmx_qsort(void *           base,
         {      
             /* Big arrays, pseudomedian of 9 */
             s = (nmemb/8)*size;
-            pl = qsort_med3(pl, pl+s, pl+2*s, compar);
-            pm = qsort_med3(pm-s, pm, pm+s, compar);
-            pn = qsort_med3(pn-2*s, pn-s, pn, compar);
+            pl = (char *)qsort_med3((void *)pl, (void *)((size_t)pl+s), (void *)((size_t)pl+2*s), compar);
+            pm = (char *)qsort_med3((void *)((size_t)pm-s), (void *)pm, (void *)((size_t)pm+s), compar);
+            pn = (char *)qsort_med3((void *)((size_t)pn-2*s), (void *)((size_t)pn-s), (void *)pn, compar);
         }
         /* Mid-size, med of 3 */
-        pm = qsort_med3(pl, pm, pn, compar);    
+        pm = (char *)qsort_med3((void *)pl, (void *)pm, (void *)pn, compar);    
     }
     
     /* pv points to partition value */
@@ -149,7 +149,7 @@ gmx_qsort(void *           base,
     } 
     else 
     {
-        pv = (void*)&v; 
+        pv = (char*)(void*)&v; 
         v = *(int *)pm; 
     }
     
@@ -158,7 +158,7 @@ gmx_qsort(void *           base,
     
     for (;;) 
     {
-        while (pb <= pc && (r = compar(pb, pv)) <= 0)
+        while (pb <= pc && (r = compar((void *)pb,(void *) pv)) <= 0)
         {
             if (r == 0) 
             { 
@@ -167,7 +167,7 @@ gmx_qsort(void *           base,
             }
             pb += size;
         }
-        while (pc >= pb && (r = compar(pc, pv)) >= 0) 
+        while (pc >= pb && (r = compar((void *)pc,(void *) pv)) >= 0) 
         {
             if (r == 0)
             { 

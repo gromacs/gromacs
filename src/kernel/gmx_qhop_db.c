@@ -45,7 +45,7 @@ char *trim_strndup(const char *s, int maxlen)
   if (s == NULL)
     return NULL;
   else
-    return strndup(s, len);
+    return gmx_strndup(s, len);
 }
 
 
@@ -235,7 +235,7 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 {
   printf("trim the rtp\n");
   int i,rt,r,a;
-  bool match;
+  gmx_bool match;
   qdb->nrtp = 0;
   for (i=0; i<nbigrtp; i++)
     {
@@ -309,7 +309,7 @@ static void clear_qhop_H_exist(qhop_H_exist Hext)
 static void fill_resinfo(t_restp *rtp,qhop_resinfo_t *ri)
 {
   int    j,k,m;
-  bool   bDonor;
+  gmx_bool   bDonor;
   double qtot;
   
   qtot = 0;
@@ -449,7 +449,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
   open_symtab(&(qdb->tab));
   /*  sprintf(buf,"%s-qhop",
       forcefield);*/
-  atype = read_atype(forcefield, TRUE ,stab);
+  atype = read_atype(forcefield,stab);
   /* read_resall has changed a lot! Rework this part. */
   /* nrtp = read_resall(forcefield,qdb->bts,&(bigrtp),atype, */
 /* 		     stab,&(qdb->bAllDih), */

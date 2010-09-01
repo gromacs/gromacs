@@ -129,7 +129,7 @@ gmx_sparsematrix_value(gmx_sparsematrix_t *    A,
                        int                     row, 
                        int                     col)
 {
-    bool found  = FALSE;
+    gmx_bool found  = FALSE;
     int  i;
     real value;
     
@@ -159,7 +159,7 @@ gmx_sparsematrix_increment_value(gmx_sparsematrix_t *    A,
                                  int                     col,
                                  real                    difference)
 {
-    bool found  = FALSE;
+    gmx_bool found  = FALSE;
     int i;
     
     assert(row<A->nrow);

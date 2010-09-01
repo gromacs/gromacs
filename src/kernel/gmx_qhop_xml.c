@@ -198,7 +198,7 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, t_sy
 
 static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name, t_symtab *tab)
 {
-  bool found;
+  gmx_bool found;
   int i;
   if NN(name)
     {
@@ -268,7 +268,7 @@ static void rb_add_name_product(qhop_res_t res, const char *name, const char *pr
   /* Now, the argument 'name' may be a list of atoms,
    * because of proton tautomerism. */
   int i, j, k, nda, nnames;
-  bool acc, w;
+  gmx_bool acc, w;
   char **s, *buf;
   qhop_reactant *da;
   
@@ -364,7 +364,7 @@ static void qhop_process_attr(FILE *fp,xmlAttrPtr attr,int parent,
   char *attrname,*attrval;
   char buf[100];
   int  i,kkk,eprop;
-  bool found;
+  gmx_bool found;
   char *xbuf[exmlNR];
   
   for(i=0; (i<exmlNR); i++)
@@ -546,7 +546,7 @@ void qhops_read(char *fn, qhop_db_t qdb)
   int           i,npd;
   xmlrec        *xml;
   const char *db="qhops.dat";
-  bool fna=FALSE;
+  gmx_bool fna=FALSE;
   currentRes    ri;
   
   ri.Acc = FALSE;

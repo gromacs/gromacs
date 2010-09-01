@@ -35,9 +35,8 @@
 #ifndef _state_h_
 #define _state_h_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+
+#include "simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,7 +86,7 @@ typedef struct
  */
 typedef struct
 {
-  bool     bUpToDate;
+  gmx_bool     bUpToDate;
   int      ekin_n;
   tensor  *ekinh;
   tensor  *ekinf;
@@ -100,6 +99,17 @@ typedef struct
   real     mvcos;
 } ekinstate_t;
 
+/* energy history for delta_h histograms */
+typedef struct
+{
+    int nndh;           /* the number of energy difference lists */
+    int  *ndh;          /* the number in each energy difference list */
+    real **dh;          /* the energy difference lists */
+
+    double start_time;     /* the start time of these energy diff blocks */
+    double start_lambda;   /* lambda at start time */
+} delta_h_history_t; 
+
 typedef struct
 {
   gmx_large_int_t nsteps;       /* The number of steps in the history            */
@@ -107,9 +117,11 @@ typedef struct
   double *   ener_ave;     /* Energy term history sum to get fluctuations   */
   double *   ener_sum;     /* Energy term history sum to get fluctuations   */
   int        nener;        /* Number of energy terms in two previous arrays */
-  gmx_large_int_t nsteps_sim;   /* The number of steps in ener_sum_sim           */
-  gmx_large_int_t nsum_sim;     /* The number of frames in ener_sum_sim          */
+  gmx_large_int_t nsteps_sim;   /* The number of steps in ener_sum_sim      */
+  gmx_large_int_t nsum_sim;     /* The number of frames in ener_sum_sim     */
   double *   ener_sum_sim; /* Energy term history sum of the whole sim      */
+
+  delta_h_history_t *dht;  /* The BAR energy differences */
 }
 energyhistory_t;
 

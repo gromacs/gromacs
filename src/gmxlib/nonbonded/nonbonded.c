@@ -100,8 +100,12 @@
 #  endif
 #endif
 
-#if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
-#include "nb_kernel_f77_double/nb_kernel_f77_double.h"
+#if defined(GMX_FORTRAN)
+#  ifdef GMX_DOUBLE
+#    include "nb_kernel_f77_double/nb_kernel_f77_double.h"
+#  else
+#    include "nb_kernel_f77_single/nb_kernel_f77_single.h"
+#  endif
 #endif
 
 #if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
@@ -205,10 +209,10 @@ nb_kernel_list = NULL;
 
 
 void
-gmx_setup_kernels(FILE *fplog)
+gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
 {
     int i;
-    
+        
     snew(nb_kernel_list,eNR_NBKERNEL_NR);
     
     /* Note that later calls overwrite earlier, so the preferred (fastest)
@@ -220,14 +224,8 @@ gmx_setup_kernels(FILE *fplog)
         nb_kernel_list[i] = NULL;
     }
     
-    if(getenv("GMX_NB_GENERIC") != NULL)
+    if (bGenericKernelOnly)
     {
-        if(fplog)
-        {
-            fprintf(fplog,
-                    "Found environment variable GMX_NB_GENERIC.\n"
-                    "Disabling interaction-specific nonbonded kernels.\n\n");
-        }
         return;
     }
 	
@@ -240,16 +238,30 @@ gmx_setup_kernels(FILE *fplog)
     
     if(getenv("GMX_NOOPTIMIZEDKERNELS") != NULL)
     {
-        if(fplog)
-            fprintf(fplog,
-                    "Found environment variable GMX_NOOPTIMIZEDKERNELS.\n"
-                    "Disabling SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
         return;
     }
-    
-	/* Setup kernels. The last called setup routine will overwrite earlier assignments,
-	 * so we should e.g. test SSE3 support _after_ SSE2 support.
+
+    /* Setup kernels. The last called setup routine will overwrite earlier assignments,
+	 * so we should e.g. test SSE3 support _after_ SSE2 support,
+     * and call e.g. Fortran setup before SSE.
 	 */
+    
+#if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
+    nb_kernel_setup_f77_double(fplog,nb_kernel_list);
+#endif
+	
+#if defined(GMX_FORTRAN) && !defined(GMX_DOUBLE)   
+    nb_kernel_setup_f77_single(fplog,nb_kernel_list);
+#endif
+	
+#ifdef GMX_BLUEGENE
+    nb_kernel_setup_bluegene(fplog,nb_kernel_list);
+#endif
+	
+#ifdef GMX_POWER6
+    nb_kernel_setup_power6(fplog,nb_kernel_list);
+#endif
+    
 #ifdef GMX_PPC_ALTIVEC   
     nb_kernel_setup_ppc_altivec(fplog,nb_kernel_list);
 #endif
@@ -270,22 +282,6 @@ gmx_setup_kernels(FILE *fplog)
     nb_kernel_setup_x86_64_sse2(fplog,nb_kernel_list);
 #endif
 
-#if defined(GMX_SSE2) 
-#  ifdef GMX_DOUBLE
-	nb_kernel_setup_sse2_double(fplog,nb_kernel_list);
-#  else
-	nb_kernel_setup_sse2_single(fplog,nb_kernel_list);
-#  endif
-#endif
- 
-#if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
-    nb_kernel_setup_f77_double(fplog,nb_kernel_list);
-#endif
-	
-#if defined(GMX_FORTRAN) && !defined(GMX_DOUBLE)   
-    nb_kernel_setup_f77_single(fplog,nb_kernel_list);
-#endif
-	
 #if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
     nb_kernel_setup_ia64_double(fplog,nb_kernel_list);
 #endif
@@ -293,16 +289,6 @@ gmx_setup_kernels(FILE *fplog)
 #if (defined GMX_IA64_ASM && !defined GMX_DOUBLE)
     nb_kernel_setup_ia64_single(fplog,nb_kernel_list);
 #endif
-	
-#ifdef GMX_BLUEGENE
-    nb_kernel_setup_bluegene(fplog,nb_kernel_list);
-#endif
-	
-#ifdef GMX_POWER6
-    nb_kernel_setup_power6(fplog,nb_kernel_list);
-#endif
-	
-	
 	
 	if(fplog)
     {
@@ -317,12 +303,12 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
                   int nls,int eNL,int flags)
 {
-    bool            bLR,bDoForces,bForeignLambda;
+    gmx_bool            bLR,bDoForces,bForeignLambda;
 	t_nblist *      nlist;
 	real *          fshift;
 	int             n,n0,n1,i,i0,i1,nrnb_ind,sz;
 	t_nblists       *nblists;
-	bool            bWater;
+	gmx_bool            bWater;
 	nb_kernel_t *   kernelptr;
 	FILE *          fp;
 	int             fac=0;
@@ -331,7 +317,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
 	gmx_gbdata_t    gbdata;
-
+    
     bLR            = (flags & GMX_DONB_LR);
     bDoForces      = (flags & GMX_DONB_FORCES);
     bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA); 
@@ -346,37 +332,63 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
         {
 #if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
 # ifdef GMX_DOUBLE
-            /* double not done yet */
-            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
-/*
- nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                             &outeriter,&inneriter,&fr->AllvsAll_work);
- */
-#  else
-            nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                             &outeriter,&inneriter,&fr->AllvsAll_work);
-#  endif
-#else
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                                 &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else
+            {
+                nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                     &outeriter,&inneriter,&fr->AllvsAll_work);        
+            }
+#  else /* not double */
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                                 &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else
+            {
+                nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                     &outeriter,&inneriter,&fr->AllvsAll_work);        
+            }
+#  endif /* double/single alt. */
+#else /* no SSE support compiled in */
             nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                 &outeriter,&inneriter,&fr->AllvsAll_work);        
-#endif     
+                                 &outeriter,&inneriter,&fr->AllvsAll_work);                    
+#endif
             inc_nrnb(nrnb,eNR_NBKERNEL_ALLVSALLGB,inneriter);
         }
         else
         { 
 #if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
 # ifdef GMX_DOUBLE
-            /* double not done yet */
-            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
-/*
-            nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
-                                           &outeriter,&inneriter,&fr->AllvsAll_work);
- */
-#  else
-            nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
-                                           &outeriter,&inneriter,&fr->AllvsAll_work);
-#  endif
-#else
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                               &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else 
+            {
+                nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                   &outeriter,&inneriter,&fr->AllvsAll_work);            
+            }
+            
+#  else /* not double */
+            if(fr->UseOptimizedKernels)
+            {
+                nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                               &outeriter,&inneriter,&fr->AllvsAll_work);
+            }
+            else 
+            {
+                nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                   &outeriter,&inneriter,&fr->AllvsAll_work);            
+            }
+
+#  endif /* double/single check */
+#else /* No SSE2 support compiled in */
             nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                &outeriter,&inneriter,&fr->AllvsAll_work);
 #endif            
@@ -514,7 +526,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  dvdlambda,
 											  fr->sc_alpha,
 											  fr->sc_power,
-											  fr->sc_sigma6,
+											  fr->sc_sigma6_def,
+                                              fr->sc_sigma6_min,
                                               bDoForces,
 											  &outeriter,
 											  &inneriter);
@@ -540,7 +553,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     /* Not free energy */
 
                     kernelptr = nb_kernel_list[nrnb_ind];
-                    
+
                     if (kernelptr == NULL)
                     {
                         /* Call a generic nonbonded kernel */
@@ -631,7 +644,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                 const t_forcerec *fr,gmx_grppairener_t *grppener,
                 int *global_atom_index)
 {
-    static    bool bWarn=FALSE;
+    static    gmx_bool bWarn=FALSE;
     real      eps,r2,*tab,rtab2=0;
     rvec      dx,x14[2],f14[2];
     int       i,ai,aj,itype;
@@ -650,7 +663,7 @@ do_listed_vdw_q(int ftype,int nbonds,
     real      *egnb=NULL,*egcoul=NULL;
     t_nblist  tmplist;
     int       icoul,ivdw;
-    bool      bMolPBC,bFreeEnergy;
+    gmx_bool      bMolPBC,bFreeEnergy;
     
 #if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_t mtx;
@@ -851,7 +864,8 @@ do_listed_vdw_q(int ftype,int nbonds,
                                       dvdlambda,
                                       fr->sc_alpha,
                                       fr->sc_power,
-                                      fr->sc_sigma6,
+                                      fr->sc_sigma6_def,
+                                      fr->sc_sigma6_min,
                                       TRUE,
                                       &outeriter,
                                       &inneriter);

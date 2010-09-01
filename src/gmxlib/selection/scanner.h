@@ -51,14 +51,14 @@ typedef void *yyscan_t;
 /** Initializes the selection scanner. */
 int
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    bool bInteractive, int maxnr,
+                    gmx_bool bInteractive, int maxnr,
                     struct gmx_ana_indexgrps_t *grps);
 /** Frees memory allocated for the selection scanner. */
 void
 _gmx_sel_free_lexer(yyscan_t scanner);
 
 /** Returns TRUE if the scanner is interactive. */
-bool
+gmx_bool
 _gmx_sel_is_lexer_interactive(yyscan_t scanner);
 /** Returns the selection collection for the scanner. */
 struct gmx_ana_selcollection_t *

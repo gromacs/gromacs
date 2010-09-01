@@ -133,8 +133,8 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
     int i,j,k;
     int ni0,ni1,nj0,nj1,nj;
     int imin,imax;
-    int firstinteraction[UNROLLI];
     int ibase;
+    int firstinteraction;
     int max_offset;
     int max_excl_offset;
     int iexcl;
@@ -206,7 +206,6 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
     /* Create the exclusion masks for the prologue part */
 	snew(aadata->prologue_mask,natoms+UNROLLI); /* list of pointers */
 	
-    /* First zero everything to avoid uninitialized data */
     for(i=0;i<natoms+UNROLLI;i++)
     {
         aadata->prologue_mask[i] = NULL;
@@ -220,22 +219,48 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
         /* First find maxoffset for the next 4 atoms (or fewer if we are close to end) */
         imax = ((ibase+UNROLLI) < end) ? (ibase+UNROLLI) : end;
         
+        /* Which atom is the first we (might) interact with? */
+        imin = natoms; /* Guaranteed to be overwritten by one of 'firstinteraction' */
         for(i=ibase;i<imax;i++)
         {
-            /* Before exclusions, which atom is the first we (might) interact with? */
-            firstinteraction[i-ibase] = i+1;
+            firstinteraction = i+1;
             max_offset = calc_maxoffset(i,natoms);
             
             nj0   = excl->index[i];
             nj1   = excl->index[i+1];
             for(j=nj0; j<nj1; j++)
             {
-                if(excl->a[j]>i+max_offset)
+                if(excl->a[j] == firstinteraction)
+                {
+                    firstinteraction++;
+                }
+            }
+            imin = (firstinteraction < imin) ? firstinteraction : imin;
+        }
+        /* round down to j unrolling factor */
+        imin = (imin/UNROLLJ)*UNROLLJ;
+        
+        for(i=ibase;i<imax;i++)
+        {
+            max_offset = calc_maxoffset(i,natoms);
+            
+            nj0   = excl->index[i];
+            nj1   = excl->index[i+1];
+            for(j=nj0; j<nj1; j++)
+            {                
+                k = excl->a[j];
+                
+                if(k<imin)
+                {
+                    k += natoms;
+                }
+                
+                if(k>i+max_offset)
                 {
                     continue;
                 }
                 
-                k = excl->a[j] - ibase;
+                k = k - imin;
                 
                 if( k+natoms <= max_offset )
                 {
@@ -243,30 +268,19 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
                 }
                 
                 max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
-                
-                /* Exclusions are sorted, so this can be done iteratively */
-                if(excl->a[j] == firstinteraction[i-ibase])
-                {
-                    firstinteraction[i-ibase]++;
-                }
             }
         }
         
+        /* The offset specifies the last atom to be excluded, so add one unit to get an upper loop limit */
+        max_excl_offset++;
         /* round up to j unrolling factor */
         max_excl_offset = (max_excl_offset/UNROLLJ+1)*UNROLLJ;
-        
-        imin = firstinteraction[0];
-        for(i=ibase;i<imax;i++)
-        {
-            imin = (imin < firstinteraction[i-ibase]) ? imin : firstinteraction[i-ibase];
-        }
-        imin = (imin/UNROLLJ)*UNROLLJ;
         
         /* Set all the prologue masks length to this value (even for i>end) */
         for(i=ibase;i<ibase+UNROLLI;i++)
         {
             aadata->jindex[4*i]   = imin;
-            aadata->jindex[4*i+1] = ibase+max_excl_offset;
+            aadata->jindex[4*i+1] = imin+max_excl_offset;
         }        
     }
     
@@ -308,21 +322,22 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
                 nj0   = excl->index[i];
                 nj1   = excl->index[i+1];
                 for(j=nj0; j<nj1; j++)
-                {
+                {                    
                     if(excl->a[j]>i+max_offset)
                     {
                         continue;
                     }
                     
                     k = excl->a[j] - i;
+                    
                     if( k+natoms <= max_offset )
                     {
                         k+=natoms;
                     }
                     
-                    if(k>0)
-                    {
-                        k = k+i-imin;
+                    k = k+i-imin;
+                    if(k>=0)
+                    {                        
                         aadata->prologue_mask[i][k] = 0;
                     }
                 }
@@ -744,8 +759,8 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
         imask_SSE1        = _mm_load1_ps((real *)(imask+i+1));
         imask_SSE2        = _mm_load1_ps((real *)(imask+i+2));
         imask_SSE3        = _mm_load1_ps((real *)(imask+i+3));
-        
-         for(j=nj0; j<nj1; j+=UNROLLJ)
+         
+        for(j=nj0; j<nj1; j+=UNROLLJ)
         {            
             jmask_SSE0 = _mm_load_ps((real *)pmask0);
             jmask_SSE1 = _mm_load_ps((real *)pmask1);
@@ -961,7 +976,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
 
             dvdatmp_SSE0       = gmx_mm_sum4_ps(dvdatmp_SSE0,dvdatmp_SSE1,dvdatmp_SSE2,dvdatmp_SSE3);
             dvdatmp_SSE0       = _mm_mul_ps(dvdatmp_SSE0, _mm_mul_ps(isaj_SSE,isaj_SSE));
-            
+
             /* update derivative wrt j atom born radius */
             _mm_store_ps(dvda_align+j,
                          _mm_sub_ps( _mm_load_ps(dvda_align+j) , dvdatmp_SSE0 ));
@@ -1105,6 +1120,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             c12_SSE3           = _mm_load_ps(pvdw3+2*j+UNROLLJ);
             
             isaj_SSE           = _mm_load_ps(invsqrta_align+j);
+
             isaprod_SSE0       = _mm_mul_ps(isai_SSE0,isaj_SSE);
             isaprod_SSE1       = _mm_mul_ps(isai_SSE1,isaj_SSE);
             isaprod_SSE2       = _mm_mul_ps(isai_SSE2,isaj_SSE);
@@ -1230,6 +1246,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             fijGB_SSE1         = _mm_mul_ps(F_SSE1, _mm_mul_ps(qq_SSE1,gbscale_SSE1));
             fijGB_SSE2         = _mm_mul_ps(F_SSE2, _mm_mul_ps(qq_SSE2,gbscale_SSE2));
             fijGB_SSE3         = _mm_mul_ps(F_SSE3, _mm_mul_ps(qq_SSE3,gbscale_SSE3));
+        
             
             /* Note: this dvdatmp has different sign from the usual c code, saves 1 instruction */
             dvdatmp_SSE0       = _mm_mul_ps(_mm_add_ps(vgb_SSE0, _mm_mul_ps(fijGB_SSE0,r_SSE0)) , half_SSE);
@@ -1403,6 +1420,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             c12_SSE3           = _mm_load_ps(pvdw3+2*j+UNROLLJ);
             
             isaj_SSE           = _mm_load_ps(invsqrta_align+j);
+
             isaprod_SSE0       = _mm_mul_ps(isai_SSE0,isaj_SSE);
             isaprod_SSE1       = _mm_mul_ps(isai_SSE1,isaj_SSE);
             isaprod_SSE2       = _mm_mul_ps(isai_SSE2,isaj_SSE);
@@ -1545,7 +1563,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             dvdatmp_SSE0       = gmx_mm_sum4_ps(dvdatmp_SSE0,dvdatmp_SSE1,dvdatmp_SSE2,dvdatmp_SSE3);
             dvdatmp_SSE0       = _mm_mul_ps(dvdatmp_SSE0, _mm_mul_ps(isaj_SSE,isaj_SSE));
             
-            /* update derivative wrt j atom born radius */
+           /* update derivative wrt j atom born radius */
             _mm_store_ps(dvda_align+j,
                          _mm_sub_ps( _mm_load_ps(dvda_align+j) , dvdatmp_SSE0 ));
             

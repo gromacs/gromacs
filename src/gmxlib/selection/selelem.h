@@ -80,7 +80,7 @@ typedef enum
     SEL_MODIFIER
 } e_selelem_t;
 
-/** Defines the boolean operation of \c t_selelem objects with type \ref SEL_BOOLEAN. */
+/** Defines the gmx_boolean operation of \c t_selelem objects with type \ref SEL_BOOLEAN. */
 typedef enum
 {
     BOOL_NOT,           /**< Not */
@@ -103,9 +103,9 @@ typedef enum
 /** Returns a string representation of the type of a \c t_selelem. */
 extern const char *
 _gmx_selelem_type_str(struct t_selelem *sel);
-/** Returns a string representation of the boolean type of a \ref SEL_BOOLEAN \c t_selelem. */
+/** Returns a string representation of the gmx_boolean type of a \ref SEL_BOOLEAN \c t_selelem. */
 extern const char *
-_gmx_selelem_boolean_type_str(struct t_selelem *sel);
+_gmx_selelem_gmx_boolean_type_str(struct t_selelem *sel);
 /** Returns a string representation of the type of a \c gmx_ana_selvalue_t. */
 extern const char *
 _gmx_sel_value_type_str(gmx_ana_selvalue_t *val);
@@ -348,19 +348,19 @@ _gmx_selelem_free_compiler_data(t_selelem *sel);
 
 /** Prints a human-readable version of a selection element subtree. */
 extern void
-_gmx_selelem_print_tree(FILE *fp, t_selelem *root, bool bValues, int level);
+_gmx_selelem_print_tree(FILE *fp, t_selelem *root, gmx_bool bValues, int level);
 /* In compile.c */
 /** Prints a human-readable version of the internal compiler data structure. */
 extern void
 _gmx_selelem_print_compiler_info(FILE *fp, t_selelem *sel, int level);
 
 /** Returns TRUE if the selection element subtree requires topology information for evaluation. */
-extern bool
+extern gmx_bool
 _gmx_selelem_requires_top(t_selelem *root);
 
 /* In sm_insolidangle.c */
 /** Returns TRUE if the covered fraction of the selection can be calculated. */
-extern bool
+extern gmx_bool
 _gmx_selelem_can_estimate_cover(t_selelem *sel);
 /** Returns the covered fraction of the selection for the current frame. */
 extern real

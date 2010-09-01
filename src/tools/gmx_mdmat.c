@@ -163,7 +163,7 @@ int gmx_mdmat(int argc,char *argv[])
     "The output can be processed with xpm2ps to make a PostScript (tm) plot."
   };
   static real truncate=1.5;
-  static bool bAtom=FALSE;
+  static gmx_bool bAtom=FALSE;
   static int  nlevels=40;
   t_pargs pa[] = { 
     { "-t",   FALSE, etREAL, {&truncate},
@@ -190,9 +190,10 @@ int gmx_mdmat(int argc,char *argv[])
   char       *grpname;
   int        *rndx,*natm,prevres,newres;
   
-  int        i,j,status,nres,natoms,nframes,it,trxnat;
+  int        i,j,nres,natoms,nframes,it,trxnat;
+  t_trxstatus *status;
   int        nr0;
-  bool       bCalcN,bFrames;
+  gmx_bool       bCalcN,bFrames;
   real       t,ratio;
   char       title[256],label[234];
   t_rgb      rlo,rhi;
@@ -203,6 +204,7 @@ int gmx_mdmat(int argc,char *argv[])
   int        *tot_n;
   matrix     box;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
   
   CopyRight(stderr,argv[0]);
 
@@ -275,10 +277,13 @@ int gmx_mdmat(int argc,char *argv[])
   
   rlo.r=1.0, rlo.g=1.0, rlo.b=1.0;
   rhi.r=0.0, rhi.g=0.0, rhi.b=0.0;
+
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,trxnat,box);
+
   if (bFrames)
     out=opt2FILE("-frames",NFILE,fnm,"w");
   do {
-    rm_pbc(&top.idef,ePBC,trxnat,box,x,x);
+    gmx_rmpbc(gpbc,trxnat,box,x);
     nframes++;
     calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat,ePBC,box);
     for (i=0; (i<nres); i++)
@@ -296,6 +301,7 @@ int gmx_mdmat(int argc,char *argv[])
   } while (read_next_x(oenv,status,&t,trxnat,x,box));
   fprintf(stderr,"\n");
   close_trj(status);
+  gmx_rmpbc_done(gpbc);
   if (bFrames)
     ffclose(out);
   

@@ -47,13 +47,14 @@
 #include "txtdump.h"
 #include "nrnb.h"
 #include "gmx_random.h"
+#include "update.h"
+#include "mdrun.h"
 
-#define NTROTTERCALLS 5
 #define NTROTTERPARTS 3
 
-/* these integration routines are only references inside this file */
+/* these integration routines are only referenced inside this file */
 static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtfull,
-                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ, bool bEkinAveVel)
+                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
@@ -65,7 +66,7 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
     double *ivxi,*ixi;
     double *iQinv;
     double *GQ;
-    bool bBarostat;
+    gmx_bool bBarostat;
     int mstepsi, mstepsj;
     int ns = SUZUKI_YOSHIDA_NUM;  /* set the degree of integration in the types/state.h file */
     int nh = opts->nhchainlength;
@@ -281,7 +282,7 @@ real calc_temp(real ekin,real nrdf)
 void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
 			     t_inputrec *ir,real dt,tensor pres,
 			     tensor box,tensor box_rel,tensor boxv,
-			     tensor M,matrix mu,bool bFirstStep)
+			     tensor M,matrix mu,gmx_bool bFirstStep)
 {
   /* This doesn't do any coordinate updating. It just
    * integrates the box vector equations from the calculated
@@ -564,14 +565,24 @@ void berendsen_pscale(t_inputrec *ir,matrix mu,
   inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
 }
 
-void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt)
+void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt)
 {
-  int    i;
-  
-  real   T,reft=0,lll; 
+    t_grpopts *opts;
+    int    i;
+    real   T,reft=0,lll;
 
-  for(i=0; (i<opts->ngtc); i++) {
-    T = ekind->tcstat[i].Th;
+    opts = &ir->opts;
+
+    for(i=0; (i<opts->ngtc); i++)
+    {
+        if (ir->eI == eiVV)
+        {
+            T = ekind->tcstat[i].T;
+        }
+        else
+        {
+            T = ekind->tcstat[i].Th;
+        }
     
     if ((opts->tau_t[i] > 0) && (T > 0.0)) {
  
@@ -631,26 +642,46 @@ void destroy_bufstate(t_state *state)
     sfree(state);
 }  
 
-void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, 
+void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind, 
                     gmx_enerdata_t *enerd, t_state *state, 
                     tensor vir, t_mdatoms *md, 
-                    t_extmass *MassQ, int *trotter_seq) 
+                    t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno) 
 {
     
     int n,i,j,d,ntgrp,ngtc,gc=0;
     t_grp_tcstat *tcstat;
     t_grpopts *opts;
+    gmx_large_int_t step_eff;
     real ecorr,pcorr,dvdlcorr;
     real bmass,qmass,reft,kT,dt,nd;
     tensor dumpres,dumvir;
-    double *scalefac;
+    double *scalefac,dtc;
+    int *trotter_seq;
     rvec sumv,consk;
+    gmx_bool bCouple;
+
+    if (trotter_seqno <= ettTSEQ2)
+    {
+        step_eff = step-1;  /* the velocity verlet calls are actually out of order -- the first half step
+                               is actually the last half step from the previous step.  Thus the first half step
+                               actually corresponds to the n-1 step*/
+                               
+    } else {
+        step_eff = step;
+    }
+
+    bCouple = (ir->nsttcouple == 1 ||
+               do_per_step(step_eff+ir->nsttcouple,ir->nsttcouple));
+
+    trotter_seq = trotter_seqlist[trotter_seqno];
 
     /* signal we are returning if nothing is going to be done in this routine */
-    if (trotter_seq[0] == etrtSKIPALL) 
+    if ((trotter_seq[0] == etrtSKIPALL)  || !(bCouple))
     {
         return;
     }
+
+    dtc = ir->nsttcouple*ir->delta_t;
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
     snew(scalefac,opts->ngtc);
@@ -664,13 +695,13 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
         /* allow for doubled intgrators by doubling dt instead of making 2 calls */
         if ((trotter_seq[i] == etrtBAROV2) || (trotter_seq[i] == etrtBARONHC2) || (trotter_seq[i] == etrtNHC2))
         {
-            dt = 2 * ir->delta_t;
+            dt = 2 * dtc;
         }
         else 
         {
-            dt = ir->delta_t;
+            dt = dtc;
         }
-            
+
         switch (trotter_seq[i])
         {
         case etrtBAROV:
@@ -743,7 +774,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     sfree(scalefac);
 }
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrotter) 
+int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter) 
 {
     int n,i,j,d,ntgrp,ngtc,nnhpres,nh,gc=0;
     t_grp_tcstat *tcstat;
@@ -831,8 +862,8 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
     }
     
     /* first, initialize clear all the trotter calls */
-    snew(trotter_seq,NTROTTERCALLS);
-    for (i=0;i<NTROTTERCALLS;i++) 
+    snew(trotter_seq,ettTSEQMAX);
+    for (i=0;i<ettTSEQMAX;i++) 
     {
         snew(trotter_seq[i],NTROTTERPARTS);
         for (j=0;j<NTROTTERPARTS;j++) {
@@ -1018,9 +1049,12 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
         
             for (j=0;j<nh;j++) 
             {
-                ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
-                /* contribution from the thermal variable of the NH chain */
-                ener_npt += ixi[j]*kT;
+                if (iQinv[j] > 0)
+                {
+                    ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
+                    /* contribution from the thermal variable of the NH chain */
+                    ener_npt += ixi[j]*kT;
+                }
                 if (debug) 
                 {
                     fprintf(debug,"P-T-group: %10d Chain %4d ThermV: %15.8f ThermX: %15.8f",i,j,ivxi[j],ixi[j]);
@@ -1048,16 +1082,18 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
                     /* contribution from the thermal momenta of the NH chain */
                     for (j=0;j<nh;j++) 
                     {
-                        ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
-                        /* contribution from the thermal variable of the NH chain */
-                        if (j==0) {
-                            ndj = nd;
-                        } 
-                        else 
-                        {
-                            ndj = 1;
-                        } 
-                        ener_npt += ndj*ixi[j]*kT;
+                        if (iQinv[j] > 0) {
+                            ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
+                            /* contribution from the thermal variable of the NH chain */
+                            if (j==0) {
+                                ndj = nd;
+                            } 
+                            else 
+                            {
+                                ndj = 1;
+                            } 
+                            ener_npt += ndj*ixi[j]*kT;
+                        }
                     }
                 }
                 else  /* Other non Trotter temperature NH control  -- no chains yet. */
@@ -1149,38 +1185,57 @@ static real vrescale_resamplekin(real kk,real sigma, int ndeg, real taut,
     2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
 }
 
-void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
-		     double therm_integral[],gmx_rng_t rng)
+void vrescale_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt,
+                     double therm_integral[],gmx_rng_t rng)
 {
-  int    i;
-  real   Ek,Ek_ref1,Ek_ref,Ek_new; 
-
-  for(i=0; (i<opts->ngtc); i++) {
-    Ek = trace(ekind->tcstat[i].ekinh);
+    t_grpopts *opts;
+    int    i;
+    real   Ek,Ek_ref1,Ek_ref,Ek_new; 
     
-    if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0) {
-      Ek_ref1   = 0.5*opts->ref_t[i]*BOLTZ;
-      Ek_ref    = Ek_ref1*opts->nrdf[i];
+    opts = &ir->opts;
 
-      Ek_new =
-	vrescale_resamplekin(Ek,Ek_ref,opts->nrdf[i],opts->tau_t[i]/dt,rng);
+    for(i=0; (i<opts->ngtc); i++)
+    {
+        if (ir->eI == eiVV)
+        {
+            Ek = trace(ekind->tcstat[i].ekinf);
+        }
+        else
+        {
+            Ek = trace(ekind->tcstat[i].ekinh);
+        }
+        
+        if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0)
+        {
+            Ek_ref1 = 0.5*opts->ref_t[i]*BOLTZ;
+            Ek_ref  = Ek_ref1*opts->nrdf[i];
 
-      /* Analytically Ek_new>=0, but we check for rounding errors */
-      if (Ek_new <= 0) {
-	ekind->tcstat[i].lambda = 0.0;
-      } else {
-	ekind->tcstat[i].lambda = sqrt(Ek_new/Ek);
-      }
-      therm_integral[i] -= Ek_new - Ek;
+            Ek_new  = vrescale_resamplekin(Ek,Ek_ref,opts->nrdf[i],
+                                           opts->tau_t[i]/dt,rng);
 
-      if (debug) {
-	fprintf(debug,"TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
-		i,Ek_ref,Ek,Ek_new,ekind->tcstat[i].lambda);
-      }
-    } else {
-       ekind->tcstat[i].lambda = 1.0;
+            /* Analytically Ek_new>=0, but we check for rounding errors */
+            if (Ek_new <= 0)
+            {
+                ekind->tcstat[i].lambda = 0.0;
+            }
+            else
+            {
+                ekind->tcstat[i].lambda = sqrt(Ek_new/Ek);
+            }
+
+            therm_integral[i] -= Ek_new - Ek;
+
+            if (debug)
+            {
+                fprintf(debug,"TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
+                        i,Ek_ref,Ek,Ek_new,ekind->tcstat[i].lambda);
+            }
+        }
+        else
+        {
+            ekind->tcstat[i].lambda = 1.0;
+        }
     }
-  }
 }
 
 real vrescale_energy(t_grpopts *opts,double therm_integral[])
@@ -1195,6 +1250,64 @@ real vrescale_energy(t_grpopts *opts,double therm_integral[])
   
   return ener;
 }
+
+void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
+                        int start,int end,rvec v[])
+{
+    t_grp_acc      *gstat;
+    t_grp_tcstat   *tcstat;
+    unsigned short *cACC,*cTC;
+    int  ga,gt,n,d;
+    real lg;
+    rvec vrel;
+
+    tcstat = ekind->tcstat;
+    cTC    = mdatoms->cTC;
+
+    if (ekind->bNEMD)
+    {
+        gstat  = ekind->grpstat;
+        cACC   = mdatoms->cACC;
+
+        ga = 0;
+        gt = 0;
+        for(n=start; n<end; n++) 
+        {
+            if (cACC) 
+            {
+                ga   = cACC[n];
+            }
+            if (cTC)
+            {
+                gt   = cTC[n];
+            }
+            /* Only scale the velocity component relative to the COM velocity */
+            rvec_sub(v[n],gstat[ga].u,vrel);
+            lg = tcstat[gt].lambda;
+            for(d=0; d<DIM; d++)
+            {
+                v[n][d] = gstat[ga].u[d] + lg*vrel[d];
+            }
+        }
+    }
+    else
+    {
+        gt = 0;
+        for(n=start; n<end; n++) 
+        {
+            if (cTC)
+            {
+                gt   = cTC[n];
+            }
+            lg = tcstat[gt].lambda;
+            for(d=0; d<DIM; d++)
+            {
+                v[n][d] *= lg;
+            }
+        }
+    }
+}
+
 
 /* set target temperatures if we are annealing */
 void update_annealing_target_temp(t_grpopts *opts,real t)

@@ -117,7 +117,7 @@ int find_next_match_atoms_in_res(int *i1,int isize1,atom_id index1[],
 				 int m2,char **atnms2[])
 {
   int dx, dy, dmax, cmp;
-  bool bFW=FALSE;
+  gmx_bool bFW=FALSE;
   
   dx=dy=0;
   cmp=NOTSET;
@@ -164,7 +164,7 @@ static int find_next_match_res(int *rnr1, int isize1,
 			       int index2[], t_resinfo *resinfo2)
 {
   int dx, dy, dmax, cmp, rr1, rr2;
-  bool bFW=FALSE,bFF=FALSE;
+  gmx_bool bFW=FALSE,bFF=FALSE;
   
   dx=dy=0;
   rr1 = 0;
@@ -371,7 +371,7 @@ int gmx_confrms(int argc,char *argv[])
     "(use [TT]rasmol -nmrpdb[tt]). Also in a [TT].pdb[tt] file, B-factors",
     "calculated from the atomic MSD values can be written with [TT]-bfac[tt].",
   };
-  static bool bOne=FALSE,bRmpbc=FALSE,bMW=TRUE,bName=FALSE,
+  static gmx_bool bOne=FALSE,bRmpbc=FALSE,bMW=TRUE,bName=FALSE,
     bBfac=FALSE,bFit=TRUE,bLabel=FALSE;
   
   t_pargs pa[] = {
@@ -549,9 +549,9 @@ int gmx_confrms(int argc,char *argv[])
   }
   rms = sqrt(rms/totmass);
   
-  printf("Root mean square deviation after lsq fit = %g\n",rms);
+  printf("Root mean square deviation after lsq fit = %g nm\n",rms);
   if (bBfac)
-    printf("Atomic MSD's range from %g to %g\n",minmsd, maxmsd);
+    printf("Atomic MSD's range from %g to %g nm^2\n",minmsd, maxmsd);
   
   if (bFit) {
     /* reset coordinates of reference and fitted structure */
@@ -569,31 +569,54 @@ int gmx_confrms(int argc,char *argv[])
   case efBRK:
   case efENT:
     if (bBfac || bLabel) {
-      snew(atoms1->pdbinfo, atoms1->nr);
-      snew(atoms1->atom, atoms1->nr);
-      for(i=0; i<isize1; i++) {
-	atoms1->pdbinfo[index1[i]].type = eptAtom;
-	atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE;
+      srenew(atoms1->pdbinfo, atoms1->nr);
+      srenew(atoms1->atom, atoms1->nr);      /* Why renew atom? */
+
+      /* Avoid segfaults when writing the pdb-file */
+      for (i=0; i<atoms1->nr; i++) {
+	atoms1->pdbinfo[i].type = eptAtom;
+	atoms1->pdbinfo[i].occup = 1.00;
+	atoms1->pdbinfo[i].bAnisotropic = FALSE;
 	if (bBfac)
-	  atoms1->pdbinfo[index1[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+	  atoms1->pdbinfo[i].bfac = 0;
 	if (bLabel)
-	  atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A';
+	  atoms1->resinfo[atoms1->atom[i].resind].chainid = 'A';
       }
-      snew(atoms2->pdbinfo, atoms2->nr);
-      snew(atoms2->atom, atoms2->nr);
-      for(i=0; i<isize2; i++) {
-	atoms2->pdbinfo[index2[i]].type = eptAtom;
-	atoms2->pdbinfo[index2[i]].bAnisotropic = FALSE;
+
+      for(i=0; i<isize1; i++) {
+	/* atoms1->pdbinfo[index1[i]].type = eptAtom; */
+/* 	atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE; */
 	if (bBfac)
-	  atoms2->pdbinfo[index2[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+	  atoms1->pdbinfo[index1[i]].bfac = (800*M_PI*M_PI/3.0)*msds[i];
+/* 	if (bLabel) */
+/* 	  atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A'; */
+      }
+      srenew(atoms2->pdbinfo, atoms2->nr);
+      srenew(atoms2->atom, atoms2->nr);      /* Why renew atom? */
+
+      for (i=0; i<atoms2->nr; i++) {
+	atoms2->pdbinfo[i].type = eptAtom;
+	atoms2->pdbinfo[i].occup = 1.00;
+	atoms2->pdbinfo[i].bAnisotropic = FALSE;
+	if (bBfac)
+	  atoms2->pdbinfo[i].bfac = 0;
 	if (bLabel)
-	  atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B';
+	  atoms2->resinfo[atoms1->atom[i].resind].chainid = 'B';
+      }
+
+      for(i=0; i<isize2; i++) {
+	/* atoms2->pdbinfo[index2[i]].type = eptAtom; */
+/* 	atoms2->pdbinfo[index2[i]].bAnisotropic = FALSE; */
+	if (bBfac)
+	  atoms2->pdbinfo[index2[i]].bfac = (800*M_PI*M_PI/3.0)*msds[i];
+/* 	if (bLabel) */
+/* 	  atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B'; */
       }
     }
     fp=ffopen(outfile,"w");
     if (!bOne)
-      write_pdbfile(fp,title1,atoms1,x1,ePBC1,box1,0,1,NULL);
-    write_pdbfile(fp,title2,atoms2,x2,ePBC2,box2,0,bOne ? -1 : 2,NULL);
+      write_pdbfile(fp,title1,atoms1,x1,ePBC1,box1,' ',1,NULL,TRUE);
+    write_pdbfile(fp,title2,atoms2,x2,ePBC2,box2,' ',bOne ? -1 : 2,NULL,TRUE);
     ffclose(fp);
     break;
   case efGRO:

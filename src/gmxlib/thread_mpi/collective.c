@@ -183,7 +183,7 @@ static void tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
     tMPI_Atomic_set(&(met->n_remaining), 0);
     met->buf=(void**)tMPI_Malloc(sizeof(void*)*N);
     met->bufsize=(size_t*)tMPI_Malloc(sizeof(size_t)*N);
-    met->read_data=(bool*)tMPI_Malloc(sizeof(bool)*N);
+    met->read_data=(tmpi_bool*)tMPI_Malloc(sizeof(tmpi_bool)*N);
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     met->cpbuf=(tMPI_Atomic_ptr_t*)tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*N);
     met->cb=NULL;
@@ -322,7 +322,7 @@ static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
     {
         void *srcbuf;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-        bool decrease_ctr=FALSE;
+        tmpi_bool decrease_ctr=FALSE;
 #endif
 
         if ( sendsize > recvsize ) 
@@ -442,7 +442,7 @@ static void tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
     int i;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* decide based on the number of waiting threads */
-    bool using_cb=(bufsize < (size_t)(n_remaining*COPY_BUFFER_SIZE));
+    tmpi_bool using_cb=(bufsize < (size_t)(n_remaining*COPY_BUFFER_SIZE));
 
     cev->met[myrank].using_cb=using_cb;
     if (using_cb)
@@ -525,8 +525,8 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
            be double-buffering) so we always spin here. */
         tMPI_Atomic_memory_barrier();
 #if 0
-        while (tMPI_Atomic_cas( &(cev->met[rank].buf_readcount), 0,
-                                    -100000) != 0)
+        while (!tMPI_Atomic_cas( &(cev->met[rank].buf_readcount), 0,
+                                    -100000))
 #endif
 #if 1
         while (tMPI_Atomic_fetch_add( &(cev->met[myrank].buf_readcount), 0) 
@@ -586,7 +586,7 @@ int tMPI_Barrier(tMPI_Comm comm)
         tMPI_Profile_wait_start(cur);
 #endif
 
-        tMPI_Spinlock_barrier_wait( &(comm->barrier) );
+        tMPI_Barrier_wait( &(comm->barrier) );
 #if defined(TMPI_PROFILE) 
         tMPI_Profile_wait_stop(cur, TMPIWAIT_Barrier);
 #endif
@@ -604,9 +604,9 @@ int tMPI_Barrier(tMPI_Comm comm)
 /* The actual collective functions are #included, so that the static
    functions above are available to them and can get inlined if the
    compiler deems it appropriate. */
-#include "bcast.c"
-#include "scatter.c"
-#include "gather.c"
-#include "alltoall.c"
-#include "reduce.c"
+#include "bcast.h"
+#include "scatter.h"
+#include "gather.h"
+#include "alltoall.h"
+#include "reduce.h"
 

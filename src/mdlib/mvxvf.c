@@ -53,7 +53,7 @@
 #include "nrnb.h"
 #include "partdec.h"
 
-void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
+void move_rvecs(const t_commrec *cr,gmx_bool bForward,gmx_bool bSum,
                 int left,int right,rvec vecs[],rvec buf[],
                 int shift,t_nrnb *nrnb)
 {
@@ -134,7 +134,7 @@ void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
 }
 
 
-void move_reals(const t_commrec *cr,bool bForward,bool bSum,
+void move_reals(const t_commrec *cr,gmx_bool bForward,gmx_bool bSum,
                 int left,int right,real reals[],real buf[],
                 int shift,t_nrnb *nrnb)
 {

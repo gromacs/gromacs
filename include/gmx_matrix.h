@@ -39,16 +39,16 @@
 	
 #include <stdio.h>
 	
-extern double **alloc_matrix(int n,int m);
+double **alloc_matrix(int n,int m);
 
-extern void free_matrix(double **a,int n);
+void free_matrix(double **a,int n);
 
-extern void matrix_multiply(FILE *fp,int n,int m,double **x,double **y,double **z);
+void matrix_multiply(FILE *fp,int n,int m,double **x,double **y,double **z);
 
 /* Return 0 if OK or row number where inversion failed otherwise. */
-extern int matrix_invert(FILE *fp,int n,double **a);
+int matrix_invert(FILE *fp,int n,double **a);
 
-extern double multi_regression(FILE *fp,int ny,double *y,
+double multi_regression(FILE *fp,int ny,double *y,
                                int nx,double **xx,double *a0);
 /* Perform a regression analysis to fit
  * y' = a0[0] xx[0] + a0[1] xx[1] ... + a0[nx-1] xx[nx-1]

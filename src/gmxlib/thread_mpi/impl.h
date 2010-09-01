@@ -46,7 +46,7 @@ files.
 #endif
 
 #ifdef HAVE_SYS_TIME_H
-#include <unistd.h>
+#include <sys/time.h>
 #endif
 
 #include <errno.h>
@@ -63,9 +63,7 @@ files.
 #include "thread_mpi/collective.h"
 #include "thread_mpi/barrier.h"
 #include "thread_mpi/hwinfo.h"
-#include "wait.h"
-#include "barrier.h"
-#include "event.h"
+#include "thread_mpi/lock.h"
 #ifdef TMPI_PROFILE
 #include "profile.h"
 #endif
@@ -79,21 +77,9 @@ files.
 **************************************************************************/
 
 
-
-#ifndef __cplusplus
-typedef int bool;
+typedef int tmpi_bool;
 #define TRUE 1
 #define FALSE 0
-#else
-#ifndef TRUE
-#define TRUE true
-#endif
-#ifndef FALSE
-#define FALSE false
-#endif
-#endif
-
-
 
 
 
@@ -192,7 +178,7 @@ struct envelope
     size_t bufsize; /* the size of the data to be transmitted */
     tMPI_Datatype datatype; /* the data type */
 
-    bool nonblock; /* whether the receiver is non-blocking */
+    tmpi_bool nonblock; /* whether the receiver is non-blocking */
 
     /* state, values from enum_envelope_state .  
        (there's a few busy-waits relying on this flag). 
@@ -208,10 +194,10 @@ struct envelope
     /* prev and next envelopes in the send/recv_envelope_list linked list  */
     struct envelope *prev,*next;
 
-    bool send; /* whether this is a send envelope (if TRUE), or a receive 
+    tmpi_bool send; /* whether this is a send envelope (if TRUE), or a receive 
                   envelope (if FALSE) */
 #ifdef USE_SEND_RECV_COPY_BUFFER
-    bool using_cb; /* whether a copy buffer is (going to be) used */
+    tmpi_bool using_cb; /* whether a copy buffer is (going to be) used */
     void* cb;/* the allocated copy buffer pointer */
 #endif
     /* the next and previous envelopes in the request list */
@@ -274,7 +260,7 @@ struct recv_envelope_list
 /* the request object for asynchronious operations. */
 struct tmpi_req_
 {
-    bool finished; /* whether it's finished */
+    tmpi_bool finished; /* whether it's finished */
     struct envelope *ev; /* the envelope */
 
     struct tmpi_thread *source; /* the message source (for receives) */
@@ -282,7 +268,7 @@ struct tmpi_req_
     int tag; /* the tag */
     int error; /* error code */
     size_t transferred; /* the number of transferred bytes */
-    bool cancelled; /* whether the transmission was canceled */
+    tmpi_bool cancelled; /* whether the transmission was canceled */
 
     struct tmpi_req_ *next,*prev; /* next,prev request in linked list,
                                      used in the req_list, but also in 
@@ -348,7 +334,7 @@ struct coll_env_thread
     size_t *bufsize; /* array of number of bytes to send/recv */
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-    bool using_cb; /* whether a copy buffer is (going to be) used */
+    tmpi_bool using_cb; /* whether a copy buffer is (going to be) used */
     tMPI_Atomic_t buf_readcount; /* Number of threads reading from buf
                                     while using_cpbuf is true, but cpbuf 
                                     is still NULL.  */
@@ -361,7 +347,7 @@ struct coll_env_thread
                            and the coll_env_thread is ready for re-use. */
     tMPI_Event recv_ev; /* event associated with being a receiving thread. */
 
-    bool *read_data; /* whether we read data from a specific thread. */
+    tmpi_bool *read_data; /* whether we read data from a specific thread. */
 };
 
 /* Collective communications once sync. These run in parallel with
@@ -449,8 +435,11 @@ struct tmpi_thread
     /* the per-thread profile structure that keeps call counts & wait times. */
     struct tmpi_profile profile;
 #endif
-    /* The start function (or NULL, if main() is to be called) */
+    /* The start function (or NULL, if a main()-style start function is to 
+       be called) */
     void (*start_fn)(void*); 
+    /* The main()-style start function */
+    int (*start_fn_main)(int, char**);
     /* the argument to the start function, if it's not main()*/
     void *start_arg; 
 
@@ -556,7 +545,7 @@ struct tmpi_comm_
     struct tmpi_group_ grp; /* the communicator group */
 
     /* the barrier for tMPI_Barrier() */
-    tMPI_Spinlock_barrier_t barrier;
+    tMPI_Barrier_t barrier;
 
 
     /* List of barriers for reduce operations.
@@ -565,7 +554,7 @@ struct tmpi_comm_
        reduce_barrier[2] contains a list of N/8 barriers for N/4 threads
        and so on. (until N/x reaches 1)
        This is to facilitate tree-based algorithms for tMPI_Reduce, etc.  */
-    tMPI_Spinlock_barrier_t **reduce_barrier;
+    tMPI_Barrier_t **reduce_barrier;
     int *N_reduce; /* the number of barriers in each iteration */
     int N_reduce_iter; /* the number of iterations */
 
@@ -607,7 +596,7 @@ struct tmpi_split
 { 
     volatile int Ncol_init;
     volatile int Ncol_destroy;
-    volatile bool can_finish;
+    volatile tmpi_bool can_finish;
     volatile int *colors;
     volatile int *keys;
 };
@@ -654,7 +643,7 @@ struct tmpi_datatype_
     tMPI_Op_fn *op_functions; /* array of op functions for this datatype */
     int N_comp; /* number of components */
     struct tmpi_datatype_component *comps; /* the components */
-    bool committed; /* whether the data type is committed */
+    tmpi_bool committed; /* whether the data type is committed */
 };
 /* just as a shorthand:  */
 typedef struct tmpi_datatype_ tmpi_dt;
@@ -735,9 +724,9 @@ int tMPI_Error(tMPI_Comm comm, int tmpi_errno);
 
 
 /* check whether we're the main thread */
-bool tMPI_Is_master(void);
+tmpi_bool tMPI_Is_master(void);
 /* check whether the current process is in a group */
-bool tMPI_In_group(tMPI_Group group);
+tmpi_bool tMPI_In_group(tMPI_Group group);
 
 /* find the rank of a thread in a comm */
 int tMPI_Comm_seek_rank(tMPI_Comm comm, struct tmpi_thread *th);

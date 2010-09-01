@@ -32,11 +32,8 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
-#include <types/commrec.h>
+#include "commrec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +44,7 @@ typedef real rvec5[5];
 /* Distance restraining stuff */
 typedef struct {
   int  dr_weighting;  /* Weighting of pairs in one restraint              */
-  bool dr_bMixed;     /* Use sqrt of the instantaneous times              *
+  gmx_bool dr_bMixed;     /* Use sqrt of the instantaneous times              *
 		       * the time averaged violation                      */
   real dr_fc;	      /* Force constant for disres,                       *
 		       * which is multiplied by a (possibly)              *
@@ -93,6 +90,11 @@ typedef struct {
   rvec5  *tmp;        /* An array of temporary 5-vectors (nex);             */ 
   real   ***TMP;      /* An array of temporary 5x5 matrices (nex);          */
   real   *eig;        /* Eigenvalues/vectors, for output only (nex x 12)    */
+
+  /* variables for diagonalization with diagonalize_orires_tensors()*/
+  double **M;
+  double *eig_diag;
+  double **v;
 } t_oriresdata;
 
 /* 

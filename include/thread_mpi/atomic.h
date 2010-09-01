@@ -76,8 +76,6 @@ files.
 
 #include <stdio.h>
 
-
-
 #ifdef __cplusplus
 extern "C" 
 {  
@@ -91,7 +89,6 @@ extern "C"
                           + __GNUC_MINOR__ * 100 \
                           + __GNUC_PATCHLEVEL__)
 #endif
-
 
 
 /* first check for gcc/icc platforms. icc on linux+mac will take this path, 
@@ -110,7 +107,11 @@ extern "C"
 
 #elif (defined(__powerpc__) || (defined(__ppc__)) )
 /* and powerpc: */
-#include "atomic/gcc_ppc.h"
+/*#include "atomic/gcc_ppc.h"*/
+
+/* for now we use gcc intrinsics on gcc: */
+#include "atomic/gcc.h"
+
 
 #else
 /* otherwise, there's a generic gcc intrinsics version: */
@@ -137,7 +138,7 @@ extern "C"
 
 #elif defined(__xlC__) && defined (_AIX)
 /* IBM xlC compiler on AIX */
-#include "atomic/xlc_aix.h"
+#include "atomic/xlc_ppc.h"
 
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 /* HP compiler on ia64 */
@@ -422,9 +423,14 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
  *   The \a old value is compared with the memory value in the atomic datatype.
  *   If the are identical, the atomic type is swapped with the new value, 
  *   and otherwise left unchanged. 
+ * 
+ *   This is *the* synchronization primitive: it has a consensus number of
+ *   infinity, and is available in some form on all modern CPU architectures.
+ *   In the words of Herlihy&Shavit (The art of multiprocessor programming),
+ *   it is the 'king of all wild things'. 
  *  
- *   This is a very useful synchronization primitive: You can start by reading
- *   a value (without locking anything), perform some calculations, and then
+ *   In practice, use it as follows: You can start by reading a value 
+ *   (without locking anything), perform some calculations, and then
  *   atomically try to update it in memory unless it has changed. If it has
  *   changed you will get an error return code - reread the new value
  *   an repeat the calculations in that case.
@@ -434,23 +440,21 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
  *   \param new_val  New value to write to the atomic type if it currently is
  *                   identical to the old value.
  *
- *   \return The value of the atomic memory variable in memory when this 
- *           instruction was executed. This, if the operation succeeded the
- *           return value was identical to the \a old parameter, and if not
- *           it returns the updated value in memory so you can repeat your
- *           operations on it. 
- *
+ *   \return    True (1) if the swap occurred: i.e. if the value in a was equal
+ *              to old_val. False (0) if the swap didn't occur and the value
+ *              was not equal to old_val.
+ * 
  *   \note   The exchange occured if the return value is identical to \a old.
  */
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val)
 {
-    int t;
+    int t=0;
     
     tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    t=old_val;
     if (a->value == old_val)
     {
         a->value = new_val;
+        t=1;
     }
     tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return t;
@@ -466,31 +470,29 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val)
  *   and otherwise left unchanged. 
  *  
  *   This is essential for implementing wait-free lists and other data
- *   structures. 
+ *   structures. See 'tMPI_Atomic_cas()'.
  *
  *   \param a        Atomic datatype ('memory' value)
  *   \param old_val  Pointer value read from the atomic type at an earlier point
  *   \param new_val  New value to write to the atomic type if it currently is
  *                   identical to the old value.
  *
- *   \return The value of the atomic pointer in memory when this 
- *           instruction was executed. This, if the operation succeeded the
- *           return value was identical to the \a old parameter, and if not
- *           it returns the updated value in memory so you can repeat your
- *           operations on it. 
- *
+ *   \return    True (1) if the swap occurred: i.e. if the value in a was equal
+ *              to old_val. False (0) if the swap didn't occur and the value
+ *              was not equal to old_val.
+ * 
  *   \note   The exchange occured if the return value is identical to \a old.
  */
-static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
-                                        void *new_val)
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
+                                      void *new_val)
 {
-    void *t;
+    int t=0;
     
     tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    t=old_val;
     if (a->value == old_val)
     {
         a->value = new_val;
+        t=1;
     }
     tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return t;
@@ -566,7 +568,7 @@ void tMPI_Spinlock_unlock( tMPI_Spinlock_t &x);
  *
  *  \return 1 if the spinlock is locked, 0 otherwise.
  */
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
     int rc;
     
@@ -621,7 +623,7 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
     do
     {
         oldval=(int)(a->value);
-    } while(tMPI_Atomic_cas(a, oldval, b) != oldval);
+    } while(!tMPI_Atomic_cas(a, oldval, b));
     return oldval;
 }
 /** Atomic swap pointer operation.
@@ -639,7 +641,7 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
     do
     {
         oldval=(void*)(a->value);
-    } while(tMPI_Atomic_ptr_cas(a, oldval, b) != oldval);
+    } while(!tMPI_Atomic_ptr_cas(a, oldval, b));
     return oldval;
 }
 

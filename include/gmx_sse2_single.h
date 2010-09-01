@@ -27,13 +27,12 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#ifndef _gmx_sse2_single_h_
+#define _gmx_sse2_single_h_
 
 /* We require SSE2 now! */
 
-#include <math.h>
+#include <math.h> 
 
 
 #include <xmmintrin.h> /* SSE */
@@ -47,6 +46,9 @@
 #endif
 
 #include <stdio.h>
+
+#include "types/simple.h"
+
 
 /***************************************************
  *                                                 *
@@ -150,6 +152,20 @@ gmx_mm_invsqrt_ps(__m128 x)
 }
 
 static inline __m128
+gmx_mm_sqrt_ps(__m128 x)
+{
+    __m128 mask;
+    __m128 res;
+    
+    mask = _mm_cmpeq_ps(x,_mm_setzero_ps());
+    res  = _mm_andnot_ps(mask,gmx_mm_invsqrt_ps(x));
+    
+    res  = _mm_mul_ps(x,res);
+    
+    return res;
+}
+
+static inline __m128
 gmx_mm_inv_ps(__m128 x)
 {
 	const __m128 two = {2.0f,2.0f,2.0f,2.0f};
@@ -167,265 +183,507 @@ gmx_mm_calc_rsq_ps(__m128 dx, __m128 dy, __m128 dz)
 }
 
 /* Normal sum of four xmm registers */
-static inline __m128
-gmx_mm_sum4_ps(__m128 t0, __m128 t1, __m128 t2, __m128 t3)
-{
-    t0 = _mm_add_ps(t0,t1);
-    t2 = _mm_add_ps(t2,t3);
-    return _mm_add_ps(t0,t2);
-}
+#define gmx_mm_sum4_ps(t0,t1,t2,t3)  _mm_add_ps(_mm_add_ps(t0,t1),_mm_add_ps(t2,t3))
 
-
-static __m128 
+static __m128
 gmx_mm_log_ps(__m128 x)
 {
-	const __m128 exp_ps  = gmx_mm_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
-	const __m128 one_ps  = gmx_mm_castsi128_ps( _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000) ); 
-	const __m128 off_ps  = gmx_mm_castsi128_ps( _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000) ); 
-	const __m128 mant_ps = gmx_mm_castsi128_ps( _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF) );
-	const __m128 base_ps = gmx_mm_castsi128_ps( _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000) );
-	const __m128 loge_ps = gmx_mm_castsi128_ps( _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218) );
-	
-	const __m128 D5      = gmx_mm_castsi128_ps( _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5) );
-	const __m128 D4      = gmx_mm_castsi128_ps( _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD) ); 
-	const __m128 D3      = gmx_mm_castsi128_ps( _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9) );
-	const __m128 D2      = gmx_mm_castsi128_ps( _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B) );
-	const __m128 D1      = gmx_mm_castsi128_ps( _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD) ); 
-	const __m128 D0      = gmx_mm_castsi128_ps( _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A) );
-	
-	__m128  xmm0,xmm1,xmm2;
-	
-	xmm0  = x;
-	xmm1  = xmm0;
-	xmm1  = _mm_and_ps(xmm1, exp_ps);
-	xmm1 = gmx_mm_castsi128_ps( _mm_srli_epi32( gmx_mm_castps_si128(xmm1),8) ); 
-	
-	xmm1  = _mm_or_ps(xmm1, one_ps);
-	xmm1  = _mm_sub_ps(xmm1, off_ps);
-	
-	xmm1  = _mm_mul_ps(xmm1, base_ps);
-	xmm0  = _mm_and_ps(xmm0, mant_ps);
-	xmm0  = _mm_or_ps(xmm0, one_ps);
-	
-	xmm2  = _mm_mul_ps(xmm0, D5);
-	xmm2  = _mm_add_ps(xmm2, D4);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, D3);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, D2);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, D1);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, D0);
-	xmm0  = _mm_sub_ps(xmm0, one_ps);
-	xmm0  = _mm_mul_ps(xmm0,xmm2);
-	xmm1  = _mm_add_ps(xmm1,xmm0);
-	
-	x     = xmm1;
-	x  = _mm_mul_ps(x, loge_ps);
-	
-    return x;
+    /* Same algorithm as cephes library */
+	const __m128  expmask    = gmx_mm_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
+    const __m128i expbase_m1 = _mm_set1_epi32(127-1); /* We want non-IEEE format */
+    const __m128  half       = _mm_set1_ps(0.5f);
+    const __m128  one        = _mm_set1_ps(1.0f);
+    const __m128  invsq2     = _mm_set1_ps(1.0f/sqrt(2.0f));
+    const __m128  corr1      = _mm_set1_ps(-2.12194440e-4f);
+    const __m128  corr2      = _mm_set1_ps(0.693359375f);
+    
+    const __m128 CA_1        = _mm_set1_ps(0.070376836292f);
+    const __m128 CB_0        = _mm_set1_ps(1.6714950086782716f);
+    const __m128 CB_1        = _mm_set1_ps(-2.452088066061482f);
+    const __m128 CC_0        = _mm_set1_ps(1.5220770854701728f);
+    const __m128 CC_1        = _mm_set1_ps(-1.3422238433233642f);
+    const __m128 CD_0        = _mm_set1_ps(1.386218787509749f);
+    const __m128 CD_1        = _mm_set1_ps(0.35075468953796346f);
+    const __m128 CE_0        = _mm_set1_ps(1.3429983063133937f);
+    const __m128 CE_1        = _mm_set1_ps(1.807420826584643f);
+    
+    __m128  fexp,fexp1;
+    __m128i iexp;
+    __m128  mask;
+    __m128  x1,x2;
+    __m128  y;
+    __m128  pA,pB,pC,pD,pE,tB,tC,tD,tE;
+    
+    /* Separate x into exponent and mantissa, with a mantissa in the range [0.5..1[ (not IEEE754 standard!) */
+    fexp  = _mm_and_ps(x,expmask);
+    iexp  = gmx_mm_castps_si128(fexp);
+    iexp  = _mm_srli_epi32(iexp,23);
+    iexp  = _mm_sub_epi32(iexp,expbase_m1);
+    
+    x     = _mm_andnot_ps(expmask,x);
+    x     = _mm_or_ps(x,one);
+    x     = _mm_mul_ps(x,half);
+    
+    mask  = _mm_cmplt_ps(x,invsq2);
+    
+    x     = _mm_add_ps(x,_mm_and_ps(mask,x));
+    x     = _mm_sub_ps(x,one);
+    iexp  = _mm_add_epi32(iexp,gmx_mm_castps_si128(mask)); /* 0xFFFFFFFF = -1 as int */
+    
+    x2    = _mm_mul_ps(x,x);
+    
+    pA    = _mm_mul_ps(CA_1,x);
+    pB    = _mm_mul_ps(CB_1,x);
+    pC    = _mm_mul_ps(CC_1,x);
+    pD    = _mm_mul_ps(CD_1,x);
+    pE    = _mm_mul_ps(CE_1,x);
+    tB    = _mm_add_ps(CB_0,x2);
+    tC    = _mm_add_ps(CC_0,x2);
+    tD    = _mm_add_ps(CD_0,x2);
+    tE    = _mm_add_ps(CE_0,x2);
+    pB    = _mm_add_ps(pB,tB);
+    pC    = _mm_add_ps(pC,tC);
+    pD    = _mm_add_ps(pD,tD);
+    pE    = _mm_add_ps(pE,tE);
+    
+    pA    = _mm_mul_ps(pA,pB);
+    pC    = _mm_mul_ps(pC,pD);
+    pE    = _mm_mul_ps(pE,x2);
+    pA    = _mm_mul_ps(pA,pC);
+    y     = _mm_mul_ps(pA,pE);
+    
+    fexp  = _mm_cvtepi32_ps(iexp);
+    y     = _mm_add_ps(y,_mm_mul_ps(fexp,corr1));
+    
+    y     = _mm_sub_ps(y, _mm_mul_ps(half,x2));
+    x2    = _mm_add_ps(x,y);
+    
+    x2    = _mm_add_ps(x2,_mm_mul_ps(fexp,corr2));
+    
+    return x2;
 }
 
 
-/* This exp-routine has a relative precision of:
- *   2^-22.33 bits (essentially single precision :-)
- * WARNING: no check against over or underflows (x beyond +-87)
+/* 
+ * Exponential function.
+ * 
+ * Exp(x) is calculate from the relation Exp(x)=2^(y), where y=log2(e)*x
+ * Thus, the contents of this routine is mostly about calculating 2^y.
+ *
+ * This is done by separating y=z+w, where z=[y] is an integer. For technical reasons it is easiest
+ * for us to round to the _nearest_ integer and have w in [-0.5,0.5] rather than always rounding down.
+ * (It is not until SSE4 there was an efficient operation to do rounding towards -infinity).
+ *
+ * With this we get 2^y=2^z*2^w
+ *
+ * Since we have IEEE fp representation, we can easily calculate 2^z by adding the FP exponent bias
+ * (127 in single), and shifting the integer to the exponent field of the FP number (23 bits up).
+ *
+ * The 2^w term is calculated from a (5,0)-th order (no denominator) Minimax polynomia on the interval
+ * [-0.5,0.5]. The coefficiencts of this was derived in Mathematica using the command:
+ *
+ * MiniMaxApproximation[(2^x), {x, {-0.5, 0.5}, 5, 0}, WorkingPrecision -> 15]
+ *
+ * The lowest exponent we can represent in IEEE single-precision binary format is 2^-126; below that 
+ * it will wrap around and lead to very large positive numbers. This corresponds to a lower bound
+ * on the argument for exp(x) of roughly -87.33. For smaller arguments the return value will be 0.0.
+ *
+ * There appears to be a slight loss of precision for large arguments (~50), where the largest relative
+ * error reaches ~3e-6. However, since the actual value for that argument is around 10^21, it might
+ * not matter for typical single precision workloads. This is likely caused by the polynomial evaluation,
+ * and the only way around would then be a table-based version, which I haven't managed to get the
+ * same performance from.
+ * 
+ * The _average_ accuracy is 22.7 bits in the range [-10,10], and the worst roughly 1 bit worse.
  */
 static __m128 
 gmx_mm_exp_ps(__m128 x)
 {
-    const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   /* 0.5e+0f */
-    const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   /* 127 */
-    const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   /* log2(e) */
-	
-    const __m128i D5   = _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905);   /* 1.8775767e-3f */
-    const __m128i D4   = _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806);   /* 8.9893397e-3f */
-    const __m128i D3   = _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23);   /* 5.5826318e-2f */
-    const __m128i D2   = _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4);   /* 2.4015361e-1f */
-    const __m128i D1   = _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B);   /* 6.9315308e-1f */
-    const __m128i D0   = _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF);   /* 9.9999994e-1f */
-	
-	__m128 xmm0,xmm1;
-	__m128i xmm2;
-	
-	xmm0 = _mm_mul_ps(x,gmx_mm_castsi128_ps(CC));
-	xmm1 = _mm_sub_ps(xmm0,gmx_mm_castsi128_ps(half));
-	xmm2 = _mm_cvtps_epi32(xmm1); 
-	xmm1 = _mm_cvtepi32_ps(xmm2); 
-	
-	xmm2 = _mm_add_epi32(xmm2,gmx_mm_castps_si128(base));
-	xmm2 = _mm_slli_epi32(xmm2,23);
-	
-	xmm0 = _mm_sub_ps(xmm0,xmm1);
-	xmm1 = _mm_mul_ps(xmm0,gmx_mm_castsi128_ps(D5));
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D4));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D3));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D2));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D1));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D0));
-	xmm1 = _mm_mul_ps(xmm1,gmx_mm_castsi128_ps(xmm2));
-	
-	/* 18 instructions currently */
-	return xmm1;
+    const __m128  argscale = _mm_set1_ps(1.442695040888963f);
+    /* Lower bound: We do not allow numbers that would lead to an IEEE fp representation exponent smaller than -126. */
+    const __m128  arglimit = _mm_set1_ps(-126.0f/1.442695040888963f);
+    
+    const __m128i expbase  = _mm_set1_epi32(127);
+    const __m128  CA0      = _mm_set1_ps(0.00132764719920600f);
+    const __m128  CB0      = _mm_set1_ps(3.17196359322f);
+    const __m128  CC0      = _mm_set1_ps(20.36135752425f);
+    const __m128  CC1      = _mm_set1_ps(-0.681627790451f);
+    const __m128  CD0      = _mm_set1_ps(11.66225206128f);
+    const __m128  CD1      = _mm_set1_ps(4.79739947827f);
+    
+    
+    __m128  valuemask;
+    __m128i iexppart;
+    __m128  fexppart;
+    __m128  intpart;
+    __m128  z,z2;
+    __m128  factB,factC,factD;
+    
+	z         = _mm_mul_ps(x,argscale);     
+    iexppart  = _mm_cvtps_epi32(z);
+#if GMX_SSE4
+    /* This reduces latency and speeds up the code by roughly 5% when supported */
+    intpart   = _mm_round_ps(z,0);
+#else
+    intpart   = _mm_cvtepi32_ps(iexppart);
+#endif
+    iexppart  = _mm_slli_epi32(_mm_add_epi32(iexppart,expbase),23);    
+    valuemask = _mm_cmpgt_ps(x,arglimit);
+    
+	z         = _mm_sub_ps(z,intpart);
+    z2        = _mm_mul_ps(z,z);  
+    
+    fexppart  = _mm_and_ps(valuemask,gmx_mm_castsi128_ps(iexppart));
+    
+    /* Since SSE floating-point has relatively high latency it is faster to do 
+     * factorized polynomial summation with independent terms than using alternating add/multiply, i.e.
+     * p(z) = A0 * (B0 + z) * (C0 + C1*z + z^2) * (D0 + D1*z + z^2) 
+     */
+    factB     = _mm_add_ps(CB0,z);
+    factC     = _mm_add_ps(CC0,_mm_mul_ps(CC1,z) );
+    factC     = _mm_add_ps(factC,z2);
+    factD     = _mm_add_ps(CD0,_mm_mul_ps(CD1,z) );
+    factD     = _mm_add_ps(factD,z2);
+    
+    z         = _mm_mul_ps(CA0,fexppart);
+    factB     = _mm_mul_ps(factB,factC);
+    z         = _mm_mul_ps(z,factD);
+    z         = _mm_mul_ps(z,factB);
+    
+	/* Currently uses 22 actual (real, not including casts) SSE instructions */
+	return  z;
 }
 
 
-/* Same as gmx_mm_exp_ps, but has a lower bound check, such that it can
- * be safely called with x < -87.33.
- * WARNING: no check against overflows (x > 87)
- */
-static __m128 
-gmx_mm_exp_ps_lbc(__m128 x)
+
+static int 
+gmx_mm_sincos_ps(__m128 x,
+                 __m128 *sinval,
+                 __m128 *cosval)
 {
-    const __m128i lim  = _mm_set_epi32(0xC2AE0000, 0xC2AE0000, 0xC2AE0000, 0xC2AE0000);   /* -87 */
-    const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   /* 0.5e+0f */
-    const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   /* 127 */
-    const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   /* log2(e) */
-	
-    const __m128i D5   = _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905);   /* 1.8775767e-3f */
-    const __m128i D4   = _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806);   /* 8.9893397e-3f */
-    const __m128i D3   = _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23);   /* 5.5826318e-2f */
-    const __m128i D2   = _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4);   /* 2.4015361e-1f */
-    const __m128i D1   = _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B);   /* 6.9315308e-1f */
-    const __m128i D0   = _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF);   /* 9.9999994e-1f */
-	
-	__m128 xmm0,xmm1;
-	__m128i xmm2;
-	
-	xmm1 = _mm_max_ps(x,gmx_mm_castsi128_ps(lim)); /* x<-87 gives exp(-87) */
-	xmm0 = _mm_mul_ps(xmm1,gmx_mm_castsi128_ps(CC));
-	xmm1 = _mm_sub_ps(xmm0,gmx_mm_castsi128_ps(half));
-	xmm2 = _mm_cvtps_epi32(xmm1); 
-	xmm1 = _mm_cvtepi32_ps(xmm2); 
-	
-	xmm2 = _mm_add_epi32(xmm2,gmx_mm_castps_si128(base));
-	xmm2 = _mm_slli_epi32(xmm2,23);
-	
-	xmm0 = _mm_sub_ps(xmm0,xmm1);
-	xmm1 = _mm_mul_ps(xmm0,gmx_mm_castsi128_ps(D5));
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D4));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D3));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D2));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D1));
-	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D0));
-	xmm1 = _mm_mul_ps(xmm1,gmx_mm_castsi128_ps(xmm2));
-	
-	/* 19 instructions currently + pipeline latenct after max_ps */
-	return xmm1;
+    const __m128 _sincosf_two_over_pi = {2.0/M_PI,2.0/M_PI,2.0/M_PI,2.0/M_PI};                               
+    const __m128 _sincosf_half        = {0.5,0.5,0.5,0.5};                                                   
+    const __m128 _sincosf_one         = {1.0,1.0,1.0,1.0};                                                   
+    
+    const __m128i _sincosf_izero      = _mm_set1_epi32(0);                                                   
+    const __m128i _sincosf_ione       = _mm_set1_epi32(1);                                                   
+    const __m128i _sincosf_itwo       = _mm_set1_epi32(2);                                                   
+    const __m128i _sincosf_ithree     = _mm_set1_epi32(3);                                                   
+    
+    const __m128 _sincosf_kc1 = {1.57079625129,1.57079625129,1.57079625129,1.57079625129};                   
+    const __m128 _sincosf_kc2 = {7.54978995489e-8,7.54978995489e-8,7.54978995489e-8,7.54978995489e-8};       
+    const __m128 _sincosf_cc0 = {-0.0013602249,-0.0013602249,-0.0013602249,-0.0013602249};                   
+    const __m128 _sincosf_cc1 = {0.0416566950,0.0416566950,0.0416566950,0.0416566950};                       
+    const __m128 _sincosf_cc2 = {-0.4999990225,-0.4999990225,-0.4999990225,-0.4999990225};                   
+    const __m128 _sincosf_sc0 = {-0.0001950727,-0.0001950727,-0.0001950727,-0.0001950727};                   
+    const __m128 _sincosf_sc1 = {0.0083320758,0.0083320758,0.0083320758,0.0083320758};                       
+    const __m128 _sincosf_sc2 = {-0.1666665247,-0.1666665247,-0.1666665247,-0.1666665247};                   
+    
+    __m128 _sincosf_signbit           = gmx_mm_castsi128_ps( _mm_set1_epi32(0x80000000) );                   
+    __m128 _sincosf_tiny              = gmx_mm_castsi128_ps( _mm_set1_epi32(0x3e400000) );                   
+    
+    __m128 _sincosf_xl;                                                                                      
+    __m128 _sincosf_xl2;                                                                                     
+    __m128 _sincosf_xl3;                                                                                     
+    __m128 _sincosf_qf;                                                                                      
+    __m128 _sincosf_absxl;                                                                                   
+    __m128 _sincosf_p1;                                                                                      
+    __m128 _sincosf_cx;                                                                                      
+    __m128 _sincosf_sx;                                                                                      
+    __m128 _sincosf_ts;                                                                                      
+    __m128 _sincosf_tc;                                                                                      
+    __m128 _sincosf_tsn;                                                                                     
+    __m128 _sincosf_tcn;                                                                                     
+    __m128i _sincosf_q;                                                                                      
+    __m128i _sincosf_offsetSin;                                                                              
+    __m128i _sincosf_offsetCos;                                                                              
+    __m128 _sincosf_sinMask;                                                                                 
+    __m128 _sincosf_cosMask;                                                                                 
+    __m128 _sincosf_isTiny;                                                                                  
+    __m128 _sincosf_ct0;                                                                                     
+    __m128 _sincosf_ct1;                                                                                     
+    __m128 _sincosf_ct2;                                                                                     
+    __m128 _sincosf_st1;                                                                                     
+    __m128 _sincosf_st2;                                                                                     
+    
+    _sincosf_xl        = _mm_mul_ps(x,_sincosf_two_over_pi);                                                 
+    
+    _sincosf_xl        = _mm_add_ps(_sincosf_xl,_mm_or_ps(_mm_and_ps(_sincosf_xl,_sincosf_signbit),_sincosf_half)); 
+    
+    _sincosf_q         = _mm_cvttps_epi32(_sincosf_xl);                                                      
+    _sincosf_qf        = _mm_cvtepi32_ps(_sincosf_q);                                                        
+    
+    _sincosf_offsetSin   = _mm_and_si128(_sincosf_q,_sincosf_ithree);                                        
+    _sincosf_offsetCos   = _mm_add_epi32(_sincosf_offsetSin,_sincosf_ione);                                  
+    
+    _sincosf_p1 = _mm_mul_ps(_sincosf_qf,_sincosf_kc1);                                                      
+    _sincosf_xl = _mm_mul_ps(_sincosf_qf,_sincosf_kc2);                                                      
+    _sincosf_p1 = _mm_sub_ps(x,_sincosf_p1);                                                                 
+    _sincosf_xl = _mm_sub_ps(_sincosf_p1,_sincosf_xl);                                                       
+    
+    _sincosf_absxl  = _mm_andnot_ps(_sincosf_signbit,_sincosf_xl);                                           
+    _sincosf_isTiny = _mm_cmpgt_ps(_sincosf_tiny,_sincosf_absxl);                                            
+    
+    _sincosf_xl2    = _mm_mul_ps(_sincosf_xl,_sincosf_xl);                                                   
+    _sincosf_xl3    = _mm_mul_ps(_sincosf_xl2,_sincosf_xl);                                                  
+    
+    _sincosf_ct1    = _mm_mul_ps(_sincosf_cc0,_sincosf_xl2);                                                 
+    _sincosf_ct1    = _mm_add_ps(_sincosf_ct1,_sincosf_cc1);                                                 
+    _sincosf_st1    = _mm_mul_ps(_sincosf_sc0,_sincosf_xl2);                                                 
+    _sincosf_st1    = _mm_add_ps(_sincosf_st1,_sincosf_sc1);                                                 
+    _sincosf_ct2    = _mm_mul_ps(_sincosf_ct1,_sincosf_xl2);                                                 
+    _sincosf_ct2    = _mm_add_ps(_sincosf_ct2,_sincosf_cc2);                                                 
+    _sincosf_st2    = _mm_mul_ps(_sincosf_st1,_sincosf_xl2);                                                 
+    _sincosf_st2    = _mm_add_ps(_sincosf_st2,_sincosf_sc2);                                                 
+    
+    _sincosf_cx     = _mm_mul_ps(_sincosf_ct2,_sincosf_xl2);                                                 
+    _sincosf_cx     = _mm_add_ps(_sincosf_cx,_sincosf_one);                                                  
+    
+    _sincosf_sx     = _mm_mul_ps(_sincosf_st2,_sincosf_xl3);                                                 
+    _sincosf_sx     = _mm_add_ps(_sincosf_sx,_sincosf_xl);                                                   
+    
+    _sincosf_sinMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_ione), _sincosf_izero) ); 
+    _sincosf_cosMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_ione), _sincosf_izero) ); 
+    
+    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_cx) ); 
+    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_cx) ); 
+    
+    _sincosf_sinMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_itwo), _sincosf_izero) );
+    _sincosf_tsn    = _mm_xor_ps(_sincosf_signbit,_sincosf_ts);                                              
+    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_ts) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_tsn) ); 
+    
+    _sincosf_cosMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_itwo), _sincosf_izero) ); 
+    _sincosf_tcn    = _mm_xor_ps(_sincosf_signbit,_sincosf_tc);                                              
+    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_tc) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_tcn) ); 
+    
+    *sinval = _sincosf_ts;                                                                                    
+    *cosval = _sincosf_tc;      
+    
+    return 0;
+}
+
+static __m128
+gmx_mm_tan_ps(__m128 x)
+{
+    __m128 sinval,cosval;
+    __m128 tanval;
+    
+    gmx_mm_sincos_ps(x,&sinval,&cosval);
+    
+    tanval = _mm_mul_ps(sinval,gmx_mm_inv_ps(cosval));
+    
+    return tanval;
 }
 
 
-#define GMX_MM_SINCOS_PS(x,sinval,cosval)                                                                    \
-{                                                                                                            \
-	const __m128 _sincosf_two_over_pi = {2.0/M_PI,2.0/M_PI,2.0/M_PI,2.0/M_PI};                               \
-    const __m128 _sincosf_half        = {0.5,0.5,0.5,0.5};                                                   \
-    const __m128 _sincosf_one         = {1.0,1.0,1.0,1.0};                                                   \
-                                                                                                             \
-	const __m128i _sincosf_izero      = _mm_set1_epi32(0);                                                   \
-    const __m128i _sincosf_ione       = _mm_set1_epi32(1);                                                   \
-    const __m128i _sincosf_itwo       = _mm_set1_epi32(2);                                                   \
-    const __m128i _sincosf_ithree     = _mm_set1_epi32(3);                                                   \
-                                                                                                             \
-	const __m128 _sincosf_kc1 = {1.57079625129,1.57079625129,1.57079625129,1.57079625129};                   \
-    const __m128 _sincosf_kc2 = {7.54978995489e-8,7.54978995489e-8,7.54978995489e-8,7.54978995489e-8};       \
-	const __m128 _sincosf_cc0 = {-0.0013602249,-0.0013602249,-0.0013602249,-0.0013602249};                   \
-    const __m128 _sincosf_cc1 = {0.0416566950,0.0416566950,0.0416566950,0.0416566950};                       \
-    const __m128 _sincosf_cc2 = {-0.4999990225,-0.4999990225,-0.4999990225,-0.4999990225};                   \
-	const __m128 _sincosf_sc0 = {-0.0001950727,-0.0001950727,-0.0001950727,-0.0001950727};                   \
-    const __m128 _sincosf_sc1 = {0.0083320758,0.0083320758,0.0083320758,0.0083320758};                       \
-    const __m128 _sincosf_sc2 = {-0.1666665247,-0.1666665247,-0.1666665247,-0.1666665247};                   \
-                                                                                                             \
-	__m128 _sincosf_signbit           = gmx_mm_castsi128_ps( _mm_set1_epi32(0x80000000) );                   \
-    __m128 _sincosf_tiny              = gmx_mm_castsi128_ps( _mm_set1_epi32(0x3e400000) );                   \
-                                                                                                             \
-	__m128 _sincosf_xl;                                                                                      \
-    __m128 _sincosf_xl2;                                                                                     \
-    __m128 _sincosf_xl3;                                                                                     \
-    __m128 _sincosf_qf;                                                                                      \
-    __m128 _sincosf_absxl;                                                                                   \
-    __m128 _sincosf_p1;                                                                                      \
-    __m128 _sincosf_cx;                                                                                      \
-    __m128 _sincosf_sx;                                                                                      \
-    __m128 _sincosf_ts;                                                                                      \
-    __m128 _sincosf_tc;                                                                                      \
-    __m128 _sincosf_tsn;                                                                                     \
-    __m128 _sincosf_tcn;                                                                                     \
-	__m128i _sincosf_q;                                                                                      \
-    __m128i _sincosf_offsetSin;                                                                              \
-    __m128i _sincosf_offsetCos;                                                                              \
-    __m128 _sincosf_sinMask;                                                                                 \
-    __m128 _sincosf_cosMask;                                                                                 \
-    __m128 _sincosf_isTiny;                                                                                  \
-    __m128 _sincosf_ct0;                                                                                     \
-    __m128 _sincosf_ct1;                                                                                     \
-    __m128 _sincosf_ct2;                                                                                     \
-    __m128 _sincosf_st1;                                                                                     \
-    __m128 _sincosf_st2;                                                                                     \
-                                                                                                             \
-    _sincosf_xl        = _mm_mul_ps(x,_sincosf_two_over_pi);                                                 \
-                                                                                                             \
-    _sincosf_xl        = _mm_add_ps(_sincosf_xl,_mm_or_ps(_mm_and_ps(_sincosf_xl,_sincosf_signbit),_sincosf_half)); \
-	                                                                                                         \
-    _sincosf_q         = _mm_cvttps_epi32(_sincosf_xl);                                                      \
-    _sincosf_qf        = _mm_cvtepi32_ps(_sincosf_q);                                                        \
-  	                                                                                                         \
-    _sincosf_offsetSin   = _mm_and_si128(_sincosf_q,_sincosf_ithree);                                        \
-    _sincosf_offsetCos   = _mm_add_epi32(_sincosf_offsetSin,_sincosf_ione);                                  \
-                                                                                                             \
-    _sincosf_p1 = _mm_mul_ps(_sincosf_qf,_sincosf_kc1);                                                      \
-    _sincosf_xl = _mm_mul_ps(_sincosf_qf,_sincosf_kc2);                                                      \
-    _sincosf_p1 = _mm_sub_ps(x,_sincosf_p1);                                                                 \
-    _sincosf_xl = _mm_sub_ps(_sincosf_p1,_sincosf_xl);                                                       \
-                                                                                                             \
-    _sincosf_absxl  = _mm_andnot_ps(_sincosf_signbit,_sincosf_xl);                                           \
-    _sincosf_isTiny = _mm_cmpgt_ps(_sincosf_tiny,_sincosf_absxl);                                            \
-                                                                                                             \
-    _sincosf_xl2    = _mm_mul_ps(_sincosf_xl,_sincosf_xl);                                                   \
-    _sincosf_xl3    = _mm_mul_ps(_sincosf_xl2,_sincosf_xl);                                                  \
-	                                                                                                         \
-	_sincosf_ct1    = _mm_mul_ps(_sincosf_cc0,_sincosf_xl2);                                                 \
-	_sincosf_ct1    = _mm_add_ps(_sincosf_ct1,_sincosf_cc1);                                                 \
-	_sincosf_st1    = _mm_mul_ps(_sincosf_sc0,_sincosf_xl2);                                                 \
-	_sincosf_st1    = _mm_add_ps(_sincosf_st1,_sincosf_sc1);                                                 \
-	_sincosf_ct2    = _mm_mul_ps(_sincosf_ct1,_sincosf_xl2);                                                 \
-	_sincosf_ct2    = _mm_add_ps(_sincosf_ct2,_sincosf_cc2);                                                 \
-	_sincosf_st2    = _mm_mul_ps(_sincosf_st1,_sincosf_xl2);                                                 \
-	_sincosf_st2    = _mm_add_ps(_sincosf_st2,_sincosf_sc2);                                                 \
-	                                                                                                         \
-	_sincosf_cx     = _mm_mul_ps(_sincosf_ct2,_sincosf_xl2);                                                 \
-    _sincosf_cx     = _mm_add_ps(_sincosf_cx,_sincosf_one);                                                  \
-                                                                                                             \
-    _sincosf_sx     = _mm_mul_ps(_sincosf_st2,_sincosf_xl3);                                                 \
-    _sincosf_sx     = _mm_add_ps(_sincosf_sx,_sincosf_xl);                                                   \
-                                                                                                             \
-    _sincosf_sinMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_ione), _sincosf_izero) ); \
-    _sincosf_cosMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_ione), _sincosf_izero) ); \
-                                                                                                             \
-    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_cx) ); \
-    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_cx) ); \
-	                                                                                                         \
-    _sincosf_sinMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_itwo), _sincosf_izero) );\
-    _sincosf_tsn    = _mm_xor_ps(_sincosf_signbit,_sincosf_ts);                                              \
-    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_ts) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_tsn) ); \
-	                                                                                                         \
-    _sincosf_cosMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_itwo), _sincosf_izero) ); \
-    _sincosf_tcn    = _mm_xor_ps(_sincosf_signbit,_sincosf_tc);                                              \
-    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_tc) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_tcn) ); \
-	                                                                                                         \
-    sinval = _sincosf_ts;                                                                                    \
-    cosval = _sincosf_tc;                                                                                    \
-}         
+static __m128
+gmx_mm_asin_ps(__m128 x)
+{
+    /* Same algorithm as cephes library */
+    const __m128 signmask  = gmx_mm_castsi128_ps( _mm_set1_epi32(0x7FFFFFFF) );
+    const __m128 limitlow  = _mm_set1_ps(1e-4f);
+    const __m128 half      = _mm_set1_ps(0.5f);
+    const __m128 one       = _mm_set1_ps(1.0f);
+    const __m128 halfpi    = _mm_set1_ps(M_PI/2.0f);
+    
+    const __m128 CC5        = _mm_set1_ps(4.2163199048E-2f);
+    const __m128 CC4        = _mm_set1_ps(2.4181311049E-2f);
+    const __m128 CC3        = _mm_set1_ps(4.5470025998E-2f);
+    const __m128 CC2        = _mm_set1_ps(7.4953002686E-2f);
+    const __m128 CC1        = _mm_set1_ps(1.6666752422E-1f);
+    
+    __m128 sign;
+    __m128 mask;
+    __m128 xabs;
+    __m128 z,z1,z2,q,q1,q2;
+    __m128 pA,pB;
+    
+    sign  = _mm_andnot_ps(signmask,x);
+    xabs  = _mm_and_ps(x,signmask);
+    
+    mask  = _mm_cmpgt_ps(xabs,half);
+    
+    z1    = _mm_mul_ps(half, _mm_sub_ps(one,xabs));
+    q1    = _mm_mul_ps(z1,gmx_mm_invsqrt_ps(z1));
+    q1    = _mm_andnot_ps(_mm_cmpeq_ps(xabs,one),q1);
+    
+    q2    = xabs;
+    z2    = _mm_mul_ps(q2,q2);
+    
+    z     = _mm_or_ps( _mm_and_ps(mask,z1) , _mm_andnot_ps(mask,z2) );
+    q     = _mm_or_ps( _mm_and_ps(mask,q1) , _mm_andnot_ps(mask,q2) );
+    
+    z2    = _mm_mul_ps(z,z);
+    
+    pA    = _mm_mul_ps(CC5,z2);
+    pB    = _mm_mul_ps(CC4,z2);
+    
+    pA    = _mm_add_ps(pA,CC3);
+    pB    = _mm_add_ps(pB,CC2);
+    
+    pA    = _mm_mul_ps(pA,z2);
+    pB    = _mm_mul_ps(pB,z2);
+    
+    pA    = _mm_add_ps(pA,CC1);
+    pA    = _mm_mul_ps(pA,z);
+    
+    z     = _mm_add_ps(pA,pB);
+    z     = _mm_mul_ps(z,q);
+    z     = _mm_add_ps(z,q);
+    
+    q2    = _mm_sub_ps(halfpi,z);
+    q2    = _mm_sub_ps(q2,z);
+    
+    z     = _mm_or_ps( _mm_and_ps(mask,q2) , _mm_andnot_ps(mask,z) );
+    
+    mask  = _mm_cmpgt_ps(xabs,limitlow);
+    z     = _mm_or_ps( _mm_and_ps(mask,z) , _mm_andnot_ps(mask,xabs) );
+    
+    z = _mm_xor_ps(z,sign);
+    
+    return z;
+}
 
 
+static __m128
+gmx_mm_acos_ps(__m128 x)
+{
+    const __m128 signmask  = gmx_mm_castsi128_ps( _mm_set1_epi32(0x7FFFFFFF) );
+    const __m128 one_ps    = _mm_set1_ps(1.0f);
+    const __m128 half_ps   = _mm_set1_ps(0.5f);
+    const __m128 pi_ps     = _mm_set1_ps(M_PI);
+    const __m128 halfpi_ps = _mm_set1_ps(M_PI/2.0f);
+    
+    __m128 mask1;
+    __m128 mask2;
+    __m128 xabs;
+    __m128 z,z1,z2,z3;
+    
+    xabs  = _mm_and_ps(x,signmask);    
+    mask1 = _mm_cmpgt_ps(xabs,half_ps);
+    mask2 = _mm_cmpgt_ps(x,_mm_setzero_ps());
+    
+    z     = _mm_mul_ps(half_ps,_mm_sub_ps(one_ps,xabs));
+    z     = _mm_mul_ps(z,gmx_mm_invsqrt_ps(z));
+    z     = _mm_andnot_ps(_mm_cmpeq_ps(xabs,one_ps),z);
+    
+    z     = _mm_or_ps( _mm_and_ps(mask1,z) , _mm_andnot_ps(mask1,x) );
+    z     = gmx_mm_asin_ps(z);
+    
+    z2    = _mm_add_ps(z,z);
+    z1    = _mm_sub_ps(pi_ps,z2);
+    z3    = _mm_sub_ps(halfpi_ps,z);    
+    
+    z     = _mm_or_ps( _mm_and_ps(mask2,z2) , _mm_andnot_ps(mask2,z1) );
+    z     = _mm_or_ps( _mm_and_ps(mask1,z) , _mm_andnot_ps(mask1,z3) );
+    
+    return z;
+}
+
+
+static __m128
+gmx_mm_atan_ps(__m128 x)
+{
+    /* Same algorithm as cephes library */
+    const __m128 signmask  = gmx_mm_castsi128_ps( _mm_set1_epi32(0x7FFFFFFF) );
+    const __m128 limit1    = _mm_set1_ps(0.414213562373095f);
+    const __m128 limit2    = _mm_set1_ps(2.414213562373095f);
+    const __m128 quarterpi = _mm_set1_ps(0.785398163397448f);
+    const __m128 halfpi    = _mm_set1_ps(1.570796326794896f);
+    const __m128 mone      = _mm_set1_ps(-1.0f);
+    const __m128 CC3       = _mm_set1_ps(-3.33329491539E-1f);
+    const __m128 CC5       = _mm_set1_ps(1.99777106478E-1f);
+    const __m128 CC7       = _mm_set1_ps(-1.38776856032E-1);
+    const __m128 CC9       = _mm_set1_ps(8.05374449538e-2f);
+    
+    __m128 sign;
+    __m128 mask1,mask2;
+    __m128 y,z1,z2;
+    __m128 x2,x4;
+    __m128 sum1,sum2;
+    
+    sign  = _mm_andnot_ps(signmask,x);
+    x     = _mm_and_ps(x,signmask);
+    
+    mask1 = _mm_cmpgt_ps(x,limit1);
+    mask2 = _mm_cmpgt_ps(x,limit2);
+    
+    z1    = _mm_mul_ps(_mm_add_ps(x,mone),gmx_mm_inv_ps(_mm_sub_ps(x,mone)));
+    z2    = _mm_mul_ps(mone,gmx_mm_inv_ps(x));
+    
+    y     = _mm_and_ps(mask1,quarterpi);
+    y     = _mm_or_ps( _mm_and_ps(mask2,halfpi) , _mm_andnot_ps(mask2,y) );
+    
+    x     = _mm_or_ps( _mm_and_ps(mask1,z1) , _mm_andnot_ps(mask1,x) );
+    x     = _mm_or_ps( _mm_and_ps(mask2,z2) , _mm_andnot_ps(mask2,x) );
+    
+    x2    = _mm_mul_ps(x,x);
+    x4    = _mm_mul_ps(x2,x2);
+    
+    sum1  = _mm_mul_ps(CC9,x4);    
+    sum2  = _mm_mul_ps(CC7,x4);    
+    sum1  = _mm_add_ps(sum1,CC5);
+    sum2  = _mm_add_ps(sum2,CC3); 
+    sum1  = _mm_mul_ps(sum1,x4);
+    sum2  = _mm_mul_ps(sum2,x2);
+    
+    sum1  = _mm_add_ps(sum1,sum2);
+    sum1  = _mm_sub_ps(sum1,mone);
+    sum1  = _mm_mul_ps(sum1,x);
+    y     = _mm_add_ps(y,sum1);
+    
+    y     = _mm_xor_ps(y,sign);
+    
+    return y;
+}
+
+
+static __m128
+gmx_mm_atan2_ps(__m128 y, __m128 x)
+{
+    const __m128 pi          = _mm_set1_ps(M_PI);
+    const __m128 minuspi     = _mm_set1_ps(-M_PI);
+    const __m128 halfpi      = _mm_set1_ps(M_PI/2.0);
+    const __m128 minushalfpi = _mm_set1_ps(-M_PI/2.0);
+    
+    __m128 z,z1,z3,z4;
+    __m128 w;
+    __m128 maskx_lt,maskx_eq;
+    __m128 masky_lt,masky_eq;
+    __m128 mask1,mask2,mask3,mask4,maskall;
+    
+    maskx_lt  = _mm_cmplt_ps(x,_mm_setzero_ps());
+    masky_lt  = _mm_cmplt_ps(y,_mm_setzero_ps());
+    maskx_eq  = _mm_cmpeq_ps(x,_mm_setzero_ps());
+    masky_eq  = _mm_cmpeq_ps(y,_mm_setzero_ps());
+    
+    z         = _mm_mul_ps(y,gmx_mm_inv_ps(x));
+    z         = gmx_mm_atan_ps(z);
+    
+    mask1     = _mm_and_ps(maskx_eq,masky_lt);
+    mask2     = _mm_andnot_ps(maskx_lt,masky_eq);
+    mask3     = _mm_andnot_ps( _mm_or_ps(masky_lt,masky_eq) , maskx_eq);
+    mask4     = _mm_and_ps(masky_eq,maskx_lt);
+    
+    maskall   = _mm_or_ps( _mm_or_ps(mask1,mask2), _mm_or_ps(mask3,mask4) );
+    
+    z         = _mm_andnot_ps(maskall,z);
+    z1        = _mm_and_ps(mask1,minushalfpi);
+    z3        = _mm_and_ps(mask3,halfpi);
+    z4        = _mm_and_ps(mask4,pi);
+    
+    z         = _mm_or_ps( _mm_or_ps(z,z1), _mm_or_ps(z3,z4) );
+    
+    mask1     = _mm_andnot_ps(masky_lt,maskx_lt);
+    mask2     = _mm_and_ps(maskx_lt,masky_lt);
+    
+    w         = _mm_or_ps( _mm_and_ps(mask1,pi), _mm_and_ps(mask2,minuspi) );    
+    w         = _mm_andnot_ps(maskall,w);
+    
+    z         = _mm_add_ps(z,w);
+    
+    return z;
+}
 
 /* Load a single value from 1-4 places, merge into xmm register */
 
@@ -554,7 +812,7 @@ gmx_mm_exp_ps_lbc(__m128 x)
 
 
 /* Routines to load pairs from 1-4 places, put in two separate xmm registers. Useful to load LJ parameters! */
-#define GMX_MM_LOAD_4PAIRS_PS(ptr1,ptr2,ptr3,ptr4,c6,c12)    \
+#define GMX_MM_LOAD_4PAIRS_PS(ptr1,ptr2,ptr3,ptr4,c6,c12)     \
 {                                                             \
     __m128 _tmp1,_tmp2,_tmp3,_tmp4;                           \
     _tmp1  = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1));  \
@@ -1991,977 +2249,33 @@ gmx_mm_exp_ps_lbc(__m128 x)
 }
 
 
-/* Returns fscaltmp, multiply with rinvsq to get fscal! */
-static inline __m128
-gmx_mm_interaction_coulomb_ps(__m128 rinv, __m128 qq,__m128 *vctot)
-{
-	__m128 vcoul = _mm_mul_ps(qq,rinv);
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	return vcoul;
-}
-
 
 static inline void
-gmx_mm_interaction_coulomb_noforce_ps(__m128 rinv, __m128 qq,__m128 *vctot)
-{
-	__m128 vcoul = _mm_mul_ps(qq,rinv);
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	return;
-}
-
-/* Returns fscaltmp, multiply with rinvsq to get fscal! */
-static inline __m128
-gmx_mm_interaction_coulombrf_ps(const __m128 rinv, const __m128 rsq, const __m128 krf, const __m128 crf, const __m128 qq,__m128 *vctot)
-{
-	const __m128 two  = {2.0,2.0,2.0,2.0};
-	__m128 vcoul,krsq;
-	
-	krsq   = _mm_mul_ps(krf,rsq);
-	vcoul  = _mm_mul_ps(qq, _mm_sub_ps(_mm_add_ps(rinv,krsq),crf));
-	*vctot = _mm_add_ps(*vctot,vcoul);
-	
-	return _mm_mul_ps(qq, _mm_sub_ps(rinv, _mm_mul_ps(two,krsq)));
-}
-
-
-static inline void
-gmx_mm_interaction_coulombrf_noforce_ps(__m128 rinv, __m128 rsq, __m128 krf, __m128 crf, __m128 qq,__m128 *vctot)
-{
-	__m128 vcoul,krsq;
-	
-	krsq   = _mm_mul_ps(krf,rsq);
-	vcoul  = _mm_mul_ps(qq, _mm_sub_ps(_mm_add_ps(rinv,krsq),crf));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	return;
-}
-
-
-/* GB */
-
-
-
-
-/* GB + RF */
-
-
-/* Returns fscaltmp, multiply with rinvsq to get fscal! */
-static inline __m128
-gmx_mm_int_lj_ps(__m128 rinvsq, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-	const __m128 six    = {6.0,6.0,6.0,6.0};
-	const __m128 twelve = {12.0,12.0,12.0,12.0};
-	
-	__m128 rinvsix,vvdw6,vvdw12;
-		
-	rinvsix  = _mm_mul_ps(_mm_mul_ps(rinvsq,rinvsq),rinvsq);
-	vvdw6    = _mm_mul_ps(c6,rinvsix);  
-	vvdw12   = _mm_mul_ps(c12, _mm_mul_ps(rinvsix,rinvsix));
-	*vvdwtot = _mm_add_ps(*vvdwtot , _mm_sub_ps(vvdw12,vvdw6));
-	
-	return _mm_sub_ps( _mm_mul_ps(twelve,vvdw12),_mm_mul_ps(six,vvdw6));
-}
-		   
-
-static inline void
-gmx_mm_int_lj_potonly_ps(__m128 rinvsq, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-	__m128 rinvsix,vvdw6,vvdw12;
-	
-	rinvsix  = _mm_mul_ps(_mm_mul_ps(rinvsq,rinvsq),rinvsq);
-	vvdw6    = _mm_mul_ps(c6,rinvsix);  
-	vvdw12   = _mm_mul_ps(c12, _mm_mul_ps(rinvsix,rinvsix));
-	*vvdwtot = _mm_add_ps(*vvdwtot , _mm_sub_ps(vvdw12,vvdw6));
-	
-	return;
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_4_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 *vctot)
-{
-    __m128  rt,eps,eps2,Y,F,G,H,vcoul;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	n_d      = gmx_mm_extract_epi32(n0,3);
-	Y        = _mm_load_ps(VFtab + 4* n_a);
-	F        = _mm_load_ps(VFtab + 4* n_b);
-	G        = _mm_load_ps(VFtab + 4* n_c);
-	H        = _mm_load_ps(VFtab + 4* n_d);
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	F        = _mm_add_ps(F, _mm_add_ps(G,H));  /* Fp    */
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Y, _mm_mul_ps(eps,F)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
-	
-	return _mm_mul_ps(F,tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_4_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	n_d      = gmx_mm_extract_epi32(n0,3);
-	
-	/* For a few cases, like TIP4p waters, there are particles with LJ-only interactions in a loop where
-	 * the table data might contain both coulomb and LJ. To handle this case, we use an offset value of 0
-	 * if the data is an LJ-only table, and 1 if it is actually a mixed coul+lj table.
-	 */
-	Yd       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + 4*offset);
-	Fd       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + 4*offset);
-	Gd       = _mm_load_ps(VFtab + 4*(offset+2)* n_c + 4*offset);
-	Hd       = _mm_load_ps(VFtab + 4*(offset+2)* n_d + 4*offset);
-	Yr       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + 4*offset + 4);
-	Fr       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + 4*offset + 4);
-	Gr       = _mm_load_ps(VFtab + 4*(offset+2)* n_c + 4*offset + 4);
-	Hr       = _mm_load_ps(VFtab + 4*(offset+2)* n_d + 4*offset + 4);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
-}
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_4_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 c6, __m128 c12, 
-								  __m128 *vctot, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,vcoul,Yc,Fc,Gc,Hc,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	n_d      = gmx_mm_extract_epi32(n0,3);
-	
-	
-	Yc       = _mm_load_ps(VFtab + 12* n_a);
-	Fc       = _mm_load_ps(VFtab + 12* n_b);
-	Gc       = _mm_load_ps(VFtab + 12* n_c);
-	Hc       = _mm_load_ps(VFtab + 12* n_d);
-	Yd       = _mm_load_ps(VFtab + 12* n_a + 4);
-	Fd       = _mm_load_ps(VFtab + 12* n_b + 4);
-	Gd       = _mm_load_ps(VFtab + 12* n_c + 4);
-	Hd       = _mm_load_ps(VFtab + 12* n_d + 4);
-	Yr       = _mm_load_ps(VFtab + 12* n_a + 8);
-	Fr       = _mm_load_ps(VFtab + 12* n_b + 8);
-	Gr       = _mm_load_ps(VFtab + 12* n_c + 8);
-	Hr       = _mm_load_ps(VFtab + 12* n_d + 8);
-	_MM_TRANSPOSE4_PS(Yc,Fc,Gc,Hc);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hc       = _mm_mul_ps(Hc,eps2);              /* Heps2 */
-	Gc       = _mm_mul_ps(Gc,eps);               /* Geps  */
-	Fc       = _mm_add_ps(Fc, _mm_add_ps(Gc,Hc));  /* Fp    */
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Yc, _mm_mul_ps(eps,Fc)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fc       = _mm_mul_ps(qq, _mm_add_ps(Fc, _mm_add_ps(Gc, _mm_add_ps(Hc,Hc))));
-	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_3_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 *vctot)
-{
-    __m128  rt,eps,eps2,Y,F,G,H,vcoul;
-	__m128i n0;
-	int     n_a,n_b,n_c;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	Y        = _mm_load_ps(VFtab + 4* n_a);
-	F        = _mm_load_ps(VFtab + 4* n_b);
-	G        = _mm_load_ps(VFtab + 4* n_c);
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	F        = _mm_add_ps(F, _mm_add_ps(G,H));  /* Fp    */
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Y, _mm_mul_ps(eps,F)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
-	
-	return _mm_mul_ps(F,tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_3_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b,n_c;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	
-	/* For a few cases, like TIP4p waters, there are particles with LJ-only interactions in a loop where
-	 * the table data might contain both coulomb and LJ. To handle this case, we use an offset value of 0
-	 * if the data is an LJ-only table, and 1 if it is actually a mixed coul+lj table.
-	 */
-	Yd       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset);
-	Fd       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + offset);
-	Gd       = _mm_load_ps(VFtab + 4*(offset+2)* n_c + offset);
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset + 4);
-	Fr       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + offset + 4);
-	Gr       = _mm_load_ps(VFtab + 4*(offset+2)* n_c + offset + 4);
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
-}
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_3_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 c6, __m128 c12, 
-								  __m128 *vctot, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,vcoul,Yc,Fc,Gc,Hc,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b,n_c;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	
-	
-	Yc       = _mm_load_ps(VFtab + 12* n_a);
-	Fc       = _mm_load_ps(VFtab + 12* n_b);
-	Gc       = _mm_load_ps(VFtab + 12* n_c);
-	Hc       = _mm_setzero_ps();
-	Yd       = _mm_load_ps(VFtab + 12* n_a + 4);
-	Fd       = _mm_load_ps(VFtab + 12* n_b + 4);
-	Gd       = _mm_load_ps(VFtab + 12* n_c + 4);
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 12* n_a + 8);
-	Fr       = _mm_load_ps(VFtab + 12* n_b + 8);
-	Gr       = _mm_load_ps(VFtab + 12* n_c + 8);
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yc,Fc,Gc,Hc);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hc       = _mm_mul_ps(Hc,eps2);              /* Heps2 */
-	Gc       = _mm_mul_ps(Gc,eps);               /* Geps  */
-	Fc       = _mm_add_ps(Fc, _mm_add_ps(Gc,Hc));  /* Fp    */
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Yc, _mm_mul_ps(eps,Fc)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fc       = _mm_mul_ps(qq, _mm_add_ps(Fc, _mm_add_ps(Gc, _mm_add_ps(Hc,Hc))));
-	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
-}
-
-
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_2_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 *vctot)
-{
-    __m128  rt,eps,eps2,Y,F,G,H,vcoul;
-	__m128i n0;
-	int     n_a,n_b;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	Y        = _mm_load_ps(VFtab + 4* n_a);
-	F        = _mm_load_ps(VFtab + 4* n_b);
-	G        = _mm_setzero_ps();
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	F        = _mm_add_ps(F, _mm_add_ps(G,H));  /* Fp    */
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Y, _mm_mul_ps(eps,F)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
-	
-	return _mm_mul_ps(F,tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_2_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	
-	/* For a few cases, like TIP4p waters, there are particles with LJ-only interactions in a loop where
-	 * the table data might contain both coulomb and LJ. To handle this case, we use an offset value of 0
-	 * if the data is an LJ-only table, and 1 if it is actually a mixed coul+lj table.
-	 */
-	Yd       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset);
-	Fd       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + offset);
-	Gd       = _mm_setzero_ps();
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset + 4);
-	Fr       = _mm_load_ps(VFtab + 4*(offset+2)* n_b + offset + 4);
-	Gr       = _mm_setzero_ps();
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
-}
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_2_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 c6, __m128 c12, 
-								  __m128 *vctot, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,vcoul,Yc,Fc,Gc,Hc,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a,n_b;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	
-	Yc       = _mm_load_ps(VFtab + 12* n_a);
-	Fc       = _mm_load_ps(VFtab + 12* n_b);
-	Gc       = _mm_setzero_ps();
-	Hc       = _mm_setzero_ps();
-	Yd       = _mm_load_ps(VFtab + 12* n_a + 4);
-	Fd       = _mm_load_ps(VFtab + 12* n_b + 4);
-	Gd       = _mm_setzero_ps();
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 12* n_a + 8);
-	Fr       = _mm_load_ps(VFtab + 12* n_b + 8);
-	Gr       = _mm_setzero_ps();
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yc,Fc,Gc,Hc);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hc       = _mm_mul_ps(Hc,eps2);              /* Heps2 */
-	Gc       = _mm_mul_ps(Gc,eps);               /* Geps  */
-	Fc       = _mm_add_ps(Fc, _mm_add_ps(Gc,Hc));  /* Fp    */
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Yc, _mm_mul_ps(eps,Fc)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fc       = _mm_mul_ps(qq, _mm_add_ps(Fc, _mm_add_ps(Gc, _mm_add_ps(Hc,Hc))));
-	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
-}
-
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_1_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 *vctot)
-{
-    __m128  rt,eps,eps2,Y,F,G,H,vcoul;
-	__m128i n0;
-	int     n_a;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	Y        = _mm_load_ps(VFtab + 4* n_a);
-	F        = _mm_setzero_ps();
-	G        = _mm_setzero_ps();
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	F        = _mm_add_ps(F, _mm_add_ps(G,H));  /* Fp    */
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Y, _mm_mul_ps(eps,F)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
-	
-	return _mm_mul_ps(F,tabscale);
-}
-
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_1_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, __m128 c6, __m128 c12, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	
-	/* For a few cases, like TIP4p waters, there are particles with LJ-only interactions in a loop where
-	 * the table data might contain both coulomb and LJ. To handle this case, we use an offset value of 0
-	 * if the data is an LJ-only table, and 1 if it is actually a mixed coul+lj table.
-	 */
-	Yd       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset);
-	Fd       = _mm_setzero_ps();
-	Gd       = _mm_setzero_ps();
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 4*(offset+2)* n_a + offset + 4);
-	Fr       = _mm_setzero_ps();
-	Gr       = _mm_setzero_ps();
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
-}
-
-
-/* Return force should be multiplied by -rinv to get fscal */
-static inline __m128
-gmx_mm_int_1_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 qq, __m128 c6, __m128 c12, 
-									 __m128 *vctot, __m128 *vvdwtot)
-{
-    __m128  rt,eps,eps2,vcoul,Yc,Fc,Gc,Hc,Yd,Fd,Gd,Hd,Yr,Fr,Gr,Hr,vvdw6,vvdw12;
-	__m128i n0;
-	int     n_a;
-	
-    rt       = _mm_mul_ps(r,tabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	
-	Yc       = _mm_load_ps(VFtab + 12* n_a);
-	Fc       = _mm_setzero_ps();
-	Gc       = _mm_setzero_ps();
-	Hc       = _mm_setzero_ps();
-	Yd       = _mm_load_ps(VFtab + 12* n_a + 4);
-	Fd       = _mm_setzero_ps();
-	Gd       = _mm_setzero_ps();
-	Hd       = _mm_setzero_ps();
-	Yr       = _mm_load_ps(VFtab + 12* n_a + 8);
-	Fr       = _mm_setzero_ps();
-	Gr       = _mm_setzero_ps();
-	Hr       = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Yc,Fc,Gc,Hc);
-	_MM_TRANSPOSE4_PS(Yd,Fd,Gd,Hd);
-	_MM_TRANSPOSE4_PS(Yr,Fr,Gr,Hr);
-	Hc       = _mm_mul_ps(Hc,eps2);              /* Heps2 */
-	Gc       = _mm_mul_ps(Gc,eps);               /* Geps  */
-	Fc       = _mm_add_ps(Fc, _mm_add_ps(Gc,Hc));  /* Fp    */
-	Hd       = _mm_mul_ps(Hd,eps2);              /* Heps2 */
-	Gd       = _mm_mul_ps(Gd,eps);               /* Geps  */
-	Fd       = _mm_add_ps(Fd, _mm_add_ps(Gd,Hd));  /* Fp    */
-	Hr       = _mm_mul_ps(Hr,eps2);              /* Heps2 */
-	Gr       = _mm_mul_ps(Gr,eps);               /* Geps  */
-	Fr       = _mm_add_ps(Fr, _mm_add_ps(Gr,Hr));  /* Fp    */
-	
-	vcoul    = _mm_mul_ps(qq, _mm_add_ps(Yc, _mm_mul_ps(eps,Fc)));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
-	
-	vvdw6    = _mm_mul_ps(c6,  _mm_add_ps(Yd, _mm_mul_ps(eps,Fd)));
-	vvdw12   = _mm_mul_ps(c12, _mm_add_ps(Yr, _mm_mul_ps(eps,Fr)));
-	*vvdwtot = _mm_add_ps(*vvdwtot, _mm_add_ps(vvdw6,vvdw12));
-	
-	Fc       = _mm_mul_ps(qq, _mm_add_ps(Fc, _mm_add_ps(Gc, _mm_add_ps(Hc,Hc))));
-	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
-	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
-	
-	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
-}
-
-
-
-
-
-/* Return force should be multiplied by +rinv to get fscal */
-static inline __m128
-gmx_mm_int_4_genborn_ps(__m128 r, __m128 isai, 
-						float * isaj1, float *isaj2, float *isaj3, float *isaj4,
-						__m128 gbtabscale, float * GBtab, __m128 qq, __m128 *dvdasum, 
-						float *dvdaj1, float *dvdaj2, float *dvdaj3, float *dvdaj4, 
-						__m128 *vgbtot)
-{
-	const __m128 half  = {0.5,0.5,0.5,0.5};
-	
-    __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-	/* Assemble isaj */
-	isaj     = _mm_load_ss(isaj1);
-	t2       = _mm_load_ss(isaj2);
-	t3       = _mm_load_ss(isaj3);
-	t4       = _mm_load_ss(isaj4);
-	isaj     = _mm_unpacklo_ps(isaj,t2);  /* - - t2 t1 */
-	t3       = _mm_unpacklo_ps(t3,t4);  /* - - t4 t3 */
-	isaj     = _mm_movelh_ps(isaj,t3); /* t4 t3 t2 t1 */
-	
-	isaprod     = _mm_mul_ps(isai,isaj);
-	qq          = _mm_mul_ps(qq,isaprod);
-	gbtabscale  = _mm_mul_ps( isaprod, gbtabscale );
-	
-	rt       = _mm_mul_ps(r,gbtabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-		
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	n_d      = gmx_mm_extract_epi32(n0,3);
-	Y        = _mm_load_ps(GBtab + 4* n_a);
-	F        = _mm_load_ps(GBtab + 4* n_b);
-	G        = _mm_load_ps(GBtab + 4* n_c);
-	H        = _mm_load_ps(GBtab + 4* n_d);
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	F        = _mm_add_ps(_mm_add_ps(F,G),H);  /* Fp    */
-		
-	VV       = _mm_add_ps(Y, _mm_mul_ps(eps,F));
-	FF       = _mm_add_ps(_mm_add_ps(F,G), _mm_add_ps(H,H));
-
-	vgb      = _mm_mul_ps(qq, VV);
-	*vgbtot  = _mm_sub_ps(*vgbtot,vgb); /* Yes, the sign is correct */
-
-	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
-	
-	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
-	
-	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
-	
-	dvdatmp  = _mm_mul_ps(_mm_mul_ps(dvdatmp,isaj), isaj);
-
-	/* Update 4 dada[j] values */
-	Y        = _mm_load_ss(dvdaj1);
-	F        = _mm_load_ss(dvdaj2);
-	G        = _mm_load_ss(dvdaj3);
-	H        = _mm_load_ss(dvdaj4);
-	t3       = _mm_movehl_ps(_mm_setzero_ps(),dvdatmp);
-	t2       = _mm_shuffle_ps(dvdatmp,dvdatmp,_MM_SHUFFLE(0,0,0,1));
-	t4       = _mm_shuffle_ps(t3,t3,_MM_SHUFFLE(0,0,0,1));
-		
-	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
-	_mm_store_ss( dvdaj2 , _mm_add_ss( F, t2 ) );
-	_mm_store_ss( dvdaj3 , _mm_add_ss( G, t3 ) );
-	_mm_store_ss( dvdaj4 , _mm_add_ss( H, t4 ) );
-	
-	return ftmp;
-}
-
-
-
-/* Return force should be multiplied by +rinv to get fscal */
-static inline __m128
-gmx_mm_int_3_genborn_ps(__m128 r, __m128 isai, 
-						float * isaj1, float *isaj2, float *isaj3, 
-						__m128 gbtabscale, float * GBtab, __m128 qq, __m128 *dvdasum, 
-						float *dvdaj1, float *dvdaj2, float *dvdaj3,
-						__m128 *vgbtot)
-{
-	const __m128 half  = {0.5,0.5,0.5,0.5};
-	
-    __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-	/* Assemble isaj */
-	isaj     = _mm_load_ss(isaj1);
-	t2       = _mm_load_ss(isaj2);
-	t3       = _mm_load_ss(isaj3);
-	isaj     = _mm_unpacklo_ps(isaj,t2);  /* - - t2 t1 */
-	t3       = _mm_unpacklo_ps(t3,t3);  /* - - t3 t3 */
-	isaj     = _mm_movelh_ps(isaj,t3); /* t3 t3 t2 t1 */
-	
-	isaprod     = _mm_mul_ps(isai,isaj);
-	qq          = _mm_mul_ps(qq,isaprod);
-	gbtabscale  = _mm_mul_ps( isaprod, gbtabscale );
-	
-	rt       = _mm_mul_ps(r,gbtabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	n_c      = gmx_mm_extract_epi32(n0,2);
-	Y        = _mm_load_ps(GBtab + 4* n_a);
-	F        = _mm_load_ps(GBtab + 4* n_b);
-	G        = _mm_load_ps(GBtab + 4* n_c);
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	F        = _mm_add_ps(_mm_add_ps(F,G),H);  /* Fp    */
-	
-	VV       = _mm_add_ps(Y, _mm_mul_ps(eps,F));
-	FF       = _mm_add_ps(_mm_add_ps(F,G), _mm_add_ps(H,H));
-	
-	vgb      = _mm_mul_ps(qq, VV);
-	*vgbtot  = _mm_sub_ps(*vgbtot,vgb); /* Yes, the sign is correct */
-	
-	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
-	
-	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
-	
-	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
-	
-	dvdatmp  = _mm_mul_ps(_mm_mul_ps(dvdatmp,isaj), isaj);
-	
-	/* Update 3 dada[j] values */
-	Y        = _mm_load_ss(dvdaj1);
-	F        = _mm_load_ss(dvdaj2);
-	G        = _mm_load_ss(dvdaj3);
-	t3       = _mm_movehl_ps(_mm_setzero_ps(),dvdatmp);
-	t2       = _mm_shuffle_ps(dvdatmp,dvdatmp,_MM_SHUFFLE(0,0,0,1));
-	
-	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
-	_mm_store_ss( dvdaj2 , _mm_add_ss( F, t2 ) );
-	_mm_store_ss( dvdaj3 , _mm_add_ss( G, t3 ) );
-	
-	return ftmp;
-}
-
-
-
-
-/* Return force should be multiplied by +rinv to get fscal */
-static inline __m128
-gmx_mm_int_2_genborn_ps(__m128 r, __m128 isai, 
-						float * isaj1, float *isaj2, 
-						__m128 gbtabscale, float * GBtab, __m128 qq, __m128 *dvdasum, 
-						float *dvdaj1, float *dvdaj2,
-						__m128 *vgbtot)
-{
-	const __m128 half  = {0.5,0.5,0.5,0.5};
-	
-    __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-	/* Assemble isaj */
-	isaj     = _mm_load_ss(isaj1);
-	t2       = _mm_load_ss(isaj2);
-	isaj     = _mm_unpacklo_ps(isaj,t2);  /* - - t2 t1 */
-	
-	isaprod     = _mm_mul_ps(isai,isaj);
-	qq          = _mm_mul_ps(qq,isaprod);
-	gbtabscale  = _mm_mul_ps( isaprod, gbtabscale );
-	
-	rt       = _mm_mul_ps(r,gbtabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	n_b      = gmx_mm_extract_epi32(n0,1);
-	Y        = _mm_load_ps(GBtab + 4* n_a);
-	F        = _mm_load_ps(GBtab + 4* n_b);
-	G        = _mm_setzero_ps();
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	F        = _mm_add_ps(_mm_add_ps(F,G),H);  /* Fp    */
-	
-	VV       = _mm_add_ps(Y, _mm_mul_ps(eps,F));
-	FF       = _mm_add_ps(_mm_add_ps(F,G), _mm_add_ps(H,H));
-	
-	vgb      = _mm_mul_ps(qq, VV);
-	*vgbtot  = _mm_sub_ps(*vgbtot,vgb); /* Yes, the sign is correct */
-	
-	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
-	
-	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
-	
-	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
-	
-	dvdatmp  = _mm_mul_ps(_mm_mul_ps(dvdatmp,isaj), isaj);
-	
-	/* Update 2 dada[j] values */
-	Y        = _mm_load_ss(dvdaj1);
-	F        = _mm_load_ss(dvdaj2);
-	t2       = _mm_shuffle_ps(dvdatmp,dvdatmp,_MM_SHUFFLE(0,0,0,1));
-	
-	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
-	_mm_store_ss( dvdaj2 , _mm_add_ss( F, t2 ) );
-	
-	return ftmp;
-}
-
-/* Return force should be multiplied by +rinv to get fscal */
-static inline __m128
-gmx_mm_int_1_genborn_ps(__m128 r, __m128 isai, 
-						float * isaj1, 
-						__m128 gbtabscale, float * GBtab, __m128 qq, __m128 *dvdasum, 
-						float *dvdaj1, 
-						__m128 *vgbtot)
-{
-	const __m128 half  = {0.5,0.5,0.5,0.5};
-	
-    __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
-	__m128i n0;
-	int     n_a,n_b,n_c,n_d;
-	
-	/* Assemble isaj */
-	isaj     = _mm_load_ss(isaj1);
-	
-	isaprod     = _mm_mul_ps(isai,isaj);
-	qq          = _mm_mul_ps(qq,isaprod);
-	gbtabscale  = _mm_mul_ps( isaprod, gbtabscale );
-	
-	rt       = _mm_mul_ps(r,gbtabscale); 
-	n0       = _mm_cvttps_epi32(rt);
-	eps      = _mm_sub_ps(rt, _mm_cvtepi32_ps(n0));
-	eps2     = _mm_mul_ps(eps,eps);
-	
-	/* Extract indices from n0 */
-	n_a      = gmx_mm_extract_epi32(n0,0);
-	Y        = _mm_load_ps(GBtab + 4* n_a);
-	F        = _mm_setzero_ps();
-	G        = _mm_setzero_ps();
-	H        = _mm_setzero_ps();
-	_MM_TRANSPOSE4_PS(Y,F,G,H);
-	G        = _mm_mul_ps(G,eps);               /* Geps  */
-	H        = _mm_mul_ps(H,eps2);              /* Heps2 */
-	F        = _mm_add_ps(_mm_add_ps(F,G),H);  /* Fp    */
-	
-	VV       = _mm_add_ps(Y, _mm_mul_ps(eps,F));
-	FF       = _mm_add_ps(_mm_add_ps(F,G), _mm_add_ps(H,H));
-	
-	vgb      = _mm_mul_ps(qq, VV);
-	*vgbtot  = _mm_sub_ps(*vgbtot,vgb); /* Yes, the sign is correct */
-	
-	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
-	
-	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
-	
-	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
-	
-	dvdatmp  = _mm_mul_ps(_mm_mul_ps(dvdatmp,isaj), isaj);
-	
-	/* Update 1 dada[j] values */
-	Y        = _mm_load_ss(dvdaj1);
-	
-	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
-	
-	return ftmp;
-}
-
-
-
-
-
-static inline void
-gmx_mm_update_iforce_1atom_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
+gmx_mm_update_iforce_1atom_ps(__m128 *fix1, __m128 *fiy1, __m128 *fiz1,
                               float *fptr,
                               float *fshiftptr)
 {
 	__m128 t1,t2,t3;
 	
 #ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fix1);   
-	fiy1 = _mm_hadd_ps(fiy1,fiz1);
+	*fix1 = _mm_hadd_ps(*fix1,*fix1);   
+	*fiy1 = _mm_hadd_ps(*fiy1,*fiz1);
 	
-	fix1 = _mm_hadd_ps(fix1,fiy1); /* fiz1 fiy1 fix1 fix1 */ 
+	*fix1 = _mm_hadd_ps(*fix1,*fiy1); /* fiz1 fiy1 fix1 fix1 */ 
 #else
 	/* SSE2 */
 	/* transpose data */
-	t1 = fix1;
-	_MM_TRANSPOSE4_PS(fix1,t1,fiy1,fiz1);  
-	fix1 = _mm_add_ps(_mm_add_ps(fix1,t1), _mm_add_ps(fiy1,fiz1));
+	t1 = *fix1;
+	_MM_TRANSPOSE4_PS(*fix1,t1,*fiy1,*fiz1);  
+	*fix1 = _mm_add_ps(_mm_add_ps(*fix1,t1), _mm_add_ps(*fiy1,*fiz1));
 #endif
 	t2 = _mm_load_ss(fptr);
 	t2 = _mm_loadh_pi(t2,(__m64 *)(fptr+1));
 	t3 = _mm_load_ss(fshiftptr);
 	t3 = _mm_loadh_pi(t3,(__m64 *)(fshiftptr+1));
 	
-	t2 = _mm_add_ps(t2,fix1);
-	t3 = _mm_add_ps(t3,fix1);
+	t2 = _mm_add_ps(t2,*fix1);
+	t3 = _mm_add_ps(t3,*fix1);
 	
 	_mm_store_ss(fptr,t2);
 	_mm_storeh_pi((__m64 *)(fptr+1),t2);
@@ -2970,42 +2284,42 @@ gmx_mm_update_iforce_1atom_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 }
 
 static inline void
-gmx_mm_update_iforce_2atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-                               __m128 fix2, __m128 fiy2, __m128 fiz2,
+gmx_mm_update_iforce_2atoms_ps(__m128 *fix1, __m128 *fiy1, __m128 *fiz1,
+                               __m128 *fix2, __m128 *fiy2, __m128 *fiz2,
                                float *fptr,
                                float *fshiftptr)
 {
 	__m128 t1,t2,t4;
 	
 #ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fiy1);   
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
+	*fix1 = _mm_hadd_ps(*fix1,*fiy1);   
+	*fiz1 = _mm_hadd_ps(*fiz1,*fix2);
+	*fiy2 = _mm_hadd_ps(*fiy2,*fiz2);
 	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */ 
-	fiy2 = _mm_hadd_ps(fiy2,fiy2); /*  -    -   fiz2 fiy2 */
+	*fix1 = _mm_hadd_ps(*fix1,*fiz1); /* fix2 fiz1 fiy1 fix1 */ 
+	*fiy2 = _mm_hadd_ps(*fiy2,*fiy2); /*  -    -   fiz2 fiy2 */
 #else
 	/* SSE2 */
 	/* transpose data */
-	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
-	t1 = _mm_unpacklo_ps(fiy2,fiz2);
-	t2 = _mm_unpackhi_ps(fiy2,fiz2);
+	_MM_TRANSPOSE4_PS(*fix1,*fiy1,*fiz1,*fix2);  
+	t1 = _mm_unpacklo_ps(*fiy2,*fiz2);
+	t2 = _mm_unpackhi_ps(*fiy2,*fiz2);
 		
-	fix1 = _mm_add_ps(_mm_add_ps(fix1,fiy1), _mm_add_ps(fiz1,fix2));
+	*fix1 = _mm_add_ps(_mm_add_ps(*fix1,*fiy1), _mm_add_ps(*fiz1,*fix2));
 	t1   = _mm_add_ps(t1,t2);
 	t2   = _mm_movehl_ps(t2,t1);
-	fiy2 = _mm_add_ps(t1,t2);
+	*fiy2 = _mm_add_ps(t1,t2);
 #endif
-	_mm_storeu_ps(fptr,   _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
+	_mm_storeu_ps(fptr,   _mm_add_ps(*fix1,_mm_loadu_ps(fptr)  ));
 	t1 = _mm_loadl_pi(t1,(__m64 *)(fptr+4));
-	_mm_storel_pi((__m64 *)(fptr+4), _mm_add_ps(fiy2,t1));
+	_mm_storel_pi((__m64 *)(fptr+4), _mm_add_ps(*fiy2,t1));
 	
 	t4 = _mm_load_ss(fshiftptr+2);
 	t4 = _mm_loadh_pi(t4,(__m64 *)(fshiftptr));
 	
-	t1 = _mm_shuffle_ps(fix1,fiy2,_MM_SHUFFLE(0,0,3,2));   /* fiy2  -   fix2 fiz1 */
+	t1 = _mm_shuffle_ps(*fix1,*fiy2,_MM_SHUFFLE(0,0,3,2));   /* fiy2  -   fix2 fiz1 */
 	t1 = _mm_shuffle_ps(t1,t1,_MM_SHUFFLE(3,1,0,0));       /* fiy2 fix2  -   fiz1 */
-	t2 = _mm_shuffle_ps(fiy2,fix1,_MM_SHUFFLE(1,0,0,1));   /* fiy1 fix1  -   fiz2 */
+	t2 = _mm_shuffle_ps(*fiy2,*fix1,_MM_SHUFFLE(1,0,0,1));   /* fiy1 fix1  -   fiz2 */
 
 	t1 = _mm_add_ps(t1,t2);
 	t1 = _mm_add_ps(t1,t4); /* y x - z */
@@ -3017,47 +2331,47 @@ gmx_mm_update_iforce_2atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 
 
 static inline void
-gmx_mm_update_iforce_3atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-                               __m128 fix2, __m128 fiy2, __m128 fiz2,
-                               __m128 fix3, __m128 fiy3, __m128 fiz3,
+gmx_mm_update_iforce_3atoms_ps(__m128 *fix1, __m128 *fiy1, __m128 *fiz1,
+                               __m128 *fix2, __m128 *fiy2, __m128 *fiz2,
+                               __m128 *fix3, __m128 *fiy3, __m128 *fiz3,
                                float *fptr,
                                float *fshiftptr)
 {
 	__m128 t1,t2,t3,t4;
 	
 #ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fiy1);   
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
-	fix3 = _mm_hadd_ps(fix3,fiy3);
-	fiz3 = _mm_hadd_ps(fiz3,fiz3);
+	*fix1 = _mm_hadd_ps(*fix1,*fiy1);   
+	*fiz1 = _mm_hadd_ps(*fiz1,*fix2);
+	*fiy2 = _mm_hadd_ps(*fiy2,*fiz2);
+	*fix3 = _mm_hadd_ps(*fix3,*fiy3);
+	*fiz3 = _mm_hadd_ps(*fiz3,*fiz3);
 	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */ 
-	fiy2 = _mm_hadd_ps(fiy2,fix3); /* fiy3 fix3 fiz2 fiy2 */
-	fiz3 = _mm_hadd_ps(fiz3,fiz3); /*  -    -    -   fiz3 */
+	*fix1 = _mm_hadd_ps(*fix1,*fiz1); /* fix2 fiz1 fiy1 fix1 */ 
+	*fiy2 = _mm_hadd_ps(*fiy2,*fix3); /* fiy3 fix3 fiz2 fiy2 */
+	*fiz3 = _mm_hadd_ps(*fiz3,*fiz3); /*  -    -    -   fiz3 */
 #else
 	/* SSE2 */
 	/* transpose data */
-	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
-	_MM_TRANSPOSE4_PS(fiy2,fiz2,fix3,fiy3);
-	t2   = _mm_movehl_ps(_mm_setzero_ps(),fiz3);
-	t1   = _mm_shuffle_ps(fiz3,fiz3,_MM_SHUFFLE(0,0,0,1));
+	_MM_TRANSPOSE4_PS(*fix1,*fiy1,*fiz1,*fix2);  
+	_MM_TRANSPOSE4_PS(*fiy2,*fiz2,*fix3,*fiy3);
+	t2   = _mm_movehl_ps(_mm_setzero_ps(),*fiz3);
+	t1   = _mm_shuffle_ps(*fiz3,*fiz3,_MM_SHUFFLE(0,0,0,1));
 	t3   = _mm_shuffle_ps(t2,t2,_MM_SHUFFLE(0,0,0,1));
 	
-	fix1 = _mm_add_ps(_mm_add_ps(fix1,fiy1), _mm_add_ps(fiz1,fix2));
-	fiy2 = _mm_add_ps(_mm_add_ps(fiy2,fiz2), _mm_add_ps(fix3,fiy3));
-	fiz3 = _mm_add_ss(_mm_add_ps(fiz3,t1)  , _mm_add_ps(t2,t3));
+	*fix1 = _mm_add_ps(_mm_add_ps(*fix1,*fiy1), _mm_add_ps(*fiz1,*fix2));
+	*fiy2 = _mm_add_ps(_mm_add_ps(*fiy2,*fiz2), _mm_add_ps(*fix3,*fiy3));
+	*fiz3 = _mm_add_ss(_mm_add_ps(*fiz3,t1)  , _mm_add_ps(t2,t3));
 #endif
-	_mm_storeu_ps(fptr,  _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
-	_mm_storeu_ps(fptr+4,_mm_add_ps(fiy2,_mm_loadu_ps(fptr+4)));
-	_mm_store_ss (fptr+8,_mm_add_ss(fiz3,_mm_load_ss(fptr+8) ));
+	_mm_storeu_ps(fptr,  _mm_add_ps(*fix1,_mm_loadu_ps(fptr)  ));
+	_mm_storeu_ps(fptr+4,_mm_add_ps(*fiy2,_mm_loadu_ps(fptr+4)));
+	_mm_store_ss (fptr+8,_mm_add_ss(*fiz3,_mm_load_ss(fptr+8) ));
 	
 	t4 = _mm_load_ss(fshiftptr+2);
 	t4 = _mm_loadh_pi(t4,(__m64 *)(fshiftptr));
 	
-	t1 = _mm_shuffle_ps(fiz3,fix1,_MM_SHUFFLE(1,0,0,0));   /* fiy1 fix1  -   fiz3 */
-	t2 = _mm_shuffle_ps(fix1,fiy2,_MM_SHUFFLE(3,2,2,2));   /* fiy3 fix3  -   fiz1 */
-	t3 = _mm_shuffle_ps(fiy2,fix1,_MM_SHUFFLE(3,3,0,1));   /* fix2 fix2 fiy2 fiz2 */
+	t1 = _mm_shuffle_ps(*fiz3,*fix1,_MM_SHUFFLE(1,0,0,0));   /* fiy1 fix1  -   fiz3 */
+	t2 = _mm_shuffle_ps(*fix1,*fiy2,_MM_SHUFFLE(3,2,2,2));   /* fiy3 fix3  -   fiz1 */
+	t3 = _mm_shuffle_ps(*fiy2,*fix1,_MM_SHUFFLE(3,3,0,1));   /* fix2 fix2 fiy2 fiz2 */
 	t3 = _mm_shuffle_ps(t3  ,t3  ,_MM_SHUFFLE(1,2,0,0));   /* fiy2 fix2  -   fiz2 */
 
 	t1 = _mm_add_ps(t1,t2);
@@ -3070,49 +2384,49 @@ gmx_mm_update_iforce_3atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 
 
 static inline void
-gmx_mm_update_iforce_4atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-                               __m128 fix2, __m128 fiy2, __m128 fiz2,
-                               __m128 fix3, __m128 fiy3, __m128 fiz3,
-                               __m128 fix4, __m128 fiy4, __m128 fiz4,
+gmx_mm_update_iforce_4atoms_ps(__m128 *fix1, __m128 *fiy1, __m128 *fiz1,
+                               __m128 *fix2, __m128 *fiy2, __m128 *fiz2,
+                               __m128 *fix3, __m128 *fiy3, __m128 *fiz3,
+                               __m128 *fix4, __m128 *fiy4, __m128 *fiz4,
                                float *fptr,
                                float *fshiftptr)
 {
 	__m128 t1,t2,t3,t4,t5;
 	
 #ifdef GMX_SSE3
-	fix1 = _mm_hadd_ps(fix1,fiy1);   
-	fiz1 = _mm_hadd_ps(fiz1,fix2);
-	fiy2 = _mm_hadd_ps(fiy2,fiz2);
-	fix3 = _mm_hadd_ps(fix3,fiy3);
-	fiz3 = _mm_hadd_ps(fiz3,fix4);
-	fiy4 = _mm_hadd_ps(fiy4,fiz4);
+	*fix1 = _mm_hadd_ps(*fix1,*fiy1);   
+	*fiz1 = _mm_hadd_ps(*fiz1,*fix2);
+	*fiy2 = _mm_hadd_ps(*fiy2,*fiz2);
+	*fix3 = _mm_hadd_ps(*fix3,*fiy3);
+	*fiz3 = _mm_hadd_ps(*fiz3,*fix4);
+	*fiy4 = _mm_hadd_ps(*fiy4,*fiz4);
 	
-	fix1 = _mm_hadd_ps(fix1,fiz1); /* fix2 fiz1 fiy1 fix1 */ 
-	fiy2 = _mm_hadd_ps(fiy2,fix3); /* fiy3 fix3 fiz2 fiy2 */
-	fiz3 = _mm_hadd_ps(fiz3,fiy4); /* fiz4 fiy4 fix4 fiz3 */
+	*fix1 = _mm_hadd_ps(*fix1,*fiz1); /* fix2 fiz1 fiy1 fix1 */ 
+	*fiy2 = _mm_hadd_ps(*fiy2,*fix3); /* fiy3 fix3 fiz2 fiy2 */
+	*fiz3 = _mm_hadd_ps(*fiz3,*fiy4); /* fiz4 fiy4 fix4 fiz3 */
 #else
 	/* SSE2 */
 	/* transpose data */
-	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
-	_MM_TRANSPOSE4_PS(fiy2,fiz2,fix3,fiy3);
-	_MM_TRANSPOSE4_PS(fiz3,fix4,fiy4,fiz4);
+	_MM_TRANSPOSE4_PS(*fix1,*fiy1,*fiz1,*fix2);  
+	_MM_TRANSPOSE4_PS(*fiy2,*fiz2,*fix3,*fiy3);
+	_MM_TRANSPOSE4_PS(*fiz3,*fix4,*fiy4,*fiz4);
 	
-	fix1 = _mm_add_ps(_mm_add_ps(fix1,fiy1), _mm_add_ps(fiz1,fix2));
-	fiy2 = _mm_add_ps(_mm_add_ps(fiy2,fiz2), _mm_add_ps(fix3,fiy3));
-	fiz3 = _mm_add_ps(_mm_add_ps(fiz3,fix4), _mm_add_ps(fiy4,fiz4));
+	*fix1 = _mm_add_ps(_mm_add_ps(*fix1,*fiy1), _mm_add_ps(*fiz1,*fix2));
+	*fiy2 = _mm_add_ps(_mm_add_ps(*fiy2,*fiz2), _mm_add_ps(*fix3,*fiy3));
+	*fiz3 = _mm_add_ps(_mm_add_ps(*fiz3,*fix4), _mm_add_ps(*fiy4,*fiz4));
 #endif
-	_mm_storeu_ps(fptr,  _mm_add_ps(fix1,_mm_loadu_ps(fptr)  ));
-	_mm_storeu_ps(fptr+4,_mm_add_ps(fiy2,_mm_loadu_ps(fptr+4)));
-	_mm_storeu_ps(fptr+8,_mm_add_ps(fiz3,_mm_loadu_ps(fptr+8)));
+	_mm_storeu_ps(fptr,  _mm_add_ps(*fix1,_mm_loadu_ps(fptr)  ));
+	_mm_storeu_ps(fptr+4,_mm_add_ps(*fiy2,_mm_loadu_ps(fptr+4)));
+	_mm_storeu_ps(fptr+8,_mm_add_ps(*fiz3,_mm_loadu_ps(fptr+8)));
 	
 	t5 = _mm_load_ss(fshiftptr+2);
 	t5 = _mm_loadh_pi(t5,(__m64 *)(fshiftptr));
 	
-	t1 = _mm_shuffle_ps(fix1,fix1,_MM_SHUFFLE(1,0,2,2));   /* fiy1 fix1  -   fiz1 */
-	t2 = _mm_shuffle_ps(fiy2,fiy2,_MM_SHUFFLE(3,2,1,1));   /* fiy3 fix3  -   fiz2 */
-	t3 = _mm_shuffle_ps(fiz3,fiz3,_MM_SHUFFLE(2,1,0,0));   /* fiy4 fix4  -   fiz3 */
-	t4 = _mm_shuffle_ps(fix1,fiy2,_MM_SHUFFLE(0,0,3,3));   /* fiy2 fiy2 fix2 fix2 */
-	t4 = _mm_shuffle_ps(fiz3,t4  ,_MM_SHUFFLE(2,0,3,3));   /* fiy2 fix2  -   fiz4 */
+	t1 = _mm_shuffle_ps(*fix1,*fix1,_MM_SHUFFLE(1,0,2,2));   /* fiy1 fix1  -   fiz1 */
+	t2 = _mm_shuffle_ps(*fiy2,*fiy2,_MM_SHUFFLE(3,2,1,1));   /* fiy3 fix3  -   fiz2 */
+	t3 = _mm_shuffle_ps(*fiz3,*fiz3,_MM_SHUFFLE(2,1,0,0));   /* fiy4 fix4  -   fiz3 */
+	t4 = _mm_shuffle_ps(*fix1,*fiy2,_MM_SHUFFLE(0,0,3,3));   /* fiy2 fiy2 fix2 fix2 */
+	t4 = _mm_shuffle_ps(*fiz3,t4  ,_MM_SHUFFLE(2,0,3,3));   /* fiy2 fix2  -   fiz4 */
 	
 	t1 = _mm_add_ps(t1,t2);
 	t3 = _mm_add_ps(t3,t4);
@@ -3124,57 +2438,61 @@ gmx_mm_update_iforce_4atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 }
 
 
-static inline void
-gmx_mm_update_1pot_ps(__m128 pot1, float *ptr1)
-{
 #ifdef GMX_SSE3
-	pot1 = _mm_hadd_ps(pot1,pot1);
-	pot1 = _mm_hadd_ps(pot1,pot1);
+
+#define GMX_MM_UPDATE_1POT_PS(pot1,ptr1)                                    \
+{                                                                           \
+    pot1 = _mm_hadd_ps(pot1,pot1);                                          \
+    pot1 = _mm_hadd_ps(pot1,pot1);                                          \
+    _mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
+}
+
+#define GMX_MM_UPDATE_2POT_PS(pot1,ptr1,pot2,ptr2)                          \
+{                                                                           \
+    pot1 = _mm_hadd_ps(pot1,pot2);                                          \
+    pot1 = _mm_hadd_ps(pot1,pot1);                                          \
+    pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1));                  \
+	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
+	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));                  \
+}
+
 #else
-	/* SSE2 */
-	pot1 = _mm_add_ps(pot1,_mm_movehl_ps(pot1,pot1));
-	pot1 = _mm_add_ps(pot1,_mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1)));
+
+#define GMX_MM_UPDATE_1POT_PS(pot1,ptr1)                                    \
+{                                                                           \
+    pot1 = _mm_add_ps(pot1,_mm_movehl_ps(pot1,pot1));                       \
+    pot1 = _mm_add_ps(pot1,_mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1))); \
+    _mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
+}
+
+#define GMX_MM_UPDATE_2POT_PS(pot1,ptr1,pot2,ptr2)                          \
+{                                                                           \
+	__m128 _updt1_,_updt2;                                                  \
+	_updt1 = _mm_movehl_ps(pot2,pot1); /* 2d 2c 1d 1c */                    \
+	_updt2 = _mm_movelh_ps(pot1,pot2); /* 2b 2a 1b 1a */                    \
+	_updt1 = _mm_add_ps(_updt1,_updt2);       /* 2  2  1  1  */             \
+	_updt2 = _mm_shuffle_ps(_updt1,_updt1,_MM_SHUFFLE(3,3,1,1));            \
+	pot1   = _mm_add_ps(_updt1,_updt2);       /* -  2  -  1  */             \
+	pot2   = _mm_movehl_ps(_updt2,pot1);    /* -  -  -  2  */               \
+	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
+	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));                  \
+}
+
 #endif
-	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
+
+
+#define GMX_MM_UPDATE_4POT_PS(pot1,ptr1,pot2,ptr2,pot3,ptr3,pot4,ptr4)      \
+{                                                                           \
+    _MM_TRANSPOSE4_PS(pot1,pot2,pot3,pot4);                                 \
+    pot1 = _mm_add_ps(_mm_add_ps(pot1,pot2),_mm_add_ps(pot3,pot4));         \
+    pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(1,1,1,1));                  \
+    pot3 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(2,2,2,2));                  \
+    pot4 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(3,3,3,3));                  \
+	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));                  \
+	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));                  \
+	_mm_store_ss(ptr3,_mm_add_ss(pot3,_mm_load_ss(ptr3)));                  \
+	_mm_store_ss(ptr4,_mm_add_ss(pot4,_mm_load_ss(ptr4)));                  \
 }
 
 
-static inline void
-gmx_mm_update_2pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2)
-{
-#ifdef GMX_SSE3
-	pot1 = _mm_hadd_ps(pot1,pot2);
-	pot1 = _mm_hadd_ps(pot1,pot1);
-	pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1));
-#else
-	/* SSE2 */
-	__m128 t1,t2;
-	t1   = _mm_movehl_ps(pot2,pot1); /* 2d 2c 1d 1c */
-	t2   = _mm_movelh_ps(pot1,pot2); /* 2b 2a 1b 1a */
-	t1   = _mm_add_ps(t1,t2);       /* 2  2  1  1  */
-	t2   = _mm_shuffle_ps(t1,t1,_MM_SHUFFLE(3,3,1,1));
-	pot1 = _mm_add_ps(t1,t2);       /* -  2  -  1  */
-	pot2 = _mm_movehl_ps(t2,pot1);    /* -  -  -  2  */
-#endif
-    
-	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
-	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));
-}
-
-
-static inline void
-gmx_mm_update_4pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2, __m128 pot3, float *ptr3, __m128 pot4, float *ptr4)
-{
-    _MM_TRANSPOSE4_PS(pot1,pot2,pot3,pot4);
-    
-    pot1 = _mm_add_ps(_mm_add_ps(pot1,pot2),_mm_add_ps(pot3,pot4));
-    pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(1,1,1,1));
-    pot3 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(2,2,2,2));
-    pot4 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(3,3,3,3));
-    
-	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
-	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));
-	_mm_store_ss(ptr3,_mm_add_ss(pot3,_mm_load_ss(ptr3)));
-	_mm_store_ss(ptr4,_mm_add_ss(pot4,_mm_load_ss(ptr4)));
-}
-
+#endif /* _gmx_sse2_single_h_ */

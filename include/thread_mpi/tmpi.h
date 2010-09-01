@@ -63,8 +63,6 @@ extern "C"
 } /* Avoids screwing up auto-indentation */
 #endif
 
-/*#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"*/
 
 
 /** tMPI Communicator
@@ -282,20 +280,26 @@ tMPI_Comm tMPI_Get_comm_self(void);
 
 /*! \name Initialization and exit functions 
     \{ */
-/** Traditional MPI initializer; spawns threads that start at main(). 
+/** Traditional MPI initializer; spawns threads that start at 
+    the given function. 
   
     Seeks the argument '-nt n', where n is the number of 
     threads that will be created. If n==0, the number of threads will
     be the recommended number of threads for this platform as obtained
     from tMPI_Get_recommended_ntreads(). 
 
-    The new threads then run main() again, with the original argc and argv. 
+    The new threads then run the function start_function, with the original
+    argc and argv. This function could be main(), or any other function; 
+    calling this function again - whether from the started threads or from 
+    the main thread - has no effect.
     
     \param[in] argc     argc of original main() invocation, or NULL
     \param[in] argv     argv of original main() invocation, or NULL. 
+    \param[in] start_function Starting function of type 
+                        int start_function(int argc, char *argv[]);
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
-int tMPI_Init(int *argc, char ***argv);
+int tMPI_Init(int *argc, char ***argv, int (*start_function)(int, char**));
 
 
 /** Alternate thread MPI intializer and thread spawner.

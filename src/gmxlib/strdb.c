@@ -44,7 +44,7 @@
 #include "gmx_fatal.h"
 #include "strdb.h"
 
-bool get_a_line(FILE *fp,char line[],int n)
+gmx_bool get_a_line(FILE *fp,char line[],int n)
 {
   char *line0;
   char *dum;
@@ -77,7 +77,7 @@ bool get_a_line(FILE *fp,char line[],int n)
   return TRUE;
 }
 
-bool get_header(char line[],char *header)
+gmx_bool get_header(char line[],char *header)
 {
   char temp[STRLEN],*dum;
 
@@ -136,7 +136,7 @@ int search_str(int nstr,char **str,char *key)
 
   /* Linear search */
   for(i=0; (i<nstr); i++)
-    if (strcasecmp(str[i],key)==0)
+    if (gmx_strcasecmp(str[i],key)==0)
       return i;
 
   return -1;

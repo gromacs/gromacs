@@ -121,8 +121,8 @@ static real search_e_diss(int n2m,t_2morse t2m[],char *ai,char *aj)
   /* Do a best match search for dissociation energies */
   for(i=0; (i<n2m); i++) {
     /* Check for a perfect match */
-    if (((strcasecmp(t2m[i].ai,ai) == 0) && (strcasecmp(t2m[i].aj,aj) == 0)) ||
-	((strcasecmp(t2m[i].aj,ai) == 0) && (strcasecmp(t2m[i].ai,aj) == 0))) {
+    if (((gmx_strcasecmp(t2m[i].ai,ai) == 0) && (gmx_strcasecmp(t2m[i].aj,aj) == 0)) ||
+	((gmx_strcasecmp(t2m[i].aj,ai) == 0) && (gmx_strcasecmp(t2m[i].ai,aj) == 0))) {
       ibest = i;
       break;
     }
@@ -179,7 +179,7 @@ void convert_harmonics(int nrmols,t_molinfo mols[],gpp_atomtype_t atype)
   int  i,j,k,last,ni,nj;
   int  nrharm,nrmorse,bb;
   real edis,kb,b0,beta;
-  bool *bRemoveHarm;
+  gmx_bool *bRemoveHarm;
 
   /* First get the data */
   t2m = read_dissociation_energies(&n2m);

@@ -69,9 +69,9 @@ static void add_object(t_manager *man,eObject eO,atom_id ai,atom_id aj)
 }
 
 static void add_bonds(t_manager *man,t_functype func[],
-		      t_ilist *b,bool bB[])
+		      t_ilist *b,gmx_bool bB[])
 {
-  bool    *bH=man->bHydro;
+  gmx_bool    *bH=man->bHydro;
   t_iatom *ia;
   t_iatom type,ai,aj,ak;
   int     i,delta,ftype;
@@ -112,7 +112,7 @@ static void add_bonds(t_manager *man,t_functype func[],
   }
 }
 
-static void add_bpl(t_manager *man,t_idef *idef,bool bB[])
+static void add_bpl(t_manager *man,t_idef *idef,gmx_bool bB[])
 {
   int ftype;
 
@@ -136,7 +136,7 @@ static atom_id which_atom(t_manager *man,int x, int y)
   return NO_ATID;
 }
 
-static void do_label(t_x11 *x11,t_manager *man,int x,int y,bool bSet)
+static void do_label(t_x11 *x11,t_manager *man,int x,int y,gmx_bool bSet)
 {
   atom_id ai;
   unsigned long   col;
@@ -178,7 +178,7 @@ void set_file(t_x11 *x11,t_manager *man,const char *trajectory,
   char         buf[256],quote[256];
   t_tpxheader  sh;
   t_atoms      *at;
-  bool         *bB;
+  gmx_bool         *bB;
   int          i,idum;
 
   read_tpxheader(status,&sh,TRUE,NULL,NULL);
@@ -198,6 +198,7 @@ void set_file(t_x11 *x11,t_manager *man,const char *trajectory,
   snew(man->bHydro,sh.natoms);
   snew(bB,sh.natoms);
   read_tpx_top(status,NULL,man->box,&man->natom,NULL,NULL,NULL,&man->top);
+  man->gpbc = gmx_rmpbc_init(&man->top.idef,-1,man->natom,man->box);
   
   man->natom=
     read_first_x(man->oenv,&man->status,trajectory,&(man->time),&(man->x),
@@ -255,7 +256,7 @@ void step_message(t_x11 *x11,t_manager *man)
   XSendEvent(x11->disp,letter.xclient.window,True,0,&letter);
 }
 
-bool ReadMonfile(char *fn,int *nbars, int *bars)
+gmx_bool ReadMonfile(char *fn,int *nbars, int *bars)
 {
   FILE *fp;
   if ((fp = fopen(fn,"r"))==NULL) 
@@ -304,11 +305,11 @@ static void reset_mols(t_block *mols,matrix box,rvec x[])
   }
 }
 
-static bool step_man(t_manager *man,int *nat)
+static gmx_bool step_man(t_manager *man,int *nat)
 {
   static int  ncount=0;
-  static bool bWarn = FALSE;
-  bool        bEof;
+  static gmx_bool bWarn = FALSE;
+  gmx_bool        bEof;
   int         dum;
   const char *warn;
 
@@ -337,8 +338,7 @@ static bool step_man(t_manager *man,int *nat)
       break;
     }
     if (man->bPbc) {
-      rm_pbc(&(man->top.idef),man->molw->ePBC,
-	     man->natom,man->box,man->x,man->x);
+      gmx_rmpbc(man->gpbc,man->natom,man->box,man->x);
       reset_mols(&(man->top.mols),man->box,man->x);
     }
     ncount=0;
@@ -356,7 +356,7 @@ static bool step_man(t_manager *man,int *nat)
 static void HandleClient(t_x11 *x11,t_manager *man,long data[])
 {
   int  ID,button,x,y;
-  bool bPos;
+  gmx_bool bPos;
   real fac;
 
   ID=data[0];
@@ -391,7 +391,7 @@ static void HandleClient(t_x11 *x11,t_manager *man,long data[])
     draw_mol(x11,man);
     break;
   case IDREWIND:
-    if (man->status != -1) {
+    if (man->status) {
       rewind_trj(man->status);
       read_next_x(man->oenv,man->status,&(man->time),man->natom,man->x,
                   man->box);
@@ -442,7 +442,7 @@ static void HandleClient(t_x11 *x11,t_manager *man,long data[])
     step_message(x11,man);
 }
 
-static bool TitleCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool TitleCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_windata *wd;
 
@@ -464,7 +464,7 @@ static bool TitleCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-static bool ManCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool ManCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_manager *man;
   int       width,height;
@@ -545,9 +545,9 @@ void map_man(t_x11 *x11,t_manager *man)
   show_but(x11,man->bbox);
 }
 
-bool toggle_animate (t_x11 *x11,t_manager *man)
+gmx_bool toggle_animate (t_x11 *x11,t_manager *man)
 { 
-  if (man->status != -1) {
+  if (man->status) {
     man->bAnimate=!man->bAnimate;
     man->bStop=TRUE;
     man->bEof=FALSE;
@@ -559,7 +559,7 @@ bool toggle_animate (t_x11 *x11,t_manager *man)
   return man->bAnimate;
 }
 
-bool toggle_pbc (t_manager *man)
+gmx_bool toggle_pbc (t_manager *man)
 {
   man->bPbc=!man->bPbc;
   
@@ -576,7 +576,7 @@ t_manager *init_man(t_x11 *x11,Window Parent,
   t_manager *man;
 
   snew(man,1);
-  man->status=-1;
+  man->status=NULL;
   man->bPlus=TRUE;
   man->bSort=TRUE;
   man->oenv=oenv;

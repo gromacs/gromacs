@@ -74,7 +74,7 @@ static void move_bbox(t_x11 *x11,t_butbox *bbox)
   }
 }
 
-static bool BBCallBack(t_x11 *x11,XEvent *event, Window w,void *data)
+static gmx_bool BBCallBack(t_x11 *x11,XEvent *event, Window w,void *data)
 {
   t_butbox *bbox;
 
@@ -87,7 +87,7 @@ static bool BBCallBack(t_x11 *x11,XEvent *event, Window w,void *data)
   return FALSE;
 }
 
-static bool VBCallBack(t_x11 *x11,XEvent *event, Window w,void *data)
+static gmx_bool VBCallBack(t_x11 *x11,XEvent *event, Window w,void *data)
 {
   t_butbox *vbox;
   int        y0;
@@ -112,7 +112,7 @@ void set_vbtime(t_x11 *x11,t_butbox *vbox,char *text)
   ExposeWin(x11->disp,vbox->wd.self);
 }
 
-static bool ButtonCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool ButtonCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   XEvent    letter;
   t_mwbut   *but;

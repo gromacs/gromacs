@@ -144,19 +144,20 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 			   real ***slDensity, int *nslices, t_topology *top,
 			   int ePBC,
 			   int axis, int nr_grps, real *slWidth, 
-			   t_electron eltab[], int nr,bool bCenter,
+			   t_electron eltab[], int nr,gmx_bool bCenter,
                            const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,  
-      i,n,               /* loop indices */
+  int natoms;            /* nr. atoms in trj */
+  t_trxstatus *status;  
+  int i,n,               /* loop indices */
       ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   t_electron *found;     /* found by bsearch */
   t_electron sought;     /* thingie thought by bsearch */
+  gmx_rmpbc_t  gpbc=NULL;
  
   real t, 
         z;
@@ -186,9 +187,10 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
   
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -224,7 +226,8 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
     }
       nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
-  
+  gmx_rmpbc_done(gpbc);
+
   /*********** done with status file **********/
   close_trj(status);
   
@@ -246,14 +249,14 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 
 void calc_density(const char *fn, atom_id **index, int gnx[], 
 		  real ***slDensity, int *nslices, t_topology *top, int ePBC,
-		  int axis, int nr_grps, real *slWidth, bool bCenter,
+		  int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                   const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,  
-      **slCount,         /* nr. of atoms in one slice for a group */
+  int natoms;            /* nr. atoms in trj */
+  t_trxstatus *status;  
+  int  **slCount,         /* nr. of atoms in one slice for a group */
       i,j,n,               /* loop indices */
       teller = 0,      
       ax1=0, ax2=0,
@@ -262,6 +265,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   real t, 
         z;
   char *buf;             /* for tmp. keeping atomname */
+  gmx_rmpbc_t  gpbc=NULL;
 
   switch(axis) {
   case 0:
@@ -289,9 +293,10 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
   
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -315,7 +320,8 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 
     nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
-  
+  gmx_rmpbc_done(gpbc);
+
   /*********** done with status file **********/
   close_trj(status);
   
@@ -339,7 +345,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 void plot_density(real *slDensity[], const char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
 		  const char **dens_opt,
-		  bool bSymmetrize, const output_env_t oenv)
+		  gmx_bool bSymmetrize, const output_env_t oenv)
 {
   FILE  *den;
   const char *ylabel=NULL;
@@ -355,7 +361,7 @@ void plot_density(real *slDensity[], const char *afile, int nslices,
   
   den = xvgropen(afile, "Partial densities", "Box (nm)", ylabel,oenv);
 
-  xvgr_legend(den,nr_grps,grpname,oenv);
+  xvgr_legend(den,nr_grps,(const char**)grpname,oenv);
 
   for (slice = 0; (slice < nslices); slice++) { 
     fprintf(den,"%12g  ", slice * slWidth);
@@ -399,8 +405,8 @@ int gmx_density(int argc,char *argv[])
   static const char *axtitle="Z"; 
   static int  nslices = 50;      /* nr of slices defined       */
   static int  ngrps   = 1;       /* nr. of groups              */
-  static bool bSymmetrize=FALSE;
-  static bool bCenter=FALSE;
+  static gmx_bool bSymmetrize=FALSE;
+  static gmx_bool bCenter=FALSE;
   t_pargs pa[] = {
     { "-d", FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },

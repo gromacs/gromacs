@@ -68,6 +68,7 @@ hackblock.h \
 histogram.h \
 index.h \
 indexutil.h \
+inputrec.h \
 invblock.h \
 macros.h \
 magic.h \
@@ -98,7 +99,7 @@ orires.h \
 partdec.h \
 pbc.h \
 pdbio.h \
-pdebug.h \
+pdb2top.h \
 perf_est.h \
 physics.h \
 pme.h \
@@ -112,9 +113,7 @@ qmmm.h \
 random.h \
 rbin.h \
 rdgroup.h \
-readcomp.h \
 readinp.h \
-reorder.h \
 resall.h \
 rmpbc.h \
 selection.h \
@@ -129,14 +128,11 @@ sortwater.h \
 sparsematrix.h \
 split.h \
 splitter.h \
-statusio.h \
 statutil.h \
 strdb.h \
 string2.h \
-struc2.h \
 symtab.h \
 sysstuff.h \
-tags.h \
 tgroup.h \
 thread_mpi.h \
 tmpi.h \
@@ -144,12 +140,10 @@ topsort.h \
 toputil.h \
 tpxio.h \
 trajana.h \
-transfer.h \
 trnio.h \
 txtdump.h \
 typedefs.h \
 update.h \
-utils.h \
 vcm.h \
 vec.h \
 viewit.h \
@@ -170,4 +164,5 @@ molfile_plugin.h \
 vmddlopen.h \
 vmdplugin.h \
 oenv.h \
-sighandler.h
+sighandler.h \
+gmx_sse2_double.h

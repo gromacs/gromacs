@@ -119,7 +119,7 @@ int gmx_velacc(int argc,char *argv[])
     "of molecule numbers instead of atom numbers."
   };
   
-  static bool bM=FALSE,bMol=FALSE;
+  static gmx_bool bM=FALSE,bMol=FALSE;
   t_pargs pa[] = {
     { "-m", FALSE, etBOOL, {&bM},
       "Calculate the momentum autocorrelation function" },
@@ -131,13 +131,14 @@ int gmx_velacc(int argc,char *argv[])
   int        ePBC=-1;
   t_trxframe fr;
   matrix     box;
-  bool       bTPS=FALSE,bTop=FALSE;
+  gmx_bool       bTPS=FALSE,bTop=FALSE;
   int        gnx;
   atom_id    *index;
   char       *grpname;
   char       title[256];
   real       t0,t1,m;
-  int        status,teller,n_alloc,i,j,tel3,k,l;
+  t_trxstatus *status;
+  int        teller,n_alloc,i,j,tel3,k,l;
   rvec       mv_mol;
   real       **c1;
   real	     *normm=NULL;

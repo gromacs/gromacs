@@ -43,7 +43,6 @@
 #include "gmxcomplex.h"
 #include "smalloc.h"
 #include "futil.h"
-#include "fftgrid.h"
 #include "gmx_fatal.h"
 #include "physics.h"
 #include "coulomb.h"
@@ -120,7 +119,7 @@ void init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
 
 
 
-real do_ewald(FILE *log,       bool bVerbose,
+real do_ewald(FILE *log,       gmx_bool bVerbose,
 	      t_inputrec *ir,
 	      rvec x[],        rvec f[],
 	      real chargeA[],  real chargeB[],
@@ -136,12 +135,14 @@ real do_ewald(FILE *log,       bool bVerbose,
   rvec lll;
   int  lowiy,lowiz,ix,iy,iz,n,q;
   real tmp,cs,ss,ak,akv,mx,my,mz,m2,scale;
-  bool bFreeEnergy;
+  gmx_bool bFreeEnergy;
 
     if (cr != NULL) 
     {
-        if (cr->nnodes > 1 || cr->nthreads>1)
+        if (PAR(cr))
+	{
             gmx_fatal(FARGS,"No parallel Ewald. Use PME instead.\n");
+	}
     }
 
 

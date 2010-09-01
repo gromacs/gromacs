@@ -212,7 +212,7 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,
     else
     {
         /* Single residue molecule, keep counting */
-        *resnr = maxresnr + 1 + at_loc/atoms->nr*atoms->nres + atoms->atom[at_loc].resind;
+        *resnr = maxresnr + 1 + (atnr_global - a_start)/atoms->nr*atoms->nres + atoms->atom[at_loc].resind;
     }
     *resname  = *(atoms->resinfo[atoms->atom[at_loc].resind].name);
 }
@@ -252,7 +252,7 @@ static void gmx_mtop_atomloop_all_destroy(gmx_mtop_atomloop_all_t aloop)
     sfree(aloop);
 }
 
-bool gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
+gmx_bool gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
                                 int *at_global,t_atom **atom)
 {
     if (aloop == NULL)
@@ -341,7 +341,7 @@ static void gmx_mtop_atomloop_block_destroy(gmx_mtop_atomloop_block_t aloop)
     sfree(aloop);
 }
 
-bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
+gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
                                   t_atom **atom,int *nmol)
 {
     if (aloop == NULL)
@@ -393,7 +393,7 @@ static void gmx_mtop_ilistloop_destroy(gmx_mtop_ilistloop_t iloop)
     sfree(iloop);
 }
 
-bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
+gmx_bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
                              t_ilist **ilist_mol,int *nmol)
 {
     if (iloop == NULL)
@@ -443,7 +443,7 @@ static void gmx_mtop_ilistloop_all_destroy(gmx_mtop_ilistloop_all_t iloop)
     sfree(iloop);
 }
 
-bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
+gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
                                  t_ilist **ilist_mol,int *atnr_offset)
 {
     gmx_molblock_t *molb;
@@ -614,7 +614,7 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t *mtop)
 }
 
 void gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,
-                                        bool bKeepSingleMolCG)
+                                        gmx_bool bKeepSingleMolCG)
 {
     int     mb,cg;
     t_block *cgs_mol;
@@ -767,7 +767,7 @@ static void set_posres_params(t_idef *idef,gmx_molblock_t *molb,
 }
 
 static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
-                          bool bMergeConstr,
+                          gmx_bool bMergeConstr,
                           gmx_localtop_t *top)
 {
     int mb,srcnr,destnr,ftype,ftype_dest,mt,natoms,mol,nposre_old;

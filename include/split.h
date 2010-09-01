@@ -36,10 +36,6 @@
 #ifndef _split_h
 #define _split_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /*
  * Determine on which node a particle should reside and on which
  * node is also should be available. The distribution algorithm
@@ -90,13 +86,13 @@ typedef struct
                         /* node's id.                                  */
 } t_splitd;
 
-extern void init_splitd(t_splitd *splitd,int nnodes,int nnodeids);
+void init_splitd(t_splitd *splitd,int nnodes,int nnodeids);
      /*
       * Initialises the splitd data structure for the specified number of
       * nodes (nnodes) and number of atoms (nnodeids).
       */
  
-extern void make_splitd(t_splitalg algorithm,int nnodes,t_topology *top,
+void make_splitd(t_splitalg algorithm,int nnodes,t_topology *top,
                         rvec *x,t_splitd *splitd,char *loadfile);
      /*
       * Initialises the splitd data structure for the specified number of
@@ -117,22 +113,22 @@ extern void make_splitd(t_splitalg algorithm,int nnodes,t_topology *top,
       * the highest id that has one of the needed particles as home particle.
       */
                   
-extern long wr_split(FILE *fp,t_splitd *splitd);
+long wr_split(FILE *fp,t_splitd *splitd);
      /*
       * Writes the split descriptor (splitd) to the file specified by fp.
       */
 
-extern long rd_split(FILE *fp,t_splitd *splitd);
+long rd_split(FILE *fp,t_splitd *splitd);
      /*
       * Reads the split descriptor (splitd) from the file specified by fp.
       */
 
-extern void rm_splitd(t_splitd *splitd);
+void rm_splitd(t_splitd *splitd);
      /*
       * Frees all allocated space for the splitd data structure.
       */
 
-extern void pr_splitd(FILE *fp,int indent,char *title,t_splitd *splitd);
+void pr_splitd(FILE *fp,int indent,char *title,t_splitd *splitd);
      /*
       * This routine prints out a (human) readable representation of 
       * the split descriptor to the file fp. Ident specifies the
@@ -140,7 +136,7 @@ extern void pr_splitd(FILE *fp,int indent,char *title,t_splitd *splitd);
       * to print a header text.
       */
 
-extern void split_topology(t_splitalg algorithm,int nnodes,t_topology *top,
+void split_topology(t_splitalg algorithm,int nnodes,t_topology *top,
                            rvec x[],char *loadfile);
      /*
       * Distributes the non-bonded forces defined in top over nnodes nodes

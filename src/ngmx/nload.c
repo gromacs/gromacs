@@ -114,7 +114,7 @@ void DrawLoad(t_x11 *x11,t_windata *Win,int nloads,int *loadinfo)
   XSetForeground(x11->disp,x11->gc,x11->fg);
 }
 
-static bool LWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool LWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_loadwin *lw;
 
@@ -154,7 +154,7 @@ void map_lw(t_x11 *x11,t_loadwin *lw)
 void set_load(t_x11 *x11,t_loadwin *lw,int nnodes,int load[])
 {
   int  i;
-  bool bChange=FALSE;
+  gmx_bool bChange=FALSE;
 
   lw->nnodes=nnodes;
   for(i=0; (i<nnodes); i++)

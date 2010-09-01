@@ -36,9 +36,6 @@
 #ifndef _confio_h
 #define _confio_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "typedefs.h"
 
@@ -49,7 +46,7 @@
 extern "C" {
 #endif
   
-extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
+void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
 
@@ -66,15 +63,15 @@ void write_g96_conf(FILE *out,t_trxframe *fr,int nindex,atom_id *index);
 /* write a Gromos96 coordinate file or trajectory frame *
  * index can be NULL                                    */
 
-extern bool gro_next_x_or_v(FILE *status,t_trxframe *fr);
-extern int gro_first_x_or_v(FILE *status,t_trxframe *fr);
+gmx_bool gro_next_x_or_v(FILE *status,t_trxframe *fr);
+int gro_first_x_or_v(FILE *status,t_trxframe *fr);
 /* read first/next x and/or v frame from gro file */
 
-extern void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
+void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
 				  int nx,atom_id index[],int ndec,
 				  rvec *x,rvec *v,matrix box);
 		
-extern void write_hconf_p(FILE *out,const char *title,t_atoms *atoms, int ndec,
+void write_hconf_p(FILE *out,const char *title,t_atoms *atoms, int ndec,
 			  rvec *x,rvec *v,matrix box); 
 /* Write a Gromos file with precision ndec: number of decimal places in x,
  * v has one place more. */ 
@@ -85,21 +82,21 @@ void write_sto_conf_indexed(const char *outfile,const char *title,
 			    atom_id nindex,atom_id index[]);
 /* like write_sto_conf, but indexed */ 
 
-extern void write_sto_conf(const char *outfile,const char *title,
+void write_sto_conf(const char *outfile,const char *title,
 			   t_atoms *atoms, 
 			   rvec x[],rvec *v,int ePBC,matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL) 
  * to an STO (.gro or .pdb) file */ 
 
-extern void write_sto_conf_mtop(const char *outfile,const char *title,
+void write_sto_conf_mtop(const char *outfile,const char *title,
 				gmx_mtop_t *mtop,
 				rvec x[],rvec *v,int ePBC,matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
 
-extern void get_stx_coordnum (const char *infile,int *natoms);
+void get_stx_coordnum (const char *infile,int *natoms);
 /* read the number of atoms from an STX file */
 
-extern void read_stx_conf(const char *infile,char *title,
+void read_stx_conf(const char *infile,char *title,
 			  t_atoms *atoms, 
 			  rvec x[],rvec *v,int *ePBC,matrix box);
 /* Read atoms, x, v and box from an STX file.

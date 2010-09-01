@@ -41,19 +41,21 @@
 #include "eigio.h"
 #include "trnio.h"
 #include "tpxio.h"
+#include "statutil.h"
 #include "futil.h"
 
-void read_eigenvectors(const char *file,int *natoms,bool *bFit,
-                       rvec **xref,bool *bDMR,
-                       rvec **xav,bool *bDMA,
+void read_eigenvectors(const char *file,int *natoms,gmx_bool *bFit,
+                       rvec **xref,gmx_bool *bDMR,
+                       rvec **xav,gmx_bool *bDMA,
                        int *nvec, int **eignr, 
                        rvec ***eigvec,real **eigval)
 {
   t_trnheader head;
-  int    status,i,snew_size;
+  int    i,snew_size;
+  t_fileio *status;
   rvec   *x;
   matrix box;
-  bool   bOK;
+  gmx_bool   bOK;
 
   *bDMR=FALSE;
 
@@ -137,11 +139,11 @@ void read_eigenvectors(const char *file,int *natoms,bool *bFit,
 
 
 void write_eigenvectors(const char *trnname,int natoms,real mat[],
-                        bool bReverse,int begin,int end,
-                        int WriteXref,rvec *xref,bool bDMR,
-                        rvec xav[], bool bDMA,real eigval[])
+                        gmx_bool bReverse,int begin,int end,
+                        int WriteXref,rvec *xref,gmx_bool bDMR,
+                        rvec xav[], gmx_bool bDMA,real eigval[])
 {
-    int    trnout;
+    t_fileio *trnout;
     int    ndim,i,j,d,vec;
     matrix zerobox;
     rvec   *x;

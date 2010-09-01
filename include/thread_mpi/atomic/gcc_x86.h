@@ -121,19 +121,19 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
-    unsigned long prev;
+    unsigned int prev;
     
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a"(prev)
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
     
-    return prev;
+    return prev==oldval;
 }
 
-static inline void* volatile* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, 
-                                                  void *oldval,
-                                                  void *newval)
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, 
+                                      void *oldval,
+                                      void *newval)
 {
     void* prev;
 #ifndef __x86_64__ 
@@ -147,7 +147,7 @@ static inline void* volatile* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
 #endif
-    return prev;
+    return prev==oldval;
 }
 
 #endif /* end of check for gcc intrinsics */
@@ -253,7 +253,7 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 
  
 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
     return ( (*((volatile int*)(&(x->lock)))) != 0);
 }
@@ -268,7 +268,8 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
                          "\tpause\n"              /* otherwise: small pause
                                                      as recommended by Intel */
                          "\tjmp 1b\n"             /* and jump back */  
-                         "2:\n"
+                         "2:\tnop\n"              /* jump target for end 
+                                                     of wait */
                          : "=m"(x->lock)         /* input & output var */
                          : 
                          : "memory"/* we changed memory */

@@ -36,7 +36,7 @@ extern void do_qhop(FILE *fplog,
 	     gmx_vsite_t *vsite,
 	     rvec mu_tot,
 	     /*gmx_genborn_t *born,*/ 
-	     bool bBornRadii,
+	     gmx_bool bBornRadii,
 	     real T,
 	     int step,
 	     tensor force_vir,
@@ -48,6 +48,6 @@ extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop);
 /* Goes through the t_ilist and finds the bonded interactions
  * that can be changed */
 extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
-			       t_qhoprec *qr, bool bGlobal);
+			       t_qhoprec *qr, gmx_bool bGlobal);
 
 #endif	/* _qhop_h */

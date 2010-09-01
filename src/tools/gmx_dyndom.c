@@ -167,7 +167,8 @@ int gmx_dyndom(int argc,char *argv[])
     { "-tail",     FALSE, etRVEC, {tail},
       "Last atom of the arrow vector" }
   };
-  int     i,j,natoms,isize,status;
+  int     i,j,natoms,isize;
+  t_trxstatus *status;
   atom_id *index=NULL,*index_all;
   char    title[256],*grpname;
   t_atoms atoms;
@@ -217,7 +218,7 @@ int gmx_dyndom(int argc,char *argv[])
     if (label > 'Z')
       label-=26;
     for(j=0; (j<atoms.nr); j++)
-      atoms.resinfo[atoms.atom[j].resind].chain = label;
+      atoms.resinfo[atoms.atom[j].resind].chainid = label;
     
     write_trx(status,atoms.nr,index_all,&atoms,i,angle,box,xout,vout,NULL);  
   }

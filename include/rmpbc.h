@@ -36,33 +36,43 @@
 #ifndef _rmpbc_h
 #define _rmpbc_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 	
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],
-		   rvec x_s[]);
-/* Correct coordinates for atoms within every molecule for the periodic
- * boundary conditions such that every molecule is whole.
- * (note that mdrun only writes whole molecules)
- * x are the input coordinates, x_s the shifted coordinates where
- * the molecules are whole. x and x_s can be the same array.
- * natoms is the size of x and x_s and can be smaller than the number 
- * of atoms in idef, but should only contain complete molecules.
- * When ePBC=-1, the type of pbc is guessed from the box matrix.
- */
+  typedef struct gmx_rmpbc *gmx_rmpbc_t;
+  
+  gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
+				    matrix box);
+  
+  void gmx_rmpbc_done(gmx_rmpbc_t gpbc);
 
-extern void rm_gropbc(t_atoms *atoms,rvec x[],matrix box);
-/* Simple routine for use in analysis tools that just have a pdb or 
- * similar file.
- */
+  void gmx_rmpbc(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[]);
+  /* Correct coordinates x for atoms within every molecule for the periodic
+   * boundary conditions such that every molecule is whole.
+   * natoms is the size x and can be smaller than the number 
+   * of atoms in idef, but should only contain complete molecules.
+   * When ePBC=-1, the type of pbc is guessed from the box matrix.
+   */
 
+  void gmx_rmpbc_copy(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[],
+			     rvec x_s[]);
+  /* As gmx_rmpbc, but outputs in x_s and does not modify x. */
+
+  void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc,t_trxframe *fr);
+  /* As gmx_rmpbc but operates on a t_trxframe data structure. */
+
+  /*void rm_pbc(t_idef *idef,int ePBC,int natoms,
+    matrix box,rvec x[],rvec x_s[]);*/
+  /* Convenience function that still holds a static variable. */
+  
+  void rm_gropbc(t_atoms *atoms,rvec x[],matrix box);
+  /* Simple routine for use in analysis tools that just have a pdb or 
+   * similar file.
+   */
+  
 #ifdef __cplusplus
 }
 #endif

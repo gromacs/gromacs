@@ -93,7 +93,7 @@ int gmx_morph(int argc,char *argv[])
   static  int  ninterm = 11;
   static  real first   = 0.0;
   static  real last    = 1.0;
-  static  bool bFit    = TRUE;
+  static  gmx_bool bFit    = TRUE;
   t_pargs pa [] = {
     { "-ninterm", FALSE, etINT,  {&ninterm},
       "Number of intermediates" },
@@ -104,16 +104,17 @@ int gmx_morph(int argc,char *argv[])
     { "-fit",     FALSE, etBOOL, {&bFit},
       "Do a least squares fit of the second to the first structure before interpolating" }
   };
-  char *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
+  const char *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
   FILE     *fp=NULL;
-  int      i,isize,is_lsq,status,nat1,nat2;
+  int      i,isize,is_lsq,nat1,nat2;
+  t_trxstatus *status;
   atom_id  *index,*index_lsq,*index_all,*dummy;
   t_atoms  atoms;
   rvec     *x1,*x2,*xx,*v;
   matrix   box;
   real     rms1,rms2,fac,*mass;
   char     title[STRLEN],*grpname;
-  bool     bRMS;
+  gmx_bool     bRMS;
   output_env_t oenv;
   
   CopyRight(stderr,argv[0]);

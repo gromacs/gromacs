@@ -66,10 +66,10 @@ int find_kw(char *keyw)
   int i;
   
   for(i=0; i<ebtsNR; i++)
-    if (strcasecmp(btsNames[i],keyw) == 0)
+    if (gmx_strcasecmp(btsNames[i],keyw) == 0)
       return i;
   for(i=0; i<ekwNR; i++)
-    if (strcasecmp(kw_names[i],keyw) == 0)
+    if (gmx_strcasecmp(kw_names[i],keyw) == 0)
       return ebtsNR + 1 + i;
   
   return NOTSET;
@@ -77,7 +77,7 @@ int find_kw(char *keyw)
 
 #define FATAL() gmx_fatal(FARGS,"Reading Termini Database: not enough items on line\n%s",line)
 
-static void read_atom(char *line, bool bAdd,
+static void read_atom(char *line, gmx_bool bAdd,
 		      char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr)
 {
   int    nr, i;
@@ -128,7 +128,7 @@ static void print_atom(FILE *out,t_atom *a,gpp_atomtype_t atype,char *newnm)
 	  get_atomtype_name(a->type,atype),a->m,a->q);
 }
 
-static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],
+static void print_ter_db(const char *ff,char C,int nb,t_hackblock tb[],
 			 gpp_atomtype_t atype) 
 {
   FILE *out;
@@ -313,7 +313,7 @@ static void read_ter_db_file(char *fn,
   *tbptr  = tb;
 }
 
-int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
+int read_ter_db(const char *ffdir,char ter,
 		t_hackblock **tbptr,gpp_atomtype_t atype)
 {
   char ext[STRLEN];
@@ -326,7 +326,7 @@ int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
   /* Search for termini database files.
    * Do not generate an error when none are found.
    */
-  ntdbf = fflib_search_file_end(ffdir,bAddCWD,ext,FALSE,&tdbf);
+  ntdbf = fflib_search_file_end(ffdir,ext,FALSE,&tdbf);
   ntb    = 0;
   *tbptr = NULL;
   for(f=0; f<ntdbf; f++) {
@@ -343,100 +343,125 @@ int read_ter_db(const char *ffdir,bool bAddCWD,char ter,
 }
 
 t_hackblock **filter_ter(int nrtp,t_restp rtp[],
-			 int nb,t_hackblock tb[],
-			 const char *resname,
-			 const char *rtpname,
-			 int *nret)
+                         int nb,t_hackblock tb[],
+                         const char *resname,
+                         const char *rtpname,
+                         int *nret)
 {
-  /* Since some force fields (e.g. OPLS) needs different
-   * atomtypes for different residues there could be a lot
-   * of entries in the databases for specific residues
-   * (e.g. GLY-NH3+, SER-NH3+, ALA-NH3+).
-   * 
-   * To reduce the database size, we assume that a terminus specifier liker
-   *
-   * [ GLY|SER|ALA-NH3+ ]
-   *
-   * would cover all of the three residue types above. 
-   * Wildcards (*,?) are not OK. Don't worry about e.g. GLU vs. GLUH since 
-   * pdb2gmx only uses the first 3 letters when calling this routine.
-   * 
-   * To automate this, this routines scans a list of termini 
-   * for the residue name "resname" and returns an allocated list of 
-   * pointers to the termini that could be applied to the 
-   * residue in question. The variable pointed to by nret will
-   * contain the number of valid pointers in the list.
-   * Remember to free the list when you are done with it...
-   */ 
+    /* Since some force fields (e.g. OPLS) needs different
+     * atomtypes for different residues there could be a lot
+     * of entries in the databases for specific residues
+     * (e.g. GLY-NH3+, SER-NH3+, ALA-NH3+).
+     * 
+     * To reduce the database size, we assume that a terminus specifier liker
+     *
+     * [ GLY|SER|ALA-NH3+ ]
+     *
+     * would cover all of the three residue types above. 
+     * Wildcards (*,?) are not OK. Don't worry about e.g. GLU vs. GLUH since 
+     * pdb2gmx only uses the first 3 letters when calling this routine.
+     * 
+     * To automate this, this routines scans a list of termini 
+     * for the residue name "resname" and returns an allocated list of 
+     * pointers to the termini that could be applied to the 
+     * residue in question. The variable pointed to by nret will
+     * contain the number of valid pointers in the list.
+     * Remember to free the list when you are done with it...
+     */ 
 
-  t_restp *restp;
-  int i,j,n,len,none_idx;
-  bool found;
-  char *s,*s2,*c;
-  t_hackblock **list;
-
-  restp = search_rtp(rtpname,nrtp,rtp);
-  
-  n=0;
-  list=NULL;
-  
-  for(i=0;i<nb;i++) {
-    s=tb[i].name;
-    found=FALSE;
-    do {
-      /* The residue name should appear in a tdb file with the same base name
-       * as the file containing the rtp entry.
-       * This makes termini selection for different molecule types
-       * much cleaner.
-       */
-      if (strcasecmp(restp->filebase,tb[i].filebase) == 0 &&
-	  strncasecmp(resname,s,3) == 0) {
-	found=TRUE;
-	srenew(list,n+1);
-	list[n]=&(tb[i]);
-	n++;
-      } else { /* advance to next |-separated field */
-	s=strchr(s,'|');
-	if(s!=NULL)
-	  s++;
-      }
-    } while(!found && s!=NULL);
-  }
-      
-  /* All residue-specific termini have been added. See if there
-   * are some generic ones by searching for the occurence of
-   * '-' in the name prior to the last position (which indicates charge).
-   * The [ None ] alternative is special since we don't want that
-   * to be the default, so we put it last in the list we return.
-   */
-  none_idx=-1;
-  for(i=0;i<nb;i++) {
-    s=tb[i].name;
-    if(!strcasecmp("None",s)) {
-      none_idx=i;
-    } else {
-      c=strchr(s,'-');
-      if(c==NULL || ((c-s+1)==strlen(s))) {
-	/* Check that we haven't already added a residue-specific version 
-	 * of this terminus.
-	 */
-	for(j=0;j<n && strstr((*list[j]).name,s)==NULL;j++);
-	if(j==n) {
-	  srenew(list,n+1);
-	  list[n]=&(tb[i]);
-	  n++;
-	}
-      }
+    t_restp *   restp;
+    int         i,j,n,len,none_idx;
+    gmx_bool        found;
+    char        *rtpname_match,*s,*s2,*c;
+    t_hackblock **list;
+    
+    rtpname_match = search_rtp(rtpname,nrtp,rtp);
+    restp = get_restp(rtpname_match,nrtp,rtp);
+    
+    n=0;
+    list=NULL;
+    
+    for(i=0;i<nb;i++) 
+    {
+        s=tb[i].name;
+        found=FALSE;
+        do 
+        {
+            /* The residue name should appear in a tdb file with the same base name
+             * as the file containing the rtp entry.
+             * This makes termini selection for different molecule types
+             * much cleaner.
+             */
+            if (gmx_strcasecmp(restp->filebase,tb[i].filebase) == 0 &&
+                gmx_strncasecmp(resname,s,3) == 0) 
+            {
+                found=TRUE;
+                srenew(list,n+1);
+                list[n]=&(tb[i]);
+                n++;
+            }
+            else 
+            {
+                /* advance to next |-separated field */
+                s=strchr(s,'|');
+                if(s!=NULL)
+                {
+                    s++;
+                }
+            }
+        }
+        while(!found && s!=NULL);
     }
-  } 
-  if(none_idx>=0) {
-    srenew(list,n+1);
-    list[n]=&(tb[none_idx]);
-    n++;
-  }    
-
-  *nret=n;
-  return list;
+    
+    /* All residue-specific termini have been added. See if there
+     * are some generic ones by searching for the occurence of
+     * '-' in the name prior to the last position (which indicates charge).
+     * The [ None ] alternative is special since we don't want that
+     * to be the default, so we put it last in the list we return.
+     */
+    none_idx=-1;
+    for(i=0;i<nb;i++) 
+    {
+        s=tb[i].name;
+        /* The residue name should appear in a tdb file with the same base name
+         * as the file containing the rtp entry.
+         * This makes termini selection for different molecule types
+         * much cleaner.
+         */
+        if(gmx_strcasecmp(restp->filebase,tb[i].filebase) == 0)
+        {
+            if(!gmx_strcasecmp("None",s)) 
+            {
+                none_idx=i;
+            }
+            else 
+            {
+                c=strchr(s,'-');
+                if(c==NULL || ((c-s+1)==strlen(s))) 
+                {
+                    /* Check that we haven't already added a residue-specific version 
+                     * of this terminus.
+                     */
+                    for(j=0;j<n && strstr((*list[j]).name,s)==NULL;j++);
+                    if(j==n) 
+                    {
+                        srenew(list,n+1);
+                        list[n]=&(tb[i]);
+                        n++;
+                    }
+                }
+            }
+        } 
+    }
+    if(none_idx>=0) 
+    {
+        srenew(list,n+1);
+        list[n]=&(tb[none_idx]);
+        n++;
+    }    
+    
+    *nret=n;
+    return list;
 }
 
 

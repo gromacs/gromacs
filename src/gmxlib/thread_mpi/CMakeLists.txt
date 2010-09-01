@@ -1,10 +1,22 @@
 
 # Note that not all .c files are compiled directly: some of them 
 # are #included (some multiple times) from other source files.
-add_library(thread_mpi STATIC threads.c tmpi_init.c errhandler.c 
-            type.c group.c comm.c topology.c p2p.c collective.c 
+set(THREAD_MPI_LIB_SOURCE tmpi_init.c 
+            errhandler.c type.c group.c comm.c topology.c p2p.c collective.c 
             once.c list.c reduce_fast.c profile.c event.c barrier.c
-            hwinfo.c)
+            lock.c hwinfo.c)
+
+
+if (THREAD_PTHREADS)
+    set(THREAD_MPI_LIB_SOURCE pthreads.c ${THREAD_MPI_LIB_SOURCE})
+else (THREAD_PTHREADS)
+    if (THREAD_WINDOWS)
+        set(THREAD_MPI_LIB_SOURCE winthreads.c ${THREAD_MPI_LIB_SOURCE})
+    endif (THREAD_WINDOWS)
+endif(THREAD_PTHREADS)
+
+
+add_library(thread_mpi STATIC ${THREAD_MPI_LIB_SOURCE})
 
 # make it link to the threads library (-lpthreads, for example)
 target_link_libraries(thread_mpi ${THREAD_LIB})

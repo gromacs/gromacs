@@ -827,7 +827,6 @@ YY_DECL
     else if (state->bCmdStart)
     {
         BEGIN(cmdstart);
-        state->bCmdStart = FALSE;
     }
     else if (YYSTATE != help)
     {
@@ -835,7 +834,7 @@ YY_DECL
     }
 
 
-#line 839 "scanner.c"
+#line 838 "scanner.c"
 
 	if ( !yyg->yy_init )
 		{
@@ -916,53 +915,45 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 113 "scanner.l"
+#line 112 "scanner.l"
 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 114 "scanner.l"
+#line 113 "scanner.l"
 { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return TOK_INT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 115 "scanner.l"
+#line 114 "scanner.l"
 { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 116 "scanner.l"
-{ yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
+#line 115 "scanner.l"
+{ yylval->str = gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 118 "scanner.l"
-
+#line 117 "scanner.l"
+{ _gmx_sel_lexer_add_token(" ", 1, state); }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 119 "scanner.l"
+#line 118 "scanner.l"
 {
                     if (yytext[0] == ';' || state->bInteractive)
                     {
-                        state->bCmdStart = TRUE;
                         rtrim(state->pselstr);
                         return CMD_SEP;
                     }
+                    else
+                    {
+                        _gmx_sel_lexer_add_token(" ", 1, state);
+                    }
                 }
-	YY_BREAK
-case YY_STATE_EOF(cmdstart):
-#line 127 "scanner.l"
-{ yyterminate(); }
-	YY_BREAK
-case YY_STATE_EOF(INITIAL):
-case YY_STATE_EOF(matchof):
-case YY_STATE_EOF(matchbool):
-case YY_STATE_EOF(help):
-#line 128 "scanner.l"
-{ state->bCmdStart = TRUE; return CMD_SEP; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
@@ -978,13 +969,13 @@ YY_RULE_SETUP
 case 9:
 YY_RULE_SETUP
 #line 133 "scanner.l"
-{ yylval->str = strndup(yytext, yyleng); return HELP_TOPIC; }
+{ yylval->str = gmx_strndup(yytext, yyleng); return HELP_TOPIC; }
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
 #line 134 "scanner.l"
-{ state->bCmdStart = TRUE; return CMD_SEP; }
+{ return CMD_SEP; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
@@ -1042,7 +1033,7 @@ YY_RULE_SETUP
 case 21:
 YY_RULE_SETUP
 #line 149 "scanner.l"
-{ yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
+{ yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
@@ -1057,19 +1048,25 @@ YY_RULE_SETUP
 case 24:
 YY_RULE_SETUP
 #line 154 "scanner.l"
-{ yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return STR; }
+{ yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
 #line 155 "scanner.l"
-{ _gmx_sel_lexer_add_token(yytext, 1, state); return yytext[0]; }
+{ ADD_TOKEN; return yytext[0]; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
 #line 156 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1073 "scanner.c"
+#line 1064 "scanner.c"
+case YY_STATE_EOF(INITIAL):
+case YY_STATE_EOF(matchof):
+case YY_STATE_EOF(matchbool):
+case YY_STATE_EOF(cmdstart):
+case YY_STATE_EOF(help):
+	yyterminate();
 
 	case YY_END_OF_BUFFER:
 		{

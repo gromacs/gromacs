@@ -138,7 +138,7 @@ struct gmx_ana_poscalc_coll_t
     /** Pointer to the last data structure. */
     gmx_ana_poscalc_t        *last;
     /** Whether the collection has been initialized for evaluation. */
-    bool                      bInit;
+    gmx_bool                      bInit;
 };
 
 /*! \internal \brief
@@ -190,7 +190,7 @@ struct gmx_ana_poscalc_t
     gmx_ana_pos_t            *p;
 
     /** TRUE if the positions have been evaluated for the current frame. */
-    bool                      bEval;
+    gmx_bool                      bEval;
     /*! \brief
      * Base position data for this calculation.
      *
@@ -330,7 +330,7 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
  * be used with Gromacs command-line parsing.
  */
 const char **
-gmx_ana_poscalc_create_type_enum(bool bAtom)
+gmx_ana_poscalc_create_type_enum(gmx_bool bAtom)
 {
     const char **pcenum;
     size_t       i;
@@ -626,7 +626,7 @@ remove_poscalc(gmx_ana_poscalc_t *pc)
  * \p bBase affects on how the \p pc->gmax field is initialized.
  */
 static void
-set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
+set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, gmx_bool bBase)
 {
     gmx_ana_index_make_block(&pc->b, pc->coll->top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
     /* Set the type to POS_ATOM if the calculation in fact is such. */
@@ -665,7 +665,7 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
  * \returns   TRUE if \p pc can use a base and gets some benefit out of it,
  *   FALSE otherwise.
  */
-static bool
+static gmx_bool
 can_use_base(gmx_ana_poscalc_t *pc)
 {
     /* For atoms, it should be faster to do a simple copy, so don't use a
@@ -702,7 +702,7 @@ can_use_base(gmx_ana_poscalc_t *pc)
  * \returns   TRUE if the two calculations should be merged to use a common
  *   base, FALSE otherwise.
  */
-static bool
+static gmx_bool
 should_merge(gmx_ana_poscalc_t *pc1, gmx_ana_poscalc_t *pc2,
              gmx_ana_index_t *g1, gmx_ana_index_t *g)
 {
@@ -1160,7 +1160,7 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
  * \returns   TRUE if \p pc requires topology for initialization and/or
  *   evaluation, FALSE otherwise.
  */
-bool
+gmx_bool
 gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
 {
     if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL)

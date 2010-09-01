@@ -1,0 +1,103 @@
+<HTML>
+<HEAD>
+<TITLE>g_bar</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_bar</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
+Thu 26 Aug 2010</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+<p>
+g_bar calculates free energy difference estimates through 
+Bennett's acceptance ratio method. 
+Input option <tt>-f</tt> expects multiple dhdl files. 
+Two types of input files are supported:<br>
+* Files with only one y-value, for such files it is assumed 
+that the y-value is dH/dlambda and that the Hamiltonian depends 
+linearly on lambda. The lambda value of the simulation is inferred 
+from the subtitle if present, otherwise from a number in the
+subdirectory in the file name.
+<br>
+* Files with more than one y-value. The files should have columns 
+with dH/dlambda and Delta lambda. The lambda values are inferred 
+from the legends: 
+lambda of the simulation from the legend of dH/dlambda 
+and the foreign lambda's from the legends of Delta H.<p>
+The lambda of the simulation is parsed from dhdl.<a href="xvg.html">xvg</a> file's legend 
+containing the string 'dH', the foreign lambda's from the legend 
+containing the capitalized letters 'D' and 'H'. The temperature 
+is parsed from the legend line containing 'T ='.<p>
+The free energy estimates are determined using BAR with bisection, 
+the precision of the output is set with <tt>-prec</tt>. 
+An error estimate taking into account time correlations 
+is made by splitting the data into blocks and determining 
+the free energy differences over those blocks and assuming 
+the blocks are independent. 
+The final error estimate is determined from the average variance 
+over 5 blocks. A range of blocks numbers for error estimation can 
+be provided with the options <tt>-nbmin</tt> and <tt>-nbmax</tt>.<p>
+The results are split in two parts: the last part contains the final 
+results in kJ/mol, together with the error estimate for each part 
+and the total. The first part contains detailed free energy 
+difference estimates and phase space overlap measures in units of 
+kT (together with their computed error estimate). The printed 
+values are:<br>
+*  lam_A: the lambda values for point A.<br>
+*  lam_B: the lambda values for point B.<br>
+*     DG: the free energy estimate.<br>
+*    s_A: an estimate of the relative entropy of B in A.<br>
+*    s_A: an estimate of the relative entropy of A in B.<br>
+*  stdev: an estimate expected per-sample standard deviation.<p>
+The relative entropy of both states in each other's ensemble can be 
+interpreted as a measure of phase space overlap: 
+the relative entropy s_A of the work samples of lambda_B in the 
+ensemble of lambda_A (and vice versa for s_B), is a 
+measure of the 'distance' between Boltzmann distributions of 
+the two states, that goes to zero for identical distributions. See 
+Wu & Kofke, J. Chem. Phys. 123 084109 (2009) for more information.
+<p>
+The estimate of the expected per-sample standard deviation, as given 
+in Bennett's original BAR paper: 
+Bennett, J. Comp. Phys. 22, p 245 (1976), Eq. 10 gives an estimate 
+of the quality of sampling (not directly of the actual statistical 
+error, because it assumes independent samples).<p>
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    dhdl.xvg</a></tt> </TD><TD> Input, Opt., Mult. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     bar.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-oi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  barint.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-oh</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">histogram.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edr.html">  energy.edr</a></tt> </TD><TD> Input, Opt., Mult. </TD><TD> Energy file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Begin time for BAR </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> End time for BAR </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Temperature (K) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-prec</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>2</tt> </TD><TD> The number of digits after the decimal point </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nbmin</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>5</tt> </TD><TD> Minimum number of blocks for error estimation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nbmax</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>5</tt> </TD><TD> Maximum number of blocks for error estimation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nbin</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>100</tt> </TD><TD> Number of bins for histogram output </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

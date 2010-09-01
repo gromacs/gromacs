@@ -190,7 +190,7 @@ int gmx_rmsf(int argc,char *argv[])
     "This shows the directions in which the atoms fluctuate the most and",
     "the least."
   };
-  static bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE,bFit=TRUE;
+  static gmx_bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE,bFit=TRUE;
   t_pargs pargs[] = { 
     { "-res", FALSE, etBOOL, {&bRes},
       "Calculate averages for each residue" },
@@ -199,7 +199,8 @@ int gmx_rmsf(int argc,char *argv[])
     { "-fit", FALSE, etBOOL, {&bFit},
       "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
   };
-  int          step,nre,natom,natoms,i,g,m,teller=0;
+  int          natom;
+  int          step,nre,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms;
   
   t_tpxheader  header;
@@ -207,11 +208,12 @@ int gmx_rmsf(int argc,char *argv[])
   t_topology   top;
   int          ePBC;
   t_atoms      *pdbatoms,*refatoms;
-  bool         bCont;
+  gmx_bool         bCont;
 
   matrix       box,pdbbox;
   rvec         *x,*pdbx,*xref;
-  int          status,npdbatoms,res0;
+  t_trxstatus   *status;
+  int          npdbatoms,res0;
   char         buf[256];
   const char   *label;
   char         title[STRLEN];
@@ -220,7 +222,7 @@ int gmx_rmsf(int argc,char *argv[])
   const char   *devfn,*dirfn;
   int          resind;
 
-  bool         bReadPDB;  
+  gmx_bool         bReadPDB;  
   atom_id      *index;
   int          isize;
   char         *grpnames;
@@ -233,10 +235,11 @@ int gmx_rmsf(int argc,char *argv[])
   int          d;
   real         count=0;
   rvec         xcm;
+  gmx_rmpbc_t  gpbc=NULL;
 
   output_env_t oenv;
 
-  char  *leg[2] = { "MD", "X-Ray" };
+  const char  *leg[2] = { "MD", "X-Ray" };
 
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL,     ffREAD  },
@@ -299,18 +302,23 @@ int gmx_rmsf(int argc,char *argv[])
     copy_mat(box,pdbbox);
   }
   
-  if (bFit)
+  if (bFit) {
     sub_xcm(xref,isize,index,top.atoms.atom,xcm,FALSE);
-  
+  }
+    
   natom = read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+
+  if (bFit) {
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natom,box);
+  }
     
   /* Now read the trj again to compute fluctuations */
   teller = 0;
   do {
     if (bFit) {
       /* Remove periodic boundary */
-      rm_pbc(&(top.idef),ePBC,natom,box,x,x);
-      
+      gmx_rmpbc(gpbc,natom,box,x);
+
       /* Set center of mass to zero */
       sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
       
@@ -342,6 +350,10 @@ int gmx_rmsf(int argc,char *argv[])
   } while(read_next_x(oenv,status,&t,natom,x,box));
   close_trj(status);
   
+  if (bFit)
+    gmx_rmpbc_done(gpbc);
+
+
   invcount = 1.0/count;
   snew(Uaver,DIM*DIM);
   totmass = 0;

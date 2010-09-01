@@ -55,12 +55,12 @@
 #include "viewit.h"
 
 static int strip_dssp(char *dsspfile,int nres,
-		       bool bPhobres[],real t,
+		       gmx_bool bPhobres[],real t,
 		       real *acc,FILE *fTArea,
 		       t_matrix *mat,int average_area[],
                        const output_env_t oenv)
 {
-  static bool bFirst=TRUE;
+  static gmx_bool bFirst=TRUE;
   static char *ssbuf;
   FILE *tapeout;
   static int xsize,frame;
@@ -167,11 +167,11 @@ static int strip_dssp(char *dsspfile,int nres,
   return nr;
 }
 
-bool *bPhobics(t_atoms *atoms)
+gmx_bool *bPhobics(t_atoms *atoms)
 {
   int  i,nb;
   char **cb;
-  bool *bb;
+  gmx_bool *bb;
   
   nb=get_strings("phbres.dat",&cb);
   snew(bb,atoms->nres);
@@ -230,7 +230,7 @@ static void norm_acc(t_atoms *atoms, int nres,
 
 void prune_ss_legend(t_matrix *mat)
 {
-  bool *present;
+  gmx_bool *present;
   int  *newnum;
   int i,r,f,newnmap;
   t_mapping *newmap;
@@ -290,8 +290,9 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
 {
   FILE *fp;
   t_mapping *map;
-  int s,f,r,*count,ss_count;
-  char **leg;
+  int f,r,*count,ss_count;
+  size_t s;
+  const char** leg;
   
   map=mat->map;
   snew(count,mat->nmap);
@@ -366,7 +367,7 @@ int main(int argc,char *argv[])
     "these two programs can be used to analyze dihedral properties as a",
     "function of secondary structure type."
   };
-  static bool bVerbose;
+  static gmx_bool bVerbose;
   static const char *ss_string="HEBT"; 
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, {&bVerbose},
@@ -375,17 +376,17 @@ int main(int argc,char *argv[])
       "Secondary structures for structure count"}
   };
   
-  int        status;
+  t_trxstatus *status;
   FILE       *tapein;
   FILE       *ss,*acc,*fTArea,*tmpf;
   const char *fnSCount,*fnArea,*fnTArea,*fnAArea;
-  char *leg[] = { "Phobic", "Phylic" };
+  const char *leg[] = { "Phobic", "Phylic" };
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;
   t_matrix   mat;
   int        nres,nr0,naccr,nres_plus_separators;
-  bool       *bPhbres,bDoAccSurf;
+  gmx_bool       *bPhbres,bDoAccSurf;
   real       t;
   int        i,natoms,nframe=0;
   matrix     box;
@@ -399,7 +400,7 @@ int main(int argc,char *argv[])
   char       dssp[256];
   const char *dptr;
   output_env_t oenv;
-  
+  gmx_rmpbc_t  gpbc=NULL;
   
   t_filenm   fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD },
@@ -495,6 +496,8 @@ int main(int argc,char *argv[])
   snew(norm_av_area, atoms->nres);
   accr=NULL;
   naccr=0;
+  
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   do {
     t = output_env_conv_time(oenv,t);
     if (bDoAccSurf && nframe>=naccr) {
@@ -503,9 +506,9 @@ int main(int argc,char *argv[])
       for(i=naccr-10; i<naccr; i++)
         snew(accr[i],2*atoms->nres-1);
     }
-    rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
     tapein=ffopen(pdbfile,"w");
-    write_pdbfile_indexed(tapein,NULL,atoms,x,ePBC,box,0,-1,gnx,index,NULL);
+    write_pdbfile_indexed(tapein,NULL,atoms,x,ePBC,box,' ',-1,gnx,index,NULL,TRUE);
     ffclose(tapein);
 
 #ifdef GMX_NO_SYSTEM
@@ -535,7 +538,8 @@ int main(int argc,char *argv[])
   close_trj(status);
   if (fTArea)
     ffclose(fTArea);
-  
+  gmx_rmpbc_done(gpbc);
+
   prune_ss_legend(&mat);
   
   ss=opt2FILE("-o",NFILE,fnm,"w");

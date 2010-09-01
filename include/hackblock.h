@@ -80,10 +80,10 @@ typedef struct {
   char   ***atomname;
   int    *cgnr;
   /* Bonded interaction setup */
-  bool      bAlldih;
+  gmx_bool      bAlldih;
   int       nrexcl;
-  bool      HH14;
-  bool      bRemoveDih;
+  gmx_bool      HH14;
+  gmx_bool      bRemoveDih;
   /* list of bonded interactions to add */
   t_rbondeds rb[ebtsNR];
 } t_restp;
@@ -103,8 +103,8 @@ typedef struct {
   int     tp;       /* Type of attachment (1..11) */
   int     nctl;     /* How many control atoms there are */
   char 	  *a[4];    /* Control atoms i,j,k,l	  */
-  bool    bAlreadyPresent;
-  bool    bXSet;
+  gmx_bool    bAlreadyPresent;
+  gmx_bool    bXSet;
   rvec    newx;     /* calculated new position    */
   atom_id newi;     /* new atom index number (after additions) */
 } t_hack;
@@ -121,7 +121,7 @@ typedef struct {
 
 /* all libraries and other data to protonate a structure or trajectory */
 typedef struct {
-  bool        bInit; /* true after init; set false by init_t_protonate */
+  gmx_bool        bInit; /* true after init; set false by init_t_protonate */
   /* force field name: */
   char        FF[10];
   /* libarary data: */
@@ -149,44 +149,44 @@ typedef struct {
   real length;
 } t_specbond;
 
-extern t_specbond *get_specbonds(int *nspecbond);
-extern void done_specbonds(int nsb,t_specbond sb[]);
+t_specbond *get_specbonds(int *nspecbond);
+void done_specbonds(int nsb,t_specbond sb[]);
 
-extern void free_t_restp(int nrtp, t_restp **rtp);
-extern void free_t_hack(int nh, t_hack **h);
-extern void free_t_hackblock(int nhb, t_hackblock **hb);
+void free_t_restp(int nrtp, t_restp **rtp);
+void free_t_hack(int nh, t_hack **h);
+void free_t_hackblock(int nhb, t_hackblock **hb);
 /* free the whole datastructure */
 
-extern void clear_t_hackblock(t_hackblock *hb);
-extern void clear_t_hack(t_hack *hack);
+void clear_t_hackblock(t_hackblock *hb);
+void clear_t_hack(t_hack *hack);
 /* reset struct */
 
-extern bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], 
-			    bool bMin, bool bPlus);
+gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], 
+			    gmx_bool bMin, gmx_bool bPlus);
 /* add s[].b[] to d[].b[]
  * If bMin==TRUE, don't copy bondeds with atoms starting with '-'
  * If bPlus==TRUE, don't copy bondeds with atoms starting with '+'
  * Returns if bonds were removed at the termini.
  */
      
-extern void copy_t_restp(t_restp *s, t_restp *d);
-extern void copy_t_hack(t_hack *s, t_hack *d);
-extern void copy_t_hackblock(t_hackblock *s, t_hackblock *d);
+void copy_t_restp(t_restp *s, t_restp *d);
+void copy_t_hack(t_hack *s, t_hack *d);
+void copy_t_hackblock(t_hackblock *s, t_hackblock *d);
 /* make copy of whole datastructure */
 
-extern void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d);
+void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d);
 /* add s[] to *d[] */
 
-extern void merge_hacks(t_hackblock *s, t_hackblock *d);
+void merge_hacks(t_hackblock *s, t_hackblock *d);
 /* add s->hacks[] to d->hacks[] */
 
-extern void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
+void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
 /* add s->hacks[] and s->rb[] to d*/
 
-extern void dump_hb(FILE *out, int nres, t_hackblock hb[]);
+void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 /* print out whole datastructure */
 
-extern void init_t_protonate(t_protonate *protonate);
+void init_t_protonate(t_protonate *protonate);
 /* initialize t_protein struct */
 
 #ifdef __cplusplus

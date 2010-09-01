@@ -96,8 +96,8 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
-static int filter_enerdterm(real *afrom, bool bToBuffer, real *ato,
-                            bool bTemp, bool bPres, bool bEner) {
+static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
+                            gmx_bool bTemp, gmx_bool bPres, gmx_bool bEner) {
     int i,to,from;
 
     from = 0;
@@ -149,8 +149,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  t_vcm *vcm,
                  int nsig,real *sig,
                  gmx_mtop_t *top_global, t_state *state_local, 
-                 bool bSumEkinhOld, int flags)
-/* instead of current system, booleans for summing virial, kinetic energy, and other terms */
+                 gmx_bool bSumEkinhOld, int flags)
+/* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
   t_bin  *rb;
   int    *itc0,*itc1;
@@ -163,16 +163,16 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    nener,j;
   real   *rmsd_data=NULL;
   double nb;
-  bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate,bReadEkin;
+  gmx_bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate,bReadEkin;
 
   bVV           = EI_VV(inputrec->eI);
   bTemp         = flags & CGLO_TEMPERATURE;
   bEner         = flags & CGLO_ENERGY;
-  bPres         = flags & CGLO_PRESSURE; 
-  bConstrVir    = flags & CGLO_CONSTRAINT;
-  bFirstIterate = flags & CGLO_FIRSTITERATE;
-  bEkinAveVel   = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && IR_NPT_TROTTER(inputrec) && bPres));
-  bReadEkin     = flags & CGLO_READEKIN;
+  bPres         = (flags & CGLO_PRESSURE); 
+  bConstrVir    = (flags & CGLO_CONSTRAINT);
+  bFirstIterate = (flags & CGLO_FIRSTITERATE);
+  bEkinAveVel   = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && bPres));
+  bReadEkin     = (flags & CGLO_READEKIN);
 
   rb   = gs->rb;
   itc0 = gs->itc0;
@@ -431,18 +431,19 @@ static void moveit(t_commrec *cr,
 	     xx,NULL,(cr->nnodes-cr->npmenodes)-1,NULL);
 }
 
-gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
+gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
                           const t_commrec *cr,const t_inputrec *ir,
                           const output_env_t oenv)
 {
     gmx_mdoutf_t *of;
     char filemode[3];
+    gmx_bool bAppendFiles;
 
     snew(of,1);
 
-    of->fp_trn   = -1;
+    of->fp_trn   = NULL;
     of->fp_ene   = NULL;
-    of->fp_xtc   = -1;
+    of->fp_xtc   = NULL;
     of->fp_dhdl  = NULL;
     of->fp_field = NULL;
     
@@ -451,14 +452,20 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
 
     if (MASTER(cr))
     {
+        bAppendFiles = (mdrun_flags & MD_APPENDFILES);
+
+        of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
+
         sprintf(filemode, bAppendFiles ? "a+" : "w+");  
         
         if (ir->eI != eiNM 
-            #ifndef GMX_FAHCORE
-            && (ir->nstxout > 0 ||
-             ir->nstvout > 0 ||
-             ir->nstfout > 0)
-            #endif
+#ifndef GMX_FAHCORE
+            &&
+            !(EI_DYNAMICS(ir->eI) &&
+              ir->nstxout == 0 &&
+              ir->nstvout == 0 &&
+              ir->nstfout == 0)
+#endif
 	    )
         {
             of->fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
@@ -473,6 +480,7 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
         of->fn_cpt = opt2fn("-cpo",nfile,fnm);
         
         if (ir->efep != efepNO && ir->nstdhdl > 0 &&
+            (ir->separate_dhdl_file == sepdhdlfileYES ) && 
             !EI_ENERGY_MINIMIZATION(ir->eI))
         {
             if (bAppendFiles)
@@ -511,11 +519,11 @@ void done_mdoutf(gmx_mdoutf_t *of)
     {
         close_enx(of->fp_ene);
     }
-    if (of->fp_xtc >= 0)
+    if (of->fp_xtc)
     {
         close_xtc(of->fp_xtc);
     }
-    if (of->fp_trn >= 0)
+    if (of->fp_trn)
     {
         close_trn(of->fp_trn);
     }
@@ -637,7 +645,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
      {
          if (mdof_flags & MDOF_CPT)
          {
-             write_checkpoint(of->fn_cpt,fplog,cr,of->eIntegrator,
+             write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
+                              fplog,cr,of->eIntegrator,
                               of->simulation_part,step,t,state_global);
          }
 

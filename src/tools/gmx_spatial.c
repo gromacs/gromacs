@@ -32,6 +32,10 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 
 #include "statutil.h"
@@ -98,12 +102,12 @@ int gmx_spatial(int argc,char *argv[])
     "(Number of Additional Bins) option value. \n"
   };
   
-  static bool bPBC=FALSE;
-  static bool bSHIFT=FALSE;
+  static gmx_bool bPBC=FALSE;
+  static gmx_bool bSHIFT=FALSE;
   static int iIGNOREOUTER=-1; /*Positive values may help if the surface is spikey */
-  static bool bCUTDOWN=TRUE;
+  static gmx_bool bCUTDOWN=TRUE;
   static real rBINWIDTH=0.05; /* nm */
-  static bool bCALCDIV=TRUE;
+  static gmx_bool bCALCDIV=TRUE;
   static int iNAB=4;
 
   t_pargs pa[] = {
@@ -129,7 +133,7 @@ int gmx_spatial(int argc,char *argv[])
   t_trxframe fr;
   rvec       *xtop,*shx[26];
   matrix     box,box_pbc;
-  int        status;
+  t_trxstatus *status;
   int        flags = TRX_READ_X;
   t_pbc      pbc;
   t_atoms    *atoms;
@@ -147,6 +151,7 @@ int gmx_spatial(int argc,char *argv[])
   long tot,max,min;
   double norm;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
 
   t_filenm fnm[] = {
     { efTPS,  NULL,  NULL, ffREAD },   /* this is for the topology */
@@ -206,13 +211,16 @@ int gmx_spatial(int argc,char *argv[])
   numfr=0;
   minx=miny=minz=999;
   maxx=maxy=maxz=0;
+
+  if (bPBC)
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   /* This is the main loop over frames */
   do {
     /* Must init pbc every step because of pressure coupling */
 
     copy_mat(box,box_pbc);
     if (bPBC) {
-      rm_pbc(&top.idef,ePBC,natoms,box,fr.x,fr.x);
+      gmx_rmpbc_trxfr(gpbc,&fr);
       set_pbc(&pbc,ePBC,box_pbc);
     }
 
@@ -241,6 +249,9 @@ int gmx_spatial(int argc,char *argv[])
     /* printf("%f\t%f\t%f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]); */
 
   } while(read_next_frame(oenv,status,&fr));
+
+  if (bPBC)
+    gmx_rmpbc_done(gpbc);
 
   if(!bCUTDOWN){
     minx=miny=minz=0;

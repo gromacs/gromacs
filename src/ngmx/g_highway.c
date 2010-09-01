@@ -57,7 +57,7 @@ typedef struct {
   float acc;		/* Acceleration			*/
   float brake;		/* Break			*/
   int   lane,oldlane;	/* Currently in lane		*/
-  bool  bBrake;		/* Currently on the brakes	*/
+  gmx_bool  bBrake;		/* Currently on the brakes	*/
   unsigned long col;		/* Colour			*/
   unsigned long roof;		/* Roof Colour			*/
 } t_car;
@@ -80,8 +80,8 @@ typedef struct {
   t_car     *cars;
   t_input   ir;
   int       step;
-  bool      bDriving;	/* Are we driving ?		*/
-  bool      bFog;		/* Is it foggy ?		*/
+  gmx_bool      bDriving;	/* Are we driving ?		*/
+  gmx_bool      bFog;		/* Is it foggy ?		*/
   t_windata main;
   t_windata win;
   t_windata but[NBUT];
@@ -117,7 +117,7 @@ int read_input(t_x11 *x11,const char *fn,t_car **cars,t_input *ir)
   return n;
 }
 
-static float get_dist(int ncars,t_car cars[],int which,bool bFog,
+static float get_dist(int ncars,t_car cars[],int which,gmx_bool bFog,
 		      int dir,int lane,int metres,int *nearest)
 {
   int   i,near;
@@ -285,7 +285,7 @@ static void draw_car(Display *disp,Window wd,GC gc,
   }
 }
 
-static bool xhwCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
+static gmx_bool xhwCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
 {
   t_xhighway *xhw;
   t_windata  *win;
@@ -352,7 +352,7 @@ static bool xhwCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
   return FALSE;
 }
 
-static bool butCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
+static gmx_bool butCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
 {
   XSetWindowAttributes attr;
   t_xhighway *xhw;
