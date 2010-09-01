@@ -921,58 +921,59 @@ What is needed as well is a transition state optimizer.
 
 \section{{\gromacs} on GPUs}
 
-{\gromacs} 4.5 contains an experimental release of  GPU-accelerated
-MD simulations using the \href{https://simtk.org/home/openmm}{OpenMM library}. 
-The current release is targeted at developers and advanced users, and care should 
-be taken before production use. The following should be noted before using 
-the GPU accelerated {\tt mdrun-gpu}:
+{\gromacs} 4.5 provides an initial support for GPU acceleration through 
+the \href{https://simtk.org/home/openmm}{OpenMM library}. 
+Although limited in functionality and can only surpass by a large margin 
+the CPU algorithms of standard GROMACS, {\gromacs}-GPU gives a preview 
+of GPU-accelerated MD which we expect to be an important direction in the 
+future. 
+The following should be noted before using the accelerated {\tt mdrun-gpu}:
 \begin{itemize}
-\item The current release runs only on modern NVIDIA GPU hardware with CUDA support.
-Make sure that the necessary CUDA drivers and libraries for your operating system
-are already installed. 
-\item Multiple GPUs are not supported.
-\item Only a fairly small subset of the {\gromacs} features and options are supported on the GPUs.
-See below for a detailed list.
+\item The current release runs only on modern, CUDA compatible NVIDIA GPU hardware 
+(for details see \ref{subsec-compatibility}. Make sure that the necessary CUDA drivers and 
+libraries for your operating system are already installed. 
+\item Only single-GPU simulations are supported.
+\item Only a relatively small subset of the {\gromacs} features and options are supported 
+with the  current OpenMM-based implementation. See section \ref{subsec-features} for 
+a detailed list.
 \item Consumer-level GPU cards are known to often have problems with faulty memory.
-It is recommended that a full memory check of the cards is done at least once
-(for example, using the {\tt memtest=full} option).
-A partial memory check (for example, {\tt memtest=15}) before and
-after the simulation run would help spot
-problems resulting from overheating of the graphics card.
-\item The maximum size of the simulated systems depends on the available
-GPU memory. For example, a GTX280 with 1GB memory has been tested with systems
-of up to about 100,000 atoms.
+It is strongly recommended that a full memory check of the cards is done at least once
+(using option {\tt memtest=full}). A partial memory check (using option {\tt memtest=15}) 
+before and after the simulation run would help spot problems resulting from overheating 
+of the graphics card.
+\item The maximum size of the simulated systems depends on the GPU used. With a 
+high-end cards, like GeForce GTX 480 or Tesla 2050, systems of size up to 200.000 atoms 
+has been successfully simulated.
 \item In order to take a full advantage of the GPU platform features, many algorithms
 have been implemented in a very different way than they are on the CPUs.
-Therefore numerical correspondence between some properties of the system's state
+Therefore, numerical correspondence between some properties of the system's state
 should not be expected. Moreover, the values will likely vary when simulations are
-done on different GPU hardware. However, sufficiently long trajectories
+done on different hardware. However, sufficiently long trajectories
 should produce comparable statistical averages.
 \item Frequent retrieval of system state information such as
 trajectory coordinates and energies can greatly influence the performance
-of the program due to slow CPU$<->$GPU memory transfer speed.
-\item MD algorithms are complex, and although the {\gromacs} code is highly tuned for them,
-they often do not translate very well onto the streaming architectures.
-Realistic expectations about the achievable speed-up from tests with GTX280:
-for small protein systems in implicit solvent using all-vs-all kernels the acceleration
-can be as high as 20 times, but in most other setups involving cutoffs and PME the
-acceleration is usually only about 4 times relative to a 3GHz CPU.
+of the program due the overhead of CPU$\leftrightarrow$GPU communication.
+\item MD algorithms are complex and often does not translate very well onto the streaming architectures.
+Realistic expectations about the achievable speed-up from tests with a GeForce 400 series card:
+for small protein systems in implicit solvent using all-vs-all kernels the speedup 
+can be up to 10-15x, but in most other setups involving cutoffs and PME, 
+performance is close to the one on a modern 4 core CPU (e.g. Intel Core i7-930).
 \end{itemize}
 
-\subsection{Supported features}
+\subsection{Supported features}\label{subsec:features}
 
 \begin{itemize}
 \item \textbf{Integrators:} {\tt md/md-vv/md-vv-avek}, {\tt sd/sd1} and {\tt bd}.\\
 OpenMM implements only the velocity-Verlet algorithm for MD simulations.
-The option {\tt md} is accepted, but keep in mind that the actual algorithm is not leap-frog.
+The option {\tt md} is accepted, but keep in mind that the actual algorithm is \emph{not} leap-frog.
 Thus all three options {\tt md}, {\tt md-vv}, and {\tt md-vv-avek} are equivalent.
-Similarly, options {\tt sd} and {\tt sd1} are also equivalent.
+Similarly, {\tt sd} and {\tt sd1} are equivalent.
 \item \textbf{Long-range interactions:} {\tt Reaction-Field}, {\tt Ewald}, {\tt PME}, {\tt No-cutoff}
 {\tt Cut-off}.
 \begin{itemize}
 \item for No-cutoff, set {\tt rcoulomb=0} and {\tt rvdw=0}.
 \item for Ewald summation only 3D geometry is supported, and dipole correction is not.
-\item the cut-off method is supported only for implicit solvent simulations.
+\item the Cut-off method is supported only for implicit solvent simulations.
 \end{itemize}
 \item \textbf{Temperature control:} Supported only with the {\tt sd/sd1}, {\tt bd},
 {\tt md/md-vv/md-vv-avek} integrators.
@@ -984,8 +985,9 @@ are not supported, only {\tt tc-grps=System} will work.
 \item CMAP dihedrals in CHARMM are not supported, so use the {\tt -nocmap} option with pdb2gmx.
 \end{itemize}
 \item \textbf{Implicit solvent:} Supported only with {\tt Reaction-Field} electrostatics.
-The only supported algorithm for GB is OBC, and the default {\gromacs} values for the scale factors
-are hard coded in OpenMM, {\ie} {\tt obc_alpha=1}, {\tt obc_beta=0.8} and {\tt obc_gamma=4.85}.
+The only supported algorithm for GB is OBC, and the default {\gromacs} values for the scale fators
+are hard coded in OpenMM, {\ie} {\tt obc_alpha=1}, {\tt obc_beta=0.8} and {\tt obc_gamma=4.85} and 
+therefore can not be changed.
 \item \textbf{Constraints:} Constraints in OpenMM are done by a combination of SHAKE,
 SETTLE and CCMA. Accuracy is based on the SHAKE tolerance as set by the {\tt shake_tol} option.
 \item \textbf{Periodic Boundary Conditions:} Only {\tt pbc=xyz} and {\tt pbc=no} in rectangular cells (boxes) are supported.
@@ -1003,8 +1005,7 @@ in the current implementation.
 
 \subsection{Installing and running {\gromacs}-GPU}
 
-{\gromacs}-GPU can be installed either from the officially distributed 
-binary or source packages. 
+{\gromacs}-GPU can be installed either from the officially distributed binary or source packages. 
 We provide pre-compiled binaries built for and tested on the most common Linux, Windows, 
 and Mac OS operating systems (for details see the {\gromacs}-GPU 
 \href{http://www.gromacs.org/gpu}{download page}). 
@@ -1025,18 +1026,18 @@ graphics card is necessary. Molecular dynamics algorithms
 are very demanding and unlike in other application areas, 
 only high-end graphics cards are capable of providing performance comparable 
 to or higher then modern CPUs. For this reason, {\tt mdrun-gpu} is compatible with 
-only a subset of CUDA-enabled GPUs (for detailed list see section 
+only a subset of more performant CUDA-enabled GPUs (for detailed list see section 
 \ref{subsec-compatibility}) and by default it does not run if it detects
-non-compatible hardware. 
+incompatible hardware. 
 
-For details about compatibility of NVIDIA drivers with the CUDA library and devices consult  
+For details about compatibility of NVIDIA drivers with harthe CUDA library and GPUs consult  
 the \href{http://developer.nvidia.com/object/gpucomputing.html}{NVIDIA developer page}.
 
 Summary of prerequisites: 
 \begin{itemize}
-    \item OpenMM
-    \item NVIDIA CUDA libraries
-    \item NVIDIA driver
+    \item OpenMM v2.0
+    \item NVIDIA CUDA libraries v3.1
+    \item NVIDIA drivers $\geq$v256
     \item NVIDIA CUDA-enabled GPU
 \end{itemize}
 
@@ -1063,12 +1064,12 @@ Summary of prerequisites:
     {\small{\tt export OPENMM_PLUGIN_DIR=path_to_gromacs/openmm/lib/plugins}}
 
     \item At this point, running the command
-    {\tt path_to_gromacs/bin/mdrun-gpu -h} should display the standard {\tt mdrun} help  
+    {\tt path_to_gromacs/bin/mdrun-gpu -h} should display the standard {\tt mdrun-gpu} help  
     which means that the binary runs and all the necessary libraries are accessible. 
 
 \end{enumerate}
 
-\subsubsection{Compiling mdrun-gpu}
+\subsubsection{Compiling {\tt mdrun-gpu}}
 
 The GPU accelerated {\tt mdrun} can be compiled on Linux, Mac OS and Windows 
 operating systems, both for 32- and 64-bit. Besides the prerequisites 
@@ -1090,7 +1091,7 @@ and tested OpenMM version is strongly encouraged.
 OpenMM binaries as well as source code can be obtained from the 
 \href{https://simtk.org/project/xml/downloads.xml?group_id=161}{project's homepage}.
 
-Also note that it is essential that the same version of CUDA be used to compile both
+Also note that it is essential that the same version of CUDA is used to compile both
 {\tt mdrun-gpu} and the OpenMM libraries. 
 
 To compile {\tt mdrun-gpu} change to the top level directory of the source 
@@ -1105,7 +1106,7 @@ tree and execute the following commands:
 \end{verbatim}}
 
 
-\subsubsection{Testing and troubleshooting}
+%\subsubsection{Testing and troubleshooting}
 
 \subsubsection{{\gromacs}-GPU specific mdrun features}
 
@@ -1117,16 +1118,16 @@ These options can be used in the following form:\\
 
 The option-list prefix {\tt ACCELERATION} specifies which 
 acceleration library should be used. At the moment, the only supported value 
-is {\tt OpenMM}. This is followed by the list of comma-separated
+is {\tt OpenMM}. This is followed by a list of comma-separated
 {\tt DEV_OPTION=VALUE} option-value pairs which define 
 parameters for the selected acceleration platform. The entire device option 
-string is case insensitive.
+string is \emph{case insensitive}.
 
 Below we summarize the available options (of the OpenMM acceleration library)
 and their possible values.
 
 \paragraph{Platform} Selects the GPGPU platform to be used, currently the only 
-supported value is CUDA.  In the future, OpenCL support will be added.
+supported value is CUDA.  In the future	OpenCL support will be added.
 
 \paragraph{DeviceID} The numeric identifier of the CUDA device on which the 
 simulation will be carried out. The default value is 0, {\ie} the first device. 
@@ -1141,19 +1142,18 @@ A set of tests are performed before and after each simulation, and if
 errors are detected, the execution is aborted. 
 
 Accepted values for this option are any integer $\leq$15 with an optional ``s'' 
-suffix representing the approximate amount of time in seconds that should be spent 
-on testing; the default value is {\tt memtest=15s}. 
+suffix representing the amount of time in seconds that should be spent 
+on testing; the default value is {\tt memtest=15s} (the actual time spent 
+on testing might differ slightly).
 It is possible to completely turn off memory testing by setting 
 {\tt memtest=off}, however this is not advisable.
 
-\paragraph{Force-device} Option that enables running {\tt mdrun-gpu}
+\paragraph{Force-device} Enables running {\tt mdrun-gpu} on
 devices that are not supported but CUDA-capable. Using 
-this option might results in very low performance, or even 
-crashes, and therefore it is not encouraged.
+this option might results in very low performance or even 
+crashes and therefore it is not encouraged.
 
-{\bf Note} that both the option names and the values are case-insensitive.
-
-\subsection{Hardware and software compatibility list}\label{subsec-compatibility}
+\subsection{Hardware and software compatibility list}\label{subsec:compatibility}
 
 Compatible OpenMM versions:
 \begin{itemize}
@@ -1165,8 +1165,8 @@ Compatible NVIDIA CUDA versions (also see OpenMM version compatibility above):
 \item v3.1
 \end{itemize}
 
-Compatible hardware (for details consult the 
-\href{http://www.nvidia.com/object/cuda\_gpus.html}{NVIDIA CUDA GPUs list}):
+Compatible hardware (for further details consult the 
+\href{http://www.nvidia.com/object/cuda\_gpus.html}{NVIDIA CUDA compatible GPUs page}):
 \begin{itemize}
 \item G92/G94:
     \begin{itemize}
@@ -1185,10 +1185,11 @@ Compatible hardware (for details consult the
     \item Quadro CX
     \item Quadro Plex 2200 D2, 2200 S4
     \end{itemize}
-\item GF100 (Fermi)
+\item GF10x (Fermi):
     \begin{itemize}
-    \item GeForce GTX 460, 465, 470, 480   
-    \item Tesla C2050, C2070, S2050, S2070  
+    \item GeForce GTX 460, 465, 470, 480       
+    \item Tesla C2050, C2070, S2050, M2050, M2070
+    \item Quadro 5000(M), 6000
     \end{itemize}
 \end{itemize}
 
