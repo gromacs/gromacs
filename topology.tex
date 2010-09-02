@@ -337,9 +337,9 @@ where {\tt ptype} is the particle type (see \tabref{ptype}):
 {\small
 \begin{verbatim}
 [ atomtypes ]
-;name        mass      charge   ptype            c6           c12
-    O    15.99940       0.000       A   0.22617E-02   0.74158E-06
-   OM    15.99940       0.000       A   0.22617E-02   0.74158E-06
+;name   at.num      mass      charge   ptype            c6           c12
+    O        8  15.99940       0.000       A   0.22617E-02   0.74158E-06
+   OM        8  15.99940       0.000       A   0.22617E-02   0.74158E-06
    .....
 
 [ nonbond_params ]
@@ -355,8 +355,8 @@ where {\tt ptype} is the particle type (see \tabref{ptype}):
     .....
 \end{verbatim}}
 
-Note that the \gromosv{96} force fields also include an {\tt at.num.} column, indicating
-the atomic number of the element.  
+{\bf Note} that most of the included force fields also include the {\tt at.num.} column, 
+but this same information is implied in the OPLS-AA {\tt bond_type} column.
 The parameters V and W can be defined in two different ways, depending on
 the combination rule that was chosen in the {\tt [~defaults~]} section
 of the topology file (see~\ssecref{topfile}):
