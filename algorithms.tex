@@ -2686,7 +2686,9 @@ the number of PME nodes, since the number of PME nodes is smaller
 than the number of PP nodes, which leads to less total waiting time.
 
 The PME domain decomposition can be 1-D or 2-D along the $x$ and/or
-$y$ axis. 1-D decomposition along the $y$ axis can only be used when
+$y$ axis. 2-D decomposition is also known as pencil decomposition because of
+the shape of the domains at high parallelization.
+1-D decomposition along the $y$ axis can only be used when
 the PP decomposition has only 1 domain along $x$. 2-D PME decomposition
 has to have the number of domains along $x$ equal to the number of
 the PP decomposition. {\tt mdrun} automatically chooses 1-D or 2-D
