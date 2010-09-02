@@ -18,7 +18,7 @@ add_library(gmxana
             gmx_mindist.c   gmx_msd.c       gmx_morph.c     gmx_nmeig.c     
             gmx_nmens.c     gmx_order.c     gmx_principal.c 
             gmx_polystat.c  gmx_potential.c gmx_rama.c      
-            gmx_rdf.c       gmx_rms.c       gmx_rmsdist.c   gmx_rmsf.c      
+            gmx_rdf.c       gmx_rms.c       gmx_rmsf.c      
             gmx_rotacf.c    gmx_saltbr.c    gmx_sas.c              
             gmx_select.c	gmx_rmsdist.c	gmx_rotmat.c
             gmx_sgangle.c   gmx_sorient.c   gmx_spol.c      gmx_tcaf.c      

@@ -306,11 +306,14 @@ if(LIBXML2_FOUND)
     set(HAVE_LIBXML2 1)
 endif(LIBXML2_FOUND)
 
-find_package(X11)
-# X11 includes/libraries are only set in the ngmx subdirectory!
-if(X11_FOUND)
-    set(HAVE_X11 1)
-endif(X11_FOUND)
+option(GMX_X11 "Use X window system" OFF)
+if (GMX_X11)
+	find_package(X11)
+	# X11 includes/libraries are only set in the ngmx subdirectory!
+	if(X11_FOUND)
+    	set(HAVE_X11 1)
+	endif(X11_FOUND)
+endif(GMX_X11)
 
 if(GMX_THREADS)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREADS")
