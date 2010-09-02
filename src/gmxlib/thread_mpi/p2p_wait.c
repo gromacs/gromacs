@@ -35,9 +35,28 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is #included from p2p.c;it's not really a header file,
-   but this defines a lot of functions that probably need to be inlined.*/
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+
+#include "impl.h"
+#include "p2p.h"
 
 
 int tMPI_Wait(tMPI_Request *request, tMPI_Status *status)
@@ -146,7 +165,7 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status)
    blocking = whether to block until all reqs are completed */
 static void tMPI_Test_multi_req(struct tmpi_thread *cur, 
                                 int count, tMPI_Request *array_of_requests,
-                                gmx_bool wait, gmx_bool blocking)
+                                tmpi_bool wait, tmpi_bool blocking)
 {
     int i;
     struct tmpi_req_ *first=NULL, *last=NULL;

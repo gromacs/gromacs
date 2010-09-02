@@ -48,6 +48,7 @@
 #include "coulomb.h"
 #include "mtop_util.h"
 #include "network.h"
+#include "main.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))
@@ -1172,7 +1173,10 @@ int gmx_pme_error(int argc,char *argv[])
         fclose(fp);
     }
     
-    gmx_finalize();
+    if (gmx_parallel_env_initialized())
+    {
+        gmx_finalize();
+    }
     
     return 0;
 }

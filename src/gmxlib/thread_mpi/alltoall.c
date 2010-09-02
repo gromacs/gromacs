@@ -35,8 +35,28 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is #included from collective.c; it's not really a header file,
-      but this defines a lot of functions that probably need to be inlined.*/
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "impl.h"
+#include "collective.h"
+
 
 
 int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
@@ -87,6 +107,7 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         cev->met[myrank].buf[i]=(char*)sendbuf+sendsize*i;
         cev->met[myrank].read_data[i]=FALSE;
     }
+    tMPI_Atomic_memory_barrier_rel();
     tMPI_Atomic_set(&(cev->met[myrank].current_sync), synct);
 
     /* post availability */
@@ -194,6 +215,7 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
         cev->met[myrank].buf[i]=(char*)sendbuf+sendtype->size*sdispls[i];
         cev->met[myrank].read_data[i]=FALSE;
     }
+    tMPI_Atomic_memory_barrier_rel();
     tMPI_Atomic_set(&(cev->met[myrank].current_sync), synct);
 
     /* post availability */

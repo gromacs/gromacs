@@ -34,10 +34,28 @@ inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 
-/* this file is to be #included from collective.c; it's not really a header 
-   file, but this defines a lot of functions that probably need to be inlined.*/
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "impl.h"
+#include "collective.h"
+
 
 /* broadcast */
 int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,

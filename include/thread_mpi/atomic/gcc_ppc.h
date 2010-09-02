@@ -36,6 +36,9 @@ files.
 */
 
 
+/* this file is not used any more. gcc intrinsics take care of it */
+
+
 /* PowerPC using proper GCC inline assembly. 
  * Recent versions of xlC (>=7.0) _partially_ support this, but since it is
  * not 100% compatible we provide a separate implementation for xlC in
@@ -142,11 +145,11 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
                             "m" (a->value)
                           : "cc", "memory");
     
-    return prev;
+    return prev==oldval;
 }
 
 
-static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
                                         void *newval)
 {
     void *prev;
@@ -176,7 +179,7 @@ static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
                             "m" (a->value)
                           : "cc", "memory");
 #endif
-    return prev;
+    return prev==oldval;
 }
 
 static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
