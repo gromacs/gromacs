@@ -98,7 +98,7 @@ option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 option(USE_VERSION_H "Generate development version string/information" ON)
 
 option(GMX_DEFAULT_SUFFIX "Use default GROMACS suffixes" ON)
-set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for doubule).")
+set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for double).")
 set(GMX_LIBS_SUFFIX "" 
   CACHE STRING "Suffix for GROMACS libs (default: _d for double, _mpi for mpi, _mpi_d for mpi and double).")
 if (GMX_DEFAULT_SUFFIX)
