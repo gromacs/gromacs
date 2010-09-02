@@ -2685,13 +2685,18 @@ by the same factor.
 the number of PME nodes, since the number of PME nodes is smaller
 than the number of PP nodes, which leads to less total waiting time.
 
-Currently the PME domain decomposition is 1-D along the $x$ axis.
+The PME domain decomposition can be 1-D or 2-D along the $x$ and/or
+$y$ axis. 1-D decomposition along the $y$ axis can only be used when
+the PP decomposition has only 1 domain along $x$. 2-D PME decomposition
+has to have the number of domains along $x$ equal to the number of
+the PP decomposition. {\tt mdrun} automatically chooses 1-D or 2-D
+PME decomposition (when possible with the total given number of nodes),
+based on the minimum amount of communication for the coordinate redistribution
+in PME plus the communication for the grid overlap and transposes.
 To avoid superfluous communication of coordinates and forces
 between the PP and PME nodes, the number of DD cells in the $x$
 direction should ideally be the same or a multiple of the number
 of PME nodes. By default, {\tt mdrun} takes care of this issue.
-In the future we will support better parallelizable electrostatics
-implementations.
 
 \subsection{Domain decomposition flow chart}
 In \figref{dd_flow} a flow chart is shown for domain decomposition
