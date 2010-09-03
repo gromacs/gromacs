@@ -847,4 +847,10 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier)
     return ret;
 }
 
+#else
+
+/* just to have some symbols */
+int tMPI_Thread_winthreads=0;
+
 #endif /* THREAD_WINDOWS  */
+

@@ -36,14 +36,15 @@ files.
 */
 
 
-/* this file is not used any more. gcc intrinsics take care of it */
+/* NOTE:
 
+ ***************************************************************************
+  this file is not used any more. gcc intrinsics take care of the atomics 
+***************************************************************************
 
-/* PowerPC using proper GCC inline assembly. 
- * Recent versions of xlC (>=7.0) _partially_ support this, but since it is
- * not 100% compatible we provide a separate implementation for xlC in
- * the next section.
- */
+*/
+
+#error included gcc_ppc.h. This file is outdated
 
 
 
