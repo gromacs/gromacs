@@ -44,54 +44,141 @@ files.
  *
  * For now, we just disable the inline keyword if we're compiling C code:
  */
+#if 1
 #if (!defined(__cplusplus)) && (!defined(inline))
 #define inline_defined_in_atomic 1
 #define inline
 #endif
+#endif
 
 
-#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t isync\n"\
-                                                             : : :"memory" ); }
+/* IBM xlC compiler */
+#ifdef __cplusplus
+#include <builtins.h>
+#endif
 
 
+#define TMPI_XLC_INTRINSICS
+
+/* ppc has many memory synchronization instructions */
+/*#define tMPI_Atomic_memory_barrier() { __fence(); __sync(); __fence();}*/
+/*#define tMPI_Atomic_memory_barrier() __isync();*/
+/*#define tMPI_Atomic_memory_barrier() __lwsync();*/
+
+/* for normal memory, this should be enough: */
+#define tMPI_Atomic_memory_barrier() { __fence(); __eieio(); __fence(); }
+#define tMPI_Atomic_memory_barrier_acq() { __eieio(); __fence(); }
+#define tMPI_Atomic_memory_barrier_rel() { __fence(); __eieio(); }
+#define TMPI_HAVE_ACQ_REL_BARRIERS
+
+/*#define tMPI_Atomic_memory_barrier() __eieio();*/
 
 
 typedef struct tMPI_Atomic
 {
-    volatile int value;  /*!< Volatile, to avoid compiler aliasing */
+    volatile int value __attribute__ ((aligned(64)));  
 }
 tMPI_Atomic_t;
 
 
 typedef struct tMPI_Atomic_ptr
 {
-    void* volatile *value;  /*!< Volatile, to avoid compiler aliasing */
+    volatile char* volatile* value __attribute__ ((aligned(64)));  /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_ptr_t;
 
 
-
 typedef struct tMPI_Spinlock
 {
-    volatile unsigned int lock;  /*!< Volatile, to avoid compiler aliasing */
+    volatile int lock __attribute__ ((aligned(64)));  
 }
 tMPI_Spinlock_t;
 
 
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
 #define tMPI_Atomic_get(a)   (int)((a)->value) 
 #define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
-#define tMPI_Atomic_ptr_get(a)   (void*)((a)->value) 
-#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
+#define tMPI_Atomic_ptr_get(a)   ((a)->value) 
+#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (i))
+
+#define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
-static int tMPI_Atomic_add_return(tMPI_Atomic_t *    a, 
-                                        int               i)
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
-    int t;
+#ifdef TMPI_XLC_INTRINSICS
+    int ret;
+
+    __fence(); /* this one needs to be here to avoid ptr. aliasing issues */
+    __eieio(); /* these memory barriers are neccesary */
+    ret=(__compare_and_swap(&(a->value), &oldval, newval));
+    __isync();
+    __fence(); /* and this one needs to be here to avoid aliasing issues */
+    return ret;
+#else
+    int prev;
+    __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
+                          "\t cmpw    0,%0,%3 \n"
+                          "\t bne     2f \n"
+                          "\t stwcx.  %4,0,%2 \n"
+                          "\t bne-    1b \n"
+                          "\t sync \n"
+                          "2: \n"
+                          : "=&r" (prev), "=m" (a->value)
+                          : "r" (&a->value), "r" (oldval), "r" (newval),
+                          "m" (a->value));
+
+    return prev==oldval;
+#endif
+}
+
+
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void* oldval,
+                                      void* newval)
+{
+    int ret;
+    volatile char* volatile* oldv=oldval;
+    volatile char* volatile* newv=newval;
+
+    __fence(); /* this one needs to be here to avoid ptr. aliasing issues */
+    __eieio(); /* these memory barriers are neccesary */
+#if (!defined (__LP64__) ) && (!defined(__powerpc64__) ) 
+    ret=__compare_and_swap((int *)&(a->value), (int*)&oldv, (int)newv);
+#else
+    ret=__compare_and_swaplp((long *)&(a->value), (long*)&oldv, (long)newv);
+#endif
+    __isync();
+    __fence();
+
+    return ret;
+}
+
+
+
+
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
+{
+#ifdef TMPI_XLC_INTRINSICS
+    int oldval, newval;
     
+    do
+    {
+        __fence();
+        __eieio(); /* these memory barriers are neccesary */
+        oldval = tMPI_Atomic_get(a);
+        newval = oldval + i;
+    }
+    /*while(!__compare_and_swap( &(a->value), &oldval, newval));*/
+    while(__check_lock_mp( (int*)&(a->value), oldval, newval));
+
+    /*__isync();*/
+    __fence();
+
+    return newval;
+#else
+    int t;
+
     __asm__ __volatile__("1:     lwarx   %0,0,%2 \n"
                          "\t add     %0,%1,%0 \n"
                          "\t stwcx.  %0,0,%2 \n"
@@ -100,151 +187,90 @@ static int tMPI_Atomic_add_return(tMPI_Atomic_t *    a,
                          : "=&r" (t)
                          : "r" (i), "r" (&a->value) );
     return t;
+#endif
 }
 
 
 
-static int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
-                                       int                i)
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
-    int t;
+#ifdef TMPI_XLC_INTRINSICS
+    int oldval,newval;
     
+    do
+    {
+        __fence();
+        __eieio(); /* these memory barriers are neccesary */
+        oldval = tMPI_Atomic_get(a);
+        newval = oldval + i;
+    }
+    /*while(__check_lock_mp((const int*)&(a->value), oldval, newval));*/
+    while(__check_lock_mp( (int*)&(a->value), oldval, newval));
+    /*while(!__compare_and_swap( &(a->value), &oldval, newval));*/
+    /*__isync();*/
+    __fence();
+
+    return oldval;
+#else
+    int t;
+
     __asm__ __volatile__("\t eieio\n"
-                         "1:     lwarx   %0,0,%2 \n"                         
+                         "1:     lwarx   %0,0,%2 \n"
                          "\t add     %0,%1,%0 \n"
                          "\t stwcx.  %0,0,%2 \n"
                          "\t bne-    1b \n"
                          "\t isync \n"
                          : "=&r" (t)
                          : "r" (i), "r" (&a->value));
-    
-    return (t - i);    
-}
 
-
-static int tMPI_Atomic_cas(tMPI_Atomic_t *       a,
-                                     int                  oldval,
-                                     int                  newval)
-{
-    int prev;
-    
-    __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
-                          "\t cmpw    0,%0,%3 \n"
-                          "\t bne     2f \n"
-                          "\t stwcx.  %4,0,%2 \n"
-                          "\t bne-    1b \n"
-                          "\t sync \n"
-                          "2: \n"
-                          : "=&r" (prev), "=m" (a->value)
-                          : "r" (&a->value), "r" (oldval), "r" (newval), 
-                            "m" (a->value));
-    
-    return prev;
-}
-
-static void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *   a,
-                                           void*                oldval,
-                                           void*                newval)
-{
-    void* prev;
-   
-
-#if (!defined(__PPC64__)) && (!defined(__ppc64))
-    __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
-                          "\t cmpw    0,%0,%3 \n"
-                          "\t bne     2f \n"
-                          "\t stwcx.  %4,0,%2 \n"
-                          "\t bne-    1b \n"
-                          "\t sync \n"
-                          "2: \n"
-                          : "=&r" (prev), "=m" (a->value)
-                          : "r" (&a->value), "r" (oldval), "r" (newval), 
-                            "m" (a->value));
-    
-#else
-    __asm__ __volatile__ ("1:    ldarx   %0,0,%2 \n"
-                          "\t cmpd    0,%0,%3 \n"
-                          "\t bne     2f \n"
-                          "\t stdcx.  %4,0,%2 \n"
-                          "\t bne-    1b \n"
-                          "\t sync \n"
-                          "2: \n"
-                          : "=&r" (prev), "=m" (a->value)
-                          : "r" (&a->value), "r" (oldval), "r" (newval), 
-                            "m" (a->value));
+    return (t - i);
 #endif
-    return prev;
 }
 
 
-static void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 {
-    x->lock = 0;
+    __clear_lock_mp((const int*)x,0);
 }
 
 
-
-static void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
-    unsigned int tmp;
-    
-    __asm__ __volatile__("\t b      1f \n"
-                         "2:      lwzx    %0,0,%1 \n"
-                         "\t cmpwi   0,%0,0 \n"
-                         "\t bne+    2b \n"
-                         "1:      lwarx   %0,0,%1 \n"
-                         "\t cmpwi   0,%0,0 \n"
-                         "\t bne-    2b \n"
-                         "\t stwcx.  %2,0,%1 \n"
-                         "\t bne-    2b \n"
-                         "\t isync\n"
-                         : "=&r"(tmp)
-                         : "r"(&x->lock), "r"(1));
+    do
+    {
+        tMPI_Atomic_memory_barrier();
+    }
+    while(__check_lock_mp((int*)&(x->lock), 0, 1));
 }
 
 
-static int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
+static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
-    unsigned int old, t;
-    unsigned int mask = 1;
-    volatile unsigned int *p = &x->lock;
-    
-    __asm__ __volatile__("\t eieio\n"
-                         "1:      lwarx   %0,0,%4 \n"
-                         "\t or      %1,%0,%3 \n"
-                         "\t stwcx.  %1,0,%4 \n"
-                         "\t bne     1b \n"
-                         "\t sync \n"
-                         : "=&r" (old), "=&r" (t), "=m" (*p)
-                         : "r" (mask), "r" (p), "m" (*p));
-    
-    return ((old & mask) != 0);    
+    /* Return 0 if we got the lock */
+    return (__check_lock_mp((int*)&(x->lock), 0, 1) != 0);
 }
 
 
-static void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 {
-    __asm__ __volatile__("\t eieio \n");
-    x->lock = 0;
+    __clear_lock_mp((int*)&(x->lock),0);
 }
 
 
-static int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
-    return ( x->lock != 0);
+    tMPI_Atomic_memory_barrier();
+    return ((x->lock) != 0);
 }
 
 
-static void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
-    
-    do 
+    do
     {
         tMPI_Atomic_memory_barrier();
     }
     while(spin_islocked(x));
 }
-
-
 
 

@@ -92,22 +92,24 @@ tMPI_Atomic_t init_inited={ 0 };
 
 static void tMPI_Init_initers(void)
 {
+    int state;
     /* we can pre-check because it's atomic */
     if (tMPI_Atomic_get(&init_inited) == 0)
     {
         /* this can be a spinlock because the chances of collision are low. */
         tMPI_Spinlock_lock( &init_init );
 
-        tMPI_Atomic_memory_barrier();
-        if (tMPI_Atomic_get(&init_inited) == 0)
+        state=tMPI_Atomic_get(&init_inited);
+        tMPI_Atomic_memory_barrier_acq();
+        if (state == 0)
         {
             InitializeCriticalSection(&mutex_init);
             InitializeCriticalSection(&once_init);
             InitializeCriticalSection(&cond_init);
             InitializeCriticalSection(&barrier_init);
 
+            tMPI_Atomic_memory_barrier_rel();
             tMPI_Atomic_set(&init_inited, 1);
-            tMPI_Atomic_memory_barrier();
         }
 
         tMPI_Spinlock_unlock( &init_init );

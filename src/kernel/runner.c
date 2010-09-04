@@ -72,6 +72,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
+#include "gmx_membed.h"
 
 #include "md_openmm.h"
 
@@ -352,6 +353,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
     int         nthreads=1;
+    gmx_membed_t *membed=NULL;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -399,6 +401,16 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #endif
     }
     /* END OF CAUTION: cr is now reliable */
+
+    /* g_membed initialisation *
+     * Because we change the mtop, init_membed is called before the init_parallel *
+     * (in case we ever want to make it run in parallel) */
+    if (opt2bSet("-membed",nfile,fnm))
+    {
+	fprintf(stderr,"Entering membed code");
+        snew(membed,1);
+        init_membed(fplog,membed,nfile,fnm,mtop,inputrec,state,cr,&cpt_period);
+    }
 
     if (PAR(cr))
     {
@@ -795,6 +807,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       fcd,state,
                                       mdatoms,nrnb,wcycle,ed,fr,
                                       repl_ex_nst,repl_ex_seed,
+                                      membed,
                                       cpt_period,max_hours,
                                       deviceOptions,
                                       Flags,
@@ -835,6 +848,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
+    
+    if (opt2bSet("-membed",nfile,fnm))
+    {
+        sfree(membed);
+    }
 
     /* Does what it says */  
     print_date_and_time(fplog,cr->nodeid,"Finished mdrun",&runtime);

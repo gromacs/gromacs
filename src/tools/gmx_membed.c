@@ -40,53 +40,11 @@
 #include <signal.h>
 #include <stdlib.h>
 #include "typedefs.h"
-#include "smalloc.h"
 #include "sysstuff.h"
-#include "vec.h"
 #include "statutil.h"
 #include "macros.h"
 #include "copyrite.h"
 #include "main.h"
-#include "futil.h"
-#include "edsam.h"
-#include "checkpoint.h"
-#include "vcm.h"
-#include "mdebin.h"
-#include "nrnb.h"
-#include "calcmu.h"
-#include "index.h"
-#include "vsite.h"
-#include "update.h"
-#include "ns.h"
-#include "trnio.h"
-#include "xtcio.h"
-#include "mdrun.h"
-#include "confio.h"
-#include "network.h"
-#include "pull.h"
-#include "xvgr.h"
-#include "physics.h"
-#include "names.h"
-#include "disre.h"
-#include "orires.h"
-#include "dihre.h"
-#include "pppm.h"
-#include "pme.h"
-#include "mdatoms.h"
-#include "qmmm.h"
-#include "mpelogging.h"
-#include "domdec.h"
-#include "partdec.h"
-#include "topsort.h"
-#include "coulomb.h"
-#include "constr.h"
-#include "shellfc.h"
-#include "mvdata.h"
-#include "checkpoint.h"
-#include "mtop_util.h"
-#include "tpxio.h"
-#include "string2.h"
-#include "sighandler.h"
 #include "gmx_ana.h"
 
 #ifdef GMX_LIB_MPI
@@ -1156,17 +1114,14 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bRerunMD = flags & CGLO_RERUNMD;
     bStopCM = flags & CGLO_STOPCM;
     bGStat = flags & CGLO_GSTAT;
-/* FIX ME after 4.5 */
-/* temporary hack because we are using gmx_bool (unsigned char) */
-
-    bReadEkin = (flags & CGLO_READEKIN) != 0;
-    bScaleEkin = (flags & CGLO_SCALEEKIN) != 0;
+    bReadEkin = (flags & CGLO_READEKIN);
+    bScaleEkin = (flags & CGLO_SCALEEKIN);
     bEner = flags & CGLO_ENERGY;
     bTemp = flags & CGLO_TEMPERATURE;
-    bPres  = (flags & CGLO_PRESSURE) != 0;
-    bConstrain = (flags & CGLO_CONSTRAINT) != 0;
-    bIterate = (flags & CGLO_ITERATE) != 0;
-    bFirstIterate = (flags & CGLO_FIRSTITERATE) != 0;
+    bPres  = (flags & CGLO_PRESSURE);
+    bConstrain = (flags & CGLO_CONSTRAINT);
+    bIterate = (flags & CGLO_ITERATE);
+    bFirstIterate = (flags & CGLO_FIRSTITERATE);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -4281,6 +4236,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     return rc;
 }
 
+
 int gmx_membed(int argc,char *argv[])
 {
 	const char *desc[] = {
@@ -4325,83 +4281,24 @@ int gmx_membed(int argc,char *argv[])
 			" - It is recommended to perform a short equilibration run after the embedding",
 			"(see Wolf et al, J Comp Chem 31 (2010) 2169-2174, to re-equilibrate the membrane. Clearly",
 			"protein equilibration might require longer.\n",
+			" - It is now also possible to use the g_membed functionality with mdrun. You should than pass",
+			"a data file containing the command line options of g_membed following the -membed option, for",
+			"example mdrun -s into_mem.tpr -membed membed.dat.",
 			"\n"
 	};
-	t_commrec    *cr;
 	t_filenm fnm[] = {
 			{ efTPX, "-f",      "into_mem", ffREAD },
 			{ efNDX, "-n",      "index",    ffOPTRD },
 			{ efTOP, "-p",      "topol",    ffOPTRW },
 			{ efTRN, "-o",      NULL,       ffWRITE },
 			{ efXTC, "-x",      NULL,       ffOPTWR },
-			{ efCPT, "-cpi",    NULL,       ffOPTRD },
-			{ efCPT, "-cpo",    NULL,       ffOPTWR },
 			{ efSTO, "-c",      "membedded",  ffWRITE },
 			{ efEDR, "-e",      "ener",     ffWRITE },
-			{ efLOG, "-g",      "md",       ffWRITE },
-			{ efEDI, "-ei",     "sam",      ffOPTRD },
-			{ efTRX, "-rerun",  "rerun",    ffOPTRD },
-			{ efXVG, "-table",  "table",    ffOPTRD },
-			{ efXVG, "-tablep", "tablep",   ffOPTRD },
-			{ efXVG, "-tableb", "table",    ffOPTRD },
-			{ efXVG, "-dhdl",   "dhdl",     ffOPTWR },
-			{ efXVG, "-field",  "field",    ffOPTWR },
-			{ efXVG, "-table",  "table",    ffOPTRD },
-			{ efXVG, "-tablep", "tablep",   ffOPTRD },
-			{ efXVG, "-tableb", "table",    ffOPTRD },
-			{ efTRX, "-rerun",  "rerun",    ffOPTRD },
-			{ efXVG, "-tpi",    "tpi",      ffOPTWR },
-			{ efXVG, "-tpid",   "tpidist",  ffOPTWR },
-			{ efEDI, "-ei",     "sam",      ffOPTRD },
-			{ efEDO, "-eo",     "sam",      ffOPTWR },
-			{ efGCT, "-j",      "wham",     ffOPTRD },
-			{ efGCT, "-jo",     "bam",      ffOPTWR },
-			{ efXVG, "-ffout",  "gct",      ffOPTWR },
-			{ efXVG, "-devout", "deviatie", ffOPTWR },
-			{ efXVG, "-runav",  "runaver",  ffOPTWR },
-			{ efXVG, "-px",     "pullx",    ffOPTWR },
-			{ efXVG, "-pf",     "pullf",    ffOPTWR },
-			{ efMTX, "-mtx",    "nm",       ffOPTWR },
-			{ efNDX, "-dn",     "dipole",   ffOPTWR }
+                        { efDAT, "-dat",    "membed",   ffWRITE }
 	};
 #define NFILE asize(fnm)
 
 	/* Command line options ! */
-	gmx_bool bCart        = FALSE;
-	gmx_bool bPPPME       = FALSE;
-	gmx_bool bPartDec     = FALSE;
-	gmx_bool bDDBondCheck = TRUE;
-	gmx_bool bDDBondComm  = TRUE;
-	gmx_bool bVerbose     = FALSE;
-	gmx_bool bCompact     = TRUE;
-	gmx_bool bSepPot      = FALSE;
-	gmx_bool bRerunVSite  = FALSE;
-	gmx_bool bIonize      = FALSE;
-	gmx_bool bConfout     = TRUE;
-	gmx_bool bReproducible = FALSE;
-
-	int  npme=-1;
-	int  nmultisim=0;
-	int  nstglobalcomm=-1;
-	int  repl_ex_nst=0;
-	int  repl_ex_seed=-1;
-	int  nstepout=100;
-	int  nthreads=0; /* set to determine # of threads automatically */
-	int  resetstep=-1;
-
-	rvec realddxyz={0,0,0};
-	const char *ddno_opt[ddnoNR+1] =
-	{ NULL, "interleave", "pp_pme", "cartesian", NULL };
-	const char *dddlb_opt[] =
-	{ NULL, "auto", "no", "yes", NULL };
-	real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
-	char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
-	real cpt_period=15.0,max_hours=-1;
-	gmx_bool bAppendFiles=TRUE,bAddPart=TRUE;
-	gmx_bool bResetCountersHalfWay=FALSE;
-	output_env_t oenv=NULL;
-	const char *deviceOptions = "";
-
 	real xy_fac = 0.5;
 	real xy_max = 1.0;
 	real z_fac = 1.0;
@@ -4412,8 +4309,10 @@ int gmx_membed(int argc,char *argv[])
 	int low_up_rm = 0;
 	int maxwarn=0;
 	int pieces=1;
-    gmx_bool bALLOW_ASYMMETRY=FALSE;
-
+        gmx_bool bALLOW_ASYMMETRY=FALSE;
+        int nstepout=100;
+        gmx_bool bVerbose=FALSE;
+        char *mdrun_path=NULL;
 
 /* arguments relevant to OPENMM only*/
 #ifdef GMX_OPENMM
@@ -4421,248 +4320,80 @@ int gmx_membed(int argc,char *argv[])
 #endif
 
 	t_pargs pa[] = {
-			{ "-xyinit",   FALSE, etREAL,  {&xy_fac},   	"Resize factor for the protein in the xy dimension before starting embedding" },
-			{ "-xyend",   FALSE, etREAL,  {&xy_max},   		"Final resize factor in the xy dimension" },
-			{ "-zinit",    FALSE, etREAL,  {&z_fac},  		"Resize factor for the protein in the z dimension before starting embedding" },
-			{ "-zend",    FALSE, etREAL,  {&z_max},    		"Final resize faction in the z dimension" },
-			{ "-nxy",     FALSE,  etINT,  {&it_xy},         "Number of iteration for the xy dimension" },
-			{ "-nz",      FALSE,  etINT,  {&it_z},          "Number of iterations for the z dimension" },
-			{ "-rad",     FALSE, etREAL,  {&probe_rad},     "Probe radius to check for overlap between the group to embed and the membrane"},
-			{ "-pieces",  FALSE,  etINT,  {&pieces},        "Perform piecewise resize. Select parts of the group to insert and resize these with respect to their own geometrical center." },
-            { "-asymmetry",FALSE, etBOOL,{&bALLOW_ASYMMETRY}, "Allow asymmetric insertion, i.e. the number of lipids removed from the upper and lower leaflet will not be checked." },
-            { "-ndiff" ,  FALSE, etINT, {&low_up_rm},       "Number of lipids that will additionally be removed from the lower (negative number) or upper (positive number) membrane leaflet." },
-			{ "-maxwarn", FALSE, etINT, {&maxwarn},			"Maximum number of warning allowed" },
-  { "-pd",      FALSE, etBOOL,{&bPartDec},
-    "HIDDENUse particle decompostion" },
-  { "-dd",      FALSE, etRVEC,{&realddxyz},
-    "HIDDENDomain decomposition grid, 0 is optimize" },
-  { "-nt",      FALSE, etINT, {&nthreads},
-    "HIDDENNumber of threads to start (0 is guess)" },
-  { "-npme",    FALSE, etINT, {&npme},
-    "HIDDENNumber of separate nodes to be used for PME, -1 is guess" },
-  { "-ddorder", FALSE, etENUM, {ddno_opt},
-    "HIDDENDD node order" },
-  { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
-    "HIDDENCheck for all bonded interactions with DD" },
-  { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
-    "HIDDENUse special bonded atom communication when -rdd > cut-off" },
-  { "-rdd",     FALSE, etREAL, {&rdd},
-    "HIDDENThe maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
-  { "-rcon",    FALSE, etREAL, {&rconstr},
-    "HIDDENMaximum distance for P-LINCS (nm), 0 is estimate" },
-  { "-dlb",     FALSE, etENUM, {dddlb_opt},
-    "HIDDENDynamic load balancing (with DD)" },
-  { "-dds",     FALSE, etREAL, {&dlb_scale},
-    "HIDDENMinimum allowed dlb scaling of the DD cell size" },
-  { "-ddcsx",   FALSE, etSTR, {&ddcsx},
-    "HIDDENThe DD cell sizes in x" },
-  { "-ddcsy",   FALSE, etSTR, {&ddcsy},
-    "HIDDENThe DD cell sizes in y" },
-  { "-ddcsz",   FALSE, etSTR, {&ddcsz},
-    "HIDDENThe DD cell sizes in z" },
-  { "-gcom",    FALSE, etINT,{&nstglobalcomm},
-    "HIDDENGlobal communication frequency" },
-  { "-compact", FALSE, etBOOL,{&bCompact},
-    "Write a compact log file" },
-  { "-seppot",  FALSE, etBOOL, {&bSepPot},
-    "HIDDENWrite separate V and dVdl terms for each interaction type and node to the log file(s)" },
-  { "-pforce",  FALSE, etREAL, {&pforce},
-    "HIDDENPrint all forces larger than this (kJ/mol nm)" },
-  { "-reprod",  FALSE, etBOOL,{&bReproducible},
-    "HIDDENTry to avoid optimizations that affect binary reproducibility" },
-  { "-multi",   FALSE, etINT,{&nmultisim},
-    "HIDDENDo multiple simulations in parallel" },
-  { "-replex",  FALSE, etINT, {&repl_ex_nst},
-    "HIDDENAttempt replica exchange every # steps" },
-  { "-reseed",  FALSE, etINT, {&repl_ex_seed},
-    "HIDDENSeed for replica exchange, -1 is generate a seed" },
-  { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
-    "HIDDENRecalculate virtual site coordinates with -rerun" },
-  { "-ionize",  FALSE, etBOOL,{&bIonize},
-    "HIDDENDo a simulation including the effect of an X-Ray bombardment on your system" },
-  { "-confout", TRUE, etBOOL, {&bConfout},
-    "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
-  { "-stepout", FALSE, etINT, {&nstepout},
-    "HIDDENFrequency of writing the remaining runtime" },
-  { "-resetstep", FALSE, etINT, {&resetstep},
-    "HIDDENReset cycle counters after these many time steps" },
-  { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
-    "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
-  { "-v",       FALSE, etBOOL,{&bVerbose},
-    "Be loud and noisy" },
-  { "-maxh",   FALSE, etREAL, {&max_hours},
-    "HIDDENTerminate after 0.99 times this time (hours)" },
-  { "-cpt",     FALSE, etREAL, {&cpt_period},
-    "HIDDENCheckpoint interval (minutes)" },
-  { "-append",  FALSE, etBOOL, {&bAppendFiles},
-    "HIDDENAppend to previous output files when continuing from checkpoint" },
-  { "-addpart",  FALSE, etBOOL, {&bAddPart},
-    "HIDDENAdd the simulation part number to all output files when continuing from checkpoint" },
+			{ "-xyinit",   FALSE, etREAL,  {&xy_fac},   	
+				"Resize factor for the protein in the xy dimension before starting embedding" },
+			{ "-xyend",   FALSE, etREAL,  {&xy_max},
+				"Final resize factor in the xy dimension" },
+			{ "-zinit",    FALSE, etREAL,  {&z_fac},
+		  		"Resize factor for the protein in the z dimension before starting embedding" },
+			{ "-zend",    FALSE, etREAL,  {&z_max},
+		    		"Final resize faction in the z dimension" },
+			{ "-nxy",     FALSE,  etINT,  {&it_xy},
+			        "Number of iteration for the xy dimension" },
+			{ "-nz",      FALSE,  etINT,  {&it_z},
+			        "Number of iterations for the z dimension" },
+			{ "-rad",     FALSE, etREAL,  {&probe_rad},
+				"Probe radius to check for overlap between the group to embed and the membrane"},
+			{ "-pieces",  FALSE,  etINT,  {&pieces},
+			        "Perform piecewise resize. Select parts of the group to insert and resize these with respect to their own geometrical center." },
+		        { "-asymmetry",FALSE, etBOOL,{&bALLOW_ASYMMETRY}, 
+				"Allow asymmetric insertion, i.e. the number of lipids removed from the upper and lower leaflet will not be checked." },
+	                { "-ndiff" ,  FALSE, etINT, {&low_up_rm},
+			        "Number of lipids that will additionally be removed from the lower (negative number) or upper (positive number) membrane leaflet." },
+			{ "-maxwarn", FALSE, etINT, {&maxwarn},		
+				"Maximum number of warning allowed" },
+			{ "-stepout", FALSE, etINT, {&nstepout},
+			        "HIDDENFrequency of writing the remaining runtime" },
+			{ "-v",       FALSE, etBOOL,{&bVerbose},
+			        "Be loud and noisy" },
+			{ "-mdrun_path", FALSE, etSTR, {&mdrun_path},
+				"Path to the mdrun executable compiled with this g_membed version" }
 	};
-	gmx_edsam_t  ed;
-	unsigned long Flags, PCA_Flags;
-	ivec     ddxyz;
-	int      dd_node_order;
-	gmx_bool     HaveCheckpoint;
-	FILE     *fplog,*fptest;
-	int      sim_part,sim_part_fn;
-	const char *part_suffix=".part";
-	char     suffix[STRLEN];
-	int      rc;
+
+        FILE *data_out;
+        output_env_t oenv;
+        char buf[256],buf2[64];
 
 
-	cr = init_par(&argc,&argv);
+        parse_common_args(&argc,argv,0, NFILE,fnm,asize(pa),pa,
+                    asize(desc),desc,0,NULL, &oenv);
 
-	PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
-			| (MASTER(cr) ? 0 : PCA_QUIET));
+        data_out = ffopen(opt2fn("-dat",NFILE,fnm),"w");
+        fprintf(data_out,"nxy = %d\nnz = %d\nxyinit = %f\nxyend = %f\nzinit = %f\nzend = %f\n"
+			"rad = %f\npieces = %d\nasymmetry = %s\nndiff = %d\nmaxwarn = %d\n",
+			it_xy,it_z,xy_fac,xy_max,z_fac,z_max,probe_rad,pieces,
+			bALLOW_ASYMMETRY ? "yes" : "no",low_up_rm,maxwarn);
+        fclose(data_out);
 
-
-	/* Comment this in to do fexist calls only on master
-	 * works not with rerun or tables at the moment
-	 * also comment out the version of init_forcerec in md.c
-	 * with NULL instead of opt2fn
-	 */
-	/*
-   if (!MASTER(cr))
-   {
-   PCA_Flags |= PCA_NOT_READ_NODE;
-   }
-	 */
-
-	parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
-			asize(desc),desc,0,NULL, &oenv);
-
-	/* we set these early because they might be used in init_multisystem()
-   Note that there is the potential for npme>nnodes until the number of
-   threads is set later on, if there's thread parallelization. That shouldn't
-   lead to problems. */
-	dd_node_order = nenum(ddno_opt);
-	cr->npmenodes = npme;
-
-#ifdef GMX_THREADS
-	/* now determine the number of threads automatically. The threads are
-   only started at mdrunner_threads, though. */
-	if (nthreads<1)
+        sprintf(buf,"%s -s %s -membed %s -o %s -c %s -e %s -nt 1 -cpt -1",
+		    (mdrun_path==NULL) ? "mdrun" : mdrun_path,
+		    opt2fn("-f",NFILE,fnm),opt2fn("-dat",NFILE,fnm),opt2fn("-o",NFILE,fnm),
+		    opt2fn("-c",NFILE,fnm),opt2fn("-e",NFILE,fnm));
+        if (opt2bSet("-n",NFILE,fnm))
 	{
-		nthreads=tMPI_Get_recommended_nthreads();
-	}
-#else
-	nthreads=1;
-#endif
-
-
-	if (repl_ex_nst != 0 && nmultisim < 2)
-		gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
-
-	if (nmultisim > 1) {
-#ifndef GMX_THREADS
-		init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
-#else
-		gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
-#endif
-	}
-
-	/* Check if there is ANY checkpoint file available */
-	sim_part    = 1;
-	sim_part_fn = sim_part;
-	if (opt2bSet("-cpi",NFILE,fnm))
+		sprintf(buf2," -mn %s",opt2fn("-n",NFILE,fnm));
+		strcat(buf,buf2);
+        }
+	if (opt2bSet("-x",NFILE,fnm))
 	{
-		bAppendFiles =
-			read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,fnm,cr),
-							&sim_part_fn,NULL,cr,
-							bAppendFiles,NFILE,fnm,
-							part_suffix,&bAddPart);
-		if (sim_part_fn==0 && MASTER(cr))
-		{
-			fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
-		}
-		else
-		{
-			sim_part = sim_part_fn + 1;
-		}
+		sprintf(buf2," -x %s",opt2fn("-x",NFILE,fnm));
+                strcat(buf,buf2);
 	}
-	else
+        if (opt2bSet("-p",NFILE,fnm))
+        {
+                sprintf(buf2," -mp %s",opt2fn("-p",NFILE,fnm));
+                strcat(buf,buf2);
+        }
+	if (bVerbose)
 	{
-		bAppendFiles = FALSE;
+		sprintf(buf2," -v -stepout %d",nstepout);
+		strcat(buf,buf2);
 	}
 
-	if (!bAppendFiles)
-	{
-		sim_part_fn = sim_part;
-	}
+        printf("%s\n",buf);
+        system(buf);
 
-	if (bAddPart && sim_part_fn > 1)
-	{
-		/* This is a continuation run, rename trajectory output files
-       (except checkpoint files) */
-		/* create new part name first (zero-filled) */
-		sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
+        fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
 
-		add_suffix_to_output_names(fnm,NFILE,suffix);
-		fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
-	}
-
-	Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
-	Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
-	Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
-	Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
-	Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
-	Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
-	Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
-	Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
-	Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
-	Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0);
-	Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0);
-	Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
-
-
-	/* We postpone opening the log file if we are appending, so we can
-   first truncate the old log file and append to the correct position
-   there instead.  */
-	if ((MASTER(cr) || bSepPot) && !bAppendFiles)
-	{
-		gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
-		CopyRight(fplog,argv[0]);
-		please_cite(fplog,"Hess2008b");
-		please_cite(fplog,"Spoel2005a");
-		please_cite(fplog,"Lindahl2001a");
-		please_cite(fplog,"Berendsen95a");
-	}
-	else
-	{
-		fplog = NULL;
-	}
-
-	ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
-	ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
-	ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
-
-	/* even if nthreads = 1, we still call this one */
-
-	rc = mdrunner_membed(fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
-			nstglobalcomm,
-			ddxyz, dd_node_order, rdd, rconstr, dddlb_opt[0], dlb_scale,
-			ddcsx, ddcsy, ddcsz, nstepout, resetstep, nmultisim, repl_ex_nst,
-			repl_ex_seed, pforce, cpt_period, max_hours, deviceOptions, Flags,
-			xy_fac,xy_max,z_fac,z_max,
-			it_xy,it_z,probe_rad,low_up_rm,
-			pieces,bALLOW_ASYMMETRY,maxwarn);
-
-	if (gmx_parallel_env_initialized())
-		gmx_finalize();
-
-	if (MULTIMASTER(cr)) {
-		thanx(stderr);
-	}
-
-	/* Log file has to be closed in mdrunner if we are appending to it
-   (fplog not set here) */
-	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
-
-	if (MASTER(cr) && !bAppendFiles)
-	{
-		gmx_log_close(fplog);
-	}
-
-	return rc;
+	return 0;
 }

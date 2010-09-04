@@ -89,6 +89,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
+#include "gmx_membed.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -323,17 +324,14 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bStopCM = flags & CGLO_STOPCM;
     bGStat = flags & CGLO_GSTAT;
 
-/* FIX ME after 4.5 */
-/* temporary hack because we are using gmx_bool (unsigned char) */
-
-    bReadEkin = (flags & CGLO_READEKIN) != 0;
-    bScaleEkin = (flags & CGLO_SCALEEKIN) != 0;
+    bReadEkin = (flags & CGLO_READEKIN);
+    bScaleEkin = (flags & CGLO_SCALEEKIN);
     bEner = flags & CGLO_ENERGY;
     bTemp = flags & CGLO_TEMPERATURE;
-    bPres  = (flags & CGLO_PRESSURE) != 0;
-    bConstrain = (flags & CGLO_CONSTRAINT) != 0;
-    bIterate = (flags & CGLO_ITERATE) != 0;
-    bFirstIterate = (flags & CGLO_FIRSTITERATE) != 0;
+    bPres  = (flags & CGLO_PRESSURE);
+    bConstrain = (flags & CGLO_CONSTRAINT);
+    bIterate = (flags & CGLO_ITERATE);
+    bFirstIterate = (flags & CGLO_FIRSTITERATE);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -1074,7 +1072,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
+             int repl_ex_nst,int repl_ex_seed,gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -2719,6 +2717,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */
+
+        if ( (membed!=NULL) && (!bLastStep) )
+            rescale_membed(step_rel,membed,state_global->x);
         
         if (bRerunMD) 
         {

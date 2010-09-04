@@ -918,7 +918,7 @@ int gmx_trjconv(int argc,char *argv[])
 
         /* Determine whether to read a topology */
         bTPS = (ftp2bSet(efTPS,NFILE,fnm) ||
-            bRmPBC || bReset || bPBCcomMol ||
+            bRmPBC || bReset || bPBCcomMol || bCluster ||
             (ftp == efGRO) || (ftp == efPDB) || bCONECT);
 
         /* Determine if when can read index groups */
@@ -928,6 +928,12 @@ int gmx_trjconv(int argc,char *argv[])
             read_tps_conf(top_file,top_title,&top,&ePBC,&xp,NULL,top_box,
                           bReset || bPBCcomRes);
             atoms=&top.atoms;
+
+            if (0 == top.mols.nr && (bCluster || bPBCcomMol))
+            {
+                gmx_fatal(FARGS,"Option -pbc %s requires a .tpr file for the -s option",pbc_opt[pbc_enum]);
+            }
+
             /* top_title is only used for gro and pdb,
              * the header in such a file is top_title t= ...
              * to prevent a double t=, remove it from top_title
@@ -1186,7 +1192,7 @@ int gmx_trjconv(int argc,char *argv[])
                             }
                     }
                 }
-                else if (bCluster && bTPS) {
+                else if (bCluster) {
                     rvec com;
 
                     calc_pbc_cluster(ecenter,ifit,&top,ePBC,fr.x,ind_fit,com,fr.box);

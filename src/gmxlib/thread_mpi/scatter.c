@@ -35,8 +35,28 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is #included from collective.c; it's not really a header file,
-   but this defines a lot of functions that probably need to be inlined.*/
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "impl.h"
+#include "collective.h"
+
 
 
 int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
@@ -72,7 +92,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         size_t sendsize=sendtype->size*sendcount;
         size_t total_send_size=0;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-        gmx_bool using_cb;
+        tmpi_bool using_cb;
 #endif
 
         if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
@@ -83,6 +103,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         /* we set up multiple posts, so no Post_multi */
         cev->met[myrank].tag=TMPI_SCATTER_TAG;
         cev->met[myrank].datatype=sendtype;
+        tMPI_Atomic_memory_barrier_rel();
         tMPI_Atomic_set( &(cev->met[myrank].n_remaining), cev->N-1 );
         for(i=0;i<comm->grp.N;i++)
         {        
@@ -135,7 +156,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             /* post the new buf */
             for(i=0;i<cev->N;i++)
             {
-                tMPI_Atomic_memory_barrier();
+                tMPI_Atomic_memory_barrier_rel();
                 tMPI_Atomic_ptr_set(&(cev->met[myrank].cpbuf[i]),
                                     (char*)cev->met[myrank].cb->buf+sendsize*i);
                 /*cev->met[myrank].cpbuf[i] = (char*)cev->met[myrank].cb->buf + 
@@ -207,7 +228,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         int i;
         size_t total_send_size=0;
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-        gmx_bool using_cb;
+        tmpi_bool using_cb;
 #endif
 
         if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
@@ -218,6 +239,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         /* we set up multiple posts, so no Post_multi */
         cev->met[myrank].tag=TMPI_SCATTERV_TAG;
         cev->met[myrank].datatype=sendtype;
+        tMPI_Atomic_memory_barrier_rel();
         tMPI_Atomic_set( &(cev->met[myrank].n_remaining), cev->N-1 );
         for(i=0;i<cev->N;i++)
         {        
@@ -268,14 +290,13 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
             /* post the new buf */
             for(i=0;i<cev->N;i++)
             {
-                tMPI_Atomic_memory_barrier();
+                tMPI_Atomic_memory_barrier_rel();
                 tMPI_Atomic_ptr_set(&(cev->met[myrank].cpbuf[i]),
                                     (char*)cev->met[myrank].cb->buf + 
                                     sendtype->size*displs[i]);
                 /*cev->met[myrank].cpbuf[i]=(char*)cev->met[myrank].cb->buf + 
                           sendtype->size*displs[i];*/
             }
-            tMPI_Atomic_memory_barrier();
         }
 #endif
 

@@ -81,7 +81,7 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *   a,
     ret = _Asm_cmpxchg((_Asm_sz)SZ_W,(_Asm_sem)_SEM_ACQ,(Uint32*)a,    
                        (Uint32)newval,(_Asm_ldhint)_LDHINT_NONE);
                    
-    return ret;
+    return ret==oldval;
 }
 
 
@@ -101,7 +101,7 @@ static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *  a,
     ret = _Asm_cmpxchg((_Asm_sz)SZ_W,(_Asm_sem)_SEM_ACQ,(Uint64)a,    
                        (Uint64)newval,(_Asm_ldhint)_LDHINT_NONE);
                    
-    return ret;
+    return ret==oldval;
 }
 
 
@@ -138,7 +138,7 @@ static inline void tMPI_Atomic_add_return(tMPI_Atomic_t *       a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
+        while(!tMPI_Atomic_cas(a,oldval,newval));
     }
     return newval;
 }
@@ -169,7 +169,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
+        while(!tMPI_Atomic_cas(a,oldval,newval));
     }
     return oldval;
 }

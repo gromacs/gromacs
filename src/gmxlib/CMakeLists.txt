@@ -87,6 +87,8 @@ if(GMX_FAHCORE)
     list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
 endif(GMX_FAHCORE)
 
+# only fiddle with assembly kernels if we're not doing OpenMM build
+if(NOT GMX_OPENMM) 
 if(GMX_ASM_USEASM-NASM)
   enable_language(ASM-NASM)
 
@@ -114,11 +116,12 @@ else(GMX_ASM_USEASM-NASM)
   endif()
 
 endif(GMX_ASM_USEASM-NASM)
+endif(NOT GMX_OPENMM)
 
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${THREAD_MPI_SRC})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})
 add_dependencies(gmx gmx_version) 
-set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION})
+set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})
 
