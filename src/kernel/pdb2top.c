@@ -516,7 +516,8 @@ void print_top_comment(FILE *out,
                        const char *filename,
                        const char *generator,
                        const char *ffdir,
-                       gmx_bool bITP)
+                       gmx_bool bITP,
+                       const char *remark)
 {
   char tmp[256]; 
   char ffdir_parent[STRLEN];
