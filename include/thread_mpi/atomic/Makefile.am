@@ -3,11 +3,10 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
+pkgincludethread_mpidir = ${pkgincludedir}/thread_mpi/atomic
 
-pkgincludethread_mpiatomicdir = ${pkgincludedir}/thread_mpi/atomic
-
-pkgincludethread_mpiatomic_HEADERS = \
-	gcc.h            gcc_ppc.h        hpux.h           \
-	gcc_ia64.h       gcc_spinlock.h   msvc.h           xlc_ppc.h \
-	gcc_intrinsics.h gcc_x86.h        
+pkgincludethread_mpi_HEADERS = \
+	cycles.h         gcc_intrinsics.h gcc_x86.h\
+	gcc.h            gcc_ppc.h        msvc.h\
+	gcc_ia64.h       gcc_spinlock.h   xlc_ppc.h
 

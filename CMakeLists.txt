@@ -2,15 +2,21 @@ cmake_minimum_required(VERSION 2.6)
 
 project(Gromacs)
 include(Dart)
+mark_as_advanced(DART_ROOT)
 # PROJECT_VERSION should have the following structure: 
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-set(PROJECT_VERSION "4.5.1"
-    CACHE STRING "Gromacs version string")
+set(PROJECT_VERSION "4.5.1")
+set(CUSTOM_VERSION_STRING ""
+    CACHE STRING "Custom version string (if empty, use hard-coded default)")
+mark_as_advanced(CUSTOM_VERSION_STRING)
+if (CUSTOM_VERSION_STRING)
+    set(PROJECT_VERSION ${CUSTOM_VERSION_STRING})
+endif (CUSTOM_VERSION_STRING)
 set(SOVERSION 6)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "5")
-SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_VERSION_PATCH "1")
 
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -70,32 +76,40 @@ gmx_c_flags()
 ########################################################################
 # User input options                                                   #
 ########################################################################
-option(GMX_DOUBLE "Use double precision" OFF)
+option(GMX_DOUBLE "Use double precision. Much slower, use only if needed!)" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREADS    "Build a parallel (thread-based) version of GROMACS)" ON)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
+mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
+mark_as_advanced(GMX_FAHCORE)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library" OFF)
 set(GMX_ACCELERATION "auto" 
-    CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec")
+    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
+mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
 set(GMX_QMMM_PROGRAM "none" 
     CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
+mark_as_advanced(GMX_BROKEN_CALLOC)
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
-option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
+option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
+mark_as_advanced(GMX_DLOPEN)
 
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
+mark_as_advanced(GMX_IA32_ASM)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
+mark_as_advanced(GMX_X86_64_ASM)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
+mark_as_advanced(USE_VERSION_H)
 
 option(GMX_DEFAULT_SUFFIX "Use default GROMACS suffixes" ON)
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for double).")
@@ -109,6 +123,9 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_BINARY_SUFFIX "_d")
     set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
   endif(GMX_DOUBLE)
+  mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
+else(GMX_DEFAULT_SUFFIX)
+   mark_as_advanced(CLEAR GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
 endif(GMX_DEFAULT_SUFFIX)
 
 set(PKG_CFLAGS "")
@@ -188,6 +205,13 @@ if(GMX_OPENMM)
     if(GMX_FAHCORE)
         message(FATAL_ERROR "The OpenMM build does not support FAH build!")
     endif(GMX_FAHCORE)
+    set(GMX_DOUBLE OFF FORCE )
+    # mark as advanced the unused variables
+    mark_as_advanced(FORCE GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
+        GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)
+else(GMX_OPENMM)
+     mark_as_advanced(CLEAR GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
+        GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)   
 endif(GMX_OPENMM)
 
 
@@ -407,7 +431,7 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)")
 
-    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
     
     if (GMX_64_BIT)
       set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
@@ -417,7 +441,7 @@ if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
     # Determine the assembler/compiler to use
   else()
-    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
   endif()
 endif (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
@@ -458,9 +482,11 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
 
     if(CMAKE_GENERATOR MATCHES "Visual Studio")
       option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
-    else(CMAKE_GENERATOR MATCHES "Visual Studio")
+    else()
       option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
-    endif(CMAKE_GENERATOR MATCHES "Visual Studio")
+    endif()
+	mark_as_advanced(GMX_ASM_USEASM-NASM)
+
     if (NOT GMX_64_BIT)
         # for 32-bit compiles, we might need to turn on sse 
         CHECK_C_COMPILER_FLAG("-msse2" XFLAGS_SSE)
@@ -510,7 +536,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "ALTIVEC")
         set(GMX_PPC_ALTIVEC 1)
     endif(HAVE_ALTIVEC_H)
 else(${GMX_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of none, SSE, Fortran, BlueGene, Power6, ia64, altivec")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of auto, none, SSE, Fortran, BlueGene, Power6, ia64, altivec")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
 
@@ -611,6 +637,8 @@ else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
   set(GMX_EXTERNAL_BLAS FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
   set(GMX_EXTERNAL_LAPACK FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
 endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
+mark_as_advanced(GMX_EXTERNAL_LAPACK)
+mark_as_advanced(GMX_EXTERNAL_BLAS)
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
@@ -684,7 +712,11 @@ ADD_CUSTOM_TARGET(uninstall
 # Tests                                                                #
 ########################################################################
 
-enable_testing()
-add_test(TestBuildAll make)
+include(CTest)
+mark_as_advanced(BUILD_TESTING)
+IF(BUILD_TESTING)
+	enable_testing()
+	add_test(TestBuildAll make)
+	add_subdirectory(tests)
+ENDIF()
 
-add_subdirectory(tests)

@@ -111,7 +111,7 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
     int ret;
 
     __fence(); /* this one needs to be here to avoid ptr. aliasing issues */
-    __eieio(); /* these memory barriers are neccesary */
+    __eieio(); 
     ret=(__compare_and_swap(&(a->value), &oldval, newval));
     __isync();
     __fence(); /* and this one needs to be here to avoid aliasing issues */
@@ -142,7 +142,7 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void* oldval,
     volatile char* volatile* newv=newval;
 
     __fence(); /* this one needs to be here to avoid ptr. aliasing issues */
-    __eieio(); /* these memory barriers are neccesary */
+    __eieio(); 
 #if (!defined (__LP64__) ) && (!defined(__powerpc64__) ) 
     ret=__compare_and_swap((int *)&(a->value), (int*)&oldv, (int)newv);
 #else
@@ -230,37 +230,48 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 
 static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 {
+    __fence();
     __clear_lock_mp((const int*)x,0);
+    __fence();
 }
 
 
 static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
+    __fence();
     do
     {
-        tMPI_Atomic_memory_barrier();
     }
     while(__check_lock_mp((int*)&(x->lock), 0, 1));
+    tMPI_Atomic_memory_barrier_acq();
 }
 
 
 static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
+    int ret;
     /* Return 0 if we got the lock */
-    return (__check_lock_mp((int*)&(x->lock), 0, 1) != 0);
+    __fence();
+    ret=__check_lock_mp((int*)&(x->lock), 0, 1) != 0;
+    tMPI_Atomic_memory_barrier_acq();
+    return ret;
 }
 
 
 static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 {
+    tMPI_Atomic_memory_barrier_rel();
     __clear_lock_mp((int*)&(x->lock),0);
 }
 
 
 static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
-    tMPI_Atomic_memory_barrier();
-    return ((x->lock) != 0);
+    int ret;
+    __fence();
+    ret=((x->lock) != 0);
+    tMPI_Atomic_memory_acq();
+    return ret;
 }
 
 
@@ -268,7 +279,6 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
     do
     {
-        tMPI_Atomic_memory_barrier();
     }
     while(spin_islocked(x));
 }
