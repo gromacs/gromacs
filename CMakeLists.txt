@@ -76,7 +76,7 @@ gmx_c_flags()
 ########################################################################
 # User input options                                                   #
 ########################################################################
-option(GMX_DOUBLE "Use double precision" OFF)
+option(GMX_DOUBLE "Use double precision. Much slower, use only if needed!)" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREADS    "Build a parallel (thread-based) version of GROMACS)" ON)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
