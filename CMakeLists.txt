@@ -205,6 +205,13 @@ if(GMX_OPENMM)
     if(GMX_FAHCORE)
         message(FATAL_ERROR "The OpenMM build does not support FAH build!")
     endif(GMX_FAHCORE)
+    set(GMX_DOUBLE OFF FORCE )
+    # mark as advanced the unused variables
+    mark_as_advanced(FORCE GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
+        GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)
+else(GMX_OPENMM)
+     mark_as_advanced(CLEAR GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
+        GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)   
 endif(GMX_OPENMM)
 
 
