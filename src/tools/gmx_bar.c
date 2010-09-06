@@ -665,7 +665,7 @@ void lambdas_histogram(lambda_t *bl_head, const char *filename,
     int i;
 
     printf("\nWriting histogram to %s\n", filename);
-    sprintf(label_x, "[\\Delta]H (%s)", unit_energy);
+    sprintf(label_x, "\\DeltaH (%s)", unit_energy);
 
     fp=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, oenv);
 
@@ -916,7 +916,7 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
     lambda_t *lc;
     int j;
 
-    if (begin<=0 && end<0)
+    if (begin<=0 && end<0) 
     {
         return;
     }
@@ -967,9 +967,9 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
     }
 
     /* calculate the actual times */
-    if (begin > 0)
+    if (begin > 0 )
     {
-        begin_t = (last_t - first_t)*begin + first_t;
+        begin_t = begin;
     }
     else
     {
@@ -978,13 +978,18 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
 
     if (end >0 )
     {
-        end_t = (last_t - first_t)*end + first_t;
+        end_t = end;
     }
     else
     {
         end_t = last_t;
     }
     printf("\n   Samples in time interval: %.3f - %.3f\n", first_t, last_t);
+
+    if (begin_t > end_t)
+    {
+        return;
+    }
     printf("Removing samples outside of: %.3f - %.3f\n", begin_t, end_t);
 
     /* then impose them */
