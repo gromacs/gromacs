@@ -4,13 +4,18 @@ project(Gromacs)
 include(Dart)
 # PROJECT_VERSION should have the following structure: 
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-set(PROJECT_VERSION "4.5.1"
-    CACHE STRING "Gromacs version string")
+set(PROJECT_VERSION "4.5.1")
+set(CUSTOM_VERSION_STRING ""
+    CACHE STRING "Custom version string (if empty, use hard-coded default)")
+mark_as_advanced(CUSTOM_VERSION_STRING)
+if (CUSTOM_VERSION_STRING)
+    set(PROJECT_VERSION ${CUSTOM_VERSION_STRING})
+endif (CUSTOM_VERSION_STRING)
 set(SOVERSION 6)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "5")
-SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_VERSION_PATCH "1")
 
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -96,6 +101,7 @@ option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
+mark_as_advanced(USE_VERSION_H)
 
 option(GMX_DEFAULT_SUFFIX "Use default GROMACS suffixes" ON)
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for double).")
