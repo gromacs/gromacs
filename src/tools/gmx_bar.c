@@ -1996,7 +1996,7 @@ static void read_bar_xvg_lowlevel(char *fn, real *temp, xvg_t *ba)
             /* Read lambda from the legend */
             ba->lambda[i] = legend2lambda(fn,legend[i], &is_dhdl);
 
-            if (is_dhdl && native_lambda_read)
+            if (is_dhdl && !native_lambda_read)
             {
                 ba->native_lambda = ba->lambda[i];
                 native_lambda_read=TRUE;
