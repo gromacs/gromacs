@@ -3232,9 +3232,9 @@ int gmx_hbond(int argc,char *argv[])
     atom_id **index;
     rvec    *x,hbox;
     matrix  box;
-    real    t,ccut,dist,ang;
+    real    t,ccut,dist=0.0,ang=0.0;
     double  max_nhb,aver_nhb,aver_dist;
-    int     h,i,j,k=0,l,start,end,id,ja,ogrp,nsel;
+    int     h=0,i,j,k=0,l,start,end,id,ja,ogrp,nsel;
     int     xi,yi,zi,ai;
     int     xj,yj,zj,aj,xjj,yjj,zjj;
     int     xk,yk,zk,ak,xkk,ykk,zkk;
