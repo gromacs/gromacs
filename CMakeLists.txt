@@ -107,6 +107,40 @@ option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 mark_as_advanced(GMX_IA32_ASM)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 mark_as_advanced(GMX_X86_64_ASM)
+option(USE_VERSION_H "Generate development version string/information" ON)
+option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
+
+option(GMX_GPU  "Enable GPU acceleration. " ON)
+
+set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
+
+
+#######################################################################
+# Check for options incompatible with OpenMM build                    #
+#######################################################################
+if(GMX_OPENMM OR GMX_GPU)
+    cmake_minimum_required(VERSION 2.6.4)
+    # we'll use the built-in fft to avoid unnecessary dependencies
+    set (GMX_FFT_LIBRARY "fftpack")
+    if(GMX_MPI)
+        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
+    endif(GMX_MPI)
+    if(GMX_THREADS)
+        message(STATUS "Threads not compatible with OpenMM build, disabled")
+        set(GMX_THREADS OFF)
+    endif(GMX_THREADS)
+    if(GMX_SOFTWARE_INVSQRT)
+        set(GMX_SOFTWARE_INVSQRT OFF)
+    endif(GMX_SOFTWARE_INVSQRT)
+    if(NOT GMX_ACCELERATION MATCHES "none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
+        message(WARNING " The OpenMM/GPU build does not support other acceleration modes, acceleration set to \"none\"!")
+        set(GMX_ACCELERATION "none" 
+             CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec" FORCE)
+    endif()
+    if(GMX_FAHCORE)
+        message(FATAL_ERROR " The OpenMM build does not support FAH build!")
+    endif(GMX_FAHCORE)
+endif()
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
@@ -366,6 +400,15 @@ if(GMX_OPENMM)
     endif()
     find_package(OpenMM) 
 endif(GMX_OPENMM)
+
+if(GMX_GPU)
+    set(CUDA_BUILD_EMULATION OFF)
+    find_package(CUDA 3.0 REQUIRED)
+    add_definitions(-DGMX_GPU)
+    if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
+        set(CUDA_VERBOSE_BUILD ON)
+    endif()
+endif()
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)

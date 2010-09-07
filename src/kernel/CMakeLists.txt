@@ -45,8 +45,8 @@ set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}" SOVERSION
 
 if(GMX_OPENMM) 
     add_subdirectory(gmx_gpu_utils)
-    include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
-    link_directories(${OpenMM_LIBRARY_DIR}) 
+    include_directories(gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
+    link_directories(${OpenMM_LIBRARY_DIR})
     # only define if this is a local build not a release 
     # we assume that the auto-generated version is not used && 
     # version string does not contain "-dev" => it's a release build
@@ -59,6 +59,12 @@ if(GMX_OPENMM)
 #    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
     set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})   
 endif(GMX_OPENMM)
+
+if(GMX_GPU)
+    add_subdirectory(gmx_gpu_utils)   
+    include_directories(gmx_gpu_utils)
+    set(GMX_GPU_LIBRARIES gmx_gpu_utils)
+endif()
 
 if(GMX_FAHCORE)
   add_library(fahcore ${MDRUN_SOURCES})
@@ -99,9 +105,9 @@ target_link_libraries(gmxcheck ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gmxcheck PROPERTIES OUTPUT_NAME "gmxcheck${GMX_BINARY_SUFFIX}")
 
 add_executable(mdrun ${MDRUN_SOURCES})
-target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
+target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES} ${GMX_GPU_LIBRARIES})
 # set binary name to mdrun-gpu
-if(GMX_OPENMM)
+if(GMX_OPENMM OR GMX_GPU)
     set(_mdrun_exec_name "mdrun-gpu")    
 else()
     set(_mdrun_exec_name "mdrun${GMX_BINARY_SUFFIX}")

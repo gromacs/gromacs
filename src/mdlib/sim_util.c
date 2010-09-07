@@ -406,6 +406,7 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
   }
 }
 
+
 void do_force(FILE *fplog,t_commrec *cr,
               t_inputrec *inputrec,
               gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -421,7 +422,36 @@ void do_force(FILE *fplog,t_commrec *cr,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
               gmx_bool bBornRadii,
-              int flags)
+              int flags, 
+              t_cudata gpudata
+              )
+{
+             do_force_gpu(fplog,cr,inputrec,step,nrnb,wcycle,top,mtop,groups,
+                     box,x,hist,
+                     f,vir_force,mdatoms,enerd,fcd,
+                     lambda,graph,
+                     fr,vsite,mu_tot,t,field,ed,bBornRadii,
+                     flags, NULL);   
+}
+
+void do_force_gpu(FILE *fplog,t_commrec *cr,
+              t_inputrec *inputrec,
+              gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+              gmx_localtop_t *top,
+              gmx_mtop_t *mtop,
+              gmx_groups_t *groups,
+              matrix box,rvec x[],history_t *hist,
+              rvec f[],
+              tensor vir_force,
+              t_mdatoms *mdatoms,
+              gmx_enerdata_t *enerd,t_fcdata *fcd,
+              real lambda,t_graph *graph,
+              t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+              double t,FILE *field,gmx_edsam_t ed,
+              gmx_bool bBornRadii,
+              int flags,
+              t_cudata gpudata
+              )
 {
     int    cg0,cg1,i,j;
     int    start,homenr;
@@ -723,13 +753,23 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */    
-    do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
+#ifdef GMX_GPU
+    do_force_lowlevel_gpu(fplog,step,fr,inputrec,&(top->idef),
+                      cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
+                      x,hist,f,enerd,fcd,mtop,top,fr->born,
+                      &(top->atomtypes),bBornRadii,box,
+                      lambda,graph,&(top->excls),fr->mu_tot,
+                      flags,&cycles_pme, 
+                      gpudata);
+#else
+     do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
                       lambda,graph,&(top->excls),fr->mu_tot,
                       flags,&cycles_pme);
     
+#endif
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
     GMX_BARRIER(cr->mpi_comm_mygroup);
     

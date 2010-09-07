@@ -36,10 +36,6 @@
 #ifndef _GMX_GPU_UTILS_H_
 #define _GMX_GPU_UTILS_H_
 
-#ifndef __cplusplus
-extern "C" {
-#endif
-
 int do_quick_memtest(int /*dev_id*/);
 
 int do_full_memtest(int /*dev_id*/);
@@ -48,9 +44,15 @@ int do_timed_memtest(int /*dev_id*/, int /*time_limit*/);
 
 int is_supported_cuda_gpu(int /*dev_id*/, char* /*gpu_name*/);
 
-#ifndef __cplusplus
-}  /* extern "C" */
+#ifdef __cplusplus
+extern "C" 
 #endif
+int init_gpu(int /*dev_id*/, FILE * /*fplog*/);
+
+#ifdef __cplusplus
+extern "C" 
+#endif
+int uninit_gpu(int /*dev_id*/, FILE * /*fplog*/);
 
 #endif // _GMX_GPU_UTILS_H_
 
