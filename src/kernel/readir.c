@@ -2245,6 +2245,119 @@ static gmx_bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
   return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
 }
 
+static void
+compute_combination_rule_differences(const gmx_mtop_t *mtop, int state,
+                                     real *c6_geom_diff, real *c6_arith_diff,
+                                     gmx_bool *bArithmeticRulesPossible)
+{
+    int     ntypes, tpi, tpj;
+    int    *typecount;
+#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
+    long long int npair, npair_ij, tmpi, tmpj;
+#else
+    double  npair, npair_ij, tmpi, tmpj;
+#endif
+    double  geomdiff, arithdiff;
+    real    c6i, c6j, c12i, c12j;
+    real    c6, c6_geom, c6_arith;
+    real    sigmai, sigmaj, epsi, epsj;
+
+    ntypes = mtop->ffparams.atnr;
+    snew(typecount, ntypes);
+    gmx_mtop_count_atomtypes(mtop, state, typecount);
+    geomdiff = arithdiff = 0.0;
+    *bArithmeticRulesPossible = TRUE;
+    for (tpi = 0; tpi < ntypes; ++tpi)
+    {
+        c6i  = mtop->ffparams.iparams[(ntypes + 1) * tpi].lj.c6;
+        c12i = mtop->ffparams.iparams[(ntypes + 1) * tpi].lj.c12;
+        for (tpj = tpi; tpj < ntypes; ++tpj)
+        {
+            c6j  = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c6;
+            c12j = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c12;
+            tmpi = typecount[tpi];
+            tmpj = typecount[tpj];
+            if (tpi != tpj)
+            {
+                npair_ij = tmpi * tmpj;
+            }
+            else
+            {
+                npair_ij = tmpi * (tmpi - 1) / 2;
+            }
+            c6 = mtop->ffparams.iparams[ntypes * tpi + tpj].lj.c6;
+            c6_geom = sqrt(c6i * c6j);
+            if (!gmx_numzero(c6_geom))
+            {
+                if (!gmx_numzero(c12i) && !gmx_numzero(c12j))
+                {
+                    sigmai = pow(c12i / c6i, 1.0/6.0);
+                    sigmaj = pow(c12j / c6j, 1.0/6.0);
+                    epsi   = c6i * c6i / c12i;
+                    epsj   = c6j * c6j / c12j;
+                    c6_arith = epsi * epsj * pow(0.5 * (sigmai + sigmaj), 6);
+                }
+                else
+                {
+                    *bArithmeticRulesPossible = FALSE;
+                    c6_arith = c6_geom;
+                }
+            }
+            geomdiff  += npair_ij * fabs(c6 - c6_geom);
+            arithdiff += npair_ij * fabs(c6 - c6_arith);
+            npair += npair_ij;
+        }
+    }
+    sfree(typecount);
+    *c6_geom_diff  = geomdiff / npair;
+    *c6_arith_diff = arithdiff / npair;
+}
+
+static void
+check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
+                        warninp_t wi)
+{
+    char     err_buf[256];
+    real     c6_geom_diff, c6_arith_diff;
+    gmx_bool bArithmeticRulesPossible;
+
+    compute_combination_rule_differences(mtop, 0,
+                                         &c6_geom_diff, &c6_arith_diff,
+                                         &bArithmeticRulesPossible);
+    if (ir->bLJPMELB)
+    {
+        if (!gmx_numzero(c6_arith_diff) || !bArithmeticRulesPossible)
+        {
+            warning(wi, "You are using arithmetic-geometric combination rules "
+                        "in LJ PME, but your non-bonded C6 parameters do not "
+                        "follow these rules.");
+        }
+    }
+    else
+    {
+        if (!gmx_numzero(c6_geom_diff))
+        {
+            if (ir->eDispCorr != edispcNO)
+            {
+                warning_note(wi, "You are using geometric combination rules in "
+                                 "LJ PME, but your non-bonded C6 parameters do "
+                                 "not follow these rules. "
+                                 "Dispersion correction will correct total "
+                                 "energy and/or pressure, but not forces or "
+                                 "surface tensions.");
+            }
+            else
+            {
+                warning(wi, "You are using geometric combination rules in "
+                            "LJ PME, but your non-bonded C6 parameters do "
+                            "not follow these rules. "
+                            "Consider using dispersion correction for the "
+                            "total energy and pressure.");
+            }
+        }
+    }
+}
+
 void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
                   warninp_t wi)
 {
@@ -2291,6 +2404,10 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 	      EELTYPE(eelPME));
       warning_note(wi,err_buf);
     }
+  }
+
+  if (EVDW_PME(ir->vdwtype)) {
+    check_combination_rules(ir, sys, wi);
   }
 
   /* Generalized reaction field */  

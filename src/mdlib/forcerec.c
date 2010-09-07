@@ -853,21 +853,7 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
         if (!fr->n_tpi) {
             /* Count the types so we avoid natoms^2 operations */
             snew(typecount,ntp);
-            for(mb=0; mb<mtop->nmolblock; mb++) {
-                nmol  = mtop->molblock[mb].nmol;
-                atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-                for(i=0; i<atoms->nr; i++) {
-                    if (q == 0)
-                    {
-                        tpi = atoms->atom[i].type;
-                    }
-                    else
-                    {
-                        tpi = atoms->atom[i].typeB;
-                    }
-                    typecount[tpi] += nmol;
-                }
-            }
+            gmx_mtop_count_atomtypes(mtop, q, typecount);
             for(tpi=0; tpi<ntp; tpi++) {
                 for(tpj=tpi; tpj<ntp; tpj++) {
                     tmpi = typecount[tpi];
