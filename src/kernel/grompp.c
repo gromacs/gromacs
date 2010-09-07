@@ -913,7 +913,7 @@ int main (int argc, char *argv[])
     "The functioning of these statements in your topology may be modulated by",
     "using the following two flags in your [TT]mdp[tt] file:[BR]",
     "define = -DVARIABLE1 -DVARIABLE2[BR]",
-    "include = /home/john/doe[BR]",
+    "include = -I/home/john/doe[BR]",
     "For further information a C-programming textbook may help you out.",
     "Specifying the [TT]-pp[tt] flag will get the pre-processed",
     "topology file written out so that you can verify its contents.[PAR]",
@@ -942,13 +942,6 @@ int main (int argc, char *argv[])
     "a new run input file. Note that if you only want to change the number",
     "of run steps tpbconv is more convenient than grompp.[PAR]",
 
-    "Using the [TT]-morse[tt] option grompp can convert the harmonic bonds",
-    "in your topology to morse potentials. This makes it possible to break",
-    "bonds. For this option to work you need an extra file in your $GMXLIB",
-    "with dissociation energy. Use the -debug option to get more information",
-    "on the workings of this option (look for MORSE in the grompp.log file",
-    "using less or something like that).[PAR]",
-    
     "By default all bonded interactions which have constant energy due to",
     "virtual site constructions will be removed. If this constant energy is",
     "not zero, this will result in a shift in the total energy. All bonded",

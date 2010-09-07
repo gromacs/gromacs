@@ -97,8 +97,8 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     do
     {
-        __sync_synchronize();
     } while (x->lock == 1);
+    __sync_synchronize();
 }
 
 
