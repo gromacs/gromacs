@@ -1552,7 +1552,7 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
     for(i=0;i<cb->nsamples;i++)
     {
         samples_t *s=cb->s[i];
-        sample_range_t *r=&(ca->r[i]);
+        sample_range_t *r=&(cb->r[i]);
         if (r->use)
         {
             if (!s->hist)
