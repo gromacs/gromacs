@@ -60,6 +60,39 @@ static int factorize(int n,int **fac,int **mfac)
 	return ndiv;
 }
 
+static gmx_bool is_prime(int n)
+{
+    int i;
+    
+    i = 2;
+    while (i*i <= n)
+    {
+        if (n % i == 0)
+        {
+            return FALSE;
+        }
+        i++;
+    }
+
+    return TRUE;
+}
+
+static int lcd(int n1,int n2)
+{
+    int d,i;
+    
+    d = 1;
+    for(i=2; (i<=n1 && i<=n2); i++)
+    {
+        if (n1 % i == 0 && n2 % i == 0)
+        {
+            d = i;
+        }
+    }
+    
+  return d;
+}
+
 static gmx_bool fits_pme_ratio(int nnodes,int npme,float ratio)
 {
     return ((double)npme/(double)nnodes > 0.95*ratio); 
@@ -70,16 +103,32 @@ static gmx_bool fits_pp_pme_perf(FILE *fplog,
                              int nnodes,int npme,float ratio)
 {
     int ndiv,*div,*mdiv,ldiv;
+    int npp_root3,npme_root2;
 
     ndiv = factorize(nnodes-npme,&div,&mdiv);
     ldiv = div[ndiv-1];
     sfree(div);
     sfree(mdiv);
+
+    npp_root3  = (int)(pow(nnodes-npme,1.0/3.0) + 0.5);
+    npme_root2 = (int)(sqrt(npme) + 0.5);
+
     /* The check below gives a reasonable division:
      * factor 5 allowed at 5 or more PP nodes,
      * factor 7 allowed at 49 or more PP nodes.
      */
-    if (ldiv > 3 + (int)(pow(nnodes-npme,1.0/3.0) + 0.5))
+    if (ldiv > 3 + npp_root3)
+    {
+        return FALSE;
+    }
+
+    /* Check if the number of PP and PME nodes have a reasonable sized
+     * denominator in common, such that we can use 2D PME decomposition
+     * when required (which requires nx_pp == nx_pme).
+     * The factor of 2 allows for a maximum ratio of 2^2=4
+     * between nx_pme and ny_pme.
+     */
+    if (lcd(nnodes-npme,npme)*2 < npme_root2)
     {
         return FALSE;
     }
@@ -173,22 +222,6 @@ static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
     }
     
     return npme;
-}
-
-static int lcd(int n1,int n2)
-{
-    int d,i;
-    
-    d = 1;
-    for(i=2; (i<=n1 && i<=n2); i++)
-    {
-        if (n1 % i == 0 && n2 % i == 0)
-        {
-            d = i;
-        }
-    }
-    
-  return d;
 }
 
 static int div_up(int n,int f)
@@ -612,6 +645,11 @@ real dd_choose_grid(FILE *fplog,
     
     if (MASTER(cr))
     {
+        if (cr->nnodes > 12 && is_prime(cr->nnodes))
+        {
+            gmx_fatal(FARGS,"The number of nodes you selected (%d) is a large prime. In most cases this will lead to bad performance. Choose a non-prime number, or set the decomposition (option -dd) manually.",cr->nnodes);
+        }
+
         if (EEL_PME(ir->coulombtype))
         {
             if (cr->npmenodes >= 0)
