@@ -35,46 +35,41 @@
 
 static int factorize(int n,int **fac,int **mfac)
 {
-	int d,ndiv;
+    int d,ndiv;
 
-	/* Decompose n in factors */
-	snew(*fac,n/2);
-	snew(*mfac,n/2);
-	d = 2;
-	ndiv = 0;
-	while (n > 1)
-		{
-		while (n % d == 0)
-			{
-			if (ndiv == 0 || (*fac)[ndiv-1] != d)
-				{
-				ndiv++;
-				(*fac)[ndiv-1] = d;
-				}
-			(*mfac)[ndiv-1]++;
-			n /= d;
-			}
-		d++;
-		}
+    /* Decompose n in factors */
+    snew(*fac,n/2);
+    snew(*mfac,n/2);
+    d = 2;
+    ndiv = 0;
+    while (n > 1)
+    {
+        while (n % d == 0)
+        {
+            if (ndiv == 0 || (*fac)[ndiv-1] != d)
+            {
+                ndiv++;
+                (*fac)[ndiv-1] = d;
+            }
+            (*mfac)[ndiv-1]++;
+            n /= d;
+        }
+        d++;
+    }
 	
-	return ndiv;
+    return ndiv;
 }
 
-static gmx_bool is_prime(int n)
+static gmx_bool largest_divisor(int n)
 {
-    int i;
-    
-    i = 2;
-    while (i*i <= n)
-    {
-        if (n % i == 0)
-        {
-            return FALSE;
-        }
-        i++;
-    }
+    int ndiv,*div,*mdiv,ldiv;
 
-    return TRUE;
+    ndiv = factorize(n,&div,&mdiv);
+    ldiv = div[ndiv-1];
+    sfree(div);
+    sfree(mdiv);
+
+    return ldiv;
 }
 
 static int lcd(int n1,int n2)
@@ -641,13 +636,20 @@ real dd_choose_grid(FILE *fplog,
                     gmx_bool bInterCGBondeds,gmx_bool bInterCGMultiBody)
 {
     int  npme,nkx,nky;
+    int  ldiv;
     real limit;
     
     if (MASTER(cr))
     {
-        if (cr->nnodes > 12 && is_prime(cr->nnodes))
+        if (cr->nnodes > 12)
         {
-            gmx_fatal(FARGS,"The number of nodes you selected (%d) is a large prime. In most cases this will lead to bad performance. Choose a non-prime number, or set the decomposition (option -dd) manually.",cr->nnodes);
+            ldiv = largest_divisor(cr->nnodes);
+            /* Check if the largest divisor is more than nnodes^2/3 */
+            if (ldiv*ldiv*ldiv > cr->nnodes*cr->nnodes)
+            {
+                gmx_fatal(FARGS,"The number of nodes you selected (%d) contains a large prime factor %d. In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
+                          cr->nnodes,ldiv);
+            }
         }
 
         if (EEL_PME(ir->coulombtype))
