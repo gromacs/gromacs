@@ -43,7 +43,7 @@
 extern "C" {
 #endif
 
-  enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD, ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_SOLVE, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcTEST, ewcNR };
+  enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD, ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcSEND_X_GPU, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_SOLVE, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcRECV_F_GPU, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcTEST, ewcNR };
 
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
@@ -66,7 +66,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[]);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-			    gmx_wallcycle_t wc, double cycles[]);
+			    gmx_wallcycle_t wc, double cycles[], gpu_times_t *gputimes);
 /* Print the cycle and time accounting */
 
 gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);

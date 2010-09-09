@@ -38,6 +38,8 @@
 #include "qmmmrec.h"
 #include "idef.h"
 
+#include "cutypedefs_ext.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -128,6 +130,17 @@ typedef struct {
 typedef struct ewald_tab *ewald_tab_t; 
 
 typedef struct {
+  rvec *f;
+  int  f_nalloc;
+  rvec *fshift;
+  real ener[F_NRE];
+  gmx_grppairener_t grpp;
+  real Vcorr;
+  real dvdl;
+  tensor vir;
+} f_thread_t;
+
+typedef struct {
   /* Domain Decomposition */
   gmx_bool bDomDec;
 
@@ -138,7 +151,8 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
-  gmx_bool UseOptimizedKernels;
+  gmx_bool  useGPU;  /* use GPU acceleration */
+  gmx_bool  UseOptimizedKernels;
 
   /* Use special N*N kernels? */
   gmx_bool bAllvsAll;
@@ -160,6 +174,7 @@ typedef struct {
 
   /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
   double qsum[2];
+  double q2sum[2];
   rvec   mu_tot[2];
 
   /* Dispersion correction stuff */
@@ -227,6 +242,14 @@ typedef struct {
   int  nnblists;
   int  *gid2nblists;
   t_nblists *nblists;
+
+  /* The bounding box type neighbor searching data */
+  real rcut_nsbox;
+  real rlist_nsbox;
+  gmx_nbsearch_t nbs;
+  int            nnbl;
+  gmx_nblist_t   **nbl;
+  gmx_nb_atomdata_t *nbat;
 
   /* The wall tables (if used) */
   int  nwall;
@@ -365,6 +388,18 @@ typedef struct {
   real userreal2;
   real userreal3;
   real userreal4;
+
+  /* Thread local force and energy data */ 
+  int  nthreads;
+  f_thread_t *f_t;
+
+  /* Exclusion load distribution over the threads */
+  int  *excl_load;
+
+  /* GPU data structure */
+  t_cudata  gpu_data;
+  gmx_bool  emulateGPU;
+  gmx_bool  streamGPU;
 } t_forcerec;
 
 #define C6(nbfp,ntp,ai,aj)     (nbfp)[2*((ntp)*(ai)+(aj))]

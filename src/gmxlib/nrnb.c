@@ -391,21 +391,21 @@ void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
       pr_difftime(out,nodetime);
     }
     if (delta_t > 0) {
-      mflop = mflop/nodetime;
+      mflop = mflop/realtime;
       runtime = nsteps*delta_t;
       fprintf(out,"%12s %10s %10s %10s %10s\n",
 	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
 	      "(ns/day)","(hour/ns)");
       fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
-	      nbfs/nodetime,(mflop > 1000) ? (mflop/1000) : mflop,
-	      runtime*24*3.6/nodetime,1000*nodetime/(3600*runtime));
+	      nbfs/realtime,(mflop > 1000) ? (mflop/1000) : mflop,
+	      runtime*24*3.6/realtime,1000*nodetime/(3600*runtime));
     } else {
       fprintf(out,"%12s %10s %10s %14s\n",
 	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
 	      "(steps/hour)");
       fprintf(out,"%12s %10.3f %10.3f %14.1f\n","Performance:",
-	      nbfs/nodetime,(mflop > 1000) ? (mflop/1000) : mflop,
-	      nsteps*3600.0/nodetime);
+	      nbfs/realtime,(mflop > 1000) ? (mflop/1000) : mflop,
+	      nsteps*3600.0/realtime);
     }
   }
 }

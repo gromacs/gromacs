@@ -284,6 +284,7 @@ void finish_run(FILE *log,t_commrec *cr,const char *confout,
 		       t_inputrec *inputrec,
 		       t_nrnb nrnb[],gmx_wallcycle_t wcycle,
 		       gmx_runtime_t *runtime,
+                       gpu_times_t *gputimes,
 		       gmx_bool bWriteStat);
 
 void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);

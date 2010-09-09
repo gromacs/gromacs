@@ -31,6 +31,7 @@ MACRO(gmx_c_flags)
     # gcc
     if(CMAKE_COMPILER_IS_GNUCC)
         GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_SSE2 "-msse2" GMXC_CFLAGS)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -finline-functions -funroll-all-loops" 
@@ -40,7 +41,8 @@ MACRO(gmx_c_flags)
     # g++
     if(CMAKE_COMPILER_IS_GNUCXX)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused" GMXC_CXXFLAGS)
-      # new in gcc 4.5
+        GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "-msse2" GMXC_CXXFLAGS)
+        # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" 
                           GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -finline-functions -funroll-all-loops" 

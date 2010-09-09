@@ -57,6 +57,10 @@
 #include "nonbonded.h"
 #include "mdrun.h"
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
 1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4 ,
@@ -2542,6 +2546,87 @@ real tab_dihs(int nbonds,
   return vtot;
 }
 
+static void zero_thread_forces(f_thread_t *f_t,int n)
+{
+    int i,j;
+
+    if (n > f_t->f_nalloc)
+    {
+        f_t->f_nalloc = over_alloc_large(n);
+        srenew(f_t->f,f_t->f_nalloc);
+    }
+
+    for(i=0; i<n; i++)
+    {
+        clear_rvec(f_t->f[i]);
+    }
+    for(i=0; i<SHIFTS; i++)
+    {
+        clear_rvec(f_t->fshift[i]);
+    }
+    for(i=0; i<F_NRE; i++)
+    {
+        f_t->ener[i] = 0;
+    }
+    for(i=0; i<egNR; i++)
+    {
+        for(j=0; j<f_t->grpp.nener; j++)
+        {
+            f_t->grpp.ener[i][j] = 0;
+        }
+    }
+    f_t->dvdl = 0;
+}
+
+static void reduce_thread_forces(int n,rvec *f,rvec *fshift,
+                                 real *ener,gmx_grppairener_t *grpp,real *dvdl,
+                                 int nthreads,f_thread_t *f_t,
+                                 gmx_bool bCalcEnerVir)
+{
+    int t,i,j;
+
+#pragma omp parallel for private(t) schedule(static)
+    for(i=0; i<n; i++)
+    {
+        for(t=1; t<nthreads; t++)
+        {
+            rvec_inc(f[i],f_t[t].f[i]);
+        }
+    }
+    if (bCalcEnerVir)
+    {
+        for(i=0; i<SHIFTS; i++)
+        {
+            for(t=1; t<nthreads; t++)
+            {
+                rvec_inc(fshift[i],f_t[t].fshift[i]);
+            }
+        }
+        for(i=0; i<F_NRE; i++)
+        {
+            for(t=1; t<nthreads; t++)
+            {
+                ener[i] += f_t[t].ener[i];
+            }
+        }
+        for(i=0; i<egNR; i++)
+        {
+            for(j=0; j<f_t[1].grpp.nener; j++)
+            {
+                for(t=1; t<nthreads; t++)
+                {
+                    
+                    grpp->ener[i][j] += f_t[t].grpp.ener[i][j];
+                }
+            }
+        }
+        for(t=1; t<nthreads; t++)
+        {
+            *dvdl += f_t[t].dvdl;
+        }
+    }
+}
+
 void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_idef *idef,
 		rvec x[],history_t *hist,
@@ -2552,12 +2637,19 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
 		t_atomtypes *atype, gmx_genborn_t *born,
+                gmx_bool bCalcEnerVir,
 		gmx_bool bPrintSepPot,gmx_large_int_t step)
 {
   int    ftype,nbonds,ind,nat1;
-  real   *epot,v,dvdl;
+  real   *epot,v,dvdl_nl,dvdl;
   const  t_pbc *pbc_null;
   char   buf[22];
+  /* thread stuff */
+  int    t;
+  rvec   *ft,*fshift;
+  real   *ener,*dvdlt;
+  gmx_grppairener_t *grpp;
+  int    nb0,nbn;
 
   if (fr->bMolPBC)
     pbc_null = pbc;
@@ -2588,64 +2680,119 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		    idef->iparams,(const rvec*)x,pbc_null,
 		    fcd,hist);
   }
-  
-  /* Loop over all bonded force types to calculate the bonded forces */
-  for(ftype=0; (ftype<F_NRE); ftype++) {
-	  if(ftype<F_GB12 || ftype>F_GB14) {
-    if (interaction_function[ftype].flags & IF_BOND &&
-	!(ftype == F_CONNBONDS || ftype == F_POSRES)) {
-      nbonds=idef->il[ftype].nr;
-      if (nbonds > 0) {
-	ind  = interaction_function[ftype].nrnb_ind;
-	nat1 = interaction_function[ftype].nratoms + 1;
-	dvdl = 0;
-	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) {
-		if(ftype==F_CMAP)
-		{
-			v = cmap_dihs(nbonds,idef->il[ftype].iatoms,
-						  idef->iparams,&idef->cmap_grid,
-						  (const rvec*)x,f,fr->fshift,
-						  pbc_null,g,lambda,&dvdl,md,fcd,
-						  global_atom_index);
-		}
-		else
-		{
-			v =
-	    interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
-					      idef->iparams,
-					      (const rvec*)x,f,fr->fshift,
-					      pbc_null,g,lambda,&dvdl,md,fcd,
-					      global_atom_index);
-		}
 
-	  if (bPrintSepPot) {
-	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
-		    interaction_function[ftype].longname,nbonds/nat1,v,dvdl);
-	  }
-	} else {
-	  v = do_listed_vdw_q(ftype,nbonds,idef->il[ftype].iatoms,
-			      idef->iparams,
-			      (const rvec*)x,f,fr->fshift,
-			      pbc_null,g,
-			      lambda,&dvdl,
-			      md,fr,&enerd->grpp,global_atom_index);
-	  if (bPrintSepPot) {
-	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-		    interaction_function[ftype].longname,
-		    interaction_function[F_COUL14].longname,nbonds/nat1,dvdl);
-	  }
-	}
-	if (ind != -1)
-	  inc_nrnb(nrnb,ind,nbonds/nat1);
-	epot[ftype]        += v;
-	enerd->dvdl_nonlin += dvdl;
-      }
+    dvdl_nl = 0;
+
+/*
+#pragma omp parallel for private(ftype,v,dvdl,ind,nat1,ft,fshift,epot,grpp,dvdlt,nbonds,nb0,nbn) schedule(static)
+    for(t=0; t<fr->nthreads; t++)
+*/
+#pragma omp parallel num_threads(fr->nthreads) private(ftype,v,dvdl,ind,nat1,ft,fshift,epot,grpp,dvdlt,nbonds,nb0,nbn,t)
+    {
+        t = omp_get_thread_num();
+        if (t == 0)
+        {
+            ft     = f;
+            fshift = fr->fshift;
+            epot   = enerd->term;
+            grpp   = &enerd->grpp;
+            dvdlt  = &dvdl_nl;
+        }
+        else
+        {
+            zero_thread_forces(&fr->f_t[t],fr->natoms_force);
+
+            ft     = fr->f_t[t].f;
+            fshift = fr->f_t[t].fshift;
+            epot   = fr->f_t[t].ener;
+            grpp   = &fr->f_t[t].grpp;
+            dvdlt  = &fr->f_t[t].dvdl;
+        }
+        /* Loop over all bonded force types to calculate the bonded forces */
+        for(ftype=0; (ftype<F_NRE); ftype++)
+        {
+            if(ftype<F_GB12 || ftype>F_GB14)
+            {
+                if (interaction_function[ftype].flags & IF_BOND &&
+                    !(ftype == F_CONNBONDS || ftype == F_POSRES))
+                {
+                    nbonds=idef->il[ftype].nr;
+                    if (nbonds > 0)
+                    {
+                        ind  = interaction_function[ftype].nrnb_ind;
+                        nat1 = interaction_function[ftype].nratoms + 1;
+                        nbonds /= nat1;
+
+                        nb0 = ((nbonds* t   )/(fr->nthreads))*nat1;
+                        nbn = ((nbonds*(t+1))/(fr->nthreads))*nat1 - nb0;
+
+                        dvdl = 0;
+                        if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB)
+                        {
+                            if(ftype==F_CMAP)
+                            {
+                                v = cmap_dihs(nbn,idef->il[ftype].iatoms+nb0,
+                                              idef->iparams,&idef->cmap_grid,
+                                              (const rvec*)x,ft,fshift,
+                                              pbc_null,g,lambda,&dvdl,md,fcd,
+                                              global_atom_index);
+                            }
+                            else
+                            {
+                                v =
+                                    interaction_function[ftype].ifunc(nbn,idef->il[ftype].iatoms+nb0,
+                                                                      idef->iparams,
+                                                                      (const rvec*)x,ft,fshift,
+                                                                      pbc_null,g,lambda,&dvdl,md,fcd,
+                                                                      global_atom_index);
+                            }
+                            
+                            if (bPrintSepPot)
+                            {
+                                fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
+                                        interaction_function[ftype].longname,nbonds,v,dvdl);
+                            }
+                        }
+                        else
+                        {
+                            v = do_listed_vdw_q(ftype,nbn,idef->il[ftype].iatoms+nb0,
+                                                idef->iparams,
+                                                (const rvec*)x,ft,fshift,
+                                                pbc_null,g,
+                                                lambda,&dvdl,
+                                                md,fr,grpp,global_atom_index);
+                            if (bPrintSepPot)
+                            {
+                                fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+                                        interaction_function[ftype].longname,
+                                        interaction_function[F_COUL14].longname,nbonds,dvdl);
+                            }
+                        }
+                        if (ind != -1 && t == 0)
+                        {
+                            inc_nrnb(nrnb,ind,nbonds);
+                        }
+                        epot[ftype] += v;
+                        *dvdlt      += dvdl;
+                    }
+                }
+            }
+        }
     }
-  }
-  }
-  /* Copy the sum of violations for the distance restraints from fcd */
-  if (fcd)
-    epot[F_DISRESVIOL] = fcd->disres.sumviol;
+    if (fr->nthreads > 1)
+    {
+        reduce_thread_forces(fr->natoms_force,f,fr->fshift,
+                             enerd->term,&enerd->grpp,&dvdl_nl,
+                             fr->nthreads,fr->f_t,
+                             bCalcEnerVir);
+    }
+    enerd->dvdl_nonlin += dvdl_nl;
+
+    /* Copy the sum of violations for the distance restraints from fcd */
+    if (fcd)
+    {
+        enerd->term[F_DISRESVIOL] = fcd->disres.sumviol;
+    }
 }
 
 void calc_bonds_lambda(FILE *fplog,

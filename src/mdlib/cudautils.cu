@@ -9,17 +9,37 @@
 /*** General CUDA data operations ***/
 /* TODO: create a cusmalloc module that implements similar things as smalloc */
 
-int download_cudata(void * h_dest, void * d_src, size_t bytes)
+int _download_cudata_generic(void * h_dest, void * d_src, size_t bytes, 
+                             gmx_bool async = FALSE, cudaStream_t stream = 0)
 {
     cudaError_t stat;
     
     if (h_dest == 0 || d_src == 0 || bytes <= 0)
         return -1;
 
-    stat = cudaMemcpy(h_dest, d_src, bytes, cudaMemcpyDeviceToHost);
-    CU_RET_ERR(stat, "DtoH cudaMemcpy failed");
+    if (async)
+    {
+        stat = cudaMemcpyAsync(h_dest, d_src, bytes, cudaMemcpyDeviceToHost, stream);
+        CU_RET_ERR(stat, "DtoH cudaMemcpyAsync failed");
+
+    }
+    else
+    {
+        stat = cudaMemcpy(h_dest, d_src, bytes, cudaMemcpyDeviceToHost);
+        CU_RET_ERR(stat, "DtoH cudaMemcpy failed");
+    }
 
     return 0;
+}
+
+int download_cudata(void * h_dest, void * d_src, size_t bytes)
+{
+    return _download_cudata_generic(h_dest, d_src, bytes, FALSE);
+}
+
+int download_cudata_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t stream = 0)
+{
+    return _download_cudata_generic(h_dest, d_src, bytes, TRUE, stream);
 }
 
 int download_cudata_alloc(void ** h_dest, void * d_src, size_t bytes)
@@ -32,23 +52,43 @@ int download_cudata_alloc(void ** h_dest, void * d_src, size_t bytes)
     return download_cudata(*h_dest, d_src, bytes);
 }
 
-int upload_cudata(void * d_dest, void * h_src, size_t bytes)
-{   
+
+int _upload_cudata_generic(void * d_dest, void * h_src, size_t bytes, 
+                                 gmx_bool async = FALSE, cudaStream_t stream = 0)
+{
     cudaError_t stat;
 
     if (d_dest == 0 || h_src == 0 || bytes <= 0)
         return -1;
 
-    stat = cudaMemcpy(d_dest, h_src, bytes, cudaMemcpyHostToDevice);
-    CU_RET_ERR(stat, "HtoD cudaMemcpy failed");
+    if (async)
+    {
+        stat = cudaMemcpyAsync(d_dest, h_src, bytes, cudaMemcpyHostToDevice, stream);
+        CU_RET_ERR(stat, "HtoD cudaMemcpyAsync failed");
+    }
+    else
+    {
+        stat = cudaMemcpy(d_dest, h_src, bytes, cudaMemcpyHostToDevice);
+        CU_RET_ERR(stat, "HtoD cudaMemcpy failed");
+    }
 
     return 0;
+}
+
+int upload_cudata(void * d_dest, void * h_src, size_t bytes)
+{   
+    return _upload_cudata_generic(d_dest, h_src, bytes, FALSE);
+}
+
+int upload_cudata_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t stream = 0)
+{   
+    return _upload_cudata_generic(d_dest, h_src, bytes, TRUE, stream);
 }
 
 int upload_cudata_alloc(void ** d_dest, void * h_src, size_t bytes)
 {
     cudaError_t stat;
-    
+
     if (d_dest == 0 || h_src == 0 || bytes <= 0)
         return -1;
 
@@ -58,56 +98,15 @@ int upload_cudata_alloc(void ** d_dest, void * h_src, size_t bytes)
     return upload_cudata(*d_dest, h_src, bytes);
 }
 
-/* pinned alloc */
-void * pmalloc(size_t bytes, FILE *fplog)
+int cu_blockwait_event(cudaEvent_t stop, cudaEvent_t start, float *time)
 {
-    cudaError_t err;
-    void *      ptr;
+    cudaError_t s;
 
-    if (bytes == 0)
-	return NULL;
+    s = cudaEventSynchronize(stop);
+    CU_RET_ERR(s, "cudaEventSynchronize failed in cu_blockwait_event");
 
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-    {
-        fprintf(fplog, "Just caught a previously occured CUDA error: %s, will try to continue.\n", 
-                    cudaGetErrorString(err));
-        fprintf(stderr, "Just caught a previously occured CUDA error: %s, will try to continue.\n", 
-                    cudaGetErrorString(err));
-    }
+    s = cudaEventElapsedTime(time, start, stop);
+    CU_RET_ERR(s, "cudaEventElapsedTime failed in cu_blockwait_event");
 
-    cudaMallocHost(&ptr, bytes);
-	
-    if ((err = cudaGetLastError()) != cudaSuccess)
-    {
-    	gmx_fatal(FARGS, "palloc of size %d bytes failed: %s (%d)\n", 
-                    bytes, cudaGetErrorString(err), err);
-                    
-	exit(1);
-    }
-    return ptr;
-}
-
-/* pinned free */
-void pfree(void *h_ptr, FILE *fplog) 
-{
-    if (h_ptr)
-	cudaFreeHost(h_ptr);
-}
-
-void calc_grid_block_conf(int *threds_per_block, int *nb_blocks, int dim,
-			int min_blocks, int max_blocks,
-			int min_threds, int default_threds, int max_threds)
-{
-    *threds_per_block = default_threds;
-    *nb_blocks = (dim % default_threds == 0) ?
-		    (dim / default_threds) :
-		    (dim / default_threds) + 1;	
-
-//	if (*nbr_ctas > max_ctas) 
-//		*nbr_ctas = max_ctas;
-
-    if (*nb_blocks > GRID_MAX_DIM) 
-        *nb_blocks = GRID_MAX_DIM;
-
+    return 0;
 }

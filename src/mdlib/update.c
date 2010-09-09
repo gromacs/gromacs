@@ -67,6 +67,10 @@
 #include "orires.h"
 #include "gmx_wallcycle.h"
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
 
@@ -1568,6 +1572,7 @@ void update_coords(FILE         *fplog,
     int              *icom = NULL;
     tensor           vir_con;
     rvec             *vcom,*xcom,*vall,*xall,*xin,*vin,*forcein,*fall,*xpall,*xprimein,*xprime;
+    int              nth,th;
     
 
     /* Running the velocity half does nothing except for velocity verlet */
@@ -1622,81 +1627,106 @@ void update_coords(FILE         *fplog,
     dump_it_all(fplog,"Before update",
                 state->natoms,state->x,xprime,state->v,force);
     
-    switch (inputrec->eI) {
-    case (eiMD):
-        if (ekind->cosacc.cos_accel == 0) {
-            /* use normal version of update */
-            do_update_md(start,nrend,dt,
-                         ekind->tcstat,ekind->grpstat,state->nosehoover_vxi,
-                         inputrec->opts.acc,inputrec->opts.nFreeze,md->invmass,md->ptype,
-                         md->cFREEZE,md->cACC,md->cTC,
-                         state->x,xprime,state->v,force,M,
-                         bNH,bPR);
-        } 
-        else 
-        {
-            do_update_visc(start,nrend,dt,
-                           ekind->tcstat,md->invmass,state->nosehoover_vxi,
-                           md->ptype,md->cTC,state->x,xprime,state->v,force,M,
+#ifdef GMX_OPENMP
+    if (EI_RANDOM(inputrec->eI))
+    {
+        /* We still need to take care of generating random seeds properly
+         * when multi-threading.
+         */
+        nth = 1;
+    }
+    else
+    {
+        nth = omp_get_max_threads();
+    }
+#else
+    nth = 1;
+#endif
+
+# pragma omp parallel for schedule(static)
+    for(th=0; th<nth; th++)
+    {
+        int start_th,end_th;
+
+        start_th = start + ((nrend-start)* th   )/nth;
+        end_th   = start + ((nrend-start)*(th+1))/nth;
+
+        switch (inputrec->eI) {
+        case (eiMD):
+            if (ekind->cosacc.cos_accel == 0)
+            {
+                do_update_md(start_th,end_th,dt,
+                             ekind->tcstat,ekind->grpstat,state->nosehoover_vxi,
+                             inputrec->opts.acc,inputrec->opts.nFreeze,md->invmass,md->ptype,
+                             md->cFREEZE,md->cACC,md->cTC,
+                             state->x,xprime,state->v,force,M,
+                             bNH,bPR);
+            } 
+            else 
+            {
+                do_update_visc(start_th,end_th,dt,
+                               ekind->tcstat,md->invmass,state->nosehoover_vxi,
+                               md->ptype,md->cTC,state->x,xprime,state->v,force,M,
                            state->box,ekind->cosacc.cos_accel,ekind->cosacc.vcos,bNH,bPR);
         }
-        break;
-    case (eiSD1):
-        do_update_sd1(upd->sd,start,homenr,dt,
-                      inputrec->opts.acc,inputrec->opts.nFreeze,
-                      md->invmass,md->ptype,
-                      md->cFREEZE,md->cACC,md->cTC,
-                      state->x,xprime,state->v,force,state->sd_X,
-                      inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t);
-        break;
-    case (eiSD2):
-        /* The SD update is done in 2 parts, because an extra constraint step
-         * is needed 
-         */
-        do_update_sd2(upd->sd,bInitStep,start,homenr,
-                      inputrec->opts.acc,inputrec->opts.nFreeze,
-                      md->invmass,md->ptype,
-                      md->cFREEZE,md->cACC,md->cTC,
-                      state->x,xprime,state->v,force,state->sd_X,
-                      inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                      TRUE);
-        break;
-    case (eiBD):
-        do_update_bd(start,nrend,dt,
-                     inputrec->opts.nFreeze,md->invmass,md->ptype,
-                     md->cFREEZE,md->cTC,
-                     state->x,xprime,state->v,force,
-                     inputrec->bd_fric,
-                     inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                     upd->sd->bd_rf,upd->sd->gaussrand);
-        break;
-    case (eiVV):
-    case (eiVVAK):
-        alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
-        switch (UpdatePart) {
-        case etrtVELOCITY1:
-        case etrtVELOCITY2:
-            do_update_vv_vel(start,nrend,dt,
-                             ekind->tcstat,ekind->grpstat,
-                             inputrec->opts.acc,inputrec->opts.nFreeze,
-                             md->invmass,md->ptype,
-                             md->cFREEZE,md->cACC,
-                             state->v,force,
-                             bExtended,state->veta,alpha);  
             break;
-        case etrtPOSITION:
-            do_update_vv_pos(start,nrend,dt,
-                             ekind->tcstat,ekind->grpstat,
-                             inputrec->opts.acc,inputrec->opts.nFreeze,
-                             md->invmass,md->ptype,md->cFREEZE,
-                             state->x,xprime,state->v,force,
-                             bExtended,state->veta,alpha);
+        case (eiSD1):
+            do_update_sd1(upd->sd,start,homenr,dt,
+                          inputrec->opts.acc,inputrec->opts.nFreeze,
+                          md->invmass,md->ptype,
+                          md->cFREEZE,md->cACC,md->cTC,
+                          state->x,xprime,state->v,force,state->sd_X,
+                          inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t);
+            break;
+        case (eiSD2):
+            /* The SD update is done in 2 parts, because an extra constraint step
+             * is needed 
+             */
+            do_update_sd2(upd->sd,bInitStep,start,homenr,
+                          inputrec->opts.acc,inputrec->opts.nFreeze,
+                          md->invmass,md->ptype,
+                          md->cFREEZE,md->cACC,md->cTC,
+                          state->x,xprime,state->v,force,state->sd_X,
+                          inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+                          TRUE);
+        break;
+        case (eiBD):
+            do_update_bd(start,nrend,dt,
+                         inputrec->opts.nFreeze,md->invmass,md->ptype,
+                         md->cFREEZE,md->cTC,
+                         state->x,xprime,state->v,force,
+                         inputrec->bd_fric,
+                         inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+                         upd->sd->bd_rf,upd->sd->gaussrand);
+            break;
+        case (eiVV):
+        case (eiVVAK):
+            alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
+            switch (UpdatePart) {
+            case etrtVELOCITY1:
+            case etrtVELOCITY2:
+                do_update_vv_vel(start_th,end_th,dt,
+                                 ekind->tcstat,ekind->grpstat,
+                                 inputrec->opts.acc,inputrec->opts.nFreeze,
+                                 md->invmass,md->ptype,
+                                 md->cFREEZE,md->cACC,
+                                 state->v,force,
+                                 bExtended,state->veta,alpha);  
+                break;
+            case etrtPOSITION:
+                do_update_vv_pos(start_th,end_th,dt,
+                                 ekind->tcstat,ekind->grpstat,
+                                 inputrec->opts.acc,inputrec->opts.nFreeze,
+                                 md->invmass,md->ptype,md->cFREEZE,
+                                 state->x,xprime,state->v,force,
+                                 bExtended,state->veta,alpha);
+                break;
+            }
+            break;
+        default:
+            gmx_fatal(FARGS,"Don't know how to update coordinates");
             break;
         }
-        break;
-    default:
-        gmx_fatal(FARGS,"Don't know how to update coordinates");
-        break;
     }
 }
 

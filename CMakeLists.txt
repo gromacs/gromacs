@@ -5,7 +5,7 @@ include(Dart)
 mark_as_advanced(DART_ROOT)
 # PROJECT_VERSION should have the following structure: 
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-set(PROJECT_VERSION "4.5.1")
+set(PROJECT_VERSION "4.5.1-GPU")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -78,7 +78,7 @@ gmx_c_flags()
 ########################################################################
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREADS    "Build a parallel (thread-based) version of GROMACS (cannot be combined with MPI yet)" ON)
+option(GMX_THREADS    "Build a parallel (thread-based) version of GROMACS (cannot be combined with MPI yet)" OFF)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
@@ -108,39 +108,12 @@ mark_as_advanced(GMX_IA32_ASM)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 mark_as_advanced(GMX_X86_64_ASM)
 option(USE_VERSION_H "Generate development version string/information" ON)
-option(GMX_DISABLE_GCC41_CHECK "Disable check for (buggy) gcc 4.1.x" OFF)
 
 option(GMX_GPU  "Enable GPU acceleration. " ON)
+option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
 
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries.")
 
-
-#######################################################################
-# Check for options incompatible with OpenMM build                    #
-#######################################################################
-if(GMX_OPENMM OR GMX_GPU)
-    cmake_minimum_required(VERSION 2.6.4)
-    # we'll use the built-in fft to avoid unnecessary dependencies
-    set (GMX_FFT_LIBRARY "fftpack")
-    if(GMX_MPI)
-        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
-    endif(GMX_MPI)
-    if(GMX_THREADS)
-        message(STATUS "Threads not compatible with OpenMM build, disabled")
-        set(GMX_THREADS OFF)
-    endif(GMX_THREADS)
-    if(GMX_SOFTWARE_INVSQRT)
-        set(GMX_SOFTWARE_INVSQRT OFF)
-    endif(GMX_SOFTWARE_INVSQRT)
-    if(NOT GMX_ACCELERATION MATCHES "none|None|NONE" OR NOT ${GMX_ACCELERATION} STREQUAL "")
-        message(WARNING " The OpenMM/GPU build does not support other acceleration modes, acceleration set to \"none\"!")
-        set(GMX_ACCELERATION "none" 
-             CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec" FORCE)
-    endif()
-    if(GMX_FAHCORE)
-        message(FATAL_ERROR " The OpenMM build does not support FAH build!")
-    endif(GMX_FAHCORE)
-endif()
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
@@ -218,6 +191,32 @@ endif(GMX_MPI)
 
 
 #######################################################################
+# Check for options incompatible with the GPU build                   #
+#######################################################################
+if(GMX_GPU)
+    cmake_minimum_required(VERSION 2.6.4)
+    if(GMX_THREADS)
+        message(STATUS "Threads not compatible with OpenMM build, disabled!")
+        set(GMX_THREADS OFF CACHE BOOL 
+		"Threads not compatible with OpenMM build, disabled!" FORCE)
+    endif(GMX_THREADS)
+    mark_as_advanced(FORCE GMX_THREADS)
+endif()
+
+#######################################################################
+# Check for options incompatible with the OpenMP build                #
+#######################################################################
+if(GMX_OPENMP)
+    if(GMX_THREADS)
+        message(STATUS "Threads not compatible with OpenMM build, disabled!")
+        set(GMX_THREADS OFF CACHE BOOL 
+		"Threads not compatible with OpenMM build, disabled!" FORCE)
+    endif(GMX_THREADS)
+    mark_as_advanced(FORCE GMX_THREADS)
+endif()
+
+
+#######################################################################
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
 if(GMX_OPENMM)
@@ -255,7 +254,6 @@ else(GMX_OPENMM)
         GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)   
 endif(GMX_OPENMM)
 
-
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
 ########################################################################
@@ -277,13 +275,25 @@ check_include_files(sys/stat.h   HAVE_SYS_STAT_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(rpc/rpc.h    HAVE_RPC_RPC_H)
 check_include_files("rpc/rpc.h;rpc/xdr.h"    HAVE_RPC_XDR_H)
-# SSE support
-check_include_files(xmmintrin.h  HAVE_XMMINTRIN_H)
-check_include_files(emmintrin.h  HAVE_EMMINTRIN_H)
-check_include_files(pmmintrin.h  HAVE_PMMINTRIN_H)
-check_include_files(smmintrin.h  HAVE_SMMINTRIN_H)
 check_include_files(io.h  		 HAVE_IO_H)
 
+# SIMD instrinsics support
+#
+# x86intrin.h: x86 instructions
+# mmintrin.h: MMX (Pentium MMX!)
+# mm3dnow.h: 3dnow! (K6-2) (deprecated)
+# xmmintrin.h: SSE + MMX (Pentium 3, Athlon XP)
+# emmintrin.h: SSE2 + SSE + MMX (Pentiuem 4, Ahtlon 64)
+# pmmintrin.h: SSE3 + SSE2 + SSE + MMX (Pentium 4 Prescott, Ahtlon 64 San Diego)
+# tmmintrin.h: SSSE3 + SSE3 + SSE2 + SSE + MMX (Core 2, Bulldozer)
+# popcntintrin.h: POPCNT (Core i7, Phenom subset of SSE4.2 and SSE4A)
+# ammintrin.h: SSE4A + SSE3 + SSE2 + SSE + MMX (Phenom)
+# smmintrin.h: SSE4_1 + SSSE3 + SSE3 + SSE2 + SSE + MMX (Core i7, Bulldozer)
+# nmmintrin.h: SSE4_2 + SSE4_1 + SSSE3 + SSE3 + SSE2 + SSE + MMX (Core i7, Bulldozer)
+# wmmintrin.h: AES (Core i7 Westmere, Bulldozer)
+# immintrin.h: AVX, SSE4_2 + SSE4_1 + SSSE3 + SSE3 + SSE2 + SSE + MMX (Core i7 Sandy Bridge, Bulldozer)
+check_include_files(emmintrin.h  HAVE_EMMINTRIN_H)
+check_include_files(smmintrin.h  HAVE_SMMINTRIN_H)
 
 include(CheckFunctionExists)
 check_function_exists(strcasecmp        HAVE_STRCASECMP)
@@ -403,11 +413,46 @@ endif(GMX_OPENMM)
 
 if(GMX_GPU)
     set(CUDA_BUILD_EMULATION OFF)
-    find_package(CUDA 3.0 REQUIRED)
+    if ("${CUDA_NVCC_FLAGS}" STREQUAL "")
+        set(CUDA_NVCC_FLAGS "-arch=sm_20;-use_fast_math;" CACHE STRING "" FORCE)
+    endif()
+    find_package(CUDA 3.1 REQUIRED)
     add_definitions(-DGMX_GPU)
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
         set(CUDA_VERBOSE_BUILD ON)
     endif()
+endif()
+
+if(GMX_OPENMP)   
+    # gcc 
+    if(CMAKE_COMPILER_IS_GNUCC)
+        CHECK_C_COMPILER_FLAG("-fopenmp" XFLAGS_OPENMP)
+         if (XFLAGS_OPENMP)
+            set(GROMACS_C_FLAGS "-fopenmp ${GROMACS_C_FLAGS}")
+        endif ()  
+    endif()
+    
+    # g++
+    if(CMAKE_COMPILER_IS_GNUCXX)
+        CHECK_C_COMPILER_FLAG("-fopenmp" XXFLAGS_OPENMP)
+         if (XXFLAGS_OPENMP)
+            set(GROMACS_C_FLAGS "-fopenmp ${GROMACS_CXX_FLAGS}")
+        endif ()  
+    endif()
+
+    # intel 
+    if (CMAKE_C_COMPILER_ID MATCHES "Intel")
+        CHECK_C_COMPILER_FLAG("-openmp" XFLAGS_OPENMP)
+        message(WARNING "Although OpenMP is supported it does not work with CUDA!")
+    endif()
+
+    # intel 
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        CHECK_C_COMPILER_FLAG("-openmp" XXFLAGS_OPENMP)
+        message(WARNING "Although OpenMP is supported it does not work with CUDA!")        
+    endif()
+
+    add_definitions(-DGMX_OPENMP)
 endif()
 
 if(APPLE)
@@ -538,38 +583,21 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
     endif()
 	mark_as_advanced(GMX_ASM_USEASM-NASM)
 
-    if (NOT GMX_64_BIT)
-        # for 32-bit compiles, we might need to turn on sse 
-        CHECK_C_COMPILER_FLAG("-msse2" XFLAGS_SSE)
-        if (XFLAGS_SSE)
-            set(GROMACS_C_FLAGS "-msse2 ${GROMACS_C_FLAGS}")
-        endif (XFLAGS_SSE)
-        CHECK_CXX_COMPILER_FLAG("-msse2" XXFLAGS_SSE)
-        if (XXFLAGS_SSE)
-            set(GROMACS_CXX_FLAGS "-msse2 ${GROMACS_CXX_FLAGS}")
-        endif (XXFLAGS_SSE)
-    endif (NOT GMX_64_BIT)
-
-    if(GMX_IA32_ASM)
-      if(GMX_DOUBLE)
-        set(GMX_IA32_SSE2 1)
-      else()
-	set(GMX_IA32_SSE 1)
-      endif()
-    elseif(GMX_X86_64_ASM)
-      if(GMX_DOUBLE)
-	set(GMX_X86_64_SSE2 1)
-      else()
-        set(GMX_X86_64_SSE 1)
-      endif()
-    endif()
-
-#    if(HAVE_PMMINTRIN_H)
-#        set(GMX_SSE3 1)
-#    endif(HAVE_PMMINTRIN_H)
-#    if(HAVE_SMMINTRIN_H)
-#        set(GMX_SSE4_1 1)
-#    endif(HAVE_SMMINTRIN_H)
+    if(HAVE_EMMINTRIN_H)
+        if(GMX_IA32_ASM)
+        if(GMX_DOUBLE)
+            set(GMX_IA32_SSE2 1)
+        else()
+            set(GMX_IA32_SSE 1)
+        endif()
+        elseif(GMX_X86_64_ASM)
+        if(GMX_DOUBLE)
+            set(GMX_X86_64_SSE2 1)
+        else()
+            set(GMX_X86_64_SSE 1)
+        endif()
+        endif()
+    endif(HAVE_EMMINTRIN_H)
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
     set(GMX_FORTRAN 1)
@@ -680,6 +708,11 @@ else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, fftw2, mkl, acml, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
+# enable threaded fftw3 if we've found it 
+if(FFTW3_THREADS OR FFTW3F_THREADS)
+    add_definitions(-DFFT5D_FFTW_THREADS)
+endif()
+
 # MKL has BLAS/LAPACK routines
 if(HAVE_MKL OR ACCELERATE_FRAMEWORK)
   set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
@@ -718,6 +751,10 @@ if (NOT DEFINED GROMACS_C_FLAGS_SET)
         CACHE STRING "Linker flags" FORCE) 
 endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 
+#if(GMX_GPU)
+#   set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}${GROMACS_CXX_FLAGS}")
+#endif()
+
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
@@ -734,7 +771,7 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 ##################################################################
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_SKIP_BUILD_RPATH  FALSE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
     set(CMAKE_INSTALL_RPATH "${LIB_INSTALL_DIR}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()

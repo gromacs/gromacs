@@ -56,6 +56,10 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
 typedef struct gmx_constr {
   int              ncon_tot;     /* The total number of constraints    */
   int              nflexcon;     /* The number of flexible constraints */
@@ -73,6 +77,9 @@ typedef struct gmx_constr {
   int              warncount_lincs;
   int              warncount_settle;
   gmx_edsam_t      ed;           /* The essential dynamics data        */
+
+    tensor           *rmdr_th;   /* Thread local working data          */
+    int              *settle_error; /* Thread local working data          */
 
   gmx_mtop_t       *warn_mtop;   /* Only used for printing warnings    */
 } t_gmx_constr;
@@ -288,7 +295,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     gmx_bool    bOK,bDump;
     int     start,homenr,nrend;
     int     i,j,d;
-    int     ncons,error;
+    int     ncons,settle_error;
     tensor  rmdr;
     rvec    *vstor;
     real    invdt,vir_fac,t;
@@ -297,6 +304,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     t_pbc   pbc;
     char    buf[22];
     t_vetavars *vetavar;
+    int     nth,th,th_ss;
 
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
@@ -336,105 +344,145 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     }
     
     where();
-    if (constr->lincsd)
-    {
-        bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr,
-                              x,xprime,min_proj,box,lambda,dvdlambda,
-                              invdt,v,vir!=NULL,rmdr,
-                              econq,nrnb,
-                              constr->maxwarn,&constr->warncount_lincs);
-        if (!bOK && constr->maxwarn >= 0)
-        {
-            if (fplog != NULL)
-            {
-                fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
-                        econstr_names[econtLINCS],gmx_step_str(step,buf));
-            }
-            bDump = TRUE;
-        }
-    }	
-    
-    if (constr->nblocks > 0)
-    {
-        switch (econq) {
-        case (econqCoord):
-            bOK = bshakef(fplog,constr->shaked,
-                          homenr,md->invmass,constr->nblocks,constr->sblock,
-                          idef,ir,box,x,xprime,nrnb,
-                          constr->lagr,lambda,dvdlambda,
-                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
-            break;
-        case (econqVeloc):
-            bOK = bshakef(fplog,constr->shaked,
-                          homenr,md->invmass,constr->nblocks,constr->sblock,
-                          idef,ir,box,x,min_proj,nrnb,
-                          constr->lagr,lambda,dvdlambda,
-                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
-            break;
-        default:
-            gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
-            break;
-        }
 
-        if (!bOK && constr->maxwarn >= 0)
-        {
-            if (fplog != NULL)
-            {
-                fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
-                        econstr_names[econtSHAKE],gmx_step_str(step,buf));
-            }
-            bDump = TRUE;
-        }
-    }
-        
     settle  = &idef->il[F_SETTLE];
-    if (settle->nr > 0)
+    nsettle = settle->nr/2;
+
+#ifdef GMX_OPENMP    
+    if (nsettle > 0)
     {
-        nsettle = settle->nr/2;
-        
-        switch (econq)
+        nth = omp_get_max_threads();
+    }
+    else
+    {
+        nth = 1;
+    }
+#else
+    nth = 1;
+#endif
+
+    if (nth > 1 && constr->rmdr_th == NULL)
+    {
+        snew(constr->rmdr_th,nth);
+        snew(constr->settle_error,nth);
+    }
+    
+    if (nth > 1 && (constr->lincsd != NULL || constr->nblocks > 0))
+    {
+        /* First thread does LINCS or SHAKE and no SETTLE */
+        th_ss = 1;
+    }
+    else
+    {
+        /* All threads do SETTLE */
+        th_ss = 0;
+    }
+
+    settle_error = -1;
+
+#pragma omp parallel for schedule(static)
+    for(th=0; th<nth; th++)
+    {
+        if (constr->lincsd != NULL && th == 0)
         {
-        case econqCoord:
-            csettle(constr->settled,
-                    nsettle,settle->iatoms,x[0],xprime[0],
-                    invdt,v[0],vir!=NULL,rmdr,&error,vetavar);
-            inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-            if (v != NULL)
-            {
-                inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
-            }
-            if (vir != NULL)
-            {
-                inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
-            }
-            
-            bOK = (error < 0);
+            bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr,
+                                  x,xprime,min_proj,box,lambda,dvdlambda,
+                                  invdt,v,vir!=NULL,rmdr,
+                                  econq,nrnb,
+                                  constr->maxwarn,&constr->warncount_lincs);
             if (!bOK && constr->maxwarn >= 0)
             {
-                char buf[256];
-                sprintf(buf,
-                        "\nstep " gmx_large_int_pfmt ": Water molecule starting at atom %d can not be "
-                        "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
-                        step,ddglatnr(cr->dd,settle->iatoms[error*2+1]));
-                if (fplog)
+                if (fplog != NULL)
                 {
-                    fprintf(fplog,"%s",buf);
-                }
-                fprintf(stderr,"%s",buf);
-                constr->warncount_settle++;
-                if (constr->warncount_settle > constr->maxwarn)
-                {
-                    too_many_constraint_warnings(-1,constr->warncount_settle);
+                    fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
+                            econstr_names[econtLINCS],gmx_step_str(step,buf));
                 }
                 bDump = TRUE;
+            }
+        }	
+        
+        if (constr->nblocks > 0 && th == 0)
+        {
+            switch (econq) {
+            case (econqCoord):
+                bOK = bshakef(fplog,constr->shaked,
+                              homenr,md->invmass,constr->nblocks,constr->sblock,
+                              idef,ir,box,x,xprime,nrnb,
+                              constr->lagr,lambda,dvdlambda,
+                              invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
+                break;
+            case (econqVeloc):
+                bOK = bshakef(fplog,constr->shaked,
+                              homenr,md->invmass,constr->nblocks,constr->sblock,
+                              idef,ir,box,x,min_proj,nrnb,
+                              constr->lagr,lambda,dvdlambda,
+                              invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
+                break;
+            default:
+                gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
+                break;
+            }
+            
+            if (!bOK && constr->maxwarn >= 0)
+            {
+                if (fplog != NULL)
+                {
+                    fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
+                            econstr_names[econtSHAKE],gmx_step_str(step,buf));
+                }
+                bDump = TRUE;
+            }
+        }
+        
+        if (nsettle > 0)
+        {
+            int start_th,end_th;
+
+            if (th > 0)
+            {
+                clear_mat(constr->rmdr_th[th]);
+            }
+            start_th = (nsettle*(th-th_ss  ))/(nth-th_ss);
+            end_th   = (nsettle*(th-th_ss+1))/(nth-th_ss);
+
+            switch (econq)
+            {
+            case econqCoord:
+                if (start_th >= 0 && end_th - start_th > 0)
+                {
+                    csettle(constr->settled,
+                            end_th-start_th,settle->iatoms+start_th*2,
+                            x[0],xprime[0],
+                            invdt,v[0],vir!=NULL,
+                            th == 0 ? rmdr : constr->rmdr_th[th],
+                            th == 0 ? &settle_error : &constr->settle_error[th],
+                            vetavar);
+                }
+                if (th == 0)
+                {
+                    inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+                    if (v != NULL)
+                    {
+                        inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
+                    }
+                    if (vir != NULL)
+                    {
+                        inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
+                    }
+                }
                 break;
             case econqVeloc:
             case econqDeriv:
             case econqForce:
             case econqForceDispl:
-                settle_proj(fplog,constr->settled,econq,
-                            nsettle,settle->iatoms,x,
-                            xprime,min_proj,vir!=NULL,rmdr,vetavar);
+                if (start_th >= 0 && end_th - start_th > 0)
+                {
+                    settle_proj(fplog,constr->settled,econq,
+                                end_th-start_th,settle->iatoms+start_th*2,x,
+                                xprime,min_proj,vir!=NULL,
+                                th == 0 ? rmdr : constr->rmdr_th[th],
+                                vetavar);
+                }
                 /* This is an overestimate */
                 inc_nrnb(nrnb,eNR_SETTLE,nsettle);
                 break;
@@ -447,6 +495,40 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         }
     }
 
+    if (settle->nr > 0)
+    {
+        /* Combine virial and error info of the other threads */
+        for(i=1; i<nth; i++)
+        {
+            m_add(rmdr,constr->rmdr_th[i],rmdr);
+            settle_error = constr->settle_error[i];
+        } 
+
+        if (econq == econqCoord && settle_error >= 0)
+        {
+            bOK = FALSE;
+            if (constr->maxwarn >= 0)
+            {
+                char buf[256];
+                sprintf(buf,
+                        "\nstep " gmx_large_int_pfmt ": Water molecule starting at atom %d can not be "
+                        "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
+                        step,ddglatnr(cr->dd,settle->iatoms[settle_error*2+1]));
+                if (fplog)
+                {
+                    fprintf(fplog,"%s",buf);
+                }
+                fprintf(stderr,"%s",buf);
+                constr->warncount_settle++;
+                if (constr->warncount_settle > constr->maxwarn)
+                {
+                    too_many_constraint_warnings(-1,constr->warncount_settle);
+                }
+                bDump = TRUE;
+            }
+        }
+    }
+        
     free_vetavars(vetavar);
     
     if (vir != NULL)

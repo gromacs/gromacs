@@ -57,6 +57,7 @@
 #include "types/graph.h"
 #include "types/nrnb.h"
 #include "types/nblist.h"
+#include "types/nblist_box.h"
 #include "types/nsgrid.h"
 #include "types/commrec.h"
 #include "types/forcerec.h"

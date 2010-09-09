@@ -44,9 +44,6 @@
 #include "vsite.h"
 #include "genborn.h"
 
-#ifdef GMX_GPU
-#include "../src/mdlib/cutypedefs_ext.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -127,6 +124,11 @@ forcerec_set_ranges(t_forcerec *fr,
 		    int natoms_force_constr,int natoms_f_novirsum);
 /* Set the number of cg's and atoms for the force calculation */
 
+gmx_bool gmx_check_use_gpu(FILE *fp);
+/* Return if we will a GPU or GPU emulation */
+
+void remove_chargegroups(gmx_mtop_t *mtop);
+
 gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
                              gmx_bool bPrintNote,t_commrec *cr,FILE *fp);
 /* Returns if we can use all-vs-all loops.
@@ -146,6 +148,7 @@ void init_forcerec(FILE       *fplog,
 			  const char *tabfn,
 			  const char *tabpfn,
 			  const char *tabbfn,
+		   gmx_bool       useGPU,
 			  gmx_bool       bNoSolvOpt,
 			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 
@@ -154,6 +157,10 @@ void init_forcerec(FILE       *fplog,
  * bMolEpot: Use the free energy stuff per molecule
  * print_force >= 0: print forces for atoms with force >= print_force
  */
+
+void forcerec_set_excl_load(t_forcerec *fr,
+			    const gmx_localtop_t *top,const t_commrec *cr);
+  /* Set the exclusion load for the local exclusions and possibly threads */
 
 void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
@@ -203,25 +210,6 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 
-
-#ifdef GMX_GPU
-extern void do_force_gpu(FILE *log,t_commrec *cr,
-		     t_inputrec *inputrec,
-		     gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		     gmx_localtop_t *top,
-		     gmx_mtop_t *mtop,
-		     gmx_groups_t *groups,
-		     matrix box,rvec x[],history_t *hist,
-		     rvec f[],
-		     tensor vir_force,
-		     t_mdatoms *mdatoms,
-		     gmx_enerdata_t *enerd,t_fcdata *fcd,
-		     real lambda,t_graph *graph,
-		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-		     double t,FILE *field,gmx_edsam_t ed,
-		     gmx_bool bBornRadii,
-		     int flags, t_cudata gpudata);
-#else
 extern void do_force(FILE *log,t_commrec *cr,
 		     t_inputrec *inputrec,
 		     gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -238,7 +226,7 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     double t,FILE *field,gmx_edsam_t ed,
 		     gmx_bool bBornRadii,
 		     int flags);
-#endif
+
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
  * Calculate forces.
@@ -267,36 +255,6 @@ void ns(FILE       *fplog,
 	       rvec       *f);
 /* Call the neighborsearcher */
 
-#ifdef GMX_GPU
-extern void do_force_lowlevel_gpu(FILE         *fplog,  
-			      gmx_large_int_t   step,
-			      t_forcerec   *fr,
-			      t_inputrec   *ir,
-			      t_idef       *idef,
-			      t_commrec    *cr,
-			      t_nrnb       *nrnb,
-			      gmx_wallcycle_t wcycle,
-			      t_mdatoms    *md,
-			      t_grpopts    *opts,
-			      rvec         x[],
-			      history_t    *hist,
-			      rvec         f[],    
-			      gmx_enerdata_t *enerd,
-			      t_fcdata     *fcd,
-			      gmx_mtop_t     *mtop,
-			      gmx_localtop_t *top,
-			      gmx_genborn_t *born,
-			      t_atomtypes  *atype,
-			      gmx_bool         bBornRadii,
-			      matrix       box,
-			      real         lambda,
-			      t_graph      *graph,
-			      t_blocka     *excl,
-			      rvec         mu_tot[2],
-			      int          flags,
-			      float        *cycles_pme,
-                              t_cudata  gpudata);
-#else 
 extern void do_force_lowlevel(FILE         *fplog,  
 			      gmx_large_int_t   step,
 			      t_forcerec   *fr,
@@ -324,7 +282,6 @@ extern void do_force_lowlevel(FILE         *fplog,
 			      rvec         mu_tot[2],
 			      int          flags,
 			      float        *cycles_pme);
-#endif
 /* Call all the force routines */
 
 #ifdef __cplusplus

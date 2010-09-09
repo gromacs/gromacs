@@ -13,6 +13,10 @@ if(GMX_GPU)
         CUDA_ADD_LIBRARY(md_gpu 
             ${MDLIB_GPU_SOURCES})
     endif()
+
+    # add_subdirectory("../kernel/gmx_gpu_utils")   
+    #include_directories("${CMAKE_SOURCE_DIR}/src/kernel/gmx_gpu_utils")
+    set(GMX_GPU_LIBRARIES gmx_gpu_utils)
 endif()
 
 # Files	called xxx_test.c are test drivers with a main() function for 
@@ -23,7 +27,7 @@ list(REMOVE_ITEM MDLIB_SOURCES ${NOT_MDLIB_SOURCES})
 add_library(md ${MDLIB_SOURCES})
 
 if(GMX_GPU)
-    target_link_libraries(md md_gpu gmx ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
+    target_link_libraries(md md_gpu gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
 else()
     target_link_libraries(md gmx ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
 endif()

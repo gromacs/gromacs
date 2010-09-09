@@ -96,16 +96,14 @@
 #ifdef GMX_THREADS
 #include "tmpi.h"
 #endif
+#ifdef GMX_GPU
+#include "gpu_data.h"
+#endif
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
 
-/* GPU acceleration stuff */ 
-#ifdef GMX_GPU
-#include "gmx_gpu_utils.h"
-#include "../mdlib/gpu_data.h"
-#endif
 
 /* simulation conditions to transmit. Keep in mind that they are 
    transmitted to other nodes through an MPI_Reduce after
@@ -1156,21 +1154,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
 #endif
-
-#ifdef GMX_GPU
-    t_cudata    gpudata = NULL;
-    int         gpu_device_id;
-#endif
-
-#ifdef GMX_GPU
-    /* initialize GPU */ 
-    gpu_device_id = 0; /* TODO get dev_id */
-    if (init_gpu(gpu_device_id, fplog) != 0)
-    {
-        gmx_fatal(FARGS, "Failed to initialize GPU #%d.", gpu_device_id);
-    }
- #endif   
- 
     
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
@@ -1316,6 +1299,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             a0 = 0;
             a1 = top_global->natoms;
         }
+
+        forcerec_set_excl_load(fr,top,cr);
 
         state = partdec_init_local_state(cr,state_global);
         f_global = f;
@@ -1544,10 +1529,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         fprintf(fplog,"\n");
     }
-
-#ifdef GMX_GPU
-   init_cudata(fplog, &gpudata, fr, mdatoms, top_global /*, top*/);
-#endif
 
     /* Set and write start time */
     runtime_start(runtime);
@@ -1954,22 +1935,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              * This is parallellized as well, and does communication too. 
              * Check comments in sim_util.c
              */
-#ifdef GMX_GPU
-            do_force_gpu(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
-                     state->box,state->x,&state->hist,
-                     f,force_vir,mdatoms,enerd,fcd,
-                     state->lambda,graph,
-                     fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
-                     (bNS ? GMX_FORCE_NS : 0) | force_flags, 
-                     gpudata);
-#else            
              do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
                      state->box,state->x,&state->hist,
                      f,force_vir,mdatoms,enerd,fcd,
                      state->lambda,graph,
                      fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
-#endif            
         }
     
         GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -2851,18 +2822,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     
     runtime->nsteps_done = step_rel;
-
-#ifdef GMX_GPU
-   destroy_cudata(fplog, gpudata);
-#endif
-
-#ifdef GMX_GPU
-    /* uninitialize GPU */
-    if (uninit_gpu(gpu_device_id, fplog) != 0)
-    {
-        gmx_warning("Failed to uninitialize GPU.");
-    }
-#endif
 
    return 0;
 }

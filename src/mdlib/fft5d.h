@@ -72,6 +72,7 @@ struct fft5d_plan_t {
 	int NG,MG,KG;
     /*int P[2];*/
 	int coor[2];
+    int nthreads_transpose;
 }; 
 
 typedef struct fft5d_plan_t *fft5d_plan;

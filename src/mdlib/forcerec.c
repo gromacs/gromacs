@@ -61,6 +61,7 @@
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
+#include "nsbox.h"
 
 
 #ifdef _MSC_VER
@@ -68,6 +69,15 @@
 #include <intrin.h>
 #endif
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
+#ifdef GMX_GPU
+#include "cutypedefs_ext.h"
+#include "gpu_data.h"
+#include "cupmalloc.h"
+#endif
 
 
 t_forcerec *mk_forcerec(void)
@@ -718,38 +728,47 @@ static int *cginfo_expand(int nmb,cginfo_mb_t *cgi_mb)
 
 static void set_chargesum(FILE *log,t_forcerec *fr,const gmx_mtop_t *mtop)
 {
-    double qsum;
+    double qsum,q2sum,q;
     int    mb,nmol,i;
     const t_atoms *atoms;
     
-    qsum = 0;
+    qsum  = 0;
+    q2sum = 0;
     for(mb=0; mb<mtop->nmolblock; mb++)
     {
         nmol  = mtop->molblock[mb].nmol;
         atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
         for(i=0; i<atoms->nr; i++)
         {
-            qsum += nmol*atoms->atom[i].q;
+            q = atoms->atom[i].q;
+            qsum  += nmol*q;
+            q2sum += nmol*q*q;
         }
     }
-    fr->qsum[0] = qsum;
+    fr->qsum[0]  = qsum;
+    fr->q2sum[0] = q2sum;
     if (fr->efep != efepNO)
     {
-        qsum = 0;
+        qsum  = 0;
+        q2sum = 0;
         for(mb=0; mb<mtop->nmolblock; mb++)
         {
             nmol  = mtop->molblock[mb].nmol;
             atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
             for(i=0; i<atoms->nr; i++)
             {
-                qsum += nmol*atoms->atom[i].qB;
+                q = atoms->atom[i].qB;
+                qsum  += nmol*q;
+                q2sum += nmol*q*q;
             }
-            fr->qsum[1] = qsum;
+            fr->qsum[1]  = qsum;
+            fr->q2sum[1] = q2sum;
         }
     }
     else
     {
-        fr->qsum[1] = fr->qsum[0];
+        fr->qsum[1]  = fr->qsum[0];
+        fr->q2sum[1] = fr->q2sum[0];
     }
     if (log) {
         if (fr->efep == efepNO)
@@ -1277,7 +1296,152 @@ forcerec_check_sse2()
 }
 
 
+static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
+{
+    int t,i;
 
+    fr->nthreads = omp_get_max_threads();
+
+    snew(fr->f_t,fr->nthreads);
+    /* Thread 0 uses the global force and energy arrays */
+    for(t=1; t<fr->nthreads; t++)
+    {
+        fr->f_t[t].f = NULL;
+        fr->f_t[t].f_nalloc = 0;
+        snew(fr->f_t[t].fshift,SHIFTS);
+        /* snew(fr->f_t[t].ener,F_NRE); */
+        fr->f_t[t].grpp.nener = grpp_nener;
+        for(i=0; i<egNR; i++)
+        {
+            snew(fr->f_t[t].grpp.ener[i],grpp_nener);
+        }
+    }
+}
+
+gmx_bool gmx_check_use_gpu(FILE *fp)
+{
+    gmx_bool useGPU,emulateGPU;
+    char *env;
+
+    env = getenv("GMX_EMULATE_GPU");
+    emulateGPU = (env != NULL);
+
+    /* Try to turn GPU acceleration on if GMX_GPU is defined */
+    useGPU = FALSE;    
+    if (emulateGPU)
+    {
+        fprintf(fp, "Emulating GPU\n");
+    }    
+#ifdef GMX_GPU
+    else
+    {
+        if (getenv("GMX_NO_GPU") == NULL)
+        {
+            int gpu_device_id;
+
+            /* initialize GPU */
+            gpu_device_id = 0; /* TODO get dev_id */
+            env = getenv("GMX_GPU_ID");
+            if (env != NULL)
+            {
+                sscanf(env, "%d",&gpu_device_id);
+            }
+            if (init_gpu(fp, gpu_device_id) != 0)
+            {
+                gmx_warning("Could not initialize GPU #%d", gpu_device_id);
+            }
+            else
+            {
+                fprintf(fp,"Using GPU#%d\n", gpu_device_id);
+                useGPU = TRUE;
+            }
+        }
+        else 
+        {
+            gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
+        }
+    }
+#endif
+    
+    return (useGPU || emulateGPU);
+}
+
+void remove_chargegroups(gmx_mtop_t *mtop)
+{
+    int mt;
+    t_block *cgs;
+    int i;
+
+    for(mt=0; mt<mtop->nmoltype; mt++)
+    {
+        cgs = &mtop->moltype[mt].cgs;
+        if (cgs->nr < mtop->moltype[mt].atoms.nr)
+        {
+            cgs->nr = mtop->moltype[mt].atoms.nr;
+            srenew(cgs->index,cgs->nr+1);
+            for(i=0; i<cgs->nr+1; i++)
+            {
+                cgs->index[i] = i;
+            }
+        }
+    }
+}
+
+static void set_nsbox_cutoffs(FILE *fp,t_forcerec *fr,real nblist_lifetime)
+{
+    /* Temporary code for cut-off setup */
+    double rbuf;
+
+    if (fr->rcoulomb == fr->rlist && fr->rvdw == fr->rlist)
+    {
+        char *env;
+
+        fr->rcut_nsbox  = fr->rcoulomb;
+                
+        env = getenv("GMX_NSBOX_BUF");
+        if (env != NULL)
+        {
+            double dbl;
+            sscanf(env,"%lf",&rbuf);
+        }
+        else
+        {
+            /* Buffer size for the probably of less than 2e-5
+             * that an atom pair in SPC water at 298 K crosses
+             * the buffer region.
+             * Atoms in SPC water are probably the fastest moving
+             * particles in bio-molecular simulations.
+             * Note that the probability of a missed interaction
+             * (which would still be very small at the cut-off)
+             * is much smaller, because many atoms pairs outside
+             * this buffer radius are still in the buffer due to
+             * it being based on groups of atoms.
+             */
+            rbuf = 3.0*pow(nblist_lifetime,0.75);
+        }
+        fr->rlist_nsbox = fr->rcut_nsbox + rbuf;
+    }
+    else
+    {
+        if (fr->rcoulomb > fr->rlist || fr->rvdw > fr->rlist)
+        {
+            gmx_fatal(FARGS,"nsbox does not support twin-range forces");
+        }
+        if (fr->rcoulomb != fr->rvdw)
+        {
+            gmx_fatal(FARGS,"nsbox does not support rcoulomb != rvdw");
+        }
+        fr->rcut_nsbox  = fr->rcoulomb;
+        fr->rlist_nsbox = fr->rlist;
+        rbuf = fr->rlist_nsbox - fr->rcut_nsbox;
+    }
+    if (fp != NULL)
+    {
+        fprintf(fp,
+                "nsbox neighbor list life time %g ps, buffer size: %.3f nm\n",
+                nblist_lifetime,rbuf);
+    }
+}
 
 void init_forcerec(FILE *fp,
                    const output_env_t oenv,
@@ -1291,6 +1455,7 @@ void init_forcerec(FILE *fp,
                    const char *tabfn,
                    const char *tabpfn,
                    const char *tabbfn,
+                   gmx_bool       useGPU,
                    gmx_bool       bNoSolvOpt,
                    real       print_force)
 {
@@ -1304,6 +1469,7 @@ void init_forcerec(FILE *fp,
     gmx_bool    bTab,bSep14tab,bNormalnblists;
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
+    int     napc;
     
     fr->bDomDec = DOMAINDECOMP(cr);
 
@@ -1781,6 +1947,86 @@ void init_forcerec(FILE *fp,
     
     if (cr->duty & DUTY_PP)
         gmx_setup_kernels(fp,bGenericKernelOnly);
+
+#ifndef GMX_OPENMP
+    fr->nthreads = 1;
+#else
+    init_forcerec_f_threads(fr,mtop->groups.grps[egcENER].nr);
+#endif
+    
+    snew(fr->excl_load,fr->nthreads+1);
+
+    if (!useGPU)
+    {
+        fr->useGPU     = FALSE;
+        fr->emulateGPU = FALSE;
+    }
+    else
+    {
+        /* nsbox neighbor searching and GPU stuff */
+        napc = GPU_NS_CELL_SIZE;
+
+        env = getenv("GMX_EMULATE_GPU");
+        fr->emulateGPU = (env != NULL);
+        fr->useGPU = !fr->emulateGPU;
+        if (fr->emulateGPU)
+        {
+            sscanf(env,"%d",&napc);
+            if (napc == 0)
+            {
+                napc = GPU_NS_CELL_SIZE;
+            }
+            if (fp != NULL)
+            {
+                fprintf(fp, "Emulating GPU, using %d atoms per cell\n",napc);
+            }
+        }
+
+        set_nsbox_cutoffs(fp,fr,EI_DYNAMICS(ir->eI) ? ir->delta_t*(ir->nstlist-1) : 0.0);
+
+        gmx_nbsearch_init(&fr->nbs,napc);
+
+        fr->nnbl = 1;
+#ifdef GMX_OPENMP
+        fr->nnbl = omp_get_max_threads();
+#endif
+        snew(fr->nbl,fr->nnbl);
+#pragma omp parallel for schedule(static)
+        for(i=0; i<fr->nnbl; i++)
+        {
+            /* Allocate the nblist data structure locally on each thread
+             * to optimize memory access for NUMA architectures.
+             */
+            snew(fr->nbl[i],1);
+            gmx_nblist_init(fr->nbl[i],
+#ifdef GMX_GPU
+                            /* Only list 0 is used on the GPU */
+                            (fr->useGPU && i==0) ? &pmalloc : NULL,
+                            (fr->useGPU && i==0) ? &pfree   : NULL);
+#else
+                            NULL,NULL);
+#endif
+        }
+
+        snew(fr->nbat,1);
+
+        gmx_nb_atomdata_init(fr->nbat,nbatXYZQ,fr->ntype,fr->nbfp,
+#ifdef GMX_GPU
+                             fr->useGPU ? &pmalloc : NULL,
+                             fr->useGPU ? &pfree   : NULL);
+#else
+                             NULL,NULL);
+#endif
+
+        if (fr->useGPU)
+        {
+
+            fr->streamGPU = (getenv("GMX_GPU_DONT_STREAM") == NULL);
+#ifdef GMX_GPU
+            init_cudata_ff(fp, &(fr->gpu_data), fr);
+#endif
+        }
+    }
 }
 
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)
@@ -1805,3 +2051,57 @@ void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
   
   fflush(fp);
 }
+
+void forcerec_set_excl_load(t_forcerec *fr,
+                            const gmx_localtop_t *top,const t_commrec *cr)
+{
+    const int *ind,*a;
+    int start,end;
+    int t,i,j,ntot,n,ntarget;
+
+    ind = top->excls.index;
+    a   = top->excls.a;
+
+    if (cr != NULL && PARTDECOMP(cr))
+    {
+        pd_at_range(cr,&start,&end);
+    }
+    else
+    {
+        start = 0;
+        end   = top->excls.nr;
+    }
+
+    ntot = 0;
+    for(i=start; i<end; i++)
+    {
+        for(j=ind[i]; j<ind[i+1]; j++)
+        {
+            if (a[j] > i)
+            {
+                ntot++;
+            }
+        }
+    }
+
+    fr->excl_load[0] = 0;
+    n = 0;
+    i = start;
+    for(t=1; t<=fr->nthreads; t++)
+    {
+        ntarget = (ntot*t)/fr->nthreads;
+        while(i < end && n < ntarget)
+        {
+            for(j=ind[i]; j<ind[i+1]; j++)
+            {
+                if (a[j] > i)
+                {
+                    n++;
+                }
+            }
+            i++;
+        }
+        fr->excl_load[t] = i;
+    }
+}
+

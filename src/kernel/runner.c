@@ -90,6 +90,10 @@
 #include "md_openmm.h"
 #endif
 
+#ifdef GMX_GPU
+#include "gmx_gpu_utils.h"
+#include "gpu_data.h"
+#endif
 
 typedef struct { 
     gmx_integrator_t *func;
@@ -325,6 +329,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
              const char *deviceOptions, unsigned long Flags)
 {
+    gmx_bool   useGPU;
     double     nodetime=0,realtime;
     t_inputrec *inputrec;
     t_state    *state=NULL;
@@ -353,6 +358,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     t_commrec   *cr_old=cr; 
     int         nthreads=1;
 
+    useGPU = gmx_check_use_gpu(fplog);
+
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
     snew(inputrec,1);
@@ -373,6 +380,15 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     {
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
+
+        if (useGPU)
+        {
+            if (fplog)
+            {
+                fprintf(fplog,"Removing all charge groups because of GPU\n");
+            }
+            remove_chargegroups(mtop);
+        }
 
         /* NOW the threads will be started: */
 #ifdef GMX_THREADS
@@ -642,7 +658,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
                       opt2fn("-table",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
-                      opt2fn("-tableb",nfile,fnm),FALSE,pforce);
+                      opt2fn("-tableb",nfile,fnm),
+                      useGPU,FALSE,pforce);
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
@@ -835,6 +852,10 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
      */
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
+#ifdef GMX_GPU
+               fr->useGPU ? get_gpu_times(fr->gpu_data) :
+#endif
+               NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
     /* Does what it says */  
@@ -857,6 +878,22 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         tMPI_Finalize();
     }
 #endif
+
+#ifdef GMX_GPU
+    if (fr->useGPU)
+    {
+        int gpu_device_id = 0; /* TODO get dev_id */
+        /* free GPU memory and uninitialize GPU */
+        destroy_cudata(fplog, fr->gpu_data);
+
+        if (uninit_gpu(fplog, gpu_device_id) != 0)
+        {
+            gmx_warning("Failed to uninitialize GPU.");
+        }
+    }
+#endif
+
+
 
     return rc;
 }

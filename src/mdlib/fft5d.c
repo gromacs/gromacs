@@ -56,11 +56,16 @@
 #include "tmpi.h"
 #endif
 
+#ifdef GMX_OPENMP
+#define FFT5D_THREADS
+
 #ifdef FFT5D_THREADS
 #include <omp.h>
 /* requires fftw compiled with openmp */
-#define FFT5D_FFTW_THREADS
+// XXX #define FFT5D_FFTW_THREADS
 #endif
+
+#endif /* GMX_THREADS */
 
 #include "fft5d.h"
 #include <float.h>
@@ -410,22 +415,46 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 
     
 #ifdef FFT5D_THREADS
-#ifdef FFT5D_FFTW_THREADS
-    FFTW(init_threads)();
-    int nthreads;
-    #pragma omp parallel
     {
-        #pragma omp master
+        char *env;
+
+        if ((env = getenv("GMX_NUM_THREADS_TRANSPOSE")) != NULL)
         {
-            nthreads = omp_get_num_threads();
+            sscanf(env,"%d",&plan->nthreads_transpose);
+        }
+        else
+        {
+            plan->nthreads_transpose = omp_get_max_threads();
+        }
+        if (prank[0] == 0 && prank[1] == 0)
+        {
+            printf("Running FFT transpose on %d threads\n",
+                   plan->nthreads_transpose);
         }
     }
-    if (prank[0] == 0 && prank[1] == 0)
+#ifdef FFT5D_FFTW_THREADS
     {
-        printf("Running fftw on %d threads\n",nthreads);        
+        char *env;
+        int nthreads;
+
+        FFTW(init_threads)();
+        if ((env = getenv("GMX_NUM_THREADS_FFT")) != NULL)
+        {
+            sscanf(env,"%d",&nthreads);
+        }
+        else
+        {
+            nthreads = omp_get_max_threads();
+        }
+        if (prank[0] == 0 && prank[1] == 0)
+        {
+            printf("Running fftw on %d threads\n",nthreads);        
+        }
+        FFTW(plan_with_nthreads)(nthreads);
     }
-    FFTW(plan_with_nthreads)(nthreads);
 #endif
+#else
+    plan->nthreads_transpose = 1;
 #endif    
 
 #ifdef GMX_FFT_FFTW3  /*if not FFTW - then we don't do a 3d plan but insead only 1D plans */
@@ -585,42 +614,60 @@ enum order {
   NG, MG, KG is size of global data*/
 static void splitaxes(t_complex* lout,const t_complex* lin,
                       int maxN,int maxM,int maxK, int pN, int pM, int pK,
-                      int P,int NG,int *N, int* oN)
+                      int P,int NG,int *N, int* oN,
+                      int nthreads)
 {
     int x,y,z,i;
     int in_i,out_i,in_z,out_z,in_y,out_y;
 
-#ifdef FFT5D_THREADS
-    int zi;
-
-    /* In the thread parallel case we want to loop over z and i
-     * in a single for loop to allow for better load balancing.
-     */
-#pragma omp parallel for private(z,in_z,out_z,i,in_i,out_i,y,in_y,out_y,x) schedule(static)
-    for (zi=0; zi<pK*P; zi++)
+    if (nthreads == 1)
     {
-        z = zi/P;
-        i = zi - z*P;
-#else
-    for (z=0; z<pK; z++) /*3. z l*/ 
-    {
-#endif
-        in_z  = z*maxN*maxM;
-        out_z = z*NG*pM;
-
-#ifndef FFT5D_THREADS
-        for (i=0; i<P; i++) /*index cube along long axis*/
-#endif
+        for (z=0; z<pK; z++) /*3. z l*/ 
         {
+            in_z  = z*maxN*maxM;
+            out_z = z*NG*pM;
+            for (i=0; i<P; i++) /*index cube along long axis*/
+            {
+                in_i  = in_z  + i*maxN*maxM*maxK;
+                out_i = out_z + oN[i];
+                for (y=0;y<pM;y++) /*2. y k*/
+                {
+                    in_y  = in_i  + y*maxN;
+                    out_y = out_i + y*NG;
+                    for (x=0;x<N[i];x++) /*1. x j*/
+                    {
+                        lout[in_y+x] = lin[out_y+x];
+                        /*after split important that each processor chunk i has size maxN*maxM*maxK and thus being the same size*/
+                        /*before split data contiguos - thus if different processor get different amount oN is different*/
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        int zi;
+        /* In the thread parallel case we want to loop over z and i
+         * in a single for loop to allow for better load balancing.
+         */
+#pragma omp parallel for private(z,in_z,out_z,i,in_i,out_i,y,in_y,out_y,x) schedule(static)
+        for (zi=0; zi<pK*P; zi++)
+        {
+            z = zi/P;
+            i = zi - z*P;
+
+            in_z  = z*maxN*maxM;
+            out_z = z*NG*pM;
+
             in_i  = in_z  + i*maxN*maxM*maxK;
             out_i = out_z + oN[i];
-            for (y=0;y<pM;y++) { /*2. y k*/
+            for (y=0;y<pM;y++) /*2. y k*/
+            {
                 in_y  = in_i  + y*maxN;
                 out_y = out_i + y*NG;
-                for (x=0;x<N[i];x++) { /*1. x j*/
+                for (x=0;x<N[i];x++) /*1. x j*/
+                {
                     lout[in_y+x] = lin[out_y+x];
-                    /*after split important that each processor chunk i has size maxN*maxM*maxK and thus being the same size*/
-                    /*before split data contiguos - thus if different processor get different amount oN is different*/
                 }
             }
         }
@@ -635,40 +682,58 @@ static void splitaxes(t_complex* lout,const t_complex* lin,
   KG global size*/
 static void joinAxesTrans13(t_complex* lin,const t_complex* lout,
                             int maxN,int maxM,int maxK,int pN, int pM, int pK, 
-                            int P,int KG, int* K, int* oK)
+                            int P,int KG, int* K, int* oK,
+                            int nthreads)
 {
     int i,x,y,z;
     int in_i,out_i,in_x,out_x,in_z,out_z;
 
-#ifdef FFT5D_THREADS
-    int xi;
-
-    /* In the thread parallel case we want to loop over x and i
-     * in a single for loop to allow for better load balancing.
-     */
-#pragma omp parallel for private(x,in_x,out_x,i,in_i,out_i,z,in_z,out_z,y) schedule(static)
-    for (xi=0; xi<pN*P; xi++)
+    if (nthreads == 1)
     {
-        x = xi/P;
-        i = xi - x*P;
-#else
-    for (x=0;x<pN;x++) /*1.j*/
-    {
-#endif
-        in_x  = x*KG*pM;
-        out_x = x;
-
-#ifndef FFT5D_THREADS
-        for (i=0;i<P;i++) /*index cube along long axis*/
-#endif
+        for (x=0;x<pN;x++) /*1.j*/
         {
+            in_x  = x*KG*pM;
+            out_x = x;
+
+            for (i=0;i<P;i++) /*index cube along long axis*/
+            {
+                in_i  = in_x  + oK[i];
+                out_i = out_x + i*maxM*maxN*maxK;
+                for (z=0;z<K[i];z++) /*3.l*/
+                {
+                    in_z  = in_i  + z;
+                    out_z = out_i + z*maxM*maxN;
+                    for (y=0;y<pM;y++) /*2.k*/
+                    {
+                        lin[in_z+y*KG] = lout[out_z+y*maxN];
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        int xi;
+        /* In the thread parallel case we want to loop over x and i
+         * in a single for loop to allow for better load balancing.
+         */
+#pragma omp parallel for private(x,in_x,out_x,i,in_i,out_i,z,in_z,out_z,y) schedule(static)
+        for (xi=0; xi<pN*P; xi++)
+        {
+            x = xi/P;
+            i = xi - x*P;
+
+            in_x  = x*KG*pM;
+            out_x = x;
+
             in_i  = in_x  + oK[i];
             out_i = out_x + i*maxM*maxN*maxK;
             for (z=0;z<K[i];z++) /*3.l*/
             {
                 in_z  = in_i  + z;
                 out_z = out_i + z*maxM*maxN;
-                for (y=0;y<pM;y++) { /*2.k*/
+                for (y=0;y<pM;y++) /*2.k*/
+                {
                     lin[in_z+y*KG] = lout[out_z+y*maxN];
                 }
             }
@@ -682,39 +747,60 @@ static void joinAxesTrans13(t_complex* lin,const t_complex* lout,
   the minor, middle, major order is only correct for x,y,z (N,M,K) for the input
   N,M,K local size
   MG, global size*/
-static void joinAxesTrans12(t_complex* lin,const t_complex* lout,int maxN,int maxM,int maxK,int pN, int pM, int pK,
-                int P,int MG, int* M, int* oM) {
+static void joinAxesTrans12(t_complex* lin,const t_complex* lout,
+                            int maxN,int maxM,int maxK,int pN, int pM, int pK,
+                            int P,int MG, int* M, int* oM,
+                            int nthreads)
+{
     int i,z,y,x;
     int in_i,out_i,in_z,out_z,in_x,out_x;
 
-#ifdef FFT5D_THREADS
-    int zi;
-
-    /* In the thread parallel case we want to loop over z and i
-     * in a single for loop to allow for better load balancing.
-     */
-#pragma omp parallel for private(i,in_i,out_i,z,in_z,out_z,in_x,out_x,x,y) schedule(static)
-    for (zi=0; zi<pK*P; zi++)
+    if (nthreads == 1)
     {
-        z = zi/P;
-        i = zi - z*P;
-#else
-    for (z=0; z<pK; z++)
-    {
-#endif
-        in_z  = z*MG*pN;
-        out_z = z*maxM*maxN;
-
-#ifndef FFT5D_THREADS
-        for (i=0; i<P; i++) /*index cube along long axis*/
-#endif
+        for (z=0; z<pK; z++)
         {
+            in_z  = z*MG*pN;
+            out_z = z*maxM*maxN;
+
+            for (i=0; i<P; i++) /*index cube along long axis*/
+            {
+                in_i  = in_z  + oM[i];
+                out_i = out_z + i*maxM*maxN*maxK;
+                for (x=0;x<pN;x++)
+                {
+                    in_x  = in_i  + x*MG;
+                    out_x = out_i + x;
+                    for (y=0;y<M[i];y++)
+                    {
+                        lin[in_x+y] = lout[out_x+y*maxN];
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        int zi;
+        /* In the thread parallel case we want to loop over z and i
+         * in a single for loop to allow for better load balancing.
+         */
+#pragma omp parallel for private(i,in_i,out_i,z,in_z,out_z,in_x,out_x,x,y) schedule(static)
+        for (zi=0; zi<pK*P; zi++)
+        {
+            z = zi/P;
+            i = zi - z*P;
+
+            in_z  = z*MG*pN;
+            out_z = z*maxM*maxN;
+
             in_i  = in_z  + oM[i];
             out_i = out_z + i*maxM*maxN*maxK;
-            for (x=0;x<pN;x++) {
+            for (x=0;x<pN;x++)
+            {
                 in_x  = in_i  + x*MG;
                 out_x = out_i + x;
-                for (y=0;y<M[i];y++) {
+                for (y=0;y<M[i];y++)
+                {
                     lin[in_x+y] = lout[out_x+y*maxN];
                 }
             }
@@ -876,7 +962,7 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
             /*prepare for AllToAll
               1. (most outer) axes (x) is split into P[s] parts of size N[s] 
               for sending*/
-            splitaxes(lin,lout,N[s],M[s],K[s], pN[s],pM[s],pK[s],P[s],C[s],iNout[s],oNout[s]);
+            splitaxes(lin,lout,N[s],M[s],K[s], pN[s],pM[s],pK[s],P[s],C[s],iNout[s],oNout[s],plan->nthreads_transpose);
 
             if (times!=0)
             {
@@ -906,9 +992,9 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
           thus make  new 1. axes contiguos
           also local transpose 1 and 2/3 */
         if ((s==0 && !(plan->flags&FFT5D_ORDER_YZ)) || (s==1 && (plan->flags&FFT5D_ORDER_YZ))) 
-            joinAxesTrans13(lin,lout,N[s],pM[s],K[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1]);
+            joinAxesTrans13(lin,lout,N[s],pM[s],K[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1],plan->nthreads_transpose);
         else 
-            joinAxesTrans12(lin,lout,N[s],M[s],pK[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1]);    
+            joinAxesTrans12(lin,lout,N[s],M[s],pK[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1],plan->nthreads_transpose);    
         if (times!=0)
             time_local+=MPI_Wtime()-time;
     

@@ -64,6 +64,10 @@
 #include "qmmm.h"
 #include "mpelogging.h"
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
 #ifdef GMX_GPU
 #include "cutypedefs_ext.h"
 #include "gpu_nb.h"
@@ -118,7 +122,30 @@ void ns(FILE *fp,
   GMX_MPE_LOG(ev_ns_finish);
 }
 
-void do_force_lowlevel_gpu(FILE       *fplog,   gmx_large_int_t step,
+static void reduce_thread_forces(int n,rvec *f,
+                                 tensor vir,
+                                 real *Vcorr,real *dvdl,
+                                 int nthreads,f_thread_t *f_t)
+{
+    int t,i;
+
+#pragma omp parallel for private(t) schedule(static)
+    for(i=0; i<n; i++)
+    {
+        for(t=1; t<nthreads; t++)
+        {
+            rvec_inc(f[i],f_t[t].f[i]);
+        }
+    }
+    for(t=1; t<nthreads; t++)
+    {
+        *Vcorr += f_t[t].Vcorr;
+        *dvdl  += f_t[t].dvdl;
+        m_add(vir,f_t[t].vir,vir);
+    }
+}
+
+void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        t_forcerec *fr,      t_inputrec *ir,
                        t_idef     *idef,    t_commrec  *cr,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
@@ -139,8 +166,7 @@ void do_force_lowlevel_gpu(FILE       *fplog,   gmx_large_int_t step,
                        t_blocka   *excl,    
                        rvec       mu_tot[],
                        int        flags,
-                       float      *cycles_pme,
-                       t_cudata gpudata)
+                       float      *cycles_pme)
 {
     int     i,status;
     int     donb_flags;
@@ -148,7 +174,7 @@ void do_force_lowlevel_gpu(FILE       *fplog,   gmx_large_int_t step,
     int     pme_flags;
     matrix  boxs;
     rvec    box_size;
-    real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
+    real    dvdlambda,Vsr,Vlr,Vcorr=0;
     t_pbc   pbc;
     real    dvdgb;
     char    buf[22];
@@ -228,23 +254,23 @@ void do_force_lowlevel_gpu(FILE       *fplog,   gmx_large_int_t step,
 	}
 	
     where();
-    donb_flags = 0;
-    if (flags & GMX_FORCE_FORCES)
+    if (flags & GMX_FORCE_NONBONDED)
     {
-        donb_flags |= GMX_DONB_FORCES;
+        donb_flags = 0;    
+        if (flags & GMX_FORCE_FORCES)
+        {
+            donb_flags |= GMX_DONB_FORCES;
+        }
+        
+        do_nonbonded(cr,fr,x,f,md,excl,
+                    fr->bBHAM ?
+                    enerd->grpp.ener[egBHAMSR] :
+                    enerd->grpp.ener[egLJSR],
+                    enerd->grpp.ener[egCOULSR],
+                    enerd->grpp.ener[egGB],box_size,nrnb,
+                    lambda,&dvdlambda,-1,-1,donb_flags);
     }
-
-#ifndef GMX_GPU
-    do_nonbonded(cr,fr,x,f,md,excl,
-                 fr->bBHAM ?
-                 enerd->grpp.ener[egBHAMSR] :
-                 enerd->grpp.ener[egLJSR],
-                 enerd->grpp.ener[egCOULSR],
-				 enerd->grpp.ener[egGB],box_size,nrnb,
-                 lambda,&dvdlambda,-1,-1,donb_flags);
-#else
-    cu_do_nb(gpudata, x, f);
-#endif
+    
     /* If we do foreign lambda and we have soft-core interactions
      * we have to recalculate the (non-linear) energies contributions.
      */
@@ -355,6 +381,7 @@ void do_force_lowlevel_gpu(FILE       *fplog,   gmx_large_int_t step,
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
+                   flags & GMX_FORCE_VIRIAL,
                    fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
         
         /* Check if we have to determine energy differences
@@ -407,14 +434,52 @@ void do_force_lowlevel_gpu(FILE       *fplog,   gmx_large_int_t step,
             if (fr->n_tpi == 0)
             {
                 dvdlambda = 0;
-                Vcorr = ewald_LRcorrection(fplog,md->start,md->start+md->homenr,
-                                           cr,fr,
+#pragma omp parallel
+                {
+                    int t,s,e,i;
+                    rvec *fnv;
+                    tensor *vir;
+                    real *Vcorrt,*dvdl;
+                    t = omp_get_thread_num();
+                    if (t == 0)
+                    {
+                        fnv    = fr->f_novirsum;
+                        vir    = &fr->vir_el_recip;
+                        Vcorrt = &Vcorr;
+                        dvdl   = &dvdlambda;
+                    }
+                    else
+                    {
+                        fnv    = fr->f_t[t].f;
+                        vir    = &fr->f_t[t].vir;
+                        Vcorrt = &fr->f_t[t].Vcorr;
+                        dvdl   = &fr->f_t[t].dvdl;
+                        for(i=0; i<fr->natoms_force; i++)
+                        {
+                            clear_rvec(fnv[i]);
+                        }
+                        clear_mat(*vir);
+                    }
+                    *dvdl = 0;
+                    *Vcorrt =
+                        ewald_LRcorrection(fplog,
+                                           fr->excl_load[t],fr->excl_load[t+1],
+                                           cr,t,fr,
                                            md->chargeA,
                                            md->nChargePerturbed ? md->chargeB : NULL,
                                            excl,x,bSB ? boxs : box,mu_tot,
                                            ir->ewald_geometry,
                                            ir->epsilon_surface,
-                                           lambda,&dvdlambda,&vdip,&vcharge);
+                                           fnv,*vir,
+                                           lambda,dvdl);
+                }
+                if (fr->nthreads > 1)
+                {
+                    reduce_thread_forces(fr->natoms_force,fr->f_novirsum,
+                                         fr->vir_el_recip,
+                                         &Vcorr,&dvdlambda,
+                                         fr->nthreads,fr->f_t);
+                }
                 PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
                 enerd->dvdl_lin += dvdlambda;
             }
@@ -586,37 +651,6 @@ void do_force_lowlevel_gpu(FILE       *fplog,   gmx_large_int_t step,
     
     GMX_MPE_LOG(ev_force_finish);
 
-}
-
-void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
-                       t_forcerec *fr,      t_inputrec *ir,
-                       t_idef     *idef,    t_commrec  *cr,
-                       t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
-                       t_mdatoms  *md,
-                       t_grpopts  *opts,
-                       rvec       x[],      history_t  *hist,
-                       rvec       f[],
-                       gmx_enerdata_t *enerd,
-                       t_fcdata   *fcd,
-                       gmx_mtop_t     *mtop,
-                       gmx_localtop_t *top,
-                       gmx_genborn_t *born,
-                       t_atomtypes *atype,
-                       bool       bBornRadii,
-                       matrix     box,
-                       real       lambda,  
-                       t_graph    *graph,
-                       t_blocka   *excl,    
-                       rvec       mu_tot[],
-                       int        flags,
-                       float      *cycles_pme)
-{
-     do_force_lowlevel_gpu(fplog,step,fr,ir,idef,
-                      cr,nrnb,wcycle,md,opts,
-                      x,hist,f,enerd,fcd,mtop,top,born,
-                      atype,bBornRadii,box,
-                      lambda,graph,excl,mu_tot,
-                      flags,cycles_pme, NULL);   
 }
 
 void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd)

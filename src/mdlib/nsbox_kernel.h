@@ -1,15 +1,16 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
  * 
  *                 G   R   O   M   A   C   S
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
+ *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010, The GROMACS development team,
+ * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -28,31 +29,31 @@
  * the papers on the package - you can find them in the top README file.
  * 
  * For more info, check our website at http://www.gromacs.org
- * 
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _GMX_GPU_UTILS_H_
-#define _GMX_GPU_UTILS_H_
+#ifndef _nsbox_kernel_h
+#define _nsbox_Kernel_h
 
-int do_quick_memtest(int /*dev_id*/);
-
-int do_full_memtest(int /*dev_id*/);
-
-int do_timed_memtest(int /*dev_id*/, int /*time_limit*/);
-
-int is_supported_cuda_gpu(int /*dev_id*/, char* /*gpu_name*/);
+#include "typedefs.h"
 
 #ifdef __cplusplus
-extern "C" 
+extern "C" {
 #endif
-int init_gpu(FILE * /*fplog*/, int /*dev_id*/);
+
+/* Reference (slow) kernel for nsbox neighbor lists */
+void
+nsbox_generic_kernel(const gmx_nblist_t         *nbl,
+                     const gmx_nb_atomdata_t    *nbat,
+                     const t_forcerec *         fr,
+                     real                       tabscale,  
+                     const real *               VFtab,
+                     real *                     f,
+                     real *                     fshift,
+                     real *                     Vc,
+                     real *                     Vvdw);
 
 #ifdef __cplusplus
-extern "C" 
+}
 #endif
-int uninit_gpu(FILE * /*fplog*/, int /*dev_id*/);
 
-#endif // _GMX_GPU_UTILS_H_
-
+#endif

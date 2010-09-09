@@ -86,6 +86,8 @@
 #include "partdec.h"
 #include "gmx_wallcycle.h"
 #include "genborn.h"
+#include "nsbox.h"
+#include "nsbox_kernel.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -95,6 +97,11 @@
 #endif
 
 #include "qmmm.h"
+
+#ifdef GMX_GPU
+#include "gpu_data.h"
+#include "gpu_nb.h" 
+#endif
 
 #if 0
 typedef struct gmx_timeprint {
@@ -422,36 +429,7 @@ void do_force(FILE *fplog,t_commrec *cr,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
               gmx_bool bBornRadii,
-              int flags, 
-              t_cudata gpudata
-              )
-{
-             do_force_gpu(fplog,cr,inputrec,step,nrnb,wcycle,top,mtop,groups,
-                     box,x,hist,
-                     f,vir_force,mdatoms,enerd,fcd,
-                     lambda,graph,
-                     fr,vsite,mu_tot,t,field,ed,bBornRadii,
-                     flags, NULL);   
-}
-
-void do_force_gpu(FILE *fplog,t_commrec *cr,
-              t_inputrec *inputrec,
-              gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-              gmx_localtop_t *top,
-              gmx_mtop_t *mtop,
-              gmx_groups_t *groups,
-              matrix box,rvec x[],history_t *hist,
-              rvec f[],
-              tensor vir_force,
-              t_mdatoms *mdatoms,
-              gmx_enerdata_t *enerd,t_fcdata *fcd,
-              real lambda,t_graph *graph,
-              t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-              double t,FILE *field,gmx_edsam_t ed,
-              gmx_bool bBornRadii,
-              int flags,
-              t_cudata gpudata
-              )
+              int flags)
 {
     int    cg0,cg1,i,j;
     int    start,homenr;
@@ -462,7 +440,13 @@ void do_force_gpu(FILE *fplog,t_commrec *cr,
     real   e,v,dvdl;
     t_pbc  pbc;
     float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
-  
+    t_cudata d_data = fr->gpu_data;
+
+#ifdef GMX_GPU    
+    gpu_times_t *gpu_t = get_gpu_times(d_data);
+    gmx_bool    gpu_debug_print = getenv("GMX_GPU_DEBUG_PRINT") != NULL;
+#endif
+    
     start  = mdatoms->start;
     homenr = mdatoms->homenr;
 
@@ -586,6 +570,7 @@ void do_force_gpu(FILE *fplog,t_commrec *cr,
         }
         wallcycle_stop(wcycle,ewcMOVEX);
     }
+
     if (bStateChanged)
     {
         for(i=0; i<2; i++)
@@ -630,22 +615,89 @@ void do_force_gpu(FILE *fplog,t_commrec *cr,
             clear_rvecs(fr->natoms_force_constr,bSepLRF ? fr->f_twin : f);
         }
 
-        /* Do the actual neighbour searching and if twin range electrostatics
-         * also do the calculation of long range forces and energies.
-         */
-        dvdl = 0; 
-        ns(fplog,fr,x,box,
-           groups,&(inputrec->opts),top,mdatoms,
-           cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
-           bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
-        if (bSepDVDL)
+        if (!(fr->useGPU || fr->emulateGPU))
         {
-            fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
+            /* Do the actual neighbour searching and if twin range electrostatics
+            * also do the calculation of long range forces and energies.
+            */
+            dvdl = 0; 
+            ns(fplog,fr,x,box,
+            groups,&(inputrec->opts),top,mdatoms,
+            cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
+            bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
+            if (bSepDVDL)
+            {
+                fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
+            }
+            enerd->dvdl_lin += dvdl;
         }
-        enerd->dvdl_lin += dvdl;
-        
+        else
+        {
+            if (top->cgs.index[top->cgs.nr] > top->cgs.nr)
+            {
+                put_atoms_in_box(box,mdatoms->homenr,x);
+            }
+
+            gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,box,mdatoms->homenr,x,
+                                     fr->nbat);
+
+            gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
+                                     &top->excls,
+                                     fr->rcut_nsbox,fr->rlist_nsbox,
+                                     800,
+                                     fr->nnbl,fr->nbl,TRUE);
+
+            gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
+            
+            gmx_nb_atomdata_set_charges(fr->nbat,fr->nbs,mdatoms->chargeA);
+
+#ifdef GMX_GPU
+            /* initialize the gpu atom datastructures */
+            if (fr->useGPU)
+            {
+                init_cudata_atoms(fr->gpu_data, fr->nbat, fr->nbl[0], fr->streamGPU);
+            }
+#endif
+        }
         wallcycle_stop(wcycle,ewcNS);
     }
+
+    if (fr->useGPU || fr->emulateGPU)
+    {
+        gmx_nb_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
+                                      fr->shift_vec,fr->nbat);
+        if (!bNS)
+        {
+            /* We are not doing ns this step, we need to copy x to nbat->x */
+            gmx_nb_atomdata_copy_x_to_nbat_x(fr->nbs,x,fr->nbat);
+        }
+    }
+
+#ifdef GMX_GPU
+    if (fr->useGPU)
+    {
+        /* wait for the atomdata trasfer to be finished */
+        if (bNS)
+        {
+            cu_blockwait_atomdata(d_data);
+            
+            if (gpu_debug_print && gpu_t->nb_count % 1000 == 0)
+            {
+                printf("NS transfer [%4d]:\t%5.3f ms\n", gpu_t->nb_count, 
+                        gpu_t->atomdt_h2d_total_time/gpu_t->atomdt_count);
+            }
+       }
+
+        /* Launch GPU-accelerated nonbonded calculations.
+           Both copying to/from device and kernel execution is asynchronous */
+        wallcycle_start(wcycle,ewcSEND_X_GPU);
+     
+        cu_stream_nb(fr->gpu_data, fr->nbat, (flags & GMX_FORCE_VIRIAL), !fr->streamGPU);
+
+        wallcycle_stop(wcycle,ewcSEND_X_GPU);
+    }
+#endif /* GMX_GPU */
+  
 	
     if (inputrec->implicit_solvent && bNS) 
     {
@@ -753,23 +805,15 @@ void do_force_gpu(FILE *fplog,t_commrec *cr,
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */    
-#ifdef GMX_GPU
-    do_force_lowlevel_gpu(fplog,step,fr,inputrec,&(top->idef),
+    /* if we use the GPU turn off the nonbonded */
+    do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
                       lambda,graph,&(top->excls),fr->mu_tot,
-                      flags,&cycles_pme, 
-                      gpudata);
-#else
-     do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
-                      cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
-                      x,hist,f,enerd,fcd,mtop,top,fr->born,
-                      &(top->atomtypes),bBornRadii,box,
-                      lambda,graph,&(top->excls),fr->mu_tot,
-                      flags,&cycles_pme);
+                      ((fr->useGPU || fr->emulateGPU) ? flags&~GMX_FORCE_NONBONDED : flags),
+                      &cycles_pme);
     
-#endif
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
     GMX_BARRIER(cr->mpi_comm_mygroup);
     
@@ -786,7 +830,53 @@ void do_force_gpu(FILE *fplog,t_commrec *cr,
             dd_cycles_add(cr->dd,cycles_force-cycles_pme,ddCyclF);
         }
     }
-    
+ 
+    if (fr->useGPU || fr->emulateGPU)
+    {
+        wallcycle_start(wcycle,ewcRECV_F_GPU);
+
+        if (fr->useGPU)
+        {
+#ifdef GMX_GPU
+            cu_blockwait_nb(fr->gpu_data, (flags & GMX_FORCE_VIRIAL),
+                            enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR]);
+            if (gpu_debug_print && (!(gpu_t->nb_count % 500) || gpu_t->nb_count == 5001))
+            {
+                if (gpu_t->nb_h2d_time > 0)
+                {
+                    printf("NB time [%4d]:\t%5.3f ms | H2D: %5.3f  D2H: %5.3f\n", 
+                            gpu_t->nb_count,
+                            gpu_t->k_time[0][0].t/gpu_t->k_time[0][0].c,
+                            gpu_t->nb_h2d_time/gpu_t->nb_count,
+                            gpu_t->nb_d2h_time/gpu_t->nb_count);
+                }
+                else 
+                {
+                    printf("NB time [%4d]:\t%5.3f ms\n", 
+                            gpu_t->nb_count,
+                            gpu_t->k_time[0][0].t/gpu_t->k_time[0][0].c);
+                }
+            }
+#endif  /* GMX_GPU */
+        }
+        else
+        {
+            /* Emulate */
+            nsbox_generic_kernel(fr->nbl[0],fr->nbat,fr,
+                                 fr->nblists[0].tab.scale,
+                                 fr->nblists[0].tab.tab,
+                                 fr->nbat->f,fr->fshift[0],
+                                 enerd->grpp.ener[egCOULSR],
+                                 fr->bBHAM ?
+                                 enerd->grpp.ener[egBHAMSR] :
+                                 enerd->grpp.ener[egLJSR]);
+        }
+
+        wallcycle_stop(wcycle,ewcRECV_F_GPU);
+
+        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,fr->nbat,mdatoms->homenr,f);
+    }
+
     if (bDoForces)
     {
         if (IR_ELEC_FIELD(*inputrec))
@@ -796,7 +886,7 @@ void do_force_gpu(FILE *fplog,t_commrec *cr,
                       start,homenr,mdatoms->chargeA,x,fr->f_novirsum,
                       inputrec->ex,inputrec->et,t);
         }
-        
+
         /* Communicate the forces */
         if (PAR(cr))
         {
@@ -1394,6 +1484,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[],gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
+                gpu_times_t *gputimes,
                 gmx_bool bWriteStat)
 {
   int    i,j;
@@ -1455,7 +1546,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
 
   if (SIMMASTER(cr)) {
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,runtime->realtime,
-                    wcycle,cycles);
+                    wcycle,cycles, gputimes);
 
     if (EI_DYNAMICS(inputrec->eI)) {
       delta_t = inputrec->delta_t;

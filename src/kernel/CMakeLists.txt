@@ -105,10 +105,10 @@ target_link_libraries(gmxcheck ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gmxcheck PROPERTIES OUTPUT_NAME "gmxcheck${GMX_BINARY_SUFFIX}")
 
 add_executable(mdrun ${MDRUN_SOURCES})
-target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES} ${GMX_GPU_LIBRARIES})
+target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
 # set binary name to mdrun-gpu
 if(GMX_OPENMM OR GMX_GPU)
-    set(_mdrun_exec_name "mdrun-gpu")    
+    set(_mdrun_exec_name "mdrun-gpu${GMX_BINARY_SUFFIX}")    
 else()
     set(_mdrun_exec_name "mdrun${GMX_BINARY_SUFFIX}")
 endif()

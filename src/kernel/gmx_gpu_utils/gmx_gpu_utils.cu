@@ -567,7 +567,7 @@ int do_timed_memtest(int dev_id, int time_constr)
 }
 
 /* TODO: add multiple device support */
-int init_gpu(int dev_id, FILE *fplog)
+int init_gpu(FILE *fplog, int dev_id)
 {
     cudaDeviceProp  dev_prop;
 
@@ -585,7 +585,7 @@ int init_gpu(int dev_id, FILE *fplog)
 }
 
 /* TODO: add multiple device support */
-int uninit_gpu(int dev_id, FILE *fplog)
+int uninit_gpu(FILE *fplog, int dev_id)
 {
     cudaError_t err;
 

@@ -36,6 +36,7 @@
 #include "mshift.h"
 #include "vsite.h"
 #include "gmx_ga2la.h"
+#include "force.h"
 
 typedef struct {
     int  *index;  /* Index for each atom into il                  */ 
@@ -1524,6 +1525,8 @@ void dd_make_local_top(FILE *fplog,
     if (dd->reverse_top->bExclRequired)
     {
         dd->nbonded_local += nexcl;
+
+        forcerec_set_excl_load(fr,ltop,NULL);
     }
     
     ltop->atomtypes  = mtop->atomtypes;
