@@ -79,6 +79,14 @@
 #include "pme.h"
 #include "gbutil.h"
 
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+#if defined(GMX_DOUBLE)
+#include "gmx_sse2_double.h"
+#else
+#include "gmx_sse2_single.h"
+#endif
+#endif
+
 
 static void global_max(t_commrec *cr,int *n)
 {
@@ -150,6 +158,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   int    nbin;
   double invbinw,*bin,refvolshift,logV,bUlogV;
   real dvdl,prescorr,enercorr,dvdlcorr;
+  gmx_bool bEnergyOutOfBounds;
   const char *tpid_leg[2]={"direct","reweighted"};
 
   /* Since numerical problems can lead to extreme negative energies
@@ -573,14 +582,30 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                 enerd->term[F_DISPCORR] = enercorr;
                 enerd->term[F_EPOT] += enercorr;
                 enerd->term[F_PRES] += prescorr;
-                enerd->term[F_DVDL] += dvdlcorr;	
-                
+                enerd->term[F_DVDL] += dvdlcorr;
+
+                epot = enerd->term[F_EPOT];
+                bEnergyOutOfBounds = FALSE;
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+                /* With SSE the energy can overflow, check for this */
+                if (gmx_mm_check_and_reset_overflow())
+                {
+                    if (debug)
+                    {
+                        fprintf(debug,"Found an SSE overflow, assuming the energy is out of bounds\n");
+                    }
+                    bEnergyOutOfBounds = TRUE;
+                }
+#endif
                 /* If the compiler doesn't optimize this check away
                  * we catch the NAN energies. With tables extreme negative
                  * energies might occur close to r=0.
                  */
-                epot = enerd->term[F_EPOT];
                 if (epot != epot || epot*beta < bU_neg_limit)
+                {
+                    bEnergyOutOfBounds = TRUE;
+                }
+                if (bEnergyOutOfBounds)
                 {
                     if (debug)
                     {
