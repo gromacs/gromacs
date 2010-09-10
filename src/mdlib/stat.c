@@ -539,6 +539,32 @@ void done_mdoutf(gmx_mdoutf_t *of)
     sfree(of);
 }
 
+int copy_state_local(t_state *new_sl,t_state *old_sl)
+{
+
+	new_sl->cg_gl_nalloc = 0;//NOTE: This is done so that we can test to see if the memcpy successfully copied the old state_local to the new state_local
+
+	int *cg_gl_new = new_sl->cg_gl;
+	rvec *x_new = new_sl->x;
+
+	memcpy (new_sl,old_sl,sizeof(t_state));
+	new_sl->cg_gl = cg_gl_new;
+	new_sl->x = x_new;
+	memcpy (new_sl->cg_gl, old_sl->cg_gl, sizeof(int) * old_sl->cg_gl_nalloc);
+	memcpy (new_sl->x, old_sl->x, sizeof(rvec) * old_sl->natoms);
+
+
+	//If it fails to memcpy return 0
+	if (new_sl->cg_gl_nalloc != old_sl->cg_gl_nalloc)// Testing to see if the copy worked by checking to see if these two ints are equal
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
 void write_traj(FILE *fplog,t_commrec *cr,
                 gmx_mdoutf_t *of,
                 int mdof_flags,
@@ -546,31 +572,71 @@ void write_traj(FILE *fplog,t_commrec *cr,
                 gmx_large_int_t step,double t,
                 t_state *state_local,t_state *state_global,
                 rvec *f_local,rvec *f_global,
-                int *n_xtc,rvec **x_xtc)
+                int *n_xtc,rvec **x_xtc,
+                t_inputrec *ir)//TODO: RJ - MAY break code elsewhere
 {
-    int     i,j;
+    int     i,j,k;
     gmx_groups_t *groups;
     rvec    *xxtc;
     rvec *local_v;
     rvec *global_v;
     
+    // RJ - These are my code additions
+    const int NUMBEROFSTEPS = 50; // RJ - This is how many times a node will save its own data sending the data to the master node.
+    int bufferStep = step%(ir->nstxtcout*NUMBEROFSTEPS);//TODO: the step doesn't need to start at 0
+
+    static gmx_domdec_t **dd_buf = NULL;//TODO: Don't use static
+    static t_state **state_local_buf = NULL;
+    static rvec **x_receive_buf = NULL;// this is only going to be used when all 50 frames are being written.
+	static gmx_large_int_t *step_buf;
+	static double *t_buf;
+
+    if (dd_buf==NULL) {
+    	initialize_dd_buf(&dd_buf, cr->dd, state_local, NUMBEROFSTEPS);
+    	snew (step_buf, NUMBEROFSTEPS);
+    	snew (t_buf, NUMBEROFSTEPS);
+    }
+    if (state_local_buf==NULL)
+    {
+    	snew (state_local_buf, NUMBEROFSTEPS);
+    	for (i=0;i<NUMBEROFSTEPS;i++)
+    	{
+    		snew(state_local_buf[i],1);
+    		snew(state_local_buf[i]->cg_gl,state_local->cg_gl_nalloc);
+    		snew(state_local_buf[i]->x,state_local->nalloc);
+    	}
+    }
+    if (x_receive_buf == NULL)
+    {
+    	snew (x_receive_buf, NUMBEROFSTEPS);
+    	for (i=0;i<NUMBEROFSTEPS;i++)
+    	{
+    		snew(x_receive_buf[i], state_global->natoms);
+    	}
+    }
+    // RJ - End of additions
+
+
 #define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)
+
 
     /* MRS -- defining these variables is to manage the difference
      * between half step and full step velocities, but there must be a better way . . . */
 
     local_v  = state_local->v;
     global_v = state_global->v;
-    
+
     if (DOMAINDECOMP(cr))
     {
-        if (mdof_flags & MDOF_CPT)
+        if (mdof_flags & MDOF_CPT)  //TODO: optimize that we use the information collected for CPT
+        							//      make sure that we actually write at least every CPT
         {
             dd_collect_state(cr->dd,state_local,state_global);
         }
         else
         {
-            if (mdof_flags & (MDOF_X | MDOF_XTC))
+            if (mdof_flags &
+            		(MDOF_X))//TODO: RJ We can optimize by not collecting all but xtc selection.
             {
                 dd_collect_vec(cr->dd,state_local,state_local->x,
                                state_global->x);
@@ -584,6 +650,27 @@ void write_traj(FILE *fplog,t_commrec *cr,
         if (mdof_flags & MDOF_F)
         {
             dd_collect_vec(cr->dd,state_local,f_local,f_global);
+        }
+        //TODO:here: if MDOF_XTC: store information always and if bufferStep == 49 then collect all
+        if (MDOF_XTC)
+        {
+        	//TODO: DEALLOCATE, later now allocation in this method. all outside where dd and state_local is allocated
+
+        	//Copy current dd and state_local to buffers
+        	step_buf[bufferStep]=step;
+        	t_buf[bufferStep]=t;
+    		srenew(state_local_buf[bufferStep]->cg_gl,state_local->cg_gl_nalloc);
+    		srenew(state_local_buf[bufferStep]->x,state_local->nalloc);
+        	copy_dd(dd_buf[bufferStep],cr->dd,state_local);
+        	copy_state_local(state_local_buf[bufferStep],state_local);
+
+        	if (bufferStep == 49)//This loop is only done when it is ready to write all 50 steps
+        	{
+        		for (i = 0; i < NUMBEROFSTEPS; i++)
+        		{
+        			dd_collect_vec(dd_buf[i],state_local_buf[i],state_local_buf[i]->x,x_receive_buf[i]);
+        		}
+        	}
         }
     }
     else
@@ -612,10 +699,11 @@ void write_traj(FILE *fplog,t_commrec *cr,
                 if (state_local->flags & (1<<estSDX)) MX(state_global->sd_X);
                 if (state_global->nrngi > 1) {
                     if (state_local->flags & (1<<estLD_RNG)) {
-#ifdef GMX_MPI
+#ifdef GMX_MPI // RJ - MPI means that the processors are going to be sharing data.
                         MPI_Gather(state_local->ld_rng ,
                                    state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
                                    state_global->ld_rng,
+
                                    state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
                                    MASTERRANK(cr),cr->mpi_comm_mygroup);
 #endif
@@ -641,6 +729,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
          }
      }
 
+     // RJ - This is what only the master node does.
      if (MASTER(cr))
      {
          if (mdof_flags & MDOF_CPT)
@@ -663,45 +752,53 @@ void write_traj(FILE *fplog,t_commrec *cr,
             }
             gmx_fio_check_file_position(of->fp_trn);
         }      
-        if (mdof_flags & MDOF_XTC) {
-            groups = &top_global->groups;
-            if (*n_xtc == -1)
+        if ((mdof_flags & MDOF_XTC) && bufferStep == NUMBEROFSTEPS-1) {
+
+            for (k = 0; k < NUMBEROFSTEPS; k++)
             {
-                *n_xtc = 0;
-                for(i=0; (i<top_global->natoms); i++)
-                {
-                    if (ggrpnr(groups,egcXTC,i) == 0)
-                    {
-                        (*n_xtc)++;
-                    }
-                }
-                if (*n_xtc != top_global->natoms)
-                {
-                    snew(*x_xtc,*n_xtc);
-                }
+            	groups = &top_global->groups;
+            	if (*n_xtc == -1)
+            	{
+            		*n_xtc = 0;
+            		for(i=0; (i<top_global->natoms); i++)
+            		{
+            			if (ggrpnr(groups,egcXTC,i) == 0)
+            			{
+            				(*n_xtc)++;
+            			}
+            		}
+            		if (*n_xtc != top_global->natoms)
+            		{
+            			snew(*x_xtc,*n_xtc);
+            		}
+            	}
+            	if (*n_xtc == top_global->natoms)
+            	{
+            		xxtc = x_receive_buf[k];
+
+            		//x_receive_buf[k] = state_global->x;
+            	}
+            	else
+            	{
+            		xxtc = *x_xtc;
+            		j = 0;
+            		for(i=0; (i<top_global->natoms); i++)
+            		{
+            			if (ggrpnr(groups,egcXTC,i) == 0)
+            			{
+            				copy_rvec(x_receive_buf[k][i],xxtc[j++]);
+
+            				//copy_rvec(state_global->x[i],x_receive_buf[k][j++]);
+            			}
+            		}
+            	}
+            	if (write_xtc(of->fp_xtc,*n_xtc,step_buf[k],t_buf[k],
+                          state_local->box,xxtc,of->xtc_prec) == 0)//xxtc is used instead of state_local_buf->x
+            	{
+            		gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
+            	}
+            	gmx_fio_check_file_position(of->fp_xtc);
             }
-            if (*n_xtc == top_global->natoms)
-            {
-                xxtc = state_global->x;
-            }
-            else
-            {
-                xxtc = *x_xtc;
-                j = 0;
-                for(i=0; (i<top_global->natoms); i++)
-                {
-                    if (ggrpnr(groups,egcXTC,i) == 0)
-                    {
-                        copy_rvec(state_global->x[i],xxtc[j++]);
-                    }
-                }
-            }
-            if (write_xtc(of->fp_xtc,*n_xtc,step,t,
-                          state_local->box,xxtc,of->xtc_prec) == 0)
-            {
-                gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
-            }
-            gmx_fio_check_file_position(of->fp_xtc);
         }
     }
 }

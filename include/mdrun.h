@@ -249,7 +249,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		       gmx_large_int_t step,double t,
 		       t_state *state_local,t_state *state_global,
 		       rvec *f_local,rvec *f_global,
-		       int *n_xtc,rvec **x_xtc);
+		       int *n_xtc,rvec **x_xtc,
+		       t_inputrec *ir);
 /* Routine that writes frames to trn, xtc and/or checkpoint.
  * What is written is determined by the mdof_flags defined above.
  * Data is collected to the master node only when necessary.

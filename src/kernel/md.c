@@ -2173,7 +2173,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
             }
             write_traj(fplog,cr,outf,mdof_flags,top_global,
-                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
+                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc,ir);
             if (bCPT)
             {
                 nchkpt++;
@@ -2719,7 +2719,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */
 
         if ( (membed!=NULL) && (!bLastStep) )
-            rescale_membed(step_rel,membed,state_global->x);
+//            rescale_membed(step_rel,membed,state_global->x);
         
         if (bRerunMD) 
         {

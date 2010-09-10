@@ -1402,7 +1402,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
     
     dd_gatherv(dd,dd->nat_home*sizeof(rvec),lv,rcounts,disps,buf);
 
-    if (DDMASTER(dd))
+    if (DDMASTER(dd))//  Master refers to the writing cell
     {
         cgs_gl = &dd->comm->cgs_gl;
 
@@ -5645,6 +5645,109 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
     return ma;
 }
 
+int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local, int number_of_steps)
+{
+	int i;
+
+	snew (*dd_buf, number_of_steps);
+	for (i=0;i<number_of_steps;i++) {
+		snew((*dd_buf)[i],1);
+		snew((*dd_buf)[i]->index_gl, dd->cg_nalloc);
+		snew((*dd_buf)[i]->comm, 1);
+		if (DDMASTER(dd)) {
+			(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
+		}
+	}
+	return 1;
+}
+
+int copy_ma(gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd)//NOTE: DOESN'T COPY ENTIRE MA!
+{
+    gmx_domdec_master_t *orig_ma = orig_dd->ma;
+    gmx_domdec_master_t *copy_ma = copy_dd->ma;
+
+    //t_block cgs_gl_new = orig_dd->comm->cgs_gl.nr;
+
+
+    srenew (copy_ma->cg,orig_dd->comm->cgs_gl.index[orig_dd->comm->cgs_gl.nr]);
+
+    memcpy (copy_ma->ncg, orig_ma->ncg, sizeof(int) * orig_dd->nnodes);
+    memcpy (copy_ma->index, orig_ma->index, sizeof(int) * orig_dd->nnodes+1);
+    memcpy (copy_ma->cg, orig_ma->cg, sizeof(int) * orig_dd->comm->cgs_gl.nr);
+    memcpy (copy_ma->nat, orig_ma->nat, sizeof(int) * orig_dd->nnodes);
+    memcpy (copy_ma->ibuf, orig_ma->ibuf, sizeof(int) * orig_dd->nnodes*2);
+
+    if (copy_dd->nnodes <= GMX_DD_NNODES_SENDRECV)
+    {
+            copy_ma->vbuf = NULL;
+    }
+    else
+    {
+    	memcpy (copy_ma->vbuf, orig_ma->vbuf, sizeof(rvec) * orig_dd->comm->cgs_gl.index[orig_dd->comm->cgs_gl.nr]);
+    }
+
+    return 1;
+}
+
+int copy_t_block (t_block *copy_gl, t_block *orig_gl)
+{
+	srenew (copy_gl->index, orig_gl->nalloc_index);
+
+	memcpy (copy_gl->index, orig_gl->index, sizeof(int) * (orig_gl->nr+1));
+
+
+	return 1;
+}
+
+
+int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state)
+{
+
+	copy_dd->rank = 0;//I'm using this value as a check point to see if the memcpy was successful
+
+	int j;
+	int *index_gl_new;
+	gmx_domdec_comm_p_t comm_new;
+	gmx_domdec_master_p_t ma_new;
+	int*	 cgs_gl_new_index;
+
+	srenew (copy_dd->index_gl,orig_dd->cg_nalloc);
+
+
+	index_gl_new = copy_dd->index_gl;
+	comm_new = copy_dd->comm;
+	ma_new = copy_dd->ma;
+	memcpy (copy_dd,orig_dd, sizeof(gmx_domdec_t));
+	copy_dd->index_gl = index_gl_new;
+	copy_dd->comm = comm_new;
+	copy_dd->ma = ma_new;
+
+	//copy_cgs_gl (copy_dd, orig_dd);
+
+	memcpy (copy_dd->index_gl,orig_dd->index_gl, sizeof(int) * orig_dd->ncg_home);
+	cgs_gl_new_index = copy_dd->comm->cgs_gl.index;
+	memcpy (copy_dd->comm,orig_dd->comm, sizeof(gmx_domdec_comm_t));
+	copy_dd->comm->cgs_gl.index = cgs_gl_new_index;
+	copy_t_block (&copy_dd->comm->cgs_gl, &orig_dd->comm->cgs_gl);
+
+	if (DDMASTER(orig_dd))
+	{
+		copy_ma(copy_dd, orig_dd);
+
+	}
+
+
+	if (copy_dd->rank != orig_dd->rank)//Checking for a successful copy
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+
 static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
                                int reorder)
 {
@@ -5717,7 +5820,6 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
         {
             gmx_fatal(FARGS,"MPI rank 0 was renumbered by MPI_Cart_create, we do not allow this");
         }
-        
         /* With this assigment we loose the link to the original communicator
          * which will usually be MPI_COMM_WORLD, unless have multisim.
          */

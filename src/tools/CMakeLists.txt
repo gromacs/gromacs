@@ -29,7 +29,7 @@ add_library(gmxana
             gmx_editconf.c  gmx_genbox.c    gmx_genion.c    gmx_genconf.c   
             gmx_genpr.c     gmx_eneconv.c   gmx_vanhove.c   gmx_wheel.c     
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
-            gmx_membed.c	gmx_pme_error.c	)
+            gmx_pme_error.c	)
 
 
 target_link_libraries(gmxana md gmx)
@@ -51,7 +51,7 @@ set(GMX_TOOLS_PROGRAMS
     g_rmsf g_rotacf g_saltbr g_sas g_select g_sgangle g_sham g_sorient
     g_spol g_sdf g_spatial g_tcaf g_traj g_tune_pme g_vanhove
     g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
-    g_membed g_pme_error)
+    g_pme_error)
 
 
 

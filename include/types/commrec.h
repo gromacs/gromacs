@@ -182,10 +182,10 @@ typedef struct {
   gmx_domdec_constraints_p_t constraints;
   gmx_domdec_specat_comm_p_t constraint_comm;
 
-  /* The local to gobal charge group index and local cg to local atom index */
+  /* The local to global charge group index and local cg to local atom index */
   int  ncg_home;
   int  ncg_tot;
-  int  *index_gl;
+  int  *index_gl;// size of index_gl is in state->ncg_gl
   int  *cgindex;
   int  cg_nalloc;
   /* Local atom to local cg index, only for special cases */
@@ -194,7 +194,7 @@ typedef struct {
 
   /* The number of home atoms */
   int  nat_home;
-  /* The total number of atoms: home and received zones */
+  /* The total number of atoms on node: home and received zones */
   int  nat_tot;
   /* Index from the local atoms to the global atoms */
   int  *gatindex;
