@@ -122,6 +122,9 @@ HWT3	1.0080 ; TIP3P
 OWT4	15.9994 ; TIP4P
 HWT4	1.0080 ; TIP4P
 MWT4	0.0000 ; TIP4P
+OWT5	15.9994 ; TIP5P
+HWT5	1.0080 ; TIP5P
+MWT5	0.0000 ; TIP5P
 MNH3	0.0000 ; vsite (rigid tetrahedrical NH3 group)
 MNH2	0.0000 ; vsite
 MCH3	0.0000 ; vsite (rigid CH3 group connected to carbons)

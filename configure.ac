@@ -475,7 +475,7 @@ if test "$enable_threads" = "yes"; then
   CFLAGS="$CFLAGS $PTHREAD_CFLAGS -I$srcdir/include"
   CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS -I$srcdir/include"
   CC="$PTHREAD_CC "
-  AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for thread_mpi multithreading])
+  AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for multithreading])
 
   # profiling
   AC_ARG_ENABLE(tmpi-profiling,
