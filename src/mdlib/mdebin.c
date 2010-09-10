@@ -1160,21 +1160,6 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
 
 }
 
-void init_energyhistory(energyhistory_t * enerhist)
-{
-    enerhist->nener = 0;
-
-    enerhist->ener_ave     = NULL;
-    enerhist->ener_sum     = NULL;
-    enerhist->ener_sum_sim = NULL;
-    enerhist->dht          = NULL;
-
-    enerhist->nsteps     = 0;
-    enerhist->nsum       = 0;
-    enerhist->nsteps_sim = 0;
-    enerhist->nsum_sim   = 0;
-}
-
 void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
 {
     int i;
