@@ -585,22 +585,38 @@ enum order {
   NG, MG, KG is size of global data*/
 static void splitaxes(t_complex* lout,const t_complex* lin,
                       int maxN,int maxM,int maxK, int pN, int pM, int pK,
-                      int P,int NG,int *N, int* oN) {
+                      int P,int NG,int *N, int* oN)
+{
     int x,y,z,i;
     int in_i,out_i,in_z,out_z,in_y,out_y;
 
-    for (i=0;i<P;i++) { /*index cube along long axis*/
-        in_i  = i*maxN*maxM*maxK;
-        out_i = oN[i];
 #ifdef FFT5D_THREADS
-#pragma omp parallel for private(in_z,out_z,y,in_y,out_y,x)
+    int zi;
+
+    /* In the thread parallel case we want to loop over z and i
+     * in a single for loop to allow for better load balancing.
+     */
+#pragma omp parallel for private(z,in_z,out_z,i,in_i,out_i,y,in_y,out_y,x) schedule(static)
+    for (zi=0; zi<pK*P; zi++)
+    {
+        z = zi/P;
+        i = zi - z*P;
+#else
+    for (z=0; z<pK; z++) /*3. z l*/ 
+    {
 #endif
-        for (z=0;z<pK;z++) { /*3. z l*/ 
-            in_z  = in_i  + z*maxN*maxM;
-            out_z = out_i + z*NG*pM;
+        in_z  = z*maxN*maxM;
+        out_z = z*NG*pM;
+
+#ifndef FFT5D_THREADS
+        for (i=0; i<P; i++) /*index cube along long axis*/
+#endif
+        {
+            in_i  = in_z  + i*maxN*maxM*maxK;
+            out_i = out_z + oN[i];
             for (y=0;y<pM;y++) { /*2. y k*/
-                in_y  = in_z  + y*maxN;
-                out_y = out_z + y*NG;
+                in_y  = in_i  + y*maxN;
+                out_y = out_i + y*NG;
                 for (x=0;x<N[i];x++) { /*1. x j*/
                     lout[in_y+x] = lin[out_y+x];
                     /*after split important that each processor chunk i has size maxN*maxM*maxK and thus being the same size*/
@@ -624,18 +640,34 @@ static void joinAxesTrans13(t_complex* lin,const t_complex* lout,
     int i,x,y,z;
     int in_i,out_i,in_x,out_x,in_z,out_z;
 
-    for (i=0;i<P;i++) { /*index cube along long axis*/
-        in_i  = oK[i];
-        out_i = i*maxM*maxN*maxK;
 #ifdef FFT5D_THREADS
-#pragma omp parallel for private(in_x,out_x,z,in_z,out_z,y)
+    int xi;
+
+    /* In the thread parallel case we want to loop over x and i
+     * in a single for loop to allow for better load balancing.
+     */
+#pragma omp parallel for private(x,in_x,out_x,i,in_i,out_i,z,in_z,out_z,y) schedule(static)
+    for (xi=0; xi<pN*P; xi++)
+    {
+        x = xi/P;
+        i = xi - x*P;
+#else
+    for (x=0;x<pN;x++) /*1.j*/
+    {
 #endif
-        for (x=0;x<pN;x++) { /*1.j*/
-            in_x  = in_i  + x*KG*pM;
-            out_x = out_i + x;
-            for (z=0;z<K[i];z++) { /*3.l*/
-                in_z  = in_x  + z;
-                out_z = out_x + z*maxM*maxN;
+        in_x  = x*KG*pM;
+        out_x = x;
+
+#ifndef FFT5D_THREADS
+        for (i=0;i<P;i++) /*index cube along long axis*/
+#endif
+        {
+            in_i  = in_x  + oK[i];
+            out_i = out_x + i*maxM*maxN*maxK;
+            for (z=0;z<K[i];z++) /*3.l*/
+            {
+                in_z  = in_i  + z;
+                out_z = out_i + z*maxM*maxN;
                 for (y=0;y<pM;y++) { /*2.k*/
                     lin[in_z+y*KG] = lout[out_z+y*maxN];
                 }
@@ -655,18 +687,33 @@ static void joinAxesTrans12(t_complex* lin,const t_complex* lout,int maxN,int ma
     int i,z,y,x;
     int in_i,out_i,in_z,out_z,in_x,out_x;
 
-    for (i=0;i<P;i++) { /*index cube along long axis*/
-        in_i  = oM[i];
-        out_i = i*maxM*maxN*maxK;
 #ifdef FFT5D_THREADS
-#pragma omp parallel for private(in_z,out_z,in_x,out_x,x,y)
+    int zi;
+
+    /* In the thread parallel case we want to loop over z and i
+     * in a single for loop to allow for better load balancing.
+     */
+#pragma omp parallel for private(i,in_i,out_i,z,in_z,out_z,in_x,out_x,x,y) schedule(static)
+    for (zi=0; zi<pK*P; zi++)
+    {
+        z = zi/P;
+        i = zi - z*P;
+#else
+    for (z=0; z<pK; z++)
+    {
 #endif
-        for (z=0;z<pK;z++) { 
-            in_z  = in_i  + z*MG*pN;
-            out_z = out_i + z*maxM*maxN;
+        in_z  = z*MG*pN;
+        out_z = z*maxM*maxN;
+
+#ifndef FFT5D_THREADS
+        for (i=0; i<P; i++) /*index cube along long axis*/
+#endif
+        {
+            in_i  = in_z  + oM[i];
+            out_i = out_z + i*maxM*maxN*maxK;
             for (x=0;x<pN;x++) {
-                in_x  = in_z  + x*MG;
-                out_x = out_z + x;
+                in_x  = in_i  + x*MG;
+                out_x = out_i + x;
                 for (y=0;y<M[i];y++) {
                     lin[in_x+y] = lout[out_x+y*maxN];
                 }
