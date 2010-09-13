@@ -73,7 +73,7 @@ static int xdr_r2f(XDR *xdrs,real *r,gmx_bool bRead)
 
 MPI_File open_xtc(const char *fn,const char *mode, gmx_domdec_t *dd)
 {
-	MPI_File fh;
+	MPI_File fh = NULL;
 	MPI_Comm new_comm;
 	int amode;
 
