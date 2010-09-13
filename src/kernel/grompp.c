@@ -428,6 +428,45 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   *mi  = molinfo;
 }
 
+static void copy_state(const char *slog,t_trxframe *fr,
+                       gmx_bool bReadVel,t_state *state,
+                       double *use_time)
+{
+    int i;
+
+    if (fr->not_ok & FRAME_NOT_OK)
+    {
+        gmx_fatal(FARGS,"Can not start from an incomplete frame");
+    }
+    if (!fr->bX)
+    {
+        gmx_fatal(FARGS,"Did not find a frame with coordinates in file %s",
+                  slog);
+    }
+
+    for(i=0; i<state->natoms; i++)
+    {
+        copy_rvec(fr->x[i],state->x[i]);
+    }
+    if (bReadVel)
+    {
+        if (!fr->bV)
+        {
+            gmx_incons("Trajecory frame unexpectedly does not contain velocities");
+        }
+        for(i=0; i<state->natoms; i++)
+        {
+            copy_rvec(fr->v[i],state->v[i]);
+        }
+    }
+    if (fr->bBox)
+    {
+        copy_mat(fr->box,state->box);
+    }
+
+    *use_time = fr->time;
+}
+
 static void cont_status(const char *slog,const char *ener,
 			gmx_bool bNeedVel,gmx_bool bGenVel, real fr_time,
 			t_inputrec *ir,t_state *state,
@@ -435,13 +474,17 @@ static void cont_status(const char *slog,const char *ener,
                         const output_env_t oenv)
      /* If fr_time == -1 read the last frame available which is complete */
 {
+    gmx_bool bReadVel;
     t_trxframe  fr;
     t_trxstatus *fp;
     int i;
+    double use_time;
+
+    bReadVel = (bNeedVel && !bGenVel);
 
     fprintf(stderr,
             "Reading Coordinates%s and Box size from old trajectory\n",
-            (!bNeedVel || bGenVel) ? "" : ", Velocities");
+            bReadVel ? ", Velocities" : "");
     if (fr_time == -1)
     {
         fprintf(stderr,"Will read whole trajectory\n");
@@ -450,7 +493,7 @@ static void cont_status(const char *slog,const char *ener,
     {
         fprintf(stderr,"Will read till time %g\n",fr_time);
     }
-    if (!bNeedVel || bGenVel)
+    if (!bReadVel)
     {
         if (bGenVel)
         {
@@ -469,13 +512,14 @@ static void cont_status(const char *slog,const char *ener,
                     "\n"
                     "WARNING: Did not find a frame with velocities in file %s,\n"
                     "         all velocities will be set to zero!\n\n",slog);
-            
-            if (!fr.bX)
+            for(i=0; i<sys->natoms; i++)
             {
-                /* Search for a frame without velocities */
-                close_trj(fp);
-                read_first_frame(oenv,&fp,slog,&fr,TRX_NEED_X);
+                clear_rvec(state->v[i]);
             }
+            close_trj(fp);
+            /* Search for a frame without velocities */
+            bReadVel = FALSE;
+            read_first_frame(oenv,&fp,slog,&fr,TRX_NEED_X);
         }
     }
 
@@ -486,51 +530,29 @@ static void cont_status(const char *slog,const char *ener,
         gmx_fatal(FARGS,"Number of atoms in Topology "
                   "is not the same as in Trajectory");
     }
-    if (!fr.bX)
-    {
-        gmx_fatal(FARGS,"Did not find a frame with coordinates in file %s",
-                  slog);
-    }
+    copy_state(slog,&fr,bReadVel,state,&use_time);
 
     /* Find the appropriate frame */
     while ((fr_time == -1 || fr.time < fr_time) &&
-           read_next_frame(oenv,fp,&fr));
+           read_next_frame(oenv,fp,&fr))
+    {
+        copy_state(slog,&fr,bReadVel,state,&use_time);
+    }
   
     close_trj(fp);
 
-    if (fr.not_ok & FRAME_NOT_OK)
-    {
-        gmx_fatal(FARGS,"Can not start from an incomplete frame");
-    }
-
-    state->x = fr.x;
-    if (bNeedVel && !bGenVel)
-    {
-        if (fr.bV)
-        {
-            state->v = fr.v;
-        }
-        else
-        {
-            for(i=0; i<sys->natoms; i++)
-            {
-                clear_rvec(state->v[i]);
-            }
-        }
-    }
-    copy_mat(fr.box,state->box);
     /* Set the relative box lengths for preserving the box shape.
      * Note that this call can lead to differences in the last bit
      * with respect to using tpbconv to create a tpx file.
      */
     set_box_rel(ir,state);
 
-    fprintf(stderr,"Using frame at t = %g ps\n",fr.time);
+    fprintf(stderr,"Using frame at t = %g ps\n",use_time);
     fprintf(stderr,"Starting time for run is %g ps\n",ir->init_t); 
   
     if ((ir->epc != epcNO  || ir->etc ==etcNOSEHOOVER) && ener)
     {
-        get_enx_state(ener,fr.time,&sys->groups,ir,state);
+        get_enx_state(ener,use_time,&sys->groups,ir,state);
         preserve_box_shape(ir,state->box_rel,state->boxv);
     }
 }
