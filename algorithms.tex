@@ -909,7 +909,7 @@ Lennard-Jones forces are smaller than Coulomb forces and
 they are mainly affected by translation of water molecules, not rotation.
 
 \begin{figure}
-\centerline{\includegraphics[width=12cm]{plots/drift_all}}
+\centerline{\includegraphics[width=12cm]{plots/drift-all}}
 \caption{Energy drift per degree of freedom in SPC/E water
 with twin-range cut-offs
 for reaction field (left) and Lennard-Jones interaction (right)
@@ -2466,7 +2466,7 @@ can cover one or multiple cells.
 An example of a zone setup is shown in \figref{ddcells}.
 
 \begin{figure}
-\centerline{\includegraphics[width=6cm]{plots/dd_cells}}
+\centerline{\includegraphics[width=6cm]{plots/dd-cells}}
 \caption{
 A non-staggered domain decomposition grid of 3$\times$2$\times$2 cells.
 Coordinates in zones 1 to 7 are communicated to the corner cell
@@ -2505,7 +2505,7 @@ for deciding if a charge group needs to be communicated:
 a non-bonded distance and a bonded distance check.
 
 \begin{figure}
-\centerline{\includegraphics[width=7cm]{plots/dd_tric}}
+\centerline{\includegraphics[width=7cm]{plots/dd-tric}}
 \caption{
 The zones to communicate to the processor of zone 0,
 see the text for details. $r_c$ and $r_b$ are the non-bonded
@@ -2554,7 +2554,7 @@ One coordinate communication step is required for the initial LINCS step
 and one for each iteration. Forces do not need to be communicated.
 
 \begin{figure}
-\centerline{\includegraphics[width=6cm]{plots/par_lincs2}}
+\centerline{\includegraphics[width=6cm]{plots/par-lincs2}}
 \caption{
 Example of the parallel setup of P-LINCS with one molecule
 split over three domain decomposition cells, using a matrix
@@ -2651,7 +2651,7 @@ since only a quarter of the cores will be using the network connection
 on each machine during the PME calculations.
 
 \begin{figure}
-\centerline{\includegraphics[width=12cm]{plots/mpmd_pme}}
+\centerline{\includegraphics[width=12cm]{plots/mpmd-pme}}
 \caption{
 Example of 8 nodes without (left) and with (right) MPMD.
 The PME communication (red arrows) is much higher on the left

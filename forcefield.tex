@@ -74,7 +74,7 @@ The parameters $C^{(12)}_{ij}$ and $C^{(6)}_{ij}$  depend on pairs of
 LJ-parameters.
 
 \begin{figure}
-\centerline{\includegraphics[width=8cm]{plots/f_lj}}
+\centerline{\includegraphics[width=8cm]{plots/f-lj}}
 \caption {The Lennard-Jones interaction.}
 \label{fig:lj}
 \end{figure}
@@ -130,7 +130,7 @@ V_{bh}(\rij) = A_{ij} \exp(-B_{ij} \rij) -
                         \frac{C_{ij}}{\rij^6}
 \eeq
 \begin{figure}
-\centerline{\includegraphics[width=8cm]{plots/f_bham}}
+\centerline{\includegraphics[width=8cm]{plots/f-bham}}
 \caption {The Buckingham interaction.}
 \label{fig:bham}
 \end{figure}
@@ -388,7 +388,7 @@ The \swapindex{bond}{stretching} between two covalently bonded atoms
 $i$ and $j$ is represented by a harmonic potential:
 
 \begin{figure}
-\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/bstretch}}\includegraphics[width=7cm]{plots/f_bond}}
+\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/bstretch}}\includegraphics[width=7cm]{plots/f-bond}}
 \caption[Bond stretching.]{Principle of bond stretching (left), and the bond
 stretching potential (right).}
 \label{fig:bstretch1}
@@ -478,7 +478,7 @@ and substituting \eqnref{betaij} and \eqnref{expminx} in the functional form:
 we recover the harmonic bond stretching potential.
 
 \begin{figure}
-\centerline{\includegraphics[width=7cm]{plots/f_morse}}
+\centerline{\includegraphics[width=7cm]{plots/f-morse}}
 \caption{The Morse potential well, with bond length 0.15 nm.}
 \label{fig:morse}
 \end{figure}
@@ -529,7 +529,7 @@ The bond-\swapindex{angle}{vibration} between a triplet of atoms $i$ - $j$ - $k$
 is also represented by a harmonic potential on the angle $\tijk$
 
 \begin{figure}
-\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/angle}}\includegraphics[width=7cm]{plots/f_angle}}
+\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/angle}}\includegraphics[width=7cm]{plots/f-angle}}
 \caption[Angle vibration.]{Principle of angle vibration (left) and the
 bond angle potential (right).}
 \label{fig:angle}
@@ -672,7 +672,7 @@ this will never cause problems.
 force constants in kJ/mol/rad$^2$.
 
 \begin{figure}
-\centerline{\includegraphics[width=8cm]{plots/f_imps}}
+\centerline{\includegraphics[width=8cm]{plots/f-imps}}
 \caption{Improper dihedral potential.}
 \label{fig:imps}
 \end{figure}
@@ -710,7 +710,7 @@ when multiple parameters are defined for the same atomtypes
 in the {\tt [ dihedraltypes ]} section.
 
 \begin{figure}
-\centerline{\raisebox{4.5cm}{\includegraphics[angle=270,width=5cm]{plots/dih}}\includegraphics[width=7cm]{plots/f_dih}}
+\centerline{\raisebox{4.5cm}{\includegraphics[angle=270,width=5cm]{plots/dih}}\includegraphics[width=7cm]{plots/f-dih}}
 \caption[Proper dihedral angle.]{Principle of proper dihedral angle
 (left, in {\em trans} form) and the dihedral angle potential (right).} 
 \label{fig:pdihf}
@@ -747,7 +747,7 @@ $C_1$   & 12.16 & $C_3$   & -3.06   & $C_5$   & -31.5   \\
 \end{table}
 
 \begin{figure}
-\centerline{\includegraphics[width=8cm]{plots/f_rbs}}
+\centerline{\includegraphics[width=8cm]{plots/f-rbs}}
 \caption{Ryckaert-Bellemans dihedral potential.}
 \label{fig:rbdih}
 \end{figure}
@@ -871,7 +871,7 @@ V_{pr}(\ve{r}_i) = \halfje{1}k_{pr}|\rvi-\ve{R}_i|^2
 The potential is plotted in \figref{posres}.
 
 \begin{figure}
-\centerline{\includegraphics[width=8cm]{plots/f_pr}}
+\centerline{\includegraphics[width=8cm]{plots/f-pr}}
 \caption{Position restraint potential.}
 \label{fig:posres}
 \end{figure}
@@ -988,7 +988,7 @@ V_{dr}(r_{ij}) ~=~ \left\{
 \eeq
 
 \begin{figure}
-\centerline{\includegraphics[width=8cm]{plots/f_dr}}
+\centerline{\includegraphics[width=8cm]{plots/f-dr}}
 \caption{Distance Restraint potential.}
 \label{fig:dist}
 \end{figure}
@@ -2105,16 +2105,16 @@ constructed from ``particles'' that are simpler virtual sites.
 \end{array}
 \eeq
 
-\item[{\bf\sf 4fdn.}]From four atoms, with a fixed distance, see separate Fig.\ \ref{fig:vsite_4fdn}.
+\item[{\bf\sf 4fdn.}]From four atoms, with a fixed distance, see separate Fig.\ \ref{fig:vsite-4fdn}.
 This construction is a bit
 complex, in particular since the previous type (4fd) could be unstable which forced us
 to introduce a more elaborate construction:
 
 \begin{figure}
-\centerline{\includegraphics[width=5cm]{plots/vsite_4fdn}}
+\centerline{\includegraphics[width=5cm]{plots/vsite-4fdn}}
 \caption {The new 4fdn virtual site construction, which is stable even when all constructing
 atoms are in the same plane.}
-\label{fig:vsite_4fdn}
+\label{fig:vsite-4fdn}
 \end{figure}
          
 \begin{eqnarray}
