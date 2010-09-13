@@ -72,7 +72,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
-#include "gmx_membed.h"
+#include "membed.h"
 
 #include "md_openmm.h"
 
