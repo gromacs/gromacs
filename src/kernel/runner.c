@@ -374,7 +374,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     if (MASTER(cr)) 
     {
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
+        read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop); //initializes state->x for rank 0
 
         /* NOW the threads will be started: */
 #ifdef GMX_THREADS

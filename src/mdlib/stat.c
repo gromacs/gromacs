@@ -470,12 +470,7 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
         {
             of->fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
         }
-        if (!EI_ENERGY_MINIMIZATION(ir->eI) &&
-            ir->nstxtcout > 0)
-        {
-            of->fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
-            of->xtc_prec = ir->xtcprec;
-        }
+
         of->fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
         of->fn_cpt = opt2fn("-cpo",nfile,fnm);
         
@@ -509,7 +504,12 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
             }
         }
     }
-
+    if (!EI_ENERGY_MINIMIZATION(ir->eI) &&
+        ir->nstxtcout > 0)
+    {
+        of->fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode, cr->dd);
+        of->xtc_prec = ir->xtcprec;
+    }
     return of;
 }
 
@@ -519,7 +519,7 @@ void done_mdoutf(gmx_mdoutf_t *of)
     {
         close_enx(of->fp_ene);
     }
-    if (of->fp_xtc)
+    if (of->fp_xtc)	//if (dd->rank < NUMBEROFSTEPS)
     {
         close_xtc(of->fp_xtc);
     }
@@ -575,26 +575,25 @@ void write_traj(FILE *fplog,t_commrec *cr,
                 int *n_xtc,rvec **x_xtc,
                 t_inputrec *ir)//TODO: RJ - MAY break code elsewhere
 {
-    int     i,j,k;
+    int     i,j;
     gmx_groups_t *groups;
     rvec    *xxtc;
     rvec *local_v;
     rvec *global_v;
     
     // RJ - These are my code additions
-    const int NUMBEROFSTEPS = 50; // RJ - This is how many times a node will save its own data sending the data to the master node.
+//    const int NUMBEROFSTEPS = 2; // RJ - This is how many times a node will save its own data sending the data to the master node.
+    							 // It also determines how many nodes will collect the frames.
     int bufferStep = step%(ir->nstxtcout*NUMBEROFSTEPS);//TODO: the step doesn't need to start at 0
 
     static gmx_domdec_t **dd_buf = NULL;//TODO: Don't use static
     static t_state **state_local_buf = NULL;
-    static rvec **x_receive_buf = NULL;// this is only going to be used when all 50 frames are being written.
-	static gmx_large_int_t *step_buf;
-	static double *t_buf;
+    //static rvec **x_receive_buf = NULL;// this is only going to be used when all 50 frames are being written.
+	static gmx_large_int_t step_buf;
+	static double t_buf;
 
     if (dd_buf==NULL) {
-    	initialize_dd_buf(&dd_buf, cr->dd, state_local, NUMBEROFSTEPS);
-    	snew (step_buf, NUMBEROFSTEPS);
-    	snew (t_buf, NUMBEROFSTEPS);
+    	initialize_dd_buf(&dd_buf, cr->dd, state_local);
     }
     if (state_local_buf==NULL)
     {
@@ -606,14 +605,17 @@ void write_traj(FILE *fplog,t_commrec *cr,
     		snew(state_local_buf[i]->x,state_local->nalloc);
     	}
     }
-    if (x_receive_buf == NULL)
-    {
-    	snew (x_receive_buf, NUMBEROFSTEPS);
-    	for (i=0;i<NUMBEROFSTEPS;i++)
-    	{
-    		snew(x_receive_buf[i], state_global->natoms);
-    	}
+    if (state_global->x == NULL && cr->dd->rank<NUMBEROFSTEPS ) {
+    	snew(state_global->x, state_global->natoms);
     }
+    //if (x_receive_buf == NULL)
+    //{
+    //	snew (x_receive_buf, NUMBEROFSTEPS);
+    //	for (i=0;i<NUMBEROFSTEPS;i++)
+    //	{
+    //		snew(x_receive_buf[i], state_global->natoms);
+    //	}
+    //}
     // RJ - End of additions
 
 
@@ -657,18 +659,23 @@ void write_traj(FILE *fplog,t_commrec *cr,
         	//TODO: DEALLOCATE, later now allocation in this method. all outside where dd and state_local is allocated
 
         	//Copy current dd and state_local to buffers
-        	step_buf[bufferStep]=step;
-        	t_buf[bufferStep]=t;
+        	if (bufferStep == cr->dd->rank) {
+        		step_buf=step;
+        		t_buf=t;
+        	}
     		srenew(state_local_buf[bufferStep]->cg_gl,state_local->cg_gl_nalloc);
     		srenew(state_local_buf[bufferStep]->x,state_local->nalloc);
         	copy_dd(dd_buf[bufferStep],cr->dd,state_local);
         	copy_state_local(state_local_buf[bufferStep],state_local);
 
-        	if (bufferStep == 49)//This loop is only done when it is ready to write all 50 steps
+
+        	if (bufferStep == NUMBEROFSTEPS-1)//This loop is only done when it is ready to write all 50 steps
         	{
+//        		scatter_ma(cr->dd,dd_buf);
         		for (i = 0; i < NUMBEROFSTEPS; i++)
         		{
-        			dd_collect_vec(dd_buf[i],state_local_buf[i],state_local_buf[i]->x,x_receive_buf[i]);
+        			dd_buf[i]->masterrank = i;
+        			dd_collect_vec(dd_buf[i],state_local_buf[i],state_local_buf[i]->x,state_global->x);//x_receive_buf[i]
         		}
         	}
         }
@@ -752,54 +759,52 @@ void write_traj(FILE *fplog,t_commrec *cr,
             }
             gmx_fio_check_file_position(of->fp_trn);
         }      
-        if ((mdof_flags & MDOF_XTC) && bufferStep == NUMBEROFSTEPS-1) {
+     }
 
-            for (k = 0; k < NUMBEROFSTEPS; k++)
-            {
-            	groups = &top_global->groups;
-            	if (*n_xtc == -1)
-            	{
-            		*n_xtc = 0;
-            		for(i=0; (i<top_global->natoms); i++)
-            		{
-            			if (ggrpnr(groups,egcXTC,i) == 0)
-            			{
-            				(*n_xtc)++;
-            			}
-            		}
-            		if (*n_xtc != top_global->natoms)
-            		{
-            			snew(*x_xtc,*n_xtc);
-            		}
-            	}
-            	if (*n_xtc == top_global->natoms)
-            	{
-            		xxtc = x_receive_buf[k];
+	if ((mdof_flags & MDOF_XTC) && bufferStep == NUMBEROFSTEPS-1 && cr->dd->rank < NUMBEROFSTEPS) {
+		groups = &top_global->groups;
+		if (*n_xtc == -1)
+		{
+			*n_xtc = 0;
+			for(i=0; (i<top_global->natoms); i++)
+			{
+				if (ggrpnr(groups,egcXTC,i) == 0)
+				{
+					(*n_xtc)++;
+				}
+			}
+			if (*n_xtc != top_global->natoms)
+			{
+				snew(*x_xtc,*n_xtc);
+			}
+		}
+		if (*n_xtc == top_global->natoms)
+		{
+			//xxtc = x_receive_buf[k];
+			//xxtc;
+			//dd_buf[k]->ma->vbuf;
+			xxtc = state_global->x;
+		}
+		else
+		{
+			xxtc = *x_xtc;
+			j = 0;
+			for(i=0; (i<top_global->natoms); i++)
+			{
+				if (ggrpnr(groups,egcXTC,i) == 0)
+				{
+					//copy_rvec(x_receive_buf[k][i],xxtc[j++]);
+					copy_rvec (state_global->x[i], xxtc[j++]);
 
-            		//x_receive_buf[k] = state_global->x;
-            	}
-            	else
-            	{
-            		xxtc = *x_xtc;
-            		j = 0;
-            		for(i=0; (i<top_global->natoms); i++)
-            		{
-            			if (ggrpnr(groups,egcXTC,i) == 0)
-            			{
-            				copy_rvec(x_receive_buf[k][i],xxtc[j++]);
-
-            				//copy_rvec(state_global->x[i],x_receive_buf[k][j++]);
-            			}
-            		}
-            	}
-            	if (write_xtc(of->fp_xtc,*n_xtc,step_buf[k],t_buf[k],
-                          state_local->box,xxtc,of->xtc_prec) == 0)//xxtc is used instead of state_local_buf->x
-            	{
-            		gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
-            	}
-            	gmx_fio_check_file_position(of->fp_xtc);
-            }
-        }
-    }
+				}
+			}
+		}
+		if (write_xtc(of->fp_xtc,*n_xtc,step_buf,t_buf,
+				  state_local->box,xxtc,of->xtc_prec) == 0)//xxtc is used instead of state_local_buf->x
+		{
+			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
+		}
+		//gmx_fio_check_file_position(of->fp_xtc); //TODO: temporary should be reactivated!
+	}
 }
 

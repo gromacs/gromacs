@@ -48,10 +48,10 @@ extern "C" {
  * bOK tells if a frame is not corrupted 
  */  
 
-t_fileio *open_xtc(const char *filename,const char *mode);
+MPI_File open_xtc(const char *filename,const char *mode, gmx_domdec_t *dd);
 /* Open a file for xdr I/O */
   
-void close_xtc(t_fileio *fio);
+void close_xtc(MPI_File fio);
 /* Close the file for xdr I/O */
   
 int read_first_xtc(t_fileio *fio,
@@ -64,7 +64,7 @@ int read_next_xtc(t_fileio *fio,
 			 matrix box,rvec *x,real *prec,gmx_bool *bOK);
 /* Read subsequent frames */
 
-int write_xtc(t_fileio *fio,
+int write_xtc(MPI_File fio,
 		     int natoms,int step,real time,
 		     matrix box,rvec *x,real prec);
 /* Write a frame to xtc file */

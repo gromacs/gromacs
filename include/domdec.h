@@ -34,6 +34,9 @@
 extern "C" {
 #endif
 
+#define NUMBEROFSTEPS 2 // RJ - This is how many times a node will save its own data sending the data to the master node.
+							 // TODO: It also determines how many nodes will collect the frames, This NEEDS to be made more flexible
+
 int ddglatnr(gmx_domdec_t *dd,int i);
 /* Returns the global topology atom number belonging to local atom index i.
  * This function is intended for writing ascii output
@@ -109,9 +112,11 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 
 void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
+//int scatter_ma(gmx_domdec_t *dd, gmx_domdec_t **dd_buf);
+
 int copy_dd(gmx_domdec_t *new_dd,gmx_domdec_t *old_dd, t_state *state);
 
-int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local, int NUMBEROFSTEPS);
+int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local);
 
 void dd_collect_vec(gmx_domdec_t *dd,
                            t_state *state_local,rvec *lv,rvec *v);

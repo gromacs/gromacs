@@ -271,7 +271,7 @@ void list_xtc(const char *fn, gmx_bool bXVG)
   real   prec,time;
   gmx_bool   bOK;
   
-  xd = open_xtc(fn,"r");
+  xd = open_xtc(fn,"r",NULL);
   read_first_xtc(xd,&natoms,&step,&time,box,&x,&prec,&bOK);
 		
   nframe=0;

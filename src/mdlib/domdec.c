@@ -397,7 +397,7 @@ static const ivec dd_zp1[dd_zp1n] = {{0,0,2}};
  * This saves memory (and some copying for small nnodes).
  * For high parallelization scatter and gather calls are used.
  */
-#define GMX_DD_NNODES_SENDRECV 4
+#define GMX_DD_NNODES_SENDRECV 1
 
 
 /*
@@ -1373,11 +1373,11 @@ static void get_commbuffer_counts(gmx_domdec_t *dd,
     ma = dd->ma;
     
     /* Make the rvec count and displacment arrays */
-    *counts  = ma->ibuf;
+    *counts  = ma->ibuf;  //TODO allocate
     *disps   = ma->ibuf + dd->nnodes;
     for(n=0; n<dd->nnodes; n++)
     {
-        (*counts)[n] = ma->nat[n]*sizeof(rvec);
+        (*counts)[n] = ma->nat[n]*sizeof(rvec);  //TODO: communicate
         (*disps)[n]  = (n == 0 ? 0 : (*disps)[n-1] + (*counts)[n-1]);
     }
 }
@@ -1421,11 +1421,12 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
 }
 
 void dd_collect_vec(gmx_domdec_t *dd,
-                    t_state *state_local,rvec *lv,rvec *v)
+                    t_state *state_local,rvec *lv,rvec *v) //      | mr = is the masterrank to be used
 {
     gmx_domdec_master_t *ma;
     int  n,i,c,a,nalloc=0;
     rvec *buf=NULL;
+    //dd->masterrank = mr;// sets the master rank
     
     dd_collect_cg(dd,state_local);
 
@@ -5645,49 +5646,85 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
     return ma;
 }
 
-int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local, int number_of_steps)
+int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local)
 {
 	int i;
 
-	snew (*dd_buf, number_of_steps);
-	for (i=0;i<number_of_steps;i++) {
+//	int* buf ;
+//	if (DDMASTER(dd)) {
+//		snew(buf, number_of_steps*(dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes));  //consecutive for communication!
+//	} else if (dd->rank<number_of_steps) {
+//		snew(buf, (dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes));  //consecutive for communication!
+//	}
+
+	snew (*dd_buf, NUMBEROFSTEPS);
+	for (i=0;i<NUMBEROFSTEPS;i++) {
 		snew((*dd_buf)[i],1);
 		snew((*dd_buf)[i]->index_gl, dd->cg_nalloc);
 		snew((*dd_buf)[i]->comm, 1);
-		if (DDMASTER(dd)) {
-			(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
+
+		if (i==dd->rank) {
+			if (DDMASTER(dd)) {
+				(*dd_buf)[i]->ma = dd->ma;
+			} else {
+				(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
+			}
 		}
+
+//		if (DDMASTER(dd) || i==dd->rank)
+//		{
+//			snew ((*dd_buf)[i]->ma,1);
+//		    (*dd_buf)[i]->ma->cg = buf;
+//		    buf += dd->comm->cgs_gl.nr;
+//			(*dd_buf)[i]->ma->index = buf;
+//			buf += dd->nnodes+1;
+//			(*dd_buf)[i]->ma->nat = buf;
+//			buf += dd->nnodes;
+			//(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
+//		}
+//		if (i==dd->rank) {
+//			if (DDMASTER(dd)) {
+//				(*dd_buf)[i]->ma->ibuf = dd->ma->ibuf;
+//				(*dd_buf)[i]->ma->vbuf = dd->ma->vbuf;
+//			} else {
+//				snew((*dd_buf)[i]->ma->ibuf,dd->nnodes*2);
+//				snew((*dd_buf)[i]->ma->vbuf,dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
+//			}
+//		}
 	}
 	return 1;
 }
 
-int copy_ma(gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd)//NOTE: DOESN'T COPY ENTIRE MA!
-{
-    gmx_domdec_master_t *orig_ma = orig_dd->ma;
-    gmx_domdec_master_t *copy_ma = copy_dd->ma;
-
-    //t_block cgs_gl_new = orig_dd->comm->cgs_gl.nr;
-
-
-    srenew (copy_ma->cg,orig_dd->comm->cgs_gl.index[orig_dd->comm->cgs_gl.nr]);
-
-    memcpy (copy_ma->ncg, orig_ma->ncg, sizeof(int) * orig_dd->nnodes);
-    memcpy (copy_ma->index, orig_ma->index, sizeof(int) * orig_dd->nnodes+1);
-    memcpy (copy_ma->cg, orig_ma->cg, sizeof(int) * orig_dd->comm->cgs_gl.nr);
-    memcpy (copy_ma->nat, orig_ma->nat, sizeof(int) * orig_dd->nnodes);
-    memcpy (copy_ma->ibuf, orig_ma->ibuf, sizeof(int) * orig_dd->nnodes*2);
-
-    if (copy_dd->nnodes <= GMX_DD_NNODES_SENDRECV)
-    {
-            copy_ma->vbuf = NULL;
-    }
-    else
-    {
-    	memcpy (copy_ma->vbuf, orig_ma->vbuf, sizeof(rvec) * orig_dd->comm->cgs_gl.index[orig_dd->comm->cgs_gl.nr]);
-    }
-
-    return 1;
-}
+//int copy_ma(gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd)//NOTE: DOESN'T COPY ENTIRE MA!
+//{
+//    gmx_domdec_master_t *orig_ma = orig_dd->ma;
+//    gmx_domdec_master_t *copy_ma = copy_dd->ma;
+//
+//    //t_block cgs_gl_new = orig_dd->comm->cgs_gl.nr;
+//
+//
+//    //srenew (copy_ma->cg,orig_dd->comm->cgs_gl.index[orig_dd->comm->cgs_gl.nr]);
+//
+//    memcpy (copy_ma->index, orig_ma->index, sizeof(int) * orig_dd->nnodes+1);
+//    memcpy (copy_ma->cg, orig_ma->cg, sizeof(int) * orig_dd->comm->cgs_gl.nr);
+//    memcpy (copy_ma->nat, orig_ma->nat, sizeof(int) * orig_dd->nnodes);
+//
+//
+//    return 1;
+//}
+//
+//int scatter_ma(gmx_domdec_t *dd, gmx_domdec_t **dd_buf) {
+//	if (DDMASTER(dd)) {
+//		MPI_Scatter(dd_buf[0]->ma->cg,       dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes,MPI_INT,
+//         			MPI_IN_PLACE,dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes,MPI_INT,
+//         	        DDMASTERRANK(dd),dd->mpi_comm_all);   //TODO: make work for nnodes>NUMBEROFSTEPS, create a mpi_comm_IO involving only IO nodes (rank<NUMBEROFSTEPS)
+//	} else {
+//		MPI_Scatter(0,0,MPI_INT,
+//		         	dd_buf[dd->rank]->ma->cg,dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes,MPI_INT,
+//		         	DDMASTERRANK(dd),dd->mpi_comm_all);   //TODO: make work for nnodes>NUMBEROFSTEPS, create a mpi_comm_IO involving only IO nodes (rank<NUMBEROFSTEPS)
+//	}
+//	return 0;
+//}
 
 int copy_t_block (t_block *copy_gl, t_block *orig_gl)
 {
@@ -5730,11 +5767,11 @@ int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state)
 	copy_dd->comm->cgs_gl.index = cgs_gl_new_index;
 	copy_t_block (&copy_dd->comm->cgs_gl, &orig_dd->comm->cgs_gl);
 
-	if (DDMASTER(orig_dd))
-	{
-		copy_ma(copy_dd, orig_dd);
-
-	}
+//	if (DDMASTER(orig_dd))
+//	{
+//		copy_ma(copy_dd, orig_dd);
+//
+//	}
 
 
 	if (copy_dd->rank != orig_dd->rank)//Checking for a successful copy
