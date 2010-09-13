@@ -236,7 +236,7 @@ int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
 
   switch (gmx_fio_getftp(status->fio)) {
   case efXTC: 
-    //write_xtc(status->fio,nind,fr->step,fr->time,fr->box,xout,prec); //TODO: fix
+    //write_xtc(status->fio,nind,fr->step,fr->time,fr->box,xout,prec); //TODO RNJ: fix
     break;
   case efTRJ:
   case efTRR:  

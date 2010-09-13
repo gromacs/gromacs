@@ -5737,7 +5737,7 @@ int copy_t_block (t_block *copy_gl, t_block *orig_gl)
 }
 
 
-int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state)
+int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state) // Copies orig_dd into copy_dd
 {
 
 	copy_dd->rank = 0;//I'm using this value as a check point to see if the memcpy was successful
@@ -5751,6 +5751,7 @@ int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state)
 	srenew (copy_dd->index_gl,orig_dd->cg_nalloc);
 
 
+	// I'm Rescuing the values that would be lost in the memcpy
 	index_gl_new = copy_dd->index_gl;
 	comm_new = copy_dd->comm;
 	ma_new = copy_dd->ma;
@@ -5759,8 +5760,8 @@ int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state)
 	copy_dd->comm = comm_new;
 	copy_dd->ma = ma_new;
 
-	//copy_cgs_gl (copy_dd, orig_dd);
 
+	// I'm Rescuing the values that would be lost in the memcpy
 	memcpy (copy_dd->index_gl,orig_dd->index_gl, sizeof(int) * orig_dd->ncg_home);
 	cgs_gl_new_index = copy_dd->comm->cgs_gl.index;
 	memcpy (copy_dd->comm,orig_dd->comm, sizeof(gmx_domdec_comm_t));

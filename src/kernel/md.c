@@ -2173,7 +2173,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
             }
             write_traj(fplog,cr,outf,mdof_flags,top_global,
-                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc,ir);
+                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc,ir,bLastStep);
             if (bCPT)
             {
                 nchkpt++;

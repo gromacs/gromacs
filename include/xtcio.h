@@ -66,7 +66,8 @@ int read_next_xtc(t_fileio *fio,
 
 int write_xtc(MPI_File fio,
 		     int natoms,int step,real time,
-		     matrix box,rvec *x,real prec);
+		     matrix box,rvec *x,real prec,
+		     gmx_bool bDontWrite);
 /* Write a frame to xtc file */
 
 int xtc_check(const char *str,gmx_bool bResult,const char *file,int line);

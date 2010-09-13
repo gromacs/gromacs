@@ -75,11 +75,21 @@ MPI_File open_xtc(const char *fn,const char *mode, gmx_domdec_t *dd)
 {
 	MPI_File fh;
 	MPI_Comm new_comm;
-	//color: 0 if dd->rank<NUMBEROFSTEPS and 1 otherwise (of size nnodes)
+	int amode;
+
+	if (strcmp(mode,"w+")==0) {
+		amode = MPI_MODE_RDWR | MPI_MODE_CREATE;
+	} else if (strcmp(mode,"a+")==0) {
+		amode = MPI_MODE_RDWR | MPI_MODE_APPEND;
+	} else if (strcmp(mode,"r")==0) {
+		amode = MPI_MODE_RDONLY;
+	} else {
+		gmx_fatal(FARGS,"Unknown mode!");
+	}
 	MPI_Comm_split(dd->mpi_comm_all, dd->rank < NUMBEROFSTEPS, dd->rank, &new_comm );// new_comm must be a vector of size color
 	if (dd->rank < NUMBEROFSTEPS)
 	{
-		MPI_File_open(new_comm,(char*)fn,MPI_MODE_RDWR | MPI_MODE_CREATE,MPI_INFO_NULL, &fh);   // TODO: use mode
+		MPI_File_open(new_comm,(char*)fn,amode,MPI_INFO_NULL, &fh);
 	}
 	return fh;
     //return gmx_fio_open(fn,mode);
@@ -193,7 +203,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, gmx_bool
 
 int write_xtc(MPI_File fio,
 	      int natoms,int step,real time,
-	      matrix box,rvec *x,real prec)
+	      matrix box,rvec *x,real prec, gmx_bool bDontWrite)
 {
   int magic_number = XTC_MAGIC;
   static char *mem_buf = NULL;
@@ -209,6 +219,13 @@ int write_xtc(MPI_File fio,
 	  snew(xd, 1);
 	  xdrmem_create(xd,mem_buf,3* natoms * sizeof(real),XDR_ENCODE);
   }
+
+  if (bDontWrite) {
+	  MPI_File_write_ordered(fio,mem_buf,0,MPI_BYTE,&status);  //TODO HIGH check status and return bOK=0 if not OK.
+	  bOK=1;
+	  return bOK;
+  }
+
   xdr_setpos(xd,0);
 
 
@@ -231,8 +248,10 @@ int write_xtc(MPI_File fio,
 //  }
 
   nBytes = xdr_getpos(xd);
-
-  MPI_File_write_ordered(fio,mem_buf,nBytes,MPI_BYTE,&status);
+  if (bOK)
+  {
+	  MPI_File_write_ordered(fio,mem_buf,nBytes,MPI_BYTE,&status);  //TODO HIGH check status and return bOK=0 if not OK.
+  }
 
   return bOK;  /* 0 if bad, 1 if writing went well */
 }
