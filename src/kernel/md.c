@@ -82,7 +82,7 @@
 #include "mtop_util.h"
 #include "sighandler.h"
 #include "string2.h"
-#include "gmx_membed.h"
+#include "membed.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>

@@ -112,6 +112,7 @@ int gmx_membed(int argc,char *argv[])
 	int maxwarn=0;
 	int pieces=1;
         gmx_bool bALLOW_ASYMMETRY=FALSE;
+        gmx_bool bStart=FALSE;
         int nstepout=100;
         gmx_bool bVerbose=FALSE;
         char *mdrun_path=NULL;
@@ -144,6 +145,8 @@ int gmx_membed(int argc,char *argv[])
 			        "Number of lipids that will additionally be removed from the lower (negative number) or upper (positive number) membrane leaflet." },
 			{ "-maxwarn", FALSE, etINT, {&maxwarn},		
 				"Maximum number of warning allowed" },
+                        { "-start",   FALSE, etBOOL, {&bStart},
+                                "Call mdrun with membed options" },
 			{ "-stepout", FALSE, etINT, {&nstepout},
 			        "HIDDENFrequency of writing the remaining runtime" },
 			{ "-v",       FALSE, etBOOL,{&bVerbose},
@@ -193,7 +196,12 @@ int gmx_membed(int argc,char *argv[])
 	}
 
         printf("%s\n",buf);
-        system(buf);
+        if (bStart)
+        {
+                system(buf);
+        } else {
+                printf("You can membed your protein now by:\n%s\n",buf);
+        }
 
         fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
 

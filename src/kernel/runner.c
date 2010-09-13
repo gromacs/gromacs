@@ -72,7 +72,7 @@
 #include "tpxio.h"
 #include "txtdump.h"
 #include "pull_rotation.h"
-#include "gmx_membed.h"
+#include "membed.h"
 #include "md_openmm.h"
 
 #ifdef GMX_LIB_MPI

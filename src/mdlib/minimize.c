@@ -75,7 +75,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
-#include "gmx_membed.h"
+#include "membed.h"
 
 typedef struct {
   t_state s;
