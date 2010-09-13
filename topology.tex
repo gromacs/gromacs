@@ -204,7 +204,10 @@ This will result in the construction of a virtual site, number 5
 whose indices are 1 and 2 or 1, 2 and 3 or 1, 2, 3 and 4 (next two,
 three or four columns `{\tt from}') following the rules determined by the function number
 (next column `{\tt funct}') with the parameters specified (last one,
-two or three columns `{\tt a b} . .').
+two or three columns `{\tt a b} . .'). Obviously, the atom numbers
+(including virtual site number) depend
+on the molecule. It may be instructive to study the topologies for
+TIP4P or TIP5P water models that are included with the {\gromacs} distribution.
 
 {\bf Note} that if any constant bonded interactions defined between
 virtual sites and/or normal atoms will be removed by {\tt grompp},
