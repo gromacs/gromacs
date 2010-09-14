@@ -34,7 +34,7 @@
 extern "C" {
 #endif
 
-#define NUMBEROFSTEPS 2 // RJ - This is how many times a node will save its own data sending the data to the master node.
+#define NUMBEROFSTEPS 50 // RJ - This is how many times a node will save its own data sending the data to the master node.
 							 // TODO: It also determines how many nodes will collect the frames, This NEEDS to be made more flexible
 
 int ddglatnr(gmx_domdec_t *dd,int i);
