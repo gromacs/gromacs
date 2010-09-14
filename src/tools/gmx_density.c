@@ -147,10 +147,10 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
+  double vol_sum;
   int natoms,            /* nr. atoms in trj */
       status,  
       i,n,               /* loop indices */
-      ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   t_electron *found;     /* found by bsearch */
@@ -159,17 +159,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   real t, 
         z;
 
-  switch(axis) {
-  case 0:
-    ax1 = 1; ax2 = 2;
-    break;
-  case 1:
-    ax1 = 0; ax2 = 2;
-    break;
-  case 2:
-    ax1 = 0; ax2 = 1;
-    break;
-  default:
+  if (axis < 0 || axis >= DIM) {
     gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
@@ -183,6 +173,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   snew(*slDensity, nr_grps);
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
+  vol_sum = 0;
   
   /*********** Start processing trajectory ***********/
   do {
@@ -192,6 +183,8 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
       center_coords(&top->atoms,box,x0,axis);
     
     *slWidth = box[axis][axis]/(*nslices);
+    vol_sum += box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+
     for (n = 0; n < nr_grps; n++) {      
       for (i = 0; i < gnx[n]; i++) {   /* loop over all atoms in index file */
 	  z = x0[index[n][i]][axis];
@@ -235,8 +228,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++)
-      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) /
-	( nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) / vol_sum;
   }
 
   sfree(x0);  /* free memory used by coordinate array */
@@ -248,29 +240,19 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
+  double vol_sum;
   int natoms,            /* nr. atoms in trj */
       status,  
       **slCount,         /* nr. of atoms in one slice for a group */
       i,j,n,               /* loop indices */
       teller = 0,      
-      ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   real t, 
         z;
   char *buf;             /* for tmp. keeping atomname */
 
-  switch(axis) {
-  case 0:
-    ax1 = 1; ax2 = 2;
-    break;
-  case 1:
-    ax1 = 0; ax2 = 2;
-    break;
-  case 2:
-    ax1 = 0; ax2 = 1;
-    break;
-  default:
+  if (axis < 0 || axis >= DIM) {
     gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
@@ -285,7 +267,8 @@ void calc_density(char *fn, atom_id **index, int gnx[],
   snew(*slDensity, nr_grps);
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
-  
+  vol_sum = 0;
+
   /*********** Start processing trajectory ***********/
   do {
     rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
@@ -294,6 +277,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
       center_coords(&top->atoms,box,x0,axis);
     
     *slWidth = box[axis][axis]/(*nslices);
+    vol_sum += box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
     teller++;
     
     for (n = 0; n < nr_grps; n++) {      
@@ -325,8 +309,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++) {
-      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) /
-	(nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) / vol_sum;
     }
   }
 
