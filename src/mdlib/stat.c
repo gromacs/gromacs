@@ -39,6 +39,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "gmx_fatal.h"
@@ -600,8 +601,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		step_at_checkpoint = ir->init_step;
 	}
 
-	bufferStep = (step - step_at_checkpoint)%(ir->nstxtcout*NUMBEROFSTEPS);
-	writeXTCNow = (mdof_flags & MDOF_XTC) && (bufferStep == NUMBEROFSTEPS-1 || bLastStep || (mdof_flags & MDOF_CPT));
+	bufferStep = (step/ir->nstxtcout - (int)ceil((double)step_at_checkpoint/ir->nstxtcout))%NUMBEROFSTEPS;
+	writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == NUMBEROFSTEPS-1) || bLastStep || (mdof_flags & MDOF_CPT);
 
 	if (mdof_flags & MDOF_CPT)
 	{

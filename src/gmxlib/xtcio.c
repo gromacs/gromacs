@@ -86,6 +86,11 @@ MPI_File open_xtc(const char *fn,const char *mode, gmx_domdec_t *dd)
 	} else {
 		gmx_fatal(FARGS,"Unknown mode!");
 	}
+    if (mode[0]=='w')
+    {
+        /* only make backups for normal gromacs */
+        make_backup(fn);
+    }
 	MPI_Comm_split(dd->mpi_comm_all, dd->rank < NUMBEROFSTEPS, dd->rank, &new_comm );// new_comm must be a vector of size color
 	if (dd->rank < NUMBEROFSTEPS)
 	{
