@@ -585,14 +585,28 @@ void write_traj(FILE *fplog,t_commrec *cr,
     // RJ - These are my code additions
 //    const int NUMBEROFSTEPS = 2; // RJ - This is how many times a node will save its own data sending the data to the master node.
     							 // It also determines how many nodes will collect the frames.
-    int bufferStep = (step-ir->init_step)%(ir->nstxtcout*NUMBEROFSTEPS);
+
 
     static gmx_domdec_t **dd_buf = NULL;//TODO: Don't use static
     static t_state **state_local_buf = NULL;
     //static rvec **x_receive_buf = NULL;// this is only going to be used when all 50 frames are being written.
 	static gmx_large_int_t step_buf;
 	static double t_buf;
-	gmx_bool writeXTCNow = (mdof_flags & MDOF_XTC) && (bufferStep == NUMBEROFSTEPS-1 || bLastStep); // TODO: HIGH:  || (mdof_flags & MDOF_CPT); need the #steps since last cpt to get bufferStep correct
+	static int step_at_checkpoint = 0; /*first step or first step after checkpoint*/
+	int bufferStep;
+	gmx_bool writeXTCNow;
+
+	if (step_at_checkpoint == 0) {  //TODO: make sure this works correctly with checkpointing
+		step_at_checkpoint = ir->init_step;
+	}
+
+	bufferStep = (step - step_at_checkpoint)%(ir->nstxtcout*NUMBEROFSTEPS);
+	writeXTCNow = (mdof_flags & MDOF_XTC) && (bufferStep == NUMBEROFSTEPS-1 || bLastStep || (mdof_flags & MDOF_CPT));
+
+	if (mdof_flags & MDOF_CPT)
+	{
+		step_at_checkpoint = step + 1;
+	}
 
     if (dd_buf==NULL) {//Initializes the dd_buf
     	initialize_dd_buf(&dd_buf, cr->dd, state_local);
@@ -607,17 +621,9 @@ void write_traj(FILE *fplog,t_commrec *cr,
     		snew(state_local_buf[i]->x,state_local->nalloc);
     	}
     }
-    if (state_global->x == NULL && cr->dd->rank<NUMBEROFSTEPS ) {//Initializes the state_global->x for the total numbed of atoms
+    if (state_global->x == NULL && cr->dd->rank<NUMBEROFSTEPS ) {//Initializes the state_global->x for the total number of atoms
     	snew(state_global->x, state_global->natoms);
     }
-    //if (x_receive_buf == NULL)
-    //{
-    //	snew (x_receive_buf, NUMBEROFSTEPS);
-    //	for (i=0;i<NUMBEROFSTEPS;i++)
-    //	{
-    //		snew(x_receive_buf[i], state_global->natoms);
-    //	}
-    //}
     // RJ - End of additions
 
 
@@ -633,7 +639,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
     if (DOMAINDECOMP(cr))
     {
         if (mdof_flags & MDOF_CPT)  //TODO:  optimize that we use the information collected for CPT
-        							//   HIGH:   make sure that we actually write at least every CPT
+
         {
             dd_collect_state(cr->dd,state_local,state_global);
         }
@@ -660,7 +666,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
         {
         	//TODO: DEALLOCATE later, now allocation in this method. all outside where dd and state_local is allocated
 
-        	//Copy current dd and state_local to buffers
+        	//This block of code copies the current dd and state_local to buffers to prepare for writing later.
         	if (bufferStep == cr->dd->rank) {
         		step_buf=step;
         		t_buf=t;
@@ -673,8 +679,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
 
         	if (writeXTCNow)
         	{
-//        		scatter_ma(cr->dd,dd_buf);
-        		for (i = 0; i <= bufferStep; i++)
+        		for (i = 0; i <= bufferStep; i++)//This loop changes which node is the master node temporarily so that it can then write
+        										 // the frames to different nodes.
         		{
         			dd_buf[i]->masterrank = i;
         			dd_collect_vec(dd_buf[i],state_local_buf[i],state_local_buf[i]->x,state_global->x);//x_receive_buf[i]
@@ -738,7 +744,6 @@ void write_traj(FILE *fplog,t_commrec *cr,
          }
      }
 
-     // RJ - This is what only the master node does.
      if (MASTER(cr))
      {
          if (mdof_flags & MDOF_CPT)
@@ -784,9 +789,6 @@ void write_traj(FILE *fplog,t_commrec *cr,
 			}
 			if (*n_xtc == top_global->natoms)
 			{
-				//xxtc = x_receive_buf[k];
-				//xxtc;
-				//dd_buf[k]->ma->vbuf;
 				xxtc = state_global->x;
 			}
 			else
@@ -797,7 +799,6 @@ void write_traj(FILE *fplog,t_commrec *cr,
 				{
 					if (ggrpnr(groups,egcXTC,i) == 0)
 					{
-						//copy_rvec(x_receive_buf[k][i],xxtc[j++]);
 						copy_rvec (state_global->x[i], xxtc[j++]);
 
 					}
@@ -805,7 +806,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 			}
 		}
 		if (write_xtc(of->fp_xtc,*n_xtc,step_buf,t_buf,
-				  state_local->box,xxtc,of->xtc_prec,!bWrite) == 0)//xxtc is used instead of state_local_buf->x
+				  state_local->box,xxtc,of->xtc_prec,!bWrite) == 0)//If it is NOT ACTUALLY being written
 		{
 			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
 		}

@@ -5646,16 +5646,9 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
     return ma;
 }
 
-int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local)
+int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local) // prepares dd_buf
 {
 	int i;
-
-//	int* buf ;
-//	if (DDMASTER(dd)) {
-//		snew(buf, number_of_steps*(dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes));  //consecutive for communication!
-//	} else if (dd->rank<number_of_steps) {
-//		snew(buf, (dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes));  //consecutive for communication!
-//	}
 
 	snew (*dd_buf, NUMBEROFSTEPS);
 	for (i=0;i<NUMBEROFSTEPS;i++) {
@@ -5663,68 +5656,16 @@ int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_l
 		snew((*dd_buf)[i]->index_gl, dd->cg_nalloc);
 		snew((*dd_buf)[i]->comm, 1);
 
-		if (i==dd->rank) {
+		if (i==dd->rank) { // This is preparing certain nodes for holding several frames.
 			if (DDMASTER(dd)) {
 				(*dd_buf)[i]->ma = dd->ma;
 			} else {
 				(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
 			}
 		}
-
-//		if (DDMASTER(dd) || i==dd->rank)
-//		{
-//			snew ((*dd_buf)[i]->ma,1);
-//		    (*dd_buf)[i]->ma->cg = buf;
-//		    buf += dd->comm->cgs_gl.nr;
-//			(*dd_buf)[i]->ma->index = buf;
-//			buf += dd->nnodes+1;
-//			(*dd_buf)[i]->ma->nat = buf;
-//			buf += dd->nnodes;
-			//(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
-//		}
-//		if (i==dd->rank) {
-//			if (DDMASTER(dd)) {
-//				(*dd_buf)[i]->ma->ibuf = dd->ma->ibuf;
-//				(*dd_buf)[i]->ma->vbuf = dd->ma->vbuf;
-//			} else {
-//				snew((*dd_buf)[i]->ma->ibuf,dd->nnodes*2);
-//				snew((*dd_buf)[i]->ma->vbuf,dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
-//			}
-//		}
 	}
 	return 1;
 }
-
-//int copy_ma(gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd)//NOTE: DOESN'T COPY ENTIRE MA!
-//{
-//    gmx_domdec_master_t *orig_ma = orig_dd->ma;
-//    gmx_domdec_master_t *copy_ma = copy_dd->ma;
-//
-//    //t_block cgs_gl_new = orig_dd->comm->cgs_gl.nr;
-//
-//
-//    //srenew (copy_ma->cg,orig_dd->comm->cgs_gl.index[orig_dd->comm->cgs_gl.nr]);
-//
-//    memcpy (copy_ma->index, orig_ma->index, sizeof(int) * orig_dd->nnodes+1);
-//    memcpy (copy_ma->cg, orig_ma->cg, sizeof(int) * orig_dd->comm->cgs_gl.nr);
-//    memcpy (copy_ma->nat, orig_ma->nat, sizeof(int) * orig_dd->nnodes);
-//
-//
-//    return 1;
-//}
-//
-//int scatter_ma(gmx_domdec_t *dd, gmx_domdec_t **dd_buf) {
-//	if (DDMASTER(dd)) {
-//		MPI_Scatter(dd_buf[0]->ma->cg,       dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes,MPI_INT,
-//         			MPI_IN_PLACE,dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes,MPI_INT,
-//         	        DDMASTERRANK(dd),dd->mpi_comm_all);   //TODO: make work for nnodes>NUMBEROFSTEPS, create a mpi_comm_IO involving only IO nodes (rank<NUMBEROFSTEPS)
-//	} else {
-//		MPI_Scatter(0,0,MPI_INT,
-//		         	dd_buf[dd->rank]->ma->cg,dd->comm->cgs_gl.nr+(dd->nnodes+1)+dd->nnodes,MPI_INT,
-//		         	DDMASTERRANK(dd),dd->mpi_comm_all);   //TODO: make work for nnodes>NUMBEROFSTEPS, create a mpi_comm_IO involving only IO nodes (rank<NUMBEROFSTEPS)
-//	}
-//	return 0;
-//}
 
 int copy_t_block (t_block *copy_gl, t_block *orig_gl)
 {
@@ -5768,20 +5709,14 @@ int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state) // Cop
 	copy_dd->comm->cgs_gl.index = cgs_gl_new_index;
 	copy_t_block (&copy_dd->comm->cgs_gl, &orig_dd->comm->cgs_gl);
 
-//	if (DDMASTER(orig_dd))
-//	{
-//		copy_ma(copy_dd, orig_dd);
-//
-//	}
-
 
 	if (copy_dd->rank != orig_dd->rank)//Checking for a successful copy
 	{
-		return 0;
+		return 0; // Failed to copy
 	}
 	else
 	{
-		return 1;
+		return 1; // successfully copied
 	}
 }
 
