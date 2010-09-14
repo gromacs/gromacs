@@ -51,12 +51,12 @@
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "All GROMACS programs have 6 standard options,",
     "of which some are hidden by default:"
   };
 
-  static char *bugs[] = {
+  const char *bugs[] = {
     "If the configuration script found Motif or Lesstif on your system, "
     "you can use the graphical interface (if not, you will get an error):[BR]"
     "[TT]-X[tt] gmx_bool [TT]no[tt] Use dialog box GUI to edit command line options",

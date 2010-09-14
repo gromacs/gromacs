@@ -2077,12 +2077,23 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (MASTER(cr))
     {
-        /* Update mdebin with energy history if appending to output files */
-        if ( Flags & MD_APPENDFILES )
+        if (opt2bSet("-cpi",nfile,fnm))
         {
-            restore_energyhistory_from_state(mdebin,&state_global->enerhist);
+            /* Update mdebin with energy history if appending to output files */
+            if ( Flags & MD_APPENDFILES )
+            {
+                restore_energyhistory_from_state(mdebin,&state_global->enerhist);
+            }
+            else
+            {
+                /* We might have read an energy history from checkpoint,
+                 * free the allocated memory and reset the counts.
+                 */
+                done_energyhistory(&state_global->enerhist);
+                init_energyhistory(&state_global->enerhist);
+            }
         }
-        /* Set the initial energy history in state to zero by updating once */
+        /* Set the initial energy history in state by updating once */
         update_energyhistory(&state_global->enerhist,mdebin);
     }
 

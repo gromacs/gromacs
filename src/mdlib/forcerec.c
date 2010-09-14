@@ -1270,7 +1270,7 @@ forcerec_check_sse2()
 	status =  (_edx & (1 << 26)) != 0;
     
 #else
-    status = 0;
+        int status = 0;
 #endif
 	/* Return SSE2 status */
 	return status;

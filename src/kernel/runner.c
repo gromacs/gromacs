@@ -558,7 +558,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         fprintf(stderr,"Loaded with Money\n\n");
     }
 
-    if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI)))
+    if (PAR(cr) && !((Flags & MD_PARTDEC) ||
+                     EI_TPI(inputrec->eI) ||
+                     inputrec->eI == eiNM))
     {
         cr->dd = init_domain_decomposition(fplog,cr,Flags,ddxyz,rdd,rconstr,
                                            dddlb_opt,dlb_scale,

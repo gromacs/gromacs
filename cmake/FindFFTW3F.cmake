@@ -5,14 +5,18 @@
 #  FFTW3F_LIBRARIES   - List of libraries when using FFTW.
 #  FFTW3F_FOUND       - True if FFTW found.
 
-if (FFTW3F_INCLUDE_DIR)
+if (FFTW3F_INCLUDE_DIR AND FFTW3F_LIBRARIES)
   # Already in cache, be silent
   set (FFTW3F_FIND_QUIETLY TRUE)
-endif (FFTW3F_INCLUDE_DIR)
+endif (FFTW3F_INCLUDE_DIR AND FFTW3F_LIBRARIES)
 
-find_path (FFTW3F_INCLUDE_DIR fftw3.h)
+find_path (FFTW3F_INCLUDE_DIR fftw3.h 
+	CACHE STRING "Path to headers for single precision FFTW3")
 
-find_library (FFTW3F_LIBRARIES NAMES fftw3f)
+find_library (FFTW3F_LIBRARIES 
+		NAMES fftw3f
+		PATHS "${FFTW3F_INCLUDE_DIR}/../lib"
+		CACHE STRING "Single precision FFTW3 libraries")
 
 # handle the QUIETLY and REQUIRED arguments and set FFTW_FOUND to TRUE if
 # all listed variables are TRUE

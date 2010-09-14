@@ -93,7 +93,7 @@ extern "C"
 
 /* first check for gcc/icc platforms. icc on linux+mac will take this path, 
    too */
-#if ( (defined(__GNUC__) || defined(__PATHSCALE__)) && (!defined(__xlc__)) )
+#if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
 
 /* now check specifically for several architectures: */
 #if (defined(i386) || defined(__x86_64__)) 
@@ -138,7 +138,7 @@ extern "C"
 
 #elif defined(__xlC__) && defined (_AIX)
 /* IBM xlC compiler on AIX */
-#include "atomic/xlc_aix.h"
+#include "atomic/xlc_ppc.h"
 
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 /* HP compiler on ia64 */
@@ -168,9 +168,36 @@ extern "C"
  it in the code should be visible to all memory operations after it - the
  CPU cannot propagate load/stores across it.
 
+ This barrier is a full barrier: all load and store operations of
+ instructions before it are completed, while all load and store operations
+ that are in instructions after it won't be done before this barrier.
+
  \hideinitializer
  */
 #define tMPI_Atomic_memory_barrier()
+
+/** Memory barrier operation with acquire semantics
+
+ This barrier is a barrier with acquire semantics: the terminology comes
+ from its common use after acquiring a lock: all load/store instructions 
+ after this barrier may not be re-ordered to happen before this barrier.
+
+ \hideinitializer
+ */
+#define tMPI_Atomic_memory_barrier_acq()
+
+/** Memory barrier operation with release semantics
+
+ This barrier is a barrier with release semantics: the terminology comes
+ from its common use before releasing a lock: all load/store instructions 
+ before this barrier may not be re-ordered to happen after this barrier.
+
+ \hideinitializer
+ */
+#define tMPI_Atomic_memory_barrier_rel()
+
+
+
 
 /* System mutex used for locking to guarantee atomicity */
 static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -423,9 +450,14 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
  *   The \a old value is compared with the memory value in the atomic datatype.
  *   If the are identical, the atomic type is swapped with the new value, 
  *   and otherwise left unchanged. 
+ * 
+ *   This is *the* synchronization primitive: it has a consensus number of
+ *   infinity, and is available in some form on all modern CPU architectures.
+ *   In the words of Herlihy&Shavit (The art of multiprocessor programming),
+ *   it is the 'king of all wild things'. 
  *  
- *   This is a very useful synchronization primitive: You can start by reading
- *   a value (without locking anything), perform some calculations, and then
+ *   In practice, use it as follows: You can start by reading a value 
+ *   (without locking anything), perform some calculations, and then
  *   atomically try to update it in memory unless it has changed. If it has
  *   changed you will get an error return code - reread the new value
  *   an repeat the calculations in that case.
@@ -435,23 +467,21 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
  *   \param new_val  New value to write to the atomic type if it currently is
  *                   identical to the old value.
  *
- *   \return The value of the atomic memory variable in memory when this 
- *           instruction was executed. This, if the operation succeeded the
- *           return value was identical to the \a old parameter, and if not
- *           it returns the updated value in memory so you can repeat your
- *           operations on it. 
- *
+ *   \return    True (1) if the swap occurred: i.e. if the value in a was equal
+ *              to old_val. False (0) if the swap didn't occur and the value
+ *              was not equal to old_val.
+ * 
  *   \note   The exchange occured if the return value is identical to \a old.
  */
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val)
 {
-    int t;
+    int t=0;
     
     tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    t=old_val;
     if (a->value == old_val)
     {
         a->value = new_val;
+        t=1;
     }
     tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return t;
@@ -467,31 +497,29 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val)
  *   and otherwise left unchanged. 
  *  
  *   This is essential for implementing wait-free lists and other data
- *   structures. 
+ *   structures. See 'tMPI_Atomic_cas()'.
  *
  *   \param a        Atomic datatype ('memory' value)
  *   \param old_val  Pointer value read from the atomic type at an earlier point
  *   \param new_val  New value to write to the atomic type if it currently is
  *                   identical to the old value.
  *
- *   \return The value of the atomic pointer in memory when this 
- *           instruction was executed. This, if the operation succeeded the
- *           return value was identical to the \a old parameter, and if not
- *           it returns the updated value in memory so you can repeat your
- *           operations on it. 
- *
+ *   \return    True (1) if the swap occurred: i.e. if the value in a was equal
+ *              to old_val. False (0) if the swap didn't occur and the value
+ *              was not equal to old_val.
+ * 
  *   \note   The exchange occured if the return value is identical to \a old.
  */
-static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
-                                        void *new_val)
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
+                                      void *new_val)
 {
-    void *t;
+    int t=0;
     
     tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    t=old_val;
     if (a->value == old_val)
     {
         a->value = new_val;
+        t=1;
     }
     tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return t;
@@ -622,7 +650,7 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
     do
     {
         oldval=(int)(a->value);
-    } while(tMPI_Atomic_cas(a, oldval, b) != oldval);
+    } while(!tMPI_Atomic_cas(a, oldval, b));
     return oldval;
 }
 /** Atomic swap pointer operation.
@@ -640,9 +668,17 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
     do
     {
         oldval=(void*)(a->value);
-    } while(tMPI_Atomic_ptr_cas(a, oldval, b) != oldval);
+    } while(!tMPI_Atomic_ptr_cas(a, oldval, b));
     return oldval;
 }
+#endif
+
+/* only define this if there were no separate acquire and release barriers */
+#ifndef TMPI_HAVE_ACQ_REL_BARRIERS
+
+/* if they're not defined explicitly, we just make full barriers out of both */
+#define tMPI_Atomic_memory_barrier_acq tMPI_Atomic_memory_barrier
+#define tMPI_Atomic_memory_barrier_rel tMPI_Atomic_memory_barrier
 
 #endif
 

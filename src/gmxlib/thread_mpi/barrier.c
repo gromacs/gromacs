@@ -87,6 +87,7 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
      */
     if( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
     {
+        tMPI_Atomic_memory_barrier_rel();
         tMPI_Atomic_set(&(barrier->count), barrier->threshold);
         barrier->cycle = !barrier->cycle;
 
@@ -101,10 +102,11 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
          */
         do
         {
+            /*tMPI_Atomic_memory_barrier();*/
             TMPI_YIELD_WAIT(barrier);
-            tMPI_Atomic_memory_barrier();
         }
         while( *(volatile int *)(&(barrier->cycle)) == cycle);
+        tMPI_Atomic_memory_barrier_acq();
 
         status = 0;
     }

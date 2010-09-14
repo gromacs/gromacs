@@ -60,7 +60,7 @@ files.
 
 /* Group query & manipulation functions */
 
-gmx_bool tMPI_In_group(tMPI_Group group)
+tmpi_bool tMPI_In_group(tMPI_Group group)
 {
     int i;
     struct tmpi_thread *cur;
