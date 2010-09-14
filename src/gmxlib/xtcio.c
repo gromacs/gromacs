@@ -224,6 +224,12 @@ int write_xtc(MPI_File fio,
   MPI_Status status;
   int bOK;
 	
+
+  if (bDontWrite) {
+	  bOK = MPI_File_write_ordered(fio,mem_buf,0,MPI_BYTE,&status) == MPI_SUCCESS;
+	  return bOK;
+  }
+
   if (mem_buf == NULL)
   {
 	  snew (mem_buf, 3* natoms * sizeof(real));
@@ -231,10 +237,6 @@ int write_xtc(MPI_File fio,
 	  xdrmem_create(xd,mem_buf,3* natoms * sizeof(real),XDR_ENCODE);
   }
 
-  if (bDontWrite) {
-	  bOK = MPI_File_write_ordered(fio,mem_buf,0,MPI_BYTE,&status) == MPI_SUCCESS;
-	  return bOK;
-  }
 
   xdr_setpos(xd,0);
 
