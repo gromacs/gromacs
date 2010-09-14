@@ -82,7 +82,11 @@ echo "Starting pdb2gmx"
 if ( $?DISPLAY ) then 
 	xterm -title pdb2gmx -sb -e tail +0f output.pdb2gmx &
 endif
-echo 0 | pdb2gmx -f ${MOL}.pdb -o ${MOL}.gro -p ${MOL}.top >& ! output.pdb2gmx
+pdb2gmx -f ${MOL}.pdb -o ${MOL}.gro -p ${MOL}.top >& ! output.pdb2gmx << KOKO
+1
+1
+KOKO
+
 echo "pdb2gmx finished"
 echo -n "Press <enter>"
 set  ans = $<

@@ -829,18 +829,18 @@ to the energy and log file.</dd>
 <dt><b>nsttcouple: (-1)</b></dt>
 <dd>The frequency for coupling the temperature.
 The default value of -1 sets <b>nsttcouple</b> equal to <b>nstlist</b>,
-unless <b>nstlist</b> &le;0, then a value of 10 is used.
+unless <b>nstlist</b>&le;0, then a value of 10 is used.
 For velocity Verlet integrators <b>nsttcouple</b> is set to 1.</dd>
 </dd>
 <dt><b>nh-chain-length (10)</b></dt>
-<dd>the number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog <b>md</b> integrator only supports 1.  Data for the NH chain variables is not printed to the .edr, but can be using the GMX_NOSEHOOVER_CHAINS environment variable</dd>
+<dd>the number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog <b>md</b> integrator only supports 1.  Data for the NH chain variables is not printed to the .edr, but can be using the <tt>GMX_NOSEHOOVER_CHAINS</tt> environment variable</dd>
 <dt><b>tc_grps:</b></dt>
 <dd>groups to couple separately to temperature bath</dd>
 <dt><b>tau_t: [ps]</b></dt>
-<dd>time constant for coupling (one for each group in tc_grps),
+<dd>time constant for coupling (one for each group in <b>tc_grps</b>),
 -1 means no temperature coupling</dd>
 <dt><b>ref_t: [K]</b></dt>
-<dd>reference temperature for coupling (one for each group in tc_grps)</dd>
+<dd>reference temperature for coupling (one for each group in <b>tc_grps</b>)</dd>
 </dl>
 
 <A NAME="pc"><br>
@@ -965,10 +965,10 @@ Simulated annealing is controlled separately for each temperature group in GROMA
 each temperature group. Use 0 for groups that are not annealed. The number of entries should equal the number of temperature groups.</dd>
 
 <dt><b>annealing_time:</b></dt>
-<dd>List of times at the annealing reference/control points for each group. If you are using periodic annealing, the times will be used modulo the last value, i.e. if the values are 0, 5, 10, and 15, the coupling will restart at the 0ps value after 15ps, 30ps, 45ps, etc. The number of entries should equal the sum of the numbers given in annealing_npoints.</dd>
+<dd>List of times at the annealing reference/control points for each group. If you are using periodic annealing, the times will be used modulo the last value, i.e. if the values are 0, 5, 10, and 15, the coupling will restart at the 0ps value after 15ps, 30ps, 45ps, etc. The number of entries should equal the sum of the numbers given in <tt>annealing_npoints</tt>.</dd>
 
 <dt><b>annealing_temp:</b></dt>
-<dd>List of temperatures at the annealing reference/control points for each group. The number of entries should equal the sum of the numbers given in annealing_npoints.</dd>
+<dd>List of temperatures at the annealing reference/control points for each group. The number of entries should equal the sum of the numbers given in <tt>annealing_npoints</tt>.</dd>
 <br>
 Confused? OK, let's use an example. Assume you have two temperature groups, set the group selections to <tt>annealing = single periodic</tt>, the number of points of each group to <tt>annealing_npoints = 3 4</tt>, the times to <tt>annealing_time = 0 3 6 0 2 4 6</tt> and finally temperatures to <tt>annealing_temp = 298 280 270 298 320 320 298</tt>.
 The first group will be coupled to 298K at 0ps, but the reference temperature will drop linearly to reach 280K at 3ps, and then linearly between 280K and 270K from 3ps to 6ps. After this is stays constant, at 270K. The second group is coupled to 298K at 0ps, it increases linearly to 320K at 2ps, where it stays constant until 4ps. Between 4ps and 6ps it decreases to 298K, and then it starts over with the same pattern again, i.e. rising linearly from 298K to 320K between 6ps and 8ps. Check the summary printed by grompp if you are unsure!
@@ -1297,7 +1297,7 @@ restraint information in topology file)</dd>
 <dt><b>simple</b></dt>
 <dd>simple (per-molecule) distance restraints,
 ensemble averaging can be performed with <tt>mdrun -multi</tt>
-where the environment variable GMX_DISRE_ENSEMBLE_SIZE sets the number
+where the environment variable <tt>GMX_DISRE_ENSEMBLE_SIZE</tt> sets the number
 of systems within each ensemble (usually equal to the mdrun -multi value)</dd>
 <dt><b>ensemble</b></dt>
 <dd>distance restraints over an ensemble of molecules in one simulation box,
@@ -1503,7 +1503,7 @@ or a liquid.</dd>
 <dl>
 <dt><b>E_x ; E_y ; E_z:</b></dt>
 <dd>If you want to use an electric field in a direction, enter 3 numbers
-after the appropriate E_*, the first number: the number of cosines,
+after the appropriate <b>E_*</b>, the first number: the number of cosines,
 only 1 is implemented (with frequency 0) so enter 1,
 the second number: the strength of the electric field in
 <b>V nm<sup>-1</sup></b>,
@@ -1647,7 +1647,7 @@ for the corresponding atom</dd>
 <dd><dl compact="compact">
 <dt><b>no</b></dt>
 <dd>Which algorithm is used the the SA part. Note that currently no specific
-SA algorithm is implemented. With implicit_solvent=GBSA, a very crude ACE-style
+SA algorithm is implemented. With <b>implicit_solvent=GBSA</b>, a very crude ACE-style
 algorithm is used by default</dd>
 </dl>
 
