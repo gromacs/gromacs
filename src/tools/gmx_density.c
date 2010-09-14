@@ -147,7 +147,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  double vol_sum;
+  double invvol;
   int natoms,            /* nr. atoms in trj */
       status,  
       i,n,               /* loop indices */
@@ -173,7 +173,6 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   snew(*slDensity, nr_grps);
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
-  vol_sum = 0;
   
   /*********** Start processing trajectory ***********/
   do {
@@ -183,7 +182,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
       center_coords(&top->atoms,box,x0,axis);
     
     *slWidth = box[axis][axis]/(*nslices);
-    vol_sum += box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+    invvol = *nslices/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
 
     for (n = 0; n < nr_grps; n++) {      
       for (i = 0; i < gnx[n]; i++) {   /* loop over all atoms in index file */
@@ -208,8 +207,8 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 	    fprintf(stderr,"Couldn't find %s. Add it to the .dat file\n",
 		    *(top->atoms.atomname[index[n][i]]));
 	  else  
-	    (*slDensity)[n][slice] += found->nr_el - 
-	                              top->atoms.atom[index[n][i]].q;
+	    (*slDensity)[n][slice] += (found->nr_el - 
+				       top->atoms.atom[index[n][i]].q)*invvol;
 	  free(sought.atomname);
 	}
     }
@@ -228,7 +227,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++)
-      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) / vol_sum;
+      (*slDensity)[n][i] /= nr_frames;
   }
 
   sfree(x0);  /* free memory used by coordinate array */
@@ -240,7 +239,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  double vol_sum;
+  double invvol;
   int natoms,            /* nr. atoms in trj */
       status,  
       **slCount,         /* nr. of atoms in one slice for a group */
@@ -267,8 +266,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
   snew(*slDensity, nr_grps);
   for (i = 0; i < nr_grps; i++)
     snew((*slDensity)[i], *nslices);
-  vol_sum = 0;
-
+  
   /*********** Start processing trajectory ***********/
   do {
     rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
@@ -277,7 +275,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
       center_coords(&top->atoms,box,x0,axis);
     
     *slWidth = box[axis][axis]/(*nslices);
-    vol_sum += box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+    invvol = *nslices/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
     teller++;
     
     for (n = 0; n < nr_grps; n++) {      
@@ -290,7 +288,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
       
 	/* determine which slice atom is in */
 	slice = (int)(z / (*slWidth)); 
-	(*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m;
+	(*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m*invvol;
       }
     }
 
@@ -309,7 +307,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++) {
-      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) / vol_sum;
+      (*slDensity)[n][i] /= nr_frames;
     }
   }
 
