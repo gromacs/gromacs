@@ -1047,7 +1047,10 @@ int gmx_traj(int argc,char *argv[])
         
     } while(read_next_frame(oenv,status,&fr));
     
-    gmx_rmpbc_done(gpbc);
+    if (gpbc != NULL)
+    {
+        gmx_rmpbc_done(gpbc);
+    }
     
     /* clean up a bit */
     close_trj(status);
