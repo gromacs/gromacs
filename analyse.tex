@@ -127,17 +127,28 @@ a number of default groups are generated to choose from:
         all non-protein atoms
 \item[{\tt DNA}]\mbox{}\\
         all DNA atoms
+\item[{\tt RNA}]\mbox{}\\
+        all RNA atoms
+\item[{\tt Water}]\mbox{}\\
+        water molecules (names like {\tt SOL}, {\tt WAT}, {\tt HOH}, etc.)  See
+        {\tt \normindex{residuetypes.dat}} for a full listing
+\item[{\tt non-Water}]\mbox{}\\
+        anything not covered by the {\tt Water} group
+\item[{\tt Ion}]\mbox{}\\
+        any name matching an Ion entry in {\tt \normindex{residuetypes.dat}}
+\item[{\tt Water_and_Ions}]\mbox{}\\
+        combination of the {\tt Water} and {\tt Ions} groups 
 \item[{\tt molecule_name}]\mbox{}\\
-        for all residues/molecules which are not recognized as protein
-        or DNA, one group per residue/molecule name is generated
+        for all residues/molecules which are not recognized as protein,
+        DNA, or RNA; one group per residue/molecule name is generated
 \item[{\tt Other}]\mbox{}\\
-        all atoms which are neither protein nor DNA.
+        all atoms which are neither protein, DNA, nor RNA.
 \end{description}
 Empty groups will not be generated.
 Most of the groups only contain protein atoms.
 An atom is considered a protein atom if its residue name is listed
 in the {\tt \normindex{residuetypes.dat}} file and is listed as a
-``Protein'' entry.
+``Protein'' entry.  The process for determinding DNA, RNA, etc. is analogous.
 
 \subsection{Selections}
 \label{subsec:selections}
@@ -171,8 +182,8 @@ your trajectory first. {\gromacs} comes with a simple trajectory
 viewer {\tt \normindex{ngmx}}; the advantage with this one is that it does not
 require OpenGL, which usually isn't present on {\eg} supercomputers.
 It is also possible to generate a
-hard-copy in Encapsulated Postscript format, see
-\figref{ngmxdump}. If you want a faster and more fancy viewer
+hard-copy in Encapsulated Postscript format (see
+\figref{ngmxdump}). If you want a faster and more fancy viewer
  there are several programs
 that can read the {\gromacs} trajectory formats -- have a look at our
 homepage ({\wwwpage}) for updated links. 
@@ -501,7 +512,7 @@ calculate. For example, the index-file could look like this:
  1     2     3
 
 [ a_vector ]
- 3     4     5
+ 4     5
 \end{verbatim}
 %} % Brace matches ifthenelse test for gmxlite
 
@@ -575,7 +586,7 @@ RMSD(t_1,t_2) ~=~ \left[\frac{1}{M} \sum_{i=1}^N m_i \|{\bf r}_i(t_1)-{\bf r}_i(
 \eeq
 where $M = \sum_{i=1}^N m_i$ and ${\bf r}_i(t)$ is the position of atom $i$ at time $t$.
 {\bf Note} that fitting does not have to use the same atoms as the calculation
-of the $RMSD$; {\eg}: a protein is usually fitted on the backbone atoms
+of the $RMSD$; {\eg} a protein is usually fitted on the backbone atoms
 (N,C$_{\alpha}$,C), but the $RMSD$ can be computed of the backbone
 or of the whole protein.
 
@@ -892,7 +903,7 @@ A typical output is given in \figref{rama}.
 
 It is also possible to generate an animation of the Ramachandran plot
 in time. This can be useful for analyzing certain dihedral transitions 
-in your protein. You can use the program {\tt \normindex{xrama}} for this.
+in your protein. You can use the program {\tt \normindex{g_xrama}} for this.
 
 When studying $\alpha$-helices 
 it is useful to have a {\em helical wheel} projection
