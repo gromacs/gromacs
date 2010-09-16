@@ -57,6 +57,7 @@
 #include "gmxfio.h"
 #include "mpelogging.h"
 #include "groupcoord.h"
+#include "gmx_sort.h"
 
 
 /* Set the minimum weight for the determination of the slab centers */
@@ -1997,7 +1998,7 @@ static void sort_collective_coordinates(
         copy_rvec(rotg->x_ref[i], data[i].x_ref);
     }
     /* Sort the 'data' structure */
-    qsort(data, rotg->nat, sizeof(sort_along_vec_t), projection_compare);
+    gmx_qsort(data, rotg->nat, sizeof(sort_along_vec_t), projection_compare);
     
     /* Copy back the sorted values */
     for (i=0; i<rotg->nat; i++)
