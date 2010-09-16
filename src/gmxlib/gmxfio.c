@@ -254,14 +254,14 @@ static void gmx_fio_set_iotype(t_fileio *fio)
 void gmx_fio_lock(t_fileio *fio)
 {
 #ifdef GMX_THREADS
-    tMPI_Spinlock_lock(&(fio->mtx));
+    tMPI_Lock_lock(&(fio->mtx));
 #endif
 }
 /* unlock the mutex associated with this fio.  */
 void gmx_fio_unlock(t_fileio *fio)
 {
 #ifdef GMX_THREADS
-    tMPI_Spinlock_unlock(&(fio->mtx));
+    tMPI_Lock_unlock(&(fio->mtx));
 #endif
 }
 
@@ -276,7 +276,7 @@ static void gmx_fio_make_dummy(void)
         open_files->next=open_files;
         open_files->prev=open_files;
 #ifdef GMX_THREADS
-        tMPI_Spinlock_init(&(open_files->mtx));
+        tMPI_Lock_init(&(open_files->mtx));
 #endif
     }
 }
@@ -491,7 +491,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
 
     snew(fio, 1);
 #ifdef GMX_THREADS
-    tMPI_Spinlock_init(&(fio->mtx));
+    tMPI_Lock_init(&(fio->mtx));
 #endif
     bRead = (newmode[0]=='r' && newmode[1]!='+');
     bReadWrite = (newmode[1]=='+');

@@ -143,7 +143,7 @@ C    Reset outer and inner iteration counters
       ninner           = 0               
 
 C    Loop over thread workunits
-   10 call f77kernelsync(mtx,count,nri,nthreads,nn0,nn1)
+   10 call pwr6kernelsync(mtx,count,nri,nthreads,nn0,nn1)
         if(nn1.gt.nri) nn1=nri
 
 C      Start outer loop over neighborlists
@@ -919,7 +919,7 @@ C    Reset outer and inner iteration counters
       ninner           = 0               
 
 C    Loop over thread workunits
-   10 call f77kernelsync(mtx,count,nri,nthreads,nn0,nn1)
+   10 call pwr6kernelsync(mtx,count,nri,nthreads,nn0,nn1)
         if(nn1.gt.nri) nn1=nri
 
 C      Start outer loop over neighborlists
