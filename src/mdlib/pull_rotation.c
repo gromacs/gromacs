@@ -1591,8 +1591,11 @@ static real do_flex2_lowlevel(
         mj = erg->mc[iigrp];  /* need the unsorted mass here */
         wj = N_M*mj;
         
-        /* Current position of this atom: x[ii][XX/YY/ZZ] */
-        copy_rvec(x[ii], xj);
+        /* Current position of this atom: x[ii][XX/YY/ZZ]
+         * Note that erg->xc_center contains the center of mass in case the flex2-t
+         * potential was chosen. For the flex2 potential erg->xc_center must be
+         * zero. */
+        rvec_sub(x[ii], erg->xc_center, xj);
 
         /* Shift this atom such that it is near its reference */
         shift_single_coord(box, xj, erg->xc_shifts[iigrp]);
@@ -1804,8 +1807,11 @@ static real do_flex_lowlevel(
         mj = erg->mc[iigrp];  /* need the unsorted mass here */
         wj = N_M*mj;
         
-        /* Current position of this atom: x[ii][XX/YY/ZZ] */
-        copy_rvec(x[ii], xj);
+        /* Current position of this atom: x[ii][XX/YY/ZZ]
+         * Note that erg->xc_center contains the center of mass in case the flex-t
+         * potential was chosen. For the flex potential erg->xc_center must be
+         * zero. */
+        rvec_sub(x[ii], erg->xc_center, xj);
         
         /* Shift this atom such that it is near its reference */
         shift_single_coord(box, xj, erg->xc_shifts[iigrp]);
@@ -3339,15 +3345,18 @@ extern void do_rotation(
                 break;
             case erotgFLEXT:
             case erotgFLEX2T:
-                /* Subtract the center of the rotation group */
-                /* TODO: checkme! */
+                /* Subtract the center of the rotation group from the collective positions array
+                 * Also store the center in erg->xc_center since it needs to be subtracted
+                 * in the low level routines from the local coordinates as well */
                 get_center(erg->xc, erg->mc, rotg->nat, erg->xc_center);
                 svmul(-1.0, erg->xc_center, transvec);
                 translate_x(erg->xc, rotg->nat, transvec);
-                gmx_fatal(FARGS, "Sorry - FLEX-T and FLEX2-T are not yet implemented in this version!");
+                do_flexible(cr,er,rotg,g,x,box,t,step,outstep_torque);
                 break;
             case erotgFLEX:
             case erotgFLEX2:
+                /* Do NOT subtract the center of mass in the low level routines! */
+                clear_rvec(erg->xc_center);
                 do_flexible(cr,er,rotg,g,x,box,t,step,outstep_torque);
                 break;
             default:

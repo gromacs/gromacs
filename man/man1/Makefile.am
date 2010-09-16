@@ -55,7 +55,6 @@ man_MANS =   \
 	g_rotmat.1  \
 	g_saltbr.1  \
 	g_sas.1  \
-	g_sdf.1  \
 	g_select.1  \
 	g_sgangle.1  \
 	g_sham.1  \

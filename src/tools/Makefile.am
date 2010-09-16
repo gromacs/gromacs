@@ -37,7 +37,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_polystat.c	gmx_potential.c	gmx_rama.c	\
 	gmx_rdf.c	gmx_rms.c	gmx_rmsdist.c	gmx_rmsf.c	\
 	gmx_rotacf.c	gmx_rotmat.c	gmx_saltbr.c	gmx_sas.c	\
-	gmx_select.c	gmx_sdf.c	gmx_pme_error.c	\
+	gmx_select.c	gmx_pme_error.c	\
 	gmx_sgangle.c	gmx_sorient.c 	gmx_spol.c	gmx_tcaf.c	\
 	gmx_traj.c	gmx_velacc.c	gmx_helixorient.c \
 	gmx_clustsize.c	gmx_mdmat.c	gmx_wham.c	eigio.h		\
@@ -70,7 +70,7 @@ bin_PROGRAMS = \
 	g_rotacf    	g_rotmat	g_saltbr    	g_sas       	\
 	g_select	g_sgangle   	\
 	g_sham 		g_sorient   	g_spol		\
-	g_sdf		g_spatial	g_pme_error	\
+	g_spatial	g_pme_error	\
 	g_tcaf      	g_traj      	g_tune_pme   \
 	g_vanhove	g_velacc    	g_membed      \
 	g_clustsize 	g_mdmat     	g_wham		\

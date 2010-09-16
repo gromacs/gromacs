@@ -35,102 +35,44 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifdef HAVE_TMPI_CONFIG_H
-#include "tmpi_config.h"
-#endif
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+/* get a pointer the next coll_env once it's ready */
+struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *synct);
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
+/* post the availability of data in a cev. 
+   cev         = the collective comm environment
+   myrank      = my rank
+   index       = the buffer index
+   tag         = the tag
+   datatype    = the datatype
+   busize      = the buffer size
+   buf         = the buffer to xfer
+   n_remaining = the number of remaining threads that need to transfer
+   synct       = the multicast sync number 
+   dest        = -1 for all theads, or a specific rank number.
+   */
+void tMPI_Post_multi(struct coll_env *cev, int myrank, int index, 
+                     int tag, tMPI_Datatype datatype, 
+                     size_t bufsize, void *buf, int n_remaining, 
+                     int synct, int dest);
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
+/* transfer data from cev->met[rank] to recvbuf */
+void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
+                    int index, int expected_tag, tMPI_Datatype recvtype,
+                    size_t recvsize, void *recvbuf, int *ret);
 
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+/* do a root transfer (from root send buffer to root recv buffer) */
+void tMPI_Coll_root_xfer(tMPI_Comm comm, 
+                         tMPI_Datatype sendtype, tMPI_Datatype recvtype, 
+                         size_t sendsize, size_t recvsize, 
+                         void* sendbuf, void* recvbuf, int *ret);
 
-#include "thread_mpi/list.h"
-
-
-void tMPI_Stack_init(tMPI_Stack *st)
-{
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
-
-void tMPI_Stack_destroy(tMPI_Stack *st)
-{
-    tMPI_Atomic_ptr_set(&(st->head), NULL);
-}
-
-void tMPI_Stack_push(tMPI_Stack *st, tMPI_Stack_element *el)
-{
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        el->next=head;
-    }
-    while (!tMPI_Atomic_ptr_cas(&(st->head), head, el));
-}
-
-tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
-{
-    tMPI_Stack_element *head,*next;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-        if (head)
-            next=head->next;
-        else
-            next=NULL;
-    } while (!tMPI_Atomic_ptr_cas(&(st->head), head, next));
-
-    return head;
-}
-
-tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st)
-{
-    tMPI_Stack_element *head;
-    do
-    {
-        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-    } while (!tMPI_Atomic_ptr_cas(&(st->head), head, NULL));
-
-    return head;
-}
+/* wait for other processes to copy data from my cev */
+void tMPI_Wait_for_others(struct coll_env *cev, int myrank);
+/* wait for data to become available from a specific rank */
+void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
+                        int myrank);
+/*int rank, int myrank, int synct);*/
 
 
-
-
-
-#if 0
-void tMPI_Queue_init(tMPI_Queue *q)
-{
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
-
-
-void tMPI_Queue_destroy(tMPI_Queue *q)
-{
-    tMPI_Atomic_ptr_set( &(q->head), NULL);
-    tMPI_Atomic_ptr_set( &(q->tail), NULL);
-}
-
-void tMPI_Queue_enqueue(tMPI_Queue *q, tMPI_Queue_element *qe)
-{
-    tMPI_Queue_element *head, *next;
-
-    do
-    {
-    } while (!tMPI_Atomic_ptr_cas(&(q->head), head, next));
-}
-#endif
 

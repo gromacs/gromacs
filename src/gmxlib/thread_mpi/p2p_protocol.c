@@ -35,12 +35,93 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is included from p2p.c; it's not really a header file,
-   but this defines a lot of functions that probably need to be inlined.*/
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+
+#include "impl.h"
+#include "p2p.h"
+
+/* free envelopes: */
+/* free envelopes: */
+static struct envelope *tMPI_Free_env_list_fetch_recv(struct free_envelope_list
+                                                      *evl);
+
+/* return an envelope to the free envelopes list */
+static void tMPI_Free_env_list_return_recv(struct free_envelope_list *evl,
+                                           struct envelope *rev);
+
+
+
+/* send envelope lists: */
+/* send envelopes: */
+/* get a new envelope from the send list's free envelope list */
+static struct envelope* tMPI_Send_env_list_fetch_new(struct
+                                              send_envelope_list *evl);
+
+/* return a send envelope to the send list's free envelope list, 
+   (to be used by the sending thread, who owns the send_envelope_list) */
+static void tMPI_Send_env_list_return(struct envelope *ev);
+#ifdef USE_SEND_RECV_COPY_BUFFER
+/* return a send envelope to the sender's send list. 
+   (to be used by the receiving thread). */
+static void tMPI_Send_env_list_rts(struct envelope *sev);
+#endif
+
+
+
+
+/* send envelopes: */
+/* remove a send envelope from its head_old list. Does not lock */
+static void tMPI_Send_env_list_remove_old(struct envelope *sev); 
+
+/* add a send envelope to the new envelopes queue in a list */
+static void tMPI_Send_env_list_add_new(struct tmpi_thread *cur, 
+                                       struct send_envelope_list *evl,
+                                       struct envelope *sev);
+/* move a send envelope to the old envelopes queue in a list. 
+   Assumes that this is safe to do without interference
+   from other threads, i.e. the list it's in must have been
+   detached. */
+static void tMPI_Send_env_list_move_to_old(struct envelope *sev); 
+
+
+
+
+/* receive envelopes: */
+/* add a receive envelope to a list */
+static void tMPI_Recv_env_list_add(struct recv_envelope_list *evl,
+                                   struct envelope *ev);
+/* remove a receive envelope from its list */
+static void tMPI_Recv_env_list_remove(struct envelope *ev);
+
+
+
+
+/* do the actual point-to-point transfer */
+static void tMPI_Xfer(struct tmpi_thread *cur, struct envelope *sev,  
+                      struct envelope *rev);
+
+
+
 
 /* Point-to-point communication protocol functions */
-
-
 void tMPI_Free_env_list_init(struct free_envelope_list *evl, int N)
 {
     int i;
@@ -168,8 +249,8 @@ void tMPI_Send_env_list_destroy(struct send_envelope_list *evl)
 }
 
 
-static struct envelope* 
-tMPI_Send_env_list_fetch_new(struct send_envelope_list *evl)
+static struct envelope* tMPI_Send_env_list_fetch_new(struct 
+                                                     send_envelope_list *evl)
 {
     struct envelope *ret;
 
@@ -187,8 +268,7 @@ tMPI_Send_env_list_fetch_new(struct send_envelope_list *evl)
             /* we detach by swapping what we expect the pointer value to be,
                with NULL. If there were a cross-platform way to atomically 
                swap  without checking, we could do that, too. */
-            while(tMPI_Atomic_ptr_cas( &(evl->head_rts), ret, NULL ) !=
-                  (void*)ret)
+            while(!tMPI_Atomic_ptr_cas( &(evl->head_rts), ret, NULL ))
             {
                 ret=(struct envelope*)tMPI_Atomic_ptr_get(&(evl->head_rts));
             }
@@ -264,7 +344,7 @@ static void tMPI_Send_env_list_rts(struct envelope *sev)
         /* the cmpxchg operation is a memory fence, so we shouldn't need
            to worry about out-of-order evaluation */
     }
-    while (tMPI_Atomic_ptr_cas( &(evl->head_rts), sevn, sev ) != (void*)sevn);
+    while (!tMPI_Atomic_ptr_cas( &(evl->head_rts), sevn, sev ));
 #else
     tMPI_Spinlock_lock( &(evl->lock_rts) );
     ev->next=(struct envelope*)evl->head_rts;
@@ -294,7 +374,6 @@ static void tMPI_Send_env_list_add_new(struct tmpi_thread *cur,
 {
 #ifdef TMPI_LOCK_FREE_LISTS
     struct envelope *evl_head_new_orig;
-    struct envelope *evl_cas;
 #endif
     sev->prev=NULL;
 
@@ -312,12 +391,10 @@ static void tMPI_Send_env_list_add_new(struct tmpi_thread *cur,
         sev->next=evl_head_new_orig;
         /* do the compare-and-swap. 
            this operation is a memory fence, so we shouldn't need
-           to worry about out-of-order stores */
-        evl_cas=(struct envelope*)tMPI_Atomic_ptr_cas(&(evl->head_new), 
-                                                      evl_head_new_orig, sev);
-        /* and compare the results: if they aren't the same,
+           to worry about out-of-order stores. If it returns false, 
            somebody else got there before us: */
-    } while (evl_cas != evl_head_new_orig); 
+    } while (!tMPI_Atomic_ptr_cas(&(evl->head_new), evl_head_new_orig, sev));
+
 #else
     tMPI_Spinlock_lock( &(evl->lock_new) );
     /* we add to the start of the list */
@@ -438,7 +515,7 @@ void tMPI_Req_list_destroy(struct req_list *rl)
 
 
 
-static struct tmpi_req_ *tMPI_Get_req(struct req_list *rl)
+struct tmpi_req_ *tMPI_Get_req(struct req_list *rl)
 {
     struct tmpi_req_ *req=rl->head;
     
@@ -456,7 +533,7 @@ static struct tmpi_req_ *tMPI_Get_req(struct req_list *rl)
     return req;
 }
 
-static void tMPI_Return_req(struct req_list *rl, struct tmpi_req_ *req)
+void tMPI_Return_req(struct req_list *rl, struct tmpi_req_ *req)
 {
     req->next=rl->head;
     req->prev=NULL;
@@ -465,7 +542,7 @@ static void tMPI_Return_req(struct req_list *rl, struct tmpi_req_ *req)
 
 
 
-static void tMPI_Req_init(struct tmpi_req_ *rq, struct envelope *ev)
+void tMPI_Req_init(struct tmpi_req_ *rq, struct envelope *ev)
 {
     rq->ev=ev;
     rq->finished=FALSE;
@@ -489,7 +566,7 @@ static void tMPI_Req_init(struct tmpi_req_ *rq, struct envelope *ev)
 
 
 
-static void tMPI_Set_req(struct envelope *ev, struct tmpi_req_ *req)
+void tMPI_Set_req(struct envelope *ev, struct tmpi_req_ *req)
 {
     req->source = ev->src;
     req->comm = ev->comm;
@@ -511,7 +588,7 @@ static void tMPI_Set_req(struct envelope *ev, struct tmpi_req_ *req)
     }
 }
 
-static void tMPI_Set_status(struct tmpi_req_ *req, tMPI_Status *st)
+void tMPI_Set_status(struct tmpi_req_ *req, tMPI_Status *st)
 {
     if (st)
     {
@@ -524,8 +601,8 @@ static void tMPI_Set_status(struct tmpi_req_ *req, tMPI_Status *st)
 }
 
 
-static gmx_bool tMPI_Envelope_matches(const struct envelope *sev,
-                                  const struct envelope *rev)
+tmpi_bool tMPI_Envelope_matches(const struct envelope *sev,
+                                const struct envelope *rev)
 {
 #ifdef TMPI_DEBUG
     printf("%5d: tMPI_Envelope_matches (%d->%d)==(%d->%d),  tag=(%d==%d),       \n       datatype=(%ld==%ld), comm=(%ld,%ld),\n              finished=(%d==%d)\n",
@@ -561,9 +638,8 @@ static gmx_bool tMPI_Envelope_matches(const struct envelope *sev,
 
 
 
-static struct envelope* 
-tMPI_Send_env_list_search_old(struct send_envelope_list *evl,
-                              struct envelope *rev)
+struct envelope* tMPI_Send_env_list_search_old(struct send_envelope_list *evl,
+                                               struct envelope *rev)
 {
     struct envelope *sev;
 
@@ -582,9 +658,8 @@ tMPI_Send_env_list_search_old(struct send_envelope_list *evl,
 }
 
 
-static struct envelope* 
-tMPI_Recv_env_list_search_new(struct recv_envelope_list *evl,
-                              struct envelope *sev)
+struct envelope* tMPI_Recv_env_list_search_new(struct recv_envelope_list *evl,
+                                               struct envelope *sev)
 {
     struct envelope *rev;
 
@@ -602,8 +677,9 @@ tMPI_Recv_env_list_search_new(struct recv_envelope_list *evl,
 
 
 #ifdef USE_SEND_RECV_COPY_BUFFER
-static void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
+void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
 {
+    int state;
     /* Fill copy buffer, after having anounced its possible use */
 
     /* in the special case of a zero buffer size, we don't do anything and
@@ -612,14 +688,15 @@ static void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
         return;
 
     /* first check whether the other side hasn't started yet */
-    tMPI_Atomic_memory_barrier();
-    if ((tMPI_Atomic_get( &(sev->state) ) == env_unmatched )) 
+    state=tMPI_Atomic_get( &(sev->state) );
+    tMPI_Atomic_memory_barrier_acq();
+    if (state == env_unmatched )
     {
         /* first copy */
         memcpy(sev->cb, sev->buf, sev->bufsize);
         /* now set state, if other side hasn't started copying yet. */
-        if (tMPI_Atomic_cas( &(sev->state), env_unmatched, env_cb_available)
-            == env_unmatched)
+        tMPI_Atomic_memory_barrier_rel();
+        if (tMPI_Atomic_cas( &(sev->state), env_unmatched, env_cb_available))
         {
             /* if it was originally unmatched, the receiver wasn't 
                copying the old buffer. We can don't need to wait,
@@ -642,8 +719,8 @@ static void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
        buffered in the first place), so we just spin-wait.  */
     while(tMPI_Atomic_get( &(sev->state) ) < env_cb_available)
     {
-        tMPI_Atomic_memory_barrier();
     }
+    tMPI_Atomic_memory_barrier_acq();
 #ifdef TMPI_DEBUG
     printf("%5d: tMPI_Send_copy_buffer(%d->%d, tag=%d) waiting-completed\n", 
            tMPI_This_threadnr(), 
@@ -657,10 +734,13 @@ static void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
 #endif
 
 
-static struct envelope* tMPI_Prep_send_envelope(struct send_envelope_list *evl, 
-                        tMPI_Comm comm, struct tmpi_thread *src, 
-                        struct tmpi_thread *dest, void *buf, int count, 
-                        tMPI_Datatype datatype, int tag, gmx_bool nonblock)
+struct envelope* tMPI_Prep_send_envelope(struct send_envelope_list *evl, 
+                                         tMPI_Comm comm, 
+                                         struct tmpi_thread *src, 
+                                         struct tmpi_thread *dest, 
+                                         void *buf, int count, 
+                                         tMPI_Datatype datatype, 
+                                         int tag, tmpi_bool nonblock)
 {
     /* get an envelope from the send-envelope stack */
     struct envelope *ev=tMPI_Send_env_list_fetch_new( evl );
@@ -699,10 +779,13 @@ static struct envelope* tMPI_Prep_send_envelope(struct send_envelope_list *evl,
     return ev;
 }
 
-static struct envelope* tMPI_Prep_recv_envelope(struct tmpi_thread *cur, 
-                        tMPI_Comm comm, struct tmpi_thread *src, 
-                        struct tmpi_thread *dest, void *buf, int count, 
-                        tMPI_Datatype datatype, int tag, gmx_bool nonblock)
+struct envelope* tMPI_Prep_recv_envelope(struct tmpi_thread *cur, 
+                                         tMPI_Comm comm, 
+                                         struct tmpi_thread *src, 
+                                         struct tmpi_thread *dest, 
+                                         void *buf, int count, 
+                                         tMPI_Datatype datatype, int tag, 
+                                         tmpi_bool nonblock)
 {
     /* get an envelope from the stack */
     struct envelope *ev=tMPI_Free_env_list_fetch_recv( &(cur->envelopes) );
@@ -749,7 +832,7 @@ static void tMPI_Xfer(struct tmpi_thread *cur, struct envelope *sev,
 #ifdef USE_SEND_RECV_COPY_BUFFER
     /* we remove the sender's envelope only if we do the transfer, which 
        we always do if the buffer size = 0 */ 
-    gmx_bool remove_sender = (sev->bufsize==0);
+    tmpi_bool remove_sender = (sev->bufsize==0);
 #endif
 #ifdef TMPI_DEBUG
     printf("%5d: tMPI_Xfer (%d->%d, tag=%d) started\n", 
@@ -778,8 +861,7 @@ static void tMPI_Xfer(struct tmpi_thread *cur, struct envelope *sev,
         if (sev->using_cb)
         {
             /* check if the other side has already finished copying */
-            if (tMPI_Atomic_cas( &(sev->state), env_unmatched, env_copying)
-                != env_unmatched)
+            if (!tMPI_Atomic_cas( &(sev->state), env_unmatched, env_copying))
             {
                 /* it has, and we're copying from the new buffer. 
                    We're now also tasked with removing the envelope */
@@ -848,12 +930,12 @@ static void tMPI_Xfer(struct tmpi_thread *cur, struct envelope *sev,
 
 
 
-static struct envelope* tMPI_Post_match_recv(struct tmpi_thread *cur,
-                                             tMPI_Comm comm, 
-                                             struct tmpi_thread *src, 
-                                             void *recv_buf, int recv_count, 
-                                             tMPI_Datatype datatype, 
-                                             int tag, gmx_bool nonblock)
+struct envelope* tMPI_Post_match_recv(struct tmpi_thread *cur,
+                                      tMPI_Comm comm, 
+                                      struct tmpi_thread *src, 
+                                      void *recv_buf, int recv_count, 
+                                      tMPI_Datatype datatype, 
+                                      int tag, tmpi_bool nonblock)
 {
     struct tmpi_thread *dest=cur;
     struct envelope *rev;
@@ -917,12 +999,12 @@ static struct envelope* tMPI_Post_match_recv(struct tmpi_thread *cur,
 
 
 
-static struct envelope *tMPI_Post_send(struct tmpi_thread *cur,
-                                       tMPI_Comm comm, 
-                                       struct tmpi_thread *dest, 
-                                       void *send_buf, int send_count,
-                                       tMPI_Datatype datatype, int tag, 
-                                       gmx_bool nonblock)
+struct envelope *tMPI_Post_send(struct tmpi_thread *cur,
+                                tMPI_Comm comm, 
+                                struct tmpi_thread *dest, 
+                                void *send_buf, int send_count,
+                                tMPI_Datatype datatype, int tag, 
+                                tmpi_bool nonblock)
 {
     struct tmpi_thread *src=cur;
     struct envelope *sev;
@@ -949,7 +1031,7 @@ static struct envelope *tMPI_Post_send(struct tmpi_thread *cur,
 
 
 
-static void tMPI_Wait_process_incoming(struct tmpi_thread *cur)
+void tMPI_Wait_process_incoming(struct tmpi_thread *cur)
 {
     int i;
     int check_id;
@@ -983,18 +1065,14 @@ static void tMPI_Wait_process_incoming(struct tmpi_thread *cur)
 #ifdef TMPI_LOCK_FREE_LISTS
             /* Behold our lock-free shared linked list:
                (see tMPI_Send_env_list_add_new for more info) */
-            struct envelope *evl_cas;
-
             do
             {
                 /* read old head atomically */
                 sev_head=(struct envelope*)
                           tMPI_Atomic_ptr_get( &(cur->evs[i].head_new) );
                 /* do the compare-and-swap to detach the list */
-                evl_cas=(struct envelope*)
-                          tMPI_Atomic_ptr_cas(&(cur->evs[i].head_new), sev_head,
-                                              NULL);
-            } while (evl_cas != sev_head);
+            } while (!tMPI_Atomic_ptr_cas(&(cur->evs[i].head_new), sev_head,
+                                              NULL));
 #else
             tMPI_Spinlock_lock( &(cur->evs[i].lock_new) );
             sev_head=(struct send_envelope*)cur->evs[i].head_new;
@@ -1041,7 +1119,7 @@ static void tMPI_Wait_process_incoming(struct tmpi_thread *cur)
     tMPI_Event_process( &(cur->p2p_event), n_handled);
 }
 
-static gmx_bool tMPI_Test_single(struct tmpi_thread *cur, struct tmpi_req_ *rq)
+tmpi_bool tMPI_Test_single(struct tmpi_thread *cur, struct tmpi_req_ *rq)
 {
     struct envelope *ev=rq->ev;
 
@@ -1081,7 +1159,7 @@ static gmx_bool tMPI_Test_single(struct tmpi_thread *cur, struct tmpi_req_ *rq)
     return rq->finished;
 }
 
-static void tMPI_Wait_single(struct tmpi_thread *cur, struct tmpi_req_ *rq)
+void tMPI_Wait_single(struct tmpi_thread *cur, struct tmpi_req_ *rq)
 {
     do
     {
@@ -1091,10 +1169,10 @@ static void tMPI_Wait_single(struct tmpi_thread *cur, struct tmpi_req_ *rq)
     } while(TRUE);
 }
 
-static gmx_bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
-                            gmx_bool *any_done)
+tmpi_bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
+                                 tmpi_bool *any_done)
 {
-    gmx_bool all_done=TRUE;
+    tmpi_bool all_done=TRUE;
     struct tmpi_req_ *creq=rqs;
 
     int i=0;
@@ -1103,7 +1181,7 @@ static gmx_bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
 
     while(creq)
     {
-        gmx_bool finished=tMPI_Test_single(cur, creq);
+        tmpi_bool finished=tMPI_Test_single(cur, creq);
         i++;
 
         /* now do the check */

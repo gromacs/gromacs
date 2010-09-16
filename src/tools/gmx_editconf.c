@@ -1038,17 +1038,25 @@ int gmx_editconf(int argc, char *argv[])
         fprintf(stderr,"\nSelect a group for output:\n");
         get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
                   1,&isize,&index,&grpname);
-        if (opt2bSet("-bf",NFILE,fnm))
-            gmx_fatal(FARGS,"combination not implemented: -bf -n  or -bf -ndef");
-        else {
-            if (outftp == efPDB) {
-                out=ffopen(outfile,"w");
-                write_pdbfile_indexed(out,title,&atoms,x,ePBC,box,' ',1,isize,index,conect,TRUE);
-                ffclose(out);
-            }
-            else
-                write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,
-                    isize,index); 
+        if (opt2parg_bSet("-label",NPA,pa)) {
+            for(i=0; (i<atoms.nr); i++) 
+                atoms.resinfo[atoms.atom[i].resind].chainid=label[0];
+        }
+                
+        if (opt2bSet("-bf",NFILE,fnm) || bLegend)
+        {
+            gmx_fatal(FARGS,"Sorry, cannot do bfactors with an index group.");
+        }
+
+        if (outftp == efPDB) 
+        {
+            out=ffopen(outfile,"w");
+            write_pdbfile_indexed(out,title,&atoms,x,ePBC,box,' ',1,isize,index,conect,TRUE);
+            ffclose(out);
+        }
+        else
+        {
+            write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,isize,index); 
         }
     }
     else {

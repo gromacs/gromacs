@@ -183,7 +183,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
 {
   gmx_cpp_t cpp;
   char *buf,*pdum;
-  char *ptr;
+  char *ptr, *ptr2;
   int i;
   unsigned int i1;
     
@@ -229,7 +229,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     for (i = 0; i < nincl; ++i)
     {
       snew(buf, strlen(incl[i]) + strlen(filenm) + 2);
-      sprintf(buf, "%s%c%s", incl[i], DIR_SEPARATOR, filenm);
+      sprintf(buf, "%s/%s", incl[i], filenm);
       if (gmx_fexist(buf))
       {
           cpp->fn = buf;
@@ -251,8 +251,14 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
    * directory. Note that we - just as C - always use UNIX path separators
    * internally in include file names.
    */
-  ptr = strrchr(cpp->fn, '/');
-  if (!ptr)
+  ptr  = strrchr(cpp->fn, '/');
+  ptr2 = strrchr(cpp->fn, DIR_SEPARATOR);
+    
+  if (ptr == NULL || (ptr2 != NULL && ptr2 > ptr))
+  {
+      ptr = ptr2;
+  }
+  if(ptr==NULL)
   {
     cpp->path = NULL;
     cpp->cwd  = NULL;

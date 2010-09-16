@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 73;
+static const int tpx_version = 9999; /* TODO: set the right number if rotation is merged */
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -783,7 +783,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
     
     /* Enforced rotation */
-    if (file_version >= 71) {
+    if (file_version >= 9999) { /* TODO: set the right number here */
         gmx_fio_do_int(fio,ir->bRot);
         if (ir->bRot == TRUE) {
             if (bRead)

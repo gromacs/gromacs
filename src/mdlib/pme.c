@@ -2152,7 +2152,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pme->nky <= pme->pme_order*(pme->nnodes_minor > 1 ? 2 : 1) ||
         pme->nkz <= pme->pme_order)
     {
-        gmx_fatal(FARGS,"The pme grid dimensions need to be larger than pme_order (%d) and in parallel larger than 2*pme_ordern for x and/or y",pme->pme_order);
+        gmx_fatal(FARGS,"The pme grid dimensions need to be larger than pme_order (%d) and in parallel larger than 2*pme_order for x and/or y",pme->pme_order);
     }
 
     if (pme->nnodes > 1) {

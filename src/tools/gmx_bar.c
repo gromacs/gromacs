@@ -665,7 +665,7 @@ void lambdas_histogram(lambda_t *bl_head, const char *filename,
     int i;
 
     printf("\nWriting histogram to %s\n", filename);
-    sprintf(label_x, "[\\Delta]H (%s)", unit_energy);
+    sprintf(label_x, "\\DeltaH (%s)", unit_energy);
 
     fp=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, oenv);
 
@@ -916,7 +916,7 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
     lambda_t *lc;
     int j;
 
-    if (begin<=0 && end<0)
+    if (begin<=0 && end<0) 
     {
         return;
     }
@@ -967,9 +967,9 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
     }
 
     /* calculate the actual times */
-    if (begin > 0)
+    if (begin > 0 )
     {
-        begin_t = (last_t - first_t)*begin + first_t;
+        begin_t = begin;
     }
     else
     {
@@ -978,13 +978,18 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
 
     if (end >0 )
     {
-        end_t = (last_t - first_t)*end + first_t;
+        end_t = end;
     }
     else
     {
         end_t = last_t;
     }
     printf("\n   Samples in time interval: %.3f - %.3f\n", first_t, last_t);
+
+    if (begin_t > end_t)
+    {
+        return;
+    }
     printf("Removing samples outside of: %.3f - %.3f\n", begin_t, end_t);
 
     /* then impose them */
@@ -1547,7 +1552,7 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
     for(i=0;i<cb->nsamples;i++)
     {
         samples_t *s=cb->s[i];
-        sample_range_t *r=&(ca->r[i]);
+        sample_range_t *r=&(cb->r[i]);
         if (r->use)
         {
             if (!s->hist)
@@ -1991,7 +1996,7 @@ static void read_bar_xvg_lowlevel(char *fn, real *temp, xvg_t *ba)
             /* Read lambda from the legend */
             ba->lambda[i] = legend2lambda(fn,legend[i], &is_dhdl);
 
-            if (is_dhdl && native_lambda_read)
+            if (is_dhdl && !native_lambda_read)
             {
                 ba->native_lambda = ba->lambda[i];
                 native_lambda_read=TRUE;
@@ -2031,7 +2036,7 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
 
     read_bar_xvg_lowlevel(fn, temp, barsim);
 
-    if (barsim->nset <2 )
+    if (barsim->nset <1 )
     {
         gmx_fatal(FARGS,"File '%s' contains fewer than two columns", fn);
     }
@@ -2062,7 +2067,7 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
     {
         printf(" %.3f (%d pts)", s[i].foreign_lambda, s[i].ndu);
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 static samples_t *read_edr_rawdh_block(int *nsamples, t_enxblock *blk, 
@@ -2381,7 +2386,7 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
             printf(" %.3f (%d pts)", lambdas[i], npts[i]);
         }
     }
-    printf("\n");
+    printf("\n\n");
     sfree(npts);
     sfree(nhists);
     sfree(lambdas);

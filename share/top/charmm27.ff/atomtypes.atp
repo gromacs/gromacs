@@ -122,9 +122,13 @@ HWT3	1.0080 ; TIP3P
 OWT4	15.9994 ; TIP4P
 HWT4	1.0080 ; TIP4P
 MWT4	0.0000 ; TIP4P
+OWT5	15.9994 ; TIP5P
+HWT5	1.0080 ; TIP5P
+MWT5	0.0000 ; TIP5P
 MNH3	0.0000 ; vsite (rigid tetrahedrical NH3 group)
 MNH2	0.0000 ; vsite
-MCH3	0.0000 ; vsite (rigid CH3 group)
+MCH3	0.0000 ; vsite (rigid CH3 group connected to carbons)
+MCH3S	0.0000 ; vsite (rigid CH3 group connected to S)
 ; DNA and RNA section
 P       30.974 ;        Phosphorus  ### For DNA
 P2	30.974000 ;	pyrophosphate phosphorus (see toppar_all27_na_nad_ppi.str)  ### For DNA 
