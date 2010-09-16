@@ -244,7 +244,11 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
         par_fn(tmpnm,efLOG,cr,FALSE,!bMasterOnly,buf,255);
         fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
     }
+#ifdef GMX_FAHCORE
+    else if (!bAppend)
+#else
     else
+#endif
     {
         fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
     }
