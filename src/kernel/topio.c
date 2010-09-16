@@ -539,14 +539,20 @@ static char **read_topol(const char *infile,const char *outfile,
   char     *tmp_line=NULL;
   char       warn_buf[STRLEN];
 
-  /* open input and output file */
+  /* We need to open the output file before opening the input file,
+   * because cpp_open_file can change the current working directory.
+   */
+  if (outfile) {
+    out = gmx_fio_fopen(outfile,"w");
+  } else {
+    out = NULL;
+  }
+
+  /* open input file */
   status = cpp_open_file(infile,&handle,cpp_opts(define,include,infile,wi));
   if (status != 0) 
     gmx_fatal(FARGS,cpp_error(&handle,status));
-  if (outfile)
-    out = gmx_fio_fopen(outfile,"w");
-  else
-    out = NULL;
+
   /* some local variables */
   DS_Init(&DS);			/* directive stack			 */
   nmol     = 0;			/* no molecules yet...			 */
