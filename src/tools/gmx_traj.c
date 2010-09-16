@@ -502,7 +502,7 @@ static void write_pdb_bfac(const char *fname,const char *xname,
         }
         
         printf("Maximum %s is %g on atom %d %s, res. %s %d\n",
-               title,sqrt(max)/nfr_v,maxi+1,*(atoms->atomname[maxi]),
+               title,sqrt(max),maxi+1,*(atoms->atomname[maxi]),
                *(atoms->resinfo[atoms->atom[maxi].resind].name),
                atoms->resinfo[atoms->atom[maxi].resind].nr);
         
