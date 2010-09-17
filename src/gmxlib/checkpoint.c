@@ -101,7 +101,8 @@ enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
        eenhENERGY_SUM_SIM, eenhENERGY_NSUM_SIM,
        eenhENERGY_NSTEPS, eenhENERGY_NSTEPS_SIM, 
        eenhENERGY_DELTA_H_NN,
-       eenhENERGY_DELTA_H_LIST, eenhENERGY_DELTA_H_STARTTIME, 
+       eenhENERGY_DELTA_H_LIST, 
+       eenhENERGY_DELTA_H_STARTTIME, 
        eenhENERGY_DELTA_H_STARTLAMBDA, 
        eenhNR };
 
@@ -111,7 +112,8 @@ const char *eenh_names[eenhNR]=
     "energy_sum_sim", "energy_nsum_sim",
     "energy_nsteps", "energy_nsteps_sim", 
     "energy_delta_h_nn",
-    "energy_delta_h_list", "energy_delta_h_start_time", 
+    "energy_delta_h_list", 
+    "energy_delta_h_start_time", 
     "energy_delta_h_start_lambda"
 };
 
@@ -957,6 +959,7 @@ static int do_cpt_enerhist(XDR *xd,gmx_bool bRead,
             snew(enerhist->dht,1);
             enerhist->dht->ndh = NULL;
             enerhist->dht->dh = NULL;
+            enerhist->dht->start_lambda_set=FALSE;
         }
     }
 
@@ -996,6 +999,7 @@ static int do_cpt_enerhist(XDR *xd,gmx_bool bRead,
                     ret=do_cpte_double(xd, 2, i, fflags, &(enerhist->dht->start_time), list); break;
                 case eenhENERGY_DELTA_H_STARTLAMBDA: 
                     ret=do_cpte_double(xd, 2, i, fflags, &(enerhist->dht->start_lambda), list); break;
+                    enerhist->dht->start_lambda_set=TRUE;
                 default:
                     gmx_fatal(FARGS,"Unknown energy history entry %d\n"
                               "You are probably reading a new checkpoint file with old code",i);
@@ -1226,7 +1230,8 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
         {
             flags_enh |= ( (1<< eenhENERGY_DELTA_H_NN) |
                            (1<< eenhENERGY_DELTA_H_LIST) | 
-                           (1<< eenhENERGY_DELTA_H_STARTTIME) );
+                           (1<< eenhENERGY_DELTA_H_STARTTIME) |
+                           (1<< eenhENERGY_DELTA_H_STARTLAMBDA) );
         }
     }
 

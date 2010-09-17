@@ -484,7 +484,8 @@ void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
         }
     }
     dhc->start_time=enerhist->dht->start_time;
-    dhc->start_lambda=enerhist->dht->start_lambda;
+    if (enerhist->dht->start_lambda_set)
+        dhc->start_lambda=enerhist->dht->start_lambda;
     if (dhc->dh[0].ndh > 0)
         dhc->start_time_set=TRUE;
     else

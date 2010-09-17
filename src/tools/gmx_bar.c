@@ -2116,13 +2116,10 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
     s=*smp;
 
     /* now double check */
-    if (! lambda_same(s->native_lambda, native_lambda) ||
-        ! lambda_same(s->foreign_lambda, foreign_lambda) ||
-        (  (derivative!=0) != (s->derivative!=0) ) )
+    if ( ! lambda_same(s->foreign_lambda, foreign_lambda) ||
+         (  (derivative!=0) != (s->derivative!=0) ) )
     {
-        fprintf(stderr, "Got native lambda=%g, expected: %g\n", 
-                s->native_lambda, native_lambda);
-        fprintf(stderr, "Got native lambda=%g, expected: %g\n", 
+        fprintf(stderr, "Got foreign lambda=%g, expected: %g\n", 
                 s->foreign_lambda, foreign_lambda);
         fprintf(stderr, "Got derivative=%d, derivative: %d\n", 
                 derivative, s->derivative);
@@ -2319,14 +2316,13 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
 
                 if (delta_lambda>0)
                 {
-                    gmx_fatal(FARGS, "Lambda values change in %s: can't apply BAR method", fn);
+                    gmx_fatal(FARGS, "Lambda values not constant in %s: can't apply BAR method", fn);
                 }
                 if ( ( *temp != rtemp) && (*temp > 0) )
                 {
                     gmx_fatal(FARGS,"Temperature in file %s different from earlier files or setting\n", fn);
                 }
                 *temp=rtemp;
-                native_lambda=start_lambda;
 
                 if (first_t < 0)
                     first_t=start_time;
@@ -2344,6 +2340,12 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
 
         if (nsamples > 0)
         {
+            /* check the native lambda */
+            if (!lambda_same(start_lambda, native_lambda) )
+            {
+                gmx_fatal(FARGS, "Native lambda not constant in file %s: started at %g, and becomes %g at time %g", 
+                          fn, native_lambda, start_lambda, start_time);
+            }
             /* check the number of samples against the previous number */
             if ( ((nblocks_raw+nblocks_hist)!=nsamples) || (nlam!=1 ) )
             {
@@ -2373,6 +2375,7 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
         {
             /* this is the first round; allocate the associated data 
                structures */
+            native_lambda=start_lambda;
             nsamples=nblocks_raw+nblocks_hist;
             snew(nhists, nsamples);
             snew(npts, nsamples);
