@@ -2120,7 +2120,14 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
         ! lambda_same(s->foreign_lambda, foreign_lambda) ||
         (  (derivative!=0) != (s->derivative!=0) ) )
     {
-        gmx_fatal(FARGS, "Block order inconsistent in file %s", filename);
+        fprintf(stderr, "Got native lambda=%g, expected: %g\n", 
+                s->native_lambda, native_lambda);
+        fprintf(stderr, "Got native lambda=%g, expected: %g\n", 
+                s->foreign_lambda, foreign_lambda);
+        fprintf(stderr, "Got derivative=%d, derivative: %d\n", 
+                derivative, s->derivative);
+        gmx_fatal(FARGS, "Inconsistent data in file %s around t=%g", filename,
+                  start_time);
     }
 
     /* make room for the data */

@@ -458,6 +458,7 @@ void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
         enerhist->dht->ndh[i] = dhc->dh[i].ndh;
     }
     enerhist->dht->start_time=dhc->start_time;
+    enerhist->dht->start_lambda=dhc->start_lambda;
 }
 
 
