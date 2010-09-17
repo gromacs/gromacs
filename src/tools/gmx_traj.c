@@ -454,11 +454,6 @@ static void write_pdb_bfac(const char *fname,const char *xname,
                 onedim = -1;
             }
         }
-        scale = 1.0/nfr_x;
-        for(i=0; i<isize; i++)
-        {
-            svmul(scale,x[index[i]],x[index[i]]);
-        }
         scale = 1.0/nfr_v;
         for(i=0; i<isize; i++)
         {
@@ -468,7 +463,7 @@ static void write_pdb_bfac(const char *fname,const char *xname,
         fp=xvgropen(xname,title,"Atom","",oenv);
         for(i=0; i<isize; i++)
         {
-            fprintf(fp,"%-5d  %10.3f  %10.3f  %10.3f\n",i,
+            fprintf(fp,"%-5d  %10.3f  %10.3f  %10.3f\n",1+i,
                     sum[index[i]][XX],sum[index[i]][YY],sum[index[i]][ZZ]);
         }
         ffclose(fp);
@@ -507,7 +502,7 @@ static void write_pdb_bfac(const char *fname,const char *xname,
         }
         
         printf("Maximum %s is %g on atom %d %s, res. %s %d\n",
-               title,sqrt(max)/nfr_v,maxi+1,*(atoms->atomname[maxi]),
+               title,sqrt(max),maxi+1,*(atoms->atomname[maxi]),
                *(atoms->resinfo[atoms->atom[maxi].resind].name),
                atoms->resinfo[atoms->atom[maxi].resind].nr);
         
@@ -613,9 +608,10 @@ int gmx_traj(int argc,char *argv[])
         "This implies [TT]-com[tt].[PAR]",
         "Options [TT]-cv[tt] and [TT]-cf[tt] write the average velocities",
         "and average forces as temperature factors to a pdb file with",
-        "the average coordinates. The temperature factors are scaled such",
-        "that the maximum is 10. The scaling can be changed with the option",
-        "[TT]-scale[tt]. To get the velocities or forces of one",
+        "the average coordinates or the coordinates at [TT]-ctime[tt].",
+        "The temperature factors are scaled such that the maximum is 10.",
+        "The scaling can be changed with the option [TT]-scale[tt].",
+        "To get the velocities or forces of one",
         "frame set both [TT]-b[tt] and [TT]-e[tt] to the time of",
         "desired frame. When averaging over frames you might need to use",
         "the [TT]-nojump[tt] option to obtain the correct average coordinates.",
@@ -629,7 +625,7 @@ int gmx_traj(int argc,char *argv[])
     static gmx_bool bMol=FALSE,bCom=FALSE,bPBC=TRUE,bNoJump=FALSE;
     static gmx_bool bX=TRUE,bY=TRUE,bZ=TRUE,bNorm=FALSE,bFP=FALSE;
     static int  ngroups=1;
-    static real scale=0,binwidth=1;
+    static real ctime=-1,scale=0,binwidth=1;
     t_pargs pa[] = {
         { "-com", FALSE, etBOOL, {&bCom},
           "Plot data for the com of each group" },
@@ -653,6 +649,8 @@ int gmx_traj(int argc,char *argv[])
           "Full precision output" },
         { "-bin", FALSE, etREAL, {&binwidth},
           "Binwidth for velocity histogram (nm/ps)" },
+        { "-ctime", FALSE, etREAL, {&ctime},
+          "Use frame at this time for x in -cv and -cf instead of the average x" },
         { "-scale", FALSE, etREAL, {&scale},
           "Scale factor for pdb output, 0 is autoscale" }
     };
@@ -666,7 +664,7 @@ int gmx_traj(int argc,char *argv[])
     t_trxframe fr,frout;
     int        flags,nvhisto=0,*vhisto=NULL;
     rvec       *xtop,*xp=NULL;
-    rvec       *sumxv=NULL,*sumv=NULL,*sumxf=NULL,*sumf=NULL;
+    rvec       *sumx=NULL,*sumv=NULL,*sumf=NULL;
     matrix     topbox;
     t_trxstatus *status;
     t_trxstatus *status_out=NULL;
@@ -902,14 +900,16 @@ int gmx_traj(int argc,char *argv[])
 
     read_first_frame(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
 
+    if (bCV || bCF)
+    {
+        snew(sumx,fr.natoms);
+    }
     if (bCV)
     {
-        snew(sumxv,fr.natoms);
         snew(sumv,fr.natoms);
     }
     if (bCF)
     {
-        snew(sumxf,fr.natoms);
         snew(sumf,fr.natoms);
     }
     nr_xfr = 0;
@@ -1008,46 +1008,39 @@ int gmx_traj(int argc,char *argv[])
             }
             fprintf(outekr,"\n");
         }
-        if (bCV)
+        if ((bCV || bCF) && fr.bX &&
+            (ctime < 0 || (fr.time >= ctime*0.999999 &&
+                           fr.time <= ctime*1.000001)))
         {
-            if (fr.bX)
+            for(i=0; i<fr.natoms; i++)
             {
-                for(i=0; i<fr.natoms; i++)
-                {
-                    rvec_inc(sumxv[i],fr.x[i]);
-                }
-                nr_xfr++;
+                rvec_inc(sumx[i],fr.x[i]);
             }
-            if (fr.bV)
-            {
-                for(i=0; i<fr.natoms; i++)
-                    rvec_inc(sumv[i],fr.v[i]);
-                nr_vfr++;
-            }
+            nr_xfr++;
         }
-        if (bCF)
+        if (bCV && fr.bV)
         {
-            if (fr.bX)
+            for(i=0; i<fr.natoms; i++)
             {
-                for(i=0; i<fr.natoms; i++)
-                {
-                    rvec_inc(sumxf[i],fr.x[i]);
-                }
-                nr_xfr++;
+                rvec_inc(sumv[i],fr.v[i]);
             }
-            if (fr.bF)
+            nr_vfr++;
+        }
+        if (bCF && fr.bF)
+        {
+            for(i=0; i<fr.natoms; i++)
             {
-                for(i=0; i<fr.natoms; i++)
-                {
-                    rvec_inc(sumf[i],fr.f[i]);
-                }
-                nr_ffr++;
+                rvec_inc(sumf[i],fr.f[i]);
             }
+            nr_ffr++;
         }
         
     } while(read_next_frame(oenv,status,&fr));
     
-    gmx_rmpbc_done(gpbc);
+    if (gpbc != NULL)
+    {
+        gmx_rmpbc_done(gpbc);
+    }
     
     /* clean up a bit */
     close_trj(status);
@@ -1066,24 +1059,37 @@ int gmx_traj(int argc,char *argv[])
         print_histo(opt2fn("-vd",NFILE,fnm),nvhisto,vhisto,binwidth,oenv);
     }
     
-    if ((bCV || bCF) && (nr_vfr>1 || nr_ffr>1) && !bNoJump)
+    if (bCV || bCF)
     {
-        fprintf(stderr,"WARNING: More than one frame was used for option -cv or -cf\n"
-                "If atoms jump across the box you should use the -nojump option\n");
+        if (nr_xfr > 1)
+        {
+            if (ePBC != epbcNONE && !bNoJump)
+            {
+                fprintf(stderr,"\nWARNING: More than one frame was used for option -cv or -cf\n"
+                        "If atoms jump across the box you should use the -nojump or -ctime option\n\n");
+            }
+            for(i=0; i<isize[0]; i++)
+            {
+                svmul(1.0/nr_xfr,sumx[index[0][i]],sumx[index[0][i]]);
+            }
+        }
+        else if (nr_xfr == 0)
+        {
+            fprintf(stderr,"\nWARNING: No coordinate frames found for option -cv or -cf\n\n");
+        }
     }
-    
     if (bCV)
     {
         write_pdb_bfac(opt2fn("-cv",NFILE,fnm),
                        opt2fn("-av",NFILE,fnm),"average velocity",&(top.atoms),
-                       ePBC,topbox,isize[0],index[0],nr_xfr,sumxv,
+                       ePBC,topbox,isize[0],index[0],nr_xfr,sumx,
                        nr_vfr,sumv,bDim,scale,oenv);
     }
     if (bCF)
     {
         write_pdb_bfac(opt2fn("-cf",NFILE,fnm),
                        opt2fn("-af",NFILE,fnm),"average force",&(top.atoms),
-                       ePBC,topbox,isize[0],index[0],nr_xfr,sumxf,
+                       ePBC,topbox,isize[0],index[0],nr_xfr,sumx,
                        nr_ffr,sumf,bDim,scale,oenv);
     }
 

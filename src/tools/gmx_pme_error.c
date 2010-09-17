@@ -112,29 +112,6 @@ typedef struct
 } t_inputinfo;
 
 
-static void sep_line(FILE *fp)
-{
-    fprintf(fp, "\n------------------------------------------------------------\n");
-}
-
-
-
-static gmx_bool is_equal(real a, real b)
-{
-    real diff, eps=1.0e-6;
-    
-    
-    diff = a - b;
-    
-    if (diff < 0.0) diff = -diff;
-    
-    if (diff < eps)
-        return TRUE;
-    else
-        return FALSE;
-}
-
-
 /* Returns TRUE when atom is charged */
 static gmx_bool is_charge(real charge)
 {
@@ -468,11 +445,8 @@ static real estimate_reciprocal(
     real tmp=0;     /* variables to compute different factors from vectors */
     real tmp1=0;
     real tmp2=0;
-    real xtmp=0;
-    real ytmp=0;
-    real ztmp=0;
-    double ewald_error;
     
+
     /* Random number generator */
     
     gmx_rng_t rng=NULL;
@@ -641,6 +615,7 @@ static real estimate_reciprocal(
 
     if (MASTER(cr))
         fprintf(stderr, "\n");
+    
     if (info->fracself>0)
     {
         nrsamples=ceil(info->fracself*nr);
@@ -649,7 +624,7 @@ static real estimate_reciprocal(
     {
         nrsamples=nr;
     }
-    
+
     
     xtot=nrsamples;
 
@@ -919,8 +894,6 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
 {
     rvec *x=NULL; /* The coordinates */
     real *q=NULL; /* The charges     */
-    real q2all=0.0;
-    real q2allnr=0.0;
     real  edir=0.0; /* real space error */
     real  erec=0.0; /* reciprocal space error */
     real  derr=0.0; /* difference of real and reciprocal space error */
@@ -1047,29 +1020,23 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
 
 }
 
-#define BENCHSTEPS (1000)
 
 int gmx_pme_error(int argc,char *argv[])
 {
     const char *desc[] = {
             "g_pme_error estimates the error of the electrostatic forces",
-            "if using the SPME algorithm. The flag [TT]-tune[tt] will determine",
+            "if using the sPME algorithm. The flag [TT]-tune[tt] will determine",
             "the splitting parameter such that the error is equally",
             "distributed over the real and reciprocal space part.",
-            "As a part of the error stems from self interaction of the particles "
-            "and is computationally very demanding a good a approximation is possible",
-            "if just a fraction of the particles is used to calculate the average",
-            "of this error by using the flag [TT]-self[tt].[PAR]",
+            "The part of the error that stems from self interaction of the particles "
+            "is computationally demanding. However, a good a approximation is to",
+            "just use a fraction of the particles for this term which can be",
+            "indicated by the flag [TT]-self[tt].[PAR]",
     };
 
-    int        repeats=2;
-    real       fs=0.0;             /* 0 indicates: not set by the user */
-
+    real        fs=0.0;             /* 0 indicates: not set by the user */
     real        user_beta=-1.0;
     real        fracself=-1.0;
-    
-    
-    t_perf      **perfdata;
     t_inputinfo info;
     t_state     state;     /* The state from the tpr input file */
     gmx_mtop_t  mtop;      /* The topology from the tpr input file */
@@ -1087,19 +1054,15 @@ int gmx_pme_error(int argc,char *argv[])
       { efTPX, "-so",   "tuned",  ffOPTWR }
     };
 
-
     output_env_t oenv=NULL;
 
     t_pargs pa[] = {
-      /***********************/
-      /* g_tune_pme options: */
-      /***********************/
         { "-beta",     FALSE, etREAL, {&user_beta},
             "If positive, overwrite ewald_beta from tpr file with this value" },
         { "-tune",     FALSE, etBOOL, {&bTUNE},
-            "If flag is set the splitting parameter will be tuned to distribute the error equally in real and rec. space" },
+            "Tune the splitting parameter such that the error is equally distributed between real and reciprocal space" },
         { "-self",     FALSE, etREAL, {&fracself},
-            "If positive, determine selfinteraction error just over this fraction (default=1.0)" }
+            "If positive, determine self interaction error from just this fraction of all particles (default = 1.0)" }
     };
 
     

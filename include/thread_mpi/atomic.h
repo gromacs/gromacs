@@ -91,7 +91,8 @@ extern "C"
 #endif
 
 
-/* first check for gcc/icc platforms. icc on linux+mac will take this path, 
+/* first check for gcc/icc platforms. 
+   Some compatible compilers, like icc on linux+mac will take this path, 
    too */
 #if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
 
@@ -105,13 +106,9 @@ extern "C"
 /* then ia64: */
 #include "atomic/gcc_ia64.h"
 
-#elif (defined(__powerpc__) || (defined(__ppc__)) )
-/* and powerpc: */
-/*#include "atomic/gcc_ppc.h"*/
-
 /* for now we use gcc intrinsics on gcc: */
-#include "atomic/gcc.h"
-
+/*#elif (defined(__powerpc__) || (defined(__ppc__)) )*/
+/*#include "atomic/gcc_ppc.h"*/
 
 #else
 /* otherwise, there's a generic gcc intrinsics version: */
@@ -127,22 +124,16 @@ extern "C"
 
 #elif ( (defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM))  && \
         (defined(__powerpc__) || defined(__ppc__)))
-/* PowerPC using xlC inline assembly. 
- * Recent versions of xlC (>=7.0) _partially_ support GCC inline assembly
- * if you use the option -qasm=gcc but we have had to hack things a bit, in 
- * particular when it comes to clobbered variables. Since this implementation
- * _could_ be buggy, we have separated it from the known-to-be-working gcc
- * one above.
- */
+
+/* PowerPC using xlC intrinsics.  */
+
 #include "atomic/xlc_ppc.h"
 
-#elif defined(__xlC__) && defined (_AIX)
-/* IBM xlC compiler on AIX */
+#elif defined(__xlC__)  || defined(__xlc__)
+/* IBM xlC compiler */
 #include "atomic/xlc_ppc.h"
 
-#elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
-/* HP compiler on ia64 */
-#include "atomic/hpux.h"
+
 
 
 

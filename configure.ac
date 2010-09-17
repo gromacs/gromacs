@@ -1207,7 +1207,7 @@ AC_ARG_VAR(
    variable you can overwrite it
   ]
 )
-if test -z ${LIBSUFFIX} ; then
+if test -z "${LIBSUFFIX}" ; then
   if test "$enable_mpi" = "yes"; then
     LIBSUFFIX="_mpi"
   fi
