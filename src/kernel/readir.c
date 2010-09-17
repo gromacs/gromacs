@@ -1823,10 +1823,13 @@ void do_index(const char* mdparin, const char *ndx,
       for(i=0; (i<nr); i++)
       {
           ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
-          if (ir->opts.tau_t[i] < 0)
+          if (ir->eI == eiBD && ir->opts.tau_t[i] <= 0)
           {
-              gmx_fatal(FARGS,"tau_t for group %d negative",i);
-          } else if (ir->opts.tau_t[i] > 0) {
+              warning_error(wi,"With Brownian Dynamics tau_t should be larger than 0");
+          }
+          if ((ir->etc == etcVRESCALE && ir->opts.tau_t[i] >= 0) || 
+              (ir->etc != etcVRESCALE && ir->opts.tau_t[i] >  0))
+          {
               tau_min = min(tau_min,ir->opts.tau_t[i]);
           }
       }

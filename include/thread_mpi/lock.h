@@ -39,6 +39,7 @@ files.
 #define _TMPI_FASTLOCK_H_
 
 #include "wait.h"
+#include "atomic.h"
 
 /** Fast (possibly busy-wait-based) lock type
  *

@@ -60,6 +60,9 @@
 #include "gmx_sort.h"
 
 
+static char *RotStr = {"Enforced rotation:"};
+
+
 /* Set the minimum weight for the determination of the slab centers */
 #define WEIGHT_MIN (10*GMX_FLOAT_MIN)
 
@@ -2108,13 +2111,13 @@ static void get_firstlast_slab_check(
 
     /* Check whether we have reference data to compare against */
     if (erg->slab_first < erg->slab_first_ref)
-        gmx_fatal(FARGS, "Enforced rotation: No reference data for first slab (n=%d), unable to proceed.",
-                  erg->slab_first);
+        gmx_fatal(FARGS, "%s No reference data for first slab (n=%d), unable to proceed.",
+                  RotStr, erg->slab_first);
     
     /* Check whether we have reference data to compare against */
     if (erg->slab_last > erg->slab_last_ref)
-        gmx_fatal(FARGS, "Enforced rotation: No reference data for last slab (n=%d), unable to proceed.",
-                  erg->slab_last);
+        gmx_fatal(FARGS, "%s No reference data for last slab (n=%d), unable to proceed.",
+                  RotStr, erg->slab_last);
 }
 
 
@@ -2779,6 +2782,7 @@ static void allocate_slabs(
         t_rotgrp  *rotg, 
         FILE      *fplog, 
         int       g, 
+        gmx_bool  bVerbose,
         t_commrec *cr)
 {
     gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
@@ -2793,8 +2797,9 @@ static void allocate_slabs(
     /* Remember how many we allocated */
     erg->nslabs_alloc = nslabs;
 
-    if (MASTER(cr))
-        fprintf(fplog, "Enforced rotation: allocating memory to store data for %d slabs (rotation group %d).\n",nslabs,g);
+    if (MASTER(cr) && bVerbose)
+        fprintf(fplog, "%s allocating memory to store data for %d slabs (rotation group %d).\n",
+                RotStr, nslabs,g);
     snew(erg->slab_center     , nslabs);
     snew(erg->slab_center_ref , nslabs);
     snew(erg->slab_weights    , nslabs);
@@ -2848,8 +2853,8 @@ static void get_firstlast_slab_ref(t_rotgrp *rotg, real mc[], int ref_firstindex
 
 
 
-extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
-        rvec *x,gmx_mtop_t *mtop,FILE *out_slabs)
+static void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
+        rvec *x,gmx_mtop_t *mtop,gmx_bool bVerbose,FILE *out_slabs)
 {
     int i,ii;
     rvec        coord,*xdum;
@@ -2988,7 +2993,7 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
         get_firstlast_slab_ref(rotg, erg->mc, ref_firstindex, ref_lastindex);
                 
         /* Allocate memory for the slabs */
-        allocate_slabs(rotg, fplog, g, cr);
+        allocate_slabs(rotg, fplog, g, bVerbose, cr);
 
         /* Flexible rotation: determine the reference centers for the rest of the simulation */
         erg->slab_first = erg->slab_first_ref;
@@ -3008,7 +3013,7 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
 }
 
 
-void dd_make_local_rotation_groups(gmx_domdec_t *dd,t_rot *rot,t_mdatoms *md)
+extern void dd_make_local_rotation_groups(gmx_domdec_t *dd,t_rot *rot,t_mdatoms *md)
 {
     gmx_ga2la_t ga2la;
     int g;
@@ -3029,9 +3034,9 @@ void dd_make_local_rotation_groups(gmx_domdec_t *dd,t_rot *rot,t_mdatoms *md)
 }
 
 
-void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
+extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
         t_commrec *cr, rvec *x, gmx_mtop_t *mtop, const output_env_t oenv,
-        unsigned long Flags)
+        gmx_bool bVerbose, unsigned long Flags)
 {
     t_rot    *rot;
     t_rotgrp *rotg;
@@ -3044,6 +3049,10 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
         gmx_fatal(FARGS, "Enforced rotation is only implemented for domain decomposition!");
 
+    if ( MASTER(cr) && bVerbose)
+        fprintf(stdout, "%s Initializing ...\n", RotStr);
+
+
     rot = ir->rot;
     snew(rot->enfrot, 1);
     er=rot->enfrot;
@@ -3052,7 +3061,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     if (Flags & MD_RERUN)
     {
         if (fplog)
-            fprintf(fplog, "Enforced rotation: rerun - will write rotation output every available step.\n");
+            fprintf(fplog, "%s rerun - will write rotation output every available step.\n", RotStr);
         rot->nstrout = 1;
         rot->nsttout = 1;
     }
@@ -3066,7 +3075,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
         rotg = &rot->grp[g];
 
         if (fplog)
-            fprintf(fplog,"Enforced rotation: group %d type '%s'\n", g, erotg_names[rotg->eType]);
+            fprintf(fplog,"%s group %d type '%s'\n", RotStr, g, erotg_names[rotg->eType]);
         
         if (rotg->nat > 0)
         {
@@ -3087,7 +3096,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
                 erg->nat_loc = rotg->nat;
                 erg->ind_loc = rotg->ind;
             }
-            init_rot_group(fplog,cr,g,rotg,x,mtop,er->out_slabs);
+            init_rot_group(fplog,cr,g,rotg,x,mtop,bVerbose,er->out_slabs);
         }
     }
     
@@ -3121,7 +3130,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
 }
 
 
-void finish_rot(FILE *fplog,t_rot *rot)
+extern void finish_rot(FILE *fplog,t_rot *rot)
 {
     gmx_enfrot_t er;        /* Pointer to the enforced rotation buffer variables */    
 
@@ -3368,7 +3377,7 @@ extern void do_rotation(
 
 #ifdef TAKETIME
     if (MASTER(cr))
-        fprintf(stderr, "Enforced rotation calculation (step %d) took %g seconds.\n", step, MPI_Wtime()-t0);
+        fprintf(stderr, "%s calculation (step %d) took %g seconds.\n", RotStr, step, MPI_Wtime()-t0);
 #endif
 
     /* Stop the cycle counter and add to the force cycles for load balancing */
