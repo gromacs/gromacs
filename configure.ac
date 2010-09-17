@@ -325,11 +325,11 @@ AM_CONDITIONAL([USE_VERSION_H],[test "$generate_version" = "yes"])
 case "${host_cpu}-${host_os}" in
   alpha*-linux*)
     cc_names="ccc cc gcc"
-    f77_names="fort f77 g77"
+    f77_names="fort f77 gfortran g77"
     ;;
   *) 
     cc_names="cc icc xlc gcc"
-    f77_names="f77 ifort xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
+    f77_names="f77 ifort xlf xlf77 cf77 fl32 gfortran g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
     ;;
 esac
 # the (non-mpi) c compiler, which is also used for programs executed during build stage
