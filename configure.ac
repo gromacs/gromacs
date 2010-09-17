@@ -51,7 +51,6 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
-# Generic fortran kernels will be turned off below if you enable power6-specific optimization!
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
 
@@ -149,9 +148,7 @@ esac
 AC_ARG_ENABLE(power6,
              [AC_HELP_STRING([--enable-power6],
                              [Use IBM Pwr6/PPC440/PPC450-specific F77 kernels])],,enable_power6=no)
-# Turn off generic fortran loops if we are using power6-specific optimization
 if test "$enable_power6" = "yes"; then
-  enable_fortran=no;
   AC_DEFINE(GMX_POWER6,,[Enable IBM Pwr6/PPC440/PPC450-specific F77 kernels])
 fi
 
