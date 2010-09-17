@@ -77,7 +77,7 @@ extern "C" {
  */
 extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
         t_commrec *cr, rvec *x, gmx_mtop_t *mtop, const output_env_t oenv, 
-        unsigned long Flags);
+        gmx_bool bVerbose, unsigned long Flags);
 
 extern void dd_make_local_rotation_groups(gmx_domdec_t *dd,t_rot *rot,t_mdatoms *md);
 
