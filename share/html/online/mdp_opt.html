@@ -1607,7 +1607,8 @@ method.</dd>
 <dt><b>GBSA</b></dt>
 <dd>Do a simulation with implicit solvent using the Generalized Born formalism. 
 Three different methods for calculating the Born radii are available, Still, HCT and
-OBC. These are specified with the <b>gb_algorithm</b> field.</dd>
+OBC. These are specified with the <b>gb_algorithm</b> field. The non-polar solvation
+is specified with the <b>sa_algorithm</b> field.</dd>
 </dl>
 
 <dt></dt><b>gb_algorithm:</b>
@@ -1645,15 +1646,22 @@ for the corresponding atom</dd>
 
 <dt></dt><b>sa_algorithm</b>
 <dd><dl compact="compact">
-<dt><b>no</b></dt>
-<dd>Which algorithm is used the the SA part. Note that currently no specific
-SA algorithm is implemented. With <b>implicit_solvent=GBSA</b>, a very crude ACE-style
-algorithm is used by default</dd>
+<dt><b>Ace-approx</b></dt>
+<dd>Use an Ace-type approximation (default)</dd>
+<dt><b>None</b></dt>
+<dd>No non-polar solvation calculation done. For GBSA only the polar part gets 
+calculated</dd>
 </dl>
 
-<dt></dt><b>sa_surface_tension: (2.092) [kj/mol/nm2]</b>
-<dd>Default values for surface tension with SA algorithms. The value, 2.092, 
-correponds to 0.005 kcal/mol/Angstrom2</dd>
+<dt></dt><b>sa_surface_tension: [kj/mol/nm2]</b>
+<dd>Default value for surface tension with SA algorithms. The default value is -1, 
+<br>Note that if this default value is not changed
+it will be over-ridden by grompp using values that are specific for the choice
+of radii algorithm (0.0049 kcal/mol/Angstrom2 for Still, 0.0054 kcal/mol/Angstrom2 
+for HCT/OBC)
+<br>Setting it to 0 will while using an sa_algorithm other than None means 
+no non-polar calculations are done.
+</dd>
 </dl>   
 
 <A NAME="user"><br>

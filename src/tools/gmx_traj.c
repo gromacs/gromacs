@@ -1066,7 +1066,7 @@ int gmx_traj(int argc,char *argv[])
             if (ePBC != epbcNONE && !bNoJump)
             {
                 fprintf(stderr,"\nWARNING: More than one frame was used for option -cv or -cf\n"
-                        "If atoms jump across the box you should use the -nojump option\n\n");
+                        "If atoms jump across the box you should use the -nojump or -ctime option\n\n");
             }
             for(i=0; i<isize[0]; i++)
             {

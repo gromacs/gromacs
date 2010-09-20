@@ -752,7 +752,8 @@ int gmx_eneconv(int argc,char *argv[])
                                        "         some data is thrown away on a block-by-block basis, where each block\n"
                                        "         contains up to %d samples.\n"
                                        "         This is almost certainly not what you want.\n"
-                                       "         Use the -rmdh option to throw all delta H samples away.\n\n", 
+                                       "         Use the -rmdh option to throw all delta H samples away.\n"
+                                       "         Use g_energy -odh option to extract these samples.\n",
                                        fnms[f], size);
                                 warned_about_dh=TRUE;
                                 break;
