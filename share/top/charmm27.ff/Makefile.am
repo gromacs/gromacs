@@ -11,7 +11,7 @@ aminoacids.hdb   cmap.itp         forcefield.doc   rna.rtp	\
 aminoacids.n.tdb dna.rtp          forcefield.itp   spc.itp	\
 aminoacids.r2b   ffbonded.itp     gb.itp           tip3p.itp	\
 aminoacids.rtp   ffnabonded.itp   ions.itp         tip4p.itp	\
-spce.itp	tips3p.itp	watermodels.dat
+spce.itp	tips3p.itp	watermodels.dat    tip5p.itp
 
 EXTRA_DIST = ${topol_DATA}
 

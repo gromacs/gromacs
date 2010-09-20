@@ -439,6 +439,20 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 			ir->sa_algorithm = esaAPPROX;
 		}
 		gmx_fio_do_real(fio,ir->sa_surface_tension);
+
+    /* Override sa_surface_tension if it is not changed in the mpd-file */
+    if(ir->sa_surface_tension<0)
+    {
+      if(ir->gb_algorithm==egbSTILL)
+      {
+        ir->sa_surface_tension = 0.0049 * 100 * CAL2JOULE;
+      }
+      else if(ir->gb_algorithm==egbHCT || ir->gb_algorithm==egbOBC)
+      {
+        ir->sa_surface_tension = 0.0054 * 100 * CAL2JOULE;
+      }
+    }
+    
 	}
 	else
 	{

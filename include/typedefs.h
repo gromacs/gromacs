@@ -131,6 +131,8 @@ void init_atom (t_atoms *at);
 void init_mtop(gmx_mtop_t *mtop);
 void init_top (t_topology *top);
 void init_inputrec(t_inputrec *ir);
+void init_energyhistory(energyhistory_t * enerhist);
+void done_energyhistory(energyhistory_t * enerhist);
 void init_gtc_state(t_state *state,int ngtc, int nnhpres, int nhchainlength);
 void init_state(t_state *state,int natoms,int ngtc, int nnhpres, int nhchainlength);
 

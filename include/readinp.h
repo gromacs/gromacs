@@ -117,7 +117,7 @@ enum {
 
 /* names to print in help info */
 static const char *argtp[etNR] = {
-  "int", "step", "real", "time", "string", "gmx_bool", "vector", "enum" 
+  "int", "step", "real", "time", "string", "bool", "vector", "enum" 
 };
 
 typedef struct {

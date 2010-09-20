@@ -33,5 +33,6 @@ else()
 endif()
 CUDA_BUILD_CLEAN_TARGET()
 
+target_link_libraries(gmx_gpu_utils gmx)
 install(TARGETS gmx_gpu_utils DESTINATION ${LIB_INSTALL_DIR})   
 

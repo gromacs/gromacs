@@ -1156,17 +1156,14 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bRerunMD = flags & CGLO_RERUNMD;
     bStopCM = flags & CGLO_STOPCM;
     bGStat = flags & CGLO_GSTAT;
-/* FIX ME after 4.5 */
-/* temporary hack because we are using gmx_bool (unsigned char) */
-
-    bReadEkin = (flags & CGLO_READEKIN) != 0;
-    bScaleEkin = (flags & CGLO_SCALEEKIN) != 0;
+    bReadEkin = (flags & CGLO_READEKIN);
+    bScaleEkin = (flags & CGLO_SCALEEKIN);
     bEner = flags & CGLO_ENERGY;
     bTemp = flags & CGLO_TEMPERATURE;
-    bPres  = (flags & CGLO_PRESSURE) != 0;
-    bConstrain = (flags & CGLO_CONSTRAINT) != 0;
-    bIterate = (flags & CGLO_ITERATE) != 0;
-    bFirstIterate = (flags & CGLO_FIRSTITERATE) != 0;
+    bPres  = (flags & CGLO_PRESSURE);
+    bConstrain = (flags & CGLO_CONSTRAINT);
+    bIterate = (flags & CGLO_ITERATE);
+    bFirstIterate = (flags & CGLO_FIRSTITERATE);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -2080,12 +2077,23 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (MASTER(cr))
     {
-        /* Update mdebin with energy history if appending to output files */
-        if ( Flags & MD_APPENDFILES )
+        if (opt2bSet("-cpi",nfile,fnm))
         {
-            restore_energyhistory_from_state(mdebin,&state_global->enerhist);
+            /* Update mdebin with energy history if appending to output files */
+            if ( Flags & MD_APPENDFILES )
+            {
+                restore_energyhistory_from_state(mdebin,&state_global->enerhist);
+            }
+            else
+            {
+                /* We might have read an energy history from checkpoint,
+                 * free the allocated memory and reset the counts.
+                 */
+                done_energyhistory(&state_global->enerhist);
+                init_energyhistory(&state_global->enerhist);
+            }
         }
-        /* Set the initial energy history in state to zero by updating once */
+        /* Set the initial energy history in state by updating once */
         update_energyhistory(&state_global->enerhist,mdebin);
     }
 

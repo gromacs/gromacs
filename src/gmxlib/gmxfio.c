@@ -254,14 +254,14 @@ static void gmx_fio_set_iotype(t_fileio *fio)
 void gmx_fio_lock(t_fileio *fio)
 {
 #ifdef GMX_THREADS
-    tMPI_Spinlock_lock(&(fio->mtx));
+    tMPI_Lock_lock(&(fio->mtx));
 #endif
 }
 /* unlock the mutex associated with this fio.  */
 void gmx_fio_unlock(t_fileio *fio)
 {
 #ifdef GMX_THREADS
-    tMPI_Spinlock_unlock(&(fio->mtx));
+    tMPI_Lock_unlock(&(fio->mtx));
 #endif
 }
 
@@ -276,7 +276,7 @@ static void gmx_fio_make_dummy(void)
         open_files->next=open_files;
         open_files->prev=open_files;
 #ifdef GMX_THREADS
-        tMPI_Spinlock_init(&(open_files->mtx));
+        tMPI_Lock_init(&(open_files->mtx));
 #endif
     }
 }
@@ -337,18 +337,12 @@ static void gmx_fio_insert(t_fileio *fio)
 }
 
 /* remove a t_fileio into the list. We assume the fio is locked, and we leave 
-   it locked. */
-static void gmx_fio_remove(t_fileio *fio, gmx_bool global_lock)
+   it locked. 
+   NOTE: We also assume that the open_file_mutex has been locked */
+static void gmx_fio_remove(t_fileio *fio)
 {    
     t_fileio *prev;
 
-#ifdef GMX_THREADS
-    /* first lock the big open_files mutex. */
-    /* We don't want two processes operating on this list at the same time */
-    if (global_lock)
-        tMPI_Thread_mutex_lock(&open_file_mutex);
-#endif
-   
     /* lock prev, because we're changing it */ 
     gmx_fio_lock(fio->prev);
 
@@ -363,13 +357,6 @@ static void gmx_fio_remove(t_fileio *fio, gmx_bool global_lock)
 
     /* and make sure we point nowhere in particular */
     fio->next=fio->prev=fio;
-
-#ifdef GMX_THREADS
-    /* now unlock the big open_files mutex.  */
-    if (global_lock)
-        tMPI_Thread_mutex_unlock(&open_file_mutex);
-#endif
-
 }
 
 
@@ -504,7 +491,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
 
     snew(fio, 1);
 #ifdef GMX_THREADS
-    tMPI_Spinlock_init(&(fio->mtx));
+    tMPI_Lock_init(&(fio->mtx));
 #endif
     bRead = (newmode[0]=='r' && newmode[1]!='+');
     bReadWrite = (newmode[1]=='+');
@@ -610,13 +597,23 @@ int gmx_fio_close(t_fileio *fio)
 {
     int rc = 0;
 
+#ifdef GMX_THREADS
+    /* first lock the big open_files mutex. */
+    /* We don't want two processes operating on the list at the same time */
+    tMPI_Thread_mutex_lock(&open_file_mutex);
+#endif
+
     gmx_fio_lock(fio);
     /* first remove it from the list */
-    gmx_fio_remove(fio, TRUE);
+    gmx_fio_remove(fio);
     rc=gmx_fio_close_locked(fio);
     gmx_fio_unlock(fio);
 
     sfree(fio);
+
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&open_file_mutex);
+#endif
 
     return rc;
 }
@@ -661,7 +658,7 @@ int gmx_fio_fclose(FILE *fp)
         if (cur->fp == fp)
         {
             rc=gmx_fio_close_locked(cur);
-            gmx_fio_remove(cur,FALSE);
+            gmx_fio_remove(cur);
             gmx_fio_stop_getting_next(cur);
             break;
         }
@@ -717,7 +714,15 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         }
         else if (feof(fio->fp))
         {
-            fprintf(stderr, "\nTrying to get md5sum: EOF: %s\n", fio->fn);
+            /*
+             * For long runs that checkpoint frequently but write e.g. logs
+             * infrequently we don't want to issue lots of warnings before we
+             * have written anything to the log.
+             */
+            if(0)
+            {
+                fprintf(stderr, "\nTrying to get md5sum: EOF: %s\n", fio->fn);
+            }
         }
         else
         {

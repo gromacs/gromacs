@@ -83,6 +83,7 @@ typedef struct {
   char   **print_grpnms;
 
   FILE   *fp_dhdl; /* the dhdl.xvg output file */
+  gmx_bool dhdl_derivatives; /* whether to write the derivatives to dhdl.xvg */
   t_mde_delta_h_coll *dhc; /* the BAR delta U (raw data + histogram) */
 } t_mdebin;
 
@@ -132,9 +133,6 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
    and that history needs to be retained in checkpoints. 
    These functions set/read the energyhistory_t structure
    that is written to checkpoints in checkpoint.c */
-
-/* initialize the energyhistory_t data structure */
-void init_energyhistory(energyhistory_t * enerhist);
 
 /* Set the energyhistory_t data structure from a mdebin structure */
 void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);

@@ -243,7 +243,7 @@ void CopyRight(FILE *out,const char *szProgram)
   fprintf(out,"\n");
 
   ster_print(out,GromacsVersion());
-  fprintf(out,"\n\n");
+  fprintf(out,"\n");
 
   /* fprintf(out,"\n");*/
 
@@ -507,7 +507,13 @@ void please_cite(FILE *fp,const char *key)
       "O. Engin, A. Villa, M. Sayar and B. Hess",
       "Driving Forces for Adsorption of Amphiphilic Peptides to Air-Water Interface",
       "J. Phys. Chem. B",
-      0, 2010, "???" }
+      0, 2010, "???" },
+    { "Wang2010",
+      "H. Wang, F. Dommert, C.Holm",
+      "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
+      "J. Chem. Phys. B",
+      133, 2010, "034117"
+    }
   };
 #define NSTR (int)asize(citedb)
   

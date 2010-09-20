@@ -97,7 +97,7 @@ void tMPI_Event_signal(tMPI_Event *ev);
 #else
 #define tMPI_Event_signal(ev) \
 { \
-    tMPI_Atomic_memory_barrier(); \
+    tMPI_Atomic_memory_barrier_rel(); \
     tMPI_Atomic_add_return( &((ev)->sync), 1); \
 }
 #endif

@@ -9,39 +9,43 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_msd</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0<br>
-Sun 18 Jan 2009</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
+Thu 26 Aug 2010</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 g_msd computes the mean square displacement (MSD) of atoms from
-their initial positions. This provides an easy way to compute
+a set of initial positions. This provides an easy way to compute
 the diffusion constant using the Einstein relation.
-The time between additional starting points for the MSD calculation
+The time between the reference points for the MSD calculation
 is set with <tt>-trestart</tt>.
 The diffusion constant is calculated by least squares fitting a
-straight line through the MSD from <tt>-beginfit</tt> to
-<tt>-endfit</tt>. An error estimate given, which is the difference
-of the diffusion coefficients obtained from fits over the two halfs
+straight line (D*t + c) through the MSD(t) from <tt>-beginfit</tt> to
+<tt>-endfit</tt> (note that t is time from the reference positions,
+not simulation time). An error estimate given, which is the difference
+of the diffusion coefficients obtained from fits over the two halves
 of the fit interval.<p>
 There are three, mutually exclusive, options to determine different
 types of mean square displacement: <tt>-type</tt>, <tt>-lateral</tt>
 and <tt>-ten</tt>. Option <tt>-ten</tt> writes the full MSD tensor for
 each group, the order in the output is: trace xx yy zz yx zx zy.<p>
-Option <tt>-mol</tt> plots the MSD for molecules, this implies
-With option <tt>-rmcomm</tt> center of mass motion can be removed.
-For trajectories produced with GROMACS this is usually not necessary
+If <tt>-mol</tt> is set, g_msd plots the MSD for individual molecules: 
+for each individual molecule a diffusion constant is computed for 
+its center of mass. The chosen index group will be split into 
+molecules.<p>
+The default way to calculate a MSD is by using mass-weighted averages.
+This can be turned off with <tt>-nomw</tt>.<p>
+With the option <tt>-rmcomm</tt>, the center of mass motion of a 
+specific group can be removed. For trajectories produced with 
+GROMACS this is usually not necessary, 
 as <a href="mdrun.html">mdrun</a> usually already removes the center of mass motion.
 When you use this option be sure that the whole system is stored
 in the trajectory file.<p>
-<tt>-mw</tt>, i.e. for each inidividual molecule an diffusion constant
-is computed for its center of mass. The chosen index group will
-be split into molecules.
 The diffusion coefficient is determined by linear regression of the MSD,
 where, unlike for the normal output of D, the times are weighted
-according to the number of restart point, i.e. short times have
-a higher weight. Also when <tt>-beginfit</tt>=-1,fitting starts at 0
-and when <tt>-endfit</tt>=-1, fitting goes to the end.
+according to the number of reference points, i.e. short times have
+a higher weight. Also when <tt>-beginfit</tt>=-1,fitting starts at 10%
+and when <tt>-endfit</tt>=-1, fitting goes to 90%.
 Using this option one also gets an accurate error estimate
 based on the statistics between individual molecules.
 Note that this diffusion coefficient and error estimate are only
@@ -66,20 +70,20 @@ This option implies option <tt>-mol</tt>.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>fs</tt>, <tt>ps</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-type</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Compute diffusion coefficient in one direction: <tt>no</tt>, <tt>x</tt>, <tt>y</tt> or <tt>z</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-lateral</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Calculate the lateral diffusion in a plane perpendicular to: <tt>no</tt>, <tt>x</tt>, <tt>y</tt> or <tt>z</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ten</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Calculate the full tensor </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ten</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Calculate the full tensor </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ngroup</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of groups to calculate MSD for </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]mw</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Mass weighted MSD </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmcomm</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Remove center of mass motion </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]mw</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Mass weighted MSD </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmcomm</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Remove center of mass motion </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tpdb</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> The frame to use for option -<a href="pdb.html">pdb</a> (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-trestart</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>10    </tt> </TD><TD> Time between restarting points in trajectory (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Start time for fitting the MSD (ps), -1 is 10% </TD></TD>

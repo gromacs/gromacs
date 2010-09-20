@@ -168,13 +168,11 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   bVV           = EI_VV(inputrec->eI);
   bTemp         = flags & CGLO_TEMPERATURE;
   bEner         = flags & CGLO_ENERGY;
-/* FIX ME after 4.5 */
-/* temporary hack because we are using gmx_bool (unsigned char) */
-  bPres         = (flags & CGLO_PRESSURE) != 0; 
-  bConstrVir    = (flags & CGLO_CONSTRAINT) != 0;
-  bFirstIterate = (flags & CGLO_FIRSTITERATE) != 0;
+  bPres         = (flags & CGLO_PRESSURE); 
+  bConstrVir    = (flags & CGLO_CONSTRAINT);
+  bFirstIterate = (flags & CGLO_FIRSTITERATE);
   bEkinAveVel   = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && bPres));
-  bReadEkin     = (flags & CGLO_READEKIN) != 0;
+  bReadEkin     = (flags & CGLO_READEKIN);
 
   rb   = gs->rb;
   itc0 = gs->itc0;
@@ -454,13 +452,13 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
 
     if (MASTER(cr))
     {
-        bAppendFiles = (mdrun_flags & MD_APPENDFILES) != 0;
+        bAppendFiles = (mdrun_flags & MD_APPENDFILES);
 
-        of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT) != 0;
+        of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
 
         sprintf(filemode, bAppendFiles ? "a+" : "w+");  
         
-        if (ir->eI != eiNM 
+        if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
 #ifndef GMX_FAHCORE
             &&
             !(EI_DYNAMICS(ir->eI) &&
@@ -472,18 +470,21 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
         {
             of->fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
         }
-        if (!EI_ENERGY_MINIMIZATION(ir->eI) &&
+        if (EI_DYNAMICS(ir->eI) &&
             ir->nstxtcout > 0)
         {
             of->fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
             of->xtc_prec = ir->xtcprec;
         }
-        of->fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
+        if (EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
+        {
+            of->fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
+        }
         of->fn_cpt = opt2fn("-cpo",nfile,fnm);
         
         if (ir->efep != efepNO && ir->nstdhdl > 0 &&
             (ir->separate_dhdl_file == sepdhdlfileYES ) && 
-            !EI_ENERGY_MINIMIZATION(ir->eI))
+            EI_DYNAMICS(ir->eI))
         {
             if (bAppendFiles)
             {

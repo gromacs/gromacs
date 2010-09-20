@@ -106,7 +106,11 @@ typedef struct
     int  *ndh;          /* the number in each energy difference list */
     real **dh;          /* the energy difference lists */
 
-    real starttime;     /* the start time of these energy diff blocks */
+    double start_time;     /* the start time of these energy diff blocks */
+    double start_lambda;   /* lambda at start time */
+
+    gmx_bool start_lambda_set; /* whether the lambda value is set. Here
+                                  For backward-compatibility. */
 } delta_h_history_t; 
 
 typedef struct
