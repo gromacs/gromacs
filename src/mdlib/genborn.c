@@ -502,7 +502,10 @@ int init_gb(gmx_genborn_t **p_born,
     born->epsilon_r = ir->epsilon_r;
     
     doffset = born->gb_doffset;
-    
+  
+    /* Set the surface tension */
+    born->sa_surface_tension = ir->sa_surface_tension;
+   
     /* If Still model, initialise the polarisation energies */
     if(gb_algorithm==egbSTILL)    
     {
@@ -1544,7 +1547,11 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr,int natoms,gmx_genborn_t *bo
         at1=natoms;
     }
     
-    /* The surface area factor is 0.0049 for Still model, 0.0054 for HCT/OBC */
+  /* factor is the surface tension */
+  factor = born->sa_surface_tension;
+  /*
+  
+    // The surface tension factor is 0.0049 for Still model, 0.0054 for HCT/OBC
     if(gb_algorithm==egbSTILL)
     {
         factor=0.0049*100*CAL2JOULE;
@@ -1553,7 +1560,7 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr,int natoms,gmx_genborn_t *bo
     {
         factor=0.0054*100*CAL2JOULE;    
     }
-    
+    */
     /* if(gb_algorithm==egbHCT || gb_algorithm==egbOBC) */
     
     es    = 0;
@@ -1704,7 +1711,7 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 
 void
 calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype, 
-               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, t_nrnb *nrnb, gmx_bool bRad,
+               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb, gmx_bool bRad,
                const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd)
 {
     real v=0;
@@ -1718,11 +1725,14 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 		pbc_null = pbc;
 	else
 		pbc_null = NULL;
-    
+  
+  if(sa_algorithm == esaAPPROX)
+  {
     /* Do a simple ACE type approximation for the non-polar solvation */
     enerd->term[F_NPSOLVATION] += calc_gb_nonpolar(cr, fr,born->nr, born, top, atype, fr->dvda, gb_algorithm,md);
-	
-    /* Calculate the bonded GB-interactions using either table or analytical formula */
+  }
+  
+  /* Calculate the bonded GB-interactions using either table or analytical formula */
     enerd->term[F_GBPOL]       += gb_bonds_tab(x,f,fr->fshift, md->chargeA,&(fr->gbtabscale),
                                      fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->epsilon_r,born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
     
