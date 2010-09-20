@@ -862,10 +862,6 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     if (!_gmx_sel_parse_params(params, mod->u.expr.method->nparams,
                                mod->u.expr.method->param, mod, scanner))
     {
-        if (mod->child != sel)
-        {
-            _gmx_selelem_free(sel);
-        }
         _gmx_selelem_free(mod);
         return NULL;
     }
@@ -1304,7 +1300,15 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
                     child = child->child;
                     if (child->type == SEL_SUBEXPRREF)
                     {
-                        child = child->child->child;
+                        child = child->child;
+                        /* Because most subexpression elements are created
+                         * during compilation, we need to check for them
+                         * explicitly here.
+                         */
+                        if (child->type == SEL_SUBEXPR)
+                        {
+                            child = child->child;
+                        }
                     }
                 }
                 /* For variable references, we should skip the
