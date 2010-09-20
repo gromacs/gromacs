@@ -193,7 +193,7 @@ static void check_box(matrix f_box, matrix box, char fn[],warninp_t wi)
     if (!bSame)
     {
         sprintf(warn_buf, "Enforced rotation: Box size in reference file %s differs from actual box size!", fn);
-        warning_note(wi, warn_buf);
+        warning(wi, warn_buf);
         pr_rvecs(stderr,0,"Your box is:",box  ,3);
         pr_rvecs(stderr,0,"Box in file:",f_box,3);
     }
