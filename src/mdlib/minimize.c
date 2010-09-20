@@ -75,6 +75,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+#include "membed.h"
 
 typedef struct {
   t_state s;
@@ -878,6 +879,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
              gmx_edsam_t ed,
              t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
+             gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -1398,6 +1400,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
                 gmx_edsam_t ed,
                 t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
+                gmx_membed_t *membed,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
                 unsigned long Flags,
@@ -2032,6 +2035,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
                 gmx_edsam_t ed,
                 t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
+                gmx_membed_t *membed,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
                 unsigned long Flags,
@@ -2236,6 +2240,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
              gmx_edsam_t ed,
              t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
+             gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
