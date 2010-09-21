@@ -31,6 +31,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
+enable_language(CXX)
 
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VENDOR "gromacs.org")
@@ -392,6 +393,8 @@ if (GMX_DLOPEN)
     list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS})
 endif (GMX_DLOPEN)
 
+find_package(GTest)
+
 ########################################################################
 # Generate development version info for cache
 ########################################################################
@@ -724,7 +727,6 @@ include(CTest)
 mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
 	enable_testing()
-	add_test(TestBuildAll make)
 	add_subdirectory(tests)
 ENDIF()
 
