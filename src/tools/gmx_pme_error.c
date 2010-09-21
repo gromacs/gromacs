@@ -503,9 +503,11 @@ static real estimate_reciprocal(
 #endif
 */
 
+#ifdef GMX_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
         t0 = MPI_Wtime();
+#endif
 #endif
     
     if (MASTER(cr)){
@@ -1077,7 +1079,9 @@ int gmx_pme_error(int argc,char *argv[])
     
     cr = init_par(&argc,&argv);
     
+#ifdef GMX_MPI
     MPI_Barrier(MPI_COMM_WORLD);
+#endif
 
     if (MASTER(cr))
       CopyRight(stderr,argv[0]);
