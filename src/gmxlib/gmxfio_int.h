@@ -76,6 +76,9 @@ typedef struct
 struct t_fileio
 {
     FILE *fp; /* the file pointer */
+    MPI_File mpi_fh;  /* the mpi file handle (used instead of fp for MPI IO) */
+    char *mem_buf;
+    int mem_buf_cur_pos, mem_buf_nalloc;
     const t_iotype *iotp;  /* file type */
     gmx_bool bOpen,  /* the file is open */
          bRead,  /* the file is open for reading */

@@ -440,14 +440,36 @@ static void gmx_fio_stop_getting_next(t_fileio *fio)
 }
 
 
-
+static int gmx_write_it(char *handle, char *buf, int size)
+{
+	t_fileio *fio = (t_fileio*) handle;
+	if (fio->mem_buf_nalloc<fio->mem_buf_cur_pos+size) {
+		fio->mem_buf_nalloc = (fio->mem_buf_cur_pos+size)*1.10;
+		srenew(fio->mem_buf,fio->mem_buf_nalloc);
+	}
+	memcpy(fio->mem_buf+fio->mem_buf_cur_pos, buf+4, size-4);  //Remove 4-byte record-marker, see http://docs.sun.com/app/docs/doc/816-1435/6m7rrfn9i?l=en&a=view#rpcproto-14265
+	fio->mem_buf_cur_pos += size-4;
+	return size;
+}
 
 /*****************************************************************
  *
  *                     EXPORTED SECTION
  *
  *****************************************************************/
+
+
 t_fileio *gmx_fio_open(const char *fn, const char *mode)
+{
+   return mpi_fio_open(fn,mode,NULL);
+}
+
+void gmx_fio_start_record(t_fileio *fio)
+{
+	fio->mem_buf_cur_pos = 0;
+}
+
+t_fileio *mpi_fio_open(const char *fn, const char *mode, gmx_domdec_t *dd)
 {
     t_fileio *fio = NULL;
     int i;
@@ -529,7 +551,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
                 make_backup(fn);
 #endif
             }
-            else 
+            else
             {
                 /* Check whether file exists */
                 if (!gmx_fexist(fn))
@@ -537,8 +559,6 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
                     gmx_open(fn);
                 }
             }
-            /* Open the file */
-            fio->fp = ffopen(fn,newmode);
 
             /* determine the XDR direction */
             if (newmode[0] == 'w' || newmode[0]=='a')
@@ -551,7 +571,43 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
             }
 
             snew(fio->xdr,1);
-            xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
+
+#ifdef GMX_LIB_MPI
+            if (dd!=NULL)
+            {
+            	MPI_Comm new_comm;
+            	int amode;
+            	if (strcmp(mode,"w+")==0) {
+            		amode = MPI_MODE_RDWR | MPI_MODE_CREATE;
+            	} else if (strcmp(mode,"a+")==0) {
+            		amode = MPI_MODE_RDWR | MPI_MODE_APPEND;
+            	} else if (strcmp(mode,"r")==0) {
+            		amode = MPI_MODE_RDONLY;
+            	} else {
+            		gmx_fatal(FARGS,"Unknown mode!");
+            	}
+
+            	xdrrec_create(fio->xdr,0,0,(char*)fio,NULL,&gmx_write_it);
+
+            	MPI_Comm_split(dd->mpi_comm_all, dd->rank < dd->n_xtc_steps, dd->nnodes - dd->rank, &new_comm );// new_comm must be a vector of size color // total nodes - rank
+            	if (dd->rank < dd->n_xtc_steps)
+            	{
+            		MPI_File_open(new_comm,(char*)fn,amode,MPI_INFO_NULL, &(fio->mpi_fh));
+            	}
+            }
+            else
+            {
+#endif
+            	/* Open the file without MPI */
+            	fio->fp = ffopen(fn,newmode);
+
+                xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
+
+#ifdef GMX_MPI
+            }
+#endif
+
+
         }
         else
         {
@@ -582,6 +638,8 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     return fio;
 }
 
+
+
 static int gmx_fio_close_locked(t_fileio *fio)
 {
     int rc = 0;
@@ -597,9 +655,18 @@ static int gmx_fio_close_locked(t_fileio *fio)
         sfree(fio->xdr);
     }
 
-    /* Don't close stdin and stdout! */
-    if (!fio->bStdio && fio->fp!=NULL)
-        rc = ffclose(fio->fp); /* fclose returns 0 if happy */
+#ifdef GMX_LIB_MPI
+    if (fio->mpi_fh != NULL)
+    {
+    	MPI_File_close(&(fio->mpi_fh));
+    }
+    else
+#endif
+    {
+		/* Don't close stdin and stdout! */
+		if (!fio->bStdio && fio->fp!=NULL)
+			rc = ffclose(fio->fp); /* fclose returns 0 if happy */
+    }
 
     fio->bOpen = FALSE;
 
@@ -800,7 +867,7 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
      about the first 64 bits - we'll have to fix
      this when exabyte-size output files are common...
      */
-    *offset=gmx_ftell(fio->fp);
+    *offset=gmx_ftell(fio->fp);  //TODO: replace all calls to gmx_ftell/fseek with gmx_fio_tell/seek. in their test for MPI
 
     return 0;
 }
@@ -989,12 +1056,19 @@ void gmx_fio_rewind(t_fileio* fio)
 
 int gmx_fio_flush(t_fileio* fio)
 {
-    int ret;
-
+    int ret = 0;
     gmx_fio_lock(fio);
-    ret=gmx_fio_int_flush(fio);
+#ifdef GMX_LIB_MPI
+    if (fio->mpi_fh != NULL) {
+    	xdrrec_endofrecord(fio->xdr, 1);
+        MPI_File_write_ordered(fio->mpi_fh,fio->mem_buf,fio->mem_buf_cur_pos,MPI_BYTE,MPI_STATUS_IGNORE);
+    }
+    else
+#endif
+    {
+    	ret=gmx_fio_int_flush(fio);
+    }
     gmx_fio_unlock(fio);
-
     return ret;
 }
 

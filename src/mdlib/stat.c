@@ -597,14 +597,14 @@ void write_traj(FILE *fplog,t_commrec *cr,
 	int bufferStep;
 	gmx_bool writeXTCNow;
 
-	if (step_at_checkpoint == 0) {  //TODO: make sure this works correctly with checkpointing
+	if (step_at_checkpoint == 0) {
 		step_at_checkpoint = ir->init_step;
 	}
 
-	bufferStep = (step/ir->nstxtcout - (int)ceil((double)step_at_checkpoint/ir->nstxtcout))%NUMBEROFSTEPS;
-	writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == NUMBEROFSTEPS-1) || bLastStep || (mdof_flags & MDOF_CPT);
+	bufferStep = (step/ir->nstxtcout - (int)ceil((double)step_at_checkpoint/ir->nstxtcout))%cr->dd->n_xtc_steps;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
+	writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->dd->n_xtc_steps-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
 
-	if (mdof_flags & MDOF_CPT)
+	if ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))
 	{
 		step_at_checkpoint = step + 1;
 	}
@@ -614,15 +614,15 @@ void write_traj(FILE *fplog,t_commrec *cr,
     }
     if (state_local_buf==NULL)//Initializes the state_local_buf
     {
-    	snew (state_local_buf, NUMBEROFSTEPS);
-    	for (i=0;i<NUMBEROFSTEPS;i++)
+    	snew (state_local_buf, cr->dd->n_xtc_steps);
+    	for (i=0;i<cr->dd->n_xtc_steps;i++)
     	{
     		snew(state_local_buf[i],1);
     		snew(state_local_buf[i]->cg_gl,state_local->cg_gl_nalloc);
     		snew(state_local_buf[i]->x,state_local->nalloc);
     	}
     }
-    if (state_global->x == NULL && cr->dd->rank<NUMBEROFSTEPS ) {//Initializes the state_global->x for the total number of atoms
+    if (state_global->x == NULL && cr->dd->rank<cr->dd->n_xtc_steps ) {//Initializes the state_global->x for the total number of atoms
     	snew(state_global->x, state_global->natoms);
     }
     // RJ - End of additions
@@ -639,7 +639,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 
     if (DOMAINDECOMP(cr))
     {
-        if (mdof_flags & MDOF_CPT)  //TODO:  optimize that we use the information collected for CPT
+        if (mdof_flags & MDOF_CPT)
 
         {
             dd_collect_state(cr->dd,state_local,state_global);
@@ -668,7 +668,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
         	//TODO: DEALLOCATE later, now allocation in this method. all outside where dd and state_local is allocated
 
         	//This block of code copies the current dd and state_local to buffers to prepare for writing later.
-        	if (bufferStep == cr->dd->rank) {
+        	if ((writeXTCNow && cr->dd->rank == 0) || (!writeXTCNow && bufferStep == cr->dd->n_xtc_steps-1 - cr->dd->rank))
+        	{
         		step_buf=step;
         		t_buf=t;
         	}
@@ -683,13 +684,23 @@ void write_traj(FILE *fplog,t_commrec *cr,
         		for (i = 0; i <= bufferStep; i++)//This loop changes which node is the master node temporarily so that it can then write
         										 // the frames to different nodes.
         		{
-        			dd_buf[i]->masterrank = i;
-        			dd_collect_vec(dd_buf[i],state_local_buf[i],state_local_buf[i]->x,state_global->x);//x_receive_buf[i]
+        			if (i==bufferStep)
+        			{
+        				dd_buf[i]->masterrank = 0;
+        			}
+        			else
+        			{
+        				dd_buf[i]->masterrank = cr->dd->n_xtc_steps-1 - i;// For the purpose of making checkpoints work correctly: we write the frames in reverse order
+        			}
+        			if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
+        			{
+        				dd_collect_vec(dd_buf[i],state_local_buf[i],state_local_buf[i]->x,state_global->x);
+        			}
         		}
         	}
         }
     }
-    else
+    else  //TODO make sure particle decomposition works . e.g. always use serial files in that case
     {
         if (mdof_flags & MDOF_CPT)
         {
@@ -749,9 +760,9 @@ void write_traj(FILE *fplog,t_commrec *cr,
      {
          if (mdof_flags & MDOF_CPT)
          {
-             write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
+             /*write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
                               fplog,cr,of->eIntegrator,
-                              of->simulation_part,step,t,state_global);
+                              of->simulation_part,step,t,state_global);*/ //TODO!
          }
 
          if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
@@ -769,9 +780,11 @@ void write_traj(FILE *fplog,t_commrec *cr,
         }      
      }
 
-	if (writeXTCNow && cr->dd->rank < NUMBEROFSTEPS) {
-		gmx_bool bWrite = cr->dd->rank <= bufferStep;
-		if (bWrite) {
+     if (writeXTCNow && cr->dd->rank < cr->dd->n_xtc_steps) {  //this is an IO node (we have to call write_traj on all IO nodes!)
+
+
+		gmx_bool bWrite = (cr->dd->n_xtc_steps - bufferStep <= cr->dd->rank ) || (cr->dd->rank == 0);  //this node is actually writing
+		if (bWrite) { // If this node is one of the writing nodes
 			groups = &top_global->groups;
 			if (*n_xtc == -1)
 			{
@@ -811,7 +824,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		{
 			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
 		}
-		//gmx_fio_check_file_position(of->fp_xtc); //TODO: temporary should be reactivated!
+		//gmx_fio_check_file_position(of->fp_xtc); //TODO: temporary should be reactivated! than check that appending works, MPI_File_get_position_shared, MPI_File_seek_shared
 	}
 }
 

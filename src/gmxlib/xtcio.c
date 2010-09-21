@@ -47,8 +47,6 @@
 #include "gmx_fatal.h"
 
 #include <domdec.h>
-#include <mpi.h>  //TODO: make wrapper to have MPI functions not in this file
-#include <rpc/xdr.h>  //TODO: make wrapper to have XDR functions not in this file
 
 #define XTC_MAGIC 1995
 
@@ -71,47 +69,21 @@ static int xdr_r2f(XDR *xdrs,real *r,gmx_bool bRead)
 #endif
 }
 
-MPI_File open_xtc(const char *fn,const char *mode, gmx_domdec_t *dd)
+t_fileio *open_xtc(const char *fn,const char *mode, gmx_domdec_t *dd)
 {
-	MPI_File fh = NULL;
-	MPI_Comm new_comm;
-	int amode;
 
-	if (strcmp(mode,"w+")==0) {
-		amode = MPI_MODE_RDWR | MPI_MODE_CREATE;
-	} else if (strcmp(mode,"a+")==0) {
-		amode = MPI_MODE_RDWR | MPI_MODE_APPEND;
-	} else if (strcmp(mode,"r")==0) {
-		amode = MPI_MODE_RDONLY;
-	} else {
-		gmx_fatal(FARGS,"Unknown mode!");
-	}
-    if (mode[0]=='w')
-    {
-        /* only make backups for normal gromacs */
-        if (DDMASTER(dd))
-        {
-        	make_backup(fn);
-        }
-    }
-	MPI_Comm_split(dd->mpi_comm_all, dd->rank < NUMBEROFSTEPS, dd->rank, &new_comm );// new_comm must be a vector of size color
-	if (dd->rank < NUMBEROFSTEPS)
-	{
-		if (MPI_File_open(new_comm,(char*)fn,amode,MPI_INFO_NULL, &fh) != MPI_SUCCESS)
-		{
-			return NULL;
-		}
-	}
-	return fh;
-    //return gmx_fio_open(fn,mode);
+	set_dd_steps(dd); //TODO: In case we haven't initialized before opening (when getting rid of static) has to be moved//TODO: add to initialization of DD
+
+    return mpi_fio_open(fn,mode, dd);
 }
 
-void close_xtc(MPI_File fio)
+void close_xtc(t_fileio *fio)
 {
-	if (fio!=NULL) {
-		MPI_File_close(&fio);
+	if (fio!=NULL)
+	{
+		gmx_fio_close(fio);
 	}
-    //gmx_fio_close(fio);
+
 }
 
 static void check_xtc_magic(int magic)
@@ -212,57 +184,38 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, gmx_bool
 
 
 
-int write_xtc(MPI_File fio,
+int write_xtc(t_fileio *fio,
 	      int natoms,int step,real time,
 	      matrix box,rvec *x,real prec, gmx_bool bDontWrite)
 {
   int magic_number = XTC_MAGIC;
-  static char *mem_buf = NULL;
-  static XDR *xd;
+  XDR *xd;
   gmx_bool bDum;
-  u_int nBytes;
-  MPI_Status status;
-  int bOK;
+  int bOK = 1;
 	
 
-  if (bDontWrite) {
-	  bOK = MPI_File_write_ordered(fio,mem_buf,0,MPI_BYTE,&status) == MPI_SUCCESS;
-	  return bOK;
+
+  gmx_fio_start_record(fio);
+
+  if (!bDontWrite) {
+
+	  xd = gmx_fio_getxdr(fio);
+	  /* write magic number and xtc identidier */
+	  if (xtc_header(xd,&magic_number,&natoms,&step,&time,FALSE,&bDum) == 0)
+	  {
+		  return 0;
+	  }
+
+	  /* write data */
+	  bOK = xtc_coord(xd,&natoms,box,x,&prec,FALSE); /* bOK will be 1 if writing went well */
   }
 
-  if (mem_buf == NULL)
+  if(bOK)
   {
-	  snew (mem_buf, 3* natoms * sizeof(real));
-	  snew(xd, 1);
-	  xdrmem_create(xd,mem_buf,3* natoms * sizeof(real),XDR_ENCODE);
-  }
-
-
-  xdr_setpos(xd,0);
-
-
-  //xd = gmx_fio_getxdr(fio);
-  /* write magic number and xtc identidier */
-  if (xtc_header(xd,&magic_number,&natoms,&step,&time,FALSE,&bDum) == 0)
-  {
-	  return 0;
-  }
-    
-  /* write data */
-  bOK = xtc_coord(xd,&natoms,box,x,&prec,FALSE); /* bOK will be 1 if writing went well */
-
-//  if(bOK)
-//  {
-//	  if(gmx_fio_flush(fio) !=0)
-//	  {
-//		  bOK = 0;
-//	  }
-//  }
-
-  nBytes = xdr_getpos(xd);
-  if (bOK)
-  {
-	  bOK = MPI_File_write_ordered(fio,mem_buf,nBytes,MPI_BYTE,&status) == MPI_SUCCESS;
+	  if(gmx_fio_flush(fio) !=0)
+	  {
+		  bOK = 0;
+	  }
   }
 
   return bOK;  /* 0 if bad, 1 if writing went well */

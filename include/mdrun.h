@@ -123,7 +123,7 @@ typedef struct {
 
 typedef struct {
   t_fileio *fp_trn;
-  MPI_File fp_xtc; /*temporary should be a t_fileio with MPI_File handler within*/
+  t_fileio *fp_xtc; /*temporary should be a t_fileio with MPI_File handler within*/
   int  xtc_prec;
   ener_file_t fp_ene;
   const char *fn_cpt;

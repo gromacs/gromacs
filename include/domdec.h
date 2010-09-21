@@ -34,8 +34,8 @@
 extern "C" {
 #endif
 
-#define NUMBEROFSTEPS 100 // RJ - This is how many times a node will save its own data sending the data to the master node.
-							 // TODO: It also determines how many nodes will collect the frames, This NEEDS to be made more flexible
+
+int set_dd_steps (gmx_domdec_t *dd); // used to dynamically set the number of frames to be saved before writing xtc
 
 int ddglatnr(gmx_domdec_t *dd,int i);
 /* Returns the global topology atom number belonging to local atom index i.

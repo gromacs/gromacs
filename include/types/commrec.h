@@ -214,6 +214,8 @@ typedef struct {
   int pme_recv_f_alloc;
   rvec *pme_recv_f_buf;
 
+  int n_xtc_steps;
+
 } gmx_domdec_t;
 
 typedef struct gmx_partdec *gmx_partdec_p_t;

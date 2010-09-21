@@ -5646,22 +5646,38 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
     return ma;
 }
 
+int set_dd_steps (gmx_domdec_t *dd)//sets dd->n_xtc_steps dynamically
+{
+	const int MAXSTEPS = 100;// This is mostly for optimization reasons
+	const int MAXMEM = 250;//<<<thats megabytes//TODO: use sizeof(int)*natoms*3*n_xtc_steps < MAXMEM
+
+	if (dd->nnodes <= MAXSTEPS)
+	{
+		dd->n_xtc_steps = dd->nnodes;
+	}
+	else
+	{
+		dd->n_xtc_steps = MAXSTEPS;
+	}
+	return 0;
+}
+
 int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local) // prepares dd_buf
 {
 	int i;
 
-	snew (*dd_buf, NUMBEROFSTEPS);
-	for (i=0;i<NUMBEROFSTEPS;i++) {
+	//set_dd_steps(dd);
+
+	snew (*dd_buf, dd->n_xtc_steps);
+	for (i=0;i<dd->n_xtc_steps;i++) {
 		snew((*dd_buf)[i],1);
 		snew((*dd_buf)[i]->index_gl, dd->cg_nalloc);
 		snew((*dd_buf)[i]->comm, 1);
 
-		if (i==dd->rank) { // This is preparing certain nodes for holding several frames.
-			if (DDMASTER(dd)) {
-				(*dd_buf)[i]->ma = dd->ma;
-			} else {
-				(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
-			}
+		if (DDMASTER(dd)) {
+			(*dd_buf)[i]->ma = dd->ma;
+		} else if (i==dd->n_xtc_steps-1 - dd->rank) { // This is preparing certain nodes for holding several frames.
+			(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
 		}
 	}
 	return 1;
