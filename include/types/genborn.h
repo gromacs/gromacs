@@ -97,6 +97,8 @@ typedef struct
 	real gb_doffset;          /* Dielectric offset for Still/HCT/OBC */
 	real gb_epsilon_solvent;  /*   */
 	real epsilon_r;           /* Used for inner dielectric */
+  
+  real sa_surface_tension;  /* Surface tension for non-polar solvation */
 	
 	real *work;               /* Used for parallel summation and in the chain rule, length natoms         */
 	real *buf;                /* Used for parallel summation and in the chain rule, length natoms         */
