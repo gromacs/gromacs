@@ -28,52 +28,37 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
- * \brief
- * Implements gmx::OptionsGlobalProperties.
+/*! \file
+ * \brief API for handling selection (the \c gmx_ana_selection_t structure and related functions).
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_options
+ * There should be no need to use the data structures or call the
+ * functions in this file directly unless using the selection routines outside
+ * the main trajectory analysis API.
  */
-#include "gromacs/options/globalproperties.h"
+#ifndef GMX_SELECTION_SELECTIONENUMS_H
+#define GMX_SELECTION_SELECTIONENUMS_H
 
-#include <cassert>
-#include <cstddef>
-
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+/** Defines the type of covered fraction. */
+typedef enum
+{
+    CFRAC_NONE,         /**< No covered fraction (everything covered). */
+    CFRAC_SOLIDANGLE    /**< Fraction of a solid (3D) angle covered. */
+} e_coverfrac_t;
 
 namespace gmx
 {
 
-static const char *const timeUnits[] = {
-    "fs", "ps", "ns", "us", "ms",  "s", NULL
+enum SelectionFlag
+{
+    efOnlyStatic        = 1<<0,
+    efOnlyAtoms         = 1<<1,
+    efDynamicMask       = 1<<2,
+    efDynamicOnlyWhole  = 1<<3,
+    efCollectRemaining  = 1<<4,
 };
-static const double timeScaleFactors[] = {
-    1e-3,    1,  1e3,  1e6,  1e9, 1e12
-};
 
-OptionsGlobalProperties::OptionsGlobalProperties()
-    : _usedProperties(0), _timeUnit(1), _selectionCollection(NULL)
-{
+typedef unsigned long SelectionFlags;
+
 }
 
-double OptionsGlobalProperties::timeScaleFactor() const
-{
-    assert(_timeUnit >= 0
-           && (size_t)_timeUnit < sizeof(timeScaleFactors)/sizeof(timeScaleFactors[0]));
-    return timeScaleFactors[_timeUnit];
-}
-
-void OptionsGlobalProperties::addDefaultOptions(Options *options)
-{
-    if (isPropertyUsed(eogpTimeScaleFactor))
-    {
-        options->addOption(StringOption("tu").enumValue(timeUnits)
-                               .defaultValue("ps")
-                               .storeEnumIndex(&_timeUnit)
-                               .description("Unit for time values"));
-    }
-}
-
-} // namespace gmx
+#endif

@@ -40,15 +40,9 @@
 
 #include "position.h"
 #include "indexutil.h"
+#include "selectionenums.h"
 
 struct t_selelem;
-
-/** Defines the type of covered fraction. */
-typedef enum
-{
-    CFRAC_NONE,         /**< No covered fraction (everything covered). */
-    CFRAC_SOLIDANGLE    /**< Fraction of a solid (3D) angle covered. */
-} e_coverfrac_t;
 
 /*! \brief
  * Describes a single selection.

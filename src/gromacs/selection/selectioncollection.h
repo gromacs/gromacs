@@ -38,7 +38,10 @@
 #include <string>
 #include <vector>
 
+#include <typedefs.h>
+
 struct gmx_ana_indexgrps_t;
+struct gmx_ana_poscalc_coll_t;
 
 namespace gmx
 {

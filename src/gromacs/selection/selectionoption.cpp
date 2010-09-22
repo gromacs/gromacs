@@ -30,50 +30,22 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::OptionsGlobalProperties.
+ * Implements ::gmx::SelectionOption.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_options
+ * \ingroup module_selection
  */
-#include "gromacs/options/globalproperties.h"
+#include "gromacs/selection/selectionoption.h"
 
-#include <cassert>
-#include <cstddef>
-
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "selectionoptionstorage.h"
 
 namespace gmx
 {
 
-static const char *const timeUnits[] = {
-    "fs", "ps", "ns", "us", "ms",  "s", NULL
-};
-static const double timeScaleFactors[] = {
-    1e-3,    1,  1e3,  1e6,  1e9, 1e12
-};
-
-OptionsGlobalProperties::OptionsGlobalProperties()
-    : _usedProperties(0), _timeUnit(1), _selectionCollection(NULL)
+int SelectionOption::createDefaultStorage(Options *options,
+                                          OptionStorageInterface **storage) const
 {
-}
-
-double OptionsGlobalProperties::timeScaleFactor() const
-{
-    assert(_timeUnit >= 0
-           && (size_t)_timeUnit < sizeof(timeScaleFactors)/sizeof(timeScaleFactors[0]));
-    return timeScaleFactors[_timeUnit];
-}
-
-void OptionsGlobalProperties::addDefaultOptions(Options *options)
-{
-    if (isPropertyUsed(eogpTimeScaleFactor))
-    {
-        options->addOption(StringOption("tu").enumValue(timeUnits)
-                               .defaultValue("ps")
-                               .storeEnumIndex(&_timeUnit)
-                               .description("Unit for time values"));
-    }
+    return createOptionStorage<SelectionOption, SelectionOptionStorage>(this, options, storage);
 }
 
 } // namespace gmx

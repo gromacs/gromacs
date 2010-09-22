@@ -30,50 +30,50 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::OptionsGlobalProperties.
+ * Declares storage class for selection options.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_options
+ * \ingroup module_selection
  */
-#include "gromacs/options/globalproperties.h"
+#ifndef GMX_SELECTION_SELECTIONOPTIONSTORAGE_H
+#define GMX_SELECTION_SELECTIONOPTIONSTORAGE_H
 
-#include <cassert>
-#include <cstddef>
-
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "../options/abstractoptionstorage.h"
+#include "selectionenums.h"
 
 namespace gmx
 {
 
-static const char *const timeUnits[] = {
-    "fs", "ps", "ns", "us", "ms",  "s", NULL
+class Selection;
+class SelectionOption;
+
+/*! \internal \brief
+ * Converts, validates, and stores selection values.
+ */
+class SelectionOptionStorage : public AbstractOptionStorage<Selection *>
+{
+    public:
+        SelectionOptionStorage();
+
+        /*! \brief
+         * Initializes the storage from option settings.
+         *
+         * \param[in] settings   Storage settings.
+         * \param[in] options    Options object.
+         * \retval 0 on success.
+         */
+        int init(const SelectionOption &settings, Options *options);
+
+        virtual const char *typeString() const { return "sel"; }
+        virtual int appendValue(const std::string &value,
+                                AbstractErrorReporter *errors);
+        virtual int finishSet(int nvalues, AbstractErrorReporter *errors);
+        virtual std::string formatValue(int i) const;
+
+    private:
+        SelectionFlags          _flags;
 };
-static const double timeScaleFactors[] = {
-    1e-3,    1,  1e3,  1e6,  1e9, 1e12
-};
-
-OptionsGlobalProperties::OptionsGlobalProperties()
-    : _usedProperties(0), _timeUnit(1), _selectionCollection(NULL)
-{
-}
-
-double OptionsGlobalProperties::timeScaleFactor() const
-{
-    assert(_timeUnit >= 0
-           && (size_t)_timeUnit < sizeof(timeScaleFactors)/sizeof(timeScaleFactors[0]));
-    return timeScaleFactors[_timeUnit];
-}
-
-void OptionsGlobalProperties::addDefaultOptions(Options *options)
-{
-    if (isPropertyUsed(eogpTimeScaleFactor))
-    {
-        options->addOption(StringOption("tu").enumValue(timeUnits)
-                               .defaultValue("ps")
-                               .storeEnumIndex(&_timeUnit)
-                               .description("Unit for time values"));
-    }
-}
 
 } // namespace gmx
+
+#endif

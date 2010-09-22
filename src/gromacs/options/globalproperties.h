@@ -43,6 +43,7 @@ namespace gmx
 {
 
 class Options;
+class SelectionCollection;
 
 /*! \brief
  * ID numbers for global properties.
@@ -50,6 +51,7 @@ class Options;
 enum OptionGlobalPropertyId
 {
     eogpTimeScaleFactor,
+    eogpSelectionCollection,
 };
 
 /*! \brief
@@ -73,8 +75,17 @@ class OptionsGlobalProperties
             _usedProperties |= (1<<id);
         }
 
+        void setSelectionCollection(SelectionCollection *sc)
+        {
+            _selectionCollection = sc;
+        }
+
         //! Returns the scaling factor to get times in ps.
         double timeScaleFactor() const;
+        SelectionCollection *selectionCollection() const
+        {
+            return _selectionCollection;
+        }
 
     private:
         OptionsGlobalProperties();
@@ -85,8 +96,9 @@ class OptionsGlobalProperties
         }
         void addDefaultOptions(Options *options);
 
-        int                     _timeUnit;
         unsigned long           _usedProperties;
+        int                     _timeUnit;
+        SelectionCollection    *_selectionCollection;
 
         friend class Options;
 

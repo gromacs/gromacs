@@ -28,52 +28,56 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \file
  * \brief
- * Implements gmx::OptionsGlobalProperties.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_options
+ * \inpublicapi
+ * \ingroup module_selection
  */
-#include "gromacs/options/globalproperties.h"
+#ifndef GMX_SELECTION_SELECTIONOPTION_H
+#define GMX_SELECTION_SELECTIONOPTION_H
 
-#include <cassert>
-#include <cstddef>
-
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "../options/abstractoption.h"
+#include "selectionenums.h"
 
 namespace gmx
 {
 
-static const char *const timeUnits[] = {
-    "fs", "ps", "ns", "us", "ms",  "s", NULL
+class Selection;
+class SelectionOptionStorage;
+
+/*! \brief
+ * Specifies an option that provides selection(s).
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
+{
+    public:
+        //! Initializes an option with the given name.
+        explicit SelectionOption(const char *name) : MyBase(name), _flags(0) {}
+
+        MyClass &onlyAtoms() { _flags |= efOnlyAtoms; return me(); }
+        MyClass &onlyStatic() { _flags |= efOnlyStatic; return me(); }
+        MyClass &dynamicMask() { _flags |= efDynamicMask; return me(); }
+        MyClass &dynamicOnlyWhole() { _flags |= efDynamicOnlyWhole; return me(); }
+        MyClass &collectRemaining() { _flags |= efCollectRemaining; return me(); }
+
+    private:
+        virtual int createDefaultStorage(Options *options,
+                                         OptionStorageInterface **storage) const;
+
+        SelectionFlags          _flags;
+
+        /*! \brief
+         * Needed to initialize SelectionOptionStorage from this class without
+         * otherwise unnecessary accessors.
+         */
+        friend class SelectionOptionStorage;
 };
-static const double timeScaleFactors[] = {
-    1e-3,    1,  1e3,  1e6,  1e9, 1e12
-};
-
-OptionsGlobalProperties::OptionsGlobalProperties()
-    : _usedProperties(0), _timeUnit(1), _selectionCollection(NULL)
-{
-}
-
-double OptionsGlobalProperties::timeScaleFactor() const
-{
-    assert(_timeUnit >= 0
-           && (size_t)_timeUnit < sizeof(timeScaleFactors)/sizeof(timeScaleFactors[0]));
-    return timeScaleFactors[_timeUnit];
-}
-
-void OptionsGlobalProperties::addDefaultOptions(Options *options)
-{
-    if (isPropertyUsed(eogpTimeScaleFactor))
-    {
-        options->addOption(StringOption("tu").enumValue(timeUnits)
-                               .defaultValue("ps")
-                               .storeEnumIndex(&_timeUnit)
-                               .description("Unit for time values"));
-    }
-}
 
 } // namespace gmx
+
+#endif
