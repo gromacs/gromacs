@@ -275,8 +275,13 @@
 #include "evaluate.h"
 #include "keywords.h"
 #include "mempool.h"
-#include "selcollection.h"
+#include "selectioncollection-impl.h"
 #include "selelem.h"
+
+static int min(int a, int b)
+{
+    return (a < b) ? a : b;
+}
 
 /*! \internal \brief
  * Compiler flags.
@@ -2539,54 +2544,55 @@ free_item_compilerdata(t_selelem *sel)
 /*! \brief
  * Initializes total masses and charges for selections.
  *
+ * \param[in,out] selections Array of selections to update.
  * \param[in]     top   Topology information.
- * \param[in]     ngrps Number of elements in the \p sel array.
- * \param[in,out] sel   Array of selections to update.
  * \param[in]     bMaskOnly TRUE if the positions will always be calculated
  *   for all atoms, i.e., the masses/charges do not change.
  */
 static void
-calculate_mass_charge(t_topology *top, int ngrps, gmx_ana_selection_t *sel[],
-                      gmx_bool bMaskOnly)
+calculate_mass_charge(std::vector<gmx::Selection *> *selections,
+                      t_topology *top, bool bMaskOnly)
 {
-    int   g, b, i;
+    int   b, i;
 
-    for (g = 0; g < ngrps; ++g)
+    for (size_t g = 0; g < selections->size(); ++g)
     {
-        sel[g]->g = sel[g]->p.g;
-        snew(sel[g]->orgm, sel[g]->p.nr);
-        snew(sel[g]->orgq, sel[g]->p.nr);
-        for (b = 0; b < sel[g]->p.nr; ++b)
+        gmx_ana_selection_t *sel = &selections->at(g)->_sel;
+
+        sel->g = sel->p.g;
+        snew(sel->orgm, sel->p.nr);
+        snew(sel->orgq, sel->p.nr);
+        for (b = 0; b < sel->p.nr; ++b)
         {
-            sel[g]->orgq[b] = 0;
+            sel->orgq[b] = 0;
             if (top)
             {
-                sel[g]->orgm[b] = 0;
-                for (i = sel[g]->p.m.mapb.index[b]; i < sel[g]->p.m.mapb.index[b+1]; ++i)
+                sel->orgm[b] = 0;
+                for (i = sel->p.m.mapb.index[b]; i < sel->p.m.mapb.index[b+1]; ++i)
                 {
-                    sel[g]->orgm[b] += top->atoms.atom[sel[g]->g->index[i]].m;
-                    sel[g]->orgq[b] += top->atoms.atom[sel[g]->g->index[i]].q;
+                    sel->orgm[b] += top->atoms.atom[sel->g->index[i]].m;
+                    sel->orgq[b] += top->atoms.atom[sel->g->index[i]].q;
                 }
             }
             else
             {
-                sel[g]->orgm[b] = 1;
+                sel->orgm[b] = 1;
             }
         }
-        if (sel[g]->bDynamic && !bMaskOnly)
+        if (sel->bDynamic && !bMaskOnly)
         {
-            snew(sel[g]->m, sel[g]->p.nr);
-            snew(sel[g]->q, sel[g]->p.nr);
-            for (b = 0; b < sel[g]->p.nr; ++b)
+            snew(sel->m, sel->p.nr);
+            snew(sel->q, sel->p.nr);
+            for (b = 0; b < sel->p.nr; ++b)
             {
-                sel[g]->m[b] = sel[g]->orgm[b];
-                sel[g]->q[b] = sel[g]->orgq[b];
+                sel->m[b] = sel->orgm[b];
+                sel->q[b] = sel->orgq[b];
             }
         }
         else
         {
-            sel[g]->m = sel[g]->orgm;
-            sel[g]->q = sel[g]->orgq;
+            sel->m = sel->orgm;
+            sel->q = sel->orgq;
         }
     }
 }
@@ -2595,17 +2601,6 @@ calculate_mass_charge(t_topology *top, int ngrps, gmx_ana_selection_t *sel[],
 /********************************************************************
  * MAIN COMPILATION FUNCTION
  ********************************************************************/
-
-/*!
- * \param[in,out] sc     Selection collection to debug.
- * \param[in]     bDebug If TRUE, later call to gmx_ana_selcollection_compile()
- *     will print out intermediate selection trees.
- */
-void
-gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, gmx_bool bDebug)
-{
-    sc->bDebugCompile = bDebug;
-}
 
 /*!
  * \param[in,out] sc Selection collection to be compiled.
@@ -2621,8 +2616,9 @@ gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, gmx_bool bD
  * \ref CFRAC_NONE.
  */
 int
-gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
+gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
 {
+    gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
     gmx_sel_evaluate_t  evaldata;
     t_selelem   *item;
     e_poscalc_t  post;
@@ -2641,7 +2637,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
      * after compilation, and variable references in the symbol table can
      * also mess up the compilation and/or become invalid.
      */
-    _gmx_selcollection_clear_symtab(sc);
+    coll->_impl->clearSymbolTable();
 
     /* Remove any unused variables. */
     sc->root = remove_unused_subexpressions(sc->root);
@@ -2697,7 +2693,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     if (sc->bDebugCompile)
     {
         fprintf(stderr, "\nTree after initial compiler processing:\n");
-        gmx_ana_selcollection_print_tree(stderr, sc, FALSE);
+        coll->printTree(stderr, FALSE);
     }
 
     /* Evaluate all static parts of the selection and analyze the tree
@@ -2726,7 +2722,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     if (sc->bDebugCompile)
     {
         fprintf(stderr, "\nTree after first analysis pass:\n");
-        gmx_ana_selcollection_print_tree(stderr, sc, FALSE);
+        coll->printTree(stderr, FALSE);
     }
 
     /* Do a second pass to evaluate static parts of common subexpressions */
@@ -2771,7 +2767,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     if (sc->bDebugCompile)
     {
         fprintf(stderr, "\nTree after second analysis pass:\n");
-        gmx_ana_selcollection_print_tree(stderr, sc, FALSE);
+        coll->printTree(stderr, FALSE);
     }
 
     /* Initialize evaluation groups, position calculations for methods, perform
@@ -2809,7 +2805,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     }
 
     /* Finish up by calculating total masses and charges. */
-    calculate_mass_charge(sc->top, sc->nr, sc->sel, sc->bMaskOnly);
+    calculate_mass_charge(&sc->sel, sc->top, sc->bMaskOnly);
 
     return 0;
 }

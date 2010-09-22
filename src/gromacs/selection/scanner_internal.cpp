@@ -55,7 +55,7 @@
 #include "selmethod.h"
 
 #include "parsetree.h"
-#include "selcollection.h"
+#include "selectioncollection-impl.h"
 #include "selelem.h"
 #include "symrec.h"
 
@@ -456,7 +456,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     snew(state, 1);
     state->sc        = sc;
     state->grps      = grps;
-    state->nexpsel   = (maxnr > 0 ? sc->nr + maxnr : -1);
+    state->nexpsel   = (maxnr > 0 ? sc->sel.size() + maxnr : -1);
 
     state->bInteractive = bInteractive;
     state->nalloc_input = 0;

@@ -648,11 +648,11 @@ typedef struct gmx_ana_selmethod_t
 
 /** Registers a selection method. */
 int
-gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
+gmx_ana_selmethod_register(struct gmx_sel_symtab_t *symtab,
                            const char *name, gmx_ana_selmethod_t *method);
 /** Registers all selection methods in the library. */
 int
-gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc);
+gmx_ana_selmethod_register_defaults(struct gmx_sel_symtab_t *symtab);
 
 /** Finds a parameter from a selection method by name. */
 gmx_ana_selparam_t *

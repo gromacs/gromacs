@@ -35,21 +35,13 @@
  * functions in this file directly unless using the selection routines outside
  * the main trajectory analysis API.
  */
-#ifndef SELECTION_H
-#define SELECTION_H
+#ifndef GMX_SELECTION_SELECTION_H
+#define GMX_SELECTION_SELECTION_H
 
 #include "position.h"
 #include "indexutil.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-/** Information for a collection of selections. */
-typedef struct gmx_ana_selcollection_t gmx_ana_selcollection_t;
-
-struct gmx_ana_poscalc_coll_t;
+struct t_selelem;
 
 /** Defines the type of covered fraction. */
 typedef enum
@@ -100,96 +92,58 @@ typedef struct gmx_ana_selection_t
     real                   *orgq;
 } gmx_ana_selection_t;
 
-/** Frees the memory allocated for a selection. */
-void
-gmx_ana_selection_free(gmx_ana_selection_t *sel);
-/** Returns the name of a selection. */
-char *
-gmx_ana_selection_name(gmx_ana_selection_t *sel);
-/** Prints out the selection information. */
-void
-gmx_ana_selection_print_info(gmx_ana_selection_t *sel);
-/** Initializes the information for covered fraction. */
-gmx_bool
-gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type);
+namespace gmx
+{
 
-/** Creates a new empty selection collection. */
-int
-gmx_ana_selcollection_create(gmx_ana_selcollection_t **sc,
-                             struct gmx_ana_poscalc_coll_t *pcc);
-/** Frees the memory allocated for a selection collection. */
-void
-gmx_ana_selcollection_free(gmx_ana_selcollection_t *sc);
-/** Sets the default reference position handling for a selection collection. */
-void
-gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, const char *type);
-/** Sets the default output position handling for a selection collection. */
-void
-gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
-                                     const char *type, gmx_bool bMaskOnly);
-/** Request evaluation of velocities for selections. */
-void
-gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
-                                    gmx_bool bVelOut);
-/** Request evaluation of forces for selections. */
-void
-gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
-                                      gmx_bool bForceOut);
-/** Sets the topology for a selection collection. */
-int
-gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,
-                                   int natoms);
-/** Returns the number of selections specified by a selection collection. */
-int
-gmx_ana_selcollection_get_count(gmx_ana_selcollection_t *sc);
-/** Returns a selection by index. */
-gmx_ana_selection_t *
-gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i);
-/** Returns TRUE if the collection requires topology information for evaluation. */
-gmx_bool
-gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc);
-/** Prints a human-readable version of the internal selection element tree. */
-void
-gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, gmx_bool bValues);
-/** Prints the selection strings into an XVGR file as comments. */
-void
-xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc, 
-                   const output_env_t oenv);
+class SelectionCollection;
 
-/* In parsetree.c */
-/** Parses selection(s) from standard input. */
-int
-gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
-                                  gmx_ana_indexgrps_t *grps,
-                                  gmx_bool bInteractive);
-/** Parses selection(s) from a file. */
-int
-gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
-                                  gmx_ana_indexgrps_t *grps);
-/** Parses selection(s) from a string. */
-int
-gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
-                                gmx_ana_indexgrps_t *grps);
+/*! \brief
+ * Wrapper class for accessing selection information.
+ */
+class Selection
+{
+    public:
+        Selection(t_selelem *elem, const char *selstr);
 
-/* In compiler.c */
-/** Set debugging flag for selection compilation. */
-void
-gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, gmx_bool bDebug);
-/** Prepares the selections for evaluation and performs some optimizations. */
-int
-gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc);
+        const char *name() const  { return _sel.name; }
+        const char *selectionText() const { return _sel.selstr; }
+        e_index_t type() const { return _sel.p.m.type; }
+        bool isDynamic() const { return _sel.bDynamic; }
+        int posCount() const { return _sel.p.nr; }
+        const gmx_ana_pos_t *positions() const { return &_sel.p; }
+        const rvec &x(int i) const { return _sel.p.x[i]; }
+        const rvec &v(int i) const { return _sel.p.v[i]; }
+        const rvec &f(int i) const { return _sel.p.f[i]; }
+        int refId(int i) const { return _sel.p.m.refid[i]; }
+        int mapId(int i) const { return _sel.p.m.mapid[i]; }
+        real mass(int i) const { return _sel.m[i]; }
+        real charge(int i) const { return _sel.q[i]; }
+        int atomCount(int i) const
+            { return _sel.p.m.mapb.index[i+1] - _sel.p.m.mapb.index[i]; }
+        const int *atomIndices(int i) const
+            { return _sel.g ? _sel.g->index + _sel.p.m.mapb.index[i] : NULL; }
+        int *mapIds() const { return _sel.p.m.mapid; }
+        gmx_ana_index_t *indexGroup() const { return _sel.g; }
+        real cfrac() const { return _sel.cfrac; }
 
-/* In evaluate.c */
-/** Evaluates the selection. */
-int
-gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
-                               t_trxframe *fr, t_pbc *pbc);
-/** Evaluates the largest possible index groups from dynamic selections. */
-int
-gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes);
+        void setOriginalId(int i, int id) { _sel.p.m.orgid[i] = id; }
+        bool initCoveredFraction(e_coverfrac_t type);
 
-#ifdef __cplusplus
-}
-#endif
+        void printInfo() const;
+        void printDebugInfo(int nmaxind) const;
+
+        gmx_ana_selection_t     _sel;
+
+    private:
+        ~Selection();
+
+        friend class SelectionCollection;
+
+        // Disallow copy and assign.
+        Selection(const Selection &);
+        void operator =(const Selection &);
+};
+
+} // namespace gmx
 
 #endif

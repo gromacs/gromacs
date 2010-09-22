@@ -29,18 +29,55 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Functions for printing help for selections.
+ * \brief
+ * Tests selection parsing and compilation.
  *
- * This is an implementation header: there should be no need to use it outside
- * this directory.
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
-#ifndef SELECTION_HELP_H
-#define SELECTION_HELP_H
+#include <vector>
 
-struct gmx_sel_symtab_t;
+#include <gtest/gtest.h>
 
-/** Prints help for writing selections. */
-void
-_gmx_sel_print_help(struct gmx_sel_symtab_t *symtab, const char *topic);
+#include "gromacs/selection/poscalc.h"
+#include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selection.h"
 
-#endif
+namespace
+{
+
+class SelectionCollectionTest : public ::testing::Test
+{
+    public:
+        void SetUp();
+        void TearDown();
+
+        gmx_ana_poscalc_coll_t *_pcc;
+        gmx::SelectionCollection *_sc;
+};
+
+void SelectionCollectionTest::SetUp()
+{
+    _sc = NULL;
+    ASSERT_EQ(0, gmx_ana_poscalc_coll_create(&_pcc));
+    ASSERT_EQ(0, gmx::SelectionCollection::create(&_sc, _pcc));
+}
+
+void SelectionCollectionTest::TearDown()
+{
+    delete _sc;
+    gmx_ana_poscalc_coll_free(_pcc);
+}
+
+TEST_F(SelectionCollectionTest, ParsesSimpleSelections)
+{
+    std::vector<gmx::Selection *> sel;
+    _sc->setReferencePosType("atom");
+    _sc->setOutputPosType("atom");
+    EXPECT_EQ(0, _sc->parseFromString("resname RA RB", &sel));
+    EXPECT_EQ(1U, sel.size());
+    EXPECT_EQ(0, _sc->parseFromString("name CA SB", &sel));
+    EXPECT_EQ(2U, sel.size());
+}
+
+} // namespace

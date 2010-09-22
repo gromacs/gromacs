@@ -59,7 +59,7 @@
 
 #include "evaluate.h"
 #include "mempool.h"
-#include "selcollection.h"
+#include "selectioncollection-impl.h"
 #include "selelem.h"
 
 /*!
@@ -173,7 +173,6 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
 {
     gmx_sel_evaluate_t  data;
     t_selelem          *sel;
-    int                 g, i;
     int                 rc;
 
     _gmx_sel_evaluate_init(&data, sc->mempool, &sc->gall, sc->top, fr, pbc);
@@ -207,13 +206,13 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
         sel = sel->next;
     }
     /* Update selection information */
-    for (g = 0; g < sc->nr; ++g)
+    for (size_t g = 0; g < sc->sel.size(); ++g)
     {
-        gmx_ana_selection_t *sel = sc->sel[g];
+        gmx_ana_selection_t *sel = &sc->sel[g]->_sel;
 
         if (sel->m != sel->orgm)
         {
-            for (i = 0; i < sel->p.nr; ++i)
+            for (int i = 0; i < sel->p.nr; ++i)
             {
                 sel->m[i] = sel->orgm[sel->p.m.refid[i]];
                 sel->q[i] = sel->orgq[sel->p.m.refid[i]];
@@ -237,22 +236,22 @@ int
 gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
 {
     t_selelem          *sel;
-    int                 g;
 
-    for (g = 0; g < sc->nr; ++g)
+    for (size_t g = 0; g < sc->sel.size(); ++g)
     {
-        sel = sc->sel[g]->selelem;
-        if (sc->sel[g]->bDynamic)
+        gmx_ana_selection_t *sel = &sc->sel[g]->_sel;
+        t_selelem *elem = sel->selelem;
+        if (sel->bDynamic)
         {
-            gmx_ana_index_copy(sc->sel[g]->g, sel->v.u.g, FALSE);
-            sc->sel[g]->g->name = NULL;
-            gmx_ana_indexmap_update(&sc->sel[g]->p.m, sc->sel[g]->g, sc->bMaskOnly);
-            sc->sel[g]->p.nr = sc->sel[g]->p.m.nr;
+            gmx_ana_index_copy(sel->g, elem->v.u.g, FALSE);
+            sel->g->name = NULL;
+            gmx_ana_indexmap_update(&sel->p.m, sel->g, sc->bMaskOnly);
+            sel->p.nr = sel->p.m.nr;
         }
 
-        if (sc->sel[g]->bCFracDyn)
+        if (sel->bCFracDyn)
         {
-            sc->sel[g]->avecfrac /= nframes;
+            sel->avecfrac /= nframes;
         }
     }
     return 0;

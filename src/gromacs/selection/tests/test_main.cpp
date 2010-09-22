@@ -29,18 +29,18 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Functions for printing help for selections.
+ * \brief
+ * main() for unit tests that use Google C++ Testing Framework.
  *
- * This is an implementation header: there should be no need to use it outside
- * this directory.
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
-#ifndef SELECTION_HELP_H
-#define SELECTION_HELP_H
+#include <gtest/gtest.h>
 
-struct gmx_sel_symtab_t;
+#include "gromacs/fatalerror/fatalerror.h"
 
-/** Prints help for writing selections. */
-void
-_gmx_sel_print_help(struct gmx_sel_symtab_t *symtab, const char *topic);
-
-#endif
+int main(int argc, char *argv[])
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    ::gmx::setFatalErrorHandler(NULL);
+    return RUN_ALL_TESTS();
+}

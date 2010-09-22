@@ -34,12 +34,20 @@
  * This is an implementation header: there should be no need to use it outside
  * this directory.
  */
-#ifndef SELECTION_COLLECTION_H
-#define SELECTION_COLLECTION_H
+#ifndef GMX_SELECTION_SELECTIONCOLLECTION_IMPL_H
+#define GMX_SELECTION_SELECTIONCOLLECTION_IMPL_H
+
+#include <vector>
 
 #include <typedefs.h>
 
 #include "indexutil.h"
+#include "selectioncollection.h"
+
+namespace gmx
+{
+class Selection;
+}
 
 /*! \internal
  * \brief
@@ -81,20 +89,18 @@ struct gmx_ana_selcollection_t
     /** Default output position type for selections. */
     const char                 *spost;
     /** TRUE if \ref POS_MASKONLY should be used for output position evaluation. */
-    gmx_bool                        bMaskOnly;
+    bool                        bMaskOnly;
     /** TRUE if velocities should be evaluated for output positions. */
-    gmx_bool                        bVelocities;
+    bool                        bVelocities;
     /** TRUE if forces should be evaluated for output positions. */
-    gmx_bool                        bForces;
+    bool                        bForces;
     /** TRUE if debugging output should be printed during compilation. */
-    gmx_bool                        bDebugCompile;
+    bool                        bDebugCompile;
 
     /** Root of the selection element tree. */
     struct t_selelem           *root;
-    /** Number of selections in \p sel. */
-    int                         nr;
     /** Array of compiled selections. */
-    struct gmx_ana_selection_t **sel;
+    std::vector<gmx::Selection *>  sel;
     /** Number of variables defined. */
     int                            nvars;
     /** Selection strings for variables. */
@@ -112,8 +118,40 @@ struct gmx_ana_selcollection_t
     struct gmx_sel_symtab_t     *symtab;
 };
 
-/** Clears the symbol table in the collection */
-void
-_gmx_selcollection_clear_symtab(struct gmx_ana_selcollection_t *sc);
+namespace gmx
+{
+
+class SelectionCollection::Impl
+{
+    public:
+        typedef std::vector<Selection *> SelectionList;
+
+        Impl(gmx_ana_poscalc_coll_t *pcc);
+        ~Impl();
+
+        void clearSymbolTable();
+        int registerDefaultMethods();
+        int runParser(void *scanner, int maxnr,
+                      std::vector<Selection *> *output);
+
+        gmx_ana_selcollection_t _sc;
+        gmx_ana_indexgrps_t    *_grps;
+};
+
+} // namespace gmx
+
+/* In compiler.c */
+/** Prepares the selections for evaluation and performs some optimizations. */
+int
+gmx_ana_selcollection_compile(gmx::SelectionCollection *coll);
+
+/* In evaluate.c */
+/** Evaluates the selection. */
+int
+gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
+                               t_trxframe *fr, t_pbc *pbc);
+/** Evaluates the largest possible index groups from dynamic selections. */
+int
+gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes);
 
 #endif

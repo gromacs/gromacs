@@ -43,7 +43,6 @@
 
 #include "selmethod.h"
 
-#include "selcollection.h"
 #include "symrec.h"
 
 /*
@@ -614,7 +613,7 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
  * All problems are described to \p stderr.
  */
 int
-gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
+gmx_ana_selmethod_register(gmx_sel_symtab_t *symtab,
                            const char *name, gmx_ana_selmethod_t *method)
 {
     gmx_bool bOk;
@@ -622,16 +621,16 @@ gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
     /* Check the method */
     if (method->flags & SMETH_MODIFIER)
     {
-        bOk = check_modifier(stderr, method, sc->symtab);
+        bOk = check_modifier(stderr, method, symtab);
     }
     else
     {
-        bOk = check_method(stderr, method, sc->symtab);
+        bOk = check_method(stderr, method, symtab);
     }
     /* Try to register the method if everything is ok */
     if (bOk) 
     {
-        if (!_gmx_sel_add_method_symbol(sc->symtab, name, method))
+        if (!_gmx_sel_add_method_symbol(symtab, name, method))
         {
             bOk = FALSE;
         }
@@ -650,7 +649,7 @@ gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
  *   registered.
  */
 int
-gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc)
+gmx_ana_selmethod_register_defaults(gmx_sel_symtab_t *symtab)
 {
     size_t i;
     int  rc;
@@ -663,11 +662,11 @@ gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc)
 
         if (smtable_def[i].name == NULL)
         {
-            rc = gmx_ana_selmethod_register(sc, method->name, method);
+            rc = gmx_ana_selmethod_register(symtab, method->name, method);
         }
         else
         {
-            rc = gmx_ana_selmethod_register(sc, smtable_def[i].name, method);
+            rc = gmx_ana_selmethod_register(symtab, smtable_def[i].name, method);
         }
         if (rc != 0)
         {
