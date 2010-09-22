@@ -792,7 +792,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         if (inputrec->bRot)
         {
            /* Initialize enforced rotation code */
-           init_rot(fplog,inputrec,nfile,fnm,cr,state->x,mtop,oenv,
+           init_rot(fplog,inputrec,nfile,fnm,cr,state->x,state->box,mtop,oenv,
                     bVerbose,Flags);
         }
 
