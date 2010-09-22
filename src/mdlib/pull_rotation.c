@@ -3035,7 +3035,7 @@ extern void dd_make_local_rotation_groups(gmx_domdec_t *dd,t_rot *rot,t_mdatoms 
 
 
 extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
-        t_commrec *cr, rvec *x, gmx_mtop_t *mtop, const output_env_t oenv,
+        t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const output_env_t oenv,
         gmx_bool bVerbose, unsigned long Flags)
 {
     t_rot    *rot;
@@ -3044,6 +3044,7 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     int      nat_max=0;     /* Size of biggest rotation group */
     gmx_enfrot_t er;        /* Pointer to the enforced rotation buffer variables */    
     gmx_enfrotgrp_t erg;    /* Pointer to enforced rotation group data */
+    rvec     *x_pbc;        /* Space for the pbc-correct atom positions */
 
 
     if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
@@ -3069,6 +3070,15 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     er->out_slabs = NULL;
     if (MASTER(cr))
         er->out_slabs = open_slab_out(rot, opt2fn("-rs",nfile,fnm));
+
+    if (MASTER(cr))
+    {
+        /* Remove pbc, make molecule whole.
+         * When ir->bContinuation=TRUE this has already been done, but ok. */
+        snew(x_pbc,mtop->natoms);
+        m_rveccopy(mtop->natoms,x,x_pbc);
+        do_pbc_first_mtop(NULL,ir->ePBC,box,mtop,x_pbc);
+    }
 
     for(g=0; g<rot->ngrp; g++)
     {
@@ -3096,7 +3106,7 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
                 erg->nat_loc = rotg->nat;
                 erg->ind_loc = rotg->ind;
             }
-            init_rot_group(fplog,cr,g,rotg,x,mtop,bVerbose,er->out_slabs);
+            init_rot_group(fplog,cr,g,rotg,x_pbc,mtop,bVerbose,er->out_slabs);
         }
     }
     
@@ -3126,6 +3136,7 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
             if (rot->nsttout > 0)
                 er->out_torque  = open_torque_out(rot, opt2fn("-rt",nfile,fnm));
         }
+        sfree(x_pbc);
     }
 }
 
@@ -3172,16 +3183,16 @@ static void rotate_local_reference(t_rotgrp *rotg)
 
 
 /* Select the PBC representation for each local x position and store that
- * for later usage. The right PBC image of an x is the one nearest to its 
- * rotated reference */
+ * for later usage. We assume the right PBC image of an x is the one nearest to
+ * its rotated reference */
 static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
 {
     int d,i,ii,m;
     gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
     rvec xref,xcurr,dx;
     ivec shift;
-    
-    
+
+
     erg=rotg->enfrotgrp;
     
     for (i=0; i<erg->nat_loc; i++)
@@ -3191,7 +3202,10 @@ static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
         /* Index of a rotation group atom  */
         ii = erg->ind_loc[i];
 
-        /* Get the already rotated reference position */
+        /* Get the reference position. The pivot (or COM or COG) was already
+         * subtracted in init_rot_group() from the reference positions. Also,
+         * the reference positions have already been rotated in
+         * rotate_local_reference() */
         copy_rvec(erg->xr_loc[i], xref);
         
         /* Subtract the (old) center from the current positions
@@ -3199,7 +3213,7 @@ static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
         rvec_sub(x[ii], erg->xc_center, xcurr);
         
         /* Shortest PBC distance between the atom and its reference */
-        rvec_sub(xref, xcurr, dx);
+        rvec_sub(xcurr, xref, dx);
         
         /* Determine the shift for this atom */
         for(m=npbcdim-1; m>=0; m--)
@@ -3217,7 +3231,7 @@ static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
                 shift[m]--;
             }
         }
-            
+        
         /* Apply the shift to the current atom */
         copy_rvec(x[ii], erg->x_loc_pbc[i]);
         shift_single_coord(box, erg->x_loc_pbc[i], shift); 
