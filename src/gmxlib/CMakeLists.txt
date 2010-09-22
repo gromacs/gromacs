@@ -21,7 +21,6 @@ endif()
 # The nonbonded directory contains subdirectories that are only
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 file(GLOB GMXLIB_SOURCES *.c 
-     selection/*.c trajana/*.c
      statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
 
 # This source file is generated
