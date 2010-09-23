@@ -1148,6 +1148,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
     int         handled_stop_condition=gmx_stop_cond_none; /* compare to get_stop_condition*/
     gmx_iterate_t iterate;
+    t_write_buffer write_buf;
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
@@ -1531,6 +1532,26 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     wallcycle_start(wcycle,ewcRUN);
     if (fplog)
         fprintf(fplog,"\n");
+
+    /*initialize buffered writing */
+#ifdef GMX_LIB_MPI
+    if (DOMAINDECOMP(cr))
+	{
+		write_buf.step_after_checkpoint = ir->init_step;
+		initialize_dd_buf(&(write_buf.dd), cr->dd, state);
+		snew (write_buf.state_local, cr->dd->n_xtc_steps);
+		for (i=0;i<cr->dd->n_xtc_steps;i++)
+		{
+			snew(write_buf.state_local[i],1);
+			snew(write_buf.state_local[i]->cg_gl,state->cg_gl_nalloc);
+			snew(write_buf.state_local[i]->x,state->nalloc);
+		}
+		if (DDIONODE(cr->dd)) //Initializes the state_global->x for the total number of atoms
+		{
+			snew(state_global->x, state_global->natoms);
+		}
+	}
+#endif
 
     /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
 #ifdef GMX_FAHCORE
@@ -2184,7 +2205,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
             }
             write_traj(fplog,cr,outf,mdof_flags,top_global,
-                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc,ir,bLastStep);
+                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc,ir,bLastStep,&write_buf);
             if (bCPT)
             {
                 nchkpt++;

@@ -134,6 +134,14 @@ typedef struct {
   FILE *fp_field;
 } gmx_mdoutf_t;
 
+typedef struct {
+	gmx_domdec_t **dd;
+	t_state **state_local;
+	gmx_large_int_t step;
+	double t;
+	int step_after_checkpoint; /*first step or first step after checkpoint*/
+} t_write_buffer;
+
 /* Variables for temporary use with the deform option,
  * used in runner.c and md.c.
  * (These variables should be stored in the tpx file.)
@@ -250,7 +258,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		       t_state *state_local,t_state *state_global,
 		       rvec *f_local,rvec *f_global,
 		       int *n_xtc,rvec **x_xtc,
-		       t_inputrec *ir, gmx_bool bLastStep);
+		       t_inputrec *ir, gmx_bool bLastStep, t_write_buffer* write_buf);
 /* Routine that writes frames to trn, xtc and/or checkpoint.
  * What is written is determined by the mdof_flags defined above.
  * Data is collected to the master node only when necessary.
