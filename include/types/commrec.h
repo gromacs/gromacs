@@ -185,7 +185,7 @@ typedef struct {
   /* The local to global charge group index and local cg to local atom index */
   int  ncg_home;
   int  ncg_tot;
-  int  *index_gl;// size of index_gl is in state->ncg_gl
+  int  *index_gl;// size is ncg_home 
   int  *cgindex;
   int  cg_nalloc;
   /* Local atom to local cg index, only for special cases */
@@ -295,6 +295,7 @@ typedef struct {
 
 #define DOMAINDECOMP(cr)   ((cr)->dd != NULL)
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
+#define DDIONODE(dd)	   ((dd)->rank < (dd)->n_xtc_steps)
 
 #define PARTDECOMP(cr)     ((cr)->pd != NULL)
 

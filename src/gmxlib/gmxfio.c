@@ -582,19 +582,14 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, gmx_domdec_t *dd)
             		MPI_File_open(new_comm,(char*)fn,amode,MPI_INFO_NULL, &(fio->mpi_fh));
             	}
             }
-            else
-            {
+            else 
 #endif
+            {
             	/* Open the file without MPI */
             	fio->fp = ffopen(fn,newmode);
 
                 xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
-
-#ifdef GMX_MPI
             }
-#endif
-
-
         }
         else
         {

@@ -69,6 +69,7 @@ int write_xtc(t_fileio *fio,
 		     matrix box,rvec *x,real prec,
 		     gmx_bool bDontWrite);
 /* Write a frame to xtc file */
+/* write_xtc has to be called by all IO nodes (if opened using MPI). bWrite is false for IO nodes which don't have any frame*/
 
 int xtc_check(const char *str,gmx_bool bResult,const char *file,int line);
 #define XTC_CHECK(s,b) xtc_check(s,b,__FILE__,__LINE__)

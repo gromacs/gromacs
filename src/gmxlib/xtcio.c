@@ -71,19 +71,12 @@ static int xdr_r2f(XDR *xdrs,real *r,gmx_bool bRead)
 
 t_fileio *open_xtc(const char *fn,const char *mode, gmx_domdec_t *dd)
 {
-
-	set_dd_steps(dd); //TODO: In case we haven't initialized before opening (when getting rid of static) has to be moved//TODO: add to initialization of DD
-
     return mpi_fio_open(fn,mode, dd);
 }
 
 void close_xtc(t_fileio *fio)
 {
-	if (fio!=NULL)
-	{
-		gmx_fio_close(fio);
-	}
-
+	gmx_fio_close(fio);
 }
 
 static void check_xtc_magic(int magic)
@@ -186,7 +179,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, gmx_bool
 
 int write_xtc(t_fileio *fio,
 	      int natoms,int step,real time,
-	      matrix box,rvec *x,real prec, gmx_bool bDontWrite)
+	      matrix box,rvec *x,real prec, gmx_bool bWrite)
 {
   int magic_number = XTC_MAGIC;
   XDR *xd;
@@ -197,7 +190,7 @@ int write_xtc(t_fileio *fio,
 
   gmx_fio_start_record(fio);
 
-  if (!bDontWrite) {
+  if (bWrite) {
 
 	  xd = gmx_fio_getxdr(fio);
 	  /* write magic number and xtc identidier */

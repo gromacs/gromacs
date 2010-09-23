@@ -423,7 +423,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     {
 	fprintf(stderr,"Entering membed code");
         snew(membed,1);
-//        init_membed(fplog,membed,nfile,fnm,mtop,inputrec,state,cr,&cpt_period);
+        init_membed(fplog,membed,nfile,fnm,mtop,inputrec,state,cr,&cpt_period);
     }
 
     if (PAR(cr))

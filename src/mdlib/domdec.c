@@ -397,7 +397,7 @@ static const ivec dd_zp1[dd_zp1n] = {{0,0,2}};
  * This saves memory (and some copying for small nnodes).
  * For high parallelization scatter and gather calls are used.
  */
-#define GMX_DD_NNODES_SENDRECV 1
+#define GMX_DD_NNODES_SENDRECV 4
 
 
 /*
@@ -1373,11 +1373,11 @@ static void get_commbuffer_counts(gmx_domdec_t *dd,
     ma = dd->ma;
     
     /* Make the rvec count and displacment arrays */
-    *counts  = ma->ibuf;  //TODO allocate
+    *counts  = ma->ibuf;
     *disps   = ma->ibuf + dd->nnodes;
     for(n=0; n<dd->nnodes; n++)
     {
-        (*counts)[n] = ma->nat[n]*sizeof(rvec);  //TODO: communicate
+        (*counts)[n] = ma->nat[n]*sizeof(rvec);
         (*disps)[n]  = (n == 0 ? 0 : (*disps)[n-1] + (*counts)[n-1]);
     }
 }
@@ -1402,7 +1402,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
     
     dd_gatherv(dd,dd->nat_home*sizeof(rvec),lv,rcounts,disps,buf);
 
-    if (DDMASTER(dd))//  Master refers to the writing cell
+    if (DDMASTER(dd))
     {
         cgs_gl = &dd->comm->cgs_gl;
 
@@ -1421,12 +1421,11 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
 }
 
 void dd_collect_vec(gmx_domdec_t *dd,
-                    t_state *state_local,rvec *lv,rvec *v) //      | mr = is the masterrank to be used
+                    t_state *state_local,rvec *lv,rvec *v)
 {
     gmx_domdec_master_t *ma;
     int  n,i,c,a,nalloc=0;
     rvec *buf=NULL;
-    //dd->masterrank = mr;// sets the master rank
     
     dd_collect_cg(dd,state_local);
 
@@ -5646,27 +5645,9 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
     return ma;
 }
 
-int set_dd_steps (gmx_domdec_t *dd)//sets dd->n_xtc_steps dynamically
-{
-	const int MAXSTEPS = 100;// This is mostly for optimization reasons
-	const int MAXMEM = 250;//<<<thats megabytes//TODO: use sizeof(int)*natoms*3*n_xtc_steps < MAXMEM
-
-	if (dd->nnodes <= MAXSTEPS)
-	{
-		dd->n_xtc_steps = dd->nnodes;
-	}
-	else
-	{
-		dd->n_xtc_steps = MAXSTEPS;
-	}
-	return 0;
-}
-
 int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local) // prepares dd_buf
 {
 	int i;
-
-	//set_dd_steps(dd);
 
 	snew (*dd_buf, dd->n_xtc_steps);
 	for (i=0;i<dd->n_xtc_steps;i++) {
@@ -5683,7 +5664,7 @@ int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_l
 	return 1;
 }
 
-int copy_t_block (t_block *copy_gl, t_block *orig_gl)
+static int copy_t_block (t_block *copy_gl, t_block *orig_gl)
 {
 	srenew (copy_gl->index, orig_gl->nalloc_index);
 
@@ -5696,8 +5677,6 @@ int copy_t_block (t_block *copy_gl, t_block *orig_gl)
 
 int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state) // Copies orig_dd into copy_dd
 {
-
-	copy_dd->rank = 0;//I'm using this value as a check point to see if the memcpy was successful
 
 	int j;
 	int *index_gl_new;
@@ -5724,16 +5703,7 @@ int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state) // Cop
 	memcpy (copy_dd->comm,orig_dd->comm, sizeof(gmx_domdec_comm_t));
 	copy_dd->comm->cgs_gl.index = cgs_gl_new_index;
 	copy_t_block (&copy_dd->comm->cgs_gl, &orig_dd->comm->cgs_gl);
-
-
-	if (copy_dd->rank != orig_dd->rank)//Checking for a successful copy
-	{
-		return 0; // Failed to copy
-	}
-	else
-	{
-		return 1; // successfully copied
-	}
+	return 0;
 }
 
 
@@ -6266,6 +6236,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     real r_2b,r_mb,r_bonded=-1,r_bonded_limit=-1,limit,acs;
     gmx_bool bC;
     char buf[STRLEN];
+    const int MAXSTEPS = 100;// This is mostly for optimization reasons
+    const int MAXMEM = 250000000;//<<<thats 250 megabytes //TODO:
     
     if (fplog)
     {
@@ -6671,6 +6643,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     dd->ddp_count = 0;
 
     clear_dd_cycle_counts(dd);
+    //Sets the Max size of IO nodes TODO:
+
+    #ifdef GMX_LIB_MPI
+    	dd->n_xtc_steps = min(min(MAXSTEPS, dd->nnodes),
+    			MAXMEM / sizeof(real) * 3 * dd->nat_tot);
+    #else
+    	dd->n_xtc_steps = 1;
+    #endif
 
     return dd;
 }

@@ -524,7 +524,7 @@ void done_mdoutf(gmx_mdoutf_t *of)
     {
         close_enx(of->fp_ene);
     }
-    if (of->fp_xtc)	//if (dd->rank < NUMBEROFSTEPS)
+    if (of->fp_xtc)
     {
         close_xtc(of->fp_xtc);
     }
@@ -546,9 +546,6 @@ void done_mdoutf(gmx_mdoutf_t *of)
 
 int copy_state_local(t_state *new_sl,t_state *old_sl)
 {
-
-	new_sl->cg_gl_nalloc = 0;//NOTE: This is done so that we can test to see if the memcpy successfully copied the old state_local to the new state_local
-
 	int *cg_gl_new = new_sl->cg_gl;
 	rvec *x_new = new_sl->x;
 
@@ -557,17 +554,7 @@ int copy_state_local(t_state *new_sl,t_state *old_sl)
 	new_sl->x = x_new;
 	memcpy (new_sl->cg_gl, old_sl->cg_gl, sizeof(int) * old_sl->cg_gl_nalloc);
 	memcpy (new_sl->x, old_sl->x, sizeof(rvec) * old_sl->natoms);
-
-
-	//If it fails to memcpy return 0
-	if (new_sl->cg_gl_nalloc != old_sl->cg_gl_nalloc)// Testing to see if the copy worked by checking to see if these two ints are equal
-	{
-		return 0;
-	}
-	else
-	{
-		return 1;
-	}
+	return 0;
 }
 
 void write_traj(FILE *fplog,t_commrec *cr,
@@ -587,47 +574,51 @@ void write_traj(FILE *fplog,t_commrec *cr,
     rvec *global_v;
     
     // RJ - These are my code additions
-//    const int NUMBEROFSTEPS = 2; // RJ - This is how many times a node will save its own data sending the data to the master node.
-    							 // It also determines how many nodes will collect the frames.
-
 
     static gmx_domdec_t **dd_buf = NULL;//TODO: Don't use static
     static t_state **state_local_buf = NULL;
-    //static rvec **x_receive_buf = NULL;// this is only going to be used when all 50 frames are being written.
 	static gmx_large_int_t step_buf;
 	static double t_buf;
 	static int step_at_checkpoint = 0; /*first step or first step after checkpoint*/
 	int bufferStep;
-	gmx_bool writeXTCNow;
+    gmx_bool bBuffer = cr->dd->n_xtc_steps > 1; // Used to determine if buffers will be used
+	gmx_bool writeXTCNow = TRUE;
 
-	if (step_at_checkpoint == 0) {
-		step_at_checkpoint = ir->init_step;
+
+	if (bBuffer)// If buffering will be used
+		{
+		if (step_at_checkpoint == 0) {
+			step_at_checkpoint = ir->init_step;
+		}
+
+		bufferStep = (step/ir->nstxtcout - (int)ceil((double)step_at_checkpoint/ir->nstxtcout))%cr->dd->n_xtc_steps;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
+		writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->dd->n_xtc_steps-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
+
+		if ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))
+		{
+			step_at_checkpoint = step + 1;
+		}
+
+		if (dd_buf==NULL) {//Initializes the dd_buf
+			initialize_dd_buf(&dd_buf, cr->dd, state_local);
+		}
+		if (state_local_buf==NULL)//Initializes the state_local_buf
+		{
+			snew (state_local_buf, cr->dd->n_xtc_steps);
+			for (i=0;i<cr->dd->n_xtc_steps;i++)
+			{
+				snew(state_local_buf[i],1);
+				snew(state_local_buf[i]->cg_gl,state_local->cg_gl_nalloc);
+				snew(state_local_buf[i]->x,state_local->nalloc);
+			}
+		}
+		if (state_global->x == NULL && cr->dd->rank<cr->dd->n_xtc_steps ) {//Initializes the state_global->x for the total number of atoms
+			snew(state_global->x, state_global->natoms);
+		}
+	} else {
+		step_buf=step;
+		t_buf=t;
 	}
-
-	bufferStep = (step/ir->nstxtcout - (int)ceil((double)step_at_checkpoint/ir->nstxtcout))%cr->dd->n_xtc_steps;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
-	writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->dd->n_xtc_steps-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
-
-	if ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))
-	{
-		step_at_checkpoint = step + 1;
-	}
-
-    if (dd_buf==NULL) {//Initializes the dd_buf
-    	initialize_dd_buf(&dd_buf, cr->dd, state_local);
-    }
-    if (state_local_buf==NULL)//Initializes the state_local_buf
-    {
-    	snew (state_local_buf, cr->dd->n_xtc_steps);
-    	for (i=0;i<cr->dd->n_xtc_steps;i++)
-    	{
-    		snew(state_local_buf[i],1);
-    		snew(state_local_buf[i]->cg_gl,state_local->cg_gl_nalloc);
-    		snew(state_local_buf[i]->x,state_local->nalloc);
-    	}
-    }
-    if (state_global->x == NULL && cr->dd->rank<cr->dd->n_xtc_steps ) {//Initializes the state_global->x for the total number of atoms
-    	snew(state_global->x, state_global->natoms);
-    }
     // RJ - End of additions
 
 
@@ -649,8 +640,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
         }
         else
         {
-            if (mdof_flags &
-            		(MDOF_X))
+            if ((mdof_flags & MDOF_X) || ((mdof_flags & MDOF_XTC) && bBuffer))
             {
                 dd_collect_vec(cr->dd,state_local,state_local->x,
                                state_global->x);
@@ -666,42 +656,41 @@ void write_traj(FILE *fplog,t_commrec *cr,
             dd_collect_vec(cr->dd,state_local,f_local,f_global);
         }
         //TODO: RJ We can optimize by not collecting all but xtc selection.
-        if (mdof_flags & MDOF_XTC)
+        if ((mdof_flags & MDOF_XTC) && bBuffer)
         {
-        	//TODO: DEALLOCATE later, now allocation in this method. all outside where dd and state_local is allocated
+			//TODO: DEALLOCATE later, now allocation in this method. all outside where dd and state_local is allocated
+			//This block of code copies the current dd and state_local to buffers to prepare for writing later.
+			if ((writeXTCNow && cr->dd->rank == 0) || (!writeXTCNow && bufferStep == cr->dd->n_xtc_steps-1 - cr->dd->rank))
+			{
+				step_buf=step;
+				t_buf=t;
+			}
+			srenew(state_local_buf[bufferStep]->cg_gl,state_local->cg_gl_nalloc);
+			srenew(state_local_buf[bufferStep]->x,state_local->nalloc);
+			copy_dd(dd_buf[bufferStep],cr->dd,state_local);
+			copy_state_local(state_local_buf[bufferStep],state_local);
 
-        	//This block of code copies the current dd and state_local to buffers to prepare for writing later.
-        	if ((writeXTCNow && cr->dd->rank == 0) || (!writeXTCNow && bufferStep == cr->dd->n_xtc_steps-1 - cr->dd->rank))
-        	{
-        		step_buf=step;
-        		t_buf=t;
-        	}
-    		srenew(state_local_buf[bufferStep]->cg_gl,state_local->cg_gl_nalloc);
-    		srenew(state_local_buf[bufferStep]->x,state_local->nalloc);
-        	copy_dd(dd_buf[bufferStep],cr->dd,state_local);
-        	copy_state_local(state_local_buf[bufferStep],state_local);
 
-
-        	if (writeXTCNow)
-        	{
-        		for (i = 0; i <= bufferStep; i++)//This loop changes which node is the master node temporarily so that it can then write
-        										 // the frames to different nodes.
-        		{
-        			if (i==bufferStep)
-        			{
-        				dd_buf[i]->masterrank = 0;
-        			}
-        			else
-        			{
-        				dd_buf[i]->masterrank = cr->dd->n_xtc_steps-1 - i;// For the purpose of making checkpoints work correctly: we write the frames in reverse order
-        			}
-        			if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
-        			{
-        				dd_collect_vec(dd_buf[i],state_local_buf[i],state_local_buf[i]->x,state_global->x);
-        			}
-        		}
-        	}
-        }
+			if (writeXTCNow)
+			{
+				for (i = 0; i <= bufferStep; i++)//This loop changes which node is the master node temporarily so that it can then write
+												 // the frames to different nodes.
+				{
+					if (i==bufferStep)
+					{
+						dd_buf[i]->masterrank = 0;
+					}
+					else
+					{
+						dd_buf[i]->masterrank = cr->dd->n_xtc_steps-1 - i;// For the purpose of making checkpoints work correctly: we write the frames in reverse order
+					}
+					if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
+					{
+						dd_collect_vec(dd_buf[i],state_local_buf[i],state_local_buf[i]->x,state_global->x);
+					}
+				}
+			}
+		}
     }
     else  //TODO make sure particle decomposition works . e.g. always use serial files in that case
     {
@@ -729,7 +718,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
                 if (state_local->flags & (1<<estSDX)) MX(state_global->sd_X);
                 if (state_global->nrngi > 1) {
                     if (state_local->flags & (1<<estLD_RNG)) {
-#ifdef GMX_MPI // RJ - MPI means that the processors are going to be sharing data.
+#ifdef GMX_MPI
                         MPI_Gather(state_local->ld_rng ,
                                    state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
                                    state_global->ld_rng,
@@ -783,10 +772,9 @@ void write_traj(FILE *fplog,t_commrec *cr,
         }      
      }
 
-     if (writeXTCNow && cr->dd->rank < cr->dd->n_xtc_steps) {  //this is an IO node (we have to call write_traj on all IO nodes!)
+     if (writeXTCNow && DDIONODE(cr->dd)) {  //this is an IO node (we have to call write_traj on all IO nodes!)
 
-
-		gmx_bool bWrite = (cr->dd->n_xtc_steps - bufferStep <= cr->dd->rank ) || (cr->dd->rank == 0);  //this node is actually writing
+		gmx_bool bWrite = (cr->dd->n_xtc_steps - bufferStep <= cr->dd->rank ) || DDMASTER(cr->dd);  //this node is actually writing
 		if (bWrite) { // If this node is one of the writing nodes
 			groups = &top_global->groups;
 			if (*n_xtc == -1)
@@ -823,7 +811,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 			}
 		}
 		if (write_xtc(of->fp_xtc,*n_xtc,step_buf,t_buf,
-				  state_local->box,xxtc,of->xtc_prec,!bWrite) == 0)//If it is NOT ACTUALLY being written
+				  state_local->box,xxtc,of->xtc_prec,bWrite) == 0)//If it is NOT ACTUALLY being written AND returns 0
 		{
 			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
 		}
