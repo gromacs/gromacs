@@ -211,6 +211,7 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
 #endif
 
     fr->bX = 1;
+    fr->bBox = 1;
     vec[0] = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
     angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma; 
     matrix_convert(fr->box,vec,angle);
