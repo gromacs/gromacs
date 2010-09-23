@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.5-beta4, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5.1, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -51,7 +51,6 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
-# Generic fortran kernels will be turned off below if you enable power6-specific optimization!
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
 
@@ -149,9 +148,7 @@ esac
 AC_ARG_ENABLE(power6,
              [AC_HELP_STRING([--enable-power6],
                              [Use IBM Pwr6/PPC440/PPC450-specific F77 kernels])],,enable_power6=no)
-# Turn off generic fortran loops if we are using power6-specific optimization
 if test "$enable_power6" = "yes"; then
-  enable_fortran=no;
   AC_DEFINE(GMX_POWER6,,[Enable IBM Pwr6/PPC440/PPC450-specific F77 kernels])
 fi
 
@@ -325,11 +322,11 @@ AM_CONDITIONAL([USE_VERSION_H],[test "$generate_version" = "yes"])
 case "${host_cpu}-${host_os}" in
   alpha*-linux*)
     cc_names="ccc cc gcc"
-    f77_names="fort f77 g77"
+    f77_names="fort f77 gfortran g77"
     ;;
   *) 
     cc_names="cc icc xlc gcc"
-    f77_names="f77 ifort xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
+    f77_names="f77 ifort xlf xlf77 cf77 fl32 gfortran g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
     ;;
 esac
 # the (non-mpi) c compiler, which is also used for programs executed during build stage
@@ -475,7 +472,7 @@ if test "$enable_threads" = "yes"; then
   CFLAGS="$CFLAGS $PTHREAD_CFLAGS -I$srcdir/include"
   CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS -I$srcdir/include"
   CC="$PTHREAD_CC "
-  AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for thread_mpi multithreading])
+  AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for multithreading])
 
   # profiling
   AC_ARG_ENABLE(tmpi-profiling,
@@ -1207,7 +1204,7 @@ AC_ARG_VAR(
    variable you can overwrite it
   ]
 )
-if test -z ${LIBSUFFIX} ; then
+if test -z "${LIBSUFFIX}" ; then
   if test "$enable_mpi" = "yes"; then
     LIBSUFFIX="_mpi"
   fi

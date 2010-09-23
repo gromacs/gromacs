@@ -51,8 +51,7 @@ g_morph|linear interpolation of conformations
 g_wham|weighted histogram analysis after umbrella sampling
 xpm2ps|convert XPM (XPixelMap) file to postscript
 g_sham|read/write xmgr and xvgr data sets
-g_spatial|calculates the spatial distribution function (more control than g_sdf)
-g_sdf|calculates the spatial distribution function (faster than g_spatial)
+g_spatial|calculates the spatial distribution function
 g_select|selects groups of atoms based on flexible textual selections
 g_tune_pme|time mdrun as a function of PME nodes to optimize settings
 END
@@ -98,7 +97,6 @@ g_sas|computes solvent accessible surface area
 g_order|computes the order parameter per atom for carbon tails
 g_principal|calculates axes of inertia for a group of atoms
 g_rdf|calculates radial distribution functions
-g_sdf|calculates solvent distribution functions
 g_sgangle|computes the angle and distance between two groups
 g_sorient|analyzes solvent orientation around solutes
 g_spol|analyzes solvent dipole orientation and polarization around solutes

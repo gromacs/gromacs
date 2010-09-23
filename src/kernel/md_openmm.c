@@ -90,7 +90,7 @@
 #include "genborn.h"
 #include "string2.h"
 #include "copyrite.h"
-#include "gmx_membed.h"
+#include "membed.h"
 
 #ifdef GMX_THREADS
 #include "tmpi.h"

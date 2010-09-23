@@ -23,7 +23,7 @@ template_DATA = template.c README Makefile.@host@_double Makefile.pkg
 else
 template_DATA = template.c README Makefile.@host@ Makefile.pkg
 endif
-EXTRA_DIST = template.c template_doc.c README Template.mak Makefile.pkg
+EXTRA_DIST = template.c template_doc.c README Template.mak Makefile.pkg CMakeLists.txt.template
 
 BUILT_SOURCES = gromacs
 
@@ -41,7 +41,7 @@ Makefile.@host@ Makefile.@host@_double: Template.mak Makefile
 CLEANFILES = Makefile.@host@ Makefile.@host@_double *~ \\\#*
 
 template_SOURCES = template.c
-#noinst_PROGRAMS = template
+noinst_PROGRAMS = template
 LDADD = ../../src/mdlib/libmd@LIBSUFFIX@.la ../../src/gmxlib/libgmx@LIBSUFFIX@.la
 #template.$(OBJEXT): gromacs
 

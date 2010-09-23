@@ -436,7 +436,7 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
 
 void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 {
-  int  i,atomnumber;
+  int  i,atomnumber,len;
   size_t k;
   char anm[6],anm_copy[6];
   char nc='\0';
@@ -448,8 +448,9 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
   for(i=0; (i<atoms->nr); i++) {
     strcpy(anm,atoms->pdbinfo[i].atomnm);
     strcpy(anm_copy,atoms->pdbinfo[i].atomnm);
+    len = strlen(anm);
     atomnumber = NOTSET;
-    if (anm[0] != ' ') {
+    if ((anm[0] != ' ') && ((len <=2) || ((len > 2) && !isdigit(anm[2])))) {
       anm_copy[2] = nc;
       if (gmx_atomprop_query(aps,epropElement,"???",anm_copy,&eval))
 	atomnumber = gmx_nint(eval);
