@@ -294,8 +294,10 @@ typedef struct {
 #define MASTERRANK(cr)     (0)
 
 #define DOMAINDECOMP(cr)   ((cr)->dd != NULL)
+#define IONODE(cr)	   (MASTER(cr) || (DOMAINDECOMP(cr) && (cr->dd)->rank < (cr->dd)->n_xtc_steps))
+
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
-#define DDIONODE(dd)	   ((dd)->rank < (dd)->n_xtc_steps)
+
 
 #define PARTDECOMP(cr)     ((cr)->pd != NULL)
 

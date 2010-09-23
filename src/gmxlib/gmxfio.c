@@ -456,7 +456,7 @@ void gmx_fio_start_record(t_fileio *fio)
 	fio->mem_buf_cur_pos = 0;
 }
 
-t_fileio *mpi_fio_open(const char *fn, const char *mode, gmx_domdec_t *dd)
+t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr)
 {
     t_fileio *fio = NULL;
     int i;
@@ -535,13 +535,16 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, gmx_domdec_t *dd)
             {
 #ifndef GMX_FAHCORE
                 /* only make backups for normal gromacs */
-                make_backup(fn);
+                if (cr==NULL || MASTER(cr))
+                {
+                	make_backup(fn);
+                }
 #endif
             }
             else
             {
                 /* Check whether file exists */
-                if (!gmx_fexist(fn))
+                if (!gmx_fexist(fn) && ( cr==NULL || MASTER(cr)))
                 {
                     gmx_open(fn);
                 }
@@ -557,10 +560,8 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, gmx_domdec_t *dd)
                 fio->xdrmode=XDR_DECODE;
             }
 
-            snew(fio->xdr,1);
-
 #ifdef GMX_LIB_MPI
-            if (dd!=NULL)
+            if (cr!=NULL && DOMAINDECOMP(cr))
             {
             	MPI_Comm new_comm;
             	int amode;
@@ -573,11 +574,11 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, gmx_domdec_t *dd)
             	} else {
             		gmx_fatal(FARGS,"Unknown mode!");
             	}
-
+            	snew(fio->xdr,1);
             	xdrrec_create(fio->xdr,0,0,(char*)fio,NULL,&gmx_write_it);
 
-            	MPI_Comm_split(dd->mpi_comm_all, dd->rank < dd->n_xtc_steps, dd->nnodes - dd->rank, &new_comm );// new_comm must be a vector of size color // total nodes - rank
-            	if (dd->rank < dd->n_xtc_steps)
+            	MPI_Comm_split(cr->dd->mpi_comm_all, cr->dd->rank < cr->dd->n_xtc_steps, cr->dd->nnodes - cr->dd->rank, &new_comm );// new_comm must be a vector of size color // total nodes - rank
+            	if (cr->dd->rank < cr->dd->n_xtc_steps)
             	{
             		MPI_File_open(new_comm,(char*)fn,amode,MPI_INFO_NULL, &(fio->mpi_fh));
             	}
@@ -586,24 +587,33 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, gmx_domdec_t *dd)
 #endif
             {
             	/* Open the file without MPI */
-            	fio->fp = ffopen(fn,newmode);
-
-                xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
+            	if (cr==NULL || MASTER(cr))
+            	{
+					fio->fp = ffopen(fn,newmode);
+					snew(fio->xdr,1);
+					xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
+            	}
             }
         }
         else
         {
             /* If it is not, open it as a regular file */
-            fio->fp = ffopen(fn,newmode);
+        	if (cr==NULL || MASTER(cr))
+        	{
+        		fio->fp = ffopen(fn,newmode);
+        	}
         }
     }
     else
     {
-        /* Use stdin/stdout for I/O */
-        fio->iFTP   = efTPA;
-        fio->fp     = bRead ? stdin : stdout;
-        fio->fn     = strdup("STDIO");
-        fio->bStdio = TRUE;
+    	if (cr==NULL || MASTER(cr))
+    	{
+			/* Use stdin/stdout for I/O */
+			fio->iFTP   = efTPA;
+			fio->fp     = bRead ? stdin : stdout;
+			fio->fn     = strdup("STDIO");
+			fio->bStdio = TRUE;
+    	}
     }
     fio->bRead  = bRead;
     fio->bReadWrite = bReadWrite;
@@ -631,7 +641,7 @@ static int gmx_fio_close_locked(t_fileio *fio)
         gmx_fatal(FARGS,"File %s closed twice!\n", fio->fn);
     }
 
-    if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
+    if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR) && fio->xdr!=NULL)
     {
         xdr_destroy(fio->xdr);
         sfree(fio->xdr);

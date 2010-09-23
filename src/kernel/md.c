@@ -1220,7 +1220,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
-            force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
+            force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags,&write_buf);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -1533,25 +1533,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (fplog)
         fprintf(fplog,"\n");
 
-    /*initialize buffered writing */
-#ifdef GMX_LIB_MPI
-    if (DOMAINDECOMP(cr))
-	{
-		write_buf.step_after_checkpoint = ir->init_step;
-		initialize_dd_buf(&(write_buf.dd), cr->dd, state);
-		snew (write_buf.state_local, cr->dd->n_xtc_steps);
-		for (i=0;i<cr->dd->n_xtc_steps;i++)
-		{
-			snew(write_buf.state_local[i],1);
-			snew(write_buf.state_local[i]->cg_gl,state->cg_gl_nalloc);
-			snew(write_buf.state_local[i]->x,state->nalloc);
-		}
-		if (DDIONODE(cr->dd)) //Initializes the state_global->x for the total number of atoms
-		{
-			snew(state_global->x, state_global->natoms);
-		}
-	}
-#endif
+
 
     /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
 #ifdef GMX_FAHCORE

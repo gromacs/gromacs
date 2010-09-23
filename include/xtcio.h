@@ -48,7 +48,7 @@ extern "C" {
  * bOK tells if a frame is not corrupted 
  */  
 
-t_fileio *open_xtc(const char *filename,const char *mode, gmx_domdec_t *dd);
+t_fileio *open_xtc(const char *filename,const char *mode, const t_commrec *cr);
 /* Open a file for xdr I/O */
   
 void close_xtc(t_fileio *fio);

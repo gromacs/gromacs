@@ -6236,8 +6236,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     real r_2b,r_mb,r_bonded=-1,r_bonded_limit=-1,limit,acs;
     gmx_bool bC;
     char buf[STRLEN];
-    const int MAXSTEPS = 100;// This is mostly for optimization reasons
-    const int MAXMEM = 250000000;//<<<thats 250 megabytes //TODO:
+
     
     if (fplog)
     {
@@ -6643,14 +6642,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     dd->ddp_count = 0;
 
     clear_dd_cycle_counts(dd);
-    //Sets the Max size of IO nodes TODO:
 
-    #ifdef GMX_LIB_MPI
-    	dd->n_xtc_steps = min(min(MAXSTEPS, dd->nnodes),
-    			MAXMEM / sizeof(real) * 3 * dd->nat_tot);
-    #else
-    	dd->n_xtc_steps = 1;
-    #endif
 
     return dd;
 }
@@ -7208,6 +7200,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     real skew_fac2_d,skew_fac_01;
     rvec sf2_round;
     int  nsend,nat;
+
     
     if (debug)
     {
@@ -7814,6 +7807,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
         dd_set_cginfo(dd->index_gl,dd->ncg_home,dd->ncg_tot,
                       NULL,comm->bLocalCG);
     }
+
 
     if (debug)
     {

@@ -82,7 +82,7 @@ t_fileio *gmx_fio_open(const char *fn,const char *mode);
  
 void gmx_fio_start_record(t_fileio *fio);
 
-t_fileio *mpi_fio_open(const char *fn, const char *mode, gmx_domdec_t *dd);
+t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr);
 // This is a wrapper function around gmx_fio_open so it can use MPI
 
 int gmx_fio_close(t_fileio *fp);

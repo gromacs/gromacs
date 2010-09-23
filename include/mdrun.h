@@ -371,7 +371,7 @@ void init_md(FILE *fplog,
 		    tensor force_vir,tensor shake_vir,
 		    rvec mu_tot,
 		    gmx_bool *bSimAnn,t_vcm **vcm, 
-		    t_state *state, unsigned long Flags);
+		    t_state *state, unsigned long Flags, t_write_buffer* write_buf);
   /* Routine in sim_util.c */
 
 #ifdef __cplusplus

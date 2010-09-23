@@ -69,9 +69,9 @@ static int xdr_r2f(XDR *xdrs,real *r,gmx_bool bRead)
 #endif
 }
 
-t_fileio *open_xtc(const char *fn,const char *mode, gmx_domdec_t *dd)
+t_fileio *open_xtc(const char *fn,const char *mode, const t_commrec *cr)
 {
-    return mpi_fio_open(fn,mode, dd);
+    return mpi_fio_open(fn,mode, cr);
 }
 
 void close_xtc(t_fileio *fio)

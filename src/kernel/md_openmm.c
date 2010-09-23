@@ -265,7 +265,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
-            force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
+            force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags,NULL);
 
     clear_mat(total_vir);
     clear_mat(pres);

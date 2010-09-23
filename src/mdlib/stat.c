@@ -509,10 +509,10 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
             }
         }
     }
-    if (!EI_DYNAMICS(ir->eI) &&
+    if (EI_DYNAMICS(ir->eI) &&
         ir->nstxtcout > 0)
     {
-        of->fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode, cr->dd);
+        of->fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode, cr);
         of->xtc_prec = ir->xtcprec;
     }
     return of;
@@ -608,7 +608,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
         }
         else
         {
-            if ((mdof_flags & MDOF_X) || ((mdof_flags & MDOF_XTC) && bBuffer))
+            if ((mdof_flags & MDOF_X) || ((mdof_flags & MDOF_XTC) && !bBuffer))
             {
                 dd_collect_vec(cr->dd,state_local,state_local->x,
                                state_global->x);
@@ -626,7 +626,6 @@ void write_traj(FILE *fplog,t_commrec *cr,
         //TODO: RJ We can optimize by not collecting all but xtc selection.
         if ((mdof_flags & MDOF_XTC) && bBuffer)
         {
-			//TODO: DEALLOCATE later, now allocation in this method. all outside where dd and state_local is allocated
 			//This block of code copies the current dd and state_local to buffers to prepare for writing later.
 			if ((writeXTCNow && cr->dd->rank == 0) || (!writeXTCNow && bufferStep == cr->dd->n_xtc_steps-1 - cr->dd->rank))
 			{
@@ -660,7 +659,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 			}
 		}
     }
-    else  //TODO make sure particle decomposition works . e.g. always use serial files in that case
+    else
     {
         if (mdof_flags & MDOF_CPT)
         {
@@ -740,10 +739,11 @@ void write_traj(FILE *fplog,t_commrec *cr,
         }      
      }
 
-     if (writeXTCNow && DDIONODE(cr->dd)) {  //this is an IO node (we have to call write_traj on all IO nodes!)
+     if (writeXTCNow && IONODE(cr)) {  //this is an IO node (we have to call write_traj on all IO nodes!)
 
-		gmx_bool bWrite = (cr->dd->n_xtc_steps - bufferStep <= cr->dd->rank ) || DDMASTER(cr->dd);  //this node is actually writing
-		int write_step, write_t;
+		gmx_bool bWrite = MASTER(cr) || (cr->dd->n_xtc_steps - bufferStep <= cr->dd->rank ) ;  //this node is actually writing
+		int write_step;
+		real write_t;
 
 		if (bWrite) { // If this node is one of the writing nodes
 			groups = &top_global->groups;
@@ -785,7 +785,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
 			write_step = write_buf->step;
 			write_t = write_buf->t;
 		}
-		else {
+		else
+		{
 			write_step = step;
 			write_t = t;
 		}
