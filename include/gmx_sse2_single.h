@@ -166,8 +166,8 @@ static int gmx_mm_check_and_reset_overflow(void)
 static inline __m128
 gmx_mm_invsqrt_ps(__m128 x)
 {
-    const __m128 half  = {0.5,0.5,0.5,0.5};
-    const __m128 three = {3.0,3.0,3.0,3.0};
+    const __m128 half  = _mm_set_ps(0.5,0.5,0.5,0.5);
+    const __m128 three = _mm_set_ps(3.0,3.0,3.0,3.0);
     
     __m128 lu = _mm_rsqrt_ps(x);
     
@@ -191,7 +191,7 @@ gmx_mm_sqrt_ps(__m128 x)
 static inline __m128
 gmx_mm_inv_ps(__m128 x)
 {
-	const __m128 two = {2.0f,2.0f,2.0f,2.0f};
+	const __m128 two = _mm_set_ps(2.0f,2.0f,2.0f,2.0f);
     
     __m128 lu = _mm_rcp_ps(x);
     
@@ -384,23 +384,23 @@ gmx_mm_sincos_ps(__m128 x,
                  __m128 *sinval,
                  __m128 *cosval)
 {
-    const __m128 _sincosf_two_over_pi = {2.0/M_PI,2.0/M_PI,2.0/M_PI,2.0/M_PI};                               
-    const __m128 _sincosf_half        = {0.5,0.5,0.5,0.5};                                                   
-    const __m128 _sincosf_one         = {1.0,1.0,1.0,1.0};                                                   
+    const __m128 _sincosf_two_over_pi = _mm_set_ps(2.0/M_PI,2.0/M_PI,2.0/M_PI,2.0/M_PI); 
+    const __m128 _sincosf_half        = _mm_set_ps(0.5,0.5,0.5,0.5);
+    const __m128 _sincosf_one         = _mm_set_ps(1.0,1.0,1.0,1.0);
     
     const __m128i _sincosf_izero      = _mm_set1_epi32(0);                                                   
     const __m128i _sincosf_ione       = _mm_set1_epi32(1);                                                   
     const __m128i _sincosf_itwo       = _mm_set1_epi32(2);                                                   
     const __m128i _sincosf_ithree     = _mm_set1_epi32(3);                                                   
     
-    const __m128 _sincosf_kc1 = {1.57079625129,1.57079625129,1.57079625129,1.57079625129};                   
-    const __m128 _sincosf_kc2 = {7.54978995489e-8,7.54978995489e-8,7.54978995489e-8,7.54978995489e-8};       
-    const __m128 _sincosf_cc0 = {-0.0013602249,-0.0013602249,-0.0013602249,-0.0013602249};                   
-    const __m128 _sincosf_cc1 = {0.0416566950,0.0416566950,0.0416566950,0.0416566950};                       
-    const __m128 _sincosf_cc2 = {-0.4999990225,-0.4999990225,-0.4999990225,-0.4999990225};                   
-    const __m128 _sincosf_sc0 = {-0.0001950727,-0.0001950727,-0.0001950727,-0.0001950727};                   
-    const __m128 _sincosf_sc1 = {0.0083320758,0.0083320758,0.0083320758,0.0083320758};                       
-    const __m128 _sincosf_sc2 = {-0.1666665247,-0.1666665247,-0.1666665247,-0.1666665247};                   
+    const __m128 _sincosf_kc1 = _mm_set_ps(1.57079625129,1.57079625129,1.57079625129,1.57079625129);                   
+    const __m128 _sincosf_kc2 = _mm_set_ps(7.54978995489e-8,7.54978995489e-8,7.54978995489e-8,7.54978995489e-8);       
+    const __m128 _sincosf_cc0 = _mm_set_ps(-0.0013602249,-0.0013602249,-0.0013602249,-0.0013602249);                   
+    const __m128 _sincosf_cc1 = _mm_set_ps(0.0416566950,0.0416566950,0.0416566950,0.0416566950);                       
+    const __m128 _sincosf_cc2 = _mm_set_ps(-0.4999990225,-0.4999990225,-0.4999990225,-0.4999990225);                   
+    const __m128 _sincosf_sc0 = _mm_set_ps(-0.0001950727,-0.0001950727,-0.0001950727,-0.0001950727);                   
+    const __m128 _sincosf_sc1 = _mm_set_ps(0.0083320758,0.0083320758,0.0083320758,0.0083320758);                       
+    const __m128 _sincosf_sc2 = _mm_set_ps(-0.1666665247,-0.1666665247,-0.1666665247,-0.1666665247);                   
     
     __m128 _sincosf_signbit           = gmx_mm_castsi128_ps( _mm_set1_epi32(0x80000000) );                   
     __m128 _sincosf_tiny              = gmx_mm_castsi128_ps( _mm_set1_epi32(0x3e400000) );                   
@@ -2227,11 +2227,11 @@ gmx_mm_atan2_ps(__m128 y, __m128 x)
  * to set up the 7 constants used for analytic 5th order switch calculations.
  */
 #define GMX_MM_SETUP_SWITCH5_PS(rswitch,rcut,switch_C3,switch_C4,switch_C5,switch_D2,switch_D3,switch_D4) {  \
-	const __m128  _swsetup_cm6  = { -6.0, -6.0, -6.0, -6.0};                                                 \
-	const __m128 _swsetup_cm10  = {-10.0,-10.0,-10.0,-10.0};                                                 \
-	const __m128  _swsetup_c15  = { 15.0, 15.0, 15.0, 15.0};                                                 \
-	const __m128 _swsetup_cm30  = {-30.0,-30.0,-30.0,-30.0};                                                 \
-	const __m128  _swsetup_c60  = { 60.0, 60.0, 60.0, 60.0};                                                 \
+	const __m128  _swsetup_cm6  = _mm_set_ps( -6.0, -6.0, -6.0, -6.0);                                                 \
+	const __m128 _swsetup_cm10  = _mm_set_ps(-10.0,-10.0,-10.0,-10.0);                                                 \
+	const __m128  _swsetup_c15  = _mm_set_ps( 15.0, 15.0, 15.0, 15.0);                                                 \
+	const __m128 _swsetup_cm30  = _mm_set_ps(-30.0,-30.0,-30.0,-30.0);                                                 \
+	const __m128  _swsetup_c60  = _mm_set_ps( 60.0, 60.0, 60.0, 60.0);                                                 \
                                                                                                              \
 	__m128 d,dinv,dinv2,dinv3,dinv4,dinv5;                                                                   \
 	                                                                                                         \
@@ -2252,7 +2252,7 @@ gmx_mm_atan2_ps(__m128 y, __m128 x)
 
 
 #define GMX_MM_EVALUATE_SWITCH5_PS(r,rswitch,rcut,sw,dsw,sw_C3,sw_C4,sw_C5,sw_D2,sw_D3,sw_D4) { \
-    const __m128  _sw_one  = {  1.0,  1.0,  1.0,  1.0};                                         \
+    const __m128  _sw_one  = _mm_set_ps(  1.0,  1.0,  1.0,  1.0);                                         \
     __m128 d,d2;                                                                                \
     d     = _mm_max_ps(r,rswitch);                                                              \
     d     = _mm_min_ps(d,rcut);                                                                 \
