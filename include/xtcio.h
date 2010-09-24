@@ -49,7 +49,7 @@ extern "C" {
  */  
 
 t_fileio *open_xtc(const char *filename,const char *mode, const t_commrec *cr);
-/* Open a file for xdr I/O */
+// Open a file for xdr I/O or MPI
   
 void close_xtc(t_fileio *fio);
 /* Close the file for xdr I/O */
@@ -67,7 +67,7 @@ int read_next_xtc(t_fileio *fio,
 int write_xtc(t_fileio *fio,
 		     int natoms,int step,real time,
 		     matrix box,rvec *x,real prec,
-		     gmx_bool bDontWrite);
+		     gmx_bool bWrite);
 /* Write a frame to xtc file */
 /* write_xtc has to be called by all IO nodes (if opened using MPI). bWrite is false for IO nodes which don't have any frame*/
 

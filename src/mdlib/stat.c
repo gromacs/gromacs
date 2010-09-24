@@ -544,7 +544,7 @@ void done_mdoutf(gmx_mdoutf_t *of)
     sfree(of);
 }
 
-int copy_state_local(t_state *new_sl,t_state *old_sl)
+static int copy_state_local(t_state *new_sl,t_state *old_sl)
 {
 	int *cg_gl_new = new_sl->cg_gl;
 	rvec *x_new = new_sl->x;
@@ -567,7 +567,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
                 t_state *state_local,t_state *state_global,
                 rvec *f_local,rvec *f_global,
                 int *n_xtc,rvec **x_xtc,
-                t_inputrec *ir, gmx_bool bLastStep, t_write_buffer* write_buf)
+                t_inputrec *ir, gmx_bool bLastStep, t_write_buffer* write_buf)// TODO RJ What if IR is NULL???
 {
     int     i,j;
     gmx_groups_t *groups;
@@ -575,9 +575,9 @@ void write_traj(FILE *fplog,t_commrec *cr,
     rvec *local_v;
     rvec *global_v;
     
-	int bufferStep;
+    int bufferStep;
     gmx_bool bBuffer = DOMAINDECOMP(cr) && cr->dd->n_xtc_steps > 1; // Used to determine if buffers will be used
-	gmx_bool writeXTCNow = TRUE;
+    gmx_bool writeXTCNow = TRUE;
 
 	if (bBuffer)// If buffering will be used
 	{
@@ -795,7 +795,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		{
 			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
 		}
-		//gmx_fio_check_file_position(of->fp_xtc); //TODO: temporary should be reactivated! than check that appending works, MPI_File_get_position_shared, MPI_File_seek_shared
+		//gmx_fio_check_file_position(of->fp_xtc); //TODO: RJ temporary should be reactivated! than check that appending works, MPI_File_get_position_shared, MPI_File_seek_shared
 	}
 }
 

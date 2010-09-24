@@ -1540,7 +1540,7 @@ void init_md(FILE *fplog,
 			snew(state->x, state->natoms);
 		}
 #else
-    	dd->n_xtc_steps = 1;
+    	cr->dd->n_xtc_steps = 1;
 #endif
     }
 

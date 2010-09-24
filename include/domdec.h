@@ -34,9 +34,6 @@
 extern "C" {
 #endif
 
-
-int set_dd_steps (gmx_domdec_t *dd); // used to dynamically set the number of frames to be saved before writing xtc
-
 int ddglatnr(gmx_domdec_t *dd,int i);
 /* Returns the global topology atom number belonging to local atom index i.
  * This function is intended for writing ascii output
@@ -111,8 +108,6 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
  */
 
 void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
-
-//int scatter_ma(gmx_domdec_t *dd, gmx_domdec_t **dd_buf);
 
 int copy_dd(gmx_domdec_t *new_dd,gmx_domdec_t *old_dd, t_state *state);
 

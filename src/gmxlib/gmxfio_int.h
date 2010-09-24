@@ -76,7 +76,9 @@ typedef struct
 struct t_fileio
 {
     FILE *fp; /* the file pointer */
+#ifdef GMX_LIB_MPI
     MPI_File mpi_fh;  /* the mpi file handle (used instead of fp for MPI IO) */
+#endif
     char *mem_buf; // Used for MPI writing of xtc buffered by gmx_writeit
     int mem_buf_cur_pos, 
          mem_buf_nalloc;

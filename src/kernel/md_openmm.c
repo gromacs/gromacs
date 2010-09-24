@@ -536,7 +536,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        step,t,
                        eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
             write_traj(fplog,cr,outf,mdof_flags,top_global,
-                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc,NULL,FALSE,NULL);
+                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc,ir,bLastStep,NULL);//TODO RJ Check with Roland
             if (bCPT)
             {
                 nchkpt++;

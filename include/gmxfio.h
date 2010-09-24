@@ -71,6 +71,11 @@ extern const char *comment_str[eitemNR];
  ********************************************************/
 
 t_fileio *gmx_fio_open(const char *fn,const char *mode);
+// This is a wrapper function around mpi_fio_open
+
+void gmx_fio_start_record(t_fileio *fio);
+
+t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr);
 /* Open a new file for reading or writing.
  * The file type will be deduced from the file name.
  * If fn is NULL, stdin / stdout will be used for Ascii I/O (TPA type)
@@ -79,11 +84,6 @@ t_fileio *gmx_fio_open(const char *fn,const char *mode);
  * doublecheck it and try to do it if you forgot. This has no effect on
  * unix, but is important on windows.
  */
- 
-void gmx_fio_start_record(t_fileio *fio);
-
-t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr);
-// This is a wrapper function around gmx_fio_open so it can use MPI
 
 int gmx_fio_close(t_fileio *fp);
 /* Close the file corresponding to fp (if not stdio)

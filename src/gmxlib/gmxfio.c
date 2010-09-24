@@ -427,7 +427,7 @@ static void gmx_fio_stop_getting_next(t_fileio *fio)
 }
 
 
-static int gmx_write_it(char *handle, char *buf, int size)
+static int gmx_write_it(char *handle, char *buf, int size) // used for writing with MPI
 {
 	t_fileio *fio = (t_fileio*) handle;
 	if (fio->mem_buf_nalloc<fio->mem_buf_cur_pos+size) {
@@ -608,11 +608,11 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr)
     {
     	if (cr==NULL || MASTER(cr))
     	{
-			/* Use stdin/stdout for I/O */
-			fio->iFTP   = efTPA;
-			fio->fp     = bRead ? stdin : stdout;
-			fio->fn     = strdup("STDIO");
-			fio->bStdio = TRUE;
+	        /* Use stdin/stdout for I/O */
+		fio->iFTP   = efTPA;
+		fio->fp     = bRead ? stdin : stdout;
+		fio->fn     = strdup("STDIO");
+		fio->bStdio = TRUE;
     	}
     }
     fio->bRead  = bRead;
@@ -869,7 +869,7 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
      about the first 64 bits - we'll have to fix
      this when exabyte-size output files are common...
      */
-    *offset=gmx_ftell(fio->fp);  //TODO: replace all calls to gmx_ftell/fseek with gmx_fio_tell/seek. in their test for MPI
+    *offset=gmx_ftell(fio->fp);  //TODO: RJ replace all calls to gmx_ftell/fseek with gmx_fio_tell/seek. in their test for MPI
 
     return 0;
 }
