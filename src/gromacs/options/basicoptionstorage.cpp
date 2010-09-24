@@ -327,11 +327,12 @@ int FileNameOptionStorage::init(const FileNameOption &settings, Options *options
     return MyBase::init(settings, options);
 }
 
-int FileNameOptionStorage::appendValue(const std::string & /*value*/,
+int FileNameOptionStorage::appendValue(const std::string &value,
                                        AbstractErrorReporter * /*errors*/)
 {
-    // TODO: Implement.
-    return eeInvalidInput;
+    // TODO: Proper implementation.
+    addValue(value);
+    return 0;
 }
 
 std::string FileNameOptionStorage::formatValue(int i) const

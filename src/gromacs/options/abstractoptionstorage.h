@@ -230,7 +230,7 @@ int AbstractOptionStorage<T>::init(const OptionTemplate<T, U> &settings, Options
     if (settings._defaultValue)
     {
         _values->clear();
-        _values->push_back(*settings._defaultValue);
+        addValue(*settings._defaultValue);
     }
     else if ((_flags & efOwnValueVector) && _store)
     {
