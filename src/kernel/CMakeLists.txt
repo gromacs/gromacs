@@ -60,6 +60,7 @@ if(GMX_OPENMM)
     target_link_libraries(openmm_api_wrapper gmx gmx_gpu_utils ${OpenMM_LIBRARIES})
 #    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
     set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})   
+	install(TARGETS openmm_api_wrapper DESTINATION ${LIB_INSTALL_DIR})   
 endif(GMX_OPENMM)
 
 if(GMX_FAHCORE)
