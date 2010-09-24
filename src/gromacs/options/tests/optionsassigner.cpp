@@ -165,6 +165,49 @@ TEST(OptionsAssignerTest, HandlesSubSections)
     EXPECT_EQ(6, value2);
 }
 
+TEST(OptionsAssignerTest, HandlesNoStrictSubSections)
+{
+    gmx::Options options(NULL, NULL);
+    gmx::Options sub1("section1", NULL);
+    gmx::Options sub2("section2", NULL);
+    int pvalue = 3;
+    int pvalue1 = 1;
+    int qvalue  = 4;
+    int pvalue2 = 2;
+    int rvalue  = 5;
+    using gmx::IntegerOption;
+    options.addOption(IntegerOption("p").store(&pvalue));
+    sub1.addOption(IntegerOption("p").store(&pvalue1));
+    sub1.addOption(IntegerOption("q").store(&qvalue));
+    sub2.addOption(IntegerOption("p").store(&pvalue2));
+    sub2.addOption(IntegerOption("r").store(&rvalue));
+    options.addSubSection(&sub1);
+    options.addSubSection(&sub2);
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&options, &errors);
+    assigner.setNoStrictSectioning(true);
+    EXPECT_EQ(0, assigner.startOption("q"));
+    EXPECT_EQ(0, assigner.appendValue("6"));
+    EXPECT_EQ(0, assigner.startOption("p"));
+    EXPECT_EQ(0, assigner.appendValue("7"));
+    EXPECT_EQ(0, assigner.startOption("r"));
+    EXPECT_EQ(0, assigner.appendValue("8"));
+    EXPECT_EQ(0, assigner.startOption("p"));
+    EXPECT_EQ(0, assigner.appendValue("9"));
+    EXPECT_EQ(0, assigner.finishSubSection());
+    EXPECT_EQ(0, assigner.startOption("p"));
+    EXPECT_EQ(0, assigner.appendValue("10"));
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, options.finish(&errors));
+
+    EXPECT_EQ(6, qvalue);
+    EXPECT_EQ(7, pvalue1);
+    EXPECT_EQ(8, rvalue);
+    EXPECT_EQ(9, pvalue2);
+    EXPECT_EQ(10, pvalue);
+}
+
 TEST(OptionsAssignerTest, HandlesMultipleSources)
 {
     gmx::Options options(NULL, NULL);
@@ -231,6 +274,7 @@ TEST(OptionsAssignerBooleanTest, ClearsBooleanWithPrefixNo)
 
     gmx::EmptyErrorReporter errors;
     gmx::OptionsAssigner assigner(&options, &errors);
+    assigner.setAcceptBooleanNoPrefix(true);
     EXPECT_EQ(0, assigner.startOption("nop"));
     EXPECT_EQ(0, assigner.finish());
     EXPECT_EQ(0, options.finish(&errors));
@@ -247,6 +291,7 @@ TEST(OptionsAssignerBooleanTest, HandlesBooleanWithPrefixAndValue)
 
     gmx::EmptyErrorReporter errors;
     gmx::OptionsAssigner assigner(&options, &errors);
+    assigner.setAcceptBooleanNoPrefix(true);
     EXPECT_EQ(0, assigner.startOption("nop"));
     assigner.appendValue("no");
     int rc = assigner.finish();
@@ -282,6 +327,7 @@ TEST(OptionsAssignerIntegerTest, StoresDefaultValue)
     int value = -1;
     using gmx::IntegerOption;
     options.addOption(IntegerOption("p").store(&value).defaultValue(2));
+    EXPECT_EQ(2, value);
 
     gmx::EmptyErrorReporter errors;
     gmx::OptionsAssigner assigner(&options, &errors);
@@ -499,6 +545,8 @@ TEST(OptionsAssignerStringTest, HandlesEnumWithNoValue)
     options.addOption(StringOption("p").store(&value)
                           .enumValue(allowed)
                           .storeEnumIndex(&index));
+    EXPECT_TRUE(value.empty());
+    EXPECT_EQ(-1, index);
 
     gmx::EmptyErrorReporter errors;
     ASSERT_EQ(0, options.finish(&errors));
@@ -518,6 +566,8 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValue)
                           .enumValue(allowed)
                           .defaultValue("test")
                           .storeEnumIndex(&index));
+    EXPECT_EQ("test", value);
+    EXPECT_EQ(1, index);
 
     gmx::EmptyErrorReporter errors;
     gmx::OptionsAssigner assigner(&options, &errors);

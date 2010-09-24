@@ -56,6 +56,14 @@ class Options;
 class OptionsAssigner::Impl
 {
     public:
+        //! Possible flags for controlling assignment behavior.
+        enum Flag
+        {
+            //! Recognize boolean option "name" also as "noname".
+            efAcceptBooleanNoPrefix     = 1<<0,
+            //! Look for options in all sections, not just the current one.
+            efNoStrictSectioning        = 1<<1,
+        };
         //! Sets the option object to assign to.
         Impl(Options *options, AbstractErrorReporter *errors);
 
@@ -78,15 +86,33 @@ class OptionsAssigner::Impl
             return code;
         }
 
+        //! Sets or clears the given flag.
+        void setFlag(Flag flag, bool bSet);
+
+        //! Returns true if the given flag is set.
+        bool hasFlag(Flag flag) const { return _flags & flag; }
         //! Returns true if a subsection has been set.
         bool inSubSection() const { return _sectionStack.size() > 1; }
         //! Returns the Options object for the current section.
         Options &currentSection() const { return *_sectionStack.back(); }
+        /*! \brief
+         * Finds an option by the given name.
+         *
+         * \param[in] name  Name of the option to look for.
+         * \returns Pointer to the found option, or NULL if none found.
+         *
+         * This function takes into account the flags specified, and may change
+         * the internal state of the assigner to match the option found.
+         * If no option is found, the internal state is not modified.
+         */
+        Option *findOption(const char *name);
 
         //! Options object to assign to.
         Options                &_options;
         //! Error reporter to use for errors.
         AbstractErrorReporter  *_errors;
+        //! Flags that control assignment behavior.
+        unsigned long           _flags;
         /*! \brief
          * List of (sub)sections being assigned to.
          *

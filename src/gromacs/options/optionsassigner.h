@@ -105,6 +105,35 @@ class OptionsAssigner
         AbstractErrorReporter *errorReporter() const;
 
         /*! \brief
+         * Sets the assigner to recognize boolean options with a "no" prefix.
+         *
+         * With this option set, \c startOption("noname") is interpreted as
+         * \c startOption("name") followed by \c appendValue("no"), if there is
+         * no option by the name "noname", but there is a boolean option with
+         * name "name".
+         *
+         * By default, the prefix is not recognized.
+         *
+         * Can be set or cleared at any time, and will have effect on all
+         * subsequent calls of startOption().
+         */
+        void setAcceptBooleanNoPrefix(bool enabled);
+        /*! \brief
+         * Sets the assigner to find options in non-active sections.
+         *
+         * By default, options are only looked for in the currently active
+         * subsection.  With this option set, if no matching option is found in
+         * the current section, a breadth-first search is performed, first on
+         * all subsections of the current section, and then going up one level
+         * at a time.  The first matching option is used, and the current
+         * section is changed to the section that contains the matching option.
+         *
+         * Can be set or cleared at any time, and will have effect on all
+         * subsequent calls of startOption().
+         */
+        void setNoStrictSectioning(bool enabled);
+
+        /*! \brief
          * Start assigning values.
          *
          * \retval 0 on success.
