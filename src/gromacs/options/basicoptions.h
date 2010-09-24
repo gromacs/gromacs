@@ -42,6 +42,8 @@
 #ifndef GMX_OPTIONS_BASICOPTIONS_H
 #define GMX_OPTIONS_BASICOPTIONS_H
 
+#include <cassert>
+
 #include <string>
 
 #include "abstractoption.h"
@@ -186,7 +188,8 @@ class StringOption : public OptionTemplate<std::string, StringOption>
     public:
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
-            : MyBase(name), _enumValues(NULL), _enumIndexStore(NULL)
+            : MyBase(name), _enumValues(NULL), _defaultEnumIndex(-1),
+              _enumIndexStore(NULL)
         {}
 
         /*! \brief
@@ -208,6 +211,13 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         MyClass &enumValue(const char *const *values)
         { _enumValues = values; return me(); }
         /*! \brief
+         * Sets the default value using an index into the enumeration table.
+         *
+         * Cannot be specified without enumValue().
+         */
+        MyClass &defaultEnumIndex(int index)
+        { assert(index >= 0); _defaultEnumIndex = index; return me(); }
+        /*! \brief
          * Stores the index of the selected value into the provided memory
          * location.
          *
@@ -216,7 +226,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * option gets its value.  If the option has not been provided,
          * and there is no default value, -1 is stored.
          *
-         * Only makes sense if specified together with enumValue().
+         * Cannot be specified without enumValue().
          */
         MyClass &storeEnumIndex(int *store)
         { _enumIndexStore = store; return me(); }
@@ -228,6 +238,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
     private:
         const char *const      *_enumValues;
+        int                     _defaultEnumIndex;
         int                    *_enumIndexStore;
 
         /*! \brief

@@ -578,4 +578,27 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValue)
     EXPECT_EQ(1, index);
 }
 
+TEST(OptionsAssignerStringTest, HandlesEnumDefaultIndex)
+{
+    gmx::Options           options(NULL, NULL);
+    std::string            value;
+    const char * const     allowed[] = { "none", "test", "value", NULL };
+    int                    index = -1;
+    using gmx::StringOption;
+    options.addOption(StringOption("p").store(&value)
+                          .enumValue(allowed)
+                          .defaultEnumIndex(1)
+                          .storeEnumIndex(&index));
+    EXPECT_EQ("test", value);
+    EXPECT_EQ(1, index);
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&options, &errors);
+    ASSERT_EQ(0, assigner.finish());
+    ASSERT_EQ(0, options.finish(&errors));
+
+    EXPECT_EQ("test", value);
+    EXPECT_EQ(1, index);
+}
+
 } // namespace

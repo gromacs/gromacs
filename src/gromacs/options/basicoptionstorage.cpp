@@ -231,12 +231,17 @@ StringOptionStorage::StringOptionStorage()
 
 int StringOptionStorage::init(const StringOption &settings, Options *options)
 {
-    if (settings._enumIndexStore && settings._enumValues == NULL)
+    if (settings._defaultEnumIndex >= 0 && settings._enumValues == NULL)
+    {
+        GMX_ERROR(eeInvalidValue,
+                  "Cannot set default enum index without enum values");
+    }
+    if (settings._enumIndexStore != NULL && settings._enumValues == NULL)
     {
         GMX_ERROR(eeInvalidValue,
                   "Cannot set enum index store without enum values");
     }
-    if (settings._enumIndexStore && settings._maxValueCount < 0)
+    if (settings._enumIndexStore != NULL && settings._maxValueCount < 0)
     {
         GMX_ERROR(eeInvalidValue,
                   "Cannot set enum index store with arbitrary number of values");
@@ -262,13 +267,39 @@ int StringOptionStorage::init(const StringOption &settings, Options *options)
                           "Default value is not one of allowed values");
             }
         }
+        if (settings._defaultEnumIndex >= 0)
+        {
+            if (settings._defaultEnumIndex >= static_cast<int>(_allowed.size()))
+            {
+                GMX_ERROR(eeInvalidValue,
+                          "Default enumeration index is out of range");
+            }
+            if (defaultValue && *defaultValue != _allowed[settings._defaultEnumIndex])
+            {
+                GMX_ERROR(eeInvalidValue,
+                          "Conflicting default values");
+            }
+        }
         // If there is no default value, match is still -1.
         if (_enumIndexStore != NULL)
         {
             *_enumIndexStore = match;
         }
     }
-    return MyBase::init(settings, options);
+    int rc = MyBase::init(settings, options);
+    if (rc == 0)
+    {
+        if (settings._defaultEnumIndex >= 0)
+        {
+            clear();
+            addValue(_allowed[settings._defaultEnumIndex]);
+            if (_enumIndexStore != NULL)
+            {
+                *_enumIndexStore = settings._defaultEnumIndex;
+            }
+        }
+    }
+    return rc;
 }
 
 int StringOptionStorage::appendValue(const std::string &value,
