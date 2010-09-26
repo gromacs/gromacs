@@ -49,34 +49,25 @@ namespace
 class SelectionCollectionTest : public ::testing::Test
 {
     public:
-        void SetUp();
-        void TearDown();
+        SelectionCollectionTest();
 
-        gmx_ana_poscalc_coll_t *_pcc;
-        gmx::SelectionCollection *_sc;
+        gmx::SelectionCollection _sc;
 };
 
-void SelectionCollectionTest::SetUp()
+SelectionCollectionTest::SelectionCollectionTest()
+    : _sc(NULL)
 {
-    _sc = NULL;
-    ASSERT_EQ(0, gmx_ana_poscalc_coll_create(&_pcc));
-    ASSERT_EQ(0, gmx::SelectionCollection::create(&_sc, _pcc));
-}
-
-void SelectionCollectionTest::TearDown()
-{
-    delete _sc;
-    gmx_ana_poscalc_coll_free(_pcc);
+    _sc.init();
 }
 
 TEST_F(SelectionCollectionTest, ParsesSimpleSelections)
 {
     std::vector<gmx::Selection *> sel;
-    _sc->setReferencePosType("atom");
-    _sc->setOutputPosType("atom");
-    EXPECT_EQ(0, _sc->parseFromString("resname RA RB", &sel));
+    _sc.setReferencePosType("atom");
+    _sc.setOutputPosType("atom");
+    EXPECT_EQ(0, _sc.parseFromString("resname RA RB", &sel));
     EXPECT_EQ(1U, sel.size());
-    EXPECT_EQ(0, _sc->parseFromString("name CA SB", &sel));
+    EXPECT_EQ(0, _sc.parseFromString("name CA SB", &sel));
     EXPECT_EQ(2U, sel.size());
 }
 

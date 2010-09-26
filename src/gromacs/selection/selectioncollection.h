@@ -28,9 +28,13 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::SelectionCollection.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inlibraryapi
+ * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELECTIONCOLLECTION_H
 #define GMX_SELECTION_SELECTIONCOLLECTION_H
@@ -46,12 +50,17 @@ struct gmx_ana_poscalc_coll_t;
 namespace gmx
 {
 
+class Options;
 class Selection;
 
 class SelectionCollection
 {
     public:
+        explicit SelectionCollection(gmx_ana_poscalc_coll_t *pcc);
         ~SelectionCollection();
+
+        int init();
+        Options *initOptions();
 
         static int create(SelectionCollection **scp, gmx_ana_poscalc_coll_t *pcc);
 
@@ -60,7 +69,7 @@ class SelectionCollection
         void setMaskOnly(bool bMaskOnly);
         void setVelocityOutput(bool bVelOut);
         void setForceOutput(bool bForceOut);
-        void setCompileDebug(bool bDebug);
+        void setDebugLevel(int debuglevel);
 
         bool requiresTopology() const;
         int setTopology(t_topology *top, int natoms);
@@ -82,10 +91,6 @@ class SelectionCollection
         Impl                   *_impl;
 
     private:
-        SelectionCollection(gmx_ana_poscalc_coll_t *pcc);
-
-        int init();
-
         // Disallow copy and assign.
         SelectionCollection(const SelectionCollection &);
         void operator =(const SelectionCollection &);

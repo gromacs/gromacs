@@ -158,4 +158,62 @@ Selection::initCoveredFraction(e_coverfrac_t type)
     return type == CFRAC_NONE || sel->cfractype != CFRAC_NONE;
 }
 
+
+void
+Selection::printDebugInfo(int nmaxind) const
+{
+    fprintf(stderr, "  ");
+    printInfo();
+    fprintf(stderr, "    ");
+    gmx_ana_index_dump(_sel.g, -1, nmaxind);
+
+    fprintf(stderr, "    Block (size=%d):", _sel.p.m.mapb.nr);
+    if (!_sel.p.m.mapb.index)
+    {
+        fprintf(stderr, " (null)");
+    }
+    else
+    {
+        int n = _sel.p.m.mapb.nr;
+        if (nmaxind >= 0 && n > nmaxind)
+            n = nmaxind;
+        for (int i = 0; i <= n; ++i)
+            fprintf(stderr, " %d", _sel.p.m.mapb.index[i]);
+        if (n < _sel.p.m.mapb.nr)
+            fprintf(stderr, " ...");
+    }
+    fprintf(stderr, "\n");
+
+    int n = _sel.p.m.nr;
+    if (nmaxind >= 0 && n > nmaxind)
+        n = nmaxind;
+    fprintf(stderr, "    RefId:");
+    if (!_sel.p.m.refid)
+    {
+        fprintf(stderr, " (null)");
+    }
+    else
+    {
+        for (int i = 0; i < n; ++i)
+            fprintf(stderr, " %d", _sel.p.m.refid[i]);
+        if (n < _sel.p.m.nr)
+            fprintf(stderr, " ...");
+    }
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "    MapId:");
+    if (!_sel.p.m.mapid)
+    {
+        fprintf(stderr, " (null)");
+    }
+    else
+    {
+        for (int i = 0; i < n; ++i)
+            fprintf(stderr, " %d", _sel.p.m.mapid[i]);
+        if (n < _sel.p.m.nr)
+            fprintf(stderr, " ...");
+    }
+    fprintf(stderr, "\n");
+}
+
 } // namespace gmx

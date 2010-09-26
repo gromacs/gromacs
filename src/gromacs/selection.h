@@ -28,59 +28,25 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \defgroup module_selection Parsing and Evaluation of Analysis Selections
+ * \ingroup group_analysismodules
  * \brief
- * Tests selection parsing and compilation.
+ * Provides functionality for initializing and evaluating selections.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ */
+/*! \file
+ * \brief
+ * Public API convenience header for selection handling.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inpublicapi
  * \ingroup module_selection
  */
-#include <vector>
+#ifndef GMX_SELECTION_H
+#define GMX_SELECTION_H
 
-#include <gtest/gtest.h>
+#include "selection/selection.h"
+#include "selection/selectionoption.h"
 
-#include "gromacs/errorreporting/emptyerrorreporter.h"
-#include "gromacs/options/globalproperties.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/optionsassigner.h"
-#include "gromacs/selection/selection.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/selection/selectionoption.h"
-
-namespace
-{
-
-class SelectionOptionTest : public ::testing::Test
-{
-    public:
-        SelectionOptionTest();
-
-        gmx::SelectionCollection _sc;
-        gmx::Options             _options;
-};
-
-SelectionOptionTest::SelectionOptionTest()
-    : _sc(NULL), _options(NULL, NULL)
-{
-    _sc.init();
-    _sc.setReferencePosType("atom");
-    _sc.setOutputPosType("atom");
-    _options.globalProperties().setSelectionCollection(&_sc);
-}
-
-TEST_F(SelectionOptionTest, ParsesSimpleSelection)
-{
-    gmx::Selection *sel = NULL;
-    using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").store(&sel));
-
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
-    ASSERT_TRUE(sel != NULL);
-}
-
-} // namespace
+#endif

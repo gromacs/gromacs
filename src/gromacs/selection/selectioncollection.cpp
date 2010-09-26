@@ -30,7 +30,7 @@
  */
 /*! \internal \file
  * \brief
- * Implementation of gmx::SelectionCollection.
+ * Implements gmx::SelectionCollection.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
@@ -49,6 +49,8 @@
 #include "selmethod.h"
 
 #include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
 
@@ -74,14 +76,14 @@ namespace gmx
  */
 
 SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
-    : _grps(NULL)
+    : _options("selection", "Common selection options"),
+      _debugLevel(0), _flags(0), _grps(NULL)
 {
     _sc.rpost     = NULL;
     _sc.spost     = NULL;
     _sc.bMaskOnly = FALSE;
     _sc.bVelocities = FALSE;
     _sc.bForces   = FALSE;
-    _sc.bDebugCompile = FALSE;
     _sc.root      = NULL;
     _sc.nvars     = 0;
     _sc.varstrs   = NULL;
@@ -110,7 +112,24 @@ SelectionCollection::Impl::~Impl()
     {
         _gmx_sel_mempool_destroy(_sc.mempool);
     }
+    if (hasFlag(efOwnPositionCollection))
+    {
+        gmx_ana_poscalc_coll_free(_sc.pcc);
+    }
     clearSymbolTable();
+}
+
+void
+SelectionCollection::Impl::setFlag(Flag flag, bool bSet)
+{
+    if (bSet)
+    {
+        _flags |= flag;
+    }
+    else
+    {
+        _flags &= ~flag;
+    }
 }
 
 void
@@ -138,6 +157,8 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
     gmx_ana_selcollection_t *sc = &_sc;
     assert(sc == _gmx_sel_lexer_selcollection(scanner));
 
+    _sc.rpost = _rpost.c_str();
+    _sc.spost = _spost.c_str();
     int oldCount = sc->sel.size();
     int bOk = !_gmx_sel_yybparse(scanner);
     _gmx_sel_free_lexer(scanner);
@@ -177,6 +198,15 @@ SelectionCollection::~SelectionCollection()
 int
 SelectionCollection::init()
 {
+    if (_impl->_sc.pcc == NULL)
+    {
+        int rc = gmx_ana_poscalc_coll_create(&_impl->_sc.pcc);
+        if (rc != 0)
+        {
+            return rc;
+        }
+        _impl->setFlag(Impl::efOwnPositionCollection, true);
+    }
     _gmx_sel_symtab_create(&_impl->_sc.symtab);
     gmx_ana_selmethod_register_defaults(_impl->_sc.symtab);
     return 0;
@@ -205,6 +235,44 @@ SelectionCollection::create(SelectionCollection **scp,
     return 0;
 }
 
+Options *
+SelectionCollection::initOptions()
+{
+    static const char * const debug_levels[]
+        = {"no", "basic", "compile", "eval", "full", NULL};
+    /*
+    static const char * const desc[] = {
+        "This program supports selections in addition to traditional",
+        "index files. Use [TT]-select help[tt] for additional information,",
+        "or type 'help' in the selection prompt.",
+        NULL,
+    };
+    options.setDescription(desc);
+    */
+
+    Options &options = _impl->_options;
+    const char **postypes = gmx_ana_poscalc_create_type_enum(TRUE);
+    if (postypes == NULL)
+    {
+        return NULL;
+    }
+    options.addOption(StringOption("selrpos").enumValue(postypes + 1)
+                          .store(&_impl->_rpost).defaultValue(postypes[1])
+                          .description("Selection reference positions"));
+    options.addOption(StringOption("seltype").enumValue(postypes + 1)
+                          .store(&_impl->_spost).defaultValue(postypes[1])
+                          .description("Default selection output positions"));
+    assert(_impl->_debugLevel >= 0 && _impl->_debugLevel <= 4);
+    options.addOption(StringOption("seldebug").hidden()
+                          .enumValue(debug_levels)
+                          .defaultValue(debug_levels[_impl->_debugLevel])
+                          .storeEnumIndex(&_impl->_debugLevel)
+                          .description("Print out selection trees for debugging"));
+    sfree(postypes);
+
+    return &_impl->_options;
+}
+
 /*!
  * \param[in]     type      Default selection reference position type
  *   (one of the strings acceptable for gmx_ana_poscalc_type_from_enum()).
@@ -216,14 +284,13 @@ void
 SelectionCollection::setReferencePosType(const char *type)
 {
     assert(type != NULL);
-    _impl->_sc.rpost = type;
+    _impl->_rpost = type;
 }
 
 /*!
  * \param[in]     type      Default selection output position type
  *   (one of the strings acceptable for gmx_ana_poslcalc_type_from_enum()).
  *
- * If \p type is NULL, the default type is not modified.
  * Should be called before calling gmx_ana_selcollection_requires_top() or
  * gmx_ana_selcollection_parse_*().
  */
@@ -231,7 +298,7 @@ void
 SelectionCollection::setOutputPosType(const char *type)
 {
     assert(type != NULL);
-    _impl->_sc.spost = type;
+    _impl->_spost = type;
 }
 
 /*!
@@ -269,9 +336,9 @@ SelectionCollection::setForceOutput(bool bForceOut)
  *     will print out intermediate selection trees.
  */
 void
-SelectionCollection::setCompileDebug(bool bDebug)
+SelectionCollection::setDebugLevel(int debuglevel)
 {
-    _impl->_sc.bDebugCompile = bDebug;
+    _impl->_debugLevel = debuglevel;
 }
 
 /*!
@@ -298,7 +365,7 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
     /* Get the number of atoms from the topology if it is not given */
     if (natoms <= 0)
     {
-        if (sc->top != 0)
+        if (sc->top == NULL)
         {
             GMX_ERROR(eeInvalidValue,
                       "Selections need either the topology or the number of atoms");
@@ -329,7 +396,7 @@ SelectionCollection::requiresTopology() const
     if (sc->rpost)
     {
         flags = 0;
-        rc = gmx_ana_poscalc_type_from_enum(sc->rpost, &type, &flags);
+        rc = gmx_ana_poscalc_type_from_enum(_impl->_rpost.c_str(), &type, &flags);
         if (rc == 0 && type != POS_ATOM)
         {
             return TRUE;
@@ -338,7 +405,7 @@ SelectionCollection::requiresTopology() const
     if (sc->spost)
     {
         flags = 0;
-        rc = gmx_ana_poscalc_type_from_enum(sc->spost, &type, &flags);
+        rc = gmx_ana_poscalc_type_from_enum(_impl->_spost.c_str(), &type, &flags);
         if (rc == 0 && type != POS_ATOM)
         {
             return TRUE;
@@ -427,13 +494,45 @@ SelectionCollection::parseFromString(const std::string &str,
 int
 SelectionCollection::compile()
 {
-    return gmx_ana_selcollection_compile(this);
+    if (_impl->_debugLevel >= 1)
+    {
+        printTree(stderr, false);
+    }
+    int rc = gmx_ana_selcollection_compile(this);
+    if (rc == 0 && _impl->hasFlag(Impl::efOwnPositionCollection))
+    {
+        if (_impl->_debugLevel >= 1)
+        {
+            std::fprintf(stderr, "\n");
+            printTree(stderr, false);
+            std::fprintf(stderr, "\n");
+            gmx_ana_poscalc_coll_print_tree(stderr, _impl->_sc.pcc);
+            std::fprintf(stderr, "\n");
+        }
+        gmx_ana_poscalc_init_eval(_impl->_sc.pcc);
+        if (_impl->_debugLevel >= 1)
+        {
+            gmx_ana_poscalc_coll_print_tree(stderr, _impl->_sc.pcc);
+            std::fprintf(stderr, "\n");
+        }
+    }
+    return rc;
 }
 
 int
 SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 {
-    return gmx_ana_selcollection_evaluate(&_impl->_sc, fr, pbc);
+    if (_impl->hasFlag(Impl::efOwnPositionCollection))
+    {
+        gmx_ana_poscalc_init_frame(_impl->_sc.pcc);
+    }
+    int rc = gmx_ana_selcollection_evaluate(&_impl->_sc, fr, pbc);
+    if (rc == 0 && _impl->_debugLevel >= 3)
+    {
+        fprintf(stderr, "\n");
+        printTree(stderr, true);
+    }
+    return rc;
 }
 
 int

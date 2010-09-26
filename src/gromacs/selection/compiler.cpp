@@ -2624,6 +2624,8 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     e_poscalc_t  post;
     int          flags;
     int          rc;
+    bool         bDebug = (coll->_impl->_debugLevel >= 2
+                           && coll->_impl->_debugLevel != 3);
 
     rc = _gmx_sel_mempool_create(&sc->mempool);
     if (rc != 0)
@@ -2690,10 +2692,10 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     /* Initialize the evaluation index groups */
     initialize_evalgrps(sc);
 
-    if (sc->bDebugCompile)
+    if (bDebug)
     {
         fprintf(stderr, "\nTree after initial compiler processing:\n");
-        coll->printTree(stderr, FALSE);
+        coll->printTree(stderr, false);
     }
 
     /* Evaluate all static parts of the selection and analyze the tree
@@ -2719,10 +2721,10 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
      * so they can be removed. */
     sc->root = remove_unused_subexpressions(sc->root);
 
-    if (sc->bDebugCompile)
+    if (bDebug)
     {
         fprintf(stderr, "\nTree after first analysis pass:\n");
-        coll->printTree(stderr, FALSE);
+        coll->printTree(stderr, false);
     }
 
     /* Do a second pass to evaluate static parts of common subexpressions */
@@ -2764,10 +2766,10 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
      * subexpressions referred to by common dynamic subexpressions. */
     sc->root = remove_unused_subexpressions(sc->root);
 
-    if (sc->bDebugCompile)
+    if (bDebug)
     {
         fprintf(stderr, "\nTree after second analysis pass:\n");
-        coll->printTree(stderr, FALSE);
+        coll->printTree(stderr, false);
     }
 
     /* Initialize evaluation groups, position calculations for methods, perform
@@ -2775,7 +2777,7 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
      * compilation. */
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
-    rc = gmx_ana_poscalc_type_from_enum(sc->rpost, &post, &flags);
+    rc = gmx_ana_poscalc_type_from_enum(coll->_impl->_rpost.c_str(), &post, &flags);
     if (rc != 0)
     {
         gmx_bug("invalid default reference position type");

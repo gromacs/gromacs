@@ -29,18 +29,24 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Definition of \c gmx_ana_selcollection_t.
+ * \brief
+ * Declares private implementation class for gmx::SelectionCollection.
  *
- * This is an implementation header: there should be no need to use it outside
- * this directory.
+ * This header also defines ::gmx_ana_selcollection_t, which is used in the old
+ * C code for handling selection collections.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELECTIONCOLLECTION_IMPL_H
 #define GMX_SELECTION_SELECTIONCOLLECTION_IMPL_H
 
+#include <string>
 #include <vector>
 
 #include <typedefs.h>
 
+#include "../options/options.h"
 #include "indexutil.h"
 #include "selectioncollection.h"
 
@@ -94,8 +100,6 @@ struct gmx_ana_selcollection_t
     bool                        bVelocities;
     /** TRUE if forces should be evaluated for output positions. */
     bool                        bForces;
-    /** TRUE if debugging output should be printed during compilation. */
-    bool                        bDebugCompile;
 
     /** Root of the selection element tree. */
     struct t_selelem           *root;
@@ -126,15 +130,27 @@ class SelectionCollection::Impl
     public:
         typedef std::vector<Selection *> SelectionList;
 
+        enum Flag
+        {
+            efOwnPositionCollection = 1<<0
+        };
+
         Impl(gmx_ana_poscalc_coll_t *pcc);
         ~Impl();
 
+        bool hasFlag(Flag flag) const { return _flags & flag; }
+        void setFlag(Flag flat, bool bSet);
         void clearSymbolTable();
         int registerDefaultMethods();
         int runParser(void *scanner, int maxnr,
                       std::vector<Selection *> *output);
 
         gmx_ana_selcollection_t _sc;
+        Options                 _options;
+        std::string             _rpost;
+        std::string             _spost;
+        int                     _debugLevel;
+        unsigned long           _flags;
         gmx_ana_indexgrps_t    *_grps;
 };
 
