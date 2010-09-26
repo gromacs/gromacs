@@ -54,7 +54,7 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
 			 atom_id index[],rvec xref,int ePBC,matrix box)
 {
   const real tol=1e-4;
-  bool  bChanged;
+  gmx_bool  bChanged;
   int   m,j,ai,iter;
   real  mass,mtot;
   rvec  dx,xtest;
@@ -166,7 +166,7 @@ int gmx_spol(int argc,char *argv[])
   };
  
   output_env_t oenv;
-  static bool bCom = FALSE,bPBC = FALSE;
+  static gmx_bool bCom = FALSE,bPBC = FALSE;
   static int  srefat=1;
   static real rmin=0.0,rmax=0.32,refdip=0,bw=0.01;
   t_pargs pa[] = {
@@ -244,7 +244,7 @@ int gmx_spol(int argc,char *argv[])
   /* start analysis of trajectory */
   do {
     /* make molecules whole again */
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
 
     set_pbc(&pbc,ir->ePBC,box);
     if (bCom)

@@ -221,7 +221,7 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
   }
 }
 
-void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
+void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc)
 {
   int i,nnht,nnhtp;
 
@@ -465,7 +465,7 @@ static void bc_pull(const t_commrec *cr,t_pull *pull)
 
 static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
 {
-  bool bAlloc=TRUE;
+  gmx_bool bAlloc=TRUE;
   int i;
 
   block_bc(cr,fepvals->init_lambda);   
@@ -485,8 +485,8 @@ static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
   block_bc(cr,fepvals->sc_sigma);        
   block_bc(cr,fepvals->bScCoul);
   nblock_bc(cr,efptNR,&(fepvals->separate_dvdl[0]));
-  block_bc(cr,fepvals->dh_table_size);
-  block_bc(cr,fepvals->dh_table_spacing);
+  block_bc(cr,fepvals->dh_hist_size);
+  block_bc(cr,fepvals->dh_hist_spacing);
   block_bc(cr,fepvals->elamstats);
   block_bc(cr,fepvals->elmcmove);
   block_bc(cr,fepvals->elmceq);
@@ -519,7 +519,7 @@ static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
 
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
 {
-  bool bAlloc=TRUE;
+  gmx_bool bAlloc=TRUE;
   int i;
 
   block_bc(cr,*inputrec);
@@ -557,7 +557,7 @@ static void bc_moltype(const t_commrec *cr,t_symtab *symtab,
 
 static void bc_molblock(const t_commrec *cr,gmx_molblock_t *molb)
 {
-  bool bAlloc=TRUE;
+  gmx_bool bAlloc=TRUE;
   
   block_bc(cr,molb->type);
   block_bc(cr,molb->nmol);

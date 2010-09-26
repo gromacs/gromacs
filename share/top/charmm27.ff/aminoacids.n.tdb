@@ -30,7 +30,7 @@
  2       4       H       N       CA      C
     	 HC      1.008   0.24
 
-; Created by Michel Cuendet
+; 
 [ NH2 ]
 [ replace ]
  N		NH2		14.0067	-0.96
@@ -43,7 +43,7 @@
  HN
 
 
-; Created by Bjelkmar 
+; 
 [ GLY-NH2 ]
 [ replace ]
  N		NH2		14.0067	-0.96
@@ -55,7 +55,7 @@
  HN
 
 
-; Created by Bjelkmar 
+; 
 [ PRO-NH ]
 [ replace ]
  N		NP	14.0027	-0.40

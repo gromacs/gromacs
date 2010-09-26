@@ -72,10 +72,10 @@
 
 
 int 
-calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
-		      int natoms, gmx_localtop_t *top,
-		      const t_atomtypes *atype, float *x, t_nblist *nl,
-		      gmx_genborn_t *born)
+calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,
+                              int natoms, gmx_localtop_t *top,
+                              const t_atomtypes *atype, float *x, t_nblist *nl,
+                              gmx_genborn_t *born)
 {
 	int i,k,n,ii,is3,ii3,nj0,nj1,offset;
 	int jnrA,jnrB,jnrC,jnrD,j3A,j3B,j3C,j3D;
@@ -113,16 +113,16 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
 	__m128   mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
 	__m128   mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
     
-	const __m128 half   = {0.5f , 0.5f , 0.5f , 0.5f };
-	const __m128 three  = {3.0f , 3.0f , 3.0f , 3.0f };
-	const __m128 one    = {1.0f,  1.0f , 1.0f , 1.0f };
-	const __m128 two    = {2.0f , 2.0f , 2.0f,  2.0f };
-	const __m128 zero   = {0.0f , 0.0f , 0.0f , 0.0f };
-	const __m128 four   = {4.0f , 4.0f , 4.0f , 4.0f };
+	const __m128 half   = _mm_set1_ps(0.5f);
+	const __m128 three  = _mm_set1_ps(3.0f);
+	const __m128 one    = _mm_set1_ps(1.0f);
+	const __m128 two    = _mm_set1_ps(2.0f);
+	const __m128 zero   = _mm_set1_ps(0.0f);
+	const __m128 four   = _mm_set1_ps(4.0f);
 	
-	const __m128 still_p5inv  = {STILL_P5INV, STILL_P5INV, STILL_P5INV, STILL_P5INV};
-	const __m128 still_pip5   = {STILL_PIP5,  STILL_PIP5,  STILL_PIP5,  STILL_PIP5};
-	const __m128 still_p4     = {STILL_P4,    STILL_P4,    STILL_P4,    STILL_P4};
+	const __m128 still_p5inv  = _mm_set1_ps(STILL_P5INV);
+	const __m128 still_pip5   = _mm_set1_ps(STILL_PIP5);
+	const __m128 still_p4     = _mm_set1_ps(STILL_P4);
 		
 	factor  = 0.5 * ONE_4PI_EPS0;
 		
@@ -233,7 +233,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             {
                 ratio       = _mm_min_ps(ratio,still_p5inv);
                 theta       = _mm_mul_ps(ratio,still_pip5);
-                GMX_MM_SINCOS_PS(theta,sinq,cosq);
+                gmx_mm_sincos_ps(theta,&sinq,&cosq);
                 term        = _mm_mul_ps(half,_mm_sub_ps(one,cosq));
                 ccf         = _mm_mul_ps(term,term);
                 dccf        = _mm_mul_ps(_mm_mul_ps(two,term),
@@ -249,7 +249,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             {
                 ratioB      = _mm_min_ps(ratioB,still_p5inv);
                 thetaB      = _mm_mul_ps(ratioB,still_pip5);
-                GMX_MM_SINCOS_PS(thetaB,sinqB,cosqB);
+                gmx_mm_sincos_ps(thetaB,&sinqB,&cosqB);
                 termB       = _mm_mul_ps(half,_mm_sub_ps(one,cosqB));
                 ccfB        = _mm_mul_ps(termB,termB);
                 dccfB       = _mm_mul_ps(_mm_mul_ps(two,termB),
@@ -262,7 +262,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             icf4B       = _mm_mul_ps(ccfB,rinv4B);
             icf6        = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four,ccf),dccf), rinv6);
             icf6B       = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four,ccfB),dccfB), rinv6B);
-            
+
             GMX_MM_INCREMENT_4VALUES_PS(work+jnrA,work+jnrB,work+jnrC,work+jnrD,_mm_mul_ps(prod_ai,icf4));
             GMX_MM_INCREMENT_4VALUES_PS(work+jnrE,work+jnrF,work+jnrG,work+jnrH,_mm_mul_ps(prod_ai,icf4B));
             
@@ -309,7 +309,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             ratio       = _mm_mul_ps(rsq, gmx_mm_inv_ps( _mm_mul_ps(rvdw,rvdw)));
             
             mask_cmp    = _mm_cmple_ps(ratio,still_p5inv);
-            
+
             /* gmx_mm_sincos_ps() is quite expensive, so avoid calculating it if we can! */
             if(0 == _mm_movemask_ps(mask_cmp))
             {
@@ -321,7 +321,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             {
                 ratio       = _mm_min_ps(ratio,still_p5inv);
                 theta       = _mm_mul_ps(ratio,still_pip5);
-                GMX_MM_SINCOS_PS(theta,sinq,cosq);
+                gmx_mm_sincos_ps(theta,&sinq,&cosq);
                 term        = _mm_mul_ps(half,_mm_sub_ps(one,cosq));
                 ccf         = _mm_mul_ps(term,term);
                 dccf        = _mm_mul_ps(_mm_mul_ps(two,term),
@@ -331,8 +331,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             prod        = _mm_mul_ps(still_p4,vaj);
             icf4        = _mm_mul_ps(ccf,rinv4);
             icf6        = _mm_mul_ps( _mm_sub_ps( _mm_mul_ps(four,ccf),dccf), rinv6);
-            
-            
+
             GMX_MM_INCREMENT_4VALUES_PS(work+jnrA,work+jnrB,work+jnrC,work+jnrD,_mm_mul_ps(prod_ai,icf4));
             
             gpi           = _mm_add_ps(gpi, _mm_mul_ps(prod,icf4));
@@ -405,7 +404,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             {
                 ratio       = _mm_min_ps(ratio,still_p5inv);
                 theta       = _mm_mul_ps(ratio,still_pip5);
-                GMX_MM_SINCOS_PS(theta,sinq,cosq);            
+                gmx_mm_sincos_ps(theta,&sinq,&cosq);            
                 term        = _mm_mul_ps(half,_mm_sub_ps(one,cosq));
                 ccf         = _mm_mul_ps(term,term);
                 dccf        = _mm_mul_ps(_mm_mul_ps(two,term),
@@ -424,7 +423,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
             dadx+=4;
             
             tmp = _mm_mul_ps(prod_ai,icf4);
-            
+
             if(offset==1)
             {
                 GMX_MM_INCREMENT_1VALUE_PS(work+jnrA,tmp);
@@ -439,9 +438,9 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
                 GMX_MM_INCREMENT_3VALUES_PS(work+jnrA,work+jnrB,work+jnrC,tmp);
             }
         }
-        gmx_mm_update_1pot_ps(gpi,work+ii);
+        GMX_MM_UPDATE_1POT_PS(gpi,work+ii);
 	}
-	
+
 	/* Sum up the polarization energy from other nodes */
 	if(PARTDECOMP(cr))
 	{
@@ -476,8 +475,8 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,
 
 
 int 
-calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
-                        const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md,int gb_algorithm)
+calc_gb_rad_hct_obc_sse2_single(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
+                                const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md,int gb_algorithm)
 {
 	int i,ai,k,n,ii,ii3,is3,nj0,nj1,at0,at1,offset;
     int jnrA,jnrB,jnrC,jnrD;
@@ -523,12 +522,12 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
     __m128 oneeighth   = _mm_set1_ps(0.125);
     __m128 onefourth   = _mm_set1_ps(0.25);
 
-	const __m128 neg   = {-1.0f , -1.0f , -1.0f , -1.0f };
-	const __m128 zero  = {0.0f , 0.0f , 0.0f , 0.0f };
-	const __m128 half  = {0.5f , 0.5f , 0.5f , 0.5f };
-	const __m128 one   = {1.0f , 1.0f , 1.0f , 1.0f };
-	const __m128 two   = {2.0f , 2.0f , 2.0f , 2.0f };
-	const __m128 three = {3.0f , 3.0f , 3.0f , 3.0f };
+	const __m128 half  = _mm_set1_ps(0.5f);
+	const __m128 three = _mm_set1_ps(3.0f);
+	const __m128 one   = _mm_set1_ps(1.0f);
+	const __m128 two   = _mm_set1_ps(2.0f);
+	const __m128 zero  = _mm_set1_ps(0.0f);
+	const __m128 neg   = _mm_set1_ps(-1.0f);
 	
 	/* Set the dielectric offset */
 	doffset   = born->gb_doffset;
@@ -1231,7 +1230,7 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
             }
             
         }
-        gmx_mm_update_1pot_ps(sum_ai,work+ii);
+        GMX_MM_UPDATE_1POT_PS(sum_ai,work+ii);
         
 	}
 	
@@ -1310,9 +1309,9 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
 
 
 
-float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
-							float *x, float *f, float *fshift, float *shiftvec,
-							int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md)						
+float calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float *dvda, 
+                                    float *x, float *f, float *fshift, float *shiftvec,
+                                    int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md)						
 {
 	int    i,k,n,ii,jnr,ii3,is3,nj0,nj1,offset,n0,n1;
 	int	   jnrA,jnrB,jnrC,jnrD;
@@ -1336,7 +1335,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
 	__m128 rbai,rbaj,rbajB, f_gb, f_gb_ai,f_gbB,f_gb_aiB;
 	__m128 xmm1,xmm2,xmm3;
 	
-	const __m128 two = {2.0f , 2.0f , 2.0f , 2.0f };
+	const __m128 two = _mm_set1_ps(2.0f);
     
 	rb     = born->work; 
 			
@@ -1518,890 +1517,11 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
 		/* fix/fiy/fiz now contain four partial force terms, that all should be
          * added to the i particle forces and shift forces. 
          */
- 		gmx_mm_update_iforce_1atom_ps(fix,fiy,fiz,f+ii3,fshift+is3);
+ 		gmx_mm_update_iforce_1atom_ps(&fix,&fiy,&fiz,f+ii3,fshift+is3);
 	}	
     
 	return 0;	
 }
-
-
-float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda, 
-					   t_idef *idef, real epsilon_r, real gb_epsilon_solvent, real facel)
-{
-	
-	int i,j,nral,nri;
-	int type1,type2,type3,type4,ai1,ai2,ai3,ai4,aj1,aj2,aj3,aj4;
-	int ai13,ai23,ai33,ai43,aj13,aj23,aj33,aj43;
-	int offset;
-	
-	float vctot;
-	
-	__m128 ix,iy,iz,jx,jy,jz,dx,dy,dz;
-	__m128 rsq11,rinv,r,t1,t2,t3;
-	__m128 isai,isaj,isaprod,inv_isaprod,expterm;
-	__m128 ci,cj,qq,fac,dva,dva_i,dva_j,di,dj;
-	__m128 vgb,vgb_tot,fgb,fgb2,fijC,fscal;
-	__m128 tx,ty,tz,fix1,fiy1,fiz1;
-	__m128 xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
-	__m128 mask;
-	
-	const __m128 neg   = {-1.0f , -1.0f , -1.0f , -1.0f };
-	const __m128 qrtr  = {0.25f , 0.25f , 0.25f , 0.25f };
-	const __m128 eigth = {0.125f , 0.125f , 0.125f , 0.125f };
-	const __m128 half  = {0.5f , 0.5f , 0.5f , 0.5f };
-	const __m128 three = {3.0f , 3.0f , 3.0f , 3.0f };
-	
-	t_iatom *forceatoms;
-	
-	/* Keep the compiler happy */
-	vgb_tot = _mm_setzero_ps();
-	vgb     = _mm_setzero_ps();
-	xmm1    = _mm_setzero_ps();
-	xmm2    = _mm_setzero_ps();
-	xmm3    = _mm_setzero_ps();
-	xmm4    = _mm_setzero_ps();
-	ai1  = ai2  = ai3  = ai4  = 0;
-	aj1  = aj2  = aj3  = aj4  = 0;
-	ai13 = ai23 = ai33 = ai43 = 0;
-	aj13 = aj23 = aj33 = aj43 = 0;
-	
-	/* Scale the electrostatics by gb_epsilon_solvent */
-	facel = (-1.0) * facel * ((1.0/epsilon_r) - 1.0/gb_epsilon_solvent);
-	fac        = _mm_load1_ps(&facel);
-	
-	vctot = 0.0;
-	
-	for(j=F_GB12;j<=F_GB14;j++)
-	{
-		forceatoms = idef->il[j].iatoms;
-		
-		/* Number of atoms involved in each GB interaction plus the interaction type */
-		nral       = NRAL(j)+1; 
-		nri        = idef->il[j].nr/nral;
-		offset     = nri%4;
-		
-		/* In the for loop, i is updated for every element in the forceatom list, so we have to stop
-		 * the loop at offset*nral before the maximum idef->il[j].nr number, instead of just offset
-		 */
-		for(i=0;i<idef->il[j].nr-(offset*nral); )
-		{
-			/* Load everything separately for now, test with sse load and shuffles later
-			 * Also, to avoid reading in the interaction type, we just increment i to pass over
-			 * the types in the forceatoms array, this saves some memory accesses.
-			 */
-			i++;
-			ai1            = forceatoms[i++];
-			aj1            = forceatoms[i++];
-		
-			i++;
-			ai2            = forceatoms[i++];
-			aj2            = forceatoms[i++];
-		
-			i++;
-			ai3            = forceatoms[i++];
-			aj3            = forceatoms[i++];
-		
-			i++;
-			ai4            = forceatoms[i++];
-			aj4            = forceatoms[i++];
-			
-			ai13 = ai1*3;
-			ai23 = ai2*3;
-			ai33 = ai3*3;
-			ai43 = ai4*3;
-			
-			aj13 = aj1*3;
-			aj23 = aj2*3;
-			aj33 = aj3*3;
-			aj43 = aj4*3;
-			
-			/* Load particle ai1-4 and transpose */
-			xmm1 = _mm_loadh_pi(xmm1,(__m64 *) (x+ai13));
-			xmm2 = _mm_loadh_pi(xmm2,(__m64 *) (x+ai23));
-			xmm3 = _mm_loadh_pi(xmm3,(__m64 *) (x+ai33));
-			xmm4 = _mm_loadh_pi(xmm4,(__m64 *) (x+ai43));
-			
-			xmm5    = _mm_load1_ps(x+ai13+2);  
-			xmm6    = _mm_load1_ps(x+ai23+2); 
-			xmm7    = _mm_load1_ps(x+ai33+2); 
-			xmm8    = _mm_load1_ps(x+ai43+2);
-			
-			xmm5    = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(0,0,0,0));
-			xmm6    = _mm_shuffle_ps(xmm7,xmm8,_MM_SHUFFLE(0,0,0,0));
-			iz      = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(2,0,2,0));
-			
-			xmm1    = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,2,3,2));
-			xmm2    = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(3,2,3,2));
-			ix      = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(2,0,2,0));
-			iy      = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,1,3,1));
-		
-			/* Load particle aj1-4 and transpose */
-			xmm1 = _mm_loadh_pi(xmm1,(__m64 *) (x+aj13));
-			xmm2 = _mm_loadh_pi(xmm2,(__m64 *) (x+aj23));
-			xmm3 = _mm_loadh_pi(xmm3,(__m64 *) (x+aj33));
-			xmm4 = _mm_loadh_pi(xmm4,(__m64 *) (x+aj43));
-			
-			xmm5    = _mm_load1_ps(x+aj13+2);  
-			xmm6    = _mm_load1_ps(x+aj23+2); 
-			xmm7    = _mm_load1_ps(x+aj33+2); 
-			xmm8    = _mm_load1_ps(x+aj43+2);
-			
-			xmm5    = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(0,0,0,0));
-			xmm6    = _mm_shuffle_ps(xmm7,xmm8,_MM_SHUFFLE(0,0,0,0));
-			jz      = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(2,0,2,0));
-			
-			xmm1    = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,2,3,2));
-			xmm2    = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(3,2,3,2));
-			jx      = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(2,0,2,0));
-			jy      = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,1,3,1));
-			
-			/* Distances */
-			dx    = _mm_sub_ps(ix, jx);
-			dy    = _mm_sub_ps(iy, jy);
-			dz    = _mm_sub_ps(iz, jz);
-			
-			rsq11 = _mm_add_ps( _mm_add_ps( _mm_mul_ps(dx,dx) , _mm_mul_ps(dy,dy) ) , _mm_mul_ps(dz,dz) );
-			
-			rinv  = gmx_mm_inv_ps(rsq11);
-			r     = _mm_mul_ps(rsq11,rinv);
-		
-			/* Load Born radii for ai's and aj's */
-			xmm1 = _mm_load_ss(bRad+ai1); 
-			xmm2 = _mm_load_ss(bRad+ai2); 
-			xmm3 = _mm_load_ss(bRad+ai3); 
-			xmm4 = _mm_load_ss(bRad+ai4);
-			
-			xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); 
-			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); 
-			isai  = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0)); 
-			
-			xmm1 = _mm_load_ss(bRad+aj1); 
-			xmm2 = _mm_load_ss(bRad+aj2); 
-			xmm3 = _mm_load_ss(bRad+aj3); 
-			xmm4 = _mm_load_ss(bRad+aj4);
-			
-			xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); 
-			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); 
-			isaj  = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
-			
-			isaprod = _mm_mul_ps(isai,isaj); /* rb2 in tinker */
-			inv_isaprod = _mm_mul_ps(isaprod,isaprod);
-			inv_isaprod = gmx_mm_inv_ps(inv_isaprod); /* 1/rb2 in tinker*/
-			
-			/* Load charges for ai's and aj's */
-			xmm1 = _mm_load_ss(charge+ai1); 
-			xmm2 = _mm_load_ss(charge+ai2); 
-			xmm3 = _mm_load_ss(charge+ai3); 
-			xmm4 = _mm_load_ss(charge+ai4);
-			
-			xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); 
-			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); 
-			ci   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
-			
-			xmm1 = _mm_load_ss(charge+aj1); 
-			xmm2 = _mm_load_ss(charge+aj2); 
-			xmm3 = _mm_load_ss(charge+aj3); 
-			xmm4 = _mm_load_ss(charge+aj4);
-			
-			xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); 
-			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); 
-			cj   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
-			
-			qq   = _mm_mul_ps(ci,fac);
-			qq   = _mm_mul_ps(cj,qq);
-	 
-			/* Calculate scalar GB force */
-			expterm = _mm_mul_ps(rsq11,inv_isaprod);
-			expterm = _mm_mul_ps(expterm,qrtr);
-			expterm = _mm_mul_ps(expterm,neg);
-			expterm = gmx_mm_exp_ps(expterm);
-	
-			fgb2    = _mm_mul_ps(isaprod,expterm);
-			fgb2    = _mm_add_ps(fgb2,rsq11);
-			
-			fgb     = gmx_mm_inv_ps(fgb2);
-			
-			/* Potential energy */
-			vgb     = _mm_mul_ps(qq,fgb);
-			vgb_tot = _mm_add_ps(vgb_tot,vgb);
-			
-			fijC    = _mm_mul_ps(qrtr,r);
-			fijC   = _mm_mul_ps(fijC,expterm);
-			fijC   = _mm_sub_ps(r,fijC);
-			fijC   = _mm_mul_ps(fijC,vgb);
-			fijC   = _mm_mul_ps(fijC,neg);
-			fijC   = _mm_mul_ps(fijC,fgb);
-			fijC   = _mm_mul_ps(fijC,fgb); /* fijC = fijC in tab code, de */
-			
-			/* Chain rule terms */
-			dva     = _mm_mul_ps(rsq11,inv_isaprod);
-			dva     = _mm_mul_ps(dva,eigth);
-			dva     = _mm_add_ps(dva,half);
-			dva     = _mm_mul_ps(dva,expterm);
-			dva     = _mm_mul_ps(dva,vgb);
-			dva     = _mm_mul_ps(dva,neg);
-			dva     = _mm_mul_ps(dva,fgb);
-			dva     = _mm_mul_ps(dva,fgb); /* dva * isaj = dvatmp*isai*isai */
-			
-			/* Calculate vectorial force */
-			fscal   = _mm_mul_ps(fijC,rinv);
-			fscal   = _mm_mul_ps(fscal,neg);
-			
-			tx      = _mm_mul_ps(fscal,dx);
-			ty      = _mm_mul_ps(fscal,dy);
-			tz      = _mm_mul_ps(fscal,dz);
-			
-			/* Load, update and store chain rule terms for ai and aj atoms */
-			dva_i   = _mm_mul_ps(dva,isaj);			
-			dva_j   = _mm_mul_ps(dva,isai);
-						
-			xmm1 = _mm_load_ss(dvda+ai1); 
-			xmm2 = _mm_load_ss(dvda+aj1);
-			xmm1 = _mm_add_ss(xmm1,dva_i);
-			xmm2 = _mm_add_ss(xmm2,dva_j);
-			_mm_store_ss(dvda+ai1,xmm1);
-			_mm_store_ss(dvda+aj1,xmm2);
-		
-			/* Need to shuffle dva_i and dva_j */
-			dva_i    = _mm_shuffle_ps(dva_i,dva_i,_MM_SHUFFLE(0,3,2,1));
-			dva_j    = _mm_shuffle_ps(dva_j,dva_j,_MM_SHUFFLE(0,3,2,1));
-			
-			xmm1 = _mm_load_ss(dvda+ai2); 
-			xmm2 = _mm_load_ss(dvda+aj2);
-			xmm1 = _mm_add_ss(xmm1,dva_i);
-			xmm2 = _mm_add_ss(xmm2,dva_j);
-			_mm_store_ss(dvda+ai2,xmm1);
-			_mm_store_ss(dvda+aj2,xmm2);
-			
-			/* Need to shuffle dva_i and dva_j */
-			dva_i    = _mm_shuffle_ps(dva_i,dva_i,_MM_SHUFFLE(0,3,2,1));
-			dva_j    = _mm_shuffle_ps(dva_j,dva_j,_MM_SHUFFLE(0,3,2,1));
-			
-			xmm1 = _mm_load_ss(dvda+ai3); 
-			xmm2 = _mm_load_ss(dvda+aj3);
-			xmm1 = _mm_add_ss(xmm1,dva_i);
-			xmm2 = _mm_add_ss(xmm2,dva_j);
-			_mm_store_ss(dvda+ai3,xmm1);
-			_mm_store_ss(dvda+aj3,xmm2);
-		
-			/* Need to shuffle dva_i and dva_j */
-			dva_i    = _mm_shuffle_ps(dva_i,dva_i,_MM_SHUFFLE(0,3,2,1));
-			dva_j    = _mm_shuffle_ps(dva_j,dva_j,_MM_SHUFFLE(0,3,2,1));
-			
-			xmm1 = _mm_load_ss(dvda+ai4); 
-			xmm2 = _mm_load_ss(dvda+aj4);
-			xmm1 = _mm_add_ss(xmm1,dva_i);
-			xmm2 = _mm_add_ss(xmm2,dva_j);
-			_mm_store_ss(dvda+ai4,xmm1);
-			_mm_store_ss(dvda+aj4,xmm2);
-		
-			/* Load, update and store partial forces on ai and ai atoms 
-			 * This needs to be done in the order ai1+aj1,ai2+aj2 etc...
-			 * since loading all four values at once will mean the force
-			 * is not updated properly
-			 */
-			/* ai1 and aj1 */
-			xmm1 = _mm_load_ss(f+ai13);
-			xmm2 = _mm_load_ss(f+ai13+1);
-			xmm3 = _mm_load_ss(f+ai13+2);
-			
-			xmm4 = _mm_load_ss(f+aj13);
-			xmm5 = _mm_load_ss(f+aj13+1);
-			xmm6 = _mm_load_ss(f+aj13+2);
-			
-			xmm1 = _mm_add_ss(xmm1,tx);
-			xmm2 = _mm_add_ss(xmm2,ty);
-			xmm3 = _mm_add_ss(xmm3,tz);
-			
-			xmm4 = _mm_sub_ss(xmm4,tx);
-			xmm5 = _mm_sub_ss(xmm5,ty);
-			xmm6 = _mm_sub_ss(xmm6,tz);
-			
-			_mm_store_ss(f+ai13,xmm1);
-			_mm_store_ss(f+ai13+1,xmm2);
-			_mm_store_ss(f+ai13+2,xmm3);
-			
-			_mm_store_ss(f+aj13,xmm4);
-			_mm_store_ss(f+aj13+1,xmm5);
-			_mm_store_ss(f+aj13+2,xmm6);
-			
-			/* ai2 and aj2 */
-			xmm1 = _mm_load_ss(f+ai23);
-			xmm2 = _mm_load_ss(f+ai23+1);
-			xmm3 = _mm_load_ss(f+ai23+2);
-			
-			xmm4 = _mm_load_ss(f+aj23);
-			xmm5 = _mm_load_ss(f+aj23+1);
-			xmm6 = _mm_load_ss(f+aj23+2);
-			
-			/* Need to shuffle tx/ty/tz */
-			tx    = _mm_shuffle_ps(tx,tx,_MM_SHUFFLE(0,3,2,1));
-			ty    = _mm_shuffle_ps(ty,ty,_MM_SHUFFLE(0,3,2,1));
-			tz    = _mm_shuffle_ps(tz,tz,_MM_SHUFFLE(0,3,2,1));
-			
-			xmm1 = _mm_add_ss(xmm1,tx);
-			xmm2 = _mm_add_ss(xmm2,ty);
-			xmm3 = _mm_add_ss(xmm3,tz);
-			
-			xmm4 = _mm_sub_ss(xmm4,tx);
-			xmm5 = _mm_sub_ss(xmm5,ty);
-			xmm6 = _mm_sub_ss(xmm6,tz);
-			
-			_mm_store_ss(f+ai23,xmm1);
-			_mm_store_ss(f+ai23+1,xmm2);
-			_mm_store_ss(f+ai23+2,xmm3);
-			
-			_mm_store_ss(f+aj23,xmm4);
-			_mm_store_ss(f+aj23+1,xmm5);
-			_mm_store_ss(f+aj23+2,xmm6);
-			
-			/* ai3 and aj3 */
-			xmm1 = _mm_load_ss(f+ai33);
-			xmm2 = _mm_load_ss(f+ai33+1);
-			xmm3 = _mm_load_ss(f+ai33+2);
-			
-			xmm4 = _mm_load_ss(f+aj33);
-			xmm5 = _mm_load_ss(f+aj33+1);
-			xmm6 = _mm_load_ss(f+aj33+2);
-			
-			/* Need to shuffle tx/ty/tz */
-			tx    = _mm_shuffle_ps(tx,tx,_MM_SHUFFLE(0,3,2,1));
-			ty    = _mm_shuffle_ps(ty,ty,_MM_SHUFFLE(0,3,2,1));
-			tz    = _mm_shuffle_ps(tz,tz,_MM_SHUFFLE(0,3,2,1));
-			
-			xmm1 = _mm_add_ss(xmm1,tx);
-			xmm2 = _mm_add_ss(xmm2,ty);
-			xmm3 = _mm_add_ss(xmm3,tz);
-			
-			xmm4 = _mm_sub_ss(xmm4,tx);
-			xmm5 = _mm_sub_ss(xmm5,ty);
-			xmm6 = _mm_sub_ss(xmm6,tz);
-			
-			_mm_store_ss(f+ai33,xmm1);
-			_mm_store_ss(f+ai33+1,xmm2);
-			_mm_store_ss(f+ai33+2,xmm3);
-			
-			_mm_store_ss(f+aj33,xmm4);
-			_mm_store_ss(f+aj33+1,xmm5);
-			_mm_store_ss(f+aj33+2,xmm6);
-			
-			/* ai4 and aj4 */
-			xmm1 = _mm_load_ss(f+ai43);
-			xmm2 = _mm_load_ss(f+ai43+1);
-			xmm3 = _mm_load_ss(f+ai43+2);
-			
-			xmm4 = _mm_load_ss(f+aj43);
-			xmm5 = _mm_load_ss(f+aj43+1);
-			xmm6 = _mm_load_ss(f+aj43+2);
-			
-			/* Need to shuffle tx/ty/tz */
-			tx    = _mm_shuffle_ps(tx,tx,_MM_SHUFFLE(0,3,2,1));
-			ty    = _mm_shuffle_ps(ty,ty,_MM_SHUFFLE(0,3,2,1));
-			tz    = _mm_shuffle_ps(tz,tz,_MM_SHUFFLE(0,3,2,1));
-			
-			xmm1 = _mm_add_ss(xmm1,tx);
-			xmm2 = _mm_add_ss(xmm2,ty);
-			xmm3 = _mm_add_ss(xmm3,tz);
-			
-			xmm4 = _mm_sub_ss(xmm4,tx);
-			xmm5 = _mm_sub_ss(xmm5,ty);
-			xmm6 = _mm_sub_ss(xmm6,tz);
-			
-			_mm_store_ss(f+ai43,xmm1);
-			_mm_store_ss(f+ai43+1,xmm2);
-			_mm_store_ss(f+ai43+2,xmm3);
-			
-			_mm_store_ss(f+aj43,xmm4);
-			_mm_store_ss(f+aj43+1,xmm5);
-			_mm_store_ss(f+aj43+2,xmm6);
-		}	
-		
-		if(offset!=0)
-		{
-			if(offset==1)
-			{
-				i++;
-				ai1            = forceatoms[i++];
-				aj1            = forceatoms[i++];
-				
-				ai13           = ai1*3;
-				aj13           = aj1*3;
-				
-				/* Load ai and aj coordinates */
-				xmm1 = _mm_loadl_pi(xmm1,(__m64 *) (x+ai13)); 
-				iz   = _mm_load1_ps(x+ai13+2); 
-				
-				ix   = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(0,0,0,0)); 
-				iy   = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(1,1,1,1)); 
-				
-				xmm1 = _mm_loadl_pi(xmm1,(__m64 *) (x+aj13)); 
-				jz   = _mm_load1_ps(x+aj13+2); 
-				
-				jx   = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(0,0,0,0)); 
-				jy   = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(1,1,1,1)); 
-				
-				/* Load Born radii for ai1 and aj1 */
-				isai   = _mm_set_ps(0.0f, 0.0f, 0.0f, bRad[ai1]);	
-				isaj   = _mm_set_ps(0.0f, 0.0f, 0.0f, bRad[aj1]);
-				
-				/* Load charges for ai1 and aj1 */
-				ci     = _mm_set_ps(0.0f, 0.0f, 0.0f, charge[ai1]);
-				cj     = _mm_set_ps(0.0f, 0.0f, 0.0f, charge[aj1]);
-				
-				/* Load chain rule terms for ai1 and aj1 */
-				di     = _mm_set_ps(0.0f,0.0f,0.0f,dvda[ai1]);
-				dj     = _mm_set_ps(0.0f,0.0f,0.0f,dvda[aj1]);
-				
-				mask = gmx_mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
-			}
-			else if(offset==2)
-			{
-				i++;
-				ai1            = forceatoms[i++];
-				aj1            = forceatoms[i++];
-				
-				i++;
-				ai2            = forceatoms[i++];
-				aj2            = forceatoms[i++];
-				
-				ai13 = ai1 * 3; 
-				ai23 = ai2 * 3;
-				aj13 = aj1 * 3; 
-				aj23 = aj2 * 3;
-				
-				/* Load ai1-2 and aj1-2 coordinates */
-				xmm1 = _mm_loadh_pi(xmm1,(__m64 *) (x+ai13)); 
-				xmm2 = _mm_loadh_pi(xmm2,(__m64 *) (x+ai23)); 
-				
-				xmm5   = _mm_load1_ps(x+ai13+2); 
-				xmm6   = _mm_load1_ps(x+ai23+2); 
-				
-				xmm5   = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(0,0,0,0)); 
-				iz     = _mm_shuffle_ps(xmm5,xmm5,_MM_SHUFFLE(2,0,2,0)); 
-				
-				xmm1   = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,2,3,2)); 
-				ix     = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0)); 
-				iy     = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1)); 	
-				
-				xmm1 = _mm_loadh_pi(xmm1,(__m64 *) (x+aj13)); 
-				xmm2 = _mm_loadh_pi(xmm2,(__m64 *) (x+aj23)); 
-				
-				xmm5   = _mm_load1_ps(x+aj13+2); 
-				xmm6   = _mm_load1_ps(x+aj23+2); 
-				
-				xmm5   = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(0,0,0,0)); 
-				jz     = _mm_shuffle_ps(xmm5,xmm5,_MM_SHUFFLE(2,0,2,0)); 
-				
-				xmm1   = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,2,3,2)); 
-				jx     = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0)); 
-				jy     = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1)); 	
-				
-				/* Load Born radii for ai1-2 and aj1-2 */
-				isai   = _mm_set_ps(0.0f, 0.0f, bRad[ai2], bRad[ai1]);	
-				isaj   = _mm_set_ps(0.0f, 0.0f, bRad[aj2], bRad[aj1]);
-				
-				/* Load charges for ai1-2 and aj1-2 */
-				ci   = _mm_set_ps(0.0f, 0.0f, charge[ai2], charge[ai1]);	
-				cj   = _mm_set_ps(0.0f, 0.0f, charge[aj2], charge[aj1]);
-				
-				/* Load chain rule terms for ai1-2 and aj1-2 */
-				di     = _mm_set_ps(0.0f,0.0f,dvda[ai2],dvda[ai1]);
-				dj     = _mm_set_ps(0.0f,0.0f,dvda[aj2],dvda[aj1]);
-				
-				mask   = gmx_mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
-			}
-			else
-			{
-				i++;
-				ai1            = forceatoms[i++];
-				aj1            = forceatoms[i++];
-				
-				i++;
-				ai2            = forceatoms[i++];
-				aj2            = forceatoms[i++];
-				
-				i++;
-				ai3            = forceatoms[i++];
-				aj3            = forceatoms[i++];
-				
-				ai13 = ai1 * 3; 
-				ai23 = ai2 * 3;
-				ai33 = ai3 * 3;
-
-				aj13 = aj1 * 3; 
-				aj23 = aj2 * 3;
-				aj33 = aj3 * 3;
-				
-				/* Load ai1-3 and aj1-3 coordinates */
-				xmm1 = _mm_loadh_pi(xmm1,(__m64 *) (x+ai13)); 
-				xmm2 = _mm_loadh_pi(xmm2,(__m64 *) (x+ai23)); 
-				xmm3 = _mm_loadh_pi(xmm3,(__m64 *) (x+ai33)); 
-				
-				xmm5 = _mm_load1_ps(x+ai13+2); 
-				xmm6 = _mm_load1_ps(x+ai23+2); 
-				xmm7 = _mm_load1_ps(x+ai33+2); 
-				
-				xmm5 = _mm_shuffle_ps(xmm5,xmm6, _MM_SHUFFLE(0,0,0,0)); 
-				iz   = _mm_shuffle_ps(xmm5,xmm7, _MM_SHUFFLE(3,1,3,1)); 						
-				
-				xmm1 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(3,2,3,2)); 
-				xmm2 = _mm_shuffle_ps(xmm3,xmm3, _MM_SHUFFLE(3,2,3,2)); 
-				
-				ix   = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(2,0,2,0)); 
-				iy   = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(3,1,3,1)); 
-				
-				xmm1 = _mm_loadh_pi(xmm1,(__m64 *) (x+aj13)); 
-				xmm2 = _mm_loadh_pi(xmm2,(__m64 *) (x+aj23)); 
-				xmm3 = _mm_loadh_pi(xmm3,(__m64 *) (x+aj33)); 
-				
-				xmm5 = _mm_load1_ps(x+aj13+2); 
-				xmm6 = _mm_load1_ps(x+aj23+2); 
-				xmm7 = _mm_load1_ps(x+aj33+2); 
-				
-				xmm5 = _mm_shuffle_ps(xmm5,xmm6, _MM_SHUFFLE(0,0,0,0)); 
-				jz   = _mm_shuffle_ps(xmm5,xmm7, _MM_SHUFFLE(3,1,3,1)); 						
-				
-				xmm1 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(3,2,3,2)); 
-				xmm2 = _mm_shuffle_ps(xmm3,xmm3, _MM_SHUFFLE(3,2,3,2)); 
-				
-				jx   = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(2,0,2,0)); 
-				jy   = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(3,1,3,1)); 
-				
-				/* Load Born radii for ai1-3 and aj1-3 */
-				isai   = _mm_set_ps(0.0f, bRad[ai3], bRad[ai2], bRad[ai1]);	
-				isaj   = _mm_set_ps(0.0f, bRad[aj3], bRad[aj2], bRad[aj1]);
-				
-				/* Load charges for ai1-3 and aj1-3 */
-				ci   = _mm_set_ps(0.0f, charge[ai3], charge[ai2], charge[ai1]);	
-				cj   = _mm_set_ps(0.0f, charge[aj3], charge[aj2], charge[aj1]);
-				
-				/* Load chain rule terms for ai1-3 and aj1-3 */
-				di     = _mm_set_ps(0.0f,dvda[ai3],dvda[ai2],dvda[ai1]);
-				dj     = _mm_set_ps(0.0f,dvda[aj3],dvda[aj2],dvda[aj1]);
-				
-				mask = gmx_mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
-			}
-			
-			ix = _mm_and_ps( mask, ix);
-			iy = _mm_and_ps( mask, iy);
-			iz = _mm_and_ps( mask, iz);
-			
-			jx = _mm_and_ps( mask, jx);
-			jy = _mm_and_ps( mask, jy);
-			jz = _mm_and_ps( mask, jz);
-			
-			/* Distances */
-			dx    = _mm_sub_ps(ix, jx);
-			dy    = _mm_sub_ps(iy, jy);
-			dz    = _mm_sub_ps(iz, jz);
-			
-			rsq11 = _mm_add_ps( _mm_add_ps( _mm_mul_ps(dx,dx) , _mm_mul_ps(dy,dy) ) , _mm_mul_ps(dz,dz) );
-			
-			rinv  = gmx_mm_inv_ps(rsq11);
-			r     = _mm_mul_ps(rsq11,rinv);
-			
-			isaprod = _mm_mul_ps(isai,isaj);
-			inv_isaprod = _mm_mul_ps(isaprod,isaprod);
-			inv_isaprod = gmx_mm_inv_ps(inv_isaprod); 
-			
-			qq   = _mm_mul_ps(ci,fac);
-			qq   = _mm_mul_ps(cj,qq);
-			
-			/* Calculate scalar GB force */
-			expterm = _mm_mul_ps(rsq11,inv_isaprod);
-			expterm = _mm_mul_ps(expterm,qrtr);
-			expterm = _mm_mul_ps(expterm,neg);
-			expterm = gmx_mm_exp_ps(expterm);
-			
-			fgb2    = _mm_mul_ps(isaprod,expterm);
-			fgb2    = _mm_add_ps(fgb2,rsq11);
-			
-			fgb     = gmx_mm_inv_ps(fgb2);
-			
-			/* Potential energy */
-			vgb     = _mm_mul_ps(qq,fgb);
-			vgb     = _mm_and_ps(mask,vgb);
-			vgb_tot = _mm_add_ps(vgb_tot,vgb);
-			
-			fijC    = _mm_mul_ps(qrtr,r);
-			fijC   = _mm_mul_ps(fijC,expterm);
-			fijC   = _mm_sub_ps(r,fijC);
-			fijC   = _mm_mul_ps(fijC,vgb);
-			fijC   = _mm_mul_ps(fijC,neg);
-			fijC   = _mm_mul_ps(fijC,fgb);
-			fijC   = _mm_mul_ps(fijC,fgb); /* fscal = fijC */
-						
-			/* Chain rule terms */
-			dva     = _mm_mul_ps(rsq11,inv_isaprod);
-			dva     = _mm_mul_ps(dva,eigth);
-			dva     = _mm_add_ps(dva,half);
-			dva     = _mm_mul_ps(dva,expterm);
-			dva     = _mm_mul_ps(dva,vgb);
-			dva     = _mm_mul_ps(dva,neg);
-			dva     = _mm_mul_ps(dva,fgb);
-			dva     = _mm_mul_ps(dva,fgb);
-			
-			/* Calculate vectorial force */
-			fscal   = _mm_mul_ps(fijC,rinv);
-			fscal   = _mm_mul_ps(fscal,neg);
-			
-			tx      = _mm_mul_ps(fscal,dx);
-			ty      = _mm_mul_ps(fscal,dy);
-			tz      = _mm_mul_ps(fscal,dz);
-			
-			/* Calculate chain rule terms */
-			dva_i   = _mm_mul_ps(dva,isaj);
-			dva_j   = _mm_mul_ps(dva,isai);
-			
-			if(offset==1)
-			{
-				/* Load, update and store chain rule terms for ai1 and aj1 */
-				xmm1 = _mm_load_ss(dvda+ai1); 
-				xmm2 = _mm_load_ss(dvda+aj1);
-				xmm1 = _mm_add_ss(xmm1,dva_i);
-				xmm2 = _mm_add_ss(xmm2,dva_j);
-				_mm_store_ss(dvda+ai1,xmm1);
-				_mm_store_ss(dvda+aj1,xmm2);
-				
-				/* Load, update and store partial forces on ai1 and aj1 */
-				xmm1 = _mm_load_ss(f+ai13);
-				xmm2 = _mm_load_ss(f+ai13+1);
-				xmm3 = _mm_load_ss(f+ai13+2);
-				
-				xmm4 = _mm_load_ss(f+aj13);
-				xmm5 = _mm_load_ss(f+aj13+1);
-				xmm6 = _mm_load_ss(f+aj13+2);
-				
-				xmm1 = _mm_add_ss(xmm1,tx);
-				xmm2 = _mm_add_ss(xmm2,ty);
-				xmm3 = _mm_add_ss(xmm3,tz);
-				
-				xmm4 = _mm_sub_ss(xmm4,tx);
-				xmm5 = _mm_sub_ss(xmm5,ty);
-				xmm6 = _mm_sub_ss(xmm6,tz);
-				
-				_mm_store_ss(f+ai13,xmm1);
-				_mm_store_ss(f+ai13+1,xmm2);
-				_mm_store_ss(f+ai13+2,xmm3);
-				
-				_mm_store_ss(f+aj13,xmm4);
-				_mm_store_ss(f+aj13+1,xmm5);
-				_mm_store_ss(f+aj13+2,xmm6);			
-			}
-			else if(offset==2)
-			{
-				/* Load, update and store chain rule terms for ai1-2 and aj1-2 atoms */
-				dva_i   = _mm_mul_ps(dva,isaj);			
-				dva_j   = _mm_mul_ps(dva,isai);
-				
-				xmm1 = _mm_load_ss(dvda+ai1); 
-				xmm2 = _mm_load_ss(dvda+aj1);
-				xmm1 = _mm_add_ss(xmm1,dva_i);
-				xmm2 = _mm_add_ss(xmm2,dva_j);
-				_mm_store_ss(dvda+ai1,xmm1);
-				_mm_store_ss(dvda+aj1,xmm2);
-				
-				/* Need to shuffle dva_i and dva_j */
-				dva_i    = _mm_shuffle_ps(dva_i,dva_i,_MM_SHUFFLE(0,3,2,1));
-				dva_j    = _mm_shuffle_ps(dva_j,dva_j,_MM_SHUFFLE(0,3,2,1));
-				
-				xmm1 = _mm_load_ss(dvda+ai2); 
-				xmm2 = _mm_load_ss(dvda+aj2);
-				xmm1 = _mm_add_ss(xmm1,dva_i);
-				xmm2 = _mm_add_ss(xmm2,dva_j);
-				_mm_store_ss(dvda+ai2,xmm1);
-				_mm_store_ss(dvda+aj2,xmm2);
-				
-				/* Load, update and store partial forces on ai1-2 and aj1-2 */
-				xmm1 = _mm_load_ss(f+ai13);
-				xmm2 = _mm_load_ss(f+ai13+1);
-				xmm3 = _mm_load_ss(f+ai13+2);
-				
-				xmm4 = _mm_load_ss(f+aj13);
-				xmm5 = _mm_load_ss(f+aj13+1);
-				xmm6 = _mm_load_ss(f+aj13+2);
-				
-				xmm1 = _mm_add_ss(xmm1,tx);
-				xmm2 = _mm_add_ss(xmm2,ty);
-				xmm3 = _mm_add_ss(xmm3,tz);
-				
-				xmm4 = _mm_sub_ss(xmm4,tx);
-				xmm5 = _mm_sub_ss(xmm5,ty);
-				xmm6 = _mm_sub_ss(xmm6,tz);
-				
-				_mm_store_ss(f+ai13,xmm1);
-				_mm_store_ss(f+ai13+1,xmm2);
-				_mm_store_ss(f+ai13+2,xmm3);
-				
-				_mm_store_ss(f+aj13,xmm4);
-				_mm_store_ss(f+aj13+1,xmm5);
-				_mm_store_ss(f+aj13+2,xmm6);
-				
-				/* ai2 and aj2 */
-				xmm1 = _mm_load_ss(f+ai23);
-				xmm2 = _mm_load_ss(f+ai23+1);
-				xmm3 = _mm_load_ss(f+ai23+2);
-				
-				xmm4 = _mm_load_ss(f+aj23);
-				xmm5 = _mm_load_ss(f+aj23+1);
-				xmm6 = _mm_load_ss(f+aj23+2);
-				
-				/* Need to shuffle tx/ty/tz */
-				tx    = _mm_shuffle_ps(tx,tx,_MM_SHUFFLE(0,3,2,1));
-				ty    = _mm_shuffle_ps(ty,ty,_MM_SHUFFLE(0,3,2,1));
-				tz    = _mm_shuffle_ps(tz,tz,_MM_SHUFFLE(0,3,2,1));
-				
-				xmm1 = _mm_add_ss(xmm1,tx);
-				xmm2 = _mm_add_ss(xmm2,ty);
-				xmm3 = _mm_add_ss(xmm3,tz);
-				
-				xmm4 = _mm_sub_ss(xmm4,tx);
-				xmm5 = _mm_sub_ss(xmm5,ty);
-				xmm6 = _mm_sub_ss(xmm6,tz);
-				
-				_mm_store_ss(f+ai23,xmm1);
-				_mm_store_ss(f+ai23+1,xmm2);
-				_mm_store_ss(f+ai23+2,xmm3);
-				
-				_mm_store_ss(f+aj23,xmm4);
-				_mm_store_ss(f+aj23+1,xmm5);
-				_mm_store_ss(f+aj23+2,xmm6);
-			}
-			else
-			{
-				/* Load, update and store chain rule terms for ai1-3 and aj1-3 atoms */
-				dva_i   = _mm_mul_ps(dva,isaj);			
-				dva_j   = _mm_mul_ps(dva,isai);
-				
-				xmm1 = _mm_load_ss(dvda+ai1); 
-				xmm2 = _mm_load_ss(dvda+aj1);
-				xmm1 = _mm_add_ss(xmm1,dva_i);
-				xmm2 = _mm_add_ss(xmm2,dva_j);
-				_mm_store_ss(dvda+ai1,xmm1);
-				_mm_store_ss(dvda+aj1,xmm2);
-				
-				/* Need to shuffle dva_i and dva_j */
-				dva_i    = _mm_shuffle_ps(dva_i,dva_i,_MM_SHUFFLE(0,3,2,1));
-				dva_j    = _mm_shuffle_ps(dva_j,dva_j,_MM_SHUFFLE(0,3,2,1));
-				
-				xmm1 = _mm_load_ss(dvda+ai2); 
-				xmm2 = _mm_load_ss(dvda+aj2);
-				xmm1 = _mm_add_ss(xmm1,dva_i);
-				xmm2 = _mm_add_ss(xmm2,dva_j);
-				_mm_store_ss(dvda+ai2,xmm1);
-				_mm_store_ss(dvda+aj2,xmm2);
-				
-				/* Need to shuffle dva_i and dva_j */
-				dva_i    = _mm_shuffle_ps(dva_i,dva_i,_MM_SHUFFLE(0,3,2,1));
-				dva_j    = _mm_shuffle_ps(dva_j,dva_j,_MM_SHUFFLE(0,3,2,1));
-				
-				xmm1 = _mm_load_ss(dvda+ai3); 
-				xmm2 = _mm_load_ss(dvda+aj3);
-				xmm1 = _mm_add_ss(xmm1,dva_i);
-				xmm2 = _mm_add_ss(xmm2,dva_j);
-				_mm_store_ss(dvda+ai3,xmm1);
-				_mm_store_ss(dvda+aj3,xmm2);
-				
-				/* Load, update and store partial forces on ai1-3 and aj1-3 */
-				xmm1 = _mm_load_ss(f+ai13);
-				xmm2 = _mm_load_ss(f+ai13+1);
-				xmm3 = _mm_load_ss(f+ai13+2);
-				
-				xmm4 = _mm_load_ss(f+aj13);
-				xmm5 = _mm_load_ss(f+aj13+1);
-				xmm6 = _mm_load_ss(f+aj13+2);
-				
-				xmm1 = _mm_add_ss(xmm1,tx);
-				xmm2 = _mm_add_ss(xmm2,ty);
-				xmm3 = _mm_add_ss(xmm3,tz);
-				
-				xmm4 = _mm_sub_ss(xmm4,tx);
-				xmm5 = _mm_sub_ss(xmm5,ty);
-				xmm6 = _mm_sub_ss(xmm6,tz);
-				
-				_mm_store_ss(f+ai13,xmm1);
-				_mm_store_ss(f+ai13+1,xmm2);
-				_mm_store_ss(f+ai13+2,xmm3);
-				
-				_mm_store_ss(f+aj13,xmm4);
-				_mm_store_ss(f+aj13+1,xmm5);
-				_mm_store_ss(f+aj13+2,xmm6);
-				
-				/* ai2 and aj2 */
-				xmm1 = _mm_load_ss(f+ai23);
-				xmm2 = _mm_load_ss(f+ai23+1);
-				xmm3 = _mm_load_ss(f+ai23+2);
-				
-				xmm4 = _mm_load_ss(f+aj23);
-				xmm5 = _mm_load_ss(f+aj23+1);
-				xmm6 = _mm_load_ss(f+aj23+2);
-				
-				/* Need to shuffle tx/ty/tz */
-				tx    = _mm_shuffle_ps(tx,tx,_MM_SHUFFLE(0,3,2,1));
-				ty    = _mm_shuffle_ps(ty,ty,_MM_SHUFFLE(0,3,2,1));
-				tz    = _mm_shuffle_ps(tz,tz,_MM_SHUFFLE(0,3,2,1));
-				
-				xmm1 = _mm_add_ss(xmm1,tx);
-				xmm2 = _mm_add_ss(xmm2,ty);
-				xmm3 = _mm_add_ss(xmm3,tz);
-				
-				xmm4 = _mm_sub_ss(xmm4,tx);
-				xmm5 = _mm_sub_ss(xmm5,ty);
-				xmm6 = _mm_sub_ss(xmm6,tz);
-				
-				_mm_store_ss(f+ai23,xmm1);
-				_mm_store_ss(f+ai23+1,xmm2);
-				_mm_store_ss(f+ai23+2,xmm3);
-				
-				_mm_store_ss(f+aj23,xmm4);
-				_mm_store_ss(f+aj23+1,xmm5);
-				_mm_store_ss(f+aj23+2,xmm6);
-				
-				/* ai3 and aj3 */
-				xmm1 = _mm_load_ss(f+ai33);
-				xmm2 = _mm_load_ss(f+ai33+1);
-				xmm3 = _mm_load_ss(f+ai33+2);
-				
-				xmm4 = _mm_load_ss(f+aj33);
-				xmm5 = _mm_load_ss(f+aj33+1);
-				xmm6 = _mm_load_ss(f+aj33+2);
-				
-				/* Need to shuffle tx/ty/tz */
-				tx    = _mm_shuffle_ps(tx,tx,_MM_SHUFFLE(0,3,2,1));
-				ty    = _mm_shuffle_ps(ty,ty,_MM_SHUFFLE(0,3,2,1));
-				tz    = _mm_shuffle_ps(tz,tz,_MM_SHUFFLE(0,3,2,1));
-				
-				xmm1 = _mm_add_ss(xmm1,tx);
-				xmm2 = _mm_add_ss(xmm2,ty);
-				xmm3 = _mm_add_ss(xmm3,tz);
-				
-				xmm4 = _mm_sub_ss(xmm4,tx);
-				xmm5 = _mm_sub_ss(xmm5,ty);
-				xmm6 = _mm_sub_ss(xmm6,tz);
-				
-				_mm_store_ss(f+ai33,xmm1);
-				_mm_store_ss(f+ai33+1,xmm2);
-				_mm_store_ss(f+ai33+2,xmm3);
-				
-				_mm_store_ss(f+aj33,xmm4);
-				_mm_store_ss(f+aj33+1,xmm5);
-				_mm_store_ss(f+aj33+2,xmm6);
-			}
-		}
-	}
-	
-	/* End processing for potential energy */
-	vgb  = _mm_movehl_ps(vgb,vgb_tot);
-	vgb_tot   = _mm_add_ps(vgb_tot,vgb);
-	vgb  = _mm_shuffle_ps(vgb_tot,vgb_tot,_MM_SHUFFLE(1,1,1,1));
-	vgb_tot   = _mm_add_ss(vgb_tot,vgb);
-	
-	_mm_store_ss(&vctot,vgb_tot);
-	
-	return vctot;
-}
-
-
 
 
 #else

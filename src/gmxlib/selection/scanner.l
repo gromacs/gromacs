@@ -102,7 +102,6 @@ COMMENT    (#.*)
     else if (state->bCmdStart)
     {
         BEGIN(cmdstart);
-        state->bCmdStart = FALSE;
     }
     else if (YYSTATE != help)
     {
@@ -113,25 +112,26 @@ COMMENT    (#.*)
 {COMMENT}
 {INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return TOK_INT; }
 {REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
-{STRING}        { yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
+{STRING}        { yylval->str = gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
-\\\n
+\\\n            { _gmx_sel_lexer_add_token(" ", 1, state); }
 ";"|\n          {
                     if (yytext[0] == ';' || state->bInteractive)
                     {
-                        state->bCmdStart = TRUE;
                         rtrim(state->pselstr);
                         return CMD_SEP;
                     }
+                    else
+                    {
+                        _gmx_sel_lexer_add_token(" ", 1, state);
+                    }
                 }
-<cmdstart><<EOF>> { yyterminate(); }
-<<EOF>>         { state->bCmdStart = TRUE; return CMD_SEP; }
 
 <cmdstart>help  { BEGIN(help); return HELP; }
 <help>{
 [[:blank:]]+
-{IDENTIFIER}    { yylval->str = strndup(yytext, yyleng); return HELP_TOPIC; }
-";"|\n          { state->bCmdStart = TRUE; return CMD_SEP; }
+{IDENTIFIER}    { yylval->str = gmx_strndup(yytext, yyleng); return HELP_TOPIC; }
+";"|\n          { return CMD_SEP; }
 .               { return INVALID; }
 }
 
@@ -146,10 +146,10 @@ and|"&&"        { ADD_TOKEN; return AND; }
 or|"||"         { ADD_TOKEN; return OR; }
 xor             { ADD_TOKEN; return XOR; }
 not|"!"         { ADD_TOKEN; return NOT; }
-{CMPOP}         { yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
+{CMPOP}         { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 
 {IDENTIFIER}    { return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
 
 [[:blank:]]+    { _gmx_sel_lexer_add_token(" ", 1, state); }
-[_[:alnum:]]+   { yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return STR; }
-.               { _gmx_sel_lexer_add_token(yytext, 1, state); return yytext[0]; }
+[_[:alnum:]]+   { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
+.               { ADD_TOKEN; return yytext[0]; }

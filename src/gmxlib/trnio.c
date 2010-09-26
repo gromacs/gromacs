@@ -70,10 +70,10 @@ static int nFloatSize(t_trnheader *sh)
   return nflsize;
 }
 
-static bool do_trnheader(t_fileio *fio,bool bRead,t_trnheader *sh, bool *bOK)
+static gmx_bool do_trnheader(t_fileio *fio,gmx_bool bRead,t_trnheader *sh, gmx_bool *bOK)
 {
   int magic=GROMACS_MAGIC;
-  static bool bFirst=TRUE;
+  static gmx_bool bFirst=TRUE;
   char buf[256];
   
   *bOK=TRUE;
@@ -145,11 +145,11 @@ void pr_trnheader(FILE *fp,int indent,char *title,t_trnheader *sh)
   }
 }
 
-static bool do_htrn(t_fileio *fio,bool bRead,t_trnheader *sh,
+static gmx_bool do_htrn(t_fileio *fio,gmx_bool bRead,t_trnheader *sh,
 		    rvec *box,rvec *x,rvec *v,rvec *f)
 {
   matrix pv;
-  bool bOK;
+  gmx_bool bOK;
 
   bOK = TRUE;
   if (sh->box_size != 0) bOK = bOK && gmx_fio_ndo_rvec(fio,box,DIM);
@@ -162,11 +162,11 @@ static bool do_htrn(t_fileio *fio,bool bRead,t_trnheader *sh,
   return bOK;
 }
 
-static bool do_trn(t_fileio *fio,bool bRead,int *step,real *t,real *lambda,
+static gmx_bool do_trn(t_fileio *fio,gmx_bool bRead,int *step,real *t,real *lambda,
 		   rvec *box,int *natoms,rvec *x,rvec *v,rvec *f)
 {
   t_trnheader *sh;
-  bool bOK;
+  gmx_bool bOK;
   
   snew(sh,1);
   if (!bRead) {
@@ -212,7 +212,7 @@ static bool do_trn(t_fileio *fio,bool bRead,int *step,real *t,real *lambda,
 void read_trnheader(const char *fn,t_trnheader *trn)
 {
   t_fileio *fio;
-  bool bOK;
+  gmx_bool bOK;
   
   fio = open_trn(fn,"r");
   if (!do_trnheader(fio,TRUE,trn,&bOK))
@@ -220,7 +220,7 @@ void read_trnheader(const char *fn,t_trnheader *trn)
   close_trn(fio);
 }
 
-bool fread_trnheader(t_fileio *fio,t_trnheader *trn, bool *bOK)
+gmx_bool fread_trnheader(t_fileio *fio,t_trnheader *trn, gmx_bool *bOK)
 {
   return do_trnheader(fio,TRUE,trn,bOK);
 }
@@ -255,13 +255,13 @@ void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
 }
 
 
-bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
+gmx_bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
 	       rvec *box,int *natoms,rvec *x,rvec *v,rvec *f)
 {
   return do_trn(fio,TRUE,step,t,lambda,box,natoms,x,v,f);
 }
 
-bool fread_htrn(t_fileio *fio,t_trnheader *trn,rvec *box,rvec *x,rvec *v,
+gmx_bool fread_htrn(t_fileio *fio,t_trnheader *trn,rvec *box,rvec *x,rvec *v,
                 rvec *f)
 {
   return do_htrn(fio,TRUE,trn,box,x,v,f);

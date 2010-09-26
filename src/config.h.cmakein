@@ -98,7 +98,7 @@
 #cmakedefine GMX_IA32_SSE
 
 /* Double-precision SSE2 instructions on ia32 */
-#undef GMX_IA32_SSE2
+#cmakedefine GMX_IA32_SSE2
 
 /* Use ia64 assembly tuned for Itanium2 */
 #cmakedefine GMX_IA64_ASM
@@ -174,7 +174,7 @@
 #cmakedefine GMX_X86_64_SSE
 
 /* Double-precision SSE2 instructions on X86_64 */
-#undef GMX_X86_64_SSE2
+#cmakedefine GMX_X86_64_SSE2
 
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
@@ -197,7 +197,7 @@
 /* Define to 1 if you have the <altivec.h> header file. */
 #cmakedefine HAVE_ALTIVEC_H
 
-/* Define to 1 if the system has the type bool. */
+/* Define to 1 if the system has the type gmx_bool. */
 #cmakedefine HAVE_BOOL
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
@@ -214,9 +214,6 @@
 
 /* Define to 1 if you have the xml2 library (-lxml2). */
 #cmakedefine HAVE_LIBXML2
-
-/* Define to 1 if you have the gsl library (-lgsl). */
-#cmakedefine HAVE_LIBGSL
 
 /* Define to 1 if you have the dl library (-ldl). */
 #cmakedefine HAVE_LIBDL
@@ -275,12 +272,6 @@
 /* Define to 1 if you have the _fileno() function. */
 #cmakedefine HAVE__FILENO
 
-/* Define to 1 if you have the copyfile() function. */
-#cmakedefine HAVE_COPYFILE
-
-/* Define to 1 if you have the Windows CopyFile() function. */
-#cmakedefine HAVE_WIN_COPYFILE
-
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H
 
@@ -316,9 +307,6 @@
 
 /* Define to 1 if yo have the <regex.h> header file. */
 #cmakedefine HAVE_REGEX_H
-
-/* Define to 1 if yo have the <copyfile.h> header file. */
-#cmakedefine HAVE_COPYFILE_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H
@@ -434,3 +422,16 @@
 
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
+
+
+/* Catch stupid CMake problems on OS X */
+#ifdef __APPLE__
+#  if ((defined(__LP64__) && __LP64__ && defined(SIZEOF_VOIDP) && SIZEOF_VOIDP<8) || ( (!defined(__LP64__) || __LP64__==0) && (defined(SIZEOF_VOIDP) && SIZEOF_VOIDP>4)))
+#    error "Inconsistency between current OS X architecture and the one used to generate original" 
+#    error "CMake configuration. This is probably caused by starting CMake with the default value"
+#    error "for CMAKE_OSX_ARCHITECTURES (blank), and then changing it. In this case all the tests"
+#    error "will have been performed with the original (now incorrect) architecture."
+#    error "To fix this, set CMAKE_OSX_ARCHITECTURES on the _command_line_ before starting CMake,"
+#    error "or create a new such entry with your choice in the GUI _before_ hitting 'configure'."
+#  endif
+#endif

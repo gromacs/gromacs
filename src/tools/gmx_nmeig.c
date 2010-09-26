@@ -66,7 +66,7 @@
 static void
 nma_full_hessian(real *           hess,
                  int              ndim,
-                 bool             bM,
+                 gmx_bool             bM,
                  t_topology *     top,
                  int              begin,
                  int              end,
@@ -125,7 +125,7 @@ nma_full_hessian(real *           hess,
 
 static void
 nma_sparse_hessian(gmx_sparsematrix_t *     sparse_hessian,
-                   bool                     bM,
+                   gmx_bool                     bM,
                    t_topology *             top,
                    int                      neig,
                    real *                   eigenvalues,
@@ -201,7 +201,7 @@ int gmx_nmeig(int argc,char *argv[])
     "standard cartesian norm (But in the mass weighted norm they would be)."
   };
     
-  static bool bM=TRUE;
+  static gmx_bool bM=TRUE;
   static int  begin=1,end=50;
   t_pargs pa[] = 
   {
@@ -226,7 +226,7 @@ int gmx_nmeig(int argc,char *argv[])
   int        natoms,ndim,nrow,ncol,count;
   char       *grpname,title[256];
   int        i,j,k,l,d,gnx;
-  bool       bSuck;
+  gmx_bool       bSuck;
   atom_id    *index;
   real       value;
   real       factor_gmx_to_omega2;

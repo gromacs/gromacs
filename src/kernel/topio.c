@@ -108,7 +108,7 @@ static int copy_nbparams(t_nbparam **param,int ftype,t_params *plist,int nr)
   return ncopy;
 }
 
-static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, int comb, bool bVerbose)
+static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, int comb, gmx_bool bVerbose)
 {
     int     i,j,ntp,nrfp,nrfpA,nrfpB,nnn;
     real    scaling;
@@ -230,7 +230,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb,
   
   *nb   = -1;
   for(i=1; (i<eNBF_NR); i++)
-    if (strcasecmp(nb_str,enbf_names[i]) == 0)
+    if (gmx_strcasecmp(nb_str,enbf_names[i]) == 0)
       *nb = i;
   if (*nb == -1)
     *nb = strtol(nb_str,NULL,10);
@@ -242,7 +242,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb,
   }
   *comb = -1;
   for(i=1; (i<eCOMB_NR); i++)
-    if (strcasecmp(comb_str,ecomb_names[i]) == 0)
+    if (gmx_strcasecmp(comb_str,ecomb_names[i]) == 0)
       *comb = i;
   if (*comb == -1)
     *comb = strtol(comb_str,NULL,10);
@@ -299,7 +299,7 @@ static char ** cpp_opts(const char *define,const char *include,
       }
     }
   }
-  if ((rptr=strrchr(infile,'/')) != NULL) {
+  if ((rptr=strrchr(infile,DIR_SEPARATOR)) != NULL) {
     buf = strdup(infile);
     buf[(int)(rptr-infile)] = '\0';
     srenew(cppopts,++ncppopts);
@@ -506,10 +506,10 @@ static char **read_topol(const char *infile,const char *outfile,
                          real        *fudgeQQ,
                          int         *nmolblock,
                          gmx_molblock_t **molblock,
-                         bool        bFEP,
-                         bool        bGenborn,
-                         bool        bZero,
-                         bool        bVerbose,
+                         gmx_bool        bFEP,
+                         gmx_bool        bGenborn,
+                         gmx_bool        bZero,
+                         gmx_bool        bVerbose,
                          warninp_t   wi)
 {
   FILE       *out;
@@ -528,7 +528,7 @@ static char **read_topol(const char *infile,const char *outfile,
   t_nbparam  **nbparam,**pair;
   t_block2   *block2;
   real       fudgeLJ=-1;    /* Multiplication factor to generate 1-4 from LJ */
-  bool       bReadDefaults,bReadMolType,bGenPairs,bWarn_copy_A_B;
+  gmx_bool       bReadDefaults,bReadMolType,bGenPairs,bWarn_copy_A_B;
   double     qt=0,qBt=0; /* total charge */
   t_bond_atomtype batype;
   int        lastcg=-1;
@@ -681,7 +681,7 @@ static char **read_topol(const char *infile,const char *outfile,
 	      get_nbparm(nb_str,comb_str,&nb_funct,&comb,wi);
 	      *combination_rule = comb;
 	      if (nscan >= 3) {
-		bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
+		bGenPairs = (gmx_strncasecmp(genpairs,"Y",1) == 0);
 		if (nb_funct != eNBF_LJ && bGenPairs) {
 		  gmx_fatal(FARGS,"Generating pair parameters is only supported with LJ non-bonded interactions");
 		}
@@ -834,7 +834,7 @@ static char **read_topol(const char *infile,const char *outfile,
 	    break;
 	  case d_molecules: {
 	    int  whichmol;
-	    bool bCouple;
+	    gmx_bool bCouple;
 	    
 	    push_mol(nmol,*molinfo,pline,&whichmol,&nrcopies,wi);
 	    mi0=&((*molinfo)[whichmol]);
@@ -844,8 +844,8 @@ static char **read_topol(const char *infile,const char *outfile,
 	    nmolb++;
 	    
         bCouple = (opts->couple_moltype != NULL &&
-                   (strcasecmp("system"    ,opts->couple_moltype) == 0 ||
-                    strcasecmp(*(mi0->name),opts->couple_moltype) == 0));
+                   (gmx_strcasecmp("system"    ,opts->couple_moltype) == 0 ||
+                    gmx_strcasecmp(*(mi0->name),opts->couple_moltype) == 0));
         if (bCouple) {
             nmol_couple += nrcopies;
         }
@@ -945,11 +945,11 @@ static char **read_topol(const char *infile,const char *outfile,
   return title;
 }
 
-char **do_top(bool         bVerbose,
+char **do_top(gmx_bool         bVerbose,
               const char   *topfile,
               const char   *topppfile,
               t_gromppopts *opts,
-              bool         bZero,
+              gmx_bool         bZero,
               t_symtab     *symtab,
               t_params     plist[],
               int          *combination_rule,
@@ -961,7 +961,7 @@ char **do_top(bool         bVerbose,
               t_inputrec   *ir,
               int          *nmolblock,
               gmx_molblock_t **molblock,
-              bool          bGenborn,
+              gmx_bool          bGenborn,
               warninp_t     wi)
 {
     /* Tmpfile might contain a long path */
@@ -1016,7 +1016,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt,unsigned char *grpnr,
     qmexcl;
   t_block2
     qmexcl2;
-  bool 
+  gmx_bool 
     *bQMMM,*blink,bexcl;
 
   /* First we search and select the QM atoms in an qm_arr array that
@@ -1242,7 +1242,7 @@ void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir)
   unsigned char *grpnr;
   int mb,mol,nat_mol,i;
   gmx_molblock_t *molb;
-  bool bQMMM;
+  gmx_bool bQMMM;
 
   grpnr = sys->groups.grpnr[egcQMMM];
 

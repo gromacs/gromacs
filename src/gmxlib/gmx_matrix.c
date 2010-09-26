@@ -33,6 +33,10 @@
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdlib.h>
 #include "typedefs.h"
 #include "smalloc.h"

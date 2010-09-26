@@ -61,7 +61,7 @@
 
 
 real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
-	       rvec gvec,rvec d,bool bQ,bool bRot,bool bMOI,matrix trans)
+	       rvec gvec,rvec d,gmx_bool bQ,gmx_bool bRot,gmx_bool bMOI,matrix trans)
 {
   int    i,ii,m;
   real   gyro,dx2,m0,Itot;
@@ -161,7 +161,7 @@ int gmx_gyrate(int argc,char *argv[])
     "of slices along the z-axis are calculated."
   };
   static int  nmol=1,nz=0;
-  static bool bQ=FALSE,bRot=FALSE,bMOI=FALSE;
+  static gmx_bool bQ=FALSE,bRot=FALSE,bMOI=FALSE;
   t_pargs pa[] = {
     { "-nmol", FALSE, etINT, {&nmol},
       "The number of molecules to analyze" },
@@ -181,7 +181,7 @@ int gmx_gyrate(int argc,char *argv[])
   rvec       *x,*x_s;
   rvec       xcm,gvec,gvec1;
   matrix     box,trans;
-  bool       bACF;
+  gmx_bool       bACF;
   real       **moi_trans=NULL;
   int        max_moi=0,delta_moi=100;
   rvec       d,d1;         /* eigenvalues of inertia tensor */
@@ -265,7 +265,7 @@ int gmx_gyrate(int argc,char *argv[])
     gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   do {
     if (nz == 0)
-      gmx_rmpbc(gpbc,box,x,x_s);
+      gmx_rmpbc_copy(gpbc,natoms,box,x,x_s);
     gyro = 0;
     clear_rvec(gvec);
     clear_rvec(d);

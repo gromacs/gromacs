@@ -142,9 +142,9 @@ static void sort_filenames(int n,char **name,char **name2)
 }
 
 static int low_fflib_search_file_end(const char *ffdir,
-                                     bool bAddCWD,
+                                     gmx_bool bAddCWD,
                                      const char *file_end,
-                                     bool bFatalError,
+                                     gmx_bool bFatalError,
                                      char ***filenames,
                                      char ***filenames_short)
 {
@@ -152,7 +152,7 @@ static int low_fflib_search_file_end(const char *ffdir,
     char *lib,*dir;
     char buf[1024];
     char *libpath;
-    bool env_is_set;
+    gmx_bool env_is_set;
     int  len_fe,len_name;
     char **fns,**fns_short;
     char dir_print[GMX_PATH_MAX];
@@ -199,20 +199,7 @@ static int low_fflib_search_file_end(const char *ffdir,
         rc = gmx_directory_open(&dirhandle,dir);
         if (rc==0)
         {
-            if (strcmp(dir,".") == 0)
-            {
-                /* Print the absolute path to the current working dir. */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-                pdum = _getcwd(dir_print,sizeof(dir_print)-1);
-#else
-                pdum =  getcwd(dir_print,sizeof(dir_print)-1);
-#endif
-            }
-            else
-            {
-                /* Print the directory dir, can be relative or absolute. */
-                strcpy(dir_print,dir);
-            }
+            strcpy(dir_print,dir);
 
             n_thisdir = 0;
             while (gmx_directory_nextfile(dirhandle,nextname,STRLEN-1)==0)
@@ -220,7 +207,8 @@ static int low_fflib_search_file_end(const char *ffdir,
                 nextname[STRLEN-1]=0;
                 if (debug)
                 {
-                    fprintf(debug,"dir '%s' file '%s'\n",dir,nextname);
+                    fprintf(debug,"dir '%s' %d file '%s'\n",
+                            dir,n_thisdir,nextname);
                 }
                 len_name = strlen(nextname);
                 /* What about case sensitivity? */
@@ -257,6 +245,7 @@ static int low_fflib_search_file_end(const char *ffdir,
                     n_thisdir++;
                 }
             }
+            gmx_directory_close(dirhandle);
 
             sort_filenames(n_thisdir,
                            fns+n-n_thisdir,
@@ -287,12 +276,12 @@ static int low_fflib_search_file_end(const char *ffdir,
     return n;
 }
 
-int fflib_search_file_end(const char *ffdir,bool bAddCWD,
+int fflib_search_file_end(const char *ffdir,
                           const char *file_end,
-                          bool bFatalError,
+                          gmx_bool bFatalError,
                           char ***filenames)
 {
-    return low_fflib_search_file_end(ffdir,bAddCWD,file_end,bFatalError,
+    return low_fflib_search_file_end(ffdir,FALSE,file_end,bFatalError,
                                      filenames,NULL);
 }
 
@@ -329,6 +318,7 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
                     n++;
                 }
             }
+            gmx_directory_close(dirhandle);
         }
         sfree(f[i]);
         sfree(f_short[i]);
@@ -341,11 +331,11 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
     return n;
 }
 
-bool fflib_fexist(const char *file)
+gmx_bool fflib_fexist(const char *file)
 {
     char *file_fullpath;
 
-    file_fullpath = low_gmxlibfn(file,FALSE);
+    file_fullpath = low_gmxlibfn(file,TRUE,FALSE);
     
     if (file_fullpath == NULL)
     {

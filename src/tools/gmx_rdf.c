@@ -72,7 +72,7 @@ static void check_box_c(matrix box)
 	      box[ZZ][XX],box[ZZ][YY],box[ZZ][ZZ]);
 }
 
-static void calc_comg(int is,int *coi,int *index,bool bMass,t_atom *atom,
+static void calc_comg(int is,int *coi,int *index,gmx_bool bMass,t_atom *atom,
 		      rvec *x,rvec *x_comg)
 {
   int  c,i,d;
@@ -158,8 +158,8 @@ static void split_group(int isize,int *index,char *grpname,
 
 static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
 		   const char *fnRDF,const char *fnCNRDF, const char *fnHQ,
-		   bool bCM,const char *close,
-		   const char **rdft,bool bXY,bool bPBC,bool bNormalize,
+		   gmx_bool bCM,const char *close,
+		   const char **rdft,gmx_bool bXY,gmx_bool bPBC,gmx_bool bNormalize,
 		   real cutoff,real binwidth,real fade,int ng,
                    const output_env_t oenv)
 {
@@ -181,7 +181,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   real       segvol,spherevol,prev_spherevol,**rdf;
   rvec       *x,dx,*x0=NULL,*x_i1,xi;
   real       *inv_segvol,invvol,invvol_sum,rho;
-  bool       bClose,*bExcl,bTop,bNonSelfExcl;
+  gmx_bool       bClose,*bExcl,bTop,bNonSelfExcl;
   matrix     box,box_pbc;
   int        **npairs;
   atom_id    ix,jx,***pairs;
@@ -361,7 +361,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     copy_mat(box,box_pbc);
     if (bPBC) {
       if (top != NULL)
-	gmx_rmpbc(gpbc,box,x,x);
+	gmx_rmpbc(gpbc,natoms,box,x);
       if (bXY) {
 	check_box_c(box);
 	clear_rvec(box_pbc[ZZ]);
@@ -659,7 +659,7 @@ int gmx_rdf(int argc,char *argv[])
     "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid",
     "spacing of which is determined by option [TT]-grid[tt]."
   };
-  static bool bCM=FALSE,bXY=FALSE,bPBC=TRUE,bNormalize=TRUE;
+  static gmx_bool bCM=FALSE,bXY=FALSE,bPBC=TRUE,bNormalize=TRUE;
   static real cutoff=0,binwidth=0.002,grid=0.05,fade=0.0,lambda=0.1,distance=10;
   static int  npixel=256,nlevel=20,ngroups=1;
   static real start_q=0.0, end_q=60.0, energy=12.0;
@@ -708,7 +708,7 @@ int gmx_rdf(int argc,char *argv[])
   };
 #define NPA asize(pa)
   const char *fnTPS,*fnNDX,*fnDAT=NULL;
-  bool       bSQ,bRDF;
+  gmx_bool       bSQ,bRDF;
   output_env_t oenv;
   
   t_filenm   fnm[] = {

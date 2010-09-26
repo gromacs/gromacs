@@ -67,7 +67,7 @@ static void string2dvec(char buf[], dvec nums)
 }
 
 static void init_pullgrp(t_pullgrp *pg,char *wbuf,
-			 bool bRef,int eGeom,char *s_vec)
+			 gmx_bool bRef,int eGeom,char *s_vec)
 {
   double d;
   int    n,m;
@@ -97,7 +97,7 @@ static void init_pullgrp(t_pullgrp *pg,char *wbuf,
 }
 
 char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
-		       t_pull *pull,bool *bStart,
+		       t_pull *pull,gmx_bool *bStart,
 		       warninp_t wi) 
 {
   int  ninp,nerror=0,i,nchar,ndim,nscan,m;
@@ -203,9 +203,9 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
       gmx_fatal(FARGS,"Less than 3 pull dimensions given in pull_dim: '%s'",
 		pulldim);
     
-    if (strncasecmp(pulldim1,"N",1) == 0) {
+    if (gmx_strncasecmp(pulldim1,"N",1) == 0) {
       pull->dim[d] = 0;
-    } else if (strncasecmp(pulldim1,"Y",1) == 0) {
+    } else if (gmx_strncasecmp(pulldim1,"Y",1) == 0) {
       pull->dim[d] = 1;
       i++;
     } else {
@@ -281,7 +281,7 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
 }
 
 void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
-		   const output_env_t oenv,bool bStart)
+		   const output_env_t oenv,gmx_bool bStart)
 {
   t_mdatoms *md;
   t_pull    *pull;

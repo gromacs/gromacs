@@ -157,7 +157,7 @@ int gmx_helix(int argc,char *argv[])
     NULL, "RAD", "TWIST", "RISE", "LEN", "NHX", "DIP", "RMS", "CPHI", 
     "RMSA", "PHI", "PSI", "HB3", "HB4", "HB5", "CD222", NULL
   };
-  static bool bCheck=FALSE,bFit=TRUE,bDBG=FALSE,bEV=FALSE;
+  static gmx_bool bCheck=FALSE,bFit=TRUE,bDBG=FALSE,bEV=FALSE;
   static int  rStart=0,rEnd=0,r0=1;
   t_pargs pa [] = {
     { "-r0", FALSE, etINT, {&r0},
@@ -180,7 +180,7 @@ int gmx_helix(int argc,char *argv[])
 
   typedef struct {
     FILE *fp,*fp2;
-    bool bfp2;
+    gmx_bool bfp2;
     const char *filenm;
     const char *title;
     const char *xaxis;
@@ -223,7 +223,7 @@ int gmx_helix(int argc,char *argv[])
   real       rms,fac;
   matrix     box;
   gmx_rmpbc_t  gpbc=NULL;
-  bool       bRange;
+  gmx_bool       bRange;
   t_filenm  fnm[] = {
     { efTPX, NULL,  NULL,   ffREAD  },
     { efNDX, NULL,  NULL,   ffREAD  },
@@ -290,14 +290,14 @@ int gmx_helix(int argc,char *argv[])
     pr_bb(stdout,nres,bb);
   }
   
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
 
   snew(xav,natoms);
   teller=0;
   do {
     if ((teller++ % 10) == 0)
       fprintf(stderr,"\rt=%.2f",t);
-    gmx_rmpbc(gpbc,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
 
     
     calc_hxprops(nres,bb,x,box);

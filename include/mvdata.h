@@ -36,28 +36,24 @@
 #ifndef _mvdata_h
 #define _mvdata_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void bcast_ir_mtop(const t_commrec *cr,
+void bcast_ir_mtop(const t_commrec *cr,
 			 t_inputrec *inputrec,gmx_mtop_t *mtop);
 /* Broadcasts ir and mtop from the master to all nodes in cr->mpi_comm_mygroup.
  */
 
-extern void bcast_state_setup(const t_commrec *cr,t_state *state);
+void bcast_state_setup(const t_commrec *cr,t_state *state);
 /* Broadcasts the state sizes and flags
  * from the master to all nodes in cr->mpi_comm_mygroup.
  * The arrays are not broadcasted.
  */
 
-extern void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc);
+void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
  * The arrays in state are allocated when bAlloc is TRUE.
  */
@@ -65,27 +61,27 @@ extern void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc);
 
 /* Routines for particle decomposition only in mvxvf.c */
 
-extern void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[]);
+void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[]);
 		     
-extern void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
+void move_rvecs(const t_commrec *cr,gmx_bool bForward,gmx_bool bSum,
 		       int left,int right,rvec vecs[],rvec buf[],
 		       int shift,t_nrnb *nrnb);
 
-extern void move_reals(const t_commrec *cr,bool bForward,bool bSum,
+void move_reals(const t_commrec *cr,gmx_bool bForward,gmx_bool bSum,
                        int left,int right,real reals[],real buf[],
                        int shift,t_nrnb *nrnb);
 
-extern void move_x(FILE *log,const t_commrec *cr,
+void move_x(FILE *log,const t_commrec *cr,
 		   int left,int right,rvec x[],t_nrnb *nrnb);
 		    
-extern void move_rborn(FILE *log,const t_commrec *cr,
+void move_rborn(FILE *log,const t_commrec *cr,
                        int left,int right,real rborn[],t_nrnb *nrnb);
 
-extern void move_f(FILE *log,const t_commrec *cr,
+void move_f(FILE *log,const t_commrec *cr,
 		   int left,int right,rvec f[],rvec fadd[],
 		   t_nrnb *nrnb);
 
-extern void move_gpol(FILE *log,const t_commrec *cr,
+void move_gpol(FILE *log,const t_commrec *cr,
                       int left,int right,real gpol[],real gpol_add[],
                       t_nrnb *nrnb);
 

@@ -325,13 +325,13 @@ static void scale_box(int natoms,rvec x[],matrix box)
   }
 }
 
-bool update_forcefield(FILE *fplog,
+gmx_bool update_forcefield(FILE *fplog,
 		       int nfile,const t_filenm fnm[],t_forcerec *fr,
 		       int natoms,rvec x[],matrix box)
 {
   static int ntry,ntried;
   int    i,j;
-  bool   bDone;
+  gmx_bool   bDone;
 
   /* First time around we have to read the parameters */  
   if (nparm == 0) {    
@@ -420,7 +420,7 @@ static real msf(int n,rvec f1[],rvec f2[])
 static void print_grid(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
 		       rvec x[],t_block *mols,real mass[],tensor pres)
 {
-  static bool bFirst = TRUE;
+  static gmx_bool bFirst = TRUE;
   static const char *desc[] = {
     "------------------------------------------------------------------------",
     "In the output from the forcefield scan we have the potential energy,", 
@@ -444,7 +444,7 @@ static void print_grid(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
   }
 }
 
-bool print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
+gmx_bool print_forcefield(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
 		      rvec x[],t_block *mols,real mass[],tensor pres)
 {
   real msf1;

@@ -51,18 +51,18 @@
 #include "copyrite.h"
 
 typedef struct {
-  bool   bSet;
+  gmx_bool   bSet;
   int    nprop,maxprop;
   char   *db;
   double def;
   char   **atomnm;
   char   **resnm;
-  bool   *bAvail;
+  gmx_bool   *bAvail;
   real   *value;
 } aprop_t;
 
 typedef struct gmx_atomprop {
-  bool       bWarned;
+  gmx_bool       bWarned;
   aprop_t    prop[epropNR];
   gmx_residuetype_t restype;
 } gmx_atomprop;
@@ -89,12 +89,12 @@ static int dbcmp_len(char *search, char *database)
 
 static int get_prop_index(aprop_t *ap,gmx_residuetype_t restype,
 			  char *resnm,char *atomnm,
-			  bool *bExact)
+			  gmx_bool *bExact)
 {
   int  i,j=NOTFOUND;
   long int alen,rlen;
   long int malen,mrlen;
-  bool bProtein,bProtWild;
+  gmx_bool bProtein,bProtWild;
   
   bProtein  = gmx_residuetype_is_protein(restype,resnm);
   bProtWild = (strcmp(resnm,"AAA")==0);
@@ -140,7 +140,7 @@ static void add_prop(aprop_t *ap,gmx_residuetype_t restype,
 		     real p,int line) 
 {
   int  i,j;
-  bool bExact;
+  gmx_bool bExact;
   
   j = get_prop_index(ap,restype,resnm,atomnm,&bExact);
   
@@ -290,7 +290,7 @@ void gmx_atomprop_destroy(gmx_atomprop_t aps)
   sfree(ap);
 }
 
-bool gmx_atomprop_query(gmx_atomprop_t aps,
+gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
 			int eprop,const char *resnm,const char *atomnm,
 			real *value)
 {
@@ -299,7 +299,7 @@ bool gmx_atomprop_query(gmx_atomprop_t aps,
   int  j;
 #define MAXQ 32
   char atomname[MAXQ],resname[MAXQ];
-  bool bExact;
+  gmx_bool bExact;
 
   set_prop(aps,eprop);
   if ((strlen(atomnm) > MAXQ-1) || (strlen(resnm) > MAXQ-1)) {
@@ -311,7 +311,7 @@ bool gmx_atomprop_query(gmx_atomprop_t aps,
     /* put digit after atomname */
     for (i=1; (i<min(MAXQ-1,strlen(atomnm))); i++)
       atomname[i-1] = atomnm[i];
-    atomname[i++] = atomnm[0];
+    atomname[i-1] = atomnm[0];
     atomname[i]   = '\0';
   } 
   else { 
@@ -355,7 +355,7 @@ int gmx_atomprop_atomnumber(gmx_atomprop_t aps,const char *elem)
   
   set_prop(aps,epropElement);
   for(i=0; (i<ap->prop[epropElement].nprop); i++) {
-    if (strcasecmp(ap->prop[epropElement].atomnm[i],elem) == 0) {
+    if (gmx_strcasecmp(ap->prop[epropElement].atomnm[i],elem) == 0) {
       return gmx_nint(ap->prop[epropElement].value[i]);
     }
   }

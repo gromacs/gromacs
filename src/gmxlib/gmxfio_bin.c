@@ -62,16 +62,16 @@
 /* This is the part that reads dummy and ascii files.  */
 
 
-static bool do_binread(t_fileio *fio, void *item, int nitem, int eio, 
+static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio, 
                        const char *desc, const char *srcfile, int line);
-static bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio, 
+static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio, 
                         const char *desc, const char *srcfile, int line);
 
 
 const t_iotype bin_iotype={do_binread, do_binwrite};
 
 
-static bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio, 
+static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio, 
                         const char *desc, const char *srcfile, int line)
 {
     size_t size = 0, wsize;
@@ -134,7 +134,7 @@ static bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
     return (wsize == nitem);
 }
 
-static bool do_binread(t_fileio *fio, void *item, int nitem, int eio, 
+static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio, 
                        const char *desc, const char *srcfile, int line)
 {
     size_t size = 0, rsize;

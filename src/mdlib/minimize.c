@@ -123,7 +123,7 @@ static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
     fprintf(out,"   Number of steps    = %12d\n",nsteps);
 }
 
-static void warn_step(FILE *fp,real ftol,bool bLastStep,bool bConstrain)
+static void warn_step(FILE *fp,real ftol,gmx_bool bLastStep,gmx_bool bConstrain)
 {
     if (bLastStep)
     {
@@ -150,7 +150,7 @@ static void warn_step(FILE *fp,real ftol,bool bLastStep,bool bConstrain)
 
 
 static void print_converged(FILE *fp,const char *alg,real ftol,
-			    gmx_large_int_t count,bool bDone,gmx_large_int_t nsteps,
+			    gmx_large_int_t count,gmx_bool bDone,gmx_large_int_t nsteps,
 			    real epot,real fmax, int nfmax, real fnorm)
 {
   char buf[STEPSTRSIZE];
@@ -408,7 +408,7 @@ void init_em(FILE *fplog,const char *title,
                   *enerd);
 
     /* Init bin for energy stuff */
-    *mdebin = init_mdebin((*outf)->fp_ene,top_global,ir); 
+    *mdebin = init_mdebin((*outf)->fp_ene,top_global,ir,NULL); 
 
     clear_rvec(mu_tot);
     calc_shifts(ems->s.box,fr->shift_vec);
@@ -448,7 +448,7 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state,rvec *f)
 
 static void write_em_traj(FILE *fplog,t_commrec *cr,
                           gmx_mdoutf_t *outf,
-                          bool bX,bool bF,const char *confout,
+                          gmx_bool bX,gmx_bool bF,const char *confout,
                           gmx_mtop_t *top_global,
                           t_inputrec *ir,gmx_large_int_t step,
                           em_state_t *state,
@@ -629,7 +629,7 @@ static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
     wallcycle_stop(wcycle,ewcDOMDEC);
 }
     
-static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
+static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
                             t_state *state_global,gmx_mtop_t *top_global,
                             em_state_t *ems,gmx_localtop_t *top,
                             t_inputrec *inputrec,
@@ -640,10 +640,10 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
                             t_graph *graph,t_mdatoms *mdatoms,
                             t_forcerec *fr,rvec mu_tot,
                             gmx_enerdata_t *enerd,tensor vir,tensor pres,
-                            gmx_large_int_t count,bool bFirst)
+                            gmx_large_int_t count,gmx_bool bFirst)
 {
   real t;
-  bool bNS;
+  gmx_bool bNS;
   int  nabnsb;
   tensor force_vir,shake_vir,ekin;
   real dvdlambda,prescorr,enercorr,dvdlcorr;
@@ -867,7 +867,7 @@ static real pr_beta(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
 
 double do_cg(FILE *fplog,t_commrec *cr,
              int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,
@@ -900,9 +900,9 @@ double do_cg(FILE *fplog,t_commrec *cr,
   real   epot_repl=0;
   real   pnorm;
   t_mdebin   *mdebin;
-  bool   converged,foundlower;
+  gmx_bool   converged,foundlower;
   rvec   mu_tot;
-  bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
+  gmx_bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
   tensor vir,pres;
   int    number_steps,neval=0,nstcg=inputrec->nstcgsteep;
   gmx_mdoutf_t *outf;
@@ -946,7 +946,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
 
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,NULL,FALSE,(double)step,
+    upd_mdebin(mdebin,FALSE,(double)step,
                mdatoms->tmass,enerd,&s_min->s,inputrec->fepvals,s_min->s.box,
                NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
@@ -1299,9 +1299,10 @@ double do_cg(FILE *fplog,t_commrec *cr,
 		step,s_min->epot,s_min->fnorm/sqrt(state_global->natoms),
 		s_min->fmax,s_min->a_fmax+1);
       /* Store the new (lower) energies */
-      upd_mdebin(mdebin,NULL,FALSE,(double)step,
+      upd_mdebin(mdebin,FALSE,(double)step,
                  mdatoms->tmass,enerd,&s_min->s,inputrec->fepvals,s_min->s.box,
                  NULL,NULL,vir,pres,NULL,mu_tot,constr);
+
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
@@ -1387,7 +1388,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
 
 double do_lbfgs(FILE *fplog,t_commrec *cr,
                 int nfile,const t_filenm fnm[],
-                const output_env_t oenv, bool bVerbose,bool bCompact,
+                const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
                 int nstglobalcomm,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
                 int stepout,
@@ -1420,10 +1421,10 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   real   diag,Epot0,Epot,EpotA,EpotB,EpotC;
   real   dgdx,dgdg,sq,yr,beta;
   t_mdebin   *mdebin;
-  bool   converged,first;
+  gmx_bool   converged,first;
   rvec   mu_tot;
   real   fnorm,fmax;
-  bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
+  gmx_bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
   tensor vir,pres;
   int    start,end,number_steps;
   gmx_mdoutf_t *outf;
@@ -1527,7 +1528,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 	
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,NULL,FALSE,(double)step,
+    upd_mdebin(mdebin,FALSE,(double)step,
                mdatoms->tmass,enerd,state,inputrec->fepvals,state->box,
                NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
@@ -1941,7 +1942,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
 		step,Epot,fnorm/sqrt(state->natoms),fmax,nfmax+1);
       /* Store the new (lower) energies */
-      upd_mdebin(mdebin,NULL,FALSE,(double)step,
+      upd_mdebin(mdebin,FALSE,(double)step,
                  mdatoms->tmass,enerd,state,inputrec->fepvals,state->box,
                  NULL,NULL,vir,pres,NULL,mu_tot,constr);
       do_log = do_per_step(step,inputrec->nstlog);
@@ -2021,7 +2022,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 
 double do_steep(FILE *fplog,t_commrec *cr,
                 int nfile, const t_filenm fnm[],
-                const output_env_t oenv, bool bVerbose,bool bCompact,
+                const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
                 int nstglobalcomm,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
                 int stepout,
@@ -2050,7 +2051,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
   real   ustep,dvdlambda,fnormn;
   gmx_mdoutf_t *outf;
   t_mdebin   *mdebin; 
-  bool   bDone,bAbort,do_x,do_f; 
+  gmx_bool   bDone,bAbort,do_x,do_f; 
   tensor vir,pres; 
   rvec   mu_tot;
   int    nsteps;
@@ -2126,10 +2127,9 @@ double do_steep(FILE *fplog,t_commrec *cr,
       
       if (s_try->epot < s_min->epot) {
 	/* Store the new (lower) energies  */
-	upd_mdebin(mdebin,NULL,FALSE,(double)count,
+	upd_mdebin(mdebin,FALSE,(double)count,
 		   mdatoms->tmass,enerd,&s_try->s,inputrec->fepvals,
                    s_try->s.box, NULL,NULL,vir,pres,NULL,mu_tot,constr);
-
 	print_ebin(outf->fp_ene,TRUE,
 		   do_per_step(steps_accepted,inputrec->nstdisreout),
 		   do_per_step(steps_accepted,inputrec->nstorireout),
@@ -2226,7 +2226,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
 
 double do_nm(FILE *fplog,t_commrec *cr,
              int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,
@@ -2255,11 +2255,11 @@ double do_nm(FILE *fplog,t_commrec *cr,
     gmx_global_stat_t gstat;
     t_graph    *graph;
     real       t,t0,lambda,lam0;
-    bool       bNS;
+    gmx_bool       bNS;
     tensor     vir,pres;
     rvec       mu_tot;
     rvec       *fneg,*dfdx;
-    bool       bSparse; /* use sparse matrix storage format */
+    gmx_bool       bSparse; /* use sparse matrix storage format */
     size_t     sz;
     gmx_sparsematrix_t * sparse_matrix = NULL;
     real *     full_matrix             = NULL;

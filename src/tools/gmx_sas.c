@@ -127,7 +127,7 @@ void do_conect(const char *fn,int n,rvec x[])
 }
 
 void connelly_plot(const char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
-		   t_symtab *symtab,int ePBC,matrix box,bool bSave)
+		   t_symtab *symtab,int ePBC,matrix box,gmx_bool bSave)
 {
   static const char *atomnm="DOT";
   static const char *resnm ="DOT";
@@ -219,8 +219,8 @@ real calc_radius(char *atom)
 }
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut,bool bSave,real minarea,bool bPBC,
-	      real dgs_default,bool bFindex, const output_env_t oenv)
+	      real qcut,gmx_bool bSave,real minarea,gmx_bool bPBC,
+	      real dgs_default,gmx_bool bFindex, const output_env_t oenv)
 {
   FILE         *fp,*fp2,*fp3=NULL,*vp;
   const char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
@@ -238,11 +238,11 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   t_topology   top;
   char         title[STRLEN];
   int          ePBC;
-  bool         bTop;
+  gmx_bool         bTop;
   t_atoms      *atoms;
-  bool         *bOut,*bPhobic;
-  bool         bConnelly;
-  bool         bResAt,bITP,bDGsol;
+  gmx_bool         *bOut,*bPhobic;
+  gmx_bool         bConnelly;
+  gmx_bool         bResAt,bITP,bDGsol;
   real         *radius,*dgs_factor=NULL,*area=NULL,*surfacedots=NULL;
   real         at_area,*atom_area=NULL,*atom_area2=NULL;
   real         *res_a=NULL,*res_area=NULL,*res_area2=NULL;
@@ -403,7 +403,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   nfr=0;
   do {
     if (bPBC)
-      gmx_rmpbc(gpbc,box,x,x);
+      gmx_rmpbc(gpbc,natoms,box,x);
     
     bConnelly = (nfr==0 && opt2bSet("-q",nfile,fnm));
     if (bConnelly) {
@@ -592,7 +592,7 @@ int gmx_sas(int argc,char *argv[])
   static int  ndots   = 24;
   static real qcut    = 0.2;
   static real minarea = 0.5, dgs_default=0;
-  static bool bSave   = TRUE,bPBC=TRUE,bFindex=FALSE;
+  static gmx_bool bSave   = TRUE,bPBC=TRUE,bFindex=FALSE;
   t_pargs pa[] = {
     { "-probe", FALSE, etREAL, {&solsize},
       "Radius of the solvent probe (nm)" },

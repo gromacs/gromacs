@@ -54,13 +54,13 @@
 
 
 
-static bool bOverAllocDD=FALSE;
+static gmx_bool bOverAllocDD=FALSE;
 #ifdef GMX_THREADS
 static tMPI_Thread_mutex_t over_alloc_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
-void set_over_alloc_dd(bool set)
+void set_over_alloc_dd(gmx_bool set)
 {
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&over_alloc_mutex);
@@ -198,7 +198,7 @@ void init_inputrec(t_inputrec *ir)
     snew(ir->fepvals,1);
 }
 
-void stupid_fill_block(t_block *grp,int natom,bool bOneIndexGroup)
+void stupid_fill_block(t_block *grp,int natom,gmx_bool bOneIndexGroup)
 {
   int i;
 
@@ -320,7 +320,7 @@ void done_molblock(gmx_molblock_t *molb)
   }
 }
 
-void done_mtop(gmx_mtop_t *mtop,bool bDoneSymtab)
+void done_mtop(gmx_mtop_t *mtop,gmx_bool bDoneSymtab)
 {
   int i;
 
@@ -552,7 +552,7 @@ void done_state(t_state *state)
   state->cg_gl_nalloc = 0;
 }
 
-static void do_box_rel(t_inputrec *ir,matrix box_rel,matrix b,bool bInit)
+static void do_box_rel(t_inputrec *ir,matrix box_rel,matrix b,gmx_bool bInit)
 {
   int d,d2;
 
@@ -628,7 +628,7 @@ void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra)
     }
 }
 
-void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
+void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo)
 {
   atoms->nr=natoms;
   atoms->nres=0;
@@ -690,7 +690,7 @@ void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
   ri->chainid = chainid;
 }
 
-void free_t_atoms(t_atoms *atoms,bool bFreeNames)
+void free_t_atoms(t_atoms *atoms,gmx_bool bFreeNames)
 {
   int i;
 
@@ -723,5 +723,72 @@ real max_cutoff(real cutoff1,real cutoff2)
     else
     {
         return max(cutoff1,cutoff2);
+    }
+}
+
+extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta)
+{
+    int i;
+    
+    dfhist->bEquil = 0;
+    dfhist->nlambda = nlambda;
+    dfhist->wl_delta = wl_delta;
+    snew(dfhist->sum_weights,dfhist->nlambda);
+    snew(dfhist->sum_dg,dfhist->nlambda);
+    snew(dfhist->sum_minvar,dfhist->nlambda);
+    snew(dfhist->sum_variance,dfhist->nlambda);
+    snew(dfhist->n_at_lam,dfhist->nlambda);
+    snew(dfhist->wl_histo,dfhist->nlambda);
+
+    /* allocate transition matrices here */
+    snew(dfhist->Tij,dfhist->nlambda);
+    snew(dfhist->Tij_empirical,dfhist->nlambda);
+    
+    for (i=0;i<dfhist->nlambda;i++) {
+        snew(dfhist->Tij[i],dfhist->nlambda);
+        snew(dfhist->Tij_empirical[i],dfhist->nlambda);
+    } 
+
+    snew(dfhist->accum_p,dfhist->nlambda);
+    snew(dfhist->accum_m,dfhist->nlambda);
+    snew(dfhist->accum_p2,dfhist->nlambda);
+    snew(dfhist->accum_m2,dfhist->nlambda);
+
+    for (i=0;i<dfhist->nlambda;i++) {
+        snew((dfhist->accum_p)[i],dfhist->nlambda);
+        snew((dfhist->accum_m)[i],dfhist->nlambda);
+        snew((dfhist->accum_p2)[i],dfhist->nlambda);
+        snew((dfhist->accum_m2)[i],dfhist->nlambda);
+    } 
+}    
+
+extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
+{
+    int i,j;
+
+    init_df_history(df_dest,df_source->nlambda,df_source->wl_delta);
+    df_dest->nlambda = df_source->nlambda;
+    df_dest->bEquil = df_source->bEquil;
+    for (i=0;i<df_dest->nlambda;i++) 
+    {
+        df_dest->sum_weights[i]  = df_source->sum_weights[i];
+        df_dest->sum_dg[i]       = df_source->sum_dg[i];
+        df_dest->sum_minvar[i]   = df_source->sum_minvar[i];
+        df_dest->sum_variance[i] = df_source->sum_variance[i];
+        df_dest->n_at_lam[i]     = df_source->n_at_lam[i];
+        df_dest->wl_histo[i]     = df_source->wl_histo[i];
+        df_dest->accum_p[i]      = df_source->accum_p[i];
+        df_dest->accum_m[i]      = df_source->accum_m[i];
+        df_dest->accum_p2[i]     = df_source->accum_p2[i];
+        df_dest->accum_m2[i]     = df_source->accum_m2[i];
+    }
+
+    for (i=0;i<df_dest->nlambda;i++) 
+    {
+        for (j=0;j<df_dest->nlambda;j++) 
+        {
+            df_dest->Tij[i][j]  = df_source->Tij[i][j];
+            df_dest->Tij_empirical[i][j]  = df_source->Tij_empirical[i][j];
+        }
     }
 }

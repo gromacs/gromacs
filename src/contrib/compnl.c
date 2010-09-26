@@ -60,7 +60,7 @@ int main(int argc,char *argv[])
   char    **fn,title[256];
   int     ***mat,nnb;
   real    mb;
-  bool    bConf;
+  gmx_bool    bConf;
   rvec    *x = NULL;
   rvec    dx;
   matrix  box;
@@ -75,7 +75,7 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   static int natoms=648;
-  static bool bSymm=TRUE;
+  static gmx_bool bSymm=TRUE;
   static t_pargs pa[] = {
     { "-nat",  FALSE, etINT, { &natoms }, "Number of atoms" },
     { "-symm", FALSE, etBOOL,{ &bSymm  }, "Symmetrize the matrices" },

@@ -46,6 +46,12 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -129,25 +135,27 @@ void upstring (char *str)
 void ltrim (char *str)
 {
   char *tr;
-  int c;
+  int i,c;
 
-  if (!str)
+  if (NULL == str)
     return;
 
-  tr = strdup (str);
-  c  = 0;
-  while ((tr[c] == ' ') || (tr[c] == '\t'))
+  c = 0;
+  while (('\0' != str[c]) && isspace(str[c]))
     c++;
-
-  strcpy (str,tr+c);
-  free (tr);
+  if (c > 0) 
+    {
+      for(i=c; ('\0' != str[i]); i++)
+	str[i-c] = str[i];
+      str[i-c] = '\0';
+    }
 }
 
 void rtrim (char *str)
 {
   int nul;
 
-  if (!str)
+  if (NULL == str)
     return;
 
   nul = strlen(str)-1;
@@ -217,7 +225,7 @@ void nice_header (FILE *out,const char *fn)
   fprintf (out,"%c\n",COMMENTSIGN);
 }
 
-int strcasecmp_min(const char *str1, const char *str2)
+int gmx_strcasecmp_min(const char *str1, const char *str2)
 {
   char ch1,ch2;
   
@@ -235,7 +243,7 @@ int strcasecmp_min(const char *str1, const char *str2)
   return 0; 
 }
 
-int strncasecmp_min(const char *str1, const char *str2, int n)
+int gmx_strncasecmp_min(const char *str1, const char *str2, int n)
 {
   char ch1,ch2;
   char *stri1, *stri2;
@@ -389,11 +397,11 @@ gmx_wcmatch(const char *pattern, const char *str)
     return (*str == 0) ? 0 : GMX_NO_WCMATCH;
 }
 
-char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)
+char *wrap_lines(const char *buf,int line_width, int indent,gmx_bool bIndentFirst)
 {
   char *b2;
   int i,i0,i2,j,b2len,lspace=0,l2space=0;
-  bool bFirst,bFitsOnLine;
+  gmx_bool bFirst,bFitsOnLine;
 
   /* characters are copied from buf to b2 with possible spaces changed
    * into newlines and extra space added for indentation.

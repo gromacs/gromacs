@@ -36,9 +36,6 @@
 #ifndef _writeps_h
 #define _writeps_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include <stdio.h>
 #include "typedefs.h"
@@ -69,58 +66,58 @@ typedef struct t_int_psdata *t_psdata;
 
 extern const char *fontnm[efontNR];
 
-extern t_psdata ps_open(const char *fn,real x1,real y1,real x2,real y2);
+t_psdata ps_open(const char *fn,real x1,real y1,real x2,real y2);
 
-extern void ps_linewidth(t_psdata ps,int lw);
-extern void ps_color(t_psdata ps,real r,real g,real b);
-extern void ps_rgb(t_psdata ps,t_rgb *rgb);
+void ps_linewidth(t_psdata ps,int lw);
+void ps_color(t_psdata ps,real r,real g,real b);
+void ps_rgb(t_psdata ps,t_rgb *rgb);
 
-extern void ps_rgb_box(t_psdata ps,t_rgb *rgb);
-extern void ps_rgb_nbox(t_psdata ps,t_rgb *rgb,real n);
-extern void ps_init_rgb_box(t_psdata ps,real xbox, real ybox);
-extern void ps_init_rgb_nbox(t_psdata ps,real xbox, real ybox);
+void ps_rgb_box(t_psdata ps,t_rgb *rgb);
+void ps_rgb_nbox(t_psdata ps,t_rgb *rgb,real n);
+void ps_init_rgb_box(t_psdata ps,real xbox, real ybox);
+void ps_init_rgb_nbox(t_psdata ps,real xbox, real ybox);
 
-extern void ps_lineto(t_psdata ps,real x,real y);
-extern void ps_linerel(t_psdata ps,real dx,real dy);
+void ps_lineto(t_psdata ps,real x,real y);
+void ps_linerel(t_psdata ps,real dx,real dy);
 
-extern void ps_moveto(t_psdata ps,real x,real y);
-extern void ps_moverel(t_psdata ps,real dx,real dy);
+void ps_moveto(t_psdata ps,real x,real y);
+void ps_moverel(t_psdata ps,real dx,real dy);
 
-extern void ps_line(t_psdata ps,real x1,real y1,real x2,real y2);
+void ps_line(t_psdata ps,real x1,real y1,real x2,real y2);
 
-extern void ps_box(t_psdata ps,real x1,real y1,real x2,real y2);
-extern void ps_fillbox(t_psdata ps,real x1,real y1,real x2,real y2);
+void ps_box(t_psdata ps,real x1,real y1,real x2,real y2);
+void ps_fillbox(t_psdata ps,real x1,real y1,real x2,real y2);
 
-extern void ps_arc(t_psdata ps,real x1,real y1,real rad,real a0,real a1);
-extern void ps_fillarc(t_psdata ps,real x1,real y1,real rad,real a0,real a1);
-extern void ps_arcslice(t_psdata ps,real xc,real yc,
+void ps_arc(t_psdata ps,real x1,real y1,real rad,real a0,real a1);
+void ps_fillarc(t_psdata ps,real x1,real y1,real rad,real a0,real a1);
+void ps_arcslice(t_psdata ps,real xc,real yc,
 			real rad1,real rad2,real a0,real a1);
-extern void ps_fillarcslice(t_psdata ps,real xc,real yc,
+void ps_fillarcslice(t_psdata ps,real xc,real yc,
 			    real rad1,real rad2,real a0,real a1);
 
-extern void ps_circle(t_psdata ps,real x1,real y1,real rad);
+void ps_circle(t_psdata ps,real x1,real y1,real rad);
 
-extern void ps_font(t_psdata ps,int font,real size);
-extern void ps_strfont(t_psdata ps,char *font,real size);
+void ps_font(t_psdata ps,int font,real size);
+void ps_strfont(t_psdata ps,char *font,real size);
 
-extern void ps_text(t_psdata ps,real x1,real y1,const char *str);
-extern void ps_ctext(t_psdata ps,real x1,real y1,const char *str,int expos);
+void ps_text(t_psdata ps,real x1,real y1,const char *str);
+void ps_ctext(t_psdata ps,real x1,real y1,const char *str,int expos);
 
-extern void ps_close(t_psdata ps);
+void ps_close(t_psdata ps);
 
-extern void ps_flip(t_psdata ps,bool bPlus);
+void ps_flip(t_psdata ps,gmx_bool bPlus);
 /* Rotate over 90 (bPlus) or -90 (!bPlus) degrees */
 
-extern void ps_rotate(t_psdata ps,real angle);
+void ps_rotate(t_psdata ps,real angle);
 
-extern void ps_translate(t_psdata ps,real x,real y);
+void ps_translate(t_psdata ps,real x,real y);
 
-extern void ps_setorigin(t_psdata ps);
-extern void ps_unsetorigin(t_psdata ps);
+void ps_setorigin(t_psdata ps);
+void ps_unsetorigin(t_psdata ps);
 
-extern void viewps(char *fn);
+void viewps(char *fn);
 
-extern void ps_comment(t_psdata ps,const char *s);
+void ps_comment(t_psdata ps,const char *s);
 
 #ifdef __cplusplus
 }

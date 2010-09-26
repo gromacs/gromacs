@@ -376,18 +376,18 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options ! */
-  bool bCart        = FALSE;
-  bool bPPPME       = FALSE;
-  bool bPartDec     = FALSE;
-  bool bDDBondCheck = TRUE;
-  bool bDDBondComm  = TRUE;
-  bool bVerbose     = FALSE;
-  bool bCompact     = TRUE;
-  bool bSepPot      = FALSE;
-  bool bRerunVSite  = FALSE;
-  bool bIonize      = FALSE;
-  bool bConfout     = TRUE;
-  bool bReproducible = FALSE;
+  gmx_bool bCart        = FALSE;
+  gmx_bool bPPPME       = FALSE;
+  gmx_bool bPartDec     = FALSE;
+  gmx_bool bDDBondCheck = TRUE;
+  gmx_bool bDDBondComm  = TRUE;
+  gmx_bool bVerbose     = FALSE;
+  gmx_bool bCompact     = TRUE;
+  gmx_bool bSepPot      = FALSE;
+  gmx_bool bRerunVSite  = FALSE;
+  gmx_bool bIonize      = FALSE;
+  gmx_bool bConfout     = TRUE;
+  gmx_bool bReproducible = FALSE;
     
   int  npme=-1;
   int  nmultisim=0;
@@ -406,9 +406,9 @@ int main(int argc,char *argv[])
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
-  bool bAppendFiles=TRUE;
-  bool bKeepAndNumCPT=FALSE;
-  bool bResetCountersHalfWay=FALSE;
+  gmx_bool bAppendFiles=TRUE;
+  gmx_bool bKeepAndNumCPT=FALSE;
+  gmx_bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
 
@@ -492,7 +492,7 @@ int main(int argc,char *argv[])
   unsigned long Flags, PCA_Flags;
   ivec     ddxyz;
   int      dd_node_order;
-  bool     bAddPart;
+  gmx_bool     bAddPart;
   FILE     *fplog,*fptest;
   int      sim_part,sim_part_fn;
   const char *part_suffix=".part";
@@ -618,6 +618,10 @@ int main(int argc,char *argv[])
       please_cite(fplog,"Spoel2005a");
       please_cite(fplog,"Lindahl2001a");
       please_cite(fplog,"Berendsen95a");
+  }
+  else if (!MASTER(cr) && bSepPot)
+  {
+      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
   }
   else
   {

@@ -143,7 +143,7 @@ static void check_viol(FILE *log,t_commrec *cr,
   t_iatom *forceatoms;
   int     i,j,nat,n,type,nviol,ndr,label;
   real    ener,rt,mviol,tviol,viol,lam,dvdl,drt;
-  static  bool bFirst=TRUE;
+  static  gmx_bool bFirst=TRUE;
   
   lam  =0;
   dvdl =0;
@@ -222,7 +222,7 @@ static void check_viol(FILE *log,t_commrec *cr,
 
 typedef struct {
   int  index;
-  bool bCore;
+  gmx_bool bCore;
   real up1,r,rT3,rT6,viol,violT3,violT6;
 } t_dr_stats;
 
@@ -246,7 +246,7 @@ static void dump_dump(FILE *log,int ndr,t_dr_stats drs[])
   static const char *core[] = { "All restraints", "Core restraints" };
   static const char *tp[]   = { "linear", "third power", "sixth power" };
   real viol_tot,viol_max,viol=0;
-  bool bCore;
+  gmx_bool bCore;
   int  nviol,nrestr;
   int  i,kkk;
 
@@ -292,7 +292,7 @@ static void dump_dump(FILE *log,int ndr,t_dr_stats drs[])
   }
 }
 
-static void dump_viol(FILE *log,int ndr,t_dr_stats *drs,bool bLinear)
+static void dump_viol(FILE *log,int ndr,t_dr_stats *drs,gmx_bool bLinear)
 {
   int i;
   
@@ -307,10 +307,10 @@ static void dump_viol(FILE *log,int ndr,t_dr_stats *drs,bool bLinear)
   }
 }
 
-static bool is_core(int i,int isize,atom_id index[])
+static gmx_bool is_core(int i,int isize,atom_id index[])
 {
   int kk;
-  bool bIC = FALSE;
+  gmx_bool bIC = FALSE;
   
   for(kk=0; !bIC && (kk<isize); kk++)
     bIC = (index[kk] == i);
@@ -441,7 +441,7 @@ static void init_dr_res(t_dr_result *dr,int ndr)
 
 static void dump_disre_matrix(const char *fn,t_dr_result *dr,int ndr,
 			      int nsteps,t_idef *idef,gmx_mtop_t *mtop,
-			      real max_dr,int nlevels,bool bThird)
+			      real max_dr,int nlevels,gmx_bool bThird)
 {
   FILE     *fp;
   int      *resnr;
@@ -564,7 +564,7 @@ int gmx_disre(int argc,char *argv[])
   static int  ntop      = 0;
   static int  nlevels   = 20;
   static real max_dr    = 0;
-  static bool bThird    = TRUE;
+  static gmx_bool bThird    = TRUE;
   t_pargs pa[] = {
     { "-ntop", FALSE, etINT,  {&ntop},
       "Number of large violations that are stored in the log file every step" },
@@ -593,7 +593,7 @@ int gmx_disre(int argc,char *argv[])
   real        t;
   rvec        *x,*f,*xav=NULL;
   matrix      box;
-  bool        bPDB;
+  gmx_bool        bPDB;
   int         isize;
   atom_id     *index=NULL,*ind_fit=NULL;
   char        *grpname;
@@ -723,7 +723,7 @@ int gmx_disre(int argc,char *argv[])
       if (ir.bPeriodicMols)
 	set_pbc(&pbc,ir.ePBC,box);
       else
-	gmx_rmpbc(gpbc,box,x,x);
+	gmx_rmpbc(gpbc,natoms,box,x);
     }
     
     if (clust) {

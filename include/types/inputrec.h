@@ -36,11 +36,6 @@
 #define _inputrec_h_
 
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include "simple.h"
 #include "../sysstuff.h"
 
@@ -89,14 +84,14 @@ typedef struct {
   int     *QMbasis;     /* Basisset in the QM calculation               */
   int     *QMcharge;    /* Total charge in the QM region                */
   int     *QMmult;      /* Spin multiplicicty in the QM region          */
-  bool    *bSH;         /* surface hopping (diabatic hop only)          */
+  gmx_bool    *bSH;         /* surface hopping (diabatic hop only)          */
   int     *CASorbitals; /* number of orbiatls in the active space       */
   int     *CASelectrons;/* number of electrons in the active space      */
   real    *SAon;        /* at which gap (A.U.) the SA is switched on    */
   real    *SAoff;
   int     *SAsteps;     /* in how many steps SA goes from 1-1 to 0.5-0.5*/
-  bool    *bOPT;
-  bool    *bTS;
+  gmx_bool    *bOPT;
+  gmx_bool    *bTS;
 } t_grpopts;
 
 enum { epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS };
@@ -131,19 +126,24 @@ typedef struct {
   int init_fep_state;    /* the initial number of the state                   */
   double delta_lambda;	 /* change of lambda per time step (fraction of (0.1) */
   int  nstfep;           /* How frequently to calculate foreign lambdas       */
-  bool bPrintEnergy;     /* Whether to print the energy in the dhdl           */
+  gmx_bool bPrintEnergy; /* Whether to print the energy in the dhdl           */
   int  n_lambda;         /* The number of foreign lambda points               */
   double **all_lambda;   /* The array of all lambda values                    */
   real sc_alpha;         /* free energy soft-core parameter                   */
   int  sc_power;         /* lambda power for soft-core interactions           */
   real sc_sigma;         /* free energy soft-core sigma when c6 or c12=0      */
-  bool bScCoul;           /* use softcore for the coulomb portion as well 
-                             (default FALSE) */ 
-  bool separate_dvdl[efptNR]; /* whether to print the dvdl term associated with 
-                                 this term; if it is not specified as separate, 
-                                 it is lumped with the FEP term */  
-  int dh_table_size;         /* The maximum table size for the dH table      */
-  double dh_table_spacing;   /* The spacing for the dH table              */
+  real sc_sigma_min;     /* free energy soft-core sigma for ?????             */
+  gmx_bool bScCoul;      /* use softcore for the coulomb portion as well 
+			    (default FALSE) */ 
+  gmx_bool separate_dvdl[efptNR]; /* whether to print the dvdl term associated with 
+				     this term; if it is not specified as separate, 
+				     it is lumped with the FEP term */  
+  int separate_dhdl_file;    /* whether to write a separate dhdl.xvg file
+				note: NOT a gmx_bool, but an enum */
+  int  dhdl_derivatives;     /* whether to calculate+write dhdl derivatives
+				note: NOT a gmx_bool, but an enum */
+  int dh_hist_size;         /* The maximum table size for the dH histogram      */
+  double dh_hist_spacing;   /* The spacing for the dH histogram              */
   int elamstats;             /* which type of move updating do we use for lambda monte carlo (or no for none) */
   int elmcmove;              /* what move set will be we using -- Gibbs, or MH */
   int elmceq;                /* the method we use to decide of we have equilibrated the weights */
@@ -153,12 +153,11 @@ typedef struct {
   int equil_steps;           /* after equil_steps steps we stop equilibrating the weights */
   int equil_samples;         /* after equil_samples total samples (steps/nstfep), we stop equilibrating the weights */
   int mc_seed;               /* random number seed for lambda mc switches */
-  bool minvar;               /* whether to use minumum variance weighting */
+  gmx_bool minvar;               /* whether to use minumum variance weighting */
   int minvarmin;             /* the number of samples needed before kicking into minvar routine */
   real minvar_const;         /* the offset for the variance in MinVar */
   int c_range;               /* range of cvalues used for BAR */
-
-  bool bSymmetrizedTMatrix;  /* whether to print symmetrized matrices */
+  gmx_bool bSymmetrizedTMatrix;  /* whether to print symmetrized matrices */
   int  nstTij;                /* How frequently to print the transition matrices */
   int  lmc_repeats;          /* number of repetitions in the MC lambda jumps */  /*MRS -- VERIFY THIS */
   int  lmc_forced_nstart;    /* minimum number of samples for each state before free samplin */ /* MRS -- VERIFY THIS! */
@@ -166,7 +165,7 @@ typedef struct {
   real  wl_scale;            /* scaling factor for wang-landau */
   real  wl_ratio;            /* ratio between largest and smallest number for freezing the weights */
   real  init_wl_delta;       /* starting delta for wang-landau */
-  bool init_weights;         /* did we initialize the weights? */
+  gmx_bool init_weights;         /* did we initialize the weights? */
   real *init_lambda_weights; /* user-specified initial weights to start with  */
   real mc_temp;              /* To override the main temperature, or define it if it's not defined */
 } t_lambda;
@@ -182,9 +181,9 @@ typedef struct {
   int        nstfout;     /* Output frequency for pull f */
   int        ePBC;        /* the boundary conditions */
   int        npbcdim;     /* do pbc in dims 0 <= dim < npbcdim */
-  bool       bRefAt;      /* do we need reference atoms for a group COM ? */
+  gmx_bool       bRefAt;      /* do we need reference atoms for a group COM ? */
   int        cosdim;      /* dimension for cosine weighting, -1 if none */
-  bool       bVirial;     /* do we need to add the pull virial? */
+  gmx_bool       bVirial;     /* do we need to add the pull virial? */
   t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
   t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
   rvec       *rbuf;       /* COM calculation buffer */
@@ -224,10 +223,10 @@ typedef struct {
                         /* the real/reciprocal space relative weight    */
   int  ewald_geometry;  /* normal/3d ewald, or pseudo-2d LR corrections */
   real epsilon_surface; /* Epsilon for PME dipole correction            */
-  bool bOptFFT;         /* optimize the fft plan at start               */
+  gmx_bool bOptFFT;         /* optimize the fft plan at start               */
   int  ePBC;		/* Type of periodic boundary conditions		*/
   int  bPeriodicMols;   /* Periodic molecules                           */
-  bool bContinuation;   /* Continuation run: starting state is correct	*/
+  gmx_bool bContinuation;   /* Continuation run: starting state is correct	*/
   int  etc;		/* temperature coupling         		*/
   int  nsttcouple;      /* interval in steps for temperature coupling   */
   int  epc;		/* pressure coupling                            */
@@ -273,7 +272,7 @@ typedef struct {
   int  eDisre;          /* Type of distance restraining                 */
   real dr_fc;		    /* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
-  bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
+  gmx_bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
   int  nstdisreout;     /* frequency of writing pair distances to enx   */ 
   real dr_tau;		    /* time constant for memory function in disres 	*/
   real orires_fc;	    /* force constant for orientational restraints  */
@@ -293,7 +292,7 @@ typedef struct {
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
   int  nLincsIter;      /* Number of iterations in the final Lincs step */
-  bool bShakeSOR;       /* Use successive overrelaxation for shake      */
+  gmx_bool bShakeSOR;       /* Use successive overrelaxation for shake      */
   real bd_fric;         /* Friction coefficient for BD (amu/ps)         */
   int  ld_seed;         /* Random seed for SD and BD                    */
   int  nwall;           /* The number of walls                          */
@@ -317,7 +316,7 @@ typedef struct {
   t_grpopts opts;	/* Group options				*/
   t_cosines ex[DIM];	/* Electric field stuff	(spatial part)		*/
   t_cosines et[DIM];	/* Electric field stuff	(time part)		*/
-  bool bQMMM;           /* QM/MM calculation                            */ 
+  gmx_bool bQMMM;           /* QM/MM calculation                            */ 
   int  QMconstraints;   /* constraints on QM bonds                      */
   int  QMMMscheme;      /* Scheme: ONIOM or normal                      */
   real scalefactor;     /* factor for scaling the MM charges in QM calc.*/

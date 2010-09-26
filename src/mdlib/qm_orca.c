@@ -1,3 +1,38 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ * $Id: gmx_matrix.c,v 1.4 2008/12/02 18:27:57 spoel Exp $
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 4.5
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2008, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+ 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
+ * And Hey:
+ * Groningen Machine for Chemical Simulation
+ */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -86,7 +121,7 @@ void write_orca_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
  snew(buf,200);
  if (addInputFile!=NULL) {
      while (!feof(addInputFile)) {
-         if (fgets(buf , 200 , addInputFile) != '\0' ) 
+         if (fgets(buf, 200, addInputFile) != NULL)
              fputs(buf, out);
      }
  }
@@ -220,8 +255,6 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
  t_QMMMrec
    *QMMMrec;
  QMMMrec = fr->qr;
- sprintf(orca_xyzFilename,"%s.xyz",qm->orca_basename);
- xyz=fopen(orca_xyzFilename,"r");
  /* in case of an optimization, the coordinates are printed in the
   * xyz file, the energy and gradients for the QM part are stored in the engrad file
   * and the gradients for the point charges are stored in the pc file.
@@ -231,10 +264,15 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
   */
 
  if(qm->bTS||qm->bOPT){
-     fgets(buf,300,xyz);
-     fgets(buf,300,xyz);
+     sprintf(orca_xyzFilename,"%s.xyz",qm->orca_basename);
+     xyz=fopen(orca_xyzFilename,"r");
+     if (fgets(buf,300,xyz) == NULL)
+         gmx_fatal(FARGS, "Unexpected end of ORCA output");
+     if (fgets(buf,300,xyz) == NULL)
+         gmx_fatal(FARGS, "Unexpected end of ORCA output");
      for(i=0;i<qm->nrQMatoms;i++){
-         fgets(buf,300,xyz);
+         if (fgets(buf,300,xyz) == NULL)
+             gmx_fatal(FARGS, "Unexpected end of ORCA output");
 #ifdef GMX_DOUBLE
          sscanf(buf,"%s%lf%lf%lf\n",
                     tmp,
@@ -252,7 +290,7 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
              qm->xQM[i][j]*=0.1;
          }
      }
- fclose(xyz);
+     fclose(xyz);
  }
  sprintf(orca_engradFilename,"%s.engrad",qm->orca_basename);
  engrad=fopen(orca_engradFilename,"r");
@@ -261,11 +299,13 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
  /* we can skip the first seven lines
   */
  for (j=0;j<7;j++){
-     fgets(buf,300,engrad);
+     if (fgets(buf,300,engrad) == NULL)
+         gmx_fatal(FARGS, "Unexpected end of ORCA output");
  }
  /* now comes the energy
   */
- fgets(buf,300,engrad);
+ if (fgets(buf,300,engrad) == NULL)
+     gmx_fatal(FARGS, "Unexpected end of ORCA output");
 #ifdef GMX_DOUBLE
  sscanf(buf,"%lf\n",&QMener);
 #else
@@ -274,7 +314,8 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
  /* we can skip the next three lines
   */
  for (j=0;j<3;j++){
-     fgets(buf,300,engrad);
+     if (fgets(buf,300,engrad) == NULL)
+         gmx_fatal(FARGS, "Unexpected end of ORCA output");
  }
  /* next lines contain the gradients of the QM atoms
   * now comes the gradient, one value per line:
@@ -283,7 +324,8 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
  
  for(i=0;i<3*qm->nrQMatoms;i++){
      k = i/3;
-     fgets(buf,300,engrad);
+     if (fgets(buf,300,engrad) == NULL)
+         gmx_fatal(FARGS, "Unexpected end of ORCA output");
 #ifdef GMX_DOUBLE
      if (i%3==0) 
          sscanf(buf,"%lf\n", &QMgrad[k][XX]);
@@ -311,9 +353,11 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
       */
      /* we can skip the first line
       */
-     fgets(buf,300,pcgrad);
+     if (fgets(buf,300,pcgrad) == NULL)
+         gmx_fatal(FARGS, "Unexpected end of ORCA output");
      for(i=0;i<mm->nrMMatoms;i++){
-         fgets(buf,300,pcgrad);
+         if (fgets(buf,300,pcgrad) == NULL)
+             gmx_fatal(FARGS, "Unexpected end of ORCA output");
     #ifdef GMX_DOUBLE
          sscanf(buf,"%lf%lf%lf\n",
                     &MMgrad[i][XX],

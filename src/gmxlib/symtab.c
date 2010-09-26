@@ -124,7 +124,7 @@ static char **enter_buf(t_symtab *symtab,char *name)
 {
   int      i;
   t_symbuf *symbuf;
-  bool     bCont;
+  gmx_bool     bCont;
   
   if (symtab->symbuf == NULL)
     symtab->symbuf=new_symbuf();

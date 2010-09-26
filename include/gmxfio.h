@@ -36,10 +36,6 @@
 #ifndef _gmxfio_h
 #define _gmxfio_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -114,36 +110,36 @@ int gmx_fio_fclose(FILE *fp);
  * Change properties of the open file
  ********************************************************/
 
-extern void gmx_fio_setprecision(t_fileio *fio,bool bDouble);
+void gmx_fio_setprecision(t_fileio *fio,gmx_bool bDouble);
 /* Select the floating point precision for reading and writing files */
 
-extern char *gmx_fio_getname(t_fileio *fio);
+char *gmx_fio_getname(t_fileio *fio);
 /* Return the filename corresponding to the fio index */
 
-extern int gmx_fio_getftp(t_fileio *fio);
+int gmx_fio_getftp(t_fileio *fio);
 /* Return the filetype corresponding to the fio index. 
     There is as of now no corresponding setftp function because the file
     was opened as a specific file type and changing that midway is most 
     likely an evil hack. */
 
-extern void gmx_fio_setdebug(t_fileio *fio,bool bDebug);
+void gmx_fio_setdebug(t_fileio *fio,gmx_bool bDebug);
 /* Set the debug mode */
 
-extern bool gmx_fio_getdebug(t_fileio *fio);
+gmx_bool gmx_fio_getdebug(t_fileio *fio);
 /* Return  whether debug mode is on in fio  */
 
-extern bool gmx_fio_getread(t_fileio *fio);
+gmx_bool gmx_fio_getread(t_fileio *fio);
 /* Return  whether read mode is on in fio  */
 
 
-extern void gmx_fio_checktype(t_fileio *fio);
+void gmx_fio_checktype(t_fileio *fio);
 /* Check whether the fio is of a sane type */
 
 /***************************************************
  * FILE Operations
  ***************************************************/
 
-extern void gmx_fio_rewind(t_fileio *fio);
+void gmx_fio_rewind(t_fileio *fio);
 /* Rewind the tpa file in fio */
 
 int gmx_fio_flush(t_fileio *fio);
@@ -156,16 +152,16 @@ int gmx_fio_fsync(t_fileio *fio);
    can cause dramatically slowed down IO performance. Some OSes (Linux, 
    for example), may implement fsync as a full sync() point. */
 
-extern gmx_off_t gmx_fio_ftell(t_fileio *fio);
+gmx_off_t gmx_fio_ftell(t_fileio *fio);
 /* Return file position if possible */
 
-extern int gmx_fio_seek(t_fileio *fio,gmx_off_t fpos);
+int gmx_fio_seek(t_fileio *fio,gmx_off_t fpos);
 /* Set file position if possible, quit otherwise */
 
-extern FILE *gmx_fio_getfp(t_fileio *fio);
+FILE *gmx_fio_getfp(t_fileio *fio);
 /* Return the file pointer itself */
 
-extern XDR *gmx_fio_getxdr(t_fileio *fio);
+XDR *gmx_fio_getxdr(t_fileio *fio);
 /* Return the file pointer itself */
 
 
@@ -220,16 +216,16 @@ int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
                          unsigned char digest[]);
 
 
-extern int xtc_seek_frame(t_fileio *fio, int frame, int natoms);
+int xtc_seek_frame(t_fileio *fio, int frame, int natoms);
 
-extern int xtc_seek_time(t_fileio *fio, real time, int natoms);
+int xtc_seek_time(t_fileio *fio, real time, int natoms);
 
 	
 /* Add this to the comment string for debugging */
-extern void gmx_fio_set_comment(t_fileio *fio, const char *comment);
+void gmx_fio_set_comment(t_fileio *fio, const char *comment);
 
 /* Remove previously set comment */
-extern void gmx_fio_unset_comment(t_fileio *fio);
+void gmx_fio_unset_comment(t_fileio *fio);
 
 
 
@@ -240,143 +236,143 @@ extern void gmx_fio_unset_comment(t_fileio *fio);
 
 
 /* basic reading & writing */
-bool gmx_fio_reade_real(t_fileio *fio, real *item, 
+gmx_bool gmx_fio_reade_real(t_fileio *fio, real *item, 
                         const char *desc, const char *srcfile, int line);
-bool gmx_fio_reade_float(t_fileio *fio, float *item, 
+gmx_bool gmx_fio_reade_float(t_fileio *fio, float *item, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_reade_double(t_fileio *fio, double *item, 
+gmx_bool gmx_fio_reade_double(t_fileio *fio, double *item, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_reade_int(t_fileio *fio, int *item, 
+gmx_bool gmx_fio_reade_int(t_fileio *fio, int *item, 
                        const char *desc, const char *srcfile, int line);
-bool gmx_fio_reade_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, 
+gmx_bool gmx_fio_reade_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, 
                                  const char *desc, const char *srcfile, int line);
-bool gmx_fio_reade_uchar(t_fileio *fio, unsigned char *item, 
+gmx_bool gmx_fio_reade_uchar(t_fileio *fio, unsigned char *item, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_reade_ushort(t_fileio *fio, unsigned short *item, 
+gmx_bool gmx_fio_reade_ushort(t_fileio *fio, unsigned short *item, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_reade_rvec(t_fileio *fio, rvec *item, 
+gmx_bool gmx_fio_reade_rvec(t_fileio *fio, rvec *item, 
                         const char *desc, const char *srcfile, int line);
-bool gmx_fio_reade_ivec(t_fileio *fio, ivec *item, 
+gmx_bool gmx_fio_reade_ivec(t_fileio *fio, ivec *item, 
                         const char *desc, const char *srcfile, int line);
-bool gmx_fio_reade_string(t_fileio *fio, char *item, 
+gmx_bool gmx_fio_reade_string(t_fileio *fio, char *item, 
                           const char *desc, const char *srcfile, int line);
 
-bool gmx_fio_writee_real(t_fileio *fio, real item, 
+gmx_bool gmx_fio_writee_real(t_fileio *fio, real item, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_writee_float(t_fileio *fio, float item, 
+gmx_bool gmx_fio_writee_float(t_fileio *fio, float item, 
                            const char *desc, const char *srcfile, int line);
-bool gmx_fio_writee_double(t_fileio *fio, double item, 
+gmx_bool gmx_fio_writee_double(t_fileio *fio, double item, 
                            const char *desc, const char *srcfile, int line);
-bool gmx_fio_writee_int(t_fileio *fio, int item, 
+gmx_bool gmx_fio_writee_int(t_fileio *fio, int item, 
                         const char *desc, const char *srcfile, int line);
-bool gmx_fio_writee_gmx_large_int(t_fileio *fio, gmx_large_int_t item, 
+gmx_bool gmx_fio_writee_gmx_large_int(t_fileio *fio, gmx_large_int_t item, 
                                   const char *desc, const char *srcfile, int line);
-bool gmx_fio_writee_uchar(t_fileio *fio, unsigned char item, 
+gmx_bool gmx_fio_writee_uchar(t_fileio *fio, unsigned char item, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_writee_ushort(t_fileio *fio, unsigned short item, 
+gmx_bool gmx_fio_writee_ushort(t_fileio *fio, unsigned short item, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_writee_rvec(t_fileio *fio, rvec *item, 
+gmx_bool gmx_fio_writee_rvec(t_fileio *fio, rvec *item, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_writee_ivec(t_fileio *fio, ivec *item, 
+gmx_bool gmx_fio_writee_ivec(t_fileio *fio, ivec *item, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_writee_string(t_fileio *fio, const char *item, 
+gmx_bool gmx_fio_writee_string(t_fileio *fio, const char *item, 
                            const char *desc, const char *srcfile, int line);
 
 /* reading or writing, depending on the file's opening mode string */
-bool gmx_fio_doe_real(t_fileio *fio, real *item, 
+gmx_bool gmx_fio_doe_real(t_fileio *fio, real *item, 
                       const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_float(t_fileio *fio, float *item, 
+gmx_bool gmx_fio_doe_float(t_fileio *fio, float *item, 
                        const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_double(t_fileio *fio, double *item, 
+gmx_bool gmx_fio_doe_double(t_fileio *fio, double *item, 
                         const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_bool(t_fileio *fio, bool *item, 
+gmx_bool gmx_fio_doe_gmx_bool(t_fileio *fio, gmx_bool *item, 
                      const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_int(t_fileio *fio, int *item, 
+gmx_bool gmx_fio_doe_int(t_fileio *fio, int *item, 
                      const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, 
+gmx_bool gmx_fio_doe_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, 
                                const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_uchar(t_fileio *fio, unsigned char *item, 
+gmx_bool gmx_fio_doe_uchar(t_fileio *fio, unsigned char *item, 
                        const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_ushort(t_fileio *fio, unsigned short *item, 
+gmx_bool gmx_fio_doe_ushort(t_fileio *fio, unsigned short *item, 
                        const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_rvec(t_fileio *fio, rvec *item, 
+gmx_bool gmx_fio_doe_rvec(t_fileio *fio, rvec *item, 
                       const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_ivec(t_fileio *fio, ivec *item, 
+gmx_bool gmx_fio_doe_ivec(t_fileio *fio, ivec *item, 
                       const char *desc, const char *srcfile, int line);
-bool gmx_fio_doe_string(t_fileio *fio, char *item, 
+gmx_bool gmx_fio_doe_string(t_fileio *fio, char *item, 
                         const char *desc, const char *srcfile, int line);
 
 
 
 
 /* array reading & writing */
-bool gmx_fio_nreade_real(t_fileio *fio, real *item, int n, 
+gmx_bool gmx_fio_nreade_real(t_fileio *fio, real *item, int n, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_nreade_float(t_fileio *fio, float *item, int n, 
+gmx_bool gmx_fio_nreade_float(t_fileio *fio, float *item, int n, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_nreade_double(t_fileio *fio, double *item, int n, 
+gmx_bool gmx_fio_nreade_double(t_fileio *fio, double *item, int n, 
                            const char *desc, const char *srcfile, int line);
-bool gmx_fio_nreade_int(t_fileio *fio, int *item, int n, 
+gmx_bool gmx_fio_nreade_int(t_fileio *fio, int *item, int n, 
                         const char *desc, const char *srcfile, int line);
-bool gmx_fio_nreade_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, int n, 
+gmx_bool gmx_fio_nreade_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, int n, 
                                   const char *desc, const char *srcfile, 
                                   int line);
-bool gmx_fio_nreade_uchar(t_fileio *fio, unsigned char *item, int n, 
+gmx_bool gmx_fio_nreade_uchar(t_fileio *fio, unsigned char *item, int n, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_nreade_ushort(t_fileio *fio, unsigned short *item, int n, 
+gmx_bool gmx_fio_nreade_ushort(t_fileio *fio, unsigned short *item, int n, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_nreade_rvec(t_fileio *fio, rvec *item, int n, 
+gmx_bool gmx_fio_nreade_rvec(t_fileio *fio, rvec *item, int n, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_nreade_ivec(t_fileio *fio, ivec *item, int n, 
+gmx_bool gmx_fio_nreade_ivec(t_fileio *fio, ivec *item, int n, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_nreade_string(t_fileio *fio, char *item[], int n, 
+gmx_bool gmx_fio_nreade_string(t_fileio *fio, char *item[], int n, 
                            const char *desc, const char *srcfile, int line);
 
-bool gmx_fio_nwritee_real(t_fileio *fio, const real *item, int n, 
+gmx_bool gmx_fio_nwritee_real(t_fileio *fio, const real *item, int n, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_nwritee_float(t_fileio *fio, const float *item, int n, 
+gmx_bool gmx_fio_nwritee_float(t_fileio *fio, const float *item, int n, 
                            const char *desc, const char *srcfile, int line);
-bool gmx_fio_nwritee_double(t_fileio *fio, const double *item, int n, 
+gmx_bool gmx_fio_nwritee_double(t_fileio *fio, const double *item, int n, 
                             const char *desc, const char *srcfile, int line);
-bool gmx_fio_nwritee_int(t_fileio *fio, const int *item, int n, 
+gmx_bool gmx_fio_nwritee_int(t_fileio *fio, const int *item, int n, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_nwritee_gmx_large_int(t_fileio *fio, 
+gmx_bool gmx_fio_nwritee_gmx_large_int(t_fileio *fio, 
                                    const gmx_large_int_t *item, int n,
                                    const char *desc, const char *srcfile, 
                                    int line);
-bool gmx_fio_nwritee_uchar(t_fileio *fio, const unsigned char *item, int n, 
+gmx_bool gmx_fio_nwritee_uchar(t_fileio *fio, const unsigned char *item, int n, 
                            const char *desc, const char *srcfile, int line);
-bool gmx_fio_nwritee_ushort(t_fileio *fio, const unsigned short *item, int n, 
+gmx_bool gmx_fio_nwritee_ushort(t_fileio *fio, const unsigned short *item, int n, 
                            const char *desc, const char *srcfile, int line);
-bool gmx_fio_nwritee_rvec(t_fileio *fio, const rvec *item, int n, 
+gmx_bool gmx_fio_nwritee_rvec(t_fileio *fio, const rvec *item, int n, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_nwritee_ivec(t_fileio *fio, const ivec *item, int n, 
+gmx_bool gmx_fio_nwritee_ivec(t_fileio *fio, const ivec *item, int n, 
                           const char *desc, const char *srcfile, int line);
-bool gmx_fio_nwritee_string(t_fileio *fio, const char *item[], int n, 
+gmx_bool gmx_fio_nwritee_string(t_fileio *fio, const char *item[], int n, 
                             const char *desc, const char *srcfile, int line);
 
-bool gmx_fio_ndoe_real(t_fileio *fio, real *item, int n, 
+gmx_bool gmx_fio_ndoe_real(t_fileio *fio, real *item, int n, 
                        const char *desc, const char *srcfile, int line);
-bool gmx_fio_ndoe_float(t_fileio *fio, float *item, int n, 
+gmx_bool gmx_fio_ndoe_float(t_fileio *fio, float *item, int n, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_ndoe_double(t_fileio *fio, double *item, int n, 
+gmx_bool gmx_fio_ndoe_double(t_fileio *fio, double *item, int n, 
                          const char *desc, const char *srcfile, int line);
-bool gmx_fio_ndoe_bool(t_fileio *fio, bool *item, int n, 
+gmx_bool gmx_fio_ndoe_gmx_bool(t_fileio *fio, gmx_bool *item, int n, 
                       const char *desc, const char *srcfile, int line);
-bool gmx_fio_ndoe_int(t_fileio *fio, int *item, int n, 
+gmx_bool gmx_fio_ndoe_int(t_fileio *fio, int *item, int n, 
                       const char *desc, const char *srcfile, int line);
-bool gmx_fio_ndoe_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, int n, 
+gmx_bool gmx_fio_ndoe_gmx_large_int(t_fileio *fio, gmx_large_int_t *item, int n, 
                                 const char *desc, const char *srcfile, 
                                 int line);
-bool gmx_fio_ndoe_uchar(t_fileio *fio, unsigned char *item, int n, 
+gmx_bool gmx_fio_ndoe_uchar(t_fileio *fio, unsigned char *item, int n, 
                         const char *desc, const char *srcfile, int line);
-bool gmx_fio_ndoe_ushort(t_fileio *fio, unsigned short *item, int n, 
+gmx_bool gmx_fio_ndoe_ushort(t_fileio *fio, unsigned short *item, int n, 
                         const char *desc, const char *srcfile, int line);
-bool gmx_fio_ndoe_rvec(t_fileio *fio, rvec *item, int n, 
+gmx_bool gmx_fio_ndoe_rvec(t_fileio *fio, rvec *item, int n, 
                        const char *desc, const char *srcfile, int line);
-bool gmx_fio_ndoe_ivec(t_fileio *fio, ivec *item, int n, 
+gmx_bool gmx_fio_ndoe_ivec(t_fileio *fio, ivec *item, int n, 
                        const char *desc, const char *srcfile, int line);
-bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n, 
+gmx_bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n, 
                          const char *desc, const char *srcfile, int line);
 
 
@@ -407,7 +403,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 #define gmx_fio_do_real(fio, item)              gmx_fio_doe_real(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_float(fio, item)             gmx_fio_doe_float(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_double(fio, item)            gmx_fio_doe_double(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_bool(fio, item)              gmx_fio_doe_bool(fio, &item, (#item), __FILE__, __LINE__)
+#define gmx_fio_do_gmx_bool(fio, item)              gmx_fio_doe_gmx_bool(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_int(fio, item)               gmx_fio_doe_int(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_gmx_large_int(fio, item)     gmx_fio_doe_gmx_large_int(fio, &item, (#item), __FILE__, __LINE__)
 #define gmx_fio_do_uchar(fio, item)             gmx_fio_doe_uchar(fio, &item, (#item), __FILE__, __LINE__)
@@ -444,7 +440,7 @@ bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 #define gmx_fio_ndo_real(fio, item, n)              gmx_fio_ndoe_real(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_float(fio, item, n)             gmx_fio_ndoe_float(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_double(fio, item, n)            gmx_fio_ndoe_double(fio, item, n, (#item), __FILE__, __LINE__)
-#define gmx_fio_ndo_bool(fio, item, n)              gmx_fio_ndoe_bool(fio, item, n, (#item), __FILE__, __LINE__)
+#define gmx_fio_ndo_gmx_bool(fio, item, n)              gmx_fio_ndoe_gmx_bool(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_int(fio, item, n)               gmx_fio_ndoe_int(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_gmx_large_int(fio, item, n)     gmx_fio_ndoe_gmx_large_int(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_uchar(fio, item, n)             gmx_fio_ndoe_uchar(fio, item, n, (#item), __FILE__, __LINE__)

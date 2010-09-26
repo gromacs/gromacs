@@ -338,7 +338,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     double       mtot;
     rvec         *xref,*xtmp,com,r_unrot,r;
     t_oriresdata *od;
-    bool         bTAV;
+    gmx_bool         bTAV;
     const real   two_thr=2.0/3.0;
     
     od = &(fcd->orires);
@@ -595,7 +595,7 @@ real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     rvec         r,Sr,fij;
     real         vtot;
     const t_oriresdata *od;
-    bool         bTAV;
+    gmx_bool         bTAV;
     
     vtot = 0;
     od = &(fcd->orires);

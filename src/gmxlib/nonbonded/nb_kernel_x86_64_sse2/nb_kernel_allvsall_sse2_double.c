@@ -122,7 +122,7 @@ calc_maxoffset(int i,int natoms)
 
 
 static void
-setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
+setup_exclusions_and_indices_double(gmx_allvsall_data_t *   aadata,
                                    t_blocka *              excl,  
                                    int                     start,
                                    int                     end,
@@ -172,16 +172,16 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
      *
      * 
      * Since the SIMD code needs to load aligned coordinates, the masks too will be aligned, i.e. the mask for atom
-     * 5 will really start on atom 4. In addition, the kernel will be unrolled both in I and J (think 4*4 tiles),
-     * so we should have groups of 4 i-atoms whose exclusion masks start at the same offset, and have the same length.
+     * 5 will really start on atom 4. In addition, the kernel will be unrolled both in I and J (think 2*2 tiles),
+     * so we should have groups of 2 i-atoms whose exclusion masks start at the same offset, and have the same length.
      */
      
     /* First create a simple mask to say which i atoms should be included. This is useful when the start/end positions
      * are not multiples of UNROLLI.
      */
     
-    /* Example: if start=5 and end=17, we will get ni=4 and ni1=20. 
-     * The i loop will this go over atoms 4, 17, 18, and 19 and addition to the ones we want to include.
+    /* Example: if start=5 and end=17, we will get ni0=4 and ni1=18 (in double/SSE2).
+     * The i loop will thus go over atoms 4 and 17 in addition to the ones we want to include.
      */
     ni0 = (start/UNROLLI)*UNROLLI;
     ni1 = ((end+UNROLLI-1)/UNROLLI)*UNROLLI;
@@ -191,6 +191,7 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
     aadata->imask = (int *) (((size_t) pi + 16) & (~((size_t) 15)));
     for(i=0;i<natoms+UNROLLI;i++)
     {
+        /* Each 64-bit double element (SSE2) corresponds to 2 integers */
         aadata->imask[2*i]   = (i>=start && i<end) ? 0xFFFFFFFF : 0;
         aadata->imask[2*i+1] = (i>=start && i<end) ? 0xFFFFFFFF : 0;
     }
@@ -247,12 +248,19 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
             nj1   = excl->index[i+1];
             for(j=nj0; j<nj1; j++)
             {                
-                if(excl->a[j]>i+max_offset)
+                k = excl->a[j];
+                
+                if(k<imin)
+                {
+                    k += natoms;
+                }
+                
+                if(k>i+max_offset)
                 {
                     continue;
                 }
-
-                k = excl->a[j] - imin;
+                
+                k = k - imin;
                 
                 if( k+natoms <= max_offset )
                 {
@@ -503,7 +511,7 @@ setup_aadata(gmx_allvsall_data_t **  p_aadata,
         aadata->ppvdw[i] = aadata->pvdwaram_align[0];
     }
     
-    setup_exclusions_and_indices_float(aadata,excl,start,end,natoms);
+    setup_exclusions_and_indices_double(aadata,excl,start,end,natoms);
 }
 
 
@@ -664,14 +672,11 @@ nb_kernel_allvsall_sse2_double(t_forcerec *           fr,
         emask1           = epilogue_mask[i+1];
         imask_SSE0       = _mm_load1_pd((double *)(imask+2*i));
         imask_SSE1       = _mm_load1_pd((double *)(imask+2*i+2));
-            
-        printf("OUTER i=%d %d     imask=%d/%d %d/%d\n",i,i+1,*(imask+2*i),*(imask+2*i+1),*(imask+2*i+2),*(imask+2*i+3));
-        
+                    
         for(j=nj0; j<nj1; j+=UNROLLJ)
         {                        
             jmask_SSE0 = _mm_load_pd((double *)pmask0);
             jmask_SSE1 = _mm_load_pd((double *)pmask1);
-            printf("PROLOGUE j=%d %d    mask=%d/%d %d/%d\n",j,j+1,*(pmask0),*(pmask0+1),*(pmask1),*(pmask1+1));
 
             pmask0 += 2*UNROLLJ;
             pmask1 += 2*UNROLLJ;
@@ -775,7 +780,6 @@ nb_kernel_allvsall_sse2_double(t_forcerec *           fr,
 
         for(j=nj1; j<nj2; j+=UNROLLJ)
         {                      
-            printf("MAIN j=%d %d\n",j,j+1);
 
             /* load j atom coordinates */
             jxSSE            = _mm_load_pd(x_align+j);
@@ -870,7 +874,6 @@ nb_kernel_allvsall_sse2_double(t_forcerec *           fr,
         {
             jmask_SSE0 = _mm_load_pd((double *)emask0);
             jmask_SSE1 = _mm_load_pd((double *)emask1);
-            printf("EPILOGUE j=%d %d    mask=%d/%d %d/%d\n",j,j+1,*(emask0),*(emask0+1),*(emask1),*(emask1+1));
 
             emask0 += 2*UNROLLJ;
             emask1 += 2*UNROLLJ;
@@ -978,7 +981,7 @@ nb_kernel_allvsall_sse2_double(t_forcerec *           fr,
         fiy_SSE0 = _mm_add_pd(fiy_SSE0,fiy_SSE1);
         _mm_store_pd(fy_align+i, _mm_add_pd(fiy_SSE0, _mm_load_pd(fy_align+i)));
         
-        tmpSSE   = fiy_SSE0;
+        tmpSSE   = fiz_SSE0;
         fiz_SSE0 = _mm_unpacklo_pd(fiz_SSE0,fiz_SSE1);
         fiz_SSE1 = _mm_unpackhi_pd(tmpSSE,fiz_SSE1);
         fiz_SSE0 = _mm_add_pd(fiz_SSE0,fiz_SSE1);

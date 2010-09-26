@@ -801,7 +801,7 @@ static void
 add_to_vsitelist(int **list, int *nitem, int *nalloc,int newitem)
 {
         int  i,idx;
-        bool found;
+        gmx_bool found;
         
         found = FALSE;
         idx = *nitem;
@@ -818,12 +818,12 @@ add_to_vsitelist(int **list, int *nitem, int *nalloc,int newitem)
         }
 }
 
-bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
+gmx_bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
                                                    t_comm_vsites *vsitecomm)
 {
         int i,j,ftype;
         int nra;
-        bool do_comm;
+        gmx_bool do_comm;
         t_iatom   *ia;
         gmx_partdec_t *pd;
         int  iconstruct;

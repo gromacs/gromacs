@@ -32,9 +32,7 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+
 
 #ifndef _idef_h
 #define _idef_h
@@ -84,6 +82,8 @@ enum {
   F_GB12,
   F_GB13,
   F_GB14,
+  F_GBPOL,
+  F_NPSOLVATION,
   F_LJ14,
   F_COUL14,
   F_LJC14_Q,

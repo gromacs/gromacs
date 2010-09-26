@@ -36,10 +36,6 @@
 #ifndef _enxio_h
 #define _enxio_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "pbc.h"
@@ -79,7 +75,11 @@ extern "C" {
     enxORI,    /* Instantaneous data for orientation restraints              */
     enxORT,    /* Order tensor(s) for orientation restraints                 */
     enxDISRE,  /* Distance restraint blocks                                  */
-    enxBARHIST,/* BAR histogram */
+
+    enxDHCOLL, /* Data about the free energy blocks in this frame.           */
+    enxDHHIST, /* BAR histogram                                              */
+    enxDH,     /* BAR raw delta H data                                       */
+
     enxNR      /* Total number of extra blocks in the current code,
                 * note that the enxio code can read files written by
 	        * future code which contain more blocks.
@@ -131,6 +131,7 @@ extern "C" {
     double   t;	            /* Timestamp of this frame	                     */
     gmx_large_int_t step;   /* MD step	   		                     */
     gmx_large_int_t nsteps; /* The number of steps between frames            */
+    double   dt;            /* The MD time step                              */
     int      nsum;          /* The number of terms for the sums in ener      */
     int      nre;           /* Number of energies			     */
     int      e_size;        /* Size (in bytes) of energies		     */
@@ -163,26 +164,26 @@ extern "C" {
 
 
   /* initialize a pre-allocated frame */
-  extern void init_enxframe(t_enxframe *ef);
+  void init_enxframe(t_enxframe *ef);
   /* delete a frame's memory (except the ef itself) */
-  extern void free_enxframe(t_enxframe *ef);
+  void free_enxframe(t_enxframe *ef);
 
 
-  extern ener_file_t open_enx(const char *fn,const char *mode);
+  ener_file_t open_enx(const char *fn,const char *mode);
 
-  extern t_fileio *enx_file_pointer(const ener_file_t ef);
+  t_fileio *enx_file_pointer(const ener_file_t ef);
 
-  extern void close_enx(ener_file_t ef);
+  void close_enx(ener_file_t ef);
   
-  extern void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);
+  void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);
   
-  extern void free_enxnms(int n,gmx_enxnm_t *nms);
+  void free_enxnms(int n,gmx_enxnm_t *nms);
   /* Frees nms and all strings in it */
 
-  extern bool do_enx(ener_file_t ef,t_enxframe *fr);
+  gmx_bool do_enx(ener_file_t ef,t_enxframe *fr);
   /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
-  extern void get_enx_state(const char *fn, real t,
+  void get_enx_state(const char *fn, real t,
 			    gmx_groups_t *groups, t_inputrec *ir,
 			    t_state *state);
   /*

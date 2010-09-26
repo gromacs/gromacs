@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -41,6 +42,12 @@
 #include <string.h>
 #include <limits.h>
 #include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "network.h"
@@ -69,12 +76,17 @@
 #endif
 
 
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
+
 #define BUFSIZE	1024
 
 /* this is not strictly thread-safe, but it's only written to at the beginning
    of the simulation, once by each thread with the same value. We assume
    that writing to an int is atomic.*/
-static bool parallel_env_val;
+static gmx_bool parallel_env_val;
 #ifdef GMX_THREADS
 tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
@@ -87,9 +99,9 @@ tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
    been initialized, for example when checking whether gmx_finalize()   
    needs to be called. Use PAR(cr) to check whether the simulation actually
    has more than one node/thread.  */
-bool gmx_parallel_env_initialized(void)
+gmx_bool gmx_parallel_env_initialized(void)
 {
-    bool ret;
+    gmx_bool ret;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&parallel_env_mutex);
 #endif
@@ -100,7 +112,7 @@ bool gmx_parallel_env_initialized(void)
     return ret;
 }
 
-static void set_parallel_env(bool val)
+static void set_parallel_env(gmx_bool val)
 {
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&parallel_env_mutex);
@@ -116,39 +128,43 @@ static void set_parallel_env(bool val)
 }
 
 
-
 static void par_fn(char *base,int ftp,const t_commrec *cr,
-		   bool bUnderScore,
+		   gmx_bool bAppendSimId,gmx_bool bAppendNodeId,
 		   char buf[],int bufsize)
 {
   int n;
   
-  if((size_t)bufsize<(strlen(base)+4))
+  if((size_t)bufsize<(strlen(base)+10))
      gmx_mem("Character buffer too small!");
 
   /* Copy to buf, and strip extension */
   strcpy(buf,base);
   buf[strlen(base) - strlen(ftp2ext(fn2ftp(base))) - 1] = '\0';
 
-  /* Add node info */
-  if (bUnderScore)
-    strcat(buf,"_");
-  if (MULTISIM(cr) && !bUnderScore) {
+  if (bAppendSimId) {
     sprintf(buf+strlen(buf),"%d",cr->ms->sim);
-  } else if (PAR(cr)) {
+  }
+  if (bAppendNodeId) {
+    strcat(buf,"_node");
     sprintf(buf+strlen(buf),"%d",cr->nodeid);
   }
   strcat(buf,".");
   
   /* Add extension again */
   strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
+  if (cr->nodeid == 0) {
+    printf("node %d par_fn '%s'\n",cr->nodeid,buf);
+    if (fn2ftp(buf) == efLOG) {
+      printf("log\n");
+    }
+  }
 }
 
 void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
                      const char *name)
 {
   int  *ibuf,p;
-  bool bCompatible;
+  gmx_bool bCompatible;
 
   fprintf(log,"Multi-checking %s ... ",name);
   
@@ -176,98 +192,117 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   sfree(ibuf);
 }
 
-void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly, 
+void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly, 
                    unsigned long Flags, FILE** fplog)
 {
-  int  len,testlen,pid;
-  char buf[256],host[256];
-  time_t t;
-  char timebuf[STRLEN];
-  FILE *fp=*fplog;
-  char *tmpnm;
+    int  len,testlen,pid;
+    char buf[256],host[256];
+    time_t t;
+    char timebuf[STRLEN];
+    FILE *fp=*fplog;
+    char *tmpnm;
 
-  bool bAppend = Flags & MD_APPENDFILES;	
+    gmx_bool bAppend = Flags & MD_APPENDFILES;	
   
-  debug_gmx();
+    debug_gmx();
   
-  /* Communicate the filename for logfile */
-  if (cr->nnodes > 1 && !bMasterOnly) {
-      if (MASTER(cr))
-          len = strlen(lognm)+1;
-      gmx_bcast(sizeof(len),&len,cr);
-      if (!MASTER(cr))
-          snew(tmpnm,len+8);
-      else
-          tmpnm=strdup(lognm);
-      gmx_bcast(len*sizeof(*tmpnm),tmpnm,cr);
-  }
-  else
-  {
-      tmpnm=strdup(lognm);
-  }
+    /* Communicate the filename for logfile */
+    if (cr->nnodes > 1 && !bMasterOnly
+#ifdef GMX_THREADS
+        /* With thread MPI the non-master log files are opened later
+         * when the files names are already known on all nodes.
+         */
+        && FALSE
+#endif
+        )
+    {
+        if (MASTER(cr))
+        {
+            len = strlen(lognm) + 1;
+        }
+        gmx_bcast(sizeof(len),&len,cr);
+        if (!MASTER(cr))
+        {
+            snew(tmpnm,len+8);
+        }
+        else
+        {
+            tmpnm=strdup(lognm);
+        }
+        gmx_bcast(len*sizeof(*tmpnm),tmpnm,cr);
+    }
+    else
+    {
+        tmpnm=strdup(lognm);
+    }
   
-  debug_gmx();
+    debug_gmx();
 
-  /*for bAppend the log file is opened in checkpoint.c:read_checkpoint 
-   * (for locking)
-   */
-  if (PAR(cr) && !bMasterOnly && (!bAppend || !MASTER(cr))) {
-    /* Since log always ends with '.log' let's use this info */
-    par_fn(tmpnm,efLOG,cr,cr->ms!=NULL,buf,255);
-	  fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
-  } else if (!bAppend) {
-	  fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
-  }
+    if (!bMasterOnly)
+    {
+        /* Since log always ends with '.log' let's use this info */
+        par_fn(tmpnm,efLOG,cr,FALSE,!bMasterOnly,buf,255);
+        fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
+    }
+    else
+    {
+        fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
+    }
 
-  sfree(tmpnm);
+    sfree(tmpnm);
 
-  gmx_fatal_set_log_file(fp);
+    gmx_fatal_set_log_file(fp);
   
-  /* Get some machine parameters */
+    /* Get some machine parameters */
 #ifdef HAVE_UNISTD_H
-  if( gethostname(host,255) != 0)
-    sprintf(host,"unknown");
+    if (gethostname(host,255) != 0)
+    {
+        sprintf(host,"unknown");
+    }
 #else
-  sprintf(host,"unknown");
+    sprintf(host,"unknown");
 #endif  
 
-  time(&t);
+    time(&t);
 
 #ifndef NO_GETPID
 #   if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-	  pid = _getpid();
+    pid = _getpid();
 #   else
-	  pid = getpid();
+    pid = getpid();
 #   endif
 #else
 	pid = 0;
 #endif
 
-  if(bAppend)
-  {
-	  fprintf(fp,
-			  "\n\n"
-			  "-----------------------------------------------------------\n"
-			  "Restarting from checkpoint, appending to previous log file.\n\n"
-			  );
-  }
+    if (bAppend)
+    {
+        fprintf(fp,
+                "\n"
+                "\n"
+                "-----------------------------------------------------------\n"
+                "Restarting from checkpoint, appending to previous log file.\n"
+                "\n"
+            );
+    }
 	
-  gmx_ctime_r(&t,timebuf,STRLEN);
-  fprintf(fp,
-	  "Log file opened on %s"
-	  "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
-	  timebuf,host,pid,cr->nodeid,cr->nnodes);
+    gmx_ctime_r(&t,timebuf,STRLEN);
+
+    fprintf(fp,
+            "Log file opened on %s"
+            "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
+            timebuf,host,pid,cr->nodeid,cr->nnodes);
 
 #if (defined BUILD_MACHINE && defined BUILD_TIME && defined BUILD_USER) 
-  fprintf(fp,
-	  "The Gromacs distribution was built %s by\n"
-	  "%s (%s)\n\n\n",BUILD_TIME,BUILD_USER,BUILD_MACHINE);
+    fprintf(fp,
+            "The Gromacs distribution was built %s by\n"
+            "%s (%s)\n\n\n",BUILD_TIME,BUILD_USER,BUILD_MACHINE);
 #endif
 
-  fflush(fp);
-  debug_gmx();
+    fflush(fp);
+    debug_gmx();
 
-  *fplog = fp;
+    *fplog = fp;
 }
 
 void gmx_log_close(FILE *fp)
@@ -301,94 +336,106 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
 }
 
 void init_multisystem(t_commrec *cr,int nsim, int nfile,
-                      const t_filenm fnm[],bool bParFn)
+                      const t_filenm fnm[],gmx_bool bParFn)
 {
-  gmx_multisim_t *ms;
-  int  nnodes,nnodpersim,sim,i,ftp;
-  char buf[256];
+    gmx_multisim_t *ms;
+    int  nnodes,nnodpersim,sim,i,ftp;
+    char buf[256];
 #ifdef GMX_MPI
-  MPI_Group mpi_group_world;
+    MPI_Group mpi_group_world;
 #endif  
-  int *rank;
+    int *rank;
 
 #ifndef GMX_MPI
-  if (nsim > 1) {
-    gmx_fatal(FARGS,"This binary is compiled without MPI support, can not do multiple simulations.");
-  }
+    if (nsim > 1)
+    {
+        gmx_fatal(FARGS,"This binary is compiled without MPI support, can not do multiple simulations.");
+    }
 #endif
 
-  nnodes  = cr->nnodes;
-  if (nnodes % nsim != 0)
-    gmx_fatal(FARGS,"The number of nodes (%d) is not a multiple of the number of simulations (%d)",nnodes,nsim);
+    nnodes  = cr->nnodes;
+    if (nnodes % nsim != 0)
+    {
+        gmx_fatal(FARGS,"The number of nodes (%d) is not a multiple of the number of simulations (%d)",nnodes,nsim);
+    }
 
-  nnodpersim = nnodes/nsim;
-  sim = cr->nodeid/nnodpersim;
+    nnodpersim = nnodes/nsim;
+    sim = cr->nodeid/nnodpersim;
 
-  if (debug)
-    fprintf(debug,"We have %d simulations, %d nodes per simulation, local simulation is %d\n",nsim,nnodpersim,sim);
+    if (debug)
+    {
+        fprintf(debug,"We have %d simulations, %d nodes per simulation, local simulation is %d\n",nsim,nnodpersim,sim);
+    }
 
-  snew(ms,1);
-  cr->ms = ms;
-  ms->nsim = nsim;
-  ms->sim  = sim;
+    snew(ms,1);
+    cr->ms = ms;
+    ms->nsim = nsim;
+    ms->sim  = sim;
 #ifdef GMX_MPI
-  /* Create a communicator for the master nodes */
-  snew(rank,ms->nsim);
-  for(i=0; i<ms->nsim; i++)
-    rank[i] = i*nnodpersim;
-  MPI_Comm_group(MPI_COMM_WORLD,&mpi_group_world);
-  MPI_Group_incl(mpi_group_world,nsim,rank,&ms->mpi_group_masters);
-  sfree(rank);
-  MPI_Comm_create(MPI_COMM_WORLD,ms->mpi_group_masters,
-		  &ms->mpi_comm_masters);
+    /* Create a communicator for the master nodes */
+    snew(rank,ms->nsim);
+    for(i=0; i<ms->nsim; i++)
+    {
+        rank[i] = i*nnodpersim;
+    }
+    MPI_Comm_group(MPI_COMM_WORLD,&mpi_group_world);
+    MPI_Group_incl(mpi_group_world,nsim,rank,&ms->mpi_group_masters);
+    sfree(rank);
+    MPI_Comm_create(MPI_COMM_WORLD,ms->mpi_group_masters,
+                    &ms->mpi_comm_masters);
 
 #if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
-  /* initialize the MPI_IN_PLACE replacement buffers */
-  snew(ms->mpb, 1);
-  ms->mpb->ibuf=NULL;
-  ms->mpb->fbuf=NULL;
-  ms->mpb->dbuf=NULL;
-  ms->mpb->ibuf_alloc=0;
-  ms->mpb->fbuf_alloc=0;
-  ms->mpb->dbuf_alloc=0;
+    /* initialize the MPI_IN_PLACE replacement buffers */
+    snew(ms->mpb, 1);
+    ms->mpb->ibuf=NULL;
+    ms->mpb->fbuf=NULL;
+    ms->mpb->dbuf=NULL;
+    ms->mpb->ibuf_alloc=0;
+    ms->mpb->fbuf_alloc=0;
+    ms->mpb->dbuf_alloc=0;
 #endif
 
 #endif
 
-  /* Reduce the intra-simulation communication */
-  cr->sim_nodeid = cr->nodeid % nnodpersim;
-  cr->nnodes = nnodpersim;
+    /* Reduce the intra-simulation communication */
+    cr->sim_nodeid = cr->nodeid % nnodpersim;
+    cr->nnodes = nnodpersim;
 #ifdef GMX_MPI
-  MPI_Comm_split(MPI_COMM_WORLD,sim,cr->sim_nodeid,&cr->mpi_comm_mysim);
-  cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-  cr->nodeid = cr->sim_nodeid;
+    MPI_Comm_split(MPI_COMM_WORLD,sim,cr->sim_nodeid,&cr->mpi_comm_mysim);
+    cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
+    cr->nodeid = cr->sim_nodeid;
 #endif
 
-  if (debug) {
-    fprintf(debug,"This is simulation %d",cr->ms->sim);
-    if (PAR(cr))
-      fprintf(debug,", local number of nodes %d, local nodeid %d",
-	      cr->nnodes,cr->sim_nodeid);
-    fprintf(debug,"\n\n");
-  }
-
-  if (bParFn) {
-    /* Patch output and tpx file names (except log which has been done already)
-     */
-    for(i=0; (i<nfile); i++) {
-      /* Because of possible multiple extensions per type we must look 
-       * at the actual file name 
-       */
-      if (is_output(&fnm[i]) ||
-	  fnm[i].ftp == efTPX || fnm[i].ftp == efCPT ||
-	  strcmp(fnm[i].opt,"-rerun") == 0) {
-	ftp = fn2ftp(fnm[i].fns[0]);
-	par_fn(fnm[i].fns[0],ftp,cr,FALSE,buf,255);
-	sfree(fnm[i].fns[0]);
-	fnm[i].fns[0] = strdup(buf);
-      }
+    if (debug)
+    {
+        fprintf(debug,"This is simulation %d",cr->ms->sim);
+        if (PAR(cr))
+        {
+            fprintf(debug,", local number of nodes %d, local nodeid %d",
+                    cr->nnodes,cr->sim_nodeid);
+        }
+        fprintf(debug,"\n\n");
     }
-  }
+
+    if (bParFn)
+    {
+        /* Patch output and tpx, cpt and rerun input file names */
+        for(i=0; (i<nfile); i++)
+        {
+            /* Because of possible multiple extensions per type we must look 
+             * at the actual file name 
+             */
+            if (is_output(&fnm[i]) ||
+                fnm[i].ftp == efTPX || fnm[i].ftp == efCPT ||
+                strcmp(fnm[i].opt,"-rerun") == 0)
+            {
+                ftp = fn2ftp(fnm[i].fns[0]);
+                par_fn(fnm[i].fns[0],ftp,cr,TRUE,FALSE,buf,255);
+                sfree(fnm[i].fns[0]);
+                fnm[i].fns[0] = strdup(buf);
+            }
+        }
+    }
 }
 
 t_commrec *init_par(int *argc,char ***argv_ptr)
@@ -396,7 +443,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     t_commrec *cr;
     char      **argv;
     int       i;
-    bool      pe=FALSE;
+    gmx_bool      pe=FALSE;
 
     snew(cr,1);
 

@@ -48,7 +48,7 @@ extern gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 					   int nst,int init_seed);
 /* Should only be called on the master nodes */
 
-extern bool replica_exchange(FILE *fplog,
+extern gmx_bool replica_exchange(FILE *fplog,
 			     const t_commrec *cr,
 			     gmx_repl_ex_t re,
 			     t_state *state,real *ener,

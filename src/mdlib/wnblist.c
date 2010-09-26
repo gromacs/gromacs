@@ -114,7 +114,7 @@ static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
 }
 
 static void set_mat(FILE *fp,int **mat,int i0,int ni,int j0,int nj,
-		    bool bSymm,int shift)
+		    gmx_bool bSymm,int shift)
 {
   int i,j;
   
@@ -130,9 +130,9 @@ static void set_mat(FILE *fp,int **mat,int i0,int ni,int j0,int nj,
   }
 }
 
-int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm)
+int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,gmx_bool bSymm)
 {
-    bool bNL;
+    gmx_bool bNL;
     char buf[256],b1[32],b2[32],solv[256],il_code[256];
     int  i,ii,j,nnbl,full,icmp,nri,isolv;
     int  iatom,nrj,nj,shift,gid,nargs,njtot=0;

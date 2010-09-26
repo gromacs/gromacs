@@ -68,15 +68,15 @@ typedef struct {
 extern void do_pp2shifts(FILE *fp,int nframes,
 			 int nlist,t_dlist dlist[],real **dih);
 
-extern bool has_dihedral(int Dih,t_dlist *dl);
+extern gmx_bool has_dihedral(int Dih,t_dlist *dl);
 
 extern t_dlist *mk_dlist(FILE *log, 
 			 t_atoms *atoms, int *nlist,
-			 bool bPhi, bool bPsi, bool bChi, int maxchi,
+			 gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, int maxchi,
 			 int r0,int naa,char **aa);
 			 
 extern void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt,  int printtype,
-bool bPhi, bool bPsi,bool bChi,bool bOmega, int maxchi);
+gmx_bool bPhi, gmx_bool bPsi,gmx_bool bChi,gmx_bool bOmega, int maxchi);
 
 extern int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi);
 
@@ -85,7 +85,7 @@ extern void mk_chi_lookup (int **lookup, int maxchi, real **dih,
 
 extern void get_chi_product_traj (real **dih,int nframes,int nangles, 
 			   int nlist,int maxchi, t_dlist dlist[], real time[], 
-			   int **lookup,int *xity,bool bRb,bool bNormalize,
+			   int **lookup,int *xity,gmx_bool bRb,gmx_bool bNormalize,
 			   real core_frac); 
 
 #endif

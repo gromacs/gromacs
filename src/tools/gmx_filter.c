@@ -81,7 +81,7 @@ int gmx_filter(int argc,char *argv[])
   };
   
   static int nf=10;
-  static bool bNoJump = TRUE,bFit = FALSE,bLowAll = FALSE;
+  static gmx_bool bNoJump = TRUE,bFit = FALSE,bLowAll = FALSE;
   t_pargs pa[] = {
     { "-nf", FALSE, etINT, {&nf},
       "Sets the filter length as well as the output interval for low-pass filtering" },
@@ -93,7 +93,7 @@ int gmx_filter(int argc,char *argv[])
       "Fit all frames to a reference structure" }
   };
   const char *topfile,*lowfile,*highfile;
-  bool       bTop=FALSE;
+  gmx_bool       bTop=FALSE;
   t_topology top;
   int        ePBC=-1;
   rvec       *xtop;
@@ -138,7 +138,7 @@ int gmx_filter(int argc,char *argv[])
 			 &xtop,NULL,topbox,TRUE);
     if (bTop) {
       gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,topbox);
-      gmx_rmpbc(gpbc,topbox,xtop,xtop);
+      gmx_rmpbc(gpbc,top.atoms.nr,topbox,xtop);
     }
   }
 
@@ -214,7 +214,7 @@ int gmx_filter(int argc,char *argv[])
 	  }
     }
     if (bTop) {
-      gmx_rmpbc(gpbc,box[nffr - 1],xn,xn);
+      gmx_rmpbc(gpbc,nat,box[nffr - 1],xn);
     }
     if (bFit) {
       calc_xcm(xn,isize,index,top.atoms.atom,xcm,FALSE);

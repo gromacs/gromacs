@@ -94,7 +94,7 @@ typedef struct {
                            point. */
 } t_corr;
 
-typedef real t_calc_func(t_corr *,int,atom_id[],int,rvec[],rvec,bool,matrix,
+typedef real t_calc_func(t_corr *,int,atom_id[],int,rvec[],rvec,gmx_bool,matrix,
                          const output_env_t oenv);
 			      
 static real thistime(t_corr *curr) 
@@ -102,13 +102,13 @@ static real thistime(t_corr *curr)
   return curr->time[curr->nframes]; 
 }
 
-static bool in_data(t_corr *curr,int nx00) 
+static gmx_bool in_data(t_corr *curr,int nx00) 
 { 
   return curr->nframes-curr->n_offs[nx00]; 
 }
 
 t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
-		  int nmol,bool bTen,bool bMass,real dt,t_topology *top,
+		  int nmol,gmx_bool bTen,gmx_bool bMass,real dt,t_topology *top,
 		  real beginfit,real endfit)
 {
   t_corr  *curr;
@@ -170,7 +170,7 @@ static void done_corr(t_corr *curr)
   sfree(curr->x0);
 }
 
-static void corr_print(t_corr *curr,bool bTen,const char *fn,const char *title,
+static void corr_print(t_corr *curr,gmx_bool bTen,const char *fn,const char *title,
                        const char *yaxis,
 		       real msdtime,real beginfit,real endfit,
 		       real *DD,real *SigmaD,char *grpname[],
@@ -210,7 +210,7 @@ static void corr_print(t_corr *curr,bool bTen,const char *fn,const char *title,
 
 /* called from corr_loop, to do the main calculations */
 static void calc_corr(t_corr *curr,int nr,int nx,atom_id index[],rvec xc[],
-		      bool bRmCOMM,rvec com,t_calc_func *calc1,bool bTen,
+		      gmx_bool bRmCOMM,rvec com,t_calc_func *calc1,gmx_bool bTen,
                       const output_env_t oenv)
 {
   int  nx0;
@@ -252,7 +252,7 @@ static void calc_corr(t_corr *curr,int nr,int nx,atom_id index[],rvec xc[],
 
 /* the non-mass-weighted mean-squared displacement calcuation */
 static real calc1_norm(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
-		      rvec dcom,bool bTen,matrix mat, const output_env_t oenv)
+		      rvec dcom,gmx_bool bTen,matrix mat, const output_env_t oenv)
 {
   int  i,ix,m,m2;
   real g,r,r2;
@@ -324,7 +324,7 @@ static void calc_mol_com(int nmol,int *molindex,t_block *mols,t_atoms *atoms,
 }
 
 static real calc_one_mw(t_corr *curr,int ix,int nx0,rvec xc[],real *tm,
-			rvec dcom,bool bTen,matrix mat)
+			rvec dcom,gmx_bool bTen,matrix mat)
 {
   real r2,r,mm;
   rvec rv;
@@ -369,7 +369,7 @@ static real calc_one_mw(t_corr *curr,int ix,int nx0,rvec xc[],real *tm,
 
 /* the normal, mass-weighted mean-squared displacement calcuation */
 static real calc1_mw(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
-		     rvec dcom,bool bTen,matrix mat,const output_env_t oenv)
+		     rvec dcom,gmx_bool bTen,matrix mat,const output_env_t oenv)
 {
   int  i;
   real g,tm;
@@ -392,7 +392,7 @@ static real calc1_mw(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
    xcur = the current coordinates
    xprev = the previous coordinates
    box = the box matrix */
-static void prep_data(bool bMol,int gnx,atom_id index[],
+static void prep_data(gmx_bool bMol,int gnx,atom_id index[],
 		      rvec xcur[],rvec xprev[],matrix box)
 {
     int  i,m,ind;
@@ -426,7 +426,7 @@ static void prep_data(bool bMol,int gnx,atom_id index[],
    box = the box matrix
    atoms = atom data (for mass)
    com(output) = center of mass  */
-static void calc_com(bool bMol, int gnx, atom_id index[], 
+static void calc_com(gmx_bool bMol, int gnx, atom_id index[], 
                      rvec xcur[],rvec xprev[],matrix box, t_atoms *atoms,
                      rvec com)
 {
@@ -459,7 +459,7 @@ static void calc_com(bool bMol, int gnx, atom_id index[],
 
 
 static real calc1_mol(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
-		      rvec dcom,bool bTen,matrix mat, const output_env_t oenv)
+		      rvec dcom,gmx_bool bTen,matrix mat, const output_env_t oenv)
 {
   int  i;
   real g,tm,gtot,tt;
@@ -555,8 +555,8 @@ void printmol(t_corr *curr,const char *fn,
  * read_next_x
  */
 int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
-	      bool bMol,int gnx[],atom_id *index[],
-	      t_calc_func *calc1,bool bTen, int *gnx_com, atom_id *index_com[],
+	      gmx_bool bMol,int gnx[],atom_id *index[],
+	      t_calc_func *calc1,gmx_bool bTen, int *gnx_com, atom_id *index_com[],
               real dt, real t_pdb,rvec **x_pdb,matrix box_pdb, 
               const output_env_t oenv)
 {
@@ -568,7 +568,7 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
   t_trxstatus *status;
 #define        prev (1-cur)
   matrix       box;
-  bool         bFirst;
+  gmx_bool         bFirst;
   gmx_rmpbc_t  gpbc=NULL;
 
   natoms = read_first_x(oenv,&status,fn,&curr->t0,&(x[cur]),box);
@@ -670,7 +670,7 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 
     /* make the molecules whole */
     if (bMol)
-      gmx_rmpbc(gpbc,box,x[cur],x[cur]);
+      gmx_rmpbc(gpbc,natoms,box,x[cur]);
 
     /* first remove the periodic boundary condition crossings */
     for(i=0;i<curr->ngrp;i++)
@@ -746,7 +746,7 @@ static void index_atom2mol(int *n,int *index,t_block *mols)
 void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file, 
              const char *mol_file, const char *pdb_file,real t_pdb,
 	     int nrgrp, t_topology *top,int ePBC,
-	     bool bTen,bool bMW,bool bRmCOMM,
+	     gmx_bool bTen,gmx_bool bMW,gmx_bool bRmCOMM,
 	     int type,real dim_factor,int axis,
 	     real dt,real beginfit,real endfit,const output_env_t oenv)
 {
@@ -915,9 +915,9 @@ int gmx_msd(int argc,char *argv[])
   static real t_pdb      = 0; 
   static real beginfit   = -1; 
   static real endfit     = -1; 
-  static bool bTen       = FALSE;
-  static bool bMW        = TRUE;
-  static bool bRmCOMM    = FALSE;
+  static gmx_bool bTen       = FALSE;
+  static gmx_bool bMW        = TRUE;
+  static gmx_bool bRmCOMM    = FALSE;
   t_pargs pa[] = {
     { "-type",    FALSE, etENUM, {normtype},
       "Compute diffusion coefficient in one direction" },
@@ -957,7 +957,7 @@ int gmx_msd(int argc,char *argv[])
   char        title[256];
   const char  *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
   rvec        *xdum;
-  bool        bTop;
+  gmx_bool        bTop;
   int         axis,type;
   real        dim_factor;
   output_env_t oenv;

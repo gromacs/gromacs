@@ -94,7 +94,7 @@ real *lincs_rmsd_data(struct gmx_lincsdata *lincsd)
     return lincsd->rmsd_data;
 }
 
-real lincs_rmsd(struct gmx_lincsdata *lincsd,bool bSD2)
+real lincs_rmsd(struct gmx_lincsdata *lincsd,gmx_bool bSD2)
 {
     if (lincsd->rmsd_data[0] > 0)
     {
@@ -185,7 +185,7 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
 static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
                       struct gmx_lincsdata *lincsd,real *invmass,
                       int econq,real *dvdlambda,
-                      bool bCalcVir,tensor rmdf)
+                      gmx_bool bCalcVir,tensor rmdf)
 {
     int     b,i,j,k,n;
     real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
@@ -344,7 +344,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
 					 t_commrec *cr,
                      real wangle,int *warn,
                      real invdt,rvec *v,
-                     bool bCalcVir,tensor rmdr)
+                     gmx_bool bCalcVir,tensor rmdr)
 {
     int     b,i,j,k,n,iter;
     real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,len2,dlen2,wfac,lam;  
@@ -686,7 +686,7 @@ static int count_triangle_constraints(t_ilist *ilist,t_blocka *at2con)
     int  ncon1,ncon_tot;
     int  c0,a00,a01,n1,c1,a10,a11,ac1,n2,c2,a20,a21;
     int  ncon_triangle;
-    bool bTriangle;
+    gmx_bool bTriangle;
     t_iatom *ia1,*ia2,*iap;
     
     ncon1    = ilist[F_CONSTR].nr/3;
@@ -750,7 +750,7 @@ static int int_comp(const void *a,const void *b)
 
 gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
                            int nflexcon_global,t_blocka *at2con,
-                           bool bPLINCS,int nIter,int nProjOrder)
+                           gmx_bool bPLINCS,int nIter,int nProjOrder)
 {
     struct gmx_lincsdata *li;
     int mb;
@@ -813,7 +813,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
 }
 
 void set_lincs(t_idef *idef,t_mdatoms *md,
-               bool bDynamics,t_commrec *cr,
+               gmx_bool bDynamics,t_commrec *cr,
                struct gmx_lincsdata *li)
 {
     int      start,natoms,nflexcon;
@@ -822,7 +822,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
     int      i,k,ncc_alloc,ni,con,nconnect,concon;
     int      type,a1,a2;
     real     lenA=0,lenB;
-    bool     bLocal;
+    gmx_bool     bLocal;
 
     li->nc = 0;
     li->ncc = 0;
@@ -1113,7 +1113,7 @@ static void cconerr(gmx_domdec_t *dd,
 
 static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
                       t_blocka *at2con,
-                      char *name,bool bAll,rvec *x,matrix box)
+                      char *name,gmx_bool bAll,rvec *x,matrix box)
 {
     char str[STRLEN];
     FILE *fp;
@@ -1148,7 +1148,7 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
     gmx_fio_fclose(fp);
 }
 
-bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
+gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                      t_inputrec *ir,
                      gmx_large_int_t step,
                      struct gmx_lincsdata *lincsd,t_mdatoms *md,
@@ -1156,7 +1156,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
                      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                      real lambda,real *dvdlambda,
                      real invdt,rvec *v,
-                     bool bCalcVir,tensor rmdr,
+                     gmx_bool bCalcVir,tensor rmdr,
                      int econq,
                      t_nrnb *nrnb,
                      int maxwarn,int *warncount)
@@ -1166,7 +1166,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     real  ncons_loc,p_ssd,p_max;
     t_pbc pbc,*pbc_null;
     rvec  dx;
-    bool  bOK;
+    gmx_bool  bOK;
     
     bOK = TRUE;
     

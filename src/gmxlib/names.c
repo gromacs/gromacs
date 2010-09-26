@@ -152,6 +152,14 @@ const char *elmceq_names[elmceqNR+1] = {
   "no", "yes", "wl-delta", "number-all-lambda", "number-steps", "number-samples", "count-ratio", NULL   
 };
 
+const char *separate_dhdl_file_names[sepdhdlfileNR+1] = {
+  "yes", "no", NULL
+};
+
+const char *dhdl_derivatives_names[dhdlderivativesNR+1] = {
+  "yes", "no", NULL
+};
+
 const char *esol_names[esolNR+1] = {
   "No", "SPC", "TIP4p", NULL
 };

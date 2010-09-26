@@ -49,7 +49,7 @@
 #include "copyrite.h"
 #include "random.h"
 
-real ener(matrix P,real e,real e0,int nmol,real kp,real ke,bool bPScal)
+real ener(matrix P,real e,real e0,int nmol,real kp,real ke,gmx_bool bPScal)
 {
   if (bPScal)
     return (kp*(sqr(P[XX][XX]+P[YY][YY]+P[ZZ][ZZ]-3))+
@@ -124,7 +124,7 @@ void rand_step(FILE *fp,int nr,t_iparams ip[],int *seed,real frac)
 }
 
 void pr_progress(FILE *fp,int nit,tensor P,real epot,real eFF,
-		 double mc_crit,bool bConv,bool bAccept)
+		 double mc_crit,gmx_bool bConv,gmx_bool bAccept)
 {
   fprintf(fp,"Iter %3d, eFF = %g, Converged = %s,  Accepted = %s\n",
 	  nit,eFF,yesno_names[bConv],yesno_names[bAccept]);
@@ -154,7 +154,7 @@ int main(int argc,char *argv[])
   static real kp       = 1,   ke     = 100, frac   = 0.1;
   static int  maxnit   = 100, eindex = 5,   pindex = 19;
   static int  seed     = 1993;
-  static bool bPScal   = FALSE;
+  static gmx_bool bPScal   = FALSE;
   static t_pargs pa[] = {
     { "-epot0",  FALSE, etREAL, {&epot0},
       "Potential energy in kJ/mol" },
@@ -192,7 +192,7 @@ int main(int argc,char *argv[])
   int         i,step,natoms,nmol,nit,atnr2;
   real        t,lambda,epot,eFF[2];
   double      mc_crit=0;
-  bool        bConverged,bAccept;
+  gmx_bool        bConverged,bAccept;
   tensor      P;
   
   CopyRight(stdout,argv[0]);
@@ -212,7 +212,7 @@ int main(int argc,char *argv[])
   fprintf(fp,"epot   = %8g  ke     = %8g  kp     = %8g\n",epot0,ke,kp);
   fprintf(fp,"maxnit = %8d  tol    = %8g  seed   = %8d\n",maxnit,tol,seed);
   fprintf(fp,"frac   = %8g  pindex = %8d  eindex = %8d\n",frac,pindex,eindex);
-  fprintf(fp,"kT     = %8g  pscal  = %8s\n",kT,bool_names[bPScal]);
+  fprintf(fp,"kT     = %8g  pscal  = %8s\n",kT,gmx_bool_names[bPScal]);
   
   /* Unpack some topology numbers */
   nmol  = top.blocks[ebMOLS].nr;

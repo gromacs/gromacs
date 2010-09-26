@@ -36,10 +36,6 @@
 #ifndef _readinp_h
 #define _readinp_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 #include "warninp.h"
 
@@ -50,8 +46,8 @@ extern "C" {
 
 typedef struct {
   int  count; /* sort order for output  */
-  bool bObsolete; /* whether it is an obsolete param value */
-  bool bSet; /* whether it it has been read out */
+  gmx_bool bObsolete; /* whether it is an obsolete param value */
+  gmx_bool bSet; /* whether it it has been read out */
   char *name; /* name of the parameter */
   char *value; /* parameter value string */
   int inp_count; /* number of einps read. Only valid for the first item
@@ -63,7 +59,7 @@ typedef struct {
 
 
 
-extern t_inpfile *read_inpfile(const char *fn,int *ninp,
+t_inpfile *read_inpfile(const char *fn,int *ninp,
 			       char **cppopts,
 			       warninp_t wi);
 /* Create & populate a t_inpfile struct from values in file fn. 
@@ -71,30 +67,30 @@ extern t_inpfile *read_inpfile(const char *fn,int *ninp,
    ninp = the number of read parameters
    cppopts = the cpp-style options for #include paths and #defines */
 
-extern void write_inpfile(const char *fn,int ninp,t_inpfile inp[],
-			  bool bHaltOnUnknown,
+void write_inpfile(const char *fn,int ninp,t_inpfile inp[],
+			  gmx_bool bHaltOnUnknown,
 			  warninp_t wi);
 
-extern void replace_inp_entry(int ninp,t_inpfile *inp,
+void replace_inp_entry(int ninp,t_inpfile *inp,
 			      const char *old_entry,const char *new_entry);
 
-extern int get_eint(int *ninp,t_inpfile **inp,const char *name,int def,
+int get_eint(int *ninp,t_inpfile **inp,const char *name,int def,
 		      warninp_t wi);
 
-extern gmx_large_int_t get_egmx_large_int(int *ninp,t_inpfile **inp,
+gmx_large_int_t get_egmx_large_int(int *ninp,t_inpfile **inp,
 					  const char *name,gmx_large_int_t def,
 					  warninp_t);
   
-extern double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def,
+double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def,
 			warninp_t wi);
 
-extern const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def);
+const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def);
 
-extern int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
+int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
 		      warninp_t wi);
 /* defs must be NULL terminated */
 
-extern int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **defs);
+int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **defs);
 /* defs must be NULL terminated */
 
 /* Here are some dirty macros to extract data from the inp structures.
@@ -126,7 +122,7 @@ static const char *argtp[etNR] = {
 
 typedef struct {
   const char *option;
-  bool bSet;
+  gmx_bool bSet;
   int  type;
   union {
     void *v;   /* This is a nasty workaround, to be able to use initialized */
@@ -135,45 +131,45 @@ typedef struct {
     real *r;
     const char **c; /* Must be pointer to string (when type == etSTR)         */
                /* or null terminated list of enums (when type == etENUM) */
-    bool *b;
+    gmx_bool *b;
     rvec *rv;
   } u;
   const char *desc;
 } t_pargs;
 
-extern void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],
-		      bool bKeepArgs);
+void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],
+		      gmx_bool bKeepArgs);
 /* Read a number of arguments from the command line. 
  * For etINT, etREAL and etCHAR an extra argument is read (when present)
- * for etBOOL the boolean option is changed to the negate value
+ * for etBOOL the gmx_boolean option is changed to the negate value
  * If !bKeepArgs, the command line arguments are removed from the command line
  */
 
-extern bool is_hidden(t_pargs *pa);
+gmx_bool is_hidden(t_pargs *pa);
 /* Return TRUE when the option is a secret one */
 
-extern char *pa_val(t_pargs *pa,char *buf, int sz);
+char *pa_val(t_pargs *pa,char *buf, int sz);
 /* Return the value of pa in the provided buffer buf, of size sz.
  * The return value is also a pointer to buf.
  */
 
-extern int opt2parg_int(const char *option,int nparg,t_pargs pa[]);
+int opt2parg_int(const char *option,int nparg,t_pargs pa[]);
 
-extern bool opt2parg_bool(const char *option,int nparg,t_pargs pa[]);
+gmx_bool opt2parg_gmx_bool(const char *option,int nparg,t_pargs pa[]);
 
-extern real opt2parg_real(const char *option,int nparg,t_pargs pa[]);
+real opt2parg_real(const char *option,int nparg,t_pargs pa[]);
 
-extern const char *opt2parg_str(const char *option,int nparg,t_pargs pa[]);
+const char *opt2parg_str(const char *option,int nparg,t_pargs pa[]);
 
-extern const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[]);
+const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[]);
 
-extern bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[]);
+gmx_bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[]);
 
-extern void print_pargs(FILE *fp, int npargs,t_pargs pa[],bool bLeadingSpace);
+void print_pargs(FILE *fp, int npargs,t_pargs pa[],gmx_bool bLeadingSpace);
 
-extern char *pargs_print_line(t_pargs *pa,bool bLeadingSpace);
+char *pargs_print_line(t_pargs *pa,gmx_bool bLeadingSpace);
 
-extern void pr_enums(FILE *fp, int npargs,t_pargs pa[],int shell);
+void pr_enums(FILE *fp, int npargs,t_pargs pa[],int shell);
 
 #ifdef __cplusplus
 }

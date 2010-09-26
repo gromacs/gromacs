@@ -88,7 +88,7 @@ int main(int argc,char *argv[])
   int        d,m,n;
   matrix     box;
   atom_id    *sysindex;
-  bool       bHaveV,bReadV;
+  gmx_bool       bHaveV,bReadV;
   t_rgb      rgblo = { 0, 0, 1 },rgbhi = { 1, 0, 0 };
   int        flags = TRX_READ_X | TRX_READ_V;
   t_trxframe fr;

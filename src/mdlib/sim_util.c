@@ -102,6 +102,10 @@ typedef struct gmx_timeprint {
 } t_gmx_timeprint;
 #endif
 
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
 
 double
 gmx_gettime()
@@ -415,14 +419,14 @@ void do_force(FILE *fplog,t_commrec *cr,
               real *lambda,t_graph *graph,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
-              bool bBornRadii,
+              gmx_bool bBornRadii,
               int flags)
 {
     int    cg0,cg1,i,j;
     int    start,homenr;
     double mu[2*DIM]; 
-    bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
-    bool   bDoLongRange,bDoForces,bSepLRF;
+    gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
+    gmx_bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
     real   e,v,dvdlambda[efptNR];
     real   dvdl_dum,lambda_dum;
@@ -1181,7 +1185,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                    matrix box,real lambda,tensor pres,tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
-    bool bCorrAll,bCorrPres;
+    gmx_bool bCorrAll,bCorrPres;
     real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
     int  m;
     
@@ -1313,7 +1317,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 
 static void low_do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 			    gmx_mtop_t *mtop,rvec x[],
-			    bool bFirst)
+			    gmx_bool bFirst)
 {
   t_graph *graph;
   int mb,as,mol;
@@ -1368,7 +1372,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[],gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
-                bool bWriteStat)
+                gmx_bool bWriteStat)
 {
   int    i,j;
   t_nrnb *nrnb_tot=NULL;
@@ -1476,7 +1480,7 @@ void init_md(FILE *fplog,
              int nfile,const t_filenm fnm[],
              gmx_mdoutf_t **outf,t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
-             bool *bNEMD,bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
+             gmx_bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
 {
     int  i,j,n;
     real tmpt,mod;
@@ -1519,8 +1523,6 @@ void init_md(FILE *fplog,
         update_annealing_target_temp(&(ir->opts),ir->init_t);
     }
     
-    *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
-    
     if (upd)
     {
         *upd = init_update(fplog,ir);
@@ -1550,7 +1552,7 @@ void init_md(FILE *fplog,
         *outf = init_mdoutf(nfile,fnm,Flags,cr,ir,oenv);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
-                              mtop,ir);
+                              mtop,ir, (*outf)->fp_dhdl);
     }
     
     /* Initiate variables */  
@@ -1636,12 +1638,12 @@ int FindMinimum(real *min_metric, int N) {
     return min_nval;
 }
 
-static bool CheckHistogramRatios(int nhisto, real *histo, real ratio, int flatcriteria) 
+static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio, int flatcriteria) 
 {
     
     int i;
     real nmean,maxval,minval;
-    bool bIfFlat;
+    gmx_bool bIfFlat;
     
     nmean = 0;
     minval = histo[0];
@@ -1692,11 +1694,11 @@ static bool CheckHistogramRatios(int nhisto, real *histo, real ratio, int flatcr
     return bIfFlat;
 }
 
-static bool CheckIfDoneEquilibrating(t_lambda *fep, df_history_t *dfhist, gmx_large_int_t step) 
+static gmx_bool CheckIfDoneEquilibrating(t_lambda *fep, df_history_t *dfhist, gmx_large_int_t step) 
 {
 
     int i,nlim,totalsamples;
-    bool bDoneEquilibrating,bIfFlat;
+    gmx_bool bDoneEquilibrating,bIfFlat;
     
     nlim = fep->n_lambda; /* for simplicity */
 
@@ -1794,10 +1796,10 @@ static bool CheckIfDoneEquilibrating(t_lambda *fep, df_history_t *dfhist, gmx_la
     return bDoneEquilibrating;
 }
 
-static bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_large_int_t step) 
+static gmx_bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_large_int_t step) 
 {
     real maxdiff = 0.000000001;
-    bool bSufficientSamples;
+    gmx_bool bSufficientSamples;
     int i, k, n, nz, indexi, indexk, min_n, max_n, nlam, nlim, totali;
     int n0,np1,nm1,nval,min_nvalm,min_nvalp,maxc;
     real chi_m1_0,chi_p1_0,chi_m2_0,chi_p2_0,chi_p1_m1,chi_p2_m1,chi_m1_p1,chi_m2_p1;
@@ -2509,7 +2511,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     int i,nlim,lamnew;
     real mckt,maxscaled=0,maxweighted=0;
     t_lambda *fep;
-    bool bIfReset,bDoneEquilibrating=FALSE;
+    gmx_bool bIfReset,bDoneEquilibrating=FALSE;
 
     fep = ir->fepvals;
 	nlim = fep->n_lambda;
@@ -2623,70 +2625,4 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     return lamnew;
 }
 
-extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta)
-{
-    int i;
-    
-    dfhist->bEquil = 0;
-    dfhist->nlambda = nlambda;
-    dfhist->wl_delta = wl_delta;
-    snew(dfhist->sum_weights,dfhist->nlambda);
-    snew(dfhist->sum_dg,dfhist->nlambda);
-    snew(dfhist->sum_minvar,dfhist->nlambda);
-    snew(dfhist->sum_variance,dfhist->nlambda);
-    snew(dfhist->n_at_lam,dfhist->nlambda);
-    snew(dfhist->wl_histo,dfhist->nlambda);
-
-    /* allocate transition matrices here */
-    snew(dfhist->Tij,dfhist->nlambda);
-    snew(dfhist->Tij_empirical,dfhist->nlambda);
-    
-    for (i=0;i<dfhist->nlambda;i++) {
-        snew(dfhist->Tij[i],dfhist->nlambda);
-        snew(dfhist->Tij_empirical[i],dfhist->nlambda);
-    } 
-
-    snew(dfhist->accum_p,dfhist->nlambda);
-    snew(dfhist->accum_m,dfhist->nlambda);
-    snew(dfhist->accum_p2,dfhist->nlambda);
-    snew(dfhist->accum_m2,dfhist->nlambda);
-
-    for (i=0;i<dfhist->nlambda;i++) {
-        snew((dfhist->accum_p)[i],dfhist->nlambda);
-        snew((dfhist->accum_m)[i],dfhist->nlambda);
-        snew((dfhist->accum_p2)[i],dfhist->nlambda);
-        snew((dfhist->accum_m2)[i],dfhist->nlambda);
-    } 
-}    
-
-extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
-{
-    int i,j;
-
-    init_df_history(df_dest,df_source->nlambda,df_source->wl_delta);
-    df_dest->nlambda = df_source->nlambda;
-    df_dest->bEquil = df_source->bEquil;
-    for (i=0;i<df_dest->nlambda;i++) 
-    {
-        df_dest->sum_weights[i]  = df_source->sum_weights[i];
-        df_dest->sum_dg[i]       = df_source->sum_dg[i];
-        df_dest->sum_minvar[i]   = df_source->sum_minvar[i];
-        df_dest->sum_variance[i] = df_source->sum_variance[i];
-        df_dest->n_at_lam[i]     = df_source->n_at_lam[i];
-        df_dest->wl_histo[i]     = df_source->wl_histo[i];
-        df_dest->accum_p[i]      = df_source->accum_p[i];
-        df_dest->accum_m[i]      = df_source->accum_m[i];
-        df_dest->accum_p2[i]     = df_source->accum_p2[i];
-        df_dest->accum_m2[i]     = df_source->accum_m2[i];
-    }
-
-    for (i=0;i<df_dest->nlambda;i++) 
-    {
-        for (j=0;j<df_dest->nlambda;j++) 
-        {
-            df_dest->Tij[i][j]  = df_source->Tij[i][j];
-            df_dest->Tij_empirical[i][j]  = df_source->Tij_empirical[i][j];
-        }
-    }
-}
 

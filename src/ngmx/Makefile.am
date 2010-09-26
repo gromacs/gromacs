@@ -10,7 +10,7 @@ if USE_X11
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\" $(X_CFLAGS)
 AM_LDFLAGS = $(X_LIBS) $(X_PRE_LIBS) -lX11 $(X_EXTRA_LIBS)
-bin_PROGRAMS     = ngmx g_xrama g_highway g_logo 
+bin_PROGRAMS     = ngmx g_xrama 
 EXTRA_PROGRAMS   = test_ngmx_dialog  g_showcol
 
 endif
@@ -35,8 +35,6 @@ EXTRA_DIST = 	alert.bm 	gromacs.bm 	play.bm 	\
 
 ngmx_SOURCES    = ngmx.c $(XSRC)
 g_xrama_SOURCES   = g_xrama.c $(XSRC)
-g_highway_SOURCES = g_highway.c $(XSRC) 
-g_logo_SOURCES = g_logo.c $(XSRC)
 g_showcol_SOURCES = g_showcol.c $(XSRC)
 test_ngmx_dialog_SOURCES     = test_ngmx_dialog.c $(XSRC)
 

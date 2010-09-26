@@ -32,10 +32,6 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,7 +54,12 @@ enum {
 /* trotter decomposition extended variable parts */
 enum {
   etrtNONE, etrtNHC, etrtBAROV, etrtBARONHC, etrtNHC2, etrtBAROV2, etrtBARONHC2, 
-  etrtVELOCITY, etrtPOSITION, etrtSKIPALL, etrtNR
+  etrtVELOCITY1, etrtVELOCITY2, etrtPOSITION, etrtSKIPALL, etrtNR
+};
+
+/* sequenced parts of the trotter decomposition */
+enum {
+  ettTSEQ0,  ettTSEQ1,  ettTSEQ2,  ettTSEQ3,  ettTSEQ4, ettTSEQMAX
 };
 
 enum {
@@ -159,40 +160,54 @@ enum {
   efptFEP,efptMASS,efptCOUL,efptVDW,efptBONDED,efptRESTRAINT,efptNR
 };
 
-  /* How the lambda weights are calculated:                        
-     elamstatsMETROPOLIS = using the metropolis criteria                                               
-     elamstatsBARKER = using the Barker critera for transition weights - also called unoptimized Bennett  
-     elamstatsMINVAR = using Barker + minimum variance for weights                                          
-     elamstatsWL = Wang-Landu (using visitation counts)               
-     elamstatsGWL = Gibbs-weighted Wang-Landau (using weighted visitation counts)                 
-  */
-  enum {
-    elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsGWL, elamstatsNR
-  };
+/* How the lambda weights are calculated:                        
+   elamstatsMETROPOLIS = using the metropolis criteria                                               
+   elamstatsBARKER = using the Barker critera for transition weights - also called unoptimized Bennett  
+   elamstatsMINVAR = using Barker + minimum variance for weights                                          
+   elamstatsWL = Wang-Landu (using visitation counts)               
+   elamstatsGWL = Gibbs-weighted Wang-Landau (using weighted visitation counts)                 
+*/
+enum {
+  elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsGWL, elamstatsNR
+};
 
 #define EWL(e) ((e) == elamstatsGWL || (e) == elamstatsWL)  
 
-  /* How moves in lambda are calculated:                                                                                 
-     elmovemcMETROPOLIS - using the Metropolis criteria, and 50% up and down        
-     elmovemcBARKER - using the Barker criteria, and 50% up and down                     
-     elmovemcGIBBS - computing the transition using the marginalized probabilities of the lambdas   
-     elmovemcMETGIBBS - computing the transition using the metropolized version of Gibbs (Liu, p. 134)     
-  */
-  enum {
-    elmcmoveNO,elmcmoveMETROPOLIS, elmcmoveBARKER, elmcmoveGIBBS, elmcmoveMETGIBBS, elmcmoveNR
-  };
-  /* how we decide whether weights have reached equilibrium 
-     elmceqNO - never stop, weights keep going 
-     elmceqYES - fix the weights from the beginning; no movement 
-     elmceqWLDELTA - stop when the WL-delta falls below a certain level 
-     elmceqNUMATLAM - stop when we have a certain number of samples at every step 
-     elmceqSTEPS - stop when we've run a certain total number of steps 
-     elmceqSAMPLES - stop when we've run a certain total number of samples
-     elmceqRATIO - stop when the ratio of samples (lowest to highest) is sufficiently large 
-   */
-  enum {
-    elmceqNO,elmceqYES,elmceqWLDELTA,elmceqNUMATLAM,elmceqSTEPS,elmceqSAMPLES,elmceqRATIO,elmceqNR
-  };
+/* How moves in lambda are calculated:                                                                                 
+   elmovemcMETROPOLIS - using the Metropolis criteria, and 50% up and down        
+   elmovemcBARKER - using the Barker criteria, and 50% up and down                     
+   elmovemcGIBBS - computing the transition using the marginalized probabilities of the lambdas   
+   elmovemcMETGIBBS - computing the transition using the metropolized version of Gibbs (Liu, p. 134)     
+*/
+enum {
+  elmcmoveNO,elmcmoveMETROPOLIS, elmcmoveBARKER, elmcmoveGIBBS, elmcmoveMETGIBBS, elmcmoveNR
+};
+/* how we decide whether weights have reached equilibrium 
+   elmceqNO - never stop, weights keep going 
+   elmceqYES - fix the weights from the beginning; no movement 
+   elmceqWLDELTA - stop when the WL-delta falls below a certain level 
+   elmceqNUMATLAM - stop when we have a certain number of samples at every step 
+   elmceqSTEPS - stop when we've run a certain total number of steps 
+   elmceqSAMPLES - stop when we've run a certain total number of samples
+   elmceqRATIO - stop when the ratio of samples (lowest to highest) is sufficiently large 
+*/
+enum {
+  elmceqNO,elmceqYES,elmceqWLDELTA,elmceqNUMATLAM,elmceqSTEPS,elmceqSAMPLES,elmceqRATIO,elmceqNR
+};
+
+/* separate_dhdl_file selection */
+enum
+{
+  /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
+  sepdhdlfileYES, sepdhdlfileNO, sepdhdlfileNR
+};
+
+/* dhdl_derivatives selection */
+enum
+{
+  /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
+  dhdlderivativesYES, dhdlderivativesNO, dhdlderivativesNR
+};
 
 /* Solvent model */
 enum {

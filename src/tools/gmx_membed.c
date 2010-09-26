@@ -161,7 +161,7 @@ int search_string(char *s,int ng,char ***gn)
 	int i;
 
 	for(i=0; (i<ng); i++)
-		if (strcasecmp(s,*gn[i]) == 0)
+		if (gmx_strcasecmp(s,*gn[i]) == 0)
 			return i;
 
 	gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default groups in your mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
@@ -213,7 +213,7 @@ int get_block(int mol_id,int nmblock,gmx_molblock_t *mblock)
 int get_tpr_version(const char *infile)
 {
 	char  	buf[STRLEN];
-	bool  	bDouble;
+	gmx_bool  	bDouble;
 	int 	precision,fver;
         t_fileio *fio;
 
@@ -266,7 +266,7 @@ int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 {
 	int i,j,nr,mol_id;
         int type=0,block=0;
-	bool bNEW;
+	gmx_bool bNEW;
 
 	nr=0;
 	snew(tlist->index,at->nr);
@@ -438,7 +438,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	int i,j,at,mol,nmol,nmolbox,count;
 	t_block *mem_a;
 	real z,zmin,zmax,mem_area;
-	bool bNew;
+	gmx_bool bNew;
 	atom_id *mol_id;
 	int type=0,block=0;
 
@@ -504,7 +504,7 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	return mem_p->mem_at.nr;
 }
 
-void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *mem_p,rvec *r, bool bALLOW_ASYMMETRY)
+void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *mem_p,rvec *r, gmx_bool bALLOW_ASYMMETRY)
 {
 	int i,j,at,c,outsidesum,gctr=0;
     int idxsum=0;
@@ -562,13 +562,13 @@ void resize(t_block *ins_at, rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
 }
 
 int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop_t *mtop,
-		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, bool bALLOW_ASYMMETRY)
+		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, gmx_bool bALLOW_ASYMMETRY)
 {
 	int i,j,k,l,at,at2,mol_id;
         int type=0,block=0;
 	int nrm,nupper,nlower;
 	real r_min_rad,z_lip,min_norm;
-	bool bRM;
+	gmx_bool bRM;
 	rvec dr,dr_tmp;
 	real *dist;
 	int *order;
@@ -704,7 +704,7 @@ void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p
 	rvec *x_tmp,*v_tmp;
 	atom_id *list,*new_mols;
 	unsigned char  *new_egrp[egcNR];
-	bool bRM;
+	gmx_bool bRM;
 
 	snew(list,state->natoms);
 	n=0;
@@ -812,7 +812,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 {
 	int i,j,m;
 	int type,natom,nmol,at,atom1=0,rm_at=0;
-	bool *bRM,bINS;
+	gmx_bool *bRM,bINS;
 	/*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
 	/*this routine does not live as dangerously as it seems. There is namely a check in mdrunner_membed to make
          *sure that g_membed exits with a warning when there are molecules of the same type not in the 
@@ -911,7 +911,7 @@ void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 					buf2[strlen(buf2)-1]='\0';
 					ltrim(buf2);
 					rtrim(buf2);
-					if (strcasecmp(buf2,"molecules")==0)
+					if (gmx_strcasecmp(buf2,"molecules")==0)
 						bMolecules=1;
 				}
 				fprintf(fpout,"%s",buf);
@@ -964,7 +964,7 @@ void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
     negative or zero. */
 enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 /* Is the signal in one simulation independent of other simulations? */
-bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
+gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
 
 typedef struct {
     int nstms;       /* The frequency for intersimulation communication */
@@ -976,7 +976,7 @@ typedef struct {
 static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
 {
     int  *buf;
-    bool bPos,bEqual;
+    gmx_bool bPos,bEqual;
     int  s,d;
 
     snew(buf,ms->nsim);
@@ -1140,211 +1140,11 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                             t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                             gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir,
                             tensor pres, rvec mu_tot, gmx_constr_t constr,
-                            globsig_t *gs,bool bInterSimGS,
+                            globsig_t *gs,gmx_bool bInterSimGS,
                             matrix box, gmx_mtop_t *top_global, real *pcurr,
-                            int natoms, bool *bSumEkinhOld, int flags)
+                            int natoms, gmx_bool *bSumEkinhOld, int flags)
 {
-
-}
-
-
-/* Definitions for convergence of iterated constraints */
-
-/* iterate constraints up to 50 times  */
-#define MAXITERCONST       50
-
-/* data type */
-typedef struct
-{
-    real f,fprev,x,xprev;
-    int iter_i;
-    bool bIterate;
-    real allrelerr[MAXITERCONST+2];
-    int num_close; /* number of "close" violations, caused by limited precision. */
-} gmx_iterate_t;
-
-#ifdef GMX_DOUBLE
-#define CONVERGEITER  0.000000001
-#define CLOSE_ENOUGH  0.000001000
-#else
-#define CONVERGEITER  0.0001
-#define CLOSE_ENOUGH  0.0050
-#endif
-
-/* we want to keep track of the close calls.  If there are too many, there might be some other issues.
-   so we make sure that it's either less than some predetermined number, or if more than that number,
-   only some small fraction of the total. */
-#define MAX_NUMBER_CLOSE        50
-#define FRACTION_CLOSE       0.001
-
-/* maximum length of cyclic traps to check, emerging from limited numerical precision  */
-#define CYCLEMAX            20
-
-static void gmx_iterate_init(gmx_iterate_t *iterate,bool bIterate)
-{
-    int i;
-
-    iterate->iter_i = 0;
-    iterate->bIterate = bIterate;
-    iterate->num_close = 0;
-    for (i=0;i<MAXITERCONST+2;i++)
-    {
-        iterate->allrelerr[i] = 0;
-    }
-}
-
-static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, bool bFirstIterate, real fom, real *newf)
-{
-    /* monitor convergence, and use a secant search to propose new
-       values.
-                                                                  x_{i} - x_{i-1}
-       The secant method computes x_{i+1} = x_{i} - f(x_{i}) * ---------------------
-                                                                f(x_{i}) - f(x_{i-1})
-
-       The function we are trying to zero is fom-x, where fom is the
-       "figure of merit" which is the pressure (or the veta value) we
-       would get by putting in an old value of the pressure or veta into
-       the incrementor function for the step or half step.  I have
-       verified that this gives the same answer as self consistent
-       iteration, usually in many fewer steps, especially for small tau_p.
-
-       We could possibly eliminate an iteration with proper use
-       of the value from the previous step, but that would take a bit
-       more bookkeeping, especially for veta, since tests indicate the
-       function of veta on the last step is not sufficiently close to
-       guarantee convergence this step. This is
-       good enough for now.  On my tests, I could use tau_p down to
-       0.02, which is smaller that would ever be necessary in
-       practice. Generally, 3-5 iterations will be sufficient */
-
-    real relerr,err;
-    char buf[256];
-    int i;
-    bool incycle;
-
-    if (bFirstIterate)
-    {
-        iterate->x = fom;
-        iterate->f = fom-iterate->x;
-        iterate->xprev = 0;
-        iterate->fprev = 0;
-        *newf = fom;
-    }
-    else
-    {
-        iterate->f = fom-iterate->x; /* we want to zero this difference */
-        if ((iterate->iter_i > 1) && (iterate->iter_i < MAXITERCONST))
-        {
-            if (iterate->f==iterate->fprev)
-            {
-                *newf = iterate->f;
-            }
-            else
-            {
-                *newf = iterate->x - (iterate->x-iterate->xprev)*(iterate->f)/(iterate->f-iterate->fprev);
-            }
-        }
-        else
-        {
-            /* just use self-consistent iteration the first step to initialize, or
-               if it's not converging (which happens occasionally -- need to investigate why) */
-            *newf = fom;
-        }
-    }
-    /* Consider a slight shortcut allowing us to exit one sooner -- we check the
-       difference between the closest of x and xprev to the new
-       value. To be 100% certain, we should check the difference between
-       the last result, and the previous result, or
-
-       relerr = (fabs((x-xprev)/fom));
-
-       but this is pretty much never necessary under typical conditions.
-       Checking numerically, it seems to lead to almost exactly the same
-       trajectories, but there are small differences out a few decimal
-       places in the pressure, and eventually in the v_eta, but it could
-       save an interation.
-
-       if (fabs(*newf-x) < fabs(*newf - xprev)) { xmin = x;} else { xmin = xprev;}
-       relerr = (fabs((*newf-xmin) / *newf));
-    */
-
-    err = fabs((iterate->f-iterate->fprev));
-    relerr = fabs(err/fom);
-
-    iterate->allrelerr[iterate->iter_i] = relerr;
-
-    if (iterate->iter_i > 0)
-    {
-        if (debug)
-        {
-            fprintf(debug,"Iterating NPT constraints: %6i %20.12f%14.6g%20.12f\n",
-                    iterate->iter_i,fom,relerr,*newf);
-        }
-
-        if ((relerr < CONVERGEITER) || (err < CONVERGEITER) || (fom==0) || ((iterate->x == iterate->xprev) && iterate->iter_i > 1))
-        {
-            iterate->bIterate = FALSE;
-            if (debug)
-            {
-                fprintf(debug,"Iterating NPT constraints: CONVERGED\n");
-            }
-            return TRUE;
-        }
-        if (iterate->iter_i > MAXITERCONST)
-        {
-            if (relerr < CLOSE_ENOUGH)
-            {
-                incycle = FALSE;
-                for (i=1;i<CYCLEMAX;i++) {
-                    if ((iterate->allrelerr[iterate->iter_i-(1+i)] == iterate->allrelerr[iterate->iter_i-1]) &&
-                        (iterate->allrelerr[iterate->iter_i-(1+i)] == iterate->allrelerr[iterate->iter_i-(1+2*i)])) {
-                        incycle = TRUE;
-                        if (debug)
-                        {
-                            fprintf(debug,"Exiting from an NPT iterating cycle of length %d\n",i);
-                        }
-                        break;
-                    }
-                }
-
-                if (incycle) {
-                    /* step 1: trapped in a numerical attractor */
-                    /* we are trapped in a numerical attractor, and can't converge any more, and are close to the final result.
-                       Better to give up convergence here than have the simulation die.
-                    */
-                    iterate->num_close++;
-                    return TRUE;
-                }
-                else
-                {
-                    /* Step #2: test if we are reasonably close for other reasons, then monitor the number.  If not, die */
-
-                    /* how many close calls have we had?  If less than a few, we're OK */
-                    if (iterate->num_close < MAX_NUMBER_CLOSE)
-                    {
-                        sprintf(buf,"Slight numerical convergence deviation with NPT at step %d, relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
-                        md_print_warning(cr,fplog,buf);
-                        iterate->num_close++;
-                        return TRUE;
-                        /* if more than a few, check the total fraction.  If too high, die. */
-                    } else if (iterate->num_close/(double)nsteps > FRACTION_CLOSE) {
-                        gmx_fatal(FARGS,"Could not converge NPT constraints, too many exceptions (%d%%\n",iterate->num_close/(double)nsteps);
-                    }
-                }
-            }
-            else
-            {
-                gmx_fatal(FARGS,"Could not converge NPT constraints\n");
-            }
-        }
-    }
-
-    iterate->xprev = iterate->x;
-    iterate->x = *newf;
-    iterate->fprev = iterate->f;
-    iterate->iter_i++;
-
-    return FALSE;
+  return;
 }
 
 static void check_nst_param(FILE *fplog,t_commrec *cr,
@@ -1493,7 +1293,7 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
 }
 
 typedef struct {
-    bool       bGStatEveryStep;
+    gmx_bool       bGStatEveryStep;
     gmx_large_int_t step_ns;
     gmx_large_int_t step_nscheck;
     gmx_large_int_t nns;
@@ -1514,7 +1314,7 @@ static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step)
 }
 
 static void init_nlistheuristics(gmx_nlheur_t *nlh,
-                                 bool bGStatEveryStep,gmx_large_int_t step)
+                                 gmx_bool bGStatEveryStep,gmx_large_int_t step)
 {
     nlh->bGStatEveryStep = bGStatEveryStep;
     nlh->nns       = 0;
@@ -1576,7 +1376,7 @@ static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step)
     }
 }
 
-static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t step)
+static void set_nlistheuristics(gmx_nlheur_t *nlh,gmx_bool bReset,gmx_large_int_t step)
 {
     int d;
 
@@ -1599,7 +1399,7 @@ static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t st
 }
 
 double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,t_inputrec *ir,
@@ -1617,81 +1417,11 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              rvec fac, rvec *r_ins, pos_ins_t *pos_ins, t_block *ins_at,
              real xy_step, real z_step, int it_xy, int it_z)
 {
-    gmx_mdoutf_t *outf;
-    gmx_large_int_t step,step_rel;
-    double     run_time;
-    double     t,t0,lam0;
-    bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
-    bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
-               bFirstStep,bStateFromTPX,bInitStep,bLastStep,
-               bBornRadii,bStartingFromCpt;
-    bool       bDoDHDL=FALSE;
-    bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
-               bForceUpdate=FALSE,bCPT;
-    int        mdof_flags;
-    bool       bMasterState;
-    int        force_flags,cglo_flags;
-    tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
-    int        i,m;
-    t_trxstatus *status;
-    rvec       mu_tot;
-    t_vcm      *vcm;
-    t_state    *bufstate=NULL;
-    matrix     *scale_tot,pcoupl_mu,M,ebox;
-    gmx_nlheur_t nlh;
-    t_trxframe rerun_fr;
-/*    gmx_repl_ex_t repl_ex=NULL;*/
-    int        nchkpt=1;
-
-    gmx_localtop_t *top;
-    t_mdebin *mdebin=NULL;
-    t_state    *state=NULL;
-    rvec       *f_global=NULL;
-    int        n_xtc=-1;
-    rvec       *x_xtc=NULL;
-    gmx_enerdata_t *enerd;
-    rvec       *f=NULL;
-    gmx_global_stat_t gstat;
-    gmx_update_t upd=NULL;
-    t_graph    *graph=NULL;
-    globsig_t   gs;
-
-    bool        bFFscan;
-    gmx_groups_t *groups;
-    gmx_ekindata_t *ekind, *ekind_save;
-    gmx_shellfc_t shellfc;
-    int         count,nconverged=0;
-    real        timestep=0;
-    double      tcount=0;
-    bool        bIonize=FALSE;
-    bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
-    bool        bAppend;
-    bool        bResetCountersHalfMaxH=FALSE;
-    bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
-    real        temp0,dvdl;
-    int         a0,a1,ii;
-    rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
-    matrix      boxcopy={{0}},lastbox;
-	real        veta_save,pcurr,scalevir,tracevir;
-	real        vetanew = 0;
-    double      cycles;
-	real        last_conserved = 0;
-    real        last_ekin = 0;
-	t_extmass   MassQ;
-    int         **trotter_seq;
-    char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-    int         handled_stop_condition=gmx_stop_cond_none; /* compare to get_stop_condition*/
-    gmx_iterate_t iterate;
-#ifdef GMX_FAHCORE
-    /* Temporary addition for FAHCORE checkpointing */
-    int chkpt_ret;
-#endif
-
-    return 0;
+  return 0;
 }
 
 int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
@@ -1702,41 +1432,392 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              unsigned long Flags,
              real xy_fac, real xy_max, real z_fac, real z_max,
              int it_xy, int it_z, real probe_rad, int low_up_rm,
-             int pieces, bool bALLOW_ASYMMETRY, int maxwarn)
+             int pieces, gmx_bool bALLOW_ASYMMETRY, int maxwarn)
 {
-    double     nodetime=0,realtime;
-    t_inputrec *inputrec;
-    t_state    *state=NULL;
-    matrix     box;
-    gmx_ddbox_t ddbox;
-    int        npme_major,npme_minor;
-    real       tmpr1,tmpr2;
-    t_nrnb     *nrnb;
-    gmx_mtop_t *mtop=NULL;
-    t_mdatoms  *mdatoms=NULL;
-    t_forcerec *fr=NULL;
-    t_fcdata   *fcd=NULL;
-    real       ewaldcoeff=0;
-    gmx_pme_t  *pmedata=NULL;
-    gmx_vsite_t *vsite=NULL;
-    gmx_constr_t constr;
-    int        i,m,nChargePerturbed=-1,status,nalloc;
-    char       *gro;
-    gmx_wallcycle_t wcycle;
-    bool       bReadRNG,bReadEkin;
-    int        list;
-    gmx_runtime_t runtime;
-    int        rc;
-    gmx_large_int_t reset_counters;
-    gmx_edsam_t ed=NULL;
-    t_commrec   *cr_old=cr;
-    int        nthreads=1,nthreads_requested=1;
-
-    return 0;
+  return 0;
 }
 
 int gmx_membed(int argc,char *argv[])
 {
-  return 0;
+	const char *desc[] = {
+			"g_membed embeds a membrane protein into an equilibrated lipid bilayer at the position",
+			"and orientation specified by the user.\n",
+			"\n",
+			"SHORT MANUAL\n------------\n",
+			"The user should merge the structure files of the protein and membrane (+solvent), creating a",
+			"single structure file with the protein overlapping the membrane at the desired position and",
+			"orientation. Box size should be taken from the membrane structure file. The corresponding topology",
+			"files should also be merged. Consecutively, create a tpr file (input for g_membed) from these files,"
+			"with the following options included in the mdp file.\n",
+			" - integrator      = md\n",
+			" - energygrp       = Protein (or other group that you want to insert)\n",
+			" - freezegrps      = Protein\n",
+			" - freezedim       = Y Y Y\n",
+			" - energygrp_excl  = Protein Protein\n",
+			"The output is a structure file containing the protein embedded in the membrane. If a topology",
+			"file is provided, the number of lipid and ",
+			"solvent molecules will be updated to match the new structure file.\n",
+			"For a more extensive manual see Wolf et al, J Comp Chem 31 (2010) 2169-2174, Appendix.\n",
+			"\n",
+			"SHORT METHOD DESCRIPTION\n",
+			"------------------------\n",
+			"1. The protein is resized around its center of mass by a factor -xy in the xy-plane",
+			"(the membrane plane) and a factor -z in the z-direction (if the size of the",
+			"protein in the z-direction is the same or smaller than the width of the membrane, a",
+			"-z value larger than 1 can prevent that the protein will be enveloped by the lipids).\n",
+			"2. All lipid and solvent molecules overlapping with the resized protein are removed. All",
+			"intraprotein interactions are turned off to prevent numerical issues for small values of -xy",
+			" or -z\n",
+			"3. One md step is performed.\n",
+			"4. The resize factor (-xy or -z) is incremented by a small amount ((1-xy)/nxy or (1-z)/nz) and the",
+			"protein is resized again around its center of mass. The resize factor for the xy-plane",
+			"is incremented first. The resize factor for the z-direction is not changed until the -xy factor",
+			"is 1 (thus after -nxy iteration).\n",
+			"5. Repeat step 3 and 4 until the protein reaches its original size (-nxy + -nz iterations).\n",
+			"For a more extensive method descrition see Wolf et al, J Comp Chem, 31 (2010) 2169-2174.\n",
+			"\n",
+			"NOTE\n----\n",
+			" - Protein can be any molecule you want to insert in the membrane.\n",
+			" - It is recommended to perform a short equilibration run after the embedding",
+			"(see Wolf et al, J Comp Chem 31 (2010) 2169-2174, to re-equilibrate the membrane. Clearly",
+			"protein equilibration might require longer.\n",
+			"\n"
+	};
+	t_commrec    *cr;
+	t_filenm fnm[] = {
+			{ efTPX, "-f",      "into_mem", ffREAD },
+			{ efNDX, "-n",      "index",    ffOPTRD },
+			{ efTOP, "-p",      "topol",    ffOPTRW },
+			{ efTRN, "-o",      NULL,       ffWRITE },
+			{ efXTC, "-x",      NULL,       ffOPTWR },
+			{ efCPT, "-cpi",    NULL,       ffOPTRD },
+			{ efCPT, "-cpo",    NULL,       ffOPTWR },
+			{ efSTO, "-c",      "membedded",  ffWRITE },
+			{ efEDR, "-e",      "ener",     ffWRITE },
+			{ efLOG, "-g",      "md",       ffWRITE },
+			{ efEDI, "-ei",     "sam",      ffOPTRD },
+			{ efTRX, "-rerun",  "rerun",    ffOPTRD },
+			{ efXVG, "-table",  "table",    ffOPTRD },
+			{ efXVG, "-tablep", "tablep",   ffOPTRD },
+			{ efXVG, "-tableb", "table",    ffOPTRD },
+			{ efXVG, "-dhdl",   "dhdl",     ffOPTWR },
+			{ efXVG, "-field",  "field",    ffOPTWR },
+			{ efXVG, "-table",  "table",    ffOPTRD },
+			{ efXVG, "-tablep", "tablep",   ffOPTRD },
+			{ efXVG, "-tableb", "table",    ffOPTRD },
+			{ efTRX, "-rerun",  "rerun",    ffOPTRD },
+			{ efXVG, "-tpi",    "tpi",      ffOPTWR },
+			{ efXVG, "-tpid",   "tpidist",  ffOPTWR },
+			{ efEDI, "-ei",     "sam",      ffOPTRD },
+			{ efEDO, "-eo",     "sam",      ffOPTWR },
+			{ efGCT, "-j",      "wham",     ffOPTRD },
+			{ efGCT, "-jo",     "bam",      ffOPTWR },
+			{ efXVG, "-ffout",  "gct",      ffOPTWR },
+			{ efXVG, "-devout", "deviatie", ffOPTWR },
+			{ efXVG, "-runav",  "runaver",  ffOPTWR },
+			{ efXVG, "-px",     "pullx",    ffOPTWR },
+			{ efXVG, "-pf",     "pullf",    ffOPTWR },
+			{ efMTX, "-mtx",    "nm",       ffOPTWR },
+			{ efNDX, "-dn",     "dipole",   ffOPTWR }
+	};
+#define NFILE asize(fnm)
 
+	/* Command line options ! */
+	gmx_bool bCart        = FALSE;
+	gmx_bool bPPPME       = FALSE;
+	gmx_bool bPartDec     = FALSE;
+	gmx_bool bDDBondCheck = TRUE;
+	gmx_bool bDDBondComm  = TRUE;
+	gmx_bool bVerbose     = FALSE;
+	gmx_bool bCompact     = TRUE;
+	gmx_bool bSepPot      = FALSE;
+	gmx_bool bRerunVSite  = FALSE;
+	gmx_bool bIonize      = FALSE;
+	gmx_bool bConfout     = TRUE;
+	gmx_bool bReproducible = FALSE;
+
+	int  npme=-1;
+	int  nmultisim=0;
+	int  nstglobalcomm=-1;
+	int  repl_ex_nst=0;
+	int  repl_ex_seed=-1;
+	int  nstepout=100;
+	int  nthreads=0; /* set to determine # of threads automatically */
+	int  resetstep=-1;
+
+	rvec realddxyz={0,0,0};
+	const char *ddno_opt[ddnoNR+1] =
+	{ NULL, "interleave", "pp_pme", "cartesian", NULL };
+	const char *dddlb_opt[] =
+	{ NULL, "auto", "no", "yes", NULL };
+	real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
+	char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
+	real cpt_period=15.0,max_hours=-1;
+	gmx_bool bAppendFiles=TRUE,bAddPart=TRUE;
+	gmx_bool bResetCountersHalfWay=FALSE;
+	output_env_t oenv=NULL;
+	const char *deviceOptions = "";
+
+	real xy_fac = 0.5;
+	real xy_max = 1.0;
+	real z_fac = 1.0;
+	real z_max = 1.0;
+	int it_xy = 1000;
+	int it_z = 0;
+	real probe_rad = 0.22;
+	int low_up_rm = 0;
+	int maxwarn=0;
+	int pieces=1;
+    gmx_bool bALLOW_ASYMMETRY=FALSE;
+
+
+/* arguments relevant to OPENMM only*/
+#ifdef GMX_OPENMM
+    gmx_input("g_membed not functional in openmm");
+#endif
+
+	t_pargs pa[] = {
+			{ "-xyinit",   FALSE, etREAL,  {&xy_fac},   	"Resize factor for the protein in the xy dimension before starting embedding" },
+			{ "-xyend",   FALSE, etREAL,  {&xy_max},   		"Final resize factor in the xy dimension" },
+			{ "-zinit",    FALSE, etREAL,  {&z_fac},  		"Resize factor for the protein in the z dimension before starting embedding" },
+			{ "-zend",    FALSE, etREAL,  {&z_max},    		"Final resize faction in the z dimension" },
+			{ "-nxy",     FALSE,  etINT,  {&it_xy},         "Number of iteration for the xy dimension" },
+			{ "-nz",      FALSE,  etINT,  {&it_z},          "Number of iterations for the z dimension" },
+			{ "-rad",     FALSE, etREAL,  {&probe_rad},     "Probe radius to check for overlap between the group to embed and the membrane"},
+			{ "-pieces",  FALSE,  etINT,  {&pieces},        "Perform piecewise resize. Select parts of the group to insert and resize these with respect to their own geometrical center." },
+            { "-asymmetry",FALSE, etBOOL,{&bALLOW_ASYMMETRY}, "Allow asymmetric insertion, i.e. the number of lipids removed from the upper and lower leaflet will not be checked." },
+            { "-ndiff" ,  FALSE, etINT, {&low_up_rm},       "Number of lipids that will additionally be removed from the lower (negative number) or upper (positive number) membrane leaflet." },
+			{ "-maxwarn", FALSE, etINT, {&maxwarn},			"Maximum number of warning allowed" },
+  { "-pd",      FALSE, etBOOL,{&bPartDec},
+    "HIDDENUse particle decompostion" },
+  { "-dd",      FALSE, etRVEC,{&realddxyz},
+    "HIDDENDomain decomposition grid, 0 is optimize" },
+  { "-nt",      FALSE, etINT, {&nthreads},
+    "HIDDENNumber of threads to start (0 is guess)" },
+  { "-npme",    FALSE, etINT, {&npme},
+    "HIDDENNumber of separate nodes to be used for PME, -1 is guess" },
+  { "-ddorder", FALSE, etENUM, {ddno_opt},
+    "HIDDENDD node order" },
+  { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
+    "HIDDENCheck for all bonded interactions with DD" },
+  { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
+    "HIDDENUse special bonded atom communication when -rdd > cut-off" },
+  { "-rdd",     FALSE, etREAL, {&rdd},
+    "HIDDENThe maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
+  { "-rcon",    FALSE, etREAL, {&rconstr},
+    "HIDDENMaximum distance for P-LINCS (nm), 0 is estimate" },
+  { "-dlb",     FALSE, etENUM, {dddlb_opt},
+    "HIDDENDynamic load balancing (with DD)" },
+  { "-dds",     FALSE, etREAL, {&dlb_scale},
+    "HIDDENMinimum allowed dlb scaling of the DD cell size" },
+  { "-ddcsx",   FALSE, etSTR, {&ddcsx},
+    "HIDDENThe DD cell sizes in x" },
+  { "-ddcsy",   FALSE, etSTR, {&ddcsy},
+    "HIDDENThe DD cell sizes in y" },
+  { "-ddcsz",   FALSE, etSTR, {&ddcsz},
+    "HIDDENThe DD cell sizes in z" },
+  { "-gcom",    FALSE, etINT,{&nstglobalcomm},
+    "HIDDENGlobal communication frequency" },
+  { "-compact", FALSE, etBOOL,{&bCompact},
+    "Write a compact log file" },
+  { "-seppot",  FALSE, etBOOL, {&bSepPot},
+    "HIDDENWrite separate V and dVdl terms for each interaction type and node to the log file(s)" },
+  { "-pforce",  FALSE, etREAL, {&pforce},
+    "HIDDENPrint all forces larger than this (kJ/mol nm)" },
+  { "-reprod",  FALSE, etBOOL,{&bReproducible},
+    "HIDDENTry to avoid optimizations that affect binary reproducibility" },
+  { "-multi",   FALSE, etINT,{&nmultisim},
+    "HIDDENDo multiple simulations in parallel" },
+  { "-replex",  FALSE, etINT, {&repl_ex_nst},
+    "HIDDENAttempt replica exchange every # steps" },
+  { "-reseed",  FALSE, etINT, {&repl_ex_seed},
+    "HIDDENSeed for replica exchange, -1 is generate a seed" },
+  { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
+    "HIDDENRecalculate virtual site coordinates with -rerun" },
+  { "-ionize",  FALSE, etBOOL,{&bIonize},
+    "HIDDENDo a simulation including the effect of an X-Ray bombardment on your system" },
+  { "-confout", TRUE, etBOOL, {&bConfout},
+    "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
+  { "-stepout", FALSE, etINT, {&nstepout},
+    "HIDDENFrequency of writing the remaining runtime" },
+  { "-resetstep", FALSE, etINT, {&resetstep},
+    "HIDDENReset cycle counters after these many time steps" },
+  { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
+    "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
+  { "-v",       FALSE, etBOOL,{&bVerbose},
+    "Be loud and noisy" },
+  { "-maxh",   FALSE, etREAL, {&max_hours},
+    "HIDDENTerminate after 0.99 times this time (hours)" },
+  { "-cpt",     FALSE, etREAL, {&cpt_period},
+    "HIDDENCheckpoint interval (minutes)" },
+  { "-append",  FALSE, etBOOL, {&bAppendFiles},
+    "HIDDENAppend to previous output files when continuing from checkpoint" },
+  { "-addpart",  FALSE, etBOOL, {&bAddPart},
+    "HIDDENAdd the simulation part number to all output files when continuing from checkpoint" },
+	};
+	gmx_edsam_t  ed;
+	unsigned long Flags, PCA_Flags;
+	ivec     ddxyz;
+	int      dd_node_order;
+	gmx_bool     HaveCheckpoint;
+	FILE     *fplog,*fptest;
+	int      sim_part,sim_part_fn;
+	const char *part_suffix=".part";
+	char     suffix[STRLEN];
+	int      rc;
+
+
+	cr = init_par(&argc,&argv);
+
+	PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
+			| (MASTER(cr) ? 0 : PCA_QUIET));
+
+
+	/* Comment this in to do fexist calls only on master
+	 * works not with rerun or tables at the moment
+	 * also comment out the version of init_forcerec in md.c
+	 * with NULL instead of opt2fn
+	 */
+	/*
+   if (!MASTER(cr))
+   {
+   PCA_Flags |= PCA_NOT_READ_NODE;
+   }
+	 */
+
+	parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
+			asize(desc),desc,0,NULL, &oenv);
+
+	/* we set these early because they might be used in init_multisystem()
+   Note that there is the potential for npme>nnodes until the number of
+   threads is set later on, if there's thread parallelization. That shouldn't
+   lead to problems. */
+	dd_node_order = nenum(ddno_opt);
+	cr->npmenodes = npme;
+
+#ifdef GMX_THREADS
+	/* now determine the number of threads automatically. The threads are
+   only started at mdrunner_threads, though. */
+	if (nthreads<1)
+	{
+		nthreads=tMPI_Get_recommended_nthreads();
+	}
+#else
+	nthreads=1;
+#endif
+
+
+	if (repl_ex_nst != 0 && nmultisim < 2)
+		gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
+
+	if (nmultisim > 1) {
+#ifndef GMX_THREADS
+		init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
+#else
+		gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
+#endif
+	}
+
+	/* Check if there is ANY checkpoint file available */
+	sim_part    = 1;
+	sim_part_fn = sim_part;
+	if (opt2bSet("-cpi",NFILE,fnm))
+	{
+		bAppendFiles =
+			read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,fnm,cr),
+							&sim_part_fn,NULL,cr,
+							bAppendFiles,NFILE,fnm,
+							part_suffix,&bAddPart);
+		if (sim_part_fn==0 && MASTER(cr))
+		{
+			fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
+		}
+		else
+		{
+			sim_part = sim_part_fn + 1;
+		}
+	}
+	else
+	{
+		bAppendFiles = FALSE;
+	}
+
+	if (!bAppendFiles)
+	{
+		sim_part_fn = sim_part;
+	}
+
+	if (bAddPart && sim_part_fn > 1)
+	{
+		/* This is a continuation run, rename trajectory output files
+       (except checkpoint files) */
+		/* create new part name first (zero-filled) */
+		sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
+
+		add_suffix_to_output_names(fnm,NFILE,suffix);
+		fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
+	}
+
+	Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
+	Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
+	Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
+	Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
+	Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
+	Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
+	Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
+	Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
+	Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
+	Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0);
+	Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0);
+	Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
+
+
+	/* We postpone opening the log file if we are appending, so we can
+   first truncate the old log file and append to the correct position
+   there instead.  */
+	if ((MASTER(cr) || bSepPot) && !bAppendFiles)
+	{
+		gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
+		CopyRight(fplog,argv[0]);
+		please_cite(fplog,"Hess2008b");
+		please_cite(fplog,"Spoel2005a");
+		please_cite(fplog,"Lindahl2001a");
+		please_cite(fplog,"Berendsen95a");
+	}
+	else
+	{
+		fplog = NULL;
+	}
+
+	ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
+	ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
+	ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
+
+	/* even if nthreads = 1, we still call this one */
+
+	rc = mdrunner_membed(fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
+			nstglobalcomm,
+			ddxyz, dd_node_order, rdd, rconstr, dddlb_opt[0], dlb_scale,
+			ddcsx, ddcsy, ddcsz, nstepout, resetstep, nmultisim, repl_ex_nst,
+			repl_ex_seed, pforce, cpt_period, max_hours, deviceOptions, Flags,
+			xy_fac,xy_max,z_fac,z_max,
+			it_xy,it_z,probe_rad,low_up_rm,
+			pieces,bALLOW_ASYMMETRY,maxwarn);
+
+	if (gmx_parallel_env_initialized())
+		gmx_finalize();
+
+	if (MULTIMASTER(cr)) {
+		thanx(stderr);
+	}
+
+	/* Log file has to be closed in mdrunner if we are appending to it
+   (fplog not set here) */
+	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
+
+	if (MASTER(cr) && !bAppendFiles)
+	{
+		gmx_log_close(fplog);
+	}
+	return 0;
 }

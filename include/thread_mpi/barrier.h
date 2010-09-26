@@ -38,7 +38,6 @@ files.
 #ifndef _TMPI_BARRIER_H_
 #define _TMPI_BARRIER_H_
 
-#include "atomic.h"
 #include "wait.h"
 
 /** Fast (possibly busy-wait-based) barrier type

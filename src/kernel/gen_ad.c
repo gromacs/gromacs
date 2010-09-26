@@ -56,7 +56,7 @@
 #include "resall.h"
 #include "gen_ad.h"
 
-typedef bool (*peq)(t_param *p1, t_param *p2);
+typedef gmx_bool (*peq)(t_param *p1, t_param *p2);
 
 static int acomp(const void *a1, const void *a2)
 {
@@ -111,7 +111,7 @@ static int dcomp(const void *d1, const void *d2)
 }
 
 
-static bool aeq(t_param *p1, t_param *p2)
+static gmx_bool aeq(t_param *p1, t_param *p2)
 {
   if (p1->AJ!=p2->AJ)
     return FALSE;
@@ -124,7 +124,7 @@ static bool aeq(t_param *p1, t_param *p2)
 
 
 
-static bool deq(t_param *p1, t_param *p2)
+static gmx_bool deq(t_param *p1, t_param *p2)
 {
   if (((p1->AJ==p2->AJ) && (p1->AK==p2->AK)) ||
       ((p1->AJ==p2->AK) && (p1->AK==p2->AJ)))
@@ -134,10 +134,10 @@ static bool deq(t_param *p1, t_param *p2)
 }
 
 
-static bool remove_dih(t_param *p, int i, int np)
+static gmx_bool remove_dih(t_param *p, int i, int np)
      /* check if dihedral p[i] should be removed */
 {
-  bool bRem;
+  gmx_bool bRem;
   int j;
 
   if (p[i].c[MAXFORCEPARAM-1]==NOTSET) {
@@ -158,7 +158,7 @@ static bool remove_dih(t_param *p, int i, int np)
   return bRem;
 }
 
-static bool preq(t_param *p1, t_param *p2)
+static gmx_bool preq(t_param *p1, t_param *p2)
 {
   if ((p1->AI==p2->AI) && (p1->AJ==p2->AJ))
     return TRUE;
@@ -286,7 +286,7 @@ static int eq_imp(atom_id a1[],atom_id a2[])
   return TRUE;
 }
 
-static bool ideq(t_param *p1, t_param *p2)
+static gmx_bool ideq(t_param *p1, t_param *p2)
 {
   return eq_imp(p1->a,p2->a);
 }
@@ -360,11 +360,11 @@ static int n_hydro(atom_id a[],char ***atomname)
 }
 
 static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
-		      t_atoms *atoms,bool bAlldih, bool bRemoveDih)
+		      t_atoms *atoms,gmx_bool bAlldih, gmx_bool bRemoveDih)
 {
   int  i,j,k,l;
   int  *index,nind;
-  bool bIsSet,bKeep;
+  gmx_bool bIsSet,bKeep;
   int  bestl,nh,minh;
   
   snew(index,*ndih+1);
@@ -429,14 +429,14 @@ static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
 }
 
 static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih,
-			 bool bAllowMissing)
+			 gmx_bool bAllowMissing)
 {
   char      *a0;
   t_rbondeds *idihs;
   t_rbonded  *hbidih;
   int       nidih,i,j,k,r,start,ninc,nalloc;
   atom_id   ai[MAXATOMLIST];
-  bool      bStop;
+  gmx_bool      bStop;
   
   ninc = 500;
   nalloc = ninc;
@@ -496,7 +496,7 @@ static int nb_dist(t_nextnb *nnb,int ai,int aj)
   return NRE;
 }
 
-bool is_hydro(t_atoms *atoms,int ai)
+gmx_bool is_hydro(t_atoms *atoms,int ai)
 {
   return ((*(atoms->atomname[ai]))[0] == 'H');
 }
@@ -519,7 +519,7 @@ static void get_atomnames_min(int n,char **anm,
 }
 
 static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
-		      bool bAllowMissing)
+		      gmx_bool bAllowMissing)
 {
   int        r;
   atom_id    a,astart,i1,i2,itmp;
@@ -634,9 +634,9 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
   }
 }
 
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14,
 	     t_params plist[], t_excls excls[], t_hackblock hb[], 
-	     bool bAlldih, bool bRemoveDih, bool bAllowMissing)
+	     gmx_bool bAlldih, gmx_bool bRemoveDih, gmx_bool bAllowMissing)
 {
   t_param *ang,*dih,*pai,*idih;
   t_rbondeds *hbang, *hbdih;
@@ -646,7 +646,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   int     ninc,maxang,maxdih,maxpai;
   int     nang,ndih,npai,nidih,nbd;
   int     nFound;
-  bool    bFound,bExcl;
+  gmx_bool    bFound,bExcl;
   
 
   /* These are the angles, dihedrals and pairs that we generate

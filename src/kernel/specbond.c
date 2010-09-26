@@ -47,7 +47,7 @@
 #include "pdb2top.h"
 #include "vec.h"
 
-bool yesno(void)
+gmx_bool yesno(void)
 {
   char c;
 
@@ -116,22 +116,22 @@ void done_specbonds(int nsb,t_specbond sb[])
   }
 }
 
-static bool is_special(int nsb,t_specbond sb[],char *res,char *atom)
+static gmx_bool is_special(int nsb,t_specbond sb[],char *res,char *atom)
 {
   int i;
   
   for(i=0; (i<nsb); i++) {
     if (((strncmp(sb[i].res1,res,3) == 0) && 
-	 (strcasecmp(sb[i].atom1,atom) == 0)) ||
+	 (gmx_strcasecmp(sb[i].atom1,atom) == 0)) ||
 	((strncmp(sb[i].res2,res,3) == 0) && 
-	 (strcasecmp(sb[i].atom2,atom) == 0)))
+	 (gmx_strcasecmp(sb[i].atom2,atom) == 0)))
       return TRUE;
   }
   return FALSE;
 }
 
-static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
-		    real d,int *index_sb,bool *bSwap)
+static gmx_bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
+		    real d,int *index_sb,gmx_bool *bSwap)
 {
   int i;
   char *at1,*at2,*res1,*res2;
@@ -149,9 +149,9 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
   for(i=0; (i<nsb); i++) {
     *index_sb = i;
     if (((strncmp(sb[i].res1,res1,3) == 0)  && 
-	 (strcasecmp(sb[i].atom1,at1) == 0) &&
+	 (gmx_strcasecmp(sb[i].atom1,at1) == 0) &&
 	 (strncmp(sb[i].res2,res2,3) == 0)  && 
-	 (strcasecmp(sb[i].atom2,at2) == 0))) {
+	 (gmx_strcasecmp(sb[i].atom2,at2) == 0))) {
       *bSwap = FALSE;
       if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d)) {
 	if (debug) fprintf(stderr,"%g\n", sb[i].length);
@@ -159,9 +159,9 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
       }
     }
     if (((strncmp(sb[i].res1,res2,3) == 0)  && 
-	 (strcasecmp(sb[i].atom1,at2) == 0) &&
+	 (gmx_strcasecmp(sb[i].atom1,at2) == 0) &&
 	 (strncmp(sb[i].res2,res1,3) == 0)  && 
-	 (strcasecmp(sb[i].atom2,at1) == 0))) {
+	 (gmx_strcasecmp(sb[i].atom2,at1) == 0))) {
       *bSwap = TRUE;
       if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d)) {
 	if (debug) fprintf(stderr,"%g\n", sb[i].length);
@@ -173,7 +173,7 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
   return FALSE;
 }
 
-static void rename_1res(t_atoms *pdba,int resind,char *newres,bool bVerbose)
+static void rename_1res(t_atoms *pdba,int resind,char *newres,gmx_bool bVerbose)
 {
   if (bVerbose) {
     printf("Using rtp entry %s for %s %d\n",
@@ -186,15 +186,15 @@ static void rename_1res(t_atoms *pdba,int resind,char *newres,bool bVerbose)
   *pdba->resinfo[resind].rtp = strdup(newres);
 }
 
-int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
-		 t_ssbond **specbonds,bool bVerbose)
+int mk_specbonds(t_atoms *pdba,rvec x[],gmx_bool bInteractive,
+		 t_ssbond **specbonds,gmx_bool bVerbose)
 {
   t_specbond *sb=NULL;
   t_ssbond   *bonds=NULL;
   int  nsb;
   int  nspec,nbonds;
   int  *specp,*sgp;
-  bool bDoit,bSwap;
+  gmx_bool bDoit,bSwap;
   int  i,j,b,e,e2;
   int  ai,aj,index_sb;
   real **d;
@@ -209,8 +209,15 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
     
     nspec = 0;
     for(i=0;(i<pdba->nr);i++) {
+      /* Check if this atom is special and if it is not a double atom
+       * in the input that still needs to be removed.
+       */
       if (is_special(nsb,sb,*pdba->resinfo[pdba->atom[i].resind].name,
-		     *pdba->atomname[i])) {
+		     *pdba->atomname[i]) &&
+	  !(nspec > 0 &&
+	    pdba->atom[sgp[nspec-1]].resind == pdba->atom[i].resind &&
+	    gmx_strcasecmp(*pdba->atomname[sgp[nspec-1]],
+		       *pdba->atomname[i]) == 0)) {
 	specp[nspec] = pdba->atom[i].resind;
 	sgp[nspec] = i;
 	nspec++;

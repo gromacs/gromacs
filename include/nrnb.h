@@ -36,25 +36,21 @@
 #ifndef _nrnb_h
 #define _nrnb_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void init_nrnb(t_nrnb *nrnb);
+void init_nrnb(t_nrnb *nrnb);
 
-extern void cp_nrnb(t_nrnb *dest, t_nrnb *src);
+void cp_nrnb(t_nrnb *dest, t_nrnb *src);
 
-extern void add_nrnb(t_nrnb *dest, t_nrnb *s1, t_nrnb *s2);
+void add_nrnb(t_nrnb *dest, t_nrnb *s1, t_nrnb *s2);
 
-extern void print_nrnb(FILE *out, t_nrnb *nrnb);
+void print_nrnb(FILE *out, t_nrnb *nrnb);
 
-extern void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
+void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 
 #if DEBUG_NRNB
 #define inc_nrnb(nrnb,enr,inc) _inc_nrnb(nrnb,enr,inc,__FILE__,__LINE__)
@@ -63,23 +59,23 @@ extern void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 #endif
 
  
-extern void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop);
+void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop);
 /* Calculates the non-bonded forces and flop count.
  * When out!=NULL also prints the full count table.
  */
 
-extern void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
+void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
 		       gmx_large_int_t nsteps,real delta_t,
 		       double nbfs,double mflop);
 /* Prints the performance, nbfs and mflop come from print_flop */
 
-extern void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);
+void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);
 /* Print detailed load balancing info */
 
-extern int cost_nrnb(int enr);
+int cost_nrnb(int enr);
 /* Cost in i860 cycles of this component of MD */
 
-extern const char *nrnb_str(int enr);
+const char *nrnb_str(int enr);
 /* Name of this component */
 
 #ifdef __cplusplus

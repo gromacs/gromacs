@@ -35,10 +35,6 @@
 #ifndef _commrec_h
 #define _commrec_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #else
@@ -135,7 +131,7 @@ typedef struct {
   int  nnodes;
   MPI_Comm mpi_comm_all;
   /* Use MPI_Sendrecv communication instead of non-blocking calls */
-  bool bSendRecv2;
+  gmx_bool bSendRecv2;
   /* The local DD cell index and rank */
   ivec ci;
   int  rank;
@@ -143,7 +139,7 @@ typedef struct {
   int  masterrank;
   /* Communication with the PME only nodes */
   int  pme_nodeid;
-  bool pme_receive_vir_ener;
+  gmx_bool pme_receive_vir_ener;
   gmx_pme_comm_n_box_p_t cnb;
   int  nreq_pme;
   MPI_Request req_pme[4];
@@ -153,13 +149,13 @@ typedef struct {
   ivec nc;
   int  ndim;
   ivec dim;  /* indexed by 0 to ndim */
-  bool bGridJump;
+  gmx_bool bGridJump;
 
   /* PBC from dim 0 to npbcdim */
   int npbcdim;
 
   /* Screw PBC? */
-  bool bScrewPBC;
+  gmx_bool bScrewPBC;
 
   /* Forward and backward neighboring cells, indexed by 0 to ndim */
   int  neighbor[DIM][2];
@@ -168,7 +164,7 @@ typedef struct {
   gmx_domdec_master_p_t ma;
 
   /* Are there inter charge group constraints */
-  bool bInterCGcons;
+  gmx_bool bInterCGcons;
 
   /* Global atom number to interaction list */
   gmx_reverse_top_p_t reverse_top;

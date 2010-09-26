@@ -133,10 +133,10 @@ static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
     sfree(xlatom);
 }
 
-void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
+void rename_atoms(const char *xlfile,const char *ffdir,
                   t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
-                  bool bResname,gmx_residuetype_t rt,bool bReorderNum,
-                  bool bVerbose)
+                  gmx_bool bResname,gmx_residuetype_t rt,gmx_bool bReorderNum,
+                  gmx_bool bVerbose)
 {
     FILE *fp;
     int nxlate,a,i,resind;
@@ -144,7 +144,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
     int  nf;
     char **f;
     char c,*rnm,atombuf[32],*ptr0,*ptr1;
-    bool bReorderedNum,bRenamed,bMatch;
+    gmx_bool bReorderedNum,bRenamed,bMatch;
 
     nxlate = 0;
     xlatom = NULL;
@@ -156,7 +156,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
     }
     else
     {
-        nf = fflib_search_file_end(ffdir,bAddCWD,".arn",FALSE,&f);
+        nf = fflib_search_file_end(ffdir,".arn",FALSE,&f);
         for(i=0; i<nf; i++)
         {
             fp = fflib_open(f[i]);
@@ -198,15 +198,15 @@ void rename_atoms(const char *xlfile,const char *ffdir,bool bAddCWD,
         for(i=0; (i<nxlate) && !bRenamed; i++) {
             /* Check if the base file name of the rtp and arn entry match */
             if (restp == NULL ||
-                strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
+                gmx_strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
-                          (strcasecmp("protein",xlatom[i].res) == 0 &&
+                          (gmx_strcasecmp("protein",xlatom[i].res) == 0 &&
                            gmx_residuetype_is_protein(rt,rnm)) ||
-                          (strcasecmp("DNA",xlatom[i].res) == 0 &&
+                          (gmx_strcasecmp("DNA",xlatom[i].res) == 0 &&
                            gmx_residuetype_is_dna(rt,rnm)) ||
-                          (strcasecmp("RNA",xlatom[i].res) == 0 &&
+                          (gmx_strcasecmp("RNA",xlatom[i].res) == 0 &&
                            gmx_residuetype_is_rna(rt,rnm)));
                 if (!bMatch)
                 {

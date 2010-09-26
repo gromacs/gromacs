@@ -267,7 +267,7 @@ _gmx_sel_symtab_free(gmx_sel_symtab_t *tab)
  * begins with \p name if a unique matching symbol is found.
  */
 gmx_sel_symrec_t *
-_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact)
+_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, gmx_bool bExact)
 {
     return _gmx_sel_find_symbol_len(tab, name, strlen(name), bExact);
 }
@@ -288,12 +288,12 @@ _gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact)
  */
 gmx_sel_symrec_t *
 _gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, size_t len,
-                         bool bExact)
+                         gmx_bool bExact)
 {
     gmx_sel_symrec_t *sym;
     gmx_sel_symrec_t *match;
-    bool              bUnique;
-    bool              bMatch;
+    gmx_bool              bUnique;
+    gmx_bool              bMatch;
 
     match = NULL;
     bUnique = TRUE;
@@ -399,7 +399,7 @@ add_symbol(gmx_sel_symtab_t *tab, const char *name, e_symbol_t *ctype)
     sym  = tab->first;
     while (sym)
     {
-        if (!strcasecmp(sym->name, name))
+        if (!gmx_strcasecmp(sym->name, name))
         {
             *ctype = sym->type;
             return NULL;

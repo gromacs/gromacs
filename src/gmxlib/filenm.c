@@ -545,7 +545,7 @@ int fn2ftp(const char *fn)
 
     for (i = 0; (i < efNR); i++)
         if ((eptr = deffile[i].ext) != NULL)
-            if (strcasecmp(feptr, eptr) == 0)
+            if (gmx_strcasecmp(feptr, eptr) == 0)
                 break;
 
     return i;
@@ -560,7 +560,7 @@ static void set_extension(char *buf, int ftp)
     df = &(deffile[ftp]);
     len = strlen(buf);
     extlen = strlen(df->ext);
-    if ((len <= extlen) || (strcasecmp(&(buf[len - extlen]), df->ext) != 0))
+    if ((len <= extlen) || (gmx_strcasecmp(&(buf[len - extlen]), df->ext) != 0))
         strcat(buf, df->ext);
 }
 
@@ -571,11 +571,11 @@ static void add_filenm(t_filenm *fnm, const char *filenm)
     fnm->nfiles++;
 }
 
-static void set_grpfnm(t_filenm *fnm, const char *name, bool bCanNotOverride)
+static void set_grpfnm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride)
 {
     char buf[256], buf2[256];
     int i, type;
-    bool bValidExt;
+    gmx_bool bValidExt;
     int nopts;
     const int *ftps;
 
@@ -632,8 +632,8 @@ static void set_grpfnm(t_filenm *fnm, const char *name, bool bCanNotOverride)
     add_filenm(fnm, buf);
 }
 
-static void set_filenm(t_filenm *fnm, const char *name, bool bCanNotOverride,
-                       bool bReadNode)
+static void set_filenm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride,
+                       gmx_bool bReadNode)
 {
     /* Set the default filename, extension and option for those fields that 
      * are not already set. An extension is added if not present, if fn = NULL
@@ -661,7 +661,7 @@ static void set_filenm(t_filenm *fnm, const char *name, bool bCanNotOverride,
             extlen = strlen(z_ext[i]);
             if (len > extlen)
             {
-                if (strcasecmp(name+len-extlen,z_ext[i]) == 0)
+                if (gmx_strcasecmp(name+len-extlen,z_ext[i]) == 0)
                 {
                     buf[len-extlen]='\0';
                     break;
@@ -687,7 +687,7 @@ static void set_filenm(t_filenm *fnm, const char *name, bool bCanNotOverride,
     }
 }
 
-static void set_filenms(int nf, t_filenm fnm[], bool bReadNode)
+static void set_filenms(int nf, t_filenm fnm[], gmx_bool bReadNode)
 {
     int i;
 
@@ -697,10 +697,10 @@ static void set_filenms(int nf, t_filenm fnm[], bool bReadNode)
 }
 
 void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
-                     bool bKeep, bool bReadNode)
+                     gmx_bool bKeep, gmx_bool bReadNode)
 {
     int i, j;
-    bool *bRemove;
+    gmx_bool *bRemove;
 
     check_opts(nf, fnm);
 
@@ -822,26 +822,26 @@ int ftp2fns(char **fns[], int ftp, int nfile, const t_filenm fnm[])
     return 0;
 }
 
-bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[])
+gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[])
 {
     int i;
 
     for (i = 0; (i < nfile); i++)
         if (ftp == fnm[i].ftp)
-            return (bool) IS_SET(fnm[i]);
+            return (gmx_bool) IS_SET(fnm[i]);
 
     fprintf(stderr, "ftp2bSet: No filetype %s\n", deffile[ftp].ext);
 
     return FALSE;
 }
 
-bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[])
+gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[])
 {
     int i;
 
     for (i = 0; (i < nfile); i++)
         if (strcmp(opt, fnm[i].opt) == 0)
-            return (bool) IS_SET(fnm[i]);
+            return (gmx_bool) IS_SET(fnm[i]);
 
     fprintf(stderr, "No option %s\n", opt);
 
@@ -930,17 +930,17 @@ char *ftp2filter(int ftp)
 }
 #endif
 
-bool is_optional(const t_filenm *fnm)
+gmx_bool is_optional(const t_filenm *fnm)
 {
     return ((fnm->flag & ffOPT) == ffOPT);
 }
 
-bool is_output(const t_filenm *fnm)
+gmx_bool is_output(const t_filenm *fnm)
 {
     return ((fnm->flag & ffWRITE) == ffWRITE);
 }
 
-bool is_set(const t_filenm *fnm)
+gmx_bool is_set(const t_filenm *fnm)
 {
     return ((fnm->flag & ffSET) == ffSET);
 }

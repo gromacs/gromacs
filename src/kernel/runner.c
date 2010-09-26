@@ -117,8 +117,8 @@ struct mdrunner_arglist
     int nfile;
     const t_filenm *fnm;
     output_env_t oenv;
-    bool bVerbose;
-    bool bCompact;
+    gmx_bool bVerbose;
+    gmx_bool bCompact;
     int nstglobalcomm;
     ivec ddxyz;
     int dd_node_order;
@@ -181,8 +181,8 @@ static void mdrunner_start_fn(void *arg)
    All options besides nthreads are the same as for mdrunner(). */
 static t_commrec *mdrunner_start_threads(int nthreads, 
               FILE *fplog,t_commrec *cr,int nfile, 
-              const t_filenm fnm[], const output_env_t oenv, bool bVerbose,
-              bool bCompact, int nstglobalcomm,
+              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
+              gmx_bool bCompact, int nstglobalcomm,
               ivec ddxyz,int dd_node_order,real rdd,real rconstr,
               const char *dddlb_opt,real dlb_scale,
               const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -316,8 +316,8 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
 
 
 int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
-             const t_filenm fnm[], const output_env_t oenv, bool bVerbose,
-             bool bCompact, int nstglobalcomm,
+             const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
+             gmx_bool bCompact, int nstglobalcomm,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -344,7 +344,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     int        i,m,nChargePerturbed=-1,status,nalloc;
     char       *gro;
     gmx_wallcycle_t wcycle;
-    bool       bReadRNG,bReadEkin;
+    gmx_bool       bReadRNG,bReadEkin;
     int        list;
     gmx_runtime_t runtime;
     int        rc;
@@ -523,7 +523,14 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         }
     }
 
-    if ((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
+    if (((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
+#ifdef GMX_THREADS
+        /* With thread MPI only the master node/thread exists in mdrun.c,
+         * therefore non-master nodes need to open the "seppot" log file here.
+         */
+        || (!MASTER(cr) && (Flags & MD_SEPPOT))
+#endif
+        )
     {
         gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
                              Flags,&fplog);

@@ -1,3 +1,8 @@
+;
+; Horn et al. (2004). J. Chem. Phys.120, 9665-9678
+;
+
+
 [ moleculetype ]
 ; molname	nrexcl
 SOL		2

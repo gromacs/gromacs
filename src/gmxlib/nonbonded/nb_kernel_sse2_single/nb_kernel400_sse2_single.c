@@ -509,13 +509,13 @@ void nb_kernel400_sse2_single(int *           p_nri,
         }
         
         dvdasum = _mm_mul_ps(dvdasum, _mm_mul_ps(isai,isai));
-		gmx_mm_update_iforce_1atom_ps(fix,fiy,fiz,faction+ii3,fshift+is3);
+		gmx_mm_update_iforce_1atom_ps(&fix,&fiy,&fiz,faction+ii3,fshift+is3);
 		
         ggid             = gid[n];         
 
-		gmx_mm_update_1pot_ps(vctot,vc+ggid);
-		gmx_mm_update_1pot_ps(vgbtot,gpol+ggid);
-		gmx_mm_update_1pot_ps(dvdasum,dvda+ii);
+	GMX_MM_UPDATE_1POT_PS(vctot,vc+ggid);
+	GMX_MM_UPDATE_1POT_PS(vgbtot,gpol+ggid);
+	GMX_MM_UPDATE_1POT_PS(dvdasum,dvda+ii);
     }
 	
 	*outeriter       = nri;            

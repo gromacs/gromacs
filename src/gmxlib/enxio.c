@@ -50,21 +50,23 @@
          Please keep it that way. */
 
 /* This number should be increased whenever the file format changes! */
-static const int enx_version = 4;
+static const int enx_version = 5;
 
 const char *enx_block_id_name[] = {
     "Averaged orientation restraints",
     "Instantaneous orientation restraints",
     "Orientation restraint order tensor(s)",
     "Distance restraints",
-    "BAR histogram"
+    "Free energy data",
+    "BAR histogram",
+    "Delta H raw data"
 };
 
 
 /* Stuff for reading pre 4.1 energy files */
 typedef struct {
-    bool     bOldFileOpen;   /* Is this an open old file? */
-    bool     bReadFirstStep; /* Did we read the first step? */
+    gmx_bool     bOldFileOpen;   /* Is this an open old file? */
+    gmx_bool     bReadFirstStep; /* Did we read the first step? */
     int      first_step;     /* First step in the energy file */
     int      step_prev;      /* Previous step */
     int      nsum_prev;      /* Previous step sum length */
@@ -313,7 +315,7 @@ void add_subblocks_enxblock(t_enxblock *eb, int n)
 }
 
 
-static void edr_strings(XDR *xdr,bool bRead,int file_version,
+static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
                         int n,gmx_enxnm_t **nms)
 {
     int  i;
@@ -372,7 +374,7 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
 {
     int  magic=-55555;
     XDR  *xdr;
-    bool bRead = gmx_fio_getread(ef->fio);
+    gmx_bool bRead = gmx_fio_getread(ef->fio);
     int  file_version;
     int  i;
    
@@ -423,13 +425,13 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
     edr_strings(xdr,bRead,file_version,*nre,nms);
 }
 
-static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
-                       int nre_test,bool *bWrongPrecision,bool *bOK)
+static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
+                       int nre_test,gmx_bool *bWrongPrecision,gmx_bool *bOK)
 {
     int  magic=-7777777;
     real r;
     int  b,i,zero=0,dum=0;
-    bool bRead = gmx_fio_getread(ef->fio);
+    gmx_bool bRead = gmx_fio_getread(ef->fio);
     int  tempfix_nr=0;
     int  ndisre=0;
     int  startb=0;
@@ -493,11 +495,19 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         }
         if (*file_version >= 3)
         {
-            gmx_fio_do_gmx_large_int(ef->fio, fr->nsteps);
+            if (!gmx_fio_do_gmx_large_int(ef->fio, fr->nsteps)) *bOK = FALSE;
         }
         else
         {
             fr->nsteps = max(1,fr->nsum);
+        }
+        if (*file_version >= 5)
+        {
+            if (!gmx_fio_do_double(ef->fio, fr->dt)) *bOK = FALSE;
+        }
+        else
+        {
+            fr->dt = 0;
         }
     }
     if (!gmx_fio_do_int(ef->fio, fr->nre))     *bOK = FALSE;
@@ -631,6 +641,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         
         fr->nsum   = fr->step - ef->eo.first_step + 1;
         fr->nsteps = fr->step - ef->eo.step_prev;
+        fr->dt     = 0;
     }
 	
     return *bOK;
@@ -657,12 +668,12 @@ void close_enx(ener_file_t ef)
     }
 }
 
-static bool empty_file(const char *fn)
+static gmx_bool empty_file(const char *fn)
 {
     FILE *fp;
     char dum;
     int  ret;
-    bool bEmpty;
+    gmx_bool bEmpty;
     
     fp = gmx_fio_fopen(fn,"r");
     ret = fread(&dum,sizeof(dum),1,fp);
@@ -679,7 +690,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
     gmx_enxnm_t *nms=NULL;
     int        file_version=-1;
     t_enxframe *fr;
-    bool       bWrongPrecision,bDum=TRUE;
+    gmx_bool       bWrongPrecision,bDum=TRUE;
     struct ener_file *ef;
 
     snew(ef,1);
@@ -810,11 +821,11 @@ static void convert_full_sums(ener_old_t *ener_old,t_enxframe *fr)
     ener_old->step_prev = fr->step;
 }
 
-bool do_enx(ener_file_t ef,t_enxframe *fr)
+gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
 {
     int       file_version=-1;
     int       i,b;
-    bool      bRead,bOK,bOK1,bSane;
+    gmx_bool      bRead,bOK,bOK1,bSane;
     real      tmp1,tmp2,rdum;
     char      buf[22];
     /*int       d_size;*/

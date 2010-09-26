@@ -231,7 +231,7 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
     {
       teller++;
 
-      gmx_rmpbc(gpbc,box,x0,x0);
+      gmx_rmpbc(gpbc,natoms,box,x0);
       
       calc_angle(ePBC,box,x0,index1,index2,gnx1,gnx2,&angle,
 		 &distance,&distance1,&distance2);
@@ -399,7 +399,7 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
   do {
     teller++;
     
-    gmx_rmpbc(gpbc,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
     if (teller==1) {
       for(i=0;i<natoms;i++)
 	copy_rvec(x0[i],xzero[i]);
@@ -465,7 +465,7 @@ int gmx_sgangle(int argc,char *argv[])
   t_topology *top;                		/* topology 		*/ 
   int       ePBC;
   atom_id   *index[2];            		
-  static bool bOne = FALSE, bZ=FALSE;
+  static gmx_bool bOne = FALSE, bZ=FALSE;
   t_pargs pa[] = {
     { "-one", FALSE, etBOOL, {&bOne},
       "Only one group compute angle between vector at time zero and time t"},

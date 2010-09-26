@@ -79,8 +79,8 @@ static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms,
 
 static void do_bonds(FILE *log,const char *fn,const char *fbond,
                      const char *fdist, int gnx,atom_id index[],
-                     real blen,real tol,bool bAver,
-                     t_topology *top,int ePBC,bool bAverDist,
+                     real blen,real tol,gmx_bool bAver,
+                     t_topology *top,int ePBC,gmx_bool bAverDist,
                      const output_env_t oenv)
 {
 #define MAXTAB 1000
@@ -243,7 +243,7 @@ int gmx_bond(int argc,char *argv[])
     "It should be possible to get bond information from the topology."
   };
   static real blen=-1.0,tol=0.1;
-  static bool bAver=TRUE,bAverDist=TRUE;
+  static gmx_bool bAver=TRUE,bAverDist=TRUE;
   t_pargs pa[] = {
     { "-blen", FALSE, etREAL, {&blen}, 
       "Bond length. By default length of first bond" },

@@ -52,6 +52,7 @@
 #include "tpxio.h"
 #include "enxio.h"
 #include "mtop_util.h"
+#include "string2.h"
 
 static void cmp_int(FILE *fp,const char *s,int index,int i1,int i2)
 {
@@ -94,7 +95,7 @@ static void cmp_uc(FILE *fp,const char *s,int index,unsigned char i1,unsigned ch
   }
 }
 
-static bool cmp_bool(FILE *fp, const char *s, int index, bool b1, bool b2)
+static gmx_bool cmp_bool(FILE *fp, const char *s, int index, gmx_bool b1, gmx_bool b2)
 {
   if (b1) {
     b1 = 1;
@@ -128,17 +129,17 @@ static void cmp_str(FILE *fp, const char *s, int index,
   }
 }
 
-static bool equal_real(real i1,real i2,real ftol,real abstol)
+static gmx_bool equal_real(real i1,real i2,real ftol,real abstol)
 {
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2)<=abstol );
 }
 
-static bool equal_float(float i1,float i2,float ftol,float abstol)
+static gmx_bool equal_float(float i1,float i2,float ftol,float abstol)
 {
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2)<=abstol );
 }
 
-static bool equal_double(double i1,double i2,real ftol,real abstol)
+static gmx_bool equal_double(double i1,double i2,real ftol,real abstol)
 {
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2)<=abstol );
 }
@@ -228,7 +229,7 @@ void cmp_iparm(FILE *fp,const char *s,t_functype ft,
 	       t_iparams ip1,t_iparams ip2,real ftol,real abstol) 
 {
   int i;
-  bool bDiff;
+  gmx_bool bDiff;
   
   bDiff=FALSE;
   for(i=0; i<MAXFORCEPARAM && !bDiff; i++)
@@ -244,7 +245,7 @@ void cmp_iparm(FILE *fp,const char *s,t_functype ft,
 void cmp_iparm_AB(FILE *fp,const char *s,t_functype ft,t_iparams ip1,real ftol,real abstol) 
 {
   int nrfpA,nrfpB,p0,i;
-  bool bDiff;
+  gmx_bool bDiff;
   
   /* Normally the first parameter is perturbable */
   p0 = 0;
@@ -369,8 +370,40 @@ static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2,real ftol, real absto
   }
 }
 
+static void cmp_groups(FILE *fp,gmx_groups_t *g0,gmx_groups_t *g1,
+		       int natoms0,int natoms1)
+{
+  int  i,j,ndiff;
+  char buf[32];
+
+  fprintf(fp,"comparing groups\n");
+
+  for(i=0; i<egcNR; i++) {
+    sprintf(buf,"grps[%d].nr",i);
+    cmp_int(fp,buf,-1,g0->grps[i].nr,g1->grps[i].nr);
+    if (g0->grps[i].nr == g1->grps[i].nr) {
+      for(j=0; j<g0->grps[i].nr; j++) {
+          sprintf(buf,"grps[%d].name[%d]",i,j);
+          cmp_str(fp,buf,-1,
+                  *g0->grpname[g0->grps[i].nm_ind[j]],
+                  *g1->grpname[g1->grps[i].nm_ind[j]]);
+      }
+    }
+    cmp_int(fp,"ngrpnr",i,g0->ngrpnr[i],g1->ngrpnr[i]);
+    if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1 && 
+	(g0->grpnr[i] != NULL || g1->grpnr[i] != NULL)) {
+      for(j=0; j<natoms0; j++) {
+	cmp_int(fp,gtypes[i],j,ggrpnr(g0,i,j),ggrpnr(g1,i,j));
+      }
+    }
+  }
+  /* We have compared the names in the groups lists,
+   * so we can skip the grpname list comparison.
+   */
+}
+
 static void cmp_rvecs(FILE *fp,const char *title,int n,rvec x1[],rvec x2[],
-		      bool bRMSD,real ftol,real abstol)
+		      gmx_bool bRMSD,real ftol,real abstol)
 {
   int i,m;
   double d,ssd;
@@ -383,7 +416,7 @@ static void cmp_rvecs(FILE *fp,const char *title,int n,rvec x1[],rvec x2[],
 	ssd += d*d;
       }
     }
-    fprintf(fp,"%s RMSD %f\n",title,sqrt(ssd/n));
+    fprintf(fp,"%s RMSD %g\n",title,sqrt(ssd/n));
   } else {
     for(i=0; (i<n); i++) {
       cmp_rvec(fp,title,i,x1[i],x2[i],ftol,abstol);
@@ -473,8 +506,6 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
   cmp_real(fp,"inputrec->fepvals->sc_sigma",-1,fep1->sc_sigma,fep2->sc_sigma,ftol,abstol);
   cmp_bool(fp,"inputrec->fepvals->bPrintEnergy",-1,fep1->bPrintEnergy,fep1->bPrintEnergy);
   cmp_bool(fp,"inputrec->fepvals->bScCoul",-1,fep1->bScCoul,fep1->bScCoul);
-  cmp_int(fp,"inputrec->fepvals->dh_table_size",-1,fep1->dh_table_size,fep2->dh_table_size);
-  cmp_double(fp,"inputrec->fepvals->dh_table_spacing",-1,fep1->dh_table_spacing,fep2->dh_table_spacing,ftol,abstol);
   cmp_int(fp,"inputrec->fepvals->lambda-stats", -1,fep1->elamstats,fep2->elamstats);
   cmp_int(fp,"inputrec->fepvals->lambda-mc-move", -1,fep1->elmcmove,fep2->elmcmove);
   cmp_int(fp,"inputrec->fepvals->lmc-repeats",-1,fep1->lmc_repeats,fep2->lmc_repeats);
@@ -496,6 +527,10 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
   cmp_int(fp,"inputrec->fepvals->nstfep",-1,fep1->nstfep,fep2->nstfep);
   cmp_int(fp,"inputrec->fepvals->mc-seed",-1,fep1->mc_seed,fep2->mc_seed);
   cmp_real(fp,"inputrec->fepvals->mc-temperature",-1,fep1->mc_temp,fep2->mc_temp,ftol,abstol);
+  cmp_int(fp,"inputrec->separate_dhdl_file",-1,fep1->separate_dhdl_file,fep2->separate_dhdl_file);
+  cmp_int(fp,"inputrec->dhdl_derivatives",-1,fep1->dhdl_derivatives,fep2->dhdl_derivatives);
+  cmp_int(fp,"inputrec->dh_hist_size",-1,fep1->dh_hist_size,fep2->dh_hist_size);
+  cmp_double(fp,"inputrec->dh_hist_spacing",-1,fep1->dh_hist_spacing,fep2->dh_hist_spacing,ftol,abstol);
 }
 
 static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, real abstol)
@@ -513,7 +548,6 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_gmx_large_int(fp,"inputrec->nsteps",ir1->nsteps,ir2->nsteps);
   cmp_gmx_large_int(fp,"inputrec->init_step",ir1->init_step,ir2->init_step);
   cmp_int(fp,"inputrec->simulation_part",-1,ir1->simulation_part,ir2->simulation_part);
-  cmp_int(fp,"inputrec->nstcalcenergy",-1,ir1->nstcalcenergy,ir2->nstcalcenergy);
   cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);
   cmp_int(fp,"inputrec->bPeriodicMols",-1,ir1->bPeriodicMols,ir2->bPeriodicMols);
   cmp_int(fp,"inputrec->ns_type",-1,ir1->ns_type,ir2->ns_type);
@@ -526,6 +560,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->nstxout",-1,ir1->nstxout,ir2->nstxout);
   cmp_int(fp,"inputrec->nstvout",-1,ir1->nstvout,ir2->nstvout);
   cmp_int(fp,"inputrec->nstfout",-1,ir1->nstfout,ir2->nstfout);
+  cmp_int(fp,"inputrec->nstcalcenergy",-1,ir1->nstcalcenergy,ir2->nstcalcenergy);
   cmp_int(fp,"inputrec->nstenergy",-1,ir1->nstenergy,ir2->nstenergy);
   cmp_int(fp,"inputrec->nstxtcout",-1,ir1->nstxtcout,ir2->nstxtcout);
   cmp_double(fp,"inputrec->init_t",-1,ir1->init_t,ir2->init_t,ftol,abstol);
@@ -647,7 +682,7 @@ static void comp_pull_AB(FILE *fp,t_pull *pull,real ftol,real abstol)
 }
 
 static void comp_state(t_state *st1, t_state *st2,
-		       bool bRMSD,real ftol,real abstol)
+		       gmx_bool bRMSD,real ftol,real abstol)
 {
   int i,j,nc;
 
@@ -707,7 +742,7 @@ static void comp_state(t_state *st1, t_state *st2,
 }
 
 void comp_tpx(const char *fn1,const char *fn2,
-	      bool bRMSD,real ftol,real abstol)
+	      gmx_bool bRMSD,real ftol,real abstol)
 {
   const char  *ff[2];
   t_tpxheader sh[2];
@@ -731,6 +766,8 @@ void comp_tpx(const char *fn1,const char *fn2,
     top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
     top[1] = gmx_mtop_t_to_t_topology(&mtop[1]);
     cmp_top(stdout,&top[0],&top[1],ftol,abstol);
+    cmp_groups(stdout,&mtop[0].groups,&mtop[1].groups,
+	       mtop[0].natoms,mtop[1].natoms);
     comp_state(&state[0],&state[1],bRMSD,ftol,abstol);
   } else {
     if (ir[0].efep == efepNO) {
@@ -750,7 +787,7 @@ void comp_tpx(const char *fn1,const char *fn2,
 }
 
 void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
-		bool bRMSD, real ftol,real abstol)
+		gmx_bool bRMSD, real ftol,real abstol)
 {
   fprintf(fp,"\n");
   cmp_int(fp,"flags",-1,fr1->flags,fr2->flags);
@@ -781,13 +818,13 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
 }
 
 void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2, 
-              bool bRMSD,real ftol,real abstol)
+              gmx_bool bRMSD,real ftol,real abstol)
 {
   int i;
   const char *fn[2];
   t_trxframe fr[2];
   t_trxstatus *status[2];
-  bool b[2];
+  gmx_bool b[2];
   
   fn[0]=fn1;
   fn[1]=fn2;
@@ -813,21 +850,120 @@ void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2,
     fprintf(stdout,"\nBoth files read correctly\n");
 }
 
-static void cmp_energies(FILE *fp,int step1,int step2,int nre,
+static real ener_tensor_diag(int n,int *ind1,int *ind2,
+			     gmx_enxnm_t *enm1,
+			     int *tensi,int i,
+			     t_energy e1[],t_energy e2[])
+{
+  int  d1,d2;
+  int  len;
+  int  j;
+  real prod1,prod2;
+  int  nfound;
+
+  d1 = tensi[i]/DIM;
+  d2 = tensi[i] - d1*DIM;
+  
+  /* Find the diagonal elements d1 and d2 */
+  len = strlen(enm1[ind1[i]].name);
+  prod1 = 1;
+  prod2 = 1;
+  nfound = 0;
+  for(j=0; j<n; j++) {
+    if (tensi[j] >= 0 &&
+	strlen(enm1[ind1[j]].name) == len &&
+	strncmp(enm1[ind1[i]].name,enm1[ind1[j]].name,len-2) == 0 &&
+	(tensi[j] == d1*DIM+d1 || tensi[j] == d2*DIM+d2)) {
+      prod1 *= fabs(e1[ind1[j]].e);
+      prod2 *= fabs(e2[ind2[j]].e);
+      nfound++;
+    }
+  }
+
+  if (nfound == 2) {
+    return 0.5*(sqrt(prod1) + sqrt(prod2));
+  } else {
+    return 0;
+  }
+}
+
+static gmx_bool enernm_equal(const char *nm1,const char *nm2)
+{
+  int len1,len2;
+
+  len1 = strlen(nm1);
+  len2 = strlen(nm2);
+
+  /* Remove " (bar)" at the end of a name */
+  if (len1 > 6 && strcmp(nm1+len1-6," (bar)") == 0) {
+    len1 -= 6;
+  }
+  if (len2 > 6 && strcmp(nm2+len2-6," (bar)") == 0) {
+    len2 -= 6;
+  }
+
+  return (len1 == len2 && gmx_strncasecmp(nm1,nm2,len1) == 0);
+}
+
+static void cmp_energies(FILE *fp,int step1,int step2,
 			 t_energy e1[],t_energy e2[],
 			 gmx_enxnm_t *enm1,gmx_enxnm_t *enm2,
 			 real ftol,real abstol,
-			 int maxener)
+			 int nre,int *ind1,int *ind2,int maxener)
 {
-  int  i;
+  int  i,ii;
+  int  *tensi,len,d1,d2;
+  real ftol_i,abstol_i;
+
+  snew(tensi,maxener);
+  /* Check for tensor elements ending on "-XX", "-XY", ... , "-ZZ" */
+  for(i=0; (i<maxener); i++) {
+    ii = ind1[i];
+    tensi[i] = -1;
+    len = strlen(enm1[ii].name);
+    if (len > 3 && enm1[ii].name[len-3] == '-') {
+      d1 = enm1[ii].name[len-2] - 'X';
+      d2 = enm1[ii].name[len-1] - 'X';
+      if (d1 >= 0 && d1 < DIM &&
+	  d2 >= 0 && d2 < DIM) {
+	tensi[i] = d1*DIM + d2;
+      }
+    }
+  }
   
   for(i=0; (i<maxener); i++) {
-    if (!equal_real(e1[i].e,e2[i].e,ftol,abstol))
-      fprintf(fp,"%-15s  step %3d:  %12g, %s step %3d: %12g\n",
-	      enm1[i].name,step1,e1[i].e,
-	      strcmp(enm1[i].name,enm2[i].name)!=0 ? enm2[i].name:"",
-	      step2,e2[i].e);
+    /* Check if this is an off-diagonal tensor element */
+    if (tensi[i] >= 0 && tensi[i] != 0 && tensi[i] != 4 && tensi[i] != 8) {
+      /* Turn on the relative tolerance check (4 is maximum relative diff.) */
+      ftol_i = 5;
+      /* Do the relative tolerance through an absolute tolerance times
+       * the size of diagonal components of the tensor.
+       */
+      abstol_i = ftol*ener_tensor_diag(nre,ind1,ind2,enm1,tensi,i,e1,e2);
+      if (debug) {
+	fprintf(debug,"tensor '%s' val %f diag %f\n",
+		enm1[i].name,e1[i].e,abstol_i/ftol);
+      }
+      if (abstol_i > 0) {
+	/* We found a diagonal, we need to check with the minimum tolerance */
+	abstol_i = min(abstol_i,abstol);
+      } else {
+	/* We did not find a diagonal, ignore the relative tolerance check */
+	abstol_i = abstol;
+      }
+    } else {
+      ftol_i   = ftol;
+      abstol_i = abstol;
+    }
+    if (!equal_real(e1[ind1[i]].e,e2[ind2[i]].e,ftol_i,abstol_i)) {
+      fprintf(fp,"%-15s  step %3d:  %12g,  step %3d: %12g\n",
+	      enm1[ind1[i]].name,
+	      step1,e1[ind1[i]].e,
+	      step2,e2[ind2[i]].e);
+    }
   }
+
+  sfree(tensi);
 }
 
 #if 0
@@ -941,11 +1077,11 @@ void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *
 {
   int        nre,nre1,nre2,block;
   ener_file_t in1, in2;
-  int        i,maxener;
+  int        i,j,maxener,*ind1,*ind2,*have;
   char       buf[256];
   gmx_enxnm_t *enm1=NULL,*enm2=NULL;
   t_enxframe *fr1,*fr2;
-  bool       b1,b2;
+  gmx_bool       b1,b2;
   
   fprintf(stdout,"comparing energy file %s and %s\n\n",fn1,fn2);
 
@@ -954,23 +1090,50 @@ void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *
   do_enxnms(in1,&nre1,&enm1);
   do_enxnms(in2,&nre2,&enm2);
   if (nre1 != nre2) {
-    fprintf(stdout,"%s: nre=%d, %s: nre=%d\n",fn1,nre1,fn2,nre2);
-    return;
+    fprintf(stdout,"There are %d and %d terms in the energy files\n\n",
+	    nre1,nre2);
+  } else {
+    fprintf(stdout,"There are %d terms in the energy files\n\n",nre1);
   }
-  nre = nre1;
-  fprintf(stdout,"There are %d terms in the energy files\n\n",nre);
-  
+
+  snew(ind1,nre1);
+  snew(ind2,nre2);
+  snew(have,nre2);
+  nre = 0;
+  for(i=0; i<nre1; i++) {
+    for(j=0; j<nre2; j++) {
+      if (enernm_equal(enm1[i].name,enm2[j].name)) {
+	ind1[nre] = i;
+	ind2[nre] = j;
+	have[j] = 1;
+	nre++;
+	break;
+      }
+    }
+    if (nre == 0 || ind1[nre-1] != i) {
+      cmp_str(stdout,"enm",i,enm1[i].name,"-");
+    }
+  }
+  for(i=0; i<nre2; i++) {
+    if (have[i] == 0) {
+      cmp_str(stdout,"enm",i,"-",enm2[i].name);
+    }
+  }
+
   maxener = nre;
-  for(i=0; (i<nre); i++) {
-    cmp_str(stdout,"enm",i,enm1[i].name,enm2[i].name);
-    cmp_str(stdout,"unit",i,enm1[i].unit,enm2[i].unit);
+  for(i=0; i<nre; i++) {
     if ((lastener != NULL) && (strstr(enm1[i].name,lastener) != NULL)) {
       maxener=i+1;
       break;
     }
   }
+
   fprintf(stdout,"There are %d terms to compare in the energy files\n\n",
 	  maxener);
+
+  for(i=0; i<maxener; i++) {
+    cmp_str(stdout,"unit",i,enm1[ind1[i]].unit,enm2[ind2[i]].unit);
+  }
   
   snew(fr1,1);
   snew(fr2,1);
@@ -986,10 +1149,11 @@ void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *
     else {
       cmp_real(stdout,"t",-1,fr1->t,fr2->t,ftol,abstol);
       cmp_int(stdout,"step",-1,fr1->step,fr2->step);
-      cmp_int(stdout,"nre",-1,fr1->nre,fr2->nre);
-      if ((fr1->nre == nre) && (fr2->nre == nre))
-	cmp_energies(stdout,fr1->step,fr1->step,nre,fr1->ener,fr2->ener,
-		     enm1,enm2,ftol,abstol,maxener);
+      /* We don't want to print the nre mismatch for every frame */
+      /* cmp_int(stdout,"nre",-1,fr1->nre,fr2->nre); */
+      if ((fr1->nre >= nre) && (fr2->nre >= nre))
+	cmp_energies(stdout,fr1->step,fr1->step,fr1->ener,fr2->ener,
+		     enm1,enm2,ftol,abstol,nre,ind1,ind2,maxener);
       /*cmp_disres(fr1,fr2,ftol,abstol);*/
       cmp_eblocks(fr1,fr2,ftol,abstol);
     }

@@ -8,5 +8,5 @@ Version: @PROJECT_VERSION@
 Requires: libgmx@LIBSUFFIX@ @PKG_FFT@ @PKG_XML@
 Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
 Libs: -L${libdir} -lmd@LIBSUFFIX@ @PKG_FFT_LIBS@
-Cflags: -I${includedir}
+Cflags: -I${includedir} @PKG_CFLAGS@
 

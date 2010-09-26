@@ -1,5 +1,5 @@
-/*
- * $id$ 
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  *
  *                This source code is part of
  * 
@@ -90,7 +90,7 @@ static const char *res2bb_notermini(const char *name,
   int i;
 
   i = 0;
-  while (i < nrr && strcasecmp(name,rr[i].gmx) != 0) {
+  while (i < nrr && gmx_strcasecmp(name,rr[i].gmx) != 0) {
     i++;
   }
 
@@ -241,119 +241,183 @@ static void read_rtprename(const char *fname,FILE *fp,
   *rtprename  = rr;
 }
 
-static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
-			  int nrr,rtprename_t *rr,t_symtab *symtab,
-			  bool bVerbose)
+static char *search_resrename(int nrr,rtprename_t *rr,
+                              const char *name,
+                              gmx_bool bStart,gmx_bool bEnd,
+                              gmx_bool bCompareFFRTPname)
 {
-  int  r,i,j;
-  bool bStart,bEnd;
-  char *nn;
+    char *nn;
+    int i;
 
-  for(r=0; r<pdba->nres; r++) {
+    nn = NULL;
+
     i = 0;
-    while(i<nrr && strcmp(*pdba->resinfo[r].rtp,rr[i].gmx) != 0) {
-      i++;
+    while (i<nrr && ((!bCompareFFRTPname && strcmp(name,rr[i].gmx)  != 0) ||
+                     ( bCompareFFRTPname && strcmp(name,rr[i].main) != 0)))
+    {
+        i++;
     }
 
-    /* If found in the database, rename this residue's rtp buidling block,
+    /* If found in the database, rename this residue's rtp building block,
      * otherwise keep the old name.
      */
-    if (i < nrr) {
-      bStart = FALSE;
-      bEnd   = FALSE;
-      for(j=0; j<nterpairs; j++) {
-	if (r == r_start[j]) {
-	  bStart = TRUE;
-	}
-      }
-      for(j=0; j<nterpairs; j++) {
-	if (r == r_end[j]) {
-	  bEnd = TRUE;
-	}
-      }
-      if (bStart && bEnd) {
-	nn = rr[i].bter;
-      } else if (bStart) {
-	nn = rr[i].nter;
-      } else if (bEnd) {
-	nn = rr[i].cter;
-      } else {
-	nn = rr[i].main;
-      }
-      if (nn[0] == '-') {
-	gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",pdba->resinfo[r].rtp,bStart ? " as a starting terminus" : (bEnd ? " as an ending terminus" : ""));
-      }
-      if (strcmp(*pdba->resinfo[r].rtp,nn) != 0) {
-	if (bVerbose) {
-	  printf("Changing rtp entry of residue %d %s to '%s'\n",
-		 pdba->resinfo[r].nr,*pdba->resinfo[r].name,nn);
-	}
-	pdba->resinfo[r].rtp = put_symtab(symtab,nn);
-      }
+    if (i < nrr)
+    {
+        if (bStart && bEnd)
+        {
+            nn = rr[i].bter;
+        }
+        else if (bStart)
+        {
+            nn = rr[i].nter;
+        }
+        else if (bEnd)
+        {
+            nn = rr[i].cter;
+        }
+        else
+        {
+            nn = rr[i].main;
+        }
+        if (nn[0] == '-')
+        {
+            gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",name,bStart ? " as a starting terminus" : (bEnd ? " as an ending terminus" : ""));
+        }
     }
-  }
+
+    return nn;
+}
+      
+
+static void rename_resrtp(t_atoms *pdba,int nterpairs,int *r_start,int *r_end,
+                          int nrr,rtprename_t *rr,t_symtab *symtab,
+                          gmx_bool bVerbose)
+{
+    int  r,i,j;
+    gmx_bool bStart,bEnd;
+    char *nn;
+    gmx_bool bFFRTPTERRNM;
+
+    bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == NULL);
+
+    for(r=0; r<pdba->nres; r++)
+    {
+        bStart = FALSE;
+        bEnd   = FALSE;
+        for(j=0; j<nterpairs; j++)
+        {
+            if (r == r_start[j])
+            {
+                bStart = TRUE;
+            }
+        }
+        for(j=0; j<nterpairs; j++)
+        {
+            if (r == r_end[j])
+            {
+                bEnd = TRUE;
+            }
+        }
+
+        nn = search_resrename(nrr,rr,*pdba->resinfo[r].rtp,bStart,bEnd,FALSE);
+
+        if (bFFRTPTERRNM && nn == NULL && (bStart || bEnd))
+        {
+            /* This is a terminal residue, but the residue name,
+             * currently stored in .rtp, is not a standard residue name,
+             * but probably a force field specific rtp name.
+             * Check if we need to rename it because it is terminal.
+             */
+            nn = search_resrename(nrr,rr,
+                                  *pdba->resinfo[r].rtp,bStart,bEnd,TRUE);
+        }
+
+        if (nn != NULL && strcmp(*pdba->resinfo[r].rtp,nn) != 0)
+        {
+            if (bVerbose)
+            {
+                printf("Changing rtp entry of residue %d %s to '%s'\n",
+                       pdba->resinfo[r].nr,*pdba->resinfo[r].name,nn);
+            }
+            pdba->resinfo[r].rtp = put_symtab(symtab,nn);
+        }
+    }
 }
 
 static void pdbres_to_gmxrtp(t_atoms *pdba)
 {
-  int i;
+    int i;
   
-  for(i=0; (i<pdba->nres); i++) {
-    pdba->resinfo[i].rtp = pdba->resinfo[i].name;
-  }
+    for(i=0; (i<pdba->nres); i++)
+    {
+        if (pdba->resinfo[i].rtp == NULL)
+        {
+            pdba->resinfo[i].rtp = pdba->resinfo[i].name;
+        }
+    }
 }
 
 static void rename_pdbres(t_atoms *pdba,const char *oldnm,const char *newnm,
-			  bool bFullCompare,t_symtab *symtab)
+                          gmx_bool bFullCompare,t_symtab *symtab)
 {
-  char *resnm;
-  int i;
+    char *resnm;
+    int i;
   
-  for(i=0; (i<pdba->nres); i++) {
-    resnm = *pdba->resinfo[i].name;
-    if ((bFullCompare && (strcasecmp(resnm,oldnm) == 0)) ||
-	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
-      pdba->resinfo[i].name = put_symtab(symtab,newnm);
+    for(i=0; (i<pdba->nres); i++)
+    {
+        resnm = *pdba->resinfo[i].name;
+        if ((bFullCompare && (gmx_strcasecmp(resnm,oldnm) == 0)) ||
+            (!bFullCompare && strstr(resnm,oldnm) != NULL))
+        {
+            /* Rename the residue name (not the rtp name) */
+            pdba->resinfo[i].name = put_symtab(symtab,newnm);
+        }
     }
-  }
 }
 
 static void rename_bb(t_atoms *pdba,const char *oldnm,const char *newnm,
-		      bool bFullCompare,t_symtab *symtab)
+                      gmx_bool bFullCompare,t_symtab *symtab)
 {
-  char *bbnm;
-  int i;
+    char *bbnm;
+    int i;
   
-  for(i=0; (i<pdba->nres); i++) {
-    bbnm = *pdba->resinfo[i].rtp;
-    if ((bFullCompare && (strcasecmp(bbnm,oldnm) == 0)) ||
-	(!bFullCompare && strstr(bbnm,oldnm) != NULL)) {
-      pdba->resinfo[i].rtp = put_symtab(symtab,newnm);
+    for(i=0; (i<pdba->nres); i++)
+    {
+        /* We have not set the rtp name yes, use the residue name */
+        bbnm = *pdba->resinfo[i].name;
+        if ((bFullCompare && (gmx_strcasecmp(bbnm,oldnm) == 0)) ||
+            (!bFullCompare && strstr(bbnm,oldnm) != NULL))
+        {
+            /* Change the rtp builing block name */
+            pdba->resinfo[i].rtp = put_symtab(symtab,newnm);
+        }
     }
-  }
 }
 
 static void rename_bbint(t_atoms *pdba,const char *oldnm,
-			 const char *gettp(int,int,const rtprename_t *),
-			 bool bFullCompare,
-			 t_symtab *symtab,
-			 int nrr,const rtprename_t *rr)
+                         const char *gettp(int,int,const rtprename_t *),
+                         gmx_bool bFullCompare,
+                         t_symtab *symtab,
+                         int nrr,const rtprename_t *rr)
 {
-  int  i;
-  const char *ptr;
-  char *bbnm;
+    int  i;
+    const char *ptr;
+    char *bbnm;
   
-  for(i=0; i<pdba->nres; i++) {
-    bbnm = *pdba->resinfo[i].rtp;
-    if ((bFullCompare && (strcmp(bbnm,oldnm) == 0)) ||
-	(!bFullCompare && strstr(bbnm,oldnm) != NULL)) {
-      ptr = gettp(i,nrr,rr);
-      pdba->resinfo[i].rtp = put_symtab(symtab,ptr);
+    for(i=0; i<pdba->nres; i++)
+    {
+        /* We have not set the rtp name yes, use the residue name */
+        bbnm = *pdba->resinfo[i].name;
+        if ((bFullCompare && (strcmp(bbnm,oldnm) == 0)) ||
+            (!bFullCompare && strstr(bbnm,oldnm) != NULL))
+        {
+            ptr = gettp(i,nrr,rr);
+            pdba->resinfo[i].rtp = put_symtab(symtab,ptr);
+        }
     }
-  }
 }
 
-static void check_occupancy(t_atoms *atoms,const char *filename,bool bVerbose)
+static void check_occupancy(t_atoms *atoms,const char *filename,gmx_bool bVerbose)
 {
   int i,ftp;
   int nzero=0;
@@ -381,9 +445,11 @@ static void check_occupancy(t_atoms *atoms,const char *filename,bool bVerbose)
       fprintf(stderr,"All occupancy fields zero. This is probably not an X-Ray structure\n");
     } else if ((nzero > 0) || (nnotone > 0)) {
       fprintf(stderr,
-	      "WARNING: there were %d atoms with zero occupancy and %d atoms"
-	      " with\n         occupancy unequal to one (out of %d atoms)."
-	      " Check your pdb file.\n",nzero,nnotone,atoms->nr);
+	      "\n"
+	      "WARNING: there were %d atoms with zero occupancy and %d atoms with\n"
+	      "         occupancy unequal to one (out of %d atoms). Check your pdb file.\n"
+	      "\n",
+	      nzero,nnotone,atoms->nr);
     } else {
       fprintf(stderr,"All occupancies are one\n");
     }
@@ -414,9 +480,9 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
 
 static int read_pdball(const char *inf, const char *outf,char *title,
 		       t_atoms *atoms, rvec **x,
-		       int *ePBC,matrix box, bool bRemoveH,
+		       int *ePBC,matrix box, gmx_bool bRemoveH,
 		       t_symtab *symtab,gmx_residuetype_t rt,const char *watres,
-		       gmx_atomprop_t aps,bool bVerbose)
+		       gmx_atomprop_t aps,gmx_bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
   int  natom,new_natom,i;
@@ -453,7 +519,7 @@ static int read_pdball(const char *inf, const char *outf,char *title,
   rename_pdbres(atoms,"SOL",watres,FALSE,symtab);
   rename_pdbres(atoms,"WAT",watres,FALSE,symtab);
 
-  rename_atoms("xlateat.dat",NULL,FALSE,
+  rename_atoms("xlateat.dat",NULL,
 	       atoms,symtab,NULL,TRUE,rt,TRUE,bVerbose);
   
   if (natom == 0)
@@ -466,16 +532,12 @@ static int read_pdball(const char *inf, const char *outf,char *title,
 }
 
 void process_chain(t_atoms *pdba, rvec *x, 
-		   bool bTrpU,bool bPheU,bool bTyrU,
-		   bool bLysMan,bool bAspMan,bool bGluMan,
-		   bool bHisMan,bool bArgMan,bool bGlnMan,
-		   bool bRenameCys,
+		   gmx_bool bTrpU,gmx_bool bPheU,gmx_bool bTyrU,
+		   gmx_bool bLysMan,gmx_bool bAspMan,gmx_bool bGluMan,
+		   gmx_bool bHisMan,gmx_bool bArgMan,gmx_bool bGlnMan,
 		   real angle,real distance,t_symtab *symtab,
 		   int nrr,const rtprename_t *rr)
 {
-  /* Initialize the rtp builing block names with the residue names */
-  pdbres_to_gmxrtp(pdba);
-
   /* Rename aromatics, lys, asp and histidine */
   if (bTyrU) rename_bb(pdba,"TYR","TYRU",FALSE,symtab);
   if (bTrpU) rename_bb(pdba,"TRP","TRPU",FALSE,symtab);
@@ -495,18 +557,21 @@ void process_chain(t_atoms *pdba, rvec *x,
   else
     rename_bb(pdba,"GLUH","GLU",FALSE,symtab);
 
-  if (bRenameCys) {
-    /* Make sure we don't have things like CYS?
-     * And rename CYS to CYSH, since that is the Gromacs standard
-     * unbound cysteine rtp entry name.
-     */ 
-    rename_bb(pdba,"CYS","CYS",FALSE,symtab);
-  }
-
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
   else
     rename_bbint(pdba,"HIS",get_histp,TRUE,symtab,nrr,rr);
+
+  /* Initialize the rtp builing block names with the residue names
+   * for the residues that have not been processed above.
+   */
+  pdbres_to_gmxrtp(pdba);
+
+  /* Now we have all rtp names set.
+   * The rtp names will conform to Gromacs naming,
+   * unless the input pdb file contained one or more force field specific
+   * rtp names as residue names.
+   */
 }
 
 /* struct for sorting the atoms from the pdb file */
@@ -550,7 +615,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   t_hackblock *hbr;
   t_pdbindex *pdbi;
   atom_id *a;
-  char *atomnm,*bbnm;
+  char *atomnm;
   
   pdba=*pdbaptr;
   natoms=pdba->nr;
@@ -558,49 +623,46 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   snew(xnew,1);
   snew(pdbi, natoms);
   
-  for(i=0; i<natoms; i++) {
-    atomnm = *pdba->atomname[i];
-    bbnm = *pdba->resinfo[pdba->atom[i].resind].rtp;
-    if ((rptr=search_rtp(bbnm,nrtp,restp)) == NULL) {
-      gmx_fatal(FARGS,"rtp entry %s not found",bbnm);
-    }
-    rptr = &restp[pdba->atom[i].resind];
-    for(j=0; (j<rptr->natom); j++) {
-      if (strcasecmp(atomnm,*(rptr->atomname[j])) == 0) {
-	break;
+  for(i=0; i<natoms; i++)
+  {
+      atomnm = *pdba->atomname[i];
+      rptr = &restp[pdba->atom[i].resind];
+      for(j=0; (j<rptr->natom); j++) 
+      {
+          if (gmx_strcasecmp(atomnm,*(rptr->atomname[j])) == 0) 
+          {
+              break;
+          }
       }
-    }
-    if (j==rptr->natom) {
-      if ( ( ( pdba->atom[i].resind == 0) && (atomnm[0] == 'H') &&
-	     ( (atomnm[1] == '1') || (atomnm[1] == '2') || 
-	       (atomnm[1] == '3') ) ) )
-	j=1;
-      else {
-	char buf[STRLEN];
-	
-	sprintf(buf,"Atom %s in residue %s %d not found in rtp entry %s with %d atoms\n"
-		"while sorting atoms%s",atomnm,
-		*pdba->resinfo[pdba->atom[i].resind].name,
-		pdba->resinfo[pdba->atom[i].resind].nr,
-		rptr->resname,
-		rptr->natom,
-		is_hydrogen(atomnm) ? ". Maybe different protonation state.\n"
-		"             Remove this hydrogen or choose a different "
-		"protonation state.\n"
-		"             Option -ignh will ignore all hydrogens "
-		"in the input." : "");
-	gmx_fatal(FARGS,buf);
+      if (j==rptr->natom) 
+      {
+          char buf[STRLEN];
+          
+          sprintf(buf,
+                  "Atom %s in residue %s %d was not found in rtp entry %s with %d atoms\n"
+                  "while sorting atoms.\n%s",atomnm,
+                  *pdba->resinfo[pdba->atom[i].resind].name,
+                  pdba->resinfo[pdba->atom[i].resind].nr,
+                  rptr->resname,
+                  rptr->natom,
+                  is_hydrogen(atomnm) ? 
+                  "\nFor a hydrogen, this can be a different protonation state, or it\n"
+                  "might have had a different number in the PDB file and was rebuilt\n"
+                  "(it might for instance have been H3, and we only expected H1 & H2).\n"
+                  "Note that hydrogens might have been added to the entry for the N-terminus.\n"
+                  "Remove this hydrogen or choose a different protonation state to solve it.\n"
+                  "Option -ignh will ignore all hydrogens in the input." : ".");
+          gmx_fatal(FARGS,buf);
       }
-    }
-    /* make shadow array to be sorted into indexgroup */
-    pdbi[i].resnr  = pdba->atom[i].resind;
-    pdbi[i].j      = j;
-    pdbi[i].index  = i;
-    pdbi[i].anm1   = atomnm[1];
-    pdbi[i].altloc = pdba->pdbinfo[i].altloc;
+      /* make shadow array to be sorted into indexgroup */
+      pdbi[i].resnr  = pdba->atom[i].resind;
+      pdbi[i].j      = j;
+      pdbi[i].index  = i;
+      pdbi[i].anm1   = atomnm[1];
+      pdbi[i].altloc = pdba->pdbinfo[i].altloc;
   }
   qsort(pdbi,natoms,(size_t)sizeof(pdbi[0]),pdbicomp);
-  
+    
   /* pdba is sorted in pdbnew using the pdbi index */ 
   snew(a,natoms);
   snew(pdbnew,1);
@@ -633,7 +695,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
   sfree(pdbi);
 }
 
-static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],bool bVerbose)
+static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],gmx_bool bVerbose)
 {
   int     i,j,oldnatoms,ndel;
   t_resinfo *ri;
@@ -862,7 +924,7 @@ typedef struct {
   char chainnum;
   int  start;
   int  natom;
-  bool bAllWat;
+  gmx_bool bAllWat;
   int  nterpairs;
   int  *chainstart;
 } t_pdbchain;
@@ -870,7 +932,7 @@ typedef struct {
 typedef struct {
   char chainid;
   int  chainnum;
-  bool bAllWat;
+  gmx_bool bAllWat;
   int nterpairs;
   int *chainstart;
   t_hackblock **ntdb;
@@ -884,34 +946,32 @@ typedef struct {
 int main(int argc, char *argv[])
 {
   const char *desc[] = {
-    "This program reads a pdb file, reads",
+    "This program reads a pdb (or gro) file, reads",
     "some database files, adds hydrogens to the molecules and generates",
-    "coordinates in Gromacs (Gromos) format and a topology in Gromacs format.",
+    "coordinates in Gromacs (Gromos), or optionally pdb, format",
+    "and a topology in Gromacs format.",
     "These files can subsequently be processed to generate a run input file.",
     "[PAR]",
-    "The force fields in the distribution are currently:[PAR]",
-      
-    "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[BR]",
-    "gromos43a1  GROMOS96 43a1 Forcefield [BR]",
-    "gromos43a2  GROMOS96 43a2 Forcefield (improved alkane dihedrals)[BR]",
-    "gromos45a3  GROMOS96 45a3 Forcefield [BR]",
-    "gromos53a5  GROMOS96 53a5 Forcefield [BR]",
-    "gromos53a6  GROMOS96 53a6 Forcefield [BR]",
-    "gmx         Gromacs Forcefield (a modified GROMOS87, see manual)[BR]",
-    "encads      Encad all-atom force field, using scaled-down vacuum charges[BR]",
-    "encadv      Encad all-atom force field, using full solvent charges[PAR]",
-      
-    "The corresponding data files can be found in the library directory",
-    "in the subdirectory <forcefield>.ff.",
-    "Note that pdb2gmx will also look for a [TT]forcefield.itp[tt] file",
-    "in such subdirectories in the current working directory.",
-    "After choosing a force field, all files will be read only from",
-    "the corresponding directory, unless the [TT]-cwd[tt] option is used.",
-    "Check chapter 5 of the manual for more information about file formats.",
+    "pdb2gmx will search for force fields by looking for",
+    "a [TT]forcefield.itp[tt] file in subdirectories [TT]<forcefield>.ff[tt]",
+    "of the current working directory and of the Gromacs library directory",
+    "as inferred from the path of the binary or the [TT]GMXLIB[tt] environment",
+    "variable.",
     "By default the forcefield selection is interactive,",
-    "but you can use the [TT]-ff[tt] option to specify",
-    "one of the short names above on the command line instead. In that",
-    "case pdb2gmx just looks for the corresponding file.[PAR]",
+    "but you can use the [TT]-ff[tt] option to specify one of the short names",
+    "in the list on the command line instead. In that case pdb2gmx just looks",
+    "for the corresponding [TT]<forcefield>.ff[tt] directory.",
+    "[PAR]",
+    "After choosing a force field, all files will be read only from",
+    "the corresponding force field directory.",
+    "If you want to modify or add a residue types, you can copy the force",
+    "field directory from the Gromacs library directory to your current",
+    "working directory. If you want to add new protein residue types,",
+    "you will need to modify residuetypes.dat in the library directory",
+    "or copy the whole library directory to a local directory and set",
+    "the environment variable [TT]GMXLIB[tt] to the name of that directory.",
+    "Check chapter 5 of the manual for more information about file formats.",
+    "[PAR]",
     
     "Note that a pdb file is nothing more than a file format, and it",
     "need not necessarily contain a protein structure. Every kind of",
@@ -928,20 +988,21 @@ int main(int argc, char *argv[])
     "on NE2 or on both. By default these selections are done automatically.",
     "For His, this is based on an optimal hydrogen bonding",
     "conformation. Hydrogen bonds are defined based on a simple geometric",
-    "criterium, specified by the maximum hydrogen-donor-acceptor angle",
+    "criterion, specified by the maximum hydrogen-donor-acceptor angle",
     "and donor-acceptor distance, which are set by [TT]-angle[tt] and",
     "[TT]-dist[tt] respectively.[PAR]",
       
     "The separation of chains is not entirely trivial since the markup",
-    "in user-generated PDB files frequently varies, and sometimes it",
+    "in user-generated PDB files frequently varies and sometimes it",
     "is desirable to merge entries across a TER record, for instance",
-    "if you have a HEME group bound to a protein. To handle this, pdb2gmx",
-    "now has a new option [TT]-chainsep[tt] so you can choose whether a new chain",
-    "should start when we find a TER record, when the chain id changes",
-    "or combinations of either or both of these. There is als an option",
-    "[TT]-merge[tt] to interactively ask if you want to merge consecutive",
-    "chains into one molecule - this can be useful for connecting chains",
-    "with a disulfide brigde or intermolecular distance restraints.[PAR]",
+    "if you want a disulfide bridge or distance restraints between",
+    "two protein chains or if you have a HEME group bound to a protein.",
+    "In such cases multiple chains should be contained in a single",
+    "[TT]molecule_type[tt] definition.",
+    "To handle this, pdb2gmx has an option [TT]-chainsep[tt] so you can",
+    "choose whether a new chain should start when we find a TER record,",
+    "when the chain id changes, combinations of either or both of these",
+    "or fully interactively.[PAR]",
     
     "pdb2gmx will also check the occupancy field of the pdb file.",
     "If any of the occupancies are not one, indicating that the atom is",
@@ -960,7 +1021,7 @@ int main(int argc, char *argv[])
 
     "The [TT].gro[tt] and [TT].g96[tt] file formats do not support chain",
     "identifiers. Therefore it is useful to enter a pdb file name at",
-    "the [TT]-o[tt] option when you want to convert a multichain pdb file.",
+    "the [TT]-o[tt] option when you want to convert a multi-chain pdb file.",
     "[PAR]",
     
     "The option [TT]-vsite[tt] removes hydrogen and fast improper dihedral",
@@ -968,7 +1029,7 @@ int main(int argc, char *argv[])
     "hydrogens into virtual sites and fixing angles, which fixes their",
     "position relative to neighboring atoms. Additionally, all atoms in the",
     "aromatic rings of the standard amino acids (i.e. PHE, TRP, TYR and HIS)",
-    "can be converted into virtual sites, elminating the fast improper dihedral",
+    "can be converted into virtual sites, eliminating the fast improper dihedral",
     "fluctuations in these rings. Note that in this case all other hydrogen",
     "atoms are also converted to virtual sites. The mass of all atoms that are",
     "converted into virtual sites, is added to the heavy atoms.[PAR]",
@@ -1023,26 +1084,28 @@ int main(int argc, char *argv[])
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
-  bool       bVsites=FALSE,bWat,bPrevWat=FALSE,bITP,bVsiteAromatics=FALSE,bMerge;
+  gmx_bool       bVsites=FALSE,bWat,bPrevWat=FALSE,bITP,bVsiteAromatics=FALSE,bMerge;
   real       mHmult=0;
   t_hackblock *hb_chain;
   t_restp    *restp_chain;
   output_env_t oenv;
   const char *p_restype;
   int        rc;
-  int           prev_chain_atomnum;
-  int           this_chain_atomnum;
-  const char *  prev_chain_atomname;
-  const char *  this_chain_atomname;
-  const char *  prev_chain_resname;
-  const char *  this_chain_resname;
-  int           prev_chain_resnum;
-  int           this_chain_resnum;
-  char          prev_chain_id;
-  char          this_chain_id;
-  int           prev_chain_number;
-  int           this_chain_number;
+  int           this_atomnum;
+  int           prev_atomnum;
+  const char *  prev_atomname;
+  const char *  this_atomname;
+  const char *  prev_resname;
+  const char *  this_resname;
+  int           prev_resnum;
+  int           this_resnum;
+  char          prev_chainid;
+  char          this_chainid;
+  int           prev_chainnumber;
+  int           this_chainnumber;
   int           nid_used;
+  int           this_chainstart;
+  int           prev_chainstart;
     
   gmx_atomprop_t aps;
   
@@ -1058,35 +1121,30 @@ int main(int argc, char *argv[])
  
 
   /* Command line arguments must be static */
-  static bool bNewRTP=FALSE,bAddCWD=FALSE,bAllowOverrideRTP=FALSE;
-  static bool bInter=FALSE, bCysMan=FALSE; 
-  static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
-  static bool bGlnMan=FALSE, bArgMan=FALSE;
-  static bool bRenameCys=TRUE;
-  static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
-  static bool bSort=TRUE, bAllowMissing=FALSE, bRemoveH=FALSE;
-  static bool bDeuterate=FALSE,bVerbose=FALSE,bChargeGroups=TRUE,bCmap=TRUE;
-  static bool bRenumRes=FALSE,bRTPresname=FALSE;
+  static gmx_bool bNewRTP=FALSE;
+  static gmx_bool bInter=FALSE, bCysMan=FALSE; 
+  static gmx_bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
+  static gmx_bool bGlnMan=FALSE, bArgMan=FALSE;
+  static gmx_bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
+  static gmx_bool bSort=TRUE, bAllowMissing=FALSE, bRemoveH=FALSE;
+  static gmx_bool bDeuterate=FALSE,bVerbose=FALSE,bChargeGroups=TRUE,bCmap=TRUE;
+  static gmx_bool bRenumRes=FALSE,bRTPresname=FALSE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static const char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   static const char *watstr[] = { NULL, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
-  static const char *chainsep[] = { NULL, "id_or_ter", "id_and_ter", "ter", "id", "interactive" };
+  static const char *chainsep[] = { NULL, "id_or_ter", "id_and_ter", "ter", "id", "interactive", NULL };
   static const char *ff = "select";
 
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
-    { "-cwd",    FALSE, etBOOL, {&bAddCWD},
-      "Also read force field files from the current working directory" },
-    { "-rtpo",  FALSE, etBOOL,  {&bAllowOverrideRTP},
-      "Allow an entry in a local rtp file to override a library rtp entry"},
     { "-lb",     FALSE, etREAL, {&long_bond_dist},
       "HIDDENLong bond warning distance" },
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
     { "-chainsep", FALSE, etENUM, {chainsep},
-      "Condition in PDB files when a new chain should be started" },
+      "Condition in PDB files when a new chain and molecule_type should be started" },
     { "-ff",     FALSE, etSTR,  {&ff},
       "Force field, interactive by default. Use -h for information." },
     { "-water",  FALSE, etENUM, {watstr},
@@ -1109,8 +1167,6 @@ int main(int argc, char *argv[])
       "Interactive Glutamine selection, iso neutral" },
     { "-his",    FALSE, etBOOL, {&bHisMan},
       "Interactive Histidine selection, iso checking H-bonds" },
-    { "-cysh",    FALSE, etBOOL, {&bRenameCys},
-      "HIDDENUse rtp entry CYSH for cysteines" },
     { "-angle",  FALSE, etREAL, {&angle}, 
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
     { "-dist",   FALSE, etREAL, {&distance},
@@ -1210,7 +1266,7 @@ int main(int argc, char *argv[])
   gmx_residuetype_init(&rt);
   
   /* Read residue renaming database(s), if present */
-  nrrn = fflib_search_file_end(ffdir,bAddCWD,".r2b",FALSE,&rrn);
+  nrrn = fflib_search_file_end(ffdir,".r2b",FALSE,&rrn);
     
   nrtprename = 0;
   rtprename  = NULL;
@@ -1267,34 +1323,44 @@ int main(int argc, char *argv[])
     
   bMerge = !strncmp(chainsep[0],"int",3);
     
-  prev_chain_atomname = NULL;
-  prev_chain_atomnum   = -1;
-  prev_chain_resname   = NULL;
-  prev_chain_resnum    = -1;
-  prev_chain_id        = '?';
-  prev_chain_number    = -1;
+  this_atomname       = NULL;
+  this_atomnum        = -1;
+  this_resname        = NULL;
+  this_resnum         = -1;
+  this_chainid        = '?';
+  this_chainnumber    = -1;
+  this_chainstart     = 0;
     
   pdb_ch=NULL;
   for (i=0; (i<natom); i++) 
   {
       ri = &pdba_all.resinfo[pdba_all.atom[i].resind];
+
+      prev_atomname      = this_atomname;
+      prev_atomnum       = this_atomnum;
+      prev_resname       = this_resname;
+      prev_resnum        = this_resnum;
+      prev_chainid       = this_chainid;
+      prev_chainnumber   = this_chainnumber;
+      prev_chainstart    = this_chainstart;
       
-      this_chain_atomname = *pdba_all.atomname[i];
-      this_chain_atomnum  = (pdba_all.pdbinfo != NULL) ? pdba_all.pdbinfo[i].atomnr : i+1;
-      this_chain_resname  = *ri->name;
-      this_chain_resnum   = ri->nr;
-      this_chain_id       = ri->chainid;
-      this_chain_number   = ri->chainnum;
+      this_atomname      = *pdba_all.atomname[i];
+      this_atomnum       = (pdba_all.pdbinfo != NULL) ? pdba_all.pdbinfo[i].atomnr : i+1;
+      this_resname       = *ri->name;
+      this_resnum        = ri->nr;
+      this_chainid       = ri->chainid;
+      this_chainnumber   = ri->chainnum;
       
-      bWat = strcasecmp(*ri->name,watres) == 0;
-      if ((i == 0) || (this_chain_number != prev_chain_number) || (bWat != bPrevWat)) 
+      bWat = gmx_strcasecmp(*ri->name,watres) == 0;
+      if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat != bPrevWat)) 
       {
+          this_chainstart = pdba_all.atom[i].resind;
           if (bMerge && i>0 && !bWat) 
           {
               printf("Merge chain ending with residue %s%d (chain id '%c', atom %d %s) with\n"
                      "chain starting with residue %s%d (chain id '%c', atom %d %s)? [n/y]\n",
-                     prev_chain_resname,prev_chain_resnum,prev_chain_id,prev_chain_atomnum,prev_chain_atomname,
-                     this_chain_resname,this_chain_resnum,this_chain_id,this_chain_atomnum,this_chain_atomname);
+                     prev_resname,prev_resnum,prev_chainid,prev_atomnum,prev_atomname,
+                     this_resname,this_resnum,this_chainid,this_atomnum,this_atomname);
               
               if(NULL==fgets(select,STRLEN-1,stdin))
               {
@@ -1305,17 +1371,11 @@ int main(int argc, char *argv[])
           {
               select[0] = 'n';
           }
-          prev_chain_atomname = this_chain_atomname;
-          prev_chain_atomnum  = this_chain_atomnum;
-          prev_chain_resname  = this_chain_resname;
-          prev_chain_resnum   = this_chain_resnum;
-          prev_chain_id       = this_chain_id;
-          prev_chain_number   = this_chain_number;
           
           if (select[0] == 'y') 
           {
               pdb_ch[nch-1].chainstart[pdb_ch[nch-1].nterpairs] = 
-              pdba_all.atom[i].resind;
+              pdba_all.atom[i].resind - prev_chainstart;
               pdb_ch[nch-1].nterpairs++;
               srenew(pdb_ch[nch-1].chainstart,pdb_ch[nch-1].nterpairs+1);
           }
@@ -1442,15 +1502,15 @@ int main(int argc, char *argv[])
   check_occupancy(&pdba_all,opt2fn("-f",NFILE,fnm),bVerbose);
   
   /* Read atomtypes... */
-  atype = read_atype(ffdir,bAddCWD,&symtab);
+  atype = read_atype(ffdir,&symtab);
   
   /* read residue database */
   printf("Reading residue database... (%s)\n",forcefield);
-  nrtpf = fflib_search_file_end(ffdir,bAddCWD,".rtp",TRUE,&rtpf);
+  nrtpf = fflib_search_file_end(ffdir,".rtp",TRUE,&rtpf);
   nrtp  = 0;
   restp = NULL;
   for(i=0; i<nrtpf; i++) {
-    read_resall(rtpf[i],&nrtp,&restp,atype,&symtab,bAllowOverrideRTP);
+    read_resall(rtpf[i],&nrtp,&restp,atype,&symtab,FALSE);
     sfree(rtpf[i]);
   }
   sfree(rtpf);
@@ -1462,20 +1522,17 @@ int main(int argc, char *argv[])
   }
     
   /* read hydrogen database */
-  nah = read_h_db(ffdir,bAddCWD,&ah);
+  nah = read_h_db(ffdir,&ah);
   
   /* Read Termini database... */
-  nNtdb=read_ter_db(ffdir,bAddCWD,'n',&ntdb,atype);
-  nCtdb=read_ter_db(ffdir,bAddCWD,'c',&ctdb,atype);
+  nNtdb=read_ter_db(ffdir,'n',&ntdb,atype);
+  nCtdb=read_ter_db(ffdir,'c',&ctdb,atype);
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=gmx_fio_fopen(top_fn,"w");
 
-#ifdef PACKAGE_VERSION
-  sprintf(generator,"%s - version %s",ShortProgram(), PACKAGE_VERSION );
-#else
-  sprintf(generator,"%s - version %s",ShortProgram(), "unknown" );
-#endif
+  sprintf(generator,"%s - %s",ShortProgram(), GromacsVersion() );
+
   print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult);
 
   nincl=0;
@@ -1500,26 +1557,28 @@ int main(int argc, char *argv[])
 	      chain+1,natom,nres);
       
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
-		  bHisMan,bArgMan,bGlnMan,bRenameCys,angle,distance,&symtab,
+		  bHisMan,bArgMan,bGlnMan,angle,distance,&symtab,
 		  nrtprename,rtprename);
       
     for(i=0; i<cc->nterpairs; i++) {
+        
       cc->chainstart[cc->nterpairs] = pdba->nres;
+                
       find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
 		  &(cc->r_start[i]),&(cc->r_end[i]),rt);    
       
         
       if ( (cc->r_start[i]<0) || (cc->r_end[i]<0) ) {
-	printf("Problem with chain definition, or missing terminus residues.\n"
-	       "This chain does not appears to contain a recognized chain molecule.\n"
-           "If this is incorrect, you can edit residuetypes.dat to modify the behavior!\n");
+	printf("Problem with chain definition, or missing terminal residues.\n"
+	       "This chain does not appear to contain a recognized chain molecule.\n"
+           "If this is incorrect, you can edit residuetypes.dat to modify the behavior.\n");
            
 	cc->nterpairs = i;
 	break;
       }
     }
 
-    /* Check for disulphides and other special bonds */
+    /* Check for disulfides and other special bonds */
     nssbonds = mk_specbonds(pdba,x,bCysMan,&ssbonds,bVerbose);
 
     if (nrtprename > 0) {        
@@ -1536,8 +1595,10 @@ int main(int argc, char *argv[])
       write_sto_conf(fn,title,pdba,x,NULL,ePBC,box);
     }
 
+      
     for(i=0; i<cc->nterpairs; i++) 
     {
+        
         /* Set termini.
          * We first apply a filter so we only have the
          * termini that can be applied to the residue in question
@@ -1580,7 +1641,7 @@ int main(int argc, char *argv[])
         if (nCtdb > 0)
         {
             tdblist = filter_ter(nrtp,restp,nCtdb,ctdb,
-                                 *pdba->resinfo[cc->r_start[i]].name,
+                                 *pdba->resinfo[cc->r_end[i]].name,
                                  *pdba->resinfo[cc->r_end[i]].rtp,
                                  &ntdblist);
             if(ntdblist==0)
@@ -1617,7 +1678,7 @@ int main(int argc, char *argv[])
      requires some re-thinking of code in gen_vsite.c, which I won't 
      do now :( AF 26-7-99 */
 
-    rename_atoms(NULL,ffdir,bAddCWD,
+    rename_atoms(NULL,ffdir,
 		 pdba,&symtab,restp_chain,FALSE,rt,FALSE,bVerbose);
 
     match_atomnames_with_rtp(restp_chain,hb_chain,pdba,x,bVerbose);
@@ -1676,12 +1737,12 @@ int main(int argc, char *argv[])
     } 
     else
     {
-        this_chain_id = cc->chainid;
+        this_chainid = cc->chainid;
         
         /* Add the chain id if we have one */
-        if(this_chain_id != ' ')
+        if(this_chainid != ' ')
         {
-            sprintf(buf,"_chain_%c",this_chain_id);
+            sprintf(buf,"_chain_%c",this_chainid);
             strcat(suffix,buf);
         }
 
@@ -1745,7 +1806,7 @@ int main(int argc, char *argv[])
     nmol++;
 
     if (bITP)
-      print_top_comment(itp_file,itp_fn,generator,TRUE);
+      print_top_comment(itp_file,itp_fn,generator,ffdir,TRUE);
 
     if (cc->bAllWat)
       top_file2=NULL;
@@ -1759,7 +1820,7 @@ int main(int argc, char *argv[])
 	    nrtp,restp,
 	    restp_chain,hb_chain,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->r_start,cc->r_end,bAllowMissing,
-	    bVsites,bVsiteAromatics,forcefield,ffdir,bAddCWD,
+	    bVsites,bVsiteAromatics,forcefield,ffdir,
 	    mHmult,nssbonds,ssbonds,
 	    long_bond_dist,short_bond_dist,bDeuterate,bChargeGroups,bCmap,
 	    bRenumRes,bRTPresname);

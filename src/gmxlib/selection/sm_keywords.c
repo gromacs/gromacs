@@ -142,7 +142,7 @@ typedef struct t_methoddata_kwstr
      */
     struct t_methoddata_kwstr_match {
         /** TRUE if the expression is a regular expression, FALSE otherwise. */
-        bool           bRegExp;
+        gmx_bool           bRegExp;
         /** The value to match against. */
         union {
 #ifdef USE_REGEX
@@ -471,7 +471,7 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     char               *s;
     int                 i;
     size_t              j;
-    bool                bRegExp;
+    gmx_bool                bRegExp;
 
     d->v   = param[0].val.u.s;
     d->n   = param[1].val.nr;
@@ -560,7 +560,7 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
     int                 i, j;
-    bool                bFound;
+    gmx_bool                bFound;
 
     out->u.g->isize = 0;
     for (i = 0; i < g->isize; ++i)

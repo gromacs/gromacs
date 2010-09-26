@@ -38,7 +38,6 @@ files.
 #ifndef _TMPI_EVENT_H_
 #define _TMPI_EVENT_H_
 
-#include "atomic.h"
 #include "wait.h"
 
 /*! \file

@@ -144,7 +144,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 			   real ***slDensity, int *nslices, t_topology *top,
 			   int ePBC,
 			   int axis, int nr_grps, real *slWidth, 
-			   t_electron eltab[], int nr,bool bCenter,
+			   t_electron eltab[], int nr,gmx_bool bCenter,
                            const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
@@ -190,7 +190,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
   gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    gmx_rmpbc(gpbc,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -249,7 +249,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 
 void calc_density(const char *fn, atom_id **index, int gnx[], 
 		  real ***slDensity, int *nslices, t_topology *top, int ePBC,
-		  int axis, int nr_grps, real *slWidth, bool bCenter,
+		  int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                   const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
@@ -296,7 +296,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
   /*********** Start processing trajectory ***********/
   do {
-    gmx_rmpbc(gpbc,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -345,7 +345,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 void plot_density(real *slDensity[], const char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
 		  const char **dens_opt,
-		  bool bSymmetrize, const output_env_t oenv)
+		  gmx_bool bSymmetrize, const output_env_t oenv)
 {
   FILE  *den;
   const char *ylabel=NULL;
@@ -405,8 +405,8 @@ int gmx_density(int argc,char *argv[])
   static const char *axtitle="Z"; 
   static int  nslices = 50;      /* nr of slices defined       */
   static int  ngrps   = 1;       /* nr. of groups              */
-  static bool bSymmetrize=FALSE;
-  static bool bCenter=FALSE;
+  static gmx_bool bSymmetrize=FALSE;
+  static gmx_bool bCenter=FALSE;
   t_pargs pa[] = {
     { "-d", FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
