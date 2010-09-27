@@ -30,6 +30,7 @@
  */
 /*! \file
  * \brief
+ * Declares gmx::SelectionOption.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
@@ -59,10 +60,26 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         //! Initializes an option with the given name.
         explicit SelectionOption(const char *name) : MyBase(name), _flags(0) {}
 
+        /*! \brief
+         * Only accept selections that evaluate to atom positions.
+         */
         MyClass &onlyAtoms() { _flags |= efOnlyAtoms; return me(); }
+        /*! \brief
+         * Only accept static selections for this option.
+         */
         MyClass &onlyStatic() { _flags |= efOnlyStatic; return me(); }
+        /*! \brief
+         * Handle dynamic selections for this option with position masks.
+         */
         MyClass &dynamicMask() { _flags |= efDynamicMask; return me(); }
+        /*! \brief
+         * Disallow using atom coordinates as the reference positions.
+         */
         MyClass &dynamicOnlyWhole() { _flags |= efDynamicOnlyWhole; return me(); }
+        /*! \brief
+         * Mark this option as receiving selections that can't be assigned to
+         * other options.
+         */
         MyClass &collectRemaining() { _flags |= efCollectRemaining; return me(); }
 
     private:

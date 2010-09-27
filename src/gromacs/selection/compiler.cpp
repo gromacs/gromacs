@@ -40,14 +40,18 @@
  * The memory usage could still be optimized.
  * Use of memory pooling could still be extended, and a lot of redundant
  * gmin/gmax data could be eliminated for complex arithmetic expressions.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 /*! \internal
- * \page selcompiler Selection compilation
+ * \page page_module_selection_compiler Selection compilation
  *
  * The compiler takes the selection element tree from the selection parser
- * (see \ref selparser) as input. The selection parser is quite independent of
- * selection evaluation details, and the compiler processes the tree to
- * conform to what the evaluation functions expect.
+ * (see \ref page_module_selection_parser) as input.
+ * The selection parser is quite independent of selection evaluation details,
+ * and the compiler processes the tree to conform to what the evaluation
+ * functions expect.
  * For better control and optimization possibilities, the compilation is
  * done on all selections simultaneously.
  * Hence, all the selections should be parsed before the compiler can be
@@ -126,7 +130,7 @@
  *
  * \todo
  * Some combinations of method parameter flags are not yet properly treated by
- * the compiler or the evaluation functions in evaluate.c. All the ones used by
+ * the compiler or the evaluation functions in evaluate.cpp. All the ones used by
  * currently implemented methods should work, but new combinations might not.
  *
  *
@@ -2603,7 +2607,7 @@ calculate_mass_charge(std::vector<gmx::Selection *> *selections,
  ********************************************************************/
 
 /*!
- * \param[in,out] sc Selection collection to be compiled.
+ * \param[in,out] coll Selection collection to be compiled.
  * \returns       0 on successful compilation, a non-zero error code on error.
  *
  * Before compilation, the selection collection should have been initialized

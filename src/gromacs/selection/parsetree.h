@@ -29,16 +29,20 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Handling of intermediate selection parser data.
+ * \brief
+ * Handling of intermediate selection parser data.
  *
  * The data types declared in this header are used by the parser to store
  * intermediate data when constructing method expressions.
  * In particular, the parameters for the method are stored.
  * The intermediate data is freed once a \c t_selelem object can be
  * constructed.
- * 
+ *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef SELECTION_PARSETREE_H
 #define SELECTION_PARSETREE_H
@@ -61,6 +65,7 @@ typedef struct t_selexpr_value
     e_selvalue_t            type;
     /** TRUE if the value is the result of an expression. */
     gmx_bool                    bExpr;
+    /** The actual value. */
     union {
         /** The integer value/range (\p type INT_VALUE); */
         struct {

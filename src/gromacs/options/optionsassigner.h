@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::OptionsAssigner.
  *
@@ -50,7 +50,7 @@ class AbstractErrorReporter;
 
 class Options;
 
-/*! \brief
+/*! \libinternal \brief
  * Decorator class for assigning values to Options.
  *
  * This class extends the interface of an Options object by providing methods

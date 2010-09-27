@@ -30,6 +30,9 @@
  */
 /*! \file
  * \brief API for handling positions.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef POSITION_H
 #define POSITION_H

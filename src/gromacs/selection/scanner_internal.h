@@ -30,6 +30,9 @@
  */
 /*! \internal \file
  * \brief Internal header file used by the selection tokenizer.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef SELECTION_SCANNER_INTERNAL_H
 #define SELECTION_SCANNER_INTERNAL_H
@@ -49,44 +52,70 @@ struct gmx_sel_lexer_t;
 /* We cannot include scanner_flex.h from the scanner itself, because it
  * seems to break everything. */
 /* And we need to define YY_NO_UNISTD_H here as well, otherwise unistd.h
- * gets included in other files than scanner.c... */
+ * gets included in other files than scanner.cpp... */
 #ifndef FLEX_SCANNER
 #define YY_NO_UNISTD_H
 #include "scanner_flex.h"
 #endif
 
-/*! \brief
+/*! \internal \brief
  * Internal data structure for the selection tokenizer state.
  */
 typedef struct gmx_sel_lexer_t
 {
+    //! Selection collection to put parsed selections in.
     struct gmx_ana_selcollection_t  *sc;
+    //! External index groups for resolving \c group keywords.
     struct gmx_ana_indexgrps_t      *grps;
+    //! Number of selections at which the parser should stop.
     int                              nexpsel;
 
+    //! Whether the parser is interactive.
     gmx_bool                             bInteractive;
+    //! Current input string (line) for an interactive scanner.
     char                            *inputstr;
+    //! Number of bytes allocated for \a inputstr.
     int                              nalloc_input;
 
+    //! Pretty-printed version of the string parsed since last clear.
     char                            *pselstr;
+    //! Length of the string in \a pselstr.
     int                              pslen;
+    //! Number of bytes allocated for \a pselstr.
     int                              nalloc_psel;
 
+    //! Stack of methods in which parameters should be looked up.
     struct gmx_ana_selmethod_t     **mstack;
+    //! Index of the top of the stack in \a mstack.
     int                              msp;
+    //! Number of elements allocated for \a mstack.
     int                              mstack_alloc;
 
+    //! Number of END_OF_METHOD tokens to return before \a nextparam.
     int                              neom;
+    //! Parameter symbol to return before resuming scanning.
     struct gmx_ana_selparam_t       *nextparam;
+    //! Whether \a nextparam was a boolean parameter with a 'no' prefix.
     gmx_bool                             bBoolNo;
+    /*! \brief
+     * Method symbol to return before resuming scanning
+     *
+     * Only used when \p nextparam is NULL.
+     */
     struct gmx_ana_selmethod_t      *nextmethod;
+    //! Used to track whether the previous token was a position modifier.
     int                              prev_pos_kw;
 
+    //! Whether the 'of' keyword is acceptable as the next token.
     gmx_bool                             bMatchOf;
+    //! Whether boolean values (yes/no/on/off) are acceptable as the next token.
     gmx_bool                             bMatchBool;
+    //! Whether the next token starts a new selection.
     gmx_bool                             bCmdStart;
 
+    //! Whether an external buffer is set for the scanner.
     gmx_bool                             bBuffer;
+    //! The current buffer for the scanner.
     YY_BUFFER_STATE                  buffer;
 } gmx_sel_lexer_t;
 

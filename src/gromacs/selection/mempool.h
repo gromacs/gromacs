@@ -31,14 +31,21 @@
 /*! \internal \file
  * \brief Declarations for memory pooling functions.
  *
+ * \todo
+ * Document these functions.
+ *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_MEMPOOL_H
 #define GMX_SELECTION_MEMPOOL_H
 
 struct gmx_ana_index_t;
 
+/** Opaque struct for memory pooling. */
 typedef struct gmx_sel_mempool_t gmx_sel_mempool_t;
 
 /** Create an empty memory pool. */

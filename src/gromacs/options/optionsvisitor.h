@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::OptionsVisitor interface and supporting classes.
  *
@@ -47,7 +47,7 @@ namespace gmx
 class Option;
 class Options;
 
-/*! \brief
+/*! \libinternal \brief
  * Wrapper class for accessing option information.
  *
  * This class isolates the details of the internal option implementation
@@ -92,7 +92,7 @@ class OptionInfo
         void operator =(const OptionInfo &);
 };
 
-/*! \brief
+/*! \libinternal \brief
  * Pure interface for visiting options in a Options object.
  *
  * \see OptionsIterator
@@ -115,7 +115,7 @@ class OptionsVisitor
         virtual void visitOption(const OptionInfo &option) = 0;
 };
 
-/*! \brief
+/*! \libinternal \brief
  * Decorator class for visiting options in a Options object.
  *
  * This class provides an interface for looping through subsections and

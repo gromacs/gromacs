@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::OptionsGlobalProperties.
  *
@@ -45,7 +45,7 @@ namespace gmx
 class Options;
 class SelectionCollection;
 
-/*! \brief
+/*! \libinternal \brief
  * ID numbers for global properties.
  */
 enum OptionGlobalPropertyId
@@ -54,7 +54,7 @@ enum OptionGlobalPropertyId
     eogpSelectionCollection,
 };
 
-/*! \brief
+/*! \libinternal \brief
  * Describes global properties of an Options collection.
  *
  * These properties are used to implement features that require all options of
@@ -75,6 +75,7 @@ class OptionsGlobalProperties
             _usedProperties |= (1<<id);
         }
 
+        //! Set the selection collection for selection option output.
         void setSelectionCollection(SelectionCollection *sc)
         {
             _selectionCollection = sc;
@@ -82,6 +83,7 @@ class OptionsGlobalProperties
 
         //! Returns the scaling factor to get times in ps.
         double timeScaleFactor() const;
+        //! Returns the selection collection.
         SelectionCollection *selectionCollection() const
         {
             return _selectionCollection;
@@ -90,6 +92,7 @@ class OptionsGlobalProperties
     private:
         OptionsGlobalProperties();
 
+        //! Returns true if request() has been called for the given property.
         bool isPropertyUsed(OptionGlobalPropertyId id) const
         {
             return _usedProperties & (1<<id);

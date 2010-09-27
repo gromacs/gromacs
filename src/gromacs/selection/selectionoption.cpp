@@ -30,7 +30,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements ::gmx::SelectionOption.
+ * Implements gmx::SelectionOption.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection

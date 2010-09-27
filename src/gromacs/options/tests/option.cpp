@@ -32,7 +32,7 @@
  * \brief
  * Tests construction of basic option types.
  *
- * Most of the tests for the basic options are in assigner_test.cpp.
+ * Most of the tests for the basic options are in optionsassigner.cpp.
  * This file only tests behavior that should fail in parameter construction,
  * which would result in higher-level code asserting.
  *

@@ -29,10 +29,14 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of distance-based selection methods.
+ * \brief
+ * Implements distance-based selection methods.
  *
  * This file implements the \p distance, \p mindistance and \p within
  * selection methods.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>

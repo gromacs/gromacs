@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Defines gmx::AbstractOptionStorage template.
  *
@@ -58,7 +58,7 @@ class Options;
  * \tparam T Assignable type that stores a single option value.
  *
  * Provides an implementation of the clear(), finish(), valueCount(), and
- * formatValues() methods of the StorageInterface interface, leaving
+ * formatValues() methods of the OptionStorageInterface interface, leaving
  * typeString(), appendValue(), finishSet(), and formatValue() to be
  * implemented in derived classes.
  *

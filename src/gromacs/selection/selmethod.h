@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \page selmethods Custom selection methods
+/*! \page page_module_selection_custom Custom selection methods
  *
  * Custom selection methods are defined by creating a new instance of 
  * \c gmx_ana_selmethod_t and filling it with the necessary data for handling
@@ -245,14 +245,14 @@
  *    or to control the default behavior of the selection engine
  *    (currently, such a framework is not implemented, but should be easy to
  *    implement if required).
- *    
+ *
  * In addition to restricting the type of the method, selection modifiers
  * do not allow the flags \ref SMETH_SINGLEVAL and \ref SMETH_VARNUMVAL
  * (they would not make sense).
  *
  * Parameters and callbacks should be implemented as with normal selection
  * method, but beware that very little of the functionality has been tested.
- * 
+ *
  * \todo
  * The modifier handling could be made more flexible and more generic;
  * the current implementation does not allow many things which would be
@@ -266,8 +266,8 @@
  * In analysis programs, this can be done by calling
  * gmx_ana_selmethod_register().
  * If adding the method to the library, you should add a pointer to the new
- * method structure into the \c smtable_def array (in \ref selmethod.c
- * "selmethod.c"), and it is registered automatically.
+ * method structure into the \c smtable_def array (in selmethod.cpp), and it is
+ * registered automatically.
  * In both cases, gmx_ana_selmethod_register() does several checks on the
  * structure and reports any errors or inconsistencies it finds.
  */
@@ -279,10 +279,13 @@
  * method.
  *
  * Instructions for implementing custom selection methods can be found
- * on a separate page: \ref selmethods
+ * on a separate page: \ref page_module_selection_custom
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
-#ifndef SELMETHOD_H
-#define SELMETHOD_H
+#ifndef GMX_SELECTION_SELMETHOD_H
+#define GMX_SELECTION_SELMETHOD_H
 
 #include "typedefs.h"
 
@@ -604,8 +607,8 @@ typedef struct gmx_ana_selmethod_help_t
  *
  * See the function pointer type documentation for details of how the
  * functions should be implemented.
- * More details on implementing new selection methods can be found on a 
- * separate page: \ref selmethods.
+ * More details on implementing new selection methods can be found on a
+ * separate page: \ref page_module_selection_custom.
  */
 typedef struct gmx_ana_selmethod_t
 {

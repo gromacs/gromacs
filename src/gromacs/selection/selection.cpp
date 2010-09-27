@@ -30,7 +30,10 @@
  */
 /*! \internal \file
  * \brief
- * Implementation of functions in selection.h.
+ * Implements gmx::Selection.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -103,6 +106,7 @@ Selection::Selection(t_selelem *elem, const char *selstr)
     initCoveredFraction(CFRAC_NONE);
 }
 
+
 Selection::~Selection()
 {
     sfree(_sel.name);
@@ -120,6 +124,7 @@ Selection::~Selection()
     sfree(_sel.orgq);
 }
 
+
 void
 Selection::printInfo() const
 {
@@ -130,10 +135,7 @@ Selection::printInfo() const
     fprintf(stderr, "\n");
 }
 
-/*!
- * \param[in] type Type of covered fraction required.
- * \returns   True if the covered fraction can be calculated for the selection.
- */
+
 bool
 Selection::initCoveredFraction(e_coverfrac_t type)
 {

@@ -33,6 +33,15 @@
  * \brief
  * Provides functionality for initializing and evaluating selections.
  *
+ * \internal
+ * Implementation details of different parts of the module are discussed on
+ * separate pages:
+ *   - \ref page_module_selection_custom
+ *   - \ref page_module_selection_parser
+ *   - \ref page_module_selection_compiler
+ *   - \ref page_module_selection_insolidangle
+ */
+/*! \ingroup group_analysismodules
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
 /*! \file

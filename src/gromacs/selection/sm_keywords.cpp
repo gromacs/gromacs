@@ -29,8 +29,12 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementations of internal selection methods for numeric and
- * string keyword evaluation.
+ * \brief
+ * Implements internal selection methods for numeric and string keyword
+ * evaluation.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>

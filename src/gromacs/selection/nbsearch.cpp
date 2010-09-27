@@ -60,7 +60,11 @@
  *     without a memory cost.
  */
 /*! \internal \file
- * \brief Implementation of functions in nbsearch.h.
+ * \brief
+ * Implements functions in nbsearch.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -749,7 +753,6 @@ gmx_ana_nbsearch_pos_mindist(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p, int i)
 
 /*!
  * \param[in]  d   Neighborhood search data structure.
- * \param[in]  n   Number of test positions in \p x.
  * \param[in]  x   Test positions.
  * \param[out] jp  Index of the reference position in the first pair.
  * \returns    TRUE if there are positions within the cutoff.

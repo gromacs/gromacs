@@ -29,55 +29,61 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of functions of in parsetree.h.
+ * \brief
+ * Implements functions in parsetree.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 /*! \internal
- * \page selparser Selection parsing
+ * \page page_module_selection_parser Selection parsing
  *
  * The selection parser is implemented in the following files:
  *  - scanner.l:
  *    Tokenizer implemented using Flex, splits the input into tokens
  *    (scanner.c and scanner_flex.h are generated from this file).
- *  - scanner.h, scanner_internal.h, scanner_internal.c:
+ *  - scanner.h, scanner_internal.h, scanner_internal.cpp:
  *    Helper functions for scanner.l and for interfacing between
  *    scanner.l and parser.y. Functions in scanner_internal.h are only
  *    used from scanner.l, while scanner.h is used from the parser.
- *  - symrec.h, symrec.c:
+ *  - symrec.h, symrec.cpp:
  *    Functions used by the tokenizer to handle the symbol table, i.e.,
  *    the recognized keywords. Some basic keywords are hardcoded into
  *    scanner.l, but all method and variable references go through the
  *    symbol table, as do position evaluation keywords.
  *  - parser.y:
  *    Semantic rules for parsing the grammar
- *    (parser.c and parser.h are generated from this file by Bison).
- *  - parsetree.h, parsetree.c:
+ *    (parser.cpp and parser.h are generated from this file by Bison).
+ *  - parsetree.h, parsetree.cpp:
  *    Functions called from actions in parser.y to construct the
  *    evaluation elements corresponding to different grammar elements.
- *    parsetree.c also defines the external interface of the parser,
- *    i.e., the \c gmx_ana_selcollection_parse_*() functions declared
- *    in selection.h.
  *  - params.c:
  *    Defines a function that processes the parameters of selection
  *    methods and initializes the children of the method element.
+ *  - selectioncollection.h, selectioncollection.cpp:
+ *    These files define the high-level public interface to the parser
+ *    through SelectionCollection::parseFromStdin(),
+ *    SelectionCollection::parseFromFile() and
+ *    SelectionCollection::parseFromString().
  *
- * The basic control flow in the parser is as follows: when a
- * fmx_ana_selcollection_parse_*() gets called, it performs some
+ * The basic control flow in the parser is as follows: when a parser function
+ * in SelectionCollection gets called, it performs some
  * initialization, and then calls the _gmx_sel_yyparse() function generated
  * by Bison. This function then calls _gmx_sel_yylex() to repeatedly read
  * tokens from the input (more complex tasks related to token recognition
- * and bookkeeping are done by functions in scanner_internal.c) and uses the
+ * and bookkeeping are done by functions in scanner_internal.cpp) and uses the
  * grammar rules to decide what to do with them. Whenever a grammar rule
- * matches, a corresponding function in parsetree.c is called to construct
- * either a temporary representation for the object or a \c t_selelem object
+ * matches, a corresponding function in parsetree.cpp is called to construct
+ * either a temporary representation for the object or a ::t_selelem object
  * (some simple rules are handled internally in parser.y).
- * When a complete selection has been parsed, the functions in parsetree.c
- * also take care of updating the \c gmx_ana_selcollection_t structure
+ * When a complete selection has been parsed, the functions in parsetree.cpp
+ * also take care of updating the ::gmx_ana_selcollection_t structure
  * appropriately.
  *
- * The rest of this page describes the resulting \c t_selelem object tree.
+ * The rest of this page describes the resulting ::t_selelem object tree.
  * Before the selections can be evaluated, this tree needs to be passed to
  * the selection compiler, which is described on a separate page:
- * \ref selcompiler
+ * \ref page_module_selection_compiler
  *
  *
  * \section selparser_tree Element tree constructed by the parser

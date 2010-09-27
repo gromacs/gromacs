@@ -29,16 +29,20 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \file
- * \brief API for handling selection (the \c gmx_ana_selection_t structure and related functions).
+ * \brief
+ * Declares common types used in selections.
  *
- * There should be no need to use the data structures or call the
- * functions in this file directly unless using the selection routines outside
- * the main trajectory analysis API.
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELECTIONENUMS_H
 #define GMX_SELECTION_SELECTIONENUMS_H
 
-/** Defines the type of covered fraction. */
+/*! \brief
+ * Defines the type of covered fraction.
+ *
+ * \inpublicapi
+ */
 typedef enum
 {
     CFRAC_NONE,         /**< No covered fraction (everything covered). */
@@ -48,6 +52,12 @@ typedef enum
 namespace gmx
 {
 
+/*! \brief
+ * Flags for options.
+ *
+ * These flags are not part of the public interface, even though they are in an
+ * installed header.  They are needed in the implementation of SelectionOption.
+ */
 enum SelectionFlag
 {
     efOnlyStatic        = 1<<0,
@@ -57,6 +67,7 @@ enum SelectionFlag
     efCollectRemaining  = 1<<4,
 };
 
+//! Holds a collection of ::SelectionFlag values.
 typedef unsigned long SelectionFlags;
 
 }

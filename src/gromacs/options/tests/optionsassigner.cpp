@@ -33,10 +33,9 @@
  * Tests option assignment.
  *
  * In addition to testing gmx::OptionsAssigner, these are the main
- * tests for the classes from basicoptions.hpp and basicstorage.hpp (and their
- * base classes) that actually implement the behavior, as well as for the
- * internal implementation of the gmx::Options and
- * gmx::Option classes.
+ * tests for the classes from basicoptions.h and basicoptionstorage.h (and
+ * their base classes) that actually implement the behavior, as well as for the
+ * internal implementation of the gmx::Options and gmx::Option classes.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options

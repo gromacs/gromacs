@@ -29,7 +29,8 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of functions in evaluate.h.
+ * \brief
+ * Implements functions in evaluate.h.
  *
  * \todo
  * One of the major bottlenecks for selection performance is that all the
@@ -41,6 +42,9 @@
  * something can be evaluated by residue/molecule instead by atom, and
  * converting selections by residue/molecule into selections by atom
  * when necessary.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>

@@ -29,11 +29,12 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \file
- * \brief API for handling selection (the \c gmx_ana_selection_t structure and related functions).
+ * \brief
+ * Declares gmx::Selection.
  *
- * There should be no need to use the data structures or call the
- * functions in this file directly unless using the selection routines outside
- * the main trajectory analysis API.
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inpublicapi
+ * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELECTION_H
 #define GMX_SELECTION_SELECTION_H
@@ -44,8 +45,10 @@
 
 struct t_selelem;
 
-/*! \brief
+/*! \internal \brief
  * Describes a single selection.
+ *
+ * \ingroup module_selection
  */
 typedef struct gmx_ana_selection_t
 {
@@ -92,38 +95,86 @@ namespace gmx
 class SelectionCollection;
 
 /*! \brief
- * Wrapper class for accessing selection information.
+ * Provides access to a single selection.
+ *
+ * \inpublicapi
+ * \ingroup module_selection
  */
 class Selection
 {
     public:
+        /*! \brief
+         * Creates a new selection object.
+         *
+         * \param[in] elem   Root of the evaluation tree for this selection.
+         * \param[in] selstr String that was parsed to produce this selection.
+         */
         Selection(t_selelem *elem, const char *selstr);
 
+        //! Returns the name of the selection.
         const char *name() const  { return _sel.name; }
+        //! Returns the string that was parsed to produce this selection.
         const char *selectionText() const { return _sel.selstr; }
-        e_index_t type() const { return _sel.p.m.type; }
+        //! Returns true if the size of the selection (posCount()) is dynamic.
         bool isDynamic() const { return _sel.bDynamic; }
+        //! Returns the type of positions in the selection.
+        e_index_t type() const { return _sel.p.m.type; }
+        //! Number of positions in the selection.
         int posCount() const { return _sel.p.nr; }
-        const gmx_ana_pos_t *positions() const { return &_sel.p; }
+        //! Returns the \p i'th position for the selection.
         const rvec &x(int i) const { return _sel.p.x[i]; }
+        //! Returns the velocity for the \p i'th position.
         const rvec &v(int i) const { return _sel.p.v[i]; }
+        //! Returns the force for the \p i'th position.
         const rvec &f(int i) const { return _sel.p.f[i]; }
+        /*! \brief
+         * Returns the reference ID for the \p i'th position.
+         */
         int refId(int i) const { return _sel.p.m.refid[i]; }
+        /*! \brief
+         * Returns the mapped ID for the \p i'th position.
+         */
         int mapId(int i) const { return _sel.p.m.mapid[i]; }
+        //! Returns the mass for the \p i'th position.
         real mass(int i) const { return _sel.m[i]; }
+        //! Returns the charge for the \p i'th position.
         real charge(int i) const { return _sel.q[i]; }
+        //! Returns the number of atoms contributing to the \p i'th position.
         int atomCount(int i) const
             { return _sel.p.m.mapb.index[i+1] - _sel.p.m.mapb.index[i]; }
+        //! Returns the atom indices contributing to the \p i'th position.
         const int *atomIndices(int i) const
             { return _sel.g ? _sel.g->index + _sel.p.m.mapb.index[i] : NULL; }
-        int *mapIds() const { return _sel.p.m.mapid; }
-        gmx_ana_index_t *indexGroup() const { return _sel.g; }
+        //! Returns the covered fraction for the current frame.
         real cfrac() const { return _sel.cfrac; }
+        //! Deprecated method for direct access to position data.
+        const gmx_ana_pos_t *positions() const { return &_sel.p; }
+        //! Deprecated method for direct access to atom index data.
+        gmx_ana_index_t *indexGroup() const { return _sel.g; }
+        //! Deprecated method for direct access to to mapped ID array.
+        int *mapIds() const { return _sel.p.m.mapid; }
 
+        /*! \brief
+         * Sets the ID for the \p i'th position for use with mapId().
+         */
         void setOriginalId(int i, int id) { _sel.p.m.orgid[i] = id; }
+        /*! \brief
+         * Initializes information about covered fractions.
+         *
+         * \param[in] type Type of covered fraction required.
+         * \returns   True if the covered fraction can be calculated for the
+         *      selection.
+         */
         bool initCoveredFraction(e_coverfrac_t type);
 
+        //! Prints out one-line description of the selection.
         void printInfo() const;
+        /*! \brief
+         * Prints out extended information about the selection for debugging.
+         *
+         * \param[in] nmaxind Maximum number of values to print in lists
+         *      (-1 = print all).
+         */
         void printDebugInfo(int nmaxind) const;
 
         gmx_ana_selection_t     _sel;

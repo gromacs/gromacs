@@ -29,7 +29,11 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of functions in selhelp.c.
+ * \brief
+ * Implements functions in selhelp.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -43,9 +47,15 @@
 #include "selhelp.h"
 #include "symrec.h"
 
+/*! \internal \brief
+ * Describes a selection help section.
+ */
 typedef struct {
+    //! Topic keyword that produces this help.
     const char  *topic;
+    //! Number of items in the \a text array.
     int          nl;
+    //! Help text as a list of strings that will be concatenated.
     const char **text;
 } t_selection_help_item;
 
@@ -308,7 +318,7 @@ static const t_selection_help_item helpitems[] = {
 /*! \brief
  * Prints a brief list of keywords (selection methods) available.
  *
- * \param[in] sc    Selection collection for which the list should be printed.
+ * \param[in] symtab  Symbol table to use to find available keywords.
  * \param[in] type  Only methods that return this type are printed.
  * \param[in] bMod  If FALSE, \ref SMETH_MODIFIER methods are excluded, otherwise
  *     only them are printed.
@@ -352,7 +362,7 @@ print_keyword_list(gmx_sel_symtab_t *symtab, e_selvalue_t type,
 }
 
 /*!
- * \param[in]  sc    Selection collection for which help should be printed.
+ * \param[in]   symtab  Symbol table to use to find available keywords.
  * \param[in]  topic Topic to print help on, or NULL for general help.
  *
  * \p sc is used to get information on which keywords are available in the

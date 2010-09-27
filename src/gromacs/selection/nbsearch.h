@@ -37,9 +37,12 @@
  * The functions within this file can be used independently of the other parts
  * of the library.
  * The library also uses the functions internally.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
-#ifndef NBSEARCH_H
-#define NBSEARCH_H
+#ifndef GMX_SELECTION_NBSEARCH_H
+#define GMX_SELECTION_NBSEARCH_H
 
 #include "typedefs.h"
 

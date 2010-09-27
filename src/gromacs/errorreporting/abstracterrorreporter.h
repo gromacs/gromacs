@@ -49,7 +49,7 @@ namespace gmx
  *
  * This class provides an interface for reporting non-fatal errors from a
  * complex function.  Such a function should take a pointer to an
- * AbstractReporter object, and use the provided methods to report any errors
+ * AbstractErrorReporter object, and use the provided methods to report any errors
  * it encounters.  If the function calls other functions that can also detect
  * errors, it can pass the reporter object to these functions as well, possibly
  * after adding context information using startContext()/finishContext() or the

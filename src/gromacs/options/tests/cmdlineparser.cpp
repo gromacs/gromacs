@@ -30,7 +30,7 @@
  */
 /*! \internal \file
  * \brief
- * Tests gmx::options::CommandLineParser.
+ * Tests gmx::CommandLineParser.
  *
  * These tests exercise a large fraction of the code, so they may
  * catch errors in other parts than just in command-line parsing.

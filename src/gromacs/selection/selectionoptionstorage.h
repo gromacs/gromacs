@@ -30,7 +30,7 @@
  */
 /*! \internal \file
  * \brief
- * Declares storage class for selection options.
+ * Declares gmx::SelectionOptionStorage.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
@@ -49,6 +49,8 @@ class SelectionOption;
 
 /*! \internal \brief
  * Converts, validates, and stores selection values.
+ *
+ * \ingroup module_selection
  */
 class SelectionOptionStorage : public AbstractOptionStorage<Selection *>
 {

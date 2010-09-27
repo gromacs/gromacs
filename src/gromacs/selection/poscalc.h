@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \internal \file
  * \brief API for structured and optimized calculation of positions.
  *
  * The functions in this header are used internally by the analysis library
@@ -37,10 +37,11 @@
  * need. Instead, one should write an analysis tool such that it gets all
  * positions through selections.
  *
- * \internal
- *
  * The API is documented in more detail on a separate page:
  * \ref poscalcengine.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef POSCALC_H
 #define POSCALC_H

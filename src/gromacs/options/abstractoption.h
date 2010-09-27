@@ -39,10 +39,12 @@
  * These classes also take care of creating and setting up the actual option
  * objects.
  *
- * This header is needed directly only when implementing new option types.
+ * This header is needed directly only when implementing new option types,
+ * but methods of OptionTemplate are visible even to the normal user through
+ * its subclasses..
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \inpublicapi
+ * \inlibraryapi
  * \ingroup module_options
  */
 #ifndef GMX_OPTIONS_ABSTRACTOPTION_H

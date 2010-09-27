@@ -30,13 +30,20 @@
  */
 /*! \internal \file
  * \brief Grammar description and parser for the selection language.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 %{
-/*! \internal \file parser.c
+/*! \internal \file parser.cpp
  * \brief Generated (from parser.y by Bison) parser for the selection language.
+ *
+ * \ingroup module_selection
  */
 /*! \internal \file parser.h
  * \brief Generated (from parser.y by Bison) parser include file.
+ *
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>

@@ -31,11 +31,16 @@
 /*! \cond \internal \file scanner.l
  * \brief
  * Tokenizer for the selection language.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  * \endcond
  */
-/*! \internal \file scanner.c
+/*! \internal \file scanner.cpp
  * \brief
  * Generated (from scanner.l by Flex) tokenizer for the selection language.
+ *
+ * \ingroup module_selection
  */
 %{
 #ifdef HAVE_CONFIG_H

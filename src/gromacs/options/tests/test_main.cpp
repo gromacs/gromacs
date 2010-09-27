@@ -38,6 +38,9 @@
 
 #include "gromacs/fatalerror/fatalerror.h"
 
+/*! \brief
+ * Initializes unit testing with Google C++ Testing Framework.
+ */
 int main(int argc, char *argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);

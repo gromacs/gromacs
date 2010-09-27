@@ -30,7 +30,10 @@
  */
 /*! \internal \file
  * \brief
- * Implementation of functions in selparam.h.
+ * Implements functions in selparam.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -1240,7 +1243,7 @@ next_param:
             bOk = FALSE;
         }
     }
-    
+
     _gmx_selexpr_free_params(pparams);
     return bOk;
 }

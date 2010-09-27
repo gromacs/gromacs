@@ -107,7 +107,12 @@ typedef void (*ErrorHandlerFunc)(int retcode, const char *msg,
 ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler);
 
 /*! \brief
- * Raises an error.
+ * Raises a fatal error.
+ *
+ * \param[in] retcode Error code to raise.
+ * \param[in] msg     More detailed description of the error.
+ * \param[in] file    Name of the source file where the error occurred.
+ * \param[in] line    Line in \p file on which the error occurred.
  */
 void fatalError(int retcode, const char *msg, const char *file, int line);
 /*! \brief
@@ -118,6 +123,11 @@ void fatalError(int retcode, const char *msg, const char *file, int line);
 ::gmx::fatalErrorFormatted(::gmx::eeInvalidInput, GMX_ERRORLOC,
     "Invalid command-line argument: %s", argname);
  * \endcode
+ *
+ * \param[in] retcode Error code to raise.
+ * \param[in] file    Name of the source file where the error occurred.
+ * \param[in] line    Line in \p file on which the error occurred.
+ * \param[in] fmt     printf format string.
  */
 void fatalErrorFormatted(int retcode, const char *file, int line,
                          const char *fmt, ...);

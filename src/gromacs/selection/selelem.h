@@ -29,14 +29,18 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Definition of \c t_selelem and related things.
+ * \brief
+ * Declares ::t_selelem and related things.
  *
  * The selection element trees constructed by the parser and the compiler
  * are described on the respective pages:
- * \ref selparser and \ref selcompiler.
+ * \ref page_module_selection_parser and \ref page_module_selection_compiler.
  *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef SELECTION_ELEMENT_H
 #define SELECTION_ELEMENT_H

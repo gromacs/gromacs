@@ -29,21 +29,42 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Functions for printing help for selections.
+ * \brief
+ * Dummy header for Doxygen documentation.
  *
- * This is an implementation header: there should be no need to use it outside
- * this directory.
+ * This file just holds the main page for doxygen.  When, at some point in the
+ * future, there is an obvious location for this documentation, we should
+ * move it there.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_selection
  */
-#ifndef GMX_SELECTION_HELP_H
-#define GMX_SELECTION_HELP_H
-
-struct gmx_sel_symtab_t;
-
-/** Prints help for writing selections. */
-void
-_gmx_sel_print_help(struct gmx_sel_symtab_t *symtab, const char *topic);
-
-#endif
+/*! \mainpage Gromacs
+ * GROMACS is a versatile package to perform molecular dynamics, i.e. simulate
+ * the Newtonian equations of motion for systems with hundreds, to millions
+ * of particles.
+ */
+/*! \defgroup group_publicapi Public API
+ * \brief
+ * Classes and other symbols that are publicly accessible from user code.
+ */
+/*! \defgroup group_libraryapi Library API
+ * \brief
+ * Classes and other symbols that are publicly accessible within the Gromacs
+ * library.
+ *
+ * \see group_publicapi
+ */
+/*! \defgroup group_utilitymodules Utility Modules
+ * \brief
+ * Modules with generic utility functions.
+ */
+/*! \defgroup group_analysismodules Analysis Modules
+ * \brief
+ * Modules used in analysis tools.
+ */
+/*! \namespace gmx
+ * \brief
+ * Generic Gromacs namespace.
+ *
+ * \inpublicapi
+ */

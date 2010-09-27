@@ -33,12 +33,17 @@
  *
  * This file implements the functions in the headers scanner.h and
  * scanner_internal.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
-/*! \internal file scanner_flex.h
+/*! \internal \file scanner_flex.h
  * \brief Generated (from scanner.l) header file by Flex.
  *
  * This file contains definitions of functions that are needed in
- * scanner_internal.c.
+ * scanner_internal.cpp.
+ *
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -63,6 +68,7 @@
 #include "scanner.h"
 #include "scanner_internal.h"
 
+//! Step in which the allocated memory for pretty-printed input is incremeted.
 #define STRSTORE_ALLOCSTEP 1000
 
 /* These are defined as macros in the generated scanner_flex.h.

@@ -50,9 +50,12 @@
  * check the validity of input groups.
  * Also, the mapping functions are useful when dealing with dynamic index
  * groups.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
-#ifndef INDEXUTIL_H
-#define INDEXUTIL_H
+#ifndef GMX_SELECTION_INDEXUTIL_H
+#define GMX_SELECTION_INDEXUTIL_H
 
 #include "typedefs.h"
 

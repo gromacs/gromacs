@@ -29,7 +29,11 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of functions in selmethod.h.
+ * \brief
+ * Implements functions in selmethod.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -102,7 +106,7 @@ extern gmx_ana_selmethod_t sm_plus;
 /* From sm_permute.c */
 extern gmx_ana_selmethod_t sm_permute;
 
-/*! \brief
+/*! \internal \brief
  * Helper structure for defining selection methods.
  */
 typedef struct {
@@ -596,7 +600,7 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
 }
 
 /*!
- * \param[in,out] sc     Selection collection to registered the method to.
+ * \param[in,out] symtab Symbol table to register the method to.
  * \param[in]     name   Name under which the method should be registered.
  * \param[in]     method Method to register.
  * \returns       0 on success, EINVAL if there was something wrong with the
@@ -644,7 +648,7 @@ gmx_ana_selmethod_register(gmx_sel_symtab_t *symtab,
 }
 
 /*!
- * \param[in,out] sc     Selection collection to registered the methods to.
+ * \param[in,out] symtab Symbol table to register the methods to.
  * \returns       0 on success, -1 if any of the default methods could not be
  *   registered.
  */

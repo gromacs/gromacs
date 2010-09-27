@@ -33,6 +33,7 @@
  * Implements gmx::SelectionCollection.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -94,6 +95,7 @@ SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
     _sc.symtab    = NULL;
 }
 
+
 SelectionCollection::Impl::~Impl()
 {
     _gmx_selelem_free_chain(_sc.root);
@@ -119,6 +121,7 @@ SelectionCollection::Impl::~Impl()
     clearSymbolTable();
 }
 
+
 void
 SelectionCollection::Impl::setFlag(Flag flag, bool bSet)
 {
@@ -132,6 +135,7 @@ SelectionCollection::Impl::setFlag(Flag flag, bool bSet)
     }
 }
 
+
 void
 SelectionCollection::Impl::clearSymbolTable()
 {
@@ -142,14 +146,7 @@ SelectionCollection::Impl::clearSymbolTable()
     }
 }
 
-/*! \brief
- * Internal helper function used by gmx_ana_selcollection_parse_*() to do the actual work.
- *
- * \param[in]     maxnr   Maximum number of selections to parse
- *   (if -1, parse as many as provided by the user).
- * \param[in,out] scanner Scanner data structure.
- * \returns       0 on success, -1 on error.
- */
+
 int
 SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
                                      std::vector<Selection *> *output)
@@ -190,10 +187,12 @@ SelectionCollection::SelectionCollection(gmx_ana_poscalc_coll_t *pcc)
 {
 }
 
+
 SelectionCollection::~SelectionCollection()
 {
     delete _impl;
 }
+
 
 int
 SelectionCollection::init()
@@ -212,12 +211,7 @@ SelectionCollection::init()
     return 0;
 }
 
-/*!
- * \param[out] scp Pointer to a newly allocated empty selection collection.
- * \param[in]  pcc Position calculation data structure to use for selection
- *   position evaluation.
- * \returns    0 on success.
- */
+
 int
 SelectionCollection::create(SelectionCollection **scp,
                             gmx_ana_poscalc_coll_t *pcc)
@@ -234,6 +228,7 @@ SelectionCollection::create(SelectionCollection **scp,
     *scp = sc;
     return 0;
 }
+
 
 Options *
 SelectionCollection::initOptions()
@@ -273,13 +268,7 @@ SelectionCollection::initOptions()
     return &_impl->_options;
 }
 
-/*!
- * \param[in]     type      Default selection reference position type
- *   (one of the strings acceptable for gmx_ana_poscalc_type_from_enum()).
- *
- * Should be called before calling gmx_ana_selcollection_requires_top() or
- * gmx_ana_selcollection_parse_*().
- */
+
 void
 SelectionCollection::setReferencePosType(const char *type)
 {
@@ -287,13 +276,7 @@ SelectionCollection::setReferencePosType(const char *type)
     _impl->_rpost = type;
 }
 
-/*!
- * \param[in]     type      Default selection output position type
- *   (one of the strings acceptable for gmx_ana_poslcalc_type_from_enum()).
- *
- * Should be called before calling gmx_ana_selcollection_requires_top() or
- * gmx_ana_selcollection_parse_*().
- */
+
 void
 SelectionCollection::setOutputPosType(const char *type)
 {
@@ -301,60 +284,35 @@ SelectionCollection::setOutputPosType(const char *type)
     _impl->_spost = type;
 }
 
-/*!
- * \param[in]     bMaskOnly If TRUE, the output positions are initialized
- *   using \ref POS_MASKONLY.
- */
+
 void
 SelectionCollection::setMaskOnly(bool bMaskOnly)
 {
     _impl->_sc.bMaskOnly = bMaskOnly;
 }
 
-/*!
- * \param[in]     bVelOut   If TRUE, selections will also evaluate
- *      velocities.
- */
+
 void
 SelectionCollection::setVelocityOutput(bool bVelOut)
 {
     _impl->_sc.bVelocities = bVelOut;
 }
 
-/*!
- * \param[in]     bForceOut If TRUE, selections will also evaluate
- *      forces.
- */
+
 void
 SelectionCollection::setForceOutput(bool bForceOut)
 {
     _impl->_sc.bForces = bForceOut;
 }
 
-/*!
- * \param[in]     bDebug If TRUE, later call to gmx_ana_selcollection_compile()
- *     will print out intermediate selection trees.
- */
+
 void
 SelectionCollection::setDebugLevel(int debuglevel)
 {
     _impl->_debugLevel = debuglevel;
 }
 
-/*!
- * \param[in]     top       Topology data.
- * \param[in]     natoms    Number of atoms. If <=0, the number of atoms in the
- *   topology is used.
- * \retval  0 on success.
- * \retval  eeInvalidValue if \p top is NULL and \p natoms <= 0.
- *
- * The topology is also set for the position calculation collection
- * associated with \p sc.
- *
- * \p natoms determines the largest atom index that can be selected by the
- * selection: even if the topology contains more atoms, they will not be
- * selected.
- */
+
 int
 SelectionCollection::setTopology(t_topology *top, int natoms)
 {
@@ -376,24 +334,16 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
     return 0;
 }
 
-/*!
- * \returns True if any selection in the collection requires topology information.
- *
- * Before gmx_ana_selcollection_parse_*(), the return value is based just on
- * the position types set.
- * After gmx_ana_selcollection_parse_*(), the return value also takes into account the
- * selection keywords used.
- */
+
 bool
 SelectionCollection::requiresTopology() const
 {
-    gmx_ana_selcollection_t *sc = &_impl->_sc;
     t_selelem   *sel;
     e_poscalc_t  type;
     int          flags;
     int          rc;
 
-    if (sc->rpost)
+    if (!_impl->_rpost.empty())
     {
         flags = 0;
         rc = gmx_ana_poscalc_type_from_enum(_impl->_rpost.c_str(), &type, &flags);
@@ -402,7 +352,7 @@ SelectionCollection::requiresTopology() const
             return TRUE;
         }
     }
-    if (sc->spost)
+    if (!_impl->_spost.empty())
     {
         flags = 0;
         rc = gmx_ana_poscalc_type_from_enum(_impl->_spost.c_str(), &type, &flags);
@@ -412,7 +362,7 @@ SelectionCollection::requiresTopology() const
         }
     }
 
-    sel = sc->root;
+    sel = _impl->_sc.root;
     while (sel)
     {
         if (_gmx_selelem_requires_top(sel))
@@ -424,12 +374,7 @@ SelectionCollection::requiresTopology() const
     return FALSE;
 }
 
-/*!
- * \param[in]     nr    Number of selections to parse
- *   (if -1, parse as many as provided by the user).
- * \param[in]     bInteractive Whether the parser should behave interactively.
- * \returns       0 on success, -1 on error.
- */
+
 int
 SelectionCollection::parseFromStdin(int nr, bool bInteractive,
                                     std::vector<Selection *> *output)
@@ -447,12 +392,9 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive,
     return _impl->runParser(scanner, nr, output);
 }
 
-/*!
- * \param[in]     fnm   Name of the file to parse selections from.
- * \returns       0 on success, -1 on error.
- */
+
 int
-SelectionCollection::parseFromFile(const std::string &fnm,
+SelectionCollection::parseFromFile(const std::string &filename,
                                    std::vector<Selection *> *output)
 {
     yyscan_t scanner;
@@ -464,17 +406,14 @@ SelectionCollection::parseFromFile(const std::string &fnm,
     {
         return rc;
     }
-    fp = ffopen(fnm.c_str(), "r");
+    fp = ffopen(filename.c_str(), "r");
     _gmx_sel_set_lex_input_file(scanner, fp);
     rc = _impl->runParser(scanner, -1, output);
     ffclose(fp);
     return rc;
 }
 
-/*!
- * \param[in]     str   String to parse selections from.
- * \returns       0 on success, -1 on error.
- */
+
 int
 SelectionCollection::parseFromString(const std::string &str,
                                      std::vector<Selection *> *output)
@@ -490,6 +429,7 @@ SelectionCollection::parseFromString(const std::string &str,
     _gmx_sel_set_lex_input_str(scanner, str.c_str());
     return _impl->runParser(scanner, -1, output);
 }
+
 
 int
 SelectionCollection::compile()
@@ -519,6 +459,7 @@ SelectionCollection::compile()
     return rc;
 }
 
+
 int
 SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 {
@@ -535,17 +476,14 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
     return rc;
 }
 
+
 int
 SelectionCollection::evaluateFinal(int nframes)
 {
     return gmx_ana_selcollection_evaluate_fin(&_impl->_sc, nframes);
 }
 
-/*!
- * \param[in] fp      File handle to receive the output.
- * \param[in] bValues If TRUE, the evaluated values of selection elements
- *   are printed as well.
- */
+
 void
 SelectionCollection::printTree(FILE *fp, bool bValues) const
 {
@@ -559,10 +497,7 @@ SelectionCollection::printTree(FILE *fp, bool bValues) const
     }
 }
 
-/*!
- * \param[in] out  Output file.
- * \param[in] oenv Output options structure.
- */
+
 void
 SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
 {

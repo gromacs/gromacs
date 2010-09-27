@@ -55,38 +55,10 @@ namespace gmx
 class Selection;
 }
 
-/*! \internal
- * \brief
+/*! \internal \brief
  * Information for a collection of selections.
  *
- * The functions to deal with the structure are defined in selection.h.
- * The structure is allocated with gmx_ana_selcollection_create() and
- * freed with gmx_ana_selcollection_free().
- * Some default values must then be set with
- * gmx_ana_selcollection_set_refpostype() and
- * gmx_ana_selcollection_set_outpostype().
- *
- * After setting the default values, one or more selections can be parsed
- * with gmx_ana_selcollection_parse_*().
- * At latest at this point, the topology must be set with
- * gmx_ana_selcollection_set_topology() unless
- * gmx_ana_selcollection_requires_top() returns FALSE.
- * Once all selections are parsed, they must be compiled all at once using
- * gmx_ana_selcollection_compile().
- * After these calls, gmx_ana_selcollection_get_count() and 
- * gmx_ana_selcollection_get_selections() can be used
- * to get the compiled selections.
- * gmx_ana_selcollection_evaluate() can be used to update the selections for a
- * new frame.
- * gmx_ana_selcollection_evaluate_fin() can be called after all the frames have
- * been processed to restore the selection values back to the ones they were
- * after gmx_ana_selcollection_compile(), i.e., dynamic selections have the
- * maximal index group as their value.
- *
- * At any point, gmx_ana_selcollection_requires_top() can be called to see
- * whether the information provided so far requires loading the topology.
- * gmx_ana_selcollection_print_tree() can be used to print the internal
- * representation of the selections (mostly useful for debugging).
+ * \ingroup module_selection
  */
 struct gmx_ana_selcollection_t
 {
@@ -125,49 +97,103 @@ struct gmx_ana_selcollection_t
 namespace gmx
 {
 
+/*! \internal \brief
+ * Private implemention class for SelectionCollection.
+ *
+ * \ingroup module_selection
+ */
 class SelectionCollection::Impl
 {
     public:
+        //! Shorthand for a list of selections stored internally.
         typedef std::vector<Selection *> SelectionList;
 
+        //! Possibel flags for the selection collection.
         enum Flag
         {
             efOwnPositionCollection = 1<<0
         };
 
-        Impl(gmx_ana_poscalc_coll_t *pcc);
+        //! Creates a new selection collection.
+        explicit Impl(gmx_ana_poscalc_coll_t *pcc);
         ~Impl();
 
+        //! Returns true if the given flag has been set.
         bool hasFlag(Flag flag) const { return _flags & flag; }
+        //! Sets or clears the given flag.
         void setFlag(Flag flat, bool bSet);
+        //! Clears the symbol table of the selection collection.
         void clearSymbolTable();
+        //! Registers the default selection methods for the collection.
         int registerDefaultMethods();
+        /*! \brief
+         * Helper function that runs the parser once the tokenizer has been
+         * initialized.
+         *
+         * \param[in,out] scanner Scanner data structure.
+         * \param[in]     maxnr   Maximum number of selections to parse
+         *      (if -1, parse as many as provided by the user).
+         * \param[out]    output  Vector to which parsed selections are
+         *      appended.
+         * \retval        0 on success.
+         * \retval        ::eeInvalidInput on error.
+         *
+         * Does not clear \p output.
+         */
         int runParser(void *scanner, int maxnr,
                       std::vector<Selection *> *output);
 
+        //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t _sc;
+        //! Options object for setting global properties on the collection.
         Options                 _options;
+        //! Default reference position type for selections.
         std::string             _rpost;
+        //! Default output position type for selections.
         std::string             _spost;
+        /*! \brief
+         * Debugging level for the collection.
+         *
+         * Possible values:
+         *  - 0: no debugging
+         *  - 1: print selection trees after parsing and compilation
+         *  - 2: like 1, also print intermediate compilation trees
+         *  - 3: like 1, also print the tree after evaluation
+         *  - 4: combine 2 and 3
+         */
         int                     _debugLevel;
+        //! Flags for various properties of the collection.
         unsigned long           _flags;
+        //! External index groups (can be NULL).
         gmx_ana_indexgrps_t    *_grps;
 };
 
 } // namespace gmx
 
-/* In compiler.c */
-/** Prepares the selections for evaluation and performs some optimizations. */
+/*! \addtogroup module_selection
+ * \{
+ */
+
+/* In compiler.cpp */
+/*! \internal \brief
+ * Prepares the selections for evaluation and performs some optimizations.
+ */
 int
 gmx_ana_selcollection_compile(gmx::SelectionCollection *coll);
 
-/* In evaluate.c */
-/** Evaluates the selection. */
+/* In evaluate.cpp */
+/*! \internal \brief
+ * Evaluates the selection.
+ */
 int
 gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
                                t_trxframe *fr, t_pbc *pbc);
-/** Evaluates the largest possible index groups from dynamic selections. */
+/*! \internal \brief
+ * Evaluates the largest possible index groups from dynamic selections.
+ */
 int
 gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes);
+
+/*!\}*/
 
 #endif

@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::OptionStorageInterface interface.
  *
@@ -46,14 +46,14 @@ namespace gmx
 
 class AbstractErrorReporter;
 
-/*! \brief
+/*! \libinternal \brief
  * Pure interface for converting, validating, and storing option values.
  *
- * The AbstractStorage template provides basic functionality for this
+ * The AbstractOptionStorage template provides basic functionality for this
  * interface, only leaving some of the functions to implement in derived
  * classes.
  * It also integrates well with option settings objects derived from
- * SettingsTempl.
+ * OptionTemplate.
  *
  * \inlibraryapi
  * \ingroup module_options
