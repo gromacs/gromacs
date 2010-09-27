@@ -568,7 +568,7 @@ adress_thermo_force(int                  cg0,
                         rvec_sub((*ref),x[k0],dr);
                     }
 
-                    rinv             = gmx_invsqrt(dr[0]*dr[0]+dr[1]*dr[1]+dr[2]*dr[2]);
+                    
                     
 
                     /* calculate distace to adress center again */
@@ -578,12 +578,14 @@ adress_thermo_force(int                  cg0,
                     case eAdressXSplit:
                         /* plane through center of ref, varies in x direction */
                         sqr_dl         = dr[0]*dr[0];
+                        rinv             = gmx_invsqrt(dr[0]*dr[0]);
                         break;
                     case eAdressSphere:
                         /* point at center of ref, assuming cubic geometry */
                         for(i=0;i<3;i++){
                             sqr_dl    += dr[i]*dr[i];
                         }
+                        rinv             = gmx_invsqrt(sqr_dl);
                         break;
                     }
 
