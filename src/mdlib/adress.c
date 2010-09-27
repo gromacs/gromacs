@@ -501,8 +501,8 @@ void adress_set_kernel_flags(int n_ex, int n_hyb, int n_cg, t_mdatoms * mdatoms)
 }
 
 void
-adress_thermo_force(int                  cg0,
-                    int                  cg1,
+adress_thermo_force(int                  start,
+                    int                  homenr,
                     t_block *            cgs,
                     rvec                 x[],
                     rvec                 f[],
@@ -510,7 +510,7 @@ adress_thermo_force(int                  cg0,
                     t_mdatoms *          mdatoms,
                     t_pbc *              pbc)
 {
-    int              icg,k0,k1,n0,nnn,nrcg, i;
+    int              iatom,n0,nnn,nrcg, i;
     int              adresstype;
     real             adressw, adressr;
     gmx_bool	     badress_tf_full_box;
@@ -533,24 +533,20 @@ adress_thermo_force(int                  cg0,
     wf               = mdatoms->wf;
     badress_tf_full_box = fr->badress_tf_full_box;
 
-    for(icg=cg0; (icg<cg1); icg++)
+    for(iatom=start; (iatom<start+homenr); iatom++)
     {
-        k0           = cgindex[icg];
-        k1           = cgindex[icg+1];
-        nrcg         = k1-k0;
-        /* avoid confusing TIP4P vsite with CG vsite */
-        if (nrcg == 1)
+        if (egp_coarsegrained(fr, mdatoms->cENER[iatom]))
         {
-            if (ptype[k0] == eptVSite)
+            if (ptype[iatom] == eptVSite)
             {
-                w    = wf[k0];
+                w    = wf[iatom];
                 /* is it hybrid or apply the thermodynamics force everywhere?*/
-                if (((w > 0 && w < 1) || badress_tf_full_box) && mdatoms->tf_table_index[k0] != NO_TF_TABLE)
+                if (((w > 0 && w < 1) || badress_tf_full_box) && mdatoms->tf_table_index[iatom] != NO_TF_TABLE)
                 {
                     if (fr->n_adress_tf_grps > 0 ){
                         /* multi component tf is on, select the right table */
-                        ATFtab = fr->atf_tabs[mdatoms->tf_table_index[k0]].tab;
-                        tabscale = fr->atf_tabs[mdatoms->tf_table_index[k0]].scale;
+                        ATFtab = fr->atf_tabs[mdatoms->tf_table_index[iatom]].tab;
+                        tabscale = fr->atf_tabs[mdatoms->tf_table_index[iatom]].scale;
                     }
                     else {
                     /* just on component*/
@@ -561,11 +557,11 @@ adress_thermo_force(int                  cg0,
                     fscal            = 0;
                     if (pbc)
                     {
-                        pbc_dx(pbc,(*ref),x[k0],dr);
+                        pbc_dx(pbc,(*ref),x[iatom],dr);
                     }
                     else
                     {
-                        rvec_sub((*ref),x[k0],dr);
+                        rvec_sub((*ref),x[iatom],dr);
                     }
 
                     
@@ -610,13 +606,12 @@ adress_thermo_force(int                  cg0,
                     F                = (Fp+Geps+2.0*Heps2)*tabscale;
 
                     fscal            = F*rinv;
-                    
-                    /* now add thermo force to f_novirsum */
-                    f[k0][0]        += fscal*dr[0];
+
+                    f[iatom][0]        += fscal*dr[0];
                     if (adresstype != eAdressXSplit)
                     {
-                        f[k0][1]    += fscal*dr[1];
-                        f[k0][2]    += fscal*dr[2];
+                        f[iatom][1]    += fscal*dr[1];
+                        f[iatom][2]    += fscal*dr[2];
                     }
                 }
             }
