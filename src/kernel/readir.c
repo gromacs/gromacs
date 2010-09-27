@@ -438,8 +438,9 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               fep->nstTij,ir->nstlog);
       CHECK((mod(fep->nstTij,ir->nstlog)!=0));
 
+      /* if there is no temperature control, we need to specify an MC temperature */
       sprintf(err_buf,"If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
-      CHECK((ir->etc==etcNO) && (fep->mc_temp <=0) && (fep->elmcmove != elmcmoveNO));
+      CHECK(!(ir->etc || EI_SD(ir->eI) || ir->eI==eiBD) && (fep->mc_temp <=0) && (fep->elmcmove != elmcmoveNO));
 
       /* other FEP checks that might need to be added . . . */
   }
@@ -2188,10 +2189,11 @@ void do_index(const char* mdparin, const char *ndx,
               gmx_fatal(FARGS,"ref_t for group %d negative",i);
           }
       }
-      /* set the lambda mc temperature to the md temperature if it's negative */
-      if ((ir->etc>etcNO) && (ir->fepvals->mc_temp < 0))
+      /* set the lambda mc temperature to the md integrator temperature (which should be defined 
+         if we are in this conditional) if mc_temp is negative */
+      if (ir->fepvals->mc_temp < 0)
       {
-          ir->fepvals->mc_temp = ir->opts.ref_t[0];  /*for now, do set to the first reft */
+          ir->fepvals->mc_temp = ir->opts.ref_t[0];  /*for now, set to the first reft */
       }  
   }
       
