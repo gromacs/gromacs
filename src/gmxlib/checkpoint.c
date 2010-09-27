@@ -37,7 +37,6 @@
 #include <io.h>
 #include <sys/locking.h>
 #endif
-#include <error.h>
 
 
 #include "filenm.h"
