@@ -946,7 +946,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
 
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,FALSE,(double)step,
+    upd_mdebin(mdebin,FALSE,FALSE,(double)step,
                mdatoms->tmass,enerd,&s_min->s,inputrec->fepvals,s_min->s.box,
                NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
@@ -1299,7 +1299,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
 		step,s_min->epot,s_min->fnorm/sqrt(state_global->natoms),
 		s_min->fmax,s_min->a_fmax+1);
       /* Store the new (lower) energies */
-      upd_mdebin(mdebin,FALSE,(double)step,
+      upd_mdebin(mdebin,FALSE,FALSE,(double)step,
                  mdatoms->tmass,enerd,&s_min->s,inputrec->fepvals,s_min->s.box,
                  NULL,NULL,vir,pres,NULL,mu_tot,constr);
 
@@ -1528,7 +1528,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 	
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,FALSE,(double)step,
+    upd_mdebin(mdebin,FALSE,FALSE,(double)step,
                mdatoms->tmass,enerd,state,inputrec->fepvals,state->box,
                NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
@@ -1942,7 +1942,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
 		step,Epot,fnorm/sqrt(state->natoms),fmax,nfmax+1);
       /* Store the new (lower) energies */
-      upd_mdebin(mdebin,FALSE,(double)step,
+      upd_mdebin(mdebin,FALSE,FALSE,(double)step,
                  mdatoms->tmass,enerd,state,inputrec->fepvals,state->box,
                  NULL,NULL,vir,pres,NULL,mu_tot,constr);
       do_log = do_per_step(step,inputrec->nstlog);
@@ -2127,7 +2127,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
       
       if (s_try->epot < s_min->epot) {
 	/* Store the new (lower) energies  */
-	upd_mdebin(mdebin,FALSE,(double)count,
+	upd_mdebin(mdebin,FALSE,FALSE,(double)count,
 		   mdatoms->tmass,enerd,&s_try->s,inputrec->fepvals,
                    s_try->s.box, NULL,NULL,vir,pres,NULL,mu_tot,constr);
 	print_ebin(outf->fp_ene,TRUE,

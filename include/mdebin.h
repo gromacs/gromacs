@@ -99,6 +99,7 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 /* update the averaging structures. Called every time 
    the energies are evaluated. */
 void upd_mdebin(t_mdebin *md, 
+		gmx_bool bDoDHDL,
 		gmx_bool bSum,
 		double time,
 		real tmass,

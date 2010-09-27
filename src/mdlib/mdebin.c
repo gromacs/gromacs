@@ -721,6 +721,7 @@ static void copy_energy(t_mdebin *md, real e[],real ecpy[])
 }
 
 void upd_mdebin(t_mdebin *md,
+                gmx_bool bDoDHDL,
                 gmx_bool bSum,
                 double time,
                 real tmass,
@@ -930,7 +931,7 @@ void upd_mdebin(t_mdebin *md,
     ebin_increase_count(md->ebin,bSum);
 
     /* BAR + thermodynamic integration values */
-    if (md->fp_dhdl)
+    if (md->fp_dhdl && bDoDHDL)
     {
         fprintf(md->fp_dhdl,"%.4f ",time);
         if (fepvals->bPrintEnergy) 
