@@ -47,7 +47,6 @@
 #include "main.h"
 #include "gmx_ana.h"
 
-                      opt2fn("-tablea",nfile,fnm),
 int gmx_membed(int argc,char *argv[])
 {
 	const char *desc[] = {
