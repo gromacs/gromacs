@@ -353,8 +353,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	gbdata.epsilon_r = fr->epsilon_r;
 	gbdata.gpol               = egpol;
 
-    if (!fr->adress_type==eAdressOff && !bDoForces && getenv("GMX_NB_GENERIC") == NULL){
-        gmx_fatal(FARGS,"No force kernels not implemeted for adress, use enverionmentflag GMX_NB_GENERIC=1");
+    if (!fr->adress_type==eAdressOff && !bDoForces){
+        gmx_fatal(FARGS,"No force kernels not implemeted for adress");
     }
 
     if(fr->bAllvsAll) 
@@ -611,9 +611,11 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 
                         /* If this processor has only explicit atoms (w=1)
                           skip the coarse grained force calculation. Same for
-                         only coarsegrained atoms and explicit interactions*/
-                        if (mdatoms->pureex && bCG) continue;
-                        if (mdatoms->purecg && !bCG) continue;
+                         only coarsegrained atoms and explicit interactions.
+                         Last condition is to make sure that generic kernel is not
+                         skipped*/
+                        if (mdatoms->pureex && bCG && nb_kernel_list[nrnb_ind] != NULL) continue;
+                        if (mdatoms->purecg && !bCG && nb_kernel_list[nrnb_ind] != NULL) continue;
 
                         kernelptr = NULL;
                         adresskernelptr = NULL;
