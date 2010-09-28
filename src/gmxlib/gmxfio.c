@@ -1166,7 +1166,7 @@ int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
     gmx_fio_lock(fio);
     if (fio->fp)
     {
-        gmx_fseek(fio->fp, fpos, SEEK_SET);
+        rc = gmx_fseek(fio->fp, fpos, SEEK_SET);
     }
     else
     {
