@@ -889,7 +889,7 @@ do_listed_vdw_q(int ftype,int nbonds,
 
         if (!fr->adress_type == eAdressOff) {
             if (fr->adress_group_explicit[md->cENER[ai]] != fr->adress_group_explicit[md->cENER[aj]]){
-                //exclude cg-ex interaction
+                /*exclude cg-ex interaction*/
                 continue;
             }           
             bCG = !fr->adress_group_explicit[md->cENER[ai]];
