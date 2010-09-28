@@ -75,7 +75,7 @@ static std::string composeString(const char *const *sarray)
 
 Options::Impl::Impl(const char *name, const char *title)
     : _name(name != NULL ? name : ""), _title(title != NULL ? title : ""),
-      _parent(NULL), _globalProperties(new OptionsGlobalProperties), _flags(0)
+      _parent(NULL), _globalProperties(new OptionsGlobalProperties)
 {
 }
 
@@ -178,7 +178,6 @@ void Options::addSubSection(Options *section)
     _impl->_subSections.push_back(section);
     section->_impl->_parent = this;
 
-    _impl->_flags |= section->_impl->_flags;
     globalProperties()._usedProperties |=
         section->_impl->_globalProperties->_usedProperties;
     delete section->_impl->_globalProperties;
@@ -194,29 +193,11 @@ void Options::addOption(const AbstractOption &settings)
     // Make sure that there are no duplicate options.
     assert(_impl->findOption(option->name().c_str()) == NULL);
     _impl->_options.push_back(option);
-    if (option->isFile())
-    {
-        _impl->_flags |= Impl::efHasFileOptions;
-    }
-    else
-    {
-        _impl->_flags |= Impl::efHasNonFileOptions;
-    }
 }
 
 void Options::addDefaultOptions()
 {
     globalProperties().addDefaultOptions(this);
-}
-
-bool Options::hasFileOptions() const
-{
-    return _impl->_flags & Impl::efHasFileOptions;
-}
-
-bool Options::hasNonFileOptions() const
-{
-    return _impl->_flags & Impl::efHasNonFileOptions;
 }
 
 bool Options::isSet(const char *name) const

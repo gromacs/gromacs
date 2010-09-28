@@ -57,102 +57,170 @@ AsciiHelpWriter::Impl::Impl(const Options &options)
 {
 }
 
-class AsciiDescriptionWriter : public OptionsVisitor
+
+/********************************************************************
+ * AsciiDescriptionWriter
+ */
+
+void AsciiDescriptionWriter::visitSubSection(const Options &section)
 {
-    public:
-        AsciiDescriptionWriter(FILE *fp) : _fp(fp) { }
-
-        void visitSubSection(const Options &section)
+    if (!section.description().empty())
+    {
+        fprintf(_fp, "\n");
+        const std::string &title = section.title();
+        if (!title.empty())
         {
-            const std::string &title = section.title();
-            if (!title.empty())
-            {
-                fprintf(_fp, "\n%s\n\n", title.c_str());
-            }
-            // TODO: Wrap lines and do markup substitutions.
-            fprintf(_fp, "%s\n\n", section.description().c_str());
-            OptionsIterator(section).acceptSubSections(this);
+            fprintf(_fp, "%s\n\n", title.c_str());
         }
-        void visitOption(const OptionInfo & /*option*/) { }
+        // TODO: Wrap lines and do markup substitutions.
+        fprintf(_fp, "%s\n\n", section.description().c_str());
+    }
+    OptionsIterator(section).acceptSubSections(this);
+}
 
-    private:
-        FILE                   *_fp;
-};
 
-class AsciiFileParameterWriter : public OptionsVisitor
+/********************************************************************
+ * AsciiFileParameterWriter
+ */
+
+void AsciiFileParameterWriter::visitSubSection(const Options &section)
 {
-    public:
-        AsciiFileParameterWriter(FILE *fp) : _fp(fp) { }
+    OptionsIterator iterator(section);
+    iterator.acceptSubSections(this);
+    iterator.acceptOptions(this);
+}
 
-        void visitSubSection(const Options &section)
-        {
-            OptionsIterator iterator(section);
-            iterator.acceptSubSections(this);
-            iterator.acceptOptions(this);
-        }
-
-        void visitOption(const OptionInfo &option)
-        {
-            if (!option.isFile())
-            {
-                return;
-            }
-            // TODO: Write the information out.
-        }
-
-    private:
-        FILE                   *_fp;
-};
-
-class AsciiParameterWriter : public OptionsVisitor
+void AsciiFileParameterWriter::visitOption(const OptionInfo &option)
 {
-    public:
-        AsciiParameterWriter(FILE *fp) : _fp(fp) { }
+    if (!option.isFile())
+    {
+        return;
+    }
 
-        void visitSubSection(const Options &section)
+    if (_bFirst)
+    {
+        fprintf(_fp, "%6s %12s  %-12s %s\n",
+                "Option", "Filename", "Type", "Description");
+        fprintf(_fp, "------------------------------------------------------------\n");
+        _bFirst = false;
+    }
+
+    std::string optionLine("-");
+    optionLine.reserve(30 + option.description().size());
+    optionLine.append(option.name()).append(" ");
+    if (optionLine.size() < 11)
+    {
+        optionLine.resize(11, ' ');
+    }
+    bool bTypePrinted = false;
+    size_t lineStart = 0;
+    for (int i = 0; i < option.valueCount(); ++i)
+    {
+        if (i > 0)
         {
-            OptionsIterator iterator(section);
-            iterator.acceptSubSections(this);
-            iterator.acceptOptions(this);
+            optionLine.append("\n");
+            lineStart = optionLine.size();
+            optionLine.append(11, ' ');
         }
-
-        void visitOption(const OptionInfo &option)
+        optionLine.append(option.formatValue(i)).append(" ");
+        // TODO: Do eliding
+        if (optionLine.size() <= lineStart + 21)
         {
-            if (option.isFile())
+            optionLine.resize(lineStart + 21, ' ');
+            if (!bTypePrinted)
             {
-                return;
+                optionLine.append(option.type()).append(" ");
+                bTypePrinted = true;
             }
-
-            std::string optionLine("-");
-            optionLine.reserve(30 + option.description().size());
-            if (option.isBoolean())
-            {
-                optionLine.append("[no]");
-            }
-            optionLine.append(option.name()).append(" ");
-            if (optionLine.size() < 13)
-            {
-                optionLine.resize(13, ' ');
-            }
-            optionLine.append(option.type()).append(" ");
-            if (optionLine.size() < 20)
-            {
-                optionLine.resize(20, ' ');
-            }
-            optionLine.append(option.formatValues()).append(" ");
-            if (optionLine.size() < 28)
-            {
-                optionLine.resize(28, ' ');
-            }
-            // TODO: Markup substitution.
-            optionLine.append(option.description());
-            // TODO: Wrap lines.
-            fprintf(_fp, "%s\n", optionLine.c_str());
         }
+    }
+    if (!bTypePrinted)
+    {
+        optionLine.append("\n");
+        lineStart = optionLine.size();
+        optionLine.append(21, ' ');
+        optionLine.append(option.type()).append(" ");
+    }
+    if (optionLine.size() > lineStart + 34)
+    {
+        if (!option.description().empty())
+        {
+            optionLine.append("\n");
+            optionLine.append(34, ' ');
+        }
+    }
+    else
+    {
+        optionLine.resize(lineStart + 34, ' ');
+    }
+    // TODO: Markup substitution.
+    optionLine.append(option.description());
+    // TODO: Wrap lines.
+    fprintf(_fp, "%s\n", optionLine.c_str());
+}
 
-    private:
-        FILE                   *_fp;
-};
+
+/********************************************************************
+ * AsciiParameterWriter
+ */
+
+void AsciiParameterWriter::visitSubSection(const Options &section)
+{
+    OptionsIterator iterator(section);
+    iterator.acceptSubSections(this);
+    iterator.acceptOptions(this);
+}
+
+void AsciiParameterWriter::visitOption(const OptionInfo &option)
+{
+    if (option.isFile() || (!_bShowHidden && option.isHidden()))
+    {
+        return;
+    }
+
+    if (_bFirst)
+    {
+        fprintf(_fp, "%-12s %-6s %-6s  %s\n",
+                "Option", "Type", "Value", "Description");
+        fprintf(_fp, "----------------------------------------------------\n");
+        _bFirst = false;
+    }
+
+    std::string optionLine("-");
+    optionLine.reserve(30 + option.description().size());
+    if (option.isBoolean())
+    {
+        optionLine.append("[no]");
+    }
+    optionLine.append(option.name()).append(" ");
+    if (optionLine.size() < 13)
+    {
+        optionLine.resize(13, ' ');
+    }
+    optionLine.append(option.type()).append(" ");
+    if (optionLine.size() < 20)
+    {
+        optionLine.resize(20, ' ');
+    }
+    optionLine.append(option.formatValues()).append(" ");
+    if (optionLine.size() > 28)
+    {
+        // TODO: Wrap lines / do eliding
+        if (!option.description().empty())
+        {
+            optionLine.append("\n");
+            optionLine.append(28, ' ');
+        }
+    }
+    else
+    {
+        optionLine.resize(28, ' ');
+    }
+    // TODO: Markup substitution.
+    optionLine.append(option.description());
+    // TODO: Wrap lines.
+    fprintf(_fp, "%s\n", optionLine.c_str());
+}
 
 /********************************************************************
  * AsciiHelpWriter
@@ -168,25 +236,42 @@ AsciiHelpWriter::~AsciiHelpWriter()
     delete _impl;
 }
 
+AsciiHelpWriter &AsciiHelpWriter::setShowHidden(bool bSet)
+{
+    _impl->_flags.set(Impl::efShowHidden, bSet);
+    return *this;
+}
+
+AsciiHelpWriter &AsciiHelpWriter::setShowDescriptions(bool bSet)
+{
+    _impl->_flags.set(Impl::efShowDescriptions, bSet);
+    return *this;
+}
+
 int AsciiHelpWriter::writeHelp(FILE *fp)
 {
-    fprintf(fp, "DESCRIPTION\n"
-                "-----------\n\n");
-    AsciiDescriptionWriter(fp).visitSubSection(_impl->_options);
-    if (_impl->_options.hasFileOptions())
+    if (_impl->_flags.test(Impl::efShowDescriptions))
     {
-        fprintf(fp, "%6s %12s  %-12s %s\n",
-                "Option", "Filename", "Type", "Description");
-        fprintf(fp, "------------------------------------------------------------\n");
-        AsciiFileParameterWriter(fp).visitSubSection(_impl->_options);
-        fprintf(fp, "\n");
+        fprintf(fp, "DESCRIPTION\n"
+                    "-----------\n");
+        AsciiDescriptionWriter(fp).visitSubSection(_impl->_options);
     }
-    if (_impl->_options.hasNonFileOptions())
     {
-        fprintf(fp, "%-12s %-6s %-6s  %s\n",
-                "Option", "Type", "Value", "Description");
-        fprintf(fp, "----------------------------------------------------\n");
-        AsciiParameterWriter(fp).visitSubSection(_impl->_options);
+        AsciiFileParameterWriter writer(fp);
+        writer.visitSubSection(_impl->_options);
+        if (writer.didOutput())
+        {
+            fprintf(fp, "\n");
+        }
+    }
+    {
+        AsciiParameterWriter writer(fp);
+        writer.setShowHidden(_impl->_flags.test(Impl::efShowHidden));
+        writer.visitSubSection(_impl->_options);
+        if (writer.didOutput())
+        {
+            fprintf(fp, "\n");
+        }
     }
     return 0;
 }

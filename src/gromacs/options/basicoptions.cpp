@@ -88,10 +88,14 @@ std::string StringOption::createDescription() const
 
     if (_enumValues != NULL)
     {
-        value.append(":");
+        value.append(": ");
         for (int i = 0; _enumValues[i] != NULL; ++i)
         {
-            value.append(" ").append(_enumValues[i]);
+            value.append(_enumValues[i]);
+            if (_enumValues[i + 1] != NULL)
+            {
+                value.append(_enumValues[i + 2] != NULL ? ", " : ", or ");
+            }
         }
     }
     return value;

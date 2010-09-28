@@ -83,6 +83,8 @@ class Option
         bool isBoolean() const { return hasFlag(efBoolean); }
         //! Returns true if the option is a file option.
         bool isFile() const { return hasFlag(efFile); }
+        //! Returns true if the option is a hidden option.
+        bool isHidden() const { return hasFlag(efHidden); }
         //! Returns the name of the option.
         const std::string &name() const { return _name; }
         //! Returns the description of the option.

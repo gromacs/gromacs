@@ -259,7 +259,9 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
             : MyBase(name), _filetype(eftUnknown)
-        { }
+        {
+            setFlag(efFile);
+        }
 
         /*! \brief
          * Sets the type of the file this option accepts.

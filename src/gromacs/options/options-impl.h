@@ -60,14 +60,6 @@ class Option;
 class Options::Impl
 {
     public:
-        //! Internal flags for the implementation.
-        enum Flag {
-            efHasFileOptions    = 1<<0,
-            efHasNonFileOptions = 1<<1,
-        };
-        //! Type to hold flags.
-        typedef unsigned int Flags;
-
         //! Convenience type for list of sections.
         typedef std::vector<Options *> SubSectionList;
         //! Convenience type for list of options.
@@ -130,10 +122,6 @@ class Options::Impl
          * this pointer is NULL.
          */
         OptionsGlobalProperties *_globalProperties;
-        /*! \brief
-         * Flags for extra information.
-         */
-        Flags                   _flags;
 };
 
 } // namespace gmx

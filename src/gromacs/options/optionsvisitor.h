@@ -70,6 +70,8 @@ class OptionInfo
         bool isBoolean() const;
         //! Returns true if the option is a file name option.
         bool isFile() const;
+        //! Returns true if the option is a hidden option.
+        bool isHidden() const;
         //! Returns the name of the option.
         const std::string &name() const;
         //! Returns the description of the option.

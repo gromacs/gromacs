@@ -64,6 +64,11 @@ bool OptionInfo::isFile() const
     return _option.isFile();
 }
 
+bool OptionInfo::isHidden() const
+{
+    return _option.isHidden();
+}
+
 const std::string &OptionInfo::name() const
 {
     return _option.name();
