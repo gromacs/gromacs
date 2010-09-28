@@ -436,39 +436,61 @@ void xvgr_box(FILE *out,
     }
 }
 
-static char *fgets3(FILE *fp,char ptr[],int *len)
+/* reads a line into ptr, adjusting len and renewing ptr if neccesary */
+static char *fgets3(FILE *fp,char **ptr,int *len, int maxlen)
 {
     char *p;
-    int  slen;
+    int len_remaining=*len; /* remaining amount of allocated bytes in buf */
+    int curp=0;             /* current position in buf to read into */
 
-    if (fgets(ptr,*len-1,fp) == NULL)
+    do
     {
-        return NULL;
-    }
-    p = ptr;
-    while ((strchr(ptr,'\n') == NULL) && (!feof(fp)))
-    {
-        /* This line is longer than len characters, let's increase len! */
-        *len += STRLEN;
-        p    += STRLEN;
-        srenew(ptr,*len);
-        if (fgets(p-1,STRLEN,fp) == NULL)
+        if (len_remaining < 2)
         {
-            break;
+            if ( *len + STRLEN < maxlen)
+            {
+                /* This line is longer than len characters, let's increase len! */
+                *len += STRLEN;
+                len_remaining += STRLEN;
+                srenew(*ptr, *len);
+            }
+            else
+            {
+                /*something is wrong, we'll just keep reading and return NULL*/
+                len_remaining = STRLEN;
+                curp=0;
+            }
         }
+        if (fgets(*ptr + curp, len_remaining, fp)==NULL)
+        {
+            /* if last line, skip */
+            return NULL;
+        }
+        curp += len_remaining-1; /* overwrite the nul char in next iteration */
+        len_remaining = 1;
     }
+    while ((strchr(*ptr,'\n') == NULL) && (!feof(fp)));
+
+    if ( *len + STRLEN >= maxlen )
+    {
+        return NULL; /* this line was too long */
+    }
+
     if (feof(fp))
     {
         /* We reached EOF before '\n', skip this last line. */
         return NULL;
     }
-    slen = strlen(ptr);
-    if (ptr[slen-1] == '\n')
     {
-        ptr[slen-1] = '\0';
+        /* now remove newline */
+        int slen = strlen(*ptr);
+        if ((*ptr)[slen-1] == '\n')
+        {
+            (*ptr)[slen-1] = '\0';
+        }
     }
 
-    return ptr;
+    return *ptr;
 }
 
 static int wordcount(char *ptr)
@@ -544,7 +566,7 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,
     *legend = NULL;
   }
 
-  while ((ptr = fgets3(fp,tmpbuf,&len)) != NULL && ptr[0]!='&') {
+  while ((ptr = fgets3(fp,&tmpbuf,&len,10*STRLEN)) != NULL && ptr[0]!='&') {
     line++;
     trim(ptr);
     if (ptr[0] == '@') {

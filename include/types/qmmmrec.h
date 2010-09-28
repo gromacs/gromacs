@@ -63,6 +63,7 @@ typedef struct {
  char          *gauss_exe;
  char          *devel_dir;
  char          *orca_basename; /* basename for I/O with orca        */
+ char          *orca_dir;      /* directory for ORCA                */
  real          *c6;
  real          *c12;
  /* Surface hopping stuff */

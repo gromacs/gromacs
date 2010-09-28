@@ -237,7 +237,7 @@ static void init_table(FILE *fp,int n,int nx0,
     snew(td->v,td->nx);
     snew(td->f,td->nx);
   }
-  for(i=td->nx0; (i<td->nx); i++)
+  for(i=0; (i<td->nx); i++)
     td->x[i] = i/tabscale;
 }
 
@@ -723,6 +723,14 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     /* Convert to single precision when we store to mem */
     td->v[i]  = Vtab;
     td->f[i]  = Ftab;
+  }
+
+  /* Continue the table linearly from nx0 to 0.
+   * These values are only required for energy minimization with overlap or TPI.
+   */
+  for(i=td->nx0-1; i>=0; i--) {
+    td->v[i] = td->v[i+1] + td->f[i+1]*(td->x[i+1] - td->x[i]);
+    td->f[i] = td->f[i+1];
   }
 
 #ifdef DEBUG_SWITCH

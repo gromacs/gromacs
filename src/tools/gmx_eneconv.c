@@ -500,6 +500,10 @@ int gmx_eneconv(int argc,char *argv[])
   int        *cont_type;
   gmx_bool       bNewFile,bFirst,bNewOutput;
   output_env_t oenv;
+  gmx_bool   warned_about_dh=FALSE;
+  t_enxblock *blocks=NULL;
+  int nblocks=0;
+  int nblocks_alloc=0;
   
   t_filenm fnm[] = {
     { efEDR, "-f", NULL,    ffRDMULT },
@@ -513,6 +517,7 @@ int gmx_eneconv(int argc,char *argv[])
   static gmx_bool  bSort=TRUE,bError=TRUE;
   static real  begin=-1;
   static real  end=-1;
+  gmx_bool  remove_dh=FALSE;
   
   t_pargs pa[] = {
     { "-b",        FALSE, etREAL, {&begin},
@@ -527,6 +532,8 @@ int gmx_eneconv(int argc,char *argv[])
       "Change starting time interactively" },
     { "-sort",     FALSE, etBOOL, {&bSort},
       "Sort energy files (not frames)"},
+    { "-rmdh",     FALSE, etBOOL, {&remove_dh},
+      "Remove free energy block data" },
     { "-scalefac", FALSE, etREAL, {&scalefac},
       "Multiply energy component by this factor" },
     { "-error",    FALSE, etBOOL, {&bError},
@@ -690,6 +697,72 @@ int gmx_eneconv(int argc,char *argv[])
 	fro->nblock       = fr->nblock;
 	/*fro->nr           = fr->nr;*/
 	fro->block        = fr->block;
+
+        /* check if we have blocks with delta_h data and are throwing 
+           away data */
+        if (fro->nblock > 0)
+        {
+            if (remove_dh)
+            {
+                int i;
+                if (!blocks || nblocks_alloc < fr->nblock)
+                {
+                    /* we pre-allocate the blocks */
+                    nblocks_alloc=fr->nblock;
+                    snew(blocks, nblocks_alloc);
+                }
+                nblocks=0; /* number of blocks so far */
+
+                for(i=0;i<fr->nblock;i++)
+                {
+                    if ( (fr->block[i].id != enxDHCOLL) &&
+                         (fr->block[i].id != enxDH) &&
+                         (fr->block[i].id != enxDHHIST) )
+                    {
+                        /* copy everything verbatim */
+                        blocks[nblocks] = fr->block[i];
+                        nblocks++;
+                    }
+                }
+                /* now set the block pointer to the new blocks */
+                fro->nblock = nblocks;
+                fro->block  = blocks;
+            }
+            else if (delta_t > 0)
+            {
+                if (!warned_about_dh) 
+                {
+                    for(i=0;i<fr->nblock;i++)
+                    {
+                        if (fr->block[i].id == enxDH ||
+                            fr->block[i].id == enxDHHIST)
+                        {
+                            int size;
+                            if (fr->block[i].id == enxDH )
+                            {
+                                size=fr->block[i].sub[2].nr;
+                            }
+                            else
+                            {
+                                size=fr->nsteps;
+                            }
+                            if (size>0)
+                            {
+                                printf("\nWARNING: %s contains delta H blocks or histograms for which\n"
+                                       "         some data is thrown away on a block-by-block basis, where each block\n"
+                                       "         contains up to %d samples.\n"
+                                       "         This is almost certainly not what you want.\n"
+                                       "         Use the -rmdh option to throw all delta H samples away.\n"
+                                       "         Use g_energy -odh option to extract these samples.\n",
+                                       fnms[f], size);
+                                warned_about_dh=TRUE;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 	
 	do_enx(out,fro);
 	if (noutfr % 1000 == 0)

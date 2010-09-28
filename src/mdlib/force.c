@@ -265,7 +265,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
 		calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
-                       ir->gb_algorithm,nrnb,bBornRadii,&pbc,graph,enerd);
+                       ir->gb_algorithm,ir->sa_algorithm,nrnb,bBornRadii,&pbc,graph,enerd);
     }
 
 #ifdef GMX_MPI

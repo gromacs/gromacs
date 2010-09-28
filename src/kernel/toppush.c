@@ -915,7 +915,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	int      i,j,ft,ftype,nn,nrfp,nrfpA,nrfpB;
 	int      start;
 	int      nxcmap,nycmap,ncmap,read_cmap,sl,nct;
-	char     s[20],alc[MAXATOMLIST+1][20];
+	char     s[20],alc[MAXATOMLIST+2][20];
 	t_param  p;
 	gmx_bool     bAllowRepeat;
 	char     errbuf[256];
