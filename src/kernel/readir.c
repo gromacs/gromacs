@@ -2241,6 +2241,9 @@ void do_index(const char* mdparin, const char *ndx,
             
             ir->adress_tf_table_index[i] = k;
             if (debug) fprintf(debug,"found tf group %s id %d \n",ptr1[i], k);
+            if (ir->adress_group_explicit[k]){
+                gmx_fatal(FARGS,"Thermodynamic force group %s is not a coarse-grained group in adress_cg_grp_names. The thermodynamic force has to act on the coarse-grained vsite of a molecule.\n",ptr1[i]);
+            }
 
     }
   }
