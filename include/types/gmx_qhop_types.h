@@ -78,6 +78,11 @@ typedef struct qhop_res {
   int niatom;    /* = db->rtp[rtp].natom */
   /*   int nft; */
   int rtp;      /* indexes the t_restp-array rtp in qhop_db. */
+
+  /* Here's an array that indexes functypes/parameters.
+   * it must match the rtp data.
+   * findex[bt][b] */
+  t_functype **findex;
 } qhop_res;
 
 typedef struct qhop_resblocks {
@@ -92,9 +97,9 @@ typedef struct qhop_resblocks {
   /* The following is for the interaction library *
    * It stores the interaction parameters for a residue.
    * They are needed to switch between protonation states. */
-  int ****iatoms;   /* atoms involved in the interactions. iatoms[restype][bt][bi][...]*/
-  int ***ft;        /* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp */
-  int ***mtop_ft;   /* index in the mtop->ffparams.functype and ...iparams */
+/*   int ****iatoms;   /\* atoms involved in the interactions. iatoms[restype][bt][bi][...]*\/ */
+/*   int ***ft;        /\* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp *\/ */
+/*   int ***mtop_ft;   /\* index in the mtop->ffparams.functype and ...iparams *\/ */
 
   char **files;     /* extra files containg additional parameters. */
   int  nf;          /* number of extra files */
@@ -104,6 +109,7 @@ typedef struct qhop_resblocks {
 		     * the last two are dummy interactions with zeroed force constants;
 		     * one for bonds with a 0.1 nm reference distance, and one with only zeroes.
 		     * ilib will be appended to the iparams in some central t_idef.*/
+  t_functype ft_null[ebtsNR]; /* Here are the nubers for the dummy functypes. */
 } qhop_resblocks;
 
 
@@ -142,5 +148,6 @@ typedef struct qhop_db {
   qhop_parameters         *qhop_param;
   int                     nres;
   qhop_H_exist            H_map;
+  t_idef                  *idef; /* Must point to the idef used by the integrator. */
 } qhop_db;
 #endif
