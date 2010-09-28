@@ -77,7 +77,7 @@ namespace gmx
  */
 
 SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
-    : _options("selection", "Common selection options"),
+    : _options("selection", "Common selection control"),
       _debugLevel(0), _flags(0), _grps(NULL)
 {
     _sc.rpost     = NULL;

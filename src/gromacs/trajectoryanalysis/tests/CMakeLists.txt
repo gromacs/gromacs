@@ -1,0 +1,2 @@
+add_executable(test_selection test_selection.cpp)
+target_link_libraries(test_selection gromacs gmx)

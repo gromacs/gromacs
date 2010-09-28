@@ -2,9 +2,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 add_subdirectory(options)
 add_subdirectory(selection)
+add_subdirectory(trajectoryanalysis)
 
 file(GLOB GMXLIB_SOURCES */*.cpp */*/*.cpp)
-file(GLOB_RECURSE NOT_GMXLIB_SOURCES */tests/*.cpp trajana//*.cpp)
+file(GLOB_RECURSE NOT_GMXLIB_SOURCES */tests/*.cpp)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})
 
 add_library(gromacs ${GMXLIB_SOURCES})
