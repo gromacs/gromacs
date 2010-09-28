@@ -64,7 +64,7 @@ bin_PROGRAMS = \
 	g_enemat    	g_energy    	g_lie       	g_filter    	\
 	g_gyrate    	g_h2order   	g_hbond     	g_helix     	\
 	g_mindist   	g_msd       	g_morph     	g_nmeig     	\
-	g_nmens     	g_order     	\
+	g_nmens     	g_order     	g_kinetics	\
 	g_polystat	g_potential 	g_rama      	\
 	g_rdf       	g_rms       	g_rmsdist   	g_rmsf      	\
 	g_rotacf    	g_rotmat	g_saltbr    	g_sas       	\
