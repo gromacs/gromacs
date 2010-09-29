@@ -47,13 +47,14 @@
 namespace gmx
 {
 
-/*! \brief
+/*! \internal \brief
  * Flags for options.
  *
  * These flags are not part of the public interface, even though they are in an
  * installed header.  They are needed in a few template class implementations.
  */
-enum OptionFlag {
+enum OptionFlag
+{
     //! %Option has been set.
     efSet                 = 1<<0,
     /*! \brief
@@ -78,7 +79,7 @@ enum OptionFlag {
      */
     efBoolean             = 1<<5,
     /*! \brief
-     * TOption value is a vector, but a single value is also accepted.
+     * %Option value is a vector, but a single value is also accepted.
      *
      * If only a single value is provided, the storage object should fill the
      * whole vector with that value.  The length of the vector must be fixed.
@@ -90,6 +91,15 @@ enum OptionFlag {
     efExternalStore       = 1<<8,
     efExternalStoreArray  = 1<<9,
     efExternalValueVector = 1<<10,
+    /*! \brief
+     * Storage object may add zero values even when a value is provided.
+     *
+     * In order to do proper error checking, this flag should be set when it is
+     * possible that the AbstractOptionStorage::appendValue() method of the
+     * storage object does not add any values for the option and still
+     * succeeds.
+     */
+    efConversionMayNotAddValues = 1<<11,
     efFile                = 1<<12,
     efFileRead            = 1<<13,
     efFileWrite           = 1<<14,

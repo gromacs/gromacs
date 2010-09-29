@@ -394,6 +394,7 @@ if (GMX_DLOPEN)
 endif (GMX_DLOPEN)
 
 find_package(GTest)
+find_package(GMock)
 
 ########################################################################
 # Generate development version info for cache

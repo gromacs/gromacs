@@ -57,10 +57,9 @@ class Options;
  *
  * \tparam T Assignable type that stores a single option value.
  *
- * Provides an implementation of the clear(), finish(), valueCount(), and
- * formatValues() methods of the AbstractOptionStorage interface, leaving
- * typeString(), appendValue(), finishSet(), and formatValue() to be
- * implemented in derived classes.
+ * Provides an implementation of the clear(), finish(), and valueCount()
+ * methods of AbstractOptionStorage, leaving typeString(), appendValue(),
+ * finishSet(), and formatValue() to be implemented in derived classes.
  *
  * \inlibraryapi
  * \ingroup module_options
@@ -101,7 +100,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
                               AbstractErrorReporter *errors) = 0;
         /*! \copydoc AbstractOptionStorage::finish()
          *
-         * The implementation in AbstractStorage copies the values
+         * The implementation in OptionStorageTemplate copies the values
          * from the main storage vector to alternate locations, and always
          * succeeds.  Derived classes should always call the base class
          * implementation if they override this method.
@@ -118,16 +117,16 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Adds a value to the storage.
          *
          * \param[in] value  Value to add. A copy is made.
+         * \retval 0 on success.
+         * \retval ::eeInvalidInput if the maximum value count has been reached.
          *
          * Derived classes should call this function from the appendValue()
          * implementation to add converted values to the storage.
+         * It is only necessary to check the return value if addValue() is
+         * called more than once from one appendValue() invocation, or if
+         * ::efConversionMayNotAddValues is specified.
          */
-        void addValue(const T &value);
-
-        //! Returns the Options object that houses the parameter.
-        Options &hostOptions() { return *_options; }
-        //! \copydoc hostOptions()
-        const Options &hostOptions() const { return *_options; }
+        int addValue(const T &value);
 
         //! Provides derived classes access to the current list of values.
         ValueList &values() { return *_values; }
@@ -155,11 +154,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
         T                     **_storeArray;
         int                    *_nvalptr;
         int                     _flags;
-        Options                *_options;
 
-        // Disallow copy and assign.
-        OptionStorageTemplate(const OptionStorageTemplate<T> &);
-        void operator =(const OptionStorageTemplate<T> &);
+        // Copy and assign disallowed by base.
 };
 
 /*! \brief
@@ -196,7 +192,7 @@ createOptionStorage(const T *settings, Options *options,
 template <typename T>
 OptionStorageTemplate<T>::OptionStorageTemplate()
     : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL),
-      _flags(0), _options(NULL)
+      _flags(0)
 {
 }
 
@@ -216,11 +212,15 @@ int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options
     // It's impossible for the caller to do proper memory management if
     // the provided memory is not initialized as NULL.
     assert(settings._storeArray == NULL || *settings._storeArray == NULL);
+    int rc = AbstractOptionStorage::init(settings, options);
+    if (rc != 0)
+    {
+        return rc;
+    }
     _store      = settings._store;
     _storeArray = settings._storeArray;
     _nvalptr    = settings._nvalptr;
     _values     = settings._storeVector;
-    _options    = options;
     if (!_values)
     {
         _values = new std::vector<T>;
@@ -276,8 +276,13 @@ int OptionStorageTemplate<T>::finish(AbstractErrorReporter * /*errors*/)
 }
 
 template <typename T>
-void OptionStorageTemplate<T>::addValue(const T &value)
+int OptionStorageTemplate<T>::addValue(const T &value)
 {
+    int rc = incrementValueCount();
+    if (rc != 0)
+    {
+        return rc;
+    }
     // We store the value here to allow limited dependence between option
     // values.
     if (_store != NULL)
@@ -285,6 +290,7 @@ void OptionStorageTemplate<T>::addValue(const T &value)
         _store[_values->size()] = value;
     }
     _values->push_back(value);
+    return 0;
 }
 
 } // namespace gmx

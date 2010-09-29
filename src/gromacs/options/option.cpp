@@ -37,6 +37,8 @@
  */
 #include "option.h"
 
+#include <cassert>
+
 #include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/abstractoption.h"
@@ -51,8 +53,7 @@ namespace gmx
  */
 
 Option::Option()
-    : _minValueCount(1), _maxValueCount(1), _storage(NULL),
-      _currentValueCount(-1)
+    : _storage(NULL)
 {
 }
 
@@ -65,22 +66,6 @@ int Option::init(const AbstractOption &settings, Options *options)
 {
     // Copy cheap values first to make them easy to access in checks.
     _flags = settings._flags;
-    _minValueCount = settings._minValueCount;
-    _maxValueCount = settings._maxValueCount;
-
-    // If the maximum number of values is not known, storage to
-    // caller-allocated memory is unsafe.
-    if (_maxValueCount < 0 && hasFlag(efExternalStore))
-    {
-        GMX_ERROR(eeInvalidValue,
-                  "Cannot set user-allocated storage for arbitrary number of values");
-    }
-    // Check that user has not provided incorrect values for vectors.
-    if (hasFlag(efVector) && (_minValueCount > 1 || _maxValueCount < 1))
-    {
-        GMX_ERROR(eeInvalidValue,
-                  "Inconsistent value counts for vector values");
-    }
 
     int rc = settings.createDefaultStorage(options, &_storage);
     if (rc != 0)
@@ -130,52 +115,35 @@ int Option::startSet(AbstractErrorReporter *errors)
         errors->error("Option specified multiple times");
         return eeInvalidInput;
     }
-    _currentValueCount = 0;
+    _storage->_currentValueCount = 0;
     return 0;
 }
 
 int Option::appendValue(const std::string &value,
                         AbstractErrorReporter *errors)
 {
-    if (_currentValueCount == -1)
-    {
-        int rc = startSet(errors);
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
-    if (_maxValueCount >= 0 && _currentValueCount >= _maxValueCount)
+    assert(_storage->_currentValueCount >= 0);
+    if (!hasFlag(efConversionMayNotAddValues) && _storage->_maxValueCount >= 0
+        && _storage->_currentValueCount >= _storage->_maxValueCount)
     {
         errors->warning("Ignoring extra value: " + value);
         return eeInvalidInput;
     }
-    int oldCount = _storage->valueCount();
-    int rc = _storage->appendValue(value, errors);
-    if (rc == 0)
-    {
-        _currentValueCount += _storage->valueCount() - oldCount;
-    }
-    return rc;
+    return _storage->appendValue(value, errors);
 }
 
 int Option::finishSet(AbstractErrorReporter *errors)
 {
-    int nvalues = _currentValueCount;
+    int nvalues = _storage->_currentValueCount;
 
     _flags.set(efSet);
-    _currentValueCount = -1;
+    _storage->_currentValueCount = -1;
 
     // TODO: We probably should always call finishSet() to keep storage state
     // more consistent.
-    if (nvalues < _minValueCount)
+    if (nvalues < _storage->_minValueCount)
     {
         errors->error("Too few (valid) values");
-        return eeInvalidInput;
-    }
-    if (_maxValueCount >= 0 && nvalues > _maxValueCount)
-    {
-        errors->error("Too many values");
         return eeInvalidInput;
     }
 
@@ -184,14 +152,7 @@ int Option::finishSet(AbstractErrorReporter *errors)
 
 int Option::finish(AbstractErrorReporter *errors)
 {
-    if (_currentValueCount >= 0)
-    {
-        int rc = finishSet(errors);
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
+    assert(_storage->_currentValueCount == -1);
     if (hasFlag(efRequired) && !isSet())
     {
         errors->error("Required option '" + _name + "' not set");

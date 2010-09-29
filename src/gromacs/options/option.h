@@ -157,9 +157,6 @@ class Option
         std::string             _name;
         std::string             _descr;
         OptionFlags             _flags;
-        int                     _minValueCount;
-        //! Maximum allowed number of values, or -1 if no limit.
-        int                     _maxValueCount;
         /*! \brief
          * Pointer to the object that validates and stores values.
          *
@@ -167,8 +164,6 @@ class Option
          * object once it is no longer needed.
          */
         AbstractOptionStorage  *_storage;
-        //! Number of values added since startSet(), or -1 if not called.
-        int                     _currentValueCount;
 
         // Disallow copy and assign.
         Option(const Option &);

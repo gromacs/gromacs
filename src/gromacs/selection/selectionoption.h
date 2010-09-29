@@ -58,7 +58,10 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
 {
     public:
         //! Initializes an option with the given name.
-        explicit SelectionOption(const char *name) : MyBase(name), _flags(0) {}
+        explicit SelectionOption(const char *name) : MyBase(name), _flags(0)
+        {
+            setFlag(efConversionMayNotAddValues);
+        }
 
         /*! \brief
          * Only accept selections that evaluate to atom positions.

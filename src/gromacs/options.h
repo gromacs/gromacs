@@ -60,7 +60,7 @@
  * option values.
  *
  * To implement new option types, it is necessary to subclass the templates
- * AbstractOptionStorage and OptionTemplate with the type of the values that
+ * OptionTemplate and OptionStorageTemplate with the type of the values that
  * the option should provide as the template argument.  After this is done, it
  * is possible to add options of this new type using Options::addOption().
  *

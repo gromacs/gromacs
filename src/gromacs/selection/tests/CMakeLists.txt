@@ -1,5 +1,5 @@
 IF (GTEST_FOUND)
-    include_directories(${GTEST_INCLUDE_DIR})
+    include_directories(${GTEST_INCLUDE_DIRS})
     add_executable(selection-test
                    selectioncollection.cpp selectionoption.cpp
                    test_main.cpp)

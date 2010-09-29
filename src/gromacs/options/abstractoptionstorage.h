@@ -45,6 +45,9 @@ namespace gmx
 {
 
 class AbstractErrorReporter;
+class AbstractOption;
+class Option;
+class Options;
 
 /*! \libinternal \brief
  * Pure interface for converting, validating, and storing option values.
@@ -61,7 +64,17 @@ class AbstractErrorReporter;
 class AbstractOptionStorage
 {
     public:
-        virtual ~AbstractOptionStorage() {}
+        virtual ~AbstractOptionStorage();
+
+        /*! \brief
+         * Initializes the storage object from the settings object.
+         *
+         * \param[in] settings  Option settings.
+         * \param[in] options   Option collection that will contain the
+         *     option.
+         * \retval 0 on success.
+         */
+        int init(const AbstractOption &settings, Options *options);
 
         /*! \brief
          * Returns a short string describing the type of the option.
@@ -118,6 +131,47 @@ class AbstractOptionStorage
          * Returns the i'th value formatted as a string.
          */
         virtual std::string formatValue(int i) const = 0;
+
+    protected:
+        //! Creates an uninitialized storage object.
+        AbstractOptionStorage();
+
+        //! Returns the Options object that houses the option.
+        Options &hostOptions() { return *_options; }
+        //! \copydoc hostOptions()
+        const Options &hostOptions() const { return *_options; }
+
+        /*! \brief
+         * Increments the number of values for the current set.
+         *
+         * \retval 0 on success.
+         * \retval ::eeInvalidInput if the maximum value count has been reached.
+         */
+        int incrementValueCount();
+
+    private:
+        //! Minimum number of values required (in one set).
+        int                     _minValueCount;
+        //! Maximum allowed number of values (in one set), or -1 if no limit.
+        int                     _maxValueCount;
+        //! Number of values added so far to the current set, or -1 if not in one.
+        int                     _currentValueCount;
+        //! Parent Options object.
+        Options                *_options;
+
+        /*! \brief
+         * Needed to access value count attributes from the parent Option object.
+         *
+         * There is no clear division between the functionality in the Option
+         * object and the associated AbstractOptionStorage, and both need to
+         * track the number of values, so they are stored here to make all
+         * dependencies one-way.
+         */
+        friend class Option;
+
+        // Disallow copy and assign.
+        AbstractOptionStorage(const AbstractOptionStorage &);
+        void operator =(const AbstractOptionStorage &);
 };
 
 } // namespace gmx

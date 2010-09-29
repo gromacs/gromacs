@@ -169,6 +169,11 @@ class AbstractOption
          * otherwise unnecessary accessors.
          */
         friend class Option;
+        /*! \brief
+         * Needed to initialize an AbstractOptionStorage object from this class
+         * without otherwise unnecessary accessors.
+         */
+        friend class AbstractOptionStorage;
 };
 
 /*! \brief
