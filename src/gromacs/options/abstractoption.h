@@ -58,10 +58,10 @@
 namespace gmx
 {
 
+class AbstractOptionStorage;
 template <typename T> class OptionStorageTemplate;
 class Option;
 class Options;
-class OptionStorageInterface;
 
 /*! \brief
  * Abstract base class for specifying option properties.
@@ -109,7 +109,7 @@ class AbstractOption
          * \see AbstractStorage::init()
          */
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const = 0;
+                                         AbstractOptionStorage **storage) const = 0;
         /*! \brief
          * Creates the description string for the option.
          *

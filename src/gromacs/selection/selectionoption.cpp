@@ -43,7 +43,7 @@ namespace gmx
 {
 
 int SelectionOption::createDefaultStorage(Options *options,
-                                          OptionStorageInterface **storage) const
+                                          AbstractOptionStorage **storage) const
 {
     return createOptionStorage<SelectionOption, SelectionOptionStorage>(this, options, storage);
 }

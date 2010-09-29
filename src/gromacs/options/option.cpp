@@ -40,8 +40,8 @@
 #include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/abstractoption.h"
+#include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
-#include "gromacs/options/optionstorageinterface.h"
 
 namespace gmx
 {

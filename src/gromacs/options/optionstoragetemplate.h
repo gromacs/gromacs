@@ -45,7 +45,7 @@
 #include <vector>
 
 #include "abstractoption.h"
-#include "optionstorageinterface.h"
+#include "abstractoptionstorage.h"
 
 namespace gmx
 {
@@ -58,7 +58,7 @@ class Options;
  * \tparam T Assignable type that stores a single option value.
  *
  * Provides an implementation of the clear(), finish(), valueCount(), and
- * formatValues() methods of the OptionStorageInterface interface, leaving
+ * formatValues() methods of the AbstractOptionStorage interface, leaving
  * typeString(), appendValue(), finishSet(), and formatValue() to be
  * implemented in derived classes.
  *
@@ -66,7 +66,7 @@ class Options;
  * \ingroup module_options
  */
 template <typename T>
-class OptionStorageTemplate : public OptionStorageInterface
+class OptionStorageTemplate : public AbstractOptionStorage
 {
     public:
         //! Alias for the template class for use in base classes.
@@ -90,7 +90,7 @@ class OptionStorageTemplate : public OptionStorageInterface
         // the declarations are still included for clarity.
         virtual const char *typeString() const = 0;
         virtual void clear();
-        /*! \copydoc OptionStorageInterface::appendValue()
+        /*! \copydoc AbstractOptionStorage::appendValue()
          *
          * Derived classes should call addValue() after they have converted
          * \p value to the storage type.
@@ -99,7 +99,7 @@ class OptionStorageTemplate : public OptionStorageInterface
                                 AbstractErrorReporter *errors) = 0;
         virtual int finishSet(int nvalues,
                               AbstractErrorReporter *errors) = 0;
-        /*! \copydoc OptionStorageInterface::finish()
+        /*! \copydoc AbstractOptionStorage::finish()
          *
          * The implementation in AbstractStorage copies the values
          * from the main storage vector to alternate locations, and always
@@ -181,7 +181,7 @@ class OptionStorageTemplate : public OptionStorageInterface
  */
 template <class T, class S> int
 createOptionStorage(const T *settings, Options *options,
-              OptionStorageInterface **output)
+                    AbstractOptionStorage **output)
 {
     S *storage = new S;
     int rc = storage->init(*settings, options);

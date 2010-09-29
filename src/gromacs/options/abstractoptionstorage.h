@@ -30,14 +30,14 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::OptionStorageInterface interface.
+ * Declares gmx::AbstractOptionStorage.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
  * \ingroup module_options
  */
-#ifndef GMX_OPTIONS_OPTIONSTORAGEINTERFACE_H
-#define GMX_OPTIONS_OPTIONSTORAGEINTERFACE_H
+#ifndef GMX_OPTIONS_ABSTRACTOPTIONSTORAGE_H
+#define GMX_OPTIONS_ABSTRACTOPTIONSTORAGE_H
 
 #include <string>
 
@@ -58,10 +58,10 @@ class AbstractErrorReporter;
  * \inlibraryapi
  * \ingroup module_options
  */
-class OptionStorageInterface
+class AbstractOptionStorage
 {
     public:
-        virtual ~OptionStorageInterface() {}
+        virtual ~AbstractOptionStorage() {}
 
         /*! \brief
          * Returns a short string describing the type of the option.

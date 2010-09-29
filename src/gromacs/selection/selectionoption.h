@@ -84,7 +84,7 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
 
     private:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
 
         SelectionFlags          _flags;
 

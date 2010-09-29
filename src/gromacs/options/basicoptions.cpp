@@ -47,7 +47,7 @@ namespace gmx
  */
 
 int BooleanOption::createDefaultStorage(Options *options,
-                                        OptionStorageInterface **storage) const
+                                        AbstractOptionStorage **storage) const
 {
     return createOptionStorage<BooleanOption, BooleanOptionStorage>(this, options, storage);
 }
@@ -57,7 +57,7 @@ int BooleanOption::createDefaultStorage(Options *options,
  */
 
 int IntegerOption::createDefaultStorage(Options *options,
-                                        OptionStorageInterface **storage) const
+                                        AbstractOptionStorage **storage) const
 {
     return createOptionStorage<IntegerOption, IntegerOptionStorage>(this, options, storage);
 }
@@ -67,7 +67,7 @@ int IntegerOption::createDefaultStorage(Options *options,
  */
 
 int DoubleOption::createDefaultStorage(Options *options,
-                                       OptionStorageInterface **storage) const
+                                       AbstractOptionStorage **storage) const
 {
     return createOptionStorage<DoubleOption, DoubleOptionStorage>(this, options, storage);
 }
@@ -77,7 +77,7 @@ int DoubleOption::createDefaultStorage(Options *options,
  */
 
 int StringOption::createDefaultStorage(Options *options,
-                                       OptionStorageInterface **storage) const
+                                       AbstractOptionStorage **storage) const
 {
     return createOptionStorage<StringOption, StringOptionStorage>(this, options, storage);
 }
@@ -106,7 +106,7 @@ std::string StringOption::createDescription() const
  */
 
 int FileNameOption::createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const
+                                         AbstractOptionStorage **storage) const
 {
     return createOptionStorage<FileNameOption, FileNameOptionStorage>(this, options, storage);
 }

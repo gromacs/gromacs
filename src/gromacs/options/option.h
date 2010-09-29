@@ -49,8 +49,8 @@ namespace gmx
 class AbstractErrorReporter;
 
 class AbstractOption;
+class AbstractOptionStorage;
 class Options;
-class OptionStorageInterface;
 
 /*! \internal \brief
  * Describes a single option.
@@ -168,7 +168,7 @@ class Option
          * The Option object is always responsible for freeing the storage
          * object once it is no longer needed.
          */
-        OptionStorageInterface *_storage;
+        AbstractOptionStorage  *_storage;
         //! Number of values added since startSet(), or -1 if not called.
         int                     _currentValueCount;
 

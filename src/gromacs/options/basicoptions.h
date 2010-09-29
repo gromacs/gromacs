@@ -85,7 +85,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 
     protected:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
 };
 
 /*! \brief
@@ -122,7 +122,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
     protected:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
 
         /*! \brief
          * Needed to initialize IntegerOptionStorage from this class without
@@ -153,7 +153,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 
     private:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
 
         bool _bTime;
 
@@ -233,7 +233,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
     protected:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
         virtual std::string createDescription() const;
 
     private:
@@ -290,7 +290,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 
     protected:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
 
     private:
         OptionFileType          _filetype;
