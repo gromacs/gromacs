@@ -51,7 +51,7 @@ namespace gmx
  */
 
 Option::Option()
-    : _flags(0), _minValueCount(1), _maxValueCount(1), _storage(NULL),
+    : _minValueCount(1), _maxValueCount(1), _storage(NULL),
       _currentValueCount(-1)
 {
 }
@@ -93,7 +93,7 @@ int Option::init(const AbstractOption &settings, Options *options)
         _name  = settings._name;
     }
     _descr = settings.createDescription();
-    _flags |= efHasDefaultValue;
+    _flags.set(efHasDefaultValue);
     return 0;
 }
 
@@ -114,7 +114,7 @@ std::string Option::formatValue(int i) const
 
 int Option::startSource()
 {
-    _flags |= efHasDefaultValue;
+    _flags.set(efHasDefaultValue);
     return 0;
 }
 
@@ -122,7 +122,7 @@ int Option::startSet(AbstractErrorReporter *errors)
 {
     if (hasFlag(efHasDefaultValue))
     {
-        _flags &= ~efHasDefaultValue;
+        _flags.clear(efHasDefaultValue);
         _storage->clear();
     }
     else if (isSet() && !hasFlag(efMulti))
@@ -163,7 +163,7 @@ int Option::finishSet(AbstractErrorReporter *errors)
 {
     int nvalues = _currentValueCount;
 
-    _flags |= efSet;
+    _flags.set(efSet);
     _currentValueCount = -1;
 
     // TODO: We probably should always call finishSet() to keep storage state

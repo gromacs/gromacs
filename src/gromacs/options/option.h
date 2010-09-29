@@ -152,7 +152,7 @@ class Option
 
     private:
         //! Returns true if the given flag is set for the option.
-        bool hasFlag(OptionFlag flag) const { return (_flags & flag); }
+        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
 
         std::string             _name;
         std::string             _descr;

@@ -42,6 +42,8 @@
 #ifndef GMX_OPTIONS_OPTIONFLAGS_H
 #define GMX_OPTIONS_OPTIONFLAGS_H
 
+#include "../utility/flags.h"
+
 namespace gmx
 {
 
@@ -101,7 +103,7 @@ enum OptionFlag {
 };
 
 //! Holds a combination of ::OptionFlag values.
-typedef unsigned long OptionFlags;
+typedef FlagsTemplate<OptionFlag> OptionFlags;
 
 } // namespace gmx
 

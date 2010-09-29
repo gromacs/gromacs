@@ -88,7 +88,7 @@ class AbstractOption
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
             : _minValueCount(1), _maxValueCount(1),
-              _name(name), _descr(NULL), _flags(0)
+              _name(name), _descr(NULL)
         { }
 
         /*! \brief
@@ -125,9 +125,9 @@ class AbstractOption
         //! Sets the description for the option.
         void setDescription(const char *descr) { _descr = descr; }
         //! Sets a flag for the option.
-        void setFlag(OptionFlag flag) { _flags |= flag; }
+        void setFlag(OptionFlag flag) { _flags.set(flag); }
         //! Clears a flag for the option.
-        void clearFlag(OptionFlag flag) { _flags &= ~flag; }
+        void clearFlag(OptionFlag flag) { _flags.clear(flag); }
         //! Returns true if the option is vector-valued.
         bool isVector() const { return hasFlag(efVector); }
         //! Sets the option to be vector-valued.
@@ -157,7 +157,7 @@ class AbstractOption
 
     private:
         //! Returns true if a flag has been set.
-        bool hasFlag(OptionFlag flag) const { return _flags & flag; }
+        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
 
         const char             *_name;
         //! Pointer to description of the option.
