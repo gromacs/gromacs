@@ -88,7 +88,7 @@ class AbstractOption
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
             : _minValueCount(1), _maxValueCount(1),
-              _name(name), _descr(NULL), _flags(0), _storage(NULL)
+              _name(name), _descr(NULL), _flags(0)
         { }
 
         /*! \brief
@@ -98,10 +98,8 @@ class AbstractOption
          * \param[out] storage  The created storage object.
          * \retval     0 if there are no errors.
          *
-         * This method is called by when creating an option without a custom
-         * storage set.  The \p options object is used to implement global
-         * properties.  The implementation should handle a NULL \p options to
-         * make isolated testing easier.
+         * This method is called by when creating an option object
+         * The \p options object is used to implement global properties.
          *
          * Derived classes should implement the method to create an actual
          * storage object and populate it with correct values.
@@ -124,11 +122,6 @@ class AbstractOption
         virtual std::string createDescription() const
         { return _descr ? _descr : ""; }
 
-        //! Returns true if (custom) storage has been set.
-        bool hasCustomStorage() const { return _storage != NULL; }
-        //! Sets a storage object for the option.
-        void setCustomStorage(OptionStorageInterface *storage)
-        { setFlag(efCustomStorage); _storage = storage; }
         //! Sets the description for the option.
         void setDescription(const char *descr) { _descr = descr; }
         //! Sets a flag for the option.
@@ -170,7 +163,6 @@ class AbstractOption
         //! Pointer to description of the option.
         const char             *_descr;
         OptionFlags             _flags;
-        OptionStorageInterface *_storage;
 
         /*! \brief
          * Needed to initialize an Option object from this class without
@@ -294,19 +286,6 @@ class OptionTemplate : public AbstractOption
          */
         MyClass &storeVector(std::vector<T> *store)
         { setFlag(efExternalValueVector); _storeVector = store; return me(); }
-        /*! \brief
-         * Set a custom object for converting, validating, and storing
-         * option values.
-         *
-         * Note that setting a custom storage object bypasses some validity
-         * checks; it is up to the caller to ensure that the storage object
-         * combined with other settings results in a valid option.
-         *
-         * Ownership of the storage object is transferred to the created
-         * option <em>once Options::addOption() is called</em>.
-         */
-        MyClass &customStorage(OptionStorageInterface *storage)
-        { setCustomStorage(storage); return me(); }
 
     protected:
         //! Initializes the name and default values for an option.

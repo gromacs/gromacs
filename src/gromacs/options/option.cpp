@@ -63,9 +63,6 @@ Option::~Option()
 
 int Option::init(const AbstractOption &settings, Options *options)
 {
-    // Take ownership of the custom storage if there is any.
-    _storage = settings._storage;
-
     // Copy cheap values first to make them easy to access in checks.
     _flags = settings._flags;
     _minValueCount = settings._minValueCount;
@@ -85,14 +82,10 @@ int Option::init(const AbstractOption &settings, Options *options)
                   "Inconsistent value counts for vector values");
     }
 
-    OptionStorageInterface *storage = settings._storage;
-    if (storage == NULL)
+    int rc = settings.createDefaultStorage(options, &_storage);
+    if (rc != 0)
     {
-        int rc = settings.createDefaultStorage(options, &storage);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        return rc;
     }
 
     if (settings._name != NULL)
@@ -100,7 +93,6 @@ int Option::init(const AbstractOption &settings, Options *options)
         _name  = settings._name;
     }
     _descr = settings.createDescription();
-    _storage = storage;
     _flags |= efHasDefaultValue;
     return 0;
 }

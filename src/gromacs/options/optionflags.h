@@ -88,8 +88,6 @@ enum OptionFlag {
     efExternalStore       = 1<<8,
     efExternalStoreArray  = 1<<9,
     efExternalValueVector = 1<<10,
-    //! User has provided a custom storage object.
-    efCustomStorage       = 1<<11,
     efFile                = 1<<12,
     efFileRead            = 1<<13,
     efFileWrite           = 1<<14,
