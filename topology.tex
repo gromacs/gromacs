@@ -259,14 +259,19 @@ sigma           & $\sigma$      & nm            \\
 \subsection{Bonded parameters}
 \label{subsec:bondparam}
 The \swapindex{bonded}{parameter}s ({\ie} bonds, bond angles, improper and proper
-dihedrals) are listed in {\tt ffbonded.itp}.% The term {\tt func} is 1 for
-%harmonic and 2 for \gromosv{96} bond and angle potentials.
-%For the dihedral, this is explained after this listing.
+dihedrals) are listed in {\tt ffbonded.itp}.~
+% The term {\tt func} is 1 for
+% harmonic and 2 for \gromosv{96} bond and angle potentials.
+% For the dihedral, this is explained after this listing.
 The entries in this database describe, respectively, the atom types
 in the interactions, the type of the interaction, and the parameters
-associated with that interaction. All the kinds of interactions are
-listed in Tables \ref{tab:topfile2} and \ref{tab:topfile3}. Example
-excepts from such files follow:
+associated with that interaction. These parameters are then read
+by {\tt \normindex{grompp}} when processing a topology and applied
+to the relevant bonded parameters, {\ie} {\tt bondtypes} are applied to
+entries in the {\tt [~bonds~]} directive, etc. Any bonded parameter that is
+missing from the relevant {\tt [~*type~]} directive generates a fatal error.
+The types of interactions are listed in Tables \ref{tab:topfile2} and 
+\ref{tab:topfile3}. Example excerpts from such files follow:
 
 {\small 
 \begin{verbatim}
@@ -335,7 +340,10 @@ them in {\tt atomtypes.atp} as well.
 \label{subsec:nbpar}
 The \swapindex{non-bonded}{parameter}s consist of the van der Waals parameters
 V ({\tt c6}) and W ({\tt c12}), as listed in the file {\tt ffnonbonded.itp},
-where {\tt ptype} is the particle type (see \tabref{ptype}):
+where {\tt ptype} is the particle type (see \tabref{ptype}).  As with the bonded
+parameters, entries in {\tt [~*type~]} directives are applied to their counterparts
+in the topology file.  Missing parameters generate warnings, except as noted 
+below in section~\ssecref{pairinteractions}.
 
 {\small
 \begin{verbatim}
@@ -424,6 +432,7 @@ as the corresponding implementation in Tinker.
 
 
 \subsection{\normindex{Pair interaction}s}
+\label{subsec:pairinteractions}
 Extra Lennard-Jones and electrostatic interactions between pairs
 of atoms in a molecule can be added in the {\tt [~pairs~]} section of
 a molecule definition. The parameters for these interactions can
@@ -437,14 +446,15 @@ The pair interaction parameters for the atom types
 in {\tt ffnonbonded.itp} are listed in the {\tt [~pairtypes~]} section.
 The {\gromos} force fields list all these interaction parameters
 explicitly, but this section might be empty for force fields like
-OPLS that calculate the 1-4 interactions by uniformly scaling the parameters.
-Pair parameters which are not present in the {\tt [~pairtypes~]} section
-are only generated when generate pairs is set to yes in the topology
-(see \ssecref{topfile}). When generate pairs is set to no, {\tt grompp}
+OPLS that calculate the \normindex{1-4 interaction}s by uniformly scaling the parameters.
+Pair parameters that are not present in the {\tt [~pairtypes~]} section
+are only generated when {\tt gen-pairs} is set to ``yes'' in the {\tt [~defaults~]}
+directive of {\tt forcefield.itp} (see \ssecref{topfile}). 
+When {\tt gen-pairs} is set to ``no,'' {\tt \normindex{grompp}}
 will give a warning for each pair type for which no parameters are given.
 
 \ifthenelse{\equal{\gmxmajor}{4}}{
-The normal pair interactions, intended for 1-4 interactions,
+The normal pair interactions, intended for \normindex{1-4 interaction}s,
 have function type 1. Function types 2 and 3 are intended
 for free-energy simulations. When determining hydration
 free energies, the solute needs to be decoupled from the solvent.
