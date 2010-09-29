@@ -1006,55 +1006,6 @@ _gmx_sel_init_variable_ref(t_selelem *sel)
     return ref;
 }
 
-/*! \brief
- * Initializes default values for position keyword evaluation.
- *
- * \param[in,out] root       Root of the element tree to initialize.
- * \param[in]     sc         Selection collection to use defaults from.
- * \param[in]     bSelection Whether the element evaluates the positions for a
- *   selection.
- */
-static void
-init_pos_keyword_defaults(t_selelem *root, gmx_ana_selcollection_t *sc, gmx_bool bSelection)
-{
-    t_selelem               *child;
-    int                      flags;
-
-    /* Selections use largest static group by default, while
-     * reference positions use the whole residue/molecule. */
-    if (root->type == SEL_EXPRESSION)
-    {
-        flags = bSelection ? POS_COMPLMAX : POS_COMPLWHOLE;
-        if (bSelection && sc->bMaskOnly)
-        {
-            flags |= POS_MASKONLY;
-        }
-        if (bSelection && sc->bVelocities)
-        {
-            flags |= POS_VELOCITIES;
-        }
-        if (bSelection && sc->bForces)
-        {
-            flags |= POS_FORCES;
-        }
-        _gmx_selelem_set_kwpos_type(root, bSelection ? sc->spost : sc->rpost);
-        _gmx_selelem_set_kwpos_flags(root, flags);
-    }
-    /* Change the defaults once we are no longer processing modifiers */
-    if (root->type != SEL_ROOT && root->type != SEL_MODIFIER
-        && root->type != SEL_SUBEXPRREF && root->type != SEL_SUBEXPR)
-    {
-        bSelection = FALSE;
-    }
-    /* Recurse into children */
-    child = root->child;
-    while (child)
-    {
-        init_pos_keyword_defaults(child, sc, bSelection);
-        child = child->next;
-    }
-}
-
 /*!
  * \param[in]  name     Name for the selection
  *     (if NULL, a default name is constructed).
@@ -1095,8 +1046,6 @@ _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
         _gmx_selelem_free(root);
         return NULL;
     }
-    /* Initialize defaults for position keywords */
-    init_pos_keyword_defaults(sel, sc, TRUE);
 
     /* If there is no name provided by the user, check whether the actual
      * selection given was from an external group, and if so, use the name

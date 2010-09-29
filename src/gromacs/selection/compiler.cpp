@@ -72,6 +72,8 @@
  * The compiler is called by calling gmx_ana_selcollection_compile().
  * This functions then does the compilation in several passes over the
  * \c t_selelem tree.
+ *  -# Defaults are set for the position type and flags of position calculation
+ *     methods that were not explicitly specified in the user input.
  *  -# Subexpressions are extracted: a separate root is created for each
  *     subexpression, and placed before the expression is first used.
  *     Currently, only variables and expressions used to evaluate parameter
@@ -117,7 +119,7 @@
  *     the compilation process.
  *  -# Most of the processing is now done, and the next pass simply sets the
  *     evaluation group of root elements to the largest selection as determined
- *     in pass 3.  For root elements of subexpressions that should not be
+ *     in pass 4.  For root elements of subexpressions that should not be
  *     evaluated before they are referred to, the evaluation group/function is
  *     cleared.  At the same time, position calculation data is initialized for
  *     for selection method elements that require it.  Compiler data is also
@@ -531,6 +533,60 @@ set_evaluation_function(t_selelem *sel, sel_evalfunc eval)
             set_evaluation_function(child, eval);
             child = child->next;
         }
+    }
+}
+
+
+/********************************************************************
+ * POSITION KEYWORD DEFAULT INITIALIZATION
+ ********************************************************************/
+
+/*! \brief
+ * Initializes default values for position keyword evaluation.
+ *
+ * \param[in,out] root       Root of the element tree to initialize.
+ * \param[in]     sc         Selection collection to use defaults from.
+ * \param[in]     spost      Default output position type.
+ * \param[in]     rpost      Default reference position type.
+ * \param[in]     bSelection Whether the element evaluates the positions for a
+ *   selection.
+ */
+static void
+init_pos_keyword_defaults(t_selelem *root, gmx_ana_selcollection_t *sc,
+                          const char *spost, const char *rpost, bool bSelection)
+{
+    /* Selections use largest static group by default, while
+     * reference positions use the whole residue/molecule. */
+    if (root->type == SEL_EXPRESSION)
+    {
+        int flags = bSelection ? POS_COMPLMAX : POS_COMPLWHOLE;
+        if (bSelection && sc->bMaskOnly)
+        {
+            flags |= POS_MASKONLY;
+        }
+        if (bSelection && sc->bVelocities)
+        {
+            flags |= POS_VELOCITIES;
+        }
+        if (bSelection && sc->bForces)
+        {
+            flags |= POS_FORCES;
+        }
+        _gmx_selelem_set_kwpos_type(root, bSelection ? spost : rpost);
+        _gmx_selelem_set_kwpos_flags(root, flags);
+    }
+    /* Change the defaults once we are no longer processing modifiers */
+    if (root->type != SEL_ROOT && root->type != SEL_MODIFIER
+        && root->type != SEL_SUBEXPRREF && root->type != SEL_SUBEXPR)
+    {
+        bSelection = FALSE;
+    }
+    /* Recurse into children */
+    t_selelem *child = root->child;
+    while (child)
+    {
+        init_pos_keyword_defaults(child, sc, spost, rpost, bSelection);
+        child = child->next;
     }
 }
 
@@ -2644,6 +2700,22 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
      * also mess up the compilation and/or become invalid.
      */
     coll->_impl->clearSymbolTable();
+
+    /* Loop through selections and initialize position keyword defaults if no
+     * other value has been provided.
+     */
+    item = sc->root;
+    while (item)
+    {
+        if (item->child->type != SEL_SUBEXPR)
+        {
+            init_pos_keyword_defaults(item->child, sc,
+                                      coll->_impl->_spost.c_str(),
+                                      coll->_impl->_rpost.c_str(),
+                                      true /* start in selection mode */);
+        }
+        item = item->next;
+    }
 
     /* Remove any unused variables. */
     sc->root = remove_unused_subexpressions(sc->root);

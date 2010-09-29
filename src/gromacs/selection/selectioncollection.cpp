@@ -80,8 +80,6 @@ SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
     : _options("selection", "Common selection control"),
       _debugLevel(0), _flags(0), _grps(NULL)
 {
-    _sc.rpost     = NULL;
-    _sc.spost     = NULL;
     _sc.bMaskOnly = FALSE;
     _sc.bVelocities = FALSE;
     _sc.bForces   = FALSE;
@@ -154,8 +152,6 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
     gmx_ana_selcollection_t *sc = &_sc;
     assert(sc == _gmx_sel_lexer_selcollection(scanner));
 
-    _sc.rpost = _rpost.c_str();
-    _sc.spost = _spost.c_str();
     int oldCount = sc->sel.size();
     int bOk = !_gmx_sel_yybparse(scanner);
     _gmx_sel_free_lexer(scanner);

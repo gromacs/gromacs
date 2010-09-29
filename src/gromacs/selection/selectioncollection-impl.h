@@ -62,10 +62,6 @@ class Selection;
  */
 struct gmx_ana_selcollection_t
 {
-    /** Default reference position type for selections. */
-    const char                 *rpost;
-    /** Default output position type for selections. */
-    const char                 *spost;
     /** TRUE if \ref POS_MASKONLY should be used for output position evaluation. */
     bool                        bMaskOnly;
     /** TRUE if velocities should be evaluated for output positions. */
