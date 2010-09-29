@@ -118,10 +118,6 @@ class AbstractOptionStorage
          * Returns the i'th value formatted as a string.
          */
         virtual std::string formatValue(int i) const = 0;
-        /*! \brief
-         * Returns all values formatted as one string.
-         */
-        virtual std::string formatValues() const = 0;
 };
 
 } // namespace gmx

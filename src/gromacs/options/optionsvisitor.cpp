@@ -96,7 +96,17 @@ std::string OptionInfo::formatValue(int i) const
 
 std::string OptionInfo::formatValues() const
 {
-    return _option.formatValues();
+    std::string result;
+    int count = valueCount();
+    for (int i = 0; i < count; ++i)
+    {
+        if (i != 0)
+        {
+            result.append(" ");
+        }
+        result.append(formatValue(i));
+    }
+    return result;
 }
 
 /********************************************************************

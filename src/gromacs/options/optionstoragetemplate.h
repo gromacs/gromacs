@@ -109,7 +109,6 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual int finish(AbstractErrorReporter *errors);
         virtual int valueCount() const { return _values->size(); }
         virtual std::string formatValue(int i) const = 0;
-        virtual std::string formatValues() const;
 
     protected:
         //! Initializes default values (no storage).
@@ -286,22 +285,6 @@ void OptionStorageTemplate<T>::addValue(const T &value)
         _store[_values->size()] = value;
     }
     _values->push_back(value);
-}
-
-template <typename T>
-std::string OptionStorageTemplate<T>::formatValues() const
-{
-    std::string result;
-    int count = valueCount();
-    for (int i = 0; i < count; ++i)
-    {
-        if (i != 0)
-        {
-            result.append(" ");
-        }
-        result.append(formatValue(i));
-    }
-    return result;
 }
 
 } // namespace gmx

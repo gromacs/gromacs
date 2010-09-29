@@ -112,11 +112,6 @@ std::string Option::formatValue(int i) const
     return _storage->formatValue(i);
 }
 
-std::string Option::formatValues() const
-{
-    return _storage->formatValues();
-}
-
 int Option::startSource()
 {
     _flags |= efHasDefaultValue;
