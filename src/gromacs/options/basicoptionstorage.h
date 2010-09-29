@@ -41,8 +41,8 @@
 #include <string>
 #include <vector>
 
-#include "abstractoptionstorage.h"
 #include "optionfiletype.h"
+#include "optionstoragetemplate.h"
 
 namespace gmx
 {
@@ -59,7 +59,7 @@ class FileNameOption;
 /*! \internal \brief
  * Converts, validates, and stores boolean values.
  */
-class BooleanOptionStorage : public AbstractOptionStorage<bool>
+class BooleanOptionStorage : public OptionStorageTemplate<bool>
 {
     public:
         virtual const char *typeString() const { return "bool"; }
@@ -74,7 +74,7 @@ class BooleanOptionStorage : public AbstractOptionStorage<bool>
 /*! \internal \brief
  * Converts, validates, and stores integer values.
  */
-class IntegerOptionStorage : public AbstractOptionStorage<int>
+class IntegerOptionStorage : public OptionStorageTemplate<int>
 {
     public:
         IntegerOptionStorage();
@@ -101,7 +101,7 @@ class IntegerOptionStorage : public AbstractOptionStorage<int>
 /*! \internal \brief
  * Converts, validates, and stores floating-point (double) values.
  */
-class DoubleOptionStorage : public AbstractOptionStorage<double>
+class DoubleOptionStorage : public OptionStorageTemplate<double>
 {
     public:
         DoubleOptionStorage();
@@ -124,7 +124,7 @@ class DoubleOptionStorage : public AbstractOptionStorage<double>
 /*! \internal \brief
  * Converts, validates, and stores string values.
  */
-class StringOptionStorage : public AbstractOptionStorage<std::string>
+class StringOptionStorage : public OptionStorageTemplate<std::string>
 {
     public:
         StringOptionStorage();
@@ -148,7 +148,7 @@ class StringOptionStorage : public AbstractOptionStorage<std::string>
 /*! \internal \brief
  * Converts, validates, and stores file names.
  */
-class FileNameOptionStorage : public AbstractOptionStorage<std::string>
+class FileNameOptionStorage : public OptionStorageTemplate<std::string>
 {
     public:
         FileNameOptionStorage();

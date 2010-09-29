@@ -30,14 +30,14 @@
  */
 /*! \libinternal \file
  * \brief
- * Defines gmx::AbstractOptionStorage template.
+ * Defines gmx::OptionStorageTemplate template.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
  * \ingroup module_options
  */
-#ifndef GMX_OPTIONS_ABSTRACTOPTIONSTORAGE_H
-#define GMX_OPTIONS_ABSTRACTOPTIONSTORAGE_H
+#ifndef GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
+#define GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 
 #include <cassert>
 
@@ -66,15 +66,15 @@ class Options;
  * \ingroup module_options
  */
 template <typename T>
-class AbstractOptionStorage : public OptionStorageInterface
+class OptionStorageTemplate : public OptionStorageInterface
 {
     public:
         //! Alias for the template class for use in base classes.
-        typedef AbstractOptionStorage<T> MyBase;
+        typedef OptionStorageTemplate<T> MyBase;
         //! Type of the container that contains the current values.
         typedef std::vector<T> ValueList;
 
-        virtual ~AbstractOptionStorage();
+        virtual ~OptionStorageTemplate();
 
         /*! \brief
          * Initializes the storage from option settings.
@@ -113,7 +113,7 @@ class AbstractOptionStorage : public OptionStorageInterface
 
     protected:
         //! Initializes default values (no storage).
-        AbstractOptionStorage();
+        OptionStorageTemplate();
 
         /*! \brief
          * Adds a value to the storage.
@@ -159,15 +159,15 @@ class AbstractOptionStorage : public OptionStorageInterface
         Options                *_options;
 
         // Disallow copy and assign.
-        AbstractOptionStorage(const AbstractOptionStorage<T> &);
-        void operator =(const AbstractOptionStorage<T> &);
+        OptionStorageTemplate(const OptionStorageTemplate<T> &);
+        void operator =(const OptionStorageTemplate<T> &);
 };
 
 /*! \brief
  * Helper function for creating storage objects.
  *
  * \tparam     T  Type of the settings object (derived from OptionTemplate).
- * \tparam     S  Type of the storage object (derived from AbstractOptionStorage).
+ * \tparam     S  Type of the storage object (derived from OptionStorageTemplate).
  * \param[in]  settings  Settings object to pass to S::init().
  * \param[in]  options   Options object to pass to S::init().
  * \param[out] output    Pointer to the created storage object.
@@ -195,14 +195,14 @@ createOptionStorage(const T *settings, Options *options,
 }
 
 template <typename T>
-AbstractOptionStorage<T>::AbstractOptionStorage()
+OptionStorageTemplate<T>::OptionStorageTemplate()
     : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL),
       _flags(0), _options(NULL)
 {
 }
 
 template <typename T>
-AbstractOptionStorage<T>::~AbstractOptionStorage()
+OptionStorageTemplate<T>::~OptionStorageTemplate()
 {
     if (_flags & efOwnValueVector)
     {
@@ -212,7 +212,7 @@ AbstractOptionStorage<T>::~AbstractOptionStorage()
 
 template <typename T>
 template <class U>
-int AbstractOptionStorage<T>::init(const OptionTemplate<T, U> &settings, Options *options)
+int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options *options)
 {
     // It's impossible for the caller to do proper memory management if
     // the provided memory is not initialized as NULL.
@@ -246,13 +246,13 @@ int AbstractOptionStorage<T>::init(const OptionTemplate<T, U> &settings, Options
 }
 
 template <typename T>
-void AbstractOptionStorage<T>::clear()
+void OptionStorageTemplate<T>::clear()
 {
     _values->clear();
 }
 
 template <typename T>
-int AbstractOptionStorage<T>::finish(AbstractErrorReporter * /*errors*/)
+int OptionStorageTemplate<T>::finish(AbstractErrorReporter * /*errors*/)
 {
     if (_nvalptr)
     {
@@ -277,7 +277,7 @@ int AbstractOptionStorage<T>::finish(AbstractErrorReporter * /*errors*/)
 }
 
 template <typename T>
-void AbstractOptionStorage<T>::addValue(const T &value)
+void OptionStorageTemplate<T>::addValue(const T &value)
 {
     // We store the value here to allow limited dependence between option
     // values.
@@ -289,7 +289,7 @@ void AbstractOptionStorage<T>::addValue(const T &value)
 }
 
 template <typename T>
-std::string AbstractOptionStorage<T>::formatValues() const
+std::string OptionStorageTemplate<T>::formatValues() const
 {
     std::string result;
     int count = valueCount();

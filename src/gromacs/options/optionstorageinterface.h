@@ -49,7 +49,7 @@ class AbstractErrorReporter;
 /*! \libinternal \brief
  * Pure interface for converting, validating, and storing option values.
  *
- * The AbstractOptionStorage template provides basic functionality for this
+ * The OptionStorageTemplate template provides basic functionality for this
  * interface, only leaving some of the functions to implement in derived
  * classes.
  * It also integrates well with option settings objects derived from

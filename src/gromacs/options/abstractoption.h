@@ -58,7 +58,7 @@
 namespace gmx
 {
 
-template <typename T> class AbstractOptionStorage;
+template <typename T> class OptionStorageTemplate;
 class Option;
 class Options;
 class OptionStorageInterface;
@@ -334,7 +334,7 @@ class OptionTemplate : public AbstractOption
          * Needed to initialize storage from this class without otherwise
          * unnecessary accessors.
          */
-        friend class AbstractOptionStorage<T>;
+        friend class OptionStorageTemplate<T>;
 };
 
 } // namespace gmx

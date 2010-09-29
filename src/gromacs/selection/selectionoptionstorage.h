@@ -38,7 +38,7 @@
 #ifndef GMX_SELECTION_SELECTIONOPTIONSTORAGE_H
 #define GMX_SELECTION_SELECTIONOPTIONSTORAGE_H
 
-#include "../options/abstractoptionstorage.h"
+#include "../options/optionstoragetemplate.h"
 #include "selectionenums.h"
 
 namespace gmx
@@ -52,7 +52,7 @@ class SelectionOption;
  *
  * \ingroup module_selection
  */
-class SelectionOptionStorage : public AbstractOptionStorage<Selection *>
+class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
 {
     public:
         SelectionOptionStorage();
