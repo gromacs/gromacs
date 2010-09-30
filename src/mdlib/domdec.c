@@ -2193,19 +2193,6 @@ static int dd_simnode2pmenode(t_commrec *cr,int sim_nodeid)
     
     return pmenode;
 }
-/*
-int iorank2ddrank(t_commrec *cr, int rank) {
-	int ddrank = cr->nionodes-1 - rank;  // For the purpose of making checkpoints work correctly: we write the frames in reverse order
-	if (rank==cr->nionodes-1)
-	{
-		ddrank = cr->dd->masterrank;
-	}
-	else if (ddrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
-	{
-		ddrank--;
-	}
-	return ddrank;
-}*/
 
 gmx_bool gmx_pmeonlynode(t_commrec *cr,int sim_nodeid)
 {

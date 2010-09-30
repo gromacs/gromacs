@@ -452,14 +452,14 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
     of->simulation_part = ir->simulation_part;
 
 
-	bAppendFiles = (mdrun_flags & MD_APPENDFILES);
+    bAppendFiles = (mdrun_flags & MD_APPENDFILES);
 
-	of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
+    of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
 
-	sprintf(filemode, bAppendFiles ? "a+" : "w+");
+    sprintf(filemode, bAppendFiles ? "a+" : "w+");
         
-	if (MASTER(cr))
-	{
+    if (MASTER(cr))
+    {
         if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
 #ifndef GMX_FAHCORE
             &&
@@ -544,7 +544,9 @@ void done_mdoutf(gmx_mdoutf_t *of)
     sfree(of);
 }
 
-static int copy_state_local(t_state *new_sl,t_state *old_sl)
+// This is used for use with write_buf inside write_traj, it copies the 
+// original state_local (old_sl) and copies it into new_sl
+static int copy_state_local(t_state *new_sl,t_state *old_sl) 
 {
 	int *cg_gl_new = new_sl->cg_gl;
 	rvec *x_new = new_sl->x;
@@ -570,7 +572,6 @@ void write_traj(FILE *fplog,t_commrec *cr,
                 t_inputrec *ir, gmx_bool bLastStep, t_write_buffer* write_buf)
 {
     int     i,j;
-    int orig_masterrank;
     gmx_groups_t *groups;
     rvec    *xxtc;
     rvec *local_v;
@@ -580,16 +581,16 @@ void write_traj(FILE *fplog,t_commrec *cr,
     gmx_bool bBuffer = cr->nionodes > 1; // Used to determine if buffers will be used
     gmx_bool writeXTCNow = TRUE;
 
-	if (bBuffer)// If buffering will be used
-	{
-		bufferStep = (step/ir->nstxtcout - (int)ceil((double)write_buf->step_after_checkpoint/ir->nstxtcout))%cr->nionodes;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
-		writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->nionodes-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
+    if (bBuffer)// If buffering will be used
+    {
+	bufferStep = (step/ir->nstxtcout - (int)ceil((double)write_buf->step_after_checkpoint/ir->nstxtcout))%cr->nionodes;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
+	writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->nionodes-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
 
-		if ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))
-		{
-			write_buf->step_after_checkpoint = step + 1;
-		}
+	if ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))
+	{
+            write_buf->step_after_checkpoint = step + 1;
 	}
+    }
 
 #define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)
 
@@ -624,45 +625,45 @@ void write_traj(FILE *fplog,t_commrec *cr,
         {
             dd_collect_vec(cr->dd,state_local,f_local,f_global);
         }
-        //TODO: RJ LOW PRIORITY: We can optimize by not collecting all but xtc selection.
+        //Could be optimized by not collecting all coordinates but only those in the xtc selection.
         if ((mdof_flags & MDOF_XTC) && bBuffer)
-        {
-			//This block of code copies the current dd and state_local to buffers to prepare for writing later.
-			if ((writeXTCNow && MASTER(cr)) || (!writeXTCNow && bufferStep == cr->dd->iorank))
-			{
-				write_buf->step=step;
-				write_buf->t=t;
-			}
-			srenew(write_buf->state_local[bufferStep]->cg_gl,state_local->cg_gl_nalloc);
-			srenew(write_buf->state_local[bufferStep]->x,state_local->nalloc);
-			copy_dd(write_buf->dd[bufferStep],cr->dd);
-			copy_state_local(write_buf->state_local[bufferStep],state_local);
+        { 
+            //This block of code copies the current dd and state_local to buffers to prepare for writing later.
+	    if ((writeXTCNow && MASTER(cr)) || (!writeXTCNow && bufferStep == cr->dd->iorank))
+	    {
+	        write_buf->step=step;
+		write_buf->t=t;
+	    }
+	    srenew(write_buf->state_local[bufferStep]->cg_gl,state_local->cg_gl_nalloc);
+	    srenew(write_buf->state_local[bufferStep]->x,state_local->nalloc);
+	    copy_dd(write_buf->dd[bufferStep],cr->dd);
+	    copy_state_local(write_buf->state_local[bufferStep],state_local);
 
 
-			if (writeXTCNow)
+	    if (writeXTCNow)
+	    {
+	        for (i = 0; i <= bufferStep; i++)//This loop changes which node is the master node temporarily so that it can then write
+						 // the frames to different nodes.
+		{
+		    if (i==bufferStep)
+		    {
+		        write_buf->dd[i]->masterrank = cr->dd->masterrank;
+		    }
+		    else
+		    {
+		        write_buf->dd[i]->masterrank = cr->nionodes-1 - i;  // For the purpose of making checkpoints work correctly: we write the frames in reverse order
+			if (write_buf->dd[i]->masterrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
 			{
-				for (i = 0; i <= bufferStep; i++)//This loop changes which node is the master node temporarily so that it can then write
-												 // the frames to different nodes.
-				{
-					if (i==bufferStep)
-					{
-						write_buf->dd[i]->masterrank = cr->dd->masterrank;
-					}
-					else
-					{
-						write_buf->dd[i]->masterrank = cr->nionodes-1 - i;  // For the purpose of making checkpoints work correctly: we write the frames in reverse order
-						if (write_buf->dd[i]->masterrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
-						{
-							write_buf->dd[i]->masterrank--;
-						}
-					}
-					if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
-					{
-						dd_collect_vec(write_buf->dd[i],write_buf->state_local[i],write_buf->state_local[i]->x,state_global->x);
-					}
-				}
+			    write_buf->dd[i]->masterrank--;
 			}
-		}
+		    }
+		    if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
+		    {
+		        dd_collect_vec(write_buf->dd[i],write_buf->state_local[i],write_buf->state_local[i]->x,state_global->x);
+                    }
+                }
+            }
+	}
     }
     else
     {
@@ -734,7 +735,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		{
 		 write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
 						  fplog,cr,of->eIntegrator,
-						  of->simulation_part,step,t,state_global);  //TODO RJ write mail to mailinglist why this is before write_xtc
+						  of->simulation_part,step,t,state_global);
 		}
 	 }
 
@@ -802,7 +803,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		{
 		 write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
 						  fplog,cr,of->eIntegrator,
-						  of->simulation_part,step,t,state_global);  //TODO RJ write mail to mailinglist why this is before write_xtc
+						  of->simulation_part,step,t,state_global);
 		}
      }
      if (MASTER(cr))

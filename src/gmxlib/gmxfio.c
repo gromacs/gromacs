@@ -443,7 +443,7 @@ static void gmx_fio_stop_getting_next(t_fileio *fio)
 }
 
 
-static int gmx_write_it(char *handle, char *buf, int size) // used for writing with MPI
+static int gmx_fio_write_to_membuf(char *handle, char *buf, int size) // writes data to mem_buf for xdr created by xdrrec_create. Used for MPI buffered writing.
 {
 	t_fileio *fio = (t_fileio*) handle;
 	if (fio->mem_buf_nalloc<fio->mem_buf_cur_pos+size) {
@@ -470,7 +470,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
 /*opens serial file for cr==NULL*/
 t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr)
 {
-#define FIO_MASTER(cr) (cr==NULL || MASTER(cr))
+#define FIO_MASTER(cr) (cr==NULL || MASTER(cr)) // Only used in gmxfio.c if it is the master node.
 
     t_fileio *fio = NULL;
     int i;
@@ -595,7 +595,7 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr)
             		gmx_fatal(FARGS,"Unknown mode!");
             	}
             	snew(fio->xdr,1);
-            	xdrrec_create(fio->xdr,0,0,(char*)fio,NULL,&gmx_write_it);
+            	xdrrec_create(fio->xdr,0,0,(char*)fio,NULL,&gmx_fio_write_to_membuf);
 
             	MPI_Comm_dup(cr->mpi_comm_io, &(fio->fh_comm));
             	if (IONODE(cr))
@@ -762,6 +762,7 @@ int gmx_fio_fclose(FILE *fp)
     return rc;
 }
 
+// Assumes fio is locked, and reads the file and supports use of MPI
 static gmx_off_t gmx_fio_int_read(void *buf, size_t size, t_fileio* fio)
 {
 	gmx_off_t numread = 0;
@@ -841,17 +842,6 @@ int gmx_fio_seek_shared(t_fileio* fio, gmx_off_t fpos, int whence)
     gmx_fio_unlock(fio);
     return rc;
 }
-
-//int gmx_fio_get_rank(t_fileio *fio)
-//{
-//	int ret = -1;
-//	gmx_fio_lock(fio);
-//#ifdef GMX_LIB_MPI
-//	ret = fio->rank;
-//#endif
-//	gmx_fio_unlock(fio);
-//	return ret;
-//}
 
 /* internal variant of get_file_md5 that operates on a locked file */
 static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset, 
@@ -1108,8 +1098,8 @@ static int gmx_fio_int_fsync(t_fileio *fio)
     	if (fio->mpi_fh == NULL)
 #endif
     	{
-    		rc=gmx_fsync((FILE*) fio->xdr->x_private);
-                                    /* ^ is this actually OK? */
+            rc=gmx_fsync((FILE*) fio->xdr->x_private);
+                                   /* ^ is this actually OK? */
     	}
     }
 
@@ -1307,7 +1297,6 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             {
                 gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
 #ifndef GMX_FAHCORE
-                //TODO: RJ mutex missing?
                 outputfiles[nfiles].chksum_size
                     = gmx_fio_int_get_file_md5(cur,
                                                outputfiles[nfiles].offset,

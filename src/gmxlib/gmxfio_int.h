@@ -80,17 +80,6 @@ struct t_fileio
     /*int rank;//rank of node   MPI_Comm_rank(comm,&rank);*/
     /*int nIOnodes;// Number of IO nodes*/
 
-    /* TODO RJ : other places:
-     *     test on bluegene (with Cartesian communicator)
-     *     test with separate PME nodes
-     *
-     *     test with nompi, threads, mpi
-     *     test each with appending of checkpoint. make sure traj matches traj_correct for each
-     *     test mpi version with pd, serial, on 3 nodes, with more nodes than ddnodes
-     *
-     *     Test with mdrun -multi 2
-     */
-
 #endif
     char *mem_buf; // Used for MPI writing of xtc buffered by gmx_writeit
     int mem_buf_cur_pos, /*current writing position in mem_buf. Equal to the amount written so far for current frame*/

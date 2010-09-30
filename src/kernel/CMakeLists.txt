@@ -33,10 +33,10 @@ set(GMXPREPROCESS_SOURCES
     xlate.c)
 
 set(MDRUN_SOURCES 
-    gctio.c    ionize.c runner.c
+    gctio.c      ionize.c   runner.c
     do_gct.c     repl_ex.c  xutils.c
-    md.c         mdrun.c    genalg.c membed.c
-    md_openmm.c)
+    md.c         mdrun.c    genalg.c 
+    md_openmm.c  gmx_membed.c)
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)

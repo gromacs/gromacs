@@ -109,9 +109,10 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 
 void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
-int copy_dd(gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd);// Copies orig_dd into copy_dd
+int copy_dd(gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd);// Copies orig_dd into copy_dd which is needed for buffering
 
-int initialize_dd_buf(gmx_domdec_t ***dd_buf, t_commrec *cr);
+int initialize_dd_buf(gmx_domdec_t ***dd_buf, t_commrec *cr);// Initializes the buffer for storing several gmx_domdec_t's.
+                                                             // The size of how many will be stored is in runner.c
 
 void dd_collect_vec(gmx_domdec_t *dd,
                            t_state *state_local,rvec *lv,rvec *v);

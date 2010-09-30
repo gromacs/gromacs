@@ -81,6 +81,7 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr);
  * if you are writing a binary file, but the routine will also 
  * doublecheck it and try to do it if you forgot. This has no effect on
  * unix, but is important on windows.
+ * Supports the use of MPI
  */
 
 int gmx_fio_close(t_fileio *fp);
@@ -158,15 +159,10 @@ int gmx_fio_fsync(t_fileio *fio);
 
 gmx_off_t gmx_fio_ftell(t_fileio *fio);
 /* Return file position if possible */
-gmx_off_t gmx_fio_ftell_shared(t_fileio *fio);
-/* Return file position if possible. Tells the shared file position if using MPI */
 
 
 int gmx_fio_seek(t_fileio *fio,gmx_off_t fpos, int whence);
 /* Set file position if possible, quit otherwise */
-int gmx_fio_seek_shared(t_fileio* fio, gmx_off_t fpos, int whence);
-/* Set file position if possible, quit otherwise. Seeks the shared file position if using MPI
- * Has to be called collective my all IO nodes if using MPI for this file */
 
 FILE *gmx_fio_getfp(t_fileio *fio);
 /* Return the file pointer itself */
@@ -221,8 +217,6 @@ t_fileio *gmx_fio_all_output_fsync(void);
              failed if an error occurred 
 */
 
-
-int gmx_fio_get_rank(t_fileio *fio);
 
 int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,  
                          unsigned char digest[]);

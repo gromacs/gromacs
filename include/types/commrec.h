@@ -130,7 +130,6 @@ typedef struct {
    */
   int  nnodes;
   MPI_Comm mpi_comm_all;
-
   /* Use MPI_Sendrecv communication instead of non-blocking calls */
   gmx_bool bSendRecv2;
   /* The local DD cell index and rank */
@@ -235,7 +234,7 @@ typedef struct {
 
 #define DUTY_PP  (1<<0)
 #define DUTY_PME (1<<1)
-#define DUTY_IO  (1<<2)
+#define DUTY_IO  (1<<2) // Used for buffering when there are nultiple IO nodes.
 
 typedef struct {
   int      bUse;
@@ -302,7 +301,7 @@ typedef struct {
 
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
 
-#define IONODE(cr)	       ((cr)->duty & DUTY_IO )
+#define IONODE(cr)	       ((cr)->duty & DUTY_IO )// Used to determine if this node is an IO node
 
 #define PARTDECOMP(cr)     ((cr)->pd != NULL)
 

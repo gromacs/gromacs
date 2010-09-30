@@ -176,7 +176,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, gmx_bool
 }
 
 
-
+// When using MPI all IO nodes must call this function
 int write_xtc(t_fileio *fio,
 	      int natoms,int step,real time,
 	      matrix box,rvec *x,real prec, gmx_bool bWrite)

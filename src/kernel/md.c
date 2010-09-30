@@ -89,7 +89,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
-#include "membed.h"
+#include "gmx_membed.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>

@@ -55,7 +55,7 @@
 #include "mtop_util.h"
 #include "tpxio.h"
 #include "string2.h"
-#include "membed.h"
+#include "gmx_membed.h"
 #include "pbc.h"
 #include "readinp.h"
 

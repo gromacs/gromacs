@@ -50,7 +50,7 @@
 #include "vsite.h"
 #include "pull.h"
 #include "update.h"
-#include "membed.h"
+#include "gmx_membed.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,11 +134,14 @@ typedef struct {
   FILE *fp_field;
 } gmx_mdoutf_t;
 
+
+/* This is where various variables that we need to save for use within
+ * write_traj are stored */
 typedef struct {
-	gmx_domdec_t **dd;
-	t_state **state_local;
-	gmx_large_int_t step;
-	double t;
+	gmx_domdec_t **dd; // This is used to store many frames of data
+	t_state **state_local; // This is used to store many frames of data
+	gmx_large_int_t step; // This is used to keep track of what step is associated with each frame of data
+	double t; // This is used to keep track of what time is associated with each frame of data
 	int step_after_checkpoint; /*first step or first step after checkpoint*/
 } t_write_buffer;
 
@@ -262,6 +265,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 /* Routine that writes frames to trn, xtc and/or checkpoint.
  * What is written is determined by the mdof_flags defined above.
  * Data is collected to the master node only when necessary.
+ * ir, bLastStep, and write_buf are only necessary when buffering.
  */
 
 int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep);
