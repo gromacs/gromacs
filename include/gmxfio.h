@@ -71,7 +71,7 @@ extern const char *comment_str[eitemNR];
  ********************************************************/
 
 t_fileio *gmx_fio_open(const char *fn,const char *mode);
-// This is a wrapper function around mpi_fio_open
+// The same as mpi_fio_open but always opens the file in serial
 
 t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr);
 /* Open a new file for reading or writing.
@@ -81,7 +81,7 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr);
  * if you are writing a binary file, but the routine will also 
  * doublecheck it and try to do it if you forgot. This has no effect on
  * unix, but is important on windows.
- * Supports the use of MPI
+ * If cr is not null opens the file in parallel.
  */
 
 int gmx_fio_close(t_fileio *fp);

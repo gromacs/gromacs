@@ -388,7 +388,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     if (MASTER(cr)) 
     {
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop); //initializes state->x for rank 0
+        read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
 
         /* NOW the threads will be started: */
 #ifdef GMX_THREADS
@@ -780,8 +780,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #ifdef GMX_LIB_MPI
     if (DOMAINDECOMP(cr) && integrator[inputrec->eI].func == do_md && (cr->duty & DUTY_PP))
 	{
-        const int MAXSTEPS = 100;// This is mostly for optimization reasons
-        const int MAXMEM = 250000000; // This checks that we won't be using more than 250 megabytes for storing frames: mostly just for optimization
+        const int MAXSTEPS = 100;// The maximum number of steps being buffered
+        const int MAXMEM = 250000000; // This checks that we won't be using more than 250 megabytes for storing frames
         gmx_bool bIOnode;
 		cr->nionodes = min(min(MAXSTEPS, cr->dd->nnodes),
 				MAXMEM / (sizeof(real) * 3 * state->natoms));
@@ -818,12 +818,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 	}
     else
 #endif
-	{
-	    cr->nionodes = 1;
-	    if (MASTER(cr))
-	    {
-	    	cr->duty |= DUTY_IO;
-	    }
+    {
+        cr->nionodes = 1;
+        if (MASTER(cr))
+        {
+       	    cr->duty |= DUTY_IO;
+        }
     }
 
 

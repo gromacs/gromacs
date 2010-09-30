@@ -139,26 +139,26 @@ static int gmx_fio_int_flush(t_fileio* fio)
 #ifdef GMX_LIB_MPI
     if (fio->mpi_fh!=NULL)
     {
-    	/* For MPI nothing has been written to a file before the flush.
-    	 * The xdr write functions write to the fio->mem_buf. Here this is written to fio->mpi_fh*/
-    	xdrrec_endofrecord(fio->xdr, 1);
-    	fio->last_frame_size = fio->mem_buf_cur_pos;
+        /* For MPI nothing has been written to a file before the flush.
+         * The xdr write functions write to the fio->mem_buf. Here this is written to fio->mpi_fh*/
+        xdrrec_endofrecord(fio->xdr, 1);
+        fio->last_frame_size = fio->mem_buf_cur_pos;
         MPI_File_write_ordered(fio->mpi_fh,fio->mem_buf,fio->last_frame_size,MPI_BYTE,MPI_STATUS_IGNORE);
         fio->mem_buf_cur_pos = 0;
-    	MPI_File_sync(fio->mpi_fh);
+        MPI_File_sync(fio->mpi_fh);
     }
     else
 #endif
     {
 
-		if (fio->fp)
-		{
-			rc = fflush(fio->fp);
-		}
-		else if (fio->xdr)
-		{
-			rc = fflush((FILE *) fio->xdr->x_private);
-		}
+        if (fio->fp)
+        {
+            rc = fflush(fio->fp);
+        }
+        else if (fio->xdr)
+        {
+            rc = fflush((FILE *) fio->xdr->x_private);
+        }
     }
 
     return rc;
@@ -445,214 +445,15 @@ static void gmx_fio_stop_getting_next(t_fileio *fio)
 
 static int gmx_fio_write_to_membuf(char *handle, char *buf, int size) // writes data to mem_buf for xdr created by xdrrec_create. Used for MPI buffered writing.
 {
-	t_fileio *fio = (t_fileio*) handle;
-	if (fio->mem_buf_nalloc<fio->mem_buf_cur_pos+size) {
-		fio->mem_buf_nalloc = (fio->mem_buf_cur_pos+size)*1.10;
-		srenew(fio->mem_buf,fio->mem_buf_nalloc);
-	}
-	memcpy(fio->mem_buf+fio->mem_buf_cur_pos, buf+4, size-4);  //Remove 4-byte record-marker, see http://docs.sun.com/app/docs/doc/816-1435/6m7rrfn9i?l=en&a=view#rpcproto-14265
-	fio->mem_buf_cur_pos += size-4;
-	return size;
+    t_fileio *fio = (t_fileio*) handle;
+    if (fio->mem_buf_nalloc<fio->mem_buf_cur_pos+size) {
+        fio->mem_buf_nalloc = (fio->mem_buf_cur_pos+size)*1.10;
+        srenew(fio->mem_buf,fio->mem_buf_nalloc);
+    }
+    memcpy(fio->mem_buf+fio->mem_buf_cur_pos, buf+4, size-4);  //Remove 4-byte record-marker, see http://docs.sun.com/app/docs/doc/816-1435/6m7rrfn9i?l=en&a=view#rpcproto-14265
+    fio->mem_buf_cur_pos += size-4;
+    return size;
 }
-
-/*****************************************************************
- *
- *                     EXPORTED SECTION
- *
- *****************************************************************/
-
-
-t_fileio *gmx_fio_open(const char *fn, const char *mode)
-{
-   return mpi_fio_open(fn,mode,NULL);
-}
-
-/*opens serial file for cr==NULL*/
-t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr)
-{
-#define FIO_MASTER(cr) (cr==NULL || MASTER(cr)) // Only used in gmxfio.c if it is the master node.
-
-    t_fileio *fio = NULL;
-    int i;
-    char newmode[5];
-    gmx_bool bRead, bReadWrite;
-    int xdrid;
-
-#ifdef GMX_THREADS  /* MPI-IO not supported for threads. thus return NULL for all non-master threads.*/
-    if (!FIO_MASTER(cr))
-    {
-    	return NULL;
-    }
-#endif
-
-    if (fn2ftp(fn) == efTPA)
-    {
-        strcpy(newmode, mode);
-    }
-    else
-    {
-        /* sanitize the mode string */
-        if (strncmp(mode, "r+", 2) == 0)
-        {
-            strcpy(newmode, "r+");
-        }
-        else if (mode[0] == 'r')
-        {
-            strcpy(newmode, "r");
-        }
-        else if (strncmp(mode, "w+", 2) == 0)
-        {
-            strcpy(newmode, "w+");
-        }
-        else if (mode[0] == 'w')
-        {
-            strcpy(newmode, "w");
-        }
-        else if (strncmp(mode, "a+", 2) == 0)
-        {
-            strcpy(newmode, "a+");
-        }
-        else if (mode[0] == 'a')
-        {
-            strcpy(newmode, "a");
-        }
-        else
-        {
-            gmx_fatal(FARGS, "DEATH HORROR in gmx_fio_open, mode is '%s'",mode);
-        }
-    }
-
-    /* Check if it should be opened as a binary file */
-    if (strncmp(ftp2ftype(fn2ftp(fn)),"ASCII",5))
-    {
-        /* Not ascii, add b to file mode */
-        if ((strchr(newmode,'b')==NULL) && (strchr(newmode,'B')==NULL))
-        {
-            strcat(newmode,"b");
-        }
-    }
-
-    snew(fio, 1);
-#ifdef GMX_THREADS
-    tMPI_Lock_init(&(fio->mtx));
-#endif
-    bRead = (newmode[0]=='r' && newmode[1]!='+');
-    bReadWrite = (newmode[1]=='+');
-    fio->fp = NULL;
-    fio->xdr = NULL;
-    if (fn)
-    {
-        fio->iFTP = fn2ftp(fn);
-        fio->fn = strdup(fn);
-        fio->bStdio = FALSE;
-
-        /* If this file type is in the list of XDR files, open it like that */
-        if (in_ftpset(fio->iFTP,asize(ftpXDR),ftpXDR))
-        {
-            /* First check whether we have to make a backup,
-             * only for writing, not for read or append.
-             */
-            if (newmode[0]=='w')
-            {
-#ifndef GMX_FAHCORE
-                /* only make backups for normal gromacs */
-                if (FIO_MASTER(cr))
-                {
-                	make_backup(fn);
-                }
-#endif
-            }
-            else
-            {
-                /* Check whether file exists */
-                if (!gmx_fexist(fn) && FIO_MASTER(cr))
-                {
-                    gmx_open(fn);
-                }
-            }
-
-            /* determine the XDR direction */
-            if (newmode[0] == 'w' || newmode[0]=='a')
-            {
-                fio->xdrmode=XDR_ENCODE;
-            }
-            else
-            {
-                fio->xdrmode=XDR_DECODE;
-            }
-
-#ifdef GMX_LIB_MPI
-            if (cr!=NULL && DOMAINDECOMP(cr))
-            {
-            	int amode;
-            	if (strcmp(mode,"w+")==0) {
-            		amode = MPI_MODE_RDWR | MPI_MODE_CREATE;
-            	} else if (strcmp(mode,"a+")==0) {
-            		amode = MPI_MODE_RDWR | MPI_MODE_APPEND;
-            	} else if (strcmp(mode,"r")==0) {
-            		amode = MPI_MODE_RDONLY;
-            	} else {
-            		gmx_fatal(FARGS,"Unknown mode!");
-            	}
-            	snew(fio->xdr,1);
-            	xdrrec_create(fio->xdr,0,0,(char*)fio,NULL,&gmx_fio_write_to_membuf);
-
-            	MPI_Comm_dup(cr->mpi_comm_io, &(fio->fh_comm));
-            	if (IONODE(cr))
-            	{
-            		MPI_File_open(fio->fh_comm,(char*)fn,amode,MPI_INFO_NULL, &(fio->mpi_fh));
-            		//MPI_Comm_rank(fio->fh_comm, &(fio->rank));
-            		/*fio->nIOnodes = cr->dd->n_xtc_steps;*/
-            	}
-            }
-            else 
-#endif
-            {
-            	/* Open the file without MPI */
-            	if (FIO_MASTER(cr))
-            	{
-					fio->fp = ffopen(fn,newmode);
-					snew(fio->xdr,1);
-					xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
-            	}
-            }
-        }
-        else
-        {
-            /* If it is not, open it as a regular file */
-        	if (FIO_MASTER(cr))
-        	{
-        		fio->fp = ffopen(fn,newmode);
-        	}
-        }
-    }
-    else
-    {
-    	if (FIO_MASTER(cr))
-    	{
-	        /* Use stdin/stdout for I/O */
-		fio->iFTP   = efTPA;
-		fio->fp     = bRead ? stdin : stdout;
-		fio->fn     = strdup("STDIO");
-		fio->bStdio = TRUE;
-    	}
-    }
-    fio->bRead  = bRead;
-    fio->bReadWrite = bReadWrite;
-    fio->bDouble= (sizeof(real) == sizeof(double));
-    fio->bDebug = FALSE;
-    fio->bOpen  = TRUE;
-    fio->bLargerThan_off_t = FALSE;
-
-    /* set the reader/writer functions */
-    gmx_fio_set_iotype(fio);
-
-    /* and now insert this file into the list of open files. */
-   	gmx_fio_insert(fio);
-    return fio;
-}
-
-
 
 static int gmx_fio_close_locked(t_fileio *fio)
 {
@@ -672,14 +473,16 @@ static int gmx_fio_close_locked(t_fileio *fio)
 #ifdef GMX_LIB_MPI
     if (fio->mpi_fh != NULL)
     {
-    	MPI_File_close(&(fio->mpi_fh));
+        MPI_File_close(&(fio->mpi_fh));
     }
     else
 #endif
     {
-		/* Don't close stdin and stdout! */
-		if (!fio->bStdio && fio->fp!=NULL)
-			rc = ffclose(fio->fp); /* fclose returns 0 if happy */
+        /* Don't close stdin and stdout! */
+        if (!fio->bStdio && fio->fp!=NULL)
+        {
+            rc = ffclose(fio->fp); /* fclose returns 0 if happy */
+        }
     }
 
     fio->bOpen = FALSE;
@@ -687,100 +490,26 @@ static int gmx_fio_close_locked(t_fileio *fio)
     return rc;
 }
 
-int gmx_fio_close(t_fileio *fio)
-{
-    int rc = 0;
-
-#ifdef GMX_THREADS
-    /* first lock the big open_files mutex. */
-    /* We don't want two processes operating on the list at the same time */
-    tMPI_Thread_mutex_lock(&open_file_mutex);
-#endif
-
-    gmx_fio_lock(fio);
-    /* first remove it from the list */
-    gmx_fio_remove(fio);
-    rc=gmx_fio_close_locked(fio);
-    gmx_fio_unlock(fio);
-
-    sfree(fio);
-
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&open_file_mutex);
-#endif
-
-    return rc;
-}
-
-/* close only fp but keep FIO entry. */
-int gmx_fio_fp_close(t_fileio *fio)
-{
-    int rc=0;
-    gmx_fio_lock(fio);
-    if (!in_ftpset(fio->iFTP,asize(ftpXDR),ftpXDR) && !fio->bStdio)
-    {
-        rc = ffclose(fio->fp); /* fclose returns 0 if happy */
-        fio->fp = NULL; 
-    }
-    gmx_fio_unlock(fio);
-
-    return rc;
-}
-
-FILE * gmx_fio_fopen(const char *fn, const char *mode)
-{
-    FILE *fp, *ret;
-    t_fileio *fio;
-
-    fio = gmx_fio_open(fn, mode);
-    gmx_fio_lock(fio);
-    ret = fio->fp;
-    gmx_fio_unlock(fio);
-
-    return ret;
-}
-
-int gmx_fio_fclose(FILE *fp)
-{
-    t_fileio *cur;
-    t_fileio *found=NULL;
-    int rc=-1;
-
-    cur=gmx_fio_get_first();
-    while(cur)
-    {
-        if (cur->fp == fp)
-        {
-            rc=gmx_fio_close_locked(cur);
-            gmx_fio_remove(cur);
-            gmx_fio_stop_getting_next(cur);
-            break;
-        }
-        cur=gmx_fio_get_next(cur);
-    }
-
-    return rc;
-}
 
 // Assumes fio is locked, and reads the file and supports use of MPI
 static gmx_off_t gmx_fio_int_read(void *buf, size_t size, t_fileio* fio)
 {
-	gmx_off_t numread = 0;
+    gmx_off_t numread = 0;
 #ifdef GMX_LIB_MPI
-	if (fio->mpi_fh)
-	{
-		MPI_Status status;
-		int n;
-		MPI_File_read(fio->mpi_fh, buf, size, MPI_BYTE, &status);
-		MPI_Get_count(&status, MPI_BYTE, &n);
-		numread = n;
-	}
-	else
+    if (fio->mpi_fh)
+    {
+        MPI_Status status;
+        int n;
+        MPI_File_read(fio->mpi_fh, buf, size, MPI_BYTE, &status);
+        MPI_Get_count(&status, MPI_BYTE, &n);
+        numread = n;
+    }
+    else
 #endif
-	{
-		numread = fread(buf, 1, size, fio->fp);
-	}
-	return numread;
+    {
+        numread = fread(buf, 1, size, fio->fp);
+    }
+    return numread;
 }
 
 
@@ -792,63 +521,46 @@ static int gmx_fio_int_seek(t_fileio* fio, gmx_off_t fpos, int whence, gmx_bool 
 #ifdef GMX_LIB_MPI
     if (fio->mpi_fh!=NULL)
     {
-    	int mpi_whence;
-    	switch(whence) {
-    	case SEEK_SET: mpi_whence = MPI_SEEK_SET; break;
-    	case SEEK_END: mpi_whence = MPI_SEEK_END; break;
-    	case SEEK_CUR: mpi_whence = MPI_SEEK_CUR; break;
-    	default: gmx_fatal(FARGS, "Unknown whence in gmx_fio_int_seek");
-    	}
-    	if (bShared)   /*currently not used*/
-    	{
-    		MPI_Bcast(&fpos, sizeof(gmx_off_t), MPI_BYTE, 0, fio->fh_comm);
-    		MPI_File_seek_shared(fio->mpi_fh, (MPI_Offset)fpos, mpi_whence);
-    	}
-    	else
-    	{
-    		MPI_File_seek(fio->mpi_fh, (MPI_Offset)fpos, mpi_whence);
-    	}
+        int mpi_whence;
+        switch(whence) {
+        case SEEK_SET: mpi_whence = MPI_SEEK_SET; break;
+        case SEEK_END: mpi_whence = MPI_SEEK_END; break;
+        case SEEK_CUR: mpi_whence = MPI_SEEK_CUR; break;
+        default: gmx_fatal(FARGS, "Unknown whence in gmx_fio_int_seek");
+        }
+        if (bShared)   /*currently not used*/
+        {
+            MPI_Bcast(&fpos, sizeof(gmx_off_t), MPI_BYTE, 0, fio->fh_comm);
+            MPI_File_seek_shared(fio->mpi_fh, (MPI_Offset)fpos, mpi_whence);
+        }
+        else
+        {
+            MPI_File_seek(fio->mpi_fh, (MPI_Offset)fpos, mpi_whence);
+        }
     }
     else
 #endif
     {
-		if (fio->fp)
-		{
+        if (fio->fp)
+        {
                         rc = gmx_fseek(fio->fp, fpos, whence);
-		}
-		else
-		{
-			gmx_file(fio->fn);
-			rc = -1;
-		}
+        }
+        else
+        {
+            gmx_file(fio->fn);
+            rc = -1;
+        }
     }
     return rc;
 }
 
-int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos, int whence)
-{
-	int rc;
-    gmx_fio_lock(fio);
-    rc = gmx_fio_int_seek(fio, fpos, whence, FALSE);
-    gmx_fio_unlock(fio);
-    return rc;
-}
-
-int gmx_fio_seek_shared(t_fileio* fio, gmx_off_t fpos, int whence)
-{
-	int rc;
-    gmx_fio_lock(fio);
-    rc = gmx_fio_int_seek(fio, fpos, whence, TRUE);
-    gmx_fio_unlock(fio);
-    return rc;
-}
 
 /* internal variant of get_file_md5 that operates on a locked file */
-static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset, 
+static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
                                     unsigned char digest[])
 {
     /*1MB: large size important to catch almost identical files */
-#define CPT_CHK_LEN  1048576 
+#define CPT_CHK_LEN  1048576
     md5_state_t state;
     unsigned char buf[CPT_CHK_LEN];
     gmx_off_t read_len;
@@ -932,6 +644,370 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
     }
 }
 
+static gmx_off_t gmx_fio_int_ftell(t_fileio* fio, gmx_bool bShared)
+{
+    gmx_off_t ret = 0;
+
+#ifdef GMX_LIB_MPI
+    if (fio->mpi_fh!=NULL)
+    {
+        MPI_Offset cur_offset;
+        if (bShared)
+        {
+            MPI_File_get_position_shared(fio->mpi_fh, &cur_offset); // takes the file handle and puts an int into cur_offset
+        }
+        else
+        {
+            MPI_File_get_position(fio->mpi_fh, &cur_offset); // takes the file handle and puts an int into cur_offset
+        }
+
+        ret = (gmx_off_t) cur_offset; //gmx_off_t is a gmx_large_int_t and cur_offset is an int of type MPI_Offset // NOTE: This will break exactly how it does below for 128 bit!
+    }
+    else
+#endif
+    {
+        if (fio->fp)
+            ret = gmx_ftell(fio->fp);
+    }
+    return ret;
+}
+
+static int gmx_fio_int_fsync(t_fileio *fio)
+{
+    int rc = 0;
+    int filen=-1;
+
+
+    if (fio->fp)
+    {
+        rc=gmx_fsync(fio->fp);
+    }
+    else if (fio->xdr) /* this should normally not happen */
+    {
+        /*don't sync for mpi files. the flush makes sure that it is written. No extra sync available*/
+#ifdef GMX_LIB_MPI
+        if (fio->mpi_fh == NULL)
+#endif
+        {
+            rc=gmx_fsync((FILE*) fio->xdr->x_private);
+                                   /* ^ is this actually OK? */
+        }
+    }
+
+    return rc;
+}
+
+/* The fio_mutex should ALWAYS be locked when this function is called
+ * Makes only for non-trajectory formats sure that the file has been written (flushes it)
+ * Returns the position before the last frame for buffered writing */
+static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
+{
+    char buf[STRLEN];
+
+    /* Flush the file, so we are sure it is written */
+    /* write_xtc and fwrite_trn flush their file - thus it is already guaranteed to be flushed,
+     * with MPI-IO we can't flush here because this method is not called by all*/
+    if (fio->iFTP != efXTC && fio->iFTP != efTRR && fio->iFTP != efTRJ &&
+            fio->iFTP != efCPT)
+    {
+        if (gmx_fio_int_flush(fio))
+        {
+            char buf[STRLEN];
+            sprintf(
+                buf,
+                "Cannot write file '%s'; maybe you are out of disk space or quota?",
+                fio->fn);
+            gmx_file(buf);
+        }
+    }
+    /* We cannot count on XDR being able to write 64-bit integers,
+     so separate into high/low 32-bit values.
+     In case the filesystem has 128-bit offsets we only care
+     about the first 64 bits - we'll have to fix
+     this when exabyte-size output files are common...
+    */
+    *offset=gmx_fio_int_ftell(fio, TRUE);
+
+    /* for buffered writing we need to subtract the last written frame. Because we call write_checkpoint after we write all buffered frames.
+     * See write_traj for detailed comments. If buffered writing is not used last_frame_size is zero and this has no affect.
+     */
+    *offset-=fio->last_frame_size;
+
+    return 0;
+}
+
+/*****************************************************************
+ *
+ *                     EXPORTED SECTION
+ *
+ *****************************************************************/
+
+
+t_fileio *gmx_fio_open(const char *fn, const char *mode)
+{
+   return mpi_fio_open(fn,mode,NULL);
+}
+
+/*opens serial file for cr==NULL*/
+t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr)
+{
+#define FIO_MASTER(cr) (cr==NULL || MASTER(cr)) // Only used in gmxfio.c if it is the master node.
+
+    t_fileio *fio = NULL;
+    int i;
+    char newmode[5];
+    gmx_bool bRead, bReadWrite;
+    int xdrid;
+
+#ifdef GMX_THREADS  /* MPI-IO not supported for threads. thus return NULL for all non-master threads.*/
+    if (!FIO_MASTER(cr))
+    {
+        return NULL;
+    }
+#endif
+
+    if (fn2ftp(fn) == efTPA)
+    {
+        strcpy(newmode, mode);
+    }
+    else
+    {
+        /* sanitize the mode string */
+        if (strncmp(mode, "r+", 2) == 0)
+        {
+            strcpy(newmode, "r+");
+        }
+        else if (mode[0] == 'r')
+        {
+            strcpy(newmode, "r");
+        }
+        else if (strncmp(mode, "w+", 2) == 0)
+        {
+            strcpy(newmode, "w+");
+        }
+        else if (mode[0] == 'w')
+        {
+            strcpy(newmode, "w");
+        }
+        else if (strncmp(mode, "a+", 2) == 0)
+        {
+            strcpy(newmode, "a+");
+        }
+        else if (mode[0] == 'a')
+        {
+            strcpy(newmode, "a");
+        }
+        else
+        {
+            gmx_fatal(FARGS, "DEATH HORROR in gmx_fio_open, mode is '%s'",mode);
+        }
+    }
+
+    /* Check if it should be opened as a binary file */
+    if (strncmp(ftp2ftype(fn2ftp(fn)),"ASCII",5))
+    {
+        /* Not ascii, add b to file mode */
+        if ((strchr(newmode,'b')==NULL) && (strchr(newmode,'B')==NULL))
+        {
+            strcat(newmode,"b");
+        }
+    }
+
+    snew(fio, 1);
+#ifdef GMX_THREADS
+    tMPI_Lock_init(&(fio->mtx));
+#endif
+    bRead = (newmode[0]=='r' && newmode[1]!='+');
+    bReadWrite = (newmode[1]=='+');
+    fio->fp = NULL;
+    fio->xdr = NULL;
+    if (fn)
+    {
+        fio->iFTP = fn2ftp(fn);
+        fio->fn = strdup(fn);
+        fio->bStdio = FALSE;
+
+        /* If this file type is in the list of XDR files, open it like that */
+        if (in_ftpset(fio->iFTP,asize(ftpXDR),ftpXDR))
+        {
+            /* First check whether we have to make a backup,
+             * only for writing, not for read or append.
+             */
+            if (newmode[0]=='w')
+            {
+#ifndef GMX_FAHCORE
+                /* only make backups for normal gromacs */
+                if (FIO_MASTER(cr))
+                {
+                    make_backup(fn);
+                }
+#endif
+            }
+            else
+            {
+                /* Check whether file exists */
+                if (!gmx_fexist(fn) && FIO_MASTER(cr))
+                {
+                    gmx_open(fn);
+                }
+            }
+
+            /* determine the XDR direction */
+            if (newmode[0] == 'w' || newmode[0]=='a')
+            {
+                fio->xdrmode=XDR_ENCODE;
+            }
+            else
+            {
+                fio->xdrmode=XDR_DECODE;
+            }
+
+#ifdef GMX_LIB_MPI
+            if (cr!=NULL && DOMAINDECOMP(cr))
+            {
+                int amode;
+                if (strcmp(mode,"w+")==0) {
+                    amode = MPI_MODE_RDWR | MPI_MODE_CREATE;
+                } else if (strcmp(mode,"a+")==0) {
+                    amode = MPI_MODE_RDWR | MPI_MODE_APPEND;
+                } else if (strcmp(mode,"r")==0) {
+                    amode = MPI_MODE_RDONLY;
+                } else {
+                    gmx_fatal(FARGS,"Unknown mode!");
+                }
+                snew(fio->xdr,1);
+                xdrrec_create(fio->xdr,0,0,(char*)fio,NULL,&gmx_fio_write_to_membuf);
+
+                MPI_Comm_dup(cr->mpi_comm_io, &(fio->fh_comm));
+                if (IONODE(cr))
+                {
+                    MPI_File_open(fio->fh_comm,(char*)fn,amode,MPI_INFO_NULL, &(fio->mpi_fh));
+                }
+            }
+            else 
+#endif
+            {
+                /* Open the file without MPI */
+                if (FIO_MASTER(cr))
+                {
+                    fio->fp = ffopen(fn,newmode);
+                    snew(fio->xdr,1);
+                    xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
+                }
+            }
+        }
+        else
+        {
+            /* If it is not, open it as a regular file */
+            if (FIO_MASTER(cr))
+            {
+                fio->fp = ffopen(fn,newmode);
+            }
+        }
+    }
+    else
+    {
+        if (FIO_MASTER(cr))
+        {
+            /* Use stdin/stdout for I/O */
+            fio->iFTP   = efTPA;
+            fio->fp     = bRead ? stdin : stdout;
+            fio->fn     = strdup("STDIO");
+            fio->bStdio = TRUE;
+        }
+    }
+    fio->bRead  = bRead;
+    fio->bReadWrite = bReadWrite;
+    fio->bDouble= (sizeof(real) == sizeof(double));
+    fio->bDebug = FALSE;
+    fio->bOpen  = TRUE;
+    fio->bLargerThan_off_t = FALSE;
+
+    /* set the reader/writer functions */
+    gmx_fio_set_iotype(fio);
+
+    /* and now insert this file into the list of open files. */
+    gmx_fio_insert(fio);
+    return fio;
+}
+
+
+int gmx_fio_close(t_fileio *fio)
+{
+    int rc = 0;
+
+#ifdef GMX_THREADS
+    /* first lock the big open_files mutex. */
+    /* We don't want two processes operating on the list at the same time */
+    tMPI_Thread_mutex_lock(&open_file_mutex);
+#endif
+
+    gmx_fio_lock(fio);
+    /* first remove it from the list */
+    gmx_fio_remove(fio);
+    rc=gmx_fio_close_locked(fio);
+    gmx_fio_unlock(fio);
+
+    sfree(fio);
+
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&open_file_mutex);
+#endif
+
+    return rc;
+}
+
+/* close only fp but keep FIO entry. */
+int gmx_fio_fp_close(t_fileio *fio)
+{
+    int rc=0;
+    gmx_fio_lock(fio);
+    if (!in_ftpset(fio->iFTP,asize(ftpXDR),ftpXDR) && !fio->bStdio)
+    {
+        rc = ffclose(fio->fp); /* fclose returns 0 if happy */
+        fio->fp = NULL; 
+    }
+    gmx_fio_unlock(fio);
+
+    return rc;
+}
+
+FILE * gmx_fio_fopen(const char *fn, const char *mode)
+{
+    FILE *fp, *ret;
+    t_fileio *fio;
+
+    fio = gmx_fio_open(fn, mode);
+    gmx_fio_lock(fio);
+    ret = fio->fp;
+    gmx_fio_unlock(fio);
+
+    return ret;
+}
+
+int gmx_fio_fclose(FILE *fp)
+{
+    t_fileio *cur;
+    t_fileio *found=NULL;
+    int rc=-1;
+
+    cur=gmx_fio_get_first();
+    while(cur)
+    {
+        if (cur->fp == fp)
+        {
+            rc=gmx_fio_close_locked(cur);
+            gmx_fio_remove(cur);
+            gmx_fio_stop_getting_next(cur);
+            break;
+        }
+        cur=gmx_fio_get_next(cur);
+    }
+
+    return rc;
+}
+
+
 
 /*
  * fio: file to compute md5 for
@@ -976,7 +1052,72 @@ int gmx_fio_check_file_position(t_fileio *fio)
     return 0;
 }
 
+int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
+                                      int *p_nfiles)
+{
+    int i, nfiles, rc, nalloc;
+    int pos_hi, pos_lo;
+    long pos;
+    gmx_file_position_t * outputfiles;
+    char buf[STRLEN];
+    t_fileio *cur;
 
+    nfiles = 0;
+
+    /* pre-allocate 100 files */
+    nalloc = 100;
+    snew(outputfiles,nalloc);
+
+    cur=gmx_fio_get_first();  /*returns locked fio! */
+    while(cur)
+    {
+        /* Skip the checkpoint files themselves, since they could be open when
+           we call this routine... */
+        /* also skip debug files (shoud be the only iFTP==efNR) */
+        if (cur->bOpen &&
+            !cur->bRead &&
+            !cur->bStdio &&
+            cur->iFTP != efCPT &&
+            cur->iFTP != efNR)
+        {
+            int ret;
+            /* This is an output file currently open for writing, add it */
+            if (nfiles == nalloc)
+            {
+                nalloc += 100;
+                srenew(outputfiles,nalloc);
+            }
+
+            strncpy(outputfiles[nfiles].filename, cur->fn, STRLEN - 1);
+
+            /* Get the file position */
+            if (cur->bLargerThan_off_t)
+            {
+                /* -1 signals out of range */
+                outputfiles[nfiles].offset = -1;
+                outputfiles[nfiles].chksum_size = -1;
+            }
+            else
+            {
+                gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
+#ifndef GMX_FAHCORE
+                outputfiles[nfiles].chksum_size
+                    = gmx_fio_int_get_file_md5(cur,
+                                               outputfiles[nfiles].offset,
+                                               outputfiles[nfiles].chksum);
+#endif
+            }
+
+            nfiles++;
+        }
+
+        cur=gmx_fio_get_next(cur);
+    }
+    *p_nfiles = nfiles;
+    *p_outputfiles = outputfiles;
+
+    return 0;
+}
 
 
 void gmx_fio_checktype(t_fileio *fio)
@@ -1081,31 +1222,6 @@ int gmx_fio_flush(t_fileio* fio)
 
 
 
-static int gmx_fio_int_fsync(t_fileio *fio)
-{
-    int rc = 0;
-    int filen=-1;
-
-
-    if (fio->fp)
-    {
-        rc=gmx_fsync(fio->fp);
-    }
-    else if (fio->xdr) /* this should normally not happen */
-    {
-    	/*don't sync for mpi files. the flush makes sure that it is written. No extra sync available*/
-#ifdef GMX_LIB_MPI
-    	if (fio->mpi_fh == NULL)
-#endif
-    	{
-            rc=gmx_fsync((FILE*) fio->xdr->x_private);
-                                   /* ^ is this actually OK? */
-    	}
-    }
-
-    return rc;
-}
-
 
 int gmx_fio_fsync(t_fileio *fio)
 {
@@ -1159,34 +1275,6 @@ t_fileio *gmx_fio_all_output_fsync(void)
 }
 
 
-static gmx_off_t gmx_fio_int_ftell(t_fileio* fio, gmx_bool bShared)
-{
-	gmx_off_t ret = 0;
-
-#ifdef GMX_LIB_MPI
-    if (fio->mpi_fh!=NULL)
-    {
-    	MPI_Offset cur_offset;
-    	if (bShared)
-    	{
-    		MPI_File_get_position_shared(fio->mpi_fh, &cur_offset); // takes the file handle and puts an int into cur_offset
-    	}
-    	else
-    	{
-    		MPI_File_get_position(fio->mpi_fh, &cur_offset); // takes the file handle and puts an int into cur_offset
-    	}
-
-		ret = (gmx_off_t) cur_offset; //gmx_off_t is a gmx_large_int_t and cur_offset is an int of type MPI_Offset // NOTE: This will break exactly how it does below for 128 bit!
-    }
-    else
-#endif
-    {
-        if (fio->fp)
-            ret = gmx_ftell(fio->fp);
-    }
-    return ret;
-}
-
 gmx_off_t gmx_fio_ftell(t_fileio* fio)
 {
 
@@ -1209,110 +1297,22 @@ gmx_off_t gmx_fio_ftell_shared(t_fileio* fio)
     return ret;
 }
 
-/* The fio_mutex should ALWAYS be locked when this function is called
- * Makes only for non-trajectory formats sure that the file has been written (flushes it)
- * Returns the position before the last frame for buffered writing */
-static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
+int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos, int whence)
 {
-    char buf[STRLEN];
-
-	/* Flush the file, so we are sure it is written */
-    /* write_xtc and fwrite_trn flush their file - thus it is already guaranteed to be flushed,
-     * with MPI-IO we can't flush here because this method is not called by all*/
-	if (fio->iFTP != efXTC && fio->iFTP != efTRR && fio->iFTP != efTRJ &&
-			fio->iFTP != efCPT)
-	{
-		if (gmx_fio_int_flush(fio))
-		{
-			char buf[STRLEN];
-			sprintf(
-				buf,
-				"Cannot write file '%s'; maybe you are out of disk space or quota?",
-				fio->fn);
-			gmx_file(buf);
-		}
-	}
-	/* We cannot count on XDR being able to write 64-bit integers,
-	 so separate into high/low 32-bit values.
-	 In case the filesystem has 128-bit offsets we only care
-	 about the first 64 bits - we'll have to fix
-	 this when exabyte-size output files are common...
-	*/
-	*offset=gmx_fio_int_ftell(fio, TRUE);
-
-	/* for buffered writing we need to subtract the last written frame. Because we call write_checkpoint after we write all buffered frames.
-	 * See write_traj for detailed comments. If buffered writing is not used last_frame_size is zero and this has no affect.
-	 */
-	*offset-=fio->last_frame_size;
-
-    return 0;
+    int rc;
+    gmx_fio_lock(fio);
+    rc = gmx_fio_int_seek(fio, fpos, whence, FALSE);
+    gmx_fio_unlock(fio);
+    return rc;
 }
 
-int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
-                                      int *p_nfiles)
+int gmx_fio_seek_shared(t_fileio* fio, gmx_off_t fpos, int whence)
 {
-    int i, nfiles, rc, nalloc;
-    int pos_hi, pos_lo;
-    long pos;
-    gmx_file_position_t * outputfiles;
-    char buf[STRLEN];
-    t_fileio *cur;
-
-    nfiles = 0;
-
-    /* pre-allocate 100 files */
-    nalloc = 100;
-    snew(outputfiles,nalloc);
-
-    cur=gmx_fio_get_first();  /*returns locked fio! */
-    while(cur)
-    {
-        /* Skip the checkpoint files themselves, since they could be open when
-           we call this routine... */
-        /* also skip debug files (shoud be the only iFTP==efNR) */
-        if (cur->bOpen &&
-            !cur->bRead &&
-            !cur->bStdio &&
-            cur->iFTP != efCPT &&
-            cur->iFTP != efNR)
-        {
-            int ret;
-            /* This is an output file currently open for writing, add it */
-            if (nfiles == nalloc)
-            {
-                nalloc += 100;
-                srenew(outputfiles,nalloc);
-            }
-
-            strncpy(outputfiles[nfiles].filename, cur->fn, STRLEN - 1);
-
-            /* Get the file position */
-            if (cur->bLargerThan_off_t)
-            {
-                /* -1 signals out of range */
-                outputfiles[nfiles].offset = -1;
-                outputfiles[nfiles].chksum_size = -1;
-            }
-            else
-            {
-                gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
-#ifndef GMX_FAHCORE
-                outputfiles[nfiles].chksum_size
-                    = gmx_fio_int_get_file_md5(cur,
-                                               outputfiles[nfiles].offset,
-                                               outputfiles[nfiles].chksum);
-#endif
-            }
-
-            nfiles++;
-        }
-
-        cur=gmx_fio_get_next(cur);
-    }
-    *p_nfiles = nfiles;
-    *p_outputfiles = outputfiles;
-
-    return 0;
+    int rc;
+    gmx_fio_lock(fio);
+    rc = gmx_fio_int_seek(fio, fpos, whence, TRUE);
+    gmx_fio_unlock(fio);
+    return rc;
 }
 
 

@@ -551,11 +551,13 @@ static int copy_state_local(t_state *new_sl,t_state *old_sl)
 	int *cg_gl_new = new_sl->cg_gl;
 	rvec *x_new = new_sl->x;
 
-	memcpy (new_sl,old_sl,sizeof(t_state));
+	memcpy(new_sl,old_sl,sizeof(t_state));
 	new_sl->cg_gl = cg_gl_new;
 	new_sl->x = x_new;
-	memcpy (new_sl->cg_gl, old_sl->cg_gl, sizeof(int) * old_sl->cg_gl_nalloc);
-	memcpy (new_sl->x, old_sl->x, sizeof(rvec) * old_sl->natoms);
+        srenew(new_sl->cg_gl,old_sl->cg_gl_nalloc);
+        srenew(new_sl->x,old_sl->nalloc);
+	memcpy(new_sl->cg_gl, old_sl->cg_gl, sizeof(int) * old_sl->cg_gl_nalloc);
+	memcpy(new_sl->x, old_sl->x, sizeof(rvec) * old_sl->natoms);
 	return 0;
 }
 
@@ -610,6 +612,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
         }
         else
         {
+            //Collect X if writing X. Also Collect if writing XTC and not buffering
             if ((mdof_flags & MDOF_X) || ((mdof_flags & MDOF_XTC) && !bBuffer))
             {
                 dd_collect_vec(cr->dd,state_local,state_local->x,
@@ -629,29 +632,27 @@ void write_traj(FILE *fplog,t_commrec *cr,
         if ((mdof_flags & MDOF_XTC) && bBuffer)
         { 
             //This block of code copies the current dd and state_local to buffers to prepare for writing later.
+            //The last frame being buffered (then writeXTCNow is TRUE) is always collected on the MASTER
 	    if ((writeXTCNow && MASTER(cr)) || (!writeXTCNow && bufferStep == cr->dd->iorank))
 	    {
 	        write_buf->step=step;
 		write_buf->t=t;
 	    }
-	    srenew(write_buf->state_local[bufferStep]->cg_gl,state_local->cg_gl_nalloc);
-	    srenew(write_buf->state_local[bufferStep]->x,state_local->nalloc);
 	    copy_dd(write_buf->dd[bufferStep],cr->dd);
 	    copy_state_local(write_buf->state_local[bufferStep],state_local);
 
 
 	    if (writeXTCNow)
 	    {
-	        for (i = 0; i <= bufferStep; i++)//This loop changes which node is the master node temporarily so that it can then write
-						 // the frames to different nodes.
+	        for (i = 0; i <= bufferStep; i++)//Collect each buffered frame to one of the IO nodes. The data is collected to the node with rank write_buf->dd[i]->masterrank.
 		{
 		    if (i==bufferStep)
 		    {
-		        write_buf->dd[i]->masterrank = cr->dd->masterrank;
+		        write_buf->dd[i]->masterrank = cr->dd->masterrank;  //the last frame is always written to the MASTER
 		    }
 		    else
 		    {
-		        write_buf->dd[i]->masterrank = cr->nionodes-1 - i;  // For the purpose of making checkpoints work correctly: we write the frames in reverse order
+		        write_buf->dd[i]->masterrank = cr->nionodes-1 - i;  
 			if (write_buf->dd[i]->masterrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
 			{
 			    write_buf->dd[i]->masterrank--;
@@ -719,7 +720,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             }
             if (mdof_flags & MDOF_F) MX(f_global);
          }
-     }
+     }     
 
     /* The order of write_checkpoint and write_xtc/fwrite_trn is crucial, because the position of the trajectories is stored in the checkpoint.
      * The checkpoint is written before the current step because the current step is written to the trajectory when appending from the checkpoint
@@ -806,6 +807,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 						  of->simulation_part,step,t,state_global);
 		}
      }
+
      if (MASTER(cr))
      {
 
@@ -823,5 +825,6 @@ void write_traj(FILE *fplog,t_commrec *cr,
             gmx_fio_check_file_position(of->fp_trn);
         }
      }
+
 }
 

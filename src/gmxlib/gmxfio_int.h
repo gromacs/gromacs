@@ -77,11 +77,8 @@ struct t_fileio
 #ifdef GMX_LIB_MPI
     MPI_File mpi_fh;  /* the mpi file handle (used instead of fp for MPI IO) */
     MPI_Comm fh_comm; /* the communicator used for this file */
-    /*int rank;//rank of node   MPI_Comm_rank(comm,&rank);*/
-    /*int nIOnodes;// Number of IO nodes*/
-
 #endif
-    char *mem_buf; // Used for MPI writing of xtc buffered by gmx_writeit
+    char *mem_buf; // Used for MPI writing. Date writen to xdr is written (by gmx_fio_write_to_membuf) to here
     int mem_buf_cur_pos, /*current writing position in mem_buf. Equal to the amount written so far for current frame*/
          mem_buf_nalloc, /*allocation size of mem_buf. Is being over-allocated to reduce number of required srenew*/
          last_frame_size; /*size of the last written frame. Currently only set when using buffered writing*/

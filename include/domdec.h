@@ -109,10 +109,11 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 
 void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
-int copy_dd(gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd);// Copies orig_dd into copy_dd which is needed for buffering
+int copy_dd(gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd);// Copies dd which is needed for buffered writing. Partly deep, partly shallow copy.
 
-int initialize_dd_buf(gmx_domdec_t ***dd_buf, t_commrec *cr);// Initializes the buffer for storing several gmx_domdec_t's.
-                                                             // The size of how many will be stored is in runner.c
+int allocate_dd_buf(gmx_domdec_t ***dd_buf, t_commrec *cr);// Allocates dd and substructures/subarrays for storing several gmx_domdec_t's.
+                                                           // Only Substructes being deep copied by copy_dd are allocated
+                                                           // The number of dds allocated is cr->nionodes
 
 void dd_collect_vec(gmx_domdec_t *dd,
                            t_state *state_local,rvec *lv,rvec *v);

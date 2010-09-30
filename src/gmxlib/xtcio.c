@@ -46,8 +46,6 @@
 #include "futil.h"
 #include "gmx_fatal.h"
 
-#include <domdec.h>
-
 #define XTC_MAGIC 1995
 
 

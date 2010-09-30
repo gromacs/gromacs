@@ -5284,8 +5284,8 @@ static void make_load_communicators(gmx_domdec_t *dd)
       loc[dim0] = i;
       dim1 = dd->dim[1];
       for(j=0; j<dd->nc[dim1]; j++) {
-	  loc[dim1] = j;
-	  make_load_communicator(dd,g_all,2,loc);
+          loc[dim1] = j;
+          make_load_communicator(dd,g_all,2,loc);
       }
     }
   }
@@ -5328,7 +5328,7 @@ void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd)
     if (DDMASTER(dd))
     {
         fprintf(stderr,"Making %dD domain decomposition %d x %d x %d\n",
-	    dd->ndim,dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
+                dd->ndim,dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
     }
     if (fplog)
     {
@@ -5647,66 +5647,60 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
 
 
 
-int initialize_dd_buf(gmx_domdec_t ***dd_buf, t_commrec *cr) // prepares dd_buf
+int allocate_dd_buf(gmx_domdec_t ***dd_buf, t_commrec *cr) // prepares dd_buf
 {
-	int i;
+    int i;
 
-	gmx_domdec_t *dd = cr->dd;
-	snew(*dd_buf, cr->nionodes);
-	for (i=0;i<cr->nionodes;i++) {
-		snew((*dd_buf)[i],1);
-		snew((*dd_buf)[i]->index_gl, dd->cg_nalloc);
-		snew((*dd_buf)[i]->comm, 1);
+    gmx_domdec_t *dd = cr->dd;
+    snew(*dd_buf, cr->nionodes);
+    for (i=0;i<cr->nionodes;i++) {
+        snew((*dd_buf)[i],1);
+        snew((*dd_buf)[i]->index_gl, dd->cg_nalloc);
+        snew((*dd_buf)[i]->comm, 1);
 
-		if (MASTER(cr)) {
-			(*dd_buf)[i]->ma = dd->ma;  /*the master already has the ma structure allocated*/
-		} else if (dd->iorank == i ) { // This is preparing certain nodes for holding several frames.
-			(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
-		}
-	}
-	return 1;
+        if (MASTER(cr)) {
+            (*dd_buf)[i]->ma = dd->ma;  /*the master already has the ma structure allocated*/
+        } else if (dd->iorank == i ) { // This is preparing certain nodes for holding several frames.
+            (*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
+        }
+    }
+    return 0;
 }
-
-static int copy_t_block (t_block *copy_gl, t_block *orig_gl)
-{
-	srenew (copy_gl->index, orig_gl->nalloc_index);
-
-	memcpy (copy_gl->index, orig_gl->index, sizeof(int) * (orig_gl->nr+1));
-
-
-	return 1;
-}
-
 
 int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd) // Copies orig_dd into copy_dd
 {
 
-	int j;
-	int *index_gl_new;
-	gmx_domdec_comm_p_t comm_new;
-	gmx_domdec_master_p_t ma_new;
-	int*	 cgs_gl_new_index;
+    int j;
+    int *index_gl_new;
+    gmx_domdec_comm_p_t comm_new;
+    gmx_domdec_master_p_t ma_new;
+    int*	 cgs_gl_new_index;
 
-	srenew (copy_dd->index_gl,orig_dd->cg_nalloc);
-
-
-	// I'm Rescuing the values that would be lost in the memcpy
-	index_gl_new = copy_dd->index_gl;
-	comm_new = copy_dd->comm;
-	ma_new = copy_dd->ma;
-	memcpy (copy_dd,orig_dd, sizeof(gmx_domdec_t));
-	copy_dd->index_gl = index_gl_new;
-	copy_dd->comm = comm_new;
-	copy_dd->ma = ma_new;
+    srenew (copy_dd->index_gl,orig_dd->cg_nalloc);
 
 
-	// I'm Rescuing the values that would be lost in the memcpy
-	memcpy (copy_dd->index_gl,orig_dd->index_gl, sizeof(int) * orig_dd->ncg_home);
-	cgs_gl_new_index = copy_dd->comm->cgs_gl.index;
-	memcpy (copy_dd->comm,orig_dd->comm, sizeof(gmx_domdec_comm_t));
-	copy_dd->comm->cgs_gl.index = cgs_gl_new_index;
-	copy_t_block (&copy_dd->comm->cgs_gl, &orig_dd->comm->cgs_gl);
-	return 0;
+    // Rescuing the pointer of the deep copied substructes that would be lost in the memcpy
+    index_gl_new = copy_dd->index_gl;
+    comm_new = copy_dd->comm;
+    ma_new = copy_dd->ma;
+    memcpy (copy_dd,orig_dd, sizeof(gmx_domdec_t)); //copy dd
+    copy_dd->index_gl = index_gl_new;
+    copy_dd->comm = comm_new;
+    copy_dd->ma = ma_new;
+
+    memcpy (copy_dd->index_gl,orig_dd->index_gl, sizeof(int) * orig_dd->ncg_home);  //copy dd->index_gl
+    //ma doesn't need to be copies. Is only used as receive buffer
+
+
+    //copy dd->comm
+    cgs_gl_new_index = copy_dd->comm->cgs_gl.index;
+    memcpy (copy_dd->comm,orig_dd->comm, sizeof(gmx_domdec_comm_t));  //copy dd->comm
+    copy_dd->comm->cgs_gl.index = cgs_gl_new_index;
+    //copy dd->comm->cgs_gl.index
+    srenew (copy_dd->comm->cgs_gl.index, orig_dd->comm->cgs_gl.nalloc_index);
+    memcpy (copy_dd->comm->cgs_gl.index, orig_dd->comm->cgs_gl.index,
+            sizeof(int) * (orig_dd->comm->cgs_gl.nr+1));
+    return 0;
 }
 
 
@@ -5721,10 +5715,10 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
 #ifdef GMX_MPI
     MPI_Comm comm_cart;
 #endif
-    
+
     dd = cr->dd;
     comm = dd->comm;
-    
+
     if (comm->bCartesianPP)
     {
         for(i=1; i<DIM; i++)
@@ -5742,8 +5736,8 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
              * But for the PME communication the opposite might be better.
              */
             if (bDiv[ZZ] && (comm->npmenodes_y > 1 ||
-                             !bDiv[YY] ||
-                             dd->nc[YY] > dd->nc[ZZ]))
+                    !bDiv[YY] ||
+                    dd->nc[YY] > dd->nc[ZZ]))
             {
                 comm->cartpmedim = ZZ;
             }
@@ -5752,7 +5746,7 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
                 comm->cartpmedim = YY;
             }
             comm->ntot[comm->cartpmedim]
-                += (cr->npmenodes*dd->nc[comm->cartpmedim])/dd->nnodes;
+                       += (cr->npmenodes*dd->nc[comm->cartpmedim])/dd->nnodes;
         }
         else if (fplog)
         {
@@ -5761,7 +5755,7 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
                     "Will not use a Cartesian communicator for PP <-> PME\n\n");
         }
     }
-    
+
 #ifdef GMX_MPI
     if (comm->bCartesianPP_PME)
     {
@@ -5769,14 +5763,14 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
         {
             fprintf(fplog,"Will use a Cartesian communicator for PP <-> PME: %d x %d x %d\n",comm->ntot[XX],comm->ntot[YY],comm->ntot[ZZ]);
         }
-        
+
         for(i=0; i<DIM; i++)
         {
             periods[i] = TRUE;
         }
         MPI_Cart_create(cr->mpi_comm_mysim,DIM,comm->ntot,periods,reorder,
-                        &comm_cart);
-        
+                &comm_cart);
+
         MPI_Comm_rank(comm_cart,&rank);
         if (MASTERNODE(cr) && rank != 0)
         {
@@ -5787,30 +5781,30 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
          */
         cr->mpi_comm_mysim = comm_cart;
         cr->sim_nodeid = rank;
-        
+
         MPI_Cart_coords(cr->mpi_comm_mysim,cr->sim_nodeid,DIM,dd->ci);
-        
+
         if (fplog)
         {
             fprintf(fplog,"Cartesian nodeid %d, coordinates %d %d %d\n\n",
                     cr->sim_nodeid,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
         }
-        
+
         if (dd->ci[comm->cartpmedim] < dd->nc[comm->cartpmedim])
         {
             cr->duty |= DUTY_PP;
         }
         if (cr->npmenodes == 0 ||
-            dd->ci[comm->cartpmedim] >= dd->nc[comm->cartpmedim])
+                dd->ci[comm->cartpmedim] >= dd->nc[comm->cartpmedim])
         {
             cr->duty = DUTY_PME;
         }
-        
+
         /* Split the sim communicator into PP and PME only nodes */
         MPI_Comm_split(cr->mpi_comm_mysim,
-                       cr->duty,
-                       dd_index(comm->ntot,dd->ci),
-                       &cr->mpi_comm_mygroup);
+                cr->duty,
+                dd_index(comm->ntot,dd->ci),
+                &cr->mpi_comm_mygroup);
     }
     else
     {
@@ -5839,7 +5833,7 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
         default:
             gmx_fatal(FARGS,"Unknown dd_node_order=%d",dd_node_order);
         }
-    
+
         if (dd_simnode2pmenode(cr,cr->sim_nodeid) == -1)
         {
             cr->duty = DUTY_PME;
@@ -5848,12 +5842,12 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
         {
             cr->duty = DUTY_PP;
         }
-        
+
         /* Split the sim communicator into PP and PME only nodes */
         MPI_Comm_split(cr->mpi_comm_mysim,
-                       cr->duty,
-                       cr->nodeid,
-                       &cr->mpi_comm_mygroup);
+                cr->duty,
+                cr->nodeid,
+                &cr->mpi_comm_mygroup);
         MPI_Comm_rank(cr->mpi_comm_mygroup,&cr->nodeid);
     }
 
@@ -5872,21 +5866,21 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
     int CartReorder;
-    
+
     dd = cr->dd;
     comm = dd->comm;
-    
+
     copy_ivec(dd->nc,comm->ntot);
-    
+
     comm->bCartesianPP = (dd_node_order == ddnoCARTESIAN);
     comm->bCartesianPP_PME = FALSE;
-    
+
     /* Reorder the nodes by default. This might change the MPI ranks.
      * Real reordering is only supported on very few architectures,
      * Blue Gene is one of them.
      */
     CartReorder = (getenv("GMX_NO_CART_REORDER") == NULL);
-    
+
     if (cr->npmenodes > 0)
     {
         /* Split the communicator into a PP and PME part */
@@ -5907,7 +5901,7 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
         cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
 #endif
     }
-    
+
     if (cr->duty & DUTY_PP)
     {
         /* Copy or make a new PP communicator */
@@ -5917,7 +5911,7 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
     {
         receive_ddindex2simnodeid(cr);
     }
-    
+
     if (!(cr->duty & DUTY_PME))
     {
         /* Set up the commnuication to our PME node */
@@ -5937,8 +5931,8 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
     if (DDMASTER(dd))
     {
         dd->ma = init_gmx_domdec_master_t(dd,
-                                          comm->cgs_gl.nr,
-                                          comm->cgs_gl.index[comm->cgs_gl.nr]);
+                comm->cgs_gl.nr,
+                comm->cgs_gl.index[comm->cgs_gl.nr]);
     }
 }
 
@@ -5947,7 +5941,7 @@ static real *get_slb_frac(FILE *fplog,const char *dir,int nc,const char *size_st
     real *slb_frac,tot;
     int  i,n;
     double dbl;
-    
+
     slb_frac = NULL;
     if (nc > 1 && size_string != NULL)
     {
@@ -5988,7 +5982,7 @@ static real *get_slb_frac(FILE *fplog,const char *dir,int nc,const char *size_st
             fprintf(fplog,"\n");
         }
     }
-    
+
     return slb_frac;
 }
 
@@ -5997,7 +5991,7 @@ static int multi_body_bondeds_count(gmx_mtop_t *mtop)
     int n,nmol,ftype;
     gmx_mtop_ilistloop_t iloop;
     t_ilist *il;
-    
+
     n = 0;
     iloop = gmx_mtop_ilistloop_init(mtop);
     while (gmx_mtop_ilistloop_next(iloop,&il,&nmol))
@@ -6005,21 +5999,21 @@ static int multi_body_bondeds_count(gmx_mtop_t *mtop)
         for(ftype=0; ftype<F_NRE; ftype++)
         {
             if ((interaction_function[ftype].flags & IF_BOND) &&
-                NRAL(ftype) >  2)
+                    NRAL(ftype) >  2)
             {
                 n += nmol*il[ftype].nr/(1 + NRAL(ftype));
             }
         }
-  }
+    }
 
-  return n;
+    return n;
 }
 
 static int dd_nst_env(FILE *fplog,const char *env_var,int def)
 {
     char *val;
     int  nst;
-    
+
     nst = def;
     val = getenv(env_var);
     if (val)
@@ -6034,7 +6028,7 @@ static int dd_nst_env(FILE *fplog,const char *env_var,int def)
                     env_var,val,nst);
         }
     }
-    
+
     return nst;
 }
 
@@ -6054,7 +6048,7 @@ static void check_dd_restrictions(t_commrec *cr,gmx_domdec_t *dd,
                                   t_inputrec *ir,FILE *fplog)
 {
     if (ir->ePBC == epbcSCREW &&
-        (dd->nc[XX] == 1 || dd->nc[YY] > 1 || dd->nc[ZZ] > 1))
+            (dd->nc[XX] == 1 || dd->nc[YY] > 1 || dd->nc[ZZ] > 1))
     {
         gmx_fatal(FARGS,"With pbc=%s can only do domain decomposition in the x-direction",epbc_names[ir->ePBC]);
     }
@@ -6134,18 +6128,18 @@ static int check_dlb_support(FILE *fplog,t_commrec *cr,
     {
         switch (eDLB)
         {
-			case edlbNO: 
-				break;
-			case edlbAUTO:
-				dd_warning(cr,fplog,"NOTE: reproducability requested, will not use dynamic load balancing\n");
-				eDLB = edlbNO;
-				break;
-			case edlbYES:
-				dd_warning(cr,fplog,"WARNING: reproducability requested with dynamic load balancing, the simulation will NOT be binary reproducable\n");
-				break;
-			default:
-				gmx_fatal(FARGS,"Death horror: undefined case (%d) for load balancing choice",eDLB);
-				break;
+        case edlbNO:
+            break;
+        case edlbAUTO:
+            dd_warning(cr,fplog,"NOTE: reproducability requested, will not use dynamic load balancing\n");
+            eDLB = edlbNO;
+            break;
+        case edlbYES:
+            dd_warning(cr,fplog,"WARNING: reproducability requested with dynamic load balancing, the simulation will NOT be binary reproducable\n");
+            break;
+        default:
+            gmx_fatal(FARGS,"Death horror: undefined case (%d) for load balancing choice",eDLB);
+            break;
         }
     }
 

@@ -135,14 +135,17 @@ typedef struct {
 } gmx_mdoutf_t;
 
 
-/* This is where various variables that we need to save for use within
- * write_traj are stored */
+/* Used to store data required for buffered writing in write_traj  
+*/
 typedef struct {
-	gmx_domdec_t **dd; // This is used to store many frames of data
-	t_state **state_local; // This is used to store many frames of data
-	gmx_large_int_t step; // This is used to keep track of what step is associated with each frame of data
-	double t; // This is used to keep track of what time is associated with each frame of data
-	int step_after_checkpoint; /*first step or first step after checkpoint*/
+        //For both dd and state_local a copy of each buffered step is stored
+	gmx_domdec_t **dd;
+	t_state **state_local; 
+	// Step number and time of the buffered frame
+	gmx_large_int_t step; 
+	double t;  
+	//first step of run or first step after checkpoint - required to compute the number of buffered frames
+	int step_after_checkpoint; 
 } t_write_buffer;
 
 /* Variables for temporary use with the deform option,

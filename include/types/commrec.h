@@ -234,7 +234,7 @@ typedef struct {
 
 #define DUTY_PP  (1<<0)
 #define DUTY_PME (1<<1)
-#define DUTY_IO  (1<<2) // Used for buffering when there are nultiple IO nodes.
+#define DUTY_IO  (1<<2) // is set for each node writing. Currently on XTC output is parallel.
 
 typedef struct {
   int      bUse;
@@ -301,7 +301,7 @@ typedef struct {
 
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
 
-#define IONODE(cr)	       ((cr)->duty & DUTY_IO )// Used to determine if this node is an IO node
+#define IONODE(cr)	   ((cr)->duty & DUTY_IO )// True if this node is participating in writing output files
 
 #define PARTDECOMP(cr)     ((cr)->pd != NULL)
 

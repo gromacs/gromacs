@@ -1521,7 +1521,7 @@ void init_md(FILE *fplog,
     if (write_buf != NULL && DOMAINDECOMP(cr))
     {
     	write_buf->step_after_checkpoint = ir->init_step;
-		initialize_dd_buf(&(write_buf->dd), cr);
+		allocate_dd_buf(&(write_buf->dd), cr);
 		snew (write_buf->state_local, cr->nionodes);
 		for (i=0;i<cr->nionodes;i++)
 		{
