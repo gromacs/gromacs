@@ -461,6 +461,9 @@ if test "$enable_threads" = "yes"; then
   if test "$with_fft" = "fftw2"; then
     AC_MSG_ERROR([fftw2 can't be used with threads. Use fftw3 or mkl.])
   fi 
+  if test "$enable_fortran" = "yes"; then
+    AC_MSG_ERROR([FORTRAN is incompatible with threads. Use --disable-threads.])
+  fi
   AC_CHECK_HEADERS(unistd.h)
   AC_CHECK_HEADERS(sys/time.h)
   AC_CHECK_HEADERS(sched.h)
