@@ -108,6 +108,13 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         {
             addValueExpectFail("dummy");
         }
+        /*! \brief
+         * Calls setFlag(efSet).
+         */
+        void setOption()
+        {
+            setFlag(gmx::efSet);
+        }
 
         virtual const char *typeString() const { return "mock"; }
         MOCK_METHOD2(appendValue, int(const std::string &value,
@@ -171,6 +178,39 @@ int MockOptionStorage::init(const MockOption &settings, gmx::Options *options)
 
 namespace
 {
+
+/*
+ * Tests that finish() can set a required option even if the user has not
+ * provided it.
+ */
+TEST(AbstractOptionStorageTest, HandlesSetInFinish)
+{
+    gmx::Options                options(NULL, NULL);
+    std::vector<std::string>    values;
+    MockOptionStorage          *mock;
+    options.addOption(MockOption("name").storageObject(&mock).required()
+                          .storeVector(&values));
+
+    {
+        ::testing::InSequence dummy;
+        using ::testing::_;
+        using ::testing::DoAll;
+        using ::testing::Return;
+        using ::testing::InvokeWithoutArgs;
+        EXPECT_CALL(*mock, finish(_))
+            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::setOption),
+                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
+                            Return(0)));
+    }
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&options, &errors);
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, options.finish(&errors));
+
+    ASSERT_EQ(1U, values.size());
+    EXPECT_EQ("dummy", values[0]);
+}
 
 /*
  * Tests that storage works if the storage object does not add a value in a

@@ -104,17 +104,7 @@ std::string BooleanOptionStorage::formatValue(int i) const
  */
 
 IntegerOptionStorage::IntegerOptionStorage()
-    : _vectorLength(0)
 {
-}
-
-int IntegerOptionStorage::init(const IntegerOption &settings, Options *options)
-{
-    if (settings.isVector())
-    {
-        _vectorLength = settings._maxValueCount;
-    }
-    return MyBase::init(settings, options);
 }
 
 int IntegerOptionStorage::appendValue(const std::string &value,
@@ -134,7 +124,11 @@ int IntegerOptionStorage::appendValue(const std::string &value,
 
 int IntegerOptionStorage::finishSet(int nvalues, AbstractErrorReporter *errors)
 {
-    return expandVector(_vectorLength, nvalues, errors, &values());
+    if (hasFlag(efVector))
+    {
+        return expandVector(maxValueCount(), nvalues, errors, &values());
+    }
+    return 0;
 }
 
 std::string IntegerOptionStorage::formatValue(int i) const
@@ -150,16 +144,12 @@ std::string IntegerOptionStorage::formatValue(int i) const
  */
 
 DoubleOptionStorage::DoubleOptionStorage()
-    : _vectorLength(0), _bTime(false)
+    : _bTime(false)
 {
 }
 
 int DoubleOptionStorage::init(const DoubleOption &settings, Options *options)
 {
-    if (settings.isVector())
-    {
-        _vectorLength = settings._maxValueCount;
-    }
     _bTime = settings._bTime;
     if (_bTime)
     {
@@ -170,7 +160,7 @@ int DoubleOptionStorage::init(const DoubleOption &settings, Options *options)
 
 const char *DoubleOptionStorage::typeString() const
 {
-    return _vectorLength > 0 ? "vector" : (_bTime ? "time" : "double");
+    return hasFlag(efVector) > 0 ? "vector" : (_bTime ? "time" : "double");
 }
 
 int DoubleOptionStorage::appendValue(const std::string &value,
@@ -190,7 +180,11 @@ int DoubleOptionStorage::appendValue(const std::string &value,
 
 int DoubleOptionStorage::finishSet(int nvalues, AbstractErrorReporter *errors)
 {
-    return expandVector(_vectorLength, nvalues, errors, &values());
+    if (hasFlag(efVector))
+    {
+        return expandVector(maxValueCount(), nvalues, errors, &values());
+    }
+    return 0;
 }
 
 int DoubleOptionStorage::finish(AbstractErrorReporter *errors)

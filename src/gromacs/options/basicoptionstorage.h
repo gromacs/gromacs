@@ -79,23 +79,12 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
     public:
         IntegerOptionStorage();
 
-        /*! \brief
-         * Initializes the storage from option settings.
-         *
-         * \param[in] settings   Storage settings.
-         * \param[in] options    Options object.
-         * \retval 0 on success.
-         */
-        int init(const IntegerOption &settings, Options *options);
-
-        virtual const char *typeString() const { return _vectorLength > 0 ? "vector" : "int"; }
+        virtual const char *typeString() const
+        { return hasFlag(efVector) ? "vector" : "int"; }
         virtual int appendValue(const std::string &value,
                                 AbstractErrorReporter *errors);
         virtual int finishSet(int nvalues, AbstractErrorReporter *errors);
         virtual std::string formatValue(int i) const;
-
-    private:
-        int                     _vectorLength;
 };
 
 /*! \internal \brief
@@ -106,7 +95,13 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
     public:
         DoubleOptionStorage();
 
-        //! \copydoc IntegerOptionStorage::init()
+        /*! \brief
+         * Initializes the storage from option settings.
+         *
+         * \param[in] settings   Storage settings.
+         * \param[in] options    Options object.
+         * \retval 0 on success.
+         */
         int init(const DoubleOption &settings, Options *options);
 
         virtual const char *typeString() const;
@@ -117,7 +112,6 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         virtual std::string formatValue(int i) const;
 
     private:
-        int                     _vectorLength;
         bool                    _bTime;
 };
 
@@ -129,7 +123,7 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
     public:
         StringOptionStorage();
 
-        //! \copydoc IntegerOptionStorage::init()
+        //! \copydoc DoubleOptionStorage::init()
         int init(const StringOption &settings, Options *options);
 
         virtual const char *typeString() const { return _allowed.empty() ? "string" : "enum"; }
@@ -153,7 +147,7 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
     public:
         FileNameOptionStorage();
 
-        //! \copydoc IntegerOptionStorage::init()
+        //! \copydoc StringOptionStorage::init()
         int init(const FileNameOption &settings, Options *options);
 
         virtual const char *typeString() const { return "file"; }

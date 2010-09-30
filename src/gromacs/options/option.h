@@ -152,11 +152,10 @@ class Option
 
     private:
         //! Returns true if the given flag is set for the option.
-        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
+        bool hasFlag(OptionFlag flag) const;
 
         std::string             _name;
         std::string             _descr;
-        OptionFlags             _flags;
         /*! \brief
          * Pointer to the object that validates and stores values.
          *

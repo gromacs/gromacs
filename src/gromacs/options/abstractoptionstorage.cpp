@@ -60,21 +60,20 @@ AbstractOptionStorage::~AbstractOptionStorage()
 
 int AbstractOptionStorage::init(const AbstractOption &settings, Options *options)
 {
-    OptionFlags flags = settings._flags;
+    _flags = settings._flags;
     _minValueCount = settings._minValueCount;
     _maxValueCount = settings._maxValueCount;
     _options = options;
 
     // If the maximum number of values is not known, storage to
     // caller-allocated memory is unsafe.
-    if ((_maxValueCount < 0 || flags.test(efMulti))
-        && flags.test(efExternalStore))
+    if ((_maxValueCount < 0 || hasFlag(efMulti)) && hasFlag(efExternalStore))
     {
         GMX_ERROR(eeInvalidValue,
                   "Cannot set user-allocated storage for arbitrary number of values");
     }
     // Check that user has not provided incorrect values for vectors.
-    if (flags.test(efVector) && (_minValueCount > 1 || _maxValueCount < 1))
+    if (hasFlag(efVector) && (_minValueCount > 1 || _maxValueCount < 1))
     {
         GMX_ERROR(eeInvalidValue,
                   "Inconsistent value counts for vector values");

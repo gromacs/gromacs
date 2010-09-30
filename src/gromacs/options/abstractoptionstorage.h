@@ -41,6 +41,8 @@
 
 #include <string>
 
+#include "optionflags.h"
+
 namespace gmx
 {
 
@@ -136,6 +138,18 @@ class AbstractOptionStorage
         //! Creates an uninitialized storage object.
         AbstractOptionStorage();
 
+        //! Returns true if the given flag is set.
+        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
+        //! Sets the given flag.
+        void setFlag(OptionFlag flag) { return _flags.set(flag); }
+        //! Clears the given flag.
+        void clearFlag(OptionFlag flag) { return _flags.clear(flag); }
+
+        //! Returns the minimum number of values required in one set.
+        int minValueCount() const { return _minValueCount; }
+        //! Returns the maximum allowed number of values in one set (-1 = no limit).
+        int maxValueCount() const { return _maxValueCount; }
+
         //! Returns the Options object that houses the option.
         Options &hostOptions() { return *_options; }
         //! \copydoc hostOptions()
@@ -150,6 +164,8 @@ class AbstractOptionStorage
         int incrementValueCount();
 
     private:
+        //! Flags for the option.
+        OptionFlags             _flags;
         //! Minimum number of values required (in one set).
         int                     _minValueCount;
         //! Maximum allowed number of values (in one set), or -1 if no limit.

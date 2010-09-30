@@ -134,12 +134,6 @@ class OptionStorageTemplate : public AbstractOptionStorage
         const ValueList &values() const { return *_values; }
 
     private:
-        //! Internal flags for managing the storage.
-        enum Flags {
-            //! Memory for \p _values is managed by this object.
-            efOwnValueVector   = 1<<0,
-        };
-
         /*! \brief
          * Vector for primary storage of option values.
          *
@@ -153,7 +147,6 @@ class OptionStorageTemplate : public AbstractOptionStorage
         T                      *_store;
         T                     **_storeArray;
         int                    *_nvalptr;
-        int                     _flags;
 
         // Copy and assign disallowed by base.
 };
@@ -191,15 +184,14 @@ createOptionStorage(const T *settings, Options *options,
 
 template <typename T>
 OptionStorageTemplate<T>::OptionStorageTemplate()
-    : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL),
-      _flags(0)
+    : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL)
 {
 }
 
 template <typename T>
 OptionStorageTemplate<T>::~OptionStorageTemplate()
 {
-    if (_flags & efOwnValueVector)
+    if (!hasFlag(efExternalValueVector))
     {
         delete _values;
     }
@@ -223,15 +215,16 @@ int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options
     _values     = settings._storeVector;
     if (!_values)
     {
+        // The flag should be set for proper error checking.
+        assert(!hasFlag(efExternalValueVector));
         _values = new std::vector<T>;
-        _flags |= efOwnValueVector;
     }
     if (settings._defaultValue)
     {
         _values->clear();
         addValue(*settings._defaultValue);
     }
-    else if ((_flags & efOwnValueVector) && _store)
+    else if (!hasFlag(efExternalValueVector) && _store != NULL)
     {
         _values->clear();
         int count = (settings.isVector() ?
