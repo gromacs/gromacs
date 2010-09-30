@@ -50,7 +50,7 @@
 #include "vsite.h"
 #include "pull.h"
 #include "update.h"
-#include "gmx_membed.h"
+#include "membed.h"
 
 #ifdef __cplusplus
 extern "C" {
