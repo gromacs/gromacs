@@ -2193,6 +2193,19 @@ static int dd_simnode2pmenode(t_commrec *cr,int sim_nodeid)
     
     return pmenode;
 }
+/*
+int iorank2ddrank(t_commrec *cr, int rank) {
+	int ddrank = cr->nionodes-1 - rank;  // For the purpose of making checkpoints work correctly: we write the frames in reverse order
+	if (rank==cr->nionodes-1)
+	{
+		ddrank = cr->dd->masterrank;
+	}
+	else if (ddrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
+	{
+		ddrank--;
+	}
+	return ddrank;
+}*/
 
 gmx_bool gmx_pmeonlynode(t_commrec *cr,int sim_nodeid)
 {
@@ -5645,19 +5658,22 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
     return ma;
 }
 
-int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local) // prepares dd_buf
+
+
+int initialize_dd_buf(gmx_domdec_t ***dd_buf, t_commrec *cr) // prepares dd_buf
 {
 	int i;
 
-	snew (*dd_buf, dd->n_xtc_steps);
-	for (i=0;i<dd->n_xtc_steps;i++) {
+	gmx_domdec_t *dd = cr->dd;
+	snew(*dd_buf, cr->nionodes);
+	for (i=0;i<cr->nionodes;i++) {
 		snew((*dd_buf)[i],1);
 		snew((*dd_buf)[i]->index_gl, dd->cg_nalloc);
 		snew((*dd_buf)[i]->comm, 1);
 
-		if (DDMASTER(dd)) {
-			(*dd_buf)[i]->ma = dd->ma;
-		} else if (i==dd->n_xtc_steps-1 - dd->rank) { // This is preparing certain nodes for holding several frames.
+		if (MASTER(cr)) {
+			(*dd_buf)[i]->ma = dd->ma;  /*the master already has the ma structure allocated*/
+		} else if (dd->iorank == i ) { // This is preparing certain nodes for holding several frames.
 			(*dd_buf)[i]->ma = init_gmx_domdec_master_t(dd, dd->comm->cgs_gl.nr, dd->comm->cgs_gl.index[dd->comm->cgs_gl.nr]);
 		}
 	}
@@ -5675,7 +5691,7 @@ static int copy_t_block (t_block *copy_gl, t_block *orig_gl)
 }
 
 
-int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd, t_state *state) // Copies orig_dd into copy_dd
+int copy_dd (gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd) // Copies orig_dd into copy_dd
 {
 
 	int j;
@@ -5795,7 +5811,7 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
         
         if (dd->ci[comm->cartpmedim] < dd->nc[comm->cartpmedim])
         {
-            cr->duty = DUTY_PP;
+            cr->duty |= DUTY_PP;
         }
         if (cr->npmenodes == 0 ||
             dd->ci[comm->cartpmedim] >= dd->nc[comm->cartpmedim])
@@ -5853,6 +5869,8 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
                        &cr->mpi_comm_mygroup);
         MPI_Comm_rank(cr->mpi_comm_mygroup,&cr->nodeid);
     }
+
+
 #endif
 
     if (fplog)

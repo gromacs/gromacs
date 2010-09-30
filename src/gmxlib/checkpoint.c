@@ -1754,7 +1754,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             } 
             if (i==0)  /*log file needs to be seeked in case we need to truncate (other files are truncated below)*/
             {
-                if (gmx_fio_seek(chksum_file,outputfiles[i].offset))
+                if (gmx_fio_seek(chksum_file,outputfiles[i].offset,SEEK_SET))
                 {
                 	gmx_fatal(FARGS,"Seek error! Failed to truncate log-file: %s.", strerror(errno));
                 }

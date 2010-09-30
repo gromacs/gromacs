@@ -776,6 +776,56 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         }
     }
 
+    /*initialize buffered MPI_IO writing */
+#ifdef GMX_LIB_MPI
+    if (DOMAINDECOMP(cr) && integrator[inputrec->eI].func == do_md && (cr->duty & DUTY_PP))
+	{
+        const int MAXSTEPS = 100;// This is mostly for optimization reasons
+        const int MAXMEM = 250000000;
+        gmx_bool bIOnode;
+		cr->nionodes = min(min(MAXSTEPS, cr->dd->nnodes),
+				MAXMEM / (sizeof(real) * 3 * state->natoms));
+
+		/*create communicator for the MPI-IO as a subgroup of the PP nodes. Make sure the master is part of the IO nodes*/
+		if (MASTER(cr))
+		{
+			bIOnode = TRUE;
+		}
+		else
+		{
+			if ( cr->dd->masterrank < cr->nionodes )
+			{
+				bIOnode = cr->dd->rank < cr->nionodes;
+			}
+			else
+			{
+				bIOnode = cr->dd->rank < cr->nionodes - 1;
+			}
+		}
+		/* In the IO communicator the node with the rank=dd->masterrank has to have the highest rank (=nionodes-1).
+		 * MPI_File_Write_ordered writes in the order of the rank and the masterrank has the last frame */
+	    MPI_Comm_split(cr->mpi_comm_mygroup, bIOnode, MASTER(cr)?cr->dd->nnodes+1:cr->dd->nnodes-cr->dd->rank,
+	    		&(cr->mpi_comm_io));/*Guarantee that the master has IO rank the highest rank (nionodes-1) */
+	    MPI_Comm_rank(cr->mpi_comm_io, &(cr->dd->iorank));
+	    if (bIOnode)
+	    {
+	    	cr->duty |= DUTY_IO;
+	    }
+		if (!MASTER(cr) && IONODE(cr)) //Initializes the state_global->x for the total number of atoms
+		{
+			snew(state->x, state->natoms);
+		}
+	}
+    else
+#endif
+	{
+	    cr->nionodes = 1;
+	    if (MASTER(cr))
+	    {
+	    	cr->duty |= DUTY_IO;
+	    }
+    }
+
 
     if (integrator[inputrec->eI].func == do_md
 #ifdef GMX_OPENMM

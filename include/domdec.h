@@ -109,9 +109,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 
 void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
-int copy_dd(gmx_domdec_t *new_dd,gmx_domdec_t *old_dd, t_state *state);
+int copy_dd(gmx_domdec_t *copy_dd,gmx_domdec_t *orig_dd);// Copies orig_dd into copy_dd
 
-int initialize_dd_buf(gmx_domdec_t ***dd_buf, gmx_domdec_t *dd, t_state *state_local);
+int initialize_dd_buf(gmx_domdec_t ***dd_buf, t_commrec *cr);
 
 void dd_collect_vec(gmx_domdec_t *dd,
                            t_state *state_local,rvec *lv,rvec *v);

@@ -698,7 +698,7 @@ int gmx_trjcat(int argc, char *argv[])
                 fpos = gmx_fio_ftell(stfio);
                 close_trj(status);
                 trxout = open_trx(out_file,"r+");
-                if (gmx_fio_seek(trx_get_fileio(trxout),fpos)) {
+                if (gmx_fio_seek(trx_get_fileio(trxout),fpos,SEEK_SET)) {
                     gmx_fatal(FARGS,"Error seeking to append position.");
                 }
             }

@@ -55,8 +55,6 @@
  */
 #define USE_XDR
 
-
-
 /* the reader/writer functions  for t_iotype */
 typedef gmx_bool read_func(t_fileio *fio, void *item, int nitem, int eio,
                        const char *desc,const char *srcfile,int line);
@@ -78,10 +76,26 @@ struct t_fileio
     FILE *fp; /* the file pointer */
 #ifdef GMX_LIB_MPI
     MPI_File mpi_fh;  /* the mpi file handle (used instead of fp for MPI IO) */
+    MPI_Comm fh_comm; /* the communicator used for this file */
+    /*int rank;//rank of node   MPI_Comm_rank(comm,&rank);*/
+    /*int nIOnodes;// Number of IO nodes*/
+
+    /* TODO RJ : other places:
+     *     test on bluegene (with Cartesian communicator)
+     *     test with separate PME nodes
+     *
+     *     test with nompi, threads, mpi
+     *     test each with appending of checkpoint. make sure traj matches traj_correct for each
+     *     test mpi version with pd, serial, on 3 nodes, with more nodes than ddnodes
+     *
+     *     Test with mdrun -multi 2
+     */
+
 #endif
     char *mem_buf; // Used for MPI writing of xtc buffered by gmx_writeit
-    int mem_buf_cur_pos, 
-         mem_buf_nalloc;
+    int mem_buf_cur_pos, /*current writing position in mem_buf. Equal to the amount written so far for current frame*/
+         mem_buf_nalloc, /*allocation size of mem_buf. Is being over-allocated to reduce number of required srenew*/
+         last_frame_size; /*size of the last written frame. Currently only set when using buffered writing*/
     const t_iotype *iotp;  /* file type */
     gmx_bool bOpen,  /* the file is open */
          bRead,  /* the file is open for reading */

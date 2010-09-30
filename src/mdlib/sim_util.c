@@ -1516,33 +1516,20 @@ void init_md(FILE *fplog,
     }
     
     init_nrnb(nrnb);
-    
-    /*initialize buffered writing */
 
-    if (DOMAINDECOMP(cr) && write_buf != NULL)
-	{
-#ifdef GMX_LIB_MPI
-        const int MAXSTEPS = 100;// This is mostly for optimization reasons
-        const int MAXMEM = 250000000;
-		cr->dd->n_xtc_steps = min(min(MAXSTEPS, cr->dd->nnodes),
-				MAXMEM / (sizeof(real) * 3 * state->natoms));
-		write_buf->step_after_checkpoint = ir->init_step;
-		initialize_dd_buf(&(write_buf->dd), cr->dd, state);
-		snew (write_buf->state_local, cr->dd->n_xtc_steps);
-		for (i=0;i<cr->dd->n_xtc_steps;i++)
+    /*allocating buffers for buffered MPI-IO writing*/
+    if (write_buf != NULL && DOMAINDECOMP(cr))
+    {
+    	write_buf->step_after_checkpoint = ir->init_step;
+		initialize_dd_buf(&(write_buf->dd), cr);
+		snew (write_buf->state_local, cr->nionodes);
+		for (i=0;i<cr->nionodes;i++)
 		{
 			snew(write_buf->state_local[i],1);
 			snew(write_buf->state_local[i]->cg_gl,state->cg_gl_nalloc);
 			snew(write_buf->state_local[i]->x,state->nalloc);
 		}
-		if (!MASTER(cr) && IONODE(cr)) //Initializes the state_global->x for the total number of atoms
-		{
-			snew(state->x, state->natoms);
-		}
-#else
-    	cr->dd->n_xtc_steps = 1;
-#endif
-    }
+	}
 
     if (nfile != -1)
     {

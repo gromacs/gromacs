@@ -130,6 +130,7 @@ typedef struct {
    */
   int  nnodes;
   MPI_Comm mpi_comm_all;
+
   /* Use MPI_Sendrecv communication instead of non-blocking calls */
   gmx_bool bSendRecv2;
   /* The local DD cell index and rank */
@@ -137,6 +138,8 @@ typedef struct {
   int  rank;
   ivec master_ci;
   int  masterrank;
+  /* rank for IO nodes */
+  int iorank;  /*the number of IO nodes is cr->nionodes (equivalent for PME)*/
   /* Communication with the PME only nodes */
   int  pme_nodeid;
   gmx_bool pme_receive_vir_ener;
@@ -214,7 +217,7 @@ typedef struct {
   int pme_recv_f_alloc;
   rvec *pme_recv_f_buf;
 
-  int n_xtc_steps;
+
 
 } gmx_domdec_t;
 
@@ -232,6 +235,7 @@ typedef struct {
 
 #define DUTY_PP  (1<<0)
 #define DUTY_PME (1<<1)
+#define DUTY_IO  (1<<2)
 
 typedef struct {
   int      bUse;
@@ -250,7 +254,7 @@ typedef struct {
    * All communication within some simulation should happen
    * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
    */
-  int sim_nodeid,nnodes,npmenodes;
+  int sim_nodeid,nnodes,npmenodes,nionodes;
 
   /* thread numbers: */
   /* Not used yet: int threadid, nthreads; */
@@ -258,6 +262,7 @@ typedef struct {
   int nodeid;
   MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
+  MPI_Comm mpi_comm_io;  /*the rank is in dd->niorank (parallel IO only supported for DD)*/
 
 #ifdef GMX_THREAD_SHM_FDECOMP
   gmx_commrec_thread_t thread;
@@ -294,10 +299,10 @@ typedef struct {
 #define MASTERRANK(cr)     (0)
 
 #define DOMAINDECOMP(cr)   ((cr)->dd != NULL)
-#define IONODE(cr)	   (MASTER(cr) || (DOMAINDECOMP(cr) && (cr->dd)->rank < (cr->dd)->n_xtc_steps))
 
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
 
+#define IONODE(cr)	       ((cr)->duty & DUTY_IO )
 
 #define PARTDECOMP(cr)     ((cr)->pd != NULL)
 

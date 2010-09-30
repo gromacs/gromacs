@@ -186,10 +186,6 @@ int write_xtc(t_fileio *fio,
   gmx_bool bDum;
   int bOK = 1;
 	
-
-
-  gmx_fio_start_record(fio);
-
   if (bWrite) {
 
 	  xd = gmx_fio_getxdr(fio);

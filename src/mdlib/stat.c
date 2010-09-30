@@ -567,22 +567,23 @@ void write_traj(FILE *fplog,t_commrec *cr,
                 t_state *state_local,t_state *state_global,
                 rvec *f_local,rvec *f_global,
                 int *n_xtc,rvec **x_xtc,
-                t_inputrec *ir, gmx_bool bLastStep, t_write_buffer* write_buf)// TODO RJ What if IR is NULL???
+                t_inputrec *ir, gmx_bool bLastStep, t_write_buffer* write_buf)
 {
     int     i,j;
+    int orig_masterrank;
     gmx_groups_t *groups;
     rvec    *xxtc;
     rvec *local_v;
     rvec *global_v;
     
     int bufferStep;
-    gmx_bool bBuffer = DOMAINDECOMP(cr) && cr->dd->n_xtc_steps > 1; // Used to determine if buffers will be used
+    gmx_bool bBuffer = cr->nionodes > 1; // Used to determine if buffers will be used
     gmx_bool writeXTCNow = TRUE;
 
 	if (bBuffer)// If buffering will be used
 	{
-		bufferStep = (step/ir->nstxtcout - (int)ceil((double)write_buf->step_after_checkpoint/ir->nstxtcout))%cr->dd->n_xtc_steps;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
-		writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->dd->n_xtc_steps-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
+		bufferStep = (step/ir->nstxtcout - (int)ceil((double)write_buf->step_after_checkpoint/ir->nstxtcout))%cr->nionodes;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
+		writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->nionodes-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
 
 		if ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))
 		{
@@ -623,18 +624,18 @@ void write_traj(FILE *fplog,t_commrec *cr,
         {
             dd_collect_vec(cr->dd,state_local,f_local,f_global);
         }
-        //TODO: RJ We can optimize by not collecting all but xtc selection.
+        //TODO: RJ LOW PRIORITY: We can optimize by not collecting all but xtc selection.
         if ((mdof_flags & MDOF_XTC) && bBuffer)
         {
 			//This block of code copies the current dd and state_local to buffers to prepare for writing later.
-			if ((writeXTCNow && cr->dd->rank == 0) || (!writeXTCNow && bufferStep == cr->dd->n_xtc_steps-1 - cr->dd->rank))
+			if ((writeXTCNow && MASTER(cr)) || (!writeXTCNow && bufferStep == cr->dd->iorank))
 			{
 				write_buf->step=step;
 				write_buf->t=t;
 			}
 			srenew(write_buf->state_local[bufferStep]->cg_gl,state_local->cg_gl_nalloc);
 			srenew(write_buf->state_local[bufferStep]->x,state_local->nalloc);
-			copy_dd(write_buf->dd[bufferStep],cr->dd,state_local);
+			copy_dd(write_buf->dd[bufferStep],cr->dd);
 			copy_state_local(write_buf->state_local[bufferStep],state_local);
 
 
@@ -645,11 +646,15 @@ void write_traj(FILE *fplog,t_commrec *cr,
 				{
 					if (i==bufferStep)
 					{
-						write_buf->dd[i]->masterrank = 0;
+						write_buf->dd[i]->masterrank = cr->dd->masterrank;
 					}
 					else
 					{
-						write_buf->dd[i]->masterrank = cr->dd->n_xtc_steps-1 - i;// For the purpose of making checkpoints work correctly: we write the frames in reverse order
+						write_buf->dd[i]->masterrank = cr->nionodes-1 - i;  // For the purpose of making checkpoints work correctly: we write the frames in reverse order
+						if (write_buf->dd[i]->masterrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
+						{
+							write_buf->dd[i]->masterrank--;
+						}
 					}
 					if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
 					{
@@ -715,33 +720,27 @@ void write_traj(FILE *fplog,t_commrec *cr,
          }
      }
 
-     if (MASTER(cr))
-     {
-         if (mdof_flags & MDOF_CPT)
-         {
-             /*write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
-                              fplog,cr,of->eIntegrator,
-                              of->simulation_part,step,t,state_global);*/ //TODO!
-         }
-
-         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
-         {
-            fwrite_trn(of->fp_trn,step,t,state_local->lambda,
-                       state_local->box,top_global->natoms,
-                       (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                       (mdof_flags & MDOF_V) ? global_v : NULL,
-                       (mdof_flags & MDOF_F) ? f_global : NULL);
-            if (gmx_fio_flush(of->fp_trn) != 0)
-            {
-                gmx_file("Cannot write trajectory; maybe you are out of quota?");
-            }
-            gmx_fio_check_file_position(of->fp_trn);
-        }      
-     }
+    /* The order of write_checkpoint and write_xtc/fwrite_trn is crucial, because the position of the trajectories is stored in the checkpoint.
+     * The checkpoint is written before the current step because the current step is written to the trajectory when appending from the checkpoint
+     * This is because write_traj is not called at the end of the step but in the middle of the step. It is called before the (coordinate) update and before the step number is increased.
+     * Mainly the forces have been computed (to allow to write both coordinates and forces).
+     *
+     * If we buffer we need to call write_traj after write_xtc. Otherwise the xtc position stored in the checkpoint would point to the position before any of the buffered steps.
+     * In that case the position is calculated to be correct (not including the current frame) even though we have already written all frames.
+     */
+     if (!bBuffer && MASTER(cr))
+	 {
+		if (mdof_flags & MDOF_CPT)
+		{
+		 write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
+						  fplog,cr,of->eIntegrator,
+						  of->simulation_part,step,t,state_global);  //TODO RJ write mail to mailinglist why this is before write_xtc
+		}
+	 }
 
      if (writeXTCNow && IONODE(cr)) {  //this is an IO node (we have to call write_traj on all IO nodes!)
 
-		gmx_bool bWrite = MASTER(cr) || (cr->dd->n_xtc_steps - bufferStep <= cr->dd->rank ) ;  //this node is actually writing
+		gmx_bool bWrite = MASTER(cr) || cr->dd->iorank<bufferStep;  //this node is actually writing
 		int write_step;
 		real write_t;
 
@@ -795,7 +794,33 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		{
 			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
 		}
-		//gmx_fio_check_file_position(of->fp_xtc); //TODO: RJ temporary should be reactivated! than check that appending works, MPI_File_get_position_shared, MPI_File_seek_shared
-	}
+		gmx_fio_check_file_position(of->fp_xtc);
+	 }
+     if (bBuffer && MASTER(cr))
+     {
+        if (mdof_flags & MDOF_CPT)
+		{
+		 write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
+						  fplog,cr,of->eIntegrator,
+						  of->simulation_part,step,t,state_global);  //TODO RJ write mail to mailinglist why this is before write_xtc
+		}
+     }
+     if (MASTER(cr))
+     {
+
+         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
+         {
+            fwrite_trn(of->fp_trn,step,t,state_local->lambda,
+                       state_local->box,top_global->natoms,
+                       (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                       (mdof_flags & MDOF_V) ? global_v : NULL,
+                       (mdof_flags & MDOF_F) ? f_global : NULL);
+            if (gmx_fio_flush(of->fp_trn) != 0)
+            {
+                gmx_file("Cannot write trajectory; maybe you are out of quota?");
+            }
+            gmx_fio_check_file_position(of->fp_trn);
+        }
+     }
 }
 
