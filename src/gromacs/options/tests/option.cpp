@@ -46,14 +46,14 @@
 
 #include "gromacs/options/basicoptions.h"
 
-#include "../option.h"
+#include "../basicoptionstorage.h"
 
 namespace
 {
 
 TEST(OptionTest, SetsNameAndDescription)
 {
-    gmx::Option  option;
+    gmx::IntegerOptionStorage   option;
     int value = -1;
     using gmx::IntegerOption;
     ASSERT_EQ(0, option.init(IntegerOption("name").store(&value)
@@ -65,7 +65,7 @@ TEST(OptionTest, SetsNameAndDescription)
 
 TEST(OptionTest, FailsOnNonsafeStorage)
 {
-    gmx::Option  option;
+    gmx::IntegerOptionStorage   option;
     int value = -1;
     using gmx::IntegerOption;
     ASSERT_NE(0, option.init(IntegerOption("name").store(&value)
@@ -74,9 +74,9 @@ TEST(OptionTest, FailsOnNonsafeStorage)
 
 TEST(OptionTest, FailsOnIncorrectEnumDefaultValue)
 {
-    gmx::Option            option;
-    std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
+    gmx::StringOptionStorage    option;
+    std::string                 value;
+    const char * const          allowed[] = { "none", "test", "value", NULL };
     using gmx::StringOption;
     ASSERT_NE(0, option.init(StringOption("name").store(&value)
                                  .enumValue(allowed)

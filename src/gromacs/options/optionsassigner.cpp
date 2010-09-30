@@ -43,9 +43,9 @@
 
 #include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/options.h"
 
-#include "option.h"
 #include "optionsassigner-impl.h"
 #include "options-impl.h"
 
@@ -75,11 +75,11 @@ void OptionsAssigner::Impl::setFlag(OptionsAssigner::Impl::Flag flag, bool bSet)
     }
 }
 
-Option *
+AbstractOptionStorage *
 OptionsAssigner::Impl::findOption(const char *name)
 {
     assert(_currentOption == NULL);
-    Option  *option = NULL;
+    AbstractOptionStorage *option = NULL;
     Options *section = NULL;
     Options *root = &currentSection();
     Options *oldRoot = NULL;
@@ -210,7 +210,7 @@ int OptionsAssigner::startOption(const char *name)
         finishOption();
     }
 
-    Option *option = _impl->findOption(name);
+    AbstractOptionStorage *option = _impl->findOption(name);
     if (option == NULL)
     {
         _impl->_errors->error("Unknown option");
@@ -228,7 +228,7 @@ int OptionsAssigner::startOption(const char *name)
 
 int OptionsAssigner::appendValue(const std::string &value)
 {
-    Option *option = _impl->_currentOption;
+    AbstractOptionStorage *option = _impl->_currentOption;
     // The option should have been successfully started.
     assert(option != NULL);
     ++_impl->_currentValueCount;
@@ -237,7 +237,7 @@ int OptionsAssigner::appendValue(const std::string &value)
 
 int OptionsAssigner::finishOption()
 {
-    Option *option = _impl->_currentOption;
+    AbstractOptionStorage *option = _impl->_currentOption;
     // The option should have been successfully started.
     assert(option != NULL);
     int rc = 0;

@@ -37,6 +37,9 @@
  */
 #include "gromacs/options/abstractoptionstorage.h"
 
+#include <cassert>
+
+#include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/optionflags.h"
@@ -58,7 +61,8 @@ AbstractOptionStorage::~AbstractOptionStorage()
 {
 }
 
-int AbstractOptionStorage::init(const AbstractOption &settings, Options *options)
+int AbstractOptionStorage::init(const AbstractOption &settings,
+                                Options *options)
 {
     _flags = settings._flags;
     _minValueCount = settings._minValueCount;
@@ -79,7 +83,77 @@ int AbstractOptionStorage::init(const AbstractOption &settings, Options *options
                   "Inconsistent value counts for vector values");
     }
 
+    if (settings._name != NULL)
+    {
+        _name  = settings._name;
+    }
+    _descr = settings.createDescription();
+    setFlag(efHasDefaultValue);
+
     return 0;
+}
+
+int AbstractOptionStorage::startSource()
+{
+    setFlag(efHasDefaultValue);
+    return 0;
+}
+
+int AbstractOptionStorage::startSet(AbstractErrorReporter *errors)
+{
+    if (hasFlag(efHasDefaultValue))
+    {
+        clearFlag(efHasDefaultValue);
+        clear();
+    }
+    else if (isSet() && !hasFlag(efMulti))
+    {
+        errors->error("Option specified multiple times");
+        return eeInvalidInput;
+    }
+    _currentValueCount = 0;
+    return 0;
+}
+
+int AbstractOptionStorage::appendValue(const std::string &value,
+                                       AbstractErrorReporter *errors)
+{
+    assert(_currentValueCount >= 0);
+    if (!hasFlag(efConversionMayNotAddValues) && _maxValueCount >= 0
+        && _currentValueCount >= _maxValueCount)
+    {
+        errors->warning("Ignoring extra value: " + value);
+        return eeInvalidInput;
+    }
+    return convertValue(value, errors);
+}
+
+int AbstractOptionStorage::finishSet(AbstractErrorReporter *errors)
+{
+    assert(_currentValueCount >= 0);
+
+    setFlag(efSet);
+    // TODO: Remove invalid values if there are too few
+    int rc = processSet(_currentValueCount, errors);
+    if (_currentValueCount < _minValueCount)
+    {
+        errors->error("Too few (valid) values");
+        rc = eeInvalidInput;
+    }
+    _currentValueCount = -1;
+    return rc;
+}
+
+int AbstractOptionStorage::finish(AbstractErrorReporter *errors)
+{
+    assert(_currentValueCount == -1);
+    int rc = processAll(errors);
+    if (hasFlag(efRequired) && !isSet())
+    {
+        errors->error("Required option '" + _name + "' not set");
+        rc = eeInconsistentInput;
+    }
+    return rc;
 }
 
 int AbstractOptionStorage::incrementValueCount()

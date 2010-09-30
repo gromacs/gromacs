@@ -48,20 +48,34 @@ namespace gmx
 
 class AbstractErrorReporter;
 class AbstractOption;
-class Option;
 class Options;
 
 /*! \libinternal \brief
- * Pure interface for converting, validating, and storing option values.
+ * Abstract base class for converting, validating, and storing option values.
  *
- * The OptionStorageTemplate template provides basic functionality for this
- * interface, only leaving some of the functions to implement in derived
- * classes.
- * It also integrates well with option settings objects derived from
- * OptionTemplate.
+ * This class should normally not be subclassed directly, but the
+ * OptionStorageTemplate should be used instead.  The templated class provides
+ * basic functionality for most of the pure virtual methods, and also
+ * integrates well with option setting objects derived from OptionTemplate.
  *
  * \inlibraryapi
  * \ingroup module_options
+ *
+ * \internal
+ * This class really consists of two parts: the public interface that is
+ * used by the internal implementation of the options module, and the
+ * interface that derived classes use to provide type-dependent functionality.
+ * The latter consists of a few pure virtual methods, of which a few simple
+ * query methods are also part of the module-internal interface, others are
+ * protected and called by the non-virtual methods when needed.
+ * The reason why these two roles are in one class is twofold:
+ *  -# Both the derived classes and the internal module implementation may need
+ *     access to the same information like the allowed number of values and the
+ *     name of the option.
+ *  -# Having only one class is consistent with the structure used for options
+ *     settings objects: there is very direct correspondence between
+ *     AbstractOption and AbstractOptionStorage and between OptionTemplate and
+ *     OptionStorageTemplate.
  */
 class AbstractOptionStorage
 {
@@ -78,6 +92,18 @@ class AbstractOptionStorage
          */
         int init(const AbstractOption &settings, Options *options);
 
+        //! Returns true if the option has been set.
+        bool isSet() const { return hasFlag(efSet); }
+        //! Returns true if the option is a boolean option.
+        bool isBoolean() const { return hasFlag(efBoolean); }
+        //! Returns true if the option is a file option.
+        bool isFile() const { return hasFlag(efFile); }
+        //! Returns true if the option is a hidden option.
+        bool isHidden() const { return hasFlag(efHidden); }
+        //! Returns the name of the option.
+        const std::string &name() const { return _name; }
+        //! Returns the description of the option.
+        const std::string &description() const { return _descr; }
         /*! \brief
          * Returns a short string describing the type of the option.
          *
@@ -92,6 +118,57 @@ class AbstractOptionStorage
          * Returns the i'th value formatted as a string.
          */
         virtual std::string formatValue(int i) const = 0;
+
+        /*! \brief
+         * Starts adding values from a new source for the option.
+         *
+         * \retval 0 on success.
+         *
+         * This marks the vurrent value of the option as a default value,
+         * causing next call to startSet() to clear it.  This allows values
+         * from the new source to overwrite old values.
+         */
+        int startSource();
+        /*! \brief
+         * Starts adding a new set of values for the option.
+         *
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 on success.
+         *
+         * If the parameter is specified multiple times, startSet() should be
+         * called before the values for each instance.
+         */
+        int startSet(AbstractErrorReporter *errors);
+        /*! \brief
+         * Adds a new value for the option, converting it from a string.
+         *
+         * \param[in] value  String value to convert.
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 if the value was successfully converted and added.
+         */
+        int appendValue(const std::string &value,
+                        AbstractErrorReporter *errors);
+        /*! \brief
+         * Performs validation and/or actions once a set of values has been
+         * added.
+         *
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 on success.
+         *
+         * If the parameter is specified multiple times, finishSet() should be
+         * called after the values for each instance.
+         */
+        int finishSet(AbstractErrorReporter *errors);
+        /*! \brief
+         * Performs validation and/or actions once all values have been added.
+         *
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 on success.
+         *
+         * This function should be called after all values have been provided
+         * with appendValue().  Calls finishSet() if needed.
+         */
+        int finish(AbstractErrorReporter *errors);
 
     protected:
         //! Creates an uninitialized storage object.
@@ -165,6 +242,8 @@ class AbstractOptionStorage
         int incrementValueCount();
 
     private:
+        std::string             _name;
+        std::string             _descr;
         //! Flags for the option.
         OptionFlags             _flags;
         //! Minimum number of values required (in one set).
@@ -175,16 +254,6 @@ class AbstractOptionStorage
         int                     _currentValueCount;
         //! Parent Options object.
         Options                *_options;
-
-        /*! \brief
-         * Needed to access value count attributes from the parent Option object.
-         *
-         * There is no clear division between the functionality in the Option
-         * object and the associated AbstractOptionStorage, and both need to
-         * track the number of values, so they are stored here to make all
-         * dependencies one-way.
-         */
-        friend class Option;
 
         // Disallow copy and assign.
         AbstractOptionStorage(const AbstractOptionStorage &);

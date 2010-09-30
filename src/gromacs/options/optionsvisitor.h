@@ -44,7 +44,7 @@
 namespace gmx
 {
 
-class Option;
+class AbstractOptionStorage;
 class Options;
 
 /*! \libinternal \brief
@@ -64,7 +64,7 @@ class OptionInfo
         /*! \brief
          * Wraps a given option object.
          */
-        OptionInfo(const Option &option);
+        OptionInfo(const AbstractOptionStorage &option);
 
         //! Returns true if the option is a boolean option.
         bool isBoolean() const;
@@ -87,7 +87,7 @@ class OptionInfo
 
     private:
         //! The wrapped option.
-        const Option           &_option;
+        const AbstractOptionStorage &_option;
 
         // Disallow copy and assign.
         OptionInfo(const OptionInfo &);

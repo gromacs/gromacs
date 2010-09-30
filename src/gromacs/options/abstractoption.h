@@ -60,7 +60,6 @@ namespace gmx
 
 class AbstractOptionStorage;
 template <typename T> class OptionStorageTemplate;
-class Option;
 class Options;
 
 /*! \brief
@@ -104,12 +103,13 @@ class AbstractOption
          * Derived classes should implement the method to create an actual
          * storage object and populate it with correct values.
          *
-         * Should only be called by Option::init().
+         * Should only be called by Options::addOption().
          *
-         * \see AbstractStorage::init()
+         * \see AbstractOptionStorage::init()
          */
         virtual int createDefaultStorage(Options *options,
                                          AbstractOptionStorage **storage) const = 0;
+
         /*! \brief
          * Creates the description string for the option.
          *
@@ -165,15 +165,14 @@ class AbstractOption
         OptionFlags             _flags;
 
         /*! \brief
-         * Needed to initialize an Option object from this class without
-         * otherwise unnecessary accessors.
-         */
-        friend class Option;
-        /*! \brief
          * Needed to initialize an AbstractOptionStorage object from this class
          * without otherwise unnecessary accessors.
          */
         friend class AbstractOptionStorage;
+        /*! \brief
+         * Needed to be able to call createDefaultStorage().
+         */
+        friend class Options;
 };
 
 /*! \brief

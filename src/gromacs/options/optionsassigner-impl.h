@@ -38,6 +38,8 @@
 #ifndef GMX_OPTIONS_OPTIONSASSIGNER_IMPL_H
 #define GMX_OPTIONS_OPTIONSASSIGNER_IMPL_H
 
+#include <vector>
+
 #include "optionsassigner.h"
 
 namespace gmx
@@ -45,7 +47,7 @@ namespace gmx
 
 class AbstractErrorReporter;
 
-class Option;
+class AbstractOptionStorage;
 class Options;
 
 /*! \internal \brief
@@ -105,7 +107,7 @@ class OptionsAssigner::Impl
          * the internal state of the assigner to match the option found.
          * If no option is found, the internal state is not modified.
          */
-        Option *findOption(const char *name);
+        AbstractOptionStorage *findOption(const char *name);
 
         //! Options object to assign to.
         Options                &_options;
@@ -120,7 +122,7 @@ class OptionsAssigner::Impl
          */
         std::vector<Options *>  _sectionStack;
         //! Current option being assigned to, or NULL if none.
-        Option                 *_currentOption;
+        AbstractOptionStorage  *_currentOption;
         //! Keeps the error code of the first error encountered, or 0 if none.
         int                     _errorCode;
         //! Number of values assigned so far to the current option.

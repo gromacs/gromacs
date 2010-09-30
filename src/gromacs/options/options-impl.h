@@ -46,8 +46,8 @@
 namespace gmx
 {
 
+class AbstractOptionStorage;
 class OptionsGlobalProperties;
-class Option;
 
 /*! \internal \brief
  * Private implementation class for Options.
@@ -63,7 +63,7 @@ class Options::Impl
         //! Convenience type for list of sections.
         typedef std::vector<Options *> SubSectionList;
         //! Convenience type for list of options.
-        typedef std::vector<Option *> OptionList;
+        typedef std::vector<AbstractOptionStorage *> OptionList;
 
         //! Sets the name and title.
         Impl(const char *name, const char *title);
@@ -82,7 +82,7 @@ class Options::Impl
          * \param[in] name  Name to search for.
          * \returns Pointer to the found option, or NULL if not found.
          */
-        Option *findOption(const char *name) const;
+        AbstractOptionStorage *findOption(const char *name) const;
 
         /*! \brief
          * Calls Option::startSource() for all options, including subsections.
