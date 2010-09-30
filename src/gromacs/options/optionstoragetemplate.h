@@ -57,9 +57,10 @@ class Options;
  *
  * \tparam T Assignable type that stores a single option value.
  *
- * Provides an implementation of the clear(), finish(), and valueCount()
- * methods of AbstractOptionStorage, leaving typeString(), appendValue(),
- * finishSet(), and formatValue() to be implemented in derived classes.
+ * Provides an implementation of the clear() and valueCount() methods of
+ * AbstractOptionStorage, as well as a basic implementation of processSet() and
+ * processAll().  This leaves typeString(), formatValue(), and convertValue()
+ * to be implemented in derived classes.
  *
  * \inlibraryapi
  * \ingroup module_options
@@ -88,30 +89,42 @@ class OptionStorageTemplate : public AbstractOptionStorage
         // No implementation in this class for the pure virtual methods, but
         // the declarations are still included for clarity.
         virtual const char *typeString() const = 0;
-        virtual void clear();
-        /*! \copydoc AbstractOptionStorage::appendValue()
-         *
-         * Derived classes should call addValue() after they have converted
-         * \p value to the storage type.
-         */
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors) = 0;
-        virtual int finishSet(int nvalues,
-                              AbstractErrorReporter *errors) = 0;
-        /*! \copydoc AbstractOptionStorage::finish()
-         *
-         * The implementation in OptionStorageTemplate copies the values
-         * from the main storage vector to alternate locations, and always
-         * succeeds.  Derived classes should always call the base class
-         * implementation if they override this method.
-         */
-        virtual int finish(AbstractErrorReporter *errors);
         virtual int valueCount() const { return _values->size(); }
         virtual std::string formatValue(int i) const = 0;
 
     protected:
         //! Initializes default values (no storage).
         OptionStorageTemplate();
+
+        virtual void clear();
+        /*! \copydoc AbstractOptionStorage::convertValue()
+         *
+         * Derived classes should call addValue() after they have converted
+         * \p value to the storage type.
+         */
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors) = 0;
+        /*! \copydoc AbstractOptionStorage::processSet()
+         *
+         * The implementation in OptionStorageTemplate copies the values
+         * from the main storage vector to alternate locations, and always
+         * succeeds.  Derived classes should always call the base class
+         * implementation if they override this method.
+         */
+        virtual int processSet(int nvalues,
+                               AbstractErrorReporter * /*errors*/)
+        {
+            processValues(nvalues, true);
+            return 0;
+        }
+        /*! \copydoc AbstractOptionStorage::processAll()
+         *
+         * The implementation in OptionStorageTemplate does nothing, and always
+         * returns zero.  Derived classes should still always call the base
+         * class implementation if they override this method.
+         */
+        virtual int processAll(AbstractErrorReporter * /*errors*/)
+        { return 0; }
 
         /*! \brief
          * Adds a value to the storage.
@@ -120,13 +133,30 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * \retval 0 on success.
          * \retval ::eeInvalidInput if the maximum value count has been reached.
          *
-         * Derived classes should call this function from the appendValue()
+         * Derived classes should call this function from the convertValue()
          * implementation to add converted values to the storage.
          * It is only necessary to check the return value if addValue() is
-         * called more than once from one appendValue() invocation, or if
+         * called more than once from one convertValue() invocation, or if
          * ::efConversionMayNotAddValues is specified.
          */
         int addValue(const T &value);
+        /*! \brief
+         * Store values in alternate locations.
+         *
+         * \param[in] nvalues  Number of values to process.
+         * \param[in] bDoArray Whether to put values in the array storage as
+         *      well.
+         *
+         * Stores the last \p nvalues values added with addValue() to the
+         * alternate storage locations.
+         * The current implementation asserts if it is called more than once
+         * with \p bDoArray set to true.
+         *
+         * Derived classes should call this method if they use addValue()
+         * outside convertValue(), e.g., to set a default value.  In such
+         * cases, \p bDoArray should be set to false.
+         */
+        void processValues(int nvalues, bool bDoArray);
 
         //! Provides derived classes access to the current list of values.
         ValueList &values() { return *_values; }
@@ -141,7 +171,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * internally allocated one.  The allocation is performed by init().
          *
          * addValue() adds values only to this storage.  Other memory locations
-         * are updated only when finish() is called.
+         * are updated only when processAll() is called.
          */
         ValueList              *_values;
         T                      *_store;
@@ -182,11 +212,13 @@ createOptionStorage(const T *settings, Options *options,
     return 0;
 }
 
+
 template <typename T>
 OptionStorageTemplate<T>::OptionStorageTemplate()
     : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL)
 {
 }
+
 
 template <typename T>
 OptionStorageTemplate<T>::~OptionStorageTemplate()
@@ -196,6 +228,7 @@ OptionStorageTemplate<T>::~OptionStorageTemplate()
         delete _values;
     }
 }
+
 
 template <typename T>
 template <class U>
@@ -223,6 +256,7 @@ int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options
     {
         _values->clear();
         addValue(*settings._defaultValue);
+        processValues(1, false);
     }
     else if (!hasFlag(efExternalValueVector) && _store != NULL)
     {
@@ -237,53 +271,49 @@ int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options
     return 0;
 }
 
+
 template <typename T>
 void OptionStorageTemplate<T>::clear()
 {
     _values->clear();
 }
 
-template <typename T>
-int OptionStorageTemplate<T>::finish(AbstractErrorReporter * /*errors*/)
-{
-    if (_nvalptr)
-    {
-        *_nvalptr = _values->size();
-    }
-    if (_storeArray)
-    {
-        *_storeArray = new T[_values->size()];
-    }
-    for (size_t i = 0; i < _values->size(); ++i)
-    {
-        if (_store)
-        {
-            _store[i] = (*_values)[i];
-        }
-        if (_storeArray)
-        {
-            (*_storeArray)[i] = (*_values)[i];
-        }
-    }
-    return 0;
-}
 
 template <typename T>
 int OptionStorageTemplate<T>::addValue(const T &value)
 {
     int rc = incrementValueCount();
-    if (rc != 0)
+    if (rc == 0)
     {
-        return rc;
+        _values->push_back(value);
     }
-    // We store the value here to allow limited dependence between option
-    // values.
-    if (_store != NULL)
+    return rc;
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::processValues(int nvalues, bool bDoArray)
+{
+    if (_nvalptr)
     {
-        _store[_values->size()] = value;
+        *_nvalptr = _values->size();
     }
-    _values->push_back(value);
-    return 0;
+    if (bDoArray && _storeArray != NULL)
+    {
+        assert(*_storeArray == NULL);
+        *_storeArray = new T[_values->size()];
+    }
+    for (size_t i = _values->size() - nvalues; i < _values->size(); ++i)
+    {
+        if (_store)
+        {
+            _store[i] = (*_values)[i];
+        }
+        if (bDoArray && _storeArray != NULL)
+        {
+            (*_storeArray)[i] = (*_values)[i];
+        }
+    }
 }
 
 } // namespace gmx

@@ -60,6 +60,7 @@ SelectionOptionStorage::SelectionOptionStorage()
 {
 }
 
+
 int SelectionOptionStorage::init(const SelectionOption &settings,
                                  Options *options)
 {
@@ -68,8 +69,15 @@ int SelectionOptionStorage::init(const SelectionOption &settings,
     return MyBase::init(settings, options);
 }
 
-int SelectionOptionStorage::appendValue(const std::string &value,
-                                        AbstractErrorReporter * /*errors*/)
+
+std::string SelectionOptionStorage::formatValue(int i) const
+{
+    return values().at(i)->selectionText();
+}
+
+
+int SelectionOptionStorage::convertValue(const std::string &value,
+                                         AbstractErrorReporter * /*errors*/)
 {
     SelectionCollection *sc =
         hostOptions().globalProperties().selectionCollection();
@@ -89,20 +97,16 @@ int SelectionOptionStorage::appendValue(const std::string &value,
     return rc;
 }
 
-int SelectionOptionStorage::finishSet(int nvalues,
-                                      AbstractErrorReporter * /*errors*/)
+
+int SelectionOptionStorage::processSet(int nvalues,
+                                       AbstractErrorReporter *errors)
 {
     if (nvalues == 0)
     {
         // TODO: Implement such that in these cases, the selection will be
         // used from a file or parsed interactively.
     }
-    return 0;
-}
-
-std::string SelectionOptionStorage::formatValue(int i) const
-{
-    return values().at(i)->selectionText();
+    return MyBase::processSet(nvalues, errors);;
 }
 
 } // namespace gmx

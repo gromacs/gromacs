@@ -88,11 +88,11 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
             EXPECT_NE(0, MyBase::addValue(value));
         }
         /*! \brief
-         * Calls finish() in the base class.
+         * Calls processAll() in the base class.
          */
-        int finishBase(gmx::AbstractErrorReporter *errors)
+        int processAllBase(gmx::AbstractErrorReporter *errors)
         {
-            return MyBase::finish(errors);
+            return MyBase::processAll(errors);
         }
         /*! \brief
          * Calls addValue("dummy") in the base class and expects it to succeed.
@@ -117,12 +117,13 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         }
 
         virtual const char *typeString() const { return "mock"; }
-        MOCK_METHOD2(appendValue, int(const std::string &value,
-                                      gmx::AbstractErrorReporter *errors));
-        MOCK_METHOD2(finishSet, int(int nvalues,
-                                    gmx::AbstractErrorReporter *errors));
-        MOCK_METHOD1(finish, int(gmx::AbstractErrorReporter *errors));
         virtual std::string formatValue(int /*i*/) const { return ""; }
+
+        MOCK_METHOD2(convertValue, int(const std::string &value,
+                                       gmx::AbstractErrorReporter *errors));
+        MOCK_METHOD2(processSet, int(int nvalues,
+                                     gmx::AbstractErrorReporter *errors));
+        MOCK_METHOD1(processAll, int(gmx::AbstractErrorReporter *errors));
 };
 
 /*! \internal \brief
@@ -168,11 +169,11 @@ int MockOptionStorage::init(const MockOption &settings, gmx::Options *options)
     using ::testing::Invoke;
     using ::testing::Return;
     using ::testing::WithArg;
-    ON_CALL(*this, appendValue(_, _))
+    ON_CALL(*this, convertValue(_, _))
         .WillByDefault(DoAll(WithArg<0>(Invoke(this, &MockOptionStorage::addValue)),
                              Return(0)));
-    ON_CALL(*this, finish(_))
-        .WillByDefault(Invoke(this, &MockOptionStorage::finishBase));
+    ON_CALL(*this, processAll(_))
+        .WillByDefault(Invoke(this, &MockOptionStorage::processAllBase));
     return MyBase::init(settings, options);
 }
 
@@ -197,7 +198,7 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
         using ::testing::DoAll;
         using ::testing::Return;
         using ::testing::InvokeWithoutArgs;
-        EXPECT_CALL(*mock, finish(_))
+        EXPECT_CALL(*mock, processAll(_))
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::setOption),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             Return(0)));
@@ -228,12 +229,12 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
         ::testing::InSequence dummy;
         using ::testing::_;
         using ::testing::Return;
-        EXPECT_CALL(*mock, appendValue("a", _));
-        EXPECT_CALL(*mock, appendValue("b", _))
+        EXPECT_CALL(*mock, convertValue("a", _));
+        EXPECT_CALL(*mock, convertValue("b", _))
             .WillOnce(Return(0));
-        EXPECT_CALL(*mock, appendValue("c", _));
-        EXPECT_CALL(*mock, finishSet(2, _));
-        EXPECT_CALL(*mock, finish(_));
+        EXPECT_CALL(*mock, convertValue("c", _));
+        EXPECT_CALL(*mock, processSet(2, _));
+        EXPECT_CALL(*mock, processAll(_));
     }
 
     gmx::EmptyErrorReporter errors;
@@ -268,13 +269,13 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
         using ::testing::DoAll;
         using ::testing::InvokeWithoutArgs;
         using ::testing::Return;
-        EXPECT_CALL(*mock, appendValue("a", _));
-        EXPECT_CALL(*mock, appendValue("b", _))
+        EXPECT_CALL(*mock, convertValue("a", _));
+        EXPECT_CALL(*mock, convertValue("b", _))
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             Return(0)));
-        EXPECT_CALL(*mock, finishSet(3, _));
-        EXPECT_CALL(*mock, finish(_));
+        EXPECT_CALL(*mock, processSet(3, _));
+        EXPECT_CALL(*mock, processAll(_));
     }
 
     gmx::EmptyErrorReporter errors;
@@ -309,13 +310,13 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
         using ::testing::DoAll;
         using ::testing::InvokeWithoutArgs;
         using ::testing::Return;
-        EXPECT_CALL(*mock, appendValue("a", _));
-        EXPECT_CALL(*mock, appendValue("b", _))
+        EXPECT_CALL(*mock, convertValue("a", _));
+        EXPECT_CALL(*mock, convertValue("b", _))
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValueExpectFail),
                             Return(gmx::eeInvalidInput)));
-        EXPECT_CALL(*mock, finishSet(2, _));
-        EXPECT_CALL(*mock, finish(_));
+        EXPECT_CALL(*mock, processSet(2, _));
+        EXPECT_CALL(*mock, processAll(_));
     }
 
     gmx::EmptyErrorReporter errors;
@@ -349,10 +350,10 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
         using ::testing::DoAll;
         using ::testing::InvokeWithoutArgs;
         using ::testing::Return;
-        EXPECT_CALL(*mock, appendValue("a", _))
+        EXPECT_CALL(*mock, convertValue("a", _))
             .WillOnce(Return(0));
-        EXPECT_CALL(*mock, finishSet(0, _));
-        EXPECT_CALL(*mock, finish(_));
+        EXPECT_CALL(*mock, processSet(0, _));
+        EXPECT_CALL(*mock, processAll(_));
     }
 
     gmx::EmptyErrorReporter errors;

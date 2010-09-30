@@ -85,47 +85,6 @@ class AbstractOptionStorage
          */
         virtual const char *typeString() const = 0;
         /*! \brief
-         * Removes all values from the storage.
-         *
-         * This function is called also before the first value is added,
-         * allowing the storage to set a default value in initialization.
-         */
-        virtual void clear() = 0;
-        /*! \brief
-         * Adds a new value, converting it from a string.
-         *
-         * \param[in] value  String value to convert.
-         * \param[in] errors Error reporter object.
-         * \retval 0 if the value was successfully converted.
-         *
-         * This function may be called multiple times if the underlying
-         * option is defined to accept multiple values.
-         */
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors) = 0;
-        /*! \brief
-         * Performs validation and/or actions once a set of values has been
-         * added.
-         *
-         * \param[in] nvalues  Number of values added since the previous call
-         *      to finishSet().
-         * \param[in] errors Error reporter object.
-         * \retval 0 on success.
-         *
-         * This function may be called multiple times of the underlying option
-         * can be specified multiple times.
-         */
-        virtual int finishSet(int nvalues, AbstractErrorReporter *errors) = 0;
-        /*! \brief
-         * Performs validation and/or actions once all values have been added.
-         *
-         * \param[in] errors Error reporter object.
-         * \retval 0 if final option values are valid.
-         *
-         * This function is always called once.
-         */
-        virtual int finish(AbstractErrorReporter *errors) = 0;
-        /*! \brief
          * Returns the number of option values added so far.
          */
         virtual int valueCount() const = 0;
@@ -154,6 +113,48 @@ class AbstractOptionStorage
         Options &hostOptions() { return *_options; }
         //! \copydoc hostOptions()
         const Options &hostOptions() const { return *_options; }
+
+        /*! \brief
+         * Removes all values from the storage.
+         *
+         * This function is called also before the first value is added,
+         * allowing the storage to set a default value in initialization.
+         */
+        virtual void clear() = 0;
+        /*! \brief
+         * Adds a new value, converting it from a string.
+         *
+         * \param[in] value  String value to convert.
+         * \param[in] errors Error reporter object.
+         * \retval 0 if the value was successfully converted.
+         *
+         * This function may be called multiple times if the underlying
+         * option is defined to accept multiple values.
+         */
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors) = 0;
+        /*! \brief
+         * Performs validation and/or actions once a set of values has been
+         * added.
+         *
+         * \param[in] nvalues  Number of values added since the previous call
+         *      to finishSet().
+         * \param[in] errors Error reporter object.
+         * \retval 0 on success.
+         *
+         * This function may be called multiple times of the underlying option
+         * can be specified multiple times.
+         */
+        virtual int processSet(int nvalues, AbstractErrorReporter *errors) = 0;
+        /*! \brief
+         * Performs validation and/or actions once all values have been added.
+         *
+         * \param[in] errors Error reporter object.
+         * \retval 0 if final option values are valid.
+         *
+         * This function is always called once.
+         */
+        virtual int processAll(AbstractErrorReporter *errors) = 0;
 
         /*! \brief
          * Increments the number of values for the current set.

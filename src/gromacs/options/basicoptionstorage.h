@@ -63,12 +63,11 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
 {
     public:
         virtual const char *typeString() const { return "bool"; }
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int /*nvalues*/,
-                              AbstractErrorReporter * /*errors*/)
-        { return 0; }
         virtual std::string formatValue(int i) const;
+
+    private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
 };
 
 /*! \internal \brief
@@ -81,10 +80,12 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
 
         virtual const char *typeString() const
         { return hasFlag(efVector) ? "vector" : "int"; }
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int nvalues, AbstractErrorReporter *errors);
         virtual std::string formatValue(int i) const;
+
+    private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
+        virtual int processSet(int nvalues, AbstractErrorReporter *errors);
 };
 
 /*! \internal \brief
@@ -105,13 +106,14 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         int init(const DoubleOption &settings, Options *options);
 
         virtual const char *typeString() const;
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int nvalues, AbstractErrorReporter *errors);
-        virtual int finish(AbstractErrorReporter *errors);
         virtual std::string formatValue(int i) const;
 
     private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
+        virtual int processSet(int nvalues, AbstractErrorReporter *errors);
+        virtual int processAll(AbstractErrorReporter *errors);
+
         bool                    _bTime;
 };
 
@@ -127,14 +129,12 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         int init(const StringOption &settings, Options *options);
 
         virtual const char *typeString() const { return _allowed.empty() ? "string" : "enum"; }
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int /*nvalues*/,
-                              AbstractErrorReporter * /*errors*/)
-        { return 0; }
         virtual std::string formatValue(int i) const;
 
     private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
+
         ValueList               _allowed;
         int                    *_enumIndexStore;
 };
@@ -151,14 +151,12 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
         int init(const FileNameOption &settings, Options *options);
 
         virtual const char *typeString() const { return "file"; }
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int /*nvalues*/,
-                              AbstractErrorReporter * /*errors*/)
-        { return 0; }
         virtual std::string formatValue(int i) const;
 
     private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
+
         OptionFileType          _filetype;
 };
 

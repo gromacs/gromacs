@@ -67,12 +67,13 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
         int init(const SelectionOption &settings, Options *options);
 
         virtual const char *typeString() const { return "sel"; }
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int nvalues, AbstractErrorReporter *errors);
         virtual std::string formatValue(int i) const;
 
     private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
+        virtual int processSet(int nvalues, AbstractErrorReporter *errors);
+
         SelectionFlags          _flags;
 };
 

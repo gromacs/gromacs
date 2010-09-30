@@ -131,7 +131,7 @@ int Option::appendValue(const std::string &value,
         errors->warning("Ignoring extra value: " + value);
         return eeInvalidInput;
     }
-    return _storage->appendValue(value, errors);
+    return _storage->convertValue(value, errors);
 }
 
 int Option::finishSet(AbstractErrorReporter *errors)
@@ -140,7 +140,7 @@ int Option::finishSet(AbstractErrorReporter *errors)
 
     _storage->setFlag(efSet);
     // TODO: Remove invalid values if there are too few
-    int rc = _storage->finishSet(_storage->_currentValueCount, errors);
+    int rc = _storage->processSet(_storage->_currentValueCount, errors);
     if (_storage->_currentValueCount < _storage->_minValueCount)
     {
         errors->error("Too few (valid) values");
@@ -153,7 +153,7 @@ int Option::finishSet(AbstractErrorReporter *errors)
 int Option::finish(AbstractErrorReporter *errors)
 {
     assert(_storage->_currentValueCount == -1);
-    int rc = _storage->finish(errors);
+    int rc = _storage->processAll(errors);
     if (hasFlag(efRequired) && !isSet())
     {
         errors->error("Required option '" + _name + "' not set");
