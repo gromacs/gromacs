@@ -1019,6 +1019,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         case epbcXYZ:
             switch (ir->coulombtype)
             {
+            case eelCUT:
             case eelRF:
             case eelGRF:
             case eelRF_NEC:
@@ -1284,14 +1285,13 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             }
 
             /* For now this is just to double-check if OpenMM selected the GPU we wanted,
-            but when we'll let OpenMM select the GPU automatically, it will query the devideId.
+            but when we'll let OpenMM select the GPU automatically, it will query the deviceId.
             */            
             if (tmp != devId)
             {
                 gmx_fatal(FARGS, "Internal error: OpenMM is using device #%d"
                         "while initialized for device #%d", tmp, devId);
             }        
-            cout << ">>>>> OpenMM devId=" << tmp << endl;
             
             /* check GPU compatibility */
             char gpuname[STRLEN];

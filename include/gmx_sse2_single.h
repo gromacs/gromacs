@@ -134,6 +134,29 @@ printxmmi(const char *s,__m128i xmmi)
 }
 
 
+static int gmx_mm_check_and_reset_overflow(void)
+{
+    int MXCSR;
+    int sse_overflow;
+
+    MXCSR = _mm_getcsr();
+    /* The overflow flag is bit 3 in the register */
+    if (MXCSR & 0x0008)
+    {
+        sse_overflow = 1;
+        /* Set the overflow flag to zero */
+        MXCSR = MXCSR & 0xFFF7;
+        _mm_setcsr(MXCSR);
+    }
+    else
+    {
+       sse_overflow = 0;
+    }
+
+    return sse_overflow;
+}
+
+
 /************************
  *                      *
  * Simple math routines *

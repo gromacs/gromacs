@@ -441,12 +441,6 @@ void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
         snew(enerhist->dht->ndh, dhc->ndh);
         snew(enerhist->dht->dh, dhc->ndh);
         enerhist->dht->nndh=dhc->ndh;
-
-        /* these don't change during the simulation */
-        for(i=0;i<dhc->ndh;i++)
-        {
-            enerhist->dht->dh[i] = dhc->dh[i].dh;
-        }
     }
     else
     {
@@ -455,9 +449,11 @@ void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
     }
     for(i=0;i<dhc->ndh;i++)
     {
+        enerhist->dht->dh[i] = dhc->dh[i].dh;
         enerhist->dht->ndh[i] = dhc->dh[i].ndh;
     }
     enerhist->dht->start_time=dhc->start_time;
+    enerhist->dht->start_lambda=dhc->start_lambda;
 }
 
 
@@ -483,7 +479,8 @@ void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
         }
     }
     dhc->start_time=enerhist->dht->start_time;
-    dhc->start_lambda=enerhist->dht->start_lambda;
+    if (enerhist->dht->start_lambda_set)
+        dhc->start_lambda=enerhist->dht->start_lambda;
     if (dhc->dh[0].ndh > 0)
         dhc->start_time_set=TRUE;
     else

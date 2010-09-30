@@ -662,6 +662,42 @@ gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm)
     return rc;
 }
 
+/* Return the size of the arrays */
+int
+gmx_residuetype_get_size(gmx_residuetype_t rt)
+{
+    return rt->n;
+}
+
+/* Search for a residuetype with name resnm within the
+ * gmx_residuetype database. Return the index if found,
+ * otherwise -1.
+ */
+int
+gmx_residuetype_get_index(gmx_residuetype_t rt, const char *resnm)
+{
+    int i,rc;
+
+    rc=-1;
+    for(i=0;i<rt->n && rc;i++)
+    {
+        rc=gmx_strcasecmp(rt->resname[i],resnm);
+    }
+
+    return (0 == rc) ? i-1 : -1;
+}
+
+/* Return the name of the residuetype with the given index, or
+ * NULL if not found. */
+const char *
+gmx_residuetype_get_name(gmx_residuetype_t rt, int index)
+{
+  if(index >= 0 && index < rt->n) {
+    return rt->resname[index];
+  } else {
+    return NULL;
+  }
+}
 
 
 

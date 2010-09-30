@@ -1,10 +1,16 @@
 
 # Note that not all .c files are compiled directly: some of them 
 # are #included (some multiple times) from other source files.
-set(THREAD_MPI_LIB_SOURCE tmpi_init.c 
-            errhandler.c type.c group.c comm.c topology.c p2p.c collective.c 
-            once.c list.c reduce_fast.c profile.c event.c barrier.c
-            lock.c hwinfo.c)
+set(THREAD_MPI_LIB_SOURCE 
+    alltoall.c      hwinfo.c        reduce.c
+    barrier.c       list.c          reduce_fast.c
+    bcast.c         lock.c          scatter.c
+    collective.c    once.c          tmpi_init.c
+    comm.c          p2p_protocol.c  topology.c
+    errhandler.c    p2p_send_recv.c type.c
+    event.c         p2p_wait.c      
+    gather.c        profile.c
+    group.c         )
 
 
 if (THREAD_PTHREADS)

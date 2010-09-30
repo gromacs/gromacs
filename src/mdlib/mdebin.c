@@ -179,7 +179,9 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->bEInd[i]=FALSE;
     }
 
-    for(i=0; i<F_NRE; i++) {
+#ifndef GMX_OPENMM
+    for(i=0; i<F_NRE; i++)
+    {
         md->bEner[i] = FALSE;
         if (i == F_LJ)
             md->bEner[i] = !bBHAM;
@@ -238,6 +240,13 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         else
             md->bEner[i] = (gmx_mtop_ftype_count(mtop,i) > 0);
     }
+#else
+    /* OpenMM always produces only the following 4 energy terms */
+    md->bEner[F_EPOT] = TRUE;
+    md->bEner[F_EKIN] = TRUE;
+    md->bEner[F_ETOT] = TRUE;
+    md->bEner[F_TEMP] = TRUE;
+#endif
 
     md->f_nre=0;
     for(i=0; i<F_NRE; i++)
@@ -1158,21 +1167,6 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
         }
     }
 
-}
-
-void init_energyhistory(energyhistory_t * enerhist)
-{
-    enerhist->nener = 0;
-
-    enerhist->ener_ave     = NULL;
-    enerhist->ener_sum     = NULL;
-    enerhist->ener_sum_sim = NULL;
-    enerhist->dht          = NULL;
-
-    enerhist->nsteps     = 0;
-    enerhist->nsum       = 0;
-    enerhist->nsteps_sim = 0;
-    enerhist->nsum_sim   = 0;
 }
 
 void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
