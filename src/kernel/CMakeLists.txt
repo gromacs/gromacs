@@ -55,11 +55,9 @@ if(GMX_OPENMM)
     else()
         add_definitions( -DOPENMM_PLUGIN_DIR="" )
     endif()
-    add_library(openmm_api_wrapper openmm_wrapper.cpp)
-    target_link_libraries(openmm_api_wrapper gmx gmx_gpu_utils ${OpenMM_LIBRARIES})
-#    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
+    add_library(openmm_api_wrapper STATIC openmm_wrapper.cpp)
+    target_link_libraries(openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})
     set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})   
-	install(TARGETS openmm_api_wrapper DESTINATION ${LIB_INSTALL_DIR})   
 endif(GMX_OPENMM)
 
 if(GMX_FAHCORE)
@@ -132,12 +130,55 @@ install(TARGETS
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 
-get_target_property(MDRUN_PATH mdrun LOCATION)
+# if we build shared gromacs libs, when installing throught the install-mdrun target 
+# these libs need to be installed as well
+if(BUILD_SHARED_LIBS)
+    # in MDRUN_LIBS we store the libraries MDRUN links against (NOTE: hardcoded!!!)
+    set(MDRUN_LIBS gmxpreprocess md gmx)
+    
+    # generate install-libXXX custom target for each shared lib that mdrun links against
+    foreach(_lib ${MDRUN_LIBS})
+        # double-check that the type is SHARED
+        get_target_property(_type ${_lib} TYPE)
+        if(NOT ${_type} STREQUAL "SHARED_LIBRARY")
+            message(FATAL_ERROR " Internal error: library ${_lib} is not shared so it's not supposed to be processed for installing")
+        endif()
+
+        # figure out the path and filename under which the lib will be installed
+        # (libname with pre- and suffix)
+        get_target_property(_lib_path ${_lib} LOCATION)
+        string(REGEX REPLACE "/" ";" _lib_fname ${_lib_path})
+        list(REVERSE _lib_fname)
+        list(GET _lib_fname 0 _lib_fname)
+
+        # prepare path and filename for the pkgconfig stuff
+        string(REGEX REPLACE ".so$" ".pc" _lib_pc_path ${_lib_path})
+        string(REGEX REPLACE ".so$" ".pc" _lib_pc_fname ${_lib_fname})
+        # create custom target for copying each library to the install location 
+        # TODO: need to fix this to have the .so.6 form
+        add_custom_target(install-${_lib}
+            COMMAND ${CMAKE_COMMAND} -E copy 
+                "${_lib_path}" "${LIB_INSTALL_DIR}/${_lib_fname}.${SOVERSION}"
+            COMMAND ${CMAKE_COMMAND} -E create_symlink 
+                "${_lib_fname}.${SOVERSION}" "${LIB_INSTALL_DIR}/${_lib_fname}"
+            COMMAND ${CMAKE_COMMAND} -E copy
+                "${_lib_pc_path}" "${LIB_INSTALL_DIR}/pkgconfig/${_lib_pc_fname}"
+            # DEPENDS ${_lib_pcpath}
+            COMMENT "Installing library ${_lib}")
+        add_dependencies(install-${_lib} ${_lib})
+
+        # gather the custom target names in a string
+        # set(_lib_install_targets "${_lib_install_targets} install-lib${_lib}")
+        list(APPEND _lib_install_targets "install-${_lib}")
+    endforeach(_lib)
+endif(BUILD_SHARED_LIBS)
+
+get_target_property(_mdrun_path mdrun LOCATION)
 add_custom_target(install-mdrun
-        COMMAND ${CMAKE_COMMAND} -E copy "${MDRUN_PATH}" 
-            "${CMAKE_INSTALL_PREFIX}/bin/${_mdrun_exec_name}"
-        DEPENDS mdrun
-        COMMENT "Installing mdrun")
+    COMMAND ${CMAKE_COMMAND} -E copy "${_mdrun_path}" 
+        "${BIN_INSTALL_DIR}/${_mdrun_exec_name}"
+    COMMENT "Installing mdrun")
+add_dependencies(install-mdrun mdrun ${_lib_install_targets})
 
 endif(GMX_FAHCORE)
 
