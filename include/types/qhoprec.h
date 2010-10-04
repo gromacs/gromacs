@@ -1,6 +1,9 @@
+#ifndef QHOPREC_H
+#define QHOPREC_H
+
 #ifdef HAVE_CONFIG_H
-#include <config.h>
-#include <idef.h>
+#include "config.h"
+#include "types/idef.h"
 #endif
 
 enum {eQNONE, eQACC, eQDON, eQACCDON, eQNR};
@@ -115,3 +118,4 @@ typedef struct {
   real           qhop_rc; /* cut of for the sphere in which veolicites will be scaled */
 
 } t_qhoprec;
+#endif
