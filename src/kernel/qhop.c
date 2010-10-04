@@ -129,8 +129,12 @@ qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, qhop_db_t
   return (q);
 }
 
+enum {etQhopModeOne, etQhopModeList, etQhopModeGillespie, etQhopModeNR};
+enum {etQhopNONE, etQhopSE, etQhopI, etQhopTST};
+static const char *qhopregimes[] = {"NONE", "SE", "Intermediate", "TST"};
+
 typedef struct {
-  int donor_id,acceptor_id,proton_id;
+  int donor_id,acceptor_id,proton_id, regime;
   real rda,prob;
 } t_hop;
 
@@ -996,7 +1000,7 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
   rvec
     dx,veca,vecb,vecc;
   int
-    nr_hops=0,max_hops=10;
+    nr_hops=0,max_hops=10, closest;
   gmx_bool 
     found_proton;
   real 
@@ -1024,16 +1028,26 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
 	/* find the proton that can go. I assume that there can only be one!
 	 */
 	found_proton = FALSE;
+	r_close = 100000;
 	for (k=0;k<donor.nr_protons;k++){
 	  /* TRICKY.... Only if proton carries a charge we allow the hop */
 	  if( md->chargeA[donor.protons[k]] > 0.000001 ){
 	    pbc_dx(&pbc,x[donor.protons[k]],x[acceptor.atom_id],dx);
-	    if(norm(dx)< HBOND){
-	      found_proton = TRUE;
-	      break;
-	    }
+	    /* if(norm(dx)< HBOND) */
+	      {
+		found_proton = TRUE;
+		if (norm(dx) < r_close)
+		  {
+		    r_close =  norm(dx);
+		    closest = k;
+		  }
+		/* break; */
+	      }
 	  }
 	}
+
+	k = closest;
+
 	if(found_proton){
 	  /* compute DHA angels */
 	  pbc_dx(&pbc,x[donor.atom_id],x[donor.protons[k]],veca);
@@ -1335,24 +1349,69 @@ static real get_self_energy(t_commrec *cr, t_qhop_residue donor,
   return(Eself);
 } /* evaluate energy */
 
-real compute_E12_left(qhop_parameters *p,real rda, real E12){
+static real calc_S(const t_qhop_parameters *p,
+		   const real rda)
+{
+  real d = rda - (p->t_A);
+
+  return (p->s_A) * (d * d) + (p->v_A);
+}
+
+static real calc_V(const t_qhop_parameters *p,
+		   const real rda)
+{
+  return (p->s_C) * exp( -(p->t_C) * (rda - 0.20)) + (p->v_C); 
+}
+
+
+/**
+ * Return the transfer probability for an arbitrary time window
+ *
+ * Models the transfer as a poisson process,
+ * p(t) =  1-exp(-k*t) = 1 - ( 1-p(0.01 ps) )^t
+ * 
+ */
+static real poisson_prob(real p,            ///< Hopping probability over a 0.01 ps window
+			 real qhop_interval ///< The interval between qhop attempts in picoseconds
+			 )
+{
+  return 1-pow((1-p), (0.01 / qhop_interval));
+}
+
+
+/**
+ * Returns the SE-regime validity limit.
+ */
+real compute_E12_left(t_qhop_parameters *p, ///< Pointer to hopping parameters			      
+		      real rda,             ///< Donor-acceptor distance			      
+		      real E12              ///< Energy difference between product and reactant states
+		      )
+{
   
   real
-    k_big,m_big,E12_left;
+    K, M, E12_left;
 
   /* compute the value of E12 that is required for 
    * p_SE(rda,10fs) = 0.1. 
    */
-  k_big = p->k_1*exp(-p->k_2*(rda-0.23))+p->k_3;
-  m_big = p->m_1*exp(-p->m_2*(rda-0.23))+p->m_3;
+  K = p->k_1*exp(-p->k_2*(rda-0.23))+p->k_3;
+  M = p->m_1*exp(-p->m_2*(rda-0.23))+p->m_3;
 
-  E12_left = -(atanh(2*(0.1-0.5))-m_big)/k_big;
+  E12_left = -(atanh(2*(0.1-0.5))-M)/K;
 
 
   return(E12_left);
-} /* compute_E12_left */
+}
 
-real compute_E12_right(qhop_parameters *p,real rda,real Temp){
+
+/**
+ * REturns the TST-regime validity limit.
+ */
+real compute_E12_right(qhop_parameters *p, ///< Pointer to hopping parameters			      
+		       real rda,	   ///< Donor-acceptor distance			      
+		       real Temp	   ///< Temperature
+		       )
+{
   
   real
     S,T,V,Eb,E12_right,d;
@@ -1368,36 +1427,66 @@ real compute_E12_right(qhop_parameters *p,real rda,real Temp){
    */
   
   /*  Eb = (BOLTZ*Temp)*log(100);
+   *  No, we must use RGAS, since the units are in kJ/mol.
    */
-  Eb = 11*(BOLTZ*Temp);
-  d = rda-p->t_A;
-  S = p->s_A*d*d+p->v_A;
+  Eb = RGAS * Temp * log(100);
+  d = rda - (p->t_A);
+  S = calc_S(p, rda);
   T = p->s_B;
-  V = p->s_C*exp(-p->t_C*(rda-0.20))+p->v_C;
-  E12_right = ((-99.50-0.0760*Temp)*(rda*10.-(2.3450+0.000410*Temp))*(rda*10.-(2.3450+0.000410*Temp))+10.3)*CAL2JOULE;
+  V = calc_V(p, rda);
+
+  d = T*T - 4*V*(S-Eb); /* I want to make sure this is non-negative. */
+
+  if (d<0)
+    {
+      gmx_fatal(FARGS, "In compute_E12_right():\n"
+  		"  T*T - 4*V*(S-Eb) is negative. Can't calculate the square root.");
+    }
+  else
+    {
+      E12_right = (-T + sqrt(d)) / (2*V);
+    }
+
+  /*   E12_right = ((-99.50-0.0760*Temp)*(rda*10.-(2.3450+0.000410*Temp))*(rda*10.-(2.3450+0.000410*Temp))+10.3)*CAL2JOULE; */
+
   return(E12_right);
 } /* compute_E12_right */
 
-real compute_Eb(qhop_parameters *p, 
-		real rda, real E12){
+
+/**
+ * Calculates the barrier height.
+ */
+static real compute_Eb(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters			   
+		       real rda,	     ///< Donor--acceptor distance				   
+		       real E12	             ///< Energy difference between product and reactant states
+		       )
+{
   real
     Eb,S,T,V,temp;
   
-  temp = rda-p->t_A;
-  S = p->s_A*(temp*temp)+p->v_A;
+  /* temp = rda - p->t_A; */
+  S = calc_S(p, rda); /* p->s_A * (temp*temp) + p->v_A; */
   T = p->s_B;
-  V = p->s_C*exp(-p->t_C*(rda-0.20))+p->v_C;
-  Eb = S+T*E12+V*E12*E12;
+  V = calc_V(p, rda); /* p->s_C*exp(-p->t_C*(rda-0.20))+p->v_C; */
+  Eb = S + T*E12 + V*E12*E12;
   return(Eb);
-} /* compute_Eb */
+}
 
-real compute_rate_TST(qhop_parameters *p,t_inputrec *ir, 
-		      real E12, real rda, real T){
-  
+
+/**
+ * Calculates the TST transfer probability for a 10 fs time window.
+ */
+real compute_rate_TST(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters
+		      real E12,		    ///< Energy difference between product and reactant states
+		      real rda,             ///< Donor--acceptor distance
+		      real T                ///< Temperature
+		      )
+{
   real
-    Q_big,R_big,kappa,half_hbar_omega,ETST,pTST,Emax,E_M,Eb;
+    Q,R,kappa,half_hbar_omega,ETST,pTST,Emax,E_M,Eb;
 
   Eb = compute_Eb(p,rda,E12);
+
   if(E12 > 0.0){
     Emax = Eb;
     E_M  = Emax - E12;
@@ -1405,48 +1494,76 @@ real compute_rate_TST(qhop_parameters *p,t_inputrec *ir,
   else {
     Emax = Eb - E12;
     E_M = Eb;
-  }  
-  Q_big = p->q_1 + p->q_2*T + p->q_3*T*T;
-  R_big = p->r_1 + p->r_2*T + p->r_3*T*T;
-  kappa = exp(p->p_1 + Q_big*E_M+R_big*E_M*E_M);
-  half_hbar_omega = p->f*exp(-p->g*Eb)+p->h;
-  ETST =-(Eb-half_hbar_omega)/(BOLTZ*T);
-  pTST = (kappa*BOLTZ*T/PLANCK)*exp(ETST)*ir->delta_t;
+  }
+
+  Q =
+    p->q_1
+    + p->q_2 * T
+    + p->q_3 * T*T;
+
+  R =
+    p->r_1
+    + p->r_2 * T
+    + p->r_3 * T*T;
+
+  kappa =
+    exp(p->p_1 + Q*E_M + R*E_M*E_M);
+
+  half_hbar_omega = p->f * exp(-p->g * Eb) + p->h;
+  ETST =-(Eb-half_hbar_omega)/(RGAS/* BOLTZ */*T);
+  pTST = (kappa*BOLTZ*T/PLANCK)*exp(ETST) * 0.01 /* (ir->delta_t * qr->qhopfreq) */;
+  /* DeltaT from eq. 28 in Lill and Helms JCP 115 translates to the qhop frequency and not the timestep.
+     Think about it; the probability should not depend on the integration time step, but on how often
+     we allow hops.*/
   return (pTST);
 } /* compute_prob_TST */
 
-real compute_rate_SE(qhop_parameters *p, t_inputrec *ir, 
-		     real E12, real rda){
 
+/**
+ * Calculates the barrierless transfer probability for a 10 fs time window.
+ */
+real compute_rate_SE(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters
+		      real E12,		   ///< Energy difference between product and reactant states
+		      real rda             ///< Donor--acceptor distance
+		      )
+{
   real
-    k_big,m_big,pSE;
+    K, M, pSE;
   
-  k_big = p->k_1*exp(-p->k_2*(rda-0.23))+p->k_3;
-  m_big = p->m_1*exp(-p->m_2*(rda-0.23))+p->m_3;
-  pSE = (0.5*tanh(-k_big*E12+m_big)+0.5)*(ir->delta_t/0.01);
+  K = p->k_1 * exp(-p->k_2 * (rda-0.23)) + p->k_3;
+  M = p->m_1 * exp(-p->m_2 * (rda-0.23)) + p->m_3;
+  pSE = (0.5 * tanh(-K * E12 + M) + 0.5);
   return(pSE);
 } /* compute_prob_SE */
 
-real compute_rate_log(qhop_parameters *p, t_inputrec *ir,
-		      real E12, real E12_left, real E12_right, 
-		      real rda, real T){
+
+/**
+ * Calculates the transfer probability for the intermediate regime over a 10 fs time window.
+ */
+real compute_rate_log(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters
+		      real E12,             ///< Energy difference between product and reactant states
+		      real E12_left,	    ///< Validity limit for the SE regime
+		      real E12_right, 	    ///< Validity limit for the TST regime
+		      real rda,		    ///< Donor--acceptor distance
+		      real T 		    ///< Temperature
+		      )
+{
   
    /* we now compute the probability over a 10fs interval. We return the
    * probability per timestep.
    */
   real 
-    rSE,rTST,log_rSE,log_rTST,log_r,rate;
+    rSE,rTST,rate;
   
-  rSE  = compute_rate_SE(p,ir,E12_left, rda)*(0.01)/(ir->delta_t);
-  /* probability of a TST after 10fs */
-  rTST = (1-pow((1-compute_rate_TST(p,ir,E12_right,rda,T)),
-		(0.01/ir->delta_t)));
-  log_rSE =  log10(rSE);
-  log_rTST = log10(rTST);
-  log_r = log_rSE + (E12-E12_left)*(log_rTST-log_rSE)/(E12_right-E12_left);
-  rate = pow(10,log_r)*(ir->delta_t/0.01);
+  rSE  = compute_rate_SE(p,E12_left, rda);
+  rTST = compute_rate_TST(p,E12_right,rda,T);
+  rate = rSE * pow((rTST/rSE), (E12-E12_left)/(E12_right-E12_left));
+  /* See, the log-space interpolation translates to the expression in the first argument above.
+   * No need to log/exp back and forth. */
+
   return(rate);
 } /* compute_prob_log */
+
 
 static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			 gmx_wallcycle_t wcycle, 
@@ -1455,10 +1572,9 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			 t_mdatoms *md,t_fcdata *fcd,
 			 t_graph *graph,
 			 t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-			 /*gmx_genborn_t *born,*/ gmx_bool bBornRadii,
-			 t_hop *hop, real T,real *E_12,
-			 t_qhoprec *qhoprec,t_pbc pbc,int step,
-			 qhop_db_t db){
+			 gmx_genborn_t *born, bool bBornRadii,
+			 t_hop *hop, real T,real *E_12, real *Eb_ext,
+			 t_qhoprec *qhoprec,t_pbc pbc,int step){
   
   /* compute the hopping probability based on the Q-hop criteria
    */
@@ -1467,69 +1583,86 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     Eafter_tot, Eafter_self, Eafter,
     E12=0,E12_right,E12_left,Eb,
     r_TST,r_SE,r_log;
-  qhop_parameters 
+  t_qhop_parameters 
     *p;
   /* liever lui dan moe */
   p = get_qhop_params(qhoprec->qhop_atoms[hop->donor_id].resname,
-		      qhoprec->qhop_atoms[hop->donor_id].resname, db);
+		      qhoprec->qhop_atoms[hop->donor_id].resname);
   
   Ebefore_tot = evaluate_energy(cr,ir, nrnb, wcycle,top,mtop,groups,
 				state,md,fcd,graph,
-				fr,vsite,mu_tot, /*born,*/ bBornRadii,step);
+				fr,vsite,mu_tot, born, bBornRadii,step);
   Ebefore_self = get_self_energy(cr,fr->qhoprec->qhop_residues[hop->donor_id],
 				 fr->qhoprec->qhop_residues[hop->acceptor_id],
 				 md,state->x,pbc,fr);
   Ebefore = Ebefore_tot-Ebefore_self;
 
-  if(change_protonation(cr, fr->qhoprec, md, hop, state->x,FALSE,mtop)){
-    Eafter_tot = evaluate_energy(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
-				 fcd,graph,fr,vsite,mu_tot, /*born,*/ bBornRadii,
-				 step);
-    Eafter_self = get_self_energy(cr,fr->qhoprec->qhop_residues[hop->donor_id],
-				  fr->qhoprec->qhop_residues[hop->acceptor_id],
-				  md,state->x,pbc,fr);
-    Eafter = Eafter_tot-Eafter_self;
+  if(change_protonation(cr, fr->qhoprec, md, hop, state->x,FALSE,mtop))
+    {
+      Eafter_tot = evaluate_energy(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
+				   fcd,graph,fr,vsite,mu_tot, born, bBornRadii,
+				   step);
+      Eafter_self = get_self_energy(cr,fr->qhoprec->qhop_residues[hop->donor_id],
+				    fr->qhoprec->qhop_residues[hop->acceptor_id],
+				    md,state->x,pbc,fr);
+      Eafter = Eafter_tot-Eafter_self;
     
-    E12 = Eafter-Ebefore;
+      E12 = Eafter-Ebefore;
     
-    E12 += p->alpha+p->beta*hop->rda+p->gamma*hop->rda*hop->rda;
+      E12 += p->alpha+p->beta*hop->rda+p->gamma*hop->rda*hop->rda;
     
-    E12_right = compute_E12_right(p,hop->rda,T);
+      E12_right = compute_E12_right(p, hop->rda, T);
     
-    E12_left  = compute_E12_left (p,hop->rda,E12);
-    Eb        = compute_Eb(p,hop->rda,E12);  
-    fprintf(stderr,"E12 = %f\n",E12);
+      E12_left  = compute_E12_left (p, hop->rda, E12);
+      Eb        = compute_Eb(p,hop->rda,E12);  
+      fprintf(stderr,"E12 = %f\n",E12);
 
-    r_TST = compute_rate_TST(p,ir,E12,hop->rda,T);
-    r_SE  = compute_rate_SE (p,ir,E12,hop->rda);
-    r_log = compute_rate_log(p,ir,E12,E12_left,E12_right,hop->rda,T);
-    if(E12 > E12_right){
-      /* Classical TST regime */
-      hop->prob = (1-pow((1-r_TST),fr->qhoprec->qhopfreq));
+      r_TST = compute_rate_TST(p, E12, hop->rda, T);
+      r_SE  = compute_rate_SE (p, E12, hop->rda);
+      if(E12 > E12_right)
+	{
+	/* Classical TST regime */
+	hop->prob = poisson_prob(r_TST, (ir->delta_t * qhoprec->qhopfreq)); /* (1-pow((1-r_TST),fr->qhoprec->qhopfreq)); */
+	hop->regime = etQhopTST;
+	}
+      else 
+	{
+	  if (E12 < E12_left)
+	    {
+	      /* Schroedinger regime */
+	      /* using volkhards probality propagation:
+	       */
+	      hop->prob = poisson_prob(r_SE, (ir->delta_t * qhoprec->qhopfreq));
+	      hop->regime = etQhopSE;
+	      fprintf(stderr, "TEMPORARY:       r_SE = %e\n", r_SE);
+	    }
+	  else
+	    {
+	      r_log = compute_rate_log(p,E12,E12_left,E12_right,hop->rda,T);
+	      /* intermediate regime */
+	      /* using volkhards probality propagation*/
+	      hop->prob = poisson_prob(r_log, (ir->delta_t * qhoprec->qhopfreq));
+	      hop->regime = etQhopI;
+	    }
+	}
+      /* now undo the move */
+      if(!change_protonation(cr, fr->qhoprec, md, hop, state->x,TRUE,mtop)){
+	gmx_fatal(FARGS,"Oops, cannot undo the change in protonation.");
+      }
     }
-    else if (E12 < E12_left ){
-      /* Schroedinger regime */
-      /* using volkhards probality propagation:
-       */
-      hop->prob = r_SE*fr->qhoprec->qhopfreq;
+  else
+    {
+      fprintf(stderr, "change_protonation() returned FALSE!");
     }
-    else{
-	/* intermediate regime */
-	/* using volkhards probality propagation*/
-      hop->prob = r_log*fr->qhoprec->qhopfreq;
-    }
-    /* now undo the move */
-    if(!change_protonation(cr, fr->qhoprec, md, hop, state->x,TRUE,mtop)){
-      gmx_fatal(FARGS,"Oops, cannot undo the change in protonation.");
-    }
-  }
   /* return the FF energy difference, as this is what we need to
      compensate by scaling velocities
    */
-  *E_12 = E12; 
+  *E_12 = E12;
+  *Eb_ext = Eb;
   free(p);
   return(Eafter_tot-Ebefore_tot);
 }
+
 
 static gmx_bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec, 
 			t_mdatoms *md, t_hop *hop, rvec *x,
@@ -1811,12 +1944,14 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   gmx_bool
     bAgain,bHop;
   real 
-    *DE_MM,*E12,rnr;
+    *DE_MM,*E12,rnr,*Eb;
   static int 
     start_seed=0;
   static gmx_rng_t 
     rng,rng_int;
-  int a;
+  int a, qhopmode;
+
+  qhopmode = etQhopList
   set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,state->box);
   
   if(bFirst){
@@ -1836,51 +1971,100 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   hop = find_acceptors(cr,fr,state->x,pbc,&nr_hops,md);
   snew(DE_MM,nr_hops);
   snew(E12,nr_hops);
+  snew(Eb, nr_hops);
+
   /* select an acceptor randomly
    */
-  i = (int )floor (1.0*(nr_hops*((1.0*gmx_rng_uniform_uint32(rng_int))/4294967296)));
-  if(nr_hops){
-    /*  for(i=0;i<nr_hops;i++){*/
-    DE_MM[i] = get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
-			    fcd,graph,fr,vsite,mu_tot/*,born*/,bBornRadii,
-			    &hop[i],T,&E12[i],
-			    fr->qhoprec,pbc,step, db);
-    /*  }*/
-    /* now we have for all hops the energy difference and the
-       probability. For the moment I loop over them in order given and
-       keep looping until I am done */
+  /*   i = (int )floor (1.0*(nr_hops*((1.0*gmx_rng_uniform_uint32(rng_int))/4294967296))); */
+  if(nr_hops > 0)
+    {
+      for(i=0; i<nr_hops; i++)
+	{
+	  if (qhopmode == etQhopModeOne)
+	    {
+	      i = (int )floor (1.0*(nr_hops*((1.0*gmx_rng_uniform_uint32(rng_int))/4294967296)));
+	    }
+	
+	  Eb[i] = -1;
+	
+	  DE_MM[i] = get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
+				  fcd,graph,fr,vsite,mu_tot/*,born*/,bBornRadii,
+				  &hop[i],T,&E12[i], &Eb[i],
+				  fr->qhoprec,pbc,step, db);
+
+	  if (qhopmode == etQhopModeOne)
+	    {
+	      break;
+	    }
+
+	}
+
+      /* now we have for all hops the energy difference and the
+	 probability. For the moment I loop over them in order given and
+	 keep looping until I am done */
     
-    /* INstead, to perserve deaitled ballance, we need to randomly select one
-     */
+      /* INstead, to perserve deaitled ballance, we need to randomly select one
+       * 
+       * Sorry, but that doesn't preserve detailed balance.
+       */
     
-    /*  for(i=0;i<nr_hops;i++){*/
-    rnr =gmx_rng_uniform_real(rng); 
-    if(MASTER(cr)){
-      /* some printing to the log file */
-      fprintf(fplog,
-	      "\n%d. don %d acc %d. E12 = %18.12f, DE_MM = %18.12f, prob. = %f, ran. = %f",i,
-	      fr->qhoprec->qhop_atoms[hop[i].donor_id].res_id,
-	      fr->qhoprec->qhop_atoms[hop[i].acceptor_id].res_id, 	      
-	      E12[i],DE_MM[i],hop[i].prob,rnr);
-    } 
-    if(hop[i].prob > rnr){
-      /* hoppenmaar! */
+      for(i=0; i<nr_hops; i++)
+	{
+	  if (hop[i].regime != etQhopNONE)
+	    {
+	      rnr =gmx_rng_uniform_real(rng); 
+	      if(MASTER(cr)){
+		/* some printing to the log file */
+		fprintf(fplog,
+			"\n%d. don %d acc %d. E12 = %18.12f, DE_MM = %18.12f, Eb = %18.12f, prob. = %f, ran. = %f (%s)", i,
+			fr->qhoprec->qhop_atoms[hop[i].donor_id].res_id,
+			fr->qhoprec->qhop_atoms[hop[i].acceptor_id].res_id, 	      
+			E12[i], DE_MM[i], Eb[i], hop[i].prob, rnr, qhopregimes[hop[i].regime]);
+	      }
+ 
+	      /* Attempt hop */
+	      if(hop[i].prob > rnr)
+		{
+		  /* hoppenmaar! */
       
-      bHop = do_hop(cr, fr->qhoprec, md, &hop[i], state->x,mtop);
-      fprintf(stderr,"hopping!\n");
-      /*      scale_velocities();*/
+		  bHop = do_hop(cr, fr->qhoprec, md, &hop[i], state->x,mtop);
+		  fprintf(stderr,"hopping!\n");
+		  /*      scale_velocities();*/
+
+		  if (qhopmode != etQhopModeOne)
+		    {
+		      /* Zap all hops whose reactants just was consumed. */
+		      for (j=i+1; j<nr_hops; j++)
+			{
+			  if (hop[j].donor_id    == hop[i].donor_id    ||
+			      hop[j].acceptor_id == hop[i].acceptor_id ||
+			      hop[j].donor_id    == hop[i].acceptor_id ||
+			      hop[j].acceptor_id == hop[i].donor_id)
+			    {
+			      hop[j].regime = etQhopNONE;
+			      fprintf(stderr, " * Zapping hop number %i *\n", j);
+			    }
+			}
+		    }
+		}
+	      else
+		{
+		  bHop = FALSE;
+		}
+
+	      if(MASTER(cr) && bHop)
+		{
+		  fprintf(fplog,"\n\nQ-hop is TRUE at step %d!\nE12 = %f, hopper: %d don: %d (%s) acc: %d (%s)\n",
+			  step,E12[i], i,
+			  fr->qhoprec->qhop_atoms[hop[i].donor_id].res_id,
+			  fr->qhoprec->qhop_atoms[hop[i].donor_id].resname,
+			  fr->qhoprec->qhop_atoms[hop[i].acceptor_id].res_id,
+			  fr->qhoprec->qhop_atoms[hop[i].acceptor_id].resname);
+		}
+	    }
+	}
+      fprintf(fplog,"\n");
     }
-    else{
-      bHop = FALSE;
-    }
-    if(MASTER(cr) && bHop){
-      fprintf(fplog,"\n\nQ-hop is TRUE at step %d!\nE12 = %f, hopper: %d don: %d  acc: %d\n",
-	      step,E12[i],i,fr->qhoprec->qhop_atoms[hop[i].donor_id].res_id,
-	      fr->qhoprec->qhop_atoms[hop[i].acceptor_id].res_id);
-      
-    }
-    fprintf(fplog,"\n");
-  }
   free(hop);
   free(E12);
   free(DE_MM);
