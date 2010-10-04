@@ -3,7 +3,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#include "types/idef.h"
+#include "idef.h"
 #endif
 
 enum {eQNONE, eQACC, eQDON, eQACCDON, eQNR};
