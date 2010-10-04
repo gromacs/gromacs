@@ -36,6 +36,8 @@
 #include "types/idef.h"
 #include "hackblock.h"
 #include "gmx_qhop_db.h"
+#include "types/qhoprec.h"
+#include "types/gmx_qhop_types.h"
 
 #define VERBOSE_QHOP
 /* THIS IS JUST FOR QUICK AND DIRTY TEST WORK!!! */
@@ -1004,7 +1006,7 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
   gmx_bool 
     found_proton;
   real 
-    ang;
+    ang, r_close;
   qhoprec = fr->qhoprec;
   qhoplist = fr->qhopnblist;
   snew(hop,max_hops);
@@ -1243,7 +1245,7 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			    t_graph *graph,
 			    t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 			    /*gmx_genborn_t *born,*/
-			    gmx_bool bBornRadii,int step){
+			    /* gmx_bool bBornRadii, */int step){
   real 
     t,etot;
   real 
@@ -1263,7 +1265,7 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	   state->box,state->x,&state->hist,
 	   /*NULL,*/NULL,force_vir,md,enerd,fcd,
 	   state->lambda,graph,
-	   fr,vsite,mu_tot,step*ir->delta_t,NULL,NULL,/*born*/bBornRadii,
+	   fr,vsite,mu_tot,step*ir->delta_t,NULL,NULL,/*born*//* bBornRadii */ FALSE,
 	   GMX_FORCE_STATECHANGED|GMX_FORCE_NS );
   //	   GMX_FORCE_ALLFORCES | (GMX_FORCE_VIRIAL ));
 
@@ -1349,7 +1351,7 @@ static real get_self_energy(t_commrec *cr, t_qhop_residue donor,
   return(Eself);
 } /* evaluate energy */
 
-static real calc_S(const t_qhop_parameters *p,
+static real calc_S(const qhop_parameters *p,
 		   const real rda)
 {
   real d = rda - (p->t_A);
@@ -1357,7 +1359,7 @@ static real calc_S(const t_qhop_parameters *p,
   return (p->s_A) * (d * d) + (p->v_A);
 }
 
-static real calc_V(const t_qhop_parameters *p,
+static real calc_V(const qhop_parameters *p,
 		   const real rda)
 {
   return (p->s_C) * exp( -(p->t_C) * (rda - 0.20)) + (p->v_C); 
@@ -1382,7 +1384,7 @@ static real poisson_prob(real p,            ///< Hopping probability over a 0.01
 /**
  * Returns the SE-regime validity limit.
  */
-real compute_E12_left(t_qhop_parameters *p, ///< Pointer to hopping parameters			      
+real compute_E12_left(qhop_parameters *p, ///< Pointer to hopping parameters			      
 		      real rda,             ///< Donor-acceptor distance			      
 		      real E12              ///< Energy difference between product and reactant states
 		      )
@@ -1456,7 +1458,7 @@ real compute_E12_right(qhop_parameters *p, ///< Pointer to hopping parameters
 /**
  * Calculates the barrier height.
  */
-static real compute_Eb(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters			   
+static real compute_Eb(qhop_parameters *p, ///< Pointer to qhop_parameters			   
 		       real rda,	     ///< Donor--acceptor distance				   
 		       real E12	             ///< Energy difference between product and reactant states
 		       )
@@ -1476,7 +1478,7 @@ static real compute_Eb(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters
 /**
  * Calculates the TST transfer probability for a 10 fs time window.
  */
-real compute_rate_TST(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters
+real compute_rate_TST(qhop_parameters *p, ///< Pointer to qhop_parameters
 		      real E12,		    ///< Energy difference between product and reactant states
 		      real rda,             ///< Donor--acceptor distance
 		      real T                ///< Temperature
@@ -1522,7 +1524,7 @@ real compute_rate_TST(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters
 /**
  * Calculates the barrierless transfer probability for a 10 fs time window.
  */
-real compute_rate_SE(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters
+real compute_rate_SE(qhop_parameters *p, ///< Pointer to qhop_parameters
 		      real E12,		   ///< Energy difference between product and reactant states
 		      real rda             ///< Donor--acceptor distance
 		      )
@@ -1540,7 +1542,7 @@ real compute_rate_SE(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters
 /**
  * Calculates the transfer probability for the intermediate regime over a 10 fs time window.
  */
-real compute_rate_log(t_qhop_parameters *p, ///< Pointer to t_qhop_parameters
+real compute_rate_log(qhop_parameters *p, ///< Pointer to qhop_parameters
 		      real E12,             ///< Energy difference between product and reactant states
 		      real E12_left,	    ///< Validity limit for the SE regime
 		      real E12_right, 	    ///< Validity limit for the TST regime
@@ -1572,9 +1574,9 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			 t_mdatoms *md,t_fcdata *fcd,
 			 t_graph *graph,
 			 t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-			 gmx_genborn_t *born, bool bBornRadii,
+			 /* gmx_genborn_t *born, gmx_bool bBornRadii, */
 			 t_hop *hop, real T,real *E_12, real *Eb_ext,
-			 t_qhoprec *qhoprec,t_pbc pbc,int step){
+			 t_qhoprec *qhoprec,t_pbc pbc,int step, qhop_db *db){
   
   /* compute the hopping probability based on the Q-hop criteria
    */
@@ -1583,15 +1585,15 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     Eafter_tot, Eafter_self, Eafter,
     E12=0,E12_right,E12_left,Eb,
     r_TST,r_SE,r_log;
-  t_qhop_parameters 
+  qhop_parameters 
     *p;
   /* liever lui dan moe */
   p = get_qhop_params(qhoprec->qhop_atoms[hop->donor_id].resname,
-		      qhoprec->qhop_atoms[hop->donor_id].resname);
+		      qhoprec->qhop_atoms[hop->donor_id].resname, db);
   
   Ebefore_tot = evaluate_energy(cr,ir, nrnb, wcycle,top,mtop,groups,
 				state,md,fcd,graph,
-				fr,vsite,mu_tot, born, bBornRadii,step);
+				fr,vsite,mu_tot, /* born, bBornRadii, */step);
   Ebefore_self = get_self_energy(cr,fr->qhoprec->qhop_residues[hop->donor_id],
 				 fr->qhoprec->qhop_residues[hop->acceptor_id],
 				 md,state->x,pbc,fr);
@@ -1600,7 +1602,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   if(change_protonation(cr, fr->qhoprec, md, hop, state->x,FALSE,mtop))
     {
       Eafter_tot = evaluate_energy(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
-				   fcd,graph,fr,vsite,mu_tot, born, bBornRadii,
+				   fcd,graph,fr,vsite,mu_tot,/*  born, bBornRadii, */
 				   step);
       Eafter_self = get_self_energy(cr,fr->qhoprec->qhop_residues[hop->donor_id],
 				    fr->qhoprec->qhop_residues[hop->acceptor_id],
@@ -1936,7 +1938,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   t_hop
     *hop;
   int
-    nr_hops,i;
+    nr_hops,i,j;
   t_pbc
     pbc;
   static gmx_bool 
@@ -1951,7 +1953,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     rng,rng_int;
   int a, qhopmode;
 
-  qhopmode = etQhopList
+  qhopmode = etQhopModeList;
   set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,state->box);
   
   if(bFirst){
@@ -1988,7 +1990,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	  Eb[i] = -1;
 	
 	  DE_MM[i] = get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
-				  fcd,graph,fr,vsite,mu_tot/*,born*/,bBornRadii,
+				  fcd,graph,fr,vsite,mu_tot,/*born,bBornRadii,*/
 				  &hop[i],T,&E12[i], &Eb[i],
 				  fr->qhoprec,pbc,step, db);
 
@@ -2246,61 +2248,60 @@ extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop)
     }
 }
 
-/* Goes through the t_ilist and finds the bonded interactions
- * that can be changed */
-extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
-			       t_qhoprec *qr, gmx_bool bGlobal)
-{
-  gmx_bool bQhop, bInAtomList;
-  int i, j, k, qres, res, rt, bt, bi, ftype, btype, niatoms,
-    iatoms[MAXATOMLIST]; /* The atoms involved in an interaction */
+/* /\* Goes through the t_ilist and finds the bonded interactions */
+/*  * that can be changed *\/ */
+/* extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db, */
+/* 			       t_qhoprec *qr, gmx_bool bGlobal) */
+/* { */
+/*   gmx_bool bQhop, bInAtomList; */
+/*   int i, j, k, qres, res, rt, bt, bi, ftype, btype, niatoms, */
+/*     iatoms[MAXATOMLIST]; /\* The atoms involved in an interaction *\/ */
   
-  t_restp *rtp;
+/*   t_restp *rtp; */
 
-  /* Loop over all qhopable residues */
-  for (qres=0; qres<qr->nr_qhop_residues; qres++)
-    {
-      rt = qr->qhop_residues[qres].rtype;
-      rtp = &(db->rtp[db->rb.rtp[rt]]);
-      /* Loop over bonded types */
-      for (bt=0; bt<ebtsNR; bt++)
-	{
-	  /* Loop over bonded interactions of type bt */
-	  for (bi=0; bi<rtp->rb[bt].nb; bi++)
-	    {
-	      /* Scan the ilist */
-	      for (i=0, bQhop=FALSE;
-		   bQhop==FALSE && i<ilist[bt].nr;
-		   i += btsNiatoms[bt])
-		{
-		  bQhop = TRUE;
-		  ftype = ilist[bt].iatoms[i++];
-		  /* j : Loop over the atoms in this interaction */
-		  for (j=0; j<btsNiatoms[bt]; j++)
-		    {
-		      /* k : Loop over the atoms in this restype */
-		      for (k=0, bInAtomList == FALSE;
-			   k<btsNiatoms[bt] && bInAtomList==FALSE && bQhop==TRUE;
-			   k++)
-			{
-			  if (db->rb.iatoms[rt][bt][bi][k] < 0)
-			    {
-			      /* This means that the interaction goes beyond the
-			       * residue boundry. Don't bother changing it.
-			       * This may have to change eventually. */
-			      bQhop = FALSE;
-			    }
-			  /* This asumes that the atoms[] is sorted in ascending order!
-			   * Make sure to order it! */
-			  bInAtomList =
-			    ilist[bt].iatoms[i] ==
-			    (db->rb.iatoms[rt][bt][bi][k] + qr->qhop_residues[qres].atoms[0]);
-			} /* k */
-		      bQhop &= bInAtomList;
-		    } /* j */
-		} /* bi */
-	    } /* i */
-	} /* bt */
-    } /* qres */
-
-}
+/*   /\* Loop over all qhopable residues *\/ */
+/*   for (qres=0; qres<qr->nr_qhop_residues; qres++) */
+/*     { */
+/*       rt = qr->qhop_residues[qres].rtype; */
+/*       rtp = &(db->rtp[db->rb.rtp[rt]]); */
+/*       /\* Loop over bonded types *\/ */
+/*       for (bt=0; bt<ebtsNR; bt++) */
+/* 	{ */
+/* 	  /\* Loop over bonded interactions of type bt *\/ */
+/* 	  for (bi=0; bi<rtp->rb[bt].nb; bi++) */
+/* 	    { */
+/* 	      /\* Scan the ilist *\/ */
+/* 	      for (i=0, bQhop=FALSE; */
+/* 		   bQhop==FALSE && i<ilist[bt].nr; */
+/* 		   i += btsNiatoms[bt]) */
+/* 		{ */
+/* 		  bQhop = TRUE; */
+/* 		  ftype = ilist[bt].iatoms[i++]; */
+/* 		  /\* j : Loop over the atoms in this interaction *\/ */
+/* 		  for (j=0; j<btsNiatoms[bt]; j++) */
+/* 		    { */
+/* 		      /\* k : Loop over the atoms in this restype *\/ */
+/* 		      for (k=0, bInAtomList == FALSE; */
+/* 			   k<btsNiatoms[bt] && bInAtomList==FALSE && bQhop==TRUE; */
+/* 			   k++) */
+/* 			{ */
+/* 			  if (db->rb.iatoms[rt][bt][bi][k] < 0) */
+/* 			    { */
+/* 			      /\* This means that the interaction goes beyond the */
+/* 			       * residue boundry. Don't bother changing it. */
+/* 			       * This may have to change eventually. *\/ */
+/* 			      bQhop = FALSE; */
+/* 			    } */
+/* 			  /\* This asumes that the atoms[] is sorted in ascending order! */
+/* 			   * Make sure to order it! *\/ */
+/* 			  bInAtomList = */
+/* 			    ilist[bt].iatoms[i] == */
+/* 			    (db->rb.iatoms[rt][bt][bi][k] + qr->qhop_residues[qres].atoms[0]); */
+/* 			} /\* k *\/ */
+/* 		      bQhop &= bInAtomList; */
+/* 		    } /\* j *\/ */
+/* 		} /\* bi *\/ */
+/* 	    } /\* i *\/ */
+/* 	} /\* bt *\/ */
+/*     } /\* qres *\/ */
+/* } */
