@@ -100,13 +100,7 @@ set_target_properties(gmxcheck PROPERTIES OUTPUT_NAME "gmxcheck${GMX_BINARY_SUFF
 
 add_executable(mdrun ${MDRUN_SOURCES})
 target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
-# set binary name to mdrun-gpu
-if(GMX_OPENMM)
-    set(_mdrun_exec_name "mdrun-gpu")    
-else()
-    set(_mdrun_exec_name "mdrun${GMX_BINARY_SUFFIX}")
-endif()
-set_target_properties(mdrun PROPERTIES OUTPUT_NAME "${_mdrun_exec_name}")
+set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}")
 
 # this is to circumvent the following MSVC error: 
 # warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs
