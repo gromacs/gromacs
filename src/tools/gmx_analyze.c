@@ -687,11 +687,12 @@ static void filter(real flen,int n,int nset,real **val,real dt,
   sfree(filt);
 }
 
-static void do_fit(FILE *out,int n,gmx_bool bYdy,int ny,real *x0,real **val,
-		   int npargs,t_pargs *ppa,const output_env_t oenv)
+static void do_fit(FILE *out,int n,gmx_bool bYdy,
+                   int ny,real *x0,real **val,
+                   int npargs,t_pargs *ppa,const output_env_t oenv)
 {
   real *c1=NULL,*sig=NULL,*fitparm;
-  real dt=0,tendfit,tbeginfit;
+  real tendfit,tbeginfit;
   int  i,efitfn,nparm;
   
   efitfn = get_acffitfn();
@@ -709,12 +710,12 @@ static void do_fit(FILE *out,int n,gmx_bool bYdy,int ny,real *x0,real **val,
   if (opt2parg_bSet("-beginfit",npargs,ppa)) {
     tbeginfit = opt2parg_real("-beginfit",npargs,ppa);
   } else {
-    tbeginfit = x0 ? x0[0]    : 0;
+    tbeginfit = x0[0];
   }
   if (opt2parg_bSet("-endfit",npargs,ppa)) {
     tendfit   = opt2parg_real("-endfit",npargs,ppa);
   } else {
-    tendfit   = x0 ? x0[ny-1] : (ny-1)*dt;
+    tendfit   = x0[ny-1];
   }
   
   snew(fitparm,nparm);
@@ -760,7 +761,7 @@ static void do_fit(FILE *out,int n,gmx_bool bYdy,int ny,real *x0,real **val,
   fprintf(out,"Starting parameters:\n");
   for(i=0; (i<nparm); i++) 
     fprintf(out,"a%-2d = %12.5e\n",i+1,fitparm[i]);
-  if (do_lmfit(ny,c1,sig,dt,x0,tbeginfit,tendfit,
+  if (do_lmfit(ny,c1,sig,0,x0,tbeginfit,tendfit,
 	       oenv,bDebugMode(),efitfn,fitparm,0)) {
     for(i=0; (i<nparm); i++) 
       fprintf(out,"a%-2d = %12.5e\n",i+1,fitparm[i]);
@@ -1086,50 +1087,75 @@ int gmx_analyze(int argc,char *argv[])
   eefile   = opt2fn_null("-ee",NFILE,fnm);
   balfile  = opt2fn_null("-bal",NFILE,fnm);
 /*   gemfile  = opt2fn_null("-gem",NFILE,fnm); */
-  if (opt2parg_bSet("-fitfn",npargs,ppa)) 
-    fitfile  = opt2fn("-g",NFILE,fnm);
-  else
-    fitfile  = opt2fn_null("-g",NFILE,fnm);
+    /* When doing autocorrelation we don't want a fitlog for fitting
+     * the function itself (not the acf) when the user did not ask for it.
+     */
+    if (opt2parg_bSet("-fitfn",npargs,ppa) && acfile == NULL)
+    {
+        fitfile  = opt2fn("-g",NFILE,fnm);
+    }
+    else
+    {
+        fitfile  = opt2fn_null("-g",NFILE,fnm);
+    }
     
-  val=read_xvg_time(opt2fn("-f",NFILE,fnm),bHaveT,
-		    opt2parg_bSet("-b",npargs,ppa),tb,
-		    opt2parg_bSet("-e",npargs,ppa),te,
-		    nsets_in,&nset,&n,&dt,&t);
-  printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
+    val = read_xvg_time(opt2fn("-f",NFILE,fnm),bHaveT,
+                        opt2parg_bSet("-b",npargs,ppa),tb,
+                        opt2parg_bSet("-e",npargs,ppa),te,
+                        nsets_in,&nset,&n,&dt,&t);
+    printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
   
-  if (bDer) {
-    printf("Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n\n",
-	    d,d);
-    n -= d;
-    for(s=0; s<nset; s++)
-      for(i=0; (i<n); i++)
-	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
-  }
-  if (bIntegrate) {
-    real sum,stddev;
-    printf("Calculating the integral using the trapezium rule\n");
+    if (bDer)
+    {
+        printf("Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n\n",
+               d,d);
+        n -= d;
+        for(s=0; s<nset; s++)
+        {
+            for(i=0; (i<n); i++)
+            {
+                val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
+            }
+        }
+    }
     
-    if (bXYdy) {
-      sum = evaluate_integral(n,t,val[0],val[1],aver_start,&stddev);
-      printf("Integral %10.3f +/- %10.5f\n",sum,stddev);
+    if (bIntegrate)
+    {
+        real sum,stddev;
+
+        printf("Calculating the integral using the trapezium rule\n");
+    
+        if (bXYdy)
+        {
+            sum = evaluate_integral(n,t,val[0],val[1],aver_start,&stddev);
+            printf("Integral %10.3f +/- %10.5f\n",sum,stddev);
+        }
+        else
+        {
+            for(s=0; s<nset; s++)
+            {
+                sum = evaluate_integral(n,t,val[s],NULL,aver_start,&stddev);
+                printf("Integral %d  %10.5f  +/- %10.5f\n",s+1,sum,stddev);
+            }
+        }
     }
-    else {
-      for(s=0; s<nset; s++) {
-	sum = evaluate_integral(n,t,val[s],NULL,aver_start,&stddev);
-	printf("Integral %d  %10.5f  +/- %10.5f\n",s+1,sum,stddev);
-      }
+
+    if (fitfile != NULL)
+    {
+        out_fit = ffopen(fitfile,"w");
+        if (bXYdy && nset >= 2)
+        {
+            do_fit(out_fit,0,TRUE,n,t,val,npargs,ppa,oenv);
+        }
+        else
+        {
+            for(s=0; s<nset; s++)
+            {
+                do_fit(out_fit,s,FALSE,n,t,val,npargs,ppa,oenv);
+            }
+        }
+        ffclose(out_fit);
     }
-  }
-  if (fitfile) {
-    out_fit = ffopen(fitfile,"w");
-    if (bXYdy && nset>=2) {
-      do_fit(out_fit,0,TRUE,n,t,val,npargs,ppa,oenv);
-    } else {
-      for(s=0; s<nset; s++)
-	do_fit(out_fit,s,FALSE,n,t,val,npargs,ppa,oenv);
-    }
-    ffclose(out_fit);
-  }
 
   printf("                                      std. dev.    relative deviation of\n");
   printf("                       standard       ---------   cumulants from those of\n");
@@ -1207,14 +1233,23 @@ int gmx_analyze(int argc,char *argv[])
 /*                   nFitPoints, fit_start, fit_end, oenv); */
   if (bPower)
     power_fit(n,nset,val,t);
-  if (acfile) {
-    if (bSubAv) 
-      for(s=0; s<nset; s++)
-	for(i=0; i<n; i++)
-	  val[s][i] -= av[s];
-    do_autocorr(acfile,oenv,"Autocorrelation",n,nset,val,dt,
-		eacNormal,bAverCorr);
-  }
+
+    if (acfile != NULL)
+    {
+        if (bSubAv)
+        {
+            for(s=0; s<nset; s++)
+            {
+                for(i=0; i<n; i++)
+                {
+                    val[s][i] -= av[s];
+                }
+            }
+        }
+        do_autocorr(acfile,oenv,"Autocorrelation",n,nset,val,dt,
+                    eacNormal,bAverCorr);
+    }
+
   if (bRegression)
       regression_analysis(n,bXYdy,t,nset,val);
 

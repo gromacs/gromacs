@@ -890,14 +890,14 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
             {
                 gmx_fatal(FARGS,
                           "Library file %s not found %sin your GMXLIB path.",
-                          bAddCWD ? "in current dir nor " : "",file);
+                          file, bAddCWD ? "in current dir nor " : "");
             }
             else
             {
                 gmx_fatal(FARGS,
                           "Library file %s not found %sin default directories.\n"
                         "(You can set the directories to search with the GMXLIB path variable)",
-                          bAddCWD ? "in current dir nor " : "",file);
+                          file, bAddCWD ? "in current dir nor " : "");
             }
         }
     }

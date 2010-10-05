@@ -548,6 +548,11 @@ else(${GMX_ACCELERATION} STREQUAL "NONE")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
 
+if(GMX_FORTRAN)
+    if (GMX_THREADS)
+        message(WARNING "FORTRAN is incompatible with threads. Disable threads or FORTRAN kernels")
+    endif()
+endif()
 
 
 

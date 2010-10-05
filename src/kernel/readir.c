@@ -637,12 +637,18 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	    "setting implicit_solvent value to \"GBSA\" in input section.\n");
   }
 
+  if(ir->sa_algorithm==esaSTILL)
+  {
+    sprintf(err_buf,"Still SA algorithm not available yet, use %s or %s instead\n",esa_names[esaAPPROX],esa_names[esaNO]);
+    CHECK(ir->sa_algorithm == esaSTILL);
+  }
+  
   if(ir->implicit_solvent==eisGBSA)
   {
-      sprintf(err_buf,"With GBSA implicit solvent, rgbradii must be equal to rlist.");
-      CHECK(ir->rgbradii != ir->rlist);
+    sprintf(err_buf,"With GBSA implicit solvent, rgbradii must be equal to rlist.");
+    CHECK(ir->rgbradii != ir->rlist);
 	  
-	  if(ir->coulombtype!=eelCUT)
+    if(ir->coulombtype!=eelCUT)
 	  {
 		  sprintf(err_buf,"With GBSA, coulombtype must be equal to %s\n",eel_names[eelCUT]);
 		  CHECK(ir->coulombtype!=eelCUT);
@@ -652,13 +658,37 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 		  sprintf(err_buf,"With GBSA, vdw-type must be equal to %s\n",evdw_names[evdwCUT]);
 		  CHECK(ir->vdwtype!=evdwCUT);
 	  }
-    
     if(ir->nstgbradii<1)
     {
       sprintf(warn_buf,"Using GBSA with nstgbradii<1, setting nstgbradii=1");
       warning_note(wi,warn_buf);
       ir->nstgbradii=1;
     }
+    if(ir->sa_algorithm==esaNO)
+    {
+      sprintf(warn_buf,"No SA (non-polar) calculation requested together with GB. Are you sure this is what you want?\n");
+      warning_note(wi,warn_buf);
+    }
+    if(ir->sa_surface_tension<0 && ir->sa_algorithm!=esaNO)
+    {
+      sprintf(warn_buf,"Value of sa_surface_tension is < 0. Changing it to 2.05016 or 2.25936 kJ/nm^2/mol for Still and HCT/OBC respectively\n");
+      warning_note(wi,warn_buf);
+      
+      if(ir->gb_algorithm==egbSTILL)
+      {
+        ir->sa_surface_tension = 0.0049 * CAL2JOULE * 100;
+      }
+      else
+      {
+        ir->sa_surface_tension = 0.0054 * CAL2JOULE * 100;
+      }
+    }
+    if(ir->sa_surface_tension==0 && ir->sa_algorithm!=esaNO)
+    {
+      sprintf(err_buf, "Surface tension set to 0 while SA-calculation requested\n");
+      CHECK(ir->sa_surface_tension==0 && ir->sa_algorithm!=esaNO);
+    }
+    
   }
 }
 
@@ -931,8 +961,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("gb_dielectric_offset", ir->gb_dielectric_offset, 0.009);
   EETYPE("sa_algorithm", ir->sa_algorithm, esa_names);
   CTYPE ("Surface tension (kJ/mol/nm^2) for the SA (nonpolar surface) part of GBSA");
-  CTYPE ("The default value (2.092) corresponds to 0.005 kcal/mol/Angstrom^2.");
-  RTYPE ("sa_surface_tension", ir->sa_surface_tension, 2.092);
+  CTYPE ("The value -1 will set default value for Still/HCT/OBC GB-models.");
+  RTYPE ("sa_surface_tension", ir->sa_surface_tension, -1);
 		 
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
@@ -1813,10 +1843,14 @@ void do_index(const char* mdparin, const char *ndx,
       for(i=0; (i<nr); i++)
       {
           ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
-          if (ir->opts.tau_t[i] < 0)
+          if ((ir->eI == eiBD || ir->eI == eiSD2) && ir->opts.tau_t[i] <= 0)
           {
-              gmx_fatal(FARGS,"tau_t for group %d negative",i);
-          } else if (ir->opts.tau_t[i] > 0) {
+              sprintf(warn_buf,"With integrator %s tau_t should be larger than 0",ei_names[ir->eI]);
+              warning_error(wi,warn_buf);
+          }
+          if ((ir->etc == etcVRESCALE && ir->opts.tau_t[i] >= 0) || 
+              (ir->etc != etcVRESCALE && ir->opts.tau_t[i] >  0))
+          {
               tau_min = min(tau_min,ir->opts.tau_t[i]);
           }
       }
@@ -2269,7 +2303,7 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
       warning(wi,err_buf);
     }
   } else {
-    if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
+    if (ir->coulombtype == eelCUT && ir->rcoulomb > 0 && !ir->implicit_solvent) {
       sprintf(err_buf,
 	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"
 	      "You might want to consider using %s electrostatics.\n",
@@ -2484,11 +2518,10 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop,const t_inputrec *ir,
              * not be zero at the cut-off.
              */
             if (EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) &&
-                rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
+                rvdw1 + rvdw2 > ir->rlist - ir->rvdw)
             {
-                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than %s (%f) - rvdw (%f)\n",
+                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than rlist (%f) - rvdw (%f)\n",
                         rvdw1+rvdw2,
-                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
                         ir->rlist,ir->rvdw);
                 if (ir_NVE(ir))
                 {

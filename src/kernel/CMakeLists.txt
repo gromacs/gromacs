@@ -35,7 +35,7 @@ set(GMXPREPROCESS_SOURCES
 set(MDRUN_SOURCES 
     gctio.c    ionize.c runner.c
     do_gct.c     repl_ex.c  xutils.c
-    md.c         mdrun.c    genalg.c gmx_membed.c
+    md.c         mdrun.c    genalg.c membed.c
     md_openmm.c)
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
@@ -57,8 +57,10 @@ if(GMX_OPENMM)
         add_definitions( -DOPENMM_PLUGIN_DIR="" )
     endif()
     add_library(openmm_api_wrapper openmm_wrapper.cpp)
+    target_link_libraries(openmm_api_wrapper gmx gmx_gpu_utils ${OpenMM_LIBRARIES})
 #    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
     set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})   
+	install(TARGETS openmm_api_wrapper DESTINATION ${LIB_INSTALL_DIR})   
 endif(GMX_OPENMM)
 
 if(GMX_FAHCORE)

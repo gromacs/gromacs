@@ -72,7 +72,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
-#include "gmx_membed.h"
+#include "membed.h"
 
 #include "md_openmm.h"
 
@@ -256,13 +256,27 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
 {
     int nthreads,nthreads_new;
     int min_atoms_per_thread;
+    char *env;
 
     nthreads = nthreads_requested;
 
     /* determine # of hardware threads. */
     if (nthreads_requested < 1)
     {
-        nthreads = tMPI_Get_recommended_nthreads();
+        if ((env = getenv("GMX_MAX_THREADS")) != NULL)
+        {
+            nthreads = 0;
+            sscanf(env,"%d",&nthreads);
+            if (nthreads < 1)
+            {
+                gmx_fatal(FARGS,"GMX_MAX_THREADS (%d) should be larger than 0",
+                          nthreads);
+            }
+        }
+        else
+        {
+            nthreads = tMPI_Get_recommended_nthreads();
+        }
     }
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))

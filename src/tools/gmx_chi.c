@@ -385,7 +385,7 @@ static int reset_em_all(int nlist,t_dlist dlist[],int nf,
   return j ; 
 }
 
-static void histogramming(FILE *log,int nbin, int naa,char **aa,
+static void histogramming(FILE *log,int nbin,gmx_residuetype_t rt,
 			  int nf,int maxchi,real **dih,
 			  int nlist,t_dlist dlist[],
 			  atom_id index[],
@@ -426,7 +426,10 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   gmx_bool    bBfac,bOccup;
   char    hisfile[256],hhisfile[256],sshisfile[256],title[256],*ss_str=NULL;
   char **leg; 
-  
+  const char *residue_name;
+  int     rt_size;
+
+  rt_size = gmx_residuetype_get_size(rt);
   if (bSSHisto) {
     fp = ffopen(ssdump,"r");
     if(1 != fscanf(fp,"%d",&nres))
@@ -444,8 +447,8 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
     /* Four dimensional array... Very cool */
     snew(his_aa_ss,3);
     for(i=0; (i<3); i++) {
-      snew(his_aa_ss[i],naa+1);
-      for(j=0; (j<=naa); j++) {
+      snew(his_aa_ss[i],rt_size+1);
+      for(j=0; (j<=rt_size); j++) {
 	snew(his_aa_ss[i][j],edMax);
 	for(Dih=0; (Dih<edMax); Dih++)
 	  snew(his_aa_ss[i][j][Dih],nbin+1);
@@ -454,8 +457,8 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   }
   snew(his_aa,edMax);
   for(Dih=0; (Dih<edMax); Dih++) {
-    snew(his_aa[Dih],naa+1);
-    for(i=0; (i<=naa); i++) {
+    snew(his_aa[Dih],rt_size+1);
+    for(i=0; (i<=rt_size); i++) {
       snew(his_aa[Dih][i],nbin+1);
     }
   }
@@ -611,7 +614,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   /* finished -jc stuff */ 
 
   snew(normhisto,nbin);
-  for(i=0; (i<naa); i++) {
+  for(i=0; (i<rt_size); i++) {
     for(Dih=0; (Dih<edMax); Dih++){
       /* First check whether something is in there */
       for(j=0; (j<nbin); j++)
@@ -625,23 +628,24 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 	if (bNormalize)
 	  normalize_histo(nbin,his_aa[Dih][i],(360.0/nbin),normhisto);
 	
+	residue_name = gmx_residuetype_get_name(rt,i);
 	switch (Dih) {
 	case edPhi:
-	  sprintf(hisfile,"histo-phi%s",aa[i]);
-	  sprintf(title,"\\xf\\f{} Distribution for %s",aa[i]);
+	  sprintf(hisfile,"histo-phi%s",residue_name);
+	  sprintf(title,"\\xf\\f{} Distribution for %s",residue_name);
 	  break;
 	case edPsi:
-	  sprintf(hisfile,"histo-psi%s",aa[i]);
-	  sprintf(title,"\\xy\\f{} Distribution for %s",aa[i]);
+	  sprintf(hisfile,"histo-psi%s",residue_name);
+	  sprintf(title,"\\xy\\f{} Distribution for %s",residue_name);
 	  break;
 	case edOmega:
-	  sprintf(hisfile,"histo-omega%s",aa[i]);
-	  sprintf(title,"\\xw\\f{} Distribution for %s",aa[i]);
+	  sprintf(hisfile,"histo-omega%s",residue_name);
+	  sprintf(title,"\\xw\\f{} Distribution for %s",residue_name);
 	  break;
 	default:
-	  sprintf(hisfile,"histo-chi%d%s",Dih-NONCHI+1,aa[i]);
+	  sprintf(hisfile,"histo-chi%d%s",Dih-NONCHI+1,residue_name);
 	  sprintf(title,"\\xc\\f{}\\s%d\\N Distribution for %s",
-		  Dih-NONCHI+1,aa[i]);
+		  Dih-NONCHI+1,residue_name);
 	}
 	strcpy(hhisfile,hisfile);
 	strcat(hhisfile,".xvg");
@@ -689,7 +693,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   if (bSSHisto) {
     /* Four dimensional array... Very cool */
     for(i=0; (i<3); i++) {
-      for(j=0; (j<=naa); j++) {
+      for(j=0; (j<=rt_size); j++) {
 	for(Dih=0; (Dih<edMax); Dih++)
 	  sfree(his_aa_ss[i][j][Dih]);
 	sfree(his_aa_ss[i][j]);
@@ -1113,18 +1117,18 @@ int gmx_chi(int argc,char *argv[])
   };
 
   FILE       *log;
-  int        natoms,nlist,naa,idum,nbin; 
+  int        natoms,nlist,idum,nbin;
   t_atoms    atoms;
   rvec       *x;
   int        ePBC;
   matrix     box;
   char       title[256],grpname[256]; 
   t_dlist    *dlist;
-  char       **aa;
   gmx_bool       bChi,bCorr,bSSHisto;
   gmx_bool       bDo_rt, bDo_oh, bDo_ot, bDo_jc ; 
   real       dt=0, traj_t_ns;
   output_env_t oenv;
+  gmx_residuetype_t rt;
   
   atom_id    isize,*index;
   int        ndih,nactdih,nf;
@@ -1203,8 +1207,8 @@ int gmx_chi(int argc,char *argv[])
   read_stx_conf(ftp2fn(efSTX,NFILE,fnm),title,&atoms,x,NULL,&ePBC,box);
   fprintf(log,"Title: %s\n",title);
   
-  naa=get_strings("aminoacids.dat",&aa);
-  dlist=mk_dlist(log,&atoms,&nlist,bPhi,bPsi,bChi,bHChi,maxchi,r0,naa,aa);
+  gmx_residuetype_init(&rt);
+  dlist=mk_dlist(log,&atoms,&nlist,bPhi,bPsi,bChi,bHChi,maxchi,r0,rt);
   fprintf(stderr,"%d residues with dihedrals found\n", nlist);
   
   if (nlist == 0) 
@@ -1239,7 +1243,7 @@ int gmx_chi(int argc,char *argv[])
     dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi,bOmega,bRAD,oenv);
   
   /* Histogramming & J coupling constants & calc of S2 order params */
-  histogramming(log,nbin,naa,aa,nf,maxchi,dih,nlist,dlist,index,
+  histogramming(log,nbin,rt,nf,maxchi,dih,nlist,dlist,index,
 		bPhi,bPsi,bOmega,bChi,
 		bNormHisto,bSSHisto,ftp2fn(efDAT,NFILE,fnm),bfac_max,&atoms,
 		bDo_jc,opt2fn("-jc",NFILE,fnm),oenv);
@@ -1318,6 +1322,8 @@ int gmx_chi(int argc,char *argv[])
   if (bCorr)
     do_view(oenv,opt2fn("-corr",NFILE,fnm),"-nxy");
     
+  gmx_residuetype_destroy(rt);
+
   thanx(stderr);
     
   return 0;

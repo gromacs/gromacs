@@ -51,10 +51,15 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
-# Generic fortran kernels will be turned off below if you enable power6-specific optimization!
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
 
+#On some systems GNU libtool's la files are more confusing for libtool than helpful due to the 
+#hard coded paths/libs in the files. And for better linking we have pkg-config files (.pc).
+AC_ARG_ENABLE(la-files,
+	[AS_HELP_STRING([--disable-la-files],[Do NOT install GNU libtool's la files])],,
+	[enable_la_files=yes])
+AM_CONDITIONAL(NO_LA_FILES,[test "$enable_la_files" = no])
 
 
 
@@ -149,9 +154,7 @@ esac
 AC_ARG_ENABLE(power6,
              [AC_HELP_STRING([--enable-power6],
                              [Use IBM Pwr6/PPC440/PPC450-specific F77 kernels])],,enable_power6=no)
-# Turn off generic fortran loops if we are using power6-specific optimization
 if test "$enable_power6" = "yes"; then
-  enable_fortran=no;
   AC_DEFINE(GMX_POWER6,,[Enable IBM Pwr6/PPC440/PPC450-specific F77 kernels])
 fi
 
@@ -325,11 +328,11 @@ AM_CONDITIONAL([USE_VERSION_H],[test "$generate_version" = "yes"])
 case "${host_cpu}-${host_os}" in
   alpha*-linux*)
     cc_names="ccc cc gcc"
-    f77_names="fort f77 g77"
+    f77_names="fort f77 gfortran g77"
     ;;
   *) 
     cc_names="cc icc xlc gcc"
-    f77_names="f77 ifort xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
+    f77_names="f77 ifort xlf xlf77 cf77 fl32 gfortran g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
     ;;
 esac
 # the (non-mpi) c compiler, which is also used for programs executed during build stage
@@ -464,6 +467,9 @@ if test "$enable_threads" = "yes"; then
   if test "$with_fft" = "fftw2"; then
     AC_MSG_ERROR([fftw2 can't be used with threads. Use fftw3 or mkl.])
   fi 
+  if test "$enable_fortran" = "yes"; then
+    AC_MSG_ERROR([FORTRAN is incompatible with threads. Use --disable-threads.])
+  fi
   AC_CHECK_HEADERS(unistd.h)
   AC_CHECK_HEADERS(sys/time.h)
   AC_CHECK_HEADERS(sched.h)
@@ -1207,7 +1213,7 @@ AC_ARG_VAR(
    variable you can overwrite it
   ]
 )
-if test -z ${LIBSUFFIX} ; then
+if test -z "${LIBSUFFIX}" ; then
   if test "$enable_mpi" = "yes"; then
     LIBSUFFIX="_mpi"
   fi
