@@ -560,7 +560,7 @@ endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
 if(GMX_FORTRAN)
     if (GMX_THREADS)
-        message(WARNING "FORTRAN is incompatible with threads. Disable threads or FORTRAN kernels")
+        message(WARNING "FORTRAN is incompatible with threads and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels)."
     endif()
 endif()
 
