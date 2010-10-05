@@ -241,6 +241,8 @@ typedef struct {
   MPI_Comm comm_intra;
   int      rank_intra;
   MPI_Comm comm_inter;
+  int      rank_inter;
+  int      masterrank_inter;
   
 } gmx_nodecomm_t;
 

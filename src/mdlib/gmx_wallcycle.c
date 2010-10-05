@@ -116,15 +116,15 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr)
     snew(wc->wcc,ewcNR);
     if (getenv("GMX_CYCLE_ALL") != NULL)
     {
-/*#ifndef GMX_THREADS*/
+#ifndef GMX_THREADS
         if (fplog) 
         {
             fprintf(fplog,"\nWill time all the code during the run\n\n");
         }
         snew(wc->wcc_all,ewcNR*ewcNR);
-/*#else*/
+#else
         gmx_fatal(FARGS, "GMX_CYCLE_ALL is incompatible with threaded code");
-/*#endif*/
+#endif
     }
     
     return wc;
@@ -246,7 +246,7 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
     }
 }
 
-void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
+void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc, double cycles[], double cycles_imbal[])
 {
     wallcc_t *wcc;
     double cycles_n[ewcNR],buf[ewcNR],*cyc_all,*buf_all;
@@ -303,9 +303,14 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
         }
         MPI_Allreduce(cycles,buf,ewcNR,MPI_DOUBLE,MPI_SUM,
                       cr->mpi_comm_mysim);
+
+        MPI_Allreduce(cycles,cycles_imbal,ewcNR,MPI_DOUBLE,MPI_MAX,
+                      cr->mpi_comm_mysim);
+
         for(i=0; i<ewcNR; i++)
         {
             cycles[i] = buf[i];
+            cycles_imbal[i] = cycles_imbal[i] * cr->nnodes - buf[i];
         }
 
         if (wc->wcc_all != NULL)
@@ -339,7 +344,7 @@ static void print_cycles(FILE *fplog, double c2t, const char *name, int nnodes,
       sprintf(num,"%10d",n);
     else
       sprintf(num,"          ");
-    fprintf(fplog," %-19s %4d %10s %12.3f %10.1f   %5.1f\n",
+    fprintf(fplog," %-22s %4d %10s %12.3f %10.1f   %5.1f\n",
 	    name,nnodes,num,c*1e-9,c*c2t,100*(double)c/(double)tot);
   }
 }
@@ -350,7 +355,7 @@ static gmx_bool subdivision(int ewc)
 }
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-		     gmx_wallcycle_t wc, double cycles[])
+		     gmx_wallcycle_t wc, double cycles[], double cycles_imbal[])
 {
     double c2t,tot,sum;
     int    i,j,npp;
@@ -384,7 +389,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 
     fprintf(fplog,"\n     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
 
-    fprintf(fplog," Computing:         Nodes     Number     G-Cycles    Seconds     %c\n",'%');
+    fprintf(fplog," Computing:            Nodes     Number     G-Cycles    Seconds     %c\n",'%');
     fprintf(fplog,"%s\n",myline);
     sum = 0;
     for(i=ewcPPDURINGPME+1; i<ewcNR; i++)
@@ -394,6 +399,13 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
             print_cycles(fplog,c2t,wcn[i],
                          (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? npme : npp,
                          wc->wcc[i].n,cycles[i],tot);
+            if (cycles_imbal[i] > tot*.005)//If load imbalance is > 1/2 of 1% write a message
+            {
+                sprintf(buf,"%s imbal.",wcn[i]);
+                print_cycles(fplog,c2t,buf,//TODO: Check
+                             (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? npme : npp,
+                             wc->wcc[i].n,cycles_imbal[i],tot);
+            }
             sum += cycles[i];
         }
     }
@@ -446,6 +458,19 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
             fprintf(fplog,"\n%s\n",buf);
         }
         /* Only the sim master calls this function, so always print to stderr */
+        fprintf(stderr,"\n%s\n",buf);
+    }
+
+    if (cycles_imbal[ewcTRAJ] > tot*0.05)
+    {
+        sprintf(buf,
+                "NOTE: %d %% of the run time was spent waiting on writing the trajectory,\n"
+                "      you may want to increase the -nionodes option of mdrun\n",
+                (int)(100*cycles_imbal[ewcTRAJ]/tot+0.5));
+        if (fplog)
+        {
+            fprintf(fplog,"\n%s\n",buf);
+        }
         fprintf(stderr,"\n%s\n",buf);
     }
 }

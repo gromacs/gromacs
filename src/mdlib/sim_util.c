@@ -1361,8 +1361,9 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
   real   delta_t;
   double nbfs,mflop;
   double cycles[ewcNR];
+  double cycles_imbal[ewcNR];
 
-  wallcycle_sum(cr,wcycle,cycles);
+  wallcycle_sum(cr,wcycle,cycles,cycles_imbal);
 
   if (cr->nnodes > 1) {
     if (SIMMASTER(cr))
@@ -1415,7 +1416,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
 
   if (SIMMASTER(cr)) {
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,runtime->realtime,
-                    wcycle,cycles);
+                    wcycle,cycles,cycles_imbal);
 
     if (EI_DYNAMICS(inputrec->eI)) {
       delta_t = inputrec->delta_t;

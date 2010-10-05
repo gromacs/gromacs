@@ -781,17 +781,37 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     if (DOMAINDECOMP(cr) && integrator[inputrec->eI].func == do_md && (cr->duty & DUTY_PP))
 	{
         const int MAXSTEPS = 100;// The maximum number of steps being buffered
-        const int MAXMEM = 250000000; // This checks that we won't be using more than 250 megabytes for storing frames
+        const int MAXMEM = 2000000; // This checks that we won't be using more than 2 megabytes for storing frames
         gmx_bool bIOnode;
-		cr->nionodes = min(min(MAXSTEPS, cr->dd->nnodes),
-				MAXMEM / (sizeof(real) * 3 * state->natoms));
+        int size_inter;
+        if (MASTER(cr))
+        {
+            if (cr->nc.bUse)
+            {
+                MPI_Comm_size(cr->nc.comm_inter,&size_inter);
+            }
+            else
+            {
+                size_inter = cr->dd->nnodes;
+            }
+
+            if(cr->nionodes==-1)
+            {
+                cr->nionodes = min(min(MAXSTEPS, size_inter),
+                               MAXMEM / (sizeof(real) * 3 * state->natoms));
+            }
+
+            fprintf(fplog,"Using %d IO nodes\n",cr->nionodes);
+        }
+
+        gmx_bcast(sizeof(int),&(cr->nionodes),cr);
 
 		/*create communicator for the MPI-IO as a subgroup of the PP nodes. Make sure the master is part of the IO nodes*/
 		if (MASTER(cr))
 		{
 			bIOnode = TRUE;
 		}
-		else
+		else if (!cr->nc.bUse)
 		{
 			if ( cr->dd->masterrank < cr->nionodes )
 			{
@@ -801,6 +821,15 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 			{
 				bIOnode = cr->dd->rank < cr->nionodes - 1;
 			}
+		} else if (cr->nc.rank_intra==0) {
+            if ( cr->nc.masterrank_inter < cr->nionodes )
+            {
+                bIOnode = cr->nc.rank_inter < cr->nionodes;
+            }
+            else
+            {
+                bIOnode = cr->nc.rank_inter < cr->nionodes - 1;
+            }
 		}
 		/* In the IO communicator the node with the rank=dd->masterrank has to have the highest rank (=nionodes-1).
 		 * MPI_File_Write_ordered writes in the order of the rank and the masterrank has the last frame */

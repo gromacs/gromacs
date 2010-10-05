@@ -315,8 +315,9 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     MPI_Comm_rank(nc->comm_intra,&nc->rank_intra);
     if (debug) {
       fprintf(debug,"In gmx_setup_nodecomm: node rank %d rank_intra %d\n",
-	      rank,nc->rank_intra);
+          rank,nc->rank_intra);
     }
+
     /* The inter-node communicator, split on rank_intra.
      * We actually only need the one for rank=0,
      * but it is easier to create them all.
@@ -330,11 +331,15 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 	      ng,ni);
     }
     if ((ng > 1 && ng < n) || (ni > 1 && ni < n)) {
-      nc->bUse = TRUE;
-      if (fplog)
-	fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",ng,(real)n/(real)ng);
-      if (nc->rank_intra > 0)
-	MPI_Comm_free(&nc->comm_inter);
+        nc->bUse = TRUE;
+        if (fplog)
+            fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",ng,(real)n/(real)ng);
+        MPI_Comm_rank(nc->comm_inter,&nc->rank_inter);
+        if (MASTER(cr))
+        {
+            nc->masterrank_inter = nc->rank_inter;
+        }
+        gmx_bcast(sizeof(int),&nc->masterrank_inter,cr);
     } else {
       /* One group or all processes in a separate group, use normal summing */
       MPI_Comm_free(&nc->comm_inter);
