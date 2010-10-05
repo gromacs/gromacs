@@ -1745,16 +1745,19 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             if (outputfiles[i].chksum_size != -1)
             {
                 if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
-                                     digest) != outputfiles[i].chksum_size)
+                                     digest) != outputfiles[i].chksum_size)  /*at the end of the call the file position is at the end of the file*/
                 {
                     gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents has been modified.",
                               outputfiles[i].chksum_size, 
                               outputfiles[i].filename);
                 }
             } 
-            else if (i==0)  /*log file need to be seeked even when not reading md5*/
+            if (i==0)  /*log file needs to be seeked in case we need to truncate (other files are truncated below)*/
             {
-                gmx_fio_seek(chksum_file,outputfiles[i].offset);
+                if (gmx_fio_seek(chksum_file,outputfiles[i].offset))
+                {
+                	gmx_fatal(FARGS,"Seek error! Failed to truncate log-file: %s.", strerror(errno));
+                }
             }
 #endif
             

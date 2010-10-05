@@ -54,6 +54,12 @@ AC_ARG_ENABLE(fortran,
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
 
+#On some systems GNU libtool's la files are more confusing for libtool than helpful due to the 
+#hard coded paths/libs in the files. And for better linking we have pkg-config files (.pc).
+AC_ARG_ENABLE(la-files,
+	[AS_HELP_STRING([--disable-la-files],[Do NOT install GNU libtool's la files])],,
+	[enable_la_files=yes])
+AM_CONDITIONAL(NO_LA_FILES,[test "$enable_la_files" = no])
 
 
 
@@ -461,6 +467,9 @@ if test "$enable_threads" = "yes"; then
   if test "$with_fft" = "fftw2"; then
     AC_MSG_ERROR([fftw2 can't be used with threads. Use fftw3 or mkl.])
   fi 
+  if test "$enable_fortran" = "yes"; then
+    AC_MSG_ERROR([FORTRAN is incompatible with threads. Use --disable-threads.])
+  fi
   AC_CHECK_HEADERS(unistd.h)
   AC_CHECK_HEADERS(sys/time.h)
   AC_CHECK_HEADERS(sched.h)
