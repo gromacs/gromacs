@@ -1379,15 +1379,6 @@ void init_forcerec(FILE *fp,
     }
     copy_rvec(ir->adress_refs,fr->adress_refs);
     
-    if (ir->adress_ivdw == evdwUSER)
-    {
-        fr->adress_ivdw = 3;
-    }
-    else
-    {
-        fr->adress_ivdw = 1;
-    }
-    
     /* Copy the user determined parameters */
     fr->userint1 = ir->userint1;
     fr->userint2 = ir->userint2;

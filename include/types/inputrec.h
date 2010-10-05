@@ -293,7 +293,6 @@ typedef struct {
   real adress_ex_width; /* center of the explicit zone                  */
   real adress_hy_width; /* width of the hybrid zone                     */
   int  adress_icor;     /* type of interface correction                 */
-  int  adress_ivdw;     /* AdResS vdw switch                            */
   int  adress_site;     /* AdResS CG site location                      */
   rvec adress_refs;     /* Coordinates for AdResS reference             */
   real adress_ex_forcecap; /* in the hybrid zone, cap forces large then this to adress_ex_forcecap */

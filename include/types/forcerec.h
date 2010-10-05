@@ -363,7 +363,6 @@ typedef struct {
   real adress_ex_width;
   real adress_hy_width;
   int  adress_icor;
-  int  adress_ivdw;
   int  adress_site;
   rvec adress_refs;
   int n_adress_tf_grps;
