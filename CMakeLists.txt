@@ -112,6 +112,10 @@ option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
 
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
+
+########################################################################
+# Set up binary and library suffixing 
+########################################################################
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
 set(GMX_LIBS_SUFFIX "" 
   CACHE STRING "Suffix for GROMACS libs (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
@@ -137,7 +141,7 @@ endif(GMX_DEFAULT_SUFFIX)
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
 endif(GMX_DOUBLE)
 if(GMX_SOFTWARE_INVSQRT)
   set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
@@ -189,30 +193,36 @@ endif(GMX_MPI)
 if(GMX_OPENMM)
     cmake_minimum_required(VERSION 2.6.4)
     # we'll use the built-in fft to avoid unnecessary dependencies
-    message(STATUS "No external FFT libraries needed for the OpenMM build, using fftpack!")
-    set (GMX_FFT_LIBRARY "fftpack" CACHE STRING 
-		"No external FFT libraries needed for the OpenMM build, using fftpack!" FORCE)
+    string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
+    if(NOT ${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
+        message(STATUS "No external FFT libraries needed for the OpenMM build, switching to fftpack!")
+        set(GMX_FFT_LIBRARY "fftpack" CACHE STRING 
+		"No external FFT libraries needed for the OpenMM build, switching to  fftpack!" FORCE)
+    endif()
     if(GMX_MPI)
         message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
     endif(GMX_MPI)
     if(GMX_THREADS)
-        message(STATUS "Threads not compatible with OpenMM build, disabled!")
+        message(STATUS "Threads are  not compatible with OpenMM build, disabled!")
         set(GMX_THREADS OFF CACHE BOOL 
-		"Threads not compatible with OpenMM build, disabled!" FORCE)
+		"Threads are not compatible with OpenMM build, disabled!" FORCE)
     endif(GMX_THREADS)
     if(GMX_SOFTWARE_INVSQRT)
-        set(GMX_SOFTWARE_INVSQRT OFF FORCE)
+        set(GMX_SOFTWARE_INVSQRT OFF CACHE STRING 
+                "The OpenMM build does not need GROMACS software 1/sqrt!" FORCE)
     endif(GMX_SOFTWARE_INVSQRT)
-    if(NOT GMX_ACCELERATION MATCHES "^(none|None|NONE)")
-        message(WARNING "CPU-based acceleration turned off, OpenMM does not support/need any!")	
-	unset(GMX_ACCELERATION CACHE)
+    string(TOUPPER ${GMX_ACCELERATION} GMX_ACCELERATION)
+    if(NOT GMX_ACCELERATION STREQUAL "NONE")
+        message(STATUS "Switching off CPU-based acceleration, the OpenMM build does not support/need any!")	
         set(GMX_ACCELERATION "none" CACHE STRING 
-		"CPU-based acceleration turned off, OpenMM does not support/need any!" FORCE)
+		"Switching off CPU-based acceleration, the OpenMM build does not support/need any!" FORCE)
     endif()
     if(GMX_FAHCORE)
         message(FATAL_ERROR "The OpenMM build does not support FAH build!")
     endif(GMX_FAHCORE)
-    set(GMX_DOUBLE OFF FORCE )
+    if(GMX_DOUBLE)
+        message(FATAL_ERROR  "The OpenMM-build does not support double precision calculations!")
+    endif()
     # mark as advanced the unused variables
     mark_as_advanced(FORCE GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
         GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)
