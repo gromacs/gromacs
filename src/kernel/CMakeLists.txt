@@ -151,9 +151,6 @@ if(BUILD_SHARED_LIBS)
         list(REVERSE _lib_fname)
         list(GET _lib_fname 0 _lib_fname)
 
-        # prepare path and filename for the pkgconfig stuff
-        string(REGEX REPLACE ".so$" ".pc" _lib_pc_path ${_lib_path})
-        string(REGEX REPLACE ".so$" ".pc" _lib_pc_fname ${_lib_fname})
         # create custom target for copying each library to the install location 
         # TODO: need to fix this to have the .so.6 form
         add_custom_target(install-${_lib}
@@ -161,9 +158,6 @@ if(BUILD_SHARED_LIBS)
                 "${_lib_path}" "${LIB_INSTALL_DIR}/${_lib_fname}.${SOVERSION}"
             COMMAND ${CMAKE_COMMAND} -E create_symlink 
                 "${_lib_fname}.${SOVERSION}" "${LIB_INSTALL_DIR}/${_lib_fname}"
-            COMMAND ${CMAKE_COMMAND} -E copy
-                "${_lib_pc_path}" "${LIB_INSTALL_DIR}/pkgconfig/${_lib_pc_fname}"
-            # DEPENDS ${_lib_pcpath}
             COMMENT "Installing library ${_lib}")
         add_dependencies(install-${_lib} ${_lib})
 
