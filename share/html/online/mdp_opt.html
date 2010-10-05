@@ -45,7 +45,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
   nstpcouple, tau_p, compressibility, ref_p, refcoord_scaling)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, annealing_npoints, annealing_time, annealing_temp)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
-<li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
+<li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, continuation, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
 <li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
 <li><A HREF="#walls"><b>Walls</b></A> (nwall, wall_type, wall_r_linpot, wall_atomtype,
 wall_density, wall_ewald_zfac)
@@ -1047,7 +1047,8 @@ when inter charge-group constraints are present.
 SHAKE can not be used with energy minimization.
 </dd>
 </dl></dd>
-<dt><b>unconstrained_start:</b></dt>
+<dt><b>continuation:</b></dt>
+<dd>This option was formerly known as <tt>unconstrained_start</tt>.</dd>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>apply constraints to the start configuration and reset shells</dd>
@@ -1800,7 +1801,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#tc">tc_grps</A><br>
 <A HREF="#tc">tcoupl</A><br>
 <A HREF="#run">tinit</A><br>
-<A HREF="#bond">unconstrained_start</A><br>
+<A HREF="#bond">continuation</A><br>
 <A HREF="#user">user1_grps</A><br>
 <A HREF="#user">user2_grps</A><br>
 <A HREF="#user">userint1</A><br>
