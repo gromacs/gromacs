@@ -85,7 +85,7 @@ option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
 set(GMX_ACCELERATION "auto" 
-    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec")
+    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
@@ -453,7 +453,7 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)")
 
-    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
     
     if (GMX_64_BIT)
       set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
@@ -463,7 +463,7 @@ if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
     # Determine the assembler/compiler to use
   else()
-    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
   endif()
 endif (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
@@ -521,20 +521,6 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
         endif (XXFLAGS_SSE)
     endif (NOT GMX_64_BIT)
 
-    if(GMX_IA32_ASM)
-      if(GMX_DOUBLE)
-        set(GMX_IA32_SSE2 1)
-      else()
-	set(GMX_IA32_SSE 1)
-      endif()
-    elseif(GMX_X86_64_ASM)
-      if(GMX_DOUBLE)
-	set(GMX_X86_64_SSE2 1)
-      else()
-        set(GMX_X86_64_SSE 1)
-      endif()
-    endif()
-
 #    if(HAVE_PMMINTRIN_H)
 #        set(GMX_SSE3 1)
 #    endif(HAVE_PMMINTRIN_H)
@@ -544,6 +530,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
     set(GMX_FORTRAN 1)
+    #these are switch on by default sometimes
+    set(GMX_IA32_ASM 0)
+    set(GMX_GMX_X86_64_ASM 0)
 elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_BLUEGENE 1)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
@@ -564,7 +553,7 @@ endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
 if(GMX_FORTRAN)
     if (GMX_THREADS)
-        message(WARNING "FORTRAN is incompatible with threads and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
+        message(FATAL_ERROR "FORTRAN is incompatible with threads and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
     endif()
 endif()
 
