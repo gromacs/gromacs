@@ -49,6 +49,13 @@ static gmx_bool gmx_fft_threads_initialized=FALSE;
 #define FFTW_UNLOCK 
 #endif /* GMX_THREADS */
 
+/* We assume here that aligned memory starts at multiple of 16 bytes and unaligned memory starts at multiple of 8 bytes. The later is guranteed for all malloc implementation. 
+   Consequesences:
+   - It is not allowed to use these FFT plans from memory which doesn't have a starting address as a multiple of 8 bytes. 
+     This is OK as long as the memory directly comes from malloc and is not some subarray within alloated memory.
+   - This has to be fixed if any future architecute requires memory to be aligned to multiples of 32 bytes.
+*/
+
 struct gmx_fft
 {
     /* Three alternatives (unaligned/aligned, out-of-place/in-place, forward/backward)
