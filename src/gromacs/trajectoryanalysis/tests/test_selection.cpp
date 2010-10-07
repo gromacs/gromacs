@@ -103,7 +103,7 @@ SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
     _options.setDescription(desc);
 
     _options.addOption(SelectionOption("select").storeVector(&_selections)
-                           .multiValue().allowMultiple()
+                           .required().multiValue().allowMultiple()
                            .description("Selections to test"));
     _options.addOption(IntegerOption("pmax").store(&_nmaxind)
                            .description("Maximum number of indices to print in lists (-1 = print all)"));

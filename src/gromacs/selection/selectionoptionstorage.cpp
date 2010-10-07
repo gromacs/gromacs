@@ -84,6 +84,7 @@ int SelectionOptionStorage::convertValue(const std::string &value,
     assert(sc != NULL);
 
     std::vector<Selection *> selections;
+    // TODO: Implement reading from a file.
     int rc = sc->parseFromString(value, &selections);
     if (rc == 0)
     {
@@ -99,16 +100,60 @@ int SelectionOptionStorage::convertValue(const std::string &value,
     return rc;
 }
 
-
 int SelectionOptionStorage::processSet(int nvalues,
                                        AbstractErrorReporter *errors)
 {
-    if (nvalues == 0)
+    return MyBase::processSet(nvalues, errors);
+}
+
+int SelectionOptionStorage::processAll(AbstractErrorReporter *errors)
+{
+    if ((hasFlag(efRequired) || hasFlag(efSet)) && valueCount() == 0)
     {
-        // TODO: Implement such that in these cases, the selection will be
-        // used from a file or parsed interactively.
+        SelectionCollection *sc =
+            hostOptions().globalProperties().selectionCollection();
+        assert(sc != NULL);
+
+        // TODO: The actual interactive input should really happen later,
+        // because otherwise some completely unrelated errors in user input may
+        // be detected only after the user has been prompted for selections.
+        // TODO: Check whether the input is a pipe.
+        bool bInteractive = true;
+        if (bInteractive)
+        {
+            std::fprintf(stderr, "\nSpecify ");
+            if (maxValueCount() < 0)
+            {
+                std::fprintf(stderr, "any number of selections");
+            }
+            else if (maxValueCount() == 1)
+            {
+                std::fprintf(stderr, "a selection");
+            }
+            else
+            {
+                std::fprintf(stderr, "%d selections", maxValueCount());
+            }
+            std::fprintf(stderr, " for option '%s' (%s):\n",
+                         name().c_str(), description().c_str());
+            std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
+                         maxValueCount() < 0 ? ", Ctrl-D to end" : "");
+        }
+        std::vector<Selection *> selections;
+        int rc = sc->parseFromStdin(maxValueCount(), bInteractive, &selections);
+        if (rc != 0)
+        {
+            return rc;
+        }
+        std::vector<Selection *>::const_iterator i;
+        for (i = selections.begin(); i != selections.end(); ++i)
+        {
+            addValue(*i);
+            // FIXME: Check return value.
+        }
+        setFlag(efSet);
     }
-    return MyBase::processSet(nvalues, errors);;
+    return MyBase::processAll(errors);
 }
 
 } // namespace gmx

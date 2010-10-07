@@ -150,9 +150,13 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         StandardErrorReporter  errors;
         CommandLineParser  parser(options, &errors);
         rc = parser.parse(argc, argv);
-        int rc1 = options->finish(&errors);
-        rc = (rc == 0 ? rc1 : rc);
         printHelp(*options, *common);
+        if (rc != 0)
+        {
+            GMX_ERROR(rc, "Command-line option parsing failed, "
+                          "see higher up for detailed error messages");
+        }
+        rc = options->finish(&errors);
         if (rc != 0)
         {
             GMX_ERROR(rc, "Command-line option parsing failed, "

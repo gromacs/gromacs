@@ -73,6 +73,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
         virtual int convertValue(const std::string &value,
                                  AbstractErrorReporter *errors);
         virtual int processSet(int nvalues, AbstractErrorReporter *errors);
+        virtual int processAll(AbstractErrorReporter *errors);
 
         SelectionFlags          _selectionFlags;
 };
