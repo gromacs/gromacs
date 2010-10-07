@@ -798,10 +798,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             if(cr->nionodes==-1)
             {
                 cr->nionodes = min(min(MAXSTEPS, size_inter),
-                               MAXMEM / (sizeof(real) * 3 * state->natoms));
+                        MAXMEM * cr->dd->nnodes / (sizeof(real) * 3 * state->natoms)  );
             }
-
-            fprintf(fplog,"Using %d IO nodes\n",cr->nionodes);
+            if (cr->nionodes > 1)
+            {
+                fprintf(fplog,"Using %d IO nodes\n",cr->nionodes);
+            }
         }
 
         gmx_bcast(sizeof(int),&(cr->nionodes),cr);
