@@ -1345,10 +1345,6 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         case bsMethod_BayesianHist:  
             /* keep histos, but assign random weights ("Bayesian bootstrap") */
             setRandomBsWeights(synthWindow,nAllPull,opt);
-            FILE *fp=fopen("test.dat","w");
-            for (i=0;i<nAllPull;i++)
-                fprintf(fp,"%d %f\n",i,synthWindow[i].bsWeight[0]);
-            fclose(fp);
             break;
         case bsMethod_traj:
         case bsMethod_trajGauss:	
@@ -1871,7 +1867,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
     for (i=0;i<nt;i++)
     {
         /* Do you want that time frame? */
-        t=1.0/1000*(rint(y[0][i]*1000)); /* round time to fs */
+        t=1.0/1000*( (int) ((y[0][i]*1000) + 0.5)); /* round time to fs */
         
         /* get time step of pdo file and get dstep from opt->dt */
         if (i==0)
@@ -1883,7 +1879,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
             dt=t-time0;
             if (opt->dt>0.0)
             {
-                dstep=(int)rint(opt->dt/dt);
+                dstep=(int)(opt->dt/dt+0.5);
                 if (dstep==0)
                     dstep=1;
             }
@@ -2161,7 +2157,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window,int nwins,
         dt=window[i].dt;
         timemax=dt*ncorr;
         snew(window[i].tau,window[i].nPull);
-        restart=rint(opt->acTrestart/dt);
+        restart=(int)(opt->acTrestart/dt+0.5);
         if (restart==0)
             restart=1;
 
@@ -2604,39 +2600,6 @@ int gmx_wham(int argc,char *argv[])
     const char *en_bsMethod[]={ NULL,"b-hist", "hist", "traj", "traj-gauss", NULL };
   
     static t_UmbrellaOptions opt;
-    opt.bins=200;
-    opt.verbose=FALSE;
-    opt.bHistOnly=FALSE;
-    opt.bCycl=FALSE;
-    opt.tmin=50;
-    opt.tmax=1e20;
-    opt.dt=0.0;
-    opt.min=0;
-    opt.max=0;
-    opt.bAuto=TRUE;
-
-    /* bootstrapping stuff */
-    opt.nBootStrap=0;
-    opt.bsMethod=bsMethod_hist;
-    opt.tauBootStrap=0.0;
-    opt.bsSeed=-1;
-    opt.histBootStrapBlockLength=8;
-    opt.bs_verbose=FALSE;
-
-    opt.bLog=TRUE;
-    opt.unit=en_kJ;
-    opt.zProf0=0.;
-    opt.Temperature=298;
-    opt.Tolerance=1e-6;
-    opt.bBoundsOnly=FALSE;
-    opt.bSym=FALSE;
-    opt.bCalcTauInt=FALSE;
-    opt.sigSmoothIact=0.0;
-    opt.bAllowReduceIact=TRUE;
-    opt.bInitPotByIntegration=TRUE;
-    opt.acTrestart=1.0;
-    opt.stepchange=100;
-    opt.stepUpdateContrib=100;
   
     t_pargs pa[] = {
         { "-min", FALSE, etREAL, {&opt.min},
@@ -2729,6 +2692,41 @@ int gmx_wham(int argc,char *argv[])
 #define NFILE asize(fnm)
 
     CopyRight(stderr,argv[0]);
+
+    opt.bins=200;
+    opt.verbose=FALSE;
+    opt.bHistOnly=FALSE;
+    opt.bCycl=FALSE;
+    opt.tmin=50;
+    opt.tmax=1e20;
+    opt.dt=0.0;
+    opt.min=0;
+    opt.max=0;
+    opt.bAuto=TRUE;
+
+    /* bootstrapping stuff */
+    opt.nBootStrap=0;
+    opt.bsMethod=bsMethod_hist;
+    opt.tauBootStrap=0.0;
+    opt.bsSeed=-1;
+    opt.histBootStrapBlockLength=8;
+    opt.bs_verbose=FALSE;
+
+    opt.bLog=TRUE;
+    opt.unit=en_kJ;
+    opt.zProf0=0.;
+    opt.Temperature=298;
+    opt.Tolerance=1e-6;
+    opt.bBoundsOnly=FALSE;
+    opt.bSym=FALSE;
+    opt.bCalcTauInt=FALSE;
+    opt.sigSmoothIact=0.0;
+    opt.bAllowReduceIact=TRUE;
+    opt.bInitPotByIntegration=TRUE;
+    opt.acTrestart=1.0;
+    opt.stepchange=100;
+    opt.stepUpdateContrib=100;
+
     parse_common_args(&argc,argv,PCA_BE_NICE,
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&opt.oenv);
   
