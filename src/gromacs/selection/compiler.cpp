@@ -639,6 +639,10 @@ remove_unused_subexpressions(t_selelem *root)
     t_selelem *prev;
     t_selelem *next;
 
+    if (root == NULL)
+    {
+        return NULL;
+    }
     root = reverse_selelem_chain(root);
     while (root->child->type == SEL_SUBEXPR && root->child->refcount == 1)
     {

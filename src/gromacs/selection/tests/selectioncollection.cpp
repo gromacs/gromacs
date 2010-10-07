@@ -60,6 +60,16 @@ SelectionCollectionTest::SelectionCollectionTest()
     _sc.init();
 }
 
+
+TEST_F(SelectionCollectionTest, HandlesNoSelections)
+{
+    _sc.setReferencePosType("atom");
+    _sc.setOutputPosType("atom");
+    EXPECT_FALSE(_sc.requiresTopology());
+    EXPECT_EQ(0, _sc.compile());
+}
+
+
 TEST_F(SelectionCollectionTest, ParsesSimpleSelections)
 {
     std::vector<gmx::Selection *> sel;
