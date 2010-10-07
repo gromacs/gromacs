@@ -74,7 +74,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
                                  AbstractErrorReporter *errors);
         virtual int processSet(int nvalues, AbstractErrorReporter *errors);
 
-        SelectionFlags          _flags;
+        SelectionFlags          _selectionFlags;
 };
 
 } // namespace gmx

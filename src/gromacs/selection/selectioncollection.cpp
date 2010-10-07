@@ -80,9 +80,6 @@ SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
     : _options("selection", "Common selection control"),
       _debugLevel(0), _flags(0), _grps(NULL)
 {
-    _sc.bMaskOnly = FALSE;
-    _sc.bVelocities = FALSE;
-    _sc.bForces   = FALSE;
     _sc.root      = NULL;
     _sc.nvars     = 0;
     _sc.varstrs   = NULL;
@@ -278,27 +275,6 @@ SelectionCollection::setOutputPosType(const char *type)
 {
     assert(type != NULL);
     _impl->_spost = type;
-}
-
-
-void
-SelectionCollection::setMaskOnly(bool bMaskOnly)
-{
-    _impl->_sc.bMaskOnly = bMaskOnly;
-}
-
-
-void
-SelectionCollection::setVelocityOutput(bool bVelOut)
-{
-    _impl->_sc.bVelocities = bVelOut;
-}
-
-
-void
-SelectionCollection::setForceOutput(bool bForceOut)
-{
-    _impl->_sc.bForces = bForceOut;
 }
 
 

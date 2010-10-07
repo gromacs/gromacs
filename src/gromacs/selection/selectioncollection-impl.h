@@ -62,13 +62,6 @@ class Selection;
  */
 struct gmx_ana_selcollection_t
 {
-    /** TRUE if \ref POS_MASKONLY should be used for output position evaluation. */
-    bool                        bMaskOnly;
-    /** TRUE if velocities should be evaluated for output positions. */
-    bool                        bVelocities;
-    /** TRUE if forces should be evaluated for output positions. */
-    bool                        bForces;
-
     /** Root of the selection element tree. */
     struct t_selelem           *root;
     /** Array of compiled selections. */

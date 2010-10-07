@@ -56,15 +56,15 @@ namespace gmx
  */
 
 SelectionOptionStorage::SelectionOptionStorage()
-    : _flags(0)
 {
+    MyBase::setFlag(efConversionMayNotAddValues);
 }
 
 
 int SelectionOptionStorage::init(const SelectionOption &settings,
                                  Options *options)
 {
-    _flags = settings._flags;
+    _selectionFlags = settings._selectionFlags;
     options->globalProperties().request(eogpSelectionCollection);
     return MyBase::init(settings, options);
 }
@@ -90,7 +90,9 @@ int SelectionOptionStorage::convertValue(const std::string &value,
         std::vector<Selection *>::const_iterator i;
         for (i = selections.begin(); i != selections.end(); ++i)
         {
+            (*i)->setFlags(_selectionFlags);
             addValue(*i);
+            // FIXME: Check the return value
         }
     }
 

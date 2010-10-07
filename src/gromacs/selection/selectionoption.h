@@ -58,38 +58,53 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
 {
     public:
         //! Initializes an option with the given name.
-        explicit SelectionOption(const char *name) : MyBase(name), _flags(0)
-        {
-            setFlag(efConversionMayNotAddValues);
-        }
+        explicit SelectionOption(const char *name) : MyBase(name)
+        { }
 
+        /*! \brief
+         * Request velocity evaluation for output positions.
+         */
+        MyClass &evaluateVelocities()
+        { _selectionFlags.set(efEvaluateVelocities); return me(); }
+        /*! \brief
+         * Request force evaluation for output positions.
+         */
+        MyClass &evaluateForces()
+        { _selectionFlags.set(efEvaluateForces); return me(); }
         /*! \brief
          * Only accept selections that evaluate to atom positions.
          */
-        MyClass &onlyAtoms() { _flags |= efOnlyAtoms; return me(); }
+        MyClass &onlyAtoms()
+        { _selectionFlags.set(efOnlyAtoms); return me(); }
         /*! \brief
          * Only accept static selections for this option.
          */
-        MyClass &onlyStatic() { _flags |= efOnlyStatic; return me(); }
+        MyClass &onlyStatic()
+        { _selectionFlags.set(efOnlyStatic); return me(); }
         /*! \brief
          * Handle dynamic selections for this option with position masks.
+         *
+         * Sets ::POS_MASKONLY on the positions for this selection.
          */
-        MyClass &dynamicMask() { _flags |= efDynamicMask; return me(); }
+        MyClass &dynamicMask()
+        { _selectionFlags.set(efDynamicMask); return me(); }
         /*! \brief
          * Disallow using atom coordinates as the reference positions.
          */
-        MyClass &dynamicOnlyWhole() { _flags |= efDynamicOnlyWhole; return me(); }
+        MyClass &dynamicOnlyWhole()
+        { _selectionFlags.set(efDynamicOnlyWhole); return me(); }
         /*! \brief
          * Mark this option as receiving selections that can't be assigned to
          * other options.
          */
-        MyClass &collectRemaining() { _flags |= efCollectRemaining; return me(); }
+        MyClass &collectRemaining()
+        { _selectionFlags.set(efCollectRemaining); return me(); }
 
     private:
         virtual int createDefaultStorage(Options *options,
                                          AbstractOptionStorage **storage) const;
 
-        SelectionFlags          _flags;
+        SelectionFlags          _selectionFlags;
 
         /*! \brief
          * Needed to initialize SelectionOptionStorage from this class without

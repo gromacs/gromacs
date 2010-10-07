@@ -244,12 +244,13 @@ gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
     for (size_t g = 0; g < sc->sel.size(); ++g)
     {
         gmx_ana_selection_t *sel = &sc->sel[g]->_sel;
+        bool bMaskOnly = sc->sel[g]->hasFlag(gmx::efDynamicMask);
         t_selelem *elem = sel->selelem;
         if (sel->bDynamic)
         {
             gmx_ana_index_copy(sel->g, elem->v.u.g, FALSE);
             sel->g->name = NULL;
-            gmx_ana_indexmap_update(&sel->p.m, sel->g, sc->bMaskOnly);
+            gmx_ana_indexmap_update(&sel->p.m, sel->g, bMaskOnly);
             sel->p.nr = sel->p.m.nr;
         }
 

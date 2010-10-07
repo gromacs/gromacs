@@ -545,32 +545,35 @@ set_evaluation_function(t_selelem *sel, sel_evalfunc eval)
  * Initializes default values for position keyword evaluation.
  *
  * \param[in,out] root       Root of the element tree to initialize.
- * \param[in]     sc         Selection collection to use defaults from.
  * \param[in]     spost      Default output position type.
  * \param[in]     rpost      Default reference position type.
- * \param[in]     bSelection Whether the element evaluates the positions for a
- *   selection.
+ * \param[in]     sel        Selection that the element evaluates the positions
+ *      for, or NULL if the element is an internal element.
  */
 static void
-init_pos_keyword_defaults(t_selelem *root, gmx_ana_selcollection_t *sc,
-                          const char *spost, const char *rpost, bool bSelection)
+init_pos_keyword_defaults(t_selelem *root, const char *spost,
+                          const char *rpost, const gmx::Selection *sel)
 {
     /* Selections use largest static group by default, while
      * reference positions use the whole residue/molecule. */
     if (root->type == SEL_EXPRESSION)
     {
+        bool bSelection = (sel != NULL);
         int flags = bSelection ? POS_COMPLMAX : POS_COMPLWHOLE;
-        if (bSelection && sc->bMaskOnly)
+        if (bSelection)
         {
-            flags |= POS_MASKONLY;
-        }
-        if (bSelection && sc->bVelocities)
-        {
-            flags |= POS_VELOCITIES;
-        }
-        if (bSelection && sc->bForces)
-        {
-            flags |= POS_FORCES;
+            if (sel->hasFlag(gmx::efDynamicMask))
+            {
+                flags |= POS_MASKONLY;
+            }
+            if (sel->hasFlag(gmx::efEvaluateVelocities))
+            {
+                flags |= POS_VELOCITIES;
+            }
+            if (sel->hasFlag(gmx::efEvaluateForces))
+            {
+                flags |= POS_FORCES;
+            }
         }
         _gmx_selelem_set_kwpos_type(root, bSelection ? spost : rpost);
         _gmx_selelem_set_kwpos_flags(root, flags);
@@ -579,13 +582,13 @@ init_pos_keyword_defaults(t_selelem *root, gmx_ana_selcollection_t *sc,
     if (root->type != SEL_ROOT && root->type != SEL_MODIFIER
         && root->type != SEL_SUBEXPRREF && root->type != SEL_SUBEXPR)
     {
-        bSelection = FALSE;
+        sel = NULL;
     }
     /* Recurse into children */
     t_selelem *child = root->child;
     while (child)
     {
-        init_pos_keyword_defaults(child, sc, spost, rpost, bSelection);
+        init_pos_keyword_defaults(child, spost, rpost, sel);
         child = child->next;
     }
 }
@@ -2606,18 +2609,17 @@ free_item_compilerdata(t_selelem *sel)
  *
  * \param[in,out] selections Array of selections to update.
  * \param[in]     top   Topology information.
- * \param[in]     bMaskOnly TRUE if the positions will always be calculated
- *   for all atoms, i.e., the masses/charges do not change.
  */
 static void
 calculate_mass_charge(std::vector<gmx::Selection *> *selections,
-                      t_topology *top, bool bMaskOnly)
+                      t_topology *top)
 {
     int   b, i;
 
     for (size_t g = 0; g < selections->size(); ++g)
     {
         gmx_ana_selection_t *sel = &selections->at(g)->_sel;
+        bool bMaskOnly = selections->at(g)->hasFlag(gmx::efDynamicMask);
 
         sel->g = sel->p.g;
         snew(sel->orgm, sel->p.nr);
@@ -2682,6 +2684,7 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     gmx_sel_evaluate_t  evaldata;
     t_selelem   *item;
     e_poscalc_t  post;
+    size_t       i;
     int          flags;
     int          rc;
     bool         bDebug = (coll->_impl->_debugLevel >= 2
@@ -2704,17 +2707,13 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     /* Loop through selections and initialize position keyword defaults if no
      * other value has been provided.
      */
-    item = sc->root;
-    while (item)
+    for (i = 0; i < sc->sel.size(); ++i)
     {
-        if (item->child->type != SEL_SUBEXPR)
-        {
-            init_pos_keyword_defaults(item->child, sc,
-                                      coll->_impl->_spost.c_str(),
-                                      coll->_impl->_rpost.c_str(),
-                                      true /* start in selection mode */);
-        }
-        item = item->next;
+        gmx::Selection *sel = sc->sel[i];
+        init_pos_keyword_defaults(sel->_sel.selelem,
+                                  coll->_impl->_spost.c_str(),
+                                  coll->_impl->_rpost.c_str(),
+                                  sel);
     }
 
     /* Remove any unused variables. */
@@ -2883,7 +2882,7 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     }
 
     /* Finish up by calculating total masses and charges. */
-    calculate_mass_charge(&sc->sel, sc->top, sc->bMaskOnly);
+    calculate_mass_charge(&sc->sel, sc->top);
 
     return 0;
 }

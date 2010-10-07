@@ -154,6 +154,10 @@ class Selection
         //! Deprecated method for direct access to to mapped ID array.
         int *mapIds() const { return _sel.p.m.mapid; }
 
+        //! Returns true if the given flag is set.
+        bool hasFlag(SelectionFlag flag) const { return _flags.test(flag); }
+        //! Sets the flags for this selection.
+        void setFlags(SelectionFlags flags) { _flags = flags; }
         /*! \brief
          * Sets the ID for the \p i'th position for use with mapId().
          */
@@ -181,6 +185,8 @@ class Selection
 
     private:
         ~Selection();
+
+        SelectionFlags          _flags;
 
         friend class SelectionCollection;
 

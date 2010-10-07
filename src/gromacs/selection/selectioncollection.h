@@ -148,17 +148,6 @@ class SelectionCollection
          */
         void setOutputPosType(const char *type);
         /*! \brief
-         * Requests dynamic selection evaluation using masks.
-         *
-         * \param[in]     bMaskOnly If TRUE, the output positions are
-         *     initialized using \ref POS_MASKONLY.
-         */
-        void setMaskOnly(bool bMaskOnly);
-        //! Request evaluation of velocities for selections.
-        void setVelocityOutput(bool bVelOut);
-        //! Request evaluation of forces for selections.
-        void setForceOutput(bool bForceOut);
-        /*! \brief
          * Sets the debugging level for the selection collection.
          */
         void setDebugLevel(int debuglevel);
