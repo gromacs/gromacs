@@ -146,9 +146,9 @@ void fatalErrorFormatted(int retcode, const char *file, int line,
  */
 #define GMX_ERROR(retcode, msg) \
     do { \
-        int rc = (retcode); \
-        ::gmx::fatalError(rc, msg, __FILE__, __LINE__); \
-        return rc; \
+        int _rc_internal = (retcode); \
+        ::gmx::fatalError(_rc_internal, msg, __FILE__, __LINE__); \
+        return _rc_internal; \
     } while (0)
 
 /*! \brief
@@ -182,9 +182,9 @@ void fatalErrorFormatted(int retcode, const char *file, int line,
 #else
 #define GMX_ERROR_DEBUG(retcode, msg) \
     do { \
-        int rc = (retcode); \
-        ::gmx::fatalError(rc, msg, __FILE__, __LINE__); \
-        return rc; \
+        int _rc_internal = (retcode); \
+        ::gmx::fatalError(_rc_internal, msg, __FILE__, __LINE__); \
+        return _rc_internal; \
     } while (0)
 #define GMX_ERROR_DEBUG_NORET(retcode, msg) \
         ::gmx::fatalError(retcode, msg, __FILE__, __LINE__)
