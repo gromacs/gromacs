@@ -686,7 +686,11 @@ endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
+if ( DEFINED LIB )
+    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${LIB}")
+else()
+    set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
+endif()
 set(BIN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/bin)
 set(DATA_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/share/gromacs)
 set(MAN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/share/man)
