@@ -633,38 +633,38 @@ void write_traj(FILE *fplog,t_commrec *cr,
         { 
             //This block of code copies the current dd and state_local to buffers to prepare for writing later.
             //The last frame being buffered (then writeXTCNow is TRUE) is always collected on the MASTER
-	    if ((writeXTCNow && MASTER(cr)) || (!writeXTCNow && bufferStep == cr->dd->iorank))
-	    {
-	        write_buf->step=step;
-		write_buf->t=t;
-	    }
-	    copy_dd(write_buf->dd[bufferStep],cr->dd);
-	    copy_state_local(write_buf->state_local[bufferStep],state_local);
+            if ((writeXTCNow && MASTER(cr)) || (!writeXTCNow && bufferStep == cr->dd->iorank))
+            {
+                write_buf->step=step;
+                write_buf->t=t;
+            }
+            copy_dd(write_buf->dd[bufferStep],cr->dd);
+            copy_state_local(write_buf->state_local[bufferStep],state_local);
 
 
-	    if (writeXTCNow)
-	    {
-	        for (i = 0; i <= bufferStep; i++)//Collect each buffered frame to one of the IO nodes. The data is collected to the node with rank write_buf->dd[i]->masterrank.
-		{
-		    if (i==bufferStep)
-		    {
-		        write_buf->dd[i]->masterrank = cr->dd->masterrank;  //the last frame is always written to the MASTER
-		    }
-		    else
-		    {
-		        write_buf->dd[i]->masterrank = cr->nionodes-1 - i;  
-			if (write_buf->dd[i]->masterrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
-			{
-			    write_buf->dd[i]->masterrank--;
-			}
-		    }
-		    if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
-		    {
-		        dd_collect_vec(write_buf->dd[i],write_buf->state_local[i],write_buf->state_local[i]->x,state_global->x);
+            if (writeXTCNow)
+            {
+                for (i = 0; i <= bufferStep; i++)//Collect each buffered frame to one of the IO nodes. The data is collected to the node with rank write_buf->dd[i]->masterrank.
+                {
+                    if (i==bufferStep)
+                    {
+                        write_buf->dd[i]->masterrank = cr->dd->masterrank;  //the last frame is always written to the MASTER
+                    }
+                    else
+                    {
+                        write_buf->dd[i]->masterrank = cr->nionodes-1 - i;
+                        if (write_buf->dd[i]->masterrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
+                        {
+                            write_buf->dd[i]->masterrank--;
+                        }
+                    }
+                    if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
+                    {
+                        dd_collect_vec(write_buf->dd[i],write_buf->state_local[i],write_buf->state_local[i]->x,state_global->x);
                     }
                 }
             }
-	}
+        }
     }
     else
     {
