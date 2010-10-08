@@ -40,6 +40,7 @@
 #endif
 
 #include <cassert>
+#include <cstdio>
 
 #include <smalloc.h>
 #include <statutil.h>
@@ -442,7 +443,7 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
     int rc = gmx_ana_selcollection_evaluate(&_impl->_sc, fr, pbc);
     if (rc == 0 && _impl->_debugLevel >= 3)
     {
-        fprintf(stderr, "\n");
+        std::fprintf(stderr, "\n");
         printTree(stderr, true);
     }
     return rc;
@@ -478,16 +479,16 @@ SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
     if (output_env_get_xvg_format(oenv) != exvgNONE)
     {
         gmx_ana_selcollection_t *sc = &_impl->_sc;
-        fprintf(out, "# Selections:\n");
+        std::fprintf(out, "# Selections:\n");
         for (i = 0; i < sc->nvars; ++i)
         {
-            fprintf(out, "#   %s\n", sc->varstrs[i]);
+            std::fprintf(out, "#   %s\n", sc->varstrs[i]);
         }
         for (i = 0; i < (int)sc->sel.size(); ++i)
         {
-            fprintf(out, "#   %s\n", sc->sel[i]->_sel.selstr);
+            std::fprintf(out, "#   %s\n", sc->sel[i]->_sel.selstr);
         }
-        fprintf(out, "#\n");
+        std::fprintf(out, "#\n");
     }
 }
 

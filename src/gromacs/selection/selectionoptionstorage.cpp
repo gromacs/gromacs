@@ -38,6 +38,7 @@
 #include "selectionoptionstorage.h"
 
 #include <cassert>
+#include <cstdio>
 
 #include <string>
 #include <vector>

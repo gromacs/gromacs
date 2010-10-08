@@ -37,6 +37,7 @@
  */
 #include "basicoptionstorage.h"
 
+#include <cstdio>
 #include <cstdlib>
 
 #include <string>
@@ -57,8 +58,8 @@ int expandVector(int length, int *nvalues, gmx::AbstractErrorReporter *errors,
         if (*nvalues != 1)
         {
             char err_buf[256];
-            sprintf(err_buf, "Expected 1 or %d values, got %d",
-                    length, *nvalues);
+            std::sprintf(err_buf, "Expected 1 or %d values, got %d",
+                         length, *nvalues);
             errors->error(err_buf);
             values->resize(values->size() - *nvalues);
             return gmx::eeInvalidInput;
@@ -114,7 +115,7 @@ std::string IntegerOptionStorage::formatValue(int i) const
     char buf[64];
     int value = values()[i];
     std::sprintf(buf, "%d", value);
-    return buf;
+    return std::string(buf);
 }
 
 int IntegerOptionStorage::convertValue(const std::string &value,
@@ -179,7 +180,7 @@ std::string DoubleOptionStorage::formatValue(int i) const
         value /= factor;
     }
     std::sprintf(buf, "%g", value);
-    return buf;
+    return std::string(buf);
 }
 
 int DoubleOptionStorage::convertValue(const std::string &value,
