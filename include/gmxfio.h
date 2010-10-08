@@ -42,6 +42,9 @@
 #include "xdrf.h"
 #include "futil.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* types */
 
 
@@ -449,6 +452,8 @@ gmx_bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
 #define gmx_fio_ndo_ivec(fio, item, n)              gmx_fio_ndoe_ivec(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_string(fio, item, n)            gmx_fio_ndoe_string(fio, item, n, (#item), __FILE__, __LINE__)
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif
