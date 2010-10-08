@@ -475,27 +475,6 @@ if(NOT GMX_SYSTEM_XDR)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_INTERNAL_XDR")
 endif(NOT GMX_SYSTEM_XDR)
 
-if(GMX_FORTRAN OR GMX_POWER6)
-    enable_language(Fortran)
-    include(FortranCInterface)
-    discover_fortran_mangling(prefix isupper suffix extra_under_score found)
-    if(extra_under_score)
-        set(extrasuffix "_")
-    endif(extra_under_score)
-
-    if(isupper)
-        set(F77_FUNCDEF   "${prefix} ## NAME ## ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} ## NAME ## ${suffix}${extrasuffix}")
-    else(isupper)
-        set(F77_FUNCDEF   "${prefix} ## name ## ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} ## name ## ${suffix}${extrasuffix}")
-    endif(isupper)
-else(GMX_FORTRAN OR GMX_POWER6)
-        set(F77_FUNCDEF   "name ## _")
-        set(F77_FUNCDEF_  "name ## _")
-endif(GMX_FORTRAN OR GMX_POWER6)
-
-
 # Process nonbonded accelerated kernels settings
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
@@ -550,16 +529,31 @@ else(${GMX_ACCELERATION} STREQUAL "NONE")
     MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of auto, none, SSE, Fortran, BlueGene, Power6, ia64, altivec")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
-
-if(GMX_FORTRAN)
+if(GMX_FORTRAN OR GMX_POWER6)
     if (GMX_THREADS)
-        message(FATAL_ERROR "FORTRAN is incompatible with threads and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
-    endif()
-endif()
+        message(FATAL_ERROR "FORTRAN/POWER6 is incompatible with threads and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
+    endif(GMX_THREADS)
+    enable_language(Fortran)
+    include(FortranCInterface)
+    discover_fortran_mangling(prefix isupper suffix extra_under_score found)
+    if(extra_under_score)
+        set(extrasuffix "_")
+    endif(extra_under_score)
+    if(prefix)
+      set(prefix "${prefix} ##")
+    endif(prefix)
 
-
-
-
+    if(isupper)
+        set(F77_FUNCDEF   "${prefix} NAME ## ${suffix}")
+        set(F77_FUNCDEF_  "${prefix} NAME ## ${suffix}${extrasuffix}")
+    else(isupper)
+        set(F77_FUNCDEF   "${prefix} name ## ${suffix}")
+        set(F77_FUNCDEF_  "${prefix} name ## ${suffix}${extrasuffix}")
+    endif(isupper)
+else(GMX_FORTRAN OR GMX_POWER6)
+        set(F77_FUNCDEF   "name ## _")
+        set(F77_FUNCDEF_  "name ## _")
+endif(GMX_FORTRAN OR GMX_POWER6)
 
 # Process QM/MM Settings
 string(TOUPPER ${GMX_QMMM_PROGRAM} ${GMX_QMMM_PROGRAM})
