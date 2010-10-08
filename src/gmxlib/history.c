@@ -10,7 +10,9 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
+#if (!((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__))
 #include <pwd.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #ifdef HAVE_UNISTD_H
@@ -98,7 +100,7 @@ make_message(const char *fmt, ...)
 
 void histaddinput(char* str)
 {
-    char* npos = rindex(str,'\n');
+    char* npos = strchr(str,'\n');
     while(npos && strlen(str)>0)
     {
         if (npos>str)
@@ -106,7 +108,7 @@ void histaddinput(char* str)
             histbuf[nhistbuf++]=make_message("INP: %.*s\n",npos-str,str);
         }
         str=npos+1;
-        npos = rindex(str,'\n');
+        npos = strchr(str,'\n');
     }
     if (strlen(str)>0)
     {
@@ -235,7 +237,7 @@ int  histclosefile(FILE** file) {
 /* return: has to be freed */
 char* getuser() {
     const char* name = NULL;
-#ifdef __MINGW32__
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
     name = getenv("USERNAME");
 #endif
     if (!name || !*name)
@@ -245,7 +247,7 @@ char* getuser() {
         name = getenv("USER");
 
 #ifdef HAVE_UNISTD_H
-#ifndef __MINGW32__
+#if (!((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__))
     if (!name || !*name) {
         struct passwd *p = getpwuid(getuid());
         if (p && p->pw_name && *p->pw_name)

@@ -53,6 +53,7 @@
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <direct.h>
 #include <io.h>
+#include <sys/locking.h>
 #endif
 
 #include "sysstuff.h"
@@ -1055,7 +1056,7 @@ int gmx_lock(FILE* file)
     fl.l_pid=0;
     return fcntl(fileno(file), F_SETLK, &fl);
 #else
-    return _locking(fileno(chksum_file), _LK_NBLCK, LONG_MAX);
+    return _locking(fileno(file), _LK_NBLCK, LONG_MAX);
 #endif
 
 }
