@@ -799,6 +799,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                 size_inter = cr->dd->nnodes;
             }
 
+            if(cr->nionodes > size_inter)
+            {
+                fprintf(fplog,"Warning: you requested the use of %d IO nodes, but there are not enough physical nodes to do that!\nInstead you were given the maximum possible which was %d IO nodes.\n",cr->nionodes, size_inter);
+                cr->nionodes = size_inter;
+            }
+
             if(cr->nionodes==-1)
             {
                 cr->nionodes = min(min(MAXSTEPS, size_inter),
