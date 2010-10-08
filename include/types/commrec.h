@@ -139,6 +139,7 @@ typedef struct {
   int  masterrank;
   /* rank for IO nodes */
   int iorank;  /*the number of IO nodes is cr->nionodes (equivalent for PME)*/
+  int *iorank2ddrank;
   /* Communication with the PME only nodes */
   int  pme_nodeid;
   gmx_bool pme_receive_vir_ener;

@@ -842,6 +842,13 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 	    MPI_Comm_split(cr->mpi_comm_mygroup, bIOnode, MASTER(cr)?cr->dd->nnodes+1:cr->dd->nnodes-cr->dd->rank,
 	    		&(cr->mpi_comm_io));/*Guarantee that the master has IO rank the highest rank (nionodes-1) */
 	    MPI_Comm_rank(cr->mpi_comm_io, &(cr->dd->iorank));
+
+	    snew(cr->dd->iorank2ddrank, cr->nionodes);
+	    if (bIOnode)
+	    {
+	        MPI_Gather(&(cr->dd->rank), 1, MPI_INT, cr->dd->iorank2ddrank, 1, MPI_INT, cr->nionodes - 1, cr->mpi_comm_io);//Converts dd->ranks to an order that is logically easy to use
+	    }
+	    gmx_bcast(sizeof(int)*cr->nionodes, cr->dd->iorank2ddrank, cr);
 	    if (bIOnode)
 	    {
 	    	cr->duty |= DUTY_IO;

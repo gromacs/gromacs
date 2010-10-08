@@ -646,18 +646,24 @@ void write_traj(FILE *fplog,t_commrec *cr,
             {
                 for (i = 0; i <= bufferStep; i++)//Collect each buffered frame to one of the IO nodes. The data is collected to the node with rank write_buf->dd[i]->masterrank.
                 {
+                    /*
                     if (i==bufferStep)
                     {
                         write_buf->dd[i]->masterrank = cr->dd->masterrank;  //the last frame is always written to the MASTER
+                        write_buf->dd[i]->masterrank = cr->dd->iorank2ddrank[0];
                     }
                     else
                     {
                         write_buf->dd[i]->masterrank = cr->nionodes-1 - i;
-                        if (write_buf->dd[i]->masterrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
+                        */
+                        write_buf->dd[i]->masterrank = cr->dd->iorank2ddrank[i];
+                        /*if (write_buf->dd[i]->masterrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
                         {
                             write_buf->dd[i]->masterrank--;
                         }
+
                     }
+                    */
                     if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
                     {
                         dd_collect_vec(write_buf->dd[i],write_buf->state_local[i],write_buf->state_local[i]->x,state_global->x);
