@@ -468,7 +468,7 @@ if test "$enable_threads" = "yes"; then
     AC_MSG_ERROR([fftw2 can't be used with threads. Use fftw3 or mkl.])
   fi 
   if test "$enable_fortran" = "yes"; then
-    AC_MSG_ERROR([FORTRAN is incompatible with threads. Use --disable-threads.])
+    AC_MSG_ERROR([FORTRAN is incompatible with threads and only provides a speed-up on certain IBM compilers. Use --disable-threads if you really want to use FORTRAN kernels.])
   fi
   AC_CHECK_HEADERS(unistd.h)
   AC_CHECK_HEADERS(sys/time.h)
@@ -576,6 +576,7 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_LIBTOOL_WIN32_DLL
+AC_LIBTOOL_DLOPEN
 AC_PROG_LIBTOOL
 AC_SYS_LARGEFILE
 #
@@ -1177,13 +1178,22 @@ if test "$with_dlopen" = "yes"; then
       CFLAGS_RET=$CFLAGS
       #LDFLAGS="$lt_cv_dlopen_libs $LDFLAGS" #can't make the macro, which is getting lt_cv_dlopen_libs, to work
       LDFLAGS_RET=$LDFLAGS
+      LIBS_RET=$LIBS
       if test "$enable_all_static" = "yes"; then  #make sure we test also whether it works static
       	 LDFLAGS="$LDFLAGS -static"
       fi
       CFLAGS="-I$srcdir/include -DGMX_DLOPEN $CFLAGS"
-      AC_TRY_LINK([#include "$srcdir/src/gmxlib/vmddlopen.c"],,[AC_MSG_RESULT([yes])\
-	AC_DEFINE(GMX_DLOPEN,,[Compile with dlopen])],AC_MSG_RESULT([no]))
+      LIBS="$DLOPEN_LIBS $LIBS"
+      AC_TRY_LINK([#include "$srcdir/src/gmxlib/vmddlopen.c"],,[
+        AC_MSG_RESULT([yes])
+	AC_DEFINE(GMX_DLOPEN,,[Compile with dlopen])
+	AC_SUBST(DLOPEN_LIBS)
+      ],[
+	AC_MSG_RESULT([no])
+	AC_SUBST(DLOPEN_LIBS,"")
+      ])
       CFLAGS=$CFLAGS_RET
+      LIBS=$LIBS_RET
       LDFLAGS=$LDFLAGS_RET
 fi
 

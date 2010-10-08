@@ -1463,7 +1463,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 	FILE* fplog = *pfplog;
 	unsigned char digest[16];
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-	struct flock fl = { 0, SEEK_SET, 0,       F_WRLCK,     0 }; 
+	struct flock fl = { F_WRLCK, SEEK_SET, 0,       0,     0 }; 
 #endif
 	
     const char *int_warn=
