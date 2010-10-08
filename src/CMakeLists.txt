@@ -4,6 +4,7 @@ add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(gromacs)
 add_subdirectory(kernel)
+add_subdirectory(programs)
 
 if(NOT GMX_FAHCORE)
   add_subdirectory(tools)

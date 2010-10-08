@@ -73,7 +73,8 @@ int SelectionOptionStorage::init(const SelectionOption &settings,
 
 std::string SelectionOptionStorage::formatValue(int i) const
 {
-    return values().at(i)->selectionText();
+    Selection *sel = values().at(i);
+    return (sel != NULL ? sel->selectionText() : "");
 }
 
 

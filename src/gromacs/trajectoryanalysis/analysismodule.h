@@ -40,7 +40,10 @@
 namespace gmx
 {
 
+class AnalysisData;
+class AnalysisDataHandle;
 class Options;
+class SelectionCollection;
 class TrajectoryAnalysisSettings;
 class TopologyInformation;
 
@@ -67,31 +70,17 @@ class TrajectoryAnalysisModuleData
         /*! \brief
          * Convenience function for finishing data handles.
          *
-         * \param[in,out]  dhp  Pointer to data handle to finish (can be NULL).
-         * \returns The return value of \p (*dhp)->finishData() if non-zero,
-         *     \p oldrc otherwise.
+         * \param[in,out]  dhp  Pointer to data handle to finish
+         *      (\p *dhp can be NULL).
+         * \returns The \p oldrc if non-zero, return value of
+         *      \c (*dhp)->finishData() otherwise
          *
-         * Calls \p (*dhp)->finishData() if \p dhp is not NULL, and returns
-         * the return value in case there is an error. If there is no error,
-         * returns \p oldrc, which is useful for chaining several calls on
-         * different handles so that all the handles get finished even if
-         * there is an error on one of them.
+         * Calls \p (*dhp)->finishData() if \p dhp is not NULL.  \p oldrc is
+         * useful for chaining several calls on different handles so that all
+         * the handles get finished even if there is an error in one of them,
+         * and still return the error code of the first error.
          */
-        /*
-        static int finishHandle(AnalysisDataHandle **dhp, int oldrc = 0)
-        {
-            if (*dhp)
-            {
-                int rc = (*dhp)->finishData();
-                if (rc != 0)
-                {
-                    oldrc = rc;
-                }
-                *dhp = NULL;
-            }
-            return oldrc;
-        }
-        */
+        static int finishHandle(AnalysisDataHandle **dhp, int oldrc = 0);
 };
 
 /*! \brief
@@ -100,32 +89,22 @@ class TrajectoryAnalysisModuleData
  * Most simple tools should only require a single data handle to be
  * thread-local, so this class implements just that.
  */
-/*
-class TrajanaModuleDataBasic : public TrajanaModuleData
+class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
 {
     public:
-        static int create(Data *data, DataParallelOptions opt,
-                          TrajanaModuleData **pdatap)
-        {
-            TrajanaModuleDataBasic *pdata = new TrajanaModuleDataBasic();
-            *pdatap = pdata;
-            int rc = data->startData(&pdata->dh, opt);
-            if (rc != 0)
-            {
-                delete pdata;
-                *pdatap = NULL;
-            }
-            return rc;
-        }
+        static int create(AnalysisData *data, /*AnalysisDataParallelOptions*/ void* opt,
+                          TrajectoryAnalysisModuleData **pdatap);
 
-        virtual int finish()
-        {
-            return finishHandle(&dh);
-        }
+        virtual int finish();
 
-        DataHandle          *dh;
+        AnalysisDataHandle *dataHandle() { return _dh; }
+
+    private:
+        TrajectoryAnalysisModuleDataBasic();
+
+        AnalysisDataHandle     *_dh;
 };
-*/
+
 
 /*! \brief
  * Trajectory analysis method.
