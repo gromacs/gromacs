@@ -786,7 +786,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 	{
         const int MAXSTEPS = 100;// The maximum number of steps being buffered
         const int MAXMEM = 2000000; // This checks that we won't be using more than 2 megabytes for storing frames
-        gmx_bool bIOnode;
+        gmx_bool bIOnode = FALSE;
         int size_inter;
         if (MASTER(cr))
         {

@@ -575,23 +575,23 @@ void write_traj(FILE *fplog,t_commrec *cr,
 {
     int     i,j;
     gmx_groups_t *groups;
-    rvec    *xxtc;
+    rvec    *xxtc = NULL;
     rvec *local_v;
     rvec *global_v;
     
-    int bufferStep;
+    int bufferStep = 0;
     gmx_bool bBuffer = cr->nionodes > 1; // Used to determine if buffers will be used
     gmx_bool writeXTCNow = TRUE;
 
     if (bBuffer)// If buffering will be used
     {
-	bufferStep = (step/ir->nstxtcout - (int)ceil((double)write_buf->step_after_checkpoint/ir->nstxtcout))%cr->nionodes;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
-	writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->nionodes-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
+        bufferStep = (step/ir->nstxtcout - (int)ceil((double)write_buf->step_after_checkpoint/ir->nstxtcout))%cr->nionodes;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
+        writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->nionodes-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
 
-	if ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))
-	{
+        if ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))
+        {
             write_buf->step_after_checkpoint = step + 1;
-	}
+        }
     }
 
 #define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)

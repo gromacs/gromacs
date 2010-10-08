@@ -521,7 +521,7 @@ static int gmx_fio_int_seek(t_fileio* fio, gmx_off_t fpos, int whence, gmx_bool 
 #ifdef GMX_LIB_MPI
     if (fio->mpi_fh!=NULL)
     {
-        int mpi_whence;
+        int mpi_whence = 0;
         switch(whence) {
         case SEEK_SET: mpi_whence = MPI_SEEK_SET; break;
         case SEEK_END: mpi_whence = MPI_SEEK_END; break;
@@ -865,7 +865,7 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr)
 #ifdef GMX_LIB_MPI
             if (cr!=NULL && DOMAINDECOMP(cr))
             {
-                int amode;
+                int amode = 0;
                 if (strcmp(mode,"w+")==0) {
                     amode = MPI_MODE_RDWR | MPI_MODE_CREATE;
                 } else if (strcmp(mode,"a+")==0) {
