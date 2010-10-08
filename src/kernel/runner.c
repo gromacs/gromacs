@@ -804,6 +804,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                 cr->nionodes = min(min(MAXSTEPS, size_inter),
                         MAXMEM * cr->dd->nnodes / (sizeof(real) * 3 * state->natoms)  );
             }
+
+            cr->nionodes = max(cr->nionodes, 1);  /*make sure to have at least one*/
+
             if (cr->nionodes > 1)
             {
                 fprintf(fplog,"Using %d IO nodes\n",cr->nionodes);
