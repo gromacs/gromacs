@@ -1195,7 +1195,7 @@ int main (int argc, char *argv[])
   char         warn_buf[STRLEN];
 
   t_filenm fnm[] = {
-    { efMDP, NULL,  NULL,        ffOPTRD },
+    { efMDP, NULL,  NULL,        ffREAD  },
     { efMDP, "-po", "mdout",     ffWRITE },
     { efSTX, "-c",  NULL,        ffREAD  },
     { efSTX, "-r",  NULL,        ffOPTRD },

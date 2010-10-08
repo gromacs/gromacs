@@ -45,7 +45,7 @@ libgmx@LIBSUFFIX@_la_DEPENDENCIES = nonbonded/libnonbonded.la         \
 
 #	
 #
-libgmx@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ $(PTHREAD_LIBS)
+libgmx@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ @DLOPEN_LIBS@ $(PTHREAD_LIBS)
 
 libgmx@LIBSUFFIX@_la_SOURCES = \
 	3dview.c	atomprop.c	bondfree.c	\
