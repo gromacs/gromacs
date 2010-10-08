@@ -421,7 +421,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
      * (in case we ever want to make it run in parallel) */
     if (opt2bSet("-membed",nfile,fnm))
     {
-	fprintf(stderr,"Entering membed code");
+        fprintf(stderr,"Entering membed code");
         snew(membed,1);
         init_membed(fplog,membed,nfile,fnm,mtop,inputrec,state,cr,&cpt_period);
     }
@@ -783,7 +783,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /*initialize buffered MPI_IO writing */
 #ifdef GMX_LIB_MPI
     if (DOMAINDECOMP(cr) && integrator[inputrec->eI].func == do_md && (cr->duty & DUTY_PP))
-	{
+    {
         const int MAXSTEPS = 100;// The maximum number of steps being buffered
         const int MAXMEM = 2000000; // This checks that we won't be using more than 2 megabytes for storing frames
         gmx_bool bIOnode = FALSE;
@@ -812,22 +812,24 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         gmx_bcast(sizeof(int),&(cr->nionodes),cr);
 
-		/*create communicator for the MPI-IO as a subgroup of the PP nodes. Make sure the master is part of the IO nodes*/
-		if (MASTER(cr))
-		{
-			bIOnode = TRUE;
-		}
-		else if (!cr->nc.bUse)
-		{
-			if ( cr->dd->masterrank < cr->nionodes )
-			{
-				bIOnode = cr->dd->rank < cr->nionodes;
-			}
-			else
-			{
-				bIOnode = cr->dd->rank < cr->nionodes - 1;
-			}
-		} else if (cr->nc.rank_intra==0) {
+        /*create communicator for the MPI-IO as a subgroup of the PP nodes. Make sure the master is part of the IO nodes*/
+        if (MASTER(cr))
+        {
+            bIOnode = TRUE;
+        }
+        else if (!cr->nc.bUse)
+        {
+            if ( cr->dd->masterrank < cr->nionodes )
+            {
+                bIOnode = cr->dd->rank < cr->nionodes;
+            }
+            else
+            {
+                bIOnode = cr->dd->rank < cr->nionodes - 1;
+            }
+        }
+        else if (cr->nc.rank_intra==0)
+        {
             if ( cr->nc.masterrank_inter < cr->nionodes )
             {
                 bIOnode = cr->nc.rank_inter < cr->nionodes;
@@ -836,35 +838,35 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             {
                 bIOnode = cr->nc.rank_inter < cr->nionodes - 1;
             }
-		}
-		/* In the IO communicator the node with the rank=dd->masterrank has to have the highest rank (=nionodes-1).
-		 * MPI_File_Write_ordered writes in the order of the rank and the masterrank has the last frame */
-	    MPI_Comm_split(cr->mpi_comm_mygroup, bIOnode, MASTER(cr)?cr->dd->nnodes+1:cr->dd->nnodes-cr->dd->rank,
-	    		&(cr->mpi_comm_io));/*Guarantee that the master has IO rank the highest rank (nionodes-1) */
-	    MPI_Comm_rank(cr->mpi_comm_io, &(cr->dd->iorank));
+        }
+        /* In the IO communicator the node with the rank=dd->masterrank has to have the highest rank (=nionodes-1).
+         * MPI_File_Write_ordered writes in the order of the rank and the masterrank has the last frame */
+        MPI_Comm_split(cr->mpi_comm_mygroup, bIOnode, MASTER(cr)?cr->dd->nnodes+1:cr->dd->nnodes-cr->dd->rank,
+                &(cr->mpi_comm_io));/*Guarantee that the master has IO rank the highest rank (nionodes-1) */
+        MPI_Comm_rank(cr->mpi_comm_io, &(cr->dd->iorank));
 
-	    snew(cr->dd->iorank2ddrank, cr->nionodes);
-	    if (bIOnode)
-	    {
-	        MPI_Gather(&(cr->dd->rank), 1, MPI_INT, cr->dd->iorank2ddrank, 1, MPI_INT, cr->nionodes - 1, cr->mpi_comm_io);//Converts dd->ranks to an order that is logically easy to use
-	    }
-	    gmx_bcast(sizeof(int)*cr->nionodes, cr->dd->iorank2ddrank, cr);
-	    if (bIOnode)
-	    {
-	    	cr->duty |= DUTY_IO;
-	    }
-		if (!MASTER(cr) && IONODE(cr)) //Initializes the state_global->x for the total number of atoms
-		{
-			snew(state->x, state->natoms);
-		}
-	}
+        snew(cr->dd->iorank2ddrank, cr->nionodes);
+        if (bIOnode)
+        {
+            MPI_Gather(&(cr->dd->rank), 1, MPI_INT, cr->dd->iorank2ddrank, 1, MPI_INT, cr->nionodes - 1, cr->mpi_comm_io);//Converts dd->ranks to an order that is logically easy to use
+        }
+        gmx_bcast(sizeof(int)*cr->nionodes, cr->dd->iorank2ddrank, cr);
+        if (bIOnode)
+        {
+            cr->duty |= DUTY_IO;
+        }
+        if (!MASTER(cr) && IONODE(cr)) //Initializes the state_global->x for the total number of atoms
+        {
+            snew(state->x, state->natoms);
+        }
+    }
     else
 #endif
     {
         cr->nionodes = 1;
         if (MASTER(cr))
         {
-       	    cr->duty |= DUTY_IO;
+            cr->duty |= DUTY_IO;
         }
     }
 
@@ -968,7 +970,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     if (MASTER(cr) && (Flags & MD_APPENDFILES))
     {
         gmx_log_close(fplog);
-    }	
+    }
 
     rc=(int)gmx_get_stop_condition();
 
