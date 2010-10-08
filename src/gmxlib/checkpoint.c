@@ -1457,23 +1457,32 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     int  natoms,ngtc,nnhpres,nhchainlength,fflags,flags_eks,flags_enh;
     int  d;
     int  ret;
-	gmx_file_position_t *outputfiles;
-	int  nfiles;
-	t_fileio *chksum_file;
-	FILE* fplog = *pfplog;
-	unsigned char digest[16];
+    gmx_file_position_t *outputfiles;
+    int  nfiles;
+    t_fileio *chksum_file;
+    FILE* fplog = *pfplog;
+    unsigned char digest[16];
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-	struct flock fl = { F_WRLCK, SEEK_SET, 0,       0,     0 }; 
+    struct flock fl;  /* don't initialize here: the struct order is OS 
+                         dependent! */
 #endif
-	
+
     const char *int_warn=
-        "WARNING: The checkpoint file was generator with integrator %s,\n"
-        "         while the simulation uses integrator %s\n\n";
+              "WARNING: The checkpoint file was generated with integrator %s,\n"
+              "         while the simulation uses integrator %s\n\n";
     const char *sd_note=
         "NOTE: The checkpoint file was for %d nodes doing SD or BD,\n"
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
     
+#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+    fl.l_type=F_WRLCK;
+    fl.l_whence=SEEK_SET;
+    fl.l_start=0;
+    fl.l_len=0;
+    fl.l_pid=0;
+#endif
+
     if (PARTDECOMP(cr))
     {
         gmx_fatal(FARGS,

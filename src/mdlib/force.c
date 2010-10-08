@@ -454,6 +454,11 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     {
                         pme_flags |= GMX_PME_CALC_ENER_VIR;
                     }
+                    if (fr->n_tpi > 0)
+                    {
+                        /* We don't calculate f, but we do want the potential */
+                        pme_flags |= GMX_PME_CALC_POT;
+                    }
                     wallcycle_start(wcycle,ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
                                         md->start,md->homenr - fr->n_tpi,
