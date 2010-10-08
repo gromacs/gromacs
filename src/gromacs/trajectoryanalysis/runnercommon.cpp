@@ -48,6 +48,7 @@
 
 #include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
@@ -99,8 +100,6 @@ TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
       _startTime(0.0), _endTime(0.0), _deltaTime(0.0),
       _bTrajOpen(false), fr(NULL), _gpbc(NULL), _status(NULL), _oenv(NULL)
 {
-    snew(_oenv, 1);
-    output_env_init_default(_oenv);
 }
 
 
@@ -114,10 +113,6 @@ TrajectoryAnalysisRunnerCommon::Impl::~Impl()
         sfree(fr->v);
         sfree(fr->f);
         sfree(fr);
-    }
-    if (_oenv)
-    {
-        output_env_done(_oenv);
     }
 }
 
@@ -297,6 +292,7 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
     {
         return 0;
     }
+    _impl->_oenv = _impl->_options.globalProperties().output_env();
 
     int frflags = _impl->_settings.frflags();
     frflags |= TRX_NEED_X;

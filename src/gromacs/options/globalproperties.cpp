@@ -40,6 +40,9 @@
 #include <cassert>
 #include <cstddef>
 
+#include <smalloc.h>
+#include <statutil.h>
+
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 
@@ -54,8 +57,18 @@ static const double timeScaleFactors[] = {
 };
 
 OptionsGlobalProperties::OptionsGlobalProperties()
-    : _usedProperties(0), _timeUnit(1), _selectionCollection(NULL)
+    : _usedProperties(0), _timeUnit(1), _selectionCollection(NULL), _oenv(NULL)
 {
+    snew(_oenv, 1);
+    output_env_init_default(_oenv);
+}
+
+OptionsGlobalProperties::~OptionsGlobalProperties()
+{
+    if (_oenv != NULL)
+    {
+        output_env_done(_oenv);
+    }
 }
 
 double OptionsGlobalProperties::timeScaleFactor() const

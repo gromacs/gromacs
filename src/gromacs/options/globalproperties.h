@@ -39,6 +39,8 @@
 #ifndef GMX_OPTIONS_GLOBALPROPERTIES_H
 #define GMX_OPTIONS_GLOBALPROPERTIES_H
 
+#include <typedefs.h>
+
 namespace gmx
 {
 
@@ -88,9 +90,23 @@ class OptionsGlobalProperties
         {
             return _selectionCollection;
         }
+        /*! \brief
+         * Returns an output environment structure for interfacing with old
+         * code.
+         *
+         * Currently, the returned structure is always filled with default
+         * values.
+         *
+         * \deprecated
+         */
+        output_env_t output_env() const
+        {
+            return _oenv;
+        }
 
     private:
         OptionsGlobalProperties();
+        ~OptionsGlobalProperties();
 
         //! Returns true if request() has been called for the given property.
         bool isPropertyUsed(OptionGlobalPropertyId id) const
@@ -102,6 +118,7 @@ class OptionsGlobalProperties
         unsigned long           _usedProperties;
         int                     _timeUnit;
         SelectionCollection    *_selectionCollection;
+        output_env_t            _oenv;
 
         friend class Options;
 
