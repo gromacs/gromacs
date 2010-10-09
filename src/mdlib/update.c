@@ -791,7 +791,7 @@ static void dump_it_all(FILE *fp,const char *title,
 static void calc_ke_part_normal(rvec x[],rvec v_old[],rvec v[],
                                 t_grpopts *opts,t_mdatoms *md,
                                 gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, 
-                                gmx_bool bSaveEkinOld,gmx_localp_grid_t *localp)
+                                gmx_bool bSaveEkinOld,gmx_localp_grid_t *localp,t_block *cgs)
 {
   int          start=md->start,homenr=md->homenr;
   int          ix,iy,iz,nx,ny,nz;
@@ -863,7 +863,7 @@ static void calc_ke_part_normal(rvec x[],rvec v_old[],rvec v[],
           }
       }
       
-      if(localp!=NULL)
+      if(localp!=NULL && localp->calc_localp)
       {
           nx = localp->nx;
           ny = localp->ny;
@@ -893,7 +893,7 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v_old[],rvec v[],
                               t_grpopts *opts,t_mdatoms *md,
                               gmx_ekindata_t *ekind,
                               t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld,
-                              gmx_localp_grid_t *localp)
+                              gmx_localp_grid_t *localp,t_block  *cgs)
 {
   int          start=md->start,homenr=md->homenr;
   int          ix,iy,iz,nx,ny,nz;
@@ -979,15 +979,15 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v_old[],rvec v[],
 
 void calc_ke_part(t_state *state,rvec *v_old,t_grpopts *opts,t_mdatoms *md,
                   gmx_ekindata_t *ekind,t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld,
-                  gmx_localp_grid_t *localp_grid)
+                  gmx_localp_grid_t *localp_grid,t_block  *cgs)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->x,v_old,state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld,localp_grid);
+        calc_ke_part_normal(state->x,v_old,state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld,localp_grid,cgs);
     }
     else
     {
-        calc_ke_part_visc(state->box,state->x,v_old,state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld,localp_grid);
+        calc_ke_part_visc(state->box,state->x,v_old,state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld,localp_grid,cgs);
     }
 }
 

@@ -422,6 +422,7 @@ int main(int argc,char *argv[])
   gmx_bool bAppendFiles=TRUE;
   gmx_bool bKeepAndNumCPT=FALSE;
   gmx_bool bResetCountersHalfWay=FALSE;
+  gmx_bool CGlocalp=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
   real localpgridspacing=0.1;
@@ -485,7 +486,9 @@ int main(int argc,char *argv[])
     { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
       "Seed for replica exchange, -1 is generate a seed" },
     { "-localpgrid",  FALSE, etREAL, {&localpgridspacing},
-          "Spacing for local pressure grid" },
+      "Spacing for local pressure grid" },
+    { "-cglocalp",  FALSE, etREAL, {&CGlocalp},
+      "Charge-group based local pressure (rather than atom sites)" },
     { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
       "HIDDENRecalculate virtual site coordinates with -rerun" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
@@ -621,7 +624,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
   Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
-
+  Flags = Flags | (CGlocalp      ? MD_NBLISTCG     : 0);
 
   /* We postpone opening the log file if we are appending, so we can 
      first truncate the old log file and append to the correct position 

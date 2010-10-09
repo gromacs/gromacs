@@ -330,7 +330,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                             tensor pres, rvec mu_tot, gmx_constr_t constr, 
                             globsig_t *gs,gmx_bool bInterSimGS,
                             matrix box, gmx_mtop_t *top_global, real *pcurr, 
-                            int natoms, gmx_bool *bSumEkinhOld, gmx_localp_grid_t *localp_grid, int flags)
+                            int natoms, gmx_bool *bSumEkinhOld, gmx_localp_grid_t *localp_grid, t_block *cgs,int flags)
 {
     int  i,gsi;
     real gs_buf[eglsNR];
@@ -382,7 +382,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         else 
         {
 
-            calc_ke_part(state,v_old,&(ir->opts),mdatoms,ekind,nrnb,bEkinAveVel,bIterate,localp_grid);
+            calc_ke_part(state,v_old,&(ir->opts),mdatoms,ekind,nrnb,bEkinAveVel,bIterate,localp_grid,cgs);
         }
         
         for(i=0;i<state->natoms;i++)
@@ -1427,7 +1427,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         printf("You will also need to think about the grid density to avoid exhausting memory;\n");
         printf("each grid cell has to store a 9-element tensor in double precision, i.e.\n");
         printf("it takes 72 bytes. With a box of 20x20x20nm and a grid spacing of e.g 0.1 nm,\n");
-        printf("the grid would need half a gigabite, and we need another copy to sum it...\n\n");
+        printf("the grid would need half a gigabyte, and we need another copy to sum it...\n\n");
         
         printf("Note that this version is seriously hacked. If you have any questions\n");
         printf("specifically about local pressure stuff you can send them to lindahl@cbr.su.se,\n");
@@ -1483,12 +1483,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 for(k=0;k<DIM;k++)
                     localp_grid->sum_grid[i][j][k] =0;
         }
-        
-        if(fr->bTwinRange)
-            snew(localp_grid->longrange_grid,ngrid);
-        
+                
         localp_grid->nframes = 0;
         localp_grid->spacing = localpgridspacing;
+        localp_grid->CGlocalp = ((Flags & MD_NBLISTCG) != 0);
         copy_mat(state->box,localp_grid->box);
         calc_recipbox(state->box,localp_grid->invbox);
     }
@@ -1561,7 +1559,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,v_old,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,NULL,FALSE,state->box,
-                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,cglo_flags);
+                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,&top->cgs,cglo_flags);
     if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */ 
         /* we do the same call as above, but turn the pressure off -- internally to 
@@ -1572,7 +1570,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,v_old,state_global,mdatoms,nrnb,vcm,
                         wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                         constr,NULL,FALSE,state->box,
-                        top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,
+                        top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,&top->cgs,
                         cglo_flags &~ CGLO_PRESSURE);
     }
     
@@ -1903,7 +1901,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
         do_verbose = bVerbose &&
                   (step % stepout == 0 || bFirstStep || bLastStep);
-
+        
         for(i=0;i<ngrid;i++)
         {
             for(j=0;j<DIM;j++)
@@ -1968,7 +1966,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,v_old,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
                             constr,NULL,FALSE,state->box,
-                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,
+                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,&top->cgs,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
@@ -2021,6 +2019,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             (bNstEner ||
              (ir->epc != epcNO && do_per_step(step,ir->nstpcouple)));
 
+        localp_grid->calc_localp = bNstEner;
+        
         /* Do we need global communication ? */
         bGStat = (bCalcEnerPres || bStopCM ||
                   do_per_step(step,nstglobalcomm) ||
@@ -2195,7 +2195,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                 wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                 constr,NULL,FALSE,state->box,
                                 top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                                localp_grid,
+                                localp_grid,&top->cgs,
                                 cglo_flags 
                                 | CGLO_ENERGY 
                                 | (bTemp ? CGLO_TEMPERATURE:0) 
@@ -2584,7 +2584,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,v_old,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                     constr,NULL,FALSE,lastbox,
-                                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,
+                                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,&top->cgs,
                                     cglo_flags | CGLO_TEMPERATURE    
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
@@ -2655,7 +2655,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             constr,
                             bFirstIterate ? &gs : NULL,(step % gs.nstms == 0),
                             lastbox,
-                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,
+                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,&top->cgs,
                             cglo_flags 
                             | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
@@ -2891,7 +2891,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             step_rel++;
         }
         
-        if(localp_grid)
+        if(localp_grid && bNstEner)
         {
             /* Sum grid virial data */
             ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
@@ -2950,8 +2950,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	/* release it */
 	sfree(localp_grid->sum_grid);
 	sfree(localp_grid->current_grid);
-	if(fr->bTwinRange)
-		sfree(localp_grid->longrange_grid);
 	sfree(localp_grid);
 	sfree(v_old);
 	

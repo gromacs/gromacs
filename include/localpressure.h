@@ -10,13 +10,13 @@ typedef struct
     int        ny;
     int        nz;
     matrix *   current_grid;   /* allocated length is nx*ny*nz */
-    matrix *   longrange_grid;   /* allocated length is nx*ny*nz */
     matrix *   sum_grid;
     int        nframes;
     real       spacing;
     matrix     box;
     matrix     invbox;
-    gmx_bool   bLR;
+    gmx_bool   calc_localp;    /* true at nstcalcenergy steps */
+    gmx_bool   CGlocalp;       /* Charge-group based local pressure */
 } gmx_localp_grid_t;
 
 

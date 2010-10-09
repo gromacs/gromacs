@@ -154,7 +154,7 @@ void update_box(FILE         *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
   void calc_ke_part(t_state *state,rvec *v_old,t_grpopts *opts,t_mdatoms *md,
-			 gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, gmx_bool bSaveOld,gmx_localp_grid_t *grid);
+		    gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, gmx_bool bSaveOld,gmx_localp_grid_t *grid, t_block *cgs);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.

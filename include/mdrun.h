@@ -74,6 +74,7 @@ extern "C" {
 #define MD_READ_EKIN      (1<<17)
 #define MD_STARTFROMCPT   (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
+#define MD_NBLISTCG       (1<<30)
 
 /* Define a number of flags to better control the information
  * passed to compute_globals in md.c and global_stat.

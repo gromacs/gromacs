@@ -94,10 +94,10 @@ gmx_spread_local_virial_on_grid(gmx_localp_grid_t *    grid,
 	/*virial tensor is Rij x delta-F (delta-F is passed to this function)*/
 	matrix virial;
 
-    if(grid==NULL)
+    if(grid==NULL || grid->calc_localp==FALSE)
         return;
 
-    pgrid = (grid->bLR==TRUE) ? grid->longrange_grid : grid->current_grid;
+    pgrid = grid->current_grid;
         
 	/*virial tensor is Rij x delta-F (delta-F is passed to this function)*/
 	coord1[XX]=ix-jx;
@@ -165,10 +165,10 @@ gmx_spread_local_virial_on_grid_mat(gmx_localp_grid_t *    grid,
 	matrix gridres;
 	matrix *pgrid;
 
-    if(grid==NULL)
+    if(grid==NULL || grid->calc_localp==FALSE)
         return;
 
-    pgrid = (grid->bLR==TRUE) ? grid->longrange_grid : grid->current_grid;
+    pgrid = grid->current_grid;
 
 	/*
      If need to calculate grid spacing on the fly, use the following:

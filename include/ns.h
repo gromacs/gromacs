@@ -54,7 +54,7 @@ extern "C" {
  *
  ****************************************************/
 
-void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
+  void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr,gmx_localp_grid_t *localp_grid);
 /* 
  * nn is the number of energy terms in the energy matrix
  * (ngener*(ngener-1))/2

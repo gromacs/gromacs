@@ -91,7 +91,7 @@ void ns(FILE *fp,
   GMX_MPE_LOG(ev_ns_start);
   if (!fr->ns.nblist_initialized)
   {
-      init_neighbor_list(fp, fr, md->homenr);
+      init_neighbor_list(fp, fr, md->homenr,localp_grid);
   }
     
   if (fr->bTwinRange) 

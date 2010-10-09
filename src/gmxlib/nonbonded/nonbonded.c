@@ -326,9 +326,6 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	gbdata.epsilon_r = fr->epsilon_r;
 	gbdata.gpol               = egpol;
     
-    if(localp_grid)
-		localp_grid->bLR = bLR;
-
     if(fr->bAllvsAll) 
     {
         if(fr->bGB)
@@ -636,8 +633,6 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
             }
         }
     }
-    if(localp_grid)
-        localp_grid->bLR=FALSE;
 }
 
 

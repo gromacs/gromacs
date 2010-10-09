@@ -236,7 +236,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
     }
 }
 
-void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
+void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr,gmx_localp_grid_t *localp_grid)
 {
    /* Make maxlr tunable! (does not seem to be a big difference though) 
     * This parameter determines the number of i particles in a long range 
@@ -305,7 +305,8 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        ivdw = 1;
    }
 
-   fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0);
+   fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0) || localp_grid->CGlocalp;
+
    if (!fr->ns.bCGlist)
    {
        enlist_def = enlistATOM_ATOM;
