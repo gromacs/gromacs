@@ -130,7 +130,8 @@ double do_tpi(FILE *fplog,t_commrec *cr,
               gmx_membed_t *membed,
               real cpt_period,real max_hours,
               const char *deviceOptions,
-              unsigned long Flags,
+              unsigned long Flags,        
+              real localpgridspacing,
               gmx_runtime_t *runtime)
 {
   const char *TPI="Test Particle Insertion"; 
@@ -568,7 +569,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                          step,nrnb,wcycle,top,top_global,&top_global->groups,
                          rerun_fr.box,state->x,&state->hist,
                          f,force_vir,mdatoms,enerd,fcd,
-                         lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,FALSE,
+                         lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,FALSE,NULL,
                          GMX_FORCE_NONBONDED |
                          (bNS ? GMX_FORCE_NS | GMX_FORCE_DOLR : 0) |
                          (bStateChanged ? GMX_FORCE_STATECHANGED : 0)); 
@@ -578,7 +579,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                 
                 /* Calculate long range corrections to pressure and energy */
                 calc_dispcorr(fplog,inputrec,fr,step,top_global->natoms,rerun_fr.box,
-                              lambda,pres,vir,&prescorr,&enercorr,&dvdlcorr);
+                              lambda,pres,vir,&prescorr,&enercorr,&dvdlcorr,NULL);
                 /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
                 enerd->term[F_DISPCORR] = enercorr;
                 enerd->term[F_EPOT] += enercorr;

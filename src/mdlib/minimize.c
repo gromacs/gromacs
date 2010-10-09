@@ -393,7 +393,7 @@ void init_em(FILE *fplog,const char *title,
                       ir,NULL,cr,-1,0,mdatoms,
                       ems->s.x,ems->s.x,NULL,ems->s.box,
                       ems->s.lambda,&dvdlambda,
-                      NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+                      NULL,NULL,nrnb,econqCoord,FALSE,0,0,NULL);
         }
     }
     
@@ -562,7 +562,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
     constrain(NULL,TRUE,TRUE,constr,&top->idef,	
               ir,NULL,cr,count,0,md,
               s1->x,s2->x,NULL,s2->box,s2->lambda,
-              &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+              &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0,NULL);
     wallcycle_stop(wcycle,ewcCONSTR);
   }
 }
@@ -691,6 +691,7 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
              ems->s.box,ems->s.x,&ems->s.hist,
              ems->f,force_vir,mdatoms,enerd,fcd,
              ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,TRUE,
+             NULL,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL |
              (bNS ? GMX_FORCE_NS | GMX_FORCE_DOLR : 0));
 	
@@ -700,7 +701,7 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
 
   /* Calculate long range corrections to pressure and energy */
   calc_dispcorr(fplog,inputrec,fr,count,top_global->natoms,ems->s.box,ems->s.lambda,
-                pres,force_vir,&prescorr,&enercorr,&dvdlcorr);
+                pres,force_vir,&prescorr,&enercorr,&dvdlcorr,NULL);
   /* don't think these next 4 lines  can be moved in for now, because we 
      don't always want to write it -- figure out how to clean this up MRS 8/4/2009 */
   enerd->term[F_DISPCORR] = enercorr;
@@ -733,7 +734,7 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
     constrain(NULL,FALSE,FALSE,constr,&top->idef,
               inputrec,NULL,cr,count,0,mdatoms,
               ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
-              NULL,&shake_vir,nrnb,econqForceDispl,FALSE,0,0);
+              NULL,&shake_vir,nrnb,econqForceDispl,FALSE,0,0,NULL);
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
     enerd->term[F_DHDL_CON] += dvdl;
@@ -883,6 +884,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
+             real localpgridspacing,
              gmx_runtime_t *runtime)
 {
   const char *CG="Polak-Ribiere Conjugate Gradients";
@@ -1404,6 +1406,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
                 unsigned long Flags,
+                real localpgridspacing,
                 gmx_runtime_t *runtime)
 {
   static const char *LBFGS="Low-Memory BFGS Minimizer";
@@ -2039,6 +2042,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
                 unsigned long Flags,
+                real localpgridspacing,
                 gmx_runtime_t *runtime)
 { 
   const char *SD="Steepest Descents";
@@ -2244,6 +2248,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
+             real localpgridspacing,
              gmx_runtime_t *runtime)
 {
     const char *NM = "Normal Mode Analysis";

@@ -51,6 +51,7 @@
 #include "pull.h"
 #include "update.h"
 #include "membed.h"
+#include "localpressure.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -168,7 +169,8 @@ typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				real cpt_period,real max_hours,
 				const char *deviceOptions,
 				unsigned long Flags,
-				gmx_runtime_t *runtime);
+				real localpgridspacing,
+                                gmx_runtime_t *runtime);
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
@@ -293,7 +295,7 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 			  gmx_large_int_t step, int natoms, 
 			  matrix box,real lambda,tensor pres,tensor virial,
-			  real *prescorr, real *enercorr, real *dvdlcorr);
+			  real *prescorr, real *enercorr, real *dvdlcorr,gmx_localp_grid_t *localp_grid);
 
 typedef enum
 {
@@ -327,7 +329,7 @@ void do_constrain_first(FILE *log,gmx_constr_t constr,
 			       t_inputrec *inputrec,t_mdatoms *md,
 			       t_state *state,rvec *f,
 			       t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-			       t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir); 
+			       t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir,gmx_localp_grid_t *localp_grid); 
 			  
 void dynamic_load_balancing(gmx_bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,
@@ -343,7 +345,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
 	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
-	     const char *deviceOptions, unsigned long Flags);
+	     const char *deviceOptions, real localpgridspacing, unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
 void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);

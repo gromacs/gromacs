@@ -301,7 +301,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,t_blocka *excl,
                   real egnb[],real egcoul[],real egpol[],rvec box_size,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
-                  int nls,int eNL,int flags)
+                  int nls,int eNL,gmx_localp_grid_t *localp_grid,int flags)
 {
     gmx_bool            bLR,bDoForces,bForeignLambda;
 	t_nblist *      nlist;
@@ -326,6 +326,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	gbdata.epsilon_r = fr->epsilon_r;
 	gbdata.gpol               = egpol;
     
+    if(localp_grid)
+		localp_grid->bLR = bLR;
+
     if(fr->bAllvsAll) 
     {
         if(fr->bGB)
@@ -546,7 +549,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                              nblists->tab.scale,
                                              tabledata,
                                              &outeriter,
-                                             &inneriter);
+                                             &inneriter,
+                                             localp_grid);
                 }
                 else
                 {
@@ -573,7 +577,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                               nblists->tab.scale,
                                               tabledata,
                                               &outeriter,
-                                              &inneriter);
+                                              &inneriter,
+                                              localp_grid);
                     }
                     else
                     {
@@ -609,7 +614,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                       nlist->mtx,
                                       &outeriter,
                                       &inneriter,
-                                      (real *)&gbdata);
+                                     (real *)localp_grid);
                     }
                 }
                 
@@ -631,6 +636,8 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
             }
         }
     }
+    if(localp_grid)
+        localp_grid->bLR=FALSE;
 }
 
 
@@ -642,7 +649,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                 real lambda,real *dvdlambda,
                 const t_mdatoms *md,
                 const t_forcerec *fr,gmx_grppairener_t *grppener,
-                int *global_atom_index)
+                int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
     static    gmx_bool bWarn=FALSE;
     real      eps,r2,*tab,rtab2=0;
@@ -664,13 +671,14 @@ do_listed_vdw_q(int ftype,int nbonds,
     t_nblist  tmplist;
     int       icoul,ivdw;
     gmx_bool      bMolPBC,bFreeEnergy;
+    matrix localvir;
+    real      avex,avey,avez;
     
 #if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_t mtx;
 #else
     void *    mtx = NULL;
 #endif
-
     
 #if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_initialize(&mtx);
@@ -920,10 +928,26 @@ do_listed_vdw_q(int ftype,int nbonds,
             rvec_dec(fshift[CENTRAL],f14[0]);
         }
         
+            localvir[XX][XX] = -0.5 * ( dx[XX] * f14[0][XX] );
+            localvir[XX][YY] = -0.5 * ( dx[XX] * f14[0][YY] );
+            localvir[XX][ZZ] = -0.5 * ( dx[XX] * f14[0][ZZ] );
+            
+            localvir[YY][XX] = -0.5 * ( dx[YY] * f14[0][XX] );
+            localvir[YY][YY] = -0.5 * ( dx[YY] * f14[0][YY] );
+            localvir[YY][ZZ] = -0.5 * ( dx[YY] * f14[0][ZZ] );
+            
+            localvir[ZZ][XX] = -0.5 * ( dx[ZZ] * f14[0][XX] );
+            localvir[ZZ][YY] = -0.5 * ( dx[ZZ] * f14[0][YY] );
+            localvir[ZZ][ZZ] = -0.5 * ( dx[ZZ] * f14[0][ZZ] );
+            
+            avex=0.5*(x[ai][XX]+x[aj][XX]);
+            avey=0.5*(x[ai][YY]+x[aj][YY]);
+            avez=0.5*(x[ai][ZZ]+x[aj][ZZ]);
+            
+            gmx_spread_local_virial_on_grid_mat(localp_grid,avex,avey,avez,localvir);
+                        
 	    /* flops: eNR_KERNEL_OUTER + eNR_KERNEL330 + 12 */
         }
     }
     return 0.0;
 }
-
-

@@ -35,6 +35,7 @@
  */
 
 #include "typedefs.h"
+#include "localpressure.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,7 +83,8 @@ gmx_bool bshakef(FILE *log,		/* Log file			*/
                     tensor rmdr,        /* sum r x m delta_r            */
                     gmx_bool bDumpOnError,  /* Dump debugging stuff on error*/
                     int econq,         /* which type of constrainint is occurring */
-                    t_vetavars *vetavar);           /* veta for pressure control */
+                    t_vetavars *vetavar,
+                 gmx_localp_grid_t *localp_grid);           /* veta for pressure control */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0 
@@ -106,8 +108,8 @@ void csettle(gmx_settledata_t settled,
                     gmx_bool bCalcVir,      /* Calculate r x m delta_r      */
                     tensor rmdr,        /* sum r x m delta_r            */
                     int *xerror,
-                    t_vetavars *vetavar     /* variables for pressure control */   
-    );
+                    t_vetavars *vetavar,     /* variables for pressure control */   
+    gmx_localp_grid_t *localp_grid);
 
 void settle_proj(FILE *fp,
                         gmx_settledata_t settled,int econq,
@@ -138,7 +140,8 @@ gmx_bool constrain(FILE *log,gmx_bool bLog,gmx_bool bEner,
                       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                       real lambda,real *dvdlambda,
                       rvec *v,tensor *vir,
-                      t_nrnb *nrnb,int econq, gmx_bool bPscal, real veta, real vetanew);
+                      t_nrnb *nrnb,int econq, gmx_bool bPscal, real veta, real vetanew,
+                   gmx_localp_grid_t *localp_grid);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -247,7 +250,7 @@ gmx_bool constrain_lincs(FILE *log,gmx_bool bLog,gmx_bool bEner,
 			    gmx_bool bCalcVir,tensor rmdr,
 			    int econ,
 			    t_nrnb *nrnb,
-			    int maxwarn,int *warncount);
+			    int maxwarn,int *warncount,gmx_localp_grid_t *localp_grid);
 /* Returns if the constraining succeeded */
 
 #ifdef __cplusplus

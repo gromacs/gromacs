@@ -214,6 +214,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     real cpt_period,real max_hours,
                     const char *deviceOptions,
                     unsigned long Flags,
+                    real localpgridspacing,
                     gmx_runtime_t *runtime)
 {
     gmx_mdoutf_t *outf;
@@ -385,7 +386,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             /* Constrain the initial coordinates and velocities */
             do_constrain_first(fplog,constr,ir,mdatoms,state,f,
-                               graph,cr,nrnb,fr,top,shake_vir);
+                               graph,cr,nrnb,fr,top,shake_vir,NULL);
         }
         if (vsite)
         {

@@ -21,14 +21,15 @@
  * executed by multiple threads.
  */
 
-#include <mknb_common.h>
-#include <mknb_declarations.h>
-#include <mknb_outerloop.h>
-#include <mknb_metacode.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "mknb_common.h"
+#include "mknb_declarations.h"
+#include "mknb_outerloop.h"
+#include "mknb_metacode.h"
+
 
 /* This program generates nonbonded interaction source code for the GROMACS
  * Molecular Dynamics package. The functions are nearly optimal, i.e.
@@ -211,6 +212,9 @@ mknb_write_file_header(void)
 
 		fprintf(mknb_output,"#include<math.h>\n");
 
+        fprintf(mknb_output,"#include \"types/simple.h\"\n");
+        fprintf(mknb_output,"#include \"localpressure.h\"\n");
+
 		if(mknb_options.software_invsqrt)
 			fprintf(mknb_output,"#include<vec.h>\n");
 
@@ -386,9 +390,8 @@ main(int argc,char *argv[])
 				sprintf(filename,"pwr6kernel%d%d%d.F",
 						mknb_func.coul,mknb_func.vdw,mknb_func.water);				
 #else
-				sprintf(filename,"nb_kernel%d%d%d_%s.%s",
+				sprintf(filename,"nb_kernel%d%d%d.%s",
 						mknb_func.coul,mknb_func.vdw,mknb_func.water,
-						(mknb_fortran) ? "f" : "c",
 						(mknb_fortran) ? "f" : "c");
 #endif
 			

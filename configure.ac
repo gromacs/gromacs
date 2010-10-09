@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.5.1, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5.2_localpressure, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -27,11 +27,11 @@ PKG_CFLAGS=""
 ### Single/Double
 AC_ARG_ENABLE(float,
 	     [AC_HELP_STRING([--disable-float],
-	                     [Use double instead of single precision])],, enable_float=yes)
+	                     [Use double instead of single precision])],, enable_float=no)
 
 AC_ARG_ENABLE(double,
 	     [AC_HELP_STRING([--enable-double],
-	                     [Same effect as --disable-float])],, enable_double=no)
+	                     [Same effect as --disable-float])],, enable_double=yes)
 if test "$enable_double" = "yes"; then
    enable_float=no;
 fi
@@ -43,17 +43,6 @@ AM_CONDITIONAL([GMX_DOUBLE],[test "$enable_float" = "no"])
 
 
 
-### Fortran or not
-AC_ARG_ENABLE(fortran,
-             [AC_HELP_STRING([--enable-fortran],
-	                     [Use Fortran kernels])],, 
-[case "${host_cpu}-${host_os}" in
-  sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
-  *) enable_fortran=no ;;
- esac])
-# always use CC for linking:
-AC_SUBST(F77LINK,"\$(LINK)")
-
 #On some systems GNU libtool's la files are more confusing for libtool than helpful due to the 
 #hard coded paths/libs in the files. And for better linking we have pkg-config files (.pc).
 AC_ARG_ENABLE(la-files,
@@ -62,13 +51,6 @@ AC_ARG_ENABLE(la-files,
 AM_CONDITIONAL(NO_LA_FILES,[test "$enable_la_files" = no])
 
 
-
-
-### MPI or not
-AC_ARG_ENABLE(mpi,
-              [AC_HELP_STRING([--enable-mpi],
-	                      [Compile for parallel runs using MPI]
-                              [(instead of threads)])],,enable_mpi=no)
 
 
 ### MPI environment
@@ -96,40 +78,15 @@ AC_ARG_ENABLE(debug,
 	      [AC_HELP_STRING([--enable-debug],
                               [Add -g to other command line arguments])],,enable_debug=no)
 
-### IA32 assembly code
-AC_ARG_ENABLE(ia32_sse,
-              [AC_HELP_STRING([--disable-ia32-sse],
-                              [Don't build SSE/SSE2 assembly loops on ia32])],,enable_ia32_sse=yes)
 
-case "${host_cpu}-${host_vendor}" in
-   i?86-*) ;;
-   *) enable_ia32_sse=no ;;
-esac
-
-### AMD64 assembly code
-AC_ARG_ENABLE(x86_64_sse,
-              [AC_HELP_STRING([--disable-x86-64-sse],
-                              [Don't build SSE assembly loops on X86_64])],,enable_x86_64_sse=yes)
-case "${host_cpu}-${host_vendor}" in
-   x86_64-* | amd64-*) ;;
-   i?86-apple) ;;
-   *) enable_x86_64_sse=no ;;
-esac
-
-
-### Altivec on powerpc (motorola)
-AC_ARG_ENABLE(ppc_altivec,
-              [AC_HELP_STRING([--disable-ppc-altivec],
-                              [Don't build Altivec loops on PowerPC])],,enable_ppc_altivec=undef)
-# Power3/4/5 running AIX does not support altivec. We identify this with vendor=IBM.
-# IBM powerpc 970 boxes run linux, and have vendor=unknown.
-if test "$enable_ppc_altivec" = "undef"; then
-  case "${host_cpu}-${host_vendor}" in
-    ppc*-ibm* | powerpc*-ibm*) enable_ppc_altivec=no ;;
-    ppc*-* | powerpc*-*) enable_ppc_altivec=yes ;; 
-    *) enable_ppc_altivec=no ;;
-  esac
-fi
+# Turn off stuff for local pressure                                                                                                                                            enable_x86_64_sse=no;
+enable_ia32_sse=no;
+enable_ia32_3dnow=no;
+enable_ppc_altivec=no;
+enable_ia64_asm=no;
+enable_bluegene=no;
+enable_power6=no;
+enable_mpi=no;
 
 ###################################
 ## Detect buggy version of gcc
@@ -140,27 +97,11 @@ AC_ARG_ENABLE(gcc41_check,
 
 
 
-### ia64 assembly code
-AC_ARG_ENABLE(ia64_asm,
-	      [AC_HELP_STRING([--enable-ia64-asm],
-	                      [Build assembly loops on ia64])],,enable_ia64_asm=no)
-case "${host_cpu}" in
-   ia64) ;;
-   *) enable_ia64_asm=no ;;
-esac
 
 
-# IBM Power6-specific optimization
-AC_ARG_ENABLE(power6,
-             [AC_HELP_STRING([--enable-power6],
-                             [Use IBM Pwr6/PPC440/PPC450-specific F77 kernels])],,enable_power6=no)
 if test "$enable_power6" = "yes"; then
   AC_DEFINE(GMX_POWER6,,[Enable IBM Pwr6/PPC440/PPC450-specific F77 kernels])
 fi
-
-AC_ARG_ENABLE(bluegene,
-              [AC_HELP_STRING([--enable-bluegene],
-                              [Build assembly intrinsics kernels on bluegene])],,enable_bluegene=no)
 
 
 ### Optimize for host cpu version
@@ -217,7 +158,7 @@ AC_ARG_ENABLE(fftw-measure,
 
 AC_ARG_ENABLE(threads,
               [AC_HELP_STRING([--disable-threads],    
-                              [Disable parallel runs using threads])],,enable_threads=yes)
+                              [Disable parallel runs using threads])],,enable_threads=no)
 
 
 ### Use external BLAS/LAPACK libraries if the user wants to.
@@ -1355,45 +1296,18 @@ AC_OUTPUT
 # Echo some important info, to avoid stupid mistakes
 #
 
-if test "$enable_float" = "no" -a "$name_transform_provided" = "no"; then
-  echo ""
-  echo "* You are compiling a double precision version of Gromacs -"
-  echo "  program names will be suffixed with _d to avoid overwriting single"
-  echo "  precision files. You can override it with --program-suffix"
-fi
-
-if test "$name_transform_provided" = "no" -a "$enable_mpi" = "yes"; then
-  echo ""
-  echo "* Seems you are compiling with MPI support. You can install the MPI-"
-  echo "  enabled programs with suffixed names to have both MPI and non-MPI"
-  echo "  versions. This is useful e.g. on supercomputers where you usually"
-  echo "  cannot run MPI-linked programs on the login node."
-  echo "  Set a suffix with e.g. --program-suffix=_mpi (or _mpi_d for double)."
-  echo "  You only need MPI for mdrun, so if you already have non-MPI stuff"
-  echo "  installed you can issue make mdrun; make install-mdrun."
-  echo ""
-  echo "  WARNING:"
-  echo "  There are known problems with some MPI implementations:"
-  echo "             OpenMPI version < 1.4.1" 
-  echo "             MVAPICH2 version <= 1.4.1"
-fi
-
-if test "$enable_shared" = "no"; then
-  echo ""
-  echo "* On most platforms you can save 10X space with dynamic libraries, although"
-  echo "  the binaries might be less portable. Why not try --enable-shared ?"
-fi  
+echo "Important: This is NOT the default Gromacs release, but a special"
+echo "version with support for local pressure. Some important points:"
+echo ""
+echo "1. It is MUCH slower than vanilla Gromacs - think order-of-magnitude".
+echo "2. It is compiled in double precision by default."
+echo "3. Threads or MPI parallelization is not supported, since it is meant"
+echo "   to be used in reruns of existing trajectories instead of new runs."
+echo "4. It is significantly more 'experimental' than vanilla Gromacs."
+echo ""
+echo "Have fun, but be aware there are some rough edges!"
+echo ""
 
 
-if test "$tmpi_atomics" = "no"; then
-  echo ""
-  echo "* This compiler+CPU combination doesn't have working atomic operations."
-  echo "  Thread support will be unbearably slow: the default number of threads"
-  echo "  is set to 1."
-  echo "  Atomics should work on all but the most obscure CPU+compiler"
-  echo "  combinations; if your system is not obscure (like, for example, x86"
-  echo "  with gcc) please contact the developers."
-  echo ""
-fi
 
 

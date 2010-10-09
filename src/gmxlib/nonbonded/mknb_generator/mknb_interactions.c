@@ -20,11 +20,11 @@
  * executed by multiple threads.
  */
 
-#include <mknb_common.h>
-#include <mknb_metacode.h>
-
 #include <string.h>
 #include <stdlib.h>
+
+#include "mknb_common.h"
+#include "mknb_metacode.h"
 
 
 /* fscal terms to be mult. by -tabscale/r */

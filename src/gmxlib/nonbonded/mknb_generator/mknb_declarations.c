@@ -25,9 +25,9 @@
 #include <stdlib.h>
 
 
-#include <mknb_common.h>
-#include <mknb_declarations.h>
-#include <mknb_metacode.h>
+#include "mknb_common.h"
+#include "mknb_declarations.h"
+#include "mknb_metacode.h"
 
 
 void
@@ -39,42 +39,40 @@ mknb_function_header(char *funcname)
 	 */
 	if(!mknb_fortran) {
 
-#define C_REAL  (mknb_double ? "double *" : "float *")
-
 		fprintf(mknb_output,"void %s(\n",funcname); 
 		fprintf(mknb_output,"%19s %-8s %6s p_nri,\n",       "", "int *",  "");
 		fprintf(mknb_output,"%19s %-8s %6s iinr,\n",       "", "int *",   "");
 		fprintf(mknb_output,"%19s %-8s %6s jindex,\n",     "", "int *",   "");
 		fprintf(mknb_output,"%19s %-8s %6s jjnr,\n",       "", "int *",   "");
 		fprintf(mknb_output,"%19s %-8s %6s shift,\n",      "", "int *",   "");
-		fprintf(mknb_output,"%19s %-8s %6s shiftvec,\n",   "", C_REAL,    "");
-		fprintf(mknb_output,"%19s %-8s %6s fshift,\n",     "", C_REAL,    "");
+		fprintf(mknb_output,"%19s %-8s %6s shiftvec,\n",   "", "real *",    "");
+		fprintf(mknb_output,"%19s %-8s %6s fshift,\n",     "", "real *",    "");
 		fprintf(mknb_output,"%19s %-8s %6s gid,\n",        "", "int *",   "");
-		fprintf(mknb_output,"%19s %-8s %6s pos,\n",        "", C_REAL,    "");
-		fprintf(mknb_output,"%19s %-8s %6s faction,\n",    "", C_REAL,    "");
-		fprintf(mknb_output,"%19s %-8s %6s charge,\n",     "", C_REAL,    "");
-		fprintf(mknb_output,"%19s %-8s %6s p_facel,\n",     "", C_REAL,   "");
-		fprintf(mknb_output,"%19s %-8s %6s p_krf,\n",       "", C_REAL,   "");
-		fprintf(mknb_output,"%19s %-8s %6s p_crf,\n",       "", C_REAL,   "");
-		fprintf(mknb_output,"%19s %-8s %6s Vc,\n",         "", C_REAL,    "");
+		fprintf(mknb_output,"%19s %-8s %6s pos,\n",        "", "real *",    "");
+		fprintf(mknb_output,"%19s %-8s %6s faction,\n",    "", "real *",    "");
+		fprintf(mknb_output,"%19s %-8s %6s charge,\n",     "", "real *",    "");
+		fprintf(mknb_output,"%19s %-8s %6s p_facel,\n",     "", "real *",   "");
+		fprintf(mknb_output,"%19s %-8s %6s p_krf,\n",       "", "real *",   "");
+		fprintf(mknb_output,"%19s %-8s %6s p_crf,\n",       "", "real *",   "");
+		fprintf(mknb_output,"%19s %-8s %6s Vc,\n",         "", "real *",    "");
 		fprintf(mknb_output,"%19s %-8s %6s type,\n",       "", "int *",   "");
 		fprintf(mknb_output,"%19s %-8s %6s p_ntype,\n",    "", "int *",   "");
-		fprintf(mknb_output,"%19s %-8s %6s vdwparam,\n",   "", C_REAL,    "");
-		fprintf(mknb_output,"%19s %-8s %6s Vvdw,\n",       "", C_REAL,    "");
-		fprintf(mknb_output,"%19s %-8s %6s p_tabscale,\n",  "", C_REAL,   "");
-		fprintf(mknb_output,"%19s %-8s %6s VFtab,\n",      "", C_REAL,    "");
-		fprintf(mknb_output,"%19s %-8s %6s invsqrta,\n",   "", C_REAL,    "");
-		fprintf(mknb_output,"%19s %-8s %6s dvda,\n",       "", C_REAL,    "");
-		fprintf(mknb_output,"%19s %-8s %6s p_gbtabscale,\n","", C_REAL,   "");
-		fprintf(mknb_output,"%19s %-8s %6s GBtab,\n",      "", C_REAL,    "");
+		fprintf(mknb_output,"%19s %-8s %6s vdwparam,\n",   "", "real *",    "");
+		fprintf(mknb_output,"%19s %-8s %6s Vvdw,\n",       "", "real *",    "");
+		fprintf(mknb_output,"%19s %-8s %6s p_tabscale,\n",  "", "real *",   "");
+		fprintf(mknb_output,"%19s %-8s %6s VFtab,\n",      "", "real *",    "");
+		fprintf(mknb_output,"%19s %-8s %6s invsqrta,\n",   "", "real *",    "");
+		fprintf(mknb_output,"%19s %-8s %6s dvda,\n",       "", "real *",    "");
+		fprintf(mknb_output,"%19s %-8s %6s p_gbtabscale,\n","", "real *",   "");
+		fprintf(mknb_output,"%19s %-8s %6s GBtab,\n",      "", "real *",    "");
 		fprintf(mknb_output,"%19s %-8s %6s p_nthreads,\n",  "", "int *",  "");
 		fprintf(mknb_output,"%19s %-8s %6s count,\n",      "", "int *",   "");
 		fprintf(mknb_output,"%19s %-8s %6s mtx,\n",        "", "void *",  "");
 		fprintf(mknb_output,"%19s %-8s %6s outeriter,\n",  "", "int *",   "");
 		fprintf(mknb_output,"%19s %-8s %6s inneriter,\n",  "", "int *",   "");
-		fprintf(mknb_output,"%19s %-8s %6s work)\n{",      "", C_REAL,    "");
+		fprintf(mknb_output,"%19s %-8s %6s work)\n{",      "", "real *",    "");
 
-#undef C_REAL
+#undef real *
 
 	} else {
 
@@ -134,6 +132,8 @@ mknb_function_header(char *funcname)
 
 	}
 	fprintf(mknb_output,"\n");
+    mknb_code("  gmx_localp_grid_t * localp_grid = (gmx_localp_grid_t *)work;");
+
 }
 
 

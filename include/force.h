@@ -62,7 +62,8 @@ real RF_excl_correction(FILE *fplog,
 			       const t_forcerec *fr,t_graph *g,
 			       const t_mdatoms *mdatoms,const t_blocka *excl,
 			       rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
-			       real lambda,real *dvdlambda);
+                        real lambda,real *dvdlambda,
+                        gmx_localp_grid_t *localp_grid);
 /* Calculate the reaction-field energy correction for this node:
  * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
  * and force correction for all excluded pairs, including self pairs.
@@ -214,7 +215,8 @@ void do_force(FILE *log,t_commrec *cr,
 		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 		     double t,FILE *field,gmx_edsam_t ed,
 		     gmx_bool bBornRadii,
-		     int flags);
+	      gmx_localp_grid_t *localp_grid,
+	      int flags);
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
  * Calculate forces.
@@ -240,7 +242,8 @@ void ns(FILE       *fplog,
 	       gmx_bool       bFillGrid,
 	       gmx_bool       bDoLongRange,
 	       gmx_bool       bDoForces,
-	       rvec       *f);
+        rvec       *f,
+        gmx_localp_grid_t *localp_grid);
 /* Call the neighborsearcher */
 
 void do_force_lowlevel(FILE         *fplog,  
@@ -269,7 +272,8 @@ void do_force_lowlevel(FILE         *fplog,
 			      t_blocka     *excl,
 			      rvec         mu_tot[2],
 			      int          flags,
-			      float        *cycles_pme);
+                       float        *cycles_pme,
+                       gmx_localp_grid_t *localp_grid);
 /* Call all the force routines */
 
 #ifdef __cplusplus

@@ -43,6 +43,7 @@
 #include "constr.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
+#include "localpressure.h"
 
 typedef struct
 {
@@ -376,7 +377,7 @@ static int xshake(real b4[], real after[], real dOH, real dHH, real mO, real mH)
 
 void csettle(gmx_settledata_t settled,
              int nsettle, t_iatom iatoms[],real b4[], real after[],
-             real invdt,real *v,gmx_bool bCalcVir,tensor rmdr,int *error,t_vetavars *vetavar)
+             real invdt,real *v,gmx_bool bCalcVir,tensor rmdr,int *error,t_vetavars *vetavar,gmx_localp_grid_t *localp_grid)
 {
     /* ***************************************************************** */
     /*                                                               ** */
@@ -411,7 +412,8 @@ void csettle(gmx_settledata_t settled,
     real t1,t2;
     real dax, day, daz, dbx, dby, dbz, dcx, dcy, dcz;
     real mdax, mday, mdaz, mdbx, mdby, mdbz, mdcx, mdcy, mdcz;
-    
+    matrix localvir;
+
     int doshake;
     
     int i, shakeret, ow1, hw2, hw3;
@@ -619,6 +621,17 @@ void csettle(gmx_settledata_t settled,
           mdcx = mHs*dcx;
           mdcy = mHs*dcy;
           mdcz = mHs*dcz;
+          
+          localvir[XX][XX] = - (b4[ow1]*mdax + b4[hw2]*mdbx + b4[hw3]*mdcx );
+          localvir[XX][YY] = - (b4[ow1]*mday + b4[hw2]*mdby + b4[hw3]*mdcy );
+          localvir[XX][ZZ] = - (b4[ow1]*mdaz + b4[hw2]*mdbz + b4[hw3]*mdcz );
+          localvir[YY][XX] = - (b4[ow1+1]*mdax + b4[hw2+1]*mdbx + b4[hw3+1]*mdcx );
+          localvir[YY][YY] = - (b4[ow1+1]*mday + b4[hw2+1]*mdby + b4[hw3+1]*mdcy );
+          localvir[YY][ZZ] = - (b4[ow1+1]*mdaz + b4[hw2+1]*mdbz + b4[hw3+1]*mdcz );
+          localvir[ZZ][XX] = - (b4[ow1+2]*mdax + b4[hw2+2]*mdbx + b4[hw3+2]*mdcx );
+          localvir[ZZ][YY] = - (b4[ow1+2]*mday + b4[hw2+2]*mdby + b4[hw3+2]*mdcy );
+          localvir[ZZ][ZZ] = - (b4[ow1+2]*mdaz + b4[hw2+2]*mdbz + b4[hw3+2]*mdcz );
+                    
           rmdr[XX][XX] -= b4[ow1]*mdax + b4[hw2]*mdbx + b4[hw3]*mdcx;
           rmdr[XX][YY] -= b4[ow1]*mday + b4[hw2]*mdby + b4[hw3]*mdcy;
           rmdr[XX][ZZ] -= b4[ow1]*mdaz + b4[hw2]*mdbz + b4[hw3]*mdcz;
@@ -628,7 +641,21 @@ void csettle(gmx_settledata_t settled,
           rmdr[ZZ][XX] -= b4[ow1+2]*mdax + b4[hw2+2]*mdbx + b4[hw3+2]*mdcx;
           rmdr[ZZ][YY] -= b4[ow1+2]*mday + b4[hw2+2]*mdby + b4[hw3+2]*mdcy;
           rmdr[ZZ][ZZ] -= b4[ow1+2]*mdaz + b4[hw2+2]*mdbz + b4[hw3+2]*mdcz;
-	/* 3*24 - 9 flops */
+          
+          localvir[XX][XX] *= 0.5*invdt*invdt;
+          localvir[XX][YY] *= 0.5*invdt*invdt;
+          localvir[XX][ZZ] *= 0.5*invdt*invdt;
+          localvir[YY][XX] *= 0.5*invdt*invdt;
+          localvir[YY][YY] *= 0.5*invdt*invdt;
+          localvir[YY][ZZ] *= 0.5*invdt*invdt;
+          localvir[ZZ][XX] *= 0.5*invdt*invdt;
+          localvir[ZZ][YY] *= 0.5*invdt*invdt;
+          localvir[ZZ][ZZ] *= 0.5*invdt*invdt;
+          
+          gmx_spread_local_virial_on_grid_mat(localp_grid,
+                                              b4[ow1],b4[ow1+1],b4[ow1+2],
+                                              localvir);
+          /* 3*24 - 9 flops */
       }
     } else {
       /* If we couldn't settle this water, try a simplified iterative shake instead */

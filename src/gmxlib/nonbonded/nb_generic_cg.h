@@ -38,6 +38,7 @@
 
 #include "types/simple.h"
 #include "typedefs.h"
+#include "localpressure.h"
 
 void
 gmx_nb_generic_cg_kernel(t_nblist *           nlist,
@@ -51,7 +52,8 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
 			 real                 tabscale,  
 			 real *               VFtab,
 			 int *                outeriter,
-			 int *                inneriter);
+             int *                inneriter,
+             gmx_localp_grid_t *  localp_grid);
 
 #endif
 

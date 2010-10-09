@@ -420,7 +420,7 @@ void do_force(FILE *fplog,t_commrec *cr,
               real lambda,t_graph *graph,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
-              gmx_bool bBornRadii,
+              gmx_bool bBornRadii,gmx_localp_grid_t *localp_grid,
               int flags)
 {
     int    cg0,cg1,i,j;
@@ -607,7 +607,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         ns(fplog,fr,x,box,
            groups,&(inputrec->opts),top,mdatoms,
            cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
-           bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
+           bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f,localp_grid);
         if (bSepDVDL)
         {
             fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
@@ -728,7 +728,7 @@ void do_force(FILE *fplog,t_commrec *cr,
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
                       lambda,graph,&(top->excls),fr->mu_tot,
-                      flags,&cycles_pme);
+                      flags,&cycles_pme,localp_grid);
     
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -916,7 +916,8 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                         t_inputrec *ir,t_mdatoms *md,
                         t_state *state,rvec *f,
                         t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-                        t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir)
+                        t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir,
+                        gmx_localp_grid_t *localp_grid)
 {
     int    i,m,start,end;
     gmx_large_int_t step;
@@ -948,7 +949,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
               ir,NULL,cr,step,0,md,
               state->x,state->x,NULL,
               state->box,state->lambda,&dvdlambda,
-              NULL,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
+              NULL,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta,localp_grid);
     if (EI_VV(ir->eI)) 
     {
         /* constrain the inital velocity, and save it */
@@ -958,7 +959,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                   ir,NULL,cr,step,0,md,
                   state->x,state->v,state->v,
                   state->box,state->lambda,&dvdlambda,
-                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcMTTK,state->veta,state->veta);
+                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcMTTK,state->veta,state->veta,localp_grid);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI!=eiVV)
@@ -987,7 +988,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                   ir,NULL,cr,step,-1,md,
                   state->x,savex,NULL,
                   state->box,state->lambda,&dvdlambda,
-                  state->v,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
+                  state->v,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta,localp_grid);
         
         for(i=start; i<end; i++) {
             for(m=0; m<DIM; m++) {
@@ -1165,11 +1166,12 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                    gmx_large_int_t step,int natoms,
                    matrix box,real lambda,tensor pres,tensor virial,
-                   real *prescorr, real *enercorr, real *dvdlcorr)
+                   real *prescorr, real *enercorr, real *dvdlcorr,gmx_localp_grid_t *localp_grid)
 {
     gmx_bool bCorrAll,bCorrPres;
     real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
     int  m;
+    int i,j,k,ngrid;
     
     *prescorr = 0;
     *enercorr = 0;
@@ -1240,6 +1242,14 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                 pres[m][m] += spres;
             }
             *prescorr += spres;
+        }
+        
+        ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
+        
+        for(i=0;i<ngrid;i++)
+        {
+            for(m=0; m<DIM; m++)
+                localp_grid->current_grid[i][m][m] -= svir/ngrid;
         }
         
         /* Can't currently control when it prints, for now, just print when degugging */

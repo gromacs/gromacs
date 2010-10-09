@@ -44,12 +44,14 @@
 #include "physics.h"
 #include "copyrite.h"
 #include "pbc.h"
+#include "localpressure.h"
 
 real RF_excl_correction(FILE *log,
-			const t_forcerec *fr,t_graph *g,
-			const t_mdatoms *mdatoms,const t_blocka *excl,
-			rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
-			real lambda,real *dvdlambda)
+                        const t_forcerec *fr,t_graph *g,
+                        const t_mdatoms *mdatoms,const t_blocka *excl,
+                        rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
+                        real lambda,real *dvdlambda,
+                        gmx_localp_grid_t *localp_grid)
 {
   /* Calculate the reaction-field energy correction for this node:
    * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
@@ -111,6 +113,12 @@ real RF_excl_correction(FILE *log,
 	    svmul(-2*qqA*ek,dx,df);
 	    rvec_inc(f[i],df);
 	    rvec_dec(f[k],df);
+          
+          gmx_spread_local_virial_on_grid(localp_grid,
+                                          x[i][XX],x[i][YY],x[i][ZZ],
+                                          x[k][XX],x[k][YY],x[k][ZZ],
+                                          df[XX],df[YY],df[ZZ]);
+          
 	    rvec_inc(fshift[ki],df);
 	    rvec_dec(fshift[CENTRAL],df);
 	  }
@@ -150,6 +158,12 @@ real RF_excl_correction(FILE *log,
 	    svmul(-2*qqL*ek,dx,df);
 	    rvec_inc(f[i],df);
 	    rvec_dec(f[k],df);
+          
+          gmx_spread_local_virial_on_grid(localp_grid,
+                                          x[i][XX],x[i][YY],x[i][ZZ],
+                                          x[k][XX],x[k][YY],x[k][ZZ],
+                                          df[XX],df[YY],df[ZZ]);
+          
 	    rvec_inc(fshift[ki],df);
 	    rvec_dec(fshift[CENTRAL],df);
 	    *dvdlambda += (qqB - qqA)*v;

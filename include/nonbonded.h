@@ -41,6 +41,7 @@
 #include "network.h"
 #include "tgroup.h"
 #include "genborn.h"
+#include "localpressure.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,7 +58,7 @@ do_nonbonded(t_commrec *cr,t_forcerec *fr,
              rvec x[],rvec f[],t_mdatoms *md,t_blocka *excl,
              real egnb[],real egcoul[],real egb[],rvec box_size,
              t_nrnb *nrnb,real lambda,real *dvdlambda,
-             int nls,int eNL,int flags);
+             int nls,int eNL,gmx_localp_grid_t *localp_grid,int flags);
 
 /* Calculate VdW/charge pair interactions (usually 1-4 interactions).
  * global_atom_index is only passed for printing error messages.
@@ -70,7 +71,7 @@ do_listed_vdw_q(int ftype,int nbonds,
 		real lambda,real *dvdlambda,
 		const t_mdatoms *md,
 		const t_forcerec *fr,gmx_grppairener_t *grppener,
-		int *global_atom_index);
+		int *global_atom_index,gmx_localp_grid_t *localp_grid);
 
 #ifdef __cplusplus
 }

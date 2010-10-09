@@ -788,11 +788,13 @@ static void dump_it_all(FILE *fp,const char *title,
 #endif
 }
 
-static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
+static void calc_ke_part_normal(rvec x[],rvec v_old[],rvec v[],
+                                t_grpopts *opts,t_mdatoms *md,
                                 gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, 
-                                gmx_bool bSaveEkinOld)
+                                gmx_bool bSaveEkinOld,gmx_localp_grid_t *localp)
 {
   int          start=md->start,homenr=md->homenr;
+  int          ix,iy,iz,nx,ny,nz;
   int          g,d,n,m,ga=0,gt=0;
   rvec         v_corrt;
   real         hm;
@@ -860,6 +862,24 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
               }
           }
       }
+      
+      if(localp!=NULL)
+      {
+          nx = localp->nx;
+          ny = localp->ny;
+          nz = localp->nz;
+          grid_lookup(localp,x[n],&ix,&iy,&iz);
+          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][XX] += hm * 0.5 * (v_corrt[XX] * v_corrt[XX] + v_old[n][XX] * v_old[n][XX] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][YY] += hm * 0.5 * (v_corrt[XX] * v_corrt[YY] + v_old[n][XX] * v_old[n][YY] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][ZZ] += hm * 0.5 * (v_corrt[XX] * v_corrt[ZZ] + v_old[n][XX] * v_old[n][ZZ] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][XX] += hm * 0.5 * (v_corrt[YY] * v_corrt[XX] + v_old[n][YY] * v_old[n][XX] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][YY] += hm * 0.5 * (v_corrt[YY] * v_corrt[YY] + v_old[n][YY] * v_old[n][YY] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][ZZ] += hm * 0.5 * (v_corrt[YY] * v_corrt[ZZ] + v_old[n][YY] * v_old[n][ZZ] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][XX] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[XX] + v_old[n][ZZ] * v_old[n][XX] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][YY] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[YY] + v_old[n][ZZ] * v_old[n][YY] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][ZZ] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[ZZ] + v_old[n][ZZ] * v_old[n][ZZ] );
+      }
+      
       if (md->nMassPerturbed && md->bPerturbed[n]) 
       {
           dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
@@ -869,12 +889,14 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
-static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
+static void calc_ke_part_visc(matrix box,rvec x[],rvec v_old[],rvec v[],
                               t_grpopts *opts,t_mdatoms *md,
                               gmx_ekindata_t *ekind,
-                              t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
+                              t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld,
+                              gmx_localp_grid_t *localp)
 {
   int          start=md->start,homenr=md->homenr;
+  int          ix,iy,iz,nx,ny,nz;
   int          g,d,n,m,gt=0;
   rvec         v_corrt;
   real         hm;
@@ -926,6 +948,24 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
               }
           }
       }
+      
+      if(localp!=NULL)
+      {
+          nx = localp->nx;
+          ny = localp->ny;
+          nz = localp->nz;
+          grid_lookup(localp,x[n],&ix,&iy,&iz);
+          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][XX] += hm * 0.5 * (v_corrt[XX] * v_corrt[XX] + v_old[n][XX] * v_old[n][XX] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][YY] += hm * 0.5 * (v_corrt[XX] * v_corrt[YY] + v_old[n][XX] * v_old[n][YY] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][ZZ] += hm * 0.5 * (v_corrt[XX] * v_corrt[ZZ] + v_old[n][XX] * v_old[n][ZZ] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][XX] += hm * 0.5 * (v_corrt[YY] * v_corrt[XX] + v_old[n][YY] * v_old[n][XX] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][YY] += hm * 0.5 * (v_corrt[YY] * v_corrt[YY] + v_old[n][YY] * v_old[n][YY] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][ZZ] += hm * 0.5 * (v_corrt[YY] * v_corrt[ZZ] + v_old[n][YY] * v_old[n][ZZ] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][XX] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[XX] + v_old[n][ZZ] * v_old[n][XX] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][YY] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[YY] + v_old[n][ZZ] * v_old[n][YY] );
+          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][ZZ] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[ZZ] + v_old[n][ZZ] * v_old[n][ZZ] );
+      }
+      
       if(md->nPerturbed && md->bPerturbed[n]) 
       {
           dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
@@ -937,16 +977,17 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
-void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
-                  gmx_ekindata_t *ekind,t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
+void calc_ke_part(t_state *state,rvec *v_old,t_grpopts *opts,t_mdatoms *md,
+                  gmx_ekindata_t *ekind,t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld,
+                  gmx_localp_grid_t *localp_grid)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld);
+        calc_ke_part_normal(state->x,v_old,state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld,localp_grid);
     }
     else
     {
-        calc_ke_part_visc(state->box,state->x,state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld);
+        calc_ke_part_visc(state->box,state->x,v_old,state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld,localp_grid);
     }
 }
 
@@ -1104,7 +1145,7 @@ static void combine_forces(int nstlist,
                            t_commrec *cr,gmx_large_int_t step,t_state *state,
                            int start,int nrend,
                            rvec f[],rvec f_lr[],
-                           t_nrnb *nrnb)
+                           t_nrnb *nrnb, gmx_localp_grid_t *localp_grid)
 {
     int  i,d,nm1;
 
@@ -1123,7 +1164,7 @@ static void combine_forces(int nstlist,
         /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         constrain(NULL,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
                   state->x,f_lr,f_lr,state->box,state->lambda,NULL,
-                  NULL,NULL,nrnb,econqForce,ir->epc==epcMTTK,state->veta,state->veta);
+                  NULL,NULL,nrnb,econqForce,ir->epc==epcMTTK,state->veta,state->veta,localp_grid);
     }
     
     /* Add nstlist-1 times the LR force to the sum of both forces
@@ -1293,7 +1334,8 @@ void update_constraints(FILE         *fplog,
                         gmx_bool         bInitStep,
                         gmx_bool         bFirstHalf,
                         gmx_bool         bCalcVir,
-                        real         vetanew)
+                        real         vetanew,
+                        gmx_localp_grid_t * localp_grid)
 {
     gmx_bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
     double           dt;
@@ -1345,7 +1387,7 @@ void update_constraints(FILE         *fplog,
                       state->x,state->v,state->v,
                       state->box,state->lambda,dvdlambda,
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
-                      inputrec->epc==epcMTTK,state->veta,vetanew);
+                      inputrec->epc==epcMTTK,state->veta,vetanew,localp_grid);
         } 
         else 
         {
@@ -1354,7 +1396,7 @@ void update_constraints(FILE         *fplog,
                       state->x,xprime,NULL,
                       state->box,state->lambda,dvdlambda,
                       state->v,bCalcVir ? &vir_con : NULL ,nrnb,econqCoord,
-                      inputrec->epc==epcMTTK,state->veta,state->veta);
+                      inputrec->epc==epcMTTK,state->veta,state->veta,localp_grid);
         }
         wallcycle_stop(wcycle,ewcCONSTR);
         
@@ -1413,7 +1455,7 @@ void update_constraints(FILE         *fplog,
                       inputrec,NULL,cr,step,1,md,
                       state->x,xprime,NULL,
                       state->box,state->lambda,dvdlambda,
-                      NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+                      NULL,NULL,nrnb,econqCoord,FALSE,0,0,localp_grid);
             wallcycle_stop(wcycle,ewcCONSTR);
         }
     }    
@@ -1574,7 +1616,8 @@ void update_coords(FILE         *fplog,
                    t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
                    t_nrnb       *nrnb,
                    gmx_constr_t constr,
-                   t_idef       *idef)
+                   t_idef       *idef,
+                   gmx_localp_grid_t *localp_grid)
 {
     gmx_bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
@@ -1627,7 +1670,7 @@ void update_coords(FILE         *fplog,
          */
         /* is this correct in the new construction? MRS */
         combine_forces(inputrec->nstlist,constr,inputrec,md,idef,cr,step,state,
-                       start,nrend,f,f_lr,nrnb);
+                       start,nrend,f,f_lr,nrnb,localp_grid);
         force = f_lr;
     }
     else

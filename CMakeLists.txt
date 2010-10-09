@@ -5,7 +5,7 @@ include(Dart)
 mark_as_advanced(DART_ROOT)
 # PROJECT_VERSION should have the following structure: 
 # VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-set(PROJECT_VERSION "4.5.1")
+set(PROJECT_VERSION "4.5.2_localpressure")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -16,7 +16,7 @@ set(SOVERSION 6)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "5")
-SET(CPACK_PACKAGE_VERSION_PATCH "1")
+SET(CPACK_PACKAGE_VERSION_PATCH "2_localpressure")
 
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -76,16 +76,16 @@ gmx_c_flags()
 ########################################################################
 # User input options                                                   #
 ########################################################################
-option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
-option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREADS    "Build a parallel (thread-based) version of GROMACS (cannot be combined with MPI yet)" ON)
+option(GMX_DOUBLE "Use double precision (strongly recommended for localpressure)" ON)
+option(GMX_MPI    "Build a parallel version of GROMACS (Disabled for localpressure)" OFF)
+option(GMX_THREADS    "Build a parallel (thread-based) version of GROMACS (Disabled for localpressure)" OFF)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
-set(GMX_ACCELERATION "auto" 
-    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran")
+set(GMX_ACCELERATION "none" 
+    CACHE STRING "Accelerated kernels are disabled for localpressure")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")

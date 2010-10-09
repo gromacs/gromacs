@@ -56,6 +56,7 @@
 #include "force.h"
 #include "nonbonded.h"
 #include "mdrun.h"
+#include "localpressure.h"
 
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
@@ -76,7 +77,6 @@ const int cmap_coeff_matrix[] = {
 0, 0,  0,  0, 0, 0,  0,  0,  0,  0,  1, -1,  0,  0, -1,  1,
 0, 0,  0,  0, 0, 0, -1,  1,  0,  0,  2, -2,  0,  0, -1,  1
 };
-
 
 
 int glatnr(int *global_atom_index,int i)
@@ -122,7 +122,7 @@ real morse_bonds(int nbonds,
 		 const t_pbc *pbc,const t_graph *g,
 		 real lambda,real *dvdl,
 		 const t_mdatoms *md,t_fcdata *fcd,
-		 int *global_atom_index)
+		 int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   const real one=1.0;
   const real two=2.0;
@@ -167,6 +167,11 @@ real morse_bonds(int nbonds,
       fshift[ki][m]+=fij;
       fshift[CENTRAL][m]-=fij;
     }
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      fbond*dx[XX],fbond*dx[YY],fbond*dx[ZZ]);
+      
   }                                           /*  58 TOTAL    */
   return vtot;
 }
@@ -177,7 +182,7 @@ real cubic_bonds(int nbonds,
 		 const t_pbc *pbc,const t_graph *g,
 		 real lambda,real *dvdl,
 		 const t_mdatoms *md,t_fcdata *fcd,
-		 int *global_atom_index)
+		 int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   const real three = 3.0;
   const real two   = 2.0;
@@ -224,6 +229,10 @@ real cubic_bonds(int nbonds,
       fshift[ki][m]+=fij;
       fshift[CENTRAL][m]-=fij;
     }
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      fbond*dx[XX],fbond*dx[YY],fbond*dx[ZZ]);
   }                                           /*  54 TOTAL    */
   return vtot;
 }
@@ -234,7 +243,7 @@ real FENE_bonds(int nbonds,
 		const t_pbc *pbc,const t_graph *g,
 		real lambda,real *dvdl,
 		const t_mdatoms *md,t_fcdata *fcd,
-		int *global_atom_index)
+		int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   const real half=0.5;
   const real one=1.0;
@@ -286,6 +295,11 @@ real FENE_bonds(int nbonds,
       fshift[ki][m]+=fij;
       fshift[CENTRAL][m]-=fij;
     }
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      fbond*dx[XX],fbond*dx[YY],fbond*dx[ZZ]);
+      
   }                                           /*  58 TOTAL    */
   return vtot;
 }
@@ -323,7 +337,7 @@ real bonds(int nbonds,
 	   const t_pbc *pbc,const t_graph *g,
 	   real lambda,real *dvdlambda,
 	   const t_mdatoms *md,t_fcdata *fcd,
-	   int *global_atom_index)
+	   int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,m,ki,ai,aj,type;
   real dr,dr2,fbond,vbond,fij,vtot;
@@ -368,6 +382,11 @@ real bonds(int nbonds,
       fshift[ki][m]+=fij;
       fshift[CENTRAL][m]-=fij;
     }
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      fbond*dx[XX],fbond*dx[YY],fbond*dx[ZZ]);
+      
   }					/* 59 TOTAL	*/
   return vtot;
 }
@@ -378,7 +397,7 @@ real restraint_bonds(int nbonds,
                      const t_pbc *pbc,const t_graph *g,
                      real lambda,real *dvdlambda,
                      const t_mdatoms *md,t_fcdata *fcd,
-                     int *global_atom_index)
+                     int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
     int  i,m,ki,ai,aj,type;
     real dr,dr2,fbond,vbond,fij,vtot;
@@ -463,6 +482,10 @@ real restraint_bonds(int nbonds,
             fshift[ki][m]+=fij;
             fshift[CENTRAL][m]-=fij;
         }
+        gmx_spread_local_virial_on_grid(localp_grid,
+                                        x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                        fbond*dx[XX],fbond*dx[YY],fbond*dx[ZZ]);        
     }					/* 59 TOTAL	*/
 
     return vtot;
@@ -474,7 +497,7 @@ real polarize(int nbonds,
 	      const t_pbc *pbc,const t_graph *g,
 	      real lambda,real *dvdlambda,
 	      const t_mdatoms *md,t_fcdata *fcd,
-	      int *global_atom_index)
+	      int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,m,ki,ai,aj,type;
   real dr,dr2,fbond,vbond,fij,vtot,ksh;
@@ -513,6 +536,11 @@ real polarize(int nbonds,
       fshift[ki][m]+=fij;
       fshift[CENTRAL][m]-=fij;
     }
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      fbond*dx[XX],fbond*dx[YY],fbond*dx[ZZ]);
+      
   }					/* 59 TOTAL	*/
   return vtot;
 }
@@ -523,7 +551,7 @@ real water_pol(int nbonds,
 	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd,
-	       int *global_atom_index)
+	       int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   /* This routine implements anisotropic polarizibility for water, through
    * a shell connected to a dummy with spring constant that differ in the
@@ -535,6 +563,8 @@ real water_pol(int nbonds,
   rvec df;
 #endif
   real vtot,fij,r_HH,r_OD,r_nW,tx,ty,tz,qS;
+
+    gmx_fatal(FARGS,"Cannot do local pressure with water polarization.");
 
   vtot = 0.0;
   if (nbonds > 0) {
@@ -682,13 +712,15 @@ real thole_pol(int nbonds,
 	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd,
-	       int *global_atom_index)
+	       int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   /* Interaction between two pairs of particles with opposite charge */
   int i,type,a1,da1,a2,da2;
   real q1,q2,qq,a,al1,al2,afac;
   real V=0;
-  
+
+    gmx_fatal(FARGS,"Cannot do local pressure with thole polarization.");
+    
   for(i=0; (i<nbonds); ) {
     type  = forceatoms[i++];
     a1    = forceatoms[i++];
@@ -734,7 +766,7 @@ real angles(int nbonds,
 	    const t_pbc *pbc,const t_graph *g,
 	    real lambda,real *dvdlambda,
 	    const t_mdatoms *md,t_fcdata *fcd,
-	    int *global_atom_index)
+	    int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
@@ -788,6 +820,18 @@ real angles(int nbonds,
 	f[aj][m]+=f_j[m];
 	f[ak][m]+=f_k[m];
       }
+        
+        gmx_spread_local_virial_on_grid(localp_grid,
+                                        x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                        f_i[XX],f_i[YY],f_i[ZZ]);
+        
+        gmx_spread_local_virial_on_grid(localp_grid,
+                                        x[ak][XX],x[ak][YY],x[ak][ZZ],
+                                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                        f_k[XX],f_k[YY],f_k[ZZ]);
+        
+        
       if (g) {
 	copy_ivec(SHIFT_IVEC(g,aj),jt);
       
@@ -810,7 +854,7 @@ real urey_bradley(int nbonds,
 		  const t_pbc *pbc,const t_graph *g,
 		  real lambda,real *dvdlambda,
 		  const t_mdatoms *md,t_fcdata *fcd,
-		  int *global_atom_index)
+		  int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,m,ai,aj,ak,t1,t2,type,ki;
   rvec r_ij,r_kj,r_ik;
@@ -870,6 +914,17 @@ real urey_bradley(int nbonds,
 	f[aj][m]+=f_j[m];
 	f[ak][m]+=f_k[m];
       }
+        
+        gmx_spread_local_virial_on_grid(localp_grid,
+                                        x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                        f_i[XX],f_i[YY],f_i[ZZ]);
+        
+        gmx_spread_local_virial_on_grid(localp_grid,
+                                        x[ak][XX],x[ak][YY],x[ak][ZZ],
+                                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                        f_k[XX],f_k[YY],f_k[ZZ]);
+        
       if (g) {
 	copy_ivec(SHIFT_IVEC(g,aj),jt);
       
@@ -900,6 +955,11 @@ real urey_bradley(int nbonds,
       fshift[ki][m]+=fik;
       fshift[CENTRAL][m]-=fik;
     }
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[ak][XX],x[ak][YY],x[ak][ZZ],
+                                      fbond*r_ik[XX],fbond*r_ik[YY],fbond*r_ik[ZZ]);
+      
   }
   return vtot;
 }
@@ -910,7 +970,7 @@ real quartic_angles(int nbonds,
 		    const t_pbc *pbc,const t_graph *g,
 		    real lambda,real *dvdlambda,
 		    const t_mdatoms *md,t_fcdata *fcd,
-		    int *global_atom_index)
+		    int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,j,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
@@ -972,6 +1032,17 @@ real quartic_angles(int nbonds,
 	f[aj][m]+=f_j[m];
 	f[ak][m]+=f_k[m];
       }
+        
+        gmx_spread_local_virial_on_grid(localp_grid,
+                                        x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                        f_i[XX],f_i[YY],f_i[ZZ]);
+        
+        gmx_spread_local_virial_on_grid(localp_grid,
+                                        x[ak][XX],x[ak][YY],x[ak][ZZ],
+                                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                        f_k[XX],f_k[YY],f_k[ZZ]);
+        
       if (g) {
 	copy_ivec(SHIFT_IVEC(g,aj),jt);
       
@@ -1015,7 +1086,7 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		rvec r_ij,rvec r_kj,rvec r_kl,
 		rvec m,rvec n,rvec f[],rvec fshift[],
 		const t_pbc *pbc,const t_graph *g,
-		const rvec x[],int t1,int t2,int t3)
+		const rvec x[],int t1,int t2,int t3,gmx_localp_grid_t *localp_grid)
 {
   /* 143 FLOPS */
   rvec f_i,f_j,f_k,f_l;
@@ -1023,7 +1094,9 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   real iprm,iprn,nrkj,nrkj2;
   real a,p,q,toler;
   ivec jt,dt_ij,dt_kj,dt_lj;  
-  
+    matrix localvir;
+    real avex,avey,avez;
+
   iprm  = iprod(m,m);		/*  5 	*/
   iprn  = iprod(n,n);		/*  5	*/
   nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
@@ -1066,6 +1139,23 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
     rvec_dec(fshift[CENTRAL],f_j);
     rvec_dec(fshift[t2],f_k);
     rvec_inc(fshift[t3],f_l);
+      
+      localvir[XX][XX] = -0.5 * ( r_ij[XX] * f_i[XX]  -  r_kj[XX] * f_k[XX]  +  dx_jl[XX] * f_l[XX] );
+      localvir[XX][YY] = -0.5 * ( r_ij[XX] * f_i[YY]  -  r_kj[XX] * f_k[YY]  +  dx_jl[XX] * f_l[YY] );
+      localvir[XX][ZZ] = -0.5 * ( r_ij[XX] * f_i[ZZ]  -  r_kj[XX] * f_k[ZZ]  +  dx_jl[XX] * f_l[ZZ] );
+      
+      localvir[YY][XX] = -0.5 * ( r_ij[YY] * f_i[XX]  -  r_kj[YY] * f_k[XX]  +  dx_jl[YY] * f_l[XX] );
+      localvir[YY][YY] = -0.5 * ( r_ij[YY] * f_i[YY]  -  r_kj[YY] * f_k[YY]  +  dx_jl[YY] * f_l[YY] );
+      localvir[YY][ZZ] = -0.5 * ( r_ij[YY] * f_i[ZZ]  -  r_kj[YY] * f_k[ZZ]  +  dx_jl[YY] * f_l[ZZ] );
+      
+      localvir[ZZ][XX] = -0.5 * ( r_ij[ZZ] * f_i[XX]  -  r_kj[ZZ] * f_k[XX]  +  dx_jl[ZZ] * f_l[XX] );
+      localvir[ZZ][YY] = -0.5 * ( r_ij[ZZ] * f_i[YY]  -  r_kj[ZZ] * f_k[YY]  +  dx_jl[ZZ] * f_l[YY] );
+      localvir[ZZ][ZZ] = -0.5 * ( r_ij[ZZ] * f_i[ZZ]  -  r_kj[ZZ] * f_k[ZZ]  +  dx_jl[ZZ] * f_l[ZZ] );
+      
+      avex=0.5*(x[j][XX]+x[k][XX]);
+      avey=0.5*(x[j][YY]+x[k][YY]);
+      avez=0.5*(x[j][ZZ]+x[k][ZZ]);
+      gmx_spread_local_virial_on_grid_mat(localp_grid,avex,avey,avez,localvir);      
   }
   /* 112 TOTAL 	*/
 }
@@ -1129,7 +1219,7 @@ real pdihs(int nbonds,
 	   const t_pbc *pbc,const t_graph *g,
 	   real lambda,real *dvdlambda,
 	   const t_mdatoms *md,t_fcdata *fcd,
-	   int *global_atom_index)
+	   int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,type,ai,aj,ak,al;
   int  t1,t2,t3;
@@ -1157,7 +1247,7 @@ real pdihs(int nbonds,
 
     vtot += vpd;
     do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
-	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
+	       f,fshift,pbc,g,x,t1,t2,t3,localp_grid);			/* 112		*/
 
 #ifdef DEBUG
     fprintf(debug,"pdih: (%d,%d,%d,%d) phi=%g\n",
@@ -1176,7 +1266,7 @@ real idihs(int nbonds,
 	   const t_pbc *pbc,const t_graph *g,
 	   real lambda,real *dvdlambda,
 	   const t_mdatoms *md,t_fcdata *fcd,
-	   int *global_atom_index)
+	   int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,type,ai,aj,ak,al;
   int  t1,t2,t3;
@@ -1230,7 +1320,7 @@ real idihs(int nbonds,
     dvdl += 0.5*(kB - kA)*dp2 - kk*dphi0*dp;
 
     do_dih_fup(ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
-	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
+	       f,fshift,pbc,g,x,t1,t2,t3,localp_grid);			/* 112		*/
     /* 217 TOTAL	*/
 #ifdef DEBUG
     if (debug)
@@ -1449,8 +1539,10 @@ real angres(int nbonds,
 	    const t_pbc *pbc,const t_graph *g,
 	    real lambda,real *dvdlambda,
 	    const t_mdatoms *md,t_fcdata *fcd,
-	    int *global_atom_index)
+	    int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
+    gmx_fatal(FARGS,"Cannot do local pressure with angle restraints.");
+
   return low_angres(nbonds,forceatoms,forceparams,x,f,fshift,pbc,g,
 		    lambda,dvdlambda,FALSE);
 }
@@ -1461,8 +1553,10 @@ real angresz(int nbonds,
 	     const t_pbc *pbc,const t_graph *g,
 	     real lambda,real *dvdlambda,
 	     const t_mdatoms *md,t_fcdata *fcd,
-	     int *global_atom_index)
+	     int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
+    gmx_fatal(FARGS,"Cannot do local pressure with angle restraints.");
+
   return low_angres(nbonds,forceatoms,forceparams,x,f,fshift,pbc,g,
 		    lambda,dvdlambda,TRUE);
 }
@@ -1474,7 +1568,7 @@ real unimplemented(int nbonds,
 		   const t_pbc *pbc,const t_graph *g,
 		   real lambda,real *dvdlambda,
 		   const t_mdatoms *md,t_fcdata *fcd,
-		   int *global_atom_index)
+		   int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   gmx_impl("*** you are using a not implemented function");
 
@@ -1487,7 +1581,7 @@ real rbdihs(int nbonds,
 	    const t_pbc *pbc,const t_graph *g,
 	    real lambda,real *dvdlambda,
 	    const t_mdatoms *md,t_fcdata *fcd,
-	    int *global_atom_index)
+	    int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
   int  type,ai,aj,ak,al,i,j;
@@ -1571,7 +1665,7 @@ real rbdihs(int nbonds,
     ddphi = -ddphi*sin_phi;				/*  11		*/
     
     do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
-	       f,fshift,pbc,g,x,t1,t2,t3);		/* 112		*/
+	       f,fshift,pbc,g,x,t1,t2,t3,localp_grid);		/* 112		*/
     vtot += v;
   }  
   *dvdlambda += dvdl;
@@ -1625,7 +1719,7 @@ real cmap_dihs(int nbonds,
 			   const t_pbc *pbc,const t_graph *g,
 			   real lambda,real *dvdlambda,
 			   const t_mdatoms *md,t_fcdata *fcd,
-			   int *global_atom_index)
+			   int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
 	int i,j,k,n,idx;
 	int ai,aj,ak,al,am;
@@ -1666,6 +1760,8 @@ real cmap_dihs(int nbonds,
 		{3,7,11,15}
 	};
 	
+    gmx_fatal(FARGS,"Cannot do local pressure with CMAP terms.");
+
 	/* Total CMAP energy */
 	vtot = 0;
 	
@@ -2064,7 +2160,7 @@ real g96bonds(int nbonds,
 	      const t_pbc *pbc,const t_graph *g,
 	      real lambda,real *dvdlambda,
 	      const t_mdatoms *md,t_fcdata *fcd,
-	      int *global_atom_index)
+	      int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,m,ki,ai,aj,type;
   real dr2,fbond,vbond,fij,vtot;
@@ -2104,6 +2200,11 @@ real g96bonds(int nbonds,
       fshift[ki][m]+=fij;
       fshift[CENTRAL][m]-=fij;
     }
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      fbond*dx[XX],fbond*dx[YY],fbond*dx[ZZ]);
+      
   }					/* 44 TOTAL	*/
   return vtot;
 }
@@ -2129,7 +2230,7 @@ real g96angles(int nbonds,
 	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd,
-	       int *global_atom_index)
+	       int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,ai,aj,ak,type,m,t1,t2;
   rvec r_ij,r_kj;
@@ -2173,6 +2274,16 @@ real g96angles(int nbonds,
       f[aj][m]+=f_j[m];
       f[ak][m]+=f_k[m];
     }
+      
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      f_i[XX],f_i[YY],f_i[ZZ]);
+      
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ak][XX],x[ak][YY],x[ak][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      f_k[XX],f_k[YY],f_k[ZZ]);      
     
     if (g) {
       copy_ivec(SHIFT_IVEC(g,aj),jt);
@@ -2196,7 +2307,7 @@ real cross_bond_bond(int nbonds,
 		     const t_pbc *pbc,const t_graph *g,
 		     real lambda,real *dvdlambda,
 		     const t_mdatoms *md,t_fcdata *fcd,
-		     int *global_atom_index)
+		     int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
    * pp. 842-847
@@ -2207,6 +2318,8 @@ real cross_bond_bond(int nbonds,
   rvec f_i,f_j,f_k;
   ivec jt,dt_ij,dt_kj;
   
+    gmx_fatal(FARGS,"Cannot do local pressure with cross bond potentials.");
+
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
@@ -2267,7 +2380,7 @@ real cross_bond_angle(int nbonds,
 		      const t_pbc *pbc,const t_graph *g,
 		      real lambda,real *dvdlambda,
 		      const t_mdatoms *md,t_fcdata *fcd,
-		      int *global_atom_index)
+		      int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
    * pp. 842-847
@@ -2278,6 +2391,8 @@ real cross_bond_angle(int nbonds,
   rvec f_i,f_j,f_k;
   ivec jt,dt_ij,dt_kj;
   
+    gmx_fatal(FARGS,"Cannot do local pressure with cross bond angle potentials.");
+
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
@@ -2324,6 +2439,16 @@ real cross_bond_angle(int nbonds,
       f[ak][m] += f_k[m];
     }
     
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      f_i[XX],f_i[YY],f_i[ZZ]);
+      
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ak][XX],x[ak][YY],x[ak][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      f_k[XX],f_k[YY],f_k[ZZ]);
+      
     /* Virial stuff */
     if (g) {
       copy_ivec(SHIFT_IVEC(g,aj),jt);
@@ -2386,7 +2511,7 @@ real tab_bonds(int nbonds,
 	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd,
-	       int *global_atom_index)
+	       int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,m,ki,ai,aj,type,table;
   real dr,dr2,fbond,vbond,fij,vtot;
@@ -2433,6 +2558,11 @@ real tab_bonds(int nbonds,
       fshift[ki][m]+=fij;
       fshift[CENTRAL][m]-=fij;
     }
+      gmx_spread_local_virial_on_grid(localp_grid,
+                                      x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                      x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                      fbond*dx[XX],fbond*dx[YY],fbond*dx[ZZ]);
+      
   }					/* 62 TOTAL	*/
   return vtot;
 }
@@ -2443,7 +2573,7 @@ real tab_angles(int nbonds,
 		const t_pbc *pbc,const t_graph *g,
 		real lambda,real *dvdlambda,
 		const t_mdatoms *md,t_fcdata *fcd,
-		int *global_atom_index)
+		int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,ai,aj,ak,t1,t2,type,table;
   rvec r_ij,r_kj;
@@ -2499,6 +2629,17 @@ real tab_angles(int nbonds,
 	f[aj][m]+=f_j[m];
 	f[ak][m]+=f_k[m];
       }
+        
+        gmx_spread_local_virial_on_grid(localp_grid,
+                                        x[ai][XX],x[ai][YY],x[ai][ZZ],
+                                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                        f_i[XX],f_i[YY],f_i[ZZ]);
+        
+        gmx_spread_local_virial_on_grid(localp_grid,
+                                        x[ak][XX],x[ak][YY],x[ak][ZZ],
+                                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                                        f_k[XX],f_k[YY],f_k[ZZ]);
+        
       if (g) {
 	copy_ivec(SHIFT_IVEC(g,aj),jt);
       
@@ -2521,7 +2662,7 @@ real tab_dihs(int nbonds,
 	      const t_pbc *pbc,const t_graph *g,
 	      real lambda,real *dvdlambda,
 	      const t_mdatoms *md,t_fcdata *fcd,
-	      int *global_atom_index)
+	      int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
   int  i,type,ai,aj,ak,al,table;
   int  t1,t2,t3;
@@ -2550,7 +2691,7 @@ real tab_dihs(int nbonds,
 		       
     vtot += vpd;
     do_dih_fup(ai,aj,ak,al,-ddphi,r_ij,r_kj,r_kl,m,n,
-	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112	*/
+	       f,fshift,pbc,g,x,t1,t2,t3,localp_grid);			/* 112	*/
 
 #ifdef DEBUG
     fprintf(debug,"pdih: (%d,%d,%d,%d) phi=%g\n",
@@ -2571,12 +2712,13 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
 		t_atomtypes *atype, gmx_genborn_t *born,
-		gmx_bool bPrintSepPot,gmx_large_int_t step)
+		gmx_bool bPrintSepPot,gmx_large_int_t step,gmx_localp_grid_t *localp_grid)
 {
   int    ftype,nbonds,ind,nat1;
   real   *epot,v,dvdl;
   const  t_pbc *pbc_null;
   char   buf[22];
+  static gmx_bool posres_warning = FALSE;
 
   if (fr->bMolPBC)
     pbc_null = pbc;
@@ -2618,6 +2760,14 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	ind  = interaction_function[ftype].nrnb_ind;
 	nat1 = interaction_function[ftype].nratoms + 1;
 	dvdl = 0;
+          
+          if(ftype==F_POSRES && posres_warning==FALSE)
+          {
+              fprintf(stderr,"WARNING! Position restraint forces do NOT contribute to local pressure.\n"
+                      "It is probably a good idea to turn them off...\n");
+              posres_warning = TRUE;
+          }
+          
 	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) {
 		if(ftype==F_CMAP)
 		{
@@ -2625,7 +2775,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 						  idef->iparams,&idef->cmap_grid,
 						  (const rvec*)x,f,fr->fshift,
 						  pbc_null,g,lambda,&dvdl,md,fcd,
-						  global_atom_index);
+						  global_atom_index,localp_grid);
 		}
 		else
 		{
@@ -2634,7 +2784,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 					      idef->iparams,
 					      (const rvec*)x,f,fr->fshift,
 					      pbc_null,g,lambda,&dvdl,md,fcd,
-					      global_atom_index);
+					      global_atom_index,localp_grid);
 		}
 
 	  if (bPrintSepPot) {
@@ -2647,7 +2797,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 			      (const rvec*)x,f,fr->fshift,
 			      pbc_null,g,
 			      lambda,&dvdl,
-			      md,fr,&enerd->grpp,global_atom_index);
+			      md,fr,&enerd->grpp,global_atom_index,localp_grid);
 	  if (bPrintSepPot) {
 	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,
@@ -2675,7 +2825,7 @@ void calc_bonds_lambda(FILE *fplog,
 		       gmx_enerdata_t *enerd,t_nrnb *nrnb,
 		       real lambda,
 		       const t_mdatoms *md,
-		       t_fcdata *fcd,int *global_atom_index)
+		       t_fcdata *fcd,int *global_atom_index,gmx_localp_grid_t *localp_grid)
 {
     int    ftype,nbonds_np,nbonds,ind, nat1;
   real   *epot,v,dvdl;
@@ -2715,14 +2865,14 @@ void calc_bonds_lambda(FILE *fplog,
                                                             idef->iparams,
                                                             (const rvec*)x,f,fr->fshift,
                                                             pbc_null,g,lambda,&dvdl,md,fcd,
-                                                            global_atom_index);
+                                                            global_atom_index,localp_grid);
                   } else {
                       v = do_listed_vdw_q(ftype,nbonds,iatom_fe,
                                           idef->iparams,
                                           (const rvec*)x,f,fr->fshift,
                                           pbc_null,g,
                                           lambda,&dvdl,
-                                          md,fr,&enerd->grpp,global_atom_index);
+                                          md,fr,&enerd->grpp,global_atom_index,localp_grid);
                   }
                   if (ind != -1)
                       inc_nrnb(nrnb,ind,nbonds/nat1);

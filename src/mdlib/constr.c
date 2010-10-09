@@ -283,7 +283,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                real lambda,real *dvdlambda,
                rvec *v,tensor *vir,
-               t_nrnb *nrnb,int econq,gmx_bool bPscal,real veta, real vetanew)
+               t_nrnb *nrnb,int econq,gmx_bool bPscal,real veta, real vetanew,gmx_localp_grid_t *localp_grid)
 {
     gmx_bool    bOK,bDump;
     int     start,homenr,nrend;
@@ -342,7 +342,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                               x,xprime,min_proj,box,lambda,dvdlambda,
                               invdt,v,vir!=NULL,rmdr,
                               econq,nrnb,
-                              constr->maxwarn,&constr->warncount_lincs);
+                              constr->maxwarn,&constr->warncount_lincs,localp_grid);
         if (!bOK && constr->maxwarn >= 0)
         {
             if (fplog != NULL)
@@ -362,14 +362,14 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,xprime,nrnb,
                           constr->lagr,lambda,dvdlambda,
-                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
+                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar,localp_grid);
             break;
         case (econqVeloc):
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,min_proj,nrnb,
                           constr->lagr,lambda,dvdlambda,
-                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
+                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar,localp_grid);
             break;
         default:
             gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
@@ -397,7 +397,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         case econqCoord:
             csettle(constr->settled,
                     nsettle,settle->iatoms,x[0],xprime[0],
-                    invdt,v[0],vir!=NULL,rmdr,&error,vetavar);
+                    invdt,v[0],vir!=NULL,rmdr,&error,vetavar,localp_grid);
             inc_nrnb(nrnb,eNR_SETTLE,nsettle);
             if (v != NULL)
             {

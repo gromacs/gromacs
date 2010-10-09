@@ -55,7 +55,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	filenm.c	futil.c		gbutil.c	gmx_fatal.c	\
 	gmx_sort.c	gmxcpp.c \
 	gmxfio.c	ifunc.c		index.c		inputrec.c	\
-	cinvsqrtdata.c	\
+	cinvsqrtdata.c	localpressure.c \
 	invblock.c	macros.c	orires.c	sparsematrix.c  \
 	main.c		maths.c		matio.c		mshift.c	\
 	mtop_util.c	mtxio.c		mvdata.c	names.c		\

@@ -43,6 +43,7 @@
 #include "vec.h"
 #include "typedefs.h"
 #include "nb_generic_cg.h"
+#include "localpressure.h"
 
  void
  gmx_nb_generic_cg_kernel(t_nblist *           nlist,
@@ -56,7 +57,8 @@
                           real                 tabscale,  
                           real *               VFtab,
                           int *                outeriter,
-                          int *                inneriter)
+                          int *                inneriter,
+                          gmx_localp_grid_t *  localp_grid)
 {
      int           nri,ntype,table_nelements,icoul,ivdw;
      real          facel,gbtabscale;
@@ -83,6 +85,7 @@
      int *         shift;
      int *         type;
      t_excl *      excl;
+     real          ixave,iyave,izave,jxave,jyave,jzave,fxsum,fysum,fzsum;
        
      icoul               = nlist->icoul;
      ivdw                = nlist->ivdw;
@@ -121,12 +124,38 @@
          fiy              = 0;
          fiz              = 0;
          
+         ixave = iyave = izave = 0;
+         for(ai=ai0;ai<ai1;ai++)
+         {
+             ixave += shX + x[ai*3+0];
+             iyave += shY + x[ai*3+1];
+             izave += shZ + x[ai*3+2];
+         }
+         ixave /= ai1-ai0;
+         iyave /= ai1-ai0;
+         izave /= ai1-ai0;
+         
          for(k=nj0; (k<nj1); k++)
          {
              aj0              = nlist->jjnr[k];
              aj1              = nlist->jjnr_end[k];
              excl             = &nlist->excl[k*MAX_CGCGSIZE];
 
+             jxave = jyave = jzave = 0;
+             for(aj=aj0;aj<aj1;aj++)
+             {
+                 jxave += x[aj*3+0];
+                 jyave += x[aj*3+1];
+                 jzave += x[aj*3+2];
+             }
+             jxave /= aj1-aj0;
+             jyave /= aj1-aj0;
+             jzave /= aj1-aj0;
+             
+             fxsum = 0;
+             fysum = 0;
+             fzsum = 0;
+             
              for(ai=ai0; (ai<ai1); ai++)
              {
                  i3               = ai*3;
@@ -289,7 +318,12 @@
                      
                      tx               = fscal*dx;     
                      ty               = fscal*dy;     
-                     tz               = fscal*dz;     
+                     tz               = fscal*dz;    
+                     
+                     fxsum += tx;
+                     fysum += ty;
+                     fzsum += tz;
+                     
                      f[i3+0]         += tx;
                      f[i3+1]         += ty;
                      f[i3+2]         += tz;
@@ -301,6 +335,10 @@
                      fiz             += tz;
                  }
              }
+             gmx_spread_local_virial_on_grid(localp_grid,
+                                             ixave,iyave,izave,
+                                             jxave,jyave,jzave,
+                                             fxsum,fysum,fzsum);             
          }
 
          fshift[is3]     += fix;

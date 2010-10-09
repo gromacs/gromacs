@@ -132,6 +132,10 @@ int main(int argc,char *argv[])
 	"hardware that is not officially supported. GPU acceleration can also be achieved on older",
 	"but Cuda capable cards, although the simulation might be too slow, and the memory limits too strict.",
 #else
+    "Note: This is a special localpressure-enabled version of mdrun.",
+    "[PAR]",
+    "Local pressure is written to localpressure.dat by default, change with -olp.",
+    "[PAR]",
     "The mdrun program is the main computational chemistry engine",
     "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
     "but it can also perform Stochastic Dynamics, Energy Minimization,",
@@ -379,7 +383,8 @@ int main(int argc,char *argv[])
     { efNDX, "-dn",     "dipole",   ffOPTWR },
     { efDAT, "-membed", "membed",   ffOPTRD },
     { efTOP, "-mp",     "membed",   ffOPTRD },
-    { efNDX, "-mn",     "membed",   ffOPTRD }
+    { efNDX, "-mn",     "membed",   ffOPTRD },
+    { efDAT, "-olp",    "localpressure", ffWRITE }
   };
 #define NFILE asize(fnm)
 
@@ -419,6 +424,7 @@ int main(int argc,char *argv[])
   gmx_bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
+  real localpgridspacing=0.1;
 
   t_pargs pa[] = {
 
@@ -478,6 +484,8 @@ int main(int argc,char *argv[])
       "Attempt replica exchange every # steps" },
     { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
       "Seed for replica exchange, -1 is generate a seed" },
+    { "-localpgrid",  FALSE, etREAL, {&localpgridspacing},
+          "Spacing for local pressure grid" },
     { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
       "HIDDENRecalculate virtual site coordinates with -rerun" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
@@ -644,7 +652,7 @@ int main(int argc,char *argv[])
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
                 nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
-                pforce, cpt_period,max_hours,deviceOptions,Flags);
+                pforce, cpt_period,max_hours,deviceOptions,localpgridspacing,Flags);
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();

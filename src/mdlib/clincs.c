@@ -344,7 +344,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
 					 t_commrec *cr,
                      real wangle,int *warn,
                      real invdt,rvec *v,
-                     gmx_bool bCalcVir,tensor rmdr)
+                     gmx_bool bCalcVir,tensor rmdr, gmx_localp_grid_t *localp_grid)
 {
     int     b,i,j,k,n,iter;
     real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,len2,dlen2,wfac,lam;  
@@ -353,6 +353,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
     rvec    *r;
     real    *blc,*blmf,*bllen,*blcc,*rhs1,*rhs2,*sol,*lambda;
     int     *nlocat;
+    real     fx,fy,fz,ccc;
     
     ncons  = lincsd->nc;
     bla    = lincsd->bla;
@@ -572,12 +573,24 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
             tmp0 = bllen[b]*lambda[b];
             for(i=0; i<DIM; i++)
             {
-                tmp1 = tmp0*r[b][i];
+                tmp1 = tmp0*r[b][i]; /* component 0/1/2 of vector i-j */
                 for(j=0; j<DIM; j++)
                 {
                     rmdr[i][j] -= tmp1*r[b][j];
                 }
             }
+            
+            i = bla[2*b];
+            j = bla[2*b+1];
+            ccc = invdt*invdt*lambda[b];
+            fx = r[b][0]*ccc;
+            fy = r[b][1]*ccc;
+            fz = r[b][2]*ccc;
+            
+            gmx_spread_local_virial_on_grid(localp_grid,
+                                            x[i][0],x[i][1],x[i][2],
+                                            x[j][0],x[j][1],x[j][2],
+                                            fx,fy,fz);            
         } /* 22 ncons flops */
     }
     
@@ -1159,7 +1172,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                      gmx_bool bCalcVir,tensor rmdr,
                      int econq,
                      t_nrnb *nrnb,
-                     int maxwarn,int *warncount)
+                     int maxwarn,int *warncount,gmx_localp_grid_t *localp_grid)
 {
     char  buf[STRLEN],buf2[22];
     int   i,warn,p_imax,error;
@@ -1265,7 +1278,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         
         do_lincs(x,xprime,box,pbc_null,lincsd,md->invmass,cr,
                  ir->LincsWarnAngle,&warn,
-                 invdt,v,bCalcVir,rmdr);
+                 invdt,v,bCalcVir,rmdr,localp_grid);
         
         if (ir->efep != efepNO)
         {

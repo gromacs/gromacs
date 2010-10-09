@@ -361,7 +361,8 @@ gmx_bool bshakef(FILE *log,gmx_shakedata_t shaked,
              int natoms,real invmass[],int nblocks,int sblock[],
              t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec prime[],
              t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
-             real invdt,rvec *v,gmx_bool bCalcVir,tensor rmdr,gmx_bool bDumpOnError,int econq,t_vetavars *vetavar)
+             real invdt,rvec *v,gmx_bool bCalcVir,tensor rmdr,gmx_bool bDumpOnError,int econq,t_vetavars *vetavar,
+                 gmx_localp_grid_t *localp_grid)
 {
   t_iatom *iatoms;
   real    *lam,dt_2,dvdl;

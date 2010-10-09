@@ -34,6 +34,7 @@
 
 #include "typedefs.h"
 #include "vsite.h"
+#include "localpressure.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,7 +72,8 @@ int relax_shell_flexcon(FILE *log,t_commrec *cr,gmx_bool bVerbose,
 			       double t,rvec mu_tot,
 			       int natoms,gmx_bool *bConverged,
 			       gmx_vsite_t *vsite,
-			       FILE *fp_field);
+			       FILE *fp_field,
+                   gmx_localp_grid_t *localp_grid);
 
 
 #ifdef __cplusplus

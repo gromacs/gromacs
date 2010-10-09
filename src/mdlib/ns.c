@@ -1789,7 +1789,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                          gmx_bool bDoVdW,gmx_bool bDoCoul,
                          gmx_bool bEvaluateNow,put_in_list_t *put_in_list,
                          gmx_bool bHaveVdW[],
-                         gmx_bool bDoForces,rvec *f)
+                         gmx_bool bDoForces,rvec *f,gmx_localp_grid_t *localp_grid)
 {
     int n,i;
     t_nblist *nl;
@@ -1807,7 +1807,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                              grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR],
                              grppener->ener[egCOULLR],
 							 grppener->ener[egGB],box_size,
-                             nrnb,lambda,dvdlambda,n,i,
+                             nrnb,lambda,dvdlambda,n,i,localp_grid,
                              GMX_DONB_LR | GMX_DONB_FORCES);
                 
                 reset_neighbor_list(fr,TRUE,n,i);
@@ -1917,7 +1917,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        put_in_list_t *put_in_list,
                        gmx_bool bHaveVdW[],
                        gmx_bool bDoLongRange,gmx_bool bDoForces,rvec *f,
-                       gmx_bool bMakeQMMMnblist)
+                       gmx_bool bMakeQMMMnblist,gmx_localp_grid_t *localp_grid)
 {
     gmx_ns_t *ns;
     atom_id **nl_lr_ljc,**nl_lr_one,**nl_sr;
@@ -2281,7 +2281,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                                                              TRUE,TRUE,FALSE,
                                                                              put_in_list,
                                                                              bHaveVdW,
-                                                                             bDoForces,f);
+                                                                             bDoForces,f,localp_grid);
                                                                 nlr_ljc[jgid]=0;
                                                             }
                                                             nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
@@ -2298,7 +2298,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                                                              rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
                                                                              put_in_list,
                                                                              bHaveVdW,
-                                                                             bDoForces,f);
+                                                                             bDoForces,f,localp_grid);
                                                                 nlr_one[jgid]=0;
                                                             }
                                                             nl_lr_one[jgid][nlr_one[jgid]++]=jjcg;
@@ -2328,7 +2328,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                             do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
                                          nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
                                          lambda,dvdlambda,grppener,TRUE,TRUE,FALSE,
-                                         put_in_list,bHaveVdW,bDoForces,f);
+                                         put_in_list,bHaveVdW,bDoForces,f,localp_grid);
                         }
                         
                         if (nlr_one[nn] > 0)
@@ -2337,7 +2337,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                          nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
                                          lambda,dvdlambda,grppener,
                                          rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
-                                         put_in_list,bHaveVdW,bDoForces,f);
+                                         put_in_list,bHaveVdW,bDoForces,f,localp_grid);
                         }
                     }
                 }
@@ -2354,14 +2354,14 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
             do_longrange(cr,top,fr,0,md,icg,nn,nlr_ljc[nn],
                          nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
                          lambda,dvdlambda,grppener,
-                         TRUE,TRUE,TRUE,put_in_list,bHaveVdW,bDoForces,f);
+                         TRUE,TRUE,TRUE,put_in_list,bHaveVdW,bDoForces,f,localp_grid);
         }
         if (rl2 > rm2) {
             do_longrange(cr,top,fr,0,md,icg,nn,nlr_one[nn],
                          nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
                          lambda,dvdlambda,grppener,
                          rvdw_lt_rcoul,rcoul_lt_rvdw,
-                         TRUE,put_in_list,bHaveVdW,bDoForces,f);
+                         TRUE,put_in_list,bHaveVdW,bDoForces,f,localp_grid);
         }
     }
     debug_gmx();
@@ -2510,7 +2510,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       gmx_grppairener_t *grppener,
                       gmx_bool bFillGrid,
                       gmx_bool bDoLongRange,
-                      gmx_bool bDoForces,rvec *f)
+                      gmx_bool bDoForces,rvec *f,gmx_localp_grid_t *localp_grid)
 {
     t_block  *cgs=&(top->cgs);
     rvec     box_size,grid_x0,grid_x1;
@@ -2645,7 +2645,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                               nrnb,md,lambda,dvdlambda,grppener,
                               put_in_list,ns->bHaveVdW,
                               bDoLongRange,bDoForces,f,
-                              FALSE);
+                              FALSE,localp_grid);
         
         /* neighbour searching withouth QMMM! QM atoms have zero charge in
          * the classical calculation. The charge-charge interaction
@@ -2663,7 +2663,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                                    nrnb,md,lambda,dvdlambda,grppener,
                                    put_in_list_qmmm,ns->bHaveVdW,
                                    bDoLongRange,bDoForces,f,
-                                   TRUE);
+                                   TRUE,localp_grid);
         }
     }
     else 

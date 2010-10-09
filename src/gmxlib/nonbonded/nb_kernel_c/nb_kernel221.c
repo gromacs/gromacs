@@ -1,44 +1,26 @@
 /*
- *                This source code is part of
+ * Copyright (c) Erik Lindahl, David van der Spoel 2003
+ * 
+ * This file is generated automatically at compile time
+ * by the program mknb in the Gromacs distribution.
  *
- *                 G   R   O   M   A   C   S
- *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS Development Team
- *
- * Gromacs is a library for molecular simulation and trajectory analysis,
- * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
- * a full list of developers and information, check out http://www.gromacs.org
- *
- * This program is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation; either version 2 of the License, or (at your option) any 
- * later version.
- * As a special exception, you may use this file as part of a free software
- * library without restriction.  Specifically, if other files instantiate
- * templates or use macros or inline functions from this file, or you compile
- * this file and link it with other files to produce an executable, this
- * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.  
- *
- * In plain-speak: do not worry about classes/macros/templates either - only
- * changes to the library have to be LGPL, not an application linking with it.
- *
- * To help fund GROMACS development, we humbly ask that you cite
- * the papers people have written on it - you can find them on the website!
+ * Options used when generation this file:
+ * Language:         c
+ * Precision:        single
+ * Threads:          no
+ * Software invsqrt: no
+ * PowerPC invsqrt:  no
+ * Prefetch forces:  no
+ * Comments:         no
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include<config.h>
 #endif
+#include<math.h>
+#include "types/simple.h"
+#include "localpressure.h"
 
-#include <math.h>
 
-#include "vec.h"
-#ifdef GMX_THREAD_SHM_FDECOMP
-#include "thread_mpi.h"
-#endif
-
-#include "nb_kernel221.h"
 
 /*
  * Gromacs nonbonded kernel nb_kernel221
@@ -80,10 +62,10 @@ void nb_kernel221(
                     int *           inneriter,
                     real *          work)
 {
+      gmx_localp_grid_t * localp_grid = (gmx_localp_grid_t *)work;
     int           nri,ntype,nthreads;
     real          facel,krf,crf,tabscale,gbtabscale;
     int           n,ii,is3,ii3,k,nj0,nj1,jnr,j3,ggid;
-    int           nn0,nn1,nouter,ninner;
     real          shX,shY,shZ;
     real          fscal,tx,ty,tz;
     real          rinvsq;
@@ -112,236 +94,153 @@ void nb_kernel221(
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    
-
-    /* Initialize water data */
     ii               = iinr[0];        
     qO               = facel*charge[ii];
     qH               = facel*charge[ii+1];
     nti              = 3*ntype*type[ii];
 
-
-    /* Reset outer and inner iteration counters */
-    nouter           = 0;              
-    ninner           = 0;              
-
-    /* Loop over thread workunits */
+    nj1              = 0;              
     
-    do
+    for(n=0; (n<nri); n++)
     {
-#ifdef GMX_THREAD_SHM_FDECOMP
-        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
-        nn0              = *count;         
-		
-        /* Take successively smaller chunks (at least 10 lists) */
-        nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
-        *count           = nn1;            
-        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
-        if(nn1>nri) nn1=nri;
-#else
-	    nn0 = 0;
-		nn1 = nri;
-#endif
-        /* Start outer loop over neighborlists */
+        is3              = 3*shift[n];     
+        shX              = shiftvec[is3];  
+        shY              = shiftvec[is3+1];
+        shZ              = shiftvec[is3+2];
+        nj0              = jindex[n];      
+        nj1              = jindex[n+1];    
+        ii               = iinr[n];        
+        ii3              = 3*ii;           
+        ix1              = shX + pos[ii3+0];
+        iy1              = shY + pos[ii3+1];
+        iz1              = shZ + pos[ii3+2];
+        ix2              = shX + pos[ii3+3];
+        iy2              = shY + pos[ii3+4];
+        iz2              = shZ + pos[ii3+5];
+        ix3              = shX + pos[ii3+6];
+        iy3              = shY + pos[ii3+7];
+        iz3              = shZ + pos[ii3+8];
+        vctot            = 0;              
+        Vvdwtot          = 0;              
+        fix1             = 0;              
+        fiy1             = 0;              
+        fiz1             = 0;              
+        fix2             = 0;              
+        fiy2             = 0;              
+        fiz2             = 0;              
+        fix3             = 0;              
+        fiy3             = 0;              
+        fiz3             = 0;              
         
-        for(n=nn0; (n<nn1); n++)
+        for(k=nj0; (k<nj1); k++)
         {
+            jnr              = jjnr[k];        
+            j3               = 3*jnr;          
+            jx1              = pos[j3+0];      
+            jy1              = pos[j3+1];      
+            jz1              = pos[j3+2];      
+            dx11             = ix1 - jx1;      
+            dy11             = iy1 - jy1;      
+            dz11             = iz1 - jz1;      
+            rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
+            dx21             = ix2 - jx1;      
+            dy21             = iy2 - jy1;      
+            dz21             = iz2 - jz1;      
+            rsq21            = dx21*dx21+dy21*dy21+dz21*dz21;
+            dx31             = ix3 - jx1;      
+            dy31             = iy3 - jy1;      
+            dz31             = iz3 - jz1;      
+            rsq31            = dx31*dx31+dy31*dy31+dz31*dz31;
+            rinv11           = 1.0/sqrt(rsq11);
+            rinv21           = 1.0/sqrt(rsq21);
+            rinv31           = 1.0/sqrt(rsq31);
+            jq               = charge[jnr+0];  
+            qq               = qO*jq;          
+            tj               = nti+3*type[jnr];
+            c6               = vdwparam[tj];   
+            cexp1            = vdwparam[tj+1]; 
+            cexp2            = vdwparam[tj+2]; 
+            rinvsq           = rinv11*rinv11;  
+            krsq             = krf*rsq11;      
+            vcoul            = qq*(rinv11+krsq-crf);
+            vctot            = vctot+vcoul;    
+            rinvsix          = rinvsq*rinvsq*rinvsq;
+            Vvdw6            = c6*rinvsix;     
+            br               = cexp2*rsq11*rinv11;
+            Vvdwexp          = cexp1*exp(-br); 
+            Vvdwtot          = Vvdwtot+Vvdwexp-Vvdw6;
+            fscal            = (qq*(rinv11-2.0*krsq)+br*Vvdwexp-6.0*Vvdw6)*rinvsq;
+            tx               = fscal*dx11;     
+            ty               = fscal*dy11;     
+            tz               = fscal*dz11;     
+            gmx_spread_local_virial_on_grid(localp_grid,
 
-            /* Load shift vector for this list */
-            is3              = 3*shift[n];     
-            shX              = shiftvec[is3];  
-            shY              = shiftvec[is3+1];
-            shZ              = shiftvec[is3+2];
+            ix1,iy1,iz1,jx1,jy1,jz1,tx,ty,tz);
 
-            /* Load limits for loop over neighbors */
-            nj0              = jindex[n];      
-            nj1              = jindex[n+1];    
+            fix1             = fix1 + tx;      
+            fiy1             = fiy1 + ty;      
+            fiz1             = fiz1 + tz;      
+            fjx1             = faction[j3+0] - tx;
+            fjy1             = faction[j3+1] - ty;
+            fjz1             = faction[j3+2] - tz;
+            qq               = qH*jq;          
+            rinvsq           = rinv21*rinv21;  
+            krsq             = krf*rsq21;      
+            vcoul            = qq*(rinv21+krsq-crf);
+            vctot            = vctot+vcoul;    
+            fscal            = (qq*(rinv21-2.0*krsq))*rinvsq;
+            tx               = fscal*dx21;     
+            ty               = fscal*dy21;     
+            tz               = fscal*dz21;     
+            gmx_spread_local_virial_on_grid(localp_grid,
 
-            /* Get outer coordinate index */
-            ii               = iinr[n];        
-            ii3              = 3*ii;           
+            ix2,iy2,iz2,jx1,jy1,jz1,tx,ty,tz);
 
-            /* Load i atom data, add shift vector */
-            ix1              = shX + pos[ii3+0];
-            iy1              = shY + pos[ii3+1];
-            iz1              = shZ + pos[ii3+2];
-            ix2              = shX + pos[ii3+3];
-            iy2              = shY + pos[ii3+4];
-            iz2              = shZ + pos[ii3+5];
-            ix3              = shX + pos[ii3+6];
-            iy3              = shY + pos[ii3+7];
-            iz3              = shZ + pos[ii3+8];
+            fix2             = fix2 + tx;      
+            fiy2             = fiy2 + ty;      
+            fiz2             = fiz2 + tz;      
+            fjx1             = fjx1 - tx;      
+            fjy1             = fjy1 - ty;      
+            fjz1             = fjz1 - tz;      
+            rinvsq           = rinv31*rinv31;  
+            krsq             = krf*rsq31;      
+            vcoul            = qq*(rinv31+krsq-crf);
+            vctot            = vctot+vcoul;    
+            fscal            = (qq*(rinv31-2.0*krsq))*rinvsq;
+            tx               = fscal*dx31;     
+            ty               = fscal*dy31;     
+            tz               = fscal*dz31;     
+            gmx_spread_local_virial_on_grid(localp_grid,
 
-            /* Zero the potential energy for this list */
-            vctot            = 0;              
-            Vvdwtot          = 0;              
+            ix3,iy3,iz3,jx1,jy1,jz1,tx,ty,tz);
 
-            /* Clear i atom forces */
-            fix1             = 0;              
-            fiy1             = 0;              
-            fiz1             = 0;              
-            fix2             = 0;              
-            fiy2             = 0;              
-            fiz2             = 0;              
-            fix3             = 0;              
-            fiy3             = 0;              
-            fiz3             = 0;              
-            
-            for(k=nj0; (k<nj1); k++)
-            {
-
-                /* Get j neighbor index, and coordinate index */
-                jnr              = jjnr[k];        
-                j3               = 3*jnr;          
-
-                /* load j atom coordinates */
-                jx1              = pos[j3+0];      
-                jy1              = pos[j3+1];      
-                jz1              = pos[j3+2];      
-
-                /* Calculate distance */
-                dx11             = ix1 - jx1;      
-                dy11             = iy1 - jy1;      
-                dz11             = iz1 - jz1;      
-                rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
-                dx21             = ix2 - jx1;      
-                dy21             = iy2 - jy1;      
-                dz21             = iz2 - jz1;      
-                rsq21            = dx21*dx21+dy21*dy21+dz21*dz21;
-                dx31             = ix3 - jx1;      
-                dy31             = iy3 - jy1;      
-                dz31             = iz3 - jz1;      
-                rsq31            = dx31*dx31+dy31*dy31+dz31*dz31;
-
-                /* Calculate 1/r and 1/r2 */
-                rinv11           = gmx_invsqrt(rsq11);
-                rinv21           = gmx_invsqrt(rsq21);
-                rinv31           = gmx_invsqrt(rsq31);
-
-                /* Load parameters for j atom */
-                jq               = charge[jnr+0];  
-                qq               = qO*jq;          
-                tj               = nti+3*type[jnr];
-                c6               = vdwparam[tj];   
-                cexp1            = vdwparam[tj+1]; 
-                cexp2            = vdwparam[tj+2]; 
-                rinvsq           = rinv11*rinv11;  
-
-                /* Coulomb reaction-field interaction */
-                krsq             = krf*rsq11;      
-                vcoul            = qq*(rinv11+krsq-crf);
-                vctot            = vctot+vcoul;    
-
-                /* Buckingham interaction */
-                rinvsix          = rinvsq*rinvsq*rinvsq;
-                Vvdw6            = c6*rinvsix;     
-                br               = cexp2*rsq11*rinv11;
-                Vvdwexp          = cexp1*exp(-br); 
-                Vvdwtot          = Vvdwtot+Vvdwexp-Vvdw6;
-                fscal            = (qq*(rinv11-2.0*krsq)+br*Vvdwexp-6.0*Vvdw6)*rinvsq;
-
-                /* Calculate temporary vectorial force */
-                tx               = fscal*dx11;     
-                ty               = fscal*dy11;     
-                tz               = fscal*dz11;     
-
-                /* Increment i atom force */
-                fix1             = fix1 + tx;      
-                fiy1             = fiy1 + ty;      
-                fiz1             = fiz1 + tz;      
-
-                /* Decrement j atom force */
-                fjx1             = faction[j3+0] - tx;
-                fjy1             = faction[j3+1] - ty;
-                fjz1             = faction[j3+2] - tz;
-
-                /* Load parameters for j atom */
-                qq               = qH*jq;          
-                rinvsq           = rinv21*rinv21;  
-
-                /* Coulomb reaction-field interaction */
-                krsq             = krf*rsq21;      
-                vcoul            = qq*(rinv21+krsq-crf);
-                vctot            = vctot+vcoul;    
-                fscal            = (qq*(rinv21-2.0*krsq))*rinvsq;
-
-                /* Calculate temporary vectorial force */
-                tx               = fscal*dx21;     
-                ty               = fscal*dy21;     
-                tz               = fscal*dz21;     
-
-                /* Increment i atom force */
-                fix2             = fix2 + tx;      
-                fiy2             = fiy2 + ty;      
-                fiz2             = fiz2 + tz;      
-
-                /* Decrement j atom force */
-                fjx1             = fjx1 - tx;      
-                fjy1             = fjy1 - ty;      
-                fjz1             = fjz1 - tz;      
-
-                /* Load parameters for j atom */
-                rinvsq           = rinv31*rinv31;  
-
-                /* Coulomb reaction-field interaction */
-                krsq             = krf*rsq31;      
-                vcoul            = qq*(rinv31+krsq-crf);
-                vctot            = vctot+vcoul;    
-                fscal            = (qq*(rinv31-2.0*krsq))*rinvsq;
-
-                /* Calculate temporary vectorial force */
-                tx               = fscal*dx31;     
-                ty               = fscal*dy31;     
-                tz               = fscal*dz31;     
-
-                /* Increment i atom force */
-                fix3             = fix3 + tx;      
-                fiy3             = fiy3 + ty;      
-                fiz3             = fiz3 + tz;      
-
-                /* Decrement j atom force */
-                faction[j3+0]    = fjx1 - tx;      
-                faction[j3+1]    = fjy1 - ty;      
-                faction[j3+2]    = fjz1 - tz;      
-
-                /* Inner loop uses 135 flops/iteration */
-            }
-            
-
-            /* Add i forces to mem and shifted force list */
-            faction[ii3+0]   = faction[ii3+0] + fix1;
-            faction[ii3+1]   = faction[ii3+1] + fiy1;
-            faction[ii3+2]   = faction[ii3+2] + fiz1;
-            faction[ii3+3]   = faction[ii3+3] + fix2;
-            faction[ii3+4]   = faction[ii3+4] + fiy2;
-            faction[ii3+5]   = faction[ii3+5] + fiz2;
-            faction[ii3+6]   = faction[ii3+6] + fix3;
-            faction[ii3+7]   = faction[ii3+7] + fiy3;
-            faction[ii3+8]   = faction[ii3+8] + fiz3;
-            fshift[is3]      = fshift[is3]+fix1+fix2+fix3;
-            fshift[is3+1]    = fshift[is3+1]+fiy1+fiy2+fiy3;
-            fshift[is3+2]    = fshift[is3+2]+fiz1+fiz2+fiz3;
-
-            /* Add potential energies to the group for this list */
-            ggid             = gid[n];         
-            Vc[ggid]         = Vc[ggid] + vctot;
-            Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
-
-            /* Increment number of inner iterations */
-            ninner           = ninner + nj1 - nj0;
-
-            /* Outer loop uses 29 flops/iteration */
+            fix3             = fix3 + tx;      
+            fiy3             = fiy3 + ty;      
+            fiz3             = fiz3 + tz;      
+            faction[j3+0]    = fjx1 - tx;      
+            faction[j3+1]    = fjy1 - ty;      
+            faction[j3+2]    = fjz1 - tz;      
         }
         
-
-        /* Increment number of outer iterations */
-        nouter           = nouter + nn1 - nn0;
+        faction[ii3+0]   = faction[ii3+0] + fix1;
+        faction[ii3+1]   = faction[ii3+1] + fiy1;
+        faction[ii3+2]   = faction[ii3+2] + fiz1;
+        faction[ii3+3]   = faction[ii3+3] + fix2;
+        faction[ii3+4]   = faction[ii3+4] + fiy2;
+        faction[ii3+5]   = faction[ii3+5] + fiz2;
+        faction[ii3+6]   = faction[ii3+6] + fix3;
+        faction[ii3+7]   = faction[ii3+7] + fiy3;
+        faction[ii3+8]   = faction[ii3+8] + fiz3;
+        fshift[is3]      = fshift[is3]+fix1+fix2+fix3;
+        fshift[is3+1]    = fshift[is3+1]+fiy1+fiy2+fiy3;
+        fshift[is3+2]    = fshift[is3+2]+fiz1+fiz2+fiz3;
+        ggid             = gid[n];         
+        Vc[ggid]         = Vc[ggid] + vctot;
+        Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
     }
-    while (nn1<nri);
     
-
-    /* Write outer/inner iteration count to pointers */
-    *outeriter       = nouter;         
-    *inneriter       = ninner;         
+    *outeriter       = nri;            
+    *inneriter       = nj1;            
 }
 
 
@@ -388,10 +287,10 @@ void nb_kernel221nf(
                     int *           inneriter,
                     real *          work)
 {
+      gmx_localp_grid_t * localp_grid = (gmx_localp_grid_t *)work;
     int           nri,ntype,nthreads;
     real          facel,krf,crf,tabscale,gbtabscale;
     int           n,ii,is3,ii3,k,nj0,nj1,jnr,j3,ggid;
-    int           nn0,nn1,nouter,ninner;
     real          shX,shY,shZ;
     real          rinvsq;
     real          jq;
@@ -419,165 +318,88 @@ void nb_kernel221nf(
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    
-
-    /* Initialize water data */
     ii               = iinr[0];        
     qO               = facel*charge[ii];
     qH               = facel*charge[ii+1];
     nti              = 3*ntype*type[ii];
 
-
-    /* Reset outer and inner iteration counters */
-    nouter           = 0;              
-    ninner           = 0;              
-
-    /* Loop over thread workunits */
+    nj1              = 0;              
     
-    do
+    for(n=0; (n<nri); n++)
     {
-#ifdef GMX_THREAD_SHM_FDECOMP
-        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
-        nn0              = *count;         
-		
-        /* Take successively smaller chunks (at least 10 lists) */
-        nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
-        *count           = nn1;            
-        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
-        if(nn1>nri) nn1=nri;
-#else
-	    nn0 = 0;
-		nn1 = nri;
-#endif
-        /* Start outer loop over neighborlists */
+        is3              = 3*shift[n];     
+        shX              = shiftvec[is3];  
+        shY              = shiftvec[is3+1];
+        shZ              = shiftvec[is3+2];
+        nj0              = jindex[n];      
+        nj1              = jindex[n+1];    
+        ii               = iinr[n];        
+        ii3              = 3*ii;           
+        ix1              = shX + pos[ii3+0];
+        iy1              = shY + pos[ii3+1];
+        iz1              = shZ + pos[ii3+2];
+        ix2              = shX + pos[ii3+3];
+        iy2              = shY + pos[ii3+4];
+        iz2              = shZ + pos[ii3+5];
+        ix3              = shX + pos[ii3+6];
+        iy3              = shY + pos[ii3+7];
+        iz3              = shZ + pos[ii3+8];
+        vctot            = 0;              
+        Vvdwtot          = 0;              
         
-        for(n=nn0; (n<nn1); n++)
+        for(k=nj0; (k<nj1); k++)
         {
-
-            /* Load shift vector for this list */
-            is3              = 3*shift[n];     
-            shX              = shiftvec[is3];  
-            shY              = shiftvec[is3+1];
-            shZ              = shiftvec[is3+2];
-
-            /* Load limits for loop over neighbors */
-            nj0              = jindex[n];      
-            nj1              = jindex[n+1];    
-
-            /* Get outer coordinate index */
-            ii               = iinr[n];        
-            ii3              = 3*ii;           
-
-            /* Load i atom data, add shift vector */
-            ix1              = shX + pos[ii3+0];
-            iy1              = shY + pos[ii3+1];
-            iz1              = shZ + pos[ii3+2];
-            ix2              = shX + pos[ii3+3];
-            iy2              = shY + pos[ii3+4];
-            iz2              = shZ + pos[ii3+5];
-            ix3              = shX + pos[ii3+6];
-            iy3              = shY + pos[ii3+7];
-            iz3              = shZ + pos[ii3+8];
-
-            /* Zero the potential energy for this list */
-            vctot            = 0;              
-            Vvdwtot          = 0;              
-
-            /* Clear i atom forces */
-            
-            for(k=nj0; (k<nj1); k++)
-            {
-
-                /* Get j neighbor index, and coordinate index */
-                jnr              = jjnr[k];        
-                j3               = 3*jnr;          
-
-                /* load j atom coordinates */
-                jx1              = pos[j3+0];      
-                jy1              = pos[j3+1];      
-                jz1              = pos[j3+2];      
-
-                /* Calculate distance */
-                dx11             = ix1 - jx1;      
-                dy11             = iy1 - jy1;      
-                dz11             = iz1 - jz1;      
-                rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
-                dx21             = ix2 - jx1;      
-                dy21             = iy2 - jy1;      
-                dz21             = iz2 - jz1;      
-                rsq21            = dx21*dx21+dy21*dy21+dz21*dz21;
-                dx31             = ix3 - jx1;      
-                dy31             = iy3 - jy1;      
-                dz31             = iz3 - jz1;      
-                rsq31            = dx31*dx31+dy31*dy31+dz31*dz31;
-
-                /* Calculate 1/r and 1/r2 */
-                rinv11           = gmx_invsqrt(rsq11);
-                rinv21           = gmx_invsqrt(rsq21);
-                rinv31           = gmx_invsqrt(rsq31);
-
-                /* Load parameters for j atom */
-                jq               = charge[jnr+0];  
-                qq               = qO*jq;          
-                tj               = nti+3*type[jnr];
-                c6               = vdwparam[tj];   
-                cexp1            = vdwparam[tj+1]; 
-                cexp2            = vdwparam[tj+2]; 
-                rinvsq           = rinv11*rinv11;  
-
-                /* Coulomb reaction-field interaction */
-                krsq             = krf*rsq11;      
-                vcoul            = qq*(rinv11+krsq-crf);
-                vctot            = vctot+vcoul;    
-
-                /* Buckingham interaction */
-                rinvsix          = rinvsq*rinvsq*rinvsq;
-                Vvdw6            = c6*rinvsix;     
-                br               = cexp2*rsq11*rinv11;
-                Vvdwexp          = cexp1*exp(-br); 
-                Vvdwtot          = Vvdwtot+Vvdwexp-Vvdw6;
-
-                /* Load parameters for j atom */
-                qq               = qH*jq;          
-
-                /* Coulomb reaction-field interaction */
-                krsq             = krf*rsq21;      
-                vcoul            = qq*(rinv21+krsq-crf);
-                vctot            = vctot+vcoul;    
-
-                /* Load parameters for j atom */
-
-                /* Coulomb reaction-field interaction */
-                krsq             = krf*rsq31;      
-                vcoul            = qq*(rinv31+krsq-crf);
-                vctot            = vctot+vcoul;    
-
-                /* Inner loop uses 91 flops/iteration */
-            }
-            
-
-            /* Add i forces to mem and shifted force list */
-
-            /* Add potential energies to the group for this list */
-            ggid             = gid[n];         
-            Vc[ggid]         = Vc[ggid] + vctot;
-            Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
-
-            /* Increment number of inner iterations */
-            ninner           = ninner + nj1 - nj0;
-
-            /* Outer loop uses 11 flops/iteration */
+            jnr              = jjnr[k];        
+            j3               = 3*jnr;          
+            jx1              = pos[j3+0];      
+            jy1              = pos[j3+1];      
+            jz1              = pos[j3+2];      
+            dx11             = ix1 - jx1;      
+            dy11             = iy1 - jy1;      
+            dz11             = iz1 - jz1;      
+            rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
+            dx21             = ix2 - jx1;      
+            dy21             = iy2 - jy1;      
+            dz21             = iz2 - jz1;      
+            rsq21            = dx21*dx21+dy21*dy21+dz21*dz21;
+            dx31             = ix3 - jx1;      
+            dy31             = iy3 - jy1;      
+            dz31             = iz3 - jz1;      
+            rsq31            = dx31*dx31+dy31*dy31+dz31*dz31;
+            rinv11           = 1.0/sqrt(rsq11);
+            rinv21           = 1.0/sqrt(rsq21);
+            rinv31           = 1.0/sqrt(rsq31);
+            jq               = charge[jnr+0];  
+            qq               = qO*jq;          
+            tj               = nti+3*type[jnr];
+            c6               = vdwparam[tj];   
+            cexp1            = vdwparam[tj+1]; 
+            cexp2            = vdwparam[tj+2]; 
+            rinvsq           = rinv11*rinv11;  
+            krsq             = krf*rsq11;      
+            vcoul            = qq*(rinv11+krsq-crf);
+            vctot            = vctot+vcoul;    
+            rinvsix          = rinvsq*rinvsq*rinvsq;
+            Vvdw6            = c6*rinvsix;     
+            br               = cexp2*rsq11*rinv11;
+            Vvdwexp          = cexp1*exp(-br); 
+            Vvdwtot          = Vvdwtot+Vvdwexp-Vvdw6;
+            qq               = qH*jq;          
+            krsq             = krf*rsq21;      
+            vcoul            = qq*(rinv21+krsq-crf);
+            vctot            = vctot+vcoul;    
+            krsq             = krf*rsq31;      
+            vcoul            = qq*(rinv31+krsq-crf);
+            vctot            = vctot+vcoul;    
         }
         
-
-        /* Increment number of outer iterations */
-        nouter           = nouter + nn1 - nn0;
+        ggid             = gid[n];         
+        Vc[ggid]         = Vc[ggid] + vctot;
+        Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
     }
-    while (nn1<nri);
     
-
-    /* Write outer/inner iteration count to pointers */
-    *outeriter       = nouter;         
-    *inneriter       = ninner;         
+    *outeriter       = nri;            
+    *inneriter       = nj1;            
 }
 
 

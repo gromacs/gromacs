@@ -2303,6 +2303,8 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
       warning(wi,err_buf);
     }
   } else {
+      /* Warning disabled for localpressure, where PME does not work.                                                                                                                
+
     if (ir->coulombtype == eelCUT && ir->rcoulomb > 0 && !ir->implicit_solvent) {
       sprintf(err_buf,
 	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"
@@ -2310,6 +2312,7 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 	      EELTYPE(eelPME));
       warning_note(wi,err_buf);
     }
+       */
   }
 
   /* Generalized reaction field */  

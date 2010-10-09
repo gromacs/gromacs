@@ -21,10 +21,10 @@
  * executed by multiple threads.
  */
 
-#include <string.h>
-#include <mknb_common.h>
-#include <mknb_innerloop.h>
-#include <mknb_metacode.h>
+#include "string.h"
+#include "mknb_common.h"
+#include "mknb_innerloop.h"
+#include "mknb_metacode.h"
 
 
 int

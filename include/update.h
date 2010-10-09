@@ -44,6 +44,7 @@
 #include "pull.h"
 #include "gmx_random.h"
 #include "maths.h"
+#include "localpressure.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,7 +107,8 @@ void update_coords(FILE         *fplog,
 			  t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
 			  t_nrnb       *nrnb,
 			  gmx_constr_t constr,
-			  t_idef       *idef);
+			  t_idef       *idef,
+                   gmx_localp_grid_t *grid);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -130,7 +132,8 @@ void update_constraints(FILE         *fplog,
 			       gmx_bool         bInitStep,
 			       gmx_bool         bFirstHalf,
 			       gmx_bool         bCalcVir,
-			       real         vetanew);
+			       real         vetanew,
+                        gmx_localp_grid_t *grid);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -150,8 +153,8 @@ void update_box(FILE         *fplog,
 		       gmx_bool         bFirstHalf);
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
-			 gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, gmx_bool bSaveOld);
+  void calc_ke_part(t_state *state,rvec *v_old,t_grpopts *opts,t_mdatoms *md,
+			 gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, gmx_bool bSaveOld,gmx_localp_grid_t *grid);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.

@@ -63,6 +63,7 @@
 #include "partdec.h"
 #include "qmmm.h"
 #include "mpelogging.h"
+#include "localpressure.h"
 
 
 void ns(FILE *fp,
@@ -81,7 +82,8 @@ void ns(FILE *fp,
         gmx_bool       bFillGrid,
         gmx_bool       bDoLongRange,
         gmx_bool       bDoForces,
-        rvec       *f)
+        rvec       *f,
+        gmx_localp_grid_t *localp_grid)
 {
   char   *ptr;
   int    nsearch;
@@ -98,7 +100,7 @@ void ns(FILE *fp,
     nsearch = search_neighbours(fp,fr,x,box,top,groups,cr,nrnb,md,
                                 lambda,dvdlambda,grppener,
                                 bFillGrid,bDoLongRange,
-                                bDoForces,f);
+                                bDoForces,f,localp_grid);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
     
@@ -134,7 +136,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        t_blocka   *excl,    
                        rvec       mu_tot[],
                        int        flags,
-                       float      *cycles_pme)
+                       float      *cycles_pme,
+                       gmx_localp_grid_t *localp_grid)
 {
     int     i,status;
     int     donb_flags;
@@ -233,7 +236,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                  enerd->grpp.ener[egLJSR],
                  enerd->grpp.ener[egCOULSR],
 				 enerd->grpp.ener[egGB],box_size,nrnb,
-                 lambda,&dvdlambda,-1,-1,donb_flags);
+                 lambda,&dvdlambda,-1,-1,localp_grid,donb_flags);
     /* If we do foreign lambda and we have soft-core interactions
      * we have to recalculate the (non-linear) energies contributions.
      */
@@ -252,7 +255,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                          ed_lam.grpp.ener[egLJSR],
                          ed_lam.grpp.ener[egCOULSR],
                          enerd->grpp.ener[egGB], box_size,nrnb,
-                         lam_i,&dvdl_dum,-1,-1,
+                         lam_i,&dvdl_dum,-1,-1,localp_grid,
                          GMX_DONB_FOREIGNLAMBDA);
             sum_epot(&ir->opts,&ed_lam);
             enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
@@ -344,7 +347,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
-                   fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
+                   fr->bSepDVDL && do_per_step(step,ir->nstlog),step,localp_grid);
         
         /* Check if we have to determine energy differences
          * at foreign lambda's.
@@ -366,7 +369,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 calc_bonds_lambda(fplog,
                                   idef,x,fr,&pbc,graph,&ed_lam,nrnb,lam_i,md,
                                   fcd,
-                                  DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                                  DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,localp_grid);
                 sum_epot(&ir->opts,&ed_lam);
                 enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
             }
@@ -533,7 +536,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             {
                 enerd->term[F_RF_EXCL] =
                     RF_excl_correction(fplog,fr,graph,md,excl,x,f,
-                                       fr->fshift,&pbc,lambda,&dvdlambda);
+                                       fr->fshift,&pbc,lambda,&dvdlambda,localp_grid);
             }
             
             enerd->dvdl_lin += dvdlambda;

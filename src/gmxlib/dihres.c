@@ -71,7 +71,7 @@ real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd,
-	       int *ddgatindex)
+	       int *ddgatindex,gmx_localp_grid_t *localp_grid)
 {
   real vtot = 0;
   int  ai,aj,ak,al,i,k,type,typep,label,power,t1,t2,t3;
@@ -129,7 +129,7 @@ real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 	ddphi = kfac*ddp;
 	
 	do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
-		   f,fshift,pbc,g,x,t1,t2,t3);		/* 112		*/
+		   f,fshift,pbc,g,x,t1,t2,t3,localp_grid);		/* 112		*/
       }
     }
   }

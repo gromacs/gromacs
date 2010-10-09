@@ -21,7 +21,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-#include <mknb_metacode.h>
+#include "mknb_metacode.h"
 
 /* This file is NOT threadsafe, but it is only used to create
  * the nonbonded loops during the build process, so it will never be
@@ -105,7 +105,7 @@ mknb_declare_real(char *name)
 #endif
   }
   else
-    sprintf(type_name, "%-13s", mknb_double ? "double" : "float");
+    sprintf(type_name, "%-13s", "real");
 
   mknb_code("%s %s%s",type_name,name, mknb_fortran ? "" : ";");
 }
@@ -138,8 +138,7 @@ mknb_declare_const_real(char *name, double value)
 	  mknb_code("%s %s",type_name,name);
       mknb_code("    parameter (%s = %f)",name,value);
   } else {
-    sprintf(type_name, "%-13s",
-	mknb_double ? "const double" : "const float");
+    sprintf(type_name, "%-13s","const real");
     mknb_code("%s %s = %.16f;",type_name,name,value);
   }
 }

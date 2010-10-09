@@ -42,7 +42,7 @@
 #include "pbc.h"
 #include "tgroup.h"
 #include "network.h"
-
+#include "localpressure.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,7 +90,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 			     gmx_grppairener_t *grppener,
 			     gmx_bool bFillGrid,
 			     gmx_bool bDoLongRange,
-			     gmx_bool bDoForces,rvec *f);
+			     gmx_bool bDoForces,rvec *f,gmx_localp_grid_t *localp_grid);
  
 
 /* Debugging routines from wnblist.c */
