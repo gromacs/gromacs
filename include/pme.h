@@ -63,6 +63,8 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 #define GMX_PME_SOLVE         (1<<1)
 #define GMX_PME_CALC_F        (1<<2)
 #define GMX_PME_CALC_ENER_VIR (1<<3)
+/* This forces the grid to be backtransformed even without GMX_PME_CALC_F */
+#define GMX_PME_CALC_POT      (1<<4)
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 int gmx_pme_do(gmx_pme_t pme,
