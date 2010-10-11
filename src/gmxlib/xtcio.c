@@ -45,6 +45,7 @@
 #include "vec.h"
 #include "futil.h"
 #include "gmx_fatal.h"
+#include "gmx_wallcycle.h"
 
 #define XTC_MAGIC 1995
 
@@ -177,7 +178,8 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, gmx_bool
 // When using MPI all IO nodes must call this function
 int write_xtc(t_fileio *fio,
 	      int natoms,int step,real time,
-	      matrix box,rvec *x,real prec, gmx_bool bWrite)
+	      matrix box,rvec *x,real prec,
+	      gmx_bool bWrite, gmx_wallcycle_t wcycle)
 {
   int magic_number = XTC_MAGIC;
   XDR *xd;
@@ -199,10 +201,18 @@ int write_xtc(t_fileio *fio,
 
   if(bOK)
   {
+      if (wcycle != NULL)
+      {
+          wallcycle_start(wcycle,ewcIO);
+      }
 	  if(gmx_fio_flush(fio) !=0)
 	  {
 		  bOK = 0;
 	  }
+      if (wcycle != NULL)
+      {
+          wallcycle_stop(wcycle,ewcIO);
+      }
   }
 
   return bOK;  /* 0 if bad, 1 if writing went well */

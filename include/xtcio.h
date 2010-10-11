@@ -67,7 +67,8 @@ int read_next_xtc(t_fileio *fio,
 int write_xtc(t_fileio *fio,
 		     int natoms,int step,real time,
 		     matrix box,rvec *x,real prec,
-		     gmx_bool bWrite);
+		     gmx_bool bWrite,
+		     gmx_wallcycle_t wcycle);
 /* Write a frame to xtc file */
 /* write_xtc has to be called by all IO nodes (if opened using MPI). bWrite is false for IO nodes which don't have any frame*/
 

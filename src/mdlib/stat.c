@@ -571,7 +571,9 @@ void write_traj(FILE *fplog,t_commrec *cr,
                 t_state *state_local,t_state *state_global,
                 rvec *f_local,rvec *f_global,
                 int *n_xtc,rvec **x_xtc,
-                t_inputrec *ir, gmx_bool bLastStep, t_write_buffer* write_buf)
+                t_inputrec *ir, gmx_bool bLastStep,
+                t_write_buffer* write_buf,
+                gmx_wallcycle_t wcycle)
 {
     int     i,j;
     gmx_groups_t *groups;
@@ -798,7 +800,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 			write_t = t;
 		}
 		if (write_xtc(of->fp_xtc,*n_xtc,write_step,write_t,
-				  state_local->box,xxtc,of->xtc_prec,bWrite) == 0)//If it is NOT ACTUALLY being written AND returns 0
+				  state_local->box,xxtc,of->xtc_prec,bWrite,wcycle) == 0)//If it is NOT ACTUALLY being written AND returns 0
 		{
 			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
 		}
