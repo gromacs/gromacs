@@ -82,6 +82,22 @@ TEST_F(SelectionOptionTest, ParsesSimpleSelection)
     EXPECT_EQ(0, assigner.finish());
     EXPECT_EQ(0, _options.finish(&errors));
     ASSERT_TRUE(sel != NULL);
+    ASSERT_FALSE(sel->isDynamic());
+}
+
+
+TEST_F(SelectionOptionTest, HandlesDynamicSelectionWhenStaticRequired)
+{
+    gmx::Selection *sel = NULL;
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").store(&sel).onlyStatic());
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    ASSERT_EQ(0, assigner.startOption("sel"));
+    EXPECT_NE(0, assigner.appendValue("resname RA RB and x < 5"));
+    EXPECT_NE(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
 }
 
 

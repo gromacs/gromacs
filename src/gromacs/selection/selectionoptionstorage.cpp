@@ -94,6 +94,12 @@ int SelectionOptionStorage::addSelections(
     std::vector<Selection *>::const_iterator i;
     for (i = selections.begin(); i != selections.end(); ++i)
     {
+        // TODO: Having this check in the parser would make interactive input
+        // behave better.
+        if (_selectionFlags.test(efOnlyStatic) && (*i)->isDynamic())
+        {
+            return eeInvalidInput;
+        }
         (*i)->setFlags(_selectionFlags);
         int rc = addValue(*i);
         if (rc != 0)

@@ -67,7 +67,6 @@ enum SelectionFlag
     //! Whether ::POS_MASKONLY should be used for output position evaluation.
     efDynamicMask       = 1<<2,
     efDynamicOnlyWhole  = 1<<3,
-    efCollectRemaining  = 1<<4,
     //! Whether velocities of output positions should be evaluated.
     efEvaluateVelocities        = 1<<5,
     //! Whether forces on output positions should be evaluated.
