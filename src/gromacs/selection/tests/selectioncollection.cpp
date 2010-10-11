@@ -39,6 +39,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/errorreporting/emptyerrorreporter.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
@@ -52,6 +53,7 @@ class SelectionCollectionTest : public ::testing::Test
         SelectionCollectionTest();
 
         gmx::SelectionCollection _sc;
+        gmx::EmptyErrorReporter  _errors;
 };
 
 SelectionCollectionTest::SelectionCollectionTest()
@@ -75,9 +77,9 @@ TEST_F(SelectionCollectionTest, ParsesSimpleSelections)
     std::vector<gmx::Selection *> sel;
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");
-    EXPECT_EQ(0, _sc.parseFromString("resname RA RB", &sel));
+    EXPECT_EQ(0, _sc.parseFromString("resname RA RB", &_errors, &sel));
     EXPECT_EQ(1U, sel.size());
-    EXPECT_EQ(0, _sc.parseFromString("name CA SB", &sel));
+    EXPECT_EQ(0, _sc.parseFromString("name CA SB", &_errors, &sel));
     EXPECT_EQ(2U, sel.size());
 }
 

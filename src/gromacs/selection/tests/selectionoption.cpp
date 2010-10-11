@@ -143,7 +143,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
     gmx::OptionsAssigner assigner(&_options, &errors);
     EXPECT_EQ(0, assigner.finish());
     EXPECT_EQ(0, _options.finish(&errors));
-    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB"));
+    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB", &errors));
     ASSERT_TRUE(sel != NULL);
 }
 
@@ -159,7 +159,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewDelayedRequiredSelections)
     gmx::OptionsAssigner assigner(&_options, &errors);
     EXPECT_EQ(0, assigner.finish());
     EXPECT_EQ(0, _options.finish(&errors));
-    EXPECT_NE(0, _sc.parseRequestedFromString("resname RA RB"));
+    EXPECT_NE(0, _sc.parseRequestedFromString("resname RA RB", &errors));
 }
 
 
@@ -174,7 +174,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
     ASSERT_EQ(0, assigner.startOption("sel"));
     EXPECT_EQ(0, assigner.finish());
     EXPECT_EQ(0, _options.finish(&errors));
-    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB"));
+    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB", &errors));
     ASSERT_TRUE(sel != NULL);
 }
 

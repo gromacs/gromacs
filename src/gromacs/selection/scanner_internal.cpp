@@ -97,7 +97,7 @@ read_stdin_line(gmx_sel_lexer_t *state)
      * the user presses Ctrl-D _twice_ at the end of a non-empty line.
      * This can be a bit confusing for users, but there's not much we can
      * do, and the chances of a normal user noticing this are not very big. */
-    while (fgets(ptr, max_len, stdin))
+    while (fgets(ptr, max_len, stdin) != NULL)
     {
         int len = strlen(ptr);
 
@@ -109,16 +109,8 @@ read_stdin_line(gmx_sel_lexer_t *state)
                 fprintf(stderr, "... ");
             }
         }
-        else if (len >= 1 && ptr[len - 1] == '\n')
+        else if ((len >= 1 && ptr[len - 1] == '\n') || len < max_len - 1)
         {
-            break;
-        }
-        else if (len < max_len - 1)
-        {
-            if (state->bInteractive)
-            {
-                fprintf(stderr, "\n");
-            }
             break;
         }
         ptr     += len;
@@ -131,6 +123,10 @@ read_stdin_line(gmx_sel_lexer_t *state)
             srenew(state->inputstr, state->nalloc_input);
             ptr = state->inputstr + len;
         }
+    }
+    if (state->bInteractive && (totlen == 0 || ptr[totlen - 1] != '\n'))
+    {
+        fprintf(stderr, "\n");
     }
     if (ferror(stdin))
     {

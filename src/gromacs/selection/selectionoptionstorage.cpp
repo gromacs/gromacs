@@ -85,10 +85,11 @@ std::string SelectionOptionStorage::formatValue(int i) const
 
 int SelectionOptionStorage::addSelections(
         const std::vector<Selection *> &selections,
-        bool bFullValue)
+        bool bFullValue, AbstractErrorReporter *errors)
 {
     if (bFullValue && selections.size() < static_cast<size_t>(minValueCount()))
     {
+        errors->error("Too few selections provided");
         return eeInvalidInput;
     }
     std::vector<Selection *>::const_iterator i;
@@ -98,6 +99,7 @@ int SelectionOptionStorage::addSelections(
         // behave better.
         if (_selectionFlags.test(efOnlyStatic) && (*i)->isDynamic())
         {
+            errors->error("Dynamic selections not supported");
             return eeInvalidInput;
         }
         (*i)->setFlags(_selectionFlags);
@@ -116,7 +118,7 @@ int SelectionOptionStorage::addSelections(
 
 
 int SelectionOptionStorage::convertValue(const std::string &value,
-                                         AbstractErrorReporter * /*errors*/)
+                                         AbstractErrorReporter *errors)
 {
     SelectionCollection *sc =
         hostOptions().globalProperties().selectionCollection();
@@ -124,10 +126,10 @@ int SelectionOptionStorage::convertValue(const std::string &value,
 
     std::vector<Selection *> selections;
     // TODO: Implement reading from a file.
-    int rc = sc->parseFromString(value, &selections);
+    int rc = sc->parseFromString(value, errors, &selections);
     if (rc == 0)
     {
-        rc = addSelections(selections, false);
+        rc = addSelections(selections, false, errors);
     }
     return rc;
 }

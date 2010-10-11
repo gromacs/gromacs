@@ -50,6 +50,7 @@
 #include "poscalc.h"
 #include "selmethod.h"
 
+#include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -358,7 +359,8 @@ SelectionCollection::requiresTopology() const
 
 
 int
-SelectionCollection::parseRequestedFromStdin(bool bInteractive)
+SelectionCollection::parseRequestedFromStdin(bool bInteractive,
+                                             AbstractErrorReporter *errors)
 {
     int rc = 0;
     Impl::RequestList::const_iterator i;
@@ -386,12 +388,12 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive)
                          request.count < 0 ? ", Ctrl-D to end" : "");
         }
         std::vector<Selection *> selections;
-        rc = parseFromStdin(request.count, bInteractive, &selections);
+        rc = parseFromStdin(request.count, bInteractive, errors, &selections);
         if (rc != 0)
         {
             break;
         }
-        rc = request.storage->addSelections(selections, true);
+        rc = request.storage->addSelections(selections, true, errors);
         if (rc != 0)
         {
             break;
@@ -403,10 +405,11 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive)
 
 
 int
-SelectionCollection::parseRequestedFromString(const std::string &str)
+SelectionCollection::parseRequestedFromString(const std::string &str,
+                                              AbstractErrorReporter *errors)
 {
     std::vector<Selection *> selections;
-    int rc = parseFromString(str, &selections);
+    int rc = parseFromString(str, errors, &selections);
     if (rc != 0)
     {
         return rc;
@@ -421,6 +424,7 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
         {
             if (selections.end() - first < request.count)
             {
+                errors->error("Too few selections provided");
                 rc = eeInvalidInput;
                 break;
             }
@@ -438,7 +442,7 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
             last = selections.end();
         }
         std::vector<Selection *> curr(first, last);
-        rc = request.storage->addSelections(curr, true);
+        rc = request.storage->addSelections(curr, true, errors);
         if (rc != 0)
         {
             break;
@@ -448,7 +452,8 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
     _impl->_requests.clear();
     if (last != selections.end())
     {
-        GMX_ERROR(eeInvalidInput, "Too many selections provided");
+        errors->error("Too many selections provided");
+        rc = eeInvalidInput;
     }
     return rc;
 }
@@ -456,6 +461,7 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
 
 int
 SelectionCollection::parseFromStdin(int nr, bool bInteractive,
+                                    AbstractErrorReporter * /*errors*/,
                                     std::vector<Selection *> *output)
 {
     yyscan_t scanner;
@@ -474,6 +480,7 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive,
 
 int
 SelectionCollection::parseFromFile(const std::string &filename,
+                                   AbstractErrorReporter * /*errors*/,
                                    std::vector<Selection *> *output)
 {
     yyscan_t scanner;
@@ -495,6 +502,7 @@ SelectionCollection::parseFromFile(const std::string &filename,
 
 int
 SelectionCollection::parseFromString(const std::string &str,
+                                     AbstractErrorReporter * /*errors*/,
                                      std::vector<Selection *> *output)
 {
     yyscan_t scanner;

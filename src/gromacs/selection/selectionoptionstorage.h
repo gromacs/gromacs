@@ -75,6 +75,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
          * \param[in] selections  List of selections to add.
          * \param[in] bFullValue  If true, the provided selections are the full
          *      value of the option, and additional checks are performed.
+         * \param[in] errors      Error reporter object.
          *
          * This function is used to implement the methods
          * SelectionCollection::parseRequestedFromStdin() and
@@ -83,7 +84,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
          * class (called with \p bFullValue set to false).
          */
         int addSelections(const std::vector<Selection *> &selections,
-                          bool bFullValue);
+                          bool bFullValue, AbstractErrorReporter *errors);
 
     private:
         virtual int convertValue(const std::string &value,

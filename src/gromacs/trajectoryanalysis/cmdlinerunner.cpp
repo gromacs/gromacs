@@ -116,6 +116,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         Options *options,
         int *argc, char *argv[])
 {
+    StandardErrorReporter  errors;
     int rc;
 
     Options *moduleOptions = _module->initOptions(settings);
@@ -147,7 +148,6 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     commonOptions->addDefaultOptions();
 
     {
-        StandardErrorReporter  errors;
         CommandLineParser  parser(options, &errors);
         rc = parser.parse(argc, argv);
         printHelp(*options, *common);
@@ -174,6 +174,10 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     {
         return rc;
     }
+
+    // TODO: Check whether the input is a pipe.
+    bool bInteractive = true;
+    rc = selections->parseRequestedFromStdin(bInteractive, &errors);
     return rc;
 }
 
@@ -224,14 +228,6 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     Options  options(NULL, NULL);
     rc = _impl->parseOptions(&settings, &common, &selections, &options,
                              &argc, argv);
-    if (rc != 0)
-    {
-        return rc;
-    }
-
-    // TODO: Check whether the input is a pipe.
-    bool bInteractive = true;
-    rc = selections.parseRequestedFromStdin(bInteractive);
     if (rc != 0)
     {
         return rc;
