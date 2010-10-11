@@ -86,6 +86,8 @@ struct gmx_ana_selcollection_t
 namespace gmx
 {
 
+class SelectionOptionStorage;
+
 /*! \internal \brief
  * Private implemention class for SelectionCollection.
  *
@@ -94,8 +96,23 @@ namespace gmx
 class SelectionCollection::Impl
 {
     public:
+        struct SelectionRequest
+        {
+            SelectionRequest(const std::string &name, const std::string &descr,
+                             int count, SelectionOptionStorage *storage)
+                : name(name), descr(descr), count(count), storage(storage)
+            { }
+
+            std::string                 name;
+            std::string                 descr;
+            int                         count;
+            SelectionOptionStorage     *storage;
+        };
+
         //! Shorthand for a list of selections stored internally.
         typedef std::vector<Selection *> SelectionList;
+        //! Shorthand for a list of selection requests.
+        typedef std::vector<SelectionRequest> RequestList;
 
         //! Possibel flags for the selection collection.
         enum Flag
@@ -131,6 +148,9 @@ class SelectionCollection::Impl
          */
         int runParser(void *scanner, int maxnr,
                       std::vector<Selection *> *output);
+        void requestSelections(const std::string &name,
+                               const std::string &descr,
+                               int count, SelectionOptionStorage *storage);
 
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t _sc;
@@ -155,6 +175,8 @@ class SelectionCollection::Impl
         unsigned long           _flags;
         //! External index groups (can be NULL).
         gmx_ana_indexgrps_t    *_grps;
+        //! List of selections requested for later parsing.
+        RequestList             _requests;
 };
 
 } // namespace gmx

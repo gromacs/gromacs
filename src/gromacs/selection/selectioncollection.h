@@ -52,6 +52,7 @@ namespace gmx
 
 class Options;
 class Selection;
+class SelectionOptionStorage;
 
 /*! \libinternal \brief
  * Collection of selections.
@@ -187,6 +188,27 @@ class SelectionCollection
          */
         void setIndexGroups(gmx_ana_indexgrps_t *grps);
         /*! \brief
+         * Parses selection(s) from standard input for options not yet
+         * provided.
+         *
+         * \param[in]  bInteractive Whether the parser should behave
+         *      interactively.
+         *
+         * This method cooperates with SelectionOption to allow interactive
+         * input of missing selections after all options have been processed.
+         * It should be called after the Options::finish() method has been
+         * called on all options that add selections to this collection.
+         */
+        int parseRequestedFromStdin(bool bInteractive);
+        /*! \brief
+         * Parses selection(s) from a string for options not yet provided.
+         *
+         * \param[in]  str  String to parse.
+         *
+         * \see parseRequestedFromStdin()
+         */
+        int parseRequestedFromString(const std::string &str);
+        /*! \brief
          * Parses selection(s) from standard input.
          *
          * \param[in]  count    Number of selections to parse
@@ -297,6 +319,11 @@ class SelectionCollection
         Impl                   *_impl;
 
     private:
+        /*! \brief
+         * Needed for handling delayed selection parsing requests.
+         */
+        friend class SelectionOptionStorage;
+
         // Disallow copy and assign.
         SelectionCollection(const SelectionCollection &);
         void operator =(const SelectionCollection &);

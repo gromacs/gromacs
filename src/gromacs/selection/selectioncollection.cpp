@@ -53,12 +53,13 @@
 #include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
-#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectioncollection.h"
 
 #include "mempool.h"
 #include "scanner.h"
 #include "selectioncollection-impl.h"
+#include "selectionoptionstorage.h"
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"
@@ -169,6 +170,14 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
     }
 
     return bOk ? 0 : eeInvalidInput;
+}
+
+
+void SelectionCollection::Impl::requestSelections(
+        const std::string &name, const std::string &descr,
+        int count, SelectionOptionStorage *storage)
+{
+    _requests.push_back(SelectionRequest(name, descr, count, storage));
 }
 
 
@@ -345,6 +354,83 @@ SelectionCollection::requiresTopology() const
         sel = sel->next;
     }
     return FALSE;
+}
+
+
+int
+SelectionCollection::parseRequestedFromStdin(bool bInteractive)
+{
+    int rc = 0;
+    Impl::RequestList::const_iterator i;
+    for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
+    {
+        const Impl::SelectionRequest &request = *i;
+        if (bInteractive)
+        {
+            std::fprintf(stderr, "\nSpecify ");
+            if (request.count < 0)
+            {
+                std::fprintf(stderr, "any number of selections");
+            }
+            else if (request.count == 1)
+            {
+                std::fprintf(stderr, "a selection");
+            }
+            else
+            {
+                std::fprintf(stderr, "%d selections", request.count);
+            }
+            std::fprintf(stderr, " for option '%s' (%s):\n",
+                         request.name.c_str(), request.descr.c_str());
+            std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
+                         request.count < 0 ? ", Ctrl-D to end" : "");
+        }
+        std::vector<Selection *> selections;
+        rc = parseFromStdin(request.count, bInteractive, &selections);
+        if (rc != 0)
+        {
+            break;
+        }
+        rc = request.storage->addSelections(selections);
+        if (rc != 0)
+        {
+            break;
+        }
+    }
+    _impl->_requests.clear();
+    return rc;
+}
+
+
+int
+SelectionCollection::parseRequestedFromString(const std::string &str)
+{
+    std::vector<Selection *> selections;
+    int rc = parseFromString(str, &selections);
+    if (rc != 0)
+    {
+        break;
+    }
+    std::vector<Selection *>::const_iterator first = selections.begin();
+    Impl::RequestList::const_iterator i;
+    for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
+    {
+        const Impl::SelectionRequest &request = *i;
+        if (selections.end() - first < request.count)
+        {
+            rc = eeInvalidInput;
+            break;
+        }
+        std::vector<Selection *> curr(first, first + request.count);
+        rc = request.storage->addSelections(curr);
+        if (rc != 0)
+        {
+            break;
+        }
+        first += request.count;
+    }
+    _impl->_requests.clear();
+    return rc;
 }
 
 

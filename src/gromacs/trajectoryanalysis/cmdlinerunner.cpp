@@ -229,6 +229,14 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
         return rc;
     }
 
+    // TODO: Check whether the input is a pipe.
+    bool bInteractive = true;
+    rc = selections.parseRequestedFromStdin(bInteractive);
+    if (rc != 0)
+    {
+        return rc;
+    }
+
     rc = common.initTopology(&selections);
     if (rc != 0)
     {

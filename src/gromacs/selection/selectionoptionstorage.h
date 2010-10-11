@@ -69,6 +69,8 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
         virtual const char *typeString() const { return "sel"; }
         virtual std::string formatValue(int i) const;
 
+        int addSelections(const std::vector<Selection *> &selections);
+
     private:
         virtual int convertValue(const std::string &value,
                                  AbstractErrorReporter *errors);
