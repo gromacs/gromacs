@@ -68,6 +68,7 @@ SelectionOptionTest::SelectionOptionTest()
     _options.globalProperties().setSelectionCollection(&_sc);
 }
 
+
 TEST_F(SelectionOptionTest, ParsesSimpleSelection)
 {
     gmx::Selection *sel = NULL;
@@ -80,6 +81,84 @@ TEST_F(SelectionOptionTest, ParsesSimpleSelection)
     EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
     EXPECT_EQ(0, assigner.finish());
     EXPECT_EQ(0, _options.finish(&errors));
+    ASSERT_TRUE(sel != NULL);
+}
+
+
+TEST_F(SelectionOptionTest, HandlesTooManySelections)
+{
+    gmx::Selection *sel = NULL;
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").store(&sel));
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    ASSERT_EQ(0, assigner.startOption("sel"));
+    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
+    EXPECT_NE(0, assigner.appendValue("resname RB RC"));
+    EXPECT_NE(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+    ASSERT_TRUE(sel != NULL);
+}
+
+
+TEST_F(SelectionOptionTest, HandlesTooFewSelections)
+{
+    gmx::Selection *sel[2] = {NULL, NULL};
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").store(sel).valueCount(2));
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    ASSERT_EQ(0, assigner.startOption("sel"));
+    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
+    EXPECT_NE(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+}
+
+
+TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
+{
+    gmx::Selection *sel = NULL;
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").store(&sel).required());
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB"));
+    ASSERT_TRUE(sel != NULL);
+}
+
+
+TEST_F(SelectionOptionTest, HandlesTooFewDelayedRequiredSelections)
+{
+    gmx::Selection *sel[2] = {NULL, NULL};
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").store(sel).required()
+                           .valueCount(2));
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+    EXPECT_NE(0, _sc.parseRequestedFromString("resname RA RB"));
+}
+
+
+TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
+{
+    gmx::Selection *sel = NULL;
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").store(&sel));
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    ASSERT_EQ(0, assigner.startOption("sel"));
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB"));
     ASSERT_TRUE(sel != NULL);
 }
 

@@ -69,7 +69,21 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
         virtual const char *typeString() const { return "sel"; }
         virtual std::string formatValue(int i) const;
 
-        int addSelections(const std::vector<Selection *> &selections);
+        /*! \brief
+         * Adds selections to the storage.
+         *
+         * \param[in] selections  List of selections to add.
+         * \param[in] bFullValue  If true, the provided selections are the full
+         *      value of the option, and additional checks are performed.
+         *
+         * This function is used to implement the methods
+         * SelectionCollection::parseRequestedFromStdin() and
+         * SelectionCollection::parseRequestedFromString() (called with
+         * \p bFullValue set to true), as well as internally by the storage
+         * class (called with \p bFullValue set to false).
+         */
+        int addSelections(const std::vector<Selection *> &selections,
+                          bool bFullValue);
 
     private:
         virtual int convertValue(const std::string &value,

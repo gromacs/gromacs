@@ -243,7 +243,7 @@ class OptionTemplate : public AbstractOption
          * \p defaultValue is copied when the option is created.
          */
         MyClass &defaultValue(const T &defaultValue)
-        { setFlag(efDefaultValue); _defaultValue = &defaultValue; return me(); }
+        { _defaultValue = &defaultValue; return me(); }
         /*! \brief
          * Stores value(s) in memory pointed by \p store.
          *

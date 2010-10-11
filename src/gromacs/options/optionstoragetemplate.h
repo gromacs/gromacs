@@ -252,20 +252,27 @@ int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options
         assert(!hasFlag(efExternalValueVector));
         _values = new std::vector<T>;
     }
-    if (settings._defaultValue)
+    // If the option does not support default values, one should not be set.
+    assert(!hasFlag(efNoDefaultValue) || settings._defaultValue == NULL);
+    if (!hasFlag(efNoDefaultValue))
     {
-        _values->clear();
-        addValue(*settings._defaultValue);
-        processValues(1, false);
-    }
-    else if (!hasFlag(efExternalValueVector) && _store != NULL)
-    {
-        _values->clear();
-        int count = (settings.isVector() ?
-                        settings._maxValueCount : settings._minValueCount);
-        for (int i = 0; i < count; ++i)
+        if (settings._defaultValue != NULL)
         {
-            _values->push_back(_store[i]);
+            _values->clear();
+            addValue(*settings._defaultValue);
+            processValues(1, false);
+            setFlag(efHasDefaultValue);
+        }
+        else if (!hasFlag(efExternalValueVector) && _store != NULL)
+        {
+            _values->clear();
+            int count = (settings.isVector() ?
+                            settings._maxValueCount : settings._minValueCount);
+            for (int i = 0; i < count; ++i)
+            {
+                _values->push_back(_store[i]);
+            }
+            setFlag(efHasDefaultValue);
         }
     }
     return 0;

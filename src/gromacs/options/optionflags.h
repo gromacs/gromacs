@@ -86,11 +86,11 @@ enum OptionFlag
      * The default length is 3 elements.
      */
     efVector              = 1<<6,
-    //! User has provided an explicit default value.
-    efDefaultValue        = 1<<7,
     efExternalStore       = 1<<8,
     efExternalStoreArray  = 1<<9,
     efExternalValueVector = 1<<10,
+    //! %Option does not support default values.
+    efNoDefaultValue      = 1<<7,
     /*! \brief
      * Storage object may add zero values even when a value is provided.
      *
@@ -100,6 +100,16 @@ enum OptionFlag
      * succeeds.
      */
     efConversionMayNotAddValues = 1<<11,
+    /*! \brief
+     * Storage object does its custom checking for minimum value count.
+     *
+     * If this flag is set, the class derived from AbstractOptionStorage should
+     * implement processSet(), processAll(), and possible other functions it
+     * provides such that it always fails if not enough values are provided.
+     * This is useful to override the default check, which is done in
+     * AbstractOptionStorage::processSet().
+     */
+    efDontCheckMinimumCount     = 1<<16,
     efFile                = 1<<12,
     efFileRead            = 1<<13,
     efFileWrite           = 1<<14,

@@ -42,6 +42,8 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/errorreporting/abstracterrorreporter.h"
+#include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
@@ -59,7 +61,9 @@ namespace gmx
 
 SelectionOptionStorage::SelectionOptionStorage()
 {
+    MyBase::setFlag(efNoDefaultValue);
     MyBase::setFlag(efConversionMayNotAddValues);
+    MyBase::setFlag(efDontCheckMinimumCount);
 }
 
 
@@ -79,16 +83,28 @@ std::string SelectionOptionStorage::formatValue(int i) const
 }
 
 
-int SelectionOptionStorage::addSelections(const std::vector<Selection *> &selections)
+int SelectionOptionStorage::addSelections(
+        const std::vector<Selection *> &selections,
+        bool bFullValue)
 {
+    if (bFullValue && selections.size() < static_cast<size_t>(minValueCount()))
+    {
+        return eeInvalidInput;
+    }
     std::vector<Selection *>::const_iterator i;
     for (i = selections.begin(); i != selections.end(); ++i)
     {
         (*i)->setFlags(_selectionFlags);
-        addValue(*i);
-        // FIXME: Check the return value
+        int rc = addValue(*i);
+        if (rc != 0)
+        {
+            return rc;
+        }
     }
-    // FIXME: Call processValues()
+    if (bFullValue)
+    {
+        processValues(selections.size(), true);
+    }
     return 0;
 }
 
@@ -105,7 +121,7 @@ int SelectionOptionStorage::convertValue(const std::string &value,
     int rc = sc->parseFromString(value, &selections);
     if (rc == 0)
     {
-        rc = addSelections(selections);
+        rc = addSelections(selections, false);
     }
     return rc;
 }
@@ -113,6 +129,12 @@ int SelectionOptionStorage::convertValue(const std::string &value,
 int SelectionOptionStorage::processSet(int nvalues,
                                        AbstractErrorReporter *errors)
 {
+    if (nvalues > 0 && nvalues < minValueCount())
+    {
+        // TODO: Remove the invalid values
+        errors->error("Too few (valid) values provided");
+        return eeInvalidInput;
+    }
     return MyBase::processSet(nvalues, errors);
 }
 

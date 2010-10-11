@@ -64,7 +64,8 @@ AbstractOptionStorage::~AbstractOptionStorage()
 int AbstractOptionStorage::init(const AbstractOption &settings,
                                 Options *options)
 {
-    _flags = settings._flags;
+    // We add user-provided flags to the ones possibly set by the subclass.
+    _flags |= settings._flags;
     _minValueCount = settings._minValueCount;
     _maxValueCount = settings._maxValueCount;
     _options = options;
@@ -88,7 +89,6 @@ int AbstractOptionStorage::init(const AbstractOption &settings,
         _name  = settings._name;
     }
     _descr = settings.createDescription();
-    setFlag(efHasDefaultValue);
 
     return 0;
 }
@@ -135,7 +135,8 @@ int AbstractOptionStorage::finishSet(AbstractErrorReporter *errors)
     setFlag(efSet);
     // TODO: Remove invalid values if there are too few
     int rc = processSet(_currentValueCount, errors);
-    if (_currentValueCount < _minValueCount)
+    if (!hasFlag(efDontCheckMinimumCount)
+        && _currentValueCount < _minValueCount)
     {
         errors->error("Too few (valid) values");
         rc = eeInvalidInput;

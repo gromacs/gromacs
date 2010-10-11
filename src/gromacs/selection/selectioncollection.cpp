@@ -391,7 +391,7 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive)
         {
             break;
         }
-        rc = request.storage->addSelections(selections);
+        rc = request.storage->addSelections(selections, true);
         if (rc != 0)
         {
             break;
@@ -409,27 +409,47 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
     int rc = parseFromString(str, &selections);
     if (rc != 0)
     {
-        break;
+        return rc;
     }
     std::vector<Selection *>::const_iterator first = selections.begin();
+    std::vector<Selection *>::const_iterator last = first;
     Impl::RequestList::const_iterator i;
     for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
     {
         const Impl::SelectionRequest &request = *i;
-        if (selections.end() - first < request.count)
+        if (request.count > 0)
         {
-            rc = eeInvalidInput;
-            break;
+            if (selections.end() - first < request.count)
+            {
+                rc = eeInvalidInput;
+                break;
+            }
+            last = first + request.count;;
         }
-        std::vector<Selection *> curr(first, first + request.count);
-        rc = request.storage->addSelections(curr);
+        else
+        {
+            if (i != _impl->_requests.end() - 1)
+            {
+                GMX_ERROR_NORET(eeInvalidValue,
+                                "Request for all selections not the last option");
+                rc = eeInvalidValue;
+                break;
+            }
+            last = selections.end();
+        }
+        std::vector<Selection *> curr(first, last);
+        rc = request.storage->addSelections(curr, true);
         if (rc != 0)
         {
             break;
         }
-        first += request.count;
+        first = last;
     }
     _impl->_requests.clear();
+    if (last != selections.end())
+    {
+        GMX_ERROR(eeInvalidInput, "Too many selections provided");
+    }
     return rc;
 }
 

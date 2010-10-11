@@ -83,6 +83,12 @@ class FlagsTemplate
         {
             return FlagsTemplate<T>(_flags | other._flags);
         }
+        //! Combines flags from another flag object.
+        FlagsTemplate<T> &operator |=(const FlagsTemplate<T> &other)
+        {
+            _flags |= other._flags;
+            return *this;
+        }
 
     private:
         //! Creates a flags object with the given flags.

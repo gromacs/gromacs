@@ -101,6 +101,10 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         { _selectionFlags.set(efCollectRemaining); return me(); }
 
     private:
+        // Disable default value because it is impossible to provide a
+        // Selection object.
+        using MyBase::defaultValue;
+
         virtual int createDefaultStorage(Options *options,
                                          AbstractOptionStorage **storage) const;
 
