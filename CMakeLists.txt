@@ -116,6 +116,10 @@ option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 mark_as_advanced(GMX_IA32_ASM)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 mark_as_advanced(GMX_X86_64_ASM)
+option(USE_VERSION_H "Generate development version string/information" ON)
+
+option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
+
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
@@ -207,6 +211,19 @@ if(GMX_MPI)
     set(GMX_LIB_MPI 1)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
 endif(GMX_MPI)
+
+
+#######################################################################
+# Check for options incompatible with the OpenMP build                #
+#######################################################################
+if(GMX_OPENMP)
+    if(GMX_THREADS)
+        message(STATUS "Threads not compatible with OpenMM build, disabled!")
+        set(GMX_THREADS OFF CACHE BOOL 
+		"Threads not compatible with OpenMM build, disabled!" FORCE)
+    endif(GMX_THREADS)
+    mark_as_advanced(FORCE GMX_THREADS)
+endif()
 
 
 #######################################################################
@@ -421,6 +438,38 @@ if(GMX_OPENMM)
     endif()
     find_package(OpenMM) 
 endif(GMX_OPENMM)
+
+if(GMX_OPENMP)   
+    # gcc 
+    if(CMAKE_COMPILER_IS_GNUCC)
+        CHECK_C_COMPILER_FLAG("-fopenmp" XFLAGS_OPENMP)
+         if (XFLAGS_OPENMP)
+            set(GROMACS_C_FLAGS "-fopenmp ${GROMACS_C_FLAGS}")
+        endif ()  
+    endif()
+    
+    # g++
+    if(CMAKE_COMPILER_IS_GNUCXX)
+        CHECK_C_COMPILER_FLAG("-fopenmp" XXFLAGS_OPENMP)
+         if (XXFLAGS_OPENMP)
+            set(GROMACS_C_FLAGS "-fopenmp ${GROMACS_CXX_FLAGS}")
+        endif ()  
+    endif()
+
+    # intel 
+    if (CMAKE_C_COMPILER_ID MATCHES "Intel")
+        CHECK_C_COMPILER_FLAG("-openmp" XFLAGS_OPENMP)
+        message(WARNING "Although OpenMP is supported it does not work with CUDA!")
+    endif()
+
+    # intel 
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        CHECK_C_COMPILER_FLAG("-openmp" XXFLAGS_OPENMP)
+        message(WARNING "Although OpenMP is supported it does not work with CUDA!")        
+    endif()
+
+    add_definitions(-DGMX_OPENMP)
+endif()
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -708,6 +757,11 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, fftw2, mkl, acml, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+
+# enable threaded fftw3 if we've found it 
+if(FFTW3_THREADS OR FFTW3F_THREADS)
+    add_definitions(-DFFT5D_FFTW_THREADS)
+endif()
 
 # MKL has BLAS/LAPACK routines
 if(HAVE_MKL OR ACCELERATE_FRAMEWORK)
