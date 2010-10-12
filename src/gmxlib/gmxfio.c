@@ -123,15 +123,35 @@ const char *comment_str[eitemNR] = {
 "; The atomic velocities in nm/ps\n",
 "; The forces on the atoms in nm/ps^2\n" };
 
-
-
-
 /******************************************************************
  *
- * Internal functions: 
+ * Internal functions:
  *
  ******************************************************************/
 
+int gmx_fio_int_end_record(t_fileio *fio)
+{
+    int rc = 0;
+#ifdef GMX_LIB_MPI
+    if (fio->mpi_fh!=NULL)
+    {
+        rc = !xdrrec_endofrecord(fio->xdr, 1);
+        if (rc==0)
+        {
+            fio->last_frame_size = fio->mem_buf_cur_pos;
+            rc = MPI_File_write_ordered(fio->mpi_fh,fio->mem_buf,fio->last_frame_size,MPI_BYTE,MPI_STATUS_IGNORE)
+                    != MPI_SUCCESS;
+            fio->mem_buf_cur_pos = 0;
+        }
+    }
+#endif
+    return rc;
+}
+
+/* Make sure to call flush only when really necessary.
+ * Checkpoint is flushing thus it should not be required to flush anywhere else.cc
+ * Flush is very expensive for MPI-IO.
+ */
 static int gmx_fio_int_flush(t_fileio* fio)
 {
     int rc = 0;
@@ -140,12 +160,13 @@ static int gmx_fio_int_flush(t_fileio* fio)
     if (fio->mpi_fh!=NULL)
     {
         /* For MPI nothing has been written to a file before the flush.
-         * The xdr write functions write to the fio->mem_buf. Here this is written to fio->mpi_fh*/
-        xdrrec_endofrecord(fio->xdr, 1);
-        fio->last_frame_size = fio->mem_buf_cur_pos;
-        MPI_File_write_ordered(fio->mpi_fh,fio->mem_buf,fio->last_frame_size,MPI_BYTE,MPI_STATUS_IGNORE);
-        fio->mem_buf_cur_pos = 0;
-        MPI_File_sync(fio->mpi_fh);
+         * The xdr (in gmx_fio_int_end_record) write functions write to the fio->mem_buf. Here this is written to fio->mpi_fh*/
+
+        rc = gmx_fio_int_end_record(fio);
+        if (rc==0)
+        {
+            rc = MPI_File_sync(fio->mpi_fh) != MPI_SUCCESS;// <<< Time consuming
+        }
     }
     else
 #endif
@@ -473,7 +494,7 @@ static int gmx_fio_close_locked(t_fileio *fio)
 #ifdef GMX_LIB_MPI
     if (fio->mpi_fh != NULL)
     {
-        MPI_File_close(&(fio->mpi_fh));
+        rc = MPI_File_close(&(fio->mpi_fh)) != MPI_SUCCESS;
     }
     else
 #endif
@@ -494,20 +515,22 @@ static int gmx_fio_close_locked(t_fileio *fio)
 // Assumes fio is locked, and reads the file and supports use of MPI
 static gmx_off_t gmx_fio_int_read(void *buf, size_t size, t_fileio* fio)
 {
-    gmx_off_t numread = 0;
+    gmx_off_t numread = -1;
 #ifdef GMX_LIB_MPI
     if (fio->mpi_fh)
     {
         MPI_Status status;
         int n;
-        MPI_File_read(fio->mpi_fh, buf, size, MPI_BYTE, &status);
-        MPI_Get_count(&status, MPI_BYTE, &n);
-        numread = n;
+        if (MPI_File_read(fio->mpi_fh, buf, size, MPI_BYTE, &status) == MPI_SUCCESS)
+        {
+            MPI_Get_count(&status, MPI_BYTE, &n);
+            numread = n;
+        }
     }
     else
 #endif
     {
-        numread = fread(buf, 1, size, fio->fp);
+        numread = fread(buf, 1, size, fio->fp); /*not guaranteed to return -1 for error - would need to check errno*/
     }
     return numread;
 }
@@ -531,11 +554,11 @@ static int gmx_fio_int_seek(t_fileio* fio, gmx_off_t fpos, int whence, gmx_bool 
         if (bShared)   /*currently not used*/
         {
             MPI_Bcast(&fpos, sizeof(gmx_off_t), MPI_BYTE, 0, fio->fh_comm);
-            MPI_File_seek_shared(fio->mpi_fh, (MPI_Offset)fpos, mpi_whence);
+            rc = MPI_File_seek_shared(fio->mpi_fh, (MPI_Offset)fpos, mpi_whence) != MPI_SUCCESS;
         }
         else
         {
-            MPI_File_seek(fio->mpi_fh, (MPI_Offset)fpos, mpi_whence);
+            rc = MPI_File_seek(fio->mpi_fh, (MPI_Offset)fpos, mpi_whence) != MPI_SUCCESS;
         }
     }
     else
@@ -543,7 +566,7 @@ static int gmx_fio_int_seek(t_fileio* fio, gmx_off_t fpos, int whence, gmx_bool 
     {
         if (fio->fp)
         {
-                        rc = gmx_fseek(fio->fp, fpos, whence);
+            rc = gmx_fseek(fio->fp, fpos, whence);
         }
         else
         {
@@ -654,14 +677,22 @@ static gmx_off_t gmx_fio_int_ftell(t_fileio* fio, gmx_bool bShared)
         MPI_Offset cur_offset;
         if (bShared)
         {
-            MPI_File_get_position_shared(fio->mpi_fh, &cur_offset); // takes the file handle and puts an int into cur_offset
+            if (MPI_File_get_position_shared(fio->mpi_fh, &cur_offset) != MPI_SUCCESS) // takes the file handle and puts an int into cur_offset
+            {
+                ret = -1;
+            }
         }
         else
         {
-            MPI_File_get_position(fio->mpi_fh, &cur_offset); // takes the file handle and puts an int into cur_offset
+            if (MPI_File_get_position(fio->mpi_fh, &cur_offset) != MPI_SUCCESS) // takes the file handle and puts an int into cur_offset
+            {
+                ret = -1;
+            }
         }
-
-        ret = (gmx_off_t) cur_offset; //gmx_off_t is a gmx_large_int_t and cur_offset is an int of type MPI_Offset // NOTE: This will break exactly how it does below for 128 bit!
+        if (ret != -1)
+        {
+            ret = (gmx_off_t) cur_offset; //gmx_off_t is a gmx_large_int_t and cur_offset is an int of type MPI_Offset // NOTE: This will break exactly how it does below for 128 bit!
+        }
     }
     else
 #endif
@@ -707,12 +738,11 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
     /* Flush the file, so we are sure it is written */
     /* write_xtc and fwrite_trn flush their file - thus it is already guaranteed to be flushed,
      * with MPI-IO we can't flush here because this method is not called by all*/
-    if (fio->iFTP != efXTC && fio->iFTP != efTRR && fio->iFTP != efTRJ &&
-            fio->iFTP != efCPT)
+
+    if (fio->iFTP != efCPT)
     {
         if (gmx_fio_int_flush(fio))
         {
-            char buf[STRLEN];
             sprintf(
                 buf,
                 "Cannot write file '%s'; maybe you are out of disk space or quota?",
@@ -728,12 +758,19 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
     */
     *offset=gmx_fio_int_ftell(fio, TRUE);
 
-    /* for buffered writing we need to subtract the last written frame. Because we call write_checkpoint after we write all buffered frames.
-     * See write_traj for detailed comments. If buffered writing is not used last_frame_size is zero and this has no affect.
-     */
-    *offset-=fio->last_frame_size;
+    if (*offset != -1)
+    {
+        /* for buffered writing we need to subtract the last written frame. Because we call write_checkpoint after we write all buffered frames.
+         * See write_traj for detailed comments. If buffered writing is not used last_frame_size is zero and this has no affect.
+         */
+        *offset-=fio->last_frame_size;
 
-    return 0;
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
 }
 
 /*****************************************************************
@@ -742,6 +779,13 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
  *
  *****************************************************************/
 
+int gmx_fio_end_record(t_fileio *fio)
+{
+    gmx_fio_lock(fio);
+    gmx_fio_int_end_record(fio);
+    gmx_fio_unlock(fio);
+    return 0;
+}
 
 t_fileio *gmx_fio_open(const char *fn, const char *mode)
 {
@@ -881,7 +925,10 @@ t_fileio *mpi_fio_open(const char *fn, const char *mode, const t_commrec *cr)
                 MPI_Comm_dup(cr->mpi_comm_io, &(fio->fh_comm));
                 if (IONODE(cr))
                 {
-                    MPI_File_open(fio->fh_comm,(char*)fn,amode,MPI_INFO_NULL, &(fio->mpi_fh));
+                    if(MPI_File_open(fio->fh_comm,(char*)fn,amode,MPI_INFO_NULL, &(fio->mpi_fh)) != MPI_SUCCESS)
+                    {
+                        gmx_file(fn);
+                    }
                 }
             }
             else 

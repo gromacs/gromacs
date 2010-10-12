@@ -826,10 +826,6 @@ void write_traj(FILE *fplog,t_commrec *cr,
                        (mdof_flags & MDOF_X) ? state_global->x : NULL,
                        (mdof_flags & MDOF_V) ? global_v : NULL,
                        (mdof_flags & MDOF_F) ? f_global : NULL);
-            if (gmx_fio_flush(of->fp_trn) != 0)
-            {
-                gmx_file("Cannot write trajectory; maybe you are out of quota?");
-            }
             gmx_fio_check_file_position(of->fp_trn);
         }
      }

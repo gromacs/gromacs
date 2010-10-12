@@ -274,5 +274,8 @@ t_fileio *open_trn(const char *fn,const char *mode)
 
 void close_trn(t_fileio *fio)
 {
-  gmx_fio_close(fio);
+    if(gmx_fio_close(fio) != 0)
+    {
+        gmx_file("Cannot close trajectory file; it might be corrupt, or maybe you are out of quota?");
+    }
 }

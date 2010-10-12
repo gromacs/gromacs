@@ -267,6 +267,10 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc, double cycles[], double cy
     {
         wcc[ewcDOMDEC].c -= wcc[ewcDDCOMMBOUND].c;
     }
+    if (wcc[ewcIO].n > 0)
+    {
+        wcc[ewcTRAJ].c -= wcc[ewcIO].c;
+    }
     if (cr->npmenodes == 0)
     {
         /* All nodes do PME (or no PME at all) */

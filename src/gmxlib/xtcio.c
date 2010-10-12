@@ -75,7 +75,10 @@ t_fileio *open_xtc(const char *fn,const char *mode, const t_commrec *cr)
 
 void close_xtc(t_fileio *fio)
 {
-	gmx_fio_close(fio);
+    if(gmx_fio_close(fio) != 0)
+    {
+        gmx_file("Cannot close xtc file; it might be corrupt, or maybe you are out of quota?");
+    }
 }
 
 static void check_xtc_magic(int magic)
@@ -205,10 +208,10 @@ int write_xtc(t_fileio *fio,
       {
           wallcycle_start(wcycle,ewcIO);
       }
-	  if(gmx_fio_flush(fio) !=0)
-	  {
-		  bOK = 0;
-	  }
+      if(gmx_fio_end_record(fio))
+      {
+          bOK = 0;
+      }
       if (wcycle != NULL)
       {
           wallcycle_stop(wcycle,ewcIO);

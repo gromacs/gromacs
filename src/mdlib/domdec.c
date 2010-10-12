@@ -5792,7 +5792,7 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
 
         if (dd->ci[comm->cartpmedim] < dd->nc[comm->cartpmedim])
         {
-            cr->duty |= DUTY_PP;
+            cr->duty = DUTY_PP;
         }
         if (cr->npmenodes == 0 ||
                 dd->ci[comm->cartpmedim] >= dd->nc[comm->cartpmedim])

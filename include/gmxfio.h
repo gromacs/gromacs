@@ -146,6 +146,9 @@ void gmx_fio_checktype(t_fileio *fio);
 void gmx_fio_rewind(t_fileio *fio);
 /* Rewind the tpa file in fio */
 
+int gmx_fio_end_record(t_fileio *fio);
+/* Flushes the fio, but doesn't guarantee that the file has written*/
+
 int gmx_fio_flush(t_fileio *fio);
 /* Flush the fio, returns 0 on success.
  * Has to be called collectively by all IO-nodes if this fio is using MPI.*/

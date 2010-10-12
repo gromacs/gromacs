@@ -979,13 +979,6 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
         }
     }
     
-    if(!bRead)
-    {
-        if( gmx_fio_flush(ef->fio) != 0)
-        {
-            gmx_file("Cannot write energy file; maybe you are out of quota?");
-        }
-    }
     
     if (!bOK)
     {
