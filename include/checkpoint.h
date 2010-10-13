@@ -55,7 +55,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
 			     FILE *fplog,t_commrec *cr,
 			     int eIntegrator,int simulation_part,
 			     gmx_large_int_t step,double t,
-			     t_state *state);
+			     t_state *state, gmx_wallcycle_t wcycle);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.

@@ -53,7 +53,7 @@ extern gmx_bool replica_exchange(FILE *fplog,
 			     gmx_repl_ex_t re,
 			     t_state *state,real *ener,
 			     t_state *state_local,
-			     int step,real time);
+			     int step,real time, gmx_wallcycle_t wcycle);
 /* Attempts replica exchange, should be called on all nodes.
  * Returns TRUE if this state has been exchanged.
  * When running each replica in parallel,

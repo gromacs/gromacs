@@ -76,7 +76,7 @@ typedef struct gmx_wallcycle
 
 /* Each name should not exceed 19 characters */
 static const char *wcn[ewcNR] =
-{ "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load", "DD comm. bounds", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Born radii", "Force", "Wait + Comm. F", "PME mesh", "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME solve", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "MPI IO", "Test" };
+{ "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load", "DD comm. bounds", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Born radii", "Force", "Wait + Comm. F", "PME mesh", "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME solve", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "MPI IO","SYNC", "Collecting", "Compressing", "Test" };
 
 gmx_bool wallcycle_have_counter(void)
 {
@@ -109,6 +109,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr)
             fprintf(fplog,"\nWill call MPI_Barrier before each cycle start/stop call\n\n");
         }
         wc->wc_barrier = TRUE;
+
         wc->mpi_comm_mygroup = cr->mpi_comm_mygroup;
     }
 #endif
@@ -270,6 +271,18 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc, double cycles[], double cy
     if (wcc[ewcIO].n > 0)
     {
         wcc[ewcTRAJ].c -= wcc[ewcIO].c;
+    }
+    if (wcc[ewcSYNC].n > 0)
+    {
+        wcc[ewcTRAJ].c -= wcc[ewcSYNC].c;
+    }
+    if (wcc[ewcCOLLECT].n > 0)
+    {
+        wcc[ewcTRAJ].c -= wcc[ewcCOLLECT].c;
+    }
+    if (wcc[ewcCOMPRESS].n > 0)
+    {
+        wcc[ewcTRAJ].c -= wcc[ewcCOMPRESS].c;
     }
     if (cr->npmenodes == 0)
     {

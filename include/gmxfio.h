@@ -149,7 +149,7 @@ void gmx_fio_rewind(t_fileio *fio);
 int gmx_fio_end_record(t_fileio *fio);
 /* Flushes the fio, but doesn't guarantee that the file has written*/
 
-int gmx_fio_flush(t_fileio *fio);
+int gmx_fio_flush(t_fileio *fio, gmx_wallcycle_t wcycle);
 /* Flush the fio, returns 0 on success.
  * Has to be called collectively by all IO-nodes if this fio is using MPI.*/
 
@@ -198,7 +198,7 @@ int gmx_fio_check_file_position(t_fileio *fio);
  */
 
 int gmx_fio_get_output_file_positions(gmx_file_position_t ** outputfiles,
-                                      int *nfiles );
+                                      int *nfiles, gmx_wallcycle_t wcycle);
 /* Return the name and file pointer positions for all currently open
  * output files. This is used for saving in the checkpoint files, so we
  * can truncate output files upon restart-with-appending.

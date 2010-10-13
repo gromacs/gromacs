@@ -52,6 +52,7 @@
 #include "string2.h"
 #include "gmxfio.h"
 #include "md5.h"
+#include "gmx_wallcycle.h"
 
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
@@ -152,7 +153,7 @@ int gmx_fio_int_end_record(t_fileio *fio)
  * Checkpoint is flushing thus it should not be required to flush anywhere else.cc
  * Flush is very expensive for MPI-IO.
  */
-static int gmx_fio_int_flush(t_fileio* fio)
+static int gmx_fio_int_flush(t_fileio* fio, gmx_wallcycle_t wcycle)
 {
     int rc = 0;
 
@@ -165,7 +166,16 @@ static int gmx_fio_int_flush(t_fileio* fio)
         rc = gmx_fio_int_end_record(fio);
         if (rc==0)
         {
+            if (wcycle != NULL)
+            {
+                wallcycle_start(wcycle, ewcSYNC);
+            }
             rc = MPI_File_sync(fio->mpi_fh) != MPI_SUCCESS;// <<< Time consuming
+            if (wcycle != NULL)
+            {
+                wallcycle_stop(wcycle, ewcSYNC);
+            }
+
         }
     }
     else
@@ -731,7 +741,7 @@ static int gmx_fio_int_fsync(t_fileio *fio)
 /* The fio_mutex should ALWAYS be locked when this function is called
  * Makes only for non-trajectory formats sure that the file has been written (flushes it)
  * Returns the position before the last frame for buffered writing */
-static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
+static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset, gmx_wallcycle_t wcycle)
 {
     char buf[STRLEN];
 
@@ -741,7 +751,7 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
 
     if (fio->iFTP != efCPT)
     {
-        if (gmx_fio_int_flush(fio))
+        if (gmx_fio_int_flush(fio, wcycle))
         {
             sprintf(
                 buf,
@@ -1100,7 +1110,7 @@ int gmx_fio_check_file_position(t_fileio *fio)
 }
 
 int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
-                                      int *p_nfiles)
+                                      int *p_nfiles, gmx_wallcycle_t wcycle)
 {
     int i, nfiles, rc, nalloc;
     int pos_hi, pos_lo;
@@ -1146,7 +1156,7 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             }
             else
             {
-                gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
+                gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset, wcycle);
 #ifndef GMX_FAHCORE
                 outputfiles[nfiles].chksum_size
                     = gmx_fio_int_get_file_md5(cur,
@@ -1258,11 +1268,11 @@ void gmx_fio_rewind(t_fileio* fio)
 }
 
 
-int gmx_fio_flush(t_fileio* fio)
+int gmx_fio_flush(t_fileio* fio, gmx_wallcycle_t wcycle)
 {
     int ret = 0;
     gmx_fio_lock(fio);
-    ret=gmx_fio_int_flush(fio);
+    ret=gmx_fio_int_flush(fio, wcycle);
     gmx_fio_unlock(fio);
     return ret;
 }

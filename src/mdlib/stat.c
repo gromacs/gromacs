@@ -610,7 +610,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
         if (mdof_flags & MDOF_CPT)
 
         {
-            dd_collect_state(cr->dd,state_local,state_global);
+            dd_collect_state(cr->dd,state_local,state_global,wcycle);
         }
         else
         {
@@ -618,17 +618,17 @@ void write_traj(FILE *fplog,t_commrec *cr,
             if ((mdof_flags & MDOF_X) || ((mdof_flags & MDOF_XTC) && !bBuffer))
             {
                 dd_collect_vec(cr->dd,state_local,state_local->x,
-                               state_global->x);
+                               state_global->x,wcycle);
             }
             if (mdof_flags & MDOF_V)
             {
                 dd_collect_vec(cr->dd,state_local,local_v,
-                               global_v);
+                               global_v,wcycle);
             }
         }
         if (mdof_flags & MDOF_F)
         {
-            dd_collect_vec(cr->dd,state_local,f_local,f_global);
+            dd_collect_vec(cr->dd,state_local,f_local,f_global,wcycle);
         }
         //Could be optimized by not collecting all coordinates but only those in the xtc selection.
         if ((mdof_flags & MDOF_XTC) && bBuffer)
@@ -668,7 +668,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
                     */
                     if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
                     {
-                        dd_collect_vec(write_buf->dd[i],write_buf->state_local[i],write_buf->state_local[i]->x,state_global->x);
+                        dd_collect_vec(write_buf->dd[i],write_buf->state_local[i],write_buf->state_local[i]->x,state_global->x,wcycle);
                     }
                 }
             }
@@ -744,7 +744,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		{
 		 write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
 						  fplog,cr,of->eIntegrator,
-						  of->simulation_part,step,t,state_global);
+						  of->simulation_part,step,t,state_global,wcycle);
 		}
 	 }
 
@@ -812,7 +812,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		{
 		 write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
 						  fplog,cr,of->eIntegrator,
-						  of->simulation_part,step,t,state_global);
+						  of->simulation_part,step,t,state_global,wcycle);
 		}
      }
 

@@ -116,10 +116,10 @@ int allocate_dd_buf(gmx_domdec_t ***dd_buf, t_commrec *cr);// Allocates dd and s
                                                            // The number of dds allocated is cr->nionodes
 
 void dd_collect_vec(gmx_domdec_t *dd,
-                           t_state *state_local,rvec *lv,rvec *v);
+                           t_state *state_local,rvec *lv,rvec *v,gmx_wallcycle_t wcycle);
 
 void dd_collect_state(gmx_domdec_t *dd,
-                             t_state *state_local,t_state *state);
+                             t_state *state_local,t_state *state, gmx_wallcycle_t wcycle);
 
 enum { ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclPME, ddCyclNr };
 

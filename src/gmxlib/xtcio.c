@@ -199,7 +199,15 @@ int write_xtc(t_fileio *fio,
 	  }
 
 	  /* write data */
+      if (wcycle != NULL)
+      {
+          wallcycle_start(wcycle,ewcCOMPRESS);
+      }
 	  bOK = xtc_coord(xd,&natoms,box,x,&prec,FALSE); /* bOK will be 1 if writing went well */
+      if (wcycle != NULL)
+      {
+          wallcycle_stop(wcycle,ewcCOMPRESS);
+      }
   }
 
   if(bOK)

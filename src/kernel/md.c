@@ -1792,7 +1792,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
                 if (DOMAINDECOMP(cr) && bMasterState)
                 {
-                    dd_collect_state(cr->dd,state,state_global);
+                    dd_collect_state(cr->dd,state,state_global,wcycle);
                 }
             }
 
@@ -2693,7 +2693,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             bExchanged = replica_exchange(fplog,cr,repl_ex,
                                           state_global,enerd->term,
-                                          state,step,t);
+                                          state,step,t,wcycle);
 
             if (bExchanged && DOMAINDECOMP(cr)) 
             {

@@ -1139,7 +1139,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
 void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
                       FILE *fplog,t_commrec *cr,
                       int eIntegrator,int simulation_part,
-                      gmx_large_int_t step,double t,t_state *state)
+                      gmx_large_int_t step,double t,t_state *state, gmx_wallcycle_t wcycle)
 {
     t_fileio *fp;
     int  file_version;
@@ -1196,7 +1196,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     }
     
     /* Get offsets for open files */
-    gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles);
+    gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles, wcycle);
 
     fp = gmx_fio_open(fntemp,"w");
 	

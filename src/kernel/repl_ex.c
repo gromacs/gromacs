@@ -628,7 +628,7 @@ static void write_debug_x(t_state *state)
 gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
                       t_state *state,real *ener,
                       t_state *state_local,
-                      int step,real time)
+                      int step,real time, gmx_wallcycle_t wcycle)
 {
     gmx_multisim_t *ms;
     int  exchange=-1,shift;
@@ -660,7 +660,7 @@ gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re
             /* Collect the global state on the master node */
             if (DOMAINDECOMP(cr))
             {
-                dd_collect_state(cr->dd,state_local,state);
+                dd_collect_state(cr->dd,state_local,state,wcycle);
             }
             else
             {
