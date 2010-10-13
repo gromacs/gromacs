@@ -45,6 +45,9 @@ set tmppath = ""
 foreach i ( `echo $MANPATH | sed "s/:/ /g"` )
   if ( "$i" != "$GMXMAN" ) set tmppath = "${tmppath}:$i"
 end
+if ("$tmppath" == "") then
+    set tmppath = ":"
+endif
 setenv MANPATH $tmppath
 
 ##########################################################
