@@ -1079,10 +1079,13 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
     if (left->mempool)
     {
         _gmx_selvalue_setstore(&left->v, sel->v.u.ptr);
-        rc = _gmx_selelem_mempool_reserve(right, g->isize);
-        if (rc != 0)
+        if (right)
         {
-            return rc;
+            rc = _gmx_selelem_mempool_reserve(right, g->isize);
+            if (rc != 0)
+            {
+                return rc;
+            }
         }
     }
     else if (right && right->mempool)
@@ -1123,7 +1126,10 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
     if (left->mempool)
     {
         _gmx_selvalue_setstore(&left->v, NULL);
-        _gmx_selelem_mempool_release(right);
+        if (right)
+        {
+            _gmx_selelem_mempool_release(right);
+        }
     }
     else if (right && right->mempool)
     {
