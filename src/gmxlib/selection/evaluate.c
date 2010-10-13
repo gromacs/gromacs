@@ -1085,7 +1085,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
             return rc;
         }
     }
-    else if (right->mempool)
+    else if (right && right->mempool)
     {
         _gmx_selvalue_setstore(&right->v, sel->v.u.ptr);
     }
@@ -1125,7 +1125,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
         _gmx_selvalue_setstore(&left->v, NULL);
         _gmx_selelem_mempool_release(right);
     }
-    else if (right->mempool)
+    else if (right && right->mempool)
     {
         _gmx_selvalue_setstore(&right->v, NULL);
     }
