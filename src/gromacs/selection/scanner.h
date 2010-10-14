@@ -51,7 +51,7 @@ typedef void *yyscan_t;
 /** Initializes the selection scanner. */
 int
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    gmx_bool bInteractive, int maxnr,
+                    bool bInteractive, int maxnr, bool bGroups,
                     struct gmx_ana_indexgrps_t *grps);
 /** Frees memory allocated for the selection scanner. */
 void
@@ -63,6 +63,9 @@ _gmx_sel_is_lexer_interactive(yyscan_t scanner);
 /** Returns the selection collection for the scanner. */
 struct gmx_ana_selcollection_t *
 _gmx_sel_lexer_selcollection(yyscan_t scanner);
+/** Returns true if the external index groups for the scanner are set. */
+bool
+_gmx_sel_lexer_has_groups_set(yyscan_t scanner);
 /** Returns the external index groups for the scanner. */
 struct gmx_ana_indexgrps_t *
 _gmx_sel_lexer_indexgrps(yyscan_t scanner);

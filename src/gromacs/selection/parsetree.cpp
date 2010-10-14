@@ -380,6 +380,7 @@ _gmx_selelem_update_flags(t_selelem *sel)
     switch (sel->type)
     {
         case SEL_CONST:
+        case SEL_GROUPREF:
             sel->flags |= SEL_SINGLEVAL;
             bUseChildType = FALSE;
             break;
@@ -936,6 +937,15 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
     gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
     t_selelem *sel;
 
+    if (!_gmx_sel_lexer_has_groups_set(scanner))
+    {
+        sel = _gmx_selelem_create(SEL_GROUPREF);
+        _gmx_selelem_set_vtype(sel, GROUP_VALUE);
+        sel->u.gref.name = strdup(name);
+        sel->u.gref.id = -1;
+        sel->name = name;
+        return sel;
+    }
     if (!grps)
     {
         return NULL;
@@ -964,6 +974,14 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
     gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
     t_selelem *sel;
 
+    if (!_gmx_sel_lexer_has_groups_set(scanner))
+    {
+        sel = _gmx_selelem_create(SEL_GROUPREF);
+        _gmx_selelem_set_vtype(sel, GROUP_VALUE);
+        sel->u.gref.name = NULL;
+        sel->u.gref.id = id;
+        return sel;
+    }
     if (!grps)
     {
         return NULL;

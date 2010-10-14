@@ -168,6 +168,56 @@ void SelectionCollection::Impl::requestSelections(
 }
 
 
+int SelectionCollection::Impl::resolveExternalGroups(t_selelem *root)
+{
+    int rc = 0;
+
+    if (root->type == SEL_GROUPREF)
+    {
+        if (root->u.gref.name != NULL)
+        {
+            char *name = root->u.gref.name;
+            if (!gmx_ana_indexgrps_find(&root->u.cgrp, _grps, name))
+            {
+                // TODO: Improve error messages
+                GMX_ERROR_NORET(eeInvalidInput,
+                                "Unknown group referenced in a selection");
+                rc = eeInvalidInput;
+            }
+            else
+            {
+                sfree(name);
+            }
+        }
+        else
+        {
+            if (!gmx_ana_indexgrps_extract(&root->u.cgrp, _grps,
+                                           root->u.gref.id))
+            {
+                // TODO: Improve error messages
+                GMX_ERROR_NORET(eeInvalidInput,
+                                "Unknown group referenced in a selection");
+                rc = eeInvalidInput;
+            }
+        }
+        if (rc == 0)
+        {
+            root->type = SEL_CONST;
+            root->name = root->u.cgrp.name;
+        }
+    }
+
+    t_selelem *child = root->child;
+    while (child != NULL)
+    {
+        int rc1 = resolveExternalGroups(child);
+        rc = (rc == 0 ? rc1 : rc);
+        child = child->next;
+    }
+    return rc;
+}
+
+
 /********************************************************************
  * SelectionCollection
  */
@@ -310,7 +360,16 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
     assert(grps == NULL || !_impl->hasFlag(Impl::efExternalGroupsSet));
     _impl->_grps = grps;
     _impl->_flags.set(Impl::efExternalGroupsSet);
-    return 0;
+
+    int rc = 0;
+    t_selelem *root = _impl->_sc.root;
+    while (root != NULL)
+    {
+        int rc1 = _impl->resolveExternalGroups(root);
+        rc = (rc == 0 ? rc1 : rc);
+        root = root->next;
+    }
+    return rc;
 }
 
 
@@ -463,7 +522,9 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive,
     yyscan_t scanner;
     int      rc;
 
-    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, bInteractive, nr, _impl->_grps);
+    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, bInteractive, nr,
+                             _impl->hasFlag(Impl::efExternalGroupsSet),
+                             _impl->_grps);
     if (rc != 0)
     {
         return rc;
@@ -483,7 +544,9 @@ SelectionCollection::parseFromFile(const std::string &filename,
     FILE *fp;
     int   rc;
 
-    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, FALSE, -1, _impl->_grps);
+    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, false, -1,
+                             _impl->hasFlag(Impl::efExternalGroupsSet),
+                             _impl->_grps);
     if (rc != 0)
     {
         return rc;
@@ -504,7 +567,9 @@ SelectionCollection::parseFromString(const std::string &str,
     yyscan_t scanner;
     int      rc;
 
-    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, FALSE, -1, _impl->_grps);
+    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, false, -1,
+                             _impl->hasFlag(Impl::efExternalGroupsSet),
+                             _impl->_grps);
     if (rc != 0)
     {
         return rc;

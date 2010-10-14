@@ -153,6 +153,7 @@ class SelectionCollection::Impl
         void requestSelections(const std::string &name,
                                const std::string &descr,
                                int count, SelectionOptionStorage *storage);
+        int resolveExternalGroups(struct t_selelem *root);
 
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t _sc;

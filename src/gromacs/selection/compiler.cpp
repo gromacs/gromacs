@@ -1148,6 +1148,10 @@ init_item_evalfunc(t_selelem *sel)
                              ? &_gmx_sel_evaluate_subexprref_simple
                              : &_gmx_sel_evaluate_subexprref);
             break;
+
+        case SEL_GROUPREF:
+            gmx_incons("unresolved group reference in compilation");
+            return FALSE;
     }
 
     return TRUE;
@@ -2286,6 +2290,10 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                 }
             }
             break;
+
+        case SEL_GROUPREF:
+            gmx_incons("unresolved group reference in compilation");
+            return -1;
     }
     /* Exit if there was some problem */
     if (rc != 0)

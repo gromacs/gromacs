@@ -80,6 +80,8 @@ typedef enum
     SEL_SUBEXPR,
     /** Reference to a subexpression. */
     SEL_SUBEXPRREF,
+    /** Unresolved reference to an external group. */
+    SEL_GROUPREF,
     /** Post-processing of selection value. */
     SEL_MODIFIER
 } e_selelem_t;
@@ -292,6 +294,13 @@ typedef struct t_selelem
         }                               arith;
         /** Associated selection parameter for \ref SEL_SUBEXPRREF elements. */
         struct gmx_ana_selparam_t      *param;
+        /** The string/number used to reference the group. */
+        struct {
+            /** Name of the referenced external group. */
+            char                       *name;
+            /** If \a name is NULL, the index number of the referenced group. */
+            int                         id;
+        }                               gref;
     }                                   u;
     /** Memory pool to use for values, or NULL if standard memory handling. */
     struct gmx_sel_mempool_t           *mempool;

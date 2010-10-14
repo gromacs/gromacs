@@ -65,6 +65,8 @@ typedef struct gmx_sel_lexer_t
 {
     //! Selection collection to put parsed selections in.
     struct gmx_ana_selcollection_t  *sc;
+    //! Whether external index groups have been set.
+    bool                             bGroups;
     //! External index groups for resolving \c group keywords.
     struct gmx_ana_indexgrps_t      *grps;
     //! Number of selections at which the parser should stop.
