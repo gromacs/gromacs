@@ -123,6 +123,15 @@ gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm);
 gmx_bool 
 gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm);
 
+int
+gmx_residuetype_get_size(gmx_residuetype_t rt);
+
+int
+gmx_residuetype_get_index(gmx_residuetype_t rt, const char *resnm);
+
+const char *
+gmx_residuetype_get_name(gmx_residuetype_t rt, int index);
+
 
 
 

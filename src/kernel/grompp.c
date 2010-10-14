@@ -183,6 +183,148 @@ static void check_cg_sizes(const char *topfn,t_block *cgs,warninp_t wi)
     }
 }
 
+static void check_bonds_timestep(gmx_mtop_t *mtop,double dt,warninp_t wi)
+{
+    /* This check is not intended to ensure accurate integration,
+     * rather it is to signal mistakes in the mdp settings.
+     * A common mistake is to forget to turn on constraints
+     * for MD after energy minimization with flexible bonds.
+     * This check can also detect too large time steps for flexible water
+     * models, but such errors will often be masked by the constraints
+     * mdp options, which turns flexible water into water with bond constraints,
+     * but without an angle constraint. Unfortunately such incorrect use
+     * of water models can not easily be detected without checking
+     * for specific model names.
+     *
+     * The stability limit of leap-frog or velocity verlet is 4.44 steps
+     * per oscillational period.
+     * But accurate bonds distributions are lost far before that limit.
+     * To allow relatively common schemes (although not common with Gromacs)
+     * of dt=1 fs without constraints and dt=2 fs with only H-bond constraints
+     * we set the note limit to 10.
+     */
+    int       min_steps_warn=5;
+    int       min_steps_note=10;
+    t_iparams *ip;
+    int       molt;
+    gmx_moltype_t *moltype,*w_moltype;
+    t_atom    *atom;
+    t_ilist   *ilist,*ilb,*ilc,*ils;
+    int       ftype;
+    int       i,a1,a2,w_a1,w_a2,j;
+    real      twopi2,limit2,fc,re,m1,m2,period2,w_period2;
+    gmx_bool  bFound,bWater,bWarn;
+    char      warn_buf[STRLEN];
+
+    ip = mtop->ffparams.iparams;
+
+    twopi2 = sqr(2*M_PI);
+
+    limit2 = sqr(min_steps_note*dt);
+
+    w_a1 = w_a2 = -1;
+    w_period2 = -1.0;
+    
+    w_moltype = NULL;
+    for(molt=0; molt<mtop->nmoltype; molt++)
+    {
+        moltype = &mtop->moltype[molt];
+        atom  = moltype->atoms.atom;
+        ilist = moltype->ilist;
+        ilc = &ilist[F_CONSTR];
+        ils = &ilist[F_SETTLE];
+        for(ftype=0; ftype<F_NRE; ftype++)
+        {
+            if (!(ftype == F_BONDS || ftype == F_G96BONDS || ftype == F_HARMONIC))
+            {
+                continue;
+            }
+            
+            ilb = &ilist[ftype];
+            for(i=0; i<ilb->nr; i+=3)
+            {
+                fc = ip[ilb->iatoms[i]].harmonic.krA;
+                re = ip[ilb->iatoms[i]].harmonic.rA;
+                if (ftype == F_G96BONDS)
+                {
+                    /* Convert squared sqaure fc to harmonic fc */
+                    fc = 2*fc*re;
+                }
+                a1 = ilb->iatoms[i+1];
+                a2 = ilb->iatoms[i+2];
+                m1 = atom[a1].m;
+                m2 = atom[a2].m;
+                if (fc > 0 && m1 > 0 && m2 > 0)
+                {
+                    period2 = twopi2*m1*m2/((m1 + m2)*fc);
+                }
+                else
+                {
+                    period2 = GMX_FLOAT_MAX;
+                }
+                if (debug)
+                {
+                    fprintf(debug,"fc %g m1 %g m2 %g period %g\n",
+                            fc,m1,m2,sqrt(period2));
+                }
+                if (period2 < limit2)
+                {
+                    bFound = FALSE;
+                    for(j=0; j<ilc->nr; j+=3)
+                    {
+                        if ((ilc->iatoms[j+1] == a1 && ilc->iatoms[j+2] == a2) ||
+                            (ilc->iatoms[j+1] == a2 && ilc->iatoms[j+2] == a1))
+                            {
+                                bFound = TRUE;
+                            }
+                        }
+                    for(j=0; j<ils->nr; j+=2)
+                    {
+                        if ((a1 >= ils->iatoms[j+1] && a1 < ils->iatoms[j+1]+3) &&
+                            (a2 >= ils->iatoms[j+1] && a2 < ils->iatoms[j+1]+3))
+                        {
+                            bFound = TRUE;
+                        }
+                    }
+                    if (!bFound &&
+                        (w_moltype == NULL || period2 < w_period2))
+                    {
+                        w_moltype = moltype;
+                        w_a1      = a1;
+                        w_a2      = a2;
+                        w_period2 = period2;
+                    }
+                }
+            }
+        }
+    }
+    
+    if (w_moltype != NULL)
+    {
+        bWarn = (w_period2 < sqr(min_steps_warn*dt));
+        /* A check that would recognize most water models */
+        bWater = ((*w_moltype->atoms.atomname[0])[0] == 'O' &&
+                  w_moltype->atoms.nr <= 5);
+        sprintf(warn_buf,"The bond in molecule-type %s between atoms %d %s and %d %s has an estimated oscillational period of %.1e ps, which is less than %d times the time step of %.1e ps.\n"
+                "%s",
+                *w_moltype->name,
+                w_a1+1,*w_moltype->atoms.atomname[w_a1],
+                w_a2+1,*w_moltype->atoms.atomname[w_a2],
+                sqrt(w_period2),bWarn ? min_steps_warn : min_steps_note,dt,
+                bWater ?
+                "Maybe you asked for fexible water." :
+                "Maybe you forgot to change the constraints mdp option.");
+        if (bWarn)
+        {
+            warning(wi,warn_buf);
+        }
+        else
+        {
+            warning_note(wi,warn_buf);
+        }
+    }
+}
+
 static void check_vel(gmx_mtop_t *mtop,rvec v[])
 {
   gmx_mtop_atomloop_all_t aloop;
@@ -1056,7 +1198,7 @@ int main (int argc, char *argv[])
   char         warn_buf[STRLEN];
 
   t_filenm fnm[] = {
-    { efMDP, NULL,  NULL,        ffOPTRD },
+    { efMDP, NULL,  NULL,        ffREAD  },
     { efMDP, "-po", "mdout",     ffWRITE },
     { efSTX, "-c",  NULL,        ffREAD  },
     { efSTX, "-r",  NULL,        ffOPTRD },
@@ -1272,6 +1414,11 @@ int main (int argc, char *argv[])
   
   for(i=0; i<sys->nmoltype; i++) {
       check_cg_sizes(ftp2fn(efTOP,NFILE,fnm),&sys->moltype[i].cgs,wi);
+  }
+
+  if (EI_DYNAMICS(ir->eI) && ir->eI != eiBD)
+  {
+      check_bonds_timestep(sys,ir->delta_t,wi);
   }
 
   check_warning_error(wi,FARGS);

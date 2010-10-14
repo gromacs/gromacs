@@ -86,7 +86,7 @@ option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
 set(GMX_ACCELERATION "auto" 
-    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec")
+    CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
@@ -113,6 +113,10 @@ option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
 
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
+
+########################################################################
+# Set up binary and library suffixing 
+########################################################################
 set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
 set(GMX_LIBS_SUFFIX "" 
   CACHE STRING "Suffix for GROMACS libs (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
@@ -127,6 +131,10 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
     set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
   endif(GMX_DOUBLE)
+  if (GMX_OPENMM)
+    set (GMX_BINARY_SUFFIX "-gpu")
+    set (GMX_LIBS_SUFFIX "_gpu")
+  endif(GMX_OPENMM)
   mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
   message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")    
   message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"") 
@@ -138,7 +146,7 @@ endif(GMX_DEFAULT_SUFFIX)
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
 endif(GMX_DOUBLE)
 if(GMX_SOFTWARE_INVSQRT)
   set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
@@ -190,30 +198,36 @@ endif(GMX_MPI)
 if(GMX_OPENMM)
     cmake_minimum_required(VERSION 2.6.4)
     # we'll use the built-in fft to avoid unnecessary dependencies
-    message(STATUS "No external FFT libraries needed for the OpenMM build, using fftpack!")
-    set (GMX_FFT_LIBRARY "fftpack" CACHE STRING 
-		"No external FFT libraries needed for the OpenMM build, using fftpack!" FORCE)
+    string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
+    if(NOT ${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
+        message(STATUS "No external FFT libraries needed for the OpenMM build, switching to fftpack!")
+        set(GMX_FFT_LIBRARY "fftpack" CACHE STRING 
+		"No external FFT libraries needed for the OpenMM build, switching to  fftpack!" FORCE)
+    endif()
     if(GMX_MPI)
         message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
     endif(GMX_MPI)
     if(GMX_THREADS)
-        message(STATUS "Threads not compatible with OpenMM build, disabled!")
+        message(STATUS "Threads are  not compatible with OpenMM build, disabled!")
         set(GMX_THREADS OFF CACHE BOOL 
-		"Threads not compatible with OpenMM build, disabled!" FORCE)
+		"Threads are not compatible with OpenMM build, disabled!" FORCE)
     endif(GMX_THREADS)
     if(GMX_SOFTWARE_INVSQRT)
-        set(GMX_SOFTWARE_INVSQRT OFF FORCE)
+        set(GMX_SOFTWARE_INVSQRT OFF CACHE STRING 
+                "The OpenMM build does not need GROMACS software 1/sqrt!" FORCE)
     endif(GMX_SOFTWARE_INVSQRT)
-    if(NOT GMX_ACCELERATION MATCHES "^(none|None|NONE)")
-        message(WARNING "CPU-based acceleration turned off, OpenMM does not support/need any!")	
-	unset(GMX_ACCELERATION CACHE)
+    string(TOUPPER ${GMX_ACCELERATION} GMX_ACCELERATION)
+    if(NOT GMX_ACCELERATION STREQUAL "NONE")
+        message(STATUS "Switching off CPU-based acceleration, the OpenMM build does not support/need any!")	
         set(GMX_ACCELERATION "none" CACHE STRING 
-		"CPU-based acceleration turned off, OpenMM does not support/need any!" FORCE)
+		"Switching off CPU-based acceleration, the OpenMM build does not support/need any!" FORCE)
     endif()
     if(GMX_FAHCORE)
         message(FATAL_ERROR "The OpenMM build does not support FAH build!")
     endif(GMX_FAHCORE)
-    set(GMX_DOUBLE OFF FORCE )
+    if(GMX_DOUBLE)
+        message(FATAL_ERROR  "The OpenMM-build does not support double precision calculations!")
+    endif()
     # mark as advanced the unused variables
     mark_as_advanced(FORCE GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
         GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)
@@ -443,7 +457,7 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)")
 
-    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+    set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
     
     if (GMX_64_BIT)
       set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
@@ -453,7 +467,7 @@ if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
     # Determine the assembler/compiler to use
   else()
-    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec" FORCE)
+    set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
   endif()
 endif (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
@@ -464,27 +478,6 @@ if(NOT GMX_SYSTEM_XDR)
     set(GMX_INTERNAL_XDR 1)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_INTERNAL_XDR")
 endif(NOT GMX_SYSTEM_XDR)
-
-if(GMX_FORTRAN OR GMX_POWER6)
-    enable_language(Fortran)
-    include(FortranCInterface)
-    discover_fortran_mangling(prefix isupper suffix extra_under_score found)
-    if(extra_under_score)
-        set(extrasuffix "_")
-    endif(extra_under_score)
-
-    if(isupper)
-        set(F77_FUNCDEF   "${prefix} ## NAME ## ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} ## NAME ## ${suffix}${extrasuffix}")
-    else(isupper)
-        set(F77_FUNCDEF   "${prefix} ## name ## ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} ## name ## ${suffix}${extrasuffix}")
-    endif(isupper)
-else(GMX_FORTRAN OR GMX_POWER6)
-        set(F77_FUNCDEF   "name ## _")
-        set(F77_FUNCDEF_  "name ## _")
-endif(GMX_FORTRAN OR GMX_POWER6)
-
 
 # Process nonbonded accelerated kernels settings
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
@@ -515,11 +508,11 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
       if(GMX_DOUBLE)
         set(GMX_IA32_SSE2 1)
       else()
-	set(GMX_IA32_SSE 1)
+       set(GMX_IA32_SSE 1)
       endif()
     elseif(GMX_X86_64_ASM)
       if(GMX_DOUBLE)
-	set(GMX_X86_64_SSE2 1)
+       set(GMX_X86_64_SSE2 1)
       else()
         set(GMX_X86_64_SSE 1)
       endif()
@@ -534,6 +527,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
 
 elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
     set(GMX_FORTRAN 1)
+    #these are switch on by default sometimes
+    set(GMX_IA32_ASM 0)
+    set(GMX_GMX_X86_64_ASM 0)
 elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_BLUEGENE 1)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
@@ -551,11 +547,31 @@ else(${GMX_ACCELERATION} STREQUAL "NONE")
     MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of auto, none, SSE, Fortran, BlueGene, Power6, ia64, altivec")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
+if(GMX_FORTRAN OR GMX_POWER6)
+    if (GMX_THREADS)
+        message(FATAL_ERROR "FORTRAN/POWER6 is incompatible with threads and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
+    endif(GMX_THREADS)
+    enable_language(Fortran)
+    include(FortranCInterface)
+    discover_fortran_mangling(prefix isupper suffix extra_under_score found)
+    if(extra_under_score)
+        set(extrasuffix "_")
+    endif(extra_under_score)
+    if(prefix)
+      set(prefix "${prefix} ##")
+    endif(prefix)
 
-
-
-
-
+    if(isupper)
+        set(F77_FUNCDEF   "${prefix} NAME ## ${suffix}")
+        set(F77_FUNCDEF_  "${prefix} NAME ## ${suffix}${extrasuffix}")
+    else(isupper)
+        set(F77_FUNCDEF   "${prefix} name ## ${suffix}")
+        set(F77_FUNCDEF_  "${prefix} name ## ${suffix}${extrasuffix}")
+    endif(isupper)
+else(GMX_FORTRAN OR GMX_POWER6)
+        set(F77_FUNCDEF   "name ## _")
+        set(F77_FUNCDEF_  "name ## _")
+endif(GMX_FORTRAN OR GMX_POWER6)
 
 # Process QM/MM Settings
 string(TOUPPER ${GMX_QMMM_PROGRAM} ${GMX_QMMM_PROGRAM})
@@ -682,7 +698,11 @@ endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
+if ( DEFINED LIB )
+    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${LIB}")
+else()
+    set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
+endif()
 set(BIN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/bin)
 set(DATA_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/share/gromacs)
 set(MAN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/share/man)

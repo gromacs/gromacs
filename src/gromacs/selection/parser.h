@@ -70,7 +70,8 @@
      OR = 286,
      AND = 287,
      NOT = 288,
-     UNARY_NEG = 289
+     UNARY_NEG = 289,
+     NUM_REDUCT = 290
    };
 #endif
 /* Tokens.  */
@@ -106,6 +107,7 @@
 #define AND 287
 #define NOT 288
 #define UNARY_NEG 289
+#define NUM_REDUCT 290
 
 
 
@@ -125,7 +127,7 @@ typedef union YYSTYPE
     struct t_selexpr_param     *param;
 }
 /* Line 1489 of yacc.c.  */
-#line 129 "parser.h"
+#line 131 "parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

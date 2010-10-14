@@ -772,7 +772,7 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 
 void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
 {
-    const t_atoms *atoms;
+    const t_atoms *atoms,*atoms_tpi;
     const t_blocka *excl;
     int    mb,nmol,nmolc,i,j,tpi,tpj,j1,j2,k,n,nexcl,q;
 #if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
@@ -882,15 +882,9 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
             /* Only correct for the interaction of the test particle
              * with the rest of the system.
              */
-            atoms = &mtop->moltype[mtop->molblock[mtop->nmolblock-1].type].atoms;
-            if (q == 0)
-            {
-                tpi = atoms->atom[atoms->nr-1].type;
-            }
-            else
-            {
-                tpi = atoms->atom[atoms->nr-1].typeB;
-            }
+            atoms_tpi =
+                &mtop->moltype[mtop->molblock[mtop->nmolblock-1].type].atoms;
+
             npair = 0;
             for(mb=0; mb<mtop->nmolblock; mb++) {
                 nmol  = mtop->molblock[mb].nmol;
@@ -900,9 +894,14 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
                     /* Remove the interaction of the test charge group
                      * with itself.
                      */
-                    if (mb == mtop->nmolblock-1 && j >= atoms->nr - fr->n_tpi)
+                    if (mb == mtop->nmolblock-1)
                     {
                         nmolc--;
+                        
+                        if (mb == 0 && nmol == 1)
+                        {
+                            gmx_fatal(FARGS,"Old format tpr with TPI, please generate a new tpr file");
+                        }
                     }
                     if (q == 0)
                     {
@@ -912,16 +911,27 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
                     {
                         tpj = atoms->atom[j].typeB;
                     }
-                    if (bBHAM)
+                    for(i=0; i<fr->n_tpi; i++)
                     {
-                        csix    += nmolc*BHAMC(nbfp,ntp,tpi,tpj);
+                        if (q == 0)
+                        {
+                            tpi = atoms_tpi->atom[i].type;
+                        }
+                        else
+                        {
+                            tpi = atoms_tpi->atom[i].typeB;
+                        }
+                        if (bBHAM)
+                        {
+                            csix    += nmolc*BHAMC(nbfp,ntp,tpi,tpj);
+                        }
+                        else
+                        {
+                            csix    += nmolc*C6 (nbfp,ntp,tpi,tpj);
+                            ctwelve += nmolc*C12(nbfp,ntp,tpi,tpj);
+                        }
+                        npair += nmolc;
                     }
-                    else
-                    {
-                        csix    += nmolc*C6 (nbfp,ntp,tpi,tpj);
-                        ctwelve += nmolc*C12(nbfp,ntp,tpi,tpj);
-                    }
-                    npair += nmolc;
                 }
             }
         }

@@ -1843,9 +1843,10 @@ void do_index(const char* mdparin, const char *ndx,
       for(i=0; (i<nr); i++)
       {
           ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
-          if (ir->eI == eiBD && ir->opts.tau_t[i] <= 0)
+          if ((ir->eI == eiBD || ir->eI == eiSD2) && ir->opts.tau_t[i] <= 0)
           {
-              warning_error(wi,"With Brownian Dynamics tau_t should be larger than 0");
+              sprintf(warn_buf,"With integrator %s tau_t should be larger than 0",ei_names[ir->eI]);
+              warning_error(wi,warn_buf);
           }
           if ((ir->etc == etcVRESCALE && ir->opts.tau_t[i] >= 0) || 
               (ir->etc != etcVRESCALE && ir->opts.tau_t[i] >  0))
@@ -2517,11 +2518,10 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop,const t_inputrec *ir,
              * not be zero at the cut-off.
              */
             if (EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) &&
-                rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
+                rvdw1 + rvdw2 > ir->rlist - ir->rvdw)
             {
-                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than %s (%f) - rvdw (%f)\n",
+                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than rlist (%f) - rvdw (%f)\n",
                         rvdw1+rvdw2,
-                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
                         ir->rlist,ir->rvdw);
                 if (ir_NVE(ir))
                 {
