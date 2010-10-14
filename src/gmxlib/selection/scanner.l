@@ -58,7 +58,7 @@ INTEGER    [[:digit:]]+
 DSEQ       ([[:digit:]]+)
 FRAC       (([[:digit:]]*"."{DSEQ})|{DSEQ}".")
 EXP        ([eE][+-]?{DSEQ})
-REAL       ("-"?(({FRAC}{EXP}?)|({DSEQ}{EXP})))
+REAL       (({FRAC}{EXP}?)|({DSEQ}{EXP}))
 STRING     (\"([^\"\\\n]|(\\\"))*\")
 IDENTIFIER ([[:alpha:]][_[:alnum:]]*)
 CMPOP      (([<>]=?)|([!=]=))

@@ -1770,6 +1770,16 @@ init_method(t_selelem *sel, t_topology *top, int isize)
                 }
             }
         }
+        /* Clear the values for dynamic output to avoid valgrind warnings. */
+        if ((sel->flags & SEL_DYNAMIC) && sel->v.type == REAL_VALUE)
+        {
+            int i;
+
+            for (i = 0; i < sel->v.nr; ++i)
+            {
+                sel->v.u.r[i] = 0.0;
+            }
+        }
     }
 
     return 0;
