@@ -81,7 +81,7 @@ namespace gmx
 
 SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
     : _options("selection", "Common selection control"),
-      _debugLevel(0), _flags(0), _grps(NULL)
+      _debugLevel(0), _grps(NULL)
 {
     _sc.root      = NULL;
     _sc.nvars     = 0;
@@ -117,20 +117,6 @@ SelectionCollection::Impl::~Impl()
         gmx_ana_poscalc_coll_free(_sc.pcc);
     }
     clearSymbolTable();
-}
-
-
-void
-SelectionCollection::Impl::setFlag(Flag flag, bool bSet)
-{
-    if (bSet)
-    {
-        _flags |= flag;
-    }
-    else
-    {
-        _flags &= ~flag;
-    }
 }
 
 
@@ -208,7 +194,7 @@ SelectionCollection::init()
         {
             return rc;
         }
-        _impl->setFlag(Impl::efOwnPositionCollection, true);
+        _impl->_flags.set(Impl::efOwnPositionCollection);
     }
     _gmx_sel_symtab_create(&_impl->_sc.symtab);
     gmx_ana_selmethod_register_defaults(_impl->_sc.symtab);
@@ -314,6 +300,16 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
         natoms = sc->top->atoms.nr;
     }
     gmx_ana_index_init_simple(&sc->gall, natoms, NULL);
+    return 0;
+}
+
+
+int
+SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
+{
+    assert(grps == NULL || !_impl->hasFlag(Impl::efExternalGroupsSet));
+    _impl->_grps = grps;
+    _impl->_flags.set(Impl::efExternalGroupsSet);
     return 0;
 }
 
@@ -521,6 +517,14 @@ SelectionCollection::parseFromString(const std::string &str,
 int
 SelectionCollection::compile()
 {
+    if (!_impl->hasFlag(Impl::efExternalGroupsSet))
+    {
+        int rc = setIndexGroups(NULL);
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
     if (_impl->_debugLevel >= 1)
     {
         printTree(stderr, false);

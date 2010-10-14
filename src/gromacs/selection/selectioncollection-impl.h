@@ -47,6 +47,7 @@
 #include <typedefs.h>
 
 #include "../options/options.h"
+#include "../utility/flags.h"
 #include "indexutil.h"
 #include "selectioncollection.h"
 
@@ -114,20 +115,21 @@ class SelectionCollection::Impl
         //! Shorthand for a list of selection requests.
         typedef std::vector<SelectionRequest> RequestList;
 
-        //! Possibel flags for the selection collection.
+        //! Possible flags for the selection collection.
         enum Flag
         {
-            efOwnPositionCollection = 1<<0
+            efOwnPositionCollection = 1<<0,
+            efExternalGroupsSet     = 1<<1
         };
+        //! Holds a collection of Flag values.
+        typedef FlagsTemplate<Flag> Flags;
 
         //! Creates a new selection collection.
         explicit Impl(gmx_ana_poscalc_coll_t *pcc);
         ~Impl();
 
         //! Returns true if the given flag has been set.
-        bool hasFlag(Flag flag) const { return _flags & flag; }
-        //! Sets or clears the given flag.
-        void setFlag(Flag flat, bool bSet);
+        bool hasFlag(Flag flag) const { return _flags.test(flag); }
         //! Clears the symbol table of the selection collection.
         void clearSymbolTable();
         //! Registers the default selection methods for the collection.
@@ -172,7 +174,7 @@ class SelectionCollection::Impl
          */
         int                     _debugLevel;
         //! Flags for various properties of the collection.
-        unsigned long           _flags;
+        Flags                   _flags;
         //! External index groups (can be NULL).
         gmx_ana_indexgrps_t    *_grps;
         //! List of selections requested for later parsing.

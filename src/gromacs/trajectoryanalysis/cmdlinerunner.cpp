@@ -175,9 +175,16 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         return rc;
     }
 
+    rc = common->initIndexGroups(selections);
+    if (rc != 0)
+    {
+        return rc;
+    }
+
     // TODO: Check whether the input is a pipe.
     bool bInteractive = true;
     rc = selections->parseRequestedFromStdin(bInteractive, &errors);
+    common->doneIndexGroups(selections);
     return rc;
 }
 

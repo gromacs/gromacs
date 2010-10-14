@@ -186,8 +186,10 @@ class SelectionCollection
         int setTopology(t_topology *top, int natoms);
         /*! \brief
          * Sets the external index groups to use for the selections.
+         *
+         * Can be called only once with non-NULL \p grps.
          */
-        void setIndexGroups(gmx_ana_indexgrps_t *grps);
+        int setIndexGroups(gmx_ana_indexgrps_t *grps);
         /*! \brief
          * Parses selection(s) from standard input for options not yet
          * provided.

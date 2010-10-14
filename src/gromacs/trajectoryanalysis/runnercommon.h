@@ -62,6 +62,8 @@ class TrajectoryAnalysisRunnerCommon
 
         Options *initOptions();
         int initOptionsDone();
+        int initIndexGroups(SelectionCollection *selections);
+        void doneIndexGroups(SelectionCollection *selections);
         int initTopology(SelectionCollection *selections);
         int initFirstFrame();
         bool readNextFrame();

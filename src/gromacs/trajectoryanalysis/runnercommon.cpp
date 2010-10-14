@@ -50,6 +50,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
@@ -84,6 +85,7 @@ class TrajectoryAnalysisRunnerCommon::Impl
         double                  _endTime;
         double                  _deltaTime;
 
+        gmx_ana_indexgrps_t    *_grps;
         bool                    _bTrajOpen;
         //! The current frame, or \p NULL if no frame loaded yet.
         t_trxframe          *fr;
@@ -98,6 +100,7 @@ TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
     : _settings(*settings), _options("common", "Common analysis control"),
       _bHelp(false), _bShowHidden(false), _bQuiet(false),
       _startTime(0.0), _endTime(0.0), _deltaTime(0.0),
+      _grps(NULL),
       _bTrajOpen(false), fr(NULL), _gpbc(NULL), _status(NULL), _oenv(NULL)
 {
 }
@@ -105,6 +108,10 @@ TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
 
 TrajectoryAnalysisRunnerCommon::Impl::~Impl()
 {
+    if (_grps != NULL)
+    {
+        gmx_ana_indexgrps_free(_grps);
+    }
     finishTrajectory();
     if (fr)
     {
@@ -219,10 +226,41 @@ TrajectoryAnalysisRunnerCommon::initOptionsDone()
     }
 
     // TODO: Set trajectory time options
-    // TODO: Create output env.
 
     return 0;
 }
+
+
+int
+TrajectoryAnalysisRunnerCommon::initIndexGroups(SelectionCollection *selections)
+{
+    int rc = 0;
+
+    if (_impl->_ndxfile.empty())
+    {
+        // TODO: Initialize default selections
+        selections->setIndexGroups(NULL);
+    }
+    else
+    {
+        gmx_ana_indexgrps_init(&_impl->_grps, NULL, _impl->_ndxfile.c_str());
+        rc = selections->setIndexGroups(_impl->_grps);
+    }
+    return rc;
+}
+
+
+void
+TrajectoryAnalysisRunnerCommon::doneIndexGroups(SelectionCollection *selections)
+{
+    if (_impl->_grps != NULL)
+    {
+        selections->setIndexGroups(NULL);
+        gmx_ana_indexgrps_free(_impl->_grps);
+        _impl->_grps = NULL;
+    }
+}
+
 
 int
 TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
