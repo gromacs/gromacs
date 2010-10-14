@@ -149,7 +149,7 @@ void gmx_fio_rewind(t_fileio *fio);
 int gmx_fio_end_record(t_fileio *fio);
 /* Flushes the fio, but doesn't guarantee that the file has written*/
 
-int gmx_fio_flush(t_fileio *fio, gmx_wallcycle_t wcycle);
+int gmx_fio_flush(t_fileio *fio);
 /* Flush the fio, returns 0 on success.
  * Has to be called collectively by all IO-nodes if this fio is using MPI.*/
 

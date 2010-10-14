@@ -214,15 +214,15 @@ int write_xtc(t_fileio *fio,
   {
       if (wcycle != NULL)
       {
-          wallcycle_start(wcycle,ewcIO);
+          wallcycle_start(wcycle,ewcMPIIO);
       }
-      if(gmx_fio_end_record(fio))
+      if(gmx_fio_flush(fio))
       {
           bOK = 0;
       }
       if (wcycle != NULL)
       {
-          wallcycle_stop(wcycle,ewcIO);
+          wallcycle_stop(wcycle,ewcMPIIO);
       }
   }
 

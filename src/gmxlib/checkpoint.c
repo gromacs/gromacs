@@ -26,6 +26,7 @@
 
 #include <string.h>
 #include <time.h>
+#include "gmx_wallcycle.h"
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -1159,186 +1160,207 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     int  flags_eks,flags_enh,i;
     t_fileio *ret;
 		
-    if (PAR(cr))
+    if (MASTER(cr))
     {
-        if (DOMAINDECOMP(cr))
+
+        if (PAR(cr))
         {
-            nppnodes  = cr->dd->nnodes;
-            npmenodes = cr->npmenodes;
+            if (DOMAINDECOMP(cr))
+            {
+                nppnodes  = cr->dd->nnodes;
+                npmenodes = cr->npmenodes;
+            }
+            else
+            {
+                nppnodes  = cr->nnodes;
+                npmenodes = 0;
+            }
         }
         else
         {
-            nppnodes  = cr->nnodes;
+            nppnodes  = 1;
             npmenodes = 0;
         }
-    }
-    else
-    {
-        nppnodes  = 1;
-        npmenodes = 0;
-    }
 
-    /* make the new temporary filename */
-    snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
-    strcpy(fntemp,fn);
-    fntemp[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-    sprintf(suffix,"_%s%s","step",gmx_step_str(step,sbuf));
-    strcat(fntemp,suffix);
-    strcat(fntemp,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
-   
-    time(&now);
-    gmx_ctime_r(&now,timebuf,STRLEN);
+        /* make the new temporary filename */
+        snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
+        strcpy(fntemp,fn);
+        fntemp[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+        sprintf(suffix,"_%s%s","step",gmx_step_str(step,sbuf));
+        strcat(fntemp,suffix);
+        strcat(fntemp,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
 
-    if (fplog)
-    { 
-        fprintf(fplog,"Writing checkpoint, step %s at %s\n\n",
-                gmx_step_str(step,buf),timebuf);
-    }
-    
-    /* Get offsets for open files */
-    gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles, wcycle);
+        time(&now);
+        gmx_ctime_r(&now,timebuf,STRLEN);
 
-    fp = gmx_fio_open(fntemp,"w");
-	
-    if (state->ekinstate.bUpToDate)
-    {
-        flags_eks =
-            ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) | 
-             (1<<eeksEKINO) | (1<<eeksEKINSCALEF) | (1<<eeksEKINSCALEH) | 
-             (1<<eeksVSCALE) | (1<<eeksDEKINDL) | (1<<eeksMVCOS));
-    }
-    else
-    {
-        flags_eks = 0;
-    }
-
-    flags_enh = 0;
-    if (state->enerhist.nsum > 0 || state->enerhist.nsum_sim > 0)
-    {
-        flags_enh |= (1<<eenhENERGY_N);
-        if (state->enerhist.nsum > 0)
+        if (fplog)
         {
-            flags_enh |= ((1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM) |
-                          (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSUM));
+            fprintf(fplog,"Writing checkpoint, step %s at %s\n\n",
+                    gmx_step_str(step,buf),timebuf);
         }
-        if (state->enerhist.nsum_sim > 0)
+
+        /* Get offsets for open files */
+        gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles, wcycle);
+
+        fp = gmx_fio_open(fntemp,"w");
+
+        if (state->ekinstate.bUpToDate)
         {
-            flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSTEPS_SIM) |
-                          (1<<eenhENERGY_NSUM_SIM));
+            flags_eks =
+                    ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) |
+                            (1<<eeksEKINO) | (1<<eeksEKINSCALEF) | (1<<eeksEKINSCALEH) |
+                            (1<<eeksVSCALE) | (1<<eeksDEKINDL) | (1<<eeksMVCOS));
         }
-        if (state->enerhist.dht)
+        else
         {
-            flags_enh |= ( (1<< eenhENERGY_DELTA_H_NN) |
-                           (1<< eenhENERGY_DELTA_H_LIST) | 
-                           (1<< eenhENERGY_DELTA_H_STARTTIME) |
-                           (1<< eenhENERGY_DELTA_H_STARTLAMBDA) );
+            flags_eks = 0;
         }
+
+        flags_enh = 0;
+        if (state->enerhist.nsum > 0 || state->enerhist.nsum_sim > 0)
+        {
+            flags_enh |= (1<<eenhENERGY_N);
+            if (state->enerhist.nsum > 0)
+            {
+                flags_enh |= ((1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM) |
+                        (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSUM));
+            }
+            if (state->enerhist.nsum_sim > 0)
+            {
+                flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSTEPS_SIM) |
+                        (1<<eenhENERGY_NSUM_SIM));
+            }
+            if (state->enerhist.dht)
+            {
+                flags_enh |= ( (1<< eenhENERGY_DELTA_H_NN) |
+                        (1<< eenhENERGY_DELTA_H_LIST) |
+                        (1<< eenhENERGY_DELTA_H_STARTTIME) |
+                        (1<< eenhENERGY_DELTA_H_STARTLAMBDA) );
+            }
+        }
+
+
+        version = strdup(VERSION);
+        btime   = strdup(BUILD_TIME);
+        buser   = strdup(BUILD_USER);
+        bmach   = strdup(BUILD_MACHINE);
+        fprog   = strdup(Program());
+
+        ftime   = &(timebuf[0]);
+
+        do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
+                &version,&btime,&buser,&bmach,&fprog,&ftime,
+                &eIntegrator,&simulation_part,&step,&t,&nppnodes,
+                DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
+                        &state->natoms,&state->ngtc,&state->nnhpres,
+                        &state->nhchainlength, &state->flags,&flags_eks,&flags_enh,
+                        NULL);
+
+        sfree(version);
+        sfree(btime);
+        sfree(buser);
+        sfree(bmach);
+        sfree(fprog);
+
+        if((do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)        ||
+                (do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)||
+                (do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)  ||
+                (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,
+                        file_version) < 0))
+        {
+            gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        }
+
+        do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
     }
-
-    
-    version = strdup(VERSION);
-    btime   = strdup(BUILD_TIME);
-    buser   = strdup(BUILD_USER);
-    bmach   = strdup(BUILD_MACHINE);
-    fprog   = strdup(Program());
-
-    ftime   = &(timebuf[0]);
-    
-    do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
-                  &version,&btime,&buser,&bmach,&fprog,&ftime,
-                  &eIntegrator,&simulation_part,&step,&t,&nppnodes,
-                  DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
-                  &state->natoms,&state->ngtc,&state->nnhpres,
-                  &state->nhchainlength, &state->flags,&flags_eks,&flags_enh,
-                  NULL);
-    
-    sfree(version);
-    sfree(btime);
-    sfree(buser);
-    sfree(bmach);
-    sfree(fprog);
-
-    if((do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)        ||
-       (do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)||
-       (do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)  ||
-       (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,
-                     file_version) < 0))
-    {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
-    }
-
-    do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
-
     /* we really, REALLY, want to make sure to physically write the checkpoint, 
        and all the files it depends on, out to disk. Because we've
        opened the checkpoint with gmx_fio_open(), it's in our list
        of open files.  */
-    ret=gmx_fio_all_output_fsync();
-
-    if (ret)
+    if (wcycle != NULL)
     {
-        char buf[STRLEN];
-        sprintf(buf,
-                "Cannot fsync '%s'; maybe you are out of disk space or quota?",
-                gmx_fio_getname(ret));
-
-        if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV)==NULL)
-        {
-            gmx_file(buf);
-        }
-        else
-        {
-            gmx_warning(buf);
-        }
+        wallcycle_start(wcycle, ewcSYNC);
     }
-
-    if( gmx_fio_close(fp) != 0)
-    {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
-    }
-
-    /* we don't move the checkpoint if the user specified they didn't want it,
-       or if the fsyncs failed */
-    if (!bNumberAndKeep && !ret)
-    {
-        if (gmx_fexist(fn))
-        {
-            /* Rename the previous checkpoint file */
-            strcpy(buf,fn);
-            buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-            strcat(buf,"_prev");
-            strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
-#ifndef GMX_FAHCORE
-            /* we copy here so that if something goes wrong between now and
-             * the rename below, there's always a state.cpt.
-             * If renames are atomic (such as in POSIX systems),
-             * this copying should be unneccesary.
-             */
-            gmx_file_copy(fn, buf, FALSE);
-            /* We don't really care if this fails: 
-             * there's already a new checkpoint.
-             */
-#else
-            gmx_file_rename(fn, buf);
+#ifdef GMX_THREADS  /* for threads we only want to sync on the master. Otherwise all files get synced n-times*/
+    if (MASTER(cr))
 #endif
-        }
-        if (gmx_file_rename(fntemp, fn) != 0)
-        {
-            gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
-        }
+    {
+        ret=gmx_fio_all_output_fsync();
     }
 
-    sfree(outputfiles);
-    sfree(fntemp);
+    if (wcycle != NULL)
+    {
+        wallcycle_stop(wcycle, ewcSYNC);
+    }
+
+    if (MASTER(cr))
+    {
+
+        if (ret)
+        {
+            char buf[STRLEN];
+            sprintf(buf,
+                    "Cannot fsync '%s'; maybe you are out of disk space or quota?",
+                    gmx_fio_getname(ret));
+
+            if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV)==NULL)
+            {
+                gmx_file(buf);
+            }
+            else
+            {
+                gmx_warning(buf);
+            }
+        }
+
+        if( gmx_fio_close(fp) != 0)
+        {
+            gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        }
+
+        /* we don't move the checkpoint if the user specified they didn't want it,
+       or if the fsyncs failed */
+        if (!bNumberAndKeep && !ret)
+        {
+            if (gmx_fexist(fn))
+            {
+                /* Rename the previous checkpoint file */
+                strcpy(buf,fn);
+                buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+                strcat(buf,"_prev");
+                strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+#ifndef GMX_FAHCORE
+                /* we copy here so that if something goes wrong between now and
+                 * the rename below, there's always a state.cpt.
+                 * If renames are atomic (such as in POSIX systems),
+                 * this copying should be unneccesary.
+                 */
+                gmx_file_copy(fn, buf, FALSE);
+                /* We don't really care if this fails:
+                 * there's already a new checkpoint.
+                 */
+#else
+                gmx_file_rename(fn, buf);
+#endif
+            }
+            if (gmx_file_rename(fntemp, fn) != 0)
+            {
+                gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
+            }
+        }
+
+        sfree(outputfiles);
+        sfree(fntemp);
 
 #ifdef GMX_FAHCORE
-    /*code for alternate checkpointing scheme.  moved from top of loop over 
+        /*code for alternate checkpointing scheme.  moved from top of loop over
       steps */
-    fcRequestCheckPoint();
-    if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
-        gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
-    }
+        fcRequestCheckPoint();
+        if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
+            gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
+        }
 #endif /* end GMX_FAHCORE block */
+    }
 }
 
 static void print_flag_mismatch(FILE *fplog,int sflags,int fflags)

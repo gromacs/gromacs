@@ -648,24 +648,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             {
                 for (i = 0; i <= bufferStep; i++)//Collect each buffered frame to one of the IO nodes. The data is collected to the node with rank write_buf->dd[i]->masterrank.
                 {
-                    /*
-                    if (i==bufferStep)
-                    {
-                        write_buf->dd[i]->masterrank = cr->dd->masterrank;  //the last frame is always written to the MASTER
-                        write_buf->dd[i]->masterrank = cr->dd->iorank2ddrank[0];
-                    }
-                    else
-                    {
-                        write_buf->dd[i]->masterrank = cr->nionodes-1 - i;
-                        */
-                        write_buf->dd[i]->masterrank = cr->dd->iorank2ddrank[i];
-                        /*if (write_buf->dd[i]->masterrank <= cr->dd->masterrank) //if the masterrank is not zero we need to skip the masterrank.
-                        {
-                            write_buf->dd[i]->masterrank--;
-                        }
-
-                    }
-                    */
+                    write_buf->dd[i]->masterrank = cr->dd->iorank2ddrank[i];
                     if (!(i==bufferStep && ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))))
                     {
                         dd_collect_vec(write_buf->dd[i],write_buf->state_local[i],write_buf->state_local[i]->x,state_global->x,wcycle);
@@ -738,7 +721,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
      * If we buffer we need to call write_traj after write_xtc. Otherwise the xtc position stored in the checkpoint would point to the position before any of the buffered steps.
      * In that case the position is calculated to be correct (not including the current frame) even though we have already written all frames.
      */
-     if (!bBuffer && MASTER(cr))
+     if (!bBuffer)
 	 {
 		if (mdof_flags & MDOF_CPT)
 		{
@@ -806,7 +789,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		}
 		gmx_fio_check_file_position(of->fp_xtc);
 	 }
-     if (bBuffer && MASTER(cr))
+     if (bBuffer)
      {
         if (mdof_flags & MDOF_CPT)
 		{
@@ -826,6 +809,10 @@ void write_traj(FILE *fplog,t_commrec *cr,
                        (mdof_flags & MDOF_X) ? state_global->x : NULL,
                        (mdof_flags & MDOF_V) ? global_v : NULL,
                        (mdof_flags & MDOF_F) ? f_global : NULL);
+            if (gmx_fio_flush(of->fp_trn) != 0)
+            {
+                gmx_file("Cannot write trajectory; maybe you are out of quota?");
+            }
             gmx_fio_check_file_position(of->fp_trn);
         }
      }

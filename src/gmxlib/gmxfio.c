@@ -130,7 +130,7 @@ const char *comment_str[eitemNR] = {
  *
  ******************************************************************/
 
-int gmx_fio_int_end_record(t_fileio *fio)
+static int gmx_fio_int_end_record(t_fileio *fio)
 {
     int rc = 0;
 #ifdef GMX_LIB_MPI
@@ -139,8 +139,12 @@ int gmx_fio_int_end_record(t_fileio *fio)
         rc = !xdrrec_endofrecord(fio->xdr, 1);
         if (rc==0)
         {
-            fio->last_frame_size = fio->mem_buf_cur_pos;
-            rc = MPI_File_write_ordered(fio->mpi_fh,fio->mem_buf,fio->last_frame_size,MPI_BYTE,MPI_STATUS_IGNORE)
+            if (fio->mem_buf_cur_pos != 0 )
+            {
+                fio->last_frame_size = fio->mem_buf_cur_pos;  /*last frame size written on this core*/
+            }
+            /*everyone needs to call this collective - we don't know whether everyone has 0 bytes without additional communication*/
+            rc = MPI_File_write_ordered(fio->mpi_fh,fio->mem_buf,fio->mem_buf_cur_pos,MPI_BYTE,MPI_STATUS_IGNORE)
                     != MPI_SUCCESS;
             fio->mem_buf_cur_pos = 0;
         }
@@ -149,11 +153,8 @@ int gmx_fio_int_end_record(t_fileio *fio)
     return rc;
 }
 
-/* Make sure to call flush only when really necessary.
- * Checkpoint is flushing thus it should not be required to flush anywhere else.cc
- * Flush is very expensive for MPI-IO.
- */
-static int gmx_fio_int_flush(t_fileio* fio, gmx_wallcycle_t wcycle)
+/*should not be called unnecessarily often - requires global MPI_File operation for MPI files*/
+static int gmx_fio_int_flush(t_fileio* fio)
 {
     int rc = 0;
 
@@ -162,21 +163,7 @@ static int gmx_fio_int_flush(t_fileio* fio, gmx_wallcycle_t wcycle)
     {
         /* For MPI nothing has been written to a file before the flush.
          * The xdr (in gmx_fio_int_end_record) write functions write to the fio->mem_buf. Here this is written to fio->mpi_fh*/
-
         rc = gmx_fio_int_end_record(fio);
-        if (rc==0)
-        {
-            if (wcycle != NULL)
-            {
-                wallcycle_start(wcycle, ewcSYNC);
-            }
-            rc = MPI_File_sync(fio->mpi_fh) != MPI_SUCCESS;// <<< Time consuming
-            if (wcycle != NULL)
-            {
-                wallcycle_stop(wcycle, ewcSYNC);
-            }
-
-        }
     }
     else
 #endif
@@ -727,7 +714,14 @@ static int gmx_fio_int_fsync(t_fileio *fio)
     {
         /*don't sync for mpi files. the flush makes sure that it is written. No extra sync available*/
 #ifdef GMX_LIB_MPI
-        if (fio->mpi_fh == NULL)
+        if (fio->mpi_fh != NULL)
+        {
+            if (rc==0)
+            {
+                rc = MPI_File_sync(fio->mpi_fh) != MPI_SUCCESS;// <<< Time consuming
+            }
+        }
+        else
 #endif
         {
             rc=gmx_fsync((FILE*) fio->xdr->x_private);
@@ -741,17 +735,21 @@ static int gmx_fio_int_fsync(t_fileio *fio)
 /* The fio_mutex should ALWAYS be locked when this function is called
  * Makes only for non-trajectory formats sure that the file has been written (flushes it)
  * Returns the position before the last frame for buffered writing */
-static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset, gmx_wallcycle_t wcycle)
+static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
 {
     char buf[STRLEN];
 
     /* Flush the file, so we are sure it is written */
-    /* write_xtc and fwrite_trn flush their file - thus it is already guaranteed to be flushed,
-     * with MPI-IO we can't flush here because this method is not called by all*/
+    /* write_xtc and fwrite_trn flush their file - thus it is already guaranteed to be flushed and not strictly necessarily
+     * with MPI-IO we can't flush here because this method is not called by all (and also an additional flush would be slow for MPI)*/
 
-    if (fio->iFTP != efCPT)
+    if (fio->iFTP != efCPT
+#ifdef GMX_LIB_MPI
+                           && fio->mpi_fh == NULL
+#endif
+        )
     {
-        if (gmx_fio_int_flush(fio, wcycle))
+        if (gmx_fio_int_flush(fio))
         {
             sprintf(
                 buf,
@@ -789,13 +787,6 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset, gmx_w
  *
  *****************************************************************/
 
-int gmx_fio_end_record(t_fileio *fio)
-{
-    gmx_fio_lock(fio);
-    gmx_fio_int_end_record(fio);
-    gmx_fio_unlock(fio);
-    return 0;
-}
 
 t_fileio *gmx_fio_open(const char *fn, const char *mode)
 {
@@ -1156,7 +1147,7 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             }
             else
             {
-                gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset, wcycle);
+                gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
 #ifndef GMX_FAHCORE
                 outputfiles[nfiles].chksum_size
                     = gmx_fio_int_get_file_md5(cur,
@@ -1268,11 +1259,11 @@ void gmx_fio_rewind(t_fileio* fio)
 }
 
 
-int gmx_fio_flush(t_fileio* fio, gmx_wallcycle_t wcycle)
+int gmx_fio_flush(t_fileio* fio)
 {
     int ret = 0;
     gmx_fio_lock(fio);
-    ret=gmx_fio_int_flush(fio, wcycle);
+    ret=gmx_fio_int_flush(fio);
     gmx_fio_unlock(fio);
     return ret;
 }
