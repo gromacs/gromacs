@@ -583,12 +583,13 @@ void write_traj(FILE *fplog,t_commrec *cr,
     
     int bufferStep = 0;
     gmx_bool bBuffer = cr->nionodes > 1; // Used to determine if buffers will be used
-    gmx_bool writeXTCNow = TRUE;
+    gmx_bool writeXTCNow = (mdof_flags & MDOF_XTC);
 
     if (bBuffer)// If buffering will be used
     {
-        bufferStep = (step/ir->nstxtcout - (int)ceil((double)write_buf->step_after_checkpoint/ir->nstxtcout))%cr->nionodes;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
-        writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->nionodes-1) || bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X);//True if the buffer is full OR its the last step OR its a checkpoint
+        bufferStep = (step/ir->nstxtcout - (int)ceil((double)write_buf->step_after_checkpoint/ir->nstxtcout)) % cr->nionodes;// bufferStep = step/(how often to write) - (round up) step_at_checkpoint/(how often to write)  MOD (how often we actually do write)
+        writeXTCNow = ((mdof_flags & MDOF_XTC) && bufferStep == cr->nionodes-1)   //write XTC in this step and buffer is full
+                || (ir->nstxtcout>0 &&  bufferStep < cr->nionodes-1 && (bLastStep || (mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X)));// XTC is written AND we haven't just written because buffer was full AND its the last step OR its a checkpoint  OR write uncompressed X
 
         if ((mdof_flags & MDOF_CPT) || (mdof_flags & MDOF_X))
         {
@@ -631,18 +632,19 @@ void write_traj(FILE *fplog,t_commrec *cr,
             dd_collect_vec(cr->dd,state_local,f_local,f_global,wcycle);
         }
         //Could be optimized by not collecting all coordinates but only those in the xtc selection.
-        if ((mdof_flags & MDOF_XTC) && bBuffer)
-        { 
-            //This block of code copies the current dd and state_local to buffers to prepare for writing later.
-            //The last frame being buffered (then writeXTCNow is TRUE) is always collected on the MASTER
-            if ((writeXTCNow && MASTER(cr)) || (!writeXTCNow && bufferStep == cr->dd->iorank))
+        if (bBuffer) {
+            if (mdof_flags & MDOF_XTC)
             {
-                write_buf->step=step;
-                write_buf->t=t;
+                //This block of code copies the current dd and state_local to buffers to prepare for writing later.
+                //The last frame being buffered (then writeXTCNow is TRUE) is always collected on the MASTER
+                if ((writeXTCNow && MASTER(cr)) || (!writeXTCNow && bufferStep == cr->dd->iorank))
+                {
+                    write_buf->step=step;
+                    write_buf->t=t;
+                }
+                copy_dd(write_buf->dd[bufferStep],cr->dd);
+                copy_state_local(write_buf->state_local[bufferStep],state_local);
             }
-            copy_dd(write_buf->dd[bufferStep],cr->dd);
-            copy_state_local(write_buf->state_local[bufferStep],state_local);
-
 
             if (writeXTCNow)
             {
@@ -783,12 +785,12 @@ void write_traj(FILE *fplog,t_commrec *cr,
 			write_t = t;
 		}
 		if (write_xtc(of->fp_xtc,*n_xtc,write_step,write_t,
-				  state_local->box,xxtc,of->xtc_prec,bWrite,wcycle) == 0)//If it is NOT ACTUALLY being written AND returns 0
+				  state_local->box,xxtc,of->xtc_prec,bWrite,wcycle) == 0)//If it is NOT ACTUALLY being written
 		{
 			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
 		}
 		gmx_fio_check_file_position(of->fp_xtc);
-	 }
+     }
      if (bBuffer)
      {
         if (mdof_flags & MDOF_CPT)
