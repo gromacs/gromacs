@@ -2162,62 +2162,60 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (bCPT && MASTER(cr))
             fcRequestCheckPoint();
 #endif
-        
-        if (mdof_flags != 0)
+
+        wallcycle_start(wcycle,ewcTRAJ);
+        if (bCPT)
         {
-            wallcycle_start(wcycle,ewcTRAJ);
-            if (bCPT)
+            if (state->flags & (1<<estLD_RNG))
             {
-                if (state->flags & (1<<estLD_RNG))
-                {
-                    get_stochd_state(upd,state);
-                }
-                if (MASTER(cr))
-                {
-                    if (bSumEkinhOld)
-                    {
-                        state_global->ekinstate.bUpToDate = FALSE;
-                    }
-                    else
-                    {
-                        update_ekinstate(&state_global->ekinstate,ekind);
-                        state_global->ekinstate.bUpToDate = TRUE;
-                    }
-                    update_energyhistory(&state_global->enerhist,mdebin);
-                }
+                get_stochd_state(upd,state);
             }
-            write_traj(fplog,cr,outf,mdof_flags,top_global,
-                       step,t,state,state_global,f,f_global,&n_xtc,
-                       &x_xtc,ir,bLastStep,&write_buf,wcycle);
-            if (bCPT)
+            if (MASTER(cr))
             {
-                nchkpt++;
-                bCPT = FALSE;
+                if (bSumEkinhOld)
+                {
+                    state_global->ekinstate.bUpToDate = FALSE;
+                }
+                else
+                {
+                    update_ekinstate(&state_global->ekinstate,ekind);
+                    state_global->ekinstate.bUpToDate = TRUE;
+                }
+                update_energyhistory(&state_global->enerhist,mdebin);
             }
-            debug_gmx();
-            if (bLastStep && step_rel == ir->nsteps &&
+        }
+        write_traj(fplog,cr,outf,mdof_flags,top_global,
+                step,t,state,state_global,f,f_global,&n_xtc,
+                &x_xtc,ir,bLastStep,&write_buf,wcycle);
+        if (bCPT)
+        {
+            nchkpt++;
+            bCPT = FALSE;
+        }
+        debug_gmx();
+        if (bLastStep && step_rel == ir->nsteps &&
                 (Flags & MD_CONFOUT) && MASTER(cr) &&
                 !bRerunMD && !bFFscan)
-            {
-                /* x and v have been collected in write_traj,
-                 * because a checkpoint file will always be written
-                 * at the last step.
-                 */
-                fprintf(stderr,"\nWriting final coordinates.\n");
-                if (ir->ePBC != epbcNONE && !ir->bPeriodicMols &&
+        {
+            /* x and v have been collected in write_traj,
+             * because a checkpoint file will always be written
+             * at the last step.
+             */
+            fprintf(stderr,"\nWriting final coordinates.\n");
+            if (ir->ePBC != epbcNONE && !ir->bPeriodicMols &&
                     DOMAINDECOMP(cr))
-                {
-                    /* Make molecules whole only for confout writing */
-                    do_pbc_mtop(fplog,ir->ePBC,state->box,top_global,state_global->x);
-                }
-                write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
-                                    *top_global->name,top_global,
-                                    state_global->x,state_global->v,
-                                    ir->ePBC,state->box);
-                debug_gmx();
+            {
+                /* Make molecules whole only for confout writing */
+                do_pbc_mtop(fplog,ir->ePBC,state->box,top_global,state_global->x);
             }
-            wallcycle_stop(wcycle,ewcTRAJ);
+            write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
+                    *top_global->name,top_global,
+                    state_global->x,state_global->v,
+                    ir->ePBC,state->box);
+            debug_gmx();
         }
+        wallcycle_stop(wcycle,ewcTRAJ);
+
         GMX_MPE_LOG(ev_output_finish);
         
         /* kludge -- virial is lost with restart for NPT control. Must restart */
