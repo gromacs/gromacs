@@ -637,7 +637,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
             {
                 //This block of code copies the current dd and state_local to buffers to prepare for writing later.
                 //The last frame being buffered (then writeXTCNow is TRUE) is always collected on the MASTER
-                if ((writeXTCNow && MASTER(cr)) || (!writeXTCNow && bufferStep == cr->dd->iorank))
+                //We always remember the time on the master in case we write a checkpoint next before writing the next XTC frame
+                if (MASTER(cr) || bufferStep == cr->dd->iorank)
                 {
                     write_buf->step=step;
                     write_buf->t=t;
