@@ -56,6 +56,7 @@ typedef struct gmx_repl_ex {
   int  nrepl;
   real temp;
   int  type;
+  int  nlambda;
   real *q;
   gmx_bool bNPT;
   real *pres;
@@ -73,35 +74,43 @@ const char *erename[ereNR] = { "temperature", "lambda" };
 static void repl_quantity(FILE *fplog,const gmx_multisim_t *ms,
 			  struct gmx_repl_ex *re,int ere,real q)
 {
-  real *qall;
-  gmx_bool bDiff;
-  int  s;
-
-  snew(qall,ms->nsim);
-  qall[re->repl] = q;
-  gmx_sum_sim(ms->nsim,qall,ms);
-
-  bDiff = FALSE;
-  for(s=1; s<ms->nsim; s++)
-    if (qall[s] != qall[0])
-      bDiff = TRUE;
-
-  if (bDiff) {
-    if (re->type >= 0 && re->type < ereNR) {
-      gmx_fatal(FARGS,"For replica exchange both %s and %s differ",
-		erename[re->type],erename[ere]);
-    } else {
-      /* Set the replica exchange type and quantities */
-      re->type = ere;
-      snew(re->q,re->nrepl);
-      for(s=0; s<ms->nsim; s++)
-	re->q[s] = qall[s];
+    real *qall;
+    gmx_bool bDiff;
+    int  s;
+    
+    snew(qall,ms->nsim);
+    qall[re->repl] = q;
+    gmx_sum_sim(ms->nsim,qall,ms);
+    
+    bDiff = FALSE;
+    for(s=1; s<ms->nsim; s++)
+    {
+        if (qall[s] != qall[0]) 
+        {
+            bDiff = TRUE;
+        }
     }
-  }
-  
-  sfree(qall);
+    if (bDiff) 
+    {
+        if (re->type >= 0 && re->type < ereNR) 
+        {
+            gmx_fatal(FARGS,"For replica exchange both %s and %s differ",
+                      erename[re->type],erename[ere]);
+        } 
+        else 
+        {
+            /* Set the replica exchange type and quantities */
+            re->type = ere;
+            snew(re->q,re->nrepl);
+            for(s=0; s<ms->nsim; s++) 
+            {
+                re->q[s] = qall[s];
+            }
+        }
+    }
+    sfree(qall);
 }
-
+    
 gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 				    const gmx_multisim_t *ms,
 				    const t_state *state,
@@ -115,81 +124,88 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
   fprintf(fplog,"\nInitializing Replica Exchange\n");
 
   if (ms == NULL || ms->nsim == 1)
-    gmx_fatal(FARGS,"Nothing to exchange with only one replica, maybe you forgot to set the -multi option of mdrun?");
-
+      gmx_fatal(FARGS,"Nothing to exchange with only one replica, maybe you forgot to set the -multi option of mdrun?");
+  
   snew(re,1);
-
+  
   re->repl     = ms->sim;
   re->nrepl    = ms->nsim;
 
   fprintf(fplog,"Repl  There are %d replicas:\n",re->nrepl);
-
+  
   check_multi_int(fplog,ms,state->natoms,"the number of atoms");
   check_multi_int(fplog,ms,ir->eI,"the integrator");
   check_multi_int(fplog,ms,ir->init_step+ir->nsteps,"init_step+nsteps");
   check_multi_int(fplog,ms,(ir->init_step+nst-1)/nst,
-		  "first exchange step: init_step/-replex");
+                  "first exchange step: init_step/-replex");
   check_multi_int(fplog,ms,ir->etc,"the temperature coupling");
   check_multi_int(fplog,ms,ir->opts.ngtc,
 		  "the number of temperature coupling groups");
   check_multi_int(fplog,ms,ir->epc,"the pressure coupling");
   check_multi_int(fplog,ms,ir->efep,"free energy");
+  check_multi_int(fplog,ms,ir->fepvals->n_lambda,"number of lambda states");
 
   re->temp = ir->opts.ref_t[0];
-  for(i=1; (i<ir->opts.ngtc); i++) {
-    if (ir->opts.ref_t[i] != re->temp) {
-      fprintf(fplog,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
-      fprintf(stderr,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
-    }
+  re->nlambda = ir->fepvals->n_lambda;
+
+  /* need a check in here for the lambda states to be the same? */
+
+  for(i=1; (i<ir->opts.ngtc); i++) 
+  {
+      if (ir->opts.ref_t[i] != re->temp) 
+      {
+          fprintf(fplog,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
+          fprintf(stderr,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
+      }
   }
-
-    re->type = -1;
-    for(i=0; i<ereNR; i++)
-    {
-        switch (i)
-        {
-        case ereTEMP:
-            repl_quantity(fplog,ms,re,i,re->temp);
-            break;
-        case ereLAMBDA:
-            if (ir->efep != efepNO)
-            {
-                repl_quantity(fplog,ms,re,i,ir->fepvals->init_lambda);
-            }
-            break;
-        default:
-            gmx_incons("Unknown replica exchange quantity");
-        }
-    }
-    if (re->type == -1)
-    {
-        gmx_fatal(FARGS,"The properties of the %d systems are all the same, there is nothing to exchange",re->nrepl);
-    }
-
-    switch (re->type)
-    {
-    case ereTEMP:
-        please_cite(fplog,"Hukushima96a");
-        if (ir->epc != epcNO)
-        {
-            re->bNPT = TRUE;
-            fprintf(fplog,"Repl  Using Constant Pressure REMD.\n");
-            please_cite(fplog,"Okabe2001a");
-        }
-        if (ir->etc == etcBERENDSEN)
-        {
-            gmx_fatal(FARGS,"REMD with the %s thermostat does not produce correct potential energy distributions, consider using the %s thermostat instead",
-                      ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
-        }
-        break;
-    case ereLAMBDA:
-        if (ir->fepvals->delta_lambda != 0)
-        {
-            gmx_fatal(FARGS,"delta_lambda is not zero");
-        }
-        break;
-    }
-
+  
+  re->type = -1;
+  for(i=0; i<ereNR; i++)
+  {
+      switch (i)
+      {
+      case ereTEMP:
+          repl_quantity(fplog,ms,re,i,re->temp);
+          break;
+      case ereLAMBDA:
+          if (ir->efep != efepNO)
+          {
+              repl_quantity(fplog,ms,re,i,(real)ir->fepvals->init_fep_state);
+          }
+          break;
+      default:
+          gmx_incons("Unknown replica exchange quantity");
+      }
+  }
+  if (re->type == -1)
+  {
+      gmx_fatal(FARGS,"The properties of the %d systems are all the same, there is nothing to exchange",re->nrepl);
+  }
+  
+  switch (re->type)
+  {
+  case ereTEMP:
+      please_cite(fplog,"Hukushima96a");
+      if (ir->epc != epcNO)
+      {
+          re->bNPT = TRUE;
+          fprintf(fplog,"Repl  Using Constant Pressure REMD.\n");
+          please_cite(fplog,"Okabe2001a");
+      }
+      if (ir->etc == etcBERENDSEN)
+      {
+          gmx_fatal(FARGS,"REMD with the %s thermostat does not produce correct potential energy distributions, consider using the %s thermostat instead",
+                    ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
+      }
+      break;
+  case ereLAMBDA:
+      if (ir->fepvals->delta_lambda != 0)
+      {
+          gmx_fatal(FARGS,"delta_lambda is not zero");
+      }
+      break;
+  }
+    
   if (re->bNPT) {
     snew(re->pres,re->nrepl);
     if (ir->epct == epctSURFACETENSION) {
@@ -209,50 +225,63 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
   }
 
   snew(re->ind,re->nrepl);
-  /* Make an index for increasing temperature order */
+  /* Make an index for increasing replica order */
   for(i=0; i<re->nrepl; i++)
-    re->ind[i] = i;
-  for(i=0; i<re->nrepl; i++) {
-    for(j=i+1; j<re->nrepl; j++) {
-      if (re->q[re->ind[j]] < re->q[re->ind[i]]) {
-	k = re->ind[i];
-	re->ind[i] = re->ind[j];
-	re->ind[j] = k;
-      } else if (re->q[re->ind[j]] == re->q[re->ind[i]]) {
-	gmx_fatal(FARGS,"Two replicas have identical %ss",erename[re->type]);
-      }
+  {
+      re->ind[i] = i;
+  }
+  for(i=0; i<re->nrepl; i++) 
+  {
+    for(j=i+1; j<re->nrepl; j++) 
+    {
+        if (re->q[re->ind[j]] < re->q[re->ind[i]]) 
+        {
+            k = re->ind[i];
+            re->ind[i] = re->ind[j];
+            re->ind[j] = k;
+        } 
+        else if (re->q[re->ind[j]] == re->q[re->ind[i]]) 
+        {
+            gmx_fatal(FARGS,"Two replicas have identical %ss",erename[re->type]);
+        }
     }
   }
   fprintf(fplog,"Repl   ");
   for(i=0; i<re->nrepl; i++)
-    fprintf(fplog," %3d  ",re->ind[i]);
+  {
+      fprintf(fplog," %3d  ",re->ind[i]);
+  }
   switch (re->type) {
   case ereTEMP:
     fprintf(fplog,"\nRepl  T");
     for(i=0; i<re->nrepl; i++)
-      fprintf(fplog," %5.1f",re->q[re->ind[i]]);
+    {
+        fprintf(fplog," %5.1f",re->q[re->ind[i]]);
+    }
     break;
   case ereLAMBDA:
     fprintf(fplog,"\nRepl  l");
-    for(i=0; i<re->nrepl; i++)
-      fprintf(fplog," %5.3f",re->q[re->ind[i]]);
+    for(i=0; i<re->nrepl; i++) 
+    {
+        fprintf(fplog," %5.3f",re->q[re->ind[i]]);
+    }
     break;
   default:
-    gmx_incons("Unknown replica exchange quantity");
+      gmx_incons("Unknown replica exchange quantity");
   }
   if (re->bNPT) {
     fprintf(fplog,"\nRepl  p");
     for(i=0; i<re->nrepl; i++)
     {
-      fprintf(fplog," %5.2f",re->pres[re->ind[i]]);
+        fprintf(fplog," %5.2f",re->pres[re->ind[i]]);
     }
-
+    
     for(i=0; i<re->nrepl; i++)
     {
-      if ((i > 0) && (re->pres[re->ind[i]] < re->pres[re->ind[i-1]]))
-      {
-        gmx_fatal(FARGS,"The reference pressure decreases with increasing temperature");
-      }
+        if ((i > 0) && (re->pres[re->ind[i]] < re->pres[re->ind[i-1]]))
+        {
+            gmx_fatal(FARGS,"The reference pressure decreases with increasing temperature");
+        }
     }
   }
   fprintf(fplog,"\nRepl  ");
@@ -276,8 +305,8 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
   snew(re->nexchange,re->nrepl);
 
   fprintf(fplog,
-	  "Repl  below: x=exchange, pr=probability\n");
-
+          "Repl  below: x=exchange, pr=probability\n");
+  
   return re;
 }
 
@@ -304,8 +333,42 @@ static void exchange_reals(const gmx_multisim_t *ms,int b,real *v,int n)
       MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
     }
 #endif
-    for(i=0; i<n; i++)
-      v[i] = buf[i];
+    for(i=0; i<n; i++) 
+    {
+        v[i] = buf[i];
+    }
+    sfree(buf);
+  }
+}
+
+
+static void exchange_ints(const gmx_multisim_t *ms,int b,int *v,int n)
+{
+  int *buf;
+  int  i;
+
+  if (v) {
+    snew(buf,n);
+#ifdef GMX_MPI
+    /*
+    MPI_Sendrecv(v,  n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
+		 buf,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
+		 ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+    */
+    {
+      MPI_Request mpi_req;
+
+      MPI_Isend(v,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
+		ms->mpi_comm_masters,&mpi_req);
+      MPI_Recv(buf,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
+	       ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+      MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
+    }
+#endif
+    for(i=0; i<n; i++) 
+    {
+        v[i] = buf[i];
+    }
     sfree(buf);
   }
 }
@@ -390,6 +453,8 @@ static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
   exchange_rvecs(ms,b,state->x,state->natoms);
   exchange_rvecs(ms,b,state->v,state->natoms);
   exchange_rvecs(ms,b,state->sd_X,state->natoms);
+  exchange_reals(ms,b,state->lambda,efptNR);
+  exchange_ints(ms,b,&(state->fep_state),1);
 }
 
 static void copy_rvecs(rvec *s,rvec *d,int n)
@@ -418,8 +483,36 @@ static void copy_doubles(const double *s,double *d,int n)
     }
 }
 
+static void copy_reals(const real *s,real *d,int n)
+{
+    int i;
+
+    if (d != NULL)
+    {
+        for(i=0; i<n; i++)
+        {
+            d[i] = s[i];
+        }
+    }
+}
+
+static void copy_ints(const int *s,int *d,int n)
+{
+    int i;
+
+    if (d != NULL)
+    {
+        for(i=0; i<n; i++)
+        {
+            d[i] = s[i];
+        }
+    }
+}
+
 #define scopy_rvecs(v,n)   copy_rvecs(state->v,state_local->v,n);
 #define scopy_doubles(v,n) copy_doubles(state->v,state_local->v,n);
+#define scopy_reals(v,n) copy_reals(state->v,state_local->v,n);
+#define scopy_ints(v,n)   copy_ints(state->v,state_local->v,n);
 
 static void copy_state_nonatomdata(t_state *state,t_state *state_local)
 {
@@ -443,6 +536,8 @@ static void copy_state_nonatomdata(t_state *state,t_state *state_local)
   scopy_rvecs(x,state->natoms);
   scopy_rvecs(v,state->natoms);
   scopy_rvecs(sd_X,state->natoms);
+  copy_ints(&(state->fep_state),&(state_local->fep_state),1);
+  scopy_reals(lambda,efptNR);
 }
 
 static void scale_velocities(t_state *state,real fac)
@@ -459,13 +554,19 @@ static void pd_collect_state(const t_commrec *cr,t_state *state)
   int shift;
   
   if (debug)
-    fprintf(debug,"Collecting state before exchange\n");
-shift = cr->nnodes - cr->npmenodes - 1;
+  {
+      fprintf(debug,"Collecting state before exchange\n");
+  }
+  shift = cr->nnodes - cr->npmenodes - 1;
   move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->x,NULL,shift,NULL);
   if (state->v)
-    move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->v,NULL,shift,NULL);
+  {
+      move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->v,NULL,shift,NULL);
+  }
   if (state->sd_X)
-    move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->sd_X,NULL,shift,NULL);
+  {
+      move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->sd_X,NULL,shift,NULL);
+  }
 }
 
 static void print_ind(FILE *fplog,const char *leg,int n,int *ind,gmx_bool *bEx)
@@ -512,7 +613,8 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
 				int step,real time)
 {
   int  m,i,a,b;
-  real *Epot=NULL,*Vol=NULL,*dvdl=NULL,*prob;
+  real *Epot=NULL,*Vol=NULL,*prob;
+  real **flambda=NULL;
   real ediff=0,delta=0,dpV=0,betaA=0,betaB=0;
   gmx_bool *bEx,bPrint;
   int  exchange;
@@ -521,97 +623,117 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
   
   switch (re->type) {
   case ereTEMP:
-    snew(Epot,re->nrepl);
-    snew(Vol,re->nrepl);
-    Epot[re->repl] = ener[F_EPOT];
-    Vol[re->repl]  = vol;
-    gmx_sum_sim(re->nrepl,Epot,ms);
-    gmx_sum_sim(re->nrepl,Vol,ms);
-    break;
+      snew(Epot,re->nrepl);
+      snew(Vol,re->nrepl);
+      Epot[re->repl] = ener[F_EPOT];
+      Vol[re->repl]  = vol;
+      gmx_sum_sim(re->nrepl,Epot,ms);
+      gmx_sum_sim(re->nrepl,Vol,ms);
+      break;
   case ereLAMBDA:
-      /* Not clear this is correct. */
-    snew(dvdl,re->nrepl);
-    dvdl[re->repl] = ener[F_DVDL_REMAIN] + ener[F_DVDL_COUL] + 
-        ener[F_DVDL_VDW] + ener[F_DVDL_BONDED] + ener[F_DKDL] + ener[F_DVDL_RESTRAINT];
-    gmx_sum_sim(re->nrepl,dvdl,ms);
-    break;
+      snew(Epot,re->nrepl);
+      snew(flambda,re->nlambda);
+      Epot[re->repl] = ener[F_EPOT];
+      gmx_sum_sim(re->nrepl,Epot,ms);
+      for (i=0;i<re->nlambda;i++) 
+      {
+          snew(flambda[i],re->nrepl);
+          gmx_sum_sim(re->nrepl,flambda[i],ms);
+      }
+      break;
   }
 
   snew(bEx,re->nrepl);
   snew(prob,re->nrepl);
-
+  
   exchange = -1;
   m = (step / re->nst) % 2;
   for(i=1; i<re->nrepl; i++) {
-    a = re->ind[i-1];
-    b = re->ind[i];
-    bPrint = (re->repl==a || re->repl==b);
-    if (i % 2 == m) {
-      switch (re->type) {
-      case ereTEMP:
-	/* Use equations from:
-	 * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
-	 */
-	ediff = Epot[b] - Epot[a];
-	betaA = 1.0/(re->q[a]*BOLTZ);
-	betaB = 1.0/(re->q[b]*BOLTZ);
-	delta = (betaA - betaB)*ediff;
-	break;
-      case ereLAMBDA:
-	/* Here we exchange based on a linear extrapolation of dV/dlambda.
-	 * We would like to have the real energies
-	 * from foreign lambda calculations, as currently, this is not correct. 
-	 */
-          ediff = (dvdl[a] - dvdl[b])*(re->q[b] - re->q[a]);
-          delta = ediff/(BOLTZ*re->temp);
-	break;
-      default:
-	gmx_incons("Unknown replica exchange quantity");
+      a = re->ind[i-1];
+      b = re->ind[i];
+      bPrint = (re->repl==a || re->repl==b);
+      if (i % 2 == m) {
+          switch (re->type) {
+          case ereTEMP:
+              /* Use equations from:
+               * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
+               */
+              ediff = Epot[b] - Epot[a];
+              betaA = 1.0/(re->q[a]*BOLTZ);
+              betaB = 1.0/(re->q[b]*BOLTZ);
+              delta = (betaA - betaB)*ediff;
+              break;
+          case ereLAMBDA:
+              ediff = (Epot[b] + flambda[b][a]) - (Epot[b] + flambda[a][b]);    
+              delta = ediff/(BOLTZ*re->temp);
+              break;
+          default:
+              gmx_incons("Unknown replica exchange quantity");
+          }
+          if (bPrint)
+          {
+              fprintf(fplog,"Repl %d <-> %d  dE = %10.3e",a,b,delta);
+          }
+          if (re->bNPT) 
+          {
+              dpV = (betaA*re->pres[a]-betaB*re->pres[b])*(Vol[b]-Vol[a])/PRESFAC;
+              if (bPrint)
+              {
+                  fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
+              }
+              delta += dpV;
+          }
+          if (bPrint)
+          {
+              fprintf(fplog,"\n");
+          }
+          if (delta <= 0) {
+              prob[i] = 1;
+              bEx[i] = TRUE;
+          } 
+          else 
+          {
+              if (delta > 100) {
+                  prob[i] = 0;
+              } else {
+                  prob[i] = exp(-delta);
+              }
+              bEx[i] = (rando(&(re->seed)) < prob[i]);
+          }
+          re->prob_sum[i] += prob[i];    
+          if (bEx[i]) 
+          {
+              if (a == re->repl) 
+              {
+                  exchange = b;
+              } 
+              else if (b == re->repl) 
+              {
+                  exchange = a;
+              }
+              re->nexchange[i]++;
+          }
+      } 
+      else 
+      {
+          prob[i] = -1;
+          bEx[i] = FALSE;
       }
-      if (bPrint)
-	fprintf(fplog,"Repl %d <-> %d  dE = %10.3e",a,b,delta);
-      if (re->bNPT) {
-	dpV = (betaA*re->pres[a]-betaB*re->pres[b])*(Vol[b]-Vol[a])/PRESFAC;
-	if (bPrint)
-	  fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
-	delta += dpV;
-      }
-      if (bPrint)
-	fprintf(fplog,"\n");
-      if (delta <= 0) {
-	prob[i] = 1;
-	bEx[i] = TRUE;
-      } else {
-        if (delta > 100)
-          prob[i] = 0;
-        else
-	  prob[i] = exp(-delta);
-	bEx[i] = (rando(&(re->seed)) < prob[i]);
-      }
-      re->prob_sum[i] += prob[i];    
-      if (bEx[i]) {
-	if (a == re->repl) {
-	  exchange = b;
-	} else if (b == re->repl) {
-	  exchange = a;
-	}
-	re->nexchange[i]++;
-      }
-    } else {
-      prob[i] = -1;
-      bEx[i] = FALSE;
-    }
   }
   print_ind(fplog,"ex",re->nrepl,re->ind,bEx);
   print_prob(fplog,"pr",re->nrepl,prob);
   fprintf(fplog,"\n");
-
+  
   sfree(bEx);
   sfree(prob);
   sfree(Epot);
   sfree(Vol);
-  sfree(dvdl);
-  
+  for (i=0;i<re->nlambda;i++) 
+  {
+      sfree(flambda[i]);
+  }
+  sfree(flambda);
+
   re->nattempt[m]++;
 
   return exchange;
@@ -621,9 +743,12 @@ static void write_debug_x(t_state *state)
 {
   int i;
 
-  if (debug) {
+  if (debug) 
+  {
     for(i=0; i<state->natoms; i+=10)
-      fprintf(debug,"dx %5d %10.5f %10.5f %10.5f\n",i,state->x[i][XX],state->x[i][YY],state->x[i][ZZ]);
+    {
+        fprintf(debug,"dx %5d %10.5f %10.5f %10.5f\n",i,state->x[i][XX],state->x[i][YY],state->x[i][ZZ]);
+    }
   }
 }
 

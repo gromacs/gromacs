@@ -1528,16 +1528,16 @@ void get_ir(const char *mdparin,const char *mdparout,
 
   opts->couple_moltype = NULL;
   if (strlen(couple_moltype) > 0) {
-    if (ir->efep != efepNO) {
+      if (ir->efep != efepNO) {
       opts->couple_moltype = strdup(couple_moltype);
       if (opts->couple_lam0 == opts->couple_lam1)
-	warning(wi,"The lambda=0 and lambda=1 states for coupling are identical");
+          warning(wi,"The lambda=0 and lambda=1 states for coupling are identical");
       if (ir->eI == eiMD && (opts->couple_lam0 == ecouplamNONE ||
-			     opts->couple_lam1 == ecouplamNONE)) {
-	warning(wi,"For proper sampling of the (nearly) decoupled state, stochastic dynamics should be used");
+                             opts->couple_lam1 == ecouplamNONE)) {
+          warning(wi,"For proper sampling of the (nearly) decoupled state, stochastic dynamics should be used");
       }
     } else {
-      warning(wi,"Can not couple a molecule with free_energy = no");
+        warning(wi,"Can not couple a molecule with free_energy = no");
     }
   }
 
