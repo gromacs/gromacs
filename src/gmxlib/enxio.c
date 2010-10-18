@@ -207,7 +207,7 @@ static void enxsubblock_alloc(t_enxsubblock *sb)
             }
             break;
         default:
-            gmx_incons("Unknown block type");
+            gmx_incons("Unknown block type: this file is corrupted or from the future");
     }
 }
 
@@ -469,6 +469,11 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         fr->t = r;
         if (!gmx_fio_do_int(ef->fio, dum))   *bOK = FALSE;
         fr->step = dum;
+
+        if (fr->t < 0 || fr->step < 0)
+        {
+            gmx_fatal(FARGS, "edr file with negative step or time (and without version number)");
+        }
     }
     else
     {
@@ -522,6 +527,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     }
 
     if (!gmx_fio_do_int(ef->fio, fr->nblock))  *bOK = FALSE;
+    if (fr->nblock < 0) *bOK=FALSE;
 
     if (ndisre!=0)
     {
@@ -541,7 +547,9 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     }
 
     if (*bOK && bRead)
+    {
         add_blocks_enxframe(fr, fr->nblock);
+    }
 
     startb=0;
     if (ndisre>0)
@@ -973,7 +981,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
                     bOK1=gmx_fio_ndo_string(ef->fio, sub->sval, sub->nr);
                     break;
                 default:
-                    gmx_incons("Reading unknown block type");
+                    gmx_incons("Reading unknown block data type: this file is corrupted or from the future");
             }
             bOK = bOK && bOK1;
         }
