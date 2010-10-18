@@ -2770,7 +2770,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             do_per_step(step,repl_ex_nst)) 
         {
             bExchanged = replica_exchange(fplog,cr,repl_ex,
-                                          state_global,enerd->term,
+                                          state_global,enerd,
                                           state,step,t);
 
             if (bExchanged && DOMAINDECOMP(cr)) 

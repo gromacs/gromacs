@@ -609,7 +609,7 @@ static void print_count(FILE *fplog,const char *leg,int n,int *count)
 }
 
 static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
-				struct gmx_repl_ex *re,real *ener,real vol,
+				struct gmx_repl_ex *re,gmx_enerdata_t *enerd,real vol,
 				int step,real time)
 {
   int  m,i,a,b;
@@ -625,19 +625,20 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
   case ereTEMP:
       snew(Epot,re->nrepl);
       snew(Vol,re->nrepl);
-      Epot[re->repl] = ener[F_EPOT];
+      Epot[re->repl] = enerd->term[F_EPOT];
       Vol[re->repl]  = vol;
       gmx_sum_sim(re->nrepl,Epot,ms);
       gmx_sum_sim(re->nrepl,Vol,ms);
       break;
   case ereLAMBDA:
       snew(Epot,re->nrepl);
-      snew(flambda,re->nlambda);
-      Epot[re->repl] = ener[F_EPOT];
+      snew(flambda,re->nrepl);
+      Epot[re->repl] = enerd->term[F_EPOT];
       gmx_sum_sim(re->nrepl,Epot,ms);
-      for (i=0;i<re->nlambda;i++) 
+      for (i=0;i<re->nrepl;i++) 
       {
           snew(flambda[i],re->nrepl);
+          flambda[i][re->repl] = (enerd->enerpart_lambda[(int)re->q[i]]-enerd->enerpart_lambda[0]);
           gmx_sum_sim(re->nrepl,flambda[i],ms);
       }
       break;
@@ -664,7 +665,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
               delta = (betaA - betaB)*ediff;
               break;
           case ereLAMBDA:
-              ediff = (Epot[b] + flambda[b][a]) - (Epot[b] + flambda[a][b]);    
+              ediff = (Epot[a] + flambda[b][a]) - (Epot[b] + flambda[a][b]);    
               delta = ediff/(BOLTZ*re->temp);
               break;
           default:
@@ -753,7 +754,7 @@ static void write_debug_x(t_state *state)
 }
 
 gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
-                      t_state *state,real *ener,
+                      t_state *state,gmx_enerdata_t *enerd,
                       t_state *state_local,
                       int step,real time)
 {
@@ -765,7 +766,7 @@ gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re
   
     if (MASTER(cr))
     {
-        exchange = get_replica_exchange(fplog,ms,re,ener,det(state->box),
+        exchange = get_replica_exchange(fplog,ms,re,enerd,det(state->box),
                                         step,time);
         bExchanged = (exchange >= 0);
     }
