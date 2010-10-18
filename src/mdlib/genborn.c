@@ -1604,35 +1604,31 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
     n  = 0;    
     rb = born->work;
         
-    
-    n0 = md->start;
-    n1 = md->start+md->homenr+1+natoms/2;
-    
+  n0 = 0;
+  n1 = natoms;
+  
     if(gb_algorithm==egbSTILL) 
     {
         for(i=n0;i<n1;i++)
         {
-            k = i % natoms;
-            rbi   = born->bRad[k];
-            rb[k] = (2 * rbi * rbi * dvda[k])/ONE_4PI_EPS0;
+          rbi   = born->bRad[i];
+          rb[i] = (2 * rbi * rbi * dvda[i])/ONE_4PI_EPS0;
         }
     }
     else if(gb_algorithm==egbHCT) 
     {
         for(i=n0;i<n1;i++)
         {
-            k = i % natoms;
-            rbi   = born->bRad[k];
-            rb[k] = rbi * rbi * dvda[k];
+          rbi   = born->bRad[i];
+          rb[i] = rbi * rbi * dvda[i];
         }
     }
     else if(gb_algorithm==egbOBC) 
     {
         for(i=n0;i<n1;i++)
         {
-            k = i % natoms;
-            rbi   = born->bRad[k];
-            rb[k] = rbi * rbi * born->drobc[k] * dvda[k];
+          rbi   = born->bRad[i];
+          rb[i] = rbi * rbi * born->drobc[i] * dvda[i];
         }
     }
     
@@ -1784,17 +1780,17 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || (defined(GMX_DOUBLE) && defined(GMX_SSE2)) )
     if(fr->UseOptimizedKernels)
     {
-        calc_gb_chainrule_sse2_double(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+        calc_gb_chainrule_sse2_double(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
                                       x[0], f[0], fr->fshift[0],  fr->shift_vec[0],
                                       gb_algorithm, born, md); 
     }
     else
     {
-        calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+        calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
                           x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md); 
     }
 #else
-    calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+    calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
                       x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);
 #endif
     
@@ -1804,19 +1800,19 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     if(fr->UseOptimizedKernels)
     {
-        calc_gb_chainrule_sse2_single(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+        calc_gb_chainrule_sse2_single(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
                                       x[0], f[0], fr->fshift[0], fr->shift_vec[0], 
                                       gb_algorithm, born, md);
     }
     else
     {
-        calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+        calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
                           x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);    
     }
     
 #else
     /* Calculate the forces due to chain rule terms with non sse code */
-    calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, 
+    calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, 
                       x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);    
 #endif    
 #endif
