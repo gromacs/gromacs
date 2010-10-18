@@ -39,6 +39,9 @@
 
 #include <gtest/gtest.h>
 
+#include "smalloc.h"
+#include "tpxio.h"
+
 #include "gromacs/errorreporting/emptyerrorreporter.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -51,22 +54,56 @@ class SelectionCollectionTest : public ::testing::Test
 {
     public:
         SelectionCollectionTest();
+        ~SelectionCollectionTest();
+
+        void setAtomCount(int natoms)
+        {
+            _sc.setTopology(NULL, natoms);
+        }
+        void loadTopology(const char *filename);
 
         gmx::SelectionCollection _sc;
         gmx::EmptyErrorReporter  _errors;
+        t_topology              *_top;
 };
 
 SelectionCollectionTest::SelectionCollectionTest()
-    : _sc(NULL)
+    : _sc(NULL), _top(NULL)
 {
     _sc.init();
+    _sc.setReferencePosType("atom");
+    _sc.setOutputPosType("atom");
+}
+
+
+SelectionCollectionTest::~SelectionCollectionTest()
+{
+    if (_top != NULL)
+    {
+        done_top(_top);
+        sfree(_top);
+    }
+}
+
+
+void
+SelectionCollectionTest::loadTopology(const char *filename)
+{
+    char    title[STRLEN];
+    int     ePBC;
+    rvec   *xtop;
+    matrix  box;
+
+    snew(_top, 1);
+    read_tps_conf(filename, title, _top, &ePBC, &xtop, NULL, box, FALSE);
+    sfree(xtop);
+
+    ASSERT_EQ(0, _sc.setTopology(_top, -1));
 }
 
 
 TEST_F(SelectionCollectionTest, HandlesNoSelections)
 {
-    _sc.setReferencePosType("atom");
-    _sc.setOutputPosType("atom");
     EXPECT_FALSE(_sc.requiresTopology());
     EXPECT_EQ(0, _sc.compile());
 }
@@ -75,12 +112,28 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
 TEST_F(SelectionCollectionTest, ParsesSimpleSelections)
 {
     std::vector<gmx::Selection *> sel;
-    _sc.setReferencePosType("atom");
-    _sc.setOutputPosType("atom");
-    EXPECT_EQ(0, _sc.parseFromString("resname RA RB", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5", &_errors, &sel));
     EXPECT_EQ(1U, sel.size());
-    EXPECT_EQ(0, _sc.parseFromString("name CA SB", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 2 to 4", &_errors, &sel));
     EXPECT_EQ(2U, sel.size());
+    setAtomCount(10);
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(5, sel[0]->posCount());
+    EXPECT_EQ(3, sel[1]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, ParsesArithmeticExpressions)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("x+1 > 3", &_errors, &sel));
+    EXPECT_EQ(1U, sel.size());
+    EXPECT_EQ(0, _sc.parseFromString("(y-1)^2 <= 1", &_errors, &sel));
+    EXPECT_EQ(2U, sel.size());
+    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(15, sel[0]->posCount());
+    EXPECT_EQ(15, sel[1]->posCount());
 }
 
 } // namespace
