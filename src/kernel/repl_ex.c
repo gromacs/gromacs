@@ -630,7 +630,6 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
       break;
   case ereLAMBDA:
       snew(flambda,re->nrepl);
-      gmx_sum_sim(re->nrepl,Epot,ms);
       for (i=0;i<re->nrepl;i++) 
       {
           snew(flambda[i],re->nrepl);
