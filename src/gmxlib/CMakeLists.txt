@@ -135,8 +135,11 @@ target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})
 add_dependencies(gmx gmx_version) 
 set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
-install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})
+install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmx.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig RENAME "libgmx${GMX_LIBS_SUFFIX}.pc")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc
+        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+        RENAME "libgmx${GMX_LIBS_SUFFIX}.pc"
+        COMPONENT development)
 
