@@ -629,9 +629,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
       gmx_sum_sim(re->nrepl,Vol,ms);
       break;
   case ereLAMBDA:
-      snew(Epot,re->nrepl);
       snew(flambda,re->nrepl);
-      Epot[re->repl] = enerd->term[F_EPOT];
       gmx_sum_sim(re->nrepl,Epot,ms);
       for (i=0;i<re->nrepl;i++) 
       {
@@ -663,7 +661,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
               delta = (betaA - betaB)*ediff;
               break;
           case ereLAMBDA:
-              ediff = (Epot[a] + flambda[b][a]) - (Epot[b] + flambda[a][b]);    
+              ediff = flambda[b][a] - flambda[a][b];    
               delta = ediff/(BOLTZ*re->temp);
               break;
           default:
@@ -725,14 +723,21 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
   
   sfree(bEx);
   sfree(prob);
-  sfree(Epot);
   sfree(Vol);
-  for (i=0;i<re->nrepl;i++) 
-  {
-      sfree(flambda[i]);
+  switch (re->type) {
+  case ereTEMP:
+      sfree(Epot);
+      break;
+  case ereLAMBDA:
+      for (i=0;i<re->nrepl;i++) 
+      {
+          sfree(flambda[i]);
+      }
+      sfree(flambda);
+      break;
+  default:
+      gmx_incons("Unknown replica exchange quantity");
   }
-  sfree(flambda);
-
   re->nattempt[m]++;
 
   return exchange;
