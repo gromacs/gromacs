@@ -470,9 +470,9 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         if (!gmx_fio_do_int(ef->fio, dum))   *bOK = FALSE;
         fr->step = dum;
 
-        if (fr->t < 0 || fr->step < 0)
+        if (fr->t < 0 || fr->t > 1e20 || fr->step < 0 )
         {
-            gmx_fatal(FARGS, "edr file with negative step or time (and without version number)");
+            gmx_fatal(FARGS, "edr file with negative step number or unreasonable time (and without version number)");
         }
     }
     else
