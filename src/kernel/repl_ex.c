@@ -56,7 +56,6 @@ typedef struct gmx_repl_ex {
   int  nrepl;
   real temp;
   int  type;
-  int  nlambda;
   real *q;
   gmx_bool bNPT;
   real *pres;
@@ -146,7 +145,6 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
   check_multi_int(fplog,ms,ir->fepvals->n_lambda,"number of lambda states");
 
   re->temp = ir->opts.ref_t[0];
-  re->nlambda = ir->fepvals->n_lambda;
 
   /* need a check in here for the lambda states to be the same? */
 
@@ -729,7 +727,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
   sfree(prob);
   sfree(Epot);
   sfree(Vol);
-  for (i=0;i<re->nlambda;i++) 
+  for (i=0;i<re->nrepl;i++) 
   {
       sfree(flambda[i]);
   }
