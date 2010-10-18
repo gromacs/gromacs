@@ -1758,7 +1758,7 @@ yyreduce:
 #line 201 "parser.y"
     {
                  (yyval.sel) = NULL;
-                 _gmx_selparser_error("invalid selection '%s'",
+                 _gmx_selparser_error(scanner, "invalid selection '%s'",
                                       _gmx_sel_lexer_pselstr(scanner));
                  _gmx_sel_lexer_clear_method_stack(scanner);
                  if (_gmx_sel_is_lexer_interactive(scanner))
@@ -2577,7 +2577,7 @@ process_param_list(t_selexpr_param *params)
 static void
 yyerror(yyscan_t scanner, char const *s)
 {
-    _gmx_selparser_error("%s", s);
+    _gmx_selparser_error(scanner, "%s", s);
 }
 
 

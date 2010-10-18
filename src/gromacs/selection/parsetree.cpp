@@ -219,7 +219,10 @@
 #include <futil.h>
 #include <smalloc.h>
 #include <string2.h>
-#include <gmx_fatal.h>
+
+#include "gromacs/errorreporting/abstracterrorreporter.h"
+#include "gromacs/errorreporting/errorcontext.h"
+#include "gromacs/fatalerror/fatalerror.h"
 
 #include "poscalc.h"
 #include "selection.h"
@@ -234,18 +237,28 @@
 
 #include "scanner.h"
 
-/*!
- * It is a simple wrapper for fprintf(stderr, ...).
- */
 void
-_gmx_selparser_error(const char *fmt, ...)
+_gmx_selparser_warning(yyscan_t scanner, const char *fmt, ...)
 {
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char buf[1024];
     va_list ap;
     va_start(ap, fmt);
-    fprintf(stderr, "selection parser: ");
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+    vsprintf(buf, fmt, ap);
     va_end(ap);
+    errors->warning(buf);
+}
+
+void
+_gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
+{
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char buf[1024];
+    va_list ap;
+    va_start(ap, fmt);
+    vsprintf(buf, fmt, ap);
+    va_end(ap);
+    errors->error(buf);
 }
 
 /*!
@@ -347,6 +360,7 @@ _gmx_selexpr_free_params(t_selexpr_param *param)
 
 /*!
  * \param[in,out] sel  Root of the selection element tree to initialize.
+ * \param[in]     scanner Scanner data structure.
  * \returns       0 on success, an error code on error.
  *
  * Propagates the \ref SEL_DYNAMIC flag from the children of \p sel to \p sel
@@ -364,7 +378,7 @@ _gmx_selexpr_free_params(t_selexpr_param *param)
  * operation does not descend beyond such elements.
  */
 int
-_gmx_selelem_update_flags(t_selelem *sel)
+_gmx_selelem_update_flags(t_selelem *sel, yyscan_t scanner)
 {
     t_selelem          *child;
     int                 rc;
@@ -434,7 +448,7 @@ _gmx_selelem_update_flags(t_selelem *sel)
     while (child)
     {
         /* Update the child */
-        rc = _gmx_selelem_update_flags(child);
+        rc = _gmx_selelem_update_flags(child, scanner);
         if (rc != 0)
         {
             return rc;
@@ -447,8 +461,8 @@ _gmx_selelem_update_flags(t_selelem *sel)
             if ((sel->flags & SEL_VALTYPEMASK)
                 && !(sel->flags & child->flags & SEL_VALTYPEMASK))
             {
-                _gmx_selparser_error("invalid combination of selection expressions");
-                return EINVAL;
+                _gmx_selparser_error(scanner, "invalid combination of selection expressions");
+                return gmx::eeInvalidInput;
             }
             sel->flags |= (child->flags & SEL_VALTYPEMASK);
         }
@@ -527,7 +541,7 @@ _gmx_selelem_init_method_params(t_selelem *sel, yyscan_t scanner)
         mdata = sel->u.expr.method->init_data(nparams, param);
         if (mdata == NULL)
         {
-            gmx_fatal(FARGS, "Method data initialization failed");
+            GMX_ERROR_NORET(gmx::eeInvalidValue, "Method data initialization failed");
         }
     }
     if (sel->u.expr.method->set_poscoll)
@@ -569,10 +583,12 @@ _gmx_selelem_set_method(t_selelem *sel, gmx_ana_selmethod_t *method,
  * \param[in,out] pcc    Position calculation collection to use.
  * \param[in,out] sel    Selection element to initialize.
  * \param[in]     rpost  Reference position type to use (NULL = default).
+ * \param[in]     scanner Scanner data structure.
  * \returns       0 on success, a non-zero error code on error.
  */
 static int
-set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost)
+set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost,
+                yyscan_t scanner)
 {
     int  rc;
 
@@ -590,8 +606,8 @@ set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost)
     }
     else
     {
-        _gmx_selparser_error("warning: '%s' modifier for '%s' ignored",
-                             rpost, sel->u.expr.method->name);
+        _gmx_selparser_warning(scanner, "modifier '%s' for '%s' ignored",
+                               rpost, sel->u.expr.method->name);
     }
     return rc;
 }
@@ -651,6 +667,9 @@ _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
     const char        *name;
     int                rc;
 
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    gmx::ErrorContext  context(errors, "In comparison initialization");
+
     sel = _gmx_selelem_create(SEL_EXPRESSION);
     _gmx_selelem_set_method(sel, &sm_compare, scanner);
     /* Create the parameter for the left expression */
@@ -673,7 +692,6 @@ _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
     if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
                                sel->u.expr.method->param, sel, scanner))
     {
-        _gmx_selparser_error("error in comparison initialization");
         _gmx_selelem_free(sel);
         return NULL;
     }
@@ -702,9 +720,15 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
     int                nargs;
     int                rc;
 
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char  buf[128];
+    sprintf(buf, "In keyword '%s'", method->name);
+    gmx::ErrorContext  context(errors, buf);
+
     if (method->nparams > 0)
     {
-        gmx_bug("internal error");
+        GMX_ERROR_NORET(gmx::eeInternalError,
+                        "Keyword initialization called with non-keyword method");
         return NULL;
     }
 
@@ -722,7 +746,8 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
             case REAL_VALUE: kwmethod = &sm_keyword_real; break;
             case STR_VALUE:  kwmethod = &sm_keyword_str;  break;
             default:
-                _gmx_selparser_error("unknown type for keyword selection");
+                GMX_ERROR_NORET(gmx::eeInternalError,
+                                "Unknown type for keyword selection");
                 _gmx_selexpr_free_values(args);
                 goto on_error;
         }
@@ -747,11 +772,10 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
         if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
                                    root->u.expr.method->param, root, scanner))
         {
-            _gmx_selparser_error("error in keyword selection initialization");
             goto on_error;
         }
     }
-    rc = set_refpos_type(sc->pcc, child, rpost);
+    rc = set_refpos_type(sc->pcc, child, rpost, scanner);
     if (rc != 0)
     {
         goto on_error;
@@ -788,6 +812,11 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     t_selelem       *root;
     int              rc;
 
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char  buf[128];
+    sprintf(buf, "In keyword '%s'", method->name);
+    gmx::ErrorContext  context(errors, buf);
+
     _gmx_sel_finish_method(scanner);
     /* The "same" keyword needs some custom massaging of the parameters. */
     rc = _gmx_selelem_custom_init_same(&method, params, scanner);
@@ -805,7 +834,7 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
         _gmx_selelem_free(root);
         return NULL;
     }
-    rc = set_refpos_type(sc->pcc, root, rpost);
+    rc = set_refpos_type(sc->pcc, root, rpost, scanner);
     if (rc != 0)
     {
         _gmx_selelem_free(root);
@@ -833,6 +862,11 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     t_selelem         *mod;
     t_selexpr_param   *vparam;
     int                i;
+
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char  buf[128];
+    sprintf(buf, "In keyword '%s'", method->name);
+    gmx::ErrorContext  context(errors, buf);
 
     _gmx_sel_finish_method(scanner);
     mod = _gmx_selelem_create(SEL_MODIFIER);
@@ -884,6 +918,11 @@ _gmx_sel_init_position(t_selelem *expr, const char *type, yyscan_t scanner)
     t_selelem       *root;
     t_selexpr_param *params;
 
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char  buf[128];
+    sprintf(buf, "In position evaluation");
+    gmx::ErrorContext  context(errors, buf);
+
     root = _gmx_selelem_create(SEL_EXPRESSION);
     _gmx_selelem_set_method(root, &sm_keyword_pos, scanner);
     _gmx_selelem_set_kwpos_type(root, type);
@@ -934,6 +973,8 @@ _gmx_sel_init_const_position(real x, real y, real z)
 t_selelem *
 _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
 {
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char buf[256];
     gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
     t_selelem *sel;
 
@@ -948,6 +989,8 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
     }
     if (!grps)
     {
+        sprintf(buf, "No index groups set; cannot match 'group %s'", name);
+        errors->error(buf);
         return NULL;
     }
     sel = _gmx_selelem_create(SEL_CONST);
@@ -955,6 +998,8 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
     /* FIXME: The constness should not be cast away */
     if (!gmx_ana_indexgrps_find(&sel->u.cgrp, grps, (char *)name))
     {
+        sprintf(buf, "Cannot match 'group %s'", name);
+        errors->error(buf);
         _gmx_selelem_free(sel);
         return NULL;
     }
@@ -971,6 +1016,8 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
 t_selelem *
 _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
 {
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char buf[128];
     gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
     t_selelem *sel;
 
@@ -984,12 +1031,16 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
     }
     if (!grps)
     {
+        sprintf(buf, "No index groups set; cannot match 'group %d'", id);
+        errors->error(buf);
         return NULL;
     }
     sel = _gmx_selelem_create(SEL_CONST);
     _gmx_selelem_set_vtype(sel, GROUP_VALUE);
     if (!gmx_ana_indexgrps_extract(&sel->u.cgrp, grps, id))
     {
+        sprintf(buf, "Cannot match 'group %d'", id);
+        errors->error(buf);
         _gmx_selelem_free(sel);
         return NULL;
     }
@@ -1041,9 +1092,15 @@ _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
     t_selelem               *root;
     int                      rc;
 
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char  buf[1024];
+    sprintf(buf, "In selection '%s'", _gmx_sel_lexer_pselstr(scanner));
+    gmx::ErrorContext  context(errors, buf);
+
     if (sel->v.type != POS_VALUE)
     {
-        gmx_bug("each selection must evaluate to a position");
+        GMX_ERROR_NORET(gmx::eeInternalError,
+                        "Each selection must evaluate to a position");
         /* FIXME: Better handling of this error */
         sfree(name);
         return NULL;
@@ -1058,7 +1115,7 @@ _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
         root->name = root->u.cgrp.name = name;
     }
     /* Update the flags */
-    rc = _gmx_selelem_update_flags(root);
+    rc = _gmx_selelem_update_flags(root, scanner);
     if (rc != 0)
     {
         _gmx_selelem_free(root);
@@ -1127,7 +1184,12 @@ _gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
     t_selelem               *root = NULL;
     int                      rc;
 
-    rc = _gmx_selelem_update_flags(expr);
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char  buf[1024];
+    sprintf(buf, "In selection '%s'", pselstr);
+    gmx::ErrorContext  context(errors, buf);
+
+    rc = _gmx_selelem_update_flags(expr, scanner);
     if (rc != 0)
     {
         sfree(name);
@@ -1172,7 +1234,7 @@ _gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
     root->child->name   = name;
     root->child->child  = expr;
     /* Update flags */
-    rc = _gmx_selelem_update_flags(root);
+    rc = _gmx_selelem_update_flags(root, scanner);
     if (rc != 0)
     {
         _gmx_selelem_free(root);

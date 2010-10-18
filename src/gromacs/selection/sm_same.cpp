@@ -222,7 +222,7 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
     if (params->nval != 1 || !params->value->bExpr
         || params->value->u.expr->type != SEL_EXPRESSION)
     {
-        _gmx_selparser_error("error: 'same' should be followed by a single keyword");
+        _gmx_selparser_error(scanner, "'same' should be followed by a single keyword");
         return -1;
     }
     kwmethod = params->value->u.expr->u.expr.method;

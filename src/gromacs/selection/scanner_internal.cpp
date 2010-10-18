@@ -55,7 +55,8 @@
 #include <string.h>
 
 #include "string2.h"
-#include "gmx_fatal.h"
+
+#include "gromacs/fatalerror/fatalerror.h"
 
 #include "selmethod.h"
 
@@ -130,7 +131,7 @@ read_stdin_line(gmx_sel_lexer_t *state)
     }
     if (ferror(stdin))
     {
-        gmx_input("selection reading failed");
+        GMX_ERROR_NORET(gmx::eeInvalidInput, "Selection reading failed");
     }
     return totlen > 0;
 }
@@ -203,7 +204,9 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, gmx_bool bPosMod
             case REAL_VALUE:  return KEYWORD_NUMERIC;
             case STR_VALUE:   return KEYWORD_STR;
             case GROUP_VALUE: return KEYWORD_GROUP;
-            default:          return INVALID;
+            default:
+                GMX_ERROR_NORET(gmx::eeInternalError, "Unsupported keyword type");
+                return INVALID;
         }
     } else {
         /* Method with parameters or a modifier */
@@ -242,6 +245,7 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, gmx_bool bPosMod
             case GROUP_VALUE: return METHOD_GROUP;
             default:
                 --state->msp;
+                GMX_ERROR_NORET(gmx::eeInternalError, "Unsupported method type");
                 return INVALID;
         }
     }
@@ -356,6 +360,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     /* Reserved symbols should have been caught earlier */
     if (symtype == SYMBOL_RESERVED)
     {
+        GMX_ERROR_NORET(gmx::eeInternalError,
+                        "Mismatch between tokenizer and reserved symbol table");
         return INVALID;
     }
     /* For variable symbols, return the type of the variable value */
@@ -378,6 +384,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                 case POS_VALUE:
                     break;
                 default:
+                    GMX_ERROR_NORET(gmx::eeInternalError,
+                                    "Unsupported variable type");
                     return INVALID;
             }
         }
@@ -388,9 +396,12 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
             case REAL_VALUE:  return VARIABLE_NUMERIC;
             case POS_VALUE:   return VARIABLE_POS;
             case GROUP_VALUE: return VARIABLE_GROUP;
-            default:          return INVALID;
+            default:
+                GMX_ERROR_NORET(gmx::eeInternalError,
+                                "Unsupported variable type");
+                return INVALID;
         }
-        return INVALID;
+        return INVALID; /* Should not be reached. */
     }
     /* For method symbols, return the correct type */
     if (symtype == SYMBOL_METHOD)
@@ -443,6 +454,7 @@ _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
 
 int
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
+                    gmx::AbstractErrorReporter *errors,
                     bool bInteractive, int maxnr, bool bGroups,
                     struct gmx_ana_indexgrps_t *grps)
 {
@@ -457,6 +469,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 
     snew(state, 1);
     state->sc        = sc;
+    state->errors    = errors;
     state->bGroups   = bGroups;
     state->grps      = grps;
     state->nexpsel   = (maxnr > 0 ? sc->sel.size() + maxnr : -1);
@@ -515,6 +528,13 @@ _gmx_sel_lexer_selcollection(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->sc;
+}
+
+gmx::AbstractErrorReporter *
+_gmx_sel_lexer_error_reporter(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return state->errors;
 }
 
 bool

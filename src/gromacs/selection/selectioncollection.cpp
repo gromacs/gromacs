@@ -516,13 +516,13 @@ SelectionCollection::parseRequestedFromString(const std::string &str,
 
 int
 SelectionCollection::parseFromStdin(int nr, bool bInteractive,
-                                    AbstractErrorReporter * /*errors*/,
+                                    AbstractErrorReporter *errors,
                                     std::vector<Selection *> *output)
 {
     yyscan_t scanner;
     int      rc;
 
-    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, bInteractive, nr,
+    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, errors, bInteractive, nr,
                              _impl->hasFlag(Impl::efExternalGroupsSet),
                              _impl->_grps);
     if (rc != 0)
@@ -537,14 +537,14 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive,
 
 int
 SelectionCollection::parseFromFile(const std::string &filename,
-                                   AbstractErrorReporter * /*errors*/,
+                                   AbstractErrorReporter *errors,
                                    std::vector<Selection *> *output)
 {
     yyscan_t scanner;
     FILE *fp;
     int   rc;
 
-    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, false, -1,
+    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, errors, false, -1,
                              _impl->hasFlag(Impl::efExternalGroupsSet),
                              _impl->_grps);
     if (rc != 0)
@@ -561,13 +561,13 @@ SelectionCollection::parseFromFile(const std::string &filename,
 
 int
 SelectionCollection::parseFromString(const std::string &str,
-                                     AbstractErrorReporter * /*errors*/,
+                                     AbstractErrorReporter *errors,
                                      std::vector<Selection *> *output)
 {
     yyscan_t scanner;
     int      rc;
 
-    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, false, -1,
+    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, errors, false, -1,
                              _impl->hasFlag(Impl::efExternalGroupsSet),
                              _impl->_grps);
     if (rc != 0)
