@@ -192,6 +192,85 @@ TEST_F(SelectionCollectionTest, HandlesComparison)
 }
 
 
+TEST_F(SelectionCollectionTest, HandlesBasicBoolean)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and atomnr 2 to 7", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 or not atomnr 3 to 8", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7", &_errors, &sel));
+    ASSERT_EQ(3U, sel.size());
+    EXPECT_FALSE(sel[0]->isDynamic());
+    EXPECT_FALSE(sel[1]->isDynamic());
+    EXPECT_FALSE(sel[2]->isDynamic());
+    setAtomCount(10);
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(4, sel[0]->posCount());
+    EXPECT_EQ(7, sel[1]->posCount());
+    EXPECT_EQ(3, sel[2]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, HandlesBooleanStaticAnalysis)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and atomnr 2 to 7 and x < 2", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and (atomnr 4 to 7 or x < 2)", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and y < 3 and (atomnr 4 to 7 or x < 2)", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and not (atomnr 4 to 7 or x < 2)", &_errors, &sel));
+    ASSERT_EQ(4U, sel.size());
+    EXPECT_TRUE(sel[0]->isDynamic());
+    EXPECT_TRUE(sel[1]->isDynamic());
+    EXPECT_TRUE(sel[2]->isDynamic());
+    EXPECT_TRUE(sel[3]->isDynamic());
+    setAtomCount(10);
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(4, sel[0]->posCount());
+    EXPECT_EQ(5, sel[1]->posCount());
+    EXPECT_EQ(5, sel[2]->posCount());
+    EXPECT_EQ(3, sel[3]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, HandlesBooleanStaticAnalysisWithVariables)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("foo = atomnr 4 to 7 or x < 2", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 4 and foo", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 2 to 6 and y < 3 and foo", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 6 to 10 and not foo", &_errors, &sel));
+    ASSERT_EQ(3U, sel.size());
+    EXPECT_TRUE(sel[0]->isDynamic());
+    EXPECT_TRUE(sel[1]->isDynamic());
+    EXPECT_TRUE(sel[2]->isDynamic());
+    setAtomCount(10);
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(4, sel[0]->posCount());
+    EXPECT_EQ(5, sel[1]->posCount());
+    EXPECT_EQ(3, sel[2]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, HandlesBooleanStaticAnalysisWithMoreVariables)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("foo = atomnr 4 to 7", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("bar = foo and x < 2", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("bar2 = foo and y < 2", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 4 and bar", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 2 to 6 and y < 3 and bar2", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("atomnr 6 to 10 and not foo", &_errors, &sel));
+    ASSERT_EQ(3U, sel.size());
+    EXPECT_TRUE(sel[0]->isDynamic());
+    EXPECT_TRUE(sel[1]->isDynamic());
+    EXPECT_FALSE(sel[2]->isDynamic());
+    setAtomCount(10);
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(1, sel[0]->posCount());
+    EXPECT_EQ(3, sel[1]->posCount());
+    EXPECT_EQ(3, sel[2]->posCount());
+}
+
+
 TEST_F(SelectionCollectionTest, HandlesSameResidue)
 {
     std::vector<gmx::Selection *> sel;
