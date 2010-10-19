@@ -1367,8 +1367,8 @@ float calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float
 	{
 		for(i=n0;i<n1;i++)
 		{
-      rbi   = born->bRad[k];
-			rb[i] = rbi * rbi * born->drobc[k] * dvda[i];
+      rbi   = born->bRad[i];
+			rb[i] = rbi * rbi * born->drobc[i] * dvda[i];
 		}
 	}
     
