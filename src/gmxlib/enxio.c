@@ -314,6 +314,19 @@ void add_subblocks_enxblock(t_enxblock *eb, int n)
     }
 }
 
+static void enx_warning(const char *msg)
+{
+    if (getenv("GMX_ENX_NO_FATAL") != NULL)
+    {
+        gmx_warning(msg);
+    }
+    else
+    {
+        gmx_fatal(FARGS,"%s\n%s",
+                  msg,
+                  "If you want to use the correct frames before the corrupted frame and avoid this fatal error set the env.var. GMX_ENX_NO_FATAL");
+    }
+}
 
 static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
                         int n,gmx_enxnm_t **nms)
@@ -472,7 +485,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
 
         if (fr->t < 0 || fr->t > 1e20 || fr->step < 0 )
         {
-            gmx_warning("edr file with negative step number or unreasonable time (and without version number).");
+            enx_warning("edr file with negative step number or unreasonable time (and without version number).");
             *bOK=FALSE;
             return FALSE;
         }
@@ -482,7 +495,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         if (!gmx_fio_do_int(ef->fio, magic))       *bOK = FALSE;
         if (magic != -7777777)
         {
-            gmx_warning("Energy header magic number mismatch, this is not a GROMACS edr file");
+            enx_warning("Energy header magic number mismatch, this is not a GROMACS edr file");
             *bOK=FALSE;
             return FALSE;
         }
@@ -537,7 +550,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     {
         if (*file_version >= 4)
         {
-            gmx_warning("Distance restraint blocks in old style in new style file");
+            enx_warning("Distance restraint blocks in old style in new style file");
             *bOK=FALSE;
             return FALSE;
         }
@@ -589,15 +602,11 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             {
                 if (fr->block[b].nsub != 1)
                 {
-                    gmx_warning("Writing an old version .edr file with too many subblocks");
-                    *bOK=FALSE;
-                    return FALSE;
+                    gmx_incons("Writing an old version .edr file with too many subblocks");
                 }
                 if (fr->block[b].sub[0].type != dtreal)
                 {
-                    gmx_warning("Writing an old version .edr file the wrong subblock type");
-                    *bOK=FALSE;
-                    return FALSE;
+                    gmx_incons("Writing an old version .edr file the wrong subblock type");
                 }
             }
             nrint = fr->block[b].sub[0].nr;
