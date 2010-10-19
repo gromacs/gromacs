@@ -40,7 +40,9 @@
 #include <gtest/gtest.h>
 
 #include "smalloc.h"
+#include "statutil.h"
 #include "tpxio.h"
+#include "vec.h"
 
 #include "gromacs/errorreporting/emptyerrorreporter.h"
 #include "gromacs/selection/poscalc.h"
@@ -49,6 +51,10 @@
 
 namespace
 {
+
+/********************************************************************
+ * Test fixture for selection testing
+ */
 
 class SelectionCollectionTest : public ::testing::Test
 {
@@ -65,10 +71,11 @@ class SelectionCollectionTest : public ::testing::Test
         gmx::SelectionCollection _sc;
         gmx::EmptyErrorReporter  _errors;
         t_topology              *_top;
+        t_trxframe              *_frame;
 };
 
 SelectionCollectionTest::SelectionCollectionTest()
-    : _sc(NULL), _top(NULL)
+    : _sc(NULL), _top(NULL), _frame(NULL)
 {
     _sc.init();
     _sc.setReferencePosType("atom");
@@ -83,6 +90,12 @@ SelectionCollectionTest::~SelectionCollectionTest()
         done_top(_top);
         sfree(_top);
     }
+
+    if (_frame != NULL)
+    {
+        sfree(_frame->x);
+        sfree(_frame);
+    }
 }
 
 
@@ -96,11 +109,23 @@ SelectionCollectionTest::loadTopology(const char *filename)
 
     snew(_top, 1);
     read_tps_conf(filename, title, _top, &ePBC, &xtop, NULL, box, FALSE);
-    sfree(xtop);
+
+    snew(_frame, 1);
+    _frame->flags  = TRX_NEED_X;
+    _frame->natoms = _top->atoms.nr;
+    _frame->bX     = TRUE;
+    snew(_frame->x, _frame->natoms);
+    memcpy(_frame->x, xtop, sizeof(*_frame->x) * _frame->natoms);
+    _frame->bBox   = TRUE;
+    copy_mat(box, _frame->box);
 
     ASSERT_EQ(0, _sc.setTopology(_top, -1));
 }
 
+
+/********************************************************************
+ * Tests for SelectionCollection functionality
+ */
 
 TEST_F(SelectionCollectionTest, HandlesNoSelections)
 {
@@ -109,7 +134,7 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
 }
 
 
-TEST_F(SelectionCollectionTest, ParsesSimpleSelections)
+TEST_F(SelectionCollectionTest, HandlesSimpleSelections)
 {
     std::vector<gmx::Selection *> sel;
     EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5", &_errors, &sel));
@@ -118,22 +143,123 @@ TEST_F(SelectionCollectionTest, ParsesSimpleSelections)
     EXPECT_EQ(2U, sel.size());
     setAtomCount(10);
     EXPECT_EQ(0, _sc.compile());
+    ASSERT_EQ(2U, sel.size());
     EXPECT_EQ(5, sel[0]->posCount());
     EXPECT_EQ(3, sel[1]->posCount());
 }
 
 
-TEST_F(SelectionCollectionTest, ParsesArithmeticExpressions)
+/********************************************************************
+ * Tests for selection syntax
+ */
+
+TEST_F(SelectionCollectionTest, HandlesConstantPositions)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("[1, -2, 3.5]", &_errors, &sel));
+    ASSERT_EQ(1U, sel.size());
+    EXPECT_FALSE(sel[0]->isDynamic());
+    setAtomCount(10);
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(1, sel[0]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, HandlesStringMatching)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("resname RA RD", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("resname \"R[BD]\"", &_errors, &sel));
+    ASSERT_EQ(2U, sel.size());
+    EXPECT_FALSE(sel[0]->isDynamic());
+    EXPECT_FALSE(sel[1]->isDynamic());
+    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(9, sel[0]->posCount());
+    EXPECT_EQ(6, sel[1]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, HandlesComparison)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("atomnr <= 5", &_errors, &sel));
+    ASSERT_EQ(1U, sel.size());
+    EXPECT_FALSE(sel[0]->isDynamic());
+    setAtomCount(10);
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(5, sel[0]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, HandlesSameResidue)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("same residue as atomnr 1 4 12", &_errors, &sel));
+    ASSERT_EQ(1U, sel.size());
+    EXPECT_FALSE(sel[0]->isDynamic());
+    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(9, sel[0]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, HandlesSameResidueName)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("same resname as atomnr 1 14", &_errors, &sel));
+    ASSERT_EQ(1U, sel.size());
+    EXPECT_FALSE(sel[0]->isDynamic());
+    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(9, sel[0]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, HandlesArithmeticExpressions)
 {
     std::vector<gmx::Selection *> sel;
     EXPECT_EQ(0, _sc.parseFromString("x+1 > 3", &_errors, &sel));
-    EXPECT_EQ(1U, sel.size());
     EXPECT_EQ(0, _sc.parseFromString("(y-1)^2 <= 1", &_errors, &sel));
-    EXPECT_EQ(2U, sel.size());
+    EXPECT_EQ(0, _sc.parseFromString("x+--1 > 3", &_errors, &sel));
+    EXPECT_EQ(0, _sc.parseFromString("-x+-1 < -3", &_errors, &sel));
+    ASSERT_EQ(4U, sel.size());
+    EXPECT_TRUE(sel[0]->isDynamic());
+    EXPECT_TRUE(sel[1]->isDynamic());
+    EXPECT_TRUE(sel[2]->isDynamic());
+    EXPECT_TRUE(sel[3]->isDynamic());
     loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
     EXPECT_EQ(0, _sc.compile());
     EXPECT_EQ(15, sel[0]->posCount());
     EXPECT_EQ(15, sel[1]->posCount());
+    EXPECT_EQ(15, sel[2]->posCount());
+    EXPECT_EQ(15, sel[3]->posCount());
+    EXPECT_EQ(0, _sc.evaluate(_frame, NULL));
+    EXPECT_EQ(7, sel[0]->posCount());
+    EXPECT_EQ(8, sel[1]->posCount());
+    EXPECT_EQ(7, sel[2]->posCount());
+    EXPECT_EQ(7, sel[3]->posCount());
+    EXPECT_EQ(0, _sc.evaluateFinal(1));
+    EXPECT_EQ(15, sel[0]->posCount());
+    EXPECT_EQ(15, sel[1]->posCount());
+    EXPECT_EQ(15, sel[2]->posCount());
+    EXPECT_EQ(15, sel[3]->posCount());
+}
+
+
+TEST_F(SelectionCollectionTest, HandlesWithinConstantPositions)
+{
+    std::vector<gmx::Selection *> sel;
+    EXPECT_EQ(0, _sc.parseFromString("within 1 of [2, 1, 0]", &_errors, &sel));
+    ASSERT_EQ(1U, sel.size());
+    EXPECT_TRUE(sel[0]->isDynamic());
+    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    EXPECT_EQ(0, _sc.compile());
+    EXPECT_EQ(15, sel[0]->posCount());
+    EXPECT_EQ(0, _sc.evaluate(_frame, NULL));
+    EXPECT_EQ(4, sel[0]->posCount());
+    EXPECT_EQ(0, _sc.evaluateFinal(1));
+    EXPECT_EQ(15, sel[0]->posCount());
 }
 
 } // namespace
