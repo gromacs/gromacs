@@ -225,7 +225,12 @@ TrajectoryAnalysisRunnerCommon::initOptionsDone()
                   "No trajectory or topology provided, nothing to do!");
     }
 
-    // TODO: Set trajectory time options
+    if (_impl->_options.isSet("b"))
+        setTimeValue(TBEGIN, _impl->_startTime);
+    if (_impl->_options.isSet("e"))
+        setTimeValue(TEND, _impl->_endTime);
+    if (_impl->_options.isSet("dt"))
+        setTimeValue(TDELTA, _impl->_deltaTime);
 
     return 0;
 }
