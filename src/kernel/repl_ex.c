@@ -261,7 +261,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     fprintf(fplog,"\nRepl  l");
     for(i=0; i<re->nrepl; i++) 
     {
-        fprintf(fplog," %5.3f",re->q[re->ind[i]]);
+        fprintf(fplog," %5d",(int)re->q[re->ind[i]]);
     }
     break;
   default:
@@ -633,7 +633,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
       for (i=0;i<re->nrepl;i++) 
       {
           snew(flambda[i],re->nrepl);
-          flambda[i][re->repl] = (enerd->enerpart_lambda[(int)re->q[i]]-enerd->enerpart_lambda[0]);
+          flambda[i][re->repl] = (enerd->enerpart_lambda[(int)re->q[i]+1]-enerd->enerpart_lambda[0]);
           gmx_sum_sim(re->nrepl,flambda[i],ms);
       }
       break;
@@ -662,6 +662,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
           case ereLAMBDA:
               ediff = flambda[b][a] - flambda[a][b];    
               delta = ediff/(BOLTZ*re->temp);
+              betaA = betaB = 1.0/(re->temp*BOLTZ); /* needed for NPT */
               break;
           default:
               gmx_incons("Unknown replica exchange quantity");
