@@ -629,6 +629,16 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
       gmx_sum_sim(re->nrepl,Vol,ms);
       break;
   case ereLAMBDA:
+
+      /* volume differences in NPT*/
+      snew(Vol,re->nrepl);
+      Vol[re->repl]  = vol;
+      gmx_sum_sim(re->nrepl,Vol,ms);
+
+      /* lambda differences. */
+      /* flambda[i][j] is the energy of the jth simulation in the ith Hamiltonian 
+         minus the energy of the jth simulation in the jth Hamiltonian            */
+      
       snew(flambda,re->nrepl);
       for (i=0;i<re->nrepl;i++) 
       {
@@ -660,7 +670,10 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
               delta = (betaA - betaB)*ediff;
               break;
           case ereLAMBDA:
-              ediff = flambda[b][a] - flambda[a][b];    
+              /* ediff =  E_new - E_old */
+              /*       =  [H_b(x_a) + H_a(x_b)] - [H_b(x_b) + H_a(x_a)] */
+              /*       =  [H_b(x_a) - H_a(x_a)] + [H_a(x_b) - H_b(x_b)] */
+              ediff = flambda[b][a] + flambda[a][b];    
               delta = ediff/(BOLTZ*re->temp);
               betaA = betaB = 1.0/(re->temp*BOLTZ); /* needed for NPT */
               break;
@@ -723,12 +736,13 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
   
   sfree(bEx);
   sfree(prob);
-  sfree(Vol);
   switch (re->type) {
   case ereTEMP:
+      sfree(Vol);
       sfree(Epot);
       break;
   case ereLAMBDA:
+      sfree(Vol);
       for (i=0;i<re->nrepl;i++) 
       {
           sfree(flambda[i]);

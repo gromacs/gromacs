@@ -429,11 +429,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"nstfep (%d) must be an integer multiple of nstlist (%d)",
               fep->nstfep,ir->nstlist);  /* MRS -- WHAT ABOUT IF IT'S VARIABLE NSLIST? */
       CHECK((mod(ir->nstdhdl,fep->nstfep)!=0));
-      if (fep->nstTij < 0) 
-      {
-          /* if negative, set to the last step only */
-          fep->nstTij = ir->nsteps;
-      }
       sprintf(err_buf,"nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
               fep->nstTij,ir->nstlog);
       CHECK((mod(fep->nstTij,ir->nstlog)!=0));
