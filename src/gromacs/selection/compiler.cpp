@@ -1670,15 +1670,6 @@ make_static(t_selelem *sel)
             sel->child->child->v.nalloc = -1;
         }
     }
-    /* When we reach here for parameter elements, the value is already
-     * stored in the parent element, so make sure that it is not freed
-     * through this element. */
-    if (sel->type == SEL_SUBEXPRREF && sel->u.param)
-    {
-        sel->u.param->val.nalloc = sel->v.nalloc;
-        sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
-        sel->v.nalloc = -1;
-    }
     /* Free the children. */
     release_subexpr_memory(sel);
     _gmx_selelem_free_chain(sel->child);
