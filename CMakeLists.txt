@@ -467,6 +467,22 @@ if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
   endif()
 endif (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
+# configure things suitably for BlueGene
+# GMX_ACCELERATION should be set in the Toolchain-BlueGene?-???.cmake file
+if (${GMX_ACCELERATION} STREQUAL "BlueGene")
+
+  if (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
+    set(SHARED_LIBS_DEFAULT OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
+  endif (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
+
+  set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Use hardware reciprocal square root on BlueGene" FORCE)
+  set(GMX_THREADS OFF CACHE BOOL "Threads not compatible with BlueGene, disabled!" FORCE)
+  set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
+  set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use MASSV for BLAS on BlueGene" FORCE)
+  set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use MASSV for LAPACK on BlueGene" FORCE)
+  list(APPEND GMX_EXTRA_LIBRARIES massv)
+endif (${GMX_ACCELERATION} STREQUAL "BlueGene")
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
