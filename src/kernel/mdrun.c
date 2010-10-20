@@ -393,6 +393,7 @@ int main(int argc,char *argv[])
   int  nmultisim=0;
   int  nstglobalcomm=-1;
   int  repl_ex_nst=0;
+  int  repl_ex_multiplex=1;
   int  repl_ex_seed=-1;
   int  nstepout=100;
   int  nthreads=0; /* set to determine # of threads automatically */
@@ -468,6 +469,8 @@ int main(int argc,char *argv[])
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
       "Attempt replica exchange every # steps" },
+    { "-mreplex",  FALSE, etINT, {&repl_ex_multiplex}, 
+      "Attempt this # of pairwise replica exchange every time replica exchange happens" },
     { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
       "Seed for replica exchange, -1 is generate a seed" },
     { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
@@ -635,7 +638,7 @@ int main(int argc,char *argv[])
   rc = mdrunner(nthreads, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
+                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_multiplex,repl_ex_seed,
                 pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   if (gmx_parallel_env_initialized())

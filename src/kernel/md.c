@@ -1074,7 +1074,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
+             int repl_ex_nst,int repl_ex_multiplex,int repl_ex_seed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -1392,7 +1392,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (repl_ex_nst > 0 && MASTER(cr))
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
-                                        repl_ex_nst,repl_ex_seed);
+                                        repl_ex_nst,repl_ex_multiplex,repl_ex_seed);
 
     if (!ir->bContinuation && !bRerunMD)
     {

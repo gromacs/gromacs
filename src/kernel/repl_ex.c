@@ -61,6 +61,7 @@ typedef struct gmx_repl_ex {
   real *pres;
   int  *ind;
   int  nst;
+  int  nmultiplex;
   int  seed;
   int  nattempt[2];
   real *prob_sum;
@@ -114,7 +115,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 				    const gmx_multisim_t *ms,
 				    const t_state *state,
 				    const t_inputrec *ir,
-				    int nst,int init_seed)
+                    int nst,int nmultiplex, int init_seed)
 {
   real temp,pres;
   int  i,j,k;
@@ -305,6 +306,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
   fprintf(fplog,
           "Repl  below: x=exchange, pr=probability\n");
   
+  re->nmultiplex = nmultiplex;
   return re;
 }
 
@@ -610,21 +612,29 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
 				struct gmx_repl_ex *re,gmx_enerdata_t *enerd,real vol,
 				int step,real time)
 {
-  int  m,i,a,b;
+  int  m,i,j,a,b,tmp_repl,tmp;
   real *Epot=NULL,*Vol=NULL,*prob;
-  real **flambda=NULL;
-  real ediff=0,delta=0,dpV=0,betaA=0,betaB=0;
+  int *tmp_indx;
+  real **flambda=NULL,*beta=NULL;
+  real ediff=0,delta=0,dpV=0;
   gmx_bool *bEx,bPrint;
   int  exchange;
 
   fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
-  
+
+  snew(beta,re->nrepl);
   switch (re->type) {
   case ereTEMP:
       snew(Epot,re->nrepl);
       snew(Vol,re->nrepl);
       Epot[re->repl] = enerd->term[F_EPOT];
       Vol[re->repl]  = vol;
+
+      /* temperatures of different states*/
+      for (i=0;i<re->nrepl;i++) 
+      {
+          beta[i] = 1.0/(re->q[a]*BOLTZ);
+      }
       gmx_sum_sim(re->nrepl,Epot,ms);
       gmx_sum_sim(re->nrepl,Vol,ms);
       break;
@@ -635,6 +645,11 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
       Vol[re->repl]  = vol;
       gmx_sum_sim(re->nrepl,Vol,ms);
 
+      /* temperatures of different states*/
+      for (i=0;i<re->nrepl;i++) 
+      {
+          beta[i] = 1.0/(re->temp*BOLTZ);
+      }
       /* lambda differences. */
       /* flambda[i][j] is the energy of the jth simulation in the ith Hamiltonian 
          minus the energy of the jth simulation in the jth Hamiltonian            */
@@ -651,83 +666,101 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
 
   snew(bEx,re->nrepl);
   snew(prob,re->nrepl);
-  
+  snew(tmp_indx,re->nrepl);
   exchange = -1;
   m = (step / re->nst) % 2;
-  for(i=1; i<re->nrepl; i++) {
-      a = re->ind[i-1];
-      b = re->ind[i];
-      bPrint = (re->repl==a || re->repl==b);
-      if (i % 2 == m) {
-          switch (re->type) {
-          case ereTEMP:
-              /* Use equations from:
-               * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
-               */
-              ediff = Epot[b] - Epot[a];
-              betaA = 1.0/(re->q[a]*BOLTZ);
-              betaB = 1.0/(re->q[b]*BOLTZ);
-              delta = (betaA - betaB)*ediff;
-              break;
-          case ereLAMBDA:
-              /* ediff =  E_new - E_old */
-              /*       =  [H_b(x_a) + H_a(x_b)] - [H_b(x_b) + H_a(x_a)] */
-              /*       =  [H_b(x_a) - H_a(x_a)] + [H_a(x_b) - H_b(x_b)] */
-              ediff = flambda[b][a] + flambda[a][b];    
-              delta = ediff/(BOLTZ*re->temp);
-              betaA = betaB = 1.0/(re->temp*BOLTZ); /* needed for NPT */
-              break;
-          default:
-              gmx_incons("Unknown replica exchange quantity");
-          }
-          if (bPrint)
+
+  /* set up temporary indices we can switch around for multiple pair switching */
+  for(i=0; i<re->nrepl; i++) 
+  {
+      tmp_indx[i] = re->ind[i];
+  }
+  tmp_repl = re->repl;
+  
+  for(j=0; j<re->nmultiplex;j++) 
+  {                                             
+      for(i=1; i<re->nrepl; i++) 
+      {
+          a = tmp_indx[i-1];
+          b = tmp_indx[i];
+
+          bPrint = (tmp_repl==a || tmp_repl==b);
+          if (i % 2 == m) 
           {
-              fprintf(fplog,"Repl %d <-> %d  dE = %10.3e",a,b,delta);
-          }
-          if (re->bNPT) 
-          {
-              dpV = (betaA*re->pres[a]-betaB*re->pres[b])*(Vol[b]-Vol[a])/PRESFAC;
+              switch (re->type) 
+              {
+              case ereTEMP:
+                  /* Use equations from:
+                   * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
+                   */
+                  ediff = Epot[b] - Epot[a];
+                  delta = -(beta[b] - beta[a])*ediff;
+                  break;
+              case ereLAMBDA:
+                  /* ediff =  E_new - E_old */
+                  /*       =  [H_b(x_a) + H_a(x_b)] - [H_b(x_b) + H_a(x_a)] */
+                  /*       =  [H_b(x_a) - H_a(x_a)] + [H_a(x_b) - H_b(x_b)] */
+                  ediff = flambda[b][a] + flambda[a][b];    
+                  delta = ediff*beta[a]; /* assume all same temperature for now!! */
+                  break;
+              default:
+                  gmx_incons("Unknown replica exchange quantity");
+              }
               if (bPrint)
               {
-                  fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
+                  fprintf(fplog,"Repl %d <-> %d  dE = %10.3e",a,b,delta);
               }
-              delta += dpV;
-          }
-          if (bPrint)
-          {
-              fprintf(fplog,"\n");
-          }
-          if (delta <= 0) {
-              prob[i] = 1;
-              bEx[i] = TRUE;
+              if (re->bNPT) 
+              {
+                  dpV = (beta[a]*re->pres[a]-beta[b]*re->pres[b])*(Vol[b]-Vol[a])/PRESFAC;
+                  if (bPrint)
+                  {
+                      fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
+                  }
+                  delta += dpV;
+              }
+              if (bPrint)
+              {
+                  fprintf(fplog,"\n");
+              }
+              if (delta <= 0) {
+                  prob[i] = 1;
+                  bEx[i] = TRUE;
+              } 
+              else 
+              {
+                  if (delta > 100) {
+                      prob[i] = 0;
+                  } else {
+                      prob[i] = exp(-delta);
+                  }
+                  bEx[i] = (rando(&(re->seed)) < prob[i]);
+              }
+              re->prob_sum[i] += prob[i];    
+              if (bEx[i]) 
+              {
+                  if (a == tmp_repl) 
+                  {
+                      exchange = b;
+                  } 
+                  else if (b == tmp_repl) 
+                  {
+                      exchange = a;
+                  }
+                  re->nexchange[i]++;
+
+                  /* flip the identities of the exchanged states */
+                  tmp_repl = exchange;
+                  tmp = tmp_indx[a];
+                  tmp_indx[a] = tmp_indx[b];
+                  tmp_indx[b] = tmp;
+              }
           } 
           else 
           {
-              if (delta > 100) {
-                  prob[i] = 0;
-              } else {
-                  prob[i] = exp(-delta);
-              }
-              bEx[i] = (rando(&(re->seed)) < prob[i]);
+              prob[i] = -1;
+              bEx[i] = FALSE;
           }
-          re->prob_sum[i] += prob[i];    
-          if (bEx[i]) 
-          {
-              if (a == re->repl) 
-              {
-                  exchange = b;
-              } 
-              else if (b == re->repl) 
-              {
-                  exchange = a;
-              }
-              re->nexchange[i]++;
-          }
-      } 
-      else 
-      {
-          prob[i] = -1;
-          bEx[i] = FALSE;
       }
   }
   print_ind(fplog,"ex",re->nrepl,re->ind,bEx);
