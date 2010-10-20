@@ -668,8 +668,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
   snew(prob,re->nrepl);
   snew(tmp_indx,re->nrepl);
   exchange = -1;
-  m = (step / re->nst) % 2;
-
+ 
   /* set up temporary indices we can switch around for multiple pair switching */
   for(i=0; i<re->nrepl; i++) 
   {
@@ -679,11 +678,13 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
   
   for(j=0; j<re->nmultiplex;j++) 
   {                                             
+      m = ((step / re->nst) + j)% 2;
+      
       for(i=1; i<re->nrepl; i++) 
       {
           a = tmp_indx[i-1];
           b = tmp_indx[i];
-
+          
           bPrint = (tmp_repl==a || tmp_repl==b);
           if (i % 2 == m) 
           {
