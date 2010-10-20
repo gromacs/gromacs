@@ -53,6 +53,7 @@ class SelectionCollection;
 enum OptionGlobalPropertyId
 {
     eogpTimeScaleFactor,
+    eogpPlotFormat,
     eogpSelectionCollection,
 };
 
@@ -114,9 +115,17 @@ class OptionsGlobalProperties
             return _usedProperties & (1<<id);
         }
         void addDefaultOptions(Options *options);
+        /*! \brief
+         * Initializes variables dependent on global properties.
+         *
+         * This method should be called after the values for the options
+         * generated with addDefaultOptions() have been set.
+         */
+        void finish();
 
         unsigned long           _usedProperties;
         int                     _timeUnit;
+        int                     _plotFormat;
         SelectionCollection    *_selectionCollection;
         output_env_t            _oenv;
 

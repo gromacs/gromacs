@@ -361,6 +361,10 @@ FileNameOptionStorage::FileNameOptionStorage()
 int FileNameOptionStorage::init(const FileNameOption &settings, Options *options)
 {
     _filetype = settings._filetype;
+    if (_filetype == eftPlot)
+    {
+        options->globalProperties().request(eogpPlotFormat);
+    }
     return MyBase::init(settings, options);
 }
 

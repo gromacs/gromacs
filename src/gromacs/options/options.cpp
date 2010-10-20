@@ -224,6 +224,11 @@ int Options::finish(AbstractErrorReporter *errors)
         int rc1 = section->finish(errors);
         rc = (rc != 0 ? rc : rc1);
     }
+    if (_impl->_parent == NULL)
+    {
+        assert(_impl->_globalProperties != NULL);
+        _impl->_globalProperties->finish();
+    }
     return rc;
 }
 
