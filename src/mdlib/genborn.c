@@ -154,43 +154,6 @@ int print_nblist(int natoms, t_nblist *nl)
     return 0;    
 }
 
-typedef union {
-    real numlog;
-    int exp;
-} u_table;
-
-void fill_log_table(const int n, real *table)
-{
-    u_table log_table;
-    real logfactor;
-    int i;
-    
-    int incr = 1 << (23-n);
-    int p=pow(2,n);
-
-    logfactor = 1.0/log(2.0);
-    
-    log_table.exp = 0x3F800000;
-    
-    for(i=0;i<p;++i)
-    {
-        /* log2(numlog)=log(numlog)/log(2.0) */
-        table[i]=log(log_table.numlog)*logfactor; 
-        log_table.exp+=incr;
-    }
-}
-
-
-real table_log(real val, const real *table, const int n)
-{
-    int *const exp_ptr = ((int*)&val);
-    int x              = *exp_ptr;
-    const int log_2    = ((x>>23) & 255) - 127;
-    x &= 0x7FFFFF;
-    x = x >> (23-n);
-    val = table[x];
-    return ((val+log_2)*0.69314718);  
-}
 
 void gb_pd_send(t_commrec *cr, real *send_data, int nr)
 {
@@ -418,11 +381,6 @@ int init_gb_still(const t_commrec *cr, t_forcerec  *fr,
     return 0;
 }
 
-
-
-#define LOG_TABLE_ACCURACY 15 /* Accuracy of the table logarithm */
-
-
 /* Initialize all GB datastructs and compute polarization energies */
 int init_gb(gmx_genborn_t **p_born,
             const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
@@ -443,7 +401,6 @@ int init_gb(gmx_genborn_t **p_born,
     snew(born,1);
     *p_born = born;
 
-	born->nr = fr->natoms_force;
     born->nr  = natoms;
     
     snew(born->drobc, natoms);
@@ -537,12 +494,6 @@ int init_gb(gmx_genborn_t **p_born,
         }
     }
         
-    /* Init the logarithm table */
-    p=pow(2,LOG_TABLE_ACCURACY);
-    snew(born->log_table, p);
-    
-    fill_log_table(LOG_TABLE_ACCURACY, born->log_table);
-    
     /* Allocate memory for work arrays for temporary use */
     snew(born->work,natoms+4);
     snew(born->count,natoms);
@@ -789,8 +740,6 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25*sk2_rinv;
                 
-                /* log_term = table_log(uij*lij_inv,born->log_table,
-                   LOG_TABLE_ACCURACY); */
                 log_term = log(uij*lij_inv);
                 
                 tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term +
@@ -1013,7 +962,6 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
                 
                 log_term = log(uij*lij_inv);
                 
-                /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
                 tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
                 
                 if(rai < sk-dr)
