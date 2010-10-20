@@ -633,7 +633,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
       /* temperatures of different states*/
       for (i=0;i<re->nrepl;i++) 
       {
-          beta[i] = 1.0/(re->q[a]*BOLTZ);
+          beta[i] = 1.0/(re->q[i]*BOLTZ);
       }
       gmx_sum_sim(re->nrepl,Epot,ms);
       gmx_sum_sim(re->nrepl,Vol,ms);
@@ -644,7 +644,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
       snew(Vol,re->nrepl);
       Vol[re->repl]  = vol;
       gmx_sum_sim(re->nrepl,Vol,ms);
-
+      
       /* temperatures of different states*/
       for (i=0;i<re->nrepl;i++) 
       {
