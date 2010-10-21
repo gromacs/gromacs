@@ -59,9 +59,6 @@ class Distance : public TrajectoryAnalysisModule
         virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
         virtual int initAnalysis(const TopologyInformation &top);
 
-        virtual int startFrames(AnalysisDataParallelOptions opt,
-                                const SelectionCollection &sel,
-                                TrajectoryAnalysisModuleData **pdatap);
         virtual int analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                  TrajectoryAnalysisModuleData *pdata);
 

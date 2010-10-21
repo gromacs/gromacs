@@ -35,27 +35,51 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
 
+#include <string>
+#include <vector>
+
 #include <typedefs.h>
 
 namespace gmx
 {
 
+class AbstractAnalysisData;
 class AnalysisData;
 class AnalysisDataHandle;
 class Options;
+class Selection;
 class SelectionCollection;
-class TrajectoryAnalysisSettings;
 class TopologyInformation;
+class TrajectoryAnalysisModule;
+class TrajectoryAnalysisSettings;
 
 /*! \brief
  * Base class for thread-local data storage during trajectory analysis.
+ *
+ * Thread-local storage of data handles and selections is implemented in this
+ * class; TrajectoryAnalysisModule instances can access the thread-local values
+ * using dataHandle() and parallelSelection().
  *
  * \see TrajectoryAnalysisModule::startFrames()
  */
 class TrajectoryAnalysisModuleData
 {
     public:
-        virtual ~TrajectoryAnalysisModuleData() {};
+        virtual ~TrajectoryAnalysisModuleData();
+
+        /*! \brief
+         * Initializes thread-local storage for data handles and selections.
+         *
+         * \param[in] module     Analysis module to use for data objects.
+         * \param[in] opt        Data parallelization options.
+         * \param[in] selections Thread-local selection collection.
+         *
+         * Calls AnalysisData::startData() on all data objects registered with
+         * TrajectoryAnalysisModule::registerAnalysisDataset() in \p module.
+         * The handles are accessible through dataHandle().
+         */
+        int init(TrajectoryAnalysisModule *module, /*AnalysisDataParallelOptions*/ void* opt,
+                 const SelectionCollection &selections);
 
         /*! \brief
          * Performs any finishing actions after all frames have been processed.
@@ -63,46 +87,44 @@ class TrajectoryAnalysisModuleData
          * \returns  0 on success, a non-zero error code on error.
          *
          * This function is called immediately before the destructor.
+         * All implementations should call finishDataHandles().
          */
         virtual int finish() = 0;
 
-    protected:
         /*! \brief
-         * Convenience function for finishing data handles.
+         * Returns a data handle for a dataset with a given name.
          *
-         * \param[in,out]  dhp  Pointer to data handle to finish
-         *      (\p *dhp can be NULL).
-         * \returns The \p oldrc if non-zero, return value of
-         *      \c (*dhp)->finishData() otherwise
-         *
-         * Calls \p (*dhp)->finishData() if \p dhp is not NULL.  \p oldrc is
-         * useful for chaining several calls on different handles so that all
-         * the handles get finished even if there is an error in one of them,
-         * and still return the error code of the first error.
+         * Allowed names are those that have been registered with
+         * TrajectoryAnalysisModule::registerAnalysisData().
          */
-        static int finishHandle(AnalysisDataHandle **dhp, int oldrc = 0);
-};
+        AnalysisDataHandle *dataHandle(const char *name);
+        /*! \brief
+         * Returns a selection that corresponds to the given selection.
+         */
+        Selection *parallelSelection(Selection *selection);
 
-/*! \brief
- * Simple data storage class for a single data handle.
- *
- * Most simple tools should only require a single data handle to be
- * thread-local, so this class implements just that.
- */
-class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
-{
-    public:
-        static int create(AnalysisData *data, /*AnalysisDataParallelOptions*/ void* opt,
-                          TrajectoryAnalysisModuleData **pdatap);
+    protected:
+        //! Initializes data.
+        TrajectoryAnalysisModuleData();
 
-        virtual int finish();
-
-        AnalysisDataHandle *dataHandle() { return _dh; }
+        /*! \brief
+         * Calls finishData() on all data handles.
+         *
+         * \returns  0 on success, a non-zero error code on error.
+         *
+         * This function should be called from the implementation of finish()
+         * in all subclasses.
+         */
+        int finishDataHandles();
 
     private:
-        TrajectoryAnalysisModuleDataBasic();
+        class Impl;
 
-        AnalysisDataHandle     *_dh;
+        Impl                   *_impl;
+
+        // Disallow copy and assign.
+        TrajectoryAnalysisModuleData(const TrajectoryAnalysisModuleData &);
+        void operator =(const TrajectoryAnalysisModuleData &);
 };
 
 
@@ -112,31 +134,13 @@ class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
  * For parallel analysis using threads, only a single object is constructed,
  * but the methods startFrames(), analyzeFrame() and finishFrames() are
  * called in each thread. Frame-local data should be initialized in
- * startFrames() and stored in a class derived from TrajanaModuleData that
- * is passed to the other methods.
+ * startFrames() and stored in a class derived from
+ * TrajectoryAnalysisModuleData that is passed to the other methods.
  */
 class TrajectoryAnalysisModule
 {
     public:
-        virtual ~TrajectoryAnalysisModule() {}
-
-        /*! \brief
-         * Sets the options object.
-         *
-         * Subclasses can access the options object through the options()
-         * method, and as a short-hand, the selections through the selections()
-         * method.
-         *
-         * There is no need for subclasses to ever use this function or even to
-         * know of its existence.
-         * Functions that create modules should call this function before
-         * calling any other function in the interface.
-         * The module does not take ownership of the options object: it is the
-         * responsibility of the caller to ensure that the object remains valid
-         * for the lifetime of the module.
-         *
-         * \see TrajanaOptions
-         */
+        virtual ~TrajectoryAnalysisModule();
 
         /*! \brief
          * Initializes parameters understood by the module.
@@ -157,9 +161,10 @@ class TrajectoryAnalysisModule
          * If the module needs to set options that affect topology loading or
          * selection initialization based on parameters values, this function
          * has to be overridden.
+         *
+         * The default implementation does nothing.
          */
-        virtual int initOptionsDone(TrajectoryAnalysisSettings * /*settings*/)
-        { return 0; }
+        virtual int initOptionsDone(TrajectoryAnalysisSettings *settings);
         /*! \brief
          * Initializes the analysis.
          *
@@ -186,33 +191,32 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual int initAfterFirstFrame(const t_trxframe &/*fr*/) { return 0; }
+        virtual int initAfterFirstFrame(const t_trxframe &fr);
 
         /*! \brief
          * Starts the analysis of frames.
          *
          * \param[in]  opt
-         * \param[in]  sel     Frame-local selection object.
+         * \param[in]  selections  Frame-local selection object.
          * \param[out] pdatap  Data structure for thread-local data.
          *
-         * It is only necessary to override this function if the module
-         * needs to support threaded parallelization. Otherwise, the
-         * default implementation (which does nothing) can be used, and
-         * all data stored as attributes in the subclass. With the default
-         * implementation, the \p pdata pointer passed to analyzeFrame()
-         * is always NULL.
+         * This function is necessary only for threaded parallelization.
+         * It is called once for each thread and should initialize a class that
+         * contains any required frame-local data in \p *pdatap.
+         * The default implementation creates a basic data structure that holds
+         * thread-local data handles for all data objects registered with
+         * registerAnalysisDataset(), as well as the thread-local selection
+         * collection.  These can be accessed in analyzeFrame() using the
+         * methods in TrajectoryAnalysisModuleData.
+         * If other thread-local data is needed, this function should be
+         * overridden and it should create an instance of a class derived from
+         * TrajectoryAnalysisModuleData.
          *
-         * For threaded analysis, this function is called once for each
-         * thread, and should initialize a class that contains any
-         * required frame-local data in \p *pdatap.
+         * \see TrajectoryAnalysisModuleData
          */
-        virtual int startFrames(/*AnalysisDataParallelOptions*/ void* /*opt*/,
-                                const SelectionCollection & /*sel*/,
-                                TrajectoryAnalysisModuleData **pdatap)
-        {
-            *pdatap = NULL;
-            return 0;
-        }
+        virtual int startFrames(/*AnalysisDataParallelOptions*/ void* opt,
+                                const SelectionCollection &selections,
+                                TrajectoryAnalysisModuleData **pdatap);
         /*! \brief
          * Analyzes a single frame.
          *
@@ -232,10 +236,9 @@ class TrajectoryAnalysisModule
          * but no assumptions should be made about which of these data
          * structures is used. It is guaranteed that two instances of
          * analyzeFrame() are not running concurrently with the same \p pdata
-         * data structure. It is also guaranteed that the \p sel object is
-         * the same as was passed to startFrames() that created \p pdata.
-         * Any access to data structures not stored in \p pdata
-         * should be designed to be thread-safe.
+         * data structure.
+         * Any access to data structures not stored in \p pdata should be
+         * designed to be thread-safe.
          */
         virtual int analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                  TrajectoryAnalysisModuleData *pdata) = 0;
@@ -258,10 +261,7 @@ class TrajectoryAnalysisModule
          *
          * \see startFrames()
          */
-        virtual int finishFrames(TrajectoryAnalysisModuleData * /*pdata*/)
-        {
-            return 0;
-        }
+        virtual int finishFrames(TrajectoryAnalysisModuleData *pdata);
 
         /*! \brief
          * Postprocesses data after frames have been read.
@@ -282,10 +282,12 @@ class TrajectoryAnalysisModule
 
         /*! \brief
          * Returns the number of datasets provided by the module.
-         *
-         * The default implementation returns 0.
          */
-        //virtual int datasetCount() const { return 0; }
+        int datasetCount() const;
+        /*! \brief
+         * Returns a vector with the names of the datasets.
+         */
+        const std::vector<std::string> &datasetNames() const;
         /*! \brief
          * Returns a pointer to the data set \p index.
          *
@@ -294,16 +296,47 @@ class TrajectoryAnalysisModule
          *      valid.
          *
          * The return value is not const to allow callers to add modules to the
-         * data sets. However, the AbstractData interface does not provide any
-         * means to alter the data, so the module does not need to care about
-         * external modifications.
-         *
-         * The default implementation always returns NULL.
+         * data sets. However, the AbstractAnalysisData interface does not
+         * provide any means to alter the data, so the module does not need to
+         * care about external modifications.
          */
-        //virtual AbstractAnalysisData *dataset(int index) const { return NULL; }
+        AbstractAnalysisData *datasetFromIndex(int index) const;
+        /*! \brief
+         * Returns a pointer to the data set with name \p name
+         *
+         * \param[in] name  Data set to query for.
+         * \returns   A pointer to the data set, or NULL if \p name is not
+         *      recognized.
+         *
+         * The return value is not const to allow callers to add modules to the
+         * data sets. However, the AbstractAnalysisData interface does not
+         * provide any means to alter the data, so the module does not need to
+         * care about external modifications.
+         */
+        AbstractAnalysisData *datasetFromName(const char *name) const;
 
     protected:
-        TrajectoryAnalysisModule() {}
+        //! Initializes the dataset registration mechanism.
+        TrajectoryAnalysisModule();
+
+        /*! \brief
+         * Registers a dataset that exports data.
+         */
+        void registerBasicDataset(AbstractAnalysisData *data, const char *name);
+        /*! \brief
+         * Registers a parallelized dataset that exports data.
+         */
+        void registerAnalysisDataset(AnalysisData *data, const char *name);
+
+    private:
+        class Impl;
+
+        Impl                   *_impl;
+
+        /*! \brief
+         * Needed to access the registered analysis data sets.
+         */
+        friend class TrajectoryAnalysisModuleData;
 
         // Disallow copy and assign.
         TrajectoryAnalysisModule(const TrajectoryAnalysisModule &);

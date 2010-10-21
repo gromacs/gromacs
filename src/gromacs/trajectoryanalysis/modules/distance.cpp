@@ -98,6 +98,7 @@ Distance::initAnalysis(const TopologyInformation & /*top*/)
                   "The second selection does not define a single position");
     }
     _data.setColumns(4);
+    registerAnalysisDataset(&_data, "distance");
 
     _avem = new AnalysisDataAverageModule();
     _data.addModule(_avem);
@@ -114,30 +115,22 @@ Distance::initAnalysis(const TopologyInformation & /*top*/)
 
 
 int
-Distance::startFrames(AnalysisDataParallelOptions opt,
-                      const SelectionCollection &sel,
-                      TrajectoryAnalysisModuleData **pdatap)
-{
-    return TrajectoryAnalysisModuleDataBasic::create(&_data, opt, pdatap);
-}
-
-
-int
 Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle *dh
-        = static_cast<TrajectoryAnalysisModuleDataBasic *>(pdata)->dataHandle();
+    AnalysisDataHandle *dh = pdata->dataHandle("distance");
+    Selection          *sel1 = pdata->parallelSelection(_sel[0]);
+    Selection          *sel2 = pdata->parallelSelection(_sel[1]);
     rvec                dx;
     real                r;
 
     if (pbc != NULL)
     {
-        pbc_dx(pbc, _sel[0]->x(0), _sel[1]->x(0), dx);
+        pbc_dx(pbc, sel1->x(0), sel2->x(0), dx);
     }
     else
     {
-        rvec_sub(_sel[0]->x(0), _sel[1]->x(0), dx);
+        rvec_sub(sel1->x(0), sel2->x(0), dx);
     }
     r = norm(dx);
     dh->startFrame(frnr, fr.time);

@@ -37,29 +37,93 @@
  */
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 
+#include <cassert>
+
 #include "gromacs/analysisdata/analysisdata.h"
+
+#include "analysismodule-impl.h"
 
 namespace gmx
 {
 
 /********************************************************************
+ * TrajectoryAnalysisModuleData::Impl
+ */
+
+TrajectoryAnalysisModuleData::Impl::~Impl()
+{
+    finishHandles();
+}
+
+
+int TrajectoryAnalysisModuleData::Impl::finishHandles()
+{
+    int rc = 0;
+    HandleContainer::const_iterator i;
+    for (i = _handles.begin(); i != _handles.end(); ++i)
+    {
+        int rc1 = i->second->finishData();
+        rc = (rc == 0 ? rc1 : rc);
+    }
+    _handles.clear();
+    return rc;
+}
+
+
+/********************************************************************
  * TrajectoryAnalysisModuleData
  */
 
-int
-TrajectoryAnalysisModuleData::finishHandle(AnalysisDataHandle **dhp,
-                                           int oldrc)
+TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
+    : _impl(new Impl)
 {
-    if (*dhp != NULL)
+}
+
+
+TrajectoryAnalysisModuleData::~TrajectoryAnalysisModuleData()
+{
+    delete _impl;
+}
+
+
+int TrajectoryAnalysisModuleData::init(TrajectoryAnalysisModule *module,
+                                       AnalysisDataParallelOptions opt,
+                                       const SelectionCollection &selections)
+{
+    TrajectoryAnalysisModule::Impl::AnalysisDatasetContainer::const_iterator i;
+    for (i = module->_impl->_analysisDatasets.begin();
+         i != module->_impl->_analysisDatasets.end(); ++i)
     {
-        int rc = (*dhp)->finishData();
-        if (oldrc == 0)
+        AnalysisDataHandle *handle = NULL;
+        int rc = i->second->startData(&handle, opt);
+        if (rc != 0)
         {
-            oldrc = rc;
+            return rc;
         }
-        *dhp = NULL;
+        _impl->_handles[i->first] = handle;
     }
-    return oldrc;
+    _impl->_selections = &selections;
+    return 0;
+}
+
+
+int TrajectoryAnalysisModuleData::finishDataHandles()
+{
+    return _impl->finishHandles();
+}
+
+
+AnalysisDataHandle *TrajectoryAnalysisModuleData::dataHandle(const char *name)
+{
+    assert(_impl->_handles.find(name) != _impl->_handles.end());
+    return _impl->_handles[name];
+}
+
+
+Selection *TrajectoryAnalysisModuleData::parallelSelection(Selection *selection)
+{
+    // TODO: Implement properly.
+    return selection;
 }
 
 
@@ -67,20 +131,49 @@ TrajectoryAnalysisModuleData::finishHandle(AnalysisDataHandle **dhp,
  * TrajectoryAnalysisModuleDataBasic
  */
 
-TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic()
-    : _dh(NULL)
+int
+TrajectoryAnalysisModuleDataBasic::finish()
+{
+    return finishDataHandles();
+}
+
+
+/********************************************************************
+ * TrajectoryAnalysisModule
+ */
+
+TrajectoryAnalysisModule::TrajectoryAnalysisModule()
+    : _impl(new Impl)
 {
 }
 
-int
-TrajectoryAnalysisModuleDataBasic::create(AnalysisData *data,
-                                          AnalysisDataParallelOptions opt,
+
+TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
+{
+    delete _impl;
+}
+
+
+int TrajectoryAnalysisModule::initOptionsDone(TrajectoryAnalysisSettings * /*settings*/)
+{
+    return 0;
+}
+
+
+int TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe &/*fr*/)
+{
+    return 0;
+}
+
+
+int TrajectoryAnalysisModule::startFrames(AnalysisDataParallelOptions opt,
+                                          const SelectionCollection &selections,
                                           TrajectoryAnalysisModuleData **pdatap)
 {
     TrajectoryAnalysisModuleDataBasic *pdata
         = new TrajectoryAnalysisModuleDataBasic();
     *pdatap = pdata;
-    int rc = data->startData(&pdata->_dh, opt);
+    int rc = pdata->init(this, opt, selections);
     if (rc != 0)
     {
         delete pdata;
@@ -89,10 +182,60 @@ TrajectoryAnalysisModuleDataBasic::create(AnalysisData *data,
     return rc;
 }
 
-int
-TrajectoryAnalysisModuleDataBasic::finish()
+
+int TrajectoryAnalysisModule::finishFrames(TrajectoryAnalysisModuleData * /*pdata*/)
 {
-    return finishHandle(&_dh);
+    return 0;
+}
+
+
+int TrajectoryAnalysisModule::datasetCount() const
+{
+    return _impl->_datasetNames.size();
+}
+
+
+const std::vector<std::string> &TrajectoryAnalysisModule::datasetNames() const
+{
+    return _impl->_datasetNames;
+}
+
+
+AbstractAnalysisData *TrajectoryAnalysisModule::datasetFromIndex(int index) const
+{
+    if (index < 0 || index >= datasetCount())
+    {
+        return NULL;
+    }
+    return _impl->_datasets[_impl->_datasetNames[index]];
+}
+
+
+AbstractAnalysisData *TrajectoryAnalysisModule::datasetFromName(const char *name) const
+{
+    Impl::DatasetContainer::const_iterator item = _impl->_datasets.find(name);
+    if (item == _impl->_datasets.end())
+    {
+        return NULL;
+    }
+    return item->second;
+}
+
+
+void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
+                                                    const char *name)
+{
+    // TODO: Check for duplicates
+    _impl->_datasets[name] = data;
+    _impl->_datasetNames.push_back(name);
+}
+
+
+void TrajectoryAnalysisModule::registerAnalysisDataset(AnalysisData *data,
+                                                       const char *name)
+{
+    registerBasicDataset(data, name);
+    _impl->_analysisDatasets[name] = data;
 }
 
 } // namespace gmx
