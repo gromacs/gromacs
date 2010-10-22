@@ -174,7 +174,7 @@ AC_ARG_ENABLE(software-invsqrt,
               [AC_HELP_STRING([--disable-software-invsqrt],
                               [No software 1/sqrt (disabled on sgi,ibm,ia64)])],,
 [case "${host_cpu}-${host_os}" in
-  mips*-irix* | rs6000*-aix* | powerpc*-aix | ia64*-*) enable_software_invsqrt=no ;;
+  mips*-irix* | rs6000*-aix* | powerpc*-aix | powerpc*-none | ia64*-*) enable_software_invsqrt=no ;;
   *) enable_software_invsqrt=yes ;;
 esac])
 if test "$enable_software_invsqrt" = "yes"; then
@@ -1126,6 +1126,8 @@ fi
 
 if test "$enable_bluegene" = "yes"; then
   AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
+  AC_DEFINE_UNQUOTED(GMX_POWERPC_INVSQRT,,[Use the PowerPC hardware 1/sqrt(x)])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_POWERPC_INVSQRT"
 fi
 
 if test "$enable_fortran" = "yes"; then
