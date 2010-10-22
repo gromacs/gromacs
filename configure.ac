@@ -178,7 +178,7 @@ AC_ARG_ENABLE(software-invsqrt,
   *) enable_software_invsqrt=yes ;;
 esac])
 if test "$enable_software_invsqrt" = "yes"; then
-  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS sGMX_INTERNAL_XDRsqrt(x)])
+  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS software 1/sqrt(x)])
   PKG_CFLAGS="$PKG_CFLAGS -DGMX_SOFTWARE_INVSQRT"
 fi
 AM_CONDITIONAL([GMX_SOFTWARE_INVSQRT],[test "$enable_software_invsqrt" = "yes"])
