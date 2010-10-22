@@ -1054,6 +1054,45 @@ static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi,warninp_t wi)
   return count;
 }
 
+static void check_gbsa_charges_lj(gmx_mtop_t *sys, gpp_atomtype_t atype)
+{
+  int i,nmiss,natoms,mt;
+  real q;
+  const t_atoms *atoms;
+  
+  
+  nmiss = 0;
+  for(mt=0;mt<sys->nmoltype;mt++)
+  {
+    atoms  = &sys->moltype[mt].atoms;
+    natoms = atoms->nr;
+    
+    for(i=0;i<natoms;i++)
+    {
+      
+      q = atoms->atom[i].q;
+      if( (get_atomtype_radius(atoms->atom[i].type,atype)    <= 0  ||
+           get_atomtype_vol(atoms->atom[i].type,atype)       <= 0  ||
+           get_atomtype_surftens(atoms->atom[i].type,atype)  <= 0  ||
+           get_atomtype_gb_radius(atoms->atom[i].type,atype) <= 0  ||
+           get_atomtype_S_hct(atoms->atom[i].type,atype)     <= 0) && q!=0)
+      {
+        fprintf(stderr,"GB parameter(s) missing or negative for atom type '%s' while charge is %g\n",
+                get_atomtype_name(atoms->atom[i].type,atype),q);
+        nmiss++;
+      }
+    }
+  }
+  
+  if (nmiss > 0)
+  {
+    gmx_fatal(FARGS,"Can't do GB electrostatics; the forcefield is missing %d values for\n"
+              "particles that also have a charge\n.",nmiss);
+  }
+  
+}
+
+
 static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
 {
     int  nmiss,i;
@@ -1380,6 +1419,11 @@ int main (int argc, char *argv[])
     {
         /* Now we have renumbered the atom types, we can check the GBSA params */
         check_gbsa_params(ir,atype);
+      
+      /* Check that all atoms that have charge and/or LJ-parameters also have 
+       * sensible GB-parameters
+       */
+      check_gbsa_charges_lj(sys,atype);
     }
 
 	/* PELA: Copy the atomtype data to the topology atomtype list */
