@@ -153,9 +153,9 @@ esac
 # IBM Power6-specific optimization
 AC_ARG_ENABLE(power6,
              [AC_HELP_STRING([--enable-power6],
-                             [Use IBM Pwr6/PPC440/PPC450-specific F77 kernels])],,enable_power6=no)
+                             [Use IBM Power6-specific F77 kernels])],,enable_power6=no)
 if test "$enable_power6" = "yes"; then
-  AC_DEFINE(GMX_POWER6,,[Enable IBM Pwr6/PPC440/PPC450-specific F77 kernels])
+  AC_DEFINE(GMX_POWER6,,[Enable IBM Power6-specific F77 kernels])
 fi
 
 AC_ARG_ENABLE(bluegene,
