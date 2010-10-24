@@ -64,6 +64,7 @@ typedef struct gmx_repl_ex {
   int  nmultiplex;
   int  seed;
   int  nattempt[2];
+  int  **nmoves;    
   real *prob_sum;
   int  *nexchange;
 } t_gmx_repl_ex;
@@ -300,6 +301,12 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
   re->nattempt[0] = 0;
   re->nattempt[1] = 0;
+  snew(re->nmoves,re->nrepl);
+  for (i<0;i<re->nrepl;i++) 
+  {
+      snew(re->nmoves[i],re->nrepl);
+  }
+
   snew(re->prob_sum,re->nrepl);
   snew(re->nexchange,re->nrepl);
 
@@ -455,6 +462,7 @@ static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
   exchange_rvecs(ms,b,state->sd_X,state->natoms);
   exchange_reals(ms,b,state->lambda,efptNR);
   exchange_ints(ms,b,&(state->fep_state),1);
+  /* do we not include the histories here? */
 }
 
 static void copy_rvecs(rvec *s,rvec *d,int n)
@@ -569,6 +577,35 @@ static void pd_collect_state(const t_commrec *cr,t_state *state)
   }
 }
 
+static void print_matrix(FILE *fplog,const char *leg,int n,int **nmoves, int nattempt)
+{
+    int i,j;
+    float Tprint;
+
+    fprintf(fplog,"                  Empirical Transition Matrix\n");
+    for (i=0;i<n;i++) 
+    {
+        fprintf(fplog,"%12d",(i+1));
+    }
+    fprintf(fplog,"\n");	  
+    for (i=0;i<n;i++) 
+    {
+        for (j=0;j<n;j++) 
+        {
+            if (nmoves[i][j] > 0) 
+            {
+                Tprint = nmoves[i][j]/(float)(nattempt);
+            }
+            else 
+            {
+                Tprint = 0.0;
+            }
+            fprintf(fplog,"%12.8f",Tprint);
+        }
+        fprintf(fplog,"%3d\n",i);
+    }
+}
+
 static void print_ind(FILE *fplog,const char *leg,int n,int *ind,gmx_bool *bEx)
 {
   int i;
@@ -617,16 +654,19 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     int *pind;
     real **flambda=NULL,*beta=NULL;
     real ediff=0,delta=0,dpV=0;
-    gmx_bool *bEx,bPrint;
-    int  exchange;
+    gmx_bool *bEx,bPrint,bMulti;
+    int exchange;
     
+    bMulti = (re->nmultiplex > 1);
+        
     fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
     
     snew(beta,re->nrepl);
+    snew(Vol,re->nrepl);
+
     switch (re->type) {
     case ereTEMP:
         snew(Epot,re->nrepl);
-        snew(Vol,re->nrepl);
         Epot[re->repl] = enerd->term[F_EPOT];
         Vol[re->repl]  = vol;
         
@@ -639,11 +679,6 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
         gmx_sum_sim(re->nrepl,Vol,ms);
         break;
     case ereLAMBDA:
-        
-        /* volume differences in NPT*/
-        snew(Vol,re->nrepl);
-        Vol[re->repl]  = vol;
-        gmx_sum_sim(re->nrepl,Vol,ms);
         
         /* temperatures of different states*/
         for (i=0;i<re->nrepl;i++) 
@@ -661,6 +696,10 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
             flambda[i][re->repl] = (enerd->enerpart_lambda[(int)re->q[i]+1]-enerd->enerpart_lambda[0]);
             gmx_sum_sim(re->nrepl,flambda[i],ms);
         }
+        /* volume differences in NPT*/
+        Vol[re->repl]  = vol;
+        gmx_sum_sim(re->nrepl,Vol,ms);
+
         break;
     }
     
@@ -668,7 +707,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     snew(prob,re->nrepl);
     exchange = -1;
     
-    if (re->nmultiplex <= 1) 
+    if (!bMulti)  /* standard case -- choose to do either forward switching or reverse switching */
     {
         m = (step / re->nst)% 2;
         for(i=1; i<re->nrepl; i++) 
@@ -751,7 +790,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
         print_prob(fplog,"pr",re->nrepl,prob);
         fprintf(fplog,"\n");
     }
-    else
+    else /* multiswitch replica exchange */
     {
         snew(pind,re->nrepl);
 
@@ -867,8 +906,14 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     default:
         gmx_incons("Unknown replica exchange quantity");
     }
-    re->nattempt[m]++;
-    
+    if (bMulti) 
+    {
+        re->nattempt[m]++;
+    }
+    else
+    {
+        re->nattempt[0]++;
+    }
     return exchange;
 }
 
@@ -963,38 +1008,55 @@ void print_replica_exchange_statistics(FILE *fplog,struct gmx_repl_ex *re)
 {
   real *prob;
   int  i;
+  gmx_bool bMulti;
+
+  bMulti = (re->nmultiplex > 1);
   
   fprintf(fplog,"\nReplica exchange statistics\n");
-  fprintf(fplog,"Repl  %d attempts, %d odd, %d even\n",
-	  re->nattempt[0]+re->nattempt[1],re->nattempt[1],re->nattempt[0]);
+  if (!(bMulti)) 
+  {
+      fprintf(fplog,"Repl  %d attempts, %d odd, %d even\n",
+              re->nattempt[0]+re->nattempt[1],re->nattempt[1],re->nattempt[0]);
+  } 
 
-  snew(prob,re->nrepl);
   
   fprintf(fplog,"Repl  average probabilities:\n");
-  for(i=1; i<re->nrepl; i++) {
-    if (re->nattempt[i%2] == 0)
-      prob[i] = 0;
-    else
-      prob[i] =  re->prob_sum[i]/re->nattempt[i%2];
+  if (bMulti) 
+  {
+      print_matrix(fplog,"",re->nrepl,re->nmoves,re->nattempt[0]);
   }
-  print_ind(fplog,"",re->nrepl,re->ind,NULL);
-  print_prob(fplog,"",re->nrepl,prob);
+  else
+  {
+      snew(prob,re->nrepl);
+      for(i=1; i<re->nrepl; i++) {
+          if (re->nattempt[i%2] == 0)
+          {
+              prob[i] = 0;
+          }
+          else
+          {
+              prob[i] =  re->prob_sum[i]/re->nattempt[i%2];
+          }
+      }
+      print_ind(fplog,"",re->nrepl,re->ind,NULL);
+      print_prob(fplog,"",re->nrepl,prob);
 
-  fprintf(fplog,"Repl  number of exchanges:\n");
-  print_ind(fplog,"",re->nrepl,re->ind,NULL);
-  print_count(fplog,"",re->nrepl,re->nexchange);
-  
-  fprintf(fplog,"Repl  average number of exchanges:\n");
-  for(i=1; i<re->nrepl; i++) {
-    if (re->nattempt[i%2] == 0)
-      prob[i] = 0;
-    else
-      prob[i] =  ((real)re->nexchange[i])/re->nattempt[i%2];
+      fprintf(fplog,"Repl  number of exchanges:\n");
+      print_ind(fplog,"",re->nrepl,re->ind,NULL);
+      print_count(fplog,"",re->nrepl,re->nexchange);
+
+      fprintf(fplog,"Repl  average number of exchanges:\n");
+      for(i=1; i<re->nrepl; i++) {
+          if (re->nattempt[i%2] == 0)
+              prob[i] = 0;
+          else
+              prob[i] =  ((real)re->nexchange[i])/re->nattempt[i%2];
+      }
+      print_ind(fplog,"",re->nrepl,re->ind,NULL);
+      print_prob(fplog,"",re->nrepl,prob);
+      
+      sfree(prob);
   }
-  print_ind(fplog,"",re->nrepl,re->ind,NULL);
-  print_prob(fplog,"",re->nrepl,prob);
-
-  sfree(prob);
   
   fprintf(fplog,"\n");
 }
