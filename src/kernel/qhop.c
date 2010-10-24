@@ -52,6 +52,8 @@
 
 /* } t_qhop_parameters; */
 
+static const char *waterName = "HXO";
+
 qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, qhop_db_t db){
   /* parameters of the current donor acceptor combination are based on 
    * the residue name.
@@ -62,7 +64,7 @@ qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, qhop_db_t
 
 #ifdef HARDCODED_QHOP_PARAMS
   /* hydroxydi ion */
-  if(!strncmp(donor_name,"SOL",3) &&!strncmp(acceptor_name,"SOL",3) ){
+  if(!strncmp(donor_name,waterName,3) &&!strncmp(acceptor_name,waterName,3) ){
     q->alpha = 0.0;
     q->beta = 0.0;
     q->gamma = 0.0;
@@ -130,15 +132,6 @@ qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, qhop_db_t
 #endif /* HARDCODED_QHOP_PARAMS */
   return (q);
 }
-
-enum {etQhopModeOne, etQhopModeList, etQhopModeGillespie, etQhopModeNR};
-enum {etQhopNONE, etQhopSE, etQhopI, etQhopTST};
-static const char *qhopregimes[] = {"NONE", "SE", "Intermediate", "TST"};
-
-typedef struct {
-  int donor_id,acceptor_id,proton_id, regime;
-  real rda,prob;
-} t_hop;
 
 
   /* Make shure that the protonation state can be dealt with correctly */
