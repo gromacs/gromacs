@@ -429,10 +429,12 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"nstfep (%d) must be an integer multiple of nstlist (%d)",
               fep->nstfep,ir->nstlist);  /* MRS -- WHAT ABOUT IF IT'S VARIABLE NSLIST? */
       CHECK((mod(ir->nstdhdl,fep->nstfep)!=0));
-      sprintf(err_buf,"nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
-              fep->nstTij,ir->nstlog);
-      CHECK((mod(fep->nstTij,ir->nstlog)!=0));
-
+      if (fep->nstTij > 0)
+      {
+          sprintf(err_buf,"nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
+                  fep->nstTij,ir->nstlog);
+          CHECK((mod(fep->nstTij,ir->nstlog)!=0));
+      }
       /* if there is no temperature control, we need to specify an MC temperature */
       sprintf(err_buf,"If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
       CHECK(!(ir->etc || EI_SD(ir->eI) || ir->eI==eiBD) && (fep->mc_temp <=0) && (fep->elmcmove != elmcmoveNO));
