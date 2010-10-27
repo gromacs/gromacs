@@ -83,7 +83,7 @@ consistent iteration.  More efficient than metropolis transition
 (min{1,exp(dE}) instead of the Fermi function
 *wang-landau- implements standard wang-landau
 *gibbs-wang-landau -- uses p(k)delta for nonlocal updating of weights, instead of delta
-*mbar.
+*mbar.  Highly experimental, recommend against using.
 *minvar - optimizes the number of samples at each states with weights that lower the variance, as described
 by Escobedo (ref #???)
 
@@ -115,7 +115,7 @@ necessary for complete detailed balance?  (Answer seems to be that if
 the velocity distribution function is equal in both states, as it is
 if the temperature is the same for both, then we're OK).
 
-fep-lambda is the default lambda array.  All the other four lambda
+fep-lambdas is the default lambda array.  All the other four lambda
 arrays (except the serial tempering temperatures) use the values in
 this array if they are not specified.  If not specificed, it is
 assumed to be zero throughout.
