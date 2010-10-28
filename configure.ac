@@ -153,9 +153,9 @@ esac
 # IBM Power6-specific optimization
 AC_ARG_ENABLE(power6,
              [AC_HELP_STRING([--enable-power6],
-                             [Use IBM Pwr6/PPC440/PPC450-specific F77 kernels])],,enable_power6=no)
+                             [Use IBM Power6-specific F77 kernels])],,enable_power6=no)
 if test "$enable_power6" = "yes"; then
-  AC_DEFINE(GMX_POWER6,,[Enable IBM Pwr6/PPC440/PPC450-specific F77 kernels])
+  AC_DEFINE(GMX_POWER6,,[Enable IBM Power6-specific F77 kernels])
 fi
 
 AC_ARG_ENABLE(bluegene,
@@ -174,11 +174,11 @@ AC_ARG_ENABLE(software-invsqrt,
               [AC_HELP_STRING([--disable-software-invsqrt],
                               [No software 1/sqrt (disabled on sgi,ibm,ia64)])],,
 [case "${host_cpu}-${host_os}" in
-  mips*-irix* | rs6000*-aix* | powerpc*-aix | ia64*-*) enable_software_invsqrt=no ;;
+  mips*-irix* | rs6000*-aix* | powerpc*-aix | powerpc*-none | ia64*-*) enable_software_invsqrt=no ;;
   *) enable_software_invsqrt=yes ;;
 esac])
 if test "$enable_software_invsqrt" = "yes"; then
-  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS sGMX_INTERNAL_XDRsqrt(x)])
+  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS software 1/sqrt(x)])
   PKG_CFLAGS="$PKG_CFLAGS -DGMX_SOFTWARE_INVSQRT"
 fi
 AM_CONDITIONAL([GMX_SOFTWARE_INVSQRT],[test "$enable_software_invsqrt" = "yes"])
@@ -1126,6 +1126,8 @@ fi
 
 if test "$enable_bluegene" = "yes"; then
   AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
+  AC_DEFINE_UNQUOTED(GMX_POWERPC_INVSQRT,,[Use the PowerPC hardware 1/sqrt(x)])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_POWERPC_INVSQRT"
 fi
 
 if test "$enable_fortran" = "yes"; then

@@ -1291,7 +1291,6 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         {
             cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
                     &ncons_loc,&p_ssd,&p_max,&p_imax);
-            lincsd->rmsd_data[0] = ncons_loc;
             /* Check if we are doing the second part of SD */
             if (ir->eI == eiSD2 && v == NULL)
             {
@@ -1303,6 +1302,12 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
             }
             lincsd->rmsd_data[0] = ncons_loc;
             lincsd->rmsd_data[i] = p_ssd;
+        }
+        else
+        {
+            lincsd->rmsd_data[0] = 0;
+            lincsd->rmsd_data[1] = 0;
+            lincsd->rmsd_data[2] = 0;
         }
         if (bLog && fplog && lincsd->nc > 0)
         {

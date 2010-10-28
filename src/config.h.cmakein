@@ -146,6 +146,9 @@
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
+/* Use the PowerPC hardware 1/sqrt(x) */
+#cmakedefine GMX_POWERPC_INVSQRT
+
 /* Compile with dlopen */
 #cmakedefine GMX_DLOPEN
 

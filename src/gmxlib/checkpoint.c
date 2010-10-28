@@ -1468,7 +1468,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 #endif
 
     const char *int_warn=
-              "WARNING: The checkpoint file was generator with integrator %s,\n"
+              "WARNING: The checkpoint file was generated with integrator %s,\n"
               "         while the simulation uses integrator %s\n\n";
     const char *sd_note=
         "NOTE: The checkpoint file was for %d nodes doing SD or BD,\n"

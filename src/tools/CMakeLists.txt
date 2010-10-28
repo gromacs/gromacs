@@ -62,9 +62,13 @@ foreach(TOOL ${GMX_TOOLS_PROGRAMS})
 endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 
 
 
+install(TARGETS gmxana DESTINATION ${LIB_INSTALL_DIR} COMPONENT runtime)
 install(TARGETS ${GMX_TOOLS_PROGRAMS}
-	gmxana DESTINATION ${LIB_INSTALL_DIR}	
-      	RUNTIME DESTINATION ${BIN_INSTALL_DIR})
+        DESTINATION ${BIN_INSTALL_DIR}
+        COMPONENT runtime)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmxana.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig RENAME "libgmxana${GMX_LIBS_SUFFIX}.pc")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc
+        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+        RENAME "libgmxana${GMX_LIBS_SUFFIX}.pc"
+        COMPONENT development)

@@ -207,7 +207,7 @@ static void enxsubblock_alloc(t_enxsubblock *sb)
             }
             break;
         default:
-            gmx_incons("Unknown block type");
+            gmx_incons("Unknown block type: this file is corrupted or from the future");
     }
 }
 
@@ -314,6 +314,19 @@ void add_subblocks_enxblock(t_enxblock *eb, int n)
     }
 }
 
+static void enx_warning(const char *msg)
+{
+    if (getenv("GMX_ENX_NO_FATAL") != NULL)
+    {
+        gmx_warning(msg);
+    }
+    else
+    {
+        gmx_fatal(FARGS,"%s\n%s",
+                  msg,
+                  "If you want to use the correct frames before the corrupted frame and avoid this fatal error set the env.var. GMX_ENX_NO_FATAL");
+    }
+}
 
 static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
                         int n,gmx_enxnm_t **nms)
@@ -469,13 +482,22 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         fr->t = r;
         if (!gmx_fio_do_int(ef->fio, dum))   *bOK = FALSE;
         fr->step = dum;
+
+        if (fr->t < 0 || fr->t > 1e20 || fr->step < 0 )
+        {
+            enx_warning("edr file with negative step number or unreasonable time (and without version number).");
+            *bOK=FALSE;
+            return FALSE;
+        }
     }
     else
     {
         if (!gmx_fio_do_int(ef->fio, magic))       *bOK = FALSE;
         if (magic != -7777777)
         {
-            gmx_fatal(FARGS,"Energy header magic number mismatch, this is not a GROMACS edr file");
+            enx_warning("Energy header magic number mismatch, this is not a GROMACS edr file");
+            *bOK=FALSE;
+            return FALSE;
         }
         *file_version = enx_version;
         if (!gmx_fio_do_int(ef->fio, *file_version)) *bOK = FALSE;
@@ -522,11 +544,16 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     }
 
     if (!gmx_fio_do_int(ef->fio, fr->nblock))  *bOK = FALSE;
+    if (fr->nblock < 0) *bOK=FALSE;
 
     if (ndisre!=0)
     {
         if (*file_version >= 4)
-            gmx_incons("Distance restraint blocks in old style in new style file");
+        {
+            enx_warning("Distance restraint blocks in old style in new style file");
+            *bOK=FALSE;
+            return FALSE;
+        }
         fr->nblock+=1;
     }
 
@@ -541,7 +568,9 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     }
 
     if (*bOK && bRead)
+    {
         add_blocks_enxframe(fr, fr->nblock);
+    }
 
     startb=0;
     if (ndisre>0)
@@ -572,7 +601,9 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             else
             {
                 if (fr->block[b].nsub != 1)
+                {
                     gmx_incons("Writing an old version .edr file with too many subblocks");
+                }
                 if (fr->block[b].sub[0].type != dtreal)
                 {
                     gmx_incons("Writing an old version .edr file the wrong subblock type");
@@ -690,7 +721,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
     gmx_enxnm_t *nms=NULL;
     int        file_version=-1;
     t_enxframe *fr;
-    gmx_bool       bWrongPrecision,bDum=TRUE;
+    gmx_bool       bWrongPrecision,bOK=TRUE;
     struct ener_file *ef;
 
     snew(ef,1);
@@ -701,8 +732,8 @@ ener_file_t open_enx(const char *fn,const char *mode)
         gmx_fio_setprecision(ef->fio,FALSE);
         do_enxnms(ef,&nre,&nms);
         snew(fr,1);
-        do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bDum);
-        if(!bDum)
+        do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bOK);
+        if(!bOK)
         {
             gmx_file("Cannot read energy file header. Corrupt file?");
         }
@@ -721,8 +752,8 @@ ener_file_t open_enx(const char *fn,const char *mode)
             gmx_fio_checktype(ef->fio);
             gmx_fio_setprecision(ef->fio,TRUE);
             do_enxnms(ef,&nre,&nms);
-            do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bDum);
-            if(!bDum)
+            do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bOK);
+            if(!bOK)
             {
                 gmx_file("Cannot write energy file header; maybe you are out of quota?");
             }
@@ -973,7 +1004,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
                     bOK1=gmx_fio_ndo_string(ef->fio, sub->sval, sub->nr);
                     break;
                 default:
-                    gmx_incons("Reading unknown block type");
+                    gmx_incons("Reading unknown block data type: this file is corrupted or from the future");
             }
             bOK = bOK && bOK1;
         }
