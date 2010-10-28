@@ -673,8 +673,8 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
     {
         ai     = nl->iinr[i];
             
-        nj0    = nl->jindex[ai];            
-        nj1    = nl->jindex[ai+1];
+        nj0    = nl->jindex[i];            
+        nj1    = nl->jindex[i+1];
         
         /* Load shifts for this list */
         shift   = nl->shift[i];
