@@ -115,6 +115,11 @@ mark_as_advanced(USE_VERSION_H)
 
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
 
+if(UNIX AND NOT APPLE AND NOT CYGWIN)
+    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE and CYGWIN) platforms but it might not always work!" OFF)
+    mark_as_advanced(GMX_PREFER_STATIC_LIBS)
+endif()
+
 ########################################################################
 # Set up binary and library suffixing 
 ########################################################################
@@ -346,6 +351,15 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
+if(UNIX AND NOT APPLE AND NOT CYGWIN)
+    if(GMX_PREFER_STATIC_LIBS)
+        SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        if(BUILD_SHARED_LIBS)
+            message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
+            set(BUILD_SHARED_LIBS OFF CACHE BOOL "Enable shared libraries (can be problematic with MPI, Windows)" FORCE)
+        endif()
+    endif()
+endif()
 
 find_package(LibXml2)
 set(PKG_XML "")
