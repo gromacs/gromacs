@@ -796,7 +796,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             }
 
             /* macro set at build time  */
-#ifdef OpenMM_PLUGIN_DIR
+#ifdef OPENMM_PLUGIN_DIR
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(OPENMM_PLUGIN_DIR);

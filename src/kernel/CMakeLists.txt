@@ -46,14 +46,10 @@ if(GMX_OPENMM)
     add_subdirectory(gmx_gpu_utils)
     include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
     link_directories(${OpenMM_LIBRARY_DIR}) 
-    # only define if this is a local build not a release 
-    # we assume that the auto-generated version is not used && 
-    # version string does not contain "-dev" => it's a release build
-    if(NOT USE_VERSION_H AND NOT PROJECT_VERSION MATCHES ".*-dev.*")  
-        add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) 
-    else()
-        add_definitions( -DOPENMM_PLUGIN_DIR="" )
-    endif()
+    # with this define no evn.var. is needed with OPENMM_PLUGIN_DIR
+    # if the same OpenMM installation is used for running and building 
+    add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) 
+    file(TO_CMAKE_PATH ${OpenMM_PLUGIN_DIR} _path)
     add_library(openmm_api_wrapper STATIC openmm_wrapper.cpp)
     target_link_libraries(openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})
     set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})   
