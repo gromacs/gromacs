@@ -122,8 +122,8 @@ mark_as_advanced(USE_VERSION_H)
 
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
 
-if(UNIX AND NOT APPLE AND NOT CYGWIN)
-    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE and CYGWIN) platforms but it might not always work!" OFF)
+if(UNIX AND NOT APPLE)
+    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE) platforms but it might not always work!" OFF)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
@@ -358,7 +358,7 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
-if(UNIX AND NOT APPLE AND NOT CYGWIN)
+if(UNIX AND NOT APPLE)
     if(GMX_PREFER_STATIC_LIBS)
         SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
         if(BUILD_SHARED_LIBS)
