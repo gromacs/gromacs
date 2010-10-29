@@ -3,9 +3,16 @@ cmake_minimum_required(VERSION 2.6)
 project(Gromacs)
 include(Dart)
 mark_as_advanced(DART_ROOT)
+
 # PROJECT_VERSION should have the following structure: 
-# VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-set(PROJECT_VERSION "4.5.1")
+# VERSION-dev[-SUFFIX] where the VERSION should have the for: vMajor.vMinor.vPatch
+#
+# The "-dev" suffix is important to keep because it makes possible to distinguish 
+# between a build from official release and a build from git release branch on a 
+# machine with no git. 
+#
+# NOTE: when releasing the "-dev" suffix needs to be stripped off!
+set(PROJECT_VERSION "4.5.1-dev")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
