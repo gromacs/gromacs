@@ -139,6 +139,7 @@ else (BUILD_SHARED_LIBS)
                 -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
         COMMENT "Installing mdrun")
 endif (BUILD_SHARED_LIBS)
+add_dependencies(install-mdrun mdrun)
 
 endif(GMX_FAHCORE)
 
