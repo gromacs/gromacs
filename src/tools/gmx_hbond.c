@@ -1649,7 +1649,10 @@ static void do_merge(t_hbdata *hb,int ntmp,
         srenew(hb0->h[0],4+nnframes/hb->wordlen);
         srenew(hb0->g[0],4+nnframes/hb->wordlen);  
     }
-    clearPshift(&(hb->per->pHist[a1][a2]));
+    if (NULL != hb->per->pHist)
+    {
+        clearPshift(&(hb->per->pHist[a1][a2]));
+    }
 
     /* Copy temp array to target array */
     for(m=0; (m<=nnframes); m++) {
@@ -3847,7 +3850,7 @@ int gmx_hbond(int argc,char *argv[])
                 trrStatus = (read_next_x(oenv,status,&t,natoms,x,box));
                 nframes++;      /*    +   */
             }      /*                 +   */
-#ifdef HAVE_OPENMP /* ++++++++++++++++´   */
+#ifdef HAVE_OPENMP /* +++++++++++++++++   */
 #pragma omp barrier
 #endif
         } while (trrStatus);
