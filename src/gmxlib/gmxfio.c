@@ -184,12 +184,7 @@ const char *gmx_fio_dbgstr(t_fileio *fio, const char *desc, char *buf)
     }
     else
     {
-#if (defined( _WIN32 ) || defined( _WIN64 ) )
-        /* windows doesn't do standard C */
-#define snprintf sprintf_s
-#endif
-        snprintf(buf, GMX_FIO_BUFLEN, "  ; %s %s", 
-                 fio->comment ? fio->comment : "", desc);
+        snprintf(buf, GMX_FIO_BUFLEN, "  ; %s %s", fio->comment ? fio->comment : "", desc);
     }
     return buf;
 }
