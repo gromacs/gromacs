@@ -136,7 +136,9 @@ endif(NOT GMX_OPENMM)
 
 add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${FORTRAN_SOURCES} ${GMX_BLUEGENE_C_SRC} ${THREAD_MPI_SRC})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})
-add_dependencies(gmx gmx_version) 
+if(USE_VERSION_H)
+	add_dependencies(gmx gmx_version) 
+endif()
 set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
