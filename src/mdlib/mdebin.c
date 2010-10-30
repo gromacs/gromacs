@@ -934,12 +934,15 @@ void upd_mdebin(t_mdebin *md,
     if (md->fp_dhdl && bDoDHDL)
     {
         fprintf(md->fp_dhdl,"%.4f ",time);
+        /* the current free energy state */
+        fprintf(md->fp_dhdl,"%4d",state->fep_state);
+
+        /* total energy (for if the temperature changes */
         if (fepvals->bPrintEnergy) 
         {
             fprintf(md->fp_dhdl,"%.4f ",enerd->term[F_ETOT]);
         }
-        /* the current free energy state */
-        fprintf(md->fp_dhdl,"%4d",state->fep_state);
+
         for (i=0;i<efptNR;i++) 
         {
             if (fepvals->separate_dvdl[i])
