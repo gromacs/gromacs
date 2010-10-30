@@ -2433,7 +2433,7 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
         }
         fprintf(outfile,"\n");
         
-        if ((mod(step,fep->nstTij)==0) && (step > 0))
+        if ((mod(step,fep->nstTij)==0) && (fep->nstTij > 0) && (step > 0))
         {            
             fprintf(outfile,"                     Transition Matrix\n");
             for (ifep=0;ifep<nlim;ifep++) 
