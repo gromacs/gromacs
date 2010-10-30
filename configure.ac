@@ -3,7 +3,13 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.5.2, [gmx-users@gromacs.org])
+
+# The "-dev" suffix is important to keep because it makes possible to distinguish 
+# between a build from official release and a build from git release branch on a 
+# machine with no git. 
+#
+# NOTE: when releasing the "-dev" suffix needs to be stripped off!
+AC_INIT(gromacs, 4.5.2-dev, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
