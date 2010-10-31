@@ -460,8 +460,8 @@ static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
   exchange_rvecs(ms,b,state->x,state->natoms);
   exchange_rvecs(ms,b,state->v,state->natoms);
   exchange_rvecs(ms,b,state->sd_X,state->natoms);
-  exchange_reals(ms,b,state->lambda,efptNR);
-  exchange_ints(ms,b,&(state->fep_state),1);
+  /*exchange_reals(ms,b,state->lambda,efptNR); */
+  /*exchange_ints(ms,b,&(state->fep_state),1); */
   /* do we not include the histories here? */
 }
 
@@ -732,7 +732,8 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
                     /*       =  [H_b(x_a) + H_a(x_b)] - [H_b(x_b) + H_a(x_a)] */
                     /*       =  [H_b(x_a) - H_a(x_a)] + [H_a(x_b) - H_b(x_b)] */
                     ediff = flambda[b][a] + flambda[a][b];    
-                    delta = ediff*beta[a]; /* assume all same temperature for now!! */
+                    delta = ediff*beta[a]; /* assume all at same temperature for now!! Could be at different temperatures,
+                                            of course. Would require the total energy as well.*/
                     break;
                 default:
                     gmx_incons("Unknown replica exchange quantity");
@@ -778,6 +779,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
                     {
                         exchange = a;
                     }
+                    re->nexchange[i]++;
                 }
             } 
             else 
@@ -890,6 +892,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     
     sfree(bEx);
     sfree(prob);
+
     switch (re->type) {
     case ereTEMP:
         sfree(Vol);
@@ -906,7 +909,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     default:
         gmx_incons("Unknown replica exchange quantity");
     }
-    if (bMulti) 
+    if (!bMulti) 
     {
         re->nattempt[m]++;
     }
