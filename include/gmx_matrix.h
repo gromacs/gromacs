@@ -39,6 +39,10 @@
 	
 #include <stdio.h>
 	
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 double **alloc_matrix(int n,int m);
 
 void free_matrix(double **a,int n);
@@ -59,4 +63,8 @@ double multi_regression(FILE *fp,int ny,double *y,
  * If fp is not NULL debug information will be written to it.
  */
 
+#ifdef __cplusplus
+}
+#endif
+			  
 #endif

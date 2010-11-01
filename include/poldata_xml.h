@@ -40,9 +40,19 @@
 #include "poldata.h"
 #include "atomprop.h"
 
+/* This source code file is part of the Alexandria project */
+	
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void gmx_poldata_write(const char *fn,gmx_poldata_t pd,gmx_atomprop_t aps,
 			      int compress);
 
 extern gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps);
+
+#ifdef __cplusplus
+}
+#endif
 			  
 #endif

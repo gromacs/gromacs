@@ -83,7 +83,7 @@ typedef struct {
 typedef struct {
     int    eqg_model,nzeta,row[MAXZETA];
     char   name[EEMBUFSIZE],zetastr[EEMBUFSIZE],qstr[EEMBUFSIZE],rowstr[EEMBUFSIZE];
-    double J0,q[MAXZETA],zeta[MAXZETA],chi0; 
+    double J0,chi0,q[MAXZETA],zeta[MAXZETA]; 
 } t_eemprops;
 
 typedef struct {
@@ -848,6 +848,12 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
         fprintf(stderr,"More than %d zeta and/or q values for %s\n",MAXZETA,eep->name);
         eep->nzeta = MAXZETA;
     }
+    for(; (n < MAXZETA); n++) 
+    {
+        eep->zeta[n] = 0;
+        eep->q[n]    = 0;
+        eep->row[n]  = 0;
+    }
     eep->chi0  = chi0;
 }
 
@@ -1052,7 +1058,7 @@ int gmx_poldata_list_epref(gmx_poldata_t pd,int *eqg_model,char **epref)
 
 void gmx_poldata_comm_eemprops(gmx_poldata_t pd,t_commrec *cr)
 {
-    int i,nep;
+    int i,j,nep;
     t_eemprops *ep;
     
     if (NULL != debug)
@@ -1078,11 +1084,16 @@ void gmx_poldata_comm_eemprops(gmx_poldata_t pd,t_commrec *cr)
     }
     if (NULL != debug) 
     {
+        fprintf(debug,"  EEP  Atom      Chi      J00     Zeta\n");
         for(i=0; (i<pd->nep); i++)
-            fprintf(debug,"EEP: %5d Atom: %5s  Chi: %8.3f  J00:  %8.3f  Z1: %8.3f  Z2: %8.3f\n",
-                    pd->eep[i].eqg_model,pd->eep[i].name,
-                    pd->eep[i].chi0,pd->eep[i].J0,
-                    pd->eep[i].zeta[0],pd->eep[i].zeta[1]);
+        {
+            fprintf(debug,"%5s %5s %8.3f %8.3f",
+                    get_eemtype_name(pd->eep[i].eqg_model),
+                    pd->eep[i].name,pd->eep[i].chi0,pd->eep[i].J0);
+            for(j=0; (j<pd->eep[i].nzeta); j++)
+                fprintf(debug," %8.3f",pd->eep[i].zeta[j]);
+            fprintf(debug,"\n");
+        }
     }
 }
 

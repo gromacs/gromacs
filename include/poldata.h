@@ -37,8 +37,14 @@
 #ifndef _poldata_h
 #define _poldata_h
 
+/* This source code file is part of the Alexandria project */
+	
 enum { eqgNone, eqgYang, eqgBultinck, eqgRappe,
        eqgAXp, eqgAXs, eqgAXg, eqgESP, eqgRESP, eqgNR };
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct gmx_poldata *gmx_poldata_t;
 
@@ -198,5 +204,9 @@ extern char *gmx_poldata_get_epref(gmx_poldata_t pd,int eqg_model);
 extern int gmx_poldata_list_epref(gmx_poldata_t pd,int *eqg_model,char **epref);
 
 extern void gmx_poldata_comm_eemprops(gmx_poldata_t pd,t_commrec *cr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -46,6 +46,10 @@
 enum { ehisA, ehisB, ehisH, ehis1, ehisNR };
 extern const char *hh[ehisNR];
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   int  res1,res2;
   char *a1,*a2;
@@ -122,5 +126,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 
 void print_sums(t_atoms *atoms, gmx_bool bSystem);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _pdb2top_h */
