@@ -170,8 +170,10 @@ static void check_cg_sizes(const char *topfn,t_block *cgs,warninp_t wi)
         maxsize = max(maxsize,cgs->index[cg+1]-cgs->index[cg]);
     }
     
-    if (maxsize > 32)
-        gmx_fatal(FARGS,"The largst charge group contains %d atoms. The maximum is 32.",maxsize);
+    if (maxsize > MAX_CHARGEGROUP_SIZE)
+    {
+        gmx_fatal(FARGS,"The largest charge group contains %d atoms. The maximum is 32.",MAX_CHARGEGROUP_SIZE);
+    }
     else if (maxsize > 10)
     {
         set_warning_line(wi,topfn,-1);
