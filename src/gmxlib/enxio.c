@@ -442,7 +442,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
                        int nre_test,gmx_bool *bWrongPrecision,gmx_bool *bOK)
 {
     int  magic=-7777777;
-    real r;
+    real first_real_to_check;
     int  b,i,zero=0,dum=0;
     gmx_bool bRead = gmx_fio_getread(ef->fio);
     int  tempfix_nr=0;
@@ -470,25 +470,18 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
      * (which is the case for for instance the block sizes for variable
      * number of blocks, where this number is read before).
      */
-    r = -2e10;
-    if (!gmx_fio_do_real(ef->fio, r))
+    first_real_to_check = -2e10;
+    if (!gmx_fio_do_real(ef->fio, first_real_to_check))
     {
         return FALSE;
     }
-    if (r > -1e10)
+    if (first_real_to_check > -1e10)
     {
         /* Assume we are reading an old format */
         *file_version = 1;
-        fr->t = r;
+        fr->t = first_real_to_check;
         if (!gmx_fio_do_int(ef->fio, dum))   *bOK = FALSE;
         fr->step = dum;
-
-        if (fr->t < 0 || fr->t > 1e20 || fr->step < 0 )
-        {
-            enx_warning("edr file with negative step number or unreasonable time (and without version number).");
-            *bOK=FALSE;
-            return FALSE;
-        }
     }
     else
     {
@@ -566,6 +559,16 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         *bWrongPrecision = TRUE;
         return *bOK;
     }
+
+    /* we now know what these should be, or we've already bailed out because
+       of wrong precision */
+    if ( *file_version==1 && (fr->t < 0 || fr->t > 1e20 || fr->step < 0 ) )
+    {
+        enx_warning("edr file with negative step number or unreasonable time (and without version number).");
+        *bOK=FALSE;
+        return FALSE;
+    }
+
 
     if (*bOK && bRead)
     {
