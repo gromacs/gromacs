@@ -6,13 +6,13 @@
 \item[Generating topologies and coordinates] \ 
 \begin{description}[font=\ttfamily\small, style=nextline, leftmargin=\proglistwidth, noitemsep, labelsep=0pt]
 \item[pdb2gmx] converts pdb files to topology and coordinate files 
-\item[x2top] generates a primitive topology from coordinates  
+\item[g_x2top] generates a primitive topology from coordinates  
 \item[editconf] edits the box and writes subgroups  
 \item[genbox] solvates a system 
 \item[genion] generates mono atomic ions on energetically favorable positions 
 \item[genconf] multiplies a conformation in 'random' orientations 
 \item[genrestr] generates position restraints or distance restraints for index groups 
-\item[protonate] protonates structures 
+\item[g_protonate] protonates structures 
 \end{description}
 
 \item[Running a simulation] \ 
@@ -25,7 +25,8 @@
 \item[Viewing trajectories] \ 
 \begin{description}[font=\ttfamily\small, style=nextline, leftmargin=\proglistwidth, noitemsep, labelsep=0pt]
 \item[ngmx] displays a trajectory 
-\item[highway] X-windows gadget for highway simulations 
+\item[g_highway] X Window System gadget for highway simulations 
+\item[g_nmtraj] generate a virtual trajectory from an eigenvector 
 \end{description}
 
 \item[Processing energies] \ 
@@ -41,8 +42,8 @@
 \item[trjconv] converts and manipulates trajectory files 
 \item[trjcat] concatenates trajectory files 
 \item[eneconv] converts energy files 
-\item[xmp2ps] converts XPM matrices to encapsulated postscript (or XPM) 
-\item[sigeps] convert c6/12 or c6/cn combinations to and from sigma/epsilon 
+\item[xpm2ps] converts XPM matrices to encapsulated postscript (or XPM) 
+\item[g_sigeps] convert c6/12 or c6/cn combinations to and from sigma/epsilon 
 \end{description}
 
 \item[Tools] \ 
@@ -51,7 +52,6 @@
 \item[mk_angndx] generates index files for g_angle 
 \item[gmxcheck] checks and compares files 
 \item[gmxdump] makes binary files human readable 
-\item[gen_table] generate tables for use by mdrun 
 \item[g_traj] plots x, v and f of selected atoms/groups (and more) from a trajectory 
 \item[g_analyze] analyzes data sets 
 \item[trjorder] orders molecules according to their distance to a group 
@@ -60,11 +60,11 @@
 \item[g_dyndom] interpolate and extrapolate structure rotations 
 \item[g_morph] linear interpolation of conformations  
 \item[g_wham] weighted histogram analysis after umbrella sampling 
-\item[ffscan] scan and modify force field data for a single point energy calculation 
 \item[xpm2ps] convert XPM (XPixelMap) file to postscript 
 \item[g_sham] read/write xmgr and xvgr data sets 
-\item[g_spatial] calculates the spatial distribution function (more control than g_sdf) 
-\item[g_sdf] calculates the spatial distribution function (faster than g_spatial) 
+\item[g_spatial] calculates the spatial distribution function 
+\item[g_select] selects groups of atoms based on flexible textual selections 
+\item[g_tune_pme] time mdrun as a function of PME nodes to optimize settings 
 \end{description}
 
 \item[Distances between structures] \ 
@@ -82,7 +82,7 @@
 \item[g_bond] calculates distances between atoms 
 \item[g_mdmat] calculates residue contact maps 
 \item[g_polystat] calculates static properties of polymers 
-\item[g_rmsdist] calculates atom pair distances averaged with power 2, -3 or -6 
+\item[g_rmsdist] calculates atom pair distances averaged with power -2, -3 or -6 
 \end{description}
 
 \item[Mass distribution properties over time] \ 
@@ -92,6 +92,7 @@
 \item[g_msd] calculates mean square displacements 
 \item[g_polystat] calculates static properties of polymers 
 \item[g_rotacf] calculates the rotational correlation function for molecules 
+\item[g_rdf] calculates radial distribution functions 
 \item[g_rotmat] plots the rotation matrix for fitting to a reference structure 
 \item[g_vanhove] calculates Van Hove displacement functions 
 \end{description}
@@ -112,14 +113,13 @@
 \item[g_order] computes the order parameter per atom for carbon tails 
 \item[g_principal] calculates axes of inertia for a group of atoms 
 \item[g_rdf] calculates radial distribution functions 
-\item[g_sdf] calculates solvent distribution functions 
 \item[g_sgangle] computes the angle and distance between two groups 
 \item[g_sorient] analyzes solvent orientation around solutes 
 \item[g_spol] analyzes solvent dipole orientation and polarization around solutes 
 \item[g_bundle] analyzes bundles of axes, {\eg} helices 
 \item[g_disre] analyzes distance restraints 
 \item[g_clustsize] calculate size distributions of atomic clusters 
-\item[anadock] cluster structures from Autodock runs 
+\item[g_anadock] cluster structures from Autodock runs 
 \end{description}
 
 \item[Kinetic properties] \ 
@@ -127,7 +127,10 @@
 \item[g_traj] plots x, v, f, box, temperature and rotational energy 
 \item[g_velacc] calculates velocity autocorrelation functions 
 \item[g_tcaf] calculates viscosities of liquids 
-\item[g_kinetics] derives information about kinetic processes from you trajectories 
+\item[g_bar] calculates free energy difference estimates through Bennett's acceptance ratio 
+\item[g_current] calculate current autocorrelation function of system 
+\item[g_vanhove] compute Van Hove correlation function 
+\item[g_principal] calculate principal axes of inertion for a group of atoms 
 \end{description}
 
 \item[Electrostatic properties] \ 
@@ -137,6 +140,7 @@
 \item[g_dipoles] computes the total dipole plus fluctuations 
 \item[g_dielectric] calculates frequency dependent dielectric constants 
 \item[g_current] calculates dielectric constants for charged systems 
+\item[g_spol] analyze dipoles around a solute 
 \end{description}
 
 \item[Protein specific analysis] \ 
@@ -146,8 +150,8 @@
 \item[g_helix] calculates basic properties of alpha helices 
 \item[g_helixorient] calculates local pitch/bending/rotation/orientation inside helices 
 \item[g_rama] computes Ramachandran plots 
-\item[xrama] shows animated Ramachandran plots 
-\item[wheel] plots helical wheels 
+\item[g_xrama] shows animated Ramachandran plots 
+\item[g_wheel] plots helical wheels 
 \end{description}
 
 \item[Interfaces] \ 
@@ -158,6 +162,7 @@
 \item[g_order] computes the order parameter per atom for carbon tails 
 \item[g_h2order] computes the orientation of water molecules 
 \item[g_bundle] analyzes bundles of axes, {\eg} transmembrane helices 
+\item[g_membed] embeds a protein into a lipid bilayer 
 \end{description}
 
 \item[Covariance analysis] \ 

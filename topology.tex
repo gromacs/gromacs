@@ -217,9 +217,7 @@ defined as virtual site or not, but by the bonding configuration of the
 atom.
 
 \section{Parameter files}
-
 \label{sec:paramfiles}
-
 \subsection{Atoms}
 The {\em static} properties (see \tabref{statprop} assigned to the
 atom types are assigned based on data in several places.
@@ -257,69 +255,6 @@ sigma           & $\sigma$      & nm            \\
 %\end{itemize}
 %These quantities are listed in the coordinate file, {\tt *.gro}
 %(see section~\ssecref{grofile}).
-
-\subsection{Non-bonded parameters}
-\label{subsec:nbpar}
-The \swapindex{non-bonded}{parameter}s consist of the van der Waals 
-parameters V ({\tt c6} or $\sigma$, depending on the combination rule) and W 
-({\tt c12} or $\epsilon$), as listed in the file {\tt ffnonbonded.itp}, where 
-{\tt ptype} is the particle type (see \tabref{ptype}). As with the bonded parameters, entries in {\tt [~*type~]} directives 
-are applied to their counterparts in the topology file.  Missing parameters 
-generate warnings, except as noted below in section~\ssecref{pairinteractions}.
-
-{\small
-\begin{verbatim}
-[ atomtypes ]
-;name   at.num      mass      charge   ptype         V(c6)        W(c12)
-    O        8  15.99940       0.000       A   0.22617E-02   0.74158E-06
-   OM        8  15.99940       0.000       A   0.22617E-02   0.74158E-06
-   .....
-
-[ nonbond_params ]
-  ; i    j func       V(c6)        W(c12)
-    O    O    1 0.22617E-02   0.74158E-06
-    O   OA    1 0.22617E-02   0.13807E-05
-    .....
-\end{verbatim}}
-
-{\bf Note} that most of the included force fields also include the {\tt at.num.} column, 
-but this same information is implied in the OPLS-AA {\tt bond_type} column.
-The interpretation of the parameters V and W depends on the combination rule 
-that was chosen in the {\tt [~defaults~]} section of the topology file 
-(see~\ssecref{topfile}):
-\begin{eqnarray}
-\mbox{for combination rule 1}: & &
-\begin{array}{llllll}
-  \mbox{V}_{ii} & = & C^{(6)}_{i}  & = & 4\,\epsilon_i\sigma_i^{6} &
-  \mbox{[ kJ mol$^{-1}$ nm$^{6}$ ]}\\
-  \mbox{W}_{ii} & = & C^{(12)}_{i} & = & 4\,\epsilon_i\sigma_i^{12} &
-  \mbox{[ kJ mol$^{-1}$ nm$^{12}$ ]}\\
-\end{array}
-\\
-\mbox{for combination rules 2 and 3}: & &
-\begin{array}{llll}
-  \mbox{V}_{ii} & = & \sigma_i   & \mbox{[ nm ]} \\
-  \mbox{W}_{ii} & = & \epsilon_i & \mbox{[ kJ mol$^{-1}$ ]}
-\end{array}
-\end{eqnarray}
-Some or all combinations for different atom types can be given in the 
-{\tt [~nonbond_params~]} section, again with parameters V and W as defined 
-above. Any combination that is not given will be computed from the parameters 
-for the corresponding atom types, according to the \normindex{combination rule}:
-\begin{eqnarray}
-\mbox{for combination rules 1 and 3}: & &
-\begin{array}{lll}
-  C^{(6)}_{ij}  & = & \left(C^{(6)}_i\,C^{(6)}_j\right)^{\frac{1}{2}} \\
-  C^{(12)}_{ij} & = & \left(C^{(12)}_i\,C^{(12)}_j\right)^{\frac{1}{2}}
-\end{array}
-\\
-\mbox{for combination rule 2}: & &
-\begin{array}{lll}
-  \sigma_{ij}   & = & \frac{1}{2}(\sigma_i+\sigma_j) \\
-  \epsilon_{ij} & = & \sqrt{\epsilon_i\,\epsilon_j}
-\end{array}
-\end{eqnarray}
-
 
 \subsection{Bonded parameters}
 \label{subsec:bondparam}
@@ -401,9 +336,102 @@ In the {\tt ffbonded.itp} file, you can add bonded parameters. If you
 want to include parameters for new atom types, make sure you define
 them in {\tt atomtypes.atp} as well.
 
+\subsection{Non-bonded parameters}
+\label{subsec:nbpar}
+The \swapindex{non-bonded}{parameter}s consist of the van der Waals parameters
+V ({\tt c6}) and W ({\tt c12}), as listed in the file {\tt ffnonbonded.itp},
+where {\tt ptype} is the particle type (see \tabref{ptype}).  As with the bonded
+parameters, entries in {\tt [~*type~]} directives are applied to their counterparts
+in the topology file.  Missing parameters generate warnings, except as noted 
+below in section~\ssecref{pairinteractions}.
+
+{\small
+\begin{verbatim}
+[ atomtypes ]
+;name   at.num      mass      charge   ptype            c6           c12
+    O        8  15.99940       0.000       A   0.22617E-02   0.74158E-06
+   OM        8  15.99940       0.000       A   0.22617E-02   0.74158E-06
+   .....
+
+[ nonbond_params ]
+  ; i    j func          c6           c12
+    O    O    1 0.22617E-02   0.74158E-06
+    O   OA    1 0.22617E-02   0.13807E-05
+    .....
+
+[ pairtypes ]
+  ; i    j func         cs6          cs12 ; THESE ARE 1-4 INTERACTIONS
+    O    O    1 0.22617E-02   0.74158E-06
+    O   OM    1 0.22617E-02   0.74158E-06
+    .....
+\end{verbatim}}
+
+{\bf Note} that most of the included force fields also include the {\tt at.num.} column, 
+but this same information is implied in the OPLS-AA {\tt bond_type} column.
+The parameters V and W can be defined in two different ways, depending on
+the combination rule that was chosen in the {\tt [~defaults~]} section
+of the topology file (see~\ssecref{topfile}):
+\begin{eqnarray}
+\mbox{for combination rule 1}: & &
+\begin{array}{llllll}
+  \mbox{V}_{ii} & = & C^{(6)}_{i}  & = & 4\,\epsilon_i\sigma_i^{6} &
+  \mbox{[ kJ mol$^{-1}$ nm$^{6}$ ]}\\
+  \mbox{W}_{ii} & = & C^{(12)}_{i} & = & 4\,\epsilon_i\sigma_i^{12} &
+  \mbox{[ kJ mol$^{-1}$ nm$^{12}$ ]}\\
+\end{array}
+\\
+\mbox{for combination rules 2 and 3}: & &
+\begin{array}{llll}
+  \mbox{V}_{ii} & = & \sigma_i   & \mbox{[ nm ]} \\
+  \mbox{W}_{ii} & = & \epsilon_i & \mbox{[ kJ mol$^{-1}$ ]}
+\end{array}
+\end{eqnarray}
+Some or all combinations for different atom types can be given in
+the {\tt [~nonbond_params~]} section. Any combination that is
+not given will be computed from the parameters for the
+corresponding atom types, according to the \normindex{combination rule}:
+\begin{eqnarray}
+\mbox{for combination rules 1 and 3}: & &
+\begin{array}{lll}
+  C^{(6)}_{ij}  & = & \left(C^{(6)}_i\,C^{(6)}_j\right)^{\frac{1}{2}} \\
+  C^{(12)}_{ij} & = & \left(C^{(12)}_i\,C^{(12)}_j\right)^{\frac{1}{2}}
+\end{array}
+\\
+\mbox{for combination rule 2}: & &
+\begin{array}{lll}
+  \sigma_{ij}   & = & \frac{1}{2}(\sigma_i+\sigma_j) \\
+  \epsilon_{ij} & = & \sqrt{\epsilon_i\,\epsilon_j}
+\end{array}
+\end{eqnarray}
+
+\subsection{\normindex{Implicit Solvent parameters}}
+Starting with {\gromacs} 4.5, implicit solvent is supported. A section in the
+topology has been introduced to list those parameters:
+
+{\small
+\begin{verbatim}
+[ implicit_genborn_params ]
+; Atomtype  sar     st   pi      gbr      hct
+NH1         0.155   1    1.028   0.17063  0.79 ; N
+N           0.155   1    1       0.155    0.79 ; Proline backbone N
+H           0.1     1    1       0.115    0.85 ; H
+CT1         0.180   1    1.276   0.190    0.72 ; C
+\end{verbatim}}
+
+In this example the atom type is listed first, followed by five
+numbers, and a comment (following a semicolon).
+
+Values in columns 1-3 are not currently used. They pertain to more
+elaborate surface area algorithms, the one from Still {\em et al.}~\cite{Still97} in
+particular.  Column 4 contains the atomic van der Waals radii, which are used
+in computing the Born radii. The dielectric offset is specified in
+the {\tt *.mdp} file, and gets added to the input radii for the different
+radii methods.  Column 5 is the scale factor for the HCT and OBC
+models. The values are taken from the original HCT reference~\cite{Truhlar96}, as well
+as the corresponding implementation in Tinker.
 
 
-\subsection{\normindex{Intramolecular pair interaction}s}
+\subsection{\normindex{Pair interaction}s}
 \label{subsec:pairinteractions}
 Extra Lennard-Jones and electrostatic interactions between pairs
 of atoms in a molecule can be added in the {\tt [~pairs~]} section of
@@ -413,16 +441,6 @@ In the {\gromos} force fields, pairs are only used
 to modify the \normindex{1-4 interaction}s (interactions of atoms
 separated by three bonds). In these force fields the 1-4 interactions
 are excluded from the non-bonded interactions (see \secref{excl}).
-
-{\small
-\begin{verbatim}
-
-[ pairtypes ]
-  ; i    j func         cs6          cs12 ; THESE ARE 1-4 INTERACTIONS
-    O    O    1 0.22617E-02   0.74158E-06
-    O   OM    1 0.22617E-02   0.74158E-06
-    .....
-\end{verbatim}}
 
 The pair interaction parameters for the atom types
 in {\tt ffnonbonded.itp} are listed in the {\tt [~pairtypes~]} section.
@@ -466,34 +484,6 @@ Energies for types 1 and 2 are written to the energy and log file
 in separate ``LJ-14'' and ``Coulomb-14'' entries per energy group pair.
 Energies for type 3 are added to the ``LJ-(SR)'' and ``Coulomb-(SR)'' terms.
 }{}
-
-\subsection{\normindex{Implicit Solvent parameters}}
-Starting with {\gromacs} 4.5, implicit solvent is supported. A section in the
-topology has been introduced to list those parameters:
-
-{\small
-\begin{verbatim}
-[ implicit_genborn_params ]
-; Atomtype  sar     st   pi      gbr      hct
-NH1         0.155   1    1.028   0.17063  0.79 ; N
-N           0.155   1    1       0.155    0.79 ; Proline backbone N
-H           0.1     1    1       0.115    0.85 ; H
-CT1         0.180   1    1.276   0.190    0.72 ; C
-\end{verbatim}}
-
-In this example the atom type is listed first, followed by five
-numbers, and a comment (following a semicolon).
-
-Values in columns 1-3 are not currently used. They pertain to more
-elaborate surface area algorithms, the one from Still {\em et al.}~\cite{Still97} in
-particular.  Column 4 contains the atomic van der Waals radii, which are used
-in computing the Born radii. The dielectric offset is specified in
-the {\tt *.mdp} file, and gets added to the input radii for the different
-radii methods.  Column 5 is the scale factor for the HCT and OBC
-models. The values are taken from the original HCT reference~\cite{Truhlar96}, as well
-as the corresponding implementation in Tinker.
-
-
 
 \section{Exclusions}
 \label{sec:excl}
