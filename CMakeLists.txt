@@ -752,7 +752,7 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 ##################################################################
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_SKIP_BUILD_RPATH  FALSE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
     set(CMAKE_INSTALL_RPATH "${LIB_INSTALL_DIR}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
