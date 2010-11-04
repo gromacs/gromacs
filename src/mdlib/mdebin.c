@@ -63,8 +63,10 @@ static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
 static const char *boxs_nm[] = { "Box-X", "Box-Y", "Box-Z" };
 
-static const char *tricl_boxs_nm[] = { "Box-XX", "Box-YX", "Box-YY",
-    "Box-ZX", "Box-ZY", "Box-ZZ" };
+static const char *tricl_boxs_nm[] = { 
+    "Box-XX", "Box-YY", "Box-ZZ",
+    "Box-YX", "Box-ZX", "Box-ZY" 
+};
 
 static const char *vol_nm[] = { "Volume" };
 
@@ -288,8 +290,9 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
     if (md->bDynBox)
     {
-        md->ib    = get_ebin_space(md->ebin, md->bTricl ? NTRICLBOXS :
-                                   NBOXS, md->bTricl ? tricl_boxs_nm : boxs_nm,
+        md->ib    = get_ebin_space(md->ebin, 
+                                   md->bTricl ? NTRICLBOXS : NBOXS, 
+                                   md->bTricl ? tricl_boxs_nm : boxs_nm,
                                    unit_length);
         md->ivol  = get_ebin_space(md->ebin, 1, vol_nm,  unit_volume);
         md->idens = get_ebin_space(md->ebin, 1, dens_nm, unit_density_SI);
@@ -677,20 +680,23 @@ void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
     }
     if (md->bDynBox)
     {
+        int nboxs;
         if(md->bTricl)
         {
             bs[0] = box[XX][XX];
-            bs[1] = box[YY][XX];
-            bs[2] = box[YY][YY];
-            bs[3] = box[ZZ][XX];
-            bs[4] = box[ZZ][YY];
-            bs[5] = box[ZZ][ZZ];
+            bs[1] = box[YY][YY];
+            bs[2] = box[ZZ][ZZ];
+            bs[3] = box[YY][XX];
+            bs[4] = box[ZZ][XX];
+            bs[5] = box[ZZ][YY];
+            nboxs=NTRICLBOXS;
         }
         else
         {
             bs[0] = box[XX][XX];
             bs[1] = box[YY][YY];
             bs[2] = box[ZZ][ZZ];
+            nboxs=NBOXS;
         }
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
@@ -712,7 +718,8 @@ void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
                 }
             }
         }
-        add_ebin(md->ebin,md->ib   ,NBOXS,bs   ,bSum);
+
+        add_ebin(md->ebin,md->ib   ,nboxs,bs   ,bSum);
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
         add_ebin(md->ebin,md->idens,1    ,&dens,bSum);
         add_ebin(md->ebin,md->ipv  ,1    ,&pv  ,bSum);

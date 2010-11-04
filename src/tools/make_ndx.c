@@ -730,7 +730,7 @@ static int split_chain(t_atoms *atoms,rvec *x,
 static gmx_bool check_have_atoms(t_atoms *atoms, char *string)
 {
   if ( atoms==NULL ) {
-    printf("Can not process '%s' without atoms info\n", string);
+    printf("Can not process '%s' without atom info, use option -f\n", string);
     return FALSE;
   } else
     return TRUE;

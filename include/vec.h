@@ -785,7 +785,7 @@ static gmx_inline void mvmul(matrix a,const rvec src,rvec dest)
 static gmx_inline void mvmul_ur0(matrix a,const rvec src,rvec dest)
 {
   dest[ZZ]=a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
-  dest[YY]=a[YY][XX]*src[XX]+a[YY][YY];
+  dest[YY]=a[YY][XX]*src[XX]+a[YY][YY]*src[YY];
   dest[XX]=a[XX][XX]*src[XX];
 }
 

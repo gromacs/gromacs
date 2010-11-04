@@ -2096,7 +2096,9 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
          (blk->sub[0].nr < 1) ||
          (blk->sub[1].nr < 1) )
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+        gmx_fatal(FARGS, 
+                  "Unexpected/corrupted block data in file %s around time %g.", 
+                  filename, start_time);
     }
    
     derivative = blk->sub[0].ival[0]; 
@@ -2120,11 +2122,11 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
          (  (derivative!=0) != (s->derivative!=0) ) )
     {
         fprintf(stderr, "Got foreign lambda=%g, expected: %g\n", 
-                s->foreign_lambda, foreign_lambda);
-        fprintf(stderr, "Got derivative=%d, derivative: %d\n", 
+                foreign_lambda, s->foreign_lambda);
+        fprintf(stderr, "Got derivative=%d, expected: %d\n", 
                 derivative, s->derivative);
-        gmx_fatal(FARGS, "Inconsistent data in file %s around t=%g", filename,
-                  start_time);
+        gmx_fatal(FARGS, "Corrupted data in file %s around t=%g.", 
+                  filename, start_time);
     }
 
     /* make room for the data */
@@ -2177,7 +2179,9 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
          (blk->sub[0].nr < 2)  ||
          (blk->sub[1].nr < 2) )
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+        gmx_fatal(FARGS, 
+                  "Unexpected/corrupted block data in file %s around time %g", 
+                  filename, start_time);
     }
 
     nhist=blk->nsub-2;
@@ -2187,7 +2191,9 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     }
     if (nhist > 2)
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+        gmx_fatal(FARGS, 
+                  "Unexpected/corrupted block data in file %s around time %g", 
+                  filename, start_time);
     }
 
     snew(s, 1);

@@ -47,7 +47,7 @@ set(GMX_TOOLS_PROGRAMS
     g_helixorient g_principal g_dipoles g_disre g_dist
     g_dyndom g_enemat g_energy g_lie g_filter g_gyrate
     g_h2order g_hbond g_helix g_mindist g_msd g_morph g_nmeig
-    g_nmens g_order g_polystat g_potential g_rama g_rdf g_rms
+    g_nmens g_order g_kinetics g_polystat g_potential g_rama g_rdf g_rms
     g_rmsf g_rotacf g_saltbr g_sas g_select g_sgangle g_sham g_sorient
     g_spol g_spatial g_tcaf g_traj g_tune_pme g_vanhove
     g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
@@ -62,9 +62,13 @@ foreach(TOOL ${GMX_TOOLS_PROGRAMS})
 endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 
 
 
+install(TARGETS gmxana DESTINATION ${LIB_INSTALL_DIR} COMPONENT runtime)
 install(TARGETS ${GMX_TOOLS_PROGRAMS}
-	gmxana DESTINATION ${LIB_INSTALL_DIR}	
-      	RUNTIME DESTINATION ${BIN_INSTALL_DIR})
+        DESTINATION ${BIN_INSTALL_DIR}
+        COMPONENT runtime)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmxana.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig RENAME "libgmxana${GMX_LIBS_SUFFIX}.pc")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxana.pc
+        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+        RENAME "libgmxana${GMX_LIBS_SUFFIX}.pc"
+        COMPONENT development)

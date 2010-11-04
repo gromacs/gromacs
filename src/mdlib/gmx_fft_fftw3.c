@@ -981,5 +981,5 @@ gmx_many_fft_destroy(gmx_fft_t    fft)
 
 #else
 int
-gmx_fft_fftw2_empty;
-#endif /* GMX_FFT_FFTW2 */
+gmx_fft_fftw3_empty;
+#endif /* GMX_FFT_FFTW3 */

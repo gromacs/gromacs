@@ -330,18 +330,23 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 }
 
 static void print_cycles(FILE *fplog, double c2t, const char *name, int nnodes,
-			 int n, gmx_cycles_t c, gmx_cycles_t tot)
+                         int n, double c, double tot)
 {
-  char num[11];
+    char num[11];
   
-  if (c > 0) {
-    if (n > 0)
-      sprintf(num,"%10d",n);
-    else
-      sprintf(num,"          ");
-    fprintf(fplog," %-19s %4d %10s %12.3f %10.1f   %5.1f\n",
-	    name,nnodes,num,c*1e-9,c*c2t,100*(double)c/(double)tot);
-  }
+    if (c > 0)
+    {
+        if (n > 0)
+        {
+            sprintf(num,"%10d",n);
+        }
+        else
+        {
+            sprintf(num,"          ");
+        }
+        fprintf(fplog," %-19s %4d %10s %12.3f %10.1f   %5.1f\n",
+                name,nnodes,num,c*1e-9,c*c2t,100*c/tot);
+    }
 }
 
 static gmx_bool subdivision(int ewc)
@@ -350,7 +355,7 @@ static gmx_bool subdivision(int ewc)
 }
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-		     gmx_wallcycle_t wc, double cycles[])
+                     gmx_wallcycle_t wc, double cycles[])
 {
     double c2t,tot,sum;
     int    i,j,npp;
