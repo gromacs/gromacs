@@ -24,6 +24,7 @@ foreach(PROG ${NGMX_PROGRAMS})
 endforeach(PROG) 
 
 install(TARGETS ${NGMX_PROGRAMS}
+        COMPONENT ngmx
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 endif(X11_FOUND)

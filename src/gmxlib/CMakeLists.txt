@@ -62,6 +62,22 @@ if(GMX_X86_64_ASM)
   endif()
 endif(GMX_X86_64_ASM)
 
+if(GMX_FORTRAN)
+  if (GMX_DOUBLE)
+    file(GLOB FORTRAN_SOURCES nonbonded/nb_kernel_f77_double/*.[cf])
+  else(GMX_DOUBLE)
+    file(GLOB FORTRAN_SOURCES nonbonded/nb_kernel_f77_single/*.[cf])
+  endif(GMX_DOUBLE)
+endif(GMX_FORTRAN)
+
+if(GMX_POWER6)
+  file(GLOB FORTRAN_SOURCES nonbonded/nb_kernel_power6/*.[cF])
+endif(GMX_POWER6)
+
+if(GMX_BLUEGENE)
+  file(GLOB GMX_BLUEGENE_C_SRC nonbonded/nb_kernel_bluegene/*.c)
+endif(GMX_BLUEGENE)
+
 if(NOT GMX_EXTERNAL_BLAS)
   file(GLOB BLAS_SOURCES gmx_blas/*.c)
 endif(NOT GMX_EXTERNAL_BLAS)
@@ -118,13 +134,18 @@ else(GMX_ASM_USEASM-NASM)
 endif(GMX_ASM_USEASM-NASM)
 endif(NOT GMX_OPENMM)
 
-add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${THREAD_MPI_SRC})
+add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${FORTRAN_SOURCES} ${GMX_BLUEGENE_C_SRC} ${THREAD_MPI_SRC})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})
-add_dependencies(gmx gmx_version) 
+if(USE_VERSION_H)
+	add_dependencies(gmx gmx_version) 
+endif()
 set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
-install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})
+install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmx.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig RENAME "libgmx${GMX_LIBS_SUFFIX}.pc")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmx.pc
+        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+        RENAME "libgmx${GMX_LIBS_SUFFIX}.pc"
+        COMPONENT development)
 

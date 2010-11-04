@@ -45,7 +45,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
   nstpcouple, tau_p, compressibility, ref_p, refcoord_scaling)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, annealing_npoints, annealing_time, annealing_temp)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
-<li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
+<li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, continuation, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
 <li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
 <li><A HREF="#walls"><b>Walls</b></A> (nwall, wall_type, wall_r_linpot, wall_atomtype,
 wall_density, wall_ewald_zfac)
@@ -1047,7 +1047,8 @@ when inter charge-group constraints are present.
 SHAKE can not be used with energy minimization.
 </dd>
 </dl></dd>
-<dt><b>unconstrained_start:</b></dt>
+<dt><b>continuation:</b></dt>
+<dd>This option was formerly known as <tt>unconstrained_start</tt>.</dd>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>apply constraints to the start configuration and reset shells</dd>
@@ -1115,11 +1116,17 @@ there is also a wall at z=z_box. Walls can only be used with <b>pbc=xy</b>.
 When set to <b>2</b> pressure coupling and Ewald summation can be used
 (it is usually best to use semiisotropic pressure coupling with
 the x/y compressibility set to 0, as otherwise the surface area will change).
+Walls interact wit the rest of the system through an optional <tt>wall_atomtype</tt>.
 Energy groups <tt>wall0</tt> and <tt>wall1</tt> (for <b>nwall=2</b>) are
 added automatically to monitor the interaction of energy groups
 with each wall.
 The <A HREF="#run">center of mass motion removal</A> will be turned
 off in the z-direction.</dd>
+<dt><b>wall_atomtype:</b></dt>
+<dd>the atom type name in the force field for each wall. 
+By (for example) defining a special wall atom type in the topology with its 
+own combination rules, this allows for independent tuning of the interaction 
+of each atomtype with the walls.</dd>
 <dt><b>wall_type:</b></dt>
 <dl>
 <dt><b>9-3</b></dt>
@@ -1142,9 +1149,6 @@ are beyond a wall.
 When the value is &le;0 (&lt;0 for <b>wall_type=table</b>),
 a fatal error is generated when atoms are beyond a wall.
 </dd>
-<dt><b>wall_atomtype:</b></dt>
-<dd>the atom type name in the force field for each wall, this allows
-for independent tuning of the interaction of each atomtype with the walls</dd>
 <dt><b>wall_density: [nm<sup>-3</sup>/nm<sup>-2</sup>]</b></dt>
 <dd>the number density of the atoms for each wall for wall types
 <b>9-3</b> and <b>10-4</b>
@@ -1646,7 +1650,7 @@ for the corresponding atom</dd>
 
 <dt></dt><b>sa_algorithm</b>
 <dd><dl compact="compact">
-<dt><b>Ace-approx</b></dt>
+<dt><b>Ace-approximation</b></dt>
 <dd>Use an Ace-type approximation (default)</dd>
 <dt><b>None</b></dt>
 <dd>No non-polar solvation calculation done. For GBSA only the polar part gets 
@@ -1800,7 +1804,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#tc">tc_grps</A><br>
 <A HREF="#tc">tcoupl</A><br>
 <A HREF="#run">tinit</A><br>
-<A HREF="#bond">unconstrained_start</A><br>
+<A HREF="#bond">continuation</A><br>
 <A HREF="#user">user1_grps</A><br>
 <A HREF="#user">user2_grps</A><br>
 <A HREF="#user">userint1</A><br>
