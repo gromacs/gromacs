@@ -89,7 +89,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
-#include "gmx_membed.h"
+#include "membed.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -2706,25 +2706,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bStartingFromCpt = FALSE;
 
         /* #######  SET VARIABLES FOR NEXT ITERATION IF THEY STILL NEED IT ###### */
-        /* Complicated conditional when bGStatEveryStep=FALSE.
-         * We can not just use bGStat, since then the simulation results
-         * would depend on nstenergy and nstlog or step_nscheck.
+        /* With all integrators, except VV, we need to retain the pressure
+         * at the current step for coupling at the next step.
          */
-        if (((state->flags & (1<<estPRES_PREV)) || 
-             (state->flags & (1<<estSVIR_PREV)) ||
-             (state->flags & (1<<estFVIR_PREV))) &&
+        if ((state->flags & (1<<estPRES_PREV)) &&
             (bGStatEveryStep ||
-             (ir->nstlist > 0 && step % ir->nstlist == 0) ||
-             (ir->nstlist < 0 && nlh.nabnsb > 0) ||
-             (ir->nstlist == 0 && bGStat))) 
+             (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {
             /* Store the pressure in t_state for pressure coupling
              * at the next MD step.
              */
-            if (state->flags & (1<<estPRES_PREV))
-            {
-                copy_mat(pres,state->pres_prev);
-            }
+            copy_mat(pres,state->pres_prev);
         }
         
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */

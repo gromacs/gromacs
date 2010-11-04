@@ -37,7 +37,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_polystat.c	gmx_potential.c	gmx_rama.c	\
 	gmx_rdf.c	gmx_rms.c	gmx_rmsdist.c	gmx_rmsf.c	\
 	gmx_rotacf.c	gmx_rotmat.c	gmx_saltbr.c	gmx_sas.c	\
-	gmx_select.c	gmx_pme_error.c	\
+	gmx_select.c	gmx_pme_error.c	gmx_membed.c    \
 	gmx_sgangle.c	gmx_sorient.c 	gmx_spol.c	gmx_tcaf.c	\
 	gmx_traj.c	gmx_velacc.c	gmx_helixorient.c \
 	gmx_clustsize.c	gmx_mdmat.c	gmx_wham.c	eigio.h		\
@@ -45,7 +45,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_trjconv.c	gmx_trjcat.c	gmx_trjorder.c	gmx_xpm2ps.c	\
 	gmx_editconf.c	gmx_genbox.c	gmx_genion.c	gmx_genconf.c	\
 	gmx_genpr.c	gmx_eneconv.c	gmx_vanhove.c	gmx_wheel.c	\
-	addconf.c 	addconf.h	gmx_tune_pme.c  gmx_membed.c    \
+	addconf.c 	addconf.h	gmx_tune_pme.c  \
 	calcpot.c 	calcpot.h 	edittop.c
 
 bin_PROGRAMS = \
@@ -64,7 +64,7 @@ bin_PROGRAMS = \
 	g_enemat    	g_energy    	g_lie       	g_filter    	\
 	g_gyrate    	g_h2order   	g_hbond     	g_helix     	\
 	g_mindist   	g_msd       	g_morph     	g_nmeig     	\
-	g_nmens     	g_order     	\
+	g_nmens     	g_order     	g_membed        \
 	g_polystat	g_potential 	g_rama      	\
 	g_rdf       	g_rms       	g_rmsdist   	g_rmsf      	\
 	g_rotacf    	g_rotmat	g_saltbr    	g_sas       	\
@@ -72,7 +72,7 @@ bin_PROGRAMS = \
 	g_sham 		g_sorient   	g_spol		\
 	g_spatial	g_pme_error	\
 	g_tcaf      	g_traj      	g_tune_pme   \
-	g_vanhove	g_velacc    	g_membed      \
+	g_vanhove	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_wham		\
 	g_sigeps
 

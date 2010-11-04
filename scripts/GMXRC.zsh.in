@@ -8,7 +8,11 @@
 tmppath=""
 for i in `echo $LD_LIBRARY_PATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXLDLIB"; then
+    if test "${tmppath}" = ""; then
+      tmppath=$i
+    else
     tmppath=${tmppath}:$i
+  fi
   fi
 done
 LD_LIBRARY_PATH=$tmppath
@@ -38,6 +42,9 @@ for i in `echo $MANPATH | sed "s/:/ /g"`; do
     tmppath=${tmppath}:$i
   fi
 done
+if test "$tmppath" = ""; then
+    tmppath=":"
+fi
 MANPATH=$tmppath
 
 ##########################################################

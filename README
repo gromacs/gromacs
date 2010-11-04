@@ -2,8 +2,10 @@
                Welcome to the official version of GROMACS!
 
 If you are familiar with unix, it should be fairly trivial to compile and
-install GROMACS. Installation instructions are available in the INSTALL file,
-and a more extended step-by-step guide can be found on http://www.gromacs.org .
+install GROMACS. Installation instructions are available in the INSTALL.* 
+files (there is one for automake users, INSTALL.automake and one for cmake
+users, INSTALL.cmake). A more extended step-by-step guide can be found 
+on our website http://www.gromacs.org .
 
 Of course we will do our utmost to help you with any problems, but PLEASE 
 READ THE INSTALLATION INSTRUCTIONS BEFORE CONTACTING US!

@@ -179,7 +179,9 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->bEInd[i]=FALSE;
     }
 
-    for(i=0; i<F_NRE; i++) {
+#ifndef GMX_OPENMM
+    for(i=0; i<F_NRE; i++)
+    {
         md->bEner[i] = FALSE;
         if (i == F_LJ)
             md->bEner[i] = !bBHAM;
@@ -238,6 +240,13 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         else
             md->bEner[i] = (gmx_mtop_ftype_count(mtop,i) > 0);
     }
+#else
+    /* OpenMM always produces only the following 4 energy terms */
+    md->bEner[F_EPOT] = TRUE;
+    md->bEner[F_EKIN] = TRUE;
+    md->bEner[F_ETOT] = TRUE;
+    md->bEner[F_TEMP] = TRUE;
+#endif
 
     md->f_nre=0;
     for(i=0; i<F_NRE; i++)

@@ -52,6 +52,7 @@
 #include "mdrun.h"
 #include "network.h"
 #include "pull.h"
+#include "pull_rotation.h"
 #include "names.h"
 #include "disre.h"
 #include "orires.h"
@@ -72,8 +73,8 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
-#include "pull_rotation.h"
-#include "gmx_membed.h"
+#include "membed.h"
+
 #include "md_openmm.h"
 
 #ifdef GMX_LIB_MPI
@@ -605,8 +606,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         /* PME, if used, is done on all nodes with 1D decomposition */
         cr->npmenodes = 0;
         cr->duty = (DUTY_PP | DUTY_PME);
-        npme_major = cr->nnodes;
+        npme_major = 1;
         npme_minor = 1;
+        if (!EI_TPI(inputrec->eI))
+        {
+            npme_major = cr->nnodes;
+        }
         
         if (inputrec->ePBC == epbcSCREW)
         {
