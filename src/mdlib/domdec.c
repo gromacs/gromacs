@@ -8596,7 +8596,7 @@ void dd_partition_system(FILE            *fplog,
     if (ir->bRot)
     {
         /* Update the local rotation groups */
-        dd_make_local_rotation_groups(dd,ir->rot,mdatoms);
+        dd_make_local_rotation_groups(dd,ir->rot);
     }
 
 
