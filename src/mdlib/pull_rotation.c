@@ -420,7 +420,8 @@ static inline real gaussian_weight(rvec curr_x, t_rotgrp *rotg, int n)
 {
     /* norm is chosen such that the sum of the gaussians
      * over the slabs is approximately 1.0 everywhere */
-    const real norm = 0.5698457353514458216;  /* = 1/1.7548609 */
+    /* a previously used value was norm = 0.5698457353514458216 = 1/1.7548609 */
+    const real norm = 0.569917543430618;      /* = 1/1.7546397922417 */
     real       sigma;
 
     
