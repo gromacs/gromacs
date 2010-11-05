@@ -1745,8 +1745,16 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
 #endif
                 {
-                    gmx_fatal(FARGS,"Failed to lock: %s. Already running "
-                        "simulation?", outputfiles[i].filename);
+                    if (errno!=EACCES && errno!=EAGAIN)
+                    {
+                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
+                                  outputfiles[i].filename, strerror(errno));
+                    }
+                    else 
+                    {
+                        gmx_fatal(FARGS,"Failed to lock: %s. Already running "
+                                  "simulation?", outputfiles[i].filename);
+                    }
                 }
             }
             

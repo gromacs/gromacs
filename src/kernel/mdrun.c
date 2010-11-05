@@ -554,6 +554,11 @@ int main(int argc,char *argv[])
   sim_part_fn = sim_part;
   if (opt2bSet("-cpi",NFILE,fnm))
   {
+      if (bSepPot && bAppendFiles)
+      {
+          gmx_fatal(FARGS,"Output file appending is not supported with -seppot");
+      }
+
       bAppendFiles =
                 read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
                                                               fnm,cr),
