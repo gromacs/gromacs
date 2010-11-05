@@ -133,7 +133,7 @@ int gmx_stats_get_point(gmx_stats_t gstats,real *x,real *y,
 {
     gmx_stats *stats = (gmx_stats *) gstats;
     int  ok,outlier;
-    real rmsd;
+    real rmsd,r;
     
     if ((ok = gmx_stats_get_rmsd(gstats,&rmsd)) != estatsOK)
     {
