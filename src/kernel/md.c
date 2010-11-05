@@ -89,6 +89,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
+#include "membed.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -1071,7 +1072,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
+             int repl_ex_nst,int repl_ex_seed,gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -1333,12 +1334,23 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (MASTER(cr))
     {
-        /* Update mdebin with energy history if appending to output files */
-        if ( Flags & MD_APPENDFILES )
+        if (opt2bSet("-cpi",nfile,fnm))
         {
-            restore_energyhistory_from_state(mdebin,&state_global->enerhist);
+            /* Update mdebin with energy history if appending to output files */
+            if ( Flags & MD_APPENDFILES )
+            {
+                restore_energyhistory_from_state(mdebin,&state_global->enerhist);
+            }
+            else
+            {
+                /* We might have read an energy history from checkpoint,
+                 * free the allocated memory and reset the counts.
+                 */
+                done_energyhistory(&state_global->enerhist);
+                init_energyhistory(&state_global->enerhist);
+            }
         }
-        /* Set the initial energy history in state to zero by updating once */
+        /* Set the initial energy history in state by updating once */
         update_energyhistory(&state_global->enerhist,mdebin);
     }	
 
@@ -1848,7 +1860,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-        bCPT = (((gs.set[eglsCHKPT] && bNS) ||
+        bCPT = (((gs.set[eglsCHKPT] && (bNS || ir->nstlist == 0)) ||
                  (bLastStep && (Flags & MD_CONFOUT))) &&
                 step > ir->init_step && !bRerunMD);
         if (bCPT)
@@ -2694,28 +2706,23 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bStartingFromCpt = FALSE;
 
         /* #######  SET VARIABLES FOR NEXT ITERATION IF THEY STILL NEED IT ###### */
-        /* Complicated conditional when bGStatEveryStep=FALSE.
-         * We can not just use bGStat, since then the simulation results
-         * would depend on nstenergy and nstlog or step_nscheck.
+        /* With all integrators, except VV, we need to retain the pressure
+         * at the current step for coupling at the next step.
          */
-        if (((state->flags & (1<<estPRES_PREV)) || 
-             (state->flags & (1<<estSVIR_PREV)) ||
-             (state->flags & (1<<estFVIR_PREV))) &&
+        if ((state->flags & (1<<estPRES_PREV)) &&
             (bGStatEveryStep ||
-             (ir->nstlist > 0 && step % ir->nstlist == 0) ||
-             (ir->nstlist < 0 && nlh.nabnsb > 0) ||
-             (ir->nstlist == 0 && bGStat))) 
+             (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {
             /* Store the pressure in t_state for pressure coupling
              * at the next MD step.
              */
-            if (state->flags & (1<<estPRES_PREV))
-            {
-                copy_mat(pres,state->pres_prev);
-            }
+            copy_mat(pres,state->pres_prev);
         }
         
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */
+
+        if ( (membed!=NULL) && (!bLastStep) )
+            rescale_membed(step_rel,membed,state_global->x);
         
         if (bRerunMD) 
         {

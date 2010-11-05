@@ -728,22 +728,32 @@ int main(int argc,char *argv[])
     printf("\n");
     
     
-    if (xref1==NULL && bFit1) {  
-        /* if g_covar used different coordinate groups to fit and to do the PCA */
-        printf("\nNote: the structure in %s should be the same\n"
-               "      as the one used for the fit in g_covar\n",ftp2fn(efTPS,NFILE,fnm));
-        printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+    if (xref1==NULL)
+    {
+        if (bFit1)
+        {
+            /* if g_covar used different coordinate groups to fit and to do the PCA */
+            printf("\nNote: the structure in %s should be the same\n"
+                     "      as the one used for the fit in g_covar\n",ftp2fn(efTPS,NFILE,fnm));
+            printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+        }
+        else
+        {
+            printf("\nNote: Apparently no fitting was done in g_covar.\n"
+                     "      However, you need to select a reference group for fitting in mdrun\n");
+        }
         get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
         snew(xref1,nfit);
         for (i=0;i<nfit;i++)
             copy_rvec(xtop[ifit[i]],xref1[i]);
-    } else {
+    }
+    else
+    {
         nfit=natoms;
         ifit=index;
-        xref1=xav1;
-    };
+    }
 
-    /* if -flood read eigenvalues and store them in evSteplist[evFLODD] */
+    /* if -flood read eigenvalues and store them in evSteplist[evFLOOD] */
     if (listen[evFLOOD][0]!=0)
         read_eigenvalues(listen[evFLOOD],opt2fn("-eig",NFILE,fnm),evStepList[evFLOOD],bHesse,kB*T);
  

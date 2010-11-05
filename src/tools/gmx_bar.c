@@ -116,6 +116,7 @@ typedef struct samples_t
 
     /* allocation data: (not NULL for data 'owned' by this struct) */
     double *du_alloc, *t_alloc; /* allocated delta u arrays  */
+    size_t ndu_alloc, nt_alloc; /* pre-allocated sizes */
     hist_t *hist_alloc; /* allocated hist */
 
     gmx_large_int_t ntot; /* total number of samples */
@@ -240,6 +241,8 @@ static void samples_init(samples_t *s, double native_lambda,
     s->du_alloc=NULL;
     s->t_alloc=NULL;
     s->hist_alloc=NULL;
+    s->ndu_alloc=0;
+    s->nt_alloc=0;
 
     s->ntot=0;
     s->filename=filename;
@@ -665,7 +668,7 @@ void lambdas_histogram(lambda_t *bl_head, const char *filename,
     int i;
 
     printf("\nWriting histogram to %s\n", filename);
-    sprintf(label_x, "[\\Delta]H (%s)", unit_energy);
+    sprintf(label_x, "\\DeltaH (%s)", unit_energy);
 
     fp=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, oenv);
 
@@ -916,7 +919,7 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
     lambda_t *lc;
     int j;
 
-    if (begin<=0 && end<0)
+    if (begin<=0 && end<0) 
     {
         return;
     }
@@ -967,9 +970,9 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
     }
 
     /* calculate the actual times */
-    if (begin > 0)
+    if (begin > 0 )
     {
-        begin_t = (last_t - first_t)*begin + first_t;
+        begin_t = begin;
     }
     else
     {
@@ -978,13 +981,18 @@ static void lambdas_impose_times(lambda_t *head, double begin, double end)
 
     if (end >0 )
     {
-        end_t = (last_t - first_t)*end + first_t;
+        end_t = end;
     }
     else
     {
         end_t = last_t;
     }
     printf("\n   Samples in time interval: %.3f - %.3f\n", first_t, last_t);
+
+    if (begin_t > end_t)
+    {
+        return;
+    }
     printf("Removing samples outside of: %.3f - %.3f\n", begin_t, end_t);
 
     /* then impose them */
@@ -1547,7 +1555,7 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
     for(i=0;i<cb->nsamples;i++)
     {
         samples_t *s=cb->s[i];
-        sample_range_t *r=&(ca->r[i]);
+        sample_range_t *r=&(cb->r[i]);
         if (r->use)
         {
             if (!s->hist)
@@ -1991,7 +1999,7 @@ static void read_bar_xvg_lowlevel(char *fn, real *temp, xvg_t *ba)
             /* Read lambda from the legend */
             ba->lambda[i] = legend2lambda(fn,legend[i], &is_dhdl);
 
-            if (is_dhdl && native_lambda_read)
+            if (is_dhdl && !native_lambda_read)
             {
                 ba->native_lambda = ba->lambda[i];
                 native_lambda_read=TRUE;
@@ -2065,16 +2073,17 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
     printf("\n\n");
 }
 
-static samples_t *read_edr_rawdh_block(int *nsamples, t_enxblock *blk, 
-                                       double start_time, double delta_time,
-                                       double native_lambda, double temp,
-                                       const char *filename)
+static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk, 
+                                 double start_time, double delta_time,
+                                 double native_lambda, double temp,
+                                 double *last_t, const char *filename)
 {
     int j;
     gmx_bool allocated;
     double foreign_lambda;
     int derivative;
-    samples_t *s;
+    samples_t *s; /* convenience pointer */
+    int startj;
 
     /* check the block types etc. */
     if ( (blk->nsub < 3) ||
@@ -2087,45 +2096,74 @@ static samples_t *read_edr_rawdh_block(int *nsamples, t_enxblock *blk,
          (blk->sub[0].nr < 1) ||
          (blk->sub[1].nr < 1) )
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+        gmx_fatal(FARGS, 
+                  "Unexpected/corrupted block data in file %s around time %g.", 
+                  filename, start_time);
     }
    
     derivative = blk->sub[0].ival[0]; 
     foreign_lambda = blk->sub[1].dval[0];
 
-    /* initialize the samples structure */
-    snew(s, 1);
-    *nsamples=1;
-    samples_init(s, native_lambda, foreign_lambda, temp,
-                 derivative!=0, filename);
+    if (! *smp)
+    {
+        /* initialize the samples structure if it's empty. */
+        snew(*smp, 1);
+        samples_init(*smp, native_lambda, foreign_lambda, temp,
+                     derivative!=0, filename);
+        (*smp)->start_time=start_time;
+        (*smp)->delta_time=delta_time;
+    }
 
-    s->start_time=start_time;
-    s->delta_time=delta_time;
+    /* set convenience pointer */
+    s=*smp;
+
+    /* now double check */
+    if ( ! lambda_same(s->foreign_lambda, foreign_lambda) ||
+         (  (derivative!=0) != (s->derivative!=0) ) )
+    {
+        fprintf(stderr, "Got foreign lambda=%g, expected: %g\n", 
+                foreign_lambda, s->foreign_lambda);
+        fprintf(stderr, "Got derivative=%d, expected: %d\n", 
+                derivative, s->derivative);
+        gmx_fatal(FARGS, "Corrupted data in file %s around t=%g.", 
+                  filename, start_time);
+    }
 
     /* make room for the data */
-    snew(s->du, blk->sub[2].nr);
-    s->ndu = blk->sub[2].nr;
-    s->ntot = s->ndu;
+    if (s->ndu_alloc < (s->ndu + blk->sub[2].nr) )
+    {
+        s->ndu_alloc += (s->ndu_alloc < blk->sub[2].nr) ?  
+                            blk->sub[2].nr*2 : s->ndu_alloc;
+        srenew(s->du_alloc, s->ndu_alloc);
+        s->du=s->du_alloc;
+    }
+    startj = s->ndu;
+    s->ndu += blk->sub[2].nr;
+    s->ntot += blk->sub[2].nr;
+    *ndu = blk->sub[2].nr;
 
     /* and copy the data*/
     for(j=0;j<blk->sub[2].nr;j++)
     {
         if (blk->sub[2].type == xdr_datatype_float)
         {
-            s->du[j] = blk->sub[2].fval[j];
+            s->du[startj+j] = blk->sub[2].fval[j];
         }
         else
         {
-            s->du[j] = blk->sub[2].dval[j];
+            s->du[startj+j] = blk->sub[2].dval[j];
         }
     }
-    return s;
+    if (start_time + blk->sub[2].nr*delta_time > *last_t)
+    {
+        *last_t = start_time + blk->sub[2].nr*delta_time;
+    }
 }
 
 static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
                                       double start_time, double delta_time,
                                       double native_lambda, double temp,
-                                      const char *filename)
+                                      double *last_t, const char *filename)
 {
     int i,j;
     samples_t *s;
@@ -2141,7 +2179,9 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
          (blk->sub[0].nr < 2)  ||
          (blk->sub[1].nr < 2) )
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+        gmx_fatal(FARGS, 
+                  "Unexpected/corrupted block data in file %s around time %g", 
+                  filename, start_time);
     }
 
     nhist=blk->nsub-2;
@@ -2151,7 +2191,9 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     }
     if (nhist > 2)
     {
-        gmx_fatal(FARGS, "Unexpected block data in file %s", filename);
+        gmx_fatal(FARGS, 
+                  "Unexpected/corrupted block data in file %s around time %g", 
+                  filename, start_time);
     }
 
     snew(s, 1);
@@ -2214,6 +2256,10 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
         }
     }
 
+    if (start_time + s->hist->sum*delta_time > *last_t)
+    {
+        *last_t = start_time + s->hist->sum*delta_time;
+    }
     return s;
 }
 
@@ -2227,11 +2273,12 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
     gmx_enxnm_t *enm=NULL;
     double first_t=-1;
     double last_t=-1;
-    int *nhists=NULL;
-    int *npts=NULL;
-    double *lambdas=NULL;
+    samples_t **samples_rawdh=NULL; /* contains samples for raw delta_h  */
+    int *nhists=NULL;       /* array to keep count & print at end */
+    int *npts=NULL;         /* array to keep count & print at end */
+    double *lambdas=NULL;   /* array to keep count & print at end */
     double native_lambda=-1;
-
+    double end_time;        /* the end time of the last batch of samples */
     int nsamples=0;
 
     fp = open_enx(fn,"r");
@@ -2275,14 +2322,13 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
 
                 if (delta_lambda>0)
                 {
-                    gmx_fatal(FARGS, "Lambda values change in %s: can't apply BAR method", fn);
+                    gmx_fatal(FARGS, "Lambda values not constant in %s: can't apply BAR method", fn);
                 }
                 if ( ( *temp != rtemp) && (*temp > 0) )
                 {
                     gmx_fatal(FARGS,"Temperature in file %s different from earlier files or setting\n", fn);
                 }
                 *temp=rtemp;
-                native_lambda=start_lambda;
 
                 if (first_t < 0)
                     first_t=start_time;
@@ -2300,73 +2346,111 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
 
         if (nsamples > 0)
         {
+            /* check the native lambda */
+            if (!lambda_same(start_lambda, native_lambda) )
+            {
+                gmx_fatal(FARGS, "Native lambda not constant in file %s: started at %g, and becomes %g at time %g", 
+                          fn, native_lambda, start_lambda, start_time);
+            }
             /* check the number of samples against the previous number */
             if ( ((nblocks_raw+nblocks_hist)!=nsamples) || (nlam!=1 ) )
             {
                 gmx_fatal(FARGS, "Unexpected block count in %s: was %d, now %d\n",
                           fn, nsamples+1, nblocks_raw+nblocks_hist+nlam);
             }
+            /* check whether last iterations's end time matches with 
+               the currrent start time */
+            if ( (fabs(last_t - start_time) > 2*delta_time)  && last_t>=0)
+            {
+                /* it didn't. We need to store our samples and reallocate */
+                for(i=0;i<nsamples;i++)
+                {
+                    if (samples_rawdh[i])
+                    {
+                        /* insert it into the existing list */
+                        lambda_list_insert_sample(lambda_head, 
+                                                  samples_rawdh[i]);
+                        /* and make sure we'll allocate a new one this time
+                           around */
+                        samples_rawdh[i]=NULL;
+                    }
+                }
+            }
         }
         else
         {
+            /* this is the first round; allocate the associated data 
+               structures */
+            native_lambda=start_lambda;
             nsamples=nblocks_raw+nblocks_hist;
             snew(nhists, nsamples);
             snew(npts, nsamples);
             snew(lambdas, nsamples);
+            snew(samples_rawdh, nsamples);
             for(i=0;i<nsamples;i++)
             {
                 nhists[i]=0;
                 npts[i]=0;
                 lambdas[i]=-1;
+                samples_rawdh[i]=NULL; /* init to NULL so we know which
+                                          ones contain values */
             }
         }
 
         /* and read them */
-        k=0;
+        k=0; /* counter for the lambdas, etc. arrays */
         for(i=0;i<fr->nblock;i++)
         {
-            int j;
-            int nb=0;
-            samples_t *s=NULL; /* this is where the data will go */
-
             if (fr->block[i].id == enxDH)
             {
-                s=read_edr_rawdh_block(&nb, &(fr->block[i]), 
-                                       start_time, delta_time, 
-                                       start_lambda, rtemp, fn);
-                npts[k] += s->ndu;
-                lambdas[k]=s->foreign_lambda;
+                int ndu;
+                read_edr_rawdh_block(&(samples_rawdh[k]),
+                                     &ndu,
+                                     &(fr->block[i]), 
+                                     start_time, delta_time, 
+                                     start_lambda, rtemp, 
+                                     &last_t, fn);
+                npts[k] += ndu;
+                if (samples_rawdh[k])
+                {
+                    lambdas[k]=samples_rawdh[k]->foreign_lambda;
+                }
                 k++;
             }
             else if (fr->block[i].id == enxDHHIST)
             {
+                int j;
+                int nb=0;
+                samples_t *s; /* this is where the data will go */
                 s=read_edr_hist_block(&nb, &(fr->block[i]), 
                                       start_time, delta_time, 
-                                      start_lambda, rtemp, fn);
+                                      start_lambda, rtemp, 
+                                      &last_t, fn);
                 nhists[k] += nb;
                 if (nb>0)
                 {
                     lambdas[k]= s->foreign_lambda;
                 }
                 k++;
-            }
-            for(j=0;j<nb;j++)
-            {
-                double endt;
-                lambda_list_insert_sample(lambda_head, s+j);
-                if (s[j].hist)
+                /* and insert the new sample immediately */
+                for(j=0;j<nb;j++)
                 {
-                    endt=s[j].hist->sum*delta_time + start_time;
+                    lambda_list_insert_sample(lambda_head, s+j);
                 }
-                else
-                {
-                    endt=s[j].ndu*delta_time + start_time;
-                }
-                if (endt > last_t)
-                    last_t = endt;
             }
         }
     }
+    /* Now store all our extant sample collections */
+    for(i=0;i<nsamples;i++)
+    {
+        if (samples_rawdh[i])
+        {
+            /* insert it into the existing list */
+            lambda_list_insert_sample(lambda_head, samples_rawdh[i]);
+        }
+    }
+
+
     fprintf(stderr, "\n");
     printf("%s: %.1f - %.1f; lambda = %.3f\n    foreign lambdas:", 
            fn, first_t, last_t, native_lambda);

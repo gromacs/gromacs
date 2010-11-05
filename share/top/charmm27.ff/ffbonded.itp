@@ -200,8 +200,9 @@ MNH3    MNH3   2    0.165238
 MCH3     CT1   2    0.206892
 MCH3     CT2   2    0.206000
 MCH3     CT3   2    0.206179
-MCH3    MCH3   2    0.185689
-MCH3       S   2    0.233335
+MCH3    MCH3   2    0.187164
+MCH3S      S   2    0.233335
+MCH3S  MCH3S   2    0.185689
 #else
 ; no heavy hydrogens.
 ; constraints for the rigid NH3 groups
@@ -214,7 +215,8 @@ MCH3     CT1   2    0.168122
 MCH3     CT2   2    0.167162
 MCH3     CT3   2    0.167354
 MCH3    MCH3   2    0.093582
-MCH3       S   2    0.195314
+MCH3S      S   2    0.195314
+MCH3S  MCH3S   2    0.092844
 #endif
 ; angle-derived constraints for OH and SH groups in proteins
 ; The constraint A-C is calculated from the angle A-B-C and bonds A-B, B-C.

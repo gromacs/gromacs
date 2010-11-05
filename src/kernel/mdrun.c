@@ -65,7 +65,7 @@ int main(int argc,char *argv[])
 	"by the OpenMM library (https://simtk.org/home/openmm).[PAR]",
 	"*Warning*[BR]",
 	"This release is targeted at developers and advanced users and",
-	"should not be considered ready for production. The following should be",
+	"care should be taken before production use. The following should be",
 	"noted before using the program:[PAR]",
 	" * The current release runs only on modern nVidia GPU hardware with CUDA support.",
 	"Make sure that the necessary CUDA drivers and libraries for your operating system",
@@ -96,14 +96,14 @@ int main(int argc,char *argv[])
 	"Realistic expectations about the achievable speed-up from test with GTX280:",
 	"For small protein systems in implicit solvent using all-vs-all kernels the acceleration",
 	"can be as high as 20 times, but in most other setups involving cutoffs and PME the",
-	"acceleration is usually only 4~6 times relative to a 3GHz CPU.[PAR]",
+	"acceleration is usually only ~4 times relative to a 3GHz CPU.[PAR]",
 	"Supported features:[PAR]",
 	" * Integrators: md/md-vv/md-vv-avek, sd/sd1 and bd.\n",
-	" * Long-range interactions (option coulombtype): Reaction-Field, Ewald, PME.\n",
+	" * Long-range interactions (option coulombtype): Reaction-Field, Ewald, PME, and cut-off (for Implicit Solvent only)\n",
 	" * Temperature control: Supported only with the md/md-vv/md-vv-avek, sd/sd1 and bd integrators.\n",
-	" * Pressure control: Not supported.\n",
+	" * Pressure control: Supported.\n",
 	" * Implicit solvent: Supported.\n",
-	"A detailed description can be found on the website:\n",
+	"A detailed description can be found on the GROMACS website:\n",
 	"http://www.gromacs.org/gpu[PAR]",
 /* From the original mdrun documentaion */
     "The mdrun program reads the run input file ([TT]-s[tt])",
@@ -283,6 +283,11 @@ int main(int argc,char *argv[])
     "appropriate options have been given. Currently under",
     "investigation are: polarizability, and X-Ray bombardments.",
     "[PAR]",
+    "The option [TT]-membed[dd] does what used to be g_membed, i.e. embed",
+    "a protein into a membrane. The data file should contain the options",
+    "that where passed to g_membed before. The [TT]-mn[tt] and [TT]-mp[tt]",
+    "both apply to this as well.",
+    "[PAR]",
     "The option [TT]-pforce[tt] is useful when you suspect a simulation",
     "crashes due to too large forces. With this option coordinates and",
     "forces of atoms with a force larger than a certain value will",
@@ -371,7 +376,10 @@ int main(int argc,char *argv[])
     { efXVG, "-px",     "pullx",    ffOPTWR },
     { efXVG, "-pf",     "pullf",    ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
-    { efNDX, "-dn",     "dipole",   ffOPTWR }
+    { efNDX, "-dn",     "dipole",   ffOPTWR },
+    { efDAT, "-membed", "membed",   ffOPTRD },
+    { efTOP, "-mp",     "membed",   ffOPTRD },
+    { efNDX, "-mn",     "membed",   ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -554,6 +562,11 @@ int main(int argc,char *argv[])
   sim_part_fn = sim_part;
   if (opt2bSet("-cpi",NFILE,fnm))
   {
+      if (bSepPot && bAppendFiles)
+      {
+          gmx_fatal(FARGS,"Output file appending is not supported with -seppot");
+      }
+
       bAppendFiles =
                 read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
                                                               fnm,cr),

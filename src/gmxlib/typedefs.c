@@ -434,12 +434,47 @@ static void init_ekinstate(ekinstate_t *eks)
   eks->mvcos          = 0;
 }
 
-static void init_energyhistory(energyhistory_t *enh)
+void init_energyhistory(energyhistory_t * enerhist)
 {
-  enh->ener_ave     = NULL;
-  enh->ener_sum     = NULL;
-  enh->ener_sum_sim = NULL;
-  enh->nener        = 0;
+    enerhist->nener = 0;
+
+    enerhist->ener_ave     = NULL;
+    enerhist->ener_sum     = NULL;
+    enerhist->ener_sum_sim = NULL;
+    enerhist->dht          = NULL;
+
+    enerhist->nsteps     = 0;
+    enerhist->nsum       = 0;
+    enerhist->nsteps_sim = 0;
+    enerhist->nsum_sim   = 0;
+
+    enerhist->dht = NULL;
+}
+
+static void done_delta_h_history(delta_h_history_t *dht)
+{
+    int i;
+
+    for(i=0; i<dht->nndh; i++)
+    {
+        sfree(dht->dh[i]);
+    }
+    sfree(dht->dh);
+    sfree(dht->ndh);
+}
+
+void done_energyhistory(energyhistory_t * enerhist)
+{
+    sfree(enerhist->ener_ave);
+    sfree(enerhist->ener_sum);
+    sfree(enerhist->ener_sum_sim);
+    sfree(enerhist->dht);
+
+    if (enerhist->dht != NULL)
+    {
+        done_delta_h_history(enerhist->dht);
+        sfree(enerhist->dht);
+    }
 }
 
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)

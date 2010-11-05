@@ -785,7 +785,7 @@ static gmx_inline void mvmul(matrix a,const rvec src,rvec dest)
 static gmx_inline void mvmul_ur0(matrix a,const rvec src,rvec dest)
 {
   dest[ZZ]=a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
-  dest[YY]=a[YY][XX]*src[XX]+a[YY][YY];
+  dest[YY]=a[YY][XX]*src[XX]+a[YY][YY]*src[YY];
   dest[XX]=a[XX][XX]*src[XX];
 }
 
@@ -828,7 +828,7 @@ static gmx_inline real trace(matrix m)
   return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
 
-static gmx_inline real _divide(real a,real b,const char *file,int line)
+static gmx_inline real _divide_err(real a,real b,const char *file,int line)
 {
     if (fabs(b) <= GMX_REAL_MIN) 
         gmx_fatal(FARGS,"Dividing by zero, file %s, line %d",file,line);
@@ -866,7 +866,7 @@ static void matrix_convert(matrix box, rvec vec, rvec angle)
                        -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
 }
 
-#define divide(a,b) _divide((a),(b),__FILE__,__LINE__)
+#define divide_err(a,b) _divide_err((a),(b),__FILE__,__LINE__)
 #define mod(a,b)    _mod((a),(b),__FILE__,__LINE__)
 
 #ifdef __cplusplus

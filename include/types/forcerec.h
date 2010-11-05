@@ -68,10 +68,12 @@ typedef struct {
 } t_nblists;
 
 /* macros for the cginfo data in forcerec */
-/* The maximum cg size is 255, because we only have space for 8 bits in cginfo,
+/* The maximum cg size in cginfo is 255,
+ * because we only have space for 8 bits in cginfo,
  * this cg size entry is actually only read with domain decomposition.
+ * But there is a smaller limit due to the t_excl data structure
+ * which is defined in nblist.h.
  */
-#define MAX_CHARGEGROUP_SIZE 256
 #define SET_CGINFO_GID(cgi,gid)      (cgi) = (((cgi)  &  ~65535)  |  (gid)   )
 #define GET_CGINFO_GID(cgi)        ( (cgi)            &   65535)
 #define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1<<16))

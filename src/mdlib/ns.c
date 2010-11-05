@@ -477,9 +477,22 @@ static inline void close_i_nblist(t_nblist *nlist)
 
 static inline void close_nblist(t_nblist *nlist)
 {
-    /* Only close this nblist when it has been initialized */
-    if (nlist->jindex)
+    /* Only close this nblist when it has been initialized.
+     * Avoid the creation of i-lists with no j-particles.
+     */
+    if (nlist->nrj == 0)
     {
+        /* Some assembly kernels do not support empty lists,
+         * make sure here that we don't generate any empty lists.
+         * With the current ns code this branch is taken in two cases:
+         * No i-particles at all: nri=-1 here
+         * There are i-particles, but no j-particles; nri=0 here
+         */
+        nlist->nri = 0;
+    }
+    else
+    {
+        /* Close list number nri by incrementing the count */
         nlist->nri++;
     }
 }
@@ -1549,7 +1562,7 @@ static int ns_simple_core(t_forcerec *fr,
     {
         for(m=0; (m<DIM); m++)
         {
-            b_inv[m] = divide(1.0,box_size[m]);
+            b_inv[m] = divide_err(1.0,box_size[m]);
         }
         bTriclinic = TRICLINIC(box);
     }

@@ -10,7 +10,7 @@ http://www.gromacs.org/gpu
 
 0. Prerequisites: 
     - OpenMM (included in the binary release)
-    - NVIDIA CUDA libraries (version >=3.0);
+    - NVIDIA CUDA libraries (version >=3.1);
     - NVIDIA driver (for details on compatiblity consult
 	  http://www.nvidia.com/Download/index5.aspx);
     - NVIDIA CUDA-enabled GPU (for compatiblity list see 
@@ -21,7 +21,7 @@ http://www.gromacs.org/gpu
 OS and architecture. Copy the content of the package to your 
 normal GROMACS installation directory (or to a custom location). 
 Note that as the distributed Gromacs-GPU packages do not contain 
-the entire set of tools and utilities included in a full GROAMCS 
+the entire set of tools and utilities included in a full GROMACS 
 installation. Therefore, it is recommended to have a ≥v4.5 
 standard Gromacs installation along the GPU accelerated one.
 e.g. on unix: 
@@ -36,8 +36,8 @@ export LD_LIBRARY_PATH=PATH_TO_GROMACS/openmm/lib:$LD_LIBRARY_PATH
 
 If there are other OpenMM versions installed, make sure that the 
 supplied libraries have preference when running mdrun-gpu. 
-Also, make sure that the CUDA libraries installed match the version 
-of CUDA with which GROMACS-GPU is compiled.
+Also, make sure that the installed CUDA libraries match the version 
+of CUDA with which GROMACS-GPU has been compiled.
 
 
 3. Set the OPENMM_PLUGIN_DIR environment variable to contain the path 
@@ -58,7 +58,7 @@ necessary libraries are accessible.
 * INSTALLING FROM SOURCE DISTRIBUTION:
 
 GROMACS-GPU uses a cmake build-generator and makefiles on unix. 
-This means your normal installation actions are limited to:
+All you have to do is run:
 
 cmake PATH_TO_SOURCE_DIRECTORY -DGMX_OPENMM=ON -DGMX_THREADS=OFF 
 make mdrun

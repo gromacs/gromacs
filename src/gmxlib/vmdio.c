@@ -211,12 +211,19 @@ gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
 #endif
 
     fr->bX = 1;
-    vec[0] = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.B;
+    fr->bBox = 1;
+    vec[0] = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
     angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma; 
     matrix_convert(fr->box,vec,angle);
-    fr->bTime = 1;
-    fr->time = ts.physical_time;
-
+    if (fr->vmdplugin.api->abiversion>10)
+    {
+        fr->bTime = TRUE;
+        fr->time = ts.physical_time;
+    }
+    else
+    {
+        fr->bTime = FALSE;
+    }
 
 
     return 1;
@@ -334,16 +341,22 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
         return 0;
     }
 
-    if (fr->natoms < 1) {
-        fprintf(stderr, "\nNo atoms found by VMD plugin in %s.\n"
-            "Or format does not record number of atoms.\n", fn );
+    if (fr->natoms == MOLFILE_NUMATOMS_UNKNOWN) {
+        fprintf(stderr, "\nFormat of file %s does not record number of atoms.\n", fn);
+        return 0;
+    } else if (fr->natoms == MOLFILE_NUMATOMS_NONE) {
+        fprintf(stderr, "\nNo atoms found by VMD plugin in file %s.\n", fn );
+        return 0;
+    } else if (fr->natoms < 1) { /*should not be reached*/
+        fprintf(stderr, "\nUnknown number of atoms %d for VMD plugin opening file %s.\n",
+                fr->natoms, fn );
         return 0;
     }
     
     snew(fr->x,fr->natoms);
 
     fr->vmdplugin.bV = 0;
-    if (fr->vmdplugin.api->read_timestep_metadata) 
+    if (fr->vmdplugin.api->abiversion > 10 && fr->vmdplugin.api->read_timestep_metadata)
     {
         fr->vmdplugin.api->read_timestep_metadata(fr->vmdplugin.handle, metadata);
         fr->vmdplugin.bV = metadata->has_velocities; 

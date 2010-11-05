@@ -128,12 +128,12 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
     
-    return prev;
+    return prev==oldval;
 }
 
-static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, 
-                                        void *oldval,
-                                        void *newval)
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, 
+                                      void *oldval,
+                                      void *newval)
 {
     void* prev;
 #ifndef __x86_64__ 
@@ -147,7 +147,7 @@ static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
 #endif
-    return prev;
+    return prev==oldval;
 }
 
 #endif /* end of check for gcc intrinsics */

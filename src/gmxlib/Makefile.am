@@ -45,7 +45,7 @@ libgmx@LIBSUFFIX@_la_DEPENDENCIES = nonbonded/libnonbonded.la         \
 
 #	
 #
-libgmx@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ $(PTHREAD_LIBS)
+libgmx@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ @DLOPEN_LIBS@ $(PTHREAD_LIBS)
 
 libgmx@LIBSUFFIX@_la_SOURCES = \
 	3dview.c	atomprop.c	bondfree.c	\
@@ -60,7 +60,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	main.c		maths.c		matio.c		mshift.c	\
 	mtop_util.c	mtxio.c		mvdata.c	names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\
-	pargs.c		pbc.c		pdbio.c		princ.c		\
+	pargs.c		pbc.c		pdbio.c		physics.c	princ.c		\
 	rando.c		random.c	gmx_random.c	rbin.c		\
 	readinp.c	replace.c	rmpbc.c		shift_util.c	\
 	sortwater.c	smalloc.c	statutil.c	sfactor.c	\
@@ -95,4 +95,7 @@ version.c: FORCE
 FORCE:
 endif
 
+LDADD = ../gmxlib/libgmx@LIBSUFFIX@.la 
+
+EXTRA_PROGRAMS = physics_test
 EXTRA_DIST = version.h libgmx.pc.cmakein

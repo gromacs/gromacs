@@ -90,6 +90,7 @@
 #include "genborn.h"
 #include "string2.h"
 #include "copyrite.h"
+#include "membed.h"
 
 #ifdef GMX_THREADS
 #include "tmpi.h"
@@ -209,6 +210,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
                     gmx_edsam_t ed,t_forcerec *fr,
                     int repl_ex_nst,int repl_ex_seed,
+                    gmx_membed_t *membed,
                     real cpt_period,real max_hours,
                     const char *deviceOptions,
                     unsigned long Flags,
@@ -253,6 +255,13 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     const char *ommOptions = NULL;
     void   *openmmData;
+
+#ifdef GMX_DOUBLE
+    /* Checks in cmake should prevent the compilation in double precision
+     * with OpenMM, but just to be sure we check here.
+     */
+    gmx_fatal(FARGS,"Compilation was performed in double precision, but OpenMM only supports single precision. If you want to use to OpenMM, compile in single precision.");
+#endif
 
     bAppend  = (Flags & MD_APPENDFILES);
     check_ir_old_tpx_versions(cr,fplog,ir,top_global);
@@ -526,7 +535,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
             openmm_copy_state(openmmData, state, &t, f, enerd, bX, bV, bF, do_ene);
 
-            upd_mdebin(mdebin, FALSE,TRUE,
+            upd_mdebin(mdebin,FALSE,TRUE,
                        t,mdatoms->tmass,enerd,state,lastbox,
                        shake_vir,force_vir,total_vir,pres,
                        ekind,mu_tot,constr);

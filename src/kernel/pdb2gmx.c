@@ -1106,6 +1106,7 @@ int main(int argc, char *argv[])
   int           nid_used;
   int           this_chainstart;
   int           prev_chainstart;
+  gmx_bool      bMerged;
     
   gmx_atomprop_t aps;
   
@@ -1332,6 +1333,7 @@ int main(int argc, char *argv[])
   this_chainstart     = 0;
     
   pdb_ch=NULL;
+  bMerged = FALSE;
   for (i=0; (i<natom); i++) 
   {
       ri = &pdba_all.resinfo[pdba_all.atom[i].resind];
@@ -1342,7 +1344,10 @@ int main(int argc, char *argv[])
       prev_resnum        = this_resnum;
       prev_chainid       = this_chainid;
       prev_chainnumber   = this_chainnumber;
-      prev_chainstart    = this_chainstart;
+      if (!bMerged)
+      {
+          prev_chainstart    = this_chainstart;
+      }
       
       this_atomname      = *pdba_all.atomname[i];
       this_atomnum       = (pdba_all.pdbinfo != NULL) ? pdba_all.pdbinfo[i].atomnr : i+1;
@@ -1372,10 +1377,11 @@ int main(int argc, char *argv[])
               select[0] = 'n';
           }
           
-          if (select[0] == 'y') 
+          bMerged = (select[0] == 'y');
+          if (bMerged) 
           {
               pdb_ch[nch-1].chainstart[pdb_ch[nch-1].nterpairs] = 
-              pdba_all.atom[i].resind - prev_chainstart;
+                  pdba_all.atom[i].resind - prev_chainstart;
               pdb_ch[nch-1].nterpairs++;
               srenew(pdb_ch[nch-1].chainstart,pdb_ch[nch-1].nterpairs+1);
           }
@@ -1560,23 +1566,25 @@ int main(int argc, char *argv[])
 		  bHisMan,bArgMan,bGlnMan,angle,distance,&symtab,
 		  nrtprename,rtprename);
       
-    for(i=0; i<cc->nterpairs; i++) {
-        
-      cc->chainstart[cc->nterpairs] = pdba->nres;
-                
-      find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
-		  &(cc->r_start[i]),&(cc->r_end[i]),rt);    
+        cc->chainstart[cc->nterpairs] = pdba->nres;
+        j = 0;
+        for(i=0; i<cc->nterpairs; i++)
+        {
+            find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
+                        &(cc->r_start[j]),&(cc->r_end[j]),rt);    
       
-        
-      if ( (cc->r_start[i]<0) || (cc->r_end[i]<0) ) {
-	printf("Problem with chain definition, or missing terminal residues.\n"
-	       "This chain does not appear to contain a recognized chain molecule.\n"
-           "If this is incorrect, you can edit residuetypes.dat to modify the behavior.\n");
-           
-	cc->nterpairs = i;
-	break;
-      }
-    }
+            if (cc->r_start[j] >= 0 && cc->r_end[j] >= 0)
+            {
+                j++;
+            }
+        }
+        cc->nterpairs = j;
+        if (cc->nterpairs == 0)
+        {
+            printf("Problem with chain definition, or missing terminal residues.\n"
+                   "This chain does not appear to contain a recognized chain molecule.\n"
+                   "If this is incorrect, you can edit residuetypes.dat to modify the behavior.\n");
+        }
 
     /* Check for disulfides and other special bonds */
     nssbonds = mk_specbonds(pdba,x,bCysMan,&ssbonds,bVerbose);
@@ -1621,14 +1629,20 @@ int main(int argc, char *argv[])
             {
                 if(bTerMan && ntdblist>1)
                 {
-                    cc->ntdb[i] = choose_ter(ntdblist,tdblist,"Select start terminus type");
+                    sprintf(select,"Select start terminus type for %s-%d",
+                            *pdba->resinfo[cc->r_start[i]].name,
+                            pdba->resinfo[cc->r_start[i]].nr);
+                    cc->ntdb[i] = choose_ter(ntdblist,tdblist,select);
                 }
                 else
                 {
                     cc->ntdb[i] = tdblist[0];
                 }
                 
-                printf("Start terminus: %s\n",(cc->ntdb[i])->name);
+                printf("Start terminus %s-%d: %s\n",
+                       *pdba->resinfo[cc->r_start[i]].name,
+                       pdba->resinfo[cc->r_start[i]].nr,
+                       (cc->ntdb[i])->name);
                 sfree(tdblist);
             }
         }
@@ -1654,13 +1668,19 @@ int main(int argc, char *argv[])
             {
                 if(bTerMan && ntdblist>1)
                 {
-                    cc->ctdb[i] = choose_ter(ntdblist,tdblist,"Select end terminus type");
+                    sprintf(select,"Select end terminus type for %s-%d",
+                            *pdba->resinfo[cc->r_end[i]].name,
+                            pdba->resinfo[cc->r_end[i]].nr);
+                    cc->ctdb[i] = choose_ter(ntdblist,tdblist,select);
                 }
                 else
                 {
                     cc->ctdb[i] = tdblist[0];
                 }
-                printf("End terminus: %s\n",(cc->ctdb[i])->name);
+                printf("End terminus %s-%d: %s\n",
+                       *pdba->resinfo[cc->r_end[i]].name,
+                       pdba->resinfo[cc->r_end[i]].nr,
+                       (cc->ctdb[i])->name);
                 sfree(tdblist);
             }
         }
@@ -1819,7 +1839,7 @@ int main(int argc, char *argv[])
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,
 	    nrtp,restp,
 	    restp_chain,hb_chain,
-	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->r_start,cc->r_end,bAllowMissing,
+	    cc->nterpairs,cc->ntdb,cc->ctdb,bAllowMissing,
 	    bVsites,bVsiteAromatics,forcefield,ffdir,
 	    mHmult,nssbonds,ssbonds,
 	    long_bond_dist,short_bond_dist,bDeuterate,bChargeGroups,bCmap,

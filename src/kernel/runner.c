@@ -72,6 +72,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
+#include "membed.h"
 
 #include "md_openmm.h"
 
@@ -255,13 +256,27 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
 {
     int nthreads,nthreads_new;
     int min_atoms_per_thread;
+    char *env;
 
     nthreads = nthreads_requested;
 
     /* determine # of hardware threads. */
     if (nthreads_requested < 1)
     {
-        nthreads = tMPI_Get_recommended_nthreads();
+        if ((env = getenv("GMX_MAX_THREADS")) != NULL)
+        {
+            nthreads = 0;
+            sscanf(env,"%d",&nthreads);
+            if (nthreads < 1)
+            {
+                gmx_fatal(FARGS,"GMX_MAX_THREADS (%d) should be larger than 0",
+                          nthreads);
+            }
+        }
+        else
+        {
+            nthreads = tMPI_Get_recommended_nthreads();
+        }
     }
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
@@ -352,6 +367,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
     int         nthreads=1;
+    gmx_membed_t *membed=NULL;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -399,6 +415,16 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #endif
     }
     /* END OF CAUTION: cr is now reliable */
+
+    /* g_membed initialisation *
+     * Because we change the mtop, init_membed is called before the init_parallel *
+     * (in case we ever want to make it run in parallel) */
+    if (opt2bSet("-membed",nfile,fnm))
+    {
+	fprintf(stderr,"Entering membed code");
+        snew(membed,1);
+        init_membed(fplog,membed,nfile,fnm,mtop,inputrec,state,cr,&cpt_period);
+    }
 
     if (PAR(cr))
     {
@@ -559,7 +585,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         fprintf(stderr,"Loaded with Money\n\n");
     }
 
-    if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI)))
+    if (PAR(cr) && !((Flags & MD_PARTDEC) ||
+                     EI_TPI(inputrec->eI) ||
+                     inputrec->eI == eiNM))
     {
         cr->dd = init_domain_decomposition(fplog,cr,Flags,ddxyz,rdd,rconstr,
                                            dddlb_opt,dlb_scale,
@@ -578,8 +606,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         /* PME, if used, is done on all nodes with 1D decomposition */
         cr->npmenodes = 0;
         cr->duty = (DUTY_PP | DUTY_PME);
-        npme_major = cr->nnodes;
+        npme_major = 1;
         npme_minor = 1;
+        if (!EI_TPI(inputrec->eI))
+        {
+            npme_major = cr->nnodes;
+        }
         
         if (inputrec->ePBC == epbcSCREW)
         {
@@ -796,6 +828,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       fcd,state,
                                       mdatoms,nrnb,wcycle,ed,fr,
                                       repl_ex_nst,repl_ex_seed,
+                                      membed,
                                       cpt_period,max_hours,
                                       deviceOptions,
                                       Flags,
@@ -837,6 +870,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
+    
+    if (opt2bSet("-membed",nfile,fnm))
+    {
+        sfree(membed);
+    }
 
     /* Does what it says */  
     print_date_and_time(fplog,cr->nodeid,"Finished mdrun",&runtime);

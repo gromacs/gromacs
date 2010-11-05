@@ -149,10 +149,10 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
+  double invvol;
   int natoms;            /* nr. atoms in trj */
   t_trxstatus *status;  
   int i,n,               /* loop indices */
-      ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
   t_electron *found;     /* found by bsearch */
@@ -162,17 +162,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
   real t, 
         z;
 
-  switch(axis) {
-  case 0:
-    ax1 = 1; ax2 = 2;
-    break;
-  case 1:
-    ax1 = 0; ax2 = 2;
-    break;
-  case 2:
-    ax1 = 0; ax2 = 1;
-    break;
-  default:
+  if (axis < 0 || axis >= DIM) {
     gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
@@ -196,6 +186,8 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
       center_coords(&top->atoms,box,x0,axis);
     
     *slWidth = box[axis][axis]/(*nslices);
+    invvol = *nslices/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
+
     for (n = 0; n < nr_grps; n++) {      
       for (i = 0; i < gnx[n]; i++) {   /* loop over all atoms in index file */
 	  z = x0[index[n][i]][axis];
@@ -219,8 +211,8 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 	    fprintf(stderr,"Couldn't find %s. Add it to the .dat file\n",
 		    *(top->atoms.atomname[index[n][i]]));
 	  else  
-	    (*slDensity)[n][slice] += found->nr_el - 
-	                              top->atoms.atom[index[n][i]].q;
+	    (*slDensity)[n][slice] += (found->nr_el - 
+				       top->atoms.atom[index[n][i]].q)*invvol;
 	  free(sought.atomname);
 	}
     }
@@ -240,8 +232,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++)
-      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) /
-	( nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+      (*slDensity)[n][i] /= nr_frames;
   }
 
   sfree(x0);  /* free memory used by coordinate array */
@@ -254,6 +245,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
+  double invvol;
   int natoms;            /* nr. atoms in trj */
   t_trxstatus *status;  
   int  **slCount,         /* nr. of atoms in one slice for a group */
@@ -267,17 +259,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   char *buf;             /* for tmp. keeping atomname */
   gmx_rmpbc_t  gpbc=NULL;
 
-  switch(axis) {
-  case 0:
-    ax1 = 1; ax2 = 2;
-    break;
-  case 1:
-    ax1 = 0; ax2 = 2;
-    break;
-  case 2:
-    ax1 = 0; ax2 = 1;
-    break;
-  default:
+  if (axis < 0 || axis >= DIM) {
     gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
@@ -302,6 +284,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
       center_coords(&top->atoms,box,x0,axis);
     
     *slWidth = box[axis][axis]/(*nslices);
+    invvol = *nslices/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
     teller++;
     
     for (n = 0; n < nr_grps; n++) {      
@@ -314,10 +297,9 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
       
 	/* determine which slice atom is in */
 	slice = (int)(z / (*slWidth)); 
-	(*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m;
+	(*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m*invvol;
       }
     }
-
     nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
   gmx_rmpbc_done(gpbc);
@@ -334,8 +316,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++) {
-      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) /
-	(nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+      (*slDensity)[n][i] /= nr_frames;
     }
   }
 
@@ -384,8 +365,10 @@ void plot_density(real *slDensity[], const char *afile, int nslices,
 int gmx_density(int argc,char *argv[])
 {
   const char *desc[] = {
-    "Compute partial densities across the box, using an index file. Densities",
-    "in kg/m^3, number densities or electron densities can be",
+    "Compute partial densities across the box, using an index file.[PAR]",
+    "For the total density of NPT simulations, use [TT]g_energy[tt] instead.",
+    "[PAR]",
+    "Densities in kg/m^3, number densities or electron densities can be",
     "calculated. For electron densities, a file describing the number of",
     "electrons for each type of atom should be provided using [TT]-ei[tt].",
     "It should look like:[BR]",

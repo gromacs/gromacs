@@ -75,6 +75,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+#include "membed.h"
 
 typedef struct {
   t_state s;
@@ -406,8 +407,11 @@ void init_em(FILE *fplog,const char *title,
     snew(*enerd,1);
     init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,*enerd);
 
-    /* Init bin for energy stuff */
-    *mdebin = init_mdebin((*outf)->fp_ene,top_global,ir,NULL); 
+    if (mdebin != NULL)
+    {
+        /* Init bin for energy stuff */
+        *mdebin = init_mdebin((*outf)->fp_ene,top_global,ir,NULL); 
+    }
 
     clear_rvec(mu_tot);
     calc_shifts(ems->s.box,fr->shift_vec);
@@ -875,6 +879,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
              gmx_edsam_t ed,
              t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
+             gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -1395,6 +1400,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
                 gmx_edsam_t ed,
                 t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
+                gmx_membed_t *membed,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
                 unsigned long Flags,
@@ -2029,6 +2035,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
                 gmx_edsam_t ed,
                 t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
+                gmx_membed_t *membed,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
                 unsigned long Flags,
@@ -2233,12 +2240,12 @@ double do_nm(FILE *fplog,t_commrec *cr,
              gmx_edsam_t ed,
              t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
+             gmx_membed_t *membed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
-    t_mdebin   *mdebin;
     const char *NM = "Normal Mode Analysis";
     gmx_mdoutf_t *outf;
     int        natoms,atom,d;
@@ -2278,7 +2285,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
             state_global,top_global,state_work,&top,
             &f,&f_global,
             nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,
-            nfile,fnm,&outf,&mdebin);
+            nfile,fnm,&outf,NULL);
     
     natoms = top_global->natoms;
     snew(fneg,natoms);
@@ -2497,9 +2504,6 @@ double do_nm(FILE *fplog,t_commrec *cr,
     
     if (MASTER(cr)) 
     {
-        print_ebin(NULL,FALSE,FALSE,FALSE,fplog,atom,t,eprAVER,
-                   FALSE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
-      
         fprintf(stderr,"\n\nWriting Hessian...\n");
         gmx_mtxio_write(ftp2fn(efMTX,nfile,fnm),sz,sz,full_matrix,sparse_matrix);
     }

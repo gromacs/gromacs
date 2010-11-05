@@ -63,12 +63,14 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 #define GMX_PME_SOLVE         (1<<1)
 #define GMX_PME_CALC_F        (1<<2)
 #define GMX_PME_CALC_ENER_VIR (1<<3)
-#define GMX_PME_DO_COULOMB    (1<<4)
-#define GMX_PME_DO_LJ         (1<<5)
-#define GMX_PME_DO_LJ_LB      (1<<6)
+/* This forces the grid to be backtransformed even without GMX_PME_CALC_F */
+#define GMX_PME_CALC_POT      (1<<4)
+#define GMX_PME_DO_COULOMB    (1<<5)
+#define GMX_PME_DO_LJ         (1<<6)
+#define GMX_PME_DO_LJ_LB      (1<<7)
 /* All bits higher than this (including this one) are used internally by the
  * PME-PP communication routines. */
-#define GMX_PME_PP_FIRST      (1<<7)
+#define GMX_PME_PP_FIRST      (1<<8)
 #define GMX_PME_DO_ALL_F      (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 int gmx_pme_do(gmx_pme_t pme,
