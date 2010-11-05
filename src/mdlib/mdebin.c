@@ -940,7 +940,7 @@ void upd_mdebin(t_mdebin *md,
         /* total energy (for if the temperature changes */
         if (fepvals->bPrintEnergy) 
         {
-            fprintf(md->fp_dhdl,"%.4f ",enerd->term[F_ETOT]);
+            fprintf(md->fp_dhdl," %.4f ",enerd->term[F_ETOT]);
         }
 
         for (i=0;i<efptNR;i++) 

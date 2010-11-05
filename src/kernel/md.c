@@ -1390,10 +1390,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
     }
 
-    if (repl_ex_nst > 0 && MASTER(cr))
+    if (repl_ex_nst > 0 && MASTER(cr)) 
+    {
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_multiplex,repl_ex_seed);
-
+    }
     if (!ir->bContinuation && !bRerunMD)
     {
         if (mdatoms->cFREEZE && (state->flags & (1<<estV)))

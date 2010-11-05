@@ -646,13 +646,12 @@ static void print_count(FILE *fplog,const char *leg,int n,int *count)
 }
 
 static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
-				struct gmx_repl_ex *re,gmx_enerdata_t *enerd,real vol,
-				int step,real time)
+                                struct gmx_repl_ex *re,gmx_enerdata_t *enerd,real vol,
+                                int step,real time)
 {
     int  m,i,a,b,ap,bp,i0,i1,tmp;
-    real *Epot=NULL,*Vol=NULL,*prob;
+    real *Epot=NULL,*Vol=NULL,**flambda=NULL,*beta=NULL,*prob;
     int *pind;
-    real **flambda=NULL,*beta=NULL;
     real ediff=0,delta=0,dpV=0;
     gmx_bool *bEx,bPrint,bMulti;
     int exchange;
@@ -934,9 +933,8 @@ static void write_debug_x(t_state *state)
 }
 
 gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
-                      t_state *state,gmx_enerdata_t *enerd,
-                      t_state *state_local,
-                      int step,real time)
+                          t_state *state,gmx_enerdata_t *enerd,
+                          t_state *state_local,int step,real time)
 {
     gmx_multisim_t *ms;
     int  exchange=-1,shift;
@@ -948,6 +946,7 @@ gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re
     {
         exchange = get_replica_exchange(fplog,ms,re,enerd,det(state->box),
                                         step,time);
+        /* if doing hamiltonian replica exchange, compute the free energy */
         bExchanged = (exchange >= 0);
     }
     
