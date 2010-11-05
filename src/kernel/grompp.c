@@ -169,8 +169,12 @@ static void check_cg_sizes(const char *topfn,t_block *cgs,warninp_t wi)
     {
         maxsize = max(maxsize,cgs->index[cg+1]-cgs->index[cg]);
     }
- 
-    if (maxsize > 10)
+    
+    if (maxsize > MAX_CHARGEGROUP_SIZE)
+    {
+        gmx_fatal(FARGS,"The largest charge group contains %d atoms. The maximum is %d.",maxsize,MAX_CHARGEGROUP_SIZE);
+    }
+    else if (maxsize > 10)
     {
         set_warning_line(wi,topfn,-1);
         sprintf(warn_buf,
@@ -222,6 +226,9 @@ static void check_bonds_timestep(gmx_mtop_t *mtop,double dt,warninp_t wi)
 
     limit2 = sqr(min_steps_note*dt);
 
+    w_a1 = w_a2 = -1;
+    w_period2 = -1.0;
+    
     w_moltype = NULL;
     for(molt=0; molt<mtop->nmoltype; molt++)
     {
@@ -1051,6 +1058,42 @@ static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi,warninp_t wi)
   return count;
 }
 
+static void check_gbsa_params_charged(gmx_mtop_t *sys, gpp_atomtype_t atype)
+{
+    int i,nmiss,natoms,mt;
+    real q;
+    const t_atoms *atoms;
+  
+    nmiss = 0;
+    for(mt=0;mt<sys->nmoltype;mt++)
+    {
+        atoms  = &sys->moltype[mt].atoms;
+        natoms = atoms->nr;
+
+        for(i=0;i<natoms;i++)
+        {
+            q = atoms->atom[i].q;
+            if ((get_atomtype_radius(atoms->atom[i].type,atype)    == 0  ||
+                 get_atomtype_vol(atoms->atom[i].type,atype)       == 0  ||
+                 get_atomtype_surftens(atoms->atom[i].type,atype)  == 0  ||
+                 get_atomtype_gb_radius(atoms->atom[i].type,atype) == 0  ||
+                 get_atomtype_S_hct(atoms->atom[i].type,atype)     == 0) &&
+                q != 0)
+            {
+                fprintf(stderr,"\nGB parameter(s) zero for atom type '%s' while charge is %g\n",
+                        get_atomtype_name(atoms->atom[i].type,atype),q);
+                nmiss++;
+            }
+        }
+    }
+
+    if (nmiss > 0)
+    {
+        gmx_fatal(FARGS,"Can't do GB electrostatics; the implicit_genborn_params section of the forcefield has parameters with value zero for %d atomtypes that occur as charged atoms.",nmiss);
+    }
+}
+
+
 static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
 {
     int  nmiss,i;
@@ -1069,7 +1112,7 @@ static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
             get_atomtype_gb_radius(i,atype) < 0 ||
             get_atomtype_S_hct(i,atype)     < 0)
         {
-            fprintf(stderr,"GB parameter(s) missing or negative for atom type '%s'\n",
+            fprintf(stderr,"\nGB parameter(s) missing or negative for atom type '%s'\n",
                     get_atomtype_name(i,atype));
             nmiss++;
         }
@@ -1077,8 +1120,7 @@ static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
     
     if (nmiss > 0)
     {
-        gmx_fatal(FARGS,"Can't do GB electrostatics; the forcefield is missing %d values for\n"
-                  "atomtype radii, or they might be negative\n.",nmiss);
+        gmx_fatal(FARGS,"Can't do GB electrostatics; the implicit_genborn_params section of the forcefield is missing parameters for %d atomtypes or they might be negative.",nmiss);
     }
   
 }
@@ -1195,7 +1237,7 @@ int main (int argc, char *argv[])
   char         warn_buf[STRLEN];
 
   t_filenm fnm[] = {
-    { efMDP, NULL,  NULL,        ffOPTRD },
+    { efMDP, NULL,  NULL,        ffREAD  },
     { efMDP, "-po", "mdout",     ffWRITE },
     { efSTX, "-c",  NULL,        ffREAD  },
     { efSTX, "-r",  NULL,        ffOPTRD },
@@ -1384,6 +1426,11 @@ int main (int argc, char *argv[])
     {
         /* Now we have renumbered the atom types, we can check the GBSA params */
         check_gbsa_params(ir,atype);
+      
+      /* Check that all atoms that have charge and/or LJ-parameters also have 
+       * sensible GB-parameters
+       */
+      check_gbsa_params_charged(sys,atype);
     }
 
 	/* PELA: Copy the atomtype data to the topology atomtype list */

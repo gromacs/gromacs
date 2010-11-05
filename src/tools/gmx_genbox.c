@@ -118,9 +118,8 @@ typedef struct {
 
 void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
 {
-  int atnr,i,j,moltp=0,nrmoltypes,resnr;
+  int atnr,i,j,moltp=0,nrmoltypes,resi_o,resi_n,resnr;
   t_moltypes *moltypes;
-  int *tps;
   t_atoms *atoms,*newatoms;
   rvec *newx, *newv=NULL;
   real *newr;
@@ -130,7 +129,6 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
   atoms = *atoms_solvt;
 
   /* copy each residue from *atoms to a molecule in *molecule */
-  snew(tps,atoms->nr);
   moltypes=NULL;
   nrmoltypes=0;
   atnr=0;
@@ -156,7 +154,6 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
       }
       moltypes[moltp].nmol++;
     }
-    tps[i]=moltp;
   }
   
   fprintf(stderr,"Found %d%s molecule type%s:\n",
@@ -189,18 +186,40 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
     if (v) snew(newv,atoms->nr);
     snew(newr,atoms->nr);
     
-    for (i=0; i<atoms->nr; i++) {
-      resnr = moltypes[tps[i]].res0 +
-	(moltypes[tps[i]].i-moltypes[tps[i]].i0) / moltypes[tps[i]].natoms;
-      newatoms->atom[moltypes[tps[i]].i].resind = resnr;
-      newatoms->resinfo[resnr] = atoms->resinfo[atoms->atom[i].resind];
-      newatoms->resinfo[resnr].nr = resnr + 1;
-      newatoms->atomname[moltypes[tps[i]].i] = atoms->atomname[i];
-      newatoms->atom[moltypes[tps[i]].i] = atoms->atom[i];
-      copy_rvec(x[i],newx[moltypes[tps[i]].i]);
-      if (v) copy_rvec(v[i],newv[moltypes[tps[i]].i]);
-      newr[moltypes[tps[i]].i] = r[i];
-      moltypes[tps[i]].i++;
+    resi_n = 0;
+    resnr = 1;
+    j = 0;
+    for(moltp=0; moltp<nrmoltypes; moltp++) {
+      i = 0;
+      while (i < atoms->nr) {
+	resi_o = atoms->atom[i].resind;
+	if (strcmp(*atoms->resinfo[resi_o].name,moltypes[moltp].name) == 0) {
+	  /* Copy the residue info */
+	  newatoms->resinfo[resi_n]    = atoms->resinfo[resi_o];
+	  newatoms->resinfo[resi_n].nr = resnr;
+	  /* Copy the atom info */
+	  do {
+	    newatoms->atom[j]        = atoms->atom[i];
+	    newatoms->atomname[j]    = atoms->atomname[i];
+	    newatoms->atom[j].resind = resi_n;
+	    copy_rvec(x[i],newx[j]);
+	    if (v != NULL) {
+	      copy_rvec(v[i],newv[j]);
+	    }
+	    newr[j] = r[i];
+	    i++;
+	    j++;
+	  } while (i < atoms->nr && atoms->atom[i].resind == resi_o);
+	  /* Increase the new residue counters */
+	  resi_n++;
+	  resnr++;
+	} else {
+	  /* Skip this residue */
+	  do {
+	    i++;
+	  } while (i < atoms->nr && atoms->atom[i].resind == resi_o);
+	}
+      }
     }
     
     /* put them back into the original arrays and throw away temporary arrays */

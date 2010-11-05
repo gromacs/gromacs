@@ -16,7 +16,13 @@ if (! $?GMXMAN) setenv GMXMAN ""
 # remove previous gromacs part from ld_library_path
 set tmppath = ""
 foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
-  if ( "$i" != "$GMXLDLIB" ) set tmppath = "${tmppath}:$i"
+  if ( "$i" != "$GMXLDLIB" ) then
+    if ("${tmppath}" == "") then
+      set tmppath = "$i"
+    else
+      set tmppath = "${tmppath}:$i"
+    endif
+  endif
 end
 setenv LD_LIBRARY_PATH $tmppath
 
@@ -39,6 +45,9 @@ set tmppath = ""
 foreach i ( `echo $MANPATH | sed "s/:/ /g"` )
   if ( "$i" != "$GMXMAN" ) set tmppath = "${tmppath}:$i"
 end
+if ("$tmppath" == "") then
+    set tmppath = ":"
+endif
 setenv MANPATH $tmppath
 
 ##########################################################

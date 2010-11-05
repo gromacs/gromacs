@@ -256,6 +256,13 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     const char *ommOptions = NULL;
     void   *openmmData;
 
+#ifdef GMX_DOUBLE
+    /* Checks in cmake should prevent the compilation in double precision
+     * with OpenMM, but just to be sure we check here.
+     */
+    gmx_fatal(FARGS,"Compilation was performed in double precision, but OpenMM only supports single precision. If you want to use to OpenMM, compile in single precision.");
+#endif
+
     bAppend  = (Flags & MD_APPENDFILES);
     check_ir_old_tpx_versions(cr,fplog,ir,top_global);
 
