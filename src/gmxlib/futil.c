@@ -454,7 +454,7 @@ FILE *ffopen(const char *file,const char *mode)
 
     bRead= (mode[0]=='r'&&mode[1]!='+');
     strcpy(buf,file);
-    if (gmx_fexist(buf) || !bRead) {
+    if (!bRead || gmx_fexist(buf)) {
         if ((ff=fopen(buf,mode))==NULL)
             gmx_file(buf);
         where();
