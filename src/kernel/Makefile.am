@@ -13,7 +13,7 @@ EXTRA_DIST = libgmxpreprocess.pc.cmakein
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
-libgmxpreprocess@LIBSUFFIX@_la_LIBADD       = ../mdlib/libmd@LIBSUFFIX@.la
+libgmxpreprocess@LIBSUFFIX@_la_LIBADD       = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
 
 libgmxpreprocess@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ $(PTHREAD_LIBS)
