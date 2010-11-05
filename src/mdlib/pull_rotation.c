@@ -1155,9 +1155,8 @@ static double opt_angle_analytic(
 }
 
 
-/* Determine actual angle of this slab by RMSD fit */
+/* Determine actual angle of this slab by RMSD fit to the reference */
 /* Not parallelized, call this routine only on the master */
-/* TODO: make this routine mass-weighted */
 static void flex_fit_angle(
         int  g,
         t_rotgrp *rotg,
@@ -1176,15 +1175,20 @@ static void flex_fit_angle(
     rvec        coord;
     real        scal;
     gmx_enfrotgrp_t erg;     /* Pointer to enforced rotation group data */
+    real        OOm_av;      /* 1/average_mass of a rotation group atom */
+    real        m_rel;       /* Relative mass of a rotation group atom  */
 
     
     erg=rotg->enfrotgrp;
+
+    /* Average mass of a rotation group atom: */
+    OOm_av = erg->invmass*rotg->nat;
 
     /**********************************/
     /* First collect the data we need */
     /**********************************/
 
-    /* Loop over slabs */
+    /* Collect the data for the individual slabs */
     for (n = erg->slab_first; n <= erg->slab_last; n++)
     {
         islab = n - erg->slab_first; /* slab index */
@@ -1199,7 +1203,7 @@ static void flex_fit_angle(
             copy_rvec(erg->xc[l], curr_x);
             
             /* The (unrotated) reference position of this atom is copied to ref_x.
-             * Beware, the xc coords have been sorted in do_flex! */
+             * Beware, the xc coords have been sorted in do_flexible */
             copy_rvec(erg->xc_ref_sorted[l], ref_x);
             
             /* Save data for doing angular RMSD fit later */
@@ -1207,17 +1211,23 @@ static void flex_fit_angle(
             copy_rvec(curr_x, sd->x[ind]);
             /* Save the corresponding reference position */
             copy_rvec(ref_x , sd->ref[ind]);
-            /* Save the weight for this atom in this slab */
-            sd->weight[ind] = gaussian_weight(curr_x, rotg, n);
             
+            /* Maybe also mass-weighting was requested. If yes, additionally
+             * multiply the weights with the relative mass of the atom. If not,
+             * multiply with unity. */
+            m_rel = erg->mc_sorted[l]*OOm_av;
+
+            /* Save the weight for this atom in this slab */
+            sd->weight[ind] = gaussian_weight(curr_x, rotg, n) * m_rel;
+
             /* Next atom in this slab */
             ind++;
         }
     }
 
-    /* Get the geometrical center of the whole rotation group: */
-    get_center(erg->xc, NULL, rotg->nat, act_center);
-
+    /* Get the center of the whole rotation group. Note, again, the erg->xc have
+     * been sorted in do_flexible */
+    get_center(erg->xc, erg->mc_sorted, rotg->nat, act_center);
 
     /******************************/
     /* Now do the fit calculation */
@@ -1230,7 +1240,7 @@ static void flex_fit_angle(
          * prior to performing the fit */
         for (i=0; i<rotg->nat; i++)
         {
-            /* First put geometrical center of positions into origin */
+            /* First put the center of the positions into the origin */
             rvec_sub(erg->xc[i], act_center, coord);
             /* Determine the scaling factor for the length: */
             scal = erg->xc_ref_length[erg->xc_sortind[i]] / norm(coord);
@@ -1245,7 +1255,8 @@ static void flex_fit_angle(
     }
     /* Note that from the point of view of the current positions, the reference has rotated backwards,
      * but we want to output the angle relative to the fixed reference, therefore the minus sign. */
-    fitangle = -opt_angle_analytic(erg->xc_ref_sorted, fitcoords, NULL, rotg->nat, erg->xc_ref_center, act_center, rotg->vec);    
+    fitangle = -opt_angle_analytic(erg->xc_ref_sorted, fitcoords, erg->mc_sorted,
+                                   rotg->nat, erg->xc_ref_center, act_center, rotg->vec);
     fprintf(fp, "%12.3e%6d%12.3f%12.3lf", t, g, degangle, fitangle);
 
 

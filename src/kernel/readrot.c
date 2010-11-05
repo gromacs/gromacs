@@ -42,6 +42,8 @@
 #include "trnio.h"
 #include "txtdump.h"
 
+static char *RotStr = {"Enforced rotation:"};
+
 
 static char s_vec[STRLEN];
 
@@ -113,8 +115,8 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
             sprintf(warn_buf, "rot_vec%d = 0", g);
             warning_error(wi, warn_buf);
         }
-        fprintf(stderr, "Enforced rotation: Group %d (%s) normalized rot. vector: %f %f %f\n", 
-                g, erotg_names[rotg->eType], vec[0], vec[1], vec[2]);
+        fprintf(stderr, "%s Group %d (%s) normalized rot. vector: %f %f %f\n",
+                RotStr, g, erotg_names[rotg->eType], vec[0], vec[1], vec[2]);
         for(m=0; m<DIM; m++)
             rotg->vec[m] = vec[m];
         
@@ -179,7 +181,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
 
 
 /* Check whether the box is unchanged */
-static void check_box(matrix f_box, matrix box, char fn[],warninp_t wi)
+static void check_box(matrix f_box, matrix box, char fn[], warninp_t wi)
 {
     int i,ii;
     gmx_bool bSame=TRUE;
@@ -192,7 +194,8 @@ static void check_box(matrix f_box, matrix box, char fn[],warninp_t wi)
                 bSame = FALSE;
     if (!bSame)
     {
-        sprintf(warn_buf, "Enforced rotation: Box size in reference file %s differs from actual box size!", fn);
+        sprintf(warn_buf, "%s Box size in reference file %s differs from actual box size!",
+                RotStr, fn);
         warning(wi, warn_buf);
         pr_rvecs(stderr,0,"Your box is:",box  ,3);
         pr_rvecs(stderr,0,"Box in file:",f_box,3);
@@ -201,8 +204,9 @@ static void check_box(matrix f_box, matrix box, char fn[],warninp_t wi)
 
 
 /* Extract the reference positions for the rotation group(s) */
-extern void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
-        const char *fn,warninp_t wi)
+extern void set_reference_positions(
+        t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
+        const char *fn, gmx_bool bSet, warninp_t wi)
 {
     int g,i,ii;
     t_rotgrp *rotg;
@@ -218,16 +222,28 @@ extern void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matri
     strcpy(extension,extpos+1);
     *extpos = '\0';
 
+
     for (g=0; g<rot->ngrp; g++)
      {
          rotg = &rot->grp[g];
-         fprintf(stderr, "Enforced rotation: group %d has %d reference positions.",g,rotg->nat);
+         fprintf(stderr, "%s group %d has %d reference positions.\n",RotStr,g,rotg->nat);
          snew(rotg->x_ref, rotg->nat);
          
+         /* Construct the name for the file containing the reference positions for this group: */
          sprintf(reffile, "%s.%d.%s", base,g,extension);
+
+         /* If the base filename for the reference position files was explicitly set by
+          * the user, we issue a fatal error if the group file can not be found */
+         if (bSet && !gmx_fexist(reffile))
+         {
+             gmx_fatal(FARGS, "%s The file containing the reference positions was not found.\n"
+                              "Expected the file '%s' for group %d.\n",
+                              RotStr, reffile, g);
+         }
+
          if (gmx_fexist(reffile))
          {
-             fprintf(stderr, " Reading them from %s.\n", reffile);
+             fprintf(stderr, "  Reading them from %s.\n", reffile);
              read_trnheader(reffile, &header);
              if (rotg->nat != header.natoms)
                  gmx_fatal(FARGS,"Number of atoms in file %s (%d) does not match the number of atoms in rotation group (%d)!\n",
