@@ -169,6 +169,13 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 	  
     for (n = 0; n < nr_grps; n++)
     {      
+        /* Check whether we actually have all positions of the requested index
+         * group in the trajectory file */
+        if (gnx[n] > natoms)
+        {
+            gmx_fatal(FARGS, "You selected a group with %d atoms, but only %d atoms\n"
+                             "were found in the trajectory.\n", gnx[n], natoms);
+        }
       for (i = 0; i < gnx[n]; i++)   /* loop over all atoms in index file */
       {
 	if (bSpherical)
@@ -364,7 +371,7 @@ void plot_potential(double *potential[], double *charge[], double *field[],
     for (n = 0; n < nr_grps; n++)
     {
       fprintf(pot,"   %20.16g", potential[n][slice]);
-      fprintf(fie,"   %20.16g", field[n][slice]);
+      fprintf(fie,"   %20.16g", field[n][slice]/1e9);  /* convert to V/nm */
       fprintf(cha,"   %20.16g", charge[n][slice]);
     }
     fprintf(pot,"\n");

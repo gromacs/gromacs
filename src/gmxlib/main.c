@@ -238,17 +238,13 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
   
     debug_gmx();
 
-    if (!bMasterOnly)
+    if (!bMasterOnly && !MASTER(cr))
     {
         /* Since log always ends with '.log' let's use this info */
         par_fn(tmpnm,efLOG,cr,FALSE,!bMasterOnly,buf,255);
         fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
     }
-#ifdef GMX_FAHCORE
     else if (!bAppend)
-#else
-    else
-#endif
     {
         fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
     }

@@ -3,9 +3,16 @@ cmake_minimum_required(VERSION 2.6)
 project(Gromacs)
 include(Dart)
 mark_as_advanced(DART_ROOT)
+
 # PROJECT_VERSION should have the following structure: 
-# VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
-set(PROJECT_VERSION "4.5.1")
+# VERSION-dev[-SUFFIX] where the VERSION should have the for: vMajor.vMinor.vPatch
+#
+# The "-dev" suffix is important to keep because it makes possible to distinguish 
+# between a build from official release and a build from git release branch on a 
+# machine with no git. 
+#
+# NOTE: when releasing the "-dev" suffix needs to be stripped off!
+set(PROJECT_VERSION "4.5.2-dev")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -16,7 +23,7 @@ set(SOVERSION 6)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "5")
-SET(CPACK_PACKAGE_VERSION_PATCH "1")
+SET(CPACK_PACKAGE_VERSION_PATCH "2")
 
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -81,6 +88,8 @@ option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREADS    "Build a parallel (thread-based) version of GROMACS (cannot be combined with MPI yet)" ON)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 mark_as_advanced(GMX_SOFTWARE_INVSQRT)
+option(GMX_POWERPC_INVSQRT "Use PowerPC hardware 1/sqrt" ON)
+mark_as_advanced(GMX_POWERPC_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
@@ -112,6 +121,11 @@ option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
 
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
+
+if(UNIX AND NOT APPLE)
+    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE) platforms but it might not always work!" OFF)
+    mark_as_advanced(GMX_PREFER_STATIC_LIBS)
+endif()
 
 ########################################################################
 # Set up binary and library suffixing 
@@ -150,6 +164,9 @@ endif(GMX_DOUBLE)
 if(GMX_SOFTWARE_INVSQRT)
   set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
 endif(GMX_SOFTWARE_INVSQRT)
+if(GMX_POWERPC_INVSQRT)
+  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_POWERPC_INVSQRT")
+endif(GMX_POWERPC_INVSQRT)
 
 ########################################################################
 #Process MPI settings
@@ -341,6 +358,15 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
+if(UNIX AND NOT APPLE)
+    if(GMX_PREFER_STATIC_LIBS)
+        SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        if(BUILD_SHARED_LIBS)
+            message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
+            set(BUILD_SHARED_LIBS OFF CACHE BOOL "Enable shared libraries (can be problematic with MPI, Windows)" FORCE)
+        endif()
+    endif()
+endif()
 
 find_package(LibXml2)
 set(PKG_XML "")
@@ -467,7 +493,6 @@ if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
   endif()
 endif (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
-
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
@@ -527,9 +552,25 @@ elseif(${GMX_ACCELERATION} STREQUAL "FORTRAN")
     set(GMX_IA32_ASM 0)
     set(GMX_GMX_X86_64_ASM 0)
 elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
+# GMX_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
+    message(STATUS "Configuring for BlueGene")
     set(GMX_BLUEGENE 1)
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
+        set(SHARED_LIBS_DEFAULT OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
+    endif (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
+    set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene" FORCE)
+    set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on BlueGene" FORCE)
+    set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
+    set(GMX_THREADS OFF CACHE BOOL "Threads not compatible with BlueGene, disabled!" FORCE)
+    set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
+    set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use MASSV for BLAS on BlueGene" FORCE)
+    set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use MASSV for LAPACK on BlueGene" FORCE)
+    list(APPEND GMX_EXTRA_LIBRARIES massv)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
+    set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
+    set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on Power6" FORCE)
 elseif(${GMX_ACCELERATION} STREQUAL "IA64")
     set(GMX_IA64_ASM 1)
     set(DISABLE_WATERWATER_NLIST 1)

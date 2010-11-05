@@ -145,7 +145,7 @@ static void ster_print(FILE *out,const char *s)
   int  slen;
   char buf[128];
   
-  sprintf(buf,":-)  %s  (-:",s);
+  snprintf(buf,128,":-)  %s  (-:",s);
   slen=strlen(buf);
   space(out,(80-slen)/2);
   fprintf(out,"%s\n",buf);
@@ -258,7 +258,7 @@ void CopyRight(FILE *out,const char *szProgram)
 
   fprintf(out,"\n");
 
-  sprintf(buf,"%s",Program());
+  snprintf(buf,256,"%s",Program());
 #ifdef GMX_DOUBLE
   strcat(buf," (double precision)");
 #endif

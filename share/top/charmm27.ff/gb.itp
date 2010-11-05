@@ -41,6 +41,7 @@
  HP             0.1     1       1       0.125    0.85 ; H
  NY             0.155   1       1.028   0.17063  0.79 ; N
  CPT            0.172   0.012   1.554   0.1875   0.72 ; C     
- MNH3		0	0	0	0	 0    ; vsite (rigid tetrahedrical NH3 group)
- MNH2		0	0	0	0	 0    ; vsite
- MCH3		0	0	0	0	 0    ; vsite (rigid CH3 group)
+ MNH3		0	0	0	0	 0    ; dummy mass
+ MNH2		0	0	0	0	 0    ; dummy mass
+ MCH3		0	0	0	0	 0    ; dummy mass
+ MCH3S		0	0	0	0	 0    ; dummy mass
