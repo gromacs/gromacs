@@ -1210,6 +1210,9 @@ static void flex_fit_angle(
             /* Save the weight for this atom in this slab */
             sd->weight[ind] = gaussian_weight(curr_x, rotg, n);
             
+            /* For mass weighting: */
+            /* sd->weight[ind] *= erg->mc_sorted[l]; */
+
             /* Next atom in this slab */
             ind++;
         }

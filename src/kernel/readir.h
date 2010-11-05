@@ -144,6 +144,6 @@ extern void make_rotation_groups(t_rot *rot,char **rotgnames,
 /* Process the rotation parameters after reading the index groups */
 
 extern void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
-        const char *fn, warninp_t wi);
+        const char *fn, gmx_bool bSet, warninp_t wi);
 
 #endif	/* _readir_h */
