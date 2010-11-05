@@ -476,8 +476,12 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
       at->atom[i].m    = get_atomtype_massA(restp[resind].atom[j].type,
 					    atype);
       cg = restp[resind].cgnr[j];
-      if ( (cg != prevcg) || (resind != prevresind) )
-	curcg++;
+      /* A charge group number -1 signals a separate charge group
+       * for this atom.
+       */
+      if ( (cg == -1) || (cg != prevcg) || (resind != prevresind) ) {
+          curcg++;
+      }
     } else {
       if (debug)
 	fprintf(debug,"atom %d%s: curcg=%d, qt=%g, is_int=%d\n",
