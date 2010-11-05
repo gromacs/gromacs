@@ -222,6 +222,9 @@ static void check_bonds_timestep(gmx_mtop_t *mtop,double dt,warninp_t wi)
 
     limit2 = sqr(min_steps_note*dt);
 
+    w_a1 = w_a2 = -1;
+    w_period2 = -1.0;
+    
     w_moltype = NULL;
     for(molt=0; molt<mtop->nmoltype; molt++)
     {
@@ -1195,7 +1198,7 @@ int main (int argc, char *argv[])
   char         warn_buf[STRLEN];
 
   t_filenm fnm[] = {
-    { efMDP, NULL,  NULL,        ffOPTRD },
+    { efMDP, NULL,  NULL,        ffREAD  },
     { efMDP, "-po", "mdout",     ffWRITE },
     { efSTX, "-c",  NULL,        ffREAD  },
     { efSTX, "-r",  NULL,        ffOPTRD },

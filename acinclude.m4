@@ -2075,6 +2075,7 @@ else
     CPPFLAGS="$save_CPPFLAGS"
     LDFLAGS="$save_LDFLAGS"
     LIBS="$save_LIBS"
+    DLOPEN_LIBS="$lt_cv_dlopen_libs"
     ;;
   esac
 
