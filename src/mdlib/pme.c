@@ -1549,9 +1549,6 @@ static real gather_energy_bsplines(gmx_pme_t pme,real *grid,
     
     
     order = pme->pme_order;
-    thx   = atc->theta[XX];
-    thy   = atc->theta[YY];
-    thz   = atc->theta[ZZ];
     
     energy = 0;
     for(n=0; (n<atc->n); n++) {
@@ -2352,7 +2349,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V)
     /* We only use the A-charges grid */
     grid = pme->pmegridA;
 
-    spread_on_grid(pme,atc,grid,TRUE,FALSE);
+    spread_on_grid(pme,atc,NULL,TRUE,FALSE);
 
     *V = gather_energy_bsplines(pme,grid,atc);
 }
@@ -2482,6 +2479,11 @@ int gmx_pme_do(gmx_pme_t pme,
             srenew(atc->pd,atc->pd_nalloc);
         }
         atc->maxshift = (atc->dimind==0 ? maxshift_x : maxshift_y);
+    }
+    else
+    {
+        /* This could be necessary for TPI */
+        pme->atc[0].n = homenr;
     }
     
     for(q=0; q<(pme->bFEP ? 2 : 1); q++) {
@@ -2657,12 +2659,12 @@ int gmx_pme_do(gmx_pme_t pme,
             }
 #endif
             where();
+
+            unwrap_periodic_pmegrid(pme,grid);
         }
 
         if (flags & GMX_PME_CALC_F)
         {
-            unwrap_periodic_pmegrid(pme,grid);
-            
             /* interpolate forces for our local atoms */
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_gather_f_bsplines_start);

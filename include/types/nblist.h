@@ -50,6 +50,11 @@ enum {
 
 typedef unsigned long t_excl;
 
+/* The maximum charge group size because of minimum size of t_excl
+ * could be 32 bits.
+ */
+#define MAX_CHARGEGROUP_SIZE 32
+
 /* The maximum charge group size for CG-CG nblists.
  * The excl entry in t_nblist uses blocks of this size.
  */

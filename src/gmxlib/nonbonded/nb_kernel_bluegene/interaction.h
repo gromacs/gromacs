@@ -312,11 +312,10 @@
 
 */
 
-/* The optimized version of converts2ints is disabled
+/* The optimized version of converts2ints is disabled on BG/P
  * because of issues on BG/P reported in bugzilla 429
  */
-/* #if (defined __IBMC__ || defined __IBMCPP__) */
-#if (0)
+#if defined __blrts__
 
 #define convert2ints(x,xi,conv,i1,i2)                      \
     xi      = __fpctiwz(x);                                \

@@ -72,6 +72,14 @@
 # Microsoft HPC SDK is automatically added to the system path
 # Argonne National Labs MPICH2 sets a registry key that we can use.
 
+TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
+  "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
+  COMPILE_DEFINITIONS )
+
+if(MPI_FOUND)
+  return()
+endif()
+
 set(_MPI_PACKAGE_DIR
   mpi
   mpich
