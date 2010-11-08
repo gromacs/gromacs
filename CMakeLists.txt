@@ -108,7 +108,7 @@ mark_as_advanced(GMX_BROKEN_CALLOC)
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
-option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
+option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" OFF)
 mark_as_advanced(GMX_DLOPEN)
 
 
