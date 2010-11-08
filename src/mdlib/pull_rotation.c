@@ -622,24 +622,25 @@ static void print_aligned_group(FILE *fp, char *str, int g)
 }
 
 
-static FILE *open_output_file(const char *fn, int steps)
+static FILE *open_output_file(const char *fn, int steps, const char what[])
 {
     FILE *fp;
     
     
     fp = ffopen(fn, "w");
 
-    fprintf(fp, "# Output is written every %d time steps.\n\n", steps);
+    fprintf(fp, "# Output of %s is written at intervals of %d time step%s.\n#\n",
+            what,steps, steps>1 ? "s":"");
     
     return fp;
 }
 
 
-/* Open output file for slab COG data. Call on master only */
+/* Open output file for slab center data. Call on master only */
 static FILE *open_slab_out(t_rot *rot, const char *fn)
 {
     FILE      *fp=NULL;
-    int       g;
+    int       g,i;
     t_rotgrp  *rotg;
 
 
@@ -650,26 +651,27 @@ static FILE *open_slab_out(t_rot *rot, const char *fn)
             || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) )
         {
             if (NULL == fp)
-                fp = open_output_file(fn, rot->nsttout);
-            fprintf(fp, "# Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
+                fp = open_output_file(fn, rot->nsttout, "gaussian weighted slab centers");
+            fprintf(fp, "# Rotation group %d (%s), slab distance %f nm, %s.\n",
+                    g, erotg_names[rotg->eType], rotg->slab_dist, rotg->bMassW? "centers of mass":"geometrical centers");
         }
     }
     
     if (fp != NULL)
     {
-        fprintf(fp, "# The following columns will have the syntax: (COG = center of geometry, gaussian weighted)\n");
+        fprintf(fp, "# Reference centers are listed first (t=-1).\n");
+        fprintf(fp, "# The following columns have the syntax:\n");
         fprintf(fp, "#     ");
         print_aligned_short(fp, "t");
         print_aligned_short(fp, "grp");
-        print_aligned_short(fp, "slab");
-        print_aligned(fp, "COG-X");
-        print_aligned(fp, "COG-Y");
-        print_aligned(fp, "COG-Z");
-        print_aligned_short(fp, "slab");
-        print_aligned(fp, "COG-X");
-        print_aligned(fp, "COG-Y");
-        print_aligned(fp, "COG-Z");
-        print_aligned_short(fp, "slab");
+        /* Print ascii legend for the first two entries only ... */
+        for (i=0; i<2; i++)
+        {
+            print_aligned_short(fp, "slab");
+            print_aligned(fp, "X center");
+            print_aligned(fp, "Y center");
+            print_aligned(fp, "Z center");
+        }
         fprintf(fp, " ...\n");
         fflush(fp);
     }
@@ -803,15 +805,15 @@ static FILE *open_angles_out(t_rot *rot, const char *fn)
 
 
     /* Open output file and write some information about it's structure: */
-    fp = open_output_file(fn, rot->nstrout);
-    fprintf(fp, "# All angles given in degrees, time in ps\n");
+    fp = open_output_file(fn, rot->nstrout, "rotation group angles");
+    fprintf(fp, "# All angles given in degrees, time in ps.\n");
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
         if (   (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
             || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) )
         {
-            fprintf(fp, "# Rotation group %d (%s), slab distance %f nm, fit type %s\n", 
+            fprintf(fp, "# Rotation group %d (%s), slab distance %f nm, fit type %s.\n",
                     g, erotg_names[rotg->eType], rotg->slab_dist, erotg_fitnames[rotg->eFittype]);
         }
     }
@@ -842,7 +844,7 @@ static FILE *open_torque_out(t_rot *rot, const char *fn)
     t_rotgrp  *rotg;
 
 
-    fp = open_output_file(fn, rot->nsttout);
+    fp = open_output_file(fn, rot->nsttout,"torques");
 
     for (g=0; g<rot->ngrp; g++)
     {
@@ -850,7 +852,7 @@ static FILE *open_torque_out(t_rot *rot, const char *fn)
         if (   (rotg->eType==erotgFLEX ) || (rotg->eType==erotgFLEXT )
             || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) )
         {
-            fprintf(fp, "# Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
+            fprintf(fp, "# Rotation group %d (%s), slab distance %f nm.\n", g, erotg_names[rotg->eType], rotg->slab_dist);
             fprintf(fp, "# The scalar tau is the torque [kJ/mol] in the direction of the rotation vector.\n");
             fprintf(fp, "# To obtain the vectorial torque, multiply tau with\n");
             fprintf(fp, "# rot_vec%d            %10.3e %10.3e %10.3e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
@@ -1064,7 +1066,7 @@ static double opt_angle_analytic(
     }
     
     /* Weight positions with sqrt(weight) */
-    if (weight)
+    if (NULL != weight)
     {
         weigh_coords(ref_s_1, weight, natoms);
         weigh_coords(act_s_1, weight, natoms);
@@ -1138,6 +1140,18 @@ static double opt_angle_analytic(
     }
     rot_matrix[2][2] = 1.0;
         
+    /* In some cases abs(rot_matrix[0][0]) can be slighly larger
+     * than unity due to numerical inacurracies. To be able to calculate
+     * the acos function, we put these values back in range. */
+    if (rot_matrix[0][0] > 1.0)
+    {
+        rot_matrix[0][0] = 1.0;
+    }
+    else if (rot_matrix[0][0] < -1.0)
+    {
+        rot_matrix[0][0] = -1.0;
+    }
+
     /* Determine the optimal rotation angle: */
     opt_angle = (-1.0)*acos(rot_matrix[0][0])*180.0/M_PI;
     if (rot_matrix[0][1] < 0.0)
