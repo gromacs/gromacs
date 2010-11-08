@@ -60,6 +60,8 @@ int gmx_stats_done(gmx_stats_t stats);
    sigma. Level needs to be larger than one obviously. */
 int gmx_stats_remove_outliers(gmx_stats_t stats,double level);
 
+
+
 int gmx_stats_add_point(gmx_stats_t stats,double x,double y,
 			       double dx,double dy);
 
@@ -72,9 +74,11 @@ int gmx_stats_add_points(gmx_stats_t stats,int n,real *x,real *y,
    more points, and returns estatsNOPOINTS when the last point has
    been returned. Should be used in a while loop. Variables for either
    pointer may be NULL, in which case the routine can be used as an
-   expensive point counter. */
+   expensive point counter. 
+   If level > 0 then the outliers outside level*sigma are reported
+   only. */
 int gmx_stats_get_point(gmx_stats_t stats,real *x,real *y,
-			       real *dx,real *dy);
+			real *dx,real *dy,real level);
 
 /* Fit the data to y = ax + b, possibly weighted, if uncertainties
    have been input. Returns slope in *a and intercept in b, *return
