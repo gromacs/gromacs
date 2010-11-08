@@ -446,6 +446,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             );
     }
 
+    if ((Flags & MD_RERUN) &&
+        (EI_ENERGY_MINIMIZATION(inputrec->eI) || eiNM == inputrec->eI))
+    {
+        gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
+    }
+
     if (can_use_allvsall(inputrec,mtop,TRUE,cr,fplog))
     {
         /* All-vs-all loops do not work with domain decomposition */

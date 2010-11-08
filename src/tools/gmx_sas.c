@@ -226,6 +226,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   const char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
 			      "Total", "D Gsolv" };
   const char   *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
+  const char   *or_and_oa_legend[] = { "Average (nm\\S2\\N)", "Standard deviation (nm\\S2\\N)" };
   const char   *vfile;
   real         t;
   gmx_atomprop_t aps=NULL;
@@ -499,10 +500,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       atom_area2[i] /= nfr;
     }
     fprintf(stderr,"Printing out areas per atom\n");
-    fp  = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue","Residue",
+    fp  = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue over the trajectory","Residue",
 		   "Area (nm\\S2\\N)",oenv);
-    fp2 = xvgropen(opt2fn("-oa",nfile,fnm),"Area per atom","Atom #",
+    xvgr_legend(fp, asize(or_and_oa_legend),or_and_oa_legend,oenv);
+    fp2 = xvgropen(opt2fn("-oa",nfile,fnm),"Area per atom over the trajectory","Atom #",
 		   "Area (nm\\S2\\N)",oenv);
+    xvgr_legend(fp2, asize(or_and_oa_legend),or_and_oa_legend,oenv);
     if (bITP) {
       fp3 = ftp2FILE(efITP,nfile,fnm,"w");
       fprintf(fp3,"[ position_restraints ]\n"
@@ -570,7 +573,7 @@ int gmx_sas(int argc,char *argv[])
     "and a group for the output. The calculation group should always",
     "consists of all the non-solvent atoms in the system.",
     "The output group can be the whole or part of the calculation group.",
-    "The area can be plotted",
+    "The average and standard deviation of the area over the trajectory can be plotted",
     "per residue and atom as well (options [TT]-or[tt] and [TT]-oa[tt]).",
     "In combination with the latter option an [TT]itp[tt] file can be",
     "generated (option [TT]-i[tt])",
