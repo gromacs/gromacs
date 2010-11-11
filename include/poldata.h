@@ -74,8 +74,6 @@ extern char *gmx_poldata_get_smatom(gmx_poldata_t pd,char *elem,
                                     int nbond,char *neighbors[],
                                     const char *geometry);
 				    
-extern double gmx_poldata_get_alpha(gmx_poldata_t pd,char *smatom);
-
 extern char *gmx_poldata_get_geometry(gmx_poldata_t pd,char *smatom);
 
 extern char *gmx_poldata_get_smtype(gmx_poldata_t pd,char *smatom);

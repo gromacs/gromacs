@@ -216,19 +216,6 @@ void gmx_poldata_set_length_unit(gmx_poldata_t pd,char *length_unit)
     pold->sm_length_unit   = strdup(length_unit);
 }
 
-double gmx_poldata_get_alpha(gmx_poldata_t pd,char *smatom)
-{
-    gmx_poldata *pold = (gmx_poldata *) pd;
-    int i;
-  
-    if (smatom)
-        for(i=0; (i<pold->nspoel); i++) 
-            if (strcasecmp(pold->spoel[i].name,smatom) == 0) 
-                return pold->spoel[i].polarizability;
-      
-    return -1;
-}
-
 char *gmx_poldata_get_geometry(gmx_poldata_t pd,char *smatom)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
