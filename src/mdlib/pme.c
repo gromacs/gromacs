@@ -2972,7 +2972,8 @@ static void copy_local_grid(gmx_pme_t pme,
     for(d=0; d<DIM; d++)
     {
         nf[d] = min(pmegrids->nbt[d],
-                    pmegrids->grid.n[d]-pmegrid->offset[d]);
+                    pmegrids->grid.n[d]-(pmegrids->grid.order-1)
+                    -pmegrid->offset[d]);
     }
 
     offx = pmegrid->offset[XX];
@@ -3087,7 +3088,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     for(d=0; d<DIM; d++)
     {
         ne[d] = min(pmegrid->offset[d]+pmegrids->nbt[d],
-                    pmegrids->grid.n[d]);
+                    pmegrids->grid.n[d]-(pmegrids->grid.order-1));
     }
 
     offx = pmegrid->offset[XX];
