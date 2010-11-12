@@ -69,7 +69,7 @@ int gmx_densmap(int argc,char *argv[])
     "It can make planar and axial-radial density maps.",
     "The output [TT].xpm[tt] file can be visualized with for instance xv",
     "and can be converted to postscript with xpm2ps.",
-	"Optionally, output can be in text form to a .dat file.",
+    "Optionally, output can be in text form to a .dat file with -od, instead of the usual .xpm file with -o.",
     "[PAR]",
     "The default analysis is a 2-D number-density map for a selected",
     "group of atoms in the x-y plane.",
