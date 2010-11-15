@@ -797,7 +797,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
     
     /* Enforced rotation */
-    if (file_version >= 9999) { /* TODO: set the right number here */
+    if (file_version >= 74) {
         gmx_fio_do_int(fio,ir->bRot);
         if (ir->bRot == TRUE) {
             if (bRead)
