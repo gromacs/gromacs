@@ -383,12 +383,16 @@ extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, int step, real t
 }
 
 
+/* The Gaussian norm is chosen such that the sum of the gaussian functions
+ * over the slabs is approximately 1.0 everywhere */
+#define GAUSS_NORM   0.569917543430618
+
+
 /* Calculate the maximum beta that leads to a gaussian larger min_gaussian,
  * also does some checks
  */
 static double calc_beta_max(real min_gaussian, real slab_dist)
 {
-    const double norm = 0.5698457353514458216;  /* = 1/1.7548609 */
     double sigma;
     double arg;
     
@@ -403,11 +407,11 @@ static double calc_beta_max(real min_gaussian, real slab_dist)
     sigma = 0.7*slab_dist;
 
     /* Calculate the argument for the logarithm and check that the log() result is negative or 0 */
-    arg = min_gaussian/norm;
+    arg = min_gaussian/GAUSS_NORM;
     if (arg > 1.0)
-        gmx_fatal(FARGS, "min_gaussian of flexible rotation groups must be <%g", norm);
+        gmx_fatal(FARGS, "min_gaussian of flexible rotation groups must be <%g", GAUSS_NORM);
     
-    return sqrt(-2.0*sigma*sigma*log(min_gaussian/norm));
+    return sqrt(-2.0*sigma*sigma*log(min_gaussian/GAUSS_NORM));
 }
 
 
@@ -419,10 +423,7 @@ static inline real calc_beta(rvec curr_x, t_rotgrp *rotg, int n)
 
 static inline real gaussian_weight(rvec curr_x, t_rotgrp *rotg, int n)
 {
-    /* norm is chosen such that the sum of the gaussians
-     * over the slabs is approximately 1.0 everywhere */
-    /* a previously used value was norm = 0.5698457353514458216 = 1/1.7548609 */
-    const real norm = 0.569917543430618;      /* = 1/1.7546397922417 */
+    const real norm = GAUSS_NORM;
     real       sigma;
 
     
