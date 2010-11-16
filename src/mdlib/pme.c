@@ -3890,7 +3890,10 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_gmxfft3d_start);
             wallcycle_start(wcycle,ewcPME_FFT);
-            gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_REAL_TO_COMPLEX,fftgrid,cfftgrid);
+#pragma omp parallel 
+            {
+                gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_REAL_TO_COMPLEX,fftgrid,cfftgrid);
+            }
             wallcycle_stop(wcycle,ewcPME_FFT);
             GMX_MPE_LOG(ev_gmxfft3d_finish);
             where();
@@ -3918,7 +3921,10 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_MPE_LOG(ev_gmxfft3d_start);
             where();
             wallcycle_start(wcycle,ewcPME_FFT);
-            gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_COMPLEX_TO_REAL,cfftgrid,fftgrid);
+#pragma omp parallel 
+            {
+                gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_COMPLEX_TO_REAL,cfftgrid,fftgrid);
+            }
             wallcycle_stop(wcycle,ewcPME_FFT);
 
             where();
