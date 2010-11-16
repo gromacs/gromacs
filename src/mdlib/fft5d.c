@@ -61,7 +61,7 @@
 #ifdef FFT5D_THREADS
 #include <omp.h>
 /* requires fftw compiled with openmp */
-#define FFT5D_FFTW_THREADS
+/* #define FFT5D_FFTW_THREADS (now set by cmake) */
 #endif
 
 #include "fft5d.h"
@@ -963,10 +963,14 @@ llToAll
 #ifdef FFT5D_MPI_TRANSPOSE
                 FFTW(execute)(mpip[s]);  /*TODO would need to read from lout2 to work!  */
 #else
+#ifdef GMX_MPI
                 if ((s==0 && !(plan->flags&FFT5D_ORDER_YZ)) || (s==1 && (plan->flags&FFT5D_ORDER_YZ))) 
                     MPI_Alltoall(lout2,N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real),GMX_MPI_REAL,lout3,N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real),GMX_MPI_REAL,cart[s]);
                 else
                     MPI_Alltoall(lout2,N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real),GMX_MPI_REAL,lout3,N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real),GMX_MPI_REAL,cart[s]);
+#else
+                gmx_incons("fft5d MPI call without MPI configuration");
+#endif /*GMX_MPI*/
 #endif /*FFT5D_MPI_TRANSPOSE*/
                 if (times!=0)
                     time_mpi[s]=MPI_Wtime()-time;
