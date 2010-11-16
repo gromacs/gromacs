@@ -3116,33 +3116,39 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     for(sx=0; sx>=-ns[XX]; sx--)
     {
         fx = pmegrid->ci[XX] + sx;
-        ox = fx*pmegrids->nbt[XX];
+        ox = 0;
         bCommX = (fx < 0);
         if (bCommX) {
             fx += pmegrids->nc[XX];
+            ox -= pmegrids->grid.n[XX] - (pmegrids->grid.order - 1);
             bCommX = (pme->nnodes_major > 1);
         }
+        ox += fx*pmegrids->nbt[XX];
         tx1 = min(ox + pmegrids->nst[XX],ne[XX]);
 
         for(sy=0; sy>=-ns[YY]; sy--)
         {
             fy = pmegrid->ci[YY] + sy;
-            oy = fy*pmegrids->nbt[YY];
+            oy = 0;
             bCommY = (fy < 0);
             if (bCommY) {
                 fy += pmegrids->nc[YY];
+                oy -= pmegrids->grid.n[YY] - (pmegrids->grid.order - 1);
                 bCommY = (pme->nnodes_minor > 1);
             }
+            oy += fy*pmegrids->nbt[YY];
             ty1 = min(oy + pmegrids->nst[YY],ne[YY]);
 
             for(sz=0; sz>=-ns[ZZ]; sz--)
             {
                 fz = pmegrid->ci[ZZ] + sz;
-                oz = fz*pmegrids->nbt[ZZ];
+                oz = 0;
                 if (fz < 0)
                 {
                     fz += pmegrids->nc[ZZ];
+                    oz -= pmegrids->grid.n[ZZ] - (pmegrids->grid.order - 1);
                 }
+                oz += fz*pmegrids->nbt[ZZ];
                 tz1 = min(oz + pmegrids->nst[ZZ],ne[ZZ]);
 
                 if (sx == 0 && sy == 0 && sz == 0)
@@ -3550,7 +3556,9 @@ static void spread_on_grid(gmx_pme_t pme,
 }
 
 
-static void dump_grid(int nx,int ny,int nz,real *g)
+static void dump_grid(FILE *fp,
+                      int sx,int sy,int sz,int nx,int ny,int nz,
+                      int my,int mz,const real *g)
 {
     int x,y,z;
     
@@ -3560,11 +3568,32 @@ static void dump_grid(int nx,int ny,int nz,real *g)
         {
             for(z=0; z<nz; z++)
             {
-                printf("%2d %2d %2d %6.3f\n",x,y,z,*g);
-                g++;
+                fprintf(fp,"%2d %2d %2d %6.3f\n",
+                        sx+x,sy+y,sz+z,g[(x*my + y)*mz + z]);
             }
         }
     }
+}
+
+static void dump_local_fftgrid(gmx_pme_t pme,const real *fftgrid)
+{
+    ivec local_fft_ndata,local_fft_offset,local_fft_size;
+
+    gmx_parallel_3dfft_real_limits(pme->pfft_setupA,
+                                   local_fft_ndata,
+                                   local_fft_offset,
+                                   local_fft_size);
+
+    dump_grid(stderr,
+              pme->pmegrid_start_ix,
+              pme->pmegrid_start_iy,
+              pme->pmegrid_start_iz,
+              pme->pmegrid_nx-pme->pme_order+1,
+              pme->pmegrid_ny-pme->pme_order+1,
+              pme->pmegrid_nz-pme->pme_order+1,
+              local_fft_size[YY],
+              local_fft_size[ZZ],
+              fftgrid);
 }
 
 
@@ -3850,10 +3879,7 @@ int gmx_pme_do(gmx_pme_t pme,
             wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
 
             /*
-            dump_grid(pme->pmegrid_nx-pme->pme_order+1,
-                      pme->pmegrid_ny-pme->pme_order+1,
-                      pme->pmegrid_nz-pme->pme_order+1,
-                      fftgrid);
+            dump_local_fftgrid(pme,fftgrid);
             exit(0);
             */
         }
