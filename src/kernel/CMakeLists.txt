@@ -40,7 +40,7 @@ set(MDRUN_SOURCES
     md_openmm.c)
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
-target_link_libraries(gmxpreprocess md)
+target_link_libraries(gmxpreprocess libgromacs)
 set_target_properties(gmxpreprocess PROPERTIES OUTPUT_NAME "gmxpreprocess${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
 
@@ -61,7 +61,7 @@ if(GMX_FAHCORE)
   add_library(fahcore ${MDRUN_SOURCES})
 else(GMX_FAHCORE)
 
-list(APPEND GMX_EXTRA_LIBRARIES gmxpreprocess md)
+list(APPEND GMX_EXTRA_LIBRARIES gmxpreprocess libgromacs)
 
 add_executable(grompp grompp.c)
 target_link_libraries(grompp ${GMX_EXTRA_LIBRARIES})
