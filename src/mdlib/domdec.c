@@ -41,7 +41,6 @@
 #include "force.h"
 #include "pme.h"
 #include "pull.h"
-#include "pull_rotation.h"
 #include "gmx_wallcycle.h"
 #include "mdrun.h"
 #include "nsgrid.h"
