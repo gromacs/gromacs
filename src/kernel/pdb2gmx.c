@@ -1331,6 +1331,8 @@ int main(int argc, char *argv[])
   this_chainid        = '?';
   this_chainnumber    = -1;
   this_chainstart     = 0;
+  /* Keep the compiler happy */
+  prev_chainstart     = 0;
     
   pdb_ch=NULL;
   bMerged = FALSE;

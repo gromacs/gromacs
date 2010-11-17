@@ -448,6 +448,24 @@ void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
 		rotmatrix[2][0],rotmatrix[2][1],rotmatrix[2][2]);
 }
 
+static void renum_resnr(t_atoms *atoms,int isize,const int *index,
+                        int resnr_start)
+{
+    int i,resind_prev,resind;
+
+    resind_prev = -1;
+    for(i=0; i<isize; i++)
+    {
+        resind = atoms->atom[index == NULL ? i : index[i]].resind;
+        if (resind != resind_prev)
+        {
+            atoms->resinfo[resind].nr = resnr_start;
+            resnr_start++;
+        }
+        resind_prev = resind;
+    }
+}
+
 int gmx_editconf(int argc, char *argv[])
 {
     const char
@@ -560,6 +578,7 @@ int gmx_editconf(int argc, char *argv[])
         *label = "A";
     static rvec visbox =
         { 0, 0, 0 };
+    static int resnr_start = -1;
     t_pargs
         pa[] =
             {
@@ -602,6 +621,9 @@ int gmx_editconf(int argc, char *argv[])
                     { "-pbc", FALSE, etBOOL,
                         { &bRMPBC },
                         "Remove the periodicity (make molecule whole again)" },
+                    { "-resnr", FALSE, etINT,
+                        { &resnr_start },
+                        " Renumber residues starting from resnr" },
                     { "-grasp", FALSE, etBOOL,
                         { &bGrasp },
                         "Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field" },
@@ -1038,6 +1060,12 @@ int gmx_editconf(int argc, char *argv[])
         fprintf(stderr,"\nSelect a group for output:\n");
         get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
                   1,&isize,&index,&grpname);
+
+        if (resnr_start >= 0)
+        {
+            renum_resnr(&atoms,isize,index,resnr_start);
+        }
+
         if (opt2parg_bSet("-label",NPA,pa)) {
             for(i=0; (i<atoms.nr); i++) 
                 atoms.resinfo[atoms.atom[i].resind].chainid=label[0];
@@ -1059,7 +1087,13 @@ int gmx_editconf(int argc, char *argv[])
             write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,isize,index); 
         }
     }
-    else {
+    else
+    {
+        if (resnr_start >= 0)
+        {
+            renum_resnr(&atoms,atoms.nr,NULL,resnr_start);
+        }
+
         if ((outftp == efPDB) || (outftp == efPQR)) {
             out=ffopen(outfile,"w");
             if (bMead) {
