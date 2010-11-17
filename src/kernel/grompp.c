@@ -1247,7 +1247,8 @@ int main (int argc, char *argv[])
     { efTOP, "-pp", "processed", ffOPTWR },
     { efTPX, "-o",  NULL,        ffWRITE },
     { efTRN, "-t",  NULL,        ffOPTRD },
-    { efEDR, "-e",  NULL,        ffOPTRD }
+    { efEDR, "-e",  NULL,        ffOPTRD },
+    { efTRN, "-ref","rotref",    ffOPTRW }
   };
 #define NFILE asize(fnm)
 
@@ -1526,6 +1527,13 @@ int main (int argc, char *argv[])
 
   if (ir->ePull != epullNO)
     set_pull_init(ir,sys,state.x,state.box,oenv,opts->pull_start);
+  
+  if (ir->bRot)
+  {
+      set_reference_positions(ir->rot,sys,state.x,state.box,
+                              opt2fn("-ref",NFILE,fnm),opt2bSet("-ref",NFILE,fnm),
+                              wi);
+  }
 
   /*  reset_multinr(sys); */
   
