@@ -443,8 +443,11 @@ endif (GMX_DLOPEN)
 ########################################################################
 
 add_definitions( -DHAVE_CONFIG_H )
+include_directories(${CMAKE_SOURCE_DIR}/src)
+# Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(${CMAKE_BINARY_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/include)
+# Required for now to make old code compile
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 
 include(gmxCheckBuildUserTime)
 gmx_check_build_user_time(BUILD_TIME BUILD_USER BUILD_MACHINE)
@@ -758,7 +761,6 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 add_subdirectory(share)
-add_subdirectory(include)
 add_subdirectory(man)
 add_subdirectory(src)
 add_subdirectory(scripts)
