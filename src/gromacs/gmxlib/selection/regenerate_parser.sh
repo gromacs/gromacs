@@ -13,7 +13,7 @@ fi
 
 # For convenience, change to the directory where the files are located
 # if the script is run from the root of the source tree.
-dirname=src/gmxlib/selection
+dirname=src/gromacs/gmxlib/selection
 if [[ -f $dirname/parser.y && -f $dirname/scanner.l ]] ; then
     cd $dirname
 fi
