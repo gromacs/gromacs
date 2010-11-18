@@ -120,7 +120,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
         for(m=0; m<DIM; m++)
             rotg->vec[m] = vec[m];
         
-        CTYPE("Pivot point for iso, pm, rm, rm2 potential [nm]");
+        CTYPE("Pivot point for the potentials iso, pm, rm, and rm2 [nm]");
         sprintf(buf,"rot_pivot%d",g);
         STYPE(buf, s_vec, "0.0 0.0 0.0");
         clear_dvec(vec);
@@ -141,7 +141,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
             warning_note(wi, warn_buf);
         }
 
-        CTYPE("Slab distance for flexible rotation [nm] (flexible axis only)");
+        CTYPE("Slab distance for flexible axis rotation [nm]");
         sprintf(buf,"rot_slab_dist%d",g);
         RTYPE(buf, rotg->slab_dist, 1.5);
         if (rotg->slab_dist <= 0.0)
@@ -150,7 +150,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
             warning_error(wi, warn_buf);
         }
 
-        CTYPE("Minimum value of Gaussian for the force to be evaluated (for flex and flex2 potentials)");
+        CTYPE("Minimum value of Gaussian function for the force to be evaluated (for flex* potentials)");
         sprintf(buf,"rot_min_gauss%d",g);
         RTYPE(buf, rotg->min_gaussian, 1e-3);
         if (rotg->min_gaussian <= 0.0)
@@ -159,7 +159,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
             warning_error(wi, warn_buf);
         }
 
-        CTYPE("Value of additive constant epsilon' [nm^2] for rm2 and flex2 potentials");
+        CTYPE("Value of additive constant epsilon' [nm^2] for rm2* and flex2* potentials");
         sprintf(buf, "rot_eps%d",g);
         RTYPE(buf, rotg->eps, 1e-4);
         if ( (rotg->eps <= 0.0) && (rotg->eType==erotgRM2 || rotg->eType==erotgFLEX2) )
@@ -168,7 +168,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
             warning_error(wi, warn_buf);
         }
 
-        CTYPE("Fitting method to determine actual angle of rotation group (rmsd or norm) (flex and flex2 pot.)");
+        CTYPE("Fitting method to determine angle of rotation group (rmsd or norm) (flex* potentials)");
         sprintf(buf,"rot_fit_method%d",g);
         ETYPE(buf, rotg->eFittype, erotg_fitnames);
     }
