@@ -854,7 +854,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     /* Add the forces from enforced rotation potentials (if any) */
     if (inputrec->bRot)
-        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr,step,t);
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
     
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))

@@ -532,7 +532,7 @@ static void pr_rot(FILE *fp,int indent,t_rot *rot)
   int g;
 
   PI("rot_nstrout",rot->nstrout);
-  PI("rot_nsttout",rot->nsttout);
+  PI("rot_nstsout",rot->nstsout);
   PI("rot_ngrp",rot->ngrp);
   for(g=0; g<rot->ngrp; g++)
     pr_rotgrp(fp,indent,g,&rot->grp[g]);

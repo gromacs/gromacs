@@ -71,8 +71,10 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
     inp    = *inp_p;
     
     /* read rotation parameters */
+    CTYPE("Output frequency for angle, torque and rotation potential energy for the whole group");
     ITYPE("rot_nstrout",     rot->nstrout, 100);
-    ITYPE("rot_nsttout",     rot->nsttout, 1000);
+    CTYPE("Output frequency for per-slab data (angles, torques and slab centers)");
+    ITYPE("rot_nstsout",     rot->nstsout, 1000);
     CTYPE("Number of rotation groups");
     ITYPE("rot_ngroups",     rot->ngrp,1);
     
