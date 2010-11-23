@@ -1080,7 +1080,8 @@ int gmx_pme_error(int argc,char *argv[])
     cr = init_par(&argc,&argv);
     
 #ifdef GMX_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
+    if (PAR(cr))
+        MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
     if (MASTER(cr))
