@@ -851,10 +851,10 @@ int gmx_sham(int argc,char *argv[])
   if (fn_ene && et_val)
     ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val,oenv);
 
-  snew(idim,nset);
-  snew(ibox,nset);
-  snew(rmin,nset);
-  snew(rmax,nset);
+  snew(idim,3);
+  snew(ibox,3);
+  snew(rmin,3);
+  snew(rmax,3);
   for(i=0; (i<min(3,nset)); i++) {
     idim[i] = nrdim[i];
     ibox[i] = nrbox[i];
