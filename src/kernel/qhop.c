@@ -928,6 +928,11 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
   t_pbc
     pbc;
   
+  if (ir->qhopmode == etQhopNONE)
+    {
+      return 0;
+    }
+
   if ((*db = qhop_db_read("ffoplsaa", mtop, md)) == NULL)
     gmx_fatal(FARGS,"Can not read qhop database information");
 
@@ -937,6 +942,8 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 			  * No, it's done from md.c.
 			  */
   qhoprec->qhopfreq = ir->qhopfreq;
+  qhoprec->qhopmode = ir->qhopmode;
+
   snew(qhoprec->global_atom_to_qhop_atom,mtop->natoms);
   nr_qhop_atoms = get_qhop_atoms(cr, mtop, qhoprec ,ir, *db);
   /* now trace down the atoms belonging to these atoms to create an
@@ -970,6 +977,9 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
       target = H_exist_2_subRes(mtop, qhoprec, *db, i);
       set_interactions(qhoprec, *db, i, target);
     }
+
+  qhoprec->hop = NULL;
+  
   return (nr_qhop_atoms);
 } /* init_hop */
 
@@ -1125,16 +1135,101 @@ static void rotate_water(rvec *x,t_qhop_atom *res,real angle,t_mdatoms *md){
   }
 } /* rotate_water */
 
-static void invert_hydronium(){
-
-  /* if the accepting water would actually result in a inverted
-     hydronium, we need to re-invert it
-   */
+static void qhop_swap_bondeds(t_qhop_residue* swapres, qhop_res* prod)
+{
+  /* placeholder. */
+  int i;
+  i=0;
+  
 }
 
+static void qhop_swap_nonbondeds(t_qhop_residue* swapres, qhop_res* prod)
+{
+  /* placeholder. */
+  int i;
+  i=0;
+  
+}
+
+
+/* Supreseeded by flip-routines in change_protonation() */
+/* static void invert_hydronium(){ */
+
+/*   /\* if the accepting water would actually result in a inverted */
+/*      hydronium, we need to re-invert it */
+/*    *\/ */
+/* } */
+
+/* Arguments like qhop_(de)protonate(),
+ * with the addition of bDonor which,
+ * if TRUE, makes a deprotonation and,
+ * if FALSE, a protonation. */
+static void qhop_titrate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom, gmx_bool bWater, gmx_bool bSwapBondeds, gmx_bool bDonor)
+{
+  int
+    i, rt, r, reactant, t;
+  qhop_res
+    *product_res;
+
+  product_res = NULL;
+  
+  rt = qr->qhop_residues[qatom->qres_id].rtype;
+  r = qr->qhop_residues[qatom->qres_id].res;
+
+  /* Find out what the product is. */
+
+  /* Loop over acceptors or donors */
+  for (reactant = 0;
+       (reactant < bDonor ? (db->rb.res[rt][r].nd) : (db->rb.res[rt][r].na))
+	 && product_res==NULL;
+       reactant++)
+    {
+      /* Loop over tautomers */
+      for (t = 0;
+	   t < bDonor ? (db->rb.res[rt][r].don[reactant].nname) : (db->rb.res[rt][r].acc[reactant].nname);
+	   t++)
+	{
+	  /* Is this the reactant? */
+	  if (!strcasecmp(db->rb.res[rt][r].acc[reactant].name[t], qatom->atomname));
+	    {
+	      /* This is the reactant! */
+	      product_res = db->rb.res[rt][r].acc[reactant].productdata;
+	      break;
+	    }
+	}
+    }
+
+  if (product_res == NULL)
+    {
+      gmx_fatal(FARGS, "Could not find the product for this reaction.");
+    }
+
+  /* Change interactions */
+  qhop_swap_bondeds   (&(qr->qhop_residues[qatom->qres_id]), product_res);
+  qhop_swap_nonbondeds(&(qr->qhop_residues[qatom->qres_id]), product_res);
+
+}
+
+
+/* Wrappers for qhop_titrate() */
+extern void qhop_protonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
+			   gmx_bool bWater, gmx_bool bSwapBondeds)
+{
+  qhop_titrate(db, qr, qatom, bWater, bSwapBondeds, FALSE);
+}
+
+extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
+			     gmx_bool bWater, gmx_bool bSwapBondeds)
+{
+  qhop_titrate(db, qr, qatom, bWater, bSwapBondeds, TRUE);
+}
+
+
 static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec, 
-			       t_mdatoms *md, t_hop *hop, rvec *x,
-			       gmx_bool bUndo,gmx_mtop_t *mtop){
+				   t_mdatoms *md, t_hop *hop, rvec *x,
+				   gmx_bool bUndo,gmx_mtop_t *mtop,
+				   rvec x_old, t_pbc *pbc,
+				   qhop_db *db){
   /* alters the topology in order to evaluate the new energy. In case
      of hydronium donating a proton, we might have to change the
      position of the resulting HW1, and HW2 in order to create a
@@ -1146,6 +1241,11 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
      hydronium, and its index. residue-water hops lead to creation of
      a new hydronium.
   */
+
+  /* Note that we still have special treatment of water and its symmetry.
+   * This should probably be generalized, since similar things happen
+   * with carboxylic acids, ammonia, etc. */
+
   int
     i;
   t_qhop_residue
@@ -1153,15 +1253,32 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
   t_qhop_atom
     *donor_atom,*acceptor_atom;
   gmx_bool
-    b;
+    bAccWater, bDonWater;
   double
     ang;
+  rvec
+    x_tmp,
+    w_normal,
+    w_don,
+    OH1,
+    OH2,
+    w_third;
+  real
+    planedist, d;
+  const int
+    /* 0 and 1 are ordinary water protons, 3 is the "out of plane" one
+     * in hydronium, while 3 and 4 are in the water plane */
+    out_of_plane_proton = 2;
+
   
   donor_atom    = &qhoprec->qhop_atoms[hop->donor_id];
   acceptor_atom = &qhoprec->qhop_atoms[hop->acceptor_id];
   donor         = &qhoprec->qhop_residues[hop->donor_id];
   acceptor      = &qhoprec->qhop_residues[hop->acceptor_id];
-    
+
+  bAccWater = db->rb.bWater[acceptor->rtype];
+  bDonWater = db->rb.bWater[donor->rtype];
+
   /* in case of our special hydronium/waters, where the protons are
      simply a dummy charge, we might have to alter the positions of
      the real atoms.
@@ -1169,25 +1286,127 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
   
   /* check if we need to rotation */ 
 
-  if(bUndo){
-    ang=-120;
+  if(bUndo)
+    {
+      ang = -120;
+    }
+  else
+    {
+      ang = 120;
+    }
+
+  if(bDonWater){
+    /* assumuming the user uses the correct water topology..... */
+
+    switch (hop->proton_id)
+      {
+      case 3:
+	rotate_water(x,donor_atom,-ang,md);
+	break;
+	
+      case 4:
+	rotate_water(x,donor_atom, ang,md);
+	break;
+	
+      default:
+	break;
+      }
   }
-  else{
-    ang=120;
-  }
-/*   if(donor_atom->bWater){ */
-/*     /\* assumuming the user uses the correct water topology..... *\/ */
-/*     switch (hop->proton_id){ */
-/*     case 3: */
-/*       rotate_water(x,donor_atom,-ang,md); */
-/*       break; */
-/*     case 4: */
-/*       rotate_water(x,donor_atom, ang,md); */
-/*       break; */
-/*     default: */
-/*       break; */
-/*     } */
-/*   }   */
+
+
+  /* Check if the protonends up on the wrong side of the acceptor */
+  if(bAccWater)
+    {
+      if (!bUndo)
+	/* Do we need to flip? */
+	{
+
+	  pbc_dx(pbc,
+		 x[donor_atom->atom_id],
+		 x[acceptor_atom->atom_id],
+		 w_don);
+	  pbc_dx(pbc,
+		 x[acceptor_atom->protons[0]],
+		 x[acceptor_atom->atom_id],
+		 OH1);
+	  pbc_dx(pbc,
+		 x[acceptor_atom->protons[1]],
+		 x[acceptor_atom->atom_id],
+		 OH2);
+	  pbc_dx(pbc,
+		 x[acceptor_atom->protons[out_of_plane_proton]],
+		 x[acceptor_atom->atom_id],
+		 w_third);
+
+	  cprod(OH1, OH2, w_normal);
+	  
+	  hop->bFlip = (iprod(w_don, w_normal) * iprod(w_third, w_normal) < 0);
+	  
+	  /* So, if <AD, (DH1 x DH2)> is negative,
+	     then the vsite construction needs flipping. */
+
+	  /* ERRATA: above line should be correct, but the c-parameter
+	   * is *negative* in the water/H3O model I'm using.
+	   * Therefore I check if the projection of the out-of-plane-proton
+	   * on the water normal points in the same
+	   * direction as the projection of the AD-vector.
+	   * <AD, w_normal> * <w_third, w_normal> > 0  <==>  no flipping needed.*/
+	}
+      
+    /* If bUndo, use the existing value for hop->bFlip */
+      
+      if (hop->bFlip)
+	{
+	  /* Flip the water molecule */
+	  
+	  /* =============== Strategy #1 ================
+	   * Swap hydrogen coordinates to have the third
+	   * hydrogen appear on the other side.
+	   * Problem is that velocities are determined
+	   * from (x(t)-x(t-1)) / delta_t*, so velocities
+	   * for those protons will be wrong for that
+	   * timestep. This can be compensated/circumvented.
+	   */
+	
+	  copy_rvec(x[acceptor_atom->protons[0]], x_tmp);
+	  copy_rvec(x[acceptor_atom->protons[1]], x[acceptor_atom->protons[0]]);
+	  copy_rvec(x_tmp, x[acceptor_atom->protons[1]]);
+
+	  /* Update vsite position by calling construct_vsite() or by mirroring in the water plane */
+	  /* Try manually, since we have a vector normal to the water plane half of the time.
+	   * It will be done automatically in all concurrent time steps. */
+	
+
+	  if (bUndo)
+	    {
+	      /* We don't have the water normal, nor dowe have the other
+	       * vectors that we need. Let's calculate them. */
+
+	      pbc_dx(pbc,
+		     x[acceptor_atom->protons[0]],
+		     x[acceptor_atom->atom_id],
+		     OH1);
+	      pbc_dx(pbc,
+		     x[acceptor_atom->protons[1]],
+		     x[acceptor_atom->atom_id],
+		     OH2);
+	      pbc_dx(pbc,
+		     x[acceptor_atom->protons[out_of_plane_proton]],
+		     x[acceptor_atom->atom_id],
+		     w_third);
+
+	      cprod(OH1, OH2, w_normal);
+	    }
+
+	  unitv(w_normal, w_normal); /* Make water normal unit vector */
+
+	  planedist = iprod(w_normal, w_third);  /* project out-of-plane proton onto unit water normal*/
+	  svmul(-2*planedist, w_normal, w_normal);
+	  rvec_inc(w_third, w_normal);
+	  copy_rvec(w_third, x[acceptor_atom->protons[out_of_plane_proton]]); /* Mirror the position. */
+	}
+    }
+
   /* alter the protonation state of the donor and acceptor atoms, but
      only if donor is still a donor, and acceptor still an acceptor 
   */
@@ -1225,6 +1444,60 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
 /*     return(FALSE); */
 /*   } */
 
+  if( ((donor_atom->state & eQDON) && (acceptor_atom->state & eQACC))
+      || ((acceptor_atom->state & eQDON) && (donor_atom->state & eQACC)) )
+    {
+      if (bUndo)
+	{
+	  /* These functions aren't really implemented yet. */
+	  qhop_protonate  (db, qhoprec, donor_atom,    bDonWater, FALSE);
+	  qhop_deprotonate(db, qhoprec, acceptor_atom, bAccWater, FALSE);
+	}
+      else
+	{
+	  /* These functions aren't really implemented yet. */
+	  qhop_protonate  (db, qhoprec, acceptor_atom, bAccWater, FALSE);
+	  qhop_deprotonate(db, qhoprec, donor_atom,    bDonWater, FALSE);
+	}
+    }
+  
+  if (!bAccWater)
+    {
+      if (bUndo)
+	{
+	  /* Put proton back */
+	  copy_rvec(x_old, x[acceptor_atom->protons[hop->proton_id]]);
+	}
+      else
+	{
+	  /* We need to position the hydrogen correctly */
+	  
+	  /* Which proton?
+	   * For now, assume it's only one. */
+	  
+
+	  if (x_old != NULL)
+	    {
+	      copy_rvec(x[acceptor_atom->protons[hop->proton_id]], x_old); /* Save old position. Needed for undo */
+	    }
+	  
+	  /* Get old AH-distance (assume it's correct) */
+	  pbc_dx(pbc,
+		 x[donor_atom->atom_id],
+		 x[acceptor_atom->atom_id],
+		 x_tmp);
+	  d = norm(x_tmp);
+
+	  /* Reposition the proton on the DA-line */
+	  pbc_dx(pbc,
+		 x[donor_atom->atom_id],
+		 x[acceptor_atom->atom_id],
+		 x_tmp);
+	  unitv(x_tmp, x_tmp);
+	  svmul(d, x_tmp, x_tmp);
+	  rvec_add(x[acceptor_atom->atom_id], x_tmp, x[acceptor_atom->protons[0]]);
+	}
+    }
 
   /* Change md->chargeA[], md->invmass[] upon (de)protonation. */
 
@@ -1580,6 +1853,8 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     r_TST,r_SE,r_log;
   qhop_parameters 
     *p;
+  rvec
+    x_old;
   /* liever lui dan moe */
   p = get_qhop_params(qhoprec->qhop_atoms[hop->donor_id].resname,
 		      qhoprec->qhop_atoms[hop->donor_id].resname, db);
@@ -1592,7 +1867,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 				 md,state->x,pbc,fr);
   Ebefore = Ebefore_tot-Ebefore_self;
 
-  if(change_protonation(cr, fr->qhoprec, md, hop, state->x,FALSE,mtop))
+  if(change_protonation(cr, fr->qhoprec, md, hop, state->x,FALSE,mtop, x_old, &pbc, db))
     {
       Eafter_tot = evaluate_energy(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
 				   fcd,graph,fr,vsite,mu_tot,/*  born, bBornRadii, */
@@ -1641,7 +1916,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	    }
 	}
       /* now undo the move */
-      if(!change_protonation(cr, fr->qhoprec, md, hop, state->x,TRUE,mtop)){
+      if(!change_protonation(cr, fr->qhoprec, md, hop, state->x,TRUE,mtop, x_old, &pbc, db)){
 	gmx_fatal(FARGS,"Oops, cannot undo the change in protonation.");
       }
     }
@@ -1919,6 +2194,78 @@ static gmx_bool scale_velocities(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   return (bConverged);
 } /* scale_velocities */
   
+/**
+ * Changes the order of the hops
+ */
+static t_hop* scramble_hops(t_hop *hop,    ///< List of hops
+			    int nr_hops,   ///< Number of hops in the list
+			    int mode,      ///< etQhopMode????
+			    gmx_rng_t rng  ///< Random number generator
+			    )
+{
+  int i, j, r, hops_left;
+  gmx_bool bSorted;
+  t_hop *new_hop, tmp_hop;
+
+  switch (mode)
+    {
+    case etQhopModeOne:
+    case etQhopModeGillespie:
+      new_hop = hop;
+      break;
+
+    case etQhopModeRandlist:
+
+      /* make random order */
+      {
+	snew(new_hop, nr_hops);
+	for (i=0; i<nr_hops; i++)
+	  {
+	    r = gmx_rng_uniform_uint32(rng) % (nr_hops - i);
+
+	    new_hop[i] = hop[r];
+
+	    /* Remove that hop from the list */
+	    hop[r] = hop[nr_hops-i-1];
+	  }
+
+	sfree(hop);
+
+	break;
+      }
+
+    case etQhopModeList:
+
+      /* Sort according to probability
+       * There's not gonna be a lot of hops, so just bubble sort them. */
+      {
+	bSorted = FALSE;
+	while (!bSorted)
+	  {
+	    bSorted = TRUE;
+	    for (i=0; i<nr_hops-1; i++)
+	      {
+		if (hop[i].prob < hop[i+1].prob)
+		  {
+		    tmp_hop  = hop[i];
+		    hop[i]   = hop[i+1];
+		    hop[i+1] = tmp_hop;
+		    bSorted = FALSE;
+		  }
+	      }
+	  }
+
+	new_hop = hop;
+
+	break;
+      }
+
+    default:
+      gmx_fatal(FARGS, "That qhopMode is unsupported: %i", mode);
+    }
+
+  return new_hop;   
+}
 
 void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	     gmx_wallcycle_t wcycle, 
@@ -1928,10 +2275,9 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	     gmx_vsite_t *vsite,rvec mu_tot,/*gmx_genborn_t *born, */
 	     gmx_bool bBornRadii,real T, int step,
 	     tensor force_vir, qhop_db_t db){
-  t_hop
-    *hop;
+
   int
-    nr_hops,i,j;
+    nr_hops,i,j,a;
   t_pbc
     pbc;
   static gmx_bool 
@@ -1939,14 +2285,14 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   gmx_bool
     bAgain,bHop;
   real 
-    *DE_MM,*E12,rnr,*Eb;
+    rnr;
   static int 
     start_seed=0;
   static gmx_rng_t 
     rng,rng_int;
-  int a, qhopmode;
+  t_qhoprec
+    *qr;
 
-  qhopmode = etQhopModeList;
   set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,state->box);
   
   if(bFirst){
@@ -1963,31 +2309,31 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     bFirst=FALSE;
   } 
 
-  hop = find_acceptors(cr,fr,state->x,pbc,&nr_hops,md);
-  snew(DE_MM,nr_hops);
-  snew(E12,nr_hops);
-  snew(Eb, nr_hops);
+  qr->hop = find_acceptors(cr,fr,state->x,pbc,&nr_hops,md);
+  /* snew(DE_MM,nr_hops); */
+  /* snew(E12,nr_hops); */
+  /* snew(Eb, nr_hops); */
 
   /* select an acceptor randomly
    */
   /*   i = (int )floor (1.0*(nr_hops*((1.0*gmx_rng_uniform_uint32(rng_int))/4294967296))); */
-  if(nr_hops > 0)
+  if(qr->nr_hops > 0)
     {
       for(i=0; i<nr_hops; i++)
 	{
-	  if (qhopmode == etQhopModeOne)
+	  if (qr->qhopmode == etQhopModeOne)
 	    {
 	      i = (int )floor (1.0*(nr_hops*((1.0*gmx_rng_uniform_uint32(rng_int))/4294967296)));
 	    }
 	
-	  Eb[i] = -1;
+	  /* qr->hop[i].Eb = -1; */
 	
-	  DE_MM[i] = get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
-				  fcd,graph,fr,vsite,mu_tot,/*born,bBornRadii,*/
-				  &hop[i],T,&E12[i], &Eb[i],
-				  fr->qhoprec,pbc,step, db);
-
-	  if (qhopmode == etQhopModeOne)
+	  qr->hop[i].DE_MM = get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
+					  fcd,graph,fr,vsite,mu_tot,/*born,bBornRadii,*/
+					  &(qr->hop[i]),T,&(qr->hop[i].E12), &(qr->hop[i].Eb),
+					  fr->qhoprec,pbc,step, db);
+	  
+	  if (qr->qhopmode == etQhopModeOne)
 	    {
 	      break;
 	    }
@@ -2003,40 +2349,44 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
        * Sorry, but that doesn't preserve detailed balance.
        */
     
+      qr->hop = scramble_hops(qr->hop, qr->nr_hops, qr->qhopmode, rng);
+
       for(i=0; i<nr_hops; i++)
 	{
-	  if (hop[i].regime != etQhopNONE)
+	  if (qr->hop[i].regime != etQhopNONE)
 	    {
 	      rnr =gmx_rng_uniform_real(rng); 
 	      if(MASTER(cr)){
 		/* some printing to the log file */
 		fprintf(fplog,
 			"\n%d. don %d acc %d. E12 = %18.12f, DE_MM = %18.12f, Eb = %18.12f, prob. = %f, ran. = %f (%s)", i,
-			fr->qhoprec->qhop_atoms[hop[i].donor_id].res_id,
-			fr->qhoprec->qhop_atoms[hop[i].acceptor_id].res_id, 	      
-			E12[i], DE_MM[i], Eb[i], hop[i].prob, rnr, qhopregimes[hop[i].regime]);
+			fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
+			fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
+			qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb,
+			qr->hop[i].prob, rnr, qhopregimes[qr->hop[i].regime]);
 	      }
  
 	      /* Attempt hop */
-	      if(hop[i].prob > rnr)
+	      if(qr->hop[i].prob > rnr)
 		{
 		  /* hoppenmaar! */
       
-		  bHop = do_hop(cr, fr->qhoprec, md, &hop[i], state->x,mtop);
+		  /* Move the actual hopping to update() */
+		  bHop = do_hop(cr, fr->qhoprec, md, &(qr->hop[i]), state->x,mtop);
 		  fprintf(stderr,"hopping!\n");
 		  /*      scale_velocities();*/
 
-		  if (qhopmode != etQhopModeOne)
+		  if (qr->qhopmode != etQhopModeOne)
 		    {
 		      /* Zap all hops whose reactants just was consumed. */
 		      for (j=i+1; j<nr_hops; j++)
 			{
-			  if (hop[j].donor_id    == hop[i].donor_id    ||
-			      hop[j].acceptor_id == hop[i].acceptor_id ||
-			      hop[j].donor_id    == hop[i].acceptor_id ||
-			      hop[j].acceptor_id == hop[i].donor_id)
+			  if (qr->hop[j].donor_id    == qr->hop[i].donor_id    ||
+			      qr->hop[j].acceptor_id == qr->hop[i].acceptor_id ||
+			      qr->hop[j].donor_id    == qr->hop[i].acceptor_id ||
+			      qr->hop[j].acceptor_id == qr->hop[i].donor_id)
 			    {
-			      hop[j].regime = etQhopNONE;
+			      qr->hop[j].regime = etQhopNONE;
 			      fprintf(stderr, " * Zapping hop number %i *\n", j);
 			    }
 			}
@@ -2050,19 +2400,16 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	      if(MASTER(cr) && bHop)
 		{
 		  fprintf(fplog,"\n\nQ-hop is TRUE at step %d!\nE12 = %f, hopper: %d don: %d (%s) acc: %d (%s)\n",
-			  step,E12[i], i,
-			  fr->qhoprec->qhop_atoms[hop[i].donor_id].res_id,
-			  fr->qhoprec->qhop_atoms[hop[i].donor_id].resname,
-			  fr->qhoprec->qhop_atoms[hop[i].acceptor_id].res_id,
-			  fr->qhoprec->qhop_atoms[hop[i].acceptor_id].resname);
+			  step,qr->hop[i].E12, i,
+			  fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
+			  fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].resname,
+			  fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
+			  fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].resname);
 		}
 	    }
 	}
       fprintf(fplog,"\n");
     }
-  free(hop);
-  free(E12);
-  free(DE_MM);
 }
 
 /* patamStr is the string form the rtp file.
