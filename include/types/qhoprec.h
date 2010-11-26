@@ -6,10 +6,30 @@
 #include "idef.h"
 #endif
 
-enum {eQNONE, eQACC, eQDON, eQACCDON, eQNR};
+enum {eQNONE=0, eQACC=1, eQDON=2, eQACCDON=3, eQNR=4};
+/* Trivial. But note that eQACCDON = eQACC|eQDON */
+
 enum {eQIDEF, eQBONLIB}; /* use the first to get the pointer to the idef,
 			   the other for the bonded stuff stored for a
 			   certain residue. */
+
+typedef struct {
+  int donor_id,
+    acceptor_id,
+    proton_id,
+    regime;
+  real E12,
+    DE_MM,
+    Eb,
+    rda,
+    prob,
+    hbo,
+    kappa,
+    Er,
+    El;
+  gmx_bool bFlip;
+} t_hop;
+
 
 /* relates position in idef to a position in a bondeds library for a residue. */
 typedef struct {
@@ -109,13 +129,17 @@ typedef struct {
 
 typedef struct {
 
+  t_hop          *hop;
   t_qhop_atom    *qhop_atoms;
   t_qhop_residue *qhop_residues;
-  int            nr_qhop_residues;
-  int            nr_qhop_atoms;
-  int            *global_atom_to_qhop_atom;
-  int            qhopfreq;
-  real           qhop_rc; /* cut of for the sphere in which veolicites will be scaled */
+  
+  int nr_hops,
+    nr_qhop_residues,
+    nr_qhop_atoms,
+    *global_atom_to_qhop_atom,
+    qhopfreq,
+    qhopmode,
+    qhop_rc; /* cut of for the sphere in which veolicites will be scaled */
 
 } t_qhoprec;
 #endif
