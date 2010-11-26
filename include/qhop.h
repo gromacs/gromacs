@@ -45,6 +45,14 @@ extern void do_qhop(FILE *fplog,
 extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop);
 
 
+/* qhop_(de)protonate do nothing to the coordinates, they hack the topology. */
+
+extern void qhop_protonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
+			   gmx_bool bWater, gmx_bool bSwapBondeds);
+
+extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
+			     gmx_bool bWater, gmx_bool bSwapBondeds);
+
 /* Goes through the t_ilist and finds the bonded interactions
  * that can be changed */
 extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
