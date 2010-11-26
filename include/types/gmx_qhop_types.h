@@ -25,14 +25,14 @@ typedef struct qhop_interactions *qhop_interactions_t;
 typedef struct qhop_H_exist *qhop_H_exist_t;
 
 
-enum {etQhopModeOne, etQhopModeList, etQhopModeGillespie, etQhopModeNR};
+/* enum {etQhopModeOne, etQhopModeList, etQhopModeGillespie, etQhopModeNR}; */
 enum {etQhopNONE, etQhopSE, etQhopI, etQhopTST};
 static const char *qhopregimes[] = {"NONE", "SE", "Intermediate", "TST"};
 
-typedef struct {
-  int donor_id,acceptor_id,proton_id, regime;
-  real rda,prob;
-} t_hop;
+/* typedef struct { */
+/*   int donor_id,acceptor_id,proton_id, regime; */
+/*   real rda,prob; */
+/* } t_hop; */
 
 typedef struct qhop_H_exist {
   int nH;   /* Number of hydrogens. Length of H. */
@@ -110,7 +110,7 @@ typedef struct qhop_resblocks {
 /*   int ****iatoms;   /\* atoms involved in the interactions. iatoms[restype][bt][bi][...]*\/ */
 /*   int ***ft;        /\* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp *\/ */
 /*   int ***mtop_ft;   /\* index in the mtop->ffparams.functype and ...iparams *\/ */
-
+  gmx_bool *bWater;
   char **files;     /* extra files containg additional parameters. */
   int  nf;          /* number of extra files */
   int ni;           /* Size of ilib below. */
