@@ -210,3 +210,6 @@ const char *eMultentOpt_names[eMultentOptNR+1] = {
   "multiple_entries", "no", "use_last", NULL
 };
 
+const char *qhop_names[etQhopModeNR+1] = {
+  "none", "one", "list", "randlist", "gillespie", NULL
+};
