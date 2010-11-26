@@ -992,6 +992,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* qhop */
   CCTYPE ("Options for qhop simulations");
   EETYPE("qhop", ir->bqhop, yesno_names); /* , nerror, TRUE); */
+  EETYPE("qhop-mode", ir->qhopmode, qhop_names);
   STYPE ("qhop-donors",  qhopdon,          NULL);
   STYPE ("qhop-acceptors",  qhopacc,          NULL);
   ITYPE ("qhopfreq",  ir->qhopfreq,         10);
