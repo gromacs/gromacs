@@ -184,7 +184,9 @@ typedef struct gmx_enfrotgrp
 /* #define PRINT_FORCES */
 #ifdef PRINT_FORCES
 #define PRINT_FORCE_J  fprintf(stderr,"f%d = %15.8f %15.8f %15.8f\n",erg->xc_ref_ind[j],erg->f_rot_loc[j][XX], erg->f_rot_loc[j][YY], erg->f_rot_loc[j][ZZ]);
-#define PRINT_POT_TAU  fprintf(stderr,"potential = %15.8f\n" "torque    = %15.8f", erg->V, erg->torque_v);
+#define PRINT_POT_TAU  if (MASTER(cr)) { \
+                           fprintf(stderr,"potential = %15.8f\n" "torque    = %15.8f", erg->V, erg->torque_v); \
+                       }
 #else
 #define PRINT_FORCE_J
 #define PRINT_POT_TAU
@@ -365,6 +367,8 @@ extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_large_int_t 
         }
     }
     
+    PRINT_POT_TAU
+
     GMX_MPE_LOG(ev_add_rot_forces_finish);
 
     return (MASTER(cr)? er->Vrot : 0.0);
@@ -1796,7 +1800,8 @@ static real do_flex_lowlevel(
     rvec  innersumvec;       /* Inner part of sum_n2                          */
     rvec  s_n;
     rvec  force_n;           /* Single force from slab n on one atom          */
-    rvec  tmpvec,tmpvec2,tmp_f;   /* Helper variables            */
+    rvec  force_n1,force_n2; /* First and second part of force_n              */
+    rvec  tmpvec,tmpvec2,tmp_f;   /* Helper variables                         */
     real  V;                 /* The rotation potential energy                 */
     real  OOsigma2;          /* 1/(sigma^2)                                   */
     real  beta;              /* beta_n(xj)                                    */
@@ -1924,8 +1929,9 @@ static real do_flex_lowlevel(
             if (bCalcTorque)
             {
                 /* The force on atom ii from slab n only: */
-                rvec_sub(innersumvec, tmpvec2, force_n);
-                svmul(rotg->k, force_n, force_n);
+                svmul(-rotg->k*wj, tmpvec2    , force_n1); /* part 1 */
+                svmul( rotg->k*mj, innersumvec, force_n2); /* part 2 */
+                rvec_add(force_n1, force_n2, force_n);
                 erg->slab_torque_v[islab] += torque(rotg->vec, force_n, xj, xcn);
             }
         } /* END of loop over slabs */
@@ -2210,8 +2216,6 @@ static void do_flexible(
     erg->torque_v = 0.0;
     for (l=0; l<nslabs; l++)
          erg->torque_v += erg->slab_torque_v[l];
-
-    PRINT_POT_TAU
 }
 
 
@@ -2345,8 +2349,6 @@ static void do_fixed(
         PRINT_FORCE_J
 
     } /* end of loop over local rotation group atoms */
-
-    PRINT_POT_TAU
 }
 
 
@@ -2418,9 +2420,6 @@ static void do_radial_motion(
 
     } /* end of loop over local rotation group atoms */
     erg->V = 0.5*rotg->k*sum;
-
-    PRINT_POT_TAU
-
 }
 
 
@@ -2543,8 +2542,6 @@ static void do_radial_motion_pf(
 
     } /* end of loop over local rotation group atoms */
     erg->V = 0.5*rotg->k*V;
-
-    PRINT_POT_TAU
 }
 
 
@@ -2738,8 +2735,6 @@ static void do_radial_motion2(
 
     } /* end of loop over local rotation group atoms */
     erg->V = 0.5*rotg->k*Vpart;
-
-    PRINT_POT_TAU
 }
 
 
