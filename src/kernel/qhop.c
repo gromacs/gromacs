@@ -1,4 +1,4 @@
-s#ifdef HAVE_CONFIG_H
+#ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
@@ -168,17 +168,17 @@ static int get_qhop_atoms(t_commrec *cr,
   t_atom    *atom;
   char *resname, *atomname;
   int
-    qhop_atoms_nr=0,qhop_atoms_max=1000,
-    qhop_residue_nr=0,qhop_residue_max=1000,
+    q_atoms_nr=0,q_atoms_max=1000,
+    q_residue_nr=0,q_residue_max=1000,
     i,j,jmax,resnr;
   t_qhop_atom
-    *qhop_atoms;
+    *q_atoms;
   t_qhop_residue
-    *qhop_residue;
+    *q_residue;
   //  snew(resname,6);
   // snew(atomname,6);
-  snew(qhop_atoms,qhop_atoms_max);
-  snew(qhop_residue,qhop_residue_max);
+  snew(q_atoms,q_atoms_max);
+  snew(q_residue,q_residue_max);
     
 /*   groups = &mtop->groups; */
 
@@ -217,16 +217,16 @@ static int get_qhop_atoms(t_commrec *cr,
     /* Do the resname and atomname show up in the qhop_resblocks?
      * The loops below replace the loops above (and the donor loop further down). */
 
-    if(qhop_atoms_nr >= qhop_atoms_max)
+    if(q_atoms_nr >= q_atoms_max)
       {
-	qhop_atoms_max += 1000;
-	srenew(qhop_atoms,qhop_atoms_max);
+	q_atoms_max += 1000;
+	srenew(q_atoms,q_atoms_max);
       }
 
-    if(qhop_residue_nr >= qhop_residue_max)
+    if(q_residue_nr >= q_residue_max)
       {
-	qhop_residue_max += 1000;
-	srenew(qhop_residue,qhop_residue_max);
+	q_residue_max += 1000;
+	srenew(q_residue,q_residue_max);
       }
 
     gmx_mtop_atomloop_all_names(aloop,&atomname,&resnr,&resname);
@@ -234,14 +234,14 @@ static int get_qhop_atoms(t_commrec *cr,
     match = FALSE;
     qhoprec->global_atom_to_qhop_atom[i] = NOTSET;
 
-    for (rb=0; rb<qdb->rb.nrestypes && !matchRB; rb++)
+    for (rb=0; rb < qdb->rb.nrestypes && !matchRB; rb++)
       {
 	if (strcmp(qdb->rb.restype[rb], resname) == 0)
 	  {
 	    /* We have a matching res(block) */
 	    matchRB = TRUE;
 
-	    for (r=0; r<qdb->rb.nres[rb] && !match; r++)
+	    for (r=0; r < qdb->rb.nres[rb] && !match; r++)
 	      {
 		/* Is the atom found among the donors/acceptors ?*/
 		nreac[0] = qdb->rb.res[rb][r].na;
@@ -266,48 +266,48 @@ static int get_qhop_atoms(t_commrec *cr,
 			    if (strcmp(qreac[react][reac].name[a], atomname) == 0)
 			      {
 				match = TRUE;
-				qhop_atoms[qhop_atoms_nr].resname      = qdb->rb.restype[rb];
-				qhop_atoms[qhop_atoms_nr].atomname     = qreac[react][reac].name[a];
-				qhop_atoms[qhop_atoms_nr].res_id       = resnr;
-				qhop_atoms[qhop_atoms_nr].atom_id      = i;
-				qhop_atoms[qhop_atoms_nr].nr_protons   = NOTSET; /* To be decided */
-				qhop_atoms[qhop_atoms_nr].protons      = NULL;
-				qhop_atoms[qhop_atoms_nr].nr_acceptors = NOTSET;
-				qhop_atoms[qhop_atoms_nr].acceptors    = NULL;
-				qhoprec->global_atom_to_qhop_atom[i]   = qhop_atoms_nr;
+				q_atoms[q_atoms_nr].resname      = qdb->rb.restype[rb];
+				q_atoms[q_atoms_nr].atomname     = qreac[react][reac].name[a];
+				q_atoms[q_atoms_nr].res_id       = resnr;
+				q_atoms[q_atoms_nr].atom_id      = i;
+				q_atoms[q_atoms_nr].nr_protons   = NOTSET; /* To be decided */
+				q_atoms[q_atoms_nr].protons      = NULL;
+				q_atoms[q_atoms_nr].nr_acceptors = NOTSET;
+				q_atoms[q_atoms_nr].acceptors    = NULL;
+				qhoprec->global_atom_to_qhop_atom[i]   = q_atoms_nr;
 
-				/* the following is ok by C99, since the right part will not be evaluated if the left is true. */
-				if ((qhop_atoms==0)
-				    || (qhop_atoms[qhop_atoms_nr].res_id !=
-					qhop_atoms[qhop_atoms_nr-1].res_id))
+				/* Short circuiting makes this conditional valid */
+				if ((q_atoms_nr==0)
+				    || (q_atoms[q_atoms_nr].res_id !=
+					q_atoms[q_atoms_nr-1].res_id))
 				  {
 				    /* New residue. */
-				    qhop_atoms[qhop_atoms_nr].qres_id                = qhop_residue_nr;
-				    qhop_residue[qhop_residue_nr].rtype              = rb;
-				    qhop_residue[qhop_residue_nr].res                = NOTSET;     /* To be decided. */
-				    qhop_residue[qhop_residue_nr].atoms              = NULL;     /* To be set. */
-				    qhop_residue[qhop_residue_nr].nr_atoms           = 0;     /* To be decided. */
-				    qhop_residue[qhop_residue_nr].nr_titrating_sites = 0; /* To be decided. */
-				    qhop_residue[qhop_residue_nr].res_nr             = NOTSET;  /* To be set */
-				    qhop_residue[qhop_residue_nr].res_nr             = resnr;
+				    q_atoms[q_atoms_nr].qres_id                = q_residue_nr;
+				    q_residue[q_residue_nr].rtype              = rb;
+				    q_residue[q_residue_nr].res                = NOTSET;     /* To be decided. */
+				    q_residue[q_residue_nr].atoms              = NULL;     /* To be set. */
+				    q_residue[q_residue_nr].nr_atoms           = 0;     /* To be decided. */
+				    q_residue[q_residue_nr].nr_titrating_sites = 0; /* To be decided. */
+				    q_residue[q_residue_nr].res_nr             = NOTSET;  /* To be set */
+				    q_residue[q_residue_nr].res_nr             = resnr;
 
-				    qhop_residue_nr++;
+				    q_residue_nr++;
 				  }
 
-				if (qhop_residue_nr > 0)
+				if (q_residue_nr > 0)
 				  {
-				    srenew(qhop_residue[qhop_residue_nr-1].titrating_sites,
-					   qhop_residue[qhop_residue_nr-1].nr_titrating_sites + 1);
+				    srenew(q_residue[q_residue_nr-1].titrating_sites,
+					   q_residue[q_residue_nr-1].nr_titrating_sites + 1);
 
-				    qhop_residue[qhop_residue_nr-1].titrating_sites[qhop_residue[qhop_residue_nr-1].nr_titrating_sites] = qhop_atoms_nr;
-				    qhop_residue[qhop_residue_nr-1].nr_titrating_sites++;
+				    q_residue[q_residue_nr-1].titrating_sites[q_residue[q_residue_nr-1].nr_titrating_sites] = q_atoms_nr;
+				    q_residue[q_residue_nr-1].nr_titrating_sites++;
 				  }
 				else
 				  {
-				    gmx_fatal(FARGS, "qhop_residue_nr = %i, which shouldn't be able to happen!\n", qhop_residue_nr);
+				    gmx_fatal(FARGS, "q_residue_nr = %i, which shouldn't be able to happen!\n", q_residue_nr);
 				  }
 
-				qhop_atoms_nr++;		    
+				q_atoms_nr++;		    
 			      }
 			  }
 		      }
@@ -317,7 +317,7 @@ static int get_qhop_atoms(t_commrec *cr,
       }
   }
   fprintf(stderr,"jmax = %d, nr qhop donors = %d\n",
-	  /*jmax*/ -1, qhop_atoms_nr);
+	  /*jmax*/ -1, q_atoms_nr);
   /* now we have the donors stored, we now check out the acceptors
    */
 /*   jmax = ir->opts.ngqhopacceptors; */
@@ -352,10 +352,10 @@ static int get_qhop_atoms(t_commrec *cr,
 /*   }  */
 
 
-  snew(H, qhop_residue_nr);
-  snew(nHref, qhop_residue_nr);
+  snew(H, q_residue_nr);
+  snew(nHref, q_residue_nr);
 
-  for (r=0; r < qhop_residue_nr; r++)
+  for (r=0; r < q_residue_nr; r++)
     {
       nHref[r] = 0;
     }
@@ -367,14 +367,14 @@ static int get_qhop_atoms(t_commrec *cr,
     {
       gmx_mtop_atomloop_all_names(aloop, &atomname, &resnr, &resname);
 
-      for (r=0; r < qhop_residue_nr; r++)
+      for (r=0; r < q_residue_nr; r++)
 	{
-	  if (resnr == qhop_residue[r].res_nr)
+	  if (resnr == q_residue[r].res_nr)
 	    {
-	      srenew(qhop_residue[r].atoms, qhop_residue[r].nr_atoms + 1);
+	      srenew(q_residue[r].atoms, q_residue[r].nr_atoms + 1);
 
-	      qhop_residue[r].atoms[qhop_residue[r].nr_atoms] = i;
-	      qhop_residue[r].nr_atoms++;
+	      q_residue[r].atoms[q_residue[r].nr_atoms] = i;
+	      q_residue[r].nr_atoms++;
 
 	      /* Is it a hydrogen? */
 	      if (atom->atomnumber == 1)
@@ -392,13 +392,13 @@ static int get_qhop_atoms(t_commrec *cr,
   /* Figure out the protonation state and which version of the residue to use
    * by looking at the names of the existing/non-existing protons and match them
    * with the rtp-entries. */
-  for (rb=0; rb < qhop_residue_nr; rb++)
+  for (rb=0; rb < q_residue_nr; rb++)
     {
       match = FALSE;
 
       /* Loop over possible protonation states (residue subtypes)*/
       for (r=0;
-	   r < qdb->rb.nres[qhop_residue[rb].rtype] && !match;
+	   r < qdb->rb.nres[q_residue[rb].rtype] && !match;
 	   r++)
 	{
 	  /* Loop over possible hydrogens */
@@ -425,7 +425,7 @@ static int get_qhop_atoms(t_commrec *cr,
 		    }
 		}
 
-	      Hname = qhop_atoms[H[rb][Ha]].atomname;
+	      Hname = q_atoms[H[rb][Ha]].atomname;
 	      /* Does it exist? */
 	      exists = get_proton_presence(&(qdb->H_map), H[rb][Ha]);
 
@@ -470,29 +470,29 @@ static int get_qhop_atoms(t_commrec *cr,
       if (!match)
 	{
 	  gmx_fatal(FARGS, "Could not find a residue subtype that matches the given proton configuraion:\n"
-		    " - %s %i", qdb->rb.restype[qhop_residue[rb].rtype], qhop_residue[rb].res_nr);
+		    " - %s %i", qdb->rb.restype[q_residue[rb].rtype], q_residue[rb].res_nr);
 	}
 
-      qhop_residue[rb].res = i;
+      q_residue[rb].res = i;
     }
 
   /* Clean up */
-  for (r=0; r<qhop_residue_nr; r++)
+  for (r=0; r<q_residue_nr; r++)
     {
       sfree(H[r]);
     }
   sfree(H);
   sfree(nHref);
   
-  srenew(qhop_atoms, qhop_atoms_nr);     /* size it down, as it is likely oversized. */
-  srenew(qhop_residue, qhop_residue_nr); /* size it down, as it is likely oversized. */
-  qhoprec->qhop_atoms       = qhop_atoms;
-  qhoprec->qhop_residues    = qhop_residue;
-  qhoprec->nr_qhop_atoms    = qhop_atoms_nr;
-  qhoprec->nr_qhop_residues = qhop_residue_nr;
+  srenew(q_atoms, q_atoms_nr);     /* size it down, as it is likely oversized. */
+  srenew(q_residue, q_residue_nr); /* size it down, as it is likely oversized. */
+  qhoprec->qhop_atoms       = q_atoms;
+  qhoprec->qhop_residues    = q_residue;
+  qhoprec->nr_qhop_atoms    = q_atoms_nr;
+  qhoprec->nr_qhop_residues = q_residue_nr;
   //  free(atomname);
   //  free(resname);
-  return(qhop_atoms_nr);
+  return(q_atoms_nr);
 } /* get_qhop_atoms */
 
 
@@ -510,7 +510,7 @@ static int H_exist_2_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
  /*  qhop_res *res = db->rb.res[qres->rtype]; */
   gmx_bool bNewH, bSameRes;
 
-  qres =  = &(qr->qhop_residues[resnr]);
+  qres = &(qr->qhop_residues[resnr]);
   nres = db->rb.nres[qres->rtype];
 
   /* Make a list of all hydrogens for this restype */
@@ -953,7 +953,7 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
   t_pbc
     pbc;
   
-  qhoprec = NULL
+  qhoprec = NULL;
   nr_qhop_atoms    = 0;
   nr_qhop_residues = 0;
 
@@ -1751,8 +1751,8 @@ static void compute_E12_left(qhop_parameters *p, ///< Pointer to hopping paramet
   /* compute the value of E12 that is required for 
    * p_SE(rda,10fs) = 0.1. 
    */
-  K = p->k_1 * exp(-p->k_2 * (rda-0.23)) + p->k_3;
-  M = p->m_1 * exp(-p->m_2 * (rda-0.23)) + p->m_3;
+  K = p->k_1 * exp(-p->k_2 * (hop->rda-0.23)) + p->k_3;
+  M = p->m_1 * exp(-p->m_2 * (hop->rda-0.23)) + p->m_3;
 
   hop->El = -(atanh( 2*(0.1-0.5) )-M) / K;
 }
@@ -1784,7 +1784,7 @@ static void compute_E12_right(qhop_parameters *p, ///< Pointer to hopping parame
    *  No, we must use RGAS, since the units are in kJ/mol.
    */
   Eb = RGAS * Temp * log(100);
-  d = rda - (p->t_A);
+  d = hop->rda - (p->t_A);
   S = calc_S(p, hop);
   T = p->s_B;
   V = calc_V(p, hop);
@@ -1805,7 +1805,7 @@ static real compute_Eb(qhop_parameters *p, ///< Pointer to qhop_parameters
 		       )
 {
   real
-    Eb,S,T,V,temp;
+    Eb, S, T, V, temp;
   
   /* temp = rda - p->t_A; */
   S = calc_S(p, hop); /* p->s_A * (temp*temp) + p->v_A; */
@@ -1858,7 +1858,7 @@ real compute_rate_TST(qhop_parameters *p, ///< Pointer to qhop_parameters
   ETST =-(Eb-half_hbar_omega)/(RGAS * T);
   pTST = (kappa*BOLTZ*T/PLANCK) * exp(ETST) * 0.01;
 
-  hop->hbo = half_bar_omega;
+  hop->hbo = half_hbar_omega;
 
   return (pTST);
 } /* compute_prob_TST */
@@ -1875,7 +1875,7 @@ static real compute_rate_SE(qhop_parameters *p, ///< Pointer to qhop_parameters
   
   K = p->k_1 * exp(-p->k_2 * (hop->rda - 0.23)) + p->k_3;
   M = p->m_1 * exp(-p->m_2 * (hop->rda - 0.23)) + p->m_3;
-  pSE = (0.5 * tanh(-K * E12 + M) + 0.5);
+  pSE = (0.5 * tanh(-K * hop->E12 + M) + 0.5);
   return(pSE);
 } /* compute_prob_SE */
 
@@ -1893,10 +1893,10 @@ real compute_rate_log(qhop_parameters *p, ///< Pointer to qhop_parameters
    * probability per timestep.
    */
   real 
-    rSE,rTST,rate, ;
+    rSE,rTST,rate;
   
-  rSE  = compute_rate_SE(p, hop->El, hop->rda);
-  rTST = compute_rate_TST(p, hop->Er, hop->rda, T);
+  rSE  = compute_rate_SE(p, hop);
+  rTST = compute_rate_TST(p, hop, T);
   rate = rSE * pow((rTST/rSE), (hop->E12 - hop->El)/(hop->Er - hop->El));
   /* See, the log-space interpolation translates to the expression in the first argument above.
    * No need to log/exp back and forth. */
