@@ -2581,7 +2581,7 @@ int gmx_wham(int argc,char *argv[])
         "such that the generated data points are distributed according the given histograms ",
         "and properly autocorrelated. The ",
         "autocorrelation time (ACT) for each window must be known, so use [TT]-ac[tt] or provide the ACT",
-        "with [TT]-iiact[TT]. If the ACT of all windows are identical (and known), you can also ",
+        "with [TT]-iiact[tt]. If the ACT of all windows are identical (and known), you can also ",
         "provide them with [TT]-bs-tau[tt]. Note that this method may severely underestimate the error ",
         "in case of limited sampling, that is if individual histograms do not represent the complete",
         "phase space at the respective positions.[BR]",
