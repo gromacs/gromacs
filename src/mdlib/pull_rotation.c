@@ -105,6 +105,9 @@ typedef struct gmx_enfrot
     real  *mpi_outbuf;      /* MPI buffer                                     */
     int   mpi_bufsize;      /* Allocation size of in & outbuf                 */
     real  Vrot;             /* (Local) part of the enf. rotation potential    */
+    unsigned long Flags;    /* mdrun flags                                    */
+    gmx_bool bOut;          /* Used to skip first output when appending to 
+                             * avoid duplicate entries in rotation outfiles   */
 } t_gmx_enfrot;
 
 
@@ -154,13 +157,13 @@ typedef struct gmx_enfrotgrp
     int   slab_first;       /* Lowermost slab for that the calculation needs 
                                to be performed at a given time step           */
     int   slab_last;        /* Uppermost slab ...                             */
-    int   slab_first_ref;   /* First slab for which reference COG is stored   */
+    int   slab_first_ref;   /* First slab for which ref. center is stored     */
     int   slab_last_ref;    /* Last ...                                       */
     int   slab_buffer;      /* Slab buffer region around reference slabs      */
     int   *firstatom;       /* First relevant atom for a slab                 */
     int   *lastatom;        /* Last relevant atom for a slab                  */
-    rvec  *slab_center;     /* Gaussian-weighted slab center (COG)            */
-    rvec  *slab_center_ref; /* Gaussian-weighted slab COG for the 
+    rvec  *slab_center;     /* Gaussian-weighted slab center                  */
+    rvec  *slab_center_ref; /* Gaussian-weighted slab center for the
                                reference positions                            */
     real  *slab_weights;    /* Sum of gaussian weights in a slab              */
     real  *slab_torque_v;   /* Torque T = r x f for each slab.                */
@@ -185,7 +188,7 @@ typedef struct gmx_enfrotgrp
 #ifdef PRINT_FORCES
 #define PRINT_FORCE_J  fprintf(stderr,"f%d = %15.8f %15.8f %15.8f\n",erg->xc_ref_ind[j],erg->f_rot_loc[j][XX], erg->f_rot_loc[j][YY], erg->f_rot_loc[j][ZZ]);
 #define PRINT_POT_TAU  if (MASTER(cr)) { \
-                           fprintf(stderr,"potential = %15.8f\n" "torque    = %15.8f", erg->V, erg->torque_v); \
+                           fprintf(stderr,"potential = %15.8f\n" "torque    = %15.8f\n", erg->V, erg->torque_v); \
                        }
 #else
 #define PRINT_FORCE_J
@@ -196,6 +199,24 @@ typedef struct gmx_enfrotgrp
 #define ISFLEX(rg) ( (rg->eType==erotgFLEX) || (rg->eType==erotgFLEXT) || (rg->eType==erotgFLEX2) || (rg->eType==erotgFLEX2T) )
 #define ISCOLL(rg) ( (rg->eType==erotgFLEX) || (rg->eType==erotgFLEXT) || (rg->eType==erotgFLEX2) || (rg->eType==erotgFLEX2T) || (rg->eType==erotgRMPF) || (rg->eType==erotgRM2PF) )
 
+
+/* Does any of the rotation groups use slab decomposition? */
+static gmx_bool HaveFlexibleGroups(t_rot *rot)
+{
+    int g;
+    t_rotgrp *rotg;
+    gmx_bool bHaveFlexGroups=FALSE;
+
+
+    for (g=0; g<rot->ngrp; g++)
+    {
+        rotg = &rot->grp[g];
+        if (ISFLEX(rotg))
+            bHaveFlexGroups = TRUE;
+    }
+
+    return bHaveFlexGroups;
+}
 
 
 static double** allocate_square_matrix(int dim)
@@ -345,8 +366,11 @@ extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_large_int_t 
     
     /* Reduce energy,torque, angles etc. to get the sum values (per rotation group) 
      * on the master and output these values to file. */
-    if ( do_per_step(step, rot->nstrout) || do_per_step(step, rot->nstsout) )
+    if ( (do_per_step(step, rot->nstrout) || do_per_step(step, rot->nstsout)) && er->bOut)
         reduce_output(cr, rot, t, step);
+
+    /* When appending, er->bOut is FALSE the first time to avoid duplicate entries */
+    er->bOut = TRUE;
 
     /* Total rotation potential is the sum over all rotation groups */
     er->Vrot = 0.0; 
@@ -619,33 +643,38 @@ static FILE *open_output_file(const char *fn, int steps, const char what[])
 
 
 /* Open output file for slab center data. Call on master only */
-static FILE *open_slab_out(t_rot *rot, const char *fn)
+static FILE *open_slab_out(const char *fn, t_rot *rot, const output_env_t oenv)
 {
-    FILE      *fp=NULL;
+    FILE      *fp;
     int       g,i;
     t_rotgrp  *rotg;
 
 
-    for (g=0; g<rot->ngrp; g++)
+    if (rot->enfrot->Flags & MD_APPENDFILES)
     {
-        rotg = &rot->grp[g];
-        if (ISFLEX(rotg))
-        {
-            if (NULL == fp)
-                fp = open_output_file(fn, rot->nstsout, "gaussian weighted slab centers");
-            fprintf(fp, "# Rotation group %d (%s), slab distance %f nm, %s.\n",
-                    g, erotg_names[rotg->eType], rotg->slab_dist, rotg->bMassW? "centers of mass":"geometrical centers");
-        }
+        fp = gmx_fio_fopen(fn,"a");
     }
-    
-    if (fp != NULL)
+    else
     {
+        fp = open_output_file(fn, rot->nstsout, "gaussian weighted slab centers");
+
+        for (g=0; g<rot->ngrp; g++)
+        {
+            rotg = &rot->grp[g];
+            if (ISFLEX(rotg))
+            {
+                fprintf(fp, "# Rotation group %d (%s), slab distance %f nm, %s.\n",
+                        g, erotg_names[rotg->eType], rotg->slab_dist,
+                        rotg->bMassW? "centers of mass":"geometrical centers");
+            }
+        }
+
         fprintf(fp, "# Reference centers are listed first (t=-1).\n");
         fprintf(fp, "# The following columns have the syntax:\n");
         fprintf(fp, "#     ");
         print_aligned_short(fp, "t");
         print_aligned_short(fp, "grp");
-        /* Print ascii legend for the first two entries only ... */
+        /* Print legend for the first two entries only ... */
         for (i=0; i<2; i++)
         {
             print_aligned_short(fp, "slab");
@@ -656,15 +685,14 @@ static FILE *open_slab_out(t_rot *rot, const char *fn)
         fprintf(fp, " ...\n");
         fflush(fp);
     }
-    
+
     return fp;
 }
 
 
 /* Open output file and print some general information about the rotation groups.
  * Call on master only */
-static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv, 
-                          unsigned long Flags)
+static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
 {
     FILE       *fp;
     int        g,nsets;
@@ -675,7 +703,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
     gmx_bool   bFlex;
 
 
-    if (Flags & MD_APPENDFILES)
+    if (rot->enfrot->Flags & MD_APPENDFILES)
     {
         fp = gmx_fio_fopen(fn,"a");
     }
@@ -713,13 +741,11 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
             if ((rotg->eType==erotgISOPF) || (rotg->eType==erotgPMPF) || (rotg->eType==erotgRMPF) || (rotg->eType==erotgRM2PF
                 || (rotg->eType==erotgFLEXT) || (rotg->eType==erotgFLEX2T)) )
             {
-                fprintf(fp, "# %s of ref. grp. %d  %12.5e %12.5e %12.5e\n",
-                        rotg->bMassW? "COM":"COG", g,
-                                erg->xc_ref_center[XX], erg->xc_ref_center[YY], erg->xc_ref_center[ZZ]);
+                fprintf(fp, "# ref. grp. %d center  %12.5e %12.5e %12.5e\n", g,
+                            erg->xc_ref_center[XX], erg->xc_ref_center[YY], erg->xc_ref_center[ZZ]);
 
-                fprintf(fp, "# initial %s grp. %d  %12.5e %12.5e %12.5e\n",
-                        rotg->bMassW? "COM":"COG", g,
-                                erg->xc_center[XX], erg->xc_center[YY], erg->xc_center[ZZ]);
+                fprintf(fp, "# grp. %d init.center  %12.5e %12.5e %12.5e\n", g,
+                            erg->xc_center[XX], erg->xc_center[YY], erg->xc_center[ZZ]);
             }
 
             if ( (rotg->eType == erotgRM2) || (rotg->eType==erotgFLEX2) || (rotg->eType==erotgFLEX2T) )
@@ -785,75 +811,90 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
 
 
 /* Call on master only */
-static FILE *open_angles_out(t_rot *rot, const char *fn)
+static FILE *open_angles_out(const char *fn, t_rot *rot, const output_env_t oenv)
 {
     int      g;
-    FILE     *fp=NULL;
+    FILE     *fp;
     t_rotgrp *rotg;
 
 
-    /* Open output file and write some information about it's structure: */
-    fp = open_output_file(fn, rot->nstsout, "rotation group angles");
-    fprintf(fp, "# All angles given in degrees, time in ps.\n");
-    for (g=0; g<rot->ngrp; g++)
+    if (rot->enfrot->Flags & MD_APPENDFILES)
     {
-        rotg = &rot->grp[g];
-        if (ISFLEX(rotg))
-        {
-            fprintf(fp, "# Rotation group %d (%s), slab distance %f nm, fit type %s.\n",
-                    g, erotg_names[rotg->eType], rotg->slab_dist, erotg_fitnames[rotg->eFittype]);
-        }
+        fp = gmx_fio_fopen(fn,"a");
     }
-    fprintf(fp, "# The following columns will have the syntax:\n");
-    fprintf(fp, "#     ");
-    print_aligned_short(fp, "t");
-    print_aligned_short(fp, "grp");
-    print_aligned(fp, "theta_ref");
-    print_aligned_short(fp, "slab");
-    print_aligned_short(fp, "atoms");
-    print_aligned(fp, "theta_fit");
-    print_aligned_short(fp, "slab");
-    print_aligned_short(fp, "atoms");
-    print_aligned(fp, "theta_fit");
-    fprintf(fp, " ...\n");
-    fflush(fp);
+    else
+    {
+        /* Open output file and write some information about it's structure: */
+        fp = open_output_file(fn, rot->nstsout, "rotation group angles");
+        fprintf(fp, "# All angles given in degrees, time in ps.\n");
+        for (g=0; g<rot->ngrp; g++)
+        {
+            rotg = &rot->grp[g];
+            if (ISFLEX(rotg))
+            {
+                fprintf(fp, "# Rotation group %d (%s), slab distance %f nm, fit type %s.\n",
+                        g, erotg_names[rotg->eType], rotg->slab_dist, erotg_fitnames[rotg->eFittype]);
+            }
+        }
+        fprintf(fp, "# Legend for the following data columns:\n");
+        fprintf(fp, "#     ");
+        print_aligned_short(fp, "t");
+        print_aligned_short(fp, "grp");
+        print_aligned(fp, "theta_ref");
+        print_aligned_short(fp, "slab");
+        print_aligned_short(fp, "atoms");
+        print_aligned(fp, "theta_fit");
+        print_aligned_short(fp, "slab");
+        print_aligned_short(fp, "atoms");
+        print_aligned(fp, "theta_fit");
+        fprintf(fp, " ...\n");
+        fflush(fp);
+    }
+
     return fp;
 }
 
 
 /* Open torque output file and write some information about it's structure.
  * Call on master only */
-static FILE *open_torque_out(t_rot *rot, const char *fn)
+static FILE *open_torque_out(const char *fn, t_rot *rot, const output_env_t oenv)
 {
     FILE      *fp;
     int       g;
     t_rotgrp  *rotg;
 
 
-    fp = open_output_file(fn, rot->nstsout,"torques");
-
-    for (g=0; g<rot->ngrp; g++)
+    if (rot->enfrot->Flags & MD_APPENDFILES)
     {
-        rotg = &rot->grp[g];
-        if (ISFLEX(rotg))
-        {
-            fprintf(fp, "# Rotation group %d (%s), slab distance %f nm.\n", g, erotg_names[rotg->eType], rotg->slab_dist);
-            fprintf(fp, "# The scalar tau is the torque [kJ/mol] in the direction of the rotation vector.\n");
-            fprintf(fp, "# To obtain the vectorial torque, multiply tau with\n");
-            fprintf(fp, "# rot_vec%d            %10.3e %10.3e %10.3e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
-            fprintf(fp, "#\n");
-        }
+        fp = gmx_fio_fopen(fn,"a");
     }
-    fprintf(fp, "# The following columns will have the syntax (tau=torque for that slab):\n");
-    fprintf(fp, "#     ");
-    print_aligned_short(fp, "t");
-    print_aligned_short(fp, "grp");
-    print_aligned_short(fp, "slab");
-    print_aligned(fp, "tau");
-    print_aligned_short(fp, "slab");
-    print_aligned(fp, "tau");
-    fprintf(fp, " ...\n");
-    fflush(fp);
+    else
+    {
+        fp = open_output_file(fn, rot->nstsout,"torques");
+
+        for (g=0; g<rot->ngrp; g++)
+        {
+            rotg = &rot->grp[g];
+            if (ISFLEX(rotg))
+            {
+                fprintf(fp, "# Rotation group %d (%s), slab distance %f nm.\n", g, erotg_names[rotg->eType], rotg->slab_dist);
+                fprintf(fp, "# The scalar tau is the torque [kJ/mol] in the direction of the rotation vector.\n");
+                fprintf(fp, "# To obtain the vectorial torque, multiply tau with\n");
+                fprintf(fp, "# rot_vec%d            %10.3e %10.3e %10.3e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
+                fprintf(fp, "#\n");
+            }
+        }
+        fprintf(fp, "# Legend for the following data columns: (tau=torque for that slab):\n");
+        fprintf(fp, "#     ");
+        print_aligned_short(fp, "t");
+        print_aligned_short(fp, "grp");
+        print_aligned_short(fp, "slab");
+        print_aligned(fp, "tau");
+        print_aligned_short(fp, "slab");
+        print_aligned(fp, "tau");
+        fprintf(fp, " ...\n");
+        fflush(fp);
+    }
 
     return fp;
 }
@@ -2861,7 +2902,7 @@ static void get_firstlast_slab_ref(t_rotgrp *rotg, real mc[], int ref_firstindex
 
 
 static void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
-        rvec *x,gmx_mtop_t *mtop,gmx_bool bVerbose,FILE *out_slabs)
+        rvec *x,gmx_mtop_t *mtop,gmx_bool bVerbose,FILE *out_slabs, gmx_bool bOutputCenters)
 {
     int i,ii;
     rvec        coord,*xdum;
@@ -2922,7 +2963,7 @@ static void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
         for (i=0; i<rotg->nat; i++)
             erg->xc_ref_ind[i] = i;
 
-    /* Copy the masses so that the COM can be determined. For all types of
+    /* Copy the masses so that the center can be determined. For all types of
      * enforced rotation, we store the masses in the erg->mc array. */
     snew(erg->mc, rotg->nat);
     if (bFlex)
@@ -3003,7 +3044,7 @@ static void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
         /* Flexible rotation: determine the reference centers for the rest of the simulation */
         erg->slab_first = erg->slab_first_ref;
         erg->slab_last = erg->slab_last_ref;
-        get_slab_centers(rotg,rotg->x_ref,erg->mc,cr,g,-1,out_slabs,TRUE,TRUE);
+        get_slab_centers(rotg,rotg->x_ref,erg->mc,cr,g,-1,out_slabs,bOutputCenters,TRUE);
 
         /* Length of each x_rotref vector from center (needed if fit routine NORM is chosen): */
         if (rotg->eFittype == erotgFitNORM)
@@ -3050,7 +3091,6 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     gmx_enfrot_t er;        /* Pointer to the enforced rotation buffer variables */    
     gmx_enfrotgrp_t erg;    /* Pointer to enforced rotation group data */
     rvec     *x_pbc=NULL;   /* Space for the pbc-correct atom positions */
-    gmx_bool bHaveFlexGroups = FALSE;
 
 
     if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
@@ -3062,10 +3102,17 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
 
     rot = ir->rot;
     snew(rot->enfrot, 1);
-    er=rot->enfrot;
+    er = rot->enfrot;
+    er->Flags = Flags;
+
+    /* When appending, skip first output to avoid duplicate entries in the data files */
+    if (er->Flags & MD_APPENDFILES)
+        er->bOut = FALSE;
+    else
+        er->bOut = TRUE;
     
     /* Output every step for reruns */
-    if (Flags & MD_RERUN)
+    if (er->Flags & MD_RERUN)
     {
         if (fplog)
             fprintf(fplog, "%s rerun - will write rotation output every available step.\n", RotStr);
@@ -3074,8 +3121,8 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     }
 
     er->out_slabs = NULL;
-    if (MASTER(cr))
-        er->out_slabs = open_slab_out(rot, opt2fn("-rs",nfile,fnm));
+    if ( MASTER(cr) && HaveFlexibleGroups(rot) )
+        er->out_slabs = open_slab_out(opt2fn("-rs",nfile,fnm), rot, oenv);
 
     if (MASTER(cr))
     {
@@ -3089,8 +3136,6 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        if (ISFLEX(rotg))
-            bHaveFlexGroups = TRUE;
 
         if (fplog)
             fprintf(fplog,"%s group %d type '%s'\n", RotStr, g, erotg_names[rotg->eType]);
@@ -3114,7 +3159,9 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
                 erg->nat_loc = rotg->nat;
                 erg->ind_loc = rotg->ind;
             }
-            init_rot_group(fplog,cr,g,rotg,x_pbc,mtop,bVerbose,er->out_slabs);
+            init_rot_group(fplog,cr,g,rotg,x_pbc,mtop,bVerbose,er->out_slabs,
+                           !(er->Flags & MD_APPENDFILES) ); /* Do not output the reference centers
+                                                             * again if we are appending */
         }
     }
     
@@ -3135,13 +3182,13 @@ extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     er->out_torque  = NULL;
     if (MASTER(cr))
     {
-        er->out_rot = open_rot_out(opt2fn("-ro",nfile,fnm), rot, oenv, Flags);
-        if (bHaveFlexGroups)
+        er->out_rot = open_rot_out(opt2fn("-ro",nfile,fnm), rot, oenv);
+        if ( HaveFlexibleGroups(rot) )
         {
             if (rot->nstrout > 0)
-                er->out_angles  = open_angles_out(rot, opt2fn("-ra",nfile,fnm));
+                er->out_angles  = open_angles_out(opt2fn("-ra",nfile,fnm), rot, oenv);
             if (rot->nstsout > 0)
-                er->out_torque  = open_torque_out(rot, opt2fn("-rt",nfile,fnm));
+                er->out_torque  = open_torque_out(opt2fn("-rt",nfile,fnm), rot, oenv);
         }
         sfree(x_pbc);
     }
@@ -3209,7 +3256,7 @@ static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
         /* Index of a rotation group atom  */
         ii = erg->ind_loc[i];
 
-        /* Get the reference position. The pivot (or COM or COG) was already
+        /* Get the reference position. The pivot was already
          * subtracted in init_rot_group() from the reference positions. Also,
          * the reference positions have already been rotated in
          * rotate_local_reference() */
@@ -3274,9 +3321,9 @@ extern void do_rotation(
     er=rot->enfrot;
     
     /* When to output in main rotation output file */
-    outstep_rot  = do_per_step(step, rot->nstrout);
+    outstep_rot  = do_per_step(step, rot->nstrout) && er->bOut;
     /* When to output per-slab data */
-    outstep_slab = do_per_step(step, rot->nstsout);
+    outstep_slab = do_per_step(step, rot->nstsout) && er->bOut;
 
     /* Output time into rotation output file */
     if (outstep_rot && MASTER(cr))
