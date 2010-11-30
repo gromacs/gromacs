@@ -308,6 +308,8 @@ int main (int argc, char *argv[])
     "[BB]3rd.[bb] by creating a tpx file for a subset of your original",
     "tpx file, which is useful when you want to remove the solvent from",
     "your tpx file, or when you want to make e.g. a pure Ca tpx file.",
+    "Note that you may need to use -nsteps -1 (or similar) to get",
+    "this to work.",
     "[BB]WARNING: this tpx file is not fully functional[bb].[PAR]",
     "[BB]4th.[bb] by setting the charges of a specified group",
     "to zero. This is useful when doing free energy estimates",
