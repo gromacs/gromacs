@@ -508,6 +508,36 @@ static void pr_pull(FILE *fp,int indent,t_pull *pull)
     pr_pullgrp(fp,indent,g,&pull->grp[g]);
 }
 
+static void pr_rotgrp(FILE *fp,int indent,int g,t_rotgrp *rotg)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"rotation_group %d:\n",g);
+  indent += 2;
+  PS("type",EROTGEOM(rotg->eType));
+  PS("massw",BOOL(rotg->bMassW));
+  pr_ivec_block(fp,indent,"atom",rotg->ind,rotg->nat,TRUE);
+  pr_rvecs(fp,indent,"x_ref",rotg->x_ref,rotg->nat);
+  pr_rvec(fp,indent,"vec",rotg->vec,DIM,TRUE);
+  pr_rvec(fp,indent,"pivot",rotg->pivot,DIM,TRUE);
+  PR("rate",rotg->rate);
+  PR("k",rotg->k);
+  PR("slab_dist",rotg->slab_dist);
+  PR("min_gaussian",rotg->min_gaussian);
+  PR("epsilon",rotg->eps);
+  PS("fit_method",EROTFIT(rotg->eFittype));
+}
+
+static void pr_rot(FILE *fp,int indent,t_rot *rot)
+{
+  int g;
+
+  PI("rot_nstrout",rot->nstrout);
+  PI("rot_nstsout",rot->nstsout);
+  PI("rot_ngrp",rot->ngrp);
+  for(g=0; g<rot->ngrp; g++)
+    pr_rotgrp(fp,indent,g,&rot->grp[g]);
+}
+
 void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
                  gmx_bool bMDPformat)
 {
@@ -638,6 +668,10 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("pull",EPULLTYPE(ir->ePull));
     if (ir->ePull != epullNO)
       pr_pull(fp,indent,ir->pull);
+    
+    PS("rotation",BOOL(ir->bRot));
+    if (ir->bRot)
+      pr_rot(fp,indent,ir->rot);
 
     PS("disre",EDISRETYPE(ir->eDisre));
     PS("disre_weighting",EDISREWEIGHTING(ir->eDisreWeighting));

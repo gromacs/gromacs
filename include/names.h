@@ -82,6 +82,9 @@ extern const char *esa_names[esaNR+1];
 extern const char *ewt_names[ewtNR+1];
 extern const char *epull_names[epullNR+1];
 extern const char *epullg_names[epullgNR+1];
+extern const char *erotg_names[erotgNR+1];
+extern const char *erotg_originnames[erotgNR+1];
+extern const char *erotg_fitnames[erotgFitNR+1];
 extern const char *eQMmethod_names[eQMmethodNR+1];
 extern const char *eQMbasis_names[eQMbasisNR+1];
 extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
@@ -124,6 +127,9 @@ extern const char *eAdressSITEtype_names[eAdressSITENR+1];
 #define EWALLTYPE(e)   ENUM_NAME(e,ewtNR,ewt_names)
 #define EPULLTYPE(e)   ENUM_NAME(e,epullNR,epull_names)
 #define EPULLGEOM(e)   ENUM_NAME(e,epullgNR,epullg_names)
+#define EROTGEOM(e)    ENUM_NAME(e,erotgNR,erotg_names)
+#define EROTORIGIN(e)  ENUM_NAME(e,erotgOriginNR,erotg_originnames)
+#define EROTFIT(e)     ENUM_NAME(e,erotgFitNR,erotg_fitnames)
 #define EQMMETHOD(e)   ENUM_NAME(e,eQMmethodNR,eQMmethod_names)
 #define EQMBASIS(e)    ENUM_NAME(e,eQMbasisNR,eQMbasis_names)
 #define EQMMMSCHEME(e) ENUM_NAME(e,eQMMMschemeNR,eQMMMscheme_names)

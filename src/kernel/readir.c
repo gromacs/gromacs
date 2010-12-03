@@ -80,6 +80,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   adress_tf_grp_names[STRLEN], adress_cg_grp_names[STRLEN];
 static char foreign_lambda[STRLEN];
 static char **pull_grp;
+static char **rot_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
 static char QMmethod[STRLEN],QMbasis[STRLEN],QMcharge[STRLEN],QMmult[STRLEN],
@@ -1087,6 +1088,15 @@ void get_ir(const char *mdparin,const char *mdparout,
     snew(ir->pull,1);
     pull_grp = read_pullparams(&ninp,&inp,ir->pull,&opts->pull_start,wi);
   }
+  
+  /* Enforced rotation */
+  CCTYPE("ENFORCED ROTATION");
+  CTYPE("Enforced rotation: No or Yes");
+  EETYPE("rotation",       ir->bRot, yesno_names);
+  if (ir->bRot) {
+    snew(ir->rot,1);
+    rot_grp = read_rotparams(&ninp,&inp,ir->rot,wi);
+  }
 
   /* Refinement */
   CCTYPE("NMR refinement stuff");
@@ -2017,6 +2027,10 @@ void do_index(const char* mdparin, const char *ndx,
 
   if (ir->ePull != epullNO) {
     make_pull_groups(ir->pull,pull_grp,grps,gnames);
+  }
+  
+  if (ir->bRot) {
+    make_rotation_groups(ir->rot,rot_grp,grps,gnames);
   }
 
   nacc = str_nelem(acc,MAXPTR,ptr1);
