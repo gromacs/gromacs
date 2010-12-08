@@ -200,7 +200,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 
     /* comm, prank and P are in the order of the decomposition (plan->cart is in the order of transposes) */
 #ifdef GMX_MPI
-    if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != 0)
+    if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != MPI_COMM_NULL)
     {
         MPI_Comm_size(comm[0],&P[0]);
         MPI_Comm_rank(comm[0],&prank[0]);
@@ -212,7 +212,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         prank[0] = 0;
     }
 #ifdef GMX_MPI
-    if (GMX_PARALLEL_ENV_INITIALIZED && comm[1] != 0)
+    if (GMX_PARALLEL_ENV_INITIALIZED && comm[1] != MPI_COMM_NULL)
     {
         MPI_Comm_size(comm[1],&P[1]);
         MPI_Comm_rank(comm[1],&prank[1]);
@@ -431,8 +431,13 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         printf("Running on %d threads\n",nthreads);        
     }
 
-#ifdef GMX_FFT_FFTW3  /*if not FFTW - then we don't do a 3d plan but insead only 1D plans */
-    if ((!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1))) {  /*don't do 3d plan in parallel or if in_place requested */  
+#ifdef GMX_FFT_FFTW3  /*if not FFTW - then we don't do a 3d plan but instead use only 1D plans */
+    /* It is possible to use the 3d plan with OMP threads - but in that case it is not allowed to be called from
+     * within a parallel region. For now deactivated. If it should be supported it has to made sure that
+     * that the execute of the 3d plan is in a master/serial block (since it contains it own parallel region)
+     * and that the 3d plan is faster than the 1d plan.
+     */
+    if ((!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1)) && nthreads==1) {  /*don't do 3d plan in parallel or if in_place requested */
             int fftwflags=FFTW_DESTROY_INPUT;
             fftw_iodim dims[3];
             int inNG=NG,outMG=MG,outKG=KG;
@@ -817,7 +822,7 @@ static void compute_offsets(fft5d_plan plan, int xs[], int xl[], int xc[], int N
             rotate(NG);            
         }
     }
-    if (plan->flags&FFT5D_REALCOMPLEX && ((!(plan->flags&FFT5D_BACKWARD) && s==0) || (plan->flags&FFT5D_BACKWARD && s==2))) {
+    if ((plan->flags&FFT5D_REALCOMPLEX) && ((!((plan->flags&FFT5D_BACKWARD)) && s==0) || ((plan->flags&FFT5D_BACKWARD) && s==2))) {
         xl[0] = rC[s];
     }
 }
@@ -1153,7 +1158,7 @@ void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan pl
     int x,y,z,l;
     int *coor = plan->coor;
     int ll=2; /*compare ll values per element (has to be 2 for complex)*/
-    if (plan->flags&FFT5D_REALCOMPLEX && plan->flags&FFT5D_BACKWARD) 
+    if ((plan->flags&FFT5D_REALCOMPLEX) && (plan->flags&FFT5D_BACKWARD))
     {
         ll=1;
     }
