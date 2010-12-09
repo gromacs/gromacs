@@ -2701,7 +2701,9 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pme->ndecompdim = 0;
         pme->nodeid_major = 0;
         pme->nodeid_minor = 0;
+#ifdef GMX_MPI
         pme->mpi_comm_d[0] = pme->mpi_comm_d[1] = MPI_COMM_NULL;
+#endif
     }
     else
     {
