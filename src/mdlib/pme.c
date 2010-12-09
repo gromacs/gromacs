@@ -1554,6 +1554,53 @@ static void pmegrid_init(pmegrid_t *grid,
     }
 }
 
+static int div_round_up(int enumerator,int denominator)
+{
+    return (enumerator + denominator - 1)/denominator;
+}
+
+static void make_subgrid_division(const ivec n,int ovl,int nthread,
+                                  ivec nsub)
+{
+    int gsize_opt,gsize;
+    int nsx,nsy,nsz;
+
+    gsize_opt = -1;
+    for(nsx=1; nsx<=nthread; nsx++)
+    {
+        if (nthread % nsx == 0)
+        {
+            for(nsy=1; nsy<=nthread; nsy++)
+            {
+                if (nsx*nsy <= nthread && nthread % (nsx*nsy) == 0)
+                {
+                    nsz = nthread/(nsx*nsy);
+                    
+                    /* Determine the number of grid points per thread */
+                    gsize =
+                        (div_round_up(n[XX],nsx) + ovl)*
+                        (div_round_up(n[YY],nsy) + ovl)*
+                        (div_round_up(n[ZZ],nsz) + ovl);
+
+                    /* Minimize the number of grids points per thread
+                     * and, secondarily, the number of cuts in minor dimensions.
+                     */
+                    if (gsize_opt == -1 ||
+                        gsize < gsize_opt ||
+                        (gsize == gsize_opt &&
+                         (nsz < nsub[ZZ] || (nsz == nsub[ZZ] && nsy < nsub[YY]))))
+                    {
+                        nsub[XX] = nsx;
+                        nsub[YY] = nsy;
+                        nsub[ZZ] = nsz;
+                        gsize_opt = gsize;
+                    }
+                }
+            }
+        }
+    }
+}
+
 static void pmegrids_init(pmegrids_t *grids,
                           int nx,int ny,int nz,
                           int pme_order,
@@ -1569,23 +1616,8 @@ static void pmegrids_init(pmegrids_t *grids,
     pmegrid_init(&grids->grid,0,0,0,n,pme_order,NULL);
 
     grids->nthread = nthread;
-    
-    grids->nc[XX] = 1;
-    grids->nc[YY] = 1;
-    grids->nc[ZZ] = 1;
 
-    if (nx >= ny && nx >= nz)
-    {
-        grids->nc[XX] = nthread;
-    }
-    else if (ny >= nz)
-    {
-        grids->nc[YY] = nthread;
-    }
-    else
-    {
-        grids->nc[ZZ] = nthread;
-    }
+    make_subgrid_division(n,pme_order-1,grids->nthread,grids->nc);
     
     for(d=0; d<DIM; d++)
     {
@@ -1595,10 +1627,15 @@ static void pmegrids_init(pmegrids_t *grids,
 
     if (grids->nthread > 1)
     {
-        printf("pmegrid %d %d %d thread %d %d %d base %d %d %d\n",
-               nx,ny,nz,
-               grids->nst[XX],grids->nst[YY],grids->nst[ZZ],
-               grids->nbt[XX],grids->nbt[YY],grids->nbt[ZZ]);
+        if (debug)
+        {
+            fprintf(debug,"pmegrid thread local division: %d x %d x %d\n",
+                    grids->nc[XX],grids->nc[YY],grids->nc[ZZ]);
+            fprintf(debug,"pmegrid %d %d %d thread %d %d %d base %d %d %d\n",
+                    nx,ny,nz,
+                    grids->nst[XX],grids->nst[YY],grids->nst[ZZ],
+                    grids->nbt[XX],grids->nbt[YY],grids->nbt[ZZ]);
+        }
 
         snew(grids->grid_th,grids->nthread);
         t = 0;
@@ -3012,11 +3049,6 @@ static void copy_local_grid(gmx_pme_t pme,
             }
         }
     }
-}
-
-static int div_round_up(int enumerator,int denominator)
-{
-    return (enumerator + denominator - 1)/denominator;
 }
 
 static void print_sendbuf(gmx_pme_t pme,real *sendbuf)
