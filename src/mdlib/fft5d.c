@@ -538,12 +538,17 @@ improvements: make sure that each FFT is aligned. each should best start at a ca
                      can  timers be improved?
 */
             plan->p1d[s] = (gmx_fft_t*)malloc(sizeof(gmx_fft_t)*nthreads);
-#pragma omp parallel 
+
+            /* Slightly complex construction to make sure that the init
+             * routines are only called by one thread at a time.
+             */
+            for(t=0; t<nthreads; t++)
             {
-                int t = omp_get_thread_num();
-                int tsize = ((t+1)*pM[s]*pK[s]/nthreads)-(t*pM[s]*pK[s]/nthreads);
-#pragma omp ordered
+#pragma omp parallel
+                if (t == omp_get_thread_num())
                 {
+                    int tsize = ((t+1)*pM[s]*pK[s]/nthreads)-(t*pM[s]*pK[s]/nthreads);
+
                     if ((flags&FFT5D_REALCOMPLEX) && ((!(flags&FFT5D_BACKWARD) && s==0) || ((flags&FFT5D_BACKWARD) && s==2))) {
                         gmx_fft_init_many_1d_real( &plan->p1d[s][t], rC[s], tsize, (flags&FFT5D_NOMEASURE)?GMX_FFT_FLAG_CONSERVATIVE:0 );
                     } else {
