@@ -132,6 +132,9 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		       const rvec *x,int t1,int t2,int t3);
 /* Do an update of the forces for dihedral potentials */
 
+void make_dp_periodic(real *dp);
+/* make a dihedral fall in the range (-pi,pi) */
+
 /*************************************************************************
  *
  *  Bonded force functions
