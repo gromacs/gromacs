@@ -952,7 +952,7 @@ void upd_mdebin(t_mdebin *md,
         }
         for(i=1; i<enerd->n_lambda; i++)
         {
-            fprintf(md->fp_dhdl," %.4g",
+            fprintf(md->fp_dhdl," %#.5g",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
         }
         if (md->epc!=epcNO) 
