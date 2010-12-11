@@ -483,6 +483,10 @@ case "${host_cpu}-${host_os}" in
     # use 8 segments (max 2Gb) instead of 1 (max 256Meg) by default.
     xLDFLAGS="$xLDFLAGS -bmaxdata:0x80000000"
     case "${gmxcpu}" in
+      power6*)
+        xCFLAGS="-O3 -qarch=pwr6 -qtune=pwr6 -qmaxmem=-1 -qstrict -qaltivec -qenablevmx -qvecnvol"
+        xFFLAGS="-O3 -qarch=pwr6 -qtune=pwr6 -qmaxmem=-1 -qhot -qstrict -qaltivec -qenablevmx -qvecnvol"
+        ;;
       power5*)
         xCFLAGS="-O3 -qarch=pwr5 -qtune=pwr5 -qmaxmem=16384"
         xFFLAGS="-O3 -Q -qarch=pwr5 -qtune=pwr5 -qmaxmem=16384 -qhot -qnoipa"
