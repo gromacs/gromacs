@@ -8,7 +8,7 @@
 tmppath=""
 for i in `echo $LD_LIBRARY_PATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXLDLIB"; then
-    tmppath="${i}${tmppath:+:}${tmppath}"
+    tmppath="${tmppath}${tmppath:+:}${i}"
   fi
 done
 LD_LIBRARY_PATH=$tmppath
@@ -17,7 +17,7 @@ LD_LIBRARY_PATH=$tmppath
 tmppath=""
 for i in `echo $PKG_CONFIG_PATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXLDLIB/pkgconfig"; then
-    tmppath="${i}${tmppath:+:}${tmppath}"
+    tmppath="${tmppath}${tmppath:+:}${i}"
   fi
 done
 PKG_CONFIG_PATH=$tmppath
@@ -26,7 +26,7 @@ PKG_CONFIG_PATH=$tmppath
 tmppath=""
 for i in `echo $PATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXBIN"; then
-    tmppath="${i}${tmppath:+:}${tmppath}"
+    tmppath="${tmppath}${tmppath:+:}${i}"
   fi
 done
 PATH=$tmppath
@@ -35,7 +35,7 @@ PATH=$tmppath
 tmppath=""
 for i in `echo $MANPATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXMAN"; then
-    tmppath="${i}${tmppath:+:}${tmppath}"
+    tmppath="${tmppath}${tmppath:+:}${i}"
   fi
 done
 MANPATH=$tmppath
