@@ -459,12 +459,18 @@ if(GMX_OPENMP)
     # intel 
     if (CMAKE_C_COMPILER_ID MATCHES "Intel")
         CHECK_C_COMPILER_FLAG("-openmp" XFLAGS_OPENMP)
+        if (XFLAGS_OPENMP)
+            set(GROMACS_C_FLAGS "-openmp ${GROMACS_C_FLAGS}")
+        endif ()  
         message(WARNING "Although OpenMP is supported it does not work with CUDA!")
     endif()
 
     # intel 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
         CHECK_C_COMPILER_FLAG("-openmp" XXFLAGS_OPENMP)
+         if (XXFLAGS_OPENMP)
+            set(GROMACS_C_FLAGS "-openmp ${GROMACS_C_FLAGS}")
+        endif ()  
         message(WARNING "Although OpenMP is supported it does not work with CUDA!")        
     endif()
 
@@ -757,11 +763,6 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, fftw2, mkl, acml, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-
-# enable threaded fftw3 if we've found it 
-if(FFTW3_THREADS OR FFTW3F_THREADS)
-    add_definitions(-DFFT5D_FFTW_THREADS)
-endif()
 
 # MKL has BLAS/LAPACK routines
 if(HAVE_MKL OR ACCELERATE_FRAMEWORK)

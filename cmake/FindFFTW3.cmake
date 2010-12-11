@@ -19,19 +19,6 @@ find_library (FFTW3_LIBRARIES
                 PATHS "${FFTW3_INCLUDE_DIR}/../lib"
                 CACHE STRING "Double precision FFTW3 libraries")
 
-# if we are using threading try to find threaded fftw3
-if(GMX_OPENMP)
-    find_library (_FFTW3_thread_libs
-                    NAMES fftw3_threads
-                    PATHS "${FFTW3F_INCLUDE_DIR}/../lib")
-     if(_FFTW3_thread_libs)
-        set(_theads True)
-        list(APPEND FFTW3_LIBRARIES ${_FFTW3_thread_libs})
-    else()
-        message(WARNING "Threaded FFTW3F not found, FFT will run in serial (slower)!")
-    endif()
-endif()
-
 
 # handle the QUIETLY and REQUIRED arguments and set FFTW_FOUND to TRUE if
 # all listed variables are TRUE
