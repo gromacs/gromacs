@@ -1,6 +1,6 @@
 #include <string.h>
+#include "smalloc.h"
 #include "types/qhoprec.h"
-#include "qhop.h"
 
 extern t_qhoprec *mk_qhoprec(void)
 {

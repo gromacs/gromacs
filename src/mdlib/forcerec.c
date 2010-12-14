@@ -61,7 +61,7 @@
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
-#include "qhophelper.h"
+#include "qhoprec.h"
 
 
 #ifdef _MSC_VER
