@@ -22,7 +22,8 @@ amberGS.ff \
 amber99.ff \
 amber99sb.ff \
 amber99sb-ildn.ff \
-amber03.ff 
+amber03.ff \
+qamber99sb.ff
 
 
 topol_DATA = \

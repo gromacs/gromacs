@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><!-- -*- mode: nxml-*- -->
+<!DOCTYPE qhops PUBLIC "../" "qhops.dtd">
+<!--
+  I removed the proton element for now. It is in principle redundant.
+  Also note that the name of an acceptor may hold several atoms,
+  which reflects proton tautomerism. This needs to be taken care of in md.c.
+-->
+<qhops>
+  <resblocks>
+    <!--
+	#######
+	SPC
+	#######
+      -->
+    <residue_type name="qSOL" water="TRUE">
+      <res name="qH2O">
+	<acceptor name="OW" product="qH3O"/>
+      </res>
+      <res name="qH3O">
+	<donor name="OW" product="qH2O"/>
+      </res>
+    </residue_type>
+  </resblocks>
+  <!--
+      ##################
+      Hopping parameters
+      ##################
+    -->
+  <qhop donor="qH3O" acceptor="qH2O">
+    <don_atom> OW </don_atom>
+    <acc_atom> OW </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="0.0" unit="kJ/mol"/>
+    <parameter name="beta"  value="0.0" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="0.0" unit="(kJ/mol)/(nm^2)"/>
+    
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>	
+    <parameter name="k_2"   value="86.69" unit="1/nm"/>
+    <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="34.36" unit=""/>
+    <parameter name="m_2"   value="4.36" unit="1/nm"/>
+    <parameter name="m_3"   value="-30.43" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="8304.824700000001" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.17509" unit="nm"/>
+    <parameter name="v_A"   value="-56.979750000000003" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5000" unit=""/>
+    <parameter name="s_C"   value="1.6441893830703012" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="91.103" unit="1/nm"/>
+    <parameter name="v_C"   value="0.00016260162601626016" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.45" unit=""/>
+    <parameter name="q_1"   value="0.83596365375418458" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.0038522238163558103" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.8421807747489236e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+</qhops>

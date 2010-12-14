@@ -1,8 +1,10 @@
-<!ELEMENT qhops (resblocks, qhop+, apa)>
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!ELEMENT qhops (resblocks, qhop+)>
 
   <!ELEMENT resblocks (residue_type+)>
     <!ELEMENT residue_type (file? res+)>
       <!ATTLIST residue_type name CDATA #REQUIRED>
+      <!ATTLIST residue_type water (TRUE|FALSE) "FALSE">
 
       <!ELEMENT file (#CDATA)>
       <!ELEMENT res (acceptor*, donor*)>
