@@ -52,7 +52,7 @@ enum {
   exmlQHOPS,
   exmlRESBLOCKS,
   exmlRESIDUE_TYPE, exmlFILE, exmlRES, exmlPROTON, exmlPRODUCT,
-  exmlQHOP, exmlDONOR, exmlACCEPTOR,
+  exmlBWATER, exmlQHOP, exmlDONOR, exmlACCEPTOR,
   exmlPARAM, exmlNAME, exmlVALUE, 
   exmlUNIT, exmlDON_ATOM, exmlACC_ATOM,
   exmlNR 
@@ -62,7 +62,7 @@ static const char *exml_names[exmlNR] = {
   "qhops",
   "resblocks",
   "residue_type", "file", "res", "proton", "product",
-  "qhop", "donor", "acceptor", "parameter", 
+  "water", "qhop", "donor", "acceptor", "parameter", 
   "name", "value", "unit", "don_atom", "acc_atom"
 };
 
@@ -172,7 +172,7 @@ static void rb_add_file(qhop_resblocks *rb, char *f, t_symtab *tab)
     gmx_fatal(FARGS, "No filename found.");
 }
 
-static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, t_symtab *tab)
+static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, char *water, t_symtab *tab)
 {
   char *s;
   if NN(name)
@@ -182,6 +182,7 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, t_sy
       if ((ri->rt = qhop_find_name(rb->restype, name, ri->r)) < 0)
 	{
 	  srenew(rb->restype, rb->nrestypes+1);       /* Make new resblock */
+	  srenew(rb->bWater, rb->nrestypes+1);        /* Make new bWater */
 	  srenew(rb->nres, rb->nrestypes+1);          /* Make new resindex */
 	  rb->nres[rb->nrestypes] = 0;
 	  srenew(rb->res, rb->nrestypes+1);  /* Make new resarray for this resblock */	    
@@ -189,6 +190,7 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, t_sy
 	  ri->r  = -1;                       /* just to be sure... */
 	  ri->da = -1;
 	  rb->restype[rb->nrestypes++] = *(put_symtab(tab, name));/*trim_strndup(name, 6);*/
+	  rb->bWater[rb->nrestypes++] = (strcasecmp(water, "TRUE") == 0);
 	  /*add_to_record(name, &(rb->restype[rb->nrestypes]), &(rb->nrestypes), RNMLEN, eUPDATE_INDEX);*/
 	}
     }
@@ -405,7 +407,7 @@ static void qhop_process_attr(FILE *fp,xmlAttrPtr attr,int parent,
     break;
     /* Here's where some resblocks stuff needs to be implemented. */
   case exmlRESIDUE_TYPE: /* 'name' */
-    rb_add_restype(xml->rb, ri, xbuf[exmlNAME], &(xml->tab));
+    rb_add_restype(xml->rb, ri, xbuf[exmlNAME], xbuf[exmlBWATER], &(xml->tab));
     break;
   case exmlRES: /* 'name' */
     rb_add_res(xml->rb, ri, xbuf[exmlNAME],&(xml->tab));

@@ -77,7 +77,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
   wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN],
-  qhopdon[STRLEN],qhopacc[STRLEN];
+  qhopH[STRLEN];
 static char foreign_lambda[STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
@@ -993,8 +993,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("Options for qhop simulations");
   EETYPE("qhop", ir->bqhop, yesno_names); /* , nerror, TRUE); */
   EETYPE("qhop-mode", ir->qhopmode, qhop_names);
-  STYPE ("qhop-donors",  qhopdon,          NULL);
-  STYPE ("qhop-acceptors",  qhopacc,          NULL);
+  STYPE ("qhop-hydrogens",  qhopH,          NULL);
   ITYPE ("qhopfreq",  ir->qhopfreq,         10);
 
 
@@ -1759,7 +1758,7 @@ void do_index(const char* mdparin, const char *ndx,
   real    SAtime;
   gmx_bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
-    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS,nqhopdonorsg,nqhopacceptorsg;	
+    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS,nqhopH;	
   char    warn_buf[STRLEN];
 
   if (bVerbose)
@@ -2064,17 +2063,17 @@ void do_index(const char* mdparin, const char *ndx,
                restnm,egrptpALL_GENREST,bVerbose,wi);
 
   /* qhop input processing */
-  nqhopdonorsg  =  str_nelem(qhopdon,MAXPTR,ptr1);
-  fprintf(stderr,"nqhopdonorsg = %d\n",nqhopdonorsg);
-  do_numbering(natoms,groups,nqhopdonorsg,ptr1,grps,
-	       gnames,egcqhopdonors,
+  nqhopH =  str_nelem(qhopH,MAXPTR,ptr1);
+  fprintf(stderr,"nqhopH = %d\n",nqhopH);
+  do_numbering(natoms,groups,nqhopH,ptr1,grps,
+	       gnames,egcqhopH,
                restnm,egrptpALL_GENREST,bVerbose,wi);
-  ir->opts.ngqhopdonors = nqhopdonorsg;
-  nqhopacceptorsg  =  str_nelem(qhopacc,MAXPTR,ptr1);
-  do_numbering(natoms,groups,nqhopacceptorsg,ptr1,
-	       grps,gnames,egcqhopacceptors,
-               restnm,egrptpALL_GENREST,bVerbose,wi);
-  ir->opts.ngqhopacceptors = nqhopacceptorsg;
+  ir->opts.ngqhopH = nqhopH;
+/*   nqhopacceptorsg  =  str_nelem(qhopacc,MAXPTR,ptr1); */
+/*   do_numbering(natoms,groups,nqhopacceptorsg,ptr1, */
+/* 	       grps,gnames,egcqhopacceptors, */
+/*                restnm,egrptpALL_GENREST,bVerbose,wi); */
+/*   ir->opts.ngqhopacceptors = nqhopacceptorsg; */
   
   /* QMMM input processing */
   nQMg          = str_nelem(QMMM,MAXPTR,ptr1);

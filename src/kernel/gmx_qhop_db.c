@@ -433,7 +433,7 @@ void qhop_db_print (qhop_parameters *qhp)
 qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
 {
   qhop_db_t qdb;
-  char buf[256];
+  char buf[256], buf2[256];
   char *fn;
   int i,j,nrtp=0, nah;
   double qtot;
@@ -454,7 +454,8 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
   /* nrtp = read_resall(forcefield,qdb->bts,&(bigrtp),atype, */
 /* 		     stab,&(qdb->bAllDih), */
 /* 		     &(qdb->nrexcl),&(qdb->bHH14),&(qdb->bRemoveDih)); */
-  read_resall(forcefield, &nrtp, &bigrtp, atype, stab, FALSE);
+  sprintf(buf, "%s/aminoacids.rtp", forcefield);
+  read_resall(buf, &nrtp, &bigrtp, atype, stab, FALSE);
 
   nah=read_h_db(forcefield,&ah);
 
@@ -475,8 +476,20 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
 
 
   /* Process rtp-info AFTER reading the ffXXX-qhop.dat */
-    
-  sprintf(buf,"%s-qhop.dat",forcefield);
+  for (i=0; i<256; i++)
+    {
+      if (forcefield[i] == '\0')
+	{
+	  break;
+	}
+    }
+  for (; i>=0; i--)
+    {
+      buf2[i] = (forcefield[i] == '.') ?
+	'\0' : forcefield[i];
+    }
+  
+  sprintf(buf,"%s/%s-qhop.dat",forcefield, buf2);
   fn = (char *)gmxlibfn(buf);
   /* Read the xml data file */
   qhops_read(fn, qdb);
