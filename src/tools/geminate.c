@@ -606,6 +606,70 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
 
 } /* eq10v2 */
 
+/* Sometimes a few elements of theoryCt are Inf. Post-process it to interpolate wherever */
+static gmx_bool patch_up_ct(double ct[], int L)
+{
+  int i, j, n;
+  double dy;
+  gmx_bool bAgain;
+  
+  bAgain = FALSE;
+
+  for (i=0, n=0;
+       i<L;
+       i++)
+    {
+      if (isinf(ct[i]))
+	{
+	  n++;
+	}
+      else
+	{
+	  if (n > 0)
+	    /* patch up the infinite elements by interpolation */
+	    {
+	      switch (i-n)
+		{
+
+		case 0:
+		  /*First element*/
+		  ct[0] = 1;
+		  if (i == L-1)
+		    {
+		      /* But... everything is Inf! */
+		      gmx_fatal(FARGS, "C(t) is all Inf.");		   
+		    }
+
+		  dy = (log(ct[i])-log(ct[0])) / 2;
+
+		  for (j=0; j<n; j++)
+		    {
+		      ct[j+i-n] = exp(log(ct[i-n] + dy*n));
+		    }
+		}
+	      break;
+	    }
+
+
+	      /* case 0: /\* First element is Inf. It's supposed to be one though. *\/ */
+/* 		ct[0] = 1; */
+
+/* 		for (j=0; j<n; j++) */
+/* 		  { */
+/* 		    ct[j] = n; */
+/* 		  } */
+
+
+
+	  n = 0;
+	
+	}
+    }
+}
+  
+
+
+
 /* This returns the real-valued index(!) to an ACF, equidistant on a log scale. */
 static double getLogIndex(const int i, const t_gemParams *params)
 {
