@@ -70,6 +70,7 @@ index.h \
 indexutil.h \
 inputrec.h \
 invblock.h \
+lambertw.h \
 macros.h \
 magic.h \
 main.h \
