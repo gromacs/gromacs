@@ -16,7 +16,7 @@
 #define HBOND  0.2
 #define HOPANG 120
 
-t_qhoprec *mk_qhoprec(void);
+/* t_qhoprec *mk_qhoprec(void); */
 
 /*! \brief Initializes the qhoprec.
  * 

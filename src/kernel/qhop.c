@@ -1024,14 +1024,16 @@ static void create_res_links(t_commrec *cr, t_qhoprec *qhoprec){
 /* /\*   } *\/ */
 /* } /\* get_protonation_state *\/ */
  
-t_qhoprec *mk_qhoprec(void)
-{
-  t_qhoprec *qr;
 
-  snew(qr,1);
-  memset((void *)qr, 0, sizeof(t_qhoprec)); /* Just in case */
-  return (qr);
-}  /* mk_qhoprec */
+/* THIS ONE MOVED TO src/gmxlib/qhoprec.c */
+/* t_qhoprec *mk_qhoprec(void) */
+/* { */
+/*   t_qhoprec *qr; */
+
+/*   snew(qr,1); */
+/*   memset((void *)qr, 0, sizeof(t_qhoprec)); /\* Just in case *\/ */
+/*   return (qr); */
+/* }  /\* mk_qhoprec *\/ */
 
 static void set_charges(t_commrec *cr, t_qhoprec *qhoprec, t_mdatoms *md)
 {

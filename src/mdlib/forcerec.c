@@ -61,6 +61,7 @@
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
+#include "qhophelper.h"
 
 
 #ifdef _MSC_VER
@@ -1755,6 +1756,7 @@ void init_forcerec(FILE *fp,
         fprintf(stderr, "qhop computation requested. Good luck....\n");
     }
     fr->bqhop = ir->bqhop;
+    fr->qhoprec = mk_qhoprec();
 
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt,

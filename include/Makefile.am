@@ -166,4 +166,5 @@ vmddlopen.h \
 vmdplugin.h \
 oenv.h \
 sighandler.h \
-gmx_sse2_double.h
+gmx_sse2_double.h \
+qhoprec.h
