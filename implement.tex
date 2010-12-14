@@ -92,7 +92,7 @@ which is the total force on $i$ with respect to $j$. Because we use Newton's Thi
 \eeq
 we must, in the implementation, double the term containing the shift $\delta_i$.
 
-\subsection{The intra-molecular shift (mol-shift).}
+\subsection{The intra-molecular shift (mol-shift)}
 For the bonded forces and SHAKE it is possible to make a {\em mol-shift}
 list, in which the periodicity is stored. We simple have an array {\tt mshift}
 in which for each atom an index in the {\tt shiftvec} array is stored.
@@ -223,7 +223,7 @@ In most cases, the Fortran or assembly loops should be selected
 automatically by the {\tt configure} script when appropriate, but you can
 also tweak this by setting options to the {\tt configure} script.
 
-\section{Computation of the 1.0/sqrt function.}
+\section{Computation of the 1.0/sqrt function}
 \label{sec:sqrt}
 \subsection{Introduction}
 The {\gromacs} project started with the development of a $1/\sqrt{x}$
