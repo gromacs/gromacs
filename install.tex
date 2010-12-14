@@ -82,12 +82,12 @@ The virial is less accurate than the forces, since the virial is only one
 order of magnitude larger than the size of each element in the sum over
 all atoms (\secref{virial}).
 In most cases this is not really a problem, since the fluctuations in the
-virial can be 2 orders of magnitude larger than the average.
-In periodic charged systems these errors are often negligible.
-Especially cut-offs for the Coulomb interactions cause large errors
-in the energies, forces and virial.
-Even when using a reaction-field or lattice sum method the errors
-are larger than or comparable to the errors due to the single precision.
+virial can be two orders of magnitude larger than the average.
+In periodic charged systems, these errors are often negligible.
+Using cut-offs for the Coulomb interactions cause large errors
+in the energies, forces, and virial.
+Even when using a reaction-field or lattice sum method, the errors
+are larger than, or comparable to, the errors due to the single precision.
 Since MD is chaotic, trajectories with very similar starting conditions will
 diverge rapidly, the divergence is faster in single precision than in double
 precision.
@@ -238,27 +238,26 @@ that particular platform, and if you are using a cluster of workstations
 there are several good free MPI implementations. You can find updated links
 to these on the {\gromacs} homepage {\wwwpage}. Once you have an MPI library
 installed it's trivial to compile {\gromacs} with MPI support: Just set
-the option {\tt --enable-mpi} to the configure script and recompile.
-(But don't forget to make distclean before running configure if you have
+the option {\tt --enable-mpi} to the {\tt configure} script and recompile.
+(But don't forget to {\tt make distclean} before running {\tt configure} if you have
 previously compiled with a different configuration.) If you are using a 
 supercomputer you might also want to turn of the default nice-ing of the
 mdrun process with the {\tt --disable-nice} option.
 
-There is usually a program called {\tt mpirun} with which you can fire
-up the parallel processes. A typical command line looks like:
+For communications over multiple nodes connected by a network,
+there is usually a program called {\tt mpirun} with which you can start 
+the parallel processes. A typical command line looks like:
 \type{mpirun -p goofus,doofus,fred 10 mdrun -s topol -v -N 30}
-this runs on each of the machines goofus,doofus,fred with 10 processes
-on each\footnote{Example taken from Silicon Graphics manual}.
 
-If you have a single machine with multiple processors you don't have to
-use the {\tt mpirun} command, but you can do with an extra option to
-{\tt mdrun}:
-\type{mdrun -np 8 -s topol -v -N 8}
-In this example MPI reads the first option from the command line.
-Since {\tt mdrun} also wants to know the number of processes you have to
-type it twice.
+This command runs 10 processes each on the machines goofus, doofus, and fred.
+\footnote{Example taken from Silicon Graphics manual}
 
-Check your local manuals (or on-line manual) for exact details
+With the implementation of threading in {\gromacs} version 4.5, 
+if you have a single machine with multiple processors you don't have to
+use the {\tt mpirun} command. Instead, you can supply the {\tt mdrun} option {\tt -nt}:
+\type{mdrun -nt 8 -s topol.tpr}
+
+Check your local manuals (or online manual) for exact details
 of your MPI implementation.
 
 If you are interested in programming MPI yourself, you can find
