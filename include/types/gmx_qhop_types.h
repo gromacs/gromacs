@@ -100,6 +100,7 @@ typedef struct qhop_resblocks {
   char **restype; /* Name of the "residue family", e.g. qLYS. */
   int *nres;      /* Number of related residues, e.g. 2 for qLYS: {LYS, LYSH}*/
   qhop_res **res; /* has size [nrestypes][nres[i]] */
+  gmx_bool *bWater; /* has size nrestypes */
   int *rtp;       /* indexes the t_restp-array rtp in qhop_db. One element for each restype.
 		   * Note that this is for the "residue families" only, e.g. qLYS.
 		   * Every related residue has its own index to the t_restp-array in qhop_reactant. */
@@ -110,7 +111,7 @@ typedef struct qhop_resblocks {
 /*   int ****iatoms;   /\* atoms involved in the interactions. iatoms[restype][bt][bi][...]*\/ */
 /*   int ***ft;        /\* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp *\/ */
 /*   int ***mtop_ft;   /\* index in the mtop->ffparams.functype and ...iparams *\/ */
-  gmx_bool *bWater;
+
   char **files;     /* extra files containg additional parameters. */
   int  nf;          /* number of extra files */
   int ni;           /* Size of ilib below. */

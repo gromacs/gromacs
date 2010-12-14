@@ -94,6 +94,7 @@ typedef struct {
 
   int    *atoms; /* global atom numbers belonging to the residue */
   int    nr_atoms;
+  char   **atomnames;
   int    nr_titrating_sites;
   int    *titrating_sites; /* points back to acceptor donors in the qhop_atoms structure. */
   /* real   **charge_set; 0*/

@@ -46,7 +46,7 @@ extern "C" {
 enum {
   egcTC,    egcENER,   egcACC, egcFREEZE, 
   egcUser1, egcUser2,  egcVCM, egcXTC,
-  egcORFIT, egcQMMM,   egcqhopdonors, egcqhopacceptors,
+  egcORFIT, egcQMMM,   egcqhopH,
   egcNR 
 };
 

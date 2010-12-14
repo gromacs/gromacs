@@ -93,8 +93,9 @@ typedef struct {
   gmx_bool    *bOPT;
   gmx_bool    *bTS;
   /* qhop related stuff */
-  int     ngqhopdonors;
-  int     ngqhopacceptors;
+  int     ngqhopH;
+  /* int     ngqhopdonors; */
+/*   int     ngqhopacceptors; */
 } t_grpopts; 
 
 enum { epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS };
