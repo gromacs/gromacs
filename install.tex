@@ -235,10 +235,10 @@ If you have installed the MPI (Message Passing Interface) on your computer(s)
 you can compile {\gromacs} with this library to run simulations in parallel. 
 All supercomputers are shipped with MPI libraries optimized for 
 that particular platform, and if you are using a cluster of workstations
-there are several good free MPI implementations. You can find updated links
+there are several good free MPI implementations. OpenMPI is preferred over MPICH variants. You can find updated links
 to these on the {\gromacs} homepage {\wwwpage}. Once you have an MPI library
 installed it's trivial to compile {\gromacs} with MPI support: Just set
-the option {\tt --enable-mpi} to the {\tt configure} script and recompile.
+the option {\tt --enable-mpi} to the {\tt configure} script and recompile. Please see the GROMACS webpage for more detailed instructions.
 (But don't forget to {\tt make distclean} before running {\tt configure} if you have
 previously compiled with a different configuration.) If you are using a 
 supercomputer you might also want to turn of the default nice-ing of the
@@ -247,14 +247,14 @@ mdrun process with the {\tt --disable-nice} option.
 For communications over multiple nodes connected by a network,
 there is usually a program called {\tt mpirun} with which you can start 
 the parallel processes. A typical command line looks like:
-\type{mpirun -p goofus,doofus,fred 10 mdrun -s topol -v -N 30}
+\type{mpirun -p goofus,doofus,fred 10 mdrun_mpi -s topol -v}
 
 This command runs 10 processes each on the machines goofus, doofus, and fred.
 \footnote{Example taken from Silicon Graphics manual}
 
-With the implementation of threading in {\gromacs} version 4.5, 
+With the implementation of threading available by default in {\gromacs} version 4.5, 
 if you have a single machine with multiple processors you don't have to
-use the {\tt mpirun} command. Instead, you can supply the {\tt mdrun} option {\tt -nt}:
+use the {\tt mpirun} command, or compile with MPI. Instead, you can allow GROMACS to determine the number of threads automatically, or use the {\tt mdrun} option {\tt -nt}:
 \type{mdrun -nt 8 -s topol.tpr}
 
 Check your local manuals (or online manual) for exact details
