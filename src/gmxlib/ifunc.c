@@ -141,7 +141,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("ORDEV",    "Ori. R. RMSD"                                         ),  
   def_bonded  ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres        ),
   def_bonded  ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz       ),
-  def_bonded  ("DIHRES",   "Dih. Rest.",      4, 5, 3,  eNR_DIHRES, ta_dihres     ),
+  def_bonded  ("DIHRES",   "Dih. Rest.",      5, 5, 3,  eNR_DIHRES, ta_dihres     ),
   def_nofc    ("DIHVIOL",  "Dih. Rest. viol."                                     ),    
   def_shkcb   ("CONSTR",   "Constraint",      2, 1, 1                             ),
   def_shk     ("CONSTRNC", "Constr. No Conn.",2, 1, 1                             ),
