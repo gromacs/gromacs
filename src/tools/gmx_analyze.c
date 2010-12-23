@@ -139,7 +139,8 @@ static void regression_analysis(int n,gmx_bool bXYdy,
                                 real *x,int nset,real **val)
 {
   real S,chi2,a,b,da,db,r=0;
-
+  int ok;
+  
   if (bXYdy || (nset == 1)) 
   {
       printf("Fitting data to a function f(x) = ax + b\n");
@@ -147,9 +148,17 @@ static void regression_analysis(int n,gmx_bool bXYdy,
       printf("Error estimates will be given if w_i (sigma) values are given\n");
       printf("(use option -xydy).\n\n");
       if (bXYdy) 
-          lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r,&S);
+      {
+          if ((ok = lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r,&S)) != estatsOK)
+              gmx_fatal(FARGS,"Error fitting the data: %s",
+                        gmx_stats_message(ok));
+      }
       else
-          lsq_y_ax_b(n,x,val[0],&a,&b,&r,&S);
+      {
+          if ((ok = lsq_y_ax_b(n,x,val[0],&a,&b,&r,&S)) != estatsOK)
+              gmx_fatal(FARGS,"Error fitting the data: %s",
+                        gmx_stats_message(ok));
+      }
       chi2 = sqr((n-2)*S);
       printf("Chi2                    = %g\n",chi2);
       printf("S (Sqrt(Chi2/(n-2))     = %g\n",S);
