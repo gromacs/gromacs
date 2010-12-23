@@ -1044,7 +1044,7 @@ int gmx_editconf(int argc, char *argv[])
                 "vector might be somewhat smaller than your specified value %f.\n"
                 "You can check the actual value with g_mindist -pi\n",dist);
         }
-        else
+        else if (!opt2parg_bSet("-bt", NPA, pa))
         {
             printf("\nWARNING: No boxtype specified - distance condition applied in each dimension.\n"
                 "If the molecule rotates the actual distance will be smaller. You might want\n"

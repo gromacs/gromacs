@@ -528,7 +528,7 @@ int main (int argc, char *argv[])
   } else {
     /* Determine total number of steps remaining */
     if (bExtend) {
-      ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (int)(extend_t/ir->delta_t + 0.5);
+      ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (gmx_large_int_t)(extend_t/ir->delta_t + 0.5);
       printf("Extending remaining runtime of by %g ps (now %s steps)\n",
 	     extend_t,gmx_step_str(ir->nsteps,buf));
     }
