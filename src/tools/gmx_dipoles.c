@@ -683,7 +683,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     real       rcut=0,t,t0,t1,dt,lambda,dd,rms_cos;
     rvec       dipaxis;
     matrix     box;
-    gmx_bool       bCorr,bTotal,bCont;
+    gmx_bool   bCorr,bTotal,bCont;
     double     M_diff=0,epsilon,invtel,vol_aver;
     double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
     double     M[3],M2[3],M4[3],Gk=0,g_k=0;
@@ -726,7 +726,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
         mols = &(top->mols);
     }
   
-    if (iVol == -1)
+    if ((iVol == -1) && bMU)
         printf("Using Volume from topology: %g nm^3\n",volume);
 
     /* Correlation stuff */ 
@@ -1349,7 +1349,7 @@ int gmx_dipoles(int argc,char *argv[])
     int          nFF[2];
     atom_id      **grpindex;
     char         **grpname=NULL;
-    gmx_bool         bCorr,bQuad,bGkr,bMU,bSlab;  
+    gmx_bool     bCorr,bQuad,bGkr,bMU,bSlab;  
     t_filenm fnm[] = {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },
