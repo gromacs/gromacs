@@ -3,7 +3,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # The nonbonded directory contains subdirectories that are only
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 file(GLOB GMXLIB_SOURCES *.c 
-     selection/*.c trajana/*.c
      statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
 
 if(GMX_DOUBLE)
@@ -69,11 +68,6 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
-# Selection has test_ instead of _test.  Removing here for special case, perhaps make general?
-if(GMX_FAHCORE)
-    file(GLOB SELECTION_TEST selection/test*)
-    list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
-endif(GMX_FAHCORE)
 
 # An ugly hack to get absolute paths...
 file(GLOB THREAD_MPI_SOURCES ${THREAD_MPI_SRC})

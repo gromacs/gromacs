@@ -45,10 +45,10 @@
 #include <statutil.h>
 #include <xvgr.h>
 #include <string2.h>
-#include <trajana.h>
 #include "gmx_ana.h"
 #include "gmx_fatal.h"
 
+#include "gromacs/trajana/trajana.h"
 
 typedef struct
 {
