@@ -1224,11 +1224,11 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
         bCite = FALSE;
         for(g=0; g<pull->ngrp+1; g++)
         {
-            if (pull->grp[g].nat > 0 &&
+            if (pull->grp[g].nat > 1 &&
                 pull->grp[g].pbcatom < 0)
             {
                 /* We are using cosine weighting */
-                fprintf(fplog,"Cosine weighting is used for groupd %d\n",g);
+                fprintf(fplog,"Cosine weighting is used for group %d\n",g);
                 bCite = TRUE;
             }
         }

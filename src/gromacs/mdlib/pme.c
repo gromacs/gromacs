@@ -362,9 +362,13 @@ static void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
 {
     int nalloc_old,i;
     
-    if (atc->n > atc->nalloc) {
+    /* We have to avoid a NULL pointer for atc->x to avoid
+     * possible fatal errors in MPI routines.
+     */
+    if (atc->n > atc->nalloc || atc->nalloc == 0)
+    {
         nalloc_old = atc->nalloc;
-        atc->nalloc = over_alloc_dd(atc->n);
+        atc->nalloc = over_alloc_dd(max(atc->n,1));
         
         if (atc->nslab > 1) {
             srenew(atc->x,atc->nalloc);

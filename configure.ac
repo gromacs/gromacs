@@ -23,7 +23,8 @@ dnl It does *not* correspond to the release number.
 SHARED_VERSION_INFO="6:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
-AC_DISABLE_SHARED
+AC_ENABLE_SHARED
+test "$enable_mpi" = "yes" && AC_DISABLE_SHARED
 PKG_CFLAGS=""
 
 #######################################################################
