@@ -1,6 +1,15 @@
+set(LIBGROMACS_SOURCES)
+
 add_subdirectory(legacyheaders)
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
+add_subdirectory(errorreporting)
+add_subdirectory(fatalerror)
+add_subdirectory(options)
+
+file(GLOB LIBGROMACS_HEADERS *.h)
+install(FILES ${LIBGROMACS_HEADERS} DESTINATION ${INCL_INSTALL_DIR}/gromacs
+        COMPONENT development)
 
 # only fiddle with assembly kernels if we're not doing OpenMM build
 if(NOT GMX_OPENMM) 
@@ -29,7 +38,7 @@ else(GMX_ASM_USEASM-NASM)
 endif(GMX_ASM_USEASM-NASM)
 endif(NOT GMX_OPENMM)
 
-set(LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${GMX_SSEKERNEL_ASM_SRC} ${MDLIB_SOURCES})
+list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${GMX_SSEKERNEL_ASM_SRC} ${MDLIB_SOURCES})
 
 # add target that generates version.c every time a make is run
 # only do this if we generate the version
