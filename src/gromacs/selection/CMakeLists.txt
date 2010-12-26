@@ -3,11 +3,13 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SELECTION_SOURCES} PARENT_SCOPE)
 
 set(SELECTION_PUBLIC_HEADERS
     centerofmass.h
-    indexutil.h
     nbsearch.h
     poscalc.h
+    indexutil.h
     position.h
     selection.h
+    selectionenums.h
+    selectionoption.h
     selparam.h
     selmethod.h
     selvalue.h)

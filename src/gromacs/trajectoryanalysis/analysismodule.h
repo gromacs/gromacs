@@ -38,7 +38,7 @@
 #include <string>
 #include <vector>
 
-#include <typedefs.h>
+#include "../legacyheaders/typedefs.h"
 
 namespace gmx
 {

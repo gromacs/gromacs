@@ -35,7 +35,7 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
 
-#include <typedefs.h>
+#include "../legacyheaders/typedefs.h"
 
 namespace gmx
 {

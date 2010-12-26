@@ -39,7 +39,7 @@
 #ifndef GMX_ANALYSISDATA_ABSTRACTDATA_H
 #define GMX_ANALYSISDATA_ABSTRACTDATA_H
 
-#include "types/simple.h"
+#include "../legacyheaders/types/simple.h"
 
 namespace gmx
 {
