@@ -29,10 +29,14 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \file
- * \brief Declaration of \c gmx_ana_selvalue_t.
+ * \brief
+ * Declares ::gmx_ana_selvalue_t.
  *
  * There should be no need to use the data structures in this file directly
  * unless implementing a custom selection routine.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELVALUE_H
 #define GMX_SELECTION_SELVALUE_H

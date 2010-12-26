@@ -39,10 +39,12 @@
  * These classes also take care of creating and setting up the actual option
  * objects.
  *
- * This header is needed directly only when implementing new option types.
+ * This header is needed directly only when implementing new option types,
+ * but methods of OptionTemplate are visible even to the normal user through
+ * its subclasses..
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \inpublicapi
+ * \inlibraryapi
  * \ingroup module_options
  */
 #ifndef GMX_OPTIONS_ABSTRACTOPTION_H
@@ -56,10 +58,9 @@
 namespace gmx
 {
 
-template <typename T> class AbstractOptionStorage;
-class Option;
+class AbstractOptionStorage;
+template <typename T> class OptionStorageTemplate;
 class Options;
-class OptionStorageInterface;
 
 /*! \brief
  * Abstract base class for specifying option properties.
@@ -86,7 +87,7 @@ class AbstractOption
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
             : _minValueCount(1), _maxValueCount(1),
-              _name(name), _descr(NULL), _flags(0), _storage(NULL)
+              _name(name), _descr(NULL)
         { }
 
         /*! \brief
@@ -96,20 +97,19 @@ class AbstractOption
          * \param[out] storage  The created storage object.
          * \retval     0 if there are no errors.
          *
-         * This method is called by when creating an option without a custom
-         * storage set.  The \p options object is used to implement global
-         * properties.  The implementation should handle a NULL \p options to
-         * make isolated testing easier.
+         * This method is called by when creating an option object
+         * The \p options object is used to implement global properties.
          *
          * Derived classes should implement the method to create an actual
          * storage object and populate it with correct values.
          *
-         * Should only be called by Option::init().
+         * Should only be called by Options::addOption().
          *
-         * \see AbstractStorage::init()
+         * \see AbstractOptionStorage::init()
          */
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const = 0;
+                                         AbstractOptionStorage **storage) const = 0;
+
         /*! \brief
          * Creates the description string for the option.
          *
@@ -122,17 +122,12 @@ class AbstractOption
         virtual std::string createDescription() const
         { return _descr ? _descr : ""; }
 
-        //! Returns true if (custom) storage has been set.
-        bool hasCustomStorage() const { return _storage != NULL; }
-        //! Sets a storage object for the option.
-        void setCustomStorage(OptionStorageInterface *storage)
-        { setFlag(efCustomStorage); _storage = storage; }
         //! Sets the description for the option.
         void setDescription(const char *descr) { _descr = descr; }
         //! Sets a flag for the option.
-        void setFlag(OptionFlag flag) { _flags |= flag; }
+        void setFlag(OptionFlag flag) { _flags.set(flag); }
         //! Clears a flag for the option.
-        void clearFlag(OptionFlag flag) { _flags &= ~flag; }
+        void clearFlag(OptionFlag flag) { _flags.clear(flag); }
         //! Returns true if the option is vector-valued.
         bool isVector() const { return hasFlag(efVector); }
         //! Sets the option to be vector-valued.
@@ -162,19 +157,22 @@ class AbstractOption
 
     private:
         //! Returns true if a flag has been set.
-        bool hasFlag(OptionFlag flag) const { return _flags & flag; }
+        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
 
         const char             *_name;
         //! Pointer to description of the option.
         const char             *_descr;
         OptionFlags             _flags;
-        OptionStorageInterface *_storage;
 
         /*! \brief
-         * Needed to initialize an Option object from this class without
-         * otherwise unnecessary accessors.
+         * Needed to initialize an AbstractOptionStorage object from this class
+         * without otherwise unnecessary accessors.
          */
-        friend class Option;
+        friend class AbstractOptionStorage;
+        /*! \brief
+         * Needed to be able to call createDefaultStorage().
+         */
+        friend class Options;
 };
 
 /*! \brief
@@ -245,7 +243,7 @@ class OptionTemplate : public AbstractOption
          * \p defaultValue is copied when the option is created.
          */
         MyClass &defaultValue(const T &defaultValue)
-        { setFlag(efDefaultValue); _defaultValue = &defaultValue; return me(); }
+        { _defaultValue = &defaultValue; return me(); }
         /*! \brief
          * Stores value(s) in memory pointed by \p store.
          *
@@ -292,19 +290,6 @@ class OptionTemplate : public AbstractOption
          */
         MyClass &storeVector(std::vector<T> *store)
         { setFlag(efExternalValueVector); _storeVector = store; return me(); }
-        /*! \brief
-         * Set a custom object for converting, validating, and storing
-         * option values.
-         *
-         * Note that setting a custom storage object bypasses some validity
-         * checks; it is up to the caller to ensure that the storage object
-         * combined with other settings results in a valid option.
-         *
-         * Ownership of the storage object is transferred to the created
-         * option <em>once Options::addOption() is called</em>.
-         */
-        MyClass &customStorage(OptionStorageInterface *storage)
-        { setCustomStorage(storage); return me(); }
 
     protected:
         //! Initializes the name and default values for an option.
@@ -332,7 +317,7 @@ class OptionTemplate : public AbstractOption
          * Needed to initialize storage from this class without otherwise
          * unnecessary accessors.
          */
-        friend class AbstractOptionStorage<T>;
+        friend class OptionStorageTemplate<T>;
 };
 
 } // namespace gmx

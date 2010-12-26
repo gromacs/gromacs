@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::OptionsVisitor interface and supporting classes.
  *
@@ -44,10 +44,10 @@
 namespace gmx
 {
 
-class Option;
+class AbstractOptionStorage;
 class Options;
 
-/*! \brief
+/*! \libinternal \brief
  * Wrapper class for accessing option information.
  *
  * This class isolates the details of the internal option implementation
@@ -64,12 +64,14 @@ class OptionInfo
         /*! \brief
          * Wraps a given option object.
          */
-        OptionInfo(const Option &option);
+        OptionInfo(const AbstractOptionStorage &option);
 
         //! Returns true if the option is a boolean option.
         bool isBoolean() const;
         //! Returns true if the option is a file name option.
         bool isFile() const;
+        //! Returns true if the option is a hidden option.
+        bool isHidden() const;
         //! Returns the name of the option.
         const std::string &name() const;
         //! Returns the description of the option.
@@ -85,14 +87,14 @@ class OptionInfo
 
     private:
         //! The wrapped option.
-        const Option           &_option;
+        const AbstractOptionStorage &_option;
 
         // Disallow copy and assign.
         OptionInfo(const OptionInfo &);
         void operator =(const OptionInfo &);
 };
 
-/*! \brief
+/*! \libinternal \brief
  * Pure interface for visiting options in a Options object.
  *
  * \see OptionsIterator
@@ -115,7 +117,7 @@ class OptionsVisitor
         virtual void visitOption(const OptionInfo &option) = 0;
 };
 
-/*! \brief
+/*! \libinternal \brief
  * Decorator class for visiting options in a Options object.
  *
  * This class provides an interface for looping through subsections and

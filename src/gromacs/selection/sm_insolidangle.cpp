@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \page sm_insolidangle Selection method: insolidangle
+/*! \page page_module_selection_insolidangle Selection method: insolidangle
  *
  * This method selects a subset of particles that are located in a solid
  * angle defined by a center and a set of points.
@@ -93,14 +93,19 @@
  * for the averages as well as in cases where the bin size is small.
  */
 /*! \internal \file
- * \brief Implementation of the \ref sm_insolidangle "insolidangle"
- *   selection method.
+ * \brief
+ * Implements the \ref sm_insolidangle "insolidangle" selection method.
  *
  * \todo
  * The implementation could be optimized quite a bit.
- * 
- * \todo Move the covered fraction stuff somewhere else and make it more
- * generic (along the lines it is handled in selection.h and trajana.h).
+ *
+ * \todo
+ * Move the covered fraction stuff somewhere else and make it more generic
+ * (along the lines it is handled in selection.h and trajana.h in the old C
+ * API).
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>

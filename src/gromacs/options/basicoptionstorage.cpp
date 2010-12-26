@@ -37,6 +37,7 @@
  */
 #include "basicoptionstorage.h"
 
+#include <cstdio>
 #include <cstdlib>
 
 #include <string>
@@ -49,21 +50,23 @@
 #include "gromacs/options/options.h"
 
 template <typename T> static
-int expandVector(int length, int nvalues, gmx::AbstractErrorReporter *errors,
+int expandVector(int length, int *nvalues, gmx::AbstractErrorReporter *errors,
                  std::vector<T> *values)
 {
-    if (length > 0 && nvalues > 0 && nvalues != length)
+    if (length > 0 && *nvalues > 0 && *nvalues != length)
     {
-        if (nvalues != 1)
+        if (*nvalues != 1)
         {
             char err_buf[256];
-            sprintf(err_buf, "Expected 1 or %d values, got %d", length, nvalues);
+            std::sprintf(err_buf, "Expected 1 or %d values, got %d",
+                         length, *nvalues);
             errors->error(err_buf);
-            values->resize(values->size() - nvalues);
+            values->resize(values->size() - *nvalues);
             return gmx::eeInvalidInput;
         }
         const T &value = (*values)[values->size() - 1];
         values->resize(values->size() + length - 1, value);
+        *nvalues = length;
     }
     return 0;
 }
@@ -75,8 +78,14 @@ namespace gmx
  * BooleanOptionStorage
  */
 
-int BooleanOptionStorage::appendValue(const std::string &value,
-                                      AbstractErrorReporter *errors)
+std::string BooleanOptionStorage::formatValue(int i) const
+{
+    bool value = values()[i];
+    return value ? "yes" : "no";
+}
+
+int BooleanOptionStorage::convertValue(const std::string &value,
+                                       AbstractErrorReporter *errors)
 {
     // TODO: Case-independence
     if (value == "1" || value == "yes" || value == "true")
@@ -93,32 +102,24 @@ int BooleanOptionStorage::appendValue(const std::string &value,
     return eeInvalidInput;
 }
 
-std::string BooleanOptionStorage::formatValue(int i) const
-{
-    bool value = values()[i];
-    return value ? "yes" : "no";
-}
-
 /********************************************************************
  * IntegerOptionStorage
  */
 
 IntegerOptionStorage::IntegerOptionStorage()
-    : _vectorLength(0)
 {
 }
 
-int IntegerOptionStorage::init(const IntegerOption &settings, Options *options)
+std::string IntegerOptionStorage::formatValue(int i) const
 {
-    if (settings.isVector())
-    {
-        _vectorLength = settings._maxValueCount;
-    }
-    return MyBase::init(settings, options);
+    char buf[64];
+    int value = values()[i];
+    std::sprintf(buf, "%d", value);
+    return std::string(buf);
 }
 
-int IntegerOptionStorage::appendValue(const std::string &value,
-                                      AbstractErrorReporter *errors)
+int IntegerOptionStorage::convertValue(const std::string &value,
+                                       AbstractErrorReporter *errors)
 {
     const char *ptr = value.c_str();
     char *endptr = NULL;
@@ -132,17 +133,17 @@ int IntegerOptionStorage::appendValue(const std::string &value,
     return eeInvalidInput;
 }
 
-int IntegerOptionStorage::finishSet(int nvalues, AbstractErrorReporter *errors)
+int IntegerOptionStorage::processSet(int nvalues, AbstractErrorReporter *errors)
 {
-    return expandVector(_vectorLength, nvalues, errors, &values());
-}
-
-std::string IntegerOptionStorage::formatValue(int i) const
-{
-    char buf[64];
-    int value = values()[i];
-    std::sprintf(buf, "%d", value);
-    return buf;
+    if (hasFlag(efVector))
+    {
+        int rc = expandVector(maxValueCount(), &nvalues, errors, &values());
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
+    return MyBase::processSet(nvalues, errors);
 }
 
 /********************************************************************
@@ -150,16 +151,12 @@ std::string IntegerOptionStorage::formatValue(int i) const
  */
 
 DoubleOptionStorage::DoubleOptionStorage()
-    : _vectorLength(0), _bTime(false)
+    : _bTime(false)
 {
 }
 
 int DoubleOptionStorage::init(const DoubleOption &settings, Options *options)
 {
-    if (settings.isVector())
-    {
-        _vectorLength = settings._maxValueCount;
-    }
     _bTime = settings._bTime;
     if (_bTime)
     {
@@ -170,11 +167,24 @@ int DoubleOptionStorage::init(const DoubleOption &settings, Options *options)
 
 const char *DoubleOptionStorage::typeString() const
 {
-    return _vectorLength > 0 ? "vector" : (_bTime ? "time" : "double");
+    return hasFlag(efVector) > 0 ? "vector" : (_bTime ? "time" : "double");
 }
 
-int DoubleOptionStorage::appendValue(const std::string &value,
-                                     AbstractErrorReporter *errors)
+std::string DoubleOptionStorage::formatValue(int i) const
+{
+    char buf[64];
+    double value = values()[i];
+    if (_bTime)
+    {
+        double factor = hostOptions().globalProperties().timeScaleFactor();
+        value /= factor;
+    }
+    std::sprintf(buf, "%g", value);
+    return std::string(buf);
+}
+
+int DoubleOptionStorage::convertValue(const std::string &value,
+                                      AbstractErrorReporter *errors)
 {
     const char *ptr = value.c_str();
     char *endptr = NULL;
@@ -188,12 +198,20 @@ int DoubleOptionStorage::appendValue(const std::string &value,
     return eeInvalidInput;
 }
 
-int DoubleOptionStorage::finishSet(int nvalues, AbstractErrorReporter *errors)
+int DoubleOptionStorage::processSet(int nvalues, AbstractErrorReporter *errors)
 {
-    return expandVector(_vectorLength, nvalues, errors, &values());
+    if (hasFlag(efVector))
+    {
+        int rc = expandVector(maxValueCount(), &nvalues, errors, &values());
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
+    return MyBase::processSet(nvalues, errors);
 }
 
-int DoubleOptionStorage::finish(AbstractErrorReporter *errors)
+int DoubleOptionStorage::processAll(AbstractErrorReporter *errors)
 {
     if (_bTime)
     {
@@ -204,20 +222,7 @@ int DoubleOptionStorage::finish(AbstractErrorReporter *errors)
             (*i) *= factor;
         }
     }
-    return MyBase::finish(errors);
-}
-
-std::string DoubleOptionStorage::formatValue(int i) const
-{
-    char buf[64];
-    double value = values()[i];
-    if (_bTime)
-    {
-        double factor = hostOptions().globalProperties().timeScaleFactor();
-        value /= factor;
-    }
-    std::sprintf(buf, "%g", value);
-    return buf;
+    return MyBase::processAll(errors);
 }
 
 /********************************************************************
@@ -231,12 +236,17 @@ StringOptionStorage::StringOptionStorage()
 
 int StringOptionStorage::init(const StringOption &settings, Options *options)
 {
-    if (settings._enumIndexStore && settings._enumValues == NULL)
+    if (settings._defaultEnumIndex >= 0 && settings._enumValues == NULL)
+    {
+        GMX_ERROR(eeInvalidValue,
+                  "Cannot set default enum index without enum values");
+    }
+    if (settings._enumIndexStore != NULL && settings._enumValues == NULL)
     {
         GMX_ERROR(eeInvalidValue,
                   "Cannot set enum index store without enum values");
     }
-    if (settings._enumIndexStore && settings._maxValueCount < 0)
+    if (settings._enumIndexStore != NULL && settings._maxValueCount < 0)
     {
         GMX_ERROR(eeInvalidValue,
                   "Cannot set enum index store with arbitrary number of values");
@@ -262,17 +272,49 @@ int StringOptionStorage::init(const StringOption &settings, Options *options)
                           "Default value is not one of allowed values");
             }
         }
+        if (settings._defaultEnumIndex >= 0)
+        {
+            if (settings._defaultEnumIndex >= static_cast<int>(_allowed.size()))
+            {
+                GMX_ERROR(eeInvalidValue,
+                          "Default enumeration index is out of range");
+            }
+            if (defaultValue && *defaultValue != _allowed[settings._defaultEnumIndex])
+            {
+                GMX_ERROR(eeInvalidValue,
+                          "Conflicting default values");
+            }
+        }
         // If there is no default value, match is still -1.
         if (_enumIndexStore != NULL)
         {
             *_enumIndexStore = match;
         }
     }
-    return MyBase::init(settings, options);
+    int rc = MyBase::init(settings, options);
+    if (rc == 0)
+    {
+        if (settings._defaultEnumIndex >= 0)
+        {
+            clear();
+            addValue(_allowed[settings._defaultEnumIndex]);
+            if (_enumIndexStore != NULL)
+            {
+                *_enumIndexStore = settings._defaultEnumIndex;
+            }
+            processValues(1, false);
+        }
+    }
+    return rc;
 }
 
-int StringOptionStorage::appendValue(const std::string &value,
-                                     AbstractErrorReporter *errors)
+std::string StringOptionStorage::formatValue(int i) const
+{
+    return values()[i];
+}
+
+int StringOptionStorage::convertValue(const std::string &value,
+                                      AbstractErrorReporter *errors)
 {
     if (_allowed.size() == 0)
     {
@@ -307,11 +349,6 @@ int StringOptionStorage::appendValue(const std::string &value,
     return 0;
 }
 
-std::string StringOptionStorage::formatValue(int i) const
-{
-    return values()[i];
-}
-
 /********************************************************************
  * FileNameOptionStorage
  */
@@ -324,19 +361,24 @@ FileNameOptionStorage::FileNameOptionStorage()
 int FileNameOptionStorage::init(const FileNameOption &settings, Options *options)
 {
     _filetype = settings._filetype;
+    if (_filetype == eftPlot)
+    {
+        options->globalProperties().request(eogpPlotFormat);
+    }
     return MyBase::init(settings, options);
-}
-
-int FileNameOptionStorage::appendValue(const std::string & /*value*/,
-                                       AbstractErrorReporter * /*errors*/)
-{
-    // TODO: Implement.
-    return eeInvalidInput;
 }
 
 std::string FileNameOptionStorage::formatValue(int i) const
 {
     return values()[i];
+}
+
+int FileNameOptionStorage::convertValue(const std::string &value,
+                                        AbstractErrorReporter * /*errors*/)
+{
+    // TODO: Proper implementation.
+    addValue(value);
+    return 0;
 }
 
 } // namespace gmx

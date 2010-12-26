@@ -47,7 +47,7 @@ namespace gmx
  */
 
 int BooleanOption::createDefaultStorage(Options *options,
-                                        OptionStorageInterface **storage) const
+                                        AbstractOptionStorage **storage) const
 {
     return createOptionStorage<BooleanOption, BooleanOptionStorage>(this, options, storage);
 }
@@ -57,7 +57,7 @@ int BooleanOption::createDefaultStorage(Options *options,
  */
 
 int IntegerOption::createDefaultStorage(Options *options,
-                                        OptionStorageInterface **storage) const
+                                        AbstractOptionStorage **storage) const
 {
     return createOptionStorage<IntegerOption, IntegerOptionStorage>(this, options, storage);
 }
@@ -67,7 +67,7 @@ int IntegerOption::createDefaultStorage(Options *options,
  */
 
 int DoubleOption::createDefaultStorage(Options *options,
-                                       OptionStorageInterface **storage) const
+                                       AbstractOptionStorage **storage) const
 {
     return createOptionStorage<DoubleOption, DoubleOptionStorage>(this, options, storage);
 }
@@ -77,7 +77,7 @@ int DoubleOption::createDefaultStorage(Options *options,
  */
 
 int StringOption::createDefaultStorage(Options *options,
-                                       OptionStorageInterface **storage) const
+                                       AbstractOptionStorage **storage) const
 {
     return createOptionStorage<StringOption, StringOptionStorage>(this, options, storage);
 }
@@ -88,10 +88,14 @@ std::string StringOption::createDescription() const
 
     if (_enumValues != NULL)
     {
-        value.append(":");
+        value.append(": ");
         for (int i = 0; _enumValues[i] != NULL; ++i)
         {
-            value.append(" ").append(_enumValues[i]);
+            value.append(_enumValues[i]);
+            if (_enumValues[i + 1] != NULL)
+            {
+                value.append(_enumValues[i + 2] != NULL ? ", " : ", or ");
+            }
         }
     }
     return value;
@@ -102,7 +106,7 @@ std::string StringOption::createDescription() const
  */
 
 int FileNameOption::createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const
+                                         AbstractOptionStorage **storage) const
 {
     return createOptionStorage<FileNameOption, FileNameOptionStorage>(this, options, storage);
 }

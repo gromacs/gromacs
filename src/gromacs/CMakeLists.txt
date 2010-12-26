@@ -3,11 +3,12 @@ set(LIBGROMACS_SOURCES)
 add_subdirectory(legacyheaders)
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
+add_subdirectory(analysisdata)
 add_subdirectory(errorreporting)
 add_subdirectory(fatalerror)
 add_subdirectory(options)
 add_subdirectory(selection)
-list(APPEND LIBGROMACS_SOURCES trajana/trajana.cpp)
+add_subdirectory(trajectoryanalysis)
 
 file(GLOB LIBGROMACS_HEADERS *.h)
 install(FILES ${LIBGROMACS_HEADERS} DESTINATION ${INCL_INSTALL_DIR}/gromacs

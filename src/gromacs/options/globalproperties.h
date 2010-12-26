@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::OptionsGlobalProperties.
  *
@@ -39,20 +39,25 @@
 #ifndef GMX_OPTIONS_GLOBALPROPERTIES_H
 #define GMX_OPTIONS_GLOBALPROPERTIES_H
 
+#include <typedefs.h>
+
 namespace gmx
 {
 
 class Options;
+class SelectionCollection;
 
-/*! \brief
+/*! \libinternal \brief
  * ID numbers for global properties.
  */
 enum OptionGlobalPropertyId
 {
     eogpTimeScaleFactor,
+    eogpPlotFormat,
+    eogpSelectionCollection,
 };
 
-/*! \brief
+/*! \libinternal \brief
  * Describes global properties of an Options collection.
  *
  * These properties are used to implement features that require all options of
@@ -73,20 +78,56 @@ class OptionsGlobalProperties
             _usedProperties |= (1<<id);
         }
 
+        //! Set the selection collection for selection option output.
+        void setSelectionCollection(SelectionCollection *sc)
+        {
+            _selectionCollection = sc;
+        }
+
         //! Returns the scaling factor to get times in ps.
         double timeScaleFactor() const;
+        //! Returns the selection collection.
+        SelectionCollection *selectionCollection() const
+        {
+            return _selectionCollection;
+        }
+        /*! \brief
+         * Returns an output environment structure for interfacing with old
+         * code.
+         *
+         * Currently, the returned structure is always filled with default
+         * values.
+         *
+         * \deprecated
+         */
+        output_env_t output_env() const
+        {
+            return _oenv;
+        }
 
     private:
         OptionsGlobalProperties();
+        ~OptionsGlobalProperties();
 
+        //! Returns true if request() has been called for the given property.
         bool isPropertyUsed(OptionGlobalPropertyId id) const
         {
             return _usedProperties & (1<<id);
         }
         void addDefaultOptions(Options *options);
+        /*! \brief
+         * Initializes variables dependent on global properties.
+         *
+         * This method should be called after the values for the options
+         * generated with addDefaultOptions() have been set.
+         */
+        void finish();
 
-        int                     _timeUnit;
         unsigned long           _usedProperties;
+        int                     _timeUnit;
+        int                     _plotFormat;
+        SelectionCollection    *_selectionCollection;
+        output_env_t            _oenv;
 
         friend class Options;
 

@@ -36,7 +36,10 @@
  * method.
  *
  * More details can be found on the page discussing
- * \ref selmethods "custom selection methods".
+ * \ref page_module_selection_custom "custom selection methods".
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELPARAM_H
 #define GMX_SELECTION_SELPARAM_H

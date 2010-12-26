@@ -29,7 +29,11 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of functions in centerofmass.h.
+ * \brief
+ * Implements functions in centerofmass.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -171,11 +175,11 @@ gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
 /*!
  * \param[in]  top   Topology structure with masses
  *   (can be NULL if \p bMASS==TRUE).
- * \param[in]  x     Forces on all atoms.
+ * \param[in]  f     Forces on all atoms.
  * \param[in]  nrefat Number of atoms in the index.
  * \param[in]  index Indices of atoms.
  * \param[in]  bMass If TRUE, force on COM is calculated.
- * \param[out] xout  Force on the COM/COG position for the indexed atoms.
+ * \param[out] fout  Force on the COM/COG position for the indexed atoms.
  * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is FALSE.
  *
  * Calls either gmx_calc_cog() or gmx_calc_cog_f() depending on the value of
@@ -431,7 +435,7 @@ gmx_calc_com_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
  * \param[in]  f     Forces on all atoms.
  * \param[in]  block t_block structure that divides \p index into blocks.
  * \param[in]  index Indices of atoms.
- * \param[out] xout  \p block->nr Forces on COG positions.
+ * \param[out] fout  \p block->nr Forces on COG positions.
  * \returns    0 on success, EINVAL if \p top is NULL.
  */
 int
@@ -501,7 +505,7 @@ gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
  * \param[in]  block t_block structure that divides \p index into blocks.
  * \param[in]  index Indices of atoms.
  * \param[in]  bMass If TRUE, force on COM is calculated.
- * \param[out] xout  \p block->nr forces on the COM/COG positions.
+ * \param[out] fout  \p block->nr forces on the COM/COG positions.
  * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is TRUE.
  *
  * Calls either gmx_calc_com_block() or gmx_calc_cog_block() depending on the

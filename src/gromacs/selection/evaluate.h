@@ -33,14 +33,17 @@
  *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
- * Users should only use gmx_ana_selcollection_evaluate() declared in
- * \ref selection.h to evaluate selections.
+ * Users should only use SelectionCollection::evaluate() to evaluate
+ * selections.
  *
  * The functions defined in this header file are all the possible values
  * for the \c t_selelem::evaluate field (in addition to NULL).
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
-#ifndef SELECTION_EVALUATE_H
-#define SELECTION_EVALUATE_H
+#ifndef GMX_SELECTION_EVALUATE_H
+#define GMX_SELECTION_EVALUATE_H
 
 #include <typedefs.h>
 

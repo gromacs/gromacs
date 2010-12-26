@@ -36,12 +36,11 @@
  * <H3>Basic Use</H3>
  *
  * Basic interface for providing options is implemented by the Options class
- * (in options.hpp) and classes defined in basicoptions.hpp for specifying
- * individual options.  Only these are needed if a class wants to provide a
- * set of standard options.
+ * and classes defined in basicoptions.h for specifying individual options.
+ * Only these are needed if a class wants to provide a set of standard options.
  *
  * Values for options can be set using option parsers.
- * Currently, only one is defined: CommandLineParser in cmdlineparser.hpp.
+ * Currently, only one is defined: CommandLineParser.
  * As the name suggests, this parser gets values from command-line arguments.
  * Multiple parsers can be used in sequence to provide option values from
  * multiple sources; in such cases, if an option is provided in multiple
@@ -52,7 +51,7 @@
  * is possible to add descriptions for individual options as well as for the
  * whole set of options.  These can then be used to write out a help using one
  * of the provided help writers.
- * Currently, only one is defined: AsciiHelpWriter in asciihelpwriter.hpp
+ * Currently, only one is defined: AsciiHelpWriter
  * (implementation is not yet complete).
  *
  * <H3>Advanced Use</H3>
@@ -61,24 +60,23 @@
  * option values.
  *
  * To implement new option types, it is necessary to subclass the templates
- * AbstractStorage (abstractstorage.hpp) and SettingsTempl
- * (abstractsettings.hpp) with the type of the values that the option should
- * provide as the template argument.  After this is done, it is possible to add
- * options of this new type using Options::addOption().
+ * OptionTemplate and OptionStorageTemplate with the type of the values that
+ * the option should provide as the template argument.  After this is done, it
+ * is possible to add options of this new type using Options::addOption().
  *
  * There is limited support for options that need to share information across
  * instances, e.g., to store values in a shared external data structure or to
  * provide a global option to set a common setting for all such options,
- * provided by the GlobalProperties class.  This mechanism is not generic,
- * meaning that it is required to change the options module to add data to this
- * structure.
+ * provided by the OptionsGlobalProperties class.  This mechanism is not
+ * generic, meaning that it is required to change the options module to add
+ * data to this structure.
  *
- * To implement new parsers, one can use OptionsAssigner (assigner.hpp),
- * which provides an interface to set values in an Options object.
+ * To implement new parsers, one can use OptionsAssigner, which provides an
+ * interface to set values in an Options object.
  *
- * It is possible to iterate over all options in an Options object using
- * classes in visitor.hpp.  One should implement the OptionsVisitor interface,
- * and then use OptionsIterator to apply this visitor to the Options object.
+ * There is also an interface to iterate over all options in an Options object.
+ * One should implement the OptionsVisitor interface, and then use
+ * OptionsIterator to apply this visitor to the Options object.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */

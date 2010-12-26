@@ -29,8 +29,12 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementations of internal selection methods for numeric and
- * string keyword evaluation.
+ * \brief
+ * Implements internal selection methods for numeric and string keyword
+ * evaluation.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -45,15 +49,17 @@
 #define USE_REGEX
 #endif
 
-#include <gmx_fatal.h>
 #include <macros.h>
 #include <smalloc.h>
 #include <string2.h>
 
+#include "gromacs/errorreporting/errorcontext.h"
+#include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/selection/selmethod.h"
 
 #include "keywords.h"
 #include "parsetree.h"
+#include "scanner.h"
 #include "selelem.h"
 
 /** Allocates data for integer keyword evaluation. */
@@ -699,12 +705,17 @@ _gmx_sel_init_keyword_evaluator(t_selelem **selp, gmx_ana_selmethod_t *method,
     t_selelem            *sel;
     t_methoddata_kweval  *data;
 
+    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    char  buf[1024];
+    sprintf(buf, "In evaluation of '%s'", method->name);
+    gmx::ErrorContext  context(errors, buf);
+
     if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
         || method->outinit || method->pupdate)
     {
         _gmx_selexpr_free_params(param);
-        gmx_incons("unsupported keyword method for arbitrary group evaluation");
-        return -1;
+        GMX_ERROR(gmx::eeInternalError,
+                  "Unsupported keyword method for arbitrary group evaluation");
     }
 
     *selp = NULL;

@@ -33,12 +33,17 @@
  *
  * This file implements the functions in the headers scanner.h and
  * scanner_internal.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
-/*! \internal file scanner_flex.h
+/*! \internal \file scanner_flex.h
  * \brief Generated (from scanner.l) header file by Flex.
  *
  * This file contains definitions of functions that are needed in
- * scanner_internal.c.
+ * scanner_internal.cpp.
+ *
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -50,12 +55,13 @@
 #include <string.h>
 
 #include "string2.h"
-#include "gmx_fatal.h"
+
+#include "gromacs/fatalerror/fatalerror.h"
 
 #include "gromacs/selection/selmethod.h"
 
 #include "parsetree.h"
-#include "selcollection.h"
+#include "selectioncollection-impl.h"
 #include "selelem.h"
 #include "symrec.h"
 
@@ -63,6 +69,7 @@
 #include "scanner.h"
 #include "scanner_internal.h"
 
+//! Step in which the allocated memory for pretty-printed input is incremeted.
 #define STRSTORE_ALLOCSTEP 1000
 
 /* These are defined as macros in the generated scanner_flex.h.
@@ -91,7 +98,7 @@ read_stdin_line(gmx_sel_lexer_t *state)
      * the user presses Ctrl-D _twice_ at the end of a non-empty line.
      * This can be a bit confusing for users, but there's not much we can
      * do, and the chances of a normal user noticing this are not very big. */
-    while (fgets(ptr, max_len, stdin))
+    while (fgets(ptr, max_len, stdin) != NULL)
     {
         int len = strlen(ptr);
 
@@ -103,16 +110,8 @@ read_stdin_line(gmx_sel_lexer_t *state)
                 fprintf(stderr, "... ");
             }
         }
-        else if (len >= 1 && ptr[len - 1] == '\n')
+        else if ((len >= 1 && ptr[len - 1] == '\n') || len < max_len - 1)
         {
-            break;
-        }
-        else if (len < max_len - 1)
-        {
-            if (state->bInteractive)
-            {
-                fprintf(stderr, "\n");
-            }
             break;
         }
         ptr     += len;
@@ -126,9 +125,13 @@ read_stdin_line(gmx_sel_lexer_t *state)
             ptr = state->inputstr + len;
         }
     }
+    if (state->bInteractive && (totlen == 0 || ptr[totlen - 1] != '\n'))
+    {
+        fprintf(stderr, "\n");
+    }
     if (ferror(stdin))
     {
-        gmx_input("selection reading failed");
+        GMX_ERROR_NORET(gmx::eeInvalidInput, "Selection reading failed");
     }
     return totlen > 0;
 }
@@ -201,7 +204,9 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, gmx_bool bPosMod
             case REAL_VALUE:  return KEYWORD_NUMERIC;
             case STR_VALUE:   return KEYWORD_STR;
             case GROUP_VALUE: return KEYWORD_GROUP;
-            default:          return INVALID;
+            default:
+                GMX_ERROR_NORET(gmx::eeInternalError, "Unsupported keyword type");
+                return INVALID;
         }
     } else {
         /* Method with parameters or a modifier */
@@ -240,6 +245,7 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, gmx_bool bPosMod
             case GROUP_VALUE: return METHOD_GROUP;
             default:
                 --state->msp;
+                GMX_ERROR_NORET(gmx::eeInternalError, "Unsupported method type");
                 return INVALID;
         }
     }
@@ -354,6 +360,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     /* Reserved symbols should have been caught earlier */
     if (symtype == SYMBOL_RESERVED)
     {
+        GMX_ERROR_NORET(gmx::eeInternalError,
+                        "Mismatch between tokenizer and reserved symbol table");
         return INVALID;
     }
     /* For variable symbols, return the type of the variable value */
@@ -376,6 +384,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                 case POS_VALUE:
                     break;
                 default:
+                    GMX_ERROR_NORET(gmx::eeInternalError,
+                                    "Unsupported variable type");
                     return INVALID;
             }
         }
@@ -386,9 +396,12 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
             case REAL_VALUE:  return VARIABLE_NUMERIC;
             case POS_VALUE:   return VARIABLE_POS;
             case GROUP_VALUE: return VARIABLE_GROUP;
-            default:          return INVALID;
+            default:
+                GMX_ERROR_NORET(gmx::eeInternalError,
+                                "Unsupported variable type");
+                return INVALID;
         }
-        return INVALID;
+        return INVALID; /* Should not be reached. */
     }
     /* For method symbols, return the correct type */
     if (symtype == SYMBOL_METHOD)
@@ -441,7 +454,8 @@ _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
 
 int
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    gmx_bool bInteractive, int maxnr,
+                    gmx::AbstractErrorReporter *errors,
+                    bool bInteractive, int maxnr, bool bGroups,
                     struct gmx_ana_indexgrps_t *grps)
 {
     gmx_sel_lexer_t *state;
@@ -455,8 +469,10 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 
     snew(state, 1);
     state->sc        = sc;
+    state->errors    = errors;
+    state->bGroups   = bGroups;
     state->grps      = grps;
-    state->nexpsel   = (maxnr > 0 ? sc->nr + maxnr : -1);
+    state->nexpsel   = (maxnr > 0 ? sc->sel.size() + maxnr : -1);
 
     state->bInteractive = bInteractive;
     state->nalloc_input = 0;
@@ -512,6 +528,20 @@ _gmx_sel_lexer_selcollection(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->sc;
+}
+
+gmx::AbstractErrorReporter *
+_gmx_sel_lexer_error_reporter(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return state->errors;
+}
+
+bool
+_gmx_sel_lexer_has_groups_set(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return state->bGroups;
 }
 
 struct gmx_ana_indexgrps_t *

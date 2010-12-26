@@ -107,7 +107,12 @@ typedef void (*ErrorHandlerFunc)(int retcode, const char *msg,
 ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler);
 
 /*! \brief
- * Raises an error.
+ * Raises a fatal error.
+ *
+ * \param[in] retcode Error code to raise.
+ * \param[in] msg     More detailed description of the error.
+ * \param[in] file    Name of the source file where the error occurred.
+ * \param[in] line    Line in \p file on which the error occurred.
  */
 void fatalError(int retcode, const char *msg, const char *file, int line);
 /*! \brief
@@ -118,6 +123,11 @@ void fatalError(int retcode, const char *msg, const char *file, int line);
 ::gmx::fatalErrorFormatted(::gmx::eeInvalidInput, GMX_ERRORLOC,
     "Invalid command-line argument: %s", argname);
  * \endcode
+ *
+ * \param[in] retcode Error code to raise.
+ * \param[in] file    Name of the source file where the error occurred.
+ * \param[in] line    Line in \p file on which the error occurred.
+ * \param[in] fmt     printf format string.
  */
 void fatalErrorFormatted(int retcode, const char *file, int line,
                          const char *fmt, ...);
@@ -136,9 +146,9 @@ void fatalErrorFormatted(int retcode, const char *file, int line,
  */
 #define GMX_ERROR(retcode, msg) \
     do { \
-        int rc = (retcode); \
-        ::gmx::fatalError(rc, msg, __FILE__, __LINE__); \
-        return rc; \
+        int _rc_internal = (retcode); \
+        ::gmx::fatalError(_rc_internal, msg, __FILE__, __LINE__); \
+        return _rc_internal; \
     } while (0)
 
 /*! \brief
@@ -172,9 +182,9 @@ void fatalErrorFormatted(int retcode, const char *file, int line,
 #else
 #define GMX_ERROR_DEBUG(retcode, msg) \
     do { \
-        int rc = (retcode); \
-        ::gmx::fatalError(rc, msg, __FILE__, __LINE__); \
-        return rc; \
+        int _rc_internal = (retcode); \
+        ::gmx::fatalError(_rc_internal, msg, __FILE__, __LINE__); \
+        return _rc_internal; \
     } while (0)
 #define GMX_ERROR_DEBUG_NORET(retcode, msg) \
         ::gmx::fatalError(retcode, msg, __FILE__, __LINE__)

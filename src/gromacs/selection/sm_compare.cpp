@@ -30,7 +30,10 @@
  */
 /*! \internal \file
  * \brief
- * Implementation of internal selection method for comparison expressions.
+ * Implements internal selection method for comparison expressions.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>

@@ -153,10 +153,6 @@ class Options
          */
         void addDefaultOptions();
 
-        //! Returns true if the collection has file options.
-        bool hasFileOptions() const;
-        //! Returns true if the collection has non-file options.
-        bool hasNonFileOptions() const;
         //! Returns true if option is set.
         bool isSet(const char *name) const;
         /*! \brief

@@ -28,9 +28,9 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \libinternal \file
  * \brief
- * Defines gmx::AbstractOptionStorage template.
+ * Declares gmx::AbstractOptionStorage.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
@@ -39,270 +39,226 @@
 #ifndef GMX_OPTIONS_ABSTRACTOPTIONSTORAGE_H
 #define GMX_OPTIONS_ABSTRACTOPTIONSTORAGE_H
 
-#include <cassert>
-
 #include <string>
-#include <vector>
 
-#include "abstractoption.h"
-#include "optionstorageinterface.h"
+#include "optionflags.h"
 
 namespace gmx
 {
 
+class AbstractErrorReporter;
+class AbstractOption;
 class Options;
 
-/*! \brief
- * Templated base class for constructing option value storage classes.
+/*! \libinternal \brief
+ * Abstract base class for converting, validating, and storing option values.
  *
- * \tparam T Assignable type that stores a single option value.
- *
- * Provides an implementation of the clear(), finish(), valueCount(), and
- * formatValues() methods of the StorageInterface interface, leaving
- * typeString(), appendValue(), finishSet(), and formatValue() to be
- * implemented in derived classes.
+ * This class should normally not be subclassed directly, but the
+ * OptionStorageTemplate should be used instead.  The templated class provides
+ * basic functionality for most of the pure virtual methods, and also
+ * integrates well with option setting objects derived from OptionTemplate.
  *
  * \inlibraryapi
  * \ingroup module_options
+ *
+ * \internal
+ * This class really consists of two parts: the public interface that is
+ * used by the internal implementation of the options module, and the
+ * interface that derived classes use to provide type-dependent functionality.
+ * The latter consists of a few pure virtual methods, of which a few simple
+ * query methods are also part of the module-internal interface, others are
+ * protected and called by the non-virtual methods when needed.
+ * The reason why these two roles are in one class is twofold:
+ *  -# Both the derived classes and the internal module implementation may need
+ *     access to the same information like the allowed number of values and the
+ *     name of the option.
+ *  -# Having only one class is consistent with the structure used for options
+ *     settings objects: there is very direct correspondence between
+ *     AbstractOption and AbstractOptionStorage and between OptionTemplate and
+ *     OptionStorageTemplate.
  */
-template <typename T>
-class AbstractOptionStorage : public OptionStorageInterface
+class AbstractOptionStorage
 {
     public:
-        //! Alias for the template class for use in base classes.
-        typedef AbstractOptionStorage<T> MyBase;
-        //! Type of the container that contains the current values.
-        typedef std::vector<T> ValueList;
-
         virtual ~AbstractOptionStorage();
 
         /*! \brief
-         * Initializes the storage from option settings.
+         * Initializes the storage object from the settings object.
+         *
+         * \param[in] settings  Option settings.
+         * \param[in] options   Option collection that will contain the
+         *     option.
+         * \retval 0 on success.
+         */
+        int init(const AbstractOption &settings, Options *options);
+
+        //! Returns true if the option has been set.
+        bool isSet() const { return hasFlag(efSet); }
+        //! Returns true if the option is a boolean option.
+        bool isBoolean() const { return hasFlag(efBoolean); }
+        //! Returns true if the option is a file option.
+        bool isFile() const { return hasFlag(efFile); }
+        //! Returns true if the option is a hidden option.
+        bool isHidden() const { return hasFlag(efHidden); }
+        //! Returns the name of the option.
+        const std::string &name() const { return _name; }
+        //! Returns the description of the option.
+        const std::string &description() const { return _descr; }
+        /*! \brief
+         * Returns a short string describing the type of the option.
+         *
+         * The caller is free to discard the returned string.
+         */
+        virtual const char *typeString() const = 0;
+        /*! \brief
+         * Returns the number of option values added so far.
+         */
+        virtual int valueCount() const = 0;
+        /*! \brief
+         * Returns the i'th value formatted as a string.
+         */
+        virtual std::string formatValue(int i) const = 0;
+
+        /*! \brief
+         * Starts adding values from a new source for the option.
          *
          * \retval 0 on success.
          *
-         * \see OptionTemplate::createDefaultStorage()
+         * This marks the vurrent value of the option as a default value,
+         * causing next call to startSet() to clear it.  This allows values
+         * from the new source to overwrite old values.
          */
-        template <class U>
-        int init(const OptionTemplate<T, U> &settings, Options *options);
-
-        // No implementation in this class for the pure virtual methods, but
-        // the declarations are still included for clarity.
-        virtual const char *typeString() const = 0;
-        virtual void clear();
-        /*! \copydoc OptionStorageInterface::appendValue()
+        int startSource();
+        /*! \brief
+         * Starts adding a new set of values for the option.
          *
-         * Derived classes should call addValue() after they have converted
-         * \p value to the storage type.
-         */
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors) = 0;
-        virtual int finishSet(int nvalues,
-                              AbstractErrorReporter *errors) = 0;
-        /*! \copydoc OptionStorageInterface::finish()
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 on success.
          *
-         * The implementation in AbstractStorage copies the values
-         * from the main storage vector to alternate locations, and always
-         * succeeds.  Derived classes should always call the base class
-         * implementation if they override this method.
+         * If the parameter is specified multiple times, startSet() should be
+         * called before the values for each instance.
          */
-        virtual int finish(AbstractErrorReporter *errors);
-        virtual int valueCount() const { return _values->size(); }
-        virtual std::string formatValue(int i) const = 0;
-        virtual std::string formatValues() const;
+        int startSet(AbstractErrorReporter *errors);
+        /*! \brief
+         * Adds a new value for the option, converting it from a string.
+         *
+         * \param[in] value  String value to convert.
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 if the value was successfully converted and added.
+         */
+        int appendValue(const std::string &value,
+                        AbstractErrorReporter *errors);
+        /*! \brief
+         * Performs validation and/or actions once a set of values has been
+         * added.
+         *
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 on success.
+         *
+         * If the parameter is specified multiple times, finishSet() should be
+         * called after the values for each instance.
+         */
+        int finishSet(AbstractErrorReporter *errors);
+        /*! \brief
+         * Performs validation and/or actions once all values have been added.
+         *
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 on success.
+         *
+         * This function should be called after all values have been provided
+         * with appendValue().  Calls finishSet() if needed.
+         */
+        int finish(AbstractErrorReporter *errors);
 
     protected:
-        //! Initializes default values (no storage).
+        //! Creates an uninitialized storage object.
         AbstractOptionStorage();
 
-        /*! \brief
-         * Adds a value to the storage.
-         *
-         * \param[in] value  Value to add. A copy is made.
-         *
-         * Derived classes should call this function from the appendValue()
-         * implementation to add converted values to the storage.
-         */
-        void addValue(const T &value);
+        //! Returns true if the given flag is set.
+        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
+        //! Sets the given flag.
+        void setFlag(OptionFlag flag) { return _flags.set(flag); }
+        //! Clears the given flag.
+        void clearFlag(OptionFlag flag) { return _flags.clear(flag); }
 
-        //! Returns the Options object that houses the parameter.
+        //! Returns the minimum number of values required in one set.
+        int minValueCount() const { return _minValueCount; }
+        //! Returns the maximum allowed number of values in one set (-1 = no limit).
+        int maxValueCount() const { return _maxValueCount; }
+
+        //! Returns the Options object that houses the option.
         Options &hostOptions() { return *_options; }
         //! \copydoc hostOptions()
         const Options &hostOptions() const { return *_options; }
 
-        //! Provides derived classes access to the current list of values.
-        ValueList &values() { return *_values; }
-        //! Provides derived classes access to the current list of values.
-        const ValueList &values() const { return *_values; }
-
-    private:
-        //! Internal flags for managing the storage.
-        enum Flags {
-            //! Memory for \p _values is managed by this object.
-            efOwnValueVector   = 1<<0,
-        };
+        /*! \brief
+         * Removes all values from the storage.
+         *
+         * This function is called also before the first value is added,
+         * allowing the storage to set a default value in initialization.
+         */
+        virtual void clear() = 0;
+        /*! \brief
+         * Adds a new value, converting it from a string.
+         *
+         * \param[in] value  String value to convert.
+         * \param[in] errors Error reporter object.
+         * \retval 0 if the value was successfully converted.
+         *
+         * This function may be called multiple times if the underlying
+         * option is defined to accept multiple values.
+         */
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors) = 0;
+        /*! \brief
+         * Performs validation and/or actions once a set of values has been
+         * added.
+         *
+         * \param[in] nvalues  Number of values added since the previous call
+         *      to finishSet().
+         * \param[in] errors Error reporter object.
+         * \retval 0 on success.
+         *
+         * This function may be called multiple times of the underlying option
+         * can be specified multiple times.
+         */
+        virtual int processSet(int nvalues, AbstractErrorReporter *errors) = 0;
+        /*! \brief
+         * Performs validation and/or actions once all values have been added.
+         *
+         * \param[in] errors Error reporter object.
+         * \retval 0 if final option values are valid.
+         *
+         * This function is always called once.
+         */
+        virtual int processAll(AbstractErrorReporter *errors) = 0;
 
         /*! \brief
-         * Vector for primary storage of option values.
+         * Increments the number of values for the current set.
          *
-         * Is never NULL; points either to externally provided vector, or an
-         * internally allocated one.  The allocation is performed by init().
-         *
-         * addValue() adds values only to this storage.  Other memory locations
-         * are updated only when finish() is called.
+         * \retval 0 on success.
+         * \retval ::eeInvalidInput if the maximum value count has been reached.
          */
-        ValueList              *_values;
-        T                      *_store;
-        T                     **_storeArray;
-        int                    *_nvalptr;
-        int                     _flags;
+        int incrementValueCount();
+
+    private:
+        std::string             _name;
+        std::string             _descr;
+        //! Flags for the option.
+        OptionFlags             _flags;
+        //! Minimum number of values required (in one set).
+        int                     _minValueCount;
+        //! Maximum allowed number of values (in one set), or -1 if no limit.
+        int                     _maxValueCount;
+        //! Number of values added so far to the current set, or -1 if not in one.
+        int                     _currentValueCount;
+        //! Parent Options object.
         Options                *_options;
 
         // Disallow copy and assign.
-        AbstractOptionStorage(const AbstractOptionStorage<T> &);
-        void operator =(const AbstractOptionStorage<T> &);
+        AbstractOptionStorage(const AbstractOptionStorage &);
+        void operator =(const AbstractOptionStorage &);
 };
-
-/*! \brief
- * Helper function for creating storage objects.
- *
- * \tparam     T  Type of the settings object (derived from OptionTemplate).
- * \tparam     S  Type of the storage object (derived from AbstractOptionStorage).
- * \param[in]  settings  Settings object to pass to S::init().
- * \param[in]  options   Options object to pass to S::init().
- * \param[out] output    Pointer to the created storage object.
- * \returns    The return value of S::init().
- *
- * Creates a new instance of S and calls the init() method with the provided
- * parameters.  If the initialization fails, destroys the partially constructed
- * object.
- *
- * \inlibraryapi
- */
-template <class T, class S> int
-createOptionStorage(const T *settings, Options *options,
-              OptionStorageInterface **output)
-{
-    S *storage = new S;
-    int rc = storage->init(*settings, options);
-    if (rc != 0)
-    {
-        delete storage;
-        return rc;
-    }
-    *output = storage;
-    return 0;
-}
-
-template <typename T>
-AbstractOptionStorage<T>::AbstractOptionStorage()
-    : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL),
-      _flags(0), _options(NULL)
-{
-}
-
-template <typename T>
-AbstractOptionStorage<T>::~AbstractOptionStorage()
-{
-    if (_flags & efOwnValueVector)
-    {
-        delete _values;
-    }
-}
-
-template <typename T>
-template <class U>
-int AbstractOptionStorage<T>::init(const OptionTemplate<T, U> &settings, Options *options)
-{
-    // It's impossible for the caller to do proper memory management if
-    // the provided memory is not initialized as NULL.
-    assert(settings._storeArray == NULL || *settings._storeArray == NULL);
-    _store      = settings._store;
-    _storeArray = settings._storeArray;
-    _nvalptr    = settings._nvalptr;
-    _values     = settings._storeVector;
-    _options    = options;
-    if (!_values)
-    {
-        _values = new std::vector<T>;
-        _flags |= efOwnValueVector;
-    }
-    if (settings._defaultValue)
-    {
-        _values->clear();
-        _values->push_back(*settings._defaultValue);
-    }
-    else if ((_flags & efOwnValueVector) && _store)
-    {
-        _values->clear();
-        int count = (settings.isVector() ?
-                        settings._maxValueCount : settings._minValueCount);
-        for (int i = 0; i < count; ++i)
-        {
-            _values->push_back(_store[i]);
-        }
-    }
-    return 0;
-}
-
-template <typename T>
-void AbstractOptionStorage<T>::clear()
-{
-    _values->clear();
-}
-
-template <typename T>
-int AbstractOptionStorage<T>::finish(AbstractErrorReporter * /*errors*/)
-{
-    if (_nvalptr)
-    {
-        *_nvalptr = _values->size();
-    }
-    if (_storeArray)
-    {
-        *_storeArray = new T[_values->size()];
-    }
-    for (size_t i = 0; i < _values->size(); ++i)
-    {
-        if (_store)
-        {
-            _store[i] = (*_values)[i];
-        }
-        if (_storeArray)
-        {
-            (*_storeArray)[i] = (*_values)[i];
-        }
-    }
-    return 0;
-}
-
-template <typename T>
-void AbstractOptionStorage<T>::addValue(const T &value)
-{
-    // We store the value here to allow limited dependence between option
-    // values.
-    if (_store != NULL)
-    {
-        _store[_values->size()] = value;
-    }
-    _values->push_back(value);
-}
-
-template <typename T>
-std::string AbstractOptionStorage<T>::formatValues() const
-{
-    std::string result;
-    int count = valueCount();
-    for (int i = 0; i < count; ++i)
-    {
-        if (i != 0)
-        {
-            result.append(" ");
-        }
-        result.append(formatValue(i));
-    }
-    return result;
-}
 
 } // namespace gmx
 

@@ -42,16 +42,19 @@
 #ifndef GMX_OPTIONS_OPTIONFLAGS_H
 #define GMX_OPTIONS_OPTIONFLAGS_H
 
+#include "../utility/flags.h"
+
 namespace gmx
 {
 
-/*! \brief
+/*! \internal \brief
  * Flags for options.
  *
  * These flags are not part of the public interface, even though they are in an
  * installed header.  They are needed in a few template class implementations.
  */
-enum OptionFlag {
+enum OptionFlag
+{
     //! %Option has been set.
     efSet                 = 1<<0,
     /*! \brief
@@ -76,20 +79,37 @@ enum OptionFlag {
      */
     efBoolean             = 1<<5,
     /*! \brief
-     * TOption value is a vector, but a single value is also accepted.
+     * %Option value is a vector, but a single value is also accepted.
      *
      * If only a single value is provided, the storage object should fill the
      * whole vector with that value.  The length of the vector must be fixed.
      * The default length is 3 elements.
      */
     efVector              = 1<<6,
-    //! User has provided an explicit default value.
-    efDefaultValue        = 1<<7,
     efExternalStore       = 1<<8,
     efExternalStoreArray  = 1<<9,
     efExternalValueVector = 1<<10,
-    //! User has provided a custom storage object.
-    efCustomStorage       = 1<<11,
+    //! %Option does not support default values.
+    efNoDefaultValue      = 1<<7,
+    /*! \brief
+     * Storage object may add zero values even when a value is provided.
+     *
+     * In order to do proper error checking, this flag should be set when it is
+     * possible that the AbstractOptionStorage::appendValue() method of the
+     * storage object does not add any values for the option and still
+     * succeeds.
+     */
+    efConversionMayNotAddValues = 1<<11,
+    /*! \brief
+     * Storage object does its custom checking for minimum value count.
+     *
+     * If this flag is set, the class derived from AbstractOptionStorage should
+     * implement processSet(), processAll(), and possible other functions it
+     * provides such that it always fails if not enough values are provided.
+     * This is useful to override the default check, which is done in
+     * AbstractOptionStorage::processSet().
+     */
+    efDontCheckMinimumCount     = 1<<16,
     efFile                = 1<<12,
     efFileRead            = 1<<13,
     efFileWrite           = 1<<14,
@@ -103,7 +123,7 @@ enum OptionFlag {
 };
 
 //! Holds a combination of ::OptionFlag values.
-typedef unsigned long OptionFlags;
+typedef FlagsTemplate<OptionFlag> OptionFlags;
 
 } // namespace gmx
 

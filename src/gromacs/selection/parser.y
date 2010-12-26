@@ -30,13 +30,20 @@
  */
 /*! \internal \file
  * \brief Grammar description and parser for the selection language.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 %{
-/*! \internal \file parser.c
+/*! \internal \file parser.cpp
  * \brief Generated (from parser.y by Bison) parser for the selection language.
+ *
+ * \ingroup module_selection
  */
 /*! \internal \file parser.h
  * \brief Generated (from parser.y by Bison) parser include file.
+ *
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -193,7 +200,7 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
            | error CMD_SEP
              {
                  $$ = NULL;
-                 _gmx_selparser_error("invalid selection '%s'",
+                 _gmx_selparser_error(scanner, "invalid selection '%s'",
                                       _gmx_sel_lexer_pselstr(scanner));
                  _gmx_sel_lexer_clear_method_stack(scanner);
                  if (_gmx_sel_is_lexer_interactive(scanner))
@@ -643,7 +650,7 @@ process_param_list(t_selexpr_param *params)
 static void
 yyerror(yyscan_t scanner, char const *s)
 {
-    _gmx_selparser_error("%s", s);
+    _gmx_selparser_error(scanner, "%s", s);
 }
 
 

@@ -41,8 +41,8 @@
 #include <string>
 #include <vector>
 
-#include "abstractoptionstorage.h"
 #include "optionfiletype.h"
+#include "optionstoragetemplate.h"
 
 namespace gmx
 {
@@ -59,25 +59,42 @@ class FileNameOption;
 /*! \internal \brief
  * Converts, validates, and stores boolean values.
  */
-class BooleanOptionStorage : public AbstractOptionStorage<bool>
+class BooleanOptionStorage : public OptionStorageTemplate<bool>
 {
     public:
         virtual const char *typeString() const { return "bool"; }
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int /*nvalues*/,
-                              AbstractErrorReporter * /*errors*/)
-        { return 0; }
         virtual std::string formatValue(int i) const;
+
+    private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
 };
 
 /*! \internal \brief
  * Converts, validates, and stores integer values.
  */
-class IntegerOptionStorage : public AbstractOptionStorage<int>
+class IntegerOptionStorage : public OptionStorageTemplate<int>
 {
     public:
         IntegerOptionStorage();
+
+        virtual const char *typeString() const
+        { return hasFlag(efVector) ? "vector" : "int"; }
+        virtual std::string formatValue(int i) const;
+
+    private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
+        virtual int processSet(int nvalues, AbstractErrorReporter *errors);
+};
+
+/*! \internal \brief
+ * Converts, validates, and stores floating-point (double) values.
+ */
+class DoubleOptionStorage : public OptionStorageTemplate<double>
+{
+    public:
+        DoubleOptionStorage();
 
         /*! \brief
          * Initializes the storage from option settings.
@@ -86,61 +103,38 @@ class IntegerOptionStorage : public AbstractOptionStorage<int>
          * \param[in] options    Options object.
          * \retval 0 on success.
          */
-        int init(const IntegerOption &settings, Options *options);
-
-        virtual const char *typeString() const { return _vectorLength > 0 ? "vector" : "int"; }
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int nvalues, AbstractErrorReporter *errors);
-        virtual std::string formatValue(int i) const;
-
-    private:
-        int                     _vectorLength;
-};
-
-/*! \internal \brief
- * Converts, validates, and stores floating-point (double) values.
- */
-class DoubleOptionStorage : public AbstractOptionStorage<double>
-{
-    public:
-        DoubleOptionStorage();
-
-        //! \copydoc IntegerOptionStorage::init()
         int init(const DoubleOption &settings, Options *options);
 
         virtual const char *typeString() const;
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int nvalues, AbstractErrorReporter *errors);
-        virtual int finish(AbstractErrorReporter *errors);
         virtual std::string formatValue(int i) const;
 
     private:
-        int                     _vectorLength;
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
+        virtual int processSet(int nvalues, AbstractErrorReporter *errors);
+        virtual int processAll(AbstractErrorReporter *errors);
+
         bool                    _bTime;
 };
 
 /*! \internal \brief
  * Converts, validates, and stores string values.
  */
-class StringOptionStorage : public AbstractOptionStorage<std::string>
+class StringOptionStorage : public OptionStorageTemplate<std::string>
 {
     public:
         StringOptionStorage();
 
-        //! \copydoc IntegerOptionStorage::init()
+        //! \copydoc DoubleOptionStorage::init()
         int init(const StringOption &settings, Options *options);
 
         virtual const char *typeString() const { return _allowed.empty() ? "string" : "enum"; }
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int /*nvalues*/,
-                              AbstractErrorReporter * /*errors*/)
-        { return 0; }
         virtual std::string formatValue(int i) const;
 
     private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
+
         ValueList               _allowed;
         int                    *_enumIndexStore;
 };
@@ -148,23 +142,21 @@ class StringOptionStorage : public AbstractOptionStorage<std::string>
 /*! \internal \brief
  * Converts, validates, and stores file names.
  */
-class FileNameOptionStorage : public AbstractOptionStorage<std::string>
+class FileNameOptionStorage : public OptionStorageTemplate<std::string>
 {
     public:
         FileNameOptionStorage();
 
-        //! \copydoc IntegerOptionStorage::init()
+        //! \copydoc StringOptionStorage::init()
         int init(const FileNameOption &settings, Options *options);
 
         virtual const char *typeString() const { return "file"; }
-        virtual int appendValue(const std::string &value,
-                                AbstractErrorReporter *errors);
-        virtual int finishSet(int /*nvalues*/,
-                              AbstractErrorReporter * /*errors*/)
-        { return 0; }
         virtual std::string formatValue(int i) const;
 
     private:
+        virtual int convertValue(const std::string &value,
+                                 AbstractErrorReporter *errors);
+
         OptionFileType          _filetype;
 };
 

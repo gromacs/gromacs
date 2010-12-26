@@ -33,14 +33,17 @@
  *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
-#ifndef SELECTION_HELP_H
-#define SELECTION_HELP_H
+#ifndef GMX_SELECTION_HELP_H
+#define GMX_SELECTION_HELP_H
 
-struct gmx_ana_selcollection_t;
+struct gmx_sel_symtab_t;
 
 /** Prints help for writing selections. */
 void
-_gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic);
+_gmx_sel_print_help(struct gmx_sel_symtab_t *symtab, const char *topic);
 
 #endif

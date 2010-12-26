@@ -37,9 +37,9 @@
  */
 #include "gromacs/options/optionsvisitor.h"
 
+#include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/options.h"
 
-#include "option.h"
 #include "options-impl.h"
 
 namespace gmx
@@ -49,7 +49,7 @@ namespace gmx
  * OptionInfo
  */
 
-OptionInfo::OptionInfo(const Option &option)
+OptionInfo::OptionInfo(const AbstractOptionStorage &option)
     : _option(option)
 {
 }
@@ -64,6 +64,11 @@ bool OptionInfo::isFile() const
     return _option.isFile();
 }
 
+bool OptionInfo::isHidden() const
+{
+    return _option.isHidden();
+}
+
 const std::string &OptionInfo::name() const
 {
     return _option.name();
@@ -76,7 +81,7 @@ const std::string &OptionInfo::description() const
 
 const char *OptionInfo::type() const
 {
-    return _option.type();
+    return _option.typeString();
 }
 
 int OptionInfo::valueCount() const
@@ -91,7 +96,17 @@ std::string OptionInfo::formatValue(int i) const
 
 std::string OptionInfo::formatValues() const
 {
-    return _option.formatValues();
+    std::string result;
+    int count = valueCount();
+    for (int i = 0; i < count; ++i)
+    {
+        if (i != 0)
+        {
+            result.append(" ");
+        }
+        result.append(formatValue(i));
+    }
+    return result;
 }
 
 /********************************************************************

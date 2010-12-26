@@ -40,6 +40,9 @@
 #include <cassert>
 #include <cstddef>
 
+#include <smalloc.h>
+#include <statutil.h>
+
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 
@@ -49,14 +52,31 @@ namespace gmx
 static const char *const timeUnits[] = {
     "fs", "ps", "ns", "us", "ms",  "s", NULL
 };
+static const char *const plotFormats[] = {
+    "none", "xmgrace", "xmgr", NULL
+};
 static const double timeScaleFactors[] = {
     1e-3,    1,  1e3,  1e6,  1e9, 1e12
 };
 
+
 OptionsGlobalProperties::OptionsGlobalProperties()
-    : _timeUnit(1), _usedProperties(0)
+    : _usedProperties(0), _timeUnit(1), _plotFormat(1),
+      _selectionCollection(NULL), _oenv(NULL)
 {
+    snew(_oenv, 1);
+    output_env_init_default(_oenv);
 }
+
+
+OptionsGlobalProperties::~OptionsGlobalProperties()
+{
+    if (_oenv != NULL)
+    {
+        output_env_done(_oenv);
+    }
+}
+
 
 double OptionsGlobalProperties::timeScaleFactor() const
 {
@@ -64,6 +84,7 @@ double OptionsGlobalProperties::timeScaleFactor() const
            && (size_t)_timeUnit < sizeof(timeScaleFactors)/sizeof(timeScaleFactors[0]));
     return timeScaleFactors[_timeUnit];
 }
+
 
 void OptionsGlobalProperties::addDefaultOptions(Options *options)
 {
@@ -73,6 +94,33 @@ void OptionsGlobalProperties::addDefaultOptions(Options *options)
                                .defaultValue("ps")
                                .storeEnumIndex(&_timeUnit)
                                .description("Unit for time values"));
+    }
+    if (isPropertyUsed(eogpPlotFormat))
+    {
+        options->addOption(StringOption("xvg").enumValue(plotFormats)
+                               .defaultValue("xmgrace")
+                               .storeEnumIndex(&_plotFormat)
+                               .description("Plot formatting"));
+    }
+}
+
+
+void OptionsGlobalProperties::finish()
+{
+    if (isPropertyUsed(eogpTimeScaleFactor))
+    {
+        _oenv->time_unit = static_cast<time_unit_t>(_timeUnit + 1);
+    }
+    if (isPropertyUsed(eogpPlotFormat))
+    {
+        if (_plotFormat == 0)
+        {
+            _oenv->xvg_format = exvgNONE;
+        }
+        else
+        {
+            _oenv->xvg_format = static_cast<xvg_format_t>(_plotFormat);
+        }
     }
 }
 

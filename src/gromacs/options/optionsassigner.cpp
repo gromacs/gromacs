@@ -37,13 +37,15 @@
  */
 #include "gromacs/options/optionsassigner.h"
 
+#include <deque>
+
 #include <cassert>
 
 #include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/options.h"
 
-#include "option.h"
 #include "optionsassigner-impl.h"
 #include "options-impl.h"
 
@@ -55,10 +57,95 @@ namespace gmx
  */
 
 OptionsAssigner::Impl::Impl(Options *options, AbstractErrorReporter *errors)
-    : _options(*options), _errors(errors), _currentOption(NULL), _errorCode(0),
-      _currentValueCount(0), _reverseBoolean(false)
+    : _options(*options), _errors(errors), _flags(0), _currentOption(NULL),
+      _errorCode(0), _currentValueCount(0), _reverseBoolean(false)
 {
     _sectionStack.push_back(&_options);
+}
+
+void OptionsAssigner::Impl::setFlag(OptionsAssigner::Impl::Flag flag, bool bSet)
+{
+    if (bSet)
+    {
+        _flags |= flag;
+    }
+    else
+    {
+        _flags &= ~flag;
+    }
+}
+
+AbstractOptionStorage *
+OptionsAssigner::Impl::findOption(const char *name)
+{
+    assert(_currentOption == NULL);
+    AbstractOptionStorage *option = NULL;
+    Options *section = NULL;
+    Options *root = &currentSection();
+    Options *oldRoot = NULL;
+    int      upcount = 0;
+    std::deque<Options *> searchList;
+    searchList.push_back(root);
+    while (option == NULL && !searchList.empty())
+    {
+        section = searchList.front();
+        option = section->_impl->findOption(name);
+        if (option == NULL && hasFlag(efAcceptBooleanNoPrefix))
+        {
+            if (name[0] == 'n' && name[1] == 'o')
+            {
+                option = section->_impl->findOption(name + 2);
+                if (option != NULL && option->isBoolean())
+                {
+                    _reverseBoolean = true;
+                }
+                else
+                {
+                    option = NULL;
+                }
+            }
+        }
+        searchList.pop_front();
+        if (hasFlag(efNoStrictSectioning))
+        {
+            Options::Impl::SubSectionList::const_iterator i;
+            for (i = section->_impl->_subSections.begin();
+                 i != section->_impl->_subSections.end(); ++i)
+            {
+                if (*i != oldRoot)
+                {
+                    searchList.push_back(*i);
+                }
+            }
+            if (searchList.empty() && root != &_options)
+            {
+                Options *oldRoot = root;
+                root = root->_impl->_parent;
+                ++upcount;
+                searchList.push_back(root);
+            }
+        }
+    }
+    if (hasFlag(efNoStrictSectioning) && option != NULL)
+    {
+        while (upcount > 0)
+        {
+            _sectionStack.pop_back();
+            --upcount;
+        }
+        std::vector<Options *> sections;
+        while (section != &currentSection())
+        {
+            sections.push_back(section);
+            section = section->_impl->_parent;
+        }
+        while (!sections.empty())
+        {
+            _sectionStack.push_back(sections.back());
+            sections.pop_back();
+        }
+    }
+    return option;
 }
 
 /********************************************************************
@@ -78,6 +165,16 @@ OptionsAssigner::~OptionsAssigner()
 AbstractErrorReporter *OptionsAssigner::errorReporter() const
 {
     return _impl->_errors;
+}
+
+void OptionsAssigner::setAcceptBooleanNoPrefix(bool enabled)
+{
+    _impl->setFlag(Impl::efAcceptBooleanNoPrefix, enabled);
+}
+
+void OptionsAssigner::setNoStrictSectioning(bool enabled)
+{
+    _impl->setFlag(Impl::efNoStrictSectioning, enabled);
 }
 
 int OptionsAssigner::start()
@@ -113,26 +210,11 @@ int OptionsAssigner::startOption(const char *name)
         finishOption();
     }
 
-    Option *option = _impl->currentSection()._impl->findOption(name);
+    AbstractOptionStorage *option = _impl->findOption(name);
     if (option == NULL)
     {
-        if (name[0] == 'n' && name[1] == 'o')
-        {
-            option = _impl->currentSection()._impl->findOption(name + 2);
-            if (option != NULL && option->isBoolean())
-            {
-                _impl->_reverseBoolean = true;
-            }
-            else
-            {
-                option = NULL;
-            }
-        }
-        if (option == NULL)
-        {
-            _impl->_errors->error("Unknown option");
-            return _impl->keepError(eeInvalidInput);
-        }
+        _impl->_errors->error("Unknown option");
+        return _impl->keepError(eeInvalidInput);
     }
     int rc = option->startSet(_impl->_errors);
     if (rc != 0)
@@ -146,7 +228,7 @@ int OptionsAssigner::startOption(const char *name)
 
 int OptionsAssigner::appendValue(const std::string &value)
 {
-    Option *option = _impl->_currentOption;
+    AbstractOptionStorage *option = _impl->_currentOption;
     // The option should have been successfully started.
     assert(option != NULL);
     ++_impl->_currentValueCount;
@@ -155,7 +237,7 @@ int OptionsAssigner::appendValue(const std::string &value)
 
 int OptionsAssigner::finishOption()
 {
-    Option *option = _impl->_currentOption;
+    AbstractOptionStorage *option = _impl->_currentOption;
     // The option should have been successfully started.
     assert(option != NULL);
     int rc = 0;

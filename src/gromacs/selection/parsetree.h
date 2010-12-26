@@ -29,16 +29,20 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Handling of intermediate selection parser data.
+ * \brief
+ * Handling of intermediate selection parser data.
  *
  * The data types declared in this header are used by the parser to store
  * intermediate data when constructing method expressions.
  * In particular, the parameters for the method are stored.
  * The intermediate data is freed once a \c t_selelem object can be
  * constructed.
- * 
+ *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef SELECTION_PARSETREE_H
 #define SELECTION_PARSETREE_H
@@ -61,6 +65,7 @@ typedef struct t_selexpr_value
     e_selvalue_t            type;
     /** TRUE if the value is the result of an expression. */
     gmx_bool                    bExpr;
+    /** The actual value. */
     union {
         /** The integer value/range (\p type INT_VALUE); */
         struct {
@@ -104,7 +109,10 @@ typedef struct t_selexpr_param
 
 /** Error reporting function for the selection parser. */
 void
-_gmx_selparser_error(const char *fmt, ...);
+_gmx_selparser_warning(void *scanner, const char *fmt, ...);
+/** Error reporting function for the selection parser. */
+void
+_gmx_selparser_error(void *scanner, const char *fmt, ...);
 
 /** Allocates and initializes a constant \c t_selexpr_value. */
 t_selexpr_value *
@@ -125,7 +133,7 @@ _gmx_selexpr_free_params(t_selexpr_param *param);
 
 /** Propagates the flags for selection elements. */
 int
-_gmx_selelem_update_flags(struct t_selelem *sel);
+_gmx_selelem_update_flags(struct t_selelem *sel, void *scanner);
 
 /** Initializes the method parameter data of \ref SEL_EXPRESSION and
  * \ref SEL_MODIFIER elements. */

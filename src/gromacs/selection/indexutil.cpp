@@ -29,7 +29,11 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of functions in indexutil.h.
+ * \brief
+ * Implements functions in indexutil.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>

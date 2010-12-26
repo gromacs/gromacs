@@ -29,14 +29,18 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Definition of \c t_selelem and related things.
+ * \brief
+ * Declares ::t_selelem and related things.
  *
  * The selection element trees constructed by the parser and the compiler
  * are described on the respective pages:
- * \ref selparser and \ref selcompiler.
+ * \ref page_module_selection_parser and \ref page_module_selection_compiler.
  *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef SELECTION_ELEMENT_H
 #define SELECTION_ELEMENT_H
@@ -76,6 +80,8 @@ typedef enum
     SEL_SUBEXPR,
     /** Reference to a subexpression. */
     SEL_SUBEXPRREF,
+    /** Unresolved reference to an external group. */
+    SEL_GROUPREF,
     /** Post-processing of selection value. */
     SEL_MODIFIER
 } e_selelem_t;
@@ -288,6 +294,13 @@ typedef struct t_selelem
         }                               arith;
         /** Associated selection parameter for \ref SEL_SUBEXPRREF elements. */
         struct gmx_ana_selparam_t      *param;
+        /** The string/number used to reference the group. */
+        struct {
+            /** Name of the referenced external group. */
+            char                       *name;
+            /** If \a name is NULL, the index number of the referenced group. */
+            int                         id;
+        }                               gref;
     }                                   u;
     /** Memory pool to use for values, or NULL if standard memory handling. */
     struct gmx_sel_mempool_t           *mempool;

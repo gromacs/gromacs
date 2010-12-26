@@ -29,7 +29,11 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of functions in selhelp.c.
+ * \brief
+ * Implements functions in selhelp.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -41,13 +45,18 @@
 
 #include "gromacs/selection/selmethod.h"
 
-#include "selcollection.h"
 #include "selhelp.h"
 #include "symrec.h"
 
+/*! \internal \brief
+ * Describes a selection help section.
+ */
 typedef struct {
+    //! Topic keyword that produces this help.
     const char  *topic;
+    //! Number of items in the \a text array.
     int          nl;
+    //! Help text as a list of strings that will be concatenated.
     const char **text;
 } t_selection_help_item;
 
@@ -318,18 +327,18 @@ static const t_selection_help_item helpitems[] = {
 /*! \brief
  * Prints a brief list of keywords (selection methods) available.
  *
- * \param[in] sc    Selection collection for which the list should be printed.
+ * \param[in] symtab  Symbol table to use to find available keywords.
  * \param[in] type  Only methods that return this type are printed.
  * \param[in] bMod  If FALSE, \ref SMETH_MODIFIER methods are excluded, otherwise
  *     only them are printed.
  */
 static void
-print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
+print_keyword_list(gmx_sel_symtab_t *symtab, e_selvalue_t type,
                    gmx_bool bMod)
 {
     gmx_sel_symrec_t *symbol;
 
-    symbol = _gmx_sel_first_symbol(sc->symtab, SYMBOL_METHOD);
+    symbol = _gmx_sel_first_symbol(symtab, SYMBOL_METHOD);
     while (symbol)
     {
         gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
@@ -362,14 +371,14 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
 }
 
 /*!
- * \param[in]  sc    Selection collection for which help should be printed.
+ * \param[in]   symtab  Symbol table to use to find available keywords.
  * \param[in]  topic Topic to print help on, or NULL for general help.
  *
  * \p sc is used to get information on which keywords are available in the
  * present context.
  */
 void
-_gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
+_gmx_sel_print_help(gmx_sel_symtab_t *symtab, const char *topic)
 {
     const t_selection_help_item *item = NULL;
     size_t i;
@@ -384,7 +393,7 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
         for (i = 0; i < asize(helpitems); ++i)
         {
             item = &helpitems[i];
-            _gmx_sel_print_help(sc, item->topic);
+            _gmx_sel_print_help(symtab, item->topic);
             if (i != asize(helpitems) - 1)
             {
                 fprintf(stderr, "\n\n");
@@ -409,7 +418,7 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
     {
         gmx_sel_symrec_t *symbol;
 
-        symbol = _gmx_sel_first_symbol(sc->symtab, SYMBOL_METHOD);
+        symbol = _gmx_sel_first_symbol(symtab, SYMBOL_METHOD);
         while (symbol)
         {
             gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
@@ -454,25 +463,25 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
         /* Print the list of keywords */
         fprintf(stderr, "\nKeywords that select atoms by an integer property:\n");
         fprintf(stderr, "(use in expressions or like \"atomnr 1 to 5 7 9\")\n");
-        print_keyword_list(sc, INT_VALUE, FALSE);
+        print_keyword_list(symtab, INT_VALUE, FALSE);
 
         fprintf(stderr, "\nKeywords that select atoms by a numeric property:\n");
         fprintf(stderr, "(use in expressions or like \"occupancy 0.5 to 1\")\n");
-        print_keyword_list(sc, REAL_VALUE, FALSE);
+        print_keyword_list(symtab, REAL_VALUE, FALSE);
 
         fprintf(stderr, "\nKeywords that select atoms by a string property:\n");
         fprintf(stderr, "(use like \"name PATTERN [PATTERN] ...\")\n");
-        print_keyword_list(sc, STR_VALUE, FALSE);
+        print_keyword_list(symtab, STR_VALUE, FALSE);
 
         fprintf(stderr, "\nAdditional keywords that directly select atoms:\n");
-        print_keyword_list(sc, GROUP_VALUE, FALSE);
+        print_keyword_list(symtab, GROUP_VALUE, FALSE);
 
         fprintf(stderr, "\nKeywords that directly evaluate to positions:\n");
         fprintf(stderr, "(see also \"help positions\")\n");
-        print_keyword_list(sc, POS_VALUE, FALSE);
+        print_keyword_list(symtab, POS_VALUE, FALSE);
 
         fprintf(stderr, "\nAdditional keywords:\n");
-        print_keyword_list(sc, POS_VALUE, TRUE);
-        print_keyword_list(sc, NO_VALUE, TRUE);
+        print_keyword_list(symtab, POS_VALUE, TRUE);
+        print_keyword_list(symtab, NO_VALUE, TRUE);
     }
 }

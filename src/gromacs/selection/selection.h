@@ -29,37 +29,26 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \file
- * \brief API for handling selection (the \c gmx_ana_selection_t structure and related functions).
+ * \brief
+ * Declares gmx::Selection.
  *
- * There should be no need to use the data structures or call the
- * functions in this file directly unless using the selection routines outside
- * the main trajectory analysis API.
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inpublicapi
+ * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELECTION_H
 #define GMX_SELECTION_SELECTION_H
 
 #include "position.h"
 #include "indexutil.h"
+#include "selectionenums.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+struct t_selelem;
 
-/** Information for a collection of selections. */
-typedef struct gmx_ana_selcollection_t gmx_ana_selcollection_t;
-
-struct gmx_ana_poscalc_coll_t;
-
-/** Defines the type of covered fraction. */
-typedef enum
-{
-    CFRAC_NONE,         /**< No covered fraction (everything covered). */
-    CFRAC_SOLIDANGLE    /**< Fraction of a solid (3D) angle covered. */
-} e_coverfrac_t;
-
-/*! \brief
+/*! \internal \brief
  * Describes a single selection.
+ *
+ * \ingroup module_selection
  */
 typedef struct gmx_ana_selection_t
 {
@@ -100,96 +89,112 @@ typedef struct gmx_ana_selection_t
     real                   *orgq;
 } gmx_ana_selection_t;
 
-/** Frees the memory allocated for a selection. */
-void
-gmx_ana_selection_free(gmx_ana_selection_t *sel);
-/** Returns the name of a selection. */
-char *
-gmx_ana_selection_name(gmx_ana_selection_t *sel);
-/** Prints out the selection information. */
-void
-gmx_ana_selection_print_info(gmx_ana_selection_t *sel);
-/** Initializes the information for covered fraction. */
-gmx_bool
-gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type);
+namespace gmx
+{
 
-/** Creates a new empty selection collection. */
-int
-gmx_ana_selcollection_create(gmx_ana_selcollection_t **sc,
-                             struct gmx_ana_poscalc_coll_t *pcc);
-/** Frees the memory allocated for a selection collection. */
-void
-gmx_ana_selcollection_free(gmx_ana_selcollection_t *sc);
-/** Sets the default reference position handling for a selection collection. */
-void
-gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, const char *type);
-/** Sets the default output position handling for a selection collection. */
-void
-gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
-                                     const char *type, gmx_bool bMaskOnly);
-/** Request evaluation of velocities for selections. */
-void
-gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
-                                    gmx_bool bVelOut);
-/** Request evaluation of forces for selections. */
-void
-gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
-                                      gmx_bool bForceOut);
-/** Sets the topology for a selection collection. */
-int
-gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,
-                                   int natoms);
-/** Returns the number of selections specified by a selection collection. */
-int
-gmx_ana_selcollection_get_count(gmx_ana_selcollection_t *sc);
-/** Returns a selection by index. */
-gmx_ana_selection_t *
-gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i);
-/** Returns TRUE if the collection requires topology information for evaluation. */
-gmx_bool
-gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc);
-/** Prints a human-readable version of the internal selection element tree. */
-void
-gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, gmx_bool bValues);
-/** Prints the selection strings into an XVGR file as comments. */
-void
-xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc, 
-                   const output_env_t oenv);
+class SelectionCollection;
 
-/* In parsetree.c */
-/** Parses selection(s) from standard input. */
-int
-gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
-                                  gmx_ana_indexgrps_t *grps,
-                                  gmx_bool bInteractive);
-/** Parses selection(s) from a file. */
-int
-gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
-                                  gmx_ana_indexgrps_t *grps);
-/** Parses selection(s) from a string. */
-int
-gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
-                                gmx_ana_indexgrps_t *grps);
+/*! \brief
+ * Provides access to a single selection.
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class Selection
+{
+    public:
+        /*! \brief
+         * Creates a new selection object.
+         *
+         * \param[in] elem   Root of the evaluation tree for this selection.
+         * \param[in] selstr String that was parsed to produce this selection.
+         */
+        Selection(t_selelem *elem, const char *selstr);
 
-/* In compiler.c */
-/** Set debugging flag for selection compilation. */
-void
-gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, gmx_bool bDebug);
-/** Prepares the selections for evaluation and performs some optimizations. */
-int
-gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc);
+        //! Returns the name of the selection.
+        const char *name() const  { return _sel.name; }
+        //! Returns the string that was parsed to produce this selection.
+        const char *selectionText() const { return _sel.selstr; }
+        //! Returns true if the size of the selection (posCount()) is dynamic.
+        bool isDynamic() const { return _sel.bDynamic; }
+        //! Returns the type of positions in the selection.
+        e_index_t type() const { return _sel.p.m.type; }
+        //! Number of positions in the selection.
+        int posCount() const { return _sel.p.nr; }
+        //! Returns the \p i'th position for the selection.
+        const rvec &x(int i) const { return _sel.p.x[i]; }
+        //! Returns the velocity for the \p i'th position.
+        const rvec &v(int i) const { return _sel.p.v[i]; }
+        //! Returns the force for the \p i'th position.
+        const rvec &f(int i) const { return _sel.p.f[i]; }
+        /*! \brief
+         * Returns the reference ID for the \p i'th position.
+         */
+        int refId(int i) const { return _sel.p.m.refid[i]; }
+        /*! \brief
+         * Returns the mapped ID for the \p i'th position.
+         */
+        int mapId(int i) const { return _sel.p.m.mapid[i]; }
+        //! Returns the mass for the \p i'th position.
+        real mass(int i) const { return _sel.m[i]; }
+        //! Returns the charge for the \p i'th position.
+        real charge(int i) const { return _sel.q[i]; }
+        //! Returns the number of atoms contributing to the \p i'th position.
+        int atomCount(int i) const
+            { return _sel.p.m.mapb.index[i+1] - _sel.p.m.mapb.index[i]; }
+        //! Returns the atom indices contributing to the \p i'th position.
+        const int *atomIndices(int i) const
+            { return _sel.g ? _sel.g->index + _sel.p.m.mapb.index[i] : NULL; }
+        //! Returns the covered fraction for the current frame.
+        real cfrac() const { return _sel.cfrac; }
+        //! Deprecated method for direct access to position data.
+        const gmx_ana_pos_t *positions() const { return &_sel.p; }
+        //! Deprecated method for direct access to atom index data.
+        gmx_ana_index_t *indexGroup() const { return _sel.g; }
+        //! Deprecated method for direct access to to mapped ID array.
+        int *mapIds() const { return _sel.p.m.mapid; }
 
-/* In evaluate.c */
-/** Evaluates the selection. */
-int
-gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
-                               t_trxframe *fr, t_pbc *pbc);
-/** Evaluates the largest possible index groups from dynamic selections. */
-int
-gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes);
+        //! Returns true if the given flag is set.
+        bool hasFlag(SelectionFlag flag) const { return _flags.test(flag); }
+        //! Sets the flags for this selection.
+        void setFlags(SelectionFlags flags) { _flags = flags; }
+        /*! \brief
+         * Sets the ID for the \p i'th position for use with mapId().
+         */
+        void setOriginalId(int i, int id) { _sel.p.m.orgid[i] = id; }
+        /*! \brief
+         * Initializes information about covered fractions.
+         *
+         * \param[in] type Type of covered fraction required.
+         * \returns   True if the covered fraction can be calculated for the
+         *      selection.
+         */
+        bool initCoveredFraction(e_coverfrac_t type);
 
-#ifdef __cplusplus
-}
-#endif
+        //! Prints out one-line description of the selection.
+        void printInfo() const;
+        /*! \brief
+         * Prints out extended information about the selection for debugging.
+         *
+         * \param[in] nmaxind Maximum number of values to print in lists
+         *      (-1 = print all).
+         */
+        void printDebugInfo(int nmaxind) const;
+
+        gmx_ana_selection_t     _sel;
+
+    private:
+        ~Selection();
+
+        SelectionFlags          _flags;
+
+        friend class SelectionCollection;
+
+        // Disallow copy and assign.
+        Selection(const Selection &);
+        void operator =(const Selection &);
+};
+
+} // namespace gmx
 
 #endif

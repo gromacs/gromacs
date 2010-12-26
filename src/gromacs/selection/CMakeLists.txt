@@ -14,3 +14,7 @@ set(SELECTION_PUBLIC_HEADERS
 install(FILES ${SELECTION_PUBLIC_HEADERS}
         DESTINATION ${INCL_INSTALL_DIR}/gromacs/selection
         COMPONENT development)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif (BUILD_TESTING)

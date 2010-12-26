@@ -64,6 +64,15 @@ class AsciiHelpWriter
         ~AsciiHelpWriter();
 
         /*! \brief
+         * Sets whether hidden options are shown in the help.
+         */
+        AsciiHelpWriter &setShowHidden(bool bShow);
+        /*! \brief
+         * Sets whether long descriptions for sections are shown in the help.
+         */
+        AsciiHelpWriter &setShowDescriptions(bool bShow);
+
+        /*! \brief
          * Writes the help.
          *
          * \param[in] fp  File to write the help to.

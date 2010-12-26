@@ -18,5 +18,5 @@ if [[ -f $dirname/parser.y && -f $dirname/scanner.l ]] ; then
     cd $dirname
 fi
 
-[[ $FORCE || parser.y  -nt parser.c ]]  && bison -d -t -o parser.c parser.y
-[[ $FORCE || scanner.l -nt scanner.c ]] && flex -o scanner.c scanner.l
+[[ $FORCE || parser.y  -nt parser.cpp ]]  && bison -t -o parser.cpp --defines=parser.h parser.y
+[[ $FORCE || scanner.l -nt scanner.cpp ]] && flex -o scanner.cpp scanner.l

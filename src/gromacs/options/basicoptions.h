@@ -42,6 +42,8 @@
 #ifndef GMX_OPTIONS_BASICOPTIONS_H
 #define GMX_OPTIONS_BASICOPTIONS_H
 
+#include <cassert>
+
 #include <string>
 
 #include "abstractoption.h"
@@ -83,7 +85,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 
     protected:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
 };
 
 /*! \brief
@@ -120,7 +122,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
     protected:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
 
         /*! \brief
          * Needed to initialize IntegerOptionStorage from this class without
@@ -151,7 +153,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 
     private:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
 
         bool _bTime;
 
@@ -186,7 +188,8 @@ class StringOption : public OptionTemplate<std::string, StringOption>
     public:
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
-            : MyBase(name), _enumValues(NULL), _enumIndexStore(NULL)
+            : MyBase(name), _enumValues(NULL), _defaultEnumIndex(-1),
+              _enumIndexStore(NULL)
         {}
 
         /*! \brief
@@ -208,6 +211,13 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         MyClass &enumValue(const char *const *values)
         { _enumValues = values; return me(); }
         /*! \brief
+         * Sets the default value using an index into the enumeration table.
+         *
+         * Cannot be specified without enumValue().
+         */
+        MyClass &defaultEnumIndex(int index)
+        { assert(index >= 0); _defaultEnumIndex = index; return me(); }
+        /*! \brief
          * Stores the index of the selected value into the provided memory
          * location.
          *
@@ -216,18 +226,19 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * option gets its value.  If the option has not been provided,
          * and there is no default value, -1 is stored.
          *
-         * Only makes sense if specified together with enumValue().
+         * Cannot be specified without enumValue().
          */
         MyClass &storeEnumIndex(int *store)
         { _enumIndexStore = store; return me(); }
 
     protected:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
         virtual std::string createDescription() const;
 
     private:
         const char *const      *_enumValues;
+        int                     _defaultEnumIndex;
         int                    *_enumIndexStore;
 
         /*! \brief
@@ -248,7 +259,9 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
             : MyBase(name), _filetype(eftUnknown)
-        { }
+        {
+            setFlag(efFile);
+        }
 
         /*! \brief
          * Sets the type of the file this option accepts.
@@ -277,7 +290,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 
     protected:
         virtual int createDefaultStorage(Options *options,
-                                         OptionStorageInterface **storage) const;
+                                         AbstractOptionStorage **storage) const;
 
     private:
         OptionFileType          _filetype;

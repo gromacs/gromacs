@@ -29,7 +29,8 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of functions in evaluate.h.
+ * \brief
+ * Implements functions in evaluate.h.
  *
  * \todo
  * One of the major bottlenecks for selection performance is that all the
@@ -41,6 +42,9 @@
  * something can be evaluated by residue/molecule instead by atom, and
  * converting selections by residue/molecule into selections by atom
  * when necessary.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -59,7 +63,7 @@
 
 #include "evaluate.h"
 #include "mempool.h"
-#include "selcollection.h"
+#include "selectioncollection-impl.h"
 #include "selelem.h"
 
 /*!
@@ -173,7 +177,6 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
 {
     gmx_sel_evaluate_t  data;
     t_selelem          *sel;
-    int                 g, i;
     int                 rc;
 
     _gmx_sel_evaluate_init(&data, sc->mempool, &sc->gall, sc->top, fr, pbc);
@@ -207,13 +210,13 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
         sel = sel->next;
     }
     /* Update selection information */
-    for (g = 0; g < sc->nr; ++g)
+    for (size_t g = 0; g < sc->sel.size(); ++g)
     {
-        gmx_ana_selection_t *sel = sc->sel[g];
+        gmx_ana_selection_t *sel = &sc->sel[g]->_sel;
 
         if (sel->m != sel->orgm)
         {
-            for (i = 0; i < sel->p.nr; ++i)
+            for (int i = 0; i < sel->p.nr; ++i)
             {
                 sel->m[i] = sel->orgm[sel->p.m.refid[i]];
                 sel->q[i] = sel->orgq[sel->p.m.refid[i]];
@@ -237,22 +240,23 @@ int
 gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
 {
     t_selelem          *sel;
-    int                 g;
 
-    for (g = 0; g < sc->nr; ++g)
+    for (size_t g = 0; g < sc->sel.size(); ++g)
     {
-        sel = sc->sel[g]->selelem;
-        if (sc->sel[g]->bDynamic)
+        gmx_ana_selection_t *sel = &sc->sel[g]->_sel;
+        bool bMaskOnly = sc->sel[g]->hasFlag(gmx::efDynamicMask);
+        t_selelem *elem = sel->selelem;
+        if (sel->bDynamic)
         {
-            gmx_ana_index_copy(sc->sel[g]->g, sel->v.u.g, FALSE);
-            sc->sel[g]->g->name = NULL;
-            gmx_ana_indexmap_update(&sc->sel[g]->p.m, sc->sel[g]->g, sc->bMaskOnly);
-            sc->sel[g]->p.nr = sc->sel[g]->p.m.nr;
+            gmx_ana_index_copy(sel->g, elem->v.u.g, FALSE);
+            sel->g->name = NULL;
+            gmx_ana_indexmap_update(&sel->p.m, sel->g, bMaskOnly);
+            sel->p.nr = sel->p.m.nr;
         }
 
-        if (sc->sel[g]->bCFracDyn)
+        if (sel->bCFracDyn)
         {
-            sc->sel[g]->avecfrac /= nframes;
+            sel->avecfrac /= nframes;
         }
     }
     return 0;

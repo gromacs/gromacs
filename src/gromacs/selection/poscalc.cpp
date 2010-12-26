@@ -79,7 +79,8 @@
  * gmx_ana_poscalc_create_enum() is also provided for convenience.
  */
 /*! \internal \file
- * \brief Implementation of functions in poscalc.h.
+ * \brief
+ * Implements functions in poscalc.h.
  *
  * \todo
  * There is probably some room for optimization in the calculation of
@@ -100,6 +101,9 @@
  * but better heuristics could probably be implemented.
  * For best results, the setup should probably be postponed (at least
  * partially) to gmx_ana_poscalc_init_eval().
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -208,7 +212,8 @@ struct gmx_ana_poscalc_t
     /** Collection this calculation belongs to. */
     gmx_ana_poscalc_coll_t   *coll;
 };
-    
+
+//! Strings returned by gmx_ana_poscalc_create_type_enum().
 static const char *const poscalc_enum_strings[] = {
     "atom",
     "res_com",       "res_cog",
@@ -221,6 +226,7 @@ static const char *const poscalc_enum_strings[] = {
     "dyn_mol_com",   "dyn_mol_cog",
     NULL,
 };
+//! Number of elements in ::poscalc_enum_strings.
 #define NENUM asize(poscalc_enum_strings)
 
 /*! \brief

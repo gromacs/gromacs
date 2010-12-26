@@ -30,6 +30,9 @@
  */
 /*! \file
  * \brief API for handling positions.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_POSITION_H
 #define GMX_SELECTION_POSITION_H

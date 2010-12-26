@@ -29,7 +29,11 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementation of functions in selelem.h.
+ * \brief
+ * Implements functions in selelem.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -67,6 +71,7 @@ _gmx_selelem_type_str(t_selelem *sel)
         case SEL_ROOT:       return "ROOT";
         case SEL_SUBEXPR:    return "SUBEXPR";
         case SEL_SUBEXPRREF: return "REF";
+        case SEL_GROUPREF:   return "GROUPREF";
         case SEL_MODIFIER:   return "MODIFIER";
     }
     return NULL;
@@ -409,6 +414,10 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
         || (sel->type == SEL_CONST && sel->v.type == GROUP_VALUE))
     {
         gmx_ana_index_deinit(&sel->u.cgrp);
+    }
+    if (sel->type == SEL_GROUPREF)
+    {
+        sfree(sel->u.gref.name);
     }
 }
 

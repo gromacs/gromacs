@@ -33,6 +33,9 @@
  *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifndef SELECTION_SYMREC_H
 #define SELECTION_SYMREC_H

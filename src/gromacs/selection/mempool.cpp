@@ -29,10 +29,11 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Memory pooling for selection evaluation.
+ * \brief
+ * Implements functions in mempool.h.
  *
- * \todo
- * Document these functions.
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -48,23 +49,43 @@
 
 #include "mempool.h"
 
+//! Alignment in bytes for all returned blocks.
 #define ALIGN_STEP 8
 
+/*! \internal \brief
+ * Describes a single block allocated from the memory pool.
+ */
 typedef struct gmx_sel_mempool_block_t
 {
+    //! Pointer to the start of the block (as returned to the user).
     void                       *ptr;
+    //! Size of the block, including padding required to align next block.
     size_t                      size;
 } gmx_sel_mempool_block_t;
 
+/*! \internal \brief
+ * Describes a memory pool.
+ */
 struct gmx_sel_mempool_t
 {
+    //! Number of bytes currently allocated from the pool.
     size_t                      currsize;
+    //! Number of bytes free in the pool, or 0 if \a buffer is NULL.
     size_t                      freesize;
+    //! Memory area allocated for the pool, or NULL if not yet reserved.
     char                       *buffer;
+    //! Pointer to the first free byte (aligned at ::ALIGN_STEP) in \a buffer.
     char                       *freeptr;
+    //! Number of blocks allocated from the pool.
     int                         nblocks;
+    //! Array describing the allocated blocks.
     gmx_sel_mempool_block_t    *blockstack;
+    //! Number of elements allocated for the \a blockstack array.
     int                         blockstack_nalloc;
+    /*! \brief
+     * Maximum number of bytes that have been reserved from the pool
+     * simultaneously.
+     */
     size_t                      maxsize;
 };
 

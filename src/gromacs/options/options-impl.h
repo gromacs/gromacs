@@ -46,8 +46,8 @@
 namespace gmx
 {
 
+class AbstractOptionStorage;
 class OptionsGlobalProperties;
-class Option;
 
 /*! \internal \brief
  * Private implementation class for Options.
@@ -60,18 +60,10 @@ class Option;
 class Options::Impl
 {
     public:
-        //! Internal flags for the implementation.
-        enum Flag {
-            efHasFileOptions    = 1<<0,
-            efHasNonFileOptions = 1<<1,
-        };
-        //! Type to hold flags.
-        typedef unsigned int Flags;
-
         //! Convenience type for list of sections.
         typedef std::vector<Options *> SubSectionList;
         //! Convenience type for list of options.
-        typedef std::vector<Option *> OptionList;
+        typedef std::vector<AbstractOptionStorage *> OptionList;
 
         //! Sets the name and title.
         Impl(const char *name, const char *title);
@@ -90,7 +82,7 @@ class Options::Impl
          * \param[in] name  Name to search for.
          * \returns Pointer to the found option, or NULL if not found.
          */
-        Option *findOption(const char *name) const;
+        AbstractOptionStorage *findOption(const char *name) const;
 
         /*! \brief
          * Calls Option::startSource() for all options, including subsections.
@@ -130,10 +122,6 @@ class Options::Impl
          * this pointer is NULL.
          */
         OptionsGlobalProperties *_globalProperties;
-        /*! \brief
-         * Flags for extra information.
-         */
-        Flags                   _flags;
 };
 
 } // namespace gmx

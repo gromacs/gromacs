@@ -41,9 +41,10 @@
 #include <cctype>
 #include <cstring>
 
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/globalproperties.h"
 
-#include "option.h"
 #include "options-impl.h"
 
 namespace gmx
@@ -75,7 +76,7 @@ static std::string composeString(const char *const *sarray)
 
 Options::Impl::Impl(const char *name, const char *title)
     : _name(name != NULL ? name : ""), _title(title != NULL ? title : ""),
-      _parent(NULL), _globalProperties(new OptionsGlobalProperties), _flags(0)
+      _parent(NULL), _globalProperties(new OptionsGlobalProperties)
 {
 }
 
@@ -102,7 +103,7 @@ Options *Options::Impl::findSubSection(const char *name) const
     return NULL;
 }
 
-Option *Options::Impl::findOption(const char *name) const
+AbstractOptionStorage *Options::Impl::findOption(const char *name) const
 {
     OptionList::const_iterator i;
     for (i = _options.begin(); i != _options.end(); ++i)
@@ -121,7 +122,7 @@ int Options::Impl::startSource()
     OptionList::const_iterator i;
     for (i = _options.begin(); i != _options.end(); ++i)
     {
-        Option *option = *i;
+        AbstractOptionStorage *option = *i;
         int rc1 = option->startSource();
         rc = (rc != 0 ? rc : rc1);
     }
@@ -178,7 +179,6 @@ void Options::addSubSection(Options *section)
     _impl->_subSections.push_back(section);
     section->_impl->_parent = this;
 
-    _impl->_flags |= section->_impl->_flags;
     globalProperties()._usedProperties |=
         section->_impl->_globalProperties->_usedProperties;
     delete section->_impl->_globalProperties;
@@ -187,21 +187,13 @@ void Options::addSubSection(Options *section)
 
 void Options::addOption(const AbstractOption &settings)
 {
-    Option *option = new Option;
-    int rc = option->init(settings, this);
+    AbstractOptionStorage *option = NULL;
+    int rc = settings.createDefaultStorage(this, &option);
     // Caller code should be fixed if option initialization fails.
     assert(rc == 0);
     // Make sure that there are no duplicate options.
     assert(_impl->findOption(option->name().c_str()) == NULL);
     _impl->_options.push_back(option);
-    if (option->isFile())
-    {
-        _impl->_flags |= Impl::efHasFileOptions;
-    }
-    else
-    {
-        _impl->_flags |= Impl::efHasNonFileOptions;
-    }
 }
 
 void Options::addDefaultOptions()
@@ -209,19 +201,9 @@ void Options::addDefaultOptions()
     globalProperties().addDefaultOptions(this);
 }
 
-bool Options::hasFileOptions() const
-{
-    return _impl->_flags & Impl::efHasFileOptions;
-}
-
-bool Options::hasNonFileOptions() const
-{
-    return _impl->_flags & Impl::efHasNonFileOptions;
-}
-
 bool Options::isSet(const char *name) const
 {
-    Option *option = _impl->findOption(name);
+    AbstractOptionStorage *option = _impl->findOption(name);
     return (option != NULL ? option->isSet() : false);
 }
 
@@ -231,7 +213,7 @@ int Options::finish(AbstractErrorReporter *errors)
     Impl::OptionList::const_iterator i;
     for (i = _impl->_options.begin(); i != _impl->_options.end(); ++i)
     {
-        Option *option = *i;
+        AbstractOptionStorage *option = *i;
         int rc1 = option->finish(errors);
         rc = (rc != 0 ? rc : rc1);
     }
@@ -241,6 +223,11 @@ int Options::finish(AbstractErrorReporter *errors)
         Options *section = *j;
         int rc1 = section->finish(errors);
         rc = (rc != 0 ? rc : rc1);
+    }
+    if (_impl->_parent == NULL)
+    {
+        assert(_impl->_globalProperties != NULL);
+        _impl->_globalProperties->finish();
     }
     return rc;
 }

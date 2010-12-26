@@ -40,14 +40,18 @@
  * The memory usage could still be optimized.
  * Use of memory pooling could still be extended, and a lot of redundant
  * gmin/gmax data could be eliminated for complex arithmetic expressions.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_selection
  */
 /*! \internal
- * \page selcompiler Selection compilation
+ * \page page_module_selection_compiler Selection compilation
  *
  * The compiler takes the selection element tree from the selection parser
- * (see \ref selparser) as input. The selection parser is quite independent of
- * selection evaluation details, and the compiler processes the tree to
- * conform to what the evaluation functions expect.
+ * (see \ref page_module_selection_parser) as input.
+ * The selection parser is quite independent of selection evaluation details,
+ * and the compiler processes the tree to conform to what the evaluation
+ * functions expect.
  * For better control and optimization possibilities, the compilation is
  * done on all selections simultaneously.
  * Hence, all the selections should be parsed before the compiler can be
@@ -68,6 +72,8 @@
  * The compiler is called by calling gmx_ana_selcollection_compile().
  * This functions then does the compilation in several passes over the
  * \c t_selelem tree.
+ *  -# Defaults are set for the position type and flags of position calculation
+ *     methods that were not explicitly specified in the user input.
  *  -# Subexpressions are extracted: a separate root is created for each
  *     subexpression, and placed before the expression is first used.
  *     Currently, only variables and expressions used to evaluate parameter
@@ -113,7 +119,7 @@
  *     the compilation process.
  *  -# Most of the processing is now done, and the next pass simply sets the
  *     evaluation group of root elements to the largest selection as determined
- *     in pass 3.  For root elements of subexpressions that should not be
+ *     in pass 4.  For root elements of subexpressions that should not be
  *     evaluated before they are referred to, the evaluation group/function is
  *     cleared.  At the same time, position calculation data is initialized for
  *     for selection method elements that require it.  Compiler data is also
@@ -126,7 +132,7 @@
  *
  * \todo
  * Some combinations of method parameter flags are not yet properly treated by
- * the compiler or the evaluation functions in evaluate.c. All the ones used by
+ * the compiler or the evaluation functions in evaluate.cpp. All the ones used by
  * currently implemented methods should work, but new combinations might not.
  *
  *
@@ -275,8 +281,13 @@
 #include "evaluate.h"
 #include "keywords.h"
 #include "mempool.h"
-#include "selcollection.h"
+#include "selectioncollection-impl.h"
 #include "selelem.h"
+
+static int min(int a, int b)
+{
+    return (a < b) ? a : b;
+}
 
 /*! \internal \brief
  * Compiler flags.
@@ -527,6 +538,63 @@ set_evaluation_function(t_selelem *sel, sel_evalfunc eval)
 
 
 /********************************************************************
+ * POSITION KEYWORD DEFAULT INITIALIZATION
+ ********************************************************************/
+
+/*! \brief
+ * Initializes default values for position keyword evaluation.
+ *
+ * \param[in,out] root       Root of the element tree to initialize.
+ * \param[in]     spost      Default output position type.
+ * \param[in]     rpost      Default reference position type.
+ * \param[in]     sel        Selection that the element evaluates the positions
+ *      for, or NULL if the element is an internal element.
+ */
+static void
+init_pos_keyword_defaults(t_selelem *root, const char *spost,
+                          const char *rpost, const gmx::Selection *sel)
+{
+    /* Selections use largest static group by default, while
+     * reference positions use the whole residue/molecule. */
+    if (root->type == SEL_EXPRESSION)
+    {
+        bool bSelection = (sel != NULL);
+        int flags = bSelection ? POS_COMPLMAX : POS_COMPLWHOLE;
+        if (bSelection)
+        {
+            if (sel->hasFlag(gmx::efDynamicMask))
+            {
+                flags |= POS_MASKONLY;
+            }
+            if (sel->hasFlag(gmx::efEvaluateVelocities))
+            {
+                flags |= POS_VELOCITIES;
+            }
+            if (sel->hasFlag(gmx::efEvaluateForces))
+            {
+                flags |= POS_FORCES;
+            }
+        }
+        _gmx_selelem_set_kwpos_type(root, bSelection ? spost : rpost);
+        _gmx_selelem_set_kwpos_flags(root, flags);
+    }
+    /* Change the defaults once we are no longer processing modifiers */
+    if (root->type != SEL_ROOT && root->type != SEL_MODIFIER
+        && root->type != SEL_SUBEXPRREF && root->type != SEL_SUBEXPR)
+    {
+        sel = NULL;
+    }
+    /* Recurse into children */
+    t_selelem *child = root->child;
+    while (child)
+    {
+        init_pos_keyword_defaults(child, spost, rpost, sel);
+        child = child->next;
+    }
+}
+
+
+/********************************************************************
  * SUBEXPRESSION PROCESSING
  ********************************************************************/
 
@@ -571,6 +639,10 @@ remove_unused_subexpressions(t_selelem *root)
     t_selelem *prev;
     t_selelem *next;
 
+    if (root == NULL)
+    {
+        return NULL;
+    }
     root = reverse_selelem_chain(root);
     while (root->child->type == SEL_SUBEXPR && root->child->refcount == 1)
     {
@@ -1076,6 +1148,10 @@ init_item_evalfunc(t_selelem *sel)
                              ? &_gmx_sel_evaluate_subexprref_simple
                              : &_gmx_sel_evaluate_subexprref);
             break;
+
+        case SEL_GROUPREF:
+            gmx_incons("unresolved group reference in compilation");
+            return FALSE;
     }
 
     return TRUE;
@@ -1593,15 +1669,6 @@ make_static(t_selelem *sel)
             sel->child->child->flags &= ~SEL_ALLOCVAL;
             sel->child->child->v.nalloc = -1;
         }
-    }
-    /* When we reach here for parameter elements, the value is already
-     * stored in the parent element, so make sure that it is not freed
-     * through this element. */
-    if (sel->type == SEL_SUBEXPRREF && sel->u.param)
-    {
-        sel->u.param->val.nalloc = sel->v.nalloc;
-        sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
-        sel->v.nalloc = -1;
     }
     /* Free the children. */
     release_subexpr_memory(sel);
@@ -2214,6 +2281,10 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                 }
             }
             break;
+
+        case SEL_GROUPREF:
+            gmx_incons("unresolved group reference in compilation");
+            return -1;
     }
     /* Exit if there was some problem */
     if (rc != 0)
@@ -2549,54 +2620,54 @@ free_item_compilerdata(t_selelem *sel)
 /*! \brief
  * Initializes total masses and charges for selections.
  *
+ * \param[in,out] selections Array of selections to update.
  * \param[in]     top   Topology information.
- * \param[in]     ngrps Number of elements in the \p sel array.
- * \param[in,out] sel   Array of selections to update.
- * \param[in]     bMaskOnly TRUE if the positions will always be calculated
- *   for all atoms, i.e., the masses/charges do not change.
  */
 static void
-calculate_mass_charge(t_topology *top, int ngrps, gmx_ana_selection_t *sel[],
-                      gmx_bool bMaskOnly)
+calculate_mass_charge(std::vector<gmx::Selection *> *selections,
+                      t_topology *top)
 {
-    int   g, b, i;
+    int   b, i;
 
-    for (g = 0; g < ngrps; ++g)
+    for (size_t g = 0; g < selections->size(); ++g)
     {
-        sel[g]->g = sel[g]->p.g;
-        snew(sel[g]->orgm, sel[g]->p.nr);
-        snew(sel[g]->orgq, sel[g]->p.nr);
-        for (b = 0; b < sel[g]->p.nr; ++b)
+        gmx_ana_selection_t *sel = &selections->at(g)->_sel;
+        bool bMaskOnly = selections->at(g)->hasFlag(gmx::efDynamicMask);
+
+        sel->g = sel->p.g;
+        snew(sel->orgm, sel->p.nr);
+        snew(sel->orgq, sel->p.nr);
+        for (b = 0; b < sel->p.nr; ++b)
         {
-            sel[g]->orgq[b] = 0;
+            sel->orgq[b] = 0;
             if (top)
             {
-                sel[g]->orgm[b] = 0;
-                for (i = sel[g]->p.m.mapb.index[b]; i < sel[g]->p.m.mapb.index[b+1]; ++i)
+                sel->orgm[b] = 0;
+                for (i = sel->p.m.mapb.index[b]; i < sel->p.m.mapb.index[b+1]; ++i)
                 {
-                    sel[g]->orgm[b] += top->atoms.atom[sel[g]->g->index[i]].m;
-                    sel[g]->orgq[b] += top->atoms.atom[sel[g]->g->index[i]].q;
+                    sel->orgm[b] += top->atoms.atom[sel->g->index[i]].m;
+                    sel->orgq[b] += top->atoms.atom[sel->g->index[i]].q;
                 }
             }
             else
             {
-                sel[g]->orgm[b] = 1;
+                sel->orgm[b] = 1;
             }
         }
-        if (sel[g]->bDynamic && !bMaskOnly)
+        if (sel->bDynamic && !bMaskOnly)
         {
-            snew(sel[g]->m, sel[g]->p.nr);
-            snew(sel[g]->q, sel[g]->p.nr);
-            for (b = 0; b < sel[g]->p.nr; ++b)
+            snew(sel->m, sel->p.nr);
+            snew(sel->q, sel->p.nr);
+            for (b = 0; b < sel->p.nr; ++b)
             {
-                sel[g]->m[b] = sel[g]->orgm[b];
-                sel[g]->q[b] = sel[g]->orgq[b];
+                sel->m[b] = sel->orgm[b];
+                sel->q[b] = sel->orgq[b];
             }
         }
         else
         {
-            sel[g]->m = sel[g]->orgm;
-            sel[g]->q = sel[g]->orgq;
+            sel->m = sel->orgm;
+            sel->q = sel->orgq;
         }
     }
 }
@@ -2607,18 +2678,7 @@ calculate_mass_charge(t_topology *top, int ngrps, gmx_ana_selection_t *sel[],
  ********************************************************************/
 
 /*!
- * \param[in,out] sc     Selection collection to debug.
- * \param[in]     bDebug If TRUE, later call to gmx_ana_selcollection_compile()
- *     will print out intermediate selection trees.
- */
-void
-gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, gmx_bool bDebug)
-{
-    sc->bDebugCompile = bDebug;
-}
-
-/*!
- * \param[in,out] sc Selection collection to be compiled.
+ * \param[in,out] coll Selection collection to be compiled.
  * \returns       0 on successful compilation, a non-zero error code on error.
  *
  * Before compilation, the selection collection should have been initialized
@@ -2631,13 +2691,17 @@ gmx_ana_selcollection_set_compile_debug(gmx_ana_selcollection_t *sc, gmx_bool bD
  * \ref CFRAC_NONE.
  */
 int
-gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
+gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
 {
+    gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
     gmx_sel_evaluate_t  evaldata;
     t_selelem   *item;
     e_poscalc_t  post;
+    size_t       i;
     int          flags;
     int          rc;
+    bool         bDebug = (coll->_impl->_debugLevel >= 2
+                           && coll->_impl->_debugLevel != 3);
 
     rc = _gmx_sel_mempool_create(&sc->mempool);
     if (rc != 0)
@@ -2651,7 +2715,19 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
      * after compilation, and variable references in the symbol table can
      * also mess up the compilation and/or become invalid.
      */
-    _gmx_selcollection_clear_symtab(sc);
+    coll->_impl->clearSymbolTable();
+
+    /* Loop through selections and initialize position keyword defaults if no
+     * other value has been provided.
+     */
+    for (i = 0; i < sc->sel.size(); ++i)
+    {
+        gmx::Selection *sel = sc->sel[i];
+        init_pos_keyword_defaults(sel->_sel.selelem,
+                                  coll->_impl->_spost.c_str(),
+                                  coll->_impl->_rpost.c_str(),
+                                  sel);
+    }
 
     /* Remove any unused variables. */
     sc->root = remove_unused_subexpressions(sc->root);
@@ -2704,10 +2780,10 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     /* Initialize the evaluation index groups */
     initialize_evalgrps(sc);
 
-    if (sc->bDebugCompile)
+    if (bDebug)
     {
         fprintf(stderr, "\nTree after initial compiler processing:\n");
-        gmx_ana_selcollection_print_tree(stderr, sc, FALSE);
+        coll->printTree(stderr, false);
     }
 
     /* Evaluate all static parts of the selection and analyze the tree
@@ -2733,10 +2809,10 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
      * so they can be removed. */
     sc->root = remove_unused_subexpressions(sc->root);
 
-    if (sc->bDebugCompile)
+    if (bDebug)
     {
         fprintf(stderr, "\nTree after first analysis pass:\n");
-        gmx_ana_selcollection_print_tree(stderr, sc, FALSE);
+        coll->printTree(stderr, false);
     }
 
     /* Do a second pass to evaluate static parts of common subexpressions */
@@ -2778,10 +2854,10 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
      * subexpressions referred to by common dynamic subexpressions. */
     sc->root = remove_unused_subexpressions(sc->root);
 
-    if (sc->bDebugCompile)
+    if (bDebug)
     {
         fprintf(stderr, "\nTree after second analysis pass:\n");
-        gmx_ana_selcollection_print_tree(stderr, sc, FALSE);
+        coll->printTree(stderr, false);
     }
 
     /* Initialize evaluation groups, position calculations for methods, perform
@@ -2789,7 +2865,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
      * compilation. */
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
-    rc = gmx_ana_poscalc_type_from_enum(sc->rpost, &post, &flags);
+    rc = gmx_ana_poscalc_type_from_enum(coll->_impl->_rpost.c_str(), &post, &flags);
     if (rc != 0)
     {
         gmx_bug("invalid default reference position type");
@@ -2819,7 +2895,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
     }
 
     /* Finish up by calculating total masses and charges. */
-    calculate_mass_charge(sc->top, sc->nr, sc->sel, sc->bMaskOnly);
+    calculate_mass_charge(&sc->sel, sc->top);
 
     return 0;
 }

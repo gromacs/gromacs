@@ -52,6 +52,8 @@ namespace gmx
 CommandLineParser::Impl::Impl(Options *options, AbstractErrorReporter *errors)
     : _assigner(options, errors)
 {
+    _assigner.setAcceptBooleanNoPrefix(true);
+    _assigner.setNoStrictSectioning(true);
 }
 
 /********************************************************************

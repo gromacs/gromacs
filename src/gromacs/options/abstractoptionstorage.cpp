@@ -30,50 +30,49 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::Option.
+ * Implements gmx::AbstractOptionStorage.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
  */
-#include "option.h"
+#include "gromacs/options/abstractoptionstorage.h"
+
+#include <cassert>
 
 #include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/optionflags.h"
-#include "gromacs/options/optionstorageinterface.h"
 
 namespace gmx
 {
 
 /********************************************************************
- * Option
+ * AbstractOptionStorage
  */
 
-Option::Option()
-    : _flags(0), _minValueCount(1), _maxValueCount(1), _storage(NULL),
-      _currentValueCount(-1)
+AbstractOptionStorage::AbstractOptionStorage()
+    : _minValueCount(0), _maxValueCount(0), _currentValueCount(-1),
+      _options(NULL)
 {
 }
 
-Option::~Option()
+AbstractOptionStorage::~AbstractOptionStorage()
 {
-    delete _storage;
 }
 
-int Option::init(const AbstractOption &settings, Options *options)
+int AbstractOptionStorage::init(const AbstractOption &settings,
+                                Options *options)
 {
-    // Take ownership of the custom storage if there is any.
-    _storage = settings._storage;
-
-    // Copy cheap values first to make them easy to access in checks.
-    _flags = settings._flags;
+    // We add user-provided flags to the ones possibly set by the subclass.
+    _flags |= settings._flags;
     _minValueCount = settings._minValueCount;
     _maxValueCount = settings._maxValueCount;
+    _options = options;
 
     // If the maximum number of values is not known, storage to
     // caller-allocated memory is unsafe.
-    if (_maxValueCount < 0 && hasFlag(efExternalStore))
+    if ((_maxValueCount < 0 || hasFlag(efMulti)) && hasFlag(efExternalStore))
     {
         GMX_ERROR(eeInvalidValue,
                   "Cannot set user-allocated storage for arbitrary number of values");
@@ -85,58 +84,27 @@ int Option::init(const AbstractOption &settings, Options *options)
                   "Inconsistent value counts for vector values");
     }
 
-    OptionStorageInterface *storage = settings._storage;
-    if (storage == NULL)
-    {
-        int rc = settings.createDefaultStorage(options, &storage);
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
-
     if (settings._name != NULL)
     {
         _name  = settings._name;
     }
     _descr = settings.createDescription();
-    _storage = storage;
-    _flags |= efHasDefaultValue;
+
     return 0;
 }
 
-const char *Option::type() const
+int AbstractOptionStorage::startSource()
 {
-    return _storage->typeString();
-}
-
-int Option::valueCount() const
-{
-    return _storage->valueCount();
-}
-
-std::string Option::formatValue(int i) const
-{
-    return _storage->formatValue(i);
-}
-
-std::string Option::formatValues() const
-{
-    return _storage->formatValues();
-}
-
-int Option::startSource()
-{
-    _flags |= efHasDefaultValue;
+    setFlag(efHasDefaultValue);
     return 0;
 }
 
-int Option::startSet(AbstractErrorReporter *errors)
+int AbstractOptionStorage::startSet(AbstractErrorReporter *errors)
 {
     if (hasFlag(efHasDefaultValue))
     {
-        _flags &= ~efHasDefaultValue;
-        _storage->clear();
+        clearFlag(efHasDefaultValue);
+        clear();
     }
     else if (isSet() && !hasFlag(efMulti))
     {
@@ -147,70 +115,60 @@ int Option::startSet(AbstractErrorReporter *errors)
     return 0;
 }
 
-int Option::appendValue(const std::string &value,
-                        AbstractErrorReporter *errors)
+int AbstractOptionStorage::appendValue(const std::string &value,
+                                       AbstractErrorReporter *errors)
 {
-    if (_currentValueCount == -1)
-    {
-        int rc = startSet(errors);
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
-    if (_maxValueCount >= 0 && _currentValueCount >= _maxValueCount)
+    assert(_currentValueCount >= 0);
+    if (!hasFlag(efConversionMayNotAddValues) && _maxValueCount >= 0
+        && _currentValueCount >= _maxValueCount)
     {
         errors->warning("Ignoring extra value: " + value);
         return eeInvalidInput;
     }
-    int oldCount = _storage->valueCount();
-    int rc = _storage->appendValue(value, errors);
-    if (rc == 0)
+    return convertValue(value, errors);
+}
+
+int AbstractOptionStorage::finishSet(AbstractErrorReporter *errors)
+{
+    assert(_currentValueCount >= 0);
+
+    setFlag(efSet);
+    // TODO: Remove invalid values if there are too few
+    int rc = processSet(_currentValueCount, errors);
+    if (!hasFlag(efDontCheckMinimumCount)
+        && _currentValueCount < _minValueCount)
     {
-        _currentValueCount += _storage->valueCount() - oldCount;
+        errors->error("Too few (valid) values");
+        rc = eeInvalidInput;
+    }
+    _currentValueCount = -1;
+    return rc;
+}
+
+int AbstractOptionStorage::finish(AbstractErrorReporter *errors)
+{
+    assert(_currentValueCount == -1);
+    int rc = processAll(errors);
+    if (hasFlag(efRequired) && !isSet())
+    {
+        errors->error("Required option '" + _name + "' not set");
+        rc = eeInconsistentInput;
     }
     return rc;
 }
 
-int Option::finishSet(AbstractErrorReporter *errors)
+int AbstractOptionStorage::incrementValueCount()
 {
-    int nvalues = _currentValueCount;
-
-    _flags |= efSet;
-    _currentValueCount = -1;
-
-    // TODO: We probably should always call finishSet() to keep storage state
-    // more consistent.
-    if (nvalues < _minValueCount)
+    if (_currentValueCount == -1)
     {
-        errors->error("Too few (valid) values");
+        return 0;
+    }
+    if (_maxValueCount >= 0 && _currentValueCount >= _maxValueCount)
+    {
         return eeInvalidInput;
     }
-    if (_maxValueCount >= 0 && nvalues > _maxValueCount)
-    {
-        errors->error("Too many values");
-        return eeInvalidInput;
-    }
-
-    return _storage->finishSet(nvalues, errors);
-}
-
-int Option::finish(AbstractErrorReporter *errors)
-{
-    if (_currentValueCount >= 0)
-    {
-        int rc = finishSet(errors);
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
-    if (hasFlag(efRequired) && !isSet())
-    {
-        errors->error("Required option '" + _name + "' not set");
-        return eeInconsistentInput;
-    }
-    return _storage->finish(errors);
+    ++_currentValueCount;
+    return 0;
 }
 
 } // namespace gmx
