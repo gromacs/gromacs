@@ -102,6 +102,10 @@ class TrajectoryAnalysisModuleData
          * Returns a selection that corresponds to the given selection.
          */
         Selection *parallelSelection(Selection *selection);
+        /*! \brief
+         * Returns a set of selection that corresponds to the given selections.
+         */
+        std::vector<Selection *> parallelSelections(const std::vector<Selection *> &selections);
 
     protected:
         //! Initializes data.

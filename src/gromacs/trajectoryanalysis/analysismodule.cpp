@@ -115,8 +115,9 @@ int TrajectoryAnalysisModuleData::finishDataHandles()
 
 AnalysisDataHandle *TrajectoryAnalysisModuleData::dataHandle(const char *name)
 {
-    assert(_impl->_handles.find(name) != _impl->_handles.end());
-    return _impl->_handles[name];
+    Impl::HandleContainer::const_iterator i = _impl->_handles.find(name);
+    assert(i != _impl->_handles.end() || !"Data handle requested on unknown dataset");
+    return (i != _impl->_handles.end()) ? (*i).second : NULL;
 }
 
 
@@ -124,6 +125,20 @@ Selection *TrajectoryAnalysisModuleData::parallelSelection(Selection *selection)
 {
     // TODO: Implement properly.
     return selection;
+}
+
+
+std::vector<Selection *>
+TrajectoryAnalysisModuleData::parallelSelections(const std::vector<Selection *> &selections)
+{
+    std::vector<Selection *> newSelections;
+    newSelections.reserve(selections.size());
+    std::vector<Selection *>::const_iterator i = selections.begin();
+    for ( ; i != selections.end(); ++i)
+    {
+        newSelections.push_back(parallelSelection(*i));
+    }
+    return newSelections;
 }
 
 

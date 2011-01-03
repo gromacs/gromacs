@@ -62,6 +62,7 @@ namespace analysismodules
 {
 
 static const char * const distance = "distance";
+static const char * const select   = "select";
 
 } // namespace modules
 

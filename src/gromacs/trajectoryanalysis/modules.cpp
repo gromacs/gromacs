@@ -40,6 +40,7 @@
 #include <string2.h>
 
 #include "modules/distance.h"
+#include "modules/select.h"
 
 namespace
 {
@@ -54,8 +55,9 @@ struct module_map_t
 
 const module_map_t modules[] =
 {
-    {distance, Distance::create},
-    {NULL,     NULL},
+    {gmx::analysismodules::distance, Distance::create},
+    {gmx::analysismodules::select,   Select::create},
+    {NULL,                           NULL},
 };
 
 } // namespace
