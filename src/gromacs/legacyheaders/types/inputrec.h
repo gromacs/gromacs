@@ -171,8 +171,8 @@ typedef struct {
 
 typedef struct {
   int        ngrp;           /* Number of rotation groups                     */
-  int        nstrout;        /* Main output frequency for angle and potential */
-  int        nsttout;        /* Outfreq. for torque, fitangles, slab centers  */
+  int        nstrout;        /* Output frequency for main rotation outfile    */
+  int        nstsout;        /* Output frequency for per-slab data            */
   t_rotgrp   *grp;           /* Groups to rotate                              */
   gmx_enfrot_t enfrot;       /* Stores non-inputrec enforced rotation data    */
 } t_rot;

@@ -280,7 +280,7 @@ static void do_rot(t_fileio *fio, t_rot *rot,gmx_bool bRead, int file_version)
 
   gmx_fio_do_int(fio,rot->ngrp);
   gmx_fio_do_int(fio,rot->nstrout);
-  gmx_fio_do_int(fio,rot->nsttout);
+  gmx_fio_do_int(fio,rot->nstsout);
   if (bRead)
     snew(rot->grp,rot->ngrp);
   for(g=0; g<rot->ngrp; g++)
