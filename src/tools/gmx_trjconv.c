@@ -393,10 +393,11 @@ static void mk_filenm(char *base,const char *ext,int ndigit,int file_nr,
 
     strcpy(out_file,base);
     fnr = file_nr;
-    while(fnr > 0) {
-        fnr = fnr/10;
+    do {
+        fnr /= 10;
         nd++;
-    }
+    } while (fnr > 0);
+
     if (nd < ndigit)
         strncat(out_file,"00000000000",ndigit-nd);
     sprintf(nbuf,"%d.",file_nr);
@@ -709,8 +710,8 @@ int gmx_trjconv(int argc,char *argv[])
                         "file" },
                     { "-nzero", FALSE, etINT,
                         { &nzero },
-                        "Prepend file number in case you use the -sep flag "
-                        "with this number of zeroes" },
+                        "If the -sep flag is set, use these many digits "
+                        "for the file numbers and prepend zeros as needed" },
                     { "-dropunder", FALSE, etREAL,
                         { &dropunder }, "Drop all frames below this value" },
                     { "-dropover", FALSE, etREAL,
