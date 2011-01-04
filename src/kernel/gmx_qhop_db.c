@@ -62,18 +62,31 @@ static void qhop_copy_t_rbondeds(t_rbondeds *s, t_rbondeds *d, t_symtab *tab)
   for (i=0; i<s->nb; i++)
     {
       for(j=0; j<MAXATOMLIST; j++)
-	(d->b[i]).a[j] = *(put_symtab(tab,(s->b[i]).a[j]));
-      (d->b[i]).s = *(put_symtab(tab, (s->b[i]).s));
+	{
+	  
+	  if (s->b[i].a[j] == NULL)
+	    {
+	      d->b[i].a[j] = NULL;
+	    }
+	  else
+	    {
+	      d->b[i].a[j] = *(put_symtab(tab, s->b[i].a[j]));
+	    }
+	}
+      d->b[i].s = *(put_symtab(tab, s->b[i].s));
     }
 }
 
 static void qhop_copy_t_restp(t_restp *src, t_restp *dest, t_symtab *tab)
 {
-  int i, j;
+  int i, j, anum;
+  char elem[4];
+
   dest->resname = *(put_symtab(tab,src->resname));
   dest->natom = src->natom;
   snew(dest->atom, dest->natom);
   snew(dest->atomname, dest->natom);
+  snew(dest->cgnr, dest->natom);
     
   for (i=0; i<dest->natom; i++)
     {
@@ -83,15 +96,47 @@ static void qhop_copy_t_restp(t_restp *src, t_restp *dest, t_symtab *tab)
       dest->atom[i].typeB       = src->atom[i].typeB;
       dest->atom[i].ptype       = src->atom[i].ptype;
       dest->atom[i].resind      = src->atom[i].resind;
-      dest->atom[i].atomnumber  = src->atom[i].atomnumber;
-      strncpy(dest->atom[i].elem, src->atom[i].elem,4);
+      dest->cgnr[i] = src->cgnr[i];
+
+
+      /* Atomnumbers and element names are not in the newly read rtp.
+       * They may be used for spotting hydrogens at some point,
+       * so we'd better set them right away.*/
+      switch ((int)(src->atomname[i][0][0]))
+	{
+	case 'H':
+	  anum = 1;
+	  sprintf(elem, "H");
+	  break;
+
+	case 'C':
+	  anum = 6;
+	  sprintf(elem, "C");
+	  break;
+
+	case 'N':
+	  anum = 7;
+	  sprintf(elem, "N");
+	  break;
+
+	case 'O':
+	  anum = 8;
+	  sprintf(elem, "O");
+	  break;
+
+	default:
+	  anum = 0;
+	  elem[0] = '\0';
+	}
+
+      dest->atom[i].atomnumber  = anum;
+      strncpy(dest->atom[i].elem, elem, 4);
 
       snew(dest->atomname[i],1);
       dest->atomname[i] = put_symtab(tab, *(src->atomname[i]));
+
     }
-  snew(dest->cgnr, dest->natom);
-  for (i=0; i<dest->natom; i++)
-    dest->cgnr[i] = src->cgnr[i];
+
   qhop_copy_t_rbondeds(src->rb, dest->rb, tab);
 }
 
@@ -225,8 +270,30 @@ void set_reactant_products(qhop_db *qdb)
 	}
     }
 }
-  
 
+
+/* Returns the index in qdb->rtp where the entry is stashed. */
+static int qhop_stash_rtp_entry(qhop_db *qdb, t_restp *src)
+{
+  int rtpi;
+
+  if (qdb->nrtp == 0)
+    {
+      snew(qdb->rtp,1);
+    }
+  else
+    {
+      srenew(qdb->rtp, (qdb->nrtp)+1);
+    }
+
+  memset((void*)(&(qdb->rtp[qdb->nrtp])), 0, sizeof(t_restp));
+  
+  qhop_copy_t_restp(src, &(qdb->rtp[qdb->nrtp]), &(qdb->tab));
+
+  rtpi = (qdb->nrtp)++;
+
+  return rtpi;
+}
 
 /* Takes a rtp database and picks out the residues found in qdb->rb->res[][].
  * The resulting slice is stored in qdb->rtp, and its size in qdb->nrtp.
@@ -234,35 +301,48 @@ void set_reactant_products(qhop_db *qdb)
 static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 {
   printf("trim the rtp\n");
-  int i,rt,r,a;
-  gmx_bool match;
+  int i, rt, r, a, nrt;
+  gmx_bool bMatch, *bRtypeAdded;
+
   qdb->nrtp = 0;
+
+  nrt = qdb->rb.nrestypes;
+
+  snew(bRtypeAdded, nrt);
+  memset(bRtypeAdded, 0, sizeof(gmx_bool)*nrt);
+
   for (i=0; i<nbigrtp; i++)
     {
       fprintf(stderr, "rtp entry no %d", i);
-      match = FALSE;
-      for (rt=0; rt<qdb->rb.nrestypes && !match; rt++) /* resblock */
+      bMatch = FALSE;
+
+      for (rt=0; rt<nrt && !bMatch; rt++) /* resblock */
 	{
-	  for (r=0; r<qdb->rb.nres[rt] && !match; r++) /* res */
+	  /* Add the resblock. */
+	  if (strcmp(bigrtp[i].resname, qdb->rb.restype[rt]) == 0 && !bRtypeAdded[rt])
 	    {
-	      if (match = ((strcmp(bigrtp[i].resname, qdb->rb.res[rt][r].name) == 0)))
+	      fprintf(stderr, "FOUND!");
+	      srenew(qdb->rb.rtp, rt+1);
+	      qdb->rb.rtp[rt] = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
+	      bRtypeAdded[rt] = TRUE;
+	      break;
+	    }
+
+	  /* Add a res? */
+	  for (r=0; r<qdb->rb.nres[rt] && !bMatch; r++) /* res */
+	    {
+	      if (bMatch = ((strcmp(bigrtp[i].resname, qdb->rb.res[rt][r].name) == 0)))
 		{
 		  fprintf(stderr, " FOUND!");
 		  /* Keep this entry */
-		  if (qdb->nrtp == 0)
-		    snew(qdb->rtp,1);
-		  else
-		    srenew(qdb->rtp,(qdb->nrtp)+1);
-		  memset((void*)(&(qdb->rtp[qdb->nrtp])), 0, sizeof(t_restp));
-		  /* Copy content, don't trust copy t_restp. */
-		  /* copy_t_restp(&bigrtp[i], &(qdb->rtp[qdb->nrtp++])); */
-		  
-		  qhop_copy_t_restp(&(bigrtp[i]), &(qdb->rtp[(qdb->nrtp)++]), &(qdb->tab));
+		  qdb->rb.res[rt][r].rtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 		}
 	    }
 	}
       fprintf(stderr, "\n");
     }
+
+  sfree(bRtypeAdded);
 }
 
 static int init_qhop_H_exist(gmx_mtop_t *top, t_mdatoms *mda, qhop_H_exist *Hext)
@@ -273,8 +353,16 @@ static int init_qhop_H_exist(gmx_mtop_t *top, t_mdatoms *mda, qhop_H_exist *Hext
   atom_id *H2atomid;
   int *atomid2H;
   t_atom *atom;
+
   n = mda->nr;
+  H = NULL;
+  H2atomid = NULL;
+  atomid2H = NULL;
+  atom = NULL;
+
   snew(atomid2H, n);
+    
+
   /* Find the hydrogens */  
   for (a=0; a<n; a++)
     {
