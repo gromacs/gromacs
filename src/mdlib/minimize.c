@@ -75,6 +75,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+#include "qhop.h"
 
 typedef struct {
   t_state s;
@@ -904,6 +905,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
   gmx_mdoutf_t *outf;
   int    i,m,gf,step,nminstep;
   real   terminate=0;  
+  qhop_db_t   qhop_database=NULL;
 
   step=0;
 
@@ -917,10 +919,19 @@ double do_cg(FILE *fplog,t_commrec *cr,
           state_global,top_global,s_min,&top,&f,&f_global,
           nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,
           nfile,fnm,&outf,&mdebin);
+
+  if(fr->bqhop)
+  {
+      init_qhop(cr, top_global, inputrec, fr,
+                state_global->x, state_global->box,
+                mdatoms, &qhop_database);
+      if (qhop_database == NULL)
+          gmx_fatal(FARGS, "qhop_database not set");
+  }
   
   /* Print to log file */
   print_em_start(fplog,cr,runtime,wcycle,CG);
-  
+
   /* Max number of steps */
   number_steps=inputrec->nsteps;
 
@@ -2054,6 +2065,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
   int    steps_accepted=0; 
   /* not used */
   real   terminate=0;
+  qhop_db_t   qhop_database=NULL;
 
   s_min = init_em_state();
   s_try = init_em_state();
@@ -2081,6 +2093,15 @@ double do_steep(FILE *fplog,t_commrec *cr,
     sp_header(stderr,SD,inputrec->em_tol,nsteps);
   if (fplog)
     sp_header(fplog,SD,inputrec->em_tol,nsteps);
+
+  if(fr->bqhop)
+  {
+      init_qhop(cr, top_global, inputrec, fr,
+                state_global->x, state_global->box,
+                mdatoms, &qhop_database);
+      if (qhop_database == NULL)
+          gmx_fatal(FARGS, "qhop_database not set");
+  }
     
   /**** HERE STARTS THE LOOP ****
    * count is the counter for the number of steps 
