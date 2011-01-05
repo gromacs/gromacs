@@ -203,10 +203,9 @@ typedef struct {
     pmegrid_t grid;     /* The full node grid (non thread-local)            */
     int  nthread;       /* The number of threads operating on this grid     */
     ivec nc;            /* The local spatial decomposition over the threads */
-    ivec nbt;           /* The thread local base grid size without order-1  */
-    ivec nst;           /* The full thread local grid size: nbt+order-1     */
     pmegrid_t *grid_th; /* Array of grids for each thread                   */
     int  **g2t;         /* The grid to thread index                         */
+    ivec nthread_comm;  /* The number of threads to communicate with        */
 } pmegrids_t;
 
 typedef struct {
@@ -1530,7 +1529,9 @@ static void alloc_real_aligned(int n,real **ptr_raw,real **ptr)
 
 static void pmegrid_init(pmegrid_t *grid,
                          int cx, int cy, int cz,
-                         ivec n,int pme_order,
+                         int x0, int y0, int z0,
+                         int x1, int y1, int z1,
+                         int pme_order,
                          real *ptr)
 {
     int d;
@@ -1538,11 +1539,12 @@ static void pmegrid_init(pmegrid_t *grid,
     grid->ci[XX] = cx;
     grid->ci[YY] = cy;
     grid->ci[ZZ] = cz;
-    for(d=0; d<DIM; d++)
-    {
-        grid->n[d] = n[d] + pme_order - 1;
-        grid->offset[d] = grid->ci[d]*n[d];
-    }
+    grid->offset[XX] = x0;
+    grid->offset[YY] = y0;
+    grid->offset[ZZ] = z0;
+    grid->n[XX]      = x1 - x0 + pme_order - 1;
+    grid->n[YY]      = y1 - y0 + pme_order - 1;
+    grid->n[ZZ]      = z1 - z0 + pme_order - 1;
     grid->order = pme_order;
     if (ptr == NULL)
     {
@@ -1564,6 +1566,7 @@ static void make_subgrid_division(const ivec n,int ovl,int nthread,
 {
     int gsize_opt,gsize;
     int nsx,nsy,nsz;
+    char *env;
 
     gsize_opt = -1;
     for(nsx=1; nsx<=nthread; nsx++)
@@ -1599,48 +1602,63 @@ static void make_subgrid_division(const ivec n,int ovl,int nthread,
             }
         }
     }
+
+    env = getenv("GMX_PME_THREAD_DIVISION");
+    if (env != NULL)
+    {
+        sscanf(env,"%d %d %d",&nsub[XX],&nsub[YY],&nsub[ZZ]);
+    }
+
+    if (nsub[XX]*nsub[YY]*nsub[ZZ] != nthread)
+    {
+        gmx_fatal(FARGS,"PME grid thread division (%d x %d x %d) does not match the total number of threads (%d)",nsub[XX],nsub[YY],nsub[ZZ],nthread);
+    }
 }
 
 static void pmegrids_init(pmegrids_t *grids,
                           int nx,int ny,int nz,
                           int pme_order,
-                          int nthread)
+                          int nthread,
+                          int overlap_x,
+                          int overlap_y)
 {
-    ivec n;
-    int t,x,y,z,d,i;
+    ivec n,g0,g1;
+    int t,x,y,z,d,i,tfac;
+    int max_comm_lines;
 
     n[XX] = nx - (pme_order - 1);
     n[YY] = ny - (pme_order - 1);
     n[ZZ] = nz - (pme_order - 1);
 
-    pmegrid_init(&grids->grid,0,0,0,n,pme_order,NULL);
+    pmegrid_init(&grids->grid,0,0,0,0,0,0,n[XX],n[YY],n[ZZ],pme_order,NULL);
 
     grids->nthread = nthread;
 
     make_subgrid_division(n,pme_order-1,grids->nthread,grids->nc);
     
-    for(d=0; d<DIM; d++)
-    {
-        grids->nbt[d] = (n[d] + grids->nc[d] - 1)/grids->nc[d];
-        grids->nst[d] = grids->nbt[d] + pme_order - 1;
-    }
-
     if (grids->nthread > 1)
     {
+        ivec nst;
+        int gridsize;
+        real *grid_all;
+
+        for(d=0; d<DIM; d++)
+        {
+            nst[d] = div_round_up(n[d],grids->nc[d]) + pme_order - 1;
+        }
+
         if (debug)
         {
             fprintf(debug,"pmegrid thread local division: %d x %d x %d\n",
                     grids->nc[XX],grids->nc[YY],grids->nc[ZZ]);
-            fprintf(debug,"pmegrid %d %d %d thread %d %d %d base %d %d %d\n",
+            fprintf(debug,"pmegrid %d %d %d max thread pmegrid %d %d %d\n",
                     nx,ny,nz,
-                    grids->nst[XX],grids->nst[YY],grids->nst[ZZ],
-                    grids->nbt[XX],grids->nbt[YY],grids->nbt[ZZ]);
+                    nst[XX],nst[YY],nst[ZZ]);
         }
 
         snew(grids->grid_th,grids->nthread);
         t = 0;
-        int gridsize=grids->nst[XX]*grids->nst[YY]*grids->nst[ZZ];
-        real *grid_all;
+        gridsize = nst[XX]*nst[YY]*nst[ZZ];
         snew(grid_all,
              grids->nthread*gridsize+(grids->nthread+1)*GMX_CACHE_SEP);
 
@@ -1651,7 +1669,14 @@ static void pmegrids_init(pmegrids_t *grids,
                 for(z=0; z<grids->nc[ZZ]; z++)
                 {
                     pmegrid_init(&grids->grid_th[t],
-                                 x,y,z,grids->nbt,pme_order,
+                                 x,y,z,
+                                 (n[XX]*(x  ))/grids->nc[XX],
+                                 (n[YY]*(y  ))/grids->nc[YY],
+                                 (n[ZZ]*(z  ))/grids->nc[ZZ],
+                                 (n[XX]*(x+1))/grids->nc[XX],
+                                 (n[YY]*(y+1))/grids->nc[YY],
+                                 (n[ZZ]*(z+1))/grids->nc[ZZ],
+                                 pme_order,
                                  grid_all+GMX_CACHE_SEP+t*(gridsize+GMX_CACHE_SEP));
                     t++;
                 }
@@ -1660,16 +1685,48 @@ static void pmegrids_init(pmegrids_t *grids,
     }
 
     snew(grids->g2t,DIM);
-    t = 1;
+    tfac = 1;
     for(d=DIM-1; d>=0; d--)
     {
         snew(grids->g2t[d],n[d]);
+        t = 0;
         for(i=0; i<n[d]; i++)
         {
-            grids->g2t[d][i] = (i/grids->nbt[d])*t;
+            /* The second check should match the parameters
+             * of the pmegrid_init call above.
+             */
+            while (t + 1 < grids->nc[d] && i >= (n[d]*(t+1))/grids->nc[d])
+            {
+                t++;
+            }
+            grids->g2t[d][i] = t*tfac;
         }
 
-        t *= grids->nc[d];
+        tfac *= grids->nc[d];
+
+        switch (d)
+        {
+        case XX: max_comm_lines = overlap_x;     break;
+        case YY: max_comm_lines = overlap_y;     break;
+        case ZZ: max_comm_lines = pme_order - 1; break;
+        }
+        grids->nthread_comm[d] = 0;
+        while ((n[d]*grids->nthread_comm[d])/grids->nc[d] < max_comm_lines)
+        {
+            grids->nthread_comm[d]++;
+        }
+        if (debug != NULL)
+        {
+            fprintf(debug,"pmegrid thread grid communication range in %c: %d\n",
+                    'x'+d,grids->nthread_comm[d]);
+        }
+        /* It should be possible to make grids->nthread_comm[d]==grids->nc[d]
+         * work, but this is not a problematic restriction.
+         */
+        if (grids->nc[d] > 1 && grids->nthread_comm[d] > grids->nc[d])
+        {
+            gmx_fatal(FARGS,"Too many threads for PME (%d) compared to the number of grid lines, reduce the number of threads doing PME",grids->nthread);
+        }
     }
 }
 
@@ -2932,7 +2989,9 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pmegrids_init(&pme->pmegridA,
                   pme->pmegrid_nx,pme->pmegrid_ny,pme->pmegrid_nz,
                   pme->pme_order,
-                  pme->nthread);
+                  pme->nthread,
+                  pme->overlap[0].s2g1[pme->nodeid_major]-pme->overlap[0].s2g0[pme->nodeid_major+1],
+                  pme->overlap[1].s2g1[pme->nodeid_minor]-pme->overlap[1].s2g0[pme->nodeid_minor+1]);
 
     ndata[0] = pme->nkx;
     ndata[1] = pme->nky;
@@ -2950,7 +3009,9 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pmegrids_init(&pme->pmegridB,
                       pme->pmegrid_nx,pme->pmegrid_ny,pme->pmegrid_nz,
                       pme->pme_order,
-                      pme->nthread);
+                      pme->nthread,
+                      pme->nkx % pme->nnodes_major != 0,
+                      pme->nky % pme->nnodes_minor != 0);
 
         gmx_parallel_3dfft_init(&pme->pfft_setupB,ndata,
                                 &pme->fftgridB,&pme->cfftgridB,
@@ -3016,15 +3077,15 @@ static void copy_local_grid(gmx_pme_t pme,
     fft_my = local_fft_size[YY];
     fft_mz = local_fft_size[ZZ];
 
-    nsx = pmegrids->nst[XX];
-    nsy = pmegrids->nst[YY];
-    nsz = pmegrids->nst[ZZ];
-
     pmegrid = &pmegrids->grid_th[thread];
+
+    nsx = pmegrid->n[XX];
+    nsy = pmegrid->n[YY];
+    nsz = pmegrid->n[ZZ];
 
     for(d=0; d<DIM; d++)
     {
-        nf[d] = min(pmegrids->nbt[d],
+        nf[d] = min(pmegrid->n[d] - (pmegrid->order - 1),
                     local_fft_ndata[d] - pmegrid->offset[d]);
     }
 
@@ -3095,13 +3156,14 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     int  fft_my,fft_mz;
     int  buf_my=-1;
     int  nsx,nsy,nsz;
-    ivec ne,ns;
+    ivec ne;
     int  offx,offy,offz,x,y,z,i0,i0t;
     int  sx,sy,sz,fx,fy,fz,tx1,ty1,tz1,ox,oy,oz;
+    gmx_bool bClearBufX,bClearBufY,bClearBufXY,bClearBuf;
     gmx_bool bCommX,bCommY;
     int  d;
     int  thread_f;
-    const pmegrid_t *pmegrid,*pmegrid_f;
+    const pmegrid_t *pmegrid,*pmegrid_g,*pmegrid_f;
     const real *grid_th;
     real *commbuf=NULL;
 
@@ -3115,10 +3177,6 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
 
     fft_my = local_fft_size[YY];
     fft_mz = local_fft_size[ZZ];
-
-    nsx = pmegrids->nst[XX];
-    nsy = pmegrids->nst[YY];
-    nsz = pmegrids->nst[ZZ];
 
     /* This routine is called when all thread have finished spreading.
      * Here each thread sums grid contributions calculated by other threads
@@ -3134,7 +3192,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
 
     for(d=0; d<DIM; d++)
     {
-        ne[d] = min(pmegrid->offset[d]+pmegrids->nbt[d],
+        ne[d] = min(pmegrid->offset[d]+pmegrid->n[d]-(pmegrid->order-1),
                     local_fft_ndata[d]);
     }
 
@@ -3142,20 +3200,10 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     offy = pmegrid->offset[YY];
     offz = pmegrid->offset[ZZ];
 
-    /* Determine the maximum thread distance we need to reduce over */
-    for(d=0; d<DIM; d++)
-    {
-        if (pmegrids->nc[d] == 1)
-        {
-            ns[d] = 1;
-        }
-        else
-        {
-            ns[d] = min(div_round_up(pmegrid->order-1,pmegrids->nbt[d]),
-                        pmegrids->nc[d]-1);
-        }
-    }
 
+    bClearBufX  = TRUE;
+    bClearBufY  = TRUE;
+    bClearBufXY = TRUE;
 
     /* Now loop over all the thread data blocks that contribute
      * to the grid region we (our thread) are operating on.
@@ -3163,7 +3211,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     /* Note that ffy_nx/y is equal to the number of grid points
      * between the first point of our node grid and the one of the next node.
      */
-    for(sx=0; sx>=-ns[XX]; sx--)
+    for(sx=0; sx>=-pmegrids->nthread_comm[XX]; sx--)
     {
         fx = pmegrid->ci[XX] + sx;
         ox = 0;
@@ -3173,20 +3221,18 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
             ox -= fft_nx;
             bCommX = (pme->nnodes_major > 1);
         }
-        ox += fx*pmegrids->nbt[XX];
+        pmegrid_g = &pmegrids->grid_th[fx*pmegrids->nc[YY]*pmegrids->nc[ZZ]];
+        ox += pmegrid_g->offset[XX];
         if (!bCommX)
-        { 
-            tx1 = min(ox + pmegrids->nst[XX],ne[XX]);
+        {
+            tx1 = min(ox + pmegrid_g->n[XX],ne[XX]);
         }
         else
         {
-            /* Something is still with ox for MPI+thread decomposition
-             * along the same dimension!
-             */
-            tx1 = min(ox + pmegrids->grid.n[XX],pme->pme_order);
+            tx1 = min(ox + pmegrid_g->n[XX],pme->pme_order);
         }
 
-        for(sy=0; sy>=-ns[YY]; sy--)
+        for(sy=0; sy>=-pmegrids->nthread_comm[YY]; sy--)
         {
             fy = pmegrid->ci[YY] + sy;
             oy = 0;
@@ -3196,20 +3242,18 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                 oy -= fft_ny;
                 bCommY = (pme->nnodes_minor > 1);
             }
-            oy += fy*pmegrids->nbt[YY];
+            pmegrid_g = &pmegrids->grid_th[fy*pmegrids->nc[ZZ]];
+            oy += pmegrid_g->offset[YY];
             if (!bCommY)
             {
-                ty1 = min(oy + pmegrids->nst[YY],ne[YY]);
+                ty1 = min(oy + pmegrid_g->n[YY],ne[YY]);
             }
             else
             {
-                /* Something is still with ox for MPI+thread decomposition
-                 * along the same dimension!
-                 */
-                ty1 = min(oy + pmegrids->grid.n[YY],pme->pme_order);
+                ty1 = min(oy + pmegrid_g->n[YY],pme->pme_order);
             }
 
-            for(sz=0; sz>=-ns[ZZ]; sz--)
+            for(sz=0; sz>=-pmegrids->nthread_comm[ZZ]; sz--)
             {
                 fz = pmegrid->ci[ZZ] + sz;
                 oz = 0;
@@ -3218,8 +3262,9 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                     fz += pmegrids->nc[ZZ];
                     oz -= fft_nz;
                 }
-                oz += fz*pmegrids->nbt[ZZ];
-                tz1 = min(oz + pmegrids->nst[ZZ],ne[ZZ]);
+                pmegrid_g = &pmegrids->grid_th[fz];
+                oz += pmegrid_g->offset[ZZ];
+                tz1 = min(oz + pmegrid_g->n[ZZ],ne[ZZ]);
 
                 if (sx == 0 && sy == 0 && sz == 0)
                 {
@@ -3234,15 +3279,22 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                 pmegrid_f = &pmegrids->grid_th[thread_f];
 
                 grid_th = pmegrid_f->grid;
-                
-                /*
-                  printf("t%d add %d  %2d %2d %2d  %2d-%2d %2d-%2d, %2d-%2d %2d-%2d, %2d-%2d %2d-%2d\n",
-                  thread,thread_f,
-                  gsh[XX],gsh[YY],gsh[ZZ],
-                  offx-ox,tx1-ox,offx,tx1,
-                  offy-oy,ty1-oy,offy,ty1,
-                           offz-oz,tz1-oz,offz,tz1);
-                */
+
+                nsx = pmegrid_f->n[XX];
+                nsy = pmegrid_f->n[YY];
+                nsz = pmegrid_f->n[ZZ];
+               
+#ifdef DEBUG_PME_REDUCE
+                printf("n%d t%d add %d  %2d %2d %2d  %2d %2d %2d  %2d-%2d %2d-%2d, %2d-%2d %2d-%2d, %2d-%2d %2d-%2d\n",
+                       pme->nodeid,thread,thread_f,
+                       pme->pmegrid_start_ix,
+                       pme->pmegrid_start_iy,
+                       pme->pmegrid_start_iz,
+                       sx,sy,sz,
+                       offx-ox,tx1-ox,offx,tx1,
+                       offy-oy,ty1-oy,offy,ty1,
+                       offz-oz,tz1-oz,offz,tz1);
+#endif
 
                 if (!(bCommX || bCommY))
                 {
@@ -3262,27 +3314,33 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                 }
                 else
                 {
-                    /* The order of these conditionals decides
+                    /* The order of this conditional decides
                      * where the corner volume gets stored with x+y decomp.
                      */
-                    if (sy < 0 && pme->nnodes_minor > 1)
+                    if (bCommY)
                     {
                         commbuf = commbuf_y;
                         buf_my  = ty1 - offy;
-                        if (sx < 0 && pme->nnodes_major > 1)
+                        if (bCommX)
                         {
                             /* We index commbuf modulo the local grid size */
                             commbuf += buf_my*fft_nx*fft_nz;
+
+                            bClearBuf  = bClearBufXY;
+                            bClearBufXY = FALSE;
                         }
-                    }
-                    else if (sx < 0 && pme->nnodes_major > 1)
-                    {
-                        commbuf = commbuf_x;
-                        buf_my  = fft_ny;
+                        else
+                        {
+                            bClearBuf  = bClearBufY;
+                            bClearBufY = FALSE;
+                        }
                     }
                     else
                     {
-                        gmx_incons("fftgrid commbuf filling");
+                        commbuf = commbuf_x;
+                        buf_my  = fft_ny;
+                        bClearBuf  = bClearBufX;
+                        bClearBufX = FALSE;
                     }
 
                     /* Copy to the communication buffer */
@@ -3293,9 +3351,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
                             i0  = (x*buf_my + y)*fft_nz;
                             i0t = ((x - ox)*nsy + (y - oy))*nsz - oz;
 
-                            if ((sx == 0 || pme->nnodes_major > 1) &&
-                                (sy == 0 || pme->nnodes_minor > 1) &&
-                                (sz == 0))
+                            if (bClearBuf)
                             {
                                 /* First access of commbuf, initialize it */
                                 for(z=offz; z<tz1; z++)
@@ -3440,12 +3496,11 @@ static void sum_fftgrid_dd(gmx_pme_t pme,real *fftgrid)
         sendptr = overlap->sendbuf;
         recvptr = overlap->recvbuf;
 
-        /*
-        printf("Comm %2d x %2d x %2d\n",
-               send_nindex,local_fft_ndata[YY],local_fft_ndata[ZZ]);
-        printf("send %f, %f\n",
-               sendptr[0],sendptr[send_nindex*datasize-1]);
-        */
+        if (debug != NULL)
+        {
+            fprintf(debug,"PME fftgrid comm %2d x %2d x %2d\n",
+                   send_nindex,local_fft_ndata[YY],local_fft_ndata[ZZ]);
+        }
 
 #ifdef GMX_MPI
         MPI_Sendrecv(sendptr,send_nindex*datasize,GMX_MPI_REAL,
@@ -3455,8 +3510,6 @@ static void sum_fftgrid_dd(gmx_pme_t pme,real *fftgrid)
                      overlap->mpi_comm,&stat);
 #endif
         
-        //printf("node %d, adding x %d from %d\n",
-        //       pme->nodeid,recv_nindex,recv_index0);
         for(x=0; x<recv_nindex; x++)
         {
             for(y=0; y<local_fft_ndata[YY]; y++)
