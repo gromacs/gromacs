@@ -1247,7 +1247,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
     /* lambda Monte carlo random number generator  */
-    mcrng = gmx_rng_init(ir->fepvals->mc_seed);
+    mcrng = gmx_rng_init(ir->fepvals->lmc_seed);
     
     /* copy the state into df_history */
     copy_df_history(&df_history,&state_global->dfhist);

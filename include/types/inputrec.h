@@ -152,7 +152,7 @@ typedef struct {
   real equil_ratio;          /* use the ratio of weights (ratio of minimum to maximum) to decide when to stop equilibrating */
   int equil_steps;           /* after equil_steps steps we stop equilibrating the weights */
   int equil_samples;         /* after equil_samples total samples (steps/nstfep), we stop equilibrating the weights */
-  int mc_seed;               /* random number seed for lambda mc switches */
+  int lmc_seed;               /* random number seed for lambda mc switches */
   gmx_bool minvar;               /* whether to use minumum variance weighting */
   int minvarmin;             /* the number of samples needed before kicking into minvar routine */
   real minvar_const;         /* the offset for the variance in MinVar */

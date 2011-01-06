@@ -495,7 +495,7 @@ static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
   block_bc(cr,fepvals->equil_ratio);
   block_bc(cr,fepvals->equil_steps);
   block_bc(cr,fepvals->equil_samples);
-  block_bc(cr,fepvals->mc_seed);
+  block_bc(cr,fepvals->lmc_seed);
   block_bc(cr,fepvals->minvar);
   block_bc(cr,fepvals->minvar_const);
   block_bc(cr,fepvals->c_range);

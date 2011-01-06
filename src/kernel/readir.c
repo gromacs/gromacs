@@ -1384,7 +1384,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("weight-equil-number-steps",ir->fepvals->equil_steps,-1);
   RTYPE ("weight-equil-wl-delta",ir->fepvals->equil_wl_delta,-1);
   RTYPE ("weight-equil-count-ratio",ir->fepvals->equil_ratio,-1);
-  ITYPE ("mc-seed",ir->fepvals->mc_seed,-1);
+  CCTYPE("Seed for Monte Carlo in lambda space");
+  ITYPE ("lmc-seed",ir->fepvals->lmc_seed,-1);
   RTYPE ("mc-temperature",ir->fepvals->mc_temp,-1);
   ITYPE ("lmc-repeats",ir->fepvals->lmc_repeats,1);
   ITYPE ("lmc-gibbsdelta",ir->fepvals->gibbsdeltalam,-1);

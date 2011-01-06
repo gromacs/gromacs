@@ -914,7 +914,7 @@ static int do_cpt_state(XDR *xd,gmx_bool bRead,
         rng_p  = NULL;
         rngi_p = NULL;
     }
-    /* I think we want the MC_RNG the same across all the notes for now -- lambda MC is global */
+    /* We want the MC_RNG the same across all the notes for now -- lambda MC is global */
 
     sflags = state->flags;
     for(i=0; (i<estNR && ret == 0); i++)

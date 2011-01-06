@@ -525,7 +525,7 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
   cmp_real(fp,"inputrec->fepvals->init-wl-delta",-1,fep1->init_wl_delta,fep2->init_wl_delta,ftol,abstol);
   cmp_real(fp,"inputrec->fepvals->wl-ratio",-1,fep1->wl_ratio,fep2->wl_ratio,ftol,abstol);
   cmp_int(fp,"inputrec->fepvals->nstfep",-1,fep1->nstfep,fep2->nstfep);
-  cmp_int(fp,"inputrec->fepvals->mc-seed",-1,fep1->mc_seed,fep2->mc_seed);
+  cmp_int(fp,"inputrec->fepvals->lmc-seed",-1,fep1->lmc_seed,fep2->lmc_seed);
   cmp_real(fp,"inputrec->fepvals->mc-temperature",-1,fep1->mc_temp,fep2->mc_temp,ftol,abstol);
   cmp_int(fp,"inputrec->separate_dhdl_file",-1,fep1->separate_dhdl_file,fep2->separate_dhdl_file);
   cmp_int(fp,"inputrec->dhdl_derivatives",-1,fep1->dhdl_derivatives,fep2->dhdl_derivatives);

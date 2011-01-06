@@ -303,7 +303,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
       gmx_fio_do_int(fio,fepvals->lmc_repeats);
       gmx_fio_do_int(fio,fepvals->gibbsdeltalam);
       gmx_fio_do_int(fio,fepvals->lmc_forced_nstart);
-      gmx_fio_do_int(fio,fepvals->mc_seed);
+      gmx_fio_do_int(fio,fepvals->lmc_seed);
       gmx_fio_do_real(fio,fepvals->mc_temp);
       gmx_fio_do_int(fio,fepvals->bSymmetrizedTMatrix);
       gmx_fio_do_int(fio,fepvals->nstTij);
