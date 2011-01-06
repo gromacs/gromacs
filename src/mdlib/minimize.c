@@ -90,6 +90,9 @@ static em_state_t *init_em_state()
   em_state_t *ems;
   
   snew(ems,1);
+  
+  /* does this need to be here?  Should the array be declared differently (staticaly)in the state definition? */
+  snew(ems->s.lambda,efptNR);
 
   return ems;
 }
@@ -276,15 +279,28 @@ void init_em(FILE *fplog,const char *title,
     }
     
     state_global->ngtc = 0;
-    
-    /* Initiate lambda variables */
-    if (ir->efep != efepNO)
+
+    /* Initialize lambda variables */
+
+    for (i=0;i<efptNR;i++)
     {
-        state_global->lambda[efptFEP] = ir->fepvals->init_lambda;
-    }
-    else 
-    {
-        state_global->lambda[efptFEP] = 0.0;
+        if (ir->efep != efepNO)
+        {
+            state_global->fep_state = ir->fepvals->init_fep_state;
+            /* overwrite lambda state with init_lambda for now for backwards compatibility */
+            if (ir->fepvals->init_lambda>=0) /* if it's -1, it was never initializd */
+            {
+                state_global->lambda[i] = ir->fepvals->init_lambda;
+            }
+            else 
+            {
+                state_global->lambda[i] = ir->fepvals->all_lambda[i][state_global->fep_state];
+            }
+        } 
+        else 
+        {
+            state_global->lambda[i] = 0.0;
+        }
     }
     
     init_nrnb(nrnb);
@@ -513,6 +529,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
   }
   
   s2->natoms = s1->natoms;
+  /* Copy free energy state -> is this necessary? */
   for (i=0;i<efptNR;i++) 
   {
       s2->lambda[i] = s1->lambda[i];
