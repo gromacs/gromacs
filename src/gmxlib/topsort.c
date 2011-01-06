@@ -71,6 +71,7 @@ static gmx_bool ip_pert(int ftype,const t_iparams *ip)
                  ip->restraint.kA    != ip->restraint.kB);
         break;
     case F_PDIHS:
+    case F_PIDIHS:
     case F_ANGRES:
     case F_ANGRESZ:
         bPert = (ip->pdihs.phiA != ip->pdihs.phiB ||
