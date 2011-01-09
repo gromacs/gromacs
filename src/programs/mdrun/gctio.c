@@ -46,7 +46,6 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "readinp.h"
-#include "readir.h"
 #include "filenm.h"
 #include "names.h"
 #include "gmxfio.h"
