@@ -1,5 +1,3 @@
-include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
-
 file(GLOB GMXDUMP_SOURCES gmxdump.c)
 
 add_executable(gmxdump ${GMXDUMP_SOURCES})

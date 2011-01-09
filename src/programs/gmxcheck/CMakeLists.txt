@@ -1,5 +1,3 @@
-include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
-
 file(GLOB GMXCHECK_SOURCES gmxcheck.c tpbcmp.c)
 
 add_executable(gmxcheck ${GMXCHECK_SOURCES})
