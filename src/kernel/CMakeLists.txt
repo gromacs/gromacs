@@ -1,35 +1,20 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
 set(GMXPREPROCESS_SOURCES 
-    add_par.c       
-    convparm.c      
     gen_ad.c        
     gen_vsite.c     
     genhydro.c   
-    gpp_atomtype.c  
-    gpp_bond_atomtype.c     
     h_db.c          
     hackblock.c             
     hizzie.c        
     nm2type.c
     pdb2top.c       
     pgutil.c        
-    readir.c
-    readpull.c      
-    readrot.c
     resall.c        
     sorting.c       
     specbond.c      
     ter_db.c        
-    tomorse.c       
-    topdirs.c       
-    topexcl.c       
-    topio.c         
-    toppush.c       
-    topshake.c      
-    toputil.c       
     tpbcmp.c        
-    vsite_parm.c    
     fflibutil.c
     xlate.c)
 
@@ -40,10 +25,6 @@ set_target_properties(gmxpreprocess PROPERTIES OUTPUT_NAME "gmxpreprocess${GMX_L
 if(NOT GMX_FAHCORE)
 
 list(APPEND GMX_EXTRA_LIBRARIES gmxpreprocess libgromacs)
-
-add_executable(grompp grompp.c)
-target_link_libraries(grompp ${GMX_EXTRA_LIBRARIES})
-set_target_properties(grompp PROPERTIES OUTPUT_NAME "grompp${GMX_BINARY_SUFFIX}")
 
 add_executable(tpbconv tpbconv.c)
 target_link_libraries(tpbconv ${GMX_EXTRA_LIBRARIES})
@@ -75,7 +56,6 @@ set_target_properties(gmxcheck PROPERTIES OUTPUT_NAME "gmxcheck${GMX_BINARY_SUFF
 
 install(TARGETS gmxpreprocess DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 install(TARGETS 
-        grompp
         tpbconv
         pdb2gmx
         g_protonate

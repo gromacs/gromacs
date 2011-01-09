@@ -1,2 +1,5 @@
-add_subdirectory(g_ana)
 add_subdirectory(mdrun)
+if (NOT GMX_FAHCORE)
+    add_subdirectory(g_ana)
+    add_subdirectory(grompp)
+endif (NOT GMX_FAHCORE)
