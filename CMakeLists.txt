@@ -435,6 +435,7 @@ endif (GMX_DLOPEN)
 
 find_package(GTest)
 find_package(GMock)
+find_package(Doxygen)
 
 ########################################################################
 # Generate development version info for cache
@@ -781,6 +782,21 @@ ADD_CUSTOM_TARGET(uninstall
                   "${CMAKE_COMMAND}" -P 
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 ###########################
+
+########################################################################
+# Doxygen configuration
+########################################################################
+if (DOXYGEN_FOUND)
+    FILE(GLOB NB_KERNEL_DIRS src/gromacs/gmxlib/nonbonded/nb_kernel_*/)
+    LIST(REMOVE_ITEM NB_KERNEL_DIRS
+         ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/nonbonded/nb_kernel_c)
+    FOREACH(NB_KERNEL_DIR ${NB_KERNEL_DIRS})
+        SET(NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN
+            "${NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN} \\\n                         ${NB_KERNEL_DIR}")
+    ENDFOREACH(NB_KERNEL_DIR)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile)
+endif (DOXYGEN_FOUND)
 
 
 ########################################################################
