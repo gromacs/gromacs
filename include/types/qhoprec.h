@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #include "idef.h"
+#include "../gmx_random.h"
 #endif
 
 enum {eQNONE=0, eQACC=1, eQDON=2, eQACCDON=3, eQNR=4};
@@ -26,7 +27,13 @@ typedef struct {
     hbo,
     kappa,
     Er,
-    El;
+    El,
+    T;
+  /* We put temperature T here, partially because one might
+     want local temperatures in the future, but mainly to
+     reduce the number of function arguments passed around
+     in this more "object oriented" approach. The latter
+     goes for most of the real data members here. */
   gmx_bool bFlip;
 } t_hop;
 
@@ -81,7 +88,7 @@ typedef struct {
 /*   int *links;  /\* points to atoms that are part of the same residue. */
 /* 		*\/ */
   int nr_acceptors; /* known after nbsearching. */
-  int *acceptors;  /* j particles that fulfil additional geometric
+  int *acceptors;   /* j particles that fulfil additional geometric
 		      criteria */
   /* upon accepting a proton, state becomes eQDON or eQACCDON; */
 } t_qhop_atom;
@@ -133,7 +140,7 @@ typedef struct {
   t_hop          *hop;
   t_qhop_atom    *qhop_atoms;
   t_qhop_residue *qhop_residues;
-  
+  gmx_rng_t      rng, rng_int;
   int nr_hops,
     nr_qhop_residues,
     nr_qhop_atoms,
