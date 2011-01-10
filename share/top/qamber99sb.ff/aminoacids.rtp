@@ -28,39 +28,31 @@
 [ qSOL ]
  [ atoms ]
     OW   OW_spc       -0.82     0
-    HW1  OW_spc       -0.41     0
-    HW2  OW_spc       -0.41     0
-    H31  OW_spc        0.00     0
-    H32  OW_spc        0.00     0
-    H33  OW_spc        0.00     0
+    HW1  HW_spc        0.41     0
+    HW2  HW_spc        0.41     0
+    H31  HW_spc        0.00     0
+    H32  HW_spc        0.00     0
+    H33  HW_spc        0.00     0
  [ bonds ]
     OW   HW1
     OW   HW2
 ;   The rest are vsites
 
-[ H2O ]
+[ qH2O ]
  [ atoms ]
     OW   OW_spc       -0.82     0
-    HW1  OW_spc       -0.41     0
-    HW2  OW_spc       -0.41     0
-    H31  OW_spc        0.00     0
-    H32  OW_spc        0.00     0
-    H33  OW_spc        0.00     0
+    HW1  HW_spc        0.41     0
+    HW2  HW_spc        0.41     0
  [ bonds ]
     OW   HW1
     OW   HW2
 
-[ H3O ]
+[ qH3O ]
  [ atoms ]
     OW   OW_spc       -0.59     0
-    HW1  OW_spc       -0.00     0
-    HW2  OW_spc       -0.00     0
-    H31  OW_spc        0.53     0
-    H32  OW_spc        0.53     0
-    H33  OW_spc        0.53     0
- [ bonds ]
-    OW   HW1
-    OW   HW2
+    H31  HW_spc        0.53     0
+    H32  HW_spc        0.53     0
+    H33  HW_spc        0.53     0
 
 ; qSOL                 |
 ;----------------------'
