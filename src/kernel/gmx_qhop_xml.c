@@ -148,9 +148,16 @@ static char *sp(int n, char buf[], int maxindent)
 static int qhop_find_name(char **ss, const char *name, int n)
 {
   int i;
-  for (i=0; i<n; i++)
-    if (strcmp(ss[i], name) == 0)
-      return i;
+  if (ss != NULL)
+    {
+      for (i=0; i<n; i++)
+	{
+	  if (strcmp(ss[i], name) == 0)
+	    {
+	      return i;
+	    }
+	}
+    }
 
   return -1;/* not found */
 }
@@ -189,9 +196,10 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, char
 	  ri->rt = rb->nrestypes;            /* Make this resblock the current one */
 	  ri->r  = -1;                       /* just to be sure... */
 	  ri->da = -1;
-	  rb->restype[rb->nrestypes++] = *(put_symtab(tab, name));/*trim_strndup(name, 6);*/
-	  rb->bWater[rb->nrestypes++] = (strcasecmp(water, "TRUE") == 0);
+	  rb->restype[rb->nrestypes] = *(put_symtab(tab, name));/*trim_strndup(name, 6);*/
+	  rb->bWater[rb->nrestypes] = (strcasecmp(water, "TRUE") == 0);
 	  /*add_to_record(name, &(rb->restype[rb->nrestypes]), &(rb->nrestypes), RNMLEN, eUPDATE_INDEX);*/
+	  rb->nrestypes++;
 	}
     }
   else

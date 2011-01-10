@@ -662,9 +662,25 @@ static void clear_qhop_rb(qhop_resblocks rb)
 
 int qhop_db_done(qhop_db_t qdb)
 {
-  int i;
+  int i, j, k;
+  t_restp *rtp;
+
   /* Free a ton of structures. */
-  free_t_restp(qdb->nrtp, &(qdb->rtp));
+
+  rtp = (qdb->rtp);
+  
+  for(i=0; i<qdb->nrtp; i++) {
+    sfree(rtp[i].atom);
+    sfree(rtp[i].atomname);
+    sfree(rtp[i].cgnr);
+    for(j=0; j<ebtsNR; j++)
+      {
+	sfree(rtp[i].rb[j].b);
+      }
+  }
+  free(rtp);
+
+  /* free_t_restp(qdb->nrtp, &(qdb->rtp)); */
   free_symtab(&qdb->tab);
   qhop_done(*qdb->gqh);
   sfree(qdb->qhop_param);
