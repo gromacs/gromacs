@@ -29,28 +29,51 @@
 #include "typedefs.h"
 #include <stdlib.h>
 #include "mtop_util.h"
-#include "qhop.h"
+/* #include "qhop.h" */
 #include "random.h"
 #include "gmx_random.h"
 #include "constr.h"
 #include "types/idef.h"
+#include "types/ifunc.h"
 #include "hackblock.h"
 #include "gmx_qhop_db.h"
 #include "types/qhoprec.h"
 #include "types/gmx_qhop_types.h"
 #include "lambertw.h"
 
-#define VERBOSE_QHOP
+/* #define VERBOSE_QHOP */
 
-static const char *waterName = "HXO";
 
-qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, qhop_db_t db){
+#define DOO   0.35
+#define BOND  0.15
+#define HBOND  0.2
+#define HOPANG 120
+
+
+const char *waterName = "HXO";
+
+static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
+{/* (char *donor_name,char *acceptor_name, qhop_db_t db){ */
+
   /* parameters of the current donor acceptor combination are based on 
    * the residue name.
    */
+
+  char *donor_name, *acceptor_name;
+
   qhop_parameters
     *q;
+
   snew(q,1);
+
+  donor_name    = db->rb.res
+    [qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].rtype]
+    [qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].res].name;
+  acceptor_name = db->rb.res
+    [qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].rtype]
+    [qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].res].name;
+
+/* 		      [(qhoprec->qhop_atoms[hop->donor_id].res)].name
 
 #ifdef VERBOSE_QHOP
   fprintf(stderr, "--- PARAMETERS FOR DONOR %s - ACCEPTOR %s ---\n",
@@ -68,9 +91,9 @@ qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, qhop_db_t
   return (q);
 }
 
-static void set_proton_presence(qhop_H_exist *Hext, int atomid, gmx_bool present)
+static void set_proton_presence(qhop_H_exist *Hext, const int atomid, const gmx_bool present)
 {
-  Hext->H[Hext->atomid2H[atomid]] == present ? (char)1: (char)0;
+  Hext->H[Hext->atomid2H[atomid]] = present ? (char)1: (char)0;
 }
 
 static gmx_bool get_proton_presence(const qhop_H_exist *Hext, const int atomid)
@@ -78,6 +101,299 @@ static gmx_bool get_proton_presence(const qhop_H_exist *Hext, const int atomid)
   return Hext->H[Hext->atomid2H[atomid]] == (char)1;
 }
 
+static int ilist_iterator_start(const t_ilist *ilist, const int itype, int* index, t_iatom *atomlist)
+{
+  if (ilist->nr == 0)
+    {
+      *index = 0;
+      atomlist = NULL;
+      return 0;
+    }
+
+  *index = 0;
+  atomlist = &(ilist->iatoms[0]);
+  return interaction_function[itype].nratoms;
+}
+
+/* Returns the length of the interaction in atoms, including the type. */
+static int ilist_iterator(const t_ilist *ilist, const int itype, int *index, t_iatom *atomlist)
+{
+  int ilen;
+  if (*index < ilist->nr)
+    {
+      return 0;
+    }
+  
+  /* Go to next interaction */
+  ilen = interaction_function[itype].nratoms;
+  *index += ilen + 1;         /* +1 for the type. */
+  atomlist = &(ilist->iatoms[*index]);
+
+  return ilen;
+}
+
+/* Is atom id among the qhop_atoms?
+ * Returns the matching qhop_atom,
+ * or -1 if not found.*/
+static int is_qhopatom(const t_qhoprec *qr, const int id)
+{
+  int i;
+  for (i=0; i<qr->nr_qhop_atoms; i++)
+    {
+      if (qr->qhop_atoms[i].atom_id == id)
+	{
+	  return i;
+	}
+    }
+
+  return -1;
+}
+
+static int is_restype(const qhop_db *db, const t_qhoprec *qr, const char *rname)
+{
+  int i;
+
+  if (rname == NULL || rname[0]=='\0')
+    {
+      return -1;
+    }
+
+  for (i=0; i<qr->nr_qhop_residues; i++)
+    {
+      if (strcmp(rname, db->rb.restype[qr->qhop_residues[i].rtype]) == 0)
+	{
+	  return i;
+	}
+    }
+
+  return -2;
+}
+
+static void attach_proton(t_qhop_atom *qatom, const int id)
+{
+  int i;
+
+  for (i=0; i<qatom->nr_protons; i++)
+    {
+      if (qatom->protons[i] == id)
+	{
+	  return;
+	}
+    }
+
+  srenew(qatom->protons, qatom->nr_protons+1);
+  qatom->protons[qatom->nr_protons++] = id;
+}
+
+static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
+{
+
+#ifdef COMPLICATED_SCAN
+  /*REDUNDANT (I hope)*/
+  int i, j, a,  natoms, tsite, a1, a2, a3, qa;
+  t_iatom *atom;
+
+  natoms = ilist_iterator_start(ilist, itype, &i, atom);
+   
+  if (natoms == 0)
+    {
+      return;
+    }
+
+  /* Uses global atom numbers. Make this work with node-local numbering! */
+
+  do
+    {
+      /* Remember that the interaction's first element is the interaction type,
+       * so the first atom is ilist[1] */
+
+      switch(itype)	
+	{
+	case F_BONDS:
+	case F_G96BONDS:
+	case F_MORSE:
+	case F_CUBICBONDS:
+	case F_CONSTR:
+	case F_HARMONIC:
+	case F_FENEBONDS:
+	case F_TABBONDS:
+	  for(a=1; a<=2; a++)
+	    {
+	      a1 = atom[a];
+	      if (mtop->moltype[mt].atoms.atom[a1].atomnumber = 1) /* Make sure atomnumber is set! */
+		{
+		  /* is it connected to a t_qhop_atom? */
+		  for (i=0; i<qr->nr_qhop_residues; i++)
+		    {
+		      if (qr->qhop_residues[i].rtype = rt)
+			{
+			  for (tsite = 0;
+			       tsite<qr->qhop_residues[i].nr_titrating_sites;
+			       tsite++)
+			    {
+			      a2 = atom[a%2 + 1];
+			      qa = qr->qhop_residues[i].titrating_sites[tsite];
+			      if (strcmp(qr->qhop_atoms[qa].atomname,
+					 *(mtop->moltype[mt].atoms.atomname[a2])) == 0)
+				{
+				  attach_proton(&(qr->qhop_atoms[qa]), a2);
+				  break;
+				}
+			    }
+			}
+		    }
+		}
+	    }
+	  break;
+	  
+	case F_SETTLE:
+	  /* This implies an oxygen and two attached hydrogens */
+	  a1 = atom[1]; /* O */
+	  a2 = atom[2]; /* H */
+	  a3 = atom[3]; /* H */
+
+	  for (i=0; i<qr->nr_qhop_residues; i++)
+	    {
+	      if (qr->qhop_residues[i].rtype = rt)
+		{
+		  for (tsite = 0;
+		       tsite<qr->qhop_residues[i].nr_titrating_sites;
+		       tsite++)
+		    {
+		      qa = qr->qhop_residues[i].titrating_sites[tsite];
+		      if (strcmp(qr->qhop_atoms[qa].atomname,
+				 *(mtop->moltype[mt].atoms.atomname[a1])) == 0)
+			{
+			  attach_proton(&(qr->qhop_atoms[qa]), a2);
+			  attach_proton(&(qr->qhop_atoms[qa]), a3);
+			}
+		    }
+		}
+	    }
+	  break;
+
+	case F_VSITE2:
+	  /* Can't see when this vsite type would be applicable,
+	   * but let's implement it anyway. */
+	  a1 = atom[1]; /* H */
+	  if (mtop->moltype[mt].atoms.atom[a1].atomnumber = 1)
+	    {
+	      /* is it connected to a t_qhop_atom? */
+	      for (i=0; i<qr->nr_qhop_residues; i++)
+		{
+		  if (qr->qhop_residues[i].rtype = rt)
+		    {
+		      for (tsite = 0;
+			   tsite<qr->qhop_residues[i].nr_titrating_sites;
+			   tsite++)
+			{
+			  for (a=2; a<=3; a++)
+			    {
+			      a2 = atom[a];
+			      qa = qr->qhop_residues[i].titrating_sites[tsite];
+			      if (strcmp(qr->qhop_atoms[qa].atomname,
+					 *(mtop->moltype[mt].atoms.atomname[a2])) == 0)
+				{
+				  attach_proton(&(qr->qhop_atoms[qa]), a2);
+				  break;
+				}
+			    }
+			}
+		    }
+		}
+	    }
+	  break;
+
+	case F_VSITE3:
+	case F_VSITE3FD:
+	case F_VSITE3FAD:
+	case F_VSITE3OUT: /* <- Not entirely sure this works with an amine */
+	case F_VSITE4FD:
+	  a1 = atom[1]; /* H */
+	  if (mtop->moltype[mt].atoms.atom[a1].atomnumber = 1)
+	    {
+	      /* is it connected to a t_qhop_atom? */
+	      for (i=0; i<qr->nr_qhop_residues; i++)
+		{
+		  if (qr->qhop_residues[i].rtype = rt)
+		    {
+		      for (tsite = 0;
+			   tsite<qr->qhop_residues[i].nr_titrating_sites;
+			   tsite++)
+			{
+			  a2 = atom[2];
+			  qa = qr->qhop_residues[i].titrating_sites[tsite];
+			}
+		    }
+		}
+	    }
+
+	  if (db->H_map.atomid2H[atom[1]] >= 0)
+	    {
+	      /* Second atom is attached to the H. */
+	      tsite = is_qhopatom(qr, atom[2]);
+	      if (tsite != -1)
+		{
+		  attach_proton(&(qr->qhop_atoms[tsite]), atom[1]);
+		  break;
+		}
+	    }
+	  break;
+
+	default:
+	  fprintf(stderr, "Unsupported connection type for qhop.\n");
+	}
+
+    }
+  while(natoms = ilist_iterator(ilist, itype, &i, atom) != 0);
+
+#else
+  /* Here's the simple scan */
+
+  gmx_bool bNext;
+  int  a, aa, r, qa;
+  t_qhop_atom *qatoms;
+  t_qhop_residue *qresidues;
+
+  qatoms = qr->qhop_atoms;
+  qresidues = qr->qhop_residues;
+
+  for (qa=0; qa < qr->nr_qhop_atoms; qa++)
+    {
+      bNext = FALSE;
+      r = qatoms[qa].qres_id;
+
+      for (a=0; a < qresidues[r].nr_atoms && !bNext; a++)
+	{
+	  if (qresidues[r].atoms[a] == qatoms[qa].atom_id)
+	    {
+	      /* Atart scanning for hydrogens. Attach all H found
+	       * to the qhop_atom qa and break as soon as a heavy
+	       * atom is encountered.
+	       * This assumes that all hydrogens, and the hydrogens only,
+	       * have names starting with 'H', and that hydrogens come
+	       * immediately after the heavy atoms they're attached to. */
+
+	      for (aa = a+1; aa < qresidues[r].nr_atoms; aa++)
+		{
+		  if (qresidues[r].atomnames[aa] != NULL &&
+		      qresidues[r].atomnames[aa][0] == 'H')
+		    {
+		      attach_proton(&(qatoms[qa]), qresidues[r].atoms[aa]);
+		    }
+		  else
+		    {
+		      bNext = TRUE;
+		      break;
+		    }
+		}
+	    }
+	}
+    }
+    
+#endif 
+
+}
 
 /* This function now makes get_qhop_residue obsolete. */
 /* remove commrec? */
@@ -99,7 +415,7 @@ static int get_qhop_atoms(t_commrec *cr,
     **H, nH,
     q_atoms_nr,   q_atoms_max,
     q_residue_nr, q_residue_max,
-    i, j, k, ngrps, resnr;
+    i, j, k, o, ngrps, resnr, mt;
 
   gmx_bool
     bMatchRB, bMatch;
@@ -118,8 +434,7 @@ static int get_qhop_atoms(t_commrec *cr,
   gmx_groups_t            *groups;
   gmx_mtop_atomloop_all_t aloop;
   t_atom                  *atom;
-  
-
+  t_ilist                 *ilist;
   q_atoms_nr = 0;
   q_residue_nr = 0;
   q_atoms_max = 1000;
@@ -147,15 +462,7 @@ static int get_qhop_atoms(t_commrec *cr,
       {
 	if (ggrpnr(groups, egcqhopH ,i) == j)
 	  {
-	    srenew(qdb->H_map.H,        qdb->H_map.nH);
-	    srenew(qdb->H_map.H2atomid, qdb->H_map.nH);
-	    srenew(qdb->H_map.atomid2H, i);
-
-	    qdb->H_map.H[qdb->H_map.nH]        = 1;
-	    qdb->H_map.H2atomid[qdb->H_map.nH] = i;
-	    qdb->H_map.atomid2H[i] = qdb->H_map.nH;
-
-	    qdb->H_map.nH++;
+	    qdb->H_map.H[qdb->H_map.atomid2H[i]]        = 1;
 	  }
       }
 
@@ -216,9 +523,9 @@ static int get_qhop_atoms(t_commrec *cr,
 				bMatch = TRUE;
 				q_atoms[q_atoms_nr].resname      = qdb->rb.restype[rb];
 				q_atoms[q_atoms_nr].atomname     = qreac[AD][reac].name[a];
-				q_atoms[q_atoms_nr].res_id       = resnr;
+				q_atoms[q_atoms_nr].res_id       = resnr-1;
 				q_atoms[q_atoms_nr].atom_id      = i;
-				q_atoms[q_atoms_nr].nr_protons   = NOTSET; /* To be decided */
+				q_atoms[q_atoms_nr].nr_protons   = 0; /* To be decided */
 				q_atoms[q_atoms_nr].protons      = NULL;
 				q_atoms[q_atoms_nr].nr_acceptors = NOTSET;
 				q_atoms[q_atoms_nr].acceptors    = NULL;
@@ -238,7 +545,7 @@ static int get_qhop_atoms(t_commrec *cr,
 				    q_residue[q_residue_nr].nr_atoms           = 0;     /* To be decided. */
 				    q_residue[q_residue_nr].nr_titrating_sites = 0; /* To be decided. */
 				    q_residue[q_residue_nr].res_nr             = NOTSET;  /* To be set */
-				    q_residue[q_residue_nr].res_nr             = resnr;
+				    q_residue[q_residue_nr].res_nr             = resnr-1;
 
 				    q_residue_nr++;
 				  }
@@ -277,7 +584,7 @@ static int get_qhop_atoms(t_commrec *cr,
 
       for (r=0; r < q_residue_nr; r++)
 	{
-	  if (resnr == q_residue[r].res_nr)
+	  if (resnr-1 == q_residue[r].res_nr)
 	    {
 	      rtp = &(qdb->rtp[q_residue[r].rtype]);
 	      
@@ -288,35 +595,37 @@ static int get_qhop_atoms(t_commrec *cr,
 	      q_residue[r].atomnames[q_residue[r].nr_atoms] = strdup(atomname);
 	      q_residue[r].nr_atoms++;
 
-	      /* Is it a hydrogen? */
-	      if (atom->atomnumber == 1)
-		{
-		  /* Find the right titrating site and add the H to the proton array. */
-		  bMatch = FALSE;
+	      /* The following block was made redundant by the call to scan_for_H in qhop_init() */
 
-		  for (j=0; j < q_residue[r].nr_titrating_sites && bMatch; j++)
-		    {
-		      qa = &(q_atoms[q_residue[r].titrating_sites[j]]);
+/* 	      /\* Is it a hydrogen? *\/ */
+/* 	      if (atom->atomnumber == 1) */
+/* 		{ */
+/* 		  /\* Find the right titrating site and add the H to the proton array. *\/ */
+/* 		  bMatch = FALSE; */
 
-		      /* Loop over the t_restp to see which donor/acceptor it is bound to */
-		      for (k=0; k < rtp->rb[ebtsBONDS].nb && bMatch; k++)
-			{
-			  for (a=0; a<2; a++)
-			    {
-			      if (strcmp(rtp->rb[ebtsBONDS].b[k].a[a%2], qa->atomname) == 0 &&
-				  strcmp(rtp->rb[ebtsBONDS].b[k].a[(a+1)%2], atomname) == 0)
-				{
-				  srenew(qa->protons, qa->nr_protons+1);
-				  qa->protons[qa->nr_protons] = i;
-				  qa->nr_protons++;
+/* 		  for (j=0; j < q_residue[r].nr_titrating_sites && !bMatch; j++) */
+/* 		    { */
+/* 		      qa = &(q_atoms[q_residue[r].titrating_sites[j]]); */
 
-				  bMatch = TRUE;
-				  break;
-				}
-			    }
-			}
-		    }
-		}
+/* 		      /\* Loop over the t_restp to see which donor/acceptor it is bound to *\/ */
+/* 		      for (k=0; k < rtp->rb[ebtsBONDS].nb && !bMatch; k++) */
+/* 			{ */
+/* 			  for (a=0; a<2; a++) */
+/* 			    { */
+/* 			      if (strcmp(rtp->rb[ebtsBONDS].b[k].a[a%2], qa->atomname) == 0 && */
+/* 				  strcmp(rtp->rb[ebtsBONDS].b[k].a[(a+1)%2], atomname) == 0) */
+/* 				{ */
+/* 				  srenew(qa->protons, qa->nr_protons+1); */
+/* 				  qa->protons[qa->nr_protons] = i; */
+/* 				  qa->nr_protons++; */
+
+/* 				  bMatch = TRUE; */
+/* 				  break; */
+/* 				} */
+/* 			    } */
+/* 			} */
+/* 		    } */
+/* 		} */
 	    }
 	}
     }  
@@ -329,6 +638,118 @@ static int get_qhop_atoms(t_commrec *cr,
   qhoprec->qhop_residues    = q_residue;
   qhoprec->nr_qhop_atoms    = q_atoms_nr;
   qhoprec->nr_qhop_residues = q_residue_nr;
+
+
+  /* Scan the idef for the hydrogens we may have missed. */
+
+  /* Tried gmx_mtop_ilistloop_*, but I couldn't get it to work.*/
+
+
+  /* loop over moltypes */
+/*   for (mt=0; mt < mtop->nmoltype; mt++) */
+/*     { */
+/*       /\* loop over residues in molecule *\/ */
+/*       for (r=0; r < mtop->moltype[mt].atoms.nres; r++) */
+/* 	{ */
+/* 	  rt = is_restype(qr, *(mtop->moltype[mt].atoms.resinfo[r].name)); */
+
+/* 	  if (rt >= 0) */
+/* 	    { */
+/* 	      for(a=0; a < mtop->moltype[mt].atoms.nr; a++) */
+/* 		{ */
+/* 		  if (mtop->moltype[mt].atoms.atom[a].res == r) */
+/* 		    { */
+		     
+/* 		    } */
+/* 		} */
+	      /* Try the g_hbond way. */
+
+/* 	      for (i=0; i<F_NRE; i++) */
+/* 		{ */
+/* 		  if (i == F_POSRES) */
+/* 		    { */
+/* 		      continue; */
+/* 		    } */
+		  
+/* 		  for (j=0; */
+/* 		       j < ilist[i]->nr; */
+/* 		       j+= interaction_function[i].nratoms+1) */
+/* 		    { */
+/* 		      if (i == F_SETTLE) */
+/* 			{ */
+/* 			  a1 = ilist[i]->iatoms[j+1]; */
+/* 			  a2 = ilist[i]->iatoms[j+2]; */
+/* 			  a3 = ilist[i]->iatoms[j+3]; */
+/* 			  for (k=0; k < qhoprec->nr_qhop_residues; k++) */
+/* 			    { */
+/* 			      if (qhoprec->qhop_residues[k] == rt) */
+/* 				{ */
+/* 				  for (a=0; a < qhoprec->qhop_residues[k].nr_titratable_sites; a++) */
+/* 				    { */
+/* 				      qa = qhoprec->qhop_residues[k].titratable_sites[a]; */
+/* 				      if (strcmp(qr->qhop_atoms[qa], */
+/* 						 *(mtop->moltype[mt].t_atoms.atomname[a1])) == 0) */
+/* 					{ */
+/* 					  attach_proton(&(qhoprec->qhop_atoms[qa]), a2); */
+/* 					  attach_proton(&(qhoprec->qhop_atoms[qa]), a3); */
+/* 					} */
+/* 				    } */
+/* 				} */
+/* 			    } */
+/* 			  continue; */
+/* 			} */
+		      
+/* 		      if (IS_CHEMBOND(i)) */
+/* 			{ */
+/* 			  for (o=0; o<2; o++) */
+/* 			    { */
+/* 			      a1 = ilist[i]->iatoms[j+1+o]; */
+/* 			      a2 = ilist[i]->iatoms[j+1+((o+1)%2)]; */
+/* 			      if (mtop->moltype[mt].t_atoms.atom[a1].atomnumber = 1) */
+/* 				{ */
+/* 				  for (k=0; k < qhoprec->nr_qhop_residues; k++) */
+/* 				    { */
+/* 				      if (qhoprec->qhop_residues[k] == rt) */
+/* 					{ */
+/* 					  for (a=0; a < qhoprec->qhop_residues[k].nr_titratable_sites; a++) */
+/* 					    { */
+/* 					      qa = qhoprec->qhop_residues[k].titratable_sites[a]; */
+/* 					      if (strcmp(qr->qhop_atoms[qa], */
+/* 							 *(mtop->moltype[mt].t_atoms.atomname[a2])) == 0) */
+/* 						{ */
+/* 						  attach_proton(&(qhoprec->qhop_atoms[qa]), a1); */
+/* 						} */
+/* 					    } */
+/* 					} */
+/* 				    } */
+/* 				  break; */
+/* 				} */
+/* 			    } */
+/* 			  continue; */
+/* 			} */
+
+/* 		      if (IS_VSITE(i)) */
+/* 			{ */
+/* 			  a1 = ilist[i]->iatoms[j+1]; */
+/* 			  /\* Now step backwards until a non-hydrogen is found.*\/ */
+/* 			  a2 = a1-1; */
+			  
+/* 			} */
+/* 		    } */
+/* 		} */
+
+/* 	      for (i=0; i<F_NRE; i++) */
+/* 		{ */
+/* 		  if (IS_CHEMBOND(i) */
+/* 		      || i == F_SETTLE */
+/* 		      || (i >= F_VSITE2 && i <= F_VSITE4FD)) */
+/* 		    { */
+/* 		      scan_ilist_for_hydrogens(mtop, qhoprec, &(qdb->H_map), rt, ilist[i], i); */
+/* 		    } */
+/* 		} */
+/* 	    } */
+/* 	} */
+/*     } */
   return(q_atoms_nr);
 } /* get_qhop_atoms */
 
@@ -346,7 +767,7 @@ static int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 			qhop_db *db, const int resnr)
 {
   int
-    h, i, j, k, t, nH, *nHres, a, r, b,
+    h, i, j, k, t, nH, *nHres, a, r, b, aa,
     atomid, nres, natoms, qrtp;
   char
     *Hname, *DAname;
@@ -415,7 +836,8 @@ static int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
   */
 
   /* Loop over residue subtypes */
-  for (r=0; r<nres; r++)
+  bSameRes = FALSE;
+  for (r=0; r<nres && !bSameRes; r++)
     {
       n_H2 = NULL;
       DAlist2 = NULL;
@@ -428,15 +850,15 @@ static int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 	{
 	  /* Go through the donors and acceptors and make a list */
 	  for (j=0;
-	       j < DA==0 ?
-		 db->rb.res[qres->rtype][r].na :
-		 db->rb.res[qres->rtype][r].nd
+	       (j < (DA==0 ?
+		     db->rb.res[qres->rtype][r].na :
+		     db->rb.res[qres->rtype][r].nd))
 		 && bMatch;
 	       j++)
 	    {
-	      reac = DA==0 ?
-		&(db->rb.res[qres->rtype][r].acc[j]) :
-		&(db->rb.res[qres->rtype][r].don[j]);
+	      reac = (DA==0 ?
+		      &(db->rb.res[qres->rtype][r].acc[j]) :
+		      &(db->rb.res[qres->rtype][r].don[j]));
 
 	      /* Tautomer loop. There may be chemically equivalent
 	       * sites, e.g. the oxygens in a carboxylate. */
@@ -457,51 +879,78 @@ static int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 		    {
 		      srenew(DAlist2, nDA2+1);
 		      srenew(n_H2, nDA2+1);
-		      
+
+		      n_H2[nDA2] = 0;
 		      DAlist2[nDA2] = reac->name[t];
 		      
+		      rtp = &(db->rtp[db->rb.res[qres->rtype][r].rtp]);
+		      for (a=0; a<rtp->natom; a++)
+			{
+			  if (strcmp(reac->name[t], *(rtp->atomname[a])) == 0)
+			    {
+			      /* Here's the titrating site. Find hydrogens.
+			       * Assume a contiguous strtch of hydrogens followed
+			       * by the next heavy atom. */
+			      for (aa=a+1; aa<rtp->natom; aa++)
+				{
+				  if (*(rtp->atomname[aa]) && *(rtp->atomname[aa][0]) == 'H')
+				    {
+				      /* A(nother) hydrogen. */
+				      n_H2[nDA2]++;
+				    }
+				  else
+				    {
+				      /* Next heavy atom. */
+				      break;
+				    }
+				}
+			      break;
+			    }
+			}
+
+
 		      /* How do we know the number of protons? We'll have to scan the rtp. */
-		      for (b=0; b < db->rtp[reac->rtp].rb[ebtsBONDS].nb; b++)
-			{
-			  rtp = &(db->rtp[reac->rtp]);
-			  n_H2[nDA2] = 0;
-			  for (a=0; a<2; a++)
-			    {
-			      /* If the bond is between the donor and a H* then we ++ the hydrogen count */
-			      DAname = rtp->rb[ebtsBONDS].b[b].a[a%2];
-			      Hname  = rtp->rb[ebtsBONDS].b[b].a[(a+1)%2];
+/* 		      for (b=0; b < db->rtp[reac->rtp].rb[ebtsBONDS].nb; b++) */
+/* 			{ */
+/* 			  rtp = &(db->rtp[reac->rtp]); */
+/* 			  n_H2[nDA2] = 0; */
+/* 			  for (a=0; a<2; a++) */
+/* 			    { */
+/* 			      /\* If the bond is between the donor and a H* then we ++ the hydrogen count *\/ */
+/* 			      DAname = rtp->rb[ebtsBONDS].b[b].a[a%2]; */
+/* 			      Hname  = rtp->rb[ebtsBONDS].b[b].a[(a+1)%2]; */
 
-			      if ((strcmp(DAname, DAlist2[nDA2]) == 0) &&
-				  (strncmp(Hname, "H", 1) == 0))
-				{
-				  /* Yes, this H was connected to this donor/acceptor */
-				  n_H2[nDA2]++;
-				}
-			    }
-			}
-		      
+/* 			      if ((strcmp(DAname, DAlist2[nDA2]) == 0) && */
+/* 				  (strncmp(Hname, "H", 1) == 0)) */
+/* 				{ */
+/* 				  /\* Yes, this H was connected to this donor/acceptor *\/ */
+/* 				  n_H2[nDA2]++; */
+/* 				} */
+/* 			    } */
+/* 			} */
 
-		      /* Is the proton count the same for the titrating_sites[] in qhop_residue? */
-		      bMatch = FALSE;
-		      for (i=0; i<nDA; i++)
-			{
-			  if (strcmp(DAlist2[nDA2], DAlist[i]) == 0)
-			    {
-			      /* Same donor/acceptor */
-			      if (n_H2[nDA2] == n_H[i])
-				{
-				  /* Same proton count */
-				  bMatch = TRUE;
-				}
-			    }
-			}
+
+/* 		      /\* Is the proton count the same for the titrating_sites[] in qhop_residue? *\/ */
+/* 		      bMatch = FALSE; */
+/* 		      for (i=0; i<nDA; i++) */
+/* 			{ */
+/* 			  if (strcmp(DAlist2[nDA2], DAlist[i]) == 0) */
+/* 			    { */
+/* 			      /\* Same donor/acceptor *\/ */
+/* 			      if (n_H2[nDA2] == n_H[i]) */
+/* 				{ */
+/* 				  /\* Same proton count *\/ */
+/* 				  bMatch = TRUE; */
+/* 				} */
+/* 			    } */
+/* 			} */
+
+/* 		      if (!bMatch) */
+/* 			{ */
+/* 			  break; */
+/* 			} */
 
 		      nDA2++;
-
-		      if (!bMatch)
-			{
-			  break;
-			}
 		    }
 		}
 	    }
@@ -520,90 +969,94 @@ static int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 	  nH -= n_H2[j];
 	}
       
-      bSameRes = (nH==0);
+      bSameRes = (nH==0); /* Same total number of hydrogens? */
 
-      for (j=0; j<nDA && bSameRes; j++)
+      /* Sum up hydrogens on tautomeric sites and compare */
+
+      /* DA==0 => acceptors, DA==1 => donors */
+      for (DA=0; DA<2 && bSameRes; DA++)
 	{
-	  for (k=0; k<nDA2 && bSameRes; k++)
+	  for (j=0;
+	       (j < (DA==0 ?
+		     db->rb.res[qres->rtype][r].na :
+		     db->rb.res[qres->rtype][r].nd))
+		 && bSameRes;
+	       j++)
 	    {
-	      if (strcmp(DAlist[j], DAlist2[k]) == 0)
-		{
-		  nH += n_H[j]; /* Used for control later */
+	      reac = (DA==0 ?
+		      &(db->rb.res[qres->rtype][r].acc[j]) :
+		      &(db->rb.res[qres->rtype][r].don[j]));
 
-		  if (n_H[j] != n_H2[k])
+	      nH = 0;
+	      
+	      for (t=0; t<reac->nname && bSameRes; t++)
+		{
+		  for (i=0; i<nDA; i++)
 		    {
-		      /* Clearly something is wrong */
-		      bSameRes = FALSE;
+		      if (strcmp(DAlist[i], reac->name[t]) == 0)
+			{
+			  nH += n_H[i];
+			  break;
+			}
 		    }
 
-		  break;
+		  for (i=0; i<nDA2; i++)
+		    {
+		      if (strcmp(DAlist2[i], reac->name[t]) == 0)
+			{
+			  nH -= n_H2[i];
+			  break;
+			}
+		    }
+
+		  /* If they are the same, then nH should be zero here. */
+		  bSameRes = (nH==0);
 		}
 	    }
 	}
 
-      /* Check if all titrating sites were matched. */
       if (bSameRes)
 	{
-	  for (j=0; j<nDA; j++)
+	  /* Adjust the existence map */
+	  
+	  /* Zero all hydrogens */
+	  for (i=0; i < qres->nr_titrating_sites; i++)
 	    {
-	      nH -= n_H[j];
+	      for (j=0; j < qr->qhop_atoms[qres->titrating_sites[i]].nr_protons; j++)
+		{
+		  set_proton_presence(&(db->H_map),
+				      qr->qhop_atoms[qres->titrating_sites[i]].protons[j],
+					 FALSE);
+		}
 	    }
 	  
-	  if (nH != 0)
+	  /* Go through the rtp */
+	  rtp = &(db->rtp[db->rb.res[qres->rtype][r].rtp]);
+	  
+	  for (i=0; i < rtp->natom; i++)
 	    {
-	      /* Uh-oh. Some donor(s)/acceptor(s) wasn't matched. */
-	      bSameRes = FALSE;
-	    }
-	  else
-	    {
-	      /* Adjust the existence map */
-
-	      /* Zero all hydrogens */
-	      for (i=0; i < qres->nr_titrating_sites; i++)
+	      /* Is it a hydrogen atom? */
+	      if (rtp->atom[i].atomnumber == 1)
 		{
-		  for (j=0; j < qr->qhop_atoms[qres->titrating_sites[i]].nr_protons; j++)
+		  /* Match with atoms in qres */
+		  for (j=0; j < qres->nr_atoms; j++)
 		    {
-		      set_proton_presence(&(db->H_map),
-					 qr->qhop_atoms[qres->titrating_sites[i]].protons[j],
-					 FALSE);
-		    }
-		}
-
-	      /* Go through the rtp */
-	      rtp = &(db->rtp[db->rb.res[qres->rtype][r].rtp]);
-
-	      for (i=0; i < rtp->natom; i++)
-		{
-		  /* Is it a hydrogen atom? */
-		  if (rtp->atom[i].atomnumber == 1)
-		    {
-		      /* Match with atoms in qres */
-		      for (j=0; j < qres->nr_atoms; j++)
+		      if (strcmp(*(rtp->atomname[i]), qres->atomnames[j]) == 0)
 			{
-			  if (strcmp(*(rtp->atomname[i]), qres->atomnames[j]) == 0)
-			    {
-			      set_proton_presence(&(db->H_map),
-						  qres->atoms[j],
-						  TRUE);
-			    }
+			  set_proton_presence(&(db->H_map),
+					      qres->atoms[j],
+					      TRUE);
 			}
 		    }
 		}
 	    }
 	}
 
+
       /* Clean up */
       if (n_H2 != NULL)
 	{
 	  sfree(n_H2);
-	}
-
-      for (j=0; j<nDA2; j++)
-	{
-	  if (DAlist2[j] != NULL)
-	    {
-	      sfree(DAlist2[j]);
-	    }
 	}
       
       if (DAlist2 != NULL)
@@ -617,7 +1070,12 @@ static int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 	}
     }
 
-  return i;
+  if (r >= nres)
+    {
+      gmx_fatal(FARGS, "Didn't find the subres.");
+    }
+
+  return r;
 
  
   /* Here's the other method, matching H-names exactly to the
@@ -654,46 +1112,134 @@ static int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 /*     } */
 }
 
-/* Qr    = qhop residue
- * to    = to what residue subtype  */
-static void set_interactions(t_qhoprec *qhoprec, qhop_db *qdb, int Qr, int to)
+
+static void qhop_swap_bondeds(t_qhop_residue *swapres, qhop_res *prod)
 {
-  int i, nri, bt, b, Gr, RB, R;
-  t_qhop_residue *qres;
+  /* placeholder. */
+  int i;
+  i=0;
+  
+}
+
+static void qhop_swap_vdws(t_qhop_residue *swapres, qhop_res *prod)
+{
+  /* placeholder. */
+  int i;
+  i=0;
+  
+}
+
+static void low_level_swap_m_and_q(t_mdatoms *md, t_atom *atom, const int atomid)
+{
+  real m, q;
+  
+  if (atom == NULL)
+    {
+      m = 1;
+      q = 0;
+    }
+  else
+    {
+      m = atom->m;
+      q = atom->q;
+    }
+
+  md->chargeA[atomid] = q;
+
+/*   if (md->massA) */
+/*     { */
+/*       md->massA[atomid] = m; */
+/*     } */
+
+/*   md->invmass[atomid] = (m==0 ? 0 : 1/m); */
+}
+
+/* Hacks mdatoms such that the masses and
+ * charges of swapres match those of prod.
+ * Works on an atomname basis
+ */
+static void qhop_swap_m_and_q(const t_qhop_residue *swapres,
+			      const qhop_res *prod,
+			      t_mdatoms *md,
+			      const qhop_db *db)
+{
+  int i, j;
+  t_restp *rtp;
+  real m;
+
+  rtp = &(db->rtp[prod->rtp]);
+
+  /* Compare atomnames with atomnames in rtp.
+   * Change */
+
+  for (i=0; i < swapres->nr_atoms; i++)
+    {
+      /* Zero m and q for all atoms
+       * Otherwise any atoms that was
+       * just turned off will retain
+       * their m and q. */
+
+      low_level_swap_m_and_q(md, NULL, swapres->atoms[i]);
+
+      for (j=0; j < rtp->natom; j++)
+	{
+	  if (strcmp(*(rtp->atomname[j]), swapres->atomnames[i]) == 0)
+	    {
+	      /* Now set the q and m for real */
+	      low_level_swap_m_and_q(md, &(rtp->atom[j]), swapres->atoms[i]);
+	      break;
+	    }
+	}
+    }
+}
+
+static void set_interactions(qhop_db *qdb, t_mdatoms *md, t_qhop_atom *QA, t_qhop_residue *qres)
+{
+  int i, j, k, nri, bt, b, Gr, RB, R;
   qhop_res *reac;
   t_restp *res;
   
   /* point pointers at the right residue */
-  qres = &(qhoprec->qhop_residues[Qr]);
   Gr   = qres->res_nr; /* global res id. */
   RB   = qres->rtype;
-  R = qres->res;
-  reac = &qdb->rb.res[RB][R];
-  
-  /* find the res in the rtp */
-  for (i=0; i < qdb->nrtp; i++)
+  R    = qres->res;
+  reac = &(qdb->rb.res[RB][R]);
+
+  for (i=0; i<qres->nr_titrating_sites; i++)
     {
-      if (strcmp(reac->name,
-		 qdb->rtp[i].resname) == 0)
+      /* find among qdb->res[][].acc/.don */
+      for (j=0; j<reac->na; j++)
 	{
-	  res = &(qdb->rtp[i]);
-	  break;
+	  /* loop over tautomeric sites */
+	  for (k=0; k<reac->acc[j].nname; k++)
+	    {
+	      if (strcmp(reac->acc[j].name[k], QA[qres->titrating_sites[i]].atomname) == 0)
+		{
+		  QA[qres->titrating_sites[i]].state |= eQACC;
+		  break;
+		}
+	    }
+	}
+
+      /* find among qdb->res[][].acc/.don */
+      for (j=0; j<reac->nd; j++)
+	{
+	  /* loop over tautomeric sites */
+	  for (k=0; k<reac->don[j].nname; k++)
+	    {
+	      if (strcmp(reac->don[j].name[k], QA[qres->titrating_sites[i]].atomname) == 0)
+		{
+		  QA[qres->titrating_sites[i]].state |= eQDON;
+		  break;
+		}
+	    }
 	}
     }
+
+  qhop_swap_bondeds(qres, reac);
+  qhop_swap_vdws(qres, reac);
+  qhop_swap_m_and_q(qres, reac, md, qdb);
   
-  /* --------- Bonded interactions --------- */
-
-  /* loop over bonded types */
-  for (bt = 0; bt<ebtsNR; bt++)
-    {
-      /* loop over interactions of type bt */
-      for (b=0; b<res->rb[bt].nb; b++)
-	{
-	  
-	}
-    }
-
-
     /* Non-bonded */
 }
 
@@ -1063,14 +1609,14 @@ void qhop_atoms2md(t_mdatoms *md, t_qhoprec *qr)
     {
       a = &(qr->qhop_atoms[i]);
 
-      md->bqhopacceptor[a->atom_id] = a->state | eQACC;
-      md->bqhopdonor[a->atom_id]    = a->state | eQDON;
+      md->bqhopacceptor[a->atom_id] = (a->state & eQACC) != 0;
+      md->bqhopdonor[a->atom_id]    = (a->state & eQDON) != 0;
     }
 }
 
 int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
 	      t_forcerec *fr, rvec *x,matrix box,t_mdatoms *md,
-	      qhop_db_t *db){
+	      qhop_db **db){
 
   int 
     nr_qhop_atoms, nr_qhop_residues, i, target;
@@ -1104,15 +1650,19 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 
   nr_qhop_atoms = get_qhop_atoms(cr, mtop, qhoprec ,ir, *db);
 
-  /* Complete the t_mdatoms */
-  qhop_atoms2md(md, qhoprec);
+  /* Find hydrogens and fill out the qr->qhop_atoms[].protons */
+  scan_for_H(qhoprec, *db);
 
   for (i=0; i < qhoprec->nr_qhop_residues; i++)
     {
       /* What flavour of the residue shall we set it to? */
       target = which_subRes(mtop, qhoprec, *db, i);
-      set_interactions(qhoprec, *db, i, target);
+      qhoprec->qhop_residues[i].res = target;
+      set_interactions(*db, md, qhoprec->qhop_atoms, &(qhoprec->qhop_residues[i]));
     }
+
+  /* Complete the t_mdatoms */
+  qhop_atoms2md(md, qhoprec);
 
   qhoprec->hop = NULL;
   
@@ -1307,42 +1857,6 @@ static void rotate_water(rvec *x,t_qhop_atom *res,real angle,t_mdatoms *md){
     }
 } /* rotate_water */
 
-static void qhop_swap_bondeds(t_qhop_residue *swapres, qhop_res *prod)
-{
-  /* placeholder. */
-  int i;
-  i=0;
-  
-}
-
-static void qhop_swap_vdws(t_qhop_residue *swapres, qhop_res *prod)
-{
-  /* placeholder. */
-  int i;
-  i=0;
-  
-}
-
-static void qhop_swap_m_and_q(t_qhop_residue *swapres, qhop_res *prod, t_mdatoms *md, qhop_db *db)
-{
-  int i, j;
-  t_restp *rtp;
-
-  rtp = &(db->rtp[prod->rtp]);
-
-  for (i=0; i < swapres->nr_atoms; i++)
-    {      
-      for (j=0; j < rtp->natom; j++)
-	{
-	  if (strcmp(*(rtp->atomname[j]), swapres->atomnames[i]) == 0)
-	    {
-	      md->chargeA[swapres->atoms[i]] = rtp->atom[j].q;
-	      md->massA[swapres->atoms[i]]   = rtp->atom[j].m;
-	    }
-	}
-    }
-}
-
 static gmx_bool is_DA(qhop_db *db, t_qhop_residue *qr, t_qhop_atom *qa, int prod, int DA)
 {
   int i, j, rt;
@@ -1400,7 +1914,9 @@ static gmx_bool is_acceptor(qhop_db *db, t_qhop_residue *qr, t_qhop_atom *qa, in
  * if DA==eQDON, makes a deprotonation and,
  * if DA==eQACC, a protonation.
  * Returns the subres being the product. */
-static int qhop_titrate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom, t_mdatoms *md, gmx_bool bWater, gmx_bool bSwapBondeds, int DA)
+static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
+			t_qhop_atom *qatom, t_mdatoms *md,
+			gmx_bool bWater, gmx_bool bSwapBondeds, int DA)
 {
   int
     i, rt, r, reactant, t;
@@ -1413,7 +1929,7 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom, t_mdatom
       gmx_fatal(FARGS, "Called qhop_titrate() with DA != eQDON || eQACC");
     }
   
-  bDonor = DA==eQDON;
+  bDonor = (DA & eQDON);
 
   product_res = NULL;
   
@@ -1434,11 +1950,15 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom, t_mdatom
 	   t++)
 	{
 	  /* Is this the reactant? */
-	  if (!strcasecmp(db->rb.res[rt][r].acc[reactant].name[t],
+	  if (!strcasecmp(bDonor ?
+			  db->rb.res[rt][r].don[reactant].name[t] :
+			  db->rb.res[rt][r].acc[reactant].name[t],
 			  qatom->atomname));
 	    {
 	      /* This is the reactant! */
-	      product_res = db->rb.res[rt][r].acc[reactant].productdata;
+	      product_res = bDonor ?
+		db->rb.res[rt][r].don[reactant].productdata :
+		db->rb.res[rt][r].acc[reactant].productdata;
 	      break;
 	    }
 	}
@@ -1491,7 +2011,7 @@ extern void qhop_protonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
   int prod;
   gmx_bool isacc;
 
-  prod = qhop_titrate(db, qr, qatom, md, bWater, bSwapBondeds, FALSE);
+  prod = qhop_titrate(db, qr, qatom, md, bWater, bSwapBondeds, eQACC);
   
   /* Since it just got a proton it must become a donor. */
   md->bqhopdonor[qatom->atom_id] = TRUE;
@@ -1518,7 +2038,7 @@ extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
   int prod;
   gmx_bool isdon;
 
-  prod = qhop_titrate(db, qr, qatom, md, bWater, bSwapBondeds, TRUE);
+  prod = qhop_titrate(db, qr, qatom, md, bWater, bSwapBondeds, eQDON);
 
   /* Since it just lost a proton it must become an acceptor. */
   md->bqhopacceptor[qatom->atom_id] = TRUE;
@@ -1581,7 +2101,7 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
   real
     planedist, d;
   const int
-    /* 0 and 1 are ordinary water protons, 3 is the "out of plane" one
+    /* 0 and 1 are ordinary water protons, 2 is the "out of plane" one
      * in hydronium, while 3 and 4 are in the water plane */
     out_of_plane_proton = 2;
 
@@ -1944,10 +2464,12 @@ static real calc_K(qhop_parameters *p, t_hop *hop)
 static real calc_M(qhop_parameters *p, t_hop *hop)
 {return p->m_1 * exp(-p->m_2 * (hop->rda-0.23)) + p->m_3;}
 /**
- * Calculates the SE-regime validity limit and stores it in hop->El.
- */
-static void compute_E12_left(qhop_parameters *p, ///< Pointer to hopping parameters			      
-		      t_hop *hop          ///< The hop
+ * \brief Calculates the SE-regime validity limit and stores it in hop->El.
+ *
+ * \param p    Pointer to hopping parameters
+ * \param hop  Pointer to a t_hop */
+static void compute_E12_left(qhop_parameters *p,
+		      t_hop *hop
 		      )
 {
   
@@ -1968,8 +2490,7 @@ static void compute_E12_left(qhop_parameters *p, ///< Pointer to hopping paramet
  * Calculates the TST-regime validity limit and stores it in hop->Er.
  */
 static void compute_E12_right(qhop_parameters *p, ///< Pointer to hopping parameters
-		       t_hop *hop,         ///< The hop
-		       real Temp	   ///< Temperature
+		       t_hop *hop         ///< The hop
 		       )
 {
   
@@ -2002,7 +2523,7 @@ static void compute_E12_right(qhop_parameters *p, ///< Pointer to hopping parame
    * equation described at the top of this function definition.
    */
 
-  A = p->h + (log(100) * BOLTZ * Temp);
+  A = p->h + (log(100) * BOLTZ * hop->T);
   g = p->g;
   f = p->f;
   Eb = (A * g + LambertW(exp(-A * g) * f * g)) / g;
@@ -2041,16 +2562,16 @@ static real compute_Eb(qhop_parameters *p, ///< Pointer to qhop_parameters
  * \brief Calculates the TST transfer probability for a 10 fs time window and hbar omega/2.
  */
 static real compute_rate_TST(qhop_parameters *p, ///< Pointer to qhop_parameters
-		      t_hop *hop,         ///< The hop
-		      real T              ///< Temperature
+		      t_hop *hop         ///< The hop
 		      )
 {
   real
-    Q, R, kappa, half_hbar_omega, ETST, pTST, E_M, Eb, E12, rda;
+    Q, R, kappa, half_hbar_omega, ETST, pTST, E_M, Eb, E12, rda, T;
 
   rda = hop->rda;
   E12 = hop->Eb;
   Eb = hop->Eb;
+  T = hop->T;
 
   if(E12 > 0.0)
     {
@@ -2104,8 +2625,7 @@ static real compute_rate_SE(qhop_parameters *p, ///< Pointer to qhop_parameters
  * Calculates the transfer probability for the intermediate regime over a 10 fs time window.
  */
 real compute_rate_log(qhop_parameters *p, ///< Pointer to qhop_parameters
-		      t_hop *hop,         ///< The hop 
-		      real T              ///< Temperature
+		      t_hop *hop         ///< The hop 
 		      )
 {
   
@@ -2116,7 +2636,7 @@ real compute_rate_log(qhop_parameters *p, ///< Pointer to qhop_parameters
     rSE,rTST,rate;
   
   rSE  = compute_rate_SE(p, hop);
-  rTST = compute_rate_TST(p, hop, T);
+  rTST = compute_rate_TST(p, hop);
   rate = rSE * pow((rTST/rSE), (hop->E12 - hop->El)/(hop->Er - hop->El));
   /* See, the log-space interpolation translates to the expression in the first argument above.
    * No need to log/exp back and forth. */
@@ -2140,8 +2660,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			 t_graph *graph,
 			 t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 			 /* gmx_genborn_t *born, gmx_bool bBornRadii, */
-			 t_hop *hop, real T,
-			 t_qhoprec *qhoprec,t_pbc pbc,int step, qhop_db *db){
+			 t_hop *hop, t_qhoprec *qhoprec,t_pbc pbc,int step, qhop_db *db){
   
   /* compute the hopping probability based on the Q-hop criteria
    */
@@ -2156,9 +2675,14 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     x_old;
 
   /* liever lui dan moe */
-  p = get_qhop_params(qhoprec->qhop_atoms[hop->donor_id].resname,
-		      qhoprec->qhop_atoms[hop->acceptor_id].resname, db);
-  
+/*   p = get_qhop_params(db->rb.res[qhoprec->qhop_atoms[hop->donor_id].rtype] */
+/* 		      [(qhoprec->qhop_atoms[hop->donor_id].res)].name, */
+/* 		      db->rb.res[qhoprec->qhop_atoms[hop->acceptor_id].rtype] */
+/* 		      [(qhoprec->qhop_atoms[hop->acceptor_id].res)].name, */
+/* 		      db); */
+
+  p = get_qhop_params(qhoprec, hop, db);
+    
   Ebefore_tot = evaluate_energy(cr, ir, nrnb, wcycle,top, mtop,
 				groups, state, md, fcd, graph,
 				fr,vsite,mu_tot, /* born, bBornRadii, */step);
@@ -2177,17 +2701,17 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 				    md, state->x, pbc, fr);
       Eafter = Eafter_tot-Eafter_self;
     
-      E12 = compute_E12_0(p, hop) + Eafter-Ebefore;
+      hop->E12 = compute_E12_0(p, hop) + Eafter-Ebefore;
 
-      compute_E12_right(p, hop, T);
+      compute_E12_right(p, hop);
     
       compute_E12_left (p, hop);
-      Eb        = compute_Eb(p,hop);
-      fprintf(stderr,"E12 = %f\n",E12);
+      hop->Eb        = compute_Eb(p,hop);
+      /* fprintf(stderr,"E12 = %f\n",hop->E12); */
 
       
 
-      r_TST = compute_rate_TST(p, hop, T);
+      r_TST = compute_rate_TST(p, hop);
       r_SE  = compute_rate_SE (p, hop);
 
       if(E12 > hop->Er)
@@ -2205,11 +2729,11 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	       */
 	      hop->prob = poisson_prob(r_SE, (ir->delta_t * qhoprec->qhopfreq));
 	      hop->regime = etQhopSE;
-	      fprintf(stderr, "TEMPORARY:       r_SE = %e\n", r_SE);
+	      /* fprintf(stderr, "TEMPORARY:       r_SE = %e\n", r_SE); */
 	    }
 	  else
 	    {
-	      r_log = compute_rate_log(p, hop, T);
+	      r_log = compute_rate_log(p, hop);
 	      /* intermediate regime */
 	      /* using volkhards probality propagation */
 	      hop->prob = poisson_prob(r_log, (ir->delta_t * qhoprec->qhopfreq));
@@ -2232,8 +2756,8 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
      compensate by scaling velocities
   */
   hop->DE_MM = Eafter_tot-Ebefore_tot;
-  hop->E12 = E12;
-  hop->Eb  = Eb;
+  /* hop->E12 = E12; */
+/*   hop->Eb  = Eb; */
   free(p);
 
   return(Eafter_tot-Ebefore_tot);
@@ -2633,22 +3157,20 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     nr_hops,i,j,a;
   t_pbc
     pbc;
-  static gmx_bool 
-    bFirst=TRUE;
   gmx_bool
     bAgain,bHop;
   real 
     rnr;
-  static int 
+  int 
     start_seed=0;
-  static gmx_rng_t 
-    rng,rng_int;
   t_qhoprec
     *qr;
 
+  qr = fr->qhoprec;
+
   set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,state->box);
   
-  if(bFirst)
+  if(qr->rng == NULL)
     {
       if(MASTER(cr))
 	{
@@ -2660,25 +3182,25 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	  MPI_Bcast(&start_seed, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	}
 #endif
-      rng     = gmx_rng_init(12/*start_seed*/); 
-      rng_int = gmx_rng_init(12/*start_seed*/); 
-      bFirst  = FALSE;
+      qr->rng     = gmx_rng_init(12/*start_seed*/);
+      qr->rng_int = gmx_rng_init(12/*start_seed*/);
     } 
 
-  qr->hop = find_acceptors(cr, fr, state->x, pbc, &nr_hops, md);
+  qr->hop = find_acceptors(cr, fr, state->x, pbc, &(qr->nr_hops), md);
 
   if(qr->nr_hops > 0)
     {
-      for(i=0; i<nr_hops; i++)
+      for(i=0; i<qr->nr_hops; i++)
 	{
+	  qr->hop[i].T = T;
 	  if (qr->qhopmode == etQhopModeOne)
 	    {
-	      i = (int) floor (nr_hops * (gmx_rng_uniform_uint32(rng_int))/4294967296.0);
+	      i = (int) floor (nr_hops * (gmx_rng_uniform_uint32(qr->rng_int))/4294967296.0);
 	    }
 	
 	  qr->hop[i].DE_MM = get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
 					  fcd,graph,fr,vsite,mu_tot,/*born,bBornRadii,*/
-					  &(qr->hop[i]),T,
+					  &(qr->hop[i]),
 					  fr->qhoprec,pbc,step, db);
 	  
 	  if (qr->qhopmode == etQhopModeOne)
@@ -2697,20 +3219,20 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
        * Sorry, but that doesn't preserve detailed balance.
        */
     
-      qr->hop = scramble_hops(qr->hop, qr->nr_hops, qr->qhopmode, rng);
+      qr->hop = scramble_hops(qr->hop, qr->nr_hops, qr->qhopmode, qr->rng);
 
-      for(i=0; i < nr_hops; i++)
+      for(i=0; i <qr-> nr_hops; i++)
 	{
 	  if (qr->hop[i].regime != etQhopNONE)
 	    {
-	      rnr = gmx_rng_uniform_real(rng); 
+	      rnr = gmx_rng_uniform_real(qr->rng); 
 	      if(MASTER(cr)){
 		/* some printing to the log file */
 		fprintf(fplog,
-			"\n%d. don %d acc %d. E12 = %18.12f, DE_MM = %18.12f, Eb = %18.12f, prob. = %f, ran. = %f (%s)", i,
+			"\n%d. don %d acc %d. E12 = %18.12f, DE_MM = %18.12f, Eb = %18.12f, rda = %3.4f, prob. = %f, ran. = %f (%s)", i,
 			fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
 			fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
-			qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb,
+			qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb, qr->hop[i].rda,
 			qr->hop[i].prob, rnr, qhopregimes[qr->hop[i].regime]);
 	      }
  
@@ -2727,7 +3249,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 		  if (qr->qhopmode != etQhopModeOne)
 		    {
 		      /* Zap all hops whose reactants just was consumed. */
-		      for (j = i+1; j < nr_hops; j++)
+		      for (j = i+1; j < qr->nr_hops; j++)
 			{
 			  if (qr->hop[j].donor_id    == qr->hop[i].donor_id    ||
 			      qr->hop[j].acceptor_id == qr->hop[i].acceptor_id ||
@@ -2760,7 +3282,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     }
 }
 
-/* patamStr is the string form the rtp file.
+/* paramStr is the string from the rtp file.
  * bts = ebtsBONDS, ..., ebtsCMAP
  * bt is the tyep found in t_rbonded.type
  */
