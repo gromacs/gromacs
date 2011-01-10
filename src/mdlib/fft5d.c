@@ -952,9 +952,12 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 llToAll
               1. (most outer) axes (x) is split into P[s] parts of size N[s] 
               for sending*/
-            tend = ((t+1)*pM[s]*pK[s]/plan->nthreads);
-            tstart/=C[s];
-            splitaxes(lout2,lout,N[s],M[s],K[s], pN[s],pM[s],pK[s],P[s],C[s],iNout[s],oNout[s],tstart%pM[s],tstart/pM[s],tend%pM[s],tend/pM[s]);
+            if (pM[s]>0) 
+            {
+                tend = ((t+1)*pM[s]*pK[s]/plan->nthreads);
+                tstart/=C[s];
+                splitaxes(lout2,lout,N[s],M[s],K[s], pN[s],pM[s],pK[s],P[s],C[s],iNout[s],oNout[s],tstart%pM[s],tstart/pM[s],tend%pM[s],tend/pM[s]);
+            }
 #pragma omp barrier /*barrier required before AllToAll (all input has to be their) - before timing to make timing more acurate*/
 #pragma omp master 
             {
@@ -1006,14 +1009,20 @@ llToAll
           runs on thread used for following FFT (thus needing a barrier before but not afterwards)
         */
         if ((s==0 && !(plan->flags&FFT5D_ORDER_YZ)) || (s==1 && (plan->flags&FFT5D_ORDER_YZ))) {
-            tstart = (t * pM[s]*pN[s]/plan->nthreads);            
-            tend = ((t+1)*pM[s]*pN[s]/plan->nthreads);            
-            joinAxesTrans13(lin,joinin,N[s],pM[s],K[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1],tstart%pM[s],tstart/pM[s],tend%pM[s],tend/pM[s]);
+            if (pM[s]>0) 
+            {
+                tstart = (t * pM[s]*pN[s]/plan->nthreads);            
+                tend = ((t+1)*pM[s]*pN[s]/plan->nthreads);            
+                joinAxesTrans13(lin,joinin,N[s],pM[s],K[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1],tstart%pM[s],tstart/pM[s],tend%pM[s],tend/pM[s]);
+            }
         }
         else { 
-            tstart = (t * pK[s]*pN[s]/plan->nthreads);            
-            tend = ((t+1)*pK[s]*pN[s]/plan->nthreads);            
-            joinAxesTrans12(lin,joinin,N[s],M[s],pK[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1],tstart%pN[s],tstart/pN[s],tend%pN[s],tend/pN[s]);
+            if (pN[s]>0) 
+            {
+                tstart = (t * pK[s]*pN[s]/plan->nthreads);            
+                tend = ((t+1)*pK[s]*pN[s]/plan->nthreads);            
+                joinAxesTrans12(lin,joinin,N[s],M[s],pK[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1],tstart%pN[s],tstart/pN[s],tend%pN[s],tend/pN[s]);
+            }
         }
 #pragma omp master 
         {
