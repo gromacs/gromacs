@@ -452,7 +452,7 @@ grid_add_to_cell(gmx_ana_nbsearch_t *d, const ivec cell, int i)
  * for the neighbors of \p x.
  */
 int
-gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, rvec x[])
+gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, const rvec x[])
 {
     d->pbc  = pbc;
     d->nref = n;
@@ -490,7 +490,9 @@ gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, rvec x[])
     }
     else
     {
-        d->xref = x;
+        // Won't be modified in this case, but when a grid is used,
+        // xref _is_ modified, so it can't be const.
+        d->xref = const_cast<rvec *>(x);
     }
     d->refid = NULL;
     return 0;
@@ -505,7 +507,7 @@ gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, rvec x[])
  * A convenience wrapper for gmx_ana_nbsearch_init().
  */
 int
-gmx_ana_nbsearch_pos_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, gmx_ana_pos_t *p)
+gmx_ana_nbsearch_pos_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, const gmx_ana_pos_t *p)
 {
     int rc;
 
@@ -572,7 +574,7 @@ is_excluded(gmx_ana_nbsearch_t *d, int j)
  * Initializes a grid search to find reference positions neighboring \p x.
  */
 static void
-grid_search_start(gmx_ana_nbsearch_t *d, rvec x)
+grid_search_start(gmx_ana_nbsearch_t *d, const rvec x)
 {
     copy_rvec(x, d->xtest);
     if (d->bGrid)
@@ -701,7 +703,7 @@ mindist_action(gmx_ana_nbsearch_t *d, int i, real r2)
  *   FALSE otherwise.
  */
 gmx_bool
-gmx_ana_nbsearch_is_within(gmx_ana_nbsearch_t *d, rvec x)
+gmx_ana_nbsearch_is_within(gmx_ana_nbsearch_t *d, const rvec x)
 {
     grid_search_start(d, x);
     return grid_search(d, &within_action);
@@ -715,7 +717,7 @@ gmx_ana_nbsearch_is_within(gmx_ana_nbsearch_t *d, rvec x)
  *   position, FALSE otherwise.
  */
 gmx_bool
-gmx_ana_nbsearch_pos_is_within(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p, int i)
+gmx_ana_nbsearch_pos_is_within(gmx_ana_nbsearch_t *d, const gmx_ana_pos_t *p, int i)
 {
     return gmx_ana_nbsearch_is_within(d, p->x[i]);
 }
@@ -727,7 +729,7 @@ gmx_ana_nbsearch_pos_is_within(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p, int i)
  *   value if there are no reference positions within the cutoff.
  */
 real
-gmx_ana_nbsearch_mindist(gmx_ana_nbsearch_t *d, rvec x)
+gmx_ana_nbsearch_mindist(gmx_ana_nbsearch_t *d, const rvec x)
 {
     real mind;
 
@@ -746,7 +748,7 @@ gmx_ana_nbsearch_mindist(gmx_ana_nbsearch_t *d, rvec x)
  *   value if there are no reference positions within the cutoff.
  */
 real
-gmx_ana_nbsearch_pos_mindist(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p, int i)
+gmx_ana_nbsearch_pos_mindist(gmx_ana_nbsearch_t *d, const gmx_ana_pos_t *p, int i)
 {
     return gmx_ana_nbsearch_mindist(d, p->x[i]);
 }
@@ -758,7 +760,7 @@ gmx_ana_nbsearch_pos_mindist(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p, int i)
  * \returns    TRUE if there are positions within the cutoff.
  */
 gmx_bool
-gmx_ana_nbsearch_first_within(gmx_ana_nbsearch_t *d, rvec x, int *jp)
+gmx_ana_nbsearch_first_within(gmx_ana_nbsearch_t *d, const rvec x, int *jp)
 {
     grid_search_start(d, x);
     return gmx_ana_nbsearch_next_within(d, jp);
@@ -772,7 +774,7 @@ gmx_ana_nbsearch_first_within(gmx_ana_nbsearch_t *d, rvec x, int *jp)
  * \returns    TRUE if there are positions within the cutoff.
  */
 gmx_bool
-gmx_ana_nbsearch_pos_first_within(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p,
+gmx_ana_nbsearch_pos_first_within(gmx_ana_nbsearch_t *d, const gmx_ana_pos_t *p,
                                   int i, int *jp)
 {
     return gmx_ana_nbsearch_first_within(d, p->x[i], jp);
