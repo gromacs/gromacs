@@ -236,7 +236,7 @@ enum {
 };
 
 enum {
-    erotgFitRMSD, erotgFitNORM, erotgFitNR
+    erotgFitRMSD, erotgFitNORM, erotgFitPOT, erotgFitNR
 };
 
 /* QMMM */

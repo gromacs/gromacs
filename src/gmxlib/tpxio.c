@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 74;
+static const int tpx_version = 75;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -272,6 +272,11 @@ static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg,gmx_bool bRead, int file_ver
   gmx_fio_do_real(fio,rotg->min_gaussian);
   gmx_fio_do_real(fio,rotg->eps);
   gmx_fio_do_int(fio,rotg->eFittype);
+  if (file_version >= 75)
+  {
+      gmx_fio_do_int(fio,rotg->PotAngle_nstep);
+      gmx_fio_do_real(fio,rotg->PotAngle_step);
+  }
 }
 
 static void do_rot(t_fileio *fio, t_rot *rot,gmx_bool bRead, int file_version)
