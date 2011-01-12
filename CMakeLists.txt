@@ -796,6 +796,10 @@ if (DOXYGEN_FOUND)
     ENDFOREACH(NB_KERNEL_DIR)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.cmakein
                    ${CMAKE_BINARY_DIR}/Doxyfile)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-lib.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile-lib)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-user.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile-user)
 endif (DOXYGEN_FOUND)
 
 
